@@ -1,5 +1,116 @@
 # @nocobase/app-cli
 
+## 1.0.0-beta.31
+
+### Patch Changes
+
+- cf23bfe: Move Redis realtime broadcasting to the commercial Realtime Redis plugin. Register its Server plugin before selecting Redis in an application, or import the standalone broker from its `/broker` entry. Preserve the Memory default, service identity, authorization and recovery protocol, and republish runtime consumers against the new host and realtime major versions. Install the compatible commercial cohort before deploying the final removal.
+- Updated dependencies [83f28b1]
+- Updated dependencies [cf23bfe]
+  - @nocobase/app-server@4.0.0-beta.0
+
+## 1.0.0-beta.30
+
+### Minor Changes
+
+- 07b14c0: `pnpm build --tar` also packs the application's `Dockerfile` and `Dockerfile.dockerignore` when it has them, so a server builds the image from the release archive alone with `docker build --build-arg DIST=prebuilt .` in the extracted directory, without the sources or a registry.
+
+### Patch Changes
+
+- Updated dependencies [e3d9a52]
+- Updated dependencies [22748f7]
+  - @nocobase/app-server@3.0.0-beta.4
+  - @nocobase/db@1.0.0-beta.23
+
+## 1.0.0-beta.29
+
+### Patch Changes
+
+- 82aa791: Create plugins directly in an existing application's `packages/` workspace without a NocoBase source checkout. Resolve generated dependencies against the application's installed versions, preserve workspace settings, connect the local dependency, and report application edits and resolved dependencies in the JSON generation plan. Keep runtime registration explicit and preserve source-repository generation.
+
+  Support custom scoped `app-plugin-*` names in generation and plugin management. Keep package-manager progress on stderr so `create-plugin --json` always prints one result document. App-local generated plugins are private by default.
+
+  Preserve application configuration during failed plugin generation with staged atomic replacements and rollback backups. Reject plugin names already declared as optional dependencies and resolve runtime-provided dependencies through pnpm symlinks.
+
+  Keep generated plugins and committed application configuration when temporary-file cleanup fails, report remaining directories on stderr, and preserve the original error if generation already failed.
+
+- df09e63: Ship plugin development guidance with the App's installed Skills, reserve its existing name for @nocobase/app-skills, and guide upgrades through verifying the project replacement before retiring old global installations. Update application and plugin entry points to use the version-matched project Skill.
+
+  Synchronize project Skills as real copies, exclude dependencies installed inside executable examples, and preserve the targets of older project links during migration.
+
+## 1.0.0-beta.28
+
+### Patch Changes
+
+- 7770b46: Support internal workspace packages while keeping the application at the project root. Generate workspace package patterns, build dependencies before client compilation, watch reachable internal sources, and document independent package checks and deployment exports.
+- 7770b46: Provide a runnable internal workspace package example with declaration watching, clarify the single-application layout, and fail package checks when an internal package lacks its check script. Keep the public development listener available during server restarts so shared-source HMR requests can wait for the replacement backend.
+
+## 1.0.0-beta.27
+
+### Patch Changes
+
+- 5b72947: Extract the Node.js that `nocobase cli build` packs inside its cache rather than the system temporary directory, so the build no longer fails with EXDEV where `/tmp` is a separate filesystem, such as on GitHub's ubuntu-26.04 runners.
+- Updated dependencies [0c5c4ff]
+  - @nocobase/app-server@3.0.0-beta.3
+
+## 1.0.0-beta.26
+
+### Patch Changes
+
+- 8b30952: Isolate application command test storage in the test configuration directory. Respect the application mount path in test router links and navigation, and clean up runtime configuration immediately when initialization or rendering fails. Preserve the original failure when cleanup also fails, without reporting handled cleanup failures again at test completion. Document the test helpers' storage, routing and cleanup contracts.
+- 4f0d96e: Add opt-in native OnlineAgent Skills and application-branded CLI execution using an isolated, lazily created just-bash environment. Load current Skill support trees, support virtual parameter files and read bindings, retain existing business authorization, and release execution resources across stop, approval and retryable finalization without replaying writes.
+
+  Redact execution credentials and declare intentionally disabled optional archive-native build scripts in workspace, generated-application and deployment installation policies.
+
+- Updated dependencies [62da032]
+  - @nocobase/app-server@3.0.0-beta.1
+
+## 1.0.0-beta.25
+
+### Patch Changes
+
+- 1952789: Require explicitly declared realtime topics and authorize dynamic resources before subscription and delivery. Isolate the server core behind a broker contract, retain the application adapter and service tokens, and handle asynchronous publication throughout plugins and examples. Add acknowledged browser subscriptions, bounded recovery and heartbeat handling, shared React refresh helpers, original-session revalidation, transport limits, and usage documentation. The included adapter remains in-process; events are transient and clients recover by refetching after acknowledgement.
+- 7afd595: Remove Refine from the client runtime
+
+  The application shell no longer mounts Refine. `@nocobase/app-client` drops `app.refine`, `app.refineConfig`, `AppClientRefineConfig`, `AppClientRefineRegistry`, `AppClientRefineSetters`, `AppClientRefineSetterValue` and the provider-context methods `runWithProviderContext` and `runWithProviderContextAsync`, which existed only to attribute Refine settings to the provider that made them. Nothing in the repository read what was registered there: a title set through `app.refine.setOptions` never reached the page, and Refine resources never produced a menu entry.
+
+  Refine also created the TanStack Query cache that pages read through `useQueryClient()`; `AppClientProviders` now creates it in the same place, the same way, so pages and plugins behave as before. `@tanstack/react-query` becomes a peer dependency of `@nocobase/app-client` and joins the identity-sensitive packages that plugins must declare as peers.
+
+  `@nocobase/i18n/client` drops `createRefineI18nProvider`, `CreateRefineI18nProviderOptions` and `RefineI18nProvider`. `@nocobase/app-plugin-repository-example` drops its Client ServiceProvider and the `./client/providers` export, which only registered Refine resources.
+
+  `nocobase build` builds the client with `vite build` instead of `refine build`, and `@nocobase/app-cli` no longer lists `@refinedev/cli` as an optional peer. The Default and Examples templates remove every `@refinedev/*` development dependency. The development and plugin Skills no longer mention Refine, and the upgrade Skill explains how an existing application removes its `this.app.refine` calls and Refine packages.
+
+- Updated dependencies [1952789]
+- Updated dependencies [1952789]
+- Updated dependencies [7afd595]
+  - @nocobase/app-server@3.0.0-beta.0
+  - @nocobase/dev-config@0.1.0-beta.24
+  - @nocobase/db@1.0.0-beta.21
+
+## 1.0.0-beta.24
+
+### Patch Changes
+
+- 00b85da: Pack CLI and runner distribution archives without host extended attributes, preventing repeated LIBARCHIVE warnings during installation with GNU tar while preserving extraction errors.
+
+## 1.0.0-beta.23
+
+### Patch Changes
+
+- 98b3862: Identify Dameng, KingbaseES and OceanBase as NocoBase Pro commercial drivers when selecting or initializing a database. Report commercial license and private registry requirements before configuration, including JSON warnings and missing-driver errors.
+- 525ace4: Declare the workspace packages the tests read as devDependencies instead of reaching into their directories, and add a test to each application template that checks `config.example.yml` still has what `nocobase config init` relies on.
+- Updated dependencies [98b3862]
+- Updated dependencies [5fe8773]
+- Updated dependencies [b22d999]
+- Updated dependencies [0037dd2]
+- Updated dependencies [eb4b081]
+- Updated dependencies [14b7aec]
+- Updated dependencies [49f61b9]
+- Updated dependencies [0037dd2]
+  - @nocobase/db@1.0.0-beta.21
+  - @nocobase/app-server@2.0.0-beta.8
+  - @nocobase/dev-config@0.1.0-beta.23
+
 ## 1.0.0-beta.22
 
 ### Patch Changes

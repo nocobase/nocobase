@@ -1,10 +1,10 @@
+/** Whether the agent can take the viewer's work now, as the agent picker shows it. */
 import type { AgentView } from '../../shared/agents.js';
 import type {
   ChatAgent,
   ChatAvailability,
 } from '../../shared/conversations.js';
 
-/** Whether the agent can take the viewer's work now, as the agent picker shows it. */
 export function availabilityOf(agent: AgentView): ChatAvailability {
   const onlineRunners =
     agent.runners.team + agent.runners.mine > 0
@@ -40,6 +40,8 @@ export function pickerAgentOf(
     isSystemDefault,
     isMyDefault: false,
     availability: availabilityOf(agent),
+    quota: agent.quota,
+    runnerNames: agent.runners.names,
     personalOnly: agent.personalOnly,
   };
 }

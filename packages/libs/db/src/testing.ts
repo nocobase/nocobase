@@ -28,6 +28,7 @@ export {
   type ProvisionedTestDatabase,
   type SqlTestDatabaseProvisionerOptions,
   type SqlTestDatabaseStatements,
+  type TestDatabaseCloneOptions,
   type TestDatabaseEnvironment,
   type TestDatabaseListOptions,
   type TestDatabaseProvisionOptions,

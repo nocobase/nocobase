@@ -93,6 +93,8 @@ import { ProposeFileDialog } from './propose-file.js';
 export type { DocMode } from '../hooks/use-view-state.js';
 
 export interface DocPaneProps {
+  /** Availability already read by the containing knowledge view. */
+  readonly proposalsEnabled?: boolean;
   readonly docId: string;
   /** Shown in another space's view, which inherits it: read-only here. */
   readonly inherited: boolean;
@@ -106,6 +108,7 @@ export interface DocPaneProps {
   /** The documents of the view, to move this one among its space's and list a folder's. */
   readonly docs: readonly KnowledgeDocSummary[];
   readonly onMode: (mode: DocMode) => void;
+  /** Reads the chosen version (or the current one), leaving history mode. */
   readonly onVersion: (version: number | null) => void;
   /** Opens another entry (a folder's, a step of the path). */
   readonly onOpen: (docId: string) => void;
@@ -446,6 +449,7 @@ export function DocPane(props: DocPaneProps): ReactElement {
   const { t, i18n } = useTranslation(ACCESS_NAMESPACE);
   const { docId, inherited, mode, version } = props;
   const doc = useKnowledgeDoc(docId);
+  const proposalsEnabled = props.proposalsEnabled !== false;
   const old = useKnowledgeVersion(docId, version);
   const api = useKnowledgeApi();
   const notify = useNotify();
@@ -491,7 +495,13 @@ export function DocPane(props: DocPaneProps): ReactElement {
         <Skeleton className='h-40 w-full' />
       </div>
     );
-  const current = doc.data;
+  const current = proposalsEnabled
+    ? doc.data
+    : {
+        ...doc.data,
+        pendingProposals: 0,
+        access: { ...doc.data.access, propose: false },
+      };
   const live = !current.archivedAt;
   const editable = current.access.edit && !inherited;
   // Someone who may propose but not edit proposes changes instead.
@@ -725,7 +735,6 @@ export function DocPane(props: DocPaneProps): ReactElement {
           doc={current}
           onView={(number) => {
             props.onVersion(number === current.version ? null : number);
-            props.onMode('read');
           }}
         />
       ) : folder ? (

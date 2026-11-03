@@ -1,6 +1,31 @@
 import { useLocale } from '@nocobase/i18n/client';
-import { type Locale, enUS, zhCN } from 'date-fns/locale';
+import {
+  type Locale,
+  enUS,
+  zhCN,
+  zhTW,
+  ja,
+  es,
+  ptBR,
+  fr,
+  de,
+  vi,
+  id,
+} from 'date-fns/locale';
 import { useMemo } from 'react';
+
+const calendarLocales: Readonly<Record<string, Locale>> = {
+  'en-US': enUS,
+  'zh-CN': zhCN,
+  'zh-TW': zhTW,
+  'ja-JP': ja,
+  'es-ES': es,
+  'pt-BR': ptBR,
+  'fr-FR': fr,
+  'de-DE': de,
+  'vi-VN': vi,
+  'id-ID': id,
+};
 
 export interface PmFormatters {
   /** Date and time in the current language, or "—" for an empty value. */
@@ -113,5 +138,5 @@ export function fromDateOnly(
 /** The `date-fns` locale for the interface language, for `DatePicker` and `format`. */
 export function useDateFnsLocale(): Locale {
   const { locale } = useLocale();
-  return locale.startsWith('zh') ? zhCN : enUS;
+  return calendarLocales[locale] ?? enUS;
 }

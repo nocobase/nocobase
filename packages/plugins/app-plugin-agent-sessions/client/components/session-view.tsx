@@ -3,7 +3,8 @@
  * choices, and beside it that work in detail, where the session runs and what it has used. A session whose computer is
  * offline, or that is archived, reads as before and takes no new messages.
  */
-import { ApiClientError, useToaster } from '@nocobase/app-client';
+import { createUuid, ApiClientError, useToaster } from '@nocobase/app-client';
+import { useNavigate } from 'react-router';
 import { useTranslation } from '@nocobase/i18n/client';
 import { cn } from 'cn';
 import { useIsMutating } from '@tanstack/react-query';
@@ -11,6 +12,7 @@ import {
   AlertTriangleIcon,
   ArchiveIcon,
   ArchiveRestoreIcon,
+  ChevronDownIcon,
   FolderIcon,
   FolderKanbanIcon,
   LaptopIcon,
@@ -23,6 +25,7 @@ import {
   XIcon,
 } from 'lucide-react';
 import {
+  useContext,
   useEffect,
   useLayoutEffect,
   useMemo,
@@ -52,23 +55,29 @@ import {
   type Mention,
   useAnswer,
   useCancel,
+  useWithdraw,
   useChoose,
   useComputers,
   useDecideLinks,
   usePrompt,
   useSession,
-  useMarkSeen,
   useTranscript,
   useUpdateSession,
 } from '../api.js';
-import { LinkOpenContext } from '../config.js';
+import {
+  AgentSessionsConfigContext,
+  LinkOpenContext,
+  useSessionSurface,
+} from '../config.js';
+import { NARROW_PX } from '../lib/size.js';
 import { valueName } from '../lib/choices.js';
-import { errorText } from '../lib/errors.js';
+import { errorText, suggestionAction } from '../lib/errors.js';
 import { dateTime, shortTime, tokens } from '../lib/format.js';
 import { displayPath } from '../lib/paths.js';
 import { byIcon, linkIcon, linkNeedsYou } from '../lib/tones.js';
 import { StatusIcon } from './status-icon.js';
 import { WaitingCount } from './waiting-count.js';
+import { useSessionsLayoutContext } from '../sessions-layout.js';
 import { foldTranscript, type TranscriptItem } from '../transcript.js';
 import { AgentBadge } from './agent-badge.js';
 import { BackLink } from './back-link.js';
@@ -81,6 +90,7 @@ import { LinkBar } from './link-bar.js';
 import { LinkName } from './link-name.js';
 import { StatusPill } from './status-pill.js';
 import { TranscriptView } from './transcript-view.js';
+import { WithdrawnEditor } from './withdrawn-editor.js';
 
 export function SessionView({
   sessionId,
@@ -90,8 +100,8 @@ export function SessionView({
   const { t } = useTranslation();
   const session = useSession(sessionId);
   const transcript = useTranscript(sessionId);
-  useMarkSeen(sessionId, transcript.data?.at(-1)?.seq);
   const computers = useComputers();
+  const surface = useSessionSurface();
   const viewportRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const viewport = window.visualViewport;
@@ -119,12 +129,14 @@ export function SessionView({
       viewport.removeEventListener('scroll', fit);
     };
   }, [session.data?.id]);
-  // Beside the conversation on a wide screen; on a narrower one it opens over it, when asked for.
-  const [details, setDetails] = useState(
-    () =>
-      typeof window === 'undefined' ||
-      window.matchMedia('(min-width: 80rem)').matches,
-  );
+  // On the page, whether the details are open and where they go are the layout's (`sessions-layout.ts`); an embedded
+  // sidebar has no layout, and keeps them closed until asked for, inside it.
+  const pageLayout = useSessionsLayoutContext();
+  const layout = surface.panel ? null : pageLayout;
+  const [ownDetails, setOwnDetails] = useState(false);
+  const details = layout ? layout.detailsOpen : ownDetails;
+  const setDetails = layout ? layout.setDetailsOpen : setOwnDetails;
+  const detailsBeside = layout?.right === 'column';
   const items = useMemo(
     () => foldTranscript(transcript.data ?? []),
     [transcript.data],
@@ -152,10 +164,24 @@ export function SessionView({
   // An open record's panel takes the details' place beside the conversation.
   const showDetails = details && !panel.opened;
   return (
-    <LinkOpenContext.Provider value={panel.open}>
-      <div ref={viewportRef} className='flex h-full min-h-0'>
+    <LinkOpenContext.Provider
+      value={(link) => {
+        const opened = panel.open(link);
+        // A page overlay yields to the record view; desktop detail columns remain available on return.
+        if (opened && !surface.panel && !detailsBeside) setDetails(false);
+        return opened;
+      }}
+    >
+      <div
+        ref={viewportRef}
+        className={cn(
+          'relative isolate flex h-full min-h-0',
+          surface.panel && 'flex-col',
+        )}
+      >
         <Conversation
           session={session.data}
+          readSeq={transcript.data?.at(-1)?.seq}
           computer={computer}
           items={transcript.data ? items : undefined}
           details={showDetails}
@@ -166,13 +192,14 @@ export function SessionView({
             } else setDetails(!details);
           }}
           onSummary={() => {
-            if (!panel.openSummary()) setDetails(true);
+            if (surface.panel) setDetails(!details);
+            else if (!panel.openSummary()) setDetails(true);
           }}
         />
-        {showDetails && (
+        {showDetails && !surface.panel && !detailsBeside && (
           <div
             aria-hidden
-            className='fixed inset-0 z-40 bg-black/30 xl:hidden'
+            className='absolute inset-0 z-40 bg-black/30'
             onClick={() => setDetails(false)}
           />
         )}
@@ -181,6 +208,8 @@ export function SessionView({
             session={session.data}
             computer={computer}
             items={items}
+            inline={surface.panel}
+            beside={detailsBeside}
             onClose={() => setDetails(false)}
           />
         )}
@@ -192,6 +221,7 @@ export function SessionView({
 
 function Conversation({
   session,
+  readSeq,
   computer,
   items,
   details,
@@ -199,6 +229,7 @@ function Conversation({
   onSummary,
 }: {
   readonly session: Session;
+  readonly readSeq?: number | undefined;
   readonly computer: Computer | undefined;
   readonly items: readonly TranscriptItem[] | undefined;
   readonly details: boolean;
@@ -208,6 +239,7 @@ function Conversation({
 }): ReactElement {
   const { t, i18n } = useTranslation();
   const toaster = useToaster();
+  const navigate = useNavigate();
   const prompt = usePrompt(session.id);
   const submission = useSubmission<{
     content: PromptContent[];
@@ -218,6 +250,11 @@ function Conversation({
   const sending =
     useIsMutating({ mutationKey: ['agentSessions', 'prompt', session.id] }) > 0;
   const cancel = useCancel(session.id);
+  const withdraw = useWithdraw(session.id);
+  const [editor, setEditor] = useState<{
+    item: Extract<TranscriptItem, { type: 'prompt' }>;
+    key: string;
+  } | null>(null);
   const answer = useAnswer(session.id);
   const decide = useDecideLinks(session.id);
   const choose = useChoose(session.id);
@@ -226,8 +263,14 @@ function Conversation({
     void toaster.show({
       type: 'error',
       title: errorText(error, t('errors.generic')),
+      ...suggestionAction(
+        error,
+        t('links.configure', { defaultValue: 'Configure' }),
+        (href) => void navigate(href),
+      ),
     });
 
+  const sectionRef = useRef<HTMLElement>(null);
   const scrollerRef = useRef<HTMLDivElement>(null);
   const pinnedRef = useRef(true);
   const [collapsed, setCollapsed] = useState(false);
@@ -240,8 +283,7 @@ function Conversation({
   const touchYRef = useRef<number | null>(null);
   const changeHeader = (next: boolean): void => {
     if (!next) pendingShrinkRef.current = null;
-    if (next === collapsed || !window.matchMedia('(max-width: 767px)').matches)
-      return;
+    if (next === collapsed || !narrow(sectionRef.current)) return;
     const header = headerRef.current;
     const scroller = scrollerRef.current;
     if (!header || !scroller) return;
@@ -313,7 +355,8 @@ function Conversation({
 
   return (
     <section
-      className='flex min-w-0 flex-1 flex-col'
+      ref={sectionRef}
+      className='@container/agent-session flex min-h-0 min-w-0 flex-1 flex-col'
       aria-label={session.title}
     >
       <div ref={headerRef} className='shrink-0'>
@@ -382,16 +425,30 @@ function Conversation({
             changeHeader(true);
         }}
       >
-        <div className='mx-auto max-w-[760px] px-4 pt-5 pb-6 sm:px-6'>
+        <div className='mx-auto max-w-[760px] px-4 pt-5 pb-6 @md/agent-session:px-6'>
           {items === undefined ? (
             <Skeleton className='h-24' />
           ) : (
             <TranscriptView
               items={items}
+              readSeq={readSeq}
               session={session}
               agentName={agentName(session, computer)}
               writable={writable}
               actions={{
+                withdraw: async (seq) => {
+                  try {
+                    await withdraw.mutateAsync(seq);
+                  } catch (error) {
+                    fail(error);
+                    throw error;
+                  }
+                },
+                edit: (item) =>
+                  setEditor({
+                    item,
+                    key: `reedit:${session.id}:${createUuid()}`,
+                  }),
                 answer: (requestId, optionId) =>
                   answer.mutate({ requestId, optionId }, { onError: fail }),
                 decide: (kind, start, skip) =>
@@ -410,12 +467,22 @@ function Conversation({
                   />
                 ))}
               </span>
-              {t('session.working')}
+              {session.startup
+                ? t(`session.startup.${session.startup}`)
+                : t('session.working')}
             </p>
           )}
         </div>
       </div>
-      <div className='mx-auto w-full max-w-[760px] px-3 pt-2 pb-3 sm:px-6 sm:pb-4'>
+      <div className='mx-auto w-full max-w-[760px] px-3 pt-2 pb-3 @md/agent-session:px-6 @md/agent-session:pb-4'>
+        {editor && (
+          <WithdrawnEditor
+            item={editor.item}
+            session={session}
+            draftKey={editor.key}
+            close={() => setEditor(null)}
+          />
+        )}
         <SubmissionNotice
           pending={submission.pending}
           sending={sending}
@@ -481,6 +548,9 @@ function Header({
   readonly onShowDetails: () => void;
 }): ReactElement {
   const { t } = useTranslation();
+  const surface = useSessionSurface();
+  const renderHeader = useContext(AgentSessionsConfigContext)?.renderHeader;
+  const navigate = useNavigate();
   const update = useUpdateSession(session.id);
   const [renaming, setRenaming] = useState(false);
   const [title, setTitle] = useState(session.title);
@@ -492,10 +562,68 @@ function Header({
       update.mutate({ title: title.trim() || null });
   };
 
+  const sessionCommands = (
+    <>
+      {session.running && session.computerOnline && (
+        <DropdownMenuItem onClick={onStop}>
+          <SquareIcon />
+          {t('session.stop')}
+        </DropdownMenuItem>
+      )}
+      <DropdownMenuItem onClick={onToggleDetails}>
+        <PanelRightIcon />
+        {details ? t('session.hideDetails') : t('session.showDetails')}
+      </DropdownMenuItem>
+      <DropdownMenuItem
+        onClick={() => {
+          setTitle(session.title);
+          // The host menu restores focus when closing; mount the editor after that handoff.
+          requestAnimationFrame(() => setRenaming(true));
+        }}
+      >
+        <PencilIcon />
+        {t('session.rename')}
+      </DropdownMenuItem>
+      <DropdownMenuItem
+        onClick={() => update.mutate({ archived: session.archivedAt === null })}
+      >
+        {session.archivedAt === null ? <ArchiveIcon /> : <ArchiveRestoreIcon />}
+        {session.archivedAt === null ? t('list.archive') : t('list.restore')}
+      </DropdownMenuItem>
+    </>
+  );
+
+  if (renderHeader)
+    return (
+      <>
+        {renderHeader({
+          panel: surface.panel,
+          title: session.title,
+          session,
+          agentName: agentName(session, computer),
+          computerName: computer?.name ?? t('session.removedComputer'),
+          computerOnline: computer?.online ?? false,
+          onRename: (title) => update.mutate({ title: title.trim() || null }),
+          onBack: surface.onBack ?? (() => navigate('/agent-sessions')),
+          onNew: surface.onNew ?? (() => navigate('/agent-sessions?new')),
+          onToggleDetails,
+          details,
+          onArchive: () =>
+            update.mutate({ archived: session.archivedAt === null }),
+        })}
+      </>
+    );
+
   return (
-    <header className='flex flex-col gap-2 border-b px-4 py-2 md:py-3 sm:px-5'>
+    <header
+      className={
+        surface.renderHeaderActions
+          ? 'flex flex-col gap-2 border-b px-3.5 py-2'
+          : 'flex flex-col gap-2 border-b px-4 py-2 @md/agent-session:py-3 @md/agent-session:px-5'
+      }
+    >
       <div className='flex min-w-0 items-center gap-2.5'>
-        <BackLink />
+        {!surface.panel && <BackLink />}
         {renaming ? (
           <Input
             autoFocus
@@ -515,93 +643,162 @@ function Header({
         ) : (
           <h2
             title={session.title}
-            className={cn(
-              'min-w-0 flex-1 text-[15px] font-semibold md:truncate',
-              collapsed ? 'truncate' : 'line-clamp-2 break-words',
-            )}
+            className={
+              surface.renderHeaderActions
+                ? 'min-w-0 flex-1 truncate text-sm font-semibold'
+                : cn(
+                    'min-w-0 flex-1 text-[15px] font-semibold @md/agent-session:truncate',
+                    collapsed ? 'truncate' : 'line-clamp-2 break-words',
+                  )
+            }
           >
-            {session.title}
+            {surface.renderHeaderActions ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger
+                  render={
+                    <button
+                      type='button'
+                      className='flex max-w-full items-center gap-1 rounded-md text-left hover:bg-muted'
+                    />
+                  }
+                >
+                  <span className='truncate'>{session.title}</span>
+                  <ChevronDownIcon className='size-3.5 shrink-0' />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align='start'>
+                  {sessionCommands}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              session.title
+            )}
           </h2>
         )}
+        {!surface.renderHeaderActions && collapsed && (
+          <Button
+            variant='ghost'
+            size='sm'
+            className='h-9 shrink-0 gap-1 px-1.5 tabular-nums @md/agent-session:hidden'
+            aria-label={`${t('links.title')} ${session.links.length}`}
+            title={`${t('links.title')} ${session.links.length}`}
+            aria-expanded={details}
+            onClick={onShowDetails}
+          >
+            <ListChecksIcon aria-hidden />
+            {session.links.length}
+          </Button>
+        )}
         {session.waiting ? (
-          <span className='max-md:sr-only inline-flex shrink-0 items-center gap-1.5 text-[11px] font-medium whitespace-nowrap text-amber-800 dark:text-amber-300'>
+          <span className='@max-md/agent-session:sr-only inline-flex shrink-0 items-center gap-1.5 text-[11px] font-medium whitespace-nowrap text-amber-800 dark:text-amber-300'>
             <span className='size-2 rounded-full bg-amber-400' />
             {t('session.asking')}
           </span>
         ) : (
           session.running && (
-            <span className='max-md:sr-only text-primary inline-flex shrink-0 items-center gap-1.5 text-[11px] font-medium whitespace-nowrap'>
+            <span className='@max-md/agent-session:sr-only text-primary inline-flex shrink-0 items-center gap-1.5 text-[11px] font-medium whitespace-nowrap'>
               <span className='bg-primary size-2 animate-pulse rounded-full' />
               {t('session.answering')}
             </span>
           )
         )}
-        {session.running && session.computerOnline && (
-          <Button
-            variant='outline'
-            size='sm'
-            className='h-9 text-xs font-normal'
-            aria-label={t('session.stop')}
-            onClick={onStop}
-          >
-            <SquareIcon />
-            <span className='max-md:sr-only'>{t('session.stop')}</span>
-          </Button>
-        )}
-        <Button
-          variant='ghost'
-          size='icon-sm'
-          className='text-muted-foreground size-9'
-          aria-label={
-            details ? t('session.hideDetails') : t('session.showDetails')
-          }
-          aria-pressed={details}
-          onClick={onToggleDetails}
-        >
-          <PanelRightIcon />
-        </Button>
-        <DropdownMenu>
-          <DropdownMenuTrigger
-            render={
+        {surface.renderHeaderActions ? (
+          surface.renderHeaderActions(sessionCommands)
+        ) : (
+          <>
+            {session.running && session.computerOnline && (
               <Button
-                variant='ghost'
-                size='icon-sm'
-                className='text-muted-foreground size-9'
-                aria-label={t('session.more')}
-              />
-            }
-          >
-            <MoreHorizontalIcon />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align='end'>
-            <DropdownMenuItem
-              onClick={() => {
-                setTitle(session.title);
-                setRenaming(true);
-              }}
-            >
-              <PencilIcon />
-              {t('session.rename')}
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() =>
-                update.mutate({ archived: session.archivedAt === null })
+                variant='outline'
+                size='sm'
+                className='h-9 text-xs font-normal'
+                aria-label={t('session.stop')}
+                onClick={onStop}
+              >
+                <SquareIcon />
+                <span className='@max-md/agent-session:sr-only'>
+                  {t('session.stop')}
+                </span>
+              </Button>
+            )}
+            <Button
+              variant='ghost'
+              size='icon-sm'
+              className='text-muted-foreground size-9'
+              aria-label={
+                details ? t('session.hideDetails') : t('session.showDetails')
               }
+              aria-pressed={details}
+              onClick={onToggleDetails}
             >
-              {session.archivedAt === null ? (
-                <ArchiveIcon />
-              ) : (
-                <ArchiveRestoreIcon />
-              )}
-              {session.archivedAt === null
-                ? t('list.archive')
-                : t('list.restore')}
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+              <PanelRightIcon />
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                render={
+                  <Button
+                    variant='ghost'
+                    size='icon-sm'
+                    className='text-muted-foreground size-9'
+                    aria-label={t('session.more')}
+                  />
+                }
+              >
+                <MoreHorizontalIcon />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align='end'>
+                <DropdownMenuItem
+                  onClick={() => {
+                    setTitle(session.title);
+                    setRenaming(true);
+                  }}
+                >
+                  <PencilIcon />
+                  {t('session.rename')}
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() =>
+                    update.mutate({ archived: session.archivedAt === null })
+                  }
+                >
+                  {session.archivedAt === null ? (
+                    <ArchiveIcon />
+                  ) : (
+                    <ArchiveRestoreIcon />
+                  )}
+                  {session.archivedAt === null
+                    ? t('list.archive')
+                    : t('list.restore')}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            {surface.actions}
+          </>
+        )}
       </div>
-      {/* Where the session runs: on a phone only in the details, which list the same. */}
-      <div className='flex min-w-0 flex-nowrap items-center gap-1.5 overflow-visible max-md:hidden'>
+      {/* Narrow, where the session runs in one line; the chips below say it at full width. */}
+      <p className='text-muted-foreground hidden min-w-0 items-center gap-1.5 text-xs @max-md/agent-session:flex'>
+        <LaptopIcon className='size-3.5 shrink-0' aria-hidden />
+        <span className='text-foreground truncate'>
+          {computer?.name ?? t('session.removedComputer')}
+        </span>
+        <span
+          aria-label={
+            session.computerOnline
+              ? t('computers.online')
+              : t('computers.offline')
+          }
+          className={cn(
+            'size-2 shrink-0 rounded-full',
+            session.computerOnline
+              ? 'bg-emerald-500'
+              : 'border-muted-foreground border-[1.5px]',
+          )}
+        />
+        <code className='min-w-0 truncate' title={session.cwd}>
+          {displayPath(session.cwd, computer?.home ?? null)}
+        </code>
+      </p>
+      {/* Where the session runs, in full. */}
+      <div className='flex min-w-0 flex-nowrap items-center gap-1.5 overflow-visible @max-md/agent-session:hidden'>
         <MetaChip
           title={[agentName(session, computer), mode]
             .filter(Boolean)
@@ -650,9 +847,9 @@ function Header({
         className={cn(
           'hover:bg-muted focus-visible:ring-ring flex min-w-0 items-center gap-2 rounded-md px-1 py-1 text-left text-xs focus-visible:ring-2',
           // The open details list the same work; on a phone the line stays one row, cut short.
-          details && 'md:hidden',
-          'max-md:overflow-hidden max-md:whitespace-nowrap',
-          collapsed && 'max-md:hidden',
+          details && '@md/agent-session:hidden',
+          '@max-md/agent-session:overflow-hidden @max-md/agent-session:whitespace-nowrap',
+          collapsed && '@max-md/agent-session:hidden',
         )}
       >
         <ListChecksIcon className='size-4 shrink-0' aria-hidden />
@@ -742,16 +939,24 @@ function Details({
   session,
   computer,
   items,
+  inline,
+  beside,
   onClose,
 }: {
   readonly session: Session;
   readonly computer: Computer | undefined;
   readonly items: readonly TranscriptItem[];
+  /** Inside the host's sidebar, without covering the main page. */
+  readonly inline: boolean;
+  /** A column beside the conversation; otherwise a sheet over it, closed from its own header. */
+  readonly beside: boolean;
   readonly onClose: () => void;
 }): ReactElement {
   const { t, i18n } = useTranslation();
+  const surface = useSessionSurface();
   const decide = useDecideLinks(session.id);
   const toaster = useToaster();
+  const navigate = useNavigate();
   const context = session.state?.context;
   const used = usage(items);
   const mode = modeName(session);
@@ -760,10 +965,22 @@ function Details({
   )?.version;
   return (
     <aside
-      className='bg-background fixed inset-y-0 right-0 z-50 w-[min(100%,22rem)] overflow-y-auto border-l shadow-xl xl:static xl:z-auto xl:w-[296px] xl:shrink-0 xl:shadow-none'
+      className={cn(
+        'bg-background overflow-y-auto',
+        inline
+          ? 'max-h-[50%] min-h-0 shrink-0 border-t'
+          : beside
+            ? 'w-[296px] shrink-0 border-l'
+            : 'absolute inset-y-0 right-0 z-50 w-[min(100%,22rem)] border-l shadow-xl',
+      )}
       aria-label={t('session.details')}
     >
-      <div className='flex items-center justify-between border-b px-5 py-3 xl:hidden'>
+      <div
+        className={cn(
+          'flex items-center justify-between border-b px-5 py-3',
+          !inline && beside && 'hidden',
+        )}
+      >
         <h2 className='text-[15px] font-semibold'>{t('session.details')}</h2>
         <button
           type='button'
@@ -799,7 +1016,13 @@ function Details({
               {session.links.map((link) => (
                 <li
                   key={`${link.kind}:${link.refId}`}
-                  className='flex flex-col gap-1 px-3 py-2'
+                  aria-current={
+                    surface.activeLink?.kind === link.kind &&
+                    surface.activeLink.refId === link.refId
+                      ? 'true'
+                      : undefined
+                  }
+                  className='flex flex-col gap-1 px-3 py-2 aria-[current=true]:bg-accent'
                 >
                   <div className='flex min-w-0 items-center gap-2'>
                     <LinkName
@@ -838,6 +1061,13 @@ function Details({
                                 toaster.show({
                                   type: 'error',
                                   title: errorText(error, t('errors.generic')),
+                                  ...suggestionAction(
+                                    error,
+                                    t('links.configure', {
+                                      defaultValue: 'Configure',
+                                    }),
+                                    (href) => void navigate(href),
+                                  ),
                                 }),
                             },
                           )
@@ -1045,7 +1275,7 @@ function Banner({
   return (
     <div
       className={cn(
-        'mx-4 mt-3 flex items-start gap-2.5 rounded-lg border px-3.5 py-2.5 text-[13px] sm:mx-5 max-md:mt-2 max-md:items-center max-md:py-1.5',
+        'mx-4 mt-3 flex items-start gap-2.5 rounded-lg border px-3.5 py-2.5 text-[13px] @md/agent-session:mx-5 @max-md/agent-session:mt-2 @max-md/agent-session:items-center @max-md/agent-session:py-1.5',
         warning
           ? 'border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-800 dark:bg-amber-950/50 dark:text-amber-200'
           : 'bg-card',
@@ -1053,12 +1283,16 @@ function Banner({
     >
       <span className='mt-0.5'>{icon}</span>
       <div className='min-w-0'>
-        <p className='max-md:truncate'>
+        <p className='@max-md/agent-session:truncate'>
           <span className='font-semibold'>{title}</span>
           {meta && <span className='opacity-80'> · {meta}</span>}
         </p>
         {/* A phone keeps the one line; the explanation is for a wider screen. */}
-        {body && <p className='mt-0.5 opacity-80 max-md:hidden'>{body}</p>}
+        {body && (
+          <p className='mt-0.5 opacity-80 @max-md/agent-session:hidden'>
+            {body}
+          </p>
+        )}
       </div>
     </div>
   );
@@ -1098,4 +1332,12 @@ function usage(
 function percent(used: number, size: number): string {
   const share = (used / size) * 100;
   return share < 10 ? share.toFixed(1) : String(Math.round(share));
+}
+
+/** Whether the conversation is drawn as on a phone: its own width, or the screen's before it is laid out. */
+function narrow(element: HTMLElement | null): boolean {
+  const width = element?.getBoundingClientRect().width ?? 0;
+  return width > 0
+    ? width < NARROW_PX
+    : window.matchMedia('(max-width: 767px)').matches;
 }

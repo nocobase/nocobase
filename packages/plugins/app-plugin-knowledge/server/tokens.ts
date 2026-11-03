@@ -10,6 +10,21 @@ import {
 
 import type { KnowledgeAccessResolver } from './services/access.js';
 import type { Knowledge } from './services/knowledge.js';
+import type {
+  KnowledgeIndexing,
+  KnowledgeIndexingRegistry,
+} from './indexing/types.js';
+
+/** Global indexing management, independent of per-space knowledge permissions. */
+export const knowledgeIndexingToken: ServiceToken<KnowledgeIndexing> =
+  createServiceToken<KnowledgeIndexing>(
+    '@nocobase/app-plugin-knowledge/indexing',
+  );
+/** Application-owned registry; sealed before jobs and searches start. */
+export const knowledgeIndexingExtensionsToken: ServiceToken<KnowledgeIndexingRegistry> =
+  createServiceToken<KnowledgeIndexingRegistry>(
+    '@nocobase/app-plugin-knowledge/indexing-extensions',
+  );
 
 /** The knowledge base: documents, search, proposals and snapshots, each asked with a reader. */
 export const knowledgeToken: ServiceToken<Knowledge> =

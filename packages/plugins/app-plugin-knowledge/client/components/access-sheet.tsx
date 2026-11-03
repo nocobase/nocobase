@@ -166,15 +166,22 @@ export function SpaceAccessSheet({
   access,
   spaceLabel,
   details,
+  proposalsEnabled = true,
 }: {
   readonly open: boolean;
   readonly onOpenChange: (open: boolean) => void;
   readonly access: KnowledgeAccess;
   readonly spaceLabel: string;
   readonly details: KnowledgeAccessDetails | undefined;
+  readonly proposalsEnabled?: boolean;
 }): ReactElement {
   const { t } = useTranslation(ACCESS_NAMESPACE);
-  const level = levelOf(access);
+  const actions = ACTIONS.filter(
+    (action) => proposalsEnabled || action !== 'propose',
+  );
+  const level = levelOf(
+    proposalsEnabled ? access : { ...access, propose: false },
+  );
   const Icon = ICONS[level];
   const you = t(`knowledge.access.you.${level}`);
   return (
@@ -201,7 +208,7 @@ export function SpaceAccessSheet({
               </Badge>
             </div>
             <ul className='divide-y rounded-lg border'>
-              {ACTIONS.map((action) => (
+              {actions.map((action) => (
                 <li
                   key={action}
                   className='flex items-center gap-3 px-3 py-2 text-sm'
@@ -244,7 +251,7 @@ export function SpaceAccessSheet({
                   <TableHeader>
                     <TableRow>
                       <TableHead>{t('knowledge.access.role')}</TableHead>
-                      {ACTIONS.map((action) => (
+                      {actions.map((action) => (
                         <TableHead key={action}>
                           {t(`knowledge.access.columns.${action}`)}
                         </TableHead>
@@ -265,7 +272,7 @@ export function SpaceAccessSheet({
                             </span>
                           ) : null}
                         </TableCell>
-                        {ACTIONS.map((action) => (
+                        {actions.map((action) => (
                           <TableCell key={action}>
                             <Cell cell={row.cells[action]} />
                           </TableCell>
@@ -285,7 +292,9 @@ export function SpaceAccessSheet({
               {(details?.related ?? []).map((line) => (
                 <li key={line}>{line}</li>
               ))}
-              <li>{t('knowledge.access.agents')}</li>
+              {proposalsEnabled ? (
+                <li>{t('knowledge.access.agents')}</li>
+              ) : null}
             </ul>
           </section>
           {details?.manage ? (

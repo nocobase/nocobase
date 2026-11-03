@@ -4,6 +4,10 @@ import {
   type AppConfigFactory,
 } from '@nocobase/app-server/config';
 import type { AppSessionConfigInput } from '@nocobase/app-server/session';
+import {
+  createAppCookieScope,
+  normalizeBasePath,
+} from '@nocobase/app-server/support';
 
 const session: AppConfigFactory<AppSessionConfigInput> = defineAppConfig({
   env: {
@@ -14,12 +18,13 @@ const session: AppConfigFactory<AppSessionConfigInput> = defineAppConfig({
       generate: 'secret',
     }),
   },
-  defaults: ({ paths, env }) => ({
+  defaults: ({ paths, env, routing }) => ({
     enabled: true,
     default: 'memory',
     cookie: {
-      name: 'nocobase_session',
-      path: '/',
+      name: `nocobase_session_${createAppCookieScope(routing.publicBasePath)}`,
+      // A distinct name also keeps a child application from reading a parent's cookie sent under an overlapping path.
+      path: normalizeBasePath(routing.publicBasePath) || '/',
       secure: env.NODE_ENV === 'production',
       httpOnly: true,
       sameSite: 'lax' as const,

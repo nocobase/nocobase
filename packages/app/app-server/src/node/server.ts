@@ -85,6 +85,31 @@ export function resolveNodeShutdownTimeouts(
   };
 }
 
+/** Headers that describe the connection rather than the response, which Node's HTTP server alone decides. */
+const CONNECTION_HEADERS: readonly string[] = ['connection', 'keep-alive'];
+
+/**
+ * Leaves the connection's headers to Node. A response that names its own, as the AI SDK's streams say
+ * `connection: keep-alive`, contradicts a connection Node then closes because the request asked it to: the client
+ * keeps reusing it, and its next request is refused with a bare 400 before the application sees it.
+ */
+function withoutConnectionHeaders(
+  fetch: AppServer['fetch'],
+): AppServer['fetch'] {
+  return async (...args) => {
+    const response = await fetch(...args);
+    if (!CONNECTION_HEADERS.some((name) => response.headers.has(name)))
+      return response;
+    const headers = new Headers(response.headers);
+    for (const name of CONNECTION_HEADERS) headers.delete(name);
+    return new Response(response.body, {
+      status: response.status,
+      statusText: response.statusText,
+      headers,
+    });
+  };
+}
+
 export function startNodeAppServer(
   app: ClosableNodeAppServer,
   options: StartNodeAppServerOptions,
@@ -96,7 +121,7 @@ export function startNodeAppServer(
     let unregisterShutdownHandlers = (): void => undefined;
     const server = serve(
       {
-        fetch: app.fetch,
+        fetch: withoutConnectionHeaders(app.fetch),
         hostname: options.hostname,
         port: options.port,
       },

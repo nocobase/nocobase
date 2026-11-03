@@ -10,8 +10,9 @@ export const mountsStep: PrepareStep = {
   async run(context) {
     const mounts = context.payload.mounts ?? [];
     if (mounts.length === 0) return;
-    const workDir = context.workspace?.workDir;
-    if (workDir === undefined) throw new Error('The workspace is not locked.');
+    const workDir = context.privateDir;
+    if (workDir === undefined)
+      throw new Error('The workspace was not prepared.');
     const result = await placeMounts({
       paths: context.paths,
       appKey: context.registration.key,

@@ -2,10 +2,35 @@ import { useState, type ReactElement } from 'react';
 import { CalendarDays } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { useTranslation } from '@nocobase/i18n/client';
-import { enUS, zhCN } from 'react-day-picker/locale';
+import {
+  enUS,
+  zhCN,
+  zhTW,
+  ja,
+  es,
+  ptBR,
+  fr,
+  de,
+  vi,
+  id,
+} from 'react-day-picker/locale';
+import { MAIL_PLUGIN_NS } from '../namespace.js';
 import { Button } from './ui/button.js';
 import { Calendar } from './ui/calendar.js';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover.js';
+
+const calendarLocales: Readonly<Record<string, typeof enUS>> = {
+  'en-US': enUS,
+  'zh-CN': zhCN,
+  'zh-TW': zhTW,
+  'ja-JP': ja,
+  'es-ES': es,
+  'pt-BR': ptBR,
+  'fr-FR': fr,
+  'de-DE': de,
+  'vi-VN': vi,
+  'id-ID': id,
+};
 
 export interface MailSyncPolicyValue {
   readonly receivedAfter: string;
@@ -26,9 +51,9 @@ export function MailSyncPolicyFields({
   disabled = false,
   onChange,
 }: MailSyncPolicyFieldsProps): ReactElement {
-  const { t, i18n } = useTranslation();
+  const { t, i18n } = useTranslation(MAIL_PLUGIN_NS);
   const [open, setOpen] = useState(false);
-  const locale = i18n.language?.startsWith('zh') ? zhCN : enUS;
+  const locale = calendarLocales[i18n.language ?? 'en-US'] ?? enUS;
   const selected = value.receivedAfter
     ? parseISO(value.receivedAfter)
     : undefined;

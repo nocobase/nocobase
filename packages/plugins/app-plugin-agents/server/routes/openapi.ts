@@ -36,7 +36,7 @@ export function agentsSecurityFragment(): ApiDocumentFragment {
           in: 'header',
           name: HEADERS.runToken,
           description:
-            "A run's token, which the runner hands the agent's CLI for the run. It acts as the person who woke the agent, within the agent's business actions, and works only while a runner holds the run.",
+            'Execution credential in x-nocobase-run-token: fgr_ is a database-backed Run held by a Runner; fgo_ is an application-instance-local OnlineAgent credential acting as its user until execution exits or TTL expires. Each route must explicitly accept the credential type; sharing this scheme does not grant Run identity.',
         },
         [SECURITY_SCHEMES.runnerKey]: {
           type: 'apiKey',

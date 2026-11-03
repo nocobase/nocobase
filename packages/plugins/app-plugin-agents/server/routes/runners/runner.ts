@@ -1,3 +1,4 @@
+import { takeToolDetection } from '../../runners/tool-detection.js';
 /**
  * The runner endpoints (`RUNNER_ROUTES` of `@nocobase/agent-protocol`), mounted at `/api/agents/runners` beside the
  * people's runners API (`admin.ts`), so every route names its own authentication: every path but `register` the
@@ -63,6 +64,7 @@ import { z } from 'zod';
 
 import type { Runner } from '../../../shared/runners.js';
 import type { Agents } from '../../composition.js';
+import { createClaimScan, type ClaimScan } from '../../core/runs/claim.js';
 import { upgradeFields, upgradeFor } from '../../distribution/index.js';
 import { domainRouter } from '../../kernel/http.js';
 import { upgradeRequiredOf, type RunnerEnv } from '../../runners/index.js';
@@ -270,6 +272,7 @@ export function createRunnerRoutes(
           ok: true,
           serverTime: services.clock.now().toISOString(),
           protocolVersion: PROTOCOL_VERSION,
+          capacity: { slots: runner.slots, toolSlots: runner.toolSlots ?? {} },
           ...upgradeFields(upgrade),
           compatibility: upgradeRequiredOf(runner.protocolVersion),
           cancelRequested: [],
@@ -302,6 +305,9 @@ export function createRunnerRoutes(
         ok: true,
         serverTime: services.clock.now().toISOString(),
         protocolVersion: PROTOCOL_VERSION,
+        enabledTools: runner.enabledTools ?? [],
+        detectTools: takeToolDetection(runner.id),
+        capacity: { slots: runner.slots, toolSlots: runner.toolSlots ?? {} },
         ...upgradeFields(upgrade),
         cancelRequested,
         release,
@@ -347,12 +353,21 @@ export function createRunnerRoutes(
 
   // Runs and jobs share the runner's slots: jobs first (they are short and people wait on them), then runs. Jobs run
   // no coding tool, so only runs are bounded by the runner's room per tool.
-  const claimWork = async (runner: Runner, request: ClaimRequest) => {
+  const claimWork = async (
+    runner: Runner,
+    request: ClaimRequest,
+    scan: ClaimScan,
+  ) => {
     const { free } = request;
     const jobs = await services.jobs.runner.claim(runner, free);
     const runs =
       free - jobs.length > 0
-        ? await services.claims.claim(runner, free - jobs.length, request.tools)
+        ? await services.claims.claim(
+            runner,
+            free - jobs.length,
+            request.tools,
+            scan,
+          )
         : [];
     return { runs, jobs };
   };
@@ -393,7 +408,8 @@ export function createRunnerRoutes(
       }
       const request = parseApiInput(ClaimRequestSchema, await jsonOf(context));
       const { free } = request;
-      let work = await claimWork(runner, request);
+      const scan = createClaimScan();
+      let work = await claimWork(runner, request, scan);
       if (
         work.runs.length === 0 &&
         work.jobs.length === 0 &&
@@ -406,7 +422,11 @@ export function createRunnerRoutes(
         );
         if (outcome !== 'aborted')
           // The runner may have been revoked while it waited.
-          work = await claimWork(await authenticate(context, true), request);
+          work = await claimWork(
+            await authenticate(context, true),
+            request,
+            scan,
+          );
       }
       // A runner of protocol 3 is never handed a job (it announces no job feature), so `jobs` stays out of its answer.
       const response: ClaimResponse =

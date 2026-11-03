@@ -1,3 +1,4 @@
+import settings from './settings-en-US.js';
 import type { LocaleResource } from '@nocobase/i18n';
 import deviceApprovalEnUS from '#extensions/nocobase-device-approval/locales/en-US';
 import inboxEnUS from '#extensions/nocobase-inbox/locales/en-US';
@@ -7,6 +8,57 @@ import inboxEnUS from '#extensions/nocobase-inbox/locales/en-US';
  * replaces this file, so put the application's own copy in `../en-US.ts` rather than here.
  */
 const systemEnUS = {
+  listFeedback: {
+    loading: 'Loading',
+    empty: 'No data yet',
+    noResults: 'No results',
+    forbidden: 'Access denied',
+    unauthenticated: 'Session expired',
+    failed: 'Unable to load list',
+    refreshFailed: 'Refresh failed; showing previous data',
+    retry: 'Retry',
+    retrying: 'Retrying…',
+    clear: 'Clear filters',
+    signIn: 'Sign in',
+  },
+  flowDiagram: {
+    controls: 'Diagram controls',
+    fitView: 'Fit to view',
+    fullscreen: 'Fullscreen',
+    exitFullscreen: 'Exit fullscreen',
+    escapeHint: 'Press Escape to exit',
+    leavesTo: 'Leaves to',
+    arrivesFrom: 'Arrives from',
+    otherRoutes: 'Other routes',
+    minimap: 'Diagram overview',
+
+    configure: 'Configure',
+    overview: 'Diagram overview',
+    actualSize: 'Actual size',
+    states: 'States',
+    transitions: 'Transitions',
+    configurable: 'Parameters',
+    current: 'Current',
+    visited: 'Visited',
+    initial: 'Initial',
+    final: 'Final',
+    state: 'State',
+    zoomOut: 'Zoom out',
+    zoomIn: 'Zoom in',
+    fit: 'Fit to view',
+
+    empty: 'No states to display.',
+    loading: 'Laying out diagram…',
+    failed: 'Unable to lay out this diagram.',
+    nodeHelp: 'Press Enter or Space to select a state.',
+    edgeHelp: 'Press Enter or Space to select a transition.',
+  },
+  settings,
+  'auth.preparingSession': 'Preparing your session…',
+  'auth.connectionFailed': 'Unable to connect',
+  'auth.connectionFailedDescription':
+    'The realtime connection could not be prepared. Retry to enter the application, or sign out.',
+
   'auth.passwordResetSuccess':
     'Your password has been reset. Sign in with your new password.',
   'auth.requestNewResetLink': 'Request a new reset link',
@@ -15,6 +67,16 @@ const systemEnUS = {
   ...deviceApprovalEnUS,
   // The UI Library block of the `/inbox` page; the keys below may reword it.
   ...inboxEnUS,
+  // Shared form wording overrides the defaults included by composed blocks.
+  formFeedback: {
+    field: 'This value was rejected. Check it and try again.',
+    invalid: 'Check the highlighted fields and try again.',
+    failed: 'Unable to save. Your input has been kept. Try again.',
+    network:
+      'Unable to connect. Check your connection and try again. Your input has been kept.',
+    denied:
+      'You cannot submit this form with your current access. Your input has been kept.',
+  },
   // The UI Library component of the header's inbox button.
   'inboxButton.title': 'Inbox',
   'inboxButton.pending': 'Inbox, {{count}} waiting',
@@ -140,7 +202,7 @@ const systemEnUS = {
     back: 'Back',
   },
   dataTable: {
-    noResults: 'No results.',
+    noResults: 'No results',
     sortAscending: 'Asc',
     sortDescending: 'Desc',
     hideColumn: 'Hide',

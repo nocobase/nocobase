@@ -63,6 +63,8 @@ export {
   type FireOptions,
   type FireResult,
   type LifecycleEvent,
+  type LifecycleRecordChange,
+  type RecordChangeFilter,
   type LifecycleListener,
   type LifecycleLogger,
   type LifecycleRuntimeOptions,

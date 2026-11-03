@@ -12,7 +12,7 @@ export async function prepareDriveStorage(
   const directories = Array.from(
     new Set(
       Object.values(config.disks)
-        .filter((disk) => disk.driver === 'fs')
+        .filter((disk) => typeof disk !== 'function' && disk.driver === 'fs')
         .map((disk) => disk.location),
     ),
   );

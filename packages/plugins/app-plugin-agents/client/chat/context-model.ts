@@ -1,14 +1,52 @@
 /**
  * The page context a chat message carries (`PageContext` in `shared/conversations`), as plain data. Pages register
  * what they show (an object, a list filter); the panel keeps the last text selected on the page and the objects an
- * "Ask agent" button pinned. The composer shows all of it as removable chips and sends ids only: a chip's label is for
- * the person, the server resolves its own titles.
+ * "Ask agent" button pinned. Business chips send ids only: the server resolves its own titles. Explicitly selected
+ * UI sources separately contribute open, untrusted JSON snapshots, read asynchronously at send time.
  */
 import {
   PAGE_CONTEXT_LIMITS,
   type PageContext,
   type PageContextRef,
 } from '../../shared/conversations.js';
+
+import {
+  clonePageUIContext,
+  type PageUIItem,
+  type PageUIContext,
+} from '../../shared/page-ui-context.js';
+
+/** Registering a UI source makes it available, not selected. Snapshot readers must be side-effect free. */
+export interface ChatUIContextSource extends PageContextRef {
+  readonly label: string;
+  readonly getSnapshot: () => PageUIItem | Promise<PageUIItem>;
+}
+
+/** Collision-free UI identity, separate from server-authorized business references. */
+export function uiItemKey(item: PageContextRef): string {
+  return `ui:${JSON.stringify([item.kind, item.id])}`;
+}
+
+/** Read only explicitly selected sources, validate their identity and detach values at send time. */
+export async function snapshotUIContext(
+  sources: readonly ChatUIContextSource[],
+): Promise<PageUIContext | undefined> {
+  if (!sources.length) return undefined;
+  const items = await Promise.all(
+    sources.map(async (source) => {
+      const item = clonePageUIContext({
+        version: 1,
+        items: [await source.getSnapshot()],
+      }).items[0];
+      if (item.kind !== source.kind || item.id !== source.id)
+        throw new Error(
+          'UI snapshot identity does not match its registered source.',
+        );
+      return item;
+    }),
+  );
+  return clonePageUIContext({ version: 1, items });
+}
 
 /** An object a page shows, with what its chip says (a record's key and title, an agent's name). */
 export interface ChatContextItem extends PageContextRef {
@@ -29,6 +67,11 @@ export interface ChatSelection {
 }
 
 export type ChatContextChip =
+  | {
+      readonly key: string;
+      readonly kind: 'ui';
+      readonly source: ChatUIContextSource;
+    }
   | {
       readonly key: string;
       readonly kind: 'item';
@@ -53,6 +96,10 @@ export interface ChatContextInput {
   readonly pinned: readonly ChatContextItem[];
   /** Objects the current page registered. */
   readonly sources: readonly ChatContextItem[];
+  /** Explicitly selected UI sources only; not every registered source. */
+  readonly uiSources?: readonly ChatUIContextSource[];
+  /** Latest validated snapshot, read asynchronously immediately before submitting. */
+  readonly ui?: PageUIContext;
   readonly filter: ChatContextFilter | null;
   readonly selection: ChatSelection | null;
   /** Chip keys the person removed on this page. */
@@ -78,6 +125,10 @@ export function contextChips(input: ChatContextInput): ChatContextChip[] {
     seen.add(key);
     chips.push({ key, kind: 'item', item, pinned: pinned.has(key) });
   }
+  for (const source of input.uiSources ?? []) {
+    const key = uiItemKey(source);
+    if (!input.removed.has(key)) chips.push({ key, kind: 'ui', source });
+  }
   if (
     input.filter &&
     !input.removed.has(FILTER_KEY) &&
@@ -97,13 +148,14 @@ function clip(value: string, max: number): string {
   return value.length > max ? value.slice(0, max) : value;
 }
 
-/** The `context` of a message: what the chips show, ids only, within `PAGE_CONTEXT_LIMITS`. */
+/** Business refs remain ids only; the separately awaited UI envelope is validated and cloned without trimming. */
 export function buildPageContext(
   input: ChatContextInput,
 ): PageContext | undefined {
   const items: PageContextRef[] = [];
   let filter: PageContext['filter'];
   let selection: PageContext['selection'];
+
   for (const chip of contextChips(input)) {
     if (chip.kind === 'item')
       items.push({ kind: chip.item.kind, id: chip.item.id });
@@ -124,19 +176,22 @@ export function buildPageContext(
           ? { label: clip(label, PAGE_CONTEXT_LIMITS.filterLabel) }
           : {}),
       };
-    } else
+    } else if (chip.kind === 'ui') continue;
+    else
       selection = {
         text: clip(chip.selection.text, PAGE_CONTEXT_LIMITS.selection),
         ...(chip.selection.source ? { source: chip.selection.source } : {}),
       };
   }
   const route = clip(input.route, PAGE_CONTEXT_LIMITS.route);
-  if (items.length === 0 && !filter && !selection) {
+  const ui = input.ui ? clonePageUIContext(input.ui) : undefined;
+  if (items.length === 0 && !filter && !selection && !ui) {
     return route ? { route, items } : undefined;
   }
   return {
     route,
     items,
+    ...(ui ? { ui } : {}),
     ...(filter ? { filter } : {}),
     ...(selection ? { selection } : {}),
   };

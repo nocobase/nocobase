@@ -10,6 +10,7 @@ Rules: ["Field types" in `form.md`](../form.md#field-types). These fields are no
 
 ```tsx
 // client/pages/projects/project-settings-form.tsx
+import { FeedbackForm } from '#components/feedback-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslation } from '@nocobase/i18n/client';
 import { type ReactElement, useMemo } from 'react';
@@ -78,6 +79,7 @@ export function ProjectSettingsForm({
   );
 
   const form = useForm({
+    shouldFocusError: false,
     resolver: zodResolver(schema),
     defaultValues: {
       description: settings?.description ?? '',
@@ -96,7 +98,13 @@ export function ProjectSettingsForm({
   });
 
   return (
-    <form id={formId} noValidate onSubmit={(event) => void handleSubmit(event)}>
+    <FeedbackForm
+      submitting={form.formState.isSubmitting}
+      validationErrors={form.formState.errors}
+      id={formId}
+      noValidate
+      onSubmit={(event) => handleSubmit(event)}
+    >
       <FieldGroup>
         <FieldSet>
           <FieldLegend>{t('projects.form.basics')}</FieldLegend>
@@ -278,7 +286,7 @@ export function ProjectSettingsForm({
           </FieldGroup>
         </FieldSet>
       </FieldGroup>
-    </form>
+    </FeedbackForm>
   );
 }
 ```

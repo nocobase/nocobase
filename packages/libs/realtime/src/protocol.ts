@@ -26,6 +26,7 @@ export type RealtimeClientMessage =
     };
 
 export type RealtimeServerMessage =
+  | { readonly type: 'resync' }
   | {
       readonly type: 'subscribed';
       readonly id?: string;
@@ -40,6 +41,7 @@ export type RealtimeServerMessage =
     }
   | {
       readonly type: 'event';
+      readonly eventId?: string;
       readonly topic: string;
       readonly payload: unknown;
       readonly publishedAt: string;
@@ -112,6 +114,8 @@ export function parseRealtimeServerMessage(
 ): RealtimeServerMessage {
   const value = parseWireMessage(data);
   switch (value.type) {
+    case 'resync':
+      return { type: 'resync' };
     case 'subscribed':
       return {
         type: 'subscribed',
@@ -142,6 +146,7 @@ export function parseRealtimeServerMessage(
     case 'event':
       return {
         type: 'event',
+        eventId: optionalString(value.eventId),
         topic: requiredTopic(value.topic),
         payload: value.payload,
         publishedAt: requiredString(

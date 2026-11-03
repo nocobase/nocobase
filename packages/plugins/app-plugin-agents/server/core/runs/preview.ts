@@ -129,6 +129,7 @@ export function createBriefPreviewer(deps: {
           finishedAt: null,
           lastActivityAt: null,
           cancelRequestedAt: null,
+          cancelledById: null,
           failureReason: null,
           failureDetail: null,
           summary: null,

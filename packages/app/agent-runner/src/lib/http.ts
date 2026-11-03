@@ -40,6 +40,7 @@ export class ApiError extends Error {
     return (
       this.status === 0 ||
       this.status === 408 ||
+      (this.status === 409 && this.reason === 'REVISION_CONFLICT') ||
       this.status === 429 ||
       this.status >= 500
     );

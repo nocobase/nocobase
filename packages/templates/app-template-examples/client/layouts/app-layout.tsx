@@ -6,6 +6,8 @@ import { Outlet, useLocation } from 'react-router';
 import { BrandWatermark } from '#components/brand-watermark';
 import { Breadcrumbs } from '#components/breadcrumbs';
 
+import { OnlineAgentProvider } from '#components/online-agent/provider';
+import { OnlineAgentPanelHost } from '#components/online-agent/panel-host';
 import { RouteTreeProvider } from '../routing/route-context.js';
 
 import { PageBreadcrumbProvider } from '@nocobase/app-client';
@@ -30,6 +32,14 @@ export interface AppLayoutProps {
 }
 
 export function AppLayout({ routes }: AppLayoutProps): ReactElement {
+  return (
+    <OnlineAgentProvider>
+      <AuthenticatedLayout routes={routes} />
+    </OnlineAgentProvider>
+  );
+}
+
+function AuthenticatedLayout({ routes }: AppLayoutProps): ReactElement {
   // The browser decides what it renders; this tells the server the same language so its messages match.
   useSyncServerLocale();
 
@@ -69,14 +79,18 @@ export function AppLayout({ routes }: AppLayoutProps): ReactElement {
               </div>
               <HeaderActions />
             </LayoutHeader>
-            <main className='app-brand-surface relative isolate min-w-0 flex-1 overflow-hidden'>
-              <BrandWatermark className='-z-10' />
-              {/* main only positions; the page scrolls in here, so a child page layer laid over main is neither
+            {/* Examples-only integration: the temporary chat docks beside any demo without replacing the route. */}
+            <div className='relative flex min-h-0 flex-1'>
+              <main className='app-brand-surface relative isolate min-h-0 min-w-0 flex-1 overflow-hidden'>
+                <BrandWatermark className='-z-10' />
+                {/* main only positions; the page scrolls in here, so a child page layer laid over main is neither
             moved by the page's scrolling nor stretched by its height. */}
-              <div className='h-full overflow-y-auto'>
-                <Outlet />
-              </div>
-            </main>
+                <div className='h-full overflow-y-auto'>
+                  <Outlet />
+                </div>
+              </main>
+              <OnlineAgentPanelHost />
+            </div>
           </div>
         </AppSidebarProvider>
       </PageBreadcrumbProvider>

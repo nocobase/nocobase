@@ -13,6 +13,9 @@ import type { ParameterConfigurationService } from '../services/parameter-config
 import { signedInUser, tags } from './api.js';
 import { ActAsQuery } from './schemas.js';
 
+const workflowQuery = ActAsQuery.extend({
+  workflow: z.string().min(1).max(100),
+});
 const object = z.record(z.string(), z.unknown());
 const groupParams = z.object({ groupId: z.string().min(1).max(100) });
 const saveInput = z.strictObject({
@@ -67,9 +70,12 @@ export function configurationRoutes(
       'List readable parameter groups',
       true,
     ),
-    apiValidator('query', ActAsQuery),
+    apiValidator('query', workflowQuery),
     async (context) => {
-      const data = await service.list(actor(context));
+      const data = await service.list(
+        actor(context),
+        context.req.valid('query').workflow,
+      );
       return context.json({ data, meta: { total: data.length } });
     },
   );
@@ -185,12 +191,13 @@ export function configurationRoutes(
       'Read the current configuration and code-owned bindings',
     ),
     apiValidator('param', groupParams),
-    apiValidator('query', ActAsQuery),
+    apiValidator('query', workflowQuery),
     async (context) =>
       context.json({
         data: await service.read(
           context.req.valid('param').groupId,
           actor(context),
+          context.req.valid('query').workflow,
         ),
       }),
   );
@@ -202,7 +209,7 @@ export function configurationRoutes(
       'Save a complete immutable configuration version using CAS',
     ),
     apiValidator('param', groupParams),
-    apiValidator('query', ActAsQuery),
+    apiValidator('query', workflowQuery),
     apiValidator('json', saveInput),
     async (context) => {
       const { values, expectedRevision, requestId } = context.req.valid('json');
@@ -213,6 +220,7 @@ export function configurationRoutes(
           expectedRevision,
           requestId,
           actor(context),
+          context.req.valid('query').workflow,
         ),
       });
     },
@@ -227,12 +235,7 @@ export function configurationRoutes(
     apiValidator(
       'param',
       z.object({
-        lifecycle: z.enum([
-          'expenses',
-          'tickets',
-          'reviewerDemo',
-          'reviewerLiveDemo',
-        ]),
+        lifecycle: z.enum(['expenses', 'tickets']),
         recordId: z.string().regex(/^[1-9]\d*$/),
       }),
     ),
@@ -244,29 +247,4 @@ export function configurationRoutes(
       });
     },
   );
-  for (const name of ['reviewerDemo', 'reviewerLiveDemo'] as const)
-    router.post(
-      `${base}/${name}`,
-      permission('read'),
-      describeRoute({
-        tags,
-        operationId:
-          name === 'reviewerDemo'
-            ? 'lifecycleExampleCreateSnapshotReviewerDemo'
-            : 'lifecycleExampleCreateLiveReviewerDemo',
-        summary: 'Create a finite any-candidate review demonstration',
-        responses: {
-          201: dataResponse(object),
-          401: apiErrorResponse(401),
-          403: apiErrorResponse(403),
-        },
-      }),
-      apiValidator('query', ActAsQuery),
-      apiValidator('json', z.strictObject({})),
-      async (context) =>
-        context.json(
-          { data: await service.createReview(name, actor(context)) },
-          201,
-        ),
-    );
 }

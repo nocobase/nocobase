@@ -1,3 +1,4 @@
+import { orderTimingGroup } from '../configuration/definitions.js';
 import {
   defineLifecycle,
   type InputProblem,
@@ -91,6 +92,7 @@ export const orderLifecycle: Lifecycle<OrderTypes> =
       { name: 'refunded', final: true },
     ],
     // A real shop waits half an hour or more; the example a few minutes.
+    parameterConfiguration: { readMode: 'live', groups: [orderTimingGroup] },
     parameters: { paymentWindowMinutes: 3 },
     transitions: {
       checkout: {

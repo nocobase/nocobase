@@ -8,9 +8,9 @@ export class CheckoutError extends Error {
   override name = 'CheckoutError';
 }
 
-/** An HTTPS token git fetches with, for one invocation (a job's `repo.auth`). */
+/** An HTTPS token git fetches with, and the username its code host expects with it (`oauth2`, `x-access-token`). */
 export interface GitAuth {
-  readonly username?: string;
+  readonly username: string;
   readonly token: string;
 }
 
@@ -20,9 +20,9 @@ export function gitAuthEnv(
   scope?: string,
 ): Record<string, string> {
   if (auth === undefined) return {};
-  const basic = Buffer.from(
-    `${auth.username ?? 'x-access-token'}:${auth.token}`,
-  ).toString('base64');
+  const basic = Buffer.from(`${auth.username}:${auth.token}`).toString(
+    'base64',
+  );
   return {
     GIT_CONFIG_COUNT: '2',
     GIT_CONFIG_KEY_0:

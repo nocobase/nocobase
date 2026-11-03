@@ -24,6 +24,8 @@ export const ListUsersQuery: z.ZodObject<
   {
     page: z.ZodOptional<z.ZodCoercedNumber<unknown>>;
     pageSize: z.ZodOptional<z.ZodCoercedNumber<unknown>>;
+    sort: z.ZodOptional<z.ZodEnum<{ name: 'name' }>>;
+    order: z.ZodOptional<z.ZodEnum<{ asc: 'asc'; desc: 'desc' }>>;
     q: z.ZodOptional<z.ZodString>;
     status: z.ZodOptional<
       z.ZodEnum<{ enabled: 'enabled'; disabled: 'disabled' }>
@@ -45,6 +47,8 @@ export const ListUsersQuery: z.ZodObject<
     .positive()
     .optional()
     .describe('The maximum number of records to return.'),
+  sort: z.enum(['name']).optional().describe('The field to sort by.'),
+  order: z.enum(['asc', 'desc']).optional().describe('The sort direction.'),
   q: z.string().optional().describe('Text to search for.'),
   status: z
     .enum(['enabled', 'disabled'])
@@ -86,12 +90,24 @@ export const CreateUserInput: z.ZodObject<
 
 export const UpdateUserInput: z.ZodObject<
   {
+    roleScopes: z.ZodOptional<
+      z.ZodRecord<
+        z.ZodString,
+        z.ZodUnion<readonly [z.ZodString, z.ZodArray<z.ZodString>]>
+      >
+    >;
     name: z.ZodOptional<z.ZodString>;
     username: z.ZodOptional<z.ZodNullable<z.ZodString>>;
     email: z.ZodOptional<z.ZodString>;
   },
   z.core.$strict
 > = z.strictObject({
+  roleScopes: z
+    .record(z.string().min(1), UserRoleValueInput)
+    .optional()
+    .describe(
+      'Role scopes to replace atomically with the profile. Omitted scopes remain unchanged.',
+    ),
   name: nonEmpty.optional().describe('The name to display.'),
   username: nonEmpty
     .nullable()
@@ -162,12 +178,18 @@ export const AcceptInvitationInput: z.ZodObject<
   {
     token: z.ZodString;
     name: z.ZodString;
+    username: z.ZodOptional<z.ZodString>;
     password: z.ZodString;
   },
   z.core.$strict
 > = z.strictObject({
   token: nonEmpty.describe('The personal access token.'),
   name: nonEmpty.describe('The name to display.'),
+  username: nonEmpty
+    .optional()
+    .describe(
+      'Optional username used to sign in. Ignored for existing accounts.',
+    ),
   // Existing accounts authenticate through their session; account creation still validates password strength.
   password: z.string().describe('The password to set.'),
 });
@@ -265,6 +287,7 @@ export const UserManagementOptionsSchema: z.ZodType = z
         labelI18nNs: z.string().optional(),
         selection: z.enum(['single', 'multiple']),
         requiredOnCreate: z.boolean(),
+        defaultValue: z.union([z.string(), z.array(z.string())]).optional(),
         hasAuthenticatedDefaultAccess: z.boolean().meta({
           description:
             'Whether permissions granted to every signed-in user apply alongside the roles this scope shows.',

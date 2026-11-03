@@ -1,5 +1,28 @@
 # @nocobase/db-testkit
 
+## 0.1.0-beta.5
+
+### Patch Changes
+
+- e3d9a52: Prevent overlapping form submissions with a shared submission controller and preserve operation identifiers across uncertain retries. Standard Repository writes can commit operation receipts atomically with business data and replay successful results for 24 hours after checking current access.
+
+  New application templates require operation identifiers and install receipt storage and bounded cleanup. Existing applications must reconcile the provider, migration and copied form sources, migrate their callers, and then enable strict mode; updating dependencies alone does not activate protection. Custom actions must explicitly join the receipt transaction and provide current authorization and result visibility checks. Cross-connection and unadapted external side effects are outside this guarantee.
+
+- Updated dependencies [e3d9a52]
+  - @nocobase/db@1.0.0-beta.23
+
+## 0.1.0-beta.4
+
+### Patch Changes
+
+- 525ace4: Declare the workspace packages the tests read as devDependencies instead of reaching into their directories, and add a test to each application template that checks `config.example.yml` still has what `nocobase config init` relies on.
+- Updated dependencies [98b3862]
+- Updated dependencies [b22d999]
+- Updated dependencies [0037dd2]
+- Updated dependencies [14b7aec]
+- Updated dependencies [0037dd2]
+  - @nocobase/db@1.0.0-beta.21
+
 ## 0.1.0-beta.3
 
 ### Patch Changes

@@ -5,6 +5,7 @@
 // detection reports no list, so nothing is advertised that could not be confirmed.
 import {
   TOOL_MODEL_SUGGESTIONS,
+  isNativeTool,
   type AgentTool,
   type ToolInfo,
   type ToolModel,
@@ -26,7 +27,7 @@ export type ModelListOverrides = Readonly<
 
 /** The built-in list of `tool`, for a tool that cannot list its models. */
 export function builtInModels(tool: AgentTool): ToolModel[] {
-  return TOOL_MODEL_SUGGESTIONS[tool]
+  return (TOOL_MODEL_SUGGESTIONS[tool] ?? [])
     .filter((id) => !ALIASES.has(id))
     .map((id) => ({ id }));
 }
@@ -36,6 +37,7 @@ export function reportedModels(
   tool: ToolInfo,
   override: ModelListOverride | undefined,
 ): ToolInfo {
+  if (!isNativeTool(tool.kind)) return tool;
   const status = tool.modelsDetectionStatus;
   if (tool.kind === 'pi' && status !== 'detected')
     return { ...tool, models: [] };

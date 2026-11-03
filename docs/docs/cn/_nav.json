@@ -8,6 +8,10 @@
     "link": "/capabilities/"
   },
   {
+    "text": "部署",
+    "link": "/deployment"
+  },
+  {
     "text": "首页",
     "link": "https://www.nocobase.com/cn/"
   }

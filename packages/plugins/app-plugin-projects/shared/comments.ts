@@ -51,6 +51,14 @@ export interface MentionCandidate extends MentionRef {
   readonly hint?: string;
 }
 
+/** Server-authored display messages; private provenance is never part of their parameters. */
+export interface CommentMessage {
+  /** Namespaced application-defined identifier, at most 100 characters. */
+  readonly type: string;
+  /** At most 10 public primitive values; strings are at most 500 characters. */
+  readonly params: Readonly<Record<string, string | number | boolean>>;
+}
+
 export interface IssueComment {
   readonly id: string;
   readonly issueId: string;
@@ -70,6 +78,8 @@ export interface IssueComment {
   readonly via: 'cli' | 'api_key' | 'agent' | null;
   /** The originating run and attempt, when recorded by the application. Kept separate from the transport `via`. */
   readonly source?: ActivityVia | null;
+  /** Optional, validated display projection of a server-authored message. Absent once deleted. */
+  readonly message?: CommentMessage;
   readonly createdAt: string;
   readonly editedAt: string | null;
   readonly deleted: boolean;
@@ -115,6 +125,12 @@ export interface UpdateCommentRequest {
 export interface CreateCommentResult {
   readonly comment: IssueComment;
   readonly triggered: readonly MentionRef[];
+  /** Principals whose work was held back; omitted by service calls that do not collect attempts. */
+  readonly skipped?: readonly {
+    readonly kind: string;
+    readonly id: string;
+    readonly reason: 'waitingOwner' | 'blocked' | 'dormant' | 'limited';
+  }[];
 }
 
 /** `POST /api/projects/comments/{commentId}/react` and `/unreact`: the comment's reactions after the change. */

@@ -1,10 +1,10 @@
 /**
- * Route `/runtimes/connect` ("Add runtime"): choose which coding tools the runtime may run (all by default) and how many
- * runs it takes at once (1 by default), get a
+ * Route `/runtimes/connect` ("Add runtime"): choose which coding tools the runtime may run (Codex and Claude Code by default) and how many
+ * runs it takes at once (3 by default), get a
  * one-line install command carrying a one-time token, run it on the host, and watch it show up connected with the
  * coding tools it found and whether each is on and signed in. The tool choice and the concurrency travel with the
  * token, so the command stays one line, and both can be changed on the runtimes page afterwards. A runtime added this way is personal (it runs
- * only its owner's work); someone who manages runners may add one shared with the team instead.
+ * only its owner's work); someone who manages runners may add one shared with all users instead.
  *
  * Installing the runner, creating its credential and starting it at login are one command here.
  */
@@ -13,7 +13,11 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { CheckCircle2Icon, ChevronRightIcon } from 'lucide-react';
 import { useState, type FormEvent, type ReactElement } from 'react';
 
-import { AGENT_TOOLS, type AgentTool } from '@nocobase/agent-protocol';
+import {
+  AGENT_TOOLS,
+  DEFAULT_AGENT_TOOLS,
+  type AgentTool,
+} from '@nocobase/agent-protocol';
 
 import type {
   RegistrationToken,
@@ -22,6 +26,7 @@ import type {
 } from '../../../shared/runners.js';
 import { RUNNERS_TOPIC } from '../../../shared/realtime.js';
 import { agentsKeys } from '../../api/keys.js';
+import { AgentPromptCallout } from '../../components/agent-prompt-callout.js';
 import { CommandLine } from '../../components/command-line.js';
 import { RouteDialog } from '../../components/route-dialog.js';
 import { Button } from '../../components/ui/button.js';
@@ -55,12 +60,12 @@ import { useAgentsApi } from '../../hooks/use-agents-api.js';
 import { useNotify } from '../../hooks/use-notify.js';
 import { useRealtimeTopic } from '../../hooks/use-realtime-topic.js';
 import { useServerUrl } from '../../hooks/use-server-url.js';
+import { noCodingToolsFound } from '../../lib/runner-tools.js';
 import { useFormatters } from '../../lib/format.js';
 import {
   guessSystem,
   installCommand,
   INSTALL_SYSTEMS,
-  registerCommand,
 } from '../../lib/install.js';
 import { RunnerToolsCell } from './runner-cells.js';
 import { readToolSlots, type ToolSlotsDraft } from '../../lib/tool-slots.js';
@@ -77,7 +82,7 @@ export default function ConnectRuntimePage(): ReactElement {
     <RouteDialog
       title={t('connect.title')}
       description={t('connect.description')}
-      className='sm:max-w-2xl'
+      className='sm:max-w-3xl'
     >
       <AddRunnerSteps />
     </RouteDialog>
@@ -91,9 +96,9 @@ function AddRunnerSteps(): ReactElement {
   const { close } = useRouteOverlay();
   const canShare = useSetting('agents.runners', 'manage');
   const [trust, setTrust] = useState<RunnerTrust>('ownerOnly');
-  const [tools, setTools] = useState<readonly AgentTool[]>(AGENT_TOOLS);
+  const [tools, setTools] = useState<readonly AgentTool[]>(DEFAULT_AGENT_TOOLS);
   const [toolsMissing, setToolsMissing] = useState(false);
-  const [slots, setSlots] = useState('1');
+  const [slots, setSlots] = useState('3');
   const [slotsInvalid, setSlotsInvalid] = useState(false);
   const [toolSlots, setToolSlots] = useState<ToolSlotsDraft>({});
   const [toolSlotsInvalid, setToolSlotsInvalid] = useState(false);
@@ -107,8 +112,7 @@ function AddRunnerSteps(): ReactElement {
       const before = await api.runners();
       const token = await api.createRegistrationToken({
         trust: canShare ? trust : 'ownerOnly',
-        // Every tool is no choice at all, so a tool the protocol adds later is offered too.
-        enabledTools: tools.length === AGENT_TOOLS.length ? null : tools,
+        enabledTools: tools,
         slots: Number(slots),
         ...(limits ? { toolSlots: limits } : {}),
       });
@@ -173,6 +177,9 @@ function AddRunnerSteps(): ReactElement {
           {t('runtimes.trust.personalOnly')}
         </p>
       )}
+      <p className='text-sm text-muted-foreground'>
+        {t('runtimes.trust.isolationHint')}
+      </p>
       <FieldSet data-invalid={toolsMissing ? true : undefined}>
         <FieldLegend variant='label'>{t('connect.tools')}</FieldLegend>
         <FieldDescription>{t('connect.toolsHint')}</FieldDescription>
@@ -306,23 +313,51 @@ function InstallStep({
           const command = installCommand(candidate, server, token.token);
           return (
             <TabsContent key={candidate} value={candidate} className='pt-3'>
-              {command ? (
-                <div className='space-y-3'>
-                  <p className='text-sm'>{t('connect.run')}</p>
+              <div className='space-y-4'>
+                <AgentPromptCallout
+                  title={t('connect.promptTitle')}
+                  description={t('connect.promptHint')}
+                  prompt={
+                    (candidate === 'windows'
+                      ? t('connect.promptWindows')
+                      : '') +
+                    t('connect.promptBody', {
+                      tools: (token.enabledTools ?? AGENT_TOOLS)
+                        .map((tool) => t(`tools.${tool}`))
+                        .join(', '),
+                      command,
+                    })
+                  }
+                  labels={{
+                    copy: t('connect.promptCopy'),
+                    copied: t('command.copied'),
+                    copyFailed: t('command.copyFailed'),
+                    show: t('connect.promptShow'),
+                    hide: t('connect.promptHide'),
+                  }}
+                />
+                <section className='space-y-3' data-install-manual=''>
+                  <h3 className='text-sm font-medium'>{t('connect.manual')}</h3>
+                  {candidate === 'windows' ? (
+                    <>
+                      <p className='text-sm'>
+                        {t('connect.windowsPowerShell')}
+                      </p>
+                      <CommandLine command='wsl --install' />
+                      <p className='text-sm'>{t('connect.windowsUbuntu')}</p>
+                      <p className='text-xs text-muted-foreground'>
+                        {t('connect.windowsNetwork')}
+                      </p>
+                    </>
+                  ) : (
+                    <p className='text-sm'>{t('connect.run')}</p>
+                  )}
                   <CommandLine command={command} />
                   <p className='text-xs text-muted-foreground'>
                     {t('connect.nodeRequired')}
                   </p>
-                  <p className='text-xs text-muted-foreground'>
-                    {t('connect.installed')}
-                  </p>
-                  <CommandLine command={registerCommand(server, token.token)} />
-                </div>
-              ) : (
-                <p className='text-sm text-muted-foreground'>
-                  {t('connect.unsupported')}
-                </p>
-              )}
+                </section>
+              </div>
             </TabsContent>
           );
         })}
@@ -365,6 +400,11 @@ function InstallStep({
                 {t('connect.connected', { name: connected.name })}
               </p>
               <RunnerToolsCell runner={connected} />
+              {noCodingToolsFound(connected) ? (
+                <p className='text-sm text-muted-foreground'>
+                  {t('runtimes.pathHint')}
+                </p>
+              ) : null}
             </div>
           </>
         ) : (

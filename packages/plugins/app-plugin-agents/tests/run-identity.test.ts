@@ -4,7 +4,7 @@ import { claim, createHarness, type Harness } from './harness.js';
 
 /**
  * Work done as different people on one subject: it is queued as separate runs and claimed one at a time. Its variables
- * go to the runner that takes it, unless one is for team runners only. `owner` owns every agent here.
+ * go to the runner that takes it, unless one is for shared runners only. `owner` owns every agent here.
  */
 describe('runs as their actors', () => {
   let h: Harness;
@@ -130,7 +130,7 @@ describe('runs as their actors', () => {
     expect(await waitOf(queued.runId)).toBe('sameWorkActive');
   });
 
-  it("is taken by the actor's personal runner or a team runner, not by another person's", async () => {
+  it("is taken by the actor's personal runner or a shared runner, not by another person's", async () => {
     h = await createHarness();
     const agentId = await h.createAgent();
     const ownerRunner = await h.registerRunner({
@@ -228,7 +228,7 @@ describe('runs as their actors', () => {
         notices.push(notice.type);
       });
 
-      // Bob's own runner leaves bob's run: it waits for a team runner and names the variable.
+      // Bob's own runner leaves bob's run: it waits for a shared runner and names the variable.
       const theirs = await asBob(agentId);
       const bobRunner = await h.registerRunner({
         trust: 'ownerOnly',
@@ -255,7 +255,7 @@ describe('runs as their actors', () => {
       });
       expect(await claim(h, ownerRunner)).toEqual([]);
 
-      // A team runner takes both, with every variable.
+      // A shared runner takes both, with every variable.
       const team = await h.registerRunner({ slots: 4 });
       const payloads = await claim(h, team, 4);
       expect(payloads.map((payload) => payload.run.id)).toEqual([theirs.runId]);
@@ -389,7 +389,7 @@ describe('runs as their actors', () => {
         { scope: 'agent', scopeId: agentId, name: 'DEPLOY_KEY' },
       ]);
 
-      // A team runner would take it; without the mark, bob's own runner would too.
+      // A shared runner would take it; without the mark, bob's own runner would too.
       const team = await h.registerRunner();
       expect(
         (await h.services.eligibility.runnersFor(conn, agent, asBob)).map(

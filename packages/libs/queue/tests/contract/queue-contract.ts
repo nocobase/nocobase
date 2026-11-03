@@ -8,13 +8,15 @@ import {
   type QueueConfigEntry,
   type QueueLogger,
   type QueueService,
-} from '../../src/index.js';
+} from '@nocobase/queue';
 
+export const queueContractVersion: number = 2;
 /** An implementation the contract runs against. */
 export interface QueueContractTarget {
   readonly name: string;
   /** A complete configuration entry for `namespace`, without job options. */
   entry(namespace: string): QueueConfigEntry;
+  register?(service: QueueService): void;
 }
 
 export interface Deferred<T = void> {
@@ -84,6 +86,7 @@ export function defineQueueContract(target: QueueContractTarget): void {
           logger: silentLogger,
         },
       );
+      target.register?.(created);
       services.push(created);
       return created;
     }

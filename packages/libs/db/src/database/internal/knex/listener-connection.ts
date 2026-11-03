@@ -25,6 +25,9 @@ import type {
   ScopedDatabaseConnection,
 } from '../../connection.js';
 import type { DatabaseDriverRuntime } from '../../runtime.js';
+import type { RestrictedDatabase } from '../../restricted-database.js';
+import type { DatabasePolicyMap } from '../../policy-map.js';
+import { createRestrictedDatabase } from '../restricted-database.js';
 import type { KnexDatabaseConnection } from './connection.js';
 import {
   bindPolicies,
@@ -34,7 +37,7 @@ import {
 /**
  * The transaction connection an `inTransaction` listener receives. It is the
  * transaction connection of the call that emitted the event, except that the
- * Repositories it hands out, directly, through `withPolicies` or in a
+ * Repositories it hands out, directly, through `restrict` / `withPolicies` or in a
  * savepoint, report that call as the parent of their own events. That is how
  * `parentOperationId` and the recursion limit follow a chain of listener
  * writes without ambient state.
@@ -108,8 +111,15 @@ export class RepositoryListenerConnection implements PolicyBindableConnection {
     );
   }
 
+  restrict<P, const TCollection extends string>(
+    policies: DatabasePolicyMap<P, TCollection>,
+    principal: P,
+  ): RestrictedDatabase<TCollection> {
+    return createRestrictedDatabase(this, policies, principal);
+  }
+
   withPolicies<P>(
-    policies: Parameters<DatabaseConnection['withPolicies']>[0],
+    policies: DatabasePolicyMap<P>,
     principal: P,
   ): ScopedDatabaseConnection {
     return bindPolicies(this, policies, principal);

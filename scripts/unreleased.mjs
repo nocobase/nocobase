@@ -25,7 +25,7 @@ pnpm unreleased:create NAME [--template default|examples] [--dialect sqlite]
   # --dialect only decides which configuration commands are printed afterwards
   [--output-dir /parent/directory] [--json] [--no-install]
 pnpm unreleased:smoke [--template default|examples] [--dialect sqlite]
-  [--config /absolute/test.yml] [--timeout 420] [--workdir /empty/directory]
+  [--config /absolute/test.yml] [--timeout 420] [--workdir /empty/directory] [--internal-packages]
 pnpm unreleased:installer-smoke [--app-port 13100] [--workdir /empty/directory]
 pnpm unreleased:clean
 eval "$(pnpm -s unreleased:env)"
@@ -72,6 +72,10 @@ export function parseArgs(argv) {
     clean: [],
   };
   for (let i = 0; i < args.length; i++) {
+    if (action === 'smoke' && args[i] === '--internal-packages') {
+      options.internalPackages = true;
+      continue;
+    }
     if (action === 'prepare' && args[i] === '--reset') {
       options.reset = true;
       continue;
@@ -562,6 +566,7 @@ async function main() {
         'bash',
         [
           path.join(repo, 'scripts/smoke-create-app.sh'),
+          ...(options.internalPackages ? ['--internal-packages'] : []),
           '--registry',
           state.registry,
           '--create-app-version',

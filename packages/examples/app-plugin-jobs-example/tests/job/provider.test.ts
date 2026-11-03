@@ -59,9 +59,9 @@ function application() {
   const defineTopic = vi.fn(() => ({
     name: JOB_TASKS_TOPIC,
     audience: 'user' as const,
-    publishFor: (userId: string, task: JobTask) => {
+    publishFor: async (userId: string, task: JobTask) => {
       published.push({ userId, task });
-      return { topic: JOB_TASKS_TOPIC, subscriberCount: 1 };
+      return { topic: JOB_TASKS_TOPIC, eventId: 'event-1' };
     },
     close,
   }));

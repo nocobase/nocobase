@@ -1,6 +1,6 @@
 # Model services
 
-Agents run on runners and do not use model services. The plugin keeps model services for the App's own model calls, such as a knowledge base's embeddings, reranking and short texts. The README's "Model services" and "Vectors" sections are the reference.
+Agents run on runners and do not use model services. The plugin keeps model services for the App's own model calls, such as a knowledge base's embeddings, reranking and short texts. The README's "Model services" section is the reference.
 
 ## Model services
 
@@ -12,6 +12,6 @@ Agents run on runners and do not use model services. The plugin keeps model serv
 
 `models.gateway` on `agentsToken` serves the App's own model calls: `catalog(kind)`, `check(ref)`, `embed({ model, values, source })`, `rerank({ model, query, documents, topN?, source })` and `generate({ model, system?, prompt, maxOutputTokens?, source })`. Each names who asks (`source`), is recorded in `agModelUsage` and priced from the service's model prices, and throws `ModelError` with a code (`config`, `auth`, `quota`, `rateLimit`, `network`, `contextOverflow`, `filtered`, `badResponse`, `aborted`, `unknown`). Use it rather than calling a provider SDK, so keys, usage and prices stay in one place.
 
-## Vectors
+## Legacy vector collections
 
-`vectors.collection(spec)` gives the App semantic search over items it names, embedded with the model it chooses, in the store `agents.vectors` configures (`sqlite-vec` by default, `pgvector` for several instances or Alpine). `status()` answers availability and a `VectorUnavailableCode` when it is not available; then search answers null and the caller keeps its keyword search. See the README's "Vectors" section.
+Agents 2 removes the legacy vector collection service. Use the model gateway for Embedding; Knowledge owns its independent document indexing and storage. Before upgrading an existing integration, read `@nocobase/app-plugin-agents/docs/vectors-migration.md`. There is no automatic conversion of legacy collections.

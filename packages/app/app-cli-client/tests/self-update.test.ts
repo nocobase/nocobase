@@ -7,6 +7,7 @@ import {
   mkdirSync,
   readFileSync,
   readlinkSync,
+  renameSync,
   symlinkSync,
   writeFileSync,
 } from 'node:fs';
@@ -127,6 +128,7 @@ describe('<bin> update', () => {
     const file = path.join(skills.stateHome, 'skills.json');
     const registry = JSON.parse(readFileSync(file, 'utf8'));
     registry.targets.push({
+      skill: 'nb-studio-cli',
       tool: 'claude',
       path: child,
       hash: 'child-hash',
@@ -190,9 +192,12 @@ describe('<bin> update', () => {
       const other = path.join(skills.home!, '.agents/skills/my-own-skill');
       mkdirSync(other);
       writeFileSync(path.join(other, 'SKILL.md'), 'preserve');
-      // A competing operation fails the Skill sync but cannot invalidate the activated CLI.
-      if (fail)
-        mkdirSync(path.join(path.dirname(destination), '.nb-studio-cli.lock'));
+      // An unsafe destination fails the Skill sync without invalidating the activated CLI.
+      if (fail) {
+        const previous = `${destination}-previous`;
+        renameSync(destination, previous);
+        symlinkSync(previous, destination);
+      }
       const server = fakeServer('0.2.0');
       const environment: UpdateEnvironment = {
         bin,

@@ -91,6 +91,7 @@ export interface RemoteCreateOneOptions<
     | MutationValuesInput<CreateMutationValues<TCreate>>
     | BuiltMutationValues<CreateMutationValues<TCreate>>;
   readonly idempotencyKey?: string;
+  readonly signal?: AbortSignal;
 }
 
 export interface RemoteUpdateOneOptions<
@@ -103,6 +104,7 @@ export interface RemoteUpdateOneOptions<
     | BuiltMutationValues<UpdateMutationValues<TUpdate>>;
   readonly ifVersion?: string | number;
   readonly idempotencyKey?: string;
+  readonly signal?: AbortSignal;
 }
 
 export interface RemoteDeleteOneOptions<
@@ -111,6 +113,7 @@ export interface RemoteDeleteOneOptions<
   readonly filter: RemoteRepositoryFilter<TRecord>;
   readonly ifVersion?: string | number;
   readonly idempotencyKey?: string;
+  readonly signal?: AbortSignal;
 }
 
 export interface RemoteMutationResult<TRecord extends object> {
@@ -222,11 +225,17 @@ export function createRemoteRepository<
   const call = <TResult, TJson>(
     action: RemoteRepositoryAction,
     json: TJson,
+    idempotencyKey?: string,
+    signal?: AbortSignal,
   ): Promise<TResult> =>
     options
       .request<RepositoryApiResponse<TResult>, TJson>({
         path: actionPath(action),
         method: 'POST',
+        ...(signal ? { signal } : {}),
+        ...(idempotencyKey
+          ? { headers: { 'Idempotency-Key': idempotencyKey } }
+          : {}),
         json,
       })
       .then((response): TResult => response.data);
@@ -268,15 +277,30 @@ export function createRemoteRepository<
     createOne: (
       input: RemoteCreateOneOptions<TCreate, TRecord>,
     ): Promise<RemoteMutationResult<TRecord>> =>
-      call('createOne', buildCreateOneOptions<TCreate, TRecord>(input)),
+      call(
+        'createOne',
+        buildCreateOneOptions<TCreate, TRecord>(withoutOperationKey(input)),
+        input.idempotencyKey,
+        input.signal,
+      ),
     updateOne: (
       input: RemoteUpdateOneOptions<TRecord, TUpdate>,
     ): Promise<RemoteMutationResult<TRecord>> =>
-      call('updateOne', buildUpdateOneOptions<TRecord, TUpdate>(input)),
+      call(
+        'updateOne',
+        buildUpdateOneOptions<TRecord, TUpdate>(withoutOperationKey(input)),
+        input.idempotencyKey,
+        input.signal,
+      ),
     deleteOne: (
       input: RemoteDeleteOneOptions<TRecord>,
     ): Promise<RemoteDeleteResult<TRecord>> =>
-      call('deleteOne', buildDeleteOneOptions<TRecord>(input)),
+      call(
+        'deleteOne',
+        buildDeleteOneOptions<TRecord>(withoutOperationKey(input)),
+        input.idempotencyKey,
+        input.signal,
+      ),
   };
 }
 
@@ -487,4 +511,11 @@ function queryConsumptionError(): Error & { readonly code: string } {
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function withoutOperationKey<
+  T extends { readonly idempotencyKey?: string; readonly signal?: AbortSignal },
+>(input: T): Omit<T, 'idempotencyKey' | 'signal'> {
+  const { idempotencyKey: _key, signal: _signal, ...body } = input;
+  return body;
 }

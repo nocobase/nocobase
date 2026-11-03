@@ -3,7 +3,7 @@
  * (`ConnectSteps`, also what a person with no computer sees first). These computers run only their owner's sessions;
  * machines that run the team's background work are managed elsewhere in the application.
  */
-import { useToaster } from '@nocobase/app-client';
+import { copyText, useToaster } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { cn } from 'cn';
 import {
@@ -242,6 +242,26 @@ function ComputerCard({
           </span>
         ))}
       </div>
+      {installedAgents(computer)
+        .filter((agent) => agent.problem)
+        .map((agent) => (
+          <div
+            key={agent.id}
+            className='bg-muted flex min-w-0 flex-col gap-1 rounded-md p-2.5 text-xs'
+          >
+            <p className='font-medium'>
+              {agent.name} · {t(`computers.problems.${agent.problem}`)}
+            </p>
+            {agent.detail && (
+              <p className='text-muted-foreground whitespace-pre-wrap [overflow-wrap:anywhere]'>
+                {agent.detail}
+              </p>
+            )}
+          </div>
+        ))}
+      <p className='text-muted-foreground text-xs'>
+        {t('computers.recheckHint')}
+      </p>
       {others && (
         <p className='text-muted-foreground text-xs'>
           {t('newSession.alsoSupported', { names: others })}
@@ -374,10 +394,11 @@ function Command({ text }: { readonly text: string }): ReactElement {
         aria-label={t('actions.copy')}
         className='shrink-0 text-[oklch(0.68_0.02_264)] hover:text-[oklch(0.9_0.01_264)]'
         onClick={() =>
-          void navigator.clipboard.writeText(text).then(
-            () => setCopied(true),
-            () => toaster.show({ type: 'error', title: t('errors.copy') }),
-          )
+          void copyText(text).then((copied) => {
+            setCopied(copied);
+            if (!copied)
+              toaster.show({ type: 'error', title: t('errors.copy') });
+          })
         }
       >
         {copied ? (

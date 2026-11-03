@@ -55,10 +55,11 @@ beforeEach(() => {
   state.api = { request } as unknown as ApiClient;
   state.realtime = {
     connected: true,
-    subscribe: vi.fn((_topic: string, next: typeof listener) => {
-      listener = next;
-      return unsubscribe;
+    watch: vi.fn((_topic: string, options: { onEvent: typeof listener }) => {
+      listener = options.onEvent;
+      return { close: unsubscribe };
     }),
+    onStateChange: vi.fn(() => () => undefined),
     onOpen: vi.fn(() => () => undefined),
   } as unknown as RealtimeClient;
 });
@@ -90,9 +91,12 @@ function push(task: JobTask): void {
 
 it('subscribes while open, adds a block per created job and follows its progress', async () => {
   const view = await show();
-  expect(state.realtime!.subscribe).toHaveBeenCalledExactlyOnceWith(
+  expect(state.realtime!.watch).toHaveBeenCalledExactlyOnceWith(
     JOB_TASKS_TOPIC,
-    expect.any(Function),
+    expect.objectContaining({
+      onEvent: expect.any(Function),
+      onReady: expect.any(Function),
+    }),
   );
   expect(await screen.findByText(/No jobs yet/u)).toBeTruthy();
 

@@ -80,23 +80,54 @@ describe('expandPolicyRefs', () => {
     ).toThrowError(/forms a cycle/);
   });
 
-  it('refuses a reference to a collection the binding does not cover', () => {
-    expect(() =>
-      expandPolicyRefs(
-        normalize({
-          projects: {
-            read: {
-              scope: true,
-              fields: ['id'],
-              relations: { tasks: ref('tasks') },
+  it.each(['tasks', 'toString', 'constructor', '__proto__'])(
+    'refuses a reference to the unlisted collection %s',
+    (target) => {
+      expect(() =>
+        expandPolicyRefs(
+          normalize({
+            projects: {
+              read: {
+                scope: true,
+                fields: ['id'],
+                relations: { tasks: ref(target) },
+              },
+              create: open,
+              update: open,
+              delete: open,
             },
-            create: open,
-            update: open,
-            delete: open,
+          }),
+        ),
+      ).toThrowError(/names no Collection in this binding/);
+    },
+  );
+
+  it('preserves an explicit __proto__ collection as a map entry', () => {
+    const expanded = expandPolicyRefs(
+      normalize({
+        ['__proto__']: {
+          read: { scope: true, fields: ['id'] },
+          create: false,
+          update: false,
+          delete: false,
+        },
+        projects: {
+          read: {
+            scope: true,
+            fields: ['id'],
+            relations: { tasks: ref('__proto__') },
           },
-        }),
-      ),
-    ).toThrowError(/names no Collection in this binding/);
+          create: false,
+          update: false,
+          delete: false,
+        },
+      }),
+    );
+    expect(Object.hasOwn(expanded, '__proto__')).toBe(true);
+    expect(Object.getPrototypeOf(expanded)).toBe(Object.prototype);
+    expect(expanded.projects.read).toMatchObject({
+      relations: { tasks: { fields: ['id'] } },
+    });
   });
 
   it('refuses a reference to a collection whose read is not a set of rules', () => {

@@ -1,5 +1,121 @@
 # @nocobase/app-plugin-repository-example
 
+## 2.0.0-beta.6
+
+### Patch Changes
+
+- cf23bfe: Move Redis realtime broadcasting to the commercial Realtime Redis plugin. Register its Server plugin before selecting Redis in an application, or import the standalone broker from its `/broker` entry. Preserve the Memory default, service identity, authorization and recovery protocol, and republish runtime consumers against the new host and realtime major versions. Install the compatible commercial cohort before deploying the final removal.
+- Updated dependencies [88d35b8]
+- Updated dependencies [88d35b8]
+- Updated dependencies [83f28b1]
+- Updated dependencies [cf23bfe]
+  - @nocobase/app-client@4.0.0-beta.6
+  - @nocobase/app-plugin-authentication@2.0.0-beta.17
+  - @nocobase/app-server@4.0.0-beta.0
+
+## 2.0.0-beta.5
+
+### Patch Changes
+
+- d3f0c92: Show distinct list feedback states, keep Customers' empty copy concise and keep its search controls together at all widths.
+- Updated dependencies [b6934ad]
+- Updated dependencies [d3f0c92]
+- Updated dependencies [a0b4568]
+- Updated dependencies [12b1f64]
+- Updated dependencies [b6934ad]
+- Updated dependencies [5ce4a7c]
+- Updated dependencies [b6934ad]
+- Updated dependencies [171f7fb]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.16
+  - @nocobase/app-client@4.0.0-beta.5
+  - @nocobase/app-server@3.0.0-beta.5
+  - @nocobase/db@1.0.0-beta.24
+
+## 2.0.0-beta.4
+
+### Patch Changes
+
+- e3d9a52: Prevent overlapping form submissions with a shared submission controller and preserve operation identifiers across uncertain retries. Standard Repository writes can commit operation receipts atomically with business data and replay successful results for 24 hours after checking current access.
+
+  New application templates require operation identifiers and install receipt storage and bounded cleanup. Existing applications must reconcile the provider, migration and copied form sources, migrate their callers, and then enable strict mode; updating dependencies alone does not activate protection. Custom actions must explicitly join the receipt transaction and provide current authorization and result visibility checks. Cross-connection and unadapted external side effects are outside this guarantee.
+
+- Updated dependencies [451bf75]
+- Updated dependencies [e3d9a52]
+- Updated dependencies [22748f7]
+  - @nocobase/app-client@4.0.0-beta.4
+  - @nocobase/app-server@3.0.0-beta.4
+  - @nocobase/api-client@1.0.0-beta.6
+  - @nocobase/db@1.0.0-beta.23
+  - @nocobase/app-plugin-authentication@2.0.0-beta.15
+
+## 2.0.0-beta.3
+
+### Patch Changes
+
+- 05f800a: Publish editable file upload/preview and notification delivery-log UI through the UI Library. Install `@nocobase/file-component-ui` or `@nocobase/notification-logs-ui` with shadcn, and merge their bundled locale resources into the consuming application. Existing application-owned copies remain usable; reconcile upstream changes while preserving customizations. The default template keeps its File UI installation path and now tracks the UI Library source.
+
+  Remove plugin-owned Registry recipes, their build/materialize commands, the Registry example plugin, and the `registry` capability from the plugin scaffold. Plugins can continue to install UI Library items into their own client source. Update plugin development guidance to use this single source distribution channel.
+
+  Preserve custom file download callbacks for images opened from FileList, including preview toolbar and fallback downloads.
+
+## 2.0.0-beta.2
+
+### Patch Changes
+
+- 58531da: Require HTTP-compatible UUID and clipboard helpers in browser source while preserving Node APIs. Use the shared helpers for mail composition, demo links, example records, template copy actions and workflow request identifiers.
+- Updated dependencies [58531da]
+  - @nocobase/app-client@4.0.0-beta.3
+  - @nocobase/app-server@3.0.0-beta.3
+  - @nocobase/db@1.0.0-beta.22
+  - @nocobase/i18n@2.0.0-beta.1
+  - @nocobase/service-provider@0.0.2-beta.2
+  - @nocobase/app-plugin-authentication@2.0.0-beta.13
+
+## 2.0.0-beta.1
+
+### Patch Changes
+
+- 1952789: Complete all ten supported languages in plugin and example plugin catalogues, including model suggestions and test Web Push notifications. Align calendars and invitation emails, support locale-specific plural forms, and validate resource loading and formatting.
+
+  Correct joined translation text and distinguish configuration save actions, refund stages, and domain-specific operation labels.
+
+- Updated dependencies [1952789]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.12
+  - @nocobase/i18n@2.0.0-beta.1
+  - @nocobase/app-client@4.0.0-beta.0
+
+## 2.0.0-beta.0
+
+### Major Changes
+
+- 7afd595: Remove Refine from the client runtime
+
+  The application shell no longer mounts Refine. `@nocobase/app-client` drops `app.refine`, `app.refineConfig`, `AppClientRefineConfig`, `AppClientRefineRegistry`, `AppClientRefineSetters`, `AppClientRefineSetterValue` and the provider-context methods `runWithProviderContext` and `runWithProviderContextAsync`, which existed only to attribute Refine settings to the provider that made them. Nothing in the repository read what was registered there: a title set through `app.refine.setOptions` never reached the page, and Refine resources never produced a menu entry.
+
+  Refine also created the TanStack Query cache that pages read through `useQueryClient()`; `AppClientProviders` now creates it in the same place, the same way, so pages and plugins behave as before. `@tanstack/react-query` becomes a peer dependency of `@nocobase/app-client` and joins the identity-sensitive packages that plugins must declare as peers.
+
+  `@nocobase/i18n/client` drops `createRefineI18nProvider`, `CreateRefineI18nProviderOptions` and `RefineI18nProvider`. `@nocobase/app-plugin-repository-example` drops its Client ServiceProvider and the `./client/providers` export, which only registered Refine resources.
+
+  `nocobase build` builds the client with `vite build` instead of `refine build`, and `@nocobase/app-cli` no longer lists `@refinedev/cli` as an optional peer. The Default and Examples templates remove every `@refinedev/*` development dependency. The development and plugin Skills no longer mention Refine, and the upgrade Skill explains how an existing application removes its `this.app.refine` calls and Refine packages.
+
+### Patch Changes
+
+- 1952789: Require explicitly declared realtime topics and authorize dynamic resources before subscription and delivery. Isolate the server core behind a broker contract, retain the application adapter and service tokens, and handle asynchronous publication throughout plugins and examples. Add acknowledged browser subscriptions, bounded recovery and heartbeat handling, shared React refresh helpers, original-session revalidation, transport limits, and usage documentation. The included adapter remains in-process; events are transient and clients recover by refetching after acknowledgement.
+- Updated dependencies [1952789]
+- Updated dependencies [1952789]
+- Updated dependencies [1952789]
+- Updated dependencies [1952789]
+- Updated dependencies [1952789]
+- Updated dependencies [7afd595]
+  - @nocobase/app-client@4.0.0-beta.0
+  - @nocobase/app-plugin-authentication@2.0.0-beta.11
+  - @nocobase/app-server@3.0.0-beta.0
+  - @nocobase/i18n@2.0.0-beta.0
+  - @nocobase/db@1.0.0-beta.21
+  - @nocobase/service-provider@0.0.2-beta.2
+
+## 2.0.0-beta
+
 ## 1.0.0-beta.21
 
 ### Patch Changes

@@ -195,6 +195,23 @@ it('backs off runner-reported worker startup failures and exhausts the real budg
   });
 });
 
+it('backs off from the configured base delay', async () => {
+  h = await createHarness({ retryBaseDelayMs: 1_000 });
+  const agent = await h.createAgent({ maxAttempts: 3 });
+  const runId = await h.enqueue(agent);
+  const runner = await h.registerRunner();
+  for (const delay of [1_000, 2_000]) {
+    await heartbeat(runner);
+    expect(await claim(h, runner)).toHaveLength(1);
+    await h.services.reports.fail({ id: runner.runnerId }, runId, {
+      reason: 'startTimeout',
+    });
+    const run = await h.services.runs.get(runId);
+    expect(Date.parse(run.availableAt!) - h.clock.now().getTime()).toBe(delay);
+    h.clock.advance(delay);
+  }
+});
+
 async function interrupt(
   runId: string,
   runner: RegisteredRunner,

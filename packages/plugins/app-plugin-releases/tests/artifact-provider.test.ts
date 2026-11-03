@@ -16,6 +16,37 @@ import { createHarness } from './harness.js';
 
 afterEach(() => vi.restoreAllMocks());
 
+it('rejects a disk factory before initializing a Host or invoking the factory', () => {
+  const factory = vi.fn(() => {
+    throw new Error('Must not run.');
+  });
+  const initialize = vi.spyOn(AppHostSupervisor, 'initialize');
+  const create = vi.spyOn(AppHostSupervisor, 'create');
+  const container = new ServiceContainer();
+  const provider = new ReleasesProvider({
+    container,
+    config: accessor(
+      {
+        artifact: { disk: 'custom' },
+        dataDir: 'storage/releases',
+        host: {
+          enabled: true,
+          configPath: 'unused.yml',
+          appVolumesDir: 'volumes',
+        },
+      },
+      { default: 'custom', disks: { custom: factory } },
+    ),
+  });
+  provider.register();
+  expect(() => container.resolve(releasesToken)).toThrow(
+    'release artifacts require a serializable disk configuration object',
+  );
+  expect(factory).not.toHaveBeenCalled();
+  expect(initialize).not.toHaveBeenCalled();
+  expect(create).not.toHaveBeenCalled();
+});
+
 function accessor(
   releases: ReleasesPluginConfig,
   drive: AppDriveConfig,

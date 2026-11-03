@@ -133,6 +133,8 @@ export interface ProposalFilter {
 }
 
 export interface ProposalService {
+  /** Whether this application accepts proposals. */
+  enabled(): boolean;
   propose(
     viewer: KnowledgeReader,
     input: ProposalInput,
@@ -174,6 +176,7 @@ export interface ProposalService {
 
 /** What the proposals of files need: where files are stored, and how large they may be. */
 export interface ProposalFileDeps {
+  readonly enabled?: () => boolean;
   readonly store: () => KnowledgeFileStore | null;
   readonly maxBytes: number;
 }
@@ -561,8 +564,19 @@ export function createProposalService(
     return file;
   }
 
+  const enabled = () => files.enabled?.() !== false;
+  const requireEnabled = () => {
+    if (!enabled())
+      throw new KnowledgeError(
+        404,
+        'PROPOSALS_UNAVAILABLE',
+        'Knowledge proposals are disabled.',
+      );
+  };
   const service: ProposalService = {
+    enabled,
     async propose(viewer, input) {
+      requireEnabled();
       const access = resolverFor(viewer);
       const reason = check.reason(input.reason);
       const kind = input.kind;
@@ -917,6 +931,7 @@ export function createProposalService(
     },
 
     async proposeFile(viewer, input, file) {
+      requireEnabled();
       const stored = await storeFile(
         context,
         store(),
@@ -936,6 +951,7 @@ export function createProposalService(
     },
 
     async ticket(viewer, input) {
+      requireEnabled();
       store();
       const access = resolverFor(viewer);
       if (input.kind !== 'update' && input.kind !== 'create')
@@ -989,6 +1005,7 @@ export function createProposalService(
     },
 
     async redeem(ticketId, token, file) {
+      requireEnabled();
       const conn = context.read();
       const ticket = await ticketsRepo(conn).findOne({
         filter: { id: ticketId },

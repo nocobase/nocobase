@@ -264,9 +264,12 @@ describe('knowledge files', () => {
     });
     await expect(docs.versions(h.user('lead'), folder.id)).resolves.toEqual([]);
     const tree = await docs.tree(h.user('lead'), project);
-    expect(tree.spaces[0].docs.map((doc) => [doc.kind, doc.title])).toEqual([
-      ['folder', 'Specifications'],
+    // These are in different sibling groups; the flat list's title collation varies by dialect.
+    expect(
+      tree.spaces[0].docs.map((doc) => [doc.kind, doc.title]).sort(),
+    ).toEqual([
       ['file', 'design.pdf'],
+      ['folder', 'Specifications'],
     ]);
     // A file's text is not edited as text; its title is a new version that keeps the file.
     await expect(

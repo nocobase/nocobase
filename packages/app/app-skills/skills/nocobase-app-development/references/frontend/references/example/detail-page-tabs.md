@@ -421,11 +421,11 @@ export default function CustomerOverviewTab(): ReactElement {
 
 ## The test
 
-`tests/components/customer-page.test.tsx` renders the page with the routes `customerDetailRoutes` declares, written out, and opens the header's "Edit" from every tab, which catches a tab that does not pass the page's context on through its `Outlet`; that every tab declares the header's overlays is the route test's to check (below). It then goes back to check that the list gets exactly its own parameters:
+`tests/client/customer-page.test.tsx` renders the page with the routes `customerDetailRoutes` declares, written out, and opens the header's "Edit" from every tab, which catches a tab that does not pass the page's context on through its `Outlet`; that every tab declares the header's overlays is the route test's to check (below). It then goes back to check that the list gets exactly its own parameters:
 
 ```tsx
-// tests/components/customer-page.test.tsx
-// The setup of tests/components/page-harness.test.tsx — its vi.hoisted values and every vi.mock — unchanged; only
+// tests/client/customer-page.test.tsx
+// The setup of tests/client/page-harness.test.tsx — its vi.hoisted values and every vi.mock — unchanged; only
 // what differs is shown. The runtime reads the application's own locale files,
 // where the customer copy lives, so the queries name what the user reads.
 import {
@@ -582,10 +582,10 @@ describe('customer page', () => {
 
 ## The route test
 
-Every page that declares `customerDetailRoutes` adds a route per tab and per overlay under each tab to the page grant list of `tests/logic/client-routes.test.ts` ([section 12 of `page.md`](../page.md#12-update-the-route-test)). A helper in the test spells out one owner's set, with its names and authorization written literally rather than taken from the application's function, whose output is what the test checks:
+Every page that declares `customerDetailRoutes` adds a route per tab and per overlay under each tab to the page grant list of `tests/client/client-routes.test.ts` ([section 12 of `page.md`](../page.md#12-update-the-route-test)). A helper in the test spells out one owner's set, with its names and authorization written literally rather than taken from the application's function, whose output is what the test checks:
 
 ```ts
-// tests/logic/client-routes.test.ts, in 'pins the page authorization of every signed-in page'
+// tests/client/client-routes.test.ts, in 'pins the page authorization of every signed-in page'
 expect(pageAuthorizations(resolved.routes)).toEqual([
   { name: 'home', authorizedAs: null },
   { name: 'customers', authorizedAs: null },

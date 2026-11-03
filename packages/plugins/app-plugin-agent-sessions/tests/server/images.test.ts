@@ -88,7 +88,12 @@ describe('a session’s images', () => {
     // The agent still gets the image itself.
     const { commands } = await service.poll(
       'u1',
-      { computerId, wait: false },
+      {
+        computerId,
+        wait: false,
+        protocol: BRIDGE_PROTOCOL_VERSION,
+        bridgeStartedAt: 'bridge-1',
+      },
       new AbortController().signal,
     );
     expect(commands).toMatchObject([

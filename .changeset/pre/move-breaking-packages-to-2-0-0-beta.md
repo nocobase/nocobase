@@ -23,7 +23,6 @@
 '@nocobase/app-plugin-notification-providers': patch
 '@nocobase/app-plugin-queue-example': patch
 '@nocobase/app-plugin-realtime-example': patch
-'@nocobase/app-plugin-registry-example': patch
 '@nocobase/app-plugin-repository-example': patch
 '@nocobase/app-plugin-routes-example': patch
 '@nocobase/app-plugin-scheduler': patch

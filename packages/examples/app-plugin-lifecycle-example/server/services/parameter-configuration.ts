@@ -1,3 +1,9 @@
+import { workflowParameterGroup } from '../configuration/workflow-parameter-store.js';
+import { subscriptionLifecycle } from '../lifecycles/subscription.js';
+import { exportLifecycle } from '../lifecycles/export.js';
+import { invoiceLifecycle } from '../lifecycles/invoice.js';
+import { orderLifecycle } from '../lifecycles/order.js';
+import { workflowParameterStore } from '../configuration/store.js';
 import type {
   ParameterGroupView,
   ParameterHistoryView,
@@ -13,11 +19,18 @@ import {
   type LifecycleRuntime,
   type LifecycleParameterStore,
   type ParameterGroup,
+  type ParameterVersion,
   type ReviewerSelection,
 } from '@nocobase/lifecycle';
 import { person } from '../../shared/people.js';
 import {
   expenseParameterGroup,
+  expenseTimingGroup,
+  ticketTimingGroup,
+  orderTimingGroup,
+  invoiceTimingGroup,
+  exportTimingGroup,
+  subscriptionTimingGroup,
   ticketParameterGroup,
   notificationParameterGroup,
   reviewerParameterGroup,
@@ -25,23 +38,26 @@ import {
 import { reviewerServices } from '../configuration/reviewers.js';
 import { expenseLifecycle } from '../lifecycles/expense.js';
 import { ticketLifecycle } from '../lifecycles/ticket.js';
-import {
-  reviewerDemoLifecycle,
-  reviewerLiveDemoLifecycle,
-} from '../lifecycles/reviewer-demo.js';
 import { ExampleError } from './lifecycle-example.js';
 
 const groups: readonly ParameterGroup[] = [
   expenseParameterGroup,
+  expenseTimingGroup,
+  ticketTimingGroup,
+  orderTimingGroup,
+  invoiceTimingGroup,
+  exportTimingGroup,
+  subscriptionTimingGroup,
   ticketParameterGroup,
   notificationParameterGroup,
-  reviewerParameterGroup,
 ];
 const lifecycles = [
+  orderLifecycle,
+  invoiceLifecycle,
+  exportLifecycle,
+  subscriptionLifecycle,
   expenseLifecycle,
   ticketLifecycle,
-  reviewerDemoLifecycle,
-  reviewerLiveDemoLifecycle,
 ];
 export class ParameterConfigurationService {
   public constructor(
@@ -70,7 +86,9 @@ export class ParameterConfigurationService {
             ].includes(role ?? '') &&
             (!['agent', 'customer'].includes(role ?? '') ||
               group === undefined ||
-              ['ticketPolicy', 'notificationCopy'].includes(group));
+              ['ticketPolicy', 'notificationCopy', 'ticketTiming'].includes(
+                group,
+              ));
     if (!allowed)
       throw new ExampleError(
         'FORBIDDEN',
@@ -88,15 +106,31 @@ export class ParameterConfigurationService {
       );
     return group;
   }
-  public async read(key: string, actor: string): Promise<ParameterGroupView> {
+  public async read(
+    key: string,
+    actor: string,
+    workflow?: string,
+    configuration?: ParameterVersion,
+  ): Promise<ParameterGroupView> {
     this.authorize(actor, 'read', key);
     const group = this.group(key);
-    const owner = lifecycles.find((lifecycle) =>
-      lifecycle.parameterConfiguration?.groups.some(
-        (candidate) => candidate.key === key,
-      ),
-    )!;
-    const version = await this.store.read('demo', key);
+    const owners = lifecycles.filter(
+      (lifecycle) =>
+        (!workflow || lifecycle.name === workflow) &&
+        lifecycle.parameterConfiguration?.groups.some(
+          (candidate) => candidate.key === key,
+        ),
+    );
+    if (owners.length !== 1)
+      throw new ExampleError(
+        'NOT_FOUND',
+        'PARAMETER_WORKFLOW_REQUIRED',
+        'Choose a workflow that declares this parameter group.',
+      );
+    const owner = owners[0];
+    const version =
+      configuration ??
+      (await workflowParameterStore(this.store, owner.name).read('demo', key));
     if (version && version.schemaVersion !== group.schemaVersion)
       throw new ParameterConfigurationError(
         'CONFIGURATION_INCOMPATIBLE',
@@ -112,7 +146,7 @@ export class ParameterConfigurationService {
       key,
       title: group.title,
       revision: version?.revision ?? 0,
-      origin: version ? 'configuration' : 'default',
+      origin: version && version.revision > 0 ? 'configuration' : 'default',
       schemaVersion: group.schemaVersion,
       values: normalizeParameterValues(group, version?.values ?? defaults),
       canUpdate: person(actor)?.role === 'finance',
@@ -121,7 +155,7 @@ export class ParameterConfigurationService {
           ([key, { parse: _parse, ...field }]) => [key, field],
         ),
       ),
-      uses: lifecycles.flatMap((lifecycle) =>
+      uses: [owner].flatMap((lifecycle) =>
         Object.entries(group.fields)
           .filter(() =>
             lifecycle.parameterConfiguration?.groups.some(
@@ -140,9 +174,22 @@ export class ParameterConfigurationService {
       ),
     };
   }
-  public async list(actor: string): Promise<readonly ParameterGroupView[]> {
+  public async list(
+    actor: string,
+    workflow: string,
+  ): Promise<readonly ParameterGroupView[]> {
     this.authorize(actor, 'read');
     const visible = groups.filter((group) => {
+      if (
+        !lifecycles.some(
+          (item) =>
+            item.name === workflow &&
+            item.parameterConfiguration?.groups.some(
+              (candidate) => candidate.key === group.key,
+            ),
+        )
+      )
+        return false;
       try {
         this.authorize(actor, 'read', group.key);
         return true;
@@ -150,7 +197,47 @@ export class ParameterConfigurationService {
         return false;
       }
     });
-    return Promise.all(visible.map((group) => this.read(group.key, actor)));
+    const version = await this.store.read('demo', `lifecycle.${workflow}`);
+    return Promise.all(
+      visible.map((group) =>
+        this.read(
+          group.key,
+          actor,
+          workflow,
+          version
+            ? {
+                ...version,
+                schemaVersion: group.schemaVersion,
+                values: Object.fromEntries(
+                  Object.keys(group.fields).map((field) => [
+                    field,
+                    version.values[field],
+                  ]),
+                ),
+              }
+            : undefined,
+        ),
+      ),
+    );
+  }
+  public async readWorkflow(
+    actor: string,
+    workflow: string,
+  ): Promise<{
+    kind: 'lifecycle';
+    revision: number;
+    values: JsonObject;
+    groups: readonly ParameterGroupView[];
+  }> {
+    const groups = await this.list(actor, workflow);
+    return {
+      kind: 'lifecycle' as const,
+      revision: groups[0]?.revision ?? 0,
+      values: Object.fromEntries(
+        groups.flatMap((group) => Object.entries(group.values)),
+      ),
+      groups,
+    };
   }
   public async save(
     key: string,
@@ -158,10 +245,39 @@ export class ParameterConfigurationService {
     expectedRevision: number,
     requestId: string,
     actor: string,
+    workflow?: string,
   ): Promise<ParameterGroupView> {
     this.authorize(actor, 'write', key);
-    const group = this.group(key);
-    const normalized = normalizeParameterValues(group, values);
+    const current = await this.read(key, actor, workflow);
+    const owner = current.uses[0].lifecycle;
+    await this.saveWorkflow(
+      normalizeParameterValues(this.group(key), values),
+      expectedRevision,
+      requestId,
+      actor,
+      owner,
+    );
+    return this.read(key, actor, owner);
+  }
+  public async saveWorkflow(
+    values: JsonObject,
+    expectedRevision: number,
+    requestId: string,
+    actor: string,
+    workflow: string,
+  ): Promise<{
+    kind: 'lifecycle';
+    revision: number;
+    values: JsonObject;
+    groups: readonly ParameterGroupView[];
+  }> {
+    this.authorize(actor, 'write');
+    const group = workflowParameterGroup(workflow);
+    const current = await this.readWorkflow(actor, workflow);
+    const normalized = normalizeParameterValues(group, {
+      ...current.values,
+      ...values,
+    });
     const saved = await this.database
       .connection()
       .transaction(async (connection) => {
@@ -202,10 +318,20 @@ export class ParameterConfigurationService {
         );
       });
     return {
-      ...(await this.read(key, actor)),
+      kind: 'lifecycle',
       revision: saved.revision,
       values: saved.values,
-      origin: 'configuration',
+      groups: current.groups.map((group) => ({
+        ...group,
+        revision: saved.revision,
+        origin: 'configuration',
+        values: Object.fromEntries(
+          Object.keys(group.fields).map((field) => [
+            field,
+            saved.values[field],
+          ]),
+        ),
+      })),
     };
   }
   private referenceRepository(type: ReviewerReferenceType) {
@@ -341,21 +467,5 @@ export class ParameterConfigurationService {
       current,
       recorded: usages.length > 0,
     };
-  }
-  public async createReview(
-    name: 'reviewerDemo' | 'reviewerLiveDemo',
-    actor: string,
-  ): Promise<Readonly<Record<string, unknown>> & { readonly id: string }> {
-    this.authorize(actor, 'read', 'financeReviewers');
-    const result = await this.runtime.create(
-      name,
-      {
-        applicantId: actor,
-        candidates: [],
-        createdAt: new Date().toISOString(),
-      },
-      { actor: { id: actor } },
-    );
-    return { ...result.record, id: String(result.record.id) };
   }
 }

@@ -299,6 +299,7 @@ function TaskPanel({
           <RowsTable
             rows={view.rows}
             config={config}
+            parentDepartment={text(record.departmentName)}
             editable={editable}
             allowAssist={kind === 'clerk'}
             dispatchLabel={kind === 'clerk' ? '派发执行团队信息' : '派发执行人'}
@@ -344,7 +345,16 @@ export default function TasksPage(): ReactElement {
     { kind: TaskKind; id: string } | undefined
   >();
   const [tick, setTick] = useState(0);
-  const config = useLoader(() => client.get<Config>('config'), 'config');
+  const workflow =
+    open?.kind === 'team'
+      ? 'teamTasks'
+      : open?.kind === 'executor'
+        ? 'executorTasks'
+        : 'clerkTasks';
+  const config = useLoader(
+    () => client.get<Config>(`config?workflow=${workflow}`),
+    `config:${workflow}`,
+  );
   const tasks = useLoader(
     () => client.list('tasks', actor),
     `tasks:${actor}:${tick}`,

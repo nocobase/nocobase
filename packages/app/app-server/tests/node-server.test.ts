@@ -1,4 +1,4 @@
-import type { AddressInfo } from 'node:net';
+import { connect, type AddressInfo } from 'node:net';
 
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -66,6 +66,49 @@ describe('Node app server', () => {
 
     expect(websocketEnvironments).toEqual([{ signal: controller.signal }]);
     expect(close).not.toHaveBeenCalled();
+  });
+
+  it('leaves the connection headers to Node, so a client never reuses a connection being closed', async () => {
+    const app: ClosableNodeAppServer = {
+      close: async () => undefined,
+      // As the AI SDK's streams answer: an event stream that says `connection: keep-alive` itself.
+      fetch: () =>
+        new Response(
+          new ReadableStream({
+            start(controller) {
+              controller.enqueue(new TextEncoder().encode('data: ok\n\n'));
+              controller.close();
+            },
+          }),
+          {
+            headers: {
+              'content-type': 'text/event-stream',
+              connection: 'keep-alive',
+              'keep-alive': 'timeout=600',
+            },
+          },
+        ),
+    };
+    const { url } = await listen(app);
+    const { port, hostname } = new URL(url);
+    const raw = (connection: string) =>
+      new Promise<string>((resolve, reject) => {
+        const socket = connect(Number(port), hostname);
+        let text = '';
+        socket.on('data', (chunk) => (text += String(chunk)));
+        socket.on('error', reject);
+        socket.on('close', () => resolve(text));
+        socket.write(
+          `GET /events HTTP/1.1\r\nHost: ${hostname}\r\nConnection: ${connection}\r\n\r\n`,
+        );
+        if (connection !== 'close') setTimeout(() => socket.end(), 200);
+      });
+    const closing = (await raw('close')).toLowerCase();
+    expect(closing).toContain('connection: close');
+    expect(closing).not.toContain('keep-alive');
+    const kept = (await raw('keep-alive')).toLowerCase();
+    expect(kept).toContain('connection: keep-alive');
+    expect(kept).not.toContain('timeout=600');
   });
 
   it('drains the HTTP server before closing application resources', async () => {

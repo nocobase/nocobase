@@ -39,7 +39,7 @@ function setup() {
   return { request, client, wrapper };
 }
 
-describe('useCan without a Refine provider', () => {
+describe('useCan', () => {
   it('shares a permission snapshot and revokes immediately while revalidating', async () => {
     const { wrapper, request, client } = setup();
     const { result } = renderHook(() => [useCan(check), useCan(check)], {

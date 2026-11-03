@@ -1,6 +1,7 @@
 import {
   BridgeCommandSchema,
   PollRequestSchema,
+  PromptRequestSchema,
   RegisterRequestSchema,
   ReplyRequestSchema,
   ReportRequestSchema,
@@ -40,6 +41,45 @@ const computerNotFound = apiErrorResponse(
 export function bridgeRoutes(service: AgentSessionsService): Hono<AuthEnv> {
   const router = new Hono<AuthEnv>();
 
+  for (const operation of ['claim', 'withdrawn'] as const) {
+    router.post(
+      `/${operation}`,
+      describeRoute({
+        tags,
+        summary:
+          operation === 'claim'
+            ? 'Authorize a queued message to start'
+            : 'Confirm removal of a withdrawn message',
+        operationId:
+          operation === 'claim'
+            ? 'agentSessionsClaimPrompt'
+            : 'agentSessionsConfirmWithdrawal',
+        ...cliRoute(false),
+        security,
+        description: bridgeOnly,
+        responses: {
+          200: dataResponse(
+            operation === 'claim'
+              ? z.object({ execute: z.boolean() })
+              : z.object({ confirmed: z.boolean() }),
+          ),
+          ...errors,
+          400: apiErrorResponse(400),
+          404: computerNotFound,
+        },
+      }),
+      apiValidator('json', PromptRequestSchema),
+      async (context) => {
+        const request = context.req.valid('json');
+        const userId = bridgeCaller(context, request.computerId).userId;
+        if (operation === 'claim')
+          return context.json({ data: await service.claim(userId, request) });
+        await service.withdrawn(userId, request);
+        return context.json({ data: { confirmed: true } });
+      },
+    );
+  }
+
   router.post(
     '/register',
     describeRoute({
@@ -76,11 +116,15 @@ export function bridgeRoutes(service: AgentSessionsService): Hono<AuthEnv> {
       operationId: 'agentSessionsPoll',
       ...cliRoute(false),
       security,
-      description: `Answers with the commands waiting for the computer and takes them away; with \`wait\`, waits up to 25 seconds for one. ${bridgeOnly}`,
+      description: `Answers with the commands waiting for the computer. Withdrawals remain until removal is acknowledged; other commands are taken away. With \`wait\`, waits up to 25 seconds for one. ${bridgeOnly}`,
       responses: {
         200: dataResponse(z.object({ commands: z.array(BridgeCommandSchema) })),
         ...errors,
         404: computerNotFound,
+        400: apiErrorResponse(
+          400,
+          'Upgrade the bridge or restart a replaced connection.',
+        ),
       },
     }),
     apiValidator('json', PollRequestSchema),
@@ -108,6 +152,10 @@ export function bridgeRoutes(service: AgentSessionsService): Hono<AuthEnv> {
       responses: {
         200: dataResponse(z.object({ open: z.boolean() })),
         ...errors,
+        400: apiErrorResponse(
+          400,
+          'The registered bridge generation no longer matches this report.',
+        ),
         404: apiErrorResponse(
           404,
           'The computer or the session is not yours, or the session runs elsewhere.',

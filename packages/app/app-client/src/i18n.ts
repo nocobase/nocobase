@@ -1,8 +1,7 @@
 import { I18nRuntime, type Locale, type LocalesModule } from '@nocobase/i18n';
 
+import { resolveAppBase } from './client.js';
 import type { AppClientContributionSource } from './plugins.js';
-
-const LOCALE_STORAGE_KEY = 'nocobase.locale';
 
 /** The language an application falls back to when its configuration names none. */
 export const DEFAULT_LOCALE: Locale = 'en-US';
@@ -37,14 +36,18 @@ export interface CreateAppI18nRuntimeOptions {
 }
 
 /**
- * Reads the visitor's stored language preference.
+ * Reads the visitor's language preference for this application's full mount path.
  *
  * Storage is the source of truth on the client, so the first frame renders in the right language without waiting for
  * the server. Access is guarded because a browser can refuse it outright in private modes.
+ * The old shared key is deliberately ignored: its choice may belong to another application on the same origin.
  */
 export function readStoredLocale(): Locale | undefined {
   try {
-    return globalThis.localStorage?.getItem(LOCALE_STORAGE_KEY) ?? undefined;
+    return (
+      globalThis.localStorage?.getItem(`nocobase.locale:${resolveAppBase()}`) ??
+      undefined
+    );
   } catch {
     return undefined;
   }
@@ -52,7 +55,10 @@ export function readStoredLocale(): Locale | undefined {
 
 export function writeStoredLocale(locale: Locale): void {
   try {
-    globalThis.localStorage?.setItem(LOCALE_STORAGE_KEY, locale);
+    globalThis.localStorage?.setItem(
+      `nocobase.locale:${resolveAppBase()}`,
+      locale,
+    );
   } catch {
     // A visitor who blocks storage still gets a working switch for this session.
   }

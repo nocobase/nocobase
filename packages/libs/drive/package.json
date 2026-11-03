@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/drive",
-  "version": "0.1.0-beta.5",
+  "version": "0.1.0-beta.7",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {
@@ -16,7 +16,8 @@
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "skills"
   ],
   "publishConfig": {
     "exports": {
@@ -29,7 +30,7 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.tests.json",
     "test": "vitest run",
     "lint": "eslint . --max-warnings 0",
     "lint:fix": "eslint . --fix --max-warnings 0",

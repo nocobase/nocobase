@@ -70,6 +70,42 @@ async function listFiles(
 }
 
 describe('createPlugin', () => {
+  it('detects the source repository from a child directory without reading another package', async () => {
+    const repoRoot = await createTestRepo();
+    const generatorDirectory = path.join(
+      repoRoot,
+      'packages/tools/create-plugin',
+    );
+    await mkdir(generatorDirectory, { recursive: true });
+    await writeFile(
+      path.join(repoRoot, 'package.json'),
+      JSON.stringify({ name: 'nocobase-v3', private: true }),
+    );
+    await writeFile(
+      path.join(generatorDirectory, 'package.json'),
+      JSON.stringify({ name: '@nocobase/create-plugin' }),
+    );
+    const options = {
+      directory: generatorDirectory,
+      name: 'audit-log',
+      empty: true,
+      dryRun: true,
+    };
+    const result = await createPlugin(options);
+    expect(result.project).toEqual({ kind: 'repository', root: repoRoot });
+    expect(result.targetDirectory).toBe(
+      path.join(repoRoot, 'packages/plugins/app-plugin-audit-log'),
+    );
+
+    await writeFile(
+      path.join(repoRoot, 'package.json'),
+      JSON.stringify({ name: 'unrelated-workspace', private: true }),
+    );
+    await expect(createPlugin(options)).rejects.toMatchObject({
+      code: 'APP_NOT_FOUND',
+    });
+  });
+
   it('resolves package imports to development sources without compiler aliases', async () => {
     const result = await createWith(['client.components']);
     const root = result.targetDirectory;
@@ -122,7 +158,6 @@ describe('createPlugin', () => {
     ['client.react-providers', 'client/react-providers/index.ts', 'server/'],
     ['client.service-providers', 'client/providers/index.ts', 'server/'],
     ['client.locales', 'client/locales/index.ts', 'server/'],
-    ['registry', 'registry.config.json', 'database/'],
     ['cli', 'cli/info.ts', 'server/'],
     ['skills', 'skills/nocobase-app-plugin-audit-log/SKILL.md', 'client/'],
   ] as const)(
@@ -203,7 +238,6 @@ describe('createPlugin', () => {
       [],
       ['@nocobase/app-client', '@nocobase/i18n'],
     ],
-    ['registry', ['./package.json'], [], ['react']],
     [
       'cli',
       ['./cli', './package.json'],
@@ -272,36 +306,6 @@ describe('createPlugin', () => {
     },
   );
 
-  it('publishes the complete Registry ownership and build surface', async () => {
-    const result = await createWith(['client.components', 'registry']);
-    const manifest = JSON.parse(
-      await readFile(path.join(result.targetDirectory, 'package.json'), 'utf8'),
-    ) as {
-      files: string[];
-      nocobase?: unknown;
-      scripts: Record<string, string>;
-    };
-
-    expect(manifest.files).toEqual([
-      'dist',
-      'README.md',
-      'CHANGELOG.md',
-      'components.json',
-      'registry',
-      'registry.config.json',
-      'public/r',
-    ]);
-    expect(manifest.nocobase).toEqual({
-      registry: { items: { 'component-ui': './registry/component-ui' } },
-    });
-    expect(manifest.scripts).toMatchObject({
-      'registry:build': 'node ../../../scripts/registry.mjs build --package .',
-      'registry:materialize':
-        'node ../../../scripts/registry.mjs materialize --package .',
-      prepack: 'pnpm registry:build',
-    });
-  });
-
   it('uses the same file plan for dry-run and real creation', async () => {
     const dryRunRepo = await createTestRepo();
     const dryRun = await createPlugin({
@@ -351,14 +355,6 @@ describe('createPlugin', () => {
       'createClientLibraryConfig',
       true,
       true,
-    ],
-    [
-      'registry-only',
-      ['registry'],
-      '@nocobase/dev-config/tsconfig/client-library.json',
-      'createClientLibraryConfig',
-      false,
-      false,
     ],
     [
       'skills-only',
@@ -671,7 +667,6 @@ it('runs TSX tests under Node', () => {
       'client.service-providers',
       'client.react-providers',
       'client.locales',
-      'registry',
       'skills',
     ]);
     const manifest = JSON.parse(
@@ -689,7 +684,7 @@ it('runs TSX tests under Node', () => {
     expect(result.files).toContain(
       'skills/nocobase-app-plugin-audit-log/SKILL.md',
     );
-    expect(result.files).toContain('registry.config.json');
+    expect(result.files).not.toContain('registry.config.json');
     expect(manifest.dependencies).toMatchObject({ hono: 'catalog:' });
     expect(manifest.peerDependencies).toMatchObject({
       '@nocobase/app-server': 'workspace:^',
@@ -698,10 +693,8 @@ it('runs TSX tests under Node', () => {
       '@nocobase/jobs': 'workspace:^',
       '@nocobase/service-provider': 'workspace:^',
     });
-    expect(manifest.files).toEqual(
-      expect.arrayContaining(['skills', 'registry', 'public/r']),
-    );
-    expect(manifest.scripts?.prepack).toBe('pnpm registry:build');
+    expect(manifest.files).toEqual(expect.arrayContaining(['skills']));
+    expect(manifest.scripts?.prepack).toBeUndefined();
   });
 
   it('generates an AppCommand that returns its result, with a test that binds it', async () => {

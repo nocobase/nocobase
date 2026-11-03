@@ -33,12 +33,16 @@ export interface ParameterApi {
   ): Promise<readonly string[]>;
   history(lifecycle: string, recordId: string): Promise<ParameterHistoryView>;
 }
-export function parameterApi(client: ApiClient, actor: string): ParameterApi {
+export function parameterApi(
+  client: ApiClient,
+  actor: string,
+  workflow?: string,
+): ParameterApi {
   const get = async <T>(path: string): Promise<T> =>
     (
       await client.request<{ data: T }>({
         path: `${LIFECYCLE_ROUTES}/${path}`,
-        query: { actAs: actor },
+        query: { actAs: actor, ...(workflow ? { workflow } : {}) },
       })
     ).data;
   const post = async <T>(
@@ -50,7 +54,7 @@ export function parameterApi(client: ApiClient, actor: string): ParameterApi {
       await client.request<{ data: T }>({
         method,
         path: `${LIFECYCLE_ROUTES}/${path}`,
-        query: { actAs: actor },
+        query: { actAs: actor, ...(workflow ? { workflow } : {}) },
         json: body,
       })
     ).data;

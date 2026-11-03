@@ -43,6 +43,7 @@ interface SchedulerInternals {
 
 export class SchedulerProvider extends ServiceProvider<AppPluginApplication> {
   public readonly name: string = '@nocobase/app-plugin-scheduler';
+  private startPromise: Promise<void> | undefined;
   private reconcileTimer: ReturnType<typeof setInterval> | undefined;
   private unsubscribe: Unsubscribe | undefined;
   private internals: SchedulerInternals | undefined;
@@ -58,6 +59,14 @@ export class SchedulerProvider extends ServiceProvider<AppPluginApplication> {
   }
 
   public override async start(): Promise<void> {
+    const { service } = this.compose();
+    if (service.draining)
+      return Promise.reject(new Error('The Scheduler has been drained.'));
+    this.startPromise ??= this.runStart();
+    return this.startPromise;
+  }
+
+  private async runStart(): Promise<void> {
     const { executor, service } = this.compose();
     const startupMode = this.app.container.resolveIfCreated(
       schedulerStartupModeToken,
@@ -67,6 +76,7 @@ export class SchedulerProvider extends ServiceProvider<AppPluginApplication> {
     // before setup() writes the rules and starts the worker: a due firing must
     // never reach this instance ahead of its handler.
     await service.sync(startupMode?.finalize ?? false);
+    if (service.draining) return;
     if (consume) {
       this.unsubscribe = executor.subscribe(async (event) => {
         if (event.reason === 'handler-not-registered') {
@@ -81,7 +91,7 @@ export class SchedulerProvider extends ServiceProvider<AppPluginApplication> {
     }
     await executor.setup({ consume });
     await service.activate();
-    if (!consume) return;
+    if (!consume || service.draining) return;
     this.reconcileTimer = setInterval(() => {
       void service.reconcileOccurrences().catch((error: unknown) => {
         console.error('Scheduler occurrence reconciliation failed', error);
@@ -90,15 +100,9 @@ export class SchedulerProvider extends ServiceProvider<AppPluginApplication> {
     this.reconcileTimer.unref?.();
   }
 
-  public override async shutdown(): Promise<void> {
-    if (this.reconcileTimer) clearInterval(this.reconcileTimer);
-    this.reconcileTimer = undefined;
-    this.unsubscribe?.();
-    this.unsubscribe = undefined;
-    // Waits for a running firing to finish before what it uses is released.
-    // The rules stay in the backend for the other instances.
-    await this.internals?.executor.shutdown();
-    this.internals = undefined;
+  public override shutdown(): Promise<void> {
+    // Never compose an executor just to close an unused or failed provider.
+    return this.internals?.service.drain() ?? Promise.resolve();
   }
 
   /**
@@ -141,7 +145,22 @@ export class SchedulerProvider extends ServiceProvider<AppPluginApplication> {
     );
     this.internals = {
       executor,
-      service: new DefaultSchedulerService(store, occurrences, targets),
+      service: new DefaultSchedulerService(store, occurrences, targets, {
+        stopReconciliation: () => {
+          if (this.reconcileTimer) clearInterval(this.reconcileTimer);
+          this.reconcileTimer = undefined;
+        },
+        shutdownExecutor: async () => {
+          // Startup may still be finishing setup/activation. Do not reopen it
+          // after shutdown; the original start caller keeps its failure.
+          await this.startPromise?.catch(() => undefined);
+          await executor.shutdown();
+        },
+        unsubscribe: () => {
+          this.unsubscribe?.();
+          this.unsubscribe = undefined;
+        },
+      }),
     };
     return this.internals;
   }

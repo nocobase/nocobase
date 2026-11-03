@@ -1,3 +1,4 @@
+import type { DatabaseConnection } from '@nocobase/db';
 /**
  * The working directories of a project, in their order: git repositories, and directories that already exist on one
  * runner. Each may carry an initialization prompt.
@@ -50,6 +51,7 @@ export interface ProjectResources {
   accessTo(
     viewer: Viewer,
     target: { readonly projectId: string } | { readonly resourceId: string },
+    connection?: DatabaseConnection,
   ): Promise<ProjectAccessInfo | null>;
   addResource(
     viewer: Viewer,
@@ -183,8 +185,8 @@ export function createProjectResources(deps: {
             });
       return names;
     },
-    accessTo: async (viewer, target) => {
-      const conn = deps.tx.read();
+    accessTo: async (viewer, target, connection) => {
+      const conn = connection ?? deps.tx.read();
       const projectId =
         'projectId' in target
           ? target.projectId

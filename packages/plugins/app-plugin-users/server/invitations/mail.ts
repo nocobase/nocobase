@@ -1,12 +1,12 @@
 /**
- * The invitation email and the port it goes through. The provider backs the port with the notification plugin; tests
+ * The invitation email and the port it goes through. The provider uses the application mailer, or a legacy notification adapter; tests
  * pass a recording double.
  *
  * The invitee has no account yet, so there is no language to choose: the email carries every language the server
  * locales have, one block each.
  */
-import enUS from '../locales/en-US.js';
-import zhCN from '../locales/zh-CN.js';
+import type { UsersResource } from '../locales/en-US.js';
+import locales from '../locales/index.js';
 
 export interface InvitationEmail {
   readonly to: string;
@@ -28,13 +28,6 @@ export const unconfiguredMailer: InvitationMailer = {
   send: () => Promise.reject(new Error(NO_EMAIL_CHANNEL_MESSAGE)),
 };
 
-type Texts = (typeof enUS)['invitationEmail'];
-
-const LANGUAGES: readonly Texts[] = [
-  enUS.invitationEmail,
-  zhCN.invitationEmail,
-];
-
 function fill(
   template: string,
   values: Readonly<Record<string, string>>,
@@ -54,16 +47,22 @@ function escapeHtml(value: string): string {
     .replace(/'/gu, '&#39;');
 }
 
-export function buildInvitationEmail(input: {
+export async function buildInvitationEmail(input: {
   readonly to: string;
   readonly appTitle: string;
   readonly inviterName: string;
   readonly summary: readonly string[];
   readonly url: string;
   readonly expiresAt: Date;
-}): InvitationEmail {
+}): Promise<InvitationEmail> {
+  const languages = await Promise.all(
+    Object.values(locales).map(async (load) => {
+      const resource = (await load()) as { default: UsersResource };
+      return resource.default.invitationEmail;
+    }),
+  );
   const date = input.expiresAt.toISOString();
-  const blocks = LANGUAGES.map((texts) => {
+  const blocks = languages.map((texts) => {
     const values = {
       inviter: input.inviterName,
       app: input.appTitle,
@@ -83,7 +82,7 @@ export function buildInvitationEmail(input: {
   const url = escapeHtml(input.url);
   return {
     to: input.to,
-    subject: fill(enUS.invitationEmail.subject, {
+    subject: fill(languages[0].subject, {
       inviter: input.inviterName,
       app: input.appTitle,
     }),

@@ -115,6 +115,8 @@ expect(run.json()).toMatchObject({
 
 `bindAppCommand()` pins the command to a fixture application, the way the runner would point it at the one it located; `id` is the id the runner would give it, colon-separated, so the document names the command. Pass `loadRuntime` and `createApp` as well to replace the application with a stub. `runAppCommand()` returns what `run()` returned as `result`, what escaped it as `error`, the `exitCode`, the captured `stdout` and `stderr`, and `json()` for the `--json` document. Assert on those rather than on printed text.
 
+For a command that opens a real application, use `createTestAppConfig()` and `bindTestAppCommand()` from the same entry. They isolate its databases and storage; call `config.dispose()` after the command finishes. Follow the [complete database command example](testing/cli/command.md) for schema preparation and cleanup; use the [file-command example](testing/cli/files.md) for temporary output directories. A custom `loadRuntime` replaces the conventional loader and must arrange its own isolation: pass `config.path` as `configPath` and direct runtime storage into the fixture directory itself. The conventional loader runs through Node; a TypeScript application using `.js` import specifiers needs a compatible loader, compiled modules, or explicit imports of its runtime and app factory supplied through `loadRuntime` and `createApp`.
+
 ## Example
 
 ```ts

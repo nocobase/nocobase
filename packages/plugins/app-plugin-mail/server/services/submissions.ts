@@ -1,4 +1,5 @@
 import { notifyMailMessageChange } from '../realtime.js';
+import { recipientIssues } from '../../shared/addresses.js';
 import { createHash } from 'node:crypto';
 import { SendMailOperation } from '../operations/send-mail.js';
 import {
@@ -116,11 +117,19 @@ export class MailSubmissionsService {
       );
     }
     const submissions: MailSubmissionView[] = [];
+    const invalid = recipientIssues({ to: input.recipients })[0];
     const bulkKeyPrefix = `bulk:${createHash('sha256').update(input.idempotencyKey).digest('hex')}`;
     const anchor = await this.dependencies.store.getSubmissionByIdempotencyKey(
       input.accountId,
       `${bulkKeyPrefix}:0`,
     );
+    const invalidBatch = invalid
+      ? mailInvalidArgument(
+          invalid.message,
+          invalid.field.replace(/^to/u, 'recipients'),
+        )
+      : undefined;
+    if (invalidBatch && !anchor) throw invalidBatch;
     const persisted = anchor
       ? await this.dependencies.store.getScheduledSubmission(anchor.id)
       : undefined;
@@ -159,6 +168,31 @@ export class MailSubmissionsService {
             ),
           }
         : undefined);
+    if (invalidBatch) {
+      // Invalid legacy batches may only return already terminal matching children.
+      // Preflight every child before any operation can create or close anything.
+      for (const [index, recipient] of input.recipients.entries()) {
+        const idempotencyKey = `${bulkKeyPrefix}:${index}`;
+        const existing =
+          await this.dependencies.store.getSubmissionByIdempotencyKey(
+            input.accountId,
+            idempotencyKey,
+          );
+        const replay = await this.sendMail.replayTerminalSubmission(context, {
+          ...input,
+          draftMessageId: undefined,
+          sourceDraft,
+          to: [recipient],
+          cc: [],
+          bcc: [],
+          scheduledAt: input.scheduledAt ?? existing?.scheduledAt,
+          idempotencyKey,
+        });
+        if (!replay) throw invalidBatch;
+        submissions.push(toSubmissionView(replay));
+      }
+      return submissions;
+    }
     for (const [index, recipient] of input.recipients.entries()) {
       const idempotencyKey = `${bulkKeyPrefix}:${index}`;
       const existing =

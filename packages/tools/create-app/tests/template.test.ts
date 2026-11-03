@@ -1,9 +1,9 @@
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import os from 'node:os';
 import path from 'node:path';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   DEFAULT_REGISTRY,
   DEFAULT_TEMPLATE,
@@ -19,6 +19,7 @@ import {
 const created: string[] = [];
 
 afterEach(async () => {
+  vi.unstubAllEnvs();
   await Promise.all(
     created
       .splice(0)
@@ -174,6 +175,18 @@ describe('downloadTemplate', () => {
     'reports the source when a package cannot be fetched',
     { timeout: 60_000 },
     async () => {
+      // setup-node writes @nocobase:registry into its user config. npm prefers that scope
+      // over --registry, so this network fixture must not inherit runner or user config.
+      const npmConfig = await mkdtemp(
+        path.join(os.tmpdir(), 'create-app-npm-config-'),
+      );
+      created.push(npmConfig);
+      for (const config of ['userconfig', 'globalconfig']) {
+        const filename = path.join(npmConfig, `${config}.npmrc`);
+        await writeFile(filename, '');
+        vi.stubEnv(`npm_config_${config}`, filename);
+        vi.stubEnv(`NPM_CONFIG_${config.toUpperCase()}`, filename);
+      }
       const requests: string[] = [];
       const registry = createServer((request, response) => {
         requests.push(request.url ?? '');

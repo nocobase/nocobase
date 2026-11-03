@@ -9,8 +9,11 @@ import type { LocalesContribution } from '@nocobase/i18n';
 
 import type { AppPaths } from '../config/index.js';
 import type { AppRouteContribution } from '../router/index.js';
+import type { AppServerPluginSnapshot } from './inspect.js';
 
 export interface AppPluginApplication<TConfig = object> {
+  /** Current explicit Server registrations, including plugins with no routes or database contributions. Older hosts may omit this snapshot. */
+  readonly registeredServerPlugins?: readonly AppServerPluginSnapshot[];
   readonly runtimeLogging?: AppRuntimeLogging;
   /** Where console log records go; set by a command-line host to `stderr`. */
   readonly consoleLogStream?: 'stdout' | 'stderr';

@@ -97,6 +97,12 @@ async function syncApp(appRoot: string, plugin?: string): Promise<void> {
 }
 
 describe('pluginSkillPrefix', () => {
+  it('includes a custom plugin scope in the ownership prefix', () => {
+    expect(pluginSkillPrefix('@my-app/app-plugin-demo')).toBe(
+      'my-app-app-plugin-demo',
+    );
+  });
+
   it('drops the scope and keeps the package name', () => {
     expect(pluginSkillPrefix('@nocobase/app-plugin-scheduler')).toBe(
       'nocobase-app-plugin-scheduler',
@@ -116,6 +122,226 @@ describe('pluginSkillPrefix', () => {
 });
 
 describe('skills synchronization', () => {
+  it('excludes installed example dependencies and removes copies left by an older sync', async () => {
+    const name = 'nocobase-app-plugin-development';
+    const appRoot = await createApp();
+    await declareDependencies(appRoot, {
+      dependencies: { '@nocobase/app-skills': '1' },
+    });
+    await installPlugin(appRoot, '@nocobase/app-skills', { [name]: '# guide' });
+    const source = path.join(
+      appRoot,
+      'node_modules/@nocobase/app-skills/skills',
+      name,
+    );
+    const external = path.join(appRoot, 'dependency-store');
+    await mkdir(external);
+    await writeFile(path.join(external, 'package.json'), '{}');
+    await mkdir(path.join(source, 'assets/example/node_modules'), {
+      recursive: true,
+    });
+    await writeFile(path.join(source, 'assets/example/run.mjs'), '// example');
+    await symlink(
+      external,
+      path.join(source, 'assets/example/node_modules/dep'),
+      'dir',
+    );
+    await writeAppSkill(appRoot, name, '# guide');
+    const target = path.join(appRoot, '.agents/skills', name);
+    await mkdir(path.join(target, 'assets/example/node_modules'), {
+      recursive: true,
+    });
+    await symlink(
+      external,
+      path.join(target, 'assets/example/node_modules/dep'),
+      'dir',
+    );
+    await writeFile(path.join(target, 'assets/example/run.mjs'), '// example');
+    const { appPackageName, plugins } = await resolveInstalledPlugins({
+      appRoot,
+    });
+    const plan = await planSkillsSync({ appPackageName, appRoot, plugins });
+    expect(
+      plan.copies
+        .flatMap((copy) => copy.files)
+        .some((file) => file.includes('node_modules')),
+    ).toBe(false);
+    await applySkillsSync(plan);
+    await expect(
+      lstat(path.join(target, 'assets/example/node_modules')),
+    ).rejects.toMatchObject({ code: 'ENOENT' });
+    expect(
+      await readFile(path.join(target, 'assets/example/run.mjs'), 'utf8'),
+    ).toBe('// example');
+    expect(await readFile(path.join(external, 'package.json'), 'utf8')).toBe(
+      '{}',
+    );
+    const before = (await stat(path.join(target, 'SKILL.md'))).mtimeMs;
+    await syncApp(appRoot);
+    expect((await stat(path.join(target, 'SKILL.md'))).mtimeMs).toBe(before);
+  });
+
+  it('replaces a project link with a real copy without altering the identical global target', async () => {
+    const name = 'nocobase-app-plugin-development';
+    const appRoot = await createApp();
+    await declareDependencies(appRoot, {
+      dependencies: { '@nocobase/app-skills': '1' },
+    });
+    await installPlugin(appRoot, '@nocobase/app-skills', {
+      [name]: '# complete guide',
+    });
+    const globalRoot = await mkdtemp(
+      path.join(os.tmpdir(), 'nb3-global-skill-'),
+    );
+    created.push(globalRoot);
+    await writeFile(path.join(globalRoot, 'SKILL.md'), '# complete guide');
+    const target = path.join(appRoot, '.agents/skills', name);
+    await mkdir(path.dirname(target), { recursive: true });
+    await symlink(globalRoot, target, 'dir');
+    await syncApp(appRoot);
+    expect((await lstat(target)).isDirectory()).toBe(true);
+    expect((await lstat(target)).isSymbolicLink()).toBe(false);
+    expect(await readFile(path.join(globalRoot, 'SKILL.md'), 'utf8')).toBe(
+      '# complete guide',
+    );
+    await rm(globalRoot, { recursive: true });
+    expect(await readFile(path.join(target, 'SKILL.md'), 'utf8')).toBe(
+      '# complete guide',
+    );
+    expect(
+      await readFile(
+        path.join(appRoot, '.claude/skills', name, 'SKILL.md'),
+        'utf8',
+      ),
+    ).toBe('# complete guide');
+  });
+
+  it('syncs, upgrades and removes the shared plugin development Skill with package ownership', async () => {
+    const name = 'nocobase-app-plugin-development';
+    const appRoot = await createApp();
+    await declareDependencies(appRoot, {
+      dependencies: { '@nocobase/app-skills': '1' },
+    });
+    await installPlugin(appRoot, '@nocobase/app-skills', {
+      [name]: '# version one',
+    });
+    const source = path.join(
+      appRoot,
+      'node_modules/@nocobase/app-skills/skills',
+      name,
+    );
+    await mkdir(path.join(source, 'references'), { recursive: true });
+    await writeFile(
+      path.join(source, 'references/contracts.md'),
+      '# contracts',
+    );
+    await syncApp(appRoot);
+    const target = path.join(appRoot, '.agents/skills', name);
+    expect(
+      await readFile(path.join(target, 'references/contracts.md'), 'utf8'),
+    ).toBe('# contracts');
+    expect(
+      await readFile(
+        path.join(appRoot, '.claude/skills', name, 'SKILL.md'),
+        'utf8',
+      ),
+    ).toBe('# version one');
+    expect(
+      JSON.parse(
+        await readFile(path.join(appRoot, '.agents/.skills-sync.json'), 'utf8'),
+      ),
+    ).toEqual({ [name]: '@nocobase/app-skills' });
+    await writeFile(path.join(source, 'SKILL.md'), '# version two');
+    await syncApp(appRoot);
+    expect(await readFile(path.join(target, 'SKILL.md'), 'utf8')).toBe(
+      '# version two',
+    );
+    expect(
+      await planPackageSkillRemovals(
+        appRoot,
+        '@nocobase/app-plugin-development',
+      ),
+    ).toEqual([]);
+    await removePackageSkills(appRoot, '@nocobase/app-skills');
+    await expect(lstat(target)).rejects.toMatchObject({ code: 'ENOENT' });
+    await expect(
+      lstat(path.join(appRoot, '.claude/skills', name)),
+    ).rejects.toMatchObject({ code: 'ENOENT' });
+  });
+
+  it.each([
+    '@nocobase/other',
+    '@nocobase/app-plugin-development',
+    '@acme/app-plugin-development',
+  ])(
+    'rejects %s claiming the shared development Skill without modifying project files',
+    async (packageName) => {
+      const appRoot = await createApp();
+      await declareDependencies(appRoot, {
+        dependencies: { [packageName]: '1' },
+      });
+      await installPlugin(appRoot, packageName, {
+        'nocobase-app-plugin-development': '# impostor',
+      });
+      await writeAppSkill(
+        appRoot,
+        'nocobase-app-plugin-development',
+        '# existing',
+      );
+      await expect(syncApp(appRoot)).rejects.toThrow(
+        'owned only by @nocobase/app-skills',
+      );
+      expect(
+        await readFile(
+          path.join(
+            appRoot,
+            '.agents/skills/nocobase-app-plugin-development/SKILL.md',
+          ),
+          'utf8',
+        ),
+      ).toBe('# existing');
+    },
+  );
+
+  it('does not grant app-skills other plugin names or similarly named suffixes', async () => {
+    const appRoot = await createApp();
+    await declareDependencies(appRoot, {
+      dependencies: { '@nocobase/app-skills': '1' },
+    });
+    await installPlugin(appRoot, '@nocobase/app-skills', {
+      'nocobase-app-plugin-development-extra': '# extra',
+    });
+    await expect(syncApp(appRoot)).rejects.toThrow('Invalid skill directory');
+  });
+
+  it('never infers shared development Skill ownership from a legacy plugin prefix', async () => {
+    const appRoot = await createApp({
+      '@nocobase/app-plugin-development': { enabled: true },
+    });
+    await installPlugin(appRoot, '@nocobase/app-plugin-development');
+    await writeAppSkill(
+      appRoot,
+      'nocobase-app-plugin-development',
+      '# untracked project guidance',
+    );
+    expect(
+      await planPackageSkillRemovals(
+        appRoot,
+        '@nocobase/app-plugin-development',
+      ),
+    ).toEqual([]);
+    await syncApp(appRoot);
+    expect(
+      await readFile(
+        path.join(
+          appRoot,
+          '.agents/skills/nocobase-app-plugin-development/SKILL.md',
+        ),
+        'utf8',
+      ),
+    ).toBe('# untracked project guidance');
+  });
+
   it('copies every skill a registered plugin ships', async () => {
     const appRoot = await createApp({
       '@nocobase/app-plugin-demo': { enabled: true },
@@ -901,4 +1127,30 @@ describe('package skill removal', () => {
       code: 'ENOENT',
     });
   });
+});
+
+it('synchronizes and removes recorded custom-scope skills without touching local guidance', async () => {
+  const appRoot = await createApp();
+  const packageName = '@my-app/app-plugin-demo';
+  await declareDependencies(appRoot, {
+    dependencies: { [packageName]: 'workspace:*' },
+  });
+  await installPlugin(appRoot, packageName, {
+    'my-app-app-plugin-demo': '# Plugin integration',
+  });
+  await writeAppSkill(appRoot, 'my-local-guide', '# Keep');
+  await syncApp(appRoot);
+  expect(
+    await readFile(
+      path.join(appRoot, '.agents/skills/my-app-app-plugin-demo/SKILL.md'),
+      'utf8',
+    ),
+  ).toBe('# Plugin integration');
+  await rm(path.join(appRoot, 'node_modules', packageName, 'skills'), {
+    recursive: true,
+  });
+  await syncApp(appRoot);
+  expect(await readdir(path.join(appRoot, '.agents/skills'))).toEqual([
+    'my-local-guide',
+  ]);
 });

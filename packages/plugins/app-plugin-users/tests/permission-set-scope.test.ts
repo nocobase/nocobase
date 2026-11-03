@@ -50,10 +50,7 @@ describe('built-in user permission-set scope', () => {
       title: 'Member',
       grants: [],
     });
-    await authorization.permissionSets.assign({
-      subject: { type: 'authenticated', id: '*' },
-      permissionSet: 'member',
-    });
+
     await authorization.permissionSets.create({
       key: 'content-editor',
       title: 'Content editor',
@@ -84,6 +81,7 @@ describe('built-in user permission-set scope', () => {
         value: 'content-editor',
         label: 'Content editor',
       },
+      { value: 'member', label: 'Member' },
       {
         value: 'root',
         label: 'permissionSets.builtIn.root',
@@ -98,11 +96,41 @@ describe('built-in user permission-set scope', () => {
       labelI18nKey: 'page.roles',
       labelI18nNs: '@nocobase/app-plugin-users',
       selection: 'multiple',
-      hasAuthenticatedDefaultAccess: true,
+      hasAuthenticatedDefaultAccess: expect.any(Function),
+      defaultValue: ['member'],
     });
   });
 
-  it('replaces custom roles while preserving authenticated defaults', async () => {
+  it('preserves separately configured global defaults and refuses a global Member assignment', async () => {
+    const configured = createAppAuthorization({
+      connection: database.connection(),
+      config: { permissionSets: { defaultSet: 'everyone' } },
+    });
+    await configured.permissionSets.create({ key: 'everyone', grants: [] });
+    await configured.permissionSets.assign({
+      subject: { type: 'authenticated', id: '*' },
+      permissionSet: 'everyone',
+    });
+    const scope = createApplicationUserRoleScope(configured.permissionSets);
+    expect(
+      (await scope.options()).some((option) => option.value === 'everyone'),
+    ).toBe(false);
+    expect(
+      typeof scope.hasAuthenticatedDefaultAccess === 'function' &&
+        (await scope.hasAuthenticatedDefaultAccess()),
+    ).toBe(true);
+    await expect(
+      configured.permissionSets.assign({
+        subject: { type: 'authenticated', id: '*' },
+        permissionSet: 'member',
+      }),
+    ).rejects.toThrow();
+    expect(configured.permissionSets.protection('everyone')?.allow).toEqual([
+      'update',
+    ]);
+  });
+
+  it('replaces roles without retaining Member implicitly', async () => {
     await createUser(database, 'user-1');
     await authorization.permissionSets.assign({
       subject: { type: 'user', id: 'user-1' },
@@ -125,7 +153,7 @@ describe('built-in user permission-set scope', () => {
         .filter(({ subject }) => subject.id === 'user-1')
         .map(({ permissionSet }) => permissionSet)
         .sort(),
-    ).toEqual(['content-editor', 'member']);
+    ).toEqual(['content-editor']);
   });
 
   it('rejects changes to the protected system administrator assignment', async () => {
@@ -198,6 +226,7 @@ describe('built-in user permission-set scope', () => {
     // The root set named here is another key, so every listed set is assignable.
     await expect(scope.options()).resolves.toEqual([
       { value: 'content-editor', label: 'Content editor' },
+      { value: 'member', label: 'Member' },
       { value: 'plugin-internal', label: 'Plugin internal' },
       {
         value: 'root',

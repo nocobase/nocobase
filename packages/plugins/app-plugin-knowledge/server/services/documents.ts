@@ -50,6 +50,7 @@ import {
   type KnowledgeSearchReranker,
 } from './search.js';
 import {
+  allSpaceRefs,
   ancestorsOf,
   docsOf,
   docsRepo,
@@ -92,6 +93,11 @@ export interface DocumentService {
     viewer: KnowledgeReader,
     refs: readonly SpaceRef[],
   ): Promise<KnowledgeSpaceSummary[]>;
+  searchAll(
+    viewer: KnowledgeReader,
+    query: string,
+    options?: { readonly limit?: number; readonly explain?: boolean },
+  ): Promise<KnowledgeSearchHit[]>;
   searchMany(
     viewer: KnowledgeReader,
     refs: readonly SpaceRef[],
@@ -752,6 +758,14 @@ export function createDocumentService(
       }));
     },
 
+    async searchAll(viewer, query, options = {}) {
+      const refs = new Map<string, SpaceRef>();
+      for (const candidate of await allSpaceRefs(context.read())) {
+        const ref = context.access.space(candidate);
+        if (ref) refs.set(spaceKey(ref), ref);
+      }
+      return service.searchMany(viewer, [...refs.values()], query, options);
+    },
     async searchMany(viewer, refs, query, options = {}) {
       const access = resolverFor(viewer);
       const recall = await recallOf(context);

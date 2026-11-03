@@ -38,6 +38,8 @@ import {
   IssueListQuerySchema,
   IssueParams,
   IssueSchema,
+  IssueSummariesQuery,
+  IssueSummarySchema,
   IssueSessionHeader,
   StatusDefinitionSchema,
   UpdateIssueBody,
@@ -145,7 +147,7 @@ export function createIssueRoutes(deps: {
         examples: ['issue create --file issue.json --status in_progress'],
       }),
       description:
-        'Needs `create` on `pm.issues` for the issue’s project. A session context header must identify an active session owned by the caller; its project is the default and successful creation is linked to it. The issue starts in `backlog` unless `statusKey` is `in_progress`; the caller owns it unless `ownerUserId` says otherwise. Without `executor` it gets the default executor, if a kind names one. Optional `attachmentIds` binds the caller’s own unattached uploads in the creation transaction before work starts; this also needs `upload` on `pm.attachments`.',
+        'Needs `create` on `pm.issues` for the issue’s project. A session context header must identify an active session owned by the caller; its project is the default and successful creation is linked to it. The issue starts in `backlog` unless `statusKey` is `in_progress`. Moving into `in_progress` starts work; there is no separate start option. The caller owns it unless `ownerUserId` says otherwise. Without `executor` it gets the default executor, if a kind names one. Optional `attachmentIds` binds the caller’s own unattached uploads in the creation transaction before work starts; this also needs `upload` on `pm.attachments`.',
       responses: {
         201: dataResponse(IssueSchema),
         ...apiErrorResponses,
@@ -254,6 +256,31 @@ export function createIssueRoutes(deps: {
     (context) => context.json(boundedList(deps.queries.statuses())),
   );
   routes.get(
+    '/summaries',
+    describeRoute({
+      tags,
+      summary: 'Read issue summaries in a batch',
+      operationId: 'projectsGetIssueSummaries',
+      ...cliRoute(false),
+      description:
+        'At most 100 IDs or identifiers. Only live issues visible to the caller and within the credential project scope are returned. Missing and invisible references are indistinguishable.',
+      responses: {
+        200: listResponse(IssueSummarySchema, BoundedListMeta),
+        ...apiErrorResponses,
+      },
+    }),
+    apiValidator('query', IssueSummariesQuery),
+    async (context) =>
+      context.json(
+        boundedList(
+          await deps.queries.summaries(
+            viewerOf(context),
+            context.req.valid('query').refs,
+          ),
+        ),
+      ),
+  );
+  routes.get(
     '/:issueId',
     describeRoute({
       tags,
@@ -265,7 +292,7 @@ export function createIssueRoutes(deps: {
         flags: { issueId: { name: 'issue' } },
         action: 'pm.issues/view',
       }),
-      description: `The issue with its newest activities and comment threads, files, sub-issues and dependencies, and application progress when available. ${idOrKey}`,
+      description: `The issue with its newest activities and comment threads, files, sub-issues and dependencies, and application progress for CLI and delegated callers when available. ${idOrKey}`,
       responses: {
         200: dataResponse(IssueDetailSchema),
         ...apiErrorResponses,
@@ -281,9 +308,13 @@ export function createIssueRoutes(deps: {
       );
       const integration = deps.session?.();
       return context.json({
-        data: integration
-          ? { ...issue, progress: await integration.progress(viewer, issue) }
-          : issue,
+        data:
+          integration &&
+          (context.req.header('x-nocobase-client') === 'cli' ||
+            viewer.actor.via ||
+            viewer.actor.type !== 'user')
+            ? { ...issue, progress: await integration.progress(viewer, issue) }
+            : issue,
       });
     },
   );

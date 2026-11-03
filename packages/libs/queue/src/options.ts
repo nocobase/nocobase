@@ -141,7 +141,7 @@ export function validateBackoff(value: unknown): QueueBackoffOptions {
     throw new TypeError('Queue backoff.jitter must be between 0 and 1.');
   }
   return {
-    type: value.type,
+    type: value.type === 'fixed' ? 'fixed' : 'exponential',
     ...(delay !== undefined ? { delay } : {}),
     ...(jitter !== undefined ? { jitter } : {}),
   };

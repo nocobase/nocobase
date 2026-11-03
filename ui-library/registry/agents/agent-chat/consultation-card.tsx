@@ -1,8 +1,5 @@
-/**
- * The card of a consultation in a conversation (`ask_agent`): "Consulted ‹agent›", folded to one line that says how it
- * went, and open to the question, the consulted agent's steps while it answers (its own run's transcript, live), its
- * answer as it is written and then final, the plans it proposed and what it used. The server rewrites the card in
- * place while it runs (`metadata.streaming`), so the conversation fetches it again.
+/** A genuine saved consultation data part; same-message revision rereads update its structured state and answer.
+ * This renderer does not restore an ask_agent producer. Run transcript reads remain authorized by their own API.
  */
 import { useLiveRunEvents } from '@nocobase/app-plugin-agents/client/chat';
 import type { ConsultationNotice } from '@nocobase/app-plugin-agents/shared/conversations';
@@ -136,11 +133,7 @@ export function ConsultationCard({
             {notice.error}
           </p>
         ) : null}
-        {notice.plans > 0 ? (
-          <p className='text-xs text-muted-foreground'>
-            {t('chat.consultation.plans', { count: notice.plans })}
-          </p>
-        ) : null}
+
         {notice.usage ? (
           <p
             className='text-xs text-muted-foreground tabular-nums'

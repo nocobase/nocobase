@@ -70,10 +70,18 @@ const ui = {
     },
     idleLabel: 'Stop when unvisited for',
     dormantLabel: 'Hibernate when unvisited for',
+    idleModeLabel: 'Idle timer behavior',
+    dormantModeLabel: 'Hibernate timer behavior',
     minutes: 'minutes',
     hours: 'hours',
     neverIdle: 'Never',
     neverDormant: 'Never',
+    timerMode: {
+      inherit: 'Use environment default',
+      custom: 'Set a custom value',
+    },
+    customTimerHint:
+      'A blank custom value turns that timer off; it does not use the environment default.',
     idleSummary: 'stops after {{minutes}} min unvisited',
     dormantSummary: 'hibernates after {{hours}} h',
     timersHint:
@@ -367,8 +375,6 @@ const ui = {
   },
   initialAdmin: {
     title: 'First administrator',
-    expires:
-      'Generated for the first deployment. Save it now: it is deleted in {{hours}} h.',
     kept: 'Generated for the first deployment; it is kept until the app is removed.',
     username: 'Username',
     email: 'Email',
@@ -377,6 +383,7 @@ const ui = {
     hide: 'Hide password',
     copy: 'Copy password',
     copied: 'Password copied.',
+    copyFailed: 'Could not copy the password. Show it and copy it manually.',
     dismiss: 'I’ve saved it',
     dismissed: 'The first administrator was deleted from the release manager.',
   },
@@ -607,6 +614,11 @@ const ui = {
     name: 'Name',
     driver: 'Driver',
     runsOn: 'Runs on',
+    appCount: 'Apps',
+    purpose: 'Purpose',
+    purposeHint:
+      'Each environment is for one thing: pull request previews, or testing releases.',
+    purposes: { preview: 'Previews', test: 'Testing' },
     policy: 'Policy',
     publicUrl: 'Public URL pattern',
     config: 'Settings (JSON)',

@@ -85,6 +85,7 @@ const defaultAgentPickerLabels: AgentPickerLabels = {
     agentMissing: 'Deleted',
     agentArchived: 'Not enabled',
     forbidden: 'Not available to you',
+    noModel: 'Configure a chat model first',
     noRunner: 'No runner online, cannot be chosen',
     othersPersonal: "Only others' personal runners have it",
   },

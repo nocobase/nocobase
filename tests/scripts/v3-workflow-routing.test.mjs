@@ -1,5 +1,8 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, mkdtempSync, rmSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
 import test from 'node:test';
 
 const workflow = (name) =>
@@ -16,7 +19,7 @@ const triggerBranches = (source, event) => {
   return match[1]
     .trimEnd()
     .split('\n')
-    .map((line) => line.replace(/^      - /u, '').replace(/^['"]|['"]$/gu, ''));
+    .map((line) => line.replace(/^ {6}- /u, '').replace(/^['"]|['"]$/gu, ''));
 };
 
 const matchesSingleSegmentGlob = (pattern, branch) => {
@@ -37,6 +40,10 @@ test('stacked v3 targets receive PR checks without widening direct-branch trigge
     '*/v3-*',
   ]);
   assert.deepEqual(triggerBranches(guard, 'pull_request'), ['v3-main']);
+  assert.deepEqual(
+    triggerBranches(workflow('pr-description'), 'pull_request'),
+    ['v3-main', 'v3-develop', '*/v3-*'],
+  );
 
   const workflowPattern = '*/v3-*';
   const botPattern = /^[^/]+\/v3-[^/]+$/u;
@@ -97,7 +104,7 @@ test('the release smoke registry keeps scope isolation over public npm', () => {
     new URL('../../.github/verdaccio/config.yaml', import.meta.url),
     'utf8',
   );
-  assert.match(source, /nocobase:\n    url: https:\/\/registry\.npmjs\.org\//u);
+  assert.match(source, /nocobase:\n {4}url: https:\/\/registry\.npmjs\.org\//u);
   assert.match(source, /'@nocobase\/\*':[\s\S]*?proxy: nocobase/u);
   assert.doesNotMatch(source, /npm\.nocobase\.ai/u);
 });
@@ -106,7 +113,7 @@ test('v3 GitHub Releases never take the shared Latest marker', () => {
   const source = workflow('github-release');
   assert.match(
     source,
-    /release-beta\/\*\) FLAGS=\(--prerelease --latest=false\)/u,
+    /nocobase-v3-beta\/\*\|release-beta\/\*\)\s+FLAGS=\(--prerelease --latest=false\)/u,
   );
   assert.match(source, /release\/\*\)\s+FLAGS=\(--latest=false\)/u);
 });
@@ -200,5 +207,79 @@ test('Pro workflows retain the branch arguments supported by their source-owned 
   assert.match(workflow('pro-release-beta'), /ARGS=\(--branch develop\)/u);
   for (const name of ['pro-release-stable', 'pro-promote-to-stable']) {
     assert.match(workflow(name), /ARGS=\(--branch main\)/u);
+  }
+});
+
+test('Beta batch numbering counts both tag generations and emits a separate public tag', (t) => {
+  const cwd = mkdtempSync(path.join(tmpdir(), 'v3-beta-tags-'));
+  t.after(() => rmSync(cwd, { recursive: true, force: true }));
+  const git = (...args) => execFileSync('git', args, { cwd, stdio: 'pipe' });
+  git('init', '-b', 'main');
+  git(
+    '-c',
+    'user.name=Test',
+    '-c',
+    'user.email=test@example.com',
+    'commit',
+    '--allow-empty',
+    '-m',
+    'fixture',
+  );
+  git('remote', 'add', 'origin', cwd);
+  const day = new Date().toISOString().slice(0, 10);
+  git('tag', `release-beta/${day}.9`);
+  git('tag', `nocobase-v3-beta/${day}.10`);
+  git('tag', `release/${day}.99`);
+  const source = workflow('release-beta');
+  const step = source
+    .split('      - name: Create release branch\n')[1]
+    .split('      - name: Version\n')[0];
+  const script = step.split('        run: |\n')[1].replace(/^ {10}/gm, '');
+  const output = path.join(cwd, 'outputs');
+  execFileSync('bash', ['-e', '-c', script], {
+    cwd,
+    env: { ...process.env, GITHUB_OUTPUT: output },
+    stdio: 'pipe',
+  });
+  assert.match(
+    readFileSync(output, 'utf8'),
+    new RegExp(`tag=nocobase-v3-beta/${day}\\.11`),
+  );
+  assert.match(
+    readFileSync(output, 'utf8'),
+    new RegExp(`name=release-beta/${day}\\.11`),
+  );
+  assert.match(source, /TAG: \$\{\{ steps\.branch\.outputs\.tag \}\}/u);
+  assert.match(
+    source,
+    /tag: \$\{\{ needs\.prepare\.outputs\.release_tag \}\}/u,
+  );
+  assert.match(source, /git tag "\$RELEASE_TAG"/u);
+  assert.match(
+    source,
+    /git push origin "refs\/tags\/\$\{RELEASE_TAG\}:refs\/tags\/\$\{RELEASE_TAG\}"/u,
+  );
+});
+
+test('GitHub Release titles identify Beta releases and retain stable titles', () => {
+  const source = workflow('github-release');
+  const script = source
+    .match(/ {10}case "\$TAG" in([\s\S]*?) {10}esac/u)[0]
+    .replace(/^ {10}/gm, '');
+  for (const prefix of ['nocobase-v3-beta', 'release-beta', 'release']) {
+    const actual = execFileSync(
+      'bash',
+      ['-e', '-c', script + '\nprintf "%s\n" "$TITLE" "${FLAGS[*]}"'],
+      {
+        env: { ...process.env, TAG: `${prefix}/2026-10-28.2` },
+        encoding: 'utf8',
+      },
+    );
+    assert.equal(
+      actual,
+      prefix === 'release'
+        ? '2026-10-28.2\n--latest=false\n'
+        : 'NocoBase v3 Beta · 2026-10-28.2\n--prerelease --latest=false\n',
+    );
   }
 });

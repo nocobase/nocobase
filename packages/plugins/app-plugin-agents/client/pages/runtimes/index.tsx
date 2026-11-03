@@ -1,7 +1,7 @@
 /**
  * Route `/runtimes`: the runtimes that run agents (a runner on a server, a VM or someone's own device). The list is an
  * overview, one row per runtime: its name with its system, its state with the slots it uses, its coding tools by
- * whether each is signed in, whether it is personal or shared with the team, its runner version (marked when a newer
+ * whether each is signed in, whether it is personal or shared with all users, its runner version (marked when a newer
  * one is served) and when it was last seen. Clicking a row, or "Edit" in its menu, opens the runtime's sheet
  * (`runner-sheet.tsx`), which holds every setting; the menu also revokes it, or deletes it once revoked. Revoked
  * runtimes sit folded below until deleted.
@@ -82,7 +82,9 @@ export default function RuntimesPage(): ReactElement {
   const api = useAgentsApi();
   const notify = useNotify();
   const queryClient = useQueryClient();
-  const [openId, setOpenId] = useState<string | null>(null);
+  const [openId, setOpenId] = useState<string | null>(() =>
+    new URLSearchParams(window.location.search).get('runtime'),
+  );
   const [confirming, setConfirming] = useState<Confirming | null>(null);
 
   const runners = useQuery({
@@ -359,7 +361,7 @@ function RunnerActions({
         <MoreHorizontalIcon />
       </DropdownMenuTrigger>
       <DropdownMenuContent align='end' className='w-auto min-w-40'>
-        {revoked || !runner.canManage ? null : (
+        {revoked || (!runner.canManage && !runner.canManageTools) ? null : (
           <>
             <DropdownMenuItem onClick={onEdit}>
               {t('runtimes.edit.button')}

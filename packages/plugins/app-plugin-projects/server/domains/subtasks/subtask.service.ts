@@ -34,6 +34,7 @@ import {
   liveChildren,
   requireEditor,
   requireVisible,
+  visibleIssueIds,
   type IssueExtras,
   type IssueRelations,
 } from '../issues/index.js';
@@ -472,24 +473,40 @@ export function createSubtaskService(deps: SubtaskDeps): SubtaskService {
     extras: {
       async relations(conn, viewer, issue) {
         const catalogs = catalogsFor(deps.statuses, conn);
-        const visible = new Map<string, boolean>();
-        const sees = async (other: Issue) => {
-          let value = visible.get(other.id);
-          if (value === undefined) {
-            value = await canSee(conn, viewer, other);
-            visible.set(other.id, value);
-          }
-          return value;
-        };
-
-        const children = [];
-        for (const child of await liveChildren(conn, [issue.id]))
-          if (await sees(child)) children.push(child);
-        const counts = await blockedCounts(conn, catalogs, children);
-        const name = await deps.kinds.nameAll(
-          conn,
-          children.flatMap((child) => (child.executor ? [child.executor] : [])),
+        const [allChildren, out, into, blockers] = await Promise.all([
+          liveChildren(conn, [issue.id]),
+          outgoing(conn, [issue.id]),
+          incoming(conn, [issue.id]),
+          blockersOf(conn, catalogs, issue),
+        ]);
+        const others = new Map(
+          (
+            await findIssues(conn, [
+              ...out.map((dependency) => dependency.dependsOnIssueId),
+              ...into.map((dependency) => dependency.issueId),
+            ])
+          ).map((other) => [other.id, other]),
         );
+        const loaded = new Map([
+          ...allChildren.map((child) => [child.id, child] as const),
+          ...others,
+        ]);
+        const missing = blockers.flatMap((blocker) =>
+          loaded.has(blocker.issueId) ? [] : [blocker.issueId],
+        );
+        for (const other of await findIssues(conn, missing))
+          loaded.set(other.id, other);
+        const visible = await visibleIssueIds(conn, viewer, [...loaded.keys()]);
+        const children = allChildren.filter((child) => visible.has(child.id));
+        const [counts, name] = await Promise.all([
+          blockedCounts(conn, catalogs, children),
+          deps.kinds.nameAll(
+            conn,
+            children.flatMap((child) =>
+              child.executor ? [child.executor] : [],
+            ),
+          ),
+        ]);
         const subtasks: SubtaskSummary[] = [];
         for (const child of children)
           subtasks.push({
@@ -506,16 +523,6 @@ export function createSubtaskService(deps: SubtaskDeps): SubtaskService {
             terminal: await catalogs.terminal(child),
           });
 
-        const out = await outgoing(conn, [issue.id]);
-        const into = await incoming(conn, [issue.id]);
-        const others = new Map(
-          (
-            await findIssues(conn, [
-              ...out.map((dependency) => dependency.dependsOnIssueId),
-              ...into.map((dependency) => dependency.issueId),
-            ])
-          ).map((other) => [other.id, other]),
-        );
         const views = async (
           list: readonly DependencyRecord[],
           end: 'dependsOnIssueId' | 'issueId',
@@ -523,20 +530,14 @@ export function createSubtaskService(deps: SubtaskDeps): SubtaskService {
           const result: IssueDependency[] = [];
           for (const dependency of list) {
             const other = others.get(dependency[end]);
-            if (other && (await sees(other)))
+            if (other && visible.has(other.id))
               result.push(await dependencyView(catalogs, dependency, other));
           }
           return result;
         };
-        const blockers = await blockersOf(conn, catalogs, issue);
-        const shown: Blocker[] = [];
-        for (const blocker of blockers) {
-          const other =
-            others.get(blocker.issueId) ??
-            children.find((child) => child.id === blocker.issueId) ??
-            (await findIssues(conn, [blocker.issueId]))[0];
-          if (other && (await sees(other))) shown.push(blocker);
-        }
+        const shown = blockers.filter((blocker) =>
+          visible.has(blocker.issueId),
+        );
         return {
           subtasks,
           blockedBy: await views(
@@ -580,14 +581,18 @@ export function createSubtaskService(deps: SubtaskDeps): SubtaskService {
         const children = readableIds
           ? new Map<string, number>()
           : await childCounts(conn, ids);
-        if (readableIds) {
-          for (const child of await liveChildren(conn, ids)) {
-            if (readableIds.has(child.id) && child.parentIssueId)
-              children.set(
-                child.parentIssueId,
-                (children.get(child.parentIssueId) ?? 0) + 1,
-              );
-          }
+        if (readableIds && ids.length && readableIds.size) {
+          const counts = await conn.query
+            .selectFrom('pmIssues')
+            .select('parentIssueId')
+            .select((eb) => [eb.fn.countAll().as('count')])
+            .where('deletedAt', 'is', null)
+            .where('parentIssueId', 'in', ids)
+            .where('id', 'in', [...readableIds])
+            .groupBy('parentIssueId')
+            .execute();
+          for (const row of counts)
+            children.set(String(row.parentIssueId), Number(row.count));
         }
         const blocked = await blockedCounts(
           conn,

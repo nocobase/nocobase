@@ -3,7 +3,7 @@
  * changed since the running deployment, and the first administrator a first deployment generated (shown masked to
  * those who may deploy, until someone saved it).
  */
-import { ApiClientError } from '@nocobase/app-client';
+import { copyText, ApiClientError } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import {
   CopyIcon,
@@ -126,18 +126,7 @@ export function InitialAdminAlert({
   const admin = useLoad(
     () =>
       api.get<InitialAdminView>(`apps/${appId}/initialAdmin`).then(
-        (found) => ({
-          ...found,
-          // Whole hours left, read when it loads.
-          hours: found.expiresAt
-            ? Math.max(
-                1,
-                Math.ceil(
-                  (Date.parse(found.expiresAt) - Date.now()) / 3_600_000,
-                ),
-              )
-            : null,
-        }),
+        (found) => found,
         (reason: unknown) => {
           if (
             reason instanceof ApiClientError &&
@@ -151,14 +140,10 @@ export function InitialAdminAlert({
   );
   const data = admin.data;
   if (!data || dismissed) return null;
-  const { hours } = data;
   const copy = async (): Promise<void> => {
-    try {
-      await navigator.clipboard.writeText(data.password);
+    if (await copyText(data.password))
       notify.success(t('ui.initialAdmin.copied'));
-    } catch (reason) {
-      notify.error(reason);
-    }
+    else notify.error(new Error(t('ui.initialAdmin.copyFailed')));
   };
   const dismiss = async (): Promise<void> => {
     setDismissing(true);
@@ -177,11 +162,7 @@ export function InitialAdminAlert({
       <KeyRoundIcon />
       <AlertTitle>{t('ui.initialAdmin.title')}</AlertTitle>
       <AlertDescription>
-        <p>
-          {hours === null
-            ? t('ui.initialAdmin.kept')
-            : t('ui.initialAdmin.expires', { hours })}
-        </p>
+        <p>{t('ui.initialAdmin.kept')}</p>
         <dl className='mt-2 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-foreground'>
           <dt className='text-muted-foreground'>
             {t('ui.initialAdmin.username')}

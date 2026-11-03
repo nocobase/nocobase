@@ -1,3 +1,4 @@
+import { useFileSubmission } from '../submission.js';
 import { PageContainer } from '../components/page-container.js';
 import { PageHeader } from '../components/page-header.js';
 import {
@@ -84,6 +85,7 @@ export default function ProfileAvatarsPage(): ReactElement {
     };
   }, [fetchRows]);
 
+  const submission = useFileSubmission();
   const mutate = useCallback(
     async (
       profileId: string,
@@ -92,10 +94,11 @@ export default function ProfileAvatarsPage(): ReactElement {
       setBusyId(profileId);
       setError('');
       try {
-        await profiles.updateOne({
-          filter: { id: profileId },
-          values,
-        });
+        await submission.run(
+          { filter: { id: profileId }, values },
+          (idempotencyKey, snapshot) =>
+            profiles.updateOne({ ...snapshot, idempotencyKey }),
+        );
         setRows(await fetchRows());
       } catch (cause) {
         setError(messageOf(cause));
@@ -103,7 +106,7 @@ export default function ProfileAvatarsPage(): ReactElement {
         setBusyId(undefined);
       }
     },
-    [profiles, fetchRows],
+    [profiles, fetchRows, submission],
   );
 
   return (
@@ -115,6 +118,23 @@ export default function ProfileAvatarsPage(): ReactElement {
       {error && (
         <p role='alert' className='text-sm text-destructive'>
           {error}
+          <button
+            type='button'
+            disabled={submission.submitting}
+            onClick={() => {
+              void (async () => {
+                try {
+                  await submission.retry();
+                  setRows(await fetchRows());
+                  setError('');
+                } catch (cause) {
+                  setError(messageOf(cause));
+                }
+              })();
+            }}
+          >
+            {t('retrySubmission')}
+          </button>
         </p>
       )}
       <ul className='divide-y divide-border/60 rounded-xl border bg-card shadow-2xs overflow-hidden'>
@@ -157,7 +177,11 @@ export default function ProfileAvatarsPage(): ReactElement {
                 repository={avatars}
                 accept={['image/*']}
                 maxSize={5 * 1024 * 1024}
-                disabled={busyId === profile.id}
+                disabled={
+                  submission.submitting ||
+                  submission.pending ||
+                  busyId === profile.id
+                }
                 labels={{
                   ...labels,
                   choose: avatar ? t('replaceAvatar') : t('uploadAvatar'),
@@ -172,7 +196,11 @@ export default function ProfileAvatarsPage(): ReactElement {
                 <button
                   type='button'
                   className='rounded-lg border px-3 py-2 text-xs font-medium text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-50 cursor-pointer'
-                  disabled={busyId === profile.id}
+                  disabled={
+                    submission.submitting ||
+                    submission.pending ||
+                    busyId === profile.id
+                  }
                   onClick={() =>
                     void mutate(profile.id, { avatar: { disconnect: true } })
                   }

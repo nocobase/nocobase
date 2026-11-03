@@ -8,7 +8,7 @@ import type { DriverContract } from 'flydrive/types';
 import { createOssDriver } from './oss.js';
 import type {
   AppDriveConfig,
-  AppDriveDiskConfig,
+  AppDriveDiskDefinition,
   CreateDriveManagerOptions,
   FsDriveDiskConfig,
   NocoBaseDriveManager,
@@ -35,14 +35,21 @@ export function createDriveManager(
 }
 
 export function assertDefaultDisk(config: AppDriveConfig): void {
-  if (!config.disks[config.default]) {
+  if (
+    !Object.hasOwn(config.disks, config.default) ||
+    !config.disks[config.default]
+  ) {
     throw new Error(
       `Default drive disk "${config.default}" is not configured.`,
     );
   }
 }
 
-function createDriver(disk: AppDriveDiskConfig): DriverContract {
+function createDriver(disk: AppDriveDiskDefinition): DriverContract {
+  if (typeof disk === 'function') {
+    return disk();
+  }
+
   if (disk.driver === 'fs') {
     return createFsDriver(disk);
   }

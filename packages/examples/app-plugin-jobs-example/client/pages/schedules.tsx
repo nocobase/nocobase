@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactElement } from 'react';
 import {
+  createRealtimeRefresh,
   realtimeClientToken,
   useApiClient,
   useService,
@@ -63,7 +64,6 @@ export default function SchedulesPage(): ReactElement {
 
   useEffect(() => {
     let active = true;
-    let timer: ReturnType<typeof setTimeout> | undefined;
 
     async function load(): Promise<void> {
       try {
@@ -81,20 +81,16 @@ export default function SchedulesPage(): ReactElement {
     // A push names the changed rule and nothing more: the rules are shared by
     // the whole application, so they are read back through the signed-in
     // route. A burst of pushes — one firing starts and ends — reloads once.
-    const reload = (): void => {
-      clearTimeout(timer);
-      timer = setTimeout(() => void load(), 150);
-    };
-    // Subscribing opens the WebSocket, and leaving the page unsubscribes.
-    const unsubscribe = realtime.subscribe(SCHEDULE_CHANGES_TOPIC, reload);
-    // Pushes are not replayed, so every (re)connection reloads.
-    const stopOpen = realtime.onOpen(reload);
-    void load();
+    const refresh = createRealtimeRefresh(load, { delayMs: 150 });
+    const subscription = realtime.watch(SCHEDULE_CHANGES_TOPIC, {
+      onEvent: () => refresh.request(),
+      onReady: () => refresh.request(),
+    });
+    refresh.request();
     return () => {
       active = false;
-      clearTimeout(timer);
-      stopOpen();
-      unsubscribe();
+      subscription.close();
+      refresh.close();
     };
   }, [api, realtime]);
 

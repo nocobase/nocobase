@@ -1,4 +1,16 @@
 export {
+  getAvatarInitials,
+  type AvatarInitialsOptions,
+} from './avatar-initials.js';
+export {
+  watchReadiness,
+  type RealtimeReadiness,
+  type ReadinessOptions,
+} from './realtime-readiness.js';
+export { refreshRealtimeQueries } from './realtime-query.js';
+export { createUuid } from './create-uuid.js';
+export { copyText, type CopyTextOptions } from './copy-text.js';
+export {
   apiClientToken,
   ClientApplication,
   createApp,
@@ -53,6 +65,10 @@ export {
 } from './toaster.js';
 export type {
   RealtimeClient,
+  RealtimeSubscription,
+  RealtimeSubscriptionState,
+  RealtimeConnectionState,
+  RealtimeWatchOptions,
   RealtimeErrorEvent,
   RealtimeEvent,
   RealtimeListener,
@@ -72,7 +88,6 @@ export {
   type AppClientConfigValue,
   type AppClientPublicConfig,
   type AppClientReactProvider,
-  type AppClientRefineConfig,
   type AppClientRenderConfig,
 } from './config.js';
 export type {
@@ -111,9 +126,6 @@ export type {
   AppClientReactProviderDefinition,
   AppClientReactProviderLayer,
   AppClientReactProviders,
-  AppClientRefineRegistry,
-  AppClientRefineSetterValue,
-  AppClientRefineSetters,
   AppClientRegisteredReactProvider,
   AppClientRegisteredRoute,
   AppClientRegisteredServiceProvider,
@@ -137,3 +149,47 @@ export type {
 
 export { NavigationGuardProvider } from './navigation-guard-provider.js';
 export { useNavigationGuard } from './navigation-guard.js';
+
+export {
+  useRealtimeTopic,
+  useRealtimeReadiness,
+  useRealtimeRefresh,
+  useRealtimeConnectionState,
+  createRealtimeRefresh,
+  type UseRealtimeTopicOptions,
+  type UseRealtimeRefreshOptions,
+  type RealtimeRefresh,
+  type RealtimeRefreshOptions,
+  type RealtimeRefreshSnapshot,
+  type UseRealtimeRefreshResult,
+} from './realtime.js';
+export {
+  resolveListState,
+  listStateShowsData,
+  type ListState,
+  type ListSnapshot,
+} from './list-state.js';
+
+export {
+  SubmissionController,
+  deriveSubmissionKey,
+  PendingSubmissionError,
+  SubmissionTimeoutError,
+  useSubmission,
+  type Submission,
+  type SubmissionOptions,
+  type SubmissionStorage,
+} from './submission.js';
+
+export {
+  FormFeedback,
+  formFeedbackErrors,
+  normalizeFormFieldPath,
+  type FormFeedbackMessages,
+  type FormFeedbackField,
+  type FormFeedbackError,
+  type FormFeedbackState,
+  type FormFeedbackAttempt,
+  type FormFeedbackViolation,
+  type FormFeedbackOptions,
+} from './form-feedback.js';

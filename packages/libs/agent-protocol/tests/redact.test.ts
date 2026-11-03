@@ -39,6 +39,11 @@ describe('redactPatterns', () => {
       `x-nocobase-run-token: ${REDACTED}`,
     ],
     [
+      'an OnlineAgent execution token',
+      `x-nocobase-run-token: fgo_${'Zx9_-'.repeat(9)}`,
+      `x-nocobase-run-token: ${REDACTED}`,
+    ],
+    [
       'a private key block',
       `before\n${PRIVATE_KEY}\nafter`,
       `before\n${REDACTED}\nafter`,

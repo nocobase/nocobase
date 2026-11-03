@@ -8,9 +8,9 @@ import {
 } from 'lucide-react';
 import { useState, type ReactElement } from 'react';
 
-import { isSafeImagePreview } from '../lib/file-preview';
-import type { FileThumbnailProps } from '../types';
-import { resolveSafeFileUrl } from '../lib/file-url';
+import { isSafeImagePreview } from '../lib/file-preview.js';
+import type { FileThumbnailProps } from '../types.js';
+import { resolveSafeFileUrl } from '../lib/file-url.js';
 
 function extension(filename: string): string {
   const dot = filename.lastIndexOf('.');

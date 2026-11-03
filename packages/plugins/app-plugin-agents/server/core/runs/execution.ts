@@ -113,6 +113,7 @@ export async function endExecution(
   finishedAt: string,
   failureReason: string | null,
   failureSource?: 'sweeper',
+  quota?: import('@nocobase/agent-protocol').QuotaReport,
 ): Promise<void> {
   const current = await findRunRecord(conn, run.id);
   if (!current) return;
@@ -126,6 +127,7 @@ export async function endExecution(
     ...execution,
     finishedAt,
     failureReason,
+    ...(quota ? { quota } : {}),
     ...(failureSource ? { failureSource } : {}),
   };
   await runsRepo(conn).updateMany({

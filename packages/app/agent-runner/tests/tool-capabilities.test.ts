@@ -39,7 +39,9 @@ describe('capability refresh', () => {
       await vi.advanceTimersByTimeAsync(0);
     };
     await round();
-    expect(cache.tools).toEqual([]);
+    expect(cache.tools).toMatchObject([
+      { authenticated: false, status: 'notInstalled' },
+    ]);
     for (const next of [
       { installed: false, authenticated: false, version: '1.9.0' },
       {
@@ -72,10 +74,13 @@ describe('capability refresh', () => {
             version: next.version,
             path: next.path,
             authenticated: next.authenticated,
-            models: [{ id: next.version }],
+            ...(next.authenticated ? { models: [{ id: next.version }] } : {}),
           }),
         ]);
-      else expect(cache.tools).toEqual([]);
+      else
+        expect(cache.tools).toMatchObject([
+          { status: 'notInstalled', authenticated: false },
+        ]);
     }
     expect(new Set(instances).size).toBe(6);
     await cache.stop();
@@ -120,10 +125,14 @@ describe('capability refresh', () => {
     expect(factory).toHaveBeenCalledTimes(1);
     await vi.advanceTimersByTimeAsync(51);
     expect(signal.aborted).toBe(true);
-    expect(cache.tools).toEqual([]);
+    expect(cache.tools).toMatchObject([
+      { status: 'failed', authenticated: false },
+    ]);
     finish({ installed: true, version: 'late', authenticated: true });
     await vi.advanceTimersByTimeAsync(0);
-    expect(cache.tools).toEqual([]);
+    expect(cache.tools).toMatchObject([
+      { status: 'failed', authenticated: false },
+    ]);
     healthy = true;
     await vi.advanceTimersByTimeAsync(MODEL_REFRESH_INTERVAL_MS);
     cache.refresh();
@@ -309,4 +318,42 @@ it('retains versioned model identifiers', () => {
   expect(boundedModels([{ id: 'claude-sonnet-4@20250514' }])).toEqual([
     { id: 'claude-sonnet-4@20250514' },
   ]);
+});
+
+it('does not handshake again until a program changes or a refresh is requested', async () => {
+  vi.useFakeTimers();
+  let fingerprint = 'path-a:version-a:mtime-a';
+  const detect = vi.fn(async () => ({ installed: true, authenticated: true }));
+  const cache = new ToolCapabilitiesCache(
+    () =>
+      new Map([
+        [
+          'gemini',
+          {
+            ...createEchoAdapter({ kind: 'gemini' }),
+            detect,
+            fingerprint: async () => fingerprint,
+          },
+        ],
+      ]),
+    [],
+  );
+  cache.refresh();
+  await vi.advanceTimersByTimeAsync(0);
+  expect(detect).toHaveBeenCalledTimes(1);
+  for (let round = 0; round < 3; round++) {
+    await vi.advanceTimersByTimeAsync(MODEL_REFRESH_INTERVAL_MS);
+    cache.refresh();
+    await vi.advanceTimersByTimeAsync(0);
+  }
+  expect(detect).toHaveBeenCalledTimes(1);
+  fingerprint = 'path-b:version-b:mtime-b';
+  await vi.advanceTimersByTimeAsync(MODEL_REFRESH_INTERVAL_MS);
+  cache.refresh();
+  await vi.advanceTimersByTimeAsync(0);
+  expect(detect).toHaveBeenCalledTimes(2);
+  cache.invalidate();
+  await vi.advanceTimersByTimeAsync(0);
+  expect(detect).toHaveBeenCalledTimes(3);
+  await cache.stop();
 });

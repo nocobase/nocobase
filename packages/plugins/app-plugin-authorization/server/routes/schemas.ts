@@ -41,10 +41,12 @@ export const CreatePermissionSetBody: Strict<{
 
 /** Only the fields that change; `key` renames the set and `title: null` clears its title. */
 export const UpdatePermissionSetBody: Strict<{
+  expectedRevision: z.ZodOptional<z.ZodString>;
   key: z.ZodOptional<z.ZodString>;
   title: z.ZodOptional<z.ZodNullable<typeof TitleInput>>;
   grants: z.ZodOptional<z.ZodArray<typeof PermissionGrantInput>>;
 }> = z.strictObject({
+  expectedRevision: z.string().min(1).optional(),
   key: z.string().min(1).optional(),
   title: TitleInput.nullable().optional(),
   grants: z.array(PermissionGrantInput).optional(),
@@ -144,6 +146,7 @@ const writeOperation = z.enum([
 export const PermissionSetSchema: z.ZodType = z
   .object({
     key: z.string(),
+    revision: z.string().optional(),
     title: TitleSchema.optional(),
     grants: z.array(PermissionGrantSchema),
     protection: z

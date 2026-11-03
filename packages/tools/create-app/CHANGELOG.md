@@ -1,5 +1,19 @@
 # @nocobase/create-app
 
+## 0.1.0-beta.34
+
+### Patch Changes
+
+- 7770b46: Support internal workspace packages while keeping the application at the project root. Generate workspace package patterns, build dependencies before client compilation, watch reachable internal sources, and document independent package checks and deployment exports.
+
+## 0.1.0-beta.33
+
+### Patch Changes
+
+- 4f0d96e: Add opt-in native OnlineAgent Skills and application-branded CLI execution using an isolated, lazily created just-bash environment. Load current Skill support trees, support virtual parameter files and read bindings, retain existing business authorization, and release execution resources across stop, approval and retryable finalization without replaying writes.
+
+  Redact execution credentials and declare intentionally disabled optional archive-native build scripts in workspace, generated-application and deployment installation policies.
+
 ## 0.1.0-beta.32
 
 ### Patch Changes

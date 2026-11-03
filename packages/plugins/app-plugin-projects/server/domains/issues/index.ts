@@ -21,6 +21,7 @@ export {
 export {
   canSee,
   issueVisibleTo,
+  visibleIssueIds,
   managesIssue,
   requireEditor,
   requireVisible,
@@ -58,3 +59,5 @@ export {
   type StatusCatalog,
   type StatusService,
 } from './ports.js';
+
+export type { IssueHierarchySource } from './issue.hierarchy-source.js';

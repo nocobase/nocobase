@@ -119,6 +119,10 @@ export function pluginPackageName(name: string): string {
   if (trimmed === '') {
     throw new Error('A plugin name is required.');
   }
+  if (
+    /^@[a-z0-9][a-z0-9-]*\/app-plugin-[a-z0-9]+(?:-[a-z0-9]+)*$/u.test(trimmed)
+  )
+    return trimmed;
   if (trimmed.startsWith(PLUGIN_PREFIX)) {
     const shortName = trimmed.slice(PLUGIN_PREFIX.length);
     if (!SHORT_NAME_PATTERN.test(shortName)) {
@@ -143,9 +147,8 @@ export function pluginPackageName(name: string): string {
 
 /** The short name a package name carries, for messages and directory lookups. */
 export function pluginShortName(packageName: string): string {
-  return packageName.startsWith(PLUGIN_PREFIX)
-    ? packageName.slice(PLUGIN_PREFIX.length)
-    : packageName;
+  const match = /^@[a-z0-9][a-z0-9-]*\/app-plugin-(.+)$/u.exec(packageName);
+  return match?.[1] ?? packageName;
 }
 
 /**

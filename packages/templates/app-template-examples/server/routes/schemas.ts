@@ -1,5 +1,13 @@
+import { workflowCategoryColors } from '../../shared/workflow-category-colors.js';
 import { DescriptionViewSchema } from '@nocobase/app-plugin-lifecycle-example/server';
 import { z } from 'zod';
+
+export const KnowledgeDirectorySearchQuery = z.object({
+  q: z.string().trim().min(1).max(500),
+});
+export const KnowledgeDirectoryMeta = z.object({
+  total: z.number().int().nonnegative(),
+});
 
 export const articleStatuses = ['draft', 'published', 'archived'] as const;
 
@@ -178,11 +186,16 @@ export const WorkflowParams = z.object({
 export const WorkflowExecutionParams = WorkflowParams.extend({
   recordId: z.string().regex(/^[1-9]\d{0,14}$/),
 });
+export const WorkflowDefinitionQuery = z.object({
+  q: z.string().trim().max(200).optional(),
+  category: z.string().trim().min(1).max(100).optional(),
+});
 export const WorkflowPageQuery = z.object({
   page: z.coerce.number().int().min(1).max(1000).default(1),
   order: z.enum(['newest', 'oldest']).default('newest'),
   pageSize: z.coerce.number().int().min(1).max(100).default(20),
   workflowId: WorkflowParams.shape.workflowId.optional(),
+  q: z.string().trim().max(200).optional(),
 });
 export const WorkflowPageMeta = z.object({
   page: z.number(),
@@ -199,6 +212,8 @@ export const WorkflowSummarySchema: z.ZodType<
     states: z.number(),
     transitions: z.number(),
     executionCount: z.number().int().nonnegative(),
+    lastExecutedAt: z.iso.datetime().nullable(),
+    categoryId: z.string().nullable().optional(),
   })
   .meta({ ref: 'ExamplesWorkflowSummary' });
 export const WorkflowExecutionSchema: z.ZodType<
@@ -220,3 +235,33 @@ export const WorkflowDefinitionSchema: z.ZodType<
     DescriptionViewSchema,
   )
   .meta({ ref: 'ExamplesWorkflowDefinition' });
+
+export const WorkflowCategorySchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  sortOrder: z.number().int(),
+  color: z.enum(
+    Object.keys(workflowCategoryColors) as [
+      keyof typeof workflowCategoryColors,
+      ...Array<keyof typeof workflowCategoryColors>,
+    ],
+  ),
+});
+export const WorkflowCategoryInput = z.strictObject({
+  title: z.string().trim().min(1).max(100),
+  sortOrder: z.number().int().min(0).max(100000),
+  color: z
+    .enum(
+      Object.keys(workflowCategoryColors) as [
+        keyof typeof workflowCategoryColors,
+        ...Array<keyof typeof workflowCategoryColors>,
+      ],
+    )
+    .default('gray'),
+});
+export const WorkflowCategoryParams = z.object({
+  categoryId: z.string().min(1).max(100),
+});
+export const WorkflowCategoryAssignment = z.strictObject({
+  categoryId: z.string().min(1).max(100).nullable(),
+});

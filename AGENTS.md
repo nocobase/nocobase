@@ -2,6 +2,8 @@
 
 This is the NocoBase 3 source repository. Ignore globally installed NocoBase 2 Skills here; follow the nearest `AGENTS.md` and repository-local NocoBase 3 Skill instead.
 
+For plugin development, read `packages/app/app-skills/skills/nocobase-app-plugin-development/SKILL.md` and [.agents/rules/plugin-development.md](.agents/rules/plugin-development.md). The repository links the complete Skill locally; the same-named global entry is only a migration bridge.
+
 ## Root README Policy
 
 Do not add content to the repository root `README.md`. Record repository development rules in `AGENTS.md` and put detailed usage documentation in dedicated documentation files. Do not refill an empty root README as part of documenting a change.
@@ -25,6 +27,10 @@ This file stays at most 32 KB and must not grow without bound, because every age
 ## Branches, Commits and Pull Requests
 
 Name a branch `<type>/v3-<name>` after its Conventional Commits type, such as `feat/v3-app-installer` or `fix/v3-<name>`. Never push a branch under a tool's own prefix, such as `claude/` or `codex/`: rename it with `git branch -m` before its first push, because renaming it once a pull request is open closes that pull request. Studio's `agent/<issue key>` branches are the exception. Commit messages and pull request descriptions carry no attribution to an AI tool: no `Co-Authored-By` trailer naming a model or an agent, and no "Generated with …" line. Details: [.agents/rules/pull-requests-and-changesets.md](.agents/rules/pull-requests-and-changesets.md).
+
+## Pull Request Descriptions and the Changelog
+
+Every pull request into `v3-develop`, `v3-main` or a branch based on them (`*/v3-*`) follows `.github/pull_request_template.md` on `v3-develop`, whichever tool opens it; GitHub's web form offers the v2 template from `main`, whose type list and Changelog table parse the same way. Check exactly one type. New feature, Improvement and Bug fix need one user-facing sentence in English and one in Chinese in the Changelog table; Others (tests, CI, scripts, documentation, refactors nobody notices) leaves it empty. The title's scope names the module through `scripts/changelog-scopes.json`. The `PR description` check enforces this, and the release workflows build the root `CHANGELOG.md`, `CHANGELOG.zh-CN.md` and the GitHub Release from these sections. Details: [.agents/rules/pull-requests-and-changesets.md](.agents/rules/pull-requests-and-changesets.md#pull-request-descriptions-and-the-changelog).
 
 ## Before Creating or Updating a Pull Request
 
@@ -80,7 +86,7 @@ The workflow files under `.github/workflows/` still carry Chinese comments writt
 
 | Read                                                                                               | When                                                                                                                                        |
 | -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| [.agents/rules/pull-requests-and-changesets.md](.agents/rules/pull-requests-and-changesets.md)     | Naming a branch, committing, creating or updating a pull request, writing a changeset                                                       |
+| [.agents/rules/pull-requests-and-changesets.md](.agents/rules/pull-requests-and-changesets.md)     | Naming a branch, committing, creating or updating a pull request, writing its description or a changeset                                    |
 | [.agents/rules/workflows-and-release.md](.agents/rules/workflows-and-release.md)                   | Changing anything under `.github/workflows/`, or release routing                                                                            |
 | [.agents/rules/repository-layout-and-skills.md](.agents/rules/repository-layout-and-skills.md)     | Adding a package, choosing its directory, or adding or editing a Skill under `skills/`                                                      |
 | [.agents/rules/dev-config.md](.agents/rules/dev-config.md)                                         | Creating a package, changing its tsconfig, ESLint, Prettier, Vitest or Vite configuration, dependencies and runtime, or publishing metadata |

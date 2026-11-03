@@ -129,6 +129,8 @@ export interface Knowledge {
 }
 
 export interface KnowledgeDeps {
+  /** Proposal availability; enabled by default. */
+  readonly proposals?: boolean;
   readonly database: Pick<DatabaseManager, 'transaction' | 'connection'>;
   /** The application's spaces and who may do what in them. */
   readonly access: KnowledgeAccessResolver;
@@ -152,6 +154,8 @@ export function createKnowledge(deps: KnowledgeDeps): Knowledge {
   ];
   const rerankers: KnowledgeSearchReranker[] = [];
   let indexer: KnowledgeIndexer | null = null;
+  let releaseIndexer: (() => void) | undefined;
+  let indexerRevision = 0;
   const docs = createDocumentService(
     context,
     () => providers,
@@ -160,7 +164,9 @@ export function createKnowledge(deps: KnowledgeDeps): Knowledge {
   const store = deps.files?.store ?? (() => null);
   const files = createFileService(context, docs, {
     store,
-    extract: deps.files?.extract ?? workerExtractor(),
+    extract:
+      deps.files?.extract ??
+      workerExtractor({ maxInputBytes: deps.files?.maxBytes }),
     ...(deps.files?.maxBytes ? { maxBytes: deps.files.maxBytes } : {}),
   });
   return {
@@ -168,6 +174,7 @@ export function createKnowledge(deps: KnowledgeDeps): Knowledge {
     docs,
     files,
     proposals: createProposalService(context, {
+      enabled: () => deps.proposals !== false,
       store,
       maxBytes: files.maxBytes,
     }),
@@ -176,9 +183,43 @@ export function createKnowledge(deps: KnowledgeDeps): Knowledge {
     bindSettings: (source) => context.bindSettings(source),
     indexing: createIndexingService(context, () => indexer),
     registerIndexer(next) {
-      indexer = next;
+      const revision = ++indexerRevision;
+      const previous = releaseIndexer;
+      releaseIndexer = undefined;
+      indexer = null;
+      let release: (() => void) | undefined;
+      try {
+        previous?.();
+        indexer = next;
+        release = next.onChange?.((docId) => {
+          if (indexerRevision === revision)
+            context.announce({ type: 'index.changed', docId });
+        });
+      } catch (error) {
+        if (indexerRevision === revision) {
+          indexer = null;
+          indexerRevision += 1;
+        }
+        context.announce({ type: 'indexer.changed' });
+        throw error;
+      }
+      // A listener may register another indexer while onChange is attaching.
+      if (indexerRevision !== revision) {
+        release?.();
+        return () => {};
+      }
+      releaseIndexer = release;
+      context.announce({ type: 'indexer.changed' });
       return () => {
-        if (indexer === next) indexer = null;
+        if (indexerRevision !== revision) return;
+        indexerRevision += 1;
+        releaseIndexer = undefined;
+        indexer = null;
+        try {
+          release?.();
+        } finally {
+          context.announce({ type: 'indexer.changed' });
+        }
       };
     },
     registerSubjectProvider: (provider) => context.subjects.register(provider),

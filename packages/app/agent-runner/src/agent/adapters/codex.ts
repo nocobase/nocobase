@@ -16,6 +16,8 @@
  * - `stop()` interrupts the turn, then ends the process group: within five
  *   seconds in all.
  */
+import { StreamOutput } from './stream-output.ts';
+import { programFingerprint } from './program-fingerprint.ts';
 import { randomUUID } from 'node:crypto';
 import { constants as fsConstants } from 'node:fs';
 import { access } from 'node:fs/promises';
@@ -30,6 +32,7 @@ import { boundedModels } from './models.ts';
 import { recoveryEvent, recoveryPrompt } from './session-recovery.ts';
 import { withDetectionEnvironment } from './detection.ts';
 import { classifyCodexFailure } from './codex/classify.ts';
+import { codexQuota } from './quota.ts';
 import type { CodexFailureSignal } from './codex/classify.ts';
 import { OPTED_OUT_NOTIFICATIONS } from './codex/protocol.ts';
 import { detectExec } from './detect-exec.ts';
@@ -185,6 +188,14 @@ export class CodexAdapter implements AgentAdapter {
     };
   }
 
+  private program(): Promise<string | undefined> {
+    return findOnPath('codex', this.options.searchPath);
+  }
+
+  async fingerprint(): Promise<string> {
+    return programFingerprint(await this.program());
+  }
+
   features(): RunnerFeature[] {
     return ['steer'];
   }
@@ -291,8 +302,8 @@ export class CodexAdapter implements AgentAdapter {
   }
 
   private async runDetection(signal?: AbortSignal): Promise<ToolDetection> {
-    const { exec, minVersion, searchPath, env } = this.options;
-    const found = await findOnPath('codex', searchPath);
+    const { exec, minVersion, env } = this.options;
+    const found = await this.program();
     if (!found) {
       return {
         installed: false,
@@ -348,6 +359,7 @@ class CodexRun {
   private turnRunning = false;
   private lastTurn?: Turn;
   private lastError?: TurnError;
+  private rateLimits: unknown;
   private turnSummary?: string;
   private summary?: string;
 
@@ -360,6 +372,7 @@ class CodexRun {
   private readonly items = new Map<string, ThreadItem>();
   private usageBaseline?: TokenUsageBreakdown;
   private usageTotal?: TokenUsageBreakdown;
+  private context?: { used: number; size: number };
 
   private stopping = false;
   private finished = false;
@@ -399,6 +412,8 @@ class CodexRun {
       result: this.done,
     };
   }
+
+  private readonly streaming = new StreamOutput((event) => this.emit(event));
 
   private emit(event: Omit<AdapterEvent, 'at'>): void {
     this.events.push({ at: new Date().toISOString(), ...event });
@@ -504,6 +519,7 @@ class CodexRun {
       clientUserMessageId: first.clientId,
       approvalPolicy: 'never',
       sandboxPolicy,
+      ...(this.session.outputBlocks ? { summary: 'auto' as const } : {}),
       ...(effort && EFFORTS.has(effort) ? { effort } : {}),
     });
     if (effort && EFFORTS.has(effort))
@@ -621,6 +637,14 @@ class CodexRun {
     const p = (params ?? {}) as Record<string, unknown>;
     if (p.threadId && this.threadId && p.threadId !== this.threadId) return;
     switch (method) {
+      case 'account/rateLimits/updated':
+        this.rateLimits = p.rateLimits;
+        this.emit({
+          type: 'status',
+          content: 'quota',
+          meta: { quota: codexQuota(this.rateLimits) },
+        });
+        return;
       case 'turn/started': {
         const turn = p.turn as Turn;
         this.turnRunning = true;
@@ -631,18 +655,67 @@ class CodexRun {
       case 'turn/completed':
         this.onTurnCompleted(p.turn as Turn);
         return;
+      case 'turn/plan/updated': {
+        // The plan the agent keeps for the turn (`update_plan`), reported the way ACP agents report theirs.
+        const steps = Array.isArray(p.plan) ? (p.plan as unknown[]) : [];
+        const plan = steps.flatMap((step) => {
+          const { step: content, status } = (step ?? {}) as Record<
+            string,
+            unknown
+          >;
+          return typeof content === 'string'
+            ? [
+                {
+                  content,
+                  status:
+                    status === 'completed'
+                      ? 'completed'
+                      : status === 'inProgress' || status === 'in_progress'
+                        ? 'in_progress'
+                        : 'pending',
+                },
+              ]
+            : [];
+        });
+        this.emit({ type: 'status', content: 'plan', meta: { plan } });
+        return;
+      }
+      case 'item/agentMessage/delta':
+        if (!this.session.outputBlocks) return;
+        this.streaming.delta(
+          `${String(p.itemId)}:text`,
+          'text',
+          p.delta as string,
+        );
+        return;
+      case 'item/reasoning/summaryTextDelta':
+        if (!this.session.outputBlocks) return;
+        this.streaming.delta(
+          `${String(p.itemId)}:summary:${Number(p.summaryIndex)}`,
+          'thinking',
+          p.delta as string,
+        );
+        return;
       case 'item/started':
         this.onItemStarted(p.item as ThreadItem);
         return;
       case 'item/completed':
         this.onItemCompleted(p.item as ThreadItem);
         return;
-      case 'thread/tokenUsage/updated':
-        this.onUsage(
-          (p.tokenUsage as ThreadTokenUsage).total,
-          (p.tokenUsage as ThreadTokenUsage).last,
-        );
+      case 'thread/tokenUsage/updated': {
+        const usage = p.tokenUsage as ThreadTokenUsage;
+        this.onUsage(usage.total, usage.last);
+        // What the conversation holds now against the model's window, when Codex says how large that is.
+        if (
+          typeof usage.modelContextWindow === 'number' &&
+          usage.modelContextWindow > 0
+        )
+          this.context = {
+            used: usage.last.totalTokens,
+            size: usage.modelContextWindow,
+          };
         return;
+      }
       case 'error': {
         const error = p.error as TurnError;
         if (p.willRetry) {
@@ -673,6 +746,8 @@ class CodexRun {
   };
 
   private onTurnCompleted(turn: Turn): void {
+    if (this.session.outputBlocks && turn.status === 'interrupted')
+      this.streaming.end(true);
     this.lastTurn = turn;
     this.turnRunning = false;
     this.activeTurnId = undefined;
@@ -689,6 +764,12 @@ class CodexRun {
       },
     });
     this.emit({ type: 'usage', meta: { usage: this.usage() } });
+    if (this.context)
+      this.emit({
+        type: 'status',
+        content: 'context',
+        meta: { context: this.context },
+      });
     this.afterTurn();
   }
 
@@ -741,13 +822,32 @@ class CodexRun {
       case 'agentMessage':
         if ('text' in item) {
           this.turnSummary = item.text;
-          this.text('text', item.text);
+          if (this.session.outputBlocks)
+            this.streaming.complete(`${item.id}:text`, 'text', item.text);
+          else this.text('text', item.text);
         }
         break;
       case 'reasoning':
-        if ('summary' in item) {
-          const text = [...item.summary, ...item.content].join('\n\n');
-          if (text) this.text('thinking', text);
+        if (!this.session.outputBlocks) {
+          if ('summary' in item) {
+            const text = [...item.summary, ...item.content].join('\n\n');
+            if (text) this.text('thinking', text);
+          }
+        } else {
+          if ('summary' in item) {
+            for (const [index, text] of item.summary.entries())
+              this.streaming.complete(
+                `${item.id}:summary:${index}`,
+                'thinking',
+                text,
+              );
+          }
+          if ('content' in item && item.content.length)
+            this.streaming.complete(
+              `${item.id}:reasoning-content`,
+              'thinking',
+              item.content.join('\n\n'),
+            );
         }
         break;
       case 'commandExecution':
@@ -932,6 +1032,7 @@ class CodexRun {
       await this.shutdown();
     }
     const result = this.outcome(thrown, processFailed);
+    if (this.session.outputBlocks) this.streaming.end();
     if (result.error)
       this.emit({
         type: 'error',
@@ -1009,7 +1110,13 @@ class CodexRun {
       capabilities: {
         experimentalApi: false,
         requestAttestation: false,
-        optOutNotificationMethods: OPTED_OUT_NOTIFICATIONS,
+        optOutNotificationMethods: session.outputBlocks
+          ? OPTED_OUT_NOTIFICATIONS
+          : [
+              ...OPTED_OUT_NOTIFICATIONS,
+              'item/agentMessage/delta',
+              'item/reasoning/summaryTextDelta',
+            ],
       },
     });
     rpc.notify('initialized');
@@ -1071,7 +1178,9 @@ class CodexRun {
     if (this.stopping) return;
     const prompt: Steer = {
       clientId: randomUUID(),
-      text: recovered ? recoveryPrompt(session.prompt) : session.prompt,
+      text: recovered
+        ? recoveryPrompt(session.prompt, session.recoveryContext)
+        : session.prompt,
       prompt: true,
     };
     const early = this.carry;
@@ -1135,6 +1244,15 @@ class CodexRun {
       if (this.lastError)
         signal.message = `${this.lastError.message}; ${signal.message}`;
     }
+    const info = signal.codexErrorInfo;
+    const key =
+      typeof info === 'string' ? info : info ? Object.keys(info)[0] : undefined;
+    if (key === 'usageLimitExceeded')
+      this.emit({
+        type: 'status',
+        content: 'quota',
+        meta: { quota: codexQuota(this.rateLimits, true, info) },
+      });
     return { ...base, exit: 'error', error: classifyCodexFailure(signal) };
   }
 }

@@ -3,4 +3,4 @@
 '@nocobase/app-template-examples': patch
 ---
 
-Document that user invitation emails require an enabled system-email notification channel in the example configuration.
+Document shared mailer selection and the legacy system-email notification channel fallback for invitation emails in the example configuration.

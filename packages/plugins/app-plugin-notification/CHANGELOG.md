@@ -1,5 +1,134 @@
 # @nocobase/app-plugin-notification
 
+## 2.0.0-beta.3
+
+### Patch Changes
+
+- cf23bfe: Move Redis realtime broadcasting to the commercial Realtime Redis plugin. Register its Server plugin before selecting Redis in an application, or import the standalone broker from its `/broker` entry. Preserve the Memory default, service identity, authorization and recovery protocol, and republish runtime consumers against the new host and realtime major versions. Install the compatible commercial cohort before deploying the final removal.
+- Updated dependencies [88d35b8]
+- Updated dependencies [83f28b1]
+- Updated dependencies [88d35b8]
+- Updated dependencies [88d35b8]
+- Updated dependencies [83f28b1]
+- Updated dependencies [cf23bfe]
+- Updated dependencies [b29a336]
+  - @nocobase/app-client@4.0.0-beta.6
+  - @nocobase/app-plugin-authorization@1.0.0-beta.34
+  - @nocobase/app-plugin-authentication@2.0.0-beta.17
+  - @nocobase/app-server@4.0.0-beta.0
+
+## 2.0.0-beta.2
+
+### Patch Changes
+
+- a0b4568: **Breaking:** Move ordinary and recurring Redis Jobs out of the open-source runtime into the commercial `@nocobase/app-plugin-jobs-redis` Server plugin. Redis deployments must install and register a compatible plugin on every producer and consumer as part of the framework upgrade; selecting an unregistered backend now fails explicitly instead of falling back to Memory. Move Redis-specific type imports from `@nocobase/jobs` to `@nocobase/app-plugin-jobs-redis/config`.
+
+  Add application-owned, paired backend registration through `jobExecutorServiceToken`'s `registerImplementation(name, implementation)` and public `JobsImplementation` contracts from `@nocobase/jobs`, without a separate registry token. Keep the existing Jobs service token, lazy executors and Memory behavior. Registration opens no resources and is not frozen by boot or executor startup. Services require no setup; configuration and missing implementations are validated when an executor is requested, and consumers still own executor startup. Default and Examples templates now declare only Memory. Preserve existing Redis connection, namespace, scopes and job identities; no database or Redis data migration is required. Queue Redis is unchanged.
+
+  Existing YAML overrides that relied on template defaults must explicitly declare `adapter: redis` for each Redis Jobs configuration; `connection` alone no longer selects Redis. Updated template examples document the commercial Server plugin installation and registration prerequisite.
+
+  Selected configurations with missing, empty or non-string adapters are rejected instead of silently using Memory.
+
+  Release the framework first and verify its exact version is downloadable from the customer registry before pinning and releasing the compatible commercial plugin. Redis users must wait through any publication gap and upgrade the framework and plugin together.
+
+- b6934ad: Expose notification email configuration helpers from `@nocobase/app-plugin-notification-providers/config` and mailer contracts and validation from `@nocobase/mailer/config`, without loading sending runtimes. Preserve notification validation, optional private environment mappings and application overrides. Migrate application templates and configuration examples to the new import. Freeze and deprecate the published `@nocobase/app-server/mailer` API while retaining existing behavior for applications that still depend on it.
+- Updated dependencies [b6934ad]
+- Updated dependencies [d3f0c92]
+- Updated dependencies [a0b4568]
+- Updated dependencies [12b1f64]
+- Updated dependencies [b6934ad]
+- Updated dependencies [5ce4a7c]
+- Updated dependencies [b6934ad]
+- Updated dependencies [171f7fb]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.16
+  - @nocobase/app-client@4.0.0-beta.5
+  - @nocobase/jobs@1.0.0-beta.5
+  - @nocobase/app-server@3.0.0-beta.5
+  - @nocobase/db@1.0.0-beta.24
+
+## 2.0.0-beta.1
+
+### Patch Changes
+
+- 05f800a: Publish editable file upload/preview and notification delivery-log UI through the UI Library. Install `@nocobase/file-component-ui` or `@nocobase/notification-logs-ui` with shadcn, and merge their bundled locale resources into the consuming application. Existing application-owned copies remain usable; reconcile upstream changes while preserving customizations. The default template keeps its File UI installation path and now tracks the UI Library source.
+
+  Remove plugin-owned Registry recipes, their build/materialize commands, the Registry example plugin, and the `registry` capability from the plugin scaffold. Plugins can continue to install UI Library items into their own client source. Update plugin development guidance to use this single source distribution channel.
+
+  Preserve custom file download callbacks for images opened from FileList, including preview toolbar and fallback downloads.
+
+## 2.0.0-beta.0
+
+### Major Changes
+
+- f8f64ad: Remove the Notification TestAdapter protocol, built-in form descriptors, generic test-send routes and permission, and test client methods. Channel classes now implement only their delivery lifecycle. Existing send/sendTransient contracts, retries, logs, and inbox records remain unchanged.
+
+  Applications should remove test buttons and test API clients, then verify delivery through their business flows or a server-side send() call. Log pages must read provider identities from recorded deliveries rather than test target metadata. Update the notification Skill and example guidance to match, and republish consumers against the new notification package line.
+
+  Explicitly include Node.js types in both application templates' client typechecks, whose shared contracts reference server package sources in the workspace, so compilation no longer depends on the removed notification test imports to load those types.
+
+### Minor Changes
+
+- f8f64ad: Add class-based notification channel registration with `registerChannelType`, per-channel lifecycle management, and container access. Accept `type` in channel configuration while preserving the `provider` alias and legacy extension factories. Keep the provider-based `NotificationChannelConfig` and legacy callback types compatible, and expose `NotificationChannelConfigInput` for configuration accepting either discriminator. Mark legacy registration methods and definition types as deprecated with migration guidance. Keep send contracts and persisted delivery identities compatible, including custom type names matching JavaScript prototype properties, and drain active requests before closing channels. Support the same configuration aliases in the host mailer.
+
+  Normalize notification channel aliases in application configuration snapshots, including defaults, environment overlays, and reloads. Preserve legacy `config.provider` reads and their required-string type, mark the field deprecated in favor of `type`, and expose `NotificationConfigInput` for unnormalized configuration. Keep source layers and conflict validation unchanged.
+
+### Patch Changes
+
+- Updated dependencies [f8f64ad]
+  - @nocobase/app-server@3.0.0-beta.2
+  - @nocobase/app-plugin-authentication@2.0.0-beta.12
+
+## 2.0.0-beta
+
+### Major Changes
+
+- Remove generic notification test adapters and test-send APIs. Verify delivery through normal business flows or server-side `send()` calls. Existing notification logs and inbox data are retained.
+
+## 1.0.0-beta.29
+
+### Patch Changes
+
+- 1952789: Complete all ten supported languages in plugin and example plugin catalogues, including model suggestions and test Web Push notifications. Align calendars and invitation emails, support locale-specific plural forms, and validate resource loading and formatting.
+
+  Correct joined translation text and distinguish configuration save actions, refund stages, and domain-specific operation labels.
+
+- Updated dependencies [1952789]
+- Updated dependencies [06e53be]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.12
+  - @nocobase/app-plugin-authorization@1.0.0-beta.30
+  - @nocobase/i18n@2.0.0-beta.1
+  - @nocobase/app-client@4.0.0-beta.0
+
+## 1.0.0-beta.28
+
+### Patch Changes
+
+- 1952789: Require explicitly declared realtime topics and authorize dynamic resources before subscription and delivery. Isolate the server core behind a broker contract, retain the application adapter and service tokens, and handle asynchronous publication throughout plugins and examples. Add acknowledged browser subscriptions, bounded recovery and heartbeat handling, shared React refresh helpers, original-session revalidation, transport limits, and usage documentation. The included adapter remains in-process; events are transient and clients recover by refetching after acknowledgement.
+- 7afd595: Remove Refine from the client runtime
+
+  The application shell no longer mounts Refine. `@nocobase/app-client` drops `app.refine`, `app.refineConfig`, `AppClientRefineConfig`, `AppClientRefineRegistry`, `AppClientRefineSetters`, `AppClientRefineSetterValue` and the provider-context methods `runWithProviderContext` and `runWithProviderContextAsync`, which existed only to attribute Refine settings to the provider that made them. Nothing in the repository read what was registered there: a title set through `app.refine.setOptions` never reached the page, and Refine resources never produced a menu entry.
+
+  Refine also created the TanStack Query cache that pages read through `useQueryClient()`; `AppClientProviders` now creates it in the same place, the same way, so pages and plugins behave as before. `@tanstack/react-query` becomes a peer dependency of `@nocobase/app-client` and joins the identity-sensitive packages that plugins must declare as peers.
+
+  `@nocobase/i18n/client` drops `createRefineI18nProvider`, `CreateRefineI18nProviderOptions` and `RefineI18nProvider`. `@nocobase/app-plugin-repository-example` drops its Client ServiceProvider and the `./client/providers` export, which only registered Refine resources.
+
+  `nocobase build` builds the client with `vite build` instead of `refine build`, and `@nocobase/app-cli` no longer lists `@refinedev/cli` as an optional peer. The Default and Examples templates remove every `@refinedev/*` development dependency. The development and plugin Skills no longer mention Refine, and the upgrade Skill explains how an existing application removes its `this.app.refine` calls and Refine packages.
+
+- Updated dependencies [1952789]
+- Updated dependencies [1952789]
+- Updated dependencies [1952789]
+- Updated dependencies [1952789]
+- Updated dependencies [1952789]
+- Updated dependencies [7afd595]
+  - @nocobase/app-client@4.0.0-beta.0
+  - @nocobase/app-plugin-authentication@2.0.0-beta.11
+  - @nocobase/app-plugin-authorization@1.0.0-beta.29
+  - @nocobase/app-server@3.0.0-beta.0
+  - @nocobase/i18n@2.0.0-beta.0
+  - @nocobase/db@1.0.0-beta.21
+  - @nocobase/jobs@0.1.0-beta.3
+  - @nocobase/service-provider@0.0.2-beta.2
+
 ## 1.0.0-beta.27
 
 ### Patch Changes

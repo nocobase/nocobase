@@ -28,13 +28,19 @@ The package README is the full reference: read it at `node_modules/@nocobase/app
 2. In a service provider of the App, resolve `agentSessionsToken` from `@nocobase/app-plugin-agent-sessions/server` and register the App's link kinds and tools.
 3. Each person installs a coding agent and signs in to it, installs the App's CLI, signs in (`<cli> login --server <url>`) and runs `<cli> acp service install` on their computer, which keeps it connected from every login (`<cli> acp start` connects it until the terminal stops). The first registration gives the computer its own key, so it stays connected however long the sign-in lasts.
 
+The page list has fold and expand controls, with per-viewer choices by width band. Hosts sharing a sidebar with another conversation kind can use the exported `useSessionsLayout` hook and pass the same `layoutStoragePrefix` in the route options. Compact embedded panel headers keep their own styling.
+
 ## Verification
+
+Hosts embedding `AgentSessionsPanel` can use `attach.mode: 'replace'` with a stable `scope` and a fresh update `id` to follow page context in a new draft. A new explicit entry starts another scope. Automatic context replaces only its own attachments and stops following after removal or submission; manual mentions, images and attachments survive page changes. Use `activeLink` to mark the host page's current record in the sidebar's internal task list; sidebar task links keep that list open without a page overlay.
 
 - The page's "My computers" dialog lists the computer as online with its agents' versions; an agent marked not installed or failed shows why on hover.
 - A new session answers its first message; its details show the agent and its mode.
 - Asking the agent to use the App calls its CLI as the signed-in owner. Verify creation checks the session owner and links records through the existing service.
 
 ## Troubleshooting
+
+Queued messages support individual withdrawal with bridge protocol 4. The server arbitrates withdrawal against execution before agent initialization, and the UI waits for computer removal confirmation before showing Withdrawn. Offline withdrawal remains pending. Upgrade and restart older computer connections; messages already delivered to an older bridge explicitly have no safe withdrawal capability. Editing a withdrawn message opens a separate draft and retains its images, without replacing the current draft. Do not replace this protocol with session cancellation or client-only hiding.
 
 | Symptom                                     | Cause                                                                                                                                                                                |
 | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |

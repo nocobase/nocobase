@@ -16,7 +16,8 @@ import { ClaudeAdapter } from '../../src/agent/adapters/claude.ts';
 import type { AdapterEvent } from '../../src/agent/adapters/types.ts';
 import { calls, setScript } from './fake-sdk.ts';
 
-vi.mock('@anthropic-ai/claude-agent-sdk', async () => ({
+vi.mock('@anthropic-ai/claude-agent-sdk', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@anthropic-ai/claude-agent-sdk')>()),
   query: (await import('./fake-sdk.ts')).fakeQuery,
 }));
 

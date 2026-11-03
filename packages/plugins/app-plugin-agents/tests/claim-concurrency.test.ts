@@ -75,7 +75,7 @@ describe('concurrent claims over comment run chains', () => {
       slots: 3,
       ownerUserId: 'alice',
     });
-    // Before any team runner exists, half the chains ask the owner for her personal runner.
+    // Before any shared runner exists, half the chains ask the owner for her personal runner.
     const roots: string[] = [];
     for (let issue = 1; issue <= ISSUES; issue += 1) {
       if (issue === ISSUES / 2 + 1)

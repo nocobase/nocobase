@@ -613,10 +613,16 @@ export default function UsagePage(): ReactElement {
   const queryClient = useQueryClient();
   // What runs used accrues as they run, and nothing announces it: Refresh reads the report again.
   const refresh = () =>
-    queryClient.refetchQueries({
-      queryKey: ['agents', 'usage'],
-      type: 'active',
-    });
+    Promise.all([
+      queryClient.refetchQueries({
+        queryKey: agentsKeys.models,
+        type: 'active',
+      }),
+      queryClient.refetchQueries({
+        queryKey: ['agents', 'usage'],
+        type: 'active',
+      }),
+    ]);
   const openPrices = (open: boolean) => {
     const next = new URLSearchParams(params);
     if (open) next.set('prices', '1');
@@ -669,8 +675,14 @@ function UsageView({
     queryFn: () => api.usage(params),
     placeholderData: keepPreviousData,
   });
+  const models = useQuery({
+    queryKey: agentsKeys.models,
+    queryFn: () => api.models(),
+  });
+  const hasModels = (models.data?.services.length ?? 0) > 0;
   const otherUse = useQuery({
     queryKey: agentsKeys.modelUsage(params.from, params.to),
+    enabled: hasModels,
     queryFn: () => api.modelUsage({ from: params.from, to: params.to }),
     placeholderData: keepPreviousData,
   });
@@ -736,7 +748,9 @@ function UsageView({
             ) : null}
           </p>
         ) : null}
-        {otherUse.data ? <OtherModelUse report={otherUse.data} /> : null}
+        {hasModels && otherUse.data ? (
+          <OtherModelUse report={otherUse.data} />
+        ) : null}
       </div>
     );
   }

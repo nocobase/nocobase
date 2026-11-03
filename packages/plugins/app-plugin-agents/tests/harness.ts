@@ -9,6 +9,10 @@ import {
   createSecretsService,
   type SecretsService,
 } from '@nocobase/app-server/secrets';
+import type { AuthorizationContext } from '@nocobase/authorization/core';
+import { createTestI18nRuntime } from '@nocobase/i18n/testing';
+import { createI18nMiddleware } from '@nocobase/i18n/server';
+import serverLocales from '../server/locales/index.js';
 import { randomUUID } from 'node:crypto';
 import path from 'node:path';
 
@@ -17,18 +21,16 @@ import {
   PROTOCOL_VERSION,
   ProtocolError,
   RUNNER_ROUTES,
-} from '@nocobase/agent-protocol';
-import type {
-  ClaimRequest,
-  RegisterRequest,
-  RunnerFeature,
-  AgentTool,
-  ToolInfo,
+  type ClaimRequest,
+  type RegisterRequest,
+  type RunnerFeature,
+  type AgentTool,
+  type ToolInfo,
+  type ToolPolicy,
 } from '@nocobase/agent-protocol';
 import { createTestDatabase } from '@nocobase/app-testing/server';
 import type { DatabaseManager } from '@nocobase/db';
-import type { MiddlewareHandler } from 'hono';
-import { Hono } from 'hono';
+import { type MiddlewareHandler, Hono } from 'hono';
 
 import type {
   BusinessKey,
@@ -42,7 +44,6 @@ import type {
   ConfirmChanges,
   RunnerModelEntry,
 } from '../shared/agents.js';
-import type { ToolPolicy } from '@nocobase/agent-protocol';
 import { agentsRepo } from '../server/core/agents/agent.store.js';
 import { replaceAttachments } from '../server/core/skills/skill.store.js';
 
@@ -90,6 +91,7 @@ import {
 } from '../server/routes/runners/admin.js';
 import { createDistRoutes } from '../server/routes/runners/dist.js';
 import { createRunnerRoutes } from '../server/routes/runners/runner.js';
+import type { OnlineAgentRecoveryConfig } from '../server/online/agent/types.js';
 
 const MIGRATIONS = path.resolve(import.meta.dirname, '../database/migrations');
 const PACKAGE = '@nocobase/app-plugin-agents';
@@ -296,8 +298,11 @@ export function testSecrets(
 export async function createHarness(
   options: {
     /** `null` for an application without secrets keys. */
+    readonly uiRecovery?: OnlineAgentRecoveryConfig;
+    readonly measureOnlineAgent?: (phase: string, durationMs: number) => void;
     readonly secrets?: SecretsService | null;
     readonly dist?: DistConfig;
+    readonly retryBaseDelayMs?: number;
   } = {},
 ): Promise<Harness> {
   const { database, drop } = await openDatabase();
@@ -320,6 +325,8 @@ export async function createHarness(
   const disk = memoryDisk();
   const chatFiles = memoryChatFiles(database, clock);
   const services = createAgents({
+    measureOnlineAgent: options.measureOnlineAgent,
+    uiRecovery: options.uiRecovery,
     database,
     idGenerator,
     chatFiles,
@@ -328,6 +335,9 @@ export async function createHarness(
     app: { id: 'acme', name: 'Acme' },
     skillDisk: () => disk,
     ...(options.dist ? { dist: options.dist } : {}),
+    ...(options.retryBaseDelayMs === undefined
+      ? {}
+      : { retryBaseDelayMs: options.retryBaseDelayMs }),
     ...(options.secrets === null
       ? {}
       : { secrets: options.secrets ?? testSecrets() }),
@@ -429,6 +439,13 @@ export async function createHarness(
     );
     context.set('caller', {
       userId: user,
+      onlineContext: {
+        user: { id: user },
+        credentials: { kind: 'test-session', userId: user },
+        authorization: {
+          identity: { principal: { type: 'user', id: user } },
+        } as AuthorizationContext,
+      },
       can: (item: SettingsItem, action: SettingsAction) =>
         Promise.resolve(
           grants.includes(`${item}/${action}`) ||
@@ -478,6 +495,12 @@ export async function createHarness(
     await next();
   };
   const app = new Hono();
+  app.use(
+    '*',
+    createI18nMiddleware(
+      await createTestI18nRuntime({ namespaces: { [PACKAGE]: serverLocales } }),
+    ),
+  );
   app.route(
     '/agents/runners',
     createRunnerRoutes(runners, { pollTimeoutMs: 200 }),
@@ -616,9 +639,11 @@ export async function createHarness(
         options.ownerUserId === undefined ? 'owner' : options.ownerUserId,
         {
           trust: options.trust ?? 'team',
+          slots: options.slots ?? 2,
+          ...(options.toolSlots ? { toolSlots: options.toolSlots } : {}),
           ...(options.enabledTools !== undefined
             ? { enabledTools: options.enabledTools }
-            : {}),
+            : { enabledTools: ['claude', 'codex', 'opencode', 'pi'] }),
         },
       );
       const registration: RegisterRequest = {

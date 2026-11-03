@@ -24,10 +24,12 @@ const translations = translationsOf(pages, page.route);
 const capabilityHrefs = Object.fromEntries(
   pages
     .filter(
-      ({ language, kind }) =>
-        language === page.language && kind === 'capability-overview',
+      ({ language, kind, route }) =>
+        language === page.language &&
+        (kind === 'capability-overview' ||
+          (kind === 'doc' && /^\/capabilities\/[^/]+$/.test(route))),
     )
-    .map(({ module, path }) => [module!, path]),
+    .map(({ module, route, path }) => [module ?? route.split('/')[2], path]),
 );
 ---
 

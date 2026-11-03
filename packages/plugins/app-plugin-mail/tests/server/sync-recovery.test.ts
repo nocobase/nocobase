@@ -86,15 +86,22 @@ function adapter(
     ...overrides,
   };
 }
-function service(provider: MailProviderAdapter): DefaultMailService {
+function service(
+  provider: MailProviderAdapter,
+  notify?: (userId: string) => void | Promise<void>,
+): DefaultMailService {
   return new DefaultMailService({
     store,
     adapters: { resolve: async () => provider },
     outbox: { kick: vi.fn() },
     syncBatchSize: 100,
+    messageChangeNotifier: notify ? { notify } : undefined,
   });
 }
-async function step(provider: MailProviderAdapter): Promise<void> {
+async function step(
+  provider: MailProviderAdapter,
+  notify?: (userId: string) => void | Promise<void>,
+): Promise<void> {
   const tasks = await store.claimOutbox(
     new Date().toISOString(),
     'publisher',
@@ -111,6 +118,7 @@ async function step(provider: MailProviderAdapter): Promise<void> {
   );
   await new SyncMailboxOperation({
     store,
+    messageChangeNotifier: notify ? { notify } : undefined,
     adapters: { resolve: async () => provider },
   }).execute(task.payload);
 }
@@ -499,4 +507,55 @@ it('recovers lost deliveries even when more than a full batch of older runs are 
     revision: 1,
     status: 'pending',
   });
+});
+
+it('announces committed start, empty progress and completion to the account owner', async () => {
+  const provider = adapter();
+  const observed: string[] = [];
+  let runId = '';
+  const notify = vi.fn(async (userId: string) => {
+    expect(userId).toBe('owner');
+    if (runId) observed.push((await store.getSyncRun(runId))!.status);
+  });
+  const run = await service(provider, notify).startSync(
+    { actorId: 'owner' },
+    { accountId: '10000000-0000-4000-8000-000000000001' },
+  );
+  runId = run.id;
+  expect(notify).toHaveBeenCalledWith('owner');
+  await step(provider, notify);
+  await step(provider, notify);
+  await step(provider, notify);
+  await vi.waitFor(() => expect(observed).toContain('completed'));
+  expect(observed).toContain('running');
+  expect((await store.getSyncRun(run.id))?.processedMessages).toBe(0);
+});
+
+it('announces failed and cancelled synchronization without requiring changed messages', async () => {
+  const provider = adapter({
+    getCurrentSyncCursor: async () => ({
+      ok: false,
+      error: {
+        code: 'TEST_FAILED',
+        message: 'Unavailable',
+        category: 'configuration',
+        retryable: false,
+      },
+    }),
+  });
+  const notify = vi.fn();
+  const sync = service(provider, notify);
+  const run = await sync.startSync(
+    { actorId: 'owner' },
+    { accountId: '10000000-0000-4000-8000-000000000001' },
+  );
+  notify.mockClear();
+  await step(provider, notify);
+  expect((await store.getSyncRun(run.id))?.status).toBe('failed');
+  expect(notify).toHaveBeenCalledWith('owner');
+  const next = await sync.retrySyncRun({ actorId: 'owner' }, run.id);
+  notify.mockClear();
+  await sync.cancelSyncRun({ actorId: 'owner' }, next.id);
+  expect(notify).toHaveBeenCalledWith('owner');
+  expect((await store.getSyncRun(next.id))?.status).toBe('cancelled');
 });

@@ -3,12 +3,18 @@
  * and lets a script read the streaming input and invoke the permission
  * callbacks the way Claude Code does.
  */
+import { vi } from 'vitest';
 import type {
   ModelInfo,
   Options,
   SDKMessage,
   SDKUserMessage,
 } from '@anthropic-ai/claude-agent-sdk';
+
+// Preserve the SDK exception identity even when query() is mocked.
+const { AbortError } = await vi.importActual<
+  typeof import('@anthropic-ai/claude-agent-sdk')
+>('@anthropic-ai/claude-agent-sdk');
 
 export interface FakeContext {
   options: Options;
@@ -116,9 +122,7 @@ export function fakeQuery({
   const inner = script(ctx);
   const outer = (async function* () {
     const abortError = aborted.then(() => {
-      const error = new Error('Claude Code process aborted by user');
-      error.name = 'AbortError';
-      throw error;
+      throw new AbortError('Claude Code process aborted by user');
     });
     while (true) {
       const next = await Promise.race([inner.next(), abortError]);

@@ -1,13 +1,11 @@
 import {
   ApiClientError,
+  createRealtimeRefresh,
+  refreshRealtimeQueries,
   realtimeClientToken,
   useService,
 } from '@nocobase/app-client';
-import {
-  QueryClient,
-  QueryClientProvider,
-  useQueryClient,
-} from '@tanstack/react-query';
+import { QueryClientProvider, useQueryClient } from '@tanstack/react-query';
 import {
   useEffect,
   useState,
@@ -17,14 +15,18 @@ import {
 
 import {
   PM_REALTIME_TOPIC,
+  isDiscussionOnly,
   type PmChangeEvent,
 } from '../../shared/realtime.js';
 import {
   announcedIssueIds,
   changedIssueSegments,
+  embeddedIssueSegments,
   isIssueRead,
 } from '../api/changed-issues.js';
+import { PmQueryClient } from '../api/invalidate-queries.js';
 import { pmKeys } from '../api/keys.js';
+import { usePmApi } from '../hooks/use-pm-api.js';
 
 /** A refusal (4xx) will not change on a retry; anything else gets one more try. */
 function retry(failures: number, error: unknown): boolean {
@@ -52,52 +54,113 @@ function isChange(payload: unknown): payload is PmChangeEvent {
 function RealtimeRefresh(): null {
   const realtime = useService(realtimeClientToken);
   const queryClient = useQueryClient();
+  const api = usePmApi();
   useEffect(() => {
-    const refreshAll = () =>
-      void queryClient.invalidateQueries({ queryKey: pmKeys.all });
-    const unsubscribeOpen = realtime.onOpen(refreshAll);
-    const unsubscribeTopic = realtime.subscribe<unknown>(
-      PM_REALTIME_TOPIC,
-      ({ payload }) => {
-        if (!isChange(payload)) return;
-        if (payload.domain === 'labels') {
-          void queryClient.invalidateQueries({ queryKey: pmKeys.labels });
+    let full = false;
+    let pending: PmChangeEvent[] = [];
+    const scheduled = createRealtimeRefresh(async (signal) => {
+      const all = full;
+      const changes = pending;
+      full = false;
+      pending = [];
+      try {
+        if (all || changes.length === 0) {
+          await refreshRealtimeQueries(
+            queryClient,
+            { queryKey: pmKeys.all },
+            signal,
+          );
           return;
         }
-        // Plan cards and lists; executing or undoing a plan changes issues too, which the issues' own events announce.
-        if (payload.domain === 'plans') {
-          void queryClient.invalidateQueries({ queryKey: ['pm', 'plans'] });
-          return;
+        const requests: Promise<void>[] = [];
+        const invalidate = (queryKey: readonly unknown[]) => {
+          requests.push(
+            refreshRealtimeQueries(queryClient, { queryKey }, signal),
+          );
+        };
+        if (changes.some((change) => change.domain === 'labels'))
+          invalidate(pmKeys.labels);
+        if (changes.some((change) => change.domain === 'plans'))
+          invalidate(['pm', 'plans']);
+        const issues = changes.filter((change) => change.domain === 'issues');
+        if (issues.length) {
+          invalidate(pmKeys.issues);
+          if (
+            changes.every(isDiscussionOnly) &&
+            queryClient instanceof PmQueryClient
+          ) {
+            await queryClient.refreshDiscussions(
+              api,
+              new Set(issues.flatMap((change) => change.issueIds ?? [])),
+            );
+            await Promise.all(requests);
+            return;
+          }
+          const named = issues.map(announcedIssueIds);
+          if (
+            named.some((ids) => !ids) ||
+            issues.some((change) => change.listsChanged)
+          )
+            invalidate(pmKeys.projects);
+          if (named.some((ids) => !ids)) {
+            invalidate(['pm', 'issue']);
+          } else {
+            const ids = new Set(named.flatMap((ids) => (ids ? [...ids] : [])));
+            const segments = changedIssueSegments(queryClient, ids);
+            const embedded = embeddedIssueSegments(queryClient, ids);
+            requests.push(
+              refreshRealtimeQueries(
+                queryClient,
+                {
+                  queryKey: ['pm', 'issue'],
+                  predicate: (query) =>
+                    isIssueRead(query.queryKey, segments) ||
+                    (query.queryKey.length === 3 &&
+                      embedded.has(String(query.queryKey[2]))),
+                },
+                signal,
+              ),
+            );
+          }
         }
-        // Issue changes also move lists; an issue's own reads refresh only for the issues named. Projects count their
-        // issues by status, which only an announcement that names no issues can change (`PmChangeEvent.issueIds`).
-        void queryClient.invalidateQueries({ queryKey: pmKeys.issues });
-        const named = announcedIssueIds(payload);
-        if (!named) {
-          void queryClient.invalidateQueries({ queryKey: pmKeys.projects });
-          void queryClient.invalidateQueries({ queryKey: ['pm', 'issue'] });
-          return;
-        }
-        const segments = changedIssueSegments(queryClient, named);
-        void queryClient.invalidateQueries({
-          queryKey: ['pm', 'issue'],
-          predicate: (query) => isIssueRead(query.queryKey, segments),
-        });
+        await Promise.all(requests);
+      } catch (error) {
+        // A later event must not replace the snapshots that still need recovery.
+        full = true;
+        throw error;
+      }
+    });
+    const subscription = realtime.watch<unknown>(PM_REALTIME_TOPIC, {
+      onReady: () => {
+        full = true;
+        scheduled.retry();
       },
-    );
+      onEvent: ({ payload }) => {
+        if (!isChange(payload)) return;
+        if (pending.length < 100) pending.push(payload);
+        else {
+          full = true;
+          pending = [];
+        }
+        scheduled.request();
+      },
+    });
     return () => {
-      unsubscribeTopic?.();
-      unsubscribeOpen?.();
+      subscription.close();
+      scheduled.close();
     };
-  }, [realtime, queryClient]);
+  }, [realtime, queryClient, api]);
   return null;
 }
 
 /** This plugin's query cache, kept current by the server's change announcements. */
-export function PmQueryProvider({ children }: PropsWithChildren): ReactElement {
+export function PmQueryProvider({
+  children,
+  realtime = true,
+}: PropsWithChildren<{ realtime?: boolean }>): ReactElement {
   const [client] = useState(
     () =>
-      new QueryClient({
+      new PmQueryClient({
         defaultOptions: {
           queries: { retry, staleTime: 10_000, refetchOnWindowFocus: false },
         },
@@ -105,7 +168,7 @@ export function PmQueryProvider({ children }: PropsWithChildren): ReactElement {
   );
   return (
     <QueryClientProvider client={client}>
-      <RealtimeRefresh />
+      {realtime && <RealtimeRefresh />}
       {children}
     </QueryClientProvider>
   );

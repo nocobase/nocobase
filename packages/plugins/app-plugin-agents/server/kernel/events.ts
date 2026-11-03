@@ -31,6 +31,7 @@ export interface AgentsNotice {
   readonly type:
     | 'runner_upgrade_required'
     | 'run_secrets_not_allowed'
+    | 'runner_quota'
     | 'runner_revoked'
     | 'run_request_expired';
   readonly userIds: readonly string[];
@@ -101,6 +102,39 @@ export type AgentsEvent =
       readonly conversationId: string;
       readonly userId: string;
       readonly lastSeq?: number;
+      /** Present only when the change acknowledges the owner's read position. */
+      readonly seenSeq?: number;
+      readonly messageId?: string;
+      readonly revision?: number;
+    }
+  /** A conversation was deleted, by its owner or once archived past the retention: what refers to it may go. */
+  | {
+      readonly type: 'conversation.deleted';
+      readonly conversationId: string;
+      readonly userId: string;
+    }
+  /**
+   * A conversation started waiting for its owner (`ConversationSummary.needsYou`) at message `seq`: for the
+   * application's reminders, push and badge. It may already be settled when a listener reads it again.
+   */
+  | {
+      readonly type: 'conversation.attention';
+      readonly conversationId: string;
+      readonly userId: string;
+      readonly reason: 'reply' | 'failed' | 'confirm';
+      readonly seq: number;
+      readonly title: string | null;
+      readonly text: string | null;
+    }
+  | {
+      readonly type: 'conversation.historyReplaced';
+      readonly conversationId: string;
+      readonly userId: string;
+      readonly messageId: string;
+      readonly seq: number;
+      readonly revision: number;
+      readonly lastSeq: number;
+      readonly executionId: string;
     }
   | { readonly type: 'agent.changed'; readonly agentId: string }
   /**
@@ -141,7 +175,9 @@ export type AgentsEvent =
    */
   | {
       readonly type: 'notice.cleared';
-      readonly notice: Pick<AgentsNotice, 'type' | 'subject'>;
+      readonly notice: Pick<AgentsNotice, 'type' | 'subject'> & {
+        readonly key?: string;
+      };
     };
 
 export type AgentsEventType = AgentsEvent['type'];

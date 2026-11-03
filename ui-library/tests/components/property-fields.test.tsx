@@ -4,6 +4,7 @@ import { useState, type ReactElement } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
+  PeopleAvatars,
   PropertyCard,
   PropertyLink,
   PropertyLongText,
@@ -82,6 +83,7 @@ function Card({
 afterEach(() => {
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
+  Reflect.deleteProperty(document, 'execCommand');
 });
 
 describe('PropertyCard variant form', () => {
@@ -236,4 +238,56 @@ describe('PropertyCard variant inline', () => {
       screen.queryByRole('button', { name: 'Edit Website' }),
     ).not.toBeInTheDocument();
   });
+});
+
+describe('property copying on HTTP', () => {
+  it.each([true, false])(
+    'reports the fallback copy outcome (%s)',
+    async (success) => {
+      vi.stubGlobal('navigator', { clipboard: undefined });
+      const command = vi.fn(() => {
+        const field = document.activeElement as HTMLTextAreaElement;
+        expect(field.value).toBe('ada@example.com');
+        expect(field.selectionStart).toBe(0);
+        expect(field.selectionEnd).toBe(field.value.length);
+        return success;
+      });
+      Object.defineProperty(document, 'execCommand', {
+        configurable: true,
+        value: command,
+      });
+      render(<Card variant='inline' />);
+      const button = screen.getAllByRole('button', { name: 'Copy' })[0]!;
+      button.focus();
+      fireEvent.click(button);
+      await act(async () => {
+        await Promise.resolve();
+      });
+      expect(command).toHaveBeenCalledWith('copy');
+      expect(button).toHaveFocus();
+      expect(document.querySelector('textarea')).toBeNull();
+      expect(screen.queryByRole('button', { name: 'Copied' }) !== null).toBe(
+        success,
+      );
+    },
+  );
+});
+
+it('uses CJK name endings in people avatars and preserves Latin abbreviations', () => {
+  render(
+    <PeopleAvatars
+      label='Followers'
+      people={[
+        { id: '1', name: '周 建国' },
+        { id: '2', name: '欧阳娜娜' },
+        { id: '3', name: 'Li Lei' },
+        { id: '4', name: 'Alice' },
+      ]}
+    />,
+  );
+  const group = screen.getByRole('group', { name: 'Followers' });
+  expect(within(group).getByText('建国')).toBeVisible();
+  expect(within(group).getByText('娜娜')).toBeVisible();
+  expect(within(group).getByText('LL')).toBeVisible();
+  expect(within(group).getByText('AL')).toBeVisible();
 });

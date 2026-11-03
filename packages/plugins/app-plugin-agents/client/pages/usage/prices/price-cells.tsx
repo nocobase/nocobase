@@ -49,8 +49,8 @@ export function PriceCells({
 }): ReactElement {
   const { t } = useTranslation();
   const initial = {
-    input: price ? amountText(price.inputPerM) : '',
-    output: price ? amountText(price.outputPerM) : '',
+    input: price ? String(price.inputPerM) : '',
+    output: price ? String(price.outputPerM) : '',
   };
   const [input, setInput] = useState(initial.input);
   const [output, setOutput] = useState(initial.output);

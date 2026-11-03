@@ -72,6 +72,7 @@ export interface ProcessingLevel {
 export type TaskKind = 'clerk' | 'team' | 'executor';
 
 export interface Config {
+  readonly dispatchRules?: import('../../shared/workflow-parameters.js').DispatchRules;
   readonly departments: readonly {
     readonly id: string;
     readonly name: string;

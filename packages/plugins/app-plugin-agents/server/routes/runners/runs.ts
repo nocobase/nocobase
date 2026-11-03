@@ -1,3 +1,4 @@
+import { requestToolDetection } from '../../runners/tool-detection.js';
 /**
  * A run's endpoints on the runner protocol (`RUNNER_ROUTES` `runs/:runId/*`): its lease, start, events, status,
  * ending reports, cancellation acknowledgement, the skills and mounts it gets and its repositories' credentials, mounted under
@@ -110,7 +111,7 @@ export function mountRunnerRunRoutes(
       'agentsRunnerReportRunEvents',
       "Report a run's events",
       EventsResponseSchema,
-      "Appends a batch of the run's transcript events, in order.",
+      'Appends canonical transcript events; negotiated conversation previews are delivered in memory without storage.',
     ),
     runParam,
     apiValidator('json', EventsRequestSchema),
@@ -159,14 +160,17 @@ export function mountRunnerRunRoutes(
     report('agentsRunnerFailRun', 'Fail a run', FinishResponseSchema),
     runParam,
     apiValidator('json', FailRequestSchema),
-    async (context) =>
-      context.json({
-        data: await services.reports.fail(
-          context.get('runner'),
-          context.req.valid('param').runId,
-          context.req.valid('json'),
-        ),
-      }),
+    async (context) => {
+      const runner = context.get('runner');
+      const failure = context.req.valid('json');
+      const data = await services.reports.fail(
+        runner,
+        context.req.valid('param').runId,
+        failure,
+      );
+      if (failure.reason === 'toolAuth') requestToolDetection(runner.id);
+      return context.json({ data });
+    },
   );
   // One of the run's skills, while the runner holds the run; a skill the run does not get is not found.
   router.get(

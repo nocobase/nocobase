@@ -125,6 +125,36 @@ test('requires a route that accepts a run token to declare its business action',
   assert.equal(problems[0].fix, openApiFixes.runAction);
 });
 
+test('distinguishes explicit person-only shared-token commands from actual Run-capable routes', () => {
+  for (const identities of [
+    undefined,
+    [],
+    ['run'],
+    ['person', 'run'],
+    ['unknown'],
+    'person',
+    ['person'],
+  ]) {
+    const inspection = cleanInspection();
+    inspection.document.paths['/api/conversations/{id}'] = {
+      get: operation('agentsGetConversation', {
+        security: [{ runToken: [] }],
+        'x-cli': { identities },
+      }),
+    };
+    const problems = findOpenApiProblems(inspection);
+    assert.equal(
+      problems.length,
+      Array.isArray(identities) &&
+        identities.length === 1 &&
+        identities[0] === 'person'
+        ? 0
+        : 1,
+    );
+    if (problems.length) assert.equal(problems[0].fix, openApiFixes.runAction);
+  }
+});
+
 test('reports why a route counts as undeclared when the inspection says so', () => {
   const inspection = cleanInspection();
   inspection.routes.push({

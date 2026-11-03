@@ -353,7 +353,7 @@ export function DeleteProjectButton({
 
 ## 13. Loading, empty, and error states
 
-- Every view that loads data needs these three states (for the four list states, see [`table.md`](table.md); for how to handle loading and errors, see [`api.md`](api.md)).
+- Every view that loads data needs loading and failure feedback (for list feedback states, see [`table.md`](table.md); for individual-record loading and errors, see [`api.md`](api.md)).
 - Components: `Loading` (`#components/loading`, the shared loading indicator) and `Spinner` (a small loading indicator in a button or toolbar) ship with the template; `Skeleton` (a skeleton screen that preserves the layout), `Empty` (empty state) and `Alert` (error message) are added with `yes n | pnpm exec shadcn add skeleton empty alert`.
 - Put loading feedback inside the surface that is loading. A page-level loading indicator rendered for a dialog's content appears behind the dialog, not inside it.
 

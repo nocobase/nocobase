@@ -1,3 +1,5 @@
+import { resolveModelCapabilities } from './search/capabilities.js';
+import type { ModelCapabilities } from '../../shared/models.js';
 /**
  * The model services online agents call (`agModelServices`): listing, adding, editing, switching off and deleting
  * them, fetching a provider's models and checking a model over a connection being edited, and what the gateway reads
@@ -232,6 +234,7 @@ export const ConnectionCheckSchema: z.ZodType<ModelConnectionCheckRequest> =
   });
 
 export interface ModelServices extends ModelSource {
+  capabilities(ref: ModelRef): Promise<ModelCapabilities>;
   list(): Promise<ModelServiceView[]>;
   create(input: CreateModelServiceRequest): Promise<ModelServiceView>;
   update(
@@ -342,6 +345,17 @@ function normalizeBaseUrl(value: string | null | undefined): string | null {
 const providerName = (record: ServiceRecord): ModelProviderName =>
   ProviderSchema.parse(record.provider);
 
+/** Derived output only; never written back into agModelServices.models. */
+function outputModels(record: ServiceRecord): ModelOption[] {
+  return modelsOf(record.models).map((model) => ({
+    ...model,
+    capabilities: resolveModelCapabilities(
+      { provider: providerName(record), baseUrl: record.baseUrl },
+      model.value,
+      model.kind,
+    ),
+  }));
+}
 function view(record: ServiceRecord): ModelServiceView {
   return {
     name: record.name,
@@ -350,7 +364,7 @@ function view(record: ServiceRecord): ModelServiceView {
     baseUrl: record.baseUrl,
     apiKeySet: record.apiKeyEncrypted !== null,
     enabled: Boolean(record.enabled),
-    models: modelsOf(record.models),
+    models: outputModels(record),
   };
 }
 
@@ -365,7 +379,7 @@ function offeredOf(
       name: record.name,
       title: record.title,
       provider: record.provider,
-      models: modelsOf(record.models).filter((model) => model.kind === kind),
+      models: outputModels(record).filter((model) => model.kind === kind),
     }))
     .filter((service) => service.models.length > 0);
 }
@@ -669,6 +683,16 @@ export function createModelServices(deps: {
       return answered(looksLike ? { ...checked, looksLike } : checked);
     },
 
+    async capabilities(ref: ModelRef): Promise<ModelCapabilities> {
+      const record = (await all(deps.tx.read())).find(
+        (item) => item.name === ref.modelService,
+      );
+      if (!record?.enabled) return { webSearch: false };
+      return (
+        outputModels(record).find((model) => model.value === ref.model)
+          ?.capabilities ?? { webSearch: false }
+      );
+    },
     async catalog(kind: ModelKind = 'chat'): Promise<ModelCatalog> {
       const conn = deps.tx.read();
       const records = await all(conn);
@@ -705,12 +729,13 @@ export function createModelServices(deps: {
       return (await endpoint(ref, kind)).connection;
     },
 
-    endpointFor: (ref, kind) => endpoint(ref, kind),
+    endpointFor: (ref, kind, options) => endpoint(ref, kind, options),
   };
 
   async function endpoint(
     ref: ModelRef,
     kind: ModelKind,
+    options?: { readonly allowUnlistedModel?: boolean },
   ): Promise<ModelEndpoint> {
     const record = (
       await repo(deps.tx.read()).findMany({
@@ -722,10 +747,19 @@ export function createModelServices(deps: {
         'config',
         `The model service ${ref.modelService} is not there or is off.`,
       );
+    const configured = modelsOf(record.models).find(
+      (model) => model.value === ref.model,
+    );
     const offered = modelsOf(record.models).find(
       (model) => model.value === ref.model && model.kind === kind,
     );
-    if (!offered)
+    const unlistedEmbedding =
+      options?.allowUnlistedModel === true &&
+      kind === 'embedding' &&
+      !configured &&
+      providerOf(record.provider)?.kinds.includes('embedding') === true &&
+      ModelRefSchema.safeParse(ref).success;
+    if (!offered && !unlistedEmbedding)
       throw new ModelError(
         'config',
         `The model service ${ref.modelService} does not offer the ${kind} model ${ref.model}.`,
@@ -745,6 +779,6 @@ export function createModelServices(deps: {
         'auth',
         `The model service ${ref.modelService} has no API key.`,
       );
-    return { connection, dimensions: offered.dimensions };
+    return { connection, dimensions: offered?.dimensions ?? null };
   }
 }

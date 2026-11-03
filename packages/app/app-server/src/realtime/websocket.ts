@@ -1,7 +1,8 @@
+import { REALTIME_MAX_MESSAGE_BYTES } from '@nocobase/realtime/protocol';
 import type { Hono } from 'hono';
 
 import type { ServiceResolver } from '@nocobase/service-provider';
-import type { AppWebSocketHandler } from '../websocket.js';
+import type { AppWebSocketHandler } from '@nocobase/app-websocket';
 import {
   realtimePrincipalResolverToken,
   realtimeServiceToken,
@@ -47,9 +48,24 @@ export function createRealtimeWebSocketHandler(
     }
 
     const realtime = container.resolve(realtimeServiceToken);
-    const principal = container.has(realtimePrincipalResolverToken)
-      ? await container.resolve(realtimePrincipalResolverToken).resolve(request)
+    const resolver = container.has(realtimePrincipalResolverToken)
+      ? container.resolve(realtimePrincipalResolverToken)
       : undefined;
+    const principal = await resolver?.resolve(request);
+    const context = {
+      request,
+      principal,
+      validatePrincipal:
+        principal && resolver
+          ? async (): Promise<boolean> => {
+              const current = await resolver.resolve(request);
+              return (
+                current?.userId === principal.userId &&
+                current?.sessionId === principal.sessionId
+              );
+            }
+          : undefined,
+    };
     let connection: RealtimeConnection | undefined;
     const disconnect = (): void => {
       if (!connection) {
@@ -61,21 +77,20 @@ export function createRealtimeWebSocketHandler(
     };
 
     return {
+      maxMessageBytes: REALTIME_MAX_MESSAGE_BYTES,
       onOpen(_event, ws) {
-        connection = realtime.connect(ws, { request, principal });
+        connection = realtime.connect(ws, context);
       },
-      onMessage(event, ws) {
-        if (!connection) {
-          connection = realtime.connect(ws, { request, principal });
-        }
-
-        realtime.handleClientMessage(connection, event.data);
+      async onMessage(event) {
+        if (!connection) return;
+        await realtime.handleClientMessage(connection, event.data);
       },
       onClose() {
         disconnect();
       },
-      onError() {
+      onError(_event, ws) {
         disconnect();
+        ws.close(1011, 'realtime transport failed');
       },
     };
   };

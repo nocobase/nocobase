@@ -37,15 +37,11 @@ agents:
     versions: { acme: 0.1.0 } # pin a product instead of the channel's highest
     npm: # a product with no tarball in dir, named on npm instead (exact versions)
       nocobase-runner: { package: '@nocobase/agent-runner', version: 1.0.0 }
-  vectors:
-    store: sqlite-vec # the default; pgvector (own PostgreSQL), or false
-    path: storage/vectors.sqlite
   skills:
     disk: s3 # Drive disk for skill files; drive.default by default
 ```
 
 - `agents.cli.name` defaults to `agents.app.id`; set it to the App's `nocobase.cli.bin` so runs install and call the same CLI the App serves.
-- `sqlite-vec` is local to an instance and has no build for Alpine (musl), where it reports `SQLITE_VEC_UNSUPPORTED`; an App running several instances, or on Alpine, uses `pgvector`, which takes its own PostgreSQL connection and never the App's.
 - Moving `agents.skills.disk` does not copy what is stored: copy `skills/blobs/` across first.
 - Model services, for the App's own model calls, are not configured here; they are added on the Models page or through the API.
 - `secrets.keys` (the App's secrets service) must be set before variables or model service keys can be stored. `pnpm nocobase secrets rotate` reseals both stores.
@@ -55,3 +51,7 @@ agents:
 The plugin has no routes of its own. The App routes what `@nocobase/app-plugin-agents/client/routes` exports (`agentsRoute`, `runtimesRoute`, `skillsRoute`, `usageRoute`, `modelsRoute`), each behind a page grant named like its route (`PAGES` in `shared/access`); `modelsRoute` stands behind `agents.services` read. `client/kit` has the pieces for the App's own pages (`RunnerAgentsSection`, the Agent page's list for an App that shows its own agents beside it, `VariablesSection`, `DefaultSkillsSection`, `useRunnerOptions`, `useAgentOptions`), `client/runs` the headless parts of a subject's runs, `client/profile` the person's default chat agent, and `client/config` the business-action catalog context.
 
 The chat is headless in `client/chat`: wrap the App's routes in `ChatProvider` and install the UI Library's `agent-chat` block (`yes n | pnpm exec shadcn add @nocobase/agent-chat`) for its UI. The README's "Web UI" section describes every export.
+
+## OnlineAgent chat
+
+Mount `ChatProvider` from the plugin client chat entry and key it by the authenticated user identity. It owns the shared submission, canonical-history and initial-stream controller for every chat view. New chats use create then messages; legacy start/fallback/restore endpoints are removed. Network uncertainty requires explicit saved-history inspection, never hidden resend or stream reconnect. Existing Runner conversations remain read-only in the switched UI. Ordinary configuration snapshots and custom server tools use `agentsToken.onlineAgent`; see [OnlineAgent chats and business tools](online-agent.md) for configuration, server examples and browser integration.

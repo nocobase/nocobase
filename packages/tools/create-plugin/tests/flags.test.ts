@@ -76,6 +76,9 @@ describe('parseCreatePluginArgs', () => {
   });
 
   it('rejects implicit, unknown, missing, and conflicting capabilities', () => {
+    expect(() =>
+      parseCreatePluginArgs(['audit-log', '--with', 'registry']),
+    ).toThrow('Unknown plugin capability: registry');
     expect(() => parseCreatePluginArgs(['audit-log'])).toThrow(
       'No plugin capabilities were selected',
     );

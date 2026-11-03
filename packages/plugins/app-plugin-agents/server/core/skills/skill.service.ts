@@ -213,6 +213,11 @@ export interface SkillService {
     targets: readonly SkillTarget[],
     runId: string,
   ): Promise<RunSkill[]>;
+  /** Read-only delivery metadata for a batch of admission checks; no bundle bodies are loaded. */
+  admissionMetadata(
+    conn: DatabaseConnection,
+    targets: readonly SkillTarget[],
+  ): Promise<RunSkillRow[]>;
   /** One of a run's skills, as the runner fetches it: assembled from its blobs, cached by its version's hash. */
   bundle(conn: DatabaseConnection, slug: string): Promise<SkillBundle>;
   /** Stores a file or a zip to import, before the save or import that names it (`SkillUpload.id`). */
@@ -824,6 +829,12 @@ export function createSkillService(deps: SkillServiceDeps): SkillService {
         runId,
       );
     },
+
+    admissionMetadata: (conn, targets) =>
+      runSkillRows(
+        conn,
+        targets.filter((target) => target.scope !== 'agent'),
+      ),
 
     async bundle(conn, slug) {
       const skill = await skillsRepo(conn).findOne({ filter: { slug } });

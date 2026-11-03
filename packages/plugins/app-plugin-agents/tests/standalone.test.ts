@@ -42,7 +42,10 @@ const migrationsOf = (name: string) =>
   );
 
 let testDatabase: TestDatabase | undefined;
+let stopServices: (() => Promise<void>) | undefined;
 afterEach(async () => {
+  await stopServices?.();
+  stopServices = undefined;
   await testDatabase?.destroy();
   testDatabase = undefined;
 });
@@ -76,6 +79,8 @@ it('runs a conversation on a runner with nothing but authentication, authorizati
     }),
     onError: () => undefined,
   });
+
+  stopServices = () => agents.onlineAgent.shutdown();
 
   // A signed-in person, as the application's authentication and authorization would set them.
   const guard: MiddlewareHandler<AdminEnv> = async (context, nextHandler) => {
@@ -145,7 +150,7 @@ it('runs a conversation on a runner with nothing but authentication, authorizati
     vocabulary.body.data.scopes.map((scope: { key: string }) => scope.key),
   ).toEqual(['workdir']);
 
-  // A runner connects with the echo tool signed in to one model, which becomes an agent to enable.
+  // A runner connects with the echo tool signed in to one model, from which an agent is created and enabled.
   const token = await agents.runners.createRegistrationToken('admin', {
     trust: 'team',
   });
@@ -173,34 +178,50 @@ it('runs a conversation on a runner with nothing but authentication, authorizati
   });
   expect(registered.status).toBe(200);
   const runnerKey = registered.body.data.runnerKey as string;
-  const listed = await call('GET', '/agents', { user: 'admin' });
-  expect(listed.body.data).toEqual([
+  expect((await call('GET', '/agents', { user: 'admin' })).body.data).toEqual(
+    [],
+  );
+  const groups = await call('GET', '/agents/availableModels', {
+    user: 'admin',
+  });
+  expect(groups.body.data).toEqual([
     expect.objectContaining({
-      name: 'Claude · Sonnet 5',
-      status: 'pending',
       tool: 'claude',
-      model: 'claude-sonnet-5',
+      modelCount: 1,
+      status: 'available',
     }),
   ]);
-  const agent = await call('PATCH', `/agents/${listed.body.data[0].id}`, {
+  const available = await call('GET', '/agents/availableModels?tool=claude', {
     user: 'admin',
-    body: { description: 'Answers', enabled: true, expectedRevision: 1 },
   });
-  expect(agent.status).toBe(200);
+  expect(available.body.data).toEqual([
+    expect.objectContaining({
+      tool: 'claude',
+      model: 'claude-sonnet-5',
+      agentId: null,
+    }),
+  ]);
+  const agent = await call('POST', '/agents/runnerAgents', {
+    user: 'admin',
+    body: { tool: 'claude', model: 'claude-sonnet-5', description: 'Answers' },
+  });
+  expect(agent.status).toBe(201);
+  expect(agent.body.data).toMatchObject({
+    name: 'Claude · Sonnet 5',
+    status: 'enabled',
+    tool: 'claude',
+    model: 'claude-sonnet-5',
+  });
 
-  // A person chats with the agent.
-  const conversation = await call('POST', '/agents/conversations', {
-    user: 'alice',
-    body: { agentId: agent.body.data.id },
+  // Historical Runner conversations remain a domain capability, outside the OnlineAgent HTTP cutover.
+  const conversation = await agents.conversations.create('alice', {
+    agentId: agent.body.data.id,
   });
-  expect(conversation.status).toBe(201);
-  const id = conversation.body.data.id as string;
-  const sent = await call('POST', `/agents/conversations/${id}/messages`, {
-    user: 'alice',
-    body: { content: 'ping' },
+  const id = conversation.id;
+  const sent = await agents.conversations.send('alice', id, {
+    content: 'ping',
   });
-  expect(sent.status).toBe(201);
-  expect(sent.body.data.run).toMatchObject({ outcome: 'created' });
+  expect(sent.run).toMatchObject({ outcome: 'created' });
 
   // The runner claims the run and answers it as the echo adapter does: the message, as text.
   const claimed = await call('POST', '/agents/runners/claim', {
@@ -264,14 +285,12 @@ it('runs a conversation on a runner with nothing but authentication, authorizati
     ).status,
   ).toBe(200);
 
-  const messages = await call('GET', `/agents/conversations/${id}/messages`, {
-    user: 'alice',
+  await agents.conversations.syncRun(runId);
+  const messages = await agents.conversations.messages('alice', id, {
+    limit: 20,
   });
   expect(
-    messages.body.data.map((message: { role: string; content: any }) => [
-      message.role,
-      message.content.content,
-    ]),
+    messages.items.map((message) => [message.role, message.content.content]),
   ).toEqual([
     ['user', 'ping'],
     ['assistant', 'ping'],

@@ -33,6 +33,8 @@ export interface ListAdministratedUsersInput {
   readonly userIds?: readonly string[];
   /** Which accounts to list: people (the default), service accounts, or both. */
   readonly kind?: UserKind | 'all';
+  readonly sort?: 'name';
+  readonly order?: 'asc' | 'desc';
 }
 
 export interface CreateServiceAccountInput {
@@ -191,7 +193,14 @@ class DefaultUserAdministrationService implements UserAdministrationService {
       select: (select) => select.fields(...userColumns),
       // `createdAt` alone is not a total order, so a shared timestamp could
       // drop or repeat a row across pages; `id` breaks the tie.
-      sort: (sort) => [sort.field('createdAt').desc(), sort.field('id').asc()],
+      sort: (sort) => [
+        input.sort === 'name'
+          ? input.order === 'desc'
+            ? sort.field('name').desc()
+            : sort.field('name').asc()
+          : sort.field('createdAt').desc(),
+        sort.field('id').asc(),
+      ],
       limit: pageSize,
       offset: (page - 1) * pageSize,
     });
@@ -364,7 +373,7 @@ class DefaultUserAdministrationService implements UserAdministrationService {
     await this.requireUser(userId);
     const context = await this.options.auth.administrationContext();
     await context.internalAdapter.deleteUserSessions(userId);
-    this.options.realtime?.disconnectUser(userId);
+    await this.options.realtime?.disconnectUser(userId);
   }
 
   async remove(userId: string, actorId: string): Promise<void> {
@@ -383,7 +392,7 @@ class DefaultUserAdministrationService implements UserAdministrationService {
       .deleteFrom('account')
       .where('userId', '=', userId)
       .execute();
-    this.options.realtime?.disconnectUser(userId);
+    await this.options.realtime?.disconnectUser(userId);
   }
 
   private async requireUser(userId: string): Promise<AdministratedUser> {

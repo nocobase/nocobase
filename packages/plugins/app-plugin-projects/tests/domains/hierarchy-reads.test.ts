@@ -182,3 +182,178 @@ it('marks a change of project, parent or executor as moving the issue', async ()
     true,
   ]);
 });
+
+it('limits hierarchy records to unfinished issues, explicit issues and contiguous visible ancestors', async () => {
+  const h = await harness();
+  const parent = await h.services.issues.create(admin(h), {
+    title: 'Finished parent',
+  });
+  await move(h, parent, 'done');
+  const child = await h.services.issues.create(admin(h), {
+    title: 'Unfinished child',
+    parentIssueId: parent.id,
+  });
+  const followed = await h.services.issues.create(admin(h), {
+    title: 'Finished explicit issue',
+  });
+  await move(h, followed, 'done');
+  const historical = await h.services.issues.create(admin(h), {
+    title: 'Other history',
+  });
+  await move(h, historical, 'cancelled');
+  const result = await h.services.issueQueries.hierarchy(
+    admin(h),
+    {},
+    { unfinishedOnly: true, includeIds: [followed.id] },
+  );
+  expect(result.issues.map((issue) => issue.id).sort()).toEqual(
+    [parent.id, child.id, followed.id].sort(),
+  );
+  expect(
+    (await h.services.issueQueries.hierarchy(admin(h), {})).issues,
+  ).toHaveLength(4);
+  expect(
+    (
+      await h.services.issueQueries.hierarchy(
+        { ...admin(h), projectIds: [] },
+        {},
+        { unfinishedOnly: true, includeIds: [followed.id] },
+      )
+    ).issues,
+  ).toEqual([]);
+});
+
+it('keeps database hierarchy relations equivalent to authorized filter matches', async () => {
+  const h = await harness();
+  await seed(h, 2);
+  const client = await h.database.connection().client<Knex>();
+  for (const viewer of [
+    admin(h),
+    { ...admin(h), projectIds: [] },
+    h.viewer('admin', 'member'),
+  ]) {
+    for (const query of [
+      {},
+      { statusKey: 'done' },
+      { involvesUserId: 'admin' },
+      { q: 'STEP 1.' },
+      { q: '%' },
+    ]) {
+      const hierarchy = await h.services.issueQueries.hierarchy(viewer, query);
+      const source = await h.services.issueQueries.hierarchySource(
+        viewer,
+        query,
+      );
+      const rows = (await client
+        .with(
+          'authorized',
+          client.raw(source.matching.sql, [
+            ...source.matching.parameters,
+          ] as Knex.RawBinding[]),
+        )
+        .select('id')
+        .from('authorized')) as { id: string }[];
+      expect(rows.map((row) => row.id).sort()).toEqual(
+        [...hierarchy.matchingIds].sort(),
+      );
+    }
+  }
+});
+
+it('keeps the blocker relation equivalent to hierarchy waits without exposing invisible blockers', async () => {
+  const h = await harness();
+  await h.addUser('bob');
+  const issues = await seed(h, 2);
+  const secret = await h.services.projects.create(admin(h), {
+    name: 'Hidden blockers',
+    visibility: 'members',
+  });
+  for (const issue of [issues[0]!, issues[2]!]) {
+    const current = await h.services.issueQueries.visible(admin(h), issue.id);
+    await h.services.issues.update(admin(h), issue.id, {
+      revision: current.revision,
+      projectId: secret.id,
+    });
+  }
+  const self = issues.at(-1)!;
+  await h.database
+    .connection()
+    .query.insertInto('pmIssueDependencies')
+    .values({
+      id: 'historical-self',
+      issueId: self.id,
+      dependsOnIssueId: self.id,
+      type: 'blockedBy',
+      createdByType: 'user',
+      createdById: 'admin',
+      createdAt: new Date().toISOString(),
+    })
+    .execute();
+  await move(h, issues[0]!, 'backlog');
+  const viewer = h.viewer('bob', 'member');
+  const client = await h.database.connection().client<Knex>();
+  for (const state of ['open', 'done', 'deleted', 'restored'] as const) {
+    if (state === 'done') await move(h, issues[2]!, 'done');
+    if (state === 'deleted')
+      await h.services.issues.remove(admin(h), issues[0]!.id);
+    if (state === 'restored')
+      await h.services.issues.restore(admin(h), issues[0]!.id);
+    const hierarchy = await h.services.issueQueries.hierarchy(
+      viewer,
+      {},
+      { unfinishedOnly: true },
+    );
+    const source = await h.services.issueQueries.hierarchySource(viewer, {});
+    const rows = (await client
+      .with(
+        'authorized',
+        client.raw(source.blocked.sql, [
+          ...source.blocked.parameters,
+        ] as Knex.RawBinding[]),
+      )
+      .select('id')
+      .from('authorized')) as { id: string }[];
+    const unfinished = new Set(
+      hierarchy.issues
+        .filter((i) => !['done', 'cancelled'].includes(i.statusKey))
+        .map((i) => i.id),
+    );
+    expect(rows.map((r) => r.id).sort()).toEqual(
+      [...hierarchy.blockedIds].filter((id) => unfinished.has(id)).sort(),
+    );
+    expect(rows.map((r) => r.id)).not.toContain(issues[0]!.id);
+    expect(rows.map((r) => r.id)).not.toContain(issues[2]!.id);
+  }
+});
+
+it('hydrates narrow count candidates without materializing unrelated visible records', async () => {
+  const h = await harness();
+  const issues = await seed(h, 1);
+  const viewer = admin(h);
+  for (let n = 0; n < 24; n++)
+    await h.services.issues.create(viewer, { title: `Unrelated ${n}` });
+  const source = await h.services.issueQueries.hierarchySource(viewer, {});
+  const read = () =>
+    h.services.issueQueries.hierarchyItems(
+      viewer,
+      [issues[3]!.id],
+      source.visible,
+    );
+  await read();
+  const client = await h.database.connection().client<Knex>();
+  const mark = Symbol('narrow-counts');
+  const sizes: number[] = [];
+  const listener = (rows: unknown) => {
+    if (scope.getStore() === mark && Array.isArray(rows))
+      sizes.push(rows.length);
+  };
+  client.on('query-response', listener);
+  try {
+    const rows = await scope.run(mark, read);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]!.blockedCount).toBe(1);
+    expect(Math.max(...sizes)).toBeLessThanOrEqual(4);
+  } finally {
+    client.removeListener('query-response', listener);
+  }
+});

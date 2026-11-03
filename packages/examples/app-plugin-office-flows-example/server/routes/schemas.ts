@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { OfficeDispatchRules } from '../services/workflow-parameter-schema.js';
 
 import { PEOPLE } from '../../shared/people.js';
 import type { Plain } from '../services/store.js';
@@ -356,6 +357,7 @@ export const OfficeDetail: z.ZodType<Plain> = z
 
 export const OfficeConfig: z.ZodType<Plain> = z
   .looseObject({
+    dispatchRules: OfficeDispatchRules.optional(),
     people: z.array(z.record(z.string(), z.unknown())),
     roles: z.record(z.string(), z.unknown()),
     departments: z.array(OfficeRecord),

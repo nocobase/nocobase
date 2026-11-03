@@ -1,18 +1,17 @@
 /**
  * Agents as the browser and the server's admin API exchange them.
  *
- * Nobody creates an agent. Each coding tool and model the runners report becomes one agent (`source: 'runner'`): the
- * runners report, per tool, whether it is installed and signed in and which models it can use, and the server keeps one
- * agent per tool and model (`model-catalog.ts` names it and normalizes the model), however many runners report it. A new
- * one waits (`pending`) until someone who manages agents writes what it is good at and enables it. The application may
- * also keep agents of its own (`source: 'system'`), such as a project manager, which it configures through its own
- * settings and runs with the tool and model of the agents it names.
+ * People add a runner agent from the live available models list, already enabled. Recommended tool and model
+ * combinations are enabled automatically when a runner reports them. Other reported models stay out of the database
+ * until someone adds them. The application may also keep agents of its own (`source: 'system'`).
  *
  * Which tool and model an agent works with, and with what reasoning effort, is an ordered list (`modelEntries`); a
  * runner takes a run with the first entry it reports. An agent discovered from runners has exactly one entry, its own
  * tool and model; only its default reasoning effort can be changed. The rest of what an agent is (its instructions,
  * the business actions it may perform, how many attempts a run gets) is the application's, the same for every agent.
  */
+import type { QuotaLocation } from './quota.js';
+
 import {
   TOOL_EFFORTS,
   type AgentTool,
@@ -27,10 +26,10 @@ export const AGENT_SOURCES = ['runner', 'system'] as const;
 export type AgentSource = (typeof AGENT_SOURCES)[number];
 
 /**
- * Whether an agent is offered work: `pending` (discovered, nobody enabled it yet), `enabled`, `disabled`. Only enabled
+ * Whether an agent is offered work: `enabled` or `disabled`. Only enabled
  * agents are offered work, mentioned or chatted with.
  */
-export const AGENT_STATUSES = ['pending', 'enabled', 'disabled'] as const;
+export const AGENT_STATUSES = ['enabled', 'disabled'] as const;
 
 export type AgentStatus = (typeof AGENT_STATUSES)[number];
 
@@ -59,7 +58,7 @@ export const MAX_MODEL_ENTRIES = 20;
 export function effortsFor(entry: {
   readonly tool: AgentTool;
 }): readonly string[] {
-  return TOOL_EFFORTS[entry.tool];
+  return TOOL_EFFORTS[entry.tool] ?? [];
 }
 
 /** The coding tools an agent's entries name, in order and once each. */
@@ -117,13 +116,12 @@ export interface Agent {
 }
 
 /**
- * Why an agent cannot take the caller's work now: `pending` and `disabled` (not enabled), `unreported` (no runner
+ * Why an agent cannot take the caller's work now: `disabled` (not enabled), `unreported` (no runner
  * reported its tool and model for `AGENT_UNREPORTED_AFTER_MS`), `notConfigured` (an application's own agent with no
  * tool and model yet), `noRunner` (no runner online that has it and would take the caller's work), `othersPersonal`
  * (only other people's personal runners have it).
  */
 export const AGENT_UNUSABLE_REASONS = [
-  'pending',
   'disabled',
   'unreported',
   'notConfigured',
@@ -135,21 +133,19 @@ export type AgentUnusableReason = (typeof AGENT_UNUSABLE_REASONS)[number];
 
 /** Where an agent can run now: the online runners that have its tool and model signed in and take its work. */
 export interface AgentRunners {
-  /** Online team runners: they take anyone's work. */
+  /** Online shared runners: they take anyone's work. */
   readonly team: number;
   /** Online personal runners: each takes only its owner's work. */
   readonly personal: number;
   /** Of `personal`, the caller's own. */
   readonly mine: number;
-  /** A few of their names, team runners first. */
+  /** A few of their names, shared runners first. */
   readonly names: readonly string[];
 }
 
 /** An agent as the Agent page lists it (`GET /api/agents`), for the caller. */
 export interface AgentView extends Agent {
-  readonly discoveryKey?: string;
-  readonly discoveryRevision?: number;
-  readonly ignored?: boolean;
+  readonly quota?: readonly QuotaLocation[];
   /** Its default reasoning effort: its first entry's. */
   readonly effort: string | null;
   /** The efforts its tool takes, weakest first; empty for an application's own agent. */
@@ -178,6 +174,7 @@ export interface AgentName {
 
 /** An agent the caller may give work to: what it is good at, and whether it can take work now. */
 export interface AvailableAgent {
+  readonly quota?: readonly QuotaLocation[];
   readonly runners?: AgentRunners;
   readonly id: string;
   readonly name: string;
@@ -203,6 +200,105 @@ export interface AgentPatch {
   readonly effort?: string | null;
   readonly enabled?: boolean;
   readonly expectedRevision: number;
+}
+
+/**
+ * Whether a tool's models can be created into agents right now, computed per model from the online runners currently
+ * offering it (never an offline one, never another model's runner): `available` when at least one does; otherwise the
+ * most actionable reason none does, read from their own reports (`ToolStatusReason`, bucketed: `notLoggedIn`,
+ * `notConfigured` and the handshake-only `signInUnconfirmed` to `needsSetup`; `versionTooOld` unchanged; everything
+ * else — `otherProgram`, `timeout`, `startFailed`, a legacy report with neither a reason nor a recognized status, or
+ * no reason at all — to `failed`). A legacy runner's plain `status: 'needsLogin'`, reported before this field existed,
+ * still buckets to `needsSetup`.
+ */
+export const MODEL_AVAILABILITY_STATUSES = [
+  'available',
+  'needsSetup',
+  'versionTooOld',
+  'failed',
+] as const;
+
+export type ModelAvailabilityStatus =
+  (typeof MODEL_AVAILABILITY_STATUSES)[number];
+
+/** How many of a group's or a row's runners can run it now, and a few of their names. */
+export interface AvailableModelRunners {
+  readonly ready: number;
+  readonly total: number;
+  readonly names: readonly string[];
+}
+
+/**
+ * One coding tool in the enable dialog (`GET /api/agents/availableModels` without `tool`): how many models it has and
+ * how many runners have it selected, its aggregated availability and, when unavailable, why — grouped so a tool with
+ * hundreds of models (the discovery bug this replaced) reads as one row until someone opens it.
+ */
+export interface AvailableModelGroup {
+  readonly tool: AgentTool;
+  readonly modelCount: number;
+  readonly runnerCount: number;
+  readonly status: ModelAvailabilityStatus;
+  /** The reason behind `status`, when it is not `available` and a runner gave one (protocol 13). */
+  readonly statusReason?: string;
+  /** A runner's own words about `statusReason`, redacted and bounded. */
+  readonly statusDetail?: string;
+  readonly recommendedCount: number;
+}
+
+/**
+ * A tool and model a runner has reported, whether or not an agent exists for it yet (`GET /api/agents/availableModels`
+ * with `tool`, replacing the discovery list a runner's report used to create one pending agent per combination for):
+ * the enable dialog groups these by tool and lets someone create an agent from one that has none, instead of a
+ * runner's report creating one for every model it lists.
+ */
+export interface AvailableModel {
+  readonly tool: AgentTool;
+  /** Normalized; empty for a tool that cannot list models (one entry stands for the whole tool). */
+  readonly model: string;
+  /** As the tool names it, when known and different from `model`. */
+  readonly displayModel?: string;
+  /** The agent already kept for this tool and model, if any. */
+  readonly agentId: string | null;
+  readonly status: AgentStatus | null;
+  /** In the application's recommended list: a runner reporting it signed in creates and enables it on its own. */
+  readonly recommended: boolean;
+  /** What the model catalog or the application's own list says it is good at; null for a model neither knows. */
+  readonly suggestion: { readonly en: string; readonly zh: string } | null;
+  /** Its group's availability (`AvailableModelGroup.status`); unselectable to create unless `available`. */
+  readonly availability: ModelAvailabilityStatus;
+  /** The runners currently offering this exact model. */
+  readonly runners: AvailableModelRunners;
+}
+
+/** What creating an agent from an available model takes (`POST /api/agents/runnerAgents`). */
+export interface RunnerAgentCreateInput {
+  readonly tool: AgentTool;
+  readonly model: string;
+  /** As the tool names it (`AvailableModel.displayModel`), for the agent's name; `model` itself when absent. */
+  readonly displayModel?: string;
+  /** What it is good at: required, as enabling any agent needs one. */
+  readonly description: string;
+  /** Its default reasoning effort, one of its tool's; the tool's default (`medium` when it takes one) when absent. */
+  readonly effort?: string | null;
+}
+
+/** Paging for available-model rows. */
+export interface ListPageMeta {
+  readonly total: number;
+  readonly page: number;
+  readonly pageSize: number;
+}
+
+/** `GET /api/agents/availableModels` without `tool`. */
+export interface AvailableModelGroupsPage {
+  readonly data: readonly AvailableModelGroup[];
+  readonly meta: ListPageMeta;
+}
+
+/** `GET /api/agents/availableModels` with `tool`. */
+export interface AvailableModelsPage {
+  readonly data: readonly AvailableModel[];
+  readonly meta: ListPageMeta;
 }
 
 /**

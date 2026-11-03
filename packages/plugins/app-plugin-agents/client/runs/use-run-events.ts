@@ -12,7 +12,7 @@ export interface RunEventsState {
 /** How many events one request asks for; a full page means there may be more. */
 export const EVENT_PAGE = 500;
 /** How often an open run's transcript is fetched when no realtime announcement comes (other instances, lost signals). */
-export const EVENT_POLL_MS = 5000;
+export const EVENT_POLL_MS = 60_000;
 
 /** Merges a batch into the list by `seq`; a repeated delivery is ignored. */
 export function mergeRunEvents(
@@ -88,7 +88,9 @@ export function useRunEvents(
 
   useEffect(() => {
     if (!polling) return undefined;
-    const timer = window.setInterval(fetchMore, EVENT_POLL_MS);
+    const timer = window.setInterval(() => {
+      if (!document.hidden) fetchMore();
+    }, EVENT_POLL_MS);
     return () => window.clearInterval(timer);
   }, [polling, fetchMore]);
 

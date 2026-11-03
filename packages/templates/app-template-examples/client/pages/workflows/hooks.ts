@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useApiClient } from '@nocobase/app-client';
-import { useTranslation } from '@nocobase/i18n/client';
+import { ApiClientError, useApiClient } from '@nocobase/app-client';
+import { useTranslation, useNamespace } from '@nocobase/i18n/client';
 import type { WorkflowSummary } from '../../../shared/workflows.js';
 
 export function useWorkflowData<T>(path: string, query = '') {
@@ -11,6 +11,7 @@ export function useWorkflowData<T>(path: string, query = '') {
     requestKey?: string;
     data?: T;
     status?: number;
+    error?: unknown;
   }>({ key: '' });
   const key = `${path}?${query}`;
   const requestKey = `${key}#${refresh}`;
@@ -34,7 +35,15 @@ export function useWorkflowData<T>(path: string, query = '') {
             key,
             requestKey,
             status: status || 500,
-            data: previous.key === key ? previous.data : undefined,
+            error,
+            data:
+              previous.key === key &&
+              !(
+                error instanceof ApiClientError &&
+                [401, 403].includes(error.status)
+              )
+                ? previous.data
+                : undefined,
           }));
       });
     return () => {
@@ -44,14 +53,16 @@ export function useWorkflowData<T>(path: string, query = '') {
   const reload = useCallback(() => setRefresh((value) => value + 1), []);
   return {
     data: result.key === key ? result.data : undefined,
-    status: result.requestKey === requestKey ? result.status : undefined,
+    status: result.key === key ? result.status : undefined,
     loading: result.requestKey !== requestKey,
+    error: result.key === key ? result.error : undefined,
     reload,
   };
 }
 
 export function useWorkflowLabels() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const namespace = useNamespace();
   const { t: lifecycle } = useTranslation(
     '@nocobase/app-plugin-lifecycle-example',
   );
@@ -59,8 +70,11 @@ export function useWorkflowLabels() {
     '@nocobase/app-plugin-office-flows-example',
   );
   return {
-    title: (workflow: Pick<WorkflowSummary, 'name'>) =>
-      t(`workflows.names.${workflow.name}`, { defaultValue: workflow.name }),
+    title: (workflow: Pick<WorkflowSummary, 'name'>) => {
+      const key = `workflows.names.${workflow.name}`;
+      // Custom registrations can supply a display name without an application translation key.
+      return i18n.exists(key, { ns: namespace }) ? t(key) : workflow.name;
+    },
     state: (source: WorkflowSummary['source'], name: string) =>
       (source === 'office' ? office : lifecycle)(`states.${name}`, {
         defaultValue: name,

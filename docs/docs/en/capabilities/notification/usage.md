@@ -18,7 +18,7 @@ The application selects when to notify, the recipients, content and destination 
 
 ## User invitation emails
 
-User invitation emails also use notification channels. The Users plugin uses `system-email` by default; configure and enable an email provider such as SMTP at `notification.channels.system-email`. The application templates include an SMTP example in `config.example.yml`. If no usable channel is configured, invitation creation still succeeds and returns “Email not sent: no email channel configured” with an invitation link for an authorized inviter to forward manually.
+User invitation emails use `users.invitations.mailer` when set, otherwise `mailers.default`. An explicit `users.invitations.emailChannel` selects a legacy notification channel instead of the default mailer; without either selection or a default mailer, the Users plugin falls back to `system-email`. Configure a shared sender under `mailers`, or configure and enable the fallback channel at `notification.channels.system-email`. The application templates include both examples in `config.example.yml`. If no sender or usable fallback channel is configured, invitation creation still succeeds and returns “Email not sent: no email channel configured” with an invitation link for an authorized inviter to forward manually.
 
 ## Example: send an in-app notification
 

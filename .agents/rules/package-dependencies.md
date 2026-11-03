@@ -37,6 +37,7 @@ The current entries:
 | `@nocobase/i18n`             | Exports the React contexts backing the i18n runtime                                                                                                                                                                                                |
 | `@nocobase/queue`            | Plugins receive the host-owned `QueueService` and type their published declarations against it, so a second copy describes that service with another contract version                                                                              |
 | `@nocobase/lifecycle`        | A `LifecycleRuntime` is shared between plugins through `addGuard()`, and `EffectFailure` and `LifecycleError` are recognised with `instanceof`, so a second copy neither registers into the runtime it is handed nor recognises the other's errors |
+| `@tanstack/react-query`      | The routes' query cache reaches pages through its React context, so the hooks of a second copy read another context and find no `QueryClient`, or a different one, instead of the routes'                                                          |
 | any `@nocobase/app-plugin-*` | Plugins export tokens for one another, such as `authenticationToken` and `notificationServiceToken`                                                                                                                                                |
 
 ### Why a second copy is worth this much trouble
@@ -90,8 +91,6 @@ So the question is who resolves the import, and then what the import actually is
 - **A type-only import can belong in `devDependencies` only if consumers do not need to resolve it.** JavaScript erases `import type`, but emitted `.d.ts` files can retain references to that package. Inspect the published declarations and use a dependency or peer contract when those references survive; shared classes with private members follow the peer rule.
 - **A dynamic `import()` counts as a value import.** Deferring the load changes when a package is needed, not whether.
 - **The `files` field decides whether code ships at all.** A test, an eval harness, or a build script excluded from `files` never reaches a consumer, so its imports are correctly devDependencies.
-
-`registry/` is excluded for a stronger reason than the rest: it is shadcn-style source copied into a consumer and compiled there against that package's own `react` and `package.json#imports`. The recipe's publishing plugin cannot resolve those imports, so declaring them would claim dependencies it does not have.
 
 `peerDependencies` is the third answer, for a package the application must supply exactly one copy of. `react`, `react-dom`, `react-router`, and everything in `IDENTITY_SENSITIVE_PACKAGES` belong here rather than in `dependencies`: a second copy of a router or a React context does not merely waste space, it silently breaks. `@nocobase/i18n` is the shape to copy: it exports a server entry and a client entry from one package, so `i18next` is an ordinary dependency while `react`, `hono`, and `react-i18next` are optional peers. Mark such a peer `optional` in `peerDependenciesMeta` so the consumer that legitimately does not need it gets no warning.
 

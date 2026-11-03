@@ -4,6 +4,8 @@ import type { AppRuntimeContext } from '../runtime/definition.js';
 
 /** A problem a validator found, with its path relative to the section it validated. */
 export interface ConfigValidationContext {
+  /** Read another section from the same validation snapshot, without resolving services. */
+  get?(path: string): unknown;
   error(path: string, message: string, options?: ConfigIssueOptions): void;
   warning(path: string, message: string, options?: ConfigIssueOptions): void;
   /** Whether the value at `path` came from a configuration file or the environment rather than code defaults. */

@@ -2,6 +2,11 @@ import type { UsageQuery } from '../../shared/reports.js';
 
 /** Query keys of this plugin's cache, all under `['agents']`. */
 export const agentsKeys: {
+  readonly available: readonly ['agents', 'available'];
+  readonly chatAgents: readonly ['agents', 'chat', 'agents'];
+  readonly runner: (
+    id: string,
+  ) => readonly ['agents', 'runners', 'detail', string];
   readonly all: readonly ['agents'];
   readonly agents: readonly ['agents', 'agents'];
   readonly agentNames: readonly ['agents', 'agent-names'];
@@ -58,7 +63,21 @@ export const agentsKeys: {
     agentId: string,
     scenario: string | null,
   ) => readonly ['agents', 'brief-preview', string, string | null];
+  /** Prefix shared by every available-models query, to invalidate groups and rows together after a change. */
+  readonly availableModelsAll: readonly ['agents', 'available-models'];
+  readonly availableModelGroups: (
+    q: string,
+    status: string,
+  ) => readonly ['agents', 'available-models', 'groups', string, string];
+  readonly availableModelRows: (
+    tool: string,
+    q: string,
+    status: string,
+  ) => readonly ['agents', 'available-models', 'rows', string, string, string];
 } = {
+  available: ['agents', 'available'],
+  chatAgents: ['agents', 'chat', 'agents'],
+  runner: (id) => ['agents', 'runners', 'detail', id],
   all: ['agents'],
   agents: ['agents', 'agents'],
   agentNames: ['agents', 'agent-names'],
@@ -94,5 +113,21 @@ export const agentsKeys: {
     'brief-preview',
     agentId,
     scenario,
+  ],
+  availableModelsAll: ['agents', 'available-models'],
+  availableModelGroups: (q, status) => [
+    'agents',
+    'available-models',
+    'groups',
+    q,
+    status,
+  ],
+  availableModelRows: (tool, q, status) => [
+    'agents',
+    'available-models',
+    'rows',
+    tool,
+    q,
+    status,
   ],
 };

@@ -12,6 +12,7 @@ import { optionText, type OptionText } from './i18n.js';
 export interface AuthorizationOptionsAction {
   readonly name: string;
   readonly title: OptionText;
+  readonly description?: OptionText;
 }
 
 export interface AuthorizationOptionsDataScope {
@@ -97,7 +98,13 @@ const title = (value: AuthorizationTitle | undefined, fallback: string) =>
   optionText(value, fallback);
 
 function actionOption(action: ResourceItemAction): AuthorizationOptionsAction {
-  return { name: action.name, title: title(action.title, action.name) };
+  return {
+    name: action.name,
+    title: title(action.title, action.name),
+    ...(action.description === undefined
+      ? {}
+      : { description: title(action.description, '') }),
+  };
 }
 
 /**

@@ -8,8 +8,9 @@ export const skillsStep: PrepareStep = {
   name: 'skills',
   failure: 'setupFailed',
   async run(context) {
-    const workDir = context.workspace?.workDir;
-    if (workDir === undefined) throw new Error('The workspace is not locked.');
+    const workDir = context.privateDir;
+    if (workDir === undefined)
+      throw new Error('The workspace was not prepared.');
     const placed = await placeSkills({
       paths: context.paths,
       appKey: context.registration.key,

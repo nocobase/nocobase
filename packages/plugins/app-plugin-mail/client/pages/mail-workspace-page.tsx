@@ -9,6 +9,7 @@ import {
 } from '../lib/mail-forward-content.js';
 import {
   EMPTY_COMPOSER,
+  formatAddressList,
   type ComposerState,
 } from '../lib/mail-composer-state.js';
 import {
@@ -29,7 +30,12 @@ import {
 } from 'react';
 import type { ReactElement, ReactNode } from 'react';
 import { useTranslation } from '@nocobase/i18n/client';
-import { resolveAppUrl } from '@nocobase/app-client';
+import {
+  resolveAppUrl,
+  useRealtimeRefresh,
+  ApiClientError,
+} from '@nocobase/app-client';
+import { MAIL_REALTIME_TOPIC } from '../../shared/realtime.js';
 import type { MailComposerRequest } from '../contracts/composer.js';
 import { MailWorkspaceComposer } from '../components/mail-workspace-composer.js';
 
@@ -274,9 +280,59 @@ export default function MailWorkspacePage({
         currentAccount?.status === 'active' &&
         currentProviderCapabilities?.incrementalSync,
       );
+  const imapSourceFolder = (
+    message: Pick<MailMessage, 'accountId' | 'folderIds'>,
+  ) =>
+    foldersByAccountId
+      .get(message.accountId)
+      ?.find(
+        (folder) =>
+          folder.providerFolderId === folderId &&
+          (!folderAccountId || folderAccountId === message.accountId) &&
+          message.folderIds.includes(folder.providerFolderId),
+      );
+  const isImapMessage = (message: Pick<MailMessage, 'accountId'>) =>
+    accounts.find((account) => account.id === message.accountId)?.provider
+      .type === 'imap-smtp';
+  const inTrash = (message: Pick<MailMessage, 'accountId' | 'folderIds'>) =>
+    isImapMessage(message)
+      ? imapSourceFolder(message)?.type === 'trash'
+      : isMessageInTrash(message, foldersByAccountId);
+  const deleteDisabledReason = (message: MailMessage): string | undefined => {
+    if (message.scheduledSend)
+      return t('workspace.imapScheduled', {
+        defaultValue:
+          'Cancel the scheduled delivery before deleting this draft.',
+      });
+    if (message.providerMessageId?.startsWith('local-draft:')) return undefined;
+    if (isImapMessage(message)) {
+      if (!imapSourceFolder(message))
+        return t('workspace.imapSourceRequired', {
+          defaultValue:
+            'Open the source folder before moving or deleting this message.',
+        });
+      if (
+        !inTrash(message) &&
+        !foldersByAccountId
+          .get(message.accountId)
+          ?.some((folder) => folder.type === 'trash')
+      )
+        return t('workspace.imapTrashMissing', {
+          defaultValue:
+            'This account has no Trash folder. Use your mail client.',
+        });
+    }
+    if (!selectedMessageProviderCapabilities?.moveMessage && !inTrash(message))
+      return t('workspace.deleteUnsupported', {
+        defaultValue:
+          'This account does not support deletion. Use your mail client.',
+      });
+    return undefined;
+  };
   const selectedMessageCanMove = Boolean(
     selectedMessageAccount?.status === 'active' &&
     selectedMessageProviderCapabilities?.moveMessage &&
+    (!selected || !isImapMessage(selected) || imapSourceFolder(selected)) &&
     [...(foldersByAccountId.get(selected?.accountId ?? '') ?? [])].some(
       (folder) => folder.type === 'archive',
     ),
@@ -287,9 +343,7 @@ export default function MailWorkspacePage({
   );
   const selectedMessageCanUseLabels =
     selectedMessageAccount?.status === 'active';
-  const selectedMessageInTrash = Boolean(
-    selected && isMessageInTrash(selected, foldersByAccountId),
-  );
+  const selectedMessageInTrash = Boolean(selected && inTrash(selected));
 
   const loadAccounts = useCallback(
     (clearError = true): void => {
@@ -366,17 +420,28 @@ export default function MailWorkspacePage({
     void Promise.resolve().then(() => loadAccounts());
   }, [loadAccounts]);
 
-  useEffect(() => {
-    const timer = window.setInterval(() => {
+  const syncRefresh = useRealtimeRefresh(
+    MAIL_REALTIME_TOPIC,
+    async (signal) => {
       if (syncPollInFlightRef.current) return;
       const activeRuns = Object.values(syncRunsRef.current).filter(
         isActiveSyncRun,
       );
       if (activeRuns.length === 0) return;
       syncPollInFlightRef.current = true;
-      void Promise.all(
+      await Promise.all(
         activeRuns.map((run) =>
           mail.getSyncRun(run.id).catch((cause: unknown) => {
+            if (signal.aborted) return undefined;
+            if (
+              !(cause instanceof ApiClientError) ||
+              cause.status >= 500 ||
+              cause.status === 408 ||
+              cause.status === 429
+            ) {
+              requestError(cause);
+              throw cause;
+            }
             if (syncRunsRef.current[run.accountId]?.id === run.id) {
               setSyncRuns((current) => {
                 if (current[run.accountId]?.id !== run.id) return current;
@@ -391,6 +456,7 @@ export default function MailWorkspacePage({
         ),
       )
         .then((nextRuns) => {
+          if (signal.aborted) return;
           const resolvedRuns = nextRuns.filter((run): run is MailSyncRunView =>
             Boolean(run),
           );
@@ -442,9 +508,12 @@ export default function MailWorkspacePage({
         .finally(() => {
           syncPollInFlightRef.current = false;
         });
-    }, 1500);
-    return () => window.clearInterval(timer);
-  }, [loadAccounts, mail, requestError, t]);
+    },
+    {
+      enabled: Object.values(syncRuns).some(isActiveSyncRun),
+      refreshIntervalMs: 60_000,
+    },
+  );
 
   useEffect(() => {
     const timer = window.setTimeout(() => setDebouncedQuery(query), 300);
@@ -708,7 +777,7 @@ export default function MailWorkspacePage({
   };
 
   const deleteWorkspaceMessage = (message: MailMessage): void => {
-    const permanently = isMessageInTrash(message, foldersByAccountId);
+    const permanently = inTrash(message);
     if (
       permanently &&
       !window.confirm(
@@ -721,7 +790,11 @@ export default function MailWorkspacePage({
       return;
     }
     mutateMessage(
-      mail.deleteMessage(message.accountId, message.id, permanently),
+      isImapMessage(message)
+        ? mail.deleteMessage(message.accountId, message.id, permanently, {
+            sourceProviderFolderId: imapSourceFolder(message)?.providerFolderId,
+          })
+        : mail.deleteMessage(message.accountId, message.id, permanently),
       true,
     );
   };
@@ -874,7 +947,7 @@ export default function MailWorkspacePage({
                 role='link'
                 variant='outline'
               >
-                {t('navigation.accounts', { defaultValue: 'Mail accounts' })}
+                {t('nav.devAccounts', { defaultValue: 'Mail accounts' })}
               </Button>
             ) : null}
             {headerActions}
@@ -972,6 +1045,7 @@ export default function MailWorkspacePage({
               onClick={() => {
                 loadAccounts();
                 setReloadVersion((version) => version + 1);
+                syncRefresh.retry();
               }}
               variant='ghost'
             >
@@ -1195,21 +1269,21 @@ export default function MailWorkspacePage({
                                     accountId: message.accountId,
                                     messageId: message.id,
                                     providerFolderId: archive.providerFolderId,
+                                    ...(isImapMessage(message)
+                                      ? {
+                                          sourceProviderFolderId:
+                                            imapSourceFolder(message)
+                                              ?.providerFolderId,
+                                        }
+                                      : {}),
                                   }),
                                   true,
                                 );
                             }
                           : undefined,
                         delete: (message) => deleteWorkspaceMessage(message),
-                        canDelete: (message) =>
-                          Boolean(
-                            !message.scheduledSend &&
-                            (selectedMessageProviderCapabilities?.moveMessage ||
-                              isMessageInTrash(message, foldersByAccountId) ||
-                              message.providerMessageId.startsWith(
-                                'local-draft:',
-                              )),
-                          ),
+                        canDelete: (message) => !deleteDisabledReason(message),
+                        deleteDisabledReason,
                         downloadAttachment: (message, attachment) => {
                           void downloadAttachment(
                             mail,
@@ -1561,12 +1635,6 @@ function isMessageInTrash(
     .get(message.accountId)
     ?.find((folder) => folder.type === 'trash');
   return Boolean(trash && message.folderIds.includes(trash.providerFolderId));
-}
-
-function formatAddressList(
-  addresses: readonly { address: string; name?: string }[],
-): string {
-  return addresses.map((address) => address.address).join(', ');
 }
 
 function forwardSubject(subject: string): string {

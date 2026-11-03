@@ -183,21 +183,31 @@ describe('createApiClient', () => {
     });
   });
 
-  it('rejects a successful streaming response without a body', async () => {
-    const request = vi
-      .fn<typeof fetch>()
-      .mockResolvedValue(new Response(null, { status: 204 }));
-    const api = createApiClient({ baseURL: '/api', fetch: request });
+  it.each([false, true])(
+    'rejects a no-content streaming response even with a browser body: %s',
+    async (browserBody) => {
+      const response = new Response(null, { status: 204 });
+      if (browserBody)
+        Object.defineProperty(response, 'body', {
+          value: new ReadableStream({
+            start(controller) {
+              controller.close();
+            },
+          }),
+        });
+      const request = vi.fn<typeof fetch>().mockResolvedValue(response);
+      const api = createApiClient({ baseURL: '/api', fetch: request });
 
-    await expect(api.stream({ path: 'events' })).rejects.toMatchObject<
-      Partial<ApiClientError>
-    >({
-      message: 'API streaming response has no body.',
-      status: 204,
-      method: 'GET',
-      url: '/api/events',
-    });
-  });
+      await expect(api.stream({ path: 'events' })).rejects.toMatchObject<
+        Partial<ApiClientError>
+      >({
+        message: 'API streaming response has no body.',
+        status: 204,
+        method: 'GET',
+        url: '/api/events',
+      });
+    },
+  );
 
   it('maps Repository calls onto the same request transport', async () => {
     const request = vi

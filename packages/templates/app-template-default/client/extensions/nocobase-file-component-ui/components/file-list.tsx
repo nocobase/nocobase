@@ -1,12 +1,13 @@
 import { useTranslation } from '@nocobase/i18n/client';
-import { Download, Eye, Trash2 } from 'lucide-react';
 import { useState, type ReactElement } from 'react';
 
-import type { FileListProps, FileRecord } from '../types';
-import { Button } from '#components/ui/button';
-import { resolveSafeFileUrl } from '../lib/file-url';
-import { FilePreviewDialog } from './file-preview-dialog';
-import { FileThumbnail } from './file-thumbnail';
+import type { FileListProps, FileRecord } from '../types.js';
+import {
+  AttachmentList,
+  type AttachmentFile,
+} from '#components/attachment-list';
+import { resolveSafeFileUrl } from '../lib/file-url.js';
+import { FilePreviewDialog } from './file-preview-dialog.js';
 
 function triggerDownload(url: string, filename: string): void {
   const link = document.createElement('a');
@@ -17,7 +18,7 @@ function triggerDownload(url: string, filename: string): void {
 }
 
 export function FileList(inputProps: FileListProps): ReactElement {
-  const { t } = useTranslation('@nocobase/app-plugin-file');
+  const { t } = useTranslation();
   const {
     files,
     onPreview,
@@ -31,18 +32,19 @@ export function FileList(inputProps: FileListProps): ReactElement {
   const [previewIndex, setPreviewIndex] = useState(0);
   const [previewOpen, setPreviewOpen] = useState(false);
   const previewLabel =
-    labels?.preview ?? t('files.preview', { defaultValue: 'Preview' });
+    labels?.preview ?? t('fileUi.files.preview', { defaultValue: 'Preview' });
   const downloadLabel =
-    labels?.download ?? t('files.download', { defaultValue: 'Download' });
+    labels?.download ??
+    t('fileUi.files.download', { defaultValue: 'Download' });
   const removeLabel =
-    labels?.remove ?? t('files.remove', { defaultValue: 'Remove' });
+    labels?.remove ?? t('fileUi.files.remove', { defaultValue: 'Remove' });
 
   if (!files.length)
     return (
       <div role='status'>
         {emptyState ??
           labels?.empty ??
-          t('files.empty', { defaultValue: 'No files.' })}
+          t('fileUi.files.empty', { defaultValue: 'No files.' })}
       </div>
     );
 
@@ -56,7 +58,7 @@ export function FileList(inputProps: FileListProps): ReactElement {
       const url = raw ? resolveSafeFileUrl(raw) : undefined;
       if (!url)
         throw new Error(
-          t('urlNotAllowed', {
+          t('fileUi.urlNotAllowed', {
             defaultValue: 'File URL is not allowed.',
           }),
         );
@@ -66,7 +68,7 @@ export function FileList(inputProps: FileListProps): ReactElement {
         error instanceof Error
           ? error
           : new Error(
-              t('downloadFailed', {
+              t('fileUi.downloadFailed', {
                 defaultValue: 'File download failed.',
               }),
             ),
@@ -74,71 +76,66 @@ export function FileList(inputProps: FileListProps): ReactElement {
     });
   };
 
+  const attachments: readonly AttachmentFile[] = files.map((file) => ({
+    id: file.id,
+    name: file.filename,
+    size: Number(file.size),
+    url: file.contentUrl ? (resolveSafeFileUrl(file.contentUrl) ?? '') : '',
+    downloadUrl: file.contentUrl
+      ? (resolveSafeFileUrl(file.contentUrl) ?? '')
+      : '',
+    image: file.mimeType.startsWith('image/'),
+    canRemove: Boolean(onRemove),
+  }));
   return (
     <>
-      <ul data-slot='file-list' className='grid gap-3 sm:grid-cols-2'>
-        {files.map((file, index) => (
-          <li
-            key={file.id}
-            className='flex min-w-0 items-center gap-3 rounded-md border p-3'
-          >
-            <div className='h-12 w-12 shrink-0 overflow-hidden rounded-md'>
-              <FileThumbnail file={file} />
-            </div>
-            <div className='min-w-0 flex-1'>
-              <div className='truncate font-medium' title={file.filename}>
-                {file.filename}
-              </div>
-              <div className='text-sm text-muted-foreground'>
-                {file.mimeType}
-              </div>
-            </div>
-            <div className='flex shrink-0 items-center gap-1'>
-              <Button
-                type='button'
-                size='icon'
-                variant='ghost'
-                aria-label={`${previewLabel}: ${file.filename}`}
-                title={previewLabel}
-                onClick={() => {
-                  onPreview?.(file);
-                  setPreviewIndex(index);
-                  setPreviewOpen(true);
-                }}
-              >
-                <Eye aria-hidden='true' />
-              </Button>
-              <Button
-                type='button'
-                size='icon'
-                variant='ghost'
-                aria-label={`${downloadLabel}: ${file.filename}`}
-                title={downloadLabel}
-                onClick={() => downloadFile(file)}
-              >
-                <Download aria-hidden='true' />
-              </Button>
-              {onRemove ? (
-                <Button
-                  type='button'
-                  size='icon'
-                  variant='ghost'
-                  aria-label={`${removeLabel}: ${file.filename}`}
-                  title={removeLabel}
-                  onClick={() => void onRemove(file)}
-                >
-                  <Trash2 aria-hidden='true' />
-                </Button>
-              ) : null}
-            </div>
-          </li>
-        ))}
-      </ul>
+      <AttachmentList
+        files={attachments}
+        labels={{
+          title: '',
+          images: '',
+          files: '',
+          pending: '',
+          upload: '',
+          uploading: '',
+          removeTitle: '',
+          removeDescription: '',
+          removeConfirm: '',
+          cancel: '',
+          previous: '',
+          next: '',
+          preview: `${previewLabel}: {name}`,
+          download: `${downloadLabel}: {name}`,
+          remove: `${removeLabel}: {name}`,
+        }}
+        onPreview={(ordered, index) => {
+          const selected = files.findIndex(
+            (file) => file.id === ordered[index]?.id,
+          );
+          if (selected < 0) return;
+          onPreview?.(files[selected]);
+          setPreviewIndex(selected);
+          setPreviewOpen(true);
+        }}
+        onDownload={(item) => {
+          const file = files.find((file) => file.id === item.id);
+          if (file) downloadFile(file);
+        }}
+        onRemove={
+          onRemove
+            ? (item) => {
+                const file = files.find((file) => file.id === item.id);
+                if (file) void onRemove(file);
+              }
+            : undefined
+        }
+      />
       <FilePreviewDialog
         files={files}
         initialIndex={previewIndex}
         open={previewOpen}
         onOpenChange={setPreviewOpen}
+        onDownload={onDownload}
         labels={labels}
         onError={onError}
       />

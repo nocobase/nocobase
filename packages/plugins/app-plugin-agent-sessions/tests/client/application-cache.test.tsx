@@ -40,16 +40,18 @@ it('retains an editable draft and one live subscription across routes, but disca
     fetch: answerApi(() => ({ data: [] })),
     services: (app) => {
       const realtime = app.container.resolve(realtimeClientToken);
-      vi.spyOn(realtime, 'subscribe').mockImplementation(() => {
+      vi.spyOn(realtime, 'watch').mockImplementation((_topic, options) => {
         subscriptions++;
-        return () => {
-          subscriptions--;
-        };
-      });
-      vi.spyOn(realtime, 'onOpen').mockImplementation((listener) => {
-        opened.add(listener);
-        return () => {
-          opened.delete(listener);
+        const ready = () => options?.onReady?.();
+        opened.add(ready);
+        return {
+          state: 'subscribed',
+          error: undefined,
+          retry: () => {},
+          close: () => {
+            subscriptions--;
+            opened.delete(ready);
+          },
         };
       });
     },

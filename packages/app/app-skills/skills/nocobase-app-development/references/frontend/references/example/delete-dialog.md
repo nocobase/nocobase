@@ -1,5 +1,7 @@
 # Delete confirmation: `project-delete-dialog.tsx`
 
+Use the parent list's shared `useListData().reload` after a confirmed success. For partial batch success, wait for every outcome, keep failed ids and errors, and refresh once; do not decrement a total optimistically. For an uncertain network result verify the list without automatically replaying the delete. See [list recovery](../table.md#delete-and-recover-a-list).
+
 Part of the [projects worked example](../example.md).
 
 **Depends on**: [session alert](session-expired-alert.md), [types](types.md), [copy](copy.md).
@@ -36,6 +38,8 @@ export interface ProjectDeleteDialogProps {
   readonly project: Pick<Project, 'id' | 'name'> | null | undefined;
   /** Called when the delete succeeds or the record was already deleted by someone else (404). The parent closes the confirmation dialog (or the whole drawer) and refreshes the list. */
   readonly onDeleted: () => void;
+  /** Verify server state after an uncertain response without replaying the delete. */
+  readonly onUncertain: () => void;
   /** Where focus goes after the delete. The button that opened the confirmation dialog usually disappears along with the record (guideline A6). */
   readonly deletedFocusRef?: RefObject<HTMLElement | null>;
 }
@@ -45,6 +49,7 @@ export function ProjectDeleteDialog({
   onOpenChange,
   project,
   onDeleted,
+  onUncertain,
   deletedFocusRef,
 }: ProjectDeleteDialogProps): ReactElement {
   const { t } = useTranslation();
@@ -72,6 +77,7 @@ export function ProjectDeleteDialog({
       });
     } catch (caught: unknown) {
       const status = caught instanceof ApiClientError ? caught.status : 0;
+      if (status === 0 || status >= 500) onUncertain();
       if (status !== 404) {
         // Other failures: keep the confirmation dialog open and explain the reason inside it, without showing the backend's raw message.
         setError(

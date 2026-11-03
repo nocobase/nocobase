@@ -14,6 +14,8 @@ With `PROXY_TARGET_URL`, the local Hono server is skipped and Vite becomes the l
 
 Changes to `.env` and `.env.local` (including creation, atomic replacement, and deletion) restart the full development run after its previous processes exit. The new run reloads environment files, ports, proxy settings, and startup hooks; explicit shell variables still take precedence. Use the newly printed URL if the port or base path changes. This also applies in proxy mode. `config.yml` changes restart only the local server. `NOCOBASE_STRICT_STARTUP=true` disables both automatic restarts.
 
+In normal watch mode the public entry port stays open while the application backend restarts on a private loopback port. New connections wait up to 30 seconds for that backend, so shared-package edits can update client modules even during a server restart. Requests already sent to the old backend are never replayed; a pending API call or realtime connection can still be interrupted. Keep using the printed `Local:` URL rather than the private backend port. Strict startup and remote-backend mode do not use this connection proxy.
+
 Changes to `package.json`, the lockfile, and the package manager's install state restart the local server once they have been quiet for a few seconds. An install writes several of them over as long as fetching and linking take, so restarting on the first write would bring the server back against a half-installed `node_modules` — and the next write would arrive while it was still shutting down, which is where the watcher escalates to SIGKILL. Waiting for quiet turns one install into one restart.
 
 ## One development server per application
@@ -38,7 +40,7 @@ For local client debugging against another running application, use `PROXY_TARGE
 
 The proxy maps same-origin browser HTTP and WebSocket Origin headers to the target origin, with matching Referer paths mapped to the target app base. It preserves foreign origins and does not add missing Origin headers. Keep backend origin checks enabled. Test browser handshakes with an explicit Origin; an Origin-less Node WebSocket test does not verify browser compatibility. Production does not use this Vite adaptation: configure `APP_PUBLIC_ORIGIN` and preserve public Host/protocol information through the reverse proxy.
 
-Use `APP_SERVER_PORT` for the local entry port in both development modes. With `PROXY_TARGET_URL` it selects Vite's preferred port, defaulting to 5173; without it, it selects the local backend port, defaulting to 13000, and Vite still starts from 5173. If occupied, the port advances automatically. Open the printed Local URL and keep the remote service address in `PROXY_TARGET_URL`; this variable does not change it.
+Use `APP_SERVER_PORT` for the local entry port in both development modes. With `PROXY_TARGET_URL` it selects Vite's preferred port, defaulting to 5173; without it, it selects the public application port, defaulting to 13000, and Vite still starts from 5173. If occupied, the port advances automatically. Open the printed Local URL and keep the remote service address in `PROXY_TARGET_URL`; this variable does not change it.
 
 ## Development logging
 

@@ -8,6 +8,16 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Expand opted-in application cards without changing the installed Registry renderer. */
+[data-chat-message='assistant'] > div:has([data-chat-width='full']) {
+  flex: 1;
+  max-width: 100%;
+}
+
+[data-chat-message='assistant'] > div > div:has([data-chat-width='full']) {
+  width: 100%;
+}
+
 /* The stationary brand and a constant orbit read as loading at every size. */
 @keyframes nocobase-loading-orbit {
   to {

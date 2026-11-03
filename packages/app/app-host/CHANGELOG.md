@@ -1,5 +1,37 @@
 # @nocobase/app-host
 
+## 0.1.0-beta.18
+
+### Patch Changes
+
+- cf23bfe: Move Redis realtime broadcasting to the commercial Realtime Redis plugin. Register its Server plugin before selecting Redis in an application, or import the standalone broker from its `/broker` entry. Preserve the Memory default, service identity, authorization and recovery protocol, and republish runtime consumers against the new host and realtime major versions. Install the compatible commercial cohort before deploying the final removal.
+- Updated dependencies [83f28b1]
+- Updated dependencies [cf23bfe]
+  - @nocobase/app-server@4.0.0-beta.0
+
+## 0.1.0-beta.17
+
+### Patch Changes
+
+- 1952789: Require explicitly declared realtime topics and authorize dynamic resources before subscription and delivery. Isolate the server core behind a broker contract, retain the application adapter and service tokens, and handle asynchronous publication throughout plugins and examples. Add acknowledged browser subscriptions, bounded recovery and heartbeat handling, shared React refresh helpers, original-session revalidation, transport limits, and usage documentation. The included adapter remains in-process; events are transient and clients recover by refetching after acknowledgement.
+- Updated dependencies [1952789]
+- Updated dependencies [1952789]
+- Updated dependencies [7afd595]
+  - @nocobase/app-server@3.0.0-beta.0
+  - @nocobase/app-websocket@0.1.0-beta.1
+
+## 0.1.0-beta.16
+
+### Patch Changes
+
+- 89648ee: Add a native Aliyun OSS drive using the official server SDK, with access keys or ECS RAM role credentials, on-demand refresh, V4 signed URLs, file operations and ACL support. Handle input stream errors while credentials are loading so failed uploads reject safely without terminating the process. Default OSS transfer timeouts to ten minutes and allow a positive integer `timeout` in milliseconds (up to 2147483647), retained after credential refresh and bucket changes, so slow uploads and buffered downloads are not limited by the SDK default of sixty seconds. Metadata request timeouts remain unchanged. Allow OSS artifact storage in standalone App Hosts. S3 configuration and credential behavior remain unchanged. Validated with simulated metadata and the real OSS SDK request/signing chain; real ECS/OSS verification remains a follow-up.
+- Updated dependencies [89648ee]
+- Updated dependencies [fe81e4b]
+- Updated dependencies [5fe8773]
+- Updated dependencies [49f61b9]
+  - @nocobase/drive@0.1.0-beta.6
+  - @nocobase/app-server@2.0.0-beta.8
+
 ## 0.1.0-beta.15
 
 ### Patch Changes

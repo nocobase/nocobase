@@ -1,3 +1,4 @@
+import revisionMigration from '../../../database/migrations/202610150001_authorization_permission_set_revision.js';
 import {
   defineCompositeResource,
   defineRecordAccess,
@@ -42,6 +43,7 @@ beforeEach(async () => {
   database = testDatabase.database;
   connection = database.connection();
   await permissionSetMigration.up(migrationContext(connection));
+  await revisionMigration.up(migrationContext(connection));
   await connection.builder.createCollections([
     {
       name: 'authzCustomers',

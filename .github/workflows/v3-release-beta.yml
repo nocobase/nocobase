@@ -34,8 +34,13 @@ jobs:
     defaults:
       run:
         working-directory: release-source
+    # Pull requests read lets the changelog step read the descriptions of the pull requests this release contains.
+    permissions:
+      contents: read
+      pull-requests: read
     outputs:
       release_branch: ${{ steps.branch.outputs.name }}
+      release_tag: ${{ steps.branch.outputs.tag }}
       batch: ${{ steps.branch.outputs.batch }}
       rows: ${{ steps.changed.outputs.rows }}
       base_sha: ${{ steps.release_state.outputs.base_sha }}
@@ -113,7 +118,7 @@ jobs:
           git fetch --tags --force
           DAY=$(date -u +%Y-%m-%d)
           MAX=0
-          for t in $(git tag -l "release-beta/${DAY}.*"); do
+          for t in $(git tag -l "release-beta/${DAY}.*" "nocobase-v3-beta/${DAY}.*"); do
             N="${t##*.}"
             case "$N" in ''|*[!0-9]*) continue ;; esac
             [ "$N" -gt "$MAX" ] && MAX="$N"
@@ -124,6 +129,7 @@ jobs:
           git checkout -b "$NAME"
           {
             echo "name=$NAME"
+            echo "tag=nocobase-v3-beta/${BATCH}"
             echo "batch=$BATCH"
           } >> "$GITHUB_OUTPUT"
           echo "Version: $BATCH"
@@ -155,6 +161,29 @@ jobs:
             echo "| --- | --- |"
             node scripts/list-package-versions.mjs --table
           } >> "$GITHUB_STEP_SUMMARY"
+
+      # The root CHANGELOG.md and CHANGELOG.zh-CN.md gain this release's section, written by scripts/changelog.mjs from
+      # the type and bilingual changelog of each pull request merged since the previous beta
+      # (.github/pull_request_template.md). The release commit carries both files, and v3-github-release.yml reads the
+      # English section back for the GitHub Release. The script comes from the workflow tooling checkout and reads pull
+      # requests with this job's read-only token. Best effort: a failure warns, puts both files back as they were, and
+      # the release goes on without the section.
+      - name: Write the changelog
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.branch.outputs.tag }}
+          REPO: ${{ github.repository }}
+        run: |
+          if ! node ../scripts/changelog.mjs --tag "$TAG" --repo "$REPO" --root .; then
+            echo "::warning::Writing the changelog failed; $TAG has no changelog section."
+            for file in CHANGELOG.md CHANGELOG.zh-CN.md; do
+              if git ls-files --error-unmatch -- "$file" > /dev/null 2>&1; then
+                git checkout HEAD -- "$file"
+              else
+                rm -f -- "$file"
+              fi
+            done
+          fi
 
       - name: Save versioned release source
         id: release_state
@@ -430,7 +459,7 @@ jobs:
       run:
         working-directory: release-source
     outputs:
-      tag: ${{ needs.prepare.outputs.release_branch }}
+      tag: ${{ needs.prepare.outputs.release_tag }}
       merged: ${{ steps.merge.outputs.merged }}
     steps:
       - name: Check out workflow tooling
@@ -542,25 +571,26 @@ jobs:
           RELEASE_TOKEN: ${{ steps.release_token.outputs.token }}
         run: git remote set-url origin "https://x-access-token:${RELEASE_TOKEN}@github.com/nocobase/nocobase.git"
 
-      # Use full refspecs because the release branch and tag intentionally share a name for a short time.
+      # Keep the internal candidate branch separate from the public v3 Beta tag.
       - name: Tag and push release branch
         if: '!inputs.dry_run'
         env:
           RELEASE_BRANCH: ${{ needs.prepare.outputs.release_branch }}
+          RELEASE_TAG: ${{ needs.prepare.outputs.release_tag }}
         run: |
-          if git show-ref --verify --quiet "refs/tags/$RELEASE_BRANCH"; then
-            TAG_SHA=$(git rev-parse "refs/tags/${RELEASE_BRANCH}^{commit}")
+          if git show-ref --verify --quiet "refs/tags/$RELEASE_TAG"; then
+            TAG_SHA=$(git rev-parse "refs/tags/${RELEASE_TAG}^{commit}")
             HEAD_SHA=$(git rev-parse HEAD)
             if [ "$TAG_SHA" != "$HEAD_SHA" ]; then
-              echo "::error::Tag $RELEASE_BRANCH points to $TAG_SHA instead of release candidate $HEAD_SHA"
+              echo "::error::Tag $RELEASE_TAG points to $TAG_SHA instead of release candidate $HEAD_SHA"
               exit 1
             fi
-            echo "Tag $RELEASE_BRANCH already points to the release candidate."
+            echo "Tag $RELEASE_TAG already points to the release candidate."
           else
-            git tag "$RELEASE_BRANCH"
+            git tag "$RELEASE_TAG"
           fi
           git push origin "refs/heads/${RELEASE_BRANCH}:refs/heads/${RELEASE_BRANCH}"
-          git push origin "refs/tags/${RELEASE_BRANCH}:refs/tags/${RELEASE_BRANCH}"
+          git push origin "refs/tags/${RELEASE_TAG}:refs/tags/${RELEASE_TAG}"
 
       # Publish the exact tarballs prepared and tested from the immutable release source state.
       - name: Publish to npm

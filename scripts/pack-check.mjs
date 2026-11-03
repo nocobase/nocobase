@@ -298,7 +298,7 @@ async function smokeTestDevConfig(archivePath, packageDirectory) {
   }
 }
 
-// A `prepack` script chains the steps a package needs before it can be packed, typically `pnpm registry:build &&
+// A `prepack` script chains the steps a package needs before it can be packed, typically `pnpm assets:build &&
 // pnpm build`. When the workspace has just been built, the build half repeats work already on disk: in a release it
 // recompiled fourteen packages one at a time. Prebuilt mode keeps every other step and drops only the build.
 export function prepackStepsWithoutBuild(prepack) {

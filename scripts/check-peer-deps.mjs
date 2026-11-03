@@ -44,12 +44,24 @@ export const IDENTITY_SENSITIVE_PACKAGES = new Map([
   ],
   ['@nocobase/i18n', 'exports React contexts for the i18n runtime'],
   [
+    '@tanstack/react-query',
+    'the application query cache reaches pages and plugins through its React context, which a second copy does not read',
+  ],
+  [
     '@nocobase/queue',
     'types the host-owned QueueService that plugins resolve from queueServiceToken',
   ],
   [
+    '@nocobase/jobs',
+    'types host-owned executors and shares Job and deployment-error class identities across adapters',
+  ],
+  [
     '@nocobase/lifecycle',
     'a LifecycleRuntime is shared between plugins through addGuard(), and EffectFailure and LifecycleError are recognised with instanceof, so a second copy neither registers into the runtime it is handed nor recognises the errors thrown by the other',
+  ],
+  [
+    '@nocobase/concurrency',
+    'shared backend contracts and concurrent error constructors cross adapter boundaries and are recognised by identity',
   ],
 ]);
 

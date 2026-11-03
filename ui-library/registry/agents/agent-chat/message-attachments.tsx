@@ -1,3 +1,4 @@
+import type { FileUIPart } from 'ai';
 /**
  * The files sent with a message, through `attachment-list`: the images as thumbnails that open larger in its dialog
  * (stepping through them, with a download), and the other files as chips that download. Each reads its bytes from the
@@ -15,7 +16,22 @@ import { cn } from 'cn';
 
 import { useAttachmentLabels } from './chat-i18n.js';
 
-function fileOf(attachment: MessageAttachment): AttachmentFile {
+function fileOf(attachment: MessageAttachment | FileUIPart): AttachmentFile {
+  if ('type' in attachment)
+    return {
+      id: attachment.url,
+      name: attachment.filename ?? attachment.mediaType,
+      url: attachment.url,
+      downloadUrl: attachment.url,
+      image: [
+        'image/png',
+        'image/jpeg',
+        'image/gif',
+        'image/webp',
+        'image/avif',
+        'image/bmp',
+      ].includes(attachment.mediaType),
+    };
   return {
     id: attachment.id,
     name: attachment.filename,
@@ -27,7 +43,7 @@ function fileOf(attachment: MessageAttachment): AttachmentFile {
 }
 
 export interface MessageAttachmentsProps {
-  readonly attachments: readonly MessageAttachment[];
+  readonly attachments: readonly (MessageAttachment | FileUIPart)[];
   readonly className?: string;
 }
 

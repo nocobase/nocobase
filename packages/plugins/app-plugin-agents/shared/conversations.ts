@@ -1,64 +1,23 @@
 /**
- * Conversations: a person chatting with an agent from the chat panel, as the browser, the server's API and the
- * application exchange them. This file is the contract; the panel (client), the application's extensions and the
- * conversation domain build on it and on nothing else.
- *
- * ## Model
- *
- * - A **conversation** belongs to one person (its owner) and is bound to one agent, which answers on a runner. Its
- *   **mode** is `runner`; conversations an earlier version answered with an online agent keep `online`. Only the owner
- *   reads its content:
- *   the API answers 404 to everyone else, administrators included, and the runs a conversation starts are hidden from
- *   anyone the run does not involve. Administrators see usage only.
- * - A **message** is what the owner sent (`user`), what the agent replied (`assistant`), or a notice the server wrote
- *   (`system`: the agent was switched, a run failed). Field names follow the platform AI employee's
- *   `aiConversations` / `aiMessages`, so the two stores can be merged later.
- * - Each message the owner sends wakes the agent: a run with the subject `{ kind: 'conversation', id }`, woken by the
- *   owner (whose permissions bound it). A message sent while the agent is working joins that run as input; a message
- *   sent while it waits for a runner joins the waiting run. Every text the agent writes in a run becomes an assistant
- *   message, in order, as the runner reports it. The run's step-by-step transcript stays readable through the runs API
- *   (`/api/agents/admin/runs/:runId/events`), for the "thinking / reading X" lines.
- * - **Sessions**: a run resumes the session the same runner kept for the conversation. On another runner it starts a
- *   fresh session and its prompt carries the last `CONVERSATION_HISTORY_IN_PROMPT` messages and the previous run's
- *   summary. Switching the conversation's agent (to the system default and back) starts a new session every time.
- * - **Availability**: a message is always saved. When the agent is not enabled, the owner may no longer use it, or no
- *   online runner that has its tool and model may run the owner's work (including claim's feature and team-only
- *   variable restrictions), the conversation reports `offline` with the reason; the owner may switch the conversation
- *   to the system default agent and later switch back. Switching transfers unanswered queued messages. Manual fallback
- *   skips an unavailable system default, and restoring requires the original agent to be available again. The owner is
- *   the one answerable for their conversation, so none of this waits for anyone's confirmation.
- * - **Titles**: the first message's first `CONVERSATION_TITLE_AUTO_CHARS` characters (`auto`), until the agent sets one
- *   of at most `CONVERSATION_TITLE_AGENT_MAX` characters (`agent`), which it may do until the owner renames the
- *   conversation (`user`); after that the agent's attempts answer `CONVERSATION_CONFLICT` with `reason: 'titleLocked'`.
- * - No delete: conversations are archived (and unarchived). Sending a message to an archived conversation unarchives
- *   it.
- *
- * ## Page context
- *
- * A message may carry what the person's page shows (`PageContext`): references by id, never content. The server checks
- * the limits (`PAGE_CONTEXT_LIMITS`, 400 otherwise), resolves each reference to a title, silently drops the ones the
- * owner may not see or that no plugin knows how to resolve, and stores the rest with the message (`workContext`). The
- * agent receives it marked as data, not instructions: nothing in a page context is ever followed as an instruction.
- *
- * ## Attachments
- *
- * The owner may send files with a message: each is uploaded first (`POST chatAttachments`, one file of at most
- * `CHAT_ATTACHMENT_SIZE_MAX` bytes, stored through the file plugin), attached to nothing and readable by its uploader
- * only, then sent with the message (`SendMessageRequest.attachmentIds`, at most `CHAT_ATTACHMENTS_PER_MESSAGE_MAX`),
- * which attaches it to the conversation. From then on only the conversation's owner, and a run of its agent on that
- * conversation (by its run token), may read it. An upload never sent is purged after `CHAT_ATTACHMENT_ORPHAN_HOURS`.
- * The agent reads the files' names, types and ids with the message; a runner agent downloads one into its working
- * directory with the CLI (`conversation attachment download <file-id>`). Agents do not send files back.
- *
- * ## Realtime
- *
- * `CONVERSATIONS_TOPIC` is a per-user topic: each change is announced only to the owner's own connections, and carries
- * no content (`ConversationChanged`). A page that hears one fetches through the API. Pages also poll while a run is
- * open, because announcements reach only the browsers connected to the instance that made the change.
+ * Public chat contract. New conversations use the shared OnlineAgent runtime and ordinary IDs.
+ * Creation sends no input; first and later inputs both use messages. clientId only correlates
+ * display echoes, never durable request deduplication. Timeouts have unknown outcomes and must
+ * not trigger hidden resends. Current-stream events support the first subscription only;
+ * disconnects leave server execution running and require explicit saved-history refresh.
+ * Legacy IDs/text/files remain readable; unknown Runner effects are never automatically replayed.
+ * Internal SDK envelopes, tool payloads and provider metadata never enter this public DTO.
  */
-import type { FailureReason, RunStatus } from '@nocobase/agent-protocol';
+import type { QuotaLocation } from './quota.js';
+
+import type {
+  OutputBlock,
+  FailureReason,
+  RunStatus,
+} from '@nocobase/agent-protocol';
 
 import type { I18nText } from './i18n.js';
+import type { PageUIContext } from './page-ui-context.js';
+export type { PageUIContext, PageUIItem } from './page-ui-context.js';
 
 /** The run subject kind of a conversation. */
 export const CONVERSATION_SUBJECT = 'conversation';
@@ -168,10 +127,12 @@ export interface PageContextRef {
 }
 
 /**
- * What the person's page shows when they send a message, as the browser sends it: ids and the visible filter, never
- * content. Data, not instructions.
+ * What the person's page shows when they send a message: authorized business ids, visible filters and explicitly
+ * selected browser UI snapshots. All browser-supplied values are untrusted data, never instructions.
  */
 export interface PageContext {
+  /** Explicitly selected, untrusted browser UI snapshots; never resolved as business resources. */
+  readonly ui?: PageUIContext;
   /** The page's route (path and query), at most `PAGE_CONTEXT_LIMITS.route` characters. */
   readonly route: string;
   /** The objects the page shows or the person pinned, at most `PAGE_CONTEXT_LIMITS.items`. */
@@ -203,8 +164,10 @@ export interface ResolvedPageContextItem extends PageContextRef {
   readonly url: string | null;
 }
 
-/** A page context as stored with a message (`workContext`) and handed to the agent. */
+/** A page context stored with the message. Follow-ups may reauthorize only its references, never replay its stale page parameters. */
 export interface ResolvedPageContext {
+  /** Detached browser data; its presence grants no resource or tool access. */
+  readonly ui?: PageUIContext;
   readonly route: string;
   readonly items: readonly ResolvedPageContextItem[];
   readonly filter?: PageContext['filter'];
@@ -233,6 +196,7 @@ export interface ConversationAgent {
 
 /** Why a conversation's agent cannot answer now. */
 export const OFFLINE_REASONS = [
+  'noModel',
   /** The agent was deleted. */
   'agentMissing',
   /** The agent is not enabled. */
@@ -269,11 +233,26 @@ export interface ConversationRun {
 
 /** A conversation in the history list. */
 export interface ConversationSummary {
+  /** Linked work resolved for this conversation's owner in the list/detail snapshot. */
+  readonly links?: readonly ConversationLink[];
+  /** The optional project whose code this Runner conversation uses. */
+  readonly projectId?: string | null;
+  readonly execution?: {
+    readonly status: 'running' | 'idle';
+    readonly outcome?: 'completed' | 'cancelled' | 'failed';
+    readonly requiresEffectReview?: boolean;
+    readonly waitingApproval?: boolean;
+    readonly interrupted?: boolean;
+    readonly messageId?: string;
+    readonly revision?: number;
+  };
   readonly id: string;
   /** Null until the first message gives it one. */
   readonly title: string | null;
   readonly titleSource: TitleSource;
   readonly category: ConversationCategory;
+  /** Visibility in the default chat list; direct owned reads remain available. */
+  readonly showInChatList: boolean;
   readonly source: ConversationSource;
   readonly mode: ConversationMode;
   readonly agent: ConversationAgent;
@@ -287,10 +266,111 @@ export interface ConversationSummary {
   readonly updatedAt: string;
   /** The open run, if any: the panel shows "working" and offers to stop. */
   readonly run: ConversationRun | null;
+  /**
+   * The runner the conversation is bound to: the first one that took a run on it, which alone takes the next ones.
+   * Null until then, and after `switchRunner`. These four are absent from servers before they were added.
+   */
+  readonly runner?: ConversationRunner | null;
+  /** The highest message `seq`. */
+  readonly lastSeq?: number;
+  /** How far the owner has seen it (`markSeen`). */
+  readonly seenSeq?: number;
+  /** What waits for the owner, until they see it (a reply, a failure) or answer it (a question). */
+  readonly needsYou?: ConversationNeedsYou | null;
 }
+
+/** A conversation's bound runner, as its owner sees it. */
+export interface ConversationRunner {
+  readonly id: string;
+  /** Null once the runner is gone. */
+  readonly name: string | null;
+  /**
+   * `online` takes the conversation's runs now; `offline` and `revoked` keep them waiting until it is back (or the owner
+   * switches runner); `missing` is a deleted runner, which only a switch gets past.
+   */
+  readonly status: 'online' | 'offline' | 'revoked' | 'missing';
+}
+
+/** Why a conversation waits for its owner. */
+export const CONVERSATION_NEEDS_YOU = ['reply', 'failed', 'confirm'] as const;
+
+export type ConversationNeedsYouReason =
+  (typeof CONVERSATION_NEEDS_YOU)[number];
+
+export interface ConversationNeedsYou {
+  /** `reply`: the agent finished a turn; `failed`: its run failed; `confirm`: it asked the owner something. */
+  readonly reason: ConversationNeedsYouReason;
+  /** The message `seq` it is about. */
+  readonly seq: number;
+  /** What the agent asked, for `confirm`; null otherwise. */
+  readonly text: string | null;
+}
+
+/** The owner's conversations that wait for them (`GET /api/agents/conversationAttention`), for a badge. */
+export interface ConversationAttentionCounts {
+  /** Open conversations with messages the owner has not read. */
+  readonly unread: number;
+  /** Open conversations that need the owner (`ConversationSummary.needsYou`). */
+  readonly needsYou: number;
+}
+
+/**
+ * What a conversation's runs used, as their coding tools reported it: tokens summed over every run (zero when none
+ * reported any), and how full the context window was after the latest run that said (null when none did).
+ */
+export interface ConversationUsage {
+  readonly inputTokens: number;
+  readonly cacheReadTokens: number;
+  readonly outputTokens: number;
+  /** Runs that reported tokens. */
+  readonly runs: number;
+  readonly context: { readonly used: number; readonly size: number } | null;
+  /** What the runs cost in US dollars, over the runs whose coding tool priced them; null when none did. */
+  readonly costUsd: number | null;
+}
+
+/** How the application shows something a conversation is tied to, as its link kind resolves it for the viewer. */
+export interface ConversationLinkView {
+  /** When the resolved target was last updated, for ordering linked work without another read. */
+  readonly targetUpdatedAt?: string;
+  /** Its short identifier, such as an issue's `ST-58`. */
+  readonly key: string | null;
+  readonly title: string;
+  /** Where it stands, in words (`In progress`); null when the kind says nothing. */
+  readonly status: string | null;
+  /** Where the application shows it, relative to the application's routes. */
+  readonly url: string | null;
+}
+
+/** Who tied a target to a conversation: its owner, the agent working in it, or the application. */
+export const CONVERSATION_LINK_ORIGINS = [
+  'user',
+  'agent',
+  'application',
+] as const;
+
+export type ConversationLinkOrigin = (typeof CONVERSATION_LINK_ORIGINS)[number];
+
+/** Something a conversation is tied to: a record of a kind the application registered. */
+export interface ConversationLink {
+  readonly id: string;
+  readonly conversationId: string;
+  readonly kind: string;
+  readonly targetId: string;
+  readonly origin: ConversationLinkOrigin;
+  readonly createdAt: string;
+  /** Null when the kind cannot resolve it, or the viewer may no longer see it. */
+  readonly view: ConversationLinkView | null;
+}
+
+/** `kind` of a conversation link: letters, digits, `_` and `-`, starting with a letter. */
+export const CONVERSATION_LINK_KIND_PATTERN: RegExp =
+  /^[a-z][a-zA-Z0-9_-]{0,63}$/u;
 
 /** One conversation as the panel opens it. */
 export interface ConversationDetail extends ConversationSummary {
+  /** Saved per-conversation preference; null uses the current Agent default. */
+  readonly effort?: string | null;
   readonly availability: ChatAvailability;
   /** Another agent may take over (`POST …/fallback`): the system default agent, when it can answer. */
   readonly canFallback: boolean;
@@ -328,6 +408,12 @@ export type ConversationNotice =
       readonly fromAgentId: string;
       readonly reason: OfflineReason;
     }
+  /** The owner selected another Runner Agent; the next message starts a fresh tool session. */
+  | {
+      readonly code: 'switchedAgent';
+      readonly agentId: string;
+      readonly fromAgentId: string;
+    }
   /** The conversation is back on its own agent. */
   | {
       readonly code: 'switchedBack';
@@ -340,7 +426,7 @@ export type ConversationNotice =
       readonly runId: string;
       readonly reason: FailureReason | null;
     }
-  /** The owner stopped the run. */
+  /** Cancellation was requested; this notice does not confirm the run has ended. */
   | { readonly code: 'runCancelled'; readonly runId: string }
   /**
    * Something happened outside the conversation that the application tells its owner and its agent about
@@ -400,8 +486,17 @@ export type ConversationNoticeCode = ConversationNotice['code'];
 
 /** `aiMessages.metadata`. */
 export interface MessageMetadata {
+  readonly effort?: string;
+  readonly output?: OutputBlock;
+  readonly parentToolUseId?: string;
+  readonly childSessionId?: string;
   /** A user message: the run input it became, once the agent was woken. */
   readonly inputId?: string;
+  /** A user message sent while the agent was working, joining its run (`queue`); `pickedUp` once the agent took it. */
+  readonly queued?: boolean;
+  readonly pickedUp?: boolean;
+  /** A queued user message its sender took back before the agent took it: kept in the history, never answered. */
+  readonly withdrawn?: boolean;
   /** An assistant message: the agent that wrote it and the run event it came from. */
   readonly agentId?: string;
   readonly runEventSeq?: number;
@@ -466,15 +561,12 @@ export interface ConversationMessage {
  * | ------ | --------------- | ------------------------------------------------- | -------------------------- |
  * | GET    | `conversations` | `ConversationListQuery` (cursor paging)           | `ConversationSummary[]`    |
  * | POST   | `conversations` | `CreateConversationRequest`                       | `ConversationDetail` (201) |
- * | POST   | `start`         | `StartConversationRequest`                        | `SendMessageResult`        |
  * | GET    | `conversation`  |                                                   | `ConversationDetail`       |
  * | PATCH  | `conversation`  | `ConversationPatch` (rename, archive / unarchive) | `ConversationDetail`       |
  * | GET    | `messages`      | `MessageListQuery` (cursor paging)                | `ConversationMessage[]`    |
  * | POST   | `messages`      | `SendMessageRequest`                              | `SendMessageResult` (201)  |
  * | POST   | `markRead`      |                                                   | `ConversationDetail`       |
  * | POST   | `stop`          |                                                   | `ConversationDetail`       |
- * | POST   | `fallback`      |                                                   | `ConversationDetail`       |
- * | POST   | `restore`       |                                                   | `ConversationDetail`       |
  * | GET    | `agents`        |                                                   | `ChatAgent[]`              |
  * | GET    | `preferences`   |                                                   | `ChatPreferences`          |
  * | PATCH  | `preferences`   | `ChatPreferencesPatch`                            | `ChatPreferences`          |
@@ -491,11 +583,17 @@ export const CHAT_ROUTES = {
   conversations: 'agents/conversations',
   conversation: 'agents/conversations/:conversationId',
   messages: 'agents/conversations/:conversationId/messages',
+  queue: 'agents/conversations/:conversationId/queue',
+  usage: 'agents/conversations/:conversationId/usage',
+  events: 'agents/conversations/:conversationId/events',
+  config: 'agents/conversations/:conversationId/config',
   markRead: 'agents/conversations/:conversationId/markRead',
+  markSeen: 'agents/conversations/:conversationId/markSeen',
+  switchRunner: 'agents/conversations/:conversationId/switchRunner',
+  switchAgent: 'agents/conversations/:conversationId/switchAgent',
+  links: 'agents/conversations/:conversationId/links',
+  attention: 'agents/conversationAttention',
   stop: 'agents/conversations/:conversationId/stop',
-  fallback: 'agents/conversations/:conversationId/fallback',
-  restore: 'agents/conversations/:conversationId/restore',
-  start: 'agents/conversations/start',
   agents: 'agents/chatAgents',
   preferences: 'agents/chatPreferences',
   settings: 'agents/chatSettings',
@@ -524,6 +622,8 @@ export const CONVERSATION_CONFLICTS = [
   'noFallback',
   /** `restore`: the conversation is not on the system default, or its own agent is still unavailable. */
   'noRestore',
+  /** `withdraw`: the message's runner already took it, so the agent has it. */
+  'messageTaken',
 ] as const;
 
 export type ConversationConflict = (typeof CONVERSATION_CONFLICTS)[number];
@@ -535,7 +635,12 @@ export interface ConversationListQuery {
   /** `false` (default): open ones; `true`: archived ones; `all`: both. */
   readonly archived?: boolean | 'all';
   readonly agentId?: string;
+  /** `online`: conversations with the online agent; `runner`: those with every other agent. */
+  readonly mode?: ConversationMode;
   readonly source?: ConversationSource;
+  /** Only the conversations tied to this target (`linkKind` with `linkTargetId`). */
+  readonly linkKind?: string;
+  readonly linkTargetId?: string;
   /** The `meta.nextPageToken` of the previous page. */
   readonly pageToken?: string;
   /** `CONVERSATION_PAGE_DEFAULT`, at most `CONVERSATION_PAGE_MAX`. */
@@ -549,12 +654,41 @@ export interface ConversationPage {
 }
 
 /** `POST conversations`. Creating starts no run; the first message does. */
+export type OnlineChatJson =
+  | null
+  | boolean
+  | number
+  | string
+  | OnlineChatJson[]
+  | { [key: string]: OnlineChatJson };
+export interface OnlineChatConfigSnapshot {
+  readonly agentId?: string;
+  readonly selectedModel: { modelService: string; model: string } | null;
+  readonly scope: string[];
+  /** Missing and empty lists impose no additional model restriction. */
+  readonly model?: string[];
+  readonly thinking?: string;
+  readonly webSearch?: boolean;
+  readonly tool: string[];
+  readonly toolVersions: Record<string, string>;
+  readonly systemPrompt: string;
+  readonly variable?: OnlineChatJson;
+}
 export interface CreateConversationRequest {
-  /**
-   * The agent to chat with, which must be enabled. Without one: the person's default agent
-   * (`ChatPreferences.defaultAgentId`) while it is enabled, else the system default (`ChatSettings.defaultAgentId`),
-   * else `CONVERSATION_CONFLICT` `noChatAgent`.
-   */
+  readonly projectId?: string | null;
+  /** Explicit non-default Runner effort; omission or null uses the Agent default when supported, otherwise the tool default. */
+  readonly effort?: string | null;
+  /** Defaults to true; background SDK sessions are always hidden. */
+  readonly showInChatList?: boolean;
+  readonly config?: {
+    agentId?: string;
+    context?: { variable?: OnlineChatJson };
+    scope?: string[];
+    thinking?: string;
+    webSearch?: boolean;
+  };
+  readonly selectedModel?: { modelService: string; model: string };
+  /** Selects the native `online` executor or a callable Runner agent for a new conversation. */
   readonly agentId?: string;
   /** An explicit title (`user`); otherwise the first message gives one. */
   readonly title?: string;
@@ -564,6 +698,8 @@ export interface CreateConversationRequest {
 
 /** `PATCH conversation`: rename (the title becomes `user`'s and the agent may no longer change it), or archive. */
 export interface ConversationPatch {
+  /** May change only before the first user message. */
+  readonly projectId?: string | null;
   readonly title?: string;
   readonly archived?: boolean;
 }
@@ -574,6 +710,8 @@ export interface ConversationPatch {
  * highest `seq` in the conversation now.
  */
 export interface MessageListQuery {
+  /** Native UIMessage IDs to reread after a message revision notification, comma-separated (at most 100). */
+  readonly ids?: string;
   /** Messages with a higher `seq`. */
   readonly after?: number;
   /** The `meta.nextPageToken` of the previous page: older messages. */
@@ -593,6 +731,10 @@ export interface MessagePage {
 
 /** `POST messages`. */
 export interface SendMessageRequest {
+  /** Explicit non-default Runner effort; omission or null uses the Agent default when supported, otherwise the tool default. */
+  readonly effort?: string | null;
+  /** Confirm this Runner agent only if the message is accepted while idle. */
+  readonly agentId?: string;
   /** Markdown, at most `MESSAGE_CONTENT_MAX` characters; empty only when files are sent. */
   readonly content: string;
   readonly context?: PageContext;
@@ -643,6 +785,13 @@ export interface StartConversationRequest {
 
 /** An agent the person may chat with (`GET agents`). */
 export interface ChatAgent {
+  /** Known efforts shared by all eligible runners for the current model. Empty or absent hides selection. */
+  readonly efforts?: readonly string[];
+  /** The Agent default; it can become unsupported after a capability update. */
+  readonly effort?: string | null;
+  readonly quota?: readonly QuotaLocation[];
+  /** Viewer-visible eligible runtimes, for partial quota availability. */
+  readonly runnerNames: readonly string[];
   readonly id: string;
   readonly name: string;
   readonly description: string | null;
@@ -665,7 +814,7 @@ export interface ChatPreferences {
 
 export type ChatPreferencesPatch = Partial<ChatPreferences>;
 
-/** The team's chat settings ("Agent team › Settings"). */
+/** The team's chat settings ("Agent management › Settings"). */
 export interface ChatSettings {
   /** The agent new conversations go to when a person has no default of their own; null when none is set. */
   readonly defaultAgentId: string | null;
@@ -686,6 +835,21 @@ export const CONVERSATIONS_TOPIC = 'agents:conversations';
  */
 export type ConversationChanged =
   | {
+      readonly kind: 'conversation.historyReplaced';
+      readonly conversationId: string;
+      readonly messageId: string;
+      readonly seq: number;
+      readonly revision: number;
+      readonly lastSeq: number;
+      readonly executionId: string;
+    }
+  | {
+      readonly kind: 'conversation.messageUpdated';
+      readonly conversationId: string;
+      readonly messageId: string;
+      readonly revision: number;
+    }
+  | {
       readonly kind: 'conversation.messages';
       readonly conversationId: string;
       readonly lastSeq: number;
@@ -693,4 +857,6 @@ export type ConversationChanged =
   | {
       readonly kind: 'conversation.changed';
       readonly conversationId: string;
+      /** A read acknowledgement; other conversation data is unchanged. */
+      readonly seenSeq?: number;
     };

@@ -1,3 +1,4 @@
+import { createUuid } from '@nocobase/app-client';
 import type { ReactElement } from 'react';
 import { Link } from 'react-router';
 import { useTranslation } from '@nocobase/i18n/client';
@@ -55,7 +56,7 @@ export function OrderItemsEditor({
             onChange([
               ...items,
               {
-                id: crypto.randomUUID(),
+                id: createUuid(),
                 productId: '',
                 quantity: '1',
                 unitPriceCents: '0',

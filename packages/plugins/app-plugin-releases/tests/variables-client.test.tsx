@@ -27,7 +27,9 @@ const mocks = vi.hoisted(() => ({
   request: vi.fn(),
   toasts: [] as { type: string; title: string }[],
 }));
-vi.mock('@nocobase/app-client', () => ({
+vi.mock('@nocobase/app-client', async (importOriginal) => ({
+  copyText: (await importOriginal<typeof import('@nocobase/app-client')>())
+    .copyText,
   ApiClientError: class extends Error {
     public constructor(
       message: string,
@@ -459,30 +461,35 @@ describe('App variable alerts', () => {
     expect(screen.queryByRole('link')).toBeNull();
   });
 
-  it('shows the first administrator masked, and deletes it once saved', async () => {
-    const sent = serve([], {
-      deploymentId: 'd1',
-      username: 'nocobase',
-      email: 'admin@nocobase.com',
-      password: 'Secret123Secret1',
-      expiresAt: new Date(Date.now() + 5 * 3_600_000).toISOString(),
-    });
-    render(<InitialAdminAlert appId='shop' />);
-    expect(await screen.findByText('nocobase')).toBeInTheDocument();
-    expect(screen.queryByText('Secret123Secret1')).toBeNull();
-    expect(screen.getByText(/deleted in 5 h/)).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Show password' }));
-    expect(screen.getByText('Secret123Secret1')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'I’ve saved it' }));
-    await waitFor(() => expect(screen.queryByText('nocobase')).toBeNull());
-    expect(
-      sent.some(
-        (item) =>
-          item.method === 'POST' &&
-          item.path === 'releases/apps/shop/initialAdmin/dismiss',
-      ),
-    ).toBe(true);
-  });
+  it.each([null, '2026-01-01T00:00:00.000Z'])(
+    'shows the retained first administrator masked, and deletes it once saved (legacy expiry: %s)',
+    async (expiresAt) => {
+      const sent = serve([], {
+        deploymentId: 'd1',
+        username: 'nocobase',
+        email: 'admin@nocobase.com',
+        password: 'Secret123Secret1',
+        expiresAt,
+      });
+      render(<InitialAdminAlert appId='shop' />);
+      expect(await screen.findByText('nocobase')).toBeInTheDocument();
+      expect(screen.queryByText('Secret123Secret1')).toBeNull();
+      expect(
+        screen.getByText(/kept until the app is removed/),
+      ).toBeInTheDocument();
+      fireEvent.click(screen.getByRole('button', { name: 'Show password' }));
+      expect(screen.getByText('Secret123Secret1')).toBeInTheDocument();
+      fireEvent.click(screen.getByRole('button', { name: 'I’ve saved it' }));
+      await waitFor(() => expect(screen.queryByText('nocobase')).toBeNull());
+      expect(
+        sent.some(
+          (item) =>
+            item.method === 'POST' &&
+            item.path === 'releases/apps/shop/initialAdmin/dismiss',
+        ),
+      ).toBe(true);
+    },
+  );
 
   it('shows nothing when there is no first administrator', async () => {
     const sent = serve([]);
@@ -495,3 +502,59 @@ describe('App variable alerts', () => {
     expect(container.querySelector('[data-slot=initial-admin]')).toBeNull();
   });
 });
+
+it.each([true, false])(
+  'reports the actual HTTP fallback result when copying an administrator password (%s)',
+  async (copied) => {
+    const clipboard = Object.getOwnPropertyDescriptor(navigator, 'clipboard');
+    const execCommand = Object.getOwnPropertyDescriptor(
+      document,
+      'execCommand',
+    );
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: undefined,
+    });
+    const copy = vi.fn(() => {
+      expect(document.querySelector('textarea')?.value).toBe('test-copy-value');
+      return copied;
+    });
+    Object.defineProperty(document, 'execCommand', {
+      configurable: true,
+      value: copy,
+    });
+    try {
+      serve([], {
+        deploymentId: 'd1',
+        username: 'nocobase',
+        email: 'admin@example.test',
+        password: 'test-copy-value',
+        expiresAt: null,
+      });
+      render(<InitialAdminAlert appId='shop' />);
+      fireEvent.click(
+        await screen.findByRole('button', { name: 'Copy password' }),
+      );
+      await waitFor(() =>
+        expect(mocks.toasts).toContainEqual({
+          type: copied ? 'success' : 'error',
+          title: copied
+            ? 'Password copied.'
+            : 'Could not copy the password. Show it and copy it manually.',
+        }),
+      );
+      expect(copy).toHaveBeenCalledWith('copy');
+      expect(document.querySelector('textarea')).toBeNull();
+      if (!copied)
+        expect(mocks.toasts.some((toast) => toast.type === 'success')).toBe(
+          false,
+        );
+    } finally {
+      if (clipboard) Object.defineProperty(navigator, 'clipboard', clipboard);
+      else Reflect.deleteProperty(navigator, 'clipboard');
+      if (execCommand)
+        Object.defineProperty(document, 'execCommand', execCommand);
+      else Reflect.deleteProperty(document, 'execCommand');
+    }
+  },
+);

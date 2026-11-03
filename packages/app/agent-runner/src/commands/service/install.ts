@@ -23,7 +23,7 @@ const HIDDEN_VALUE = '<hidden>';
 
 export default class ServiceInstall extends RunnerCommand {
   static override summary: string =
-    'Run the runner as a user service that starts at login and restarts when it exits.';
+    'Run the runner as a user service that starts at login and restarts after an update or unexpected failure.';
   static override description: string =
     'Writes a launchd agent (macOS) or a systemd user unit (Linux) and (re)starts it. --dry-run prints the file and ' +
     'the commands instead. The label is remembered for `service uninstall` and `uninstall`. A service does not read ' +

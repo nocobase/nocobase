@@ -77,6 +77,11 @@ describe('app runtime', () => {
     );
 
     expect(runtime.i18n).toBe(i18n);
+    expect(runtime.registeredPlugins).toEqual([
+      { packageName: '@example/plugin' },
+    ]);
+    expect(Object.isFrozen(runtime.registeredPlugins)).toBe(true);
+    expect(Object.isFrozen(runtime.registeredPlugins?.[0])).toBe(true);
     expect(loadLocale).not.toHaveBeenCalled();
   });
 

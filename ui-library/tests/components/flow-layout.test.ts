@@ -1,6 +1,10 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
-import { layoutFlowDiagram } from '../../registry/components/flow-layout.js';
+import {
+  layoutFlowDiagram,
+  revealRoute,
+  partitionFlowDiagramReturns,
+} from '../../registry/components/flow-layout.js';
 
 const graph = {
   nodes: ['a', 'b', 'c', 'isolated'].map((id) => ({ id, label: id })),
@@ -160,4 +164,82 @@ describe('ELK layout and routing', () => {
     );
     expect(result.edges[0]!.points).toHaveLength(2);
   });
+});
+
+it.each(['RIGHT', 'DOWN'] as const)(
+  'keeps compact condition labels within routed bounds in %s',
+  async (direction) => {
+    const input = {
+      nodes: graph.nodes.slice(0, 2),
+      edges: [
+        {
+          id: 'condition',
+          source: 'a',
+          target: 'b',
+          label:
+            'A long business condition that wraps across multiple lines for the reviewer to understand the branch',
+        },
+      ],
+    };
+    const layout = await layoutFlowDiagram(input, direction, true);
+    expect(layout.edges[0]!.labelPosition).toBeDefined();
+    expect(layout.height).toBeGreaterThan(104);
+    const label = layout.edges[0]!.labelPosition!;
+    expect(label.x).toBeGreaterThanOrEqual(0);
+    expect(label.y).toBeGreaterThanOrEqual(0);
+    expect(label.x).toBeLessThanOrEqual(layout.width);
+    expect(label.y).toBeLessThanOrEqual(layout.height);
+  },
+);
+
+it.each(['RIGHT', 'DOWN'] as const)(
+  'routes revealed returns and self loops outside intervening nodes in %s',
+  async (direction) => {
+    const layout = await layoutFlowDiagram(
+      {
+        nodes: graph.nodes.slice(0, 3),
+        edges: [
+          { id: 'a-b', source: 'a', target: 'b' },
+          { id: 'b-c', source: 'b', target: 'c' },
+        ],
+      },
+      direction,
+      true,
+    );
+    const [a, b, c] = layout.nodes;
+    const first = revealRoute(layout.nodes, c!, a!, direction);
+    const outer = revealRoute(layout.nodes, c!, a!, direction, 1);
+    const axis = direction === 'DOWN' ? 'x' : 'y';
+    expect(first.points[1]![axis]).toBeLessThan(
+      Math.min(...layout.nodes.map((node) => node[axis])),
+    );
+    expect(outer.points[1]![axis]).toBeLessThan(first.points[1]![axis]);
+    const loop = revealRoute(layout.nodes, b!, b!, direction);
+    expect(loop.points[0]).not.toEqual(loop.points.at(-1));
+    for (let index = 1; index < loop.points.length; index++) {
+      const before = loop.points[index - 1]!,
+        after = loop.points[index]!;
+      expect(before.x === after.x || before.y === after.y).toBe(true);
+    }
+  },
+);
+
+it('keeps adjacent returns and self transitions out of the process layout as auxiliary routes', () => {
+  const graph = {
+    nodes: ['a', 'b', 'c'].map((id) => ({ id, label: id })),
+    edges: [
+      { id: 'forward', source: 'a', target: 'c' },
+      { id: 'long', source: 'c', target: 'a' },
+      { id: 'short', source: 'c', target: 'b' },
+      { id: 'self', source: 'b', target: 'b' },
+    ],
+  };
+  const routes = partitionFlowDiagramReturns(graph);
+  expect(routes.edges.map((edge) => edge.id)).toEqual(['forward']);
+  expect(routes.extraEdges.map((edge) => edge.id)).toEqual([
+    'long',
+    'short',
+    'self',
+  ]);
+  expect(graph.edges).toHaveLength(4);
 });

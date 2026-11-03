@@ -1107,5 +1107,149 @@
       }
     ],
     "promptKey": "ai-knowledge-base"
+  },
+  "task-center": {
+    "markup": "<a class=\"skip\" href=\"#content\">跳至正文</a><main class=\"auth-page\" id=\"content\"><nav class=\"crumbs\" aria-label=\"面包屑\"><a href=\"/zh-CN/\">文档首页</a><span>/</span><a href=\"/zh-CN/#capabilities\">应用能力</a><span>/</span><span aria-current=\"page\">待办中心</span></nav><section class=\"auth-hero\"><div><div class=\"section-label\"><b>Capability</b><i></i><span>个人工作入口</span></div><div class=\"auth-title\"><span class=\"icon\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-list-checks\" aria-hidden=\"true\"><path d=\"m3 17 2 2 4-4\"></path><path d=\"m3 7 2 2 4-4\"></path><path d=\"M13 6h8\"></path><path d=\"M13 12h8\"></path><path d=\"M13 18h8\"></path></svg></span><h1>待办中心</h1></div><p class=\"auth-lead\">把「需要我处理的事」，汇集到一个入口。</p><p class=\"auth-intro\">让 Agent 将审批、设备领取等业务接入个人待办，按实际规则产生事项、打开详情、完成办理，并同步状态与数量。</p><div class=\"hero-links\"><a class=\"primary\" href=\"#scenarios\">开始接入 →</a><a class=\"secondary\" href=\"#scenarios\">复制提示词</a></div></div><aside class=\"identity\"><p>由真实业务驱动的个人待办</p><div class=\"identity-flow\"><div class=\"identity-box\"><strong>业务产生</strong><small>确定接收人</small></div><div class=\"identity-box\"><strong>个人待办</strong><small>集中查看</small></div><div class=\"identity-box\"><strong>业务办理</strong><small>同步结果</small></div></div><footer>待处理 · 已完成 · 已取消。具体办理资格由业务决定。</footer></aside></section><nav class=\"anchor-nav\" aria-label=\"页内导航\"><a href=\"#overview\">什么时候用</a><a href=\"#scenarios\">动手试用</a><a href=\"#references\">相关能力</a></nav><section id=\"overview\"><div class=\"section-head\"><h2>什么时候用，能带来什么</h2></div><div class=\"rules\"><article><h3>这些时候，用待办中心</h3><p>主管需要统一查看待自己审批的请假、报销申请；员工既要补交材料，也要确认设备领取。</p><p>当需要处理的事项分散在不同业务中，就用待办中心汇集「我的待办」。</p></article><article><h3>少找入口，更快处理</h3><p>打开一个入口，就知道有哪些事等我处理，并进入对应业务办理。</p><p>减少来回切换和遗漏；办完后同步更新状态与数量，清楚掌握剩余工作。</p></article></div></section><section id=\"scenarios\"><div class=\"section-head\"><h2>跟着四步，在项目中试一次</h2><p>先完成 1–4 步；需要更多业务时，再选后面的场景。复制提示词交给应用项目中的 Agent，完成后按清单检查。</p></div><div class=\"scenario-shell\"><div class=\"scenario-tabs\" role=\"tablist\" aria-label=\"待办中心搭建步骤\"></div><div id=\"scenario-panel\" role=\"tabpanel\"><div class=\"scenario-grid\"><div class=\"scenario-about\"><span class=\"badge\" id=\"scenario-status\"></span><h3 id=\"scenario-title\"></h3><p id=\"scenario-summary\"></p><dl class=\"decisions\" aria-label=\"需要决定的规则\"></dl><p class=\"scenario-note\" id=\"scenario-note\"></p></div><div class=\"editor-wrap\"><div class=\"editor-head\"><span><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-message-square-text\" aria-hidden=\"true\"><path d=\"M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z\"></path><path d=\"M13 8H7\"></path><path d=\"M17 12H7\"></path></svg>发送给 Agent</span><small>可按业务修改</small></div><textarea id=\"scenario-prompt\" aria-label=\"场景提示词\" spellcheck=\"false\"></textarea><div class=\"editor-footer\"><button class=\"reset-button\" id=\"reset\" disabled>恢复默认</button><button class=\"primary\" id=\"copy\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-copy\" aria-hidden=\"true\"><rect width=\"14\" height=\"14\" x=\"8\" y=\"8\" rx=\"2\" ry=\"2\"></rect><path d=\"M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2\"></path></svg>复制提示词</button></div><p class=\"editor-hint\">切换场景保留本次编辑；刷新页面后恢复默认。</p></div></div><div class=\"acceptance\"><div class=\"acceptance-header\"><h4>完成后，检查这些结果</h4><output id=\"check-count\" aria-live=\"polite\"></output></div><div class=\"check-items\"></div><p class=\"check-note\">这是手动检查清单，不会自动运行测试；勾选状态仅在本次页面中保留。</p></div></div></div><div class=\"scenario-bottom\"><details class=\"reference-image\"><summary>查看现有文档中的界面示例</summary><img id=\"reference-image\" loading=\"lazy\" alt=\"\"><p>示例展示一种实现效果，实际界面可由 Agent 按应用需求调整。</p></details><a id=\"scenario-doc\">查看 Markdown 版提示词 ↗</a></div></section>\n<section id=\"references\"><div class=\"section-head\"><h2>相关能力与文档</h2></div><div class=\"resources\"><a href=\"/zh-CN/capabilities/approval/\"><strong>审批 ↗</strong><p>配置审批路线与处理规则。</p></a><a href=\"/zh-CN/capabilities/notification/\"><strong>通知 ↗</strong><p>为业务事项增加提醒。</p></a><a href=\"/zh-CN/capabilities/task-center.md\"><strong>Markdown 文档 ↗</strong><p>下载完整说明，交给 Agent 读取。</p></a></div></section><nav class=\"bottom-links\"><a href=\"/zh-CN/#capabilities\">← 返回应用能力</a><a href=\"#scenarios\">开始搭建 ↑</a></nav><footer class=\"end\"><span>NocoBase 3 · 开发文档</span><span>开源 · 私有部署 · 自选模型与 Agent</span></footer></main><div class=\"toast\" role=\"status\" aria-live=\"polite\"></div>",
+    "promptKey": "task-center",
+    "scenarios": [
+      {
+        "id": "start",
+        "title": "先有一个「我的待办」入口",
+        "summary": "把需要自己处理的事放在一起，不必逐个打开业务页面。",
+        "decisions": [["例如", "主管登录后，从导航栏进入「我的待办」。"]],
+        "checks": [
+          "登录后显示自己的待办和空状态。",
+          "可以按业务和状态找到要处理的事项。"
+        ],
+        "note": "先在测试数据上试用，再按实际业务调整。",
+        "status": "1. 建立入口",
+        "image": null,
+        "doc": "/zh-CN/capabilities/task-center.md"
+      },
+      {
+        "id": "approvals",
+        "title": "把请假、报销审批放进来",
+        "summary": "已有审批业务时，让主管在一个入口看到待自己审批的申请。",
+        "decisions": [["例如", "同一位主管的请假和报销审批出现在同一列表。"]],
+        "checks": [
+          "转交后原接收人取消、新接收人待处理。",
+          "审批只展示当前允许的动作。"
+        ],
+        "note": "先在测试数据上试用，再按实际业务调整。",
+        "status": "2. 接入审批",
+        "image": null,
+        "doc": "/zh-CN/capabilities/task-center.md"
+      },
+      {
+        "id": "handling",
+        "title": "从待办直接进入业务办理",
+        "summary": "点开事项查看详情，按业务允许的动作处理，办完就刷新。",
+        "decisions": [
+          ["例如", "主管批准一笔报销后，它进入已完成，待处理数量减少。"]
+        ],
+        "checks": [
+          "只有有权处理的人能查看详情并办理。",
+          "办理后列表与各处数量刷新。"
+        ],
+        "note": "先在测试数据上试用，再按实际业务调整。",
+        "status": "3. 完成办理",
+        "image": null,
+        "doc": "/zh-CN/capabilities/task-center.md"
+      },
+      {
+        "id": "verification",
+        "title": "用两个账号走一遍",
+        "summary": "让 Agent 验证真实业务，再自己试一次。",
+        "decisions": [
+          ["例如", "林晓处理自己的事项，陈晨看不到也不能办理林晓的事项。"]
+        ],
+        "checks": [
+          "两个账号的数据隔离验证通过。",
+          "已验证与未验证的场景分别记录。"
+        ],
+        "note": "先在测试数据上试用，再按实际业务调整。",
+        "status": "4. 验证结果",
+        "image": null,
+        "doc": "/zh-CN/capabilities/task-center.md"
+      },
+      {
+        "id": "ordinary",
+        "title": "接入一项普通业务",
+        "summary": "领取、补材料、确认交付，也可以成为待办，无需增加审批流程。",
+        "decisions": [
+          ["例如", "领取单 EQ-001 发给林晓后产生待办，确认领取后完成。"]
+        ],
+        "checks": [
+          "同一件事不会重复出现在列表里。",
+          "领取成功后事项完成，领取失败时仍待处理。"
+        ],
+        "note": "先在测试数据上试用，再按实际业务调整。",
+        "status": "设备领取",
+        "image": null,
+        "doc": "/zh-CN/capabilities/task-center.md"
+      },
+      {
+        "id": "dashboard",
+        "title": "在首页看到还有多少事",
+        "summary": "不进入完整列表，也能知道当前有多少待处理。",
+        "decisions": [
+          ["例如", "两条报销、一条设备领取，全部待处理角标显示 3。"]
+        ],
+        "checks": [
+          "首页数字与打开的待办列表数量一致。",
+          "切换业务后能找到对应事项，换账号后只看到自己的工作。"
+        ],
+        "note": "先在测试数据上试用，再按实际业务调整。",
+        "status": "首页角标",
+        "image": null,
+        "doc": "/zh-CN/capabilities/task-center.md"
+      },
+      {
+        "id": "reassignment",
+        "title": "工作转给另一个人",
+        "summary": "原接收人的未完成事项取消，新接收人获得待办。",
+        "decisions": [
+          ["例如", "设备领取从林晓改派给陈晨，只有陈晨还能确认领取。"]
+        ],
+        "checks": [
+          "改派后原接收人不能继续办理。",
+          "已完成历史保留，未完成事项按规则取消。"
+        ],
+        "note": "先在测试数据上试用，再按实际业务调整。",
+        "status": "人员改派",
+        "image": null,
+        "doc": "/zh-CN/capabilities/task-center.md"
+      },
+      {
+        "id": "history",
+        "title": "把已有工作补进来",
+        "summary": "应用已在使用时，让旧任务和新任务出现在同一个入口。",
+        "decisions": [
+          ["例如", "补齐中断后可以继续，已在线完成的事项不会重新变成待处理。"]
+        ],
+        "checks": [
+          "中断后可续跑，重跑不产生重复记录。",
+          "已经办完的事项不会重新变成待处理。"
+        ],
+        "note": "先在测试数据上试用，再按实际业务调整。",
+        "status": "历史任务",
+        "image": null,
+        "doc": "/zh-CN/capabilities/task-center.md"
+      },
+      {
+        "id": "notifications",
+        "title": "待办产生时提醒接收人",
+        "summary": "用通知提醒「有事要处理」，实际办理仍在业务中完成。",
+        "decisions": [["例如", "读过领取提醒但尚未领取，事项仍保持待处理。"]],
+        "checks": [
+          "每次业务事件只提醒一次。",
+          "阅读通知不改变待办，投递失败不撤销业务。"
+        ],
+        "note": "先在测试数据上试用，再按实际业务调整。",
+        "status": "业务提醒",
+        "image": null,
+        "doc": "/zh-CN/capabilities/task-center.md"
+      }
+    ]
   }
 }

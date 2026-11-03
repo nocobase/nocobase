@@ -9,6 +9,16 @@ import { schedulerServiceToken as concreteSchedulerServiceToken } from './servic
 
 export interface SchedulerService {
   /**
+   * Stops new reconciliation and drains this process's executor, inspections,
+   * event records and accepted completion reports before releasing subscriptions.
+   * Concurrent/repeated calls and provider shutdown share one promise, including
+   * rejection. Reports remain accepted until executor and inspections settle;
+   * later reports reject before storage access. This does not drain host requests
+   * or wait for all durable waiting targets (such as human approvals).
+   */
+  drain(): Promise<void>;
+
+  /**
    * Registers what a schedule can point at: how its configuration is
    * validated, how a firing starts, and — for anything that finishes later —
    * how a run is inspected. The returned handle is how that target reports a

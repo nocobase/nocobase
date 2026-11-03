@@ -1,5 +1,36 @@
+import {
+  type OnlineAgentToolContext as PublicToolContext,
+  type RealtimeOnlineAgent,
+  type OnlineAgent,
+  type BackgroundOnlineAgent,
+  type OnlineAgentJson,
+  type OnlineAgentResult,
+  type OnlineAgentSafeError,
+  OnlineAgentConfigurator as OnlineAgentEntryConfigurator,
+} from '@nocobase/app-plugin-agents/server/online-agent';
+import type { Agents } from '@nocobase/app-plugin-agents/server/tokens';
+import { OnlineAgentConfigurator } from '../server/online/agent/configuration.js';
+import type {
+  OnlineAgentToolDefinition,
+  OnlineAgentToolContext,
+} from '../server/online/agent/types.js';
 import { expect, expectTypeOf, it } from 'vitest';
+import {
+  OnlineAgentService as PublicOnlineAgentService,
+  OnlineAgentConfigurator as PublicOnlineAgentConfigurator,
+} from '@nocobase/app-plugin-agents/server';
 import { z } from 'zod';
+import type { JSONSchema7, ModelMessage } from 'ai';
+import type { UseQueryResult } from '@tanstack/react-query';
+import type {
+  ChatApi,
+  useChatModels,
+  useSendMessage,
+} from '@nocobase/app-plugin-agents/client/chat';
+import type {
+  ModelRef,
+  ModelService,
+} from '@nocobase/app-plugin-agents/shared/models';
 
 import { VariableSchema } from '../server/routes/schemas.js';
 import type {
@@ -11,6 +42,25 @@ import type {
 } from '../server/tokens.js';
 import type { RunRepo, RunWait } from '../shared/runs.js';
 import type { Variable } from '../shared/variables.js';
+import type {
+  ConversationSummary,
+  CreateConversationRequest,
+} from '../shared/conversations.js';
+
+it('exports typed chat model catalog and optional native selection through the public client entry', () => {
+  expectTypeOf<ReturnType<ChatApi['models']>>().toEqualTypeOf<
+    Promise<ModelService[]>
+  >();
+  expectTypeOf<Parameters<typeof useChatModels>>().toEqualTypeOf<
+    [enabled?: boolean]
+  >();
+  expectTypeOf<ReturnType<typeof useChatModels>>().toEqualTypeOf<
+    UseQueryResult<ModelService[]>
+  >();
+  expectTypeOf<
+    Parameters<typeof useSendMessage>[0]['selectedModel']
+  >().toEqualTypeOf<ModelRef | undefined>();
+});
 
 // Checked by tsconfig.type-tests.json as well as Vitest: applications may still construct the previous shapes.
 const wait: RunWait = {
@@ -133,4 +183,115 @@ it('lets applications guard a pending request and report a queued run', async ()
       },
     ),
   ).toEqual({ started: false, requestId: 'pending-request' });
+});
+
+it('preserves SDK tool input, output and execution context generics', () => {
+  const configurator = new OnlineAgentConfigurator();
+  const definition: OnlineAgentToolDefinition<
+    { value: number },
+    { doubled: number },
+    OnlineAgentToolContext
+  > = {
+    inputSchema: z.object({ value: z.number() }),
+    execute: (input, options) => {
+      expectTypeOf(input).toEqualTypeOf<{ value: number }>();
+      expectTypeOf(options.context).toEqualTypeOf<OnlineAgentToolContext>();
+      expectTypeOf(options.abortSignal).toEqualTypeOf<
+        AbortSignal | undefined
+      >();
+      expectTypeOf(options.toolCallId).toEqualTypeOf<string>();
+      return { doubled: input.value * 2 };
+    },
+  };
+  configurator.registerTool('typed', { version: '1', definition });
+  configurator.registerTool('factory', {
+    version: '1',
+    definition: () => definition,
+  });
+});
+
+const businessSession = (context: PublicToolContext): string =>
+  context.sessionId;
+void businessSession;
+
+it('exposes the shared service and configurator through the public server entry', () => {
+  expect(PublicOnlineAgentConfigurator).toBe(OnlineAgentConfigurator);
+  expect(OnlineAgentEntryConfigurator).toBe(OnlineAgentConfigurator);
+  expectTypeOf<
+    PublicOnlineAgentService['configurator']
+  >().toEqualTypeOf<OnlineAgentConfigurator>();
+  expectTypeOf<
+    Agents['onlineAgent']
+  >().toEqualTypeOf<PublicOnlineAgentService>();
+  expectTypeOf<
+    Awaited<ReturnType<PublicOnlineAgentService['realtime']>>
+  >().toEqualTypeOf<RealtimeOnlineAgent>();
+});
+
+it('shares public UI history while keeping background submission capabilities separate', () => {
+  expectTypeOf<RealtimeOnlineAgent>().toExtend<OnlineAgent>();
+  expectTypeOf<BackgroundOnlineAgent>().toExtend<OnlineAgent>();
+  expectTypeOf<ReturnType<BackgroundOnlineAgent['history']>>().toEqualTypeOf<
+    ReturnType<RealtimeOnlineAgent['history']>
+  >();
+  expectTypeOf<
+    Extract<keyof BackgroundOnlineAgent, 'send' | 'receive' | 'approve'>
+  >().toEqualTypeOf<never>();
+  expectTypeOf<
+    Awaited<ReturnType<PublicOnlineAgentService['background']>>
+  >().toEqualTypeOf<BackgroundOnlineAgent>();
+});
+
+it('requires JSON Schema for background run through the public server entry', () => {
+  type Background = Awaited<ReturnType<PublicOnlineAgentService['background']>>;
+  type Run = Background['run'];
+  expectTypeOf<Parameters<Run>[0]>().toEqualTypeOf<ModelMessage[]>();
+  expectTypeOf<Parameters<Run>[1]>().toEqualTypeOf<JSONSchema7>();
+  expectTypeOf<Parameters<Run>>().toExtend<
+    [ModelMessage[], JSONSchema7, ...unknown[]]
+  >();
+  expectTypeOf<z.ZodObject>().not.toExtend<Parameters<Run>[1]>();
+  expectTypeOf<ReturnType<Run>>().toEqualTypeOf<Promise<void>>();
+});
+
+it('exports typed result observation through the public server entry', () => {
+  expectTypeOf<ReturnType<BackgroundOnlineAgent['get']>>().toEqualTypeOf<
+    Promise<OnlineAgentJson>
+  >();
+  expectTypeOf<ReturnType<BackgroundOnlineAgent['try']>>().toEqualTypeOf<
+    Promise<OnlineAgentResult>
+  >();
+  expectTypeOf<Parameters<BackgroundOnlineAgent['try']>>().toEqualTypeOf<
+    [options?: { wait?: number }]
+  >();
+  const failure: OnlineAgentResult = {
+    ok: false,
+    reason: 'failed',
+    error: {
+      code: 'EXECUTION_FAILED',
+      message: 'The execution failed.',
+    } satisfies OnlineAgentSafeError,
+  };
+  expect(failure.reason).toBe('failed');
+});
+
+it('keeps the chat directory outside the OnlineAgent service contract', () => {
+  expectTypeOf<
+    Extract<keyof PublicOnlineAgentService, 'chatAgents'>
+  >().toEqualTypeOf<never>();
+});
+
+it('exposes conversation visibility without a background visibility override', () => {
+  expectTypeOf<
+    ConversationSummary['showInChatList']
+  >().toEqualTypeOf<boolean>();
+  expectTypeOf<CreateConversationRequest['showInChatList']>().toEqualTypeOf<
+    boolean | undefined
+  >();
+  expectTypeOf<
+    Extract<
+      keyof NonNullable<Parameters<PublicOnlineAgentService['background']>[1]>,
+      'showInChatList'
+    >
+  >().toEqualTypeOf<never>();
 });

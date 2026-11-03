@@ -17,7 +17,7 @@ export interface FileUiLabels {
 }
 
 export interface FileUploadFieldProps {
-  readonly repository: ClientFileRepository;
+  readonly repository: Pick<ClientFileRepository, 'uploadOne' | 'deleteOne'>;
   readonly value: readonly FileRecord[];
   readonly onChange: (value: readonly FileRecord[]) => void;
   readonly onError?: (error: Error) => void;
@@ -47,6 +47,8 @@ export interface FilePreviewDialogProps {
   readonly initialIndex?: number;
   readonly open: boolean;
   readonly onOpenChange: (open: boolean) => void;
+  /** Override downloads for both the toolbar and preview fallbacks. */
+  readonly onDownload?: (file: FileRecord) => void | Promise<void>;
   readonly onError?: (error: Error) => void;
   readonly download?: boolean;
   readonly labels?: FileUiLabels;

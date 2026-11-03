@@ -23,3 +23,9 @@ A task's `createdAt` and `updatedAt` are RFC 3339 UTC timestamps, such as `2026-
 Errors use the standard body with domain `notificationExample`. Only a task's creator and assignee may read or update it; anyone else gets `403 TASK_ACCESS_DENIED` whether or not the task exists. Reassigning by someone other than the creator is `403 TASK_ASSIGNMENT_FORBIDDEN`, and an inactive or unknown assignee is `400 ASSIGNEE_NOT_FOUND` with a field violation on `assigneeId`.
 
 Each route declares itself for the application's API document, which a signed-in user reads at `/api/swagger/docs`. In `server/routes/index.ts`, `describeRoute()` from `@nocobase/app-server/router` gives the `NotificationExample` tag, a summary, an `operationId` (`notificationExampleListAssignees`, `notificationExampleListTasks`, `notificationExampleGetTask`, `notificationExampleCreateTask`, `notificationExampleUpdateTask`) and the responses, the reasons above included; `apiValidator()` validates the path, query and body and documents them; the task and user schemas live in `server/routes/schemas.ts` with `.meta({ ref })`.
+
+## Realtime task consumers
+
+Task creation and updates publish a user-scoped invalidation to the creator and current assignee; reassignment also invalidates the previous assignee. Import `TASKS_TOPIC` and task response types from `@nocobase/app-plugin-notification-example/realtime`. Events contain only `{ changed: true }`, so consumers refetch the authenticated task API with `useRealtimeRefresh` and retain its participant permission checks. An announcement failure is logged without turning a committed write into a failed response.
+
+The realtime example plugin consumes this topic for its collaborative board and reuses `readTasksForExport` from the Server export for its bounded, participant-filtered CSV snapshot. Task writes update only the submitted fields. These contracts share the existing task records; they do not create a second task model.

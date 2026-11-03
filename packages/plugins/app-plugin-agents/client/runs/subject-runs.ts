@@ -3,8 +3,13 @@
  * open and when the page says it learned of new work (`refreshSignal`), so the panel, the live badge and the activity
  * rows agree.
  */
+import {
+  createRealtimeRefresh,
+  refreshRealtimeQueries,
+  type RealtimeRefresh,
+} from '@nocobase/app-client';
 import { useQuery, type QueryClient } from '@tanstack/react-query';
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 
 import type { Run } from '../../shared/runs.js';
 import type { AgentsApi } from '../api/client.js';
@@ -34,13 +39,23 @@ function useRefresh(
   subjectId: string,
   refreshSignal: unknown,
 ): void {
+  const scheduledRef = useRef<RealtimeRefresh | undefined>(undefined);
   useEffect(() => {
-    if (refreshSignal === undefined) return;
-    // Reuse an in-flight request: repeated discovery signals must not discard slow responses forever.
-    void client.invalidateQueries(
-      { queryKey: agentsKeys.runs(subjectKind, subjectId) },
-      { cancelRefetch: false },
+    const refresh = createRealtimeRefresh((signal) =>
+      refreshRealtimeQueries(
+        client,
+        { queryKey: agentsKeys.runs(subjectKind, subjectId) },
+        signal,
+      ),
     );
+    scheduledRef.current = refresh;
+    return () => {
+      refresh.close();
+      scheduledRef.current = undefined;
+    };
+  }, [client, subjectKind, subjectId]);
+  useEffect(() => {
+    if (refreshSignal !== undefined) scheduledRef.current?.request();
   }, [refreshSignal, client, subjectKind, subjectId]);
 }
 

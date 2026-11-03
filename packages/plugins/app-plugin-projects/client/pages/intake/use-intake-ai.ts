@@ -1,6 +1,6 @@
 /**
  * Requests to AI from the AI draft tab and the issue page (`shared/intake-ai.ts`): whether the viewer can ask now, and
- * one request followed until it ends. A running request is read again every two seconds, and whenever the server
+ * one request followed until it ends. A running request is reconciled once a minute and whenever the server
  * announces a change (the keys sit under `['pm', 'plans']`).
  */
 import { useQuery, type UseQueryResult } from '@tanstack/react-query';
@@ -16,7 +16,8 @@ import { planKeys, usePlanApi } from '../../kit/plans/api.js';
 /** The URL parameter holding the running request, so a reload or a link (from the issue page) follows it. */
 export const INTAKE_JOB_PARAM = 'job';
 
-const POLL_MS = 2_000;
+// Realtime drives progress; this reconciles a failed best-effort announcement.
+const POLL_MS = 60_000;
 
 /** Whether the viewer can ask AI now; nothing is asked of someone who may not create issues. */
 export function useIntakeAiAvailability(): IntakeAiAvailability | null {

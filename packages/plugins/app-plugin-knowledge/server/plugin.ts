@@ -7,15 +7,33 @@ import {
 
 import serviceProviders from './providers/index.js';
 import routes from './routes/index.js';
+import { indexingProvider } from './providers/indexing.js';
+import { sqliteVecIndexingExtension } from './extension/sqlite-vec/index.js';
+import { pgvectorIndexingExtension } from './extension/pgvector/index.js';
+import type { KnowledgeIndexingExtension } from './indexing/types.js';
 
-const knowledgePlugin: AppServerPlugin = defineServerPlugin({
-  baseDir: path.resolve(import.meta.dirname, '..'),
-  packageName: '@nocobase/app-plugin-knowledge',
-  serviceProviders,
-  routes,
-  database: {
-    migrations: './database/migrations',
-  },
-});
+export function createKnowledgePlugin(
+  options: {
+    readonly indexingExtensions?: readonly KnowledgeIndexingExtension[];
+  } = {},
+): AppServerPlugin {
+  return defineServerPlugin({
+    baseDir: path.resolve(import.meta.dirname, '..'),
+    packageName: '@nocobase/app-plugin-knowledge',
+    serviceProviders: [
+      ...serviceProviders,
+      indexingProvider([
+        sqliteVecIndexingExtension,
+        pgvectorIndexingExtension,
+        ...(options.indexingExtensions ?? []),
+      ]),
+    ],
+    routes,
+    database: {
+      migrations: './database/migrations',
+    },
+  });
+}
 
+const knowledgePlugin: AppServerPlugin = createKnowledgePlugin();
 export default knowledgePlugin;

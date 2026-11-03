@@ -1,5 +1,12 @@
 /** Every key the device approval looks up, so each locale is checked against the same list. */
 export interface DeviceApprovalLocale {
+  readonly formFeedback: {
+    readonly field: string;
+    readonly invalid: string;
+    readonly failed: string;
+    readonly network: string;
+    readonly denied: string;
+  };
   readonly 'deviceApproval.title': string;
   readonly 'deviceApproval.description': string;
   readonly 'deviceApproval.enterCode': string;
@@ -23,6 +30,15 @@ export interface DeviceApprovalLocale {
 }
 
 const enUS: DeviceApprovalLocale = {
+  formFeedback: {
+    field: 'This value was rejected. Check it and try again.',
+    invalid: 'Check the highlighted fields and try again.',
+    failed: 'Unable to save. Your input has been kept. Try again.',
+    network:
+      'Unable to connect. Check your connection and try again. Your input has been kept.',
+    denied:
+      'You cannot submit this form with your current access. Your input has been kept.',
+  },
   'deviceApproval.title': 'Authorize a device',
   'deviceApproval.description':
     'A command line or another device asked to sign in as you. Approve it only if you started the sign-in yourself.',

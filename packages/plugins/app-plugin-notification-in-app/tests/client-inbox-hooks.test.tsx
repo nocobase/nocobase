@@ -1,4 +1,8 @@
-import type { ApiClient, RealtimeClient } from '@nocobase/app-client';
+import type {
+  ApiClient,
+  RealtimeClient,
+  RealtimeWatchOptions,
+} from '@nocobase/app-client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import type { PropsWithChildren, ReactElement } from 'react';
@@ -15,6 +19,7 @@ const mocks = vi.hoisted(() => ({
   realtime: {
     connected: true,
     subscribe: vi.fn(),
+    watch: vi.fn(),
     onOpen: vi.fn(),
     onError: vi.fn(),
     reconnect: vi.fn(),
@@ -31,6 +36,7 @@ vi.mock('@nocobase/app-client', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@nocobase/app-client')>();
   return {
     ...actual,
+    useRealtimeReadiness: () => true,
     useApiClient: () => mocks.appClient,
     useService: (token: unknown) =>
       token === actual.realtimeClientToken ? mocks.realtime : mocks.appClient,
@@ -49,7 +55,6 @@ vi.mock('../client/subscription.js', () => ({
 }));
 
 import {
-  inboxKeys,
   useInboxActions,
   useInboxItems,
   useInboxRefresh,
@@ -224,51 +229,45 @@ describe('in-app notification inbox hooks', () => {
     expect(result.current.actions.pending).toBe(true);
   });
 
-  it('invalidates every inbox query on the plugin signal and on extra topics', () => {
-    const stopItems = vi.fn();
-    const stopTopic = vi.fn();
-    let refreshItems: () => void = () => undefined;
-    let refreshTopic: () => void = () => undefined;
-    mocks.subscribe.mockImplementation(
-      (_realtime: unknown, _target: unknown, refresh: () => void) => {
-        refreshItems = refresh;
-        return stopItems;
-      },
-    );
-    mocks.realtime.subscribe.mockImplementation(
-      (_topic: string, refresh: () => void) => {
-        refreshTopic = refresh;
-        return stopTopic;
-      },
-    );
+  it('shares inbox refresh ownership and recovers only after both topics acknowledge', async () => {
+    const callbacks = new Map<string, RealtimeWatchOptions<unknown>>();
+    const close = vi.fn();
+    mocks.realtime.watch.mockImplementation((topic, options) => {
+      callbacks.set(topic, options!);
+      return { state: 'subscribed', error: undefined, retry: vi.fn(), close };
+    });
+    mocks.fetchUnreadCount.mockResolvedValue(1);
     const { queryClient, wrapper } = setup();
-    const invalidate = vi.spyOn(queryClient, 'invalidateQueries');
-
     const view = renderHook(
-      ({ topics }: { topics: string[] }) => useInboxRefresh(topics),
-      { wrapper, initialProps: { topics: ['app:inbox'] } },
+      () => {
+        useInboxRefresh(['app:inbox']);
+        useInboxRefresh(['app:inbox']);
+        return useInboxUnreadCount();
+      },
+      { wrapper },
     );
-    expect(mocks.subscribe).toHaveBeenCalledWith(
-      mocks.realtime,
-      window,
-      expect.any(Function),
+    await waitFor(() => expect(view.result.current.data).toBe(1));
+    act(() => callbacks.forEach((callback) => callback.onReady?.()));
+    expect(mocks.fetchUnreadCount).toHaveBeenCalledOnce();
+    mocks.fetchUnreadCount.mockResolvedValue(2);
+    act(() => {
+      callbacks.forEach((callback) => callback.onStateChange?.('pending'));
+      callbacks.forEach((callback) => callback.onReady?.());
+    });
+    await waitFor(() => expect(view.result.current.data).toBe(2));
+    mocks.fetchUnreadCount.mockResolvedValue(3);
+    act(() =>
+      callbacks.get('app:inbox')!.onEvent?.({
+        type: 'event',
+        topic: 'app:inbox',
+        payload: {},
+        publishedAt: new Date().toISOString(),
+      }),
     );
-    expect(mocks.realtime.subscribe).toHaveBeenCalledWith(
-      'app:inbox',
-      expect.any(Function),
-    );
-
-    refreshItems();
-    refreshTopic();
-    expect(invalidate).toHaveBeenCalledTimes(2);
-    expect(invalidate).toHaveBeenCalledWith({ queryKey: inboxKeys.all });
-
-    // A new array with the same topics does not resubscribe.
-    view.rerender({ topics: ['app:inbox'] });
-    expect(mocks.subscribe).toHaveBeenCalledTimes(1);
-
+    await waitFor(() => expect(view.result.current.data).toBe(3));
+    expect(mocks.realtime.watch).toHaveBeenCalledTimes(2);
     view.unmount();
-    expect(stopItems).toHaveBeenCalledTimes(1);
-    expect(stopTopic).toHaveBeenCalledTimes(1);
+    expect(close).toHaveBeenCalledTimes(2);
+    queryClient.clear();
   });
 });

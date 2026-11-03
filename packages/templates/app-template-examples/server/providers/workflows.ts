@@ -1,3 +1,8 @@
+import {
+  workflowNamesEnUS,
+  workflowNamesZhCN,
+} from '../../shared/workflow-names.js';
+import { WorkflowCatalogService } from '@nocobase/app-plugin-lifecycle-example/server';
 import type { DatabaseManager } from '@nocobase/db';
 import { ApiError } from '@nocobase/app-server/router';
 import {
@@ -35,7 +40,10 @@ export class WorkflowsService {
     private readonly sources: readonly WorkflowSource[],
   ) {}
 
-  private summaries(): Omit<WorkflowSummary, 'executionCount'>[] {
+  private summaries(): Omit<
+    WorkflowSummary,
+    'executionCount' | 'lastExecutedAt'
+  >[] {
     return this.sources.flatMap((source) =>
       source.definitions.map(({ name }) => {
         const description = source.runtime.describe(name);
@@ -50,19 +58,70 @@ export class WorkflowsService {
     );
   }
 
-  public async definitions(): Promise<WorkflowSummary[]> {
+  private matchesKeyword(
+    workflow: Pick<WorkflowSummary, 'id' | 'name'>,
+    q = '',
+  ): boolean {
+    const keyword = q.trim().toLocaleLowerCase();
+    return [
+      workflow.id,
+      workflow.name,
+      workflowNamesEnUS[workflow.name as keyof typeof workflowNamesEnUS],
+      workflowNamesZhCN[workflow.name as keyof typeof workflowNamesZhCN],
+    ].some((value) => value?.toLocaleLowerCase().includes(keyword));
+  }
+
+  public async definitions(
+    q = '',
+    category = 'all',
+  ): Promise<WorkflowSummary[]> {
+    const categories = await new WorkflowCatalogService(
+      this.database,
+    ).assignments();
     return Promise.all(
-      this.summaries().map(async (workflow) => ({
-        ...workflow,
-        executionCount: await this.executionCount(workflow.id),
-      })),
+      this.summaries()
+        .filter(
+          (workflow) =>
+            this.matchesKeyword(workflow, q) &&
+            (category === 'all' ||
+              (category === 'uncategorized'
+                ? !categories.has(workflow.id)
+                : categories.get(workflow.id) === category)),
+        )
+        .map(async (workflow) => ({
+          ...workflow,
+          categoryId: categories.get(workflow.id) ?? null,
+          ...(await this.executionStats(workflow.id)),
+        })),
     );
   }
 
-  private async executionCount(id: string): Promise<number> {
+  public assertWorkflow(id: string): void {
+    this.resolve(id);
+  }
+
+  private async executionStats(
+    id: string,
+  ): Promise<Pick<WorkflowSummary, 'executionCount' | 'lastExecutedAt'>> {
     const { collection } = this.resolve(id);
+    const repository = this.database.repository(collection);
     // Match the execution list: one lifecycle-managed business record is one execution.
-    return this.database.repository(collection).count({});
+    const [executionCount, latest] = await Promise.all([
+      repository.count({}),
+      repository.findMany({
+        select: (select) => select.fields('createdAt'),
+        sort: (sort) => [sort.field('createdAt').desc()],
+        limit: 1,
+      }),
+    ]);
+    const createdAt = latest[0]?.createdAt;
+    return {
+      executionCount,
+      lastExecutedAt:
+        createdAt instanceof Date
+          ? createdAt.toISOString()
+          : scalarText(createdAt) || null,
+    };
   }
 
   private resolve(id: string) {
@@ -82,10 +141,14 @@ export class WorkflowsService {
 
   public async definition(id: string): Promise<WorkflowDefinition> {
     const { runtime, name } = this.resolve(id);
+    const categories = await new WorkflowCatalogService(
+      this.database,
+    ).assignments();
     return {
       workflow: {
         ...this.summaries().find((item) => item.id === id)!,
-        executionCount: await this.executionCount(id),
+        categoryId: categories.get(id) ?? null,
+        ...(await this.executionStats(id)),
       },
       ...(await lifecycleDescriptionViewAsync(runtime, name, {
         record: null,
@@ -99,11 +162,14 @@ export class WorkflowsService {
     pageSize: number,
     workflowId?: string,
     order: 'newest' | 'oldest' = 'newest',
+    q = '',
   ): Promise<WorkflowExecutionPage> {
-    const workflows = workflowId
+    const candidates = workflowId
       ? [this.summaries().find((item) => item.id === workflowId)!]
       : this.summaries();
     if (workflowId) this.resolve(workflowId);
+    const workflows = candidates.filter((item) => this.matchesKeyword(item, q));
+    const singleWorkflow = workflows.length === 1;
     const offset = (page - 1) * pageSize;
     // Each collection contributes only its newest candidates. Merge using the same date/id ordering as the queries;
     // a single-flow filter can page directly without fetching earlier pages.
@@ -121,8 +187,8 @@ export class WorkflowsService {
                 ? sort.field('id').desc()
                 : sort.field('id').asc(),
             ],
-            limit: workflowId ? pageSize : offset + pageSize,
-            offset: workflowId ? offset : 0,
+            limit: singleWorkflow ? pageSize : offset + pageSize,
+            offset: singleWorkflow ? offset : 0,
           }),
           repository.count({}),
         ]);
@@ -160,8 +226,8 @@ export class WorkflowsService {
       );
     return {
       data: ordered.slice(
-        workflowId ? 0 : offset,
-        workflowId ? pageSize : offset + pageSize,
+        singleWorkflow ? 0 : offset,
+        singleWorkflow ? pageSize : offset + pageSize,
       ),
       meta: {
         page,

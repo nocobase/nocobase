@@ -1,7 +1,7 @@
 export const CLOCK_TOPIC: string = 'clock:now';
 
 export interface ClockPublisherRealtime {
-  publish(topic: string, payload: unknown): unknown;
+  publish(topic: string, payload: unknown): Promise<unknown>;
   subscriptionCount(topic: string): number;
   onTopicSubscriptionChange(
     topic: string,
@@ -26,7 +26,11 @@ export function startClockPublisher(
     }
 
     interval = setInterval(() => {
-      realtime.publish(CLOCK_TOPIC, new Date().toString());
+      void realtime
+        .publish(CLOCK_TOPIC, new Date().toString())
+        .catch((error: unknown) =>
+          console.error('Clock realtime announcement failed.', error),
+        );
     }, intervalMs);
     interval.unref();
   };

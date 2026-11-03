@@ -1,3 +1,4 @@
+import { rememberMutationIdentity } from './mutation-identity.js';
 import {
   normalizeWritePolicy,
   normalizeFieldWritePolicy,
@@ -694,15 +695,19 @@ export class DefaultRepository<
       scopeCheck: await this.scopeCheck(collection, 'create'),
       relationScopes: await this.writeRelationScopes(collection, 'create'),
     });
-    return {
-      record: pickSelection(
-        result.record,
-        requestedFields,
-        selection.select,
-      ) as TRecord,
-      createdTargets: result.createdTargets,
-      version: result.version,
-    };
+    return rememberMutationIdentity(
+      {
+        record: pickSelection(
+          result.record,
+          requestedFields,
+          selection.select,
+        ) as TRecord,
+        createdTargets: result.createdTargets,
+        version: result.version,
+      },
+      collection,
+      result.record,
+    );
   }
 
   async createMany<TSelection extends AnySelectBuilder<TRecord>>(
@@ -872,15 +877,19 @@ export class DefaultRepository<
     if (result === 'multiple') multipleRecordsMatched(collection);
     if (result === 'conflict') versionConflict(collection);
     if (result === 'missing') recordNotFound(collection);
-    return {
-      record: pickSelection(
-        result.record,
-        requestedFields,
-        selection.select,
-      ) as TRecord,
-      createdTargets: result.createdTargets,
-      version: result.version,
-    };
+    return rememberMutationIdentity(
+      {
+        record: pickSelection(
+          result.record,
+          requestedFields,
+          selection.select,
+        ) as TRecord,
+        createdTargets: result.createdTargets,
+        version: result.version,
+      },
+      collection,
+      result.record,
+    );
   }
 
   async upsertOne(
@@ -1034,15 +1043,19 @@ export class DefaultRepository<
       ),
     });
     if (result === 'conflict') versionConflict(collection);
-    return {
-      record: pickSelection(
-        result.record,
-        requestedFields,
-        selection.select,
-      ) as TRecord,
-      createdTargets: result.createdTargets,
-      version: result.version,
-    };
+    return rememberMutationIdentity(
+      {
+        record: pickSelection(
+          result.record,
+          requestedFields,
+          selection.select,
+        ) as TRecord,
+        createdTargets: result.createdTargets,
+        version: result.version,
+      },
+      collection,
+      result.record,
+    );
   }
 
   async updateMany<TSelection extends AnySelectBuilder<TRecord>>(

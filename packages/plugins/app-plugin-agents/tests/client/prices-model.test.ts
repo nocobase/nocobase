@@ -1,5 +1,5 @@
 /**
- * Agent team › Usage › Prices without React: what is priced, and the price table changed one row at a time, each price
+ * Agent management › Usage › Prices without React: what is priced, and the price table changed one row at a time, each price
  * keyed by its source and model.
  */
 import type { ModelPrice, PricesAnswer } from '../../shared/reports.js';
@@ -54,7 +54,6 @@ describe('the models page model', () => {
     expect(
       onlinePairs([
         service('a', 'openai-compatible'),
-        { ...service('b', 'openai-compatible'), enabled: false },
         { ...service('c', 'deepseek'), models: [] },
         service('d', 'openai-compatible'),
       ]).map(({ service: item, models }) => [item.name, models]),

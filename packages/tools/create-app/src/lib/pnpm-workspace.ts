@@ -35,6 +35,9 @@ export const ALLOWED_BUILDS: readonly AllowBuildsEntry[] = [
   { name: 'esbuild', allowed: true },
   { name: 'oracledb', allowed: true },
   { name: 'tesseract.js', allowed: false },
+  // just-bash's archive commands are not enabled by the OnlineAgent Sandbox.
+  { name: '@mongodb-js/zstd', allowed: false },
+  { name: 'node-liblzma', allowed: false },
 ];
 
 /** YAML needs quotes around a scoped name, whose leading `@` would otherwise start a reserved indicator. */
@@ -78,6 +81,13 @@ export const WORKSPACE_SETTINGS: readonly {
   key: string;
   value: string;
 }[] = [
+  {
+    comment: [
+      '# The application stays at the workspace root; reusable internal packages live below packages/.',
+    ],
+    key: 'packages',
+    value: "['packages/*']",
+  },
   {
     comment: [
       '# Use msgpackr without its optional native accelerator or platform binary packages.',
