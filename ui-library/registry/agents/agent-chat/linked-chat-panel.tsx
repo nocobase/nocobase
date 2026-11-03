@@ -110,14 +110,17 @@ function LinkedListHeader(): ReactElement {
       >
         <PlusIcon />
       </Button>
-      <Button
-        variant='ghost'
-        size='icon-sm'
-        aria-label={t('chat.close')}
-        onClick={panel.closeChat}
-      >
-        <XIcon />
-      </Button>
+      {/* Expanded, the list is a column beside the conversation, whose header already ends with restore and close. */}
+      {panel.mode !== 'expanded' || panel.view === 'history' ? (
+        <Button
+          variant='ghost'
+          size='icon-sm'
+          aria-label={t('chat.close')}
+          onClick={panel.closeChat}
+        >
+          <XIcon />
+        </Button>
+      ) : null}
     </div>
   );
 }

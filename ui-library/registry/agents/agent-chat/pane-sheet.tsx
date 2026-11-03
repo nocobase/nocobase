@@ -35,37 +35,45 @@ export function PaneSheetContent({
   const { t } = useChatTranslation();
   return (
     <SheetPrimitive.Portal data-slot='sheet-portal' container={container}>
-      <SheetPrimitive.Backdrop
-        forceRender
-        data-slot='sheet-overlay'
-        className='absolute inset-0 z-50 bg-black/10 transition-opacity duration-150 data-ending-style:opacity-0 data-starting-style:opacity-0 supports-backdrop-filter:backdrop-blur-xs'
-      />
-      <SheetPrimitive.Popup
-        data-slot='sheet-content'
-        data-side='right'
-        className={cn(
-          'absolute inset-y-0 right-0 z-50 flex h-full w-3/4 flex-col gap-4 border-l bg-popover bg-clip-padding text-sm text-popover-foreground shadow-lg transition duration-200 ease-in-out data-ending-style:translate-x-[2.5rem] data-ending-style:opacity-0 data-starting-style:translate-x-[2.5rem] data-starting-style:opacity-0 sm:max-w-sm',
-          className,
-        )}
-        {...props}
+      {/* The popup starts translated past the pane's right edge. Without this clip that overhang made an
+          `overflow: hidden` ancestor scrollable, and focusing the popup scrolled it, shifting the conversation behind
+          the overlay sideways for the length of the slide (WebKit). `overflow: clip` cannot be scrolled at all. */}
+      <div
+        data-slot='sheet-layer'
+        className='absolute inset-0 z-50 overflow-clip'
       >
-        {children}
-        {showCloseButton && (
-          <SheetPrimitive.Close
-            data-slot='sheet-close'
-            render={
-              <Button
-                variant='ghost'
-                className='absolute top-3 right-3'
-                size='icon-sm'
-              />
-            }
-          >
-            <XIcon />
-            <span className='sr-only'>{t('chat.close')}</span>
-          </SheetPrimitive.Close>
-        )}
-      </SheetPrimitive.Popup>
+        <SheetPrimitive.Backdrop
+          forceRender
+          data-slot='sheet-overlay'
+          className='absolute inset-0 z-50 bg-black/10 transition-opacity duration-150 data-ending-style:opacity-0 data-starting-style:opacity-0 supports-backdrop-filter:backdrop-blur-xs'
+        />
+        <SheetPrimitive.Popup
+          data-slot='sheet-content'
+          data-side='right'
+          className={cn(
+            'absolute inset-y-0 right-0 z-50 flex h-full w-3/4 flex-col gap-4 border-l bg-popover bg-clip-padding text-sm text-popover-foreground shadow-lg transition duration-200 ease-in-out data-ending-style:translate-x-[2.5rem] data-ending-style:opacity-0 data-starting-style:translate-x-[2.5rem] data-starting-style:opacity-0 sm:max-w-sm',
+            className,
+          )}
+          {...props}
+        >
+          {children}
+          {showCloseButton && (
+            <SheetPrimitive.Close
+              data-slot='sheet-close'
+              render={
+                <Button
+                  variant='ghost'
+                  className='absolute top-3 right-3'
+                  size='icon-sm'
+                />
+              }
+            >
+              <XIcon />
+              <span className='sr-only'>{t('chat.close')}</span>
+            </SheetPrimitive.Close>
+          )}
+        </SheetPrimitive.Popup>
+      </div>
     </SheetPrimitive.Portal>
   );
 }

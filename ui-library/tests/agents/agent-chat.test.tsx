@@ -880,3 +880,25 @@ it.each([
     expect(document.body).not.toHaveTextContent(/Unbound|尚未绑定/u);
   },
 );
+
+it('ends the expanded linked panel with restore and close in the conversation header only, as Studio does', async () => {
+  render(
+    <Shell>
+      <Open conversationId='welcome-tour' />
+      <LinkedChatPanel />
+    </Shell>,
+  );
+  const panel = await screen.findByTestId('chat-panel');
+  fireEvent.click(await within(panel).findByTestId('chat-expand'));
+  const history = await within(panel).findByTestId('chat-history');
+  const column = history.closest('[data-panel-history]')!;
+  expect(
+    within(column as HTMLElement).queryByRole('button', { name: 'Close' }),
+  ).toBeNull();
+  const header = within(panel).getByTestId('conversation-header');
+  const labels = within(header)
+    .getAllByRole('button')
+    .map((button) => button.getAttribute('aria-label'))
+    .filter(Boolean);
+  expect(labels.slice(-3)).toEqual(['Restore panel', 'More', 'Close']);
+});
