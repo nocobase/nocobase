@@ -1,3 +1,8 @@
+import {
+  resolveMailSenderFactory,
+  type MailSender,
+} from '@nocobase/app-server/mailers';
+import { createPasswordResetSender } from './reset-sender.js';
 import type { AuthEmailConfig } from './email-config.js';
 import {
   PasswordResetPolicy,
@@ -69,6 +74,33 @@ const trustedSessionPlugin = {
     ),
   },
 } satisfies BetterAuthPlugin;
+
+function settleShutdown(
+  operations: readonly (() => void | Promise<void>)[],
+  message: string,
+): Promise<void> {
+  const started = operations.map((operation) => {
+    try {
+      return Promise.resolve(operation());
+    } catch (error) {
+      return Promise.reject(asError(error));
+    }
+  });
+  return Promise.allSettled(started).then((results) => {
+    const failures: unknown[] = [];
+    for (const result of results)
+      if (result.status === 'rejected') failures.push(result.reason);
+    if (failures.length) throw new AggregateError(failures, message);
+  });
+}
+
+function asError(value: unknown): Error {
+  return value instanceof Error
+    ? value
+    : new Error('Authentication shutdown operation failed.', {
+        cause: value,
+      });
+}
 
 export interface AuthOptions extends Omit<BetterAuthOptions, 'database'> {
   connection: DatabaseConnection;
@@ -198,6 +230,9 @@ export class Auth {
   private readonly connection: DatabaseConnection;
   private readonly options: AuthOptions;
   private readonly resetPolicy: PasswordResetPolicy;
+  private closePromise?: Promise<void>;
+  /** Created by this instance when the caller supplied no sender; borrowed by connection bindings. */
+  private readonly ownedSender?: MailSender;
   private scopedCredentialChecks = new Set<ScopedCredentialCheck>();
   private credentialResolvers = new Set<CredentialResolver>();
   private userInitializers = new Set<
@@ -229,15 +264,30 @@ export class Auth {
       ...config
     } = options;
     this.connection = connection;
-    this.options = options;
     if (!config.secret?.trim() && !config.secrets?.length) {
       throw new Error('Authentication secret is required.');
     }
+    let resetServices: PasswordResetServices = passwordResetServices ?? {};
+    if (!Object.hasOwn(resetServices, 'sender')) {
+      // Standalone construction: this instance selects and owns its sender.
+      const selection = createPasswordResetSender(resolveMailSenderFactory(), {
+        email,
+        passwordReset,
+        legacyChannels: resetServices.legacyChannels,
+      });
+      this.ownedSender = selection.sender;
+      resetServices = {
+        ...resetServices,
+        sender: selection.sender,
+        legacySender: selection.legacy,
+      };
+    }
+    this.options = { ...options, passwordResetServices: resetServices };
     this.resetPolicy = new PasswordResetPolicy(
       passwordReset ?? {},
       config,
       connection,
-      passwordResetServices ?? {},
+      resetServices,
       email,
     );
     const plugins = (config.plugins ?? []).some(
@@ -480,8 +530,12 @@ export class Auth {
     return this.resetPolicy.available;
   }
 
-  async close(): Promise<void> {
-    await this.resetPolicy.close();
+  close(): Promise<void> {
+    this.closePromise ??= settleShutdown(
+      [() => this.resetPolicy.close(), () => this.ownedSender?.close()],
+      'Authentication shutdown failed.',
+    );
+    return this.closePromise;
   }
 
   async getSession(

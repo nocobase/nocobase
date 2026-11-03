@@ -1,5 +1,11 @@
 # @nocobase/app-server
 
+## 5.0.0-beta
+
+### Breaking changes
+
+Remove the deprecated `@nocobase/app-server/mailer` subpath, including `Mailer`, `mailerToken`, `createMailer`, `MailerProvider` and the notification configuration helpers. Create exclusive senders through `@nocobase/app-server/mailers`; import notification configuration declarations and validation from `@nocobase/app-plugin-notification-providers/config`. Existing inline SMTP/Resend YAML and environment-variable mappings remain supported.
+
 ## 4.0.0-beta.0
 
 ### Major Changes

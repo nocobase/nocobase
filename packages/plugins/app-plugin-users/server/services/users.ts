@@ -1,3 +1,4 @@
+import type { InvitationWork } from '../invitations/lifecycle.js';
 import { lockUserForAdministration } from '@nocobase/app-plugin-authentication';
 import type { DatabaseConnection, DatabaseManager } from '@nocobase/db';
 import type { PermissionSetsApi } from '@nocobase/authorization/permission-sets';
@@ -47,6 +48,8 @@ export function createUserRoleScopeRegistry(): UserRoleScopeRegistry {
 
 export interface CreateUserManagementServiceOptions {
   readonly database: DatabaseManager;
+  /** @internal Provider-owned tracking shared with transaction bindings. */
+  readonly invitationWork?: InvitationWork;
   readonly connection?: DatabaseConnection;
   readonly users: UserAdministrationService;
   readonly roleScopes: UserRoleScopeRegistry;
@@ -105,13 +108,19 @@ class DefaultUserManagementService implements UserManagementService {
   }
 
   invite: InvitationManager['invite'] = (input) =>
-    this.invitations.invite(input);
+    this.services.invitationWork
+      ? this.services.invitationWork.run(() => this.invitations.invite(input))
+      : this.invitations.invite(input);
   listInvitations: InvitationManager['listInvitations'] = (input) =>
     this.invitations.listInvitations(input);
   getInvitation: InvitationManager['getInvitation'] = (id) =>
     this.invitations.getInvitation(id);
   resendInvitation: InvitationManager['resendInvitation'] = (id, input) =>
-    this.invitations.resendInvitation(id, input);
+    this.services.invitationWork
+      ? this.services.invitationWork.run(() =>
+          this.invitations.resendInvitation(id, input),
+        )
+      : this.invitations.resendInvitation(id, input);
   revokeInvitation: InvitationManager['revokeInvitation'] = (id) =>
     this.invitations.revokeInvitation(id);
   lookupInvitation: InvitationManager['lookupInvitation'] = (token) =>

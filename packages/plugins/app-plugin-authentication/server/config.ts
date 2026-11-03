@@ -1,3 +1,7 @@
+import {
+  assertMailerReference,
+  type MailersConfig,
+} from '@nocobase/app-server/mailers/config';
 import { authEmailIssues, type AuthEmailConfig } from './email-config.js';
 export type { AuthEmailConfig } from './email-config.js';
 import {
@@ -81,6 +85,25 @@ export const validateAuthConfig: ConfigValidator<AuthConfig> = (
   auth,
   context,
 ) => {
+  if (
+    auth.email &&
+    typeof auth.email === 'object' &&
+    'mailer' in auth.email &&
+    context.get
+  ) {
+    try {
+      assertMailerReference(
+        (context.get('mailers') ?? {}) as MailersConfig,
+        auth.email.mailer,
+        'auth.email.mailer',
+      );
+    } catch (error) {
+      context.error(
+        'email.mailer',
+        error instanceof Error ? error.message : 'Invalid mailer reference.',
+      );
+    }
+  }
   for (const issue of authEmailIssues(auth.email))
     context.error(issue.path, issue.message);
   if (

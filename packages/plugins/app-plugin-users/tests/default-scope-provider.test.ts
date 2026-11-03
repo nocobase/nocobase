@@ -15,7 +15,10 @@ it.each([true, false])(
     container.instance(authorizationToken, createAppAuthorization({}));
     const provider = new UsersProvider({
       container,
-      config: { get: () => ({ permissionSets: enabled }) },
+      config: {
+        get: (key: string) =>
+          key === 'users' ? { permissionSets: enabled } : undefined,
+      },
     } as unknown as AppPluginApplication);
     provider.register();
     await provider.boot();
