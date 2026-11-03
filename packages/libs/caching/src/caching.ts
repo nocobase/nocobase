@@ -1,5 +1,5 @@
 import { createDefaultCachingConfig } from './config.js';
-import { getCachingDriver } from './drivers.js';
+import { memoryCacheProviderDriver } from './drivers.js';
 import { resolveTtlConfig } from './internal/duration.js';
 import { assertNamespace } from './internal/validation.js';
 import type {
@@ -7,6 +7,7 @@ import type {
   Cache,
   CacheProvider,
   CacheProviderConfig,
+  CacheProviderDriver,
   CacheProviderRuntimeOptions,
   CachingConfig,
   Counter,
@@ -21,11 +22,35 @@ interface ProviderState {
 
 export class Caching {
   private readonly providers = new Map<string, ProviderState>();
+  private readonly drivers = new Map<string, CacheProviderDriver>([
+    [memoryCacheProviderDriver.name, memoryCacheProviderDriver],
+  ]);
 
   constructor(
     private readonly config: CachingConfig = createDefaultCachingConfig(),
   ) {
     validateCachingConfig(config);
+  }
+
+  registerDriver(driver: CacheProviderDriver): void {
+    const { name } = driver;
+    if (
+      typeof name !== 'string' ||
+      !name.trim() ||
+      typeof driver.createProvider !== 'function' ||
+      driver.createProvider.constructor.name === 'AsyncFunction'
+    ) {
+      throw new Error(
+        'Cache provider driver requires a nonempty name and a synchronous factory.',
+      );
+    }
+    if (this.drivers.has(name)) {
+      throw new Error(`Cache provider driver "${name}" is already registered.`);
+    }
+    this.drivers.set(name, {
+      name,
+      createProvider: driver.createProvider.bind(driver),
+    });
   }
 
   getCache(options: GetCacheOptions): Cache {
@@ -76,7 +101,7 @@ export class Caching {
   ): CacheProvider {
     const name = requestedName ?? this.config.default;
     const definition = this.config.providers[name];
-    if (!definition) {
+    if (!Object.hasOwn(this.config.providers, name) || !definition) {
       throw new Error(`Cache provider "${name}" is not configured.`);
     }
 
@@ -91,7 +116,7 @@ export class Caching {
       return existing.provider;
     }
 
-    const driver = getCachingDriver(definition.driver);
+    const driver = this.drivers.get(definition.driver);
     if (!driver) {
       throw new Error(
         `Cache provider driver "${definition.driver}" is not registered.`,
@@ -119,18 +144,36 @@ export function createCaching(
 }
 
 function validateCachingConfig(config: CachingConfig): void {
-  const defaultProvider = config.providers[config.default];
-  if (!defaultProvider) {
+  if (
+    !config ||
+    typeof config !== 'object' ||
+    typeof config.default !== 'string' ||
+    !config.providers ||
+    typeof config.providers !== 'object' ||
+    Array.isArray(config.providers)
+  ) {
+    throw new Error(
+      'Caching config requires a default name and provider definitions.',
+    );
+  }
+  if (
+    !Object.hasOwn(config.providers, config.default) ||
+    !config.providers[config.default]
+  ) {
     throw new Error(
       `Default cache provider "${config.default}" is not configured.`,
     );
   }
-
   for (const provider of Object.values(config.providers)) {
-    if (!getCachingDriver(provider.driver)) {
-      throw new Error(
-        `Cache provider driver "${provider.driver}" is not registered.`,
-      );
+    if (
+      !provider ||
+      typeof provider !== 'object' ||
+      Array.isArray(provider) ||
+      !Object.hasOwn(provider, 'driver') ||
+      typeof provider.driver !== 'string' ||
+      !provider.driver.trim()
+    ) {
+      throw new Error('Cache provider requires a nonempty driver name.');
     }
   }
 }
