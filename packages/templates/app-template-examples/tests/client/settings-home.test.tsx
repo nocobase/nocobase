@@ -65,7 +65,18 @@ it('groups the modules an administrator may open into categories of cards that o
     screen
       .getAllByRole('region')
       .map((region) => region.getAttribute('aria-label')),
-  ).toEqual(['Accounts and permissions', 'Business configuration', 'AI']);
+  ).toEqual([
+    'Accounts and permissions',
+    'Business configuration',
+    'AI',
+    'System',
+  ]);
+  // The task notifications the examples send bring the template directory into the System category.
+  expect(
+    within(screen.getByRole('region', { name: 'System' })).getByRole('link', {
+      name: /Notification management/,
+    }),
+  ).toHaveAttribute('href', '/main/settings/notifications/templates');
   cards[1].focus();
   await user.keyboard('{Enter}');
   await waitFor(() =>
