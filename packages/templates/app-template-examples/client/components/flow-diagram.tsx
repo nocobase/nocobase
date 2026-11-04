@@ -8,7 +8,7 @@ import {
   type ReactElement,
   type ReactNode,
 } from 'react';
-import { BodyPortal } from '#components/body-portal';
+import { BodyPortal } from './body-portal.js';
 import {
   BaseEdge,
   Controls,
