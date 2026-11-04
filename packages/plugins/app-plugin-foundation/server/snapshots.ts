@@ -260,7 +260,6 @@ export class FoundationSnapshots implements FoundationService {
       const overview = await collector.overview({
         refresh: true,
         countRecords: row.countRecords,
-        signal: context.signal,
       });
       context.signal.throwIfAborted();
       if (
