@@ -245,6 +245,7 @@ export class BaseAuth extends Auth {
     if (!temp) {
       if (tokenStatus === 'valid') {
         this.ctx.state.authTokenSource = tokenSource;
+        this.ctx.state.authTokenRole = roleName;
         return { tokenStatus, user, temp };
       } else {
         this.ctx.throw(401, {
