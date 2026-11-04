@@ -177,7 +177,8 @@ function DefaultAssociations({
           >
             <a
               href={link.view!.url ? resolveAppUrl(link.view!.url) : undefined}
-              className='flex min-w-0 flex-1 items-center gap-2'
+              aria-label={`${link.view!.key ?? ''} ${link.view!.title}`.trim()}
+              className='flex min-w-0 flex-1 flex-col gap-0.5'
               onClick={(event) => {
                 if (
                   onOpen &&
@@ -191,12 +192,16 @@ function DefaultAssociations({
                 }
               }}
             >
-              <span className='min-w-0 flex-1 truncate'>
-                {link.view!.key} {link.view!.title}
-              </span>
-              <span className='shrink-0 text-muted-foreground'>
-                {link.view!.status}
-              </span>
+              {/* The title has the first line to itself; the key and the status share the second. */}
+              <span className='min-w-0 truncate'>{link.view!.title}</span>
+              {(link.view!.key || link.view!.status) && (
+                <span className='flex min-w-0 items-center gap-2 text-muted-foreground'>
+                  <span className='min-w-0 truncate font-mono'>
+                    {link.view!.key}
+                  </span>
+                  <span className='ml-auto shrink-0'>{link.view!.status}</span>
+                </span>
+              )}
             </a>
             <Button
               variant='ghost'
