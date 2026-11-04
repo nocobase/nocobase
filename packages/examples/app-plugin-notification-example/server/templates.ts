@@ -78,7 +78,7 @@ export class TaskTemplateProvider extends ServiceProvider<AppPluginApplication> 
                 : {
                     title: 'Review the sample proposal',
                     description: 'Synthetic task for preview only.',
-                    status: 'pending',
+                    status: 'open',
                   },
               event,
             ),
