@@ -37,7 +37,7 @@ const frFR: LocaleResource<typeof enUS> = {
       "L'ordinateur n'a pas répondu à temps. Vérifiez que sa connexion fonctionne, puis réessayez.",
     folderUnavailable: "Le dossier ne peut pas être ouvert sur l'ordinateur.",
     discoveryFailed:
-      "Impossible de charger les paramètres de l'agent. Vérifiez l'agent sur cet ordinateur et réessayez.",
+      'Impossible de charger les paramètres de l’agent. Mettez à jour la ligne de commande sur cet ordinateur et redémarrez la connexion en arrière-plan, puis réessayez.',
     projectNotFound:
       "Un tel projet n'existe pas ou vous ne pouvez pas le voir.",
     referenceNotFound:

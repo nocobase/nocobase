@@ -34,7 +34,7 @@ const idID: LocaleResource<typeof enUS> = {
       'Komputer tidak menjawab tepat waktu. Periksa apakah koneksinya berjalan, lalu coba lagi.',
     folderUnavailable: 'Folder tidak dapat dibuka di komputer.',
     discoveryFailed:
-      'Tidak dapat memuat pengaturan agen. Periksa agen di komputer ini dan coba lagi.',
+      'Tidak dapat memuat pengaturan agen. Perbarui baris perintah di komputer ini dan mulai ulang koneksi latar belakang, lalu coba lagi.',
     projectNotFound:
       'Tidak ada proyek seperti itu, atau Anda tidak dapat melihatnya.',
     referenceNotFound:

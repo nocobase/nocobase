@@ -25,7 +25,8 @@ const zhTW: LocaleResource<typeof enUS> = {
     computerNotAnswering:
       '電腦沒有及時應答。檢查其連線是否正在執行，然後重試。',
     folderUnavailable: '無法在電腦上開啟該資料夾。',
-    discoveryFailed: '無法載入代理設定。檢查此計算機上的代理並重試。',
+    discoveryFailed:
+      '無法載入代理設定。請更新這台電腦上的命令列並重新啟動背景連線，然後重試。',
     projectNotFound: '沒有這個專案，或者你看不到它。',
     referenceNotFound: '提到的東西不存在，或者你看不到它。',
     imageNotFound: '會話中未傳送具有此名稱的影像。',

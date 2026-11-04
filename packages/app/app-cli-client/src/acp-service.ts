@@ -7,7 +7,7 @@
 // values now, since a service reads no shell configuration; its files are readable by their owner only. Each plan
 // lists the file it writes and the commands it runs.
 import { execFile, spawn } from 'node:child_process';
-import { chmod, mkdir, rm, writeFile } from 'node:fs/promises';
+import { chmod, mkdir, readdir, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { promisify } from 'node:util';
@@ -201,6 +201,93 @@ export async function acpServiceLoaded(
     () => true,
     () => false,
   );
+}
+
+export interface AcpRestartResult {
+  readonly restarted: string[];
+  readonly warnings: string[];
+}
+
+/** Restart installed, running services for every profile without changing their saved environment. */
+export async function restartAcpServices(
+  bin: string,
+  options: {
+    readonly platform?: NodeJS.Platform;
+    readonly home?: string;
+    readonly uid?: number;
+    readonly run?: (
+      command: string,
+      args: string[],
+    ) => Promise<{ stdout: string }>;
+  } = {},
+): Promise<AcpRestartResult> {
+  const result: AcpRestartResult = { restarted: [], warnings: [] };
+  const platform = options.platform ?? process.platform;
+  if (platform !== 'darwin' && platform !== 'linux') return result;
+  const home = options.home ?? os.homedir();
+  const directory =
+    platform === 'darwin'
+      ? path.join(home, 'Library', 'LaunchAgents')
+      : path.join(home, '.config', 'systemd', 'user');
+  const prefix =
+    platform === 'darwin' ? `com.nocobase.${bin}-acp` : `${bin}-acp`;
+  const extension = platform === 'darwin' ? '.plist' : '.service';
+  const execute = options.run ?? run;
+  const warn = (label: string): void => {
+    result.warnings.push(
+      `Could not restart ${label}. Run \`${bin} acp service restart\` to retry.`,
+    );
+  };
+  let files: string[];
+  try {
+    files = await readdir(directory);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') warn(directory);
+    return result;
+  }
+  for (const file of files.sort()) {
+    if (!file.endsWith(extension)) continue;
+    const name = file.slice(0, -extension.length);
+    if (
+      name !== prefix &&
+      !(
+        name.startsWith(`${prefix}-`) &&
+        /^[A-Za-z0-9._-]+$/u.test(name.slice(prefix.length + 1))
+      )
+    )
+      continue;
+    const label = platform === 'darwin' ? name : file;
+    const target = `gui/${options.uid ?? process.getuid?.() ?? 501}/${label}`;
+    try {
+      if (platform === 'darwin') {
+        let stdout: string;
+        try {
+          ({ stdout } = await execute('launchctl', ['print', target]));
+        } catch (error) {
+          // launchctl exits 113 when the service is not loaded.
+          if ((error as { code?: number }).code === 113) continue;
+          throw error;
+        }
+        if (!/^\s*state = running\s*$/mu.test(stdout)) continue;
+        await execute('launchctl', ['kickstart', '-k', target]);
+      } else {
+        const { stdout } = await execute('systemctl', [
+          '--user',
+          'show',
+          '--property=ActiveState',
+          '--value',
+          label,
+        ]);
+        if (stdout.trim() !== 'active') continue;
+        // try-restart also preserves a stopped service if it stopped after the check.
+        await execute('systemctl', ['--user', 'try-restart', label]);
+      }
+      result.restarted.push(label);
+    } catch {
+      warn(label);
+    }
+  }
+  return result;
 }
 
 function xml(value: string): string {

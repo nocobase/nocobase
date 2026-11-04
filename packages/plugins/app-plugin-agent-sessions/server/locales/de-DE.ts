@@ -40,7 +40,7 @@ const deDE: LocaleResource<typeof enUS> = {
     folderUnavailable:
       'Der Ordner kann auf dem Computer nicht geöffnet werden.',
     discoveryFailed:
-      'Agent-Einstellungen konnten nicht geladen werden. Überprüfen Sie den Agenten auf diesem Computer und versuchen Sie es erneut.',
+      'Die Agenteneinstellungen konnten nicht geladen werden. Aktualisieren Sie die Befehlszeile auf diesem Computer und starten Sie die Hintergrundverbindung neu. Versuchen Sie es dann erneut.',
     projectNotFound:
       'Es gibt kein solches Projekt, oder Sie können es nicht sehen.',
     referenceNotFound:

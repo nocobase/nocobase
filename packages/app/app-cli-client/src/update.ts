@@ -21,6 +21,7 @@ import {
   type DistResolution,
 } from '@nocobase/agent-protocol';
 
+import { restartAcpServices } from './acp-service.ts';
 import { appCliHome, type AppCliConfig, type AppCliSession } from './config.ts';
 import { currentSession } from './dynamic/session.ts';
 import {
@@ -270,12 +271,12 @@ export function updateEnvironment(
 /** `<bin> update`, for a CLI whose configuration names `selfUpdate`. */
 export function updateCommand(app: AppCliConfig): Command.Class {
   return class Update extends AppCommand {
+    private serviceWarnings: string[] = [];
     protected override toSuccessJson(result: unknown): unknown {
-      return successEnvelope(
-        this.commandName,
-        result,
-        (result as CliUpdateResult).skills?.warnings ?? [],
-      );
+      return successEnvelope(this.commandName, result, [
+        ...((result as CliUpdateResult).skills?.warnings ?? []),
+        ...this.serviceWarnings,
+      ]);
     }
     static override summary = `Update ${app.bin} to the newest version the server serves.`;
     static override description =
@@ -311,6 +312,14 @@ export function updateCommand(app: AppCliConfig): Command.Class {
         check: flags.check === true,
         log: (line) => this.log(line),
       });
+      // Keep this outside updateCli: the bridge also calls it before exiting for its service manager to restart it.
+      if (result.updated) {
+        const services = await restartAcpServices(app.bin);
+        this.serviceWarnings = services.warnings;
+        for (const label of services.restarted)
+          this.log(`Restarted ${label} on ${result.latest}.`);
+        for (const warning of services.warnings) this.warn(warning);
+      }
       for (const warning of result.skills?.warnings ?? []) this.warn(warning);
       return result;
     }
