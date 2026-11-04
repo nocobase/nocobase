@@ -66,7 +66,19 @@ it('groups the modules an administrator may open into categories of cards that o
     screen
       .getAllByRole('region')
       .map((region) => region.getAttribute('aria-label')),
-  ).toEqual(['Accounts and permissions', 'Business configuration', 'AI']);
+  ).toEqual([
+    'Accounts and permissions',
+    'Business configuration',
+    'AI',
+    'System',
+  ]);
+  // Examples configures the built-in invitation mailer, so Notifications joins System.
+  const system = screen.getByRole('region', { name: 'System' });
+  expect(
+    within(system)
+      .getAllByRole('link')
+      .map((card) => card.getAttribute('href')),
+  ).toEqual(['/main/settings/notifications/templates']);
   cards[1].focus();
   await user.keyboard('{Enter}');
   await waitFor(() =>
