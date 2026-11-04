@@ -17,13 +17,12 @@ vi.mock('@emotion/css', () => ({ css: () => '' }));
 vi.mock('antd', () => ({
   Alert: ({ description }: { description?: React.ReactNode }) => <div>{description}</div>,
   Image: () => null,
-  Modal: ({ children, open, title }: React.PropsWithChildren<{ open?: boolean; title?: React.ReactNode }>) =>
-    open ? (
-      <div>
-        <h1>{title}</h1>
-        {children}
-      </div>
-    ) : null,
+  Modal: ({ children, open, title }: React.PropsWithChildren<{ open?: boolean; title?: React.ReactNode }>) => (
+    <div hidden={!open}>
+      <h1>{title}</h1>
+      {children}
+    </div>
+  ),
   Space: ({ children }: React.PropsWithChildren) => <div>{children}</div>,
   Spin: () => null,
 }));
@@ -34,10 +33,13 @@ vi.mock('react-i18next', () => ({
 }));
 
 describe('FilePreviewRenderer', () => {
-  it('reloads the video element when switching files', () => {
+  it.each([
+    { tag: 'video', extension: 'mp4', mimetype: 'video/mp4' },
+    { tag: 'audio', extension: 'mp3', mimetype: 'audio/mpeg' },
+  ])('reloads the $tag element when switching files', ({ tag, extension, mimetype }) => {
     const files = [
-      { filename: 'first.mp4', mimetype: 'video/mp4', url: '/files/first.mp4' },
-      { filename: 'second.mp4', mimetype: 'video/mp4', url: '/files/second.mp4' },
+      { filename: `first.${extension}`, mimetype, url: `/files/first.${extension}` },
+      { filename: `second.${extension}`, mimetype, url: `/files/second.${extension}` },
     ];
     const commonProps = {
       list: files,
@@ -46,14 +48,44 @@ describe('FilePreviewRenderer', () => {
     };
 
     const { container, rerender } = render(<FilePreviewRenderer {...commonProps} file={files[0]} index={0} />);
-    const firstVideo = container.querySelector('video');
+    const firstMedia = container.querySelector(tag);
 
-    expect(firstVideo?.querySelector('source')?.getAttribute('src')).toBe('/files/first.mp4');
+    expect(firstMedia?.querySelector('source')?.getAttribute('src')).toBe(files[0].url);
 
     rerender(<FilePreviewRenderer {...commonProps} file={files[1]} index={1} />);
 
-    const secondVideo = container.querySelector('video');
-    expect(secondVideo?.querySelector('source')?.getAttribute('src')).toBe('/files/second.mp4');
-    expect(secondVideo).not.toBe(firstVideo);
+    const secondMedia = container.querySelector(tag);
+    expect(secondMedia?.querySelector('source')?.getAttribute('src')).toBe(files[1].url);
+    expect(secondMedia).not.toBe(firstMedia);
+
+    rerender(<FilePreviewRenderer {...commonProps} file={files[0]} index={0} />);
+
+    const previousMedia = container.querySelector(tag);
+    expect(previousMedia?.querySelector('source')?.getAttribute('src')).toBe(files[0].url);
+    expect(previousMedia).not.toBe(secondMedia);
+  });
+
+  it('reloads the audio element when opening another file after closing the preview', () => {
+    const files = [
+      { filename: 'first.mp3', mimetype: 'audio/mpeg', url: '/files/first.mp3' },
+      { filename: 'second.mp3', mimetype: 'audio/mpeg', url: '/files/second.mp3' },
+    ];
+    const commonProps = {
+      list: files,
+      onDownload: () => undefined,
+    };
+
+    const { container, rerender } = render(<FilePreviewRenderer {...commonProps} file={files[0]} index={0} open />);
+    const firstAudio = container.querySelector('audio');
+    expect(firstAudio?.querySelector('source')?.getAttribute('src')).toBe(files[0].url);
+
+    rerender(<FilePreviewRenderer {...commonProps} file={files[0]} index={0} open={false} />);
+    expect(container.querySelector('audio')).toBe(firstAudio);
+
+    rerender(<FilePreviewRenderer {...commonProps} file={files[1]} index={1} open />);
+
+    const secondAudio = container.querySelector('audio');
+    expect(secondAudio?.querySelector('source')?.getAttribute('src')).toBe(files[1].url);
+    expect(secondAudio).not.toBe(firstAudio);
   });
 });
