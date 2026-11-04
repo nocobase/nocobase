@@ -3,6 +3,44 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const deDE: LocaleResource<typeof enUS> = {
+  templates: {
+    title: 'Benachrichtigungsvorlagen',
+    coverage:
+      'Nur registrierte Szenarien. Dynamische Sendungen, eigene Rückrufe und private Mailvorlagen sind nicht enthalten. Definitionen und Vorschauen sind schreibgeschützt.',
+    search: 'Szenarien suchen',
+    category: 'Geschäftskategorie',
+    channel: 'Kanal',
+    all: 'Alle',
+    details: 'Details anzeigen',
+    close: 'Details schließen',
+    trigger: 'Auslöser',
+    recipients: 'Empfängerregel',
+    businessRule: 'Geschäftliche Aktivierung',
+    contributor: 'Quelle',
+    languagePolicy: 'Sprachverhalten',
+    status: 'Kanalkonfiguration',
+    statusHelp:
+      'Eine registrierte Definition aktiviert keine Benachrichtigungen. Eine Konfiguration bestätigt keine Verbindung.',
+    configured: 'Konfiguriert',
+    unconfigured: 'Nicht konfiguriert',
+    enabled: 'Aktiviert',
+    disabled: 'Deaktiviert',
+    unknown: 'Unbekannt',
+    variables: 'Verfügbare Variablen',
+    language: 'Inhaltssprache',
+    synthetic:
+      'Nur synthetische Beispieldaten. Die Vorschau sendet nichts und ändert keine Konfiguration.',
+    definition: 'Vorlagendefinition',
+    preview: 'Synthetische Vorschau',
+    html: 'HTML-Quelltext (inert)',
+    loading: 'Wird geladen…',
+    failed: 'Vorlagen konnten nicht geladen werden.',
+    forbidden: 'Keine Berechtigung zum Anzeigen der Vorlagen.',
+    notFound: 'Diese Vorlage ist nicht mehr registriert.',
+    retry: 'Erneut versuchen',
+    empty: 'Keine Szenarien registriert.',
+    noResults: 'Keine Szenarien entsprechen den Filtern.',
+  },
   logs: {
     deliveryOperations: 'Lieferbetriebe',
     recipeDescription:

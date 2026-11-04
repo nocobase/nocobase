@@ -1,4 +1,8 @@
 const settings = {
+  notificationManagementDescription:
+    'View registered notification templates and synthetic content previews.',
+  notificationTemplates: 'Notification templates',
+  notificationManagement: 'Notification management',
   listChanged: 'The list has changed. Please retry.',
   setup: {
     title: 'Feature prerequisites',

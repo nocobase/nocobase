@@ -187,6 +187,7 @@ describe('app client routes', () => {
       'knowledge',
       'knowledgeIndexing',
       'workflows',
+      'notificationManagement',
       'settingsUsers',
       'permissionManagement',
     ]);
@@ -286,6 +287,7 @@ describe('app client routes', () => {
         name: 'workflowExecution',
         authorizedAs: 'settings:workflow-management',
       },
+      { name: 'notificationTemplates', authorizedAs: 'notification.templates' },
       { name: 'settingsUsers', authorizedAs: 'user:*' },
       { name: 'settingsUserCreate', authorizedAs: 'user:*' },
       { name: 'settingsUser', authorizedAs: 'user:*' },

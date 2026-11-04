@@ -8,6 +8,10 @@ import { createNotificationManager } from '../manager.js';
 import { createNotificationRegistry } from '../registry.js';
 import { notificationRuntimeToken } from '../runtime.js';
 import {
+  NotificationTemplateRegistry,
+  notificationTemplateRegistryToken,
+} from '../templates.js';
+import {
   notificationExtensionRegistryToken,
   notificationServiceToken,
 } from '../tokens.js';
@@ -47,6 +51,10 @@ export class NotificationProvider<
     // Keep the startup snapshot; third-party channel configuration may contain functions.
     const config = this.app.config.get<NotificationConfig>('notification')!;
     const registry = createNotificationRegistry();
+    this.app.container.instance(
+      notificationTemplateRegistryToken,
+      new NotificationTemplateRegistry(),
+    );
     this.app.container.instance(notificationExtensionRegistryToken, registry);
     this.app.container.singleton(notificationRuntimeToken, (container) =>
       createNotificationManager<NotificationChannelMap>({
