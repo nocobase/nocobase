@@ -79,7 +79,8 @@ async function loadCurrentUserRoles(options: {
 }
 
 export async function setCurrentRole(ctx: Context, next) {
-  const headerRole = ctx.get('X-Role');
+  const authTokenRole = ctx.state.authTokenRole as string | undefined;
+  const headerRole = authTokenRole || ctx.get('X-Role');
   const roleCookieName = getAuthCookieName('role', ctx.app?.name);
   const cookieRole = headerRole ? null : ctx.cookies?.get(roleCookieName);
   let currentRole = headerRole || cookieRole;
@@ -116,6 +117,19 @@ export async function setCurrentRole(ctx: Context, next) {
   roles.forEach((role) => rolesMap.set(role.name, role));
   const userRoles = Array.from(rolesMap.values());
   ctx.state.currentUser.roles = userRoles;
+  // API keys must retain their bound role even when interactive sessions are forced to use the roles union.
+  if (authTokenRole) {
+    if (!userRoles.some((role) => role.name === authTokenRole)) {
+      return ctx.throw(401, {
+        code: 'ROLE_NOT_FOUND_FOR_USER',
+        message: ctx.t('The role does not belong to the user', { ns: 'acl' }),
+      });
+    }
+    ctx.state.currentRole = authTokenRole;
+    ctx.state.currentRoles = [authTokenRole];
+    ctx.headers['x-role'] = authTokenRole;
+    return next();
+  }
   const systemSettingsRepository = mainDb?.getRepository('systemSettings');
   const systemSettings = systemSettingsRepository
     ? ((await cache.wrap(`app:systemSettings`, () =>
