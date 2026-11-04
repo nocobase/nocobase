@@ -101,6 +101,51 @@
         }
       }
     },
+    "/backups:download": {
+      "parameters": [{ "name": "filterByTk", "in": "query", "required": true, "schema": { "type": "string" } }],
+      "post": {
+        "tags": ["backups"],
+        "summary": "Issue a backup download token",
+        "description": "Requires backup download permission. The token authorizes GET for this file and application for 30 seconds. Accepted transfers continue after expiry.",
+        "responses": {
+          "200": {
+            "description": "Short-lived download token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": { "token": { "type": "string" } }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": ["backups"],
+        "summary": "Download a backup file",
+        "parameters": [
+          {
+            "name": "hash",
+            "in": "query",
+            "schema": { "type": "string" },
+            "description": "Token from POST /backups:download. Omit when using normal authenticated download access."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Backup file stream",
+            "content": { "application/octet-stream": { "schema": { "type": "string", "format": "binary" } } }
+          },
+          "401": { "description": "Invalid or expired download token" }
+        }
+      }
+    },
     "/backup:download": {
       "get": {
         "tags": ["backups"],
