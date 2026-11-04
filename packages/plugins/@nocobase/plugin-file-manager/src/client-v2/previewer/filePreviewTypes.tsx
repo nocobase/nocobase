@@ -1316,7 +1316,7 @@ const AudioPreviewer = ({ file }: FilePreviewerProps) => {
     return null;
   }
   return (
-    <audio controls>
+    <audio key={src} controls>
       <source src={src} type={file?.type || file?.mimetype} />
       {t('Your browser does not support the audio tag.')}
     </audio>
