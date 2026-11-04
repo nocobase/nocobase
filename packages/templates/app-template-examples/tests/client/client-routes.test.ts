@@ -217,6 +217,8 @@ describe('app client routes', () => {
     const resolved = resolveRoutes();
 
     expect(pageAuthorizations(resolved.routes)).toEqual([
+      // A shared conversation opts out of page authorization: the agents API checks ownership or a snapshot grant.
+      { name: 'conversation', authorizedAs: null },
       ...['onboarding', 'onboarding-new', 'onboarding-detail'].map((name) => ({
         name,
         authorizedAs: 'onboarding',

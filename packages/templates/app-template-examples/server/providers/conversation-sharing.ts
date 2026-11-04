@@ -6,6 +6,8 @@ import { ServiceProvider } from '@nocobase/service-provider';
 export default class ConversationSharingProvider extends ServiceProvider<Application> {
   public readonly name = 'examples/conversation-sharing';
   public override async boot(): Promise<void> {
+    // A composition without the agents plugin has no directory to provide.
+    if (!this.app.container.has(agentsToken)) return;
     this.app.container.resolve(agentsToken).people.provide({
       list: async (conn) =>
         conn.repository<{ id: string; name: string }>('user').findMany({
