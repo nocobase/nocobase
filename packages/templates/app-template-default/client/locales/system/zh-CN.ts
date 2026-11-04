@@ -344,7 +344,7 @@ const systemZhCN: SystemResource = {
   },
 
   appearance: {
-    title: '外观',
+    title: '主题',
     mode: '颜色模式',
     preset: '主题',
     light: '浅色',

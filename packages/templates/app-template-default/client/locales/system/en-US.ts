@@ -367,7 +367,7 @@ const systemEnUS = {
   },
 
   appearance: {
-    title: 'Appearance',
+    title: 'Theme',
     mode: 'Color mode',
     preset: 'Theme',
     light: 'Light',

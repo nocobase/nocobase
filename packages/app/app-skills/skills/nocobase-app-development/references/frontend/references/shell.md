@@ -16,10 +16,10 @@ The shell is `client/routing/` and `client/layouts/`, with the header, sidebar a
 
 The icon button area in the top-right corner of the page is in `client/layouts/components/header-actions.tsx` (the layout's header, not `PageHeader`'s `actions`). Choose the hover behavior by what the entry does:
 
-| What the entry does                                     | On hover                                                                                                           | Examples                 |
-| ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ | ------------------------ |
-| Navigates to another page                               | Show a short tooltip describing the destination or purpose                                                         | Help, Notifications      |
-| Opens a menu or configuration panel on the current page | Open the panel on hover; close it once the pointer leaves the trigger and panel area. Do not add a tooltip as well | Appearance, account menu |
+| What the entry does                                     | On hover                                                                                                           | Examples            |
+| ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ | ------------------- |
+| Navigates to another page                               | Show a short tooltip describing the destination or purpose                                                         | Help, Notifications |
+| Opens a menu or configuration panel on the current page | Open the panel on hover; close it once the pointer leaves the trigger and panel area. Do not add a tooltip as well | Account menu        |
 
 ### Navigation entries
 
@@ -68,7 +68,7 @@ export function HeaderActions(): ReactElement {
 }
 ```
 
-- Keep every header entry the same size and style (`ACTION_LINK_CLASS` above matches the Appearance and account triggers).
+- Keep every header entry the same size and style (`ACTION_LINK_CLASS` above matches the account trigger).
 - Keep the hint to a few words, such as "Help" or "Notification center"; do not write sentences like "Click here to go to…". It also shows on keyboard focus (Base UI's Tooltip does this by default; do not turn it off).
 - Translate both the tooltip and the `aria-label`; an unread count can be added to the `aria-label`.
 - Do not also write a native `title` attribute, or a second browser tooltip appears. An icon-only trigger must keep an accessible name.
@@ -79,7 +79,7 @@ export function HeaderActions(): ReactElement {
 - When the pointer moves from the trigger to the panel, or between a menu and the submenu it opens, the controls must stay reachable. Leave this interaction region, positioning, focus, and dismissal to the component.
 - Keep opening by click and touch, keyboard navigation, and closing with Esc.
 - Keep the component's default distinction: a panel opened by hover closes when the pointer leaves; a panel opened by click stays open until an outside click or Esc. Do not use custom mouseleave handlers, coordinate checks, timers, or extra open state to force a click-opened panel to close like a hover-opened one. Prefer the component's existing public options over reimplementing them yourself.
-- When selecting an item completes the action, use the component's built-in dismissal: the language radio items in the account menu have `closeOnClick`, so the menu closes immediately after a selection (`language-switcher.tsx` in the same directory); by default, radio items do not close the menu on selection. The header's Appearance popover (`client/theme/theme-settings.tsx`) stays open after a selection so you can keep adjusting, and closes the way `Popover` does by default.
+- When selecting an item completes the action, use the component's built-in dismissal: the language radio items in the account menu have `closeOnClick`, so the menu closes immediately after a selection (`language-switcher.tsx` in the same directory); by default, radio items do not close the menu on selection. The account menu's Theme submenu (`client/theme/theme-settings.tsx`) keeps `closeOnClick={false}` so you can keep adjusting; Escape closes the submenu before the account menu.
 
 ### Consistency
 

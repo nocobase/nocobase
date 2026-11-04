@@ -200,8 +200,8 @@ function AuthenticatedLayout({ routes }: AppLayoutProps): ReactElement {`,
         "import { ChatHeaderButton } from '#extensions/nocobase-agent-chat/launchers';",
     );
     replaceOnce(
-      '        <ThemeSettings />',
-      '        <ChatHeaderButton />\n        <ThemeSettings />',
+      '        <UserMenu />',
+      '        <ChatHeaderButton />\n        <UserMenu />',
     );
   }
   return source;

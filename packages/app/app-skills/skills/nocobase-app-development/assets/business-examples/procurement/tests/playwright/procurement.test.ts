@@ -385,12 +385,15 @@ test('native roles complete a purchasing loop with scoped selectors, editable li
     await reviewer.keyboard.press('Escape');
     await expect(reviewer.getByRole('menu')).toHaveCount(0);
     await reviewer
-      .getByRole('button', { name: 'Appearance', exact: true })
+      .getByRole('button', { name: 'Open account menu', exact: true })
       .hover();
     await reviewer
-      .getByRole('radiogroup', { name: 'Color mode' })
-      .getByText('Dark', { exact: true })
+      .getByRole('menuitem', { name: 'Theme', exact: true })
+      .hover();
+    await reviewer
+      .getByRole('menuitemradio', { name: 'Dark', exact: true })
       .click();
+    await reviewer.keyboard.press('Escape');
     await reviewer.keyboard.press('Escape');
     await reviewer.getByRole('link', { name: title, exact: true }).click();
     await reviewer.setViewportSize({ width: 390, height: 844 });
