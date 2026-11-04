@@ -21,6 +21,8 @@ export interface AssociationSectionProps {
 }
 export interface ConversationAssociationSlot {
   readonly label: string;
+  /** Shown before the label in the details' section heading. */
+  readonly icon?: ReactNode;
   readonly hidden?: boolean;
   /** Omitted: the kind keeps the default rows under its own label. */
   readonly render?: (props: AssociationSectionProps) => ReactNode;
@@ -136,9 +138,10 @@ export function ConversationAssociations({
             className='flex flex-col gap-2.5 border-b px-5 py-4'
             data-association-kind={kind}
           >
-            <h3 className='text-sm font-semibold'>
-              {slot?.label ?? kind}{' '}
-              <span className='font-medium text-muted-foreground'>
+            <h3 className='flex items-center gap-1.5 text-sm font-semibold'>
+              {slot?.icon}
+              {slot?.label ?? kind}
+              <span className='font-medium text-muted-foreground tabular-nums'>
                 {items.length}
               </span>
             </h3>

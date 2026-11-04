@@ -177,7 +177,7 @@ const ptBR: LocaleResource<typeof enUS> = {
     usage: 'Uso',
     contextLabel: 'Contexto',
     context: 'Contexto {{used}} de tokens {{size}}',
-    cost: 'Custo até agora: {{cost}}',
+    costLabel: 'Custo',
     tokens: {
       input: 'Entrada',
       cached: 'Em cache',
