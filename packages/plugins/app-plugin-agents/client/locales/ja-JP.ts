@@ -107,6 +107,7 @@ const jaJP: LocaleResource<typeof enUS> = {
     cline: 'Cline',
     amp: 'Amp',
     vibe: 'Mistral Vibe',
+    dsh: 'DeepSeek Harness',
   },
   agents: {
     unavailableNow: '現在利用不可',

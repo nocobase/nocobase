@@ -111,6 +111,7 @@ const deDE: LocaleResource<typeof enUS> = {
     cline: 'Cline',
     amp: 'Amp',
     vibe: 'Mistral Vibe',
+    dsh: 'DeepSeek Harness',
   },
   agents: {
     unavailableNow: 'Derzeit nicht verfügbar',

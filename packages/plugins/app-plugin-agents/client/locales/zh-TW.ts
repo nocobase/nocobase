@@ -104,6 +104,7 @@ const zhTW: LocaleResource<typeof enUS> = {
     cline: 'Cline',
     amp: 'Amp',
     vibe: 'Mistral Vibe',
+    dsh: 'DeepSeek Harness',
   },
   agents: {
     unavailableNow: '目前無法使用',

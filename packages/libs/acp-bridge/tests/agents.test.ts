@@ -531,6 +531,18 @@ describe('resolveAgent', () => {
       expect(Boolean(spec.modes?.length) || spec.allowAll === true).toBe(true);
     }
   });
+
+  it('starts DeepSeek Harness through ACP with full access and its API key setup command', () => {
+    const dsh = AGENTS.find((spec) => spec.id === 'dsh');
+    expect(dsh).toMatchObject({
+      id: 'dsh',
+      name: 'DeepSeek Harness',
+      launchers: [{ command: 'dsh', args: ['--profile', 'acp'] }],
+      allowAll: true,
+      signIn: 'export DEEPSEEK_API_KEY=...',
+      permissionEnv: { DSH_PERMISSION_MODE: 'danger-full-access' },
+    });
+  });
 });
 
 describe('compareVersions', () => {

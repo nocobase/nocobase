@@ -105,6 +105,7 @@ const zhCN: AgentsResource = {
     cline: 'Cline',
     amp: 'Amp',
     vibe: 'Mistral Vibe',
+    dsh: 'DeepSeek Harness',
   },
   agents: {
     unavailableNow: '当前不可用',
