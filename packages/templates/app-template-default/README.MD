@@ -139,11 +139,11 @@ The three files named `runtime.ts`, `plugins.ts`, and `routes.ts` are compositio
 
 ### Everyday development
 
-| Script             | What it does                                                                         |
-| ------------------ | ------------------------------------------------------------------------------------ |
-| `pnpm dev`         | Start the API server and client with hot reload                                      |
-| `pnpm build`       | Build the client and server into `dist/`                                             |
-| `pnpm start`       | Run the built server; requires `pnpm build` first                                    |
+| Script             | What it does                                                                                                                    |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm dev`         | Start the API server and client with hot reload                                                                                 |
+| `pnpm build`       | Build the client and server into `dist/`                                                                                        |
+| `pnpm start`       | Run the built server; requires `pnpm build` first                                                                               |
 | `pnpm build --tar` | Build, then pack `dist/`, `config.example.yml` and the `Dockerfile` with its `.dockerignore` into `storage/exports/dist.tar.gz` |
 
 ### Database
