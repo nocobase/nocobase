@@ -140,7 +140,7 @@ export function AssignedFieldsEditor({
     () =>
       getCollectionFields(flowEngine.context.dataSourceManager, collection)
         .filter(hasFieldName)
-        .filter((field) => !field.hidden && Boolean(field.uiSchema)) as AssignedField[],
+        .filter((field) => (!field.hidden || field.type === 'password') && Boolean(field.uiSchema)) as AssignedField[],
     [collection, flowEngine],
   );
   const fields = useMemo(() => allFields.filter(fieldFilter), [allFields, fieldFilter]);
