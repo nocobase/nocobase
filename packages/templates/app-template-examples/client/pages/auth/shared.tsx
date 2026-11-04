@@ -76,7 +76,7 @@ function BrandPanel(): ReactElement {
         <p className='text-xs font-semibold tracking-[0.16em] text-(--auth-brand-highlight) uppercase'>
           {t('auth.platform')}
         </p>
-        <h2 className='mt-6 text-4xl leading-tight font-semibold tracking-tight'>
+        <h2 className='mt-6 text-3xl leading-tight font-semibold tracking-tight'>
           {t('auth.marketingTitleFirst')}
           <br />
           {t('auth.marketingTitleSecond')}
