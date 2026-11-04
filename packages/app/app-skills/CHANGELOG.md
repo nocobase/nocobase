@@ -1,5 +1,13 @@
 # @nocobase/app-skills
 
+## 0.1.0-beta.58
+
+### Patch Changes
+
+- de91b90: Include the agent chat with details recipe (`agent-chat-details`) in the UI Library catalog, including its shared installation directory and integration slots.
+- c26c3c8: Describe the agent chat workspace (`agent-chat-details`): one component for a full page and the side panel, laid out by its own width, with narrow application slots.
+- c36beac: Move theme settings into the account menu in both application templates, preserving color modes, theme presets, and saved preferences.
+
 ## 0.1.0-beta.57
 
 ### Patch Changes

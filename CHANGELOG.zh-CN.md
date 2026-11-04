@@ -2,6 +2,33 @@
 
 本文件记录 NocoBase 3 的所有重要变更，每次发布一节：`nocobase-v3-beta/<日期>.<序号>` 是预览版，`release/<日期>.<序号>` 是正式版。每次发布的包版本见对应的 GitHub Release，各个包自己的变更见包内的 CHANGELOG.md。
 
+## [nocobase-v3-beta/2026-11-04.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-04.1)
+
+### 🎉 新特性
+
+- **[服务端]** 找回密码、用户邀请和邮件通知统一使用具名应用发件配置，并保留现有发件配置兼容。 ([#11284](https://github.com/nocobase/nocobase/pull/11284)) by @cgyrock
+- **[缓存]** 自定义缓存驱动按应用隔离，并可在首次使用前完成注册。 ([#11302](https://github.com/nocobase/nocobase/pull/11302)) by @cgyrock
+
+### 🚀 优化
+
+- **[界面]**
+  - 页面和面板共用对话头部，支持可选关联工作详情和优先打开列表。 ([#11285](https://github.com/nocobase/nocobase/pull/11285)) by @2013xile
+  - 会话页面和侧边面板使用同一个工作区，根据可用宽度自动调整布局，两处的样子和交互保持一致。 ([#11312](https://github.com/nocobase/nocobase/pull/11312)) by @2013xile
+- **[数据库]** 应用和插件可统一识别受支持数据库的重复键错误，避免将其他 SQLite 约束错误误判为重复键。 ([#11298](https://github.com/nocobase/nocobase/pull/11298)) by @mytharcher
+- **[应用基础]** 持久保存应用底座结果，在刷新或内核版本变化时后台更新，并提供紧凑统计和明确的历史状态。 ([#11300](https://github.com/nocobase/nocobase/pull/11300)) by @katherinehhh
+- **[Agent]** 说明执行机对话的等待原因，并允许撤回尚未领取的一轮后选择其他 Agent。 ([#11303](https://github.com/nocobase/nocobase/pull/11303)) by @2013xile
+- **[应用模板]** 将两套应用模板的主题设置收进用户菜单，并保留已保存的偏好。 ([#11309](https://github.com/nocobase/nocobase/pull/11309)) by @katherinehhh
+
+### 🐛 修复
+
+- **[邮件]** IMAP/SMTP 邮箱可安全移动、归档和删除当前文件夹中的邮件副本，并在操作不可用时显示原因。 ([#10895](https://github.com/nocobase/nocobase/pull/10895)) by @cgyrock
+- **[文件]** 在文件预览弹窗中居中显示图片。 ([#11292](https://github.com/nocobase/nocobase/pull/11292)) by @katherinehhh
+- **[应用基础]** 保留经已证明的本地回调和查询访问器建立的数据库模型关联，并拒绝格式错误的请求头名称。 ([#11293](https://github.com/nocobase/nocobase/pull/11293)) by @katherinehhh
+- **[界面]**
+  - 默认文字头像对中日韩姓名忽略空格并显示最后两个字。 ([#11294](https://github.com/nocobase/nocobase/pull/11294)) by @katherinehhh
+  - 会话详情在对话区域内打开，点击详情外的区域即可关闭，桌面和手机一致。 ([#11304](https://github.com/nocobase/nocobase/pull/11304)) by @2013xile
+- **[Agent]** 允许应用按执行人权限接纳 Agent 运行，并将运行修改评论的范围限定为当前运行自己发布的评论。 ([#11307](https://github.com/nocobase/nocobase/pull/11307)) by @2013xile
+
 ## [nocobase-v3-beta/2026-11-02.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-02.1)
 
 ### 🚀 优化

@@ -2,6 +2,33 @@
 
 All notable changes to NocoBase 3 are documented in this file, one section per release: `nocobase-v3-beta/<date>.<n>` for a beta and `release/<date>.<n>` for a stable release. The versions each release published are on its GitHub Release, and every package's own changes are in its CHANGELOG.md.
 
+## [nocobase-v3-beta/2026-11-04.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-04.1)
+
+### 🎉 New Features
+
+- **[Server]** Configure named application mailers once for password reset, invitations and email notifications while retaining existing sender configurations. ([#11284](https://github.com/nocobase/nocobase/pull/11284)) by @cgyrock
+- **[Caching]** Keep custom cache drivers isolated between applications while allowing registration before first use. ([#11302](https://github.com/nocobase/nocobase/pull/11302)) by @cgyrock
+
+### 🚀 Improvements
+
+- **[Interface]**
+  - Share conversation headers across pages and panels, with optional related-work details and list-first navigation. ([#11285](https://github.com/nocobase/nocobase/pull/11285)) by @2013xile
+  - The agent sessions page and the side panel share one workspace that adapts to the space it has, so they look and work the same. ([#11312](https://github.com/nocobase/nocobase/pull/11312)) by @2013xile
+- **[Database]** Applications and plugins can recognize duplicate-key errors consistently across supported databases without treating unrelated SQLite constraints as duplicates. ([#11298](https://github.com/nocobase/nocobase/pull/11298)) by @mytharcher
+- **[App foundation]** Keep App Foundation results across restarts and update them in the background on refresh or kernel changes, with compact statistics and clear historical states. ([#11300](https://github.com/nocobase/nocobase/pull/11300)) by @katherinehhh
+- **[Agents]** Explain why Runner conversations are waiting and allow withdrawing an unclaimed turn before choosing another Agent. ([#11303](https://github.com/nocobase/nocobase/pull/11303)) by @2013xile
+- **[App templates]** Move theme settings into the account menu in both application templates while preserving saved preferences. ([#11309](https://github.com/nocobase/nocobase/pull/11309)) by @katherinehhh
+
+### 🐛 Bug Fixes
+
+- **[Mail]** Allow IMAP/SMTP users to move, archive and delete the selected folder copy safely, with explanations when an action is unavailable. ([#10895](https://github.com/nocobase/nocobase/pull/10895)) by @cgyrock
+- **[Files]** Center images in file preview dialogs. ([#11292](https://github.com/nocobase/nocobase/pull/11292)) by @katherinehhh
+- **[App foundation]** Preserve database model associations through proven local callbacks and query accessors, and reject malformed request header names. ([#11293](https://github.com/nocobase/nocobase/pull/11293)) by @katherinehhh
+- **[Interface]**
+  - Show the last two characters of Chinese, Japanese and Korean names in default text avatars, ignoring spaces. ([#11294](https://github.com/nocobase/nocobase/pull/11294)) by @katherinehhh
+  - Conversation details open inside the conversation and close when you press outside them, on desktop and phone. ([#11304](https://github.com/nocobase/nocobase/pull/11304)) by @2013xile
+- **[Agents]** Let applications admit agent runs under their executing user's permissions and let runs change only their own comments from the current run. ([#11307](https://github.com/nocobase/nocobase/pull/11307)) by @2013xile
+
 ## [nocobase-v3-beta/2026-11-02.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-02.1)
 
 ### 🚀 Improvements
