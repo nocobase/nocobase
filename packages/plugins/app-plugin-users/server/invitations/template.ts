@@ -3,6 +3,7 @@ import type { MailersConfig } from '@nocobase/app-server/mailers';
 import type { UsersConfig } from '../tokens.js';
 import locales from '../locales/index.js';
 import { renderInvitationEmail } from './mail.js';
+import { describeInvitationEmailChannel } from './channel.js';
 
 /** Notification remains optional for standalone Users hosts. No sender is created for this directory. */
 export async function registerInvitationTemplate(
@@ -55,30 +56,15 @@ export async function registerInvitationTemplate(
             'One-time invitation link; preview uses example.invalid only',
         },
       ],
-      channels: () => {
-        const config = app.config.get<UsersConfig>('users')?.invitations;
-        const mailers = app.config.get<MailersConfig>('mailers');
-        const selected =
-          config?.mailer ??
-          (config?.emailChannel === undefined ? mailers?.default : undefined);
-        if (selected !== undefined) {
-          const mailer = mailers?.[selected];
-          return [
-            {
-              name: selected,
-              type: 'email',
-              configured: typeof mailer === 'object',
-              enabled:
-                typeof mailer === 'object' ? mailer.enabled !== false : null,
-            },
-          ];
-        }
-        const state = notification.describeNotificationTemplateChannel(
-          app.config.get('notification'),
-          config?.emailChannel ?? 'system-email',
-        );
-        return [{ ...state, type: 'email' }];
-      },
+      channels: () => [
+        describeInvitationEmailChannel({
+          invitations: app.config.get<UsersConfig>('users')?.invitations,
+          mailers: app.config.get<MailersConfig>('mailers'),
+          channels: app.config.get<{
+            channels?: Readonly<Record<string, { enabled?: boolean }>>;
+          }>('notification')?.channels,
+        }),
+      ],
       render: async (_locale, example) => {
         const raw = example === 'definition';
         const mail = await renderInvitationEmail({
