@@ -34,7 +34,7 @@ const esES: LocaleResource<typeof enUS> = {
       'La computadora no respondió a tiempo. Verifique que su conexión esté funcionando y vuelva a intentarlo.',
     folderUnavailable: 'La carpeta no se puede abrir en la computadora.',
     discoveryFailed:
-      'No se pudo cargar la configuración del agente. Verifique el agente en esta computadora y vuelva a intentarlo.',
+      'No se pudo cargar la configuración del agente. Actualiza la línea de comandos de este equipo y reinicia la conexión en segundo plano; luego vuelve a intentarlo.',
     projectNotFound: 'No existe tal proyecto o no se puede ver.',
     referenceNotFound: 'Algo mencionado no existe o no se puede ver.',
     imageNotFound: 'No se envió ninguna imagen con este nombre en la sesión.',

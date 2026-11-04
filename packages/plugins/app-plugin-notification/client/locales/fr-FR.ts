@@ -3,6 +3,44 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const frFR: LocaleResource<typeof enUS> = {
+  templates: {
+    title: 'Modèles de notification',
+    coverage:
+      'Scénarios enregistrés uniquement. Les envois dynamiques, fonctions personnalisées et modèles privés sont exclus. Définitions et aperçus sont en lecture seule.',
+    search: 'Rechercher des scénarios',
+    category: 'Catégorie',
+    channel: 'Canal',
+    all: 'Tous',
+    details: 'Voir les détails',
+    close: 'Fermer les détails',
+    trigger: 'Déclencheur',
+    recipients: 'Règle des destinataires',
+    businessRule: 'Activation métier',
+    contributor: 'Source',
+    languagePolicy: 'Comportement linguistique',
+    status: 'Configuration du canal',
+    statusHelp:
+      'Enregistrer une définition ne signifie pas activer les notifications. La configuration ne garantit pas la connexion.',
+    configured: 'Configuré',
+    unconfigured: 'Non configuré',
+    enabled: 'Activé',
+    disabled: 'Désactivé',
+    unknown: 'Inconnu',
+    variables: 'Variables disponibles',
+    language: 'Langue du contenu',
+    synthetic:
+      'Données synthétiques uniquement. Cet aperçu ne transmet aucune notification et ne modifie aucune configuration.',
+    definition: 'Définition du modèle',
+    preview: 'Aperçu synthétique',
+    html: 'Source HTML (texte inerte)',
+    loading: 'Chargement…',
+    failed: 'Impossible de charger les modèles.',
+    forbidden: 'Vous ne pouvez pas consulter ces modèles.',
+    notFound: 'Ce modèle n’est plus enregistré.',
+    retry: 'Réessayer',
+    empty: 'Aucun scénario enregistré.',
+    noResults: 'Aucun scénario ne correspond aux filtres.',
+  },
   logs: {
     deliveryOperations: 'Opérations de livraison',
     recipeDescription:

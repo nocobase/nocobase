@@ -2,7 +2,13 @@ import {
   TestI18nProvider,
   createTestI18nRuntime,
 } from '@nocobase/i18n/testing';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import type { ReactElement } from 'react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { describe, expect, it, vi } from 'vitest';
@@ -98,6 +104,9 @@ describe('application authentication pages', () => {
     });
     expect(panel).toHaveClass('hidden', 'xl:block');
     expect(panel).toHaveTextContent('AI-native application platform');
+    expect(within(panel).getByRole('heading', { level: 2 })).toHaveTextContent(
+      /^AI \+ NocoBase\s*Build reliable business systems$/,
+    );
     expect(panel).toHaveTextContent('AI-native frontend');
     expect(panel).toHaveTextContent('NocoBase foundation');
     expect(panel).toHaveTextContent('Freedom above. Confidence below.');

@@ -29,7 +29,7 @@ const auth: AppConfigFactory<AuthConfig> = defineAuthConfig({
       }),
       bearer(),
     ],
-    emailAndPassword: { enabled: true, autoSignIn: false },
+    emailAndPassword: { enabled: true, autoSignIn: true },
     session: { storeSessionInDatabase: true },
     account: { encryptOAuthTokens: true },
   },

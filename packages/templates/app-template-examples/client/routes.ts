@@ -1,3 +1,4 @@
+import { includeNotificationTemplateRoutes } from './pages/settings/notification-routes.js';
 import systemSettingsRoutes from './pages/settings/routes.js';
 import { knowledgeDefinition } from '@nocobase/app-plugin-knowledge/client/routes';
 import {
@@ -468,16 +469,20 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
   },
 ]);
 
-const routes: readonly AppClientRouteContribution[] = [
-  appRoutes,
-  defineAppRoutes(
-    systemSettingsRoutes.routes.flatMap((group) =>
-      (group.children ?? []).map((route) => ({
-        ...route,
-        parent: 'systemManagement',
-      })),
-    ),
-  ),
-];
+const routes: readonly AppClientRouteContribution[] =
+  includeNotificationTemplateRoutes(
+    [
+      appRoutes,
+      defineAppRoutes(
+        systemSettingsRoutes.routes.flatMap((group) =>
+          (group.children ?? []).map((route) => ({
+            ...route,
+            parent: 'systemManagement',
+          })),
+        ),
+      ),
+    ],
+    true,
+  );
 
 export default routes;

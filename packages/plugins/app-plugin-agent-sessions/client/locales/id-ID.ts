@@ -169,7 +169,7 @@ const idID: LocaleResource<typeof enUS> = {
     usage: 'Penggunaan',
     contextLabel: 'Konteks',
     context: 'Konteks {{used}} dari token {{size}}',
-    cost: 'Biaya sejauh ini: {{cost}}',
+    costLabel: 'Biaya',
     tokens: {
       input: 'Masukan',
       cached: 'Di-cache',

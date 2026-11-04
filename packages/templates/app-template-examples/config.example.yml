@@ -121,7 +121,7 @@ auth:
   # Existing inline auth.email and AUTH_EMAIL_* remain supported for compatibility.
   emailAndPassword:
     enabled: true
-    autoSignIn: false
+    autoSignIn: true
   session:
     storeSessionInDatabase: true
 

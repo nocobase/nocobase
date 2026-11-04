@@ -81,6 +81,9 @@ const systemZhCN: SystemResource = {
   'auth.loginDescription': '使用用户名或邮箱和密码登录',
   'auth.registerTitle': '创建账户',
   'auth.registerDescription': '创建账户以开始使用',
+  'auth.registrationAccepted': '注册请求已提交',
+  'auth.registrationGuidance':
+    '请尝试使用刚填写的用户名和密码登录。如果此邮箱已有账户，新填写的信息不会生效，请使用原账户登录或找回密码。如应用提供了验证指引，请先完成验证。',
   'auth.forgotTitle': '忘记密码',
   'auth.forgotDescription': '输入邮箱，如果账户存在，我们将发送重置链接',
   'auth.passwordResetUnavailable': '未开启自助找回，请联系管理员重置密码。',
@@ -120,9 +123,8 @@ const systemZhCN: SystemResource = {
   'auth.continueWith': '使用 {provider} 继续',
   'auth.about': '关于此应用',
   'auth.platform': 'AI 原生应用平台',
-  'auth.marketingTitleFirst': '让 AI 自由构建',
-  'auth.marketingTitleSecond': 'NocoBase 保障',
-  'auth.marketingTitleThird': '可靠运行',
+  'auth.marketingTitleFirst': 'AI + NocoBase',
+  'auth.marketingTitleSecond': 'Build reliable business systems',
   'auth.marketingDescription':
     '让 AI 在灵活的前端框架上构建体验，由 NocoBase 保障底层数据、权限与治理',
   'auth.frontend': 'AI 原生前端',
@@ -142,8 +144,8 @@ const systemZhCN: SystemResource = {
   'status.routeFailedDescription':
     '无法加载 {{packageName}} 的路由 {{label}}。',
   shell: {
-    buildFreely: 'AI 自由构建',
-    reliability: '<brand>NocoBase</brand> 保障可靠',
+    brandPartnership: 'AI + <brand>NocoBase</brand>',
+    buildReliableSystems: 'Build reliable business systems',
   },
   appearance: {
     title: '主题',

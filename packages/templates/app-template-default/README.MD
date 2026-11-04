@@ -139,11 +139,11 @@ The three files named `runtime.ts`, `plugins.ts`, and `routes.ts` are compositio
 
 ### Everyday development
 
-| Script             | What it does                                                                         |
-| ------------------ | ------------------------------------------------------------------------------------ |
-| `pnpm dev`         | Start the API server and client with hot reload                                      |
-| `pnpm build`       | Build the client and server into `dist/`                                             |
-| `pnpm start`       | Run the built server; requires `pnpm build` first                                    |
+| Script             | What it does                                                                                                                    |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm dev`         | Start the API server and client with hot reload                                                                                 |
+| `pnpm build`       | Build the client and server into `dist/`                                                                                        |
+| `pnpm start`       | Run the built server; requires `pnpm build` first                                                                               |
 | `pnpm build --tar` | Build, then pack `dist/`, `config.example.yml` and the `Dockerfile` with its `.dockerignore` into `storage/exports/dist.tar.gz` |
 
 ### Database
@@ -453,3 +453,9 @@ Set `NOCOBASE_STRICT_STARTUP=true` when running `pnpm dev` or `pnpm start` in au
 ## Internal workspace packages
 
 The application can also be the root of a pnpm workspace, with internal packages under `packages/*` and the existing `client/`, `server/` and `database/` directories unchanged. New projects receive this workspace pattern automatically. Internal packages use `workspace:*` dependencies and may remain private. Run installation, development and deployment builds from the application root; `pnpm check` includes the internal packages' own checks. See [internal packages](.agents/rules/workspace.md) for configuration and development conventions.
+
+### Registration feedback
+
+Password registration signs in new accounts by default (`auth.emailAndPassword.autoSignIn: true` in `server/config/auth.ts` and `config.example.yml`). An existing email returns an explicit error, exposing whether that email is registered. For enumeration protection, explicitly set `autoSignIn: false` and configure email verification with a sender or `onExistingUserSignUp` to notify the email owner. Existing explicit overrides remain effective; no configuration migration is performed. The authentication plugin warns at startup about registration with auto sign-in disabled and neither verification nor an existing-user notification.
+
+The registration page treats `usePasswordRegistration().isSuccess` as request acceptance only. A refreshed session navigates signed-in users into the application. Visitors who remain signed out see neutral sign-in and recovery guidance, without an account-creation or email-delivery promise. Applications customizing this page must keep that distinction.

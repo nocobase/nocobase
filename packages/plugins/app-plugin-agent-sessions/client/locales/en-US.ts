@@ -162,7 +162,7 @@ const enUS = {
     usage: 'Usage',
     contextLabel: 'Context',
     context: 'Context {{used}} of {{size}} tokens',
-    cost: 'Cost so far: {{cost}}',
+    costLabel: 'Cost',
     tokens: { input: 'Input', cached: 'Cached', output: 'Output' },
     record: 'Record',
     recordBody: 'The full record is kept here, and only you can see it.',
