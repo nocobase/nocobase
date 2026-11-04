@@ -153,8 +153,8 @@ const systemEnUS = {
   'status.routeFailedDescription':
     'Route {{label}} from {{packageName}} could not be loaded.',
   shell: {
-    buildFreely: 'AI builds freely.',
-    reliability: '<brand>NocoBase</brand> keeps it reliable.',
+    brandPartnership: 'AI + <brand>NocoBase</brand>',
+    buildReliableSystems: 'Build reliable business systems',
   },
   appearance: {
     title: 'Theme',

@@ -142,8 +142,8 @@ const systemZhCN: SystemResource = {
   'status.routeFailedDescription':
     '无法加载 {{packageName}} 的路由 {{label}}。',
   shell: {
-    buildFreely: 'AI 自由构建',
-    reliability: '<brand>NocoBase</brand> 保障可靠',
+    brandPartnership: 'AI + <brand>NocoBase</brand>',
+    buildReliableSystems: 'Build reliable business systems',
   },
   appearance: {
     title: '主题',
