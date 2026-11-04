@@ -161,7 +161,7 @@ const zhTW: LocaleResource<typeof enUS> = {
     usage: '用法',
     contextLabel: '上下文',
     context: '{{size}} 代幣的上下文 {{used}}',
-    cost: '到目前為止的成本：{{cost}}',
+    costLabel: '費用',
     tokens: {
       input: '輸入',
       cached: '已快取',

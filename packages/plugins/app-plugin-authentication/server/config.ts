@@ -151,6 +151,14 @@ export const validateAuthConfig: ConfigValidator<AuthConfig> = (
       context.error(`emailAndPassword.${field}`, 'must be true or false.');
     }
   }
+  const registrationWarning = registrationFeedbackWarning(auth);
+  if (registrationWarning) {
+    context.warning(
+      'emailAndPassword.autoSignIn',
+      registrationWarning.message,
+      { fix: registrationWarning.fix },
+    );
+  }
   if (
     emailAndPassword.enabled === false &&
     emailAndPassword.disableSignUp === false &&
@@ -162,6 +170,26 @@ export const validateAuthConfig: ConfigValidator<AuthConfig> = (
     );
   }
 };
+
+/** Shared by configuration checks and startup logging, which does not emit configuration warnings. */
+export function registrationFeedbackWarning(
+  auth: AuthConfig,
+): { readonly message: string; readonly fix: string } | undefined {
+  const options = auth.emailAndPassword;
+  if (
+    options?.enabled === false ||
+    options?.disableSignUp === true ||
+    options?.autoSignIn !== false ||
+    options.requireEmailVerification ||
+    options.onExistingUserSignUp
+  )
+    return undefined;
+  return {
+    message:
+      'Sign-up can return an accepted response for an existing email without creating an account or signing in. Without email verification or an existing-user notification, users receive no account-specific guidance.',
+    fix: 'In server/config/auth.ts or config.yml, set auth.emailAndPassword.autoSignIn to true, enable requireEmailVerification with a verification email sender, or configure onExistingUserSignUp to notify the email owner. Keep unsigned-in responses neutral.',
+  };
+}
 
 /**
  * Declares the `auth` section with this plugin's validation and public fields, in place of `defineAppConfig`.

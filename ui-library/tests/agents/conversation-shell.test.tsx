@@ -114,7 +114,10 @@ it.each(['panel', 'page'] as const)(
 );
 it('renders generic links without application registrations and unlinks through their existing contract', () => {
   render(<ConversationAssociations conversationId='c' />, { wrapper });
-  expect(screen.getByRole('link')).toHaveTextContent('W-1 Generic work');
+  // The title has the first line to itself; the key and the status share the second.
+  expect(
+    screen.getByRole('link', { name: 'W-1 Generic work' }),
+  ).toHaveTextContent('Generic workW-1Ready');
   expect(screen.getByText('Ready')).toBeVisible();
   fireEvent.click(screen.getByRole('button', { name: enUS.chat.unlink }));
   expect(state.remove).toHaveBeenCalledWith(state.links[0]);
@@ -156,5 +159,8 @@ it('keeps the default rows under a slot label without a renderer', () => {
     { wrapper },
   );
   expect(screen.getByRole('heading', { name: /Documents/ })).toBeVisible();
-  expect(screen.getByRole('link')).toHaveTextContent('W-1 Generic work');
+  // The title has the first line to itself; the key and the status share the second.
+  expect(
+    screen.getByRole('link', { name: 'W-1 Generic work' }),
+  ).toHaveTextContent('Generic workW-1Ready');
 });

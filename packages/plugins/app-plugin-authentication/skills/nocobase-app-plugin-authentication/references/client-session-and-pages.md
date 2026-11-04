@@ -149,7 +149,7 @@ await submit({ identifier, password });
 
 - `usePasswordLogin` routes an identifier containing `@` to email sign-in and
   anything else to username sign-in, then refreshes the session.
-- `usePasswordRegistration` takes `{ name, email, username, password }`.
+- `usePasswordRegistration` takes `{ name, email, username, password }` and exposes `isSuccess` after the request is accepted and the session refresh completes. This confirms neither account creation nor email delivery. Use the refreshed session for signed-in navigation. When still signed out, show neutral sign-in/recovery guidance: Better Auth may simulate success for an existing email. Never infer creation from a user object or `token: null`.
 - `usePasswordResetRequest` takes `{ email }` and exposes `isSuccess`; it
   sends the user back to the application's `/reset-password` route.
 - `usePasswordReset` takes `{ token, password }` and exposes `isSuccess`; show a success status and stop offering another submission when it is true.
@@ -179,3 +179,9 @@ was called with. The template's own client tests show both patterns.
 Reset requests always use an account-independent limit of three per minute per client. The production authentication route passes the host's real connection peer to `Auth.handler`; headers alone cannot identify a client. Forwarded addresses are considered only through explicitly configured `auth.advanced.ipAddress.trustedProxies` and `ipAddressHeaders`, with the actual peer anchoring the chain. Without trusted connection metadata, including direct server API calls, requests share a conservative bucket. A custom HTTP mount forwards `{ clientAddress: getClientAddress(context) }` to `Auth.handler`, using `getClientAddress` from `@nocobase/app-server/router` rather than reading forwarding headers itself.
 
 Automatic recovery requires `app.publicOrigin` (or `APP_PUBLIC_ORIGIN`) to be configured so credential links cannot be derived from a client-controlled `Host`. A direct `Auth` consumer supplies a static HTTP(S) `baseURL` without credentials, query or fragment, or Better Auth's explicitly restricted `baseURL.allowedHosts`. Existing custom senders retain their prior configuration behavior and remain responsible for their own link policy.
+
+### Registration feedback and defaults
+
+Both application templates default to `emailAndPassword.autoSignIn: true`: a new account signs in immediately, and an existing email returns an explicit error. This exposes whether an email is registered, as in Better Auth’s default flow. Applications requiring email enumeration protection can explicitly keep `autoSignIn: false` and configure email verification with `emailVerification.sendVerificationEmail`, or `emailAndPassword.onExistingUserSignUp` to notify the email owner. Existing explicit configuration overrides the template default and is never migrated automatically. `defineAuthConfig` warns at startup when password registration is allowed with automatic sign-in off and neither verification nor an existing-user callback.
+
+Unsigned-in registration responses need neutral feedback and a sign-in or recovery link. Show verification instructions only for an actual configured flow, and promise an email only when the application can confirm it was sent. The templates do not publish verification or notification settings and therefore make no email-delivery promise.

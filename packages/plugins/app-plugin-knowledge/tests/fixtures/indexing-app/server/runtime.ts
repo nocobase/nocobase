@@ -45,7 +45,7 @@ export function createIndexingAppRuntime(
         defaults: {
           secret: 'knowledge-indexing-test-secret-32-characters',
           trustedOrigins: ['http://localhost'],
-          emailAndPassword: { enabled: true, autoSignIn: false },
+          emailAndPassword: { enabled: true, autoSignIn: true },
         },
       }),
       logging: defineAppConfig({

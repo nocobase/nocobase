@@ -1,14 +1,13 @@
 /**
  * The viewer's conversations, newest message first, grouped by day, for the chat workspace: search, All / Needs me /
  * In progress with counts, unread dots, what waits for the viewer, and archive (hover or E) with Archived at the foot.
- * An application adds what only it knows through narrow slots: `row.extra` (a line under the agent and runtime),
+ * An application adds what only it knows through narrow slots: `row.extra` (a line under the title),
  * `row.facts` (what else makes a row need the viewer or count as in progress), `row.status` (a status in place of the
  * default one), `filters` with `filter` (more filters, such as a project), and `heading` (such as a switch between
  * kinds of sessions).
  */
 import {
   chatIsRunning,
-  useAgentText,
   useConversationActions,
   useConversationList,
 } from '@nocobase/app-plugin-agents/client/chat';
@@ -77,7 +76,7 @@ function shortTime(at: string, locale: string): string {
 
 /** What an application adds to a row. */
 export interface ConversationRowSlots {
-  /** A line under the agent and runtime, such as the work the conversation drives. */
+  /** A line under the title, such as the work the conversation drives. */
   readonly extra?:
     ((conversation: ConversationSummary) => ReactNode) | undefined;
   /** What else makes the row need the viewer, or count as in progress. */
@@ -390,7 +389,6 @@ function ConversationRow({
   readonly onArchive: () => void;
 }): ReactElement {
   const { t } = useChatTranslation();
-  const agentText = useAgentText();
   const restoring = conversation.archivedAt !== null;
   const [deleting, setDeleting] = useState(false);
   const onKeyDown = (event: KeyboardEvent): void => {
@@ -403,10 +401,6 @@ function ConversationRow({
     )
       onArchive();
   };
-  const where = [
-    agentText.name(conversation.agent),
-    conversation.runner?.name ?? null,
-  ].filter(Boolean);
   const extra = slots?.extra?.(conversation);
   const custom = slots?.status?.(conversation);
   const status =
@@ -447,11 +441,6 @@ function ConversationRow({
           {shortTime(conversation.lastMessageAt, locale)}
         </span>
       </div>
-      {where.length > 0 && (
-        <p className='truncate text-xs text-muted-foreground'>
-          {where.join(' · ')}
-        </p>
-      )}
       {extra != null || status != null ? (
         <div className='flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground'>
           {extra}

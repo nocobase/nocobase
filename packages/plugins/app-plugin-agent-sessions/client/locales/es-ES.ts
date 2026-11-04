@@ -177,7 +177,7 @@ const esES: LocaleResource<typeof enUS> = {
     usage: 'Uso',
     contextLabel: 'Contexto',
     context: 'Contexto {{used}} de tokens {{size}}',
-    cost: 'Costo hasta el momento: {{cost}}',
+    costLabel: 'Costo',
     tokens: {
       input: 'Entrada',
       cached: 'En caché',

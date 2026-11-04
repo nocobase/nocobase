@@ -765,24 +765,24 @@ describe('runtimes page', () => {
     await userEvent.click(next);
     await within(table).findByRole('alert');
     expect(
-      within(table).getByText('first-0', { selector: 'td.max-w-44' }),
+      within(table).getByText('first-0', { selector: 'td:first-child' }),
     ).toBeInTheDocument();
     fail = false;
     await userEvent.click(next);
-    await within(table).findByText('second-0', { selector: 'td.max-w-44' });
+    await within(table).findByText('second-0', { selector: 'td:first-child' });
     expect(within(table).queryByText('first-0')).toBeNull();
     expect(within(table).getAllByRole('row')).toHaveLength(21);
     expect(
       within(table).getByText('runtimes.detail.runsPage(page=2,pageCount=3)'),
     ).toBeInTheDocument();
     await userEvent.click(previous);
-    await within(table).findByText('first-0', { selector: 'td.max-w-44' });
+    await within(table).findByText('first-0', { selector: 'td:first-child' });
     const before = callsTo('GET', 'agents/runners/r1/runs').length;
     await userEvent.click(next);
-    await within(table).findByText('second-0', { selector: 'td.max-w-44' });
+    await within(table).findByText('second-0', { selector: 'td:first-child' });
     expect(callsTo('GET', 'agents/runners/r1/runs')).toHaveLength(before);
     await userEvent.click(next);
-    await within(table).findByText('last-run', { selector: 'td.max-w-44' });
+    await within(table).findByText('last-run', { selector: 'td:first-child' });
     expect(within(table).getAllByRole('row')).toHaveLength(2);
     expect(next).toBeDisabled();
     expect(

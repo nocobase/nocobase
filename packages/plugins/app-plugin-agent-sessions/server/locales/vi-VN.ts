@@ -34,7 +34,7 @@ const viVN: LocaleResource<typeof enUS> = {
       'Máy tính không trả lời kịp thời. Kiểm tra xem kết nối của nó có đang chạy không, sau đó thử lại.',
     folderUnavailable: 'Không thể mở được thư mục trên máy tính.',
     discoveryFailed:
-      'Không thể tải cài đặt tác nhân. Hãy kiểm tra tác nhân trên máy tính này và thử lại.',
+      'Không thể tải cài đặt tác nhân. Hãy cập nhật dòng lệnh trên máy tính này và khởi động lại kết nối nền, rồi thử lại.',
     projectNotFound: 'Không có dự án nào như vậy hoặc bạn không thể xem được.',
     referenceNotFound:
       'Nội dung được đề cập không tồn tại hoặc bạn không thể nhìn thấy nó.',

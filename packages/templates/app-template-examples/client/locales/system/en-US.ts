@@ -88,6 +88,9 @@ const systemEnUS = {
   'auth.loginDescription': 'Sign in with your username or email and password.',
   'auth.registerTitle': 'Create an account',
   'auth.registerDescription': 'Create an account to get started.',
+  'auth.registrationAccepted': 'Registration request submitted',
+  'auth.registrationGuidance':
+    'Try signing in with the username and password you submitted. If this email already has an account, the new details will not take effect. Sign in with your original account or recover your password. Follow any verification instructions provided by the application before signing in.',
   'auth.forgotTitle': 'Forgot password',
   'auth.forgotDescription':
     'Enter your email and we will send a reset link if the account exists.',
@@ -130,9 +133,8 @@ const systemEnUS = {
   'auth.continueWith': 'Continue with {provider}',
   'auth.about': 'About this application',
   'auth.platform': 'AI-native application platform',
-  'auth.marketingTitleFirst': 'Let AI build freely.',
-  'auth.marketingTitleSecond': 'NocoBase keeps it',
-  'auth.marketingTitleThird': 'reliable.',
+  'auth.marketingTitleFirst': 'AI + NocoBase',
+  'auth.marketingTitleSecond': 'Build reliable business systems',
   'auth.marketingDescription':
     'Give AI a flexible frontend framework to shape each experience, while NocoBase secures the data, permissions and governance underneath.',
   'auth.frontend': 'AI-native frontend',
@@ -153,8 +155,8 @@ const systemEnUS = {
   'status.routeFailedDescription':
     'Route {{label}} from {{packageName}} could not be loaded.',
   shell: {
-    buildFreely: 'AI builds freely.',
-    reliability: '<brand>NocoBase</brand> keeps it reliable.',
+    brandPartnership: 'AI + <brand>NocoBase</brand>',
+    buildReliableSystems: 'Build reliable business systems',
   },
   appearance: {
     title: 'Theme',

@@ -89,15 +89,15 @@ describe('application shell', () => {
     expect(
       screen.queryByRole('link', { name: 'Settings' }),
     ).not.toBeInTheDocument();
-    expect(screen.getByText('AI builds freely.')).toBeVisible();
+    expect(screen.getByText('Build reliable business systems')).toBeVisible();
     expect(screen.getByRole('link', { name: 'NocoBase' })).toHaveAttribute(
       'href',
       'https://www.nocobase.com',
     );
     expect(
       screen.getByText('NocoBase', { selector: 'a' }).parentElement,
-    ).toHaveTextContent('NocoBase keeps it reliable.');
-    expect(screen.getByText('Default Template')).toHaveClass('truncate');
+    ).toHaveTextContent('AI + NocoBase');
+    expect(screen.queryByText('Default Template')).not.toBeInTheDocument();
     expect(screen.getByText('v0.0.0')).toHaveClass('truncate');
     // shadcn's edge rail, with a translated label in place of its built-in one.
     expect(
@@ -201,13 +201,25 @@ describe('application shell', () => {
     expect(
       await screen.findByRole('button', { name: 'Expand navigation' }),
     ).toHaveAttribute('aria-pressed', 'true');
-    // The footer keeps only its shield; focusing it shows the slogan, name and version.
+    // The footer keeps only its shield; focusing it shows the slogan and version.
     const footerIcon = screen.getByRole('img', {
-      name: 'AI builds freely. NocoBase keeps it reliable. Default Template v0.0.0',
+      name: 'AI + NocoBase Build reliable business systems v0.0.0',
     });
     act(() => footerIcon.focus());
     expect(
-      await screen.findByText('Default Template v0.0.0', {
+      await screen.findByText('v0.0.0', {
+        selector: '[data-slot="tooltip-content"] span',
+      }),
+    ).toBeVisible();
+
+    expect(screen.queryByText(/Default Template/)).not.toBeInTheDocument();
+    expect(
+      screen.getByText('AI + NocoBase', {
+        selector: '[data-slot="tooltip-content"] span',
+      }),
+    ).toBeVisible();
+    expect(
+      screen.getByText('Build reliable business systems', {
         selector: '[data-slot="tooltip-content"] span',
       }),
     ).toBeVisible();
@@ -223,7 +235,7 @@ describe('application shell', () => {
       ),
     );
     expect(
-      screen.queryByRole('img', { name: /Default Template/ }),
+      screen.queryByRole('img', { name: /AI \+ NocoBase/ }),
     ).not.toBeInTheDocument();
   });
 
