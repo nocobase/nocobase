@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { resolveAppRuntime } from '@nocobase/app-client/runtime';
 import { defineAppRuntime } from '@nocobase/app-client/runtime';
 import appRuntime from '../../client/runtime.js';
+import { createApplicationRoutes } from '../../client/routes.js';
 import cliPlugins from '../../cli/plugins.js';
 import serverPlugins from '../../server/plugins.js';
 import settingsRoutes from '../../client/pages/settings/routes.js';
@@ -45,7 +46,7 @@ describe('default Foundation integration', () => {
     const runtime = await resolveAppRuntime(
       defineAppRuntime({
         ...appRuntime,
-        routes: [...appRuntime.routes, settingsRoutes],
+        routes: () => [...createApplicationRoutes(), settingsRoutes],
       }),
     );
     const menu = buildRouteNavigation(runtime.routes, new Set());
