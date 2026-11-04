@@ -8,12 +8,13 @@
  */
 
 import { Form } from 'antd';
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { clearCache } from 'ahooks';
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const holder = vi.hoisted(() => ({
-  ctx: null as any,
+  ctx: null as unknown,
 }));
 
 vi.mock('@nocobase/flow-engine', async (importOriginal) => {
@@ -48,6 +49,49 @@ function renderForm(initialValues: Record<string, unknown>) {
 describe('MessageConfigForm', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    clearCache();
+  });
+
+  it('can search and select a channel beyond the default first page', async () => {
+    const channels = Array.from({ length: 21 }, (_, index) => ({
+      name: `channel-${index + 1}`,
+      title: `Channel ${index + 1}`,
+      notificationType: 'in-app-message',
+    }));
+    const list = vi.fn().mockImplementation(async (params?: { paginate?: boolean }) => ({
+      data: {
+        data: params?.paginate === false ? channels : channels.slice(0, 20),
+      },
+    }));
+    const request = vi.fn();
+    const loader = () => Promise.resolve({ default: Body });
+
+    holder.ctx = {
+      api: {
+        resource: () => ({ list }),
+        request,
+      },
+      app: {
+        pm: {
+          get: () => ({
+            channelTypes: {
+              get: (type: string) =>
+                type === 'in-app-message' ? { components: { MessageConfigFormLoader: loader } } : undefined,
+            },
+          }),
+        },
+      },
+    };
+
+    renderForm({});
+
+    const select = screen.getByRole('combobox');
+    fireEvent.mouseDown(select);
+    fireEvent.change(select, { target: { value: 'Channel 21' } });
+    fireEvent.click(await screen.findByText('Channel 21'));
+
+    expect(await screen.findByText('Loaded message config')).toBeInTheDocument();
+    expect(request).not.toHaveBeenCalled();
   });
 
   it('renders the registered message body directly from the channel list metadata', async () => {

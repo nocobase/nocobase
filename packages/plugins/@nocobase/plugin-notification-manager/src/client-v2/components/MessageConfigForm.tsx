@@ -116,7 +116,7 @@ export function MessageConfigForm({ variableOptions, namePrefix }: MessageConfig
       >
         <RemoteSelect<ChannelOption>
           request={async () => {
-            const response = await ctx.api.resource(COLLECTION_NAME.channels).list();
+            const response = await ctx.api.resource(COLLECTION_NAME.channels).list({ paginate: false });
             const payload = (response as ResourceResponse<ChannelOption[]>)?.data?.data;
             return Array.isArray(payload) ? payload : [];
           }}
