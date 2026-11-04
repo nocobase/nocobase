@@ -178,7 +178,7 @@ const frFR: LocaleResource<typeof enUS> = {
     usage: 'Utilisation',
     contextLabel: 'Contexte',
     context: 'Contexte {{used}} des jetons {{size}}',
-    cost: "Coût jusqu'à présent : {{cost}}",
+    costLabel: 'Coût',
     tokens: {
       input: 'Entrée',
       cached: 'En cache',

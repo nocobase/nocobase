@@ -173,7 +173,7 @@ const jaJP: LocaleResource<typeof enUS> = {
     usage: '使い方',
     contextLabel: 'コンテキスト',
     context: '{{size}} トークンのコンテキスト {{used}}',
-    cost: 'これまでのコスト: {{cost}}',
+    costLabel: 'コスト',
     tokens: {
       input: '入力',
       cached: 'キャッシュ済み',

@@ -172,7 +172,7 @@ const deDE: LocaleResource<typeof enUS> = {
     usage: 'Verwendung',
     contextLabel: 'Kontext',
     context: 'Kontext {{used}} von {{size}}-Tokens',
-    cost: 'Bisherige Kosten: {{cost}}',
+    costLabel: 'Kosten',
     tokens: {
       input: 'Eingabe',
       cached: 'Zwischengespeichert',

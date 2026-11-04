@@ -1134,9 +1134,10 @@ function Details({
       </DetailSection>
       {(context || used) && (
         <DetailSection title={t('session.usage')}>
+          {/* The same usage as a Runner conversation's details: the window with a thin bar, then a row per count. */}
           {context && context.size > 0 && (
-            <>
-              <div className='flex justify-between text-xs'>
+            <div className='flex flex-col gap-1'>
+              <div className='flex items-baseline justify-between gap-2 text-xs'>
                 <span className='text-muted-foreground'>
                   {t('session.contextLabel')}
                 </span>
@@ -1146,48 +1147,56 @@ function Details({
                   {percent(context.used, context.size)}%
                 </span>
               </div>
-              <div className='bg-muted h-2 overflow-hidden rounded-full border'>
-                <div
-                  className='bg-primary h-full'
+              <span
+                className='bg-muted h-1.5 overflow-hidden rounded-full'
+                role='progressbar'
+                aria-label={t('session.contextLabel')}
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={Number(percent(context.used, context.size))}
+              >
+                <span
+                  className='bg-primary block h-full'
                   style={{
                     width: `${Math.min(100, (context.used / context.size) * 100)}%`,
                   }}
                 />
-              </div>
-            </>
-          )}
-          {used && (
-            <div className='grid grid-cols-3 gap-2'>
-              {(
-                [
-                  ['input', used.input],
-                  ['cached', used.cached],
-                  ['output', used.output],
-                ] as const
-              ).map(([name, count]) => (
-                <div
-                  key={name}
-                  className='bg-card rounded-md border px-2.5 py-2'
-                >
-                  <div className='text-muted-foreground text-[11px]'>
-                    {t(`session.tokens.${name}`)}
-                  </div>
-                  <div className='text-xs font-semibold tabular-nums'>
-                    {tokens(count, i18n.language)}
-                  </div>
-                </div>
-              ))}
+              </span>
             </div>
           )}
-          {context?.cost && (
-            <p className='text-muted-foreground text-xs'>
-              {t('session.cost', {
-                cost: new Intl.NumberFormat(i18n.language, {
-                  style: 'currency',
-                  currency: context.cost.currency,
-                }).format(context.cost.amount),
-              })}
-            </p>
+          {(used || context?.cost) && (
+            <dl className='grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-xs'>
+              {used &&
+                (
+                  [
+                    ['input', used.input],
+                    ['cached', used.cached],
+                    ['output', used.output],
+                  ] as const
+                ).map(([name, count]) => (
+                  <div key={name} className='contents'>
+                    <dt className='text-muted-foreground'>
+                      {t(`session.tokens.${name}`)}
+                    </dt>
+                    <dd className='text-right tabular-nums'>
+                      {new Intl.NumberFormat(i18n.language).format(count)}
+                    </dd>
+                  </div>
+                ))}
+              {context?.cost && (
+                <div className='contents'>
+                  <dt className='text-muted-foreground'>
+                    {t('session.costLabel')}
+                  </dt>
+                  <dd className='text-right tabular-nums'>
+                    {new Intl.NumberFormat(i18n.language, {
+                      style: 'currency',
+                      currency: context.cost.currency,
+                    }).format(context.cost.amount)}
+                  </dd>
+                </div>
+              )}
+            </dl>
           )}
         </DetailSection>
       )}

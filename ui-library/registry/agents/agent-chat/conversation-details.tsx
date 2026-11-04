@@ -49,7 +49,9 @@ export function ConversationDetails({
         onOpen={onOpen}
       />
       <section className='flex flex-col gap-2.5 border-b px-5 py-4'>
-        <h3 className='text-sm font-semibold'>{t('chat.sessionDetails')}</h3>
+        <h3 className='flex items-center gap-1.5 text-sm font-semibold'>
+          {t('chat.sessionDetails')}
+        </h3>
         <dl className='grid grid-cols-[max-content_minmax(0,1fr)] gap-x-3 gap-y-2 text-xs [&>dd]:min-w-0 [&>dd]:break-words [&>dt]:whitespace-nowrap'>
           {conversation.mode !== 'online' && conversation.runner?.name ? (
             <>
@@ -71,7 +73,9 @@ export function ConversationDetails({
       </section>
       {usage.data && (usage.data.runs > 0 || usage.data.context) && (
         <section className='flex flex-col gap-2.5 border-b px-5 py-4'>
-          <h3 className='text-sm font-semibold'>{t('chat.usageTitle')}</h3>
+          <h3 className='flex items-center gap-1.5 text-sm font-semibold'>
+            {t('chat.usageTitle')}
+          </h3>
           <UsageSection usage={usage.data} />
         </section>
       )}
@@ -142,7 +146,9 @@ function DetailsSheet({
           data-placement='pane'
         >
           <PaneSheetHeader className='shrink-0 border-b px-5 py-3 pr-14'>
-            <PaneSheetTitle>{title}</PaneSheetTitle>
+            <PaneSheetTitle className='text-[15px] font-semibold'>
+              {title}
+            </PaneSheetTitle>
           </PaneSheetHeader>
           {children}
         </PaneSheetContent>
