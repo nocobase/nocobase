@@ -1,5 +1,11 @@
 # @nocobase/app-client
 
+## 4.0.0-beta.7
+
+### Minor Changes
+
+- 6cc8acf: Show the last two non-whitespace characters of CJK names in default text avatars, with a shared avatar initials utility that preserves existing Latin and email fallback rules.
+
 ## 4.0.0-beta.6
 
 ### Patch Changes

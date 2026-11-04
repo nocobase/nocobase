@@ -1,5 +1,67 @@
 # @nocobase/app-template-examples
 
+## 1.0.0-beta.71
+
+### Patch Changes
+
+- 6cc8acf: Show the last two non-whitespace characters of CJK names in default text avatars, with a shared avatar initials utility that preserves existing Latin and email fallback rules.
+- c36beac: Move theme settings into the account menu in both application templates, preserving color modes, theme presets, and saved preferences.
+- 99de914: Persist App Foundation snapshots and refresh them through background Jobs on first use, manual refresh or a changed running kernel version. Retain historical results and independent record-count timestamps across restarts, and show compact statistics with explicit pending and partial states. Replace GET refresh/count flags with protected POST actions and active-scan status polling.
+- cf23bfe: **Breaking:** Remove the deprecated `@nocobase/app-server/mailer` entry and its `Mailer`, `mailerToken`, `createMailer`, `MailerProvider`, and notification configuration exports. Replace `MailExecutions.close(waitMs)` and `drain()` with `stop()` and `wait()`; transport `close()` now cancels supported network work and waits for its original completion without a nested timeout. Application owners must apply the outer shutdown budget. Create exclusive senders with `@nocobase/app-server/mailers` and declare notification config with `@nocobase/app-plugin-notification-providers/config`. Existing inline SMTP/Resend YAML, environment mappings, and provider/channel APIs remain supported.
+
+  Default and Examples now show `mailers.default: system` and explicitly map `MAILERS_SYSTEM_*`; the example configuration remains empty at runtime. The previous `MAILERS_TRANSACTIONAL_*` sample prefix was not published. Applications may still choose any valid mailer name and custom environment prefix.
+
+- 4411984: Configure named application mailers once for password reset, user invitations and email notifications. App-server validates `mailers`, adds explicit environment mappings and a private startup snapshot, and registers a `MailSenderFactory` from which Authentication, Users and each email notification channel create their own exclusive sender and close it after stopping their own work, so closing one never affects another. Legacy inline senders, channel selection and standalone Auth, Provider factories and hand-composed hosts keep working without new arguments. New applications can send reset and invitation emails without installing Notification. Restart after changing email configuration; configuration reload does not hot-switch active senders.
+- Updated dependencies [6cc8acf]
+- Updated dependencies [1f0b3ba]
+- Updated dependencies [5934070]
+- Updated dependencies [4411984]
+- Updated dependencies [9933a9a]
+- Updated dependencies [be17408]
+- Updated dependencies [1e018f1]
+- Updated dependencies [99de914]
+- Updated dependencies [cf23bfe]
+- Updated dependencies [139e754]
+- Updated dependencies [4411984]
+  - @nocobase/app-plugin-mail@1.0.0-beta.21
+  - @nocobase/app-plugin-agents@2.0.0-beta.3
+  - @nocobase/caching@1.0.0-beta.4
+  - @nocobase/app-plugin-users@2.0.0-beta.14
+  - @nocobase/app-plugin-authentication@2.0.0-beta.18
+  - @nocobase/app-plugin-knowledge@0.1.0-beta.17
+  - @nocobase/app-plugin-foundation@0.1.0-beta.13
+  - @nocobase/db@1.0.0-beta.25
+  - @nocobase/app-server@5.0.0-beta.0
+  - @nocobase/app-cli@1.0.0-beta.32
+  - @nocobase/app-plugin-api-keys@1.0.0-beta.21
+  - @nocobase/app-plugin-authorization@1.0.0-beta.35
+  - @nocobase/app-plugin-authorization-example@1.0.0-beta.22
+  - @nocobase/app-plugin-database-example@0.1.0-beta.11
+  - @nocobase/app-plugin-file-example@1.0.0-beta.25
+  - @nocobase/app-plugin-jobs-example@1.0.0-beta.11
+  - @nocobase/app-plugin-lifecycle-example@0.1.0-beta.16
+  - @nocobase/app-plugin-mail-example@1.0.0-beta.11
+  - @nocobase/app-plugin-notification-example@1.0.0-beta.13
+  - @nocobase/app-plugin-office-flows-example@0.1.0-beta.11
+  - @nocobase/app-plugin-queue-example@1.0.0-beta.15
+  - @nocobase/app-plugin-realtime-example@0.1.0-beta.14
+  - @nocobase/app-plugin-repository-example@2.0.0-beta.7
+  - @nocobase/app-plugin-routes-example@1.0.0-beta.24
+  - @nocobase/app-plugin-service-provider-example@1.0.0-beta.11
+  - @nocobase/app-plugin-skills-example@1.0.0-beta.10
+  - @nocobase/app-plugin-template-print-example@1.0.0-beta.10
+  - @nocobase/app-plugin-authz-default-access@1.0.0-beta.19
+  - @nocobase/app-plugin-authz-restriction-rules@1.0.0-beta.17
+  - @nocobase/app-plugin-authz-sharing-rules@1.0.0-beta.18
+  - @nocobase/app-plugin-concurrency@0.1.0-beta.2
+  - @nocobase/app-plugin-database-explorer@1.0.0-beta.19
+  - @nocobase/app-plugin-file@1.0.0-beta.29
+  - @nocobase/app-plugin-i18n@1.0.0-beta.20
+  - @nocobase/app-plugin-notification@2.0.0-beta.4
+  - @nocobase/app-plugin-notification-in-app@2.0.0-beta.2
+  - @nocobase/app-plugin-notification-providers@1.0.0-beta.18
+  - @nocobase/app-plugin-scheduler@1.0.0-beta.23
+
 ## 1.0.0-beta.70
 
 ### Minor Changes

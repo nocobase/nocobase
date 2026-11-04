@@ -1,5 +1,11 @@
 # @nocobase/db
 
+## 1.0.0-beta.25
+
+### Minor Changes
+
+- 1e018f1: Expose isUniqueConstraintViolation for shared cross-dialect duplicate-key recovery and stop classifying generic SQLite constraint failures as unique violations.
+
 ## 1.0.0-beta.24
 
 ### Minor Changes
