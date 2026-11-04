@@ -117,7 +117,7 @@ export class MainDataSource extends SequelizeDataSource {
       },
     });
     const collections = loadedCollections.filter(
-      (collection: Model) => !['db2cm', 'dbsync'].includes(collection.options?.from),
+      (collection: Model) => !['db2cm'].includes(collection.options?.from),
     );
     const loadedData = {};
     for (const collection of collections) {
