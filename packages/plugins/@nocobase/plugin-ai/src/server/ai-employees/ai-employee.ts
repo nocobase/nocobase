@@ -585,6 +585,7 @@ export class AIEmployee {
       }
     };
     let lastAIMessageId: string | undefined;
+    const pendingInterrupts: { id?: string; value?: InterruptPayload }[] = [];
 
     const reasoningState = new ReasoningStreamState();
     const stopReasoning = async (conversation: StreamConversation) => {
@@ -682,23 +683,7 @@ export class AIEmployee {
         } else if (mode === 'updates') {
           const interrupt = chunks?.__interrupt__?.[0];
           if (interrupt) {
-            const toolsMap = await this.getToolsMap();
-            await this.handleInterruptedToolCalls(
-              interrupt,
-              (sessionId) => aiMessageIdMap.get(sessionId),
-              async ({ messageId, interruptAction, toolCall, currentConversation }) => {
-                await this.protocol.with(currentConversation).toolCallStatus({
-                  toolCall: {
-                    messageId,
-                    id: toolCall.id,
-                    name: toolCall.name,
-                    willInterrupt: this.shouldInterruptToolCall(toolsMap.get(toolCall.name)),
-                  },
-                  invokeStatus: 'interrupted',
-                  interruptAction,
-                });
-              },
-            );
+            pendingInterrupts.push(interrupt);
           }
         } else if (mode === 'custom') {
           const { currentConversation } = chunks;
@@ -807,6 +792,30 @@ export class AIEmployee {
               })
               .knowledgeBaseReferences({ toolCallId, documents });
           }
+        }
+      }
+
+      // LangGraph emits interrupts before its asynchronous checkpoint writes finish. Wait for the stream to drain
+      // before allowing the frontend to resume, so it reads the checkpoint that contains the interrupted tool call.
+      if (!signal.aborted && pendingInterrupts.length) {
+        const toolsMap = await this.getToolsMap();
+        for (const interrupt of pendingInterrupts) {
+          await this.handleInterruptedToolCalls(
+            interrupt,
+            (sessionId) => aiMessageIdMap.get(sessionId),
+            async ({ messageId, interruptAction, toolCall, currentConversation }) => {
+              await this.protocol.with(currentConversation).toolCallStatus({
+                toolCall: {
+                  messageId,
+                  id: toolCall.id,
+                  name: toolCall.name,
+                  willInterrupt: this.shouldInterruptToolCall(toolsMap.get(toolCall.name)),
+                },
+                invokeStatus: 'interrupted',
+                interruptAction,
+              });
+            },
+          );
         }
       }
 
