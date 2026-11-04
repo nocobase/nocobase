@@ -3,6 +3,44 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const ptBR: LocaleResource<typeof enUS> = {
+  templates: {
+    title: 'Modelos de notificação',
+    coverage:
+      'Somente cenários registrados. Envios dinâmicos, funções personalizadas e modelos privados ficam fora deste catálogo. Definições e prévias são somente leitura.',
+    search: 'Pesquisar cenários',
+    category: 'Categoria',
+    channel: 'Canal',
+    all: 'Todos',
+    details: 'Ver detalhes',
+    close: 'Fechar detalhes',
+    trigger: 'Gatilho',
+    recipients: 'Regra de destinatários',
+    businessRule: 'Ativação do negócio',
+    contributor: 'Origem',
+    languagePolicy: 'Comportamento do idioma',
+    status: 'Configuração do canal',
+    statusHelp:
+      'Registrar uma definição não ativa notificações. A configuração não garante conectividade.',
+    configured: 'Configurado',
+    unconfigured: 'Não configurado',
+    enabled: 'Ativado',
+    disabled: 'Desativado',
+    unknown: 'Desconhecido',
+    variables: 'Variáveis disponíveis',
+    language: 'Idioma do conteúdo',
+    synthetic:
+      'Somente dados sintéticos. A prévia não envia notificações nem altera configurações.',
+    definition: 'Definição do modelo',
+    preview: 'Prévia sintética',
+    html: 'Código HTML (texto inerte)',
+    loading: 'Carregando…',
+    failed: 'Não foi possível carregar os modelos.',
+    forbidden: 'Você não tem permissão para ver os modelos.',
+    notFound: 'Este modelo não está mais registrado.',
+    retry: 'Tentar novamente',
+    empty: 'Nenhum cenário registrado.',
+    noResults: 'Nenhum cenário corresponde aos filtros.',
+  },
   logs: {
     deliveryOperations: 'Operações de entrega',
     recipeDescription:

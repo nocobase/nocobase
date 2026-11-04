@@ -4711,6 +4711,9 @@ importers:
 
   packages/plugins/app-plugin-notification:
     dependencies:
+      '@base-ui/react':
+        specifier: 'catalog:'
+        version: 1.7.0(@date-fns/tz@1.5.0)(@types/react@19.2.18)(date-fns@4.4.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@nocobase/app-client':
         specifier: workspace:^
         version: link:../../app/app-client
@@ -4741,6 +4744,12 @@ importers:
       '@sinclair/typebox':
         specifier: 'catalog:'
         version: 0.34.52
+      class-variance-authority:
+        specifier: 'catalog:'
+        version: 0.7.1
+      cn:
+        specifier: 'catalog:'
+        version: 0.4.0
       hono:
         specifier: 'catalog:'
         version: 4.13.2
@@ -4784,6 +4793,15 @@ importers:
       prettier:
         specifier: 'catalog:'
         version: 3.9.6
+      shadcn:
+        specifier: 'catalog:'
+        version: 4.18.0(@cfworker/json-schema@4.1.1)(typescript@6.0.3)
+      tailwindcss:
+        specifier: 'catalog:'
+        version: 4.3.3
+      tw-animate-css:
+        specifier: 'catalog:'
+        version: 1.4.0
       typescript:
         specifier: 'catalog:'
         version: 6.0.3

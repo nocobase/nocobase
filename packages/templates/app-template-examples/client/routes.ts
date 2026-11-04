@@ -1,3 +1,4 @@
+import notificationManagementRoutes from './pages/settings/notification-routes.js';
 import systemSettingsRoutes from './pages/settings/routes.js';
 import { knowledgeDefinition } from '@nocobase/app-plugin-knowledge/client/routes';
 import {
@@ -462,6 +463,7 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
 
 const routes: readonly AppClientRouteContribution[] = [
   appRoutes,
+  notificationManagementRoutes,
   defineAppRoutes(
     systemSettingsRoutes.routes.flatMap((group) =>
       (group.children ?? []).map((route) => ({

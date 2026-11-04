@@ -1,4 +1,6 @@
 const settings = {
+  notificationTemplates: '通知模板',
+  notificationManagement: '通知管理',
   listChanged: '列表已变化，请重试。',
   setup: {
     title: '功能前置配置',

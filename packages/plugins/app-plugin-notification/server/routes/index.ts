@@ -19,6 +19,7 @@ import {
 } from '../http-errors.js';
 import type { NotificationProviderApplicationConfig } from '../providers/notification.js';
 import { notificationRuntimeToken } from '../runtime.js';
+import { createTemplateRoutes } from './templates.js';
 
 type NotificationRoutesEnv = {
   Variables: AuthEnv['Variables'] & AuthorizationEnv['Variables'];
@@ -52,6 +53,7 @@ export const apiRoutes: AppApiRouteContribution<
   logs.route('/', notification.router);
 
   router.route('/notifications', logs);
+  router.route('/notifications', createTemplateRoutes(container));
   return router;
 });
 

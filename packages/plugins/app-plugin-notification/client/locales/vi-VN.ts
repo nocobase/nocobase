@@ -3,6 +3,44 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const viVN: LocaleResource<typeof enUS> = {
+  templates: {
+    title: 'Mẫu thông báo',
+    coverage:
+      'Chỉ hiển thị kịch bản đã đăng ký. Không bao gồm gửi động, hàm tùy chỉnh và mẫu thư riêng tư. Định nghĩa và xem trước chỉ để đọc.',
+    search: 'Tìm kịch bản',
+    category: 'Danh mục nghiệp vụ',
+    channel: 'Kênh',
+    all: 'Tất cả',
+    details: 'Xem chi tiết',
+    close: 'Đóng chi tiết',
+    trigger: 'Điều kiện kích hoạt',
+    recipients: 'Quy tắc người nhận',
+    businessRule: 'Kích hoạt nghiệp vụ',
+    contributor: 'Nguồn',
+    languagePolicy: 'Quy tắc ngôn ngữ',
+    status: 'Cấu hình kênh',
+    statusHelp:
+      'Đăng ký định nghĩa không có nghĩa là đã bật thông báo. Có cấu hình không đảm bảo kết nối.',
+    configured: 'Đã cấu hình',
+    unconfigured: 'Chưa cấu hình',
+    enabled: 'Đã bật',
+    disabled: 'Đã tắt',
+    unknown: 'Không rõ',
+    variables: 'Biến có sẵn',
+    language: 'Ngôn ngữ nội dung',
+    synthetic:
+      'Chỉ dùng dữ liệu mẫu tổng hợp. Xem trước không gửi thông báo hoặc thay đổi cấu hình.',
+    definition: 'Định nghĩa mẫu',
+    preview: 'Xem trước tổng hợp',
+    html: 'Mã HTML (văn bản không thực thi)',
+    loading: 'Đang tải…',
+    failed: 'Không thể tải mẫu.',
+    forbidden: 'Bạn không có quyền xem mẫu thông báo.',
+    notFound: 'Mẫu này không còn được đăng ký.',
+    retry: 'Thử lại',
+    empty: 'Chưa đăng ký kịch bản thông báo.',
+    noResults: 'Không có kịch bản phù hợp bộ lọc.',
+  },
   logs: {
     deliveryOperations: 'Hoạt động giao hàng',
     recipeDescription:
