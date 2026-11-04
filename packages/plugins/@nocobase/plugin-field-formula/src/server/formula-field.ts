@@ -25,6 +25,7 @@ const DataTypeMap = {
   decimal: DataTypes.DECIMAL,
   string: DataTypes.STRING,
   date: DataTypes.DATE(3),
+  dateOnly: DataTypes.DATEONLY,
 };
 
 export class FormulaField extends Field {
