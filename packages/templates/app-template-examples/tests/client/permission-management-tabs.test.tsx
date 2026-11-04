@@ -4,6 +4,8 @@ import { resolveAppClientContributions } from '@nocobase/app-client/plugins';
 import { act, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState, type ReactNode } from 'react';
+import { Breadcrumbs } from '../../client/components/breadcrumbs.js';
+import { useSettingsLeave } from '../../client/pages/settings/hooks.js';
 import { BodyPortal } from '../../client/components/body-portal.js';
 import { ClientRoute } from '../../client/routing/client-route.js';
 import { authorizationClientToken } from '@nocobase/app-plugin-authorization/client';
@@ -137,6 +139,7 @@ it('uses the agreed Chinese menu and tab names', async () => {
 
 function Draft() {
   const [value, setValue] = useState('');
+  const leave = useSettingsLeave(value !== '', false);
   return (
     <>
       <input
@@ -149,6 +152,7 @@ function Draft() {
           {value}
         </div>
       </BodyPortal>
+      {leave.dialog}
     </>
   );
 }
@@ -228,5 +232,55 @@ it.each([false, true])(
     await screen.findByRole('tab', { name: 'Roles and permissions' });
     expect(screen.getByRole('textbox', { name: 'Draft' })).toBe(draft);
     expect(draft).toHaveValue('Keep this unsaved value');
+  },
+);
+
+it.each(['tab', 'breadcrumb'])(
+  'protects an inline module draft when leaving by %s',
+  async (destination) => {
+    const user = userEvent.setup();
+    await renderAuthenticatedClient(
+      <Shell>
+        <Breadcrumbs />
+        <Routes>
+          <Route path='/roles' element={<DraftPage />} />
+          <Route
+            path='/default-access'
+            element={<Content tab='default-access' />}
+          />
+          <Route path='/settings' element={<h1>Settings destination</h1>} />
+        </Routes>
+      </Shell>,
+      { route: '/roles' },
+    );
+    const draft = await screen.findByRole('textbox', { name: 'Draft' });
+    await user.type(draft, 'Unsaved inline draft');
+    const target =
+      destination === 'tab'
+        ? await screen.findByRole('tab', { name: 'Default data scopes' })
+        : screen.getByRole('link', { name: 'System settings' });
+    await user.click(target);
+    expect(await screen.findByRole('alertdialog')).toBeVisible();
+    await user.click(
+      screen.getByRole('button', { name: 'Cancel', exact: true }),
+    );
+    expect(draft).toHaveValue('Unsaved inline draft');
+    await user.click(target);
+    await user.click(
+      await screen.findByRole('button', { name: 'Confirm', exact: true }),
+    );
+    if (destination === 'tab')
+      await waitFor(() =>
+        expect(screen.getByRole('status', { name: 'Route' })).toHaveTextContent(
+          '/default-access',
+        ),
+      );
+    else
+      expect(
+        await screen.findByRole('heading', { name: 'Settings destination' }),
+      ).toBeVisible();
+    expect(
+      screen.queryByRole('textbox', { name: 'Draft' }),
+    ).not.toBeInTheDocument();
   },
 );
