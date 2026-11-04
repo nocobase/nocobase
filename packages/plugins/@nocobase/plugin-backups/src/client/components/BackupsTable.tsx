@@ -7,11 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { LoadingOutlined } from '@ant-design/icons';
 import { DatePicker, useRequest, useAPIClient, useCurrentAppInfo } from '@nocobase/client';
 import type { TableColumnsType } from 'antd';
 import { App, Divider, message, Space, Table } from 'antd';
-import { saveAs } from 'file-saver';
-import React from 'react';
+import React, { useRef, useState } from 'react';
 import { NAMESPACE } from '../constants';
 import { useBackupsContext } from '../contexts';
 import { useT } from '../locale';
@@ -26,6 +26,8 @@ export interface BackupFile {
 
 export const BackupsTable = () => {
   const t = useT();
+  const downloadingRef = useRef(false);
+  const [downloading, setDownloading] = useState<string>();
   const api = useAPIClient();
   const currentAppInfo = useCurrentAppInfo();
   const { modal } = App.useApp();
@@ -51,6 +53,7 @@ export const BackupsTable = () => {
   };
 
   const handleDownload = async (fileData: BackupFile) => {
+    if (downloadingRef.current) return;
     const appName = currentAppInfo?.data?.['name'];
     const params: Record<string, string> = {
       filterByTk: fileData.name,
@@ -58,14 +61,30 @@ export const BackupsTable = () => {
     if (appName) {
       params.__appName = appName;
     }
-    const response = await api.request({
-      url: 'backups:download',
-      method: 'get',
-      params,
-      responseType: 'blob',
-    });
-    const blob = new Blob([response.data]);
-    saveAs(blob, fileData.name);
+    downloadingRef.current = true;
+    setDownloading(fileData.name);
+    try {
+      const response = await api.request<{ data: { token: string } }>({
+        url: 'backups:download',
+        method: 'post',
+        params,
+      });
+      const link = document.createElement('a');
+      link.href = api.axios.getUri({
+        url: 'backups:download',
+        params: { ...params, hash: response.data.data.token },
+      });
+      link.download = fileData.name;
+      link.rel = 'noreferrer';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch {
+      message.error(t('Download failed'));
+    } finally {
+      downloadingRef.current = false;
+      setDownloading(undefined);
+    }
   };
 
   const hideCellWhenInProgress = (data: BackupFile) => (data.inProgress ? { colSpan: 0 } : {});
@@ -111,11 +130,21 @@ export const BackupsTable = () => {
         <Space split={<Divider type="vertical" />}>
           <RestoreFromBackup backup={record} />
           <a
-            type="link"
+            role="button"
+            tabIndex={0}
+            aria-busy={downloading === record.name}
+            aria-disabled={!!downloading}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                handleDownload(record);
+              }
+            }}
             onClick={() => {
               handleDownload(record);
             }}
           >
+            {downloading === record.name && <LoadingOutlined style={{ marginRight: 4 }} aria-hidden />}
             {t('Download')}
           </a>
           <a onClick={() => handleDestory(record)}>{t('Delete')}</a>

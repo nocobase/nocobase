@@ -12,11 +12,11 @@ import { koaMulter as multer } from '@nocobase/utils';
 import fsPromises from 'fs/promises';
 import os from 'os';
 import { BackupManager, BackupSettings, BackupTaskResult } from '../managers/backup';
-import { BACKUP_EXTENSION, BACKUP_TASKS_CACHE_NAME, isQsTruly, RESTORE_TASKS_CACHE_NAME, SETTINGS } from '../utils';
+import { BACKUP_EXTENSION, BACKUP_TASKS_CACHE_NAME, RESTORE_TASKS_CACHE_NAME, SETTINGS } from '../utils';
 import { RestoreManager } from '../managers/restore';
 import { Cache } from '@nocobase/cache';
 import crypto from 'crypto';
-import { AppSupervisor } from '@nocobase/server';
+import { signDownloadToken } from '../download-token';
 
 async function setRestoreTaskError(statusCache: Cache, taskId: string, error: unknown) {
   await statusCache.set(taskId, {
@@ -117,9 +117,16 @@ export default {
       await next();
     },
     async download(ctx, next) {
+      ctx.set('Cache-Control', 'private, no-store');
+      const fileName = ctx.action.params.filterByTk;
+      ctx.assert(typeof fileName === 'string' && fileName.length > 0, 400);
+      if (ctx.method === 'POST') {
+        ctx.body = { token: signDownloadToken(ctx.app, fileName) };
+        return next();
+      }
+      ctx.assert(ctx.method === 'GET', 405);
       const backupSettings: BackupSettings = await ctx.db.getRepository(SETTINGS).findOne();
       const backupManager = new BackupManager(ctx.app, ctx, backupSettings);
-      const fileName = ctx.action.params.filterByTk;
       ctx.attachment(fileName);
       ctx.body = await backupManager.createReadStream(fileName);
       await next();

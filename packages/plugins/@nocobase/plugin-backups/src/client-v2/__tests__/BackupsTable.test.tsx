@@ -7,8 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { App } from 'antd';
+import axios from 'axios';
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { BackupsTable } from '../components/BackupsTable';
@@ -16,10 +17,11 @@ import { RefreshBackups } from '../components/RefreshBackups';
 import { BackupsContext, useBackupsContext } from '../contexts';
 
 const mocks = vi.hoisted(() => ({
-  appInfo: { name: 'main-app' },
+  appInfo: { name: 'main-app' } as { name?: string; data?: { name: string } },
   flowContext: {
     api: {
       request: vi.fn(),
+      axios: { getUri: (config: object) => axios.getUri({ baseURL: '/api/', ...config }) },
     },
   },
   destroy: vi.fn(),
@@ -29,7 +31,6 @@ const mocks = vi.hoisted(() => ({
   message: {
     success: vi.fn(),
   },
-  saveAs: vi.fn(),
 }));
 
 vi.mock('@nocobase/client-v2', () => ({
@@ -79,10 +80,6 @@ vi.mock('ahooks', () => ({
   }),
 }));
 
-vi.mock('file-saver', () => ({
-  saveAs: mocks.saveAs,
-}));
-
 vi.mock('../components/RestoreFromBackup', () => ({
   RestoreFromBackup: ({ backup }: { backup: { name: string } }) => <button type="button">Restore {backup.name}</button>,
 }));
@@ -93,7 +90,9 @@ function renderWithBackupsContext(value: React.ContextType<typeof BackupsContext
 
 describe('backup table and context components', () => {
   beforeEach(() => {
+    vi.restoreAllMocks();
     vi.clearAllMocks();
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
     mocks.flowContext.api.request.mockReset();
     mocks.destroy.mockReset();
     vi.spyOn(App, 'useApp').mockReturnValue({
@@ -133,7 +132,12 @@ describe('backup table and context components', () => {
   });
 
   it('downloads backups with the current app name', async () => {
-    mocks.flowContext.api.request.mockResolvedValue({ data: 'backup-content' });
+    let resolveToken: (value: { data: { data: { token: string } } }) => void;
+    mocks.flowContext.api.request.mockReturnValue(
+      new Promise((resolve) => {
+        resolveToken = resolve;
+      }),
+    );
     renderWithBackupsContext(
       {
         data: {
@@ -146,25 +150,35 @@ describe('backup table and context components', () => {
       <BackupsTable />,
     );
 
-    fireEvent.click(screen.getByText('Download'));
+    const download = screen.getByRole('button', { name: 'Download' });
+    expect(download.tagName).toBe('A');
+    fireEvent.keyDown(download, { key: 'Enter' });
+    expect(download).toHaveAttribute('aria-busy', 'true');
+    expect(download).toHaveAttribute('aria-disabled', 'true');
+    fireEvent.click(download);
+    expect(mocks.flowContext.api.request).toHaveBeenCalledOnce();
+    await act(async () => resolveToken({ data: { data: { token: 'download-token' } } }));
 
     await waitFor(() =>
       expect(mocks.flowContext.api.request).toHaveBeenCalledWith({
         url: 'backups:download',
-        method: 'get',
+        method: 'post',
         params: {
           filterByTk: 'backup.zip',
           __appName: 'main-app',
         },
-        responseType: 'blob',
       }),
     );
-    expect(mocks.saveAs).toHaveBeenCalledWith(expect.any(Blob), 'backup.zip');
+    await waitFor(() => expect(HTMLAnchorElement.prototype.click).toHaveBeenCalledOnce());
+    const link = vi.mocked(HTMLAnchorElement.prototype.click).mock.instances[0] as HTMLAnchorElement;
+    expect(link.href).toContain('hash=download-token');
+    expect(link.href).toContain('__appName=main-app');
+    expect(link.download).toBe('backup.zip');
   });
 
   it('downloads backups with nested current app info', async () => {
     mocks.appInfo = { data: { name: 'nested-app' } };
-    mocks.flowContext.api.request.mockResolvedValue({ data: 'backup-content' });
+    mocks.flowContext.api.request.mockResolvedValue({ data: { data: { token: 'download-token' } } });
     renderWithBackupsContext(
       {
         data: {
