@@ -5,7 +5,7 @@ import type {
 } from '@nocobase/app-client/plugins';
 import { useCan } from '@nocobase/app-plugin-authorization/client';
 import { NamespaceScope } from '@nocobase/i18n/client';
-import { type ReactElement, useEffect, useState } from 'react';
+import { Activity, type ReactElement, useEffect, useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 
 import { Loading } from '#components/loading';
@@ -52,8 +52,8 @@ export function ClientRoute({ route }: ClientRouteProps): ReactElement {
     return <ClientPageError route={route} />;
   }
 
-  if (checkAccess && accessLoading) return <ClientPageLoading />;
-  if (checkAccess && !allowed) return <ClientPageDenied route={route} />;
+  if (checkAccess && !accessLoading && !allowed)
+    return <ClientPageDenied route={route} />;
 
   if (!componentModule) {
     return <ClientPageLoading />;
@@ -61,13 +61,20 @@ export function ClientRoute({ route }: ClientRouteProps): ReactElement {
 
   const Component = componentModule.default;
 
+  const checking = checkAccess && accessLoading;
   return (
-    <ErrorBoundary fallback={<ClientPageError route={route} />}>
-      {/* The owning package is the page's namespace, so a plugin page translates with a bare useTranslation(). */}
-      <NamespaceScope ns={route.packageName}>
-        <Component />
-      </NamespaceScope>
-    </ErrorBoundary>
+    <>
+      {checking ? <ClientPageLoading /> : null}
+      {/* Conceal a previously allowed page during rechecks without discarding its draft. A denial unmounts it. */}
+      <Activity mode={checking ? 'hidden' : 'visible'}>
+        <ErrorBoundary fallback={<ClientPageError route={route} />}>
+          {/* The owning package is the page's namespace, so a plugin page translates with a bare useTranslation(). */}
+          <NamespaceScope ns={route.packageName}>
+            <Component />
+          </NamespaceScope>
+        </ErrorBoundary>
+      </Activity>
+    </>
   );
 }
 

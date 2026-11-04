@@ -1,3 +1,4 @@
+import packageMetadata from '../../package.json' with { type: 'json' };
 import { renderAuthenticatedClient } from '../helpers/authenticated-client.js';
 import { resolveAppClientContributions } from '@nocobase/app-client/plugins';
 import { screen, waitFor, within } from '@testing-library/react';
@@ -13,7 +14,7 @@ import { useRouteNavigation } from '../../client/routing/route-navigation.js';
 
 const { routes } = resolveAppClientContributions([
   {
-    packageName: '@nocobase/app-template-examples',
+    packageName: packageMetadata.name,
     source: 'application',
     routes: applicationRoutes,
   },
