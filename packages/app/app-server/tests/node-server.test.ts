@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   closeNodeServer,
   closeNodeServerWithGracePeriod,
+  DEFAULT_HTTP_REQUEST_TIMEOUT_MS,
   disposeAfterStartupFailure,
   resolveNodeShutdownTimeouts,
   shutdownNodeAppServer,
@@ -170,6 +171,25 @@ describe('Node app server', () => {
       ),
     ).rejects.toMatchObject({ code: 'EADDRINUSE' });
     expect(close).not.toHaveBeenCalled();
+  });
+
+  it('gives a request ten minutes to arrive, unless told otherwise', async () => {
+    const app: ClosableNodeAppServer = {
+      close: async () => undefined,
+      fetch: () => new Response('ok'),
+    };
+    const { server } = await listen(app);
+    expect(DEFAULT_HTTP_REQUEST_TIMEOUT_MS).toBe(600_000);
+    expect(server).toMatchObject({ requestTimeout: 600_000 });
+
+    const custom = await startNodeAppServer(app, {
+      hostname: '127.0.0.1',
+      port: 0,
+      registerProcessSignals: false,
+      requestTimeoutMs: 0,
+    });
+    servers.push(custom);
+    expect(custom).toMatchObject({ requestTimeout: 0 });
   });
 
   it('removes process signal handlers when the HTTP server closes', async () => {
