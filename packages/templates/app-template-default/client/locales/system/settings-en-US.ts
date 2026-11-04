@@ -115,6 +115,19 @@ const settings = {
 
   reload: 'Reload role',
   title: 'System settings',
+  home: {
+    description:
+      'Accounts, permissions, business configuration and system capabilities are all here.',
+    empty: 'No settings are available to you yet.',
+  },
+  categories: {
+    account: 'Accounts and permissions',
+    business: 'Business configuration',
+    ai: 'AI',
+    system: 'System',
+  },
+  permissionManagementDescription:
+    'Set what each role can open and do, and the data it can see.',
   users: 'Users',
   roles: 'Roles and permissions',
   usersDescription: 'Manage accounts, access and active sessions.',

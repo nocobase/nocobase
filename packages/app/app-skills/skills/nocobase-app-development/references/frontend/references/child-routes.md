@@ -638,7 +638,7 @@ A page that shows a record whose detail is a page of its own — an orders list'
 
 ## 7. Settings pages
 
-- A settings page is an ordinary App page under a navigation group of the application's own, such as Settings ([section 5 of `page.md`](page.md#5-settings-pages)); there is no `/settings` or `/dev` surface.
+- A settings page is an ordinary App page in the System settings structure ([section 5 of `page.md`](page.md#5-settings-pages)); a settings module with several views uses URL-backed tabs through `SettingsModulePage` ([System settings navigation](../../settings-navigation.md)).
 - Tabs in settings pages also use child routes ([section 4](#4-page-tabs)); nested details and tabs usually have no `navigation`.
 - A settings page checks its settings item; its child pages and tabs inherit that check or declare another action or item of their own, never a page grant.
 - Navigation groups carry no page permission. Access checks in the browser do not replace server authorization.

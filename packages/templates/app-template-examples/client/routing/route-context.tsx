@@ -37,8 +37,32 @@ export function useRouteSearches(): ReadonlyMap<string, string> {
 }
 
 const RouteTreeContext = createContext<readonly AppClientRegisteredRoute[]>([]);
+
+/** The shell's page permission check (`useRouteNavigation`), shared so pages reuse it instead of checking again. */
+export interface RouteAccess {
+  /** Route keys the viewer may not open. */
+  readonly denied: ReadonlySet<string>;
+  /** The check is still running; `denied` is not yet known. */
+  readonly loading: boolean;
+}
+
+const DEFAULT_ACCESS: RouteAccess = { denied: new Set(), loading: false };
+const RouteAccessContext = createContext<RouteAccess>(DEFAULT_ACCESS);
+
 export interface RouteTreeProviderProps extends PropsWithChildren {
   readonly routes: readonly AppClientRegisteredRoute[];
+  /** The shell's page permission result; without it every route counts as open. */
+  readonly access?: RouteAccess;
+}
+
+/** The registered business route tree the shell renders. */
+export function useRouteTree(): readonly AppClientRegisteredRoute[] {
+  return useContext(RouteTreeContext);
+}
+
+/** Which routes the viewer may open, from the shell's single permission check. */
+export function useRouteAccess(): RouteAccess {
+  return useContext(RouteAccessContext);
 }
 
 /**
@@ -51,6 +75,7 @@ export interface RouteTreeProviderProps extends PropsWithChildren {
 export function RouteTreeProvider({
   children,
   routes,
+  access,
 }: RouteTreeProviderProps): ReactElement {
   const location = useLocation();
   const pathname = location.pathname.replace(/\/+$/u, '') || '/';
@@ -74,9 +99,11 @@ export function RouteTreeProvider({
   }
   return (
     <RouteTreeContext.Provider value={routes}>
-      <RouteSearchContext.Provider value={queries}>
-        {children}
-      </RouteSearchContext.Provider>
+      <RouteAccessContext.Provider value={access ?? DEFAULT_ACCESS}>
+        <RouteSearchContext.Provider value={queries}>
+          {children}
+        </RouteSearchContext.Provider>
+      </RouteAccessContext.Provider>
     </RouteTreeContext.Provider>
   );
 }

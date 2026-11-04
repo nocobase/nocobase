@@ -4,6 +4,8 @@ const frFR: FoundationResource = {
   nav: {
     settings: 'Paramètres système',
     foundation: 'Socle de l’application',
+    foundationDescription:
+      'Les capacités NocoBase sur lesquelles repose cette application.',
   },
   page: {
     notCounted: 'Non compté',

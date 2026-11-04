@@ -28,7 +28,14 @@ export function foundationDefinition(
     authz: 'unrestricted',
     ...(options.navigation === false
       ? {}
-      : { navigation: { title: 'nav.foundation', icon: Layers, order: 1000 } }),
+      : {
+          navigation: {
+            title: 'nav.foundation',
+            description: 'nav.foundationDescription',
+            icon: Layers,
+            order: 1000,
+          },
+        }),
     componentLoader: async () => {
       const { FoundationPage } =
         await import('./components/foundation-page.js');

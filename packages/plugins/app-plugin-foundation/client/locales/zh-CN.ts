@@ -4,6 +4,7 @@ const zhCN: FoundationResource = {
   nav: {
     settings: '系统设置',
     foundation: '应用底座',
+    foundationDescription: '这个应用用到了哪些 NocoBase 基础能力。',
   },
   page: {
     notCounted: '未统计',

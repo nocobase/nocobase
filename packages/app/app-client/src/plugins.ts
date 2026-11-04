@@ -108,6 +108,11 @@ export interface AppClientRouteNavigation {
   /** Lower values appear first among siblings; defaults to 0, with ties in registration order. */
   readonly order?: number;
   readonly title: string;
+  /**
+   * One sentence saying what the entry is for, as a translation key like `title`. Menus ignore it; an overview such
+   * as a settings home shows it under the title.
+   */
+  readonly description?: string;
   readonly icon?: AppClientRouteIcon;
 }
 
@@ -702,6 +707,21 @@ function normalizeTitle(
   return normalized;
 }
 
+function normalizeNavigation(
+  navigation: AppClientRouteNavigation,
+  id: string,
+  packageName: string,
+): AppClientRouteNavigation {
+  const { description, ...rest } = navigation;
+  const trimmed = description?.trim();
+  return Object.freeze({
+    ...rest,
+    title: normalizeTitle(navigation.title, id, packageName),
+    // A blank description is no description, so an overview never shows an empty line.
+    ...(trimmed ? { description: trimmed } : {}),
+  });
+}
+
 interface RouteResolveContext {
   parentPath: string;
   parentAuth?: AppClientRouteAuth;
@@ -769,10 +789,7 @@ function resolveRouteTree(
         `Client route "${name}" cannot use reserved path "${path}" unless auth is "guest".`,
       );
     const navigation = route.navigation
-      ? Object.freeze({
-          ...route.navigation,
-          title: normalizeTitle(route.navigation.title, id, packageName),
-        })
+      ? normalizeNavigation(route.navigation, id, packageName)
       : undefined;
     if (
       navigation &&

@@ -4,6 +4,7 @@ const idID: FoundationResource = {
   nav: {
     settings: 'Pengaturan sistem',
     foundation: 'Fondasi aplikasi',
+    foundationDescription: 'Kemampuan NocoBase yang digunakan aplikasi ini.',
   },
   page: {
     notCounted: 'Belum dihitung',

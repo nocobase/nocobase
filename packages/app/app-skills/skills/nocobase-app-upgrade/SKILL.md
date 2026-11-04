@@ -124,6 +124,8 @@ When the target adds standard form feedback, follow [form feedback source upgrad
 
 When the template changes the permission workspace, follow [Permission editor source upgrades](references/edge-cases.md#permission-editor-source-upgrades). Merge copied permission models and translations while preserving application-specific descriptions, grants and role behavior; a dependency update alone does not update them.
 
+When the template introduces or changes the System settings structure (one settings entry, a home page of cards, tabs inside a module), follow [System settings navigation upgrades](references/settings-navigation-upgrade.md). Merge the navigation transform, routing, settings pages and locales, and move existing administration pages into categories without changing their names, paths or authorization; updating dependencies alone keeps the old navigation.
+
 When the template changes list-return behavior, read [list navigation upgrades](references/list-navigation-upgrade.md). Merge the routing context, breadcrumb and back-link sources together, and examine application-owned detail links and forms; updating dependencies alone does not update these copied sources.
 
 When the template changes loading, empty, filtered or failed list feedback, follow [list feedback source upgrades](references/list-feedback-upgrade.md). Reconcile copied components, request owners, translations and business empty content together, and verify both new and upgraded applications with retained permissions and records.
