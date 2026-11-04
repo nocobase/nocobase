@@ -658,6 +658,7 @@ export function useConversationActions(): ConversationActions {
       onMutate: scope,
       onSuccess: (detail, input, lifetime) => {
         if (!lifetime.active()) return;
+        controller.invalidateQuery(chatKeys.lists);
         if (!input.archived) {
           toaster.show({ type: 'success', title: t('chat.unarchived') });
           return;
