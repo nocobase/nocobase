@@ -4,6 +4,7 @@ import { databaseManagerToken, type DatabaseManager } from '@nocobase/db';
 import { ServiceContainer } from '@nocobase/service-provider';
 import { type Caching } from '@nocobase/caching';
 import { cachingToken } from '@nocobase/app-server/caching';
+import { loggingToken } from '@nocobase/app-server/logging';
 import { AppConfig, createAppPaths } from '@nocobase/app-server/config';
 import { idGeneratorToken } from '@nocobase/app-server/id-generator';
 import { realtimePrincipalResolverToken } from '@nocobase/app-server/realtime';
@@ -32,6 +33,42 @@ import {
 import { authenticationToken } from '../../tokens.js';
 
 describe('authentication provider', () => {
+  it.each([
+    { autoSignIn: false, expected: 1 },
+    { autoSignIn: true, expected: 0 },
+    { autoSignIn: false, disableSignUp: true, expected: 0 },
+    { autoSignIn: false, enabled: false, expected: 0 },
+    { autoSignIn: false, requireEmailVerification: true, expected: 0 },
+    { autoSignIn: false, onExistingUserSignUp: async () => {}, expected: 0 },
+  ])(
+    'logs actionable registration guidance at startup: %j',
+    async ({ expected, ...emailAndPassword }) => {
+      const warn = vi.fn();
+      const provider = Object.assign(
+        Object.create(AuthenticationProvider.prototype),
+        {
+          app: {
+            config: { get: () => ({ emailAndPassword }) },
+            container: {
+              has: (token: unknown) => token === loggingToken,
+              resolve: () => ({ getLogger: () => ({ warn }) }),
+            },
+          },
+        },
+      ) as AuthenticationProvider;
+      await provider.boot();
+      expect(warn).toHaveBeenCalledTimes(expected);
+      if (expected)
+        expect(warn).toHaveBeenCalledWith(
+          expect.objectContaining({
+            configKey: 'auth.emailAndPassword.autoSignIn',
+            fix: expect.stringContaining('server/config/auth.ts or config.yml'),
+          }),
+          expect.stringContaining('without creating an account'),
+        );
+    },
+  );
+
   it('closes its sender while Auth is still completing and observes both failures', async () => {
     const authClose = Promise.withResolvers<void>();
     const authFailure = new Error('Auth close failed.');

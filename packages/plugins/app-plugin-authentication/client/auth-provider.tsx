@@ -181,8 +181,14 @@ export function AuthenticationGuard({
 }: PropsWithChildren<{ mode: 'required' | 'guest' }>): ReactElement | null {
   const { session, isPending } = useAuthentication();
   const { search } = useLocation();
+  const [hasResolved, setHasResolved] = useState(false);
+  useEffect(() => {
+    // Guest forms keep their result and pending state while refreshing an already known session.
+    // eslint-disable-next-line @eslint-react/set-state-in-effect
+    if (!isPending) setHasResolved(true);
+  }, [isPending]);
 
-  if (isPending) return null;
+  if (isPending && (mode !== 'guest' || !hasResolved)) return null;
   if (mode === 'required' && !session) {
     return <Navigate to='/login' replace />;
   }
