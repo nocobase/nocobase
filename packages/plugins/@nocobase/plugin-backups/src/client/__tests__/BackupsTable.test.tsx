@@ -81,6 +81,7 @@ describe('BackupsTable', () => {
     const user = userEvent.setup();
     render(<MockedTable />, { wrapper: Wrapper });
     const download = await screen.findByText('Download');
+    expect(download.tagName).toBe('A');
     await waitFor(() => {
       expect(download.closest('.ant-spin-container')).not.toHaveClass('ant-spin-blur');
     });
@@ -100,7 +101,7 @@ describe('BackupsTable', () => {
       );
       expect(click).toHaveBeenCalledOnce();
       const link = click.mock.instances[0] as HTMLAnchorElement;
-      expect(link.href).toContain('downloadToken=download-token');
+      expect(link.href).toContain('hash=download-token');
       expect(link.download).toBe('backup_20240818_182301_9056.nbdata');
     });
   });

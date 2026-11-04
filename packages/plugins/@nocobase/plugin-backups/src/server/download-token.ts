@@ -27,16 +27,12 @@ export function signDownloadToken(app: Application, fileName: string) {
 }
 
 export async function authenticateDownload(ctx: Context, next: Next) {
-  if (
-    ctx.action.resourceName !== 'backups' ||
-    ctx.action.actionName !== 'download' ||
-    !('downloadToken' in ctx.query)
-  ) {
+  if (ctx.action.resourceName !== 'backups' || ctx.action.actionName !== 'download' || !('hash' in ctx.query)) {
     return next();
   }
   ctx.assert(ctx.method === 'GET', 405);
   ctx.set('Cache-Control', 'private, no-store');
-  const token = ctx.query.downloadToken;
+  const token = ctx.query.hash;
   if (typeof token !== 'string') {
     return ctx.throw(401);
   }

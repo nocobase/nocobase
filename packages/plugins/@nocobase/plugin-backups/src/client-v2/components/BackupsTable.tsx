@@ -7,11 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { LoadingOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { Table, useCurrentAppInfo } from '@nocobase/client-v2';
 import { useFlowContext } from '@nocobase/flow-engine';
 import { useRequest } from 'ahooks';
-import { App, Button, Divider, Space, theme } from 'antd';
+import { App, Divider, Space, theme } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
@@ -100,7 +101,7 @@ export const BackupsTable = () => {
         const link = document.createElement('a');
         link.href = ctx.api.axios.getUri({
           url: 'backups:download',
-          params: { ...params, downloadToken: response.data.data.token },
+          params: { ...params, hash: response.data.data.token },
         });
         link.download = fileData.name;
         link.rel = 'noreferrer';
@@ -161,17 +162,24 @@ export const BackupsTable = () => {
         render: (_: unknown, record) => (
           <Space split={<Divider type="vertical" />}>
             <RestoreFromBackup backup={record} />
-            <Button
-              type="link"
-              style={{ padding: 0 }}
-              loading={downloading === record.name}
-              disabled={!!downloading}
+            <a
+              role="button"
+              tabIndex={0}
+              aria-busy={downloading === record.name}
+              aria-disabled={!!downloading}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault();
+                  handleDownload(record);
+                }
+              }}
               onClick={() => {
                 handleDownload(record);
               }}
             >
+              {downloading === record.name && <LoadingOutlined style={{ marginRight: 4 }} aria-hidden />}
               {t('Download')}
-            </Button>
+            </a>
             <a onClick={() => handleDestroy(record)}>{t('Delete')}</a>
           </Space>
         ),

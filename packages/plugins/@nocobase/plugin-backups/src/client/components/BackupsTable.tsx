@@ -7,9 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { LoadingOutlined } from '@ant-design/icons';
 import { DatePicker, useRequest, useAPIClient, useCurrentAppInfo } from '@nocobase/client';
 import type { TableColumnsType } from 'antd';
-import { App, Button, Divider, message, Space, Table } from 'antd';
+import { App, Divider, message, Space, Table } from 'antd';
 import React, { useRef, useState } from 'react';
 import { NAMESPACE } from '../constants';
 import { useBackupsContext } from '../contexts';
@@ -67,7 +68,7 @@ export const BackupsTable = () => {
       const link = document.createElement('a');
       link.href = api.axios.getUri({
         url: 'backups:download',
-        params: { ...params, downloadToken: response.data.data.token },
+        params: { ...params, hash: response.data.data.token },
       });
       link.download = fileData.name;
       link.rel = 'noreferrer';
@@ -124,17 +125,24 @@ export const BackupsTable = () => {
       render: (_, record) => (
         <Space split={<Divider type="vertical" />}>
           <RestoreFromBackup backup={record} />
-          <Button
-            type="link"
-            style={{ padding: 0 }}
-            loading={downloading === record.name}
-            disabled={!!downloading}
+          <a
+            role="button"
+            tabIndex={0}
+            aria-busy={downloading === record.name}
+            aria-disabled={!!downloading}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                handleDownload(record);
+              }
+            }}
             onClick={() => {
               handleDownload(record);
             }}
           >
+            {downloading === record.name && <LoadingOutlined style={{ marginRight: 4 }} aria-hidden />}
             {t('Download')}
-          </Button>
+          </a>
           <a onClick={() => handleDestory(record)}>{t('Delete')}</a>
         </Space>
       ),

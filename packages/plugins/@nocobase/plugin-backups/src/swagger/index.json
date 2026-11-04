@@ -131,7 +131,7 @@
         "summary": "Download a backup file",
         "parameters": [
           {
-            "name": "downloadToken",
+            "name": "hash",
             "in": "query",
             "schema": { "type": "string" },
             "description": "Token from POST /backups:download. Omit when using normal authenticated download access."

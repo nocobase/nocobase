@@ -54,7 +54,7 @@ describe('backup download tokens', () => {
     const payload = jwt.decode(token) as jwt.JwtPayload;
     expect(payload.exp - payload.iat).toBe(30);
     vi.spyOn(BackupManager.prototype, 'createReadStream').mockResolvedValue(Readable.from('backup content'));
-    const response = await app.agent().get(url).query({ filterByTk: fileName, downloadToken: token });
+    const response = await app.agent().get(url).query({ filterByTk: fileName, hash: token });
     expect(response.status).toBe(200);
     expect(response.headers['content-disposition']).toContain(fileName);
     expect(response.headers['cache-control']).toBe('private, no-store');
@@ -66,8 +66,8 @@ describe('backup download tokens', () => {
     const user = await app.db.getRepository('users').create({ values: { roles: ['member'] } });
     const agent = await app.agent().login(user);
     expect((await agent.post(url).query({ filterByTk: fileName })).status).toBe(403);
-    expect((await app.agent().get('/backups:list').query({ downloadToken: token })).status).not.toBe(200);
-    expect((await app.agent().post(url).query({ filterByTk: fileName, downloadToken: token })).status).toBe(405);
+    expect((await app.agent().get('/backups:list').query({ hash: token })).status).not.toBe(200);
+    expect((await app.agent().post(url).query({ filterByTk: fileName, hash: token })).status).toBe(405);
   });
 
   it('rejects expired, tampered, cross-file and cross-app tokens', async () => {
@@ -78,10 +78,10 @@ describe('backup download tokens', () => {
     const otherApp = { name: 'other-app', authManager: app.authManager } as MockServer;
     const otherToken = signDownloadToken(otherApp, fileName);
     for (const params of [
-      { filterByTk: fileName, downloadToken: expired },
-      { filterByTk: fileName, downloadToken: token + 'invalid' },
-      { filterByTk: 'other.nbdata', downloadToken: token },
-      { filterByTk: fileName, downloadToken: otherToken },
+      { filterByTk: fileName, hash: expired },
+      { filterByTk: fileName, hash: token + 'invalid' },
+      { filterByTk: 'other.nbdata', hash: token },
+      { filterByTk: fileName, hash: otherToken },
     ]) {
       expect((await app.agent().get(url).query(params)).status).toBe(401);
     }

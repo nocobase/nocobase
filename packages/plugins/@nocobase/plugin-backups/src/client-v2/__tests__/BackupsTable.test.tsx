@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { App } from 'antd';
 import axios from 'axios';
 import React from 'react';
@@ -132,7 +132,12 @@ describe('backup table and context components', () => {
   });
 
   it('downloads backups with the current app name', async () => {
-    mocks.flowContext.api.request.mockResolvedValue({ data: { data: { token: 'download-token' } } });
+    let resolveToken: (value: { data: { data: { token: string } } }) => void;
+    mocks.flowContext.api.request.mockReturnValue(
+      new Promise((resolve) => {
+        resolveToken = resolve;
+      }),
+    );
     renderWithBackupsContext(
       {
         data: {
@@ -145,7 +150,14 @@ describe('backup table and context components', () => {
       <BackupsTable />,
     );
 
-    fireEvent.click(screen.getByText('Download'));
+    const download = screen.getByRole('button', { name: 'Download' });
+    expect(download.tagName).toBe('A');
+    fireEvent.keyDown(download, { key: 'Enter' });
+    expect(download).toHaveAttribute('aria-busy', 'true');
+    expect(download).toHaveAttribute('aria-disabled', 'true');
+    fireEvent.click(download);
+    expect(mocks.flowContext.api.request).toHaveBeenCalledOnce();
+    await act(async () => resolveToken({ data: { data: { token: 'download-token' } } }));
 
     await waitFor(() =>
       expect(mocks.flowContext.api.request).toHaveBeenCalledWith({
@@ -159,7 +171,7 @@ describe('backup table and context components', () => {
     );
     await waitFor(() => expect(HTMLAnchorElement.prototype.click).toHaveBeenCalledOnce());
     const link = vi.mocked(HTMLAnchorElement.prototype.click).mock.instances[0] as HTMLAnchorElement;
-    expect(link.href).toContain('downloadToken=download-token');
+    expect(link.href).toContain('hash=download-token');
     expect(link.href).toContain('__appName=main-app');
     expect(link.download).toBe('backup.zip');
   });
