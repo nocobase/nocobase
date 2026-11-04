@@ -196,11 +196,11 @@ export function ToolTable({
     <div className='w-full rounded-lg border'>
       <Table className='table-fixed'>
         <colgroup>
-          <col className='w-28' />
+          <col className='w-36' />
           <col className='w-14' />
           <col className='w-28' />
           <col />
-          <col className='w-24' />
+          <col className='w-28' />
           <col className='w-20' />
         </colgroup>
         <TableHeader>

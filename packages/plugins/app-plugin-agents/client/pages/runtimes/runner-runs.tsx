@@ -69,10 +69,10 @@ export function RunnerRuns({
   return (
     <div className='min-w-0' data-testid='runner-runs'>
       <div className='rounded-lg border'>
-        <Table className='table-fixed min-w-[560px]'>
+        <Table className='table-fixed min-w-[600px]'>
           <colgroup>
             <col />
-            <col className='w-32' />
+            <col className='w-40' />
             <col className='w-28' />
             <col className='w-24' />
             <col className='w-20' />
