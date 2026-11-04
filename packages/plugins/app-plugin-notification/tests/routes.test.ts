@@ -21,6 +21,10 @@ import serverLocales from '../server/locales/index.js';
 import { createNotificationRouter } from '../server/router.js';
 import { apiRoutes } from '../server/routes/index.js';
 import {
+  NotificationTemplateRegistry,
+  notificationTemplateRegistryToken,
+} from '../server/templates.js';
+import {
   notificationRuntimeToken,
   type NotificationRuntime,
 } from '../server/runtime.js';
@@ -108,6 +112,17 @@ describe('API document', () => {
     expect(operations).toEqual([
       ['GET /api/notifications/logs', 'notificationsListLogs', tags],
       ['GET /api/notifications/logs/{logId}', 'notificationsGetLog', tags],
+      ['GET /api/notifications/templates', 'notificationsListTemplates', tags],
+      [
+        'GET /api/notifications/templates/{templateId}',
+        'notificationsGetTemplate',
+        tags,
+      ],
+      [
+        'POST /api/notifications/templates/{templateId}/preview',
+        'notificationsPreviewTemplate',
+        tags,
+      ],
     ]);
     expect(document.components?.schemas).toHaveProperty(
       'NotificationLogDetails',
@@ -129,6 +144,10 @@ async function createRouter(options: RouterOptions = {}): Promise<{
   readonly can: ReturnType<typeof vi.fn>;
 }> {
   const container = new ServiceContainer();
+  container.instance(
+    notificationTemplateRegistryToken,
+    new NotificationTemplateRegistry(),
+  );
   const can = vi.fn(async () => options.allowed ?? true);
   let logsRouter = options.logsRouter;
   if (!logsRouter) {

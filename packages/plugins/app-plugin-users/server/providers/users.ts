@@ -1,4 +1,5 @@
 import { InvitationWork } from '../invitations/lifecycle.js';
+import { registerInvitationTemplate } from '../invitations/template.js';
 import { createApplicationUserRoleScope } from '../services/permission-set-scope.js';
 import { databaseManagerToken } from '@nocobase/db';
 import {
@@ -59,6 +60,7 @@ export class UsersProvider extends ServiceProvider<AppPluginApplication> {
   public readonly name: string = '@nocobase/app-plugin-users';
   private releasePermissionSetScope?: () => void;
   private releaseSubjectType?: () => void;
+  private releaseInvitationTemplate?: () => void;
 
   private readonly invitationWork = new InvitationWork();
   private invitationMailer?: ReturnType<typeof createNotificationMailer>;
@@ -104,7 +106,10 @@ export class UsersProvider extends ServiceProvider<AppPluginApplication> {
     });
   }
 
-  public override boot(): Promise<void> {
+  public override async boot(): Promise<void> {
+    this.releaseInvitationTemplate ??= await registerInvitationTemplate(
+      this.app,
+    );
     if (
       !this.releasePermissionSetScope &&
       this.app.container.has(authorizationToken) &&
@@ -198,6 +203,8 @@ export class UsersProvider extends ServiceProvider<AppPluginApplication> {
   private shutdownPromise?: Promise<void>;
 
   public override shutdown(): Promise<void> {
+    this.releaseInvitationTemplate?.();
+    this.releaseInvitationTemplate = undefined;
     this.shutdownPromise ??= this.closeInvitations();
     return this.shutdownPromise;
   }

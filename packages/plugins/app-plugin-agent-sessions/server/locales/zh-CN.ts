@@ -8,7 +8,8 @@ const zhCN: AgentSessionsResource = {
       '这条旧消息无法安全撤回，请升级命令行并重启电脑连接。',
     bridgeReplaced: '另一连接已登记这台电脑，请重启当前连接。',
     submissionConflict: '该提交 ID 已用于另一项请求。',
-    discoveryFailed: '无法加载智能体设置。请检查此电脑上的智能体后重试。',
+    discoveryFailed:
+      '无法加载智能体设置。请更新这台电脑上的命令行并重启后台连接，然后重试。',
     authenticationRequired: '请先登录。',
     computerNotFound: '你的账号下没有这台电脑。',
     sessionNotFound: '没有找到这个会话，或者它不属于你。',

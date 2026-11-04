@@ -50,7 +50,11 @@ import { createAuthStorage } from '../auth-storage.js';
 import { authenticationToken } from '../tokens.js';
 import { userAdministrationServiceToken } from '../tokens.js';
 import { createUserAdministrationService } from '../user-administration.js';
-import { type AuthConfig, resolveAuthSecrets } from '../config.js';
+import {
+  type AuthConfig,
+  resolveAuthSecrets,
+  registrationFeedbackWarning,
+} from '../config.js';
 
 interface RequestInitWithDuplex extends RequestInit {
   duplex?: 'half';
@@ -155,6 +159,18 @@ export class AuthenticationProvider<
    * does not build Better Auth's schema.
    */
   public override async boot(): Promise<void> {
+    const warning = registrationFeedbackWarning(
+      this.app.config.get<AuthConfig>('auth') ?? {},
+    );
+    if (warning && this.app.container.has(loggingToken)) {
+      this.app.container
+        .resolve(loggingToken)
+        .getLogger('auth')
+        .warn(
+          { configKey: 'auth.emailAndPassword.autoSignIn', fix: warning.fix },
+          warning.message,
+        );
+    }
     // Better Auth's endpoints are the browser's sign-in and session flow: a command line signs in its own way.
     if (this.app.container.has(cliToken))
       this.app.container.resolve(cliToken).exclude({ paths: ['/api/auth/'] });

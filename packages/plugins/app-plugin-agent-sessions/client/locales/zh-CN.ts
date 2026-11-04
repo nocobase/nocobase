@@ -148,7 +148,7 @@ const zhCN: AgentSessionsResource = {
     usage: '用量',
     contextLabel: '上下文',
     context: '上下文 {{used}} / {{size}} tokens',
-    cost: '目前费用：{{cost}}',
+    costLabel: '费用',
     tokens: { input: '输入', cached: '缓存', output: '输出' },
     record: '记录',
     recordBody: '完整记录保存在这里，只有你能看到。',

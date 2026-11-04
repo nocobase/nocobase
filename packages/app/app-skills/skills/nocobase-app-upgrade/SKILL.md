@@ -210,3 +210,5 @@ Compare BASE directly with TARGET and merge the resulting changes once. Check th
 When the target adds or changes the standard process UI sources, also follow [standard process management source upgrades](references/edge-cases.md#standard-process-management-source-upgrades): confirm existing process pages actually consume the merged components, while preserving explicit user customizations, parameters, grants and history.
 
 When the target introduces standard submission protection, follow [submission source upgrades](references/submission-upgrade.md) during planning and reconciliation. Dependency or version-marker changes alone do not update copied forms, custom actions or the application's receipt migrations. Verify both a fresh application and retained customized data.
+
+For a target that adds notification template administration, follow [notification template source reconciliation](references/notification-template-upgrade.md) in the same version-selected upgrade, preserving business renderers, workflows, permissions and channel configuration.

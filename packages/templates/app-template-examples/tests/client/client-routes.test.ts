@@ -210,6 +210,10 @@ describe('app client routes', () => {
       ],
       ['settingsBusiness', [['workflows', '/workflows']]],
       ['settingsAi', [['knowledgeIndexing', '/knowledge/indexing']]],
+      [
+        'settingsSystem',
+        [['notificationManagement', '/settings/notifications/templates']],
+      ],
     ]);
     expect(catalog[2].modules[0].route).toMatchObject({
       path: '/knowledge/indexing',
@@ -337,6 +341,7 @@ describe('app client routes', () => {
         authorizedAs: 'settings:workflow-management',
       },
       { name: 'knowledgeIndexing', authorizedAs: 'settings:kb.indexing' },
+      { name: 'notificationTemplates', authorizedAs: 'notification.templates' },
     ]);
   });
 });

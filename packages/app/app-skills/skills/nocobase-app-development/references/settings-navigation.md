@@ -33,7 +33,7 @@ Each module and tab keeps a URL of its own, so refresh, bookmarks and Back and F
 | Notifications         | `notificationManagement` group in `settingsSystem`, path prefix `/notifications` | the views the application actually has: Delivery logs (`notificationLogs`, the UI Library `notification-logs-ui` page); Notification templates (`notificationTemplates`) when the application provides the catalogue |
 | App Foundation        | the Foundation plugin's `foundation` page, shown in `settingsSystem`             | one page                                                                                                                                                                                                             |
 
-Register the notification module once the application sends notifications, and add later notification views to the same group rather than another card:
+The templates' `includeNotificationTemplateRoutes` (`client/pages/settings/notification-routes.ts`) adds the Notification templates view (`/settings/notifications/templates`, `page:notification.templates`) to an existing `notificationManagement` group exactly once, or creates the group in `settingsSystem` when notification business is in use. Register Delivery logs and any later notification view in the same group rather than as another card, adding its title key to the application's locales:
 
 ```ts
 defineAppRoutes([
@@ -41,11 +41,11 @@ defineAppRoutes([
     parent: 'settingsSystem',
     name: 'notificationManagement',
     navigation: {
-      title: 'settings.notifications.title',
-      description: 'settings.notifications.description',
+      title: 'settings.notificationManagement',
+      description: 'settings.notificationManagementDescription',
       icon: Bell,
     },
-    breadcrumb: { title: 'settings.notifications.title' },
+    breadcrumb: { title: 'settings.notificationManagement' },
     children: [
       {
         // Default: /settings/notifications/logs. The page checks the same grant as GET /api/notifications/logs.
@@ -56,8 +56,8 @@ defineAppRoutes([
           resource: { type: 'page', id: 'notification.logs' },
           action: 'access',
         },
-        navigation: { title: 'settings.notifications.logs' },
-        breadcrumb: { title: 'settings.notifications.logs' },
+        navigation: { title: 'settings.notificationLogs' },
+        breadcrumb: { title: 'settings.notificationLogs' },
         componentLoader: () => import('./pages/settings/notification-logs.js'),
       },
     ],

@@ -58,6 +58,7 @@ interface InstalledTarget extends Target {
 interface Registry {
   version: 2;
   targets: InstalledTarget[];
+  newer?: true;
 }
 
 export interface SkillStatus extends Target {
@@ -371,8 +372,11 @@ async function readRegistry(environment: SkillsEnvironment): Promise<Registry> {
     skill?: unknown;
     targets?: unknown;
   } | null;
-  if (data === null || typeof data !== 'object' || !Array.isArray(data.targets))
-    throw invalid();
+  if (data === null || typeof data !== 'object') throw invalid();
+  // A newer format may not even have targets. Never reinterpret or rewrite it.
+  if (typeof data.version === 'number' && data.version > 2)
+    return { version: 2, targets: [], newer: true };
+  if (!Array.isArray(data.targets)) throw invalid();
   // The original file has no version and one top-level `skill`; its targets inherit it.
   const legacy = data.version === undefined;
   if (legacy ? data.skill !== SKILL : data.version !== 2) throw invalid();
@@ -401,10 +405,23 @@ async function readRegistry(environment: SkillsEnvironment): Promise<Registry> {
   return { version: 2, targets };
 }
 
+function requireWritableRegistry(
+  registry: Registry,
+  environment: SkillsEnvironment,
+): void {
+  if (registry.newer)
+    throw new CliCommandError(
+      'SKILLS_NEWER_REGISTRY',
+      `The Skill installation record uses a newer format. Update ${environment.bin} before installing Skills.`,
+      { exit: EXIT_CODES.validation },
+    );
+}
+
 async function writeRegistry(
   environment: SkillsEnvironment,
   registry: Registry,
 ): Promise<void> {
+  requireWritableRegistry(registry, environment);
   const file = registryFile(environment);
   await safePath(file, false);
   const temporary = await mkdtemp(
@@ -540,6 +557,7 @@ async function replace(
   source: Snapshot,
   registry: Registry,
 ): Promise<SkillInstall> {
+  requireWritableRegistry(registry, environment);
   if (
     overlaps(target.path, environment.packageRoot) ||
     overlaps(target.path, environment.stateHome)
@@ -714,6 +732,7 @@ export async function installSkills(
   });
   const perform = async (): Promise<SkillsInstallResult> => {
     const registry = await readRegistry(environment);
+    requireWritableRegistry(registry, environment);
     const conflict = targetConflicts([...targets, ...registry.targets])
       .values()
       .next().value;
@@ -762,6 +781,7 @@ export async function installSkills(
   };
   if (!dryRun) {
     const registry = await readRegistry(environment);
+    requireWritableRegistry(registry, environment);
     const conflict = targetConflicts([...targets, ...registry.targets])
       .values()
       .next().value;
@@ -793,8 +813,17 @@ export async function prepareSessionSkill(
   environment: SkillsEnvironment,
   agentId: string,
 ): Promise<void> {
-  if (TOOLS.some((tool) => tool === agentId))
-    await installSkills(environment, [agentId]);
+  if (TOOLS.some((tool) => tool === agentId)) {
+    try {
+      await installSkills(environment, [agentId]);
+    } catch (error) {
+      if (
+        !(error instanceof CliCommandError) ||
+        error.code !== 'SKILLS_NEWER_REGISTRY'
+      )
+        throw error;
+    }
+  }
 }
 
 /** ACP text is the common fallback; it needs no agent-specific install directory. */
@@ -861,6 +890,7 @@ export async function syncInstalledSkills(
   try {
     // Do not create state or tool directories on machines that never installed this Skill.
     const registry = await readRegistry(environment);
+    requireWritableRegistry(registry, environment);
     const shipped = shippedSkills(environment.packageRoot);
     const { defaults, legacy } = locations(environment, shipped);
     for (const target of unique([...defaults, ...legacy])) {
@@ -883,6 +913,7 @@ export async function syncInstalledSkills(
     if (registry.targets.length > 0)
       await lock(path.join(environment.stateHome, '.skills.lock'), async () => {
         const current = await readRegistry(environment);
+        requireWritableRegistry(current, environment);
         const kept = current.targets.filter((target) =>
           shipped.includes(target.skill),
         );
@@ -953,6 +984,7 @@ export async function syncInstalledSkills(
         }
         // Re-read: replace() rewrote the record for each updated target.
         const latest = await readRegistry(environment);
+        requireWritableRegistry(latest, environment);
         await writeRegistry(environment, {
           version: 2,
           targets: latest.targets.filter(
@@ -961,9 +993,15 @@ export async function syncInstalledSkills(
         });
       });
   } catch (error) {
-    advise(
-      `Could not synchronize installed Skills: ${error instanceof Error ? error.message : String(error)}.`,
-    );
+    if (
+      error instanceof CliCommandError &&
+      error.code === 'SKILLS_NEWER_REGISTRY'
+    )
+      warnings.push(error.message);
+    else
+      advise(
+        `Could not synchronize installed Skills: ${error instanceof Error ? error.message : String(error)}.`,
+      );
   }
   return { targets, warnings };
 }

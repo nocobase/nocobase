@@ -390,7 +390,12 @@ install_product() {
 }
 
 # 1. The CLI.
+previous_cli="$(readlink "$prefix/current" 2>/dev/null || true)"
 install_product "$cli" "$prefix" cli
+# Reuse the saved ACP service definitions after switching current, including every profile.
+if [ "$installed" = new ] && [ "$previous_cli" != "$(readlink "$prefix/current" 2>/dev/null || true)" ]; then
+  run "$prefix/current/bin/$cli" acp service restart || say "Could not restart background connections. Run $cli acp service restart to retry."
+fi
 reuse=0
 [ "$installed" != used ] || reuse=1
 

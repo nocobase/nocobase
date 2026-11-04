@@ -7,6 +7,7 @@ import { describe, expect, it } from 'vitest';
 import foundation from '@nocobase/app-plugin-foundation/client/routes';
 import settings from '../../client/pages/settings/routes.js';
 import shell from '../../client/pages/settings/shell-routes.js';
+import { createApplicationRoutes } from '../../client/routes.js';
 import {
   buildRouteNavigation,
   buildSettingsCatalog,
@@ -204,5 +205,26 @@ describe('System settings navigation', () => {
     const page = find(routes, 'foundation');
     expect(page.navigation?.description).toBe('nav.foundationDescription');
     expect(buildRouteNavigation(routes, new Set([routeKey(page)]))).toEqual([]);
+  });
+
+  it('shows the notification template view as a System card once an invitation mailer is configured', () => {
+    const routes = resolveAppClientContributions([
+      {
+        packageName: app,
+        source: 'application',
+        routes: createApplicationRoutes({
+          notificationTemplates: { invitationConfigured: true },
+        }),
+      },
+    ]).routes;
+    expect(catalog(routes)).toEqual([
+      [
+        'settingsSystem',
+        [['notificationManagement', '/settings/notifications/templates']],
+      ],
+    ]);
+    expect(
+      buildRouteNavigation(routes, new Set()).map(({ route }) => route.name),
+    ).toEqual(['home', 'settingsHome']);
   });
 });

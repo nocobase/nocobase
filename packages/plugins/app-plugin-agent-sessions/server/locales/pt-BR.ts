@@ -35,7 +35,7 @@ const ptBR: LocaleResource<typeof enUS> = {
       'O computador não respondeu a tempo. Verifique se a conexão está funcionando e tente novamente.',
     folderUnavailable: 'A pasta não pode ser aberta no computador.',
     discoveryFailed:
-      'Não foi possível carregar as configurações do agente. Verifique o agente neste computador e tente novamente.',
+      'Não foi possível carregar as configurações do agente. Atualize a linha de comando neste computador e reinicie a conexão em segundo plano. Depois, tente novamente.',
     projectNotFound: 'Esse projeto não existe ou você não consegue vê-lo.',
     referenceNotFound: 'Algo mencionado não existe ou você não pode ver.',
     imageNotFound: 'Nenhuma imagem com este nome foi enviada na sessão.',

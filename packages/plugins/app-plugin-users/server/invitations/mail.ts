@@ -53,13 +53,28 @@ export async function buildInvitationEmail(input: {
   readonly url: string;
   readonly expiresAt: Date;
 }): Promise<InvitationEmail> {
+  return renderInvitationEmail({
+    ...input,
+    expiresAt: input.expiresAt.toISOString(),
+  });
+}
+
+/** Pure content builder shared by sending and the source-owned template directory. */
+export async function renderInvitationEmail(input: {
+  readonly to: string;
+  readonly appTitle: string;
+  readonly inviterName: string;
+  readonly summary: readonly string[];
+  readonly url: string;
+  readonly expiresAt: string;
+}): Promise<InvitationEmail> {
   const languages = await Promise.all(
     Object.values(locales).map(async (load) => {
       const resource = (await load()) as { default: UsersResource };
       return resource.default.invitationEmail;
     }),
   );
-  const date = input.expiresAt.toISOString();
+  const date = input.expiresAt;
   const blocks = languages.map((texts) => {
     const values = {
       inviter: input.inviterName,

@@ -171,7 +171,7 @@ const viVN: LocaleResource<typeof enUS> = {
     usage: 'Cách sử dụng',
     contextLabel: 'Bối cảnh',
     context: 'Bối cảnh {{used}} của token {{size}}',
-    cost: 'Chi phí tính đến thời điểm hiện tại: {{cost}}',
+    costLabel: 'Chi phí',
     tokens: {
       input: 'Đầu vào',
       cached: 'Đã lưu vào bộ nhớ đệm',
