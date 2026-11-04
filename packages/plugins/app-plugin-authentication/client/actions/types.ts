@@ -28,6 +28,11 @@ export interface PasswordRegistrationInput {
   readonly username: string;
 }
 
+export interface PasswordRegistrationActionState extends AuthenticationActionState<PasswordRegistrationInput> {
+  /** The request was accepted and the session refreshed; this does not confirm account creation or email delivery. */
+  readonly isSuccess: boolean;
+}
+
 export interface PasswordResetRequestInput {
   readonly email: string;
 }

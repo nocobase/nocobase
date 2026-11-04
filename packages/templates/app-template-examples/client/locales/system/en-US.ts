@@ -88,6 +88,9 @@ const systemEnUS = {
   'auth.loginDescription': 'Sign in with your username or email and password.',
   'auth.registerTitle': 'Create an account',
   'auth.registerDescription': 'Create an account to get started.',
+  'auth.registrationAccepted': 'Registration request submitted',
+  'auth.registrationGuidance':
+    'Try signing in with the username and password you submitted. If this email already has an account, the new details will not take effect. Sign in with your original account or recover your password. Follow any verification instructions provided by the application before signing in.',
   'auth.forgotTitle': 'Forgot password',
   'auth.forgotDescription':
     'Enter your email and we will send a reset link if the account exists.',
