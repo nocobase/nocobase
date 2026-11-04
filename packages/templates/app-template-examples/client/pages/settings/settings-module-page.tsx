@@ -114,14 +114,8 @@ export function SettingsModulePage({
   const header = (
     <PageHeader title={heading} description={description} actions={actions} />
   );
-  if (!showTabs)
-    return (
-      <PageContainer>
-        {header}
-        {children}
-      </PageContainer>
-    );
-  const value = routeKey(active);
+  // Keep the content under the same frame while permissions reload or the tab count changes.
+  const value = active ? routeKey(active) : 'settings-content';
   return (
     <PageContainer>
       {header}
@@ -135,24 +129,26 @@ export function SettingsModulePage({
         }}
       >
         {/* Many tabs scroll sideways on a narrow screen instead of widening the page. */}
-        <div className='-mx-1 max-w-full overflow-x-auto px-1'>
-          <TabsList variant='line' aria-label={heading}>
-            {tabs.map((tab) => (
-              <TabsTrigger
-                key={routeKey(tab)}
-                ref={tab === active ? activeRef : undefined}
-                value={routeKey(tab)}
-              >
-                {tab.navigation
-                  ? t(tab.navigation.title, {
-                      ns: tab.packageName,
-                      defaultValue: tab.navigation.title,
-                    })
-                  : null}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-        </div>
+        {showTabs ? (
+          <div className='-mx-1 max-w-full overflow-x-auto px-1'>
+            <TabsList variant='line' aria-label={heading}>
+              {tabs.map((tab) => (
+                <TabsTrigger
+                  key={routeKey(tab)}
+                  ref={tab === active ? activeRef : undefined}
+                  value={routeKey(tab)}
+                >
+                  {tab.navigation
+                    ? t(tab.navigation.title, {
+                        ns: tab.packageName,
+                        defaultValue: tab.navigation.title,
+                      })
+                    : null}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </div>
+        ) : null}
         <TabsContent value={value} className='space-y-6'>
           {children}
         </TabsContent>

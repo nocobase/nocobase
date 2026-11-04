@@ -17,6 +17,8 @@ Three-way merge each file from the BASE template, the application and the TARGET
 
 Keep the application's own changes to these files and say in a comment why each remains.
 
+Also merge `client/routing/client-route.tsx`, `client/components/body-portal.tsx` and the `BodyPortal` use in `client/components/flow-diagram.tsx`. The route guard retains an already loaded page in React Activity while permissions are pending, then unmounts it on denial. Body portals detach their DOM in a layout Effect cleanup so hidden pages cannot leave a visible diagram or overlay behind. Keep the existing session boundary that clears page state when the signed-in identity changes. Review application-owned body portals for the same cleanup; field-error portals inside their form need no separate body container.
+
 ## Place the application's administration
 
 1. Keep the application's settings group name. Default uses `settings`; Examples uses `systemManagement`; an application that renamed it sets `SETTINGS_GROUP` to its actual name rather than renaming the route, because its children's ids and grants do not depend on it but its customizations may.
@@ -30,4 +32,4 @@ If a URL has to change, keep the old path working with a redirect route and list
 
 ## Verify
 
-Run the application's navigation and settings tests, then check in the browser as an administrator and as a restricted user: one System settings entry selected on every settings page; the home shows the expected cards with descriptions and no empty category; each old deep link and bookmark opens the same page; tabs switch by URL, refresh and Back keep the view; the breadcrumb returns to the home; a restricted user sees only the cards and tabs their grants open and is still refused by direct URLs and APIs; list filters, unsaved-change guards and business data are unchanged.
+Run the application's navigation and settings tests, then check in the browser as an administrator and as a restricted user: one System settings entry selected on every settings page; the home shows the expected cards with descriptions and no empty category; each old deep link and bookmark opens the same page; tabs switch by URL, refresh and Back keep the view; the breadcrumb returns to the home; a restricted user sees only the cards and tabs their grants open and is still refused by direct URLs and APIs; list filters, unsaved-change guards and business data are unchanged. Trigger a permission refresh while editing: content and overlays must be hidden while pending, the same draft must return if access remains allowed, and denial or a different signed-in identity must remove the previous content. Cancel leaving through module tabs and the home breadcrumb and check that the draft remains; confirm leaving and check the final destination.

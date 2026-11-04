@@ -1,8 +1,14 @@
+import packageMetadata from '../../package.json' with { type: 'json' };
 import { renderAuthenticatedClient } from '../helpers/authenticated-client.js';
 import { resolveAppClientContributions } from '@nocobase/app-client/plugins';
-import { screen, waitFor } from '@testing-library/react';
+import { act, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
+import { Breadcrumbs } from '../../client/components/breadcrumbs.js';
+import { useSettingsLeave } from '../../client/pages/settings/hooks.js';
+import { BodyPortal } from '../../client/components/body-portal.js';
+import { ClientRoute } from '../../client/routing/client-route.js';
+import { authorizationClientToken } from '@nocobase/app-plugin-authorization/client';
 import { Route, Routes, useLocation } from 'react-router';
 import { expect, it } from 'vitest';
 import { PermissionManagementPage } from '../../client/pages/settings/permission-management-page.js';
@@ -13,7 +19,7 @@ import { useRouteNavigation } from '../../client/routing/route-navigation.js';
 
 const { routes } = resolveAppClientContributions([
   {
-    packageName: '@nocobase/app-template-default',
+    packageName: packageMetadata.name,
     source: 'application',
     routes: [shellRoutes, settingsRoutes],
   },
@@ -24,6 +30,9 @@ function Shell({ children }: { children: ReactNode }) {
   const { denied, loading } = useRouteNavigation(routes);
   return (
     <RouteTreeProvider routes={routes} access={{ denied, loading }}>
+      <output aria-label='Permission check'>
+        {loading ? 'Checking' : 'Ready'}
+      </output>
       {children}
     </RouteTreeProvider>
   );
@@ -128,3 +137,151 @@ it('uses the agreed Chinese menu and tab names', async () => {
   expect(screen.getByRole('tab', { name: '角色与权限' })).toBeVisible();
   expect(screen.getByRole('tab', { name: '默认数据范围' })).toBeVisible();
 });
+
+function Draft() {
+  const [value, setValue] = useState('');
+  const leave = useSettingsLeave(value !== '', false);
+  return (
+    <>
+      <input
+        aria-label='Draft'
+        value={value}
+        onChange={(event) => setValue(event.target.value)}
+      />
+      <BodyPortal>
+        <div aria-label='Draft overlay' role='dialog'>
+          {value}
+        </div>
+      </BodyPortal>
+      {leave.dialog}
+    </>
+  );
+}
+
+function DraftPage() {
+  return (
+    <PermissionManagementPage tab='roles'>
+      <Draft />
+    </PermissionManagementPage>
+  );
+}
+
+it.each([false, true])(
+  'preserves the mounted draft during permission rechecks (page guard: %s)',
+  async (guarded) => {
+    let hold = false;
+    let release!: () => void;
+    const pending = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const view = await renderAuthenticatedClient(
+      <Shell>
+        {guarded ? (
+          <ClientRoute
+            route={{
+              id: 'draft',
+              name: 'draft',
+              path: '/draft',
+              auth: 'required',
+              authz: 'unrestricted',
+              packageName: packageMetadata.name,
+              source: 'application',
+              componentLoader: async () => ({ default: DraftPage }),
+            }}
+          />
+        ) : (
+          <DraftPage />
+        )}
+      </Shell>,
+      {
+        route: '/settings/roles',
+        beforeRequest: async (request) => {
+          if (
+            hold &&
+            new URL(request.url).pathname.endsWith('/authorization/permissions')
+          )
+            await pending;
+        },
+      },
+    );
+    await screen.findByRole('tab', { name: 'Roles and permissions' });
+    const draft = screen.getByRole('textbox', { name: 'Draft' });
+    await userEvent.type(draft, 'Keep this unsaved value');
+    try {
+      hold = true;
+      act(() =>
+        view.app.container.resolve(authorizationClientToken).invalidate(),
+      );
+      await waitFor(() =>
+        expect(
+          screen.getByRole('status', { name: 'Permission check' }),
+        ).toHaveTextContent('Checking'),
+      );
+      expect(screen.queryByRole('tablist')).not.toBeInTheDocument();
+      expect(draft).toBeInTheDocument();
+      if (guarded) {
+        expect(draft).not.toBeVisible();
+        expect(
+          screen.queryByRole('dialog', { name: 'Draft overlay' }),
+        ).not.toBeInTheDocument();
+      }
+      expect(draft).toHaveValue('Keep this unsaved value');
+    } finally {
+      hold = false;
+      release();
+    }
+    await screen.findByRole('tab', { name: 'Roles and permissions' });
+    expect(screen.getByRole('textbox', { name: 'Draft' })).toBe(draft);
+    expect(draft).toHaveValue('Keep this unsaved value');
+  },
+);
+
+it.each(['tab', 'breadcrumb'])(
+  'protects an inline module draft when leaving by %s',
+  async (destination) => {
+    const user = userEvent.setup();
+    await renderAuthenticatedClient(
+      <Shell>
+        <Breadcrumbs />
+        <Routes>
+          <Route path='/settings/roles' element={<DraftPage />} />
+          <Route
+            path='/settings/default-access'
+            element={<Content tab='default-access' />}
+          />
+          <Route path='/settings' element={<h1>Settings destination</h1>} />
+        </Routes>
+      </Shell>,
+      { route: '/settings/roles' },
+    );
+    const draft = await screen.findByRole('textbox', { name: 'Draft' });
+    await user.type(draft, 'Unsaved inline draft');
+    const target =
+      destination === 'tab'
+        ? await screen.findByRole('tab', { name: 'Default data scopes' })
+        : screen.getByRole('link', { name: 'System settings' });
+    await user.click(target);
+    expect(await screen.findByRole('alertdialog')).toBeVisible();
+    await user.click(
+      screen.getByRole('button', { name: 'Cancel', exact: true }),
+    );
+    expect(draft).toHaveValue('Unsaved inline draft');
+    await user.click(target);
+    await user.click(
+      await screen.findByRole('button', { name: 'Confirm', exact: true }),
+    );
+    if (destination === 'tab')
+      await waitFor(() =>
+        expect(screen.getByRole('status', { name: 'Route' })).toHaveTextContent(
+          '/settings/default-access',
+        ),
+      );
+    else
+      expect(
+        await screen.findByRole('heading', { name: 'Settings destination' }),
+      ).toBeVisible();
+    expect(
+      screen.queryByRole('textbox', { name: 'Draft' }),
+    ).not.toBeInTheDocument();
+  },
+);
