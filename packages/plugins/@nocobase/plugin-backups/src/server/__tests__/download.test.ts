@@ -8,7 +8,6 @@
  */
 
 import { createMockServer, MockServer } from '@nocobase/test/server';
-import jwt from 'jsonwebtoken';
 import { Readable } from 'stream';
 import { signDownloadToken } from '../download-token';
 import { BackupManager } from '../managers/backup';
@@ -51,13 +50,25 @@ describe('backup download tokens', () => {
   afterEach(() => vi.restoreAllMocks());
 
   it('issues a 30-second token and streams without a session', async () => {
-    const payload = jwt.decode(token) as jwt.JwtPayload;
-    expect(payload.exp - payload.iat).toBe(30);
-    vi.spyOn(BackupManager.prototype, 'createReadStream').mockResolvedValue(Readable.from('backup content'));
-    const response = await app.agent().get(url).query({ filterByTk: fileName, hash: token });
-    expect(response.status).toBe(200);
-    expect(response.headers['content-disposition']).toContain(fileName);
-    expect(response.headers['cache-control']).toBe('private, no-store');
+    expect(token).toMatch(/^[A-Za-z0-9_-]{51}$/);
+    const peer = {
+      name: app.name,
+      authManager: { jwt: { getSecret: () => app.authManager.jwt.getSecret() } },
+    } as MockServer;
+    const now = Date.now();
+    vi.spyOn(Date, 'now').mockReturnValue(now);
+    const peerToken = signDownloadToken(peer, fileName);
+    expect(Buffer.from(peerToken, 'base64url').readUIntBE(0, 6)).toBe(now + 30_000);
+    vi.restoreAllMocks();
+    vi.spyOn(BackupManager.prototype, 'createReadStream').mockImplementation(async () =>
+      Readable.from('backup content'),
+    );
+    for (const hash of [token, peerToken]) {
+      const response = await app.agent().get(url).query({ filterByTk: fileName, hash });
+      expect(response.status).toBe(200);
+      expect(response.headers['content-disposition']).toContain(fileName);
+      expect(response.headers['cache-control']).toBe('private, no-store');
+    }
     await expect(app.authManager.jwt.decode(token)).rejects.toThrow();
   });
 
@@ -77,9 +88,13 @@ describe('backup download tokens', () => {
     vi.restoreAllMocks();
     const otherApp = { name: 'other-app', authManager: app.authManager } as MockServer;
     const otherToken = signDownloadToken(otherApp, fileName);
+    const extended = Buffer.from(token, 'base64url');
+    extended.writeUIntBE(now + 60_000, 0, 6);
     for (const params of [
       { filterByTk: fileName, hash: expired },
       { filterByTk: fileName, hash: token + 'invalid' },
+      { filterByTk: fileName, hash: extended.toString('base64url') },
+      { filterByTk: fileName, hash: token.slice(0, 10) + (token[10] === 'A' ? 'B' : 'A') + token.slice(11) },
       { filterByTk: 'other.nbdata', hash: token },
       { filterByTk: fileName, hash: otherToken },
     ]) {

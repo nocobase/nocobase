@@ -87,12 +87,16 @@ export const BackupsTable = () => {
   const handleDownload = useCallback(
     async (fileData: BackupFile) => {
       if (downloadingRef.current) return;
+      const appName = currentAppInfo?.name ?? currentAppInfo?.data?.name;
+      const params: Record<string, string> = {
+        filterByTk: fileData.name,
+      };
+      if (appName) {
+        params.__appName = appName;
+      }
       downloadingRef.current = true;
       setDownloading(fileData.name);
       try {
-        const appName = currentAppInfo?.name ?? currentAppInfo?.data?.name;
-        const params: Record<string, string> = { filterByTk: fileData.name };
-        if (appName) params.__appName = appName;
         const response = await ctx.api.request<{ data: { token: string } }>({
           url: 'backups:download',
           method: 'post',
