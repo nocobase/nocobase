@@ -130,9 +130,8 @@ const systemEnUS = {
   'auth.continueWith': 'Continue with {provider}',
   'auth.about': 'About this application',
   'auth.platform': 'AI-native application platform',
-  'auth.marketingTitleFirst': 'Let AI build freely.',
-  'auth.marketingTitleSecond': 'NocoBase keeps it',
-  'auth.marketingTitleThird': 'reliable.',
+  'auth.marketingTitleFirst': 'AI + NocoBase',
+  'auth.marketingTitleSecond': 'Build reliable business systems',
   'auth.marketingDescription':
     'Give AI a flexible frontend framework to shape each experience, while NocoBase secures the data, permissions and governance underneath.',
   'auth.frontend': 'AI-native frontend',

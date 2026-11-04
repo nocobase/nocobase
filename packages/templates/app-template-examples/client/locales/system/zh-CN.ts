@@ -120,9 +120,8 @@ const systemZhCN: SystemResource = {
   'auth.continueWith': '使用 {provider} 继续',
   'auth.about': '关于此应用',
   'auth.platform': 'AI 原生应用平台',
-  'auth.marketingTitleFirst': '让 AI 自由构建',
-  'auth.marketingTitleSecond': 'NocoBase 保障',
-  'auth.marketingTitleThird': '可靠运行',
+  'auth.marketingTitleFirst': 'AI + NocoBase',
+  'auth.marketingTitleSecond': 'Build reliable business systems',
   'auth.marketingDescription':
     '让 AI 在灵活的前端框架上构建体验，由 NocoBase 保障底层数据、权限与治理',
   'auth.frontend': 'AI 原生前端',
