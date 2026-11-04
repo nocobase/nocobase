@@ -6,6 +6,7 @@ import { Outlet, useLocation } from 'react-router';
 import { BrandWatermark } from '#components/brand-watermark';
 import { Breadcrumbs } from '#components/breadcrumbs';
 
+import { RouteLeaveBoundary } from '../routing/route-leave-boundary.js';
 import { RouteTreeProvider } from '../routing/route-context.js';
 
 import { PageBreadcrumbProvider } from '@nocobase/app-client';
@@ -48,39 +49,41 @@ export function AppLayout({ routes }: AppLayoutProps): ReactElement {
   return (
     // The shell owns the business route tree used by its pages and navigation.
     <RouteTreeProvider routes={routes} access={access}>
-      <PageBreadcrumbProvider>
-        <AppSidebarProvider>
-          <AppSidebar label={navigationLabel} footer={<AppSidebarFooter />}>
-            <NavigationMenu
-              items={menuItems}
-              label={navigationLabel}
-              selectedKey={selectedKey}
-            />
-          </AppSidebar>
-          <div className='flex min-w-0 flex-1 flex-col'>
-            <LayoutHeader className='sticky top-0 z-40 justify-between'>
-              <div className='flex min-w-0 items-center gap-3'>
-                <AppSidebarToggle />
-                <div className='md:hidden'>
-                  <AppBrand />
+      <RouteLeaveBoundary hidden={loading}>
+        <PageBreadcrumbProvider>
+          <AppSidebarProvider>
+            <AppSidebar label={navigationLabel} footer={<AppSidebarFooter />}>
+              <NavigationMenu
+                items={menuItems}
+                label={navigationLabel}
+                selectedKey={selectedKey}
+              />
+            </AppSidebar>
+            <div className='flex min-w-0 flex-1 flex-col'>
+              <LayoutHeader className='sticky top-0 z-40 justify-between'>
+                <div className='flex min-w-0 items-center gap-3'>
+                  <AppSidebarToggle />
+                  <div className='md:hidden'>
+                    <AppBrand />
+                  </div>
+                  <div className='h-5 w-px shrink-0 bg-border' />
+                  {/* The current page's trail: the route tree's, or the one the page declares (`usePageBreadcrumb`). */}
+                  <Breadcrumbs denied={denied} />
                 </div>
-                <div className='h-5 w-px shrink-0 bg-border' />
-                {/* The current page's trail: the route tree's, or the one the page declares (`usePageBreadcrumb`). */}
-                <Breadcrumbs denied={denied} />
-              </div>
-              <HeaderActions />
-            </LayoutHeader>
-            <main className='app-brand-surface relative isolate min-w-0 flex-1 overflow-hidden'>
-              <BrandWatermark className='-z-10' />
-              {/* main only positions; the page scrolls in here, so a child page layer laid over main is neither
+                <HeaderActions />
+              </LayoutHeader>
+              <main className='app-brand-surface relative isolate min-w-0 flex-1 overflow-hidden'>
+                <BrandWatermark className='-z-10' />
+                {/* main only positions; the page scrolls in here, so a child page layer laid over main is neither
             moved by the page's scrolling nor stretched by its height. */}
-              <div className='h-full overflow-y-auto'>
-                <Outlet />
-              </div>
-            </main>
-          </div>
-        </AppSidebarProvider>
-      </PageBreadcrumbProvider>
+                <div className='h-full overflow-y-auto'>
+                  <Outlet />
+                </div>
+              </main>
+            </div>
+          </AppSidebarProvider>
+        </PageBreadcrumbProvider>
+      </RouteLeaveBoundary>
     </RouteTreeProvider>
   );
 }

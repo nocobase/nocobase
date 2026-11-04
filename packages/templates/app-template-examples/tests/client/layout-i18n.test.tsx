@@ -1,5 +1,6 @@
 import {
   ClientApplicationContext,
+  NavigationGuardProvider,
   type ClientApplication,
   createAppClientConfig,
 } from '@nocobase/app-client';
@@ -74,7 +75,9 @@ async function setup(children: ReactNode) {
     <I18nProvider runtime={runtime}>
       <ClientApplicationContext.Provider value={app}>
         <SidebarPreferenceProvider value={sidebarPreference}>
-          <MemoryRouter initialEntries={['/']}>{children}</MemoryRouter>
+          <MemoryRouter initialEntries={['/']}>
+            <NavigationGuardProvider>{children}</NavigationGuardProvider>
+          </MemoryRouter>
         </SidebarPreferenceProvider>
       </ClientApplicationContext.Provider>
     </I18nProvider>,
