@@ -10,6 +10,7 @@ import shell from '../../client/pages/settings/shell-routes.js';
 import {
   buildRouteNavigation,
   buildSettingsCatalog,
+  filterRouteTree,
   selectedNavigationId,
   routeKey,
 } from '../../client/routing/route-navigation.js';
@@ -190,6 +191,14 @@ describe('System settings navigation', () => {
     const menu = buildRouteNavigation(routes, new Set());
     expect(menu.map(({ route }) => route.name)).toEqual(['settingsHome']);
     expect(catalog(routes)).toEqual([
+      ['settingsSystem', [['foundation', '/foundation']]],
+    ]);
+    // The signed-in shell receives the tree filtered to its pages; empty categories keep their titles there.
+    const signedIn = filterRouteTree(
+      routes,
+      (route) => route.auth === 'required',
+    );
+    expect(catalog(signedIn)).toEqual([
       ['settingsSystem', [['foundation', '/foundation']]],
     ]);
     const page = find(routes, 'foundation');

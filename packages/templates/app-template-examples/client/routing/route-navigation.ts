@@ -229,3 +229,18 @@ export function childRouteParentPath(
 export function routeKey(route: AppClientRegisteredRoute): string {
   return `${route.packageName}:${route.path}:${route.id}`;
 }
+
+/** Pure groups can span shells; a page and its descendants always share their shell. */
+export function filterRouteTree(
+  routes: readonly AppClientRegisteredRoute[],
+  predicate: (route: AppClientRegisteredRoute) => boolean,
+): AppClientRegisteredRoute[] {
+  return routes.flatMap((route) => {
+    if (route.componentLoader) return predicate(route) ? [route] : [];
+    const children = filterRouteTree(route.children ?? EMPTY_ARRAY, predicate);
+    // A group declared empty, such as a settings category waiting for modules, stays so its title is still known.
+    return children.length || !route.children?.length
+      ? [{ ...route, children }]
+      : [];
+  });
+}
