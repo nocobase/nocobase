@@ -30,7 +30,13 @@ import { which } from './cli.ts';
 export const WRAPPER_MARKER = '# nocobase-runner host tool wrapper';
 
 /** The tools wrapped whenever they are installed, credential or not. */
-export const GUARDED_TOOLS: readonly string[] = ['git', 'gh', 'glab', 'gitee'];
+export const GUARDED_TOOLS: readonly string[] = [
+  'git',
+  'gh',
+  'glab',
+  'gitee',
+  'gt',
+];
 
 /** `<bin> auth <subcommand>` that would change this machine's login or print the credential. */
 export const HOST_LOGIN_COMMANDS: Readonly<Record<string, readonly string[]>> =
@@ -38,6 +44,7 @@ export const HOST_LOGIN_COMMANDS: Readonly<Record<string, readonly string[]>> =
     gh: ['login', 'logout', 'refresh', 'setup-git', 'switch', 'token'],
     glab: ['login', 'logout', 'token'],
     gitee: ['login', 'logout', 'token'],
+    gt: ['login', 'logout', 'token', 'refresh', 'switch', 'setup-git'],
   };
 
 export const GUARD_FILE = 'git-guard-nocobase-runner.mjs';
@@ -212,6 +219,37 @@ export function hostToolWrapperScript(
       '  esac',
       'done',
     );
+  if (bin === 'gt') {
+    const base = credential?.env.GITEA_INSTANCE_URL;
+    const expected = typeof base === 'string' ? base : '';
+    const guard = `
+const args = process.argv.slice(1);
+const base = ${JSON.stringify(expected)};
+const sameInstance = (value) => { try { const given = new URL(value); const expected = new URL(base); const prefix = expected.pathname.endsWith('/') ? expected.pathname.slice(0, -1) : expected.pathname; return !given.username && !given.password && given.origin === expected.origin && given.pathname.startsWith(prefix + '/'); } catch { return false; } };
+const fail = () => { process.stderr.write('nocobase-runner: refused: gt may not change credentials, configuration or the run instance.\\n'); process.exit(1); };
+const values = new Set(['--repo','-R','--title','-t','--body','-b','--body-file','-F','--head','-H','--base','-B','--label','-l','--reviewer','-r','--assignee','-a','--field','-f','--header','--method','-X','--json','--jq','-q','--limit','-L','--page','--state','--output','--milestone','-m','--ref','--remote','--cwd']);
+let command = ''; let subcommand = '';
+for (let i = 0; i < args.length; i++) {
+  const arg = args[i];
+  if (/^--(?:host|user|sudo|config)(?:=|$)/.test(arg)) fail();
+  if (arg.startsWith('-')) {
+    const key = arg.split('=')[0];
+    const inline = arg.includes('=') ? arg.slice(arg.indexOf('=') + 1) : null;
+    const value = values.has(key) ? (inline ?? args[++i]) : /^-R./.test(arg) ? arg.slice(2) : null;
+    if ((key === '--repo' || key === '-R' || /^-R./.test(arg)) && value?.includes(':') && !sameInstance(value)) fail();
+    continue;
+  }
+  if (!command) { command = arg; if (!['pr','issue','repo','run','workflow','api','help','version','completion'].includes(command)) fail(); continue; }
+  if (!subcommand) subcommand = arg;
+  if (command === 'auth' && subcommand !== 'status') fail();
+  if (command === 'repo' && subcommand === 'set-default') fail();
+  if (command === 'api' && (arg.includes('://') || arg.startsWith('//') || arg.includes('..') || arg.includes('\\\\'))) fail();
+  if (command === 'repo' && subcommand === 'clone' && arg.includes(':') && !sameInstance(arg)) fail();
+}
+if (command === 'auth' && args.some(arg => /^--show-token(?:=|$)|^-t$/.test(arg))) fail();
+`;
+    lines.push(`${quote(node)} -e ${quote(guard)} -- "$@" || exit 1`);
+  }
   if (credential !== undefined)
     lines.push(
       `exports=$(${quote(node)} ${quote(credential.helper)} ${credential.index} env ${quote(JSON.stringify(credential.env))}) || exit 1`,
@@ -223,6 +261,20 @@ export function hostToolWrapperScript(
       'export GITEE_API_PREFIX=https://gitee.com/api/v5',
       'export GITEE_GO_API_HOST=go-api.gitee.com',
     );
+  if (bin === 'gt' && credential !== undefined) {
+    lines.push(
+      'unset GITEA_CLI_HOST GITEA_CLI_USER GITEA_CLI_REPO GITEA_INSTANCE_INSECURE GITEA_INSTANCE_SSH_HOST GITEA_SERVER_URL',
+      'export GITEA_CLI_HOST="$GITEA_INSTANCE_URL"',
+      'export GITEA_CLI_NO_EXTENSIONS=1 GITEA_CLI_NO_UPDATE_NOTIFIER=1',
+      'gt_config=$(mktemp -d) || exit 1',
+      'export GITEA_CLI_CONFIG_DIR="$gt_config"',
+      'trap \'rm -rf "$gt_config"\' EXIT',
+      `${quote(real)} --host "$GITEA_INSTANCE_URL" "$@"`,
+      'exit $?',
+      '',
+    );
+    return lines.join('\n');
+  }
   lines.push(
     `exec ${quote(real)}${bin === 'gitee' ? ' --hostname gitee.com' : ''} "$@"`,
     '',
@@ -288,7 +340,7 @@ export async function writeHostTools(
     if (real === undefined) {
       if (byBin.has(bin))
         options.log?.(
-          `host tools: ${bin} is not installed; no wrapper${bin === 'gitee' ? '. Install the official CLI with npm install -g @gitee/gitee-cli, then retry.' : ''}`,
+          `host tools: ${bin} is not installed; no wrapper${bin === 'gitee' ? '. Install the official CLI with npm install -g @gitee/gitee-cli, then retry.' : bin === 'gt' ? '. Install the official gt binary locally from https://docs.gitea.com/cli/installation/; use the REST API fallback in the run brief until then.' : ''}`,
         );
       continue;
     }
