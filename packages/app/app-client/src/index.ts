@@ -193,3 +193,7 @@ export {
   type FormFeedbackViolation,
   type FormFeedbackOptions,
 } from './form-feedback.js';
+export {
+  AppLocalePreferenceContext,
+  type AppLocalePreference,
+} from './locale-preference.js';

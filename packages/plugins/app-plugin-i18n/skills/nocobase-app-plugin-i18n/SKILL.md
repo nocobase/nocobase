@@ -268,6 +268,8 @@ await sendMail(recipient.email, {
 });
 ```
 
+When the recipient is identified only by `userId` and users is registered, use `resolveUserLocale(preferences, i18n, userId)` from `@nocobase/app-plugin-users/server`; resolve `preferences` with `userPreferencesServiceToken` from that same entry. It reads the supported string at `i18n.locale`, then the supported application default, then `en-US`. Load the resulting locale before translation. This is independent of request negotiation: session `locale` and `Accept-Language` never establish a durable preference. The users Client plugin restores and synchronizes saved preferences automatically; missing preferences use the default without importing an unowned browser cache. Applications without users retain browser language selection.
+
 How an error boundary serializes `AppI18nError`, and where a job without a container should translate, are in the `nocobase-app-plugin-development` Skill's `references/i18n.md` and the `@nocobase/i18n` README.
 
 ## Adding a language
