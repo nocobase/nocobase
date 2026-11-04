@@ -323,6 +323,7 @@ describe('getDownloadFileName', () => {
       cMapPacked: true,
       cMapUrl: '/static/plugins/@nocobase/plugin-file-manager/dist/client/pdfjs/cmaps/',
       standardFontDataUrl: '/static/plugins/@nocobase/plugin-file-manager/dist/client/pdfjs/standard_fonts/',
+      wasmUrl: '/static/plugins/@nocobase/plugin-file-manager/dist/client/pdfjs/wasm/',
     });
     expect(getPdfPreviewWorkerSrc()).toBe(
       '/static/plugins/@nocobase/plugin-file-manager/dist/client/pdfjs/pdf.worker.min.mjs',
@@ -338,6 +339,7 @@ describe('getDownloadFileName', () => {
       cMapPacked: true,
       cMapUrl: '/nocobase/static/plugins/@nocobase/plugin-file-manager/dist/client/pdfjs/cmaps/',
       standardFontDataUrl: '/nocobase/static/plugins/@nocobase/plugin-file-manager/dist/client/pdfjs/standard_fonts/',
+      wasmUrl: '/nocobase/static/plugins/@nocobase/plugin-file-manager/dist/client/pdfjs/wasm/',
     });
     expect(getPdfPreviewWorkerSrc()).toBe(
       '/nocobase/static/plugins/@nocobase/plugin-file-manager/dist/client/pdfjs/pdf.worker.min.mjs',
@@ -354,6 +356,7 @@ describe('getDownloadFileName', () => {
       cMapPacked: true,
       cMapUrl: '/nocobase/v/static/plugins/@nocobase/plugin-file-manager/dist/client/pdfjs/cmaps/',
       standardFontDataUrl: '/nocobase/v/static/plugins/@nocobase/plugin-file-manager/dist/client/pdfjs/standard_fonts/',
+      wasmUrl: '/nocobase/v/static/plugins/@nocobase/plugin-file-manager/dist/client/pdfjs/wasm/',
     });
     expect(getPdfPreviewWorkerSrc()).toBe(
       '/nocobase/v/static/plugins/@nocobase/plugin-file-manager/dist/client/pdfjs/pdf.worker.min.mjs',
@@ -371,6 +374,7 @@ describe('getDownloadFileName', () => {
       cMapPacked: true,
       cMapUrl: '/nocobase/static/plugins/@nocobase/plugin-file-manager/dist/client/pdfjs/cmaps/',
       standardFontDataUrl: '/nocobase/static/plugins/@nocobase/plugin-file-manager/dist/client/pdfjs/standard_fonts/',
+      wasmUrl: '/nocobase/static/plugins/@nocobase/plugin-file-manager/dist/client/pdfjs/wasm/',
     });
     expect(getPdfPreviewWorkerSrc()).toBe(
       '/nocobase/static/plugins/@nocobase/plugin-file-manager/dist/client/pdfjs/pdf.worker.min.mjs',
@@ -389,6 +393,7 @@ describe('getDownloadFileName', () => {
       cMapUrl: 'https://cdn.example.com/assets/static/plugins/@nocobase/plugin-file-manager/dist/client/pdfjs/cmaps/',
       standardFontDataUrl:
         'https://cdn.example.com/assets/static/plugins/@nocobase/plugin-file-manager/dist/client/pdfjs/standard_fonts/',
+      wasmUrl: 'https://cdn.example.com/assets/static/plugins/@nocobase/plugin-file-manager/dist/client/pdfjs/wasm/',
     });
     expect(getPdfPreviewWorkerSrc()).toBe(
       'https://cdn.example.com/assets/static/plugins/@nocobase/plugin-file-manager/dist/client/pdfjs/pdf.worker.min.mjs',
