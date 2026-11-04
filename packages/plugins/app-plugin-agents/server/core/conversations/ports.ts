@@ -246,7 +246,7 @@ export interface ConversationService {
   ): Promise<{ readonly seq: number; readonly run: SendMessageResult['run'] }>;
   /**
    * Takes back a message queued while the agent worked (`queue`), while its runner has not taken it: it stays in the
-   * history, marked withdrawn, and the agent never sees it.
+   * history, marked withdrawn, and the agent never sees it. An initial unclaimed turn ends through guarded queued withdrawal.
    */
   withdraw(userId: string, id: string, messageId: string): Promise<void>;
   /** A new conversation and its first message (`StartConversationRequest`): the application pages' buttons. */

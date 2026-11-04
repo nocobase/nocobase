@@ -673,13 +673,41 @@ export async function readQueueWait(
   runnerSource: WorkloadRunners,
   runId: string,
   diagnose?: ClaimService['diagnose'],
+  conversationRunnerId?: string | null,
 ): Promise<RunWait | null> {
   const record = await runsRepo(conn).findOne({ filter: { id: runId } });
-  if (!record || record.status !== 'queued') return null;
+  if (!record || record.status !== 'queued' || record.runnerId !== null)
+    return null;
   const state = await readQueueState(conn, clock, runnerSource);
   const run = toRun(record);
   const agent = state.agentById.get(run.agentId);
-  const previous = quickWait(record, run.requires, state);
+  // Conversation binding is stricter than an Agent's general availability. This is read-only; claim is unchanged.
+  const scoped = conversationRunnerId
+    ? {
+        ...state,
+        online: state.online.filter(
+          (runner) => runner.id === conversationRunnerId,
+        ),
+      }
+    : state;
+  let previous = quickWait(record, run.requires, scoped);
+  if (conversationRunnerId && scoped.online.length === 0)
+    return { ...wait('runnersOffline'), position: null, agentPosition: 1 };
+  if (conversationRunnerId && previous.reason === 'runnersBusy') {
+    const runner = scoped.online[0];
+    const limit = Math.min(runner.slots, runner.reportedSlots ?? runner.slots);
+    previous = {
+      ...previous,
+      params: {
+        ...previous.params,
+        used: Math.max(
+          state.runnerUsed.get(runner.id) ?? 0,
+          limit - (runner.globalFree ?? limit),
+        ),
+        limit,
+      },
+    };
+  }
   const diagnostic =
     agent?.status === 'enabled' && diagnose
       ? await diagnose(conn, run, agent)

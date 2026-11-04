@@ -208,7 +208,8 @@ export interface ChatAttachmentService {
 export interface ChatAttachmentLinks {
   /**
    * Gives `ids` (checked: at most `CHAT_ATTACHMENTS_PER_MESSAGE_MAX` distinct ids of `userId`'s uploads attached to
-   * nothing) to the conversation and message. Answers what the message keeps, in the order named; 400
+   * nothing, or files on a withdrawn input in this same owned conversation) to the conversation and message.
+   * Answers what the message keeps, in the order named; 400
    * `INVALID_REQUEST` otherwise, and nothing is attached.
    */
   attach(
@@ -415,24 +416,62 @@ export function createChatAttachments(deps: ChatAttachmentDeps): {
           'Send at most the allowed number of distinct attachments.',
         );
       const rows = await findFiles(conn, ids);
+      // A withdrawn input can be sent with another Agent in the same owned conversation, without copying files.
+      const reused = rows.filter(
+        (row) =>
+          row.conversationId === target.conversationId &&
+          row.uploaderId === userId,
+      );
+      const withdrawn = reused.length
+        ? await conn
+            .repository<{ id: string; metadata: unknown }>(
+              'agConversationMessages',
+            )
+            .findMany({
+              filter: (f) =>
+                f.and([
+                  f.string('conversationId').eq(target.conversationId),
+                  f.or(
+                    reused.flatMap((row) =>
+                      row.messageId ? [f.string('id').eq(row.messageId)] : [],
+                    ),
+                  ),
+                  f.json('metadata').path(['withdrawn']).eq(true),
+                ]),
+            })
+        : [];
+      const reusable = new Set(
+        reused
+          .filter((row) =>
+            withdrawn.some((message) => message.id === row.messageId),
+          )
+          .map((row) => row.id),
+      );
       const ordered = ids.map((id) => {
         const row = rows.find((candidate) => candidate.id === id);
-        if (!row || row.conversationId !== null || row.uploaderId !== userId)
+        if (
+          !row ||
+          (row.conversationId !== null && !reusable.has(id)) ||
+          row.uploaderId !== userId
+        )
           throw invalid(`File ${id} is not an upload of yours to send.`, {
             field: 'attachmentIds',
             fileId: id,
           });
         return row;
       });
-      const bound = await files(conn).updateMany({
-        filter: (f) =>
-          f.and([
-            f.or(ids.map((id) => f.string('id').eq(id))),
-            f.string('conversationId').eq(null),
-          ]),
-        values: { ...target, updatedAt: now() },
-      });
-      if (bound.updatedCount !== ids.length)
+      const fresh = ids.filter((id) => !reusable.has(id));
+      const bound = fresh.length
+        ? await files(conn).updateMany({
+            filter: (f) =>
+              f.and([
+                f.or(fresh.map((id) => f.string('id').eq(id))),
+                f.string('conversationId').eq(null),
+              ]),
+            values: { ...target, updatedAt: now() },
+          })
+        : { updatedCount: 0 };
+      if (bound.updatedCount !== fresh.length)
         throw invalid('An upload was already attached to another message.');
       return ordered.map(stored);
     },
