@@ -10,7 +10,6 @@
 import * as nocobaseClient from '@nocobase/client';
 import { render, screen, userEvent, waitFor } from '@nocobase/test/client';
 import { App } from 'antd';
-import { saveAs } from 'file-saver';
 import React from 'react';
 import { describe, vi } from 'vitest';
 import { BackupFile, BackupsTable } from '../components/BackupsTable';
@@ -33,18 +32,12 @@ const mockedData = {
   ],
 };
 
-vi.mock('file-saver', async () => {
-  return {
-    saveAs: vi.fn(),
-  };
-});
-
 describe('BackupsTable', () => {
   const { Wrapper, mockRequest } = createMockAppWrapper();
 
   beforeEach(() => {
     mockRequest.reset();
-    vi.spyOn(nocobaseClient, 'useCurrentAppInfo').mockReturnValue(undefined as any);
+    vi.spyOn(nocobaseClient, 'useCurrentAppInfo').mockReturnValue(undefined);
     mockRequest.onGet(`${NAMESPACE}:appInfo`).reply(200, {
       data: {
         database: {
@@ -60,7 +53,7 @@ describe('BackupsTable', () => {
 
   const MockedTable = () => {
     mockRequest.onGet('backups:list').reply(200, mockedData);
-    mockRequest.onGet('backups:download').reply(200, 'mocked-backup-content');
+    mockRequest.onPost('backups:download').reply(200, { data: { token: 'download-token' } });
     mockRequest.onPost('backups:destroy').reply(200, {});
 
     const useRequestValues = nocobaseClient.useRequest<{ data: BackupFile[] }>({
@@ -84,9 +77,11 @@ describe('BackupsTable', () => {
   });
 
   test('should handle download action', async () => {
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
     const user = userEvent.setup();
     render(<MockedTable />, { wrapper: Wrapper });
     const download = await screen.findByText('Download');
+    expect(download.tagName).toBe('A');
     await waitFor(() => {
       expect(download.closest('.ant-spin-container')).not.toHaveClass('ant-spin-blur');
     });
@@ -94,18 +89,20 @@ describe('BackupsTable', () => {
     await user.click(download);
 
     await waitFor(() => {
-      expect(mockRequest.history.get).toEqual(
+      expect(mockRequest.history.post).toEqual(
         expect.arrayContaining([
           expect.objectContaining({
             url: 'backups:download',
-            responseType: 'blob',
             params: {
               filterByTk: 'backup_20240818_182301_9056.nbdata',
             },
           }),
         ]),
       );
-      expect(saveAs).toHaveBeenCalledWith(expect.any(Blob), 'backup_20240818_182301_9056.nbdata');
+      expect(click).toHaveBeenCalledOnce();
+      const link = click.mock.instances[0] as HTMLAnchorElement;
+      expect(link.href).toContain('hash=download-token');
+      expect(link.download).toBe('backup_20240818_182301_9056.nbdata');
     });
   });
 

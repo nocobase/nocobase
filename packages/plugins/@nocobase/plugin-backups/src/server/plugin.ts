@@ -15,6 +15,7 @@ import _ from 'lodash';
 import path from 'path';
 import { BackupManager, BackupSettings } from './managers/backup';
 import { RestoreManager } from './managers/restore';
+import { authenticateDownload } from './download-token';
 import backupCliResource from './resourcers/backup-cli';
 import backupsResource from './resourcers/backups';
 import {
@@ -78,6 +79,8 @@ export class PluginBackupsServer extends Plugin {
         'id.$ne': 1,
       };
     });
+    this.app.resourceManager.use(authenticateDownload, { before: 'auth' });
+    this.app.acl.allow('backups', 'download', (ctx) => ctx.state.backupDownload === true);
     this.app.resourceManager.define(backupsResource);
     this.app.resourceManager.define(backupCliResource);
 
