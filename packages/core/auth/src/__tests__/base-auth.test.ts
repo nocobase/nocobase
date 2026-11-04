@@ -11,6 +11,8 @@ import { vi } from 'vitest';
 import { BaseAuth } from '../base/auth';
 import { AuthErrorCode } from '../auth';
 
+type BaseAuthConfig = ConstructorParameters<typeof BaseAuth>[0];
+
 describe('base-auth', () => {
   it('should validate username', () => {
     const auth = new BaseAuth({
@@ -46,6 +48,7 @@ describe('base-auth', () => {
 
   it('check: should set roleName to headers', async () => {
     const ctx = {
+      state: {} as { authTokenRole?: string },
       getBearerToken: () => 'token',
       t: (s) => s,
       headers: {},
@@ -82,10 +85,11 @@ describe('base-auth', () => {
           findOne: () => ({ id: 1 }),
         },
       },
-    } as any);
+    } as unknown as BaseAuthConfig);
 
     await auth.check();
     expect(ctx.headers['x-role']).toBe('admin');
+    expect(ctx.state.authTokenRole).toBe('admin');
   });
 
   it('check: should return user', async () => {
