@@ -16,6 +16,89 @@ import { PluginUiTemplatesClientV2 } from '../plugin';
 const t = (key: string) => key;
 
 describe('PluginUiTemplatesClientV2', () => {
+  it('registers the popup template selector immediately when flow-engine is ready', async () => {
+    const registerActions = vi.fn();
+    const app = {
+      flowEngine: {
+        registerModelLoaders: vi.fn(),
+        flowSettings: {
+          registerDynamicFlowSourceProvider: vi.fn(),
+        },
+        getAction: vi.fn(() => ({
+          name: 'openView',
+          uiSchema: {},
+          handler: vi.fn(),
+        })),
+        registerActions,
+      },
+      eventBus: new EventTarget(),
+      pluginSettingsManager: {
+        addMenuItem: vi.fn(),
+        addPageTabItem: vi.fn(),
+      },
+      i18n: {
+        t: (key: string) => key,
+      },
+    };
+    const plugin = new PluginUiTemplatesClientV2({}, app as never);
+
+    await plugin.load();
+
+    expect(registerActions).toHaveBeenCalledTimes(1);
+  });
+
+  it('registers the popup template selector when flow-engine loads afterward', async () => {
+    const registerActions = vi.fn();
+    let action:
+      | {
+          name: string;
+          uiSchema: Record<string, unknown>;
+          handler: ReturnType<typeof vi.fn>;
+        }
+      | undefined;
+    const eventBus = new EventTarget();
+    const app = {
+      flowEngine: {
+        registerModelLoaders: vi.fn(),
+        flowSettings: {
+          registerDynamicFlowSourceProvider: vi.fn(),
+        },
+        getAction: vi.fn(() => action),
+        registerActions,
+      },
+      eventBus,
+      pluginSettingsManager: {
+        addMenuItem: vi.fn(),
+        addPageTabItem: vi.fn(),
+      },
+      i18n: {
+        t: (key: string) => key,
+      },
+    };
+    const plugin = new PluginUiTemplatesClientV2({}, app as never);
+
+    await plugin.load();
+
+    expect(registerActions).not.toHaveBeenCalled();
+
+    action = {
+      name: 'openView',
+      uiSchema: {},
+      handler: vi.fn(),
+    };
+    eventBus.dispatchEvent(new Event('flow-engine:loaded'));
+    eventBus.dispatchEvent(new Event('flow-engine:loaded'));
+
+    expect(registerActions).toHaveBeenCalledWith(
+      expect.objectContaining({
+        openView: expect.objectContaining({
+          uiSchema: expect.objectContaining({ popupTemplateUid: expect.any(Object) }),
+        }),
+      }),
+    );
+    expect(registerActions).toHaveBeenCalledTimes(1);
+  });
+
   it('registers v2 models and settings pages', async () => {
     const registerModelLoaders = vi.fn();
     const registerDynamicFlowSourceProvider = vi.fn();
@@ -30,6 +113,7 @@ describe('PluginUiTemplatesClientV2', () => {
         getAction: vi.fn(() => undefined),
         registerActions: vi.fn(),
       },
+      eventBus: new EventTarget(),
       pluginSettingsManager: {
         addMenuItem,
         addPageTabItem,

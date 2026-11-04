@@ -987,9 +987,9 @@ const hasOwnParam = (params: any, key: string) => {
   return !!params && typeof params === 'object' && Object.prototype.hasOwnProperty.call(params, key);
 };
 
-export function registerOpenViewPopupTemplateAction(flowEngine: FlowEngine) {
+export function registerOpenViewPopupTemplateAction(flowEngine: FlowEngine): boolean {
   const base = flowEngine.getAction('openView') as ActionDefinition | undefined;
-  if (!base) return;
+  if (!base) return false;
 
   const baseUiSchema: any = (base as any).uiSchema || {};
   const { mode, size, uid, ...rest } = baseUiSchema;
@@ -1093,4 +1093,5 @@ export function registerOpenViewPopupTemplateAction(flowEngine: FlowEngine) {
   };
 
   flowEngine.registerActions({ openView: enhanced });
+  return true;
 }

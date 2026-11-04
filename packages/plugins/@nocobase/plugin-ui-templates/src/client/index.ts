@@ -8,20 +8,28 @@
  */
 
 import { Plugin } from '@nocobase/client';
+import { FLOW_ENGINE_LOADED_EVENT } from '@nocobase/client-v2';
 import {
   blockTemplatesPageLoader,
   popupTemplatesPageLoader,
+  registerLegacyUiTemplateAction,
   registerLegacyUiTemplateExtensions,
   registerLegacyUiTemplateModelLoaders,
 } from './legacyV2Bridge';
 
 const NAMESPACE = 'ui-templates';
 const PLUGIN_NAMESPACE = '@nocobase/plugin-ui-templates';
-
 export class PluginBlockReferenceClient extends Plugin {
   async load() {
     registerLegacyUiTemplateModelLoaders(this.flowEngine);
     registerLegacyUiTemplateExtensions(this.flowEngine);
+    const registerPopupTemplateAction = () => {
+      if (registerLegacyUiTemplateAction(this.flowEngine)) {
+        this.app.eventBus.removeEventListener(FLOW_ENGINE_LOADED_EVENT, registerPopupTemplateAction);
+      }
+    };
+    this.app.eventBus.addEventListener(FLOW_ENGINE_LOADED_EVENT, registerPopupTemplateAction);
+    registerPopupTemplateAction();
 
     // 父级菜单（只有标题，无组件）
     this.app.pluginSettingsManager.add(NAMESPACE, {
