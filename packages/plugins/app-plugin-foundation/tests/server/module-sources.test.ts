@@ -1540,23 +1540,53 @@ it('selects declaration factories through a called local wrapper and exported al
   expect(watched).toContain(path.join(dependency, 'server/index.ts'));
 });
 
-it('stops reading packages once interrupted instead of reporting incomplete evidence', async () => {
-  const root = await fixture({
-    'client/routes.ts': `export default [{name:'one',componentLoader:()=>import('./page.js')}];`,
-    'client/page.ts': `export default ()=>null;`,
+it('stops between packages when interrupted mid-scan, and a later full scan matches an uninterrupted one', async () => {
+  const route = (name: string) => ({
+    'client/routes.ts': `export default [{name:'${name}',componentLoader:()=>import('./page.js')}];`,
+    'client/page.ts': `import {query} from '@nocobase/db';export default ()=>query();`,
   });
+  const root = await fixture(route('host'));
+  const first = await fixture({
+    'package.json': JSON.stringify({ name: 'first-plugin' }),
+    ...route('first'),
+  });
+  const second = await fixture({
+    'package.json': JSON.stringify({ name: 'second-plugin' }),
+    ...route('second'),
+  });
+  const runtime = [
+    { name: 'first-plugin', rootDir: first, evidence: 'serverRegistration' },
+    { name: 'second-plugin', rootDir: second, evidence: 'serverRegistration' },
+  ] as const;
+  const expected = await collectModuleSources(root, runtime);
+  expect(expected.routes.map((r) => r.routeName).sort()).toEqual([
+    'first',
+    'host',
+    'second',
+  ]);
+
   const abort = new AbortController();
   const reason = new Error('shutting down');
-  abort.abort(reason);
+  const watched: string[] = [];
   const unreadable = vi.fn();
   await expect(
     collectModuleSources(
       root,
-      [],
-      { watch: async () => undefined, unreadable },
+      runtime,
+      {
+        watch: async (file) => {
+          watched.push(file);
+          // Interrupt while the first plugin is being read.
+          if (file.startsWith(first)) abort.abort(reason);
+        },
+        unreadable,
+      },
       abort.signal,
     ),
   ).rejects.toBe(reason);
+  expect(watched.some((file) => file.startsWith(first))).toBe(true);
+  expect(watched.some((file) => file.startsWith(second))).toBe(false);
   expect(unreadable).not.toHaveBeenCalled();
-  expect((await collectModuleSources(root)).routes).toHaveLength(1);
+
+  expect(await collectModuleSources(root, runtime)).toEqual(expected);
 });

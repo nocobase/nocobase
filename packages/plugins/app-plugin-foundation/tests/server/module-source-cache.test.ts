@@ -12,6 +12,7 @@ import { afterEach, expect, it } from 'vitest';
 import { ServiceContainer } from '@nocobase/service-provider';
 import { DefaultFoundationService } from '../../server/services/foundation.js';
 import { ModuleSourceCache } from '../../server/module-source-cache.js';
+import { collectModuleSources } from '../../server/module-sources.js';
 
 const roots: string[] = [];
 afterEach(async () => {
@@ -347,4 +348,34 @@ it('invalidates missing, inherited and unreadable local alias declarations', asy
   expect((await cache.read(root)).routes[0]?.providers).toContain(
     '@nocobase/app-plugin-file',
   );
+});
+
+it('never caches a scan interrupted mid-scan; the next read is complete and then cached', async () => {
+  const root = await fixture();
+  const plugin = await fixture('fixture-plugin');
+  const runtime = [
+    {
+      name: 'fixture-plugin',
+      rootDir: plugin,
+      evidence: 'serverRegistration',
+    },
+  ] as const;
+  const expected = await collectModuleSources(root, runtime);
+  // The application package takes four checks; the sixth comes after the plugin's files are walked, before it is analysed.
+  let checks = 0;
+  const reason = new Error('shutting down');
+  const signal = {
+    get aborted() {
+      return checks >= 6;
+    },
+    throwIfAborted() {
+      if (++checks >= 6) throw reason;
+    },
+  } as unknown as AbortSignal;
+  const cache = new ModuleSourceCache();
+  await expect(cache.read(root, runtime, signal)).rejects.toBe(reason);
+  expect(checks).toBe(6);
+  const complete = await cache.read(root, runtime);
+  expect(complete).toEqual(expected);
+  expect(await cache.read(root, runtime)).toBe(complete);
 });
