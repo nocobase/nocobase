@@ -11,11 +11,10 @@ import { css } from '@emotion/css';
 import { Table, useCurrentAppInfo } from '@nocobase/client-v2';
 import { useFlowContext } from '@nocobase/flow-engine';
 import { useRequest } from 'ahooks';
-import { App, Divider, Space, theme } from 'antd';
+import { App, Button, Divider, Space, theme } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
-import { saveAs } from 'file-saver';
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { NAMESPACE } from '../constants';
 import { useBackupsContext } from '../contexts';
 import { useT } from '../locale';
@@ -41,6 +40,8 @@ type ResourceResponse<T> = {
 
 export const BackupsTable = () => {
   const t = useT();
+  const downloadingRef = useRef(false);
+  const [downloading, setDownloading] = useState<string>();
   const ctx = useFlowContext();
   const currentAppInfo = useCurrentAppInfo<AppInfo>();
   const { token } = theme.useToken();
@@ -84,23 +85,36 @@ export const BackupsTable = () => {
 
   const handleDownload = useCallback(
     async (fileData: BackupFile) => {
-      const appName = currentAppInfo?.name ?? currentAppInfo?.data?.name;
-      const params: Record<string, string> = {
-        filterByTk: fileData.name,
-      };
-      if (appName) {
-        params.__appName = appName;
+      if (downloadingRef.current) return;
+      downloadingRef.current = true;
+      setDownloading(fileData.name);
+      try {
+        const appName = currentAppInfo?.name ?? currentAppInfo?.data?.name;
+        const params: Record<string, string> = { filterByTk: fileData.name };
+        if (appName) params.__appName = appName;
+        const response = await ctx.api.request<{ data: { token: string } }>({
+          url: 'backups:download',
+          method: 'post',
+          params,
+        });
+        const link = document.createElement('a');
+        link.href = ctx.api.axios.getUri({
+          url: 'backups:download',
+          params: { ...params, downloadToken: response.data.data.token },
+        });
+        link.download = fileData.name;
+        link.rel = 'noreferrer';
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+      } catch {
+        message.error(t('Download failed'));
+      } finally {
+        downloadingRef.current = false;
+        setDownloading(undefined);
       }
-      const response = await ctx.api.request({
-        url: 'backups:download',
-        method: 'get',
-        params,
-        responseType: 'blob',
-      });
-      const blob = new Blob([response.data]);
-      saveAs(blob, fileData.name);
     },
-    [ctx.api, currentAppInfo?.data?.name, currentAppInfo?.name],
+    [ctx.api, currentAppInfo?.data?.name, currentAppInfo?.name, message, t],
   );
 
   const hideCellWhenInProgress = (record: BackupFile) => (record.inProgress ? { colSpan: 0 } : {});
@@ -147,19 +161,23 @@ export const BackupsTable = () => {
         render: (_: unknown, record) => (
           <Space split={<Divider type="vertical" />}>
             <RestoreFromBackup backup={record} />
-            <a
+            <Button
+              type="link"
+              style={{ padding: 0 }}
+              loading={downloading === record.name}
+              disabled={!!downloading}
               onClick={() => {
                 handleDownload(record);
               }}
             >
               {t('Download')}
-            </a>
+            </Button>
             <a onClick={() => handleDestroy(record)}>{t('Delete')}</a>
           </Space>
         ),
       },
     ],
-    [handleDestroy, handleDownload, t, token.colorText],
+    [downloading, handleDestroy, handleDownload, t, token.colorText],
   );
 
   return (

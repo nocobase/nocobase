@@ -29,9 +29,11 @@ function createPlugin() {
     },
     acl: {
       addFixedParams: vi.fn(),
+      allow: vi.fn(),
     },
     resourceManager: {
       define: vi.fn(),
+      use: vi.fn(),
     },
     on: vi.fn((event: string, callback: AppEventCallback) => {
       callbacks.set(event, callback);

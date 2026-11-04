@@ -24,6 +24,7 @@
     "archiver": "^5.3.1",
     "content-disposition": "^0.5.4",
     "dayjs": "^1.11.8",
+    "jsonwebtoken": "^9.0.2",
     "inquirer": "^8.0.0",
     "koa-send": "^5.0.1",
     "mkdirp": "^1.0.4",
