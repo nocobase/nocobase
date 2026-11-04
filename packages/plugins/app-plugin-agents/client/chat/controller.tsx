@@ -1622,6 +1622,7 @@ export class ChatController {
     refresh = true,
     synchronizeLists = true,
   ): void {
+    if (detail.snapshot) return;
     if (synchronizeLists) this.syncLists(detail);
     if (detail.execution?.status === 'running') this.receive(detail.id, detail);
     if (!chatIsRunning(detail)) {

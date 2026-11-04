@@ -1732,6 +1732,7 @@ const conversationSummaryObject = z.object({
       }),
     })
     .nullable()
+    .optional()
     .meta({
       description:
         'The runner the conversation is bound to: the first that took a run on it, which alone takes the next ones. Null until then, and after switchRunner.',
@@ -1740,8 +1741,9 @@ const conversationSummaryObject = z.object({
   seenSeq: z
     .number()
     .int()
+    .optional()
     .meta({ description: 'How far the owner has seen it (markSeen).' }),
-  needsYou: ConversationNeedsYouSchema.nullable().meta({
+  needsYou: ConversationNeedsYouSchema.nullable().optional().meta({
     description:
       'What waits for the owner: a reply or failure until they see it, a question until they write.',
   }),
@@ -1751,6 +1753,9 @@ export const ConversationSummarySchema: z.ZodType<ConversationSummary> =
   conversationSummaryObject.meta({ ref: 'AgentsConversationSummary' });
 
 const conversationDetailObject = conversationSummaryObject.extend({
+  snapshot: z
+    .object({ cutoffSeq: z.number().int(), snapshotAt: z.string() })
+    .optional(),
   effort: z.string().nullable().optional(),
   availability,
   canFallback: z.boolean(),

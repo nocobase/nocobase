@@ -1,3 +1,5 @@
+import { ShareConversation } from './share-conversation.js';
+import { ConversationHeader } from './conversation-header.js';
 /**
  * One conversation as a page of its own, for an application that gives it a route (for example, `/chat/:conversationId`,
  * where a conversation started from the home page lands). It is the panel's conversation view in its page form: the
@@ -182,10 +184,15 @@ function PageBar({
   const actions = useConversationActions();
   const mobile = useMediaQuery(CHAT_MOBILE_QUERY);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [sharing, setSharing] = useState(false);
   const shown = conversation
     ? conversation.title?.trim() || t('chat.untitled')
     : '';
 
+  if (conversation?.snapshot)
+    return (
+      <ConversationHeader title={shown} onBack={onNew} onClose={undefined} />
+    );
   return (
     // The header lines up with the messages' column, as the title of what is under it.
     <header
@@ -248,6 +255,9 @@ function PageBar({
           </DropdownMenuTrigger>
           <DropdownMenuContent align='end' className='w-auto min-w-40'>
             <DropdownMenuGroup>
+              <DropdownMenuItem onClick={() => setSharing(true)}>
+                {t('chat.sharing.title')}
+              </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => {
                   actions.archive.mutate({
@@ -264,6 +274,13 @@ function PageBar({
           </DropdownMenuContent>
         </DropdownMenu>
       ) : null}
+      {conversation && (
+        <ShareConversation
+          conversationId={conversation.id}
+          open={sharing}
+          onOpenChange={setSharing}
+        />
+      )}
       <ChatHistoryDialog
         open={historyOpen}
         onOpenChange={setHistoryOpen}

@@ -1,3 +1,4 @@
+import ConversationSharingProvider from './conversation-sharing.js';
 import OnboardingRegistration from './onboarding-registration.js';
 import ProcurementRegistration from './procurement-registration.js';
 import SubmissionProvider from './submission.js';
@@ -21,6 +22,7 @@ export {
 
 const serviceProviders: readonly ApplicationServiceProviderConstructor[] = [
   SubmissionProvider,
+  ConversationSharingProvider,
   ProcurementRegistration,
   OnboardingRegistration,
   AppExampleProvider,

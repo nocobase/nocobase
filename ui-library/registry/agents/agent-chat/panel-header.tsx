@@ -1,3 +1,4 @@
+import { ShareConversation } from './share-conversation.js';
 import { useState, type ReactElement } from 'react';
 import {
   CHAT_MOBILE_QUERY,
@@ -29,17 +30,22 @@ export function PanelHeader(): ReactElement {
   const { t } = useChatTranslation();
   const phone = useMediaQuery(CHAT_MOBILE_QUERY);
   const [deleting, setDeleting] = useState(false);
+  const [sharing, setSharing] = useState(false);
   return (
     <>
       <ConversationHeader
         title={conversation?.title?.trim() || t('chat.newConversation')}
         onRename={
-          conversation
+          conversation && !conversation.snapshot
             ? (title) => actions.rename.mutate({ id: conversation.id, title })
             : undefined
         }
         onBack={() => panel.setView('history')}
-        onNew={conversation ? () => panel.selectConversation(null) : undefined}
+        onNew={
+          conversation && !conversation.snapshot
+            ? () => panel.selectConversation(null)
+            : undefined
+        }
         onExpand={
           !phone
             ? () =>
@@ -49,13 +55,16 @@ export function PanelHeader(): ReactElement {
         expanded={panel.mode === 'expanded'}
         onClose={panel.closeChat}
         metadata={
-          conversation ? (
+          conversation && !conversation.snapshot ? (
             <ConversationMetadata conversation={conversation} />
           ) : null
         }
         menuItems={
-          conversation ? (
+          conversation && !conversation.snapshot ? (
             <>
+              <DropdownMenuItem onClick={() => setSharing(true)}>
+                {t('chat.sharing.title')}
+              </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() =>
                   actions.archive.mutate({
@@ -82,6 +91,13 @@ export function PanelHeader(): ReactElement {
           ) : null
         }
       />
+      {conversation && (
+        <ShareConversation
+          conversationId={conversation.id}
+          open={sharing}
+          onOpenChange={setSharing}
+        />
+      )}
       {conversation && (
         <DeleteConversationDialog
           conversation={conversation}

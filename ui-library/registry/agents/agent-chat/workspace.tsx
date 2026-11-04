@@ -1,3 +1,5 @@
+import { ShareConversation } from './share-conversation.js';
+import { SnapshotView } from './snapshot-view.js';
 /**
  * The chat workspace: the conversation list, one conversation and its details, laid out by the workspace's own width
  * (a ResizeObserver on its root, never the viewport), so a full page and a side panel are the same component:
@@ -395,8 +397,28 @@ function WorkspaceConversation({
   const detail = useConversation(conversationId).data ?? null;
   const actions = useConversationActions();
   const [deleting, setDeleting] = useState(false);
+  const [sharing, setSharing] = useState(false);
   // The conversation owns its usage read; the details only show the cached snapshot.
-  useConversationUsage(conversationId, false);
+  useConversationUsage(
+    detail?.snapshot || !detail ? null : conversationId,
+    false,
+  );
+  if (detail?.snapshot)
+    return (
+      <section className='flex min-h-0 min-w-0 flex-1 flex-col'>
+        <ConversationHeader
+          title={detail.title || t('chat.untitled')}
+          onBack={narrow ? onBack : undefined}
+          onClose={onClose}
+          onExpand={onExpand}
+          expanded={expanded}
+        />
+        <SnapshotView
+          key={`${detail.id}:${detail.updatedAt}`}
+          conversation={detail}
+        />
+      </section>
+    );
   return (
     <>
       <section
@@ -436,6 +458,9 @@ function WorkspaceConversation({
           menuItems={
             detail ? (
               <>
+                <DropdownMenuItem onClick={() => setSharing(true)}>
+                  {t('chat.sharing.title')}
+                </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() =>
                     actions.archive.mutate({
@@ -467,6 +492,13 @@ function WorkspaceConversation({
           <ConversationView conversationId={conversationId} />
         )}
       </section>
+      {detail && (
+        <ShareConversation
+          conversationId={detail.id}
+          open={sharing}
+          onOpenChange={setSharing}
+        />
+      )}
       {detail && (
         <DeleteConversationDialog
           conversation={detail}

@@ -1,7 +1,7 @@
 /**
  * The chat API, mounted at `/api/agents` (`CHAT_ROUTES` in `shared/conversations`). Every route is behind the guard (a
- * signed-in person and their authorization context). A conversation is its owner's alone: the service answers 404 to
- * anyone else, whatever they may manage. Changing the team's default chat agent needs `agents.agents` manage.
+ * signed-in person and their authorization context). Only its owner writes a conversation. Named recipients read
+ * bounded snapshots; everyone else receives 404. Changing the team's default chat agent needs `agents.agents` manage.
  */
 import {
   apiErrorResponse,
@@ -77,7 +77,7 @@ import {
 
 const noConversation = apiErrorResponse(
   404,
-  "The conversation does not exist or is not the caller's (`CONVERSATION_NOT_FOUND`).",
+  'The conversation does not exist or the caller has no access (`CONVERSATION_NOT_FOUND`).',
 );
 const conversationConflict = (when: string) =>
   apiErrorResponse(400, `${when} (\`CONVERSATION_CONFLICT\`).`);
@@ -440,7 +440,7 @@ export function createChatRoutes(
       tags,
       security: personOrRunSecurity,
       description:
-        'Owner-only read. The runToken scheme accepts OnlineAgent execution credentials, or other issued credentials admitted by the application. Other scoped credentials are refused.',
+        'The owner reads the live conversation; a named recipient reads only snapshot metadata. The runToken scheme accepts OnlineAgent execution credentials, or other issued credentials admitted by the application. Other scoped credentials are refused.',
       summary: 'Get a conversation',
       operationId: 'agentsGetConversation',
       ...cliRoute({
@@ -456,13 +456,115 @@ export function createChatRoutes(
       },
     }),
     conversationParam,
-    async (context) =>
-      context.json({
+    async (context) => {
+      context.header('Cache-Control', 'private, no-store');
+      return context.json({
         data: await conversations.get(
           me(context),
           context.req.valid('param').conversationId,
         ),
+      });
+    },
+  );
+  const ShareSchema = z.object({
+    userId: z.string(),
+    name: z.string().nullable(),
+    cutoffSeq: z.number().int(),
+    snapshotAt: z.string(),
+    updatedAt: z.string(),
+  });
+  router.get(
+    '/conversations/:conversationId/shareCandidates',
+    guard,
+    describeRoute({
+      tags,
+      summary: 'List snapshot recipients available to the owner',
+      operationId: 'agentsConversationShareCandidates',
+      ...cliRoute(false),
+      responses: {
+        200: listResponse(z.object({ id: z.string(), name: z.string() })),
+        404: noConversation,
+        ...apiErrorResponses,
+      },
+    }),
+    conversationParam,
+    async (c) =>
+      c.json({
+        data: await conversations.shares.candidates(me(c), conversationId(c)),
       }),
+  );
+  router.get(
+    '/conversations/:conversationId/shares',
+    guard,
+    describeRoute({
+      tags,
+      summary: 'List conversation snapshots as the owner',
+      operationId: 'agentsListConversationShares',
+      ...cliRoute(false),
+      responses: {
+        200: listResponse(ShareSchema),
+        404: noConversation,
+        ...apiErrorResponses,
+      },
+    }),
+    conversationParam,
+    async (c) => {
+      c.header('Cache-Control', 'private, no-store');
+      return c.json({
+        data: await conversations.shares.list(me(c), conversationId(c)),
+      });
+    },
+  );
+  const ShareParams = z.object({
+    conversationId: z.string().min(1).max(64),
+    userId: z.string().min(1).max(64),
+  });
+  router.put(
+    '/conversations/:conversationId/shares/:userId',
+    guard,
+    describeRoute({
+      tags,
+      summary: 'Share the latest finished conversation snapshot',
+      operationId: 'agentsGrantConversationShare',
+      ...cliRoute(false),
+      description:
+        'Owner only. Repeating advances the cutoff to the latest finished turn. The recipient must belong to the application-provided scope.',
+      responses: {
+        200: dataResponse(ShareSchema),
+        404: noConversation,
+        ...apiErrorResponses,
+      },
+    }),
+    apiValidator('param', ShareParams),
+    async (c) => {
+      const { conversationId: id, userId } = c.req.valid('param');
+      return c.json({
+        data: await conversations.shares.grant(me(c), id, userId),
+      });
+    },
+  );
+  router.delete(
+    '/conversations/:conversationId/shares/:userId',
+    guard,
+    describeRoute({
+      tags,
+      summary: 'Revoke a conversation snapshot',
+      operationId: 'agentsRevokeConversationShare',
+      ...cliRoute(false),
+      description:
+        'Owner only. The next recipient read, including attachment download, returns 404.',
+      responses: {
+        204: emptyResponse(),
+        404: noConversation,
+        ...apiErrorResponses,
+      },
+    }),
+    apiValidator('param', ShareParams),
+    async (c) => {
+      const { conversationId: id, userId } = c.req.valid('param');
+      await conversations.shares.revoke(me(c), id, userId);
+      return c.body(null, 204);
+    },
   );
   router.patch(
     '/conversations/:conversationId',
@@ -557,21 +659,31 @@ export function createChatRoutes(
         pageToken === undefined
           ? undefined
           : decodePageToken(pageToken, MessagePosition).before;
-      const agent = await services.onlineAgent.realtime(trusted(context), {
-        sessionId: conversationId(context),
-      });
       const wanted = ids?.split(',');
       if (
         wanted &&
         (wanted.length > 100 || wanted.some((id) => !id || id.length > 100))
       )
         throw invalid('Select at most 100 valid message IDs.');
-      const page = await agent.messages({
+      const query = {
         ids: wanted,
         before,
         after: before === undefined ? after : undefined,
         limit: pageSize,
-      });
+      };
+      const snapshot = await conversations.snapshotMessages(
+        me(context),
+        conversationId(context),
+        query,
+      );
+      const page =
+        snapshot ??
+        (await (
+          await services.onlineAgent.realtime(trusted(context), {
+            sessionId: conversationId(context),
+          })
+        ).messages(query));
+      context.header('Cache-Control', 'private, no-store');
       return context.json({
         data: page.items,
         meta: {
@@ -1094,6 +1206,7 @@ export function createChatRoutes(
     }),
     conversationParam,
     async (context) => {
+      context.header('Cache-Control', 'private, no-store');
       const items = await conversations.links.list(
         me(context),
         conversationId(context),

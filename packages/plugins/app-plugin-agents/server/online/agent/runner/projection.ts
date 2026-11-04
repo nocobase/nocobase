@@ -633,12 +633,14 @@ export async function runnerUIPage(
   lastSeq: number,
   query: NativeHistoryQuery,
   basePath: string,
+  cutoffSeq?: number,
 ): Promise<NativeHistoryPage> {
   const repo = messagesRepo(tx.read());
   const rows = await repo.findMany({
     filter: (f) =>
       f.and([
         f.string('conversationId').eq(id),
+        ...(cutoffSeq === undefined ? [] : [f.number('seq').lte(cutoffSeq)]),
         ...(query.ids
           ? [
               f.or(
@@ -677,6 +679,9 @@ export async function runnerUIPage(
         filter: (f) =>
           f.and([
             f.string('conversationId').eq(id),
+            ...(cutoffSeq === undefined
+              ? []
+              : [f.number('seq').lte(cutoffSeq)]),
             f.or([
               f.string('role').eq('assistant'),
               f.string('role').eq('user'),
@@ -697,6 +702,9 @@ export async function runnerUIPage(
         filter: (f) =>
           f.and([
             f.string('conversationId').eq(id),
+            ...(cutoffSeq === undefined
+              ? []
+              : [f.number('seq').lte(cutoffSeq)]),
             f.number('seq').gte(minimum),
             f.number('seq').lte(maximum),
           ]),

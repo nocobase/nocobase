@@ -49,6 +49,7 @@ export {
 import type {
   ChatAgent,
   ConversationDetail,
+  ConversationShare,
   ConversationLink,
   ResolvedPageContext,
   ConversationMode,
@@ -2015,8 +2016,34 @@ export { chatKeys } from '../../../../packages/plugins/app-plugin-agents/client/
 const linkedPanelQueries = new QueryClient();
 export const agentsQueryClient: typeof Chat.agentsQueryClient = () =>
   linkedPanelQueries;
+const previewShares = new Map<string, ConversationShare[]>();
 export const useChatApi: typeof Chat.useChatApi = () =>
   ({
+    shareCandidates: async () => [
+      { id: 'preview-reader', name: 'Taylor (preview)' },
+    ],
+    shares: async (id: string) => previewShares.get(id) ?? [],
+    share: async (id: string, userId: string) => {
+      const at = new Date().toISOString();
+      const share: ConversationShare = {
+        userId,
+        name: 'Taylor (preview)',
+        cutoffSeq: 0,
+        snapshotAt: at,
+        updatedAt: at,
+      };
+      previewShares.set(id, [share]);
+      return share;
+    },
+    revokeShare: async (id: string, userId: string) => {
+      previewShares.set(
+        id,
+        (previewShares.get(id) ?? []).filter(
+          (share) => share.userId !== userId,
+        ),
+      );
+    },
+    conversationLinks: async () => [],
     usage: async () => ({
       inputTokens: 1200,
       cacheReadTokens: 8000,

@@ -1,3 +1,11 @@
+import {
+  conversationAccess,
+  createConversationShares,
+  sharesRepo,
+} from './shares.js';
+import { runnerUIPage } from '../../online/agent/runner/projection.js';
+import { NativeMessages } from '../../online/agent/messages/projection.js';
+import { OnlineAgentConfigurator } from '../../online/agent/configuration.js';
 import { outputBlock, TERMINAL_RUN_STATUSES } from '@nocobase/agent-protocol';
 import {
   historicalPageContext,
@@ -152,6 +160,8 @@ import type { AppUIMessage, AppUIJson } from '../../../shared/online-agent.js';
 const SYNC_PAGE = 500;
 
 export interface ConversationServiceDeps {
+  /** Reuse the native backend's registered public tool projections, without an executable session facade. */
+  readonly nativeHistory?: (messages: unknown[]) => Promise<AppUIMessage[]>;
   readonly nativeNotice?: (
     unit: Tx,
     record: ConversationRecord,
@@ -398,6 +408,12 @@ export function createConversationService(
   }
 
   const sources = createSources();
+  const shares = createConversationShares({
+    tx,
+    ids,
+    people: deps.people,
+    now,
+  });
   const links = createConversationLinks({
     tx,
     ids,
@@ -701,7 +717,41 @@ export function createConversationService(
 
   async function detail(userId: string, id: string) {
     const conn = tx.read();
-    return detailOf(conn, await owned(conn, userId, id));
+    const { record, share } = await conversationAccess(conn, userId, id);
+    if (!share) return detailOf(conn, record);
+    // Whitelist snapshot fields: no latest runner, project, execution, usage, wait or owner attention.
+    return {
+      id,
+      title: share.title,
+      titleSource: 'user',
+      category: 'chat',
+      showInChatList: false,
+      source: 'panel',
+      mode: record.mode,
+      agent: {
+        id: '',
+        name: null,
+        nameText: null,
+        avatar: null,
+        archived: false,
+      },
+      fallbackFrom: null,
+      read: true,
+      lastMessageAt: share.snapshotAt,
+      archivedAt: null,
+      createdAt: record.createdAt,
+      updatedAt: share.updatedAt,
+      run: null,
+      lastSeq: Number(share.cutoffSeq),
+      links: [],
+      availability: { online: false, reason: null, onlineRunners: 0 },
+      canFallback: false,
+      canRestore: false,
+      snapshot: {
+        cutoffSeq: Number(share.cutoffSeq),
+        snapshotAt: share.snapshotAt,
+      },
+    } satisfies ConversationDetail;
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -1134,6 +1184,9 @@ export function createConversationService(
     const released = deps.attachments
       ? await deps.attachments.release(unit.conn, record.id)
       : async () => {};
+    await sharesRepo(unit.conn).deleteMany({
+      filter: { conversationId: record.id },
+    });
     await messagesRepo(unit.conn).deleteMany({
       filter: { conversationId: record.id },
     });
@@ -1906,6 +1959,96 @@ export function createConversationService(
 
   const service: ConversationService = {
     binding,
+    shares,
+    async snapshotMessages(userId, id, query) {
+      const conn = tx.read();
+      const { record, share } = await conversationAccess(conn, userId, id);
+      if (!share) return null;
+      const cutoff = Number(share.cutoffSeq);
+      let page;
+      if (record.mode === 'runner' || !jsonObject(record.metadata).onlineAgent)
+        page = await runnerUIPage(
+          tx,
+          id,
+          cutoff,
+          query,
+          deps.basePath?.() ?? '',
+          cutoff,
+        );
+      else {
+        const rows = await messagesRepo(conn).findMany({
+          filter: (f) =>
+            f.and([
+              f.string('conversationId').eq(id),
+              f.number('seq').lte(cutoff),
+              ...(query.ids
+                ? [f.or(query.ids.map((key) => f.string('id').eq(key)))]
+                : []),
+              ...(query.before !== undefined
+                ? [f.number('seq').lt(query.before)]
+                : []),
+              ...(query.after !== undefined
+                ? [f.number('seq').gt(query.after)]
+                : []),
+            ]),
+          sort: (s) =>
+            query.after !== undefined || query.ids
+              ? s.field('seq').asc()
+              : s.field('seq').desc(),
+          limit: query.ids ? query.ids.length : query.limit + 1,
+        });
+        const hasMore = !query.ids && rows.length > query.limit;
+        const selected = rows.slice(0, query.ids ? rows.length : query.limit);
+        if (query.after === undefined && !query.ids) selected.reverse();
+        const native = new NativeMessages(new OnlineAgentConfigurator());
+        page = {
+          items: selected.length
+            ? await (
+                deps.nativeHistory ??
+                (async (values) => native.public(await native.validate(values)))
+              )(selected.map((row) => jsonObject(row.content).original))
+            : [],
+          lastSeq: cutoff,
+          hasMore,
+          ...(query.after !== undefined && hasMore && selected.length
+            ? { nextAfter: Number(selected.at(-1)!.seq) }
+            : {}),
+        };
+      }
+      for (const message of page.items) {
+        if (message.metadata) {
+          delete message.metadata.queue;
+          delete message.metadata.executionId;
+          delete message.metadata.turnId;
+        }
+        // A shared transcript contains historical content; linked records are always resolved as this viewer.
+        if (message.metadata?.context) {
+          const context = message.metadata.context;
+          message.metadata.context = await deps.contextKinds.resolve(
+            conn,
+            userId,
+            {
+              route: '',
+              items: context.items.map(({ kind, id }) => ({ kind, id })),
+            },
+          );
+        }
+        const indexes = message.parts.flatMap((part, index) =>
+          part.type === 'data-turn' || part.type === 'data-phase'
+            ? []
+            : [index],
+        );
+        if (message.metadata?.sourceRecords)
+          message.metadata.sourceRecords = message.metadata.sourceRecords
+            .filter((source) => indexes.includes(source.partIndex))
+            .map((source) => ({
+              ...source,
+              partIndex: indexes.indexOf(source.partIndex),
+            }));
+        message.parts = indexes.map((index) => message.parts[index]);
+      }
+      return page;
+    },
     contextKinds: deps.contextKinds,
     sources,
     ownedTitles,

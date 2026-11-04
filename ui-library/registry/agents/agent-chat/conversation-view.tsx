@@ -1,3 +1,4 @@
+import { SnapshotView } from './snapshot-view.js';
 /**
  * One conversation, the panel's main view: the messages as a log (older pages on demand), what an application adds
  * among them (plan cards), the agent at work, notices about who answers, and the composer. Without a conversation
@@ -161,6 +162,13 @@ export function ConversationView({
       </div>
     );
   }
+  if (detail.data?.snapshot)
+    return (
+      <SnapshotView
+        key={`${conversationId}:${detail.data.updatedAt}`}
+        conversation={detail.data}
+      />
+    );
   return (
     <ConversationBody
       key={

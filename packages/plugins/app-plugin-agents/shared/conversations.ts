@@ -368,8 +368,27 @@ export interface ConversationLink {
 export const CONVERSATION_LINK_KIND_PATTERN: RegExp =
   /^[a-z][a-zA-Z0-9_-]{0,63}$/u;
 
+/** One recipient's bounded view, updated only when the owner shares again. */
+export interface ConversationShare {
+  readonly userId: string;
+  readonly name: string | null;
+  readonly cutoffSeq: number;
+  readonly snapshotAt: string;
+  readonly updatedAt: string;
+}
+export interface ConversationShareCandidate {
+  readonly id: string;
+  readonly name: string;
+}
+
 /** One conversation as the panel opens it. */
 export interface ConversationDetail extends ConversationSummary {
+  /** Present only for a recipient: never mount execution, input or live subscriptions. */
+  readonly snapshot?: {
+    readonly cutoffSeq: number;
+    readonly snapshotAt: string;
+  };
+
   /** Diagnosed only for the latest queued, unclaimed Runner turn, on the existing detail read. */
   readonly wait?: RunWait | null;
   /** Saved per-conversation preference; null uses the current Agent default. */

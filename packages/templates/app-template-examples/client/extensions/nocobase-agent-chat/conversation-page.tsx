@@ -1,3 +1,4 @@
+import { ShareConversation } from './share-conversation.js';
 import { useConversationActions } from './conversation-actions.js';
 import {
   CHAT_MOBILE_QUERY,
@@ -167,10 +168,17 @@ function PageBar({
   const actions = useConversationActions();
   const mobile = useMediaQuery(CHAT_MOBILE_QUERY);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [sharing, setSharing] = useState(false);
   const shown = conversation
     ? conversation.title?.trim() || t('chat.untitled')
     : '';
 
+  if (conversation?.snapshot)
+    return (
+      <header className={cn(PAGE_COLUMN, 'py-3')}>
+        <h1 className='text-base font-semibold'>{shown}</h1>
+      </header>
+    );
   return (
     // The header lines up with the messages' column, as the title of what is under it.
     <header
@@ -233,6 +241,9 @@ function PageBar({
           </DropdownMenuTrigger>
           <DropdownMenuContent align='end' className='w-auto min-w-40'>
             <DropdownMenuGroup>
+              <DropdownMenuItem onClick={() => setSharing(true)}>
+                {t('chat.sharing.title')}
+              </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => {
                   actions.archive.mutate({
@@ -249,6 +260,13 @@ function PageBar({
           </DropdownMenuContent>
         </DropdownMenu>
       ) : null}
+      {conversation && (
+        <ShareConversation
+          conversationId={conversation.id}
+          open={sharing}
+          onOpenChange={setSharing}
+        />
+      )}
       <ChatHistoryDialog
         open={historyOpen}
         onOpenChange={setHistoryOpen}
