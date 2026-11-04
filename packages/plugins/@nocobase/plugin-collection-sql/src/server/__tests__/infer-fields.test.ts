@@ -116,4 +116,22 @@ left join roles r on ru.role_name=r.name`;
       a: {},
     });
   });
+
+  it('should infer fields with PostgreSQL full-text search syntax and SQL variables', () => {
+    const model = class extends SQLModel {};
+    model.init(null, {
+      modelName: 'users',
+      tableName: 'users',
+      sequelize: db.sequelize,
+    });
+    model.database = db;
+    model.sql = `select id, nickname from users
+where to_tsvector('english', coalesce(nickname, ''))
+@@ plainto_tsquery('english', {{search_query}})`;
+
+    expect(model.inferFields()).toMatchObject({
+      id: { type: 'bigInt', source: 'users.id' },
+      nickname: { type: 'string', source: 'users.nickname' },
+    });
+  });
 });
