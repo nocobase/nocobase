@@ -7,6 +7,8 @@ import * as mailer from '@nocobase/mailer';
 afterEach(() => vi.restoreAllMocks());
 import { createTestApp } from '@nocobase/app-testing/server';
 import { createStandaloneServer } from '../fixtures/reset-app/server/standalone.js';
+import { MailSenderFactory } from '@nocobase/app-server/mailers';
+import { createAuthFixture } from './support.js';
 import { authenticationToken } from '../../tokens.js';
 
 async function receiver(stall = false) {
@@ -68,6 +70,7 @@ it.each([
   ['https://public.example.test', true],
   ['https://public.example.test', 'named'],
   ['https://public.example.test', 'default'],
+  ['https://public.example.test', 'password-reset'],
 ] as const)(
   'resets through real SMTP without notification or authorization using public origin %s (independent %s)',
   async (publicOrigin, independent) => {
@@ -77,6 +80,7 @@ it.each([
       body: JSON.stringify(body),
     });
     const smtp = await receiver();
+    const unused = await receiver();
     const create = mailer.createMailTransport;
     const sends: Promise<mailer.MailResult>[] = [];
     vi.spyOn(mailer, 'createMailTransport').mockImplementation((...args) => {
@@ -100,10 +104,11 @@ it.each([
                 system: {
                   provider: 'smtp',
                   host: '127.0.0.1',
-                  port: smtp.port,
+                  port:
+                    independent === 'password-reset' ? unused.port : smtp.port,
                   from: 'sender@example.test',
                 },
-                ...(independent === 'named'
+                ...(['named', 'password-reset'].includes(independent)
                   ? {
                       marketing: {
                         provider: 'smtp',
@@ -116,7 +121,9 @@ it.each([
               },
               ...(independent === 'named'
                 ? { auth: { email: { mailer: 'marketing' } } }
-                : {}),
+                : independent === 'password-reset'
+                  ? { auth: { passwordReset: { mailer: 'marketing' } } }
+                  : {}),
             }
           : independent
             ? {
@@ -228,6 +235,8 @@ it.each([
           )
         ).status,
       ).toBe(200);
+      expect(unused.messages).toHaveLength(0);
+      expect(unused.connections()).toBe(0);
       const auth = app.application.container.resolve(authenticationToken);
       expect(await auth.getSession(new Headers({ cookie }))).toBeNull();
       expect(
@@ -237,6 +246,102 @@ it.each([
       await app.close();
       await vi.waitFor(() => expect(smtp.sockets.size).toBe(0));
       await smtp.close();
+      await unused.close();
     }
   },
 );
+
+it('standalone Auth selects the new named mailer, preserves templates and completes reset/login without fallback', async () => {
+  const smtp = await receiver();
+  const unused = await receiver();
+  const factory = new MailSenderFactory({
+    default: 'unused',
+    unused: {
+      provider: 'smtp',
+      host: '127.0.0.1',
+      port: unused.port,
+      from: 'unused@example.test',
+    },
+    selected: {
+      provider: 'smtp',
+      host: '127.0.0.1',
+      port: smtp.port,
+      from: 'selected@example.test',
+    },
+  });
+  const fixture = await createAuthFixture({
+    emailAndPassword: { enabled: true },
+    passwordReset: {
+      enabled: true,
+      mailer: 'selected',
+      template: (data) => ({
+        to: data.user.email,
+        subject: 'Standalone reset',
+        text: data.url,
+      }),
+    },
+    passwordResetServices: { mailerFactory: factory },
+  });
+  const request = (body: unknown) => ({
+    method: 'POST',
+    headers: { 'content-type': 'application/json', origin: 'http://localhost' },
+    body: JSON.stringify(body),
+  });
+  try {
+    await fixture.signUp();
+    const resetRequest = await fixture.router.request(
+      '/api/auth/request-password-reset',
+      request({ email: 'alice@example.com' }),
+    );
+    expect(resetRequest.status).toBe(200);
+    await vi.waitFor(() => expect(smtp.messages).toHaveLength(1));
+    expect(smtp.messages[0]).toContain('Subject: Standalone reset');
+    expect(smtp.messages[0]).toContain('From: selected@example.test');
+    const decoded = smtp.messages[0]!.replace(/=\r\n/gu, '').replace(
+      /=([0-9A-F]{2})/gu,
+      (_match, hex: string) => String.fromCharCode(Number.parseInt(hex, 16)),
+    );
+    const token = decoded.match(
+      /\/api\/auth\/reset-password\/([A-Za-z0-9_-]+)/u,
+    )?.[1];
+    expect(token).toBeTruthy();
+    expect(
+      (
+        await fixture.router.request(
+          '/api/auth/reset-password',
+          request({ token, newPassword: 'replacement-password' }),
+        )
+      ).status,
+    ).toBe(200);
+    expect(
+      (
+        await fixture.router.request(
+          '/api/auth/reset-password',
+          request({ token, newPassword: 'another-password' }),
+        )
+      ).status,
+    ).toBe(400);
+    for (const [password, status] of [
+      ['correct horse battery staple', 401],
+      ['replacement-password', 200],
+    ] as const)
+      expect(
+        (
+          await fixture.router.request(
+            '/api/auth/sign-in/email',
+            request({ email: 'alice@example.com', password }),
+          )
+        ).status,
+      ).toBe(status);
+    // Connection bindings borrow the same sender and retain its validated factory.
+    const bound = fixture.auth.forConnection(fixture.connection);
+    expect(bound.passwordResetAvailable()).toBe(true);
+    await bound.close();
+    expect(unused.messages).toHaveLength(0);
+    expect(unused.connections()).toBe(0);
+  } finally {
+    await fixture.dispose();
+    await smtp.close();
+    await unused.close();
+  }
+});

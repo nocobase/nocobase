@@ -82,6 +82,7 @@ export class AuthenticationProvider<
   private emailSnapshot?: Pick<AuthConfig, 'email' | 'passwordReset'>;
   /** This Provider owns the reset sender and closes it alongside Auth's native work. */
   private resetSender?: PasswordResetSenderSelection;
+  private mailerFactory?: ReturnType<typeof resolveMailSenderFactory>;
   private shutdownPromise?: Promise<void>;
 
   public override register(): void {
@@ -92,18 +93,16 @@ export class AuthenticationProvider<
       passwordReset: auth.passwordReset && { ...auth.passwordReset },
     };
     // Select now so an invalid reference fails startup; no transport is allocated until the first send.
-    this.resetSender = createPasswordResetSender(
-      resolveMailSenderFactory(
-        this.app.container,
-        this.app.config.get<MailersConfig>('mailers') ?? {},
-      ),
-      {
-        ...this.emailSnapshot,
-        legacyChannels: this.app.config.get<{
-          channels?: Readonly<Record<string, unknown>>;
-        }>('notification')?.channels,
-      },
+    this.mailerFactory = resolveMailSenderFactory(
+      this.app.container,
+      this.app.config.get<MailersConfig>('mailers') ?? {},
     );
+    this.resetSender = createPasswordResetSender(this.mailerFactory, {
+      ...this.emailSnapshot,
+      legacyChannels: this.app.config.get<{
+        channels?: Readonly<Record<string, unknown>>;
+      }>('notification')?.channels,
+    });
     this.app.container.singleton(authenticationToken, (container) =>
       this.createAuthentication(container),
     );
@@ -229,6 +228,7 @@ export class AuthenticationProvider<
       ...authConfig,
       ...this.emailSnapshot,
       passwordResetServices: {
+        mailerFactory: this.mailerFactory,
         sender: this.resetSender?.sender,
         legacySender: this.resetSender?.legacy,
         increment: (key) =>

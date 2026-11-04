@@ -2,7 +2,10 @@ import {
   resolveMailSenderFactory,
   type MailSender,
 } from '@nocobase/app-server/mailers';
-import { createPasswordResetSender } from './reset-sender.js';
+import {
+  createPasswordResetSender,
+  assertPasswordResetMailer,
+} from './reset-sender.js';
 import type { AuthEmailConfig } from './email-config.js';
 import {
   PasswordResetPolicy,
@@ -280,8 +283,10 @@ export class Auth {
     }
     let resetServices: PasswordResetServices = passwordResetServices ?? {};
     if (!Object.hasOwn(resetServices, 'sender')) {
+      const mailerFactory =
+        resetServices.mailerFactory ?? resolveMailSenderFactory();
       // Standalone construction: this instance selects and owns its sender.
-      const selection = createPasswordResetSender(resolveMailSenderFactory(), {
+      const selection = createPasswordResetSender(mailerFactory, {
         email,
         passwordReset,
         legacyChannels: resetServices.legacyChannels,
@@ -292,6 +297,11 @@ export class Auth {
         sender: selection.sender,
         legacySender: selection.legacy,
       };
+    } else if (passwordReset?.mailer !== undefined) {
+      assertPasswordResetMailer(
+        resetServices.mailerFactory ?? resolveMailSenderFactory(),
+        { email, passwordReset },
+      );
     }
     this.options = { ...options, passwordResetServices: resetServices };
     this.resetPolicy = new PasswordResetPolicy(

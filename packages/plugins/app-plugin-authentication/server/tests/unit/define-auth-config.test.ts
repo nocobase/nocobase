@@ -81,11 +81,14 @@ describe('defineAuthConfig', () => {
 });
 
 describe('authentication email configuration', () => {
-  it('refuses to publish authentication email credentials', () => {
-    expect(() =>
-      defineAuthConfig({ defaults: {}, public: ['email.apiKey'] }),
-    ).toThrow('must remain private');
-  });
+  it.each(['email.apiKey', 'passwordReset', 'passwordReset.mailer'])(
+    'refuses to publish private authentication fields: %s',
+    (path) => {
+      expect(() => defineAuthConfig({ defaults: {}, public: [path] })).toThrow(
+        'must remain private',
+      );
+    },
+  );
   it.each([
     [{ provider: 'smtp', port: 587 }, 'auth.email.host'],
     [{ provider: 'smtp', host: 'smtp.test', port: '587' }, 'auth.email.port'],

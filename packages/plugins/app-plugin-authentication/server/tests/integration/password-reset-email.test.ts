@@ -2,6 +2,7 @@
 
 import { afterEach, expect, it, vi } from 'vitest';
 import { createTestApp } from '@nocobase/app-testing/server';
+import { MailSenderFactory } from '@nocobase/app-server/mailers';
 import { MailExecutions } from '@nocobase/mailer';
 import * as mailer from '@nocobase/mailer';
 import { Auth } from '../../auth.js';
@@ -88,15 +89,17 @@ it.each([undefined, false])(
 );
 
 it.each(
-  [false, true].flatMap((legacy) =>
+  (['inline', 'legacy', 'reference'] as const).flatMap((mode) =>
     (['accepted', 'failed', 'submission_unknown'] as const).map((result) => ({
-      legacy,
+      mode,
       result,
     })),
   ),
 )(
-  'submits once through the selected Resend configuration: $result (legacy $legacy)',
-  async ({ legacy, result }) => {
+  'submits once through the selected Resend configuration: $result (mode $mode)',
+  async ({ mode, result }) => {
+    const legacy = mode === 'legacy';
+    const reference = mode === 'reference';
     const fetch = vi.fn().mockImplementation(async () => {
       if (result === 'submission_unknown')
         throw new Error('synthetic-private-provider-body');
@@ -117,10 +120,10 @@ it.each(
     const warning = vi.fn();
     const executions = new MailExecutions();
     const fixture = await setup({
-      ...(legacy ? {} : { email }),
+      ...(legacy || reference ? {} : { email }),
       passwordReset: {
         enabled: true,
-        emailChannel: 'legacy',
+        ...(reference ? { mailer: 'selected' } : { emailChannel: 'legacy' }),
         template: (data) => ({
           to: data.user.email,
           subject: 'Application template',
@@ -129,6 +132,15 @@ it.each(
       },
       emailAndPassword: { enabled: true },
       passwordResetServices: {
+        ...(reference
+          ? {
+              mailerFactory: new MailSenderFactory({
+                default: 'unused',
+                unused: { ...email, apiKey: 'unused-key' },
+                selected: email,
+              }),
+            }
+          : {}),
         executions,
         report,
         warning,
@@ -148,11 +160,13 @@ it.each(
     expect(await response.json()).toEqual(await missing.json());
     await vi.waitFor(() => expect(fetch).toHaveBeenCalledOnce());
     await vi.waitFor(() => expect(executions.inFlight).toBe(0));
-    expect(warning).toHaveBeenCalledWith(
-      legacy
-        ? expect.stringContaining('deprecated. Migrate to mailers')
-        : 'auth.passwordReset.emailChannel is unused; auth.email takes precedence.',
-    );
+    if (reference) expect(warning).not.toHaveBeenCalled();
+    else
+      expect(warning).toHaveBeenCalledWith(
+        legacy
+          ? expect.stringContaining('deprecated. Migrate to mailers')
+          : 'auth.passwordReset.emailChannel is unused; auth.email takes precedence.',
+      );
     expect(
       new Headers(fetch.mock.calls[0]![1].headers as HeadersInit).get(
         'authorization',
@@ -405,7 +419,7 @@ it.each([false, undefined])(
   },
 );
 
-// Legacy compatibility only: new applications configure auth.email.
+// Legacy compatibility only: new applications configure auth.passwordReset.mailer.
 it.each([
   { channel: { ...email }, available: true },
   { channel: { ...email, type: 'resend' }, available: true },
@@ -605,3 +619,38 @@ it('preserves the bounded shutdown wait for custom callbacks that ignore cancell
     vi.useRealTimers();
   }
 });
+
+it.each([undefined, false, true])(
+  'custom callback wins over a valid new reference (enabled %s)',
+  async (enabled) => {
+    const callback = vi.fn();
+    const fetch = vi.fn();
+    const warning = vi.fn();
+    vi.stubGlobal('fetch', fetch);
+    const fixture = await setup({
+      emailAndPassword: { enabled: true, sendResetPassword: callback },
+      passwordReset: { enabled, mailer: 'selected' },
+      passwordResetServices: {
+        mailerFactory: new MailSenderFactory({ selected: email }),
+        warning,
+      },
+    });
+    await fixture.signUp();
+    expect(
+      (
+        await fixture.router.request(
+          '/api/auth/request-password-reset',
+          json({ email: 'alice@example.com' }),
+        )
+      ).status,
+    ).toBe(enabled === false ? 400 : 200);
+    if (enabled === false) expect(callback).not.toHaveBeenCalled();
+    else {
+      await vi.waitFor(() => expect(callback).toHaveBeenCalledOnce());
+      expect(warning).toHaveBeenCalledWith(
+        'auth.passwordReset.mailer is unused; auth.emailAndPassword.sendResetPassword takes precedence.',
+      );
+    }
+    expect(fetch).not.toHaveBeenCalled();
+  },
+);

@@ -2,7 +2,11 @@ import {
   assertMailerReference,
   type MailersConfig,
 } from '@nocobase/app-server/mailers/config';
-import { authEmailIssues, type AuthEmailConfig } from './email-config.js';
+import {
+  authEmailIssues,
+  passwordResetMailerIssues,
+  type AuthEmailConfig,
+} from './email-config.js';
 export type { AuthEmailConfig } from './email-config.js';
 import {
   ApplicationNotConfiguredError,
@@ -17,6 +21,7 @@ import {
 } from '@nocobase/app-server/config';
 
 export type AuthConfig = import('better-auth').BetterAuthOptions & {
+  /** Legacy reference/inline entry; new references belong in passwordReset.mailer. */
   readonly email?: AuthEmailConfig;
   readonly passwordReset?: import('./password-reset.js').PasswordResetConfig;
 };
@@ -32,6 +37,11 @@ export const AUTH_PUBLIC_PATHS: readonly string[] = [
 
 /** The environment variables that set `auth` fields, which this plugin reads. */
 const AUTH_ENVIRONMENT = {
+  AUTH_PASSWORD_RESET_MAILER: envString('passwordReset.mailer', {
+    required: false,
+    description:
+      'Named application mailer for password reset; does not enable recovery.',
+  }),
   AUTH_EMAIL_PROVIDER: envString('email.provider', {
     required: false,
     description: 'Authentication email provider: smtp or resend.',
@@ -104,6 +114,22 @@ export const validateAuthConfig: ConfigValidator<AuthConfig> = (
       );
     }
   }
+  for (const issue of passwordResetMailerIssues(auth.passwordReset, auth.email))
+    context.error(issue.path, issue.message);
+  if (auth.passwordReset?.mailer !== undefined && context.get) {
+    try {
+      assertMailerReference(
+        (context.get('mailers') ?? {}) as MailersConfig,
+        auth.passwordReset.mailer,
+        'auth.passwordReset.mailer',
+      );
+    } catch (error) {
+      context.error(
+        'passwordReset.mailer',
+        error instanceof Error ? error.message : 'Invalid mailer reference.',
+      );
+    }
+  }
   for (const issue of authEmailIssues(auth.email))
     context.error(issue.path, issue.message);
   if (
@@ -149,11 +175,16 @@ export function defineAuthConfig(
 ): AppConfigFactory<AuthConfig> {
   if (
     definition.public?.some(
-      (path) => path === 'email' || path.startsWith('email.'),
+      (path) =>
+        path === 'email' ||
+        path.startsWith('email.') ||
+        path === 'passwordReset' ||
+        path === 'passwordReset.mailer' ||
+        path.startsWith('passwordReset.mailer.'),
     )
   )
     throw new Error(
-      'Authentication email configuration must remain private. Remove email fields from public configuration.',
+      'Authentication email configuration must remain private. Remove email and passwordReset.mailer from public configuration.',
     );
   const extra =
     definition.validate === undefined

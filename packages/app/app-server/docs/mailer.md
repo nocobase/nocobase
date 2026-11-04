@@ -16,8 +16,7 @@ mailers:
 auth:
   passwordReset:
     enabled: true
-  # email:
-  #   mailer: system
+    mailer: system # omit to retain existing default/legacy selection
 users:
   invitations: {}
 notification:
@@ -118,14 +117,27 @@ Mailers, consumer selection and legacy inline configurations use startup snapsho
 
 ## Compatibility and migration
 
-Auth keeps explicit disablement first, including custom callbacks. Selection then is custom `auth.emailAndPassword.sendResetPassword`, explicit `auth.email.mailer`, complete legacy inline `auth.email`, explicit `auth.passwordReset.emailChannel`, `mailers.default`, implicit `system-email`. Built-in sending requires explicit `passwordReset.enabled: true`, enabled password authentication and a trusted origin. A custom callback retains its previous behavior without the switch. References and inline fields cannot share an object. Invalid explicit input never falls back. Custom callback implementations stay application-owned.
+Auth keeps explicit disablement first, including custom callbacks. Selection then is custom `auth.emailAndPassword.sendResetPassword`, explicit `auth.passwordReset.mailer`, legacy `auth.email.mailer`, complete legacy inline `auth.email`, explicit `auth.passwordReset.emailChannel`, `mailers.default`, implicit `system-email`. Built-in sending requires explicit `passwordReset.enabled: true`, enabled password authentication and a trusted origin. A custom callback retains its previous behavior without the switch. References and inline fields cannot share an object. Invalid explicit input never falls back. Custom callback implementations stay application-owned. The new reference may coexist with `auth.email.mailer` only when both names match; remove the old reference after confirming the sender identity. A different old reference, inline `auth.email` (including values from `AUTH_EMAIL_*`) or explicit `auth.passwordReset.emailChannel` conflicts with the new field and fails validation, even when recovery is disabled or a custom callback wins. Omission of the new field preserves the old priority exactly.
 
 Users selects explicit `users.invitations.mailer`, explicit legacy `emailChannel`, application default, then implicit `system-email`. The new path needs no Notification installation. Legacy `sendTransient` still bypasses records/retries. Invitation permissions, token storage, post-commit sending, delivery budget, share links and manual resend remain unchanged. A timeout never triggers another submission or releases a slot occupied by original work.
 
 Notification `type: email` selects its explicit `mailer` or the application default. Existing inline SMTP/Resend channels and `provider` aliases retain selection and create their own senders through the same factory. Message validation, recipient preparation, records, retries, cancellation, redaction and deliveryId idempotency identity remain with Notification.
 
-To migrate, copy an existing provider configuration into a named mailer, declare its environment mappings and default, then replace business selections with references or remove them to use the default. Confirm sender identities before removing explicit old selections: a new default never takes them over. Preserve password-reset opt-in and public origin; retain legacy channels still used elsewhere. `AUTH_EMAIL_*`, `SMTP_PASSWORD` and `RESEND_API_KEY` keep their original paths. Clear inline environment variables when replacing an object with a reference, since mixing is invalid. Safe diagnostics point to mailers; no removal date is set.
+To migrate, copy an existing provider configuration into a named mailer, declare its environment mappings and default, then replace the Auth selection with `auth.passwordReset.mailer` and other business selections with references, or remove them to use the default. Confirm sender identities before removing explicit old selections: a new default never takes them over. Preserve password-reset opt-in and public origin; retain legacy channels still used elsewhere. `AUTH_EMAIL_*`, `SMTP_PASSWORD` and `RESEND_API_KEY` keep their original paths. Clear inline environment variables when replacing an object with a reference, since mixing is invalid. Safe diagnostics identify the relevant configuration path; no removal date is set.
 
 The earlier `MAILERS_TRANSACTIONAL_*` mapping appeared only in this unmerged change branch and was absent from published application-template packages. No released alias is needed; the explicit `mailerEnvironment` helper still supports an application's existing custom names and prefixes.
 
 The published `@nocobase/app-server/mailer` subpath has been removed as a breaking API change. Create an exclusive sender from `/mailers` at the assembly boundary; close it from the component that created it. Move notification configuration helpers to `@nocobase/app-plugin-notification-providers/config`. Existing inline SMTP/Resend YAML and environment-variable mappings remain supported; this removal applies to the old TypeScript module, not those configuration paths.
+
+## Configuration structure audit
+
+| Decision    | Path                                                                   | Reason                                                                                                                                |
+| ----------- | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| Adjust      | `auth.email.mailer` → `auth.passwordReset.mailer`                      | The reference belongs directly to the password-reset business; the old reference remains compatible.                                  |
+| Retain      | Inline `auth.email`, `AUTH_EMAIL_*`, `auth.passwordReset.emailChannel` | Existing applications keep their sender choice and environment mappings when the new field is omitted.                                |
+| Retain      | `users.invitations.mailer`                                             | `invitations` identifies the business that sends.                                                                                     |
+| Retain      | `notification.channels.<name>.mailer`, `type: email`                   | The channel name and type identify a particular notification channel.                                                                 |
+| Retain      | `mailers.default`, `mailers.<name>`, SMTP `auth.user/pass`             | These identify a default, a named service and a credential group.                                                                     |
+| Unconfirmed | `auth.passwordReset.email.mailer`                                      | No support exists in the current configuration or consumers; no compatibility alias is added without evidence of a released contract. |
+
+The mailbox plugin's independent `mail` configuration is outside this audit. No persisted application configuration is rewritten, no public entry point is removed and no compatibility removal date is set.

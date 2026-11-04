@@ -111,3 +111,43 @@ it('accepts an entirely environment-configured shared sender without enabling re
     },
   });
 });
+
+it('loads the recommended password-reset reference from YAML and discovers its private environment mapping', async () => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), 'auth-reference-'));
+  try {
+    const file = path.join(directory, 'config.yml');
+    await writeFile(
+      file,
+      'auth:\n  passwordReset:\n    enabled: true\n    mailer: system\nmailers:\n  system:\n    provider: smtp\n    host: localhost\n    port: 2525\n',
+    );
+    const config = new AppConfig().loadFile(file);
+    await config.loadAll();
+    const defaults = defaultAppConfigs({ auth, mailers });
+    config.mergeDefaults(defaults({} as never));
+    config.defineSections(defaults.sections!);
+    expect(await config.validate()).toEqual([]);
+    expect(config.get('auth.passwordReset.mailer')).toBe('system');
+    expect(config.publicPaths()).not.toContain('auth.passwordReset.mailer');
+    expect(JSON.stringify(config.publicValues())).not.toContain(
+      'passwordReset',
+    );
+    expect(config.environmentVariableMappings()).toMatchObject({
+      AUTH_PASSWORD_RESET_MAILER: {
+        path: 'auth.passwordReset.mailer',
+        required: false,
+      },
+      AUTH_EMAIL_PASSWORD: { path: 'auth.email.auth.pass', secret: true },
+    });
+    await config.loadSectionEnvironment({
+      AUTH_PASSWORD_RESET_MAILER: 'missing',
+    });
+    expect(await config.validate()).toContainEqual(
+      expect.objectContaining({
+        path: 'auth.passwordReset.mailer',
+        level: 'error',
+      }),
+    );
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});

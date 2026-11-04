@@ -7,7 +7,11 @@ import {
   isMailChannelConfig,
   type EmailChannelConfig,
 } from '@nocobase/mailer/config';
-import { assertAuthEmailConfig, type AuthEmailConfig } from './email-config.js';
+import {
+  assertAuthEmailConfig,
+  passwordResetMailerIssues,
+  type AuthEmailConfig,
+} from './email-config.js';
 import type { PasswordResetConfig } from './password-reset.js';
 
 export interface PasswordResetSenderSelection {
@@ -17,7 +21,7 @@ export interface PasswordResetSenderSelection {
 }
 
 /**
- * Pick and create the built-in reset sender at an assembly boundary. Precedence: `auth.email` (reference or inline),
+ * Pick and create the built-in reset sender at an assembly boundary. Precedence: `passwordReset.mailer`, `auth.email` (reference or inline),
  * explicit `passwordReset.emailChannel`, `mailers.default`, then the implicit `system-email` channel. A custom
  * `sendResetPassword` still wins inside the policy; an invalid explicit reference throws even then. Creation is lazy
  * and allocates no transport until the first send. The caller owns and closes the returned sender.
@@ -31,7 +35,12 @@ export function createPasswordResetSender(
   },
 ): PasswordResetSenderSelection {
   const { email, passwordReset, legacyChannels } = options;
-  assertAuthEmailConfig(email);
+  assertPasswordResetMailer(factory, options);
+  if (passwordReset?.mailer !== undefined)
+    return {
+      sender: factory.create(passwordReset.mailer, 'auth.passwordReset.mailer'),
+      legacy: false,
+    };
   if (email)
     return {
       sender:
@@ -53,6 +62,30 @@ export function createPasswordResetSender(
     sender: legacySender(factory, legacyChannels?.['system-email']),
     legacy: true,
   };
+}
+
+/** Validate explicit selections even when a custom callback or injected sender wins. */
+export function assertPasswordResetMailer(
+  factory: MailSenderFactory,
+  options: {
+    readonly email?: AuthEmailConfig;
+    readonly passwordReset?: PasswordResetConfig;
+  },
+): void {
+  assertAuthEmailConfig(options.email);
+  const issues = passwordResetMailerIssues(
+    options.passwordReset,
+    options.email,
+  );
+  if (issues.length)
+    throw new Error(
+      issues.map((issue) => `auth.${issue.path}: ${issue.message}`).join(' '),
+    );
+  if (options.passwordReset?.mailer !== undefined)
+    factory.assertReference(
+      options.passwordReset.mailer,
+      'auth.passwordReset.mailer',
+    );
 }
 
 /** Preserve legacy channel aliases, validation and enablement. */

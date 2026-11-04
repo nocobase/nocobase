@@ -1,4 +1,7 @@
-import type { MailSendView } from '@nocobase/app-server/mailers';
+import type {
+  MailSendView,
+  MailSenderFactory,
+} from '@nocobase/app-server/mailers';
 import { assertAuthEmailConfig, type AuthEmailConfig } from './email-config.js';
 import { createHash } from 'node:crypto';
 import { AsyncLocalStorage } from 'node:async_hooks';
@@ -19,12 +22,16 @@ type ResetData = Parameters<ResetSender>[0];
 
 export interface PasswordResetConfig {
   readonly enabled?: boolean;
-  /** @deprecated Legacy applications only. Configure mailers instead. */
+  /** Named application mailer; omission preserves the legacy/default selection rules. */
+  readonly mailer?: string;
+  /** @deprecated Legacy applications only. Use mailers and passwordReset.mailer instead. */
   readonly emailChannel?: string;
   readonly template?: (data: ResetData, appName: string) => EmailMessage;
 }
 
 export interface PasswordResetServices {
+  /** Factory used to validate references, including when a sender is injected. Standalone Auth may supply its own. */
+  readonly mailerFactory?: MailSenderFactory;
   /** The built-in sender chosen by the assembly owner, which also closes it. */
   readonly sender?: MailSendView;
   /** Whether `sender` came from a deprecated notification channel. */
@@ -75,6 +82,14 @@ export class PasswordResetPolicy {
       config.enabled !== false &&
       (Boolean(custom) || this.automatic);
     if (this.available) {
+      if (config.mailer !== undefined && email !== undefined)
+        services.warning?.(
+          'auth.email.mailer is deprecated. Remove it and use auth.passwordReset.mailer after confirming the sender identity.',
+        );
+      if (custom && config.mailer !== undefined)
+        services.warning?.(
+          'auth.passwordReset.mailer is unused; auth.emailAndPassword.sendResetPassword takes precedence.',
+        );
       if (custom && email !== undefined)
         services.warning?.(
           'auth.email is unused for password reset; auth.emailAndPassword.sendResetPassword takes precedence.',
@@ -91,7 +106,7 @@ export class PasswordResetPolicy {
         services.legacySender === true
       )
         services.warning?.(
-          'auth.passwordReset.emailChannel is deprecated. Migrate to mailers; legacy applications remain supported.',
+          'auth.passwordReset.emailChannel is deprecated. Migrate to mailers and auth.passwordReset.mailer; legacy applications remain supported.',
         );
     }
     this.sender = this.available
