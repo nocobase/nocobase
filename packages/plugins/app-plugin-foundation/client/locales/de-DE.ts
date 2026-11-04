@@ -4,6 +4,8 @@ const deDE: FoundationResource = {
   nav: {
     settings: 'Systemeinstellungen',
     foundation: 'Anwendungsbasis',
+    foundationDescription:
+      'Die NocoBase-Funktionen, auf denen diese Anwendung aufbaut.',
   },
   page: {
     notCounted: 'Nicht gezählt',

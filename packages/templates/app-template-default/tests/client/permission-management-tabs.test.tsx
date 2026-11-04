@@ -1,12 +1,36 @@
 import { renderAuthenticatedClient } from '../helpers/authenticated-client.js';
+import { resolveAppClientContributions } from '@nocobase/app-client/plugins';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import type { ReactNode } from 'react';
 import { Route, Routes, useLocation } from 'react-router';
 import { expect, it } from 'vitest';
 import { PermissionManagementPage } from '../../client/pages/settings/permission-management-page.js';
+import settingsRoutes from '../../client/pages/settings/routes.js';
+import shellRoutes from '../../client/pages/settings/shell-routes.js';
+import { RouteTreeProvider } from '../../client/routing/route-context.js';
+import { useRouteNavigation } from '../../client/routing/route-navigation.js';
+
+const { routes } = resolveAppClientContributions([
+  {
+    packageName: '@nocobase/app-template-default',
+    source: 'application',
+    routes: [shellRoutes, settingsRoutes],
+  },
+]);
+
+/** The shell's route tree and permission check, as `AppLayout` provides them. */
+function Shell({ children }: { children: ReactNode }) {
+  const { denied, loading } = useRouteNavigation(routes);
+  return (
+    <RouteTreeProvider routes={routes} access={{ denied, loading }}>
+      {children}
+    </RouteTreeProvider>
+  );
+}
 
 function mount(prefix: string, tab = 'roles', roles = true, locale = 'en-US') {
-  return renderAuthenticatedClient(tree(prefix), {
+  return renderAuthenticatedClient(<Shell>{tree(prefix)}</Shell>, {
     route: `${prefix}/${tab}`,
     locale,
     member: true,
@@ -41,8 +65,8 @@ function tree(prefix: string) {
     </Routes>
   );
 }
-it.each(['', '/settings'])(
-  'uses two URL-backed tabs under one heading, preserves the existing %s route prefix and keyboard focus',
+it.each(['/settings'])(
+  'uses two URL-backed tabs under one heading at the existing %s URLs and keeps keyboard focus',
   async (prefix) => {
     const user = userEvent.setup();
     await mount(prefix);
@@ -85,21 +109,20 @@ it.each(['', '/settings'])(
     );
   },
 );
-it('hides an unreadable tab while keeping direct navigation on the readable default scope page', async () => {
-  await mount('', 'default-access', false);
-  await screen.findByRole('tab', { name: 'Default data scopes' });
-  expect(
-    screen.queryByRole('tab', { name: 'Roles and permissions' }),
-  ).not.toBeInTheDocument();
-  expect(
-    screen.getByRole('tab', { name: 'Default data scopes' }),
-  ).toHaveAttribute('aria-selected', 'true');
+it('shows a readable view without a single-tab bar and keeps direct navigation on it', async () => {
+  await mount('/settings', 'default-access', false);
+  await screen.findByRole('heading', { name: 'Permission management' });
+  // The module has one view this viewer may open, so it shows that view without a tab bar.
+  await waitFor(() =>
+    expect(screen.queryByRole('tablist')).not.toBeInTheDocument(),
+  );
+  expect(screen.queryByRole('tab')).not.toBeInTheDocument();
   expect(screen.getByRole('status', { name: 'Route' })).toHaveTextContent(
-    '/default-access',
+    '/settings/default-access',
   );
 });
 it('uses the agreed Chinese menu and tab names', async () => {
-  await mount('', 'roles', true, 'zh-CN');
+  await mount('/settings', 'roles', true, 'zh-CN');
   await screen.findByRole('tab', { name: '角色与权限' });
   expect(screen.getByRole('heading', { name: '权限管理' })).toBeVisible();
   expect(screen.getByRole('tab', { name: '角色与权限' })).toBeVisible();

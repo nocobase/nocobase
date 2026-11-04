@@ -4,6 +4,8 @@ const ptBR: FoundationResource = {
   nav: {
     settings: 'Configurações do sistema',
     foundation: 'Base do aplicativo',
+    foundationDescription:
+      'Os recursos do NocoBase em que este aplicativo se baseia.',
   },
   page: {
     notCounted: 'Não contado',

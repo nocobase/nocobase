@@ -1,4 +1,5 @@
 import { Home } from 'lucide-react';
+import settingsShellRoutes from './pages/settings/shell-routes.js';
 import {
   defineAppRoutes,
   type AppClientRouteContribution,
@@ -64,6 +65,11 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
   },
 ]);
 
-const routes: readonly AppClientRouteContribution[] = [appRoutes];
+// The System settings shell stays registered: it shows only the modules a viewer may open, and none until the
+// application or its plugins contribute one. Business administration such as `./pages/settings/routes.js` joins it.
+const routes: readonly AppClientRouteContribution[] = [
+  appRoutes,
+  settingsShellRoutes,
+];
 
 export default routes;

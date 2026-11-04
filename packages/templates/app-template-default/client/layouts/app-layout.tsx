@@ -1,5 +1,5 @@
 import { useSyncServerLocale } from '@nocobase/app-plugin-i18n/client';
-import type { ReactElement } from 'react';
+import { useMemo, type ReactElement } from 'react';
 import type { AppClientRegisteredRoute } from '@nocobase/app-client/plugins';
 import { Outlet, useLocation } from 'react-router';
 
@@ -34,7 +34,8 @@ export function AppLayout({ routes }: AppLayoutProps): ReactElement {
   useSyncServerLocale();
 
   const { t } = useTranslation();
-  const { items: menuItems, denied } = useRouteNavigation(routes);
+  const { items: menuItems, denied, loading } = useRouteNavigation(routes);
+  const access = useMemo(() => ({ denied, loading }), [denied, loading]);
   const selectedKey = selectedNavigationId(
     routes,
     useLocation().pathname,
@@ -46,7 +47,7 @@ export function AppLayout({ routes }: AppLayoutProps): ReactElement {
 
   return (
     // The shell owns the business route tree used by its pages and navigation.
-    <RouteTreeProvider routes={routes}>
+    <RouteTreeProvider routes={routes} access={access}>
       <PageBreadcrumbProvider>
         <AppSidebarProvider>
           <AppSidebar label={navigationLabel} footer={<AppSidebarFooter />}>

@@ -137,45 +137,80 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
     ],
   },
   {
+    // System settings: one sidebar entry opening a home of cards. Its child groups are the home's categories; an
+    // administration module joins one with `parent`. The group keeps its original name, so its pages keep their ids.
     name: 'systemManagement',
-    children: [],
-    navigation: {
-      title: 'workflows.systemManagement',
-      icon: Settings,
-      order: 100,
-    },
-    breadcrumb: { title: 'workflows.systemManagement' },
+    navigation: { title: 'settings.title', icon: Settings, order: 100 },
+    breadcrumb: { title: 'settings.title' },
+    children: [
+      {
+        // Lists only modules the viewer may open, so it needs no grant of its own.
+        name: 'settingsHome',
+        path: '/settings',
+        auth: 'required',
+        authz: 'skip',
+        componentLoader: () => import('./pages/settings/settings-home.js'),
+      },
+      {
+        name: 'settingsAccount',
+        navigation: { title: 'settings.categories.account', order: 10 },
+        children: [],
+      },
+      {
+        name: 'settingsBusiness',
+        navigation: { title: 'settings.categories.business', order: 20 },
+        children: [],
+      },
+      {
+        name: 'settingsAi',
+        navigation: { title: 'settings.categories.ai', order: 30 },
+        children: [],
+      },
+      {
+        name: 'settingsSystem',
+        navigation: { title: 'settings.categories.system', order: 40 },
+        children: [],
+      },
+    ],
   },
   {
     ...knowledgeDefinition(),
     componentLoader: () => import('./pages/knowledge/index.js'),
-    parent: 'systemManagement',
+    // Reading and asking the knowledge base is everyday work, so it stays in the business navigation.
     navigation: { title: 'knowledge.title', icon: BookOpen },
     breadcrumb: { title: 'knowledge.title' },
   },
   {
     name: 'knowledgeIndexing',
     path: '/knowledge/indexing',
-    parent: 'systemManagement',
+    parent: 'settingsAi',
     auth: 'required',
     authz: {
       resource: { type: 'settings', id: 'kb.indexing' },
       action: 'read',
     },
-    navigation: { title: 'knowledge.indexing', icon: DatabaseZap },
+    navigation: {
+      title: 'knowledge.indexing',
+      description: 'knowledge.indexingDescription',
+      icon: DatabaseZap,
+    },
     breadcrumb: { title: 'knowledge.indexing' },
     componentLoader: () => import('./pages/knowledge/indexing.js'),
   },
   {
     name: 'workflows',
-    parent: 'systemManagement',
+    parent: 'settingsBusiness',
     path: '/workflows',
     auth: 'required',
     authz: {
       resource: { type: 'settings', id: 'workflow-management' },
       action: 'read',
     },
-    navigation: { title: 'workflows.title', icon: Workflow },
+    navigation: {
+      title: 'workflows.title',
+      description: 'workflows.description',
+      icon: Workflow,
+    },
     breadcrumb: { title: 'workflows.title' },
     componentLoader: () => import('./pages/workflows/index.js'),
     children: [
@@ -460,16 +495,10 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
   },
 ]);
 
+// Users and Permission management join the Accounts and permissions category with their original URLs and ids.
 const routes: readonly AppClientRouteContribution[] = [
   appRoutes,
-  defineAppRoutes(
-    systemSettingsRoutes.routes.flatMap((group) =>
-      (group.children ?? []).map((route) => ({
-        ...route,
-        parent: 'systemManagement',
-      })),
-    ),
-  ),
+  systemSettingsRoutes,
 ];
 
 export default routes;
