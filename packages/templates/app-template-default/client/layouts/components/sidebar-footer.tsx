@@ -12,8 +12,8 @@ import {
 } from '#components/ui/tooltip';
 
 /**
- * The application's sidebar footer: the NocoBase slogan's two lines, then the template's name and its version, each
- * on its own line. In icon mode only the shield remains, and a tooltip carries the same text.
+ * The application's sidebar footer: the NocoBase slogan's two lines, then the application's version.
+ * In icon mode only the shield remains, and a tooltip carries the same text.
  */
 export function AppSidebarFooter(): ReactElement {
   const { t } = useTranslation();
@@ -21,7 +21,6 @@ export function AppSidebarFooter(): ReactElement {
   const iconOnly = state === 'collapsed' && !isMobile;
   // Published by the server from the application's package.json.
   const publicConfig = useClientApplication().config.public;
-  const templateName = publicConfig.get('app.displayName', 'Default Template');
   const templateVersion = publicConfig.get('app.version', '0.0.0');
   const versionLabel = `v${templateVersion}`;
   // The tooltip and the icon's accessible name have no link, so the brand's markup is dropped there.
@@ -53,7 +52,7 @@ export function AppSidebarFooter(): ReactElement {
               <span
                 aria-label={
                   iconOnly
-                    ? `${brandPartnership} ${buildReliableSystems} ${templateName} ${versionLabel}`
+                    ? `${brandPartnership} ${buildReliableSystems} ${versionLabel}`
                     : undefined
                 }
                 className='flex h-5 shrink-0 items-center rounded-sm text-sidebar-foreground/80 outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring'
@@ -71,9 +70,7 @@ export function AppSidebarFooter(): ReactElement {
           >
             <span className='font-medium'>{brandPartnership}</span>
             <span>{buildReliableSystems}</span>
-            <span className='mt-1 opacity-70'>
-              {templateName} {versionLabel}
-            </span>
+            <span className='mt-1 opacity-70'>{versionLabel}</span>
           </TooltipContent>
         </Tooltip>
         <div className='min-w-0 flex-1 group-data-[collapsible=icon]:hidden'>
@@ -90,14 +87,10 @@ export function AppSidebarFooter(): ReactElement {
           <p className='text-balance text-muted-foreground'>
             {buildReliableSystems}
           </p>
-          {/* Name and version stay on one line each; a long name is cut off, with the whole name as its title. */}
           <p
             className='mt-1 truncate text-muted-foreground'
-            title={templateName}
+            title={versionLabel}
           >
-            {templateName}
-          </p>
-          <p className='truncate text-muted-foreground' title={versionLabel}>
             {versionLabel}
           </p>
         </div>

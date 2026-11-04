@@ -86,9 +86,11 @@ describe('shell translations', () => {
       screen.getByRole('navigation', { name: 'Breadcrumb' }),
     ).toHaveTextContent('Overview');
     expect(screen.getByText('Build reliable business systems')).toBeVisible();
+    expect(screen.queryByText('Default Template')).not.toBeInTheDocument();
     await act(() => runtime.changeLanguage('zh-CN'));
     expect(screen.getByRole('navigation', { name: '面包屑' })).toBeVisible();
     expect(screen.getByText('Build reliable business systems')).toBeVisible();
+    expect(screen.queryByText('Default Template')).not.toBeInTheDocument();
     expect(
       screen.getByRole('link', { name: 'NocoBase' }).parentElement,
     ).toHaveTextContent('AI + NocoBase');
