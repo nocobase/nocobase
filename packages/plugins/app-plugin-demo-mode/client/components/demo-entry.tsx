@@ -7,20 +7,21 @@ import {
   type PropsWithChildren,
   type ReactElement,
 } from 'react';
-import { useHref, useLocation } from 'react-router';
 
 import { DEMO_MODE_NAMESPACE } from '../namespace.js';
 
-/** Resolve the visitor's session before the application's home route can redirect to its login page. */
-export function DemoHomeEntry({ children }: PropsWithChildren): ReactElement {
+/** Resolve the visitor's session before a protected route can redirect to its login page. */
+export function DemoEntry({
+  children,
+  required,
+}: PropsWithChildren<{ required: boolean }>): ReactElement {
   const api = useApiClient();
-  const root = useHref('/');
-  const { search, hash } = useLocation();
   const { t } = useTranslation(DEMO_MODE_NAMESPACE);
   const [ready, setReady] = useState(false);
   const pendingRef = useRef<Promise<boolean> | undefined>(undefined);
 
   useEffect(() => {
+    if (!required) return;
     let active = true;
     pendingRef.current ??= api
       .request<{ data: { signedIn: boolean } }>({
@@ -39,7 +40,7 @@ export function DemoHomeEntry({ children }: PropsWithChildren): ReactElement {
     pendingRef.current
       .then((signedIn) => {
         if (!active) return;
-        if (signedIn) window.location.replace(`${root}${search}${hash}`);
+        if (signedIn) window.location.reload();
         else setReady(true);
       })
       .catch(() => {
@@ -48,9 +49,9 @@ export function DemoHomeEntry({ children }: PropsWithChildren): ReactElement {
     return () => {
       active = false;
     };
-  }, [api, root, search, hash]);
+  }, [api, required]);
 
-  return ready ? (
+  return ready || !required ? (
     <>{children}</>
   ) : (
     <p role='status' className='p-4 text-sm text-muted-foreground'>
