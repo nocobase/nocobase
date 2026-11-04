@@ -149,6 +149,7 @@ describe('file preview helpers', () => {
       cMapPacked: true,
       cMapUrl: '/static/plugins/@nocobase/plugin-file-manager/dist/client/pdfjs/cmaps/',
       standardFontDataUrl: '/static/plugins/@nocobase/plugin-file-manager/dist/client/pdfjs/standard_fonts/',
+      wasmUrl: '/static/plugins/@nocobase/plugin-file-manager/dist/client/pdfjs/wasm/',
     });
     expect(getPdfPreviewWorkerSrc()).toBe(
       '/static/plugins/@nocobase/plugin-file-manager/dist/client/pdfjs/pdf.worker.min.mjs',
@@ -164,6 +165,21 @@ describe('file preview helpers', () => {
     browserWindow.__webpack_public_path__ = 'https://cdn.example.com/assets';
     expect(getPdfPreviewApiSrc()).toBe(
       'https://cdn.example.com/assets/static/plugins/@nocobase/plugin-file-manager/dist/client/pdfjs/pdf.min.mjs',
+    );
+  });
+
+  it.each([
+    [undefined, undefined, undefined, '/'],
+    ['/nocobase/v/', 'v', undefined, '/nocobase/'],
+    ['/nocobase/v/', 'v', 'https://cdn.example.com/assets', 'https://cdn.example.com/assets/'],
+  ])('provides the JPX decoder URL for public path %s, prefix %s, CDN %s', (publicPath, prefix, cdn, expectedBase) => {
+    browserWindow.__nocobase_public_path__ = publicPath;
+    browserWindow.__nocobase_modern_client_prefix__ = prefix;
+    browserWindow.__webpack_public_path__ = cdn;
+
+    expect(getPdfPreviewResourceOptions()).toHaveProperty(
+      'wasmUrl',
+      `${expectedBase}static/plugins/@nocobase/plugin-file-manager/dist/client/pdfjs/wasm/`,
     );
   });
 
