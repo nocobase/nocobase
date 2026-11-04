@@ -55,6 +55,7 @@ function buildStandIn(
       'case "${1:-} ${2:-}" in',
       '  "status --json") printf \'{\\n  "running": true,\\n  "apps": [{ "server": "%s" }]\\n}\\n\' "$STAND_IN_SERVER" ;;',
       '  "register --server") [ -z "${STAND_IN_REGISTER_FAILS:-}" ] || exit 3 ;;',
+      '  "acp service") [ -z "${STAND_IN_RESTART_FAILS:-}" ] || exit 1 ;;',
       'esac',
       '',
     ].join('\n'),
@@ -241,6 +242,9 @@ describe('install script', () => {
       `+ curl -fSL --progress-bar -H x-nocobase-registration-token: ${token}`,
     );
     expect(result.stdout).toContain(`Downloading acme 0.7.0 for ${target}`);
+    expect(result.stdout).toContain(
+      `+ ${prefix}/current/bin/acme acp service restart`,
+    );
     expect(result.stdout).toContain(
       `Downloading ${RUNNER_PRODUCT} 0.2.0 for ${target}`,
     );
@@ -530,7 +534,7 @@ describe('install script, the CLI alone', () => {
     expect(
       JSON.parse(readFileSync(path.join(prefix, 'install.json'), 'utf8')),
     ).toEqual({ prefix, binLink: path.join(binDir, 'acme'), mode: 'cli' });
-    expect(existsSync(log)).toBe(false);
+    expect(readFileSync(log, 'utf8')).toBe('acme acp service restart\n');
 
     // Again with a token that is used up: what is installed is kept.
     const again = await install([
@@ -545,6 +549,28 @@ describe('install script, the CLI alone', () => {
     ]);
     expect(again.code).toBe(0);
     expect(again.stdout).toContain('acme is installed in');
+  });
+
+  it('preserves successful installation when restarting ACP fails', async () => {
+    const prefix = path.join(root, 'restart-failure');
+    const result = await install(
+      [
+        '--server',
+        base,
+        '--token',
+        await downloadToken(),
+        '--prefix',
+        prefix,
+        '--bin-dir',
+        path.join(root, 'restart-failure-bin'),
+      ],
+      { STAND_IN_RESTART_FAILS: '1' },
+    );
+    expect(result.code).toBe(0);
+    expect(result.stdout).toContain(
+      'Could not restart background connections. Run acme acp service restart to retry.',
+    );
+    expect(readlinkSync(path.join(prefix, 'current'))).toBe('versions/0.7.0');
   });
 
   it('defaults --server to the address it was served from', async () => {
