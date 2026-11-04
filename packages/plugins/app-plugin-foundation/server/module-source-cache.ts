@@ -86,6 +86,7 @@ export class ModuleSourceCache {
   public async read(
     rootDir: string,
     runtime: readonly RuntimeProviderEvidence[] = [],
+    signal?: AbortSignal,
   ): Promise<FoundationModuleSources> {
     const key = JSON.stringify([
       path.resolve(rootDir),
@@ -105,7 +106,7 @@ export class ModuleSourceCache {
       return previous.sources;
     this.cached = undefined;
     const files = new Snapshot();
-    const sources = await collectModuleSources(rootDir, runtime, files);
+    const sources = await collectModuleSources(rootDir, runtime, files, signal);
     if (
       files.cacheable &&
       Buffer.byteLength(key) <= MAX_BYTES &&

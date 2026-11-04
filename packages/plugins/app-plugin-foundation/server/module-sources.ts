@@ -40,6 +40,7 @@ export async function collectModuleSources(
   rootDir: string,
   runtime: readonly RuntimeProviderEvidence[] = [],
   observation?: ModuleSourceObservation,
+  signal?: AbortSignal,
 ): Promise<FoundationModuleSources> {
   const routes: FoundationModuleSource[] = [];
   let complete = true;
@@ -49,6 +50,8 @@ export async function collectModuleSources(
     if (entry.rootDir) roots.set(entry.name, entry.rootDir);
   for (const [name, directory] of roots) {
     if (!directory || name === '@nocobase/app-plugin-foundation') continue;
+    // Each package takes up to a few seconds of parsing; stop between steps so shutdown does not wait for a scan.
+    signal?.throwIfAborted();
     try {
       const graph = await SourceGraph.create(directory, observation);
       if (!name) overridden = await graph.overrides();
@@ -76,8 +79,11 @@ export async function collectModuleSources(
         continue;
       }
       const declarationFiles = await graph.walk(entry, false);
+      signal?.throwIfAborted();
       const backendComplete = await graph.prepare(entry, runtime);
+      signal?.throwIfAborted();
       const endpoints = await graph.apiDependencies();
+      signal?.throwIfAborted();
       for (const source of declarationFiles.sources) {
         const declarations = graph.routeDeclarations(source.ast);
         for (const declaration of declarations) {
@@ -153,7 +159,8 @@ export async function collectModuleSources(
         }
       }
       complete &&= declarationFiles.complete && graph.declarationsComplete;
-    } catch {
+    } catch (error) {
+      if (signal?.aborted) throw error;
       observation?.unreadable();
       complete = false;
     }

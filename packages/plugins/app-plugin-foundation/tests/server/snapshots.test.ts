@@ -134,6 +134,7 @@ it('claims once across simultaneous first visits and refreshes; reads and time d
   expect(collect).toHaveBeenCalledExactlyOnceWith({
     refresh: true,
     countRecords: false,
+    signal: expect.any(AbortSignal),
   });
 });
 
@@ -261,6 +262,22 @@ it('recovers a lost memory task after interruption without losing history', asyn
   expect(collect).toHaveBeenCalledTimes(2);
 });
 
+it('passes the job interruption to the collector so shutdown does not wait for a full scan', async () => {
+  const a = service();
+  await a.ensureScan();
+  const abort = new AbortController();
+  collect.mockImplementationOnce(async (options) => {
+    abort.abort();
+    options?.signal?.throwIfAborted();
+    return result;
+  });
+  await expect(run(a, 0, abort.signal)).rejects.toThrow();
+  expect(collect).toHaveBeenCalledWith(
+    expect.objectContaining({ signal: abort.signal }),
+  );
+  expect((await a.scanStatus()).status).toBe('running');
+});
+
 it('isolates applications and only asks for heavy record counts explicitly', async () => {
   const a = service(),
     b = service(RUNNING_KERNEL_VERSION, 'other');
@@ -272,12 +289,14 @@ it('isolates applications and only asks for heavy record counts explicitly', asy
   expect(collect).toHaveBeenLastCalledWith({
     refresh: true,
     countRecords: true,
+    signal: expect.any(AbortSignal),
   });
   await a.ensureScan({ refresh: true });
   await run(a, 2);
   expect(collect).toHaveBeenLastCalledWith({
     refresh: true,
     countRecords: false,
+    signal: expect.any(AbortSignal),
   });
 });
 

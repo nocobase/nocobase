@@ -106,8 +106,9 @@ export class DefaultFoundationService {
     this.moduleSources = new ModuleSourceCache(this.now);
   }
 
+  /** `signal` stops a collection between steps; the background scan job passes its interruption signal. */
   public async overview(
-    options: FoundationOverviewOptions = {},
+    options: FoundationOverviewOptions & { readonly signal?: AbortSignal } = {},
   ): Promise<FoundationOverview> {
     const container = this.options.container;
     const database = container.has(databaseManagerToken)
@@ -138,14 +139,17 @@ export class DefaultFoundationService {
         : result;
     }
     const counts = options.countRecords === true;
-    const result = this.collect(counts).finally(() => {
+    const result = this.collect(counts, options.signal).finally(() => {
       this.pending = undefined;
     });
     this.pending = { counts, result };
     return result;
   }
 
-  private async collect(countRecords: boolean): Promise<FoundationOverview> {
+  private async collect(
+    countRecords: boolean,
+    signal?: AbortSignal,
+  ): Promise<FoundationOverview> {
     const started = this.now();
     const { container } = this.options;
     const database = container.has(databaseManagerToken)
@@ -295,9 +299,11 @@ export class DefaultFoundationService {
               ],
         };
     }
+    signal?.throwIfAborted();
     const moduleSources = await this.moduleSources.read(
       this.options.rootDir,
       this.options.runtimeProviders?.(),
+      signal,
     );
     const finished = this.now();
     for (let index = 0; index < capabilities.length; index++)

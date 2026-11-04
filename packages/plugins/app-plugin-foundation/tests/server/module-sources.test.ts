@@ -9,7 +9,7 @@ import {
 } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import ts from 'typescript';
 
 import { businessModules } from '../../client/business-modules.js';
@@ -1538,4 +1538,25 @@ it('selects declaration factories through a called local wrapper and exported al
     },
   ]);
   expect(watched).toContain(path.join(dependency, 'server/index.ts'));
+});
+
+it('stops reading packages once interrupted instead of reporting incomplete evidence', async () => {
+  const root = await fixture({
+    'client/routes.ts': `export default [{name:'one',componentLoader:()=>import('./page.js')}];`,
+    'client/page.ts': `export default ()=>null;`,
+  });
+  const abort = new AbortController();
+  const reason = new Error('shutting down');
+  abort.abort(reason);
+  const unreadable = vi.fn();
+  await expect(
+    collectModuleSources(
+      root,
+      [],
+      { watch: async () => undefined, unreadable },
+      abort.signal,
+    ),
+  ).rejects.toBe(reason);
+  expect(unreadable).not.toHaveBeenCalled();
+  expect((await collectModuleSources(root)).routes).toHaveLength(1);
 });
