@@ -41,7 +41,7 @@ const messages = {
       actions: 'Actions',
     },
     view: 'View details',
-    refresh: 'Refresh',
+    retryRead: 'Retry',
     previous: 'Previous',
     next: 'Next',
     page: 'Page {{page}}',
@@ -60,7 +60,7 @@ const messages = {
     notificationHint:
       'After a task is saved, the related people other than the current editor are notified: the creator and current assignee. If the assignee changes, both the previous and new assignees are notified.',
     edit: 'Edit task',
-    refresh: 'Refresh',
+    retryRead: 'Retry',
     save: 'Save changes',
     cancel: 'Cancel',
     back: 'Back to tasks',

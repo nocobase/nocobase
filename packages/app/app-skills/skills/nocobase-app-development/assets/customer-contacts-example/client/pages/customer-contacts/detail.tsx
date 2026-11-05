@@ -9,7 +9,7 @@ import {
   useParams,
 } from 'react-router';
 import type { ColumnDef } from '@tanstack/react-table';
-import { MoreHorizontal, RefreshCw } from 'lucide-react';
+import { MoreHorizontal } from 'lucide-react';
 import { RouteChildPage } from '#components/route-child-page';
 import { BackButton } from '#components/back-button';
 import { PageContainer } from '#components/page-container';
@@ -206,14 +206,6 @@ export default function CustomerDetailPage() {
                       {t('customerContacts.edit')}
                     </Button>
                   )}
-                  <Button
-                    variant='outline'
-                    disabled={request.loading}
-                    onClick={reload}
-                  >
-                    <RefreshCw />
-                    {t('customerContacts.refresh')}
-                  </Button>
                 </>
               )
             }

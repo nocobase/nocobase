@@ -100,12 +100,22 @@ describe('workflow management', () => {
     const view = render(<WorkflowDefinitionList {...props} />);
     const input = screen.getByRole('textbox');
     expect(screen.queryByText('No definitions')).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Refresh' })).toBeDisabled();
+    expect(
+      screen.queryByRole('button', { name: 'Refresh' }),
+    ).not.toBeInTheDocument();
     view.rerender(<WorkflowDefinitionList {...props} loaded loading={false} />);
     expect(screen.getByRole('textbox')).toBe(input);
     expect(input).toHaveValue('draft');
     expect(screen.getByText('No definitions')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Refresh' }));
+    view.rerender(
+      <WorkflowDefinitionList
+        {...props}
+        loaded
+        loading={false}
+        listState='failed'
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
     expect(onRefresh).toHaveBeenCalledOnce();
   });
 

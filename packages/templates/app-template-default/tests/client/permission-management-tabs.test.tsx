@@ -1,5 +1,5 @@
 import packageMetadata from '../../package.json' with { type: 'json' };
-import { renderAuthenticatedClient } from '../helpers/authenticated-client.js';
+import { createAuthenticatedClientRenderer } from '../helpers/authenticated-client.js';
 import { resolveAppClientContributions } from '@nocobase/app-client/plugins';
 import { act, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -26,6 +26,8 @@ import settingsRoutes from '../../client/pages/settings/routes.js';
 import shellRoutes from '../../client/pages/settings/shell-routes.js';
 import { RouteTreeProvider } from '../../client/routing/route-context.js';
 import { useRouteNavigation } from '../../client/routing/route-navigation.js';
+
+const renderAuthenticatedClient = createAuthenticatedClientRenderer();
 
 const { routes } = resolveAppClientContributions([
   {
@@ -510,7 +512,10 @@ it('drops a hidden draft and its shell guard when the final permission result de
     expect(beforeUnload()).toBe(true);
     await view.server.application.container
       .resolve(authorizationToken)
-      .permissionSets.update('test-access', { key: 'test-access', grants: [] });
+      .permissionSets.update(view.permissionSetKey, {
+        key: view.permissionSetKey,
+        grants: [],
+      });
   } finally {
     hold = false;
     pending.resolve();

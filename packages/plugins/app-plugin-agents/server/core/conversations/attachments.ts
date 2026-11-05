@@ -9,6 +9,9 @@
  * conversation. Anyone else gets 404, as if it did not exist. Uploads never sent are purged after
  * `CHAT_ATTACHMENT_ORPHAN_HOURS`.
  */
+import { conversationAccess } from './shares.js';
+import { messagesRepo } from './conversation.store.js';
+
 import { Readable } from 'node:stream';
 
 import type { DatabaseConnection, Repository } from '@nocobase/db';
@@ -385,11 +388,33 @@ export function createChatAttachments(deps: ChatAttachmentDeps): {
         reader.run.subjectId !== row.conversationId)
     )
       throw notFound('Attachment');
-    const conversation = await conn
-      .repository<{ id: string; userId: string }>('agConversations')
-      .findOne({ filter: { id: row.conversationId } });
-    if (!conversation || conversation.userId !== reader.userId)
-      throw notFound('Attachment');
+    let access;
+    try {
+      access = await conversationAccess(
+        conn,
+        reader.userId,
+        row.conversationId,
+      );
+    } catch (error) {
+      if (
+        error instanceof ProtocolError &&
+        error.code === 'CONVERSATION_NOT_FOUND'
+      )
+        throw notFound('Attachment');
+      throw error;
+    }
+    if (access.share) {
+      if (reader.run || !row.messageId) throw notFound('Attachment');
+      const message = await messagesRepo(conn).findOne({
+        filter: (f) =>
+          f.and([
+            f.string('id').eq(row.messageId),
+            f.string('conversationId').eq(row.conversationId),
+            f.number('seq').lte(Number(access.share!.cutoffSeq)),
+          ]),
+      });
+      if (!message) throw notFound('Attachment');
+    }
     return row;
   }
 
