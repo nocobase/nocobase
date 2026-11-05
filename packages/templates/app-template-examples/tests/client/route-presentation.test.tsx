@@ -14,7 +14,7 @@ import {
   TestI18nProvider,
   createTestI18nRuntime,
 } from '@nocobase/i18n/testing';
-import { Activity, useState, type ReactNode } from 'react';
+import { Activity, useState, useLayoutEffect, type ReactNode } from 'react';
 import {
   createMemoryRouter,
   Link,
@@ -190,6 +190,32 @@ describe('route presentations', () => {
     await user.keyboard('{Escape}');
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
     expect(screen.getByTestId('location')).toHaveTextContent(/^\/items$/);
+  });
+
+  it('allows closing a cold permission check without a mounted form', async () => {
+    const permissions = deferred<unknown>();
+    const user = await renderItems(
+      [
+        page('create', '/items/create', async () => ({ default: CreateForm }), {
+          authz: { resource: { type: 'user', id: '*' }, action: 'create' },
+          presentation: { kind: 'dialog', title: 'settings.newUser' },
+        }),
+      ],
+      answerApi(({ path }) =>
+        path === 'authorization/permissions' ? permissions.promise : null,
+      ),
+    );
+    try {
+      await user.click(screen.getByRole('link', { name: 'Open create' }));
+      await screen.findByRole('dialog', { name: 'New user' });
+      await user.keyboard('{Escape}');
+      await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+      expect(screen.getByTestId('location')).toHaveTextContent(/^\/items$/);
+    } finally {
+      await act(async () =>
+        permissions.resolve({ data: { unrestricted: true, permissions: [] } }),
+      );
+    }
   });
 
   it('keeps a slow authorization check and its denial inside the declared dialog', async () => {
@@ -386,7 +412,7 @@ describe('route overlay host', () => {
     beforeClose,
   }: {
     readonly concealed: boolean;
-    readonly beforeClose: () => boolean;
+    readonly beforeClose: () => boolean | Promise<boolean>;
   }): ReactNode {
     return (
       <RouteOverlayHost title='New item' ready concealed={concealed}>
@@ -403,7 +429,78 @@ describe('route overlay host', () => {
     );
   }
 
-  it('hides what the page configured while it is concealed but keeps its close guard', async () => {
+  it('conceals a nested portal below a hidden parent DOM element and restores the same panel', async () => {
+    let conceal!: (value: boolean) => void;
+    function Harness() {
+      const [hidden, setHidden] = useState(false);
+      useLayoutEffect(() => {
+        conceal = setHidden;
+      }, []);
+      return (
+        <Activity mode={hidden ? 'hidden' : 'visible'}>
+          <main>
+            <Host concealed={false} beforeClose={() => false} />
+          </main>
+        </Activity>
+      );
+    }
+    const router = createMemoryRouter(
+      [{ path: '/items/create', element: <Harness /> }],
+      { initialEntries: ['/items/create'] },
+    );
+    render(
+      <TestI18nProvider runtime={runtime}>
+        <RouterProvider router={router} />
+      </TestI18nProvider>,
+    );
+    const panel = await screen.findByRole('dialog', { name: 'Secret record' });
+    await act(async () => conceal(true));
+    expect(panel).not.toBeVisible();
+    expect(panel.closest('[data-slot="dialog-portal"]')).toHaveStyle({
+      display: 'none',
+    });
+    await act(async () => conceal(false));
+    expect(screen.getByRole('dialog', { name: 'Secret record' })).toBe(panel);
+    expect(screen.getByRole('button', { name: 'Save item' })).toBeVisible();
+  });
+
+  it('never resumes an async close that crossed concealment, even when it settles after recovery', async () => {
+    const decision = deferred<boolean>();
+    let conceal!: (value: boolean) => void;
+    const beforeClose = vi.fn(() => decision.promise);
+    function Harness() {
+      const [concealed, setConcealed] = useState(false);
+      useLayoutEffect(() => {
+        conceal = setConcealed;
+      }, []);
+      return <Host concealed={concealed} beforeClose={beforeClose} />;
+    }
+    const router = createMemoryRouter(
+      [
+        {
+          path: '/items',
+          children: [{ path: 'create', element: <Harness /> }],
+        },
+      ],
+      { initialEntries: ['/items/create'] },
+    );
+    render(
+      <TestI18nProvider runtime={runtime}>
+        <RouterProvider router={router} />
+      </TestI18nProvider>,
+    );
+    const user = userEvent.setup();
+    await screen.findByRole('dialog', { name: 'Secret record' });
+    await user.keyboard('{Escape}');
+    await waitFor(() => expect(beforeClose).toHaveBeenCalledTimes(1));
+    await act(async () => conceal(true));
+    await act(async () => conceal(false));
+    await act(async () => decision.resolve(true));
+    expect(screen.getByRole('dialog', { name: 'Secret record' })).toBeVisible();
+    expect(router.state.location.pathname).toBe('/items/create');
+  });
+
+  it('hides protected slots and refuses closing without calling the disconnected page guard', async () => {
     const user = userEvent.setup();
     const beforeClose = vi.fn(() => false);
     function Harness() {
@@ -449,7 +546,7 @@ describe('route overlay host', () => {
     expect(screen.queryByRole('button', { name: 'Save item' })).toBeNull();
 
     await user.keyboard('{Escape}');
-    await waitFor(() => expect(beforeClose).toHaveBeenCalledTimes(1));
+    expect(beforeClose).not.toHaveBeenCalled();
     expect(router.state.location.pathname).toBe('/items/create');
 
     toggle();

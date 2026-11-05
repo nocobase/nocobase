@@ -3,6 +3,7 @@ import type { AppClientRegisteredRoute } from '@nocobase/app-client/plugins';
 import {
   AuthorizationClient,
   authorizationClientToken,
+  useCan,
 } from '@nocobase/app-plugin-authorization/client';
 import projects from '../../client/plugin.js';
 import {
@@ -12,10 +13,27 @@ import {
 } from '../../client/pages.js';
 import { BUSINESS_KEYS, SETTINGS_KEYS } from '../../shared/access.js';
 import { answerApi, renderWithApp } from '@nocobase/app-testing/client';
-import { act, screen, waitFor, within } from '@testing-library/react';
+import {
+  act,
+  fireEvent,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { Link, Outlet, Route, Routes, useLocation } from 'react-router';
+import {
+  Link,
+  Outlet,
+  Route,
+  Routes,
+  useLocation,
+  useNavigate,
+} from 'react-router';
 import { describe, expect, it } from 'vitest';
+
+import { RouteLeaveBoundary } from '../../../../templates/app-template-examples/client/routing/route-leave-boundary.js';
+import { useRouteOverlay } from '../../../../templates/app-template-examples/client/components/use-route-overlay.js';
+import { memo, useLayoutEffect, type ReactNode } from 'react';
 
 import { renderRouteTree } from '../../../../templates/app-template-examples/client/routing/route-tree.js';
 import enUS from '../../../../templates/app-template-examples/client/locales/en-US.js';
@@ -25,10 +43,10 @@ const LOAD = { timeout: 10_000 };
 
 function Parent() {
   return (
-    <>
+    <main>
       <Link to='new?tab=manual'>Open editor</Link>
       <Outlet />
-    </>
+    </main>
   );
 }
 function Location() {
@@ -44,22 +62,56 @@ function Location() {
 async function renderEditor(
   definition: typeof newIssueRoute,
   locale = 'en-US',
+  protectedRoute = false,
+  protectedParent = false,
 ) {
   const created: unknown[] = [];
   const response = Promise.withResolvers<unknown>();
+  let permissions = Promise.resolve<unknown>({
+    data: { unrestricted: true, permissions: [] },
+  });
+  let close: () => Promise<void> = async () => {};
+  let navigate: ReturnType<typeof useNavigate>;
+  const permission = { resource: { type: 'user', id: '*' }, action: 'create' };
+  const module = await definition.componentLoader!();
+  const Component = memo(module.default);
+  function Editor() {
+    const overlay = useRouteOverlay();
+    useLayoutEffect(() => {
+      close = overlay.close;
+    }, [overlay.close]);
+    return <Component />;
+  }
+  function Shell({ children }: { readonly children: ReactNode }) {
+    const { isPending } = useCan(
+      protectedRoute || protectedParent ? permission : undefined,
+    );
+    const currentNavigate = useNavigate();
+    useLayoutEffect(() => {
+      navigate = currentNavigate;
+    }, [currentNavigate]);
+    return (
+      <RouteLeaveBoundary
+        hidden={(protectedRoute || protectedParent) && isPending}
+      >
+        {children}
+      </RouteLeaveBoundary>
+    );
+  }
   const route: AppClientRegisteredRoute = {
     ...definition,
     id: 'application:editor',
     name: 'editor',
     path: '/items/new',
     auth: 'required',
-    authz: 'skip',
+    authz: protectedRoute ? permission : 'skip',
+    componentLoader: async () => ({ default: Editor }),
     packageName: packageMetadata.name,
     source: 'application',
   };
   const user = userEvent.setup();
-  await renderWithApp(
-    <>
+  const { app } = await renderWithApp(
+    <Shell>
       <Routes>
         {renderRouteTree([
           {
@@ -67,7 +119,7 @@ async function renderEditor(
             name: 'parent',
             path: '/items',
             auth: 'required',
-            authz: 'skip',
+            authz: protectedParent ? permission : 'skip',
             packageName: packageMetadata.name,
             source: 'application',
             componentLoader: async () => ({ default: Parent }),
@@ -77,7 +129,7 @@ async function renderEditor(
         <Route path='/issues/created' element={<p>Created issue</p>} />
       </Routes>
       <Location />
-    </>,
+    </Shell>,
     {
       route: '/items?filter=mine',
       namespace: packageMetadata.name,
@@ -92,6 +144,7 @@ async function renderEditor(
         );
       },
       fetch: answerApi(async ({ method, path, json }) => {
+        if (path === 'authorization/permissions') return permissions;
         if (method === 'GET' && path === 'projects/me')
           return {
             data: {
@@ -130,7 +183,31 @@ async function renderEditor(
   await user.click(
     await screen.findByRole('link', { name: 'Open editor' }, LOAD),
   );
-  return { user, created, response };
+  return {
+    user,
+    created,
+    response,
+    close: () => close(),
+    navigate: (to: string | number) =>
+      typeof to === 'number' ? navigate(to) : navigate(to),
+    async recheck() {
+      const pending = Promise.withResolvers<unknown>();
+      permissions = pending.promise;
+      await act(async () =>
+        app.container.resolve(authorizationClientToken).invalidate(),
+      );
+      await waitFor(() =>
+        expect(
+          screen.getByLabelText('Title', { exact: true }),
+        ).not.toBeVisible(),
+      );
+      return async (allowed = true) => {
+        await act(async () =>
+          pending.resolve({ data: { unrestricted: allowed, permissions: [] } }),
+        );
+      };
+    },
+  };
 }
 
 describe('Projects pages in the application route host', () => {
@@ -235,4 +312,130 @@ describe('Projects pages in the application route host', () => {
       }
     },
   );
+});
+
+describe('Projects draft protection during real permission rechecks', () => {
+  it('blocks every close path and navigation, then restores the child form registration', async () => {
+    const fixture = await renderEditor(newIssueRoute, 'en-US', true);
+    const { user } = fixture;
+    await user.type(
+      await screen.findByLabelText('Title', { exact: true }, LOAD),
+      'Protected draft',
+    );
+    const restore = await fixture.recheck();
+    try {
+      expect(
+        document.querySelector('[data-slot="route-overlay-footer"]'),
+      ).toBeNull();
+      const unload = new Event('beforeunload', { cancelable: true });
+      window.dispatchEvent(unload);
+      expect(unload.defaultPrevented).toBe(true);
+      await user.keyboard('{Escape}');
+      await user.click(
+        screen.getByRole('button', { name: 'Close', exact: true }),
+      );
+      await act(async () => fixture.close());
+      await act(async () => fixture.navigate('/elsewhere'));
+      await act(async () => fixture.navigate(-1));
+      await waitFor(() =>
+        expect(screen.getByTestId('location')).toHaveTextContent('/items/new'),
+      );
+      expect(screen.queryByRole('alertdialog')).toBeNull();
+    } finally {
+      await restore();
+    }
+    expect(
+      await screen.findByLabelText('Title', { exact: true }, LOAD),
+    ).toHaveValue('Protected draft');
+    await user.keyboard('{Escape}');
+    const question = await screen.findByRole('alertdialog', {
+      name: 'Discard unsaved changes?',
+    });
+    await user.click(
+      within(question).getByRole('button', { name: 'Keep editing' }),
+    );
+    expect(screen.getByLabelText('Title', { exact: true })).toHaveValue(
+      'Protected draft',
+    );
+    await user.keyboard('{Escape}');
+    await user.click(
+      await screen.findByRole('button', { name: 'Discard', exact: true }),
+    );
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+  });
+
+  it('invalidates a close already asking when Activity disconnects the dirty child form', async () => {
+    const fixture = await renderEditor(newIssueRoute, 'en-US', true);
+    await fixture.user.type(
+      await screen.findByLabelText('Title', { exact: true }, LOAD),
+      'Still editing',
+    );
+    await fixture.user.keyboard('{Escape}');
+    await screen.findByRole('alertdialog', {
+      name: 'Discard unsaved changes?',
+    });
+    const restore = await fixture.recheck();
+    await restore();
+    expect(
+      await screen.findByLabelText('Title', { exact: true }, LOAD),
+    ).toHaveValue('Still editing');
+    expect(screen.queryByRole('alertdialog')).toBeNull();
+    expect(screen.getByTestId('location')).toHaveTextContent('/items/new');
+    await fixture.user.keyboard('{Escape}');
+    expect(
+      await screen.findByRole('alertdialog', {
+        name: 'Discard unsaved changes?',
+      }),
+    ).toBeVisible();
+  });
+
+  it('keeps protection above a parent Activity that disconnects the nested Projects host', async () => {
+    const fixture = await renderEditor(newIssueRoute, 'en-US', false, true);
+    await fixture.user.type(
+      await screen.findByLabelText('Title', { exact: true }, LOAD),
+      'Parent recheck draft',
+    );
+    const restore = await fixture.recheck();
+    try {
+      await act(async () => fixture.navigate('/elsewhere'));
+      await act(async () => fixture.navigate(-1));
+      expect(screen.getByTestId('location')).toHaveTextContent('/items/new');
+      const unload = new Event('beforeunload', { cancelable: true });
+      window.dispatchEvent(unload);
+      expect(unload.defaultPrevented).toBe(true);
+    } finally {
+      await restore();
+    }
+    expect(
+      await screen.findByLabelText('Title', { exact: true }, LOAD),
+    ).toHaveValue('Parent recheck draft');
+    await fixture.user.keyboard('{Escape}');
+    expect(
+      await screen.findByRole('alertdialog', {
+        name: 'Discard unsaved changes?',
+      }),
+    ).toBeVisible();
+  });
+
+  it('unmounts a denied editor and releases both the wait lock and the old confirmation', async () => {
+    const fixture = await renderEditor(newIssueRoute, 'en-US', true);
+    await fixture.user.type(
+      await screen.findByLabelText('Title', { exact: true }, LOAD),
+      'Revoked draft',
+    );
+    await fixture.user.keyboard('{Escape}');
+    await screen.findByRole('alertdialog');
+    const restore = await fixture.recheck();
+    await restore(false);
+    expect(await screen.findByText('Access denied', {}, LOAD)).toBeVisible();
+    expect(screen.queryByLabelText('Title', { exact: true })).toBeNull();
+    expect(
+      document.querySelector('[data-slot="route-overlay-footer"]'),
+    ).toBeNull();
+    await fixture.user.keyboard('{Escape}');
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    const unload = new Event('beforeunload', { cancelable: true });
+    fireEvent(window, unload);
+    expect(unload.defaultPrevented).toBe(false);
+  });
 });

@@ -102,6 +102,16 @@ function RouteOverlayFrame({
   const { t } = useTranslation();
   const parentPopup = useContext(ParentPopupContext);
   const popupRef = useRef<HTMLDivElement>(null);
+  const [portal, setPortal] = useState<HTMLDivElement | null>(null);
+  // A parent route's Activity can stop at its first DOM element, while this portal lives outside that element.
+  // Base UI creates the portal after mount, so track the actual node before connecting its visibility lifecycle.
+  useLayoutEffect(() => {
+    if (!portal) return;
+    portal.style.removeProperty('display');
+    return () => {
+      portal.style.display = 'none';
+    };
+  }, [portal]);
   const previousFocusRef = useRef<HTMLElement | null>(null);
   useLayoutEffect(() => {
     previousFocusRef.current =
@@ -125,6 +135,7 @@ function RouteOverlayFrame({
     pendingRef.current = null;
     return () => {
       generationRef.current += 1;
+      setClosingLocation(null);
     };
   }, [location]);
 
@@ -134,6 +145,7 @@ function RouteOverlayFrame({
     setClosingLocation(location);
     const request = Promise.resolve()
       .then(async () => {
+        if (generationRef.current !== requestGeneration) return;
         const allowed = beforeClose ? await beforeClose() : true;
         if (allowed && generationRef.current === requestGeneration) {
           await navigate(
@@ -167,7 +179,7 @@ function RouteOverlayFrame({
               });
           }}
         >
-          <DialogPortal>
+          <DialogPortal ref={setPortal}>
             {/* Each nested panel needs its own backdrop above its parent panel. */}
             <DialogOverlay forceRender />
             <DialogPrimitive.Popup

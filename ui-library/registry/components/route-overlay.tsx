@@ -107,7 +107,7 @@ export interface RouteOverlayHostProps {
   /**
    * True while the mounted page is hidden, for example during an authorization recheck: the host shows only its own
    * title and no footer, so nothing the page derived from protected data stays on screen. The page's close guard
-   * still applies, because the page and its draft are still mounted.
+   * is temporarily blocked until the page's effects reconnect, because hiding disconnects form dirty registrations.
    */
   readonly concealed?: boolean;
   readonly children?: ReactNode;
@@ -142,6 +142,7 @@ export function RouteOverlayHost({
       footer={shown?.footer}
       closeTo={page?.closeTo}
       beforeClose={page?.beforeClose}
+      closeBlocked={ready && concealed}
       className={page?.className}
     >
       <RouteOverlayHostContext.Provider value={host}>
@@ -160,10 +161,24 @@ function RouteOverlayFrame({
   beforeClose,
   className,
   drawer = false,
-}: RouteOverlayProps & { readonly drawer?: boolean }): ReactElement {
+  closeBlocked = false,
+}: RouteOverlayProps & {
+  readonly drawer?: boolean;
+  readonly closeBlocked?: boolean;
+}): ReactElement {
   const { t } = useTranslation();
   const parentPopup = useContext(ParentPopupContext);
   const popupRef = useRef<HTMLDivElement>(null);
+  const [portal, setPortal] = useState<HTMLDivElement | null>(null);
+  // A parent route's Activity can stop at its first DOM element, while this portal lives outside that element.
+  // Base UI creates the portal after mount, so track the actual node before connecting its visibility lifecycle.
+  useLayoutEffect(() => {
+    if (!portal) return;
+    portal.style.removeProperty('display');
+    return () => {
+      portal.style.display = 'none';
+    };
+  }, [portal]);
   const previousFocusRef = useRef<HTMLElement | null>(null);
   useLayoutEffect(() => {
     previousFocusRef.current =
@@ -173,29 +188,37 @@ function RouteOverlayFrame({
   }, []);
   const navigate = useNavigate();
   const location = useLocation();
-  const [closingLocation, setClosingLocation] = useState<
-    typeof location | null
-  >(null);
-  const isClosing = closingLocation === location;
+  const closeScope = useMemo(
+    () => ({ location, closeBlocked }),
+    [location, closeBlocked],
+  );
+  const [closingScope, setClosingScope] = useState<typeof closeScope | null>(
+    null,
+  );
+  const isClosing = closingScope === closeScope;
   const pendingRef = useRef<Promise<void> | null>(null);
   const generationRef = useRef(0);
 
-  // A still-mounted parent can change location while its confirmation is pending.
-  // Invalidate that request as well as requests from an unmounted route.
+  // A location change or concealment invalidates pending closes. Activity cleanup can resolve a form's old
+  // confirmation, but that result must never navigate, including after permission is restored.
   useLayoutEffect(() => {
     generationRef.current += 1;
     pendingRef.current = null;
     return () => {
       generationRef.current += 1;
+      setClosingScope(null);
     };
-  }, [location]);
+  }, [location, closeBlocked]);
 
   const close = useCallback((): Promise<void> => {
+    if (closeBlocked) return Promise.resolve();
     if (pendingRef.current) return pendingRef.current;
     const requestGeneration = generationRef.current;
-    setClosingLocation(location);
+    setClosingScope(closeScope);
     const request = Promise.resolve()
       .then(async () => {
+        // A recheck can start while an earlier confirmation is open, or before this microtask runs.
+        if (generationRef.current !== requestGeneration) return;
         const allowed = beforeClose ? await beforeClose() : true;
         if (allowed && generationRef.current === requestGeneration) {
           await navigate(
@@ -207,12 +230,12 @@ function RouteOverlayFrame({
       .finally(() => {
         if (generationRef.current === requestGeneration) {
           pendingRef.current = null;
-          setClosingLocation(null);
+          setClosingScope(null);
         }
       });
     pendingRef.current = request;
     return request;
-  }, [beforeClose, closeTo, location, navigate]);
+  }, [beforeClose, closeBlocked, closeScope, closeTo, location, navigate]);
   const value = useMemo(() => ({ close, isClosing }), [close, isClosing]);
 
   return (
@@ -229,7 +252,7 @@ function RouteOverlayFrame({
               });
           }}
         >
-          <DialogPortal>
+          <DialogPortal ref={setPortal}>
             {/* Each nested panel needs its own backdrop above its parent panel. */}
             <DialogOverlay forceRender />
             <DialogPrimitive.Popup

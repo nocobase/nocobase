@@ -1,4 +1,5 @@
 import { useTranslation } from '@nocobase/i18n/client';
+import { useNavigationGuard } from '@nocobase/app-client';
 import type {
   AppClientRegisteredRoute,
   AppClientRouteComponentModule,
@@ -93,6 +94,22 @@ export function ClientRoute({ route }: ClientRouteProps): ReactElement {
   const checking = checkAccess && accessLoading;
   const denied = checkAccess && !accessLoading && !allowed;
   const Component = componentModule?.default;
+  const [mounted, setMounted] = useState(false);
+  const present = Boolean(Component) && !denied && !loadError && !renderFailed;
+  if (!checking && mounted !== present) setMounted(present);
+  const rechecking = checking && mounted && !loadError && !renderFailed;
+  // Activity disconnects form effects, including dirty registrations. This guard stays outside it and refuses
+  // route departures until the page's effects reconnect; settled denial still unmounts the protected page.
+  useNavigationGuard(() => !rechecking);
+  useEffect(() => {
+    if (!rechecking) return;
+    const warn = (event: BeforeUnloadEvent): void => {
+      event.preventDefault();
+      event.returnValue = '';
+    };
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, [rechecking]);
 
   let content: ReactNode;
   // A settled denial wins over an older load failure: the viewer may not see this page at all.
@@ -143,7 +160,7 @@ export function ClientRoute({ route }: ClientRouteProps): ReactElement {
             ns: presentation!.namespace ?? route.packageName,
             defaultValue: title,
           })}
-          ready={Boolean(Component) && !denied && !loadError && !renderFailed}
+          ready={mounted && !denied && !loadError && !renderFailed}
           concealed={checking}
         >
           {content}
