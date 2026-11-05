@@ -135,6 +135,32 @@ it('cancels the hidden deadline on return, respects manual close and allows conf
   expect(disabled.connected).toBe(true);
 });
 
+it('does not let replacing all watchers in an expired hidden tab open a fresh connection', async () => {
+  const document = Object.assign(new EventTarget(), {
+    visibilityState: 'hidden',
+  });
+  vi.stubGlobal('document', document);
+  const client = setup({ hiddenDisconnectMs: 100, pingInterval: 0 });
+  const first = client.watch('test:one');
+  sockets[0]!.open();
+  sockets[0]!.ack();
+  await vi.advanceTimersByTimeAsync(100);
+  first.close();
+  client.watch('test:two');
+  client.reconnect();
+  await vi.advanceTimersByTimeAsync(1000);
+  expect(sockets).toHaveLength(1);
+  document.visibilityState = 'visible';
+  document.dispatchEvent(new Event('visibilitychange'));
+  expect(sockets).toHaveLength(2);
+  sockets[1]!.open();
+  sockets[1]!.ack();
+  expect(client.ready).toBe(true);
+  client.close();
+  client.watch('test:three');
+  expect(sockets).toHaveLength(3);
+});
+
 it('shares one lazy subscription and waits for acknowledgement before dispatching', () => {
   const client = setup();
   expect(client.state).toBe('idle');

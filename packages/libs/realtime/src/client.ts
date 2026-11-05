@@ -203,8 +203,6 @@ export function createRealtimeClient(
       manuallyClosed = true;
       clearTimeout(hiddenTimer);
       hiddenTimer = undefined;
-      hiddenSince = undefined;
-      suspended = false;
       clearTimeout(reconnectTimer);
       reconnectTimer = undefined;
       disposeSocket();
@@ -239,13 +237,18 @@ export function createRealtimeClient(
     recover();
   }
   function watchHidden(): void {
-    const timeout = options.hiddenDisconnectMs ?? 10 * 60_000;
     if (
-      timeout <= 0 ||
       typeof document === 'undefined' ||
       document.visibilityState !== 'hidden'
-    )
+    ) {
+      clearTimeout(hiddenTimer);
+      hiddenTimer = undefined;
+      hiddenSince = undefined;
+      suspended = false;
       return;
+    }
+    const timeout = options.hiddenDisconnectMs ?? 10 * 60_000;
+    if (timeout <= 0) return;
     hiddenSince ??= Date.now();
     if (hiddenTimer || suspended) return;
     hiddenTimer = setTimeout(
@@ -360,10 +363,10 @@ export function createRealtimeClient(
   }
   function connect(): void {
     if (typeof WebSocket === 'undefined' || !topics.size) return;
+    manuallyClosed = false;
     installRecovery();
     if (suspendIfDue()) return;
     if (socket && socket.readyState < 2) return;
-    manuallyClosed = false;
     installRecovery();
     clearTimeout(reconnectTimer);
     reconnectTimer = undefined;
