@@ -1,12 +1,12 @@
 {
-  "All categories": "All categories",
-  "Are you sure to add the following collections?": "Are you sure to add the following collections?",
-  "Are you sure to remove the following collections?": "Are you sure to remove the following collections?",
-  "Collection category": "Collection category",
-  "Collection display name": "Collection display name",
-  "Collection name": "Collection name",
-  "Enter name or title...": "Enter name or title...",
-  "Share collections": "Share collections",
-  "Shared collections": "Shared collections",
-  "Unshared collections": "Unshared collections"
+  "All categories": "所有分類",
+  "Are you sure to add the following collections?": "確定添加以下資料表？",
+  "Are you sure to remove the following collections?": "確定移除以下資料表？",
+  "Collection category": "分類",
+  "Collection display name": "標題",
+  "Collection name": "標識",
+  "Enter name or title...": "輸入資料表標題或標識",
+  "Share collections": "共享資料表",
+  "Shared collections": "已共享的資料表",
+  "Unshared collections": "未共享的資料表"
 }
