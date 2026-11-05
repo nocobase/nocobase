@@ -93,11 +93,11 @@ it('keeps content during background work, automatically reads its completion and
   ).toBeVisible();
   const cards = screen.getByRole('region', { name: 'Key numbers' });
   expect(
-    within(cards).getByRole('button', { name: /data tables.*0/ }),
+    within(cards).getByRole('button', { name: /Data tables.*0/ }),
   ).toBeVisible();
   expect(
     within(cards).getByRole('button', {
-      name: /views.*Information pending update/,
+      name: /Views.*Information pending update/,
     }),
   ).toBeVisible();
   expect(

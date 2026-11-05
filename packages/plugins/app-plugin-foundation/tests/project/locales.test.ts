@@ -56,6 +56,16 @@ describe('Foundation translations', () => {
       }
     }
   });
+  it('labels Chinese metrics with plain names, without measure words', async () => {
+    for (const locale of ['zh-CN', 'zh-TW'] as const) {
+      const module = await locales[locale]();
+      for (const [key, label] of Object.entries(module.default.metrics)) {
+        expect(label, `${locale}: metrics.${key}`).not.toMatch(
+          /^[个個条條张張份则則封种種次篇]/,
+        );
+      }
+    }
+  });
   it('resolves plural counts in every locale without falling back to English', async () => {
     const namespace = '@nocobase/app-plugin-foundation';
     const runtime = new I18nRuntime({

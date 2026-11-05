@@ -254,7 +254,7 @@ describe('App Foundation page', () => {
     expect(
       within(detail).queryByText('Information pending update'),
     ).not.toBeInTheDocument();
-    expect(within(detail).queryByText('records')).not.toBeInTheDocument();
+    expect(within(detail).queryByText('Records')).not.toBeInTheDocument();
     expect(
       screen.queryByText(/≥|withheld|extensionCollectionOwnership/),
     ).not.toBeInTheDocument();
