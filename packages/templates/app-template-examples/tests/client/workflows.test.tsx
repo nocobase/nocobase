@@ -518,7 +518,10 @@ describe('workflow management pages', () => {
             }),
       );
       await view(<ExecutionsPage />, 'en-US', `/workflows/executions${query}`);
-      expect(screen.getByRole('status')).toHaveAttribute('aria-busy', 'true');
+      expect(screen.getByRole('table')).toHaveAttribute('aria-busy', 'true');
+      expect(await screen.findByRole('status')).toHaveTextContent(
+        enUS.listFeedback.loading,
+      );
       expect(
         screen.queryByText(enUS.listFeedback.empty),
       ).not.toBeInTheDocument();
