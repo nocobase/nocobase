@@ -139,7 +139,10 @@ export function ClientRoute({ route }: ClientRouteProps): ReactElement {
       <RouteChildPageHostBoundary>
         <RouteOverlayHost
           drawer={kind === 'drawer'}
-          title={t(title, { ns: route.packageName, defaultValue: title })}
+          title={t(title, {
+            ns: presentation!.namespace ?? route.packageName,
+            defaultValue: title,
+          })}
           ready={Boolean(Component) && !denied && !loadError && !renderFailed}
           concealed={checking}
         >

@@ -295,6 +295,24 @@ describe('client plugin definitions', () => {
     expect(
       resolve({ presentation: { kind: 'child-page' } }).presentation,
     ).toEqual({ kind: 'child-page' });
+    expect(
+      resolve({
+        presentation: {
+          kind: 'drawer',
+          title: 'items.edit',
+          namespace: ' @nocobase/app-plugin-items ',
+        },
+      }).presentation,
+    ).toEqual({
+      kind: 'drawer',
+      title: 'items.edit',
+      namespace: '@nocobase/app-plugin-items',
+    });
+    expect(() =>
+      resolve({
+        presentation: { kind: 'dialog', title: 'items.new', namespace: ' ' },
+      }),
+    ).toThrow('namespace must not be empty');
     expect(() => resolve({ presentation: { kind: 'drawer' } })).toThrow(
       'must define a title',
     );
@@ -303,7 +321,7 @@ describe('client plugin definitions', () => {
     ).toThrow('non-empty title');
     expect(() =>
       resolve({ presentation: { kind: 'content', title: 'items.new' } }),
-    ).toThrow('cannot declare a title');
+    ).toThrow('cannot declare a title or namespace');
     expect(() => resolve({ presentation: { kind: 'popover' } })).toThrow(
       'presentation must be one of',
     );

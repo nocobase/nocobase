@@ -52,7 +52,11 @@ export const runtimesRoute: AppClientRoutePageDefinition = {
     {
       name: 'runtimes-connect',
       path: 'connect',
-      presentation: { kind: 'dialog', title: 'connect.title' },
+      presentation: {
+        kind: 'dialog',
+        title: 'connect.title',
+        namespace: '@nocobase/app-plugin-agents',
+      },
       componentLoader: withPlugin(() => import('./pages/runtimes/connect.js')),
     },
   ],

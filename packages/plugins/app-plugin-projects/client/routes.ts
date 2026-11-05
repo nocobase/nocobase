@@ -24,7 +24,11 @@ const page = (id: Page) =>
 export const newIssueDefinition: AppClientRoutePageDefinition = {
   name: 'pm-issue-new',
   path: 'new',
-  presentation: { kind: 'dialog', title: 'newIssue.title' },
+  presentation: {
+    kind: 'dialog',
+    title: 'newIssue.title',
+    namespace: '@nocobase/app-plugin-projects',
+  },
   componentLoader: () => import('./pages/issues/new.js'),
 };
 
@@ -51,7 +55,11 @@ export const issueDetailChildDefinitions: readonly AppClientRoutePageDefinition[
     {
       name: 'pm-subtask-new',
       path: 'new-subtask',
-      presentation: { kind: 'dialog', title: 'subtasks.newTitle' },
+      presentation: {
+        kind: 'dialog',
+        title: 'subtasks.newTitle',
+        namespace: '@nocobase/app-plugin-projects',
+      },
       componentLoader: () => import('./pages/issues/detail/new-subtask.js'),
     },
   ];
@@ -68,7 +76,11 @@ export const projectsDefinition: AppClientRoutePageDefinition = {
     {
       name: 'pm-project-new',
       path: 'new',
-      presentation: { kind: 'dialog', title: 'projectForm.title' },
+      presentation: {
+        kind: 'dialog',
+        title: 'projectForm.title',
+        namespace: '@nocobase/app-plugin-projects',
+      },
       componentLoader: () => import('./pages/projects/new.js'),
     },
   ],

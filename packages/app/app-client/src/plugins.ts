@@ -60,6 +60,11 @@ export interface AppClientRoutePresentation {
    * for `dialog` and `drawer`, rejected otherwise. It must not depend on the record the page shows.
    */
   readonly title?: string;
+  /**
+   * The translation namespace of `title`. Defaults to the package that registers the route; a plugin whose route
+   * definitions an application registers under its own package names its own package here.
+   */
+  readonly namespace?: string;
 }
 
 export interface AppClientRoutePageDefinition {
@@ -774,9 +779,12 @@ function normalizePresentation(
     );
   const overlay = kind === 'dialog' || kind === 'drawer';
   if (!overlay) {
-    if (presentation.title !== undefined)
+    if (
+      presentation.title !== undefined ||
+      presentation.namespace !== undefined
+    )
       throw new Error(
-        `Client route "${id}" presentation "${kind}" cannot declare a title.`,
+        `Client route "${id}" presentation "${kind}" cannot declare a title or namespace.`,
       );
     return Object.freeze({ kind: kind as AppClientRoutePresentationKind });
   }
@@ -784,9 +792,15 @@ function normalizePresentation(
     throw new Error(
       `Client route "${id}" presentation "${kind}" must define a title.`,
     );
+  const namespace = presentation.namespace?.trim();
+  if (presentation.namespace !== undefined && !namespace)
+    throw new Error(
+      `Client route "${id}" presentation namespace must not be empty.`,
+    );
   return Object.freeze({
     kind,
     title: normalizeTitle(presentation.title, id, packageName),
+    ...(namespace ? { namespace } : {}),
   });
 }
 
