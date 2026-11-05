@@ -2,6 +2,17 @@
 
 All notable changes to NocoBase 3 are documented in this file, one section per release: `nocobase-v3-beta/<date>.<n>` for a beta and `release/<date>.<n>` for a stable release. The versions each release published are on its GitHub Release, and every package's own changes are in its CHANGELOG.md.
 
+## [nocobase-v3-beta/2026-11-05.2](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-05.2)
+
+### 🚀 Improvements
+
+- **[Agents]** Let applications start independent agent sessions with bounded handoff summaries. ([#11341](https://github.com/nocobase/nocobase/pull/11341)) by @2013xile
+- **[App foundation]** App foundation statistics now show a plain metric name before each value, with the same name on the summary cards and in capability details. ([#11342](https://github.com/nocobase/nocobase/pull/11342)) by @katherinehhh
+
+### 🐛 Bug Fixes
+
+- **[Release management]** Keep environment App inputs aligned when their labels wrap. ([#11338](https://github.com/nocobase/nocobase/pull/11338)) by @gchust
+
 ## [nocobase-v3-beta/2026-11-05.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-05.1)
 
 ### 🎉 New Features
