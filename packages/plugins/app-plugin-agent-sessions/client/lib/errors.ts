@@ -1,7 +1,7 @@
 import type { ToastOptions } from '@nocobase/app-client';
 import { ApiClientError } from '@nocobase/app-client';
 
-/** What to tell the person about a failed request: the server's translated message, the original error, or `fallback`. */
+/** What to tell the person about a failed request: the server's translated message when it sent one, else `fallback`. */
 export function errorText(error: unknown, fallback: string): string {
   if (error instanceof ApiClientError) {
     const payload = error.payload as
@@ -9,7 +9,7 @@ export function errorText(error: unknown, fallback: string): string {
     const message = payload?.error?.localizedMessage?.message;
     if (typeof message === 'string' && message) return message;
   }
-  return error instanceof Error && error.message ? error.message : fallback;
+  return fallback;
 }
 
 /** A setup suggestion within the application; external and protocol-relative locations are never actions. */
