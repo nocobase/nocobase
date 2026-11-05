@@ -2,6 +2,8 @@
 
 This document shows how to write overlays. For the rules on choosing and stacking overlays, see I1 in [`../ui-guidelines.md`](../ui-guidelines.md); for the form itself, see [`form.md`](form.md); for how to load data, see [`api.md`](api.md).
 
+While a lazy child route is loading, the template renders a compact floating status outside the parent layout. Keep this behavior when customizing `ClientRoute`: a full-page loading placeholder at a parent’s outlet adds another viewport of height before the dialog or drawer can mount. Navigation-only groups still use ordinary root-page loading. Do not infer overlay presentation from route depth; a child can also be an inline page.
+
 ## 1. Choosing an overlay
 
 | Use case                                                                             | Component                      | Width (`className`)                                          | Where the open state lives |

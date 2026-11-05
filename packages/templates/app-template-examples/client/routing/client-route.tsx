@@ -5,15 +5,26 @@ import type {
 } from '@nocobase/app-client/plugins';
 import { useCan } from '@nocobase/app-plugin-authorization/client';
 import { NamespaceScope } from '@nocobase/i18n/client';
-import { Activity, type ReactElement, useEffect, useState } from 'react';
+import {
+  Activity,
+  createContext,
+  useContext,
+  type ReactElement,
+  useEffect,
+  useState,
+} from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 
+import { BodyPortal } from '#components/body-portal';
 import { Loading } from '#components/loading';
 import { Button } from '#components/ui/button';
 
 export interface ClientRouteProps {
   readonly route: AppClientRegisteredRoute;
 }
+
+// A route group does not render a page. Only a mounted page makes its descendants nested.
+const ParentPageContext = createContext(false);
 
 export function ClientRoute({ route }: ClientRouteProps): ReactElement {
   const { authz, componentLoader } = route;
@@ -70,7 +81,9 @@ export function ClientRoute({ route }: ClientRouteProps): ReactElement {
         <ErrorBoundary fallback={<ClientPageError route={route} />}>
           {/* The owning package is the page's namespace, so a plugin page translates with a bare useTranslation(). */}
           <NamespaceScope ns={route.packageName}>
-            <Component />
+            <ParentPageContext.Provider value={true}>
+              <Component />
+            </ParentPageContext.Provider>
           </NamespaceScope>
         </ErrorBoundary>
       </Activity>
@@ -101,13 +114,25 @@ function ClientPageDenied(inputProps: ClientRouteProps): ReactElement {
 
 function ClientPageLoading(): ReactElement {
   const { t } = useTranslation();
+  const nested = useContext(ParentPageContext);
+  const label = t('status.loadingPage', { defaultValue: 'Loading page' });
 
-  return (
-    <Loading
-      className='min-h-[calc(100svh-4rem)]'
-      label={t('status.loadingPage', { defaultValue: 'Loading page' })}
-    />
-  );
+  // An outlet may follow a full page or live inside a transformed/clipped overlay.
+  // Keep pending child routes out of that layout without guessing their eventual presentation.
+  if (nested) {
+    return (
+      <BodyPortal>
+        <div className='pointer-events-none fixed inset-0 z-50 flex items-center justify-center p-6'>
+          <Loading
+            className='rounded-xl border bg-popover p-6 text-popover-foreground shadow-lg'
+            label={label}
+          />
+        </div>
+      </BodyPortal>
+    );
+  }
+
+  return <Loading className='min-h-[calc(100svh-4rem)]' label={label} />;
 }
 
 function ClientPageError(inputProps: ClientRouteProps): ReactElement {
