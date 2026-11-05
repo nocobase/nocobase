@@ -13,3 +13,4 @@ export * from './useApplyAutoFlows';
 export * from './useFlowSettingsContext';
 export * from './useNiceDropdownMaxHeight';
 export * from './useFlowStep';
+export * from './useDirectionalPlacement';

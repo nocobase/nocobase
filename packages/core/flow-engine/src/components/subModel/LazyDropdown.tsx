@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { useDirectionalPlacement } from '../../hooks/useDirectionalPlacement';
 import { css } from '@emotion/css';
 import { ConfigProvider, Dropdown, DropdownProps, Empty, Input, InputProps, Spin, theme } from 'antd';
 import React, { FC, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
@@ -554,6 +555,7 @@ const SUBMENU_MOTION_DISABLED = {
 const dropdownPersistRegistry: Map<string, number> = new Map();
 
 const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownMenuProps }> = ({ menu, ...props }) => {
+  const placement = useDirectionalPlacement('bottomLeft');
   const engine = useFlowEngine();
   const { getPrefixCls } = React.useContext(ConfigProvider.ConfigContext);
   const { token } = theme.useToken();
@@ -991,7 +993,7 @@ const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownM
       mouseLeaveDelay={props.mouseLeaveDelay ?? MENU_CLOSE_DELAY}
       openClassName={mergedOpenClassName}
       overlayClassName={overlayClassName}
-      placement="bottomLeft"
+      placement={placement}
       menu={{
         ...dropdownMenuProps,
         openKeys: Array.from(openKeys),

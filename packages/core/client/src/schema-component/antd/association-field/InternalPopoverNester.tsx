@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { useDirectionalPlacement } from '@nocobase/flow-engine';
 import { EditOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { observer, useFieldSchema } from '@formily/react';
@@ -40,6 +41,7 @@ export const InternalPopoverNester = observer(
     }) => React.ReactElement;
     children?: React.ReactElement;
   }) => {
+    const placement = useDirectionalPlacement('topLeft');
     const { field } = useAssociationFieldContext();
     const [visible, setVisible] = useState(false);
     const schema = useFieldSchema();
@@ -76,7 +78,7 @@ export const InternalPopoverNester = observer(
           overlayStyle={overlayStyle}
           content={content}
           trigger="click"
-          placement="topLeft"
+          placement={placement}
           open={visible}
           onOpenChange={handleOpenChange}
           title={field?.title || ''}

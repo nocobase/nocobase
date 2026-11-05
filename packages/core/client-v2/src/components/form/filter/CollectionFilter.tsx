@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { useDirectionalPlacement } from '@nocobase/flow-engine';
 import { FilterOutlined } from '@ant-design/icons';
 import type { Collection } from '@nocobase/flow-engine';
 import { Button, type ButtonProps, Popover, type PopoverProps } from 'antd';
@@ -57,6 +58,7 @@ export interface CollectionFilterProps {
  * Pair with `<ExtendCollectionsProvider>` when the target collection is client-only (e.g. a `schema-only` server collection that isn't auto-published to the v2 data source).
  */
 export const CollectionFilter: FC<CollectionFilterProps> = (props) => {
+  const placement = useDirectionalPlacement('bottomLeft');
   const {
     collection,
     initialValue,
@@ -99,7 +101,7 @@ export const CollectionFilter: FC<CollectionFilterProps> = (props) => {
   return (
     <Popover
       trigger="click"
-      placement="bottomLeft"
+      placement={placement}
       {...popoverProps}
       open={open}
       onOpenChange={setOpen}
