@@ -914,6 +914,181 @@ describe('openViewActionExtensions (popup template)', () => {
     expect(capturedCtx?.inputArgs?.filterByTk).toBe(123);
   });
 
+  it('uses the target collection filterTargetKey when it differs from the association targetKey', async () => {
+    const engine = new FlowEngine();
+    let capturedCtx: any;
+    const baseHandler = vi.fn(async (ctxArg: any) => {
+      capturedCtx = ctxArg;
+      return undefined;
+    });
+
+    const baseOpenView: ActionDefinition = {
+      name: 'openView',
+      title: 'openView',
+      uiSchema: {
+        uid: { type: 'string' },
+      },
+      handler: baseHandler as any,
+    };
+    engine.registerActions({ openView: baseOpenView });
+
+    registerOpenViewPopupTemplateAction(engine);
+    const enhanced = engine.getAction('openView') as any;
+
+    const sourceRecord: any = {
+      organizationId: 38,
+      organization: 'target-record-uuid',
+    };
+    const assocField: any = {
+      isAssociationField: () => true,
+      name: 'organization',
+      foreignKey: 'organizationId',
+      targetKey: 'id',
+      targetCollection: { dataSourceKey: 'main', name: 'organizations', filterTargetKey: 'uuid' },
+      collection: { dataSourceKey: 'main', name: 'users' },
+    };
+
+    const ctx: any = new FlowContext();
+    ctx.engine = engine;
+    ctx.t = (k: string) => k;
+    ctx.collectionField = assocField;
+    ctx.defineProperty('record', { value: sourceRecord });
+    ctx.defineProperty('inputArgs', {
+      value: {
+        dataSourceKey: 'main',
+        collectionName: 'users',
+        associationName: 'users.organization',
+        filterByTk: sourceRecord.organizationId,
+      },
+    });
+
+    await enhanced.handler(ctx, {
+      popupTemplateUid: 'tpl-1',
+      uid: 'popup-1',
+      dataSourceKey: 'main',
+      collectionName: 'organizations',
+      filterByTk: sourceRecord.organizationId,
+      popupTemplateHasFilterByTk: true,
+    });
+
+    expect(baseHandler).toHaveBeenCalledTimes(1);
+    expect(ctx.inputArgs.filterByTk).toBe(sourceRecord.organizationId);
+    expect(capturedCtx?.inputArgs?.collectionName).toBe('organizations');
+    expect(capturedCtx?.inputArgs?.filterByTk).toBe(sourceRecord.organization);
+  });
+
+  it('does not reuse the association targetKey when the target collection filterTargetKey is unavailable', async () => {
+    const engine = new FlowEngine();
+    let capturedCtx: any;
+    const baseHandler = vi.fn(async (ctxArg: any) => {
+      capturedCtx = ctxArg;
+      return undefined;
+    });
+
+    const baseOpenView: ActionDefinition = {
+      name: 'openView',
+      title: 'openView',
+      uiSchema: { uid: { type: 'string' } },
+      handler: baseHandler as any,
+    };
+    engine.registerActions({ openView: baseOpenView });
+    registerOpenViewPopupTemplateAction(engine);
+
+    const ctx: any = new FlowContext();
+    ctx.engine = engine;
+    ctx.t = (k: string) => k;
+    ctx.collectionField = {
+      isAssociationField: () => true,
+      name: 'organization',
+      foreignKey: 'organizationId',
+      targetKey: 'id',
+      targetCollection: { dataSourceKey: 'main', name: 'organizations', filterTargetKey: 'uuid' },
+      collection: { dataSourceKey: 'main', name: 'users' },
+    };
+    ctx.defineProperty('record', { value: { organizationId: 38 } });
+    ctx.defineProperty('inputArgs', {
+      value: {
+        dataSourceKey: 'main',
+        collectionName: 'users',
+        associationName: 'users.organization',
+        filterByTk: 38,
+      },
+    });
+
+    await (engine.getAction('openView') as any).handler(ctx, {
+      popupTemplateUid: 'tpl-1',
+      uid: 'popup-1',
+      dataSourceKey: 'main',
+      collectionName: 'organizations',
+      filterByTk: 38,
+      popupTemplateHasFilterByTk: true,
+    });
+
+    expect(capturedCtx?.inputArgs?.filterByTk).toBe(null);
+  });
+
+  it('builds a composite target filterByTk from a to-many association record', async () => {
+    const engine = new FlowEngine();
+    let capturedCtx: any;
+    const baseHandler = vi.fn(async (ctxArg: any) => {
+      capturedCtx = ctxArg;
+      return undefined;
+    });
+
+    const baseOpenView: ActionDefinition = {
+      name: 'openView',
+      title: 'openView',
+      uiSchema: { uid: { type: 'string' } },
+      handler: baseHandler as any,
+    };
+    engine.registerActions({ openView: baseOpenView });
+    registerOpenViewPopupTemplateAction(engine);
+
+    const ctx: any = new FlowContext();
+    ctx.engine = engine;
+    ctx.t = (k: string) => k;
+    ctx.collectionField = {
+      isAssociationField: () => true,
+      name: 'organization',
+      foreignKey: 'organizationId',
+      targetKey: 'id',
+      targetCollection: {
+        dataSourceKey: 'main',
+        name: 'organizations',
+        filterTargetKey: ['tenantId', 'code'],
+      },
+      collection: { dataSourceKey: 'main', name: 'users' },
+    };
+    ctx.defineProperty('record', {
+      value: {
+        organizationId: 38,
+        organization: [
+          { id: 37, tenantId: 'tenant-1', code: 'org-37' },
+          { id: 38, tenantId: 'tenant-1', code: 'org-38' },
+        ],
+      },
+    });
+    ctx.defineProperty('inputArgs', {
+      value: {
+        dataSourceKey: 'main',
+        collectionName: 'users',
+        associationName: 'users.organization',
+        filterByTk: 38,
+      },
+    });
+
+    await (engine.getAction('openView') as any).handler(ctx, {
+      popupTemplateUid: 'tpl-1',
+      uid: 'popup-1',
+      dataSourceKey: 'main',
+      collectionName: 'organizations',
+      filterByTk: 38,
+      popupTemplateHasFilterByTk: true,
+    });
+
+    expect(capturedCtx?.inputArgs?.filterByTk).toEqual({ tenantId: 'tenant-1', code: 'org-38' });
+  });
+
   it('runtime clears filterByTk/sourceId in shadow ctx when template does not provide them', async () => {
     const engine = new FlowEngine();
     let capturedCtx: any;
