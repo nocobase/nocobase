@@ -756,9 +756,9 @@
       "name": "data-table-demo",
       "type": "registry:example",
       "title": "Data Table Demo",
-      "description": "Standard TanStack DataTable with stable row identities, sortable columns and pagination, plus an explicitly driven request lifecycle showing first load, same-page refresh, page change and failure recovery.",
+      "description": "Standard TanStack DataTable with stable row identities, sortable columns and pagination, plus an explicitly driven request lifecycle showing first load, same-page refresh, page change, consecutive searches while a request is pending, and failure recovery.",
       "dependencies": ["@nocobase/app-client@^4.0.0-beta.9"],
-      "registryDependencies": ["@nocobase/data-table", "button"],
+      "registryDependencies": ["@nocobase/data-table", "button", "input"],
       "files": [
         {
           "path": "components/data-table.tsx",

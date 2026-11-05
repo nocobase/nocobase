@@ -326,6 +326,9 @@ const idID: LocaleResource<typeof enUS> = {
   empty: 'Belum ada catatan. Buat rekaman pertama untuk memulai.',
   loading: 'Memuat…',
   listFeedback: {
+    refreshing: 'Memuat ulang',
+    longWait:
+      'Ini memakan waktu lebih lama dari biasanya. Anda dapat terus menunggu.',
     loading: 'Memuat',
     empty: 'Belum ada data',
     noResults: 'Tidak ada hasil',

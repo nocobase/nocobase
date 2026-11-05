@@ -99,6 +99,8 @@ function Picker({
   // The application keeps previous query data as a placeholder; those options
   // belong to the previous search or filter and must not appear as matches.
   const current = !options.isPlaceholderData;
+  // A new search or filter restarts the display delay of its own wait.
+  const queryIdentity = JSON.stringify([search, filter ?? null]);
   const items = [
     ...new Map(
       ((current && options.data?.pages) || [])
@@ -218,7 +220,11 @@ function Picker({
         </div>
         <div ref={listRef} className='min-h-0 flex-1 overflow-y-auto p-1'>
           {options.isPending || !current ? (
-            <Loading label={t('customerContacts.loading')} className='py-6' />
+            <Loading
+              identity={queryIdentity}
+              label={t('customerContacts.loading')}
+              className='py-6'
+            />
           ) : options.isError && !isFetchNextPageError ? (
             <div className='p-1'>
               <ReadFeedback
@@ -255,13 +261,11 @@ function Picker({
                   />
                 </div>
               ) : hasNextPage ? (
-                <div
+                <NextPagePending
                   ref={endRef}
-                  aria-busy={isFetchingNextPage}
-                  className='flex min-h-8 justify-center py-2'
-                >
-                  <NextPagePending pending={isFetchingNextPage} />
-                </div>
+                  pending={isFetchingNextPage}
+                  identity={queryIdentity}
+                />
               ) : null}
             </div>
           ) : (
@@ -279,16 +283,48 @@ function Picker({
   );
 }
 
-/** The next page appends below kept options; its small indicator follows the shared display delay. */
-function NextPagePending({ pending }: { pending: boolean }) {
+/**
+ * The next page appends below kept options. Its mark follows the shared
+ * display delay and a slow page explains itself; the polite status stays
+ * mounted outside the busy row so the change is announced, not dropped.
+ */
+function NextPagePending({
+  pending,
+  identity,
+  ref,
+}: {
+  pending: boolean;
+  identity: unknown;
+  ref: Ref<HTMLDivElement>;
+}) {
   const { t } = useTranslation();
-  const feedback = usePendingFeedback(pending);
-  if (!feedback.visible) return null;
+  const feedback = usePendingFeedback(pending, identity);
+  const message = feedback.longWaiting
+    ? t('pendingFeedback.longWait')
+    : t('customerContacts.loading');
   return (
     <>
-      <BrandLoadingMark className='size-4 text-muted-foreground' />
-      <span role='status' className='sr-only'>
-        {t('customerContacts.loading')}
+      <div
+        ref={ref}
+        aria-busy={pending}
+        className='flex min-h-8 flex-col items-center justify-center gap-1 py-2'
+      >
+        {feedback.visible ? (
+          <>
+            <BrandLoadingMark className='size-4 text-muted-foreground' />
+            {feedback.longWaiting ? (
+              <span
+                aria-hidden='true'
+                className='text-xs text-muted-foreground'
+              >
+                {message}
+              </span>
+            ) : null}
+          </>
+        ) : null}
+      </div>
+      <span role='status' aria-live='polite' className='sr-only'>
+        {feedback.visible ? message : ''}
       </span>
     </>
   );

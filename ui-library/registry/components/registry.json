@@ -448,7 +448,7 @@
         "@nocobase/list-feedback",
         "@nocobase/loading"
       ],
-      "docs": "Use DataTable with typed columns and getRowId. Server data must use manualPagination and manualSorting with controlled state; never sort or paginate only a fetched page locally. pagination=false renders every supplied row and leaves pagination to the caller. Pass loading for the current request: with rows of the current query it is a background refresh that keeps rows and shows a delayed RefreshIndicator; a new query hides previous rows, keeps their body and pagination height, and never shows the previous page count. Pass listState from resolveListState so loading, empty, failure and permission states stay distinct.",
+      "docs": "Use DataTable with typed columns and getRowId. Server data must use manualPagination and manualSorting with controlled state; never sort or paginate only a fetched page locally. pagination=false renders every supplied row and leaves pagination to the caller. Pass loading for the current request: with rows of the current query it is a background refresh that keeps rows and shows a delayed RefreshIndicator; a new query hides previous rows, keeps their body and pagination height, and never shows the previous page count. Pass listState from resolveListState so loading, empty, failure and permission states stay distinct. Pass loadingIdentity, the current query's stable identity such as its request path, so a new query restarts the 300ms and 10-second display thresholds without remounting the table or losing its kept geometry; the table itself is busy only while it shows retained rows.",
       "files": [
         {
           "path": "data-table/column-header.tsx",
@@ -543,7 +543,7 @@
         "@nocobase/loading",
         "@nocobase/pending-button"
       ],
-      "docs": "Pass resolveListState from @nocobase/app-client. ListFeedback renders loading through @nocobase/loading, keeping the body's footprint at once and showing the indicator and one status after 300ms, and every other built-in state as one matching icon and one short line; render ListFeedbackActions with the existing retry, clear and sign-in controls in the host toolbar. Merge listFeedback translations listed in the components README. Keep the standard create action in the permission-gated page header, including for empty collections; reserve empty and emptyAction for intentional business-specific empty content. Retry uses PendingButton, so the host passes the real retry request as busy.",
+      "docs": "Pass resolveListState from @nocobase/app-client. ListFeedback renders loading through @nocobase/loading, keeping the body's footprint at once and showing the indicator and one status after 300ms, and every other built-in state as one matching icon and one short line; render ListFeedbackActions with the existing retry, clear and sign-in controls in the host toolbar. Merge listFeedback translations listed in the components README. Keep the standard create action in the permission-gated page header, including for empty collections; reserve empty and emptyAction for intentional business-specific empty content. Retry uses PendingButton, so the host passes the real retry request as busy. Pass identity, the current query's stable identity, so consecutive queries each get their own display delay.",
       "files": [
         {
           "path": "list-feedback.tsx",

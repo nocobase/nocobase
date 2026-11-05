@@ -330,6 +330,7 @@ function CustomerContactsContent() {
         showSelectedCount={false}
         listState={state}
         loading={active && request.loading}
+        loadingIdentity={path}
         onRetry={reload}
       />
       <AlertDialog

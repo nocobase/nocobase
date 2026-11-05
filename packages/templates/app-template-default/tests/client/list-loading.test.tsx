@@ -27,7 +27,9 @@ function Table({
   listState,
   total = rows.length,
   label,
+  query,
 }: {
+  readonly query?: string;
   readonly rows: readonly { id: string }[];
   readonly loading: boolean;
   readonly listState: 'loading' | 'ready';
@@ -44,6 +46,7 @@ function Table({
       onPaginationChange={() => undefined}
       showSelectedCount={false}
       loading={loading}
+      loadingIdentity={query}
       listState={listState}
     />
   );
@@ -88,7 +91,12 @@ describe('standard list loading feedback', () => {
     );
     vi.useFakeTimers();
     view.rerender(<Table rows={[]} loading listState='loading' />);
-    expect(screen.getByRole('table')).toHaveAttribute('aria-busy', 'true');
+    // The loading body is the busy region; its status sits outside it so it is announced.
+    expect(screen.getByRole('table')).not.toHaveAttribute('aria-busy', 'true');
+    expect(document.querySelector('[data-slot="loading"]')).toHaveAttribute(
+      'aria-busy',
+      'true',
+    );
     expect(screen.getByRole('columnheader', { name: 'ID' })).toBeVisible();
     await advance(299);
     expect(screen.queryByRole('status')).toBeNull();
@@ -97,6 +105,7 @@ describe('standard list loading feedback', () => {
     expect(screen.getByRole('status')).toHaveTextContent(
       enUS.listFeedback.loading,
     );
+    expect(screen.getByRole('status').closest('[aria-busy="true"]')).toBeNull();
     await advance(9700);
     expect(screen.getByRole('status')).toHaveTextContent(
       enUS.pendingFeedback.longWait,
@@ -197,6 +206,66 @@ describe('standard list loading feedback', () => {
     );
     expect(screen.getByRole('cell', { name: 'New match' })).toBeVisible();
     expect(screen.getByText('Page 1 of 1')).toBeVisible();
+  });
+
+  it('restarts the display delay for each new query without remounting the table', async () => {
+    const view = await renderWithApp(
+      <Table rows={[{ id: 'Old' }]} loading={false} listState='ready' />,
+      options,
+    );
+    vi.useFakeTimers();
+    const tableNode = screen.getByRole('table');
+    // Query A has waited past the long-wait threshold.
+    view.rerender(<Table rows={[]} loading listState='loading' query='a' />);
+    await advance(10_000);
+    expect(screen.getByRole('status')).toHaveTextContent(
+      enUS.pendingFeedback.longWait,
+    );
+    // Query B replaces it: nothing until its own 300ms, no inherited long wait.
+    view.rerender(<Table rows={[]} loading listState='loading' query='b' />);
+    expect(screen.queryByRole('status')).toBeNull();
+    await advance(299);
+    expect(screen.queryByRole('status')).toBeNull();
+    await advance(1);
+    expect(screen.getByRole('status')).toHaveTextContent(
+      enUS.listFeedback.loading,
+    );
+    await advance(9699);
+    expect(screen.getByRole('status')).toHaveTextContent(
+      enUS.listFeedback.loading,
+    );
+    await advance(1);
+    expect(screen.getByRole('status')).toHaveTextContent(
+      enUS.pendingFeedback.longWait,
+    );
+    // Query C answers within 200ms: it never flashes feedback.
+    view.rerender(<Table rows={[]} loading listState='loading' query='c' />);
+    await advance(200);
+    expect(screen.queryByRole('status')).toBeNull();
+    view.rerender(
+      <Table
+        rows={[{ id: 'C' }]}
+        loading={false}
+        listState='ready'
+        query='c'
+      />,
+    );
+    await advance(1000);
+    expect(screen.queryByRole('status')).toBeNull();
+    // The same table stayed mounted and kept the earlier rows' height while loading.
+    expect(screen.getByRole('table')).toBe(tableNode);
+    expect(screen.getByRole('cell', { name: 'C' })).toBeVisible();
+  });
+
+  it("keeps the previous rows' geometry across consecutive query changes", async () => {
+    const view = await renderWithApp(
+      <Table rows={[{ id: 'Old' }]} loading={false} listState='ready' />,
+      options,
+    );
+    view.rerender(<Table rows={[]} loading listState='loading' query='a' />);
+    expect(screen.getAllByRole('cell')[0]).toHaveStyle({ height: '420px' });
+    view.rerender(<Table rows={[]} loading listState='loading' query='b' />);
+    expect(screen.getAllByRole('cell')[0]).toHaveStyle({ height: '420px' });
   });
 
   it('keeps feedback of concurrent regions independent', async () => {

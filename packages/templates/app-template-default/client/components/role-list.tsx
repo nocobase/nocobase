@@ -26,7 +26,10 @@ export interface RoleListProps {
     readonly custom: string;
   };
   readonly ariaLabel?: string;
-  /** The host's request for these roles is refreshing them. */
+  /**
+   * The host is refreshing these current roles. Pass false while another
+   * control, such as a retry after a refresh failure, already announces the wait.
+   */
   readonly loading?: boolean;
   readonly tableState?: Pick<
     DataTableProps<RoleListRole>,

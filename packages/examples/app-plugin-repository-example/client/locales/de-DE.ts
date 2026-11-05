@@ -329,6 +329,8 @@ const deDE: LocaleResource<typeof enUS> = {
     'Noch keine Aufzeichnungen. Erstellen Sie zunächst den ersten Datensatz.',
   loading: 'Wird geladen…',
   listFeedback: {
+    refreshing: 'Wird aktualisiert',
+    longWait: 'Das dauert länger als üblich. Sie können weiter warten.',
     loading: 'Wird geladen',
     empty: 'Keine Daten vorhanden',
     noResults: 'Keine Ergebnisse',

@@ -330,6 +330,9 @@ const frFR: LocaleResource<typeof enUS> = {
     "Aucun enregistrement pour l'instant. Créez le premier enregistrement pour commencer.",
   loading: 'Chargement…',
   listFeedback: {
+    refreshing: 'Actualisation',
+    longWait:
+      'Cela prend plus de temps que d’habitude. Vous pouvez continuer à patienter.',
     loading: 'Chargement',
     empty: 'Aucune donnée',
     noResults: 'Aucun résultat',

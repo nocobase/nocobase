@@ -38,6 +38,11 @@ export interface ListFeedbackProps {
   readonly empty?: ReactNode;
   /** Optional business-specific action; the standard create action belongs in the page header. */
   readonly emptyAction?: ReactNode;
+  /**
+   * The current query's stable identity, such as its request path. A new
+   * query restarts the display delay without remounting the list.
+   */
+  readonly identity?: unknown;
 }
 
 export interface ListFeedbackActionsProps {
@@ -103,6 +108,7 @@ export function ListFeedback({
   children,
   empty,
   emptyAction,
+  identity,
 }: ListFeedbackProps): ReactElement {
   const { t } = useTranslation();
 
@@ -136,6 +142,7 @@ export function ListFeedback({
     // The body keeps its footprint at once; the indicator and one status follow the shared display delay.
     return (
       <Loading
+        identity={identity}
         label={t('listFeedback.loading', { defaultValue: 'Loading' })}
         className='min-h-24 px-4 py-4'
       />

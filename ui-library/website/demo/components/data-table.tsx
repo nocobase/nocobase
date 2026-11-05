@@ -1,6 +1,7 @@
 import { useMemo, useState, type ReactElement } from 'react';
 import { resolveListState } from '@nocobase/app-client';
 import { Button } from '#components/ui/button';
+import { Input } from '#components/ui/input';
 import { DataTable } from '#components/data-table/data-table';
 import { DataTableColumnHeader } from '#components/data-table/column-header';
 
@@ -63,15 +64,26 @@ const ledger = Array.from({ length: 9 }, (_, index) => ({
  * flight until Complete or Fail is pressed, so nothing finishes on a timer.
  */
 function RequestLifecycleTable(): ReactElement {
-  const [loaded, setLoaded] = useState(0);
-  const [requested, setRequested] = useState(0);
+  const [loaded, setLoaded] = useState({ page: 0, search: '' });
+  const [requested, setRequested] = useState({ page: 0, search: '' });
   const [pending, setPending] = useState(true);
   const [failed, setFailed] = useState(false);
   const [everLoaded, setEverLoaded] = useState(false);
-  const current = everLoaded && requested === loaded;
+  const current =
+    everLoaded &&
+    requested.page === loaded.page &&
+    requested.search === loaded.search;
+  const matching = useMemo(
+    () =>
+      ledger.filter((row) =>
+        row.title.toLowerCase().includes(loaded.search.toLowerCase()),
+      ),
+    [loaded.search],
+  );
   const rows = useMemo(
-    () => ledger.slice(loaded * PAGE_SIZE, (loaded + 1) * PAGE_SIZE),
-    [loaded],
+    () =>
+      matching.slice(loaded.page * PAGE_SIZE, (loaded.page + 1) * PAGE_SIZE),
+    [matching, loaded.page],
   );
   const listState = resolveListState(
     {
@@ -84,6 +96,18 @@ function RequestLifecycleTable(): ReactElement {
   return (
     <section aria-label='Invoices' className='flex flex-col gap-3'>
       <div className='flex flex-wrap gap-2'>
+        {/* Typing starts a new request at once, even while the previous one is still pending. */}
+        <Input
+          aria-label='Search items'
+          placeholder='Search items'
+          className='w-full sm:max-w-48'
+          value={requested.search}
+          onChange={(event) => {
+            setRequested({ page: 0, search: event.target.value });
+            setPending(true);
+            setFailed(false);
+          }}
+        />
         <Button
           variant='outline'
           disabled={pending || !current}
@@ -132,20 +156,21 @@ function RequestLifecycleTable(): ReactElement {
           },
         ]}
         manualPagination
-        rowCount={ledger.length}
-        paginationState={{ pageIndex: requested, pageSize: PAGE_SIZE }}
+        rowCount={current ? matching.length : 0}
+        paginationState={{ pageIndex: requested.page, pageSize: PAGE_SIZE }}
         onPaginationChange={(update) => {
           const next =
             typeof update === 'function'
-              ? update({ pageIndex: requested, pageSize: PAGE_SIZE })
+              ? update({ pageIndex: requested.page, pageSize: PAGE_SIZE })
               : update;
-          setRequested(next.pageIndex);
+          setRequested({ page: next.pageIndex, search: requested.search });
           setPending(true);
           setFailed(false);
         }}
         pageSizeOptions={[PAGE_SIZE]}
         showSelectedCount={false}
         loading={pending}
+        loadingIdentity={`${requested.page}:${requested.search}`}
         listState={listState}
         onRetry={() => setPending(true)}
       />

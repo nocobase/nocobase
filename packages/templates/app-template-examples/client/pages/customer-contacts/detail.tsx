@@ -310,6 +310,7 @@ export default function CustomerDetailPage() {
                 pageSizeOptions={[10]}
                 showSelectedCount={false}
                 loading={active && contacts.loading}
+                loadingIdentity={contacts.path}
                 listState={contactState}
                 onRetry={contacts.reload}
               />

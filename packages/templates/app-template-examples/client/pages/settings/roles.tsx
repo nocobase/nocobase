@@ -128,7 +128,8 @@ export default function RolesPage(): ReactElement {
         <ListFeedback state={listState}>
           <RoleList
             tableState={tableState}
-            loading={active && request.loading}
+            // After a refresh failure the toolbar's retry button owns the wait.
+            loading={active && request.loading && listState === 'ready'}
             ariaLabel={t('settings.roles')}
             roles={rows.map((role) => ({
               key: role.key,

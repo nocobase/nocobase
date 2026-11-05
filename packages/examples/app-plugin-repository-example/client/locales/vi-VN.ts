@@ -326,6 +326,8 @@ const viVN: LocaleResource<typeof enUS> = {
   empty: 'Chưa có hồ sơ nào. Tạo bản ghi đầu tiên để bắt đầu.',
   loading: 'Đang tải…',
   listFeedback: {
+    refreshing: 'Đang làm mới',
+    longWait: 'Việc này lâu hơn bình thường. Bạn có thể tiếp tục chờ.',
     loading: 'Đang tải',
     empty: 'Chưa có dữ liệu',
     noResults: 'Không có kết quả',

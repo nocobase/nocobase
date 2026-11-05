@@ -54,6 +54,12 @@ export interface DataTableProps<TData, TValue = unknown> {
    * refresh: rows stay and a delayed refresh indicator appears. Without them the body shows the loading state.
    */
   readonly loading?: boolean;
+  /**
+   * The current query's stable identity, such as its request path. When it
+   * changes the loading and refresh feedback restart their display delay;
+   * the table, its rows' geometry and its controls stay mounted.
+   */
+  readonly loadingIdentity?: unknown;
   readonly listState?: ListState;
   readonly onRetry?: () => void;
   readonly onClearFilters?: () => void;
@@ -108,6 +114,7 @@ export function DataTable<TData, TValue = unknown>({
   onSortingChange,
   showSelectedCount = true,
   loading = false,
+  loadingIdentity,
   listState,
   onRetry,
   onClearFilters,
@@ -241,8 +248,10 @@ export function DataTable<TData, TValue = unknown>({
         {/* A retry after a refresh failure is announced by its own toolbar button. */}
         <RefreshIndicator
           pending={loading && showRows && state !== 'refresh-failed'}
+          identity={loadingIdentity}
         />
-        <Table aria-busy={loading}>
+        {/* Only retained rows are busy; a loading body owns its own busy region and status. */}
+        <Table aria-busy={loading && showRows}>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
@@ -285,6 +294,7 @@ export function DataTable<TData, TValue = unknown>({
                 >
                   <ListFeedback
                     state={state}
+                    identity={loadingIdentity}
                     empty={emptyMessage}
                     emptyAction={emptyAction}
                   />

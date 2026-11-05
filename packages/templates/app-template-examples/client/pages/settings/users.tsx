@@ -513,6 +513,7 @@ export default function UsersPage(): ReactElement {
           manualSorting
           showSelectedCount={false}
           loading={active && request.loading}
+          loadingIdentity={requestPath}
           listState={listState}
           onRetry={request.reload}
           onClearFilters={clearFilters}
