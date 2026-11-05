@@ -1,3 +1,5 @@
+import type { AppClientRegisteredRoute } from '@nocobase/app-client/plugins';
+import { RouteTreeProvider } from '../../client/routing/route-context.js';
 import { renderSettingsClient as renderWithApp } from '../helpers/settings-client.js';
 import { answerApi } from '@nocobase/app-testing/client';
 import { apiClientToken, type ClientApplication } from '@nocobase/app-client';
@@ -14,8 +16,24 @@ import enUS from '../../client/locales/en-US.js';
 import zhCN from '../../client/locales/zh-CN.js';
 
 const namespace = '@nocobase/role-return-test';
-function Parent() {
-  return <Outlet context={{ reload: () => undefined }} />;
+function Parent({ path }: { path: string }) {
+  const routes: AppClientRegisteredRoute[] = [
+    {
+      id: 'roles',
+      name: 'roles',
+      path,
+      packageName: namespace,
+      source: 'application',
+      auth: 'required',
+      authz: 'skip',
+      componentLoader: async () => ({ default: () => null }),
+    },
+  ];
+  return (
+    <RouteTreeProvider routes={routes}>
+      <Outlet context={{ reload: () => undefined }} />
+    </RouteTreeProvider>
+  );
 }
 function Location() {
   const { pathname, search } = useLocation();
@@ -50,7 +68,7 @@ it.each(
   const result = await renderWithApp(
     <>
       <Routes>
-        <Route path={parent} element={<Parent />}>
+        <Route path={parent} element={<Parent path={parent} />}>
           <Route index element={<h1>Role list</h1>} />
           <Route path=':key/edit' element={<RoleForm />} />
         </Route>

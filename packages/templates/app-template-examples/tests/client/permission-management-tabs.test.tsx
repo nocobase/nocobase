@@ -268,7 +268,7 @@ it.each(['tab', 'breadcrumb'])(
     const target =
       destination === 'tab'
         ? await screen.findByRole('tab', { name: 'Default data scopes' })
-        : screen.getByRole('link', { name: 'System settings' });
+        : await screen.findByRole('link', { name: 'System settings' });
     await user.click(target);
     expect(await screen.findByRole('alertdialog')).toBeVisible();
     await user.click(
@@ -301,6 +301,7 @@ function HistoryControls() {
   return (
     <>
       <button onClick={() => navigate(-1)}>Browser back</button>
+      <button onClick={() => navigate('/settings')}>Open settings</button>
       <output aria-label='Current URL'>{location.pathname}</output>
     </>
   );
@@ -367,7 +368,7 @@ function beforeUnload() {
 }
 
 it.each(['breadcrumb', 'back'])(
-  'protects a nested hidden draft during a pending permission request: %s',
+  'protects a nested draft when leaving across a permission recheck: %s',
   async (destination) => {
     const pending = Promise.withResolvers<void>();
     let hold = false;
@@ -389,10 +390,20 @@ it.each(['breadcrumb', 'back'])(
     try {
       await waitFor(() => expect(draft).not.toBeVisible());
       expect(beforeUnload()).toBe(true);
+      expect(
+        screen.queryByRole('link', { name: 'System settings' }),
+      ).not.toBeInTheDocument();
+      // A permission-sensitive parent cannot be clicked until this check resolves.
+      // Browser Back still exercises the hidden draft's guard while the check is pending.
+      if (destination === 'breadcrumb') {
+        hold = false;
+        pending.resolve();
+        await waitFor(() => expect(draft).toBeVisible());
+      }
       const leave = async () => {
         await user.click(
           destination === 'breadcrumb'
-            ? screen.getByRole('link', { name: 'System settings' })
+            ? await screen.findByRole('link', { name: 'System settings' })
             : screen.getByRole('button', { name: 'Browser back' }),
         );
         expect(await screen.findByRole('alertdialog')).toBeVisible();
@@ -448,8 +459,11 @@ it('restores the draft and restarts only the mounted data effect after permissio
   try {
     await waitFor(() => expect(draft).not.toBeVisible());
     expect(count('/users')).toBe(users);
+    expect(
+      screen.queryByRole('link', { name: 'System settings' }),
+    ).not.toBeInTheDocument();
     await userEvent.click(
-      screen.getByRole('link', { name: 'System settings' }),
+      screen.getByRole('button', { name: 'Open settings' }),
     );
     await userEvent.click(
       await screen.findByRole('button', { name: 'Cancel', exact: true }),
@@ -500,7 +514,9 @@ it('drops a hidden draft and its shell guard when the final permission result de
   expect(await screen.findByText('Access denied')).toBeVisible();
   expect(draft).not.toBeInTheDocument();
   await waitFor(() => expect(beforeUnload()).toBe(false));
-  await userEvent.click(screen.getByRole('link', { name: 'System settings' }));
+  await userEvent.click(
+    await screen.findByRole('link', { name: 'System settings' }),
+  );
   expect(
     await screen.findByRole('heading', { name: 'Settings destination' }),
   ).toBeVisible();
