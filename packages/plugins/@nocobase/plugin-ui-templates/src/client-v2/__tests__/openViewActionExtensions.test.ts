@@ -63,6 +63,36 @@ describe('openViewActionExtensions (popup template)', () => {
     expect(merged.map((item) => item.value)).toEqual(['disabled-1', 'disabled-2', 'enabled-later']);
   });
 
+  it('omits popup template settings for popup sub table internal openView models', async () => {
+    const engine = new FlowEngine();
+    const baseOpenView: ActionDefinition = {
+      name: 'openView',
+      title: 'openView',
+      uiSchema: {
+        mode: { type: 'string' },
+        size: { type: 'string' },
+        uid: { type: 'string' },
+      },
+      handler: vi.fn(async () => undefined) as any,
+    };
+    engine.registerActions({ openView: baseOpenView });
+
+    registerOpenViewPopupTemplateAction(engine);
+    const enhanced = engine.getAction('openView') as any;
+    const schema = await enhanced.uiSchema({
+      model: { use: 'PopupSubTableEditActionModel' },
+    });
+    expect(schema).toHaveProperty('mode');
+    expect(schema).toHaveProperty('size');
+    expect(schema).toHaveProperty('uid');
+    expect(schema).not.toHaveProperty('popupTemplateUid');
+
+    const normalSchema = await enhanced.uiSchema({
+      model: { use: 'PopupActionModel' },
+    });
+    expect(normalSchema).toHaveProperty('popupTemplateUid');
+  });
+
   it('resolves popupTemplateUid to uid and delegates to base', async () => {
     const engine = new FlowEngine();
     const baseBefore = vi.fn(async () => {});
