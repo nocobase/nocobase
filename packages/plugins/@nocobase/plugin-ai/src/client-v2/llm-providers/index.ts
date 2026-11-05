@@ -70,6 +70,8 @@ export const xaiProviderOptions = createProviderOptions(createModelSettingsForm(
 
 export const mimoProviderOptions = createProviderOptions(createModelSettingsForm(openAICompletionFields));
 
+export const atlascloudProviderOptions = createProviderOptions(createModelSettingsForm(openAICompletionFields));
+
 export const mistralProviderOptions = createProviderOptions(createModelSettingsForm(mistralCompletionFields));
 
 export const orcarouterProviderOptions = createProviderOptions(createModelSettingsForm(orcaRouterCompletionFields), {
@@ -100,6 +102,7 @@ export const builtinLLMProviderOptions: Array<[string, LLMProviderOptions]> = [
   ['mimo', mimoProviderOptions],
   ['mistral', mistralProviderOptions],
   ['orcarouter', orcarouterProviderOptions],
+  ['atlascloud', atlascloudProviderOptions],
   ['shengsuanyun', shengsuanyunProviderOptions],
 ];
 
@@ -116,6 +119,7 @@ const builtinLLMProviderModelOptionFields = new Map<string, OptionField[]>([
   ['mimo', openAICompletionFields],
   ['mistral', mistralCompletionFields],
   ['orcarouter', orcaRouterCompletionFields],
+  ['atlascloud', openAICompletionFields],
   ['shengsuanyun', shengSuanYunCompletionFields],
 ]);
 
