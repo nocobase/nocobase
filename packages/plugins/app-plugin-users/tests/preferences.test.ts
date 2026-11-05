@@ -115,10 +115,20 @@ describe('user preferences', () => {
   it('reads a preference through the caller transaction without acquiring a second connection', async () => {
     await database.transaction(async (connection) => {
       const now = new Date();
-      await connection.query.insertInto('userPreferences').values({
-        id: 'transaction-locale', userId: 'ann', key: 'i18n.locale', value: '"zh-CN"', createdAt: now, updatedAt: now,
-      }).execute();
-      await expect(service.get('ann', 'i18n.locale', connection)).resolves.toBe('zh-CN');
+      await connection.query
+        .insertInto('userPreferences')
+        .values({
+          id: 'transaction-locale',
+          userId: 'ann',
+          key: 'i18n.locale',
+          value: '"zh-CN"',
+          createdAt: now,
+          updatedAt: now,
+        })
+        .execute();
+      await expect(service.get('ann', 'i18n.locale', connection)).resolves.toBe(
+        'zh-CN',
+      );
     });
   });
 
