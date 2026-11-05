@@ -3443,7 +3443,7 @@ export class ReleasesService {
   ): Promise<DeploymentView> {
     const app = await this.requireApp(appId);
     await this.options.guard.requireApp(caller, 'deploy', app);
-    await this.withLock(`publish:${appId}`, async () => {
+    await this.withLock(`cancel:${deploymentId}`, async () => {
       const deployment = await this.requireDeployment(appId, deploymentId);
       if (
         deployment.status === 'cancelled' ||
