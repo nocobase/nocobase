@@ -35,6 +35,14 @@ import {
 
 const appRoutes: AppClientRouteContribution = defineAppRoutes([
   {
+    name: 'conversation',
+    path: '/chat/:conversationId',
+    auth: 'required',
+    // The API checks ownership or an explicit snapshot grant on every read.
+    authz: 'skip',
+    componentLoader: () => import('./pages/chat/index.js'),
+  },
+  {
     name: 'onboarding',
     path: '/onboarding',
     auth: 'required',

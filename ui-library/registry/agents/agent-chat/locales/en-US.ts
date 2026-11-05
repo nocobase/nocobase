@@ -1,5 +1,24 @@
 export interface AgentChatLocale {
   readonly chat: {
+    readonly sharing: {
+      readonly related: string;
+      readonly title: string;
+      readonly description: string;
+      readonly sensitive: string;
+      readonly asOf: string;
+      readonly recipient: string;
+      readonly share: string;
+      readonly update: string;
+      readonly revoke: string;
+      readonly copy: string;
+      readonly copied: string;
+      readonly copyFailed: string;
+      readonly none: string;
+      readonly failed: string;
+      readonly failedRecipients: string;
+      readonly older: string;
+      readonly empty: string;
+    };
     readonly webSearch: {
       readonly title: string;
       readonly queryCount: string;
@@ -356,6 +375,28 @@ export interface AgentChatLocale {
 }
 const agentChatEnUS: AgentChatLocale = {
   chat: {
+    sharing: {
+      related: 'Related records',
+      title: 'Share snapshot',
+      description:
+        'Recipients can only see content from the time you share. An unfinished turn is excluded. Share again to update the snapshot.',
+      sensitive:
+        'This conversation may contain sensitive information. Share only with people who should see it.',
+      asOf: 'Shared as of {{time}}',
+      recipient: 'Select application users',
+      share: 'Share',
+      update: 'Update',
+      revoke: 'Revoke',
+      copy: 'Copy link',
+      copied: 'Link copied',
+      copyFailed: 'Could not copy the link',
+      none: 'No recipients yet.',
+      failed: 'Could not load or update sharing. Please try again.',
+      failedRecipients:
+        'Could not share with: {{names}}. These users remain selected for retry.',
+      older: 'Load older messages',
+      empty: 'There are no finished turns in this snapshot.',
+    },
     webSearch: {
       title: 'Web search',
       queryCount: 'Queries · {{count}}',
