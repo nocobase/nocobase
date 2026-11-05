@@ -114,7 +114,7 @@ const zhTW: LocaleResource<typeof enUS> = {
     preparing: '正在準備演示郵箱資料...',
     retry: '重試設定',
     openWorkspace: '開啟郵件工作區',
-    refresh: '重新整理',
+    retryRead: '重試',
     loading: '載入中…',
   },
 };

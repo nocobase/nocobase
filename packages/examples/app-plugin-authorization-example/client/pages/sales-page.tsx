@@ -65,13 +65,6 @@ function SalesTable({
   const [message, setMessage] = useState('');
   const [amounts, setAmounts] = useState<Record<string, number>>({});
   const [references, setReferences] = useState<Record<string, string>>({});
-  function refresh(): void {
-    onSaved();
-    setNotes({});
-    setAmounts({});
-    setReferences({});
-    state.reload();
-  }
   function clearDraft(row: SalesRecord): void {
     setNotes((current) => {
       const next = { ...current };
@@ -157,9 +150,11 @@ function SalesTable({
     <section className='overflow-hidden rounded-xl border bg-card'>
       <div className='flex items-center justify-between border-b p-4'>
         <h2 className='font-semibold'>{t(`sales.${path}`)}</h2>
-        <Button variant='outline' disabled={busy} onClick={refresh}>
-          {t('sales.refresh')}
-        </Button>
+        {state.error === 'error' && (
+          <Button variant='outline' disabled={busy} onClick={state.reload}>
+            {t('sales.retryRead')}
+          </Button>
+        )}
       </div>
       {(search.get('project') || search.get('record')) && (
         <div className='flex items-center justify-between border-b bg-muted/30 px-4 py-2 text-sm'>

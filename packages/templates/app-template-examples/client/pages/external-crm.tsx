@@ -17,7 +17,6 @@ import {
   Database,
   FileText,
   Lock,
-  RefreshCw,
   ShoppingBag,
   Users,
 } from 'lucide-react';
@@ -226,19 +225,10 @@ export default function ExternalCrmPage(): ReactElement {
             </Button>
           ))}
         </div>
-        <Button
-          variant='outline'
-          size='sm'
-          className='h-8 gap-1.5'
-          disabled={orders.isFetching}
-          onClick={() => void orders.refetch()}
-        >
-          <RefreshCw
-            className={`size-3.5 ${orders.isFetching ? 'animate-spin' : ''}`}
-          />
-          {t('externalCrm.refresh')}
-        </Button>
-        <ListFeedbackActions state={state} />
+        <ListFeedbackActions
+          state={state}
+          onRetry={() => void orders.refetch()}
+        />
       </div>
 
       <ListFeedback state={state}>
