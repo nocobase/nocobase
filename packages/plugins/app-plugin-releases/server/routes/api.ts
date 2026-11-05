@@ -1446,7 +1446,7 @@ export function createReleasesApi(
         ...apiErrorResponses,
         400: apiErrorResponse(
           400,
-          'The archive is invalid or does not match its checksum, or its variables manifest is (`INVALID_VARIABLES_MANIFEST`), or deploying it is refused (`APPROVAL_REQUIRED` on a protected environment, `DEPLOYMENT_IN_PROGRESS`, `VARIABLES_MISSING`: the release is kept, and deploys by its ID once the variables are set).',
+          'The archive is invalid or does not match its checksum, or its variables manifest is (`INVALID_VARIABLES_MANIFEST`), or deploying it is refused (`APPROVAL_REQUIRED` on a protected environment, `VARIABLES_MISSING`: the release is kept, and deploys by its ID once the variables are set).',
         ),
         404: apiErrorResponse(404),
         409: apiErrorResponse(

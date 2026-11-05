@@ -1,3 +1,5 @@
+import path from 'node:path';
+import { createReleases } from '../server/composition.js';
 // @vitest-environment node
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Knex } from 'knex';
@@ -12,6 +14,7 @@ import {
   createFakeDriver,
   createHarness,
   streamOf,
+  TEST_SECRETS,
   type Harness,
 } from './harness.js';
 
@@ -209,6 +212,54 @@ describe('deployment control', () => {
     expect(
       harness.events.filter((event) => event.type === 'deployment.failed'),
     ).toHaveLength(0);
+  });
+
+  it('asks the runtime to cancel when another controller has no local dispatch record', async () => {
+    const { admin, release } = await setup();
+    const deployment = await harness.services.releases.deploy(admin, 'shop', {
+      releaseId: release.id,
+    });
+    await control.ready(deployment.id);
+    control.start(deployment.id);
+    await vi.waitFor(async () =>
+      expect(
+        (
+          await harness.services.releases.getDeployment(
+            admin,
+            'shop',
+            deployment.id,
+          )
+        ).status,
+      ).toBe('deploying'),
+    );
+    const reopened = createReleases({
+      database: harness.database,
+      drivers: harness.services.drivers,
+      access: () => harness.application,
+      secrets: TEST_SECRETS,
+      config: {
+        artifact: {
+          driver: 'fs',
+          location: path.join(harness.rootDir, 'artifacts'),
+          visibility: 'private',
+        },
+        dataDir: path.join(harness.rootDir, 'data'),
+      },
+    });
+    try {
+      expect(
+        (await reopened.releases.cancelDeployment(admin, 'shop', deployment.id))
+          .status,
+      ).toBe('cancelling');
+      expect(control.operations.get(deployment.id)!.cancelled).toBe(true);
+      control.operations.get(deployment.id)!.finish();
+      expect(
+        (await harness.services.releases.waitForDeployment(deployment.id))
+          .status,
+      ).toBe('cancelled');
+    } finally {
+      await reopened.releases.shutdown();
+    }
   });
 
   it('enforces authentication, deploy permission and App scope at the production cancel route', async () => {

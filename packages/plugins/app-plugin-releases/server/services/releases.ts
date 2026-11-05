@@ -3490,7 +3490,10 @@ export class ReleasesService {
   ): Promise<'cancelled' | 'cancelling' | 'tooLate' | 'notFound'> {
     const dispatch = this.dispatch.get(deployment.id);
     let result: 'cancelled' | 'cancelling' | 'tooLate' | 'notFound';
-    if (!dispatch?.submitted) {
+    if (
+      (dispatch && !dispatch.submitted) ||
+      (!dispatch && deployment.status === 'queued')
+    ) {
       if (dispatch) dispatch.cancelled = true;
       result = 'cancelled';
     } else {
@@ -3536,7 +3539,7 @@ export class ReleasesService {
     replacedBy?: string,
   ): Promise<void> {
     const current = await this.requireDeploymentById(deployment.id);
-    if (current.status === 'cancelled') return;
+    if (!['queued', 'deploying', 'cancelling'].includes(current.status)) return;
     const reason = replacedBy
       ? 'Replaced by a newer deployment.'
       : 'Deployment cancelled.';
@@ -3556,16 +3559,17 @@ export class ReleasesService {
         .execute();
       await this.settleRequest(connection, deployment, 'cancelled', finishedAt);
     });
-    this.appendDeploymentLog(deployment, {
-      time: finishedAt.toISOString(),
-      level: 'info',
-      appId: deployment.appId,
-      deploymentId: deployment.id,
-      phase: 'cancelled',
-      msg: reason,
-      reason: replacedBy ? 'superseded' : 'requested',
-      ...(replacedBy ? { replacedBy } : {}),
-    });
+    if (this.options.logging?.deployments?.enabled !== false)
+      this.appendDeploymentLog(deployment, {
+        time: finishedAt.toISOString(),
+        level: 'info',
+        appId: deployment.appId,
+        deploymentId: deployment.id,
+        phase: 'cancelled',
+        msg: reason,
+        reason: replacedBy ? 'superseded' : 'requested',
+        ...(replacedBy ? { replacedBy } : {}),
+      });
     const app = await this.requireApp(deployment.appId);
     const release = await this.requireRelease(app.id, deployment.releaseId);
     await this.options.events
