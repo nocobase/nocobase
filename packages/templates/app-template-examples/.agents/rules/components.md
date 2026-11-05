@@ -31,6 +31,8 @@ Style with the semantic Tailwind tokens — `bg-background`, `text-foreground`, 
 
 The default brand palette and density live in `client/theme/themes/*.css`; shared hover/cursor and Badge geometry live in `client/styles.css`, outside generated shadcn primitives. For semantic status labels, use `StatusBadge` from `client/components/status-badge.tsx` with `neutral`, `info`, `warning`, or `success`; choose the tone by meaning and keep the visible status text. A badge beside a title or on a dense card is the small one, `size='sm'` on `StatusBadge` or `data-size='sm'` on `Badge`. Reuse these shared components and tokens in new pages so template upgrades can carry the design consistently.
 
+Dialog and AlertDialog footer actions use the shared semantic-slot sizing rule in `client/styles.css`, including linked Buttons and RouteOverlay's composed DialogFooter. Keep route links and pending guards; avoid page height/padding patches. The [footer contract](../skills/nocobase-app-development/references/frontend/references/overlay.md#footer-ownership) explains precedence, wrapping and the source upgrade path for existing applications.
+
 **Follow the UI guidelines.** [The UI guidelines](../skills/nocobase-app-development/references/frontend/ui-guidelines.md) set the conventions every page follows, among them the page header and the single placement of the primary action, empty states, row actions behind one "…" menu, dates picked from a `Calendar` in a `Popover` rather than a native date input, and medium-width drawers; the frontend workflow says how much of it to read for a change.
 
 ## Standard process management
