@@ -15,6 +15,7 @@ import React, { useContext, useEffect, useMemo, useState, useCallback } from 're
 import {
   ActionContextProvider,
   DropdownVisibleContext,
+  useSchemaSettings,
   SchemaComponent,
   useActionContext,
   useSystemSettings,
@@ -138,6 +139,7 @@ const schema: ISchema = {
 
 export const ChangePassword = () => {
   const ctx = useContext(DropdownVisibleContext);
+  const settings = useSchemaSettings();
   const [visible, setVisible] = useState(false);
   const { t } = useTranslation();
   const { data } = useSystemSettings() || {};
@@ -149,10 +151,11 @@ export const ChangePassword = () => {
   const handleClick = useCallback(
     (e) => {
       e.stopPropagation();
+      settings?.setVisible?.(false);
       ctx?.setVisible?.(false);
       setVisible((prev) => (prev ? prev : true)); // 只有 `visible` 变化时才触发更新
     },
-    [ctx],
+    [ctx, settings],
   );
 
   const schemaComponent = useMemo(() => {
@@ -161,7 +164,7 @@ export const ChangePassword = () => {
         <SchemaComponent scope={{ useCloseAction, useSaveCurrentUserValues }} schema={schema} />
       </SchemaComponentContext.Provider>
     );
-  }, [zIndex]);
+  }, []);
 
   if (enableChangePassword === false) {
     return null;
