@@ -568,7 +568,7 @@ A child route presented as a non-modal page covering the content area, keeping t
 - Installs to: `client/components/route-child-page.tsx`
 - Plugin dependencies: none
 - Example: `@nocobase/route-child-page-demo` (`pnpm exec shadcn view @nocobase/route-child-page-demo`)
-- After installing: Return RouteChildPage from the component of a child route. It covers the nearest positioned ancestor, so render a page's own outlet beside its container rather than inside it. A child page that can only render inside another one, such as the child page of a tab, covers that one whole.
+- After installing: Return RouteChildPage from the component of a child route. It covers the nearest positioned ancestor, so render a page's own outlet beside its container rather than inside it. A child page that can only render inside another one, such as the child page of a tab, covers that one whole. On a route declaring a child-page presentation the application opens the layer first; this component then adds its content and className to that layer.
 
 ## Task Center
 

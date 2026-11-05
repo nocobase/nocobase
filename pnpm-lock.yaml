@@ -335,6 +335,9 @@ catalogs:
       version: 4.6.5
 
 overrides:
+  '@nocobase/app-plugin-projects>@nocobase/app-client': workspace:*
+  '@nocobase/app-plugin-releases>@nocobase/app-client': workspace:*
+  '@nocobase/app-plugin-agents>@nocobase/app-client': workspace:*
   ollama-ai-provider-v2>@ai-sdk/provider-utils: 5.0.54
   '@anthropic-ai/sdk>zod': 3.25.76
   '@langchain/anthropic>zod': 3.25.76
@@ -3365,7 +3368,7 @@ importers:
         specifier: workspace:^
         version: link:../../app/app-cli-client
       '@nocobase/app-client':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../app/app-client
       '@nocobase/app-plugin-authentication':
         specifier: workspace:^
@@ -5091,7 +5094,7 @@ importers:
         specifier: 'catalog:'
         version: 3.2.2(react@19.2.8)
       '@nocobase/app-client':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../app/app-client
       '@nocobase/app-plugin-authentication':
         specifier: workspace:^
@@ -5205,6 +5208,9 @@ importers:
         specifier: 'catalog:'
         version: 4.6.5
     devDependencies:
+      '@nocobase/app-template-examples':
+        specifier: workspace:*
+        version: link:../../templates/app-template-examples
       '@nocobase/app-testing':
         specifier: workspace:*
         version: link:../../tools/app-testing
@@ -5263,7 +5269,7 @@ importers:
         specifier: 'catalog:'
         version: 1.7.0(@date-fns/tz@1.5.0)(@types/react@19.2.18)(date-fns@4.4.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@nocobase/app-client':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../app/app-client
       '@nocobase/app-host':
         specifier: workspace:^

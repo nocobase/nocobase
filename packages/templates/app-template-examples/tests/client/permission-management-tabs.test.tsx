@@ -265,6 +265,11 @@ it.each(['tab', 'breadcrumb'])(
     );
     const draft = await screen.findByRole('textbox', { name: 'Draft' });
     await user.type(draft, 'Unsaved inline draft');
+    await waitFor(() =>
+      expect(
+        screen.getByRole('status', { name: 'Permission check' }),
+      ).toHaveTextContent('Ready'),
+    );
     const target =
       destination === 'tab'
         ? await screen.findByRole('tab', { name: 'Default data scopes' })
@@ -395,9 +400,20 @@ it.each(['breadcrumb', 'back'])(
             ? screen.getByRole('link', { name: 'System settings' })
             : screen.getByRole('button', { name: 'Browser back' }),
         );
-        expect(await screen.findByRole('alertdialog')).toBeVisible();
       };
       await leave();
+      expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+      expect(
+        screen.getByRole('status', { name: 'Current URL' }),
+      ).toHaveTextContent('/roles/test/edit');
+      expect(beforeUnload()).toBe(true);
+      hold = false;
+      pending.resolve();
+      await waitFor(() => expect(draft).toBeVisible());
+      expect(draft).toHaveValue('Nested unsaved draft');
+      expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+      await leave();
+      expect(await screen.findByRole('alertdialog')).toBeVisible();
       await user.click(
         screen.getByRole('button', { name: 'Cancel', exact: true }),
       );
@@ -451,9 +467,11 @@ it('restores the draft and restarts only the mounted data effect after permissio
     await userEvent.click(
       screen.getByRole('link', { name: 'System settings' }),
     );
-    await userEvent.click(
-      await screen.findByRole('button', { name: 'Cancel', exact: true }),
-    );
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('status', { name: 'Current URL' }),
+    ).toHaveTextContent('/roles/test/edit');
+    expect(beforeUnload()).toBe(true);
   } finally {
     hold = false;
     pending.resolve();
