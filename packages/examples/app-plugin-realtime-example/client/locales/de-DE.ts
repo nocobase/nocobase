@@ -4,6 +4,7 @@ import type enUS from './en-US.js';
 
 const deDE: LocaleResource<typeof enUS> = {
   business: {
+    longWait: 'Das dauert länger als üblich. Sie können weiter warten.',
     scenarios: 'Echtzeitszenarien',
     tabs: {
       tasks: 'Aufgaben',

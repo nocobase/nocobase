@@ -4,6 +4,8 @@ import type enUS from './en-US.js';
 
 const idID: LocaleResource<typeof enUS> = {
   business: {
+    longWait:
+      'Ini memakan waktu lebih lama dari biasanya. Anda dapat terus menunggu.',
     scenarios: 'Skenario waktu nyata',
     tabs: {
       tasks: 'Tugas',

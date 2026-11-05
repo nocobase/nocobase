@@ -522,7 +522,13 @@ it('shows an honest delayed upload wait, explains a long one and aborts on unmou
     await act(() => vi.advanceTimersByTimeAsync(0));
     expect(signal).toBeDefined();
     const field = document.querySelector('[data-slot="file-upload-field"]')!;
-    expect(field).toHaveAttribute('aria-busy', 'true');
+    const zone = field.querySelector('[aria-busy]')!;
+    expect(zone).toHaveAttribute('aria-busy', 'true');
+    // The polite summary is announced from outside the busy drop zone.
+    const live = field.querySelector('[aria-live="polite"]')!;
+    expect(live.closest('[aria-busy="true"]')).toBeNull();
+    // One display hook per uploading item: two one-shot timers.
+    expect(vi.getTimerCount()).toBe(2);
     // No percentage exists for this request, so none is shown.
     expect(screen.queryByRole('progressbar')).toBeNull();
     expect(field.querySelector('svg.size-8')).toBeNull();

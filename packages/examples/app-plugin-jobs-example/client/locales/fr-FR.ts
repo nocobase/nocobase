@@ -13,6 +13,8 @@ const frFR: LocaleResource<typeof enUS> = {
     schedules: 'Planifications',
   },
   jobs: {
+    longWait:
+      'Cela prend plus de temps que d’habitude. Vous pouvez continuer à patienter.',
     failed:
       'La tâche s’est arrêtée : {{reason}}. Créez une nouvelle tâche pour réessayer.',
     title: 'Tâches en arrière-plan',

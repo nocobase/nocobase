@@ -121,7 +121,10 @@ export default function JobsPage(): ReactElement {
           />
         </div>
         {loading ? (
-          <JobsLoading label={t('jobs.loading')} />
+          <JobsLoading
+            label={t('jobs.loading')}
+            longWait={t('jobs.longWait')}
+          />
         ) : !tasks.length ? (
           <p className='rounded-lg border border-dashed p-12 text-center text-sm text-muted-foreground'>
             {t('jobs.empty')}
@@ -176,15 +179,35 @@ export default function JobsPage(): ReactElement {
   );
 }
 
-/** The list region keeps its size at once; its text appears after the shared delay. */
-function JobsLoading({ label }: { readonly label: string }): ReactElement {
+/**
+ * The list region keeps its size at once; its text follows the shared delay
+ * and a slow read says so. The polite status stays mounted outside the busy
+ * region so the change is announced rather than dropped.
+ */
+function JobsLoading({
+  label,
+  longWait,
+}: {
+  readonly label: string;
+  readonly longWait: string;
+}): ReactElement {
   const feedback = usePendingFeedback(true);
+  const message = feedback.visible
+    ? feedback.longWaiting
+      ? longWait
+      : label
+    : '';
   return (
-    <div
-      aria-busy='true'
-      className='rounded-lg border p-12 text-center text-sm text-muted-foreground'
-    >
-      {feedback.visible ? <span role='status'>{label}</span> : null}
-    </div>
+    <>
+      <div
+        aria-busy='true'
+        className='rounded-lg border p-12 text-center text-sm text-muted-foreground'
+      >
+        <span aria-hidden='true'>{message}</span>
+      </div>
+      <span role='status' className='sr-only'>
+        {message}
+      </span>
+    </>
   );
 }

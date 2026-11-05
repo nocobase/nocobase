@@ -1,6 +1,7 @@
 import type { RealtimeExampleResource } from './en-US.js';
 const zhCN: RealtimeExampleResource = {
   business: {
+    longWait: '耗时比平常更长，您可以继续等待。',
     scenarios: '实时业务场景',
     tabs: {
       tasks: '任务协作',

@@ -55,9 +55,9 @@ it('never carries cached inbox messages into a new authenticated route identity'
     switchAccount('bob');
   });
   expect(screen.queryByText('alice private task')).not.toBeInTheDocument();
-  expect(
-    await screen.findByRole('status', { name: 'Loading' }),
-  ).toBeInTheDocument();
+  const loading = await screen.findByRole('status', { name: 'Loading' });
+  // Announced from outside the busy skeletons.
+  expect(loading.closest('[aria-busy="true"]')).toBeNull();
   await act(async () => {
     release();
   });

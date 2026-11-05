@@ -13,6 +13,7 @@ const jaJP: LocaleResource<typeof enUS> = {
     schedules: 'スケジュール',
   },
   jobs: {
+    longWait: '通常より時間がかかっています。このままお待ちください。',
     failed:
       'ジョブが停止しました：{{reason}}。新しいジョブを作成して再試行してください。',
     title: 'バックグラウンドジョブ',

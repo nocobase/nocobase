@@ -4,6 +4,7 @@ import type enUS from './en-US.js';
 
 const viVN: LocaleResource<typeof enUS> = {
   business: {
+    longWait: 'Việc này lâu hơn bình thường. Bạn có thể tiếp tục chờ.',
     scenarios: 'Kịch bản thời gian thực',
     tabs: {
       tasks: 'Tác vụ',

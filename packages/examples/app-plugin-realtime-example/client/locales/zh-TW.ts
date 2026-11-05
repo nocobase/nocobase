@@ -4,6 +4,7 @@ import type enUS from './en-US.js';
 
 const zhTW: LocaleResource<typeof enUS> = {
   business: {
+    longWait: '耗時比平常更長，您可以繼續等待。',
     scenarios: '即時場景',
     tabs: {
       tasks: '任務',

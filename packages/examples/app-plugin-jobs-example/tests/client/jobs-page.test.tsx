@@ -16,6 +16,7 @@ import { beforeEach, expect, it, vi } from 'vitest';
 
 import { JOB_TASKS_TOPIC, type JobTask } from '../../client/lib/api.js';
 import locales from '../../client/locales/index.js';
+import enUS from '../../client/locales/en-US.js';
 
 // The page reads both clients through hooks, so the mocks hand back the same
 // objects on every render.
@@ -138,4 +139,21 @@ it('subscribes while open, adds a block per created job and follows its progress
 
   view.unmount();
   expect(unsubscribe).toHaveBeenCalledOnce();
+});
+
+it('announces a slow first read outside the busy list and explains a long wait', async () => {
+  request.mockImplementation(() => new Promise(() => undefined));
+  vi.useFakeTimers();
+  try {
+    await show();
+    const status = screen.getByRole('status');
+    expect(status.textContent).toBe('');
+    await act(() => vi.advanceTimersByTimeAsync(300));
+    expect(status.textContent).toBe(enUS.jobs.loading);
+    expect(status.closest('[aria-busy="true"]')).toBeNull();
+    await act(() => vi.advanceTimersByTimeAsync(9700));
+    expect(status.textContent).toBe(enUS.jobs.longWait);
+  } finally {
+    vi.useRealTimers();
+  }
 });

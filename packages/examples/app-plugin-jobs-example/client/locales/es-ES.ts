@@ -13,6 +13,7 @@ const esES: LocaleResource<typeof enUS> = {
     schedules: 'Programaciones',
   },
   jobs: {
+    longWait: 'Está tardando más de lo habitual. Puede seguir esperando.',
     failed:
       'El trabajo se detuvo: {{reason}}. Cree un trabajo nuevo para volver a intentarlo.',
     title: 'Trabajos en segundo plano',

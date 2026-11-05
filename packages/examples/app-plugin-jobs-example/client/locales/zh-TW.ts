@@ -13,6 +13,7 @@ const zhTW: LocaleResource<typeof enUS> = {
     schedules: '排程',
   },
   jobs: {
+    longWait: '耗時比平常更長，您可以繼續等待。',
     failed: '任務已停止：{{reason}}。可新建任務重試。',
     title: '後臺作業',
     description:

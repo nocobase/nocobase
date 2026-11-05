@@ -13,6 +13,8 @@ const ptBR: LocaleResource<typeof enUS> = {
     schedules: 'Agendamentos',
   },
   jobs: {
+    longWait:
+      'Está demorando mais que o normal. Você pode continuar aguardando.',
     failed:
       'O trabalho parou: {{reason}}. Crie um novo trabalho para tentar novamente.',
     title: 'Trabalhos em segundo plano',

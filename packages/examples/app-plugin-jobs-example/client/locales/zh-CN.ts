@@ -9,6 +9,7 @@ const messages = {
     schedules: '周期任务',
   },
   jobs: {
+    longWait: '耗时比平常更长，您可以继续等待。',
     failed: '任务已停止：{{reason}}。可新建任务重试。',
     title: '后台任务',
     description:

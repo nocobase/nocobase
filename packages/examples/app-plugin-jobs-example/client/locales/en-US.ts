@@ -9,6 +9,7 @@ const messages = {
     schedules: 'Schedules',
   },
   jobs: {
+    longWait: 'This is taking longer than usual. You can keep waiting.',
     failed: 'The job stopped: {{reason}}. Create a new job to try again.',
     title: 'Background jobs',
     description:

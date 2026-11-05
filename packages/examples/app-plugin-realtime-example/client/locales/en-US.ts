@@ -2,6 +2,7 @@ import type { LocaleResource } from '@nocobase/i18n';
 
 const enUS = {
   business: {
+    longWait: 'This is taking longer than usual. You can keep waiting.',
     scenarios: 'Realtime scenarios',
     tabs: {
       tasks: 'Tasks',

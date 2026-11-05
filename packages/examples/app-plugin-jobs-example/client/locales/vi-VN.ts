@@ -13,6 +13,7 @@ const viVN: LocaleResource<typeof enUS> = {
     schedules: 'Lịch trình',
   },
   jobs: {
+    longWait: 'Việc này lâu hơn bình thường. Bạn có thể tiếp tục chờ.',
     failed: 'Tác vụ đã dừng: {{reason}}. Hãy tạo tác vụ mới để thử lại.',
     title: 'Công việc nền',
     description:

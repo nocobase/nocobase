@@ -4,6 +4,8 @@ import type enUS from './en-US.js';
 
 const ptBR: LocaleResource<typeof enUS> = {
   business: {
+    longWait:
+      'Está demorando mais que o normal. Você pode continuar aguardando.',
     scenarios: 'Cenários em tempo real',
     tabs: {
       tasks: 'Tarefas',

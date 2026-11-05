@@ -4,6 +4,8 @@ import type enUS from './en-US.js';
 
 const frFR: LocaleResource<typeof enUS> = {
   business: {
+    longWait:
+      'Cela prend plus de temps que d’habitude. Vous pouvez continuer à patienter.',
     scenarios: 'Scénarios temps réel',
     tabs: {
       tasks: 'Tâches',

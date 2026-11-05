@@ -4,6 +4,7 @@ import type enUS from './en-US.js';
 
 const jaJP: LocaleResource<typeof enUS> = {
   business: {
+    longWait: '通常より時間がかかっています。このままお待ちください。',
     scenarios: 'リアルタイムシナリオ',
     tabs: {
       tasks: 'タスク',

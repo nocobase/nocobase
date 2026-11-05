@@ -13,6 +13,8 @@ const idID: LocaleResource<typeof enUS> = {
     schedules: 'Jadwal',
   },
   jobs: {
+    longWait:
+      'Ini memakan waktu lebih lama dari biasanya. Anda dapat terus menunggu.',
     failed: 'Tugas berhenti: {{reason}}. Buat tugas baru untuk mencoba lagi.',
     title: 'Pekerjaan latar belakang',
     description:

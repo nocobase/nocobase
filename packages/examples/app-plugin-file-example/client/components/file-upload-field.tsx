@@ -140,15 +140,17 @@ export function FileUploadField({
         ) : (
           <UploadCloud aria-hidden='true' className='size-4 text-primary' />
         )}
-        {/* Both labels share one cell so the button keeps its width. */}
+        {/* Both labels share one cell so the button keeps its width; only the
+            visible one is exposed, so the button is always named. */}
         <span className='grid'>
           <span
+            aria-hidden={feedback.visible || undefined}
             className={`col-start-1 row-start-1 ${feedback.visible ? 'invisible' : ''}`}
           >
             {labels.choose}
           </span>
           <span
-            aria-hidden='true'
+            aria-hidden={!feedback.visible || undefined}
             className={`col-start-1 row-start-1 ${feedback.visible ? '' : 'invisible'}`}
           >
             {labels.uploading}
@@ -202,11 +204,14 @@ export function FileUploadField({
           {control}
         </div>
       )}
-      {feedback.visible ? (
-        <p role='status' className='text-xs text-muted-foreground'>
-          {feedback.longWaiting ? labels.longWait : labels.uploading}
-        </p>
-      ) : null}
+      {/* Stays mounted so the change is announced rather than dropped. */}
+      <p role='status' className='text-xs text-muted-foreground empty:hidden'>
+        {feedback.visible
+          ? feedback.longWaiting
+            ? labels.longWait
+            : labels.uploading
+          : ''}
+      </p>
       {error ? (
         <div className='flex flex-wrap items-center gap-2'>
           <p role='alert' className='text-sm text-destructive'>

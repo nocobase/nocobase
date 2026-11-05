@@ -13,6 +13,7 @@ const deDE: LocaleResource<typeof enUS> = {
     schedules: 'Zeitpläne',
   },
   jobs: {
+    longWait: 'Das dauert länger als üblich. Sie können weiter warten.',
     failed:
       'Der Job wurde beendet: {{reason}}. Erstellen Sie einen neuen Job, um es erneut zu versuchen.',
     title: 'Hintergrundjobs',

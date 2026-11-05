@@ -90,30 +90,34 @@ export function BusinessLoading({
   layout?: 'board' | 'feed' | 'detail';
 }): ReactElement {
   const { t } = useTranslation();
-  // Skeletons keep the layout at once and appear only after the shared delay.
+  // Skeletons keep the layout at once and appear only after the shared delay;
+  // the polite status stays mounted outside the busy skeletons.
   const feedback = usePendingFeedback(true);
+  const message = feedback.visible
+    ? t(feedback.longWaiting ? 'business.longWait' : 'loading')
+    : '';
   return (
-    <div
-      aria-busy='true'
-      className={[
-        layout === 'board' ? 'grid gap-4 lg:grid-cols-3' : 'grid gap-4',
-        feedback.visible ? '' : 'invisible',
-      ].join(' ')}
-    >
-      {feedback.visible ? (
-        <span role='status' aria-label={t('loading')} className='sr-only'>
-          {t('loading')}
-        </span>
-      ) : null}
-      {[0, 1, 2].map((id) => (
-        <Skeleton
-          key={id}
-          className={
-            layout === 'detail' ? 'h-8' : layout === 'board' ? 'h-48' : 'h-24'
-          }
-        />
-      ))}
-    </div>
+    <>
+      <span role='status' aria-label={message || undefined} className='sr-only'>
+        {message}
+      </span>
+      <div
+        aria-busy='true'
+        className={[
+          layout === 'board' ? 'grid gap-4 lg:grid-cols-3' : 'grid gap-4',
+          feedback.visible ? '' : 'invisible',
+        ].join(' ')}
+      >
+        {[0, 1, 2].map((id) => (
+          <Skeleton
+            key={id}
+            className={
+              layout === 'detail' ? 'h-8' : layout === 'board' ? 'h-48' : 'h-24'
+            }
+          />
+        ))}
+      </div>
+    </>
   );
 }
 export function BusinessFailure({

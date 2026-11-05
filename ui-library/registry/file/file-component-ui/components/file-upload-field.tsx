@@ -9,6 +9,7 @@ import {
   type ChangeEvent,
   type DragEvent,
   type ReactElement,
+  type ReactNode,
 } from 'react';
 
 import type { FileRecord, FileUploadFieldProps } from '../types.js';
@@ -26,32 +27,42 @@ type UploadItem = {
 
 /**
  * The upload request reports no byte progress, so the item shows an honest
- * indeterminate wait: the mark appears after the shared display delay and a
- * long upload says so after 10 seconds, next to the real cancel action.
+ * indeterminate wait from one display hook: the mark appears after the shared
+ * display delay and a long upload says so after 10 seconds, next to the real
+ * cancel action.
  */
-function UploadingState({
-  uploading,
+function UploadItemBody({
+  status,
+  failure,
+  children,
 }: {
-  readonly uploading: boolean;
+  readonly status: UploadItem['status'];
+  readonly failure?: string;
+  readonly children: ReactNode;
 }): ReactElement {
-  const feedback = usePendingFeedback(uploading);
-  return feedback.visible ? (
-    <BrandLoadingMark className='size-8 text-muted-foreground' />
-  ) : (
-    <UploadCloud aria-hidden='true' />
-  );
-}
-
-function UploadingLabel(): ReactElement {
   const { t } = useTranslation();
-  const feedback = usePendingFeedback(true);
+  const feedback = usePendingFeedback(status === 'uploading');
   return (
     <>
-      {feedback.longWaiting
-        ? t('fileUi.files.longWait', {
-            defaultValue: 'Still uploading. Keep waiting or cancel.',
-          })
-        : t('fileUi.files.uploading', { defaultValue: 'Uploading' })}
+      <div className='flex h-20 items-center justify-center overflow-hidden rounded-sm bg-muted/30'>
+        {feedback.visible ? (
+          <BrandLoadingMark className='size-8 text-muted-foreground' />
+        ) : (
+          <UploadCloud aria-hidden='true' />
+        )}
+      </div>
+      {children}
+      <div className='text-xs text-muted-foreground'>
+        {status === 'error'
+          ? (failure ?? t('fileUi.files.failed', { defaultValue: 'Failed' }))
+          : status === 'uploading'
+            ? feedback.longWaiting
+              ? t('fileUi.files.longWait', {
+                  defaultValue: 'Still uploading. Keep waiting or cancel.',
+                })
+              : t('fileUi.files.uploading', { defaultValue: 'Uploading' })
+            : t('fileUi.files.pending', { defaultValue: 'Pending' })}
+      </div>
     </>
   );
 }
@@ -282,12 +293,10 @@ export function FileUploadField(
   };
 
   return (
-    <div
-      data-slot='file-upload-field'
-      className='space-y-3'
-      aria-busy={items.some((item) => item.status === 'uploading')}
-    >
+    <div data-slot='file-upload-field' className='space-y-3'>
+      {/* The polite summary below stays outside the busy drop zone. */}
       <div
+        aria-busy={items.some((item) => item.status === 'uploading')}
         className={`flex min-h-24 flex-wrap gap-3 rounded-md border border-dashed p-3 ${dragging ? 'border-primary bg-primary/5' : ''}`}
         onDragOver={(event) => {
           event.preventDefault();
@@ -321,26 +330,20 @@ export function FileUploadField(
         ))}
         {items.map((item) => (
           <div key={item.key} className='w-36 rounded-md border p-2'>
-            <div className='flex h-20 items-center justify-center overflow-hidden rounded-sm bg-muted/30'>
-              <UploadingState uploading={item.status === 'uploading'} />
-            </div>
-            <div className='mt-2 truncate text-sm' title={item.file.name}>
-              {item.file.name}
-            </div>
-            <div className='text-xs text-muted-foreground'>
-              {item.status === 'error' ? (
-                ((item.error
+            <UploadItemBody
+              status={item.status}
+              failure={
+                item.status === 'error' && item.error
                   ? t(messageKey(item.error.message), {
                       defaultValue: item.error.message,
                     })
-                  : undefined) ??
-                t('fileUi.files.failed', { defaultValue: 'Failed' }))
-              ) : item.status === 'uploading' ? (
-                <UploadingLabel />
-              ) : (
-                t('fileUi.files.pending', { defaultValue: 'Pending' })
-              )}
-            </div>
+                  : undefined
+              }
+            >
+              <div className='mt-2 truncate text-sm' title={item.file.name}>
+                {item.file.name}
+              </div>
+            </UploadItemBody>
             <div className='mt-2 flex gap-1'>
               {item.status === 'error' ? (
                 <Button
