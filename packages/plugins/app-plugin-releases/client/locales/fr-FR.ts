@@ -301,6 +301,11 @@ const frFR: LocaleResource<typeof enUS> = {
         'Cet environnement est protégé. Tapez {{appId}} pour déployer.',
     },
     deployments: {
+      cancel: 'Annuler le déploiement',
+      replaced: 'Remplacé par un déploiement plus récent.',
+      cancelAccepted: 'Annulation acceptée.',
+      queueAhead: 'En attente · {{ahead}} avant',
+      restartHint: 'Déploiement interrompu. Déployez à nouveau la version.',
       title: 'Déploiements',
       kind: 'Genre',
       status: 'Statut',
@@ -317,6 +322,8 @@ const frFR: LocaleResource<typeof enUS> = {
       hideLogs: 'Masquer les journaux',
       noLogs: 'Aucune ligne de journal.',
       statuses: {
+        cancelling: 'Annulation en cours',
+        cancelled: 'Annulé',
         queued: "En file d'attente",
         deploying: 'Déploiement',
         succeeded: 'Réussi',
@@ -643,6 +650,10 @@ const frFR: LocaleResource<typeof enUS> = {
         CONFIG_TOO_LARGE: 'La configuration est trop grande.',
         CONFIRMATION_REQUIRED:
           "Saisissez l'ID de l'application pour confirmer.",
+        DEPLOYMENT_NOT_CANCELLABLE:
+          'Le déploiement a commencé la bascule ou est terminé.',
+        CANCELLATION_UNSUPPORTED:
+          'Ce pilote de déploiement ne prend pas en charge l’annulation.',
         DEPLOYMENT_IN_PROGRESS:
           'Un déploiement de cette application est déjà en cours.',
         DEPLOYMENT_NOT_FOUND: "Le déploiement n'existe pas.",

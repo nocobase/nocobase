@@ -116,6 +116,13 @@ export type ReleasesEvent =
       readonly actor: ActorRef;
     }
   | {
+      readonly type: 'deployment.cancelled';
+      readonly app: AppView;
+      readonly deployment: DeploymentView;
+      readonly release: ReleaseView;
+      readonly actor: ActorRef;
+    }
+  | {
       readonly type: 'deployment.failed';
       readonly app: AppView;
       readonly deployment: DeploymentView;

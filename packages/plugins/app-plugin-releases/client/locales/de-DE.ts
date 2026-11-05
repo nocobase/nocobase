@@ -301,6 +301,12 @@ const deDE: LocaleResource<typeof enUS> = {
         'Diese Umgebung ist geschützt. Geben Sie zum Bereitstellen {{appId}} ein.',
     },
     deployments: {
+      cancel: 'Bereitstellung abbrechen',
+      replaced: 'Durch eine neuere Bereitstellung ersetzt.',
+      cancelAccepted: 'Abbruch angenommen.',
+      queueAhead: 'In Warteschlange · {{ahead}} davor',
+      restartHint:
+        'Bereitstellung unterbrochen. Stellen Sie die Version erneut bereit.',
       title: 'Bereitstellungen',
       kind: 'Freundlich',
       status: 'Status',
@@ -317,6 +323,8 @@ const deDE: LocaleResource<typeof enUS> = {
       hideLogs: 'Protokolle ausblenden',
       noLogs: 'Keine Protokollzeilen.',
       statuses: {
+        cancelling: 'Wird abgebrochen',
+        cancelled: 'Abgebrochen',
         queued: 'In der Warteschlange',
         deploying: 'Bereitstellung',
         succeeded: 'Erfolgreich',
@@ -637,6 +645,10 @@ const deDE: LocaleResource<typeof enUS> = {
           'Die Konfiguration wurde gespeichert, die App konnte sie jedoch nicht neu laden.',
         CONFIG_TOO_LARGE: 'Die Konfiguration ist zu groß.',
         CONFIRMATION_REQUIRED: 'Geben Sie zur Bestätigung die App-ID ein.',
+        DEPLOYMENT_NOT_CANCELLABLE:
+          'Die Bereitstellung wechselt bereits die Version oder ist abgeschlossen.',
+        CANCELLATION_UNSUPPORTED:
+          'Dieser Bereitstellungstreiber unterstützt keinen Abbruch.',
         DEPLOYMENT_IN_PROGRESS:
           'Die Bereitstellung dieser App ist bereits im Gange.',
         DEPLOYMENT_NOT_FOUND: 'Die Bereitstellung ist nicht vorhanden.',

@@ -149,6 +149,11 @@ const ui = {
       'This environment is protected. Type {{appId}} to deploy.',
   },
   deployments: {
+    cancel: 'Cancel deployment',
+    replaced: 'Replaced by a newer deployment.',
+    cancelAccepted: 'Cancellation accepted.',
+    queueAhead: 'Queued · {{ahead}} ahead',
+    restartHint: 'Deployment interrupted. Deploy the release again.',
     title: 'Deployments',
     kind: 'Kind',
     status: 'Status',
@@ -165,6 +170,8 @@ const ui = {
     hideLogs: 'Hide logs',
     noLogs: 'No log lines.',
     statuses: {
+      cancelling: 'Cancelling',
+      cancelled: 'Cancelled',
       queued: 'Queued',
       deploying: 'Deploying',
       succeeded: 'Succeeded',
@@ -466,6 +473,10 @@ const ui = {
         'The configuration was saved, but the app could not reload it.',
       CONFIG_TOO_LARGE: 'The configuration is too large.',
       CONFIRMATION_REQUIRED: 'Type the app ID to confirm.',
+      DEPLOYMENT_NOT_CANCELLABLE:
+        'The deployment has started switching or has finished.',
+      CANCELLATION_UNSUPPORTED:
+        'This deployment driver does not support cancellation.',
       DEPLOYMENT_IN_PROGRESS:
         'A deployment of this app is already in progress.',
       DEPLOYMENT_NOT_FOUND: 'The deployment does not exist.',

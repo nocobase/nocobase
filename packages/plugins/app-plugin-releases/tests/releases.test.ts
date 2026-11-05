@@ -204,9 +204,6 @@ describe('releases', () => {
       kind: 'deploy',
       actorId: 'admin',
     });
-    await expect(
-      harness.services.releases.deploy(admin, 'shop', { releaseId: r2.id }),
-    ).rejects.toMatchObject({ reason: 'DEPLOYMENT_IN_PROGRESS' });
     expect(
       await harness.services.releases.waitForDeployment(first.id),
     ).toMatchObject({
@@ -518,7 +515,8 @@ describe('releases', () => {
         await local.services.releases.getDeployment(admin, 'shop', forgotten),
       ).toMatchObject({
         status: 'failed',
-        error: 'Deployment was interrupted by a restart.',
+        error:
+          'Deployment was interrupted by a restart. Deploy the release again.',
       });
       expect(recorded.state.restored.at(-1)).toEqual([
         expect.objectContaining({

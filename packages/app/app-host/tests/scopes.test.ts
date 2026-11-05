@@ -684,6 +684,28 @@ describe('management over IPC', () => {
     try {
       server.attach();
       expect((await client.describeHost()).backends[0]?.name).toBe('fake');
+      const cancelledSpec = {
+        ...spec('cancelled'),
+        scope: serviceScope('staging'),
+      };
+      const cancelled = client
+        .applyDeployment(cancelledSpec)
+        .catch((error: unknown) => error);
+      expect(
+        await client.cancelDeployment('cancelled-d1', 'cancelled', {
+          scope: cancelledSpec.scope,
+        }),
+      ).toBe('cancelled');
+      expect(await cancelled).toMatchObject({ code: 'DEPLOYMENT_CANCELLED' });
+      await expect(client.applyDeployment(cancelledSpec)).rejects.toMatchObject(
+        { code: 'DEPLOYMENT_CANCELLED' },
+      );
+      expect(
+        await client.deploymentProgress('cancelled-d1', 'cancelled', {
+          scope: cancelledSpec.scope,
+        }),
+      ).toBeNull();
+
       expect(await client.checkScope(serviceScope('staging'))).toMatchObject({
         ok: true,
       });

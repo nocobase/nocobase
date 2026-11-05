@@ -72,10 +72,13 @@ export interface AppRuntimePolicy {
   readonly dormantAfterHours: number | null;
 }
 
-export type DeploymentStatus = 'queued' | 'deploying' | 'succeeded' | 'failed';
+export type DeploymentStatus =
+  'queued' | 'deploying' | 'cancelling' | 'cancelled' | 'succeeded' | 'failed';
 
 export type DeploymentPhase =
   | 'queued'
+  | 'cancelling'
+  | 'cancelled'
   | 'resolving'
   | 'verifying'
   | 'extracting'
@@ -365,6 +368,10 @@ export interface AppSummary {
   readonly currentVersion: string | null;
   readonly hasReleases: boolean;
   readonly hasPendingDeployment: boolean;
+  readonly pendingDeployment?: {
+    readonly status: 'queued' | 'deploying' | 'cancelling';
+    readonly queueAhead: number | null;
+  } | null;
   /**
    * What the caller may do on this App, decided as the server decides each request (a `related` scope counts only on
    * the Apps the caller created or the application relates to them). Only the single-App read answers it.
@@ -457,6 +464,10 @@ export interface ReleaseView {
 }
 
 export interface DeploymentView {
+  /** Transient Host queue position; null until the Host accepts it or once execution starts. */
+  readonly queueAhead?: number | null;
+  readonly cancellable?: boolean;
+
   readonly id: string;
   readonly appId: string;
   readonly releaseId: string;

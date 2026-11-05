@@ -1,3 +1,4 @@
+import { DeploymentCancelledError } from '../deployment-control.js';
 /**
  * Scopes on a managed Host: what the management service adds for a control plane with several environments. A scope
  * is one environment. Its sets carry their own revision and replace only its own Apps (an App belongs to one scope),
@@ -229,6 +230,7 @@ export class ManagedScopes {
   async applyDeployment(
     spec: HostDeploymentSpec,
     listener: DeploymentLogListener | undefined,
+    beforeRun?: () => void,
   ): Promise<HostStatus> {
     this.assertAccepting();
     const scope = spec.scope!;
@@ -236,17 +238,22 @@ export class ManagedScopes {
     const scoped = { ...spec, scope };
     this.assertOwnership(scope.id, [spec.appId]);
     this.assertBackend(scoped);
-    if (!spec.operationId) return await this.run(state, scoped, listener);
+    if (!spec.operationId) {
+      beforeRun?.();
+      return await this.run(state, scoped, listener);
+    }
     assertOperationId(spec.operationId);
     const key = `${scope.id}\u0000${spec.operationId}`;
     const running = this.inflight.get(key);
     if (running) return await running;
     const recorded = await this.operations.get(scope.id, spec.operationId);
-    if (recorded && recorded.state !== 'running')
+    if (recorded?.state === 'cancelled') throw new DeploymentCancelledError();
+    if (recorded && recorded.state !== 'running' && recorded.state !== 'queued')
       return this.status({ scope: scope.id });
-    const work = this.record(scope.id, scoped, () =>
-      this.run(state, scoped, listener),
-    );
+    const work = this.record(scope.id, scoped, () => {
+      beforeRun?.();
+      return this.run(state, scoped, listener);
+    });
     this.inflight.set(key, work);
     try {
       return await work;
@@ -280,14 +287,24 @@ export class ManagedScopes {
     return status;
   }
 
-  getOperation(
+  async getOperation(
     operationId: string,
     scope: HostScope | undefined,
   ): Promise<HostOperation | null> {
     assertOperationId(operationId);
     const scopeId = scope?.id ?? UNSCOPED;
     assertScopeId(scopeId);
-    return this.operations.get(scopeId, operationId);
+    const operation = await this.operations.get(scopeId, operationId);
+    if (operation?.state === 'queued') {
+      const progress = this.options.reconciler.deploymentProgress(
+        operationId,
+        operation.appId,
+        scope?.id,
+      );
+      if (progress && progress.state !== 'queued')
+        return { ...operation, state: 'running' };
+    }
+    return operation;
   }
 
   /** The Host's status, narrowed to one scope's Apps or to some Apps. */
@@ -409,7 +426,7 @@ export class ManagedScopes {
     } as const;
     await this.operations.put({
       ...base,
-      state: 'running',
+      state: 'queued',
       status: null,
       error: null,
       finishedAt: null,
@@ -434,7 +451,8 @@ export class ManagedScopes {
     } catch (error) {
       await this.operations.put({
         ...base,
-        state: 'failed',
+        state:
+          error instanceof DeploymentCancelledError ? 'cancelled' : 'failed',
         status: null,
         error: fullErrorMessage(error),
         finishedAt: new Date(this.now()).toISOString(),

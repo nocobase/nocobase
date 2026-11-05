@@ -55,6 +55,20 @@ describe('app summary refresh', () => {
     expect(load).toHaveBeenCalledTimes(4);
   });
 
+  it('uses one summary and at most one deployment-list refresh per pending poll', async () => {
+    const load = vi
+      .fn<() => Promise<AppSummary>>()
+      .mockResolvedValue({ ...appSummary(), hasPendingDeployment: true });
+    const progress = vi.fn();
+    renderHook(() => useAppSummary('shop', load, vi.fn(), progress));
+    await advance(0);
+    expect(load).toHaveBeenCalledTimes(1);
+    expect(progress).toHaveBeenCalledTimes(1);
+    await advance(1500);
+    expect(load).toHaveBeenCalledTimes(2);
+    expect(progress).toHaveBeenCalledTimes(2);
+  });
+
   it('serializes a slow poll and coalesces explicit refreshes, discarding the obsolete response', async () => {
     const slow = deferred<AppSummary>();
     const fresh = deferred<AppSummary>();
