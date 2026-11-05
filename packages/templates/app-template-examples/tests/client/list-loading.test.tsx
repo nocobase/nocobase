@@ -118,6 +118,52 @@ describe('standard list loading feedback', () => {
     expect(vi.getTimerCount()).toBe(0);
   });
 
+  it('keeps a paused unresolved query silent without showing cached rows or empty results', async () => {
+    const view = await renderWithApp(
+      <Table
+        rows={[{ id: 'Previous query' }]}
+        loading={false}
+        listState='ready'
+        total={45}
+      />,
+      options,
+    );
+    const table = screen.getByRole('table');
+    vi.useFakeTimers();
+    view.rerender(
+      <Table rows={[]} loading listState='loading' query='interrupted' />,
+    );
+    await advance(10_000);
+    expect(screen.getByRole('status')).toHaveTextContent(
+      enUS.pendingFeedback.longWait,
+    );
+    view.rerender(
+      <Table
+        rows={[{ id: 'Previous query' }]}
+        loading={false}
+        listState='loading'
+        total={45}
+      />,
+    );
+    await advance(10_000);
+    expect(screen.queryByRole('status')).toBeNull();
+    expect(document.querySelector('[aria-busy="true"]')).toBeNull();
+    expect(screen.queryByText('Previous query')).toBeNull();
+    expect(screen.queryByText(enUS.listFeedback.empty)).toBeNull();
+    expect(screen.getByRole('table')).toBe(table);
+    expect(screen.getAllByRole('cell')[0]).toHaveStyle({ height: '420px' });
+    view.rerender(
+      <Table rows={[]} loading listState='loading' query='resumed' />,
+    );
+    await advance(299);
+    expect(screen.queryByRole('status')).toBeNull();
+    await advance(1);
+    expect(screen.getByRole('status')).toHaveTextContent(
+      enUS.listFeedback.loading,
+    );
+    expect(screen.getByRole('table')).toBe(table);
+  });
+
   it('shows nothing for a fast read', async () => {
     const view = await renderWithApp(
       <Table rows={[]} loading listState='loading' />,

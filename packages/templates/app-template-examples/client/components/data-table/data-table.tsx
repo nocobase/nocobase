@@ -52,6 +52,7 @@ export interface DataTableProps<TData, TValue = unknown> {
   /**
    * The current request is in flight. With rows of the current query and permission scope this is a background
    * refresh: rows stay and a delayed refresh indicator appears. Without them the body shows the loading state.
+   * Explicit false pauses loading feedback for an unresolved, inactive query; omitting it uses listState.
    */
   readonly loading?: boolean;
   /**
@@ -113,7 +114,7 @@ export function DataTable<TData, TValue = unknown>({
   sortingState,
   onSortingChange,
   showSelectedCount = true,
-  loading = false,
+  loading,
   loadingIdentity,
   listState,
   onRetry,
@@ -247,7 +248,7 @@ export function DataTable<TData, TValue = unknown>({
       <div className='relative overflow-hidden rounded-lg border'>
         {/* A retry after a refresh failure is announced by its own toolbar button. */}
         <RefreshIndicator
-          pending={loading && showRows && state !== 'refresh-failed'}
+          pending={Boolean(loading && showRows && state !== 'refresh-failed')}
           identity={loadingIdentity}
         />
         {/* Only retained rows are busy; a loading body owns its own busy region and status. */}
@@ -292,12 +293,15 @@ export function DataTable<TData, TValue = unknown>({
                       : undefined
                   }
                 >
-                  <ListFeedback
-                    state={state}
-                    identity={loadingIdentity}
-                    empty={emptyMessage}
-                    emptyAction={emptyAction}
-                  />
+                  {/* Readiness may stay unresolved while the parent query is paused. */}
+                  {state !== 'loading' || loading !== false ? (
+                    <ListFeedback
+                      state={state}
+                      identity={loadingIdentity}
+                      empty={emptyMessage}
+                      emptyAction={emptyAction}
+                    />
+                  ) : null}
                 </TableCell>
               </TableRow>
             ) : null}

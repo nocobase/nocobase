@@ -122,33 +122,35 @@ export default function RolesPage(): ReactElement {
             state={listState}
             onClear={clearSearch}
             onRetry={request.reload}
-            busy={request.loading}
+            busy={active && request.loading}
           />
         </div>
-        <ListFeedback state={listState}>
-          <RoleList
-            tableState={tableState}
-            // After a refresh failure the toolbar's retry button owns the wait.
-            loading={active && request.loading && listState === 'ready'}
-            ariaLabel={t('settings.roles')}
-            roles={rows.map((role) => ({
-              key: role.key,
-              title: text(role.title ?? role.key),
-              to: {
-                pathname: `${encodeURIComponent(role.key)}/edit`,
-                search: location.search,
-              },
-              protected: Boolean(role.protection),
-            }))}
-            labels={{
-              name: t('settings.roleName'),
-              key: t('settings.key'),
-              type: t('settings.roleType'),
-              protected: t('settings.protected'),
-              custom: t('settings.custom'),
-            }}
-          />
-        </ListFeedback>
+        {active || listState !== 'loading' ? (
+          <ListFeedback state={listState}>
+            <RoleList
+              tableState={tableState}
+              // After a refresh failure the toolbar's retry button owns the wait.
+              loading={active && request.loading && listState === 'ready'}
+              ariaLabel={t('settings.roles')}
+              roles={rows.map((role) => ({
+                key: role.key,
+                title: text(role.title ?? role.key),
+                to: {
+                  pathname: `${encodeURIComponent(role.key)}/edit`,
+                  search: location.search,
+                },
+                protected: Boolean(role.protection),
+              }))}
+              labels={{
+                name: t('settings.roleName'),
+                key: t('settings.key'),
+                type: t('settings.roleType'),
+                protected: t('settings.protected'),
+                custom: t('settings.custom'),
+              }}
+            />
+          </ListFeedback>
+        ) : null}
       </PermissionManagementPage>
       <Outlet context={{ reload: request.reload }} />
     </>

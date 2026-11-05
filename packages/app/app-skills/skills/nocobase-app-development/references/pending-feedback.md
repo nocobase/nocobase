@@ -37,7 +37,7 @@ Render within the slot that actually loads; only application startup uses `fulls
 
 ## A new list page
 
-A new business list needs no feedback code of its own. Read through `useListData`, derive the state with `resolveListState`, and hand the request's real `loading`, its path as `loadingIdentity`, and its retry to the preinstalled `DataTable`. This feedback-focused excerpt requests only page 1 and leaves pagination to the table, so it is not a complete server-paginated list; for URL-backed page state, `manualPagination`, and the server's total, follow the [complete server-paginated table example](frontend/references/example/server-table.md).
+A new business list needs no feedback code of its own. Read through `useListData`, derive the state with `resolveListState`, and hand `active && request.loading`, its path as `loadingIdentity`, and its retry to the preinstalled `DataTable`. This feedback-focused excerpt requests only page 1 and leaves pagination to the table, so it is not a complete server-paginated list; for URL-backed page state, `manualPagination`, and the server's total, follow the [complete server-paginated table example](frontend/references/example/server-table.md).
 
 ```tsx
 const path = `equipment?page=1&pageSize=20${query ? `&q=${encodeURIComponent(query)}` : ''}`;
@@ -70,7 +70,7 @@ const listState = resolveListState(
 />;
 ```
 
-The first load, search changes, refreshes, failure with Retry, empty and no-results states then follow this document. Page actions use `PendingButton` with their real busy state, a retained summary card adds `RefreshIndicator` inside its positioned container, and a long server task renders `TaskProgress` from its task record.
+The first load, search changes, refreshes, failure with Retry, empty and no-results states then follow this document. `useListData.loading` also tracks unresolved readiness while inactive; `active && request.loading` prevents a cold background list from announcing work that has not started. Keep this gate when adapting copied tables; card-style `ListFeedback` uses `active || listState !== 'loading'` to omit a paused loading boundary. Page actions use `PendingButton` with their real busy state, a retained summary card adds `RefreshIndicator` inside its positioned container, and a long server task renders `TaskProgress` from its task record.
 
 ## Lists, cards and pickers
 
