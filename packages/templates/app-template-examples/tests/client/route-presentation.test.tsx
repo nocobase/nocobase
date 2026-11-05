@@ -248,10 +248,34 @@ describe('route presentations', () => {
 
     await screen.findByText('Item form', {}, LOAD);
     expect(load).toHaveBeenCalledTimes(2);
+    expect(screen.queryByRole('button', { name: 'Reload page' })).toBeNull();
     expect(screen.getAllByRole('dialog')).toHaveLength(1);
     expect(
       screen.getByLabelText('Parent note', { selector: 'input' }),
     ).toHaveValue('draft');
+  });
+
+  it('offers a full reload only after retrying the module failed again', async () => {
+    const load = vi.fn<() => Promise<AppClientRouteComponentModule>>(() =>
+      Promise.reject(new Error('Chunk unavailable')),
+    );
+    const user = await renderItems([
+      page('create', '/items/create', load, {
+        presentation: { kind: 'dialog', title: 'settings.newUser' },
+      }),
+    ]);
+    await user.click(screen.getByRole('link', { name: 'Open create' }));
+    const dialog = await screen.findByRole('dialog', { name: 'New user' });
+    await within(dialog).findByText('Unable to load page', {}, LOAD);
+    expect(
+      within(dialog).queryByRole('button', { name: 'Reload page' }),
+    ).toBeNull();
+
+    await user.click(within(dialog).getByRole('button', { name: 'Retry' }));
+    expect(
+      await within(dialog).findByRole('button', { name: 'Reload page' }, LOAD),
+    ).toBeVisible();
+    expect(load).toHaveBeenCalledTimes(2);
   });
 
   it('keeps a route without a presentation in charge of its own overlay, nested in a hosted one', async () => {

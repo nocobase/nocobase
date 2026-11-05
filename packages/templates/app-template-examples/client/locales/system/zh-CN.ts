@@ -152,6 +152,9 @@ const systemZhCN: SystemResource = {
   'status.denied': '无权访问',
   'status.pageFailed': '无法加载页面',
   'status.retry': '重试',
+  'status.reloadPage': '重新加载页面',
+  'status.retryFailedDescription':
+    '仍然无法加载。可以重新加载整个页面，但本页未保存的修改可能丢失。',
   'navigation.brandHome': 'NocoBase 首页',
   'navigation.brandApps': 'NocoBase 应用',
   'routeOverlay.close': '关闭',

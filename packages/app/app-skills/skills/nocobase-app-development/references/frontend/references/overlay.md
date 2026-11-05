@@ -132,7 +132,7 @@ Declare every route whose page renders `RouteDialog` or `RouteDrawer` as its roo
 },
 ```
 
-- The application opens one panel at once with `title`, a static translation key in the route's package that must not depend on the record. The authorization check, the module wait, a denial and a load failure with a Retry that reloads only this module render inside it, so nothing is added under the page that opened it and its draft and scroll position stay.
+- The application opens one panel at once with `title`, a static translation key in the route's package that must not depend on the record. The authorization check, the module wait, a denial and a load failure render inside it. Retry loads only this module again; because a browser may keep answering a failed module import without fetching it again, a retry that fails too also offers Reload page, which reloads the document, so nothing is added under the page that opened it and its draft and scroll position stay.
 - The page keeps rendering `RouteDialog` or `RouteDrawer` exactly as before. Inside the opened panel it configures that panel instead of opening a second one: its `title`, `description`, `footer`, `closeTo` and `beforeClose` replace the opened panel's. Render it unconditionally as the page's root; its footer renders in the panel's footer slot, so it reads only contexts provided above the route.
 - While an authorization recheck hides an allowed page, the panel shows the route's static title and no footer or description, and still applies the page's `beforeClose`.
 - `kind` names the container the page renders: `dialog` for `RouteDialog`, `drawer` for `RouteDrawer`. Nothing infers it from the route depth.

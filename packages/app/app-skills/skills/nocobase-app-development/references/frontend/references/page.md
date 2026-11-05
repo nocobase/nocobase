@@ -468,7 +468,7 @@ const appRuntime = defineAppRuntime({
 
 ## 11. Where rendering happens
 
-- `client/routing/` renders routes, checks access, and handles loading and error states. For a route with a declared `presentation` it renders them inside the child page, dialog or drawer it opens first; Retry reloads only that route's module, never the whole document.
+- `client/routing/` renders routes, checks access, and handles loading and error states. For a route with a declared `presentation` it renders them inside the child page, dialog or drawer it opens first; Retry loads only that route's module again, and offers a full page reload only after that retry fails too.
 - `client/layouts/` holds the App layout; `client/layouts/components/` holds its containers, navigation, branding and account controls. The layout owns its permissions and route rendering; guest and optional pages render in `client/routing/standalone-page-layout.tsx`.
 - Declare business routes only in `client/routes.ts`, never in the directories above.
 

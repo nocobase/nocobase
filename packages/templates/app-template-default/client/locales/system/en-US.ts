@@ -163,6 +163,9 @@ const systemEnUS = {
   'status.denied': 'Access denied',
   'status.pageFailed': 'Unable to load page',
   'status.retry': 'Retry',
+  'status.reloadPage': 'Reload page',
+  'status.retryFailedDescription':
+    'It still could not be loaded. Reloading the whole page may help; unsaved changes on this page may be lost.',
   'navigation.brandHome': 'NocoBase home',
   'navigation.brandApps': 'NocoBase applications',
   'routeOverlay.close': 'Close',

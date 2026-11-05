@@ -99,7 +99,12 @@ export function ClientRoute({ route }: ClientRouteProps): ReactElement {
   if (denied) content = <ClientPageDenied route={route} region={region} />;
   else if (loadError)
     content = (
-      <ClientPageError route={route} region={region} onRetry={retryLoad} />
+      <ClientPageError
+        route={route}
+        region={region}
+        onRetry={retryLoad}
+        retried={attempt > 0}
+      />
     );
   else if (!Component) content = <ClientPageLoading region={region} />;
   else
@@ -205,7 +210,15 @@ function ClientPageError({
   route,
   region,
   onRetry,
-}: ClientRouteStateProps & { readonly onRetry: () => void }): ReactElement {
+  retried = false,
+}: ClientRouteStateProps & {
+  readonly onRetry: () => void;
+  /**
+   * Set once a retry of the module failed too. A browser may keep answering a failed module import from its module
+   * map without fetching again, so the full reload that does fetch it becomes the second way out.
+   */
+  readonly retried?: boolean;
+}): ReactElement {
   const { t } = useTranslation();
 
   return (
@@ -223,9 +236,24 @@ function ClientPageError({
             defaultValue: `Route ${route.name} from ${route.packageName} could not be loaded.`,
           })}
         </p>
-        <Button onClick={onRetry}>
-          {t('status.retry', { defaultValue: 'Retry' })}
-        </Button>
+        {retried && (
+          <p className='text-sm text-muted-foreground'>
+            {t('status.retryFailedDescription', {
+              defaultValue:
+                'It still could not be loaded. Reloading the whole page may help; unsaved changes on this page may be lost.',
+            })}
+          </p>
+        )}
+        <div className='flex flex-wrap justify-center gap-2'>
+          <Button onClick={onRetry}>
+            {t('status.retry', { defaultValue: 'Retry' })}
+          </Button>
+          {retried && (
+            <Button variant='outline' onClick={() => window.location.reload()}>
+              {t('status.reloadPage', { defaultValue: 'Reload page' })}
+            </Button>
+          )}
+        </div>
       </section>
     </section>
   );
