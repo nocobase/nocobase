@@ -97,6 +97,12 @@ export interface AppLifecycleEvent {
 
 /** How long a failed activation keeps answering requests with its error before one may try again. */
 const ACTIVATION_FAILURE_HOLD_MS = 10_000;
+/**
+ * An App requested more recently than this is in use even between requests (a page polling every few seconds), so
+ * capacity admission never reclaims it: evicting it would only make its next request evict another App, and the Host
+ * would restart Apps every few seconds instead of answering the newcomer that it is full.
+ */
+export const CAPACITY_RECENT_USE_MS = 60_000;
 
 export interface AppRuntimeRegistryOptions {
   /** Shared in-process heap budget. Defaults to 70%, 256 MiB baseline minimum and 256 MiB per App. */
@@ -1011,12 +1017,15 @@ export class AppRuntimeRegistry {
               1) *
               this.appMemory >
             this.heapTarget;
+        const recent = (id: string) =>
+          Date.now() - (this.lastAccessedAt(id) ?? 0) < CAPACITY_RECENT_USE_MS;
         if (full() || heapFull()) {
           const candidate = this.getEvictableSnapshots()
             .filter(
               (app) =>
                 app.id !== definition.id &&
                 !this.operations.has(app.id) &&
+                !recent(app.id) &&
                 (!shared || app.backend === 'in-process'),
             )
             .reduce<AppSnapshot | undefined>(
@@ -1062,6 +1071,9 @@ export class AppRuntimeRegistry {
                       ? 'resident'
                       : null,
                     app && !this.isEvictable(app) ? 'busy' : null,
+                    app && this.isEvictable(app) && recent(id)
+                      ? 'recent'
+                      : null,
                   ].filter(Boolean),
                 };
               }),

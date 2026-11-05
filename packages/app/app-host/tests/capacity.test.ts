@@ -14,6 +14,11 @@ afterEach(async () => {
   vi.useRealTimers();
 });
 const MiB = 1024 ** 2;
+/** Moves the clock past capacity admission's recent-use protection, leaving timers real. */
+function laterThanRecentUse() {
+  vi.useFakeTimers({ toFake: ['Date'] });
+  vi.setSystemTime(Date.now() + 61_000);
+}
 function registry(
   options: ConstructorParameters<typeof AppRuntimeRegistry>[0] = {},
 ) {
@@ -101,6 +106,7 @@ it('reserves starting Apps atomically, releases failed starts and evicts the eff
   });
   release();
   await slow;
+  laterThanRecentUse();
   await expect(host.create('broken')).rejects.toThrow('broken');
   await host.ensureActive('other');
   expect(host.list().map((app) => app.id)).toEqual(['other']);
@@ -108,7 +114,8 @@ it('reserves starting Apps atomically, releases failed starts and evicts the eff
   const lru = registry(); // (70% * 1280 - 256) / 256 = two slots
   await lru.create('a');
   await lru.create('b');
-  lru.touch('a', Date.now() + 1000);
+  laterThanRecentUse();
+  lru.touch('a', Date.now());
   await lru.create('c');
   expect(
     lru
@@ -160,6 +167,7 @@ it('rejects retained heap pressure after one safe eviction and requests rotation
     sampleHeap: () => ({ heapUsed, heapLimit: 1280 * MiB }),
   });
   await host.create('a');
+  laterThanRecentUse();
   heapUsed = 800 * MiB;
   await expect(host.create('b')).rejects.toMatchObject({
     code: 'APP_CAPACITY_EXCEEDED',
@@ -196,8 +204,40 @@ it('does not reclaim an App with a live socket to admit another App', async () =
     { type: 'close', code: 1000, reason: '', wasClean: true },
     socket,
   );
+  // The page just closed its socket, so the App was in use moments ago.
+  await expect(host.ensureActive('new')).rejects.toMatchObject({
+    code: 'APP_CAPACITY_EXCEEDED',
+  });
+  laterThanRecentUse();
   await host.ensureActive('new');
   expect(host.isActive('connected')).toBe(false);
+});
+
+it('answers a newcomer that capacity is full instead of reclaiming an App polled moments ago', async () => {
+  const warn = vi.fn();
+  const host = registry({
+    maxActiveApps: 1,
+    logger: { warn, info: vi.fn(), debug: vi.fn() } as unknown as Logger,
+  });
+  await host.create('polled');
+  laterThanRecentUse();
+  // A poll a few seconds ago, with no request in flight now.
+  host.touch('polled', Date.now() - 5_000);
+  await expect(host.create('newcomer')).rejects.toMatchObject({
+    code: 'APP_CAPACITY_EXCEEDED',
+  });
+  expect(host.isActive('polled')).toBe(true);
+  expect(host.getMetrics().capacityEvictions).toBe(0);
+  expect(warn).toHaveBeenCalledWith(
+    expect.objectContaining({
+      occupants: [{ appId: 'polled', reasons: ['recent'] }],
+    }),
+    expect.any(String),
+  );
+  vi.setSystemTime(Date.now() + 61_000);
+  await host.ensureActive('newcomer');
+  expect(host.isActive('polled')).toBe(false);
+  expect(host.getMetrics().capacityEvictions).toBe(1);
 });
 
 it('applies admission to stopped reloads, deployments and replacements', async () => {
