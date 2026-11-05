@@ -120,7 +120,7 @@ it('links the System settings breadcrumb back to the home from a module view', a
   await mount({}, '/roles');
   const trail = await screen.findByRole('navigation', { name: 'Breadcrumb' });
   expect(
-    within(trail).getByRole('link', { name: 'System settings' }),
+    await within(trail).findByRole('link', { name: 'System settings' }),
   ).toHaveAttribute('href', '/main/settings');
   expect(within(trail).getByText('Roles and permissions')).toBeVisible();
 });

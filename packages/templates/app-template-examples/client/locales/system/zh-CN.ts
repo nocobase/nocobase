@@ -189,6 +189,7 @@ const systemZhCN: SystemResource = {
     breadcrumb: '面包屑',
     breadcrumbMore: '显示中间层级',
     back: '返回',
+    backTo: '返回{{label}}',
   },
   dataTable: {
     noResults: '无结果',

@@ -1,6 +1,7 @@
 import { usePageBreadcrumbLevels } from '@nocobase/app-client';
 import type { PageBreadcrumbLevel } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
+import { ArrowLeftIcon } from 'lucide-react';
 import { Fragment, type ReactElement } from 'react';
 import { Link } from 'react-router';
 
@@ -23,10 +24,13 @@ import { settingsHomeRoute } from '#lib/navigation-transform';
 import { cn } from 'cn';
 
 import {
+  useRouteTree,
+  useRouteAccess,
   useRouteTrail,
   useRouteSearches,
   type RouteTrailEntry,
 } from '../routing/route-context.js';
+import { navigationDestination } from '../routing/navigation-destination.js';
 import { routeKey } from '../routing/route-navigation.js';
 
 export interface BreadcrumbsProps {
@@ -45,7 +49,7 @@ export interface BreadcrumbsProps {
  * `usePageBreadcrumb` from `@nocobase/app-client`. Earlier levels link where a page sits behind them; the last is the
  * current page.
  *
- * On a phone only the last level shows, beside the brand; on a medium screen a trail of three or more levels keeps its
+ * On a phone the current title and a link to the nearest authorized parent show; on a medium screen a trail of three or more levels keeps its
  * first and last and folds the middle into a menu.
  */
 export function Breadcrumbs({
@@ -53,10 +57,18 @@ export function Breadcrumbs({
   denied,
 }: BreadcrumbsProps = {}): ReactElement | null {
   const trail = useRouteTrail();
+  const routes = useRouteTree();
+  const contextAccess = useRouteAccess();
+  const access = denied
+    ? {
+        ...contextAccess,
+        denied: new Set([...contextAccess.denied, ...denied]),
+      }
+    : contextAccess;
   const searches = useRouteSearches();
   const declared = usePageBreadcrumbLevels();
   const { t } = useTranslation();
-  const trailLevels =
+  const candidates =
     declared ??
     trail.flatMap((entry): PageBreadcrumbLevel[] => {
       const title = routeLevelTitle(entry);
@@ -93,6 +105,19 @@ export function Breadcrumbs({
       ];
     });
 
+  const trailLevels = candidates.flatMap(
+    (level, index): PageBreadcrumbLevel[] => {
+      if (!level.to) return [level];
+      const to = navigationDestination(level.to, routes, access);
+      // Keep the current title during permission checks, but never expose an inaccessible ancestor's name.
+      return to
+        ? [{ ...level, to }]
+        : index === candidates.length - 1
+          ? [{ label: level.label }]
+          : [];
+    },
+  );
+
   if (trailLevels.length === 0) return null;
   // A level is told apart by its depth and label; two levels may share either alone.
   const levels = trailLevels.map((level, depth) => ({
@@ -101,6 +126,7 @@ export function Breadcrumbs({
   }));
   const last = levels.length - 1;
   const folded = levels.slice(1, last);
+  const parent = levels.slice(0, last).findLast((level) => level.to);
 
   return (
     <Breadcrumb
@@ -108,6 +134,21 @@ export function Breadcrumbs({
       className={cn('min-w-0', className)}
     >
       <BreadcrumbList className='flex-nowrap'>
+        {parent ? (
+          <BreadcrumbItem className='shrink-0 md:hidden'>
+            <BreadcrumbLink
+              aria-label={t('navigation.backTo', {
+                label: parent.label,
+                defaultValue: `Back to ${parent.label}`,
+              })}
+              title={parent.label}
+              className='inline-flex size-9 items-center justify-center rounded-sm focus-visible:outline-2 focus-visible:outline-ring'
+              render={<Link to={parent.to!} replace />}
+            >
+              <ArrowLeftIcon aria-hidden='true' className='size-4' />
+            </BreadcrumbLink>
+          </BreadcrumbItem>
+        ) : null}
         {levels.map((level, index) => (
           <Fragment key={level.key}>
             {index === 1 && folded.length > 0 ? (
@@ -154,7 +195,10 @@ export function Breadcrumbs({
               )}
             >
               {index === last ? (
-                <BreadcrumbPage className='truncate font-medium'>
+                <BreadcrumbPage
+                  title={level.label}
+                  className='truncate font-medium'
+                >
                   {level.label}
                 </BreadcrumbPage>
               ) : level.to ? (

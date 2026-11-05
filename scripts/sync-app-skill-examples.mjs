@@ -10,6 +10,7 @@ const skill = path.join(
 );
 const files = [
   'client/pages/skill-projects/index.tsx',
+  'client/pages/skill-projects/detail.tsx',
   'client/pages/skill-projects/edit.tsx',
   'client/pages/skill-projects/locales.ts',
   'server/routes/skill-projects.ts',
