@@ -1639,6 +1639,8 @@ export class ReleasesService {
         .selectFrom('relDeployments')
         .selectAll()
         .where('status', 'in', ['queued', 'deploying', 'cancelling'])
+        .orderBy('createdAt', 'asc')
+        .orderBy('id', 'asc')
         .execute<Row>()
     ).map(decodeDeployment);
     // A deployment the target recorded (the App Host's operation log) is finalised from what it reports; every other
@@ -3107,13 +3109,13 @@ export class ReleasesService {
     }
     const app = await this.requireApp(deployment.appId);
     const release = await this.requireRelease(app.id, deployment.releaseId);
-    let previous = await this.currentDeployment(app);
+    let settlement: ((work: () => Promise<void>) => Promise<void>) | undefined;
     let phaseWrites = Promise.resolve();
     let lastSequence = 0;
     let lastPhase: string | undefined;
     let switchStarted = false;
     let phaseError: Error | undefined;
-    let outcome: { ok: true } | { ok: false; error: string };
+    let outcome: { ok: true } | { ok: false; error: string } | undefined;
     try {
       const session = await this.session(app.environmentId);
       const logsEnabled = this.options.logging?.deployments?.enabled !== false;
@@ -3141,6 +3143,8 @@ export class ReleasesService {
         });
       }
       dispatch.submitted = true;
+      // Reserve in runtime submission order without holding up Host admission or cancellation.
+      settlement = this.reserveSettlement(app.id);
       let started = false;
       const observed = await session.apply(spec, (entry) => {
         if (typeof entry.sequence === 'number') {
@@ -3182,10 +3186,6 @@ export class ReleasesService {
             .then(async () => {
               // Queue-position events are transient; they cause no database writes.
               if (phase === 'queued' || !changed) return;
-              if (first)
-                previous = await this.currentDeployment(
-                  await this.requireApp(app.id),
-                );
               await this.query()
                 .updateTable('relDeployments')
                 .set({
@@ -3194,7 +3194,6 @@ export class ReleasesService {
                     ? {
                         status: 'deploying',
                         startedAt: new Date(),
-                        previousDeploymentId: previous?.id ?? null,
                       }
                     : {}),
                 })
@@ -3227,28 +3226,65 @@ export class ReleasesService {
         throw new Error(
           observed.error ?? 'The runtime did not report the deployment.',
         );
-      await this.markSucceeded(deployment, app.id, previous);
       outcome = { ok: true };
     } catch (error) {
       await phaseWrites.catch(() => undefined);
       outcome = { ok: false, error: errorMessage(error) };
-      await this.markFailed(deployment, error);
     } finally {
-      this.dispatch.delete(deploymentId);
-      this.progress.delete(deploymentId);
-      const policy = this.options.logging?.deployments;
-      await pruneJournals(
-        path.dirname(this.deploymentLogPath(app.id, deployment.id)),
-        {
-          retentionDays: policy?.retentionDays ?? 30,
-          maxSizeMB: policy?.maxTotalSizeMB ?? 1024,
-        },
-        `${deployment.id}.log`,
-      ).catch((error: unknown) =>
-        reportLoggingFailure('Deployment log cleanup failed', error),
-      );
+      const settle = settlement ?? this.reserveSettlement(app.id);
+      const result = settle(async () => {
+        if (!outcome) return;
+        // The predecessor is read only after its writes, cleanup and outcome event have finished.
+        const previous = await this.currentDeployment(
+          await this.requireApp(app.id),
+        );
+        if (outcome.ok) {
+          try {
+            await this.markSucceeded(deployment, app.id, previous);
+          } catch (error) {
+            outcome = { ok: false, error: errorMessage(error) };
+          }
+        }
+        if (!outcome.ok)
+          await this.markFailed(deployment, new Error(outcome.error), previous);
+        await this.emitOutcome(deployment, app, release, outcome);
+      });
+      try {
+        // A queued cancellation is already terminal; it must not wait for the running predecessor.
+        if (outcome) await result;
+      } finally {
+        this.dispatch.delete(deploymentId);
+        this.progress.delete(deploymentId);
+        const policy = this.options.logging?.deployments;
+        await pruneJournals(
+          path.dirname(this.deploymentLogPath(app.id, deployment.id)),
+          {
+            retentionDays: policy?.retentionDays ?? 30,
+            maxSizeMB: policy?.maxTotalSizeMB ?? 1024,
+          },
+          `${deployment.id}.log`,
+        ).catch((error: unknown) =>
+          reportLoggingFailure('Deployment log cleanup failed', error),
+        );
+      }
     }
-    await this.emitOutcome(deployment, app, release, outcome);
+  }
+
+  /** Reuse the local lock chain to order results while the Host continues executing its queue. */
+  private reserveSettlement(
+    appId: string,
+  ): (work: () => Promise<void>) => Promise<void> {
+    let finish!: (work: () => Promise<void>) => void;
+    const ready = new Promise<() => Promise<void>>((resolve) => {
+      finish = resolve;
+    });
+    const result = this.withLock(`deployment-result:${appId}`, async () =>
+      (await ready)(),
+    );
+    return (work) => {
+      finish(work);
+      return result;
+    };
   }
 
   private async markSucceeded(
@@ -3261,7 +3297,12 @@ export class ReleasesService {
     await this.options.database.transaction(async (connection) => {
       await connection.query
         .updateTable('relDeployments')
-        .set({ status: 'succeeded', phase: 'completed', finishedAt })
+        .set({
+          status: 'succeeded',
+          phase: 'completed',
+          finishedAt,
+          previousDeploymentId: previous?.id ?? null,
+        })
         .where('id', '=', deployment.id)
         .execute();
       await connection.query
@@ -3282,6 +3323,7 @@ export class ReleasesService {
   private async markFailed(
     deployment: DeploymentRecord,
     error: unknown,
+    previous?: DeploymentRecord | null,
   ): Promise<void> {
     this.logDeployment(deployment, 'completed', 'Deployment failed', error);
     const finishedAt = new Date();
@@ -3293,6 +3335,9 @@ export class ReleasesService {
           phase: 'completed',
           error: errorMessage(error),
           finishedAt,
+          ...(previous !== undefined
+            ? { previousDeploymentId: previous?.id ?? null }
+            : {}),
         })
         .where('id', '=', deployment.id)
         .execute();
@@ -3387,12 +3432,7 @@ export class ReleasesService {
         return;
       }
       if (status?.state === 'running') {
-        const previous = deployment.previousDeploymentId
-          ? await this.requireDeployment(
-              app.id,
-              deployment.previousDeploymentId,
-            ).catch(() => null)
-          : null;
+        const previous = await this.currentDeployment(app);
         this.logDeployment(
           deployment,
           'switching',

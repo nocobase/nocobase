@@ -1,4 +1,5 @@
 import path from 'node:path';
+import { readFile } from 'node:fs/promises';
 import { createReleases } from '../server/composition.js';
 // @vitest-environment node
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -80,6 +81,7 @@ function controlledDriver() {
   };
   return {
     driver: fake.driver,
+    state: fake.state,
     operations,
     async ready(id: string) {
       await vi.waitFor(() => expect(operations.has(id)).toBe(true));
@@ -183,6 +185,96 @@ describe('deployment control', () => {
     expect(
       harness.events.filter((event) => event.type === 'deployment.cancelled'),
     ).toHaveLength(2);
+  });
+
+  it('settles runtime successors in order when an earlier success transaction is delayed', async () => {
+    const { admin, release } = await setup();
+    const releases = harness.services.releases;
+    const first = await releases.deploy(admin, 'shop', {
+      releaseId: release.id,
+      config: { mode: 'file', content: 'app:\n  title: First\n' },
+    });
+    await control.ready(first.id);
+    control.start(first.id);
+    await vi.waitFor(async () =>
+      expect(
+        (await releases.getDeployment(admin, 'shop', first.id)).status,
+      ).toBe('deploying'),
+    );
+    const obsolete = await releases.deploy(admin, 'shop', {
+      releaseId: release.id,
+    });
+    await control.ready(obsolete.id);
+    const second = await releases.deploy(admin, 'shop', {
+      releaseId: release.id,
+      config: { mode: 'file', content: 'app:\n  title: Second\n' },
+    });
+    // Cancellation drains its own run immediately even though the settlement chain still contains First.
+    expect((await releases.waitForDeployment(obsolete.id)).status).toBe(
+      'cancelled',
+    );
+    await control.ready(second.id);
+    let releaseTransaction!: () => void;
+    let reachedTransaction = false;
+    const held = new Promise<void>((resolve) => {
+      releaseTransaction = resolve;
+    });
+    const transaction = harness.database.transaction.bind(harness.database);
+    vi.spyOn(harness.database, 'transaction').mockImplementationOnce(
+      async (...args) => {
+        reachedTransaction = true;
+        await held;
+        return transaction(...args);
+      },
+    );
+    try {
+      control.operations.get(first.id)!.finish();
+      await vi.waitFor(() => expect(reachedTransaction).toBe(true));
+      control.start(second.id);
+      control.operations.get(second.id)!.finish();
+      // The Host can finish the warm successor while the predecessor's SQL is held.
+      await vi.waitFor(() =>
+        expect(control.state.running.get('shop')?.deploymentId).toBe(second.id),
+      );
+      expect(
+        harness.events.filter((event) => event.type === 'deployment.succeeded'),
+      ).toHaveLength(0);
+    } finally {
+      releaseTransaction();
+    }
+    expect((await releases.waitForDeployment(first.id)).status).toBe(
+      'succeeded',
+    );
+    const finished = await releases.waitForDeployment(second.id);
+    expect(finished.status).toBe('succeeded');
+    expect(finished.previousDeploymentId).toBe(first.id);
+    expect((await releases.getApp(admin, 'shop')).app.currentDeploymentId).toBe(
+      second.id,
+    );
+    const configs = await harness.database
+      .connection()
+      .query.selectFrom('relDeployments')
+      .select(['id', 'configPath'])
+      .where('id', 'in', [first.id, second.id])
+      .execute();
+    const current = configs.find((row) => row.id === second.id)!;
+    expect(await readFile(current.configPath!, 'utf8')).toContain(
+      'title: Second',
+    );
+    await expect(
+      readFile(configs.find((row) => row.id === first.id)!.configPath!, 'utf8'),
+    ).rejects.toMatchObject({ code: 'ENOENT' });
+    const events = harness.events.filter(
+      (event) => event.type === 'deployment.succeeded',
+    );
+    expect(events.map((event) => event.deployment.id)).toEqual([
+      first.id,
+      second.id,
+    ]);
+    expect(events.map((event) => event.app.currentDeploymentId)).toEqual([
+      first.id,
+      second.id,
+    ]);
   });
 
   it('waits for cleanup before settling a running cancellation and repeats safely', async () => {
