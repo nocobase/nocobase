@@ -88,6 +88,8 @@ const idID: LocaleResource<typeof enUS> = {
         'Buat tugas yang ditetapkan untuk Anda sendiri di Tasks, lalu kembali ke sini.',
     },
     exports: {
+      ready:
+        '{{count}} baris siap. Unduh CSV di sini; file tetap ada di daftar ini.',
       missing:
         'File ekspor ini tidak lagi tersedia. Buat ekspor baru untuk mengunduh tugas Anda saat ini.',
       title: 'Ekspor tugas',
@@ -232,6 +234,16 @@ const idID: LocaleResource<typeof enUS> = {
     capacity: 'Demonstrasi sedang sibuk. Coba lagi nanti.',
     subscription:
       'Langganan gagal. Sambungkan kembali atau coba lagi setelah akses dipulihkan.',
+  },
+  taskProgress: {
+    queued: 'Menunggu dimulai',
+    running: 'Sedang berjalan',
+    completed: 'Selesai',
+    failed: 'Gagal',
+    canceled: 'Dibatalkan',
+    count: '{{processed}} dari {{total}}',
+    processed: '{{processed}} diproses',
+    background: 'Tetap berjalan jika Anda meninggalkan halaman ini.',
   },
 };
 

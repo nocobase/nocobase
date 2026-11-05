@@ -87,6 +87,8 @@ const jaJP: LocaleResource<typeof enUS> = {
         '[タスク] で自分に割り当てられたタスクを作成してから、ここに戻ってください。',
     },
     exports: {
+      ready:
+        '{{count}} 行の準備ができました。ここから CSV をダウンロードできます。ファイルはこの一覧に残ります。',
       missing:
         'このエクスポート ファイルは利用できなくなりました。新しいエクスポートを作成して、現在のタスクをダウンロードします。',
       title: 'タスクのエクスポート',
@@ -234,6 +236,16 @@ const jaJP: LocaleResource<typeof enUS> = {
     capacity: 'デモは忙しいです。後でもう一度試してください。',
     subscription:
       '購読に失敗しました。アクセスが回復した後に再接続するか、再試行してください。',
+  },
+  taskProgress: {
+    queued: '開始待ち',
+    running: '処理中',
+    completed: '完了',
+    failed: '失敗',
+    canceled: 'キャンセル済み',
+    count: '{{processed}} / {{total}}',
+    processed: '{{processed}} 件処理済み',
+    background: 'このページを離れても処理は続きます。',
   },
 };
 

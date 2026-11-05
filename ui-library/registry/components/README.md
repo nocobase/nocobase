@@ -6,6 +6,7 @@ Single components that pages are built from. Each is its own item, installs into
 | ------------------ | ---------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `page-container`   | `page-container.tsx`                                                                     | `PageContainer`                                                                                                                                                                                                                                                  |
 | `page-header`      | `page-header.tsx`                                                                        | `PageHeader`                                                                                                                                                                                                                                                     |
+| `task-progress`    | `task-progress.tsx`                                                                      | `TaskProgress`                                                                                                                                                                                                                                                   |
 | `list-feedback`    | `list-feedback.tsx`                                                                      | `ListFeedback`, `ListFeedbackActions`                                                                                                                                                                                                                            |
 | `route-dialog`     | `route-dialog.tsx`, with `route-overlay.tsx` and `use-route-overlay.ts`                  | `RouteDialog`, `useRouteOverlay`                                                                                                                                                                                                                                 |
 | `route-drawer`     | `route-drawer.tsx`, with `route-overlay.tsx` and `use-route-overlay.ts`                  | `RouteDrawer`, `useRouteOverlay`                                                                                                                                                                                                                                 |
@@ -91,6 +92,10 @@ Use `useSubmission().submitting` for buttons; `.pending` represents an unresolve
 
 These items require a runtime exporting `usePendingFeedback`. Release that runtime before publishing Registry sources; `scripts/check-form-feedback-release.mjs` gates upload on obtainable JavaScript and declaration exports for both items. Existing installed copies require source reconciliation; runtime dependency updates alone do not update them.
 
+## Task progress
+
+`TaskProgress` renders one long-running task record — an export, an import, a background job — from the server's own task state. Pass `processed` and `total`, or `percent`, only when the task really reports them: a known value shows a determinate bar with its count and percentage, an unknown one an indeterminate bar with no number, never a placeholder 0%. The status (waiting, in progress, completed, failed, canceled) is announced once per change; percentage updates are not announced. Set `continuesInBackground` when leaving the page does not stop the task. The caller supplies the failure reason or the result location through `message`, and real actions — download, run again, or a cancel the server supports — through `actions`. A request that reports no progress, such as an upload, keeps the indeterminate per-item wait of the file upload field instead.
+
 ## Translations
 
 The overlays' close button names itself with `useTranslation()` from `@nocobase/i18n/client` under `routeOverlay.close`, falling back to `Close`. A component ships no locale file, so add the keys to the locale resources of the namespace that renders them:
@@ -155,6 +160,14 @@ The shared DataTable and its column header and pagination controls use these key
 | `pendingFeedback.longWait`     | This is taking longer than usual. You can keep waiting. | 耗时比平常更长，您可以继续等待。 |
 | `status.loading`               | Loading                                                 | 加载中                           |
 | `status.refreshing`            | Refreshing                                              | 正在刷新                         |
+| `taskProgress.queued`          | Waiting to start                                        | 等待开始                         |
+| `taskProgress.running`         | In progress                                             | 进行中                           |
+| `taskProgress.completed`       | Completed                                               | 已完成                           |
+| `taskProgress.failed`          | Failed                                                  | 失败                             |
+| `taskProgress.canceled`        | Canceled                                                | 已取消                           |
+| `taskProgress.count`           | {{processed}} of {{total}}                              | {{processed}} / {{total}}        |
+| `taskProgress.processed`       | {{processed}} processed                                 | 已处理 {{processed}}             |
+| `taskProgress.background`      | It keeps running if you leave this page.                | 离开此页面后任务会继续运行。     |
 | `listFeedback.loading`         | Loading                                                 | 加载中                           |
 | `listFeedback.empty`           | No data yet                                             | 暂无数据                         |
 | `listFeedback.noResults`       | No results                                              | 无结果                           |

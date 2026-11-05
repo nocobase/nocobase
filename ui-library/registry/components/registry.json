@@ -620,6 +620,30 @@
           "target": "client/components/brand-mark-geometry.ts"
         }
       ]
+    },
+    {
+      "name": "task-progress",
+      "type": "registry:component",
+      "title": "Task Progress",
+      "description": "One long-running task record: real determinate progress, honest indeterminate waiting, failure, result and background continuation.",
+      "categories": ["feedback"],
+      "meta": {
+        "group": "Feedback"
+      },
+      "dependencies": [
+        "@nocobase/i18n@^2.0.0-beta.1",
+        "cn@^0.4.0",
+        "@base-ui/react@^1.6.0"
+      ],
+      "registryDependencies": [],
+      "docs": "Render one task record from the server's own job or task state; do not create a client-side task. Pass processed and total, or percent, only when the task really reports them; otherwise the bar is indeterminate and shows no percentage. Status changes are announced once, percentage updates are not. Set continuesInBackground when the task survives leaving the page. Put the result location (a download action or link) and failure recovery in message and actions, and offer cancel only when the server can really cancel. Add the taskProgress translations listed in the components README.",
+      "files": [
+        {
+          "path": "task-progress.tsx",
+          "type": "registry:component",
+          "target": "client/components/task-progress.tsx"
+        }
+      ]
     }
   ]
 }

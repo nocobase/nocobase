@@ -1,5 +1,7 @@
-import { LoaderCircle, UploadCloud } from 'lucide-react';
+import { usePendingFeedback } from '@nocobase/app-client';
+import { LoaderCircle, RotateCcw, UploadCloud, X } from 'lucide-react';
 import {
+  useEffect,
   useRef,
   useState,
   type ChangeEvent,
@@ -20,6 +22,9 @@ export interface FileUploadLabels {
   readonly tooLarge: string;
   readonly rejected: string;
   readonly uploadFailed: string;
+  readonly cancel: string;
+  readonly retry: string;
+  readonly longWait: string;
 }
 
 export interface FileUploadFieldProps {
@@ -50,9 +55,16 @@ export function FileUploadField({
   compact = false,
 }: FileUploadFieldProps): ReactElement {
   const inputRef = useRef<HTMLInputElement>(null);
+  const controllerRef = useRef<AbortController | undefined>(undefined);
   const [busy, setBusy] = useState(false);
   const [dragging, setDragging] = useState(false);
   const [error, setError] = useState('');
+  // Files of the last failed upload, kept so Retry sends exactly them again.
+  const [failed, setFailed] = useState<readonly File[]>([]);
+  // The upload request reports no byte progress: show an honest wait.
+  const feedback = usePendingFeedback(busy);
+  // Leaving the page cancels the request instead of letting it land later.
+  useEffect(() => () => controllerRef.current?.abort(), []);
 
   const submit = async (selected: readonly File[]): Promise<void> => {
     const files = (multiple ? selected : selected.slice(0, 1)).filter(
@@ -69,19 +81,37 @@ export function FileUploadField({
       },
     );
     if (!files.length) return;
+    const controller = new AbortController();
+    controllerRef.current = controller;
     setBusy(true);
     setError('');
+    setFailed([]);
     try {
-      if (files.length === 1)
-        await onChange([
-          (await repository.uploadOne({ file: files[0] })).record,
-        ]);
-      else await onChange((await repository.uploadMany({ files })).records);
+      const { signal } = controller;
+      const records =
+        files.length === 1
+          ? [
+              (await repository.uploadOne({ file: files[0] }, { signal }))
+                .record,
+            ]
+          : (await repository.uploadMany({ files }, { signal })).records;
+      if (signal.aborted) return;
+      await onChange(records);
     } catch (cause) {
+      if (controller.signal.aborted) return;
       setError(cause instanceof Error ? cause.message : labels.uploadFailed);
+      setFailed(files);
     } finally {
-      setBusy(false);
+      if (controllerRef.current === controller) {
+        controllerRef.current = undefined;
+        setBusy(false);
+      }
     }
+  };
+  const cancel = (): void => {
+    controllerRef.current?.abort();
+    controllerRef.current = undefined;
+    setBusy(false);
   };
 
   const handleChange = (event: ChangeEvent<HTMLInputElement>): void => {
@@ -102,13 +132,39 @@ export function FileUploadField({
         disabled={disabled || busy}
         onClick={() => inputRef.current?.click()}
       >
-        {busy ? (
-          <LoaderCircle aria-hidden='true' className='size-4 animate-spin' />
+        {feedback.visible ? (
+          <LoaderCircle
+            aria-hidden='true'
+            className='size-4 motion-safe:animate-spin'
+          />
         ) : (
           <UploadCloud aria-hidden='true' className='size-4 text-primary' />
         )}
-        {busy ? labels.uploading : labels.choose}
+        {/* Both labels share one cell so the button keeps its width. */}
+        <span className='grid'>
+          <span
+            className={`col-start-1 row-start-1 ${feedback.visible ? 'invisible' : ''}`}
+          >
+            {labels.choose}
+          </span>
+          <span
+            aria-hidden='true'
+            className={`col-start-1 row-start-1 ${feedback.visible ? '' : 'invisible'}`}
+          >
+            {labels.uploading}
+          </span>
+        </span>
       </button>
+      {busy ? (
+        <button
+          type='button'
+          className='inline-flex items-center gap-1 rounded-lg px-2 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground cursor-pointer'
+          onClick={cancel}
+        >
+          <X aria-hidden='true' className='size-4' />
+          {labels.cancel}
+        </button>
+      ) : null}
       <span className={compact ? 'sr-only' : 'text-xs text-muted-foreground'}>
         {labels.dropHint}
       </span>
@@ -146,10 +202,28 @@ export function FileUploadField({
           {control}
         </div>
       )}
-      {error ? (
-        <p role='alert' className='text-sm text-destructive'>
-          {error}
+      {feedback.visible ? (
+        <p role='status' className='text-xs text-muted-foreground'>
+          {feedback.longWaiting ? labels.longWait : labels.uploading}
         </p>
+      ) : null}
+      {error ? (
+        <div className='flex flex-wrap items-center gap-2'>
+          <p role='alert' className='text-sm text-destructive'>
+            {error}
+          </p>
+          {failed.length ? (
+            <button
+              type='button'
+              className='inline-flex items-center gap-1 rounded-lg border px-3 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground cursor-pointer disabled:opacity-50'
+              disabled={disabled}
+              onClick={() => void submit(failed)}
+            >
+              <RotateCcw aria-hidden='true' className='size-4' />
+              {labels.retry}
+            </button>
+          ) : null}
+        </div>
       ) : null}
     </div>
   );

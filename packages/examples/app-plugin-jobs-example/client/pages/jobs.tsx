@@ -3,6 +3,7 @@ import {
   createRealtimeRefresh,
   realtimeClientToken,
   useApiClient,
+  usePendingFeedback,
   useService,
 } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
@@ -10,7 +11,6 @@ import { useTranslation } from '@nocobase/i18n/client';
 import { LiveIndicator } from '../components/live-indicator.js';
 import { PageContainer } from '../components/page-container.js';
 import { PageHeader } from '../components/page-header.js';
-import { Badge } from '../components/ui/badge.js';
 import { Button } from '../components/ui/button.js';
 import {
   Card,
@@ -19,11 +19,7 @@ import {
   CardHeader,
   CardTitle,
 } from '../components/ui/card.js';
-import {
-  Progress,
-  ProgressLabel,
-  ProgressValue,
-} from '../components/ui/progress.js';
+import { TaskProgress } from '../components/task-progress.js';
 import {
   createJobTask,
   errorMessage,
@@ -31,18 +27,7 @@ import {
   listJobTasks,
   mergeJobTask,
   type JobTask,
-  type JobTaskStatus,
 } from '../lib/api.js';
-
-const STATUS_VARIANT: Record<
-  JobTaskStatus,
-  'default' | 'secondary' | 'outline' | 'destructive'
-> = {
-  queued: 'outline',
-  running: 'secondary',
-  completed: 'default',
-  failed: 'destructive',
-};
 
 export default function JobsPage(): ReactElement {
   const { i18n, t } = useTranslation('@nocobase/app-plugin-jobs-example');
@@ -136,9 +121,7 @@ export default function JobsPage(): ReactElement {
           />
         </div>
         {loading ? (
-          <div className='rounded-lg border p-12 text-center text-sm text-muted-foreground'>
-            {t('jobs.loading')}
-          </div>
+          <JobsLoading label={t('jobs.loading')} />
         ) : !tasks.length ? (
           <p className='rounded-lg border border-dashed p-12 text-center text-sm text-muted-foreground'>
             {t('jobs.empty')}
@@ -156,9 +139,6 @@ export default function JobsPage(): ReactElement {
                       <CardTitle className='font-mono text-sm'>
                         {t('jobs.job', { id: task.jobId.slice(0, 8) })}
                       </CardTitle>
-                      <Badge variant={STATUS_VARIANT[task.status]}>
-                        {t(`status.${task.status}`)}
-                      </Badge>
                     </div>
                     <CardDescription>
                       {t('jobs.createdAt', {
@@ -170,10 +150,21 @@ export default function JobsPage(): ReactElement {
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <Progress value={task.progress}>
-                      <ProgressLabel>{t('jobs.progress')}</ProgressLabel>
-                      <ProgressValue />
-                    </Progress>
+                    {/* A queued job has not reported progress yet, so it stays indeterminate. */}
+                    <TaskProgress
+                      status={task.status}
+                      label={t('jobs.progress')}
+                      statusLabel={t(`status.${task.status}`)}
+                      percent={task.status === 'queued' ? null : task.progress}
+                      continuesInBackground
+                      message={
+                        task.status === 'failed'
+                          ? t('jobs.failed', {
+                              reason: task.reason ?? t('status.failed'),
+                            })
+                          : undefined
+                      }
+                    />
                   </CardContent>
                 </Card>
               </li>
@@ -182,5 +173,18 @@ export default function JobsPage(): ReactElement {
         )}
       </section>
     </PageContainer>
+  );
+}
+
+/** The list region keeps its size at once; its text appears after the shared delay. */
+function JobsLoading({ label }: { readonly label: string }): ReactElement {
+  const feedback = usePendingFeedback(true);
+  return (
+    <div
+      aria-busy='true'
+      className='rounded-lg border p-12 text-center text-sm text-muted-foreground'
+    >
+      {feedback.visible ? <span role='status'>{label}</span> : null}
+    </div>
   );
 }

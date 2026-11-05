@@ -235,3 +235,4 @@ The design review and the acceptance review both go through this checklist item 
 
 - [ ] Page/panel waits and native submit actions use the installed Loading/PendingButton contract; immediate busy semantics, delayed display, one announcement and stable dimensions are verified (S5, S7).
 - [ ] Lists, cards and pickers take loading, refresh, empty, failure and permission states from `resolveListState` and the shared DataTable/ListFeedback/RefreshIndicator; no hand-written spinner, timer or refresh slot, no previous query's rows, total or options shown as current, and covered lists show no refresh feedback (S1, I4).
+- [ ] Uploads, imports, exports and jobs show only real progress (`TaskProgress` or the upload field's indeterminate wait), offer cancel only where it really stops the work, keep failures recoverable and say where the result is (see pending feedback).

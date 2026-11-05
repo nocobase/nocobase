@@ -13,6 +13,8 @@ const deDE: LocaleResource<typeof enUS> = {
     schedules: 'Zeitpläne',
   },
   jobs: {
+    failed:
+      'Der Job wurde beendet: {{reason}}. Erstellen Sie einen neuen Job, um es erneut zu versuchen.',
     title: 'Hintergrundjobs',
     description:
       'Jeder Job wartet in der Warteschlange, arbeitet dann zehn Sekunden lang und meldet jede Sekunde 10 % des Fortschritts. Während diese Seite geöffnet ist, wird über WebSocket ein Fortschritt erzielt.',
@@ -81,6 +83,16 @@ const deDE: LocaleResource<typeof enUS> = {
     running: 'Wird ausgeführt',
     completed: 'Abgeschlossen',
     failed: 'Fehlgeschlagen',
+  },
+  taskProgress: {
+    queued: 'Wartet auf Start',
+    running: 'Läuft',
+    completed: 'Abgeschlossen',
+    failed: 'Fehlgeschlagen',
+    canceled: 'Abgebrochen',
+    count: '{{processed}} von {{total}}',
+    processed: '{{processed}} verarbeitet',
+    background: 'Läuft weiter, wenn Sie diese Seite verlassen.',
   },
 };
 

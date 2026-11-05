@@ -89,6 +89,8 @@ const frFR: LocaleResource<typeof enUS> = {
         'Créez une tâche qui vous est assignée dans Tâches, puis revenez ici.',
     },
     exports: {
+      ready:
+        '{{count}} lignes sont prêtes. Téléchargez le CSV ici ; il reste dans cette liste.',
       missing:
         "Ce fichier d'exportation n'est plus disponible. Créez une nouvelle exportation pour télécharger vos tâches actuelles.",
       title: 'Exportations de tâches',
@@ -240,6 +242,16 @@ const frFR: LocaleResource<typeof enUS> = {
     capacity: 'La manifestation est occupée. Réessayez plus tard.',
     subscription:
       "L'abonnement a échoué. Reconnectez-vous ou réessayez une fois l’accès restauré.",
+  },
+  taskProgress: {
+    queued: 'En attente de démarrage',
+    running: 'En cours',
+    completed: 'Terminé',
+    failed: 'Échec',
+    canceled: 'Annulé',
+    count: '{{processed}} sur {{total}}',
+    processed: '{{processed}} traités',
+    background: 'Continue si vous quittez cette page.',
   },
 };
 

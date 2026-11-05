@@ -13,6 +13,8 @@ const esES: LocaleResource<typeof enUS> = {
     schedules: 'Programaciones',
   },
   jobs: {
+    failed:
+      'El trabajo se detuvo: {{reason}}. Cree un trabajo nuevo para volver a intentarlo.',
     title: 'Trabajos en segundo plano',
     description:
       'Cada trabajo espera en la cola, luego funciona durante diez segundos e informa el 10% del progreso cada segundo. El progreso llega a WebSocket mientras esta página está abierta.',
@@ -80,6 +82,16 @@ const esES: LocaleResource<typeof enUS> = {
     running: 'En ejecución',
     completed: 'Completado',
     failed: 'Falló',
+  },
+  taskProgress: {
+    queued: 'Esperando para empezar',
+    running: 'En curso',
+    completed: 'Completado',
+    failed: 'Error',
+    canceled: 'Cancelado',
+    count: '{{processed}} de {{total}}',
+    processed: '{{processed}} procesados',
+    background: 'Sigue ejecutándose si sale de esta página.',
   },
 };
 

@@ -55,7 +55,9 @@ it('never carries cached inbox messages into a new authenticated route identity'
     switchAccount('bob');
   });
   expect(screen.queryByText('alice private task')).not.toBeInTheDocument();
-  expect(screen.getByRole('status', { name: 'Loading' })).toBeInTheDocument();
+  expect(
+    await screen.findByRole('status', { name: 'Loading' }),
+  ).toBeInTheDocument();
   await act(async () => {
     release();
   });

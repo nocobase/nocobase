@@ -82,6 +82,7 @@ const zhTW: LocaleResource<typeof enUS> = {
       emptyHelp: '在任務中建立分配給自己的任務，然後回到此處。',
     },
     exports: {
+      ready: '{{count}} 列已就緒。可在此下載 CSV，檔案保留在此清單中。',
       missing: '此匯出檔案不再可用。建立新的匯出以下載目前任務。',
       title: '任務匯出',
       description: '在背景匯出可見任務並下載產生的 CSV。',
@@ -213,6 +214,16 @@ const zhTW: LocaleResource<typeof enUS> = {
     expired: '演示已過期。重新載入它以建立一個新房間。',
     capacity: '演示很忙。稍後再試。',
     subscription: '訂閱失敗。恢復訪問後重新連線或重試。',
+  },
+  taskProgress: {
+    queued: '等待開始',
+    running: '進行中',
+    completed: '已完成',
+    failed: '失敗',
+    canceled: '已取消',
+    count: '{{processed}} / {{total}}',
+    processed: '已處理 {{processed}}',
+    background: '離開此頁面後任務會繼續執行。',
   },
 };
 

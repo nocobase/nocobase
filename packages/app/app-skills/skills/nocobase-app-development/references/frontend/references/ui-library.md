@@ -326,6 +326,17 @@ A stable-size native action button with immediate busy semantics and delayed fee
 - Example: `@nocobase/pending-button-demo` (`pnpm exec shadcn view @nocobase/pending-button-demo`)
 - After installing: Use real pending/submitting state. Feedback appears after 300ms, long-wait guidance after 10s, and clears immediately. Add pendingFeedback.working, pendingFeedback.longWait and status.loading to application translations. Preserve useSubmission protection; pending is recoverable state, not busy. Publish the runtime exporting usePendingFeedback before Registry publication.
 
+### task-progress
+
+One long-running task record: real determinate progress, honest indeterminate waiting, failure, result and background continuation.
+
+- Kind: component
+- Install: `yes n | pnpm exec shadcn add @nocobase/task-progress`
+- Installs to: `client/components/task-progress.tsx`
+- Plugin dependencies: none
+- Example: `@nocobase/task-progress-demo` (`pnpm exec shadcn view @nocobase/task-progress-demo`)
+- After installing: Render one task record from the server's own job or task state; do not create a client-side task. Pass processed and total, or percent, only when the task really reports them; otherwise the bar is indeterminate and shows no percentage. Status changes are announced once, percentage updates are not. Set continuesInBackground when the task survives leaving the page. Put the result location (a download action or link) and failure recovery in message and actions, and offer cancel only when the server can really cancel. Add the taskProgress translations listed in the components README.
+
 ## File
 
 ### file-component-ui
@@ -336,9 +347,9 @@ Application-owned upload, list, thumbnail, and preview components for business f
 - Install: `yes n | pnpm exec shadcn add @nocobase/file-component-ui`
 - Installs to: `client/extensions/nocobase-file-component-ui/`
 - Plugin dependencies: `@nocobase/app-plugin-file`
-- Also installs: `@nocobase/attachment-list`
+- Also installs: `@nocobase/attachment-list`, `@nocobase/loading`
 - Example: `@nocobase/file-component-ui-demo` (`pnpm exec shadcn view @nocobase/file-component-ui-demo`)
-- After installing: Requires the File plugin services and your own authorized file repository. Pass a ClientFileRepository to FileUploadField. Merge locales/ into application locales. The default template preinstalls this block; reconcile existing copies instead of overwriting them.
+- After installing: Requires the File plugin services and your own authorized file repository. Pass a ClientFileRepository to FileUploadField. Merge locales/ into application locales. The default template preinstalls this block; reconcile existing copies instead of overwriting them. Uploads report no byte progress: each uploading item shows an indeterminate wait whose mark appears after 300ms and a long-wait note after 10 seconds, with a real cancel that aborts the request; failures keep the file for Retry, and unmounting aborts every upload. Never invent a percentage.
 
 ## Forms
 

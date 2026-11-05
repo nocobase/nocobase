@@ -13,6 +13,7 @@ const zhTW: LocaleResource<typeof enUS> = {
     schedules: '排程',
   },
   jobs: {
+    failed: '任務已停止：{{reason}}。可新建任務重試。',
     title: '後臺作業',
     description:
       '每個作業在佇列中等待，然後工作十秒並每秒報告 10% 的進度。此頁面開啟時，進度會透過 WebSocket 到達。',
@@ -77,6 +78,16 @@ const zhTW: LocaleResource<typeof enUS> = {
     running: '執行中',
     completed: '已完成',
     failed: '失敗',
+  },
+  taskProgress: {
+    queued: '等待開始',
+    running: '進行中',
+    completed: '已完成',
+    failed: '失敗',
+    canceled: '已取消',
+    count: '{{processed}} / {{total}}',
+    processed: '已處理 {{processed}}',
+    background: '離開此頁面後任務會繼續執行。',
   },
 };
 

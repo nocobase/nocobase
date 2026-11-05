@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import {
+  act,
   fireEvent,
   render,
   screen,
@@ -491,4 +492,48 @@ it('refuses to embed a PDF response that answers with an active document', async
   );
   expect(create).not.toHaveBeenCalled();
   expect(screen.queryByTitle('invoice.pdf')).toBeNull();
+});
+
+it('shows an honest delayed upload wait, explains a long one and aborts on unmount', async () => {
+  let signal: AbortSignal | undefined;
+  const api = createApiClient({
+    baseURL: 'http://localhost/api',
+    fetch: (_input, init) => {
+      signal = init?.signal ?? undefined;
+      return new Promise((_resolve, reject) =>
+        signal?.addEventListener('abort', () =>
+          reject(new DOMException('Cancelled', 'AbortError')),
+        ),
+      );
+    },
+  });
+  const repository = new ClientFileRepositoryManager(api).repository(
+    'invoiceAttachments',
+  );
+  const view = render(
+    <FileUploadField repository={repository} value={[]} onChange={vi.fn()} />,
+  );
+  vi.useFakeTimers();
+  try {
+    fireEvent.change(
+      screen.getByLabelText('Choose file', { selector: 'input' }),
+      { target: { files: [new File(['x'], 'slow.txt')] } },
+    );
+    await act(() => vi.advanceTimersByTimeAsync(0));
+    expect(signal).toBeDefined();
+    const field = document.querySelector('[data-slot="file-upload-field"]')!;
+    expect(field).toHaveAttribute('aria-busy', 'true');
+    // No percentage exists for this request, so none is shown.
+    expect(screen.queryByRole('progressbar')).toBeNull();
+    expect(field.querySelector('svg.size-8')).toBeNull();
+    await act(() => vi.advanceTimersByTimeAsync(300));
+    expect(field.querySelector('svg.size-8')).not.toBeNull();
+    await act(() => vi.advanceTimersByTimeAsync(9700));
+    expect(screen.getByText(enUS.fileUi['files.longWait'])).toBeInTheDocument();
+    view.unmount();
+    expect(signal?.aborted).toBe(true);
+    expect(vi.getTimerCount()).toBe(0);
+  } finally {
+    vi.useRealTimers();
+  }
 });

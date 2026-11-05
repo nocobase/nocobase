@@ -9,6 +9,7 @@ const messages = {
     schedules: '周期任务',
   },
   jobs: {
+    failed: '任务已停止：{{reason}}。可新建任务重试。',
     title: '后台任务',
     description:
       '每个任务先进入队列，然后工作十秒，每秒上报 10% 的进度。页面打开期间，进度通过 WebSocket 实时推送。',
@@ -73,6 +74,16 @@ const messages = {
     running: '执行中',
     completed: '已完成',
     failed: '失败',
+  },
+  taskProgress: {
+    queued: '等待开始',
+    running: '进行中',
+    completed: '已完成',
+    failed: '失败',
+    canceled: '已取消',
+    count: '{{processed}} / {{total}}',
+    processed: '已处理 {{processed}}',
+    background: '离开此页面后任务会继续运行。',
   },
 };
 

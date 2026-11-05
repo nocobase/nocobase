@@ -107,6 +107,13 @@ it('subscribes while open, adds a block per created job and follows its progress
     path: 'jobsExample/tasks',
   });
   expect(screen.getByText('Queued')).toBeTruthy();
+  // A queued job has reported nothing yet: indeterminate, without a fake 0%.
+  expect(screen.getByRole('progressbar').hasAttribute('aria-valuenow')).toBe(
+    false,
+  );
+  expect(
+    screen.getByText(/keeps running if you leave this page/u),
+  ).toBeTruthy();
 
   push({
     ...created,

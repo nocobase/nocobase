@@ -13,6 +13,8 @@ const frFR: LocaleResource<typeof enUS> = {
     schedules: 'Planifications',
   },
   jobs: {
+    failed:
+      'La tâche s’est arrêtée : {{reason}}. Créez une nouvelle tâche pour réessayer.',
     title: 'Tâches en arrière-plan',
     description:
       "Chaque travail attend dans la file d'attente, puis travaille pendant dix secondes et rapporte 10 % de progression chaque seconde. Les progrès arrivent sur WebSocket pendant que cette page est ouverte.",
@@ -80,6 +82,16 @@ const frFR: LocaleResource<typeof enUS> = {
     running: 'En cours d’exécution',
     completed: 'Terminé',
     failed: 'Échec',
+  },
+  taskProgress: {
+    queued: 'En attente de démarrage',
+    running: 'En cours',
+    completed: 'Terminé',
+    failed: 'Échec',
+    canceled: 'Annulé',
+    count: '{{processed}} sur {{total}}',
+    processed: '{{processed}} traités',
+    background: 'Continue si vous quittez cette page.',
   },
 };
 

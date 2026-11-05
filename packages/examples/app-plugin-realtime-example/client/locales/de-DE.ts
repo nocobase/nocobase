@@ -89,6 +89,8 @@ const deDE: LocaleResource<typeof enUS> = {
         'Erstellen Sie unter „Aufgaben“ eine Aufgabe, die Ihnen selbst zugewiesen wurde, und kehren Sie dann hierher zurück.',
     },
     exports: {
+      ready:
+        '{{count}} Zeilen sind bereit. Laden Sie die CSV hier herunter; sie bleibt in dieser Liste.',
       missing:
         'Diese Exportdatei ist nicht mehr verfügbar. Erstellen Sie einen neuen Export, um Ihre aktuellen Aufgaben herunterzuladen.',
       title: 'Aufgabenexporte',
@@ -242,6 +244,16 @@ const deDE: LocaleResource<typeof enUS> = {
       'Die Demonstration ist beschäftigt. Versuchen Sie es später noch einmal.',
     subscription:
       'Das Abonnement ist fehlgeschlagen. Stellen Sie erneut eine Verbindung her oder versuchen Sie es erneut, nachdem der Zugriff wiederhergestellt wurde.',
+  },
+  taskProgress: {
+    queued: 'Wartet auf Start',
+    running: 'Läuft',
+    completed: 'Abgeschlossen',
+    failed: 'Fehlgeschlagen',
+    canceled: 'Abgebrochen',
+    count: '{{processed}} von {{total}}',
+    processed: '{{processed}} verarbeitet',
+    background: 'Läuft weiter, wenn Sie diese Seite verlassen.',
   },
 };
 

@@ -1,4 +1,5 @@
 import { messageKey } from '../lib/message-key.js';
+import { usePendingFeedback } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { RotateCcw, Trash2, UploadCloud, X } from 'lucide-react';
 import {
@@ -12,7 +13,7 @@ import {
 
 import type { FileRecord, FileUploadFieldProps } from '../types.js';
 import { Button } from '#components/ui/button';
-import { Spinner } from '#components/ui/spinner';
+import { BrandLoadingMark } from '#components/brand-loading-mark';
 import { FileThumbnail } from './file-thumbnail.js';
 
 type UploadItem = {
@@ -22,6 +23,38 @@ type UploadItem = {
   readonly controller?: AbortController;
   readonly error?: Error;
 };
+
+/**
+ * The upload request reports no byte progress, so the item shows an honest
+ * indeterminate wait: the mark appears after the shared display delay and a
+ * long upload says so after 10 seconds, next to the real cancel action.
+ */
+function UploadingState({
+  uploading,
+}: {
+  readonly uploading: boolean;
+}): ReactElement {
+  const feedback = usePendingFeedback(uploading);
+  return feedback.visible ? (
+    <BrandLoadingMark className='size-8 text-muted-foreground' />
+  ) : (
+    <UploadCloud aria-hidden='true' />
+  );
+}
+
+function UploadingLabel(): ReactElement {
+  const { t } = useTranslation();
+  const feedback = usePendingFeedback(true);
+  return (
+    <>
+      {feedback.longWaiting
+        ? t('fileUi.files.longWait', {
+            defaultValue: 'Still uploading. Keep waiting or cancel.',
+          })
+        : t('fileUi.files.uploading', { defaultValue: 'Uploading' })}
+    </>
+  );
+}
 
 function accepts(file: File, rules: readonly string[]): boolean {
   if (!rules.length) return true;
@@ -289,30 +322,24 @@ export function FileUploadField(
         {items.map((item) => (
           <div key={item.key} className='w-36 rounded-md border p-2'>
             <div className='flex h-20 items-center justify-center overflow-hidden rounded-sm bg-muted/30'>
-              {item.status === 'uploading' ? (
-                <Spinner
-                  aria-label={t('fileUi.files.uploading', {
-                    defaultValue: 'Uploading',
-                  })}
-                />
-              ) : (
-                <UploadCloud aria-hidden='true' />
-              )}
+              <UploadingState uploading={item.status === 'uploading'} />
             </div>
             <div className='mt-2 truncate text-sm' title={item.file.name}>
               {item.file.name}
             </div>
             <div className='text-xs text-muted-foreground'>
-              {item.status === 'error'
-                ? ((item.error
-                    ? t(messageKey(item.error.message), {
-                        defaultValue: item.error.message,
-                      })
-                    : undefined) ??
-                  t('fileUi.files.failed', { defaultValue: 'Failed' }))
-                : item.status === 'uploading'
-                  ? t('fileUi.files.uploading', { defaultValue: 'Uploading' })
-                  : t('fileUi.files.pending', { defaultValue: 'Pending' })}
+              {item.status === 'error' ? (
+                ((item.error
+                  ? t(messageKey(item.error.message), {
+                      defaultValue: item.error.message,
+                    })
+                  : undefined) ??
+                t('fileUi.files.failed', { defaultValue: 'Failed' }))
+              ) : item.status === 'uploading' ? (
+                <UploadingLabel />
+              ) : (
+                t('fileUi.files.pending', { defaultValue: 'Pending' })
+              )}
             </div>
             <div className='mt-2 flex gap-1'>
               {item.status === 'error' ? (

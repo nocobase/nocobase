@@ -9,6 +9,7 @@ const messages = {
     schedules: 'Schedules',
   },
   jobs: {
+    failed: 'The job stopped: {{reason}}. Create a new job to try again.',
     title: 'Background jobs',
     description:
       'Each job waits in the queue, then works for ten seconds and reports 10% of progress every second. Progress arrives over WebSocket while this page is open.',
@@ -75,6 +76,16 @@ const messages = {
     running: 'Running',
     completed: 'Completed',
     failed: 'Failed',
+  },
+  taskProgress: {
+    queued: 'Waiting to start',
+    running: 'In progress',
+    completed: 'Completed',
+    failed: 'Failed',
+    canceled: 'Canceled',
+    count: '{{processed}} of {{total}}',
+    processed: '{{processed}} processed',
+    background: 'It keeps running if you leave this page.',
   },
 };
 

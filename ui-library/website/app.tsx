@@ -1,5 +1,6 @@
 import { LoadingDemo } from './demo/components/loading.js';
 import { PendingButtonDemo } from './demo/components/pending-button.js';
+import { TaskProgressDemo } from './demo/components/task-progress.js';
 import { ListFeedbackDemo } from './demo/components/list-feedback.js';
 import { FileComponentUiDemo } from './demo/file/file-component-ui.js';
 import { NotificationLogsUiDemo } from './demo/notification/notification-logs-ui.js';
@@ -183,6 +184,10 @@ const itemPreviews: Record<string, ItemPreview> = {
     path: '/demo/components/pending-button',
     icon: ListChecks,
   },
+  'task-progress': {
+    path: '/demo/components/task-progress',
+    icon: ListChecks,
+  },
   'list-feedback': { path: '/demo/components/list-feedback', icon: ListChecks },
   'setup-readiness': {
     path: '/demo/components/setup-readiness',
@@ -336,6 +341,8 @@ function AppContent(): ReactElement {
   if (pathname.startsWith('/demo/components/loading')) return <LoadingDemo />;
   if (pathname.startsWith('/demo/components/pending-button'))
     return <PendingButtonDemo />;
+  if (pathname.startsWith('/demo/components/task-progress'))
+    return <TaskProgressDemo />;
   if (pathname.startsWith('/demo/components/list-feedback'))
     return <ListFeedbackDemo />;
   if (pathname.startsWith('/demo/components/setup-readiness'))

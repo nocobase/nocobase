@@ -13,6 +13,7 @@ const viVN: LocaleResource<typeof enUS> = {
     schedules: 'Lịch trình',
   },
   jobs: {
+    failed: 'Tác vụ đã dừng: {{reason}}. Hãy tạo tác vụ mới để thử lại.',
     title: 'Công việc nền',
     description:
       'Mỗi công việc chờ trong hàng đợi, sau đó hoạt động trong 10 giây và báo cáo 10% tiến độ mỗi giây. Tiến trình đến trên WebSocket khi trang này được mở.',
@@ -79,6 +80,16 @@ const viVN: LocaleResource<typeof enUS> = {
     running: 'Đang chạy',
     completed: 'Đã hoàn thành',
     failed: 'Thất bại',
+  },
+  taskProgress: {
+    queued: 'Đang chờ bắt đầu',
+    running: 'Đang thực hiện',
+    completed: 'Hoàn tất',
+    failed: 'Thất bại',
+    canceled: 'Đã hủy',
+    count: '{{processed}} / {{total}}',
+    processed: 'Đã xử lý {{processed}}',
+    background: 'Vẫn tiếp tục chạy nếu bạn rời trang này.',
   },
 };
 

@@ -13,6 +13,8 @@ const jaJP: LocaleResource<typeof enUS> = {
     schedules: 'スケジュール',
   },
   jobs: {
+    failed:
+      'ジョブが停止しました：{{reason}}。新しいジョブを作成して再試行してください。',
     title: 'バックグラウンドジョブ',
     description:
       '各ジョブはキュー内で待機し、その後 10 秒間動作し、毎秒 10% の進行状況を報告します。このページが開いている間、進行状況は WebSocket 経由で到着します。',
@@ -79,6 +81,16 @@ const jaJP: LocaleResource<typeof enUS> = {
     running: '実行中',
     completed: '完成',
     failed: '失敗しました',
+  },
+  taskProgress: {
+    queued: '開始待ち',
+    running: '処理中',
+    completed: '完了',
+    failed: '失敗',
+    canceled: 'キャンセル済み',
+    count: '{{processed}} / {{total}}',
+    processed: '{{processed}} 件処理済み',
+    background: 'このページを離れても処理は続きます。',
   },
 };
 
