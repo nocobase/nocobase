@@ -7,7 +7,6 @@ import {
 import { AppConfig, defaultAppConfigs } from '@nocobase/app-server/config';
 import { PasswordResetPolicy } from '../../password-reset.js';
 import { createPasswordResetSender } from '../../reset-sender.js';
-import { Auth } from '../../auth.js';
 import { defineAuthConfig } from '../../config.js';
 
 const smtp = { provider: 'smtp', host: 'localhost', port: 25 } as const;
@@ -134,19 +133,4 @@ it('rejects mismatched legacy aliases instead of selecting a referenced default 
     },
   );
   expect(sender).toBeUndefined();
-});
-
-it('validates an explicit reference even when the caller injects its own sender', () => {
-  expect(
-    () =>
-      new Auth({
-        connection: {} as never,
-        secret: 'synthetic-auth-secret-at-least-32-characters',
-        passwordReset: { mailer: 'missing', enabled: false },
-        passwordResetServices: {
-          mailerFactory: new MailSenderFactory({ main: smtp }),
-          sender: { send: vi.fn() },
-        },
-      }),
-  ).toThrow('auth.passwordReset.mailer');
 });

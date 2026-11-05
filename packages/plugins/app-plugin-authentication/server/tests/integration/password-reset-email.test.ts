@@ -4,8 +4,10 @@ import { afterEach, expect, it, vi } from 'vitest';
 import { createTestApp } from '@nocobase/app-testing/server';
 import { MailExecutions } from '@nocobase/mailer';
 import * as mailer from '@nocobase/mailer';
+import * as appMailers from '@nocobase/app-server/mailers';
 import { MailSenderFactory } from '@nocobase/app-server/mailers';
 import { Auth } from '../../auth.js';
+import { createPasswordResetSender } from '../../reset-sender.js';
 import { createStandaloneServer } from '../fixtures/reset-app/server/standalone.js';
 import { createAuthFixture } from './support.js';
 
@@ -15,11 +17,13 @@ const email = {
   from: 'sender@example.test',
 } as const;
 const fixtures: Awaited<ReturnType<typeof createAuthFixture>>[] = [];
+const callerOwnedSenders: Array<{ close(): Promise<void> }> = [];
 afterEach(async () => {
   for (const fixture of fixtures.splice(0)) {
     await fixture.auth.close();
     await fixture.dispose();
   }
+  for (const sender of callerOwnedSenders.splice(0)) await sender.close();
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
 });
@@ -41,12 +45,23 @@ it.each([undefined, false, true])(
     const warning = vi.fn();
     const fetch = vi.fn();
     vi.stubGlobal('fetch', fetch);
+    const selection = createPasswordResetSender(
+      new MailSenderFactory({ selected: email }),
+      {
+        email,
+        passwordReset: { enabled, mailer: 'selected', emailChannel: 'legacy' },
+        legacyChannels: { legacy: { ...email, apiKey: 'legacy-key' } },
+      },
+    );
+    if (!selection.sender) throw new Error('Expected a selected reset sender.');
+    callerOwnedSenders.push(selection.sender);
     const fixture = await setup({
       email,
       passwordReset: { enabled, mailer: 'selected', emailChannel: 'legacy' },
       emailAndPassword: { enabled: true, sendResetPassword: custom },
       passwordResetServices: {
-        mailerFactory: new MailSenderFactory({ selected: email }),
+        sender: selection.sender,
+        legacySender: selection.legacy,
         warning,
         legacyChannels: { legacy: { ...email, apiKey: 'legacy-key' } },
       },
@@ -118,6 +133,25 @@ it.each(
     const report = vi.fn();
     const warning = vi.fn();
     const executions = new MailExecutions();
+    const directFactory =
+      legacy === 'direct'
+        ? new MailSenderFactory({
+            default: 'fallback',
+            fallback: { ...email, apiKey: 'unselected-key' },
+            selected: email,
+          })
+        : undefined;
+    const resolveFactory = directFactory
+      ? vi.spyOn(appMailers, 'resolveMailSenderFactory')
+      : undefined;
+    const selection = directFactory
+      ? createPasswordResetSender(directFactory, {
+          passwordReset: { enabled: true, mailer: 'selected' },
+        })
+      : undefined;
+    if (selection && !selection.sender)
+      throw new Error('Expected a selected reset sender.');
+    if (selection?.sender) callerOwnedSenders.push(selection.sender);
     const fixture = await setup({
       ...(legacy ? {} : { email }),
       passwordReset: {
@@ -132,14 +166,8 @@ it.each(
       },
       emailAndPassword: { enabled: true },
       passwordResetServices: {
-        ...(legacy === 'direct'
-          ? {
-              mailerFactory: new MailSenderFactory({
-                default: 'fallback',
-                fallback: { ...email, apiKey: 'unselected-key' },
-                selected: email,
-              }),
-            }
+        ...(selection?.sender
+          ? { sender: selection.sender, legacySender: selection.legacy }
           : {}),
         executions,
         report,
@@ -147,6 +175,7 @@ it.each(
         legacyChannels: { legacy: { ...email, apiKey: 'legacy-key' } },
       },
     });
+    if (resolveFactory) expect(resolveFactory).not.toHaveBeenCalled();
     await fixture.signUp();
     const response = await fixture.router.request(
       '/api/auth/request-password-reset',

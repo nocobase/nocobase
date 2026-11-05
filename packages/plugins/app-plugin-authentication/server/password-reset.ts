@@ -1,7 +1,4 @@
-import type {
-  MailSendView,
-  MailSenderFactory,
-} from '@nocobase/app-server/mailers';
+import type { MailSendView } from '@nocobase/app-server/mailers';
 import { assertAuthEmailConfig, type AuthEmailConfig } from './email-config.js';
 import { createHash } from 'node:crypto';
 import { AsyncLocalStorage } from 'node:async_hooks';
@@ -30,9 +27,7 @@ export interface PasswordResetConfig {
 }
 
 export interface PasswordResetServices {
-  /** Application factory for standalone selection and explicit-reference validation. */
-  readonly mailerFactory?: MailSenderFactory;
-  /** The built-in sender chosen by the assembly owner, which also closes it. */
+  /** A caller-created sender. Auth uses it but does not close or revalidate it. */
   readonly sender?: MailSendView;
   /** Whether `sender` came from a deprecated notification channel. */
   readonly legacySender?: boolean;
