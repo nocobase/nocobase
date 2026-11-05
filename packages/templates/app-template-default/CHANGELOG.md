@@ -1,5 +1,38 @@
 # @nocobase/app-template-default
 
+## 1.0.0-beta.88
+
+### Minor Changes
+
+- 9998ac4: Organize application administration as one System settings sidebar entry that opens a home page of cards grouped by category, with URL-backed tabs inside a module. Route navigation accepts an optional `description` that the settings home shows on each card, and App Foundation declares one. Existing settings URLs, route ids and authorization stay unchanged; updating dependencies alone keeps an existing application's navigation, so reconcile the application-owned navigation transform, routing, settings pages and locales with the `nocobase-app-upgrade` Skill's System settings navigation guide.
+
+### Patch Changes
+
+- 550dd55: Update the brand slogan to “AI + NocoBase” and “Build reliable business systems” in both languages, on the sidebar footer (including collapsed tooltips and accessible labels) and the sign-in brand panel.
+
+  Remove the template name from the Default sidebar footer, including its collapsed tooltip and accessible label, while retaining the version.
+
+- 78bdca8: Sign in new accounts by default in application templates, warn about ambiguous registration configurations, and expose request acceptance for neutral unsigned-in feedback.
+- 3681eb0: Provide a permission-protected, read-only notification template directory with synthetic previews that reuse business send renderers, plus application integration and source upgrade guidance.
+- 9998ac4: Preserve unsaved page state during permission rechecks, keep leave protection active and conceal page overlays while access is pending, and keep settings navigation tests working after an application is renamed.
+- Updated dependencies [bfddb40]
+- Updated dependencies [c627337]
+- Updated dependencies [49daa11]
+- Updated dependencies [78bdca8]
+- Updated dependencies [3681eb0]
+- Updated dependencies [7fe7292]
+- Updated dependencies [9998ac4]
+- Updated dependencies [87f1ea5]
+- Updated dependencies [6507d01]
+  - @nocobase/app-plugin-agents@2.0.0-beta.4
+  - @nocobase/app-plugin-authentication@2.0.0-beta.19
+  - @nocobase/app-plugin-authorization@1.0.0-beta.36
+  - @nocobase/app-plugin-notification@2.0.0-beta.5
+  - @nocobase/app-plugin-users@2.0.0-beta.15
+  - @nocobase/app-plugin-foundation@0.1.0-beta.14
+  - @nocobase/app-server@5.0.0-beta.1
+  - @nocobase/app-plugin-i18n@1.0.0-beta.21
+
 ## 1.0.0-beta.87
 
 ### Patch Changes

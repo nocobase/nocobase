@@ -1,5 +1,27 @@
 # @nocobase/app-plugin-demo-mode
 
+## 0.2.0-beta.9
+
+### Patch Changes
+
+- b3b3252: Automatically sign anonymous demo visitors in when opening protected deep links, retaining existing accounts and the complete destination URL.
+- Updated dependencies [bfddb40]
+- Updated dependencies [c627337]
+- Updated dependencies [49daa11]
+- Updated dependencies [78bdca8]
+- Updated dependencies [3681eb0]
+- Updated dependencies [7fe7292]
+- Updated dependencies [9998ac4]
+- Updated dependencies [87f1ea5]
+- Updated dependencies [6507d01]
+  - @nocobase/app-plugin-agents@2.0.0-beta.4
+  - @nocobase/app-plugin-authentication@2.0.0-beta.19
+  - @nocobase/app-plugin-authorization@1.0.0-beta.36
+  - @nocobase/app-plugin-users@2.0.0-beta.15
+  - @nocobase/app-client@4.0.0-beta.8
+  - @nocobase/app-server@5.0.0-beta.1
+  - @nocobase/app-cli@1.0.0-beta.32
+
 ## 0.2.0-beta.8
 
 ### Patch Changes
