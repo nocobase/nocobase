@@ -1,6 +1,7 @@
 import type { ReactElement } from 'react';
+import { randomUUID } from 'node:crypto';
 import { CookieJar } from 'jsdom';
-import { onTestFinished, vi } from 'vitest';
+import { afterAll, beforeAll, onTestFinished, vi } from 'vitest';
 import { act, waitFor } from '@testing-library/react';
 import { createTestApp, type TestApp } from '@nocobase/app-testing/server';
 import { renderWithApp } from '@nocobase/app-testing/client';
@@ -36,8 +37,57 @@ export async function renderAuthenticatedClient(
       response: Response,
     ) => void | Promise<void>;
   } = {},
+  sharedServer?: TestApp,
 ) {
-  const server = await createTestApp({
+  const server = sharedServer ?? (await createClientTestServer());
+  if (!sharedServer) onTestFinished(() => server.close());
+  const identity = sharedServer ? randomUUID() : '';
+  const permissionSetKey = identity ? `test-access-${identity}` : 'test-access';
+  const member = {
+    name: 'Test member',
+    email: identity ? `member-${identity}@example.test` : 'member@example.test',
+    password: 'test-member-password',
+  };
+  if (options.member || sharedServer) {
+    const response = await server.request('/auth/sign-up/email', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        origin: 'http://localhost',
+      },
+      body: JSON.stringify(member),
+    });
+    if (!response.ok)
+      throw new Error(`Member registration failed: ${await response.text()}`);
+  }
+  const authz = server.application.container.resolve(authorizationToken);
+  const session = await signIn(
+    server,
+    options.member || sharedServer ? member : DEFAULT_ADMIN_CREDENTIALS,
+  );
+  if (sharedServer && !options.member) {
+    await authz.permissionSets.assign({
+      id: randomUUID(),
+      permissionSet: 'root',
+      subject: { type: 'user', id: session.user.id },
+    });
+  }
+  if (options.grants) {
+    await authz.permissionSets.create({
+      key: permissionSetKey,
+      grants: options.grants,
+    });
+    await authz.permissionSets.assign({
+      id: identity ? `test-assignment-${identity}` : 'test-assignment',
+      permissionSet: permissionSetKey,
+      subject: { type: 'user', id: session.user.id },
+    });
+  }
+  return renderClient(server, session, permissionSetKey, ui, options);
+}
+
+function createClientTestServer() {
+  return createTestApp({
     createServer: createStandaloneServer,
     connections: ['main'],
     config: {
@@ -50,40 +100,37 @@ export async function renderAuthenticatedClient(
       },
     },
   });
-  onTestFinished(() => server.close());
-  const member = {
-    name: 'Test member',
-    email: 'member@example.test',
-    password: 'test-member-password',
+}
+
+/**
+ * Reuse installation within a file whose tests only change their own identity's state.
+ * Each render gets a new user, session, grants, cookies and client. Tests that mutate
+ * shared application configuration or business data use renderAuthenticatedClient instead.
+ */
+export function createAuthenticatedClientRenderer() {
+  let server: TestApp | undefined;
+  beforeAll(async () => {
+    server = await createClientTestServer();
+  });
+  afterAll(async () => {
+    await server?.close();
+  });
+  return (
+    ui: ReactElement,
+    options: Parameters<typeof renderAuthenticatedClient>[1] = {},
+  ) => {
+    if (!server) throw new Error('The test application has not started.');
+    return renderAuthenticatedClient(ui, options, server);
   };
-  if (options.member) {
-    const response = await server.request('/auth/sign-up/email', {
-      method: 'POST',
-      headers: {
-        'content-type': 'application/json',
-        origin: 'http://localhost',
-      },
-      body: JSON.stringify(member),
-    });
-    if (!response.ok)
-      throw new Error(`Member registration failed: ${await response.text()}`);
-  }
-  const session = await signIn(
-    server,
-    options.member ? member : DEFAULT_ADMIN_CREDENTIALS,
-  );
-  if (options.grants) {
-    const authz = server.application.container.resolve(authorizationToken);
-    await authz.permissionSets.create({
-      key: 'test-access',
-      grants: options.grants,
-    });
-    await authz.permissionSets.assign({
-      id: 'test-assignment',
-      permissionSet: 'test-access',
-      subject: { type: 'user', id: session.user.id },
-    });
-  }
+}
+
+async function renderClient(
+  server: TestApp,
+  session: TestSession,
+  permissionSetKey: string,
+  ui: ReactElement,
+  options: NonNullable<Parameters<typeof renderAuthenticatedClient>[1]>,
+) {
   await options.prepare?.(server, session);
   const jar = new CookieJar();
   const root = `http://localhost${server.publicBasePath.replace(/\/$/u, '')}`;
@@ -135,6 +182,7 @@ export async function renderAuthenticatedClient(
     ...view,
     server,
     session,
+    permissionSetKey,
     identity: () => identity!,
     async signInAs(credentials: SignInCredentials) {
       const next = await signIn(server, credentials);

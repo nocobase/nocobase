@@ -1,5 +1,5 @@
 import packageMetadata from '../../package.json' with { type: 'json' };
-import { renderAuthenticatedClient } from '../helpers/authenticated-client.js';
+import { createAuthenticatedClientRenderer } from '../helpers/authenticated-client.js';
 import { resolveAppClientContributions } from '@nocobase/app-client/plugins';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -12,6 +12,8 @@ import settingsRoutes from '../../client/pages/settings/routes.js';
 import shellRoutes from '../../client/pages/settings/shell-routes.js';
 import { RouteTreeProvider } from '../../client/routing/route-context.js';
 import { useRouteNavigation } from '../../client/routing/route-navigation.js';
+
+const renderAuthenticatedClient = createAuthenticatedClientRenderer();
 
 const { routes } = resolveAppClientContributions([
   {
