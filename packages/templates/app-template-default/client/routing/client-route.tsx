@@ -12,6 +12,7 @@ import {
   type ReactNode,
   useCallback,
   useEffect,
+  useRef,
   useState,
 } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
@@ -54,14 +55,31 @@ export function ClientRoute({ route }: ClientRouteProps): ReactElement {
   const [loadError, setLoadError] = useState<unknown>();
   const [attempt, setAttempt] = useState(0);
   const [renderFailed, setRenderFailed] = useState(false);
+  const loadedRef = useRef<
+    | {
+        loader: typeof componentLoader;
+        attempt: number;
+      }
+    | undefined
+  >(undefined);
 
   useEffect(() => {
     if (checkAccess && !allowed) return;
+    // Activity reconnects Effects after a parent permission recheck. Keep the loaded component's identity:
+    // loaders that wrap a module (for example, withNamespace) can return a new component on every call.
+    if (
+      loadedRef.current &&
+      loadedRef.current.loader === componentLoader &&
+      loadedRef.current.attempt === attempt
+    )
+      return;
+    loadedRef.current = undefined;
     let active = true;
 
     componentLoader!().then(
       (module) => {
         if (active) {
+          loadedRef.current = { loader: componentLoader, attempt };
           setComponentModule(module);
           setLoadError(undefined);
         }

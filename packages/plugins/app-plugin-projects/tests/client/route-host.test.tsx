@@ -73,15 +73,7 @@ async function renderEditor(
   let close: () => Promise<void> = async () => {};
   let navigate: ReturnType<typeof useNavigate>;
   const permission = { resource: { type: 'user', id: '*' }, action: 'create' };
-  const module = await definition.componentLoader!();
-  const Component = memo(module.default);
-  function Editor() {
-    const overlay = useRouteOverlay();
-    useLayoutEffect(() => {
-      close = overlay.close;
-    }, [overlay.close]);
-    return <Component />;
-  }
+  let loads = 0;
   function Shell({ children }: { readonly children: ReactNode }) {
     const { isPending } = useCan(
       protectedRoute || protectedParent ? permission : undefined,
@@ -105,7 +97,20 @@ async function renderEditor(
     path: '/items/new',
     auth: 'required',
     authz: protectedRoute ? permission : 'skip',
-    componentLoader: async () => ({ default: Editor }),
+    componentLoader: async () => {
+      loads += 1;
+      // Use the public loader as shipped: its namespace wrapper has a new component identity on every call.
+      const module = await definition.componentLoader!();
+      const Component = memo(module.default);
+      function Editor() {
+        const overlay = useRouteOverlay();
+        useLayoutEffect(() => {
+          close = overlay.close;
+        }, [overlay.close]);
+        return <Component />;
+      }
+      return { default: Editor };
+    },
     packageName: packageMetadata.name,
     source: 'application',
   };
@@ -187,6 +192,7 @@ async function renderEditor(
     user,
     created,
     response,
+    loads: () => loads,
     close: () => close(),
     navigate: (to: string | number) =>
       typeof to === 'number' ? navigate(to) : navigate(to),
@@ -315,6 +321,43 @@ describe('Projects pages in the application route host', () => {
 });
 
 describe('Projects draft protection during real permission rechecks', () => {
+  it('retains the public wrapped module through repeated shared parent and child permission rechecks', async () => {
+    const fixture = await renderEditor(newIssueRoute, 'en-US', true, true);
+    const title = await screen.findByLabelText('Title', { exact: true }, LOAD);
+    await fixture.user.type(title, 'Shared permission draft');
+    for (let recheck = 0; recheck < 2; recheck += 1) {
+      const restore = await fixture.recheck();
+      await restore();
+      expect(
+        await screen.findByLabelText('Title', { exact: true }, LOAD),
+      ).toHaveValue('Shared permission draft');
+      expect(screen.getByLabelText('Title', { exact: true })).toBe(title);
+      expect(fixture.loads()).toBe(1);
+    }
+    await fixture.user.type(title, ' after rechecks');
+    await fixture.user.keyboard('{Escape}');
+    await fixture.user.click(
+      await screen.findByRole('button', { name: 'Keep editing' }),
+    );
+    await fixture.user.click(
+      screen.getByRole('button', { name: 'Create and start', exact: true }),
+    );
+    await waitFor(() => expect(fixture.created).toHaveLength(1));
+    expect(fixture.created[0]).toMatchObject({
+      title: 'Shared permission draft after rechecks',
+    });
+    await act(async () =>
+      fixture.response.resolve({
+        data: { id: 'created', identifier: 'HOST-1' },
+      }),
+    );
+    await waitFor(() =>
+      expect(screen.getByTestId('location')).toHaveTextContent(
+        '/issues/created',
+      ),
+    );
+  });
+
   it('blocks every close path and navigation, then restores the child form registration', async () => {
     const fixture = await renderEditor(newIssueRoute, 'en-US', true);
     const { user } = fixture;
