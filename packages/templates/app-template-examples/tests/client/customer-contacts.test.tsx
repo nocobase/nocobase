@@ -525,3 +525,76 @@ it('discards rows and selection when permissions change', async () => {
     screen.queryByRole('link', { name: 'Acorn 01' }),
   ).not.toBeInTheDocument();
 });
+
+it('shows loading instead of the previous search options while a new search is pending', async () => {
+  let finish!: (value: unknown) => void;
+  const slow = new Promise((resolve) => {
+    finish = resolve;
+  });
+  await mount(
+    (call) => {
+      if (call.path === 'customerContacts/customers/options')
+        return call.query?.search === 'zed'
+          ? slow
+          : list([{ id: 'acorn', name: 'Acorn option' }]);
+      throw new Error(`Unexpected ${call.path}`);
+    },
+    '/picker',
+    'en-US',
+    <RelationPicker
+      kind='customers'
+      value=''
+      onChange={() => undefined}
+      label='Customer'
+    />,
+  );
+  await userEvent.click(
+    await screen.findByRole('button', { name: 'Customer' }),
+  );
+  await screen.findByText('Acorn option');
+  fireEvent.change(screen.getByRole('textbox', { name: 'Search by name' }), {
+    target: { value: 'zed' },
+  });
+  // The cache keeps the previous search as placeholder data; it is not a match.
+  await waitFor(() =>
+    expect(screen.queryByText('Acorn option')).not.toBeInTheDocument(),
+  );
+  expect(
+    await screen.findByRole('status', {
+      name: enUS.customerContacts.loading,
+    }),
+  ).toBeInTheDocument();
+  await act(async () => {
+    finish(list([{ id: 'zed', name: 'Zed option' }]));
+  });
+  expect(await screen.findByText('Zed option')).toBeVisible();
+  expect(screen.queryByRole('status')).not.toBeInTheDocument();
+});
+
+it('keeps customer rows during a refresh and shows only the table refresh indicator', async () => {
+  let refresh = false;
+  let finish!: (value: unknown) => void;
+  const slow = new Promise((resolve) => {
+    finish = resolve;
+  });
+  await mount((call) => {
+    if (call.path === 'customerContacts/customers')
+      return refresh ? slow : list([customer]);
+    throw new Error(`Unexpected ${call.path}`);
+  });
+  expect(await screen.findByRole('link', { name: 'Acorn 01' })).toBeVisible();
+  refresh = true;
+  await userEvent.click(screen.getByRole('button', { name: 'Refresh' }));
+  expect(screen.getByRole('link', { name: 'Acorn 01' })).toBeVisible();
+  expect(
+    await screen.findByRole('status', { name: enUS['status.refreshing'] }),
+  ).toBeInTheDocument();
+  expect(screen.getAllByRole('status')).toHaveLength(1);
+  await act(async () => {
+    finish(list([{ ...customer, name: 'Acorn refreshed' }]));
+  });
+  expect(
+    await screen.findByRole('link', { name: 'Acorn refreshed' }),
+  ).toBeVisible();
+  expect(screen.queryByRole('status')).not.toBeInTheDocument();
+});

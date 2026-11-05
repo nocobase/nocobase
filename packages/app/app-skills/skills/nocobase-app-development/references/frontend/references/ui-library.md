@@ -170,7 +170,7 @@ A role administration table built with the standard DataTable: localized column 
 - Plugin dependencies: none
 - Also installs: `@nocobase/data-table`, `@nocobase/record-link`
 - Example: `@nocobase/role-list-demo` (`pnpm exec shadcn view @nocobase/role-list-demo`)
-- After installing: Render inside a React Router and the application i18n provider. Supply roles with key, localized title, edit destination (to) and protected state. Pass localized labels for name, key, type, protected and custom, plus an optional ariaLabel. Uses the shared DataTable for table semantics, sorting and pagination. Optional tableState accepts controlled pagination/sorting and page-size choices from the host URL adapter. The host owns loading, empty/error states, filtering and authorization. Existing apps must update the installed role-list component, its data-table dependency and caller labels together.
+- After installing: Render inside a React Router and the application i18n provider. Supply roles with key, localized title, edit destination (to) and protected state. Pass localized labels for name, key, type, protected and custom, plus an optional ariaLabel. Uses the shared DataTable for table semantics, sorting and pagination. Optional tableState accepts controlled pagination/sorting and page-size choices from the host URL adapter. The host owns loading, empty/error states, filtering and authorization; pass loading={active && request.loading} so a same-query refresh shows the table's standard refresh indicator. Existing apps must update the installed role-list component, its data-table dependency and caller labels together.
 
 ### default-access-editor
 
@@ -313,7 +313,7 @@ Region-owned loading feedback with delayed display and long-wait guidance.
 - Installs to: `client/components/loading.tsx`, `client/components/brand-loading-mark.tsx`, `client/components/brand-mark-geometry.ts`
 - Plugin dependencies: none
 - Example: `@nocobase/loading-demo` (`pnpm exec shadcn view @nocobase/loading-demo`)
-- After installing: Use real pending/submitting state. Feedback appears after 300ms, long-wait guidance after 10s, and clears immediately. Add pendingFeedback.working, pendingFeedback.longWait and status.loading to application translations. Preserve useSubmission protection; pending is recoverable state, not busy. Publish the runtime exporting usePendingFeedback before Registry publication.
+- After installing: Use real pending/submitting state. Feedback appears after 300ms, long-wait guidance after 10s, and clears immediately. Add pendingFeedback.working, pendingFeedback.longWait and status.loading to application translations. Preserve useSubmission protection; pending is recoverable state, not busy. Publish the runtime exporting usePendingFeedback before Registry publication. RefreshIndicator marks a background refresh of content that still belongs to the current query and permission scope; render it inside the positioned element owning that content and add status.refreshing to translations.
 
 ### pending-button
 
@@ -401,9 +401,9 @@ Standard TanStack Table v8 table with controlled server pagination and sorting, 
 - Install: `yes n | pnpm exec shadcn add @nocobase/data-table`
 - Installs to: `client/components/data-table/column-header.tsx`, `client/components/data-table/data-table.tsx`, `client/components/data-table/index.ts`, `client/components/data-table/pagination.tsx`, `client/components/data-table/view-options.tsx`
 - Plugin dependencies: none
-- Also installs: `@nocobase/list-feedback`
+- Also installs: `@nocobase/list-feedback`, `@nocobase/loading`
 - Example: `@nocobase/data-table-demo` (`pnpm exec shadcn view @nocobase/data-table-demo`)
-- After installing: Use DataTable with typed columns and getRowId. Server data must use manualPagination and manualSorting with controlled state; never sort or paginate only a fetched page locally. pagination=false renders every supplied row and leaves pagination to the caller.
+- After installing: Use DataTable with typed columns and getRowId. Server data must use manualPagination and manualSorting with controlled state; never sort or paginate only a fetched page locally. pagination=false renders every supplied row and leaves pagination to the caller. Pass loading for the current request: with rows of the current query it is a background refresh that keeps rows and shows a delayed RefreshIndicator; a new query hides previous rows, keeps their body and pagination height, and never shows the previous page count. Pass listState from resolveListState so loading, empty, failure and permission states stay distinct.
 
 ### list-feedback
 
@@ -413,8 +413,9 @@ Accessible list loading, empty, filtered, permission and request feedback for ta
 - Install: `yes n | pnpm exec shadcn add @nocobase/list-feedback`
 - Installs to: `client/components/list-feedback.tsx`
 - Plugin dependencies: none
+- Also installs: `@nocobase/loading`, `@nocobase/pending-button`
 - Example: `@nocobase/list-feedback-demo` (`pnpm exec shadcn view @nocobase/list-feedback-demo`)
-- After installing: Pass resolveListState from @nocobase/app-client. ListFeedback renders each built-in state as one matching icon and one short line; render ListFeedbackActions with the existing retry, clear and sign-in controls in the host toolbar. Merge listFeedback translations listed in the components README. Keep the standard create action in the permission-gated page header, including for empty collections; reserve empty and emptyAction for intentional business-specific empty content.
+- After installing: Pass resolveListState from @nocobase/app-client. ListFeedback renders loading through @nocobase/loading, keeping the body's footprint at once and showing the indicator and one status after 300ms, and every other built-in state as one matching icon and one short line; render ListFeedbackActions with the existing retry, clear and sign-in controls in the host toolbar. Merge listFeedback translations listed in the components README. Keep the standard create action in the permission-gated page header, including for empty collections; reserve empty and emptyAction for intentional business-specific empty content. Retry uses PendingButton, so the host passes the real retry request as busy.
 
 ## Page layout
 

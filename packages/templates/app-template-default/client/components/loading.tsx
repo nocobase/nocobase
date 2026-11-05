@@ -85,3 +85,63 @@ export function Loading({
     </>
   );
 }
+
+export interface RefreshIndicatorProps {
+  readonly pending: boolean;
+  readonly identity?: unknown;
+  readonly label?: string;
+  readonly longWaitLabel?: string;
+  readonly className?: string;
+}
+
+/**
+ * Background refresh of content that still belongs to the current query and permission scope. Render it inside the
+ * positioned element that owns that content; it takes no layout space and never replaces the content.
+ */
+export function RefreshIndicator({
+  pending,
+  identity,
+  label,
+  longWaitLabel,
+  className,
+}: RefreshIndicatorProps): ReactElement | null {
+  const { t } = useTranslation();
+  const feedback = usePendingFeedback(pending, identity);
+  if (!feedback.visible) return null;
+  const message = feedback.longWaiting
+    ? (longWaitLabel ??
+      t('pendingFeedback.longWait', {
+        defaultValue: 'This is taking longer than usual. You can keep waiting.',
+      }))
+    : (label ?? t('status.refreshing', { defaultValue: 'Refreshing' }));
+  return (
+    <div
+      data-slot='refresh-indicator'
+      className={cn(
+        'pointer-events-none absolute inset-x-0 top-0 z-10 flex flex-col items-end',
+        className,
+      )}
+    >
+      <div
+        aria-hidden='true'
+        className='h-0.5 w-full bg-primary/70 motion-safe:animate-pulse'
+      />
+      {feedback.longWaiting && (
+        <span
+          aria-hidden='true'
+          className='m-2 max-w-[calc(100%-1rem)] rounded-md border border-border bg-popover px-2 py-1 text-xs text-muted-foreground shadow-sm'
+        >
+          {message}
+        </span>
+      )}
+      <span
+        role='status'
+        aria-live='polite'
+        aria-label={message}
+        className='sr-only'
+      >
+        {message}
+      </span>
+    </div>
+  );
+}

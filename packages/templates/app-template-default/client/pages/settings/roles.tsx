@@ -12,7 +12,6 @@ import { PlusIcon } from 'lucide-react';
 import { PermissionManagementPage } from './permission-management-page.js';
 import { Input } from '#components/ui/input';
 import { Button } from '#components/ui/button';
-import { Spinner } from '#components/ui/spinner';
 import { useTableUrlState } from '#hooks/use-table-url-state';
 import { RoleList } from '#components/role-list';
 import { ListFeedback, ListFeedbackActions } from '#components/list-feedback';
@@ -125,13 +124,11 @@ export default function RolesPage(): ReactElement {
             onRetry={request.reload}
             busy={request.loading}
           />
-          {active && request.loading && request.data ? (
-            <Spinner className='text-muted-foreground' />
-          ) : null}
         </div>
         <ListFeedback state={listState}>
           <RoleList
             tableState={tableState}
+            loading={active && request.loading}
             ariaLabel={t('settings.roles')}
             roles={rows.map((role) => ({
               key: role.key,

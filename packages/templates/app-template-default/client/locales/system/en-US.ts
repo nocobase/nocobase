@@ -148,6 +148,7 @@ const systemEnUS = {
   'auth.foundationDescription': 'Reliable data, access control and governance.',
   'auth.marketingFooter': 'Freedom above. Confidence below.',
   'status.loading': 'Loading',
+  'status.refreshing': 'Refreshing',
   'status.loadingPage': 'Loading page',
   'status.denied': 'Access denied',
   'status.pageFailed': 'Unable to load page',

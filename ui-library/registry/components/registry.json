@@ -445,9 +445,10 @@
         "button",
         "select",
         "dropdown-menu",
-        "@nocobase/list-feedback"
+        "@nocobase/list-feedback",
+        "@nocobase/loading"
       ],
-      "docs": "Use DataTable with typed columns and getRowId. Server data must use manualPagination and manualSorting with controlled state; never sort or paginate only a fetched page locally. pagination=false renders every supplied row and leaves pagination to the caller.",
+      "docs": "Use DataTable with typed columns and getRowId. Server data must use manualPagination and manualSorting with controlled state; never sort or paginate only a fetched page locally. pagination=false renders every supplied row and leaves pagination to the caller. Pass loading for the current request: with rows of the current query it is a background refresh that keeps rows and shows a delayed RefreshIndicator; a new query hides previous rows, keeps their body and pagination height, and never shows the previous page count. Pass listState from resolveListState so loading, empty, failure and permission states stay distinct.",
       "files": [
         {
           "path": "data-table/column-header.tsx",
@@ -530,13 +531,19 @@
       "title": "List feedback",
       "description": "Accessible list loading, empty, filtered, permission and request feedback for tables and cards.",
       "dependencies": [
-        "@nocobase/app-client@^4.0.0-beta.4",
+        "@nocobase/app-client@^4.0.0-beta.9",
         "lucide-react@^0.487.0",
         "@nocobase/i18n@^1.0.0-beta.4",
         "react-router@^7.0.2"
       ],
-      "registryDependencies": ["button", "alert", "empty"],
-      "docs": "Pass resolveListState from @nocobase/app-client. ListFeedback renders each built-in state as one matching icon and one short line; render ListFeedbackActions with the existing retry, clear and sign-in controls in the host toolbar. Merge listFeedback translations listed in the components README. Keep the standard create action in the permission-gated page header, including for empty collections; reserve empty and emptyAction for intentional business-specific empty content.",
+      "registryDependencies": [
+        "button",
+        "alert",
+        "empty",
+        "@nocobase/loading",
+        "@nocobase/pending-button"
+      ],
+      "docs": "Pass resolveListState from @nocobase/app-client. ListFeedback renders loading through @nocobase/loading, keeping the body's footprint at once and showing the indicator and one status after 300ms, and every other built-in state as one matching icon and one short line; render ListFeedbackActions with the existing retry, clear and sign-in controls in the host toolbar. Merge listFeedback translations listed in the components README. Keep the standard create action in the permission-gated page header, including for empty collections; reserve empty and emptyAction for intentional business-specific empty content. Retry uses PendingButton, so the host passes the real retry request as busy.",
       "files": [
         {
           "path": "list-feedback.tsx",
@@ -560,7 +567,7 @@
         "cn@^0.4.0"
       ],
       "registryDependencies": [],
-      "docs": "Use real pending/submitting state. Feedback appears after 300ms, long-wait guidance after 10s, and clears immediately. Add pendingFeedback.working, pendingFeedback.longWait and status.loading to application translations. Preserve useSubmission protection; pending is recoverable state, not busy. Publish the runtime exporting usePendingFeedback before Registry publication.",
+      "docs": "Use real pending/submitting state. Feedback appears after 300ms, long-wait guidance after 10s, and clears immediately. Add pendingFeedback.working, pendingFeedback.longWait and status.loading to application translations. Preserve useSubmission protection; pending is recoverable state, not busy. Publish the runtime exporting usePendingFeedback before Registry publication. RefreshIndicator marks a background refresh of content that still belongs to the current query and permission scope; render it inside the positioned element owning that content and add status.refreshing to translations.",
       "files": [
         {
           "path": "loading.tsx",

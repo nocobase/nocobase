@@ -88,7 +88,8 @@ export function PendingButton({
             side='top'
             sideOffset={8}
             collisionPadding={12}
-            className='z-50'
+            // The hint only explains the wait; it must not block the controls it covers.
+            className='pointer-events-none z-50'
           >
             <Tooltip.Popup
               data-slot='pending-hint'

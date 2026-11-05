@@ -26,6 +26,8 @@ export interface RoleListProps {
     readonly custom: string;
   };
   readonly ariaLabel?: string;
+  /** The host's request for these roles is refreshing them. */
+  readonly loading?: boolean;
   readonly tableState?: Pick<
     DataTableProps<RoleListRole>,
     | 'paginationState'
@@ -41,6 +43,7 @@ export function RoleList({
   roles,
   labels,
   ariaLabel,
+  loading = false,
   tableState,
 }: RoleListProps): ReactElement {
   const columns = useMemo<ColumnDef<RoleListRole>[]>(
@@ -95,6 +98,7 @@ export function RoleList({
         data={roles}
         getRowId={(role) => role.key}
         showSelectedCount={false}
+        loading={loading}
       />
     </div>
   );

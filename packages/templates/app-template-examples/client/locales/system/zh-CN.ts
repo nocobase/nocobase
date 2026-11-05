@@ -137,6 +137,7 @@ const systemZhCN: SystemResource = {
   'auth.foundationDescription': '可靠的数据、访问控制与治理',
   'auth.marketingFooter': '自由构建，可靠支撑',
   'status.loading': '加载中',
+  'status.refreshing': '正在刷新',
   'status.loadingPage': '正在加载页面',
   'status.denied': '无权访问',
   'status.pageFailed': '无法加载页面',

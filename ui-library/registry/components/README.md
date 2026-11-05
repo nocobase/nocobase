@@ -154,6 +154,7 @@ The shared DataTable and its column header and pagination controls use these key
 | `pendingFeedback.working`      | Working…                                                | 正在处理…                        |
 | `pendingFeedback.longWait`     | This is taking longer than usual. You can keep waiting. | 耗时比平常更长，您可以继续等待。 |
 | `status.loading`               | Loading                                                 | 加载中                           |
+| `status.refreshing`            | Refreshing                                              | 正在刷新                         |
 | `listFeedback.loading`         | Loading                                                 | 加载中                           |
 | `listFeedback.empty`           | No data yet                                             | 暂无数据                         |
 | `listFeedback.noResults`       | No results                                              | 无结果                           |
@@ -270,6 +271,8 @@ Both templates also prepare `RequiredRoleSetup`, which uses the real Users optio
 ## List feedback
 
 `ListFeedback` renders the state returned by `resolveListState` from `@nocobase/app-client`. Pass the original query snapshot, including `isPlaceholderData`; retry refetches the same query, and clear synchronizes the controls, applied filters and first page. `DataTable` accepts `listState`, `onRetry`, `onClearFilters` and `emptyAction`; its legacy `emptyMessage` remains business content for successful unfiltered emptiness. Gate creation with existing permissions. Installed sources need a three-way source merge, including request owners and translations, to upgrade.
+
+Loading and refreshing follow the shared pending timing. The loading state renders `Loading` from the `loading` item: the body keeps its footprint at once and shows the indicator and one status after 300ms, never on a fast read. Retry is a `PendingButton` busy with the real retry request. `DataTable`'s `loading` means the current request is in flight: with rows of the current query and permission scope it is a background refresh, so rows, toolbar and pagination stay and a delayed `RefreshIndicator` (a thin bar plus one polite status, and a visible note after 10 seconds) appears inside the table frame. A changed query, page or sort hides previous rows at once, keeps the previous body and pagination height while it loads, and hides the previous page count. Pass `active && loading` while a route overlay covers the list, and never show a previous query's total elsewhere on the page. Use `RefreshIndicator` directly for other retained regions, such as a summary card, inside a positioned element; a picker whose query changed shows `Loading` instead of the previous query's options, including TanStack placeholder data.
 
 Default list states use a compact themed treatment with a neutral icon, a short title and standard actions. Refresh failures use a concise inline warning beside retained rows and keep the standard retry action available. Motion respects reduced-motion preferences. The shared Translations table includes every status and action key required for an installed copy.
 

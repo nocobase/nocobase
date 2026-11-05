@@ -47,6 +47,7 @@ const options = {
     ],
   },
 };
+const refreshing = enUS['status.refreshing'];
 const row = {
   id: 'alice',
   name: 'Alice',
@@ -110,17 +111,17 @@ it.each(['fast', 'slow'] as const)(
     vi.useFakeTimers();
     try {
       await act(() => vi.advanceTimersByTimeAsync(1000));
-      expect(screen.queryByText(enUS.settings.loading)).not.toBeInTheDocument();
+      expect(screen.queryByRole('status', { name: refreshing })).toBeNull();
       await act(async () => {
         fireEvent.click(
           screen.getByRole('button', { name: 'Cancel', exact: true }),
         );
       });
       expect(screen.getByRole('link', { name: 'Alice' })).toBeVisible();
-      expect(screen.queryByText(enUS.settings.loading)).not.toBeInTheDocument();
+      expect(screen.queryByRole('status', { name: refreshing })).toBeNull();
       if (speed === 'slow') {
         await act(() => vi.advanceTimersByTimeAsync(1000));
-        expect(screen.getByText(enUS.settings.loading)).toBeVisible();
+        expect(screen.getByRole('status', { name: refreshing })).toBeVisible();
         expect(screen.getByRole('link', { name: 'Alice' })).toBeVisible();
       }
       await act(async () => {
@@ -131,7 +132,7 @@ it.each(['fast', 'slow'] as const)(
       expect(
         screen.getByRole('link', { name: 'Alice refreshed' }),
       ).toBeVisible();
-      expect(screen.queryByText(enUS.settings.loading)).not.toBeInTheDocument();
+      expect(screen.queryByRole('status', { name: refreshing })).toBeNull();
     } finally {
       vi.useRealTimers();
     }

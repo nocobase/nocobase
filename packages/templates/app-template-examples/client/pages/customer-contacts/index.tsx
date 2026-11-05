@@ -1,10 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
 import { useAuthentication } from '@nocobase/app-plugin-authentication/client';
 import {
+  resolveListState,
   useApiClient,
   useToaster,
-  ApiClientError,
-  type ListState,
 } from '@nocobase/app-client';
 import {
   useCan,
@@ -193,23 +192,15 @@ function CustomerContactsContent() {
       cell: ({ row }) => <OwnerName id={row.original.ownerId} />,
     },
   ];
-  const state: ListState = request.error
-    ? request.error instanceof ApiClientError && request.error.status === 403
-      ? 'forbidden'
-      : request.error instanceof ApiClientError && request.error.status === 401
-        ? 'unauthenticated'
-        : rows.length
-          ? 'refresh-failed'
-          : 'failed'
-    : request.loading
-      ? rows.length
-        ? 'ready'
-        : 'loading'
-      : rows.length
-        ? 'ready'
-        : search || status !== 'all' || owner
-          ? 'no-results'
-          : 'empty';
+  const state = resolveListState(
+    {
+      data: currentData,
+      error: request.error,
+      isPending: request.loading && !currentData,
+    },
+    rows.length,
+    Boolean(search || status !== 'all' || owner),
+  );
   const reload = () => {
     setSelection({ key: '', ids: [] });
     request.reload();
@@ -265,7 +256,7 @@ function CustomerContactsContent() {
                 disabled={request.loading}
                 aria-label={t('customerContacts.refresh')}
               >
-                <RefreshCw className={request.loading ? 'animate-spin' : ''} />
+                <RefreshCw aria-hidden='true' />
                 {t('customerContacts.refresh')}
               </Button>
             </>
