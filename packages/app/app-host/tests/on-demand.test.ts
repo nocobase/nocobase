@@ -28,6 +28,7 @@ const tempDirs: string[] = [];
 const hosts: AppHost[] = [];
 
 afterEach(async () => {
+  vi.unstubAllGlobals();
   await Promise.all(hosts.splice(0).map((host) => host.close('test cleanup')));
   await Promise.all(
     tempDirs.splice(0).map((dir) => rm(dir, { recursive: true, force: true })),
@@ -35,6 +36,52 @@ afterEach(async () => {
 });
 
 describe('on-demand Apps on a managed Host', () => {
+  it('lets a hidden tab release its slot without waking the App again until visible', async () => {
+    const document = Object.assign(new EventTarget(), {
+      visibilityState: 'visible',
+    });
+    vi.stubGlobal('document', document);
+    const fixture = await createFixture();
+    const host = await startHost(fixture);
+    await host.management.applyDeployment(
+      spec(fixture.artifact, { activation: 'lazy', idleStopMs: 1000 }),
+    );
+    const client = createRealtimeClient({
+      resolveUrl: () => `${baseUrl(host)}/customer/ws`,
+      pingInterval: 0,
+      hiddenDisconnectMs: 20,
+    });
+    try {
+      const ready = vi.fn();
+      client.watch('test:keepalive', { onReady: ready });
+      await vi.waitFor(() => expect(ready).toHaveBeenCalledOnce());
+      document.visibilityState = 'hidden';
+      document.dispatchEvent(new Event('visibilitychange'));
+      await vi.waitFor(() => {
+        expect(client.connected).toBe(false);
+        expect(
+          host.registry.requireSnapshot('customer').activeConnections,
+        ).toBe(0);
+      });
+      for (let cycle = 1; cycle <= 3; cycle++) {
+        await host.registry.sweep(Date.now() + cycle * 2000);
+        client.reconnect();
+        expect(host.registry.isActive('customer')).toBe(false);
+        expect(host.registry.getMetrics().activations).toBe(1);
+      }
+      document.visibilityState = 'visible';
+      document.dispatchEvent(new Event('visibilitychange'));
+      await vi.waitFor(() => expect(ready).toHaveBeenCalledTimes(2));
+      expect(host.registry.getMetrics().activations).toBe(2);
+      expect(host.registry.requireSnapshot('customer').activeConnections).toBe(
+        1,
+      );
+    } finally {
+      client.close();
+      vi.unstubAllGlobals();
+    }
+  });
+
   it('keeps a real realtime socket through three idle cycles and closes it during Host shutdown', async () => {
     const fixture = await createFixture();
     const host = await startHost(fixture);
