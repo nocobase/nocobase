@@ -167,6 +167,8 @@ Request language and durable recipient language are different. HTTP translation 
 
 Background jobs should resolve the recipient's language explicitly; they must not use the worker's runtime current language or the triggering request's session. `resolveUserLocale` validates the stored type and exact membership in the Server runtime's supported locales, falling back to a supported application default and finally `en-US`. It does not change the shared runtime or swallow database failures.
 
+`UserPreferencesService.get(userId, key, connection?)` accepts a caller-owned transaction connection. Pass it when resolving preferences inside a transaction to read its current data and avoid acquiring a second pooled connection.
+
 ```ts
 import { i18nToken } from '@nocobase/app-server/i18n';
 import {
