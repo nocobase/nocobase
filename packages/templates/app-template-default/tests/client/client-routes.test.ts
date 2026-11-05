@@ -185,15 +185,17 @@ describe('app client routes', () => {
     expect(pageAuthorizations(resolved.routes)).toEqual([
       { name: 'home', authorizedAs: null },
       { name: 'inbox', authorizedAs: null },
+      { name: 'settingsHome', authorizedAs: null },
     ]);
   });
 
-  it('keeps a bare application home-only and supports settings registration as business capabilities are developed', async () => {
+  it('keeps a bare application free of settings modules and supports settings registration as business capabilities are developed', async () => {
+    // Only the settings home, which lists what the viewer may open and grants nothing itself.
     expect(
-      pagePaths(resolveRoutes().routes).some((path) =>
+      pagePaths(resolveRoutes().routes).filter((path) =>
         path.startsWith('/settings'),
       ),
-    ).toBe(false);
+    ).toEqual(['/settings']);
     const built = resolveAppClientContributions([
       {
         packageName: '@nocobase/app-template-default',
@@ -204,6 +206,7 @@ describe('app client routes', () => {
     expect(pageAuthorizations(built.routes)).toEqual([
       { name: 'home', authorizedAs: null },
       { name: 'inbox', authorizedAs: null },
+      { name: 'settingsHome', authorizedAs: null },
       { name: 'settingsUsers', authorizedAs: 'user:*' },
       { name: 'settingsUserCreate', authorizedAs: 'user:*' },
       { name: 'settingsUser', authorizedAs: 'user:*' },

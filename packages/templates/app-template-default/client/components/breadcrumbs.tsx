@@ -19,6 +19,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '#components/ui/dropdown-menu';
+import { settingsHomeRoute } from '#lib/navigation-transform';
 import { cn } from 'cn';
 
 import {
@@ -60,6 +61,18 @@ export function Breadcrumbs({
     trail.flatMap((entry): PageBreadcrumbLevel[] => {
       const title = routeLevelTitle(entry);
       if (title === undefined || denied?.has(routeKey(entry.route))) return [];
+      // The settings group links to its home page, the way back from any settings module.
+      const home = settingsHomeRoute(entry.route);
+      if (home)
+        return [
+          {
+            label: t(title, {
+              ns: entry.route.packageName,
+              defaultValue: title,
+            }),
+            to: { pathname: home.path, search: searches.get(home.path) ?? '' },
+          },
+        ];
       return [
         {
           label: t(title, {

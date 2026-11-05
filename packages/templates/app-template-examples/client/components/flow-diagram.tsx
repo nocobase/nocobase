@@ -8,7 +8,7 @@ import {
   type ReactElement,
   type ReactNode,
 } from 'react';
-import { createPortal } from 'react-dom';
+import { BodyPortal } from './body-portal.js';
 import {
   BaseEdge,
   Controls,
@@ -934,7 +934,7 @@ export function FlowDiagram({
       )}
     </div>
   );
-  return expanded ? createPortal(canvas, document.body) : canvas;
+  return expanded ? <BodyPortal>{canvas}</BodyPortal> : canvas;
 }
 
 /** View controls belong inside React Flow so they always use this canvas's viewport. */

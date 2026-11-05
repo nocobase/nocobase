@@ -1,5 +1,5 @@
 import { useSyncServerLocale } from '@nocobase/app-plugin-i18n/client';
-import type { ReactElement } from 'react';
+import { useMemo, type ReactElement } from 'react';
 import type { AppClientRegisteredRoute } from '@nocobase/app-client/plugins';
 import { Outlet, useLocation } from 'react-router';
 
@@ -7,6 +7,7 @@ import { BrandWatermark } from '#components/brand-watermark';
 import { Breadcrumbs } from '#components/breadcrumbs';
 
 import { RouteTreeProvider } from '../routing/route-context.js';
+import { RouteLeaveBoundary } from '../routing/route-leave-boundary.js';
 
 import { PageBreadcrumbProvider } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
@@ -34,7 +35,8 @@ export function AppLayout({ routes }: AppLayoutProps): ReactElement {
   useSyncServerLocale();
 
   const { t } = useTranslation();
-  const { items: menuItems, denied } = useRouteNavigation(routes);
+  const { items: menuItems, denied, loading } = useRouteNavigation(routes);
+  const access = useMemo(() => ({ denied, loading }), [denied, loading]);
   const selectedKey = selectedNavigationId(
     routes,
     useLocation().pathname,
@@ -46,7 +48,7 @@ export function AppLayout({ routes }: AppLayoutProps): ReactElement {
 
   return (
     // The shell owns the business route tree used by its pages and navigation.
-    <RouteTreeProvider routes={routes}>
+    <RouteTreeProvider routes={routes} access={access}>
       <PageBreadcrumbProvider>
         <AppSidebarProvider>
           <AppSidebar label={navigationLabel} footer={<AppSidebarFooter />}>
@@ -74,7 +76,9 @@ export function AppLayout({ routes }: AppLayoutProps): ReactElement {
               {/* main only positions; the page scrolls in here, so a child page layer laid over main is neither
             moved by the page's scrolling nor stretched by its height. */}
               <div className='h-full overflow-y-auto'>
-                <Outlet />
+                <RouteLeaveBoundary hidden={loading}>
+                  <Outlet />
+                </RouteLeaveBoundary>
               </div>
             </main>
           </div>

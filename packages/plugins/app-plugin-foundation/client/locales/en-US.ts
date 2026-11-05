@@ -4,6 +4,8 @@ const enUS = {
   nav: {
     settings: 'System settings',
     foundation: 'App foundation',
+    foundationDescription:
+      'The NocoBase capabilities this application is built on.',
   },
   page: {
     notCounted: 'Not counted',
