@@ -106,11 +106,14 @@ export function TaskProgress({
           className='flex flex-col gap-1.5'
         >
           <Progress.Track className='relative h-1.5 w-full overflow-hidden rounded-full bg-muted'>
+            {/* An unknown amount fills the whole track faintly, so no segment can be read as a fraction done. */}
             <Progress.Indicator
-              className={cn(
-                'h-full bg-primary motion-safe:transition-[width] motion-safe:duration-500',
-                !known && 'w-1/3 opacity-70 motion-safe:animate-pulse',
-              )}
+              data-slot='task-progress-indicator'
+              className={
+                known
+                  ? 'h-full bg-primary motion-safe:transition-[width] motion-safe:duration-500'
+                  : 'h-full w-full bg-primary/25 motion-safe:animate-pulse'
+              }
             />
           </Progress.Track>
           {countText || known ? (

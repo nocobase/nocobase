@@ -138,3 +138,25 @@ for (const locale of ['en-US', 'zh-CN'] as const) {
     ).toBeVisible();
   });
 }
+
+it('fills the whole track faintly while the amount is unknown, never a fixed segment', () => {
+  const view = render(<TaskProgress status='queued' label='Contact import' />);
+  const indicator = document.querySelector(
+    '[data-slot="task-progress-indicator"]',
+  ) as HTMLElement;
+  expect(indicator).toHaveClass('w-full');
+  expect(indicator.style.width === '' || indicator.style.width === '100%').toBe(
+    true,
+  );
+  view.rerender(
+    <TaskProgress
+      status='running'
+      label='Contact import'
+      processed={30}
+      total={120}
+    />,
+  );
+  expect(
+    document.querySelector('[data-slot="task-progress-indicator"]'),
+  ).not.toHaveClass('w-full');
+});

@@ -1,4 +1,8 @@
-import { useApiClient, useToaster } from '@nocobase/app-client';
+import {
+  resolveListState,
+  useApiClient,
+  useToaster,
+} from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { useEffect, useRef, useState } from 'react';
 import {
@@ -16,6 +20,7 @@ import { PageContainer } from '#components/page-container';
 import { PageHeader } from '#components/page-header';
 import { LongText } from '#components/long-text';
 import { DataTable } from '#components/data-table';
+import { RefreshIndicator } from '#components/loading';
 import { RecordLink } from '#components/record-link';
 import { StatusBadge } from '#components/status-badge';
 import { Button } from '#components/ui/button';
@@ -83,6 +88,14 @@ export default function CustomerDetailPage() {
       headingRef.current?.focus();
   }, [active, request.loading]);
   const customer = request.data?.data;
+  const contactState = resolveListState(
+    {
+      data: contacts.data,
+      error: contacts.error,
+      isPending: contacts.loading && !contacts.data,
+    },
+    contacts.data?.data.length ?? 0,
+  );
   const writable = customer && customer.status !== 'closed';
   const reload = () => {
     request.reload();
@@ -211,7 +224,7 @@ export default function CustomerDetailPage() {
                     disabled={request.loading}
                     onClick={reload}
                   >
-                    <RefreshCw />
+                    <RefreshCw aria-hidden='true' />
                     {t('customerContacts.refresh')}
                   </Button>
                 </>
@@ -224,28 +237,35 @@ export default function CustomerDetailPage() {
         ) : (
           customer && (
             <>
-              <dl className='grid grid-cols-[8rem_1fr] gap-4 text-sm'>
-                <dt className='text-muted-foreground'>
-                  {t('customerContacts.status')}
-                </dt>
-                <dd>
-                  <StatusBadge>
-                    {t(`customerContacts.${customer.status}`)}
-                  </StatusBadge>
-                </dd>
-                <dt className='text-muted-foreground'>
-                  {t('customerContacts.owner')}
-                </dt>
-                <dd>
-                  <OwnerName id={customer.ownerId} />
-                </dd>
-                <dt className='text-muted-foreground'>
-                  {t('customerContacts.notes')}
-                </dt>
-                <dd className='min-w-0 whitespace-pre-wrap break-words'>
-                  <LongText>{customer.notes || '—'}</LongText>
-                </dd>
-              </dl>
+              {/* The summary and the contacts table refresh independently; each owns its feedback. */}
+              <div className='relative'>
+                <RefreshIndicator pending={active && request.loading} />
+                <dl
+                  className='grid grid-cols-[8rem_1fr] gap-4 text-sm'
+                  aria-busy={active && request.loading}
+                >
+                  <dt className='text-muted-foreground'>
+                    {t('customerContacts.status')}
+                  </dt>
+                  <dd>
+                    <StatusBadge>
+                      {t(`customerContacts.${customer.status}`)}
+                    </StatusBadge>
+                  </dd>
+                  <dt className='text-muted-foreground'>
+                    {t('customerContacts.owner')}
+                  </dt>
+                  <dd>
+                    <OwnerName id={customer.ownerId} />
+                  </dd>
+                  <dt className='text-muted-foreground'>
+                    {t('customerContacts.notes')}
+                  </dt>
+                  <dd className='min-w-0 whitespace-pre-wrap break-words'>
+                    <LongText>{customer.notes || '—'}</LongText>
+                  </dd>
+                </dl>
+              </div>
               {!writable && (
                 <p className='text-sm text-muted-foreground'>
                   {t('customerContacts.readOnly')}
@@ -272,29 +292,28 @@ export default function CustomerDetailPage() {
                   </Button>
                 )}
               </div>
-              {contacts.error ? (
-                <ReadFeedback error={contacts.error} retry={contacts.reload} />
-              ) : (
-                <DataTable
-                  columns={columns}
-                  data={contacts.data?.data ?? []}
-                  manualPagination
-                  rowCount={contacts.data?.meta.total ?? 0}
-                  paginationState={{ pageIndex: page, pageSize: 10 }}
-                  onPaginationChange={(update) =>
-                    setPage(
-                      (old) =>
-                        (typeof update === 'function'
-                          ? update({ pageIndex: old, pageSize: 10 })
-                          : update
-                        ).pageIndex,
-                    )
-                  }
-                  pageSizeOptions={[10]}
-                  showSelectedCount={false}
-                  loading={contacts.loading}
-                />
-              )}
+              <DataTable
+                columns={columns}
+                data={contacts.data?.data ?? []}
+                manualPagination
+                rowCount={contacts.data?.meta.total ?? 0}
+                paginationState={{ pageIndex: page, pageSize: 10 }}
+                onPaginationChange={(update) =>
+                  setPage(
+                    (old) =>
+                      (typeof update === 'function'
+                        ? update({ pageIndex: old, pageSize: 10 })
+                        : update
+                      ).pageIndex,
+                  )
+                }
+                pageSizeOptions={[10]}
+                showSelectedCount={false}
+                loading={active && contacts.loading}
+                loadingIdentity={contacts.path}
+                listState={contactState}
+                onRetry={contacts.reload}
+              />
             </>
           )
         )}

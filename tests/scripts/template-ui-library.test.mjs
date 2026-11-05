@@ -23,6 +23,7 @@ const preinstalled = [
   { group: 'components', item: 'list-feedback' },
   { group: 'components', item: 'loading' },
   { group: 'components', item: 'pending-button' },
+  { group: 'components', item: 'task-progress' },
   { group: 'components', item: 'record-link' },
   { group: 'auth', item: 'auth-forms' },
   { group: 'auth', item: 'auth-methods' },

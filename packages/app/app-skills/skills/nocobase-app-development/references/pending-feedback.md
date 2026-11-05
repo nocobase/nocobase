@@ -35,6 +35,41 @@ Pass the real request's `pending` to Loading, a stable query key as `identity`, 
 
 Render within the slot that actually loads; only application startup uses `fullscreen`. The normal indicator reserves its own footprint; a page owns any larger content reservation. Keep existing content only when the query and permission identity still match. Use [list states](frontend/references/table.md) through `resolveListState` for tables; this display component never decides empty, forbidden or failed states. An unmet dependency or disabled query is idle, not loading. Route dialogs and drawers still follow the existing container contract; adding Loading does not move an overlay shell before lazy module loading.
 
+## A new list page
+
+A new business list needs no feedback code of its own. Read through `useListData`, derive the state with `resolveListState`, and hand the request's real `loading`, its path as `loadingIdentity`, and its retry to the preinstalled `DataTable`:
+
+```tsx
+const path = `equipment?page=1&pageSize=20${query ? `&q=${encodeURIComponent(query)}` : ''}`;
+const request = useListData<{ data: readonly Equipment[] }>(path, {
+  keepPreviousData: true,
+});
+const current = request.path === path ? request.data : undefined;
+const rows = current?.data ?? [];
+const listState = resolveListState(
+  {
+    data: current,
+    error: request.error,
+    isPending: request.loading && !current,
+  },
+  rows.length,
+  Boolean(query),
+);
+
+<DataTable
+  columns={columns}
+  data={rows}
+  getRowId={(row) => row.id}
+  loading={active && request.loading}
+  loadingIdentity={path}
+  listState={listState}
+  onRetry={request.reload}
+  onClearFilters={clearFilters}
+/>;
+```
+
+The first load, search changes, refreshes, failure with Retry, empty and no-results states then follow this document. Page actions use `PendingButton` with their real busy state, a retained summary card adds `RefreshIndicator` inside its positioned container, and a long server task renders `TaskProgress` from its task record.
+
 ## Lists, cards and pickers
 
 Tables and card lists take their state from `resolveListState` (see [list states](frontend/references/table.md)) and their feedback from the installed components; do not add a page-level spinner, a hand-written 300ms timer or a reserved toolbar slot for refreshes.
@@ -88,6 +123,6 @@ Keep one status per operation; the branded graphic is decorative. The waiting la
 
 ## Upgrade and review
 
-Both templates preinstall the Registry recipes and translated keys. New generated applications receive them by default. Existing applications reconcile the selected template version and their copied source through the [upgrade Skill](../../nocobase-app-upgrade/SKILL.md); do not overwrite business customizations or assume a package update replaces copied files. Independently installed Registry copies merge the current `loading`, `pending-button` and branded mark sources, install the declared compatible runtime, and add `status.loading`, `pendingFeedback.working` and `pendingFeedback.longWait` translations. Publish the runtime before the Registry recipes. A customized Button or legacy spinner needs inspection rather than a blind replacement.
+Both templates preinstall the Registry `loading`, `pending-button`, `list-feedback`, `data-table` and `task-progress` recipes with their translated keys, so a new business page imports `#components/loading`, `#components/pending-button`, `#components/data-table` or `#components/task-progress` without installing anything. New generated applications receive them by default. Existing applications reconcile the selected template version and their copied source through the [upgrade Skill](../../nocobase-app-upgrade/SKILL.md); do not overwrite business customizations or assume a package update replaces copied files. Independently installed Registry copies merge the current `loading`, `pending-button` and branded mark sources, install the declared compatible runtime, and add `status.loading`, `pendingFeedback.working` and `pendingFeedback.longWait` translations. Publish the runtime before the Registry recipes. A customized Button or legacy spinner needs inspection rather than a blind replacement.
 
 Review checklist: real busy starts before the display delay; click and Enter use one submission controller; fast work has no indicator; completion/error clears at once; operation replacement resets age; no nested status/spinner; button dimensions and focus remain stable; source and both templates match; English/Chinese, narrow width, light/dark themes and reduced motion are checked. Verify timeout and unknown-outcome recovery through the existing submission suite. Route shell ownership remains a separate integration; lists, cards, pickers and long operations follow the sections above.

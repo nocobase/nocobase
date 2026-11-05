@@ -525,3 +525,138 @@ it('discards rows and selection when permissions change', async () => {
     screen.queryByRole('link', { name: 'Acorn 01' }),
   ).not.toBeInTheDocument();
 });
+
+it('shows loading instead of the previous search options while a new search is pending', async () => {
+  let finish!: (value: unknown) => void;
+  const slow = new Promise((resolve) => {
+    finish = resolve;
+  });
+  await mount(
+    (call) => {
+      if (call.path === 'customerContacts/customers/options')
+        return call.query?.search === 'zed'
+          ? slow
+          : list([{ id: 'acorn', name: 'Acorn option' }]);
+      throw new Error(`Unexpected ${call.path}`);
+    },
+    '/picker',
+    'en-US',
+    <RelationPicker
+      kind='customers'
+      value=''
+      onChange={() => undefined}
+      label='Customer'
+    />,
+  );
+  await userEvent.click(
+    await screen.findByRole('button', { name: 'Customer' }),
+  );
+  await screen.findByText('Acorn option');
+  fireEvent.change(screen.getByRole('textbox', { name: 'Search by name' }), {
+    target: { value: 'zed' },
+  });
+  // The cache keeps the previous search as placeholder data; it is not a match.
+  await waitFor(() =>
+    expect(screen.queryByText('Acorn option')).not.toBeInTheDocument(),
+  );
+  expect(
+    await screen.findByRole('status', {
+      name: enUS.customerContacts.loading,
+    }),
+  ).toBeInTheDocument();
+  await act(async () => {
+    finish(list([{ id: 'zed', name: 'Zed option' }]));
+  });
+  expect(await screen.findByText('Zed option')).toBeVisible();
+  expect(screen.queryByRole('status')).not.toBeInTheDocument();
+});
+
+it('keeps customer rows during a refresh and shows only the table refresh indicator', async () => {
+  let refresh = false;
+  let finish!: (value: unknown) => void;
+  const slow = new Promise((resolve) => {
+    finish = resolve;
+  });
+  await mount((call) => {
+    if (call.path === 'customerContacts/customers')
+      return refresh ? slow : list([customer]);
+    throw new Error(`Unexpected ${call.path}`);
+  });
+  expect(await screen.findByRole('link', { name: 'Acorn 01' })).toBeVisible();
+  refresh = true;
+  await userEvent.click(screen.getByRole('button', { name: 'Refresh' }));
+  expect(screen.getByRole('link', { name: 'Acorn 01' })).toBeVisible();
+  expect(
+    await screen.findByRole('status', { name: enUS['status.refreshing'] }),
+  ).toBeInTheDocument();
+  expect(screen.getAllByRole('status')).toHaveLength(1);
+  await act(async () => {
+    finish(list([{ ...customer, name: 'Acorn refreshed' }]));
+  });
+  expect(
+    await screen.findByRole('link', { name: 'Acorn refreshed' }),
+  ).toBeVisible();
+  expect(screen.queryByRole('status')).not.toBeInTheDocument();
+});
+
+it('restarts the picker wait for each search and announces a slow next page outside its busy row', async () => {
+  const pending = new Map<string, Promise<unknown>>();
+  const hold = (key: string) => {
+    if (!pending.has(key)) pending.set(key, new Promise(() => undefined));
+    return pending.get(key);
+  };
+  await mount(
+    (call) => {
+      if (call.path !== 'customerContacts/customers/options')
+        throw new Error(`Unexpected ${call.path}`);
+      const search = String(call.query?.search ?? '');
+      if (search) return hold(search);
+      return Number(call.query?.page) === 1
+        ? list([{ id: 'a', name: 'First option' }], 1, 12)
+        : hold('page-2');
+    },
+    '/picker',
+    'en-US',
+    <RelationPicker
+      kind='customers'
+      value=''
+      onChange={() => undefined}
+      label='Customer'
+    />,
+  );
+  await userEvent.click(
+    await screen.findByRole('button', { name: 'Customer' }),
+  );
+  await screen.findByText('First option');
+  vi.useFakeTimers();
+  try {
+    // A slow next page: one polite status outside the busy row, then the long-wait note.
+    scrollToEnd();
+    await act(() => vi.advanceTimersByTimeAsync(300));
+    const status = screen.getByRole('status');
+    expect(status).toHaveTextContent(enUS.customerContacts.loading);
+    expect(status.closest('[aria-busy="true"]')).toBeNull();
+    await act(() => vi.advanceTimersByTimeAsync(9700));
+    expect(status).toHaveTextContent(enUS.pendingFeedback.longWait);
+
+    const search = screen.getByRole('textbox', { name: 'Search by name' });
+    fireEvent.change(search, { target: { value: 'alpha' } });
+    await act(() => vi.advanceTimersByTimeAsync(300));
+    await act(() => vi.advanceTimersByTimeAsync(10_000));
+    expect(screen.getByRole('status')).toHaveTextContent(
+      enUS.pendingFeedback.longWait,
+    );
+    // A new search while the first is still pending starts its own wait.
+    fireEvent.change(search, { target: { value: 'beta' } });
+    await act(() => vi.advanceTimersByTimeAsync(300));
+    expect(screen.queryByRole('status')).toBeNull();
+    await act(() => vi.advanceTimersByTimeAsync(299));
+    expect(screen.queryByRole('status')).toBeNull();
+    await act(() => vi.advanceTimersByTimeAsync(1));
+    expect(screen.getByRole('status')).toHaveTextContent(
+      enUS.customerContacts.loading,
+    );
+  } finally {
+    vi.useRealTimers();
+  }
+});

@@ -9,6 +9,16 @@ const systemZhCN: SystemResource = {
     working: '正在处理…',
     longWait: '耗时比平常更长，您可以继续等待。',
   },
+  taskProgress: {
+    queued: '等待开始',
+    running: '进行中',
+    completed: '已完成',
+    failed: '失败',
+    canceled: '已取消',
+    count: '{{processed}} / {{total}}',
+    processed: '已处理 {{processed}}',
+    background: '离开此页面后任务会继续运行。',
+  },
   listFeedback: {
     loading: '加载中',
     empty: '暂无数据',

@@ -12,6 +12,16 @@ const systemEnUS = {
     working: 'Working…',
     longWait: 'This is taking longer than usual. You can keep waiting.',
   },
+  taskProgress: {
+    queued: 'Waiting to start',
+    running: 'In progress',
+    completed: 'Completed',
+    failed: 'Failed',
+    canceled: 'Canceled',
+    count: '{{processed}} of {{total}}',
+    processed: '{{processed}} processed',
+    background: 'It keeps running if you leave this page.',
+  },
   listFeedback: {
     loading: 'Loading',
     empty: 'No data yet',
