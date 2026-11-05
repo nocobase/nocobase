@@ -1,5 +1,4 @@
 export const enUS = {
-  refresh: 'Refresh',
   signIn: 'Sign in',
   title: 'Customers and contacts',
   description:
@@ -77,7 +76,6 @@ export const enUS = {
   invalid: 'Check the highlighted fields.',
 };
 export const zhCN: Record<keyof typeof enUS, string> = {
-  refresh: '刷新',
   signIn: '登录',
   title: '客户与联系人',
   description: '练习按权限选择关联记录和批量修改当前页客户。',

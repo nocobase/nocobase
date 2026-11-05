@@ -1,5 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ApiClientError, useApiClient } from '@nocobase/app-client';
+import {
+  ApiClientError,
+  useApiClient,
+  useRealtimeRefresh,
+} from '@nocobase/app-client';
 import { useTranslation, useNamespace } from '@nocobase/i18n/client';
 import type { WorkflowSummary } from '../../../shared/workflows.js';
 
@@ -51,6 +55,13 @@ export function useWorkflowData<T>(path: string, query = '') {
     };
   }, [api, key, requestKey, path, query]);
   const reload = useCallback(() => setRefresh((value) => value + 1), []);
+  // Both workflow sources already announce transitions and background effect completion.
+  // Parameter forms keep their drafts; only read views subscribe to invalidations.
+  const live =
+    path.startsWith('workflows/definitions') ||
+    path.startsWith('workflows/executions');
+  useRealtimeRefresh(live ? 'lifecycle-example:changes' : null, reload);
+  useRealtimeRefresh(live ? 'office-flows:changed' : null, reload);
   return {
     data: result.key === key ? result.data : undefined,
     status: result.key === key ? result.status : undefined,

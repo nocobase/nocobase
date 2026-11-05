@@ -12,7 +12,7 @@ const zhCN: NotificationResource = {
     description:
       '追踪通知投递及每一次服务商尝试。消息正文、收件人和租约令牌均已脱敏。',
     refreshing: '正在刷新…',
-    refresh: '刷新',
+    retryRead: '重试',
     deliveriesShown: '当前投递数',
     needAttention: '需要关注',
     unavailable: '通知日志不可用',

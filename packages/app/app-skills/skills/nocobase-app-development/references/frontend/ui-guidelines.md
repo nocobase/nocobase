@@ -95,7 +95,7 @@ Structure, top to bottom: PageHeader (primary action "New X") → toolbar (searc
 
 ### T5 Dashboard: where things stand, at a glance
 
-Structure, top to bottom: PageHeader (title and description; actions only for the whole page, such as Refresh) → a row of metric cards → charts → the records that need attention (recently updated, overdue), each list in a card.
+Structure, top to bottom: PageHeader (title and description; actions only for whole-page business operations, such as Export) → a row of metric cards → charts → the records that need attention (recently updated, overdue), each list in a card.
 
 - **T5.1 [Must]** A metric card shows its label above its value, the value large and formatted for the current language (T1.6). A change against an earlier period states its direction in words or with a sign, not by color alone (A2).
 - **T5.2 [Must]** Each chart sits in a Card with a title and a one-sentence description. Axis labels, series names and the tooltip are translated, and the colors come from the theme's chart tokens.
@@ -168,7 +168,7 @@ Do not show raw backend error messages (untranslated exception messages, stack t
 
 **R3 [Must] The record no longer exists**: when editing, deleting or opening the details reveals that the record has been deleted (404), say "This record does not exist or has been deleted" and give a next step (close the overlay, go back to the list); the list refreshes as well. Do not let the user repeat an action that is bound to fail, and do not offer "Retry".
 
-**R4 [Must] Refresh where data changes on its own**: a page whose data changes underneath the user without them acting — runs, deployments and builds, runtime states, usage and report figures — and that is not kept current by a realtime update or polling offers one Refresh action: an outline icon button (`RefreshCwIcon`, `size='icon'`) named and tooltipped "Refresh", whose icon spins while the refresh it started runs. It refetches every block of the page and keeps the old data on screen meanwhile (I4). It is a page-level action, the last of the PageHeader's actions, before only a "More" menu (L1, L5); a view without actions of its own in a header, such as one tab of a record page, puts it at the end of its toolbar instead. A page kept current live, and a form or settings page whose data changes only when someone saves, has none. The "Retry" of a failed load (S4) is not a Refresh and does not replace one.
+**R4 [Must] No default page Refresh action**: ordinary lists, details, settings and dashboards do not add a persistent header or toolbar action whose only effect is refetching page data. Browser reload remains available; preserve the route and URL-backed list state (I6). Mobile pull-to-refresh depends on the browser and scroll container: do not promise it everywhere or add a custom implementation by default. Keep immediate updates after writes (R2), contextual Retry after a failed read (S4), and existing realtime subscriptions or polling. Before removing an existing control on a progress or runtime-status view, verify that asynchronous completion still reaches the open view; use the existing event/snapshot mechanism rather than adding unnecessary high-frequency polling. Rescan, synchronize, recheck and regenerate operations with business effects remain explicit authorized actions with descriptive labels and pending states; browser reload must never trigger them.
 
 ## S States
 
@@ -219,7 +219,7 @@ The design review and the acceptance review both go through this checklist item 
 - [ ] Form: container, labels and required marks, validation timing, button order and copy, submitting, failure, success, loading the latest data before editing (T3.1–T3.8)
 - [ ] Settings page: one Card per topic, each saved on its own, toggles that apply at once (T4.1–T4.3)
 - [ ] Dashboard: metric cards, charts in titled cards, short record lists aligned with their card and linking to the full list, the states of each card (T5.1–T5.4)
-- [ ] Data freshness: writes are based on the latest data, the UI updates immediately after success, a missing record is handled, and a page whose data changes on its own without a live update has one Refresh at the end of its header actions (R1–R4)
+- [ ] Data freshness: writes use the latest data and update the UI after success; missing records and failed reads have contextual recovery; ordinary pages have no persistent Refresh action; asynchronous completion and business rescan/sync actions still work (R1–R4)
 - [ ] Destructive actions are confirmed, and the confirmation dialog names the object and the consequence (I2)
 - [ ] Feedback and loading indicators are correct, and raw backend errors are not exposed (I3, I4)
 - [ ] Overlays and their state have URLs; every record and overlay opens over the view the user is on — a filtered list, a dashboard, a board, a drawer, the tab being shown — at that view's URL plus its own segments, and closing returns to exactly that URL, checked from a view other than the first one too: a tab other than the default, a list with a filter applied (I6, I9)

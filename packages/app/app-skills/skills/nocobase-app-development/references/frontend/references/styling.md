@@ -246,7 +246,7 @@ Merge class names with `cn()` from the `cn` package (`import { cn } from 'cn'`),
 
 ```tsx
 import { useTranslation } from '@nocobase/i18n/client';
-import { RefreshCwIcon } from 'lucide-react';
+import { PencilIcon } from 'lucide-react';
 import type { ReactElement } from 'react';
 
 import { Button } from '#components/ui/button';
@@ -256,10 +256,10 @@ import {
   TooltipTrigger,
 } from '#components/ui/tooltip';
 
-export function RefreshButton({
-  onRefresh,
+export function EditButton({
+  onEdit,
 }: {
-  readonly onRefresh: () => void;
+  readonly onEdit: () => void;
 }): ReactElement {
   const { t } = useTranslation();
   return (
@@ -269,14 +269,14 @@ export function RefreshButton({
           <Button
             variant='outline'
             size='icon'
-            aria-label={t('projects.actions.refresh')}
-            onClick={onRefresh}
+            aria-label={t('projects.actions.edit')}
+            onClick={onEdit}
           />
         }
       >
-        <RefreshCwIcon />
+        <PencilIcon />
       </TooltipTrigger>
-      <TooltipContent>{t('projects.actions.refresh')}</TooltipContent>
+      <TooltipContent>{t('projects.actions.edit')}</TooltipContent>
     </Tooltip>
   );
 }

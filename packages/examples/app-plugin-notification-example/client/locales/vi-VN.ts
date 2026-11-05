@@ -45,7 +45,7 @@ const viVN: LocaleResource<typeof enUS> = {
       actions: 'Thao tác',
     },
     view: 'Xem chi tiết',
-    refresh: 'Làm mới',
+    retryRead: 'Thử lại',
     previous: 'Trước',
     next: 'Tiếp theo',
     page: 'Trang {{page}}',
@@ -64,7 +64,7 @@ const viVN: LocaleResource<typeof enUS> = {
     notificationHint:
       'Sau khi tác vụ được lưu, những người có liên quan ngoài người chỉnh sửa hiện tại sẽ được thông báo: người tạo và người được giao hiện tại. Nếu người được chuyển nhượng thay đổi, cả người được chuyển nhượng trước đó và mới đều được thông báo.',
     edit: 'Chỉnh sửa nhiệm vụ',
-    refresh: 'Làm mới',
+    retryRead: 'Thử lại',
     save: 'Lưu thay đổi',
     cancel: 'Hủy',
     back: 'Quay lại nhiệm vụ',

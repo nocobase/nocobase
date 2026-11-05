@@ -65,6 +65,8 @@ interface FakeHost {
   readonly restarts: string[];
   /** Lifecycle states reported per App; Apps without one report running. */
   readonly lifecycle: Map<string, Lifecycle>;
+  readonly requests: Map<string, number>;
+  readonly connections: Map<string, number>;
   counters: NonNullable<HostStatus['counters']>;
   /** When set, the next deployment fails with it while the previous runtime keeps serving (a start-first switch). */
   failure: string | null;
@@ -107,6 +109,8 @@ function fakeHost(restartAfterChurn?: number): FakeHost {
               desiredVersion: spec.artifact.version,
               createdAt: '2026-10-02T00:00:00.000Z',
               lastError: null,
+              activeRequests: host.requests.get(spec.appId) ?? 0,
+              activeConnections: host.connections.get(spec.appId) ?? 0,
             } as never)
           : null,
       error: null,
@@ -220,6 +224,8 @@ function fakeHost(restartAfterChurn?: number): FakeHost {
     checked: [],
     restarts: [],
     lifecycle: new Map(),
+    requests: new Map(),
+    connections: new Map(),
     counters: {
       activations: 0,
       idleStops: 0,
@@ -516,6 +522,7 @@ describe('Host driver', () => {
     });
     const session = await open(driver, [preview]);
     await session.apply(preview);
+    host.connections.set('fg-1--app', 1);
     host.counters = {
       activations: 4,
       idleStops: 2,
@@ -536,5 +543,90 @@ describe('Host driver', () => {
     expect(host.restored.at(-1)!.deployments.map((spec) => spec.appId)).toEqual(
       ['fg-1--app'],
     );
+  });
+
+  it('rotates by the maximum wait under continuous requests even when later status reads fail', async () => {
+    vi.useFakeTimers();
+    const host = fakeHost(1);
+    const driver = driverFor(host);
+    const preview = appSpec('busy', { activation: 'onDemand' });
+    const session = await open(driver, [preview]);
+    await session.apply(preview);
+    host.requests.set('busy', 1);
+    host.counters.idleStops = 1;
+    await vi.advanceTimersByTimeAsync(60_000);
+    expect(host.restarts).toHaveLength(0);
+    const management = await host.endpoint.controller.getManagementClient();
+    vi.spyOn(management, 'getStatus').mockRejectedValue(
+      new Error('unavailable'),
+    );
+    await vi.advanceTimersByTimeAsync(5 * 60_000 - 1);
+    expect(host.restarts).toHaveLength(0);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(host.restarts).toHaveLength(1);
+    expect(driver.churn()).toBe(0);
+  });
+
+  it('rotates immediately when running Apps have neither requests nor connections, including heap pressure', async () => {
+    vi.useFakeTimers();
+    const host = fakeHost(20);
+    const driver = driverFor(host);
+    const preview = appSpec('idle', { activation: 'onDemand' });
+    const session = await open(driver, [preview]);
+    await session.apply(preview);
+    host.counters.memoryPressure = 1;
+    await vi.advanceTimersByTimeAsync(60_000);
+    expect(host.restarts).toHaveLength(1);
+  });
+
+  it('does not let a hung deployment extend the deadline, and gates ingress and new work during rotation', async () => {
+    vi.useFakeTimers();
+    const host = fakeHost(1);
+    const driver = driverFor(host);
+    const preview = appSpec('busy', { activation: 'onDemand' });
+    const session = await open(driver, [preview]);
+    await session.apply(preview);
+    const management = await host.endpoint.controller.getManagementClient();
+    let finishDeployment!: () => void;
+    let entered!: () => void;
+    const deploymentEntered = new Promise<void>((resolve) => {
+      entered = resolve;
+    });
+    const deploymentGate = new Promise<void>((resolve) => {
+      finishDeployment = resolve;
+    });
+    vi.spyOn(management, 'applyDeployment').mockImplementationOnce(async () => {
+      entered();
+      await deploymentGate;
+      return management.getStatus({ scope: 'preview' });
+    });
+    const deploying = session.apply(preview);
+    await deploymentEntered;
+    let finishRestart!: () => void;
+    const restartGate = new Promise<void>((resolve) => {
+      finishRestart = resolve;
+    });
+    const originalRestart = host.endpoint.controller.restart!;
+    const restart = vi
+      .spyOn(host.endpoint.controller, 'restart')
+      .mockImplementation(async (reason, options) => {
+        await restartGate;
+        return originalRestart(reason, options);
+      });
+    host.counters.idleStops = 1;
+    await vi.advanceTimersByTimeAsync(60_000 + 5 * 60_000);
+    expect(restart).toHaveBeenCalledExactlyOnceWith(expect.any(String), {
+      shutdownTimeoutMs: 30_000,
+    });
+    expect(driver.proxyTarget()).toBeNull();
+    const start = vi.spyOn(management, 'startDeployment');
+    const starting = session.start(appSpec('new'));
+    await vi.advanceTimersByTimeAsync(0);
+    expect(start).not.toHaveBeenCalled();
+    finishRestart();
+    await starting;
+    expect(start).toHaveBeenCalledOnce();
+    finishDeployment();
+    await deploying;
   });
 });
