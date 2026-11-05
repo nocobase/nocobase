@@ -12,7 +12,7 @@ import { BackupManager, BackupSettings } from '../../managers/backup';
 import { MockServer } from '@nocobase/test';
 import path from 'path';
 import { storagePathJoin } from '@nocobase/utils';
-import { BACKUP_EXTENSION, METADATA_EXTENSION, SETTINGS } from '../../utils';
+import { BACKUP_EXTENSION, ENCRYPTION_FIELD_KEYS_DIRECTORY, METADATA_EXTENSION, SETTINGS } from '../../utils';
 import fs from 'fs';
 import * as cp from 'child_process';
 import PluginFileManagerServer from '@nocobase/plugin-file-manager';
@@ -56,9 +56,13 @@ vi.mock('child_process', async (importOriginal) => {
 });
 
 const backupFileBaseName = 'backup_for_unit_tests';
-const backupFilesFolder = storagePathJoin('backups', 'main');
+const backupAppName = 'backup-manager-unit-tests';
+const backupFilesFolder = storagePathJoin('backups', backupAppName);
 const finalBackupFilePath = path.join(backupFilesFolder, `${backupFileBaseName}.${BACKUP_EXTENSION}`);
 const finalMetadataFilePath = path.join(backupFilesFolder, `${backupFileBaseName}${METADATA_EXTENSION}`);
+const encryptionFieldKeysFolder = storagePathJoin('apps', backupAppName, ENCRYPTION_FIELD_KEYS_DIRECTORY);
+const encryptionFieldKey = Buffer.alloc(32, 1).toString('base64');
+const secondaryEncryptionFieldKey = Buffer.alloc(32, 2).toString('base64');
 
 async function listZipEntries(filePath: string) {
   return await new Promise<string[]>((resolve, reject) => {
@@ -89,13 +93,15 @@ describe('BackupManager', async () => {
   };
 
   beforeEach(async () => {
-    app = await getApp();
+    app = await getApp({ name: backupAppName });
     await fs.promises.mkdir(backupFilesFolder, { recursive: true });
     await fs.promises.unlink(finalBackupFilePath).catch(() => {});
+    await fs.promises.rm(encryptionFieldKeysFolder, { recursive: true, force: true });
   });
 
   afterEach(async () => {
     await app.destroy();
+    await fs.promises.rm(encryptionFieldKeysFolder, { recursive: true, force: true });
   });
 
   afterAll(async () => {
@@ -114,6 +120,8 @@ describe('BackupManager', async () => {
       await backupManager.backup(backupFileBaseName);
       const files = await fs.promises.readdir(backupFilesFolder);
       expect(files).toContain(`${backupFileBaseName}.${BACKUP_EXTENSION}`);
+      const entries = await listZipEntries(finalBackupFilePath);
+      expect(entries).toContain(`${ENCRYPTION_FIELD_KEYS_DIRECTORY}/`);
     });
 
     it('should generate a backup file with encryption', async () => {
@@ -124,6 +132,51 @@ describe('BackupManager', async () => {
       await backupManager.backup(backupFileBaseName);
       const files = await fs.promises.readdir(backupFilesFolder);
       expect(files).toContain(`${backupFileBaseName}.nbdata`);
+    });
+
+    it('should include all encryption field keys in the backup', async () => {
+      const encryptionFieldKeyFile = path.join(encryptionFieldKeysFolder, 'prime.key');
+      const secondaryEncryptionFieldKeyFile = path.join(encryptionFieldKeysFolder, 'secondary.key');
+      await fs.promises.mkdir(encryptionFieldKeysFolder, { recursive: true });
+      await fs.promises.writeFile(encryptionFieldKeyFile, encryptionFieldKey);
+      await fs.promises.writeFile(secondaryEncryptionFieldKeyFile, secondaryEncryptionFieldKey);
+
+      const backupManager = new BackupManager(app, null, defaultBackupSettings);
+      await backupManager.backup(backupFileBaseName);
+
+      const entries = await listZipEntries(finalBackupFilePath);
+      expect(entries).toContain(`${ENCRYPTION_FIELD_KEYS_DIRECTORY}/prime.key`);
+      expect(entries).toContain(`${ENCRYPTION_FIELD_KEYS_DIRECTORY}/secondary.key`);
+    });
+
+    it('should only include regular key files in the backup', async () => {
+      const ignoredTextFile = path.join(encryptionFieldKeysFolder, 'ignored.txt');
+      const nestedKeyDirectory = path.join(encryptionFieldKeysFolder, 'nested');
+      const nestedKeyFile = path.join(nestedKeyDirectory, 'nested.key');
+      const keyDirectory = path.join(encryptionFieldKeysFolder, 'directory.key');
+      const symlinkTargetFile = path.join(encryptionFieldKeysFolder, 'symlink-target');
+      const symlinkKeyFile = path.join(encryptionFieldKeysFolder, 'symlink.key');
+      await fs.promises.mkdir(nestedKeyDirectory, { recursive: true });
+      await fs.promises.mkdir(keyDirectory);
+      await fs.promises.writeFile(path.join(encryptionFieldKeysFolder, 'valid.key'), encryptionFieldKey);
+      await fs.promises.writeFile(ignoredTextFile, 'not a key');
+      await fs.promises.writeFile(nestedKeyFile, encryptionFieldKey);
+      await fs.promises.writeFile(symlinkTargetFile, encryptionFieldKey);
+      if (process.platform !== 'win32') {
+        await fs.promises.symlink(symlinkTargetFile, symlinkKeyFile);
+      }
+
+      const backupManager = new BackupManager(app, null, defaultBackupSettings);
+      await backupManager.backup(backupFileBaseName);
+
+      const entries = await listZipEntries(finalBackupFilePath);
+      expect(entries).toContain(`${ENCRYPTION_FIELD_KEYS_DIRECTORY}/valid.key`);
+      expect(entries).not.toContain(`${ENCRYPTION_FIELD_KEYS_DIRECTORY}/ignored.txt`);
+      expect(entries).not.toContain(`${ENCRYPTION_FIELD_KEYS_DIRECTORY}/nested/nested.key`);
+      expect(entries).not.toContain(`${ENCRYPTION_FIELD_KEYS_DIRECTORY}/directory.key`);
+      if (process.platform !== 'win32') {
+        expect(entries).not.toContain(`${ENCRYPTION_FIELD_KEYS_DIRECTORY}/symlink.key`);
+      }
     });
 
     it('should upload using configured cloud storage when backup options omit storageId', async () => {
@@ -231,7 +284,7 @@ describe('BackupManager', async () => {
         getTableNameWithSchemaAsString: () => 'business_records',
       };
       const fakeApp = {
-        name: 'main',
+        name: backupAppName,
         db: {
           options: {
             dialect: 'mysql',
@@ -461,7 +514,8 @@ describe('BackupManager', async () => {
 
     it('should reject sibling files that only match the backup directory prefix', async () => {
       const backupManager = new BackupManager(app, null, defaultBackupSettings);
-      const siblingDir = path.join(path.dirname(backupFilesFolder), 'main_evil');
+      const siblingDirectoryName = `${backupAppName}_evil`;
+      const siblingDir = path.join(path.dirname(backupFilesFolder), siblingDirectoryName);
       const siblingFileName = 'prefix-collision.nbdata';
       const siblingFilePath = path.join(siblingDir, siblingFileName);
 
@@ -469,7 +523,7 @@ describe('BackupManager', async () => {
         await fs.promises.mkdir(siblingDir, { recursive: true });
         await fs.promises.writeFile(siblingFilePath, 'malicious sibling file');
 
-        await expect(backupManager.destroy(`../main_evil/${siblingFileName}`)).rejects.toThrow(
+        await expect(backupManager.destroy(`../${siblingDirectoryName}/${siblingFileName}`)).rejects.toThrow(
           /(FILE_NOT_FOUND|not found)/,
         );
         await expect(fs.promises.readFile(siblingFilePath, 'utf8')).resolves.toBe('malicious sibling file');
@@ -524,7 +578,8 @@ describe('BackupManager', async () => {
 
     it('should reject sibling files that only match the backup directory prefix', async () => {
       const backupManager = new BackupManager(app, null, defaultBackupSettings);
-      const siblingDir = path.join(path.dirname(backupFilesFolder), 'main_evil');
+      const siblingDirectoryName = `${backupAppName}_evil`;
+      const siblingDir = path.join(path.dirname(backupFilesFolder), siblingDirectoryName);
       const siblingFileName = 'prefix-collision.nbdata';
       const siblingFilePath = path.join(siblingDir, siblingFileName);
 
@@ -532,7 +587,7 @@ describe('BackupManager', async () => {
         await fs.promises.mkdir(siblingDir, { recursive: true });
         await fs.promises.writeFile(siblingFilePath, 'malicious sibling file');
 
-        await expect(backupManager.createReadStream(`../main_evil/${siblingFileName}`)).rejects.toThrow(
+        await expect(backupManager.createReadStream(`../${siblingDirectoryName}/${siblingFileName}`)).rejects.toThrow(
           /(FILE_NOT_FOUND|not found)/,
         );
       } finally {
