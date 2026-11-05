@@ -214,6 +214,14 @@ describeIntegrationDatabases('Repository sort nullability', (context) => {
     await context.database
       .repository('unspecified')
       .createMany({ values: [{ value: null }, { value: 1 }] });
+    const primaryKey = await captureSql(context, () =>
+      context.database.repository('unspecified').findMany({
+        sort: (s) => s.field('id').asc(),
+        select: (s) => s.fields('id'),
+      }),
+    );
+    expect(primaryKey.result).toEqual([{ id: 1 }, { id: 2 }]);
+    expect(primaryKey.statements.at(-1)).not.toMatch(/case when/i);
     await context.builder.createViewCollection('uncertainView', (v) => {
       v.integer('id').primary().notNull();
       v.integer('value').notNull();
