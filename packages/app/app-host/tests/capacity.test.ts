@@ -44,7 +44,7 @@ it('keeps sockets alive across three idle and dormancy cycles, counts only opens
       websocket: () => ({ onOpen, onClose }),
     }),
   });
-  await host.create('a', { resourcePolicy: { dormantAfterMs: 100 } });
+  await host.create('a', { resourcePolicy: { dormantAfterMs: 1000 } });
   const handle = await host.ensureActiveHandle('a');
   const events = (await handle.acceptWebSocket!(
     new Request('http://localhost/a/ws'),
@@ -53,7 +53,7 @@ it('keeps sockets alive across three idle and dormancy cycles, counts only opens
   const socket = { close: vi.fn() } as unknown as AppWebSocket;
   await events.onOpen!({ type: 'open' }, socket);
   for (let i = 0; i < 3; i++) {
-    await vi.advanceTimersByTimeAsync(101);
+    await vi.advanceTimersByTimeAsync(1001);
     await host.sweep();
     expect(host.requireSnapshot('a').activeConnections).toBe(1);
     expect(host.getMetrics().activations).toBe(1);
@@ -74,6 +74,9 @@ it('keeps sockets alive across three idle and dormancy cycles, counts only opens
   await vi.advanceTimersByTimeAsync(101);
   await host.sweep();
   expect(host.isActive('a')).toBe(false);
+  expect(hibernate).not.toHaveBeenCalled();
+  await vi.advanceTimersByTimeAsync(900);
+  await host.sweep();
   expect(hibernate).toHaveBeenCalledOnce();
 });
 

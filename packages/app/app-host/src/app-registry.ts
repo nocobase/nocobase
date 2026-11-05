@@ -1113,6 +1113,8 @@ export class AppRuntimeRegistry {
 
     const startedAt = Date.now();
     await runtime.destroy(options);
+    const lastAccessedAt = this.lastAccessedAt(id);
+    if (lastAccessedAt !== null) this.touch(id, lastAccessedAt);
     this.runtimes.delete(id);
     this.metrics.evictions += 1;
     this.metrics.lastEvictionDurationMs = Date.now() - startedAt;
