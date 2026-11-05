@@ -1,3 +1,5 @@
+export { useSubmission } from '../../../../packages/app/app-client/src/submission.js';
+export { usePendingFeedback } from '../../../../packages/app/app-client/src/pending-feedback.js';
 import type * as AppClient from '@nocobase/app-client';
 import { removeDemoLink } from '../agents/agents-chat-client.js';
 

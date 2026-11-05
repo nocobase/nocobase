@@ -197,3 +197,7 @@ export {
   AppLocalePreferenceContext,
   type AppLocalePreference,
 } from './locale-preference.js';
+export {
+  usePendingFeedback,
+  type PendingFeedback,
+} from './pending-feedback.js';

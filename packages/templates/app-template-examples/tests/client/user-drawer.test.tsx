@@ -451,7 +451,7 @@ it('blocks closing and duplicate submission until the unified save completes', a
   await user.click(screen.getByRole('button', { name: 'Save', exact: true }));
   await waitFor(() => expect(name).toBeDisabled());
   expect(
-    screen.getByRole('button', { name: enUS.settings.saving }),
+    await screen.findByRole('button', { name: enUS.settings.saving }),
   ).toBeDisabled();
   expect(
     screen.getByRole('button', { name: 'Cancel', exact: true }),

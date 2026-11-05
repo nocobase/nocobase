@@ -1,3 +1,4 @@
+import { PendingButton } from '#components/pending-button';
 import { FeedbackForm } from '#components/feedback-form';
 import { useAuthentication } from '@nocobase/app-plugin-authentication/client';
 import { useSubmission } from '@nocobase/app-client';
@@ -436,7 +437,9 @@ function UserEditor(): ReactElement {
         {t('settings.cancel')}
       </Button>
       {allowed && (
-        <Button
+        <PendingButton
+          busy={busy}
+          pendingLabel={t('settings.saving')}
           form={formId}
           type='submit'
           disabled={
@@ -455,14 +458,8 @@ function UserEditor(): ReactElement {
               (options.loading || Boolean(options.error) || !options.data))
           }
         >
-          {t(
-            busy
-              ? 'settings.saving'
-              : creating
-                ? 'settings.create'
-                : 'settings.save',
-          )}
-        </Button>
+          {t(creating ? 'settings.create' : 'settings.save')}
+        </PendingButton>
       )}
     </>
   );
@@ -475,6 +472,7 @@ function UserEditor(): ReactElement {
       ) : (
         !data.error && (
           <FeedbackForm
+            aria-busy={busy}
             submitting={busy}
             error={error}
             errorContent={<SettingsError error={error} inline />}

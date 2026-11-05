@@ -5,6 +5,10 @@ import inboxZhCN from '#extensions/nocobase-inbox/locales/zh-CN';
 
 /** The Chinese copy of what the template ships; see `./en-US.ts`. */
 const systemZhCN: SystemResource = {
+  pendingFeedback: {
+    working: '正在处理…',
+    longWait: '耗时比平常更长，您可以继续等待。',
+  },
   listFeedback: {
     loading: '加载中',
     empty: '暂无数据',

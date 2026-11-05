@@ -302,6 +302,30 @@ Theme-aware, read-only lifecycle diagram using React Flow and ELK. Shows the cur
 - Example: `@nocobase/lifecycle-diagram-demo` (`pnpm exec shadcn view @nocobase/lifecycle-diagram-demo`)
 - After installing: Pass description.description from useLifecycle/createLifecycleHook, currentState from view.record, availableTransitions filtered from view.available, and history from view.history.transitions. History matches the exact transition/source/destination; current state alone never implies a visited path. Pass a translated endLabel for separate decorative markers on explicit final states. Defaults to direction DOWN, autoHeight and initialMinZoom 0.7 for readable vertical page reading. The Fit control still shows the entire graph; an explicit initialMinZoom overrides the default. Override direction and autoHeight explicitly for compact canvases. stateActions supplies explicit configuration buttons; nodeDescription displays real policy summaries. Translate ariaLabel, stateLabel and transitionLabel; append a gear to automatic transition labels if needed. Edges are solid with inline labels and subdued neutral strokes; current/visited/available highlights use the application primary theme token. Current nodes have a stronger border and ring; icons, top accents and status footers distinguish current, visited and configurable nodes using theme tokens. onStateClick/onTransitionClick open details and never fire transitions. Keep toMermaid for documentation/export. Pass configuration={label, canConfigure, onConfigure} for automatic Configure buttons on authorized bound states and configuration selection on bound transitions. onConfigure receives the exact target and permitted bound fields grouped by native parameter key; connect the existing real editor and API. canConfigure is required and is only a UI affordance. Explicit direction/style overrides are reserved for user-requested customization; Mermaid is documentation/export only.
 
+## Feedback
+
+### loading
+
+Region-owned loading feedback with delayed display and long-wait guidance.
+
+- Kind: component
+- Install: `yes n | pnpm exec shadcn add @nocobase/loading`
+- Installs to: `client/components/loading.tsx`, `client/components/brand-loading-mark.tsx`, `client/components/brand-mark-geometry.ts`
+- Plugin dependencies: none
+- Example: `@nocobase/loading-demo` (`pnpm exec shadcn view @nocobase/loading-demo`)
+- After installing: Use real pending/submitting state. Feedback appears after 300ms, long-wait guidance after 10s, and clears immediately. Add pendingFeedback.working, pendingFeedback.longWait and status.loading to application translations. Preserve useSubmission protection; pending is recoverable state, not busy. Publish the runtime exporting usePendingFeedback before Registry publication.
+
+### pending-button
+
+A stable-size native action button with immediate busy semantics and delayed feedback.
+
+- Kind: component
+- Install: `yes n | pnpm exec shadcn add @nocobase/pending-button`
+- Installs to: `client/components/pending-button.tsx`, `client/components/brand-loading-mark.tsx`, `client/components/brand-mark-geometry.ts`
+- Plugin dependencies: none
+- Example: `@nocobase/pending-button-demo` (`pnpm exec shadcn view @nocobase/pending-button-demo`)
+- After installing: Use real pending/submitting state. Feedback appears after 300ms, long-wait guidance after 10s, and clears immediately. Add pendingFeedback.working, pendingFeedback.longWait and status.loading to application translations. Preserve useSubmission protection; pending is recoverable state, not busy. Publish the runtime exporting usePendingFeedback before Registry publication.
+
 ## File
 
 ### file-component-ui

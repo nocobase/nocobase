@@ -17,6 +17,7 @@ import { once } from 'node:events';
 import {
   checkFormFeedbackPackage,
   checkFormFeedbackPeer,
+  checkPendingFeedbackPackage,
   runtimeFloor,
 } from '../../scripts/check-form-feedback-release.mjs';
 
@@ -52,6 +53,10 @@ test('release gate rejects a compatible-looking version that lacks runtime expor
       'export class FormFeedback {}\nexport function formFeedbackErrors() {}',
     );
     assert.equal(checkFormFeedbackPackage(dir), '2.0.0-test.1');
+    assert.throws(
+      () => checkPendingFeedbackPackage(dir),
+      /lacks usePendingFeedback/,
+    );
     writeFileSync(
       path.join(dir, 'dist/index.d.ts'),
       'export declare class FormFeedback {}',
@@ -145,12 +150,17 @@ test('publication gate isolates npm from inherited scope config while checking b
         name: 'property-fields',
         dependencies: [`${packageName}@^${avatarVersion}`],
       },
+      { name: 'loading', dependencies: [`${packageName}@^${formVersion}`] },
+      {
+        name: 'pending-button',
+        dependencies: [`${packageName}@^${formVersion}`],
+      },
     ],
   };
   const formRuntime =
-    'export class FormFeedback {}\nexport function formFeedbackErrors() {}';
+    'export class FormFeedback {}\nexport function formFeedbackErrors() {}\nexport function usePendingFeedback() {}';
   const formDeclarations =
-    'export declare class FormFeedback {}\nexport declare function formFeedbackErrors(): void;\nexport interface FormFeedbackAttempt {}\nexport interface FormFeedbackField {}\nexport interface FormFeedbackOptions {}';
+    'export declare class FormFeedback {}\nexport declare function formFeedbackErrors(): void;\nexport interface FormFeedbackAttempt {}\nexport interface FormFeedbackField {}\nexport interface FormFeedbackOptions {}\nexport declare function usePendingFeedback(): PendingFeedback;\nexport interface PendingFeedback {}';
   const avatarRuntime =
     'export function getAvatarInitials(name) { return name; }';
   const avatarDeclarations =
@@ -322,6 +332,8 @@ writeFileSync(process.argv[4], 'allowed');
             assert.equal(code, 0, output);
             assert.ok(requested.has(avatarVersion), output);
             assert.match(output, /property-fields registry release allowed/);
+            assert.match(output, /loading registry release allowed/);
+            assert.match(output, /pending-button registry release allowed/);
           }
         });
       }

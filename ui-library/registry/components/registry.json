@@ -544,6 +544,75 @@
           "target": "client/components/list-feedback.tsx"
         }
       ]
+    },
+    {
+      "name": "loading",
+      "type": "registry:component",
+      "title": "Loading",
+      "description": "Region-owned loading feedback with delayed display and long-wait guidance.",
+      "categories": ["feedback"],
+      "meta": {
+        "group": "Feedback"
+      },
+      "dependencies": [
+        "@nocobase/app-client@^4.0.0-beta.9",
+        "@nocobase/i18n@^2.0.0-beta.1",
+        "cn@^0.4.0"
+      ],
+      "registryDependencies": [],
+      "docs": "Use real pending/submitting state. Feedback appears after 300ms, long-wait guidance after 10s, and clears immediately. Add pendingFeedback.working, pendingFeedback.longWait and status.loading to application translations. Preserve useSubmission protection; pending is recoverable state, not busy. Publish the runtime exporting usePendingFeedback before Registry publication.",
+      "files": [
+        {
+          "path": "loading.tsx",
+          "type": "registry:component",
+          "target": "client/components/loading.tsx"
+        },
+        {
+          "path": "brand-loading-mark.tsx",
+          "type": "registry:component",
+          "target": "client/components/brand-loading-mark.tsx"
+        },
+        {
+          "path": "brand-mark-geometry.ts",
+          "type": "registry:component",
+          "target": "client/components/brand-mark-geometry.ts"
+        }
+      ]
+    },
+    {
+      "name": "pending-button",
+      "type": "registry:component",
+      "title": "Pending Button",
+      "description": "A stable-size native action button with immediate busy semantics and delayed feedback.",
+      "categories": ["feedback"],
+      "meta": {
+        "group": "Feedback"
+      },
+      "dependencies": [
+        "@nocobase/app-client@^4.0.0-beta.9",
+        "@nocobase/i18n@^2.0.0-beta.1",
+        "cn@^0.4.0",
+        "@base-ui/react@^1.6.0"
+      ],
+      "registryDependencies": ["button"],
+      "docs": "Use real pending/submitting state. Feedback appears after 300ms, long-wait guidance after 10s, and clears immediately. Add pendingFeedback.working, pendingFeedback.longWait and status.loading to application translations. Preserve useSubmission protection; pending is recoverable state, not busy. Publish the runtime exporting usePendingFeedback before Registry publication.",
+      "files": [
+        {
+          "path": "pending-button.tsx",
+          "type": "registry:component",
+          "target": "client/components/pending-button.tsx"
+        },
+        {
+          "path": "brand-loading-mark.tsx",
+          "type": "registry:component",
+          "target": "client/components/brand-loading-mark.tsx"
+        },
+        {
+          "path": "brand-mark-geometry.ts",
+          "type": "registry:component",
+          "target": "client/components/brand-mark-geometry.ts"
+        }
+      ]
     }
   ]
 }

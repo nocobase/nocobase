@@ -79,6 +79,18 @@ Call `useRouteOverlay()` from a component rendered inside the overlay, such as a
 
 `RouteChildPage` is not modal. It positions itself with `absolute inset-0`, so the element that contains it must be positioned; an application's content area is. The page it covers renders its `Outlet` last, at the end of its `PageContainer`: the layer makes what comes before it `inert`, and anything after it would stay reachable. Give the child page a `PageContainer` of its own, inside `RouteChildPage`; returned bare, a child route's `PageContainer` renders below the parent's content instead of covering it. A child page that can only render inside another one — the child page of a tab, reached through the tab's outlet — covers the enclosing child page whole, because a `RouteChildPage` is two elements: the outer one positions and never scrolls, the inner one scrolls. While it is mounted, the siblings it covers are `inert`, and inside another child page so is everything around it up to that page's scrolling element. It has no close button: a back link above its heading, such as the `BackButton` the application templates carry in `client/components/back-button.tsx`, or the browser's back button, returns to the page beneath.
 
+## Loading and PendingButton
+
+`Loading` owns a page or panel's feedback. Mount it inside the actual content slot; keep the shell, toolbar, form draft and scroll owner mounted. `fullscreen` is reserved for application startup. It preserves its indicator and text footprint before display and uses the existing brand mark with reduced-motion support. It adds no viewport height unless `fullscreen` is explicit. Do not put an overlay's Loading at the end of its parent page.
+
+`PendingButton` wraps the installed native Button. Pass the real `busy` state and a translated `pendingLabel`; ordinary `type`, `form`, `ref`, `disabled`, variant and size props pass through. Both idle and waiting labels participate in layout from the start so the button keeps its size. Use text or an accessible label for icon-only actions. It disables immediately, announces once after the display delay, and keeps a polite status outside its busy element. After 10 seconds an anchored, non-interactive hint also explains the wait visually without resizing the button. Do not nest another Spinner or live region inside either component. Custom `render` and link semantics use their own action-specific feedback, not this native submission button.
+
+Both use `usePendingFeedback(busy, identity?)` from `@nocobase/app-client`: show after 300ms, explain after 10 seconds, clear immediately on completion, failure or cancellation. Ten seconds is guidance, not a timeout. There is no forced minimum wait. Change a stable primitive `identity` when one continuously busy operation is replaced by another. Timers are cleared on completion, identity changes and unmount. The hook neither fetches nor cancels work, caches results, authorizes content, nor guards stale responses; the request owner handles those boundaries.
+
+Use `useSubmission().submitting` for buttons; `.pending` represents an unresolved operation that may need recovery and must not hold the button busy indefinitely. Keep the shared submission controller before asynchronous validation and keep server receipt/idempotency protection. A disabled button only supplies feedback; keyboard and programmatic form entries still invoke the same controller. See the application Skill's `references/pending-feedback.md` for integration and migration.
+
+These items require a runtime exporting `usePendingFeedback`. Release that runtime before publishing Registry sources; `scripts/check-form-feedback-release.mjs` gates upload on obtainable JavaScript and declaration exports for both items. Existing installed copies require source reconciliation; runtime dependency updates alone do not update them.
+
 ## Translations
 
 The overlays' close button names itself with `useTranslation()` from `@nocobase/i18n/client` under `routeOverlay.close`, falling back to `Close`. A component ships no locale file, so add the keys to the locale resources of the namespace that renders them:
@@ -137,19 +149,22 @@ The shared DataTable and its column header and pagination controls use these key
 | `flowDiagram.arrivesFrom`    | Arrives from                                 | 来自                        |
 | `flowDiagram.otherRoutes`    | Other routes                                 | 其他流转                    |
 
-| Key                            | English                               | Chinese                |
-| ------------------------------ | ------------------------------------- | ---------------------- |
-| `listFeedback.loading`         | Loading                               | 加载中                 |
-| `listFeedback.empty`           | No data yet                           | 暂无数据               |
-| `listFeedback.noResults`       | No results                            | 无结果                 |
-| `listFeedback.forbidden`       | Access denied                         | 无权访问               |
-| `listFeedback.unauthenticated` | Session expired                       | 会话已过期             |
-| `listFeedback.failed`          | Unable to load list                   | 列表加载失败           |
-| `listFeedback.refreshFailed`   | Refresh failed; showing previous data | 刷新失败，仍显示旧数据 |
-| `listFeedback.retry`           | Retry                                 | 重试                   |
-| `listFeedback.retrying`        | Retrying…                             | 正在重试…              |
-| `listFeedback.clear`           | Clear filters                         | 清空筛选               |
-| `listFeedback.signIn`          | Sign in                               | 登录                   |
+| Key                            | English                                                 | Chinese                          |
+| ------------------------------ | ------------------------------------------------------- | -------------------------------- |
+| `pendingFeedback.working`      | Working…                                                | 正在处理…                        |
+| `pendingFeedback.longWait`     | This is taking longer than usual. You can keep waiting. | 耗时比平常更长，您可以继续等待。 |
+| `status.loading`               | Loading                                                 | 加载中                           |
+| `listFeedback.loading`         | Loading                                                 | 加载中                           |
+| `listFeedback.empty`           | No data yet                                             | 暂无数据                         |
+| `listFeedback.noResults`       | No results                                              | 无结果                           |
+| `listFeedback.forbidden`       | Access denied                                           | 无权访问                         |
+| `listFeedback.unauthenticated` | Session expired                                         | 会话已过期                       |
+| `listFeedback.failed`          | Unable to load list                                     | 列表加载失败                     |
+| `listFeedback.refreshFailed`   | Refresh failed; showing previous data                   | 刷新失败，仍显示旧数据           |
+| `listFeedback.retry`           | Retry                                                   | 重试                             |
+| `listFeedback.retrying`        | Retrying…                                               | 正在重试…                        |
+| `listFeedback.clear`           | Clear filters                                           | 清空筛选                         |
+| `listFeedback.signIn`          | Sign in                                                 | 登录                             |
 
 ## In a plugin
 

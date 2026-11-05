@@ -8,6 +8,10 @@ import inboxEnUS from '#extensions/nocobase-inbox/locales/en-US';
  * upgrade replaces this file, so put the application's own copy in `../en-US.ts` rather than here.
  */
 const systemEnUS = {
+  pendingFeedback: {
+    working: 'Working…',
+    longWait: 'This is taking longer than usual. You can keep waiting.',
+  },
   listFeedback: {
     loading: 'Loading',
     empty: 'No data yet',
