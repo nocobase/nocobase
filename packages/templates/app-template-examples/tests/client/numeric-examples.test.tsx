@@ -98,7 +98,7 @@ it('shows loading, then a transport failure and a successful retry', async () =>
       'Unable to load list',
     );
     offline = false;
-    fireEvent.click(screen.getByRole('button', { name: 'Refresh' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
     expect(
       await screen.findByRole('region', { name: 'Stored values' }),
     ).toBeVisible();

@@ -34,6 +34,8 @@ Conventions every page follows, each explained in its home:
 - Toasts with `useToaster()` from `@nocobase/app-client`, never a second `Toaster` (["Toasts" in `references/api.md`](references/api.md#toasts)).
 - Every user-visible string through a translation key ([`references/i18n.md`](references/i18n.md)).
 
+Ordinary pages do not add a persistent Refresh action. Preserve write invalidation, contextual read retries and automatic progress updates; see [page data freshness](references/page-freshness.md) for the rule and the boundary between new templates and existing application copies.
+
 ## Browser API compatibility
 
 Check browser support and secure-context requirements before choosing a browser API, including APIs called by third-party libraries. HTTPS-only APIs are allowed when a feature needs them: detect availability and permission failures, and show a localized explanation of the requirement and how the user can proceed. Keep unrelated actions working. Do not silently do nothing or show a success message when an API is unavailable. A LAN IP served over HTTP is not a secure context, while localhost is treated as trustworthy, so test the unavailable state instead of relying on localhost alone.

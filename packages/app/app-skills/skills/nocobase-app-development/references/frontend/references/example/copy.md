@@ -71,7 +71,6 @@ const enUS = {
       more: 'More actions for "{{name}}"',
       edit: 'Edit',
       delete: 'Delete',
-      refresh: 'Refresh',
     },
     create: {
       action: 'New project',
@@ -176,7 +175,6 @@ const enUS = {
   projectDashboard: {
     title: 'Project dashboard',
     description: 'Where the projects stand, and what changed recently.',
-    refresh: 'Refresh',
     metrics: {
       total: 'All projects',
       active: 'Active',
@@ -288,7 +286,6 @@ const zhCN: AppResource = {
       more: '“{{name}}”的更多操作',
       edit: '编辑',
       delete: '删除',
-      refresh: '刷新',
     },
     create: {
       action: '新建项目',
@@ -389,7 +386,6 @@ const zhCN: AppResource = {
   projectDashboard: {
     title: '项目仪表盘',
     description: '项目的整体进展，以及最近的变化。',
-    refresh: '刷新',
     metrics: {
       total: '全部项目',
       active: '进行中',

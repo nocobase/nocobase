@@ -12,7 +12,7 @@ const enUS = {
     description:
       'Trace notification delivery and every provider attempt. Message bodies, recipients, and lease tokens are redacted.',
     refreshing: 'Refreshing…',
-    refresh: 'Refresh',
+    retryRead: 'Retry',
     deliveriesShown: 'Deliveries shown',
     needAttention: 'Need attention',
     unavailable: 'Logs unavailable',

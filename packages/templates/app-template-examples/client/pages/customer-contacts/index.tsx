@@ -14,7 +14,6 @@ import { useTranslation } from '@nocobase/i18n/client';
 import { useEffect, useRef, useState } from 'react';
 import { Link, Outlet, useLocation } from 'react-router';
 import type { ColumnDef } from '@tanstack/react-table';
-import { RefreshCw } from 'lucide-react';
 import { DataTable } from '#components/data-table';
 import { PageContainer } from '#components/page-container';
 import { PageHeader } from '#components/page-header';
@@ -259,15 +258,6 @@ function CustomerContactsContent() {
                   {t('customerContacts.reset')}
                 </Button>
               )}
-              <Button
-                variant='outline'
-                onClick={reload}
-                disabled={request.loading}
-                aria-label={t('customerContacts.refresh')}
-              >
-                <RefreshCw className={request.loading ? 'animate-spin' : ''} />
-                {t('customerContacts.refresh')}
-              </Button>
             </>
           }
         />

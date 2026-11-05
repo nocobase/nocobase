@@ -319,7 +319,7 @@ const esES: LocaleResource<typeof enUS> = {
   cancel: 'Cancelar',
   search: 'Buscar por nombre/número/ID',
   apply: 'Buscar',
-  refresh: 'Actualizar',
+  retryRead: 'Reintentar',
   previous: 'Anterior',
   next: 'Siguiente',
   page: 'Página {{page}}',
