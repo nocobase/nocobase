@@ -42,7 +42,8 @@ export const customVariable = defineAction({
       if (variable.type === 'runjs') {
         const getFunction = async () => {
           const { code, version } = normalizeRunJSValue(variable.runjs);
-          return ctx.runjs(code, undefined, { version });
+          const result = await ctx.runjs(code, undefined, { version });
+          return result?.success ? result.value : undefined;
         };
         const metaFunction = () => ({
           title: variable.title,
