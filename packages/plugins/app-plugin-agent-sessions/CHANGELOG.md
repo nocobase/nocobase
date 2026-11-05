@@ -1,5 +1,24 @@
 # @nocobase/app-plugin-agent-sessions
 
+## 1.0.0-beta.18
+
+### Patch Changes
+
+- f27c1d9: Give a linked task's title the whole first line in a session's details, with its key and status on the line below.
+- 2bef509: Show a session's usage in its details the same way as a runner conversation: a thin context bar, then one row each for input, cached and output tokens and the cost.
+- 49daa11: Explain how to recover agent settings discovery by updating the CLI and restarting the background connection.
+- e800687: Remove the project name from session list rows while keeping project filtering available.
+- Updated dependencies [bfddb40]
+- Updated dependencies [78bdca8]
+- Updated dependencies [9998ac4]
+- Updated dependencies [87f1ea5]
+- Updated dependencies [6507d01]
+  - @nocobase/acp-bridge@1.0.0-beta.5
+  - @nocobase/app-plugin-authentication@2.0.0-beta.19
+  - @nocobase/app-client@4.0.0-beta.8
+  - @nocobase/app-server@5.0.0-beta.1
+  - @nocobase/app-plugin-file@1.0.0-beta.29
+
 ## 1.0.0-beta.17
 
 ### Patch Changes
