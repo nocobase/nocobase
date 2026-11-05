@@ -180,6 +180,37 @@ it('rejects retained heap pressure after one safe eviction and requests rotation
   expect(host.isActive('b')).toBe(true);
 });
 
+it('does not report startup peaks or a never-reclaimed heap as retained pressure', async () => {
+  let heapUsed = 100 * MiB;
+  let release!: () => void;
+  const started = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  const host = registry({
+    sampleHeap: () => ({ heapUsed, heapLimit: 1280 * MiB }),
+    resolveFactory: (definition) => async () => {
+      if (definition.id === 'slow') await started;
+      return { fetch: () => new Response('ok'), config: new AppConfig() };
+    },
+  });
+  await host.register('slow');
+  const slow = host.ensureActive('slow');
+  await vi.waitFor(() => expect(host.isActivating('slow')).toBe(true));
+  // The starting App's allocations and its reservation together exceed the target.
+  heapUsed = 500 * MiB;
+  await expect(host.create('b')).rejects.toMatchObject({
+    code: 'APP_CAPACITY_EXCEEDED',
+  });
+  release();
+  await slow;
+  // Nothing is starting, but no App has left this process: rotation would reclaim nothing.
+  heapUsed = 700 * MiB;
+  await expect(host.ensureActive('b')).rejects.toMatchObject({
+    code: 'APP_CAPACITY_EXCEEDED',
+  });
+  expect(host.getMetrics().memoryPressure).toBe(0);
+});
+
 it('does not reclaim an App with a live socket to admit another App', async () => {
   const host = registry({
     maxActiveApps: 1,

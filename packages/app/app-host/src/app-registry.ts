@@ -1047,7 +1047,17 @@ export class AppRuntimeRegistry {
           }
         }
         if (full() || heapFull()) {
-          if (heapFull()) this.metrics.memoryPressure += 1;
+          // Rotation helps only with memory that Apps gone from this process left behind. A starting App is
+          // counted twice above (its reservation and the heap it already allocated), and a Host whose Apps
+          // never went away has nothing to reclaim, so neither is reported as retained pressure.
+          if (
+            heapFull() &&
+            ![...this.reservations.values()].some(
+              (app) => app.backend === 'in-process',
+            ) &&
+            this.metrics.evictions + this.metrics.destroys > 0
+          )
+            this.metrics.memoryPressure += 1;
           this.logger?.warn(
             {
               appId: definition.id,
