@@ -16,6 +16,9 @@ export const enUS = {
   description: 'Create and rename projects.',
   name: 'Name',
   actions: 'Actions',
+  detail: 'Project details',
+  detailGone:
+    'This project no longer exists. Return to Projects to choose another record.',
   edit: 'Edit project',
   create: 'Create project',
   loading: 'Loading projects…',
@@ -55,6 +58,8 @@ export const zhCN = {
   description: '创建项目并修改名称。',
   name: '名称',
   actions: '操作',
+  detail: '项目详情',
+  detailGone: '此项目已不存在，请返回项目列表选择其他记录。',
   edit: '编辑项目',
   create: '创建项目',
   loading: '正在加载项目…',

@@ -94,3 +94,7 @@ export default function CreateProjectPage(): ReactElement {
   );
 }
 ```
+
+## Independent edit pages
+
+This example is an overlay: Cancel and Close return to the tab that opened it. For an independent edit page, use the [detail → edit navigation pattern](../navigation.md): declare list → record detail → Edit before loading, keep detail as the edit parent regardless of its internal tabs, and do not add a second page BackButton under the shell.

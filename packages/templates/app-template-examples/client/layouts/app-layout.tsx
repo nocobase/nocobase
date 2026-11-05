@@ -20,7 +20,6 @@ import {
   AppSidebarToggle,
 } from './components/app-sidebar.js';
 import { NavigationMenu } from './components/navigation-menu.js';
-import { AppBrand } from './components/app-brand.js';
 import { HeaderActions } from './components/header-actions.js';
 import { AppSidebarFooter } from './components/sidebar-footer.js';
 import {
@@ -72,9 +71,6 @@ function AuthenticatedLayout({ routes }: AppLayoutProps): ReactElement {
             <LayoutHeader className='sticky top-0 z-40 justify-between'>
               <div className='flex min-w-0 items-center gap-3'>
                 <AppSidebarToggle />
-                <div className='md:hidden'>
-                  <AppBrand />
-                </div>
                 <div className='h-5 w-px shrink-0 bg-border' />
                 {/* The current page's trail: the route tree's, or the one the page declares (`usePageBreadcrumb`). */}
                 <Breadcrumbs denied={denied} />

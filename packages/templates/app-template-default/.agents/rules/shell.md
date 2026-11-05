@@ -4,6 +4,8 @@ Read this before changing the layouts, header, sidebar, breadcrumbs, account men
 
 ## Breadcrumbs and layouts
 
+Both automatic and explicit parents pass through `client/routing/navigation-destination.ts`, using the shell's existing route/access context. Keep permission loading fail-closed, check every target ancestor, and remove denied parent names. Desktop breadcrumbs and the mobile parent arrow use the same resolved levels; mobile keeps the current title and omits the duplicate brand. Follow the [detail/edit generation contract](../skills/nocobase-app-development/references/frontend/references/navigation.md), including stable parents during record failures, source-tab state and direct-entry defaults. Do not add a second page BackButton under the shell.
+
 Layouts own breadcrumb route context and render the current page's trail in the header after the sidebar toggle (`client/components/breadcrumbs.tsx`): the route trail by default, or the trail a page declares with `usePageBreadcrumb` from `@nocobase/app-client` when it names records. Pages do not render breadcrumbs themselves. `AppRouter` selects routes and layouts. See [pages and routes](../skills/nocobase-app-development/references/frontend/references/page.md) for each layout's scope.
 
 The route-tree provider remembers each visited ancestor's query while its descendants are open. Default breadcrumbs and back links restore that query, including an empty one, instead of applying detail-only parameters to the list. Keep this provider mounted above page navigation. Explicit breadcrumb/back destinations remain application-owned. See the linked pages-and-routes reference for deep-link and reload fallbacks.
