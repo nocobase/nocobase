@@ -77,6 +77,7 @@ it.each([
       body: JSON.stringify(body),
     });
     const smtp = await receiver();
+    const unselected = await receiver();
     const create = mailer.createMailTransport;
     const sends: Promise<mailer.MailResult>[] = [];
     vi.spyOn(mailer, 'createMailTransport').mockImplementation((...args) => {
@@ -100,7 +101,7 @@ it.each([
                 system: {
                   provider: 'smtp',
                   host: '127.0.0.1',
-                  port: smtp.port,
+                  port: independent === 'named' ? unselected.port : smtp.port,
                   from: 'sender@example.test',
                 },
                 ...(independent === 'named'
@@ -115,7 +116,7 @@ it.each([
                   : {}),
               },
               ...(independent === 'named'
-                ? { auth: { email: { mailer: 'marketing' } } }
+                ? { auth: { passwordReset: { mailer: 'marketing' } } }
                 : {}),
             }
           : independent
@@ -180,6 +181,7 @@ it.each([
       await expect(sends[1]).resolves.toMatchObject({ status: 'accepted' });
       // Each submission opens its own connection and releases it when it ends.
       expect(smtp.connections()).toBe(2);
+      expect(unselected.connections()).toBe(0);
       await vi.waitFor(() => expect(smtp.sockets.size).toBe(0));
       const decoded = smtp.messages[1]!.replace(/=\r\n/gu, '').replace(
         /=([0-9A-F]{2})/gu,
@@ -237,6 +239,7 @@ it.each([
       await app.close();
       await vi.waitFor(() => expect(smtp.sockets.size).toBe(0));
       await smtp.close();
+      await unselected.close();
     }
   },
 );

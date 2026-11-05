@@ -116,8 +116,7 @@ auth:
   # Set app.publicOrigin before explicitly enabling automatic password recovery.
   # passwordReset:
   #   enabled: true
-  # email:
-  #   mailer: system # omit to use mailers.default
+  #   mailer: system # omit to preserve existing default selection
   # Existing inline auth.email and AUTH_EMAIL_* remain supported for compatibility.
   emailAndPassword:
     enabled: true

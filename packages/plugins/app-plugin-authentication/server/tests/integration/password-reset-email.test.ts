@@ -4,6 +4,7 @@ import { afterEach, expect, it, vi } from 'vitest';
 import { createTestApp } from '@nocobase/app-testing/server';
 import { MailExecutions } from '@nocobase/mailer';
 import * as mailer from '@nocobase/mailer';
+import { MailSenderFactory } from '@nocobase/app-server/mailers';
 import { Auth } from '../../auth.js';
 import { createStandaloneServer } from '../fixtures/reset-app/server/standalone.js';
 import { createAuthFixture } from './support.js';
@@ -42,9 +43,10 @@ it.each([undefined, false, true])(
     vi.stubGlobal('fetch', fetch);
     const fixture = await setup({
       email,
-      passwordReset: { enabled, emailChannel: 'legacy' },
+      passwordReset: { enabled, mailer: 'selected', emailChannel: 'legacy' },
       emailAndPassword: { enabled: true, sendResetPassword: custom },
       passwordResetServices: {
+        mailerFactory: new MailSenderFactory({ selected: email }),
         warning,
         legacyChannels: { legacy: { ...email, apiKey: 'legacy-key' } },
       },
@@ -57,7 +59,7 @@ it.each([undefined, false, true])(
     expect(response.status).toBe(enabled === false ? 400 : 200);
     if (enabled !== false) {
       await vi.waitFor(() => expect(custom).toHaveBeenCalledOnce());
-      expect(warning).toHaveBeenCalledTimes(2);
+      expect(warning).toHaveBeenCalledTimes(3);
     } else expect(custom).not.toHaveBeenCalled();
     expect(fetch).not.toHaveBeenCalled();
     expect(JSON.stringify(warning.mock.calls)).not.toContain('synthetic-key');
@@ -88,7 +90,7 @@ it.each([undefined, false])(
 );
 
 it.each(
-  [false, true].flatMap((legacy) =>
+  [false, true, 'direct'].flatMap((legacy) =>
     (['accepted', 'failed', 'submission_unknown'] as const).map((result) => ({
       legacy,
       result,
@@ -121,6 +123,7 @@ it.each(
       passwordReset: {
         enabled: true,
         emailChannel: 'legacy',
+        ...(legacy === 'direct' ? { mailer: 'selected' } : {}),
         template: (data) => ({
           to: data.user.email,
           subject: 'Application template',
@@ -129,6 +132,15 @@ it.each(
       },
       emailAndPassword: { enabled: true },
       passwordResetServices: {
+        ...(legacy === 'direct'
+          ? {
+              mailerFactory: new MailSenderFactory({
+                default: 'fallback',
+                fallback: { ...email, apiKey: 'unselected-key' },
+                selected: email,
+              }),
+            }
+          : {}),
         executions,
         report,
         warning,
@@ -149,15 +161,17 @@ it.each(
     await vi.waitFor(() => expect(fetch).toHaveBeenCalledOnce());
     await vi.waitFor(() => expect(executions.inFlight).toBe(0));
     expect(warning).toHaveBeenCalledWith(
-      legacy
-        ? expect.stringContaining('deprecated. Migrate to mailers')
-        : 'auth.passwordReset.emailChannel is unused; auth.email takes precedence.',
+      legacy === 'direct'
+        ? 'auth.passwordReset.emailChannel is unused; auth.passwordReset.mailer takes precedence.'
+        : legacy
+          ? expect.stringContaining('deprecated. Migrate to mailers')
+          : 'auth.passwordReset.emailChannel is unused; auth.email takes precedence.',
     );
     expect(
       new Headers(fetch.mock.calls[0]![1].headers as HeadersInit).get(
         'authorization',
       ),
-    ).toBe(`Bearer ${legacy ? 'legacy-key' : 'synthetic-key'}`);
+    ).toBe(`Bearer ${legacy === true ? 'legacy-key' : 'synthetic-key'}`);
     expect(JSON.stringify(report.mock.calls)).not.toMatch(
       /synthetic-key|synthetic-private-provider-body/u,
     );
@@ -172,6 +186,42 @@ it.each(
           ? ['provider', 'request']
           : ['network', 'request'],
     );
+    if (legacy === 'direct' && result === 'accepted') {
+      const { text } = JSON.parse(fetch.mock.calls[0]![1].body as string) as {
+        text: string;
+      };
+      const token = text.match(/reset-password\/([A-Za-z0-9_-]+)/u)?.[1];
+      expect(token).toBeTruthy();
+      expect(
+        (
+          await fixture.router.request(
+            '/api/auth/reset-password',
+            json({ token, newPassword: 'replacement-password' }),
+          )
+        ).status,
+      ).toBe(200);
+      expect(
+        (
+          await fixture.router.request(
+            '/api/auth/reset-password',
+            json({ token, newPassword: 'another-password' }),
+          )
+        ).status,
+      ).toBe(400);
+      for (const [password, status] of [
+        ['replacement-password', 200],
+        ['correct horse battery staple', 401],
+      ] as const) {
+        expect(
+          (
+            await fixture.router.request(
+              '/api/auth/sign-in/email',
+              json({ email: 'alice@example.com', password }),
+            )
+          ).status,
+        ).toBe(status);
+      }
+    }
   },
 );
 

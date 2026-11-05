@@ -17,7 +17,7 @@ export interface PasswordResetSenderSelection {
 }
 
 /**
- * Pick and create the built-in reset sender at an assembly boundary. Precedence: `auth.email` (reference or inline),
+ * Pick and create the built-in reset sender at an assembly boundary. Precedence: `auth.passwordReset.mailer`, inline `auth.email`,
  * explicit `passwordReset.emailChannel`, `mailers.default`, then the implicit `system-email` channel. A custom
  * `sendResetPassword` still wins inside the policy; an invalid explicit reference throws even then. Creation is lazy
  * and allocates no transport until the first send. The caller owns and closes the returned sender.
@@ -32,12 +32,14 @@ export function createPasswordResetSender(
 ): PasswordResetSenderSelection {
   const { email, passwordReset, legacyChannels } = options;
   assertAuthEmailConfig(email);
+  if (passwordReset?.mailer !== undefined)
+    return {
+      sender: factory.create(passwordReset.mailer, 'auth.passwordReset.mailer'),
+      legacy: false,
+    };
   if (email)
     return {
-      sender:
-        'mailer' in email
-          ? factory.create(email.mailer, 'auth.email.mailer')
-          : factory.createFromConfig(email),
+      sender: factory.createFromConfig(email),
       legacy: false,
     };
   if (passwordReset?.emailChannel !== undefined)
