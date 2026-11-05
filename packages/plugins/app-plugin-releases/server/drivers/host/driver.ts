@@ -563,6 +563,10 @@ export function createHostDriver(
             };
       };
 
+      const pendingDeployments = new Map<
+        string,
+        { appId: string; submitted: boolean; cancelled: boolean }
+      >();
       return {
         async check() {
           try {
@@ -580,7 +584,29 @@ export function createHostDriver(
             };
           }
         },
+        async cancel(deploymentId, appId, queuedOnly) {
+          const pending = pendingDeployments.get(deploymentId);
+          if (pending && pending.appId === appId && !pending.submitted) {
+            pending.cancelled = true;
+            return 'cancelled';
+          }
+          return (await management()).cancelDeployment(deploymentId, appId, {
+            scope: scope.scope,
+            queuedOnly,
+          });
+        },
+        async progress(deploymentId, appId) {
+          return (await management()).deploymentProgress(deploymentId, appId, {
+            scope: scope.scope,
+          });
+        },
         async apply(spec, onEvent) {
+          const pending = {
+            appId: spec.appId,
+            submitted: false,
+            cancelled: false,
+          };
+          pendingDeployments.set(spec.deploymentId, pending);
           track(scope, spec);
           let replacing = false;
           try {
@@ -594,6 +620,11 @@ export function createHostDriver(
                   (deployment) => deployment.app?.state === 'active',
                 ),
               );
+              if (pending.cancelled)
+                throw Object.assign(new Error('Deployment cancelled.'), {
+                  code: 'DEPLOYMENT_CANCELLED',
+                });
+              pending.submitted = true;
               // A deployment always starts the App once, so it proves the release runs.
               return await service.applyDeployment(
                 {
@@ -611,10 +642,17 @@ export function createHostDriver(
               return failed(spec, 'The Host did not report the deployment.');
             return outcomeOf(deployed, spec.deploymentId);
           } catch (error) {
+            if ((error as { code?: string }).code === 'DEPLOYMENT_CANCELLED')
+              return {
+                ...failed(spec, 'Deployment cancelled.'),
+                state: 'cancelled',
+              };
             return failed(
               spec,
               error instanceof Error ? error.message : String(error),
             );
+          } finally {
+            pendingDeployments.delete(spec.deploymentId);
           }
         },
         async start(spec) {
@@ -753,12 +791,14 @@ function operationOutcome(result: HostOperation): AppObservedStatus {
       lastAccessedAt: result.status?.lifecycle?.lastAccessedAt ?? null,
     };
   return {
-    state: 'failed',
+    state: result.state === 'cancelled' ? 'cancelled' : 'failed',
     version: result.status?.version ?? null,
     deploymentId: result.operationId,
     startedAt: null,
     error:
-      result.error ??
+      (result.state === 'interrupted'
+        ? 'Deployment was interrupted by a restart. Deploy the release again.'
+        : result.error) ??
       (result.state === 'running'
         ? `The deployment of ${result.appId} has not finished on the Host.`
         : 'The deployment failed.'),

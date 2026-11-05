@@ -37,6 +37,15 @@ const PREFIXES: readonly (readonly [string, string])[] = [
 /** A runtime's or the plugin's message in the reader's language; unknown text as it is. */
 export function messageText(t: Translate, message: string): string {
   const text = message.trim();
+  if (text === 'Deployment cancelled.')
+    return t('ui.deployments.statuses.cancelled');
+  if (text === 'Replaced by a newer deployment.')
+    return t('ui.deployments.replaced');
+  if (
+    text ===
+    'Deployment was interrupted by a restart. Deploy the release again.'
+  )
+    return t('ui.deployments.restartHint');
   for (const [prefix, key] of PREFIXES)
     if (text.startsWith(prefix))
       return t(`ui.errors.prefixed.${key}`, {

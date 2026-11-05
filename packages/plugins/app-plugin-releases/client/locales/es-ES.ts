@@ -301,6 +301,11 @@ const esES: LocaleResource<typeof enUS> = {
         'Este entorno está protegido. Escriba {{appId}} para implementar.',
     },
     deployments: {
+      cancel: 'Cancelar despliegue',
+      replaced: 'Sustituido por un despliegue más reciente.',
+      cancelAccepted: 'Cancelación aceptada.',
+      queueAhead: 'En cola · {{ahead}} por delante',
+      restartHint: 'Despliegue interrumpido. Vuelva a desplegar la versión.',
       title: 'Despliegues',
       kind: 'Amable',
       status: 'Estado',
@@ -317,6 +322,8 @@ const esES: LocaleResource<typeof enUS> = {
       hideLogs: 'Ocultar registros',
       noLogs: 'Sin líneas de registro.',
       statuses: {
+        cancelling: 'Cancelando',
+        cancelled: 'Cancelado',
         queued: 'En cola',
         deploying: 'Despliegue',
         succeeded: 'Tuvo éxito',
@@ -640,6 +647,9 @@ const esES: LocaleResource<typeof enUS> = {
           'La configuración se guardó, pero la aplicación no pudo recargarla.',
         CONFIG_TOO_LARGE: 'La configuración es demasiado grande.',
         CONFIRMATION_REQUIRED: 'Escriba la ID de la aplicación para confirmar.',
+        DEPLOYMENT_NOT_CANCELLABLE:
+          'El despliegue ha empezado a cambiar de versión o ha terminado.',
+        CANCELLATION_UNSUPPORTED: 'Este controlador no admite la cancelación.',
         DEPLOYMENT_IN_PROGRESS: 'Ya se está implementando esta aplicación.',
         DEPLOYMENT_NOT_FOUND: 'La implementación no existe.',
         DRIVER_UNAVAILABLE: 'El controlador del entorno no está disponible.',

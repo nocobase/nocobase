@@ -5,7 +5,8 @@ import type { AppSummary } from '../../shared/releases.js';
  * starts it.
  */
 export function appStateOf(summary: AppSummary): string {
-  if (summary.hasPendingDeployment) return 'deploying';
+  if (summary.hasPendingDeployment)
+    return summary.pendingDeployment?.status ?? 'deploying';
   const state = summary.runtime.state;
   if (
     state === 'stopped' &&

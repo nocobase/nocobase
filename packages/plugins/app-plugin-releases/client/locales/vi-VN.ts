@@ -299,6 +299,12 @@ const viVN: LocaleResource<typeof enUS> = {
         'Môi trường này được bảo vệ. Gõ {{appId}} để triển khai.',
     },
     deployments: {
+      cancel: 'Hủy triển khai',
+      replaced: 'Đã được thay thế bằng lần triển khai mới hơn.',
+      cancelAccepted: 'Đã nhận yêu cầu hủy.',
+      queueAhead: 'Đang chờ · còn {{ahead}} lượt phía trước',
+      restartHint:
+        'Triển khai bị gián đoạn. Vui lòng triển khai lại bản phát hành.',
       title: 'Triển khai',
       kind: 'Loại',
       status: 'Trạng thái',
@@ -315,6 +321,8 @@ const viVN: LocaleResource<typeof enUS> = {
       hideLogs: 'Ẩn nhật ký',
       noLogs: 'Không có dòng nhật ký.',
       statuses: {
+        cancelling: 'Đang hủy',
+        cancelled: 'Đã hủy',
         queued: 'Đã xếp hàng',
         deploying: 'Triển khai',
         succeeded: 'Đã thành công',
@@ -633,6 +641,9 @@ const viVN: LocaleResource<typeof enUS> = {
           'Cấu hình đã được lưu nhưng ứng dụng không thể tải lại.',
         CONFIG_TOO_LARGE: 'Cấu hình quá lớn.',
         CONFIRMATION_REQUIRED: 'Nhập ID ứng dụng để xác nhận.',
+        DEPLOYMENT_NOT_CANCELLABLE:
+          'Triển khai đã bắt đầu chuyển phiên bản hoặc đã kết thúc.',
+        CANCELLATION_UNSUPPORTED: 'Trình triển khai này không hỗ trợ hủy.',
         DEPLOYMENT_IN_PROGRESS:
           'Quá trình triển khai ứng dụng này đang được tiến hành.',
         DEPLOYMENT_NOT_FOUND: 'Việc triển khai không tồn tại.',

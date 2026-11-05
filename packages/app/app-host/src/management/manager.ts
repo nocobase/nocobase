@@ -1,3 +1,4 @@
+import { DeploymentCancelledError } from '../deployment-control.js';
 import type { JournalPage, JournalQuery, Logger } from '@nocobase/logging';
 import type { DeploymentLogListener } from './../deployment-log.js';
 /**
@@ -28,6 +29,8 @@ import type {
   HostDeploymentSet,
   HostDescription,
   HostOperation,
+  HostCancelResult,
+  HostDeploymentProgress,
   HostScope,
   HostScopeCheck,
   HostStatus,
@@ -44,6 +47,17 @@ import type {
  * a scope every call behaves as it did before scopes existed.
  */
 export interface HostManagementService {
+  cancelDeployment(
+    operationId: string,
+    appId: string,
+    options?: { scope?: HostScope; queuedOnly?: boolean },
+  ): Promise<HostCancelResult>;
+  deploymentProgress(
+    operationId: string,
+    appId: string,
+    options?: { scope?: HostScope },
+  ): Promise<HostDeploymentProgress | null>;
+
   restoreDeploymentSet(
     deploymentSet: HostDeploymentSet,
   ): Promise<ApplyDeploymentSetResult>;
@@ -104,6 +118,57 @@ type HostModeState =
     };
 
 export class HostManager implements HostManagementService {
+  private readonly admissions = new Map<
+    string,
+    {
+      appId: string;
+      waiting: boolean;
+      cancelled: boolean;
+      work?: Promise<HostStatus>;
+    }
+  >();
+
+  cancelDeployment(
+    operationId: string,
+    appId: string,
+    options: { scope?: HostScope; queuedOnly?: boolean } = {},
+  ): Promise<HostCancelResult> {
+    if (this.state.mode !== 'managed')
+      throw new Error('Deployments require managed host mode');
+    const result = this.state.reconciler.cancelDeployment(
+      operationId,
+      appId,
+      options.scope?.id,
+      options.queuedOnly,
+    );
+    const admission = this.admissions.get(
+      `${options.scope?.id ?? ''}\u0000${operationId}`,
+    );
+    if (
+      result === 'notFound' &&
+      admission?.appId === appId &&
+      admission.waiting
+    ) {
+      admission.cancelled = true;
+      return Promise.resolve('cancelled');
+    }
+    return Promise.resolve(result);
+  }
+  deploymentProgress(
+    operationId: string,
+    appId: string,
+    options: { scope?: HostScope } = {},
+  ): Promise<HostDeploymentProgress | null> {
+    if (this.state.mode !== 'managed') return Promise.resolve(null);
+    return Promise.resolve(
+      this.state.reconciler.deploymentProgress(
+        operationId,
+        appId,
+        options.scope?.id,
+      ),
+    );
+  }
+
   publishAppConfig(
     appId: string,
     content: string,
@@ -194,11 +259,31 @@ export class HostManager implements HostManagementService {
       throw new Error('Deployments require managed host mode');
     }
     const { reconciler, scopes } = this.state;
-    if (deployment?.scope) return scopes.applyDeployment(deployment, listener);
     scopes.assertAccepting();
-    return scopes.recordUnscoped(deployment, () =>
-      reconciler.applyDeployment(deployment, listener),
-    );
+    const key = `${deployment.scope?.id ?? ''}\u0000${deployment.operationId ?? deployment.id}`;
+    const existing = this.admissions.get(key);
+    if (existing?.work && deployment.operationId) return existing.work;
+    const admission: {
+      appId: string;
+      waiting: boolean;
+      cancelled: boolean;
+      work?: Promise<HostStatus>;
+    } = { appId: deployment.appId, waiting: true, cancelled: false };
+    this.admissions.set(key, admission);
+    const beforeRun = (): void => {
+      if (admission.cancelled) throw new DeploymentCancelledError();
+      admission.waiting = false;
+    };
+    const work = deployment.scope
+      ? scopes.applyDeployment(deployment, listener, beforeRun)
+      : scopes.recordUnscoped(deployment, () => {
+          beforeRun();
+          return reconciler.applyDeployment(deployment, listener);
+        });
+    admission.work = work.finally(() => {
+      if (this.admissions.get(key) === admission) this.admissions.delete(key);
+    });
+    return admission.work;
   }
 
   startDeployment(deployment: HostDeploymentSpec): Promise<HostStatus> {

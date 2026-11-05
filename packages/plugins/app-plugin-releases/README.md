@@ -170,3 +170,11 @@ A Host records each deployment's outcome under its deployment ID in an operation
 ## Atomic application-owned App initialization
 
 Applications calling `releases.releases.createApp(caller, input, { initialize })` may initialize their own App-linked records in the same database transaction as App creation. The optional callback receives a public `DatabaseConnection` and the created App ID. Write application-owned records through that connection; do not perform network calls, emit events, or write plugin-owned tables in the callback. A callback failure rolls back App creation and its writes, and `app.created` is emitted only after the transaction commits. The existing two-argument call remains supported.
+
+## Deployment queue and cancellation
+
+A Host executes deployments serially. New deployments replace older queued deployments of the same App; running deployments continue. Queued history and App badges show the number of operations ahead, and deployment logs record queue changes before resolving starts. Queue positions are transient and are not database state.
+
+`POST /api/releases/apps/{appId}/deployments/{deploymentId}/cancel` requires the App's deploy permission and is exposed as `deploy cancel <app> <deployment>`. The deployment row menu offers the same operation. Queued cancellation completes immediately; a running deployment reports `cancelling` until its current step and cleanup finish, then `cancelled`. Cancellation closes before switching. Repeated cancellation is safe. Drivers may provide `cancel` and `progress`; a driver without cancellation support returns `CANCELLATION_UNSUPPORTED` once work has been submitted.
+
+The `deployment.cancelled` event reports cancellation separately from failure, and an approved request settles as cancelled with its deployment. Applications consuming deployment outcomes must handle this event if they track preview progress. A restart does not replay interrupted queued deployments: their error explicitly asks for redeployment. See [Host isolation measurements](../../app/app-host/docs/deployment-performance.md) for the protocol, costs and verification method.

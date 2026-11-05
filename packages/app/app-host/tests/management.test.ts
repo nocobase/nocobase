@@ -44,6 +44,234 @@ afterEach(async () => {
 });
 
 describe('managed host reconciliation', () => {
+  it('cancels while the Host is recording admission, before it can enter the queue', async () => {
+    const fixture = await createFixture();
+    const host = createAppHost({
+      mode: 'managed',
+      appRevisionsDir: fixture.deploymentsDir,
+      appVolumesDir: fixture.volumesDir,
+      artifact: fsArtifact(fixture.artifactDir),
+      evictionIntervalMs: 0,
+    });
+    hosts.push(host);
+    const spec = deploymentSet(1, fixture.artifact).deployments[0]!;
+    const deployment = host.management.applyDeployment({
+      ...spec,
+      operationId: 'admission',
+    });
+    const rejection = deployment.catch((error: unknown) => error);
+    expect(
+      await host.management.cancelDeployment('admission', 'customer', {
+        queuedOnly: true,
+      }),
+    ).toBe('cancelled');
+    expect(await rejection).toMatchObject({ code: 'DEPLOYMENT_CANCELLED' });
+    expect(await host.management.getOperation('admission')).toMatchObject({
+      state: 'cancelled',
+    });
+    expect(host.registry.has('customer')).toBe(false);
+  });
+
+  it('reports queue positions and cancels queued work without waiting for the running deployment', async () => {
+    const fixture = await createFixture();
+    const host = createAppHost({
+      mode: 'managed',
+      appRevisionsDir: fixture.deploymentsDir,
+      appVolumesDir: fixture.volumesDir,
+      artifact: fsArtifact(fixture.artifactDir),
+      evictionIntervalMs: 0,
+    });
+    hosts.push(host);
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const resolve = host.artifactResolver.resolve.bind(host.artifactResolver);
+    let entered!: () => void;
+    const started = new Promise<void>((resolve) => {
+      entered = resolve;
+    });
+    const spy = vi
+      .spyOn(host.artifactResolver, 'resolve')
+      .mockImplementationOnce(async (reference) => {
+        entered();
+        await gate;
+        return resolve(reference);
+      });
+    const spec = deploymentSet(1, fixture.artifact).deployments[0]!;
+    const first = host.management.applyDeployment({
+      ...spec,
+      operationId: 'first',
+    });
+    await started;
+    const logs: Record<string, unknown>[] = [];
+    const second = host.management.applyDeployment(
+      { ...spec, operationId: 'second' },
+      (entry) => logs.push(entry),
+    );
+    const rejected = second.catch((error: unknown) => error);
+    await vi.waitFor(async () =>
+      expect(
+        await host.management.deploymentProgress('second', 'customer'),
+      ).toMatchObject({ state: 'queued', queueAhead: 1 }),
+    );
+    expect(logs.some((entry) => entry.phase === 'resolving')).toBe(false);
+    expect(await host.management.cancelDeployment('second', 'other')).toBe(
+      'notFound',
+    );
+    expect(
+      await host.management.cancelDeployment('first', 'customer', {
+        queuedOnly: true,
+      }),
+    ).toBe('tooLate');
+    expect(await host.management.cancelDeployment('second', 'customer')).toBe(
+      'cancelled',
+    );
+    expect(await rejected).toMatchObject({ code: 'DEPLOYMENT_CANCELLED' });
+    expect(await host.management.getOperation('second')).toMatchObject({
+      state: 'cancelled',
+    });
+    release();
+    await first;
+    spy.mockRestore();
+    expect(await host.management.getOperation('first')).toMatchObject({
+      state: 'succeeded',
+    });
+  });
+
+  it.each(['resolving', 'verifying', 'extracting', 'preparing'])(
+    'cancels at the %s step boundary and removes candidate files',
+    async (phase) => {
+      const fixture = await createFixture();
+      const host = createAppHost({
+        mode: 'managed',
+        appRevisionsDir: fixture.deploymentsDir,
+        appVolumesDir: fixture.volumesDir,
+        artifact: fsArtifact(fixture.artifactDir),
+        evictionIntervalMs: 0,
+      });
+      hosts.push(host);
+      const spec = deploymentSet(1, fixture.artifact).deployments[0]!;
+      let requested = false;
+      const deployment = host.management.applyDeployment(
+        { ...spec, operationId: 'cancel-at-step' },
+        (entry) => {
+          if (entry.phase === phase && !requested) {
+            requested = true;
+            void host.management.cancelDeployment('cancel-at-step', 'customer');
+          }
+        },
+      );
+      await expect(deployment).rejects.toMatchObject({
+        code: 'DEPLOYMENT_CANCELLED',
+      });
+      expect(requested).toBe(true);
+      expect(
+        await host.management.getOperation('cancel-at-step'),
+      ).toMatchObject({ state: 'cancelled' });
+      const entries = await readdir(
+        path.join(fixture.deploymentsDir, 'customer'),
+      );
+      expect(
+        entries.filter(
+          (name) =>
+            name.endsWith('.staging') ||
+            name.endsWith('.tar.gz') ||
+            /^[a-f0-9]{64}$/.test(name),
+        ),
+      ).toEqual([]);
+      expect(host.registry.has('customer')).toBe(false);
+    },
+  );
+
+  it('keeps the previous runtime, configuration and selected revision after cancellation', async () => {
+    const fixture = await createFixture();
+    const host = createAppHost({
+      mode: 'managed',
+      appRevisionsDir: fixture.deploymentsDir,
+      appVolumesDir: fixture.volumesDir,
+      artifact: fsArtifact(fixture.artifactDir),
+      evictionIntervalMs: 0,
+    });
+    hosts.push(host);
+    const first = deploymentSet(1, fixture.artifact, {
+      activation: 'eager',
+      operationId: 'previous',
+      config: {
+        provider: 'file',
+        revision: 'previous',
+        content: 'title: previous',
+      },
+    }).deployments[0]!;
+    await host.management.applyDeployment(first);
+    const before = host.registry.definition('customer');
+    const next = await createArtifact(fixture, '2.0.0');
+    await expect(
+      host.management.applyDeployment(
+        {
+          ...first,
+          operationId: 'candidate',
+          artifact: next,
+          config: {
+            provider: 'file',
+            revision: 'candidate',
+            content: 'title: candidate',
+          },
+        },
+        (entry) => {
+          if (entry.phase === 'preparing')
+            void host.management.cancelDeployment('candidate', 'customer');
+        },
+      ),
+    ).rejects.toMatchObject({ code: 'DEPLOYMENT_CANCELLED' });
+    expect(host.registry.definition('customer')).toEqual(before);
+    expect(await readFile(before!.configPath!, 'utf8')).toBe('title: previous');
+    expect(
+      await readFile(
+        path.join(fixture.deploymentsDir, 'customer', '.active-revision'),
+        'utf8',
+      ),
+    ).toContain(fixture.artifact.checksum);
+    await expect(
+      readFile(
+        path.join(
+          fixture.deploymentsDir,
+          'customer',
+          next.checksum,
+          'package.json',
+        ),
+      ),
+    ).rejects.toMatchObject({ code: 'ENOENT' });
+  });
+
+  it('closes cancellation before switching and preserves the actual successful outcome', async () => {
+    const fixture = await createFixture();
+    const host = createAppHost({
+      mode: 'managed',
+      appRevisionsDir: fixture.deploymentsDir,
+      appVolumesDir: fixture.volumesDir,
+      artifact: fsArtifact(fixture.artifactDir),
+      evictionIntervalMs: 0,
+    });
+    hosts.push(host);
+    const spec = deploymentSet(1, fixture.artifact).deployments[0]!;
+    let cancellation: Promise<string> | undefined;
+    await host.management.applyDeployment(
+      { ...spec, operationId: 'switching' },
+      (entry) => {
+        if (entry.phase === 'switching')
+          cancellation = host.management.cancelDeployment(
+            'switching',
+            'customer',
+          );
+      },
+    );
+    expect(await cancellation).toBe('tooLate');
+    expect(await host.management.getOperation('switching')).toMatchObject({
+      state: 'succeeded',
+    });
+  });
+
   it.each(['deploy', 'restore'] as const)(
     'waits for revision pruning before %s reads a revision',
     async (operation) => {

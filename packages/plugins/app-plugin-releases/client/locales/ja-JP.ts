@@ -298,6 +298,11 @@ const jaJP: LocaleResource<typeof enUS> = {
         'この環境は保護されています。 「{{appId}}」と入力してデプロイします。',
     },
     deployments: {
+      cancel: 'デプロイをキャンセル',
+      replaced: '新しいデプロイに置き換えられました。',
+      cancelAccepted: 'キャンセルを受け付けました。',
+      queueAhead: '待機中 · 前に {{ahead}} 件',
+      restartHint: 'デプロイが中断されました。再度デプロイしてください。',
       title: '展開',
       kind: '種類',
       status: '状態',
@@ -314,6 +319,8 @@ const jaJP: LocaleResource<typeof enUS> = {
       hideLogs: 'ログを非表示にする',
       noLogs: 'ログ行はありません。',
       statuses: {
+        cancelling: 'キャンセル中',
+        cancelled: 'キャンセル済み',
         queued: 'キューに登録されました',
         deploying: '配備中',
         succeeded: '成功しました',
@@ -626,6 +633,10 @@ const jaJP: LocaleResource<typeof enUS> = {
           '設定は保存されましたが、アプリは設定をリロードできませんでした。',
         CONFIG_TOO_LARGE: '構成が大きすぎます。',
         CONFIRMATION_REQUIRED: '確認のためアプリ ID を入力します。',
+        DEPLOYMENT_NOT_CANCELLABLE:
+          'デプロイは切り替え中か、すでに終了しています。',
+        CANCELLATION_UNSUPPORTED:
+          'このデプロイドライバーはキャンセルに対応していません。',
         DEPLOYMENT_IN_PROGRESS: 'このアプリの展開はすでに進行中です。',
         DEPLOYMENT_NOT_FOUND: 'デプロイメントが存在しません。',
         DRIVER_UNAVAILABLE: '環境のドライバーが利用できません。',
