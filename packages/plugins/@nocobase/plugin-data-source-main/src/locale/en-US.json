@@ -1,4 +1,7 @@
 {
+  "Cannot synchronize collection \"{{collection}}\" because its database table could not be found.": "Cannot synchronize collection \"{{collection}}\" because its database table could not be found.",
+  "Cannot synchronize field \"{{field}}\" in collection \"{{collection}}\": database type \"{{type}}\" is not supported.": "Cannot synchronize field \"{{field}}\" in collection \"{{collection}}\": database type \"{{type}}\" is not supported.",
+  "Cannot remove field \"{{field}}\" from collection \"{{collection}}\" because its database column still exists.": "Cannot remove field \"{{field}}\" from collection \"{{collection}}\" because its database column still exists.",
   "any.required": "{{label}} is required",
   "date.base": "{{label}} must be a valid date",
   "date.format": "{{label}} must be in {{format}} format",
