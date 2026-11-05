@@ -51,9 +51,8 @@ function Pages({ base }: { readonly base: string }) {
       <Routes>
         <Route path={base} element={<UsersPage />}>
           <Route path='create' element={<UserForm />} />
-          <Route path=':userId' element={<UserDetail />}>
-            <Route path='edit' element={<UserForm />} />
-          </Route>
+          <Route path=':userId' element={<UserDetail />} />
+          <Route path=':userId/edit' element={<UserForm />} />
         </Route>
         <Route path='*' element={<h1>Fallback home</h1>} />
       </Routes>

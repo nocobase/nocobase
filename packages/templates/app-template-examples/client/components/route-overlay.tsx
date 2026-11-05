@@ -49,11 +49,114 @@ export interface RouteOverlayProps {
 const ParentPopupContext =
   createContext<RefObject<HTMLDivElement | null> | null>(null);
 
+interface RouteOverlayHostValue {
+  readonly configure: (config: RouteOverlayProps) => void;
+}
+
+// Set by `RouteOverlayHost` for the page module it hosts, and cleared again inside it, so only that module's own
+// `RouteDialog` or `RouteDrawer` configures the host. Any other overlay, such as a child route's, builds its own.
+const RouteOverlayHostContext = createContext<RouteOverlayHostValue | null>(
+  null,
+);
+
 /**
  * The shared implementation of `RouteDialog` and `RouteDrawer`: a modal that is open for as long as its route matches,
  * and closes by navigating away from it. Route registration stays with the application.
+ *
+ * On a route that declares a `dialog` or `drawer` presentation the application has already opened the panel, and this
+ * component configures that one instead of opening a second: its title, description, footer, `closeTo` and
+ * `beforeClose` move to the host and its children render in the host's body. On any other route it opens its own.
  */
-export function RouteOverlay({
+export function RouteOverlay(
+  props: RouteOverlayProps & { readonly drawer?: boolean },
+): ReactElement {
+  const host = useContext(RouteOverlayHostContext);
+  return host ? (
+    <HostedRouteOverlay host={host} {...props} />
+  ) : (
+    <RouteOverlayFrame {...props} />
+  );
+}
+
+function HostedRouteOverlay({
+  host,
+  children,
+  drawer: _drawer,
+  ...config
+}: RouteOverlayProps & {
+  readonly host: RouteOverlayHostValue;
+  readonly drawer?: boolean;
+}): ReactElement {
+  // Runs after every render so the footer and guard the host shows are always this render's. There is no cleanup:
+  // the host stops using the configuration once it is told the page is gone, and an `<Activity>` that only hides
+  // the page during a recheck must not take its close guard away.
+  useLayoutEffect(() => {
+    host.configure(config);
+  });
+  return (
+    <RouteOverlayHostContext.Provider value={null}>
+      {children}
+    </RouteOverlayHostContext.Provider>
+  );
+}
+
+export interface RouteOverlayHostProps {
+  readonly drawer?: boolean;
+  /** Shown until the hosted page configures its own title, and whenever its content is concealed. */
+  readonly title: ReactNode;
+  /**
+   * True while the page component is mounted. While it is false — the module is loading, failed or was denied — the
+   * host ignores what an earlier mount configured and closes without a guard.
+   */
+  readonly ready?: boolean;
+  /**
+   * True while the mounted page is hidden, for example during an authorization recheck: the host shows only its own
+   * title and no footer, so nothing the page derived from protected data stays on screen. The page's close guard
+   * still applies, because the page and its draft are still mounted.
+   */
+  readonly concealed?: boolean;
+  readonly children?: ReactNode;
+}
+
+/**
+ * The panel the application opens for a route that declares a `dialog` or `drawer` presentation, before the page
+ * module, its authorization check or its data are ready. Waiting, denial and failure render as its children; once the
+ * page renders its own `RouteDialog` or `RouteDrawer` inside, that configures this panel. There is still one panel
+ * and one focus trap, and the same close path and focus return as a standalone overlay. A hosted page renders its
+ * `RouteDialog` or `RouteDrawer` unconditionally, as its root.
+ */
+export function RouteOverlayHost({
+  drawer = false,
+  title,
+  ready = false,
+  concealed = false,
+  children,
+}: RouteOverlayHostProps): ReactElement {
+  const [config, setConfig] = useState<RouteOverlayProps | null>(null);
+  const host = useMemo<RouteOverlayHostValue>(
+    () => ({ configure: setConfig }),
+    [],
+  );
+  const page = ready ? config : null;
+  const shown = concealed ? null : page;
+  return (
+    <RouteOverlayFrame
+      drawer={drawer}
+      title={shown?.title ?? title}
+      description={shown?.description}
+      footer={shown?.footer}
+      closeTo={page?.closeTo}
+      beforeClose={page?.beforeClose}
+      className={page?.className}
+    >
+      <RouteOverlayHostContext.Provider value={host}>
+        {children}
+      </RouteOverlayHostContext.Provider>
+    </RouteOverlayFrame>
+  );
+}
+
+function RouteOverlayFrame({
   title,
   description,
   children,
@@ -210,5 +313,18 @@ export function RouteOverlay({
         </Dialog>
       </ParentPopupContext.Provider>
     </RouteOverlayContext.Provider>
+  );
+}
+
+/** Ends a `RouteOverlayHost`'s reach, so a route rendered inside one that is not hosted builds its own overlay. */
+export function RouteOverlayHostBoundary({
+  children,
+}: {
+  readonly children?: ReactNode;
+}): ReactElement {
+  return (
+    <RouteOverlayHostContext.Provider value={null}>
+      {children}
+    </RouteOverlayHostContext.Provider>
   );
 }

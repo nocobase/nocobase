@@ -198,7 +198,6 @@ function UserEditor(): ReactElement {
   const location = useLocation();
   const parent = useOutletContext<{
     reload: (updated?: ManagedUser) => void;
-    listPath?: string;
   }>();
   const data = useSettingsData<{ data: ManagedUser }>(
     userId ? `users/${encodeURIComponent(userId)}` : 'users/options',
@@ -282,11 +281,8 @@ function UserEditor(): ReactElement {
   const [serverErrors, setServerErrors] = useState<Record<string, string>>({});
   const [submitted, setSubmitted] = useState(false);
 
-  const parentPath = useResolvedPath('..').pathname;
-  const closeTo = {
-    pathname: creating ? parentPath : (parent.listPath ?? parentPath),
-    search: location.search,
-  };
+  const listPath = useResolvedPath('..').pathname;
+  const closeTo = { pathname: listPath, search: location.search };
   const fieldError = (name: keyof typeof fields): string | undefined => {
     if (!submitted) return;
     if (serverErrors[name]) return serverErrors[name];

@@ -78,9 +78,8 @@ it.each(['fast', 'slow'] as const)(
     await renderWithApp(
       <Routes>
         <Route path='/settings/users' element={<UsersPage />}>
-          <Route path=':userId' element={<UserDetail />}>
-            <Route path='edit' element={<UserForm />} />
-          </Route>
+          <Route path=':userId' element={<UserDetail />} />
+          <Route path=':userId/edit' element={<UserForm />} />
         </Route>
       </Routes>,
       {
@@ -321,9 +320,8 @@ it.each(['/settings/users', '/users'])(
       <>
         <Routes>
           <Route path={base} element={<UsersPage />}>
-            <Route path=':userId' element={<UserDetail />}>
-              <Route path='edit' element={<UserForm />} />
-            </Route>
+            <Route path=':userId' element={<UserDetail />} />
+            <Route path=':userId/edit' element={<UserForm />} />
           </Route>
         </Routes>
         <Location />

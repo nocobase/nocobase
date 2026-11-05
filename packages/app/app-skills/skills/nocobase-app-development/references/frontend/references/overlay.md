@@ -119,6 +119,26 @@ What the components already do:
 - **Focus**: on open, focus moves into the overlay; when the focused element inside the overlay disappears (for example, a button is replaced by a skeleton after clicking "Retry"), focus returns to the overlay panel; after closing, focus returns to the element that had focus before opening (usually the link that opened it; for a row menu's "Edit", the menu's trigger). When a nested overlay closes, focus returns to the element in the parent layer that opened it, or to the parent layer's panel if that element is gone; when `/projects/12/edit` is opened directly, both layers mount at once, and after the dialog closes, focus is on the drawer panel.
 - When the element that focus should return to is no longer on the page after closing (for example, the list row disappears after a delete), the component cannot handle it. Move focus to a stable place yourself; see `afterDelete` above (guideline A6).
 
+#### Declare the presentation
+
+Declare every route whose page renders `RouteDialog` or `RouteDrawer` as its root with a `presentation`, so the overlay opens on the click and not when the module, the authorization check and the data have all arrived:
+
+```ts
+{
+  name: 'project-new',
+  path: 'new',
+  presentation: { kind: 'dialog', title: 'projects.new' },
+  componentLoader: () => import('./pages/projects/new.js'),
+},
+```
+
+- The application opens one panel at once with `title`, a static translation key in the route's package that must not depend on the record. The authorization check, the module wait, a denial and a load failure with a Retry that reloads only this module render inside it, so nothing is added under the page that opened it and its draft and scroll position stay.
+- The page keeps rendering `RouteDialog` or `RouteDrawer` exactly as before. Inside the opened panel it configures that panel instead of opening a second one: its `title`, `description`, `footer`, `closeTo` and `beforeClose` replace the opened panel's. Render it unconditionally as the page's root; its footer renders in the panel's footer slot, so it reads only contexts provided above the route.
+- While an authorization recheck hides an allowed page, the panel shows the route's static title and no footer or description, and still applies the page's `beforeClose`.
+- `kind` names the container the page renders: `dialog` for `RouteDialog`, `drawer` for `RouteDrawer`. Nothing infers it from the route depth.
+- A route without `presentation` keeps the earlier behavior: its component builds its own overlay once loaded, and the application renders a page-sized placeholder at the parent's outlet until then. That is the long blank area under the list a slow module shows, so declare it on every route overlay you add or touch.
+- Closing a panel that is still loading goes to the parent route, `..`. A parent route that only forwards to this one, such as an old `:id` link redirecting to `:id/edit`, sends the user back into the overlay; declare the overlay as `:id/edit` beside the forwarding route instead of under it.
+
 #### Asynchronous overlay lifecycle
 
 For one opening, identify the owner of the overlay container through route fallback, lazy module loading, data loading, failure/retry and ready content. Prefer one stable `RouteDrawer` or `RouteDialog` with state-specific children. For example, keep the drawer outside the conditional that chooses loading, error or detail content; on a record change, key the record-specific child by its id when its draft must reset. Do not key the container by loading state, request count or data version.

@@ -261,6 +261,127 @@ describe('client plugin definitions', () => {
     expect(Object.isFrozen(overridden[0])).toBe(true);
   });
 
+  it('registers declared page presentations and validates them', () => {
+    const Page = (): null => null;
+    const resolve = (route: Record<string, unknown>) =>
+      resolveAppClientContributions([
+        {
+          packageName: '@nocobase/app-plugin-example',
+          routes: defineAppRoutes([
+            {
+              name: 'list',
+              path: '/list',
+              authz: 'skip',
+              componentLoader: async () => ({ default: Page }),
+              children: [
+                {
+                  name: 'item',
+                  path: 'item',
+                  componentLoader: async () => ({ default: Page }),
+                  ...route,
+                } as never,
+              ],
+            },
+          ]),
+        },
+      ]).routes[0].children![0];
+
+    expect(resolve({}).presentation).toBeUndefined();
+    const dialog = resolve({
+      presentation: { kind: 'dialog', title: ' items.new ' },
+    });
+    expect(dialog.presentation).toEqual({ kind: 'dialog', title: 'items.new' });
+    expect(Object.isFrozen(dialog.presentation)).toBe(true);
+    expect(
+      resolve({ presentation: { kind: 'child-page' } }).presentation,
+    ).toEqual({ kind: 'child-page' });
+    expect(() => resolve({ presentation: { kind: 'drawer' } })).toThrow(
+      'must define a title',
+    );
+    expect(() =>
+      resolve({ presentation: { kind: 'drawer', title: '  ' } }),
+    ).toThrow('non-empty title');
+    expect(() =>
+      resolve({ presentation: { kind: 'content', title: 'items.new' } }),
+    ).toThrow('cannot declare a title');
+    expect(() => resolve({ presentation: { kind: 'popover' } })).toThrow(
+      'presentation must be one of',
+    );
+    expect(() =>
+      resolveAppClientContributions([
+        {
+          packageName: '@nocobase/app-plugin-example',
+          routes: defineAppRoutes([
+            {
+              name: 'group',
+              navigation: { title: 'group' },
+              presentation: { kind: 'content' },
+              children: [
+                {
+                  name: 'page',
+                  path: '/page',
+                  authz: 'skip',
+                  componentLoader: async () => ({ default: Page }),
+                },
+              ],
+            } as never,
+          ]),
+        },
+      ]),
+    ).toThrow('cannot declare presentation');
+  });
+
+  it('never lets an override inherit the presentation of the route it replaces', () => {
+    const Page = (): null => null;
+    const [route] = resolveAppClientContributions([
+      {
+        packageName: '@nocobase/app-plugin-example',
+        routes: defineAppRoutes([
+          {
+            name: 'create',
+            path: '/create',
+            authz: 'skip',
+            presentation: { kind: 'dialog', title: 'items.new' },
+            componentLoader: async () => ({ default: Page }),
+          },
+        ]),
+      },
+    ]).routes;
+    const routeId = '@nocobase/app-plugin-example:create';
+    const [legacy] = applyClientRouteComponentOverrides(
+      [route],
+      [{ routeId, componentLoader: async () => ({ default: Page }) }],
+    );
+    expect(legacy).not.toHaveProperty('presentation');
+    const [migrated] = applyClientRouteComponentOverrides(
+      [route],
+      [
+        {
+          routeId,
+          componentLoader: async () => ({ default: Page }),
+          presentation: { kind: 'drawer', title: 'items.edit' },
+        },
+      ],
+    );
+    expect(migrated.presentation).toEqual({
+      kind: 'drawer',
+      title: 'items.edit',
+    });
+    expect(() =>
+      applyClientRouteComponentOverrides(
+        [route],
+        [
+          {
+            routeId,
+            componentLoader: async () => ({ default: Page }),
+            presentation: { kind: 'dialog' },
+          },
+        ],
+      ),
+    ).toThrow('must define a title');
+    expect(route.presentation).toEqual({ kind: 'dialog', title: 'items.new' });
+  });
+
   it('validates route component override targets and loaders', async () => {
     const [route] = resolveAppClientContributions([
       {

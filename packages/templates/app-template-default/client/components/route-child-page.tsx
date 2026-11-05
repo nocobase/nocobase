@@ -19,6 +19,10 @@ export interface RouteChildPageProps {
 const EnclosingLayerContext =
   createContext<RefObject<HTMLDivElement | null> | null>(null);
 
+// True only directly inside the layer the application opened for a route that declares a `child-page` presentation,
+// so the hosted page's own `RouteChildPage` renders its content into that layer instead of adding a second one.
+const RouteChildPageHostContext = createContext(false);
+
 /**
  * A child page, laid over the page that opened it.
  *
@@ -36,7 +40,38 @@ const EnclosingLayerContext =
  * the tab's outlet — anchors to the outer element: it covers this layer whole instead of scrolling out of sight with
  * the content once the user has scrolled this page.
  */
-export function RouteChildPage({
+export function RouteChildPage(props: RouteChildPageProps): ReactElement {
+  const hosted = useContext(RouteChildPageHostContext);
+  if (hosted)
+    return (
+      <RouteChildPageHostContext.Provider value={false}>
+        {props.children}
+      </RouteChildPageHostContext.Provider>
+    );
+  return <RouteChildPageLayer {...props} />;
+}
+
+/**
+ * The layer the application opens for a route that declares a `child-page` presentation, before the page module, its
+ * authorization check or its data are ready. Waiting, denial and failure render inside it; once the page renders, its
+ * own `RouteChildPage` contributes content to this layer. Everything the hosted page renders, including an outlet it
+ * places beside its `RouteChildPage`, is inside the layer, so a deeper child page covers this one whole.
+ */
+export function RouteChildPageHost({
+  children,
+}: {
+  readonly children?: ReactNode;
+}): ReactElement {
+  return (
+    <RouteChildPageLayer>
+      <RouteChildPageHostContext.Provider value>
+        {children}
+      </RouteChildPageHostContext.Provider>
+    </RouteChildPageLayer>
+  );
+}
+
+function RouteChildPageLayer({
   children,
   className,
 }: RouteChildPageProps): ReactElement {
@@ -117,5 +152,18 @@ export function RouteChildPage({
         </EnclosingLayerContext.Provider>
       </div>
     </div>
+  );
+}
+
+/** Ends a `RouteChildPageHost`'s reach, so a route rendered inside one that is not hosted builds its own layer. */
+export function RouteChildPageHostBoundary({
+  children,
+}: {
+  readonly children?: ReactNode;
+}): ReactElement {
+  return (
+    <RouteChildPageHostContext.Provider value={false}>
+      {children}
+    </RouteChildPageHostContext.Provider>
   );
 }

@@ -142,6 +142,8 @@ export type {
   AppClientServiceProviders,
   AppClientRouteIcon,
   AppClientRouteNavigation,
+  AppClientRoutePresentation,
+  AppClientRoutePresentationKind,
   ClientServiceProviderConstructor,
   ClientServiceProviderContext,
   ResolvedAppClientContributions,
