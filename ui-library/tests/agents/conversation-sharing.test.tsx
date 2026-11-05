@@ -209,8 +209,15 @@ it('retains all failed recipients and removes their retry warning when the user 
   expect(
     screen.queryByRole('button', { name: 'Update', exact: true }),
   ).not.toBeInTheDocument();
-  await user.click(screen.getByRole('combobox'));
-  await user.click(screen.getByRole('option', { name: 'Bob' }));
+  const recipientSelector = await screen.findByRole('combobox', {
+    name: 'Select application users',
+  });
+  await waitFor(() => expect(recipientSelector).toBeEnabled());
+  await user.click(recipientSelector);
+  await waitFor(() =>
+    expect(recipientSelector).toHaveAttribute('aria-expanded', 'true'),
+  );
+  await user.click(await screen.findByRole('option', { name: 'Bob' }));
   expect(screen.getByRole('alert')).toHaveTextContent(
     'Could not share with: Carol.',
   );
