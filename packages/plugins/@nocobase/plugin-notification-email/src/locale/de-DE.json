@@ -19,5 +19,6 @@
   "Subject": "Betreff",
   "The email address that will be used as the sender": "Die E-Mail-Adresse, die als Absender verwendet wird",
   "To": "An",
+  "Reply To": "Antworten an",
   "Transport": "Transport"
 }
