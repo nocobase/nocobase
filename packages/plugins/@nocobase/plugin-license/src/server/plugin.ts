@@ -13,7 +13,6 @@ import {
   saveLicenseKey,
   isLicenseKeyExists,
   getLicenseValidate,
-  CACHE_KEY,
   getLicenseStatus,
   testPkgConnection,
   testPkgLogin,
@@ -22,8 +21,57 @@ import {
 } from './utils';
 import pick from 'lodash/pick';
 
+export function getUpgradeLicenseErrorMessage({
+  pkgVersion,
+  appVersion,
+  licenseStatus,
+  upgradeExpirationDate,
+}: {
+  pkgVersion: string;
+  appVersion: string | null;
+  licenseStatus?: string | null;
+  upgradeExpirationDate?: string | null;
+}): string | undefined {
+  if (!licenseStatus || licenseStatus === 'active') {
+    return;
+  }
+
+  if (appVersion === pkgVersion) {
+    return;
+  }
+
+  const installedVersion = appVersion || 'unknown';
+  const reason = upgradeExpirationDate
+    ? `The license has expired and cannot be upgraded. Upgrade expiration date: ${upgradeExpirationDate}.`
+    : 'The license is invalid and cannot be upgraded.';
+
+  return [
+    reason,
+    `Please roll back to version ${installedVersion}.`,
+    `Current core version is ${pkgVersion}, but the installed application version is ${installedVersion}.`,
+  ].join('\n');
+}
+
 export class PluginLicenseServer extends Plugin {
-  async afterAdd() {}
+  async afterAdd() {
+    this.app.on('afterLoad', async () => {
+      const pkgVersion = this.app.getPackageVersion();
+      const appVersion = await this.app.version.get();
+      const keyData = await getLocalKeyData();
+      const licenseStatus = keyData?.licenseKey?.licenseStatus;
+      const upgradeExpirationDate = keyData?.upgradeExpirationDate;
+      const errorMessage = getUpgradeLicenseErrorMessage({
+        pkgVersion,
+        appVersion,
+        licenseStatus,
+        upgradeExpirationDate,
+      });
+
+      if (errorMessage) {
+        throw new Error(errorMessage);
+      }
+    });
+  }
 
   async beforeLoad() {}
 
