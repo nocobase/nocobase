@@ -709,6 +709,8 @@ export class ManagedReconciler {
           idleStops: metrics.idleEvictions,
           dormancies: metrics.dormancies,
           materializations: metrics.materializations,
+          capacityStops: metrics.capacityEvictions,
+          memoryPressure: metrics.memoryPressure,
         };
       })(),
     };
