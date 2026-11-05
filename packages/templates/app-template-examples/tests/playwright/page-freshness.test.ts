@@ -1,13 +1,9 @@
-import { expect, test } from '@playwright/test';
+import { expect } from '@playwright/test';
+import { test } from './page-freshness.fixture.js';
 import { randomUUID } from 'node:crypto';
 import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
 
-const applicationUrl = process.env.APP_URL;
-test.skip(
-  !applicationUrl || !process.env.E2E_USERNAME || !process.env.E2E_PASSWORD,
-  'Set an independent disposable APP_URL and synthetic E2E_USERNAME/E2E_PASSWORD.',
-);
 test.use({
   locale: 'en-US',
   viewport: { width: 1440, height: 1000 },
@@ -18,13 +14,16 @@ test.use({
 
 test('workflow completion reaches the open detail through existing source events', async ({
   page,
+  freshness,
 }, testInfo) => {
-  const app = applicationUrl!.replace(/\/$/, '');
+  const app = freshness.url.replace(/\/$/, '');
   await page.goto(`${app}/login`);
-  await page.getByLabel('Username or email').fill(process.env.E2E_USERNAME!);
+  await page
+    .getByLabel('Username or email')
+    .fill(freshness.credentials.username);
   await page
     .getByLabel('Password', { exact: true })
-    .fill(process.env.E2E_PASSWORD!);
+    .fill(freshness.credentials.password);
   await page.getByRole('button', { name: 'Sign in', exact: true }).click();
   await page.waitForURL((url) => !url.pathname.endsWith('/login'));
   const headers = { origin: new URL(app).origin };
@@ -80,18 +79,66 @@ test('workflow completion reaches the open detail through existing source events
   }
 });
 
+test('workflow lists expose business controls without a persistent Refresh action', async ({
+  page,
+  freshness,
+}, testInfo) => {
+  const app = freshness.url.replace(/\/$/, '');
+  await page.goto(`${app}/login`);
+  await page
+    .getByLabel('Username or email')
+    .fill(freshness.credentials.username);
+  await page
+    .getByLabel('Password', { exact: true })
+    .fill(freshness.credentials.password);
+  await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+  await page.waitForURL((url) => !url.pathname.endsWith('/login'));
+  const screenshots =
+    process.env.E2E_EVIDENCE_DIR ?? testInfo.outputPath('screenshots');
+  await mkdir(screenshots, { recursive: true });
+  for (const view of ['definitions', 'executions']) {
+    const loaded = page.waitForResponse((response) =>
+      new URL(response.url()).pathname.endsWith(`/api/workflows/${view}`),
+    );
+    await page.goto(`${app}/workflows/${view}`);
+    await loaded;
+    await page
+      .getByRole('heading', { name: 'Workflow management', exact: true })
+      .waitFor();
+    await expect(
+      page.getByText('Loading', { exact: true }).filter({ visible: true }),
+    ).toHaveCount(0);
+    await expect(
+      page.getByRole('button', { name: 'Refresh', exact: true }),
+    ).toHaveCount(0);
+    for (const [size, viewport] of [
+      ['desktop', { width: 1440, height: 1000 }],
+      ['mobile', { width: 390, height: 844 }],
+    ] as const) {
+      await page.setViewportSize(viewport);
+      await page.screenshot({
+        path: path.join(screenshots, `workflows-${view}-${size}.png`),
+        fullPage: true,
+      });
+    }
+  }
+});
+
 test('ordinary pages retain writes, read recovery and URL state without a Refresh action', async ({
   page,
+  freshness,
 }, testInfo) => {
-  const app = applicationUrl!.replace(/\/$/, '');
+  const app = freshness.url.replace(/\/$/, '');
   const screenshots =
     process.env.E2E_EVIDENCE_DIR ?? testInfo.outputPath('screenshots');
   await mkdir(screenshots, { recursive: true });
   await page.goto(`${app}/login`);
-  await page.getByLabel('Username or email').fill(process.env.E2E_USERNAME!);
+  await page
+    .getByLabel('Username or email')
+    .fill(freshness.credentials.username);
   await page
     .getByLabel('Password', { exact: true })
-    .fill(process.env.E2E_PASSWORD!);
+    .fill(freshness.credentials.password);
   await page.getByRole('button', { name: 'Sign in', exact: true }).click();
   await page.waitForURL((url) => !url.pathname.endsWith('/login'));
 
@@ -103,124 +150,135 @@ test('ordinary pages retain writes, read recovery and URL state without a Refres
     )
       writes += 1;
   });
-  await page.goto(`${app}/customer-contacts?page=2&pageSize=10`);
-  await expect(
-    page.getByRole('link', { name: 'Acorn 11', exact: true }),
-  ).toBeVisible();
-  await expect(
-    page.getByRole('button', { name: 'Refresh', exact: true }),
-  ).toHaveCount(0);
-  await page.reload();
-  await expect(
-    page.getByRole('link', { name: 'Acorn 11', exact: true }),
-  ).toBeVisible();
-  expect(new URL(page.url()).searchParams.get('page')).toBe('2');
-  expect(writes).toBe(0);
-
-  await page.goto(`${app}/customer-contacts?search=Acorn`);
-  await page.getByRole('link', { name: 'Acorn 01', exact: true }).click();
-  await expect(
-    page.getByRole('heading', { name: 'Acorn 01', exact: true }),
-  ).toBeVisible();
-  const detailUrl = page.url();
-  await page.reload();
-  await expect(
-    page.getByRole('heading', { name: 'Acorn 01', exact: true }),
-  ).toBeVisible();
-  expect(page.url()).toBe(detailUrl);
-  expect(new URL(page.url()).searchParams.get('search')).toBe('Acorn');
-  expect(writes).toBe(0);
-
-  const suffix = randomUUID().slice(0, 8);
-  const customerName = `Acorn ${suffix}`;
-  await page.getByRole('button', { name: 'Edit', exact: true }).click();
-  await page
-    .getByRole('textbox', { name: 'Name *', exact: true })
-    .fill(customerName);
-  await page.getByRole('button', { name: 'Save', exact: true }).click();
-  await expect(
-    page.getByRole('heading', { name: customerName, exact: true }),
-  ).toBeVisible();
-
-  const contactName = `Contact ${suffix}`;
-  await page.getByRole('button', { name: 'New contact', exact: true }).click();
-  await page
-    .getByRole('textbox', { name: 'Name *', exact: true })
-    .fill(contactName);
-  await page.getByRole('button', { name: 'Create', exact: true }).click();
-  await expect(
-    page.getByRole('link', { name: contactName, exact: true }),
-  ).toBeVisible();
-  await page
-    .getByRole('button', { name: `Actions for ${contactName}`, exact: true })
-    .click();
-  await page.getByRole('menuitem', { name: 'Delete', exact: true }).click();
-  await page
-    .getByRole('alertdialog')
-    .getByRole('button', { name: 'Delete', exact: true })
-    .click();
-  await expect(
-    page.getByRole('link', { name: contactName, exact: true }),
-  ).toHaveCount(0);
-  const afterWrites = writes;
-  await page.reload();
-  await expect(
-    page.getByRole('heading', { name: customerName, exact: true }),
-  ).toBeVisible();
-  expect(writes).toBe(afterWrites);
-
-  for (const [size, viewport] of [
-    ['desktop', { width: 1440, height: 1000 }],
-    ['mobile', { width: 390, height: 844 }],
-  ] as const) {
-    await page.setViewportSize(viewport);
+  const prefix = `Freshness ${randomUUID().slice(0, 8)}`;
+  const customers = Array.from({ length: 11 }, (_, index) => ({
+    id: `${randomUUID()}-${index}`,
+    name: `${prefix} ${String(index).padStart(2, '0')}`,
+    status: 'active',
+    ownerId: 'crm-rep',
+    notes: 'Isolated browser test customer.',
+  })).sort((left, right) => left.id.localeCompare(right.id));
+  const customerRepository =
+    freshness.app.connection.repository('exampleCustomers');
+  const contactRepository =
+    freshness.app.connection.repository('exampleContacts');
+  const filteredList = `${app}/customer-contacts?${new URLSearchParams({ search: prefix })}`;
+  let failRead = false;
+  try {
+    for (const customer of customers)
+      await customerRepository.createOne({ values: customer });
+    await page.goto(`${filteredList}&page=2&pageSize=10`);
     await expect(
-      page.getByRole('button', { name: 'Refresh', exact: true }),
-    ).toHaveCount(0);
-    await page.screenshot({
-      path: path.join(screenshots, `customer-detail-${size}.png`),
-      fullPage: true,
-    });
-    await page.goto(`${app}/customer-contacts?search=Acorn`);
-    await expect(
-      page.getByRole('link', { name: customerName, exact: true }),
+      page.getByRole('link', { name: customers[10]!.name, exact: true }),
     ).toBeVisible();
     await expect(
       page.getByRole('button', { name: 'Refresh', exact: true }),
     ).toHaveCount(0);
-    await page.screenshot({
-      path: path.join(screenshots, `customer-list-${size}.png`),
-      fullPage: true,
-    });
-    await page.goto(detailUrl);
+    await page.reload();
+    await expect(
+      page.getByRole('link', { name: customers[10]!.name, exact: true }),
+    ).toBeVisible();
+    expect(new URL(page.url()).searchParams.get('page')).toBe('2');
+    expect(writes).toBe(0);
+
+    await page.goto(filteredList);
+    await page
+      .getByRole('link', { name: customers[0]!.name, exact: true })
+      .click();
+    await expect(
+      page.getByRole('heading', { name: customers[0]!.name, exact: true }),
+    ).toBeVisible();
+    const detailUrl = page.url();
+    await page.reload();
+    await expect(
+      page.getByRole('heading', { name: customers[0]!.name, exact: true }),
+    ).toBeVisible();
+    expect(page.url()).toBe(detailUrl);
+    expect(new URL(page.url()).searchParams.get('search')).toBe(prefix);
+    expect(writes).toBe(0);
+
+    const suffix = randomUUID().slice(0, 8);
+    const customerName = `${prefix} updated`;
+    await page.getByRole('button', { name: 'Edit', exact: true }).click();
+    await page
+      .getByRole('textbox', { name: 'Name *', exact: true })
+      .fill(customerName);
+    await page.getByRole('button', { name: 'Save', exact: true }).click();
     await expect(
       page.getByRole('heading', { name: customerName, exact: true }),
     ).toBeVisible();
-  }
 
-  // Restore this test's edited sample before checking failed-read recovery.
-  await page.getByRole('button', { name: 'Edit', exact: true }).click();
-  await page
-    .getByRole('textbox', { name: 'Name *', exact: true })
-    .fill('Acorn 01');
-  await page.getByRole('button', { name: 'Save', exact: true }).click();
-  await expect(
-    page.getByRole('heading', { name: 'Acorn 01', exact: true }),
-  ).toBeVisible();
-  let failRead = true;
-  await page.route('**/api/customerContacts/customers?*', async (route) => {
-    if (failRead)
-      await route.fulfill({
-        status: 503,
-        contentType: 'application/json',
-        body: JSON.stringify({
-          error: { status: 'UNAVAILABLE', message: 'Unavailable' },
-        }),
+    const contactName = `Contact ${suffix}`;
+    await page
+      .getByRole('button', { name: 'New contact', exact: true })
+      .click();
+    await page
+      .getByRole('textbox', { name: 'Name *', exact: true })
+      .fill(contactName);
+    await page.getByRole('button', { name: 'Create', exact: true }).click();
+    await expect(
+      page.getByRole('link', { name: contactName, exact: true }),
+    ).toBeVisible();
+    await page
+      .getByRole('button', { name: `Actions for ${contactName}`, exact: true })
+      .click();
+    await page.getByRole('menuitem', { name: 'Delete', exact: true }).click();
+    await page
+      .getByRole('alertdialog')
+      .getByRole('button', { name: 'Delete', exact: true })
+      .click();
+    await expect(
+      page.getByRole('link', { name: contactName, exact: true }),
+    ).toHaveCount(0);
+    const afterWrites = writes;
+    await page.reload();
+    await expect(
+      page.getByRole('heading', { name: customerName, exact: true }),
+    ).toBeVisible();
+    expect(writes).toBe(afterWrites);
+
+    for (const [size, viewport] of [
+      ['desktop', { width: 1440, height: 1000 }],
+      ['mobile', { width: 390, height: 844 }],
+    ] as const) {
+      await page.setViewportSize(viewport);
+      await expect(
+        page.getByRole('button', { name: 'Refresh', exact: true }),
+      ).toHaveCount(0);
+      await page.screenshot({
+        path: path.join(screenshots, `customer-detail-${size}.png`),
+        fullPage: true,
       });
-    else await route.continue();
-  });
-  try {
-    await page.goto(`${app}/customer-contacts?search=Acorn`);
+      await page.getByRole('link', { name: 'Back', exact: true }).click();
+      await expect(
+        page.getByRole('link', { name: customerName, exact: true }),
+      ).toBeVisible();
+      await expect(
+        page.getByRole('button', { name: 'Refresh', exact: true }),
+      ).toHaveCount(0);
+      await page.screenshot({
+        path: path.join(screenshots, `customer-list-${size}.png`),
+        fullPage: true,
+      });
+      await page.getByRole('link', { name: customerName, exact: true }).click();
+      await expect(
+        page.getByRole('heading', { name: customerName, exact: true }),
+      ).toBeVisible();
+    }
+
+    failRead = true;
+    await page.route('**/api/customerContacts/customers?*', async (route) => {
+      if (failRead)
+        await route.fulfill({
+          status: 503,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            error: { status: 'UNAVAILABLE', message: 'Unavailable' },
+          }),
+        });
+      else await route.continue();
+    });
+    await page.goto(filteredList);
     await expect(
       page.getByRole('button', { name: 'Retry', exact: true }),
     ).toBeVisible();
@@ -228,7 +286,7 @@ test('ordinary pages retain writes, read recovery and URL state without a Refres
     failRead = false;
     await page.getByRole('button', { name: 'Retry', exact: true }).click();
     await expect(
-      page.getByRole('link', { name: 'Acorn 01', exact: true }),
+      page.getByRole('link', { name: customerName, exact: true }),
     ).toBeVisible();
     expect(writes).toBe(beforeRetry);
     await expect(
@@ -236,5 +294,10 @@ test('ordinary pages retain writes, read recovery and URL state without a Refres
     ).toHaveCount(0);
   } finally {
     failRead = false;
+    await contactRepository.deleteMany({
+      filter: { customerId: customers[0]!.id },
+    });
+    for (const customer of customers)
+      await customerRepository.deleteOne({ filter: { id: customer.id } });
   }
 });
