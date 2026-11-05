@@ -13,7 +13,8 @@ import http from 'node:http';
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { createRealtimeClient } from '@nocobase/realtime/client';
 import { c as createTar } from 'tar';
 import {
   createAppHost,
@@ -34,6 +35,41 @@ afterEach(async () => {
 });
 
 describe('on-demand Apps on a managed Host', () => {
+  it('keeps a real realtime socket through three idle cycles and closes it during Host shutdown', async () => {
+    const fixture = await createFixture();
+    const host = await startHost(fixture);
+    await host.management.applyDeployment(
+      spec(fixture.artifact, {
+        activation: 'eager',
+        idleStopMs: 1000,
+        dormantAfterMs: 5000,
+      }),
+    );
+    const client = createRealtimeClient({
+      resolveUrl: () => `${baseUrl(host)}/customer/ws`,
+      pingInterval: 0,
+    });
+    try {
+      await new Promise<void>((resolve) => {
+        client.watch('test:keepalive', { onReady: resolve });
+      });
+      expect(host.registry.requireSnapshot('customer').activeConnections).toBe(
+        1,
+      );
+      for (let cycle = 1; cycle <= 3; cycle++) {
+        await host.registry.sweep(Date.now() + cycle * 6000);
+        expect(client.ready).toBe(true);
+        expect(host.registry.getMetrics().activations).toBe(1);
+        expect(host.registry.isDormant('customer')).toBe(false);
+      }
+      await host.close();
+      hosts.splice(hosts.indexOf(host), 1);
+      await vi.waitFor(() => expect(client.connected).toBe(false));
+    } finally {
+      client.close();
+    }
+  });
+
   it('stops an App after its idle time and starts it on the next request', async () => {
     const fixture = await createFixture();
     const host = await startHost(fixture);
@@ -381,6 +417,12 @@ async function createFixture(
     `export async function createServer() {
       await new Promise((resolve) => setTimeout(resolve, ${options.startDelayMs ?? 0}));
       return {
+        websocket() {
+          return { onMessage(event, ws) {
+            const message = JSON.parse(event.data);
+            if (message.type === 'subscribe') ws.send(JSON.stringify({ type: 'subscribed', id: message.id, topic: message.topic, subscriptionId: message.id }));
+          } };
+        },
         fetch(request) {
           const url = new URL(request.url);
           if (url.pathname === '/') return new Response('<!doctype html><title>Customer</title>', { headers: { 'content-type': 'text/html' } });

@@ -69,6 +69,9 @@ class CoreClientServiceProvider extends ServiceProvider<ClientApplication> {
     });
     this.app.container.singleton(realtimeClientToken, (): RealtimeClient =>
       createRealtimeClient({
+        hiddenDisconnectMs: this.app.config.get<number>(
+          'api.realtimeHiddenDisconnectMs',
+        ),
         resolveUrl: () => {
           const realtimeURL = this.app.config.get<string>('api.realtimeURL');
           const baseURL =

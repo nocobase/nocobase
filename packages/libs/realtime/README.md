@@ -153,6 +153,8 @@ The hooks keep callbacks current without resubscribing on each render and releas
 
 ## Migration checklist
 
+The browser client disconnects after ten minutes continuously hidden, cancels socket and subscription retries, and keeps its watchers pending. Returning to a visible document reconnects and resubscribes; `onReady` then lets the page refetch missed changes. Explicitly closing the client also removes the visibility listener. Configure `createRealtimeClient({ hiddenDisconnectMs })`, or an application's `client.api.realtimeHiddenDisconnectMs`; zero disables suspension. A short visit to a visible tab starts a new hidden period. This changes no messages on the wire and requires rebuilt client assets to affect existing deployments.
+
 - Register every static topic and dynamic topic family before accepting subscriptions. Remove permissive fallback subscriptions.
 - Await `publish`, `publishFor`, `disconnectUser` and service shutdown. Catch asynchronous publication failures at the business boundary or attach an explicit rejection handler to best-effort announcements.
 - Replace publication `subscriberCount` with a receipt's `eventId`; use local diagnostics only for local observation.

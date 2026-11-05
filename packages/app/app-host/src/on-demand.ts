@@ -16,7 +16,7 @@
 import type { IncomingMessage } from 'node:http';
 
 import type { AppRuntimeRegistry } from './app-registry.ts';
-import { AppNotFoundError } from './errors.ts';
+import { AppNotFoundError, AppCapacityExceededError } from './errors.ts';
 import type { ActiveAppHandle, AppLifecycleState } from './app-types.ts';
 
 export interface OnDemandActivationOptions {
@@ -66,6 +66,10 @@ export async function activateForRequest(
   );
   if (outcome.kind === 'ready') return outcome.value;
   if (outcome.kind === 'failed') {
+    if (outcome.error instanceof AppCapacityExceededError)
+      return page
+        ? pageResponse(textFor(req, 'capacity'), 10, false)
+        : unavailable('APP_CAPACITY_EXCEEDED');
     if (page && !(outcome.error instanceof AppNotFoundError))
       return failedPage(req);
     throw outcome.error;
@@ -115,13 +119,17 @@ async function settleWithin<T>(
   }
 }
 
-function unavailable(code: 'APP_STARTING' | 'APP_START_FAILED'): Response {
+function unavailable(
+  code: 'APP_STARTING' | 'APP_START_FAILED' | 'APP_CAPACITY_EXCEEDED',
+): Response {
   return new Response(
     JSON.stringify({
       error:
-        code === 'APP_STARTING'
-          ? 'The application is starting. Retry shortly.'
-          : 'The application failed to start. Retry shortly.',
+        code === 'APP_CAPACITY_EXCEEDED'
+          ? 'Preview capacity is full. Please try again later.'
+          : code === 'APP_STARTING'
+            ? 'The application is starting. Retry shortly.'
+            : 'The application failed to start. Retry shortly.',
       code,
     }),
     {
@@ -146,9 +154,16 @@ interface PageText {
 
 const TEXT: Record<
   'en' | 'zh',
-  Record<'stopped' | 'dormant' | 'failed', PageText>
+  Record<'stopped' | 'dormant' | 'failed' | 'capacity', PageText>
 > = {
   en: {
+    capacity: {
+      lang: 'en',
+      title: 'Preview capacity is full',
+      message:
+        'All available capacity is currently in use. Please try again later.',
+      hint: 'Close previews you no longer need. This page retries automatically.',
+    },
     stopped: {
       lang: 'en',
       title: 'Starting the application…',
@@ -171,6 +186,12 @@ const TEXT: Record<
     },
   },
   zh: {
+    capacity: {
+      lang: 'zh-CN',
+      title: '预览容量已满',
+      message: '当前可用容量已被占用，请稍后再试。',
+      hint: '请关闭不再使用的预览。此页面会自动重试。',
+    },
     stopped: {
       lang: 'zh-CN',
       title: '正在启动应用…',
@@ -194,7 +215,7 @@ const TEXT: Record<
 
 function textFor(
   req: IncomingMessage,
-  kind: 'stopped' | 'dormant' | 'failed',
+  kind: 'stopped' | 'dormant' | 'failed' | 'capacity',
 ): PageText {
   const language = String(req.headers['accept-language'] ?? '').toLowerCase();
   return TEXT[language.startsWith('zh') ? 'zh' : 'en'][kind];
