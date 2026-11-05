@@ -29,3 +29,20 @@ it.each(['https://other.test', '//other.test', '/\\other.test'])(
     expect(suggestionAction(error(href), 'Configure', vi.fn())).toEqual({});
   },
 );
+
+it('preserves an unlocalized discovery error and its field detail', () => {
+  const detail =
+    'discovery.choices.4.options.1.description: Too big: expected string to have <=1000 characters';
+  expect(errorText(new Error(detail), 'Failed')).toBe(detail);
+  expect(
+    errorText(
+      new ApiClientError(detail, {
+        status: 400,
+        reason: 'AGENT_SESSIONS_DISCOVERY_FAILED',
+        method: 'POST',
+        url: '/api/discover',
+      }),
+      'Failed',
+    ),
+  ).toBe(detail);
+});

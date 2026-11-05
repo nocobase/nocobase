@@ -137,6 +137,41 @@ describe('new-session composer', () => {
     );
     expect(screen.getByRole('textbox')).not.toBeDisabled();
   });
+  it('shows the discovery failure reason next to Retry', async () => {
+    const detail =
+      'discovery.choices.4.options.1.description: Too big: expected string to have <=1000 characters';
+    await renderWithApp(
+      <QueryClientProvider
+        client={
+          new QueryClient({ defaultOptions: { queries: { retry: false } } })
+        }
+      >
+        <NewSession />
+      </QueryClientProvider>,
+      {
+        plugins: [plugin({ routes: false })],
+        services: (app) => {
+          vi.spyOn(
+            app.container.resolve(realtimeClientToken),
+            'connected',
+            'get',
+          ).mockReturnValue(true);
+        },
+        namespace: '@nocobase/app-plugin-agent-sessions',
+        fetch: answerApi(({ path }) => {
+          if (path === 'agentSessions/computers')
+            return { data: [computer], meta: { total: 1 } };
+          if (path.endsWith('/discoverChoices')) throw new Error(detail);
+          return { data: [], meta: {} };
+        }),
+      },
+    );
+    expect(await screen.findByText(detail)).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'Retry settings' }),
+    ).toBeEnabled();
+  });
+
   it('tells to update the command line on a computer whose bridge was refused as too old', async () => {
     await renderWithApp(
       <QueryClientProvider

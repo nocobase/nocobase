@@ -3,7 +3,7 @@ import * as acp from '@agentclientprotocol/sdk';
 import { z } from 'zod';
 import { AgentProcess, isAuthRequired } from './agent-process.js';
 import type { AgentSpec } from './catalog.js';
-import type { SessionChoice } from './protocol.js';
+import { normalizeSessionChoices, type SessionChoice } from './protocol.js';
 
 export { AgentProcess, errorMessage, isAuthRequired } from './agent-process.js';
 export type {
@@ -84,21 +84,23 @@ export function sessionChoices(
         ]
       : [],
   );
-  return choices.length || !modes
-    ? choices
-    : [
-        {
-          id: 'mode',
-          name: 'Mode',
-          category: 'mode',
-          currentValue: modes.currentModeId,
-          options: modes.availableModes.map((mode) => ({
-            value: mode.id,
-            name: mode.name,
-            ...(mode.description ? { description: mode.description } : {}),
-          })),
-        },
-      ];
+  return normalizeSessionChoices(
+    choices.length || !modes
+      ? choices
+      : [
+          {
+            id: 'mode',
+            name: 'Mode',
+            category: 'mode',
+            currentValue: modes.currentModeId,
+            options: modes.availableModes.map((mode) => ({
+              value: mode.id,
+              name: mode.name,
+              ...(mode.description ? { description: mode.description } : {}),
+            })),
+          },
+        ],
+  );
 }
 
 /** Only an explicit missing session permits recovery. Authentication and transport errors must reach the caller. */

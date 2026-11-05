@@ -26,6 +26,7 @@ import { allowedDir } from './folders.js';
 import type { ResolvedAgent } from './agents.js';
 import {
   MAX_EVENT_TEXT,
+  normalizeSessionChoices,
   type DiscoveredChoices,
   type BridgeCommand,
   type BridgeEvent,
@@ -623,8 +624,10 @@ export class BridgeSession {
   }
 
   #setCurrent(choiceId: string, value: string): void {
-    this.#choices = this.#choices.map((choice) =>
-      choice.id === choiceId ? { ...choice, currentValue: value } : choice,
+    this.#choices = normalizeSessionChoices(
+      this.#choices.map((choice) =>
+        choice.id === choiceId ? { ...choice, currentValue: value } : choice,
+      ),
     );
   }
 

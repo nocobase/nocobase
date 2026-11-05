@@ -617,6 +617,142 @@ describe('runBridge', () => {
     }
   });
 
+  it('delivers long agent descriptions to a server enforcing the original choice limits', async () => {
+    vi.spyOn(agents, 'resolveAgent').mockImplementation(async (spec) =>
+      spec.id === 'opencode'
+        ? {
+            spec: { ...spec, modes: ['full'] },
+            command: process.execPath,
+            args: [path.join(import.meta.dirname, 'fixtures/fake-agent.mjs')],
+          }
+        : undefined,
+    );
+    const original = AgentProcess.start;
+    vi.spyOn(AgentProcess, 'start').mockImplementation((resolved, options) =>
+      original(resolved, {
+        ...options,
+        env: { ...options.env, FAKE_VARIANT: 'long-choices' },
+      }),
+    );
+    answer = (request) => {
+      if (!request.path.endsWith('/reply'))
+        return { data: { computerId: 'c1', key: 'k1' } };
+      const discovery = request.body.discovery as {
+        choices: { options: { value: string; description?: string }[] }[];
+      };
+      const options = discovery.choices[0]!.options;
+      return options.length <= 200 &&
+        options.every(
+          (option) =>
+            option.value.length <= 200 &&
+            (option.description?.length ?? 0) <= 1000,
+        )
+        ? { data: {} }
+        : {
+            status: 400,
+            error: { message: 'Original server bounds exceeded' },
+          };
+    };
+    commands.push({
+      type: 'discoverChoices',
+      requestId: 'd1',
+      agentId: 'opencode',
+      cwd: root,
+      settings: {},
+    });
+    const { done, stop } = await run();
+    try {
+      await until(() => seen.some((one) => one.path.endsWith('/reply')));
+      const replies = seen.filter((one) => one.path.endsWith('/reply'));
+      expect(replies).toHaveLength(1);
+      expect(replies[0]?.body).toMatchObject({
+        error: null,
+        discovery: {
+          choices: [
+            {
+              options: [
+                { value: 'ask', description: 'w'.repeat(1000) },
+                { value: 'full' },
+              ],
+            },
+          ],
+        },
+      });
+    } finally {
+      stop();
+      await done;
+    }
+  });
+
+  it.each([false, true])(
+    'answers invalid discovery with a concrete error (server refusal: %s)',
+    async (refused) => {
+      vi.spyOn(BridgeSession.prototype, 'discover').mockResolvedValue({
+        status: 'available',
+        choices: refused
+          ? []
+          : [
+              {
+                id: 'agent',
+                name: 'Agent',
+                currentValue: 'web-fetch',
+                options: [
+                  {
+                    value: 'web-fetch',
+                    name: 'Web fetch',
+                    description: 'w'.repeat(1944),
+                  },
+                ],
+              },
+            ],
+      });
+      vi.spyOn(BridgeSession.prototype, 'close').mockResolvedValue();
+      answer = (request) =>
+        request.path.endsWith('/reply') && request.body.discovery
+          ? {
+              status: 400,
+              error: {
+                message: 'The request contains invalid fields.',
+                fieldViolations: [
+                  {
+                    field: 'discovery.choices.4.options.1.description',
+                    description:
+                      'Too big: expected string to have <=1000 characters',
+                    reason: 'too_big',
+                  },
+                ],
+              },
+            }
+          : { data: { computerId: 'c1', key: 'k1' } };
+      commands.push({
+        type: 'discoverChoices',
+        requestId: 'd1',
+        agentId: 'opencode',
+        cwd: root,
+        settings: {},
+      });
+      const { done, stop } = await run();
+      try {
+        await until(() =>
+          seen.some(
+            (one) =>
+              one.path.endsWith('/reply') && typeof one.body.error === 'string',
+          ),
+        );
+        const replies = seen.filter((one) => one.path.endsWith('/reply'));
+        expect(replies).toHaveLength(refused ? 2 : 1);
+        expect(replies.at(-1)?.body.error).toContain(
+          refused ? 'discovery.choices.4.options.1.description' : 'description',
+        );
+        expect(replies.at(-1)?.body.error).toContain('1000');
+        expect(replies.at(-1)?.body.discovery).toBeFalsy();
+      } finally {
+        stop();
+        await done;
+      }
+    },
+  );
+
   it('delivers discovered choices before slow cleanup and awaits cleanup during shutdown', async () => {
     let release: (() => void) | undefined;
     vi.spyOn(BridgeSession.prototype, 'discover').mockResolvedValue({
