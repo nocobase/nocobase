@@ -75,7 +75,7 @@ export default class InAppNotificationChannel extends BaseNotificationChannel {
   }
 
   private async persistMessagesInBatches(options: {
-    userIds: number[];
+    userIds: Array<number | string>;
     title: string;
     content: string;
     channelName: string;
@@ -151,14 +151,14 @@ export default class InAppNotificationChannel extends BaseNotificationChannel {
   send: SendFnType<InAppMessageFormValues> = async (params) => {
     const startedAt = Date.now();
     const { channel, message, receivers, transaction } = params;
-    let userIds: number[];
+    let userIds: Array<number | string>;
     const { content, title, options = {} } = message;
     const userRepo = this.app.db.getRepository('users');
     const resolveReceiversStartedAt = Date.now();
     if (receivers?.type === 'userId') {
       userIds = receivers.value;
     } else {
-      userIds = (await parseUserSelectionConf(message.receivers, userRepo, { transaction })).map((id) => Number(id));
+      userIds = await parseUserSelectionConf(message.receivers, userRepo, { transaction });
     }
     const resolveReceiversMs = Date.now() - resolveReceiversStartedAt;
 

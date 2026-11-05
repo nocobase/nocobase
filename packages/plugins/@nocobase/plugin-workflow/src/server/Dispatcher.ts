@@ -688,7 +688,14 @@ export default class Dispatcher {
     const code = databaseError.parent?.code || databaseError.original?.code;
     const errno = databaseError.parent?.errno || databaseError.original?.errno;
 
-    return code === '40001' || code === '40P01' || code === 'ER_LOCK_DEADLOCK' || errno === 1205 || errno === 1213;
+    return (
+      code === '40001' ||
+      code === '40P01' ||
+      code === 'ER_LOCK_DEADLOCK' ||
+      code === 'SQLITE_BUSY' ||
+      errno === 1205 ||
+      errno === 1213
+    );
   }
 
   private async process(
