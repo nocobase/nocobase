@@ -71,6 +71,8 @@ import {
   isActive,
   isTerminal,
   lastSummary,
+  recentSummaries,
+  type RecentRunSummary,
   openRunsOn,
   openRunsOnEach,
   pendingInputs,
@@ -366,6 +368,16 @@ export interface RunService {
     },
     exceptRunId: string,
   ): Promise<string | null>;
+  /** The five latest terminal runs of this agent on this subject, with summaries capped at 400 characters. */
+  recentSummaries(
+    conn: DatabaseConnection,
+    key: {
+      readonly agentId: string;
+      readonly subjectKind: string;
+      readonly subjectId: string;
+    },
+    exceptRunId: string,
+  ): Promise<RecentRunSummary[]>;
 }
 
 export interface RunServiceDeps extends TransitionDeps {
@@ -2110,5 +2122,6 @@ export function createRunService(deps: RunServiceDeps): RunService {
       (await pendingInputs(conn, runId)).map(toInput),
     inputsSince: inputsOnSince,
     lastSummary,
+    recentSummaries,
   };
 }
