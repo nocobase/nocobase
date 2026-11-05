@@ -954,7 +954,15 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
       }),
       apiValidator(
         'query',
-        z.object({ expectedUserId: z.string().min(1).optional() }),
+        z.object({
+          expectedUserId: z
+            .string()
+            .min(1)
+            .optional()
+            .describe(
+              'Refuse the read if the authenticated user changed before it reached the server.',
+            ),
+        }),
       ),
       async (context) =>
         context.json({

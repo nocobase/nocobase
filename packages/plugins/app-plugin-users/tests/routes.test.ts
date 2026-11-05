@@ -977,6 +977,18 @@ describe('@nocobase/app-plugin-users API routes', () => {
     });
     expect(
       manifest.commands.find(
+        (command) => command.id === 'user:preference:list',
+      )?.parameters,
+    ).toContainEqual(
+      expect.objectContaining({
+        field: 'expectedUserId',
+        description:
+          'Refuse the read if the authenticated user changed before it reached the server.',
+        required: false,
+      }),
+    );
+    expect(
+      manifest.commands.find(
         (command) => command.id === 'user:invitation:create',
       )?.output.columns,
     ).toEqual(['email', 'outcome', 'invitationId', 'emailSent', 'inviteUrl']);
