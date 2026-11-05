@@ -453,6 +453,41 @@ function NewSessionContent({
                     onManage={() => setComputersOpen(true)}
                   />
                 )}
+                {discovery.error && (
+                  <div className='w-full min-w-0 space-y-1'>
+                    <p
+                      role='status'
+                      className='text-muted-foreground text-xs [overflow-wrap:anywhere]'
+                    >
+                      {errorText(
+                        discovery.error,
+                        t('newSession.settingsFailed'),
+                      )}
+                    </p>
+                    <div className='flex flex-wrap gap-1'>
+                      <Button
+                        variant='ghost'
+                        size='sm'
+                        onClick={() => {
+                          pick({});
+                          discovery.retry();
+                        }}
+                      >
+                        {t('newSession.settingsRetry')}
+                      </Button>
+                      <Button
+                        variant='ghost'
+                        size='sm'
+                        onClick={() => {
+                          pick({});
+                          discovery.reset();
+                        }}
+                      >
+                        {t('newSession.settingsReset')}
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
             }
             toolbar={
@@ -475,10 +510,7 @@ function NewSessionContent({
                       : discovery.loading
                         ? t('newSession.settingsLoading')
                         : discovery.error
-                          ? errorText(
-                              discovery.error,
-                              t('newSession.settingsFailed'),
-                            )
+                          ? null
                           : discovery.result?.status === 'unsupported'
                             ? t('newSession.settingsUnsupported')
                             : discovery.result &&
@@ -486,30 +518,6 @@ function NewSessionContent({
                               ? t('newSession.settingsEmpty')
                               : null}
                 </span>
-                {discovery.error && (
-                  <>
-                    <Button
-                      variant='ghost'
-                      size='sm'
-                      onClick={() => {
-                        pick({});
-                        discovery.retry();
-                      }}
-                    >
-                      {t('newSession.settingsRetry')}
-                    </Button>
-                    <Button
-                      variant='ghost'
-                      size='sm'
-                      onClick={() => {
-                        pick({});
-                        discovery.reset();
-                      }}
-                    >
-                      {t('newSession.settingsReset')}
-                    </Button>
-                  </>
-                )}
               </>
             }
             onSend={async (content, _interrupt, mentions) => {
