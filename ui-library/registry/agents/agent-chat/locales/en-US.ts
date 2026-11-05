@@ -15,6 +15,7 @@ export interface AgentChatLocale {
       readonly copyFailed: string;
       readonly none: string;
       readonly failed: string;
+      readonly failedRecipients: string;
       readonly older: string;
       readonly empty: string;
     };
@@ -382,7 +383,7 @@ const agentChatEnUS: AgentChatLocale = {
       sensitive:
         'This conversation may contain sensitive information. Share only with people who should see it.',
       asOf: 'Shared as of {{time}}',
-      recipient: 'Select an application user',
+      recipient: 'Select application users',
       share: 'Share',
       update: 'Update',
       revoke: 'Revoke',
@@ -391,6 +392,8 @@ const agentChatEnUS: AgentChatLocale = {
       copyFailed: 'Could not copy the link',
       none: 'No recipients yet.',
       failed: 'Could not load or update sharing. Please try again.',
+      failedRecipients:
+        'Could not share with: {{names}}. These users remain selected for retry.',
       older: 'Load older messages',
       empty: 'There are no finished turns in this snapshot.',
     },

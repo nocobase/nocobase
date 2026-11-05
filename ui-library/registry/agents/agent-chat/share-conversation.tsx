@@ -5,6 +5,7 @@ import {
   useChatApi,
   useChatPanel,
 } from '@nocobase/app-plugin-agents/client/chat';
+import type { ConversationShare } from '@nocobase/app-plugin-agents/shared/conversations';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { Button } from '#components/ui/button';
 import {
@@ -32,7 +33,8 @@ export function ShareConversation({
   readonly open: boolean;
   readonly onOpenChange: (open: boolean) => void;
 }): ReactElement {
-  const [selected, setSelected] = useState<string | null>(null);
+  const [selected, setSelected] = useState<string[]>([]);
+  const [failedRecipients, setFailedRecipients] = useState<string[]>([]);
   const api = useChatApi();
   const panel = useChatPanel();
   const toaster = useToaster();
@@ -46,9 +48,10 @@ export function ShareConversation({
     },
     agentsQueryClient(),
   );
+  const sharesQueryKey = ['agents', 'shares', conversationId] as const;
   const shares = useQuery(
     {
-      queryKey: ['agents', 'shares', conversationId],
+      queryKey: sharesQueryKey,
       queryFn: () => api.shares(conversationId),
       enabled: open,
       retry: false,
@@ -68,11 +71,45 @@ export function ShareConversation({
         else await api.share(conversationId, userId);
       },
       onSuccess: () => {
-        setSelected(null);
         void shares.refetch();
       },
     },
     agentsQueryClient(),
+  );
+  const shareMany = useMutation(
+    {
+      mutationFn: (userIds: string[]) =>
+        Promise.allSettled(
+          userIds.map((userId) => api.share(conversationId, userId)),
+        ),
+      onMutate: () => setFailedRecipients([]),
+      onSuccess: (results, userIds) => {
+        const failed = userIds.filter(
+          (_, index) => results[index]?.status === 'rejected',
+        );
+        setSelected(failed);
+        setFailedRecipients(failed);
+        agentsQueryClient().setQueryData<readonly ConversationShare[]>(
+          sharesQueryKey,
+          (previous) => {
+            const rows = new Map(
+              (previous ?? []).map((row) => [row.userId, row]),
+            );
+            for (const result of results) {
+              if (result.status === 'fulfilled')
+                rows.set(result.value.userId, result.value);
+            }
+            return [...rows.values()];
+          },
+        );
+        void shares.refetch();
+      },
+    },
+    agentsQueryClient(),
+  );
+  const busy = change.isPending || shareMany.isPending;
+  const names = new Map(
+    (candidates.data ?? []).map((person) => [person.id, person.name]),
   );
   const copy = async () => {
     const href = panel.conversationPath?.(conversationId);
@@ -105,13 +142,37 @@ export function ShareConversation({
               {t('chat.sharing.failed')}
             </p>
           ) : null}
+          {failedRecipients.length > 0 && (
+            <p role='alert' className='text-sm text-destructive'>
+              {t('chat.sharing.failedRecipients', {
+                names: failedRecipients
+                  .map((id) => names.get(id) ?? id)
+                  .join(', '),
+              })}
+            </p>
+          )}
           <div className='flex min-w-0 gap-2'>
-            <Select value={selected} onValueChange={setSelected}>
+            <Select
+              multiple
+              modal={false}
+              disabled={busy}
+              value={selected}
+              onValueChange={(value) => {
+                setSelected(value);
+                setFailedRecipients((previous) =>
+                  previous.filter((id) => value.includes(id)),
+                );
+              }}
+            >
               <SelectTrigger
                 className='min-w-0 flex-1'
                 aria-label={t('chat.sharing.recipient')}
               >
-                <SelectValue placeholder={t('chat.sharing.recipient')} />
+                <SelectValue placeholder={t('chat.sharing.recipient')}>
+                  {selected.length > 0
+                    ? selected.map((id) => names.get(id) ?? id).join(', ')
+                    : undefined}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {(candidates.data ?? []).map((person) => (
@@ -122,8 +183,8 @@ export function ShareConversation({
               </SelectContent>
             </Select>
             <Button
-              disabled={!selected || change.isPending}
-              onClick={() => selected && change.mutate({ userId: selected })}
+              disabled={selected.length === 0 || busy}
+              onClick={() => shareMany.mutate(selected)}
             >
               {t('chat.sharing.share')}
             </Button>
@@ -145,7 +206,7 @@ export function ShareConversation({
                 <Button
                   size='sm'
                   variant='outline'
-                  disabled={change.isPending}
+                  disabled={busy}
                   onClick={() => change.mutate({ userId: share.userId })}
                 >
                   {t('chat.sharing.update')}
@@ -153,7 +214,7 @@ export function ShareConversation({
                 <Button
                   size='sm'
                   variant='ghost'
-                  disabled={change.isPending}
+                  disabled={busy}
                   onClick={() =>
                     change.mutate({ userId: share.userId, revoke: true })
                   }

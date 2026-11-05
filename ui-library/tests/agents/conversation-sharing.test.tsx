@@ -29,7 +29,10 @@ vi.mock('@nocobase/app-plugin-agents/client/chat', () => ({
   agentsQueryClient: () => queries,
   useChatPanel: () => ({ conversationPath: (id: string) => `/chat/${id}` }),
   useChatApi: () => ({
-    shareCandidates: async () => [{ id: 'bob', name: 'Bob' }],
+    shareCandidates: async () => [
+      { id: 'bob', name: 'Bob' },
+      { id: 'carol', name: 'Carol' },
+    ],
     shares: async () => state.rows,
     share: state.share,
     revokeShare: state.revoke,
@@ -70,9 +73,10 @@ it('selects a named recipient, updates, copies the mounted link and revokes with
   );
   const user = userEvent.setup();
   await user.click(
-    screen.getByRole('combobox', { name: 'Select an application user' }),
+    screen.getByRole('combobox', { name: 'Select application users' }),
   );
   await user.click(await screen.findByRole('option', { name: 'Bob' }));
+  await user.keyboard('{Escape}');
   await user.click(screen.getByRole('button', { name: 'Share', exact: true }));
   await waitFor(() =>
     expect(state.share).toHaveBeenCalledWith('conversation', 'bob'),
@@ -91,4 +95,129 @@ it('selects a named recipient, updates, copies the mounted link and revokes with
     expect(state.revoke).toHaveBeenCalledWith('conversation', 'bob'),
   );
   await screen.findByText('No recipients yet.');
+});
+
+function renderSharing() {
+  render(
+    <TestI18nProvider runtime={runtime}>
+      <ShareConversation
+        conversationId='conversation'
+        open
+        onOpenChange={vi.fn()}
+      />
+    </TestI18nProvider>,
+  );
+}
+function savedShare(userId: string): ConversationShare {
+  const share = {
+    userId,
+    name: userId === 'bob' ? 'Bob' : 'Carol',
+    cutoffSeq: 2,
+    snapshotAt: '2026-11-04T00:00:00.000Z',
+    updatedAt: '2026-11-04T00:00:00.000Z',
+  };
+  state.rows = [...state.rows.filter((row) => row.userId !== userId), share];
+  return share;
+}
+async function selectBoth(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(
+    screen.getByRole('combobox', { name: 'Select application users' }),
+  );
+  await user.click(await screen.findByRole('option', { name: 'Bob' }));
+  await user.click(screen.getByRole('option', { name: 'Carol' }));
+  await user.keyboard('{Escape}');
+}
+
+it('shares with multiple recipients and prevents empty or repeated submissions while requests are pending', async () => {
+  const finish = new Map<string, () => void>();
+  state.share.mockImplementation(
+    (_conversation: string, id: string) =>
+      new Promise<ConversationShare>((resolve) => {
+        finish.set(id, () => resolve(savedShare(id)));
+      }),
+  );
+  renderSharing();
+  const user = userEvent.setup();
+  const submit = screen.getByRole('button', { name: 'Share', exact: true });
+  expect(submit).toBeDisabled();
+  await selectBoth(user);
+  expect(screen.getByRole('combobox')).toHaveTextContent('Bob, Carol');
+  await user.click(submit);
+  await waitFor(() => expect(state.share).toHaveBeenCalledTimes(2));
+  expect(submit).toBeDisabled();
+  expect(screen.getByRole('combobox')).toBeDisabled();
+  await user.click(submit);
+  expect(state.share).toHaveBeenCalledTimes(2);
+  finish.get('bob')!();
+  finish.get('carol')!();
+  await waitFor(() =>
+    expect(
+      screen.getAllByRole('button', { name: 'Update', exact: true }),
+    ).toHaveLength(2),
+  );
+  expect(screen.getByRole('combobox')).toHaveTextContent(
+    'Select application users',
+  );
+  expect(submit).toBeDisabled();
+  expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+});
+
+it('lists successful shares, keeps failed recipients selected and retries only those recipients', async () => {
+  let failCarol = true;
+  state.share.mockImplementation(async (_conversation: string, id: string) => {
+    if (id === 'carol' && failCarol)
+      throw new Error('Recipient request failed');
+    return savedShare(id);
+  });
+  renderSharing();
+  const user = userEvent.setup();
+  await selectBoth(user);
+  await user.click(screen.getByRole('button', { name: 'Share', exact: true }));
+  expect(await screen.findByRole('alert')).toHaveTextContent(
+    'Could not share with: Carol. These users remain selected for retry.',
+  );
+  expect(screen.getByRole('combobox')).toHaveTextContent('Carol');
+  expect(screen.getByRole('combobox')).not.toHaveTextContent('Bob');
+  expect(
+    screen.getAllByRole('button', { name: 'Update', exact: true }),
+  ).toHaveLength(1);
+  failCarol = false;
+  await user.click(screen.getByRole('button', { name: 'Share', exact: true }));
+  await waitFor(() =>
+    expect(
+      screen.getAllByRole('button', { name: 'Update', exact: true }),
+    ).toHaveLength(2),
+  );
+  expect(state.share.mock.calls.map((args) => args[1])).toEqual([
+    'bob',
+    'carol',
+    'carol',
+  ]);
+  expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+});
+
+it('retains all failed recipients and removes their retry warning when the user deselects them', async () => {
+  state.share.mockRejectedValue(new Error('Sharing unavailable'));
+  renderSharing();
+  const user = userEvent.setup();
+  await selectBoth(user);
+  await user.click(screen.getByRole('button', { name: 'Share', exact: true }));
+  expect(await screen.findByRole('alert')).toHaveTextContent(
+    'Could not share with: Bob, Carol.',
+  );
+  expect(screen.getByRole('combobox')).toHaveTextContent('Bob, Carol');
+  expect(
+    screen.queryByRole('button', { name: 'Update', exact: true }),
+  ).not.toBeInTheDocument();
+  await user.click(screen.getByRole('combobox'));
+  await user.click(screen.getByRole('option', { name: 'Bob' }));
+  expect(screen.getByRole('alert')).toHaveTextContent(
+    'Could not share with: Carol.',
+  );
+  await user.click(screen.getByRole('option', { name: 'Carol' }));
+  await user.keyboard('{Escape}');
+  expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  expect(
+    screen.getByRole('button', { name: 'Share', exact: true }),
+  ).toBeDisabled();
 });
