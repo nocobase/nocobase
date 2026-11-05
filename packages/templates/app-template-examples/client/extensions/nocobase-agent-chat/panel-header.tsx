@@ -15,6 +15,7 @@ import {
   Maximize2Icon,
   Minimize2Icon,
   PlusIcon,
+  Share2Icon,
   XIcon,
 } from 'lucide-react';
 import { useState, type ReactElement } from 'react';
@@ -173,7 +174,8 @@ export function PanelHeader({
               </DropdownMenuTrigger>
               <DropdownMenuContent>
                 <DropdownMenuItem onClick={() => setSharing(true)}>
-                  {t('chat.sharing.title')}
+                  <Share2Icon />
+                  {t('chat.sharing.share')}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

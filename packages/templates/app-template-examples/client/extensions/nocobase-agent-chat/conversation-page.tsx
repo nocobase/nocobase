@@ -13,6 +13,7 @@ import {
   ArchiveIcon,
   HistoryIcon,
   MoreHorizontalIcon,
+  Share2Icon,
   PanelRightIcon,
   SquarePenIcon,
 } from 'lucide-react';
@@ -242,7 +243,8 @@ function PageBar({
           <DropdownMenuContent align='end' className='w-auto min-w-40'>
             <DropdownMenuGroup>
               <DropdownMenuItem onClick={() => setSharing(true)}>
-                {t('chat.sharing.title')}
+                <Share2Icon />
+                {t('chat.sharing.share')}
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => {

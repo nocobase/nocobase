@@ -23,6 +23,7 @@ import type { ConversationDetail } from '@nocobase/app-plugin-agents/shared/conv
 import {
   ArchiveIcon,
   ArchiveRestoreIcon,
+  Share2Icon,
   PanelLeftOpenIcon,
   PlusIcon,
   Trash2Icon,
@@ -459,7 +460,8 @@ function WorkspaceConversation({
             detail ? (
               <>
                 <DropdownMenuItem onClick={() => setSharing(true)}>
-                  {t('chat.sharing.title')}
+                  <Share2Icon />
+                  {t('chat.sharing.share')}
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() =>

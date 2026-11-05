@@ -7,7 +7,12 @@ import {
   useConversationActions,
 } from '@nocobase/app-plugin-agents/client/chat';
 import type { ConversationDetail } from '@nocobase/app-plugin-agents/shared/conversations';
-import { ArchiveIcon, ArchiveRestoreIcon, Trash2Icon } from 'lucide-react';
+import {
+  ArchiveIcon,
+  ArchiveRestoreIcon,
+  Share2Icon,
+  Trash2Icon,
+} from 'lucide-react';
 import { DropdownMenuItem } from '#components/ui/dropdown-menu';
 import { Button } from '#components/ui/button';
 import { PlusIcon, XIcon } from 'lucide-react';
@@ -63,7 +68,8 @@ export function PanelHeader(): ReactElement {
           conversation && !conversation.snapshot ? (
             <>
               <DropdownMenuItem onClick={() => setSharing(true)}>
-                {t('chat.sharing.title')}
+                <Share2Icon />
+                {t('chat.sharing.share')}
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() =>
