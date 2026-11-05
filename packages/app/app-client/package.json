@@ -16,6 +16,10 @@
       "types": "./src/plugins.ts",
       "import": "./src/plugins.ts"
     },
+    "./route-containers": {
+      "types": "./src/route-containers.ts",
+      "import": "./src/route-containers.ts"
+    },
     "./runtime": {
       "types": "./src/runtime/index.ts",
       "import": "./src/runtime/index.ts"
@@ -30,6 +34,10 @@
       "./plugins": {
         "types": "./dist/plugins.d.ts",
         "import": "./dist/plugins.js"
+      },
+      "./route-containers": {
+        "types": "./dist/route-containers.d.ts",
+        "import": "./dist/route-containers.js"
       },
       "./runtime": {
         "types": "./dist/runtime/index.d.ts",

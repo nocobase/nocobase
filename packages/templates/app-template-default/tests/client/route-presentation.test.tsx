@@ -354,7 +354,7 @@ describe('route presentations', () => {
     await act(async () =>
       module.resolve({
         default: () => (
-          <RouteChildPage>
+          <RouteChildPage className='bg-muted'>
             <h2>Child content</h2>
           </RouteChildPage>
         ),
@@ -368,6 +368,8 @@ describe('route presentations', () => {
     expect(layer).toContainElement(
       screen.getByRole('heading', { name: 'Child content' }),
     );
+    // The page's own layer classes move onto the layer the application opened.
+    expect(layer).toHaveClass('bg-muted');
   });
 });
 

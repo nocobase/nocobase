@@ -26,9 +26,13 @@ import {
   DialogPortal,
   DialogTitle,
 } from '#components/ui/dialog';
+import {
+  RouteOverlayContext,
+  RouteOverlayHostContext,
+  type RouteOverlayHostConfig,
+  type RouteOverlayHostValue,
+} from '@nocobase/app-client/route-containers';
 import { cn } from 'cn';
-
-import { RouteOverlayContext } from './use-route-overlay.js';
 
 export interface RouteOverlayProps {
   readonly title: ReactNode;
@@ -49,16 +53,6 @@ export interface RouteOverlayProps {
 const ParentPopupContext =
   createContext<RefObject<HTMLDivElement | null> | null>(null);
 
-interface RouteOverlayHostValue {
-  readonly configure: (config: RouteOverlayProps) => void;
-}
-
-// Set by `RouteOverlayHost` for the page module it hosts, and cleared again inside it, so only that module's own
-// `RouteDialog` or `RouteDrawer` configures the host. Any other overlay, such as a child route's, builds its own.
-const RouteOverlayHostContext = createContext<RouteOverlayHostValue | null>(
-  null,
-);
-
 /**
  * The shared implementation of `RouteDialog` and `RouteDrawer`: a modal that is open for as long as its route matches,
  * and closes by navigating away from it. Route registration stays with the application.
@@ -66,6 +60,7 @@ const RouteOverlayHostContext = createContext<RouteOverlayHostValue | null>(
  * On a route that declares a `dialog` or `drawer` presentation the application has already opened the panel, and this
  * component configures that one instead of opening a second: its title, description, footer, `closeTo` and
  * `beforeClose` move to the host and its children render in the host's body. On any other route it opens its own.
+ * The host context comes from `@nocobase/app-client`, so a plugin's own copy of this component joins the same panel.
  */
 export function RouteOverlay(
   props: RouteOverlayProps & { readonly drawer?: boolean },
@@ -132,7 +127,7 @@ export function RouteOverlayHost({
   concealed = false,
   children,
 }: RouteOverlayHostProps): ReactElement {
-  const [config, setConfig] = useState<RouteOverlayProps | null>(null);
+  const [config, setConfig] = useState<RouteOverlayHostConfig | null>(null);
   const host = useMemo<RouteOverlayHostValue>(
     () => ({ configure: setConfig }),
     [],

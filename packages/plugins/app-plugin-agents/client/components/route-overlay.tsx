@@ -24,9 +24,12 @@ import {
   DialogPortal,
   DialogTitle,
 } from './ui/dialog.js';
+import {
+  RouteOverlayContext,
+  RouteOverlayHostContext,
+  type RouteOverlayHostValue,
+} from '@nocobase/app-client/route-containers';
 import { cn } from 'cn';
-
-import { RouteOverlayContext } from './use-route-overlay.js';
 
 export interface RouteOverlayProps {
   readonly title: ReactNode;
@@ -50,8 +53,43 @@ const ParentPopupContext =
 /**
  * The shared implementation of `RouteDialog` and `RouteDrawer`: a modal that is open for as long as its route matches,
  * and closes by navigating away from it. Route registration stays with the application.
+ *
+ * On a route that declares a `dialog` or `drawer` presentation the application has already opened the panel; this
+ * component then configures that panel through the shared host context instead of opening a second one.
  */
-export function RouteOverlay({
+export function RouteOverlay(
+  props: RouteOverlayProps & { readonly drawer?: boolean },
+): ReactElement {
+  const host = useContext(RouteOverlayHostContext);
+  return host ? (
+    <HostedRouteOverlay host={host} {...props} />
+  ) : (
+    <RouteOverlayFrame {...props} />
+  );
+}
+
+function HostedRouteOverlay({
+  host,
+  children,
+  drawer: _drawer,
+  ...config
+}: RouteOverlayProps & {
+  readonly host: RouteOverlayHostValue;
+  readonly drawer?: boolean;
+}): ReactElement {
+  // Runs after every render so the host shows this render's footer and guard. The host drops the configuration
+  // itself once the page is gone, so there is no cleanup that a recheck hiding the page could run.
+  useLayoutEffect(() => {
+    host.configure(config);
+  });
+  return (
+    <RouteOverlayHostContext.Provider value={null}>
+      {children}
+    </RouteOverlayHostContext.Provider>
+  );
+}
+
+function RouteOverlayFrame({
   title,
   description,
   children,

@@ -1,8 +1,15 @@
 import {
+  RouteChildPageHostContext,
+  type RouteChildPageHostValue,
+} from '@nocobase/app-client/route-containers';
+import {
   createContext,
   useContext,
   useEffect,
+  useLayoutEffect,
+  useMemo,
   useRef,
+  useState,
   type ReactElement,
   type ReactNode,
   type RefObject,
@@ -18,10 +25,6 @@ export interface RouteChildPageProps {
 // The scrolling element of the layer a child page is rendered inside, when it is rendered inside one.
 const EnclosingLayerContext =
   createContext<RefObject<HTMLDivElement | null> | null>(null);
-
-// True only directly inside the layer the application opened for a route that declares a `child-page` presentation,
-// so the hosted page's own `RouteChildPage` renders its content into that layer instead of adding a second one.
-const RouteChildPageHostContext = createContext(false);
 
 /**
  * A child page, laid over the page that opened it.
@@ -41,14 +44,29 @@ const RouteChildPageHostContext = createContext(false);
  * the content once the user has scrolled this page.
  */
 export function RouteChildPage(props: RouteChildPageProps): ReactElement {
-  const hosted = useContext(RouteChildPageHostContext);
-  if (hosted)
-    return (
-      <RouteChildPageHostContext.Provider value={false}>
-        {props.children}
-      </RouteChildPageHostContext.Provider>
-    );
+  const host = useContext(RouteChildPageHostContext);
+  if (host) return <HostedRouteChildPage host={host} {...props} />;
   return <RouteChildPageLayer {...props} />;
+}
+
+// Inside the layer the application opened, the page's `RouteChildPage` adds no second layer: its content renders in
+// that layer and its `className` moves onto it, so a migrated page keeps its layout.
+function HostedRouteChildPage({
+  host,
+  children,
+  className,
+}: RouteChildPageProps & {
+  readonly host: RouteChildPageHostValue;
+}): ReactElement {
+  useLayoutEffect(() => {
+    host.configure({ className });
+    return () => host.configure({});
+  }, [host, className]);
+  return (
+    <RouteChildPageHostContext.Provider value={null}>
+      {children}
+    </RouteChildPageHostContext.Provider>
+  );
 }
 
 /**
@@ -62,9 +80,14 @@ export function RouteChildPageHost({
 }: {
   readonly children?: ReactNode;
 }): ReactElement {
+  const [className, setClassName] = useState<string>();
+  const host = useMemo<RouteChildPageHostValue>(
+    () => ({ configure: (config) => setClassName(config.className) }),
+    [],
+  );
   return (
-    <RouteChildPageLayer>
-      <RouteChildPageHostContext.Provider value>
+    <RouteChildPageLayer className={className}>
+      <RouteChildPageHostContext.Provider value={host}>
         {children}
       </RouteChildPageHostContext.Provider>
     </RouteChildPageLayer>
@@ -162,7 +185,7 @@ export function RouteChildPageHostBoundary({
   readonly children?: ReactNode;
 }): ReactElement {
   return (
-    <RouteChildPageHostContext.Provider value={false}>
+    <RouteChildPageHostContext.Provider value={null}>
       {children}
     </RouteChildPageHostContext.Provider>
   );

@@ -24,6 +24,7 @@ const page = (id: Page) =>
 export const newIssueDefinition: AppClientRoutePageDefinition = {
   name: 'pm-issue-new',
   path: 'new',
+  presentation: { kind: 'dialog', title: 'newIssue.title' },
   componentLoader: () => import('./pages/issues/new.js'),
 };
 
@@ -39,6 +40,7 @@ export const issueChildDefinitions: readonly AppClientRoutePageDefinition[] = [
     // A plan's own page (the timeline's "via ‹Agent›'s plan" links here).
     name: 'pm-plan',
     path: 'plans/:planId',
+    presentation: { kind: 'child-page' },
     componentLoader: () => import('./pages/plans/detail.js'),
   },
 ];
@@ -49,6 +51,7 @@ export const issueDetailChildDefinitions: readonly AppClientRoutePageDefinition[
     {
       name: 'pm-subtask-new',
       path: 'new-subtask',
+      presentation: { kind: 'dialog', title: 'subtasks.newTitle' },
       componentLoader: () => import('./pages/issues/detail/new-subtask.js'),
     },
   ];
@@ -65,6 +68,7 @@ export const projectsDefinition: AppClientRoutePageDefinition = {
     {
       name: 'pm-project-new',
       path: 'new',
+      presentation: { kind: 'dialog', title: 'projectForm.title' },
       componentLoader: () => import('./pages/projects/new.js'),
     },
   ],
