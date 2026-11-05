@@ -300,6 +300,11 @@ const ptBR: LocaleResource<typeof enUS> = {
         'Este ambiente está protegido. Digite {{appId}} para implantar.',
     },
     deployments: {
+      cancel: 'Cancelar implantação',
+      replaced: 'Substituída por uma implantação mais recente.',
+      cancelAccepted: 'Cancelamento aceito.',
+      queueAhead: 'Na fila · {{ahead}} à frente',
+      restartHint: 'Implantação interrompida. Implante a versão novamente.',
       title: 'Implantações',
       kind: 'Gentil',
       status: 'Status',
@@ -316,6 +321,8 @@ const ptBR: LocaleResource<typeof enUS> = {
       hideLogs: 'Ocultar registros',
       noLogs: 'Sem linhas de registro.',
       statuses: {
+        cancelling: 'Cancelando',
+        cancelled: 'Cancelada',
         queued: 'Na fila',
         deploying: 'Implantação',
         succeeded: 'Sucesso',
@@ -641,6 +648,10 @@ const ptBR: LocaleResource<typeof enUS> = {
           'A configuração foi salva, mas o aplicativo não conseguiu recarregá-la.',
         CONFIG_TOO_LARGE: 'A configuração é muito grande.',
         CONFIRMATION_REQUIRED: 'Digite o ID do aplicativo para confirmar.',
+        DEPLOYMENT_NOT_CANCELLABLE:
+          'A implantação iniciou a troca de versão ou já terminou.',
+        CANCELLATION_UNSUPPORTED:
+          'Este driver de implantação não oferece suporte ao cancelamento.',
         DEPLOYMENT_IN_PROGRESS:
           'A implantação deste aplicativo já está em andamento.',
         DEPLOYMENT_NOT_FOUND: 'A implantação não existe.',

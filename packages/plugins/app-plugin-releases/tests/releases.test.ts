@@ -204,9 +204,6 @@ describe('releases', () => {
       kind: 'deploy',
       actorId: 'admin',
     });
-    await expect(
-      harness.services.releases.deploy(admin, 'shop', { releaseId: r2.id }),
-    ).rejects.toMatchObject({ reason: 'DEPLOYMENT_IN_PROGRESS' });
     expect(
       await harness.services.releases.waitForDeployment(first.id),
     ).toMatchObject({
@@ -456,7 +453,7 @@ describe('releases', () => {
     ).toMatchObject({ status: 'failed' });
   });
 
-  it('finalises a deployment the runtime recorded before it restores the environment', async () => {
+  it('finalises recorded deployments in creation order before restoring the environment', async () => {
     const recorded = createFakeDriver('recorded');
     const local = await createHarness({ drivers: [recorded.driver] });
     try {
@@ -483,7 +480,14 @@ describe('releases', () => {
       });
       const finished = '00000000-0000-0000-0000-000000000004';
       const forgotten = '00000000-0000-0000-0000-000000000005';
-      for (const id of [finished, forgotten])
+      const latest = '00000000-0000-0000-0000-000000000006';
+      const createdAt = Date.now();
+      // Storage iteration order must not decide which completed deployment becomes current.
+      for (const [id, offset] of [
+        [latest, 2],
+        [forgotten, 3],
+        [finished, 1],
+      ] as const)
         await local.database
           .connection()
           .query.insertInto('relDeployments')
@@ -497,32 +501,50 @@ describe('releases', () => {
             configMode: 'file',
             previousDeploymentId: v1.deploymentId,
             actorKind: 'human',
-            createdAt: new Date(),
+            createdAt: new Date(createdAt + offset),
           })
           .execute();
-      // The Host finished one of them while this application restarted, and never saw the other.
-      recorded.state.resumable.set(finished, {
-        state: 'running',
-        version: '2.0.0',
-        deploymentId: finished,
-        startedAt: new Date().toISOString(),
-        error: null,
-      });
+      // Both runtime operations completed before SQL settlement; the third never reached the Host.
+      for (const id of [finished, latest])
+        recorded.state.resumable.set(id, {
+          state: 'running',
+          version: '2.0.0',
+          deploymentId: id,
+          startedAt: new Date().toISOString(),
+          error: null,
+        });
       await local.services.releases.restore();
       // Readers wait for the outcome, and the environment is restored with the finished deployment as current.
       await local.services.releases.listApps(admin);
       expect(
         await local.services.releases.getDeployment(admin, 'shop', finished),
-      ).toMatchObject({ status: 'succeeded' });
+      ).toMatchObject({
+        status: 'succeeded',
+        previousDeploymentId: v1.deploymentId,
+      });
+      expect(
+        await local.services.releases.getDeployment(admin, 'shop', latest),
+      ).toMatchObject({ status: 'succeeded', previousDeploymentId: finished });
+      expect(
+        (await local.services.releases.getApp(admin, 'shop')).app
+          .currentDeploymentId,
+      ).toBe(latest);
+      expect(
+        local.events
+          .filter((event) => event.type === 'deployment.succeeded')
+          .slice(-2)
+          .map((event) => event.deployment.id),
+      ).toEqual([finished, latest]);
       expect(
         await local.services.releases.getDeployment(admin, 'shop', forgotten),
       ).toMatchObject({
         status: 'failed',
-        error: 'Deployment was interrupted by a restart.',
+        error:
+          'Deployment was interrupted by a restart. Deploy the release again.',
       });
       expect(recorded.state.restored.at(-1)).toEqual([
         expect.objectContaining({
-          deploymentId: finished,
+          deploymentId: latest,
           release: expect.objectContaining({ version: '2.0.0' }),
         }),
       ]);

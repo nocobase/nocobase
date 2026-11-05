@@ -1,5 +1,11 @@
 # @nocobase/app-plugin-releases
 
+## 0.1.0-beta.18
+
+### Patch Changes
+
+- 0c485af: Keep environment App inputs aligned when their labels wrap onto multiple lines.
+
 ## 0.1.0-beta.17
 
 ### Patch Changes

@@ -769,6 +769,13 @@ export const ReleasesAppSchema: z.ZodType<AppSummary> = z
     currentVersion: z.string().nullable(),
     hasReleases: z.boolean(),
     hasPendingDeployment: z.boolean(),
+    pendingDeployment: z
+      .object({
+        status: z.enum(['queued', 'deploying', 'cancelling']),
+        queueAhead: z.number().int().nonnegative().nullable(),
+      })
+      .nullable()
+      .optional(),
     allowed: z.array(z.enum(BUSINESS_ACTIONS['rel.apps'])).optional().meta({
       description:
         'What the caller may do on this App; only the single-App read answers it.',
@@ -877,6 +884,8 @@ export const ReleasesUploadTicketSchema: z.ZodType<UploadTicketView> = z.object(
 
 const deploymentPhase = z.enum([
   'queued',
+  'cancelling',
+  'cancelled',
   'resolving',
   'verifying',
   'extracting',
@@ -896,7 +905,16 @@ export const ReleasesDeploymentSchema: z.ZodType<DeploymentView> = z
     kind: z.enum(['deploy', 'rollback']),
     rollbackTargetDeploymentId: z.string().nullable(),
     previousDeploymentId: z.string().nullable(),
-    status: z.enum(['queued', 'deploying', 'succeeded', 'failed']),
+    status: z.enum([
+      'queued',
+      'deploying',
+      'cancelling',
+      'cancelled',
+      'succeeded',
+      'failed',
+    ]),
+    queueAhead: z.number().int().nonnegative().nullable().optional(),
+    cancellable: z.boolean().optional(),
     phase: deploymentPhase,
     configMode: z.enum(['file', 'external']),
     error: z.string().nullable(),

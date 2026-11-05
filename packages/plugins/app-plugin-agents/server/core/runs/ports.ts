@@ -245,6 +245,8 @@ export interface SubjectReports {
 
 export interface SubjectBinding {
   readonly kind: string;
+  /** Host policy for tool sessions. Absent preserves normal fingerprint-based reuse. No I/O is performed here. */
+  readonly sessionPolicy?: (claim: ClaimContext) => 'fresh' | 'reuse';
   /** Reads current issue visibility outside database transactions for comment-origin work. */
   readonly commentActorMayRead?: (
     subjectId: string,

@@ -2,6 +2,17 @@
 
 本文件记录 NocoBase 3 的所有重要变更，每次发布一节：`nocobase-v3-beta/<日期>.<序号>` 是预览版，`release/<日期>.<序号>` 是正式版。每次发布的包版本见对应的 GitHub Release，各个包自己的变更见包内的 CHANGELOG.md。
 
+## [nocobase-v3-beta/2026-11-05.2](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-05.2)
+
+### 🚀 优化
+
+- **[Agent]** 支持应用为 Agent 开启独立会话并提供有界交接摘要。 ([#11341](https://github.com/nocobase/nocobase/pull/11341)) by @2013xile
+- **[应用基础]** 应用底座统计改为“指标名称 + 数值”，去掉数量单位，顶部卡片与能力详情使用一致的名称。 ([#11342](https://github.com/nocobase/nocobase/pull/11342)) by @katherinehhh
+
+### 🐛 修复
+
+- **[发布管理]** 修复环境表单中标签换行导致应用输入框不对齐的问题。 ([#11338](https://github.com/nocobase/nocobase/pull/11338)) by @gchust
+
 ## [nocobase-v3-beta/2026-11-05.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-05.1)
 
 ### 🎉 新特性

@@ -338,7 +338,25 @@ describe('the agent sessions routes', () => {
         )?.requestId ?? '';
       expect(requestId).not.toBe('');
     });
-    const discovery = { status: 'unsupported', choices: [] };
+    const discovery = {
+      status: 'available',
+      choices: [
+        {
+          id: 'agent',
+          name: 'n'.repeat(201),
+          currentValue: 'web-fetch',
+          options: [
+            {
+              value: 'web-fetch',
+              name: 'Web fetch',
+              description: 'w'.repeat(1944),
+            },
+            { value: 'v'.repeat(201), name: 'Invalid' },
+            { value: 'other', name: 'Other' },
+          ],
+        },
+      ],
+    };
     expect(
       (
         await call(
@@ -351,8 +369,107 @@ describe('the agent sessions routes', () => {
         )
       ).status,
     ).toBe(204);
-    expect(await (await pending).json()).toEqual({ data: discovery });
+    expect(await (await pending).json()).toEqual({
+      data: {
+        status: 'available',
+        choices: [
+          {
+            id: 'agent',
+            name: 'n'.repeat(200),
+            currentValue: 'web-fetch',
+            options: [
+              {
+                value: 'web-fetch',
+                name: 'Web fetch',
+                description: 'w'.repeat(1000),
+              },
+              { value: 'other', name: 'Other' },
+            ],
+          },
+        ],
+      },
+    });
   });
+  test('accepts old bridge state with long display text and discards invalid identifiers without weakening ownership', async ({
+    database,
+  }) => {
+    const router = await mount(database);
+    const {
+      data: { computerId },
+    } = await (
+      await call(router, 'POST', '/bridge/register', 'u1', {
+        protocol: BRIDGE_PROTOCOL_VERSION,
+        computerId: null,
+        bridgeStartedAt: 'bridge-1',
+        computer,
+      })
+    ).json();
+    const { data: session } = await (
+      await call(router, 'POST', '/sessions', 'u1', {
+        computerId,
+        agentId: 'codex',
+        cwd: '/home/zhou',
+        content: [{ type: 'text', text: 'Hello' }],
+      })
+    ).json();
+    const input = {
+      computerId,
+      sessionId: session.id,
+      batch: 1,
+      bridgeStartedAt: 'bridge-1',
+      events: [],
+      state: {
+        acpSessionId: 's1',
+        agent: 'test agent',
+        commands: [],
+        title: null,
+        context: null,
+        choices: [
+          {
+            id: 'bad',
+            name: 'Bad',
+            currentValue: 'v'.repeat(201),
+            options: [],
+          },
+          {
+            id: 'mode',
+            name: 'n'.repeat(201),
+            currentValue: 'ask',
+            options: [
+              { value: 'ask', name: 'Ask', description: 'w'.repeat(1944) },
+              { value: 'v'.repeat(201), name: 'Invalid' },
+              { value: 'full', name: 'Full access' },
+            ],
+          },
+        ],
+      },
+    };
+    expect(
+      (await call(router, 'POST', '/bridge/report', undefined, input)).status,
+    ).toBe(401);
+    expect(
+      (await call(router, 'POST', '/bridge/report', 'u2', input)).status,
+    ).toBe(404);
+    expect(
+      (await call(router, 'POST', '/bridge/report', 'u1', input, computerId))
+        .status,
+    ).toBe(200);
+    const { data: saved } = await (
+      await call(router, 'GET', `/sessions/${session.id}`, 'u1')
+    ).json();
+    expect(saved.state.choices).toEqual([
+      {
+        id: 'mode',
+        name: 'n'.repeat(200),
+        currentValue: 'ask',
+        options: [
+          { value: 'ask', name: 'Ask', description: 'w'.repeat(1000) },
+          { value: 'full', name: 'Full access' },
+        ],
+      },
+    ]);
+  });
+
   for (const [locale, message] of [
     ['en-US', enUS.errors.discoveryFailed],
     ['zh-CN', zhCN.errors.discoveryFailed],
