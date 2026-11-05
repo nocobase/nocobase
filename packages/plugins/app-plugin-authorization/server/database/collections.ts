@@ -63,14 +63,12 @@ export async function describeCollection(
   const fields = (definition.fields ?? [])
     .filter((field) => !relationTypes.has(field.type))
     .map((field) => field.name);
-  const physical = await connection.collections.getPhysical(name);
-  const column = physical?.primaryKey?.columns[0];
   const primary = definition.constraints?.find(
     (constraint) => constraint.type === 'primary',
   );
-  const primaryKey = primary?.fields[0] ?? column ?? 'id';
-  const schema = physical?.columns.find(
-    (candidate) => candidate.columnName === (column ?? primaryKey),
+  const primaryKey = primary?.fields[0] ?? 'id';
+  const keyField = definition.fields?.find(
+    (field) => field.name === primaryKey,
   );
   return {
     name,
@@ -95,9 +93,10 @@ export async function describeCollection(
     ),
     primaryKey,
     generatedPrimaryKey:
-      schema !== undefined &&
-      (schema.autoIncrement ||
-        schema.default !== undefined ||
-        schema.generated !== undefined),
+      keyField !== undefined &&
+      (keyField.autoIncrement === true ||
+        keyField.defaultValue !== undefined ||
+        keyField.db?.defaultExpression !== undefined ||
+        keyField.db?.generated !== undefined),
   };
 }
