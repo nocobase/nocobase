@@ -354,6 +354,18 @@ describe('BridgeSession', () => {
     expect(session.state?.choices[0]?.options).toEqual(
       found.choices[0]?.options,
     );
+    session.handle({
+      type: 'choose',
+      sessionId: target.id,
+      choiceId: 'mode',
+      value: 'full',
+    });
+    await vi.waitFor(() =>
+      expect(session.state?.choices[0]?.currentValue).toBe('full'),
+    );
+    expect(session.state?.choices[0]?.options).toEqual(
+      found.choices[0]?.options,
+    );
   });
 
   it('applies the model first and uses its updated dependent choices before prompting', async () => {
