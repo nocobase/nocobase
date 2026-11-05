@@ -50,6 +50,7 @@ import {
   resolveAdminRouteRuntimeTarget,
   toRouterNavigationPath,
 } from './resolveAdminRouteRuntimeTarget';
+import { adminLayoutPageTypeManager } from './AdminLayoutPageTypeManager';
 
 export * from './AdminLayoutMenuUtils';
 const insertPositionToMethod = {
@@ -391,14 +392,14 @@ export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStruc
   }
 
   async createMenuFromMeta(meta: AdminLayoutMenuCreationMeta, values: AdminLayoutMenuCreationParams) {
-    const routeType =
-      meta.menuType === 'flowPage'
-        ? NocoBaseDesktopRouteType.flowPage
-        : meta.menuType === 'page'
-          ? NocoBaseDesktopRouteType.page
-          : meta.menuType === 'group'
-            ? NocoBaseDesktopRouteType.group
-            : NocoBaseDesktopRouteType.link;
+    const pageType = adminLayoutPageTypeManager.get(meta.menuType);
+    const routeType = pageType
+      ? NocoBaseDesktopRouteType.flowPage
+      : meta.menuType === 'page'
+        ? NocoBaseDesktopRouteType.page
+        : meta.menuType === 'group'
+          ? NocoBaseDesktopRouteType.group
+          : NocoBaseDesktopRouteType.link;
     const createRoute = async (route: NocoBaseDesktopRoute) => {
       if (meta.insertPosition) {
         return this.createRouteForInsert(route, meta.insertPosition, meta.targetRoute);
@@ -439,13 +440,21 @@ export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStruc
     const tabSchemaUid = uid();
     const tabSchemaName = uid();
 
-    await createRoute({
+    const pageTypeOptions =
+      typeof pageType?.routeOptions === 'function' ? pageType.routeOptions(values) : pageType?.routeOptions;
+    const route: NocoBaseDesktopRoute = {
       type: routeType,
       title: values.title,
       icon: values.icon,
       schemaUid: pageSchemaUid,
       menuSchemaUid,
       enableTabs: false,
+      options: pageType
+        ? {
+            ...pageTypeOptions,
+            pageType: pageType.name,
+          }
+        : pageTypeOptions,
       children: [
         {
           type: NocoBaseDesktopRouteType.tabs,
@@ -454,7 +463,27 @@ export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStruc
           hidden: true,
         },
       ],
-    });
+    };
+    const createdRoute = await createRoute(route);
+    const routeId =
+      createdRoute && typeof createdRoute === 'object' && 'id' in createdRoute ? createdRoute.id : createdRoute;
+
+    if (!pageType?.onRouteCreated || routeId == null) {
+      return;
+    }
+
+    try {
+      await pageType.onRouteCreated({
+        flowEngine: this.flowEngine,
+        pageSchemaUid,
+        routeId,
+        route,
+        values,
+      });
+    } catch (error) {
+      await this.getRouteRepository().deleteRoute(routeId);
+      throw error;
+    }
   }
 
   async persistMenuCreation(values: AdminLayoutMenuCreationParams) {
@@ -586,6 +615,20 @@ export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStruc
     const nextSibling = findNextSiblingRoute(allAccessRoutes, route);
 
     await this.getRouteRepository().deleteRoute(route.id);
+    const pageTypeName = typeof route.options?.pageType === 'string' ? route.options.pageType : undefined;
+    const pageType = pageTypeName ? adminLayoutPageTypeManager.get(pageTypeName) : undefined;
+    if (pageType?.onRouteDeleted && route.schemaUid) {
+      try {
+        await pageType.onRouteDeleted({
+          flowEngine: this.flowEngine,
+          pageSchemaUid: route.schemaUid,
+          routeId: route.id,
+          route,
+        });
+      } catch (error) {
+        console.error(`Failed to clean up page type ${pageType.name}`, error);
+      }
+    }
 
     if (!shouldNavigate) {
       return true;
