@@ -548,6 +548,7 @@ describe('Host driver', () => {
   it('rotates by the maximum wait under continuous requests even when later status reads fail', async () => {
     vi.useFakeTimers();
     const host = fakeHost(1);
+    host.endpoint.restartMaxWaitMs = 5 * 60_000 + 1234;
     const driver = driverFor(host);
     const preview = appSpec('busy', { activation: 'onDemand' });
     const session = await open(driver, [preview]);
@@ -560,21 +561,46 @@ describe('Host driver', () => {
     vi.spyOn(management, 'getStatus').mockRejectedValue(
       new Error('unavailable'),
     );
-    await vi.advanceTimersByTimeAsync(5 * 60_000 - 1);
+    await vi.advanceTimersByTimeAsync(5 * 60_000 + 1234 - 1);
     expect(host.restarts).toHaveLength(0);
     await vi.advanceTimersByTimeAsync(1);
     expect(host.restarts).toHaveLength(1);
     expect(driver.churn()).toBe(0);
   });
 
-  it('rotates immediately when running Apps have neither requests nor connections, including heap pressure', async () => {
+  it('retries a failed deadline restart through a new timer without polling the expired deadline', async () => {
+    vi.useFakeTimers();
+    const host = fakeHost(1);
+    host.endpoint.restartMaxWaitMs = 5 * 60_000 + 1;
+    const restart = vi.spyOn(host.endpoint.controller, 'restart');
+    restart.mockRejectedValueOnce(new Error('restart failed'));
+    const driver = driverFor(host);
+    const preview = appSpec('busy', { activation: 'onDemand' });
+    const session = await open(driver, [preview]);
+    await session.apply(preview);
+    host.requests.set('busy', 1);
+    host.counters.idleStops = 1;
+    await vi.advanceTimersByTimeAsync(60_000 + 5 * 60_000 + 1);
+    expect(restart).toHaveBeenCalledTimes(1);
+    // The next check arms a fresh maximum-wait timer instead of retrying an expired deadline.
+    await vi.advanceTimersByTimeAsync(60_000 - 1);
+    expect(restart).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(5 * 60_000);
+    expect(restart).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(restart).toHaveBeenCalledTimes(2);
+    expect(host.restarts).toHaveLength(1);
+    expect(driver.churn()).toBe(0);
+  });
+
+  it('rotates immediately when running Apps have neither requests nor connections', async () => {
     vi.useFakeTimers();
     const host = fakeHost(20);
     const driver = driverFor(host);
     const preview = appSpec('idle', { activation: 'onDemand' });
     const session = await open(driver, [preview]);
     await session.apply(preview);
-    host.counters.memoryPressure = 1;
+    host.counters.capacityStops = 20;
     await vi.advanceTimersByTimeAsync(60_000);
     expect(host.restarts).toHaveLength(1);
   });

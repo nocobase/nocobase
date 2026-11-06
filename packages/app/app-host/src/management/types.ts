@@ -139,7 +139,6 @@ export interface HostDeploymentStatus {
 /** Runtime changes since this Host process started; a supervisor uses them to decide when to recycle it. */
 export interface HostRuntimeCounters {
   capacityStops?: number;
-  memoryPressure?: number;
   activations: number;
   idleStops: number;
   dormancies: number;

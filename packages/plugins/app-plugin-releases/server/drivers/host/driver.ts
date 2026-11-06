@@ -212,9 +212,7 @@ export function createHostDriver(
   let inFlight = 0;
   let restartScheduled: Promise<void> | null = null;
   let churnTimer: NodeJS.Timeout | null = null;
-  let restartDueAt: number | null = null;
   let restartDeadline: NodeJS.Timeout | null = null;
-  let memoryPressure = false;
   let checkingChurn = false;
   let hostGeneration = 0;
 
@@ -384,8 +382,6 @@ export function createHostDriver(
         hostGeneration += 1;
         churn = 0;
         runtimeChurn = 0;
-        memoryPressure = false;
-        restartDueAt = null;
         if (restartDeadline) clearTimeout(restartDeadline);
         restartDeadline = null;
       }
@@ -429,8 +425,6 @@ export function createHostDriver(
         });
         churn = 0;
         runtimeChurn = 0;
-        memoryPressure = false;
-        restartDueAt = null;
         await restoreHost(inProcess);
       } finally {
         restartScheduled = null;
@@ -457,24 +451,15 @@ export function createHostDriver(
     );
 
   /**
-   * Rotates after churn or heap pressure, as soon as Apps are idle or at the fixed maximum-wait deadline.
+   * Rotates after churn, as soon as Apps are idle or at the fixed maximum-wait deadline.
    */
   const maybeRestart = async (): Promise<void> => {
     const limit = inProcess.restartAfterChurn;
     const { controller } = inProcess;
     if (!limit || !controller.restart || restartScheduled) return;
     if (controller.getInfo().status !== 'ready') return;
-    if (restartDueAt !== null && Date.now() >= restartDueAt) {
-      await restartHost('App Host rotation maximum wait reached');
-      return;
-    }
     const scheduleDeadline = () => {
-      if (
-        restartDueAt !== null ||
-        (churn + runtimeChurn < limit && !memoryPressure)
-      )
-        return;
-      restartDueAt = Date.now() + (inProcess.restartMaxWaitMs ?? 5 * 60_000);
+      if (restartDeadline !== null || churn + runtimeChurn < limit) return;
       restartDeadline = setTimeout(
         () => {
           restartDeadline = null;
@@ -483,7 +468,7 @@ export function createHostDriver(
               diagnostic.error('Failed to restart the App Host', error),
           );
         },
-        Math.max(0, restartDueAt - Date.now()),
+        inProcess.restartMaxWaitMs ?? 5 * 60_000,
       );
       restartDeadline.unref?.();
     };
@@ -498,11 +483,10 @@ export function createHostDriver(
         (counters.idleStops ?? 0) +
         (counters.dormancies ?? 0) +
         (counters.capacityStops ?? 0);
-      memoryPressure ||= (counters.memoryPressure ?? 0) > 0;
     }
     scheduleDeadline();
     const total = churn + runtimeChurn;
-    if ((total < limit && !memoryPressure) || inFlight > 0) return;
+    if (total < limit || inFlight > 0) return;
     if (!statuses || onDemandBusy(statuses)) return;
     await restartHost(
       `${total} applications replaced, removed, stopped or made dormant`,

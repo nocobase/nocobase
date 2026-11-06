@@ -710,7 +710,6 @@ export class ManagedReconciler {
           dormancies: metrics.dormancies,
           materializations: metrics.materializations,
           capacityStops: metrics.capacityEvictions,
-          memoryPressure: metrics.memoryPressure,
         };
       })(),
     };

@@ -85,6 +85,26 @@ it('keeps sockets alive across three idle and dormancy cycles, counts only opens
   expect(hibernate).toHaveBeenCalledOnce();
 });
 
+it('counts a safe dormancy stop once even before the idle stop deadline', async () => {
+  vi.useFakeTimers();
+  const hibernate = vi.fn();
+  const host = registry({
+    idleTtlMs: 10_000,
+    dormancy: { hibernate, materialize: async () => {} },
+  });
+  await host.create('a', { resourcePolicy: { dormantAfterMs: 1000 } });
+  await vi.advanceTimersByTimeAsync(1001);
+  expect(await host.hibernateIdle()).toEqual(['a']);
+  expect(host.isActive('a')).toBe(false);
+  expect(host.getMetrics()).toMatchObject({
+    evictions: 1,
+    idleEvictions: 1,
+    dormancies: 1,
+  });
+  expect(await host.hibernateIdle()).toEqual([]);
+  expect(hibernate).toHaveBeenCalledOnce();
+});
+
 it('reserves starting Apps atomically, releases failed starts and evicts the effective LRU', async () => {
   let release!: () => void;
   const started = new Promise<void>((resolve) => {
@@ -161,54 +181,29 @@ it('returns an explicit capacity page and logs occupants without evicting connec
   );
 });
 
-it('rejects retained heap pressure after one safe eviction and requests rotation', async () => {
+it('admits by fixed slots despite high heap use and samples only at startup', async () => {
   let heapUsed = 100 * MiB;
+  const sampleHeap = vi.fn(() => ({ heapUsed, heapLimit: 1280 * MiB }));
   const host = registry({
-    sampleHeap: () => ({ heapUsed, heapLimit: 1280 * MiB }),
+    sampleHeap,
   });
   await host.create('a');
-  laterThanRecentUse();
   heapUsed = 800 * MiB;
-  await expect(host.create('b')).rejects.toMatchObject({
-    code: 'APP_CAPACITY_EXCEEDED',
-  });
-  expect(host.isActive('a')).toBe(false);
-  expect(host.getMetrics().capacityEvictions).toBe(1);
-  expect(host.getMetrics().memoryPressure).toBe(1);
-  heapUsed = 100 * MiB;
-  await host.ensureActive('b');
+  await host.create('b');
+  expect(host.isActive('a')).toBe(true);
   expect(host.isActive('b')).toBe(true);
-});
-
-it('does not report startup peaks or a never-reclaimed heap as retained pressure', async () => {
-  let heapUsed = 100 * MiB;
-  let release!: () => void;
-  const started = new Promise<void>((resolve) => {
-    release = resolve;
-  });
-  const host = registry({
-    sampleHeap: () => ({ heapUsed, heapLimit: 1280 * MiB }),
-    resolveFactory: (definition) => async () => {
-      if (definition.id === 'slow') await started;
-      return { fetch: () => new Response('ok'), config: new AppConfig() };
-    },
-  });
-  await host.register('slow');
-  const slow = host.ensureActive('slow');
-  await vi.waitFor(() => expect(host.isActivating('slow')).toBe(true));
-  // The starting App's allocations and its reservation together exceed the target.
-  heapUsed = 500 * MiB;
-  await expect(host.create('b')).rejects.toMatchObject({
+  expect(host.health().capacity.memorySlots).toBe(2);
+  await expect(host.create('c')).rejects.toMatchObject({
     code: 'APP_CAPACITY_EXCEEDED',
   });
-  release();
-  await slow;
-  // Nothing is starting, but no App has left this process: rotation would reclaim nothing.
-  heapUsed = 700 * MiB;
-  await expect(host.ensureActive('b')).rejects.toMatchObject({
-    code: 'APP_CAPACITY_EXCEEDED',
-  });
-  expect(host.getMetrics().memoryPressure).toBe(0);
+  laterThanRecentUse();
+  host.touch('b');
+  await host.ensureActive('c');
+  expect(host.isActive('a')).toBe(false);
+  expect(host.isActive('b')).toBe(true);
+  expect(host.isActive('c')).toBe(true);
+  expect(host.getMetrics().capacityEvictions).toBe(1);
+  expect(sampleHeap).toHaveBeenCalledOnce();
 });
 
 it('does not reclaim an App with a live socket to admit another App', async () => {
