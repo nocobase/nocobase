@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { agentsRepo } from '../server/core/agents/agent.store.js';
 import { appendFile } from 'node:fs/promises';
 import { createSessionManager } from '../server/online/agent/persistence/manager.js';
 import { createChatAttachments } from '../server/core/conversations/attachments.js';
@@ -99,7 +100,7 @@ async function setup() {
     await agent.retryFinalization();
   }
   const grant = () => h.request('PUT', `${base}/shares/bob`, { user: 'alice' });
-  return { id, agent, base, read, start, finish, file, grant, runner };
+  return { id, agent, agentId, base, read, start, finish, file, grant, runner };
 }
 
 async function readCost(
@@ -140,6 +141,26 @@ async function readCost(
 }
 
 describe('conversation snapshots', () => {
+  it('returns the actual agent name in snapshot details and a null name when the agent no longer exists', async () => {
+    const f = await setup();
+    await f.grant();
+    const detail = await f.read();
+    expect(detail.status).toBe(200);
+    expect(detail.body.data.agent).toMatchObject({
+      id: f.agentId,
+      name: 'Coder',
+    });
+    for (const key of ['execution', 'runner', 'wait', 'needsYou', 'projectId'])
+      expect(detail.body.data).not.toHaveProperty(key);
+    await h.services.tx.run(async ({ conn }) => {
+      await agentsRepo(conn).deleteMany({ filter: { id: f.agentId } });
+    });
+    expect((await f.read()).body.data.agent).toMatchObject({
+      id: f.agentId,
+      name: null,
+    });
+  });
+
   it('excludes the entire open turn, new messages and files; sharing again advances and revocation applies on the next read', async () => {
     const f = await setup();
     const firstFile = await f.file('finished.txt');
@@ -156,7 +177,7 @@ describe('conversation snapshots', () => {
     const granted = await f.grant();
     expect(granted.status).toBe(200);
     const cutoff = granted.body.data.cutoffSeq;
-    await readCost('runner detail', () => f.read(), 2);
+    await readCost('runner detail', () => f.read(), 3);
     await readCost('runner history', () => f.read('/messages'), 8);
     await readCost(
       'runner file',

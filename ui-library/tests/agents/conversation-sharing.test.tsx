@@ -8,7 +8,10 @@ import { QueryClient } from '@tanstack/react-query';
 import { afterEach, expect, it, vi } from 'vitest';
 import { ShareConversation } from '../../registry/agents/agent-chat/share-conversation.js';
 import enUS from '../../registry/agents/agent-chat/locales/en-US.js';
+import zhCN from '../../registry/agents/agent-chat/locales/zh-CN.js';
 import type { ConversationShare } from '@nocobase/app-plugin-agents/shared/conversations';
+import { useState } from 'react';
+import { Dialog, DialogContent, DialogTitle } from '#components/ui/dialog';
 
 const state = vi.hoisted(() => ({
   rows: [] as ConversationShare[],
@@ -108,6 +111,41 @@ function renderSharing() {
     </TestI18nProvider>,
   );
 }
+
+it('renders a backdrop above a parent dialog and closes only sharing on Escape', async () => {
+  function NestedSharing() {
+    const [open, setOpen] = useState(true);
+    return (
+      <Dialog open>
+        <DialogContent>
+          <DialogTitle>Agent panel</DialogTitle>
+          <ShareConversation
+            conversationId='nested'
+            open={open}
+            onOpenChange={setOpen}
+          />
+        </DialogContent>
+      </Dialog>
+    );
+  }
+  render(
+    <TestI18nProvider runtime={runtime}>
+      <NestedSharing />
+    </TestI18nProvider>,
+  );
+  await screen.findByTestId('share-conversation');
+  expect(
+    document.querySelectorAll('[data-slot="dialog-overlay"]'),
+  ).toHaveLength(2);
+  await userEvent.setup().keyboard('{Escape}');
+  await waitFor(() =>
+    expect(screen.queryByTestId('share-conversation')).not.toBeInTheDocument(),
+  );
+  expect(screen.getByRole('dialog', { name: 'Agent panel' })).toBeVisible();
+  expect(
+    document.querySelectorAll('[data-slot="dialog-overlay"]'),
+  ).toHaveLength(1);
+});
 function savedShare(userId: string): ConversationShare {
   const share = {
     userId,
@@ -227,4 +265,22 @@ it('retains all failed recipients and removes their retry warning when the user 
   expect(
     screen.getByRole('button', { name: 'Share', exact: true }),
   ).toBeDisabled();
+});
+
+it('formats the recipient cutoff in the application language instead of the browser default', async () => {
+  savedShare('bob');
+  const chinese = await createTestI18nRuntime({
+    locale: 'zh-CN',
+    application: { namespace: 'sharing-test', resources: zhCN },
+  });
+  render(
+    <TestI18nProvider runtime={chinese}>
+      <ShareConversation conversationId='chinese' open onOpenChange={vi.fn()} />
+    </TestI18nProvider>,
+  );
+  const cutoff = new Intl.DateTimeFormat('zh-CN', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(new Date(state.rows[0]!.snapshotAt));
+  expect(await screen.findByText(`截至 ${cutoff} 的分享`)).toBeVisible();
 });
