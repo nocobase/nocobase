@@ -728,13 +728,22 @@ export function createConversationService(
       showInChatList: false,
       source: 'panel',
       mode: record.mode,
-      agent: {
-        id: '',
-        name: null,
-        nameText: null,
-        avatar: null,
-        archived: false,
-      },
+      agent: jsonObject(record.metadata).onlineAgent
+        ? {
+            id: 'online',
+            name: 'Online agent',
+            nameText: null,
+            avatar: null,
+            archived: false,
+          }
+        : {
+            ...agentRef(
+              record.agentId,
+              record.agentId ? await findAgent(conn, record.agentId) : null,
+            ),
+            avatar: null,
+            archived: false,
+          },
       fallbackFrom: null,
       read: true,
       lastMessageAt: share.snapshotAt,
