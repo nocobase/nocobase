@@ -1,5 +1,11 @@
 # @nocobase/app-plugin-agents
 
+## 2.0.0-beta.5
+
+### Patch Changes
+
+- ef04803: Let host applications require fresh tool sessions and read bounded summaries of recent terminal runs for handoff context.
+
 ## 2.0.0-beta.4
 
 ### Minor Changes

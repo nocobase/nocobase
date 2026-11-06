@@ -44,3 +44,5 @@ export type {
 } from './ports.js';
 export { autoTitle } from './titles.js';
 export { conversationKey } from './prompt.js';
+
+export type { ConversationShares, ConversationShareScope } from './shares.js';

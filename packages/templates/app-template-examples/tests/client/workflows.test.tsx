@@ -1,4 +1,6 @@
+import { useRealtimeRefresh } from '@nocobase/app-client';
 import { RouteTreeProvider } from '../../client/routing/route-context.js';
+import type { AppClientRegisteredRoute } from '@nocobase/app-client/plugins';
 import { BackButton } from '../../client/components/back-button.js';
 import {
   OfficeParameterEditor,
@@ -24,7 +26,13 @@ import {
 } from '@nocobase/i18n/client';
 import { createTestI18nRuntime } from '@nocobase/i18n/testing';
 import { describeLifecycle } from '@nocobase/lifecycle';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -48,6 +56,7 @@ const { api } = vi.hoisted(() => ({ api: { request: vi.fn() } }));
 vi.mock('@nocobase/app-client', async (original) => ({
   ...(await original<typeof import('@nocobase/app-client')>()),
   useApiClient: () => api,
+  useRealtimeRefresh: vi.fn(),
 }));
 vi.mock('#components/route-drawer', () => ({
   RouteDrawer: ({ children }: { children: ReactNode }) => <div>{children}</div>,
@@ -56,6 +65,19 @@ vi.mock('@nocobase/app-plugin-authorization/client', () => ({
   useCan: () => ({ can: true, isPending: false }),
 }));
 const namespace = '@nocobase/app-template-examples';
+// Navigation targets must be registered pages, as they are in the application shell.
+const routes: AppClientRegisteredRoute[] = [
+  '/workflows/definitions',
+  '/workflows/executions',
+].map((path) => ({
+  id: path,
+  name: path,
+  path,
+  packageName: namespace,
+  source: 'application',
+  authz: 'skip',
+  componentLoader: async () => ({ default: () => null }),
+}));
 
 async function view(
   children: ReactNode,
@@ -86,7 +108,7 @@ async function view(
     <I18nProvider runtime={runtime}>
       <NamespaceScope ns={namespace}>
         <MemoryRouter initialEntries={[path]}>
-          <RouteTreeProvider routes={[]}>
+          <RouteTreeProvider routes={routes}>
             <PageBreadcrumbProvider>
               <Breadcrumbs />
               {children}
@@ -136,6 +158,7 @@ beforeAll(() => {
 });
 beforeEach(() => {
   api.request.mockReset();
+  vi.mocked(useRealtimeRefresh).mockClear();
 });
 
 const history = [
@@ -226,7 +249,7 @@ describe('workflow management pages', () => {
     },
   );
 
-  it('uses one refresh action to reload data and return from history to latest progress', async () => {
+  it('updates execution progress from both source topics without a page refresh action', async () => {
     api.request.mockResolvedValue({ data: detail });
     await view(
       <Routes>
@@ -242,31 +265,20 @@ describe('workflow management pages', () => {
       name: 'Show progress at step 1',
     });
     await userEvent.click(firstStep);
-    expect(firstStep).toHaveAttribute('aria-pressed', 'true');
     expect(
-      screen.queryByRole('button', { name: enUS.workflows.latest }),
+      screen.queryByRole('button', { name: 'Refresh' }),
     ).not.toBeInTheDocument();
-    const refresh = screen.getByRole('button', { name: 'Refresh' });
-    let finish: ((value: unknown) => void) | undefined;
-    api.request.mockImplementationOnce(
-      () =>
-        new Promise((resolve) => {
-          finish = resolve;
-        }),
-    );
-    await userEvent.click(refresh);
-    expect(api.request).toHaveBeenCalledTimes(2);
-    expect(refresh).toBeDisabled();
-    expect(
-      screen.getByRole('button', { name: 'Show progress at step 1' }),
-    ).toHaveAttribute('aria-pressed', 'false');
-    finish?.({ data: detail });
-    await waitFor(() => expect(refresh).toBeEnabled());
-    expect(
-      screen
-        .getByTestId('rf__node-awaitingManager')
-        .querySelector('[data-execution-state="current"]'),
-    ).not.toBeNull();
+    for (const topic of ['lifecycle-example:changes', 'office-flows:changed']) {
+      const reads = api.request.mock.calls.length;
+      const callback = vi
+        .mocked(useRealtimeRefresh)
+        .mock.calls.find(([name]) => name === topic)![1];
+      await act(async () => callback(new AbortController().signal));
+      await waitFor(() =>
+        expect(api.request.mock.calls.length).toBeGreaterThan(reads),
+      );
+      expect(firstStep).toHaveAttribute('aria-pressed', 'true');
+    }
   });
 
   it.each(['en-US', 'zh-CN'])(
@@ -926,9 +938,14 @@ it('retains loaded definitions while refreshing and exposes the busy state', asy
         finish = resolve;
       }),
   );
-  fireEvent.click(screen.getByRole('button', { name: 'Refresh' }));
+  const callback = vi
+    .mocked(useRealtimeRefresh)
+    .mock.calls.find(([topic]) => topic === 'lifecycle-example:changes')![1];
+  await act(async () => callback(new AbortController().signal));
   expect(link).toBeInTheDocument();
-  expect(screen.getByRole('button', { name: 'Refresh' })).toBeDisabled();
+  expect(
+    screen.queryByRole('button', { name: 'Refresh' }),
+  ).not.toBeInTheDocument();
   expect(screen.getAllByRole('status').length).toBeGreaterThan(0);
   finish?.({ data: [] });
   await screen.findByText(enUS.listFeedback.empty);
@@ -1090,16 +1107,9 @@ it.each(['en-US', 'zh-CN'])(
     );
     await screen.findByRole('link', { name: copy.names.expenses });
     const input = screen.getByRole('searchbox', { name: copy.filterByName });
-    const refresh = screen.getByRole('button', { name: copy.refresh });
     expect(
-      screen
-        .getByRole('button', { name: 'Finance' })
-        .compareDocumentPosition(refresh) & Node.DOCUMENT_POSITION_FOLLOWING,
-    ).toBeTruthy();
-    expect(
-      refresh.compareDocumentPosition(screen.getByRole('table')) &
-        Node.DOCUMENT_POSITION_FOLLOWING,
-    ).toBeTruthy();
+      screen.queryByRole('button', { name: copy.refresh }),
+    ).not.toBeInTheDocument();
     await userEvent.type(input, copy.names.orders);
     await new Promise((resolve) => setTimeout(resolve, 400));
     expect(

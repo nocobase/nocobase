@@ -109,7 +109,7 @@ const messages = {
     preparing: 'Preparing demo mailbox data…',
     retry: 'Retry setup',
     openWorkspace: 'Open mail workspace',
-    refresh: 'Refresh',
+    retryRead: 'Retry',
     loading: 'Loading…',
   },
 };

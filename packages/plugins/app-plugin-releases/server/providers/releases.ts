@@ -123,8 +123,12 @@ export class ReleasesProvider extends ServiceProvider<ReleasesProviderApplicatio
                 sweepIntervalSeconds: host.sweepIntervalSeconds,
                 activationHoldMs: host.activationHoldMs,
                 activationWaitMs: host.activationWaitMs,
+                memoryBudget: host.memoryBudget,
+                maxActiveApps: host.maxActiveApps,
               }),
             ...(host.publicUrl ? { publicUrl: host.publicUrl } : {}),
+            restartMaxWaitMs: host.restartMaxWaitMs,
+            restartDrainMs: host.restartDrainMs,
             ...(host.restartAfterChurn
               ? { restartAfterChurn: host.restartAfterChurn }
               : {}),

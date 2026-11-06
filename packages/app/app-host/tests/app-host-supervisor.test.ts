@@ -245,6 +245,46 @@ describe('AppHostSupervisor', () => {
     }
   });
 
+  it('bounds rotation even when an App shutdown hook never finishes', async () => {
+    const rootDir = await mkdtemp(
+      path.join(os.tmpdir(), 'app-host-hung-shutdown-'),
+    );
+    const fixture = await createManagedFixture(rootDir, {
+      hangOnShutdown: true,
+    });
+    const supervisor = SourceAppHostSupervisor.initialize({
+      mode: 'managed',
+      driver: 'auto',
+      appRevisionsDir: fixture.appRevisionsDir,
+      appVolumesDir: fixture.appVolumesDir,
+      configPath: fixture.configPath,
+      startTimeoutMs: 10_000,
+    });
+    try {
+      await supervisor.applyDeploymentSet({
+        revision: 1,
+        deployments: [
+          {
+            id: 'demo',
+            appId: 'demo',
+            artifact: fixture.artifact,
+            desiredState: 'running',
+            backend: 'in-process',
+            activation: 'eager',
+          },
+        ],
+      });
+      const oldPid = supervisor.getInfo().pid!;
+      await supervisor.restart('bounded rotation', { shutdownTimeoutMs: 25 });
+      expect(supervisor.getInfo().status).toBe('ready');
+      expect(supervisor.getInfo().pid).not.toBe(oldPid);
+      expect(() => process.kill(oldPid, 0)).toThrow();
+    } finally {
+      await supervisor.shutdown();
+      await rm(rootDir, { recursive: true, force: true });
+    }
+  });
+
   it('runs scoped deployments once and keeps their outcome across restarts', async () => {
     const volumesDir = await mkdtemp(path.join(os.tmpdir(), 'app-host-data-'));
     const fixture = await createManagedFixture(volumesDir);
@@ -461,15 +501,31 @@ describe('AppHostSupervisor', () => {
   });
 });
 
-async function createManagedFixture(rootDir: string): Promise<{
+async function createManagedFixture(
+  rootDir: string,
+  options: { hangOnShutdown?: boolean } = {},
+): Promise<{
   appRevisionsDir: string;
   appVolumesDir: string;
   configPath: string;
   artifact: ArtifactReference;
 }> {
-  const sourceDir = fileURLToPath(
+  let sourceDir = fileURLToPath(
     new URL('../fixtures/app-dist/demo', import.meta.url),
   );
+  if (options.hangOnShutdown) {
+    const copy = path.join(rootDir, 'hung-source');
+    await cp(sourceDir, copy, { recursive: true });
+    sourceDir = copy;
+    const entrypoint = path.join(sourceDir, 'dist/server/embedded.js');
+    await writeFile(
+      entrypoint,
+      (await readFile(entrypoint, 'utf8')).replace(
+        'export function createServer(scope) {',
+        "export function createServer(scope) { scope.registerDisposer('hung shutdown', () => new Promise(() => {}));",
+      ),
+    );
+  }
   const artifactDir = path.join(rootDir, 'app-artifacts');
   const appRevisionsDir = path.join(rootDir, 'app-deployments');
   const appVolumesDir = path.join(rootDir, 'app-volumes');

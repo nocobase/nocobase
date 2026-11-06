@@ -1,6 +1,26 @@
 import type { AgentChatLocale } from './en-US.js';
 const agentChatZhCN: AgentChatLocale = {
   chat: {
+    sharing: {
+      related: '关联记录',
+      title: '分享快照',
+      description:
+        '对方只能看到分享时的内容，不包含正在运行的整轮。再次分享可更新快照。',
+      sensitive: '对话可能包含敏感信息，请仅分享给应当查看的人。',
+      asOf: '截至 {{time}} 的分享',
+      recipient: '选择应用用户（可多选）',
+      share: '分享',
+      update: '更新',
+      revoke: '撤销',
+      copy: '复制链接',
+      copied: '链接已复制',
+      copyFailed: '无法复制链接',
+      none: '尚未分享给任何人。',
+      failed: '无法读取或更新分享，请重试。',
+      failedRecipients: '未能分享给：{{names}}。这些用户仍保留选中，可重试。',
+      older: '加载更早的消息',
+      empty: '此快照尚无已结束的轮次。',
+    },
     webSearch: {
       title: '联网搜索',
       queryCount: '{{count}} 个搜索词',

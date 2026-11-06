@@ -1,5 +1,11 @@
 # @nocobase/app-plugin-foundation
 
+## 0.1.0-beta.15
+
+### Patch Changes
+
+- 03d8ce5: Show App foundation statistics as a plain name followed by its value, without Chinese measure words, and use sentence-case metric labels in the other languages.
+
 ## 0.1.0-beta.14
 
 ### Patch Changes

@@ -45,7 +45,12 @@ export class UserPreferenceError extends Error {
 export interface UserPreferencesService {
   /** Every preference of `userId`, by key. */
   list(userId: string): Promise<UserPreferences>;
-  get(userId: string, key: string): Promise<UserPreferenceValue | undefined>;
+  /** Reads through a caller-owned transaction when a connection is supplied. */
+  get(
+    userId: string,
+    key: string,
+    connection?: DatabaseConnection,
+  ): Promise<UserPreferenceValue | undefined>;
   /** Stores one value, replacing what the key held. */
   set(userId: string, key: string, value: unknown): Promise<void>;
   /** Stores several values in one transaction. */
@@ -174,10 +179,9 @@ export function createUserPreferencesService(
       return result;
     },
 
-    async get(userId, key) {
-      const row = await database
-        .connection()
-        .query.selectFrom(TABLE)
+    async get(userId, key, connection) {
+      const row = await (connection ?? database.connection()).query
+        .selectFrom(TABLE)
         .select(['key', 'value'])
         .where('userId', '=', userId)
         .where('key', '=', checkPreferenceKey(key))

@@ -35,6 +35,14 @@ import {
 
 const appRoutes: AppClientRouteContribution = defineAppRoutes([
   {
+    name: 'conversation',
+    path: '/chat/:conversationId',
+    auth: 'required',
+    // The API checks ownership or an explicit snapshot grant on every read.
+    authz: 'skip',
+    componentLoader: () => import('./pages/chat/index.js'),
+  },
+  {
     name: 'onboarding',
     path: '/onboarding',
     auth: 'required',
@@ -148,6 +156,19 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
         path: 'new',
         presentation: { kind: 'dialog', title: 'skillProjects.create' },
         componentLoader: () => import('./pages/skill-projects/edit.js'),
+      },
+      {
+        name: 'skill-projects-detail',
+        path: ':projectId/details',
+        breadcrumb: { title: 'skillProjects.detail' },
+        componentLoader: () => import('./pages/skill-projects/detail.js'),
+        children: [
+          {
+            name: 'skill-projects-detail-edit',
+            path: 'edit',
+            componentLoader: () => import('./pages/skill-projects/edit.js'),
+          },
+        ],
       },
       {
         name: 'skill-projects-edit',

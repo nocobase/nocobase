@@ -247,6 +247,8 @@ describe('app client routes', () => {
     const resolved = resolveRoutes();
 
     expect(pageAuthorizations(resolved.routes)).toEqual([
+      // A shared conversation opts out of page authorization: the agents API checks ownership or a snapshot grant.
+      { name: 'conversation', authorizedAs: null },
       ...['onboarding', 'onboarding-new', 'onboarding-detail'].map((name) => ({
         name,
         authorizedAs: 'onboarding',
@@ -264,6 +266,8 @@ describe('app client routes', () => {
       ].map((name) => ({ name, authorizedAs: 'customer-contacts' })),
       { name: 'skill-projects', authorizedAs: 'skill-projects' },
       { name: 'skill-projects-new', authorizedAs: 'skill-projects' },
+      { name: 'skill-projects-detail', authorizedAs: 'skill-projects' },
+      { name: 'skill-projects-detail-edit', authorizedAs: 'skill-projects' },
       { name: 'skill-projects-edit', authorizedAs: 'skill-projects' },
       { name: 'knowledge', authorizedAs: 'knowledge' },
       // The landing page opted out of page authorization, so it is reachable by every signed-in user.

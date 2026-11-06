@@ -117,7 +117,7 @@ const jaJP: LocaleResource<typeof enUS> = {
     preparing: 'デモメールボックスデータを準備しています…',
     retry: 'セットアップを再試行します',
     openWorkspace: 'メールワークスペースを開く',
-    refresh: '更新',
+    retryRead: '再試行',
     loading: '読み込み中…',
   },
 };

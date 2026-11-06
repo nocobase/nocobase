@@ -1,5 +1,5 @@
 import packageMetadata from '../../package.json' with { type: 'json' };
-import { renderAuthenticatedClient } from '../helpers/authenticated-client.js';
+import { createAuthenticatedClientRenderer } from '../helpers/authenticated-client.js';
 import { resolveAppClientContributions } from '@nocobase/app-client/plugins';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -11,6 +11,8 @@ import SettingsHomePage from '../../client/pages/settings/settings-home.js';
 import applicationRoutes from '../../client/routes.js';
 import { RouteTreeProvider } from '../../client/routing/route-context.js';
 import { useRouteNavigation } from '../../client/routing/route-navigation.js';
+
+const renderAuthenticatedClient = createAuthenticatedClientRenderer();
 
 const { routes } = resolveAppClientContributions([
   {
@@ -118,7 +120,7 @@ it('links the System settings breadcrumb back to the home from a module view', a
   await mount({}, '/roles');
   const trail = await screen.findByRole('navigation', { name: 'Breadcrumb' });
   expect(
-    within(trail).getByRole('link', { name: 'System settings' }),
+    await within(trail).findByRole('link', { name: 'System settings' }),
   ).toHaveAttribute('href', '/main/settings');
   expect(within(trail).getByText('Roles and permissions')).toBeVisible();
 });

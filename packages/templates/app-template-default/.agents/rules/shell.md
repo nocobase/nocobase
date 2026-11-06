@@ -4,6 +4,8 @@ Read this before changing the layouts, header, sidebar, breadcrumbs, account men
 
 ## Breadcrumbs and layouts
 
+Both automatic and explicit parents pass through `client/routing/navigation-destination.ts`, using the shell's existing route/access context. Keep permission loading fail-closed, check every target ancestor, and remove denied parent names. Desktop breadcrumbs and the mobile parent arrow use the same resolved levels; mobile keeps the current title and omits the duplicate brand. Follow the [detail/edit generation contract](../skills/nocobase-app-development/references/frontend/references/navigation.md), including stable parents during record failures, source-tab state and direct-entry defaults. Do not add a second page BackButton under the shell.
+
 Layouts own breadcrumb route context and render the current page's trail in the header after the sidebar toggle (`client/components/breadcrumbs.tsx`): the route trail by default, or the trail a page declares with `usePageBreadcrumb` from `@nocobase/app-client` when it names records. Pages do not render breadcrumbs themselves. `AppRouter` selects routes and layouts. See [pages and routes](../skills/nocobase-app-development/references/frontend/references/page.md) for each layout's scope.
 
 The route-tree provider remembers each visited ancestor's query while its descendants are open. Default breadcrumbs and back links restore that query, including an empty one, instead of applying detail-only parameters to the list. Keep this provider mounted above page navigation. Explicit breadcrumb/back destinations remain application-owned. See the linked pages-and-routes reference for deep-link and reload fallbacks.
@@ -39,3 +41,7 @@ The signed-in region waits in `client/routing/session-preparation.tsx` before mo
 ## List context
 
 Keep the identity-keyed `SessionPreparation` boundary: mounted private list conditions and ancestor query memory must be discarded when the signed-in user changes. Public list state uses `useTableUrlState`; tabbed datasets use `useListTabs`, with complete owned parameter keys and permission-filtered tabs. Follow the synchronized [list navigation rules](../skills/nocobase-app-development/references/frontend/references/child-routes.md#list-tab-breadcrumbs-and-private-conditions). Default back links use an empty ancestor query when no source visit exists; explicit return destinations remain application-owned.
+
+## Page data freshness
+
+Follow the synchronized [page data freshness rules](../skills/nocobase-app-development/references/frontend/references/page-freshness.md): ordinary pages have no persistent Refresh action. Preserve contextual read retries, write invalidation and live progress updates. Dependency upgrades do not rewrite application-owned pages or installed Registry source; reconcile them through the template upgrade workflow.

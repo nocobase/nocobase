@@ -24,6 +24,8 @@ import type {
   HostDeploymentSet,
   HostDescription,
   HostOperation,
+  HostCancelResult,
+  HostDeploymentProgress,
   HostScope,
   HostScopeCheck,
   HostStatus,
@@ -31,6 +33,8 @@ import type {
 } from './types.ts';
 
 type IpcMethod =
+  | 'cancelDeployment'
+  | 'deploymentProgress'
   | 'publishAppConfig'
   | 'restoreDeploymentSet'
   | 'reloadAppConfig'
@@ -52,6 +56,21 @@ export interface IpcHostManagementClientOptions {
 }
 
 export class IpcHostManagementClient implements HostManagementService {
+  cancelDeployment(
+    operationId: string,
+    appId: string,
+    options?: { scope?: HostScope; queuedOnly?: boolean },
+  ): Promise<HostCancelResult> {
+    return this.call('cancelDeployment', { operationId, appId, ...options });
+  }
+  deploymentProgress(
+    operationId: string,
+    appId: string,
+    options?: { scope?: HostScope },
+  ): Promise<HostDeploymentProgress | null> {
+    return this.call('deploymentProgress', { operationId, appId, ...options });
+  }
+
   publishAppConfig(
     appId: string,
     content: string,
@@ -269,6 +288,19 @@ export class IpcHostManagementServer {
           (request.payload as { appId: string }).appId,
         );
         break;
+      case 'cancelDeployment':
+      case 'deploymentProgress': {
+        const { operationId, appId, ...options } = request.payload as {
+          operationId: string;
+          appId: string;
+          scope?: HostScope;
+          queuedOnly?: boolean;
+        };
+        result = await this.service[
+          request.method as 'cancelDeployment' | 'deploymentProgress'
+        ](operationId, appId, options);
+        break;
+      }
       case 'getOperation': {
         const { operationId, scope } = request.payload as {
           operationId: string;

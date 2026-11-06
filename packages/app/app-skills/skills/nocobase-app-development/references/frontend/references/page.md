@@ -297,16 +297,16 @@ A number is something waiting; `{ count, live: true, hint }` is work under way, 
 
 ## 7. Back button and breadcrumbs
 
-The shell header shows the current page's breadcrumb after the sidebar toggle, on every page; pages never render breadcrumbs themselves. A page that sits below another one — a covering child page, a record's own page, a form too long for a dialog — has a back button above its title (guideline L6), unless its header trail already leads back the same way; do not render both, and do not add a "Back to list" button to `actions`.
+The shell header shows the current page's breadcrumb after the sidebar toggle, on every page; pages never render breadcrumbs themselves. Under `AppLayout`, a covering child page, record detail or independent edit uses the header trail and mobile parent arrow. Do not render a duplicate page back button or add “Back to list” to `actions`. A standalone page without that header supplies its own validated parent navigation.
 
 ### The back button
 
-`BackButton` (`#components/back-button`) is a component of its own: the page places it inside `PageContainer`, above `PageHeader`, and it needs nothing from the header. [Section 5 of `child-routes.md`](child-routes.md#5-covering-child-pages-routechildpage) has the complete example, a covering child page.
+`BackButton` (`#components/back-button`) is a component of its own: the page places it inside `PageContainer`, above `PageHeader`, and uses the route/access context for destination validation. Use it only when the shell header does not already provide the same parent. [Section 5 of `child-routes.md`](child-routes.md#5-covering-child-pages-routechildpage) has the complete example, a covering child page.
 
 - It is a muted text link with an arrow and "Back" (`navigation.back`), turning to the foreground on hover.
 - By default the back link leads to the parent route with its recorded query. The parent is resolved by route, not by path segment, so a two-segment detail route returns to its real list too.
 - Without a recorded parent visit, including a directly opened detail or reload, the back link uses the default parent with an empty query. For a deliberate deep-link contract that forwards known list parameters, supply an explicit `to` with an allowlisted query; never borrow arbitrary detail parameters.
-- `to` sends it elsewhere, for a page that belongs to exactly one parent, such as a record page declared beside its list: `<BackButton to={{ pathname: '/customers', search: location.search }} />`. For a module reused under several parents — a record's page opened from another page as well (["The same detail page over another page" in `child-routes.md`](child-routes.md#the-same-detail-page-over-another-page)) — omit it, or keep `..` as its `pathname` when only the query string changes, as the previous point does, so the back button follows the parent route it was opened from; a hard-coded path sends a user who came from elsewhere to a page they were not on. `children` replaces the label; keep "Back" unless the destination needs naming.
+- `to` selects another registered, authorized application page, for a page that belongs to exactly one parent, such as a record page declared beside its list: `<BackButton to={{ pathname: '/customers', search: searches.get('/customers') ?? '' }} />`. For a module reused under several parents — a record's page opened from another page as well (["The same detail page over another page" in `child-routes.md`](child-routes.md#the-same-detail-page-over-another-page)) — omit it, or keep `..` as its `pathname` when only the query string changes, as the previous point does, so the back button follows the parent route it was opened from; a hard-coded path sends a user who came from elsewhere to a page they were not on. `children` replaces the label; keep "Back" unless the destination needs naming.
 - It navigates rather than going back in the browser history, which a page opened from a link or a refresh does not have, and it replaces the history entry, as closing an overlay does: the browser's Back then does not reopen the page just left, such as a form that would come back empty.
 
 ### The breadcrumb in the header
@@ -320,27 +320,29 @@ By default the trail is generated from the matched route levels:
 - Earlier page levels link to their actual URLs with the query recorded when that ancestor was last visited in the current route ancestry. This restores its search, filters and page without copying detail-only parameters. An ancestor never visited in this mounted shell (for example, a direct detail URL or a reload) links without a query; use an explicit `usePageBreadcrumb` destination when a deep link must carry a known parent query. A group without a component is plain text. The last level is the current page and is not a link.
 - `breadcrumb.title` is a static translation key and names the kind of page ("Project details"), so it can sit on a path with parameters and is known before anything loads.
 
-A page whose trail names records, or should lead back with the parent's search, declares its whole trail with `usePageBreadcrumb` from `@nocobase/app-client`, the page itself last:
+Every independent detail page declares its complete trail with `usePageBreadcrumb`, including before loading succeeds. Use the [standard detail → edit pattern](navigation.md) when generating a page: it covers dynamic names, logical parents outside the URL hierarchy, source lists/tabs, direct entry and failure states. Ordinary static nested pages can use `breadcrumb.title`; home and first-level lists do not invent parents.
 
 ```tsx
 import { usePageBreadcrumb } from '@nocobase/app-client';
+import { useRouteSearches } from '../routing/route-context.js'; // adjust from the page's directory
 
-usePageBreadcrumb(
-  customer.data
-    ? [
-        {
-          label: t('navigation.customers'),
-          to: { pathname: '/customers', search: location.search },
-        },
-        { label: customer.data.name },
-      ]
-    : undefined,
-);
+const searches = useRouteSearches();
+usePageBreadcrumb([
+  {
+    label: t('navigation.customers'),
+    to: { pathname: '/customers', search: searches.get('/customers') ?? '' },
+  },
+  { label: customer.data?.name ?? t('customers.detail.title') },
+]);
 ```
 
-Pass `undefined` while the record loads: the route trail shows until then. When a page and a page nested in it both declare one, the inner one wins until it closes. A plugin page declares its trail the same way; in an application without the header the hook does nothing. Such a trail leads back the way `BackButton` would, so the page drops `BackButton`.
+Keep the parent during loading, failure and not-found states; use a translated current-page fallback. Do not forward arbitrary detail queries to the list. List-tab layouts pass `useListTabs().source` through outlet context; use that known source instead of the tab group's redirect. For logical parents outside the mounted ancestry, carry only a declared source id and allowlisted public list parameters through the application's existing URL contract, resolve the id against a fixed local map, and validate access before falling back to the default parent. Never accept an arbitrary return URL. Sensitive filters remain in the mounted list's private memory and clear on reload or account change.
 
-On a phone the header shows the brand and only the last level; on a medium screen a trail of three or more levels keeps the first and last and folds the rest into a menu.
+The header validates both automatic and explicit destinations against registered routes and the shell's existing authorization result, including ancestors; it hides parent names and links during permission checks or on denial. Explicit destinations are application-absolute paths without the deployment base. A structural group is plain text. If a source is denied, a page may choose its authorized default parent; otherwise the header uses the nearest remaining declared accessible ancestor. It never invents a home/history fallback. This browser check does not replace server authorization.
+
+On a phone the header keeps the current title and a visible arrow to the nearest accessible parent, named “Back to <parent>” for assistive technology. It omits the duplicate brand. On a medium screen a trail of three or more levels folds the middle into a menu. Under `AppLayout`, omit the duplicate page `BackButton`. Detail tabs keep the same parent; an independent edit page declares detail as its parent and list as the preceding level. A dialog/drawer instead keeps the existing close/cancel semantics and does not add a breadcrumb level.
+
+`StandalonePageLayout` has no header. A standalone page supplies an explicit back link with the same destination validation and its route/access context; it must not use browser history as its only fallback.
 
 ## 8. Show actions by permission (useCan)
 

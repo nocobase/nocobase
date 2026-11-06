@@ -143,7 +143,7 @@ describe('Repository pages with real HTTP and SQLite', () => {
     );
     await waitFor(() =>
       expect(
-        screen.getByRole('button', { name: 'Refresh', exact: true }),
+        screen.getByRole('button', { name: 'Search', exact: true }),
       ).toBeEnabled(),
     );
     await user.type(
@@ -397,7 +397,9 @@ describe('Repository pages with real HTTP and SQLite', () => {
     );
     expect(await screen.findByText('Customer 00')).toBeVisible();
     await waitFor(() =>
-      expect(screen.getByRole('button', { name: 'Refresh' })).toBeEnabled(),
+      expect(
+        screen.getByRole('button', { name: 'Search', exact: true }),
+      ).toBeEnabled(),
     );
     findMany.mockRejectedValueOnce(new Error('Page load failed'));
     await user.click(screen.getByRole('button', { name: 'Next' }));
@@ -423,18 +425,26 @@ describe('Repository pages with real HTTP and SQLite', () => {
     ).toBe(true);
 
     findMany.mockRejectedValueOnce(new Error('Refresh timed out'));
-    await user.click(screen.getByRole('button', { name: 'Refresh' }));
+    await user.click(
+      screen.getAllByRole('button', { name: 'Delete', exact: true })[0]!,
+    );
+    await user.click(
+      await screen.findByRole('button', {
+        name: 'Confirm deletion',
+        exact: true,
+      }),
+    );
     expect(
       await screen.findByText('Refresh failed; showing previous data'),
     ).toBeVisible();
-    expect(screen.getByText('Customer 10')).toBeVisible();
+    expect(screen.getByText('Customer 11')).toBeVisible();
     await user.click(screen.getByRole('button', { name: 'Retry' }));
     await waitFor(() =>
       expect(
         screen.queryByText('Refresh failed; showing previous data'),
       ).not.toBeInTheDocument(),
     );
-    expect(screen.getByText('Customer 10')).toBeVisible();
+    expect(screen.getByText('Customer 11')).toBeVisible();
   });
   it('creates an order and a product-linked item through relation selectors', async () => {
     await repository(f.api, 'customers').createOne({
@@ -569,7 +579,7 @@ describe('Repository pages with real HTTP and SQLite', () => {
     });
     const user = userEvent.setup();
     await user.click(
-      screen.getByRole('button', { name: 'Refresh', exact: true }),
+      screen.getByRole('button', { name: 'Search', exact: true }),
     );
     await user.click(
       await screen.findByRole('button', { name: 'Edit', exact: true }),

@@ -3,6 +3,9 @@ import userEvent from '@testing-library/user-event';
 import { expect, it } from 'vitest';
 import { Route, Routes, Navigate } from 'react-router';
 import { randomUUID } from 'node:crypto';
+import type { ReactElement } from 'react';
+import type { AppClientRegisteredRoute } from '@nocobase/app-client/plugins';
+import { RouteTreeProvider } from '../../client/routing/route-context.js';
 import OnboardingPage from '../../client/pages/onboarding/index.js';
 import OnboardingWizard from '../../client/pages/onboarding/wizard.js';
 import { renderAuthenticatedClient } from '../helpers/authenticated-client.js';
@@ -13,6 +16,26 @@ import {
   type OnboardingInput,
   type OnboardingDetail,
 } from '../../shared/onboarding.js';
+const routes: AppClientRegisteredRoute[] = [
+  {
+    id: 'onboarding',
+    name: 'onboarding',
+    path: '/onboarding',
+    packageName: '@nocobase/app-template-examples',
+    source: 'application',
+    authz: 'skip',
+    componentLoader: async () => ({ default: OnboardingPage }),
+  },
+];
+// The isolated page tree still supplies the registered list used by the safe return link.
+const renderOnboardingClient = (
+  ui: ReactElement,
+  options: Parameters<typeof renderAuthenticatedClient>[1] = {},
+) =>
+  renderAuthenticatedClient(
+    <RouteTreeProvider routes={routes}>{ui}</RouteTreeProvider>,
+    options,
+  );
 const write = (input: unknown, method = 'POST') => ({
   method,
   headers: {
@@ -73,7 +96,7 @@ it('derives the first incomplete step with shared conditional and cross-step val
 });
 it('retains input while changing steps, validates conditions and recovers a private draft from the real API', async () => {
   const writes: string[] = [];
-  await renderAuthenticatedClient(
+  await renderOnboardingClient(
     <Routes>
       <Route path='/onboarding' element={<OnboardingPage />}>
         <Route path='new' element={<OnboardingWizard />} />
@@ -250,7 +273,7 @@ it('retains input while changing steps, validates conditions and recovers a priv
   ).not.toBeInTheDocument();
 });
 it('keeps unsaved child-page input until leaving is confirmed', async () => {
-  await renderAuthenticatedClient(
+  await renderOnboardingClient(
     <Routes>
       <Route path='/onboarding' element={<OnboardingPage />}>
         <Route path='new' element={<OnboardingWizard />} />
@@ -300,7 +323,7 @@ it('locks save and submit through refresh and replays an uncertain submission wi
     );
   }
   try {
-    const view = await renderAuthenticatedClient(<RequestRoutes />, {
+    const view = await renderOnboardingClient(<RequestRoutes />, {
       route: '/start',
       async prepare(app, session) {
         await app.connection.repository('onboardingDepartments').createOne({

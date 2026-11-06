@@ -1,15 +1,8 @@
-import { useState, type ReactElement } from 'react';
-import { RefreshCw } from 'lucide-react';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '#components/ui/tooltip';
+import type { ReactElement } from 'react';
 import { useLocation, useParams } from 'react-router';
 import { useTranslation } from '@nocobase/i18n/client';
 import { ProcessDiagram } from '@nocobase/app-plugin-lifecycle-example/client';
 import { WorkflowDetailPage } from './detail-page.js';
-import { Button } from '#components/ui/button';
 import { WorkflowExecutionDetail as WorkflowExecutionView } from '#extensions/nocobase-workflow-management/execution-detail';
 import type { WorkflowExecutionDetail } from '../../../shared/workflows.js';
 import { DataState } from './shared.js';
@@ -84,7 +77,6 @@ export function ExecutionDiagram({
 }
 export default function ExecutionPage(): ReactElement {
   const { workflowId = '', recordId = '' } = useParams();
-  const [refreshVersion, setRefreshVersion] = useState(0);
   const location = useLocation();
   const { t } = useTranslation();
   const labels = useWorkflowLabels();
@@ -98,29 +90,6 @@ export default function ExecutionPage(): ReactElement {
           ? `${labels.title(request.data.data.workflow)} · #${recordId}`
           : t('workflows.execution')
       }
-      titleSuffix={
-        <Tooltip>
-          <TooltipTrigger
-            render={
-              <Button
-                variant='ghost'
-                size='icon-sm'
-                aria-label={t('workflows.refresh')}
-                disabled={request.loading}
-                onClick={() => {
-                  setRefreshVersion((version) => version + 1);
-                  request.reload();
-                }}
-              />
-            }
-          >
-            <RefreshCw
-              className={request.loading ? 'animate-spin' : undefined}
-            />
-          </TooltipTrigger>
-          <TooltipContent>{t('workflows.refresh')}</TooltipContent>
-        </Tooltip>
-      }
       description={t('workflows.executionDescription')}
       listTitle={t('workflows.executions')}
       closeTo={{ pathname: '/workflows/executions', search: location.search }}
@@ -128,7 +97,7 @@ export default function ExecutionPage(): ReactElement {
       <DataState {...request} retry={request.reload} />
       {request.data && (
         <ExecutionDiagram
-          key={`${workflowId}:${recordId}:${refreshVersion}`}
+          key={`${workflowId}:${recordId}`}
           detail={request.data.data}
         />
       )}

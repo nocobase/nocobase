@@ -45,7 +45,7 @@ const zhTW: LocaleResource<typeof enUS> = {
       actions: '操作',
     },
     view: '檢視詳情',
-    refresh: '重新整理',
+    retryRead: '重試',
     previous: '上一步',
     next: '下一步',
     page: '頁{{page}}',
@@ -63,7 +63,7 @@ const zhTW: LocaleResource<typeof enUS> = {
     notificationHint:
       '任務儲存後，會通知當前編輯者以外的相關人員：建立者和當前受讓人。如果受託人發生變化，先前的受託人和新的受託人都會收到通知。',
     edit: '編輯任務',
-    refresh: '重新整理',
+    retryRead: '重試',
     save: '儲存更改',
     cancel: '取消',
     back: '返回任務',

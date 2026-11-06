@@ -783,6 +783,9 @@ importers:
         specifier: 'catalog:'
         version: 7.5.22
     devDependencies:
+      '@nocobase/realtime':
+        specifier: workspace:^
+        version: link:../../libs/realtime
       '@nocobase/dev-config':
         specifier: workspace:*
         version: link:../../tools/dev-config

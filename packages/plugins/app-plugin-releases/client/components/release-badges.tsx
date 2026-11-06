@@ -18,6 +18,8 @@ const APP_STATE_TONE: Readonly<Record<string, Tone>> = {
   pending: 'blue',
   starting: 'blue',
   deploying: 'blue',
+  queued: 'grey',
+  cancelling: 'amber',
   stopped: 'grey',
   stoppedOnDemand: 'grey',
   dormant: 'violet',
@@ -43,13 +45,20 @@ export function AppStateBadge({
           : undefined
       }
     >
-      {t(`ui.state.${state}`)}
+      {state === 'queued' && summary.pendingDeployment?.queueAhead != null
+        ? t('ui.deployments.queueAhead', {
+            ahead: summary.pendingDeployment.queueAhead,
+          })
+        : ['queued', 'cancelling'].includes(state)
+          ? t(`ui.deployments.statuses.${state}`)
+          : t(`ui.state.${state}`)}
     </Tag>
   );
 }
 
 const STATUS_TONE: Readonly<Record<string, Tone>> = {
   queued: 'grey',
+  cancelling: 'amber',
   deploying: 'blue',
   succeeded: 'green',
   failed: 'red',

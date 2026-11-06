@@ -29,3 +29,36 @@ it.each(['https://other.test', '//other.test', '/\\other.test'])(
     expect(suggestionAction(error(href), 'Configure', vi.fn())).toEqual({});
   },
 );
+
+it.each([
+  new TypeError('Failed to fetch'),
+  new ApiClientError('Internal Server Error', {
+    status: 500,
+    reason: 'INTERNAL_ERROR',
+    method: 'POST',
+    url: '/api/discover',
+  }),
+])(
+  'keeps the localized fallback when no localized message is supplied (%s)',
+  (failure) => {
+    expect(errorText(failure, '无法加载智能体设置。')).toBe(
+      '无法加载智能体设置。',
+    );
+  },
+);
+
+it('preserves localized discovery failures and their field detail', () => {
+  const detail =
+    'discovery.choices.4.options.1.description: Too big: expected string to have <=1000 characters';
+  const localized = `无法加载智能体设置。 ${detail}`;
+  const failure = new ApiClientError('Could not load agent settings.', {
+    status: 400,
+    reason: 'AGENT_SESSIONS_DISCOVERY_FAILED',
+    method: 'POST',
+    url: '/api/discover',
+    payload: {
+      error: { localizedMessage: { locale: 'zh-CN', message: localized } },
+    },
+  });
+  expect(errorText(failure, '请求失败。')).toBe(localized);
+});

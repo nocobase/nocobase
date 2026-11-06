@@ -320,7 +320,7 @@ const deDE: LocaleResource<typeof enUS> = {
   cancel: 'Abbrechen',
   search: 'Suche nach Name/Nummer/ID',
   apply: 'Suchen',
-  refresh: 'Aktualisieren',
+  retryRead: 'Erneut versuchen',
   previous: 'Zurück',
   next: 'Weiter',
   page: 'Seite {{page}}',

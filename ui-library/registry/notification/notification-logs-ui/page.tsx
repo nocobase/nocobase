@@ -108,11 +108,13 @@ export function NotificationLogsView({
           </p>
         </div>
         <div>
-          <Button variant='outline' onClick={refresh}>
-            <RefreshCw className={loading ? 'animate-spin' : undefined} />
+          {error && (
+            <Button variant='outline' disabled={loading} onClick={refresh}>
+              <RefreshCw className={loading ? 'animate-spin' : undefined} />
 
-            {t('notificationLogs.logs.refresh', { defaultValue: 'Refresh' })}
-          </Button>
+              {t('notificationLogs.logs.retryRead', { defaultValue: 'Retry' })}
+            </Button>
+          )}
         </div>
       </header>
 

@@ -480,13 +480,6 @@ function EntityWorkspace({
                 </CardTitle>
                 <div className='flex gap-2'>
                   <Button
-                    variant='outline'
-                    disabled={busy || loading}
-                    onClick={refresh}
-                  >
-                    {t('refresh')}
-                  </Button>
-                  <Button
                     disabled={busy}
                     onClick={() => {
                       setEditing('new');
@@ -815,13 +808,15 @@ function EntityWorkspace({
           >
             {t('back')}
           </Button>
-          <Button
-            variant='outline'
-            disabled={loading || busy}
-            onClick={refresh}
-          >
-            {t('refresh')}
-          </Button>
+          {error && (
+            <Button
+              variant='outline'
+              disabled={loading || busy}
+              onClick={refresh}
+            >
+              {t('retryRead')}
+            </Button>
+          )}
           {detail && (
             <Button
               disabled={busy}

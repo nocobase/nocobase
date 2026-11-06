@@ -1,4 +1,7 @@
-import { renderSettingsClient as renderWithApp } from '../helpers/settings-client.js';
+import type { ReactElement } from 'react';
+import type { AppClientRegisteredRoute } from '@nocobase/app-client/plugins';
+import { RouteTreeProvider } from '../../client/routing/route-context.js';
+import { renderSettingsClient } from '../helpers/settings-client.js';
 import { answerApi } from '@nocobase/app-testing/client';
 import { apiClientToken, type ClientApplication } from '@nocobase/app-client';
 import {
@@ -23,6 +26,28 @@ import { BackButton } from '../../client/components/back-button.js';
 import enUS from '../../client/locales/en-US.js';
 import zhCN from '../../client/locales/zh-CN.js';
 const namespace = '@nocobase/continuity-test';
+const routes: AppClientRegisteredRoute[] = [
+  '/settings/roles',
+  '/settings/processes/loan',
+].map((path) => ({
+  id: path,
+  name: path,
+  path,
+  packageName: namespace,
+  source: 'application',
+  auth: 'required',
+  authz: 'skip',
+  componentLoader: async () => ({ default: () => null }),
+}));
+// Return targets are registered fixture pages, as they are in the running shell.
+const renderWithApp = (
+  ui: ReactElement,
+  options: Parameters<typeof renderSettingsClient>[1] = {},
+) =>
+  renderSettingsClient(
+    <RouteTreeProvider routes={routes}>{ui}</RouteTreeProvider>,
+    options,
+  );
 const namespaces = {
   [namespace]: {
     'en-US': async () => ({ default: enUS }),

@@ -162,7 +162,7 @@ const jaJP: LocaleResource<typeof enUS> = {
     record: 'レコード',
     notes: 'メモ',
     save: '保存',
-    refresh: '更新',
+    retryRead: '再試行',
     loading: '読み込み中…',
     empty: 'アクセス可能な記録はありません',
     readOnly: '読み取り専用',

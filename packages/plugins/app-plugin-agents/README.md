@@ -12,6 +12,10 @@ Runner agents are enabled or disabled. The available-model list is computed live
 
 The plugin knows no domain of its own beyond conversations: what agents work on (subjects), the scopes variables are kept in, the business actions an agent may be given and those every discovered agent gets, and the report pages are the application's, which contributes them through the extension points below; the CLI's business commands are the application's own routes, each described with `cliRoute()`. The assembling application does it in `server/agents` and `client/agents`. With nothing contributed, the plugin still runs agents in conversations on runners, with its own commands.
 
+## Read-only conversation sharing
+
+Owners can share a snapshot with named application users, advance it by sharing again, and revoke access. Recipients only read completed history and its attachments through the saved cutoff; they receive no live streams, usage or write access. The plugin owns the permission table and checks, while applications supply a directory or candidate scope. See [conversation snapshots](docs/conversation-sharing.md) for storage, endpoint permissions, UI Library integration and cost.
+
 ## What it does
 
 Registering the same runner name and hostname again revokes every active prior registration and its keys for the token's owner, leaving other owners' runners untouched. Registration uses the existing transaction without a dedicated lock or additional table. Simultaneous registrations may leave multiple active records until the next registration cleans them up. Existing tasks continue through the usual sweep and retry rules.

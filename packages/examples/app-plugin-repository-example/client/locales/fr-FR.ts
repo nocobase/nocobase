@@ -321,7 +321,7 @@ const frFR: LocaleResource<typeof enUS> = {
   cancel: 'Annuler',
   search: 'Recherche par nom/numéro/ID',
   apply: 'Rechercher',
-  refresh: 'Actualiser',
+  retryRead: 'Réessayer',
   previous: 'Précédent',
   next: 'Suivant',
   page: 'Page {{page}}',

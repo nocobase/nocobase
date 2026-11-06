@@ -46,7 +46,7 @@ const frFR: LocaleResource<typeof enUS> = {
       actions: 'Actions',
     },
     view: 'Afficher les détails',
-    refresh: 'Actualiser',
+    retryRead: 'Réessayer',
     previous: 'Précédent',
     next: 'Suivant',
     page: 'Page {{page}}',
@@ -65,7 +65,7 @@ const frFR: LocaleResource<typeof enUS> = {
     notificationHint:
       "Une fois qu'une tâche est enregistrée, les personnes concernées autres que l'éditeur actuel sont informées : le créateur et le destinataire actuel. Si le cessionnaire change, les cessionnaires précédents et les nouveaux en sont informés.",
     edit: 'Modifier la tâche',
-    refresh: 'Actualiser',
+    retryRead: 'Réessayer',
     save: 'Enregistrer les modifications',
     cancel: 'Annuler',
     back: 'Retour aux tâches',

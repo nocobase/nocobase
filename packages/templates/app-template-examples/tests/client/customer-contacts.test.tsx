@@ -12,10 +12,12 @@ import {
   within,
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { Route, Routes } from 'react-router';
+import { Route, Routes, useOutletContext } from 'react-router';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { renderSettingsClient } from '../helpers/settings-client.js';
-import CustomerContactsPage from '../../client/pages/customer-contacts/index.js';
+import CustomerContactsPage, {
+  type CustomerListContext,
+} from '../../client/pages/customer-contacts/index.js';
 import CustomerDetailPage from '../../client/pages/customer-contacts/detail.js';
 import CustomerEditorPage from '../../client/pages/customer-contacts/edit.js';
 import CustomerBatchPage from '../../client/pages/customer-contacts/batch.js';
@@ -577,14 +579,30 @@ it('keeps customer rows during a refresh and shows only the table refresh indica
   const slow = new Promise((resolve) => {
     finish = resolve;
   });
-  await mount((call) => {
-    if (call.path === 'customerContacts/customers')
-      return refresh ? slow : list([customer]);
-    throw new Error(`Unexpected ${call.path}`);
-  });
+  function ReloadList() {
+    const { reload } = useOutletContext<CustomerListContext>();
+    // Child writes use this callback; ordinary pages no longer expose a Refresh action.
+    return <button onClick={reload}>Reload list after write</button>;
+  }
+  await mount(
+    (call) => {
+      if (call.path === 'customerContacts/customers')
+        return refresh ? slow : list([customer]);
+      throw new Error(`Unexpected ${call.path}`);
+    },
+    '/customer-contacts',
+    'en-US',
+    <Routes>
+      <Route path='/customer-contacts' element={<CustomerContactsPage />}>
+        <Route index element={<ReloadList />} />
+      </Route>
+    </Routes>,
+  );
   expect(await screen.findByRole('link', { name: 'Acorn 01' })).toBeVisible();
   refresh = true;
-  await userEvent.click(screen.getByRole('button', { name: 'Refresh' }));
+  await userEvent.click(
+    screen.getByRole('button', { name: 'Reload list after write' }),
+  );
   expect(screen.getByRole('link', { name: 'Acorn 01' })).toBeVisible();
   expect(
     await screen.findByRole('status', { name: enUS['status.refreshing'] }),

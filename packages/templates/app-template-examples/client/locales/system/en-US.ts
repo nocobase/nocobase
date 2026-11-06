@@ -220,6 +220,7 @@ const systemEnUS = {
     breadcrumb: 'Breadcrumb',
     breadcrumbMore: 'Show the levels in between',
     back: 'Back',
+    backTo: 'Back to {{label}}',
   },
   dataTable: {
     noResults: 'No results',

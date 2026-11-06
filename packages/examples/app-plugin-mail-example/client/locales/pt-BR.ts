@@ -117,7 +117,7 @@ const ptBR: LocaleResource<typeof enUS> = {
     preparing: 'Preparando dados de caixa de correio de demonstração…',
     retry: 'Tentar configurar novamente',
     openWorkspace: 'Abrir espaço de trabalho de correio',
-    refresh: 'Atualizar',
+    retryRead: 'Tentar novamente',
     loading: 'Carregando…',
   },
 };

@@ -13,7 +13,7 @@ const frFR: NotificationResource = {
     description:
       'Tracez la livraison des notifications et chaque tentative du fournisseur. Les corps des messages, les destinataires et les jetons de bail sont expurgés.',
     refreshing: 'Rafraîchissant…',
-    refresh: 'Actualiser',
+    retryRead: 'Réessayer',
     deliveriesShown: 'Livraisons affichées',
     needAttention: "Besoin d'attention",
     unavailable: 'Journaux indisponibles',
