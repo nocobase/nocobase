@@ -4,6 +4,7 @@
  * (`releasesAccessToken`), may widen what "related" means, resolves approvers and marks agents, registers deployment
  * drivers (`releasesDriversToken`) and hears what happens (`releasesEventsToken`).
  */
+import type { Context } from 'hono';
 import type { AuthorizationIdentity } from '@nocobase/authorization/core';
 import {
   createServiceToken,
@@ -27,6 +28,10 @@ import type { Releases } from './composition.js';
  * nothing.
  */
 export interface ReleasesAccess {
+  /** Optional diagnostic fields from the authenticated request, never from upload input. */
+  securityLogContextOf?(
+    context: Pick<Context, 'get'>,
+  ): Readonly<Record<string, unknown>>;
   /** What a signed-in caller may do, decided once per request. */
   permissionsOf(identity: AuthorizationIdentity): Promise<ReleasesPermissions>;
   /**
