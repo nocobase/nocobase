@@ -284,6 +284,12 @@ export interface RunService {
     readonly source: string;
   } | null>;
   list(filter: RunFilter): Promise<Run[]>;
+  /** The agents that have a run on the subject (only the runs `involvingUserId` started or owns, when given), each once. */
+  agentIds(filter: {
+    readonly subjectKind: string;
+    readonly subjectId: string;
+    readonly involvingUserId?: string;
+  }): Promise<string[]>;
   inputTriggers(
     runIds: readonly string[],
   ): Promise<
@@ -1939,6 +1945,25 @@ export function createRunService(deps: RunServiceDeps): RunService {
         ...(filter.cursor ? { cursor: filter.cursor } : {}),
       });
       return readRuns(records);
+    },
+
+    async agentIds(filter) {
+      let query = tx
+        .read()
+        .query.selectFrom('agRuns')
+        .select('agentId')
+        .distinct()
+        .where('subjectKind', '=', filter.subjectKind)
+        .where('subjectId', '=', filter.subjectId);
+      const userId = filter.involvingUserId;
+      if (userId !== undefined)
+        query = query.where((eb) =>
+          eb.or([
+            eb('actorUserId', '=', userId),
+            eb('ownerUserId', '=', userId),
+          ]),
+        );
+      return (await query.execute()).map((row) => String(row.agentId));
     },
 
     async lastEnded(subjectKind, subjectIds) {

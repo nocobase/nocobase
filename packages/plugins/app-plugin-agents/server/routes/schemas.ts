@@ -297,6 +297,14 @@ export const AuditListQuery: z.ZodType<Paging> = z.object({
   ),
 });
 
+export const RunAgentsQuery: z.ZodType<{
+  readonly subjectKind: string;
+  readonly subjectId: string;
+}> = z.object({
+  subjectKind: id.describe('The kind of subject.'),
+  subjectId: id.describe('The subject identifier.'),
+});
+
 export const RunListQuery: z.ZodType<
   Paging & {
     readonly subjectKind?: string | undefined;

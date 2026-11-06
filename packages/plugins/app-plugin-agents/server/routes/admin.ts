@@ -125,6 +125,7 @@ import {
   ModelUsageQuery,
   PreviewBriefQuery,
   RunEventsQuery,
+  RunAgentsQuery,
   RunListQuery,
   RunParams,
   ScopeParams,
@@ -1509,6 +1510,39 @@ export function createAdminRoutes(
               }
             : {},
       });
+    },
+  );
+  // The agents a subject's run filter offers: those with a run on it the caller may see, removed ones included.
+  router.get(
+    '/runAgents',
+    guard,
+    describeRoute({
+      tags,
+      summary: "List the agents of a subject's runs",
+      operationId: 'agentsListRunAgents',
+      // UI-only: the options of a run history's agent filter.
+      ...cliRoute(false),
+      description: `Every agent with at least one run on the subject, removed ones included, by id and name, each once. Counts the runs \`GET /api/agents/runs\` shows the caller: ${runVisibility}`,
+      responses: {
+        200: listResponse(AgentNameSchema),
+        ...apiErrorResponses,
+      },
+    }),
+    apiValidator('query', RunAgentsQuery),
+    async (context) => {
+      const who = caller(context);
+      const query = context.req.valid('query');
+      // The same runs `GET /runs` shows: a private subject's only to the people involved.
+      const all =
+        services.subjects.get(query.subjectKind)?.private !== true &&
+        (await who.can('agents.agents', 'read'));
+      const ids = await services.runs.agentIds({
+        subjectKind: query.subjectKind,
+        subjectId: query.subjectId,
+        ...(all ? {} : { involvingUserId: who.userId }),
+      });
+      const data = await services.agents.directory(services.tx.read(), ids);
+      return context.json({ data, meta: { total: data.length } });
     },
   );
   router.get(
