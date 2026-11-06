@@ -29,7 +29,7 @@ import {
   useLocation,
   useNavigate,
 } from 'react-router';
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 
 import { RouteLeaveBoundary } from '../../../../templates/app-template-examples/client/routing/route-leave-boundary.js';
 import { useRouteOverlay } from '../../../../templates/app-template-examples/client/components/use-route-overlay.js';
@@ -40,6 +40,16 @@ import enUS from '../../../../templates/app-template-examples/client/locales/en-
 import packageMetadata from '../../../../templates/app-template-examples/package.json' with { type: 'json' };
 
 const LOAD = { timeout: 10_000 };
+
+beforeAll(async () => {
+  // Prepare the real lazy modules before timing interactions. Each route still
+  // calls its public namespace-wrapping loader, retaining its identity regression.
+  await Promise.all([
+    newIssueRoute.componentLoader!(),
+    projectsRoute.children![0]!.componentLoader!(),
+    issueDetailChildRoutes[0]!.componentLoader!(),
+  ]);
+});
 
 function Parent() {
   return (
