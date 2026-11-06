@@ -7,4 +7,4 @@
 '@nocobase/app-skills': patch
 ---
 
-Require the client runtime with shared route containers and keep generated application session and draft-protection tests aligned with permission rechecks.
+Bind plugin peers to the shared client runtime version at release time and keep generated application session and draft-protection tests aligned with permission rechecks.

@@ -404,21 +404,18 @@ it.each(['breadcrumb', 'back'])(
       expect(
         screen.queryByRole('link', { name: 'System settings' }),
       ).not.toBeInTheDocument();
-      // A permission-sensitive parent cannot be clicked until this check resolves.
-      // Browser Back still exercises the hidden draft's guard while the check is pending.
-      if (destination === 'breadcrumb') {
-        hold = false;
-        pending.resolve();
-        await waitFor(() => expect(draft).toBeVisible());
-      }
-      const leave = async () => {
+      // Permission-sensitive breadcrumbs are absent during the check. Exercise
+      // the same destination through the router, then the real breadcrumb after recovery.
+      const leave = async (duringRecheck = false) => {
         await user.click(
           destination === 'breadcrumb'
-            ? await screen.findByRole('link', { name: 'System settings' })
+            ? duringRecheck
+              ? screen.getByRole('button', { name: 'Open settings' })
+              : await screen.findByRole('link', { name: 'System settings' })
             : screen.getByRole('button', { name: 'Browser back' }),
         );
       };
-      await leave();
+      await leave(true);
       expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
       expect(
         screen.getByRole('status', { name: 'Current URL' }),

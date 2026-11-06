@@ -134,10 +134,6 @@ catalog:
 # part of the stack onto it: the `openai` client and LangChain then load different copies, types stop agreeing, and
 # LangGraph's interrupt handling changes behavior. Pinning keeps one copy throughout the stack.
 overrides:
-  # Develop the next app-client release against this checkout; published plugin peers retain the beta.9 floor.
-  '@nocobase/app-plugin-projects>@nocobase/app-client': 'workspace:*'
-  '@nocobase/app-plugin-releases>@nocobase/app-client': 'workspace:*'
-  '@nocobase/app-plugin-agents>@nocobase/app-client': 'workspace:*'
   # Ollama declares a provider-utils range; constrain workspace builds to the same release set.
   # This root override does not constrain an application's independent installation of Agents.
   'ollama-ai-provider-v2>@ai-sdk/provider-utils': 'catalog:'
