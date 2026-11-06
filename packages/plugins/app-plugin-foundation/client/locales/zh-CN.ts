@@ -7,6 +7,7 @@ const zhCN: FoundationResource = {
     foundationDescription: '这个应用用到了哪些 NocoBase 基础能力。',
   },
   page: {
+    otherCapabilities: '其他能力',
     notCounted: '未统计',
     updatingHistory: '正在更新，当前展示上次结果。',
     previousKernel:
@@ -118,6 +119,7 @@ const zhCN: FoundationResource = {
     legendUnused: '本系统尚未使用 {{count}}',
   },
   detail: {
+    selectedCapability: '当前选中的能力',
     retainedAt: '上次确认于 {{time}}',
     readNotes: '读取详情',
     collectionCount: '共 {{count}} 张数据表',
@@ -371,6 +373,7 @@ const zhCN: FoundationResource = {
     seeds: '已执行种子',
   },
   dynamic: {
+    extension: '扩展',
     pending: '待识别',
     pendingDescription:
       '此插件已接入当前应用，具体配置和实际使用情况尚待识别。',

@@ -8,6 +8,7 @@ const deDE: FoundationResource = {
       'Die NocoBase-Funktionen, auf denen diese Anwendung aufbaut.',
   },
   page: {
+    otherCapabilities: 'Weitere Fähigkeiten',
     notCounted: 'Nicht gezählt',
     updatingHistory: 'Aktualisierung… Das vorherige Ergebnis wird angezeigt.',
     previousKernel:
@@ -126,6 +127,7 @@ const deDE: FoundationResource = {
     legendUnused: 'Noch ungenutzt {{count}}',
   },
   detail: {
+    selectedCapability: 'Ausgewählte Fähigkeit',
     retainedAt: 'Zuletzt bestätigt {{time}}',
     readNotes: 'Lesedetails',
     collectionCount: '{{count}} Tabellen',
@@ -407,6 +409,7 @@ const deDE: FoundationResource = {
     seeds: 'Ausgeführte Seeds',
   },
   dynamic: {
+    extension: 'Erweiterung',
     pending: 'Erkennung ausstehend',
     pendingDescription:
       'Das Plugin ist registriert. Konfiguration und tatsächliche Nutzung sind noch nicht bestimmt.',

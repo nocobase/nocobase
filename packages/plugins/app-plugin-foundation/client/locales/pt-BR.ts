@@ -8,6 +8,7 @@ const ptBR: FoundationResource = {
       'Os recursos do NocoBase em que este aplicativo se baseia.',
   },
   page: {
+    otherCapabilities: 'Outras capacidades',
     notCounted: 'Não contado',
     updatingHistory: 'Atualizando… Exibindo o resultado anterior.',
     previousKernel:
@@ -126,6 +127,7 @@ const ptBR: FoundationResource = {
     legendUnused: 'Ainda sem uso {{count}}',
   },
   detail: {
+    selectedCapability: 'Capacidade selecionada',
     retainedAt: 'Última confirmação {{time}}',
     readNotes: 'Detalhes da leitura',
     collectionCount: '{{count}} tabelas',
@@ -408,6 +410,7 @@ const ptBR: FoundationResource = {
     seeds: 'Seeds executadas',
   },
   dynamic: {
+    extension: 'Extensão',
     pending: 'Aguardando identificação',
     pendingDescription:
       'O plugin está registrado; sua configuração e uso real ainda não foram determinados.',
