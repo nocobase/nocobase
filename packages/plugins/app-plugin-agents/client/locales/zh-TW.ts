@@ -634,11 +634,11 @@ const zhTW: LocaleResource<typeof enUS> = {
       near: '接近極限',
       clear: '清除',
       clearMark: '清晰標記',
-      confirm: '清除此標記嗎？ {{target}} 又開始工作了。',
+      confirm: '確認額度已恢復後再清除。清除後 {{target}} 將可繼續領取工作。',
       observed: '最後報告 {{time}}',
       usedPercent: '{{percent}}% 使用',
       ok: '好的',
-      hint: '已知的重置時間會自動恢復資格。對於未知重置，恢復配額並清除標記。只有執行時間擁有者和管理員才能清除標記。',
+      hint: '已知重置時間到點或工具回報額度未用完時自動解除；手動清除前請確認額度已恢復。只有執行環境擁有者和管理員才能清除標記。',
     },
     workspaces: {
       paused: '新工作暫停，直到磁碟空間恢復。現有執行仍在繼續。',

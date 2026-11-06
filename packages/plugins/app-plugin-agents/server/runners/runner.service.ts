@@ -861,6 +861,7 @@ export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
       const oldMarks = JSON.stringify(marks);
       const usage = [...(runner.quotaUsage ?? [])];
       const fresh: UnavailableModel[] = [];
+      const cleared: UnavailableModel[] = [];
       for (const window of quota.windows) {
         // A default Claude lease cannot prove a model-specific target; block this tool conservatively.
         const scope =
@@ -924,7 +925,12 @@ export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
           if (index < 0) usage.push(sample);
           else usage[index] = sample;
         }
-        if (!window.exhausted) continue;
+        if (!window.exhausted) {
+          // The same window reports quota left again: its mark no longer holds.
+          const at = marks.findIndex(same);
+          if (at >= 0) cleared.push(...marks.splice(at, 1));
+          continue;
+        }
         const old = marks.find(same);
         if (
           old &&
@@ -972,6 +978,15 @@ export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
         );
       if (JSON.stringify(marks) !== oldMarks)
         unit.emit({ type: 'runner.changed', runnerId });
+      for (const mark of cleared)
+        unit.emit({
+          type: 'notice.cleared',
+          notice: {
+            type: 'runner_quota',
+            subject: { kind: 'runner', id: runnerId, label: runner.name },
+            key: quotaKey(mark),
+          },
+        });
       const noticeAgents =
         runner.ownerUserId && fresh.length ? await deps.quotaAgents(unit) : [];
       if (runner.ownerUserId)
@@ -985,7 +1000,7 @@ export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
               subject: { kind: 'runner', id: runnerId, label: runner.name },
               title: `${TOOL_DISPLAY_NAMES[tool]}${mark.model ? ` · ${quotaTargetLabel(tool, mark.scope ?? 'model', mark.model)}` : ''} quota exhausted on ${runner.name}`,
               body: mark.resetsAt
-                ? `Expected reset: ${mark.resetsAt}. Queued work can resume afterwards.`
+                ? `Expected reset: ${mark.resetsAt}. Queued work can resume afterwards, or earlier once the quota is restored and the mark is cleared on the runtime page.`
                 : 'Reset time unknown. Restore the quota, then clear the mark on the runtime page.',
               params: {
                 runnerName: runner.name,
@@ -1045,14 +1060,6 @@ export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
           target.window,
         ]);
         const marks = runner.unavailableModels ?? [];
-        const selected = marks.find(
-          (mark) => mark.reason === 'toolQuota' && quotaKey(mark) === key,
-        );
-        if (selected?.resetsAt)
-          throw precondition(
-            'QUOTA_RESET_KNOWN',
-            'Known quota reset times clear automatically.',
-          );
         const kept = marks.filter(
           (mark) => mark.reason !== 'toolQuota' || quotaKey(mark) !== key,
         );

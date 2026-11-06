@@ -80,7 +80,7 @@ export function QuotaCell({
               })}
             </span>
           ) : null}
-          {!mark.resetsAt && runner.canClearQuota ? (
+          {runner.canClearQuota ? (
             <Button
               type='button'
               size='xs'

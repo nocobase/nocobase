@@ -531,6 +531,80 @@ describe('runtimes page', () => {
     confirm.mockRestore();
   });
 
+  it('offers clearing a known-reset quota mark to whoever may clear marks', async () => {
+    const resetsAt = new Date(Date.now() + 3_600_000).toISOString();
+    const mark = {
+      tool: 'claude' as const,
+      model: '',
+      scope: 'tool' as const,
+      reason: 'toolQuota' as const,
+      window: '5h',
+      resetsAt,
+      at: new Date().toISOString(),
+      reported: [],
+    };
+    runners[0] = {
+      ...runners[0]!,
+      canManage: false,
+      canClearQuota: true,
+      unavailableModels: [mark],
+    };
+    api.routes['POST agents/runners/r1/quota/clear'] = () => {
+      runners[0] = { ...runners[0]!, unavailableModels: [] };
+      return undefined;
+    };
+    renderPage(<RuntimesPage />);
+    const sheet = await openSheet();
+    expect(
+      within(sheet).getByText('runtimes.quota.automatic'),
+    ).toBeInTheDocument();
+    fireEvent.click(
+      within(sheet).getByRole('button', { name: 'runtimes.quota.clear' }),
+    );
+    fireEvent.click(
+      within(sheet).getByRole('button', { name: 'runtimes.quota.clearMark' }),
+    );
+    await waitFor(() =>
+      expect(callsTo('POST', 'agents/runners/r1/quota/clear')).toHaveLength(1),
+    );
+    expect(callsTo('POST', 'agents/runners/r1/quota/clear')[0]?.json).toEqual({
+      tool: 'claude',
+      scope: 'tool',
+      target: '',
+      window: '5h',
+    });
+  });
+
+  it('hides clearing a known-reset quota mark from readers', async () => {
+    runners[0] = {
+      ...runners[0]!,
+      canManage: false,
+      canClearQuota: false,
+      unavailableModels: [
+        {
+          tool: 'claude',
+          model: '',
+          scope: 'tool',
+          reason: 'toolQuota',
+          window: '5h',
+          resetsAt: new Date(Date.now() + 3_600_000).toISOString(),
+          at: new Date().toISOString(),
+          reported: [],
+        },
+      ],
+    };
+    renderPage(<RuntimesPage />);
+    const readerSheet = await openSheet();
+    expect(
+      within(readerSheet).getByText('runtimes.quota.automatic'),
+    ).toBeInTheDocument();
+    expect(
+      within(readerSheet).queryByRole('button', {
+        name: 'runtimes.quota.clear',
+      }),
+    ).not.toBeInTheDocument();
+  });
+
   it('shows near-limit usage without disabling a signed-in tool, and hides clearing from readers', async () => {
     runners[0] = {
       ...runners[0]!,

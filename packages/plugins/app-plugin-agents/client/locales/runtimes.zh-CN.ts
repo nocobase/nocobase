@@ -70,11 +70,11 @@ const runtimesZhCN: RuntimesLocale = {
       near: '接近上限',
       clear: '清除',
       clearMark: '清除标记',
-      confirm: '清除此标记？{{target}} 将可继续领取工作。',
+      confirm: '确认额度已恢复后再清除。清除后 {{target}} 将可继续领取工作。',
       observed: '上次报告 {{time}}',
       usedPercent: '已用 {{percent}}%',
       ok: '正常',
-      hint: '已知恢复时间到点后自动恢复领取资格；未知时请在额度恢复后手动清除。只有执行机主人和管理员可以清除。',
+      hint: '已知恢复时间到点或工具上报额度未用完时自动解除；手动清除前请确认额度已恢复。只有执行机主人和管理员可以清除。',
     },
     workspaces: {
       paused: '空间恢复前暂停领取新任务，现有运行继续。',

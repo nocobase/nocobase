@@ -659,11 +659,12 @@ const viVN: LocaleResource<typeof enUS> = {
       near: 'Gần đến giới hạn',
       clear: 'Xóa',
       clearMark: 'Đánh dấu rõ ràng',
-      confirm: 'Xóa dấu này? {{target}} hoạt động trở lại.',
+      confirm:
+        'Chỉ xóa dấu này sau khi xác nhận hạn ngạch đã được khôi phục. {{target}} nhận việc trở lại.',
       observed: '{{time}} được báo cáo lần cuối',
       usedPercent: '{{percent}}% đã sử dụng',
       ok: 'Được rồi',
-      hint: 'Thời gian đặt lại đã biết sẽ tự động khôi phục tính đủ điều kiện. Đối với các lần đặt lại không xác định, hãy khôi phục hạn ngạch và xóa dấu. Chỉ chủ sở hữu thời gian chạy và quản trị viên mới có thể xóa điểm.',
+      hint: 'Dấu tự xóa vào thời điểm đặt lại đã biết, hoặc khi công cụ báo lại còn hạn ngạch. Chỉ xóa thủ công sau khi xác nhận hạn ngạch đã được khôi phục. Chỉ chủ sở hữu thời gian chạy và quản trị viên mới có thể xóa dấu.',
     },
     workspaces: {
       paused:
