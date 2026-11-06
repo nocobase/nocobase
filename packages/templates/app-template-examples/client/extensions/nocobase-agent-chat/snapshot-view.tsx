@@ -1,10 +1,12 @@
 import { type ReactElement } from 'react';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { resolveAppUrl } from '@nocobase/app-client';
+import { useTranslation } from '@nocobase/i18n/client';
 import {
   ChatExtensionsContext,
   agentsQueryClient,
   useChatApi,
+  useAgentText,
   chatMessageSegments,
 } from '@nocobase/app-plugin-agents/client/chat';
 import type { ConversationDetail } from '@nocobase/app-plugin-agents/shared/conversations';
@@ -21,6 +23,8 @@ export function SnapshotView({
 }): ReactElement {
   const api = useChatApi();
   const { t } = useChatTranslation();
+  const { i18n } = useTranslation();
+  const agent = useAgentText();
   const snapshot = conversation.snapshot!;
   const history = useInfiniteQuery(
     {
@@ -69,7 +73,10 @@ export function SnapshotView({
       >
         <p className='border-b px-4 py-2 text-sm text-muted-foreground'>
           {t('chat.sharing.asOf', {
-            time: new Date(snapshot.snapshotAt).toLocaleString(),
+            time: new Intl.DateTimeFormat(i18n.language, {
+              dateStyle: 'medium',
+              timeStyle: 'short',
+            }).format(new Date(snapshot.snapshotAt)),
           })}
         </p>
         <div
@@ -135,7 +142,9 @@ export function SnapshotView({
                     key={segment.key}
                     message={message}
                     segment={segment}
-                    agentName={() => t('chat.title')}
+                    agentName={() =>
+                      agent.name(conversation.agent) ?? t('chat.agentGone')
+                    }
                     readOnly
                   />
                 );

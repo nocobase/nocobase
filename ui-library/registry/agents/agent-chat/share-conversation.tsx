@@ -1,4 +1,5 @@
 import { useState, type ReactElement } from 'react';
+import { useTranslation } from '@nocobase/i18n/client';
 import { Dialog as DialogPrimitive } from '@base-ui/react/dialog';
 import { XIcon } from 'lucide-react';
 import { copyText, resolveAppUrl, useToaster } from '@nocobase/app-client';
@@ -43,6 +44,7 @@ export function ShareConversation({
   const panel = useChatPanel();
   const toaster = useToaster();
   const { t } = useChatTranslation();
+  const { i18n } = useTranslation();
   const candidates = useQuery(
     {
       queryKey: ['agents', 'shareCandidates', conversationId],
@@ -207,7 +209,10 @@ export function ShareConversation({
                     <p className='truncate'>{share.name ?? share.userId}</p>
                     <p className='text-xs text-muted-foreground'>
                       {t('chat.sharing.asOf', {
-                        time: new Date(share.snapshotAt).toLocaleString(),
+                        time: new Intl.DateTimeFormat(i18n.language, {
+                          dateStyle: 'medium',
+                          timeStyle: 'short',
+                        }).format(new Date(share.snapshotAt)),
                       })}
                     </p>
                   </div>
