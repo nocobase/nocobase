@@ -202,11 +202,19 @@ export function ChatWorkspace({
     () => ({
       layout,
       conversationId,
+      newConversation: onNew,
       openDetails,
       closeCoveringDetails,
       reportAside,
     }),
-    [layout, conversationId, openDetails, closeCoveringDetails, reportAside],
+    [
+      layout,
+      conversationId,
+      onNew,
+      openDetails,
+      closeCoveringDetails,
+      reportAside,
+    ],
   );
   // Nothing mounts before the first measurement (taken before paint), so a narrow workspace never mounts both.
   const measured = width !== null;

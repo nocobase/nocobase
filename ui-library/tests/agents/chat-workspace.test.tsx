@@ -13,7 +13,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { ChatWorkspace } from '../../registry/agents/agent-chat/workspace';
 import { PanelWorkspace } from '../../registry/agents/agent-chat/linked-chat-panel';
-import { workspaceLayout } from '../../registry/agents/agent-chat/workspace-layout';
+import {
+  workspaceLayout,
+  useChatWorkspace,
+} from '../../registry/agents/agent-chat/workspace-layout';
 import enUS from '../../registry/agents/agent-chat/locales/en-US';
 import { resetChatDemo } from '../../website/demo/agents/agents-chat-client';
 
@@ -203,4 +206,32 @@ describe('chat workspace layout by its own width', () => {
     ).toEqual(pageButtons);
     expect(panelButtons.slice(-1)).toEqual(['Close']);
   });
+});
+
+function StartFromNotice(): ReactElement {
+  const workspace = useChatWorkspace();
+  return (
+    <button onClick={() => workspace?.newConversation?.()}>
+      Start fresh from notice
+    </button>
+  );
+}
+it('lets a composer slot use its page or panel New action', async () => {
+  const onNew = vi.fn();
+  render(
+    <Shell>
+      <ChatWorkspace
+        conversationId='welcome-tour'
+        view='conversation'
+        onOpen={() => undefined}
+        onNew={onNew}
+        onBack={() => undefined}
+        renderBody={() => <StartFromNotice />}
+      />
+    </Shell>,
+  );
+  fireEvent.click(
+    await screen.findByRole('button', { name: 'Start fresh from notice' }),
+  );
+  expect(onNew).toHaveBeenCalledOnce();
 });
