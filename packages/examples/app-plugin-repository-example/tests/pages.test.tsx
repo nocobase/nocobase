@@ -221,6 +221,55 @@ describe('Repository pages with real HTTP and SQLite', () => {
       ),
     ).not.toBeInTheDocument();
   });
+  it('keeps rows during a same-query refresh and hides them for a new search', async () => {
+    const customers = repository(f.api, 'customers');
+    await customers.createOne({
+      values: {
+        id: 'customer-a',
+        name: 'Acorn Supplies',
+        company: 'Example Co',
+        email: 'acorn@example.test',
+      },
+    });
+    let hold: Promise<ExampleRecord[]> | undefined;
+    let last: ExampleRecord[] = [];
+    const findMany = vi.fn(
+      async (input: Parameters<typeof customers.findMany>[0]) =>
+        hold ?? (last = await customers.findMany(input)),
+    );
+    vi.spyOn(f.api, 'repository').mockReturnValue({ ...customers, findMany });
+    await show('crm', 'en-US', undefined, false);
+    await screen.findByText('Acorn Supplies');
+    let release!: () => void;
+    hold = new Promise<ExampleRecord[]>((resolve) => {
+      release = () => resolve(last);
+    });
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Search', exact: true }),
+    );
+    // Same query: rows stay and exactly one delayed refresh status appears.
+    expect(screen.getByText('Acorn Supplies')).toBeVisible();
+    expect(
+      await screen.findByRole('status', { name: 'Refreshing' }),
+    ).toBeInTheDocument();
+    expect(screen.getAllByRole('status')).toHaveLength(1);
+    expect(screen.getByText('Acorn Supplies')).toBeVisible();
+    hold = undefined;
+    release();
+    await waitFor(() =>
+      expect(screen.queryByRole('status', { name: 'Refreshing' })).toBeNull(),
+    );
+    // A new search never shows the previous query's rows while it loads.
+    hold = new Promise<ExampleRecord[]>(() => undefined);
+    await userEvent.type(
+      screen.getByRole('textbox', { name: 'Search by name / number / ID' }),
+      'zzz{Enter}',
+    );
+    await waitFor(() =>
+      expect(screen.queryByText('Acorn Supplies')).not.toBeInTheDocument(),
+    );
+    expect(await screen.findByRole('status')).toHaveTextContent('Loading');
+  });
   it('keeps the custom empty copy on other repository example lists', async () => {
     await show('orders');
     expect(

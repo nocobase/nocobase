@@ -1,5 +1,6 @@
 import type { ListState } from '@nocobase/app-client';
 import { ListFeedback, ListFeedbackActions } from '#components/list-feedback';
+import { RefreshIndicator } from '#components/loading';
 import {
   type ColumnDef,
   type PaginationState,
@@ -17,7 +18,14 @@ import {
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table';
-import { type ReactElement, type ReactNode, useMemo, useState } from 'react';
+import {
+  type ReactElement,
+  type ReactNode,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 
 import { DataTablePagination } from './pagination.js';
 import {
@@ -41,7 +49,18 @@ export interface DataTableProps<TData, TValue = unknown> {
   readonly sortingState?: SortingState;
   readonly onSortingChange?: OnChangeFn<SortingState>;
   readonly showSelectedCount?: boolean;
+  /**
+   * The current request is in flight. With rows of the current query and permission scope this is a background
+   * refresh: rows stay and a delayed refresh indicator appears. Without them the body shows the loading state.
+   * Explicit false pauses loading feedback for an unresolved, inactive query; omitting it uses listState.
+   */
   readonly loading?: boolean;
+  /**
+   * The current query's stable identity, such as its request path. When it
+   * changes the loading and refresh feedback restart their display delay;
+   * the table, its rows' geometry and its controls stay mounted.
+   */
+  readonly loadingIdentity?: unknown;
   readonly listState?: ListState;
   readonly onRetry?: () => void;
   readonly onClearFilters?: () => void;
@@ -95,7 +114,8 @@ export function DataTable<TData, TValue = unknown>({
   sortingState,
   onSortingChange,
   showSelectedCount = true,
-  loading = false,
+  loading,
+  loadingIdentity,
   listState,
   onRetry,
   onClearFilters,
@@ -176,6 +196,37 @@ export function DataTable<TData, TValue = unknown>({
     rows.length > 0 && (state === 'ready' || state === 'refresh-failed');
   const showFeedback = !showRows || state === 'refresh-failed';
   const feedbackColumnCount = Math.max(1, table.getVisibleLeafColumns().length);
+  const showPagination =
+    pagination &&
+    (state === 'ready' || (state === 'refresh-failed' && rows.length > 0));
+  // A new query hides the previous rows at once; keep their body and footer
+  // geometry while it loads so the page below does not jump.
+  const bodyRef = useRef<HTMLTableSectionElement>(null);
+  const footerRef = useRef<HTMLDivElement>(null);
+  const [reserved, setReserved] = useState<{
+    readonly body: number;
+    readonly footer: number;
+  }>();
+  if (!showRows && state !== 'loading' && reserved !== undefined)
+    setReserved(undefined);
+  useEffect(() => {
+    const body = bodyRef.current;
+    if (!showRows || !body || typeof ResizeObserver === 'undefined') return;
+    const footer = footerRef.current;
+    const observer = new ResizeObserver(() => {
+      const next = {
+        body: body.offsetHeight,
+        footer: footer?.offsetHeight ?? 0,
+      };
+      setReserved((old) =>
+        old?.body === next.body && old.footer === next.footer ? old : next,
+      );
+    });
+    observer.observe(body);
+    if (footer) observer.observe(footer);
+    return () => observer.disconnect();
+  }, [showRows, showPagination]);
+  const reserving = state === 'loading' && reserved !== undefined;
 
   return (
     <div className={cn('flex flex-col gap-4', className)}>
@@ -194,8 +245,14 @@ export function DataTable<TData, TValue = unknown>({
           />
         </div>
       ) : null}
-      <div className='overflow-hidden rounded-lg border'>
-        <Table aria-busy={loading}>
+      <div className='relative overflow-hidden rounded-lg border'>
+        {/* A retry after a refresh failure is announced by its own toolbar button. */}
+        <RefreshIndicator
+          pending={Boolean(loading && showRows && state !== 'refresh-failed')}
+          identity={loadingIdentity}
+        />
+        {/* Only retained rows are busy; a loading body owns its own busy region and status. */}
+        <Table aria-busy={loading && showRows}>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
@@ -224,15 +281,27 @@ export function DataTable<TData, TValue = unknown>({
               </TableRow>
             ))}
           </TableHeader>
-          <TableBody>
+          <TableBody ref={bodyRef}>
             {showFeedback ? (
               <TableRow>
-                <TableCell colSpan={feedbackColumnCount} className='p-0'>
-                  <ListFeedback
-                    state={state}
-                    empty={emptyMessage}
-                    emptyAction={emptyAction}
-                  />
+                <TableCell
+                  colSpan={feedbackColumnCount}
+                  className='p-0'
+                  style={
+                    reserving && reserved.body > 0
+                      ? { height: reserved.body }
+                      : undefined
+                  }
+                >
+                  {/* Readiness may stay unresolved while the parent query is paused. */}
+                  {state !== 'loading' || loading !== false ? (
+                    <ListFeedback
+                      state={state}
+                      identity={loadingIdentity}
+                      empty={emptyMessage}
+                      emptyAction={emptyAction}
+                    />
+                  ) : null}
                 </TableCell>
               </TableRow>
             ) : null}
@@ -258,14 +327,16 @@ export function DataTable<TData, TValue = unknown>({
           </TableBody>
         </Table>
       </div>
-      {pagination &&
-      (state === 'ready' || (state === 'refresh-failed' && rows.length > 0)) ? (
-        <DataTablePagination
-          table={table}
-          pageSizeOptions={pageSizeOptions}
-          showSelectedCount={showSelectedCount}
-          disabled={loading}
-        />
+      {showPagination || (pagination && reserving) ? (
+        <div ref={footerRef} data-slot='data-table-footer'>
+          <DataTablePagination
+            table={table}
+            pageSizeOptions={pageSizeOptions}
+            showSelectedCount={showSelectedCount}
+            disabled={loading || !showPagination}
+            countPending={!showPagination}
+          />
+        </div>
       ) : null}
     </div>
   );

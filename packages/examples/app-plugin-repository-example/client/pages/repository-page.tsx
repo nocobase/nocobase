@@ -23,7 +23,6 @@ import { useTranslation } from '@nocobase/i18n/client';
 import {
   CircleAlert,
   Inbox,
-  LoaderCircle,
   LockKeyhole,
   LogIn,
   RefreshCw,
@@ -39,6 +38,8 @@ import {
   type ReactElement,
 } from 'react';
 import { Button } from '../components/ui/button.js';
+import { Loading, RefreshIndicator } from '../components/loading.js';
+import { PendingButton } from '../components/pending-button.js';
 import { Input } from '../components/ui/input.js';
 import { Badge } from '../components/ui/badge.js';
 import {
@@ -71,7 +72,6 @@ import {
 const NS = '@nocobase/app-plugin-repository-example';
 const PAGE_SIZE = 10;
 const listFeedback = {
-  loading: ['listFeedback.loading', 'Loading', LoaderCircle],
   empty: ['listFeedback.empty', 'No data yet', Inbox],
   'no-results': ['listFeedback.noResults', 'No results', SearchX],
   forbidden: ['listFeedback.forbidden', 'Access denied', LockKeyhole],
@@ -82,11 +82,23 @@ const listFeedback = {
 function RepositoryListFeedback({
   state,
   empty,
+  identity,
 }: {
   readonly state: ListState;
   readonly empty?: string;
+  readonly identity?: unknown;
 }): ReactElement {
   const { t } = useTranslation(NS);
+  if (state === 'loading')
+    // The body keeps its place at once; the indicator follows the shared delay.
+    return (
+      <Loading
+        identity={identity}
+        label={t('listFeedback.loading')}
+        longWaitLabel={t('listFeedback.longWait')}
+        className='min-h-24 px-4 py-4'
+      />
+    );
   const [key, fallback, Icon] =
     listFeedback[state as keyof typeof listFeedback];
   return (
@@ -98,15 +110,9 @@ function RepositoryListFeedback({
           ? 'alert'
           : 'status'
       }
-      aria-busy={state === 'loading'}
       className='flex min-h-24 items-center justify-center gap-2 px-4 py-6 text-sm text-muted-foreground'
     >
-      <Icon
-        aria-hidden='true'
-        className={
-          state === 'loading' ? 'size-4 motion-safe:animate-spin' : 'size-4'
-        }
-      />
+      <Icon aria-hidden='true' className='size-4' />
       <span className='flex flex-col gap-1 text-center'>
         <span>{t(key, { defaultValue: fallback })}</span>
         {state === 'empty' && empty && (
@@ -139,17 +145,17 @@ function RepositoryListFeedbackActions({
   }
   if (state === 'failed' || state === 'refresh-failed') {
     return (
-      <Button type='button' variant='outline' disabled={busy} onClick={onRetry}>
-        {busy ? (
-          <LoaderCircle
-            aria-hidden='true'
-            className='motion-safe:animate-spin'
-          />
-        ) : (
-          <RefreshCw aria-hidden='true' />
-        )}
-        {busy ? t('listFeedback.retrying') : t('listFeedback.retry')}
-      </Button>
+      <PendingButton
+        type='button'
+        variant='outline'
+        busy={busy}
+        pendingLabel={t('listFeedback.retrying')}
+        longWaitLabel={t('listFeedback.longWait')}
+        onClick={onRetry}
+      >
+        <RefreshCw aria-hidden='true' />
+        {t('listFeedback.retry')}
+      </PendingButton>
     );
   }
   if (state === 'unauthenticated') {
@@ -263,6 +269,22 @@ function EntityWorkspace({
       listState === 'no-results')
       ? count
       : undefined;
+  // A new search or page hides previous rows at once; keep their height while
+  // it loads so the page does not jump.
+  const bodyRef = useRef<HTMLTableSectionElement>(null);
+  const [reservedHeight, setReservedHeight] = useState<number>();
+  const showsRows = visibleRows.length > 0;
+  if (!showsRows && listState !== 'loading' && reservedHeight !== undefined)
+    setReservedHeight(undefined);
+  useEffect(() => {
+    const body = bodyRef.current;
+    if (!showsRows || !body || typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver(() =>
+      setReservedHeight(body.offsetHeight),
+    );
+    observer.observe(body);
+    return () => observer.disconnect();
+  }, [showsRows]);
   const emptyFeedbackState: Exclude<ListState, 'ready' | 'refresh-failed'> =
     listState === 'refresh-failed'
       ? query.trim()
@@ -509,11 +531,18 @@ function EntityWorkspace({
                   onRetry={refresh}
                 />
               </form>
-              <div
-                className='overflow-hidden rounded-lg border'
-                aria-busy={loading}
-              >
-                <table className='w-full text-left text-sm'>
+              <div className='relative overflow-hidden rounded-lg border'>
+                {/* Same-query refreshes keep rows; a retry announces its own wait. */}
+                <RefreshIndicator
+                  pending={loading && listState === 'ready'}
+                  identity={requestPath}
+                  label={t('listFeedback.refreshing')}
+                  longWaitLabel={t('listFeedback.longWait')}
+                />
+                <table
+                  className='w-full text-left text-sm'
+                  aria-busy={loading && visibleRows.length > 0}
+                >
                   <thead>
                     <tr className='border-b bg-muted/40'>
                       {entity.fields.map((field) => (
@@ -529,7 +558,7 @@ function EntityWorkspace({
                       </th>
                     </tr>
                   </thead>
-                  <tbody className='divide-y divide-border/60'>
+                  <tbody ref={bodyRef} className='divide-y divide-border/60'>
                     {listState === 'refresh-failed' && (
                       <tr>
                         <td colSpan={entity.fields.length + 1} className='p-0'>
@@ -624,8 +653,17 @@ function EntityWorkspace({
                     ))}
                     {!visibleRows.length && (
                       <tr>
-                        <td colSpan={entity.fields.length + 1} className='p-0'>
+                        <td
+                          colSpan={entity.fields.length + 1}
+                          className='p-0'
+                          style={
+                            listState === 'loading' && reservedHeight
+                              ? { height: reservedHeight }
+                              : undefined
+                          }
+                        >
                           <RepositoryListFeedback
+                            identity={requestPath}
                             state={emptyFeedbackState}
                             empty={
                               entity.key === 'customers'

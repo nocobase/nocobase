@@ -19,6 +19,9 @@ const messages: Record<string, string> = {
   tooLarge: '文件超过大小限制',
   rejected: '不支持的文件类型',
   uploadFailed: '上传失败',
+  cancelUpload: '取消上传',
+  retryUpload: '重试上传',
+  uploadLongWait: '仍在上传，可继续等待或取消。',
 
   preview: '预览',
   download: '下载',

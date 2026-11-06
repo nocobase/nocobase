@@ -25,6 +25,7 @@ const messages = {
   'files.retry': 'Thử lại',
   'files.done': 'Hoàn thành',
   'files.uploading': 'Đang tải lên',
+  'files.longWait': 'Vẫn đang tải lên. Hãy tiếp tục chờ hoặc hủy.',
   'files.failed': 'Thất bại',
   'files.pending': 'Đang chờ',
   'files.previous': 'Tệp trước đó',

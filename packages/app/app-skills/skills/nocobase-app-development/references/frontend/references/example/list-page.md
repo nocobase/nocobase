@@ -346,7 +346,7 @@ export default function ProjectsPage(): ReactElement {
         data={rows ?? []}
         getRowId={(row) => row.id}
         listState={listState}
-        loading={loading}
+        loading={active && loading}
         onRetry={reload}
         onClearFilters={clearFilters}
         // No row selection on this page, so no "0 of N row(s) selected" summary.

@@ -310,6 +310,8 @@ const zhTW: LocaleResource<typeof enUS> = {
   empty: '還沒有記錄。建立第一筆記錄以開始。',
   loading: '載入中…',
   listFeedback: {
+    refreshing: '正在重新整理',
+    longWait: '耗時比平常更長，您可以繼續等待。',
     loading: '載入中',
     empty: '暫無資料',
     noResults: '無結果',

@@ -267,6 +267,11 @@ it.each(['tab', 'breadcrumb'])(
     );
     const draft = await screen.findByRole('textbox', { name: 'Draft' });
     await user.type(draft, 'Unsaved inline draft');
+    await waitFor(() =>
+      expect(
+        screen.getByRole('status', { name: 'Permission check' }),
+      ).toHaveTextContent('Ready'),
+    );
     const target =
       destination === 'tab'
         ? await screen.findByRole('tab', { name: 'Default data scopes' })
@@ -395,22 +400,30 @@ it.each(['breadcrumb', 'back'])(
       expect(
         screen.queryByRole('link', { name: 'System settings' }),
       ).not.toBeInTheDocument();
-      // A permission-sensitive parent cannot be clicked until this check resolves.
-      // Browser Back still exercises the hidden draft's guard while the check is pending.
-      if (destination === 'breadcrumb') {
-        hold = false;
-        pending.resolve();
-        await waitFor(() => expect(draft).toBeVisible());
-      }
-      const leave = async () => {
+      // Permission-sensitive breadcrumbs are absent during the check. Exercise
+      // the same destination through the router, then the real breadcrumb after recovery.
+      const leave = async (duringRecheck = false) => {
         await user.click(
           destination === 'breadcrumb'
-            ? await screen.findByRole('link', { name: 'System settings' })
+            ? duringRecheck
+              ? screen.getByRole('button', { name: 'Open settings' })
+              : await screen.findByRole('link', { name: 'System settings' })
             : screen.getByRole('button', { name: 'Browser back' }),
         );
-        expect(await screen.findByRole('alertdialog')).toBeVisible();
       };
+      await leave(true);
+      expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+      expect(
+        screen.getByRole('status', { name: 'Current URL' }),
+      ).toHaveTextContent('/roles/test/edit');
+      expect(beforeUnload()).toBe(true);
+      hold = false;
+      pending.resolve();
+      await waitFor(() => expect(draft).toBeVisible());
+      expect(draft).toHaveValue('Nested unsaved draft');
+      expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
       await leave();
+      expect(await screen.findByRole('alertdialog')).toBeVisible();
       await user.click(
         screen.getByRole('button', { name: 'Cancel', exact: true }),
       );
@@ -467,9 +480,11 @@ it('restores the draft and restarts only the mounted data effect after permissio
     await userEvent.click(
       screen.getByRole('button', { name: 'Open settings' }),
     );
-    await userEvent.click(
-      await screen.findByRole('button', { name: 'Cancel', exact: true }),
-    );
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('status', { name: 'Current URL' }),
+    ).toHaveTextContent('/roles/test/edit');
+    expect(beforeUnload()).toBe(true);
   } finally {
     hold = false;
     pending.resolve();

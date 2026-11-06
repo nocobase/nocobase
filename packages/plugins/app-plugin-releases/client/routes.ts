@@ -59,11 +59,21 @@ export function appsDefinition(
       {
         name: 'rel-app-new',
         path: 'new',
+        presentation: {
+          kind: 'dialog',
+          title: 'ui.apps.create',
+          namespace: '@nocobase/app-plugin-releases',
+        },
         componentLoader: loader(() => import('./pages/new-app-page.js'), paths),
       },
       {
         name: 'rel-request',
         path: 'requests/:requestId',
+        presentation: {
+          kind: 'dialog',
+          title: 'ui.requests.title',
+          namespace: '@nocobase/app-plugin-releases',
+        },
         componentLoader: loader(() => import('./pages/request-page.js'), paths),
       },
       {
@@ -74,6 +84,11 @@ export function appsDefinition(
           {
             name: 'rel-app-request',
             path: 'requests/:requestId',
+            presentation: {
+              kind: 'dialog',
+              title: 'ui.requests.title',
+              namespace: '@nocobase/app-plugin-releases',
+            },
             componentLoader: loader(
               () => import('./pages/request-page.js'),
               paths,

@@ -1,3 +1,4 @@
+import { ACCESS_NAMESPACE } from '../../../shared/access.js';
 import { useTranslation } from '@nocobase/i18n/client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { AlertCircleIcon } from 'lucide-react';
@@ -258,7 +259,7 @@ function Footer({
 }: {
   readonly submitting: boolean;
 }): ReactElement {
-  const { t } = useTranslation();
+  const { t } = useTranslation(ACCESS_NAMESPACE);
   const { close } = useRouteOverlay();
   return (
     <>

@@ -325,6 +325,8 @@ const jaJP: LocaleResource<typeof enUS> = {
   empty: 'レコードはまだありません。最初のレコードを作成して始めましょう。',
   loading: '読み込み中…',
   listFeedback: {
+    refreshing: '更新中',
+    longWait: '通常より時間がかかっています。このままお待ちください。',
     loading: '読み込み中',
     empty: 'データはありません',
     noResults: '結果がありません',

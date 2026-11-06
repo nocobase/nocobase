@@ -87,6 +87,10 @@ Install, update and customize plugins, and remove a direct NocoBase package, as 
 
 Business role assignments must be visible and editable through administration. Default to explicit users; do not assign application roles to every authenticated identity or broaden the inherited member role merely to enable a feature. Follow [permission assignment safety](references/authorization.md#visible-and-manageable-assignments) and run the template's initialized-assignment guard before delivery.
 
+## Waiting feedback
+
+For page/panel waits and native submit buttons, follow [pending feedback](references/pending-feedback.md). Use installed Loading/PendingButton and the shared timing hook; retain submission and list-state owners.
+
 ## Choose sample data or a demo system
 
 A request to add example customers, orders or tasks normally means sample data in the existing application. Use `sample: true` seeds or `sampleDataToken`; see [sample data and demo systems](references/migrations.md#sample-data-and-demo-systems). Keep required initialization data in ordinary seeds. Do not infer an isolated demo deployment from the words "demo data" alone.

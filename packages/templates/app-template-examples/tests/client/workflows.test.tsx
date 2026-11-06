@@ -530,7 +530,12 @@ describe('workflow management pages', () => {
             }),
       );
       await view(<ExecutionsPage />, 'en-US', `/workflows/executions${query}`);
-      expect(screen.getByRole('status')).toHaveAttribute('aria-busy', 'true');
+      expect(
+        screen.getByRole('table').querySelector('[data-slot="loading"]'),
+      ).toHaveAttribute('aria-busy', 'true');
+      const status = await screen.findByRole('status');
+      expect(status).toHaveTextContent(enUS.listFeedback.loading);
+      expect(status.closest('[aria-busy="true"]')).toBeNull();
       expect(
         screen.queryByText(enUS.listFeedback.empty),
       ).not.toBeInTheDocument();

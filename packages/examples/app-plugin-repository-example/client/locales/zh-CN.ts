@@ -308,6 +308,8 @@ const zhCN: RepositoryExampleResource = {
   empty: '暂无记录，新增第一条记录开始体验。',
   loading: '加载中…',
   listFeedback: {
+    refreshing: '正在刷新',
+    longWait: '耗时比平常更长，您可以继续等待。',
     loading: '加载中',
     empty: '暂无数据',
     noResults: '无结果',

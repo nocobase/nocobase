@@ -53,11 +53,13 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
       {
         name: 'onboarding-new',
         path: 'new',
+        presentation: { kind: 'child-page' },
         componentLoader: () => import('./pages/onboarding/wizard.js'),
       },
       {
         name: 'onboarding-detail',
         path: ':id',
+        presentation: { kind: 'child-page' },
         componentLoader: () => import('./pages/onboarding/wizard.js'),
       },
     ],
@@ -73,11 +75,13 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
       {
         name: 'procurement-new',
         path: 'new',
+        presentation: { kind: 'drawer', title: 'procurement.new' },
         componentLoader: () => import('./pages/procurement/detail.js'),
       },
       {
         name: 'procurement-detail',
         path: ':id',
+        presentation: { kind: 'drawer', title: 'procurement.open' },
         componentLoader: () => import('./pages/procurement/detail.js'),
       },
     ],
@@ -96,26 +100,40 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
       {
         name: 'customer-contacts-batch',
         path: 'batch',
+        presentation: { kind: 'dialog', title: 'customerContacts.batchTitle' },
         componentLoader: () => import('./pages/customer-contacts/batch.js'),
       },
       {
         name: 'customer-contacts-detail',
         path: ':customerId',
+        presentation: { kind: 'child-page' },
         componentLoader: () => import('./pages/customer-contacts/detail.js'),
         children: [
           {
             name: 'customer-contacts-edit',
             path: 'edit',
+            presentation: {
+              kind: 'dialog',
+              title: 'customerContacts.editCustomer',
+            },
             componentLoader: () => import('./pages/customer-contacts/edit.js'),
           },
           {
             name: 'customer-contacts-new-contact',
             path: 'contacts/new',
+            presentation: {
+              kind: 'dialog',
+              title: 'customerContacts.newContact',
+            },
             componentLoader: () => import('./pages/customer-contacts/edit.js'),
           },
           {
             name: 'customer-contacts-edit-contact',
             path: 'contacts/:contactId/edit',
+            presentation: {
+              kind: 'dialog',
+              title: 'customerContacts.editContact',
+            },
             componentLoader: () => import('./pages/customer-contacts/edit.js'),
           },
         ],
@@ -136,6 +154,7 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
       {
         name: 'skill-projects-new',
         path: 'new',
+        presentation: { kind: 'dialog', title: 'skillProjects.create' },
         componentLoader: () => import('./pages/skill-projects/edit.js'),
       },
       {
@@ -154,6 +173,7 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
       {
         name: 'skill-projects-edit',
         path: ':projectId/edit',
+        presentation: { kind: 'dialog', title: 'skillProjects.edit' },
         componentLoader: () => import('./pages/skill-projects/edit.js'),
       },
     ],
@@ -254,6 +274,10 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
                   resource: { type: 'settings', id: 'workflow-management' },
                   action: 'update',
                 },
+                presentation: {
+                  kind: 'dialog',
+                  title: 'workflows.workflowParameters',
+                },
                 componentLoader: () =>
                   import('./pages/workflows/parameters.js'),
               },
@@ -312,12 +336,17 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
         name: 'routeDialogExample',
         path: 'dialog',
         authz: 'skip',
+        presentation: { kind: 'dialog', title: 'routeOverlays.dialogTitle' },
         componentLoader: () => import('./pages/route-overlays/dialog/index.js'),
         children: [
           {
             name: 'routeDialogDrawerExample',
             path: 'drawer',
             authz: 'skip',
+            presentation: {
+              kind: 'drawer',
+              title: 'routeOverlays.drawerTitle',
+            },
             componentLoader: () =>
               import('./pages/route-overlays/dialog/drawer.js'),
           },
@@ -327,12 +356,17 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
         name: 'routeDrawerExample',
         path: 'drawer',
         authz: 'skip',
+        presentation: { kind: 'drawer', title: 'routeOverlays.drawerTitle' },
         componentLoader: () => import('./pages/route-overlays/drawer/index.js'),
         children: [
           {
             name: 'routeDrawerDialogExample',
             path: 'dialog',
             authz: 'skip',
+            presentation: {
+              kind: 'dialog',
+              title: 'routeOverlays.dialogTitle',
+            },
             componentLoader: () =>
               import('./pages/route-overlays/drawer/dialog.js'),
           },
@@ -345,6 +379,7 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
         path: 'pages',
         breadcrumb: { title: 'routeOverlays.childPagesTitle' },
         authz: 'skip',
+        presentation: { kind: 'child-page' },
         componentLoader: () => import('./pages/route-overlays/pages/index.js'),
         children: [
           {
@@ -352,6 +387,7 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
             path: 'quotation',
             breadcrumb: { title: 'routeOverlays.topicQuotation' },
             authz: 'skip',
+            presentation: { kind: 'child-page' },
             componentLoader: () =>
               import('./pages/route-overlays/pages/quotation/index.js'),
             children: [
@@ -360,6 +396,10 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
                 name: 'routeChildPageDialog',
                 path: 'dialog',
                 authz: 'skip',
+                presentation: {
+                  kind: 'dialog',
+                  title: 'routeOverlays.topicDialogTitle',
+                },
                 componentLoader: () =>
                   import('./pages/route-overlays/pages/quotation/dialog.js'),
               },
@@ -370,6 +410,7 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
             path: 'onboarding',
             breadcrumb: { title: 'routeOverlays.topicOnboarding' },
             authz: 'skip',
+            presentation: { kind: 'child-page' },
             componentLoader: () =>
               import('./pages/route-overlays/pages/onboarding.js'),
           },
@@ -378,6 +419,7 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
             path: 'renewal',
             breadcrumb: { title: 'routeOverlays.topicRenewal' },
             authz: 'skip',
+            presentation: { kind: 'child-page' },
             componentLoader: () =>
               import('./pages/route-overlays/pages/renewal.js'),
           },

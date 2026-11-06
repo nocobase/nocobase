@@ -321,6 +321,8 @@ const enUS = {
   empty: 'No records yet. Create the first record to get started.',
   loading: 'Loading…',
   listFeedback: {
+    refreshing: 'Refreshing',
+    longWait: 'This is taking longer than usual. You can keep waiting.',
     loading: 'Loading',
     empty: 'No data yet',
     noResults: 'No results',

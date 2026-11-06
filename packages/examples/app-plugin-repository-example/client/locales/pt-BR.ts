@@ -328,6 +328,9 @@ const ptBR: LocaleResource<typeof enUS> = {
   empty: 'Ainda não há registros. Crie o primeiro registro para começar.',
   loading: 'Carregando…',
   listFeedback: {
+    refreshing: 'Atualizando',
+    longWait:
+      'Está demorando mais que o normal. Você pode continuar aguardando.',
     loading: 'Carregando',
     empty: 'Ainda não há dados',
     noResults: 'Nenhum resultado',

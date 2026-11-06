@@ -3,7 +3,6 @@ import { useTranslation } from '@nocobase/i18n/client';
 import {
   CircleAlert,
   Inbox,
-  LoaderCircle,
   LockKeyhole,
   LogIn,
   RefreshCw,
@@ -14,6 +13,8 @@ import { Fragment, type ReactElement, type ReactNode } from 'react';
 import { Link } from 'react-router';
 import { Button } from '#components/ui/button';
 import { Alert } from '#components/ui/alert';
+import { Loading } from '#components/loading';
+import { PendingButton } from '#components/pending-button';
 import {
   Empty,
   EmptyContent,
@@ -23,7 +24,6 @@ import {
 } from '#components/ui/empty';
 
 const feedback = {
-  loading: ['listFeedback.loading', 'Loading', LoaderCircle],
   empty: ['listFeedback.empty', 'No data yet', Inbox],
   'no-results': ['listFeedback.noResults', 'No results', SearchX],
   forbidden: ['listFeedback.forbidden', 'Access denied', LockKeyhole],
@@ -38,6 +38,11 @@ export interface ListFeedbackProps {
   readonly empty?: ReactNode;
   /** Optional business-specific action; the standard create action belongs in the page header. */
   readonly emptyAction?: ReactNode;
+  /**
+   * The current query's stable identity, such as its request path. A new
+   * query restarts the display delay without remounting the list.
+   */
+  readonly identity?: unknown;
 }
 
 export interface ListFeedbackActionsProps {
@@ -67,19 +72,17 @@ export function ListFeedbackActions({
 
   if ((state === 'failed' || state === 'refresh-failed') && onRetry) {
     return (
-      <Button variant='outline' disabled={busy} onClick={onRetry}>
-        {busy ? (
-          <LoaderCircle
-            aria-hidden='true'
-            className='motion-safe:animate-spin'
-          />
-        ) : (
-          <RefreshCw aria-hidden='true' />
-        )}
-        {busy
-          ? t('listFeedback.retrying', { defaultValue: 'Retrying…' })
-          : t('listFeedback.retry', { defaultValue: 'Retry' })}
-      </Button>
+      <PendingButton
+        variant='outline'
+        busy={busy}
+        pendingLabel={t('listFeedback.retrying', {
+          defaultValue: 'Retrying…',
+        })}
+        onClick={onRetry}
+      >
+        <RefreshCw aria-hidden='true' />
+        {t('listFeedback.retry', { defaultValue: 'Retry' })}
+      </PendingButton>
     );
   }
 
@@ -105,6 +108,7 @@ export function ListFeedback({
   children,
   empty,
   emptyAction,
+  identity,
 }: ListFeedbackProps): ReactElement {
   const { t } = useTranslation();
 
@@ -134,6 +138,17 @@ export function ListFeedback({
     );
   }
 
+  if (state === 'loading') {
+    // The body keeps its footprint at once; the indicator and one status follow the shared display delay.
+    return (
+      <Loading
+        identity={identity}
+        label={t('listFeedback.loading', { defaultValue: 'Loading' })}
+        className='min-h-24 px-4 py-4'
+      />
+    );
+  }
+
   const [key, fallback, Icon] = feedback[state];
   const isError =
     state === 'failed' || state === 'forbidden' || state === 'unauthenticated';
@@ -145,15 +160,9 @@ export function ListFeedback({
       <Empty
         role={isError ? 'alert' : 'status'}
         className='min-h-24 flex-row flex-none gap-2 rounded-none border-0 px-4 py-6 text-pretty text-card-foreground'
-        aria-busy={state === 'loading'}
       >
         <EmptyMedia className='mb-0 size-4 text-muted-foreground'>
-          <Icon
-            aria-hidden='true'
-            className={
-              state === 'loading' ? 'size-4 motion-safe:animate-spin' : 'size-4'
-            }
-          />
+          <Icon aria-hidden='true' className='size-4' />
         </EmptyMedia>
         <EmptyTitle className='text-sm font-medium text-muted-foreground'>
           {t(key, { defaultValue: fallback })}

@@ -6,6 +6,7 @@ Single components that pages are built from. Each is its own item, installs into
 | ------------------ | ---------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `page-container`   | `page-container.tsx`                                                                     | `PageContainer`                                                                                                                                                                                                                                                  |
 | `page-header`      | `page-header.tsx`                                                                        | `PageHeader`                                                                                                                                                                                                                                                     |
+| `task-progress`    | `task-progress.tsx`                                                                      | `TaskProgress`                                                                                                                                                                                                                                                   |
 | `list-feedback`    | `list-feedback.tsx`                                                                      | `ListFeedback`, `ListFeedbackActions`                                                                                                                                                                                                                            |
 | `route-dialog`     | `route-dialog.tsx`, with `route-overlay.tsx` and `use-route-overlay.ts`                  | `RouteDialog`, `useRouteOverlay`                                                                                                                                                                                                                                 |
 | `route-drawer`     | `route-drawer.tsx`, with `route-overlay.tsx` and `use-route-overlay.ts`                  | `RouteDrawer`, `useRouteOverlay`                                                                                                                                                                                                                                 |
@@ -79,6 +80,22 @@ Call `useRouteOverlay()` from a component rendered inside the overlay, such as a
 
 `RouteChildPage` is not modal. It positions itself with `absolute inset-0`, so the element that contains it must be positioned; an application's content area is. The page it covers renders its `Outlet` last, at the end of its `PageContainer`: the layer makes what comes before it `inert`, and anything after it would stay reachable. Give the child page a `PageContainer` of its own, inside `RouteChildPage`; returned bare, a child route's `PageContainer` renders below the parent's content instead of covering it. A child page that can only render inside another one — the child page of a tab, reached through the tab's outlet — covers the enclosing child page whole, because a `RouteChildPage` is two elements: the outer one positions and never scrolls, the inner one scrolls. While it is mounted, the siblings it covers are `inert`, and inside another child page so is everything around it up to that page's scrolling element. It has no close button: the application shell's breadcrumb and mobile parent arrow return to the declared parent. The page declares list → record → edit with `usePageBreadcrumb`, including loading and failure states, and omits a duplicate page back slot. Without a shell header, supply a back slot using a registered, authorized application destination. The Registry detail components (`project-detail`, `issue-detail`) are presentational: their back slots do not infer routes, permissions or list state. Follow the application Skill's `frontend/references/navigation.md` for the complete integration contract.
 
+## Loading and PendingButton
+
+`Loading` owns a page or panel's feedback. Mount it inside the actual content slot; keep the shell, toolbar, form draft and scroll owner mounted. `fullscreen` is reserved for application startup. It preserves its indicator and text footprint before display and uses the existing brand mark with reduced-motion support. It adds no viewport height unless `fullscreen` is explicit. Do not put an overlay's Loading at the end of its parent page.
+
+`PendingButton` wraps the installed native Button. Pass the real `busy` state and a translated `pendingLabel`; ordinary `type`, `form`, `ref`, `disabled`, variant and size props pass through. Both idle and waiting labels participate in layout from the start so the button keeps its size. Use text or an accessible label for icon-only actions. It disables immediately, announces once after the display delay, and keeps a polite status outside its busy element. After 10 seconds an anchored, non-interactive hint also explains the wait visually without resizing the button. Do not nest another Spinner or live region inside either component. Custom `render` and link semantics use their own action-specific feedback, not this native submission button.
+
+Both use `usePendingFeedback(busy, identity?)` from `@nocobase/app-client`: show after 300ms, explain after 10 seconds, clear immediately on completion, failure or cancellation. Ten seconds is guidance, not a timeout. There is no forced minimum wait. Change a stable primitive `identity` when one continuously busy operation is replaced by another. Timers are cleared on completion, identity changes and unmount. The hook neither fetches nor cancels work, caches results, authorizes content, nor guards stale responses; the request owner handles those boundaries.
+
+Use `useSubmission().submitting` for buttons; `.pending` represents an unresolved operation that may need recovery and must not hold the button busy indefinitely. Keep the shared submission controller before asynchronous validation and keep server receipt/idempotency protection. A disabled button only supplies feedback; keyboard and programmatic form entries still invoke the same controller. See the application Skill's `references/pending-feedback.md` for integration and migration.
+
+These items require a runtime exporting `usePendingFeedback`. Release that runtime before publishing Registry sources; `scripts/check-form-feedback-release.mjs` gates upload on obtainable JavaScript and declaration exports for both items. Existing installed copies require source reconciliation; runtime dependency updates alone do not update them.
+
+## Task progress
+
+Both application templates preinstall `task-progress` with its `taskProgress` translations. `TaskProgress` renders one long-running task record — an export, an import, a background job — from the server's own task state. Pass `processed` and `total`, or `percent`, only when the task really reports them: a known value shows a determinate bar with its count and percentage, an unknown one an indeterminate bar with no number, never a placeholder 0%. The status (waiting, in progress, completed, failed, canceled) is announced once per change; percentage updates are not announced. Set `continuesInBackground` when leaving the page does not stop the task. The caller supplies the failure reason or the result location through `message`, and real actions — download, run again, or a cancel the server supports — through `actions`. A request that reports no progress, such as an upload, keeps the indeterminate per-item wait of the file upload field instead.
+
 ## Translations
 
 The overlays' close button names itself with `useTranslation()` from `@nocobase/i18n/client` under `routeOverlay.close`, falling back to `Close`. A component ships no locale file, so add the keys to the locale resources of the namespace that renders them:
@@ -137,19 +154,31 @@ The shared DataTable and its column header and pagination controls use these key
 | `flowDiagram.arrivesFrom`    | Arrives from                                 | 来自                        |
 | `flowDiagram.otherRoutes`    | Other routes                                 | 其他流转                    |
 
-| Key                            | English                               | Chinese                |
-| ------------------------------ | ------------------------------------- | ---------------------- |
-| `listFeedback.loading`         | Loading                               | 加载中                 |
-| `listFeedback.empty`           | No data yet                           | 暂无数据               |
-| `listFeedback.noResults`       | No results                            | 无结果                 |
-| `listFeedback.forbidden`       | Access denied                         | 无权访问               |
-| `listFeedback.unauthenticated` | Session expired                       | 会话已过期             |
-| `listFeedback.failed`          | Unable to load list                   | 列表加载失败           |
-| `listFeedback.refreshFailed`   | Refresh failed; showing previous data | 刷新失败，仍显示旧数据 |
-| `listFeedback.retry`           | Retry                                 | 重试                   |
-| `listFeedback.retrying`        | Retrying…                             | 正在重试…              |
-| `listFeedback.clear`           | Clear filters                         | 清空筛选               |
-| `listFeedback.signIn`          | Sign in                               | 登录                   |
+| Key                            | English                                                 | Chinese                          |
+| ------------------------------ | ------------------------------------------------------- | -------------------------------- |
+| `pendingFeedback.working`      | Working…                                                | 正在处理…                        |
+| `pendingFeedback.longWait`     | This is taking longer than usual. You can keep waiting. | 耗时比平常更长，您可以继续等待。 |
+| `status.loading`               | Loading                                                 | 加载中                           |
+| `status.refreshing`            | Refreshing                                              | 正在刷新                         |
+| `taskProgress.queued`          | Waiting to start                                        | 等待开始                         |
+| `taskProgress.running`         | In progress                                             | 进行中                           |
+| `taskProgress.completed`       | Completed                                               | 已完成                           |
+| `taskProgress.failed`          | Failed                                                  | 失败                             |
+| `taskProgress.canceled`        | Canceled                                                | 已取消                           |
+| `taskProgress.count`           | {{processed}} of {{total}}                              | {{processed}} / {{total}}        |
+| `taskProgress.processed`       | {{processed}} processed                                 | 已处理 {{processed}}             |
+| `taskProgress.background`      | It keeps running if you leave this page.                | 离开此页面后任务会继续运行。     |
+| `listFeedback.loading`         | Loading                                                 | 加载中                           |
+| `listFeedback.empty`           | No data yet                                             | 暂无数据                         |
+| `listFeedback.noResults`       | No results                                              | 无结果                           |
+| `listFeedback.forbidden`       | Access denied                                           | 无权访问                         |
+| `listFeedback.unauthenticated` | Session expired                                         | 会话已过期                       |
+| `listFeedback.failed`          | Unable to load list                                     | 列表加载失败                     |
+| `listFeedback.refreshFailed`   | Refresh failed; showing previous data                   | 刷新失败，仍显示旧数据           |
+| `listFeedback.retry`           | Retry                                                   | 重试                             |
+| `listFeedback.retrying`        | Retrying…                                               | 正在重试…                        |
+| `listFeedback.clear`           | Clear filters                                           | 清空筛选                         |
+| `listFeedback.signIn`          | Sign in                                                 | 登录                             |
 
 ## In a plugin
 
@@ -255,6 +284,8 @@ Both templates also prepare `RequiredRoleSetup`, which uses the real Users optio
 ## List feedback
 
 `ListFeedback` renders the state returned by `resolveListState` from `@nocobase/app-client`. Pass the original query snapshot, including `isPlaceholderData`; retry refetches the same query, and clear synchronizes the controls, applied filters and first page. `DataTable` accepts `listState`, `onRetry`, `onClearFilters` and `emptyAction`; its legacy `emptyMessage` remains business content for successful unfiltered emptiness. Gate creation with existing permissions. Installed sources need a three-way source merge, including request owners and translations, to upgrade.
+
+Loading and refreshing follow the shared pending timing. The loading state renders `Loading` from the `loading` item: the body keeps its footprint at once and shows the indicator and one status after 300ms, never on a fast read. Retry is a `PendingButton` busy with the real retry request. `DataTable`'s `loading` means the current request is in flight: with rows of the current query and permission scope it is a background refresh, so rows, toolbar and pagination stay and a delayed `RefreshIndicator` (a thin bar plus one polite status, and a visible note after 10 seconds) appears inside the table frame. A changed query, page or sort hides previous rows at once, keeps the previous body and pagination height while it loads, and hides the previous page count. Pass `loadingIdentity` (to `DataTable`) or `identity` (to `ListFeedback`) with the current query's stable identity, such as its request path: each new query restarts the display delay and the 10-second note, while the table, its rows' kept geometry and its controls stay mounted. A host whose retry button announces a refresh-failure retry passes `loading` to an inner table only for the `ready` state, so one control owns each wait. Pass `loading={active && request.loading}` for app-owned lists: explicit false suppresses unresolved loading feedback while a query is paused, while omitted loading continues to use `listState`. A card-style `ListFeedback` host omits a paused loading boundary with `active || state !== 'loading'`. Keep request readiness, permission states and cached table geometry intact, and never show a previous query's total elsewhere on the page. Use `RefreshIndicator` directly for other retained regions, such as a summary card, inside a positioned element; a picker whose query changed shows `Loading` instead of the previous query's options, including TanStack placeholder data.
 
 Default list states use a compact themed treatment with a neutral icon, a short title and standard actions. Refresh failures use a concise inline warning beside retained rows and keep the standard retry action available. Motion respects reduced-motion preferences. The shared Translations table includes every status and action key required for an installed copy.
 

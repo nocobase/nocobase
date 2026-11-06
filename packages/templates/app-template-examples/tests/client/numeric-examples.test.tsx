@@ -89,7 +89,7 @@ it('shows loading, then a transport failure and a successful retry', async () =>
     },
   });
   try {
-    expect(screen.getByRole('status').textContent).toBe('Loading');
+    expect((await screen.findByRole('status')).textContent).toBe('Loading');
     await act(async () => {
       pending.resolve();
       await pending.promise;

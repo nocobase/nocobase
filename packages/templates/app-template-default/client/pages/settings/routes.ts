@@ -24,23 +24,27 @@ const systemSettingsRoutes: AppClientRouteContribution = defineAppRoutes([
     breadcrumb: { title: 'settings.users' },
     componentLoader: () => import('./users.js'),
     children: [
+      // The forms declare their presentation, so the dialog or drawer opens at once and the wait for the form's module,
+      // its authorization and its data stays inside it instead of under the list.
       {
         name: 'settingsUserCreate',
         path: 'create',
         authz: { resource: { type: 'user', id: '*' }, action: 'create' },
+        presentation: { kind: 'dialog', title: 'settings.newUser' },
         componentLoader: () => import('./user-form.js'),
       },
+      // A sibling rather than the parent of the editor, so closing the drawer returns to the list instead of to this
+      // route, which only forwards older detail links to the editor.
       {
         name: 'settingsUser',
         path: ':userId',
         componentLoader: () => import('./user-detail.js'),
-        children: [
-          {
-            name: 'settingsUserEdit',
-            path: 'edit',
-            componentLoader: () => import('./user-form.js'),
-          },
-        ],
+      },
+      {
+        name: 'settingsUserEdit',
+        path: ':userId/edit',
+        presentation: { kind: 'drawer', title: 'settings.editUser' },
+        componentLoader: () => import('./user-form.js'),
       },
     ],
   },
@@ -80,12 +84,14 @@ const systemSettingsRoutes: AppClientRouteContribution = defineAppRoutes([
               action: 'create',
             },
             breadcrumb: { title: 'settings.newRole' },
+            presentation: { kind: 'child-page' },
             componentLoader: () => import('./role-form.js'),
           },
           {
             name: 'settingsRoleEdit',
             path: ':key/edit',
             breadcrumb: { title: 'settings.editRole' },
+            presentation: { kind: 'child-page' },
             componentLoader: () => import('./role-form.js'),
           },
         ],
@@ -119,6 +125,7 @@ const systemSettingsRoutes: AppClientRouteContribution = defineAppRoutes([
               action: 'create',
             },
             breadcrumb: { title: 'settings.defaultAccess.new' },
+            presentation: { kind: 'child-page' },
             componentLoader: () => import('./default-access-form.js'),
           },
           // Read permission opens the full rule even when the viewer may not update it.
@@ -126,6 +133,7 @@ const systemSettingsRoutes: AppClientRouteContribution = defineAppRoutes([
             name: 'settingsDefaultAccessEdit',
             path: ':key/edit',
             breadcrumb: { title: 'settings.defaultAccess.edit' },
+            presentation: { kind: 'child-page' },
             componentLoader: () => import('./default-access-form.js'),
           },
         ],

@@ -399,7 +399,7 @@ export default function DefaultAccessPage(): ReactElement {
           getRowId={(rule) => rule.key}
           showSelectedCount={false}
           pageSize={20}
-          loading={rules.loading || catalog.loading}
+          loading={active && (rules.loading || catalog.loading)}
           listState={listState}
           onRetry={() => {
             rules.reload();

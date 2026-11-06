@@ -95,6 +95,7 @@ class LeaveController {
 class LeaveScope {
   private readonly entries = new Set<LeaveController>();
   private hidden = false;
+  private generation = 0;
   constructor(private readonly dirtyChanged: (dirty: boolean) => void) {}
 
   changed = (): void => {
@@ -118,7 +119,12 @@ class LeaveScope {
     this.changed();
   }
   update(hidden: boolean, pathname: string): void {
-    this.hidden = hidden;
+    if (this.hidden !== hidden) {
+      this.generation += 1;
+      this.hidden = hidden;
+      // A confirmation started before concealment must not discard or resume its old navigation on recovery.
+      if (hidden) for (const entry of this.entries) entry.cancel();
+    }
     for (const entry of this.entries) {
       if (pathname !== entry.origin && !pathname.startsWith(`${entry.origin}/`))
         this.remove(entry);
@@ -130,8 +136,14 @@ class LeaveScope {
       for (const entry of this.entries) if (!entry.active) this.remove(entry);
   }
   guard = (): Decision => {
+    const generation = this.generation;
     const remaining = [...this.entries];
     const next = (): Decision => {
+      if (
+        generation !== this.generation ||
+        (this.hidden && this.entries.size > 0)
+      )
+        return false;
       const entry = remaining.shift();
       if (!entry) return true;
       const value = entry.guard();

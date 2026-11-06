@@ -61,7 +61,7 @@ A child route renders in the parent page's Outlet, and what its component return
 | How to leave    | Switch to another child route            | Shell parent link or browser back            | Close button, Esc, backdrop, `close()` | Same as left     |
 | Use for         | Page tabs                                | Child pages with long forms or many sections | Create and edit forms                  | Record details   |
 
-For how to write `RouteDialog` and `RouteDrawer`, see [`overlay.md`](overlay.md). A record's own page declared beside its list declares that logical list in `usePageBreadcrumb` ([section 7 of `page.md`](page.md#7-back-button-and-breadcrumbs)).
+Declare what the component returns as the route's `presentation` — `{ kind: 'child-page' }`, or `{ kind: 'dialog' | 'drawer', title }` — so the application opens that container first and renders the module wait, the authorization check, a denial and a load failure inside it; see ["Declare the presentation" in `overlay.md`](overlay.md#declare-the-presentation). A hosted `RouteChildPage` adds its content to the layer the application opened and moves its `className` onto that layer, so the layout it set stays; an `<Outlet />` the page places beside it is inside that layer too. Classes that only make sense on an inner element — anything relying on the layer's own `z-index`, `overflow` or `absolute inset-0`, which the application's layer already sets — belong on the page's `PageContainer` instead, so check them when you migrate. For how to write `RouteDialog` and `RouteDrawer`, see [`overlay.md`](overlay.md). A record's own page declared beside its list declares that logical list in `usePageBreadcrumb` ([section 7 of `page.md`](page.md#7-back-button-and-breadcrumbs)).
 
 ## 4. Page tabs
 
