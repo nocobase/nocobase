@@ -680,9 +680,10 @@ const deDE: LocaleResource<typeof enUS> = {
       resets: 'Setzt {{time}} zurück',
       near: 'Nahe an der Grenze',
       clear: 'Leeren',
-      clearMark: 'Klare Markierung',
+      clearMark: 'Markierung löschen',
+      confirmTitle: 'Kontingentmarkierung für {{target}} löschen?',
       confirm:
-        'Löschen Sie diese Markierung erst, wenn das Kontingent wiederhergestellt ist. {{target}} bekommt wieder Arbeit.',
+        'Löschen Sie sie erst, wenn das Kontingent wiederhergestellt ist. {{target}} bekommt sofort wieder Arbeit; ist das Kontingent noch erschöpft, markiert der nächste Lauf es erneut.',
       observed: 'Zuletzt gemeldet {{time}}',
       usedPercent: '{{percent}}% verwendet',
       ok: 'OK',

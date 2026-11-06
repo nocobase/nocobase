@@ -686,8 +686,9 @@ const frFR: LocaleResource<typeof enUS> = {
       near: 'Proche de la limite',
       clear: 'Effacer',
       clearMark: 'Effacer la marque',
+      confirmTitle: 'Effacer la marque de quota de {{target}} ?',
       confirm:
-        'N’effacez cette marque qu’après avoir confirmé que le quota est rétabli. {{target}} retrouve du travail.',
+        'Ne l’effacez qu’après avoir confirmé que le quota est rétabli. {{target}} retrouve du travail immédiatement ; si le quota est encore épuisé, la prochaine exécution le marque à nouveau.',
       observed: 'Dernier rapport {{time}}',
       usedPercent: '{{percent}}% utilisé',
       ok: "D'accord",

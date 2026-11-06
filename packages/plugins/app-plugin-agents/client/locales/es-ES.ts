@@ -686,8 +686,9 @@ const esES: LocaleResource<typeof enUS> = {
       near: 'Cerca del límite',
       clear: 'Borrar',
       clearMark: 'Borrar marca',
+      confirmTitle: '¿Borrar la marca de cuota de {{target}}?',
       confirm:
-        'Borre esta marca solo después de confirmar que la cuota se ha restablecido. {{target}} vuelve a recibir trabajo.',
+        'Bórrela solo después de confirmar que la cuota se ha restablecido. {{target}} vuelve a recibir trabajo de inmediato; si la cuota sigue agotada, la siguiente ejecución la marca de nuevo.',
       observed: 'Último reportado {{time}}',
       usedPercent: '{{percent}}% usado',
       ok: 'Aceptar',

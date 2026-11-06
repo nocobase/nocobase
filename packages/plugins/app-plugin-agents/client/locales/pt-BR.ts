@@ -680,9 +680,10 @@ const ptBR: LocaleResource<typeof enUS> = {
       resets: 'Reinicia {{time}}',
       near: 'Perto do limite',
       clear: 'Limpar',
-      clearMark: 'Marca clara',
+      clearMark: 'Limpar marca',
+      confirmTitle: 'Limpar a marca de cota de {{target}}?',
       confirm:
-        'Limpe esta marca somente depois de confirmar que a cota foi restaurada. {{target}} volta a receber trabalho.',
+        'Limpe somente depois de confirmar que a cota foi restaurada. {{target}} volta a receber trabalho imediatamente; se a cota ainda estiver esgotada, a próxima execução a marca de novo.',
       observed: 'Último {{time}} relatado',
       usedPercent: '{{percent}}% usado',
       ok: 'OK',

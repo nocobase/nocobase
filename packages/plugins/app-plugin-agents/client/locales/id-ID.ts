@@ -661,9 +661,10 @@ const idID: LocaleResource<typeof enUS> = {
       resets: 'Mereset {{time}}',
       near: 'Mendekati batas',
       clear: 'Bersihkan',
-      clearMark: 'Tanda yang jelas',
+      clearMark: 'Hapus tanda',
+      confirmTitle: 'Hapus tanda kuota pada {{target}}?',
       confirm:
-        'Hapus tanda ini hanya setelah memastikan kuota sudah pulih. {{target}} menerima pekerjaan lagi.',
+        'Hapus hanya setelah memastikan kuota sudah pulih. {{target}} langsung menerima pekerjaan lagi; jika kuota masih habis, eksekusi berikutnya menandainya lagi.',
       observed: 'Terakhir dilaporkan {{time}}',
       usedPercent: '{{percent}}% digunakan',
       ok: 'Oke',

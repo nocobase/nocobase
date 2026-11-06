@@ -70,7 +70,9 @@ const runtimesZhCN: RuntimesLocale = {
       near: '接近上限',
       clear: '清除',
       clearMark: '清除标记',
-      confirm: '确认额度已恢复后再清除。清除后 {{target}} 将可继续领取工作。',
+      confirmTitle: '清除 {{target}} 的额度标记？',
+      confirm:
+        '确认额度已恢复后再清除。清除后 {{target}} 立即可以继续领取工作；如果额度其实仍未恢复，下次运行会重新标记。',
       observed: '上次报告 {{time}}',
       usedPercent: '已用 {{percent}}%',
       ok: '正常',

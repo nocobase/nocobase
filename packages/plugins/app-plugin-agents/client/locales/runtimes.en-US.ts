@@ -70,8 +70,9 @@ const runtimesEnUS = {
       near: 'Near limit',
       clear: 'Clear',
       clearMark: 'Clear mark',
+      confirmTitle: 'Clear the quota mark on {{target}}?',
       confirm:
-        'Clear this mark only after confirming the quota is restored. {{target}} gets work again.',
+        'Clear it only after confirming the quota is restored. {{target}} gets work again right away; if the quota is still used up, the next run marks it again.',
       observed: 'Last reported {{time}}',
       usedPercent: '{{percent}}% used',
       ok: 'OK',

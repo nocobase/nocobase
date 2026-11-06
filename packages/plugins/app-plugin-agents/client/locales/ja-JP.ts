@@ -658,9 +658,10 @@ const jaJP: LocaleResource<typeof enUS> = {
       resets: '{{time}}をリセットします',
       near: '限界に近い',
       clear: 'クリア',
-      clearMark: 'クリアマーク',
+      clearMark: 'マークをクリア',
+      confirmTitle: '{{target}} のクォータマークをクリアしますか？',
       confirm:
-        'クォータが回復したことを確認してからマークをクリアしてください。{{target}} は再び仕事を受け取ります。',
+        'クォータが回復したことを確認してからクリアしてください。{{target}} はすぐに仕事を受け取ります。クォータがまだ尽きている場合は、次の実行で再びマークされます。',
       observed: '最後に報告されたのは {{time}}',
       usedPercent: '{{percent}}% 使用',
       ok: 'わかりました',

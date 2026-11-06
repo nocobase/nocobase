@@ -658,9 +658,10 @@ const viVN: LocaleResource<typeof enUS> = {
       resets: 'Đặt lại {{time}}',
       near: 'Gần đến giới hạn',
       clear: 'Xóa',
-      clearMark: 'Đánh dấu rõ ràng',
+      clearMark: 'Xóa dấu',
+      confirmTitle: 'Xóa dấu hạn ngạch của {{target}}?',
       confirm:
-        'Chỉ xóa dấu này sau khi xác nhận hạn ngạch đã được khôi phục. {{target}} nhận việc trở lại.',
+        'Chỉ xóa sau khi xác nhận hạn ngạch đã được khôi phục. {{target}} nhận việc trở lại ngay; nếu hạn ngạch vẫn hết, lần chạy tiếp theo sẽ đánh dấu lại.',
       observed: '{{time}} được báo cáo lần cuối',
       usedPercent: '{{percent}}% đã sử dụng',
       ok: 'Được rồi',

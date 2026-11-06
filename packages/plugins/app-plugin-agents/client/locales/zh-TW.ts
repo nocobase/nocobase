@@ -633,8 +633,10 @@ const zhTW: LocaleResource<typeof enUS> = {
       resets: '重設 {{time}}',
       near: '接近極限',
       clear: '清除',
-      clearMark: '清晰標記',
-      confirm: '確認額度已恢復後再清除。清除後 {{target}} 將可繼續領取工作。',
+      clearMark: '清除標記',
+      confirmTitle: '清除 {{target}} 的額度標記？',
+      confirm:
+        '確認額度已恢復後再清除。清除後 {{target}} 立即可以繼續領取工作；如果額度其實仍未恢復，下次執行會重新標記。',
       observed: '最後報告 {{time}}',
       usedPercent: '{{percent}}% 使用',
       ok: '好的',
