@@ -1,7 +1,11 @@
 ---
-'@nocobase/app-client': minor
-'@nocobase/app-template-default': minor
-'@nocobase/app-template-examples': minor
+'@nocobase/app-skills': patch
+'@nocobase/app-template-default': patch
+'@nocobase/app-template-examples': patch
+'@nocobase/app-plugin-authorization-example': patch
+'@nocobase/app-plugin-mail-example': patch
+'@nocobase/app-plugin-notification-example': patch
+'@nocobase/app-plugin-repository-example': patch
 ---
 
-Add route breadcrumbs, nested child pages, and reusable page headers to the client and application templates.
+Remove default page Refresh actions from shared application guidance and examples while preserving write updates, contextual read retries, and live progress updates.

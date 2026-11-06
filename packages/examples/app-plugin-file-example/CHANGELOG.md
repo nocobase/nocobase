@@ -1,5 +1,19 @@
 # @nocobase/app-plugin-file-example
 
+## 1.0.0-beta.26
+
+### Patch Changes
+
+- 7c25f88: Show long operations honestly: uploads show a delayed indeterminate wait with a long-wait note, real cancel and retry, and abort when the page closes; background jobs and exports show real progress or an indeterminate bar instead of an invented 0%, keep failures recoverable, say they continue after leaving the page and show where the result is.
+- 7c25f88: Keep upload and task waits accessible: the File example upload button keeps an accessible name while uploading, loading statuses in the Jobs and Realtime examples are announced from outside their busy regions with a long-wait note, and each uploading file in the file upload field uses one display timer pair with its summary announced outside the busy drop zone.
+- Updated dependencies [7c25f88]
+- Updated dependencies [7c25f88]
+- Updated dependencies [7c25f88]
+- Updated dependencies [215795d]
+  - @nocobase/app-client@4.0.0-beta.9
+  - @nocobase/app-plugin-authentication@2.0.0-beta.19
+  - @nocobase/app-plugin-file@1.0.0-beta.29
+
 ## 1.0.0-beta.25
 
 ### Patch Changes

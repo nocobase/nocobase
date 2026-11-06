@@ -1,5 +1,18 @@
 # @nocobase/app-plugin-repository-example
 
+## 2.0.0-beta.8
+
+### Patch Changes
+
+- 3d28bff: Remove default page Refresh actions from shared application guidance and examples while preserving write updates, contextual read retries, and live progress updates.
+- 7c25f88: Announce each list wait once and per query: a retry after a refresh failure on the Roles page is no longer announced twice, a search or page that replaces a pending one restarts its own loading delay instead of inheriting an earlier long-wait note, first-load and next-page statuses sit outside their busy regions, and the Repository example CRM list uses the shared loading, refresh and retry feedback.
+- Updated dependencies [7c25f88]
+- Updated dependencies [7c25f88]
+- Updated dependencies [7c25f88]
+- Updated dependencies [215795d]
+  - @nocobase/app-client@4.0.0-beta.9
+  - @nocobase/app-plugin-authentication@2.0.0-beta.19
+
 ## 2.0.0-beta.7
 
 ### Patch Changes

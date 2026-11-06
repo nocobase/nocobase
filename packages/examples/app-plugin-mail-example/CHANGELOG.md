@@ -1,5 +1,16 @@
 # @nocobase/app-plugin-mail-example
 
+## 1.0.0-beta.12
+
+### Patch Changes
+
+- 3d28bff: Remove default page Refresh actions from shared application guidance and examples while preserving write updates, contextual read retries, and live progress updates.
+- Updated dependencies [7c25f88]
+- Updated dependencies [7c25f88]
+- Updated dependencies [7c25f88]
+- Updated dependencies [215795d]
+  - @nocobase/app-client@4.0.0-beta.9
+
 ## 1.0.0-beta.11
 
 ### Patch Changes

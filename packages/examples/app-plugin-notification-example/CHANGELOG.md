@@ -1,5 +1,17 @@
 # @nocobase/app-plugin-notification-example
 
+## 1.0.0-beta.15
+
+### Patch Changes
+
+- 3d28bff: Remove default page Refresh actions from shared application guidance and examples while preserving write updates, contextual read retries, and live progress updates.
+- Updated dependencies [7c25f88]
+- Updated dependencies [7c25f88]
+- Updated dependencies [7c25f88]
+- Updated dependencies [215795d]
+  - @nocobase/app-client@4.0.0-beta.9
+  - @nocobase/app-plugin-authentication@2.0.0-beta.19
+
 ## 1.0.0-beta.14
 
 ### Patch Changes

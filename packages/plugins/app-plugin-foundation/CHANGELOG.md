@@ -1,5 +1,18 @@
 # @nocobase/app-plugin-foundation
 
+## 0.1.0-beta.16
+
+### Patch Changes
+
+- 1d28bde: Lay out the App foundation page for scanning: capabilities wrap in a responsive grid (a single list on phones) with a status badge on every tile, selection shown by its own border and marker, readable extension names with the full package identifier kept, and key numbers grouped by capability.
+- Updated dependencies [7c25f88]
+- Updated dependencies [7c25f88]
+- Updated dependencies [7c25f88]
+- Updated dependencies [215795d]
+  - @nocobase/app-client@4.0.0-beta.9
+  - @nocobase/app-cli@1.0.0-beta.32
+  - @nocobase/app-plugin-authentication@2.0.0-beta.19
+
 ## 0.1.0-beta.15
 
 ### Patch Changes

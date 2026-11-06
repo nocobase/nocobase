@@ -2,6 +2,29 @@
 
 本文件记录 NocoBase 3 的所有重要变更，每次发布一节：`nocobase-v3-beta/<日期>.<序号>` 是预览版，`release/<日期>.<序号>` 是正式版。每次发布的包版本见对应的 GitHub Release，各个包自己的变更见包内的 CHANGELOG.md。
 
+## [nocobase-v3-beta/2026-11-06.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-06.1)
+
+### 🎉 新特性
+
+- **[Agent]** 向指定用户分享已结束的对话快照，并可撤销其只读访问权限。 ([#11326](https://github.com/nocobase/nocobase/pull/11326)) by @2013xile
+
+### 🚀 优化
+
+- **[发布管理]**
+  - 支持在切换前取消部署、替换旧排队部署并显示排队位置，归档处理移到应用 Host 进程之外。 ([#11337](https://github.com/nocobase/nocobase/pull/11337)) by @2013xile
+  - 允许应用在制品操作日志中记录已认证的运行身份，便于排查问题。 ([#11360](https://github.com/nocobase/nocobase/pull/11360)) by @2013xile
+- **[客户端]** 统一页面、表格、列表、选择器、上传和后台任务的加载反馈，保持提交按钮尺寸稳定，同时保留表单提交保护。 ([#11349](https://github.com/nocobase/nocobase/pull/11349)) by @katherinehhh
+- **[应用模板]** 取消普通应用页面及公共生成规范中的默认刷新按钮，保留自动更新和错误场景的重试入口。 ([#11353](https://github.com/nocobase/nocobase/pull/11353)) by @chenos
+- **[应用基础]** 应用底座页面的能力改为自动换行的网格，状态以醒目的标签显示，选中状态单独标识，扩展名称更易读，关键数字按能力分组。 ([#11362](https://github.com/nocobase/nocobase/pull/11362)) by @katherinehhh
+
+### 🐛 修复
+
+- **[Agent 会话]** 智能体选项说明超长时仍可加载设置，并显示设置发现失败的具体原因。 ([#11344](https://github.com/nocobase/nocobase/pull/11344)) by @zhouyanliang
+- **[发布管理]** 保持使用中的预览连接，让后台标签页释放容量，并限制宿主内存占用与轮换等待时间。 ([#11345](https://github.com/nocobase/nocobase/pull/11345)) by @2013xile
+- **[通用]** 统一弹窗底部链接与原生按钮的尺寸和对齐，并支持窄屏长文案换行。 ([#11351](https://github.com/nocobase/nocobase/pull/11351)) by @chenos
+- **[应用模板]** 详情页在桌面和手机端保留安全的上级导航入口，并统一新建页面的导航规范。 ([#11352](https://github.com/nocobase/nocobase/pull/11352)) by @chenos
+- **[Agent]** 手机 Agent 面板分享弹窗显示遮罩，快照截止时间跟随应用语言，共享回复显示会话的实际 Agent 名称。 ([#11358](https://github.com/nocobase/nocobase/pull/11358)) by @2013xile
+
 ## [nocobase-v3-beta/2026-11-05.2](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-05.2)
 
 ### 🚀 优化

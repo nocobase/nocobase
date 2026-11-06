@@ -1,5 +1,55 @@
 # @nocobase/app-template-examples
 
+## 1.0.0-beta.73
+
+### Patch Changes
+
+- ca21461: Provide authorized parent navigation on desktop and mobile, and standardize detail and edit page generation with source-list state and safe direct-entry fallbacks.
+- 7c25f88: Bind plugin peers to the shared client runtime version at release time and keep generated application session and draft-protection tests aligned with permission rechecks.
+- 7c25f88: Preinstall task progress in both application templates with its translations, show an unknown amount of progress as a faint full-width bar instead of a segment that reads as a fraction done, synchronize the published customer contacts Skill example with its source, and document the standard recipe for a new business list page.
+- d43fc18: Format shared conversation cutoffs in the application language and show the actual agent name in snapshot replies, with a deleted-agent fallback.
+- d43fc18: Show the conversation sharing backdrop inside the phone Agent panel.
+- 7c25f88: Preserve unsaved forms during permission rechecks by blocking departures and invalidating pending closes until authorization settles. Conceal disconnected confirmation portals and keep Projects rich-text editor effects safe when hidden content reconnects.
+- 1f98579: Add named-user read-only conversation snapshots with completed-turn cutoffs, attachment authorization, revocation and application-defined recipient scopes. Include multi-recipient share management with per-recipient retries and historical views in the chat recipes and the example application.
+- 3d28bff: Remove default page Refresh actions from shared application guidance and examples while preserving write updates, contextual read retries, and live progress updates.
+- 7c25f88: Keep inactive background lists silent on direct child-route visits and start loading feedback only when their query resumes.
+- 4d30aa6: Reduce template test setup and teardown by reusing application fixtures while keeping client identities and business test data isolated.
+
+  Synchronize the runnable procurement and onboarding Skill examples with the optimized template test fixtures.
+
+- 7c25f88: Let child page, dialog and drawer routes declare their presentation so the application opens that container before the page module, its authorization check and its data arrive, keeps waits, denials and a module-only retry inside it, and leaves undeclared routes and route component overrides on their own containers.
+- 4676817: Align dialog footer link and native button actions consistently, allow long labels to wrap, and document source reconciliation for existing applications.
+- 7c25f88: Share the route container contexts through `@nocobase/app-client/route-containers` so plugin dialogs, drawers and child pages open in the container the application shows while they load, keep a hosted child page's layout classes, and declare presentations for the remaining Examples and plugin overlays.
+- 7c25f88: Announce each list wait once and per query: a retry after a refresh failure on the Roles page is no longer announced twice, a search or page that replaces a pending one restarts its own loading delay instead of inheriting an earlier long-wait note, first-load and next-page statuses sit outside their busy regions, and the Repository example CRM list uses the shared loading, refresh and retry feedback.
+- 7c25f88: Keep loaded route component identities stable across permission rechecks so hosted plugin forms retain their drafts, while loader replacements and explicit retries still take effect.
+- 7c25f88: Give tables, lists, summary cards and pickers the shared pending timing: list loading and retry appear only after the display delay, same-query refreshes keep rows with one delayed refresh indicator, a new query keeps the table's geometry without showing previous rows or totals, a picker no longer shows a previous search's options as matches, and the long-wait hint on pending buttons no longer blocks the controls it covers.
+- 7c25f88: Add shared delayed loading feedback and stable pending buttons, preserve submission protection in user forms, and document source migration for applications and Registry consumers.
+- Updated dependencies [215795d]
+- Updated dependencies [7c25f88]
+- Updated dependencies [1d28bde]
+- Updated dependencies [7c25f88]
+- Updated dependencies [7c25f88]
+- Updated dependencies [d43fc18]
+- Updated dependencies [7c25f88]
+- Updated dependencies [7c25f88]
+- Updated dependencies [9601146]
+- Updated dependencies [1f98579]
+- Updated dependencies [3d28bff]
+- Updated dependencies [7c25f88]
+- Updated dependencies [7c25f88]
+- Updated dependencies [215795d]
+  - @nocobase/app-plugin-users@2.0.0-beta.16
+  - @nocobase/app-plugin-agents@2.0.0-beta.6
+  - @nocobase/app-plugin-foundation@0.1.0-beta.16
+  - @nocobase/app-plugin-jobs-example@1.0.0-beta.12
+  - @nocobase/app-plugin-realtime-example@0.1.0-beta.15
+  - @nocobase/app-plugin-file-example@1.0.0-beta.26
+  - @nocobase/app-plugin-authorization-example@1.0.0-beta.23
+  - @nocobase/app-plugin-mail-example@1.0.0-beta.12
+  - @nocobase/app-plugin-notification-example@1.0.0-beta.15
+  - @nocobase/app-plugin-repository-example@2.0.0-beta.8
+  - @nocobase/realtime@1.0.0-beta.1
+
 ## 1.0.0-beta.72
 
 ### Minor Changes

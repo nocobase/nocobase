@@ -1,5 +1,28 @@
 # @nocobase/app-plugin-agents
 
+## 2.0.0-beta.6
+
+### Minor Changes
+
+- 1f98579: Add named-user read-only conversation snapshots with completed-turn cutoffs, attachment authorization, revocation and application-defined recipient scopes. Include multi-recipient share management with per-recipient retries and historical views in the chat recipes and the example application.
+
+### Patch Changes
+
+- 7c25f88: Bind plugin peers to the shared client runtime version at release time and keep generated application session and draft-protection tests aligned with permission rechecks.
+- d43fc18: Format shared conversation cutoffs in the application language and show the actual agent name in snapshot replies, with a deleted-agent fallback.
+- 7c25f88: Preserve unsaved forms during permission rechecks by blocking departures and invalidating pending closes until authorization settles. Conceal disconnected confirmation portals and keep Projects rich-text editor effects safe when hidden content reconnects.
+- 7c25f88: Share the route container contexts through `@nocobase/app-client/route-containers` so plugin dialogs, drawers and child pages open in the container the application shows while they load, keep a hosted child page's layout classes, and declare presentations for the remaining Examples and plugin overlays.
+- Updated dependencies [4f0370e]
+- Updated dependencies [7c25f88]
+- Updated dependencies [7c25f88]
+- Updated dependencies [7c25f88]
+- Updated dependencies [215795d]
+  - @nocobase/acp-bridge@1.0.0-beta.6
+  - @nocobase/app-client@4.0.0-beta.9
+  - @nocobase/app-cli@1.0.0-beta.32
+  - @nocobase/app-plugin-authentication@2.0.0-beta.19
+  - @nocobase/app-plugin-file@1.0.0-beta.29
+
 ## 2.0.0-beta.5
 
 ### Patch Changes

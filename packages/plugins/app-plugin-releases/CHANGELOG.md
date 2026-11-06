@@ -1,5 +1,27 @@
 # @nocobase/app-plugin-releases
 
+## 0.1.0-beta.19
+
+### Minor Changes
+
+- 9417357: Cancel deployments before switching, replace older queued deployments of the same application, show live queue positions, and isolate archive verification and extraction from the application Host process.
+
+### Patch Changes
+
+- 7c25f88: Bind plugin peers to the shared client runtime version at release time and keep generated application session and draft-protection tests aligned with permission rechecks.
+- 7c25f88: Preserve unsaved forms during permission rechecks by blocking departures and invalidating pending closes until authorization settles. Conceal disconnected confirmation portals and keep Projects rich-text editor effects safe when hidden content reconnects.
+- 3597c1e: Allow applications to include authenticated diagnostic context in artifact operation security logs and correlate legacy ticket uploads with their issuing log.
+- 7c25f88: Share the route container contexts through `@nocobase/app-client/route-containers` so plugin dialogs, drawers and child pages open in the container the application shows while they load, keep a hosted child page's layout classes, and declare presentations for the remaining Examples and plugin overlays.
+- 215795d: Keep active preview connections alive, suspend hidden tabs after ten minutes, limit shared applications by heap budget without reclaiming applications used in the last minute, and rotate busy hosts within a bounded wait.
+- Updated dependencies [9417357]
+- Updated dependencies [7c25f88]
+- Updated dependencies [7c25f88]
+- Updated dependencies [7c25f88]
+- Updated dependencies [215795d]
+  - @nocobase/app-host@0.1.0-beta.20
+  - @nocobase/app-client@4.0.0-beta.9
+  - @nocobase/app-plugin-authentication@2.0.0-beta.19
+
 ## 0.1.0-beta.18
 
 ### Patch Changes
