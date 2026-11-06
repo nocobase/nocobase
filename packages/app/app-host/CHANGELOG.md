@@ -1,5 +1,15 @@
 # @nocobase/app-host
 
+## 0.1.0-beta.20
+
+### Minor Changes
+
+- 9417357: Cancel deployments before switching, replace older queued deployments of the same application, show live queue positions, and isolate archive verification and extraction from the application Host process.
+
+### Patch Changes
+
+- 215795d: Keep active preview connections alive, suspend hidden tabs after ten minutes, limit shared applications by heap budget without reclaiming applications used in the last minute, and rotate busy hosts within a bounded wait.
+
 ## 0.1.0-beta.19
 
 ### Patch Changes

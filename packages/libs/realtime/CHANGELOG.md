@@ -1,5 +1,11 @@
 # @nocobase/realtime
 
+## 1.0.0-beta.1
+
+### Patch Changes
+
+- 215795d: Keep active preview connections alive, suspend hidden tabs after ten minutes, limit shared applications by heap budget without reclaiming applications used in the last minute, and rotate busy hosts within a bounded wait.
+
 ## 1.0.0-beta.0
 
 ### Major Changes

@@ -1,5 +1,16 @@
 # @nocobase/app-client
 
+## 4.0.0-beta.9
+
+### Patch Changes
+
+- 7c25f88: Let child page, dialog and drawer routes declare their presentation so the application opens that container before the page module, its authorization check and its data arrive, keeps waits, denials and a module-only retry inside it, and leaves undeclared routes and route component overrides on their own containers.
+- 7c25f88: Share the route container contexts through `@nocobase/app-client/route-containers` so plugin dialogs, drawers and child pages open in the container the application shows while they load, keep a hosted child page's layout classes, and declare presentations for the remaining Examples and plugin overlays.
+- 7c25f88: Add shared delayed loading feedback and stable pending buttons, preserve submission protection in user forms, and document source migration for applications and Registry consumers.
+- 215795d: Keep active preview connections alive, suspend hidden tabs after ten minutes, limit shared applications by heap budget without reclaiming applications used in the last minute, and rotate busy hosts within a bounded wait.
+- Updated dependencies [215795d]
+  - @nocobase/realtime@1.0.0-beta.1
+
 ## 4.0.0-beta.8
 
 ### Minor Changes

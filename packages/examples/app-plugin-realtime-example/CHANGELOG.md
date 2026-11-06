@@ -1,5 +1,21 @@
 # @nocobase/app-plugin-realtime-example
 
+## 0.1.0-beta.15
+
+### Patch Changes
+
+- 7c25f88: Preinstall task progress in both application templates with its translations, show an unknown amount of progress as a faint full-width bar instead of a segment that reads as a fraction done, synchronize the published customer contacts Skill example with its source, and document the standard recipe for a new business list page.
+- 7c25f88: Show long operations honestly: uploads show a delayed indeterminate wait with a long-wait note, real cancel and retry, and abort when the page closes; background jobs and exports show real progress or an indeterminate bar instead of an invented 0%, keep failures recoverable, say they continue after leaving the page and show where the result is.
+- 7c25f88: Keep upload and task waits accessible: the File example upload button keeps an accessible name while uploading, loading statuses in the Jobs and Realtime examples are announced from outside their busy regions with a long-wait note, and each uploading file in the file upload field uses one display timer pair with its summary announced outside the busy drop zone.
+- Updated dependencies [3d28bff]
+- Updated dependencies [7c25f88]
+- Updated dependencies [7c25f88]
+- Updated dependencies [7c25f88]
+- Updated dependencies [215795d]
+  - @nocobase/app-plugin-notification-example@1.0.0-beta.15
+  - @nocobase/app-client@4.0.0-beta.9
+  - @nocobase/app-plugin-authentication@2.0.0-beta.19
+
 ## 0.1.0-beta.14
 
 ### Patch Changes

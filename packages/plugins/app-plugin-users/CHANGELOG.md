@@ -1,5 +1,21 @@
 # @nocobase/app-plugin-users
 
+## 2.0.0-beta.16
+
+### Patch Changes
+
+- 215795d: Describe the optional identity guard when listing personal preferences in API and command-line documentation.
+- 9601146: Describe the optional identity precondition for preference reads in the API and CLI documentation.
+
+  Allow preference reads to use a caller-owned database transaction.
+
+- Updated dependencies [7c25f88]
+- Updated dependencies [7c25f88]
+- Updated dependencies [7c25f88]
+- Updated dependencies [215795d]
+  - @nocobase/app-client@4.0.0-beta.9
+  - @nocobase/app-plugin-authentication@2.0.0-beta.19
+
 ## 2.0.0-beta.15
 
 ### Minor Changes

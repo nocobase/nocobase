@@ -1,5 +1,20 @@
 # @nocobase/app-plugin-agent-sessions
 
+## 1.0.0-beta.19
+
+### Patch Changes
+
+- 4f0370e: Keep agent settings available when agents return long display text or invalid choice identifiers, and show concrete discovery failures with field details.
+- Updated dependencies [4f0370e]
+- Updated dependencies [7c25f88]
+- Updated dependencies [7c25f88]
+- Updated dependencies [7c25f88]
+- Updated dependencies [215795d]
+  - @nocobase/acp-bridge@1.0.0-beta.6
+  - @nocobase/app-client@4.0.0-beta.9
+  - @nocobase/app-plugin-authentication@2.0.0-beta.19
+  - @nocobase/app-plugin-file@1.0.0-beta.29
+
 ## 1.0.0-beta.18
 
 ### Patch Changes

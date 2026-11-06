@@ -2,6 +2,29 @@
 
 All notable changes to NocoBase 3 are documented in this file, one section per release: `nocobase-v3-beta/<date>.<n>` for a beta and `release/<date>.<n>` for a stable release. The versions each release published are on its GitHub Release, and every package's own changes are in its CHANGELOG.md.
 
+## [nocobase-v3-beta/2026-11-06.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-06.1)
+
+### 🎉 New Features
+
+- **[Agents]** Share completed conversation snapshots with selected users and revoke their read-only access. ([#11326](https://github.com/nocobase/nocobase/pull/11326)) by @2013xile
+
+### 🚀 Improvements
+
+- **[Release management]**
+  - Cancel deployments before switching, replace older queued deployments, and see queue positions while archive processing runs outside the application Host. ([#11337](https://github.com/nocobase/nocobase/pull/11337)) by @2013xile
+  - Let applications include authenticated execution details in artifact operation logs for troubleshooting. ([#11360](https://github.com/nocobase/nocobase/pull/11360)) by @2013xile
+- **[Client]** Keep loading feedback consistent across pages, tables, lists, pickers, uploads and background tasks, and keep submit buttons stable while preserving form submission protection. ([#11349](https://github.com/nocobase/nocobase/pull/11349)) by @katherinehhh
+- **[App templates]** Remove default Refresh buttons from ordinary application pages and shared generation guidance while retaining automatic updates and contextual retries. ([#11353](https://github.com/nocobase/nocobase/pull/11353)) by @chenos
+- **[App foundation]** The App foundation page shows capabilities in a wrapping grid with clear status badges, separate selection, readable extension names and key numbers grouped by capability. ([#11362](https://github.com/nocobase/nocobase/pull/11362)) by @katherinehhh
+
+### 🐛 Bug Fixes
+
+- **[Agent sessions]** Keep agent settings available with long option descriptions and show concrete discovery failure reasons. ([#11344](https://github.com/nocobase/nocobase/pull/11344)) by @zhouyanliang
+- **[Release management]** Keep active previews connected, let hidden tabs release capacity, and bound host memory use and rotation waits. ([#11345](https://github.com/nocobase/nocobase/pull/11345)) by @2013xile
+- **[General]** Keep link and native button actions aligned in dialog footers, including long labels on narrow screens. ([#11351](https://github.com/nocobase/nocobase/pull/11351)) by @chenos
+- **[App templates]** Keep detail-page parent navigation visible on desktop and mobile, with safe destinations and consistent page-generation guidance. ([#11352](https://github.com/nocobase/nocobase/pull/11352)) by @chenos
+- **[Agents]** Show the sharing backdrop in phone Agent panels, format snapshot cutoffs in the application language and display the conversation agent in shared replies. ([#11358](https://github.com/nocobase/nocobase/pull/11358)) by @2013xile
+
 ## [nocobase-v3-beta/2026-11-05.2](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-05.2)
 
 ### 🚀 Improvements
