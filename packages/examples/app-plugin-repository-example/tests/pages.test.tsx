@@ -244,7 +244,9 @@ describe('Repository pages with real HTTP and SQLite', () => {
     hold = new Promise<ExampleRecord[]>((resolve) => {
       release = () => resolve(last);
     });
-    await userEvent.click(screen.getByRole('button', { name: 'Refresh' }));
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Search', exact: true }),
+    );
     // Same query: rows stay and exactly one delayed refresh status appears.
     expect(screen.getByText('Acorn Supplies')).toBeVisible();
     expect(
