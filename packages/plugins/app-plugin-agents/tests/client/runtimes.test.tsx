@@ -515,6 +515,10 @@ describe('runtimes page', () => {
       within(row).getByRole('button', { name: 'runtimes.quota.clear' }),
     );
     const dialog = await screen.findByRole('alertdialog');
+    // Opened from the runtime sheet, the dialog still brings its own backdrop over the sheet.
+    expect(
+      document.querySelectorAll('[data-slot=alert-dialog-overlay]'),
+    ).toHaveLength(1);
     expect(
       within(dialog).getByText(
         'runtimes.quota.confirmTitle(target=tools.claude)',
@@ -591,6 +595,10 @@ describe('runtimes page', () => {
       within(sheet).getByRole('button', { name: 'runtimes.quota.clear' }),
     );
     const dialog = await screen.findByRole('alertdialog');
+    // Opened from the runtime sheet, the dialog still brings its own backdrop over the sheet.
+    expect(
+      document.querySelectorAll('[data-slot=alert-dialog-overlay]'),
+    ).toHaveLength(1);
     expect(
       within(dialog).getByText(
         /^runtimes\.quota\.confirmTitle\(target=.*opus/iu,

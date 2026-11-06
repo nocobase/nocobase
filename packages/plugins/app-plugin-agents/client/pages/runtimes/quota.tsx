@@ -178,7 +178,8 @@ export function QuotaClearDialog({
         if (!open && !pending) onCancel();
       }}
     >
-      <AlertDialogContent>
+      {/* Opened from the runtime sheet, so its backdrop must be forced to cover the sheet. */}
+      <AlertDialogContent nested>
         <AlertDialogHeader>
           <AlertDialogTitle>
             {t('runtimes.quota.confirmTitle', { target: name ?? '' })}
