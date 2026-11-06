@@ -12,7 +12,7 @@ import { invalid, notFound } from '../../kernel/errors.js';
 import type { TxRunner } from '../../kernel/tx.js';
 import { findAgent } from '../agents/index.js';
 import {
-  AGENT_LAYER_PREFIX,
+  STABLE_AGENT_LAYER_PREFIX,
   annotatePlaceholders,
   firstTurn,
   renderTurnPrompt,
@@ -54,7 +54,7 @@ export function splitPrompt(
   instructions: string | null,
 ): Pick<BriefPreview, 'platform' | 'agentPrompt'> {
   const own = instructions?.trim() ?? '';
-  const prefix = AGENT_LAYER_PREFIX.replace('the context above', 'the context');
+  const prefix = STABLE_AGENT_LAYER_PREFIX;
   const first = own && prompt.startsWith(`${prefix}\n\n${own}\n\n`);
   if (first) {
     return {

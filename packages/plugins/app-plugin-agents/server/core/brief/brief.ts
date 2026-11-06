@@ -123,6 +123,10 @@ export function onlineToolRules(
 export const AGENT_LAYER_PREFIX =
   "The following are this agent's own instructions from its owner. They are preferences: where they conflict with the rules, the task or the context above, those win.";
 
+/** The preference lead-in when fixed instructions precede the task and context. */
+export const STABLE_AGENT_LAYER_PREFIX =
+  "The following are this agent's own instructions from its owner. They are preferences: where they conflict with the rules, the task or the context, those win.";
+
 function describeDir(dir: WorkspaceDir): string {
   const name = dir.name ? ` (${dir.name})` : '';
   if (dir.kind === 'repo')
@@ -283,9 +287,7 @@ export function agentLayer(
   stablePrefix = false,
 ): string {
   const text = instructions?.trim() ?? '';
-  const prefix = stablePrefix
-    ? AGENT_LAYER_PREFIX.replace('the context above', 'the context')
-    : AGENT_LAYER_PREFIX;
+  const prefix = stablePrefix ? STABLE_AGENT_LAYER_PREFIX : AGENT_LAYER_PREFIX;
   return text ? `${prefix}\n\n${text}` : '';
 }
 
