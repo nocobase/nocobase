@@ -8,6 +8,7 @@ const enUS = {
       'The NocoBase capabilities this application is built on.',
   },
   page: {
+    otherCapabilities: 'Other capabilities',
     notCounted: 'Not counted',
     updatingHistory: 'Updating… Showing the previous result.',
     previousKernel:
@@ -126,6 +127,7 @@ const enUS = {
     legendUnused: 'Not used yet {{count}}',
   },
   detail: {
+    selectedCapability: 'Selected capability',
     retainedAt: 'Last confirmed {{time}}',
     readNotes: 'Read details',
     collectionCount: '{{count}} collections',
@@ -406,6 +408,7 @@ const enUS = {
     seeds: 'Seeds run',
   },
   dynamic: {
+    extension: 'Extension',
     pending: 'Pending recognition',
     pendingDescription:
       'This plugin is registered. Its configuration and actual use have not yet been determined.',

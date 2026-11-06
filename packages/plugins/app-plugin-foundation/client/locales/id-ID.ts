@@ -7,6 +7,7 @@ const idID: FoundationResource = {
     foundationDescription: 'Kemampuan NocoBase yang digunakan aplikasi ini.',
   },
   page: {
+    otherCapabilities: 'Kemampuan lainnya',
     notCounted: 'Belum dihitung',
     updatingHistory: 'Memperbarui… Menampilkan hasil sebelumnya.',
     previousKernel:
@@ -124,6 +125,7 @@ const idID: FoundationResource = {
     legendUnused: 'Belum digunakan {{count}}',
   },
   detail: {
+    selectedCapability: 'Kemampuan terpilih',
     retainedAt: 'Terakhir dikonfirmasi {{time}}',
     readNotes: 'Detail pembacaan',
     collectionCount: '{{count}} tabel',
@@ -396,6 +398,7 @@ const idID: FoundationResource = {
     seeds: 'Seed dijalankan',
   },
   dynamic: {
+    extension: 'Ekstensi',
     pending: 'Menunggu identifikasi',
     pendingDescription:
       'Plugin telah terdaftar. Konfigurasi dan penggunaan aktual belum ditentukan.',

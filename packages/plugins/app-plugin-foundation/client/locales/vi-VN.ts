@@ -7,6 +7,7 @@ const viVN: FoundationResource = {
     foundationDescription: 'Các năng lực NocoBase mà ứng dụng này sử dụng.',
   },
   page: {
+    otherCapabilities: 'Các khả năng khác',
     notCounted: 'Chưa thống kê',
     updatingHistory: 'Đang cập nhật… Hiển thị kết quả trước đó.',
     previousKernel:
@@ -122,6 +123,7 @@ const viVN: FoundationResource = {
     legendUnused: 'Chưa dùng {{count}}',
   },
   detail: {
+    selectedCapability: 'Khả năng đang chọn',
     retainedAt: 'Xác nhận gần nhất {{time}}',
     readNotes: 'Chi tiết đọc dữ liệu',
     collectionCount: '{{count}} bảng dữ liệu',
@@ -389,6 +391,7 @@ const viVN: FoundationResource = {
     seeds: 'Seed đã chạy',
   },
   dynamic: {
+    extension: 'Tiện ích mở rộng',
     pending: 'Chờ nhận diện',
     pendingDescription:
       'Plugin đã đăng ký. Cấu hình và việc sử dụng thực tế chưa được xác định.',
