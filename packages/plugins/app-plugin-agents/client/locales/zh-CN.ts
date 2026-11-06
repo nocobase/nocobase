@@ -64,7 +64,7 @@ const zhCN: AgentsResource = {
   },
   errors: {
     boundRunnerIncompatible:
-      '此执行机无法运行所选 Agent。请更换执行机或新建对话。',
+      '当前运行环境无法运行所选 Agent。请更换运行环境后继续。',
     CONFLICT: '它已被修改，请刷新后重试。',
     REVISION_CONFLICT: '它已被修改，请刷新后重试。',
     FORBIDDEN: '你没有权限执行此操作。',

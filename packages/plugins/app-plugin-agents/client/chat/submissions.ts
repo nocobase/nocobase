@@ -303,6 +303,31 @@ export class ChatSubmissions {
     this.publish();
     return true;
   }
+  /**
+   * Puts back a message an existing conversation refused before writing it, as the application kept it across a
+   * reload; it is not sent again. Refused when its conversation already has a message in flight or it is known.
+   */
+  public restore(
+    record: SubmissionInput & {
+      readonly conversationId: string;
+      readonly clientId: string;
+      readonly createdAt: string;
+      readonly error?: unknown;
+    },
+  ): boolean {
+    if (
+      this.records.some((item) => item.clientId === record.clientId) ||
+      this.blocked(record.conversationId, record.editorKey)
+    )
+      return false;
+    this.records.push({
+      ...record,
+      operation: 0,
+      status: 'notSubmitted',
+    });
+    this.publish();
+    return true;
+  }
   public editRejected(clientId: string): ChatSubmission | null {
     const record = this.records.find((item) => item.clientId === clientId);
     if (record?.status !== 'notSubmitted') return null;

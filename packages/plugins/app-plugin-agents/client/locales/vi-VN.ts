@@ -65,7 +65,7 @@ const viVN: LocaleResource<typeof enUS> = {
   },
   errors: {
     boundRunnerIncompatible:
-      'Runner này không thể chạy Agent đã chọn. Hãy đổi runner hoặc bắt đầu cuộc trò chuyện mới.',
+      'Môi trường này không thể chạy Agent đã chọn. Hãy đổi môi trường để tiếp tục.',
     CONFLICT: 'Trong lúc đó, nó đã thay đổi. Tải lại và thử lại.',
     REVISION_CONFLICT: 'Trong lúc đó, nó đã thay đổi. Tải lại và thử lại.',
     FORBIDDEN: 'Bạn không được phép làm điều này.',

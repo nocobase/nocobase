@@ -65,7 +65,7 @@ const idID: LocaleResource<typeof enUS> = {
   },
   errors: {
     boundRunnerIncompatible:
-      'Runner ini tidak dapat menjalankan Agent yang dipilih. Ganti runner atau mulai percakapan baru.',
+      'Lingkungan ini tidak dapat menjalankan Agent yang dipilih. Ganti lingkungan untuk melanjutkan.',
     CONFLICT: 'Sementara itu, keadaannya berubah. Muat ulang dan coba lagi.',
     REVISION_CONFLICT:
       'Sementara itu, keadaannya berubah. Muat ulang dan coba lagi.',

@@ -18,6 +18,8 @@ export function workspaceLayout(width: number): WorkspaceLayout {
 export interface ChatWorkspaceState {
   readonly layout: WorkspaceLayout;
   readonly conversationId: string | null;
+  /** Starts a draft through the containing page or panel, keeping its native navigation. */
+  readonly newConversation?: () => void;
   /** Shows the details, closing an opened record. */
   readonly openDetails: () => void;
   /** Hides the details where they cover the conversation; beside it they stay. */
