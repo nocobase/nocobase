@@ -450,7 +450,10 @@ export function briefOf(
   cli: string,
   appName: string,
 ): RenderedBrief {
-  const rendered = renderBrief({
+  // Custom system prompts (such as conversations) keep their own layout.
+  const stablePrefix =
+    assembly.briefLayout === 'stable-prefix' && assembly.system === undefined;
+  const input = {
     agentName: agent.name,
     subject: { noun: assembly.subject.noun, key: assembly.subject.key },
     task: assembly.task,
@@ -461,7 +464,8 @@ export function briefOf(
     cli,
     appName,
     ...(assembly.guidance ? { guidance: assembly.guidance } : {}),
-  });
+  };
+  const rendered = renderBrief(input);
   const layers =
     assembly.system === undefined
       ? rendered
@@ -469,7 +473,12 @@ export function briefOf(
   const turn = assembly.turn.previousSummary
     ? `${assembly.turn.prompt}\n\nWhat earlier runs on this already did:\n\n${assembly.turn.previousSummary}`
     : assembly.turn.prompt;
-  return { layers, turn, prompt: joinBrief(layers) };
+  // Keep the logical layers (and their session fingerprint) unchanged. Only the outgoing text is reordered,
+  // so an ordinary follow-up can still resume the session created by an independent review.
+  const prompt = stablePrefix
+    ? joinBrief(renderBrief({ ...input, stablePrefix: true }), true)
+    : joinBrief(layers);
+  return { layers, turn, prompt };
 }
 
 /** What a claim produces: the payload, the run's requirements and directories, and the brief's fingerprint. */

@@ -138,16 +138,32 @@ describe('claim query cost', () => {
     },
   );
 
-  it.each(
-    [1, 10, 50].flatMap((count) =>
+  it.each([
+    ...[1, 10, 50].flatMap((count) =>
       [0, 3].flatMap((skillCount) =>
-        [false, true].map((affinity) => ({ count, skillCount, affinity })),
+        [false, true].map((affinity) => ({
+          count,
+          skillCount,
+          affinity,
+          stablePrefix: false,
+        })),
       ),
     ),
-  )(
-    'loads $count candidates with $skillCount skills (affinity: $affinity) with bounded reads',
-    async ({ count, skillCount, affinity }) => {
+    { count: 1, skillCount: 0, affinity: false, stablePrefix: true },
+  ])(
+    'loads $count candidates with $skillCount skills (affinity: $affinity, stable prefix: $stablePrefix) with bounded reads',
+    async ({ count, skillCount, affinity, stablePrefix }) => {
       h = await createHarness();
+      if (stablePrefix) {
+        const context = h.services.subjects.get('sample')!.context;
+        const assemble = context.assemble.bind(context);
+        vi.spyOn(context, 'assemble').mockImplementation(
+          async (conn, claim) => ({
+            ...(await assemble(conn, claim)),
+            briefLayout: 'stable-prefix',
+          }),
+        );
+      }
       h.scopes = [{ scope: 'team', scopeId: 'team' }];
       if (count > 1) {
         const excluded = await h.createAgent({
