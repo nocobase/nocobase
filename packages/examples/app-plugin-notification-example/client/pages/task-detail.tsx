@@ -164,6 +164,15 @@ export default function TaskDetailPage(): ReactElement {
       {loading ? (
         <p className='text-sm text-muted-foreground'>{t('common.loading')}</p>
       ) : null}
+      {error && (
+        <Button
+          variant='outline'
+          disabled={loading || saving}
+          onClick={refresh}
+        >
+          {t('taskDetail.retryRead')}
+        </Button>
+      )}
       {!loading && task ? (
         <>
           <div className='flex gap-2'>
@@ -173,13 +182,6 @@ export default function TaskDetailPage(): ReactElement {
               nativeButton={false}
             >
               {t('taskDetail.back')}
-            </Button>
-            <Button
-              variant='outline'
-              disabled={loading || saving}
-              onClick={refresh}
-            >
-              {t('taskDetail.refresh')}
             </Button>
             <Button onClick={startEditing} disabled={saving}>
               {t('taskDetail.edit')}

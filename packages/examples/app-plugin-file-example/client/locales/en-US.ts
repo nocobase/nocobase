@@ -20,6 +20,9 @@ const messages: Record<string, string> = {
   tooLarge: 'File exceeds the maximum size',
   rejected: 'File type is not allowed',
   uploadFailed: 'Upload failed',
+  cancelUpload: 'Cancel upload',
+  retryUpload: 'Retry upload',
+  uploadLongWait: 'Still uploading. Keep waiting or cancel.',
 
   preview: 'Preview',
   download: 'Download',

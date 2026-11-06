@@ -98,7 +98,7 @@ describe.each(Object.keys(adapters) as (keyof typeof adapters)[])(
         );
         expect(screen.getByText('Original row')).toBeVisible();
         expect(
-          screen.getByRole('button', { name: 'Retrying…' }),
+          await screen.findByRole('button', { name: 'Retrying…' }),
         ).toBeDisabled();
         expect(calls).toHaveLength(3);
         expect(new Set(calls).size).toBe(1);
@@ -177,7 +177,7 @@ describe.each(Object.keys(adapters) as (keyof typeof adapters)[])(
       await userEvent.click(
         screen.getByRole('button', { name: 'Change query' }),
       );
-      expect(screen.getByRole('status')).toHaveTextContent('Loading');
+      expect(await screen.findByRole('status')).toHaveTextContent('Loading');
       expect(screen.queryByText('First row')).not.toBeInTheDocument();
       expect(screen.queryByRole('alert')).not.toBeInTheDocument();
       await act(async () => current.resolve({ data: ['Second row'] }));

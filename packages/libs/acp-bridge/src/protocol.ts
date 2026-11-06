@@ -500,21 +500,62 @@ export interface SessionChoice {
   }[];
 }
 
-const SessionChoiceSchema: z.ZodType<SessionChoice> = z.object({
+const ChoiceOptionSchema = z.object({
+  value: id,
+  name: z.string().min(1).max(200),
+  description: z.string().max(1000).optional(),
+});
+const SessionChoiceSchema = z.object({
   id,
   name: z.string().min(1).max(200),
   category: z.string().max(40).optional(),
   currentValue: id,
-  options: z
-    .array(
-      z.object({
-        value: id,
-        name: z.string().min(1).max(200),
-        description: z.string().max(1000).optional(),
-      }),
-    )
-    .max(200),
+  options: z.array(ChoiceOptionSchema).max(200),
 });
+
+/** Bound display text and isolate invalid identifiers without changing what is sent back to the agent. */
+export function normalizeSessionChoices(
+  input: readonly unknown[],
+): SessionChoice[] {
+  const choices: SessionChoice[] = [];
+  for (const item of input) {
+    if (!item || typeof item !== 'object') continue;
+    const choice = item as Record<string, unknown>;
+    if (!Array.isArray(choice.options)) continue;
+    const parsed = SessionChoiceSchema.safeParse({
+      ...choice,
+      name:
+        typeof choice.name === 'string'
+          ? choice.name.slice(0, 200)
+          : choice.name,
+      category:
+        typeof choice.category === 'string'
+          ? choice.category.slice(0, 40)
+          : choice.category,
+      options: choice.options
+        .flatMap((item: unknown) => {
+          if (!item || typeof item !== 'object') return [];
+          const option = item as Record<string, unknown>;
+          const parsed = ChoiceOptionSchema.safeParse({
+            ...option,
+            name:
+              typeof option.name === 'string'
+                ? option.name.slice(0, 200)
+                : option.name,
+            description:
+              typeof option.description === 'string'
+                ? option.description.slice(0, 1000)
+                : option.description,
+          });
+          return parsed.success ? [parsed.data] : [];
+        })
+        .slice(0, 200),
+    });
+    if (parsed.success) choices.push(parsed.data);
+    if (choices.length === 20) break;
+  }
+  return choices;
+}
 
 /** Empty available choices and an unsupported configuration surface are distinct. */
 export interface DiscoveredChoices {

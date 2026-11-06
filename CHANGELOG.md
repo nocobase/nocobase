@@ -2,6 +2,45 @@
 
 All notable changes to NocoBase 3 are documented in this file, one section per release: `nocobase-v3-beta/<date>.<n>` for a beta and `release/<date>.<n>` for a stable release. The versions each release published are on its GitHub Release, and every package's own changes are in its CHANGELOG.md.
 
+## [nocobase-v3-beta/2026-11-05.2](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-05.2)
+
+### 🚀 Improvements
+
+- **[Agents]** Let applications start independent agent sessions with bounded handoff summaries. ([#11341](https://github.com/nocobase/nocobase/pull/11341)) by @2013xile
+- **[App foundation]** App foundation statistics now show a plain metric name before each value, with the same name on the summary cards and in capability details. ([#11342](https://github.com/nocobase/nocobase/pull/11342)) by @katherinehhh
+
+### 🐛 Bug Fixes
+
+- **[Release management]** Keep environment App inputs aligned when their labels wrap. ([#11338](https://github.com/nocobase/nocobase/pull/11338)) by @gchust
+
+## [nocobase-v3-beta/2026-11-05.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-05.1)
+
+### 🎉 New Features
+
+- **[Agent runner]**
+  - Let runs use the official Gitea CLI with their supplied credentials. ([#11313](https://github.com/nocobase/nocobase/pull/11313)) by @2013xile
+  - Run DeepSeek Harness as a coding tool on execution machines through ACP. ([#11314](https://github.com/nocobase/nocobase/pull/11314)) by @2013xile
+- **[Notifications]** Show registered notification scenarios and safe synthetic content previews in a unified read-only template directory. ([#11331](https://github.com/nocobase/nocobase/pull/11331)) by @katherinehhh
+- **[Users]** Keep users' selected language across browsers and devices, and let background tasks resolve their preferred language by user ID. ([#11332](https://github.com/nocobase/nocobase/pull/11332)) by @mytharcher
+- **[App templates]** Applications built from the templates show administration as one System settings entry that opens a home page of cards by category, with tabs inside each module. ([#11333](https://github.com/nocobase/nocobase/pull/11333)) by @katherinehhh
+
+### 🚀 Improvements
+
+- **[App templates]** Unify the Default and Examples sidebar and sign-in slogans as “AI + NocoBase” and “Build reliable business systems”, and remove the template name from the Default footer while keeping its version. ([#11321](https://github.com/nocobase/nocobase/pull/11321)) by @katherinehhh
+- **[Agent sessions]**
+  - Show usage in My Agent's session details as rows, the same way as runner conversations. ([#11329](https://github.com/nocobase/nocobase/pull/11329)) by @zhouyanliang
+  - Simplify Runner Agent and My Agent session rows by removing secondary agent, runtime and project labels. ([#11330](https://github.com/nocobase/nocobase/pull/11330)) by @zhouyanliang
+  - Show a linked task's full-width title in session details, with its key and status on the line below. ([#11335](https://github.com/nocobase/nocobase/pull/11335)) by @zhouyanliang
+- **[Agents]** The runtime drawer's overview, workspaces and runs tables give their width to tool quotas, directories and issues instead of short columns, so sizes, types and agent names are no longer cut off. ([#11336](https://github.com/nocobase/nocobase/pull/11336)) by @zhouyanliang
+
+### 🐛 Bug Fixes
+
+- **[Demo mode]** Open protected demo links automatically while keeping the current account and destination URL. ([#11319](https://github.com/nocobase/nocobase/pull/11319)) by @gchust
+- **[Agents]** Remove restored conversations from the archived list automatically. ([#11320](https://github.com/nocobase/nocobase/pull/11320)) by @gchust
+- **[Authentication]** Give accurate registration feedback, sign in new accounts by default, and warn about configurations that cannot explain the next step. ([#11322](https://github.com/nocobase/nocobase/pull/11322)) by @katherinehhh
+- **[Server]** Give a request ten minutes to arrive instead of five, so a large upload over a slow link is no longer cut off with HTTP 408. ([#11323](https://github.com/nocobase/nocobase/pull/11323)) by @gchust
+- **[CLI]** Restart running background agent connections after CLI upgrades and provide recovery steps when agent settings cannot load. ([#11334](https://github.com/nocobase/nocobase/pull/11334)) by @zhouyanliang
+
 ## [nocobase-v3-beta/2026-11-04.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-04.1)
 
 ### 🎉 New Features

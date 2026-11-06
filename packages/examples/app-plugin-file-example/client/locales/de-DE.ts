@@ -23,6 +23,10 @@ const deDE: LocaleResource<typeof enUS> = {
   tooLarge: 'Datei überschreitet die maximale Größe',
   rejected: 'Dateityp ist nicht zulässig',
   uploadFailed: 'Hochladen fehlgeschlagen',
+  cancelUpload: 'Hochladen abbrechen',
+  retryUpload: 'Hochladen wiederholen',
+  uploadLongWait:
+    'Wird noch hochgeladen. Warten Sie weiter oder brechen Sie ab.',
   preview: 'Vorschau',
   download: 'Herunterladen',
   remove: 'Löschen',

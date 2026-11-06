@@ -1,5 +1,22 @@
 # @nocobase/app-plugin-notification
 
+## 2.0.0-beta.5
+
+### Minor Changes
+
+- 3681eb0: Provide a permission-protected, read-only notification template directory with synthetic previews that reuse business send renderers, plus application integration and source upgrade guidance.
+
+### Patch Changes
+
+- Updated dependencies [78bdca8]
+- Updated dependencies [9998ac4]
+- Updated dependencies [87f1ea5]
+- Updated dependencies [6507d01]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.19
+  - @nocobase/app-plugin-authorization@1.0.0-beta.36
+  - @nocobase/app-client@4.0.0-beta.8
+  - @nocobase/app-server@5.0.0-beta.1
+
 ## 2.0.0-beta.4
 
 ### Patch Changes

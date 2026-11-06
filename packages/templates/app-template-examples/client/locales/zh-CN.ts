@@ -17,6 +17,7 @@ const zhCN: AppResource = {
   ...agentChatZhCN,
   knowledge: {
     indexing: '知识库索引',
+    indexingDescription: '所有知识空间的文档切分与向量化方式。',
     title: '知识库',
     spaces: { default: '默认知识库' },
     chat: {

@@ -281,6 +281,10 @@
     "#extensions/nocobase-agent-chat/conversation-links": "./registry/agents/agent-chat/conversation-links.ts",
     "#extensions/nocobase-agent-chat/usage": "./registry/agents/agent-chat/usage.tsx",
     "#extensions/nocobase-agent-chat/use-conversation-usage": "./registry/agents/agent-chat/use-conversation-usage.ts",
-    "#extensions/nocobase-agent-chat/linked-launchers": "./registry/agents/agent-chat/linked-launchers.tsx"
+    "#extensions/nocobase-agent-chat/linked-launchers": "./registry/agents/agent-chat/linked-launchers.tsx",
+    "#components/loading": "./registry/components/loading.tsx",
+    "#components/pending-button": "./registry/components/pending-button.tsx",
+    "#components/task-progress": "./registry/components/task-progress.tsx",
+    "#components/brand-loading-mark": "./registry/components/brand-loading-mark.tsx"
   }
 }

@@ -304,6 +304,8 @@ it('keeps the accepted export visible when the following history refresh fails',
     .setup()
     .click(screen.getByRole('button', { name: 'Export tasks', exact: true }));
   await screen.findByText('Queued');
+  // The queued job has no total yet, so its bar shows no invented 0%.
+  expect(screen.getByRole('progressbar')).not.toHaveAttribute('aria-valuenow');
   await screen.findByText('The request failed. Please try again.');
   expect(screen.queryByText('No exports yet')).not.toBeInTheDocument();
   expect(

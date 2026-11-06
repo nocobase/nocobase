@@ -80,7 +80,10 @@ export interface HostRuntimeController {
   /** The child's management service; asked for per call, since a restarted child is reached through a new client. */
   getManagementClient(): Promise<HostManagementService>;
   /** Stops and starts the Host child; its `onReady` listeners then replay the desired sets. */
-  restart?(reason?: string): Promise<URL>;
+  restart?(
+    reason?: string,
+    options?: { shutdownTimeoutMs?: number },
+  ): Promise<URL>;
 }
 
 /** A Host the driver deploys to, for the environments whose backend it runs. */
@@ -98,9 +101,13 @@ export interface HostEndpointOptions {
    * Restart the Host once this many Apps were replaced, removed, stopped for idleness or made dormant since it
    * started: in-process Apps cannot unload their modules (ESM has no unload), so every runtime that goes away leaves
    * memory behind; a restart replays the desired sets into a fresh process, where on-demand Apps stay stopped until
-   * requested. The restart waits while an on-demand App is running. Off when omitted.
+   * requested. Busy Apps defer rotation only up to `restartMaxWaitMs`. Off when omitted.
    */
   readonly restartAfterChurn?: number;
+  /** Maximum deferral after reaching the churn threshold or memory pressure (five minutes by default). */
+  readonly restartMaxWaitMs?: number;
+  /** Graceful shutdown allowance before the supervisor kills the old child (30 seconds by default). */
+  readonly restartDrainMs?: number;
 }
 
 export interface HostDriverOptions {
@@ -181,6 +188,18 @@ export function createHostDriver(
   const diagnostic = createDiagnosticLogger(options.logger);
   const inProcess = options.hosts[IN_PROCESS_BACKEND];
   if (!inProcess) throw new Error('The Host driver needs the in-process Host.');
+  for (const [name, value] of Object.entries({
+    restartMaxWaitMs: inProcess.restartMaxWaitMs,
+    restartDrainMs: inProcess.restartDrainMs,
+  })) {
+    if (
+      value !== undefined &&
+      (!Number.isInteger(value) || value < 0 || value > 2_147_483_647)
+    )
+      throw new Error(
+        `Invalid ${name}: expected a non-negative timer interval`,
+      );
+  }
   const scopes = new Map<string, OpenScope>();
   /** The latest revision sent per scope; the Host refuses an older one. */
   const revisions = new Map<string, number>();
@@ -193,6 +212,11 @@ export function createHostDriver(
   let inFlight = 0;
   let restartScheduled: Promise<void> | null = null;
   let churnTimer: NodeJS.Timeout | null = null;
+  let restartDueAt: number | null = null;
+  let restartDeadline: NodeJS.Timeout | null = null;
+  let memoryPressure = false;
+  let checkingChurn = false;
+  let hostGeneration = 0;
 
   const hostOf = (backend: string): HostEndpointOptions => {
     const host = options.hosts[backend];
@@ -356,6 +380,15 @@ export function createHostDriver(
     if (watched.has(host)) return;
     watched.add(host);
     host.controller.onReady(() => {
+      if (host === inProcess && !restartScheduled) {
+        hostGeneration += 1;
+        churn = 0;
+        runtimeChurn = 0;
+        memoryPressure = false;
+        restartDueAt = null;
+        if (restartDeadline) clearTimeout(restartDeadline);
+        restartDeadline = null;
+      }
       void restoreHost(host);
     });
   };
@@ -386,9 +419,18 @@ export function createHostDriver(
       throw new Error('This Host runtime cannot be restarted by the driver.');
     restartScheduled ??= (async () => {
       try {
-        await controller.restart!(reason);
+        hostGeneration += 1;
+        if (restartDeadline) clearTimeout(restartDeadline);
+        restartDeadline = null;
+        // SIGTERM closes the child's listener and drains its management operations and HTTP requests. The
+        // supervisor's single deadline also bounds deployments, sockets and shutdown hooks that never finish.
+        await controller.restart!(reason, {
+          shutdownTimeoutMs: inProcess.restartDrainMs ?? 30_000,
+        });
         churn = 0;
         runtimeChurn = 0;
+        memoryPressure = false;
+        restartDueAt = null;
         await restoreHost(inProcess);
       } finally {
         restartScheduled = null;
@@ -397,7 +439,7 @@ export function createHostDriver(
     await restartScheduled;
   };
 
-  /** Whether an on-demand App runs or starts, which a restart would cut off. */
+  /** Whether an on-demand App is starting or has work or connections a restart would cut off. */
   const onDemandBusy = (
     statuses: readonly (readonly [OpenScope, HostStatus])[],
   ): boolean =>
@@ -406,37 +448,77 @@ export function createHostDriver(
         const state = observed(deployment).state;
         return (
           scope.onDemand.has(deployment.appId) &&
-          (state === 'running' || state === 'starting')
+          (state === 'starting' ||
+            (state === 'running' &&
+              ((deployment.app?.activeRequests ?? 0) > 0 ||
+                (deployment.app?.activeConnections ?? 0) > 0)))
         );
       }),
     );
 
   /**
-   * Restarts the in-process Host when the churn reached `restartAfterChurn`, nothing is in flight and no on-demand App
-   * is in use; otherwise a later check tries again.
+   * Rotates after churn or heap pressure, as soon as Apps are idle or at the fixed maximum-wait deadline.
    */
   const maybeRestart = async (): Promise<void> => {
     const limit = inProcess.restartAfterChurn;
     const { controller } = inProcess;
     if (!limit || !controller.restart || restartScheduled) return;
     if (controller.getInfo().status !== 'ready') return;
+    if (restartDueAt !== null && Date.now() >= restartDueAt) {
+      await restartHost('App Host rotation maximum wait reached');
+      return;
+    }
+    const scheduleDeadline = () => {
+      if (
+        restartDueAt !== null ||
+        (churn + runtimeChurn < limit && !memoryPressure)
+      )
+        return;
+      restartDueAt = Date.now() + (inProcess.restartMaxWaitMs ?? 5 * 60_000);
+      restartDeadline = setTimeout(
+        () => {
+          restartDeadline = null;
+          void restartHost('App Host rotation maximum wait reached').catch(
+            (error: unknown) =>
+              diagnostic.error('Failed to restart the App Host', error),
+          );
+        },
+        Math.max(0, restartDueAt - Date.now()),
+      );
+      restartDeadline.unref?.();
+    };
+    scheduleDeadline();
+    const generation = hostGeneration;
     const statuses = await statusesOf(inProcess).catch(() => null);
+    if (restartScheduled || generation !== hostGeneration) return;
     const counters = statuses?.find(([, status]) => status.counters)?.[1]
       .counters;
-    if (counters)
-      runtimeChurn = (counters.idleStops ?? 0) + (counters.dormancies ?? 0);
+    if (counters) {
+      runtimeChurn =
+        (counters.idleStops ?? 0) +
+        (counters.dormancies ?? 0) +
+        (counters.capacityStops ?? 0);
+      memoryPressure ||= (counters.memoryPressure ?? 0) > 0;
+    }
+    scheduleDeadline();
     const total = churn + runtimeChurn;
-    if (total < limit || inFlight > 0) return;
-    if (statuses && onDemandBusy(statuses)) return;
+    if ((total < limit && !memoryPressure) || inFlight > 0) return;
+    if (!statuses || onDemandBusy(statuses)) return;
     await restartHost(
       `${total} applications replaced, removed, stopped or made dormant`,
     );
   };
 
   const checkChurn = (): void => {
-    void maybeRestart().catch((error: unknown) =>
-      diagnostic.error('Failed to restart the App Host', error),
-    );
+    if (checkingChurn) return;
+    checkingChurn = true;
+    void maybeRestart()
+      .catch((error: unknown) =>
+        diagnostic.error('Failed to restart the App Host', error),
+      )
+      .finally(() => {
+        checkingChurn = false;
+      });
   };
 
   const countChurn = (scope: OpenScope): void => {
@@ -519,6 +601,7 @@ export function createHostDriver(
     churn: () => churn + runtimeChurn,
     restartHost: (reason = 'restart requested') => restartHost(reason),
     proxyTarget() {
+      if (restartScheduled) return null;
       const info = inProcess.controller.getInfo();
       return info.status === 'ready' && info.targetUrl
         ? new URL(info.targetUrl)
@@ -563,6 +646,10 @@ export function createHostDriver(
             };
       };
 
+      const pendingDeployments = new Map<
+        string,
+        { appId: string; submitted: boolean; cancelled: boolean }
+      >();
       return {
         async check() {
           try {
@@ -580,7 +667,29 @@ export function createHostDriver(
             };
           }
         },
+        async cancel(deploymentId, appId, queuedOnly) {
+          const pending = pendingDeployments.get(deploymentId);
+          if (pending && pending.appId === appId && !pending.submitted) {
+            pending.cancelled = true;
+            return 'cancelled';
+          }
+          return (await management()).cancelDeployment(deploymentId, appId, {
+            scope: scope.scope,
+            queuedOnly,
+          });
+        },
+        async progress(deploymentId, appId) {
+          return (await management()).deploymentProgress(deploymentId, appId, {
+            scope: scope.scope,
+          });
+        },
         async apply(spec, onEvent) {
+          const pending = {
+            appId: spec.appId,
+            submitted: false,
+            cancelled: false,
+          };
+          pendingDeployments.set(spec.deploymentId, pending);
           track(scope, spec);
           let replacing = false;
           try {
@@ -594,6 +703,11 @@ export function createHostDriver(
                   (deployment) => deployment.app?.state === 'active',
                 ),
               );
+              if (pending.cancelled)
+                throw Object.assign(new Error('Deployment cancelled.'), {
+                  code: 'DEPLOYMENT_CANCELLED',
+                });
+              pending.submitted = true;
               // A deployment always starts the App once, so it proves the release runs.
               return await service.applyDeployment(
                 {
@@ -611,28 +725,39 @@ export function createHostDriver(
               return failed(spec, 'The Host did not report the deployment.');
             return outcomeOf(deployed, spec.deploymentId);
           } catch (error) {
+            if ((error as { code?: string }).code === 'DEPLOYMENT_CANCELLED')
+              return {
+                ...failed(spec, 'Deployment cancelled.'),
+                state: 'cancelled',
+              };
             return failed(
               spec,
               error instanceof Error ? error.message : String(error),
             );
+          } finally {
+            pendingDeployments.delete(spec.deploymentId);
           }
         },
         async start(spec) {
           track(scope, spec);
-          await (
-            await management()
-          ).startDeployment({
-            ...toHostSpec(scope, spec, 'running'),
-            scope: scope.scope,
-          });
+          await tracked(scope, async () =>
+            (await management()).startDeployment({
+              ...toHostSpec(scope, spec, 'running'),
+              scope: scope.scope,
+            }),
+          );
           return await statusOf(spec.appId);
         },
         async stop(appId) {
-          await (await management()).stopDeployment(appId);
+          await tracked(scope, async () =>
+            (await management()).stopDeployment(appId),
+          );
           return await statusOf(appId);
         },
         async restart(appId) {
-          await (await management()).restartApp(appId);
+          await tracked(scope, async () =>
+            (await management()).restartApp(appId),
+          );
           return await statusOf(appId);
         },
         async remove(appId, { purgeData }) {
@@ -671,7 +796,9 @@ export function createHostDriver(
           await scheduleRestore(scope);
         },
         async reloadConfig(appId, content) {
-          await (await management()).publishAppConfig(appId, content);
+          await tracked(scope, async () =>
+            (await management()).publishAppConfig(appId, content),
+          );
         },
         async logs(appId: string, query: JournalQuery): Promise<JournalPage> {
           return await (await management()).readAppLogs(appId, query);
@@ -753,12 +880,14 @@ function operationOutcome(result: HostOperation): AppObservedStatus {
       lastAccessedAt: result.status?.lifecycle?.lastAccessedAt ?? null,
     };
   return {
-    state: 'failed',
+    state: result.state === 'cancelled' ? 'cancelled' : 'failed',
     version: result.status?.version ?? null,
     deploymentId: result.operationId,
     startedAt: null,
     error:
-      result.error ??
+      (result.state === 'interrupted'
+        ? 'Deployment was interrupted by a restart. Deploy the release again.'
+        : result.error) ??
       (result.state === 'running'
         ? `The deployment of ${result.appId} has not finished on the Host.`
         : 'The deployment failed.'),
@@ -812,6 +941,8 @@ function delay(ms: number): Promise<void> {
 
 /** What a Host child's configuration file holds; see `writeHostConfig`. */
 export interface HostConfigFile {
+  readonly memoryBudget?: import('@nocobase/app-host/registry').AppMemoryBudget;
+  readonly maxActiveApps?: number;
   readonly artifact: AppDriveDiskConfig;
   readonly appVolumesDir: string;
   readonly appRevisionsDir?: string;
@@ -836,6 +967,10 @@ export async function writeHostConfig(
     stringifyYaml({
       host: {
         mode: 'managed',
+        ...(config.memoryBudget ? { memoryBudget: config.memoryBudget } : {}),
+        ...(config.maxActiveApps !== undefined
+          ? { maxActiveApps: config.maxActiveApps }
+          : {}),
         ...(config.logging ? { logging: config.logging } : {}),
         server: { host: '127.0.0.1', port: 3000 },
         artifact:

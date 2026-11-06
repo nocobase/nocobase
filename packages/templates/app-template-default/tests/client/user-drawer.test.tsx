@@ -51,9 +51,8 @@ function Pages({ base }: { readonly base: string }) {
       <Routes>
         <Route path={base} element={<UsersPage />}>
           <Route path='create' element={<UserForm />} />
-          <Route path=':userId' element={<UserDetail />}>
-            <Route path='edit' element={<UserForm />} />
-          </Route>
+          <Route path=':userId' element={<UserDetail />} />
+          <Route path=':userId/edit' element={<UserForm />} />
         </Route>
         <Route path='*' element={<h1>Fallback home</h1>} />
       </Routes>
@@ -451,7 +450,7 @@ it('blocks closing and duplicate submission until the unified save completes', a
   await user.click(screen.getByRole('button', { name: 'Save', exact: true }));
   await waitFor(() => expect(name).toBeDisabled());
   expect(
-    screen.getByRole('button', { name: enUS.settings.saving }),
+    await screen.findByRole('button', { name: enUS.settings.saving }),
   ).toBeDisabled();
   expect(
     screen.getByRole('button', { name: 'Cancel', exact: true }),

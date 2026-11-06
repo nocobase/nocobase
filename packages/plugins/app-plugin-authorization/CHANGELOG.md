@@ -1,5 +1,18 @@
 # @nocobase/app-plugin-authorization
 
+## 1.0.0-beta.36
+
+### Patch Changes
+
+- 78bdca8: Sign in new accounts by default in application templates, warn about ambiguous registration configurations, and expose request acceptance for neutral unsigned-in feedback.
+- Updated dependencies [78bdca8]
+- Updated dependencies [9998ac4]
+- Updated dependencies [87f1ea5]
+- Updated dependencies [6507d01]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.19
+  - @nocobase/app-client@4.0.0-beta.8
+  - @nocobase/app-server@5.0.0-beta.1
+
 ## 1.0.0-beta.35
 
 ### Patch Changes

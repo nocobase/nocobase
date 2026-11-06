@@ -46,7 +46,7 @@ const esES: LocaleResource<typeof enUS> = {
       actions: 'Acciones',
     },
     view: 'Ver detalles',
-    refresh: 'Actualizar',
+    retryRead: 'Reintentar',
     previous: 'Anterior',
     next: 'Siguiente',
     page: 'Página {{page}}',
@@ -65,7 +65,7 @@ const esES: LocaleResource<typeof enUS> = {
     notificationHint:
       'Después de guardar una tarea, se notifica a las personas relacionadas además del editor actual: el creador y el asignado actual. Si el cesionario cambia, se notifica tanto al cesionario anterior como al nuevo.',
     edit: 'Editar tarea',
-    refresh: 'Actualizar',
+    retryRead: 'Reintentar',
     save: 'Guardar cambios',
     cancel: 'Cancelar',
     back: 'Volver a tareas',

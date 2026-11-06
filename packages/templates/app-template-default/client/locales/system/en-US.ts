@@ -8,6 +8,20 @@ import inboxEnUS from '#extensions/nocobase-inbox/locales/en-US';
  * upgrade replaces this file, so put the application's own copy in `../en-US.ts` rather than here.
  */
 const systemEnUS = {
+  pendingFeedback: {
+    working: 'Working…',
+    longWait: 'This is taking longer than usual. You can keep waiting.',
+  },
+  taskProgress: {
+    queued: 'Waiting to start',
+    running: 'In progress',
+    completed: 'Completed',
+    failed: 'Failed',
+    canceled: 'Canceled',
+    count: '{{processed}} of {{total}}',
+    processed: '{{processed}} processed',
+    background: 'It keeps running if you leave this page.',
+  },
   listFeedback: {
     loading: 'Loading',
     empty: 'No data yet',
@@ -144,10 +158,14 @@ const systemEnUS = {
   'auth.foundationDescription': 'Reliable data, access control and governance.',
   'auth.marketingFooter': 'Freedom above. Confidence below.',
   'status.loading': 'Loading',
+  'status.refreshing': 'Refreshing',
   'status.loadingPage': 'Loading page',
   'status.denied': 'Access denied',
   'status.pageFailed': 'Unable to load page',
   'status.retry': 'Retry',
+  'status.reloadPage': 'Reload page',
+  'status.retryFailedDescription':
+    'It still could not be loaded. Reloading the whole page may help; unsaved changes on this page may be lost.',
   'navigation.brandHome': 'NocoBase home',
   'navigation.brandApps': 'NocoBase applications',
   'routeOverlay.close': 'Close',
@@ -412,6 +430,7 @@ const systemEnUS = {
     breadcrumb: 'Breadcrumb',
     breadcrumbMore: 'Show the levels in between',
     back: 'Back',
+    backTo: 'Back to {{label}}',
   },
   dataTable: {
     noResults: 'No results',

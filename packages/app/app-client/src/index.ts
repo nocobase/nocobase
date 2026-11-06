@@ -142,6 +142,8 @@ export type {
   AppClientServiceProviders,
   AppClientRouteIcon,
   AppClientRouteNavigation,
+  AppClientRoutePresentation,
+  AppClientRoutePresentationKind,
   ClientServiceProviderConstructor,
   ClientServiceProviderContext,
   ResolvedAppClientContributions,
@@ -193,3 +195,21 @@ export {
   type FormFeedbackViolation,
   type FormFeedbackOptions,
 } from './form-feedback.js';
+export {
+  AppLocalePreferenceContext,
+  type AppLocalePreference,
+} from './locale-preference.js';
+export {
+  usePendingFeedback,
+  type PendingFeedback,
+} from './pending-feedback.js';
+export {
+  RouteChildPageHostContext,
+  RouteOverlayContext,
+  RouteOverlayHostContext,
+  type RouteChildPageHostConfig,
+  type RouteChildPageHostValue,
+  type RouteOverlayContextValue,
+  type RouteOverlayHostConfig,
+  type RouteOverlayHostValue,
+} from './route-containers.js';

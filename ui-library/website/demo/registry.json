@@ -651,7 +651,7 @@
       "name": "task-center-ui-demo",
       "type": "registry:example",
       "title": "Task Center UI Demo",
-      "description": "Usage example of @nocobase/task-center-ui. A person's tasks from four sources \u2014 approvals waiting for them, their own requests, copies and work items \u2014 with subjects under each source, To do / Done / All, summaries contributed per subject, one-type batch approval, reminders and mark-as-read, and a detail drawer whose approve and reject form the approval type contributes.",
+      "description": "Usage example of @nocobase/task-center-ui. A person's tasks from four sources — approvals waiting for them, their own requests, copies and work items — with subjects under each source, To do / Done / All, summaries contributed per subject, one-type batch approval, reminders and mark-as-read, and a detail drawer whose approve and reject form the approval type contributes.",
       "categories": ["task-center"],
       "registryDependencies": [
         "button",
@@ -756,8 +756,9 @@
       "name": "data-table-demo",
       "type": "registry:example",
       "title": "Data Table Demo",
-      "description": "Standard TanStack DataTable with stable row identities, sortable columns and pagination.",
-      "registryDependencies": ["@nocobase/data-table"],
+      "description": "Standard TanStack DataTable with stable row identities, sortable columns and pagination, plus an explicitly driven request lifecycle showing first load, same-page refresh, page change, consecutive searches while a request is pending, and failure recovery.",
+      "dependencies": ["@nocobase/app-client@^4.0.0-beta.9"],
+      "registryDependencies": ["@nocobase/data-table", "button", "input"],
       "files": [
         {
           "path": "components/data-table.tsx",
@@ -831,9 +832,9 @@
       "name": "file-component-ui-demo",
       "type": "registry:example",
       "title": "File Component Ui Demo",
-      "description": "Usage example of @nocobase/file-component-ui with sample data.",
+      "description": "Usage example of @nocobase/file-component-ui with sample data. Uploads stay in flight until Finish uploads or Fail uploads is pressed, so slow, cancelled, failed and retried uploads can be tried without a timer.",
       "categories": ["file"],
-      "registryDependencies": ["@nocobase/file-component-ui"],
+      "registryDependencies": ["@nocobase/file-component-ui", "button"],
       "dependencies": ["@nocobase/app-plugin-file@>=1.0.0-beta.0 <2.0.0"],
       "files": [
         {
@@ -911,6 +912,49 @@
           "path": "agents/agent-chat-details.tsx",
           "type": "registry:example",
           "target": "client/extensions/nocobase-agent-chat-details-demo/agent-chat-details.tsx"
+        }
+      ]
+    },
+    {
+      "name": "loading-demo",
+      "type": "registry:example",
+      "title": "Loading Demo",
+      "description": "Start a panel wait or a background refresh and finish or cancel it explicitly. No simulated completion timer.",
+      "registryDependencies": ["@nocobase/loading", "button"],
+      "files": [
+        {
+          "path": "components/loading.tsx",
+          "type": "registry:example",
+          "target": "client/extensions/nocobase-loading-demo/loading.tsx"
+        }
+      ]
+    },
+    {
+      "name": "pending-button-demo",
+      "type": "registry:example",
+      "title": "Pending-Button Demo",
+      "description": "Submit by click or Enter, then explicitly complete or fail the operation and retry with the same draft.",
+      "registryDependencies": ["@nocobase/pending-button", "button", "input"],
+      "files": [
+        {
+          "path": "components/pending-button.tsx",
+          "type": "registry:example",
+          "target": "client/extensions/nocobase-pending-button-demo/pending-button.tsx"
+        }
+      ],
+      "dependencies": ["@nocobase/app-client@^4.0.0-beta.9"]
+    },
+    {
+      "name": "task-progress-demo",
+      "type": "registry:example",
+      "title": "Task Progress Demo",
+      "description": "An import from upload to result and a percentage-only export, each advanced only by explicit server-event buttons: unknown totals stay indeterminate, failures explain recovery, and results say where to find them.",
+      "registryDependencies": ["@nocobase/task-progress", "button"],
+      "files": [
+        {
+          "path": "components/task-progress.tsx",
+          "type": "registry:example",
+          "target": "client/extensions/nocobase-task-progress-demo/task-progress.tsx"
         }
       ]
     }

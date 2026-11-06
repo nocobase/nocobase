@@ -53,11 +53,13 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
       {
         name: 'onboarding-new',
         path: 'new',
+        presentation: { kind: 'child-page' },
         componentLoader: () => import('./pages/onboarding/wizard.js'),
       },
       {
         name: 'onboarding-detail',
         path: ':id',
+        presentation: { kind: 'child-page' },
         componentLoader: () => import('./pages/onboarding/wizard.js'),
       },
     ],
@@ -73,11 +75,13 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
       {
         name: 'procurement-new',
         path: 'new',
+        presentation: { kind: 'drawer', title: 'procurement.new' },
         componentLoader: () => import('./pages/procurement/detail.js'),
       },
       {
         name: 'procurement-detail',
         path: ':id',
+        presentation: { kind: 'drawer', title: 'procurement.open' },
         componentLoader: () => import('./pages/procurement/detail.js'),
       },
     ],
@@ -96,26 +100,40 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
       {
         name: 'customer-contacts-batch',
         path: 'batch',
+        presentation: { kind: 'dialog', title: 'customerContacts.batchTitle' },
         componentLoader: () => import('./pages/customer-contacts/batch.js'),
       },
       {
         name: 'customer-contacts-detail',
         path: ':customerId',
+        presentation: { kind: 'child-page' },
         componentLoader: () => import('./pages/customer-contacts/detail.js'),
         children: [
           {
             name: 'customer-contacts-edit',
             path: 'edit',
+            presentation: {
+              kind: 'dialog',
+              title: 'customerContacts.editCustomer',
+            },
             componentLoader: () => import('./pages/customer-contacts/edit.js'),
           },
           {
             name: 'customer-contacts-new-contact',
             path: 'contacts/new',
+            presentation: {
+              kind: 'dialog',
+              title: 'customerContacts.newContact',
+            },
             componentLoader: () => import('./pages/customer-contacts/edit.js'),
           },
           {
             name: 'customer-contacts-edit-contact',
             path: 'contacts/:contactId/edit',
+            presentation: {
+              kind: 'dialog',
+              title: 'customerContacts.editContact',
+            },
             componentLoader: () => import('./pages/customer-contacts/edit.js'),
           },
         ],
@@ -136,55 +154,105 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
       {
         name: 'skill-projects-new',
         path: 'new',
+        presentation: { kind: 'dialog', title: 'skillProjects.create' },
         componentLoader: () => import('./pages/skill-projects/edit.js'),
+      },
+      {
+        name: 'skill-projects-detail',
+        path: ':projectId/details',
+        breadcrumb: { title: 'skillProjects.detail' },
+        componentLoader: () => import('./pages/skill-projects/detail.js'),
+        children: [
+          {
+            name: 'skill-projects-detail-edit',
+            path: 'edit',
+            componentLoader: () => import('./pages/skill-projects/edit.js'),
+          },
+        ],
       },
       {
         name: 'skill-projects-edit',
         path: ':projectId/edit',
+        presentation: { kind: 'dialog', title: 'skillProjects.edit' },
         componentLoader: () => import('./pages/skill-projects/edit.js'),
       },
     ],
   },
   {
+    // System settings: one sidebar entry opening a home of cards. Its child groups are the home's categories; an
+    // administration module joins one with `parent`. The group keeps its original name, so its pages keep their ids.
     name: 'systemManagement',
-    children: [],
-    navigation: {
-      title: 'workflows.systemManagement',
-      icon: Settings,
-      order: 100,
-    },
-    breadcrumb: { title: 'workflows.systemManagement' },
+    navigation: { title: 'settings.title', icon: Settings, order: 100 },
+    breadcrumb: { title: 'settings.title' },
+    children: [
+      {
+        // Lists only modules the viewer may open, so it needs no grant of its own.
+        name: 'settingsHome',
+        path: '/settings',
+        auth: 'required',
+        authz: 'skip',
+        componentLoader: () => import('./pages/settings/settings-home.js'),
+      },
+      {
+        name: 'settingsAccount',
+        navigation: { title: 'settings.categories.account', order: 10 },
+        children: [],
+      },
+      {
+        name: 'settingsBusiness',
+        navigation: { title: 'settings.categories.business', order: 20 },
+        children: [],
+      },
+      {
+        name: 'settingsAi',
+        navigation: { title: 'settings.categories.ai', order: 30 },
+        children: [],
+      },
+      {
+        name: 'settingsSystem',
+        navigation: { title: 'settings.categories.system', order: 40 },
+        children: [],
+      },
+    ],
   },
   {
     ...knowledgeDefinition(),
     componentLoader: () => import('./pages/knowledge/index.js'),
-    parent: 'systemManagement',
+    // Reading and asking the knowledge base is everyday work, so it stays in the business navigation.
     navigation: { title: 'knowledge.title', icon: BookOpen },
     breadcrumb: { title: 'knowledge.title' },
   },
   {
     name: 'knowledgeIndexing',
     path: '/knowledge/indexing',
-    parent: 'systemManagement',
+    parent: 'settingsAi',
     auth: 'required',
     authz: {
       resource: { type: 'settings', id: 'kb.indexing' },
       action: 'read',
     },
-    navigation: { title: 'knowledge.indexing', icon: DatabaseZap },
+    navigation: {
+      title: 'knowledge.indexing',
+      description: 'knowledge.indexingDescription',
+      icon: DatabaseZap,
+    },
     breadcrumb: { title: 'knowledge.indexing' },
     componentLoader: () => import('./pages/knowledge/indexing.js'),
   },
   {
     name: 'workflows',
-    parent: 'systemManagement',
+    parent: 'settingsBusiness',
     path: '/workflows',
     auth: 'required',
     authz: {
       resource: { type: 'settings', id: 'workflow-management' },
       action: 'read',
     },
-    navigation: { title: 'workflows.title', icon: Workflow },
+    navigation: {
+      title: 'workflows.title',
+      description: 'workflows.description',
+      icon: Workflow,
+    },
     breadcrumb: { title: 'workflows.title' },
     componentLoader: () => import('./pages/workflows/index.js'),
     children: [
@@ -205,6 +273,10 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
                 authz: {
                   resource: { type: 'settings', id: 'workflow-management' },
                   action: 'update',
+                },
+                presentation: {
+                  kind: 'dialog',
+                  title: 'workflows.workflowParameters',
                 },
                 componentLoader: () =>
                   import('./pages/workflows/parameters.js'),
@@ -264,12 +336,17 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
         name: 'routeDialogExample',
         path: 'dialog',
         authz: 'skip',
+        presentation: { kind: 'dialog', title: 'routeOverlays.dialogTitle' },
         componentLoader: () => import('./pages/route-overlays/dialog/index.js'),
         children: [
           {
             name: 'routeDialogDrawerExample',
             path: 'drawer',
             authz: 'skip',
+            presentation: {
+              kind: 'drawer',
+              title: 'routeOverlays.drawerTitle',
+            },
             componentLoader: () =>
               import('./pages/route-overlays/dialog/drawer.js'),
           },
@@ -279,12 +356,17 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
         name: 'routeDrawerExample',
         path: 'drawer',
         authz: 'skip',
+        presentation: { kind: 'drawer', title: 'routeOverlays.drawerTitle' },
         componentLoader: () => import('./pages/route-overlays/drawer/index.js'),
         children: [
           {
             name: 'routeDrawerDialogExample',
             path: 'dialog',
             authz: 'skip',
+            presentation: {
+              kind: 'dialog',
+              title: 'routeOverlays.dialogTitle',
+            },
             componentLoader: () =>
               import('./pages/route-overlays/drawer/dialog.js'),
           },
@@ -297,6 +379,7 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
         path: 'pages',
         breadcrumb: { title: 'routeOverlays.childPagesTitle' },
         authz: 'skip',
+        presentation: { kind: 'child-page' },
         componentLoader: () => import('./pages/route-overlays/pages/index.js'),
         children: [
           {
@@ -304,6 +387,7 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
             path: 'quotation',
             breadcrumb: { title: 'routeOverlays.topicQuotation' },
             authz: 'skip',
+            presentation: { kind: 'child-page' },
             componentLoader: () =>
               import('./pages/route-overlays/pages/quotation/index.js'),
             children: [
@@ -312,6 +396,10 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
                 name: 'routeChildPageDialog',
                 path: 'dialog',
                 authz: 'skip',
+                presentation: {
+                  kind: 'dialog',
+                  title: 'routeOverlays.topicDialogTitle',
+                },
                 componentLoader: () =>
                   import('./pages/route-overlays/pages/quotation/dialog.js'),
               },
@@ -322,6 +410,7 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
             path: 'onboarding',
             breadcrumb: { title: 'routeOverlays.topicOnboarding' },
             authz: 'skip',
+            presentation: { kind: 'child-page' },
             componentLoader: () =>
               import('./pages/route-overlays/pages/onboarding.js'),
           },
@@ -330,6 +419,7 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
             path: 'renewal',
             breadcrumb: { title: 'routeOverlays.topicRenewal' },
             authz: 'skip',
+            presentation: { kind: 'child-page' },
             componentLoader: () =>
               import('./pages/route-overlays/pages/renewal.js'),
           },
@@ -469,20 +559,9 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
   },
 ]);
 
+// Users and Permission management join the Accounts and permissions category with their original URLs and ids;
+// Notifications joins the System category.
 const routes: readonly AppClientRouteContribution[] =
-  includeNotificationTemplateRoutes(
-    [
-      appRoutes,
-      defineAppRoutes(
-        systemSettingsRoutes.routes.flatMap((group) =>
-          (group.children ?? []).map((route) => ({
-            ...route,
-            parent: 'systemManagement',
-          })),
-        ),
-      ),
-    ],
-    true,
-  );
+  includeNotificationTemplateRoutes([appRoutes, systemSettingsRoutes], true);
 
 export default routes;

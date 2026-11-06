@@ -1,5 +1,26 @@
 # @nocobase/app-plugin-foundation
 
+## 0.1.0-beta.15
+
+### Patch Changes
+
+- 03d8ce5: Show App foundation statistics as a plain name followed by its value, without Chinese measure words, and use sentence-case metric labels in the other languages.
+
+## 0.1.0-beta.14
+
+### Patch Changes
+
+- 9998ac4: Organize application administration as one System settings sidebar entry that opens a home page of cards grouped by category, with URL-backed tabs inside a module. Route navigation accepts an optional `description` that the settings home shows on each card, and App Foundation declares one. Existing settings URLs, route ids and authorization stay unchanged; updating dependencies alone keeps an existing application's navigation, so reconcile the application-owned navigation transform, routing, settings pages and locales with the `nocobase-app-upgrade` Skill's System settings navigation guide.
+- Updated dependencies [78bdca8]
+- Updated dependencies [9998ac4]
+- Updated dependencies [87f1ea5]
+- Updated dependencies [6507d01]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.19
+  - @nocobase/app-plugin-authorization@1.0.0-beta.36
+  - @nocobase/app-client@4.0.0-beta.8
+  - @nocobase/app-server@5.0.0-beta.1
+  - @nocobase/app-cli@1.0.0-beta.32
+
 ## 0.1.0-beta.13
 
 ### Minor Changes

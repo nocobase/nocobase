@@ -15,6 +15,8 @@ const enUS = {
   skillProjects: skillProjectsenUS,
   knowledge: {
     indexing: 'Knowledge indexing',
+    indexingDescription:
+      'How documents are split and embedded for retrieval across every knowledge space.',
     title: 'Knowledge base',
     spaces: { default: 'Default knowledge base' },
     chat: {

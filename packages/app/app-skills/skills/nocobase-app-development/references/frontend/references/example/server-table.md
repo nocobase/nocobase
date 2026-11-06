@@ -125,7 +125,7 @@ export default function ProjectsPage(): ReactElement {
       rows={rows}
       total={result?.total ?? 0}
       listState={listState}
-      loading={loading}
+      loading={active && loading}
       onRetry={reload}
       onClearFilters={clearFilters}
       pagination={tableState.paginationState}

@@ -298,6 +298,11 @@ const idID: LocaleResource<typeof enUS> = {
         'Lingkungan ini dilindungi. Ketik {{appId}} untuk diterapkan.',
     },
     deployments: {
+      cancel: 'Batalkan penerapan',
+      replaced: 'Digantikan oleh penerapan yang lebih baru.',
+      cancelAccepted: 'Pembatalan diterima.',
+      queueAhead: 'Dalam antrean · {{ahead}} di depan',
+      restartHint: 'Penerapan terputus. Terapkan ulang rilis.',
       title: 'Penerapan',
       kind: 'Baik hati',
       status: 'Status',
@@ -314,6 +319,8 @@ const idID: LocaleResource<typeof enUS> = {
       hideLogs: 'Sembunyikan log',
       noLogs: 'Tidak ada garis log.',
       statuses: {
+        cancelling: 'Membatalkan',
+        cancelled: 'Dibatalkan',
         queued: 'Mengantri',
         deploying: 'Penyebaran',
         succeeded: 'Berhasil',
@@ -628,6 +635,10 @@ const idID: LocaleResource<typeof enUS> = {
           'Konfigurasi telah disimpan, tetapi aplikasi tidak dapat memuat ulang.',
         CONFIG_TOO_LARGE: 'Konfigurasinya terlalu besar.',
         CONFIRMATION_REQUIRED: 'Ketikkan ID aplikasi untuk mengonfirmasi.',
+        DEPLOYMENT_NOT_CANCELLABLE:
+          'Penerapan telah mulai beralih versi atau telah selesai.',
+        CANCELLATION_UNSUPPORTED:
+          'Driver penerapan ini tidak mendukung pembatalan.',
         DEPLOYMENT_IN_PROGRESS: 'Penerapan aplikasi ini sedang berlangsung.',
         DEPLOYMENT_NOT_FOUND: 'Penerapannya tidak ada.',
         DRIVER_UNAVAILABLE: 'Driver lingkungan tidak tersedia.',

@@ -1,6 +1,7 @@
-import { ApiClientError } from '@nocobase/app-client';
+import { ApiClientError, usePendingFeedback } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import type { ReactNode } from 'react';
+import { cn } from 'cn';
 import { Link } from 'react-router';
 import { Alert, AlertDescription } from '#components/ui/alert';
 import { Button } from '#components/ui/button';
@@ -21,17 +22,7 @@ export function ReadFeedback({
   retry: () => void;
 }) {
   const { t } = useTranslation();
-  if (!error)
-    return (
-      <div
-        role='status'
-        aria-label={t('customerContacts.loading')}
-        className='flex flex-col gap-4'
-      >
-        <Skeleton className='h-8 w-full' />
-        <Skeleton className='h-8 w-full' />
-      </div>
-    );
+  if (!error) return <ReadPending />;
   const status = error instanceof ApiClientError ? error.status : 0;
   return (
     <Alert variant='destructive'>
@@ -52,6 +43,35 @@ export function ReadFeedback({
         )}
       </AlertDescription>
     </Alert>
+  );
+}
+/** Skeleton rows keep the read's footprint at once and appear only after the shared display delay. */
+function ReadPending() {
+  const { t } = useTranslation();
+  const feedback = usePendingFeedback(true);
+  const message = feedback.longWaiting
+    ? t('pendingFeedback.longWait')
+    : t('customerContacts.loading');
+  return (
+    <>
+      <div
+        aria-busy='true'
+        className={cn('flex flex-col gap-4', !feedback.visible && 'invisible')}
+      >
+        <Skeleton aria-hidden='true' className='h-8 w-full' />
+        <Skeleton aria-hidden='true' className='h-8 w-full' />
+      </div>
+      {feedback.visible && (
+        <span
+          role='status'
+          aria-live='polite'
+          aria-label={message}
+          className='sr-only'
+        >
+          {message}
+        </span>
+      )}
+    </>
   );
 }
 export function WriteFeedback({ error }: { error?: unknown }) {

@@ -45,7 +45,7 @@ const jaJP: LocaleResource<typeof enUS> = {
       actions: '操作',
     },
     view: '詳細を見る',
-    refresh: '更新',
+    retryRead: '再試行',
     previous: '前へ',
     next: '次へ',
     page: 'ページ {{page}}',
@@ -64,7 +64,7 @@ const jaJP: LocaleResource<typeof enUS> = {
     notificationHint:
       'タスクが保存されると、現在の編集者以外の関係者、つまり作成者と現在の担当者に通知されます。担当者が変更されると、以前の担当者と新しい担当者の両方に通知されます。',
     edit: 'タスクの編集',
-    refresh: '更新',
+    retryRead: '再試行',
     save: '変更を保存する',
     cancel: 'キャンセル',
     back: 'タスクに戻る',

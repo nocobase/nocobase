@@ -1,5 +1,37 @@
 # @nocobase/app-plugin-agents
 
+## 2.0.0-beta.5
+
+### Patch Changes
+
+- ef04803: Let host applications require fresh tool sessions and read bounded summaries of recent terminal runs for handoff context.
+
+## 2.0.0-beta.4
+
+### Minor Changes
+
+- bfddb40: Add DeepSeek Harness as an ACP coding tool, with runner API-key detection, its CLI version, and full-access permissions.
+
+### Patch Changes
+
+- c627337: Refresh archived conversation lists after archiving, restoring, or undoing an archive.
+- 49daa11: Restart running background agent connections after installing a new CLI version.
+- 7fe7292: Rebalance the column widths of the runtime drawer's overview, workspaces and runs tables: short columns fit their content and the tool quota, directory and issue columns take the remaining width.
+- Updated dependencies [49daa11]
+- Updated dependencies [bfddb40]
+- Updated dependencies [78bdca8]
+- Updated dependencies [9998ac4]
+- Updated dependencies [87f1ea5]
+- Updated dependencies [6507d01]
+  - @nocobase/app-cli-client@0.1.0-beta.18
+  - @nocobase/acp-bridge@1.0.0-beta.5
+  - @nocobase/app-plugin-authentication@2.0.0-beta.19
+  - @nocobase/app-plugin-authorization@1.0.0-beta.36
+  - @nocobase/app-client@4.0.0-beta.8
+  - @nocobase/app-server@5.0.0-beta.1
+  - @nocobase/app-cli@1.0.0-beta.32
+  - @nocobase/app-plugin-file@1.0.0-beta.29
+
 ## 2.0.0-beta.3
 
 ### Patch Changes

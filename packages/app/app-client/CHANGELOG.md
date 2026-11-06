@@ -1,5 +1,15 @@
 # @nocobase/app-client
 
+## 4.0.0-beta.8
+
+### Minor Changes
+
+- 9998ac4: Organize application administration as one System settings sidebar entry that opens a home page of cards grouped by category, with URL-backed tabs inside a module. Route navigation accepts an optional `description` that the settings home shows on each card, and App Foundation declares one. Existing settings URLs, route ids and authorization stay unchanged; updating dependencies alone keeps an existing application's navigation, so reconcile the application-owned navigation transform, routing, settings pages and locales with the `nocobase-app-upgrade` Skill's System settings navigation guide.
+
+### Patch Changes
+
+- 6507d01: Persist signed-in users' explicit language choices across browsers and devices, isolate language changes across identities, and expose validated recipient language resolution for background jobs. Accounts without a saved language use the application default; unowned legacy browser choices are not imported. Preference caches are now scoped to the application mount path and authentication session.
+
 ## 4.0.0-beta.7
 
 ### Minor Changes

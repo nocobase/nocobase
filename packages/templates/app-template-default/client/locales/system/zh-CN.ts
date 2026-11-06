@@ -5,6 +5,20 @@ import inboxZhCN from '#extensions/nocobase-inbox/locales/zh-CN';
 
 /** The Chinese copy of what the template ships; see `./en-US.ts`. */
 const systemZhCN: SystemResource = {
+  pendingFeedback: {
+    working: '正在处理…',
+    longWait: '耗时比平常更长，您可以继续等待。',
+  },
+  taskProgress: {
+    queued: '等待开始',
+    running: '进行中',
+    completed: '已完成',
+    failed: '失败',
+    canceled: '已取消',
+    count: '{{processed}} / {{total}}',
+    processed: '已处理 {{processed}}',
+    background: '离开此页面后任务会继续运行。',
+  },
   listFeedback: {
     loading: '加载中',
     empty: '暂无数据',
@@ -133,10 +147,14 @@ const systemZhCN: SystemResource = {
   'auth.foundationDescription': '可靠的数据、访问控制与治理',
   'auth.marketingFooter': '自由构建，可靠支撑',
   'status.loading': '加载中',
+  'status.refreshing': '正在刷新',
   'status.loadingPage': '正在加载页面',
   'status.denied': '无权访问',
   'status.pageFailed': '无法加载页面',
   'status.retry': '重试',
+  'status.reloadPage': '重新加载页面',
+  'status.retryFailedDescription':
+    '仍然无法加载。可以重新加载整个页面，但本页未保存的修改可能丢失。',
   'navigation.brandHome': 'NocoBase 首页',
   'navigation.brandApps': 'NocoBase 应用',
   'routeOverlay.close': '关闭',
@@ -387,6 +405,7 @@ const systemZhCN: SystemResource = {
     breadcrumb: '面包屑',
     breadcrumbMore: '显示中间层级',
     back: '返回',
+    backTo: '返回{{label}}',
   },
   dataTable: {
     noResults: '无结果',

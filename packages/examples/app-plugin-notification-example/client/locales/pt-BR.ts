@@ -46,7 +46,7 @@ const ptBR: LocaleResource<typeof enUS> = {
       actions: 'Ações',
     },
     view: 'Ver detalhes',
-    refresh: 'Atualizar',
+    retryRead: 'Tentar novamente',
     previous: 'Anterior',
     next: 'Próximo',
     page: 'Página {{page}}',
@@ -65,7 +65,7 @@ const ptBR: LocaleResource<typeof enUS> = {
     notificationHint:
       'Depois que uma tarefa é salva, as pessoas relacionadas que não sejam o editor atual são notificadas: o criador e o responsável atual. Se o destinatário mudar, tanto o destinatário anterior quanto o novo serão notificados.',
     edit: 'Editar tarefa',
-    refresh: 'Atualizar',
+    retryRead: 'Tentar novamente',
     save: 'Salvar alterações',
     cancel: 'Cancelar',
     back: 'Voltar às tarefas',

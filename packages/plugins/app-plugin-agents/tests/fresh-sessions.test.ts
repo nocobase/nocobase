@@ -64,6 +64,110 @@ describe('fresh run sessions', () => {
     ).toBe(200);
   }
 
+  it('lets the host force fresh sessions while other agents still reuse their session', async () => {
+    h = await createHarness();
+    const manager = await h.createAgent();
+    const worker = await h.createAgent({ name: 'Worker' });
+    const binding = h.services.subjects.get('sample')!;
+    h.services.subjects.register({
+      ...binding,
+      kind: 'policy',
+      sessionPolicy: (claim) =>
+        claim.agent.id === manager ? 'fresh' : 'reuse',
+    });
+    h.sessionNotes = { fresh: 'Read the handoff.', resumed: 'Continue.' };
+    const runner = await h.registerRunner();
+    for (const agent of [manager, worker]) {
+      await enqueue(agent, false, { subject: { kind: 'policy', id: '1' } });
+      const [first] = await claim(h, runner);
+      await finish(runner, first, `session-${agent}`);
+      await enqueue(agent, false, { subject: { kind: 'policy', id: '1' } });
+      const [next] = await claim(h, runner);
+      expect(next.prompt.session).toBe(agent === manager ? 'fresh' : 'resume');
+      if (agent === manager) {
+        expect(next.prompt).not.toHaveProperty('resumeSessionId');
+        expect(next.prompt.turn).toContain('Read the handoff.');
+      }
+      await finish(runner, next, `session-${agent}`);
+    }
+  });
+
+  it('returns only five terminal summaries for this agent and subject and memoizes the transaction read', async () => {
+    h = await createHarness();
+    const agent = await h.createAgent();
+    const other = await h.createAgent({ name: 'Other' });
+    const key = { agentId: agent, subjectKind: 'sample', subjectId: '1' };
+    for (let n = 0; n < 8; n++) {
+      const item = await enqueue(agent, true, { threadScope: `history-${n}` });
+      await h.database
+        .connection()
+        .repository('agRuns')
+        .updateOne({
+          filter: { id: item.runId! },
+          values: {
+            status: n === 7 ? 'cancelled' : n === 6 ? 'failed' : 'completed',
+            summary: n === 7 ? null : `${n}${'😀'.repeat(450)}`,
+            finishedAt: new Date(2026, 0, n + 1).toISOString(),
+          },
+        });
+    }
+    await enqueue(other);
+    await enqueue(agent, true, { subject: { kind: 'sample', id: 'other' } });
+    const current = await enqueue(agent);
+    await h.database.connection().transaction(async (conn) => {
+      const queries: string[] = [];
+      const client = await conn.client<{
+        on: (
+          event: 'query',
+          listener: (query: { sql: string }) => void,
+        ) => void;
+        off: (
+          event: 'query',
+          listener: (query: { sql: string }) => void,
+        ) => void;
+      }>();
+      const listener = ({ sql }: { sql: string }) => queries.push(sql);
+      client.on('query', listener);
+      await h.services.runs.lastSummary(conn, key, current.runId!);
+      const before = queries.filter((sql) =>
+        /select.*ag_runs/iu.test(sql),
+      ).length;
+      queries.length = 0;
+      const summaries = await h.services.runs.recentSummaries(
+        conn,
+        key,
+        current.runId!,
+      );
+      expect(summaries).toHaveLength(5);
+      expect(summaries[0]).toMatchObject({
+        status: 'cancelled',
+        summary: null,
+      });
+      expect(summaries[1].status).toBe('failed');
+      expect(
+        summaries.slice(1).map((row) => Array.from(row.summary!).length),
+      ).toEqual([400, 400, 400, 400]);
+      expect(
+        await h.services.runs.recentSummaries(conn, key, current.runId!),
+      ).toBe(summaries);
+      client.off('query', listener);
+      expect(before).toBe(1);
+      expect(
+        queries.filter((sql) => /select.*ag_runs/iu.test(sql)),
+      ).toHaveLength(1);
+      expect(
+        queries.filter((sql) => /^(insert|update|delete|begin)/iu.test(sql)),
+      ).toHaveLength(0);
+      expect(
+        await h.services.runs.recentSummaries(
+          conn,
+          { ...key, agentId: other },
+          current.runId!,
+        ),
+      ).toEqual([]);
+    });
+  });
+
   it('refreshes the session fingerprint when global skills are added, updated or removed', async () => {
     h = await createHarness();
     const agent = await h.createAgent();

@@ -313,7 +313,7 @@ const enUS = {
   cancel: 'Cancel',
   search: 'Search by name / number / ID',
   apply: 'Search',
-  refresh: 'Refresh',
+  retryRead: 'Retry',
   previous: 'Previous',
   next: 'Next',
   page: 'Page {{page}}',
@@ -321,6 +321,8 @@ const enUS = {
   empty: 'No records yet. Create the first record to get started.',
   loading: 'Loading…',
   listFeedback: {
+    refreshing: 'Refreshing',
+    longWait: 'This is taking longer than usual. You can keep waiting.',
     loading: 'Loading',
     empty: 'No data yet',
     noResults: 'No results',
@@ -351,7 +353,7 @@ const enUS = {
   trace: 'Repository calls',
   traceHint: 'The latest request and result show the API used by this screen.',
   error: 'The operation failed.',
-  loadError: 'Unable to load records. Retry with Refresh.',
+  loadError: 'Unable to load records. Try again.',
   conflict:
     'This order changed since you opened it. Refresh and reopen it before editing.',
   choicesHint:

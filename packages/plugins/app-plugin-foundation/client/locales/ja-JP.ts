@@ -4,6 +4,7 @@ const jaJP: FoundationResource = {
   nav: {
     settings: 'システム設定',
     foundation: 'アプリ基盤',
+    foundationDescription: 'このアプリが利用している NocoBase の基盤機能。',
   },
   page: {
     notCounted: '未集計',

@@ -6,6 +6,7 @@ import {
   apiClientToken,
   realtimeClientToken,
   ClientApplicationContext,
+  NavigationGuardProvider,
   type ClientApplication,
   createAppClientConfig,
 } from '@nocobase/app-client';
@@ -337,7 +338,9 @@ function renderApplication(
             <SidebarPreferenceProvider
               value={createAppSidebarPreferenceStore('/main')}
             >
-              <AppRouter clientRoutes={clientRoutes} />
+              <NavigationGuardProvider>
+                <AppRouter clientRoutes={clientRoutes} />
+              </NavigationGuardProvider>
             </SidebarPreferenceProvider>
           </AppThemeProvider>
         </MemoryRouter>

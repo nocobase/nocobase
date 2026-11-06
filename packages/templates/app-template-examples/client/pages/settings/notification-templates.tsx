@@ -2,15 +2,14 @@ import type { ReactElement } from 'react';
 import { useSearchParams } from 'react-router';
 import { useTranslation } from '@nocobase/i18n/client';
 import { NotificationTemplates } from '@nocobase/app-plugin-notification/client/templates';
-import { PageContainer } from '#components/page-container';
-import { PageHeader } from '#components/page-header';
+import { SettingsModulePage } from './settings-module-page.js';
 
 export default function NotificationTemplatesPage(): ReactElement {
   const { t } = useTranslation('@nocobase/app-plugin-notification');
   const [query, setQuery] = useSearchParams();
   return (
-    <PageContainer>
-      <PageHeader title={t('templates.title')} />
+    // A view of the Notifications settings module: it gains tabs once the module has another view, such as logs.
+    <SettingsModulePage title={t('templates.title')}>
       <NotificationTemplates
         selectedId={query.get('template')}
         onSelect={(id) =>
@@ -22,6 +21,6 @@ export default function NotificationTemplatesPage(): ReactElement {
           })
         }
       />
-    </PageContainer>
+    </SettingsModulePage>
   );
 }

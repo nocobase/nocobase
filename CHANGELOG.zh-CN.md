@@ -2,6 +2,45 @@
 
 本文件记录 NocoBase 3 的所有重要变更，每次发布一节：`nocobase-v3-beta/<日期>.<序号>` 是预览版，`release/<日期>.<序号>` 是正式版。每次发布的包版本见对应的 GitHub Release，各个包自己的变更见包内的 CHANGELOG.md。
 
+## [nocobase-v3-beta/2026-11-05.2](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-05.2)
+
+### 🚀 优化
+
+- **[Agent]** 支持应用为 Agent 开启独立会话并提供有界交接摘要。 ([#11341](https://github.com/nocobase/nocobase/pull/11341)) by @2013xile
+- **[应用基础]** 应用底座统计改为“指标名称 + 数值”，去掉数量单位，顶部卡片与能力详情使用一致的名称。 ([#11342](https://github.com/nocobase/nocobase/pull/11342)) by @katherinehhh
+
+### 🐛 修复
+
+- **[发布管理]** 修复环境表单中标签换行导致应用输入框不对齐的问题。 ([#11338](https://github.com/nocobase/nocobase/pull/11338)) by @gchust
+
+## [nocobase-v3-beta/2026-11-05.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-05.1)
+
+### 🎉 新特性
+
+- **[Agent 运行器]**
+  - 支持运行使用所提供凭据调用官方 Gitea CLI。 ([#11313](https://github.com/nocobase/nocobase/pull/11313)) by @2013xile
+  - 执行机现在可以通过 ACP 使用 DeepSeek Harness 作为编码工具。 ([#11314](https://github.com/nocobase/nocobase/pull/11314)) by @2013xile
+- **[通知]** 在统一的只读通知模板目录中展示已登记通知场景并提供安全的合成内容预览。 ([#11331](https://github.com/nocobase/nocobase/pull/11331)) by @katherinehhh
+- **[用户]** 跨浏览器和设备保留用户选择的语言，并支持后台任务按用户 ID 解析其偏好语言。 ([#11332](https://github.com/nocobase/nocobase/pull/11332)) by @mytharcher
+- **[应用模板]** 基于模板搭建的应用将管理功能统一为一个“系统设置”入口，打开后按分类展示功能卡片，模块内用标签页切换。 ([#11333](https://github.com/nocobase/nocobase/pull/11333)) by @katherinehhh
+
+### 🚀 优化
+
+- **[应用模板]** 将 Default 与 Examples 侧栏和登录页标语统一为“AI + NocoBase”和“Build reliable business systems”，并去掉 Default 页脚模板名称、保留版本号。 ([#11321](https://github.com/nocobase/nocobase/pull/11321)) by @katherinehhh
+- **[Agent 会话]**
+  - My Agent 会话详情中的用量改为逐行显示，与 Runner 对话一致。 ([#11329](https://github.com/nocobase/nocobase/pull/11329)) by @zhouyanliang
+  - 精简 Runner Agent 与 My Agent 会话行，移除多余的 Agent、运行环境和项目名称。 ([#11330](https://github.com/nocobase/nocobase/pull/11330)) by @zhouyanliang
+  - 会话详情中关联任务的标题独占首行，编号和状态放在第二行。 ([#11335](https://github.com/nocobase/nocobase/pull/11335)) by @zhouyanliang
+- **[Agent]** 运行环境抽屉中概览、工作目录和运行记录表格的宽度优先留给额度、目录和任务，大小、类型和 Agent 名称不再被截断。 ([#11336](https://github.com/nocobase/nocobase/pull/11336)) by @zhouyanliang
+
+### 🐛 修复
+
+- **[演示模式]** 直接打开演示模式业务链接时自动登录，并保留已有账号和目标地址。 ([#11319](https://github.com/nocobase/nocobase/pull/11319)) by @gchust
+- **[Agent]** 恢复会话后自动从已归档列表移除。 ([#11320](https://github.com/nocobase/nocobase/pull/11320)) by @gchust
+- **[认证]** 准确反馈注册请求结果，默认让新账号自动登录，并对无法提供后续指引的配置发出警告。 ([#11322](https://github.com/nocobase/nocobase/pull/11322)) by @katherinehhh
+- **[服务端]** 请求的接收时限由 5 分钟延长到 10 分钟，慢速网络下上传大文件不再因 HTTP 408 中断。 ([#11323](https://github.com/nocobase/nocobase/pull/11323)) by @gchust
+- **[命令行]** 命令行升级后重启运行中的后台智能体连接，并在智能体设置无法加载时提供恢复操作提示。 ([#11334](https://github.com/nocobase/nocobase/pull/11334)) by @zhouyanliang
+
 ## [nocobase-v3-beta/2026-11-04.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-04.1)
 
 ### 🎉 新特性

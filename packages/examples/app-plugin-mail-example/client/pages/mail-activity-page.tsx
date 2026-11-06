@@ -1,10 +1,11 @@
 import {
+  MAIL_REALTIME_TOPIC,
   mailErrorMessage,
   type MailAccountView,
   type MailSubmissionLogView,
   useMailClient,
 } from '@nocobase/app-plugin-mail/client';
-import { resolveAppUrl } from '@nocobase/app-client';
+import { resolveAppUrl, useRealtimeRefresh } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { RefreshCw } from 'lucide-react';
 import {
@@ -66,6 +67,8 @@ function MailExampleActivity({
       .finally(() => setLoading(false));
   }, [accounts, mail, t]);
 
+  useRealtimeRefresh(MAIL_REALTIME_TOPIC, refresh);
+
   useEffect(() => {
     void Promise.resolve().then(refresh);
   }, [refresh]);
@@ -88,18 +91,20 @@ function MailExampleActivity({
             >
               {t('demo.openWorkspace')}
             </a>
-            <button
-              className='inline-flex items-center gap-2 rounded-lg border bg-background px-4 py-2 text-sm font-medium hover:bg-muted disabled:opacity-50'
-              disabled={loading}
-              onClick={refresh}
-              type='button'
-            >
-              <RefreshCw
-                aria-hidden='true'
-                className={`size-4 ${loading ? 'animate-spin' : ''}`}
-              />
-              {t('demo.refresh')}
-            </button>
+            {error && (
+              <button
+                className='inline-flex items-center gap-2 rounded-lg border bg-background px-4 py-2 text-sm font-medium hover:bg-muted disabled:opacity-50'
+                disabled={loading}
+                onClick={refresh}
+                type='button'
+              >
+                <RefreshCw
+                  aria-hidden='true'
+                  className={`size-4 ${loading ? 'animate-spin' : ''}`}
+                />
+                {t('demo.retryRead')}
+              </button>
+            )}
           </>
         }
       />

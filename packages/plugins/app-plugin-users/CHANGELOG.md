@@ -1,5 +1,25 @@
 # @nocobase/app-plugin-users
 
+## 2.0.0-beta.15
+
+### Minor Changes
+
+- 6507d01: Persist signed-in users' explicit language choices across browsers and devices, isolate language changes across identities, and expose validated recipient language resolution for background jobs. Accounts without a saved language use the application default; unowned legacy browser choices are not imported. Preference caches are now scoped to the application mount path and authentication session.
+
+### Patch Changes
+
+- 3681eb0: Provide a permission-protected, read-only notification template directory with synthetic previews that reuse business send renderers, plus application integration and source upgrade guidance.
+- Updated dependencies [78bdca8]
+- Updated dependencies [3681eb0]
+- Updated dependencies [9998ac4]
+- Updated dependencies [87f1ea5]
+- Updated dependencies [6507d01]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.19
+  - @nocobase/app-plugin-authorization@1.0.0-beta.36
+  - @nocobase/app-plugin-notification@2.0.0-beta.5
+  - @nocobase/app-client@4.0.0-beta.8
+  - @nocobase/app-server@5.0.0-beta.1
+
 ## 2.0.0-beta.14
 
 ### Minor Changes

@@ -2,6 +2,7 @@ import { createAppClientConfig } from '@nocobase/app-client';
 import { readAppClientRuntimeConfig } from '@nocobase/app-client/runtime';
 import { includeNotificationTemplateRoutes } from './pages/settings/notification-routes.js';
 import { Home } from 'lucide-react';
+import settingsShellRoutes from './pages/settings/shell-routes.js';
 import {
   defineAppRoutes,
   type AppClientRouteContribution,
@@ -67,12 +68,14 @@ const appRoutes: AppClientRouteContribution = defineAppRoutes([
   },
 ]);
 
+// The System settings shell stays registered: it shows only the modules a viewer may open, and none until the
+// application or its plugins contribute one. Business administration such as `./pages/settings/routes.js` joins it.
 export function createApplicationRoutes(
   rawConfig: unknown = readAppClientRuntimeConfig(),
 ): readonly AppClientRouteContribution[] {
   const config = createAppClientConfig({ rawConfig });
   return includeNotificationTemplateRoutes(
-    [appRoutes],
+    [appRoutes, settingsShellRoutes],
     config.get<boolean>('notificationTemplates.invitationConfigured') === true,
   );
 }

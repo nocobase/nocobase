@@ -52,6 +52,11 @@ export const runtimesRoute: AppClientRoutePageDefinition = {
     {
       name: 'runtimes-connect',
       path: 'connect',
+      presentation: {
+        kind: 'dialog',
+        title: 'connect.title',
+        namespace: '@nocobase/app-plugin-agents',
+      },
       componentLoader: withPlugin(() => import('./pages/runtimes/connect.js')),
     },
   ],
@@ -68,11 +73,13 @@ export const skillsRoute: AppClientRoutePageDefinition = {
     {
       name: 'skills-new',
       path: 'new',
+      presentation: { kind: 'child-page' },
       componentLoader: withPlugin(() => import('./pages/skills/new.js')),
     },
     {
       name: 'skills-detail',
       path: ':skillId',
+      presentation: { kind: 'child-page' },
       componentLoader: withPlugin(
         () => import('./pages/skills/detail/index.js'),
       ),

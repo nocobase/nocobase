@@ -148,7 +148,10 @@ describe('one-to-one profile avatars page', () => {
       target: { files: [avatar] },
     });
     await waitFor(() =>
-      expect(avatars.uploadOne).toHaveBeenCalledWith({ file: avatar }),
+      expect(avatars.uploadOne).toHaveBeenCalledWith(
+        { file: avatar },
+        { signal: expect.any(AbortSignal) },
+      ),
     );
     await waitFor(() =>
       expect(profiles.updateOne).toHaveBeenCalledWith({
@@ -237,9 +240,12 @@ describe('one-to-many order attachments page', () => {
       target: { files: [contract, receipt] },
     });
     await waitFor(() =>
-      expect(attachments.uploadMany).toHaveBeenCalledWith({
-        files: [contract, receipt],
-      }),
+      expect(attachments.uploadMany).toHaveBeenCalledWith(
+        {
+          files: [contract, receipt],
+        },
+        { signal: expect.any(AbortSignal) },
+      ),
     );
     await waitFor(() =>
       expect(orders.updateOne).toHaveBeenCalledWith({
