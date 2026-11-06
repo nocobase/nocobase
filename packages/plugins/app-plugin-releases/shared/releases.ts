@@ -72,10 +72,13 @@ export interface AppRuntimePolicy {
   readonly dormantAfterHours: number | null;
 }
 
-export type DeploymentStatus = 'queued' | 'deploying' | 'succeeded' | 'failed';
+export type DeploymentStatus =
+  'queued' | 'deploying' | 'cancelling' | 'cancelled' | 'succeeded' | 'failed';
 
 export type DeploymentPhase =
   | 'queued'
+  | 'cancelling'
+  | 'cancelled'
   | 'resolving'
   | 'verifying'
   | 'extracting'
@@ -128,6 +131,13 @@ export interface EnvironmentCapabilities {
   readonly onDemand: boolean;
 }
 
+/**
+ * What an environment is for: `preview` runs pull request previews, `test` runs Apps people try a release on. An
+ * application groups its environments by it; nothing in this plugin behaves differently.
+ */
+export const ENVIRONMENT_PURPOSES = ['preview', 'test'] as const;
+export type EnvironmentPurpose = (typeof ENVIRONMENT_PURPOSES)[number];
+
 export interface EnvironmentRecord {
   readonly id: string;
   readonly name: string;
@@ -165,8 +175,15 @@ export interface EnvironmentRecord {
   readonly capabilities: EnvironmentCapabilities;
   /** An App's first deployment here loads its sample data (`APP_SAMPLE_DATA=true`, generated). */
   readonly sampleDataOnFirstDeploy: boolean;
+  /** What the environment is for. */
+  readonly purpose: EnvironmentPurpose;
   readonly createdAt: string;
   readonly updatedAt: string;
+}
+
+/** An environment as the environments list answers it, with how many Apps it holds. */
+export interface EnvironmentListItem extends EnvironmentRecord {
+  readonly appCount: number;
 }
 
 export interface EnvironmentInput {
@@ -189,6 +206,8 @@ export interface EnvironmentInput {
   readonly defaultDormantAfterHours?: number | null;
   readonly registryId?: string | null;
   readonly sampleDataOnFirstDeploy?: boolean;
+  /** `test` when an environment is created without one. */
+  readonly purpose?: EnvironmentPurpose;
 }
 
 /** Settings to try before they are saved (`POST environments/check`). */
@@ -349,6 +368,10 @@ export interface AppSummary {
   readonly currentVersion: string | null;
   readonly hasReleases: boolean;
   readonly hasPendingDeployment: boolean;
+  readonly pendingDeployment?: {
+    readonly status: 'queued' | 'deploying' | 'cancelling';
+    readonly queueAhead: number | null;
+  } | null;
   /**
    * What the caller may do on this App, decided as the server decides each request (a `related` scope counts only on
    * the Apps the caller created or the application relates to them). Only the single-App read answers it.
@@ -441,6 +464,10 @@ export interface ReleaseView {
 }
 
 export interface DeploymentView {
+  /** Transient Host queue position; null until the Host accepts it or once execution starts. */
+  readonly queueAhead?: number | null;
+  readonly cancellable?: boolean;
+
   readonly id: string;
   readonly appId: string;
   readonly releaseId: string;
@@ -753,6 +780,6 @@ export interface InitialAdminView {
   readonly username: string;
   readonly email: string;
   readonly password: string;
-  /** When it is deleted; null when it is kept until the App goes (a preview App's). */
+  /** Always null; kept until someone dismisses it or the App is removed. */
   readonly expiresAt: string | null;
 }

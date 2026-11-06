@@ -30,7 +30,10 @@ export function normalizePluginPackageNames(
     if (name === '') {
       throw new Error('A plugin name cannot be empty.');
     }
-    if (name.startsWith(PACKAGE_SCOPE)) {
+    if (
+      name.startsWith(PACKAGE_SCOPE) ||
+      /^@[a-z0-9][a-z0-9-]*\/app-plugin-[a-z0-9]+(?:-[a-z0-9]+)*$/u.test(name)
+    ) {
       return name;
     }
     if (name.includes('/')) {

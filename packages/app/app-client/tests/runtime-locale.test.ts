@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { createAppClientConfig } from '../src/config.js';
 import { createAppI18nRuntime } from '../src/i18n.js';
@@ -24,8 +24,14 @@ const japanesePlugin = defineClientPlugin({
   },
 });
 
+beforeEach(() => {
+  document.body.innerHTML =
+    '<script id="nocobase-runtime-config" type="application/json">{"version":1,"config":{"app":{"basePath":"/main"}}}</script>';
+});
+
 afterEach(() => {
   vi.unstubAllGlobals();
+  document.body.innerHTML = '';
 });
 
 describe('runtime default locale', () => {

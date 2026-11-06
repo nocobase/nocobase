@@ -112,3 +112,28 @@ describe('PartialLocaleResource', () => {
     expectTypeOf(zhCN).toMatchTypeOf<PartialLocaleResource<typeof enUS>>();
   });
 });
+
+describe('locale-specific plural categories', () => {
+  it('accepts a many form for a source plural group without allowing arbitrary keys', () => {
+    type CountResource = LocaleResource<{
+      items: { count_one: string; count_other: string };
+    }>;
+    const frFR: CountResource = {
+      items: {
+        count_one: '{{count}} élément',
+        count_other: '{{count}} éléments',
+        count_many: '{{count}} éléments',
+      },
+    };
+    expectTypeOf(frFR.items.count_many).toEqualTypeOf<string | undefined>();
+    const invalid: CountResource = {
+      items: {
+        count_one: 'One',
+        count_other: 'Other',
+        // @ts-expect-error an extra form must belong to a source plural group
+        typo_many: 'Invalid',
+      },
+    };
+    expectTypeOf(invalid).toMatchTypeOf<CountResource>();
+  });
+});

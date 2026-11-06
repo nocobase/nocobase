@@ -18,6 +18,8 @@
  *   so a runner without a recent enough `claude` reports Claude Code
  *   unavailable and is offered no Claude runs.
  */
+import { boundedOutputText, StreamOutput } from './stream-output.ts';
+import { programFingerprint } from './program-fingerprint.ts';
 import { randomUUID } from 'node:crypto';
 import { constants as fsConstants } from 'node:fs';
 import { access, realpath, stat } from 'node:fs/promises';
@@ -25,7 +27,7 @@ import { homedir } from 'node:os';
 import path from 'node:path';
 
 import { TOOL_EFFORTS, type ToolCapabilities } from '@nocobase/agent-protocol';
-import { query } from '@anthropic-ai/claude-agent-sdk';
+import { AbortError, query } from '@anthropic-ai/claude-agent-sdk';
 import type {
   ModelInfo,
   Options,
@@ -82,6 +84,23 @@ export interface ClaudeAdapterOptions {
   env?: Record<string, string>;
   /** Runs a command for detection; replaceable in tests. */
   exec?: ExecFn;
+  /**
+   * Let Claude Code make its nonessential network requests (telemetry, update checks, error reports). Off by default:
+   * one of them blocks its start by one to two seconds every turn. The runner's owner turns it on with
+   * `NOCOBASE_RUNNER_CLAUDE_NONESSENTIAL_TRAFFIC=1`, and a run that sets `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC`
+   * itself keeps its own value.
+   */
+  nonessentialTraffic?: boolean;
+}
+
+/** `env` with Claude Code's nonessential traffic turned off, unless allowed or already decided in `env`. */
+export function quietEnv(
+  env: Record<string, string>,
+  allowed: boolean | undefined,
+): Record<string, string> {
+  return allowed || 'CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC' in env
+    ? env
+    : { ...env, CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: '1' };
 }
 
 /** The `claude` a run uses. */
@@ -216,9 +235,10 @@ function toolResultText(content: unknown): string {
 export class ClaudeAdapter implements AgentAdapter {
   readonly kind = 'claude' as const;
   private readonly options: Required<
-    Omit<ClaudeAdapterOptions, 'searchPath' | 'env'>
+    Omit<ClaudeAdapterOptions, 'searchPath' | 'env' | 'nonessentialTraffic'>
   > & { searchPath: string };
   private readonly detectionEnv?: Record<string, string>;
+  private readonly nonessentialTraffic: boolean;
   private detection?: Promise<{
     detection: ToolDetection;
     executable: ResolvedExecutable | undefined;
@@ -226,11 +246,20 @@ export class ClaudeAdapter implements AgentAdapter {
 
   constructor(options: ClaudeAdapterOptions = {}) {
     this.detectionEnv = options.env;
+    this.nonessentialTraffic = options.nonessentialTraffic ?? false;
     this.options = {
       minVersion: options.minVersion ?? DEFAULT_MIN_CLAUDE_VERSION,
       exec: options.exec ?? detectExec(options.env),
       searchPath: options.searchPath ?? (options.env ?? process.env).PATH ?? '',
     };
+  }
+
+  private program(): Promise<string | undefined> {
+    return findOnPath('claude', this.options.searchPath);
+  }
+
+  async fingerprint(): Promise<string> {
+    return programFingerprint(await this.program());
   }
 
   features(): RunnerFeature[] {
@@ -271,7 +300,7 @@ export class ClaudeAdapter implements AgentAdapter {
           prompt: input,
           options: {
             cwd,
-            env,
+            env: quietEnv(env, this.nonessentialTraffic),
             settingSources: [],
             abortController,
             pathToClaudeCodeExecutable: executable.path,
@@ -330,8 +359,8 @@ export class ClaudeAdapter implements AgentAdapter {
     detection: ToolDetection;
     executable: ResolvedExecutable | undefined;
   }> {
-    const { exec, minVersion, searchPath } = this.options;
-    const found = await findOnPath('claude', searchPath);
+    const { exec, minVersion } = this.options;
+    const found = await this.program();
     if (!found)
       return {
         detection: { installed: false, authenticated: false },
@@ -363,7 +392,10 @@ export class ClaudeAdapter implements AgentAdapter {
   }
 
   start(session: AdapterSession): AdapterHandle {
-    return new ClaudeRun(session, () => this.resolveExecutable()).handle();
+    return new ClaudeRun(
+      { ...session, env: quietEnv(session.env, this.nonessentialTraffic) },
+      () => this.resolveExecutable(),
+    ).handle();
   }
 }
 
@@ -387,6 +419,7 @@ class ClaudeRun {
   private model?: string;
   private lastResult?: SDKResultMessage;
   private lastAssistantError?: string;
+  private lastContext?: { model: string; used: number };
   private turnUsage: Usage = {
     tool: 'claude',
     inputTokens: 0,
@@ -426,6 +459,8 @@ class ClaudeRun {
       result: this.done,
     };
   }
+
+  private readonly streaming = new StreamOutput((event) => this.emit(event));
 
   private emit(event: Omit<AdapterEvent, 'at'>): void {
     this.events.push({ at: new Date().toISOString(), ...event });
@@ -510,7 +545,7 @@ class ClaudeRun {
       allowDangerouslySkipPermissions: true,
       env: { ...session.env },
       abortController: this.abortController,
-      includePartialMessages: false,
+      includePartialMessages: session.outputBlocks === true,
       stderr: (data: string) => {
         this.stderrTail = (this.stderrTail + data).slice(-8192);
         this.stderrLines.push(...data.split('\n').filter(Boolean));
@@ -580,6 +615,7 @@ class ClaudeRun {
         delete options.resume;
         this.initialMessage.message.content = recoveryPrompt(
           this.session.prompt,
+          this.session.recoveryContext,
         );
         this.emit(recoveryEvent('claude'));
       }
@@ -599,6 +635,8 @@ class ClaudeRun {
       this.input.close();
     }
     const result = this.outcome(thrown);
+    if (this.session.outputBlocks)
+      this.streaming.end(this.stopping && thrown instanceof AbortError);
     if (result.error)
       this.emit({
         type: 'error',
@@ -700,13 +738,165 @@ class ClaudeRun {
     }
   }
 
+  private readonly partialMessages = new Map<
+    string,
+    {
+      id: string;
+      blocks: Map<
+        number,
+        { type: string; text: string; assigned: boolean; truncated: boolean }
+      >;
+    }
+  >();
+  private readonly completedEnvelopes = new Set<string>();
+  private partialBlockCount = 0;
+  private onPartial(
+    message: Extract<SDKMessage, { type: 'stream_event' }>,
+  ): void {
+    const parent = message.parent_tool_use_id ?? '';
+    const event = message.event;
+    if (event.type === 'message_start') {
+      if (!this.partialMessages.has(parent) && this.partialMessages.size >= 64)
+        return;
+      this.partialBlockCount -=
+        this.partialMessages.get(parent)?.blocks.size ?? 0;
+      this.partialMessages.set(parent, {
+        id: event.message.id,
+        blocks: new Map(),
+      });
+      return;
+    }
+    const state = this.partialMessages.get(parent);
+    if (!state) return;
+    const meta = parent ? { parentToolUseId: parent } : {};
+    if (
+      event.type === 'message_delta' &&
+      event.delta.stop_reason === 'max_tokens'
+    ) {
+      for (const index of state.blocks.keys())
+        this.streaming.finishPartial(`${parent}:${state.id}:${index}`);
+      return;
+    }
+    if (
+      (event.type === 'content_block_start' ||
+        event.type === 'content_block_delta') &&
+      !state.blocks.has(event.index) &&
+      this.partialBlockCount >= 64
+    )
+      return;
+    if (event.type === 'content_block_start') {
+      const block = event.content_block;
+      const text =
+        block.type === 'text'
+          ? block.text
+          : block.type === 'thinking'
+            ? block.thinking
+            : '';
+      if (!state.blocks.has(event.index)) this.partialBlockCount++;
+      state.blocks.set(event.index, {
+        type: block.type,
+        text: boundedOutputText(text),
+        truncated: Buffer.byteLength(text) > MAX_EVENT_TEXT_BYTES,
+        assigned: false,
+      });
+      if (text && (block.type === 'text' || block.type === 'thinking'))
+        this.streaming.delta(
+          `${parent}:${state.id}:${event.index}`,
+          block.type === 'text' ? 'text' : 'thinking',
+          text,
+          meta,
+        );
+    } else if (event.type === 'content_block_delta') {
+      const delta = event.delta;
+      if (delta.type !== 'text_delta' && delta.type !== 'thinking_delta')
+        return;
+      const type = delta.type === 'text_delta' ? 'text' : 'thinking';
+      const text = delta.type === 'text_delta' ? delta.text : delta.thinking;
+      const block = state.blocks.get(event.index) ?? {
+        type,
+        text: '',
+        truncated: false,
+        assigned: false,
+      };
+      if (!state.blocks.has(event.index)) this.partialBlockCount++;
+      if (!block.truncated) {
+        const candidate = block.text + text;
+        block.text = boundedOutputText(candidate);
+        block.truncated = block.text.length < candidate.length;
+      }
+      state.blocks.set(event.index, block);
+      this.streaming.delta(
+        `${parent}:${state.id}:${event.index}`,
+        type,
+        text,
+        meta,
+      );
+    }
+  }
+  private completePartial(
+    message: Extract<SDKMessage, { type: 'assistant' }>,
+    block:
+      { type: 'text'; text: string } | { type: 'thinking'; thinking: string },
+  ): void {
+    const parent = message.parent_tool_use_id ?? '';
+    const text = block.type === 'text' ? block.text : block.thinking;
+    const identity = `${message.uuid}:${message.message.content.indexOf(block as never)}`;
+    if (this.completedEnvelopes.has(identity)) return;
+    this.completedEnvelopes.add(identity);
+    const state = this.partialMessages.get(parent);
+    const candidates =
+      state?.id === message.message.id
+        ? [...state.blocks].filter(
+            ([, item]) =>
+              !item.assigned &&
+              item.type === block.type &&
+              text.startsWith(item.text),
+          )
+        : [];
+    const found =
+      candidates.find(([, item]) => item.text === text) ?? candidates[0];
+    if (
+      !found &&
+      state?.id === message.message.id &&
+      [...state.blocks.values()].some(
+        (item) =>
+          item.assigned &&
+          item.type === block.type &&
+          text.startsWith(item.text),
+      )
+    )
+      return;
+    if (found) found[1].assigned = true;
+    const key = `${parent}:${message.message.id}:${found ? found[0] : message.uuid + ':' + message.message.content.indexOf(block as never)}`;
+    this.streaming.complete(
+      key,
+      block.type === 'text' ? 'text' : 'thinking',
+      text,
+      parent ? { parentToolUseId: parent } : {},
+    );
+  }
+
   private onMessage(message: SDKMessage): void {
     switch (message.type) {
+      case 'stream_event':
+        if (this.session.outputBlocks) this.onPartial(message);
+        return;
       case 'system':
         this.onSystem(message);
         return;
       case 'assistant': {
         if (message.error) this.lastAssistantError = message.error;
+        // The main thread's latest request is what the conversation's context holds now.
+        if (!message.parent_tool_use_id) {
+          const u = message.message.usage;
+          const used =
+            (u?.input_tokens ?? 0) +
+            (u?.cache_read_input_tokens ?? 0) +
+            (u?.cache_creation_input_tokens ?? 0) +
+            (u?.output_tokens ?? 0);
+          if (used > 0)
+            this.lastContext = { model: message.message.model, used };
+        }
         this.acknowledge(
           message.user_message_uuids ??
             (message.user_message_uuid ? [message.user_message_uuid] : []),
@@ -716,25 +906,31 @@ class ClaudeRun {
           : {};
         for (const block of message.message.content) {
           if (block.type === 'text') {
-            const capped = capText(block.text);
-            this.emit({
-              type: 'text',
-              content: capped.text,
-              meta: {
-                ...parent,
-                ...(capped.truncated ? { truncated: true } : {}),
-              },
-            });
+            if (this.session.outputBlocks) this.completePartial(message, block);
+            else {
+              const capped = capText(block.text);
+              this.emit({
+                type: 'text',
+                content: capped.text,
+                meta: {
+                  ...parent,
+                  ...(capped.truncated ? { truncated: true } : {}),
+                },
+              });
+            }
           } else if (block.type === 'thinking') {
-            const capped = capText(block.thinking);
-            this.emit({
-              type: 'thinking',
-              content: capped.text,
-              meta: {
-                ...parent,
-                ...(capped.truncated ? { truncated: true } : {}),
-              },
-            });
+            if (this.session.outputBlocks) this.completePartial(message, block);
+            else {
+              const capped = capText(block.thinking);
+              this.emit({
+                type: 'thinking',
+                content: capped.text,
+                meta: {
+                  ...parent,
+                  ...(capped.truncated ? { truncated: true } : {}),
+                },
+              });
+            }
           } else if (
             block.type === 'tool_use' ||
             block.type === 'server_tool_use' ||
@@ -868,6 +1064,22 @@ class ClaudeRun {
     }
   }
 
+  /** The context window of the model the main thread last used, from the result's per-model usage. */
+  private contextWindow(message: SDKResultMessage): number | undefined {
+    const usage = message.modelUsage ?? {};
+    const own = this.lastContext?.model
+      ? usage[this.lastContext.model]?.contextWindow
+      : undefined;
+    const windows = Object.values(usage)
+      .map((entry) => entry.contextWindow)
+      .filter((value) => typeof value === 'number' && value > 0);
+    return own && own > 0
+      ? own
+      : windows.length
+        ? Math.max(...windows)
+        : undefined;
+  }
+
   private onResult(message: SDKResultMessage): void {
     this.lastResult = message;
     this.sessionId = message.session_id;
@@ -902,6 +1114,13 @@ class ClaudeRun {
       },
     });
     this.emit({ type: 'usage', meta: { usage: this.usage() } });
+    const size = this.contextWindow(message);
+    if (this.lastContext && size)
+      this.emit({
+        type: 'status',
+        content: 'context',
+        meta: { context: { used: this.lastContext.used, size } },
+      });
 
     // End the session once nothing more is queued: no steer awaiting the
     // agent and no further turn announced. Otherwise wait for the next result.

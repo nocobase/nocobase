@@ -40,7 +40,10 @@ it('automatically renders a bound state control, preserves custom actions and do
       }}
     />,
   );
-  fireEvent.click(screen.getByRole('button', { name: '配置审批人' }));
+  const control = screen.getByRole('button', { name: '配置审批人' });
+  expect(control).toHaveAttribute('title', '配置审批人');
+  expect(control).toHaveTextContent(/^$/);
+  fireEvent.click(control);
   expect(configure).toHaveBeenCalledOnce();
   expect(configure.mock.calls[0]![0]).toMatchObject({
     target: { kind: 'state', name: 'review' },
@@ -190,7 +193,10 @@ it('lets the user choose multiple outgoing bindings and opens the editor after t
       />
     </>,
   );
-  await user.click(screen.getByRole('button', { name: 'Configure: Review' }));
+  const chooser = screen.getByRole('button', { name: 'Configure: Review' });
+  expect(chooser).toHaveTextContent(/^$/);
+  expect(chooser).toHaveAttribute('title', 'Configure: Review');
+  await user.click(chooser);
   expect(configure).not.toHaveBeenCalled();
   await user.keyboard('{Escape}');
   await waitFor(() =>

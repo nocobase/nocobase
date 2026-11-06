@@ -38,6 +38,8 @@ import {
   IssueListQuerySchema,
   IssueParams,
   IssueSchema,
+  IssueSummariesQuery,
+  IssueSummarySchema,
   IssueSessionHeader,
   StatusDefinitionSchema,
   UpdateIssueBody,
@@ -270,6 +272,31 @@ export function createIssueRoutes(deps: {
     (context) => context.json(boundedList(deps.queries.statuses())),
   );
   routes.get(
+    '/summaries',
+    describeRoute({
+      tags,
+      summary: 'Read issue summaries in a batch',
+      operationId: 'projectsGetIssueSummaries',
+      ...cliRoute(false),
+      description:
+        'At most 100 IDs or identifiers. Only live issues visible to the caller and within the credential project scope are returned. Missing and invisible references are indistinguishable.',
+      responses: {
+        200: listResponse(IssueSummarySchema, BoundedListMeta),
+        ...apiErrorResponses,
+      },
+    }),
+    apiValidator('query', IssueSummariesQuery),
+    async (context) =>
+      context.json(
+        boundedList(
+          await deps.queries.summaries(
+            viewerOf(context),
+            context.req.valid('query').refs,
+          ),
+        ),
+      ),
+  );
+  routes.get(
     '/:issueId',
     describeRoute({
       tags,
@@ -281,7 +308,7 @@ export function createIssueRoutes(deps: {
         flags: { issueId: { name: 'issue' } },
         action: 'pm.issues/view',
       }),
-      description: `The issue with its newest activities and comment threads, files, sub-issues and dependencies, and application progress when available. ${idOrKey}`,
+      description: `The issue with its newest activities and comment threads, files, sub-issues and dependencies, and application progress for CLI and delegated callers when available. ${idOrKey}`,
       responses: {
         200: dataResponse(IssueDetailSchema),
         ...apiErrorResponses,
@@ -297,9 +324,13 @@ export function createIssueRoutes(deps: {
       );
       const integration = deps.session?.();
       return context.json({
-        data: integration
-          ? { ...issue, progress: await integration.progress(viewer, issue) }
-          : issue,
+        data:
+          integration &&
+          (context.req.header('x-nocobase-client') === 'cli' ||
+            viewer.actor.via ||
+            viewer.actor.type !== 'user')
+            ? { ...issue, progress: await integration.progress(viewer, issue) }
+            : issue,
       });
     },
   );
@@ -454,6 +485,7 @@ export function createIssueRoutes(deps: {
       tags,
       summary: 'List an issue’s activities',
       operationId: 'projectsListIssueActivities',
+      security: personOrRunSecurity,
       ...cliRoute({
         command: 'issue activity list',
         flags: { issueId: { name: 'issue' }, pageSize: { name: 'limit' } },

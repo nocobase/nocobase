@@ -1,0 +1,6 @@
+interface:
+  display_name: 'NocoBase Plugin Development'
+  short_description: 'Develop NocoBase v3 plugins'
+  default_prompt: 'Use $nocobase-app-plugin-development to plan or implement a NocoBase v3 plugin in this App or source workspace.'
+policy:
+  allow_implicit_invocation: true

@@ -1,0 +1,40 @@
+# This default-branch entry dispatches the v1/v2 implementation on main so that it stays runnable from the default branch.
+# To run it on another branch (next, develop, v1 or a feature branch), select that branch in "Use workflow from": GitHub then runs that branch's own manual-release-next.yml directly.
+# Keep the name and the workflow_dispatch inputs in sync with manual-release-next.yml on main; see .github/V3-MIGRATION.md.
+name: Manual release next
+on:
+  workflow_dispatch:
+    inputs:
+      is_feat:
+        description: is feat
+        type: boolean
+      add_minor:
+        description: add minor number
+        type: boolean
+      version:
+        description: specific a version
+        type: string
+      skip_install_build:
+        description: skip yarn install and build
+        type: boolean
+        default: false
+permissions:
+  contents: read
+  actions: write
+jobs:
+  dispatch:
+    name: Run the v1/v2 implementation
+    if: ${{ github.ref == 'refs/heads/v3-develop' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dispatch on main
+        env:
+          GH_TOKEN: ${{ github.token }}
+          WORKFLOW_FILE: manual-release-next.yml
+          DISPATCH_INPUTS: ${{ toJSON(inputs) }}
+        run: >
+          printf '%s' "$DISPATCH_INPUTS" \
+            | jq '{ref: "main", inputs: ((. // {}) | with_entries(.value |= tostring))}' \
+            | gh api --method POST "repos/$GITHUB_REPOSITORY/actions/workflows/$WORKFLOW_FILE/dispatches" --input -
+          echo "Dispatched $WORKFLOW_FILE on main. Check that workflow run for its result." >>
+          "$GITHUB_STEP_SUMMARY"

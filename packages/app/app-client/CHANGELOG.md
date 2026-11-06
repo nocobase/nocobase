@@ -1,5 +1,84 @@
 # @nocobase/app-client
 
+## 4.0.0-beta.8
+
+### Minor Changes
+
+- 9998ac4: Organize application administration as one System settings sidebar entry that opens a home page of cards grouped by category, with URL-backed tabs inside a module. Route navigation accepts an optional `description` that the settings home shows on each card, and App Foundation declares one. Existing settings URLs, route ids and authorization stay unchanged; updating dependencies alone keeps an existing application's navigation, so reconcile the application-owned navigation transform, routing, settings pages and locales with the `nocobase-app-upgrade` Skill's System settings navigation guide.
+
+### Patch Changes
+
+- 6507d01: Persist signed-in users' explicit language choices across browsers and devices, isolate language changes across identities, and expose validated recipient language resolution for background jobs. Accounts without a saved language use the application default; unowned legacy browser choices are not imported. Preference caches are now scoped to the application mount path and authentication session.
+
+## 4.0.0-beta.7
+
+### Minor Changes
+
+- 6cc8acf: Show the last two non-whitespace characters of CJK names in default text avatars, with a shared avatar initials utility that preserves existing Latin and email fallback rules.
+
+## 4.0.0-beta.6
+
+### Patch Changes
+
+- 88d35b8: Provide an acknowledgement gate for initial snapshots with HTTP fallback and reconnect recovery.
+- cf23bfe: Move Redis realtime broadcasting to the commercial Realtime Redis plugin. Register its Server plugin before selecting Redis in an application, or import the standalone broker from its `/broker` entry. Preserve the Memory default, service identity, authorization and recovery protocol, and republish runtime consumers against the new host and realtime major versions. Install the compatible commercial cohort before deploying the final removal.
+- Updated dependencies [cf23bfe]
+  - @nocobase/realtime@1.0.0-beta.0
+
+## 4.0.0-beta.5
+
+### Patch Changes
+
+- d3f0c92: Present concise, theme-aware list feedback for loading, empty data, unmatched filters, denied access and request failures, preserve prior results after failed refreshes, and include target-guidance discovery, source reconciliation and verified completion in the existing version-selected template upgrade workflow.
+
+## 4.0.0-beta.4
+
+### Minor Changes
+
+- 451bf75: Locate editable validation errors in form layout order, preserve input on failed submissions, and provide accessible field feedback with a source reconciliation guide for existing applications.
+
+  Show validation reasons beside their fields or groups without a top summary, preserve automatic error focus, and retain safe form messages for unmapped failures or unavailable focus targets.
+
+- e3d9a52: Prevent overlapping form submissions with a shared submission controller and preserve operation identifiers across uncertain retries. Standard Repository writes can commit operation receipts atomically with business data and replay successful results for 24 hours after checking current access.
+
+  New application templates require operation identifiers and install receipt storage and bounded cleanup. Existing applications must reconcile the provider, migration and copied form sources, migrate their callers, and then enable strict mode; updating dependencies alone does not activate protection. Custom actions must explicitly join the receipt transaction and provide current authorization and result visibility checks. Cross-connection and unadapted external side effects are outside this guarantee.
+
+### Patch Changes
+
+- Updated dependencies [e3d9a52]
+  - @nocobase/api-client@1.0.0-beta.6
+
+## 4.0.0-beta.3
+
+### Minor Changes
+
+- 58531da: Support plain HTTP origins when creating session and upload identifiers or copying text. Provide shared browser UUID and clipboard helpers so draft, submission and invitation actions work without secure-context APIs.
+
+  Document capability checks and user-facing explanations for secure-context browser features, require HTTP-compatible UUID and copy actions, and return an explicit copy result for localized recovery UI.
+
+### Patch Changes
+
+- @nocobase/i18n@2.0.0-beta.1
+  - @nocobase/service-provider@0.0.2-beta.2
+
+## 4.0.0-beta.2
+
+### Patch Changes
+
+- 0c5c4ff: Store language choices separately for each application's full mount path so applications on the same origin retain their own defaults and preferences. The previous shared choice is left untouched and no longer read; after upgrading, each application starts in its default language until the visitor chooses again. Update the screenshot tool to preset the application-specific language choice.
+
+## 4.0.0-beta.1
+
+### Minor Changes
+
+- 62da032: Add App Foundation for administrators with unrestricted access: a dynamic capability overview, live statistics, business-module associations, qualitative value explanations, and resolved provider package versions. Collect evidence read-only inside the plugin, include recognized installed capabilities and registered extensions, and distinguish installation, registration, configuration and use. Support all ten Client locales and responsive layouts.
+
+  Derive module associations from registered navigation, authentication and authorization declarations, bounded value-reachable source references, and explicitly matched API handlers. Ignore unused imports, type-only references and unrelated handlers. Keep unsupported or unreadable evidence undetermined rather than guessing usage; report incomplete counts and refresh failures. Cache successful overviews for 30 seconds with a manual refresh action.
+
+  Expose optional immutable Client and Server registration snapshots so the plugin can discover provider-only and locales-only registrations without reloading contributions. Keep collection, classification, authorization and presentation in the Foundation plugin.
+
+  Show deduplicated related package names and versions once within capability details, keeping technical discovery counts and diagnostic evidence internal. Export a permission-preserving helper for placing the Foundation link last in an existing settings navigation group.
+
 ## 4.0.0-beta.0
 
 ### Major Changes

@@ -4,6 +4,7 @@ import { databaseManagerToken, type DatabaseManager } from '@nocobase/db';
 import { ServiceContainer } from '@nocobase/service-provider';
 import { type Caching } from '@nocobase/caching';
 import { cachingToken } from '@nocobase/app-server/caching';
+import { loggingToken } from '@nocobase/app-server/logging';
 import { AppConfig, createAppPaths } from '@nocobase/app-server/config';
 import { idGeneratorToken } from '@nocobase/app-server/id-generator';
 import { realtimePrincipalResolverToken } from '@nocobase/app-server/realtime';
@@ -32,6 +33,85 @@ import {
 import { authenticationToken } from '../../tokens.js';
 
 describe('authentication provider', () => {
+  it.each([
+    { autoSignIn: false, expected: 1 },
+    { autoSignIn: true, expected: 0 },
+    { autoSignIn: false, disableSignUp: true, expected: 0 },
+    { autoSignIn: false, enabled: false, expected: 0 },
+    { autoSignIn: false, requireEmailVerification: true, expected: 0 },
+    { autoSignIn: false, onExistingUserSignUp: async () => {}, expected: 0 },
+  ])(
+    'logs actionable registration guidance at startup: %j',
+    async ({ expected, ...emailAndPassword }) => {
+      const warn = vi.fn();
+      const provider = Object.assign(
+        Object.create(AuthenticationProvider.prototype),
+        {
+          app: {
+            config: { get: () => ({ emailAndPassword }) },
+            container: {
+              has: (token: unknown) => token === loggingToken,
+              resolve: () => ({ getLogger: () => ({ warn }) }),
+            },
+          },
+        },
+      ) as AuthenticationProvider;
+      await provider.boot();
+      expect(warn).toHaveBeenCalledTimes(expected);
+      if (expected)
+        expect(warn).toHaveBeenCalledWith(
+          expect.objectContaining({
+            configKey: 'auth.emailAndPassword.autoSignIn',
+            fix: expect.stringContaining('server/config/auth.ts or config.yml'),
+          }),
+          expect.stringContaining('without creating an account'),
+        );
+    },
+  );
+
+  it('closes its sender while Auth is still completing and observes both failures', async () => {
+    const authClose = Promise.withResolvers<void>();
+    const authFailure = new Error('Auth close failed.');
+    const senderFailure = new Error('Sender close failed.');
+    const auth = { close: vi.fn(() => authClose.promise) };
+    const sender = {
+      close: vi.fn(() => {
+        throw senderFailure;
+      }),
+    };
+    const provider = Object.assign(
+      Object.create(AuthenticationProvider.prototype),
+      {
+        app: {
+          container: {
+            resolveIfCreated: vi.fn(() => auth),
+          },
+        },
+        resetSender: { sender },
+      },
+    ) as AuthenticationProvider;
+
+    const shutdown = provider.shutdown();
+    expect(provider.shutdown()).toBe(shutdown);
+    expect(auth.close).toHaveBeenCalledOnce();
+    expect(sender.close).toHaveBeenCalledOnce();
+    let settled = false;
+    const observed = shutdown.catch((error: unknown) => {
+      settled = true;
+      return error;
+    });
+    await Promise.resolve();
+    expect(settled).toBe(false);
+
+    authClose.reject(authFailure);
+    const error = await observed;
+    expect(error).toBeInstanceOf(AggregateError);
+    expect((error as AggregateError).errors).toEqual([
+      authFailure,
+      senderFailure,
+    ]);
+  });
+
   it('registers authentication with the application runtime and dependencies', async () => {
     const connection = { kind: 'connection' };
     const database = {
@@ -98,7 +178,7 @@ describe('authentication provider', () => {
         baseURL: 'https://example.com',
         basePath: '/main/api/auth',
         advanced: expect.objectContaining({
-          cookiePrefix: 'main-app',
+          cookiePrefix: 'main-app__%2Fmain',
           defaultCookieAttributes: { path: '/main' },
           useSecureCookies: true,
         }),
@@ -117,12 +197,52 @@ describe('authentication provider', () => {
     );
   });
 
+  it('freezes only sender settings at registration and reads later auth defaults lazily', async () => {
+    const container = new ServiceContainer();
+    const config = await createConfig();
+    container.instance(databaseManagerToken, {
+      connection: vi.fn(() => ({})),
+    } as unknown as DatabaseManager);
+    container.instance(cachingToken, {
+      getCache: vi.fn(),
+      getCounter: vi.fn(() => ({ increment: vi.fn() })),
+    } as unknown as Caching);
+    container.instance(idGeneratorToken, {
+      generate: vi.fn(() => 1),
+      generateString: vi.fn(() => 'generated-id'),
+    });
+    const provider = new AuthenticationProvider({
+      appName: 'main app',
+      publicBasePath: '/main',
+      config,
+      container,
+      paths: createAppPaths({ rootDir: '/test/app' }),
+      router: new Hono(),
+    });
+
+    provider.register();
+    // A later provider, such as Demo Mode, contributes auth defaults after Authentication registered.
+    config.mergeDefaults({
+      auth: {
+        advanced: { defaultCookieAttributes: { sameSite: 'none' } },
+        passwordReset: { enabled: true },
+      },
+    });
+    container.resolve(authenticationToken);
+
+    const options = createAuthentication.mock.lastCall?.[0];
+    expect(options?.advanced?.defaultCookieAttributes).toMatchObject({
+      sameSite: 'none',
+    });
+    expect(options?.passwordReset).toBeUndefined();
+  });
+
   it('normalizes public paths, requests, and cookie prefixes', async () => {
     expect(resolvePublicPath('/api/auth', '/main')).toBe('/main/api/auth');
     expect(resolvePublicPath('/api/auth', '')).toBe('/api/auth');
     expect(resolvePublicPath('/', '/main')).toBe('/main/');
-    expect(createCookiePrefix(' Main App ')).toBe('main-app');
-    expect(createCookiePrefix('---')).toBe('nocobase3');
+    expect(createCookiePrefix(' Main App ')).toBe('main-app__%2F');
+    expect(createCookiePrefix('---')).toBe('nocobase3__%2F');
 
     const request = new Request(
       'http://localhost/api/auth/sign-in/username?from=login',
@@ -143,43 +263,42 @@ describe('authentication provider', () => {
   });
 
   it('separates cookies of apps that share a host but not a port', () => {
-    // A portless public origin is authoritative: production keeps the bare
-    // name so deployments that already hold sessions keep them.
+    // A portless public origin is authoritative: no listen-port suffix.
     expect(
       createCookiePrefix('main', {
         publicOrigin: 'https://example.com',
         listenPort: 13000,
       }),
-    ).toBe('main');
+    ).toBe('main__%2F');
     // An explicit public port wins over the listen port a proxy hides.
     expect(
       createCookiePrefix('main', {
         publicOrigin: 'https://example.com:8443',
         listenPort: 13000,
       }),
-    ).toBe('main-8443');
+    ).toBe('main-8443__%2F');
     // Development: no public origin, so the listen port is what separates
     // two copies of the same app.
     expect(createCookiePrefix('main', { listenPort: 13000 })).toBe(
-      'main-13000',
+      'main-13000__%2F',
     );
     expect(createCookiePrefix('main', { listenPort: 13001 })).toBe(
-      'main-13001',
+      'main-13001__%2F',
     );
-    // An embedded app owns neither, and is separated by its cookie path.
-    expect(createCookiePrefix('main', {})).toBe('main');
+    // An embedded app owns neither port; its complete mount path is still part of the name.
+    expect(createCookiePrefix('main', {})).toBe('main__%2F');
     // A malformed origin falls back rather than throwing.
     expect(
       createCookiePrefix('main', {
         publicOrigin: 'not a url',
         listenPort: 13000,
       }),
-    ).toBe('main-13000');
+    ).toBe('main-13000__%2F');
   });
 
   it.each([
-    { mode: 'standalone' as const, cookiePrefix: 'main-app-13001' },
-    { mode: 'embedded' as const, cookiePrefix: 'main-app' },
+    { mode: 'standalone' as const, cookiePrefix: 'main-app-13001__%2Fmain' },
+    { mode: 'embedded' as const, cookiePrefix: 'main-app__%2Fmain' },
   ])(
     'uses the app-owned port for $mode cookie names',
     async ({ mode, cookiePrefix }) => {

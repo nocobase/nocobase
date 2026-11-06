@@ -654,11 +654,12 @@ export class MailClient {
     accountId: string,
     messageId: string,
     permanently = false,
+    options?: { readonly sourceProviderFolderId?: string },
   ): Promise<void> {
     return this.client.request<void>({
       path: `mail/accounts/${encodeURIComponent(accountId)}/messages/${encodeURIComponent(messageId)}`,
       method: 'DELETE',
-      query: { permanently },
+      query: { permanently, ...options },
     });
   }
 

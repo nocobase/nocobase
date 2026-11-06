@@ -1,3 +1,4 @@
+import { SnapshotView } from './snapshot-view.js';
 import { useConversationActions } from './conversation-actions.js';
 import {
   ChatExtensionsContext,
@@ -12,17 +13,20 @@ import {
   useAgentText,
   useChatAgents,
   useChatModels,
+  useConversationModel,
   useChatPanel,
   useConversation,
   useConversationMessages,
   useChatStream,
   useChatController,
   useSendMessage,
+  useResendMessage,
+  type OnlineAgentResendOptions,
   type ChatTimelineItem,
 } from '@nocobase/app-plugin-agents/client/chat';
 import type { ConversationDetail } from '@nocobase/app-plugin-agents/shared/conversations';
 import type { ModelRef } from '@nocobase/app-plugin-agents/shared/models';
-import { BotMessageSquareIcon, PaperclipIcon } from 'lucide-react';
+import { BotMessageSquareIcon, GlobeIcon, PaperclipIcon } from 'lucide-react';
 import {
   useCallback,
   useContext,
@@ -49,13 +53,15 @@ import { Skeleton } from '#components/ui/skeleton';
 import { Spinner } from '#components/ui/spinner';
 import { cn } from 'cn';
 
-import { NewChatChoice } from './agent-choice.js';
+import { NewChatChoice, ConversationModelChoice } from './agent-choice.js';
 import { AgentNotice } from './agent-status.js';
 import { errorStatus, useChatTranslation } from './chat-i18n.js';
+import { useChatMode } from './chat-mode.js';
 import { LoadError } from './chat-ui.js';
 import { Composer } from './composer.js';
 import { LiveSteps, TurnAnnouncer } from './live-steps.js';
 import { MessageItem, PendingItem } from './message-item.js';
+import { MessageActions, MessageEditor } from './message-actions.js';
 
 const NO_ITEMS: readonly ChatTimelineItem[] = [];
 
@@ -87,12 +93,18 @@ export function ConversationView({
   // keeps its focus and the message stays where it is.
   const [created, setCreated] = useState<string | null>(null);
   const continuing = conversationId !== null && created === conversationId;
-  // Each "new conversation" is a fresh body.
+  // An explicit fresh blank chat also drops its optimistic timeline and pending creation observer.
+  // Existing conversations keep their message/stream owner; only their composer follows the revision.
   const [freshKey, setFreshKey] = useState(0);
   const [seenId, setSeenId] = useState(conversationId);
-  if (seenId !== conversationId) {
+  const [seenRevision, setSeenRevision] = useState(panel.composerRevision);
+  if (seenId !== conversationId || seenRevision !== panel.composerRevision) {
     setSeenId(conversationId);
-    if (conversationId === null) setFreshKey((value) => value + 1);
+    setSeenRevision(panel.composerRevision);
+    if (conversationId === null) {
+      setFreshKey((value) => value + 1);
+      setCreated(null);
+    }
   }
 
   if (conversationId && detail.isError && !detail.data) {
@@ -146,6 +158,13 @@ export function ConversationView({
       </div>
     );
   }
+  if (detail.data?.snapshot)
+    return (
+      <SnapshotView
+        key={`${conversationId}:${detail.data.updatedAt}`}
+        conversation={detail.data}
+      />
+    );
   return (
     <ConversationBody
       key={
@@ -192,8 +211,27 @@ function ConversationBody({
   const extensions = useContext(ChatExtensionsContext);
   const actions = useConversationActions();
   const agents = useChatAgents(panel.open);
-  const catalog = useChatModels(panel.open && !conversation);
+  const nativeConversation =
+    conversation?.agent.id === 'online' && Boolean(conversation.execution);
+  const catalog = useChatModels(
+    panel.open && (!conversation || nativeConversation),
+  );
+  const {
+    configuration,
+    select: selectModel,
+    changing: changingModel,
+  } = useConversationModel(
+    nativeConversation ? conversation.id : null,
+    panel.open,
+  );
   const [chosenModel, setChosenModel] = useState<ModelRef | null>(null);
+  const [chosenSearch, setChosenSearch] = useState(false);
+  const modelChangeBlocked =
+    changingModel ||
+    (nativeConversation &&
+      (selectModel.isError ||
+        configuration.isFetching ||
+        !configuration.isSuccess));
   const run = conversation?.run ?? null;
   const stream = useChatStream(conversation?.execution ? conversationId : null);
   const receiving =
@@ -202,6 +240,61 @@ function ConversationBody({
   const chatController = useChatController();
   const [saveError, setSaveError] = useState<unknown>(null);
   const messages = useConversationMessages(conversationId);
+  const resend = useResendMessage(conversationId);
+  const [editing, setEditing] = useState<{
+    messageId: string;
+    text: string;
+  } | null>(null);
+  const [resendNotice, setResendNotice] = useState<
+    'rejected' | 'unknown' | 'needsSync' | null
+  >(null);
+  const resendPendingRef = useRef(false);
+  const viewActiveRef = useRef(true);
+  useEffect(() => {
+    viewActiveRef.current = true;
+    return () => {
+      viewActiveRef.current = false;
+    };
+  }, []);
+  if (
+    !resend.isPending &&
+    editing &&
+    !messages.items.some((message) => message.id === editing.messageId)
+  )
+    setEditing(null);
+  const nativeMessages = conversation?.mode === 'online';
+  const resendDisabled =
+    inputAvailability?.canSend === false ||
+    !nativeMessages ||
+    !conversationId ||
+    Boolean(conversation?.archivedAt) ||
+    running ||
+    resend.isPending ||
+    modelChangeBlocked;
+  const submitResend = async (
+    options: OnlineAgentResendOptions & { messageId: string },
+  ) => {
+    if (resendDisabled || resendPendingRef.current) return;
+    resendPendingRef.current = true;
+    setResendNotice(null);
+    try {
+      const result = await resend.resend(options);
+      if (!viewActiveRef.current) return;
+      if (result.outcome === 'accepted') {
+        setEditing(null);
+        if (result.needsSync) setResendNotice('needsSync');
+      } else {
+        setResendNotice(result.outcome);
+      }
+    } catch {
+      // Preflight failed before the SDK submitted a write; retain the edit.
+      if (viewActiveRef.current) {
+        setResendNotice('rejected');
+      }
+    } finally {
+      resendPendingRef.current = false;
+    }
+  };
   const [refreshError, setRefreshError] = useState<unknown>(null);
   const refreshHistory = () => {
     messages.fetchNewer();
@@ -222,9 +315,16 @@ function ConversationBody({
     conversationId ?? '',
     revision,
   );
+  const chatMode = useChatMode();
+  // A new conversation goes to an agent of the panel's mode; the online agent is the only one of its mode.
+  const offered = agents.data ? chatMode.agents : undefined;
   const target = conversation
     ? null
-    : newConversationAgent(agents.data, panel.newAgentId);
+    : (newConversationAgent(
+        offered,
+        panel.newAgentId,
+        panel.lastAgentId ?? null,
+      ) ?? (chatMode.mode === 'online' ? (offered?.[0] ?? null) : null));
 
   // Leave default resolution on the server until a model is explicitly chosen.
   const model = chosenModel;
@@ -244,6 +344,19 @@ function ConversationBody({
         ),
     ),
   );
+  const searchModel = nativeConversation
+    ? configuration.data?.selectedModel
+    : model;
+  const searchSupported = Boolean(
+    searchModel &&
+    catalog.data
+      ?.find((service) => service.name === searchModel.modelService)
+      ?.models.find((item) => item.value === searchModel.model)?.capabilities
+      ?.webSearch,
+  );
+  const searchEnabled = nativeConversation
+    ? configuration.data?.webSearch === true
+    : chosenSearch && searchSupported;
   const nativeReady =
     catalog.isSuccess &&
     !catalog.isFetching &&
@@ -269,7 +382,7 @@ function ConversationBody({
   const created = useCallback(
     (detail: ConversationDetail) => {
       onCreated(detail.id);
-      selectConversation(detail.id);
+      selectConversation(detail.id, undefined, { preserveComposer: true });
       resetSource();
     },
     [onCreated, selectConversation, resetSource],
@@ -278,9 +391,12 @@ function ConversationBody({
     conversationId,
     agentId: conversation ? conversation.agent.id : (target?.id ?? null),
     source,
+    editorRevision: panel.composerRevision,
     dispatch: messages.dispatch,
     onCreated: created,
     ...(target?.id === 'online' && model ? { selectedModel: model } : {}),
+    webSearch:
+      target?.id === 'online' && searchSupported ? searchEnabled : undefined,
   });
 
   // Viewed: tell the server the agent's latest replies were read.
@@ -354,6 +470,58 @@ function ConversationBody({
             messages.items,
           )}
           readOnly={!conversationId || Boolean(conversation?.archivedAt)}
+          editor={
+            segment.message.role === 'user' &&
+            editing?.messageId === segment.message.id ? (
+              <MessageEditor
+                text={editing.text}
+                disabled={resendDisabled}
+                hasFiles={segment.message.parts.some(
+                  (part) => part.type === 'file',
+                )}
+                onChange={(value) => setEditing({ ...editing, text: value })}
+                onCancel={() => setEditing(null)}
+                onSend={() =>
+                  void submitResend({
+                    messageId: editing.messageId,
+                    input: { text: editing.text },
+                  })
+                }
+              />
+            ) : null
+          }
+          actions={
+            segment.last && segment.message.role !== 'system' ? (
+              <MessageActions
+                text={appUIMessageText(segment.message)}
+                disabled={resendDisabled}
+                onEdit={
+                  nativeMessages &&
+                  segment.message.role === 'user' &&
+                  segment.message.metadata?.seq !== undefined
+                    ? () => {
+                        setEditing({
+                          messageId: segment.message.id,
+                          text: appUIMessageText(segment.message),
+                        });
+                        setResendNotice(null);
+                      }
+                    : undefined
+                }
+                onRefresh={
+                  nativeMessages &&
+                  segment.message.role === 'assistant' &&
+                  segment.message.metadata?.sourceUserMessageId
+                    ? () =>
+                        void submitResend({
+                          messageId:
+                            segment.message.metadata!.sourceUserMessageId!,
+                        })
+                    : undefined
+                }
+              />
+            ) : null
+          }
           segment={segment}
           streaming={
             receiving && segment.message.id === messages.items.at(-1)?.id
@@ -420,6 +588,7 @@ function ConversationBody({
         (appUIMessageText(item).trim().length > 0 ||
           item.parts.some(
             (part) =>
+              (part.type === 'reasoning' && part.text.trim().length > 0) ||
               part.type === 'dynamic-tool' ||
               part.type.startsWith('tool-') ||
               part.type === 'file',
@@ -502,6 +671,11 @@ function ConversationBody({
         addFilesRef.current?.(Array.from(event.dataTransfer.files));
       }}
     >
+      {resendNotice ? (
+        <p role='alert' className='px-3 py-2 text-sm text-destructive'>
+          {t(`chat.resend.${resendNotice}`)}
+        </p>
+      ) : null}
       {dragging ? (
         <div
           className='pointer-events-none absolute inset-0 z-10 flex items-center justify-center rounded-lg border-2 border-dashed border-primary/50 bg-background/80'
@@ -691,9 +865,47 @@ function ConversationBody({
         </div>
       ) : null}
       {busyFeedback ? null : feedbackNotice}
+      {nativeMessages &&
+      !resendDisabled &&
+      (feedback === 'failed' || feedback === 'cancelled') &&
+      !messages.items.some(
+        (message) =>
+          message.role === 'assistant' &&
+          (message.metadata?.seq ?? Infinity) > afterUser &&
+          appUIMessageText(message).trim(),
+      ) ? (
+        <Button
+          variant='ghost'
+          className='self-start'
+          onClick={() => {
+            const lastUser = messages.items
+              .filter((message) => message.role === 'user')
+              .at(-1);
+            if (lastUser) void submitResend({ messageId: lastUser.id });
+          }}
+        >
+          {t('chat.resendConfirm')}
+        </Button>
+      ) : null}
       <TurnAnnouncer running={running} />
       <div className={page ? cn(PAGE_COLUMN, 'pt-2 pb-4') : undefined}>
-        {sendAvailability?.notice}
+        {sendAvailability?.notice ? (
+          <div className='mb-3'>{sendAvailability.notice}</div>
+        ) : null}
+        {nativeConversation && (configuration.error || selectModel.error) ? (
+          <LoadError
+            title={t(
+              selectModel.error
+                ? 'chat.agents.modelChangeFailed'
+                : 'chat.agents.modelLoadFailed',
+            )}
+            error={selectModel.error ?? configuration.error}
+            onRetry={() => {
+              selectModel.reset();
+              void configuration.refetch();
+            }}
+          />
+        ) : null}
         {saveError ? (
           <LoadError
             title={t('chat.loadFailed')}
@@ -709,6 +921,8 @@ function ConversationBody({
         <Composer
           variant={variant}
           disabled={
+            resend.isPending ||
+            modelChangeBlocked ||
             sendAvailability?.canSend === false ||
             running ||
             Boolean(conversation && !conversation.availability.online) ||
@@ -724,40 +938,121 @@ function ConversationBody({
             if (conversationId) actions.stop.mutate(conversationId);
           }}
           onSend={(content, context, attachments) => {
+            if (modelChangeBlocked || resend.isPending) return false;
             if (sendAvailability?.canSend === false) return false;
             const accepted = send({ content, context, attachments });
-            if (accepted) focusComposer();
+            if (accepted) {
+              // The next new conversation starts with the agent this one went to.
+              if (target) panel.rememberAgent?.(target.id);
+              focusComposer();
+            }
             return accepted;
           }}
           registerAddFiles={registerAddFiles}
           toolbar={
-            conversation ? null : (
-              // Before the first message: who the conversation goes to.
-              <NewChatChoice
-                agents={agents.data ?? []}
-                agent={target}
-                services={catalog.data ?? []}
-                model={model}
-                modelsDisabled={
-                  catalog.isFetching || !catalog.isSuccess || !hasChatModels
-                }
-                onModelChange={(selected) => {
-                  setChosenModel(selected);
-                  selectConversation(null, 'online');
-                  focusComposer();
-                }}
-                onAgentChange={(agentId) => {
-                  selectConversation(null, agentId);
-                  focusComposer();
-                }}
-              />
-            )
+            <div className='flex min-w-0 flex-wrap items-center gap-1'>
+              {nativeConversation || target?.id === 'online' ? (
+                <Button
+                  type='button'
+                  size='icon-sm'
+                  className={cn(
+                    'shrink-0 rounded-full',
+                    !searchEnabled && 'text-muted-foreground',
+                  )}
+                  aria-label={t('chat.webSearch.toggle')}
+                  variant={searchEnabled ? 'secondary' : 'ghost'}
+                  aria-pressed={searchEnabled}
+                  title={
+                    searchSupported
+                      ? t('chat.webSearch.toggle')
+                      : t('chat.webSearch.unsupported')
+                  }
+                  disabled={
+                    !searchSupported ||
+                    running ||
+                    resend.isPending ||
+                    stopping ||
+                    modelChangeBlocked ||
+                    catalog.isFetching ||
+                    !catalog.isSuccess ||
+                    chatController.submissions.blocked(
+                      conversationId,
+                      `registry:${source}:${conversationId ?? 'new'}`,
+                    )
+                  }
+                  onClick={() => {
+                    if (nativeConversation)
+                      selectModel.mutate({ webSearch: !searchEnabled });
+                    else setChosenSearch(!searchEnabled);
+                  }}
+                  data-testid='chat-web-search-toggle'
+                >
+                  <GlobeIcon aria-hidden='true' />
+                </Button>
+              ) : null}
+              {conversation ? (
+                nativeConversation ? (
+                  <ConversationModelChoice
+                    services={catalog.data ?? []}
+                    model={configuration.data?.selectedModel ?? null}
+                    allowedModels={configuration.data?.model}
+                    disabled={
+                      running ||
+                      resend.isPending ||
+                      stopping ||
+                      modelChangeBlocked ||
+                      catalog.isFetching ||
+                      !catalog.isSuccess ||
+                      chatController.submissions.blocked(
+                        conversationId,
+                        `registry:${source}:${conversationId ?? 'new'}`,
+                      )
+                    }
+                    onModelChange={(selected) => {
+                      const current = configuration.data?.selectedModel;
+                      if (
+                        current?.modelService === selected.modelService &&
+                        current.model === selected.model
+                      )
+                        return;
+                      selectModel.mutate(selected);
+                    }}
+                  />
+                ) : null
+              ) : (
+                // Before the first message: who the conversation goes to.
+                <NewChatChoice
+                  agents={offered ?? []}
+                  agent={target}
+                  services={catalog.data ?? []}
+                  model={model}
+                  modelsDisabled={
+                    catalog.isFetching || !catalog.isSuccess || !hasChatModels
+                  }
+                  onModelChange={(selected) => {
+                    setChosenSearch(false);
+                    setChosenModel(selected);
+                    selectConversation(null, 'online', {
+                      preserveComposer: true,
+                    });
+                    focusComposer();
+                  }}
+                  onAgentChange={(agentId) => {
+                    setChosenSearch(false);
+                    selectConversation(null, agentId, {
+                      preserveComposer: true,
+                    });
+                    focusComposer();
+                  }}
+                />
+              )}
+            </div>
           }
           notice={
             conversation ? (
               <AgentNotice conversation={conversation} />
             ) : target === null && agents.isSuccess ? (
-              (agents.data?.length ?? 0) > 0 ? (
+              (offered?.length ?? 0) > 0 ? (
                 <p
                   className='text-xs text-muted-foreground'
                   data-testid='chat-choose-agent'

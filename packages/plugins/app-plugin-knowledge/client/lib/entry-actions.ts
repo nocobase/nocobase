@@ -29,9 +29,9 @@ export interface EntryActions {
   /** Opens the space's access: the viewer's, and who may do what by role. */
   spaceAccess(): void;
   /** Runs the search test over the view. */
-  searchTest(): void;
+  searchTest?(): void;
   /** Opens how the space is cut into sections, for someone who manages it. */
-  chunking(): void;
+  chunking?(): void;
 }
 
 export const EntryActionsContext: React.Context<EntryActions | null> =

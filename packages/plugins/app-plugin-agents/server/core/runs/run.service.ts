@@ -71,6 +71,8 @@ import {
   isActive,
   isTerminal,
   lastSummary,
+  recentSummaries,
+  type RecentRunSummary,
   openRunsOn,
   openRunsOnEach,
   pendingInputs,
@@ -149,7 +151,7 @@ export interface EnqueueRequest {
   readonly causedByRunId?: string;
   /**
    * How work whose source is not the responsible runs: `auto` (the default) asks the responsible to confirm it;
-   * `mine` queues it at once as the source, on a runner they may use (their own or a team runner), refused with
+   * `mine` queues it at once as the source, on a runner they may use (their own or a shared runner), refused with
    * `NO_RUNNER_AVAILABLE` when there is none now. Ignored when the source is the responsible or there is none.
    */
   readonly execution?: RunExecution;
@@ -211,7 +213,7 @@ export interface RunFilter {
   readonly subjectKind?: string;
   readonly subjectId?: string;
   readonly agentId?: string;
-  readonly status?: RunStatus;
+  readonly status?: RunStatus | readonly RunStatus[];
   /** Only runs this user started or is owner of. */
   readonly involvingUserId?: string;
   readonly limit?: number;
@@ -234,12 +236,22 @@ export interface RunService {
     readonly run: Run;
     readonly inputs: readonly RunInput[];
   } | null>;
+  /** Like identityInputs, batched by unique run id on the caller's connection. Missing runs are omitted. */
+  identityInputsMany(
+    conn: DatabaseConnection,
+    runIds: readonly string[],
+  ): Promise<
+    ReadonlyMap<
+      string,
+      { readonly run: Run; readonly inputs: readonly RunInput[] }
+    >
+  >;
   /** Work waiting for the subject's responsible to confirm it: confirming, rejecting, withdrawing, handing it on. */
   readonly requests: RunRequestService;
   /** Adds input to a run that has not ended. */
   addInput(runId: string, input: NewInput, outer?: Tx): Promise<string>;
   /** A queued run ends at once; a held one is asked to stop. In `outer`, joins the caller's transaction. */
-  cancel(runId: string, byUserId: string, outer?: Tx): Promise<Run>;
+  cancel(runId: string, byUserId: string | null, outer?: Tx): Promise<Run>;
   /**
    * Ends the queued runs on a subject, of one agent or of any, or of one agent on every subject; optionally only those
    * `actorUserId` woke. Held runs are left alone. Answers the runs it ended. In `outer`, joins the caller's transaction.
@@ -295,7 +307,11 @@ export interface RunService {
    * candidate runners; null when the run does not exist or is not queued. Whoever calls decides what of it a person may
    * see.
    */
-  queueWait(runId: string): Promise<RunWait | null>;
+  /** A conversation supplies its binding (null when unbound), restricting the existing queue facts to that runner. */
+  queueWait(
+    runId: string,
+    conversationRunnerId?: string | null,
+  ): Promise<RunWait | null>;
   events(
     runId: string,
     afterSeq: number,
@@ -352,6 +368,16 @@ export interface RunService {
     },
     exceptRunId: string,
   ): Promise<string | null>;
+  /** The five latest terminal runs of this agent on this subject, with summaries capped at 400 characters. */
+  recentSummaries(
+    conn: DatabaseConnection,
+    key: {
+      readonly agentId: string;
+      readonly subjectKind: string;
+      readonly subjectId: string;
+    },
+    exceptRunId: string,
+  ): Promise<RecentRunSummary[]>;
 }
 
 export interface RunServiceDeps extends TransitionDeps {
@@ -425,12 +451,26 @@ export function createRunService(deps: RunServiceDeps): RunService {
     run: RunRecord,
     byUserId: string,
   ): Promise<void> {
-    const ended = await finishRun(unit, deps, run, {
-      status: 'cancelled',
-      reason: null,
-      detail: COMMENT_CANCEL_DETAIL,
-      cancelledById: byUserId,
-    });
+    const ended = await finishRun(
+      unit,
+      deps,
+      run,
+      {
+        status: 'cancelled',
+        reason: null,
+        detail: COMMENT_CANCEL_DETAIL,
+        cancelledById: byUserId,
+      },
+      false,
+      async () => {
+        await deps.subjects
+          .get(run.subjectKind)
+          ?.sink?.onCancelRequested?.(
+            unit,
+            toRun({ ...run, cancelledById: byUserId }),
+          );
+      },
+    );
     if (!ended) throw conflict('The comment work changed; read it again.');
   }
 
@@ -1373,6 +1413,31 @@ export function createRunService(deps: RunServiceDeps): RunService {
       return { run: toRun(run), inputs: inputs.map(toInput) };
     },
 
+    identityInputsMany: async (conn, runIds) => {
+      const result = new Map<string, { run: Run; inputs: RunInput[] }>();
+      const ids = [...new Set(runIds)];
+      // Bound parameter counts also on SQLite; progress reads need at most 100 ids.
+      for (let offset = 0; offset < ids.length; offset += 500) {
+        const runs = await runsRepo(conn).findMany({
+          filter: (f) =>
+            f.or(
+              ids
+                .slice(offset, offset + 500)
+                .map((id) => f.string('id').eq(id)),
+            ),
+        });
+        if (!runs.length) continue;
+        for (const run of runs)
+          result.set(run.id, { run: toRun(run), inputs: [] });
+        const inputs = await inputsRepo(conn).findMany({
+          filter: (f) => f.or(runs.map((run) => f.string('runId').eq(run.id))),
+        });
+        for (const input of inputs)
+          result.get(input.runId)!.inputs.push(toInput(input));
+      }
+      return result;
+    },
+
     addInput: (runId, input, outer) =>
       tx.run(async (unit) => {
         const run = await require(unit.conn, runId);
@@ -1422,24 +1487,48 @@ export function createRunService(deps: RunServiceDeps): RunService {
             `The run is ${run.status}.`,
           );
         if (run.status === 'queued') {
-          const ended = await finishRun(unit, deps, run, {
-            status: 'cancelled',
-            reason: 'cancelled',
-            cancelledById: byUserId,
-          });
+          const ended = await finishRun(
+            unit,
+            deps,
+            run,
+            {
+              status: 'cancelled',
+              reason: 'cancelled',
+              cancelledById: byUserId,
+            },
+            false,
+            async () => {
+              await deps.subjects
+                .get(run.subjectKind)
+                ?.sink?.onCancelRequested?.(
+                  unit,
+                  toRun({ ...run, cancelledById: byUserId }),
+                );
+            },
+          );
           if (!ended) throw conflict('The run changed; try again.');
           return toRun(ended);
         }
         if (!run.cancelRequestedAt) {
           const now = clock.now().toISOString();
-          await runsRepo(unit.conn).updateMany({
-            filter: { id: run.id },
+          const updated = await runsRepo(unit.conn).updateMany({
+            filter: { id: run.id, status: run.status, revision: run.revision },
             values: {
               cancelRequestedAt: now,
               cancelledById: byUserId,
               updatedAt: now,
             },
           });
+          if (updated.updatedCount !== 1)
+            throw conflict('The run changed; try again.');
+          await deps.subjects.get(run.subjectKind)?.sink?.onCancelRequested?.(
+            unit,
+            toRun({
+              ...run,
+              cancelRequestedAt: now,
+              cancelledById: byUserId,
+            }),
+          );
           unit.emit({ type: 'run.changed', runId: run.id, status: run.status });
         }
         return toRun(await require(unit.conn, run.id));
@@ -1823,7 +1912,16 @@ export function createRunService(deps: RunServiceDeps): RunService {
               ? [f.string('subjectId').eq(filter.subjectId)]
               : []),
             ...(filter.agentId ? [f.string('agentId').eq(filter.agentId)] : []),
-            ...(filter.status ? [f.string('status').eq(filter.status)] : []),
+            ...(filter.status
+              ? [
+                  f.or(
+                    (typeof filter.status === 'string'
+                      ? [filter.status]
+                      : filter.status
+                    ).map((status) => f.string('status').eq(status)),
+                  ),
+                ]
+              : []),
             ...(filter.involvingUserId
               ? [
                   f.or([
@@ -1900,13 +1998,14 @@ export function createRunService(deps: RunServiceDeps): RunService {
       return readWorkload(tx.read(), clock, deps.runners, query);
     },
 
-    queueWait(runId) {
+    queueWait(runId, conversationRunnerId) {
       return readQueueWait(
         tx.read(),
         clock,
         deps.runners,
         runId,
-        deps.diagnose,
+        conversationRunnerId === undefined ? deps.diagnose : undefined,
+        conversationRunnerId,
       );
     },
 
@@ -2023,5 +2122,6 @@ export function createRunService(deps: RunServiceDeps): RunService {
       (await pendingInputs(conn, runId)).map(toInput),
     inputsSince: inputsOnSince,
     lastSummary,
+    recentSummaries,
   };
 }

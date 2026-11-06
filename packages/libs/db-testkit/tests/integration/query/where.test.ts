@@ -4,6 +4,65 @@ import { describeIntegrationDatabases } from '../helpers.js';
 import { createWhereOrdersCollection, seedWhereOrders } from './helpers.js';
 
 describeIntegrationDatabases('query where', (context) => {
+  it('matches mixed-case ASCII text with LOWER on both operands and bound patterns', async () => {
+    await context.builder.createCollection('searchTitles', (collection) => {
+      collection.increments('id');
+      collection.string('displayTitle').nullable();
+    });
+    await context.database
+      .query()
+      .insertInto('searchTitles')
+      .values([
+        { displayTitle: 'Export reports' },
+        { displayTitle: 'EXPORT REPORTS' },
+        { displayTitle: 'export reports' },
+        { displayTitle: 'Other' },
+        { displayTitle: null },
+      ])
+      .execute();
+    const base = context.database.query().selectFrom('searchTitles as item');
+    for (const pattern of ['%export%', '%ExPoRt%']) {
+      const query = base
+        .where((eb) =>
+          eb(
+            eb.fn.lower('item.displayTitle'),
+            'like',
+            eb.fn.lower(eb.val(pattern)),
+          ),
+        )
+        .orderBy('id');
+      expect(query.compile().parameters).toContain(pattern);
+      expect(query.compile().sql).not.toContain(pattern);
+      await expect(query.pluck<string>('displayTitle')).resolves.toEqual([
+        'Export reports',
+        'EXPORT REPORTS',
+        'export reports',
+      ]);
+    }
+    await expect(
+      base
+        .where((eb) =>
+          eb(
+            eb.fn.lower('item.displayTitle'),
+            'like',
+            eb.fn.lower(eb.val("%' OR 1=1 --%")),
+          ),
+        )
+        .execute(),
+    ).resolves.toEqual([]);
+    await expect(
+      base
+        .where((eb) =>
+          eb(
+            eb.fn.lower('item.displayTitle'),
+            'not like',
+            eb.fn.lower(eb.val('%EXPORT%')),
+          ),
+        )
+        .pluck<string>('displayTitle'),
+    ).resolves.toEqual(['Other']);
+  });
+
   it('supports comparison, list, null, and pattern operators against a real connection', async () => {
     const ordersTable = 'whereOrders';
 

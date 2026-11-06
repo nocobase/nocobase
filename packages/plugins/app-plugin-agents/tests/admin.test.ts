@@ -120,11 +120,11 @@ describe('admin API', () => {
   it('lets anyone signed in read agents, and only a manager of agents change them', async () => {
     h = await createHarness();
     expect((await h.request('GET', '/agents')).status).toBe(401);
-    const id = await h.createAgent({ source: 'runner', status: 'pending' });
+    const id = await h.createAgent({ source: 'runner', status: 'disabled' });
     const list = await h.request('GET', '/agents', { user: 'bob' });
     expect(list.status).toBe(200);
     expect(list.body.data).toEqual([
-      expect.objectContaining({ id, status: 'pending', canEdit: false }),
+      expect.objectContaining({ id, status: 'disabled', canEdit: false }),
     ]);
     const reader = await h.request('PATCH', `/agents/${id}`, {
       user: 'bob',
@@ -137,7 +137,7 @@ describe('admin API', () => {
       can: ADMIN,
     });
     expect(managed.body.data[0].canEdit).toBe(true);
-    // Anyone signed in may add a personal runner; a team runner needs the runners item.
+    // Anyone signed in may add a personal runner; a shared runner needs the runners item.
     const personal = await h.request(
       'POST',
       '/agents/runners/registrationTokens',
@@ -159,7 +159,7 @@ describe('admin API', () => {
     h = await createHarness();
     const id = await h.createAgent({
       source: 'runner',
-      status: 'pending',
+      status: 'disabled',
       modelEntries: [{ tool: 'codex', model: 'gpt-6-astra', effort: 'medium' }],
     });
     const bare = await h.request('PATCH', `/agents/${id}`, {
@@ -594,6 +594,47 @@ describe('admin API', () => {
     ]);
   });
 
+  it('pages multiple run statuses together and preserves run visibility', async () => {
+    h = await createHarness();
+    const agentId = await h.createAgent();
+    const ids: string[] = [];
+    for (let i = 0; i < 5; i++) {
+      const id = await h.enqueue(agentId, String(i), { actorUserId: 'bob' });
+      ids.push(id);
+      if (i % 2 === 0) await h.services.runs.cancel(id, 'bob');
+    }
+    await h.enqueue(agentId, 'private', { actorUserId: 'carol' });
+    const path = '/agents/runs?status=queued,cancelled,queued&pageSize=2';
+    expect((await h.request('GET', path)).status).toBe(401);
+    expect(
+      (
+        await h.request('GET', '/agents/runs?status=queued,invalid', {
+          user: 'bob',
+        })
+      ).status,
+    ).toBe(400);
+    const seen: string[] = [];
+    let token: string | undefined;
+    do {
+      const page = await h.request(
+        'GET',
+        path + (token ? `&pageToken=${token}` : ''),
+        { user: 'bob' },
+      );
+      expect(page.status).toBe(200);
+      seen.push(...page.body.data.map((run: { id: string }) => run.id));
+      token = page.body.meta.nextPageToken;
+    } while (token);
+    expect(seen).toEqual([...ids].reverse());
+    const single = await h.request('GET', '/agents/runs?status=cancelled', {
+      user: 'bob',
+    });
+    expect(single.body.data).toHaveLength(3);
+    expect(
+      (await h.request('GET', path, { user: 'stranger' })).body.data,
+    ).toEqual([]);
+  });
+
   it('shows people their own runs, and every run to readers', async () => {
     h = await createHarness();
     const agentId = await h.createAgent();
@@ -889,7 +930,7 @@ describe('admin API', () => {
     expect(shared.body.data.trust).toBe('team');
   });
 
-  it('lets only the owner choose its coding tools', async () => {
+  it('lets owners and shared runner managers choose tools without granting other settings', async () => {
     h = await createHarness();
     const token = await h.request(
       'POST',
@@ -909,7 +950,7 @@ describe('admin API', () => {
     const unknown = await h.request(
       'POST',
       '/agents/runners/registrationTokens',
-      { user: 'bob', body: { enabledTools: ['cursor'] } },
+      { user: 'bob', body: { enabledTools: ['unknown-tool'] } },
     );
     expect(unknown.status).toBe(400);
 
@@ -948,14 +989,34 @@ describe('admin API', () => {
     });
     expect(owner.status).toBe(200);
     expect(owner.body.data.enabledTools).toEqual(['claude', 'codex']);
-    expect(await online()).toBe(1);
+    // A newly enabled tool must report again before it is offered work.
+    expect(await online()).toBe(0);
     const manager = await h.request('PATCH', path, {
       user: 'carol',
       can: ['agents.runners/manage'],
       body: { enabledTools: [] },
     });
-    expect(manager.status).toBe(403);
-    expect(await online()).toBe(1);
+    expect(manager.status).toBe(200);
+    expect(await online()).toBe(0);
+    const rename = await h.request('PATCH', path, {
+      user: 'carol',
+      can: ['agents.runners/manage'],
+      body: { enabledTools: ['gemini'], name: 'Changed by manager' },
+    });
+    expect(rename.status).toBe(403);
+    const personal = await h.registerRunner({
+      trust: 'ownerOnly',
+      ownerUserId: 'bob',
+    });
+    expect(
+      (
+        await h.request('PATCH', `/agents/runners/${personal.runnerId}`, {
+          user: 'carol',
+          can: ['agents.runners/manage'],
+          body: { enabledTools: ['gemini'] },
+        })
+      ).status,
+    ).toBe(403);
   });
 
   it('refuses variables with SECRETS_KEY_MISSING when no secrets key is configured', async () => {

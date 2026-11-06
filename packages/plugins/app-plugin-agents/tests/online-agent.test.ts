@@ -1,3 +1,8 @@
+import {
+  fixtureFileInputs,
+  projectNativeHistory,
+} from './helpers/native-files.js';
+import { createSandboxProvider } from '../server/online/sandbox/provider.js';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { MockLanguageModelV4 } from 'ai/test';
 import {
@@ -87,26 +92,28 @@ async function fixture(model: MockLanguageModelV4) {
     },
   });
   const measurements: { phase: string; durationMs: number }[] = [];
+  const fileInputs = fixtureFileInputs(model, h.services.chatAttachments);
   const sessions = createSessionManager({
     tx: h.services.tx,
     ids,
     attachments: attachments.links,
-    files: h.services.chatAttachments,
     now: () => new Date().toISOString(),
     measure: (phase, durationMs) => measurements.push({ phase, durationMs }),
   });
   const resolver = new ServiceContainer();
   const errors: unknown[] = [];
-  const resolveModel = vi.fn(
-    async (_ref: typeof ref, _sessionId: string) => model,
+  const resolveModel = vi.fn((_ref: typeof ref, _sessionId: string) =>
+    fileInputs.model(_ref, _sessionId),
   );
   const service = new OnlineAgentService({
     sessions,
     ids,
     resolver,
+    fileInputs,
     model: resolveModel,
     defaultModel: async () => ref,
     onError: (error) => errors.push(error),
+    sandboxProvider: createSandboxProvider({ skills: h.services.skills }),
   });
   // HTTP projections must observe the same real Service that owns this SDK fixture.
   vi.spyOn(h.services.onlineAgent, 'producerAvailable').mockImplementation(
@@ -121,7 +128,9 @@ async function fixture(model: MockLanguageModelV4) {
     resolveModel,
     history: async (agent: { sessionId: string }, userId = 'alice') =>
       (
-        await sessions.native.executionHistory(
+        await projectNativeHistory(
+          sessions.native,
+          h.services.chatAttachments,
           userId,
           agent.sessionId,
           undefined,
@@ -443,6 +452,34 @@ describe('OnlineAgent service slice', () => {
     ).rejects.toThrow('not found');
   });
 
+  it('lists online and Runner conversations apart by mode', async () => {
+    const f = await fixture(
+      new MockLanguageModelV4({
+        doStream: async () => ({ stream: streamed(text('Hi')) }),
+      }),
+    );
+    const online = await f.service.realtime(context());
+    const agentId = await h.createAgent();
+    const runner = (await h.services.conversations.create('alice', { agentId }))
+      .id;
+    const ids = async (mode?: 'online' | 'runner') =>
+      (
+        await h.services.conversations.list('alice', mode ? { mode } : {})
+      ).items.map((item) => item.id);
+    expect(await ids()).toEqual(
+      expect.arrayContaining([online.sessionId, runner]),
+    );
+    expect(await ids('online')).toEqual([online.sessionId]);
+    expect(await ids('runner')).toEqual([runner]);
+    const http = await h.request('GET', '/agents/conversations?mode=runner', {
+      user: 'alice',
+    });
+    expect(http.status).toBe(200);
+    expect(http.body.data.map((item: { id: string }) => item.id)).toEqual([
+      runner,
+    ]);
+  });
+
   it('retries failed and commit-unknown UI saves without rerunning the SDK or duplicating messages', async () => {
     const model = new MockLanguageModelV4({
       doStream: async () => ({ stream: streamed(text('Saved once')) }),
@@ -616,17 +653,14 @@ it.each(['realtime', 'background'] as const)(
     ]);
     const history = await agent.history();
     expect(history.map(appUIMessageText)).toEqual(['Question', 'Public']);
-    expect(history[1].parts).toEqual([{ type: 'text', text: 'Public' }]);
+    expect(history[1].parts).toEqual([
+      { type: 'text', text: 'Public' },
+      { type: 'reasoning', text: 'Private' },
+    ]);
     expect(JSON.stringify(history)).not.toContain('secret');
     const internal = await f.history(agent);
     expect(JSON.stringify(internal)).toContain('Private');
     expect(JSON.stringify(internal)).toContain('secret');
-    expect(await f.sessions.history('alice', agent.sessionId)).toEqual(
-      internal,
-    );
-    expect(await f.sessions.executionHistory('alice', agent.sessionId)).toEqual(
-      internal,
-    );
   },
 );
 
@@ -688,7 +722,7 @@ it('assembles background UI messages without transport and replays private user 
     ]);
     expect(history[0].parts).toEqual([{ type: 'text', text: 'Files' }]);
     expect(JSON.stringify(history)).not.toContain('private');
-    const replay = await f.sessions.history('alice', job.sessionId);
+    const replay = await f.history(job);
     expect(replay[0]).toMatchObject({
       role: 'user',
       providerOptions: { fixture: { token: 'private-user-options' } },
@@ -1192,14 +1226,14 @@ it('does not evaluate providers on read and persists only explicit idle override
   expect(session.model).toEqual(ref);
   expect(global).toHaveBeenCalledTimes(1);
   expect(business).toHaveBeenCalledTimes(1);
-  await expect(
-    loaded.send([{ role: 'user', content: 'Clear models' }], {
-      overrides: { model: [] },
-    }),
-  ).rejects.toThrow('outside');
-  expect(
-    (await f.sessions.load('alice', agent.sessionId)).config.model,
-  ).toEqual(['fixture/chat']);
+  expect(session.config).not.toHaveProperty('model');
+  await loaded.send([{ role: 'user', content: 'Clear model restriction' }], {
+    overrides: { model: [] },
+  });
+  await settle(loaded);
+  const unrestricted = await f.sessions.load('alice', agent.sessionId);
+  expect(unrestricted.config.model).toEqual([]);
+  expect(unrestricted.model).toEqual(ref);
 });
 
 it('caches a shared factory while binding distinct users to streaming tool execution', async () => {
@@ -1280,6 +1314,111 @@ it('drains a provider error before finalization and keeps incomplete text out of
     .findMany({ filter: { conversationId: agent.sessionId } });
   expect(JSON.stringify(rows)).toContain('Partial answer');
   expect(model.doStreamCalls).toHaveLength(1);
+});
+
+it('preserves absent and explicit empty model restrictions through configuration resolution', async () => {
+  const configurator = new OnlineAgentConfigurator();
+  const absent = await configurator.resolve(context(), {});
+  expect(absent).not.toHaveProperty('model');
+  expect(
+    await configurator.resolve(context(), { thinking: 'high' }, absent),
+  ).not.toHaveProperty('model');
+  const empty = await configurator.resolve(context(), { model: [] });
+  expect(empty).toHaveProperty('model', []);
+  expect(await configurator.resolve(context(), {}, empty)).toHaveProperty(
+    'model',
+    [],
+  );
+  configurator.registerOnlineAgentScope('restricted', {
+    model: ['fixture/chat'],
+  });
+  configurator.registerOnlineAgentScope('unrestricted', { model: [] });
+  const restricted = await configurator.resolve(context(), {
+    scope: ['restricted'],
+  });
+  expect((await configurator.resolve(context(), {}, restricted)).model).toEqual(
+    ['fixture/chat'],
+  );
+  expect(
+    (
+      await configurator.resolve(
+        context(),
+        { scope: ['unrestricted'] },
+        restricted,
+      )
+    ).model,
+  ).toEqual([]);
+});
+
+it.each([{ models: undefined }, { models: [] }])(
+  'keeps model restrictions as %j while selecting, switching and restoring native models',
+  async ({ models }) => {
+    const f = await fixture(
+      new MockLanguageModelV4({
+        doStream: async () => ({ stream: streamed(text('Done')) }),
+      }),
+    );
+    const options = models === undefined ? {} : { model: models };
+    const check = async (id: string) => {
+      const session = await f.sessions.load('alice', id);
+      if (models === undefined)
+        expect(session.config).not.toHaveProperty('model');
+      else expect(session.config).toHaveProperty('model', []);
+      return session;
+    };
+    const background = await f.service.background(context(), options);
+    expect((await check(background.sessionId)).model).toEqual(ref);
+    const agent = await f.service.realtime(context(), options);
+    expect((await check(agent.sessionId)).model).toEqual(ref);
+    const selected = { modelService: 'alternate', model: 'second' };
+    const explicit = await f.service.realtime(context(), {
+      ...options,
+      selectedModel: selected,
+    });
+    expect((await check(explicit.sessionId)).model).toEqual(selected);
+
+    await f.service.configure(context(), agent.sessionId, {}, selected, 'http');
+    expect((await check(agent.sessionId)).model).toEqual(selected);
+    const restored = await f.service.realtime(context(), {
+      sessionId: agent.sessionId,
+    });
+    await restored.send([{ role: 'user', content: 'Use the saved model' }]);
+    await settle(restored);
+    expect(f.resolveModel).toHaveBeenLastCalledWith(selected, agent.sessionId);
+    await check(agent.sessionId);
+    await restored.send([{ role: 'user', content: 'Choose another model' }], {
+      selectedModel: ref,
+    });
+    await settle(restored);
+    expect((await check(agent.sessionId)).model).toEqual(ref);
+    expect(f.resolveModel).toHaveBeenLastCalledWith(ref, agent.sessionId);
+  },
+);
+
+it('rejects a selected model outside a nonempty restriction without changing the persisted configuration', async () => {
+  const f = await fixture(
+    new MockLanguageModelV4({
+      doStream: async () => ({ stream: streamed(text('Done')) }),
+    }),
+  );
+  const options = { model: ['fixture/chat'] };
+  const selected = { modelService: 'alternate', model: 'second' };
+  await expect(
+    f.service.realtime(context(), { ...options, selectedModel: selected }),
+  ).rejects.toThrow('outside');
+  const agent = await f.service.realtime(context(), options);
+  await expect(
+    f.service.configure(context(), agent.sessionId, {}, selected, 'http'),
+  ).rejects.toThrow('outside');
+  await expect(
+    agent.send([{ role: 'user', content: 'Not allowed' }], {
+      selectedModel: selected,
+    }),
+  ).rejects.toThrow('outside');
+  const session = await f.sessions.load('alice', agent.sessionId);
+  expect(session.config.model).toEqual(options.model);
+  expect(session.model).toEqual(ref);
+  expect(f.resolveModel).not.toHaveBeenCalledWith(selected, agent.sessionId);
 });
 
 it('selects the first resolved business or request model before validating the original model columns', async () => {
@@ -1753,6 +1892,28 @@ it('warns on failed shutdown finalization, drains other executions and preserves
   }
 });
 
+it('announces an accepted message with its seq, so other pages read it at once', async () => {
+  const f = await fixture(
+    new MockLanguageModelV4({
+      doStream: async () => ({ stream: streamed(text('Saved')) }),
+    }),
+  );
+  const agent = await f.service.realtime(context());
+  const events: { lastSeq?: number; messageId?: string }[] = [];
+  h.services.events.on('conversation.changed', (event) => {
+    if (event.conversationId === agent.sessionId) events.push(event);
+  });
+  await agent.send([{ role: 'user', content: 'Hello' }]);
+  await agent.receive();
+  const page = await f.sessions.native.page('alice', agent.sessionId, {
+    limit: 100,
+  });
+  const user = page.items.find((message) => message.role === 'user');
+  expect(events).toContainEqual(
+    expect.objectContaining({ lastSeq: user?.metadata?.seq }),
+  );
+});
+
 it('announces committed message revisions and permits stable ID rereads', async () => {
   const f = await fixture(
     new MockLanguageModelV4({
@@ -2123,6 +2284,7 @@ it('does not reclaim current-process occupancy through a new service facade or b
   await agent.send([{ role: 'user', content: 'Work' }]);
   await entered.promise;
   const second = new OnlineAgentService({
+    sandboxProvider: createSandboxProvider({ skills: h.services.skills }),
     sessions: f.sessions,
     ids: { next: () => 'unused' },
     model: async () => model,
@@ -2397,6 +2559,7 @@ it('waits for persistence and release, isolates multiple observers across rounds
   outputs[1].close();
   expect(await final).toEqual({ count: 2 });
   const restarted = new OnlineAgentService({
+    sandboxProvider: createSandboxProvider({ skills: h.services.skills }),
     sessions: f.sessions,
     ids: { next: () => 'unused-read-id' },
     model: f.resolveModel,
@@ -2877,7 +3040,6 @@ it('validates HTTP variables across selected scope schemas while keeping trusted
       context: { variable: { name: 'Alice', count: 2 } },
     },
     undefined,
-    [],
     true,
   );
   expect(resolved.variable).toEqual({ name: 'Alice', count: 2 });
@@ -2892,4 +3054,40 @@ it('validates HTTP variables across selected scope schemas while keeping trusted
     systemPrompt: 'Trusted prompt',
     variable: { arbitrary: true },
   });
+});
+
+it('projects background reasoning history without changing structured results or requiring browser streams', async () => {
+  const f = await fixture(
+    new MockLanguageModelV4({
+      doStream: async () => ({
+        stream: streamed([
+          { type: 'reasoning-start', id: 'r' },
+          {
+            type: 'reasoning-delta',
+            id: 'r',
+            delta: 'Background reasoning',
+            providerMetadata: { fixture: { signature: 'private-signature' } },
+          },
+          { type: 'reasoning-end', id: 'r' },
+          ...text('{"count":2}'),
+        ]),
+      }),
+    }),
+  );
+  const job = await f.service.background(context());
+  await job.run([{ role: 'user', content: 'Count' }], {
+    type: 'object',
+    properties: { count: { type: 'integer' } },
+    required: ['count'],
+  });
+  await settle(job);
+  expect(await job.get()).toEqual({ count: 2 });
+  expect(await job.try()).toEqual({ ok: true, data: { count: 2 } });
+  const history = await job.history();
+  expect(history.at(-1)!.parts).toContainEqual({
+    type: 'reasoning',
+    text: 'Background reasoning',
+    state: 'done',
+  });
+  expect(JSON.stringify(history)).not.toContain('private-signature');
 });

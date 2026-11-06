@@ -1,3 +1,9 @@
+import {
+  registerWebSearchTool,
+  type OnlineAgentWebSearch,
+} from './web-search.js';
+import type { NativeFileInputs } from '../files/service.js';
+import type { OnlineAgentSandboxProvider } from '../sandbox/types.js';
 import type { LanguageModel } from 'ai';
 import type { ServiceResolver } from '@nocobase/service-provider';
 import type {
@@ -33,8 +39,11 @@ export class OnlineAgentService {
       sessions: OnlineAgentSessionManager;
       runner?: OnlineAgentBackend;
       configurator?: OnlineAgentConfigurator;
+      sandboxProvider?: OnlineAgentSandboxProvider;
       ids: IdSource;
       resolver?: ServiceResolver;
+      webSearch?: OnlineAgentWebSearch;
+      fileInputs?: NativeFileInputs;
       model(ref: ModelRef, sessionId: string): Promise<LanguageModel>;
       defaultModel(): Promise<ModelRef | null>;
       uiStreams?: OnlineAgentUIStreams;
@@ -42,6 +51,7 @@ export class OnlineAgentService {
     },
   ) {
     this.configurator = deps.configurator ?? new OnlineAgentConfigurator();
+    registerWebSearchTool(this.configurator, deps.webSearch);
     this.uiStreams =
       deps.uiStreams ??
       new OnlineAgentUIStreams({ onError: (error) => deps.onError(error) });
@@ -133,6 +143,14 @@ export class OnlineAgentService {
       );
     }
     const initial = await this.initial(context, options, boundary);
+    if (
+      options.effort !== undefined &&
+      (!initial.config.agentId || initial.config.agentId === 'online')
+    )
+      throw invalid(
+        'Online agents do not support conversation reasoning effort.',
+        { reason: 'EFFORT_UNSUPPORTED' },
+      );
     return this.selectedBackend(initial).createRealtime(
       context,
       initial,
@@ -183,7 +201,6 @@ export class OnlineAgentService {
         scope: options.scope ?? defaults.scope,
       },
       undefined,
-      [],
       boundary === 'http',
     );
     this.trusted(context);

@@ -4,6 +4,7 @@ import {
 } from './scheduled-drafts.js';
 import { acceptDraftWrite, closeDrafts } from './draft-states.js';
 import { lockWritableAccount } from './account-guard.js';
+import { parseAttachmentLocator } from '../adapters/imap-smtp/locators.js';
 import { type DatabaseManager } from '@nocobase/db';
 import {
   MAIL_LOCAL_DRAFT_FOLDER_ID,
@@ -52,6 +53,61 @@ export class MailMessagesStore {
   ): Promise<MailMessage> {
     await this.database.transaction(async ({ query }) => {
       await lockWritableAccount(query, accountId);
+      const locations = await query
+        .selectFrom('mailMessages')
+        .leftJoin('mailMessageImapLocations', (join) =>
+          join
+            .onRef(
+              'mailMessageImapLocations.accountId',
+              '=',
+              'mailMessages.accountId',
+            )
+            .onRef(
+              'mailMessageImapLocations.messageId',
+              '=',
+              'mailMessages.id',
+            ),
+        )
+        .select([
+          'mailMessages.imapIdSource',
+          'mailMessageImapLocations.providerFolderId',
+          'mailMessageImapLocations.uidValidity',
+          'mailMessageImapLocations.uid',
+          'mailMessageImapLocations.status',
+        ])
+        .where('mailMessages.accountId', '=', accountId)
+        .where('mailMessages.id', '=', messageId)
+        .where('mailMessages.providerMessageId', '=', message.providerMessageId)
+        .execute<{
+          imapIdSource: MessageRow['imapIdSource'];
+          providerFolderId: string | null;
+          uidValidity: string | null;
+          uid: number | string | null;
+          status: string | null;
+        }>();
+      if (locations.length === 0) return;
+      // A late content fetch must not restore attachment locators retired by a move.
+      // The account lock serializes this check with move commits, including after
+      // pending protection has been released. Other adapters retain their write rules.
+      if (
+        locations[0]?.imapIdSource &&
+        !message.attachments.every((attachment) => {
+          const locator = parseAttachmentLocator(
+            attachment.providerAttachmentId,
+          );
+          return (
+            locator &&
+            locations.some(
+              (location) =>
+                location.status === 'valid' &&
+                location.providerFolderId === locator.folder &&
+                location.uidValidity === locator.uidValidity &&
+                Number(location.uid) === locator.uid,
+            )
+          );
+        })
+      )
+        return;
       let update = query
         .updateTable<MessageRow>('mailMessages')
         .set({

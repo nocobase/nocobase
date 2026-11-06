@@ -1,5 +1,230 @@
 # @nocobase/app-plugin-knowledge
 
+## 0.1.0-beta.17
+
+### Patch Changes
+
+- 9933a9a: Allow applications to define issued-credential admission consistently with their command policies. Support run-authenticated project creation, activity and label reads, issue uploads and project resources. Restrict comment edits and deletions to the authenticated originating run, and accept run credentials when reading a release.
+
+  Apply the same trusted application admission to knowledge and owner-checked conversation routes without bypassing their business permissions or ownership checks.
+
+  Check issue visibility before collecting plan rehearsal baselines so a refused row cannot disclose hidden issue fields or dependency identifiers.
+
+- cf23bfe: **Breaking:** Remove the deprecated `@nocobase/app-server/mailer` entry and its `Mailer`, `mailerToken`, `createMailer`, `MailerProvider`, and notification configuration exports. Replace `MailExecutions.close(waitMs)` and `drain()` with `stop()` and `wait()`; transport `close()` now cancels supported network work and waits for its original completion without a nested timeout. Application owners must apply the outer shutdown budget. Create exclusive senders with `@nocobase/app-server/mailers` and declare notification config with `@nocobase/app-plugin-notification-providers/config`. Existing inline SMTP/Resend YAML, environment mappings, and provider/channel APIs remain supported.
+
+  Default and Examples now show `mailers.default: system` and explicitly map `MAILERS_SYSTEM_*`; the example configuration remains empty at runtime. The previous `MAILERS_TRANSACTIONAL_*` sample prefix was not published. Applications may still choose any valid mailer name and custom environment prefix.
+
+- Updated dependencies [6cc8acf]
+- Updated dependencies [1f0b3ba]
+- Updated dependencies [9933a9a]
+- Updated dependencies [1e018f1]
+- Updated dependencies [cf23bfe]
+- Updated dependencies [4411984]
+  - @nocobase/app-client@4.0.0-beta.7
+  - @nocobase/app-plugin-agents@2.0.0-beta.3
+  - @nocobase/app-plugin-authentication@2.0.0-beta.18
+  - @nocobase/db@1.0.0-beta.25
+  - @nocobase/app-server@5.0.0-beta.0
+  - @nocobase/app-plugin-authorization@1.0.0-beta.35
+  - @nocobase/app-plugin-file@1.0.0-beta.29
+
+## 0.1.0-beta.16
+
+### Patch Changes
+
+- cf23bfe: Move Redis realtime broadcasting to the commercial Realtime Redis plugin. Register its Server plugin before selecting Redis in an application, or import the standalone broker from its `/broker` entry. Preserve the Memory default, service identity, authorization and recovery protocol, and republish runtime consumers against the new host and realtime major versions. Install the compatible commercial cohort before deploying the final removal.
+- Updated dependencies [88d35b8]
+- Updated dependencies [83f28b1]
+- Updated dependencies [88d35b8]
+- Updated dependencies [88d35b8]
+- Updated dependencies [88d35b8]
+- Updated dependencies [88d35b8]
+- Updated dependencies [83f28b1]
+- Updated dependencies [d04061e]
+- Updated dependencies [88d35b8]
+- Updated dependencies [88d35b8]
+- Updated dependencies [36f61d0]
+- Updated dependencies [cf23bfe]
+- Updated dependencies [88d35b8]
+- Updated dependencies [b29a336]
+  - @nocobase/app-client@4.0.0-beta.6
+  - @nocobase/authorization@1.0.0-beta.16
+  - @nocobase/app-plugin-authorization@1.0.0-beta.34
+  - @nocobase/app-plugin-agents@2.0.0-beta.1
+  - @nocobase/app-plugin-authentication@2.0.0-beta.17
+  - @nocobase/app-server@4.0.0-beta.0
+  - @nocobase/app-plugin-file@1.0.0-beta.28
+
+## 0.1.0-beta.15
+
+### Patch Changes
+
+- a0b4568: **Breaking:** Move ordinary and recurring Redis Jobs out of the open-source runtime into the commercial `@nocobase/app-plugin-jobs-redis` Server plugin. Redis deployments must install and register a compatible plugin on every producer and consumer as part of the framework upgrade; selecting an unregistered backend now fails explicitly instead of falling back to Memory. Move Redis-specific type imports from `@nocobase/jobs` to `@nocobase/app-plugin-jobs-redis/config`.
+
+  Add application-owned, paired backend registration through `jobExecutorServiceToken`'s `registerImplementation(name, implementation)` and public `JobsImplementation` contracts from `@nocobase/jobs`, without a separate registry token. Keep the existing Jobs service token, lazy executors and Memory behavior. Registration opens no resources and is not frozen by boot or executor startup. Services require no setup; configuration and missing implementations are validated when an executor is requested, and consumers still own executor startup. Default and Examples templates now declare only Memory. Preserve existing Redis connection, namespace, scopes and job identities; no database or Redis data migration is required. Queue Redis is unchanged.
+
+  Existing YAML overrides that relied on template defaults must explicitly declare `adapter: redis` for each Redis Jobs configuration; `connection` alone no longer selects Redis. Updated template examples document the commercial Server plugin installation and registration prerequisite.
+
+  Selected configurations with missing, empty or non-string adapters are rejected instead of silently using Memory.
+
+  Release the framework first and verify its exact version is downloadable from the customer registry before pinning and releasing the compatible commercial plugin. Redis users must wait through any publication gap and upgrade the framework and plugin together.
+
+- 82f9c1d: BREAKING: Agents 2 removes legacy vector collections, their SQLite/pgvector stores, workers and public types. Migrate consumers before upgrading; active `agents.vectors` settings now fail startup, while `{ store: false }` remains an inert compatibility setting for the 2.x line. Model services, Embedding, usage recording and Knowledge's independent indexing remain available. Historical migrations and existing data are retained. See `@nocobase/app-plugin-agents/docs/vectors-migration.md` for API/configuration migration, backups and rollback. Republish direct consumers against the new Agents major version.
+- Updated dependencies [b6934ad]
+- Updated dependencies [c571810]
+- Updated dependencies [b2c0dfd]
+- Updated dependencies [311f6e1]
+- Updated dependencies [d3f0c92]
+- Updated dependencies [57ecc34]
+- Updated dependencies [4c89e3c]
+- Updated dependencies [a0b4568]
+- Updated dependencies [483ac67]
+- Updated dependencies [12b1f64]
+- Updated dependencies [b6934ad]
+- Updated dependencies [5ce4a7c]
+- Updated dependencies [b6934ad]
+- Updated dependencies [b2eed36]
+- Updated dependencies [82f9c1d]
+- Updated dependencies [8f3e54d]
+- Updated dependencies [171f7fb]
+- Updated dependencies [91b7602]
+- Updated dependencies [eff2cb2]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.16
+  - @nocobase/app-plugin-agents@2.0.0-beta.0
+  - @nocobase/app-client@4.0.0-beta.5
+  - @nocobase/jobs@1.0.0-beta.5
+  - @nocobase/app-server@3.0.0-beta.5
+  - @nocobase/db@1.0.0-beta.24
+  - @nocobase/app-plugin-file@1.0.0-beta.27
+
+## 0.1.0-beta.14
+
+### Patch Changes
+
+- 22748f7: Describe the fields of the indexing settings, rebuild and retry requests, so the API document and the CLI flags derived from it say what each one is.
+- Updated dependencies [451bf75]
+- Updated dependencies [22748f7]
+- Updated dependencies [5782713]
+- Updated dependencies [22748f7]
+- Updated dependencies [22748f7]
+- Updated dependencies [22748f7]
+- Updated dependencies [22748f7]
+- Updated dependencies [22748f7]
+- Updated dependencies [22748f7]
+- Updated dependencies [22748f7]
+- Updated dependencies [22748f7]
+- Updated dependencies [22748f7]
+- Updated dependencies [e3d9a52]
+- Updated dependencies [22748f7]
+- Updated dependencies [22748f7]
+- Updated dependencies [cc0b521]
+  - @nocobase/app-client@4.0.0-beta.4
+  - @nocobase/app-plugin-agents@1.0.0-beta.28
+  - @nocobase/app-server@3.0.0-beta.4
+  - @nocobase/app-plugin-authorization@1.0.0-beta.33
+  - @nocobase/db@1.0.0-beta.23
+  - @nocobase/app-plugin-authentication@2.0.0-beta.15
+  - @nocobase/app-plugin-file@1.0.0-beta.27
+
+## 0.1.0-beta.13
+
+### Patch Changes
+
+- 05f800a: Publish editable file upload/preview and notification delivery-log UI through the UI Library. Install `@nocobase/file-component-ui` or `@nocobase/notification-logs-ui` with shadcn, and merge their bundled locale resources into the consuming application. Existing application-owned copies remain usable; reconcile upstream changes while preserving customizations. The default template keeps its File UI installation path and now tracks the UI Library source.
+
+  Remove plugin-owned Registry recipes, their build/materialize commands, the Registry example plugin, and the `registry` capability from the plugin scaffold. Plugins can continue to install UI Library items into their own client source. Update plugin development guidance to use this single source distribution channel.
+
+  Preserve custom file download callbacks for images opened from FileList, including preview toolbar and fallback downloads.
+
+- Updated dependencies [05f800a]
+  - @nocobase/app-plugin-agents@1.0.0-beta.27
+  - @nocobase/app-plugin-file@1.0.0-beta.27
+
+## 0.1.0-beta.12
+
+### Minor Changes
+
+- 2e5823a: Add permission-filtered all-space Knowledge search and person-only search/read CLI commands for native OnlineAgent credentials. Register optional global Knowledge instructions with on-demand and always retrieval policies through existing context variables, preserving session snapshots and scoped credential restrictions.
+
+  Export the existing native credential type for optional plugin integration.
+
+- 354db9b: Allow applications to disable knowledge proposals while retaining authorized direct editing and historical records. Remove disabled proposal routes, reject proposal and ticket creation in the service, and hide proposal navigation and creation controls using the capabilities endpoint.
+
+### Patch Changes
+
+- 2e5823a: Use the OpenAI-compatible SDK for Alibaba Qwen embeddings while preserving its existing chat SDK, service base URL, credentials, and dimension selection. Version Alibaba Knowledge embedding identities so generations created with the former native transport require an explicit rebuild instead of silently reusing vectors across the protocol change.
+- 2e5823a: Allow Knowledge indexing to use a manually entered fixed Embedding model ID as well as catalog suggestions, including services with empty model lists. Keep unlisted models behind an explicit server-only gateway opt-in, preserve service and model-kind checks, and learn unknown vector dimensions from indexing responses without probing on edit or save. Rename the Chinese settings title and remove duplicate dialog close controls and standalone configuration headings.
+
+  Show deployment guidance whenever no indexing instances are configured, including when earlier settings remain saved. Preserve those settings without presenting a stale form or old progress as configurable.
+
+  Simplify zero-instance guidance and localize a clearer Agent configuration prompt: inspect supported indexing types, let the user choose, and edit knowledge.indexing in the actual config.yaml or existing config.yml without assuming a vector backend.
+
+- 2e5823a: Add Knowledge-owned global indexing with durable generations, transactional document work, authorized vector retrieval, and sqlite-vec and pgvector backends. Keep database connections and index storage in deployment configuration, support safe rebuild and recovery, and preserve text search when indexing is unavailable.
+- 2e5823a: Add shared dialog and standalone Knowledge indexing settings with type-owned forms, on-demand Embedding catalogs, per-instance drafts and zero-configuration guidance. Move the pgvector generation table prefix into deployment configuration and prevent browser options from overriding it. Add a permission-protected Examples settings page and synchronize deployment examples in both templates. Separate index enablement into a dedicated switch, retain rendered forms and drafts across toggles, show document progress with hover-only failure counts, and place rebuild controls in the footer. Display the selected instance type beside its selector. Keep settings fields, progress and footer vertically stacked in both standalone and dialog layouts. Remove duplicate standalone back navigation and scope labels. Make indexing entry placement application-owned: add a generic title-action slot and remove built-in page/back navigation from the reusable settings components. Add an Examples Knowledge indexing menu immediately below Knowledge.
+
+  Explain the sqlite-vec and pgvector vector database options in two setup cards, followed by concrete configuration-file, restart and enablement steps. Provide a separate localized Agent prompt that checks available types, waits for the user’s choice and confirms configuration changes and paid operations.
+
+- 3eb340c: Hide Search test and Section settings when no knowledge indexer is registered, expose semantic search availability, and reject unavailable semantic tool requests while keeping keyword search available.
+- Updated dependencies [2e5823a]
+- Updated dependencies [2e5823a]
+- Updated dependencies [2e5823a]
+- Updated dependencies [2e5823a]
+- Updated dependencies [2e5823a]
+- Updated dependencies [671e1b3]
+- Updated dependencies [e5d61bd]
+- Updated dependencies [7fbcda4]
+- Updated dependencies [7fbcda4]
+  - @nocobase/app-plugin-agents@1.0.0-beta.25
+
+## 0.1.0-beta.11
+
+### Patch Changes
+
+- d490379: Share Knowledge's local PDF, Office, spreadsheet and text parsers in a Worker-isolated extraction library with bounded input, output, concurrency and cancellation. Preserve Knowledge's public parsing entry points, custom extractor injection, default Markdown output and version text persistence.
+
+  Report actual-text availability separately from generated PDF or slide headings. Provide an option to omit embedded DOCX image bytes before applying text budgets while retaining Knowledge's default Markdown images and detecting image-only documents without treating image markup as readable text.
+
+- Updated dependencies [d490379]
+  - @nocobase/document-extractor@0.1.0-beta.0
+
+## 0.1.0-beta.10
+
+### Patch Changes
+
+- dfe2318: Wait for post-commit file cleanup before completing knowledge proposal rejection or withdrawal, preventing stale file records and cleanup races on MySQL.
+- Updated dependencies [9eea184]
+  - @nocobase/db@1.0.0-beta.22
+  - @nocobase/app-plugin-authentication@2.0.0-beta.12
+  - @nocobase/app-plugin-file@1.0.0-beta.26
+
+## 0.1.0-beta.9
+
+### Patch Changes
+
+- 1952789: Complete all ten supported languages in plugin and example plugin catalogues, including model suggestions and test Web Push notifications. Align calendars and invitation emails, support locale-specific plural forms, and validate resource loading and formatting.
+
+  Correct joined translation text and distinguish configuration save actions, refund stages, and domain-specific operation labels.
+
+- Updated dependencies [1952789]
+- Updated dependencies [06e53be]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.12
+  - @nocobase/app-plugin-authorization@1.0.0-beta.30
+  - @nocobase/app-plugin-file@1.0.0-beta.26
+  - @nocobase/i18n@2.0.0-beta.1
+  - @nocobase/authorization@1.0.0-beta.15
+  - @nocobase/app-client@4.0.0-beta.0
+
+## 0.1.0-beta.8
+
+### Minor Changes
+
+- 7a6d311: Declare indexer notification coverage and expose it as optional snapshot metadata. Share event and fallback refresh scheduling across index query observers, reconcile complete acknowledged subscriptions once per minute, and use bounded adaptive polling for incomplete or legacy indexers. Refresh inherited permission changes, clear inaccessible index snapshots, and release subscriptions and timers when queries leave the cache. Preserve existing API data and client method return shapes. Show failed index refreshes with a reader-accessible retry action in document badges, section panels and space summaries.
+
+### Patch Changes
+
+- @nocobase/app-server@3.0.0-beta.0
+  - @nocobase/app-plugin-file@1.0.0-beta.25
+
 ## 0.1.0-beta.7
 
 ### Minor Changes

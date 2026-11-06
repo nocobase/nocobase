@@ -4,7 +4,7 @@
  * may focus it. While the agent works, an empty box turns the send button into "Stop"; a message written meanwhile is
  * sent at once and the agent takes it in with the run it is on (or the one waiting for a runner). Files added to it
  * (the attach button, a paste, a drop on it or on the view, through `registerAddFiles`) upload through the agents
- * plugin and go with the message.
+ * plugin and go with the message. Clicking a chip shows what it carries (`chipContent`).
  */
 import {
   buildPageContext,
@@ -13,6 +13,7 @@ import {
   useChatAttachments,
   useChatPanel,
   useChatSources,
+  type ChatContextChip,
   type ChatContextInput,
 } from '@nocobase/app-plugin-agents/client/chat';
 import type {
@@ -60,6 +61,28 @@ export interface ComposerProps {
   readonly variant?: 'panel' | 'page';
 }
 
+/** What a chip in the composer carries, as its preview dialog shows it. */
+function chipContent(chip: ChatContextChip): unknown {
+  switch (chip.kind) {
+    case 'selection':
+      return chip.selection.text;
+    case 'filter':
+      return chip.filter;
+    case 'item':
+      return {
+        kind: chip.item.kind,
+        id: chip.item.id,
+        label: chip.item.label,
+      };
+    case 'ui':
+      return {
+        kind: chip.source.kind,
+        id: chip.source.id,
+        label: chip.source.label,
+      };
+  }
+}
+
 export function Composer({
   disabled,
   running,
@@ -76,14 +99,16 @@ export function Composer({
   const panel = useChatPanel();
   // Upload completion must use the current model/executor and readiness, not a captured callback.
   const currentSendRef = useRef(onSend);
+  const activeRevisionRef = useRef(panel.composerRevision);
   const sendAllowedRef = useRef(false);
   useLayoutEffect(() => {
     currentSendRef.current = onSend;
+    activeRevisionRef.current = panel.composerRevision;
     sendAllowedRef.current = panel.open && !disabled;
     return () => {
       sendAllowedRef.current = false;
     };
-  }, [onSend, disabled, panel.open]);
+  }, [onSend, disabled, panel.open, panel.composerRevision]);
   const sources = useChatSources();
   const labels = useComposerLabels();
   const files = useChatAttachments();
@@ -114,6 +139,7 @@ export function Composer({
   const context: AgentComposerContext = {
     chips: contextChips(input),
     onRemove: sources.remove,
+    inspect: chipContent,
     build: () => {
       if (sources.selectedUIKeys.size === 0) return buildPageContext(input);
       return sources.snapshotUI().then((ui) => {
@@ -136,6 +162,7 @@ export function Composer({
 
   return (
     <AgentComposer
+      key={panel.composerRevision}
       variant={variant}
       disabled={disabled}
       running={running}
@@ -150,7 +177,11 @@ export function Composer({
       registerFocus={panel.registerComposer}
       onStop={onStop}
       onSend={(content, carried, sent) => {
-        if (!sendAllowedRef.current) return false;
+        if (
+          !sendAllowedRef.current ||
+          activeRevisionRef.current !== panel.composerRevision
+        )
+          return false;
         const taken = currentSendRef.current(content, carried, sent);
         if (taken) panel.clearPinned();
         return taken;

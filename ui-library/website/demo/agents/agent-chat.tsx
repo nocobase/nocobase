@@ -21,7 +21,16 @@ import {
   ChatHeaderButton,
 } from '#extensions/nocobase-agent-chat/launchers';
 
-const ISSUE = { kind: 'issue', id: 'pm-12', label: 'PM-12 Welcome tour' };
+const zh =
+  typeof window !== 'undefined' &&
+  new URLSearchParams(window.location.search).get('lang') === 'zh-CN';
+const L = (en: string, cn: string): string => (zh ? cn : en);
+
+const ISSUE = {
+  kind: 'issue',
+  id: 'pm-12',
+  label: L('PM-12 Welcome tour', 'PM-12 欢迎引导'),
+};
 
 /** A page that tells the panel what it shows: the issue becomes a chip in the composer. */
 function IssuePage(): ReactElement {
@@ -31,23 +40,43 @@ function IssuePage(): ReactElement {
       <div className='flex items-start justify-between gap-3'>
         <div className='min-w-0'>
           <p className='text-xs text-muted-foreground'>PM-12</p>
-          <h1 className='text-lg font-semibold'>Welcome tour</h1>
+          <h1 className='text-lg font-semibold'>
+            {L('Welcome tour', '欢迎引导')}
+          </h1>
         </div>
         <AskAgentButton
           item={ISSUE}
           newConversation
-          draft='Summarize this issue and what is left to do.'
+          draft={L(
+            'Summarize this issue and what is left to do.',
+            '总结一下这个任务还剩什么。',
+          )}
         />
       </div>
-      <p className='text-sm text-muted-foreground'>
+      <p className='text-sm text-muted-foreground' hidden={zh}>
         New members see a short tour of the workspace the first time they sign
         in: the projects, the inbox and how to ask an agent. Select text here
         and it goes along as context.
       </p>
-      <p className='text-sm text-muted-foreground'>
+      <p className='text-sm text-muted-foreground' hidden={zh}>
         Ask agent starts a new conversation: its agent, and the model of an
         online agent, are chosen in the composer before the first message, and
         the header then shows that agent for as long as the conversation lasts.
+        The next new conversation starts with the agent used last.
+      </p>
+      {zh ? (
+        <p className='text-sm text-muted-foreground'>
+          新成员第一次登录时会看到一段简短的工作区引导：项目、收件箱，以及怎样问
+          Agent。在这里选中文字，会作为上下文一起发送。「问
+          Agent」会新建对话；顶部按钮打开对话面板。
+        </p>
+      ) : null}
+      <p className='text-sm text-muted-foreground' hidden={zh}>
+        The switch in the panel&apos;s list header moves between the online
+        agent and runner agents, each with its own conversations. Click a
+        context chip to see what it carries. Open the demo with{' '}
+        <code>?agents=online</code> or <code>?agents=runner</code> to see the
+        panel with one kind of agent and no switch.
       </p>
     </div>
   );
@@ -81,11 +110,15 @@ function OpenOnArrival(): null {
 export function AgentChatDemo(): ReactElement {
   return (
     <BrowserRouter basename='/demo/agents/agent-chat'>
-      <ChatProvider conversationPath={(id) => `/chat/${id}`}>
+      <ChatProvider
+        conversationPath={(id) => `/chat/${id}`}
+        // The signed-in person's id in an application, so the agent last used is remembered for them.
+        memoryScope='demo-user'
+      >
         <OpenOnArrival />
         <div className='flex h-svh flex-col bg-background'>
           <header className='flex h-14 shrink-0 items-center justify-between border-b px-4'>
-            <p className='text-sm font-medium'>Workspace</p>
+            <p className='text-sm font-medium'>{L('Workspace', '工作区')}</p>
             <ChatHeaderButton />
           </header>
           <div className='relative flex min-h-0 flex-1'>

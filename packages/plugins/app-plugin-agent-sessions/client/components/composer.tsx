@@ -1,10 +1,11 @@
 /**
- * Where a person writes to the agent. Enter sends, Shift+Enter breaks the line, and while the agent is answering a
- * message waits for the turn to end unless sent with ⌘↩ (Ctrl+Enter), which stops the turn first. Pasted, dropped or
+ * Where a person writes to the agent. On phones Enter breaks the line; on desktop Enter sends and Shift+Enter
+ * breaks the line. While the agent answers, a message waits unless sent with ⌘↩ (Ctrl+Enter), which stops the turn. Pasted, dropped or
  * picked images go with the message. A message that starts with `/` offers the agent's own commands, and `#` offers
  * what the message can mention, such as an issue, which then goes with it. What the host attached, such as the page
  * it was opened from, shows above the message until removed and goes with the next message sent.
  */
+import { createUuid } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { cn } from 'cn';
 import {
@@ -33,11 +34,14 @@ import type { PromptContent, Reference } from '../../shared/api.js';
 import { useMentions, type Mention } from '../api.js';
 import {
   attachedKey,
+  mentionText,
   stopAutomaticAttachment,
   type Attachment,
 } from '../lib/attachments.js';
 import { useQueryClient } from '@tanstack/react-query';
+import { usePhone } from '../use-phone.js';
 import { useSessionMemory } from '../use-session-memory.js';
+import { useSessionSurface } from '../config.js';
 import { StatusPill } from './status-pill.js';
 
 type Image = Extract<PromptContent, { type: 'image' }>;
@@ -99,10 +103,6 @@ const MOD_KEY =
     ? '⌘'
     : 'Ctrl';
 
-/** How a mention reads in the message. */
-const mentionText = (reference: Reference): string =>
-  `#${reference.key ?? reference.title}`;
-
 export function Composer({
   placeholder,
   draftKey,
@@ -125,12 +125,14 @@ export function Composer({
 }: ComposerProps): ReactElement {
   const { t } = useTranslation();
   const client = useQueryClient();
+  const { onInspectAttachment } = useSessionSurface();
   const [text, setText] = useSessionMemory(
     draftKey && `text:${draftKey}`,
     initialContent
       .flatMap((part) => (part.type === 'text' ? [part.text] : []))
       .join('\n\n'),
   );
+  const phone = usePhone();
   const [expanded, setExpanded] = useState(false);
   const [caret, setCaret] = useState(0);
   const [images, setImages] = useSessionMemory<Pending[]>(
@@ -292,7 +294,7 @@ export function Composer({
     onEdit?.();
     const read = await Promise.all(
       files.map(async (file): Promise<Pending> => ({
-        id: crypto.randomUUID(),
+        id: createUuid(),
         type: 'image',
         mimeType: file.type,
         data: await base64(file),
@@ -302,7 +304,9 @@ export function Composer({
   };
 
   const onKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>): void => {
-    if (event.nativeEvent.isComposing) return;
+    if (event.nativeEvent.isComposing || event.nativeEvent.keyCode === 229)
+      return;
+    if (phone && event.key === 'Enter') return;
     if (suggestions.length > 0) {
       if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
         event.preventDefault();
@@ -411,7 +415,17 @@ export function Composer({
                 ) : (
                   <FileTextIcon className='text-muted-foreground size-3 shrink-0' />
                 )}
-                <span className='truncate'>{attachment.label}</span>
+                {onInspectAttachment ? (
+                  <button
+                    type='button'
+                    className='min-w-0 truncate rounded hover:underline focus-visible:ring-2 focus-visible:ring-ring'
+                    onClick={() => onInspectAttachment(attachment)}
+                  >
+                    {attachment.label}
+                  </button>
+                ) : (
+                  <span className='truncate'>{attachment.label}</span>
+                )}
                 <button
                   type='button'
                   aria-label={t('composer.removeAttached', {
@@ -589,7 +603,7 @@ export function Composer({
           </div>
         </div>
       </div>
-      {hints && (
+      {hints && !phone && (
         <p className='text-muted-foreground mt-2 hidden flex-wrap gap-x-4 gap-y-1 px-1 text-[11px] @md/agent-session:flex'>
           {keys.map(([combo, label]) => (
             <span key={label} className='inline-flex items-center gap-1'>

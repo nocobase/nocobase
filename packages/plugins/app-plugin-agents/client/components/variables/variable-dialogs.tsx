@@ -1,6 +1,6 @@
 /**
  * Adding a variable (`target.name === null`), in the scope chosen in the dialog when the panel lists several, or
- * replacing one's value or whether only team runtimes receive it, and showing revealed values. The value field starts
+ * replacing one's value or whether only shared runtimes receive it, and showing revealed values. The value field starts
  * empty: stored values never reach the browser except through the audited reveal, and an empty value when replacing
  * keeps the stored one. "Take from the runtime" keeps a name only: the runtime that takes a run provides the value.
  *
@@ -197,7 +197,7 @@ function VariableForm({
     if (problem || tooLong || valueMissing) return;
     setSaving(true);
     try {
-      // Replacing with an empty value keeps the stored one: only whether team runtimes alone receive it changes.
+      // Replacing with an empty value keeps the stored one: only whether shared runtimes alone receive it changes.
       await api.setVariable(
         scope.scope,
         scope.scopeId,

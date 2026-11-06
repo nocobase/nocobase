@@ -165,6 +165,36 @@ const call = (path: string, init: RequestInit & { role?: string } = {}) => {
 };
 
 describe('the /api/projects guard', () => {
+  it('authenticates and bounds summary batches without disclosing invisible references', async () => {
+    const admin = h.viewer('alice', 'admin');
+    const visible = await h.services.issues.create(admin, { title: 'Card' });
+    const path = `/issues/summaries?refs=${visible.id},${visible.identifier},missing`;
+    expect((await call(path)).status).toBe(401);
+    expect((await call(path, { role: 'none' })).status).toBe(403);
+    const response = await call(path, { role: 'admin' });
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({
+      data: [
+        {
+          id: visible.id,
+          identifier: visible.identifier,
+          title: 'Card',
+          statusKey: 'backlog',
+        },
+      ],
+      meta: { total: 1 },
+    });
+    for (const refs of [
+      '',
+      'a,,b',
+      Array.from({ length: 101 }, (_, at) => `i${at}`).join(','),
+    ])
+      expect(
+        (await call(`/issues/summaries?refs=${refs}`, { role: 'admin' }))
+          .status,
+      ).toBe(400);
+  });
+
   it.each([false, true])(
     'updates structured progress through PATCH (delegated=%s)',
     async (delegated) => {
@@ -1466,6 +1496,85 @@ describe('dependencies over HTTP', () => {
 });
 
 describe('comments over HTTP', () => {
+  it.each(['waitingOwner', 'blocked', 'dormant', 'limited', 'denied'] as const)(
+    'returns recorded work skips for a saved comment: %s',
+    async (reason) => {
+      h.services.kinds.add({
+        key: 'bot',
+        mention: { candidates: () => Promise.resolve([]) },
+        work: {
+          onCommentCreated: (_tx, change) =>
+            Promise.resolve([
+              {
+                kind: 'bot',
+                principalId: 'builder',
+                subjectId: change.issue.id,
+                triggerType: 'mention',
+                started: false,
+                skipped: reason,
+              },
+            ]),
+        },
+      });
+      const issue = await h.services.issues.create(h.viewer('alice'), {
+        title: 'Held work',
+      });
+      const path = `/issues/${issue.id}/comments`;
+      const body = JSON.stringify({
+        content: 'Go [@Builder](mention://bot/builder)',
+      });
+      expect((await call(path, { method: 'POST', body })).status).toBe(401);
+      expect(
+        (await call(path, { role: 'none', method: 'POST', body })).status,
+      ).toBe(404);
+      const posted = await call(path, { role: 'member', method: 'POST', body });
+      expect(posted.status).toBe(201);
+      expect(await posted.json()).toMatchObject({
+        data: {
+          comment: { content: 'Go [@Builder](mention://bot/builder)' },
+          triggered: [],
+          skipped:
+            reason === 'denied' ? [] : [{ kind: 'bot', id: 'builder', reason }],
+        },
+      });
+    },
+  );
+
+  it('rejects message and provenance on public comment writes and keeps the read permission boundary', async () => {
+    const issue = await h.services.issues.create(h.viewer('alice'), {
+      title: 'Display message',
+    });
+    const message = {
+      type: 'example.notice',
+      params: { agentName: 'Sol' },
+    } as const;
+    for (const extra of [{ message }, { origin: { message } }]) {
+      const response = await call(`/issues/${issue.id}/comments`, {
+        role: 'member',
+        method: 'POST',
+        body: JSON.stringify({ content: 'Hi', ...extra }),
+      });
+      expect(response.status).toBe(400);
+    }
+    await h.services.comments.post(
+      { type: 'system', id: null },
+      issue.id,
+      { content: 'Fallback.' },
+      { message, origin: { runId: 'private-run' } },
+    );
+    expect((await call(`/issues/${issue.id}/comments`)).status).toBe(401);
+    expect(
+      (await call(`/issues/${issue.id}/comments`, { role: 'none' })).status,
+    ).toBe(404);
+    const response = await call(`/issues/${issue.id}/comments`, {
+      role: 'member',
+    });
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({
+      data: [{ root: { message } }],
+    });
+  });
+
   it('posts, reacts with an encoded emoji, follows and lists mentions', async () => {
     await call('/issues', {
       role: 'member',
@@ -1819,6 +1928,39 @@ describe('the API document', () => {
 });
 
 describe('CLI session issue integration', () => {
+  it('computes detail progress only for CLI or delegated actors after visibility checks', async () => {
+    const issue = await h.services.issues.create(h.viewer('alice'), {
+      title: 'Progress',
+    });
+    const progress = vi.fn(async () => ({ agent: 'Worker' }));
+    container.instance(projectsIssueSessionToken, { progress } as never);
+    const path = `/issues/${issue.identifier.toLowerCase()}`;
+    expect((await call(path)).status).toBe(401);
+    expect((await call(path, { role: 'none' })).status).toBe(404);
+    const browser = await call(path, { role: 'admin' });
+    expect(browser.status).toBe(200);
+    expect((await browser.json()).data).not.toHaveProperty('progress');
+    expect(progress).not.toHaveBeenCalled();
+    const cli = await call(path, {
+      role: 'admin',
+      headers: { 'x-nocobase-client': 'cli' },
+    });
+    expect((await cli.json()).data.progress).toEqual({ agent: 'Worker' });
+    expect(progress).toHaveBeenCalledOnce();
+    let actor: import('../server/tokens.js').Viewer['actor'] = {
+      type: 'user',
+      id: 'alice',
+      via: 'api_key',
+    };
+    container.instance(projectsRequestActorToken, () => Promise.resolve(actor));
+    const keyed = await call(path, { role: 'admin' });
+    expect((await keyed.json()).data.progress).toEqual({ agent: 'Worker' });
+    actor = { type: 'agent', id: 'worker' };
+    const agent = await call(path, { role: 'admin' });
+    expect((await agent.json()).data.progress).toEqual({ agent: 'Worker' });
+    expect(progress).toHaveBeenCalledTimes(3);
+  });
+
   it('keeps ordinary creation unchanged and rejects a session context without integration', async () => {
     const created = await call('/issues', {
       role: 'admin',
@@ -1898,7 +2040,10 @@ describe('CLI session issue integration', () => {
         statusKey: 'backlog',
       });
       expect(link).toHaveBeenCalledExactlyOnceWith(body.data.id);
-      const detail = await call(`/issues/${body.data.id}`, { role: 'admin' });
+      const detail = await call(`/issues/${body.data.id}`, {
+        role: 'admin',
+        headers: { 'x-nocobase-client': 'cli' },
+      });
       expect(await detail.json()).toMatchObject({
         data: {
           progress: {

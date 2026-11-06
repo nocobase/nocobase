@@ -369,6 +369,16 @@ const enUS = {
     withdraw: 'Withdraw',
   },
   flowDiagram: {
+    controls: 'Diagram controls',
+    fitView: 'Fit to view',
+    fullscreen: 'Fullscreen',
+    exitFullscreen: 'Exit fullscreen',
+    escapeHint: 'Press Escape to exit',
+    leavesTo: 'Leaves to',
+    arrivesFrom: 'Arrives from',
+    otherRoutes: 'Other routes',
+    minimap: 'Diagram overview',
+
     overview: 'Diagram overview',
     actualSize: 'Actual size',
     states: 'States',
@@ -470,7 +480,7 @@ const enUS = {
       cancelled: {
         customer: 'Cancelled by the customer.',
         timeout: 'Closed: not paid in time.',
-        refundRequested: 'Refunded at the customer’s request.',
+        refundRequested: 'Refund requested by the customer.',
       },
       refunding: 'Refunding…',
       refundNeedsAttention:

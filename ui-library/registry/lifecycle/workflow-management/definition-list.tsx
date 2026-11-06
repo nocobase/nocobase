@@ -1,3 +1,4 @@
+import type { ListState } from '@nocobase/app-client';
 import type { ReactElement, ReactNode } from 'react';
 import type {
   CellContext,
@@ -11,26 +12,29 @@ import { DataTable } from '#components/data-table/data-table';
 
 export interface WorkflowDefinitionRow {
   id: string;
-  name: string;
+  name?: string;
   title: ReactNode;
   activity: ReactNode;
 }
 export interface WorkflowDefinitionListProps {
+  listState?: ListState;
+  onClearFilters?: () => void;
   rows: readonly WorkflowDefinitionRow[];
   categories?: ReactNode;
   search: ReactNode;
   status?: ReactNode;
   loaded: boolean;
   loading: boolean;
-  empty: ReactNode;
+  empty?: ReactNode;
   labels: {
-    refresh: string;
+    /** Legacy adapter label; ready lists no longer render a Refresh control. */
+    refresh?: string;
     workflow: string;
     executionCount: string;
     executionActivity: string;
   };
   sort?: { ascending: boolean };
-  onSort: () => void;
+  onSort?: () => void;
   onRefresh: () => void;
 }
 
@@ -39,6 +43,8 @@ type DefinitionActivityMeta = ColumnMeta<WorkflowDefinitionRow, unknown> &
 
 export function WorkflowDefinitionList({
   rows,
+  listState,
+  onClearFilters,
   categories,
   search,
   status,
@@ -61,20 +67,24 @@ export function WorkflowDefinitionList({
       <div className='flex w-full min-w-0 flex-1 flex-col gap-4'>
         <div className='flex flex-col items-stretch justify-between gap-2 sm:flex-row sm:items-center'>
           <div className='min-w-0 flex-1 sm:max-w-xs'>{search}</div>
-          <Button
-            className='shrink-0 self-start sm:self-auto'
-            variant='outline'
-            disabled={loading}
-            onClick={onRefresh}
-          >
-            {labels.refresh}
-          </Button>
         </div>
         {status}
-        {loaded && rows.length > 0 && (
+        {(listState !== undefined || loaded || loading) && (
           <div className='bg-card'>
             <DataTable
               data={rows}
+              loading={loading}
+              listState={
+                listState ??
+                (!loaded ? 'loading' : rows.length ? 'ready' : 'empty')
+              }
+              onRetry={onRefresh}
+              onClearFilters={onClearFilters}
+              emptyMessage={
+                <Empty>
+                  <EmptyDescription>{empty}</EmptyDescription>
+                </Empty>
+              }
               getRowId={(row) => row.id}
               pagination={false}
               manualSorting
@@ -91,7 +101,7 @@ export function WorkflowDefinitionList({
                 {
                   id: 'activity',
                   accessorFn: (row) => row.activity,
-                  enableSorting: true,
+                  enableSorting: Boolean(onSort),
                   meta: activityMeta,
                   header: DefinitionActivityHeader,
                   cell: DefinitionActivityCell,
@@ -99,11 +109,6 @@ export function WorkflowDefinitionList({
               ]}
             />
           </div>
-        )}
-        {loaded && rows.length === 0 && (
-          <Empty>
-            <EmptyDescription>{empty}</EmptyDescription>
-          </Empty>
         )}
       </div>
     </section>
@@ -118,7 +123,9 @@ function DefinitionTitleCell({
   return (
     <>
       {row.original.title}
-      <p className='text-xs text-muted-foreground'>{row.original.name}</p>
+      {row.original.name && row.original.name !== row.original.title && (
+        <p className='text-xs text-muted-foreground'>{row.original.name}</p>
+      )}
     </>
   );
 }
@@ -134,15 +141,19 @@ function DefinitionActivityHeader({
     .meta as DefinitionActivityMeta;
   return (
     <div className='text-right'>
-      <Button
-        variant='ghost'
-        size='sm'
-        title={labels.executionCount}
-        onClick={onSort}
-      >
-        {labels.executionActivity}
-        {sort && (sort.ascending ? <ArrowUp /> : <ArrowDown />)}
-      </Button>
+      {onSort ? (
+        <Button
+          variant='ghost'
+          size='sm'
+          title={labels.executionCount}
+          onClick={onSort}
+        >
+          {labels.executionActivity}
+          {sort && (sort.ascending ? <ArrowUp /> : <ArrowDown />)}
+        </Button>
+      ) : (
+        <span>{labels.executionActivity}</span>
+      )}
     </div>
   );
 }

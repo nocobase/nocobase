@@ -1,6 +1,6 @@
 name: V3 GitHub Release
 
-# Create a GitHub Release for a release-beta/* or release/* aggregate tag.
+# Create a GitHub Release for a nocobase-v3-beta/*, legacy release-beta/* or release/* aggregate tag.
 # Package tags on the same commit identify the packages that were actually published.
 # Reading those tags is repeatable and lets failed GitHub Release creation be retried.
 #
@@ -20,7 +20,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Aggregate release tag, e.g. release-beta/2026-08-26.5'
+        description: 'Aggregate release tag, e.g. nocobase-v3-beta/2026-08-26.5'
         type: string
         required: true
 
@@ -75,14 +75,16 @@ jobs:
           TAG: ${{ inputs.tag }}
         run: |
           case "$TAG" in
-            release-beta/*) FLAGS=(--prerelease --latest=false) ;;
-            release/*)      FLAGS=(--latest=false) ;;
+            nocobase-v3-beta/*|release-beta/*)
+              FLAGS=(--prerelease --latest=false)
+              TITLE="NocoBase v3 Beta · ${TAG##*/}"
+              ;;
+            release/*) FLAGS=(--latest=false); TITLE="${TAG##*/}" ;;
             *)
               echo "::error::$TAG is not an aggregate release tag"
               exit 1
               ;;
           esac
-          TITLE="${TAG##*/}"
 
           if gh release view "$TAG" > /dev/null 2>&1; then
             gh release edit "$TAG" \

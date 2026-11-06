@@ -1,3 +1,4 @@
+import { workspaceInUse } from './workspace-use.ts';
 // Per-attempt worktrees. Resume advances only by fast-forward; divergent heads are listed for manual integration.
 import { createHash, randomUUID } from 'node:crypto';
 import { existsSync } from 'node:fs';
@@ -27,6 +28,8 @@ import { TRAILERS_ENV } from './git-hooks.ts';
 
 const identity = (parts: readonly string[]) =>
   createHash('sha256').update(JSON.stringify(parts)).digest('hex');
+const SUBMODULE_RECOVERY_REASON =
+  'Initialized submodules require recovery in the original worktree; their objects are not saved by a parent commit';
 const COMMIT = [
   '-c',
   'core.fsync=objects,reference',
@@ -73,6 +76,28 @@ export function sessionWorkDir(
     paths.workRoot,
     '.sessions',
     identity([app, subject, agent, tool, scope]),
+  );
+}
+
+export function taskSessionRoot(
+  paths: RunnerPaths,
+  app: string,
+  subject: string,
+): string {
+  return path.join(paths.workRoot, '.sessions', identity([app, subject]));
+}
+
+export function taskSessionWorkDir(
+  paths: RunnerPaths,
+  app: string,
+  subject: string,
+  agent: string,
+  tool: string,
+  scope = 'root',
+): string {
+  return path.join(
+    taskSessionRoot(paths, app, subject),
+    identity([agent, tool, scope]),
   );
 }
 
@@ -238,10 +263,17 @@ async function assertWorktreeIdentity(
       'Unresolved Git operation; keep the original worktree for recovery',
     );
   // Retain any initialized submodule, including its unpublished objects. A parent gitlink cannot save them.
-  if ((await taskGit(context, ['submodule', 'status', '--recursive'])) !== '')
-    throw new CheckoutError(
-      'Initialized submodules require recovery in the original worktree; their objects are not saved by a parent commit',
-    );
+  const submodules = await taskGit(context, [
+    'submodule',
+    'status',
+    '--recursive',
+  ]);
+  // A deinitialized submodule can still own unpublished objects under the worktree's Git directory.
+  if (
+    existsSync(path.join(gitDir, 'modules')) ||
+    submodules.split('\n').some((line) => line !== '' && !line.startsWith('-'))
+  )
+    throw new CheckoutError(SUBMODULE_RECOVERY_REASON);
   if (
     !allowBranchChange &&
     (await taskGit(context, ['symbolic-ref', '--short', 'HEAD'])) !==
@@ -341,7 +373,11 @@ export async function retryWorkspaceRemoval(
   log: (message: string) => void,
   lockHeld = false,
 ): Promise<boolean> {
-  if (!isInside(paths.workRoot, workDir)) return false;
+  if (
+    !isInside(paths.workRoot, workDir) ||
+    (await workspaceInUse(paths, workDir))
+  )
+    return false;
   const lock = lockHeld
     ? undefined
     : await acquireLock(`${workDir}.lock`, { timeoutMs: 0 }).catch(
@@ -426,6 +462,53 @@ export async function retryWorkspaceRemoval(
   }
 }
 
+/** Recheck only the old false alarm for a clean checkout with no initialized submodules. */
+async function retryUninitializedSubmoduleRecovery(
+  paths: RunnerPaths,
+  workDir: string,
+  appKey: string,
+  subjectKey: string,
+): Promise<void> {
+  if (!isInside(paths.workRoot, workDir)) return;
+  const lock = await acquireLock(`${workDir}.lock`, { timeoutMs: 0 }).catch(
+    () => undefined,
+  );
+  if (lock === undefined) return;
+  try {
+    const meta = await readWorkspaceMeta(paths, workDir);
+    if (
+      meta?.recoveryRequired !== true ||
+      meta.recoveryReason !== SUBMODULE_RECOVERY_REASON ||
+      meta.appKey !== appKey ||
+      meta.subjectKey !== subjectKey ||
+      meta.runWorktrees !== true ||
+      meta.readOnly === true ||
+      meta.legacy === true ||
+      meta.repos.length === 0
+    )
+      return;
+    for (const repo of meta.repos) {
+      const dir = path.resolve(workDir, repo.path);
+      if (
+        !isInside(workDir, dir) ||
+        !isInside(paths.reposDir, repo.cache) ||
+        repo.localBranch === undefined ||
+        repo.removing === true
+      )
+        return;
+      const context = { dir, cache: repo.cache, url: repo.url };
+      await assertWorktreeIdentity(context, repo.localBranch);
+      if ((await taskGit(context, ['status', '--porcelain'])) !== '') return;
+    }
+    // Preserve continuation refs through normal finalization, rather than clearing a recovery marker.
+    await finalizeRunWorktrees(paths, workDir, () => {});
+  } catch {
+    // Changed, unavailable or genuinely unsafe work stays registered for recovery.
+  } finally {
+    await lock.release();
+  }
+}
+
 /** Create and register before any subsequent preparation can fail or be cancelled. */
 export async function addRunWorktree(options: {
   paths: RunnerPaths;
@@ -452,6 +535,12 @@ export async function addRunWorktree(options: {
   const state = await readContinuationState(paths, appKey, subjectKey);
   let record: WorkspaceRepo | undefined;
   for (const previous of state?.activeWorkDirs ?? []) {
+    await retryUninitializedSubmoduleRecovery(
+      paths,
+      previous,
+      appKey,
+      subjectKey,
+    );
     await retryWorkspaceRemoval(paths, previous, () => {});
     const record = await readWorkspaceMeta(paths, previous);
     if (record?.recoveryRequired === true)

@@ -37,15 +37,11 @@ agents:
     versions: { acme: 0.1.0 } # pin a product instead of the channel's highest
     npm: # a product with no tarball in dir, named on npm instead (exact versions)
       nocobase-runner: { package: '@nocobase/agent-runner', version: 1.0.0 }
-  vectors:
-    store: sqlite-vec # the default; pgvector (own PostgreSQL), or false
-    path: storage/vectors.sqlite
   skills:
     disk: s3 # Drive disk for skill files; drive.default by default
 ```
 
 - `agents.cli.name` defaults to `agents.app.id`; set it to the App's `nocobase.cli.bin` so runs install and call the same CLI the App serves.
-- `sqlite-vec` is local to an instance and has no build for Alpine (musl), where it reports `SQLITE_VEC_UNSUPPORTED`; an App running several instances, or on Alpine, uses `pgvector`, which takes its own PostgreSQL connection and never the App's.
 - Moving `agents.skills.disk` does not copy what is stored: copy `skills/blobs/` across first.
 - Model services, for the App's own model calls, are not configured here; they are added on the Models page or through the API.
 - `secrets.keys` (the App's secrets service) must be set before variables or model service keys can be stored. `pnpm nocobase secrets rotate` reseals both stores.

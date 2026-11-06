@@ -15,6 +15,7 @@ import type {
   RunEventType,
   RunnerFeature,
   ToolCapabilities,
+  ToolStatusReason,
 } from '../../protocol/index.ts';
 
 export type { FailureReason, RunEventType, RunnerFeature };
@@ -62,7 +63,7 @@ export type AdapterEventType = Exclude<RunEventType, 'checkout'>;
  *   must not emit its own.
  * - input: a steered input reached the agent; `content` is its text,
  *   `meta.inputId` the id given to `steer()`.
- * - status: lifecycle notes (`content` is a short code such as 'started',
+ * - status: lifecycle notes (`content` is a short code such as 'preparing', 'started',
  *   'turnCompleted', 'retrying', 'compacting'); details in `meta`.
  * - error: a non-fatal or fatal error; `content` is the message,
  *   `meta.reason` a {@link FailureReason}.
@@ -93,9 +94,16 @@ export interface ToolDetection {
   version?: string;
   path?: string;
   authenticated: boolean;
+  status?: 'checking' | 'notInstalled' | 'needsLogin' | 'ready' | 'failed';
+  /** Why `status` is what it is, when known; reported on as `ToolInfo.statusReason`. Optional: no adapter must set it. */
+  statusReason?: ToolStatusReason;
+  /** The tool's own words about its status, redacted and bounded; reported on as `ToolInfo.statusDetail`. */
+  statusDetail?: string;
 }
 
 export interface AdapterSession {
+  /** Conversation-only incremental transport, negotiated by the server. */
+  outputBlocks?: boolean;
   /** Absolute path the agent works in (the checked-out worktree). */
   workDir: string;
   /** The first user message of the run. */
@@ -107,6 +115,8 @@ export interface AdapterSession {
   effort?: string;
   /** Resume this tool session instead of starting a fresh one. */
   resumeSessionId?: string;
+  /** What a fresh session is told of what came before, when `resumeSessionId` cannot be resumed after all. */
+  recoveryContext?: string;
   /**
    * The complete environment of the tool process (already whitelisted by
    * the runner). The adapter adds nothing from its own process environment.
@@ -153,6 +163,8 @@ export interface AdapterHandle {
 
 export interface AgentAdapter {
   kind: ToolKind;
+  /** Checks program identity without starting it. */
+  fingerprint?(): Promise<string>;
   detect(signal?: AbortSignal): Promise<ToolDetection>;
   /** Fresh capability discovery, independent of cached installation detection. No method means unsupported. */
   detectModels?(signal: AbortSignal): Promise<ToolCapabilities>;

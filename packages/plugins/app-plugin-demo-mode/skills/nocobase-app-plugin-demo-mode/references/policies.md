@@ -1,0 +1,60 @@
+# Data operations and write policies
+
+Use the built-in management page for a read-only overview of data status, progress, daily resets and account entry links. Run data operations and select the dataset language through the CLI or API. Write policies are managed through deployment configuration or the configuration service/API, without a built-in settings tab. Add the application's base path to request URLs below; middleware path patterns are application-relative and exclude it.
+
+## Data operations
+
+`GET /api/demoMode/data` requires `settings:demoMode.data/read`. POST `/import`, `/clear` and `/reset` under that path require both `read` and `manage`. Demo Mode must be enabled. Import runs the registered generator, not an uploaded file; import/reset accept `{ language?: string }`. Poll status until generation/reset finishes before reporting success.
+
+Register the CLI export to use `pnpm nocobase demo-mode data <status|import|clear|reset>`. Import and clear require `--actor <existing-admin-id>`; reset can reuse the previous importing actor and language. Use `--language` to choose a supported language. Mutations require `--force`; `--dry-run` prints the requested operation without starting the app, so it does not validate the target or dataset.
+
+Clear/reset run the application's full business cleanup, including visitor additions. See [cleanup and recovery](adapting-data.md#business-cleanup) if an operation fails.
+
+## Write protection
+
+Use `isDemoMode(container)` from `@nocobase/app-plugin-demo-mode/server` for server checks. It returns `false` without a registered Demo Mode service, including plugin-free generator tests; failures initializing a registered service propagate. Use `useDemoMode()` from the client export for UI checks. The client provider shares the startup `demoMode.enabled` from `defineDemoModeConfig()` public configuration; it never calls the status endpoint, and the hook returns `false` without the provider or when disabled. Reload after changing deployment configuration. `GET /api/demoMode/status` remains compatible with existing clients.
+
+The guard observes SQL through `@nocobase/db` in an HTTP request context. It does not replace authentication, operation permissions or record scopes, or intercept files, outbound calls and background work. Treat jobs, queue messages and schedule firings as unguarded, including work a visitor's action triggers: Redis workers never see the request, and in-process adapters stop being refused once the request that enqueued them has ended. Writes made after a route handler returns are unguarded as well: a streamed response body, such as server-sent events from Agents chat and the tool calls and message persistence it runs, and messages on an upgraded WebSocket. Adapt those [external boundaries and jobs](integration-checklist.md) in the application.
+
+A refused request returns 400 with `error.reason: DEMO_READ_ONLY`. Branch on the reason, not its translated message. If a page encounters a refusal, identify the required business write before granting an exception.
+
+## Request effects guard
+
+Register `app.addHttpMiddleware(demoEffectsGuard({ paths, allow }))`, importing `demoEffectsGuard` from the server export, after the application's i18n middleware and before middleware that performs outbound work. It rejects matching non-GET/HEAD/OPTIONS requests in Demo Mode before route handlers, using the same localized `DEMO_READ_ONLY` error and `Server-Timing: demo-read-only`. A missing or disabled Demo Mode service passes requests through. It does not automatically register routes for official plugins.
+
+`paths` is a list of application-relative paths including `/api`, without a deployment prefix such as `/main`. Use exact endpoints, `:id` for one segment, or a final `/*` for a subtree including its root. Matching is case-sensitive with segment boundaries; exact endpoints accept a trailing slash. `allow` is an optional list of `{ method, path }` exceptions with the same path syntax and case-insensitive methods. Use precise POST exceptions for verified read-only queries. If protecting `/api/*`, explicitly allow the intended authentication, visitor entry and Demo Mode management routes; there is no blanket management bypass. Allowed requests still undergo authorization and the database guard.
+
+Keep checks at service boundaries for jobs, direct calls, GET routes with effects and WebSocket messages. Registering this middleware covers only the selected HTTP paths, and cannot undo work performed by earlier middleware. See the [package README](../../../README.md#refuse-requests-before-external-effects) for a registration example.
+
+## Collection write exceptions
+
+Use logical collection names matching migrations, such as `orderItems`. An exception allows INSERT, UPDATE and DELETE together on that collection's own table in the default database connection. A write that also changes related rows, such as a many-to-many through collection, needs each of those collections too; the refusal log `Demo mode refused a write` names the tables. Keep operation and record restrictions in normal application authorization.
+
+The management page does not display collection exceptions; existing policies remain effective. For application-owned configuration clients, GET `/api/demoMode/configuration/collections` returns selectable `{ name, title? }` entries. Preserve saved selections absent from the catalog so administrators can remove them. Unknown, malformed or duplicate names are rejected.
+
+Deployment defaults come from `demoMode.allowCollections`, overridden by `NOCOBASE_DEMO_WRITABLE_COLLECTIONS=orderItems,userPreferences`. Restart after changing deployment configuration. These `fixedCollections` combine with runtime selections and cannot be removed through the runtime configuration API.
+
+The Users preference API stores `locale`, `theme.mode` and `theme.preset` in application-scoped visitor session cookies while Demo Mode is enabled. These three keys need no `userPreferences` write exception; other keys still use account storage and the write guard. API clients must retain and resend the cookies, and cookie-bearing writes must send a trusted `Origin` or `Referer`, including when using an API key. Authentication rules are unchanged. Controls using only localStorage or `/i18n/locale` do not use this storage policy; see the package README for defaults and session behavior.
+
+## Custom configuration clients
+
+Resolve the original `demoConfigurationToken` from `@nocobase/app-plugin-demo-mode/server/tokens` for application Server integration. The built-in page handles read permissions; custom configuration clients must also handle write permissions and revisions.
+
+GET `/api/demoMode/configuration` requires `settings:demoMode.configuration/read`. PUT `/collections`, `/mocks` and `/chat` under that path require both `read` and `configure`, with `{ expectedRevision, value }`. For collections, `value` is the logical-name array. Read the current revision from the returned `data` object and wait for active data operations before saving. On 409 `DEMO_CONFIGURATION_CONFLICT`, re-fetch and review changes before retrying.
+
+## Daily reset
+
+Daily reset runs on the application's jobs service (`JobExecutorServiceProvider`, composed by generated applications) and is always enabled in Demo Mode. It starts resetting only after the first generation, which records the administrator to run as. Without the jobs service, no automatic reset runs.
+
+Register `defineDemoModeConfig()` and set these environment variables in the owning application. Restart after changing them. The page displays the effective schedule and the server's next run without editing controls.
+
+| Environment variable           | Default | Meaning                                        |
+| ------------------------------ | ------- | ---------------------------------------------- |
+| `NOCOBASE_DEMO_RESET_HOUR`     | `3`     | Local hour, 0–23                               |
+| `NOCOBASE_DEMO_RESET_MINUTE`   | `0`     | Minute, 0–59                                   |
+| `NOCOBASE_DEMO_RESET_TIMEZONE` | `UTC`   | IANA time zone                                 |
+| `NOCOBASE_DEMO_RESET_LANGUAGE` | `en-US` | A language supported by the registered dataset |
+
+The schedule does not follow manual generation's language or the dataset's time zone. Old saved schedules, including disabled schedules, are ignored. The configuration API/service no longer accepts schedule writes. Other saved policies retain their existing behavior.
+
+Use this integration instead of adding a second timer or cron. Automatic reset uses the same business cleanup as manual reset. A settled ordinary cleanup/generation error or busy admission retries after five minutes, up to three attempts per local day, including a retry that falls after local midnight; a retry not claimed within a day is abandoned. Validation, policy and lease-loss errors do not automatically retry. Successful days remain terminal. When an attempt's owner stopped renewing, the next due run reads the settled demo data: if a reset finished ready after the attempt started, the day is closed without repeating it; otherwise, including an owner that stopped before its reset began, the attempt counts as a retryable failure. While the data status shows an interrupted operation, automatic resets pause: stop its previous owner before running the existing manual reset. An operation that has not renewed its lease for an hour is presumed abandoned, as after a restart, and the next due run takes it over with the same cleanup and counts it as an attempt; an owner that is still alive but stopped renewing for that long loses its lease and must not be relied on to finish. Successful manual generation settles interrupted attempts without making their day eligible again. Failure causes appear in the `demo-mode` log; the data status shows the failure code and a cleanup failure's retry hint. Each attempt starts with fresh persisted policy.

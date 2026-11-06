@@ -1,3 +1,5 @@
+import { OutputPreview } from './output-preview.js';
+import { outputBlock, type RunEvent } from '@nocobase/agent-protocol';
 /**
  * What a runner reports about the runs it holds: lease renewals, the start, events, and how the run ended. Every
  * report first checks that the runner still holds the run; a runner that lost it (the sweeper took it back, or it
@@ -39,7 +41,12 @@ import {
   type SecretMemory,
 } from '../../kernel/redaction.js';
 import type { Tx, TxRunner } from '../../kernel/tx.js';
-import { asJson, jsonObject, truncateBytes } from '../../kernel/values.js';
+import {
+  asJson,
+  jsonObject,
+  truncateBytes,
+  withoutNul,
+} from '../../kernel/values.js';
 import { recordActualModels } from './execution.js';
 import { dropInputs, gatePending, type InputGateDeps } from './input-gate.js';
 import { everHeld } from './run-tokens.js';
@@ -60,6 +67,9 @@ import {
   type RunRecord,
 } from './run.store.js';
 import { finishRun, requeueRun, type TransitionDeps } from './transitions.js';
+
+// MySQL TEXT stores at most 65,535 bytes, one less than the protocol's event limit.
+const MAX_STORED_EVENT_BYTES = Math.min(MAX_EVENT_CONTENT_BYTES, 65_535);
 
 const executionReport = z.object({
   effort: z.string().trim().min(1).max(200).nullable(),
@@ -104,6 +114,7 @@ export interface RunnerReports {
 }
 
 export interface RunnerReportsDeps extends TransitionDeps, InputGateDeps {
+  readonly onOutput?: (runId: string, event: RunEvent) => void;
   readonly tx: TxRunner;
   readonly ids: IdSource;
   readonly clock: Clock;
@@ -138,6 +149,7 @@ export interface RunnerReportsDeps extends TransitionDeps, InputGateDeps {
 
 export function createRunnerReports(deps: RunnerReportsDeps): RunnerReports {
   const { tx, ids, clock } = deps;
+  const previews = new OutputPreview();
   const secrets = deps.secrets ?? createSecretMemory();
   const redactorOf = (runId: string) => secrets.redactor(runSecretsKey(runId));
 
@@ -198,8 +210,33 @@ export function createRunnerReports(deps: RunnerReportsDeps): RunnerReports {
   async function deliver(conn: DatabaseConnection, run: RunRecord) {
     const now = clock.now().toISOString();
     const pending = await settlePending(conn, run, now);
-    await markDelivered(conn, pending, now);
-    return pending.map(toInput);
+    return (await markDelivered(conn, pending, now)).map(toInput);
+  }
+
+  /**
+   * For an events answer: the run's input when some arrived that its runner has not been given, delivered as a status
+   * poll would; nothing otherwise, so most answers read nothing more.
+   */
+  async function arrived(conn: DatabaseConnection, run: RunRecord) {
+    return (await undelivered(conn, run.id))
+      ? await deliver(conn, run)
+      : undefined;
+  }
+
+  async function undelivered(
+    conn: DatabaseConnection,
+    runId: string,
+  ): Promise<boolean> {
+    return Boolean(
+      await inputsRepo(conn).findOne({
+        filter: (f) =>
+          f.and([
+            f.string('runId').eq(runId),
+            f.date('handledAt').empty(),
+            f.date('deliveredAt').empty(),
+          ]),
+      }),
+    );
   }
 
   /** The run's unhandled input it may act on, marking what it may no longer act on handled. */
@@ -370,9 +407,64 @@ export function createRunnerReports(deps: RunnerReportsDeps): RunnerReports {
         };
       }),
 
-    events: (runner, runId, request) =>
-      tx.run(async (unit) => {
+    events: async (runner, runId, reported) => {
+      let previewKey = runId;
+      const completed: RunEvent[] = [];
+      if (reported.events.some((event) => outputBlock(event.meta)))
+        reported = withoutNul(reported);
+      const transient = reported.events.filter((event) => {
+        const output = outputBlock(event.meta);
+        return (
+          output?.phase === 'delta' ||
+          (output?.phase === 'end' && event.content === undefined)
+        );
+      });
+      if (
+        transient.length ||
+        reported.events.some((event) => outputBlock(event.meta))
+      ) {
+        const run = await held(tx.read(), runner, runId);
+        const machine = await runnersRepo(tx.read()).findOne({
+          filter: { id: runner.id },
+        });
+        if (
+          run.subjectKind !== 'conversation' ||
+          !Array.isArray(machine?.features) ||
+          !machine.features.includes('outputBlocks')
+        )
+          throw new ProtocolError(
+            'RUN_NOT_OWNED',
+            'Output previews require a capable runner holding a conversation.',
+          );
+        previewKey = `${runId}:${run.attempt}`;
+        previews.accept(
+          previewKey,
+          transient,
+          () => redactorOf(runId),
+          (event) => deps.onOutput?.(runId, event),
+        );
+        if (transient.length === reported.events.length) {
+          // A preview answer reads nothing more unless input is waiting.
+          const inputs = (await undelivered(tx.read(), runId))
+            ? await tx.run(async ({ conn }) =>
+                arrived(conn, await held(conn, runner, runId)),
+              )
+            : undefined;
+          return {
+            accepted: 0,
+            duplicates: 0,
+            cancelRequested: run.cancelRequestedAt !== null,
+            ...(inputs ? { inputs } : {}),
+          };
+        }
+      }
+      const durable = {
+        ...reported,
+        events: reported.events.filter((event) => !transient.includes(event)),
+      };
+      const response = await tx.run(async (unit) => {
         const { conn } = unit;
+        const request = withoutNul(durable);
         const run = await held(conn, runner, runId);
         const seqs = request.events.map((event) => event.seq);
         const existing =
@@ -429,14 +521,14 @@ export function createRunnerReports(deps: RunnerReportsDeps): RunnerReports {
               ? null
               : truncateBytes(
                   redact.text(event.content),
-                  MAX_EVENT_CONTENT_BYTES,
+                  MAX_STORED_EVENT_BYTES,
                 );
           const output =
             event.output === undefined
               ? null
               : truncateBytes(
                   redact.text(event.output),
-                  MAX_EVENT_CONTENT_BYTES,
+                  MAX_STORED_EVENT_BYTES,
                 );
           await eventsRepo(conn).createOne({
             values: {
@@ -459,6 +551,12 @@ export function createRunnerReports(deps: RunnerReportsDeps): RunnerReports {
               createdAt: now,
             },
           });
+          if (outputBlock(event.meta)?.phase === 'end')
+            completed.push({
+              ...event,
+              content: content?.text,
+              meta: redact.value(event.meta),
+            });
           accepted += 1;
           if (event.type === 'usage') {
             const usage = UsageSchema.array().safeParse(
@@ -485,13 +583,23 @@ export function createRunnerReports(deps: RunnerReportsDeps): RunnerReports {
         await recordActualModels(conn, run, reportedUsage, now, efforts, true);
         if (accepted > 0)
           unit.emit({ type: 'run.events', runId: run.id, lastSeq });
+        const inputs = await arrived(conn, run);
         return {
           accepted,
           duplicates: request.events.length - accepted,
           cancelRequested: run.cancelRequestedAt !== null,
+          ...(inputs ? { inputs } : {}),
         };
-      }),
-
+      });
+      if (completed.length)
+        previews.accept(
+          previewKey,
+          completed,
+          () => redactorOf(runId),
+          (event) => deps.onOutput?.(runId, event),
+        );
+      return response;
+    },
     status: async (runner, runId) => {
       const conn = tx.read();
       const run = await findRunStatus(conn, runId);
@@ -534,8 +642,9 @@ export function createRunnerReports(deps: RunnerReportsDeps): RunnerReports {
       });
     },
 
-    complete: (runner, runId, request) =>
+    complete: (runner, runId, reported) =>
       tx.run(async (unit) => {
+        const request = withoutNul(reported);
         const handled = new Set(request.handledInputIds);
         // Revision conflicts are bounded; exhaustion rolls back the transaction.
         for (let attempt = 0; attempt < 4; attempt += 1) {
@@ -584,8 +693,9 @@ export function createRunnerReports(deps: RunnerReportsDeps): RunnerReports {
         );
       }),
 
-    fail: (runner, runId, reported) =>
+    fail: (runner, runId, failure) =>
       tx.run(async (unit) => {
+        const reported = withoutNul(failure);
         const run = await held(unit.conn, runner, runId);
         const machine =
           reported.reason === 'runnerDiskFull'
@@ -706,8 +816,9 @@ export function createRunnerReports(deps: RunnerReportsDeps): RunnerReports {
         return { status: ended.status };
       }),
 
-    cancelAck: (runner, runId, request) =>
+    cancelAck: (runner, runId, acknowledged) =>
       tx.run(async (unit) => {
+        const request = withoutNul(acknowledged);
         const run = await held(unit.conn, runner, runId);
         await recordOutcome(unit, run, request);
         await rememberSession(unit, run, request.sessionId, false);

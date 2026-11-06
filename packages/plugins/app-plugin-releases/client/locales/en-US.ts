@@ -70,10 +70,18 @@ const ui = {
     },
     idleLabel: 'Stop when unvisited for',
     dormantLabel: 'Hibernate when unvisited for',
+    idleModeLabel: 'Idle timer behavior',
+    dormantModeLabel: 'Hibernate timer behavior',
     minutes: 'minutes',
     hours: 'hours',
     neverIdle: 'Never',
     neverDormant: 'Never',
+    timerMode: {
+      inherit: 'Use environment default',
+      custom: 'Set a custom value',
+    },
+    customTimerHint:
+      'A blank custom value turns that timer off; it does not use the environment default.',
     idleSummary: 'stops after {{minutes}} min unvisited',
     dormantSummary: 'hibernates after {{hours}} h',
     timersHint:
@@ -141,6 +149,11 @@ const ui = {
       'This environment is protected. Type {{appId}} to deploy.',
   },
   deployments: {
+    cancel: 'Cancel deployment',
+    replaced: 'Replaced by a newer deployment.',
+    cancelAccepted: 'Cancellation accepted.',
+    queueAhead: 'Queued · {{ahead}} ahead',
+    restartHint: 'Deployment interrupted. Deploy the release again.',
     title: 'Deployments',
     kind: 'Kind',
     status: 'Status',
@@ -157,6 +170,8 @@ const ui = {
     hideLogs: 'Hide logs',
     noLogs: 'No log lines.',
     statuses: {
+      cancelling: 'Cancelling',
+      cancelled: 'Cancelled',
       queued: 'Queued',
       deploying: 'Deploying',
       succeeded: 'Succeeded',
@@ -367,8 +382,6 @@ const ui = {
   },
   initialAdmin: {
     title: 'First administrator',
-    expires:
-      'Generated for the first deployment. Save it now: it is deleted in {{hours}} h.',
     kept: 'Generated for the first deployment; it is kept until the app is removed.',
     username: 'Username',
     email: 'Email',
@@ -377,6 +390,7 @@ const ui = {
     hide: 'Hide password',
     copy: 'Copy password',
     copied: 'Password copied.',
+    copyFailed: 'Could not copy the password. Show it and copy it manually.',
     dismiss: 'I’ve saved it',
     dismissed: 'The first administrator was deleted from the release manager.',
   },
@@ -459,6 +473,10 @@ const ui = {
         'The configuration was saved, but the app could not reload it.',
       CONFIG_TOO_LARGE: 'The configuration is too large.',
       CONFIRMATION_REQUIRED: 'Type the app ID to confirm.',
+      DEPLOYMENT_NOT_CANCELLABLE:
+        'The deployment has started switching or has finished.',
+      CANCELLATION_UNSUPPORTED:
+        'This deployment driver does not support cancellation.',
       DEPLOYMENT_IN_PROGRESS:
         'A deployment of this app is already in progress.',
       DEPLOYMENT_NOT_FOUND: 'The deployment does not exist.',
@@ -607,6 +625,11 @@ const ui = {
     name: 'Name',
     driver: 'Driver',
     runsOn: 'Runs on',
+    appCount: 'Apps',
+    purpose: 'Purpose',
+    purposeHint:
+      'Each environment is for one thing: pull request previews, or testing releases.',
+    purposes: { preview: 'Previews', test: 'Testing' },
     policy: 'Policy',
     publicUrl: 'Public URL pattern',
     config: 'Settings (JSON)',

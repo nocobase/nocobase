@@ -88,11 +88,13 @@ export async function findDependencyBetween(
 export async function unfinishedBlockedBy(
   conn: DatabaseConnection,
   finishedKeys: readonly string[],
+  issueIds?: readonly string[],
 ): Promise<DependencyRecord[]> {
   return dependencies(conn).findMany({
     filter: (f) =>
       f.and([
         f.string('type').eq('blockedBy'),
+        ...(issueIds ? [oneOf(f, 'issueId', issueIds)] : []),
         f
           .relation('dependsOn')
           .some((target) =>

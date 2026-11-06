@@ -133,6 +133,31 @@ test('an exemption covers its path and is reported once it covers nothing', asyn
   assert.deepEqual(result.unusedExemptions, [unused]);
 });
 
+test('resolves import.meta URLs within a nested package without attributing them to its parent', async (t) => {
+  const { root, write } = createWorkspace(t);
+  const nested = 'packages/libs/reader/assets/example';
+  write('pnpm-workspace.yaml', `packages:\n  - packages/*/*\n  - ${nested}\n`);
+  write(
+    `${nested}/package.json`,
+    JSON.stringify({ name: '@test/example', private: true }),
+  );
+  write(
+    `${nested}/tests/cli/count.test.ts`,
+    "const fixture = new URL('../fixtures/app', import.meta.url);\n",
+  );
+  write(
+    `${nested}/tests/database/migration.test.ts`,
+    "const migrations = new URL('../../database/migrations', import.meta.url);\n",
+  );
+  write(
+    `${nested}/tests/parent.test.ts`,
+    "const outside = new URL('../../../src/index.ts', import.meta.url);\n",
+  );
+  assert.deepEqual(summarize(await findCrossPackageReads(root)), [
+    `${nested}/tests/parent.test.ts ../../../src/index.ts @test/reader`,
+  ]);
+});
+
 test('skips node_modules and build output', async (t) => {
   const { root, write } = createWorkspace(t);
   write(
@@ -169,7 +194,7 @@ test('collects module specifiers, path literals and joined literal arguments, no
     { kind: 'module', text: '../c.js' },
     { kind: 'module', text: '../d.ts' },
     { kind: 'path', text: '../e' },
-    { kind: 'path', text: '../f/' },
+    { kind: 'module', text: '../f/' },
     { kind: 'path', text: '../g/' },
     { kind: 'repository', text: 'packages/libs/h/src' },
   ]);

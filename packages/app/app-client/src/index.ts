@@ -1,4 +1,15 @@
+export {
+  getAvatarInitials,
+  type AvatarInitialsOptions,
+} from './avatar-initials.js';
+export {
+  watchReadiness,
+  type RealtimeReadiness,
+  type ReadinessOptions,
+} from './realtime-readiness.js';
 export { refreshRealtimeQueries } from './realtime-query.js';
+export { createUuid } from './create-uuid.js';
+export { copyText, type CopyTextOptions } from './copy-text.js';
 export {
   apiClientToken,
   ClientApplication,
@@ -131,6 +142,8 @@ export type {
   AppClientServiceProviders,
   AppClientRouteIcon,
   AppClientRouteNavigation,
+  AppClientRoutePresentation,
+  AppClientRoutePresentationKind,
   ClientServiceProviderConstructor,
   ClientServiceProviderContext,
   ResolvedAppClientContributions,
@@ -141,6 +154,7 @@ export { useNavigationGuard } from './navigation-guard.js';
 
 export {
   useRealtimeTopic,
+  useRealtimeReadiness,
   useRealtimeRefresh,
   useRealtimeConnectionState,
   createRealtimeRefresh,
@@ -151,3 +165,51 @@ export {
   type RealtimeRefreshSnapshot,
   type UseRealtimeRefreshResult,
 } from './realtime.js';
+export {
+  resolveListState,
+  listStateShowsData,
+  type ListState,
+  type ListSnapshot,
+} from './list-state.js';
+
+export {
+  SubmissionController,
+  deriveSubmissionKey,
+  PendingSubmissionError,
+  SubmissionTimeoutError,
+  useSubmission,
+  type Submission,
+  type SubmissionOptions,
+  type SubmissionStorage,
+} from './submission.js';
+
+export {
+  FormFeedback,
+  formFeedbackErrors,
+  normalizeFormFieldPath,
+  type FormFeedbackMessages,
+  type FormFeedbackField,
+  type FormFeedbackError,
+  type FormFeedbackState,
+  type FormFeedbackAttempt,
+  type FormFeedbackViolation,
+  type FormFeedbackOptions,
+} from './form-feedback.js';
+export {
+  AppLocalePreferenceContext,
+  type AppLocalePreference,
+} from './locale-preference.js';
+export {
+  usePendingFeedback,
+  type PendingFeedback,
+} from './pending-feedback.js';
+export {
+  RouteChildPageHostContext,
+  RouteOverlayContext,
+  RouteOverlayHostContext,
+  type RouteChildPageHostConfig,
+  type RouteChildPageHostValue,
+  type RouteOverlayContextValue,
+  type RouteOverlayHostConfig,
+  type RouteOverlayHostValue,
+} from './route-containers.js';

@@ -79,6 +79,48 @@ describe('AgentComposer', () => {
     expect(onRemove).toHaveBeenCalledWith('filter');
   });
 
+  it('opens what a chip carries in a dialog titled from the labels, only with inspect', async () => {
+    const inspect = vi.fn((chip: ChatContextChip) =>
+      chip.kind === 'filter' ? chip.filter : 'Plain text',
+    );
+    const view = render(
+      <AgentComposer
+        onSend={() => true}
+        labels={{ contextPreview: 'Carried: {label}' }}
+        context={{
+          chips: CHIPS,
+          onRemove: () => undefined,
+          build: () => undefined,
+          inspect,
+        }}
+      />,
+    );
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Show context: Filter: Open' }),
+    );
+    const dialog = await screen.findByTestId('chat-context-preview');
+    expect(
+      within(dialog).getByRole('heading', { name: 'Carried: Filter: Open' }),
+    ).toBeVisible();
+    expect(dialog).toHaveTextContent('"status": "open"');
+    expect(inspect).toHaveBeenCalledWith(CHIPS[1]);
+    view.unmount();
+
+    render(
+      <AgentComposer
+        onSend={() => true}
+        context={{
+          chips: CHIPS,
+          onRemove: () => undefined,
+          build: () => undefined,
+        }}
+      />,
+    );
+    expect(
+      screen.queryByRole('button', { name: 'Show context: Filter: Open' }),
+    ).toBeNull();
+  });
+
   it('has an icon-only send button with an accessible name, and Stop while the agent works on an empty box', () => {
     const onStop = vi.fn();
     const { rerender } = render(

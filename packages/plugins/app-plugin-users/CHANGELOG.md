@@ -1,5 +1,171 @@
 # @nocobase/app-plugin-users
 
+## 2.0.0-beta.15
+
+### Minor Changes
+
+- 6507d01: Persist signed-in users' explicit language choices across browsers and devices, isolate language changes across identities, and expose validated recipient language resolution for background jobs. Accounts without a saved language use the application default; unowned legacy browser choices are not imported. Preference caches are now scoped to the application mount path and authentication session.
+
+### Patch Changes
+
+- 3681eb0: Provide a permission-protected, read-only notification template directory with synthetic previews that reuse business send renderers, plus application integration and source upgrade guidance.
+- Updated dependencies [78bdca8]
+- Updated dependencies [3681eb0]
+- Updated dependencies [9998ac4]
+- Updated dependencies [87f1ea5]
+- Updated dependencies [6507d01]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.19
+  - @nocobase/app-plugin-authorization@1.0.0-beta.36
+  - @nocobase/app-plugin-notification@2.0.0-beta.5
+  - @nocobase/app-client@4.0.0-beta.8
+  - @nocobase/app-server@5.0.0-beta.1
+
+## 2.0.0-beta.14
+
+### Minor Changes
+
+- 4411984: Configure named application mailers once for password reset, user invitations and email notifications. App-server validates `mailers`, adds explicit environment mappings and a private startup snapshot, and registers a `MailSenderFactory` from which Authentication, Users and each email notification channel create their own exclusive sender and close it after stopping their own work, so closing one never affects another. Legacy inline senders, channel selection and standalone Auth, Provider factories and hand-composed hosts keep working without new arguments. New applications can send reset and invitation emails without installing Notification. Restart after changing email configuration; configuration reload does not hot-switch active senders.
+
+### Patch Changes
+
+- 4411984: Wait for invitation delivery bookkeeping even when closing the sender fails, and reuse the same shutdown promise for repeated calls.
+- cf23bfe: **Breaking:** Remove the deprecated `@nocobase/app-server/mailer` entry and its `Mailer`, `mailerToken`, `createMailer`, `MailerProvider`, and notification configuration exports. Replace `MailExecutions.close(waitMs)` and `drain()` with `stop()` and `wait()`; transport `close()` now cancels supported network work and waits for its original completion without a nested timeout. Application owners must apply the outer shutdown budget. Create exclusive senders with `@nocobase/app-server/mailers` and declare notification config with `@nocobase/app-plugin-notification-providers/config`. Existing inline SMTP/Resend YAML, environment mappings, and provider/channel APIs remain supported.
+
+  Default and Examples now show `mailers.default: system` and explicitly map `MAILERS_SYSTEM_*`; the example configuration remains empty at runtime. The previous `MAILERS_TRANSACTIONAL_*` sample prefix was not published. Applications may still choose any valid mailer name and custom environment prefix.
+
+- Updated dependencies [6cc8acf]
+- Updated dependencies [9933a9a]
+- Updated dependencies [1e018f1]
+- Updated dependencies [cf23bfe]
+- Updated dependencies [4411984]
+  - @nocobase/app-client@4.0.0-beta.7
+  - @nocobase/app-plugin-authentication@2.0.0-beta.18
+  - @nocobase/db@1.0.0-beta.25
+  - @nocobase/app-server@5.0.0-beta.0
+  - @nocobase/mailer@1.0.0-beta.2
+  - @nocobase/app-plugin-authorization@1.0.0-beta.35
+  - @nocobase/app-plugin-notification@2.0.0-beta.4
+
+## 2.0.0-beta.13
+
+### Minor Changes
+
+- 5a4ebe0: Allow new invitees to choose an optional username for sign-in, with inline conflict feedback that preserves their form and a secondary sign-in link below account creation.
+
+## 2.0.0-beta.12
+
+### Patch Changes
+
+- cf23bfe: Move Redis realtime broadcasting to the commercial Realtime Redis plugin. Register its Server plugin before selecting Redis in an application, or import the standalone broker from its `/broker` entry. Preserve the Memory default, service identity, authorization and recovery protocol, and republish runtime consumers against the new host and realtime major versions. Install the compatible commercial cohort before deploying the final removal.
+- Updated dependencies [88d35b8]
+- Updated dependencies [83f28b1]
+- Updated dependencies [88d35b8]
+- Updated dependencies [88d35b8]
+- Updated dependencies [83f28b1]
+- Updated dependencies [cf23bfe]
+- Updated dependencies [b29a336]
+  - @nocobase/app-client@4.0.0-beta.6
+  - @nocobase/authorization@1.0.0-beta.16
+  - @nocobase/app-plugin-authorization@1.0.0-beta.34
+  - @nocobase/app-plugin-authentication@2.0.0-beta.17
+  - @nocobase/app-server@4.0.0-beta.0
+  - @nocobase/app-plugin-notification@2.0.0-beta.3
+
+## 2.0.0-beta.11
+
+### Minor Changes
+
+- e3d9a52: Prevent overlapping form submissions with a shared submission controller and preserve operation identifiers across uncertain retries. Standard Repository writes can commit operation receipts atomically with business data and replay successful results for 24 hours after checking current access.
+
+  New application templates require operation identifiers and install receipt storage and bounded cleanup. Existing applications must reconcile the provider, migration and copied form sources, migrate their callers, and then enable strict mode; updating dependencies alone does not activate protection. Custom actions must explicitly join the receipt transaction and provide current authorization and result visibility checks. Cross-connection and unadapted external side effects are outside this guarantee.
+
+### Patch Changes
+
+- Updated dependencies [451bf75]
+- Updated dependencies [e3d9a52]
+- Updated dependencies [22748f7]
+  - @nocobase/app-client@4.0.0-beta.4
+  - @nocobase/app-server@3.0.0-beta.4
+  - @nocobase/app-plugin-authorization@1.0.0-beta.33
+  - @nocobase/db@1.0.0-beta.23
+  - @nocobase/app-plugin-authentication@2.0.0-beta.15
+
+## 2.0.0-beta.10
+
+### Patch Changes
+
+- 25e7bd3: Make Member a visible, editable creation default and honor explicitly empty role lists. Initialize new person accounts transactionally across existing creation paths. Preserve existing Member grants and users through a new transactional seed before removing the global assignment, without restoring later role removals. Keep protected administrators and authenticated account basics unchanged.
+
+  Stop old account writers and upgrade Authentication, Authorization, and Users together before applying database tasks and reopening traffic. Existing applications must also merge the updated template user pages and translations; plugin upgrades do not replace application-owned source. Restore a database backup with matching old packages if rollback is required.
+
+- Updated dependencies [25e7bd3]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.15
+  - @nocobase/app-plugin-authorization@1.0.0-beta.32
+
+## 2.0.0-beta.9
+
+### Patch Changes
+
+- d3d4c5d: Preserve standard settings list position across details and edits, display localized role names, and support scoped member configuration with a safe return destination. Keep unsupported workflow ordering static and document the shared navigation contract without changing stored permissions or business configuration.
+
+  Provide contextual setup readiness components and a live required-role membership adapter in both templates, with typed unavailable states and safe configuration links. Guide builders to connect feature-specific initialization checks to authorized business services without startup scans, automatic grants or fabricated relationship defaults.
+
+  Explain empty user and role lists when creation is unavailable, report the specific completed account action, and distinguish invalid requests and generic data conflicts from retryable failures without changing permissions or discarding input.
+
+  Simplify user management to one edit drawer for basic information and roles, with underlined names as the edit entry and inline account controls, a searchable role picker, one atomic Save and shared leave guards. Preserve legacy URLs and resolve return paths from the actual route mount so remapped settings pages retain their list context.
+
+  Allow user profile fields and submitted role scopes to be updated in one transaction, requiring each affected action independently and preserving omitted scopes and legacy profile-only callers.
+
+  Keep localized pagination summaries on one line with content-sized widths and wrap complete control groups at narrow widths, preventing Chinese labels from splitting under desktop table layouts.
+
+  Use quiet, consistent outlined account-action buttons and semantic green enabled/gray disabled status badges in user management, keeping existing action confirmations and authorization.
+
+  Standardize clickable record fields through RecordLink: foreground text at rest, an underline on hover, and visible keyboard focus. Reuse it for user, role, data-scope and example workflow record links while preserving native navigation and list query context.
+
+- f8f64ad: Remove the Notification TestAdapter protocol, built-in form descriptors, generic test-send routes and permission, and test client methods. Channel classes now implement only their delivery lifecycle. Existing send/sendTransient contracts, retries, logs, and inbox records remain unchanged.
+
+  Applications should remove test buttons and test API clients, then verify delivery through their business flows or a server-side send() call. Log pages must read provider identities from recorded deliveries rather than test target metadata. Update the notification Skill and example guidance to match, and republish consumers against the new notification package line.
+
+  Explicitly include Node.js types in both application templates' client typechecks, whose shared contracts reference server package sources in the workspace, so compilation no longer depends on the removed notification test imports to load those types.
+
+- Updated dependencies [f8f64ad]
+- Updated dependencies [f8f64ad]
+  - @nocobase/app-plugin-notification@2.0.0-beta.0
+  - @nocobase/app-server@3.0.0-beta.2
+  - @nocobase/app-plugin-authentication@2.0.0-beta.12
+
+## 2.0.0-beta.8
+
+### Minor Changes
+
+- 799c227: Let an application role scope refuse who acts on whom. A scope's optional `assertCanAdminister(userId, actorId, action, connection)` is called for `update`, `disable`, `enable`, `reset-password`, `revoke-sessions` and `assign-role` with the authenticated actor, inside the action's transaction and before anything changes; a refusal answers `FAILED_PRECONDITION`. An application can then keep, for example, anyone but an owner from resetting an owner's password. The management service's account methods take the actor as an optional last argument; calls without one are not checked.
+
+### Patch Changes
+
+- Updated dependencies [62da032]
+  - @nocobase/app-client@4.0.0-beta.1
+  - @nocobase/app-server@3.0.0-beta.1
+  - @nocobase/app-plugin-authentication@2.0.0-beta.12
+  - @nocobase/app-plugin-authorization@1.0.0-beta.30
+  - @nocobase/app-plugin-notification@1.0.0-beta.29
+
+## 2.0.0-beta.7
+
+### Patch Changes
+
+- 1952789: Complete all ten supported languages in plugin and example plugin catalogues, including model suggestions and test Web Push notifications. Align calendars and invitation emails, support locale-specific plural forms, and validate resource loading and formatting.
+
+  Correct joined translation text and distinguish configuration save actions, refund stages, and domain-specific operation labels.
+
+- Updated dependencies [1952789]
+- Updated dependencies [06e53be]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.12
+  - @nocobase/app-plugin-authorization@1.0.0-beta.30
+  - @nocobase/app-plugin-notification@1.0.0-beta.29
+  - @nocobase/i18n@2.0.0-beta.1
+  - @nocobase/authorization@1.0.0-beta.15
+  - @nocobase/app-client@4.0.0-beta.0
+
 ## 2.0.0-beta.6
 
 ### Patch Changes

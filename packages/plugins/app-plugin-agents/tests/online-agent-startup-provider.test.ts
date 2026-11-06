@@ -1,6 +1,6 @@
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
 import { ServiceContainer } from '@nocobase/service-provider';
-import { expect, it, vi } from 'vitest';
+import { expect, it } from 'vitest';
 import { createSessionManager } from '../server/online/agent/persistence/manager.js';
 import { AgentsProvider } from '../server/providers/agents.js';
 import { agentsToken } from '../server/tokens.js';
@@ -10,10 +10,6 @@ it.each([undefined, 'stderr'] as const)(
   'preserves occupied sessions in a command host and repairs them on server startup (%s)',
   async (consoleLogStream) => {
     const h = await createHarness();
-    const start = vi
-      .spyOn(h.services.vectors, 'start')
-      .mockImplementation(() => {});
-    const stop = vi.spyOn(h.services.vectors, 'stop').mockResolvedValue();
     const container = new ServiceContainer();
     container.instance(agentsToken, h.services);
     const provider = new AgentsProvider({
@@ -58,7 +54,11 @@ it.each([undefined, 'stderr'] as const)(
           ? { state: 'running' }
           : { state: 'idle', outcome: 'failed' },
       );
-      expect(await sessions.history('alice', id)).toHaveLength(1);
+      expect(
+        await sessions.native.messages.model(
+          (await sessions.native.executionSnapshot('alice', id)).replay,
+        ),
+      ).toHaveLength(1);
       const history = await sessions.native.history('alice', id);
       expect(history).toHaveLength(consoleLogStream === 'stderr' ? 1 : 2);
       if (consoleLogStream !== 'stderr')
@@ -68,8 +68,6 @@ it.each([undefined, 'stderr'] as const)(
         });
     } finally {
       await provider.shutdown();
-      start.mockRestore();
-      stop.mockRestore();
       await h.close();
     }
   },

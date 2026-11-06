@@ -1,0 +1,36 @@
+# This default-branch entry dispatches the v1/v2 implementation on main so that it stays runnable from the default branch.
+# To run it on another branch (next, develop, v1 or a feature branch), select that branch in "Use workflow from": GitHub then runs that branch's own manual-build-pro-plugin-image.yml directly.
+# Keep the name and the workflow_dispatch inputs in sync with manual-build-pro-plugin-image.yml on main; see .github/V3-MIGRATION.md.
+name: Build pro plugin docker image
+on:
+  workflow_dispatch:
+    inputs:
+      pro_plugin:
+        description: Please enter a pro plugin name
+        required: true
+      pr_number:
+        description: Please enter the pr number of pro plugin repository
+        required: false
+      nocobase_pr_number:
+        description: Please enter the pr number of nocobase/nocobase repository
+        required: false
+permissions:
+  contents: read
+  actions: write
+jobs:
+  dispatch:
+    name: Run the v1/v2 implementation
+    if: ${{ github.ref == 'refs/heads/v3-develop' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dispatch on main
+        env:
+          GH_TOKEN: ${{ github.token }}
+          WORKFLOW_FILE: manual-build-pro-plugin-image.yml
+          DISPATCH_INPUTS: ${{ toJSON(inputs) }}
+        run: >
+          printf '%s' "$DISPATCH_INPUTS" \
+            | jq '{ref: "main", inputs: ((. // {}) | with_entries(.value |= tostring))}' \
+            | gh api --method POST "repos/$GITHUB_REPOSITORY/actions/workflows/$WORKFLOW_FILE/dispatches" --input -
+          echo "Dispatched $WORKFLOW_FILE on main. Check that workflow run for its result." >>
+          "$GITHUB_STEP_SUMMARY"

@@ -36,7 +36,16 @@ type LocaleResourceShape<TSource> = TSource extends TranslationLeaf
   ? string
   : {
       readonly [Key in keyof TSource]: LocaleResourceShape<TSource[Key]>;
-    };
+    } & LocalePluralForms<TSource>;
+
+/** Additional CLDR forms, such as French `many`, are valid only for a source plural group. */
+type LocalePluralForms<TSource> = {
+  readonly [
+    Key in keyof TSource & string as Key extends `${infer Base}_other`
+      ? `${Base}_${'zero' | 'one' | 'two' | 'few' | 'many' | 'other'}`
+      : never
+  ]?: string;
+};
 
 /**
  * The same shape with every key optional, for a locale that is only partly translated.

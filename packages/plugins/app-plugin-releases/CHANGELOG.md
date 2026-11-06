@@ -1,5 +1,165 @@
 # @nocobase/app-plugin-releases
 
+## 0.1.0-beta.18
+
+### Patch Changes
+
+- 0c485af: Keep environment App inputs aligned when their labels wrap onto multiple lines.
+
+## 0.1.0-beta.17
+
+### Patch Changes
+
+- 9933a9a: Allow applications to define issued-credential admission consistently with their command policies. Support run-authenticated project creation, activity and label reads, issue uploads and project resources. Restrict comment edits and deletions to the authenticated originating run, and accept run credentials when reading a release.
+
+  Apply the same trusted application admission to knowledge and owner-checked conversation routes without bypassing their business permissions or ownership checks.
+
+  Check issue visibility before collecting plan rehearsal baselines so a refused row cannot disclose hidden issue fields or dependency identifiers.
+
+- cf23bfe: **Breaking:** Remove the deprecated `@nocobase/app-server/mailer` entry and its `Mailer`, `mailerToken`, `createMailer`, `MailerProvider`, and notification configuration exports. Replace `MailExecutions.close(waitMs)` and `drain()` with `stop()` and `wait()`; transport `close()` now cancels supported network work and waits for its original completion without a nested timeout. Application owners must apply the outer shutdown budget. Create exclusive senders with `@nocobase/app-server/mailers` and declare notification config with `@nocobase/app-plugin-notification-providers/config`. Existing inline SMTP/Resend YAML, environment mappings, and provider/channel APIs remain supported.
+
+  Default and Examples now show `mailers.default: system` and explicitly map `MAILERS_SYSTEM_*`; the example configuration remains empty at runtime. The previous `MAILERS_TRANSACTIONAL_*` sample prefix was not published. Applications may still choose any valid mailer name and custom environment prefix.
+
+- Updated dependencies [6cc8acf]
+- Updated dependencies [9933a9a]
+- Updated dependencies [1e018f1]
+- Updated dependencies [cf23bfe]
+- Updated dependencies [4411984]
+  - @nocobase/app-client@4.0.0-beta.7
+  - @nocobase/app-plugin-authentication@2.0.0-beta.18
+  - @nocobase/db@1.0.0-beta.25
+  - @nocobase/app-server@5.0.0-beta.0
+  - @nocobase/app-host@0.1.0-beta.19
+  - @nocobase/app-host-docker@0.1.0-beta.4
+  - @nocobase/app-plugin-authorization@1.0.0-beta.35
+
+## 0.1.0-beta.16
+
+### Patch Changes
+
+- cf23bfe: Move Redis realtime broadcasting to the commercial Realtime Redis plugin. Register its Server plugin before selecting Redis in an application, or import the standalone broker from its `/broker` entry. Preserve the Memory default, service identity, authorization and recovery protocol, and republish runtime consumers against the new host and realtime major versions. Install the compatible commercial cohort before deploying the final removal.
+- Updated dependencies [88d35b8]
+- Updated dependencies [83f28b1]
+- Updated dependencies [88d35b8]
+- Updated dependencies [88d35b8]
+- Updated dependencies [83f28b1]
+- Updated dependencies [cf23bfe]
+- Updated dependencies [b29a336]
+  - @nocobase/app-client@4.0.0-beta.6
+  - @nocobase/authorization@1.0.0-beta.16
+  - @nocobase/app-plugin-authorization@1.0.0-beta.34
+  - @nocobase/app-plugin-authentication@2.0.0-beta.17
+  - @nocobase/app-server@4.0.0-beta.0
+  - @nocobase/app-host@0.1.0-beta.18
+  - @nocobase/app-host-docker@0.1.0-beta.3
+
+## 0.1.0-beta.15
+
+### Patch Changes
+
+- 2b8a30e: Retain generated first administrator credentials until they are manually dismissed or the app is removed.
+- Updated dependencies [b6934ad]
+- Updated dependencies [d3f0c92]
+- Updated dependencies [a0b4568]
+- Updated dependencies [12b1f64]
+- Updated dependencies [b6934ad]
+- Updated dependencies [5ce4a7c]
+- Updated dependencies [b6934ad]
+- Updated dependencies [171f7fb]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.16
+  - @nocobase/app-client@4.0.0-beta.5
+  - @nocobase/app-server@3.0.0-beta.5
+  - @nocobase/db@1.0.0-beta.24
+
+## 0.1.0-beta.14
+
+### Minor Changes
+
+- 07b14c0: Allow applications to initialize their own App-linked records atomically during App creation.
+
+  Environments have a `purpose`, `preview` or `test`, chosen when one is created and editable later; the migration `202611020001_rel_environment_purpose` sets it for existing environments, `preview` for those holding pull request preview Apps (`previewOf`). The environments list and an environment's page show it, and `EnvironmentsSettings` takes an optional `title` and `description`.
+
+- 07b14c0: The environments list answers each environment's `appCount`, and the Environments page shows it in an Apps column.
+- 07b14c0: Download an archive release's `.tar.gz` with `GET /api/releases/apps/:appId/releases/:releaseId/archive` (`release download`), and read several Apps' summaries in one batched read with `releases.summarizeApps(appIds)`.
+
+### Patch Changes
+
+- 07b14c0: Downloading a release whose archive is missing from the artifact storage answers `404` with reason `RELEASE_ARCHIVE_NOT_FOUND` before any response headers are sent, instead of failing the stream mid-response. `EnvironmentsSettings` takes any `ReactNode` as its `title` and `description`.
+- Updated dependencies [451bf75]
+- Updated dependencies [e3d9a52]
+- Updated dependencies [22748f7]
+  - @nocobase/app-client@4.0.0-beta.4
+  - @nocobase/app-server@3.0.0-beta.4
+  - @nocobase/app-plugin-authorization@1.0.0-beta.33
+  - @nocobase/db@1.0.0-beta.23
+  - @nocobase/app-plugin-authentication@2.0.0-beta.15
+
+## 0.1.0-beta.13
+
+### Patch Changes
+
+- 05f800a: Publish editable file upload/preview and notification delivery-log UI through the UI Library. Install `@nocobase/file-component-ui` or `@nocobase/notification-logs-ui` with shadcn, and merge their bundled locale resources into the consuming application. Existing application-owned copies remain usable; reconcile upstream changes while preserving customizations. The default template keeps its File UI installation path and now tracks the UI Library source.
+
+  Remove plugin-owned Registry recipes, their build/materialize commands, the Registry example plugin, and the `registry` capability from the plugin scaffold. Plugins can continue to install UI Library items into their own client source. Update plugin development guidance to use this single source distribution channel.
+
+  Preserve custom file download callbacks for images opened from FileList, including preview toolbar and fallback downloads.
+
+## 0.1.0-beta.12
+
+### Patch Changes
+
+- e5e7498: Normalize shared client imports in session, invitation and release components without changing their behavior.
+- Updated dependencies [756f3df]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.14
+
+## 0.1.0-beta.11
+
+### Patch Changes
+
+- 58531da: Support plain HTTP origins when creating session and upload identifiers or copying text. Provide shared browser UUID and clipboard helpers so draft, submission and invitation actions work without secure-context APIs.
+
+  Document capability checks and user-facing explanations for secure-context browser features, require HTTP-compatible UUID and copy actions, and return an explicit copy result for localized recovery UI.
+
+- Updated dependencies [58531da]
+  - @nocobase/app-client@4.0.0-beta.3
+  - @nocobase/app-host-docker@0.1.0-beta.2
+  - @nocobase/app-server@3.0.0-beta.3
+  - @nocobase/authorization@1.0.0-beta.15
+  - @nocobase/config@0.1.0-beta.3
+  - @nocobase/db@1.0.0-beta.22
+  - @nocobase/i18n@2.0.0-beta.1
+  - @nocobase/service-provider@0.0.2-beta.2
+  - @nocobase/app-plugin-authentication@2.0.0-beta.13
+  - @nocobase/app-plugin-authorization@1.0.0-beta.31
+
+## 0.1.0-beta.10
+
+### Patch Changes
+
+- 4b36a3d: Complete runtime timer inheritance labels in every supported client locale so the release management package builds and the settings remain translated.
+- 10120a1: Let newly created apps inherit environment runtime timer defaults until a timer is explicitly customized.
+- Updated dependencies [62da032]
+  - @nocobase/app-client@4.0.0-beta.1
+  - @nocobase/app-server@3.0.0-beta.1
+  - @nocobase/app-plugin-authentication@2.0.0-beta.12
+  - @nocobase/app-plugin-authorization@1.0.0-beta.30
+
+## 0.1.0-beta.9
+
+### Patch Changes
+
+- 1952789: Complete all ten supported languages in plugin and example plugin catalogues, including model suggestions and test Web Push notifications. Align calendars and invitation emails, support locale-specific plural forms, and validate resource loading and formatting.
+
+  Correct joined translation text and distinguish configuration save actions, refund stages, and domain-specific operation labels.
+
+- Updated dependencies [1952789]
+- Updated dependencies [06e53be]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.12
+  - @nocobase/app-plugin-authorization@1.0.0-beta.30
+  - @nocobase/i18n@2.0.0-beta.1
+  - @nocobase/authorization@1.0.0-beta.15
+  - @nocobase/app-client@4.0.0-beta.0
+
 ## 0.1.0-beta.8
 
 ### Patch Changes

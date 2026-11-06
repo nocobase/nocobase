@@ -78,6 +78,8 @@ export interface ResolveAppRuntimeOptions {
 }
 
 export interface AppRuntimeContext {
+  /** All explicit Client registrations, including locales-only and provider-only plugins. Older hand-composed runtimes may omit this. */
+  readonly registeredPlugins?: readonly { readonly packageName: string }[];
   app?: ClientApplication;
   readonly config: AppClientConfig;
   readonly i18n: I18nRuntime;
@@ -138,6 +140,11 @@ export async function resolveAppRuntime(
   );
 
   const runtime: AppRuntimeContext = {
+    registeredPlugins: Object.freeze(
+      definition.plugins.plugins.map(({ packageName }) =>
+        Object.freeze({ packageName }),
+      ),
+    ),
     config,
     i18n,
     // The mount path the server published, so the router and every URL the client builds agree on one value.

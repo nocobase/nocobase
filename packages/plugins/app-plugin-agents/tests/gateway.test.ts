@@ -76,6 +76,7 @@ describe('the model gateway', () => {
               value: 'mock-model',
               label: 'Mock model',
               kind: 'chat',
+              capabilities: { webSearch: false },
               dimensions: null,
             },
           ],
@@ -85,7 +86,13 @@ describe('the model gateway', () => {
           title: 'Keyless',
           provider: 'openai',
           models: [
-            { value: 'gpt-x', label: 'gpt-x', kind: 'chat', dimensions: null },
+            {
+              value: 'gpt-x',
+              label: 'gpt-x',
+              kind: 'chat',
+              dimensions: null,
+              capabilities: { webSearch: true },
+            },
           ],
         },
       ],

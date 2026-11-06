@@ -11,11 +11,6 @@ import { pathToFileURL } from 'node:url';
 import ts from 'typescript';
 
 import {
-  buildRegistry,
-  findRegistryOwners,
-  materializeRegistry,
-} from '../../scripts/registry.mjs';
-import {
   assertPortableImports,
   assertResolvableImports,
   importsOf,
@@ -90,28 +85,6 @@ import legacyType = require('@/import-equals');
       ]),
     /build-tool alias/u,
   );
-});
-
-test('every package-owned generated registry is free of build-tool aliases', (t) => {
-  const root = temporary(t);
-  const files = [];
-  const owners = findRegistryOwners(repoRoot);
-  assert.ok(owners.length, 'Expected package-owned registries');
-  for (const [index, ownerRoot] of owners.entries()) {
-    const outputDirectory = path.join(root, String(index));
-    const result = buildRegistry({ ownerRoot, outputDirectory, repoRoot });
-    for (const { name } of result.items) {
-      const item = JSON.parse(
-        fs.readFileSync(path.join(outputDirectory, `${name}.json`), 'utf8'),
-      );
-      for (const file of item.files)
-        files.push({
-          path: `${path.relative(repoRoot, ownerRoot)}/${file.path}`,
-          content: file.content,
-        });
-    }
-  }
-  assertPortableImports(files);
 });
 
 test('every shadcn-built UI Library item and demo is free of build-tool aliases', async (t) => {
@@ -234,28 +207,7 @@ function consumer(root, kind) {
   return options;
 }
 
-function registryOwner(root) {
-  json(root, 'package.json', {
-    name: '@fixture/registry-owner',
-    type: 'module',
-    nocobase: { registry: { items: { probe: './registry/probe' } } },
-  });
-  json(root, 'registry.config.json', {
-    name: 'fixture',
-    items: [
-      {
-        name: 'probe',
-        type: 'registry:block',
-        registryDependencies: [],
-        dependencies: [],
-        source: {
-          root: 'registry/probe',
-          target: 'client/extensions/probe',
-          include: ['.'],
-        },
-      },
-    ],
-  });
+function registryFixture(root) {
   write(
     root,
     'registry/probe/local.ts',
@@ -309,21 +261,32 @@ async function registryServer(t, output) {
 }
 
 for (const kind of ['app', 'plugin']) {
-  for (const installation of ['materialize', 'shadcn add']) {
+  for (const installation of ['shadcn add']) {
     test(`${installation}: ${kind} resolves package imports without aliases, including plugin output`, async (t) => {
       const root = temporary(t);
       const ownerRoot = path.join(root, 'owner');
       const host = path.join(root, 'host');
       const target =
         kind === 'plugin' ? path.join(host, 'plugins/probe') : host;
-      registryOwner(ownerRoot);
+      registryFixture(ownerRoot);
       const options = consumer(target, kind);
       if (kind === 'plugin') consumer(host, 'app');
-      if (installation === 'materialize') {
-        materializeRegistry({ ownerRoot, outputRoot: target, repoRoot: root });
-      } else {
+      {
         const output = path.join(root, 'r');
-        buildRegistry({ ownerRoot, outputDirectory: output, repoRoot: root });
+        json(output, 'probe.json', {
+          name: 'probe',
+          type: 'registry:block',
+          registryDependencies: [],
+          files: ['local.ts', 'index.ts', 'page-container.tsx'].map((file) => ({
+            path: `probe/${file}`,
+            type: 'registry:component',
+            target: `client/extensions/probe/${file}`,
+            content: fs.readFileSync(
+              path.join(ownerRoot, 'registry/probe', file),
+              'utf8',
+            ),
+          })),
+        });
         const { url, unexpected } = await registryServer(t, output);
         // Emulate an upstream shadcn primitive: add must rewrite its utils import from the consumer's config.
         json(output, 'button.json', {

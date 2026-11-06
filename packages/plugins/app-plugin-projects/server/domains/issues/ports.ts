@@ -42,6 +42,8 @@ export interface StatusCatalog {
   /** Every status change goes through `move` with it and `rules`. */
   readonly machine: LifecycleMachine;
   readonly rules: IssueRules;
+  /** Includes an event targeting the current status, for progress-only updates. */
+  eventTarget(from: string, event: string): string | null;
 }
 
 /** The fixed statuses (`shared/statuses.ts`), and where principals of each kind may move an issue. */

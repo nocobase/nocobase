@@ -1,3 +1,4 @@
+import { useFileSubmission } from '../submission.js';
 import { PageContainer } from '../components/page-container.js';
 import { PageHeader } from '../components/page-header.js';
 import {
@@ -94,12 +95,17 @@ export default function OrderAttachmentsPage(): ReactElement {
     };
   }, [fetchRows]);
 
+  const submission = useFileSubmission();
   const mutate = useCallback(
     async (orderId: string, values: MutationValues): Promise<void> => {
       setBusyId(orderId);
       setError('');
       try {
-        await orders.updateOne({ filter: { id: orderId }, values });
+        await submission.run(
+          { filter: { id: orderId }, values },
+          (idempotencyKey, snapshot) =>
+            orders.updateOne({ ...snapshot, idempotencyKey }),
+        );
         setRows(await fetchRows());
       } catch (cause) {
         setError(messageOf(cause));
@@ -107,7 +113,7 @@ export default function OrderAttachmentsPage(): ReactElement {
         setBusyId(undefined);
       }
     },
-    [orders, fetchRows],
+    [orders, fetchRows, submission],
   );
 
   const amount = useMemo(
@@ -128,6 +134,23 @@ export default function OrderAttachmentsPage(): ReactElement {
       {error && (
         <p role='alert' className='text-sm text-destructive'>
           {error}
+          <button
+            type='button'
+            disabled={submission.submitting}
+            onClick={() => {
+              void (async () => {
+                try {
+                  await submission.retry();
+                  setRows(await fetchRows());
+                  setError('');
+                } catch (cause) {
+                  setError(messageOf(cause));
+                }
+              })();
+            }}
+          >
+            {t('retrySubmission')}
+          </button>
         </p>
       )}
       <div className='space-y-4'>
@@ -155,7 +178,11 @@ export default function OrderAttachmentsPage(): ReactElement {
             <FileList
               files={files}
               labels={{ ...labels, remove: t('unlink') }}
-              disabled={busyId === order.id}
+              disabled={
+                submission.submitting ||
+                submission.pending ||
+                busyId === order.id
+              }
               emptyState={t('ordersNoFiles')}
               onRemove={(file) =>
                 mutate(order.id, {
@@ -167,7 +194,11 @@ export default function OrderAttachmentsPage(): ReactElement {
               repository={attachments}
               labels={labels}
               multiple
-              disabled={busyId === order.id}
+              disabled={
+                submission.submitting ||
+                submission.pending ||
+                busyId === order.id
+              }
               onChange={(records) =>
                 mutate(order.id, {
                   attachments: {

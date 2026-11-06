@@ -1,20 +1,14 @@
 import {
-  resolveJobsConfig,
   selectJobsConfig,
-  type ResolvedMemoryJobsConfig,
-  type ResolvedRedisJobsConfig,
   type ResolvedJobsConfig,
   type JobsConfig,
 } from './config.js';
+import { JobsBackendRegistry, type JobsImplementation } from './adapters.js';
 import type { ScheduleExecutor } from './schedule/types.js';
 import type { JobExecutorService, JobsLogger } from './types.js';
 import { assertValidScope } from './validation.js';
 import type { JobExecutor } from './job/types.js';
-import { BackendJobExecutor } from './job/executor.js';
-import { MemoryJobBackend } from './job/memory/backend.js';
 import { jobStateFilePath } from './job/memory/state-file.js';
-import { RedisJobBackend } from './job/redis/backend.js';
-
 /** Reports that an executor runs on the built-in memory configuration. */
 export interface JobsFallbackEvent {
   readonly scope: string;
@@ -45,41 +39,10 @@ export interface ManagedJobExecutorService extends JobExecutorService {
   shutdown(): Promise<void>;
 }
 
-export type ScheduleExecutorFactory<
-  TConfig extends ResolvedJobsConfig = ResolvedJobsConfig,
-> = (
-  config: TConfig,
-  dependencies: JobExecutorServiceDependencies,
-) => ScheduleExecutor;
-
-export interface ScheduleExecutorFactories {
-  readonly memory: ScheduleExecutorFactory<ResolvedMemoryJobsConfig>;
-  readonly redis: ScheduleExecutorFactory<ResolvedRedisJobsConfig>;
-}
-
-export interface JobExecutorFactories {
-  readonly memory: (
-    config: ResolvedMemoryJobsConfig,
-    dependencies: JobExecutorServiceDependencies,
-  ) => JobExecutor;
-  readonly redis: (
-    config: ResolvedRedisJobsConfig,
-    dependencies: JobExecutorServiceDependencies,
-  ) => JobExecutor;
-}
-
-const defaultJobFactories: JobExecutorFactories = {
-  memory: (config, { logger }) =>
-    new BackendJobExecutor(new MemoryJobBackend(config), logger),
-  redis: (config, { logger }) =>
-    new BackendJobExecutor(new RedisJobBackend(config, logger), logger),
-};
-
 export function createJobExecutorServiceWith(
   config: JobsConfig | undefined,
   dependencies: JobExecutorServiceDependencies,
-  factories: ScheduleExecutorFactories,
-  jobFactories: JobExecutorFactories = defaultJobFactories,
+  registry: JobsBackendRegistry,
 ): ManagedJobExecutorService {
   const executors = new Map<string, ScheduleExecutor>();
   const jobs = new Map<string, JobExecutor>();
@@ -90,6 +53,15 @@ export function createJobExecutorServiceWith(
   let shutdownPromise: Promise<void> | undefined;
 
   return {
+    registerImplementation<TConfig extends ResolvedJobsConfig>(
+      name: string,
+      implementation: JobsImplementation<TConfig>,
+    ): void {
+      if (shutdownPromise)
+        throw new Error('Jobs backend registration is closed.');
+      registry.register(name, implementation);
+    },
+
     getScheduleExecutor(scope: string, name?: string): ScheduleExecutor {
       if (shutdownPromise) {
         throw new Error('The jobs service has been shut down.');
@@ -101,11 +73,9 @@ export function createJobExecutorServiceWith(
       const identity = JSON.stringify([selection.key, scope]);
       const existing = executors.get(identity);
       if (existing) return existing;
-      const resolved = resolveJobsConfig(selection, scope, dependencies);
-      const executor =
-        resolved.adapter === 'memory'
-          ? factories.memory(resolved, dependencies)
-          : factories.redis(resolved, dependencies);
+      const selected = registry.select(config, name, scope, dependencies);
+      const resolved = selected.config;
+      const executor = selected.createScheduleExecutor();
       executors.set(identity, executor);
       if (resolved.builtIn) {
         dependencies.onFallback?.({
@@ -124,11 +94,13 @@ export function createJobExecutorServiceWith(
       const identity = JSON.stringify([selection.key, scope]);
       const existing = jobs.get(identity);
       if (existing) return existing;
-      const resolved = resolveJobsConfig(selection, scope, dependencies);
+      const selected = registry.select(config, name, scope, dependencies);
+      const resolved = selected.config;
       // Memory keys naming the same file share one executor: two in-process
       // writers would overwrite each other's pending snapshot at shutdown.
-      const file =
-        resolved.adapter === 'memory' ? jobStateFilePath(resolved) : undefined;
+      const file = selected.memory
+        ? jobStateFilePath(selected.memory)
+        : undefined;
       const shared = file === undefined ? undefined : memoryJobs.get(file);
       if (shared) {
         if (
@@ -142,10 +114,7 @@ export function createJobExecutorServiceWith(
         jobs.set(identity, shared.executor);
         return shared.executor;
       }
-      const executor =
-        resolved.adapter === 'memory'
-          ? jobFactories.memory(resolved, dependencies)
-          : jobFactories.redis(resolved, dependencies);
+      const executor = selected.createJobExecutor();
       jobs.set(identity, executor);
       if (file !== undefined)
         memoryJobs.set(file, { config: resolved, executor });

@@ -19,12 +19,13 @@ const runWaitEnUS = {
       delayed: 'Scheduled for {{until}}',
       noRunnerOnline: 'No runtime online',
       runnersOffline: 'Its runtimes are offline',
+      toolQuota: 'Tool quota exhausted; reset time: {{until}}',
       toolUnavailable:
         'Tool not signed in, disabled, or requested model unavailable ({{tool}})',
       noSharedRunner: 'Only other people’s personal runners are online',
       missingFeatures: 'No runtime supports {{features}}',
       secretsNotAllowed:
-        'Needs a team runtime: {{variables}} is for team runtimes only',
+        'Needs a shared runtime: {{variables}} is for shared runtimes only',
       sameWorkActive: 'After the run already on it',
       concurrencyFull: 'Concurrency full ({{active}}/{{limit}})',
       runnersBusy: 'Compatible runners are full',
@@ -35,6 +36,7 @@ const runWaitEnUS = {
     /** A reason this version does not know, such as one a newer server sends. */
     unknown: 'Queued ({{reason}})',
     /** When a parameter the text names was not sent. */
+    quotaResetUnknown: 'unknown',
     unknownValue: '—',
   },
 };

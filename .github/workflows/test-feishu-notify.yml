@@ -1,0 +1,51 @@
+# This default-branch entry dispatches the v1/v2 implementation on main so that it stays runnable from the default branch.
+# To run it on another branch (next, develop, v1 or a feature branch), select that branch in "Use workflow from": GitHub then runs that branch's own test-feishu-notify.yml directly.
+# Keep the name and the workflow_dispatch inputs in sync with test-feishu-notify.yml on main; see .github/V3-MIGRATION.md.
+name: Test Feishu Notification
+on:
+  workflow_dispatch:
+    inputs:
+      title:
+        description: Card title
+        required: true
+        default: NocoBase 版本 v0.0.0-test Release 结果通知
+      status:
+        description: Build status
+        required: true
+        type: choice
+        options:
+          - success
+          - failure
+        default: success
+      content:
+        description: Card body content in lark_md format (leave empty for default)
+        required: false
+        default: ''
+      build_time:
+        description: Build time (leave empty for current time)
+        required: false
+        default: ''
+      workflow_url:
+        description: Workflow URL (leave empty for current run URL)
+        required: false
+        default: ''
+permissions:
+  contents: read
+  actions: write
+jobs:
+  dispatch:
+    name: Run the v1/v2 implementation
+    if: ${{ github.ref == 'refs/heads/v3-develop' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dispatch on main
+        env:
+          GH_TOKEN: ${{ github.token }}
+          WORKFLOW_FILE: test-feishu-notify.yml
+          DISPATCH_INPUTS: ${{ toJSON(inputs) }}
+        run: >
+          printf '%s' "$DISPATCH_INPUTS" \
+            | jq '{ref: "main", inputs: ((. // {}) | with_entries(.value |= tostring))}' \
+            | gh api --method POST "repos/$GITHUB_REPOSITORY/actions/workflows/$WORKFLOW_FILE/dispatches" --input -
+          echo "Dispatched $WORKFLOW_FILE on main. Check that workflow run for its result." >>
+          "$GITHUB_STEP_SUMMARY"

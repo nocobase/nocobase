@@ -3,6 +3,7 @@ import { afterEach, expect, it, vi } from 'vitest';
 import { MockLanguageModelV4 } from 'ai/test';
 import type { AuthorizationContext } from '@nocobase/authorization/core';
 import { appendFile } from 'node:fs/promises';
+import { createSandboxProvider } from '../server/online/sandbox/provider.js';
 import { createHarness, type Harness } from './harness.js';
 import { OnlineAgentService } from '../server/online/agent/service.js';
 import { createSessionManager } from '../server/online/agent/persistence/manager.js';
@@ -108,6 +109,7 @@ async function fixture() {
     contextKinds: h.services.conversations.contextKinds,
   });
   const service = new OnlineAgentService({
+    sandboxProvider: createSandboxProvider({ skills: h.services.skills }),
     sessions,
     ids: { next: () => 'context-' + ++next },
     model: async () => model,

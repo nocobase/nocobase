@@ -105,3 +105,47 @@ it('preserves the visible message when an older page and new output grow in one 
   view.rerender(<Log seq={0} />);
   expect(log.scrollTop).toBe(800);
 });
+
+it('leaves a reader who scrolled up where they are when the layout changes before their scroll event arrives', () => {
+  let resize!: () => void;
+  vi.stubGlobal(
+    'ResizeObserver',
+    class {
+      constructor(callback: () => void) {
+        resize = callback;
+      }
+      observe() {}
+      disconnect() {}
+    },
+  );
+  let height = 1000;
+  function Log({ text }: { text: string }) {
+    const ref = useChatScroll(1);
+    return (
+      <div ref={ref} data-testid='log'>
+        <div>{text}</div>
+      </div>
+    );
+  }
+  const view = render(<Log text='A' />);
+  const log = view.getByTestId('log');
+  Object.defineProperties(log, {
+    scrollHeight: { get: () => height },
+    clientHeight: { value: 400 },
+  });
+  act(() => resize());
+  expect(log.scrollTop).toBe(1000);
+  // The reader goes to the top; a resize reflows the content before the browser dispatches the scroll event.
+  log.scrollTop = 0;
+  height = 1200;
+  act(() => resize());
+  expect(log.scrollTop).toBe(0);
+  view.rerender(<Log text='AB' />);
+  expect(log.scrollTop).toBe(0);
+  // Back at the end, the log follows again.
+  log.scrollTop = 1200;
+  fireEvent.scroll(log);
+  height = 1300;
+  act(() => resize());
+  expect(log.scrollTop).toBe(1300);
+});

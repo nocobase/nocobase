@@ -78,6 +78,7 @@ export type LocalizedText =
 interface OptionsActionResponse {
   name: string;
   title: LocalizedText;
+  description?: LocalizedText;
 }
 
 /** What every `options` route answers. */
@@ -288,6 +289,13 @@ interface ListResponse<T> {
 export class AuthorizationClient {
   private cached?: Promise<AuthorizationSnapshot>;
   private currentRevision = 0;
+  private waitUntilReady: () => Promise<void> = () => Promise.resolve();
+  private inFlight?: Promise<DataResponse<AuthorizationSnapshot> | undefined>;
+
+  /** Coordinate the initial permission read with acknowledged subscription readiness. */
+  waitForRealtime(wait: () => Promise<void>): void {
+    this.waitUntilReady = wait;
+  }
   private readonly invalidationListeners = new Set<() => void>();
 
   constructor(private readonly api: ApiClient) {}
@@ -310,20 +318,28 @@ export class AuthorizationClient {
   /** `GET authorization/permissions`, cached until `invalidate()`. */
   snapshot(): Promise<AuthorizationSnapshot> {
     if (!this.cached) {
-      const request: Promise<AuthorizationSnapshot> = this.api
-        .request<DataResponse<AuthorizationSnapshot>>({
-          path: 'authorization/permissions',
-        })
-        .then(
-          (response) =>
-            this.cached === request ? response.data : this.snapshot(),
-          (error: unknown) => {
-            // A request from an earlier session must not evict its successor.
-            if (this.cached !== request) return this.snapshot();
-            this.cached = undefined;
-            throw error;
-          },
+      const response = (this.inFlight ?? Promise.resolve())
+        .catch(() => undefined)
+        .then(() => this.waitUntilReady())
+        .then(() =>
+          this.cached === request
+            ? this.api.request<DataResponse<AuthorizationSnapshot>>({
+                path: 'authorization/permissions',
+              })
+            : undefined,
         );
+
+      this.inFlight = response;
+      const request: Promise<AuthorizationSnapshot> = response.then(
+        (response) =>
+          this.cached === request && response ? response.data : this.snapshot(),
+        (error: unknown) => {
+          // A request from an earlier session must not evict its successor.
+          if (this.cached !== request) return this.snapshot();
+          this.cached = undefined;
+          throw error;
+        },
+      );
       this.cached = request;
     }
     return this.cached;
@@ -332,6 +348,12 @@ export class AuthorizationClient {
   /** Changes whenever the snapshot is invalidated. */
   revision(): number {
     return this.currentRevision;
+  }
+
+  /** Drop the previous identity's queue without waiting for its HTTP response. */
+  resetSession(): void {
+    this.inFlight = undefined;
+    this.invalidate();
   }
 
   invalidate(): void {
@@ -355,25 +377,41 @@ export class AuthorizationClient {
     return this.get(`authorization/permissionSets/${encodeURIComponent(key)}`);
   }
 
-  createPermissionSet(input: PermissionSetInput): Promise<PermissionSet> {
-    return this.send('authorization/permissionSets', 'POST', input);
+  createPermissionSet(
+    input: PermissionSetInput,
+    idempotencyKey?: string,
+  ): Promise<PermissionSet> {
+    return this.send(
+      'authorization/permissionSets',
+      'POST',
+      input,
+      idempotencyKey,
+    );
   }
 
   updatePermissionSet(
     key: string,
     input: PermissionSetInput,
+    idempotencyKey?: string,
   ): Promise<PermissionSet> {
     return this.send(
       `authorization/permissionSets/${encodeURIComponent(key)}`,
       'PATCH',
       input,
+      idempotencyKey,
     );
   }
 
-  async deletePermissionSet(key: string): Promise<void> {
+  async deletePermissionSet(
+    key: string,
+    idempotencyKey?: string,
+  ): Promise<void> {
     await this.api.request({
       path: `authorization/permissionSets/${encodeURIComponent(key)}`,
       method: 'DELETE',
+      ...(idempotencyKey
+        ? { headers: { 'Idempotency-Key': idempotencyKey } }
+        : {}),
     });
   }
 
@@ -498,9 +536,17 @@ export class AuthorizationClient {
     path: string,
     method: 'POST' | 'PATCH',
     value: unknown,
+    idempotencyKey?: string,
   ): Promise<T> {
     return this.api
-      .request<DataResponse<T>>({ path, method, json: value })
+      .request<DataResponse<T>>({
+        path,
+        method,
+        json: value,
+        ...(idempotencyKey
+          ? { headers: { 'Idempotency-Key': idempotencyKey } }
+          : {}),
+      })
       .then((response) => response.data);
   }
 }

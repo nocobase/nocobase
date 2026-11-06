@@ -1,5 +1,145 @@
 # @nocobase/app-server
 
+## 5.0.0-beta.1
+
+### Patch Changes
+
+- 87f1ea5: Give a request ten minutes to arrive instead of Node's five, so a large upload over a slow link is no longer cut off with HTTP 408.
+
+## 5.0.0-beta.0
+
+### Major Changes
+
+- cf23bfe: **Breaking:** Remove the deprecated `@nocobase/app-server/mailer` entry and its `Mailer`, `mailerToken`, `createMailer`, `MailerProvider`, and notification configuration exports. Replace `MailExecutions.close(waitMs)` and `drain()` with `stop()` and `wait()`; transport `close()` now cancels supported network work and waits for its original completion without a nested timeout. Application owners must apply the outer shutdown budget. Create exclusive senders with `@nocobase/app-server/mailers` and declare notification config with `@nocobase/app-plugin-notification-providers/config`. Existing inline SMTP/Resend YAML, environment mappings, and provider/channel APIs remain supported.
+
+  Default and Examples now show `mailers.default: system` and explicitly map `MAILERS_SYSTEM_*`; the example configuration remains empty at runtime. The previous `MAILERS_TRANSACTIONAL_*` sample prefix was not published. Applications may still choose any valid mailer name and custom environment prefix.
+
+### Minor Changes
+
+- 4411984: Configure named application mailers once for password reset, user invitations and email notifications. App-server validates `mailers`, adds explicit environment mappings and a private startup snapshot, and registers a `MailSenderFactory` from which Authentication, Users and each email notification channel create their own exclusive sender and close it after stopping their own work, so closing one never affects another. Legacy inline senders, channel selection and standalone Auth, Provider factories and hand-composed hosts keep working without new arguments. New applications can send reset and invitation emails without installing Notification. Restart after changing email configuration; configuration reload does not hot-switch active senders.
+
+### Patch Changes
+
+- Updated dependencies [5934070]
+- Updated dependencies [1e018f1]
+- Updated dependencies [cf23bfe]
+- Updated dependencies [4411984]
+  - @nocobase/caching@1.0.0-beta.4
+  - @nocobase/db@1.0.0-beta.25
+  - @nocobase/mailer@1.0.0-beta.2
+  - @nocobase/db-mssql@0.1.0-beta.5
+  - @nocobase/db-mysql@0.1.0-beta.5
+  - @nocobase/db-oracle@0.1.0-beta.5
+  - @nocobase/db-postgres@0.1.0-beta.5
+  - @nocobase/db-sqlite@0.1.0-beta.6
+
+## 5.0.0-beta
+
+### Breaking changes
+
+Remove the deprecated `@nocobase/app-server/mailer` subpath, including `Mailer`, `mailerToken`, `createMailer`, `MailerProvider` and the notification configuration helpers. Create exclusive senders through `@nocobase/app-server/mailers`; import notification configuration declarations and validation from `@nocobase/app-plugin-notification-providers/config`. Existing inline SMTP/Resend YAML and environment-variable mappings remain supported.
+
+## 4.0.0-beta.0
+
+### Major Changes
+
+- cf23bfe: Move Redis realtime broadcasting to the commercial Realtime Redis plugin. Register its Server plugin before selecting Redis in an application, or import the standalone broker from its `/broker` entry. Preserve the Memory default, service identity, authorization and recovery protocol, and republish runtime consumers against the new host and realtime major versions. Install the compatible commercial cohort before deploying the final removal.
+
+### Patch Changes
+
+- 83f28b1: Avoid computing application progress for browser issue details and parallelize independent detail reads. Expose authorized blocker inputs and keep hierarchy count hydration limited to related tasks. Let applications own project cache refreshes and keep request logs free of duplicate route fields.
+- Updated dependencies [cf23bfe]
+  - @nocobase/realtime@1.0.0-beta.0
+
+## 4.0.0-beta
+
+### Breaking changes
+
+Select realtime brokers through an application-local registry. Redis is no longer built into the host: register `@nocobase/app-plugin-realtime-redis/server` before selecting `realtime.adapter: redis`. The original service token, Memory default and host lifecycle remain unchanged. This final-removal version must follow an installable commercial compatibility cohort.
+
+## 3.0.0-beta.5
+
+### Minor Changes
+
+- a0b4568: **Breaking:** Move ordinary and recurring Redis Jobs out of the open-source runtime into the commercial `@nocobase/app-plugin-jobs-redis` Server plugin. Redis deployments must install and register a compatible plugin on every producer and consumer as part of the framework upgrade; selecting an unregistered backend now fails explicitly instead of falling back to Memory. Move Redis-specific type imports from `@nocobase/jobs` to `@nocobase/app-plugin-jobs-redis/config`.
+
+  Add application-owned, paired backend registration through `jobExecutorServiceToken`'s `registerImplementation(name, implementation)` and public `JobsImplementation` contracts from `@nocobase/jobs`, without a separate registry token. Keep the existing Jobs service token, lazy executors and Memory behavior. Registration opens no resources and is not frozen by boot or executor startup. Services require no setup; configuration and missing implementations are validated when an executor is requested, and consumers still own executor startup. Default and Examples templates now declare only Memory. Preserve existing Redis connection, namespace, scopes and job identities; no database or Redis data migration is required. Queue Redis is unchanged.
+
+  Existing YAML overrides that relied on template defaults must explicitly declare `adapter: redis` for each Redis Jobs configuration; `connection` alone no longer selects Redis. Updated template examples document the commercial Server plugin installation and registration prerequisite.
+
+  Selected configurations with missing, empty or non-string adapters are rejected instead of silently using Memory.
+
+  Release the framework first and verify its exact version is downloadable from the customer registry before pinning and releasing the compatible commercial plugin. Redis users must wait through any publication gap and upgrade the framework and plugin together.
+
+### Patch Changes
+
+- 5ce4a7c: Move the Redis/BullMQ Queue backend to the Server-only commercial `@nocobase/app-plugin-queue-redis` plugin. Applications using Redis Queue must install and explicitly register that plugin and retain the same Redis target, namespace and logical queue names. Memory remains built in and both templates now declare only Memory. Common configuration is always validated; an unselected Redis declaration no longer requires its implementation, but selecting Redis without it fails explicitly without falling back to Memory. Backend implementations register through the new public runtime contract before host setup. Remove `QueueService.registerBackend()` and OSS Redis identity exports; migrate factories and identity imports to the commercial plugin. Jobs and recurring schedules are unchanged. Coordinate release order: publish the additive OSS API, then the compatible commercial plugin, before shipping this removal. Rollback requires a compatible OSS/plugin/application composition set, not uninstalling the plugin alone.
+- b6934ad: Expose notification email configuration helpers from `@nocobase/app-plugin-notification-providers/config` and mailer contracts and validation from `@nocobase/mailer/config`, without loading sending runtimes. Preserve notification validation, optional private environment mappings and application overrides. Migrate application templates and configuration examples to the new import. Freeze and deprecate the published `@nocobase/app-server/mailer` API while retaining existing behavior for applications that still depend on it.
+- 171f7fb: Record bounded query context and caller categories while restricting identifiers to ID parameters, using route templates instead of raw request paths, and redacting sensitive path parameters in all request logs.
+- Updated dependencies [a0b4568]
+- Updated dependencies [12b1f64]
+- Updated dependencies [b6934ad]
+- Updated dependencies [5ce4a7c]
+- Updated dependencies [b6934ad]
+  - @nocobase/jobs@1.0.0-beta.5
+  - @nocobase/db@1.0.0-beta.24
+  - @nocobase/mailer@0.1.0-beta.1
+  - @nocobase/queue@1.0.0-beta.10
+  - @nocobase/db-mssql@0.1.0-beta.5
+  - @nocobase/db-mysql@0.1.0-beta.5
+  - @nocobase/db-oracle@0.1.0-beta.5
+  - @nocobase/db-postgres@0.1.0-beta.5
+  - @nocobase/db-sqlite@0.1.0-beta.6
+
+## 3.0.0-beta.4
+
+### Minor Changes
+
+- e3d9a52: Prevent overlapping form submissions with a shared submission controller and preserve operation identifiers across uncertain retries. Standard Repository writes can commit operation receipts atomically with business data and replay successful results for 24 hours after checking current access.
+
+  New application templates require operation identifiers and install receipt storage and bounded cleanup. Existing applications must reconcile the provider, migration and copied form sources, migrate their callers, and then enable strict mode; updating dependencies alone does not activate protection. Custom actions must explicitly join the receipt transaction and provide current authorization and result visibility checks. Cross-connection and unadapted external side effects are outside this guarantee.
+
+### Patch Changes
+
+- 22748f7: Leave a response's `connection` and `keep-alive` headers to Node's HTTP server. The AI SDK's message streams say `connection: keep-alive` themselves, so a stream answering a request that asked to close its connection still announced keep-alive while Node closed it; a client reusing that connection had its next request refused with a bare 400 that never reached the application.
+- Updated dependencies [e3d9a52]
+  - @nocobase/db@1.0.0-beta.23
+  - @nocobase/db-mssql@0.1.0-beta.5
+  - @nocobase/db-mysql@0.1.0-beta.5
+  - @nocobase/db-oracle@0.1.0-beta.5
+  - @nocobase/db-postgres@0.1.0-beta.5
+  - @nocobase/db-sqlite@0.1.0-beta.6
+
+## 3.0.0-beta.3
+
+### Patch Changes
+
+- 0c5c4ff: Isolate language sessions and all default authentication cookies by the complete public application mount path, including root and nested applications. Preserve port isolation and explicit cookie configuration. Fix template root-path configuration and share a cookie-name-safe path encoder.
+
+  Visitors using default authentication cookie names must sign in again after upgrading. Old cookies and server records are neither migrated nor deleted; records expire normally, and rolling back can recognize old logins again. Explicit names and prefixes remain unchanged and must be unique across applications with overlapping paths.
+
+  Existing applications must merge the updated `server/config/session.ts` and root-path handling in `server/config/app.ts` into their own source as well as upgrade dependencies; dependency updates alone do not replace copied template configuration. See the application cookie isolation guide in the upgrade Skill for the exact edits and verification steps.
+
+## 3.0.0-beta.2
+
+### Minor Changes
+
+- f8f64ad: Add class-based notification channel registration with `registerChannelType`, per-channel lifecycle management, and container access. Accept `type` in channel configuration while preserving the `provider` alias and legacy extension factories. Keep the provider-based `NotificationChannelConfig` and legacy callback types compatible, and expose `NotificationChannelConfigInput` for configuration accepting either discriminator. Mark legacy registration methods and definition types as deprecated with migration guidance. Keep send contracts and persisted delivery identities compatible, including custom type names matching JavaScript prototype properties, and drain active requests before closing channels. Support the same configuration aliases in the host mailer.
+
+  Normalize notification channel aliases in application configuration snapshots, including defaults, environment overlays, and reloads. Preserve legacy `config.provider` reads and their required-string type, mark the field deprecated in favor of `type`, and expose `NotificationConfigInput` for unnormalized configuration. Keep source layers and conflict validation unchanged.
+
+## 3.0.0-beta.1
+
+### Minor Changes
+
+- 62da032: Add App Foundation for administrators with unrestricted access: a dynamic capability overview, live statistics, business-module associations, qualitative value explanations, and resolved provider package versions. Collect evidence read-only inside the plugin, include recognized installed capabilities and registered extensions, and distinguish installation, registration, configuration and use. Support all ten Client locales and responsive layouts.
+
+  Derive module associations from registered navigation, authentication and authorization declarations, bounded value-reachable source references, and explicitly matched API handlers. Ignore unused imports, type-only references and unrelated handlers. Keep unsupported or unreadable evidence undetermined rather than guessing usage; report incomplete counts and refresh failures. Cache successful overviews for 30 seconds with a manual refresh action.
+
+  Expose optional immutable Client and Server registration snapshots so the plugin can discover provider-only and locales-only registrations without reloading contributions. Keep collection, classification, authorization and presentation in the Foundation plugin.
+
+  Show deduplicated related package names and versions once within capability details, keeping technical discovery counts and diagnostic evidence internal. Export a permission-preserving helper for placing the Foundation link last in an existing settings navigation group.
+
 ## 3.0.0-beta.0
 
 ### Minor Changes

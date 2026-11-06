@@ -1,5 +1,6 @@
 {
   "icons": {
+    "UserRoundCheck": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-user-round-check\" aria-hidden=\"true\"><circle cx=\"10\" cy=\"8\" r=\"5\"></circle><path d=\"M2 21a8 8 0 0 1 13.3-6\"></path><path d=\"m16 19 2 2 4-4\"></path></svg>",
     "KeyRound": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-key-round\" aria-hidden=\"true\"><path d=\"M2.586 17.414A2 2 0 0 0 2 18.828V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.172a2 2 0 0 0 1.414-.586l.814-.814a6.5 6.5 0 1 0-4-4z\"></path><circle cx=\"16.5\" cy=\"7.5\" r=\".5\" fill=\"currentColor\"></circle></svg>",
     "ShieldCheck": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-shield-check\" aria-hidden=\"true\"><path d=\"M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z\"></path><path d=\"m9 12 2 2 4-4\"></path></svg>",
     "Workflow": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-workflow\" aria-hidden=\"true\"><rect width=\"8\" height=\"8\" x=\"3\" y=\"3\" rx=\"2\"></rect><path d=\"M7 11v4a2 2 0 0 0 2 2h4\"></path><rect width=\"8\" height=\"8\" x=\"13\" y=\"13\" rx=\"2\"></rect></svg>",
@@ -58,6 +59,13 @@
       "✓",
       "处理多级审批、会签、转交和抄送。",
       "为采购申请增加审批：金额不超过一万元由部门主管审批，超过一万元还需要财务审批。申请人可以查看进度，审批结束后收到站内通知。请先检查项目的审批能力。"
+    ],
+    [
+      "task-center",
+      "待办中心",
+      "✓",
+      "集中处理审批、设备领取等个人待办，统一查看状态和数量。",
+      "主管每天要处理请假、报销等申请，希望打开应用就能在一个地方看到所有等自己处理的事情，不必逐个业务查找。\n请增加一个「我的待办」页面，每个人只看到自己的事项，能区分待处理、已完成、已取消，并看到各有多少条。"
     ],
     [
       "scheduler",
@@ -128,6 +136,7 @@
     "Database",
     "ShieldCheck",
     "Workflow",
+    "UserRoundCheck",
     "ListChecks",
     "CalendarClock",
     "Bell",
@@ -416,6 +425,48 @@
         "business-data-0": {
           "label": "查询业务数据",
           "text": "为 Northstar 的运输助理接入订单查询。\n员工可以询问哪些订单待调度，并按客户、阶段或线路查询。\n查询沿用当前用户的数据权限，显示订单号、客户、线路和负责人。\n把每笔结果显示为可打开的订单卡片；没有结果时说明当前范围内没有符合条件的订单。\n用户追问某一笔订单时，继续使用这笔订单的上下文。"
+        }
+      }
+    },
+    "task-center": {
+      "title": "待办中心",
+      "description": "集中处理审批、设备领取等个人待办，统一查看状态和数量。",
+      "prompts": {
+        "start": {
+          "label": "1. 建立入口",
+          "text": "主管每天要处理请假、报销等申请，希望打开应用就能在一个地方看到所有等自己处理的事情，不必逐个业务查找。\n请增加一个「我的待办」页面，每个人只看到自己的事项，能区分待处理、已完成、已取消，并看到各有多少条。"
+        },
+        "approvals": {
+          "label": "2. 接入审批",
+          "text": "请把现有的请假和报销申请放进「我的待办」，让实际负责审批的人看到申请类型和编号，审批规则保持不变。\n申请转交后由接手人处理，原审批人不再待办；申请撤回后不再要求审批。同一件事不要重复出现。"
+        },
+        "handling": {
+          "label": "3. 完成办理",
+          "text": "我希望点开一条待办，就能查看申请内容并完成审批，设备领取则可以直接确认已领取。\n办完后，这条事项进入已完成，剩余数量跟着变化。只允许有权处理的人操作，已撤销的事项说明原因并停止办理。"
+        },
+        "verification": {
+          "label": "4. 验证结果",
+          "text": "请用林晓和陈晨两个测试账号试一遍：各自收到事项、打开详情、完成处理，再看剩余数量是否正确。\n确认两人看不到也不能处理对方的个人事项，重复点击不会出现重复工作，处理失败的事情不会显示已完成。告诉我哪些已验证，并给我一条可以自己试用的路径。"
+        },
+        "ordinary": {
+          "label": "设备领取",
+          "text": "设备确认发放后，请让指定领取员工在「我的待办」中看到领取单，点开可以查看设备并确认已领取。\n领取成功后该事项完成；管理员撤销发放后，该事项取消。同一张领取单不要重复出现，领取失败时仍保留待处理。"
+        },
+        "dashboard": {
+          "label": "首页角标",
+          "text": "我希望在首页一眼看到自己还有多少事没处理，点击这个数字就能打开对应的待办列表。\n每办完一件事，数字和列表一起更新；没有待办时显示「暂无待处理事项」。换账号后只显示新账号自己的工作。"
+        },
+        "reassignment": {
+          "label": "人员改派",
+          "text": "管理员需要把尚未领取的设备从林晓改派给陈晨。改派后，林晓不再需要领取，也不能继续确认；陈晨能看到并处理这张领取单。\n已经完成的领取记录保留不变，重复改派不要产生多条相同待办。"
+        },
+        "history": {
+          "label": "历史任务",
+          "text": "应用里已经有一些没处理完的审批和设备领取，请让负责的人也能在新的「我的待办」中找到它们，并保留原来的业务记录。\n整理期间新产生的工作不能遗漏，已经办完的不能再次要求处理，也不要出现重复事项。如果中途失败，下次可以继续，不必从头整理。"
+        },
+        "notifications": {
+          "label": "业务提醒",
+          "text": "设备可以领取时，请在应用里提醒指定员工，点击提醒能打开领取单。\n同一次发放只提醒一次，读过提醒不代表已经领取；只有本人确认领取成功才完成待办。提醒没送达也不影响正常领取。"
         }
       }
     }

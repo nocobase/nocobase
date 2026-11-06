@@ -223,6 +223,8 @@ export interface AppSnapshot {
   state: AppState;
   endpoint: AppRuntimeEndpoint;
   activeRequests: number;
+  /** Open WebSockets, separate from HTTP requests and upgrade handshakes. */
+  activeConnections?: number;
   createdAt: string;
   updatedAt: string;
   lastAccessedAt: string | null;

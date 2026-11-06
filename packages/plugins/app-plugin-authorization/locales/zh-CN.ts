@@ -3,10 +3,10 @@ import type { AuthorizationServerResource } from './en-US.js';
 const zhCN: AuthorizationServerResource = {
   // Workspace sections this plugin registers through `authz.ui`.
   sections: {
-    pages: '页面权限',
+    pages: '页面访问',
     page: '页面',
-    business: '业务权限',
-    administration: '系统管理',
+    business: '业务操作',
+    administration: '系统与工具',
     other: '其他',
   },
   options: {

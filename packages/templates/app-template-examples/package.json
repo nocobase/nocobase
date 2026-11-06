@@ -1,7 +1,7 @@
 {
   "name": "@nocobase/app-template-examples",
   "displayName": "NocoBase Examples",
-  "version": "1.0.0-beta.54",
+  "version": "1.0.0-beta.72",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {
@@ -10,7 +10,7 @@
   "packageManager": "pnpm@11.7.0",
   "nocobase": {
     "templateKind": "app",
-    "defaultTemplateVersion": "1.0.0-beta.54",
+    "defaultTemplateVersion": "1.0.0-beta.72",
     "cli": {
       "bin": "nocobase-examples",
       "displayName": "NocoBase Examples",
@@ -60,6 +60,7 @@
     "ai": "catalog:",
     "class-variance-authority": "catalog:",
     "cn": "catalog:",
+    "date-fns": "catalog:",
     "dayjs": "^1.10.7",
     "dingtalk-jsapi": "3.1.1",
     "echarts": "^5.5.0",
@@ -74,6 +75,7 @@
     "postcss": "catalog:",
     "prettier": "catalog:",
     "react": "catalog:",
+    "react-day-picker": "^10.0.2",
     "react-dom": "catalog:",
     "react-error-boundary": "^6.0.0",
     "react-hook-form": "^7.57.0",
@@ -91,7 +93,9 @@
     "vitest": "catalog:",
     "tar": "catalog:",
     "@xyflow/react": "^12.11.5",
-    "elkjs": "^0.10.2"
+    "elkjs": "^0.10.2",
+    "@types/jsdom": "catalog:",
+    "@noble/hashes": "2.3.0"
   },
   "files": [
     ".prettierignore",
@@ -127,7 +131,17 @@
     "AGENTS.md",
     ".agents/rules",
     "CLAUDE.md",
-    "playwright.config.ts"
+    "playwright.config.ts",
+    "scripts/check-packages.mjs",
+    "docs/ui/pages/skill-projects.md",
+    "docs/ui/pages/customer-contacts.md",
+    "docs/customer-contacts.md",
+    "docs/customer-contacts/*.png",
+    "docs/procurement.md",
+    "docs/business-examples/index.json",
+    "docs/ui/pages/procurement.md",
+    "docs/onboarding.md",
+    "docs/ui/pages/onboarding.md"
   ],
   "publishConfig": {
     "access": "public"
@@ -142,7 +156,7 @@
     "dev": "nocobase dev",
     "build": "nocobase build",
     "start": "nocobase start",
-    "check": "pnpm lint && pnpm format:check && pnpm typecheck && pnpm test && pnpm build",
+    "check": "pnpm check:packages && pnpm lint && pnpm format:check && pnpm typecheck && pnpm test && pnpm build",
     "fix": "pnpm lint:fix && pnpm format",
     "typecheck": "tsc --noEmit && tsc -p tsconfig.node.json --noEmit && tsc -p tsconfig.server.json --noEmit",
     "lint": "eslint . --max-warnings 0",
@@ -152,7 +166,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "test:e2e": "playwright test --pass-with-no-tests"
+    "test:e2e": "playwright test --pass-with-no-tests",
+    "check:packages": "node scripts/check-packages.mjs"
   },
   "browserslist": {
     "production": [
@@ -167,6 +182,8 @@
     ]
   },
   "dependencies": {
+    "@nocobase/concurrency": "workspace:^",
+    "@nocobase/app-plugin-concurrency": "workspace:^",
     "zod": "catalog:",
     "@nocobase/app-plugin-agents": "workspace:^",
     "@nocobase/app-plugin-api-keys": "workspace:^",
@@ -179,7 +196,9 @@
     "@nocobase/app-plugin-database-explorer": "workspace:^",
     "@nocobase/app-plugin-file": "workspace:^",
     "@nocobase/app-plugin-file-example": "workspace:^",
+    "@nocobase/app-plugin-foundation": "workspace:^",
     "@nocobase/app-plugin-i18n": "workspace:^",
+    "@nocobase/app-plugin-knowledge": "workspace:^",
     "@nocobase/app-plugin-jobs-example": "workspace:^",
     "@nocobase/app-plugin-lifecycle-example": "workspace:^",
     "@nocobase/app-plugin-notification": "workspace:^",

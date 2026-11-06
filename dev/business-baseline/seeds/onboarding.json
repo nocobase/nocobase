@@ -1,0 +1,138 @@
+{
+  "version": 1,
+  "scenario": "onboarding",
+  "actors": {
+    "owner": "owner@baseline.invalid",
+    "otherOwner": "other-owner@baseline.invalid",
+    "reviewer": "reviewer@baseline.invalid",
+    "otherReviewer": "other-reviewer@baseline.invalid",
+    "outsider": "outsider@baseline.invalid"
+  },
+  "catalog": [
+    {
+      "alias": "allowed",
+      "name": "Alpha Office",
+      "active": true,
+      "allowedActors": ["owner", "reviewer"]
+    },
+    {
+      "alias": "allowedOther",
+      "name": "Beta Office",
+      "active": true,
+      "allowedActors": ["owner", "reviewer"]
+    },
+    {
+      "alias": "inactive",
+      "name": "Alpha Inactive",
+      "active": false,
+      "allowedActors": ["owner", "reviewer"]
+    },
+    {
+      "alias": "restricted",
+      "name": "Alpha Restricted",
+      "active": true,
+      "allowedActors": ["otherOwner", "otherReviewer"]
+    }
+  ],
+  "items": [],
+  "roles": {
+    "owner": "hr-coordinator",
+    "otherOwner": "same-as-owner",
+    "reviewer": "task-assignee",
+    "otherReviewer": "same-as-reviewer",
+    "outsider": "no-business-grants"
+  },
+  "records": [
+    {
+      "alias": "draft",
+      "owner": "owner",
+      "state": "draft",
+      "record": {
+        "employee": "Employee Alpha",
+        "reference": "allowed",
+        "tasks": [
+          {
+            "title": "Prepare laptop",
+            "assignee": "reviewer"
+          },
+          {
+            "title": "Orientation",
+            "assignee": "otherReviewer"
+          }
+        ]
+      }
+    },
+    {
+      "alias": "active",
+      "owner": "owner",
+      "state": "active",
+      "record": {
+        "employee": "Employee Alpha",
+        "reference": "allowed",
+        "tasks": [
+          {
+            "title": "Prepare laptop",
+            "assignee": "reviewer"
+          },
+          {
+            "title": "Orientation",
+            "assignee": "otherReviewer"
+          }
+        ]
+      }
+    },
+    {
+      "alias": "completed",
+      "owner": "owner",
+      "state": "completed",
+      "record": {
+        "employee": "Employee Alpha",
+        "reference": "allowed",
+        "tasks": [
+          {
+            "title": "Prepare laptop",
+            "assignee": "reviewer"
+          },
+          {
+            "title": "Orientation",
+            "assignee": "otherReviewer"
+          }
+        ]
+      }
+    },
+    {
+      "alias": "foreignDocument",
+      "owner": "otherOwner",
+      "state": "active",
+      "record": {
+        "employee": "Employee Alpha",
+        "reference": "restricted",
+        "tasks": [
+          {
+            "title": "Prepare laptop",
+            "assignee": "otherReviewer"
+          },
+          {
+            "title": "Orientation",
+            "assignee": "otherReviewer"
+          }
+        ]
+      },
+      "childAlias": "foreignChild"
+    }
+  ],
+  "validRecord": {
+    "employee": "Employee Alpha",
+    "reference": "allowed",
+    "tasks": [
+      {
+        "title": "Prepare laptop",
+        "assignee": "reviewer"
+      },
+      {
+        "title": "Orientation",
+        "assignee": "otherReviewer"
+      }
+    ]
+  }
+}

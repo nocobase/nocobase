@@ -1,5 +1,279 @@
 # @nocobase/app-skills
 
+## 0.1.0-beta.59
+
+### Minor Changes
+
+- 9998ac4: Organize application administration as one System settings sidebar entry that opens a home page of cards grouped by category, with URL-backed tabs inside a module. Route navigation accepts an optional `description` that the settings home shows on each card, and App Foundation declares one. Existing settings URLs, route ids and authorization stay unchanged; updating dependencies alone keeps an existing application's navigation, so reconcile the application-owned navigation transform, routing, settings pages and locales with the `nocobase-app-upgrade` Skill's System settings navigation guide.
+
+### Patch Changes
+
+- 3681eb0: Provide a permission-protected, read-only notification template directory with synthetic previews that reuse business send renderers, plus application integration and source upgrade guidance.
+- 9998ac4: Preserve unsaved page state during permission rechecks, keep leave protection active and conceal page overlays while access is pending, and keep settings navigation tests working after an application is renamed.
+
+## 0.1.0-beta.58
+
+### Patch Changes
+
+- de91b90: Include the agent chat with details recipe (`agent-chat-details`) in the UI Library catalog, including its shared installation directory and integration slots.
+- c26c3c8: Describe the agent chat workspace (`agent-chat-details`): one component for a full page and the side panel, laid out by its own width, with narrow application slots.
+- c36beac: Move theme settings into the account menu in both application templates, preserving color modes, theme presets, and saved preferences.
+
+## 0.1.0-beta.57
+
+### Patch Changes
+
+- 726ecfc: Document bounded realtime reads, demand-driven API work, request-log measurement and deterministic browser testing practices.
+
+## 0.1.0-beta.56
+
+### Minor Changes
+
+- 237a192: Add a four-step employee onboarding example with private recoverable drafts, complete server validation, atomic employee creation and reusable Skill resources.
+
+### Patch Changes
+
+- e9256f4: Automatically check required commercial plugin and database driver access through the pkg-v3 registry and install compatible authorized packages without prompting. Route knowledge base requirements to the existing knowledge plugin and its installed documentation. Report unavailable access in the conversation while continuing independent work.
+- 5e32117: Provide business concurrency interfaces with shared errors and application-owned native Mutex instances. Support unbounded ordinary acquisition, native single and bounded attempts, acquisition-only cancellation, optional renewable lease durations accepted and ignored by local Mutex, no-argument Executors, strict named configuration and public managed-instance extension tools. Keep business results independent of automatic cleanup failures and actively release confirmed occupancy during application-owned shutdown.
+
+  Expose managed-instance contracts and tools through the single Server entry, with the built-in Mutex implementation organized under its own internal directory.
+
+  Keep local Lock and Executor ownership until explicit release, actual runner settlement or instance shutdown. Managed lease tools do not own TTL timers or renewal; preserve public duration validation and native bounded acquisition. Separate confirmed Lease registration from per-request acquisition observation, track in-flight completions in the owning instance, and keep Mutex adaptation private without changing business APIs.
+
+- cf23bfe: Move Redis realtime broadcasting to the commercial Realtime Redis plugin. Register its Server plugin before selecting Redis in an application, or import the standalone broker from its `/broker` entry. Preserve the Memory default, service identity, authorization and recovery protocol, and republish runtime consumers against the new host and realtime major versions. Install the compatible commercial cohort before deploying the final removal.
+
+## 0.1.0-beta.55
+
+### Minor Changes
+
+- f5703e1: Add a runnable customers and contacts example with scoped relation selection, transactional batch assignments, native authorization tests and synchronized adaptation references.
+- a9872cc: Add a runnable procurement request example with scoped references, exact amounts, atomic parent and line saves, editable applicant quote snapshots with current catalog comparisons, designated reviewer transitions and synchronized adaptation guidance.
+
+### Patch Changes
+
+- a56182e: Clarify paused and active list loading states, correct the delayed refresh indicator example, and add overlay transition acceptance checks.
+- d3f0c92: Present concise, theme-aware list feedback for loading, empty data, unmatched filters, denied access and request failures, preserve prior results after failed refreshes, and include target-guidance discovery, source reconciliation and verified completion in the existing version-selected template upgrade workflow.
+- d3f0c92: Show each built-in list state with a matching icon and one concise line, keep recovery actions in existing controls, retain prior data after refresh failures, and show loading instead of previous-query results while a new query is pending.
+- 4a2c960: Plan pages, data, endpoints and permissions together before implementing a complete application or feature. Let routine CRUD pages use the lightweight workflow while retaining internal reviews for complex interactions, and verify complete user operations instead of treating backend tests or design documents as delivery.
+- 3402d7e: Add a runnable project list and edit example with persisted data, native authorization, submission recovery across reloads and deleted records, and synchronized Skills source checked for drift.
+- e4ff32a: Rename the unpublished Mutex adapter to @nocobase/app-plugin-concurrency and add its application-owned service token, Provider, strict named configuration and pure configuration factory. Default and Examples explicitly register the plugin and its in-process Mutex configuration. Install the compatible concurrency core and host peers; the default remains process-local and does not coordinate multiple instances. Server APIs, including deliberate low-level Mutex construction, are exported from /server; configuration uses /config. No library-style package-root export, private implementation subpath, app-server concurrency subpath or old-package alias is provided.
+- a0b4568: **Breaking:** Move ordinary and recurring Redis Jobs out of the open-source runtime into the commercial `@nocobase/app-plugin-jobs-redis` Server plugin. Redis deployments must install and register a compatible plugin on every producer and consumer as part of the framework upgrade; selecting an unregistered backend now fails explicitly instead of falling back to Memory. Move Redis-specific type imports from `@nocobase/jobs` to `@nocobase/app-plugin-jobs-redis/config`.
+
+  Add application-owned, paired backend registration through `jobExecutorServiceToken`'s `registerImplementation(name, implementation)` and public `JobsImplementation` contracts from `@nocobase/jobs`, without a separate registry token. Keep the existing Jobs service token, lazy executors and Memory behavior. Registration opens no resources and is not frozen by boot or executor startup. Services require no setup; configuration and missing implementations are validated when an executor is requested, and consumers still own executor startup. Default and Examples templates now declare only Memory. Preserve existing Redis connection, namespace, scopes and job identities; no database or Redis data migration is required. Queue Redis is unchanged.
+
+  Existing YAML overrides that relied on template defaults must explicitly declare `adapter: redis` for each Redis Jobs configuration; `connection` alone no longer selects Redis. Updated template examples document the commercial Server plugin installation and registration prerequisite.
+
+  Selected configurations with missing, empty or non-string adapters are rejected instead of silently using Memory.
+
+  Release the framework first and verify its exact version is downloadable from the customer registry before pinning and releasing the compatible commercial plugin. Redis users must wait through any publication gap and upgrade the framework and plugin together.
+
+- d3f0c92: Clarify that the permission-gated list create action stays in the page header when a list is empty.
+- 5ce4a7c: Move the Redis/BullMQ Queue backend to the Server-only commercial `@nocobase/app-plugin-queue-redis` plugin. Applications using Redis Queue must install and explicitly register that plugin and retain the same Redis target, namespace and logical queue names. Memory remains built in and both templates now declare only Memory. Common configuration is always validated; an unselected Redis declaration no longer requires its implementation, but selecting Redis without it fails explicitly without falling back to Memory. Backend implementations register through the new public runtime contract before host setup. Remove `QueueService.registerBackend()` and OSS Redis identity exports; migrate factories and identity imports to the commercial plugin. Jobs and recurring schedules are unchanged. Coordinate release order: publish the additive OSS API, then the compatible commercial plugin, before shipping this removal. Rollback requires a compatible OSS/plugin/application composition set, not uninstalling the plugin alone.
+- d3f0c92: Remove the generic Page access description from both templates while keeping role permissions unchanged.
+- b6934ad: Expose notification email configuration helpers from `@nocobase/app-plugin-notification-providers/config` and mailer contracts and validation from `@nocobase/mailer/config`, without loading sending runtimes. Preserve notification validation, optional private environment mappings and application overrides. Migrate application templates and configuration examples to the new import. Freeze and deprecate the published `@nocobase/app-server/mailer` API while retaining existing behavior for applications that still depend on it.
+- e6af70d: Remove unused route-override and source-extension entry files from application templates. Document explicit opt-in route overrides and preserve existing application customizations during template upgrades.
+- a56182e: Share reference-aware UI design and acceptance rules between application and plugin development. Preserve application-owned design decisions and authorized page exceptions across tasks, compare original references during review, and clarify installed dialog footer ownership and scrolling verification. Require component selection and source review, and ship a targeted JSX checker for duplicate native interactions with narrowly documented exceptions. Bind exceptions to adjacent elements without interpreting rendered JSX text as comments.
+- a9872cc: Keep procurement actions disabled until saved versions finish refreshing, and preserve conflict feedback across refreshed editors.
+- a56182e: Correct the submission example to record failed form submissions and revalidate corrected fields while retaining the submission lock before asynchronous validation.
+- d3f0c92: Keep table headers and existing controls visible while list feedback appears in the table body, and retain same-query rows alongside refresh-failure messages.
+- 38ad946: Clarify asynchronous UI continuity and transition verification, and document file upload components, unsaved form protection, and content URL handling in the application development skill.
+
+  Continue frontend implementation after presenting the reviewed design without requiring routine user confirmation.
+
+## 0.1.0-beta.54
+
+### Patch Changes
+
+- 07b14c0: `pnpm build --tar` also packs the application's `Dockerfile` and `Dockerfile.dockerignore` when it has them, so a server builds the image from the release archive alone with `docker build --build-arg DIST=prebuilt .` in the extracted directory, without the sources or a registry.
+- 451bf75: Locate editable validation errors in form layout order, preserve input on failed submissions, and provide accessible field feedback with a source reconciliation guide for existing applications.
+
+  Show validation reasons beside their fields or groups without a top summary, preserve automatic error focus, and retain safe form messages for unmapped failures or unavailable focus targets.
+
+- 809ec42: Use standard top tabs, compact checkbox groups, menu routes and global grant-status filtering in the role permission editor while preserving independent scope drafts and save behavior.
+- 4beef1b: Allow App-local plugins for code reuse and modular organization without requiring publication, and fix the plugin Skill's CLI testing example when using published npm dependencies.
+- 2b26601: Recover invalid list pages after deletions while preserving filters and ordering, isolate stale reads, and document source upgrades for customized applications.
+- abeba35: Keep list sorting, page size and source tabs consistent when returning from details, reset invalid browsing state safely, and document source reconciliation for customized applications.
+- e3d9a52: Prevent overlapping form submissions with a shared submission controller and preserve operation identifiers across uncertain retries. Standard Repository writes can commit operation receipts atomically with business data and replay successful results for 24 hours after checking current access.
+
+  New application templates require operation identifiers and install receipt storage and bounded cleanup. Existing applications must reconcile the provider, migration and copied form sources, migrate their callers, and then enable strict mode; updating dependencies alone does not activate protection. Custom actions must explicitly join the receipt transaction and provide current authorization and result visibility checks. Cross-connection and unadapted external side effects are outside this guarantee.
+
+- 94b6e75: Keep workflow node configuration controls icon-only with accessible labels and hover hints, preserving space for node titles and clarifying workflow UI guidance.
+
+## 0.1.0-beta.53
+
+### Patch Changes
+
+- 82aa791: Create plugins directly in an existing application's `packages/` workspace without a NocoBase source checkout. Resolve generated dependencies against the application's installed versions, preserve workspace settings, connect the local dependency, and report application edits and resolved dependencies in the JSON generation plan. Keep runtime registration explicit and preserve source-repository generation.
+
+  Support custom scoped `app-plugin-*` names in generation and plugin management. Keep package-manager progress on stderr so `create-plugin --json` always prints one result document. App-local generated plugins are private by default.
+
+  Preserve application configuration during failed plugin generation with staged atomic replacements and rollback backups. Reject plugin names already declared as optional dependencies and resolve runtime-provided dependencies through pnpm symlinks.
+
+  Keep generated plugins and committed application configuration when temporary-file cleanup fails, report remaining directories on stderr, and preserve the original error if generation already failed.
+
+- df09e63: Ship plugin development guidance with the App's installed Skills, reserve its existing name for @nocobase/app-skills, and guide upgrades through verifying the project replacement before retiring old global installations. Update application and plugin entry points to use the version-matched project Skill.
+
+  Synchronize project Skills as real copies, exclude dependencies installed inside executable examples, and preserve the targets of older project links during migration.
+
+## 0.1.0-beta.52
+
+### Patch Changes
+
+- 05f800a: Publish editable file upload/preview and notification delivery-log UI through the UI Library. Install `@nocobase/file-component-ui` or `@nocobase/notification-logs-ui` with shadcn, and merge their bundled locale resources into the consuming application. Existing application-owned copies remain usable; reconcile upstream changes while preserving customizations. The default template keeps its File UI installation path and now tracks the UI Library source.
+
+  Remove plugin-owned Registry recipes, their build/materialize commands, the Registry example plugin, and the `registry` capability from the plugin scaffold. Plugins can continue to install UI Library items into their own client source. Update plugin development guidance to use this single source distribution channel.
+
+  Preserve custom file download callbacks for images opened from FileList, including preview toolbar and fallback downloads.
+
+- 7770b46: Support internal workspace packages while keeping the application at the project root. Generate workspace package patterns, build dependencies before client compilation, watch reachable internal sources, and document independent package checks and deployment exports.
+- 7770b46: Provide a runnable internal workspace package example with declaration watching, clarify the single-application layout, and fail package checks when an internal package lacks its check script. Keep the public development listener available during server restarts so shared-source HMR requests can wait for the replacement backend.
+- 54af55a: Preserve visited parent list searches and pagination when returning through breadcrumbs or the default back link, resolve role editor return links against their parent route, and document source upgrades for existing applications.
+
+## 0.1.0-beta.51
+
+### Patch Changes
+
+- 25e7bd3: Make Member a visible, editable creation default and honor explicitly empty role lists. Initialize new person accounts transactionally across existing creation paths. Preserve existing Member grants and users through a new transactional seed before removing the global assignment, without restoring later role removals. Keep protected administrators and authenticated account basics unchanged.
+
+  Stop old account writers and upgrade Authentication, Authorization, and Users together before applying database tasks and reopening traffic. Existing applications must also merge the updated template user pages and translations; plugin upgrades do not replace application-owned source. Restore a database backup with matching old packages if rollback is required.
+
+## 0.1.0-beta.50
+
+### Patch Changes
+
+- 0c34e7e: Organize application tests by client, server, database, CLI and project source domains, with separate jsdom and Node Vitest projects. Keep browser tests in Playwright, run Node suites sequentially, use real application fixtures in home, inbox, sidebar permission and layout tests, and update the bundled testing guidance and commands.
+
+  Replace mocked authentication, permission hooks and article/numeric API clients in existing template tests with real application, cookie and database fixtures. Verify actual session revocation, persisted permission changes, successful retries and saved article contents. Keep deliberate network failures and delayed responses at the transport boundary.
+
+## 0.1.0-beta.49
+
+### Patch Changes
+
+- 2e5823a: Register Knowledge indexing configuration and both vector database types in the application templates, document their deployment settings, and guide application development through the supported configuration contract.
+
+## 0.1.0-beta.48
+
+### Patch Changes
+
+- 58531da: Support plain HTTP origins when creating session and upload identifiers or copying text. Provide shared browser UUID and clipboard helpers so draft, submission and invitation actions work without secure-context APIs.
+
+  Document capability checks and user-facing explanations for secure-context browser features, require HTTP-compatible UUID and copy actions, and return an explicit copy result for localized recovery UI.
+
+## 0.1.0-beta.47
+
+### Patch Changes
+
+- 39fa974: The chat's headless entry tells a panel which kind of agent it shows: `resolveChatAgentMode`, `configuredChatModes`, `agentsOfMode` and `chatAgentMode` split the catalog into the online agent and runner agents, and `useChatPanel()` carries `agentMode` with `setAgentMode` for a panel that switches between them. `GET /api/agents/conversations` takes `mode=online|runner` to list one kind's conversations. `ChatProvider` takes `memoryScope` (the signed-in person's id) and remembers the agent a new conversation last went to in `localStorage` (`lastAgentId`, `rememberAgent`, `readLastAgent`, `rememberLastAgent`); `newConversationAgent` takes it as a third argument, ahead of the person's and the team's defaults. Every addition is optional, and a panel that passes none of it behaves as before.
+
+  The UI Library catalog in `nocobase-app-development` describes the updated `agent-chat` and `agent-composer` items: the panel's mode switch and the agent last used, and context chips that open a preview of what they carry.
+
+- 9c20e2d: Add Demo Mode for isolated demonstration deployments, enabled by the boolean `NOCOBASE_DEMO_MODE` environment variable or `demoMode.enabled` configuration and disabled by default, with application-owned repeatable datasets, full business cleanup, reusable visitor accounts, application-scoped quick sign-in redirects, progress reporting and daily scheduled resets. Track applied credentials across restarts so reset preserves unchanged sessions and applies password changes.
+
+  Provide request-scoped write protection with logical-collection exceptions while preserving business authorization. Expose permission-gated data management, revision-safe policy APIs, CLI commands and composable settings components.
+
+  Support optional official Agents integration with a persistent simulated model, application-owned Agent simulations and explicitly authorized online conversation policies. Preserve existing global defaults and disable the owned model when Demo Mode is disabled. Document raw OpenAI JSON and streaming response contracts. Non-AI applications can use demo data without installing Agents. Publish structural service contracts and browser-safe shared types.
+
+  Publish a task-focused integration Skill with capability prerequisites, an executable non-AI example, settings-based management authorization and application-owned datasets and cleanup. Distinguish ordinary sample data from dedicated demo deployments, use automatic daily reset defaults and keep customization and simulation guidance conditional on the requested demo.
+
+## 0.1.0-beta.46
+
+### Patch Changes
+
+- 0c5c4ff: Isolate language sessions and all default authentication cookies by the complete public application mount path, including root and nested applications. Preserve port isolation and explicit cookie configuration. Fix template root-path configuration and share a cookie-name-safe path encoder.
+
+  Visitors using default authentication cookie names must sign in again after upgrading. Old cookies and server records are neither migrated nor deleted; records expire normally, and rolling back can recognize old logins again. Explicit names and prefixes remain unchanged and must be unique across applications with overlapping paths.
+
+  Existing applications must merge the updated `server/config/session.ts` and root-path handling in `server/config/app.ts` into their own source as well as upgrade dependencies; dependency updates alone do not replace copied template configuration. See the application cookie isolation guide in the upgrade Skill for the exact edits and verification steps.
+
+- 6e3d66e: Clarify how application-owned permission workspaces map independently assignable business operations to actual UI controls, server enforcement and data scopes, including compatibility requirements when splitting existing actions. Align the settings guidance with checkbox-based draft editing.
+
+  Allow applications to hide created-record range selectors while retaining registered policies, name related-record ranges per action, and localize filter field captions by collection in both templates.
+
+- 6e3d66e: Present role permissions as compact ordered action tiles with checkboxes, descriptions and named data ranges while retaining the original category navigation. Keep the visible catalog in application-owned composition, require explicit settings opt-in plus a real configuration page and registered server action, omit the default System and tools category, preserve undisplayed grants, and update the permission Registry integration and agent guidance.
+
+  Render page access using the application's actual menu hierarchy, with independent page checkboxes, disclosure-only structural groups, ancestor-aware filtering and preserved non-menu page grants.
+
+  Use checkboxes consistently for page, business and settings permission drafts and the enabled-only filter, retaining separate scope selectors and explicit host Save.
+
+  Refine menu permission trees with compact aligned rows, subtle hover and focus feedback, restrained group headings and fewer nested borders.
+
+  Keep page-access trees limited to business pages. Group actual system-settings pages and operations under Configuration permissions, explain the boundary, and preserve existing grant identifiers and values.
+
+  Remove the global default-data-scope shortcut from role editors; retain its dedicated Permission management tab.
+
+  Keep multi-scope action tiles at stable widths, show default-rule explanations visibly, and let applications classify individual composite configuration actions by their actual pages while retaining native filter editing.
+
+  Group default data scope controls under one heading per operation and reuse application-owned business captions across role and default-scope forms without rewriting stored rules.
+
+- 0c5c4ff: Store language choices separately for each application's full mount path so applications on the same origin retain their own defaults and preferences. The previous shared choice is left untouched and no longer read; after upgrading, each application starts in its default language until the visitor chooses again. Update the screenshot tool to preset the application-specific language choice.
+- 6e3d66e: Require a reviewable operation-to-permission map and independent UI/API authorization checks when building new applications.
+
+## 0.1.0-beta.45
+
+### Patch Changes
+
+- e913522: Add notification upgrade planning and acceptance guidance for TestAdapter removal, class-based channel extensions and deprecated configuration compatibility. Cover application-owned forms, log pages, permissions and E2E fixtures while preserving send contracts, delivery identities and historical records.
+- 99b5ad2: List the new `task-center-ui` block in the UI Library catalog: presentational components for a personal task center layered as source, subject, status and task cards, with per-type summaries, one-type batch selection and a detail drawer whose form the task's business supplies.
+
+## 0.1.0-beta.44
+
+### Patch Changes
+
+- d3d4c5d: Preserve standard settings list position across details and edits, display localized role names, and support scoped member configuration with a safe return destination. Keep unsupported workflow ordering static and document the shared navigation contract without changing stored permissions or business configuration.
+
+  Provide contextual setup readiness components and a live required-role membership adapter in both templates, with typed unavailable states and safe configuration links. Guide builders to connect feature-specific initialization checks to authorized business services without startup scans, automatic grants or fabricated relationship defaults.
+
+  Explain empty user and role lists when creation is unavailable, report the specific completed account action, and distinguish invalid requests and generic data conflicts from retryable failures without changing permissions or discarding input.
+
+  Simplify user management to one edit drawer for basic information and roles, with underlined names as the edit entry and inline account controls, a searchable role picker, one atomic Save and shared leave guards. Preserve legacy URLs and resolve return paths from the actual route mount so remapped settings pages retain their list context.
+
+  Allow user profile fields and submitted role scopes to be updated in one transaction, requiring each affected action independently and preserving omitted scopes and legacy profile-only callers.
+
+  Keep localized pagination summaries on one line with content-sized widths and wrap complete control groups at narrow widths, preventing Chinese labels from splitting under desktop table layouts.
+
+  Use quiet, consistent outlined account-action buttons and semantic green enabled/gray disabled status badges in user management, keeping existing action confirmations and authorization.
+
+  Standardize clickable record fields through RecordLink: foreground text at rest, an underline on hover, and visible keyboard focus. Reuse it for user, role, data-scope and example workflow record links while preserving native navigation and list query context.
+
+- f152ed4: Document shared compact workflow diagram presentation, auxiliary route discovery, and execution history semantics.
+- f8f64ad: Use the notification channel `type` discriminator in application configuration examples and explain its compatibility with `provider` in application development guidance.
+
+## 0.1.0-beta.43
+
+### Patch Changes
+
+- 8b30952: Isolate application command test storage in the test configuration directory. Respect the application mount path in test router links and navigation, and clean up runtime configuration immediately when initialization or rendering fails. Preserve the original failure when cleanup also fails, without reporting handled cleanup failures again at test completion. Document the test helpers' storage, routing and cleanup contracts.
+- 62da032: Preserve application module capability associations in a validated deployment artifact generated by the Foundation CLI build hook, without shipping business source code. Register the hook in the default template. Read all permission configuration pages before reporting totals, and synchronize the generated UI Registry catalog.
+- 62da032: Guide application builders to assign business roles to explicit users and keep assignments visible and editable in administration. Require an explicit request and management controls before introducing a global default role. Ship an isolated application initialization test that rejects unexpected wildcard role assignments and hidden business grants in the inherited member role.
+
+## 0.1.0-beta.42
+
+### Patch Changes
+
+- 06e53be: Present roles as compact content rows with consistent body-sized names, aligned identifiers and small state labels. Preinstall the shared RoleList Registry source in both templates and document source reconciliation for existing applications.
+
+  Tighten the permission workspace with regular-weight action labels, narrower category navigation and aligned compact action rows. Avoid repeating the selected category heading in normal browsing while retaining category headings for filtered results and accessible section names. Keep multiple data ranges independently configurable in an expandable area without rewriting existing grants. Synchronize the Registry and both templates, including localized labels and source-upgrade guidance.
+
+  Use neutral foreground text and consistent hover underlines for user and role names, retain the shared keyboard focus treatment, and document the record-link convention.
+
+- 06e53be: Add a protected default data scope administration entry, rule list and controlled editor to the system settings contribution. Synchronize the Registry and both templates, preserve existing selections and filter parameters, and keep unknown catalog configuration read-only without reseeding or changing role grants.
+- cec87fc: Guide lifecycle authoring toward precise business transitions and readable diagrams, explaining Cartesian edge expansion and presentation filtering that preserves business paths, configuration access, and execution history.
+
+  Route approval requirements to the commercial approval plugin, explain licensing and installation prerequisites, and distinguish full approval processes from simple lifecycle confirmations.
+
+- 06e53be: Clarify role permission categories, group account actions for individual review, omit bulk-selection controls and authorization counts, expose registered action descriptions, and place Agent administration under system tools. Show labelled selections for multiple data ranges and correctly describe an empty scope as granting no additional record access while preserving default, sharing and restriction rules. Synchronize the Registry and both templates without changing permission identifiers or existing grants.
+- 06e53be: Present the existing role and default-data-scope administration pages as two tabs behind one Permission management sidebar entry while preserving their routes, authorization requirements and stored configuration. Document the source upgrade without adding new rule editors.
+- b7a3083: Keep installed client plugins in custom scopes on the same application contexts and service tokens as template page tests. Update both application templates' page examples to use real application hooks, permissions and notifications through `@nocobase/app-testing`.
+
+  Align application and generated-plugin testing guidance with the shared fixtures, including Node integration tests, database dialect selection, temporary CLI storage and fixture ownership.
+
+## 0.1.0-beta.41
+
+### Patch Changes
+
+- baf80fe: Declare the Examples business CLI and configure Runner chat to obtain it from the application's distribution while preserving the existing application registration identity. Document the required CLI build and distinguish it from Runner installation and development-management commands.
+- 30ac4db: Document deploying applications to an existing Studio, including CLI installation and authentication, repository-backed and manual archive uploads, deployment approval, and verification across multiple destinations.
+
 ## 0.1.0-beta.40
 
 ### Patch Changes

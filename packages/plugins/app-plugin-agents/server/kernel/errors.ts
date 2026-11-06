@@ -31,7 +31,9 @@ export type Missing =
   | 'Scope'
   | 'Product'
   | 'File'
-  | 'Attachment';
+  | 'Attachment'
+  | 'Link'
+  | 'Message';
 
 const MISSING: Readonly<Record<Missing, ErrorCode>> = {
   Agent: 'AGENT_NOT_FOUND',
@@ -52,6 +54,8 @@ const MISSING: Readonly<Record<Missing, ErrorCode>> = {
   Product: 'PRODUCT_NOT_FOUND',
   File: 'DIST_FILE_NOT_FOUND',
   Attachment: 'NOT_FOUND',
+  Link: 'NOT_FOUND',
+  Message: 'NOT_FOUND',
 };
 
 /** An object that does not exist, or that the caller may not see: the two are indistinguishable on purpose. */

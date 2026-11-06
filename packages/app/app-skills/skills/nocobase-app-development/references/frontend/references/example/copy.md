@@ -2,7 +2,7 @@
 
 Part of the [projects worked example](../example.md).
 
-Rules: [`i18n.md`](../i18n.md). Every key the handbook's examples pass to `t()` or name in a route, in both languages. Add the groups your feature uses; `actions.create`, `actions.saving`, `actions.discard`, `actions.signInAgain` and `'status.sessionExpired'` are the shared keys the template does not have yet (["Existing shared keys" in `i18n.md`](../i18n.md#existing-shared-keys)).
+Rules: [`i18n.md`](../i18n.md). Every key the handbook's examples pass to `t()` or name in a route, in both languages. Add the groups your feature uses; built-in list feedback uses the template's shared `listFeedback.*` translations. `actions.create`, `actions.saving`, `actions.discard`, `actions.signInAgain` and `'status.sessionExpired'` are the shared keys the template does not have yet (["Existing shared keys" in `i18n.md`](../i18n.md#existing-shared-keys)).
 
 ```ts
 // client/locales/en-US.ts (the groups the handbook's examples add; merge them into the existing file)
@@ -71,7 +71,6 @@ const enUS = {
       more: 'More actions for "{{name}}"',
       edit: 'Edit',
       delete: 'Delete',
-      refresh: 'Refresh',
     },
     create: {
       action: 'New project',
@@ -157,11 +156,6 @@ const enUS = {
       budgetInvalid: 'Enter a number',
       customerRequired: 'Choose a customer',
     },
-    empty: {
-      title: 'No projects yet',
-      description: 'Create your first project to start tracking progress.',
-      noResults: 'No projects match your filters',
-    },
     error: {
       title: 'Projects could not be loaded',
       notFound:
@@ -181,7 +175,6 @@ const enUS = {
   projectDashboard: {
     title: 'Project dashboard',
     description: 'Where the projects stand, and what changed recently.',
-    refresh: 'Refresh',
     metrics: {
       total: 'All projects',
       active: 'Active',
@@ -293,7 +286,6 @@ const zhCN: AppResource = {
       more: '“{{name}}”的更多操作',
       edit: '编辑',
       delete: '删除',
-      refresh: '刷新',
     },
     create: {
       action: '新建项目',
@@ -394,7 +386,6 @@ const zhCN: AppResource = {
   projectDashboard: {
     title: '项目仪表盘',
     description: '项目的整体进展，以及最近的变化。',
-    refresh: '刷新',
     metrics: {
       total: '全部项目',
       active: '进行中',

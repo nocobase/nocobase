@@ -79,3 +79,24 @@ export function truncateBytes(
   // A cut inside a multi-byte character decodes to U+FFFD at the end; drop it.
   return { text: cut.replace(/\uFFFD$/u, ''), truncated: true };
 }
+
+/**
+ * `value` with every NUL character removed from its strings, object keys included, at any depth. PostgreSQL refuses
+ * NUL in text and JSON columns, and tool output reported by a runner may carry one.
+ */
+export function withoutNul<T>(value: T): T {
+  return strip(value) as T;
+}
+
+function strip(value: unknown): unknown {
+  if (typeof value === 'string') return value.replaceAll('\0', '');
+  if (Array.isArray(value)) return value.map(strip);
+  if (value && typeof value === 'object' && !(value instanceof Date))
+    return Object.fromEntries(
+      Object.entries(value).map(([key, item]) => [
+        key.replaceAll('\0', ''),
+        strip(item),
+      ]),
+    );
+  return value;
+}

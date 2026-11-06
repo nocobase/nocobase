@@ -1,4 +1,5 @@
 import { afterEach, expect, it, vi } from 'vitest';
+import { QueryObserver } from '@tanstack/react-query';
 import type { AppUIMessage } from '../../client/chat.js';
 import { appUIMessageText } from '../../client/chat.js';
 import { agentsQueryClient } from '../../client/query.js';
@@ -22,42 +23,102 @@ const metadata = {
   revision: 0,
   executionId: 'native-1',
 };
-it('shares one SDK owner and one initial recovery across views, then reconciles durable completion', async () => {
+it.each(['Answer', 'Over-redacted preview'])(
+  'shares one SDK owner and reconciles durable completion after %s',
+  async (preview) => {
+    const f = fixture(),
+      output = f.output();
+    f.controller.receive('c1');
+    f.controller.receive('c1');
+    expect(f.controller.chat('c1')).toBe(f.controller.chat('c1'));
+    await vi.waitFor(() => expect(output.attached).toBe(true));
+    output.emit({
+      type: 'start',
+      messageId: 'answer',
+      messageMetadata: metadata,
+    });
+    output.emit({ type: 'text-start', id: 'text' });
+    output.emit({ type: 'text-delta', id: 'text', delta: preview });
+    output.emit({ type: 'text-end', id: 'text' });
+    const saved: AppUIMessage = {
+      id: 'answer',
+      role: 'assistant',
+      metadata: { ...metadata, revision: 1, seq: 2 },
+      parts: [{ type: 'text', text: 'Answer', state: 'done' }],
+    };
+    f.state.messages = [saved];
+    f.state.detail = {
+      ...f.state.detail,
+      execution: { status: 'idle', outcome: 'completed', messageId: 'answer' },
+    };
+    output.emit({ type: 'finish', messageMetadata: saved.metadata });
+    output.close();
+    await vi.waitFor(() =>
+      expect(f.controller.chat('c1').status).toBe('ready'),
+    );
+    await vi.waitFor(() =>
+      expect(f.controller.chat('c1').messages).toEqual([saved]),
+    );
+    expect(f.stream).toHaveBeenCalledOnce();
+    expect(
+      agentsQueryClient().getQueryData(chatKeys.conversation('c1')),
+    ).toEqual(f.state.detail);
+  },
+);
+it('keeps a live runner response while reconciling an older saved snapshot', async () => {
   const f = fixture(),
     output = f.output();
-  f.controller.receive('c1');
-  f.controller.receive('c1');
-  expect(f.controller.chat('c1')).toBe(f.controller.chat('c1'));
+  f.state.detail = {
+    ...f.state.detail,
+    mode: 'runner',
+    execution: { status: 'running' },
+  };
+  f.state.messages = [
+    {
+      id: 'answer',
+      role: 'assistant',
+      metadata: { ...metadata, seq: 2 },
+      parts: [{ type: 'text', text: 'Opening', state: 'done' }],
+    },
+  ];
+  await f.controller.loadHistory('c1');
+  f.controller.receive('c1', f.state.detail);
   await vi.waitFor(() => expect(output.attached).toBe(true));
   output.emit({
     type: 'start',
     messageId: 'answer',
-    messageMetadata: metadata,
+    messageMetadata: { ...metadata, seq: 2 },
   });
-  output.emit({ type: 'text-start', id: 'text' });
-  output.emit({ type: 'text-delta', id: 'text', delta: 'Answer' });
-  output.emit({ type: 'text-end', id: 'text' });
-  const saved: AppUIMessage = {
-    id: 'answer',
-    role: 'assistant',
-    metadata: { ...metadata, revision: 1, seq: 2 },
-    parts: [{ type: 'text', text: 'Answer', state: 'done' }],
-  };
-  f.state.messages = [saved];
-  f.state.detail = {
-    ...f.state.detail,
-    execution: { status: 'idle', outcome: 'completed', messageId: 'answer' },
-  };
-  output.emit({ type: 'finish', messageMetadata: saved.metadata });
+  output.emit({ type: 'text-start', id: 'part' });
+  output.emit({ type: 'text-delta', id: 'part', delta: 'Live answer' });
+  await vi.waitFor(() =>
+    expect(appUIMessageText(f.controller.chat('c1').messages[0])).toBe(
+      'Live answer',
+    ),
+  );
+  await f.controller.refresh('c1');
+  expect(f.controller.chat('c1').status).toBe('streaming');
+  expect(appUIMessageText(f.controller.chat('c1').messages[0])).toBe(
+    'Live answer',
+  );
+  f.state.messages = [
+    {
+      ...f.state.messages[0],
+      metadata: { ...metadata, seq: 2, revision: 1 },
+      parts: [{ type: 'text', text: 'Saved answer', state: 'done' }],
+    },
+  ];
+  f.state.detail = { ...f.state.detail, execution: { status: 'idle' } };
+  output.emit({ type: 'text-end', id: 'part' });
+  output.emit({ type: 'finish' });
   output.close();
   await vi.waitFor(() => expect(f.controller.chat('c1').status).toBe('ready'));
   await f.controller.refresh('c1');
-  expect(f.controller.chat('c1').messages).toEqual([saved]);
-  expect(f.stream).toHaveBeenCalledOnce();
-  expect(agentsQueryClient().getQueryData(chatKeys.conversation('c1'))).toEqual(
-    f.state.detail,
+  expect(appUIMessageText(f.controller.chat('c1').messages[0])).toBe(
+    'Saved answer',
   );
 });
+
 it('appends SDK deltas in place and protects the active message against an older history snapshot', async () => {
   const f = fixture(),
     output = f.output();
@@ -128,13 +189,13 @@ it('retains interrupted output and explicitly resumes through SDK without resend
   expect(
     f.stream.mock.calls.map((call) => (call[0] as { method: string }).method),
   ).toEqual(['GET', 'GET']);
-  expect(f.controller.state('c1')?.error).toBeDefined();
+  expect(f.controller.state('c1')?.error).toBeUndefined();
 });
 it('keeps business occupancy after SDK finish and after missing transport, including approval waiting', async () => {
   const f = fixture();
   await f.controller.resume('c1');
   expect(f.controller.state('c1')?.status).toBe('ready');
-  expect(f.controller.state('c1')?.error).toBeDefined();
+  expect(f.controller.state('c1')?.error).toBeUndefined();
   f.state.detail = {
     ...f.state.detail,
     execution: { status: 'running', waitingApproval: true },
@@ -184,6 +245,48 @@ it('does not let a stale idle detail overwrite a newer command or clear an inter
     f.state.detail,
   );
 });
+it.each(['detail', 'reconcile'])(
+  'reads new messages when a newer detail query supersedes refresh during %s',
+  async (phase) => {
+    const f = fixture();
+    f.state.detail = { ...f.state.detail, execution: { status: 'idle' } };
+    f.state.messages = [uiMessage(1)];
+    await f.controller.loadHistory('c1');
+    let release!: () => void;
+    const gate = new Promise<void>((done) => {
+      release = done;
+    });
+    const held =
+      phase === 'detail'
+        ? vi.spyOn(f.api, 'conversation').mockImplementationOnce(async () => {
+            await gate;
+            return f.state.detail;
+          })
+        : vi.spyOn(f.api, 'messages').mockImplementationOnce(async () => {
+            const items = [...f.state.messages],
+              lastSeq = f.state.lastSeq;
+            await gate;
+            return { items, lastSeq, hasMore: false, nextCursor: null };
+          });
+    const refreshing = f.controller.refresh('c1');
+    await vi.waitFor(() => expect(held).toHaveBeenCalledOnce());
+    // Ordinary detail queries advance the version without requesting messages.
+    const current = f.controller.detailRequest('c1');
+    const newer = { ...f.state.detail, title: 'Newer detail' };
+    expect(current()).toBe(true);
+    agentsQueryClient().setQueryData(chatKeys.conversation('c1'), newer);
+    f.state.messages.push(uiMessage(2, 'system', 'Task completed'));
+    release();
+    await refreshing;
+    expect(f.controller.chat('c1').messages.map((m) => m.id)).toEqual([
+      'm1',
+      'm2',
+    ]);
+    expect(
+      agentsQueryClient().getQueryData(chatKeys.conversation('c1')),
+    ).toEqual(newer);
+  },
+);
 it.each([false, true])(
   'keeps Stop pending until terminal confirmation and clears identity lifetimes (historical=%s)',
   async (historical) => {
@@ -512,7 +615,8 @@ it('retains an interrupted unsaved tool input when shared recovery has no stream
   expect(f.controller.chat('c1').messages[0].parts[0].type).toBe(
     'tool-business',
   );
-  expect(f.controller.state('c1')?.error).toBeDefined();
+  expect(f.controller.state('c1')).toMatchObject({ recovery: 'history' });
+  expect(f.controller.state('c1')?.error).toBeUndefined();
   expect(
     f.stream.mock.calls.map((call) => (call[0] as { method: string }).method),
   ).toEqual(['GET', 'GET']);
@@ -707,11 +811,18 @@ it('keeps live independent notices in source order without letting SDK deltas ap
       .messages.filter((message) => message.id === 'answer'),
   ).toHaveLength(1);
   const { chatMessageSegments } = await import('../../client/chat.js');
+  const segments = chatMessageSegments(f.controller.chat('c1').messages);
+  expect(segments.map((segment) => segment.seq)).toEqual([2, 3]);
+  expect(segments[0].message.id).toBe('answer');
+  expect(segments[0].partIndexes).toEqual([0, 1]);
   expect(
-    chatMessageSegments(f.controller.chat('c1').messages).map(
-      (segment) => segment.seq,
-    ),
-  ).toEqual([2, 3, 4]);
+    segments[0].partIndexes.map((index) => segments[0].message.parts[index]),
+  ).toEqual([
+    { type: 'text', text: 'First', state: 'done' },
+    { type: 'text', text: 'Second', state: 'done' },
+  ]);
+  expect(segments[0].message.metadata).toEqual(final);
+  expect(segments[1].message).toEqual(notice);
 });
 it('continues approval on its stable assistant while later independent notifications are read during the response', async () => {
   const f = fixture();
@@ -870,4 +981,224 @@ it('does not attach recovery after a new send starts during the history read', a
   output.emit({ type: 'finish' });
   output.close();
   await sending;
+});
+
+it('keeps a pending history read when marking the conversation read', async () => {
+  const f = fixture();
+  const saved = uiMessage(1, 'assistant', 'Completed answer');
+  let resolve!: (value: {
+    data: AppUIMessage[];
+    meta: { lastSeq: number };
+  }) => void;
+  f.request.mockImplementationOnce(
+    () =>
+      new Promise((done) => {
+        resolve = done;
+      }),
+  );
+  const reading = f.controller.loadHistory('c1');
+  await vi.waitFor(() => expect(resolve).toBeDefined());
+  await f.controller.markRead('c1');
+  resolve({ data: [saved], meta: { lastSeq: 1 } });
+  await reading;
+  expect(f.controller.chat('c1').messages).toEqual([saved]);
+});
+
+it.each(['command', 'identity'])(
+  'ignores a read receipt superseded by %s',
+  async (kind) => {
+    const f = fixture();
+    let resolve!: (value: { data: ConversationDetail }) => void;
+    f.request.mockImplementationOnce(
+      () =>
+        new Promise((done) => {
+          resolve = done;
+        }),
+    );
+    const reading = f.controller.markRead('c1');
+    const newer = { ...f.state.detail, title: 'New title' };
+    if (kind === 'command')
+      await f.controller.command(
+        'c1',
+        async () => newer,
+        (detail) => detail,
+      );
+    else {
+      f.controller.invalidate();
+      agentsQueryClient().setQueryData(chatKeys.conversation('c1'), newer);
+    }
+    resolve({ data: f.state.detail });
+    await reading;
+    expect(
+      agentsQueryClient().getQueryData(chatKeys.conversation('c1')),
+    ).toEqual(newer);
+  },
+);
+
+it.each(['none', 'reread', 'detail'])(
+  'preserves completion revision when markRead overlaps %s',
+  async (phase) => {
+    const f = fixture();
+    const initial = uiMessage(2, 'assistant', 'Completed answer');
+    f.state.messages = [initial];
+    await f.controller.loadHistory('c1');
+    f.state.detail = {
+      ...f.state.detail,
+      execution: {
+        status: 'idle',
+        outcome: 'completed',
+        messageId: initial.id,
+      },
+    };
+    const saved = {
+      ...initial,
+      metadata: { ...initial.metadata!, revision: 2 },
+      parts: [
+        ...initial.parts,
+        { type: 'data-turn' as const, data: { durationMs: 4200 } },
+      ],
+    };
+    f.state.messages = [saved];
+    let release!: () => void;
+    const gate = new Promise<void>((done) => {
+      release = done;
+    });
+    if (phase === 'detail') {
+      vi.spyOn(f.api, 'conversation').mockImplementationOnce(async () => {
+        await gate;
+        return f.state.detail;
+      });
+      const refreshing = f.controller.refresh('c1');
+      await f.controller.markRead('c1');
+      release();
+      await refreshing;
+    } else if (phase === 'reread') {
+      const original = f.api.messages.bind(f.api);
+      let reading!: () => void;
+      const started = new Promise<void>((done) => {
+        reading = done;
+      });
+      vi.spyOn(f.api, 'messages').mockImplementationOnce(async (id, query) => {
+        reading();
+        await gate;
+        return original(id, query);
+      });
+      const refreshing = f.controller.refresh('c1');
+      await started;
+      await f.controller.markRead('c1');
+      release();
+      await refreshing;
+    } else {
+      await f.controller.refresh('c1');
+    }
+    expect(f.controller.chat('c1').messages).toEqual([saved]);
+  },
+);
+
+it('shares initial conversation reads and keeps one trailing refresh for concurrent changes', async () => {
+  const f = fixture();
+  f.state.detail = {
+    ...f.state.detail,
+    execution: { status: 'idle' },
+  } as ConversationDetail;
+  const blocked = Promise.withResolvers<{ data: ConversationDetail }>();
+  f.request.mockImplementationOnce(() => blocked.promise);
+  const first = f.controller.refresh('c1', false);
+  const duplicate = f.controller.refresh('c1', false);
+  const changed = f.controller.refresh('c1');
+  expect(duplicate).toBe(first);
+  expect(changed).toBe(first);
+  expect(f.request).toHaveBeenCalledTimes(1);
+  blocked.resolve({ data: f.state.detail });
+  await first;
+  expect(
+    f.request.mock.calls.filter(
+      ([options]) => options.path === 'agents/conversations/c1',
+    ),
+  ).toHaveLength(2);
+});
+
+it('uses an active detail snapshot for initial messages without rereading the conversation or loaded history', async () => {
+  const f = fixture();
+  f.state.detail = {
+    ...f.state.detail,
+    execution: { status: 'idle' },
+  } as ConversationDetail;
+  const observer = new QueryObserver(agentsQueryClient(), {
+    queryKey: chatKeys.conversation('c1'),
+    queryFn: async () => f.state.detail,
+  });
+  const off = observer.subscribe(() => {});
+  await observer.refetch();
+  try {
+    await f.controller.refresh('c1', false);
+    await f.controller.refresh('c1', false);
+    expect(
+      f.request.mock.calls.filter(
+        ([options]) => options.path === 'agents/conversations/c1',
+      ),
+    ).toHaveLength(0);
+    expect(
+      f.request.mock.calls.filter(([options]) =>
+        options.path.endsWith('/messages'),
+      ),
+    ).toHaveLength(1);
+    await f.controller.refresh('c1');
+    expect(
+      f.request.mock.calls.filter(
+        ([options]) => options.path === 'agents/conversations/c1',
+      ),
+    ).toHaveLength(1);
+  } finally {
+    off();
+  }
+});
+
+it('initializes one shared stream while multiple surfaces follow it', async () => {
+  const f = fixture();
+  const receive = vi
+    .spyOn(f.controller, 'receive')
+    .mockImplementation(() => {});
+  const one = f.controller.followStream('c1');
+  const two = f.controller.followStream('c1');
+  expect(receive).toHaveBeenCalledOnce();
+  one();
+  two();
+  const reopened = f.controller.followStream('c1');
+  expect(receive).toHaveBeenCalledTimes(2);
+  reopened();
+});
+
+it('keeps an initial history read alive while the initial detail is reconciled', async () => {
+  const f = fixture();
+  f.state.detail = {
+    ...f.state.detail,
+    execution: { status: 'idle' },
+  } as ConversationDetail;
+  const observer = new QueryObserver(agentsQueryClient(), {
+    queryKey: chatKeys.conversation('c1'),
+    queryFn: async () => f.state.detail,
+  });
+  const off = observer.subscribe(() => {});
+  await observer.refetch();
+  const blocked = Promise.withResolvers<{
+    data: never[];
+    meta: { lastSeq: number };
+  }>();
+  const original = f.request.getMockImplementation()!;
+  f.request.mockImplementation((options) =>
+    options.path.endsWith('/messages') ? blocked.promise : original(options),
+  );
+  const loading = f.controller.loadHistory('c1');
+  const refreshing = f.controller.refresh('c1', false);
+  await Promise.resolve();
+  await Promise.resolve();
+  expect(
+    f.request.mock.calls.filter(([options]) =>
+      options.path.endsWith('/messages'),
+    ),
+  ).toHaveLength(1);
+  blocked.resolve({ data: [], meta: { lastSeq: 0 } });
+  await Promise.all([loading, refreshing]);
+  off();
 });

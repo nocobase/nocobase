@@ -1,6 +1,6 @@
 # Frontend development handbook
 
-When you write or change code under `client/`, first decide the workflow with [`ui-workflow.md`](ui-workflow.md), then read the documents listed here by topic. For what the UI should look like, see [`ui-guidelines.md`](ui-guidelines.md); this handbook covers only how to write the code.
+Use the workflow selected during feature planning with [`ui-workflow.md`](ui-workflow.md), or select it before a frontend-only change, then read the documents listed here by topic. For what the UI should look like, see [`ui-guidelines.md`](ui-guidelines.md); this handbook covers only how to write the code.
 
 All code examples use the example "projects" domain. The topic references hold the rules with focused snippets, none longer than a small component; [`references/example.md`](references/example.md) indexes the complete files of the feature, one document per file, by task. Every example is complete as code: hooks are called at the top level of a component, a snippet comes with the component or function it belongs to, and omitted parts are marked with `// …`. The translation keys an example calls are not all in the template: add the shared keys listed in `references/i18n.md` and your feature's own group before code that follows an example calls them.
 
@@ -34,6 +34,22 @@ Conventions every page follows, each explained in its home:
 - Toasts with `useToaster()` from `@nocobase/app-client`, never a second `Toaster` (["Toasts" in `references/api.md`](references/api.md#toasts)).
 - Every user-visible string through a translation key ([`references/i18n.md`](references/i18n.md)).
 
+Ordinary pages do not add a persistent Refresh action. Preserve write invalidation, contextual read retries and automatic progress updates; see [page data freshness](references/page-freshness.md) for the rule and the boundary between new templates and existing application copies.
+
+## Browser API compatibility
+
+Check browser support and secure-context requirements before choosing a browser API, including APIs called by third-party libraries. HTTPS-only APIs are allowed when a feature needs them: detect availability and permission failures, and show a localized explanation of the requirement and how the user can proceed. Keep unrelated actions working. Do not silently do nothing or show a success message when an API is unavailable. A LAN IP served over HTTP is not a secure context, while localhost is treated as trustworthy, so test the unavailable state instead of relying on localhost alone.
+
+UUID generation and copying text must work on ordinary HTTP, including LAN IP access. Use the public `createUuid()` and `copyText()` utilities from `@nocobase/app-client` rather than duplicating browser-specific implementations in pages. `createUuid()` returns a cryptographically random UUID v4 using `crypto.getRandomValues`, with the standard version, variant and encoding; it does not require `crypto.randomUUID`. Server-side `node:crypto` is unaffected.
+
+### Copy and clipboard actions
+
+Call `copyText(text)` directly from the user's click handler and await its boolean result. It uses the [Clipboard API](https://developer.mozilla.org/en-US/docs/Web/API/Clipboard/writeText) when available and falls back to selection-based copying on HTTP or after a rejected write. It returns `false` when programmatic copying is refused or unsupported. Only show a copied confirmation when it returns `true`; on `false`, present the exact text in a selectable field with localized manual-copy instructions. Do not use optional chaining on `navigator.clipboard` that silently skips copying.
+
+For a dialog or other focus trap, pass `copyText(text, { container: dialogElement })` when the trigger does not take focus. Otherwise the helper selects the nearest dialog containing the active element, or the document body. Its temporary field is removed and the previous focus and selection are restored. The HTTP fallback uses the [deprecated `document.execCommand('copy')` compatibility mechanism](https://developer.mozilla.org/en-US/docs/Web/API/Document/execCommand); browser policy can still reject it, so keep the manual-copy path.
+
+Verify UUID generation and copy actions on a non-secure HTTP origin where `window.isSecureContext` is `false`, including missing clipboard APIs, permission denial and copying from a dialog. Verify copied content by pasting into a normal input, including multiline and non-ASCII text; do not rely only on another secure-context-only API such as `navigator.clipboard.readText()`. For other HTTPS-only features, test the unavailable/denied state and its user-facing explanation as well as the supported path. Report browser checks that could not be performed.
+
 ## Look up by task
 
 | Task                                                                                     | Read                                                                                                                                                                                                                                                                                           |
@@ -47,6 +63,7 @@ Conventions every page follows, each explained in its home:
 | A record's own page with tabs, and what its header opens                                 | ["A record detail page with tabs" in `child-routes.md`](references/child-routes.md#a-record-detail-page-with-tabs), [`example/detail-page-tabs.md`](references/example/detail-page-tabs.md)                                                                                                    |
 | Dialogs and drawers, confirmations, temporary panels                                     | [`overlay.md`](references/overlay.md) [§1](references/overlay.md#1-choosing-an-overlay), [§2](references/overlay.md#2-overlays-as-child-routes), [§4](references/overlay.md#4-delete-confirmation-alertdialog), [§5](references/overlay.md#5-sheet-temporary-panels)                           |
 | Forms: fields, dependent fields and steps, validation, server errors, where a form goes  | [`form.md`](references/form.md): [Field types](references/form.md#field-types), [Dependent fields and steps](references/form.md#dependent-fields-and-steps), [Server errors](references/form.md#server-errors), [Where forms go](references/form.md#where-forms-go)                            |
+| File uploads, attachment lists and previews                                              | [`form.md` §File uploads and attachments](references/form.md#file-uploads-and-attachments); [`ui-library.md`](references/ui-library.md) `file-component-ui` and `attachment-list`                                                                                                              |
 | Calling endpoints, loading data, errors, writes, toasts                                  | [`api.md`](references/api.md): [Loading data](references/api.md#loading-data-in-a-component), [Error handling](references/api.md#error-handling), [Write operations](references/api.md#write-operations), [Toasts](references/api.md#toasts)                                                   |
 | Lists: search and filters, states, columns and row actions, selection, server pagination | [`table.md`](references/table.md) [§1](references/table.md#1-choosing-a-table-component), [§5](references/table.md#5-writing-search-and-filters-to-the-url), [§7](references/table.md#7-the-four-list-states), [§8](references/table.md#8-column-definitions-and-row-actions)                  |
 | A dashboard; a record opened from a page other than its list                             | Guideline T5 in [`ui-guidelines.md`](ui-guidelines.md), [`example/project-dashboard.md`](references/example/project-dashboard.md), ["The same drawer over another page" in `overlay.md`](references/overlay.md#the-same-drawer-over-another-page)                                              |
@@ -63,6 +80,8 @@ Conventions every page follows, each explained in its home:
 
 Each is explained where the pointer leads:
 
+- Overlays recreated during loading or retry ([overlay lifecycle](references/overlay.md#asynchronous-overlay-lifecycle)).
+- Navigation metadata cleared with every list request, or old results retained across resource or authorization changes ([data invalidation boundaries](references/api.md#data-invalidation-boundaries)).
 - A hook called outside a component or custom hook, in a handler, a condition or a loop.
 - A create, edit or detail view opened from component state instead of a child route ([`references/overlay.md`](references/overlay.md)).
 - A child route that returns its own `PageContainer` without `RouteChildPage`: it renders at the parent's `Outlet`, below the parent's content, instead of covering it ([section 3 of `references/child-routes.md`](references/child-routes.md#3-four-ways-to-present-a-child-route)).
@@ -89,10 +108,11 @@ Each is explained where the pointer leads:
 - `setState` called synchronously in an effect, which fails lint (`react-hooks/set-state-in-effect`, with `--max-warnings 0`); set state in request callbacks, or compare with the previous value during render ([`references/api.md`](references/api.md)).
 - A confirmation dialog that clears its target when closing, so its title flickers ([section 4 of `references/overlay.md`](references/overlay.md#4-delete-confirmation-alertdialog)).
 - A form whose dirty flag is not cleared before `close()` after a successful save, so the close asks to discard the changes that were just saved ([section 2.5 of `references/overlay.md`](references/overlay.md#25-beforeclose-checks-before-closing)).
+- A file upload or attachment list built by hand as an `<input type='file'>` plus filenames, instead of the preinstalled `file-component-ui` block ([File uploads and attachments](references/form.md#file-uploads-and-attachments)).
 
 ## Self-check before finishing
 
-This is the one list of checks every workflow runs, scoped to the changed files and the tests that cover them; do not run full checks every time. [`ui-workflow.md`](ui-workflow.md) then adds what each workflow checks in the browser: a quick change looks at the changed element once, a theme change follows [`references/theme.md` section 7](references/theme.md#7-verify), and the full workflow does the acceptance review.
+This is the one list of checks every workflow runs, scoped to the changed files and the tests that cover them; do not run full checks every time. [`ui-workflow.md`](ui-workflow.md) then adds what each workflow checks in the browser: a quick change verifies the changed element and affected interactions, a theme change follows [`references/theme.md` section 7](references/theme.md#7-verify), and the full workflow does the acceptance review.
 
 ```bash
 pnpm exec tsc -p tsconfig.json --noEmit
@@ -103,10 +123,12 @@ pnpm exec vitest run <related-test-files>
 
 - Give ESLint only the changed `.ts`, `.tsx`, `.js` and `.mjs` files, test files included; it has no configuration for `.css` or `.md` and exits nonzero on them. Prettier takes every changed file, CSS and Markdown too.
 - Primitives the change added are changed files too: formatted with Prettier, their built-in English translated as ["English built into primitives"](references/shadcn.md#english-built-into-primitives) lists, and otherwise exactly what the CLI wrote.
+- Run the [targeted component checker](component-selection.md#run-the-targeted-check) on the changed client source in each owning package. Review actual imports and local wrappers against the component source list; resolve findings and review every native/custom exception. Record the command and scanned scope; a missing parser or failed scan is Not verified.
 - Lint does not check the shadcn skill's "Critical Rules". Read the changed components against them: items inside their groups, `gap-*` rather than `space-*`, `data-icon` and no sizing classes on icons inside components, full `Card` structure, semantic tokens ([`references/shadcn.md`](references/shadcn.md)).
+- For changed asynchronous UI, verify affected intermediate states with [controlled transition tests](references/testing.md#asynchronous-transitions).
 - Choose the related tests by searching `tests/` for the changed component, page or route name.
-- A changed route always includes `tests/logic/client-routes.test.ts`.
-- A changed `t()` key or route title always includes `tests/logic/app-locale-coverage.test.ts`; what it does not catch is in ["Checks" in `i18n.md`](references/i18n.md#checks).
+- A changed route always includes `tests/client/client-routes.test.ts`.
+- A changed `t()` key or route title always includes `tests/client/app-locale-coverage.test.ts`; what it does not catch is in ["Checks" in `i18n.md`](references/i18n.md#checks).
 - Confirm that every test file you named ran: see ["Running tests" in `testing.md`](references/testing.md#running-tests).
 - When you changed server or database code as well, also run `pnpm exec tsc -p tsconfig.server.json --noEmit`.
 - When you changed a browser test under `tests/playwright/`, also run `pnpm exec tsc -p tsconfig.node.json --noEmit`, which covers `tests/playwright/` once Playwright is set up (an application without it sets it up first, as [`references/testing.md`](references/testing.md) describes).

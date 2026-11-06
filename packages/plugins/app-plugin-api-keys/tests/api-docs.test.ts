@@ -267,7 +267,7 @@ describe('API documentation access with an API key', () => {
       cookieAuth: expect.objectContaining({
         type: 'apiKey',
         in: 'cookie',
-        name: 'main.session_token',
+        name: 'main__%2F.session_token',
       }),
       apiKeyAuth: expect.objectContaining({
         type: 'apiKey',

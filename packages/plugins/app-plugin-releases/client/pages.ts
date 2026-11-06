@@ -13,7 +13,9 @@ import { ACCESS_NAMESPACE } from '../shared/access.js';
 import AppPage from './pages/app-page.js';
 import AppsPage from './pages/apps-page.js';
 import EnvironmentPage from './pages/environment-page.js';
-import EnvironmentsPage from './pages/environments-page.js';
+import EnvironmentsPage, {
+  type EnvironmentsPageProps,
+} from './pages/environments-page.js';
 import NewAppPage from './pages/new-app-page.js';
 import RequestPage from './pages/request-page.js';
 
@@ -40,10 +42,10 @@ export const ReleasesRequestPage: ComponentType = withNamespace(
   ACCESS_NAMESPACE,
   RequestPage,
 );
-export const EnvironmentsSettings: ComponentType = withNamespace(
-  ACCESS_NAMESPACE,
-  EnvironmentsPage,
-);
+export type { EnvironmentsPageProps };
+/** The environments page; `title` and `description` name it in the mounting application's words. */
+export const EnvironmentsSettings: ComponentType<EnvironmentsPageProps> =
+  withNamespace(ACCESS_NAMESPACE, EnvironmentsPage);
 export const ReleasesEnvironmentPage: ComponentType = withNamespace(
   ACCESS_NAMESPACE,
   EnvironmentPage,

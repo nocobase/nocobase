@@ -72,6 +72,7 @@ export type {
   IssueMatchScope,
   IssueQueries,
   IssueHierarchy,
+  IssueHierarchySource,
 } from './domains/issues/index.js';
 export type {
   AttachmentContent,

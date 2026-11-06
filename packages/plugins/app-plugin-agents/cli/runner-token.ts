@@ -24,7 +24,7 @@ export default class RunnerToken extends AppCommand {
       default: 'ownerOnly',
       options: ['team', 'ownerOnly'],
       description:
-        'team runs anyone’s work; ownerOnly runs only work the owner started.',
+        'Usage scope: team is shared (runs any user’s tasks with their variables and secrets); ownerOnly is personal (only its owner’s tasks).',
     }),
     owner: Flags.string({
       description: 'The user id that owns the runner (required for ownerOnly).',

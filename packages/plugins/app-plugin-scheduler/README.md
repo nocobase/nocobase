@@ -45,3 +45,17 @@ pnpm --filter @nocobase/app-plugin-scheduler test
 pnpm --filter @nocobase/app-plugin-scheduler build
 pnpm --filter @nocobase/app-plugin-scheduler test:integration  # needs Docker; runs against Redis
 ```
+
+## Draining before dependency shutdown
+
+Resolve `schedulerServiceToken` from `@nocobase/app-plugin-scheduler/server/tokens` and call `drain(): Promise<void>` before releasing services used by schedule targets. For reverse-order provider shutdown, an application can register a final provider whose `shutdown()` returns `this.app.container.resolve(schedulerServiceToken).drain()`. Stop host HTTP admission and drain other business executors in the appropriate application order; Scheduler does not own them.
+
+The first call synchronously stops admission of reconciliation checks and clears the reconciliation timer. Already admitted checks may overlap as before. Drain waits for those checks, their observation/completion writes, and the existing configured schedule executor, including its state persistence and event delivery. Completion reports remain accepted while the executor or checks are draining. Once both settle, the report entry closes and drain waits for all previously accepted reports and event records before releasing the subscription. A late `reportCompletion()` rejects with `The Scheduler has been drained.` before any storage access, even if drain failed.
+
+Concurrent and repeated calls, including the plugin provider's final shutdown, return the same promise and the same success or failure. A failure does not finish drain early: other admitted work settles first. A single failure is rethrown unchanged; multiple failures use `AggregateError.errors`. Scheduler observes its own event-record failures even though Jobs logs subscriber errors. Infrastructure failures observed by an in-flight reconciliation are included; target inspection failures still mean an unknown target state, and business terminal outcomes retain their existing meaning. Failures already settled before drain began remain the responsibility of their original callers/logs.
+
+Drain is a one-way, process-local boundary with no restart or retry. It does not wait for every durable `waiting` occurrence or for human approval; later processes can use the existing recovery path. It neither cancels business work nor imposes a new deadline. Keep dependencies available until the drain promise settles, and propagate rejection to the host's shutdown error handling. Do not await drain from inside a target, inspection or completion operation that drain itself must wait for.
+
+The same boundary works with an empty manifest, sync-only startup and partial startup failure. Shutdown uses the already selected `scheduler.jobs` executor and does not create a replacement. This contract requires a Jobs revision whose Schedule executor waits for queued event delivery even when backend shutdown fails; the older failure path that returns before delivery is insufficient.
+
+Tracking adds only process-local state and promises. Requests, ticks, claims and runs add no SQL, network request, durable write, transaction or lock. Existing shutdown state-file persistence and occurrence/event writes still occur and must complete; drain does not make those costs zero.

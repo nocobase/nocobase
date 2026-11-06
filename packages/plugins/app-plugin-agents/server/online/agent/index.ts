@@ -1,3 +1,9 @@
+export type { OnlineAgentResendOptions } from '../../../shared/resend.js';
+export type {
+  OnlineAgentSandbox,
+  OnlineAgentSandboxSkill,
+  OnlineAgentSandboxSkillCatalog,
+} from '../sandbox/types.js';
 export type {
   OnlineAgent,
   RealtimeOnlineAgent,
@@ -9,6 +15,7 @@ export type {
   OnlineAgentSafeError,
   OnlineAgentContext,
   OnlineAgentToolContext,
+  OnlineAgentToolExecution,
   OnlineAgentScope,
   OnlineAgentScopeProvider,
   OnlineAgentOptions,

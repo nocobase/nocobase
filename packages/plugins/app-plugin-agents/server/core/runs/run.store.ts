@@ -75,7 +75,7 @@ export interface RunRecord {
   readonly directoryKey: string | null;
   readonly claimFailures: number;
   readonly payloadFingerprint: string | null;
-  /** While queued: the variables for team runners only that kept a personal runner off it (`VariableRef[]`). */
+  /** While queued: the variables for shared runners only that kept a personal runner off it (`VariableRef[]`). */
   readonly teamOnlyVariables?: JsonColumn;
   /** While held: the repository URLs its runner may ask credentials for on demand (`RunGit.onDemand`); null otherwise. */
   readonly gitCredentialUrls?: JsonColumn;
@@ -276,6 +276,7 @@ export function toRun(record: RunRecord): Run {
     finishedAt: record.finishedAt,
     lastActivityAt: record.lastActivityAt,
     cancelRequestedAt: record.cancelRequestedAt,
+    cancelledById: record.cancelledById,
     failureReason: record.failureReason as FailureReason | null,
     failureDetail: record.failureDetail,
     summary: record.summary,
@@ -380,22 +381,42 @@ export async function pendingInputs(
   });
 }
 
-/** Marks the given inputs as delivered to the runner, once. */
+/**
+ * Marks the given inputs delivered to the runner, once, and answers the ones the runner now has: each delivered
+ * before or by this call, never one handled meanwhile (an input its sender withdrew, which `handledAt` marks in a
+ * conditional update of its own: whichever update comes first wins the row).
+ */
 export async function markDelivered(
   conn: DatabaseConnection,
   inputs: readonly InputRecord[],
   now: string,
-): Promise<void> {
-  const undelivered = inputs.filter((input) => !input.deliveredAt);
-  if (undelivered.length === 0) return;
-  await inputsRepo(conn).updateMany({
-    filter: (f) =>
-      f.and([
-        f.or(undelivered.map((input) => f.string('id').eq(input.id))),
-        f.date('deliveredAt').empty(),
-      ]),
-    values: { deliveredAt: now },
+): Promise<InputRecord[]> {
+  if (inputs.length === 0) return [];
+  const ids = inputs.map((input) => input.id);
+  if (inputs.some((input) => !input.deliveredAt))
+    await inputsRepo(conn).updateMany({
+      filter: (f) =>
+        f.and([
+          f.or(ids.map((id) => f.string('id').eq(id))),
+          f.date('deliveredAt').empty(),
+          f.date('handledAt').empty(),
+        ]),
+      values: { deliveredAt: now },
+    });
+  const current = await inputsRepo(conn).findMany({
+    filter: (f) => f.or(ids.map((id) => f.string('id').eq(id))),
   });
+  const delivered = new Set(
+    current
+      .filter((input) => input.deliveredAt && !input.handledAt)
+      .map((input) => input.id),
+  );
+  return inputs
+    .filter((input) => delivered.has(input.id))
+    .map((input) => ({
+      ...input,
+      deliveredAt: current.find((row) => row.id === input.id)!.deliveredAt,
+    }));
 }
 
 /**
@@ -503,11 +524,70 @@ export async function inputsOnSince(
 
 const summaryRead = transactionRead<string | null>();
 
+/** Bounded handoff history; empty summaries remain visible rather than inventing a result. */
+export interface RecentRunSummary {
+  readonly id: string;
+  readonly status: RunStatus;
+  readonly finishedAt: string | null;
+  readonly summary: string | null;
+}
+
+const recentSummaryRead = transactionRead<RecentRunSummary[]>();
+
+export function recentSummaries(
+  conn: DatabaseConnection,
+  key: {
+    readonly agentId: string;
+    readonly subjectKind: string;
+    readonly subjectId: string;
+  },
+  exceptRunId: string,
+): Promise<RecentRunSummary[]> {
+  return recentSummaryRead(
+    conn,
+    JSON.stringify([key.agentId, key.subjectKind, key.subjectId, exceptRunId]),
+    async () => {
+      const records = await runsRepo(conn).findMany({
+        select: (select) =>
+          select.fields('id', 'status', 'finishedAt', 'summary'),
+        filter: (f) =>
+          f.and([
+            f.string('agentId').eq(key.agentId),
+            f.string('subjectKind').eq(key.subjectKind),
+            f.string('subjectId').eq(key.subjectId),
+            f.or(
+              ['completed', 'failed', 'cancelled'].map((status) =>
+                f.string('status').eq(status),
+              ),
+            ),
+            f.string('id').ne(exceptRunId),
+          ]),
+        sort: (sort) => [
+          sort.field('finishedAt').desc(),
+          sort.field('id').desc(),
+        ],
+        limit: 5,
+      });
+      return records.map((record) => ({
+        id: record.id,
+        status: record.status,
+        finishedAt:
+          record.finishedAt == null
+            ? null
+            : new Date(record.finishedAt).toISOString(),
+        summary: record.summary
+          ? Array.from(record.summary).slice(0, 400).join('')
+          : null,
+      }));
+    },
+  );
+}
+
 /** The summary of the newest completed run of an agent on a subject, other than `exceptRunId`. */
 export async function lastSummary(
   conn: DatabaseConnection,
   key: {
-    readonly agentId: string;
+    readonly agentId?: string;
     readonly subjectKind: string;
     readonly subjectId: string;
   },
@@ -520,7 +600,7 @@ export async function lastSummary(
       const records = await runsRepo(conn).findMany({
         filter: (f) =>
           f.and([
-            f.string('agentId').eq(key.agentId),
+            ...(key.agentId ? [f.string('agentId').eq(key.agentId)] : []),
             f.string('subjectKind').eq(key.subjectKind),
             f.string('subjectId').eq(key.subjectId),
             f.string('status').eq('completed'),

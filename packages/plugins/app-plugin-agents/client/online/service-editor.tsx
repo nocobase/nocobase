@@ -208,7 +208,12 @@ function ServiceForm({
       const fields = {
         title: title.trim(),
         baseUrl: baseUrlOf(url, chosen),
-        models: [...models],
+        models: models.map(({ value, label, kind, dimensions }) => ({
+          value,
+          label,
+          kind,
+          dimensions,
+        })),
         enabled,
         ...(key.trim() ? { apiKey: key.trim() } : {}),
       };

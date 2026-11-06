@@ -1,5 +1,241 @@
 # @nocobase/app-plugin-projects
 
+## 0.1.0-beta.25
+
+### Patch Changes
+
+- 9933a9a: Allow applications to define issued-credential admission consistently with their command policies. Support run-authenticated project creation, activity and label reads, issue uploads and project resources. Restrict comment edits and deletions to the authenticated originating run, and accept run credentials when reading a release.
+
+  Apply the same trusted application admission to knowledge and owner-checked conversation routes without bypassing their business permissions or ownership checks.
+
+  Check issue visibility before collecting plan rehearsal baselines so a refused row cannot disclose hidden issue fields or dependency identifiers.
+
+- cf23bfe: **Breaking:** Remove the deprecated `@nocobase/app-server/mailer` entry and its `Mailer`, `mailerToken`, `createMailer`, `MailerProvider`, and notification configuration exports. Replace `MailExecutions.close(waitMs)` and `drain()` with `stop()` and `wait()`; transport `close()` now cancels supported network work and waits for its original completion without a nested timeout. Application owners must apply the outer shutdown budget. Create exclusive senders with `@nocobase/app-server/mailers` and declare notification config with `@nocobase/app-plugin-notification-providers/config`. Existing inline SMTP/Resend YAML, environment mappings, and provider/channel APIs remain supported.
+
+  Default and Examples now show `mailers.default: system` and explicitly map `MAILERS_SYSTEM_*`; the example configuration remains empty at runtime. The previous `MAILERS_TRANSACTIONAL_*` sample prefix was not published. Applications may still choose any valid mailer name and custom environment prefix.
+
+- Updated dependencies [6cc8acf]
+- Updated dependencies [4411984]
+- Updated dependencies [9933a9a]
+- Updated dependencies [1e018f1]
+- Updated dependencies [cf23bfe]
+- Updated dependencies [4411984]
+  - @nocobase/app-client@4.0.0-beta.7
+  - @nocobase/app-plugin-users@2.0.0-beta.14
+  - @nocobase/app-plugin-authentication@2.0.0-beta.18
+  - @nocobase/db@1.0.0-beta.25
+  - @nocobase/app-server@5.0.0-beta.0
+  - @nocobase/app-plugin-authorization@1.0.0-beta.35
+  - @nocobase/app-plugin-file@1.0.0-beta.29
+  - @nocobase/app-plugin-notification@2.0.0-beta.4
+
+## 0.1.0-beta.24
+
+### Patch Changes
+
+- a71b814: Include recorded work skip reasons in comment creation responses so callers can distinguish saved comments from work held by a run limit.
+- Updated dependencies [5a4ebe0]
+  - @nocobase/app-plugin-users@2.0.0-beta.13
+
+## 0.1.0-beta.23
+
+### Patch Changes
+
+- 88d35b8: Preserve parent and child task scope when announcing completed subtasks.
+- 83f28b1: Avoid computing application progress for browser issue details and parallelize independent detail reads. Expose authorized blocker inputs and keep hierarchy count hydration limited to related tasks. Let applications own project cache refreshes and keep request logs free of duplicate route fields.
+- cf23bfe: Move Redis realtime broadcasting to the commercial Realtime Redis plugin. Register its Server plugin before selecting Redis in an application, or import the standalone broker from its `/broker` entry. Preserve the Memory default, service identity, authorization and recovery protocol, and republish runtime consumers against the new host and realtime major versions. Install the compatible commercial cohort before deploying the final removal.
+- Updated dependencies [88d35b8]
+- Updated dependencies [83f28b1]
+- Updated dependencies [88d35b8]
+- Updated dependencies [88d35b8]
+- Updated dependencies [83f28b1]
+- Updated dependencies [cf23bfe]
+- Updated dependencies [b29a336]
+  - @nocobase/app-client@4.0.0-beta.6
+  - @nocobase/authorization@1.0.0-beta.16
+  - @nocobase/app-plugin-authorization@1.0.0-beta.34
+  - @nocobase/app-plugin-authentication@2.0.0-beta.17
+  - @nocobase/app-server@4.0.0-beta.0
+  - @nocobase/app-plugin-file@1.0.0-beta.28
+  - @nocobase/app-plugin-notification@2.0.0-beta.3
+  - @nocobase/app-plugin-users@2.0.0-beta.12
+
+## 0.1.0-beta.22
+
+### Minor Changes
+
+- 302d8bc: Add permission-filtered issue card summaries in batches of at most 100 references.
+- cea24b5: Allow server writers to store validated display messages on comments and expose only their public type and parameters.
+
+### Patch Changes
+
+- 7a7a51d: Expose a permission-checked, bounded read of issue and live comment attachments for evidence consumers.
+- 57ecc34: Allow applications to supply project workspaces for Runner conversations, retain their runner when changing agents, and continue from the latest conversation summary. Project selection is frozen after the first message. Project access checks can use the caller's transaction connection.
+
+  Reject Agent changes when the conversation’s bound project runner cannot run the selected Agent, preserving its workspace and queued work.
+
+- c571810: Classify confirmed discussion-only announcements and refresh comment threads and activity without reloading unrelated task projections.
+- 302d8bc: Refresh cached task details when a directly embedded parent, child, dependency or related task changes, while keeping unrelated details and discussion histories cached.
+- 5769799: Add optional unfinished hierarchy reads with visible ancestors and explicit inclusions, and authorized database relations for bounded historical task pagination. Scope dependency and subtask count reads to their requested tasks.
+- 302d8bc: Preserve known task IDs in realtime updates, including batches with opaque executor announcements, with a list membership flag and bounded announcements so unrelated task details need not reload.
+- c571810: Reuse the authorized issue when loading its activity in task details to avoid redundant database reads.
+- Updated dependencies [b6934ad]
+- Updated dependencies [d3f0c92]
+- Updated dependencies [a0b4568]
+- Updated dependencies [12b1f64]
+- Updated dependencies [b6934ad]
+- Updated dependencies [5ce4a7c]
+- Updated dependencies [b6934ad]
+- Updated dependencies [171f7fb]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.16
+  - @nocobase/app-client@4.0.0-beta.5
+  - @nocobase/app-server@3.0.0-beta.5
+  - @nocobase/app-plugin-notification@2.0.0-beta.2
+  - @nocobase/db@1.0.0-beta.24
+  - @nocobase/app-plugin-file@1.0.0-beta.27
+
+## 0.1.0-beta.21
+
+### Patch Changes
+
+- cc0b521: Allow task-linked conversation questions to settle when their task resumes, using the recorded status transition time while preserving newer questions and unread replies.
+- Updated dependencies [451bf75]
+- Updated dependencies [e3d9a52]
+- Updated dependencies [22748f7]
+  - @nocobase/app-client@4.0.0-beta.4
+  - @nocobase/app-server@3.0.0-beta.4
+  - @nocobase/app-plugin-users@2.0.0-beta.11
+  - @nocobase/app-plugin-authorization@1.0.0-beta.33
+  - @nocobase/db@1.0.0-beta.23
+  - @nocobase/app-plugin-authentication@2.0.0-beta.15
+  - @nocobase/app-plugin-file@1.0.0-beta.27
+
+## 0.1.0-beta.20
+
+### Patch Changes
+
+- 05f800a: Publish editable file upload/preview and notification delivery-log UI through the UI Library. Install `@nocobase/file-component-ui` or `@nocobase/notification-logs-ui` with shadcn, and merge their bundled locale resources into the consuming application. Existing application-owned copies remain usable; reconcile upstream changes while preserving customizations. The default template keeps its File UI installation path and now tracks the UI Library source.
+
+  Remove plugin-owned Registry recipes, their build/materialize commands, the Registry example plugin, and the `registry` capability from the plugin scaffold. Plugins can continue to install UI Library items into their own client source. Update plugin development guidance to use this single source distribution channel.
+
+  Preserve custom file download callbacks for images opened from FileList, including preview toolbar and fallback downloads.
+
+- Updated dependencies [05f800a]
+  - @nocobase/app-plugin-file@1.0.0-beta.27
+  - @nocobase/app-plugin-notification@2.0.0-beta.1
+
+## 0.1.0-beta.19
+
+### Patch Changes
+
+- e5e7498: Normalize shared client imports in session, invitation and release components without changing their behavior.
+- Updated dependencies [756f3df]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.14
+
+## 0.1.0-beta.18
+
+### Patch Changes
+
+- 58531da: Support plain HTTP origins when creating session and upload identifiers or copying text. Provide shared browser UUID and clipboard helpers so draft, submission and invitation actions work without secure-context APIs.
+
+  Document capability checks and user-facing explanations for secure-context browser features, require HTTP-compatible UUID and copy actions, and return an explicit copy result for localized recovery UI.
+
+- Updated dependencies [58531da]
+  - @nocobase/app-client@4.0.0-beta.3
+  - @nocobase/app-server@3.0.0-beta.3
+  - @nocobase/authorization@1.0.0-beta.15
+  - @nocobase/db@1.0.0-beta.22
+  - @nocobase/i18n@2.0.0-beta.1
+  - @nocobase/markdown-mermaid@0.1.0-beta.2
+  - @nocobase/repository-input@0.1.0-beta.3
+  - @nocobase/service-provider@0.0.2-beta.2
+  - @nocobase/app-plugin-authentication@2.0.0-beta.13
+  - @nocobase/app-plugin-authorization@1.0.0-beta.31
+  - @nocobase/app-plugin-file@1.0.0-beta.26
+  - @nocobase/app-plugin-notification@2.0.0-beta.0
+  - @nocobase/app-plugin-users@2.0.0-beta.9
+
+## 0.1.0-beta.17
+
+### Minor Changes
+
+- e98d0f7: Let hosts inspect session context tags and transfer draft text, selected references and context through the existing memory cache. Let hosts supply consistent panel header controls while retaining session commands, and show history beside mounted panel drafts with host-owned labels and actions. Align the standalone My Agent history with panel history, including a neutral new-session icon, search and status filters, plain empty rows and footer archive access. Allow applications to retain manual issue forms without AI intake tabs.
+
+### Patch Changes
+
+- 5d4d4a1: Show detailed start failure messages and app-relative configuration actions supplied by the host application.
+- 5875cb9: Expose cancellation actors and a transactional stop request callback, and allow status events to refresh issue progress even when the issue already has the target status.
+- Updated dependencies [0c5c4ff]
+- Updated dependencies [6e3d66e]
+- Updated dependencies [6e3d66e]
+- Updated dependencies [0c5c4ff]
+  - @nocobase/app-server@3.0.0-beta.3
+  - @nocobase/app-plugin-authentication@2.0.0-beta.13
+  - @nocobase/app-plugin-authorization@1.0.0-beta.31
+  - @nocobase/app-client@4.0.0-beta.2
+  - @nocobase/app-plugin-file@1.0.0-beta.26
+
+## 0.1.0-beta.16
+
+### Patch Changes
+
+- f8f64ad: Recognize both `type` and legacy `provider` discriminators when selecting the in-app notification channel for project notices.
+- f8f64ad: Remove the Notification TestAdapter protocol, built-in form descriptors, generic test-send routes and permission, and test client methods. Channel classes now implement only their delivery lifecycle. Existing send/sendTransient contracts, retries, logs, and inbox records remain unchanged.
+
+  Applications should remove test buttons and test API clients, then verify delivery through their business flows or a server-side send() call. Log pages must read provider identities from recorded deliveries rather than test target metadata. Update the notification Skill and example guidance to match, and republish consumers against the new notification package line.
+
+  Explicitly include Node.js types in both application templates' client typechecks, whose shared contracts reference server package sources in the workspace, so compilation no longer depends on the removed notification test imports to load those types.
+
+- Updated dependencies [d3d4c5d]
+- Updated dependencies [f8f64ad]
+- Updated dependencies [f8f64ad]
+  - @nocobase/app-plugin-users@2.0.0-beta.9
+  - @nocobase/app-plugin-notification@2.0.0-beta.0
+  - @nocobase/app-server@3.0.0-beta.2
+  - @nocobase/app-plugin-authentication@2.0.0-beta.12
+  - @nocobase/app-plugin-file@1.0.0-beta.26
+
+## 0.1.0-beta.15
+
+### Patch Changes
+
+- 1952789: Complete all ten supported languages in plugin and example plugin catalogues, including model suggestions and test Web Push notifications. Align calendars and invitation emails, support locale-specific plural forms, and validate resource loading and formatting.
+
+  Correct joined translation text and distinguish configuration save actions, refund stages, and domain-specific operation labels.
+
+- a0ec885: Compare computer discovery data independently of JSON key order, keep runner event text within MySQL storage limits, and make issue searches case-insensitive across database dialects.
+- Updated dependencies [1952789]
+- Updated dependencies [06e53be]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.12
+  - @nocobase/app-plugin-authorization@1.0.0-beta.30
+  - @nocobase/app-plugin-file@1.0.0-beta.26
+  - @nocobase/app-plugin-notification@1.0.0-beta.29
+  - @nocobase/app-plugin-users@2.0.0-beta.7
+  - @nocobase/i18n@2.0.0-beta.1
+  - @nocobase/authorization@1.0.0-beta.15
+  - @nocobase/app-client@4.0.0-beta.0
+
+## 0.1.0-beta.14
+
+### Minor Changes
+
+- 2c2b137: Remove the issue start option from services, plans, HTTP input and generated commands. Work handlers can observe changes regardless of executor kind, and issue responses and events include the final state after transactional work routing.
+
+### Patch Changes
+
+- baf80fe: Add the OnlineAgent server service foundation with versioned conversation configuration, complete SDK message persistence, injectable business tools, shared execution control, and first-subscription stream caching. Preserve ordinary conversation and message identifiers without persistent request deduplication. Connect the original chat HTTP resources and first-subscription events to one shared browser submission and stream controller for application and Registry chat views. Preserve uploaded attachments, per-view drafts and unknown-outcome feedback without hidden retries or Runner fallback.
+
+  Recognize no-content streaming responses by HTTP status even when a browser exposes an empty body, so completed chats read saved history without a false disconnect warning.
+
+  Resolve Scope/Provider model changes consistently through the configuration API. Let users explicitly permit a new input after an unknown send result, and preserve Registry drafts and files when the shared client refuses a submission.
+
+  Let application-provided Organize entries own their availability feedback while retaining default Runner availability hints.
+
+  Bind the authoritative execution session ID to each business tool context so applications can associate business proposals with the current chat without trusting model-supplied identifiers.
+
+- @nocobase/app-server@3.0.0-beta.0
+  - @nocobase/app-plugin-file@1.0.0-beta.25
+
 ## 0.1.0-beta.13
 
 ### Patch Changes

@@ -1,0 +1,53 @@
+---
+'@nocobase/app-cli': patch
+'@nocobase/app-client': patch
+'@nocobase/app-host': patch
+'@nocobase/app-host-docker': patch
+'@nocobase/app-plugin-agent-sessions': patch
+'@nocobase/app-plugin-agents': patch
+'@nocobase/app-plugin-api-keys': patch
+'@nocobase/app-plugin-authentication': patch
+'@nocobase/app-plugin-authorization': patch
+'@nocobase/app-plugin-authorization-example': patch
+'@nocobase/app-plugin-authz-default-access': patch
+'@nocobase/app-plugin-authz-restriction-rules': patch
+'@nocobase/app-plugin-authz-sharing-rules': patch
+'@nocobase/app-plugin-concurrency': patch
+'@nocobase/app-plugin-database-example': patch
+'@nocobase/app-plugin-database-explorer': patch
+'@nocobase/app-plugin-demo-mode': patch
+'@nocobase/app-plugin-file': patch
+'@nocobase/app-plugin-file-example': patch
+'@nocobase/app-plugin-foundation': patch
+'@nocobase/app-plugin-i18n': patch
+'@nocobase/app-plugin-jobs-example': patch
+'@nocobase/app-plugin-knowledge': patch
+'@nocobase/app-plugin-lifecycle-example': patch
+'@nocobase/app-plugin-mail': patch
+'@nocobase/app-plugin-mail-example': patch
+'@nocobase/app-plugin-notification': patch
+'@nocobase/app-plugin-notification-example': patch
+'@nocobase/app-plugin-notification-in-app': patch
+'@nocobase/app-plugin-notification-providers': patch
+'@nocobase/app-plugin-notification-web-push': patch
+'@nocobase/app-plugin-office-flows-example': patch
+'@nocobase/app-plugin-projects': patch
+'@nocobase/app-plugin-queue-example': patch
+'@nocobase/app-plugin-realtime-example': patch
+'@nocobase/app-plugin-releases': patch
+'@nocobase/app-plugin-repository-example': patch
+'@nocobase/app-plugin-routes-example': patch
+'@nocobase/app-plugin-scheduler': patch
+'@nocobase/app-plugin-service-provider-example': patch
+'@nocobase/app-plugin-skills-example': patch
+'@nocobase/app-plugin-template-print-example': patch
+'@nocobase/app-plugin-users': patch
+'@nocobase/app-server': major
+'@nocobase/app-skills': patch
+'@nocobase/app-template-default': patch
+'@nocobase/app-template-examples': patch
+'@nocobase/app-testing': patch
+'@nocobase/realtime': major
+---
+
+Move Redis realtime broadcasting to the commercial Realtime Redis plugin. Register its Server plugin before selecting Redis in an application, or import the standalone broker from its `/broker` entry. Preserve the Memory default, service identity, authorization and recovery protocol, and republish runtime consumers against the new host and realtime major versions. Install the compatible commercial cohort before deploying the final removal.

@@ -17,6 +17,22 @@ export function runRetentionDays(value: unknown): number {
   return value;
 }
 
+/** How often archived conversations past their retention are deleted: once a day. */
+export const ARCHIVED_CONVERSATION_PURGE_INTERVAL_MS: number = 24 * 60 * 60_000;
+
+/**
+ * `agents.conversations.archivedRetentionDays`: archived conversations are deleted this many days after they were
+ * archived; 30 by default, 0 keeps them.
+ */
+export function archivedRetentionDays(value: unknown): number {
+  if (value === undefined) return 30;
+  if (typeof value !== 'number' || !Number.isSafeInteger(value) || value < 0)
+    throw new Error(
+      'agents.conversations.archivedRetentionDays must be a non-negative integer.',
+    );
+  return value;
+}
+
 /** Independent maintenance: no run writes, lifecycle transitions or claim locks. */
 export function createRunDataPurge(deps: {
   readonly tx: TxRunner;

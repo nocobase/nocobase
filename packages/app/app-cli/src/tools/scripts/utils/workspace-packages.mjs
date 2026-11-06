@@ -35,7 +35,12 @@ export const listWorkspacePackageDirectories = (workspaceRoot) => {
   const excluded = declared
     .filter((pattern) => pattern.startsWith('!'))
     .map((pattern) => pattern.slice(1));
-  const directories = new Set();
+  // pnpm always includes the workspace root, even when no glob names it. A generated application lives there.
+  const directories = new Set(
+    fs.existsSync(path.join(workspaceRoot, 'package.json'))
+      ? [workspaceRoot]
+      : [],
+  );
   for (const pattern of declared.filter((entry) => !entry.startsWith('!'))) {
     const manifests = fs.globSync(path.posix.join(pattern, 'package.json'), {
       cwd: workspaceRoot,

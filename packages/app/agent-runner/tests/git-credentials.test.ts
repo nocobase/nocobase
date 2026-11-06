@@ -1,3 +1,4 @@
+import { deliverFixtureRepos as reportRepos } from './delivery-fixture.ts';
 // A run's repository credentials on demand (agent/git-credentials.ts): the broker against a scripted server, the
 // helper against a real git, and the runner's own git against a git server over HTTP that refuses a credential once it
 // is no longer valid, as GitHub does with an expired installation token.
@@ -18,11 +19,7 @@ import {
   serveGitCredentials,
   type CredentialServer,
 } from '../src/agent/git-credentials.ts';
-import {
-  checkout,
-  RepoAccessFailure,
-  reportRepos,
-} from '../src/core/checkout.ts';
+import { checkout, RepoAccessFailure } from '../src/core/checkout.ts';
 import type { SpoolEvent } from '../src/core/events.ts';
 import { installGitHooks } from '../src/core/git-hooks.ts';
 import { runnerPaths, type RunnerPaths } from '../src/lib/home.ts';

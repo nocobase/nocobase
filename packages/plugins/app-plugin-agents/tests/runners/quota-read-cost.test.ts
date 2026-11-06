@@ -9,13 +9,15 @@ it.each([1, 10, 50])(
   'keeps page reads fixed with %s runners and agents, without writes',
   async (n) => {
     const counts = new Map<string, number>([
-      ['/agents', 6],
+      // The Agent page no longer reads the retired discovery preferences.
+      ['/agents', 5],
       ['/agents/available', 5],
       // Native chat also reads model services and the configured default once per catalog.
       ['/agents/chatAgents', 8],
       ['/agents/runners', 4],
       ['/agents/runners/:id', 5],
-      ['/agents/runners/:id/runs', 2],
+      // Empty history probes dated and never-started ranges, reads runner visibility, and counts all runs once.
+      ['/agents/runners/:id/runs', 4],
     ]);
     h = await createHarness();
     const models = Array.from({ length: n }, (_, index) => ({
@@ -31,8 +33,13 @@ it.each([1, 10, 50])(
         })
       ).runnerId;
     }
-    for (const agent of await h.services.agents.list())
-      await h.enableAgent(agent.id);
+    // A runner's report no longer creates an agent by itself: create and enable one for each reported model, as
+    // this test needs to exercise reads that scale with the number of agents, not with how they came to exist.
+    for (const model of models)
+      await h.services.agents.createFromAvailable(
+        { tool: 'codex', model: model.id, description: 'Reviews' },
+        'alice',
+      );
     const client = await h.database.connection().client<Knex>();
     for (const endpoint of [
       '/agents',
@@ -62,6 +69,12 @@ it.each([1, 10, 50])(
         ).length;
         expect(writes).toBe(0);
         expect(reads).toBe(counts.get(name));
+        if (name === '/agents/runners/:id/runs') {
+          expect(result.body.meta.total).toBe(0);
+          expect(
+            sql.filter((query) => /count\(\*\)/i.test(query)),
+          ).toHaveLength(1);
+        }
       }
     }
   },

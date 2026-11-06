@@ -1,4 +1,5 @@
 const messages: Record<string, string> = {
+  retrySubmission: '重试原操作',
   officePreviewTitle: 'Office 本地预览',
   officePreviewDescription:
     '在下方上传 DOCX、XLSX 或 PPTX 文件，然后点击预览。文档在浏览器内渲染，无需 Office Online 或外部预览服务；订单附件也支持相同预览。',
@@ -18,6 +19,9 @@ const messages: Record<string, string> = {
   tooLarge: '文件超过大小限制',
   rejected: '不支持的文件类型',
   uploadFailed: '上传失败',
+  cancelUpload: '取消上传',
+  retryUpload: '重试上传',
+  uploadLongWait: '仍在上传，可继续等待或取消。',
 
   preview: '预览',
   download: '下载',

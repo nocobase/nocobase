@@ -1,7 +1,7 @@
 /**
  * The chat API, mounted at `/api/agents` (`CHAT_ROUTES` in `shared/conversations`). Every route is behind the guard (a
- * signed-in person and their authorization context). A conversation is its owner's alone: the service answers 404 to
- * anyone else, whatever they may manage. Changing the team's default chat agent needs `agents.agents` manage.
+ * signed-in person and their authorization context). Only its owner writes a conversation. Named recipients read
+ * bounded snapshots; everyone else receives 404. Changing the team's default chat agent needs `agents.agents` manage.
  */
 import {
   apiErrorResponse,
@@ -54,15 +54,21 @@ import {
 import type { AdminEnv } from './admin.js';
 import { personOrRunSecurity, tags } from './openapi.js';
 import {
+  OnlineAgentResendSchema,
   ChatAgentSchema,
   ChatSettingsSchema,
   ChatAttachmentContentQuery,
   ChatAttachmentParams,
   ChatDefaultAgentSchema,
+  ConversationAttentionSchema,
   ConversationDetailSchema,
+  ConversationLinkParams,
+  ConversationLinkSchema,
   ConversationListQuerySchema,
   ConversationParams,
+  ConversationMessageParams,
   ConversationSummarySchema,
+  ConversationUsageSchema,
   MessageAttachmentSchema,
   MessageListQuerySchema,
   PageTokenMetaSchema,
@@ -71,7 +77,7 @@ import {
 
 const noConversation = apiErrorResponse(
   404,
-  "The conversation does not exist or is not the caller's (`CONVERSATION_NOT_FOUND`).",
+  'The conversation does not exist or the caller has no access (`CONVERSATION_NOT_FOUND`).',
 );
 const conversationConflict = (when: string) =>
   apiErrorResponse(400, `${when} (\`CONVERSATION_CONFLICT\`).`);
@@ -82,6 +88,7 @@ const ConfigInput = z.strictObject({
   agentId: z.string().min(1).max(64).optional(),
   scope: z.array(z.string()).optional(),
   thinking: z.string().optional(),
+  webSearch: z.boolean().optional(),
   context: z
     .strictObject({
       variable: z.json().optional(),
@@ -94,8 +101,9 @@ const ConfigOutput: z.ZodType<OnlineChatConfigSnapshot> = z.object({
     .object({ modelService: z.string(), model: z.string() })
     .nullable(),
   scope: z.array(z.string()),
-  model: z.array(z.string()),
+  model: z.array(z.string()).optional(),
   thinking: z.string().optional(),
+  webSearch: z.boolean().optional(),
   tool: z.array(z.string()),
   toolVersions: z.record(z.string(), z.string()),
   systemPrompt: z.string(),
@@ -106,6 +114,22 @@ const SelectedModel = z.strictObject({
   model: z.string().min(1),
 });
 const CreateSchema: z.ZodType<CreateConversationRequest> = z.strictObject({
+  projectId: z
+    .string()
+    .min(1)
+    .max(64)
+    .nullable()
+    .optional()
+    .describe(
+      'Optional project workspace for a Runner conversation; null selects no project. Frozen after the first user message.',
+    ),
+  effort: z
+    .string()
+    .min(1)
+    .max(40)
+    .nullable()
+    .optional()
+    .describe('Runner reasoning effort; null restores the Agent default.'),
   agentId: z
     .string()
     .min(1)
@@ -137,6 +161,15 @@ const CreateSchema: z.ZodType<CreateConversationRequest> = z.strictObject({
 });
 
 const PatchSchema: z.ZodType<ConversationPatch> = z.strictObject({
+  projectId: z
+    .string()
+    .min(1)
+    .max(64)
+    .nullable()
+    .optional()
+    .describe(
+      'Optional project workspace for a Runner conversation; null selects no project. Frozen after the first user message.',
+    ),
   title: z
     .string()
     .max(CONVERSATION_TITLE_MAX * 2)
@@ -172,7 +205,25 @@ const NativeSendSchema = z.strictObject({
   context: PageContextSchema.optional(),
   selectedModel: SelectedModel.optional(),
 });
-const SendSchema = NativeSendSchema;
+const SendSchema = NativeSendSchema.extend({
+  effort: z
+    .string()
+    .min(1)
+    .max(40)
+    .nullable()
+    .optional()
+    .describe(
+      'Runner reasoning effort; omit or null uses the Agent default. If the runtime cannot report or support that default, use the tool default. Only explicit non-default selections are saved.',
+    ),
+  agentId: z
+    .string()
+    .min(1)
+    .max(128)
+    .optional()
+    .describe(
+      'Final Runner agent selection. Only an idle Runner conversation can change agents; binding, notice and message are committed together. Omit to keep the current agent.',
+    ),
+});
 const NativeMessageSchema = z.object({
   id: z.string(),
   role: z.enum(['user', 'assistant', 'system']),
@@ -252,6 +303,7 @@ export function createChatRoutes(
   services: Agents,
   guard: MiddlewareHandler<AdminEnv>,
   personOrRun: MiddlewareHandler<AdminEnv> = guard,
+  personOrOnlineAgent: MiddlewareHandler<AdminEnv> = guard,
 ): Hono<AdminEnv> {
   const router = domainRouter<AdminEnv>();
   const { conversations, chat } = services;
@@ -268,13 +320,15 @@ export function createChatRoutes(
 
   router.get(
     '/conversations',
-    guard,
+    personOrOnlineAgent,
     describeRoute({
       tags,
+      security: personOrRunSecurity,
       summary: "List the caller's conversations",
       operationId: 'agentsListConversations',
       ...cliRoute({
         command: 'conversation list',
+        identities: ['person'],
         flags: {
           q: { name: 'query' },
           agentId: { name: 'agent' },
@@ -283,7 +337,7 @@ export function createChatRoutes(
         columns: ['id', 'title', 'agent.name', 'lastMessageAt', 'read'],
       }),
       description:
-        "The conversations the caller started, newest message first, a page at a time; a conversation is its owner's alone.",
+        "The conversations the caller started, newest message first, a page at a time; a conversation is its owner's alone. The runToken scheme accepts OnlineAgent execution credentials, or other issued credentials admitted by the application. Other scoped credentials are refused.",
       responses: {
         200: listResponse(ConversationSummarySchema, PageTokenMetaSchema),
         ...apiErrorResponses,
@@ -296,7 +350,10 @@ export function createChatRoutes(
         archived: query.archived === 'all' ? 'all' : query.archived === 'true',
         ...(query.q ? { q: query.q } : {}),
         ...(query.agentId ? { agentId: query.agentId } : {}),
+        ...(query.mode ? { mode: query.mode } : {}),
         ...(query.source ? { source: query.source } : {}),
+        ...(query.linkKind ? { linkKind: query.linkKind } : {}),
+        ...(query.linkTargetId ? { linkTargetId: query.linkTargetId } : {}),
         ...(query.pageToken ? { pageToken: query.pageToken } : {}),
         pageSize: query.pageSize,
       });
@@ -350,12 +407,20 @@ export function createChatRoutes(
               !conversations.sources.has(request.source)
             )
               throw invalid('Unknown conversation source.');
+            if (
+              request.projectId &&
+              (request.agentId ?? request.config?.agentId ?? 'online') ===
+                'online'
+            )
+              throw invalid('Only Runner conversations can select a project.');
             const agent = await services.onlineAgent.realtime(
               trusted(context),
               {
                 ...request.config,
                 ...(request.agentId ? { agentId: request.agentId } : {}),
                 selectedModel: request.selectedModel,
+                projectId: request.projectId,
+                effort: request.effort,
                 source: request.source ?? 'panel',
                 title: title?.text || undefined,
                 showInChatList: request.showInChatList,
@@ -370,13 +435,17 @@ export function createChatRoutes(
   );
   router.get(
     '/conversations/:conversationId',
-    guard,
+    personOrOnlineAgent,
     describeRoute({
       tags,
+      security: personOrRunSecurity,
+      description:
+        'The owner reads the live conversation; a named recipient reads only snapshot metadata. The runToken scheme accepts OnlineAgent execution credentials, or other issued credentials admitted by the application. Other scoped credentials are refused.',
       summary: 'Get a conversation',
       operationId: 'agentsGetConversation',
       ...cliRoute({
         command: 'conversation get',
+        identities: ['person'],
         args: ['conversationId'],
         flags: { conversationId: { name: 'conversation' } },
       }),
@@ -387,23 +456,130 @@ export function createChatRoutes(
       },
     }),
     conversationParam,
-    async (context) =>
-      context.json({
+    async (context) => {
+      context.header('Cache-Control', 'private, no-store');
+      return context.json({
         data: await conversations.get(
           me(context),
           context.req.valid('param').conversationId,
         ),
-      }),
+      });
+    },
   );
-  router.patch(
-    '/conversations/:conversationId',
+  const ShareSchema = z.object({
+    userId: z.string(),
+    name: z.string().nullable(),
+    cutoffSeq: z.number().int(),
+    snapshotAt: z.string(),
+    updatedAt: z.string(),
+  });
+  router.get(
+    '/conversations/:conversationId/shareCandidates',
     guard,
     describeRoute({
       tags,
+      summary: 'List snapshot recipients available to the owner',
+      operationId: 'agentsConversationShareCandidates',
+      ...cliRoute(false),
+      responses: {
+        200: listResponse(z.object({ id: z.string(), name: z.string() })),
+        404: noConversation,
+        ...apiErrorResponses,
+      },
+    }),
+    conversationParam,
+    async (c) =>
+      c.json({
+        data: await conversations.shares.candidates(me(c), conversationId(c)),
+      }),
+  );
+  router.get(
+    '/conversations/:conversationId/shares',
+    guard,
+    describeRoute({
+      tags,
+      summary: 'List conversation snapshots as the owner',
+      operationId: 'agentsListConversationShares',
+      ...cliRoute(false),
+      responses: {
+        200: listResponse(ShareSchema),
+        404: noConversation,
+        ...apiErrorResponses,
+      },
+    }),
+    conversationParam,
+    async (c) => {
+      c.header('Cache-Control', 'private, no-store');
+      return c.json({
+        data: await conversations.shares.list(me(c), conversationId(c)),
+      });
+    },
+  );
+  const ShareParams = z.object({
+    conversationId: z.string().min(1).max(64),
+    userId: z.string().min(1).max(64),
+  });
+  router.put(
+    '/conversations/:conversationId/shares/:userId',
+    guard,
+    describeRoute({
+      tags,
+      summary: 'Share the latest finished conversation snapshot',
+      operationId: 'agentsGrantConversationShare',
+      ...cliRoute(false),
+      description:
+        'Owner only. Repeating advances the cutoff to the latest finished turn. The recipient must belong to the application-provided scope.',
+      responses: {
+        200: dataResponse(ShareSchema),
+        404: noConversation,
+        ...apiErrorResponses,
+      },
+    }),
+    apiValidator('param', ShareParams),
+    async (c) => {
+      const { conversationId: id, userId } = c.req.valid('param');
+      return c.json({
+        data: await conversations.shares.grant(me(c), id, userId),
+      });
+    },
+  );
+  router.delete(
+    '/conversations/:conversationId/shares/:userId',
+    guard,
+    describeRoute({
+      tags,
+      summary: 'Revoke a conversation snapshot',
+      operationId: 'agentsRevokeConversationShare',
+      ...cliRoute(false),
+      description:
+        'Owner only. The next recipient read, including attachment download, returns 404.',
+      responses: {
+        204: emptyResponse(),
+        404: noConversation,
+        ...apiErrorResponses,
+      },
+    }),
+    apiValidator('param', ShareParams),
+    async (c) => {
+      const { conversationId: id, userId } = c.req.valid('param');
+      await conversations.shares.revoke(me(c), id, userId);
+      return c.body(null, 204);
+    },
+  );
+  router.patch(
+    '/conversations/:conversationId',
+    personOrOnlineAgent,
+    describeRoute({
+      tags,
+      security: personOrRunSecurity,
+      description:
+        'Owner-only update. The runToken scheme accepts OnlineAgent execution credentials, or other issued credentials admitted by the application. Other scoped credentials are refused.',
       summary: 'Rename or archive a conversation',
       operationId: 'agentsUpdateConversation',
       ...cliRoute({
         command: 'conversation update',
+        bodyFile: 'file',
+        identities: ['person'],
         args: ['conversationId'],
         flags: { conversationId: { name: 'conversation' } },
       }),
@@ -423,6 +599,33 @@ export function createChatRoutes(
           context.req.valid('json'),
         ),
       }),
+  );
+  router.delete(
+    '/conversations/:conversationId',
+    guard,
+    describeRoute({
+      tags,
+      summary: 'Delete a conversation',
+      operationId: 'agentsDeleteConversation',
+      ...cliRoute({
+        command: 'conversation delete',
+        identities: ['person'],
+        args: ['conversationId'],
+        flags: { conversationId: { name: 'conversation' } },
+      }),
+      description:
+        "Owner-only, for good: the conversation's open runs are cancelled, its messages, files, links and kept sessions are deleted, its inbox notices are settled, and runners remove its working directories and session files on their next report.",
+      responses: {
+        204: emptyResponse(),
+        404: noConversation,
+        ...apiErrorResponses,
+      },
+    }),
+    conversationParam,
+    async (context) => {
+      await conversations.delete(me(context), conversationId(context));
+      return context.body(null, 204);
+    },
   );
   router.get(
     '/conversations/:conversationId/messages',
@@ -456,21 +659,31 @@ export function createChatRoutes(
         pageToken === undefined
           ? undefined
           : decodePageToken(pageToken, MessagePosition).before;
-      const agent = await services.onlineAgent.realtime(trusted(context), {
-        sessionId: conversationId(context),
-      });
       const wanted = ids?.split(',');
       if (
         wanted &&
         (wanted.length > 100 || wanted.some((id) => !id || id.length > 100))
       )
         throw invalid('Select at most 100 valid message IDs.');
-      const page = await agent.messages({
+      const query = {
         ids: wanted,
         before,
         after: before === undefined ? after : undefined,
         limit: pageSize,
-      });
+      };
+      const snapshot = await conversations.snapshotMessages(
+        me(context),
+        conversationId(context),
+        query,
+      );
+      const page =
+        snapshot ??
+        (await (
+          await services.onlineAgent.realtime(trusted(context), {
+            sessionId: conversationId(context),
+          })
+        ).messages(query));
+      context.header('Cache-Control', 'private, no-store');
       return context.json({
         data: page.items,
         meta: {
@@ -559,13 +772,182 @@ export function createChatRoutes(
       );
       const parts: Exclude<UserModelMessage['content'], string> =
         request.message.parts;
+      if (request.agentId && agent.backend !== 'runner')
+        throw invalid(
+          'Only Runner conversations can select an agent when sending.',
+        );
+      if (request.effort !== undefined && agent.backend !== 'runner')
+        throw invalid(
+          'Online agents do not support conversation reasoning effort.',
+          { reason: 'EFFORT_UNSUPPORTED' },
+        );
       await agent.send([{ role: 'user', content: parts }], {
+        agentId: request.agentId,
+        effort: request.effort,
         attachmentIds: [[...(request.attachmentIds ?? [])]],
         clientId: request.message.id,
         messageId: request.message.id,
         selectedModel: request.selectedModel,
         workContext,
       });
+      const stream = await agent.receive();
+      if (!stream)
+        throw invalid('The accepted response requires history reconciliation.');
+      return createUIMessageStreamResponse({
+        stream,
+        headers: {
+          'Cache-Control': 'private, no-store',
+          'x-online-agent-recovery': services.onlineAgent.recovery,
+        },
+      });
+    },
+  );
+  router.post(
+    '/conversations/:conversationId/queue',
+    guard,
+    describeRoute({
+      tags,
+      summary: 'Queue a message while the agent works',
+      operationId: 'agentsQueueConversationMessage',
+      ...cliRoute({
+        command: 'conversation message queue',
+        bodyFile: 'file',
+        args: ['conversationId'],
+        flags: {
+          conversationId: { name: 'conversation' },
+          message: { alias: 'm' },
+          context: { hidden: true },
+          selectedModel: { hidden: true },
+        },
+        uploads: {
+          attach: {
+            upload: 'agentsUploadChatAttachment',
+            field: 'attachmentIds',
+            multiple: true,
+            maxBytes: CHAT_ATTACHMENT_SIZE_MAX,
+            description: 'A file to send with the message (repeatable).',
+          },
+        },
+      }),
+      description:
+        'Runner only. The same input as sending a message, while the agent is working on the conversation: the message joins that work, the runner steering it into the running turn when its tool can and taking it as the next turn otherwise. Answers the saved user message; the current response keeps streaming. Refused (`409`) when the agent is not working on the conversation: send it instead.',
+      responses: {
+        200: dataResponse(NativeMessageSchema),
+        404: noConversation,
+        409: apiErrorResponse(
+          409,
+          'The agent is not working on the conversation.',
+        ),
+        ...apiErrorResponses,
+      },
+    }),
+    conversationParam,
+    apiValidator('json', NativeSendSchema),
+    async (context) => {
+      const id = context.req.valid('param').conversationId;
+      const request = context.req.valid('json');
+      const text = request.message.parts.map((part) => part.text).join('\n');
+      if ([...text].length > MESSAGE_CONTENT_MAX)
+        throw invalid('The message is too long.');
+      if (!text.trim() && !request.attachmentIds?.length)
+        throw invalid('A message or attachment is required.');
+      const workContext = request.context
+        ? await conversations.contextKinds.resolve(
+            services.tx.read(),
+            me(context),
+            request.context,
+          )
+        : undefined;
+      const actor = trusted(context);
+      const agent = await services.onlineAgent.realtime(
+        {
+          ...actor,
+          ...(workContext ? { business: jsonSafe(workContext) } : {}),
+        },
+        { sessionId: id },
+      );
+      const seq = await agent.queue(
+        [{ role: 'user', content: request.message.parts }],
+        {
+          attachmentIds: [[...(request.attachmentIds ?? [])]],
+          clientId: request.message.id,
+          messageId: request.message.id,
+          selectedModel: request.selectedModel,
+          workContext,
+        },
+      );
+      const page = await agent.messages({ after: seq - 1, limit: 1 });
+      const message = page.items.find(
+        (item) => item.role === 'user' && item.metadata?.seq === seq,
+      );
+      // Saved but not readable now: the server's fault, not the request's; history has it once readable.
+      if (!message)
+        throw new Error(
+          'The queued message was saved but could not be read back.',
+        );
+      return context.json({ data: message });
+    },
+  );
+  router.post(
+    '/conversations/:conversationId/messages/:messageId/withdraw',
+    guard,
+    describeRoute({
+      tags,
+      summary: 'Withdraw a queued message',
+      operationId: 'agentsWithdrawConversationMessage',
+      ...cliRoute({
+        command: 'conversation message withdraw',
+        args: ['conversationId', 'messageId'],
+        flags: {
+          conversationId: { name: 'conversation' },
+          messageId: { name: 'message' },
+        },
+      }),
+      description:
+        'Takes back a queued message or an initial queued turn, as long as its runner has not claimed it: it stays in the history, marked withdrawn, and the agent never sees it. Once the runner has it: `400` `CONVERSATION_CONFLICT` with `metadata.reason` `messageTaken`.',
+      responses: {
+        204: emptyResponse(),
+        400: apiErrorResponse(
+          400,
+          'The agent already has the message (`CONVERSATION_CONFLICT`, `messageTaken`).',
+        ),
+        404: noConversation,
+        ...apiErrorResponses,
+      },
+    }),
+    apiValidator('param', ConversationMessageParams),
+    async (context) => {
+      const { conversationId: id, messageId } = context.req.valid('param');
+      await conversations.withdraw(me(context), id, messageId);
+      return context.body(null, 204);
+    },
+  );
+  router.post(
+    '/conversations/:conversationId/resend',
+    guard,
+    describeRoute({
+      tags,
+      summary: 'Resend an existing user message',
+      operationId: 'agentsResendConversationMessage',
+      ...cliRoute(false),
+      description:
+        'Native only. Updates the user input in place and permanently deletes all later messages in the admission transaction. Retains original attachments and context. Business effects are not reversed. Unknown responses must not be automatically retried.',
+      responses: {
+        200: {
+          description: 'Standard SDK UI message stream.',
+          content: { 'text/event-stream': { schema: { type: 'string' } } },
+        },
+        404: noConversation,
+        ...apiErrorResponses,
+      },
+    }),
+    conversationParam,
+    apiValidator('json', OnlineAgentResendSchema),
+    async (context) => {
+      const agent = await services.onlineAgent.realtime(trusted(context), {
+        sessionId: conversationId(context),
+      });
+      await agent.resend(context.req.valid('json'));
       const stream = await agent.receive();
       if (!stream)
         throw invalid('The accepted response requires history reconciliation.');
@@ -641,8 +1023,41 @@ export function createChatRoutes(
       return context.json({ data: await conversations.get(me(context), id) });
     },
   );
+  router.post(
+    '/conversations/:conversationId/switchAgent',
+    guard,
+    describeRoute({
+      tags,
+      summary: 'Change a Runner conversation’s agent',
+      operationId: 'agentsSwitchConversationAgent',
+      ...cliRoute(false),
+      description:
+        'Owner only. Select an enabled, callable Runner Agent once all pending work has ended. History and task links stay; the next message starts a fresh tool session with the new agent. No run is cancelled or automatically started.',
+      responses: {
+        200: dataResponse(ConversationDetailSchema),
+        409: conversationConflict(
+          'The conversation has pending work or has been archived.',
+        ),
+        404: noConversation,
+        ...apiErrorResponses,
+      },
+    }),
+    conversationParam,
+    apiValidator(
+      'json',
+      z.strictObject({ agentId: z.string().trim().min(1).max(64) }),
+    ),
+    async (context) =>
+      context.json({
+        data: await conversations.switchAgent(
+          me(context),
+          conversationId(context),
+          context.req.valid('json').agentId,
+        ),
+      }),
+  );
   const acts: Record<
-    'markRead' | 'stop',
+    'markRead' | 'stop' | 'switchRunner',
     {
       readonly act: (userId: string, id: string) => Promise<unknown>;
       readonly operationId: string;
@@ -674,6 +1089,18 @@ export function createChatRoutes(
       summary: "Stop a conversation's agent",
       description:
         'Processes a cancellation request. The returned execution may remain running until actual termination and canonical history synchronization; request success does not mean the agent has stopped.',
+    },
+    switchRunner: {
+      act: (userId, id) => conversations.switchRunner(userId, id),
+      operationId: 'agentsSwitchConversationRunner',
+      cli: {
+        command: 'conversation switch-runner',
+        args: ['conversationId'],
+        flags: { conversationId: { name: 'conversation' } },
+      },
+      summary: 'Unbind a conversation from its runner',
+      description:
+        "Owner only. The next run goes to whichever eligible runner takes it first, which binds the conversation and starts a fresh session with the conversation's history; queued runs wait for it. The old working directory is left to the old runner's cleanup.",
     },
   };
   for (const [verb, item] of Object.entries(acts))
@@ -716,6 +1143,199 @@ export function createChatRoutes(
         }),
     );
 
+  router.post(
+    '/conversations/:conversationId/markSeen',
+    guard,
+    describeRoute({
+      tags,
+      summary: 'Mark a conversation seen up to a message',
+      operationId: 'agentsMarkConversationSeen',
+      // UI-only: the chat panel marks what the person saw.
+      ...cliRoute(false),
+      description:
+        'Owner only. Moves the read position forward to `seq` (never back): a reply or failure waiting for the owner up to there is settled, a question waits until they write.',
+      responses: {
+        200: dataResponse(ConversationDetailSchema),
+        404: noConversation,
+        ...apiErrorResponses,
+      },
+    }),
+    conversationParam,
+    apiValidator(
+      'json',
+      z.strictObject({
+        seq: z
+          .number()
+          .int()
+          .min(0)
+          .meta({ description: 'The message seq seen up to.' }),
+      }),
+    ),
+    async (context) =>
+      context.json({
+        data: await conversations.markSeen(
+          me(context),
+          conversationId(context),
+          context.req.valid('json').seq,
+        ),
+      }),
+  );
+  router.get(
+    '/conversations/:conversationId/links',
+    guard,
+    describeRoute({
+      tags,
+      summary: "List a conversation's links",
+      operationId: 'agentsListConversationLinks',
+      ...cliRoute({
+        command: 'conversation link list',
+        args: ['conversationId'],
+        flags: { conversationId: { name: 'conversation' } },
+        columns: ['id', 'kind', 'targetId', 'view.key', 'view.title'],
+      }),
+      description:
+        'Owner only. What the conversation is tied to, oldest first, as the application resolves each record for the caller; a bounded list.',
+      responses: {
+        200: listResponse(
+          ConversationLinkSchema,
+          z.object({ total: z.number().int() }),
+        ),
+        404: noConversation,
+        ...apiErrorResponses,
+      },
+    }),
+    conversationParam,
+    async (context) => {
+      context.header('Cache-Control', 'private, no-store');
+      const items = await conversations.links.list(
+        me(context),
+        conversationId(context),
+      );
+      return context.json({ data: items, meta: { total: items.length } });
+    },
+  );
+  router.post(
+    '/conversations/:conversationId/links',
+    guard,
+    describeRoute({
+      tags,
+      summary: 'Tie a record to a conversation',
+      operationId: 'agentsCreateConversationLink',
+      ...cliRoute({
+        command: 'conversation link add',
+        args: ['conversationId'],
+        flags: { conversationId: { name: 'conversation' } },
+      }),
+      description:
+        'Owner only. Ties a record of a kind the application registered, which the caller may see; tying it again answers the existing link.',
+      responses: {
+        200: dataResponse(ConversationLinkSchema, 'Already tied.'),
+        201: dataResponse(ConversationLinkSchema, 'Created.'),
+        404: noConversation,
+        ...apiErrorResponses,
+      },
+    }),
+    conversationParam,
+    apiValidator(
+      'json',
+      z.strictObject({
+        kind: z
+          .string()
+          .min(1)
+          .max(64)
+          .meta({ description: 'A link kind the application registered.' }),
+        targetId: z
+          .string()
+          .min(1)
+          .max(255)
+          .meta({ description: 'The id of the record of that kind.' }),
+      }),
+    ),
+    async (context) => {
+      const target = context.req.valid('json');
+      const id = conversationId(context);
+      // Tying it again answers the existing link, as 200 rather than 201.
+      const existed = (await conversations.links.list(me(context), id)).some(
+        (link) =>
+          link.kind === target.kind && link.targetId === target.targetId,
+      );
+      const data = await conversations.links.add(me(context), id, target);
+      return context.json({ data }, existed ? 200 : 201);
+    },
+  );
+  router.delete(
+    '/conversations/:conversationId/links/:linkId',
+    guard,
+    describeRoute({
+      tags,
+      summary: 'Untie a record from a conversation',
+      operationId: 'agentsDeleteConversationLink',
+      ...cliRoute({
+        command: 'conversation link remove',
+        args: ['conversationId', 'linkId'],
+        flags: { conversationId: { name: 'conversation' } },
+      }),
+      description: 'Owner only.',
+      responses: {
+        204: emptyResponse(),
+        404: apiErrorResponse(
+          404,
+          "The conversation or the link does not exist, or is not the caller's.",
+        ),
+        ...apiErrorResponses,
+      },
+    }),
+    apiValidator('param', ConversationLinkParams),
+    async (context) => {
+      const { conversationId: id, linkId } = context.req.valid('param');
+      await conversations.links.remove(me(context), id, linkId);
+      return context.body(null, 204);
+    },
+  );
+  router.get(
+    '/conversations/:conversationId/usage',
+    guard,
+    describeRoute({
+      tags,
+      summary: "Get a conversation's token usage",
+      operationId: 'agentsGetConversationUsage',
+      ...cliRoute({
+        command: 'conversation usage',
+        args: ['conversationId'],
+        flags: { conversationId: { name: 'conversation' } },
+      }),
+      description:
+        "Owner only. The tokens the conversation's runs used, summed, and how full the context window was after the latest run whose coding tool reports it.",
+      responses: {
+        200: dataResponse(ConversationUsageSchema),
+        404: noConversation,
+        ...apiErrorResponses,
+      },
+    }),
+    conversationParam,
+    async (context) =>
+      context.json({
+        data: await conversations.usage(me(context), conversationId(context)),
+      }),
+  );
+  router.get(
+    '/conversationAttention',
+    guard,
+    describeRoute({
+      tags,
+      summary: "Count the caller's conversations that wait for them",
+      operationId: 'agentsGetConversationAttention',
+      ...cliRoute(false),
+      description:
+        "Of the caller's open conversations in the chat list: how many are unread, and how many need them (a reply, a failure, a question).",
+      responses: {
+        200: dataResponse(ConversationAttentionSchema),
+        ...apiErrorResponses,
+      },
+    }),
+    async (context) =>
+      context.json({ data: await conversations.attention(me(context)) }),
+  );
   router.get(
     '/conversations/:conversationId/events',
     guard,

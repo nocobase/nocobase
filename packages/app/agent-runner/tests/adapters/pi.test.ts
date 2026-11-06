@@ -796,3 +796,56 @@ describe('failures and stop', () => {
     expect(processes[0]!.signals).toEqual(['SIGTERM']);
   });
 });
+
+it('streams text and thinking deltas, supplements completed tails and keeps per-message usage', async () => {
+  const { spawn } = fakeSpawn((pi) => {
+    void pi.next('prompt').then((prompt) => {
+      pi.respond(prompt, { disposition: 'started' });
+      pi.write({ type: 'message_start', message: { role: 'assistant' } });
+      for (const delta of ['Plan ', 'carefully'])
+        pi.write({
+          type: 'message_update',
+          assistantMessageEvent: {
+            type: 'thinking_delta',
+            contentIndex: 0,
+            delta,
+          },
+        });
+      for (const delta of ['Hel', 'lo'])
+        pi.write({
+          type: 'message_update',
+          assistantMessageEvent: { type: 'text_delta', contentIndex: 1, delta },
+        });
+      const final = assistantMessage([
+        { type: 'thinking', thinking: 'Plan carefully' },
+        { type: 'text', text: 'Hello world' },
+      ]).at(-1)!;
+      pi.write(final);
+      writeAll(pi, settled);
+    });
+  });
+  const handle = (await adapterWith(spawn)).start(
+    session({ outputBlocks: true }),
+  );
+  const raw = await collect(handle);
+  expect(
+    raw.some((e) => (e.meta?.output as { phase?: string })?.phase === 'delta'),
+  ).toBe(true);
+  const events = raw.filter(
+    (e) => (e.meta?.output as { phase?: string })?.phase === 'end',
+  );
+  expect(
+    events.filter((e) => e.type === 'thinking').map((e) => e.content),
+  ).toEqual(['Plan carefully']);
+  expect(
+    events
+      .filter((e) => e.type === 'text')
+      .map((e) => e.content)
+      .join(''),
+  ).toBe('Hello world');
+  expect(await handle.result).toMatchObject({
+    exit: 'completed',
+    summary: 'Hello world',
+    usage: [{ outputTokens: 20 }],
+  });
+});

@@ -204,7 +204,7 @@ describe('jobs', () => {
     await h.services.runners.update(plain.runnerId, { acceptJobs: true });
     expect(await claimJobs(plain)).toEqual([]);
 
-    // The feature, but nobody allowed it: off by default, for team runners too.
+    // The feature, but nobody allowed it: off by default, for shared runners too.
     const capable = await h.registerRunner({ features: JOB_FEATURES });
     expect((await h.services.runners.get(capable.runnerId)).acceptJobs).toBe(
       false,
@@ -332,7 +332,7 @@ describe('jobs', () => {
   });
 
   it.each(['env', 'repository', 'prepared'] as const)(
-    'keeps jobs with team-only %s variables queued for team runners without blocking other jobs',
+    'keeps jobs with team-only %s variables queued for shared runners without blocking other jobs',
     async (source) => {
       const secrets = testSecrets();
       const open = vi.spyOn(secrets, 'open');

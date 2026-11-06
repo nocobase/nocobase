@@ -1,7 +1,9 @@
+import { resolveListState } from '@nocobase/app-client';
+import { RecordLink } from '#components/record-link';
 import { useMatch } from 'react-router';
 import { Badge } from '#components/ui/badge';
 import type { ReactElement } from 'react';
-import { Link, Outlet, useLocation, useSearchParams } from 'react-router';
+import { Outlet, useLocation, useSearchParams } from 'react-router';
 import { useTranslation } from '@nocobase/i18n/client';
 import { Button } from '#components/ui/button';
 import { Input } from '#components/ui/input';
@@ -66,28 +68,26 @@ export default function ExecutionsPage(): ReactElement {
           id: `${execution.workflowId}:${execution.recordId}`,
           record: (
             <>
-              <Link
-                className='underline-offset-4 hover:underline'
+              <RecordLink
                 to={{
                   pathname: `/workflows/executions/${execution.workflowId}/${execution.recordId}`,
                   search: location.search,
                 }}
               >
                 #{execution.recordId}
-              </Link>
+              </RecordLink>
             </>
           ),
           workflow: (
             <>
-              <Link
-                className='hover:underline'
+              <RecordLink
                 to={{
                   pathname: `/workflows/definitions/${execution.workflowId}`,
                   search: location.search,
                 }}
               >
                 {workflow ? labels.title(workflow) : execution.workflowId}
-              </Link>
+              </RecordLink>
             </>
           ),
           state: (
@@ -132,17 +132,16 @@ export default function ExecutionsPage(): ReactElement {
       }
       status={
         <>
-          <DataState {...request} retry={request.reload} />
           {catalog.status && <DataState {...catalog} retry={catalog.reload} />}
         </>
       }
+      listState={resolveListState(
+        request,
+        request.data?.data.length ?? 0,
+        Boolean(normalizedName) || Boolean(workflowId),
+      )}
       loaded={Boolean(request.data)}
       loading={request.loading}
-      empty={t(
-        workflowId || normalizedName
-          ? 'workflows.noResults'
-          : 'workflows.noExecutions',
-      )}
       labels={{
         refresh: t('workflows.refresh'),
         record: t('workflows.record'),

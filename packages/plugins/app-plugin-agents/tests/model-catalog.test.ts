@@ -55,3 +55,10 @@ describe('the model catalog', () => {
 it('uses readable Gemini display names without changing model identity', () => {
   expect(modelLabel('pi', 'google/gemini-3.1-pro')).toBe('Gemini 3.1 Pro');
 });
+
+it('keeps ACP aliases, provider paths and dated ids as distinct opaque identities', () => {
+  expect(normalizeModel('gemini', 'opus-latest')).toBe('opus-latest');
+  expect(modelLabel('gemini', 'vendor/Model (20261001)')).toBe(
+    'vendor/Model (20261001)',
+  );
+});

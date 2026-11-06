@@ -203,6 +203,9 @@ export class NativeMessages {
           : this.publicPart(part);
         if (projected) parts.push(projected);
       }
+      // A private file-only user input still needs a valid, empty public representation.
+      if (message.role === 'user' && privateFiles.length && !parts.length)
+        parts.push({ type: 'text', text: '' });
       const metadata = appUIMessageMetadataSchema.parse(
         pick(message.metadata ?? {}, [
           'conversationId',
@@ -226,6 +229,7 @@ export class NativeMessages {
   private publicPart(part: UIMessage['parts'][number]): PublicPart | undefined {
     let clean: Record<string, unknown>;
     switch (part.type) {
+      case 'reasoning':
       case 'text':
         clean = pick(part, ['type', 'text', 'state']);
         break;
@@ -410,9 +414,12 @@ export class NativeMessages {
           }
         }
         switch (chunk.type) {
+          case 'reasoning-start':
+          case 'reasoning-end':
           case 'text-start':
           case 'text-end':
             return { type: chunk.type, id: chunk.id };
+          case 'reasoning-delta':
           case 'text-delta':
             return { type: chunk.type, id: chunk.id, delta: chunk.delta };
           case 'source-url':

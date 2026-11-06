@@ -10,7 +10,11 @@ import {
 } from '@nocobase/db';
 
 import { PRIORITIES, type Priority } from '../../../shared/common.js';
-import type { Issue, IssueProject } from '../../../shared/issues.js';
+import type {
+  Issue,
+  IssueProject,
+  IssueSummary,
+} from '../../../shared/issues.js';
 import type { Label } from '../../../shared/labels.js';
 import { oneOf } from '../../kernel/db.js';
 import { conflict } from '../../kernel/errors.js';
@@ -129,6 +133,18 @@ export function toIssue(record: IssueRecord): Issue {
         ? { type: executorType, id: executorId }
         : null,
   };
+}
+
+/** A bounded batch of card fields, using the same visibility predicate as issue lists. */
+export async function findIssueSummaries(
+  conn: DatabaseConnection,
+  filter: RepositoryFilter<IssueRecord>,
+): Promise<IssueSummary[]> {
+  return issues(conn).findMany({
+    filter,
+    select: (select) => select.fields('id', 'identifier', 'title', 'statusKey'),
+    limit: 100,
+  });
 }
 
 /** Complete authorized projections without owner, executor, project or label hydration. */
@@ -446,12 +462,14 @@ export async function findIssues(
 export async function liveChildren(
   conn: DatabaseConnection,
   parentIds: readonly string[],
+  readableIds?: ReadonlySet<string>,
 ): Promise<Issue[]> {
   if (parentIds.length === 0) return [];
   const rows = await issues(conn).findMany({
     filter: (f) =>
       f.and([
         oneOf(f, 'parentIssueId', [...new Set(parentIds)]),
+        ...(readableIds ? [oneOf(f, 'id', [...readableIds])] : []),
         f.date('deletedAt').empty(),
       ]),
     select: (select) => select.fields(...FIELDS),
@@ -464,11 +482,13 @@ export async function liveChildren(
 export async function unfinishedStagedChildren(
   conn: DatabaseConnection,
   finishedKeys: readonly string[],
+  parentIds?: readonly string[],
 ): Promise<Issue[]> {
   const rows = await issues(conn).findMany({
     filter: (f) =>
       f.and([
         f.string('parentIssueId').ne(null),
+        ...(parentIds ? [oneOf(f, 'parentIssueId', parentIds)] : []),
         f.number('stage').ne(null),
         f.date('deletedAt').empty(),
         ...finishedKeys.map((key) => f.string('statusKey').ne(key)),

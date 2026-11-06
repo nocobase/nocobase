@@ -8,9 +8,13 @@ import '../server/email/channel.js';
 import '../server/im/channel.js';
 
 const channels = {
-  'system-email': { provider: 'smtp', host: 'localhost', port: 587 },
+  'system-email': { type: 'smtp', host: 'localhost', port: 587 },
   marketing: { provider: 'resend', apiKey: 'key', from: 'a@example.com' },
-  alerts: { provider: 'feishu-webhook', webhookUrl: 'https://example.com' },
+  alerts: {
+    type: 'feishu-webhook',
+    provider: 'feishu-webhook',
+    webhookUrl: 'https://example.com',
+  },
 } as const;
 type Input = NotificationSendInput<
   ConfiguredNotificationChannels<typeof channels>

@@ -25,6 +25,7 @@ The endpoint contract this assumes: `GET /api/customers/:id` returns `{ data: Cu
 
 ```ts
 // client/pages/customers/types.ts
+import type { PageBreadcrumbLevel } from '@nocobase/app-client';
 export interface Customer {
   readonly id: string;
   readonly name: string;
@@ -43,6 +44,7 @@ export const CUSTOMER_PAGE_PARAMS: readonly string[] = [
 
 /** What a page that opens a customer passes to the customer's page: the list, the orders page, a dashboard. */
 export interface CustomersOutletContext {
+  readonly source: PageBreadcrumbLevel;
   readonly reload: () => void;
 }
 
@@ -57,6 +59,8 @@ export interface CustomerPageOutletContext extends CustomerEditOutletContext {
   readonly customer: Customer;
 }
 ```
+
+Each owner passes `source` through outlet context: its translated title and its application-absolute pathname with `useRouteSearches().get(ownerPath) ?? ''`. A list-tab owner uses its translated tab label and `useListTabs().source`. The source remains available when a record is opened directly because the owner route still mounts; the query defaults to empty.
 
 ## The page
 
@@ -85,7 +89,7 @@ import {
   useResolvedPath,
 } from 'react-router';
 
-import { BackButton } from '#components/back-button';
+import { usePageBreadcrumb } from '@nocobase/app-client';
 import { PageContainer } from '#components/page-container';
 import { PageHeader } from '#components/page-header';
 import { RouteChildPage } from '#components/route-child-page';
@@ -120,7 +124,8 @@ function CustomerPageContent({
   const location = useLocation();
   const pagePath = useResolvedPath('.');
   // The page this one covers — the customers list, the orders page, a dashboard — refreshes through its context.
-  const { reload: reloadOwner } = useOutletContext<CustomersOutletContext>();
+  const { reload: reloadOwner, source } =
+    useOutletContext<CustomersOutletContext>();
 
   // The order is the display order; both tabs use the page's access, so the first one is the default tab.
   const tabs = [
@@ -296,17 +301,14 @@ function CustomerPageContent({
   }
 
   const shown = notFound ? undefined : customer;
+  // The owner supplies its translated list title; a list-tab owner supplies its source path/query too.
+  usePageBreadcrumb([
+    source,
+    { label: shown?.name ?? t('customers.detail.title') },
+  ]);
   return (
     <RouteChildPage>
       <PageContainer>
-        {/* Back to whichever page this one covers — `..`, not that page's path (section 5 of child-routes.md) —
-            with its search and filters as they were, and without the parameters this page and its tabs wrote. */}
-        <BackButton
-          to={{
-            pathname: '..',
-            search: withoutParams(location.search, CUSTOMER_PAGE_PARAMS),
-          }}
-        />
         <PageHeader
           title={shown?.name ?? t('customers.detail.title')}
           actions={
@@ -355,7 +357,7 @@ function CustomerHeaderActions({
 - **The header links through the tab on screen.** The header is rendered by the page's route, where a bare `edit` resolves to `/customers/12/edit`, beside the tabs ([section 2 of `page.md`](../page.md#2-the-page-component)). `currentTab` is found the way the redirect finds the page's own URL, and `CustomerHeaderActions` links to `` `${tab}/edit` ``, the route `customerDetailRoutes` declares under every tab: the dialog opens at `/customers/12/orders/edit`, over Orders, and closing returns to `/customers/12/orders`.
 - **One context for the tabs and the overlays over them.** The tabs read the customer from it, and the edit dialog reads `onSaved` and `onNotFound` through whichever tab it opens over, which passes the context on. `onSaved` shows the returned customer at once, then refreshes the page behind (guideline R2).
 - **Not found**: a 404 on load shows the explanation without tabs; the edit dialog finding the customer gone switches the page to "not found" while the dialog stays open to say so, because the tab's `Outlet` sits outside the state branches and only its container is hidden. When the dialog closes, the "Edit" that opened it has gone with the header's actions, so focus moves to the explanation (guidelines R3 and A6).
-- **`BackButton` goes to `..`, without this page's parameters.** The page is declared under every page that opens a customer, so it returns to the parent route rather than naming one ([section 5 of `child-routes.md`](../child-routes.md#the-same-detail-page-over-another-page)). The current query string holds the covered page's search and filters, which came down with every link, and whatever this page's tabs wrote; `withoutParams` removes the latter, listed in `CUSTOMER_PAGE_PARAMS`, so the list gets exactly its own back ([section 7 of `page.md`](../page.md#7-back-button-and-breadcrumbs)). A "Delete" beside "Edit" leaves the same way: after the confirmation, the page navigates from its own route with `navigate({ pathname: '..', search: withoutParams(location.search, CUSTOMER_PAGE_PARAMS) }, { relative: 'route', replace: true })`, not from inside an overlay, where the number of levels changes with the tab.
+- **The shell breadcrumb and mobile parent arrow return to the actual owner.** The page is declared under every page that opens a customer, so it returns to the parent route rather than naming one ([section 5 of `child-routes.md`](../child-routes.md#the-same-detail-page-over-another-page)). The current query string holds the covered page's search and filters, which came down with every link, and whatever this page's tabs wrote; `withoutParams` removes the latter, listed in `CUSTOMER_PAGE_PARAMS`, so the list gets exactly its own back ([section 7 of `page.md`](../page.md#7-back-button-and-breadcrumbs)). A "Delete" beside "Edit" leaves the same way: after the confirmation, the page navigates from its own route with `navigate({ pathname: '..', search: withoutParams(location.search, CUSTOMER_PAGE_PARAMS) }, { relative: 'route', replace: true })`, not from inside an overlay, where the number of levels changes with the tab.
 - **States**: a skeleton while loading, 401 through `SessionExpiredAlert`, 403 and 404 without "Retry", other failures with it (guidelines S1 and S4).
 
 ## A tab
@@ -421,11 +423,11 @@ export default function CustomerOverviewTab(): ReactElement {
 
 ## The test
 
-`tests/components/customer-page.test.tsx` renders the page with the routes `customerDetailRoutes` declares, written out, and opens the header's "Edit" from every tab, which catches a tab that does not pass the page's context on through its `Outlet`; that every tab declares the header's overlays is the route test's to check (below). It then goes back to check that the list gets exactly its own parameters:
+`tests/client/customer-page.test.tsx` renders the page with the routes `customerDetailRoutes` declares, written out, and opens the header's "Edit" from every tab, which catches a tab that does not pass the page's context on through its `Outlet`; that every tab declares the header's overlays is the route test's to check (below). It then goes back to check that the list gets exactly its own parameters:
 
 ```tsx
-// tests/components/customer-page.test.tsx
-// The setup of tests/components/page-harness.test.tsx — its vi.hoisted values and every vi.mock — unchanged; only
+// tests/client/customer-page.test.tsx
+// The setup of tests/client/page-harness.test.tsx — its vi.hoisted values and every vi.mock — unchanged; only
 // what differs is shown. The runtime reads the application's own locale files,
 // where the customer copy lives, so the queries name what the user reads.
 import {
@@ -582,10 +584,10 @@ describe('customer page', () => {
 
 ## The route test
 
-Every page that declares `customerDetailRoutes` adds a route per tab and per overlay under each tab to the page grant list of `tests/logic/client-routes.test.ts` ([section 12 of `page.md`](../page.md#12-update-the-route-test)). A helper in the test spells out one owner's set, with its names and authorization written literally rather than taken from the application's function, whose output is what the test checks:
+Every page that declares `customerDetailRoutes` adds a route per tab and per overlay under each tab to the page grant list of `tests/client/client-routes.test.ts` ([section 12 of `page.md`](../page.md#12-update-the-route-test)). A helper in the test spells out one owner's set, with its names and authorization written literally rather than taken from the application's function, whose output is what the test checks:
 
 ```ts
-// tests/logic/client-routes.test.ts, in 'pins the page authorization of every signed-in page'
+// tests/client/client-routes.test.ts, in 'pins the page authorization of every signed-in page'
 expect(pageAuthorizations(resolved.routes)).toEqual([
   { name: 'home', authorizedAs: null },
   { name: 'customers', authorizedAs: null },

@@ -2,6 +2,7 @@
  * The browser API of the chat (`CHAT_ROUTES` in `shared/conversations`), typed with the shared contract. One method per endpoint; answers are unwrapped from `{ data }` (a page of conversations or messages
  * is put back together from `{ data, meta }`); failures throw `ApiClientError`.
  */
+import type { OnlineAgentResendOptions } from '../../shared/resend.js';
 import { DefaultChatTransport, UI_MESSAGE_STREAM_HEADERS } from 'ai';
 import type {
   AppUIMessage,
@@ -13,6 +14,9 @@ import { ApiClientError, type ApiClient } from '@nocobase/app-client';
 import {
   chatPath,
   type ChatAgent,
+  type ConversationShare,
+  type ConversationLink,
+  type ConversationShareCandidate,
   type OnlineChatConfigSnapshot,
   type ChatPreferences,
   type ChatPreferencesPatch,
@@ -26,6 +30,8 @@ import {
   type CreateConversationRequest,
   type MessageAttachment,
   type MessageListQuery,
+  type ConversationUsage,
+  type PageContext,
 } from '../../shared/conversations.js';
 
 import type { ModelService } from '../../shared/models.js';
@@ -52,8 +58,36 @@ export class ChatApi {
     this.api = api;
   }
 
-  public configuration(id: string): Promise<OnlineChatConfigSnapshot> {
-    return this.get(chatPath('config', id));
+  public conversationLinks(id: string): Promise<ConversationLink[]> {
+    return this.get(`${chatPath('conversation', id)}/links`);
+  }
+
+  public async shareCandidates(
+    id: string,
+  ): Promise<ConversationShareCandidate[]> {
+    return this.get(`${chatPath('conversation', id)}/shareCandidates`);
+  }
+  public async shares(id: string): Promise<ConversationShare[]> {
+    return this.get(`${chatPath('conversation', id)}/shares`);
+  }
+  public share(id: string, userId: string): Promise<ConversationShare> {
+    return this.send(
+      `${chatPath('conversation', id)}/shares/${encodeURIComponent(userId)}`,
+      'PUT',
+    );
+  }
+  public revokeShare(id: string, userId: string): Promise<void> {
+    return this.api.request({
+      path: `${chatPath('conversation', id)}/shares/${encodeURIComponent(userId)}`,
+      method: 'DELETE',
+    });
+  }
+
+  public configuration(
+    id: string,
+    signal?: AbortSignal,
+  ): Promise<OnlineChatConfigSnapshot> {
+    return this.get(chatPath('config', id), undefined, signal);
   }
   public configure(
     id: string,
@@ -69,10 +103,17 @@ export class ChatApi {
   public transport(
     id: string,
     accepted: (clientId: string) => void,
+    resent?: (options: OnlineAgentResendOptions) => Promise<void>,
+    reconnecting?: () => (available: boolean) => void,
   ): DefaultChatTransport<AppUIMessage> {
     return new DefaultChatTransport<AppUIMessage>({
       api: chatPath('messages', id),
       prepareSendMessagesRequest: ({ messages, body }) => {
+        if (body?.resendInput)
+          return {
+            api: `${chatPath('conversation', id)}/resend`,
+            body: body.resendInput as OnlineAgentResendOptions,
+          };
         if (body?.approvalInput)
           return {
             api: `${chatPath('conversation', id)}/approval`,
@@ -92,6 +133,7 @@ export class ChatApi {
       },
       prepareReconnectToStreamRequest: () => ({ api: chatPath('events', id) }),
       fetch: async (input, init) => {
+        const recovered = init?.method === 'GET' ? reconnecting?.() : undefined;
         try {
           const body =
             typeof init?.body === 'string'
@@ -108,6 +150,21 @@ export class ChatApi {
             ...(body ? { json: body } : {}),
             ...(init?.signal ? { signal: init.signal } : {}),
           });
+          recovered?.(true);
+          const path =
+            typeof input === 'string'
+              ? input
+              : input instanceof URL
+                ? input.toString()
+                : input.url;
+          if (init?.method === 'POST' && path.endsWith('/resend')) {
+            try {
+              await resent?.(body as OnlineAgentResendOptions);
+            } catch (error) {
+              await stream.cancel().catch(() => {});
+              throw error;
+            }
+          }
           if (
             init?.method === 'POST' &&
             body?.message &&
@@ -118,8 +175,10 @@ export class ChatApi {
             accepted(body.message.id);
           return new Response(stream, { headers: UI_MESSAGE_STREAM_HEADERS });
         } catch (error) {
-          if (error instanceof ApiClientError && error.status === 204)
+          if (error instanceof ApiClientError && error.status === 204) {
+            recovered?.(false);
             return new Response(null, { status: 204 });
+          }
           throw error;
         }
       },
@@ -136,6 +195,7 @@ export class ChatApi {
         archived:
           query.archived === undefined ? undefined : String(query.archived),
         agentId: query.agentId,
+        mode: query.mode,
         source: query.source,
         pageToken: query.pageToken,
         pageSize: query.pageSize,
@@ -216,6 +276,55 @@ export class ChatApi {
 
   public markRead(id: string): Promise<ConversationDetail> {
     return this.send(chatPath('markRead', id), 'POST');
+  }
+
+  /**
+   * One message while the agent works on the conversation: it joins that work (steered into the running turn, or
+   * taken as the next one). Answers the saved message, `metadata.queue` `queued` until the agent takes it; refused
+   * (`409`) when the agent is not working, when it is sent as usual instead.
+   */
+  public queue(
+    id: string,
+    input: {
+      readonly clientId: string;
+      readonly content: string;
+      readonly context?: PageContext;
+      readonly attachmentIds?: readonly string[];
+    },
+  ): Promise<AppUIMessage> {
+    return this.send(chatPath('queue', id), 'POST', {
+      message: {
+        id: input.clientId,
+        role: 'user',
+        parts: [{ type: 'text', text: input.content }],
+      },
+      ...(input.context ? { context: input.context } : {}),
+      ...(input.attachmentIds?.length
+        ? { attachmentIds: input.attachmentIds }
+        : {}),
+    });
+  }
+
+  /** Deletes the conversation for good, with its messages and files. */
+  public async deleteConversation(id: string): Promise<void> {
+    await this.api.request({
+      path: chatPath('conversation', id),
+      method: 'DELETE',
+    });
+  }
+
+  /** Takes back a queued message its runner has not taken (`409` once it has). */
+  public async withdraw(id: string, messageId: string): Promise<void> {
+    await this.api.request({
+      path: `${chatPath('messages', id)}/${encodeURIComponent(messageId)}/withdraw`,
+      method: 'POST',
+      json: {},
+    });
+  }
+
+  /** Tokens, context window and cost over the conversation's runs, as far as their tools report them. */
+  public usage(id: string, signal?: AbortSignal): Promise<ConversationUsage> {
+    return this.get(chatPath('usage', id), undefined, signal);
   }
 
   /** Requests cancellation. Only execution.status=idle confirms termination and synchronized history. */

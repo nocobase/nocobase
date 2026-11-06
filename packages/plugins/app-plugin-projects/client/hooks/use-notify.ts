@@ -1,6 +1,11 @@
+import type { ToastOptions } from '@nocobase/app-client';
+import {
+  UNSAFE_DataRouterContext,
+  UNSAFE_NavigationContext,
+} from 'react-router';
 import { ApiClientError, useToaster } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
-import { useMemo } from 'react';
+import { useContext, useMemo } from 'react';
 
 import { ACCESS_NAMESPACE } from '../../shared/access.js';
 
@@ -18,6 +23,22 @@ export interface Notify {
 /** Toasts through the application's toaster, with one reading of API errors for every page. */
 export function useNotify(): Notify {
   const toaster = useToaster();
+  const navigation = useContext(UNSAFE_NavigationContext);
+  const dataRouter = useContext(UNSAFE_DataRouterContext);
+  // Suggestions are app-absolute; data routers restore their own basename.
+  const navigate = useMemo(
+    () =>
+      navigation
+        ? (href: string) => {
+            navigation.navigator.push(
+              dataRouter
+                ? href
+                : `${navigation.basename.replace(/\/$/u, '')}${href}`,
+            );
+          }
+        : undefined,
+    [navigation, dataRouter],
+  );
   // Named: the issues hooks the application composes its pages from (`client/issues.ts`) call this in its namespace.
   const { t } = useTranslation(ACCESS_NAMESPACE);
   return useMemo(
@@ -33,9 +54,10 @@ export function useNotify(): Notify {
         void toaster.show({
           type: 'error',
           title: errorText(t, error, fallback ?? t('common.requestFailed')),
+          ...(navigate ? suggestionAction(error, t, navigate) : {}),
         }),
     }),
-    [toaster, t],
+    [toaster, t, navigate],
   );
 }
 
@@ -47,10 +69,35 @@ export function errorText(
   if (!(error instanceof ApiClientError)) return fallback;
   if (error.status === 403) return t('common.forbidden');
   if (error.status === 404) return t('common.notFound');
-  if (error.reason)
-    return t(`errors.${error.reason}`, {
-      defaultValue: error.message || fallback,
-    });
+  if (error.reason) {
+    const metadata = errorMetadata(error);
+    const reason = metadata?.reason;
+    const detailed =
+      typeof reason === 'string'
+        ? t(`errors.${error.reason}.${reason}`, { defaultValue: '' })
+        : '';
+    const message =
+      detailed ||
+      t(`errors.${error.reason}`, { defaultValue: error.message || fallback });
+    const suggestions = metadata?.suggestions;
+    const hint =
+      [
+        'noEnabledAgents',
+        'managerNotConfigured',
+        'managerAgentUnavailable',
+      ].includes(typeof reason === 'string' ? reason : '') &&
+      Array.isArray(suggestions) &&
+      !suggestions.some(
+        (item: unknown) =>
+          item &&
+          typeof item === 'object' &&
+          'href' in item &&
+          typeof item.href === 'string',
+      )
+        ? t(`errors.${error.reason}.suggestion`, { defaultValue: '' })
+        : '';
+    return hint ? message + ' ' + hint : message;
+  }
   return fallback;
 }
 
@@ -64,4 +111,32 @@ export function errorMetadata(
   return metadata && typeof metadata === 'object'
     ? (metadata as Readonly<Record<string, unknown>>)
     : undefined;
+}
+
+/** Only app-relative suggestions may navigate through the host router (which restores its deployment prefix). */
+export function suggestionAction(
+  error: unknown,
+  t: (key: string, options?: Record<string, unknown>) => string,
+  navigate: (href: string) => void,
+): Pick<ToastOptions, 'action'> {
+  if (!(error instanceof ApiClientError)) return {};
+  const metadata = errorMetadata(error);
+  const suggestions = metadata?.suggestions;
+  if (!Array.isArray(suggestions)) return {};
+  const first = suggestions[0] as
+    { href?: unknown; message?: unknown } | undefined;
+  const href = first?.href;
+  if (
+    typeof href !== 'string' ||
+    !href.startsWith('/') ||
+    href.startsWith('//') ||
+    href.includes('\\')
+  )
+    return {};
+  return {
+    action: {
+      label: t('common.configure', { defaultValue: 'Configure' }),
+      onClick: () => void navigate(href),
+    },
+  };
 }

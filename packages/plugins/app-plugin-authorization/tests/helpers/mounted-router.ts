@@ -66,6 +66,7 @@ export async function mountedRouter(
   const container = options.container ?? new ServiceContainer();
   const authenticate = options.authenticate ?? signedIn;
   container.instance(authenticationToken, {
+    addUserInitializer: () => () => {},
     required: () => authenticate,
   } as unknown as Auth);
   container.instance(authorizationToken, authorization);

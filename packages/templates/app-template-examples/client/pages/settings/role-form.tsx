@@ -1,3 +1,6 @@
+import { FeedbackForm } from '#components/feedback-form';
+import { useAuthentication } from '@nocobase/app-plugin-authentication/client';
+import { useSubmission } from '@nocobase/app-client';
 import {
   useSettingsLeave,
   useSettingsData,
@@ -16,14 +19,22 @@ import {
   type PermissionGrant,
   type PermissionSet,
 } from '@nocobase/app-plugin-authorization/client';
-import { pagePermissionResources } from './page-permissions.js';
+import {
+  permissionNavigationSections,
+  pagePermissionResources,
+} from './page-permissions.js';
 import { pagePermissionTitles } from './page-permission-titles.js';
+import {
+  permissionScopeVisible,
+  permissionWorkspaceCatalog,
+} from './permission-workspace.js';
 import { useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
 import {
   useLocation,
   useNavigate,
   useOutletContext,
   useParams,
+  useResolvedPath,
 } from 'react-router';
 import { RouteChildPage } from '#components/route-child-page';
 import { BackButton } from '#components/back-button';
@@ -79,7 +90,12 @@ function RoleEditor(): ReactElement {
   const [grantsDraft, setGrantsDraft] = useState<readonly PermissionGrant[]>();
   const [dirty, setDirty] = useState(false);
   const [editingScope, setEditingScope] = useState<string>();
-  const [busy, setBusy] = useState(false);
+  const { session } = useAuthentication();
+  const submission = useSubmission({
+    scope: `${session?.user.id}:settings:role:${key}`,
+  });
+  const [requestBusy, setRequestBusy] = useState(false);
+  const busy = requestBusy || submission.submitting;
   const leave = useSettingsLeave(dirty, busy);
   const [error, setError] = useState<unknown>();
 
@@ -99,128 +115,97 @@ function RoleEditor(): ReactElement {
   const grants = grantsDraft ?? initial?.grants ?? [];
   const catalog = useMemo(() => {
     if (!options.data) return undefined;
-    const source = options.data.data;
     const pages = pagePermissionResources(
       app.runtime.routes,
       pagePermissionTitles,
       (path) => t('settings.unnamedPage', { path }),
     );
-    return {
-      ...source,
-      sections: [
-        {
-          name: 'users',
-          title: { key: 'settings.userPermissions' },
-          order: 0,
-          subsections: [
-            {
-              name: 'users.accounts',
-              title: { key: 'settings.users' },
-              resources: [
-                {
-                  type: 'user',
-                  id: '*',
-                  title: { key: 'settings.users' },
-                  actions: [
-                    { name: 'read', title: { key: 'settings.readUsers' } },
-                    { name: 'create', title: { key: 'settings.createUsers' } },
-                    { name: 'update', title: { key: 'settings.updateUsers' } },
-                    { name: 'invite', title: { key: 'settings.inviteUsers' } },
-                    { name: 'delete', title: { key: 'settings.deleteUsers' } },
-                    {
-                      name: 'reset-password',
-                      title: { key: 'settings.resetUserPassword' },
-                    },
-                    { name: 'disable', title: { key: 'settings.disable' } },
-                    { name: 'enable', title: { key: 'settings.enable' } },
-                    {
-                      name: 'assign-role',
-                      title: { key: 'settings.assignRole' },
-                    },
-                    {
-                      name: 'revoke-sessions',
-                      title: { key: 'settings.revokeSessions' },
-                    },
-                  ],
-                },
-              ],
-            },
-          ],
-        },
-        ...source.sections.map((section) => ({
-          ...section,
-          subsections: section.subsections.map((sub) => ({
-            ...sub,
-            resources:
-              sub.recordType?.type === 'page'
-                ? [...sub.resources, ...pages]
-                : sub.resources,
-          })),
-        })),
-      ],
-    };
+    return permissionWorkspaceCatalog(
+      options.data.data,
+      app.runtime.routes,
+      pages,
+    );
   }, [options.data, app, t]);
   const allowed = creating
     ? canCreate
     : canUpdate &&
       (!request.data?.data.protection ||
         request.data.data.protection.allow.includes('update'));
-  const closeTo = { pathname: '/settings/roles', search: location.search };
-  const save = async (event: React.FormEvent<HTMLFormElement>) => {
+  const closeTo = {
+    pathname: useResolvedPath('..').pathname,
+    search: location.search,
+  };
+  const originalRevisionRef = useRef<string | undefined>(undefined);
+  const save = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (options.error || !catalog || (!creating && request.error)) return;
-    setSubmitted(true);
-    if (!name.trim() || !roleKey.trim()) {
-      event.currentTarget
-        .querySelector<HTMLInputElement>('input:invalid')
-        ?.focus();
-      return;
-    }
-    const incomplete = unconfiguredFilter(grants);
-    if (incomplete) {
-      setEditingScope(incomplete);
-      return;
-    }
-    setEditingScope(undefined);
-    setBusy(true);
-    setError(undefined);
-    setKeyConflict(false);
-    try {
-      const input = {
-        key: roleKey,
-        title:
-          !creating && initial && nameDraft === undefined
-            ? initial.title
-            : name.trim(),
-        grants,
-        ...(!creating && request.data?.data.revision
-          ? { expectedRevision: request.data.data.revision }
-          : {}),
-      };
-      if (creating) await authz.createPermissionSet(input);
-      else await authz.updatePermissionSet(key, input);
-      setDirty(false);
-      parent.reload();
-      toaster.show({ type: 'success', title: t('settings.saved', { name }) });
-      leave.allow();
-      void navigate(closeTo);
-    } catch (next) {
-      if (
-        creating &&
-        next instanceof Error &&
-        'status' in next &&
-        next.status === 409
-      ) {
-        setKeyConflict(true);
-        document.getElementById('role-key')?.focus();
-      } else setError(next);
-    } finally {
-      setBusy(false);
-    }
+    const form = event.currentTarget;
+    return (async () => {
+      event.preventDefault();
+      if (options.error || !catalog || (!creating && request.error)) return;
+      setSubmitted(true);
+      if (!name.trim() || !roleKey.trim()) {
+        form.querySelector<HTMLInputElement>('input:invalid')?.focus();
+        return;
+      }
+      const incomplete = unconfiguredFilter(grants);
+      if (incomplete) {
+        setEditingScope(incomplete);
+        return;
+      }
+      setEditingScope(undefined);
+      setRequestBusy(true);
+      setError(undefined);
+      setKeyConflict(false);
+      try {
+        originalRevisionRef.current ??= request.data?.data.revision;
+        const input = {
+          key: roleKey,
+          title:
+            !creating && initial && nameDraft === undefined
+              ? initial.title
+              : name.trim(),
+          grants,
+          ...(!creating && request.data?.data.revision
+            ? { expectedRevision: originalRevisionRef.current }
+            : {}),
+        };
+        const saved = await submission.run(
+          { key, creating, input },
+          (idempotencyKey) =>
+            creating
+              ? authz.createPermissionSet(input, idempotencyKey)
+              : authz.updatePermissionSet(key, input, idempotencyKey),
+        );
+        if (!saved) return;
+        setDirty(false);
+        parent.reload();
+        toaster.show({ type: 'success', title: t('settings.saved', { name }) });
+        leave.allow();
+        void navigate(closeTo, { replace: true });
+      } catch (next) {
+        if (
+          creating &&
+          next instanceof Error &&
+          'status' in next &&
+          next.status === 409
+        ) {
+          setKeyConflict(true);
+          document.getElementById('role-key')?.focus();
+        } else setError(next);
+      } finally {
+        setRequestBusy(false);
+      }
+    })();
   };
   const sections = catalog
     ? configurePermissionScopes(
-        permissionSections(catalog, grants, text),
+        permissionNavigationSections(
+          permissionSections(catalog, grants, text, permissionScopeVisible),
+          app.runtime.routes,
+          pagePermissionTitles,
+          (path) => t('settings.unnamedPage', { path }),
+          text,
+        ),
         catalog,
         grants,
         (key, fallback) => t(key, { defaultValue: fallback ?? key }),
@@ -248,7 +233,6 @@ function RoleEditor(): ReactElement {
         />
         <SettingsError error={request.error} retry={request.reload} />
         <SettingsError error={options.error} retry={options.reload} />
-        <SettingsError error={error} />
         {error instanceof Error &&
           'status' in error &&
           error.status === 409 && (
@@ -261,7 +245,10 @@ function RoleEditor(): ReactElement {
         ) : (
           !request.error &&
           !options.error && (
-            <form
+            <FeedbackForm
+              submitting={busy}
+              error={error}
+              errorContent={<SettingsError error={error} inline />}
               onSubmit={(event) => void save(event)}
               noValidate
               className='flex flex-col gap-6'
@@ -271,10 +258,16 @@ function RoleEditor(): ReactElement {
                   <Label htmlFor='role-key'>{t('settings.key')} *</Label>
                   <Input
                     id='role-key'
+                    name='key'
                     required
                     value={roleKey}
                     disabled={!creating || !allowed || busy}
                     aria-invalid={keyConflict || (submitted && !roleKey.trim())}
+                    aria-errormessage={
+                      keyConflict || (submitted && !roleKey.trim())
+                        ? 'role-key-error'
+                        : undefined
+                    }
                     onChange={(event) => {
                       setKeyConflict(false);
                       setKeyDraft(event.target.value);
@@ -282,7 +275,7 @@ function RoleEditor(): ReactElement {
                     }}
                   />
                   {(keyConflict || (submitted && !roleKey.trim())) && (
-                    <p className='text-xs text-destructive'>
+                    <p id='role-key-error' className='text-xs text-destructive'>
                       {t(
                         keyConflict
                           ? 'settings.keyConflict'
@@ -295,17 +288,24 @@ function RoleEditor(): ReactElement {
                   <Label htmlFor='role-name'>{t('settings.roleName')} *</Label>
                   <Input
                     id='role-name'
+                    name='title'
                     required
                     value={name}
                     disabled={!allowed || busy}
                     aria-invalid={submitted && !name.trim()}
+                    aria-errormessage={
+                      submitted && !name.trim() ? 'role-name-error' : undefined
+                    }
                     onChange={(event) => {
                       setNameDraft(event.target.value);
                       setDirty(true);
                     }}
                   />
                   {submitted && !name.trim() && (
-                    <p className='text-xs text-destructive'>
+                    <p
+                      id='role-name-error'
+                      className='text-xs text-destructive'
+                    >
                       {t('settings.required')}
                     </p>
                   )}
@@ -316,22 +316,39 @@ function RoleEditor(): ReactElement {
                   {t('settings.protectedHint')}
                 </p>
               )}
+              <p className='text-xs text-muted-foreground'>
+                {t('settings.permissionSaveHint')}
+              </p>
               <PermissionEditor
                 sections={sections}
                 readOnly={!allowed || busy}
                 labels={{
-                  selectAll: t('settings.selectAllPermissions'),
-                  selectVisible: (name) =>
-                    t('settings.selectVisiblePermissions', { name }),
+                  dataRanges: (count) => t('settings.dataRanges', { count }),
+                  scopeExplanation: t('settings.scopeExplanation'),
+                  scopeHintFor: (name) => t('settings.scopeHintFor', { name }),
                   levelFor: (name) => t('settings.levelFor', { name }),
                   search: t('settings.permissionSearch'),
                   enabledOnly: t('settings.enabledOnly'),
-                  clear: t('settings.clear'),
-                  empty: t('settings.noPermissions'),
-                  noResults: t('settings.noResults'),
-                  navigation: t('settings.permissionCategories'),
+                  granted: t('settings.permissionGranted'),
+                  ungranted: t('settings.permissionUngranted'),
+                  selectAll: t('settings.permissionAll'),
+                  authorizationStatus: t('settings.permissionStatus'),
+                  clearSearch: t('settings.permissionClearSearch'),
+                  collapseAll: t('settings.permissionCollapseAll'),
+                  expandAll: t('settings.permissionExpandAll'),
                   summary: (enabled, total) =>
                     t('settings.permissionSummary', { enabled, total }),
+                  clear: t('settings.clear'),
+                  empty: t('settings.noPermissions'),
+                  emptyDescription: t('settings.permissionEmptyHint'),
+                  readOnly: t('settings.permissionReadOnlyHint'),
+                  managedPermission: t('settings.permissionManagedHint'),
+                  noResults: t('settings.noResults'),
+                  navigation: t('settings.permissionCategories'),
+                  expandGroup: (name) =>
+                    t('settings.expandPermissionGroup', { name }),
+                  collapseGroup: (name) =>
+                    t('settings.collapsePermissionGroup', { name }),
                 }}
                 onEnabledChange={(id, enabled) => {
                   if (!catalog) return;
@@ -339,13 +356,6 @@ function RoleEditor(): ReactElement {
                     setPermissions(current ?? grants, catalog, [
                       { id, enabled },
                     ]),
-                  );
-                  setDirty(true);
-                }}
-                onEnabledBatchChange={(changes) => {
-                  if (!catalog) return;
-                  setGrantsDraft((current) =>
-                    setPermissions(current ?? grants, catalog, changes),
                   );
                   setDirty(true);
                 }}
@@ -374,7 +384,7 @@ function RoleEditor(): ReactElement {
                   </Button>
                 )}
               </div>
-            </form>
+            </FeedbackForm>
           )
         )}
         {leave.dialog}

@@ -19,6 +19,48 @@ import {
 } from '@nocobase/service-provider';
 
 describe('application', () => {
+  it('retains immutable registrations for provider-only plugins without activating them when inspected', () => {
+    const register = vi.fn();
+    class Provider extends ServiceProvider {
+      public readonly name = 'vendor-provider';
+      public override register(): void {
+        register();
+      }
+    }
+    const app = new Application(createTestApplicationOptions());
+    const plugin = defineServerPlugin({
+      packageName: '@vendor/pro-extension',
+      baseDir: import.meta.dirname,
+      serviceProviders: [Provider],
+    });
+    app.addServerPlugins({
+      appPackageName: 'test-app',
+      plugins: [
+        {
+          definition: plugin,
+          metadata: {
+            packageName: plugin.packageName,
+            version: 'test',
+            rootDir: import.meta.dirname,
+            baseDir: import.meta.dirname,
+            jobLocations: [],
+          },
+        },
+      ],
+    });
+    expect(app.registeredServerPlugins).toMatchObject([
+      {
+        packageName: '@vendor/pro-extension',
+        version: 'test',
+        contributions: { serviceProviders: 1, routes: 0, migrations: false },
+      },
+    ]);
+    expect(Object.isFrozen(app.registeredServerPlugins)).toBe(true);
+    expect(Object.isFrozen(app.registeredServerPlugins[0]?.contributions)).toBe(
+      true,
+    );
+    expect(register).not.toHaveBeenCalled();
+  });
   it('owns its router service and delegates fetch requests to it', async () => {
     const app = new Application(createTestApplicationOptions());
     await app.start();

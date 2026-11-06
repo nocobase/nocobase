@@ -40,6 +40,15 @@ const enUS = {
     refresh: 'Refresh',
   },
   workspace: {
+    imapSourceRequired:
+      'Open the source folder before moving or deleting this message.',
+    imapTrashMissing: 'This account has no Trash folder. Use your mail client.',
+    deleteUnsupported:
+      'This account does not support deletion. Use your mail client.',
+    imapScheduled: 'Cancel the scheduled delivery before deleting this draft.',
+
+    invalidRecipient:
+      'Correct the email address or display name: {{value}}. Use at most 100 recipients per field.',
     senderLabel: 'From',
     attachmentNumber: 'Attachment {{number}}',
     pendingDelivery:
@@ -581,6 +590,7 @@ const enUS = {
     },
   },
   errors: {
+    messageNotFound: 'Mail message was not found.',
     requestFailed: 'Mail request failed.',
     authorizationFailed: 'Could not start mail authorization.',
     syncFailed: 'Could not start mailbox synchronization.',

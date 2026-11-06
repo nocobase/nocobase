@@ -1,20 +1,21 @@
 ---
 title: 应用部署
-description: 通过 PM2 或 Docker 将应用部署到自己的服务器。选择一种方式，完成构建、启动和检查。
+description: 通过 PM2 或 Docker 部署到自己的服务器，或将应用部署到 NocoBase Studio。选择一种方式，让 Agent 协助或按手动步骤完成部署。
 sidebar: false
 pageName: deployment
 ---
 
 # 应用部署
 
-通过 PM2 或 Docker 将应用部署到自己的服务器。选择一种方式，完成构建、启动和检查。
+通过 PM2 或 Docker 部署到自己的服务器，或将应用部署到 NocoBase Studio。选择一种方式，让 Agent 协助或按手动步骤完成部署。
 
 - [通过 PM2 部署应用](#pm2)
 - [通过 Docker 部署应用](#docker)
+- [部署到 NocoBase Studio](#studio)
 
-## 示例环境与访问 {#deployment-example}
+## PM2 / Docker 示例环境与访问 {#deployment-example}
 
-PM2 和 Docker 共用以下示例。执行命令前，请替换为自己的服务器、部署目录和访问地址。
+PM2 和 Docker 共用以下示例。执行命令前，请替换为自己的服务器、部署目录和访问地址。Studio 部署使用管理员已配置的环境，访问地址以目标 App 页面显示的为准。
 
 | 参数         | 示例值                              |
 | ------------ | ----------------------------------- |
@@ -124,7 +125,7 @@ curl --fail --silent --show-error \
   https://purchase.example.com/main/api/healthz
 ```
 
-确认 status 的 result.health.ok 为 true、result.pending 为 null，健康接口返回 ok: true，再打开应用验证登录。
+确认 status 的 result.health.ok 为 true、result.pending 为 null，健康接口返回 ok: true，再打开应用验证登录。同时检查页面刷新、登录权限和一项主要业务操作；使用文件存储时检查上传与下载，涉及存储变更时验证重启后的持久化。
 
 ### 更新 PM2 应用 {#pm2-update}
 
@@ -249,7 +250,7 @@ curl --fail --silent --show-error \
   https://purchase.example.com/main/api/healthz
 ```
 
-等待容器状态变为 healthy，确认健康接口返回 ok: true，再打开应用验证登录。需要排查时执行 docker logs --tail 100 purchase。
+等待容器状态变为 healthy，确认健康接口返回 ok: true，再打开应用验证登录。需要排查时执行 docker logs --tail 100 purchase。同时检查页面刷新、登录权限和一项主要业务操作；涉及持久化配置变更时，确认容器重建后数据库和上传文件仍可用。
 
 ### 更新 Docker 应用 {#docker-update}
 
@@ -276,3 +277,183 @@ docker rm purchase
 ```
 
 重新执行启动命令，将镜像标签改为 release-002，保留相同的配置、数据挂载和环境变量，然后重复检查。仅重启容器不会更新镜像；Docker 不会自动备份数据，回退镜像前需确认数据库兼容性。
+
+## 部署到 NocoBase Studio {#studio}
+
+按以下步骤将本地应用打包、上传并部署到已有的 NocoBase Studio。所有命令均在本地电脑执行。目标环境需支持部署包；本流程要求 Studio 能根据目标应用确定源码仓库并校验提交。
+
+### 让 Agent 协助部署到 Studio {#studio-skill}
+
+在应用项目目录中打开 Coding Agent，替换下面的地址和 ID 后发送。首次连接 Studio 时，先把头像菜单「在 agent 中使用 Studio」中的配置指令交给 Agent，并在浏览器中批准登录。
+
+**发送给本地 Coding Agent**
+
+```text
+使用 nocobase-deployment Skill，将当前项目部署到 NocoBase Studio。
+
+Studio 地址：https://studio.example.com/studio
+应用 ID：purchase
+环境 ID：preview
+
+复用已有的 CLI 连接，完成打包、上传和部署。
+更新时保留现有配置和数据；缺少必要信息时向我确认。
+部署后检查状态、错误日志和应用访问，返回应用地址和验证结果。
+需要审批时提交申请，并告知当前状态。
+```
+
+### 1. 安装 CLI {#studio-cli}
+
+在 Studio 头像菜单打开「在 agent 中使用 Studio」，复制 CLI 安装命令，在本地 Bash 终端执行。下面仅为格式示例，请使用页面生成的完整命令；已安装可跳过。
+
+**本地 · Bash 终端**
+
+```bash
+curl -fsSL https://studio.example.com/studio/api/agents/dist/installScript \
+  | sh -s -- --token '<download-token>'
+```
+
+安装后检查命令是否可用：
+
+**本地 · Bash 终端**
+
+```bash
+export PATH="$HOME/.local/bin:$PATH"
+nb-studio --version
+```
+
+### 2. 登录 Studio {#studio-login}
+
+将地址替换为自己的 Studio 地址，保留 /studio 等实际部署路径。以下用 studio 作为本地连接名称。已有目标 Studio 的有效登录时，直接用 whoami 检查即可。
+
+**本地 · Bash 终端**
+
+```bash
+nb-studio --profile studio login \
+  --server https://studio.example.com/studio
+```
+
+在浏览器中核对验证码并批准登录，然后检查登录身份：
+
+**本地 · Bash 终端**
+
+```bash
+nb-studio --profile studio whoami --json
+```
+
+### 3. 选择应用 {#studio-app}
+
+列出应用，找到要部署的应用 ID：
+
+**本地 · Bash 终端**
+
+```bash
+nb-studio --profile studio app list --json
+```
+
+后续命令以 purchase 为例，请替换为选中的应用 ID。若还没有应用，先在 Studio 的「发布管理 → 应用」中新建，选择支持部署包的环境，并完成上传所需的源码关联。
+
+### 4. 本地打包 {#studio-build}
+
+在本地应用项目根目录执行。以下以 Linux x64、Node.js 24 为例，按目标环境调整构建参数：
+
+**本地 · app 项目根目录 · Bash**
+
+```bash
+pnpm install --frozen-lockfile
+pnpm build --target linux-x64 --node-version 24 --tar
+```
+
+生成的部署包为 storage/exports/dist.tar.gz。
+
+### 5. 上传部署包 {#studio-upload}
+
+使用第 2 步登录的连接上传部署包。将 <commit-sha> 替换为本次构建对应、Studio 可校验的完整提交 SHA：
+
+**本地 · app 项目根目录 · Bash**
+
+```bash
+nb-studio --profile studio release upload \
+  --app purchase \
+  --sha '<commit-sha>' \
+  --file storage/exports/dist.tar.gz \
+  --json
+```
+
+确认 result.data.superseded 为 false 且 result.data.release 有值，再复制 result.data.release.id，作为下一步的 Release ID。上传不会自动部署应用。
+
+### 6. 部署 {#studio-deploy}
+
+将 <release-id> 替换为上一步返回的 ID，先检查必填配置：
+
+**本地 · Bash 终端**
+
+```bash
+nb-studio --profile studio app env list purchase \
+  --release '<release-id>' --json
+```
+
+若有 missing: true，在 Studio 应用的「变量」页补齐。非受保护环境执行下面的部署命令：
+
+**本地 · Bash 终端**
+
+```bash
+nb-studio --profile studio app deploy purchase \
+  --release '<release-id>' --wait true --json
+```
+
+若环境要求审批，改为提交部署申请，批准后再检查结果：
+
+**本地 · Bash 终端**
+
+```bash
+nb-studio --profile studio deploy request purchase \
+  --release '<release-id>' --json
+```
+
+--wait true 最多等待约 100 秒；仍在排队、部署中或等待审批时，按第 7 步继续检查。
+
+### 7. 检查状态和错误日志 {#studio-verify}
+
+查看本次部署记录、应用状态和错误日志：
+
+**本地 · Bash 终端**
+
+```bash
+nb-studio --profile studio deploy list purchase --limit 5 --json
+nb-studio --profile studio app get purchase --json
+nb-studio --profile studio app logs purchase --level error --json
+```
+
+按 releaseId 找到本次部署，确认 status 为 succeeded，并核对 app get 返回的 app.currentDeploymentId 与其 id 一致。打开 result.data.url 验证登录和主要功能；按需启动或休眠的应用先访问唤醒，再确认 runtime.state 为 running。
+
+首次由 Studio 生成的管理员凭据，如仍在保留期且未被清除，可在应用「概览」中查看。
+
+### 更新 Studio 中的应用 {#studio-update}
+
+更新时沿用原应用 ID、配置和存储，先备份数据库与上传文件。
+
+重新打包并上传，将 <commit-sha> 替换为新代码对应的完整提交 SHA。同一应用、同一 SHA 再次上传会复用已有 Release，不能用旧 SHA 发布新的构建内容：
+
+**本地 · app 项目根目录 · Bash**
+
+```bash
+pnpm install --frozen-lockfile
+pnpm build --target linux-x64 --node-version 24 --tar
+
+nb-studio --profile studio release upload \
+  --app purchase \
+  --sha '<commit-sha>' \
+  --file storage/exports/dist.tar.gz \
+  --json
+```
+
+确认本次上传返回有效 Release 后，将 result.data.release.id 填入 <release-id>。按第 6 步补齐必填配置；非受保护环境执行以下命令，需要审批时改为提交部署申请。
+
+**本地 · app 项目根目录 · Bash**
+
+```bash
+nb-studio --profile studio app deploy purchase \
+  --release '<release-id>' --wait true --json
+```
+
+部署后按第 7 步确认本次部署成功，并检查错误日志、登录和主要功能。

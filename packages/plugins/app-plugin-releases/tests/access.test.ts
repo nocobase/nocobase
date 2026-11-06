@@ -96,6 +96,16 @@ describe('access through the application port', () => {
         .map((item) => item.app.id)
         .sort();
     expect(await visible()).toEqual(['a']);
+    // The environments list counts every App, whoever may see them.
+    expect(
+      (await harness.services.environments.list(alice)).map((env) => [
+        env.id,
+        env.appCount,
+      ]),
+    ).toEqual([
+      ['production', 0],
+      ['staging', 3],
+    ]);
     await expect(
       harness.services.releases.getApp(alice, 'b'),
     ).rejects.toMatchObject({
@@ -155,7 +165,20 @@ describe('access through the application port', () => {
       driver: 'fake',
       secret: { token: 'super-secret' },
     });
-    expect(created).toMatchObject({ hasSecret: true });
+    expect(created).toMatchObject({ hasSecret: true, purpose: 'test' });
+    // What it is for: test unless said, editable, one of the two.
+    expect(
+      (
+        await harness.services.environments.update(admin, 'remote', {
+          purpose: 'preview',
+        })
+      ).purpose,
+    ).toBe('preview');
+    await expect(
+      harness.services.environments.update(admin, 'remote', {
+        purpose: 'production' as never,
+      }),
+    ).rejects.toMatchObject({ reason: 'INVALID_ENVIRONMENT_PURPOSE' });
     expect(JSON.stringify(created)).not.toContain('super-secret');
     const stored = await harness.database
       .connection()

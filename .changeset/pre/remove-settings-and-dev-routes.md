@@ -12,7 +12,6 @@
 '@nocobase/app-plugin-mail-example': minor
 '@nocobase/app-plugin-notification-example': minor
 '@nocobase/app-plugin-office-flows-example': minor
-'@nocobase/app-plugin-registry-example': minor
 '@nocobase/app-plugin-repository-example': minor
 '@nocobase/app-plugin-template-print-example': minor
 '@nocobase/app-plugin-agents': minor

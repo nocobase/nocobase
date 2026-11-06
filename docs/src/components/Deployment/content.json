@@ -1,6 +1,6 @@
 {
   "title": "应用部署",
-  "intro": "通过 PM2 或 Docker 将应用部署到自己的服务器。选择一种方式，完成构建、启动和检查。",
+  "intro": "通过 PM2 或 Docker 部署到自己的服务器，或将应用部署到 NocoBase Studio。选择一种方式，让 Agent 协助或按手动步骤完成部署。",
   "navigationLabel": "选择部署方式",
   "copy": "复制",
   "copied": "已复制",
@@ -78,7 +78,7 @@
               "language": "bash"
             },
             {
-              "text": "确认 status 的 result.health.ok 为 true、result.pending 为 null，健康接口返回 ok: true，再打开应用验证登录。"
+              "text": "确认 status 的 result.health.ok 为 true、result.pending 为 null，健康接口返回 ok: true，再打开应用验证登录。同时检查页面刷新、登录权限和一项主要业务操作；使用文件存储时检查上传与下载，涉及存储变更时验证重启后的持久化。"
             }
           ]
         },
@@ -196,7 +196,7 @@
               "language": "bash"
             },
             {
-              "text": "等待容器状态变为 healthy，确认健康接口返回 ok: true，再打开应用验证登录。需要排查时执行 docker logs --tail 100 purchase。"
+              "text": "等待容器状态变为 healthy，确认健康接口返回 ok: true，再打开应用验证登录。需要排查时执行 docker logs --tail 100 purchase。同时检查页面刷新、登录权限和一项主要业务操作；涉及持久化配置变更时，确认容器重建后数据库和上传文件仍可用。"
             }
           ]
         },
@@ -245,6 +245,204 @@
           }
         ]
       }
+    },
+    {
+      "id": "studio",
+      "label": "NocoBase Studio",
+      "title": "部署到 NocoBase Studio",
+      "description": "按以下步骤将本地应用打包、上传并部署到已有的 NocoBase Studio。所有命令均在本地电脑执行。目标环境需支持部署包；本流程要求 Studio 能根据目标应用确定源码仓库并校验提交。",
+      "skill": {
+        "id": "studio-skill",
+        "title": "让 Agent 协助部署到 Studio",
+        "blocks": [
+          {
+            "text": "在应用项目目录中打开 Coding Agent，替换下面的地址和 ID 后发送。首次连接 Studio 时，先把头像菜单「在 agent 中使用 Studio」中的配置指令交给 Agent，并在浏览器中批准登录。"
+          },
+          {
+            "context": "发送给本地 Coding Agent",
+            "language": "text",
+            "code": "使用 nocobase-deployment Skill，将当前项目部署到 NocoBase Studio。\n\nStudio 地址：https://studio.example.com/studio\n应用 ID：purchase\n环境 ID：preview\n\n复用已有的 CLI 连接，完成打包、上传和部署。\n更新时保留现有配置和数据；缺少必要信息时向我确认。\n部署后检查状态、错误日志和应用访问，返回应用地址和验证结果。\n需要审批时提交申请，并告知当前状态。"
+          }
+        ]
+      },
+      "sections": [
+        {
+          "id": "studio-cli",
+          "title": "1. 安装 CLI",
+          "blocks": [
+            {
+              "text": "在 Studio 头像菜单打开「在 agent 中使用 Studio」，复制 CLI 安装命令，在本地 Bash 终端执行。下面仅为格式示例，请使用页面生成的完整命令；已安装可跳过。"
+            },
+            {
+              "context": "本地 · Bash 终端",
+              "code": "curl -fsSL https://studio.example.com/studio/api/agents/dist/installScript \\\n  | sh -s -- --token '<download-token>'",
+              "language": "bash"
+            },
+            {
+              "text": "安装后检查命令是否可用："
+            },
+            {
+              "context": "本地 · Bash 终端",
+              "code": "export PATH=\"$HOME/.local/bin:$PATH\"\nnb-studio --version",
+              "language": "bash"
+            }
+          ]
+        },
+        {
+          "id": "studio-login",
+          "title": "2. 登录 Studio",
+          "blocks": [
+            {
+              "text": "将地址替换为自己的 Studio 地址，保留 /studio 等实际部署路径。以下用 studio 作为本地连接名称。已有目标 Studio 的有效登录时，直接用 whoami 检查即可。"
+            },
+            {
+              "context": "本地 · Bash 终端",
+              "code": "nb-studio --profile studio login \\\n  --server https://studio.example.com/studio",
+              "language": "bash"
+            },
+            {
+              "text": "在浏览器中核对验证码并批准登录，然后检查登录身份："
+            },
+            {
+              "context": "本地 · Bash 终端",
+              "code": "nb-studio --profile studio whoami --json",
+              "language": "bash"
+            }
+          ]
+        },
+        {
+          "id": "studio-app",
+          "title": "3. 选择应用",
+          "blocks": [
+            {
+              "text": "列出应用，找到要部署的应用 ID："
+            },
+            {
+              "context": "本地 · Bash 终端",
+              "code": "nb-studio --profile studio app list --json",
+              "language": "bash"
+            },
+            {
+              "text": "后续命令以 purchase 为例，请替换为选中的应用 ID。若还没有应用，先在 Studio 的「发布管理 → 应用」中新建，选择支持部署包的环境，并完成上传所需的源码关联。"
+            }
+          ]
+        },
+        {
+          "id": "studio-build",
+          "title": "4. 本地打包",
+          "blocks": [
+            {
+              "text": "在本地应用项目根目录执行。以下以 Linux x64、Node.js 24 为例，按目标环境调整构建参数："
+            },
+            {
+              "context": "本地 · app 项目根目录 · Bash",
+              "code": "pnpm install --frozen-lockfile\npnpm build --target linux-x64 --node-version 24 --tar",
+              "language": "bash"
+            },
+            {
+              "text": "生成的部署包为 storage/exports/dist.tar.gz。"
+            }
+          ]
+        },
+        {
+          "id": "studio-upload",
+          "title": "5. 上传部署包",
+          "blocks": [
+            {
+              "text": "使用第 2 步登录的连接上传部署包。将 <commit-sha> 替换为本次构建对应、Studio 可校验的完整提交 SHA："
+            },
+            {
+              "context": "本地 · app 项目根目录 · Bash",
+              "code": "nb-studio --profile studio release upload \\\n  --app purchase \\\n  --sha '<commit-sha>' \\\n  --file storage/exports/dist.tar.gz \\\n  --json",
+              "language": "bash"
+            },
+            {
+              "text": "确认 result.data.superseded 为 false 且 result.data.release 有值，再复制 result.data.release.id，作为下一步的 Release ID。上传不会自动部署应用。"
+            }
+          ]
+        },
+        {
+          "id": "studio-deploy",
+          "title": "6. 部署",
+          "blocks": [
+            {
+              "text": "将 <release-id> 替换为上一步返回的 ID，先检查必填配置："
+            },
+            {
+              "context": "本地 · Bash 终端",
+              "code": "nb-studio --profile studio app env list purchase \\\n  --release '<release-id>' --json",
+              "language": "bash"
+            },
+            {
+              "text": "若有 missing: true，在 Studio 应用的「变量」页补齐。非受保护环境执行下面的部署命令："
+            },
+            {
+              "context": "本地 · Bash 终端",
+              "code": "nb-studio --profile studio app deploy purchase \\\n  --release '<release-id>' --wait true --json",
+              "language": "bash"
+            },
+            {
+              "text": "若环境要求审批，改为提交部署申请，批准后再检查结果："
+            },
+            {
+              "context": "本地 · Bash 终端",
+              "code": "nb-studio --profile studio deploy request purchase \\\n  --release '<release-id>' --json",
+              "language": "bash"
+            },
+            {
+              "text": "--wait true 最多等待约 100 秒；仍在排队、部署中或等待审批时，按第 7 步继续检查。"
+            }
+          ]
+        },
+        {
+          "id": "studio-verify",
+          "title": "7. 检查状态和错误日志",
+          "blocks": [
+            {
+              "text": "查看本次部署记录、应用状态和错误日志："
+            },
+            {
+              "context": "本地 · Bash 终端",
+              "code": "nb-studio --profile studio deploy list purchase --limit 5 --json\nnb-studio --profile studio app get purchase --json\nnb-studio --profile studio app logs purchase --level error --json",
+              "language": "bash"
+            },
+            {
+              "text": "按 releaseId 找到本次部署，确认 status 为 succeeded，并核对 app get 返回的 app.currentDeploymentId 与其 id 一致。打开 result.data.url 验证登录和主要功能；按需启动或休眠的应用先访问唤醒，再确认 runtime.state 为 running。"
+            },
+            {
+              "text": "首次由 Studio 生成的管理员凭据，如仍在保留期且未被清除，可在应用「概览」中查看。"
+            }
+          ]
+        },
+        {
+          "id": "studio-update",
+          "title": "更新 Studio 中的应用",
+          "blocks": [
+            {
+              "text": "更新时沿用原应用 ID、配置和存储，先备份数据库与上传文件。"
+            },
+            {
+              "text": "重新打包并上传，将 <commit-sha> 替换为新代码对应的完整提交 SHA。同一应用、同一 SHA 再次上传会复用已有 Release，不能用旧 SHA 发布新的构建内容："
+            },
+            {
+              "context": "本地 · app 项目根目录 · Bash",
+              "code": "pnpm install --frozen-lockfile\npnpm build --target linux-x64 --node-version 24 --tar\n\nnb-studio --profile studio release upload \\\n  --app purchase \\\n  --sha '<commit-sha>' \\\n  --file storage/exports/dist.tar.gz \\\n  --json",
+              "language": "bash"
+            },
+            {
+              "text": "确认本次上传返回有效 Release 后，将 result.data.release.id 填入 <release-id>。按第 6 步补齐必填配置；非受保护环境执行以下命令，需要审批时改为提交部署申请。"
+            },
+            {
+              "context": "本地 · app 项目根目录 · Bash",
+              "code": "nb-studio --profile studio app deploy purchase \\\n  --release '<release-id>' --wait true --json",
+              "language": "bash"
+            },
+            {
+              "text": "部署后按第 7 步确认本次部署成功，并检查错误日志、登录和主要功能。"
+            }
+          ]
+        }
+      ]
     }
   ],
   "legacyAnchors": {
@@ -292,7 +490,8 @@
     "应用部署": "deployment-title",
     "application-deployment": "deployment-title",
     "示例环境与访问": "deployment-example",
-    "example-environment-and-access": "deployment-example"
+    "example-environment-and-access": "deployment-example",
+    "studio-prepare": "studio-cli"
   },
   "layout": {
     "eyebrow": "部署指南",
@@ -320,9 +519,9 @@
   },
   "environment": {
     "id": "deployment-example",
-    "title": "示例环境与访问",
+    "title": "PM2 / Docker 示例环境与访问",
     "summary": "Linux x64 · SQLite",
-    "description": "PM2 和 Docker 共用以下示例。执行命令前，请替换为自己的服务器、部署目录和访问地址。",
+    "description": "PM2 和 Docker 共用以下示例。执行命令前，请替换为自己的服务器、部署目录和访问地址。Studio 部署使用管理员已配置的环境，访问地址以目标 App 页面显示的为准。",
     "parameters": [
       {
         "label": "运行环境",

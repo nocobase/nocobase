@@ -1,7 +1,9 @@
-import { useMatch } from 'react-router';
+import { resolveListState } from '@nocobase/app-client';
+import { RecordLink } from '#components/record-link';
+import { useMatch, useLocation } from 'react-router';
 import { CategoryManager, type Category } from './categories.js';
-import { useState, type ReactElement } from 'react';
-import { Link, Outlet } from 'react-router';
+import type { ReactElement } from 'react';
+import { Outlet } from 'react-router';
 import { useTranslation } from '@nocobase/i18n/client';
 import { Input } from '#components/ui/input';
 import { useUrlSearch } from '#hooks/use-url-search';
@@ -11,9 +13,7 @@ import { DataState } from './shared.js';
 import { useWorkflowData, useWorkflowLabels, workflowDate } from './hooks.js';
 
 export default function DefinitionsPage(): ReactElement {
-  const [sort, setSort] = useState<{
-    ascending: boolean;
-  }>();
+  const location = useLocation();
   const detail = useMatch({
     path: '/workflows/definitions/:workflowId',
     end: false,
@@ -22,6 +22,11 @@ export default function DefinitionsPage(): ReactElement {
   const labels = useWorkflowLabels();
   const nameFilter = useUrlSearch({ param: 'name' });
   const search = nameFilter.searchParams;
+  const activityOrder = search.get('activityOrder');
+  const sort =
+    activityOrder === 'asc' || activityOrder === 'desc'
+      ? { ascending: activityOrder === 'asc' }
+      : undefined;
   const category = search.get('category') ?? 'all';
   const normalizedName = nameFilter.search;
   const categories = useWorkflowData<{ data: Category[] }>(
@@ -44,20 +49,22 @@ export default function DefinitionsPage(): ReactElement {
     <WorkflowDefinitionList
       rows={rows.map((workflow) => ({
         id: workflow.id,
-        name: workflow.name,
+        name:
+          workflow.name === labels.title(workflow) ? undefined : workflow.name,
         title: (
-          <Link
-            className='font-medium underline-offset-4 hover:underline'
-            to={{ pathname: `/workflows/definitions/${workflow.id}` }}
+          <RecordLink
+            to={{
+              pathname: `/workflows/definitions/${workflow.id}`,
+              search: location.search,
+            }}
           >
             {labels.title(workflow)}
-          </Link>
+          </RecordLink>
         ),
         activity:
           workflow.executionCount > 0 ? (
             <>
-              <Link
-                className='underline-offset-4 hover:underline'
+              <RecordLink
                 to={{
                   pathname: '/workflows/executions',
                   search: new URLSearchParams({
@@ -69,7 +76,7 @@ export default function DefinitionsPage(): ReactElement {
                 {t('workflows.executionCountLink', {
                   count: workflow.executionCount,
                 })}
-              </Link>
+              </RecordLink>
               {workflow.lastExecutedAt && (
                 <p className='text-xs text-muted-foreground'>
                   {t('workflows.lastExecutedAt', {
@@ -116,7 +123,18 @@ export default function DefinitionsPage(): ReactElement {
           {...nameFilter.inputProps}
         />
       }
-      status={<DataState {...request} retry={request.reload} />}
+      listState={resolveListState(
+        request,
+        request.data?.data.length ?? 0,
+        Boolean(normalizedName) || category !== 'all',
+      )}
+      onClearFilters={() =>
+        nameFilter.clear((next) => {
+          next.delete('category');
+          next.delete('workflowId');
+          next.delete('page');
+        })
+      }
       loaded={Boolean(request.data)}
       loading={request.loading}
       labels={{
@@ -125,13 +143,12 @@ export default function DefinitionsPage(): ReactElement {
         executionCount: t('workflows.executionCount'),
         executionActivity: t('workflows.executionActivity'),
       }}
-      empty={t(
-        normalizedName || category !== 'all'
-          ? 'workflows.noResults'
-          : 'workflows.noDefinitions',
-      )}
       sort={sort}
-      onSort={() => setSort({ ascending: sort ? !sort.ascending : true })}
+      onSort={() =>
+        nameFilter.updateParams((next) =>
+          next.set('activityOrder', sort?.ascending ? 'desc' : 'asc'),
+        )
+      }
       onRefresh={() => {
         request.reload();
         categories.reload();

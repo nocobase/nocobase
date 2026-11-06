@@ -1,33 +1,29 @@
+import { useListLocation } from '#hooks/use-list-location';
 import { useSettingsData, useRolePermission } from './hooks.js';
 import { useTranslation } from '@nocobase/i18n/client';
 import type {
   PermissionSet,
   LocalizedText,
 } from '@nocobase/app-plugin-authorization/client';
+import { resolveListState } from '@nocobase/app-client';
 import { type ReactElement } from 'react';
-import { Link, Outlet, useLocation, useSearchParams } from 'react-router';
-import { ShieldCheckIcon, PlusIcon } from 'lucide-react';
-import { PageContainer } from '#components/page-container';
-import { PageHeader } from '#components/page-header';
+import { Link, Outlet, useLocation } from 'react-router';
+import { PlusIcon } from 'lucide-react';
+import { PermissionManagementPage } from './permission-management-page.js';
 import { Input } from '#components/ui/input';
 import { Button } from '#components/ui/button';
-import { Badge } from '#components/ui/badge';
-import {
-  Empty,
-  EmptyTitle,
-  EmptyDescription,
-  EmptyContent,
-  EmptyMedia,
-} from '#components/ui/empty';
-import { SettingsError, SettingsLoading } from './shared.js';
+import { useTableUrlState } from '#hooks/use-table-url-state';
+import { RoleList } from '#components/role-list';
+import { ListFeedback, ListFeedbackActions } from '#components/list-feedback';
 
 export default function RolesPage(): ReactElement {
   const { t, i18n } = useTranslation();
-  const [params, setParams] = useSearchParams();
+  const { params, setParams, active } = useListLocation();
   const location = useLocation();
   const search = params.get('q') ?? '';
   const request = useSettingsData<{ data: readonly PermissionSet[] }>(
     'authorization/permissionSets',
+    { active },
   );
   const canCreate = useRolePermission('create');
   const text = (value: LocalizedText): string =>
@@ -49,6 +45,40 @@ export default function RolesPage(): ReactElement {
         i18n.language,
       ),
     );
+  const tableState = useTableUrlState({
+    active,
+    revision: request.revision,
+    sortColumns: ['title', 'key'],
+    rowCount:
+      request.data && !request.loading && !request.error
+        ? rows.length
+        : undefined,
+  });
+  const listState = resolveListState(
+    {
+      data: request.data,
+      error: tableState.error ?? request.error,
+      isPending: request.loading && !request.data,
+    },
+    rows.length,
+    Boolean(search.trim()),
+  );
+  const canShowCreate =
+    canCreate &&
+    (listState === 'empty' ||
+      listState === 'ready' ||
+      listState === 'no-results' ||
+      listState === 'refresh-failed');
+  const clearSearch = () =>
+    setParams(
+      (old) => {
+        const next = new URLSearchParams(old);
+        next.delete('q');
+        next.delete('page');
+        return next;
+      },
+      { replace: true },
+    );
   const create = canCreate ? (
     <Button
       nativeButton={false}
@@ -60,12 +90,10 @@ export default function RolesPage(): ReactElement {
   ) : null;
   return (
     <>
-      <PageContainer>
-        <PageHeader
-          title={t('settings.roles')}
-          description={t('settings.rolesDescription')}
-          actions={rows.length || search ? create : undefined}
-        />
+      <PermissionManagementPage
+        tab='roles'
+        actions={canShowCreate ? create : undefined}
+      >
         <div className='flex items-center gap-3'>
           <Input
             className='sm:max-w-xs'
@@ -73,90 +101,57 @@ export default function RolesPage(): ReactElement {
             placeholder={t('settings.roleSearch')}
             aria-label={t('settings.roleSearch')}
             onChange={(event) => {
-              setParams(event.target.value ? { q: event.target.value } : {}, {
-                replace: true,
-              });
+              setParams(
+                (old) => {
+                  const next = new URLSearchParams(old);
+                  next.delete('page');
+                  if (event.target.value) next.set('q', event.target.value);
+                  else next.delete('q');
+                  return next;
+                },
+                { replace: true },
+              );
             }}
           />
-          {search && (
-            <Button
-              variant='ghost'
-              onClick={() => {
-                setParams({});
-              }}
-            >
+          {search && listState !== 'no-results' && (
+            <Button variant='ghost' onClick={clearSearch}>
               {t('settings.clear')}
             </Button>
           )}
+          <ListFeedbackActions
+            state={listState}
+            onClear={clearSearch}
+            onRetry={request.reload}
+            busy={active && request.loading}
+          />
         </div>
-        <SettingsError error={request.error} retry={request.reload} />
-        {request.loading && !request.data ? (
-          <SettingsLoading />
-        ) : (
-          !request.error &&
-          (rows.length ? (
-            <div className='divide-y overflow-hidden rounded-xl border bg-card'>
-              {rows.map((role) => (
-                <Link
-                  key={role.key}
-                  to={{
-                    pathname: `${encodeURIComponent(role.key)}/edit`,
-                    search: location.search,
-                  }}
-                  className='flex items-center justify-between gap-4 p-4 transition-colors hover:bg-muted/30 focus-visible:ring-2 focus-visible:ring-ring'
-                >
-                  <div className='flex min-w-0 items-center gap-3'>
-                    <div className='rounded-lg bg-primary/10 p-2 text-primary'>
-                      <ShieldCheckIcon className='size-4' />
-                    </div>
-                    <div className='min-w-0'>
-                      <p className='font-medium'>
-                        {text(role.title ?? role.key)}
-                      </p>
-                      <p className='text-xs text-muted-foreground'>
-                        {role.key}
-                      </p>
-                    </div>
-                  </div>
-                  <Badge variant='secondary'>
-                    {t(
-                      role.protection
-                        ? 'settings.protected'
-                        : 'settings.custom',
-                    )}
-                  </Badge>
-                </Link>
-              ))}
-            </div>
-          ) : (
-            <Empty className='min-h-48 border border-dashed'>
-              <EmptyMedia variant='icon'>
-                <ShieldCheckIcon />
-              </EmptyMedia>
-              <EmptyTitle>
-                {t(search ? 'settings.noResults' : 'settings.noRoles')}
-              </EmptyTitle>
-              <EmptyDescription>
-                {t(search ? 'settings.clearHint' : 'settings.rolesDescription')}
-              </EmptyDescription>
-              <EmptyContent>
-                {search ? (
-                  <Button
-                    variant='outline'
-                    onClick={() => {
-                      setParams({});
-                    }}
-                  >
-                    {t('settings.clear')}
-                  </Button>
-                ) : (
-                  create
-                )}
-              </EmptyContent>
-            </Empty>
-          ))
-        )}
-      </PageContainer>
+        {active || listState !== 'loading' ? (
+          <ListFeedback state={listState}>
+            <RoleList
+              tableState={tableState}
+              // After a refresh failure the toolbar's retry button owns the wait.
+              loading={active && request.loading && listState === 'ready'}
+              ariaLabel={t('settings.roles')}
+              roles={rows.map((role) => ({
+                key: role.key,
+                title: text(role.title ?? role.key),
+                to: {
+                  pathname: `${encodeURIComponent(role.key)}/edit`,
+                  search: location.search,
+                },
+                protected: Boolean(role.protection),
+              }))}
+              labels={{
+                name: t('settings.roleName'),
+                key: t('settings.key'),
+                type: t('settings.roleType'),
+                protected: t('settings.protected'),
+                custom: t('settings.custom'),
+              }}
+            />
+          </ListFeedback>
+        ) : null}
+      </PermissionManagementPage>
       <Outlet context={{ reload: request.reload }} />
     </>
   );

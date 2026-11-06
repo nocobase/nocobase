@@ -1,4 +1,8 @@
-export default {
+import type { LocaleResource } from '@nocobase/i18n';
+
+import type enUS from './en-US.js';
+
+const zhCN: LocaleResource<typeof enUS> = {
   practice: {
     intro:
       '请使用下方示例账号，不要使用管理员验证权限；管理员不受这些限制。以下是销售协作中的独立练习，并非从报价到订单的完整审批流程。每组练习均从初始业务记录状态开始。',
@@ -160,7 +164,7 @@ export default {
     record: '记录',
     notes: '备注',
     save: '保存',
-    refresh: '刷新',
+    retryRead: '重试',
     loading: '加载中…',
     empty: '暂无可访问记录',
     readOnly: '只读',
@@ -191,3 +195,5 @@ export default {
   forbidden: '没有此操作的权限。',
   error: '加载失败，请重试。',
 };
+
+export default zhCN;

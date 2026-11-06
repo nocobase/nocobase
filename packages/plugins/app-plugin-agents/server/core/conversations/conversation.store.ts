@@ -27,6 +27,7 @@ import {
 } from './attachments.js';
 
 export interface ConversationRecord {
+  readonly projectId?: string | null;
   readonly id: string;
   readonly userId: string;
   readonly agentId: string;
@@ -48,8 +49,27 @@ export interface ConversationRecord {
   readonly lastMessageAt: string;
   readonly archivedAt: string | null;
   readonly lockedAt: string | null;
+  /** The runner bound to it (`ConversationSummary.runner`); null while none is. */
+  readonly runnerId?: string | null;
+  readonly seenSeq?: number;
+  readonly needsYou?: string | null;
+  readonly needsYouSeq?: number | null;
+  readonly needsYouText?: string | null;
+  /** The highest `seq` the application told the owner of (`markNoticed`). */
+  readonly noticedSeq?: number | null;
   readonly createdAt: string;
   readonly updatedAt: string;
+}
+
+/** `agConversationLinks`: what a conversation is tied to. */
+export interface LinkRecord {
+  readonly id: string;
+  readonly conversationId: string;
+  readonly kind: string;
+  readonly targetId: string;
+  readonly origin: string;
+  readonly createdById: string | null;
+  readonly createdAt: string;
 }
 
 export interface MessageRecord {
@@ -93,6 +113,10 @@ export function messagesRepo(
   conn: DatabaseConnection,
 ): Repository<MessageRecord> {
   return conn.repository<MessageRecord>('agConversationMessages');
+}
+
+export function linksRepo(conn: DatabaseConnection): Repository<LinkRecord> {
+  return conn.repository<LinkRecord>('agConversationLinks');
 }
 
 export function preferencesRepo(
@@ -257,6 +281,19 @@ export async function updateMessageRun(
       updatedAt: now,
     },
   });
+}
+
+/**
+ * A queued user message's revision: its seq, then one more once the agent took it and two more once withdrawn, so a
+ * page rereads it when either happens.
+ */
+export function queuedRevision(
+  seq: number | string,
+  state: 'pickedUp' | 'withdrawn' | null,
+): number {
+  return (
+    Number(seq) + (state === 'pickedUp' ? 1 : state === 'withdrawn' ? 2 : 0)
+  );
 }
 
 export function metadataOf(record: MessageRecord): MessageMetadata {

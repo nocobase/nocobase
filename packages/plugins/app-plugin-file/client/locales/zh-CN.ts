@@ -1,4 +1,8 @@
-export default {
+import type { LocaleResource } from '@nocobase/i18n';
+
+import type enUS from './en-US.js';
+
+const zhCN: LocaleResource<typeof enUS> = {
   'files.ooxmlLoadFailed': '无法渲染此 Office Open XML 文件。',
   'files.ooxmlLoadTimedOut': '预览未能在 {{minutes}} 分钟内加载完成。',
   'files.previewRequestFailed': '预览请求失败（{{status}}）。',
@@ -37,3 +41,5 @@ export default {
   'files.status.pending': '等待中',
   'files.status.error': '失败',
 };
+
+export default zhCN;

@@ -18,6 +18,8 @@ export interface KnowledgePageProps {
   /** The page's heading; the plugin's "Knowledge" without it. */
   readonly title?: ReactNode;
   readonly labels?: KnowledgeViewLabels;
+  /** Application-owned actions beside the sidebar title. */
+  readonly titleActions?: ReactNode;
   readonly onProposalDecided?: () => void;
 }
 
@@ -25,6 +27,7 @@ export function KnowledgePage({
   space,
   title,
   labels,
+  titleActions,
   onProposalDecided,
 }: KnowledgePageProps): ReactElement {
   const { t } = useTranslation(ACCESS_NAMESPACE);
@@ -32,6 +35,7 @@ export function KnowledgePage({
     <section className='h-[calc(100svh-4rem)] min-h-96 p-4 md:p-6'>
       <KnowledgeView
         space={space}
+        titleActions={titleActions}
         className='h-full'
         title={
           <h1 className='truncate font-heading text-lg font-semibold'>

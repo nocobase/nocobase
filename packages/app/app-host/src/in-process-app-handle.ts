@@ -87,6 +87,7 @@ export class InProcessAppHandle implements AppScope, ActiveAppHandle {
 
   state: AppState = 'creating';
   activeRequests = 0;
+  activeConnections = 0;
 
   private constructor(options: Omit<InProcessAppHandleOptions, 'createApp'>) {
     this.id = options.definition.id;
@@ -220,6 +221,7 @@ export class InProcessAppHandle implements AppScope, ActiveAppHandle {
       },
       activeRequests: this.activeRequests,
       createdAt: this.createdAt.toISOString(),
+      activeConnections: this.activeConnections,
       updatedAt: this.updatedAt.toISOString(),
       lastAccessedAt: this.lastAccessedAt?.toISOString() ?? null,
       lastError: this.lastError,
@@ -365,7 +367,30 @@ export class InProcessAppHandle implements AppScope, ActiveAppHandle {
           transport: 'websocket',
         },
       });
-      return result;
+      if (!result || result instanceof Response) return result;
+      const connections = new WeakSet<object>();
+      return {
+        ...result,
+        onOpen: (event, ws) => {
+          if (this.state !== 'active') {
+            ws.close(1001, 'app runtime closed');
+            return;
+          }
+          if (!connections.has(ws)) {
+            connections.add(ws);
+            this.activeConnections += 1;
+          }
+          return result.onOpen?.(event, ws);
+        },
+        onClose: (event, ws) => {
+          if (connections.delete(ws)) {
+            this.activeConnections -= 1;
+            this.lastAccessedAt = new Date();
+            this.touch();
+          }
+          return result.onClose?.(event, ws);
+        },
+      };
     } catch (error) {
       this.lastError = error instanceof Error ? error.message : String(error);
       this.emit('app:requestError', {

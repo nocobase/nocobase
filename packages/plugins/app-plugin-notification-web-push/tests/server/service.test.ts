@@ -1,3 +1,6 @@
+import { createTestI18nRuntime } from '@nocobase/i18n/testing';
+import locales from '../../server/locales/index.js';
+import type { WebPushServerResource } from '../../server/locales/en-US.js';
 import { expect, it, vi } from 'vitest';
 import {
   createWebPushService,
@@ -84,12 +87,20 @@ it('rejects external, traversal and sibling-base click destinations', () => {
   );
 });
 
-it.each(['fr-FR', 'zh-CN', 'de-DE-u-co-phonebk'])(
-  'uses a supported test title or English fallback for %s',
+it.each([...Object.keys(locales), 'de-DE-u-co-phonebk'])(
+  'uses the device language for a test notification in %s',
   async (locale) => {
     const send = vi.fn(async () => ({}));
+    const i18n = await createTestI18nRuntime({
+      namespaces: { '@nocobase/app-plugin-notification-web-push': locales },
+    });
+    const expectedLocale = locale.startsWith('de') ? 'de-DE' : locale;
+    const { default: copy } = (await locales[expectedLocale]()) as {
+      default: WebPushServerResource;
+    };
     const service = createWebPushService({
       subscriptions: { get: async () => ({ enabled: true, locale }) } as never,
+      i18n,
       notifications: () => ({ send }) as never,
       transport: async () => 201,
       base: '/',
@@ -99,7 +110,7 @@ it.each(['fr-FR', 'zh-CN', 'de-DE-u-co-phonebk'])(
       expect.objectContaining({
         messages: {
           webPush: expect.objectContaining({
-            title: locale === 'zh-CN' ? '测试通知' : 'Test notification',
+            title: copy.testNotification,
           }),
         },
       }),

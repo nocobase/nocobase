@@ -123,3 +123,56 @@ it('narrows a page to the issues named, within the other filters', async () => {
   });
   expect(backlog.data.map((issue) => issue.id)).toEqual([issues[0]!.id]);
 }, 60_000);
+
+it('checks issue visibility once when reading detail and still protects older activity pages', async () => {
+  const { h, issues } = await workload(1);
+  const issue = issues[0]!;
+  const viewer = h.viewer('admin', 'admin');
+  await h.services.issueQueries.detail(viewer, issue.id);
+  const client = await h.database.connection().client<Knex>();
+  const mark = Symbol('detail');
+  const statements: string[] = [];
+  const listener = ({ sql }: { sql: string }) => {
+    if (scope.getStore() === mark) statements.push(sql);
+  };
+  client.on('query', listener);
+  try {
+    const detail = await scope.run(mark, () =>
+      h.services.issueQueries.detail(viewer, issue.id),
+    );
+    expect(detail.activities.map((item) => item.action)).toContain(
+      'issue_created',
+    );
+    expect(statements.length).toBeLessThanOrEqual(23);
+    expect(
+      statements.every(
+        (sql) =>
+          !/^(insert|update|delete|begin|commit)\b|\bfor\s+update\b/iu.test(
+            sql,
+          ),
+      ),
+    ).toBe(true);
+    for (const idOrKey of [issue.id, issue.identifier]) {
+      statements.length = 0;
+      await expect(
+        scope.run(mark, () =>
+          h.services.issueQueries.detail(h.viewer('alice', 'none'), idOrKey),
+        ),
+      ).rejects.toMatchObject({ kind: 'notFound' });
+      // Identifiers add one failed id lookup before the associated row read.
+      expect(statements.length).toBeLessThanOrEqual(
+        idOrKey === issue.id ? 4 : 5,
+      );
+      expect(
+        statements.some((sql) =>
+          /pm_activities|pm_comments|pm_attachments/iu.test(sql),
+        ),
+      ).toBe(false);
+    }
+  } finally {
+    client.removeListener('query', listener);
+  }
+  await expect(
+    h.services.issueQueries.activities(h.viewer('alice', 'none'), issue.id, {}),
+  ).rejects.toMatchObject({ kind: 'notFound' });
+});

@@ -8,9 +8,16 @@ import { useEffect, useMemo, useState } from 'react';
 import { matchPath, matchRoutes, type RouteObject } from 'react-router';
 
 import { EMPTY_ARRAY } from '#lib/constants';
-import { transformNavigation } from '#lib/navigation-transform';
+import {
+  organizeNavigation,
+  settingsCatalog,
+  transformNavigation,
+  type SettingsCategory,
+} from '#lib/navigation-transform';
 
 export interface RouteNavigationItem {
+  /** Route keys represented by a single sidebar entry whose content uses tabs. */
+  readonly activeRouteKeys?: readonly string[];
   readonly section?: boolean;
   readonly route: AppClientRegisteredRoute;
   readonly children: readonly RouteNavigationItem[];
@@ -20,7 +27,17 @@ export function buildRouteNavigation(
   routes: readonly AppClientRegisteredRoute[],
   denied: ReadonlySet<string>,
 ): RouteNavigationItem[] {
-  return transformNavigation(visibleRouteNavigation(routes, denied));
+  return transformNavigation(visibleRouteNavigation(routes, denied), routes);
+}
+
+/** The settings home's categories and modules the viewer may open (`settingsCatalog`). */
+export function buildSettingsCatalog(
+  routes: readonly AppClientRegisteredRoute[],
+  denied: ReadonlySet<string>,
+): SettingsCategory[] {
+  return settingsCatalog(
+    organizeNavigation(visibleRouteNavigation(routes, denied), routes),
+  );
 }
 
 function visibleRouteNavigation(
@@ -45,7 +62,25 @@ export function selectedNavigationId(
   denied: ReadonlySet<string> = new Set(),
 ): string | undefined {
   const matches = matchRouteTree(routes, pathname);
-  const pages = navigationPages(buildRouteNavigation(routes, denied));
+  const items = buildRouteNavigation(routes, denied);
+  const represented = (
+    nodes: readonly RouteNavigationItem[],
+  ): AppClientRegisteredRoute | undefined => {
+    for (const item of nodes) {
+      if (
+        item.activeRouteKeys?.some((key) =>
+          matches?.some(({ route }) => routeKey(route) === key),
+        )
+      )
+        return item.route;
+      const child = represented(item.children);
+      if (child) return child;
+    }
+    return undefined;
+  };
+  const active = represented(items);
+  if (active) return routeKey(active);
+  const pages = navigationPages(items);
   const visible = new Set(pages.map(routeKey));
   const selected =
     matches
@@ -75,6 +110,8 @@ function navigationPages(
     ...navigationPages(children),
   ]);
 }
+
+const NONE_DENIED: ReadonlySet<string> = new Set();
 
 export function useRouteNavigation(
   routes: readonly AppClientRegisteredRoute[],
@@ -131,9 +168,8 @@ export function useRouteNavigation(
       result.guards !== guards ||
       result.revision !== revision),
   );
-  const denied = guards.length
-    ? (result?.denied ?? new Set<string>())
-    : new Set<string>();
+  // A stable empty set keeps consumers that memoize on `denied` from recomputing on every render.
+  const denied = (guards.length && result?.denied) || NONE_DENIED;
   return {
     loading,
     items: loading ? [] : buildRouteNavigation(routes, denied),
@@ -145,11 +181,17 @@ export function matchRouteTree(
   routes: readonly AppClientRegisteredRoute[],
   pathname: string,
 ) {
-  const toMatch = (nodes: readonly AppClientRegisteredRoute[]): RouteObject[] =>
+  const toMatch = (
+    nodes: readonly AppClientRegisteredRoute[],
+    parentPath = '',
+  ): RouteObject[] =>
     nodes.map((route) => ({
-      path: route.path,
+      path: relativeRoutePath(route, parentPath),
       handle: route,
-      children: toMatch(route.children ?? EMPTY_ARRAY),
+      children: toMatch(
+        route.children ?? EMPTY_ARRAY,
+        childRouteParentPath(route, parentPath),
+      ),
     }));
   return matchRoutes(toMatch(routes), pathname)?.map((match) => ({
     ...match,
@@ -157,6 +199,48 @@ export function matchRouteTree(
   }));
 }
 
+/**
+ * A registered route's path relative to its parent's, as the router nests it. Registered paths are absolute; a route at
+ * its parent's own path (a group's home page, a pathless group) nests with an empty path.
+ */
+export function relativeRoutePath(
+  route: AppClientRegisteredRoute,
+  parentPath: string,
+): string {
+  if (!parentPath) return route.path;
+  if (
+    route.path === parentPath ||
+    parentPath.startsWith(`${route.path.replace(/\/$/, '')}/`)
+  )
+    return '';
+  return route.path.slice(parentPath === '/' ? 1 : parentPath.length + 1);
+}
+
+/** The path a route's children are relative to. */
+export function childRouteParentPath(
+  route: AppClientRegisteredRoute,
+  parentPath: string,
+): string {
+  return parentPath.startsWith(`${route.path.replace(/\/$/, '')}/`)
+    ? parentPath
+    : route.path;
+}
+
 export function routeKey(route: AppClientRegisteredRoute): string {
   return `${route.packageName}:${route.path}:${route.id}`;
+}
+
+/** Pure groups can span shells; a page and its descendants always share their shell. */
+export function filterRouteTree(
+  routes: readonly AppClientRegisteredRoute[],
+  predicate: (route: AppClientRegisteredRoute) => boolean,
+): AppClientRegisteredRoute[] {
+  return routes.flatMap((route) => {
+    if (route.componentLoader) return predicate(route) ? [route] : [];
+    const children = filterRouteTree(route.children ?? EMPTY_ARRAY, predicate);
+    // A group declared empty, such as a settings category waiting for modules, stays so its title is still known.
+    return children.length || !route.children?.length
+      ? [{ ...route, children }]
+      : [];
+  });
 }

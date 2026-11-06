@@ -85,11 +85,13 @@ describe('example process diagram', () => {
       );
       const current = await screen.findByTestId('rf__node-open');
       expect(current).toHaveTextContent(resources.states.open);
-      const ending = screen.getByText(`◎ ${resources.diagramStatus.end}`);
-      fireEvent.click(ending);
-      expect(screen.queryByRole('status')).not.toBeInTheDocument();
+      expect(
+        screen.queryByText(`◎ ${resources.diagramStatus.end}`),
+      ).not.toBeInTheDocument();
+      expect(
+        screen.getByRole('button', { name: resources.flowDiagram.fullscreen }),
+      ).toBeInTheDocument();
       const previous = screen.getByTestId('rf__node-new');
-      expect(previous).toHaveTextContent(resources.flowDiagram.visited);
       expect(
         previous.querySelector('[data-execution-state="visited"]'),
       ).not.toBeNull();
@@ -182,4 +184,56 @@ describe('example process diagram', () => {
       ).not.toBeNull();
     },
   );
+});
+
+it('keeps definitions as plans and explains long returns only beside the focused node', async () => {
+  const runtime = await createTestI18nRuntime({
+    locale: 'en-US',
+    namespaces: { [NAMESPACE]: { 'en-US': async () => ({ default: enUS }) } },
+  });
+  const process: LifecycleDescription = {
+    ...description,
+    stateInfo: description.stateInfo.map((state) => ({
+      ...state,
+      final: state.name === 'closed',
+    })),
+    transitions: [
+      {
+        ...description.transitions[0]!,
+        name: 'accept',
+        from: ['new'],
+        to: ['open'],
+      },
+      description.transitions[0]!,
+      {
+        ...description.transitions[0]!,
+        name: 'reopen',
+        from: ['closed'],
+        to: ['new'],
+      },
+    ],
+  };
+  render(
+    <TestI18nProvider runtime={runtime} namespace={NAMESPACE}>
+      <ProcessDiagram description={process} />
+    </TestI18nProvider>,
+  );
+  const closed = await screen.findByTestId('rf__node-closed');
+  expect(closed.querySelector('[data-execution-state]')).toHaveAttribute(
+    'data-execution-state',
+    'plan',
+  );
+  expect(
+    screen.queryByTestId('rf__edge-["reopen","closed","new"]'),
+  ).not.toBeInTheDocument();
+  const note = `${enUS.states.closed} · ${enUS.transitions.reopen} → ${enUS.states.new}`;
+  expect(screen.queryByRole('note', { name: note })).not.toBeInTheDocument();
+  fireEvent.mouseEnter(closed);
+  expect(await screen.findByRole('note', { name: note })).toBeInTheDocument();
+  fireEvent.mouseLeave(closed);
+  expect(screen.queryByRole('note', { name: note })).not.toBeInTheDocument();
+  fireEvent.focus(closed);
+  expect(await screen.findByRole('note', { name: note })).toBeInTheDocument();
+  fireEvent.blur(closed);
+  expect(screen.queryByRole('note', { name: note })).not.toBeInTheDocument();
 });

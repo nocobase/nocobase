@@ -175,3 +175,35 @@ describe('tool capabilities within protocol 7', () => {
     );
   });
 });
+
+it('preserves opaque ACP model ids while keeping native advisory validation', () => {
+  const model = { id: 'Provider: Model (20261001)', name: 'Displayed model' };
+  expect(
+    ToolInfoSchema.parse({
+      kind: 'gemini',
+      authenticated: true,
+      models: [model],
+    }).models,
+  ).toEqual([model]);
+  expect(
+    ReportedToolInfoSchema.parse({
+      kind: 'gemini',
+      authenticated: true,
+      models: [model],
+    }).models,
+  ).toEqual([model]);
+  expect(
+    ReportedToolInfoSchema.parse({
+      kind: 'codex',
+      authenticated: true,
+      models: [model],
+    }).models,
+  ).toBeUndefined();
+  expect(
+    ToolInfoSchema.safeParse({
+      kind: 'kimi',
+      authenticated: true,
+      models: [{ id: 'line\nbreak' }],
+    }).success,
+  ).toBe(false);
+});

@@ -17,6 +17,8 @@ import {
   listResponse,
   type ApiFieldViolation,
 } from '@nocobase/app-server/router';
+import { Readable } from 'node:stream';
+
 import { Hono, type Context, type MiddlewareHandler } from 'hono';
 
 import type { AppAction } from '../../shared/access.js';
@@ -58,6 +60,7 @@ import {
   ReleasesDeploymentSchema,
   ReleasesDriverSchema,
   ReleasesEnvironmentCheckSchema,
+  ReleasesEnvironmentListItemSchema,
   ReleasesEnvironmentSchema,
   ReleasesLogEntrySchema,
   ReleasesLogMeta,
@@ -246,13 +249,13 @@ export function createReleasesApi(
       security: personOrRunSecurity,
       ...cliRoute({
         command: 'env list',
-        columns: ['id', 'name', 'driver', 'protected'],
+        columns: ['id', 'name', 'driver', 'protected', 'appCount'],
         action: 'rel.environments/read',
       }),
       description:
         'Requires the `rel.environments` `read` setting, access to the Apps page, or the `create` action on every App.',
       responses: {
-        200: listResponse(ReleasesEnvironmentSchema, ReleasesTotalMeta),
+        200: listResponse(ReleasesEnvironmentListItemSchema, ReleasesTotalMeta),
         ...apiErrorResponses,
       },
     }),
@@ -278,7 +281,7 @@ export function createReleasesApi(
         },
         bodyFile: 'file',
         examples: [
-          'env create staging --name Staging --driver host --protected',
+          'env create staging --name Staging --driver host --purpose test --protected',
           'env create production --file production.json',
         ],
         action: 'rel.environments/manage',
@@ -1306,13 +1309,13 @@ export function createReleasesApi(
       // A password: it stays out of the command line, so it never lands in a terminal's history or an agent's log.
       ...cliRoute(false),
       description:
-        'Requires the `deploy` action on the App. People only: agents and keys are refused. The first administrator its first deployment generated, until someone saves it (`dismiss`) or 24 hours pass (a preview App’s stays until the App goes).',
+        'Requires the `deploy` action on the App. People only: agents and keys are refused. The first administrator its first deployment generated, until someone saves it (`dismiss`) or the App is removed.',
       responses: {
         200: dataResponse(ReleasesInitialAdminSchema),
         ...apiErrorResponses,
         404: apiErrorResponse(
           404,
-          'Nothing to show: it was saved or expired, or none was generated (`INITIAL_ADMIN_UNAVAILABLE`).',
+          'Nothing to show: it was saved or none was generated (`INITIAL_ADMIN_UNAVAILABLE`).',
         ),
       },
     }),
@@ -1443,7 +1446,7 @@ export function createReleasesApi(
         ...apiErrorResponses,
         400: apiErrorResponse(
           400,
-          'The archive is invalid or does not match its checksum, or its variables manifest is (`INVALID_VARIABLES_MANIFEST`), or deploying it is refused (`APPROVAL_REQUIRED` on a protected environment, `DEPLOYMENT_IN_PROGRESS`, `VARIABLES_MISSING`: the release is kept, and deploys by its ID once the variables are set).',
+          'The archive is invalid or does not match its checksum, or its variables manifest is (`INVALID_VARIABLES_MANIFEST`), or deploying it is refused (`APPROVAL_REQUIRED` on a protected environment, `VARIABLES_MISSING`: the release is kept, and deploys by its ID once the variables are set).',
         ),
         404: apiErrorResponse(404),
         409: apiErrorResponse(
@@ -1533,6 +1536,7 @@ export function createReleasesApi(
       tags,
       summary: 'Get a release',
       operationId: 'releasesGetRelease',
+      security: personOrRunSecurity,
       ...cliRoute({
         command: 'release get',
         flags: { appId: { name: 'app' }, releaseId: { name: 'release' } },
@@ -1555,6 +1559,74 @@ export function createReleasesApi(
           releaseId,
         ),
       });
+    },
+  );
+  api.get(
+    '/apps/:appId/releases/:releaseId/archive',
+    onApps('view'),
+    describeRoute({
+      tags,
+      summary: "Download a release's archive",
+      operationId: 'releasesDownloadReleaseArchive',
+      security: personOrRunSecurity,
+      ...cliRoute({
+        command: 'release download',
+        flags: { appId: { name: 'app' }, releaseId: { name: 'release' } },
+        action: 'rel.apps/view',
+        examples: ['release download --app <app> --release <release> --out .'],
+      }),
+      description:
+        'Requires the `view` action on the App. Answers the uploaded `.tar.gz` as `<appId>-<version>.tar.gz`, with its SHA-256 in `X-Artifact-Sha256`. An image release has no archive (`RELEASE_HAS_NO_ARCHIVE`).',
+      responses: {
+        200: {
+          description: 'The archive.',
+          headers: {
+            'Content-Disposition': {
+              description: '`attachment`, named `<appId>-<version>.tar.gz`.',
+              schema: { type: 'string' },
+            },
+            'X-Artifact-Sha256': {
+              description: "The archive's SHA-256, hex.",
+              schema: { type: 'string' },
+            },
+          },
+          content: {
+            'application/gzip': {
+              schema: { type: 'string', format: 'binary' },
+            },
+          },
+        },
+        ...apiErrorResponses,
+        404: apiErrorResponse(
+          404,
+          'The App or release does not exist, or its archive is missing from the artifact storage (reason `RELEASE_ARCHIVE_NOT_FOUND`).',
+        ),
+        400: apiErrorResponse(
+          400,
+          'An image release has no archive (`FAILED_PRECONDITION`, reason `RELEASE_HAS_NO_ARCHIVE`).',
+        ),
+      },
+    }),
+    apiValidator('param', ReleaseParams),
+    async (context) => {
+      const { appId, releaseId } = context.req.valid('param');
+      const archive = await services.releases.openArchive(
+        person(context),
+        appId,
+        releaseId,
+      );
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/gzip',
+        'Content-Disposition': `attachment; filename="${archive.fileName}"`,
+        'X-Artifact-Sha256': archive.checksum,
+        'Cache-Control': 'private, no-store',
+      };
+      if (archive.size !== null)
+        headers['Content-Length'] = String(archive.size);
+      return new Response(
+        Readable.toWeb(archive.stream) as unknown as ReadableStream<Uint8Array>,
+        { headers },
+      );
     },
   );
   api.patch(
@@ -1861,7 +1933,7 @@ export function createReleasesApi(
         action: 'rel.apps/deploy',
       }),
       description:
-        'Requires the `deploy` action on the App. A protected environment is deployed only through a deployment request an approver approves (`POST /apps/{appId}/deploymentRequests`), so deploying there directly is refused. The `Idempotency-Key` header, or `idempotencyKey`, answers a repeated request with its first deployment.',
+        'Requires the `deploy` action on the App. A protected environment is deployed only through a deployment request an approver approves (`POST /apps/{appId}/deploymentRequests`), so deploying there directly is refused. A new deployment replaces older queued deployments of the same App; running deployments continue. The `Idempotency-Key` header, or `idempotencyKey`, answers a repeated request with its first deployment.',
       responses: {
         200: dataResponse(
           ReleasesDeploymentSchema,
@@ -1874,7 +1946,7 @@ export function createReleasesApi(
         ...apiErrorResponses,
         400: apiErrorResponse(
           400,
-          'The release is not given, the environment is protected (`APPROVAL_REQUIRED`: request the deployment instead), a deployment is in progress (`DEPLOYMENT_IN_PROGRESS`) or a required variable is not set (`VARIABLES_MISSING`, naming them in `metadata.variables`).',
+          'The release is not given, the environment is protected (`APPROVAL_REQUIRED`: request the deployment instead), a required variable is not set (`VARIABLES_MISSING`, naming them in `metadata.variables`).',
         ),
         404: apiErrorResponse(404),
         409: apiErrorResponse(
@@ -1913,8 +1985,9 @@ export function createReleasesApi(
         deployment.id,
         100_000,
       );
-      const finished =
-        settled.status !== 'queued' && settled.status !== 'deploying';
+      const finished = !['queued', 'deploying', 'cancelling'].includes(
+        settled.status,
+      );
       return context.json({ data: settled }, finished ? 200 : 202);
     },
   );
@@ -1941,7 +2014,7 @@ export function createReleasesApi(
         ...apiErrorResponses,
         400: apiErrorResponse(
           400,
-          'The target is not a successful deployment of this App (`INVALID_ROLLBACK_TARGET`), the environment is protected (`APPROVAL_REQUIRED`) or a deployment is in progress.',
+          'The target is not a successful deployment of this App (`INVALID_ROLLBACK_TARGET`), the environment is protected (`APPROVAL_REQUIRED`).',
         ),
         404: apiErrorResponse(404),
       },
@@ -2009,6 +2082,47 @@ export function createReleasesApi(
     },
   );
   // Whoever may deploy the App reads a deployment too, so CI holding only a deploying key can wait for the result.
+  api.post(
+    '/apps/:appId/deployments/:deploymentId/cancel',
+    onApps('deploy'),
+    describeRoute({
+      tags,
+      summary: 'Cancel a deployment',
+      operationId: 'releasesCancelDeployment',
+      security: personOrRunSecurity,
+      ...cliRoute({
+        command: 'deploy cancel',
+        flags: { appId: { name: 'app' }, deploymentId: { name: 'deployment' } },
+        action: 'rel.apps/deploy',
+      }),
+      description:
+        'Requires the deploy action on the App. Cancels a queued deployment immediately; a running deployment stops after its current step and cleanup. Refused once switching starts. Repeating cancellation is safe.',
+      responses: {
+        200: dataResponse(ReleasesDeploymentSchema),
+        ...apiErrorResponses,
+        400: apiErrorResponse(
+          400,
+          'The deployment has started switching or finished (DEPLOYMENT_NOT_CANCELLABLE), or the driver does not support cancellation.',
+        ),
+        404: apiErrorResponse(404),
+      },
+    }),
+    apiValidator('param', DeploymentParams),
+    async (context) => {
+      const { appId, deploymentId } = context.req.valid('param');
+      const data = await services.releases.cancelDeployment(
+        person(context),
+        appId,
+        deploymentId,
+      );
+      log('releases.deployment.cancel', {
+        actorId: person(context).userId,
+        appId,
+        deploymentId,
+      });
+      return context.json({ data });
+    },
+  );
   api.get(
     '/apps/:appId/deployments/:deploymentId',
     onApps('view', 'deploy'),

@@ -102,6 +102,18 @@ export function WorkflowManagementDemo(): ReactElement {
               parametersTitle='Parameter settings'
               diagram={
                 <LifecycleDiagram
+                  presentation='process'
+                  stateKind={(state) =>
+                    state.name === 'review'
+                      ? 'approval'
+                      : state.name === 'rejected'
+                        ? 'negative'
+                        : state.final
+                          ? 'success'
+                          : description.initialStates.includes(state.name)
+                            ? 'start'
+                            : 'work'
+                  }
                   description={description}
                   ariaLabel='Order approval definition'
                   direction='DOWN'
@@ -137,6 +149,18 @@ export function WorkflowManagementDemo(): ReactElement {
               effectStatusLabel={(status) => status}
               renderDiagram={({ current, history }) => (
                 <LifecycleDiagram
+                  presentation='process'
+                  stateKind={(state) =>
+                    state.name === 'review'
+                      ? 'approval'
+                      : state.name === 'rejected'
+                        ? 'negative'
+                        : state.final
+                          ? 'success'
+                          : description.initialStates.includes(state.name)
+                            ? 'start'
+                            : 'work'
+                  }
                   description={description}
                   ariaLabel='Order approval execution'
                   direction='DOWN'

@@ -3,6 +3,7 @@ import type { ResolvedJobsConfig, JobsConfig } from '../../../src/config.js';
 import type { JobExecutor } from '../../../src/job/types.js';
 import type { ScheduleExecutor } from '../../../src/schedule/types.js';
 import { createJobExecutorServiceWith } from '../../../src/service.js';
+import { testRegistry } from '../../helpers/registry.js';
 
 function ordinary(): JobExecutor {
   return {
@@ -44,16 +45,15 @@ function harness(config?: JobsConfig) {
   const service = createJobExecutorServiceWith(
     config,
     { appName: 'app', storagePath: '/tmp/jobs', onFallback },
-    { memory: createSchedule, redis: createSchedule },
-    { memory: create, redis: create },
+    testRegistry(createSchedule, create),
   );
   return { service, configs, jobs, schedules, onFallback };
 }
 
 describe('ordinary service selection', () => {
   it('caches Redis executors by selected key; equal identities share a physical queue', () => {
-    const redis = {
-      adapter: 'redis' as const,
+    const test = {
+      adapter: 'test' as const,
       connection: { host: 'localhost' },
       namespace: 'app',
       attempts: 4,
@@ -61,7 +61,7 @@ describe('ordinary service selection', () => {
       removeOnComplete: true,
       removeOnFail: 7,
     };
-    const { service, configs } = harness({ default: 'a', a: redis, b: redis });
+    const { service, configs } = harness({ default: 'a', a: test, b: test });
     const a = service.getJobExecutor('scope');
     expect(service.getJobExecutor('scope', 'default')).toBe(a);
     expect(service.getJobExecutor('scope', 'unknown')).toBe(a);

@@ -158,6 +158,46 @@ describe('the fixed statuses', () => {
 });
 
 describe('status events', () => {
+  it('updates validated progress on a move and on an already matching status without replaying entry actions', async () => {
+    h.services.statusEvents.types.add({
+      key: 'test.stopped',
+      from: ['in_progress', 'blocked'],
+      to: 'blocked',
+    });
+    const issue = await h.services.issues.create(alice(), {
+      title: 'Stop',
+      statusKey: 'in_progress',
+    });
+    const fire = (needsYou: string) =>
+      h.services.statusEvents.fire({
+        event: 'test.stopped',
+        issueIds: [issue.id],
+        actor: { type: 'user', id: 'bob' },
+        needsYou,
+        next: 'Wait for a person.',
+      });
+    await fire('Bob stopped this run.');
+    expect(
+      await h.services.issueQueries.detail(alice(), issue.id),
+    ).toMatchObject({
+      statusKey: 'blocked',
+      needsYou: 'Bob stopped this run.',
+      next: 'Wait for a person.',
+    });
+    const before = (
+      await h.services.issueQueries.activities(alice(), issue.id, {})
+    ).data;
+    await fire('Bob stopped another run.');
+    expect(
+      await h.services.issueQueries.detail(alice(), issue.id),
+    ).toMatchObject({ needsYou: 'Bob stopped another run.' });
+    expect(
+      (await h.services.issueQueries.activities(alice(), issue.id, {})).data,
+    ).toEqual(before);
+    await expect(fire('x'.repeat(2001))).resolves.toMatchObject([
+      { outcome: 'refused', code: 'INVALID_FIELD' },
+    ]);
+  });
   it('moves the issues in one of its statuses, and tells where it would take one', async () => {
     h.services.statusEvents.types.add({
       key: 'test.merged',

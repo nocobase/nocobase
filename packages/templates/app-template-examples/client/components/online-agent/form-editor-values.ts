@@ -1,7 +1,14 @@
+import type { FormProposalValues } from '../../../shared/ai-form-fill.js';
+
 export interface FormEditorValues {
   name?: string;
-  priority?: 'low' | 'normal' | 'high';
+  department?: FormProposalValues['department'];
+  quantity?: string;
   budget?: string;
+  arrival?: string;
+  purpose?: string;
+  // Old conversation cards may still display these fields.
+  priority?: 'low' | 'normal' | 'high';
   subscribe?: boolean;
 }
 
@@ -9,12 +16,23 @@ export interface FormEditorValues {
 export function parseEditorValues(
   values: FormEditorValues,
 ): Record<string, string | number | boolean> {
+  const { budget, quantity, ...otherValues } = values;
   return {
-    ...(values.name === undefined ? {} : { name: values.name }),
-    ...(values.priority === undefined ? {} : { priority: values.priority }),
-    ...(values.budget === undefined
+    ...otherValues,
+    ...(budget === undefined
       ? {}
-      : { budget: values.budget.trim() ? Number(values.budget) : Number.NaN }),
-    ...(values.subscribe === undefined ? {} : { subscribe: values.subscribe }),
+      : { budget: budget.trim() ? Number(budget) : Number.NaN }),
+    ...(quantity === undefined
+      ? {}
+      : { quantity: quantity.trim() ? Number(quantity) : Number.NaN }),
+  };
+}
+
+export function toEditorValues(values: FormProposalValues): FormEditorValues {
+  const { budget, quantity, ...otherValues } = values;
+  return {
+    ...otherValues,
+    ...(budget === undefined ? {} : { budget: String(budget) }),
+    ...(quantity === undefined ? {} : { quantity: String(quantity) }),
   };
 }

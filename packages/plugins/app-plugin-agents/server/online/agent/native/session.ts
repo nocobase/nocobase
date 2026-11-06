@@ -1,3 +1,4 @@
+import type { OnlineAgentResendOptions } from '../../../../shared/resend.js';
 import type { JSONSchema7, ModelMessage } from 'ai';
 import type {
   BackgroundOnlineAgent,
@@ -20,7 +21,7 @@ import type {
 import type { ModelRef } from '../../../../shared/models.js';
 import type { OnlineAgentSession } from '../persistence/types.js';
 import type { OnlineAgentExecution } from './types.js';
-import { OnlineAgentResultError } from '../errors.js';
+import { OnlineAgentResultError, unsupportedCapability } from '../errors.js';
 import { nativeExecutionStatus } from '../persistence/state.js';
 import { createOutputSchema } from '../messages/validation.js';
 import { conflict, invalid } from '../../../kernel/errors.js';
@@ -46,6 +47,7 @@ abstract class NativeAgentSession implements OnlineAgent {
       source: _source,
       title: _title,
       showInChatList: _showInChatList,
+      projectId: _projectId,
       ...requested
     } = options;
     this.requestedModel = sessionId ? selectedModel : undefined;
@@ -103,6 +105,11 @@ export class NativeRealtimeOnlineAgent
     messages: ModelMessage[],
     input?: OnlineAgentSendOptions,
   ): Promise<number> {
+    if (input?.effort !== undefined)
+      throw invalid(
+        'Online agents do not support conversation reasoning effort.',
+        { reason: 'EFFORT_UNSUPPORTED' },
+      );
     const seq = await this.host.start(
       this.context,
       this.sessionId,
@@ -122,6 +129,27 @@ export class NativeRealtimeOnlineAgent
     return seq;
   }
 
+  queue(): Promise<number> {
+    return Promise.reject(unsupportedCapability('native', 'queued messages'));
+  }
+
+  async resend(options: OnlineAgentResendOptions = {}): Promise<number> {
+    const seq = await this.host.resend(
+      this.context,
+      this.sessionId,
+      options,
+      {
+        overrides: this.requestedOverrides,
+        selectedModel: this.requestedModel,
+        boundary: this.boundary,
+      },
+      (execution) => {
+        this.responseExecution = execution;
+      },
+    );
+    this.consumed();
+    return seq;
+  }
   async receive(): ReturnType<RealtimeOnlineAgent['receive']> {
     await this.host.sessions.load(this.context.user.id, this.sessionId);
     return this.host.native.receive(

@@ -1,5 +1,33 @@
 # @nocobase/db
 
+## 1.0.0-beta.25
+
+### Minor Changes
+
+- 1e018f1: Expose isUniqueConstraintViolation for shared cross-dialect duplicate-key recovery and stop classifying generic SQLite constraint failures as unique violations.
+
+## 1.0.0-beta.24
+
+### Minor Changes
+
+- 12b1f64: Add a LOWER scalar expression for portable case-insensitive ASCII pattern matching.
+
+## 1.0.0-beta.23
+
+### Minor Changes
+
+- e3d9a52: Prevent overlapping form submissions with a shared submission controller and preserve operation identifiers across uncertain retries. Standard Repository writes can commit operation receipts atomically with business data and replay successful results for 24 hours after checking current access.
+
+  New application templates require operation identifiers and install receipt storage and bounded cleanup. Existing applications must reconcile the provider, migration and copied form sources, migrate their callers, and then enable strict mode; updating dependencies alone does not activate protection. Custom actions must explicitly join the receipt transaction and provide current authorization and result visibility checks. Cross-connection and unadapted external side effects are outside this guarantee.
+
+## 1.0.0-beta.22
+
+### Minor Changes
+
+- 9eea184: Add `connection.restrict(policies, principal)` for restricted repository access with an explicit collection allowlist, narrowing-only repositories, and policy-preserving transactions. Export `RestrictedDatabase` and `DatabasePolicyMap`, and keep policy explanations detached from mutable defaults.
+
+  Keep `withPolicies()` and `ScopedDatabaseConnection` supported for policy binding with full connection capabilities. Adopting `restrict()` requires policies for every directly accessed collection and keeping raw database operations on the trusted connection. Custom implementations and complete mocks of `DatabaseConnection` must implement the new `restrict()` method.
+
 ## 1.0.0-beta.21
 
 ### Patch Changes

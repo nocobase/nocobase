@@ -1,4 +1,10 @@
 import {
+  resolveMailSenderFactory,
+  type MailSender,
+} from '@nocobase/app-server/mailers';
+import { createPasswordResetSender } from './reset-sender.js';
+import type { AuthEmailConfig } from './email-config.js';
+import {
   PasswordResetPolicy,
   type PasswordResetConfig,
   type PasswordResetServices,
@@ -31,10 +37,74 @@ import {
   routeAcceptsScheme,
 } from '@nocobase/app-server/router';
 import { databaseAdapter } from './better-auth/database-adapter.js';
-import { createAuthMiddleware } from 'better-auth/api';
+import { createAuthEndpoint, createAuthMiddleware } from 'better-auth/api';
+import { setSessionCookie } from 'better-auth/cookies';
+import { z } from 'zod';
+
+// No HTTP path: only trusted server code can invoke this through Auth.signInUser().
+const trustedSessionPlugin = {
+  id: 'nocobase-trusted-session',
+  endpoints: {
+    signInUser: createAuthEndpoint(
+      {
+        method: 'POST',
+        body: z.object({ userId: z.string().min(1) }),
+      },
+      async (context) => {
+        const user = await context.context.internalAdapter.findUserById(
+          context.body.userId,
+        );
+        if (!user || Reflect.get(user, 'deletedAt') != null)
+          throw APIError.from('NOT_FOUND', {
+            code: 'USER_NOT_FOUND',
+            message: 'User not found.',
+          });
+        const session = await context.context.internalAdapter.createSession(
+          user.id,
+          true,
+        );
+        if (!session)
+          throw APIError.from('UNAUTHORIZED', {
+            code: 'SESSION_CREATION_FAILED',
+            message: 'Could not create a session.',
+          });
+        await setSessionCookie(context, { session, user }, true);
+        return context.json({ success: true });
+      },
+    ),
+  },
+} satisfies BetterAuthPlugin;
+
+function settleShutdown(
+  operations: readonly (() => void | Promise<void>)[],
+  message: string,
+): Promise<void> {
+  const started = operations.map((operation) => {
+    try {
+      return Promise.resolve(operation());
+    } catch (error) {
+      return Promise.reject(asError(error));
+    }
+  });
+  return Promise.allSettled(started).then((results) => {
+    const failures: unknown[] = [];
+    for (const result of results)
+      if (result.status === 'rejected') failures.push(result.reason);
+    if (failures.length) throw new AggregateError(failures, message);
+  });
+}
+
+function asError(value: unknown): Error {
+  return value instanceof Error
+    ? value
+    : new Error('Authentication shutdown operation failed.', {
+        cause: value,
+      });
+}
 
 export interface AuthOptions extends Omit<BetterAuthOptions, 'database'> {
   connection: DatabaseConnection;
+  email?: AuthEmailConfig;
   passwordReset?: PasswordResetConfig;
   passwordResetServices?: PasswordResetServices;
 }
@@ -149,6 +219,16 @@ export type ScopedCredentialCheck = (
   request: Request,
 ) => boolean | Promise<boolean>;
 
+/**
+ * An application's issued-credential admission policy. Undefined keeps the route's declared security and scoped-key
+ * opt-in; false refuses it; true accepts this issued credential and delegates scope enforcement to the application.
+ * This never applies to ordinary sessions or API keys. Authentication and authorization still run normally.
+ */
+export type CredentialRoutePolicy = (
+  context: Context,
+  credential: IssuedCredential,
+) => boolean | undefined | Promise<boolean | undefined>;
+
 const serviceAccountRefusal = () =>
   APIError.from('FORBIDDEN', {
     code: 'SERVICE_ACCOUNT_NO_LOGIN',
@@ -160,23 +240,67 @@ export class Auth {
   private readonly connection: DatabaseConnection;
   private readonly options: AuthOptions;
   private readonly resetPolicy: PasswordResetPolicy;
+  private closePromise?: Promise<void>;
+  /** Created by this instance when the caller supplied no sender; borrowed by connection bindings. */
+  private readonly ownedSender?: MailSender;
   private scopedCredentialChecks = new Set<ScopedCredentialCheck>();
   private credentialResolvers = new Set<CredentialResolver>();
+  private credentialRoutePolicies = new Set<CredentialRoutePolicy>();
+  private userInitializers = new Set<
+    (
+      user: Record<string, unknown>,
+      connection: DatabaseConnection,
+    ) => Promise<void>
+  >();
+
+  /** Trusted initialization in the same transaction as the first user insert. */
+  addUserInitializer(
+    initializer: (
+      user: Record<string, unknown>,
+      connection: DatabaseConnection,
+    ) => Promise<void>,
+  ): () => void {
+    this.userInitializers.add(initializer);
+    return () => {
+      this.userInitializers.delete(initializer);
+    };
+  }
 
   constructor(options: AuthOptions) {
-    const { connection, passwordReset, passwordResetServices, ...config } =
-      options;
+    const {
+      connection,
+      email,
+      passwordReset,
+      passwordResetServices,
+      ...config
+    } = options;
+    this.connection = connection;
+    if (!config.secret?.trim() && !config.secrets?.length) {
+      throw new Error('Authentication secret is required.');
+    }
+    let resetServices: PasswordResetServices = passwordResetServices ?? {};
+    if (!Object.hasOwn(resetServices, 'sender')) {
+      // Standalone construction: this instance selects and owns its sender.
+      const selection = createPasswordResetSender(resolveMailSenderFactory(), {
+        email,
+        passwordReset,
+        legacyChannels: resetServices.legacyChannels,
+      });
+      this.ownedSender = selection.sender;
+      resetServices = {
+        ...resetServices,
+        sender: selection.sender,
+        legacySender: selection.legacy,
+      };
+    }
+    this.options = { ...options, passwordResetServices: resetServices };
     this.resetPolicy = new PasswordResetPolicy(
       passwordReset ?? {},
       config,
       connection,
-      passwordResetServices ?? {},
+      resetServices,
+      email,
     );
-    this.connection = connection;
-    this.options = options;
-    if (!config.secret?.trim() && !config.secrets?.length) {
-      throw new Error('Authentication secret is required.');
-    }
     const plugins = (config.plugins ?? []).some(
       (plugin) => Reflect.get(plugin, 'id') === 'username',
     )
@@ -218,8 +342,17 @@ export class Auth {
     this.auth = betterAuth({
       ...config,
       appName: config.appName ?? 'NocoBase3',
-      database: databaseAdapter(connection),
-      plugins: [...(plugins ?? []), this.resetPolicy.plugin()],
+      database: databaseAdapter(connection, {
+        initializeUser: async (user, transaction) => {
+          for (const initialize of this.userInitializers)
+            await initialize(user, transaction);
+        },
+      }),
+      plugins: [
+        ...(plugins ?? []),
+        this.resetPolicy.plugin(),
+        trustedSessionPlugin,
+      ],
       hooks: {
         ...config.hooks,
         // Delegate the original middleware with its header/response envelope intact.
@@ -385,12 +518,35 @@ export class Auth {
     );
   }
 
+  /**
+   * Creates an ordinary browser session after a trusted caller has authorized this sign-in. Has no HTTP endpoint;
+   * callers own their access policy. Session hooks, disabled/service-account checks and cookie configuration apply.
+   */
+  signInUser(
+    userId: string,
+    request: Request,
+    options: AuthRequestOptions = {},
+  ): Promise<Response> {
+    return this.resetPolicy.runRequest(options.clientAddress, () =>
+      this.auth.api.signInUser({
+        body: { userId },
+        headers: request.headers,
+        request,
+        asResponse: true,
+      }),
+    );
+  }
+
   passwordResetAvailable(): boolean {
     return this.resetPolicy.available;
   }
 
-  async close(): Promise<void> {
-    await this.resetPolicy.close();
+  close(): Promise<void> {
+    this.closePromise ??= settleShutdown(
+      [() => this.resetPolicy.close(), () => this.ownedSender?.close()],
+      'Authentication shutdown failed.',
+    );
+    return this.closePromise;
   }
 
   async getSession(
@@ -596,9 +752,19 @@ export class Auth {
 
   /** Binds trusted server operations to a caller-owned connection or transaction. */
   forConnection(connection: DatabaseConnection): Auth {
-    const bound = new Auth({ ...this.options, connection });
+    const bound = new Auth({
+      ...this.options,
+      connection,
+      passwordResetServices: {
+        ...this.options.passwordResetServices,
+        // Startup diagnostics belong to the main instance, not transaction bindings.
+        warning: undefined,
+      },
+    });
     bound.scopedCredentialChecks = this.scopedCredentialChecks;
     bound.credentialResolvers = this.credentialResolvers;
+    bound.credentialRoutePolicies = this.credentialRoutePolicies;
+    bound.userInitializers = this.userInitializers;
     return bound;
   }
 
@@ -623,6 +789,28 @@ export class Auth {
     return () => {
       this.credentialResolvers.delete(resolver);
     };
+  }
+
+  /** Register trusted application admission for issued credentials; an explicit refusal always wins. */
+  addCredentialRoutePolicy(policy: CredentialRoutePolicy): () => void {
+    this.credentialRoutePolicies.add(policy);
+    return () => {
+      this.credentialRoutePolicies.delete(policy);
+    };
+  }
+
+  /** Reuse application admission in an additional plugin guard; undefined preserves its native credential rules. */
+  async credentialRouteDecision(
+    context: Context,
+    credential: IssuedCredential,
+  ): Promise<boolean | undefined> {
+    let decision: boolean | undefined;
+    for (const policy of this.credentialRoutePolicies) {
+      const value = await policy(context, credential);
+      if (value === false) return false;
+      if (value === true) decision = true;
+    }
+    return decision;
   }
 
   /**
@@ -656,9 +844,12 @@ export class Auth {
           return rejectedCredential(context, error);
         throw error;
       }
+      const admission = auth?.credential
+        ? await this.credentialRouteDecision(context, auth.credential)
+        : undefined;
       if (
         auth?.credential &&
-        !routeAcceptsScheme(context, auth.credential.scheme)
+        !(admission ?? routeAcceptsScheme(context, auth.credential.scheme))
       )
         return credentialNotAccepted(context);
       context.set('auth', auth);
@@ -696,13 +887,17 @@ export class Auth {
           context,
         );
       }
+      const admission = auth.credential
+        ? await this.credentialRouteDecision(context, auth.credential)
+        : undefined;
       if (
         auth.credential &&
-        !routeAcceptsScheme(context, auth.credential.scheme)
+        !(admission ?? routeAcceptsScheme(context, auth.credential.scheme))
       )
         return credentialNotAccepted(context);
       if (
         !options.scopedKeys &&
+        admission !== true &&
         (await this.isScopedSession(auth, context.req.raw))
       ) {
         return apiErrorHandler(

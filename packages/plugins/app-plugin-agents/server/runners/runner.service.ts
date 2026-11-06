@@ -1,10 +1,13 @@
+import {
+  DEFAULT_AGENT_TOOLS,
+  NATIVE_AGENT_TOOLS,
+} from '@nocobase/agent-protocol';
 /**
  * Runners: registering with a one-time token, authenticating by key, heartbeats, and what people change afterwards
  * (name, trust, slots, which coding tools it may run, revocation). What a runner has (its system, features and coding
  * tools, each with whether it is signed in), what its owner's local policy lets it take (`policy`) and the names of the
  * variables it provides to runs (`variables`) are what it reports, never configured here; which of its tools it is offered work for is chosen on the web (`enabledTools`,
- * carried over from the registration token, as are its slots and its limits per coding tool unless the runner names
- * its own).
+ * carried over from the registration token, as are its slots and its limits per coding tool).
  *
  * A runner speaking a protocol this application does not serve is not turned away: it registers and stays connected
  * as `upgrade_required`, is given no work (claims want `online`), and its owner is told once per protocol
@@ -21,6 +24,7 @@ import { quotaBlocks, runnerTakesAgent } from '../../shared/runners.js';
 import type { QuotaMarkTarget } from '../../shared/quota.js';
 
 import {
+  AGENT_TOOLS,
   isProtocolSupported,
   MIN_PROTOCOL_VERSION,
   PROTOCOL_VERSION,
@@ -141,7 +145,7 @@ export interface RunnerService {
   /** The runners that are online now, read on `conn`. */
   online(conn: DatabaseConnection): Promise<Runner[]>;
   /** Every runner, whatever its status, read on `conn` (without owners' names). */
-  all(conn: DatabaseConnection): Promise<Runner[]>;
+  all(conn: DatabaseConnection, ids?: readonly string[]): Promise<Runner[]>;
   /** Of `ids`, the runners that are not online (offline, revoked, or gone), read on `conn`. */
   absent(conn: DatabaseConnection, ids: readonly string[]): Promise<string[]>;
   /** The runner, read on `conn`; null when there is none. */
@@ -412,7 +416,11 @@ export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
         const token = createCredential(CREDENTIAL_PREFIX.registration);
         const id = ids.next();
         const trust = input.trust ?? 'ownerOnly';
-        const enabledTools = storedToolChoice(input.enabledTools);
+        const enabledTools = storedToolChoice(
+          input.enabledTools === undefined
+            ? DEFAULT_AGENT_TOOLS
+            : input.enabledTools,
+        );
         const expiresAt = later(now, REGISTRATION_TOKEN_TTL_MS);
         const slots = input.slots ?? null;
         const toolSlots = storedToolSlots(input.toolSlots);
@@ -497,14 +505,9 @@ export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
           });
           emit({ type: 'runner.changed', runnerId: runner.id });
         }
-        // The runner's explicit `--slots`, else the token's, else 1.
-        const slots =
-          request.slots ?? (token.slots === null ? 1 : Number(token.slots));
-        // Its own limits per tool when it sent them, else the token's.
-        const toolSlots =
-          request.toolSlots === undefined
-            ? storedToolSlots(token.toolSlots)
-            : storedToolSlots(request.toolSlots);
+        // Capacity belongs to the application; legacy registration requests cannot override it.
+        const slots = token.slots === null ? 3 : Number(token.slots);
+        const toolSlots = storedToolSlots(token.toolSlots);
         await runnersRepo(conn).createOne({
           values: {
             id: runnerId,
@@ -516,9 +519,13 @@ export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
             product: request.product ?? null,
             protocolVersion: request.protocolVersion,
             features: cleanList(request.features),
-            tools: request.tools.map((tool) =>
-              ReportedToolInfoSchema.parse(tool),
-            ),
+            tools: request.tools
+              .filter((tool) =>
+                (storedToolChoice(token.enabledTools) ?? []).includes(
+                  tool.kind,
+                ),
+              )
+              .map((tool) => ReportedToolInfoSchema.parse(tool)),
             enabledTools: storedToolChoice(token.enabledTools),
             trust: token.trust,
             ownerUserId: token.createdById,
@@ -558,6 +565,9 @@ export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
           ...(deps.app ? { app: deps.app } : {}),
           runnerId,
           runnerKey: key,
+          enabledTools: storedToolChoice(token.enabledTools) ?? [
+            ...NATIVE_AGENT_TOOLS,
+          ],
           heartbeatIntervalMs: TIMINGS.heartbeatIntervalMs,
           pollTimeoutMs: TIMINGS.pollTimeoutMs,
           leaseRenewMs: TIMINGS.leaseRenewMs,
@@ -587,14 +597,21 @@ export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
         const now = clock.now().toISOString();
         const policy = storedPolicy(request.policy);
         const variables = storedVariableNames(request.variables);
-        const tools = request.tools.map((tool) =>
-          ReportedToolInfoSchema.parse(tool),
-        );
         const current = await require(conn, runner.id);
+        const tools = request.tools
+          .filter((tool) => (current.enabledTools ?? []).includes(tool.kind))
+          .map((tool) => ReportedToolInfoSchema.parse(tool));
         const marks = current.unavailableModels ?? [];
         const kept = keptMarks(marks, tools);
         const workspaceUsage = current.workspaceUsage;
         const changed =
+          current.reportedSlots !== request.load.slots ||
+          current.capacitySource !== request.load.capacitySource ||
+          AGENT_TOOLS.some(
+            (tool) =>
+              current.toolLoad?.[tool]?.slots !==
+              request.load.tools?.[tool]?.slots,
+          ) ||
           (request.disk !== undefined &&
             diskMoved(workspaceUsage?.disk ?? null, request.disk)) ||
           kept.length !== marks.length ||
@@ -602,7 +619,7 @@ export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
           runner.product !== (request.product ?? null) ||
           JSON.stringify(runner.features) !==
             JSON.stringify(cleanList(request.features)) ||
-          JSON.stringify(runner.tools) !== JSON.stringify(request.tools) ||
+          JSON.stringify(runner.tools) !== JSON.stringify(tools) ||
           JSON.stringify(runner.policy) !== JSON.stringify(policy) ||
           JSON.stringify(runner.variables ?? null) !==
             JSON.stringify(variables);
@@ -629,6 +646,10 @@ export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
               ...storedToolLoad(request.load.tools ?? null),
               free: request.load.free,
               slots: request.load.slots,
+              reportedAt: now,
+              ...(request.load.capacitySource
+                ? { capacitySource: request.load.capacitySource }
+                : {}),
               ...(request.load.draining
                 ? { draining: request.load.draining }
                 : {}),
@@ -703,7 +724,7 @@ export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
 
     update: (id, patch) =>
       tx.run(async ({ conn, emit }) => {
-        await require(conn, id);
+        const current = await require(conn, id);
         const values: Record<string, unknown> = {
           updatedAt: clock.now().toISOString(),
         };
@@ -712,8 +733,16 @@ export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
         if (patch.slots !== undefined) values.slots = patch.slots;
         if (patch.toolSlots !== undefined)
           values.toolSlots = asJson(storedToolSlots(patch.toolSlots));
-        if (patch.enabledTools !== undefined)
-          values.enabledTools = storedToolChoice(patch.enabledTools);
+        if (patch.enabledTools !== undefined) {
+          const selected = storedToolChoice(patch.enabledTools) ?? [];
+          values.enabledTools = selected;
+          // Newly enabled tools require a fresh report; previously cached availability is not sufficient.
+          values.tools = current.tools.filter(
+            (tool) =>
+              selected.includes(tool.kind) &&
+              (current.enabledTools ?? []).includes(tool.kind),
+          );
+        }
         if (patch.acceptJobs !== undefined)
           values.acceptJobs = patch.acceptJobs;
         await runnersRepo(conn).updateMany({ filter: { id }, values });
@@ -812,8 +841,14 @@ export function createRunnerService(deps: RunnerServiceDeps): RunnerService {
         (record) => toRunner(record),
       ),
 
-    all: async (conn) =>
-      (await runnersRepo(conn).findMany({})).map((record) => toRunner(record)),
+    all: async (conn, ids) =>
+      (
+        await runnersRepo(conn).findMany({
+          ...(ids
+            ? { filter: (f) => f.or(ids.map((id) => f.string('id').eq(id))) }
+            : {}),
+        })
+      ).map((record) => toRunner(record, null, false)),
 
     absent: (conn, ids) => absentRunners(conn, ids),
 

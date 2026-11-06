@@ -98,6 +98,12 @@ grants from before roles moved to the App; the App converts them (for example, `
 
 ## Verification
 
+Server evidence readers can call `projects.attachments.listLimited(viewer, issueIdOrKey, limit?)` with a limit from 1 to 100 (default 100). It returns `{ data, truncated }` for the task's own and live comment files, oldest first, and applies issue visibility before querying. The database reads at most `limit + 1` rows, including a truncation sentinel. A truncated batch cannot establish filename uniqueness across all files; use explicit attachment ids or direct users to the source task. The existing `list` contract is unchanged.
+
+Server integrations can pass `message: { type, params }` in `projects.comments.post` options. The framework accepts application-defined names matching `^[a-z][a-z0-9-]*(\.[a-zA-Z][a-zA-Z0-9]*)+$`, at most 100 characters, and at most 10 parameters whose values are strings (up to 500 characters), finite numbers or booleans. It does not coerce or trim values. Define and validate specific message names and parameters in the application, translate known types there, and retain safe fallback Markdown for unknown types. Only this public envelope is projected from origin; other provenance stays private, deleted comments omit the message, and ordinary comment create/edit APIs cannot supply it. A new application message does not require changing the framework.
+
+`statusEvents.fire` accepts optional `needsYou` and `next`, validated with the same progress rules as an issue update. Include the target in the event's `from` list to refresh these fields when an issue already has that status; this updates progress without replaying status activities or entry actions and returns `ignored/noTransition`. An event moving to a different status still records the provided actor and runs the normal transition.
+
 Work handlers receive the original optional `actor` on `onOwnerChanged`, `onUnblocked` and `onSubtasksFinished`, including `actor.trace.runId` when supplied. A status event moves as the system but records the actor it was fired with; pass the real actor when firing one, since an omitted actor defaults to the system.
 
 `GET /api/projects/me` as a signed-in user returns 200 with `permissions`; `POST /api/projects/issues` with a `title` returns 201
@@ -106,3 +112,5 @@ with an identifier such as `PM-1`.
 Invitation emails use `notificationService.sendTransient()` so credentials never enter notification message snapshots or job storage. This performs one bounded attempt without durable retries or deduplication. Failures retain safe status/category diagnostics without raw provider messages. The inviter can generate and privately deliver a new link if delivery fails. Historical notification snapshots are not rewritten.
 
 Applications can fill `ExecutorPresentationContext` from the client kit with `{ kind, Component }`. The component receives `{ id, name, place: 'trigger' | 'menu' }` in new-task and subtask executor selects; candidates and permissions still come from the server. This lets a runtime integration show scoped quota without Projects depending on that integration.
+
+Card-only consumers use `GET /api/projects/issues/summaries?refs=...` (1–100 IDs or identifiers), or `PmApi.issueSummaries`, rather than issue detail. Each visible live issue contributes only `id`, `identifier`, `title` and `statusKey`; missing or invisible references are omitted. `pm.changed.issueIds` also covers list membership changes: `listsChanged: true` tells a consumer to refresh lists/project counts while keeping detail invalidation scoped. Unknown-scope events and subscription acknowledgements retain whole-cache recovery.

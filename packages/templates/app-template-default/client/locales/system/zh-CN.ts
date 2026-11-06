@@ -5,7 +5,44 @@ import inboxZhCN from '#extensions/nocobase-inbox/locales/zh-CN';
 
 /** The Chinese copy of what the template ships; see `./en-US.ts`. */
 const systemZhCN: SystemResource = {
+  pendingFeedback: {
+    working: '正在处理…',
+    longWait: '耗时比平常更长，您可以继续等待。',
+  },
+  taskProgress: {
+    queued: '等待开始',
+    running: '进行中',
+    completed: '已完成',
+    failed: '失败',
+    canceled: '已取消',
+    count: '{{processed}} / {{total}}',
+    processed: '已处理 {{processed}}',
+    background: '离开此页面后任务会继续运行。',
+  },
+  listFeedback: {
+    loading: '加载中',
+    empty: '暂无数据',
+    noResults: '无结果',
+    forbidden: '无权访问',
+    unauthenticated: '会话已过期',
+    failed: '列表加载失败',
+    refreshFailed: '刷新失败，仍显示旧数据',
+    retry: '重试',
+    retrying: '正在重试…',
+    clear: '清空筛选',
+    signIn: '登录',
+  },
   flowDiagram: {
+    controls: '流程图控制',
+    fitView: '适应画布',
+    fullscreen: '全屏',
+    exitFullscreen: '退出全屏',
+    escapeHint: '按 Escape 退出',
+    leavesTo: '可转到',
+    arrivesFrom: '来自',
+    otherRoutes: '其他流转',
+    minimap: '流程缩略导航',
+
     configure: '配置',
     overview: '流程缩略导航',
     actualSize: '实际大小',
@@ -40,6 +77,14 @@ const systemZhCN: SystemResource = {
   ...deviceApprovalZhCN,
   // The UI Library block of the `/inbox` page; the keys below may reword it.
   ...inboxZhCN,
+  // Shared form wording overrides the defaults included by composed blocks.
+  formFeedback: {
+    field: '此字段的值未通过校验，请检查并修改后重试。',
+    invalid: '请检查标记的字段后重试。',
+    failed: '保存失败，已保留您的输入，请重试。',
+    network: '无法连接，请检查网络后重试。已保留您的输入。',
+    denied: '当前权限无法提交此表单。已保留您的输入。',
+  },
   // The UI Library component of the header's inbox button.
   'inboxButton.title': '收件箱',
   'inboxButton.pending': '收件箱，{{count}} 项待处理',
@@ -50,6 +95,9 @@ const systemZhCN: SystemResource = {
   'auth.loginDescription': '使用用户名或邮箱和密码登录',
   'auth.registerTitle': '创建账户',
   'auth.registerDescription': '创建账户以开始使用',
+  'auth.registrationAccepted': '注册请求已提交',
+  'auth.registrationGuidance':
+    '请尝试使用刚填写的用户名和密码登录。如果此邮箱已有账户，新填写的信息不会生效，请使用原账户登录或找回密码。如应用提供了验证指引，请先完成验证。',
   'auth.forgotTitle': '忘记密码',
   'auth.forgotDescription': '输入邮箱，如果账户存在，我们将发送重置链接',
   'auth.passwordResetUnavailable': '未开启自助找回，请联系管理员重置密码。',
@@ -89,9 +137,8 @@ const systemZhCN: SystemResource = {
   'auth.continueWith': '使用 {provider} 继续',
   'auth.about': '关于此应用',
   'auth.platform': 'AI 原生应用平台',
-  'auth.marketingTitleFirst': '让 AI 自由构建',
-  'auth.marketingTitleSecond': 'NocoBase 保障',
-  'auth.marketingTitleThird': '可靠运行',
+  'auth.marketingTitleFirst': 'AI + NocoBase',
+  'auth.marketingTitleSecond': 'Build reliable business systems',
   'auth.marketingDescription':
     '让 AI 在灵活的前端框架上构建体验，由 NocoBase 保障底层数据、权限与治理',
   'auth.frontend': 'AI 原生前端',
@@ -100,10 +147,14 @@ const systemZhCN: SystemResource = {
   'auth.foundationDescription': '可靠的数据、访问控制与治理',
   'auth.marketingFooter': '自由构建，可靠支撑',
   'status.loading': '加载中',
+  'status.refreshing': '正在刷新',
   'status.loadingPage': '正在加载页面',
   'status.denied': '无权访问',
   'status.pageFailed': '无法加载页面',
   'status.retry': '重试',
+  'status.reloadPage': '重新加载页面',
+  'status.retryFailedDescription':
+    '仍然无法加载。可以重新加载整个页面，但本页未保存的修改可能丢失。',
   'navigation.brandHome': 'NocoBase 首页',
   'navigation.brandApps': 'NocoBase 应用',
   'routeOverlay.close': '关闭',
@@ -111,8 +162,8 @@ const systemZhCN: SystemResource = {
   'status.routeFailedDescription':
     '无法加载 {{packageName}} 的路由 {{label}}。',
   shell: {
-    buildFreely: 'AI 自由构建',
-    reliability: '<brand>NocoBase</brand> 保障可靠',
+    brandPartnership: 'AI + <brand>NocoBase</brand>',
+    buildReliableSystems: 'Build reliable business systems',
   },
   home: {
     platform: 'NocoBase · AI 原生应用平台',
@@ -313,7 +364,7 @@ const systemZhCN: SystemResource = {
   },
 
   appearance: {
-    title: '外观',
+    title: '主题',
     mode: '颜色模式',
     preset: '主题',
     light: '浅色',
@@ -354,9 +405,10 @@ const systemZhCN: SystemResource = {
     breadcrumb: '面包屑',
     breadcrumbMore: '显示中间层级',
     back: '返回',
+    backTo: '返回{{label}}',
   },
   dataTable: {
-    noResults: '暂无数据。',
+    noResults: '无结果',
     sortAscending: '升序',
     sortDescending: '降序',
     hideColumn: '隐藏',

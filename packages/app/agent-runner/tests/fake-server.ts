@@ -33,8 +33,10 @@ import {
   type NpmUpgradeNotice,
   type DistResolution,
   NPM_UPGRADE_FEATURE,
+  NATIVE_AGENT_TOOLS,
   DIST_ACCEPT_NPM,
   distAccepts,
+  type AgentTool,
   type WorkspaceReporting,
   type WorkspacesRequest,
   type WorkspacesResponse,
@@ -154,6 +156,8 @@ export class FakeServer {
   ]);
   /** While set, `events` answers 503. */
   eventsDown = false;
+  /** Answer events with the run's unhandled input, as the application does once some arrived. */
+  inputsOnEvents = false;
   onCancelAck?: (run: FakeRun) => void;
   eventsFailures = 0;
   /** Skill bundles by slug, served at `RUNNER_ROUTES.skill`. */
@@ -209,6 +213,9 @@ export class FakeServer {
   uploadStatus: number | undefined;
   /** The slots the registration token carries; registration answers the runner's own, else these, else 1. */
   tokenSlots: number | undefined;
+  capacity:
+    | { slots: number; toolSlots: Partial<Record<AgentTool, number>> }
+    | undefined = { slots: 1, toolSlots: {} };
   /**
    * While set, heartbeat answers announce workspace reports and the workspaces route answers `workspaceAnswer`;
    * otherwise the route does not exist, as on an application that predates it.
@@ -484,6 +491,8 @@ export class FakeServer {
     };
   }
 
+  enabledTools: readonly string[] = NATIVE_AGENT_TOOLS;
+  detectTools = false;
   requests = 0;
   authFailure:
     | { route: string; reason: 'RUNNER_REVOKED' | 'RUNNER_KEY_INVALID' }
@@ -517,6 +526,7 @@ export class FakeServer {
       this.runners.set(id, runner);
       return ok(c, {
         ...(this.options.app === undefined ? {} : { app: this.options.app }),
+        enabledTools: this.enabledTools,
         runnerId: id,
         runnerKey: runner.key,
         heartbeatIntervalMs: this.options.heartbeatIntervalMs,
@@ -573,7 +583,10 @@ export class FakeServer {
         .map(([id]) => id);
       return ok(c, {
         ok: true,
+        ...(this.capacity ? { capacity: this.capacity } : {}),
         serverTime: new Date().toISOString(),
+        enabledTools: this.enabledTools,
+        detectTools: this.detectTools,
         ...(this.protocolVersion === undefined
           ? {}
           : { protocolVersion: this.protocolVersion }),
@@ -849,6 +862,9 @@ export class FakeServer {
         accepted,
         duplicates: body.events.length - accepted,
         cancelRequested: run.cancelRequested,
+        ...(this.inputsOnEvents && unhandled(run).length
+          ? { inputs: unhandled(run) }
+          : {}),
       });
     });
 

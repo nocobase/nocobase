@@ -1,10 +1,10 @@
+import { noCodingToolsFound } from '../../lib/runner-tools.js';
 /** Overview settings preserve drafts while the other tabs load independently. */
 import { useTranslation } from '@nocobase/i18n/client';
 import { useState, type FormEvent, type ReactElement } from 'react';
 import { AGENT_TOOLS, type AgentTool } from '@nocobase/agent-protocol';
 import {
   jobKindsOf,
-  listedTools,
   RUNNER_TRUST,
   toolEnabled,
   type RunnerPatch,
@@ -85,13 +85,10 @@ export function RunnerOverview({
   );
 }
 function enabledToolsOf(
-  runner: RunnerSummary,
+  _runner: RunnerSummary,
   switched: ReadonlySet<AgentTool>,
 ): AgentTool[] {
-  const listed = listedTools(runner);
-  return AGENT_TOOLS.filter((tool) =>
-    listed.includes(tool) ? switched.has(tool) : toolEnabled(runner, tool),
-  );
+  return AGENT_TOOLS.filter((tool) => switched.has(tool));
 }
 
 function SettingsForm({
@@ -114,20 +111,15 @@ function SettingsForm({
     toolSlotsDraft(runner.toolSlots ?? null),
   );
   const [switched, setSwitched] = useState<ReadonlySet<AgentTool>>(
-    () =>
-      new Set(listedTools(runner).filter((tool) => toolEnabled(runner, tool))),
+    () => new Set(AGENT_TOOLS.filter((tool) => toolEnabled(runner, tool))),
   );
   const [errors, setErrors] = useState<{
     name?: string;
     slots?: string;
     toolSlots?: boolean;
   }>({});
-  // The tools it reports, and any it has a limit for though it no longer reports them (so the limit can be cleared).
-  const limitTools = AGENT_TOOLS.filter(
-    (tool) =>
-      listedTools(runner).includes(tool) ||
-      runner.toolSlots?.[tool] !== undefined,
-  );
+  // Every supported tool stays selectable, including one that has not been installed yet.
+  const limitTools = AGENT_TOOLS;
   const [sharing, setSharing] = useState<RunnerPatch | null>(null);
   const jobKinds = jobKindsOf(runner);
 
@@ -250,6 +242,9 @@ function SettingsForm({
                 </Field>
               ))}
             </RadioGroup>
+            <FieldDescription>
+              {t('runtimes.trust.isolationHint')}
+            </FieldDescription>
           </FieldSet>
           {runner.offersJobs ? (
             <Field orientation='horizontal'>
@@ -281,6 +276,11 @@ function SettingsForm({
         title={t('runtimes.detail.tools')}
         description={t('runtimes.detail.toolsDescription')}
       >
+        {noCodingToolsFound(runner) ? (
+          <p className='mb-3 text-sm text-muted-foreground'>
+            {t('runtimes.pathHint')}
+          </p>
+        ) : null}
         <ToolTable
           runner={runner}
           now={now}

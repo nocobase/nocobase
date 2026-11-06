@@ -15,7 +15,8 @@ import { pathToFileURL } from 'node:url';
 
 import type ts from 'typescript';
 
-const PLUGIN_PACKAGE_PATTERN = /^@nocobase\/app-plugin-([a-z0-9][a-z0-9-]*)$/;
+const PLUGIN_PACKAGE_PATTERN =
+  /^@[a-z0-9][a-z0-9-]*\/app-plugin-([a-z0-9][a-z0-9-]*)$/;
 const CLIENT_SOURCE_DEFINITION: PluginSourceDefinition = {
   entryKind: 'call',
   entrySpecifierSuffix: '/client',
@@ -74,7 +75,7 @@ export function localNameFor(packageName: string): string {
   const match = PLUGIN_PACKAGE_PATTERN.exec(packageName);
   if (!match) {
     throw new Error(
-      `Plugin package "${packageName}" must match @nocobase/app-plugin-<name>.`,
+      `Plugin package "${packageName}" must match @scope/app-plugin-<name>.`,
     );
   }
   return match[1].replace(/-([a-z0-9])/g, (_all, character: string) =>

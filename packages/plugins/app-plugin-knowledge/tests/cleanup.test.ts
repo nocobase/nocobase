@@ -70,7 +70,7 @@ describe('cleaning up uploads', () => {
     });
     // The file plugin stamps files with the real time; put them at the test clock's.
     await filesRepo(conn()).updateMany({
-      filter: (f) => f.string('id').notEmpty(),
+      filter: (f) => f.string('id').ne(null),
       values: { createdAt: '2026-10-02T08:00:00.000Z' },
     });
     const stored = await filesRepo(conn()).findMany({});

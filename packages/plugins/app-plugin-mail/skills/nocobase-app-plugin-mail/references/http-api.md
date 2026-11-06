@@ -137,3 +137,13 @@ Provider push notifications use `POST /mail/webhooks/:providerType/:providerName
 ## Compatibility
 
 Within a major version, existing methods, paths, request requirements, response meanings, error reasons, permission resources, and stream behavior remain stable. Additive request fields are optional; additive response fields are optional. A required-field addition, path removal, behavior change, or permission change requires a new major version and a migration note.
+
+## IMAP source selection for moving and deleting
+
+`MailClient.moveMessage()` accepts optional `sourceProviderFolderId` in its input; `MailClient.deleteMessage(accountId, messageId, permanently, { sourceProviderFolderId })` accepts it in an optional fourth argument. The HTTP move body and deletion query carry the same field. Use the actual provider folder path, not a local folder UUID or an aggregate view. Older calls may omit it only when exactly one verified source is available. Other providers ignore it.
+
+IMAP ordinary deletion moves the selected source to the account's existing Trash folder. Inbox and Trash copies of one business message do not turn an Inbox deletion into permanent deletion. The workspace requires an actual source folder for remote IMAP archive/delete actions; local drafts keep their existing deletion path. A missing Trash or ambiguous source returns `MAIL_IMAP_TRASH_NOT_FOUND` or `MAIL_IMAP_MOVE_SOURCE_REQUIRED`.
+
+The static move capability describes the implemented adapter path. Each operation still checks server MOVE/UIDPLUS capabilities, generation, exact UID mapping, identity, writable folders and local ownership. `MAIL_IMAP_MOVE_UNSUPPORTED` means the server has no safe path. An incomplete operation or lost response returns `MAIL_IMAP_MOVE_OUTCOME_UNKNOWN`; never automatically retry it. An explicit retry can finish a previously confirmed destination without creating another copy. An unknown move with no confirmed mapping requires mailbox verification before further remote mutations.
+
+A successful move preserves the business message UUID, body and local metadata. Locator provider IDs and attachment API IDs can change. Reload message details and use the new attachment download links. Only the selected copy is actively moved; provider-specific object or label side effects must be checked against the remote mailbox.

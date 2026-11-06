@@ -360,6 +360,16 @@ const zhCN: LifecycleExampleResource = {
     withdraw: '撤回',
   },
   flowDiagram: {
+    controls: '流程图控制',
+    fitView: '适应画布',
+    fullscreen: '全屏',
+    exitFullscreen: '退出全屏',
+    escapeHint: '按 Escape 退出',
+    leavesTo: '可转到',
+    arrivesFrom: '来自',
+    otherRoutes: '其他流转',
+    minimap: '流程缩略导航',
+
     overview: '流程缩略导航',
     actualSize: '实际大小',
     states: '状态',
@@ -460,7 +470,7 @@ const zhCN: LifecycleExampleResource = {
       cancelled: {
         customer: '客户已取消。',
         timeout: '已关闭：未在时限内支付。',
-        refundRequested: '已应客户要求退款。',
+        refundRequested: '客户已申请退款。',
       },
       refunding: '退款中……',
       refundNeedsAttention: '退款失败：{{error}} 等待人工重试。',

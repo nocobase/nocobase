@@ -48,7 +48,7 @@ it('uses an idempotency key and redacts provider errors without SDK console outp
   await transport.close();
 });
 
-it('retains capacity when fetch ignores abort across several timeout windows', async () => {
+it('waits for fetch that ignores cancellation and retains capacity until it ends', async () => {
   vi.useFakeTimers();
   const releases: Array<(value: Response) => void> = [];
   const fetch = vi.fn(
@@ -66,8 +66,14 @@ it('retains capacity when fetch ignores abort across several timeout windows', a
     expect(fetch).toHaveBeenCalledTimes(4);
   }
   const close = transport.close();
+  expect(transport.close()).toBe(close);
+  let closed = false;
+  const closing = close.then(() => {
+    closed = true;
+  });
   await vi.advanceTimersByTimeAsync(5_001);
-  await close;
+  expect(closed).toBe(false);
+  expect((await transport.send(message)).status).toBe('failed');
   expect(fetch).toHaveBeenCalledTimes(4);
   for (const release of releases)
     release(new Response(JSON.stringify({ id: 'synthetic-id' })));
@@ -77,5 +83,7 @@ it('retains capacity when fetch ignores abort across several timeout windows', a
     'accepted',
     'accepted',
   ]);
+  await closing;
+  expect(closed).toBe(true);
   expect((await transport.send(message)).status).toBe('failed');
 });

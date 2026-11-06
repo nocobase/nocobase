@@ -1,5 +1,45 @@
 # @nocobase/app-plugin-queue-example
 
+## 1.0.0-beta.15
+
+### Patch Changes
+
+- cf23bfe: **Breaking:** Remove the deprecated `@nocobase/app-server/mailer` entry and its `Mailer`, `mailerToken`, `createMailer`, `MailerProvider`, and notification configuration exports. Replace `MailExecutions.close(waitMs)` and `drain()` with `stop()` and `wait()`; transport `close()` now cancels supported network work and waits for its original completion without a nested timeout. Application owners must apply the outer shutdown budget. Create exclusive senders with `@nocobase/app-server/mailers` and declare notification config with `@nocobase/app-plugin-notification-providers/config`. Existing inline SMTP/Resend YAML, environment mappings, and provider/channel APIs remain supported.
+
+  Default and Examples now show `mailers.default: system` and explicitly map `MAILERS_SYSTEM_*`; the example configuration remains empty at runtime. The previous `MAILERS_TRANSACTIONAL_*` sample prefix was not published. Applications may still choose any valid mailer name and custom environment prefix.
+
+- Updated dependencies [9933a9a]
+- Updated dependencies [cf23bfe]
+- Updated dependencies [4411984]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.18
+  - @nocobase/app-server@5.0.0-beta.0
+
+## 1.0.0-beta.14
+
+### Patch Changes
+
+- cf23bfe: Move Redis realtime broadcasting to the commercial Realtime Redis plugin. Register its Server plugin before selecting Redis in an application, or import the standalone broker from its `/broker` entry. Preserve the Memory default, service identity, authorization and recovery protocol, and republish runtime consumers against the new host and realtime major versions. Install the compatible commercial cohort before deploying the final removal.
+- Updated dependencies [88d35b8]
+- Updated dependencies [83f28b1]
+- Updated dependencies [cf23bfe]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.17
+  - @nocobase/app-server@4.0.0-beta.0
+
+## 1.0.0-beta.13
+
+### Patch Changes
+
+- 5ce4a7c: Move the Redis/BullMQ Queue backend to the Server-only commercial `@nocobase/app-plugin-queue-redis` plugin. Applications using Redis Queue must install and explicitly register that plugin and retain the same Redis target, namespace and logical queue names. Memory remains built in and both templates now declare only Memory. Common configuration is always validated; an unselected Redis declaration no longer requires its implementation, but selecting Redis without it fails explicitly without falling back to Memory. Backend implementations register through the new public runtime contract before host setup. Remove `QueueService.registerBackend()` and OSS Redis identity exports; migrate factories and identity imports to the commercial plugin. Jobs and recurring schedules are unchanged. Coordinate release order: publish the additive OSS API, then the compatible commercial plugin, before shipping this removal. Rollback requires a compatible OSS/plugin/application composition set, not uninstalling the plugin alone.
+- Updated dependencies [b6934ad]
+- Updated dependencies [a0b4568]
+- Updated dependencies [b6934ad]
+- Updated dependencies [5ce4a7c]
+- Updated dependencies [b6934ad]
+- Updated dependencies [171f7fb]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.16
+  - @nocobase/app-server@3.0.0-beta.5
+  - @nocobase/queue@1.0.0-beta.10
+
 ## 1.0.0-beta.12
 
 ### Patch Changes

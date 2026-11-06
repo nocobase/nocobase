@@ -55,3 +55,7 @@ export {
 } from '../stores/connection.js';
 export { describeCollection } from '../database/collections.js';
 export type { AuthorizationExtensionHost } from '../host.js';
+export {
+  submitSettingsMutation,
+  withSettingsSubmission,
+} from './submission.js';

@@ -26,7 +26,7 @@ import { DatabasePermissionSetStore } from './stores/permission-sets.js';
 export interface AppPermissionSetsConfig {
   /** The Permission Set that confers unrestricted access. */
   rootSet?: string;
-  /** The Permission Set every signed-in user holds. */
+  /** A separately configured global default set; `member` is now a direct creation default. */
   defaultSet?: string;
 }
 
@@ -55,7 +55,7 @@ export type AppAuthorization = Authorization &
   UiAuthorizationApi;
 
 const DEFAULT_ROOT_SET = 'root';
-const DEFAULT_DEFAULT_SET = 'member';
+const MEMBER_SET = 'member';
 
 const text = (key: string) => ({ key, ns: AUTHORIZATION_NAMESPACE });
 
@@ -78,7 +78,8 @@ export function createAppAuthorization(
           // `user` is this host's principal type: a superuser is an account.
           assignableTo: ['user'],
         },
-        defaultSet: sets?.defaultSet ?? DEFAULT_DEFAULT_SET,
+        defaultSet:
+          sets?.defaultSet === MEMBER_SET ? undefined : sets?.defaultSet,
       }),
       databasePlugin(options.database),
       pagesPlugin(),
@@ -86,6 +87,17 @@ export function createAppAuthorization(
       uiPlugin(),
       ...(options.config?.plugins ?? []),
     ],
+  });
+  if ((sets?.rootSet ?? DEFAULT_ROOT_SET) === MEMBER_SET) {
+    throw new Error(
+      'The member Permission Set cannot confer unrestricted access',
+    );
+  }
+  authz.permissionSets.protect({
+    owner: '@nocobase/app-plugin-authorization',
+    keys: [MEMBER_SET],
+    allow: ['update', 'assign', 'revoke'],
+    assignableTo: ['user'],
   });
   authz.subjects.add('authenticated', {
     filterActive: async (ids) => ids.filter((id) => id === '*'),

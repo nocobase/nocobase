@@ -8,7 +8,7 @@
  */
 import { useTranslation } from '@nocobase/i18n/client';
 import { useQuery } from '@tanstack/react-query';
-import { PlusIcon, SparklesIcon, TerminalIcon } from 'lucide-react';
+import { PlusIcon, PuzzleIcon, TerminalIcon } from 'lucide-react';
 import type { ReactElement } from 'react';
 import { Link, Outlet, useNavigate } from 'react-router';
 
@@ -72,7 +72,7 @@ export default function SkillsPage(): ReactElement {
   else if (skills.data.length === 0)
     content = (
       <AgEmpty
-        icon={<SparklesIcon />}
+        icon={<PuzzleIcon />}
         title={t('skills.emptyTitle')}
         description={
           canManage ? t('skills.emptyDescription') : t('skills.emptyReadOnly')

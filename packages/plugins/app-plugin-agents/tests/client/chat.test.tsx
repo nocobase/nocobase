@@ -406,10 +406,11 @@ function useChat(
   return { messages, send };
 }
 
-const { ChatClientProvider } = await import('../../client/chat/controller.js');
 const wrapper = ({ children }: { readonly children: ReactNode }) => (
   <QueryClientProvider client={chatClient()}>
-    <ChatClientProvider>{children}</ChatClientProvider>
+    <MemoryRouter>
+      <ChatProvider>{children}</ChatProvider>
+    </MemoryRouter>
   </QueryClientProvider>
 );
 
@@ -429,7 +430,9 @@ describe('conversation hooks', () => {
     );
     await waitFor(() => expect(result.current.messages.items).toHaveLength(3));
     expect(
-      callsTo('GET', `agents/${C}/messages`).map((call) => call.query.after),
+      callsTo('GET', `agents/${C}/messages`)
+        .filter((call) => !call.query.ids)
+        .map((call) => call.query.after),
     ).toEqual([undefined, 2]);
     // Another conversation's announcement, or one already loaded, fetches nothing.
     act(() => {
@@ -444,7 +447,9 @@ describe('conversation hooks', () => {
         lastSeq: 3,
       });
     });
-    expect(callsTo('GET', `agents/${C}/messages`)).toHaveLength(2);
+    expect(
+      callsTo('GET', `agents/${C}/messages`).filter((call) => !call.query.ids),
+    ).toHaveLength(2);
   });
 
   it('replaces a reply still being written in place until it is final', async () => {

@@ -77,6 +77,8 @@ export interface EventSpoolOptions {
   redactor?: Redactor;
   /** A failure retrying will not fix, such as the run no longer being active. Sending stops. */
   onFatal?: (error: ApiError) => void;
+  /** Each answer the server gave a batch: a run's carries its cancel flag and any input waiting for it. */
+  onResponse?: (body: unknown) => void;
   log?: (message: string) => void;
 }
 
@@ -220,12 +222,13 @@ export class EventSpool<E extends SpooledEvent = RunEvent> {
       if (Date.now() < this.retryAt) return;
       const batch = this.pending.slice(0, MAX_EVENTS_PER_BATCH);
       try {
-        await this.options.client.request(
+        const body: unknown = await this.options.client.request(
           'POST',
           this.options.route ??
             routePath(RUNNER_ROUTES.events, { runId: this.options.runId }),
           { events: batch },
         );
+        this.options.onResponse?.(body);
       } catch (error) {
         if (error instanceof ApiError && !error.transient) {
           this.fatal = error;

@@ -1,4 +1,5 @@
 import { messageKey } from '../lib/message-key.js';
+import { usePendingFeedback } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { RotateCcw, Trash2, UploadCloud, X } from 'lucide-react';
 import {
@@ -8,12 +9,13 @@ import {
   type ChangeEvent,
   type DragEvent,
   type ReactElement,
+  type ReactNode,
 } from 'react';
 
-import type { FileRecord, FileUploadFieldProps } from '../types';
+import type { FileRecord, FileUploadFieldProps } from '../types.js';
 import { Button } from '#components/ui/button';
-import { Spinner } from '#components/ui/spinner';
-import { FileThumbnail } from './file-thumbnail';
+import { BrandLoadingMark } from '#components/brand-loading-mark';
+import { FileThumbnail } from './file-thumbnail.js';
 
 type UploadItem = {
   readonly key: string;
@@ -22,6 +24,48 @@ type UploadItem = {
   readonly controller?: AbortController;
   readonly error?: Error;
 };
+
+/**
+ * The upload request reports no byte progress, so the item shows an honest
+ * indeterminate wait from one display hook: the mark appears after the shared
+ * display delay and a long upload says so after 10 seconds, next to the real
+ * cancel action.
+ */
+function UploadItemBody({
+  status,
+  failure,
+  children,
+}: {
+  readonly status: UploadItem['status'];
+  readonly failure?: string;
+  readonly children: ReactNode;
+}): ReactElement {
+  const { t } = useTranslation();
+  const feedback = usePendingFeedback(status === 'uploading');
+  return (
+    <>
+      <div className='flex h-20 items-center justify-center overflow-hidden rounded-sm bg-muted/30'>
+        {feedback.visible ? (
+          <BrandLoadingMark className='size-8 text-muted-foreground' />
+        ) : (
+          <UploadCloud aria-hidden='true' />
+        )}
+      </div>
+      {children}
+      <div className='text-xs text-muted-foreground'>
+        {status === 'error'
+          ? (failure ?? t('fileUi.files.failed', { defaultValue: 'Failed' }))
+          : status === 'uploading'
+            ? feedback.longWaiting
+              ? t('fileUi.files.longWait', {
+                  defaultValue: 'Still uploading. Keep waiting or cancel.',
+                })
+              : t('fileUi.files.uploading', { defaultValue: 'Uploading' })
+            : t('fileUi.files.pending', { defaultValue: 'Pending' })}
+      </div>
+    </>
+  );
+}
 
 function accepts(file: File, rules: readonly string[]): boolean {
   if (!rules.length) return true;
@@ -40,7 +84,7 @@ function accepts(file: File, rules: readonly string[]): boolean {
 export function FileUploadField(
   inputProps: FileUploadFieldProps,
 ): ReactElement {
-  const { t } = useTranslation('@nocobase/app-plugin-file');
+  const { t } = useTranslation();
   const {
     repository,
     value,
@@ -69,12 +113,12 @@ export function FileUploadField(
   const chooseLabel =
     labels?.choose ??
     (multiple
-      ? t('files.chooseMany', { defaultValue: 'Choose files' })
-      : t('files.chooseOne', { defaultValue: 'Choose file' }));
+      ? t('fileUi.files.chooseMany', { defaultValue: 'Choose files' })
+      : t('fileUi.files.chooseOne', { defaultValue: 'Choose file' }));
   const removeLabel =
-    labels?.remove ?? t('files.remove', { defaultValue: 'Remove' });
+    labels?.remove ?? t('fileUi.files.remove', { defaultValue: 'Remove' });
   const retryLabel =
-    labels?.retry ?? t('files.retry', { defaultValue: 'Retry' });
+    labels?.retry ?? t('fileUi.files.retry', { defaultValue: 'Retry' });
 
   useEffect(() => {
     valueRef.current = value;
@@ -170,7 +214,7 @@ export function FileUploadField(
     if (files.length + (multiple ? value.length : 0) + items.length > maximum) {
       onError?.(
         new Error(
-          t('fileLimitReached', {
+          t('fileUi.fileLimitReached', {
             defaultValue: 'The maximum number of files has been reached.',
           }),
         ),
@@ -181,7 +225,7 @@ export function FileUploadField(
       if (maxSize !== undefined && file.size > maxSize) {
         onError?.(
           new Error(
-            t('fileTooLarge', {
+            t('fileUi.fileTooLarge', {
               defaultValue: 'File exceeds the maximum size.',
             }),
           ),
@@ -191,7 +235,7 @@ export function FileUploadField(
       if (!accepts(file, accept)) {
         onError?.(
           new Error(
-            t('fileTypeNotAllowed', {
+            t('fileUi.fileTypeNotAllowed', {
               defaultValue: 'File type is not allowed.',
             }),
           ),
@@ -218,7 +262,7 @@ export function FileUploadField(
           error instanceof Error
             ? error
             : new Error(
-                t('removalFailed', {
+                t('fileUi.removalFailed', {
                   defaultValue: 'File removal failed.',
                 }),
               ),
@@ -249,12 +293,10 @@ export function FileUploadField(
   };
 
   return (
-    <div
-      data-slot='file-upload-field'
-      className='space-y-3'
-      aria-busy={items.some((item) => item.status === 'uploading')}
-    >
+    <div data-slot='file-upload-field' className='space-y-3'>
+      {/* The polite summary below stays outside the busy drop zone. */}
       <div
+        aria-busy={items.some((item) => item.status === 'uploading')}
         className={`flex min-h-24 flex-wrap gap-3 rounded-md border border-dashed p-3 ${dragging ? 'border-primary bg-primary/5' : ''}`}
         onDragOver={(event) => {
           event.preventDefault();
@@ -272,7 +314,7 @@ export function FileUploadField(
               {record.filename}
             </div>
             <div className='text-xs text-muted-foreground'>
-              {t('files.done', { defaultValue: 'Done' })}
+              {t('fileUi.files.done', { defaultValue: 'Done' })}
             </div>
             <Button
               type='button'
@@ -288,32 +330,20 @@ export function FileUploadField(
         ))}
         {items.map((item) => (
           <div key={item.key} className='w-36 rounded-md border p-2'>
-            <div className='flex h-20 items-center justify-center overflow-hidden rounded-sm bg-muted/30'>
-              {item.status === 'uploading' ? (
-                <Spinner
-                  aria-label={t('files.uploading', {
-                    defaultValue: 'Uploading',
-                  })}
-                />
-              ) : (
-                <UploadCloud aria-hidden='true' />
-              )}
-            </div>
-            <div className='mt-2 truncate text-sm' title={item.file.name}>
-              {item.file.name}
-            </div>
-            <div className='text-xs text-muted-foreground'>
-              {item.status === 'error'
-                ? ((item.error
-                    ? t(messageKey(item.error.message), {
-                        defaultValue: item.error.message,
-                      })
-                    : undefined) ??
-                  t('files.failed', { defaultValue: 'Failed' }))
-                : item.status === 'uploading'
-                  ? t('files.uploading', { defaultValue: 'Uploading' })
-                  : t('files.pending', { defaultValue: 'Pending' })}
-            </div>
+            <UploadItemBody
+              status={item.status}
+              failure={
+                item.status === 'error' && item.error
+                  ? t(messageKey(item.error.message), {
+                      defaultValue: item.error.message,
+                    })
+                  : undefined
+              }
+            >
+              <div className='mt-2 truncate text-sm' title={item.file.name}>
+                {item.file.name}
+              </div>
+            </UploadItemBody>
             <div className='mt-2 flex gap-1'>
               {item.status === 'error' ? (
                 <Button
@@ -331,7 +361,7 @@ export function FileUploadField(
                 type='button'
                 size='icon'
                 variant='ghost'
-                aria-label={t('files.cancelFile', {
+                aria-label={t('fileUi.files.cancelFile', {
                   filename: item.file.name,
                   defaultValue: `Cancel ${item.file.name}`,
                 })}
@@ -373,11 +403,11 @@ export function FileUploadField(
         {[
           ...value.map(
             (record) =>
-              `${record.filename}: ${t('files.done', { defaultValue: 'done' })}`,
+              `${record.filename}: ${t('fileUi.files.done', { defaultValue: 'done' })}`,
           ),
           ...items.map(
             (item) =>
-              `${item.file.name}: ${t(`files.status.${item.status}`, { defaultValue: item.status })}`,
+              `${item.file.name}: ${t(`fileUi.files.status.${item.status}`, { defaultValue: item.status })}`,
           ),
         ].join('. ')}
       </div>

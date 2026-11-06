@@ -1,3 +1,9 @@
+import type { NativeExecutionRequest } from './types.js';
+import type { OnlineAgentResendOptions } from '../../../../shared/resend.js';
+import { resendOptions } from '../messages/resend.js';
+import { validateWebSearch, type OnlineAgentWebSearch } from '../web-search.js';
+import type { NativeFileInputs } from '../../files/service.js';
+import type { OnlineAgentSandboxProvider } from '../../sandbox/types.js';
 import { nativeInputParts } from '../messages/validation.js';
 import {
   NativeRealtimeOnlineAgent,
@@ -61,8 +67,11 @@ export class NativeOnlineAgentBackend implements OnlineAgentBackend {
     private deps: {
       sessions: OnlineAgentSessionManager;
       configurator: OnlineAgentConfigurator;
+      sandboxProvider?: OnlineAgentSandboxProvider;
       ids: IdSource;
       resolver?: ServiceResolver;
+      webSearch?: OnlineAgentWebSearch;
+      fileInputs?: NativeFileInputs;
       model(ref: ModelRef, sessionId: string): Promise<LanguageModel>;
       defaultModel(): Promise<ModelRef | null>;
       uiStreams: OnlineAgentUIStreams;
@@ -195,19 +204,19 @@ export class NativeOnlineAgentBackend implements OnlineAgentBackend {
     options: OnlineAgentRealtimeOptions,
   ): Promise<string> {
     this.available();
+    if (options.projectId)
+      throw invalid('Only Runner conversations can select a project.');
     const config = structuredClone(initial.config);
     if (config.agentId && config.agentId !== 'online')
       throw invalid('This configuration belongs to a Runner backend.');
-    if (!initial.hasModel) {
-      const fallback =
-        options.selectedModel ??
-        initial.defaultModel ??
-        (await this.deps.defaultModel());
-      if (fallback)
-        config.model = [`${fallback.modelService}/${fallback.model}`];
-    }
-    const model = options.selectedModel ?? this.firstModel(config.model);
+    const model =
+      options.selectedModel ??
+      (config.model?.length
+        ? this.firstModel(config.model)
+        : (initial.defaultModel ?? (await this.deps.defaultModel())));
+    if (!model) throw invalid('No enabled chat model is configured.');
     this.validateModel(config.model, model);
+    await validateWebSearch(config, model, this.deps.webSearch);
     await this.deps.model(model, '');
     this.available();
     return this.deps.sessions.create(context.user.id, kind, config, model, {
@@ -308,6 +317,7 @@ export class NativeOnlineAgentBackend implements OnlineAgentBackend {
       abort: (...args) => this.abort(...args),
       retryFinalization: (...args) => this.retryFinalization(...args),
       start: (...args) => this.start(...args),
+      resend: (...args) => this.resend(...args),
       approve: (...args) => this.approve(...args),
       observe: (...args) => this.observe(...args),
     };
@@ -328,18 +338,27 @@ export class NativeOnlineAgentBackend implements OnlineAgentBackend {
         context,
         options,
         session.config,
-        [],
         boundary === 'http',
       );
       if ((config.agentId ?? 'online') !== (session.config.agentId ?? 'online'))
         throw conflict('Start a new conversation to choose another agent.');
       const model =
         selectedModel ??
+        (config.model?.length &&
         (options.model !== undefined ||
-        JSON.stringify(config.model) !== JSON.stringify(session.config.model)
+          JSON.stringify(config.model) !== JSON.stringify(session.config.model))
           ? this.firstModel(config.model)
           : session.model);
       this.validateModel(config.model, model);
+      const changed =
+        model.modelService !== session.model.modelService ||
+        model.model !== session.model.model;
+      await validateWebSearch(
+        config,
+        model,
+        this.deps.webSearch,
+        changed && options.webSearch === undefined,
+      );
       await this.deps.model(model, id);
       this.available();
       await this.deps.sessions.configure(context.user.id, id, config, model);
@@ -356,6 +375,7 @@ export class NativeOnlineAgentBackend implements OnlineAgentBackend {
   }
   private firstModel(models: string[]): ModelRef {
     const value = models[0];
+    if (!value) throw invalid('No enabled chat model is configured.');
     const separator = value?.indexOf('/') ?? -1;
     if (separator < 1 || separator === value.length - 1)
       throw invalid('The selected model is outside this configuration.');
@@ -364,8 +384,11 @@ export class NativeOnlineAgentBackend implements OnlineAgentBackend {
       model: value.slice(separator + 1),
     };
   }
-  private validateModel(allowed: string[], model: ModelRef) {
-    if (!allowed.includes(`${model.modelService}/${model.model}`))
+  private validateModel(allowed: string[] | undefined, model: ModelRef) {
+    if (
+      allowed?.length &&
+      !allowed.includes(`${model.modelService}/${model.model}`)
+    )
       throw invalid('The selected model is outside this configuration.');
   }
   private notifyObservers(
@@ -497,31 +520,12 @@ export class NativeOnlineAgentBackend implements OnlineAgentBackend {
     input: NativeApproval,
     onExecution?: (execution: OnlineAgentExecution) => void,
   ): Promise<number> {
-    this.available();
-    const accepted = acceptance();
-    const execution: OnlineAgentExecution = {
-      abort: new AbortController(),
-      observers: new Set(),
-    };
-    await this.gate(id, async () => {
-      if (this.stopping) throw conflict('OnlineAgent is stopping.');
-      if (this.active.size >= 1024)
-        throw conflict('OnlineAgent execution limit exceeded.');
-      if (this.active.has(id)) throw conflict('This conversation is busy.');
-      this.active.set(id, execution);
-      execution.task = this.native.run(
-        context,
-        id,
-        [],
-        undefined,
-        execution,
-        accepted,
-        input,
-      );
-    });
-    const seq = await accepted.promise;
-    onExecution?.(execution);
-    return seq;
+    return this.launch(
+      context,
+      id,
+      { kind: 'approval', approval: input },
+      onExecution,
+    );
   }
   private async start(
     context: OnlineAgentContext,
@@ -561,15 +565,44 @@ export class NativeOnlineAgentBackend implements OnlineAgentBackend {
           : {}),
       })),
     );
+    return this.launch(
+      context,
+      id,
+      { kind: 'append', inputs, input, schema },
+      onExecution,
+    );
+  }
+
+  private resend(
+    context: OnlineAgentContext,
+    id: string,
+    options: OnlineAgentResendOptions,
+    input: Parameters<NativeSessionHost['resend']>[3],
+    onExecution?: (execution: OnlineAgentExecution) => void,
+  ): Promise<number> {
+    return this.launch(
+      context,
+      id,
+      { kind: 'resend', options: resendOptions(options), input },
+      onExecution,
+    );
+  }
+
+  private async launch(
+    context: OnlineAgentContext,
+    id: string,
+    request: NativeExecutionRequest,
+    onExecution?: (execution: OnlineAgentExecution) => void,
+  ): Promise<number> {
     await this.deps.sessions.load(context.user.id, id);
-    if (this.stopping) throw conflict('OnlineAgent is stopping.');
+    this.available();
     const execution: OnlineAgentExecution = {
       abort: new AbortController(),
       observers: new Set(),
     };
     const accepted = acceptance();
     await this.gate(id, async () => {
-      if (this.stopping) throw conflict('OnlineAgent is stopping.');
+      this.available();
       if (this.active.has(id)) throw conflict('This conversation is busy.');
       if (this.active.size >= 1024)
         throw conflict('OnlineAgent execution limit exceeded.');
@@ -577,12 +610,9 @@ export class NativeOnlineAgentBackend implements OnlineAgentBackend {
       execution.task = this.native.run(
         context,
         id,
-        inputs,
-        input,
+        request,
         execution,
         accepted,
-        undefined,
-        schema,
       );
     });
     const seq = await accepted.promise;

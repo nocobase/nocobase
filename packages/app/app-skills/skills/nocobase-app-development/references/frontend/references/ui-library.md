@@ -30,14 +30,14 @@ An agent's runs on one subject: a compact side-column log with a live timer, an 
 
 ### agent-composer
 
-The message box for talking to an agent: page-context chips inside it, files to send (attach, paste, drop, uploaded before sending), Enter to send, Stop while the agent works, and a toolbar slot for a picker such as the agent's. Use it wherever a person writes to an agent. Presentational: context chips, drafts and focus come from the agents plugin's chat hooks (@nocobase/app-plugin-agents/client/chat) through optional props.
+The message box for talking to an agent: page-context chips inside it (each can open a preview of what it carries), files to send (attach, paste, drop, uploaded before sending), Enter to send, Stop while the agent works, and a toolbar slot for a picker such as the agent's. Use it wherever a person writes to an agent. Presentational: context chips, drafts and focus come from the agents plugin's chat hooks (@nocobase/app-plugin-agents/client/chat) through optional props.
 
 - Kind: component
 - Install: `yes n | pnpm exec shadcn add @nocobase/agent-composer`
 - Installs to: `client/components/agent-composer.tsx`
 - Plugin dependencies: `@nocobase/app-plugin-agents`
 - Example: `@nocobase/agent-composer-demo` (`pnpm exec shadcn view @nocobase/agent-composer-demo`)
-- After installing: Pass onSend (return true, or a promise of true, once the message is taken), and optionally running, onStop, toolbar and notice; pass attachments (upload, and optionally discard and registerAdd; useChatAttachments of @nocobase/app-plugin-agents/client/chat uploads to the plugin) to send files; wire context (chips from contextChips and buildPageContext of @nocobase/app-plugin-agents/client/chat), draft and registerFocus from the chat panel when it sits in one. Every word comes from the labels prop, English by default.
+- After installing: Pass onSend (return true, or a promise of true, once the message is taken), and optionally running, onStop, toolbar and notice; pass attachments (upload, and optionally discard and registerAdd; useChatAttachments of @nocobase/app-plugin-agents/client/chat uploads to the plugin) to send files; wire context (chips from contextChips and buildPageContext of @nocobase/app-plugin-agents/client/chat, and optionally inspect, which makes each chip open a preview of what it carries), draft and registerFocus from the chat panel when it sits in one. Every word comes from the labels prop, English by default.
 
 ### agent-picker
 
@@ -52,7 +52,7 @@ The one way to pick an agent: a trigger with the agent's avatar (availability do
 
 ### agent-chat
 
-The agents' chat: a side panel beside the content area with the conversation, live steps, a composer with page-context chips and files to send (attach, paste, drop), the agent picker, the history, a full-page conversation view, and header, floating and Ask agent launchers. Use it to let people talk to agents from any page. Wired to the headless hooks of @nocobase/app-plugin-agents/client/chat.
+A simple agent conversation panel with shared page/panel headers, history, composer and launchers. It has no association requirements. For related-work slots and conversation details, add agent-chat-details.
 
 - Kind: block
 - Install: `yes n | pnpm exec shadcn add @nocobase/agent-chat`
@@ -60,7 +60,19 @@ The agents' chat: a side panel beside the content area with the conversation, li
 - Plugin dependencies: `@nocobase/app-plugin-agents`
 - Also installs: `@nocobase/markdown-view`, `@nocobase/agent-run-history`, `@nocobase/agent-composer`, `@nocobase/agent-picker`, `@nocobase/attachment-list`
 - Example: `@nocobase/agent-chat-demo` (`pnpm exec shadcn view @nocobase/agent-chat-demo`)
-- After installing: Requires the agents plugin (and the file plugin on the server for files sent in chat): wrap the routes in ChatProvider from @nocobase/app-plugin-agents/client/chat (pass conversationPath when ChatConversationPage has a route such as /chat/:conversationId), optionally with ChatExtensionsContext for cards among the messages. Render ChatPanel as a sibling of <main> inside a `relative flex` row, ChatHeaderButton in the header and ChatFloatingButton anywhere; add the plugin's chatLinkRoutes(base) for links that open the panel; spread locales/ into client/locales/.
+- After installing: Requires the agents plugin (and the file plugin on the server for files sent in chat): wrap the routes in ChatProvider from @nocobase/app-plugin-agents/client/chat (pass memoryScope, the signed-in person's id, so a new conversation starts with the agent they used last; pass conversationPath when ChatConversationPage has a route such as /chat/:conversationId), optionally with ChatExtensionsContext for cards among the messages. Render ChatPanel as a sibling of <main> inside a `relative flex` row, ChatHeaderButton in the header and ChatFloatingButton anywhere; add the plugin's chatLinkRoutes(base) for links that open the panel; spread locales/ into client/locales/.
+
+### agent-chat-details
+
+The agent chat workspace: the conversation list, one conversation and its details (linked work such as tasks, context usage, runtime and agent), laid out by its own width as one column, list beside conversation, or list, conversation and details. Mount it as a full page with the selection in the address, or in the side panel with LinkedChatPanel; both are the same component. Linked work uses generic ConversationLink sections; applications add their own through narrow slots. No task or project dependency.
+
+- Kind: block
+- Install: `yes n | pnpm exec shadcn add @nocobase/agent-chat-details`
+- Installs to: `client/extensions/nocobase-agent-chat/`
+- Plugin dependencies: none
+- Also installs: `@nocobase/agent-chat`
+- Example: `@nocobase/agent-chat-details-demo` (`pnpm exec shadcn view @nocobase/agent-chat-details-demo`)
+- After installing: Mount ChatWorkspace on a page (selection in the address) and LinkedChatPanel under the same ChatProvider as the simple ChatPanel (selection in the panel store); both are the same workspace. Add application-specific parts through narrow slots: list.heading, list.row (extra, facts, status), list.filters/filter, renderBody, metadata, detailsMetadata and scope; slots[kind] renders a related-work section and renderSummary the summary row. Passive details reuse cached conversation and usage snapshots; no polling is added.
 
 ## Approval
 
@@ -85,6 +97,7 @@ Password sign-in, sign-up, reset-request and reset forms. Use them on authentica
 - Install: `yes n | pnpm exec shadcn add @nocobase/auth-forms`
 - Installs to: `client/extensions/nocobase-auth-forms/`
 - Plugin dependencies: none
+- Also installs: `@nocobase/feedback-form`
 - Example: `@nocobase/auth-forms-demo` (`pnpm exec shadcn view @nocobase/auth-forms-demo`)
 - After installing: Presentational: each form calls onSubmit(values) and renders what it is given (submitting, error, fieldErrors, labels with English defaults). Wire onSubmit to @nocobase/app-plugin-authentication/client/actions (the templates' client/pages/auth/ pages are the reference), pass translated labels, and put links in forgotPasswordLink and footer.
 
@@ -129,6 +142,7 @@ The /device page where a signed-in person approves or denies the sign-in of a CL
 - Install: `yes n | pnpm exec shadcn add @nocobase/device-approval`
 - Installs to: `client/extensions/nocobase-device-approval/`
 - Plugin dependencies: `@nocobase/app-plugin-authentication`
+- Also installs: `@nocobase/feedback-form`
 - Example: `@nocobase/device-approval-demo` (`pnpm exec shadcn view @nocobase/device-approval-demo`)
 - After installing: Needs wiring before it works: enable deviceAuthorization() and bearer() in server/config/auth.ts, add an application migration creating Better Auth's deviceCode table, and register deviceAuthorizationClient() in client/config/auth.ts. Render DeviceApproval on a /device route only signed-in people reach (auth: 'optional', sending others to /login?redirect=), passing ?user_code= as userCode, and spread locales/ into client/locales/. The authentication plugin's Skill (references/better-auth-plugins.md) has the details.
 
@@ -136,16 +150,51 @@ The /device page where a signed-in person approves or denies the sign-in of a CL
 
 ### permission-editor
 
-A compact resource permission workspace with horizontal action checkboxes, adjacent data scopes and atomic visible selection.
+A controlled permission workspace with top category tabs, application-owned menu paths, compact action groups, status filtering and independent data scopes.
 
 - Kind: component
 - Install: `yes n | pnpm exec shadcn add @nocobase/permission-editor`
 - Installs to: `client/components/permission-editor.tsx`, `client/components/permission-filter.tsx`
 - Plugin dependencies: none
+- Also installs: `@nocobase/long-text`
 - Example: `@nocobase/permission-editor-demo` (`pnpm exec shadcn view @nocobase/permission-editor-demo`)
-- After installing: Map your permissions to sections of groups of rows; each row has an id, a label, an optional hint, whether it is enabled, and optionally the levels it can reach and the current one. onEnabledChange and onLevelChange report changes by row id. Every word comes through props, English by default. Resource groups render as compact rows with wrapping action checkboxes. Optional row.scopes bind independent scope selectors to their owning action. Pass onEnabledBatchChange to enable atomic group selection of visible toggleable permissions; omit it to keep single-action controls. Filtering never mutates the draft. Pass labels.selectVisible for the localized group checkbox name. Use group.accessOnly for a page with a single access action to show one title checkbox without redundant action text. Provide scope.configuration for parameterized scopes; PermissionFilter edits validated condition drafts and keeps role saving in the host form. Never save customFilter as a bare key: bind its native params.filter object.
+- After installing: Use the application’s standard top Tabs, grant Checkboxes and compact groups. Supply navigation.path from actual route metadata for menu names and routes. All / Granted / Ungranted filters and draft counts never mutate grants; collapse affects presentation only. Translate granted, ungranted, authorizationStatus, clearSearch, collapseAll, expandAll and summary labels. The application owns the exposed permission catalog, its business grouping, labels and persistence. Pass sections of groups of rows; the component has no built-in business or system permissions and never discovers or requests them. Preserve caller action order, including non-CRUD operations. Each row shows a checkbox, its title and optional hint; enabled scoped actions show every independently named range directly. onEnabledChange and onLevelChange report only explicit draft edits by stable row or scope id. The host owns loading, validation, Save, conflicts and preservation of grants absent from the visible catalog. Installing a plugin or receiving a capability in options does not opt it into this form: select only actual application features and supported actions in application-owned composition code. Settings require explicit app opt-in, an actual registered configuration page and matching server capability/action together; neither installed plugins nor a catalog entry alone are sufficient. Keep standard top category tabs at every width, show one category by default and matching categories during global filtering; search and grant-status filters never change grants. Do not supply a default System and tools section or copy demo permissions into an application. Set group.accessOnly for a page with one access action. Supply scope.configuration for parameterized filters, scope.hint for contextual help, and translated labels including emptyDescription, readOnly and managedPermission. Keep descriptions near their permission, let long content wrap, and show disabled explanations. Existing apps reconcile the component, its Tabs, InputGroup, LongText and Empty dependencies, application catalog adapter and host bindings through a normal source upgrade. Preserve unknown policies and native filter parameters. For page access, pass section.navigation as application-owned nodes with id, label, optional rowId and children. References use the existing flat row ids; a structural menu group has no grant. Single-level menus stay flat; a parent page and its children use independent checkboxes for staged authorization. Disclosure only changes presentation. Search includes ancestor names and retains their paths; filtering expands matching branches and Clear restores collapse state. The host adapter uses the complete runtime menu tree and its navigation transforms, deduplicates inherited page grants, and retains independent non-menu pages. Supply translated expandGroup and collapseGroup callbacks. Never infer authorization inheritance or grant every child when opening a menu group. All page grants, business actions and settings permissions use Checkbox to edit the host draft. The grant-status Tabs change presentation immediately without editing grants. The page-access tree contains business pages only. Compose every actual system-settings page and operation, including user management and business configuration, under Configuration permissions. Preserve original row ids and grants when reclassifying existing controls, and do not duplicate these entries as page checkboxes or category-jump placeholders. Keep this boundary in developer documentation rather than repeating it as generic Page access helper copy. Map each independently assignable business operation to its actual UI entry, server request, affected fields and record scopes. Use actual operation labels, reuse a permission across equivalent entry points, and separate steps such as Approve and Reject instead of bundling them behind Manage. Page access, record viewing and lifecycle eligibility are separate; read lists do not require unrelated write permissions. Enforce the matching action and all affected record scopes server-side, including operation-scoped related-record pickers. When splitting existing actions, update backend enforcement, frontend availability and the application selection together and migrate grants and default, sharing and restriction rules without widening scopes or changing history. See the authorization Registry README for the full contract. For Create operations, hide the selector for the newly created record because no existing row can be selected; retain the source catalog and stored hidden policy values. If creation reads an existing related record, keep that related range visible and label its actual purpose. Localize custom-filter field captions by collection while preserving field identifiers and saved conditions. The application adapter decides this presentation from its real operations; the Registry supplies no fixed business fields.
+
+### role-list
+
+A role administration table built with the standard DataTable: localized column headers, sortable names and identifiers, protected/custom badges, and pagination. The host supplies authorized rows and edit destinations. Preinstalled in both application templates.
+
+- Kind: component
+- Install: `yes n | pnpm exec shadcn add @nocobase/role-list`
+- Installs to: `client/components/role-list.tsx`
+- Plugin dependencies: none
+- Also installs: `@nocobase/data-table`, `@nocobase/record-link`
+- Example: `@nocobase/role-list-demo` (`pnpm exec shadcn view @nocobase/role-list-demo`)
+- After installing: Render inside a React Router and the application i18n provider. Supply roles with key, localized title, edit destination (to) and protected state. Pass localized labels for name, key, type, protected and custom, plus an optional ariaLabel. Uses the shared DataTable for table semantics, sorting and pagination. Optional tableState accepts controlled pagination/sorting and page-size choices from the host URL adapter. The host owns loading, empty/error states, filtering and authorization; pass loading={active && request.loading && listState === 'ready'} so a same-query refresh shows the table's standard refresh indicator while a refresh-failure retry is announced only by its retry button. Existing apps must update the installed role-list component, its data-table dependency and caller labels together.
+
+### default-access-editor
+
+Controlled default data scope fields grouped by operation, with independently named ranges and native custom-filter slots. The host supplies localized business captions, current rules and authorized writes.
+
+- Kind: component
+- Install: `yes n | pnpm exec shadcn add @nocobase/default-access-editor`
+- Installs to: `client/components/default-access-editor.tsx`
+- Plugin dependencies: none
+- Example: `@nocobase/default-access-editor-demo` (`pnpm exec shadcn view @nocobase/default-access-editor-demo`)
+- After installing: Pass localized labels, a stable rule key, resource choices and scope controls. Explain that default data scopes combine with role-granted scopes for users who already hold the operation permission, and that restriction rules still constrain final access. The host loads authorization/defaultAccess and authorization/defaultAccess/options, enforces settings:authorization.default-access read/create/update/delete, and owns draft preservation, custom filters, validation, confirmation and writes. Existing apps reconcile the editor, default-access pages/model/routes, locales from the updated template. No existing rule is seeded or rewritten on upgrade. Both templates expose one Permission management sidebar entry with Roles and permissions and Default data scopes tabs, without changing their route ids, URLs, settings guards or stored rules. This navigation organization does not add sharing or restriction editors. Keep global default data scopes in the Permission management tabs and omit the contextual shortcut from role editors to avoid confusing global rules with the current role’s scopes. Group scopes with the same stable actionId under one operation heading; each scope retains its independent id, selection, filter and error. The application shares scope captions with its role permission adapter rather than exposing collection identifiers, and preserves original resource/action/scope keys and stored rules.
 
 ## Data display
+
+### record-link
+
+A native router link for record names and identifiers in tables and lists: foreground text at rest, underline on hover and visible keyboard focus. Preinstalled in both application templates.
+
+- Kind: component
+- Install: `yes n | pnpm exec shadcn add @nocobase/record-link`
+- Installs to: `client/components/record-link.tsx`
+- Plugin dependencies: none
+- Example: `@nocobase/record-link-demo` (`pnpm exec shadcn view @nocobase/record-link-demo`)
+- After installing: Render inside a React Router and pass the record route through to. Carry the current list query in to.search when opening a child route. Supports native Link props and refs; use action buttons and menu items separately.
 
 ### kanban
 
@@ -236,10 +285,10 @@ Read-only React Flow canvas with ELK orthogonal routing for directed graphs, inc
 
 - Kind: component
 - Install: `yes n | pnpm exec shadcn add @nocobase/flow-diagram`
-- Installs to: `client/components/flow-diagram.tsx`, `client/components/flow-layout.ts`, `client/components/flow-diagram-css.d.ts`
+- Installs to: `client/components/flow-diagram.tsx`, `client/components/flow-layout.ts`, `client/components/flow-diagram-css.d.ts`, `client/components/body-portal.tsx`
 - Plugin dependencies: none
 - Example: `@nocobase/flow-diagram-demo` (`pnpm exec shadcn view @nocobase/flow-diagram-demo`)
-- After installing: Pass nodes and edges with unique ids, an ariaLabel and either a bounded canvas height or autoHeight. Use direction DOWN with autoHeight for detailed page diagrams; height follows the full layout including outer routes and labels. The default node is 232×104 canvas units; set width/height for richer renderNode content. direction is RIGHT or DOWN. nodeDescription and nodeActions add supporting summaries and configuration controls. For bounded canvases, initialMinZoom=0.8 preserves initial readability and showMiniMap provides overview navigation; Fit still shows the whole graph. Translate flowDiagram.overview when using the minimap. onNodeClick/onEdgeClick open your details; onLayoutError reports invalid graph or layout failures. Translate flowDiagram.empty, loading, failed, nodeHelp and edgeHelp; see the components README. Includes React Flow CSS. Uses application primary/card/foreground/border tokens in light and dark themes. Ordinary edges are subdued, solid and labeled directly on the route. Set visited on nodes/edges for actual history and highlighted for the current node or available edges; current nodes have a stronger fill and ring. ELK optimizes port order to reduce crossings. Decorative nodes/edges are not focusable or selectable.
+- After installing: Pass nodes and edges with unique ids, an ariaLabel and either a bounded canvas height or autoHeight. Use direction DOWN with autoHeight for detailed page diagrams; height follows the full layout including outer routes and labels. The default node is 232×104 canvas units; set width/height for richer renderNode content. direction is RIGHT or DOWN. nodeDescription and nodeActions add supporting summaries and configuration controls. For bounded canvases, initialMinZoom=0.8 preserves initial readability and showMiniMap provides overview navigation; Fit still shows the whole graph. Translate flowDiagram.overview when using the minimap. onNodeClick/onEdgeClick open your details; onLayoutError reports invalid graph or layout failures. Translate flowDiagram.empty, loading, failed, nodeHelp and edgeHelp; see the components README. Includes React Flow CSS. Uses application primary/card/foreground/border tokens in light and dark themes. Ordinary edges are subdued, solid and labeled directly on the route. Set visited on nodes/edges for actual history and highlighted for the current node or available edges; current nodes have a stronger fill and ring. ELK optimizes port order to reduce crossings. Decorative nodes/edges are not focusable or selectable. Body portals detach when React Activity hides the diagram, retaining component state without leaving fullscreen content visible during permission rechecks.
 
 ### lifecycle-diagram
 
@@ -252,6 +301,68 @@ Theme-aware, read-only lifecycle diagram using React Flow and ELK. Shows the cur
 - Also installs: `@nocobase/flow-diagram`
 - Example: `@nocobase/lifecycle-diagram-demo` (`pnpm exec shadcn view @nocobase/lifecycle-diagram-demo`)
 - After installing: Pass description.description from useLifecycle/createLifecycleHook, currentState from view.record, availableTransitions filtered from view.available, and history from view.history.transitions. History matches the exact transition/source/destination; current state alone never implies a visited path. Pass a translated endLabel for separate decorative markers on explicit final states. Defaults to direction DOWN, autoHeight and initialMinZoom 0.7 for readable vertical page reading. The Fit control still shows the entire graph; an explicit initialMinZoom overrides the default. Override direction and autoHeight explicitly for compact canvases. stateActions supplies explicit configuration buttons; nodeDescription displays real policy summaries. Translate ariaLabel, stateLabel and transitionLabel; append a gear to automatic transition labels if needed. Edges are solid with inline labels and subdued neutral strokes; current/visited/available highlights use the application primary theme token. Current nodes have a stronger border and ring; icons, top accents and status footers distinguish current, visited and configurable nodes using theme tokens. onStateClick/onTransitionClick open details and never fire transitions. Keep toMermaid for documentation/export. Pass configuration={label, canConfigure, onConfigure} for automatic Configure buttons on authorized bound states and configuration selection on bound transitions. onConfigure receives the exact target and permitted bound fields grouped by native parameter key; connect the existing real editor and API. canConfigure is required and is only a UI affordance. Explicit direction/style overrides are reserved for user-requested customization; Mermaid is documentation/export only.
+
+## Feedback
+
+### loading
+
+Region-owned loading feedback with delayed display and long-wait guidance.
+
+- Kind: component
+- Install: `yes n | pnpm exec shadcn add @nocobase/loading`
+- Installs to: `client/components/loading.tsx`, `client/components/brand-loading-mark.tsx`, `client/components/brand-mark-geometry.ts`
+- Plugin dependencies: none
+- Example: `@nocobase/loading-demo` (`pnpm exec shadcn view @nocobase/loading-demo`)
+- After installing: Use real pending/submitting state. Feedback appears after 300ms, long-wait guidance after 10s, and clears immediately. Add pendingFeedback.working, pendingFeedback.longWait and status.loading to application translations. Preserve useSubmission protection; pending is recoverable state, not busy. Publish the runtime exporting usePendingFeedback before Registry publication. RefreshIndicator marks a background refresh of content that still belongs to the current query and permission scope; render it inside the positioned element owning that content and add status.refreshing to translations.
+
+### pending-button
+
+A stable-size native action button with immediate busy semantics and delayed feedback.
+
+- Kind: component
+- Install: `yes n | pnpm exec shadcn add @nocobase/pending-button`
+- Installs to: `client/components/pending-button.tsx`, `client/components/brand-loading-mark.tsx`, `client/components/brand-mark-geometry.ts`
+- Plugin dependencies: none
+- Example: `@nocobase/pending-button-demo` (`pnpm exec shadcn view @nocobase/pending-button-demo`)
+- After installing: Use real pending/submitting state. Feedback appears after 300ms, long-wait guidance after 10s, and clears immediately. Add pendingFeedback.working, pendingFeedback.longWait and status.loading to application translations. Preserve useSubmission protection; pending is recoverable state, not busy. Publish the runtime exporting usePendingFeedback before Registry publication.
+
+### task-progress
+
+One long-running task record: real determinate progress, honest indeterminate waiting, failure, result and background continuation.
+
+- Kind: component
+- Install: `yes n | pnpm exec shadcn add @nocobase/task-progress`
+- Installs to: `client/components/task-progress.tsx`
+- Plugin dependencies: none
+- Example: `@nocobase/task-progress-demo` (`pnpm exec shadcn view @nocobase/task-progress-demo`)
+- After installing: Render one task record from the server's own job or task state; do not create a client-side task. Pass processed and total, or percent, only when the task really reports them; otherwise the bar is indeterminate and shows no percentage. Status changes are announced once, percentage updates are not. Set continuesInBackground when the task survives leaving the page. Put the result location (a download action or link) and failure recovery in message and actions, and offer cancel only when the server can really cancel. Add the taskProgress translations listed in the components README.
+
+## File
+
+### file-component-ui
+
+Application-owned upload, list, thumbnail, and preview components for business file endpoints.
+
+- Kind: block
+- Install: `yes n | pnpm exec shadcn add @nocobase/file-component-ui`
+- Installs to: `client/extensions/nocobase-file-component-ui/`
+- Plugin dependencies: `@nocobase/app-plugin-file`
+- Also installs: `@nocobase/attachment-list`, `@nocobase/loading`
+- Example: `@nocobase/file-component-ui-demo` (`pnpm exec shadcn view @nocobase/file-component-ui-demo`)
+- After installing: Requires the File plugin services and your own authorized file repository. Pass a ClientFileRepository to FileUploadField. Merge locales/ into application locales. The default template preinstalls this block; reconcile existing copies instead of overwriting them. Uploads report no byte progress: each uploading item shows an indeterminate wait whose mark appears after 300ms and a long-wait note after 10 seconds, with a real cancel that aborts the request; failures keep the file for Retry, and unmounting aborts every upload. Never invent a percentage.
+
+## Forms
+
+### feedback-form
+
+Preserves form input, maps safe field errors and focuses the first editable error in layout order. Preinstalled in the templates.
+
+- Kind: component
+- Install: `yes n | pnpm exec shadcn add @nocobase/feedback-form`
+- Installs to: `client/components/feedback-form.tsx`
+- Plugin dependencies: none
+- Example: `@nocobase/feedback-form-demo` (`pnpm exec shadcn view @nocobase/feedback-form-demo`)
+- After installing: Show mapped reasons only beside fields/groups, with automatic reveal/focus and no top summary or navigation list. Unmapped failures or unavailable focus targets keep a safe accessible form message. Use submitted names or data-field-path; return promises or pass caught errors via error. RHF consumers pass submitting and validationErrors. Register persistent FormFeedback descriptors for unmounted regions and stable rows. Add formFeedback.field, invalid, failed, network and denied to application translations; device-approval includes them in its locales. Reconcile copied source as well as the runtime when upgrading. Publication is gated by check-form-feedback-release.mjs: the declared app-client version floor must be obtainable and export the form APIs in JavaScript and declarations. Release the runtime and raise this item's floor before publishing the registry. Existing controlled fields expose trusted errors through aria-errormessage or explicitly associated data-slot=field-error / data-feedback-field-error nodes.
 
 ## Inbox
 
@@ -278,6 +389,19 @@ A header button linking to the inbox, with an amber badge for what waits on the 
 - Example: `@nocobase/inbox-button-demo` (`pnpm exec shadcn view @nocobase/inbox-button-demo`)
 - After installing: Render <InboxButton badge={inboxBadge(waiting, unread)} /> inside a TooltipProvider, with inboxBadge from #components/inbox-badge, waiting what your inbox counts as waiting (0 without decisions) and unread from useInboxUnreadCount() of @nocobase/app-plugin-notification-in-app/client/inbox; useDocumentTitleBadge(badge?.text ?? null) prefixes the tab title. Add the inboxButton.* keys its README lists to client/locales/.
 
+## Notification
+
+### notification-logs-ui
+
+Application-owned delivery and provider attempt log components backed by the NocoBase notification API.
+
+- Kind: block
+- Install: `yes n | pnpm exec shadcn add @nocobase/notification-logs-ui`
+- Installs to: `client/extensions/nocobase-notification-logs-ui/`
+- Plugin dependencies: none
+- Example: `@nocobase/notification-logs-ui-demo` (`pnpm exec shadcn view @nocobase/notification-logs-ui-demo`)
+- After installing: Requires the Notification server plugin and authorized access to GET /api/notifications/logs. Mount NotificationLogsPage in an application-owned route and merge locales/ into application locales. Shows the newest 100 logs; adds no route or permissions.
+
 ## Other
 
 ### data-table
@@ -288,8 +412,21 @@ Standard TanStack Table v8 table with controlled server pagination and sorting, 
 - Install: `yes n | pnpm exec shadcn add @nocobase/data-table`
 - Installs to: `client/components/data-table/column-header.tsx`, `client/components/data-table/data-table.tsx`, `client/components/data-table/index.ts`, `client/components/data-table/pagination.tsx`, `client/components/data-table/view-options.tsx`
 - Plugin dependencies: none
+- Also installs: `@nocobase/list-feedback`, `@nocobase/loading`
 - Example: `@nocobase/data-table-demo` (`pnpm exec shadcn view @nocobase/data-table-demo`)
-- After installing: Use DataTable with typed columns and getRowId. Server data must use manualPagination and manualSorting with controlled state; never sort or paginate only a fetched page locally. pagination=false renders every supplied row and leaves pagination to the caller.
+- After installing: Use DataTable with typed columns and getRowId. Server data must use manualPagination and manualSorting with controlled state; never sort or paginate only a fetched page locally. pagination=false renders every supplied row and leaves pagination to the caller. Pass loading={active && request.loading} for an app-owned list: explicit false suppresses unresolved loading feedback while the query is paused, while omitting loading keeps listState-driven feedback. Pass loading for the current request: with rows of the current query it is a background refresh that keeps rows and shows a delayed RefreshIndicator; a new query hides previous rows, keeps their body and pagination height, and never shows the previous page count. Pass listState from resolveListState so loading, empty, failure and permission states stay distinct. Pass loadingIdentity, the current query's stable identity such as its request path, so a new query restarts the 300ms and 10-second display thresholds without remounting the table or losing its kept geometry; the table itself is busy only while it shows retained rows.
+
+### list-feedback
+
+Accessible list loading, empty, filtered, permission and request feedback for tables and cards.
+
+- Kind: component
+- Install: `yes n | pnpm exec shadcn add @nocobase/list-feedback`
+- Installs to: `client/components/list-feedback.tsx`
+- Plugin dependencies: none
+- Also installs: `@nocobase/loading`, `@nocobase/pending-button`
+- Example: `@nocobase/list-feedback-demo` (`pnpm exec shadcn view @nocobase/list-feedback-demo`)
+- After installing: Pass resolveListState from @nocobase/app-client. ListFeedback renders loading through @nocobase/loading, keeping the body's footprint at once and showing the indicator and one status after 300ms, and every other built-in state as one matching icon and one short line; render ListFeedbackActions with the existing retry, clear and sign-in controls in the host toolbar. Merge listFeedback translations listed in the components README. Keep the standard create action in the permission-gated page header, including for empty collections; reserve empty and emptyAction for intentional business-specific empty content. Retry uses PendingButton, so the host passes the real retry request as busy. Pass identity, the current query's stable identity, so consecutive queries each get their own display delay.
 
 ## Page layout
 
@@ -325,6 +462,17 @@ A settings dialog after shadcn's sidebar-13: grouped categories in a sidebar on 
 - Plugin dependencies: none
 - Example: `@nocobase/settings-dialog-demo` (`pnpm exec shadcn view @nocobase/settings-dialog-demo`)
 - After installing: Pass groups of { id, label, icon } items, the activeId and onSelect (or renderItem to draw each entry as a router link), and render the open entry as children, optionally in a SettingsDialogSection. Every word comes from the props; the component ships no locale keys.
+
+### setup-readiness
+
+Contextual prerequisite checks for a feature, with missing, ready and unavailable states. Connect real authorized business reads; never infer readiness from installed plugins. Preinstalled in application templates.
+
+- Kind: component
+- Install: `yes n | pnpm exec shadcn add @nocobase/setup-readiness`
+- Installs to: `client/components/setup-readiness.tsx`, `client/components/setup-readiness-state.ts`
+- Plugin dependencies: none
+- Example: `@nocobase/setup-readiness-demo` (`pnpm exec shadcn view @nocobase/setup-readiness-demo`)
+- After installing: Memoize SetupCheck descriptors and the async inspect callback; wire useSetupReadiness to the feature’s authorized aggregate read and pass its state to SetupReadiness. Supply translated labels, stable ids and authorized configuration links. No checks or disabled inspection causes no reads. Refresh on the host route key and after configuration saves; focus rechecks mounted checks. Unknown reason is unavailable, signIn, forbidden or invalid. Only missing checks render configuration links; denied/invalid reads are not missing. Initial all-ready hides; explicit refresh keeps a compact confirmation and the refresh control. This is informational; execution still validates prerequisites server-side. Templates also include RequiredRoleSetup for explicitly declared business roles.
 
 ## Projects
 
@@ -420,7 +568,20 @@ A child route presented as a non-modal page covering the content area, keeping t
 - Installs to: `client/components/route-child-page.tsx`
 - Plugin dependencies: none
 - Example: `@nocobase/route-child-page-demo` (`pnpm exec shadcn view @nocobase/route-child-page-demo`)
-- After installing: Return RouteChildPage from the component of a child route. It covers the nearest positioned ancestor, so render a page's own outlet beside its container rather than inside it. A child page that can only render inside another one, such as the child page of a tab, covers that one whole.
+- After installing: Return RouteChildPage from the component of a child route. It covers the nearest positioned ancestor, so render a page's own outlet beside its container rather than inside it. A child page that can only render inside another one, such as the child page of a tab, covers that one whole. On a route declaring a child-page presentation the application opens the layer first; this component then adds its content and className to that layer.
+
+## Task Center
+
+### task-center-ui
+
+Presentational components for a personal task center layered as source → subject → status → task cards: a source navigation with subjects folded under each source, pending counts and a client-side subject search; To do / Done / All tabs; day-grouped task cards whose summary each task type contributes; one-type-at-a-time batch selection with a floating action bar and confirmation; and a right-side detail drawer whose form and actions the task's business supplies. Takes data already shaped and translated; pairs with a task index such as @nocobase/app-plugin-task-center.
+
+- Kind: block
+- Install: `yes n | pnpm exec shadcn add @nocobase/task-center-ui`
+- Installs to: `client/extensions/nocobase-task-center-ui/`
+- Plugin dependencies: none
+- Example: `@nocobase/task-center-ui-demo` (`pnpm exec shadcn view @nocobase/task-center-ui-demo`)
+- After installing: Pure presentation: map your task index into TaskNavSource and TaskCardData (types.ts) with translated labels, render each task type's summary with TaskSummaryFields, its batch actions through useTaskSelection, TaskBulkBar and TaskBulkConfirm, and its detail form and actions inside TaskDetailSheet. Merge locales/ into your locale resources.
 
 ## Workflows
 

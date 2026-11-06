@@ -185,7 +185,8 @@ export interface AppObservedStatus {
     | 'stopped'
     | 'dormant'
     | 'failed'
-    | 'unknown';
+    | 'unknown'
+    | 'cancelled';
   readonly version: string | null;
   readonly deploymentId: string | null;
   readonly startedAt: string | null;
@@ -195,6 +196,21 @@ export interface AppObservedStatus {
 }
 
 export interface DriverSession {
+  /** Outside the deployment queue. queuedOnly preserves a deployment that has started. */
+  cancel?(
+    deploymentId: string,
+    appId: string,
+    queuedOnly?: boolean,
+  ): Promise<'cancelled' | 'cancelling' | 'tooLate' | 'notFound'>;
+  progress?(
+    deploymentId: string,
+    appId: string,
+  ): Promise<{
+    state: 'queued' | 'running' | 'cancelling';
+    queueAhead: number | null;
+    cancellable: boolean;
+  } | null>;
+
   /** Whether the target is reachable and usable with these settings. */
   check(): Promise<{
     readonly ok: boolean;

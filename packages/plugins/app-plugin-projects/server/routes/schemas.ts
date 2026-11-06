@@ -4,6 +4,7 @@
  */
 import type { OpenAPIV3_1 } from '@nocobase/app-server/router';
 import { z } from 'zod';
+import { CommentMessageSchema } from '../domains/comments/comment.message.js';
 
 import {
   BUSINESS_KEYS,
@@ -58,6 +59,7 @@ import {
   type CreateIssueRequest,
   type Executor,
   type Issue,
+  type IssueSummary,
   type IssueBoard,
   type IssueDetail,
   type IssueListItem,
@@ -1055,6 +1057,7 @@ export const IssueCommentSchema: z.ZodType<IssueComment> = z
     rootId: z.string(),
     via: z.enum(['cli', 'api_key', 'agent']).nullable(),
     source: ActivityViaSchema.nullable().optional(),
+    message: CommentMessageSchema.optional(),
     createdAt: dateTime,
     editedAt: dateTime.nullable(),
     deleted: z.boolean(),
@@ -1080,6 +1083,18 @@ export const CreateCommentResultSchema: z.ZodType<CreateCommentResult> =
       description:
         'Whom the comment started work for; empty without a plugin that does.',
     }),
+    skipped: z
+      .array(
+        z.object({
+          kind: z.string(),
+          id: z.string(),
+          reason: z.enum(['waitingOwner', 'blocked', 'dormant', 'limited']),
+        }),
+      )
+      .meta({
+        description:
+          'Whose work was held back and why; the comment was still saved.',
+      }),
   });
 
 export const CommentReactionsSchema: z.ZodType<CommentReactions> = z.object({
@@ -1150,6 +1165,28 @@ const issueShape = {
   lastActivityAt: dateTime,
   deletedAt: dateTime.nullable(),
 };
+
+export const IssueSummariesQuery: z.ZodType<
+  { refs: string[] },
+  { refs: string }
+> = z.object({
+  refs: z
+    .string()
+    .max(6500)
+    .transform((value) => value.split(',').map((ref) => ref.trim()))
+    .pipe(z.array(z.string().min(1).max(64)).min(1).max(100))
+    .meta({
+      description:
+        'Comma-separated issue IDs or identifiers, at most 100. Missing or invisible issues are omitted.',
+    }),
+});
+
+export const IssueSummarySchema: z.ZodType<IssueSummary> = z.object({
+  id: z.string(),
+  identifier: z.string(),
+  title: z.string(),
+  statusKey: z.string(),
+});
 
 export const IssueSchema: z.ZodType<Issue> = z
   .object(issueShape)

@@ -22,7 +22,7 @@ import {
   DefaultSchedulerService,
   schedulerServiceToken,
 } from '../server/services/scheduler.js';
-import { scheduleId } from '../server/store.js';
+import { ScheduleStore, scheduleId } from '../server/store.js';
 import {
   createMemoryScheduleService,
   createSchedulerDatabase,
@@ -65,7 +65,7 @@ function lifecycleProvider(events: string[] = []) {
   const getScheduleExecutor = vi.fn(() => executor);
   container.instance(jobExecutorServiceToken, {
     getScheduleExecutor,
-  } as JobExecutorService);
+  } as unknown as JobExecutorService);
   container.instance(databaseManagerToken, {} as DatabaseManager);
   const provider = new SchedulerProvider(application(container));
   provider.register();
@@ -100,7 +100,7 @@ describe('SchedulerProvider', () => {
     const getScheduleExecutor = vi.fn(() => ({}) as ScheduleExecutor);
     container.instance(jobExecutorServiceToken, {
       getScheduleExecutor,
-    } as JobExecutorService);
+    } as unknown as JobExecutorService);
     const provider = new SchedulerProvider(application(container));
 
     expect(provider.name).toBe('@nocobase/app-plugin-scheduler');
@@ -130,22 +130,31 @@ describe('SchedulerProvider', () => {
       },
       'redis-scheduler',
     ],
-  ])('%s', (_label, sections, name) => {
+  ])('%s', async (_label, sections, name) => {
     const container = new ServiceContainer();
     container.instance(databaseManagerToken, {} as DatabaseManager);
-    const getScheduleExecutor = vi.fn(() => ({}) as ScheduleExecutor);
+    const shutdown = vi.fn(async () => undefined);
+    const getScheduleExecutor = vi.fn(
+      () => ({ shutdown }) as unknown as ScheduleExecutor,
+    );
     container.instance(jobExecutorServiceToken, {
       getScheduleExecutor,
-    } as JobExecutorService);
+    } as unknown as JobExecutorService);
     const provider = new SchedulerProvider(application(container, sections));
     provider.register();
 
     container.resolve(schedulerServiceToken);
 
-    expect(getScheduleExecutor).toHaveBeenCalledWith(SCHEDULER_SCOPE, name);
+    expect(getScheduleExecutor).toHaveBeenCalledExactlyOnceWith(
+      SCHEDULER_SCOPE,
+      name,
+    );
+    await container.resolve(schedulerServiceToken).drain();
+    await provider.shutdown();
+    expect(shutdown).toHaveBeenCalledOnce();
   });
 
-  it('refuses a scheduler.jobs naming no jobs configuration', () => {
+  it('refuses a scheduler.jobs naming no jobs configuration', async () => {
     const container = new ServiceContainer();
     container.instance(databaseManagerToken, {} as DatabaseManager);
     container.instance(jobExecutorServiceToken, {
@@ -162,6 +171,8 @@ describe('SchedulerProvider', () => {
     expect(() => container.resolve(schedulerServiceToken)).toThrow(
       /scheduler\.jobs names "redis-typo", which is not a jobs configuration/u,
     );
+    await expect(provider.start()).rejects.toThrow('scheduler.jobs');
+    await provider.shutdown();
   });
 
   it('syncs, subscribes and sets the executor up before reconciling', async () => {
@@ -207,6 +218,46 @@ describe('SchedulerProvider', () => {
       'scheduler:activate',
     ]);
     expect(reconcile).not.toHaveBeenCalled();
+    const service = container.resolve(schedulerServiceToken);
+    const drain = service.drain();
+    expect(provider.shutdown()).toBe(drain);
+    await drain;
+  });
+
+  it.each(['sync', 'setup', 'activate'] as const)(
+    'drains the selected executor after %s fails',
+    async (phase) => {
+      const { provider, container, executor, getScheduleExecutor } =
+        lifecycleProvider();
+      const service = container.resolve(schedulerServiceToken);
+      const failure = new Error(`${phase} failed`);
+      if (phase === 'setup')
+        vi.mocked(executor.setup).mockRejectedValue(failure);
+      else vi.mocked(service[phase]).mockRejectedValue(failure);
+      await expect(provider.start()).rejects.toBe(failure);
+      const drain = service.drain();
+      expect(provider.shutdown()).toBe(drain);
+      await drain;
+      expect(executor.shutdown).toHaveBeenCalledOnce();
+      expect(getScheduleExecutor).toHaveBeenCalledOnce();
+    },
+  );
+
+  it('does not restart a service drained during startup', async () => {
+    const { provider, container, executor } = lifecycleProvider();
+    const service = container.resolve(schedulerServiceToken);
+    const setup = Promise.withResolvers<void>();
+    vi.mocked(executor.setup).mockReturnValue(setup.promise);
+    const start = provider.start();
+    await new Promise<void>((resolve) => setImmediate(resolve));
+    const drain = service.drain();
+    setup.resolve();
+    await start;
+    await drain;
+    expect(provider.shutdown()).toBe(drain);
+    await expect(provider.start()).rejects.toThrow('has been drained');
+    expect(executor.setup).toHaveBeenCalledOnce();
+    expect(executor.shutdown).toHaveBeenCalledOnce();
   });
 
   it('passes executor events to the run state', async () => {
@@ -249,7 +300,7 @@ describe('SchedulerProvider', () => {
     await provider.shutdown();
   });
 
-  it('stops reconciling and listening before it shuts the executor down', async () => {
+  it('stops reconciling and releases its subscription after the executor drains', async () => {
     vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] });
     const events: string[] = [];
     const { provider, container } = lifecycleProvider(events);
@@ -262,10 +313,10 @@ describe('SchedulerProvider', () => {
     await provider.shutdown();
     vi.advanceTimersByTime(120_000);
 
-    expect(events).toEqual(['executor:unsubscribe', 'executor:shutdown']);
+    expect(events).toEqual(['executor:shutdown', 'executor:unsubscribe']);
     expect(reconcile).not.toHaveBeenCalled();
     await provider.shutdown();
-    expect(events).toEqual(['executor:unsubscribe', 'executor:shutdown']);
+    expect(events).toEqual(['executor:shutdown', 'executor:unsubscribe']);
   });
 });
 
@@ -348,6 +399,53 @@ describe('SchedulerProvider on the memory adapter', () => {
       scheduleStatus: 'active',
     });
   });
+
+  it('reports event persistence failure even when Jobs consumes subscriber errors', async () => {
+    const { provider, service } = await startApplication();
+    const entered = Promise.withResolvers<void>();
+    const release = Promise.withResolvers<void>();
+    service.registerTarget({
+      type: 'held',
+      title: 'Held',
+      validate: () => ({ valid: true }),
+      start: async () => {
+        entered.resolve();
+        await release.promise;
+        return { state: 'completed', outcome: 'succeeded' };
+      },
+    });
+    service.defineSchedule({
+      key: 'held',
+      title: 'Held',
+      schedule: { cron: '* * * * * *', timezone: 'UTC', limit: 1 },
+      target: { type: 'held', config: {} },
+    });
+    const original = ScheduleStore.prototype.recordEvent;
+    const failure = new Error('event persistence failed');
+    const record = vi
+      .spyOn(ScheduleStore.prototype, 'recordEvent')
+      .mockImplementation(function (this: ScheduleStore, event) {
+        if (
+          event.name === 'ScheduleEnd' &&
+          event.jobName === scheduleId('main', 'held')
+        )
+          return Promise.reject(failure);
+        return original.call(this, event);
+      });
+    try {
+      await provider.start();
+      await entered.promise;
+      const drain = service.drain();
+      const outcome = drain.catch((error) => error);
+      release.resolve();
+      expect(await outcome).toBe(failure);
+      expect(provider.shutdown()).toBe(drain);
+    } finally {
+      release.resolve();
+      await provider.shutdown().catch(() => undefined);
+      record.mockRestore();
+    }
+  }, 30_000);
 
   it('only writes rules in sync-only mode and runs them on the next start', async () => {
     const first = await startApplication({ syncOnly: true });

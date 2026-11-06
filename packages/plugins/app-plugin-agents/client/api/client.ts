@@ -16,8 +16,13 @@ import type {
   AgentName,
   AgentPatch,
   AgentView,
+  AvailableModelGroupsPage,
+  AvailableModelsPage,
+  ModelAvailabilityStatus,
+  RunnerAgentCreateInput,
   UserRef,
 } from '../../shared/agents.js';
+import type { AgentTool } from '@nocobase/agent-protocol';
 import type { BriefPreview, RunBrief } from '../../shared/briefs.js';
 import type { PricesAnswer, PricesInput } from '../../shared/reports.js';
 import type {
@@ -37,7 +42,7 @@ import type {
   RegistrationTokenInput,
   Runner,
   RunnerPatch,
-  RunnerRecentRun,
+  RunnerRunsPage,
   RunnerSummary,
   RunnerListItem,
 } from '../../shared/runners.js';
@@ -73,6 +78,15 @@ type Query = Readonly<Record<string, string | number | boolean | undefined>>;
 const BASE = 'agents';
 const id = (value: string): string => encodeURIComponent(value);
 const pathOf = (path: string): string => (path ? `${BASE}/${path}` : BASE);
+
+/** Drops `undefined` and empty-string entries, so an omitted filter never reaches the query string as `?q=`. */
+function cleanQuery(query: Query): Query {
+  return Object.fromEntries(
+    Object.entries(query).filter(
+      ([, value]) => value !== undefined && value !== '',
+    ),
+  );
+}
 
 /** A list's answer: its items and what it says about itself. */
 interface ListAnswer<T> {
@@ -174,16 +188,42 @@ export class AgentsApi {
     return this.list('users');
   }
 
-  /** Every agent discovered from runners, as the Agent page shows it to the caller. */
-  public setIgnored(
-    groups: readonly { key: string; expectedRevision: number }[],
-    ignored: boolean,
-  ): Promise<unknown> {
-    return this.send('discoveryPreferences', 'PUT', { groups, ignored });
-  }
-
   public agents(): Promise<AgentView[]> {
     return this.list('');
+  }
+
+  /** One row per tool a runner has selected, with its model count and aggregated availability. */
+  public availableModelGroups(
+    filter: {
+      readonly q?: string;
+      readonly status?: ModelAvailabilityStatus;
+    } = {},
+  ): Promise<AvailableModelGroupsPage> {
+    return this.api.request<AvailableModelGroupsPage>({
+      path: pathOf('availableModels'),
+      query: cleanQuery(filter),
+    });
+  }
+
+  /** One tool's models, a page at a time, whether or not an agent exists for each yet. */
+  public availableModelRows(
+    tool: AgentTool,
+    filter: {
+      readonly q?: string;
+      readonly status?: ModelAvailabilityStatus;
+      readonly page?: number;
+      readonly pageSize?: number;
+    } = {},
+  ): Promise<AvailableModelsPage> {
+    return this.api.request<AvailableModelsPage>({
+      path: pathOf('availableModels'),
+      query: cleanQuery({ tool, ...filter }),
+    });
+  }
+
+  /** Creates and enables an agent for a tool and model from the available models list. */
+  public createRunnerAgent(input: RunnerAgentCreateInput): Promise<Agent> {
+    return this.send('runnerAgents', 'POST', input);
   }
 
   public agent(agentId: string): Promise<AgentView> {
@@ -246,8 +286,11 @@ export class AgentsApi {
   }
 
   /** A runner's latest runs, newest first. */
-  public runnerRuns(runnerId: string): Promise<RunnerRecentRun[]> {
-    return this.runnersApi.runnerRuns(runnerId);
+  public runnerRuns(
+    runnerId: string,
+    cursor?: string,
+  ): Promise<RunnerRunsPage> {
+    return this.runnersApi.runnerRuns(runnerId, cursor);
   }
 
   public createRegistrationToken(

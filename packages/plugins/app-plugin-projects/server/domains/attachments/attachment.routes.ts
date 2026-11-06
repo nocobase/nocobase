@@ -369,6 +369,7 @@ export function createIssueAttachmentRoutes(
       tags,
       summary: 'Attach a file to an issue',
       operationId: 'projectsUploadIssueAttachment',
+      security: personOrRunSecurity,
       ...cliRoute({
         command: 'issue attachment add',
         flags: { issueId: { name: 'issue' } },

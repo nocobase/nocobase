@@ -50,7 +50,18 @@ describe.each([
   });
 
   it('loads one module per locale', () => {
-    expect(Object.keys(modules).toSorted()).toEqual(['en-US', 'zh-CN']);
+    expect(Object.keys(modules).toSorted()).toEqual([
+      'de-DE',
+      'en-US',
+      'es-ES',
+      'fr-FR',
+      'id-ID',
+      'ja-JP',
+      'pt-BR',
+      'vi-VN',
+      'zh-CN',
+      'zh-TW',
+    ]);
   });
 });
 

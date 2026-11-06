@@ -35,7 +35,6 @@
 '@nocobase/app-plugin-projects': patch
 '@nocobase/app-plugin-queue-example': patch
 '@nocobase/app-plugin-realtime-example': patch
-'@nocobase/app-plugin-registry-example': patch
 '@nocobase/app-plugin-releases': patch
 '@nocobase/app-plugin-repository-example': patch
 '@nocobase/app-plugin-routes-example': patch

@@ -200,8 +200,8 @@ function AuthenticatedLayout({ routes }: AppLayoutProps): ReactElement {`,
         "import { ChatHeaderButton } from '#extensions/nocobase-agent-chat/launchers';",
     );
     replaceOnce(
-      '        <ThemeSettings />',
-      '        <ChatHeaderButton />\n        <ThemeSettings />',
+      '        <UserMenu />',
+      '        <ChatHeaderButton />\n        <UserMenu />',
     );
   }
   return source;
@@ -236,9 +236,60 @@ function sharedFrameworkSource(template, file) {
     );
   }
 
-  // Keep product identity local while comparing the shared layout.
+  // Default omits the template name; Examples retains it in the footer, tooltip and accessible name.
+  // Normalize only the exact name-related fragments so the rest of the shared layout stays compared.
   if (file === 'client/layouts/components/sidebar-footer.tsx') {
-    source = source.replace("'Examples Template'", "'Default Template'");
+    if (template.kind === 'default') {
+      assert.doesNotMatch(
+        source,
+        /templateName|app\.displayName|Default Template/u,
+      );
+    } else {
+      const nameFragments = [
+        [
+          " * The application's sidebar footer: the NocoBase slogan's two lines, then the template's name and its version, each\n" +
+            ' * on its own line. In icon mode only the shield remains, and a tooltip carries the same text.',
+          " * The application's sidebar footer: the NocoBase slogan's two lines, then the application's version.\n" +
+            ' * In icon mode only the shield remains, and a tooltip carries the same text.',
+        ],
+        [
+          "  const templateName = publicConfig.get('app.displayName', 'Examples Template');\n",
+          '',
+        ],
+        [
+          '${brandPartnership} ${buildReliableSystems} ${templateName} ${versionLabel}',
+          '${brandPartnership} ${buildReliableSystems} ${versionLabel}',
+        ],
+        [
+          "            <span className='mt-1 opacity-70'>\n" +
+            '              {templateName} {versionLabel}\n' +
+            '            </span>',
+          "            <span className='mt-1 opacity-70'>{versionLabel}</span>",
+        ],
+        [
+          '          {/* Name and version stay on one line each; a long name is cut off, with the whole name as its title. */}\n' +
+            '          <p\n' +
+            "            className='mt-1 truncate text-muted-foreground'\n" +
+            '            title={templateName}\n' +
+            '          >\n' +
+            '            {templateName}\n' +
+            '          </p>\n' +
+            "          <p className='truncate text-muted-foreground' title={versionLabel}>",
+          '          <p\n' +
+            "            className='mt-1 truncate text-muted-foreground'\n" +
+            '            title={versionLabel}\n' +
+            '          >',
+        ],
+      ];
+      for (const [before, after] of nameFragments) {
+        assert.equal(
+          source.split(before).length - 1,
+          1,
+          `${template.kind}: ${file} must retain exactly one name fragment: ${before}`,
+        );
+        source = source.replace(before, after);
+      }
+    }
   }
   return source;
 }

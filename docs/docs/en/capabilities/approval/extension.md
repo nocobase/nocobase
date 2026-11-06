@@ -29,14 +29,16 @@ Re-entry requires fresh review by default. `reuse: 'unchanged'` reuses earlier o
 
 ## Pages and approval centers
 
-| Contract                            | Purpose                                                                    |
-| ----------------------------------- | -------------------------------------------------------------------------- |
-| `previewRoute`                      | Route preview before submission                                            |
-| `runViewsFor` / `upcomingStagesFor` | Current and historical rounds, and future stages                           |
-| `actionsFor` / `runActionsFor`      | Current user's task or round operations                                    |
-| `candidatesFor`                     | Qualified candidates for transfer, added reviewers, and similar operations |
-| `perform` / `performBatch`          | Individual actions and batch handling with per-item results                |
-| `tasksOf`                           | Task aggregation; APIs still need business authorization                   |
+| Contract                            | Purpose                                                                                    |
+| ----------------------------------- | ------------------------------------------------------------------------------------------ |
+| `previewRoute`                      | Route preview before submission                                                            |
+| `runViewsFor` / `upcomingStagesFor` | Current and historical rounds, and future stages                                           |
+| `actionsFor` / `runActionsFor`      | Current user's task or round operations                                                    |
+| `candidatesFor`                     | Qualified candidates for transfer, added reviewers, and similar operations                 |
+| `perform` / `performBatch`          | Individual actions and batch handling with per-item results                                |
+| `tasksFor` / `runsFor`              | Authoritative tasks and runs for a business record; APIs still need business authorization |
+
+The host owns handover discovery scope and completeness. Task Center projections provide candidates; supplement them with business records and use `tasksFor()` / `runsFor()` to verify the original assignee and current run, stage and version. Execute explicit task IDs through the business action entry or `performBatch({ action: 'reassign', targets, ... })`, then recheck remaining responsibilities. Assignee-wide `tasksOf()` and the global `reassign()` that automatically discovered all tasks have been removed. The single-task `reassign` action retains its authorization, qualification, concurrency, transaction and audit checks.
 
 The UI Library's `approval-ui` supplies progress, timeline, route preview, action bar, branch, and receipt components. The Agent maps server data into them; business forms and pages belong to the application. Approval centers can include other work sources, each independently authorizing reads and actions.
 
@@ -93,3 +95,5 @@ Submit the hash of content displayed on the page with the opinion. Do not silent
 In the Provider that creates the lifecycle runtime, connect `createLifecycleJobs()`: `onSweep` calls approval `sweep()` and lifecycle `prune()`, while effects also run through jobs. The plugin starts no timer itself. Multi-process production applications should use shared jobs storage so each process does not run an independent memory queue.
 
 The current contract example provides working time in UTC+8, Monday–Friday 09:00–18:00, used for manager deadlines and procurement claim expiry, without a holiday table. The lab sweep processes tasks already due; it does not advance time. Use a controlled clock for precise timeout boundaries. Shared pause and handover deadline rules still need business decisions.
+
+Applicant recusal is enabled by default. When business authorization explicitly permits self-approval, set `allowSelfApproval: true` on the relevant stage, for example a budget owner confirming their own purchase before independent finance review. This permits an eligible applicant to decide manually, including through delegation; it does not auto-approve or skip the stage, and other assignment rules and action permissions still apply. The applicant is the identity returned by `applicant(record)`, which may differ from a proxy submitter. Do not replace the entire assignment chain to enable this policy.

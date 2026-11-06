@@ -26,9 +26,13 @@ import {
   DialogPortal,
   DialogTitle,
 } from '#components/ui/dialog';
+import {
+  RouteOverlayContext,
+  RouteOverlayHostContext,
+  type RouteOverlayHostConfig,
+  type RouteOverlayHostValue,
+} from '@nocobase/app-client/route-containers';
 import { cn } from 'cn';
-
-import { RouteOverlayContext } from './use-route-overlay.js';
 
 export interface RouteOverlayProps {
   readonly title: ReactNode;
@@ -52,8 +56,103 @@ const ParentPopupContext =
 /**
  * The shared implementation of `RouteDialog` and `RouteDrawer`: a modal that is open for as long as its route matches,
  * and closes by navigating away from it. Route registration stays with the application.
+ *
+ * On a route that declares a `dialog` or `drawer` presentation the application has already opened the panel, and this
+ * component configures that one instead of opening a second: its title, description, footer, `closeTo` and
+ * `beforeClose` move to the host and its children render in the host's body. On any other route it opens its own.
+ * The host context comes from `@nocobase/app-client`, so a plugin's own copy of this component joins the same panel.
  */
-export function RouteOverlay({
+export function RouteOverlay(
+  props: RouteOverlayProps & { readonly drawer?: boolean },
+): ReactElement {
+  const host = useContext(RouteOverlayHostContext);
+  return host ? (
+    <HostedRouteOverlay host={host} {...props} />
+  ) : (
+    <RouteOverlayFrame {...props} />
+  );
+}
+
+function HostedRouteOverlay({
+  host,
+  children,
+  drawer: _drawer,
+  ...config
+}: RouteOverlayProps & {
+  readonly host: RouteOverlayHostValue;
+  readonly drawer?: boolean;
+}): ReactElement {
+  // Runs after every render so the footer and guard the host shows are always this render's. There is no cleanup:
+  // the host stops using the configuration once it is told the page is gone, and an `<Activity>` that only hides
+  // the page during a recheck must not take its close guard away.
+  useLayoutEffect(() => {
+    host.configure(config);
+  });
+  return (
+    <RouteOverlayHostContext.Provider value={null}>
+      {children}
+    </RouteOverlayHostContext.Provider>
+  );
+}
+
+export interface RouteOverlayHostProps {
+  readonly drawer?: boolean;
+  /** Shown until the hosted page configures its own title, and whenever its content is concealed. */
+  readonly title: ReactNode;
+  /**
+   * True while the page component is mounted. While it is false — the module is loading, failed or was denied — the
+   * host ignores what an earlier mount configured and closes without a guard.
+   */
+  readonly ready?: boolean;
+  /**
+   * True while the mounted page is hidden, for example during an authorization recheck: the host shows only its own
+   * title and no footer, so nothing the page derived from protected data stays on screen. The page's close guard
+   * is temporarily blocked until the page's effects reconnect, because hiding disconnects form dirty registrations.
+   */
+  readonly concealed?: boolean;
+  readonly children?: ReactNode;
+}
+
+/**
+ * The panel the application opens for a route that declares a `dialog` or `drawer` presentation, before the page
+ * module, its authorization check or its data are ready. Waiting, denial and failure render as its children; once the
+ * page renders its own `RouteDialog` or `RouteDrawer` inside, that configures this panel. There is still one panel
+ * and one focus trap, and the same close path and focus return as a standalone overlay. A hosted page renders its
+ * `RouteDialog` or `RouteDrawer` unconditionally, as its root.
+ */
+export function RouteOverlayHost({
+  drawer = false,
+  title,
+  ready = false,
+  concealed = false,
+  children,
+}: RouteOverlayHostProps): ReactElement {
+  const [config, setConfig] = useState<RouteOverlayHostConfig | null>(null);
+  const host = useMemo<RouteOverlayHostValue>(
+    () => ({ configure: setConfig }),
+    [],
+  );
+  const page = ready ? config : null;
+  const shown = concealed ? null : page;
+  return (
+    <RouteOverlayFrame
+      drawer={drawer}
+      title={shown?.title ?? title}
+      description={shown?.description}
+      footer={shown?.footer}
+      closeTo={page?.closeTo}
+      beforeClose={page?.beforeClose}
+      closeBlocked={ready && concealed}
+      className={page?.className}
+    >
+      <RouteOverlayHostContext.Provider value={host}>
+        {children}
+      </RouteOverlayHostContext.Provider>
+    </RouteOverlayFrame>
+  );
+}
+
+function RouteOverlayFrame({
   title,
   description,
   children,
@@ -62,10 +161,24 @@ export function RouteOverlay({
   beforeClose,
   className,
   drawer = false,
-}: RouteOverlayProps & { readonly drawer?: boolean }): ReactElement {
+  closeBlocked = false,
+}: RouteOverlayProps & {
+  readonly drawer?: boolean;
+  readonly closeBlocked?: boolean;
+}): ReactElement {
   const { t } = useTranslation();
   const parentPopup = useContext(ParentPopupContext);
   const popupRef = useRef<HTMLDivElement>(null);
+  const [portal, setPortal] = useState<HTMLDivElement | null>(null);
+  // A parent route's Activity can stop at its first DOM element, while this portal lives outside that element.
+  // Base UI creates the portal after mount, so track the actual node before connecting its visibility lifecycle.
+  useLayoutEffect(() => {
+    if (!portal) return;
+    portal.style.removeProperty('display');
+    return () => {
+      portal.style.display = 'none';
+    };
+  }, [portal]);
   const previousFocusRef = useRef<HTMLElement | null>(null);
   useLayoutEffect(() => {
     previousFocusRef.current =
@@ -75,29 +188,37 @@ export function RouteOverlay({
   }, []);
   const navigate = useNavigate();
   const location = useLocation();
-  const [closingLocation, setClosingLocation] = useState<
-    typeof location | null
-  >(null);
-  const isClosing = closingLocation === location;
+  const closeScope = useMemo(
+    () => ({ location, closeBlocked }),
+    [location, closeBlocked],
+  );
+  const [closingScope, setClosingScope] = useState<typeof closeScope | null>(
+    null,
+  );
+  const isClosing = closingScope === closeScope;
   const pendingRef = useRef<Promise<void> | null>(null);
   const generationRef = useRef(0);
 
-  // A still-mounted parent can change location while its confirmation is pending.
-  // Invalidate that request as well as requests from an unmounted route.
+  // A location change or concealment invalidates pending closes. Activity cleanup can resolve a form's old
+  // confirmation, but that result must never navigate, including after permission is restored.
   useLayoutEffect(() => {
     generationRef.current += 1;
     pendingRef.current = null;
     return () => {
       generationRef.current += 1;
+      setClosingScope(null);
     };
-  }, [location]);
+  }, [location, closeBlocked]);
 
   const close = useCallback((): Promise<void> => {
+    if (closeBlocked) return Promise.resolve();
     if (pendingRef.current) return pendingRef.current;
     const requestGeneration = generationRef.current;
-    setClosingLocation(location);
+    setClosingScope(closeScope);
     const request = Promise.resolve()
       .then(async () => {
+        // A recheck can start while an earlier confirmation is open, or before this microtask runs.
+        if (generationRef.current !== requestGeneration) return;
         const allowed = beforeClose ? await beforeClose() : true;
         if (allowed && generationRef.current === requestGeneration) {
           await navigate(
@@ -109,12 +230,12 @@ export function RouteOverlay({
       .finally(() => {
         if (generationRef.current === requestGeneration) {
           pendingRef.current = null;
-          setClosingLocation(null);
+          setClosingScope(null);
         }
       });
     pendingRef.current = request;
     return request;
-  }, [beforeClose, closeTo, location, navigate]);
+  }, [beforeClose, closeBlocked, closeScope, closeTo, location, navigate]);
   const value = useMemo(() => ({ close, isClosing }), [close, isClosing]);
 
   return (
@@ -131,7 +252,7 @@ export function RouteOverlay({
               });
           }}
         >
-          <DialogPortal>
+          <DialogPortal ref={setPortal}>
             {/* Each nested panel needs its own backdrop above its parent panel. */}
             <DialogOverlay forceRender />
             <DialogPrimitive.Popup
@@ -210,5 +331,18 @@ export function RouteOverlay({
         </Dialog>
       </ParentPopupContext.Provider>
     </RouteOverlayContext.Provider>
+  );
+}
+
+/** Ends a `RouteOverlayHost`'s reach, so a route rendered inside one that is not hosted builds its own overlay. */
+export function RouteOverlayHostBoundary({
+  children,
+}: {
+  readonly children?: ReactNode;
+}): ReactElement {
+  return (
+    <RouteOverlayHostContext.Provider value={null}>
+      {children}
+    </RouteOverlayHostContext.Provider>
   );
 }

@@ -1,0 +1,712 @@
+import type { LocaleResource } from '@nocobase/i18n';
+
+import type enUS from './en-US.js';
+
+const viVN: LocaleResource<typeof enUS> = {
+  indexing: {
+    failedDocumentCount: 'Tài liệu thất bại: {{count}}',
+    enabled: 'Bật lập chỉ mục',
+    enabledHint:
+      'Tắt để chỉ tìm kiếm văn bản. Thay đổi có hiệu lực sau khi lưu.',
+    chooseInstance: 'Chọn phiên bản chỉ mục',
+    documentProgress: 'Tài liệu đã lập chỉ mục',
+    pendingDocuments: 'Tài liệu đang chờ',
+    failedDocuments: 'Tài liệu thất bại',
+    preparedChunks: 'Đoạn đã chuẩn bị',
+    committedChunks: 'Đoạn đã ghi nhận',
+    agentPrompt:
+      'Hãy giúp tôi cấu hình chỉ mục cơ sở tri thức cho ứng dụng NocoBase 3 này.\n\nĐọc AGENTS.md và kiểm tra các loại chỉ mục (type) thực sự khả dụng. Có hai phương án cơ sở dữ liệu vector: SQLite với sqlite-vec (type sqlite-vec, tệp cục bộ) và PostgreSQL với pgvector (type pgvector, cần bật phần mở rộng vector). Giải thích các lựa chọn cùng yêu cầu trong môi trường này và để tôi chọn trước khi tiếp tục.\n\nSau khi tôi chọn, hỏi vị trí tệp cho SQLite hoặc thông tin kết nối và trạng thái phần mở rộng vector cho PostgreSQL. Không hiển thị mật khẩu hoặc khóa API.\n\nĐưa ra cấu hình dự kiến và chờ tôi xác nhận trước khi ghi vào knowledge.indexing trong config.yaml. Giữ nguyên các cấu hình khác. Nếu ứng dụng đã dùng config.yml, hãy sửa tệp đó thay vì tạo tệp khác.\n\nKiểm tra cấu hình an toàn và hướng dẫn khởi động lại. Hỏi ý kiến trước khi khởi động lại hoặc cài phụ thuộc. Sau đó hướng dẫn tôi mở lại cài đặt, bật chỉ mục, chọn phiên bản cùng mô hình embedding rồi lưu. Các cuộc gọi mô hình trả phí và tạo lại chỉ mục cũng cần tôi xác nhận.',
+    databases: {
+      sqlite: {
+        name: 'Cơ sở dữ liệu vector SQLite',
+        description:
+          'Dùng phần mở rộng vector sqlite-vec để lưu chỉ mục trong tệp SQLite cục bộ trên máy chủ ứng dụng. Không cần dịch vụ cơ sở dữ liệu riêng; phù hợp triển khai trên một máy chủ.',
+      },
+      pgvector: {
+        name: 'Cơ sở dữ liệu vector PostgreSQL',
+        description:
+          'Dùng pgvector để lưu và tìm kiếm vector trong PostgreSQL. Cần kết nối cơ sở dữ liệu và bật phần mở rộng vector. Phù hợp khi đã có PostgreSQL hoặc cần chia sẻ chỉ mục giữa nhiều máy chủ.',
+      },
+    },
+    setupTitle: 'Các bước cấu hình',
+    setup: {
+      instance:
+        'Mở config.yaml, thêm một phiên bản chỉ mục trong knowledge.indexing với tên, loại và đường dẫn tệp cục bộ hoặc thông tin kết nối.',
+      restart: 'Lưu tệp rồi khởi động lại ứng dụng để tải cấu hình.',
+      enable:
+        'Mở lại cài đặt chỉ mục, bật chỉ mục, chọn phiên bản vừa thêm và mô hình embedding rồi lưu.',
+    },
+    agentHandoff:
+      'Nếu chưa quen với tệp cấu hình, hãy sao chép lời nhắc bên dưới cho Agent phát triển hỗ trợ.',
+    global: 'Tất cả không gian tri thức',
+    back: 'Quay lại tri thức',
+    configuration: 'Cấu hình chỉ mục',
+    typeHint:
+      'Các phiên bản được nhóm theo type. Mỗi loại xác định biểu mẫu và việc có cần mô hình Embedding hay không.',
+    typeForm: 'Biểu mẫu động của loại này',
+    openPage: 'Mở trang cấu hình riêng',
+    emptyTitle: 'Cấu hình cơ sở dữ liệu vector trước',
+    emptyDescription:
+      'Chỉ mục cần cơ sở dữ liệu vector để lưu trữ và tìm kiếm vector tài liệu. Chọn một phương án dưới đây và thêm vào config.yaml của ứng dụng:',
+    agentTitle: 'Lời nhắc cấu hình',
+    copyPrompt: 'Sao chép hướng dẫn',
+    promptCopied: 'Đã sao chép hướng dẫn. Chưa thực hiện thao tác nào.',
+    promptCopyFallback:
+      'Không thể tự động sao chép. Văn bản đã được chọn để sao chép thủ công.',
+    promptLabel: 'Hướng dẫn cho Agent phát triển',
+    rebuildHint: 'Thay đổi cần xây dựng lại chỉ mục',
+    editHint: 'Thay đổi cấu hình để lưu',
+    confirmRetryEmbedding:
+      'Chỉ thử lại tài liệu lỗi trong mọi không gian. Không lặp lại phần đã xong; có thể phát sinh phí Embedding.',
+    confirmRetry:
+      'Chỉ thử lại tài liệu lỗi trong mọi không gian. Không lặp lại phần đã xong nhưng sẽ sử dụng tài nguyên dịch vụ.',
+    confirmResources:
+      'Xây dựng lại chỉ mục của mọi không gian. Loại này không gọi Embedding nhưng dùng lưu trữ và tài nguyên dịch vụ. Chỉ mục đã công bố vẫn hoạt động đến khi có bản thay thế.',
+    deploymentPg:
+      'Kết nối, Schema và tiền tố bảng được quản lý trong cấu hình triển khai.',
+    deploymentFile:
+      'Đường dẫn tệp chỉ mục được quản lý trong cấu hình triển khai.',
+    errors: {
+      configurationChanged:
+        'Cấu hình chỉ mục hoặc mô hình đã thay đổi. Không thể thử lại thế hệ cũ bằng cấu hình mới. Kiểm tra cấu hình và xây dựng lại tất cả không gian nếu cần (có thể phát sinh phí Embedding).',
+      modelAuth:
+        'Xác thực dịch vụ Embedding thất bại. Kiểm tra API Key, quyền truy cập và khu vực endpoint.',
+      modelQuota:
+        'Đã hết hạn mức hoặc số dư Embedding. Kiểm tra tài khoản trước khi thử lại.',
+      modelRateLimit:
+        'Dịch vụ Embedding đang giới hạn yêu cầu. Hãy đợi trước khi thử lại.',
+      modelConfig:
+        'Mô hình Embedding đã lưu không khả dụng, đã thay đổi hoặc không được hỗ trợ. Kiểm tra dịch vụ và mô hình.',
+      modelInput:
+        'Đầu vào Embedding quá dài. Kiểm tra kích thước các đoạn tài liệu.',
+      modelPolicy:
+        'Dịch vụ Embedding từ chối đầu vào theo chính sách nội dung. Kiểm tra nội dung liên quan.',
+      modelResponse:
+        'Dịch vụ Embedding trả về vectơ không hợp lệ. Kiểm tra tính tương thích và số chiều.',
+      modelUnavailable:
+        'Không thể kết nối dịch vụ Embedding hoặc dịch vụ tạm thời không khả dụng. Kiểm tra endpoint và mạng.',
+      storageAuth:
+        'Xác thực kho lưu trữ chỉ mục thất bại. Kiểm tra người dùng, mật khẩu và kết nối cơ sở dữ liệu.',
+      storagePermission:
+        'Kho chỉ mục từ chối thao tác hoặc ở chế độ chỉ đọc. Kiểm tra quyền schema và bảng.',
+      storageSchema:
+        'Cơ sở dữ liệu, schema hoặc bảng cần thiết của chỉ mục không khả dụng. Kiểm tra triển khai và schema.',
+      storageUnavailable:
+        'Không thể kết nối kho chỉ mục hoặc kết nối bị gián đoạn. Kiểm tra địa chỉ, cổng và mạng.',
+      storageBusy:
+        'Kho chỉ mục đang bận hoặc có xung đột giao dịch. Hãy đợi chính sách thử lại của host.',
+      timeout:
+        'Thao tác lập chỉ mục đã hết thời gian chờ. Kiểm tra kho lưu trữ và dịch vụ mô hình trước khi thử lại.',
+      vectorExtension:
+        'PostgreSQL chưa cài tiện ích vector. Hãy nhờ quản trị viên cơ sở dữ liệu cài đặt.',
+      ownership:
+        'Quyền sở hữu hoặc cấu trúc đích chỉ mục không khớp. Kiểm tra tài nguyên; không xóa bảng không liên quan.',
+      dependencies:
+        'Instance, tiện ích hoặc cấu hình jobs của host không khả dụng. Kiểm tra triển khai và khởi động lại nếu cần.',
+    },
+    invalidValue: 'Hãy kiểm tra giá trị này.',
+    title: 'Cài đặt chỉ mục tri thức',
+    description: 'Cấu hình chỉ mục tìm kiếm cho tất cả không gian kiến thức.',
+    progress: 'Tiến độ lập chỉ mục',
+    instance: 'Phiên bản lập chỉ mục',
+    off: 'Tắt — chỉ tìm kiếm văn bản',
+    missingForm:
+      'Biểu mẫu cấu hình không khả dụng. Các tùy chọn đã lưu được giữ nguyên.',
+    statusFailed: 'Không thể cập nhật trạng thái chỉ mục.',
+    loadFailed:
+      'Không thể tải cài đặt chỉ mục. Hãy kiểm tra quyền truy cập rồi thử lại.',
+    saveFailed:
+      'Yêu cầu chưa được chấp nhận. Bản nháp của bạn vẫn được giữ lại.',
+    conflict:
+      'Cài đặt đã được thay đổi ở nơi khác. Tải lại phiên bản mới nhất mà không bỏ bản nháp, kiểm tra rồi lưu lại.',
+    saved: 'Yêu cầu đã được chấp nhận. Việc lập chỉ mục tiếp tục trong nền.',
+    workFailed:
+      'Một số công việc thất bại. Kiểm tra phiên bản và dịch vụ mô hình rồi thử lại.',
+    rebuild: 'Dựng lại mọi không gian',
+    retry: 'Thử lại công việc thất bại',
+    confirmTitle: 'Xác nhận thay đổi chỉ mục toàn cục',
+    confirmRebuild:
+      'Thao tác ảnh hưởng đến mọi không gian và có thể tính lại véc-tơ cho toàn bộ tài liệu, phát sinh phí mô hình và cần thêm dung lượng. Chỉ mục hiện tại vẫn khả dụng đến khi chỉ mục mới sẵn sàng.',
+    confirmDisable:
+      'Thao tác tắt tìm kiếm bằng chỉ mục cho mọi không gian. Tìm kiếm văn bản vẫn khả dụng. Việc dọn dẹp chạy trong nền.',
+    discardTitle: 'Bỏ thay đổi chưa lưu?',
+    discardDescription: 'Các cài đặt chỉ mục chưa lưu sẽ bị mất.',
+    discard: 'Bỏ thay đổi',
+    confirm: 'Xác nhận',
+    documents:
+      'Tài liệu: {{done}} / {{total}} · Đang chờ: {{pending}} · Thất bại: {{failed}}',
+    chunks: 'Đoạn đã chuẩn bị: {{prepared}} · Đã ghi: {{committed}}',
+    availability: {
+      disabled: 'Đã tắt — chỉ tìm kiếm văn bản',
+      unavailable: 'Chỉ mục không khả dụng — vẫn tìm được văn bản',
+      building: 'Đang dựng chỉ mục',
+      ready: 'Chỉ mục đã sẵn sàng',
+      degraded: 'Chỉ mục suy giảm — vẫn tìm được văn bản',
+    },
+    table: 'Tên bảng',
+    modelService: 'Dịch vụ mô hình',
+    model: 'Mô hình nhúng',
+    chooseService: 'Chọn dịch vụ mô hình',
+    chooseModel: 'Chọn hoặc nhập tên mô hình',
+    loadingModels: 'Đang tải mô hình nhúng…',
+    modelsUnavailable:
+      'Không có mô hình nhúng. Hãy kiểm tra dịch vụ mô hình rồi thử lại.',
+  },
+  access: {
+    businessSection: 'Kiến thức',
+    businesses: {
+      knowledge: {
+        title: 'Kiến thức',
+        description: 'Tài liệu của từng không gian tri thức.',
+        actions: {
+          read: {
+            title: 'Đọc kiến thức',
+            description:
+              'Đọc kiến thức hệ thống và các không gian liên quan đến chúng',
+            related: 'Đọc kiến thức (các không gian liên quan đến chúng)',
+            relatedLabel: 'Không gian liên quan đến tôi',
+            relatedHint: 'Ứng dụng quyết định không gian nào liên quan đến ai',
+            all: 'Đọc kiến thức (tất cả)',
+          },
+          propose: {
+            title: 'Đề xuất kiến thức',
+            description:
+              'Đề xuất thay đổi để người có thể chỉnh sửa quyết định; những đại lý nào có thể được cung cấp',
+            related: 'Đề xuất kiến thức (không gian liên quan đến chúng)',
+            relatedLabel: 'Không gian liên quan đến tôi',
+            relatedHint: 'Ứng dụng quyết định không gian nào liên quan đến ai',
+            all: 'Đề xuất kiến thức (tất cả)',
+          },
+          edit: {
+            title: 'Chỉnh sửa kiến thức',
+            description:
+              'Chỉnh sửa, lưu trữ và đánh dấu đã xác minh và quyết định các đề xuất; kiến thức hệ thống cần tất cả',
+            related: 'Chỉnh sửa kiến thức (không gian liên quan đến chúng)',
+            relatedLabel: 'Không gian liên quan đến tôi',
+            relatedHint: 'Ứng dụng quyết định không gian nào liên quan đến ai',
+            all: 'Chỉnh sửa kiến thức (tất cả)',
+          },
+          manage: {
+            title: 'Quản lý truy cập kiến thức',
+            description:
+              'Thay đổi người có thể truy cập từng thư mục và bài viết, đồng thời giữ quyền truy cập vào tất cả chúng; kiến thức hệ thống cần tất cả',
+            related:
+              'Quản lý truy cập tri thức (không gian liên quan đến chúng)',
+            relatedLabel: 'Không gian liên quan đến tôi',
+            relatedHint: 'Ứng dụng quyết định không gian nào liên quan đến ai',
+            all: 'Quản lý truy cập tri thức (tất cả)',
+          },
+        },
+      },
+    },
+  },
+  knowledge: {
+    directory: {
+      title: 'Kiến thức',
+      system: 'Kiến thức hệ thống',
+      count_one: 'Tài liệu {{count}}',
+      count_other: 'Tài liệu {{count}}',
+      archivedCount_one: 'Tài liệu lưu trữ {{count}}',
+      archivedCount_other: 'Tài liệu lưu trữ {{count}}',
+      selectTarget: 'Mở {{title}}',
+      target: 'Tạo trong {{title}}',
+      chooseTarget: 'Chọn một dự án hoặc kiến thức hệ thống để tạo trong',
+      expandAll: 'Mở rộng tất cả',
+      collapseAll: 'Thu gọn tất cả',
+      retry: 'Thử lại',
+      allProposals: 'Tất cả đề nghị',
+      reviewPage: 'Trang {{page}} của {{pages}} · Tổng số {{total}}',
+      previous: 'Trước',
+      next: 'Tiếp theo',
+      empty: 'Không có không gian kiến thức có thể tiếp cận được',
+      emptyAccessHint:
+        'Yêu cầu quản trị viên cấp quyền truy cập vào kiến thức về dự án hoặc hệ thống.',
+      noAccess: 'Kiến thức này không có sẵn hoặc bạn không còn quyền truy cập.',
+      emptyHint:
+        'Mở không gian này để tạo tài liệu hoặc yêu cầu người biên tập thêm tài liệu.',
+      createFailed: 'Không thể tạo mục này. Kiểm tra mục tiêu và thử lại.',
+      showResults: 'Hiển thị kết quả hàng đầu cho “{{q}}”',
+      topResults:
+        'Các phần được xếp hạng hàng đầu trên tất cả các dự án và kiến thức hệ thống.',
+      welcome:
+        'Mở rộng một dự án hoặc kiến thức hệ thống được chia sẻ để duyệt tài liệu. Chọn một không gian để tạo ở đó hoặc tìm kiếm trên tất cả kiến ​​thức được ủy quyền.',
+    },
+    title: 'Kiến thức',
+    someone: 'Ai đó',
+    loading: 'Đang tải',
+    index: {
+      states: {
+        pending: 'Chờ đợi',
+        done: 'Được lập chỉ mục',
+        failed: 'Thất bại',
+      },
+      done: 'Được lập chỉ mục',
+      pending: 'Lập chỉ mục {{indexed}}/{{total}}',
+      failed: 'Lập chỉ mục không thành công',
+      failedHint: 'Một số phần không thể nhúng sau mỗi lần thử.',
+      reason: 'Lý do: {{reason}}',
+      retry: 'Chỉ mục lại',
+      refreshFailed: 'Không thể làm mới trạng thái lập chỉ mục',
+      retryRefresh: 'Thử làm mới lại',
+      queued: 'Xếp hàng để lập chỉ mục lại',
+    },
+    chunks: {
+      open: 'Xem phần',
+      title: 'Phần',
+      description:
+        'Các phần {{count}} phiên bản hiện tại của "{{title}}" được cắt thành; công việc tìm kiếm và trích dẫn theo từng phần. Chọn một để tìm thấy nó trong tài liệu.',
+      lead: '(Trước tiêu đề đầu tiên)',
+      lines: 'Đường {{start}}–{{end}}',
+      chars_one: 'Ký tự {{count}}',
+      chars_other: 'Ký tự {{count}}',
+      empty: 'Tài liệu này chưa có phần nào.',
+      showing: 'Làm nổi bật các đường {{start}}–{{end}}.',
+      clear: 'Làm nổi bật rõ ràng',
+    },
+    chunking: {
+      title: 'Cài đặt phần',
+      description:
+        'Các bài viết và tập tin (văn bản được trích xuất) trong {{space}} được cắt thành các phần ở tiêu đề để tìm kiếm và trích dẫn: Word giữ các tiêu đề riêng, mỗi trang PDF hoặc trang slide và mỗi trang là một tiêu đề cấp 2 và văn bản không có tiêu đề sẽ bị cắt theo độ dài. Không gian này có thể được cắt khác với mặc định.',
+      own: 'Đặt cho không gian này',
+      defaults:
+        'Mặc định: hướng xuống cấp độ {{depth}}, nhắm đến các ký tự {{target}}, nhiều nhất là {{max}}.',
+      depth: 'Cắt ở tiêu đề',
+      depths: {
+        '1': 'Chỉ cấp 1 (#)',
+        '2': 'Xuống cấp 2 (##)',
+        '3': 'Xuống cấp 3 (###)',
+      },
+      depthHint:
+        'Các tiêu đề sâu hơn nằm trong phần của chúng. Chỉ ở cấp độ 1, các tập tin không bị cắt theo trang hoặc trang.',
+      target: 'Độ dài mục tiêu (ký tự)',
+      max: 'Giới hạn (ký tự)',
+      sizesHint:
+        'Một đoạn dài hơn giới hạn bị cắt giữa các đoạn thành nhiều đoạn gần mục tiêu; khối mã và bảng không bao giờ bị cắt.',
+      invalid: 'Độ dài từ {{min}} đến {{max}} và mục tiêu tối đa là giới hạn.',
+      effect:
+        'Quá trình lưu sẽ cắt lại các tài liệu ở chế độ nền và lập chỉ mục lại các phần của chúng khi bật tìm kiếm ngữ nghĩa.',
+      rechunking: 'Cắt lại tài liệu ở chế độ nền…',
+      save: 'Lưu',
+      saved: 'Đã lưu cài đặt phần',
+    },
+    loadFailed: 'Không thể tải kiến thức',
+    kinds: {
+      folder: 'Thư mục',
+      article: 'Bài viết',
+      file: 'Tệp',
+    },
+    folder: {
+      empty: 'Thư mục này trống.',
+    },
+    new: {
+      label: 'Mới',
+      article: 'Bài viết mới',
+      folder: 'Thư mục mới',
+      childArticle: 'Bài viết mới bên trong',
+      childFolder: 'Thư mục mới bên trong',
+    },
+    files: {
+      upload: 'Tải tập tin lên',
+      uploadHere: 'Tải file lên đây',
+      dropHint: 'Thả tập tin vào đây hoặc vào một thư mục để tải chúng lên.',
+      uploaded_one:
+        'Đã tải lên tệp {{count}}; văn bản của nó đang được trích xuất.',
+      uploaded_other:
+        'Đã tải lên các tệp {{count}}; văn bản của họ đang được trích xuất.',
+      download: 'Tải xuống',
+      version: 'Phiên bản {{version}}',
+      statusHint: {
+        parsing:
+          'Văn bản đang được trích xuất; tìm kiếm sẽ tìm thấy tập tin khi nó đã sẵn sàng.',
+        ready:
+          'Văn bản của nó được trích xuất, vì vậy bộ phận tìm kiếm và đại lý sẽ đọc nó.',
+        failed: 'Không thể trích xuất văn bản.',
+        unsupported:
+          'Văn bản không được trích xuất từ các tệp thuộc loại này; nó được lưu trữ như cũ.',
+      },
+      replace: 'Thay thế',
+      replaced: 'Đã thay thế: phiên bản {{version}}.',
+      reparse: 'Giải nén lại',
+      file: 'Tệp',
+      propose: 'Cầu hôn',
+      proposeNew: 'Đề xuất hồ sơ',
+      proposeNewHint:
+        'Ai đó có thể chỉnh sửa kiến ​​thức này quyết định; chấp nhận nó sẽ thêm tập tin.',
+      proposeReplace: 'Đề xuất thay thế',
+      proposeReplaceHint:
+        'Người có thể chỉnh sửa kiến ​​thức này sẽ quyết định; việc chấp nhận nó sẽ biến tệp của bạn thành phiên bản tiếp theo của {{title}}.',
+      proposeReasonHint: 'Tại sao nó thuộc về nơi này, do ai quyết định.',
+      proposed: 'Đề xuất; ai đó có thể chỉnh sửa quyết định.',
+      preview: 'Xem trước',
+      text: 'Trích xuất văn bản',
+      failed: 'Không thể trích xuất văn bản: {{reason}}',
+      status: {
+        parsing: 'Trích xuất văn bản',
+        ready: 'Trích xuất văn bản',
+        failed: 'Trích xuất không thành công',
+        unsupported: 'Chỉ được lưu trữ',
+      },
+      noText: {
+        parsing:
+          'Văn bản đang được trích xuất; nó sẽ xuất hiện ở đây khi đã sẵn sàng.',
+        ready: 'Tệp không chứa văn bản.',
+        failed: 'Không thể trích xuất văn bản.',
+        unsupported:
+          'Văn bản không được trích xuất từ ​​các tệp thuộc loại này; tập tin được lưu trữ như nó vốn có.',
+      },
+    },
+    spaces: {
+      actions: 'Hành động không gian',
+      access: 'Truy cập không gian',
+      proposeOnly: 'Chỉ cầu hôn',
+      inherited: 'Kế thừa',
+      inheritedHint: 'Kế thừa từ không gian khác; chỉ đọc ở đây.',
+      default: 'Kiến thức',
+      readOnly: 'Chỉ đọc',
+      empty: 'Chưa có tài liệu.',
+    },
+    tree: {
+      actions: 'Thao tác',
+      expand: 'Mở rộng',
+      collapse: 'Sụp đổ',
+      label: 'Tài liệu',
+      newDoc: 'Tài liệu mới',
+      archived: 'Hiển thị đã lưu trữ',
+      archivedBadge: 'Đã lưu trữ',
+      pending: '{{count}} đang chờ',
+      back: 'Tất cả tài liệu',
+      restricted:
+        'Bị hạn chế: chỉ những người được liệt kê mới có thể truy cập nó',
+    },
+    doc: {
+      permissions: 'Quyền',
+      restricted: 'Bị hạn chế · {{count}}',
+      restrictedHint:
+        'Chỉ những người được liệt kê và bất kỳ ai quản lý không gian mới có thể truy cập nó.',
+      verifiedLabel: 'Đã xác minh',
+      versionBy: 'v{{version}} · {{name}}',
+      proposeChanges: 'Đề xuất thay đổi',
+      more: 'Thêm hành động',
+      pending_one: '{{count}} đang chờ xử lý',
+      pending_other: '{{count}} đang chờ xử lý',
+      updatedAgo: 'Đã cập nhật {{time}}',
+      updatedDetail: '{{name}} · v{{version}}',
+      renameTitle: 'Đổi tên “{{title}}”',
+      renamedToast: 'Đã đổi tên.',
+      notFound:
+        'Tài liệu này không còn tồn tại hoặc bạn có thể không nhìn thấy nó.',
+      notVerified: 'Chưa được xác minh',
+      contents: 'Nội dung',
+      edit: 'Chỉnh sửa',
+      rename: 'Đổi tên',
+      history: 'Lịch sử',
+      verify: 'Đánh dấu đã xác minh',
+      verifiedToast: 'Đánh dấu đã xác minh.',
+      archive: 'Lưu trữ',
+      archiveTitle: 'Lưu trữ “{{title}}”?',
+      archiveDescription:
+        'Nó biến mất khỏi cây và khỏi các tác nhân. Bạn có thể khôi phục nó sau; phiên bản của nó được giữ lại.',
+      archivedToast: 'Đã lưu trữ.',
+      restore: 'Khôi phục',
+      restoredToast: 'Đã khôi phục.',
+      move: 'Di chuyển',
+      moveTitle: 'Di chuyển “{{title}}”',
+      moveTo: 'Dưới',
+      root: 'Ở cấp độ cao nhất',
+      movedToast: 'Đã chuyển đi.',
+      archivedNotice: 'Tài liệu này được lưu trữ và chỉ đọc.',
+      oldVersion: 'Bạn đang đọc phiên bản {{version}}.',
+      backToCurrent: 'Quay lại phiên bản hiện tại',
+      proposals: 'Lời cầu hôn đang chờ đợi',
+      empty: 'Tài liệu này trống.',
+    },
+    editor: {
+      editing: 'Chỉnh sửa',
+      proposing: 'Đề xuất thay đổi',
+      properties: 'Thuộc tính',
+      propertiesHint: 'Những tác nhân và liên kết nào đọc về tài liệu này.',
+      nothingToPreview: 'Chưa có gì để xem trước.',
+      reasonPlaceholder:
+        'Tại sao điều này nên thay đổi, cho bất cứ ai quyết định',
+      submitProposal: 'Gửi đề xuất',
+      proposed: 'Đề xuất; ai đó có thể chỉnh sửa quyết định.',
+      title: 'Tiêu đề',
+      slug: 'Sên',
+      slugHint:
+        'Chữ thường, chữ số và dấu gạch nối; làm thế nào các đại lý và liên kết đặt tên cho nó. Để trống, nó được làm từ tiêu đề.',
+      summary: 'Tóm tắt',
+      summaryHint: 'Một dòng tác nhân đọc trong chỉ mục.',
+      content: 'Nội dung',
+      contentPlaceholder: 'Markdown',
+      write: 'Viết',
+      preview: 'Xem trước',
+      note: 'Thay đổi ghi chú',
+      notePlaceholder: 'Điều gì đã thay đổi đối với lịch sử (tùy chọn)',
+      parent: 'Cha mẹ',
+      save: 'Lưu',
+      saved: 'Đã lưu dưới dạng phiên bản {{version}}.',
+      unchanged: 'Không có gì thay đổi.',
+      create: 'Tạo',
+      created: 'Tài liệu được tạo.',
+      cancel: 'Hủy',
+      conflict:
+        'Ai đó đã lưu phiên bản {{version}} trong khi bạn đang chỉnh sửa. Sao chép văn bản của bạn, tải lại và áp dụng lại thay đổi của bạn.',
+      reload: 'Tải lại',
+    },
+    history: {
+      by: 'bởi {{name}}',
+      title: 'Lịch sử',
+      current: 'Hiện tại',
+      fromProposal: 'Từ một lời cầu hôn',
+      compare: 'So sánh',
+      with: 'với',
+      previous: 'phiên bản trước',
+      noChanges: 'Không có sự khác biệt.',
+      view: 'Xem',
+      unchangedLines: '{{count}} dòng không thay đổi',
+      approvedBy: 'được {{name}} phê duyệt',
+    },
+    search: {
+      description:
+        'Tìm kiếm tài liệu của không gian này và các không gian mà nó kế thừa.',
+      hint: 'Gõ để tìm kiếm tiêu đề và văn bản.',
+      emptyHint: 'Hãy thử những từ khác hoặc ít từ hơn.',
+      all: 'Hiển thị tất cả kết quả cho “{{q}}”',
+      resultsFor: 'Kết quả cho “{{q}}”',
+      placeholder: 'Tìm kiếm kiến thức',
+      label: 'Tìm kiếm kiến thức',
+      empty: 'Không tìm thấy gì cho “{{q}}”.',
+      results: 'Kết quả',
+      inherited: 'Kế thừa',
+    },
+    home: {
+      emptyTitle: 'Chưa có tài liệu nào trong {{space}}',
+      emptyEdit: 'Viết bài đầu tiên, hoặc upload file để bắt đầu.',
+      emptyPropose:
+        'Đề xuất một tệp và ai đó có thể chỉnh sửa sẽ quyết định xem nó có được thêm vào hay không.',
+      emptyRead: 'Chưa có gì được viết ở đây.',
+      count_one: 'Tài liệu {{count}}',
+      count_other: 'Tài liệu {{count}}',
+      pending_one: 'Đang chờ xem xét ({{count}})',
+      pending_other: 'Đang chờ xem xét ({{count}})',
+      all: 'Xem tất cả',
+      recent: 'Cập nhật gần đây',
+      updated: '{{time}} · {{name}}',
+      unindexed: 'Không được lập chỉ mục đầy đủ',
+      unindexedFailed: '{{failed}} không thành công · {{pending}} đang chờ',
+      unindexedPending_one: 'Phần {{count}} đang chờ',
+      unindexedPending_other: 'Phần {{count}} đang chờ',
+      unverified: 'Gần đây chưa được xác minh',
+      verifiedAgo: 'Đã xác minh {{time}}',
+    },
+    diff: {
+      changes_one: '{{count}} thay đổi',
+      changes_other: '{{count}} thay đổi',
+      previous: 'Thay đổi trước đó',
+      next: 'Thay đổi tiếp theo',
+      layout: 'Bố cục khác biệt',
+      inline: 'Nội tuyến',
+      split: 'Chia tách',
+    },
+    access: {
+      you: {
+        manage: 'Bạn có thể quản lý',
+        edit: 'Bạn có thể chỉnh sửa',
+        propose: 'Bạn có thể cầu hôn',
+        read: 'Bạn có thể đọc',
+        none: 'Không có quyền truy cập',
+      },
+      title: 'Truy cập không gian',
+      description: 'Ai có thể truy cập {{space}}.',
+      yours: 'Quyền truy cập của bạn',
+      actions: {
+        read: 'Đọc tài liệu và tìm kiếm chúng',
+        propose: 'Đề xuất thay đổi để người có thể chỉnh sửa quyết định',
+        edit: 'Chỉnh sửa, sắp xếp và xác minh tài liệu',
+        manage: 'Thay đổi người có thể truy cập từng thư mục và bài viết',
+      },
+      allowed: 'Được phép',
+      notAllowed: 'Không được phép',
+      matrix: 'Theo vai trò',
+      role: 'Vai trò',
+      columns: {
+        read: 'Đọc',
+        propose: 'Cầu hôn',
+        edit: 'Chỉnh sửa',
+        manage: 'Quản lý',
+      },
+      from: 'Nguồn: {{source}}',
+      source: {
+        space: 'quyền truy cập của bạn vào {{space}}',
+        manager: 'bạn quản lý {{space}}',
+        entry: '{{subject}}, được đặt trên “{{title}}”',
+      },
+      restrictedAt:
+        'Bị hạn chế tại “{{title}}”: chỉ những người được liệt kê ở đó mới có thể truy cập nó.',
+      viewOnly:
+        'Chỉ người quản lý nó mới có thể thay đổi người có thể truy cập nó.',
+      mine: '(của bạn)',
+      howTitle: 'Cách truy cập hoạt động ở đây',
+      agents:
+        'Đại lý thay mặt ai đó đọc và cầu hôn nhiều nhất; họ không bao giờ chỉnh sửa hoặc quyết định.',
+      manage: 'Thay đổi vai trò',
+    },
+    permissions: {
+      title: 'Quyền của “{{title}}”',
+      description: {
+        folder:
+          'Ai có thể đọc, đề xuất, chỉnh sửa và quản lý thư mục này và những gì nó chứa đựng.',
+        article: 'Ai có thể đọc, đề xuất, chỉnh sửa và quản lý bài viết này.',
+        file: 'Ai có thể đọc, đề xuất, chỉnh sửa và quản lý tập tin này.',
+      },
+      modeLabel: 'Truy cập',
+      modes: {
+        inherit: 'Kế thừa từ cha mẹ của nó',
+        custom: 'Chỉ những người được liệt kê',
+      },
+      inheritHint:
+        'Bất kỳ ai có thể truy cập vào cha mẹ của nó cũng có thể truy cập vào nó và những người được thêm bên dưới ít nhất có được cấp độ của họ.',
+      customHint:
+        'Chỉ những người được liệt kê bên dưới mới có thể truy cập nó, bất kể cha mẹ của nó cho phép; những gì ở dưới nó sẽ tuân theo trừ khi nó bị hạn chế.',
+      inherited: 'Kế thừa',
+      fromSpace:
+        'Mọi người có quyền truy cập vào {{space}}, theo vai trò của họ',
+      fromDoc: 'Từ “{{title}}”',
+      fromRestricted:
+        'Từ “{{title}}”, chỉ những người được liệt kê mới có thể truy cập',
+      added: 'Cũng có quyền truy cập',
+      listed: 'Người được liệt kê',
+      add: 'Thêm người',
+      addPlaceholder: 'Thêm người, vai trò…',
+      noMatches: 'Không có trận đấu nào.',
+      noneAdded: 'Không ai ngoài những gì được thừa kế.',
+      noneListed:
+        'Không ai được liệt kê: chỉ người quản lý không gian mới có thể truy cập vào nó.',
+      managers:
+        'Người quản lý không gian luôn có quyền truy cập. Các đại lý đọc và đề xuất nhiều nhất và chỉ những gì cả họ và người của họ có thể.',
+      levelOf: 'Cấp độ {{subject}}',
+      levels: {
+        read: 'Có thể đọc được',
+        propose: 'Có thể cầu hôn',
+        edit: 'Có thể chỉnh sửa',
+        manage: 'Có thể quản lý',
+      },
+      remove: 'Loại bỏ',
+      removedSubject: 'Đã xóa ({{id}})',
+      save: 'Lưu',
+      close: 'Đóng',
+      saved: 'Đã lưu quyền.',
+      loadFailed: 'Không thể tải quyền.',
+    },
+    searchTest: {
+      title: 'Kiểm tra tìm kiếm',
+      description:
+        'Thực hiện tìm kiếm như bạn muốn và hiển thị cách mỗi lần truy cập được xếp hạng: mức độ liên quan, thứ hạng theo từ khóa và ý nghĩa, điểm xếp hạng lại và vị trí của nó trong tài liệu.',
+      keyword: 'Từ khóa',
+      semantic: 'Ý nghĩa',
+      relevance: 'Mức độ liên quan {{score}}',
+      rank: '{{name}} #{{rank}} · {{score}}',
+      unranked: '{{name}}: không tìm thấy',
+      lines: 'Đường {{start}}–{{end}}',
+      notExplained:
+        'Chi tiết xếp hạng chỉ được hiển thị cho những người quản lý không gian hoặc cài đặt tìm kiếm.',
+      query: 'Từ cần tìm',
+      run: 'Tìm kiếm',
+      fused: '{{score}} hợp nhất',
+      provider: '{{name}} #{{rank}} · {{score}}',
+      reranked: 'Xếp hạng lại {{score}}',
+      notReranked: 'Không được xếp hạng lại',
+    },
+    proposals: {
+      listTitle: 'Đề xuất',
+      statuses: {
+        pending: 'Đang chờ',
+        accepted: 'Đã chấp nhận',
+        rejected: 'Đã từ chối',
+        withdrawn: 'Đã rút lại',
+      },
+      none: {
+        pending: 'Không có gì đang chờ xem xét.',
+        accepted: 'Chưa có đề xuất nào được chấp nhận.',
+        rejected: 'Không có đề xuất nào bị từ chối.',
+      },
+      about: 'Trên “{{title}}”',
+      clearAbout: 'Hiển thị tất cả các đề xuất',
+      onBehalf: '{{proposer}} thay mặt cho {{person}}',
+      overview: 'Tổng quan',
+      changes: 'Thay đổi',
+      staleTitle: 'Tài liệu đã thay đổi kể từ',
+      decision: 'Quyết định',
+      commentLabel: 'Bình luận',
+      pendingEntry: 'Đang chờ xem xét · {{count}}',
+      kinds: {
+        update: 'Thay đổi',
+        create: 'Tài liệu mới',
+        verify: 'Vẫn giữ nguyên',
+      },
+      by: '{{proposer}} dành cho {{person}}',
+      from: 'Từ {{source}}',
+      reason: 'Lý do',
+      summary: 'Tóm tắt',
+      stale:
+        'Tài liệu đã thay đổi kể từ khi tài liệu này được viết (v{{base}} → v{{current}}). Việc chấp nhận sẽ thay thế phiên bản hiện tại bằng toàn bộ đề xuất.',
+      diffProposed: 'Đề xuất thay đổi (v{{base}} → đề xuất)',
+      diffCurrent: 'So với phiên bản hiện tại (v{{current}} → đề xuất)',
+      newContent: 'Nội dung đề xuất',
+      newFile: 'Hồ sơ đề xuất',
+      replacementFile: 'Thay thế cho phiên bản {{base}}',
+      fileNote: 'Văn bản của nó được trích xuất sau khi được chấp nhận.',
+      verifyNote:
+        'Không có gì thay đổi trong tài liệu; nó được đánh dấu là đã xác minh ngày hôm nay.',
+      accept: 'Chấp nhận',
+      acceptAnyway: 'Dù sao cũng chấp nhận',
+      reject: 'Từ chối',
+      comment: 'Bình luận (tùy chọn)',
+      accepted: 'Đã được chấp nhận.',
+      rejected: 'Bị từ chối.',
+      decided: '{{outcome}} bởi {{name}}',
+      open: 'Mở',
+      readOnly: 'Ai đó có thể chỉnh sửa kiến ​​thức này sẽ quyết định nó.',
+    },
+  },
+  errors: {
+    KNOWLEDGE_PROPOSAL_PENDING:
+      'Đề xuất trước đó của bạn cho tài liệu này vẫn đang chờ; nó phải được quyết định trước tiên.',
+    KNOWLEDGE_PROPOSAL_REJECTED:
+      'Thay đổi tương tự đã bị từ chối trước đó; đề xuất một cái gì đó khác nhau',
+    EMPTY_CONTENT: 'Nội dung đề xuất trống.',
+    INVALID_REASON: 'Nói lý do nên thay đổi (tối đa 500 ký tự).',
+    KNOWLEDGE_VERSION_CONFLICT:
+      'Trong khi đó, ai đó đã lưu phiên bản mới hơn; tải lại và áp dụng lại thay đổi của bạn.',
+    KNOWLEDGE_SLUG_TAKEN:
+      'Một tài liệu khác trong không gian này có con sên đó.',
+    KNOWLEDGE_HAS_CHILDREN:
+      'Lưu trữ hoặc di chuyển các tài liệu con của nó trước.',
+    KNOWLEDGE_ARCHIVED: 'Tài liệu được lưu trữ; khôi phục nó trước.',
+    KNOWLEDGE_DEPTH_EXCEEDED: 'Tài liệu lồng sâu tối đa bốn cấp độ.',
+    KNOWLEDGE_INVALID_MOVE:
+      'Một tài liệu không thể đứng dưới chính nó hoặc một tài liệu riêng.',
+    KNOWLEDGE_PROPOSAL_STALE:
+      'Tài liệu đã thay đổi kể từ khi đề xuất được viết.',
+    KNOWLEDGE_PROPOSAL_DECIDED: 'Đề xuất này đã được quyết định rồi.',
+    INVALID_SLUG: 'Sên có chữ cái viết thường, chữ số và dấu gạch nối.',
+    INVALID_TITLE: 'Cần có tiêu đề (tối đa 200 ký tự).',
+    FILE_TOO_LARGE: 'Tệp quá lớn.',
+    FILES_UNAVAILABLE: 'Ứng dụng này không lưu trữ tập tin nào.',
+    INVALID_FILE: 'Gửi một tệp.',
+    INVALID_PARENT: 'Không có gì nằm dưới một tập tin.',
+    KNOWLEDGE_NOT_FAILED:
+      'Chỉ một tệp có văn bản không thể trích xuất được mới được trích xuất lại.',
+  },
+  ui: {
+    nav: {
+      knowledge: 'Kiến thức',
+    },
+  },
+  common: {
+    forbidden: 'Bạn không có quyền làm điều này.',
+    requestFailed: 'Yêu cầu không thành công. Vui lòng thử lại.',
+  },
+};
+
+export default viVN;

@@ -1,9 +1,11 @@
+import { getRequestTranslator } from '@nocobase/i18n/server';
+import { requestToolDetection } from '../../runners/tool-detection.js';
 /**
  * The people-facing runners API, mounted at `/api/agents/runners` beside the runner protocol (`runner.ts`): runners
  * and registration tokens. Every route is behind the guard the route contribution passes (a signed-in user and their
  * authorization context); what each caller may do is checked here.
  *
- * - `agents.runners` read/manage: every runner; adding a team runner, and revoking and deleting any runner. Revoking
+ * - `agents.runners` read/manage: every runner; adding a shared runner, and revoking and deleting any runner. Revoking
  *   someone else's runner is an emergency measure: its owner is told, and the server log records who did it.
  * - Changing a runner (its name, slots, coding tools, policy and trust) is its owner's alone, because the runner is
  *   their machine with their tools' sign-ins and credentials: a manager who could share it with the team would send
@@ -67,6 +69,8 @@ import {
   RunnerParams,
   RunnerPatchInput,
   RunnerRecentRunSchema,
+  RunnerRunsQuery,
+  RunnerRunsPageMetaSchema,
   RunnerSchema,
   RunnerSummarySchema,
   RunnerWorkspaceSchema,
@@ -98,6 +102,16 @@ export interface AdminRoutesOptions {
   readonly logger?: AdminAuditLogger;
 }
 
+function conversationLabel(context: Context): (title: string | null) => string {
+  const t = getRequestTranslator(context, '@nocobase/app-plugin-agents');
+  return (title) =>
+    title === null
+      ? t('runnerConversation.other')
+      : t('runnerConversation.title', {
+          title: title || t('runnerConversation.untitled'),
+        });
+}
+
 /**
  * `guard` authenticates the request and sets `caller`; the route contribution installs the real one, tests a fake.
  */
@@ -119,7 +133,7 @@ export function createAdminRoutes(
     ...apiErrorResponses,
     403: apiErrorResponse(
       403,
-      "Only the runner's owner may change it; a manager of runners (`agents.runners` manage) only once its owner can no longer act.",
+      'Only the owner may edit personal tools. A manager of runners (`agents.runners` manage) may edit shared tools, and other settings only once the owner can no longer act.',
     ),
     404: notVisible,
   };
@@ -236,6 +250,10 @@ export function createAdminRoutes(
       activeByTool: held.byTool ?? {},
       takes: takes.get(runner.id) ?? [],
       canManage: rights.edit,
+      canManageTools:
+        runner.ownerUserId === caller(context).userId ||
+        (runner.trust === 'team' &&
+          (await can(caller(context), 'agents.runners', 'manage'))),
       canChangeTrust: rights.edit,
       canRevoke: rights.revoke,
       canClearQuota: rights.revoke,
@@ -244,22 +262,6 @@ export function createAdminRoutes(
       requiredProtocol: { min: MIN_PROTOCOL_VERSION, max: PROTOCOL_VERSION },
       offersJobs: services.jobs.kinds().length > 0,
     };
-  };
-
-  /** The runner named in the path if the caller may change it: 404 when they may not see it, 403 when not theirs. */
-  const editableRunner = async (
-    context: Context<AdminEnv>,
-  ): Promise<Runner> => {
-    const runner = await services.runners.get(
-      context.req.param('runnerId') ?? '',
-    );
-    const rights = await runnerRights(context, runner);
-    if (!rights.see) throw notFound('Runner');
-    if (!rights.edit)
-      throw forbidden(
-        "Only the runner's owner may change it; a manager of runners only once its owner can no longer act.",
-      );
-    return runner;
   };
 
   /** The runner named in the path if the caller may revoke or delete it: 404 when they may not see it, else 403. */
@@ -416,7 +418,7 @@ export function createAdminRoutes(
         examples: ['runtime token create --trust team'],
       }),
       description:
-        'A one-time token the install script registers a runner with; the token is shown only in this answer. Anyone signed in may add a personal runner; a runner shared with the team (`trust: team`) needs `agents.runners` manage.',
+        'A one-time token the install script registers a runner with; the token is shown only in this answer. Anyone signed in may add a personal runner; a runner shared with all users (`trust: team`) needs `agents.runners` manage.',
       responses: {
         201: dataResponse(RegistrationTokenSchema, 'Created.'),
         ...apiErrorResponses,
@@ -431,7 +433,7 @@ export function createAdminRoutes(
         !(await can(who, 'agents.runners', 'manage'))
       )
         throw forbidden(
-          'Adding a runner shared with the team needs agents.runners manage permission.',
+          'Adding a runner shared with all users needs agents.runners manage permission.',
         );
       return context.json(
         {
@@ -512,6 +514,7 @@ export function createAdminRoutes(
       const runs = await services.runnerView.held(
         runner,
         caller(context).userId,
+        conversationLabel(context),
       );
       const jobs = (
         await services.jobs.list({ runnerId: runner.id, limit: 200 })
@@ -546,21 +549,24 @@ export function createAdminRoutes(
         columns: ['id', 'title', 'status', 'createdAt'],
       }),
       description:
-        'Its latest runs whatever their status, newest first, without the link of a private run the caller is not part of.',
+        'Twenty runs ordered by startedAt descending then id descending, with null start times last. Pass meta.nextCursor for the next page; meta.total is the exact run count. Private run links are hidden from other viewers.',
       responses: {
-        200: listResponse(RunnerRecentRunSchema),
+        200: listResponse(RunnerRecentRunSchema, RunnerRunsPageMetaSchema),
         ...apiErrorResponses,
         404: notVisible,
       },
     }),
     runnerParam,
+    apiValidator('query', RunnerRunsQuery),
     async (context) => {
       const runner = await visibleRunner(context);
-      const data = await services.runnerView.recent(
+      const page = await services.runnerView.recent(
         runner,
         caller(context).userId,
+        context.req.valid('query').cursor,
+        conversationLabel(context),
       );
-      return context.json({ data, meta: { total: data.length } });
+      return context.json(page);
     },
   );
   router.patch(
@@ -576,24 +582,38 @@ export function createAdminRoutes(
         flags: { runnerId: { name: 'runtime' } },
       }),
       description:
-        "Its owner's alone, a manager of runners (`agents.runners` manage) included; a runner whose owner can no longer act (none recorded, or disabled or deleted) is changed by managers of runners.",
+        'Owners may change their runners. Managers of runners (`agents.runners` manage) may change shared tool selections and request detection, but cannot change personal tools or other settings of a runner with an active owner.',
       responses: { 200: dataResponse(RunnerSchema), ...editErrors },
     }),
     runnerParam,
-    async (context, next) => {
-      context.set('runnerToManage', await editableRunner(context));
-      await next();
-    },
     apiValidator('json', RunnerPatchInput),
-    async (context) =>
-      context.json({
-        data: runnerPublicData(
-          await services.runners.update(
-            context.get('runnerToManage').id,
-            context.req.valid('json'),
-          ),
-        ),
-      }),
+    async (context) => {
+      const runner = await visibleRunner(context);
+      const patch = context.req.valid('json');
+      const rights = await runnerRights(context, runner);
+      const toolsOnly = Object.keys(patch).every(
+        (key) => key === 'enabledTools' || key === 'redetectTools',
+      );
+      const owner = runner.ownerUserId === caller(context).userId;
+      const toolsAllowed =
+        owner ||
+        (runner.trust === 'team' &&
+          (await can(caller(context), 'agents.runners', 'manage')));
+      if (
+        !(toolsOnly ? toolsAllowed : rights.edit) ||
+        ((patch.enabledTools !== undefined || patch.redetectTools) &&
+          !toolsAllowed)
+      )
+        throw forbidden(
+          'Only the owner may edit personal tools; shared tools may also be edited by runner managers.',
+        );
+      const { redetectTools, ...settings } = patch;
+      const saved = Object.keys(settings).length
+        ? await services.runners.update(runner.id, settings)
+        : runner;
+      if (redetectTools) requestToolDetection(runner.id);
+      return context.json({ data: runnerPublicData(saved) });
+    },
   );
   router.post(
     '/:runnerId/revoke',

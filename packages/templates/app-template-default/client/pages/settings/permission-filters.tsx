@@ -8,6 +8,7 @@ import type {
   AuthorizationOptionsResponse,
 } from '@nocobase/app-plugin-authorization/client';
 import { getScopeSelection } from './permissions-model.js';
+import { permissionFilterFieldLabel } from './permission-workspace.js';
 
 export function configurePermissionScopes(
   sections: readonly PermissionEditorSection[],
@@ -19,7 +20,79 @@ export function configurePermissionScopes(
   onApply: (id: string, value: unknown) => void,
   disabled: boolean,
 ): readonly PermissionEditorSection[] {
-  const labels: PermissionFilterLabels = {
+  const labels = permissionFilterLabels(text);
+  const resources = catalog.sections.flatMap((section) =>
+    section.subsections.flatMap((sub) => sub.resources),
+  );
+  return sections.map((section) => ({
+    ...section,
+    groups: section.groups.map((group) => ({
+      ...group,
+      rows: group.rows.map((row) => ({
+        ...row,
+        scopes:
+          row.scopes?.map((scope) => {
+            if (scope.level !== 'customFilter' && editing !== scope.id)
+              return scope;
+            const [type, resourceId, action, key] = JSON.parse(
+              scope.id,
+            ) as string[];
+            const definition = resources
+              .find(
+                (resource) =>
+                  resource.type === type &&
+                  resource.id === resourceId &&
+                  resource.actions.some((item) => item.name === action),
+              )
+              ?.dataScopes?.[action ?? '']?.find((item) => item.key === key);
+            const value = getScopeSelection(grants, scope.id);
+            const params: unknown =
+              value && typeof value === 'object'
+                ? Reflect.get(value, 'params')
+                : undefined;
+            const filter: unknown =
+              params && typeof params === 'object'
+                ? Reflect.get(params, 'filter')
+                : undefined;
+            return {
+              ...scope,
+              configuration: (
+                <PermissionFilter
+                  open={editing === scope.id}
+                  onOpenChange={(open) =>
+                    setEditing(open ? scope.id : undefined)
+                  }
+                  value={filter}
+                  fields={(definition?.fields ?? []).map((field) => ({
+                    value: field,
+                    label: permissionFilterFieldLabel(
+                      definition?.collection ?? '',
+                      field,
+                      text,
+                    ),
+                  }))}
+                  labels={labels}
+                  disabled={disabled}
+                  onApply={(filter) =>
+                    onApply(scope.id, {
+                      type: 'recordAccess',
+                      key: 'customFilter',
+                      params: { filter },
+                    })
+                  }
+                />
+              ),
+            };
+          }) ?? [],
+      })),
+    })),
+  }));
+}
+
+export function permissionFilterLabels(
+  text: (key: string, fallback?: string) => string,
+): PermissionFilterLabels {
+  return {
     limit: text('settings.permissionFilter.limit'),
     configure: text('settings.permissionFilter.configure'),
     title: text('settings.permissionFilter.title'),
@@ -56,64 +129,4 @@ export function configurePermissionScopes(
       ].map((key) => [key, text(`settings.permissionFilter.operators.${key}`)]),
     ),
   };
-  const resources = catalog.sections.flatMap((section) =>
-    section.subsections.flatMap((sub) => sub.resources),
-  );
-  return sections.map((section) => ({
-    ...section,
-    groups: section.groups.map((group) => ({
-      ...group,
-      rows: group.rows.map((row) => ({
-        ...row,
-        scopes:
-          row.scopes?.map((scope) => {
-            if (scope.level !== 'customFilter' && editing !== scope.id)
-              return scope;
-            const [type, resourceId, action, key] = JSON.parse(
-              scope.id,
-            ) as string[];
-            const definition = resources
-              .find(
-                (resource) =>
-                  resource.type === type && resource.id === resourceId,
-              )
-              ?.dataScopes?.[action ?? '']?.find((item) => item.key === key);
-            const value = getScopeSelection(grants, scope.id);
-            const params: unknown =
-              value && typeof value === 'object'
-                ? Reflect.get(value, 'params')
-                : undefined;
-            const filter: unknown =
-              params && typeof params === 'object'
-                ? Reflect.get(params, 'filter')
-                : undefined;
-            return {
-              ...scope,
-              configuration: (
-                <PermissionFilter
-                  open={editing === scope.id}
-                  onOpenChange={(open) =>
-                    setEditing(open ? scope.id : undefined)
-                  }
-                  value={filter}
-                  fields={(definition?.fields ?? []).map((field) => ({
-                    value: field,
-                    label: text(`settings.permissionFields.${field}`, field),
-                  }))}
-                  labels={labels}
-                  disabled={disabled}
-                  onApply={(filter) =>
-                    onApply(scope.id, {
-                      type: 'recordAccess',
-                      key: 'customFilter',
-                      params: { filter },
-                    })
-                  }
-                />
-              ),
-            };
-          }) ?? [],
-      })),
-    })),
-  }));
 }

@@ -1,4 +1,18 @@
+import type {
+  ChannelContext,
+  ChannelInstance,
+  ChannelPreparationInput,
+  ChannelSendInput,
+  NotificationI18nText,
+  ValidatedChannelMessage,
+} from '@nocobase/app-plugin-notification';
 import { createHmac } from 'node:crypto';
+import {
+  prepareImMessage,
+  validateImMessage,
+  type ImMessage,
+  type ImRecipient,
+} from '../channel.js';
 
 import {
   type NotificationProviderDefinition,
@@ -24,6 +38,7 @@ export function defineFeishuWebhookProviderConfig(
   return { provider: 'feishu-webhook', ...input };
 }
 
+/** @deprecated Use registerChannelType(FeishuWebhookChannel) instead. */
 export function createFeishuWebhookProviderDefinition(): NotificationProviderDefinition<
   FeishuWebhookProviderConfig,
   PreparedImMessage
@@ -32,7 +47,7 @@ export function createFeishuWebhookProviderDefinition(): NotificationProviderDef
     type: 'feishu-webhook',
     messageType: 'im',
     label: notificationProviderText(
-      'test.providers.feishuWebhook',
+      'providers.feishuWebhook',
       'Feishu webhook',
     ),
     validateConfig: validateFeishuConfig,
@@ -40,40 +55,7 @@ export function createFeishuWebhookProviderDefinition(): NotificationProviderDef
       validateFeishuConfig(config);
       return {
         type: 'feishu-webhook',
-        async send({
-          message,
-          signal,
-          deliveryId,
-        }): Promise<ProviderSendResult> {
-          const timestamp = Math.floor(Date.now() / 1000).toString();
-          const body = message.content.payloads?.feishu ?? {
-            msg_type: 'text',
-            content: { text: formatImText(message.content) },
-          };
-          return postJson(
-            config.webhookUrl,
-            config.secret
-              ? {
-                  ...body,
-                  timestamp,
-                  sign: createHmac(
-                    'sha256',
-                    `${timestamp}\n${config.secret}`,
-                  ).digest('base64'),
-                }
-              : body,
-            { signal },
-            {
-              headers: { 'x-nocobase-delivery-id': deliveryId },
-              evaluateSuccess: (response) =>
-                evaluateJsonResult(response, {
-                  code: [['StatusCode'], ['code']],
-                  message: [['StatusMessage'], ['msg']],
-                  success: (code) => code === 0,
-                }),
-            },
-          );
-        },
+        send: (input) => sendFeishu(config, input),
       };
     },
   };
@@ -83,4 +65,80 @@ function validateFeishuConfig(config: FeishuWebhookProviderConfig): void {
   validateHttpUrl(config.webhookUrl, {
     allowedHosts: ['open.feishu.cn', 'open.larksuite.com'],
   });
+}
+
+function sendFeishu(
+  config: FeishuWebhookProviderConfig | FeishuWebhookChannelConfig,
+  { message, signal, deliveryId }: ChannelSendInput<PreparedImMessage>,
+): Promise<ProviderSendResult> {
+  const timestamp = Math.floor(Date.now() / 1000).toString();
+  const body = message.content.payloads?.feishu ?? {
+    msg_type: 'text',
+    content: { text: formatImText(message.content) },
+  };
+  return postJson(
+    config.webhookUrl,
+    config.secret
+      ? {
+          ...body,
+          timestamp,
+          sign: createHmac('sha256', `${timestamp}\n${config.secret}`).digest(
+            'base64',
+          ),
+        }
+      : body,
+    { signal },
+    {
+      headers: { 'x-nocobase-delivery-id': deliveryId },
+      evaluateSuccess: (response) =>
+        evaluateJsonResult(response, {
+          code: [['StatusCode'], ['code']],
+          message: [['StatusMessage'], ['msg']],
+          success: (code) => code === 0,
+        }),
+    },
+  );
+}
+
+export interface FeishuWebhookChannelConfig extends Omit<
+  FeishuWebhookProviderConfig,
+  'provider'
+> {
+  readonly type: 'feishu-webhook';
+}
+
+export class FeishuWebhookChannel implements ChannelInstance<
+  ImMessage,
+  ImRecipient,
+  PreparedImMessage
+> {
+  static readonly type = 'feishu-webhook';
+  static readonly label: NotificationI18nText = notificationProviderText(
+    'providers.feishuWebhook',
+    'Feishu webhook',
+  );
+  static validateConfig(config: FeishuWebhookChannelConfig): void {
+    validateFeishuConfig({ ...config, provider: 'feishu-webhook' });
+  }
+  constructor(
+    _context: ChannelContext,
+    private readonly config: FeishuWebhookChannelConfig,
+  ) {
+    FeishuWebhookChannel.validateConfig(config);
+  }
+  validateMessage(
+    input: unknown,
+  ): ValidatedChannelMessage<ImMessage, ImRecipient> {
+    return validateImMessage(input);
+  }
+  prepare(
+    input: ChannelPreparationInput<ImMessage, ImRecipient>,
+  ): Promise<PreparedImMessage> {
+    return prepareImMessage(input);
+  }
+  send(
+    input: ChannelSendInput<PreparedImMessage>,
+  ): Promise<ProviderSendResult> {
+    return sendFeishu(this.config, input);
+  }
 }

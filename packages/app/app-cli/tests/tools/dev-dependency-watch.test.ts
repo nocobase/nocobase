@@ -1,5 +1,7 @@
 // @vitest-environment node
 import path from 'node:path';
+import fs from 'node:fs';
+import os from 'node:os';
 import { expect, it } from 'vitest';
 
 import {
@@ -44,4 +46,31 @@ it('keeps an explicit budget from the environment', () => {
   expect(resolveDevShutdownEnv({ [SHUTDOWN_TIMEOUT_ENV]: '12000' })).toEqual({
     [SHUTDOWN_TIMEOUT_ENV]: '12000',
   });
+});
+
+it('includes the enclosing workspace installation state and deduplicates a root application', () => {
+  const root = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'dev-dependency-workspace-'),
+  );
+  try {
+    fs.writeFileSync(
+      path.join(root, 'pnpm-workspace.yaml'),
+      "packages: ['packages/*']\n",
+    );
+    const app = path.join(root, 'packages', 'app');
+    fs.mkdirSync(app, { recursive: true });
+    expect(resolveDependencyWatch(app).map((watch) => watch.directory)).toEqual(
+      [
+        app,
+        path.join(app, 'node_modules'),
+        root,
+        path.join(root, 'node_modules'),
+      ],
+    );
+    const rootWatches = resolveDependencyWatch(root);
+    expect(rootWatches).toHaveLength(2);
+    expect(rootWatches[0].filenames.has('pnpm-workspace.yaml')).toBe(true);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
 });

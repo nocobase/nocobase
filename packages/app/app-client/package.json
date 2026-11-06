@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/app-client",
-  "version": "4.0.0-beta.0",
+  "version": "4.0.0-beta.8",
   "description": "React runtime for NocoBase applications.",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
@@ -16,6 +16,10 @@
       "types": "./src/plugins.ts",
       "import": "./src/plugins.ts"
     },
+    "./route-containers": {
+      "types": "./src/route-containers.ts",
+      "import": "./src/route-containers.ts"
+    },
     "./runtime": {
       "types": "./src/runtime/index.ts",
       "import": "./src/runtime/index.ts"
@@ -30,6 +34,10 @@
       "./plugins": {
         "types": "./dist/plugins.d.ts",
         "import": "./dist/plugins.js"
+      },
+      "./route-containers": {
+        "types": "./dist/route-containers.d.ts",
+        "import": "./dist/route-containers.js"
       },
       "./runtime": {
         "types": "./dist/runtime/index.d.ts",
@@ -54,13 +62,14 @@
     "fix": "pnpm lint:fix && pnpm format"
   },
   "peerDependencies": {
-    "@tanstack/react-query": "catalog:",
     "@nocobase/i18n": "workspace:^",
+    "@nocobase/service-provider": "workspace:^",
+    "@tanstack/react-query": "catalog:",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-i18next": "^17.0.0",
     "react-router": "^7.0.0",
-    "@nocobase/service-provider": "workspace:^"
+    "@noble/hashes": "2.3.0"
   },
   "dependencies": {
     "@nocobase/api-client": "workspace:^",

@@ -1,7 +1,7 @@
 import { databaseManagerToken, type DatabaseManager } from '@nocobase/db';
 import {
   notificationExtensionRegistryToken,
-  type NotificationExtensionRegistry,
+  createNotificationRegistry,
 } from '@nocobase/app-plugin-notification';
 import { ServiceContainer } from '@nocobase/service-provider';
 import {
@@ -19,16 +19,13 @@ import { InAppNotificationProvider } from '../server/providers/in-app-notificati
 import { inAppNotificationStoreToken } from '../server/tokens.js';
 
 describe('@nocobase/app-plugin-notification-in-app provider', () => {
-  it('registers its Channel and Provider during boot', async () => {
-    const registerProvider = vi.fn();
-    const registerChannel = vi.fn(() => ({ registerProvider }));
+  it('registers its class during boot and creates the store lazily', async () => {
+    const registry = createNotificationRegistry();
     const close = vi.fn();
     const defineTopic = vi.fn(() => ({ publishFor: vi.fn(), close }));
     const container = new ServiceContainer();
     container.instance(databaseManagerToken, {} as DatabaseManager);
-    container.instance(notificationExtensionRegistryToken, {
-      registerChannel,
-    } as unknown as NotificationExtensionRegistry);
+    container.instance(notificationExtensionRegistryToken, registry);
     container.instance(userAdministrationServiceToken, {
       get: vi.fn(),
     } as unknown as UserAdministrationService);
@@ -44,12 +41,14 @@ describe('@nocobase/app-plugin-notification-in-app provider', () => {
     await provider.boot();
 
     expect(container.has(inAppNotificationStoreToken)).toBe(true);
-    expect(registerChannel).toHaveBeenCalledWith(
-      expect.objectContaining({ type: 'in-app' }),
-    );
-    expect(registerProvider).toHaveBeenCalledWith(
-      expect.objectContaining({ type: 'in-app' }),
-    );
+    expect(registry.channelType('in-app')?.type).toBe('in-app');
+    expect(defineTopic).not.toHaveBeenCalled();
+    const runtime = await registry
+      .channelType('in-app')!
+      .create({ channelName: 'inbox', container }, { type: 'in-app' });
+    expect(runtime.provider.capabilities).toEqual({
+      idempotency: { supported: true },
+    });
     expect(defineTopic).toHaveBeenCalledWith('notifications:in-app', {
       audience: 'user',
     });

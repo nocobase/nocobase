@@ -40,7 +40,10 @@
         "group": "Workflows",
         "iframeHeight": 900
       },
-      "dependencies": ["lucide-react@^0.487.0"],
+      "dependencies": [
+        "lucide-react@^0.487.0",
+        "@nocobase/app-client@^4.0.0-beta.4"
+      ],
       "registryDependencies": [
         "button",
         "card",

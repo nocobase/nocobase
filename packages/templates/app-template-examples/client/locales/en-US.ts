@@ -1,3 +1,7 @@
+import { enUS as onboarding } from '../pages/onboarding/locales.js';
+import { enUS as procurement } from '../pages/procurement/locales.js';
+import { enUS as customerContacts } from '../pages/customer-contacts/locales.js';
+import { enUS as skillProjectsenUS } from '../pages/skill-projects/locales.js';
 import { workflowNamesEnUS } from '../../shared/workflow-names.js';
 import type { LocaleResource } from '@nocobase/i18n';
 
@@ -5,42 +9,90 @@ import agentChatEnUS from '#extensions/nocobase-agent-chat/locales/en-US';
 import systemEnUS from './system/en-US.js';
 
 const enUS = {
+  procurement,
+  onboarding,
+  customerContacts,
+  skillProjects: skillProjectsenUS,
+  knowledge: {
+    indexing: 'Knowledge indexing',
+    indexingDescription:
+      'How documents are split and embedded for retrieval across every knowledge space.',
+    title: 'Knowledge base',
+    spaces: { default: 'Default knowledge base' },
+    chat: {
+      title: 'Start knowledge AI chat',
+      description: 'Choose how this conversation retrieves knowledge.',
+      strategy: 'Knowledge retrieval policy',
+      onDemand: 'On-demand retrieval',
+      onDemandDescription:
+        'Search for internal knowledge or when explicitly requested; greetings and questions independent of the knowledge base may be answered directly.',
+      always: 'Retrieve for every question',
+      alwaysDescription:
+        'Instruct AI to search before answering each new question and disclose missing or insufficient evidence.',
+      policyNote:
+        'The policy applies throughout the new conversation. It is a model instruction, not an enforced tool-execution guarantee.',
+      start: 'Start chat',
+      starting: 'Starting…',
+      expired: 'Your session has ended. Sign in again to start a conversation.',
+      forbidden:
+        'You do not have permission to start this conversation. Ask an administrator for access.',
+      failed:
+        'The conversation could not be created. Check the model configuration and try again.',
+      unknown:
+        'The result is unknown. A conversation may already exist. Check chat history before starting another one.',
+      history: 'Check chat history',
+      signIn: 'Sign in again',
+      retry: 'Retry',
+    },
+  },
   aiFormFill: {
     title: 'AI form assistance',
-    description:
-      'Generate a proposal in shared chat, review it, then explicitly apply it to a browser draft.',
-    draftTitle: 'Request draft',
-    draftOnly: 'Browser draft only. Nothing is submitted or saved.',
-    target: 'Local draft target',
-    record: 'Read-only record ID',
-    recordA: 'Record A',
-    recordB: 'Record B',
-    switchHint:
-      'Switching records invalidates previous proposals, even when switching back.',
-    name: 'Request name',
-    priority: 'Priority',
-    budget: 'Budget',
-    subscribe: 'Receive updates',
-    low: 'Low',
-    normal: 'Normal',
-    high: 'High',
-    yes: 'Yes',
-    no: 'No',
-    openChat: 'Open AI chat for this form',
+    description: 'Describe your request and let AI help fill the form.',
+    draftTitle: 'Purchase request',
+    formDescription: 'Tell us what you need to purchase and why.',
+    draftOnly: 'Filling demo only. Nothing is submitted or saved.',
+    name: 'Purchase item',
+    namePlaceholder: 'For example: designer laptops',
+    department: 'Requesting department',
+    departmentPlaceholder: 'Select a department',
+    departments: {
+      design: 'Product Design',
+      engineering: 'Engineering',
+      marketing: 'Marketing',
+      admin: 'Administration',
+    },
+    quantity: 'Quantity',
+    quantityPlaceholder: 'Enter quantity',
+    budget: 'Estimated total',
+    budgetPlaceholder: 'Enter the estimated total',
+    currency: 'CNY',
+    arrival: 'Expected delivery date',
+    arrivalPlaceholder: 'Select a date',
+    purpose: 'Purchase purpose',
+    purposePlaceholder: 'Describe the use or reason for this purchase',
+    openChat: 'AI fill',
+    chatHint: 'Describe what to fill in AI chat.',
+    unavailable:
+      'AI assistance is unavailable. Check the chat and model configuration.',
+    hint: 'Try “AI fill” above, or enter the details manually.',
+    clear: 'Clear form',
+    undo: 'Undo this fill',
+    completed: 'Filled {{count}} fields. You can keep editing.',
     retry: 'Retry',
     prompt:
-      'Propose values for the selected request form. Do not save anything. I will review and apply the browser draft myself.',
+      'Please purchase 3 designer laptops for the Product Design department, with an estimated total of CNY 36,000 and delivery by November 6, 2026. They will be used by new designers for daily design work and prototyping. Fill only the current form; do not submit or save it.',
     askFailed: 'Could not open chat. Check your connection and try again.',
-    proposalTitle: 'Suggested draft values',
+    proposalTitle: 'Form values',
+    applying: 'Updating the draft…',
     apply: 'Apply to draft',
     dismiss: 'Dismiss',
-    proposalPending: 'Preparing a draft proposal…',
+    proposalPending: 'Preparing form values…',
     proposalFailed: 'The proposal could not be completed. Send a new request.',
     invalidProposal: 'The proposal is invalid. Request a new proposal.',
     invalidName: 'Enter a name between 1 and 120 characters.',
-    invalidBudget: 'Enter a budget from 0 to 1,000,000.',
+    invalidBudget: 'Enter a total from 0 to 1,000,000.',
     invalidDraft:
-      'Complete a valid numeric budget before including the draft in a message.',
+      'Check the quantity (1–10,000), total (0–1,000,000) and other form values before sending.',
     applied: 'Applied to the browser draft. Nothing was saved.',
     dismissed: 'Dismissed. The draft was not changed.',
     stale:
@@ -51,11 +103,18 @@ const enUS = {
       'The draft update could not be confirmed. Review the draft before trying again.',
     partial:
       'Only part of the draft may have changed. Review the draft and generate a new proposal.',
+    priority: 'Priority',
+    subscribe: 'Receive updates',
+    low: 'Low',
+    normal: 'Normal',
+    high: 'High',
+    yes: 'Yes',
+    no: 'No',
   },
   structuredExtraction: {
     title: 'AI structured extraction',
     description:
-      'Two forms share one endpoint and constrain OnlineAgent.background() output with frontend JSON Schema.',
+      'Extract key information from text and organize it into an editable form.',
     contactTitle: 'Contact profile',
     contactDescription:
       'Extract contact details, a nested address and a list of skills.',
@@ -69,10 +128,12 @@ const enUS = {
     model: 'Language model',
     selectModel: 'Select a model',
     source: 'Source text',
+    result: 'Extracted information',
+    extracted: 'Extracted',
+    scenarios: 'Extraction examples',
     extract: 'Extract',
     extracting: 'Extracting…',
-    localOnly:
-      "Demo only: form edits aren't saved and are lost on leaving this page. Extracting again replaces this form.",
+    localOnly: 'Edit the result directly. Nothing is saved.',
     success: 'Extracted information filled into the form',
     noModels: 'No chat models are available.',
     missingInput: 'Select a model and enter source text.',
@@ -276,9 +337,6 @@ const enUS = {
     previous: 'Previous',
     next: 'Next',
     pagination: 'Page {{page}} · {{total}} executions',
-    noDefinitions: 'No workflow definitions.',
-    noExecutions: 'No executions yet. Start a workflow from its example page.',
-    noResults: 'No executions for this workflow.',
     loading: 'Loading workflows',
     failed: 'Could not load workflows. Please try again.',
     forbidden: 'You do not have access to this workflow.',
@@ -335,6 +393,9 @@ const enUS = {
     group: 'Agents',
     agents: 'Agents',
     runtimes: 'Runtimes',
+    skills: 'Skills',
+    newSkill: 'New skill',
+    skillDetail: 'Skill details',
     connectRuntime: 'Connect runtime',
     models: 'Models',
     openModels: 'Open models',
@@ -349,7 +410,7 @@ const enUS = {
   },
   aiTranslation: {
     title: 'AI Translation',
-    description: 'Translate text with OnlineAgent.background.',
+    description: 'Translate naturally. Keep the meaning.',
     model: 'Language model',
     selectModel: 'Select a model',
     translate: 'Translate',
@@ -376,6 +437,27 @@ const enUS = {
     signIn: 'Sign in again',
     retry: 'Retry',
     success: 'Translation complete',
+    workspace: 'Translation workspace',
+    swap: 'Swap languages',
+    clear: 'Clear',
+    copy: 'Copy',
+    copied: 'Translation copied',
+    copyFailed: 'Could not copy. Select the translation and copy it manually.',
+    tryExample: 'Try an example',
+    examples: {
+      product: {
+        title: 'Product introduction',
+        text: 'NocoBase is an extensible application development platform that helps teams build and deliver business applications faster.',
+      },
+      email: {
+        title: 'Business email',
+        text: 'Hello, thank you for your interest in our product. We would like to invite you to an online demo next Wednesday to explore how it can help your team work more efficiently. We look forward to hearing from you.',
+      },
+      notice: {
+        title: 'Event announcement',
+        text: 'Join us this Friday at 3 p.m. for a product discussion. Bring your ideas and explore new possibilities with the team.',
+      },
+    },
     languages: {
       auto: 'Detect language',
       'zh-CN': 'Simplified Chinese',
@@ -528,7 +610,6 @@ const enUS = {
     error:
       'Unable to load numeric examples. Check your connection and sign-in status, then retry.',
     retry: 'Try again',
-    empty: 'No rows in this selection. Aggregate results are shown below.',
     rows: 'Stored values',
     aggregates: 'Aggregate results',
     field: 'Field / type',
@@ -553,6 +634,18 @@ const enUS = {
     },
   },
   examples: {
+    onboarding: {
+      title: onboarding.title,
+      description: onboarding.description,
+    },
+    procurement: {
+      title: procurement.title,
+      description: procurement.description,
+    },
+    customerContacts: {
+      title: 'Customer relations and batch editing',
+      description: customerContacts.description,
+    },
     aiFormFill: {
       title: 'AI form assistance',
       description:
@@ -651,11 +744,6 @@ const enUS = {
     archived: 'Archived',
     filter: 'Filter by status',
     search: 'Search titles…',
-    loading: 'Loading articles…',
-    loadError: 'Unable to load articles. Check your connection and try again.',
-    retry: 'Try again',
-    empty: 'No matching articles',
-    emptyHint: 'Try another search or create your first article.',
     noSummary: 'No summary yet.',
     read: 'Read article',
     total: '{{count}} articles',
@@ -690,7 +778,7 @@ const enUS = {
     loadError:
       'Unable to load orders. Check that you are signed in and that the external CRM database is reachable.',
     retry: 'Retry',
-    empty: 'No matching orders',
+    empty: 'No orders yet.',
     emptyHint:
       'The SQLite stand-in is filled with sample orders on startup; a real CRM shows whatever it holds.',
     columns: {

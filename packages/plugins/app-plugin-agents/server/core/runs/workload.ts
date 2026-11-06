@@ -14,6 +14,7 @@ import type { DatabaseConnection } from '@nocobase/db';
 
 import { entryTools, type Agent } from '../../../shared/agents.js';
 import {
+  quotaForAgent,
   runsEntry,
   runsTool,
   toolLimit,
@@ -133,7 +134,24 @@ export function explainWait(
       runsEntry(runner, entry, context.now.getTime()),
     ),
   );
-  if (fitting.length === 0)
+  if (fitting.length === 0) {
+    const quota = quotaForAgent(
+      context.runners,
+      agent,
+      run.actorUserId,
+      context.now.getTime(),
+    );
+    if (quota.length > 0) {
+      const until =
+        quota
+          .flatMap((item) => (item.resetsAt ? [item.resetsAt] : []))
+          .sort()[0] ?? null;
+      return wait('toolQuota', {
+        tool,
+        until,
+        params: { ...(tool ? { tool } : {}), ...(until ? { until } : {}) },
+      });
+    }
     return wait('toolUnavailable', {
       tool,
       params: {
@@ -141,6 +159,7 @@ export function explainWait(
         ...(model ? { model } : {}),
       },
     });
+  }
   fitting = fitting.filter(
     (runner) =>
       runner.trust === 'team' || runner.ownerUserId === run.actorUserId,
@@ -154,7 +173,7 @@ export function explainWait(
     const missing = run.requires.filter((feature) => !offered.has(feature));
     return wait('missingFeatures', { missing, params: { features: missing } });
   }
-  // Variables for team runners only, as the last claim by a personal runner found them (`claim.ts`).
+  // Variables for shared runners only, as the last claim by a personal runner found them (`claim.ts`).
   const teamOnly = variableRefs(run.teamOnlyVariables);
   const trusted =
     teamOnly.length > 0
@@ -180,7 +199,8 @@ export function explainWait(
     (runner) =>
       !runner.draining &&
       (runner.globalFree ?? 1) > 0 &&
-      (context.runnerUsed.get(runner.id) ?? 0) < runner.slots,
+      (context.runnerUsed.get(runner.id) ?? 0) <
+        Math.min(runner.slots, runner.reportedSlots ?? runner.slots),
   );
   if (free.length === 0)
     return wait('runnersBusy', { params: { runners: trusted.length } });
@@ -392,6 +412,7 @@ const DIAGNOSTIC_CODES: Readonly<Record<string, RunWait['reason']>> = {
   sameWorkActive: 'sameWorkActive',
   delayed: 'delayed',
   toolUnavailable: 'toolUnavailable',
+  toolQuota: 'toolQuota',
   toolNotInstalled: 'toolNotInstalled',
   noSharedRunner: 'noSharedRunner',
   unknown: 'unknown',
@@ -433,6 +454,7 @@ function refineWait(
     );
   return {
     ...previous,
+    until: entry.reason === 'toolQuota' ? (entry.until ?? null) : null,
     reason:
       entry.reason === 'ready' && Number(record.claimFailures) > 0
         ? 'setupRetrying'
@@ -444,6 +466,9 @@ function refineWait(
         .filter((reason) => reason !== entry.reason)
         .map((reason) => DIAGNOSTIC_CODES[reason]),
       tool: entry.tool,
+      ...(entry.reason === 'toolQuota' && entry.until
+        ? { until: entry.until }
+        : {}),
       ...(entry.reason === 'concurrencyFull'
         ? { active, limit: agent!.maxConcurrentRuns }
         : entry.reason === 'busy'
@@ -648,13 +673,41 @@ export async function readQueueWait(
   runnerSource: WorkloadRunners,
   runId: string,
   diagnose?: ClaimService['diagnose'],
+  conversationRunnerId?: string | null,
 ): Promise<RunWait | null> {
   const record = await runsRepo(conn).findOne({ filter: { id: runId } });
-  if (!record || record.status !== 'queued') return null;
+  if (!record || record.status !== 'queued' || record.runnerId !== null)
+    return null;
   const state = await readQueueState(conn, clock, runnerSource);
   const run = toRun(record);
   const agent = state.agentById.get(run.agentId);
-  const previous = quickWait(record, run.requires, state);
+  // Conversation binding is stricter than an Agent's general availability. This is read-only; claim is unchanged.
+  const scoped = conversationRunnerId
+    ? {
+        ...state,
+        online: state.online.filter(
+          (runner) => runner.id === conversationRunnerId,
+        ),
+      }
+    : state;
+  let previous = quickWait(record, run.requires, scoped);
+  if (conversationRunnerId && scoped.online.length === 0)
+    return { ...wait('runnersOffline'), position: null, agentPosition: 1 };
+  if (conversationRunnerId && previous.reason === 'runnersBusy') {
+    const runner = scoped.online[0];
+    const limit = Math.min(runner.slots, runner.reportedSlots ?? runner.slots);
+    previous = {
+      ...previous,
+      params: {
+        ...previous.params,
+        used: Math.max(
+          state.runnerUsed.get(runner.id) ?? 0,
+          limit - (runner.globalFree ?? limit),
+        ),
+        limit,
+      },
+    };
+  }
   const diagnostic =
     agent?.status === 'enabled' && diagnose
       ? await diagnose(conn, run, agent)

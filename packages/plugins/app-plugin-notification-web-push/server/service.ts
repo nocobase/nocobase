@@ -1,4 +1,7 @@
 import { randomUUID } from 'node:crypto';
+import { resolveSupportedLocale, type I18nRuntime } from '@nocobase/i18n';
+import locales from './locales/index.js';
+import type { WebPushServerResource } from './locales/en-US.js';
 import type {
   NotificationService,
   ProviderSendResult,
@@ -50,6 +53,7 @@ export interface WebPushDependencies {
   ) => Promise<number>;
   base: string;
   channel?: string;
+  i18n?: I18nRuntime;
 }
 /** Constrain even malformed/absolute click URLs to the application's path; the worker rechecks origin. */
 export function pushTarget(value: string, base: string): string {
@@ -150,13 +154,29 @@ export function createWebPushService(
         throw new PushError('limited');
       testing.set(userId, now);
       if (testing.size > 2048) testing.delete(testing.keys().next().value!);
+      const locale =
+        resolveSupportedLocale(row.locale, Object.keys(locales)) ?? 'en-US';
+      let title: string;
+      if (deps.i18n) {
+        await deps.i18n.ensureLocaleLoaded(locale);
+        title = deps.i18n.getFixedT(
+          '@nocobase/app-plugin-notification-web-push',
+          locale,
+        )('testNotification');
+      } else {
+        // Standalone service users can load the same catalogue without an application container.
+        const resource = (await locales[locale]()) as {
+          default: WebPushServerResource;
+        };
+        title = resource.default.testNotification;
+      }
       const dedupeKey = `test:${randomUUID()}`;
       await deps.notifications().send({
         idempotencyKey: dedupeKey,
         messages: {
           [deps.channel ?? 'webPush']: {
             to: [{ id, userId }],
-            title: row.locale === 'zh-CN' ? '测试通知' : 'Test notification',
+            title,
             body: '',
             url: `${deps.base.replace(/\/$/u, '')}/`,
             dedupeKey,

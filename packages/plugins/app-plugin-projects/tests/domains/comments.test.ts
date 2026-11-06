@@ -6,7 +6,7 @@ import type { IssueTriggers } from '../../server/domains/issues/index.js';
 import { createProjects } from '../../server/composition.js';
 import { permissionsOf } from '../permissions.js';
 import type { Issue } from '../../shared/issues.js';
-import type { MentionRef } from '../../shared/comments.js';
+import type { CommentMessage, MentionRef } from '../../shared/comments.js';
 import { createHarness, type Harness } from '../harness.js';
 
 let h: Harness;
@@ -43,6 +43,299 @@ async function anIssue(viewer = alice()): Promise<Issue> {
 }
 
 describe('writing comments', () => {
+  it('limits run edits and deletions to that authenticated run, without moderator fallback', async () => {
+    const issue = await anIssue(admin());
+    h.services.kinds.add({ key: 'agent' });
+    const run = (id: string): Viewer => ({
+      ...admin(),
+      runId: id,
+      actor: {
+        type: 'agent',
+        id: 'coder',
+        via: 'agent',
+        trace: { agentId: 'coder', runId: id },
+      },
+    });
+    const own = await h.services.comments.create(run('first'), issue.id, {
+      content: '/note Original',
+    });
+    await expect(
+      h.services.comments.update(run('first'), own.comment.id, {
+        content: '/note Edited',
+      }),
+    ).resolves.toMatchObject({ content: '/note Edited' });
+    const human = await h.services.comments.create(admin(), issue.id, {
+      content: '/note Human',
+    });
+    const system = await h.services.comments.post(
+      { type: 'system', id: null, via: 'agent', trace: { runId: 'first' } },
+      issue.id,
+      { content: 'System' },
+    );
+    const missing = await h.services.comments.post(
+      { type: 'agent', id: 'coder' },
+      issue.id,
+      { content: 'No provenance' },
+    );
+    const other = await h.services.comments.create(run('second'), issue.id, {
+      content: '/note Another run',
+      ...{
+        origin: { trace: { runId: 'first' } },
+        runId: 'first',
+        authorId: 'coder',
+      },
+    });
+    const otherAgent = await h.services.comments.create(
+      { ...run('first'), actor: { ...run('first').actor, id: 'different' } },
+      issue.id,
+      { content: '/note Another agent' },
+    );
+    for (const comment of [
+      human.comment,
+      system.comment,
+      missing.comment,
+      other.comment,
+      otherAgent.comment,
+    ]) {
+      await expect(
+        h.services.comments.update(run('first'), comment.id, {
+          content: 'Hijacked',
+        }),
+      ).rejects.toMatchObject({ kind: 'forbidden' });
+      await expect(
+        h.services.comments.remove(run('first'), comment.id),
+      ).rejects.toMatchObject({ kind: 'forbidden' });
+    }
+    const denied = {
+      ...run('first'),
+      permissions: {
+        ...run('first').permissions,
+        scopes: {
+          ...run('first').permissions.scopes,
+          'pm.issues/comment': 'none' as const,
+        },
+      },
+    };
+    const systemActor = {
+      ...run('first'),
+      actor: { type: 'system', id: null, via: 'agent' as const },
+    };
+    await expect(
+      h.services.comments.update(systemActor, system.comment.id, {
+        content: 'Hijacked',
+      }),
+    ).rejects.toMatchObject({ kind: 'forbidden' });
+    await expect(
+      h.services.comments.remove(systemActor, system.comment.id),
+    ).rejects.toMatchObject({ kind: 'forbidden' });
+    await expect(
+      h.services.comments.update(denied, own.comment.id, { content: 'Denied' }),
+    ).rejects.toMatchObject({ kind: 'forbidden' });
+    await expect(
+      h.services.comments.remove(denied, own.comment.id),
+    ).rejects.toMatchObject({ kind: 'forbidden' });
+    await h.services.comments.remove(run('first'), own.comment.id);
+    await expect(
+      h.services.comments.remove(run('first'), own.comment.id),
+    ).rejects.toMatchObject({ kind: 'notFound' });
+    // A person retains existing moderation and authored-comment rules.
+    await h.services.comments.remove(admin(), other.comment.id);
+    await expect(
+      h.services.comments.update(admin(), human.comment.id, {
+        content: 'Human edited',
+      }),
+    ).resolves.toMatchObject({ content: 'Human edited' });
+  });
+
+  it('checks run provenance even when a conversation records the author as its person', async () => {
+    const issue = await anIssue();
+    const current: Viewer = {
+      ...alice(),
+      runId: 'conversation-run',
+      actor: {
+        type: 'user',
+        id: 'alice',
+        via: 'agent',
+        trace: { agentId: 'coder', runId: 'conversation-run' },
+      },
+    };
+    const human = await h.services.comments.create(alice(), issue.id, {
+      content: '/note Human',
+    });
+    const own = await h.services.comments.create(current, issue.id, {
+      content: '/note Agent',
+    });
+    await expect(
+      h.services.comments.update(current, own.comment.id, {
+        content: '/note Updated',
+      }),
+    ).resolves.toMatchObject({ content: '/note Updated' });
+    await expect(
+      h.services.comments.update(current, human.comment.id, {
+        content: 'Hijacked',
+      }),
+    ).rejects.toMatchObject({ kind: 'forbidden' });
+    await h.services.comments.remove(current, own.comment.id);
+  });
+  it('marks only confirmed plain discussions and keeps mentions and waiting comments complete', async () => {
+    const issue = await anIssue();
+    const classifications: (true | undefined)[] = [];
+    const stop = h.services.events.on('comment.created', (event) => {
+      classifications.push(event.discussionOnly);
+    });
+    await h.services.comments.create(alice(), issue.id, {
+      content: '/note A plain discussion',
+    });
+    await h.services.comments.create(alice(), issue.id, {
+      content: 'A person may wake or settle work',
+    });
+    await h.services.comments.create(alice(), issue.id, {
+      content: `/note ${mention('bob')}`,
+    });
+    const current = await h.services.issueQueries.detail(alice(), issue.id);
+    await h.services.issues.update(alice(), issue.id, {
+      revision: current.revision,
+      statusKey: 'in_review',
+      needsYou: 'Please decide',
+    });
+    await h.services.comments.create(alice(), issue.id, {
+      content: '/note Keep the waiting snapshot current',
+    });
+    expect(classifications).toEqual([true, undefined, undefined, undefined]);
+    stop();
+  });
+  it.each([
+    { type: 'example.notice', params: {} },
+    { type: 'example.enabled', params: { enabled: true } },
+    { type: 'acme-app.event', params: { count: 42 } },
+    { type: 'example.freeForm', params: { text: '  raw  ' } },
+  ] as const)(
+    'stores and projects a server display message: %j',
+    async (message) => {
+      const issue = await anIssue();
+      const { comment } = await h.services.comments.post(
+        { type: 'system', id: null },
+        issue.id,
+        { content: 'Safe fallback.' },
+        { message, origin: { runId: 'private-run', inputId: 'private-input' } },
+      );
+      expect(comment.message).toEqual(message);
+      expect(comment).not.toHaveProperty('origin');
+      const stored = await h.database
+        .connection()
+        .repository<{ origin: unknown }>('pmComments')
+        .findOne({ filter: { id: comment.id } });
+      expect(stored?.origin).toMatchObject({
+        runId: 'private-run',
+        inputId: 'private-input',
+        message,
+      });
+      expect(
+        (
+          await h.services.commentQueries.list(
+            h.database.connection(),
+            issue.id,
+          )
+        )[0]?.message,
+      ).toEqual(message);
+      expect(
+        (await h.services.commentQueries.threads(bob(), issue.id, {})).data[0]
+          ?.root.message,
+      ).toEqual(message);
+      expect(
+        (await h.services.issueQueries.detail(bob(), issue.id)).threads[0]?.root
+          .message,
+      ).toEqual(message);
+      await h.services.comments.remove(admin(), comment.id);
+      expect(
+        (
+          await h.services.commentQueries.list(
+            h.database.connection(),
+            issue.id,
+          )
+        )[0],
+      ).not.toHaveProperty('message');
+    },
+  );
+
+  it('projects only the public envelope and ignores invalid stored messages', async () => {
+    const issue = await anIssue();
+    const { comment } = await h.services.comments.post(
+      { type: 'system', id: null },
+      issue.id,
+      { content: 'Safe fallback.' },
+      {
+        message: {
+          type: 'example.notice',
+          params: { name: 'Example', count: 0, enabled: false },
+          inputId: 'secret',
+        } as CommentMessage,
+      },
+    );
+    expect(comment.message).toEqual({
+      type: 'example.notice',
+      params: { name: 'Example', count: 0, enabled: false },
+    });
+    const rows = h.database
+      .connection()
+      .repository<{ id: string; origin: unknown }>('pmComments');
+    for (const message of [
+      null,
+      [],
+      { type: 'invalid-type', params: {} },
+      { type: 'example.notice', params: { nested: {} } },
+      { type: 'example.notice', params: { value: null } },
+      { type: 'example.finished', params: { value: [] } },
+    ]) {
+      await rows.updateOne({
+        filter: { id: comment.id },
+        values: { origin: { message, runId: 'secret' } },
+      });
+      const [read] = await h.services.commentQueries.list(
+        h.database.connection(),
+        issue.id,
+      );
+      expect(read).not.toHaveProperty('message');
+      expect(read?.content).toBe('Safe fallback.');
+    }
+  });
+
+  it('rejects malformed server messages and prevents origin or ordinary comments from supplying one', async () => {
+    const issue = await anIssue();
+    await expect(
+      h.services.comments.post(
+        { type: 'system', id: null },
+        issue.id,
+        { content: 'Fallback.' },
+        {
+          message: {
+            type: 'example.finished',
+            params: { nested: {} },
+          } as unknown as CommentMessage,
+        },
+      ),
+    ).rejects.toMatchObject({ code: 'INVALID_COMMENT_MESSAGE' });
+    expect(
+      await h.services.commentQueries.list(h.database.connection(), issue.id),
+    ).toEqual([]);
+    const message = {
+      type: 'example.notice',
+      params: { text: 'Example' },
+    } as const;
+    const posted = await h.services.comments.post(
+      { type: 'system', id: null },
+      issue.id,
+      { content: 'Fallback.' },
+      { origin: { message } },
+    );
+    expect(posted.comment).not.toHaveProperty('message');
+    const created = await h.services.comments.create(alice(), issue.id, {
+      content: 'Human comment.',
+      ...{ message, origin: { message } },
+    });
+    expect(created.comment).not.toHaveProperty('message');
+  });
+
   it('returns the originating execution on comments and activities, and hides it when the comment is deleted', async () => {
     const issue = await anIssue();
     h.services.kinds.add({

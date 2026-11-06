@@ -7,6 +7,8 @@
  * application's resolver reads through its own. Inside a transaction only the transaction's connection is used.
  */
 import type { DatabaseConnection, DatabaseManager } from '@nocobase/db';
+import { journalChanges } from '../indexing/journal.js';
+import { lockSettings } from '../indexing/store.js';
 
 import {
   chunkingOf,
@@ -89,7 +91,7 @@ export interface KnowledgeTx {
    */
   readonly defaultChunking: KnowledgeChunking;
   emit(event: KnowledgeEvent): void;
-  /** Runs `fn` once the transaction commits; a failure is reported, never thrown. */
+  /** Runs and awaits `fn` once the transaction commits; a failure is reported, never thrown. */
   afterCommit(fn: () => void | Promise<void>): void;
 }
 
@@ -173,20 +175,28 @@ export function createKnowledgeContext(
       const after: (() => void | Promise<void>)[] = [];
       const defaultChunking =
         chunkingOf(await settings.chunking()) ?? DEFAULT_CHUNKING;
-      const result = await deps.database.transaction((conn) =>
-        fn({
+
+      const result = await deps.database.transaction(async (conn) => {
+        const indexing = await lockSettings(conn, deps.newId());
+        const value = await fn({
           conn,
           defaultChunking,
           emit: (event) => pending.push(event),
           afterCommit: (task) => after.push(task),
-        }),
-      );
+        });
+        await journalChanges(
+          conn,
+          indexing,
+          pending,
+          deps.newId,
+          (deps.now?.() ?? new Date()).toISOString(),
+        );
+        return value;
+      });
       for (const event of pending) publish(event);
       for (const task of after)
         try {
-          void Promise.resolve(task()).catch((error: unknown) =>
-            onError('Knowledge work after a commit failed.', error),
-          );
+          await task();
         } catch (error) {
           onError('Knowledge work after a commit failed.', error);
         }

@@ -66,7 +66,11 @@ async function fixture() {
       runnerKey: runner.key,
       body,
     });
-  const finish = async (agent: RunnerRealtimeOnlineAgent, text?: string) => {
+  const finish = async (
+    agent: RunnerRealtimeOnlineAgent,
+    text?: string,
+    steps: readonly Record<string, unknown>[] = [],
+  ) => {
     const [payload] = await claim(h, runner);
     const runId = payload.run.id;
     expect(
@@ -78,17 +82,26 @@ async function fixture() {
         })
       ).status,
     ).toBe(200);
-    if (text)
+    if (text || steps.length)
       expect(
         (
           await report(runId, 'events', {
             events: [
-              {
-                seq: 1,
+              ...steps.map((step, index) => ({
+                seq: index + 1,
                 at: h.clock.now().toISOString(),
-                type: 'text',
-                content: text,
-              },
+                ...step,
+              })),
+              ...(text
+                ? [
+                    {
+                      seq: steps.length + 1,
+                      at: h.clock.now().toISOString(),
+                      type: 'text',
+                      content: text,
+                    },
+                  ]
+                : []),
             ],
           })
         ).status,
@@ -569,3 +582,46 @@ it.each(['provider', 'stream', 'commit'] as const)(
     ).toMatchObject({ type: 'finish' });
   },
 );
+
+it('streams the run’s tool calls and results as tool parts, before the text that follows them', async () => {
+  const f = await fixture();
+  const agent = await f.create();
+  await agent.send(userMessage);
+  const runId = await f.finish(agent, 'Created PM-9.', [
+    {
+      type: 'toolUse',
+      tool: 'Bash',
+      input: { command: 'nb-studio issue create --json' },
+      meta: { toolUseId: 'call-1' },
+    },
+    {
+      type: 'toolResult',
+      tool: 'Bash',
+      output: '{"ok":true}',
+      meta: { toolUseId: 'call-1', isError: false },
+    },
+  ]);
+  const streamed = await chunks(await agent.receive());
+  const types = streamed.map((item) => item.type);
+  expect(streamed.find((item) => item.type === 'start')).toMatchObject({
+    messageId: `runner:${runId}`,
+  });
+  expect(
+    streamed.find((item) => item.type === 'tool-input-available'),
+  ).toMatchObject({
+    toolCallId: 'call-1',
+    toolName: 'Bash',
+    input: { command: 'nb-studio issue create --json' },
+    dynamic: true,
+  });
+  expect(
+    streamed.find((item) => item.type === 'tool-output-available'),
+  ).toMatchObject({ toolCallId: 'call-1', output: '{"ok":true}' });
+  expect(types.indexOf('tool-input-available')).toBeLessThan(
+    types.indexOf('text-delta'),
+  );
+  // Each tool part is written once.
+  expect(types.filter((type) => type === 'tool-input-available')).toHaveLength(
+    1,
+  );
+});

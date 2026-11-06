@@ -9,7 +9,7 @@
  * browser. Without a connected computer it says how to connect one. In a panel it starts with the panel's project and
  * shows the new session in place of opening its page.
  */
-import { ApiClientError, useToaster } from '@nocobase/app-client';
+import { createUuid, ApiClientError, useToaster } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { cn } from 'cn';
 import { useIsMutating, useQueryClient } from '@tanstack/react-query';
@@ -22,6 +22,7 @@ import {
   LaptopIcon,
 } from 'lucide-react';
 import {
+  useContext,
   useEffect,
   useRef,
   useState,
@@ -59,7 +60,7 @@ import { BackLink } from './back-link.js';
 import { ChoiceMenus } from './choice-menus.js';
 import { Composer } from './composer.js';
 import { sessionMemoryKey, useSessionMemory } from '../use-session-memory.js';
-import { useSessionSurface } from '../config.js';
+import { AgentSessionsConfigContext, useSessionSurface } from '../config.js';
 import { useSubmission } from '../use-submission.js';
 import { SubmissionNotice } from './submission-notice.js';
 import {
@@ -82,7 +83,30 @@ interface Choice {
   readonly projectId?: string | undefined;
 }
 
-export function NewSession({
+interface NewSessionProps {
+  readonly onStart?: () => void;
+  readonly deferDiscovery?: boolean;
+}
+export function NewSession(props: NewSessionProps): ReactElement {
+  const surface = useSessionSurface();
+  const renderHeader = useContext(AgentSessionsConfigContext)?.renderHeader;
+  const navigate = useNavigate();
+  const { t } = useTranslation();
+  return (
+    <div className='flex h-full min-h-0 flex-col'>
+      {renderHeader?.({
+        panel: surface.panel,
+        title: t('list.new'),
+        onBack: surface.onBack ?? (() => navigate('/agent-sessions')),
+      })}
+      <div className='min-h-0 flex-1'>
+        <NewSessionContent {...props} />
+      </div>
+    </div>
+  );
+}
+
+function NewSessionContent({
   onStart,
   deferDiscovery = false,
 }: {
@@ -92,6 +116,9 @@ export function NewSession({
 }): ReactElement {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const useCustomHeader = Boolean(
+    useContext(AgentSessionsConfigContext)?.renderHeader,
+  );
   const surface = useSessionSurface();
   const toaster = useToaster();
   const computers = useComputers();
@@ -111,7 +138,7 @@ export function NewSession({
     else void navigate(`/agent-sessions/${session.id}`);
   });
   // The id the next session is created with (its `submissionId`), replaced once a message was sent with it.
-  const [freshSessionId] = useState(() => crypto.randomUUID());
+  const [freshSessionId] = useState(() => createUuid());
   const [sessionId, setSessionId] = useSessionMemory(
     SESSION_ID,
     freshSessionId,
@@ -123,7 +150,7 @@ export function NewSession({
       mountedRef.current = false;
       // Replaced only once this page is gone, so the next draft does not discover while the session opens.
       if (createdRef.current)
-        client.setQueryData(sessionMemoryKey(SESSION_ID), crypto.randomUUID());
+        client.setQueryData(sessionMemoryKey(SESSION_ID), createUuid());
     };
   }, [client]);
   const [computersOpen, setComputersOpen] = useState(false);
@@ -309,19 +336,7 @@ export function NewSession({
             !surface.panel && '@md/agent-session:px-6 @md/agent-session:pt-24',
           )}
         >
-          {!surface.panel && (
-            <>
-              <BackLink />
-              <div className='text-center'>
-                <h2 className='text-[22px] font-semibold tracking-tight'>
-                  {t('newSession.title')}
-                </h2>
-                <p className='text-muted-foreground mt-1 text-sm'>
-                  {t('newSession.subtitle')}
-                </p>
-              </div>
-            </>
-          )}
+          {!surface.panel && !useCustomHeader && <BackLink />}
           {computer?.outdatedBridge && (
             <OutdatedBridgeNotice computer={computer} />
           )}
@@ -438,6 +453,41 @@ export function NewSession({
                     onManage={() => setComputersOpen(true)}
                   />
                 )}
+                {discovery.error && (
+                  <div className='w-full min-w-0 space-y-1'>
+                    <p
+                      role='status'
+                      className='text-muted-foreground text-xs [overflow-wrap:anywhere]'
+                    >
+                      {errorText(
+                        discovery.error,
+                        t('newSession.settingsFailed'),
+                      )}
+                    </p>
+                    <div className='flex flex-wrap gap-1'>
+                      <Button
+                        variant='ghost'
+                        size='sm'
+                        onClick={() => {
+                          pick({});
+                          discovery.retry();
+                        }}
+                      >
+                        {t('newSession.settingsRetry')}
+                      </Button>
+                      <Button
+                        variant='ghost'
+                        size='sm'
+                        onClick={() => {
+                          pick({});
+                          discovery.reset();
+                        }}
+                      >
+                        {t('newSession.settingsReset')}
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
             }
             toolbar={
@@ -460,10 +510,7 @@ export function NewSession({
                       : discovery.loading
                         ? t('newSession.settingsLoading')
                         : discovery.error
-                          ? errorText(
-                              discovery.error,
-                              t('newSession.settingsFailed'),
-                            )
+                          ? null
                           : discovery.result?.status === 'unsupported'
                             ? t('newSession.settingsUnsupported')
                             : discovery.result &&
@@ -471,30 +518,6 @@ export function NewSession({
                               ? t('newSession.settingsEmpty')
                               : null}
                 </span>
-                {discovery.error && (
-                  <>
-                    <Button
-                      variant='ghost'
-                      size='sm'
-                      onClick={() => {
-                        pick({});
-                        discovery.retry();
-                      }}
-                    >
-                      {t('newSession.settingsRetry')}
-                    </Button>
-                    <Button
-                      variant='ghost'
-                      size='sm'
-                      onClick={() => {
-                        pick({});
-                        discovery.reset();
-                      }}
-                    >
-                      {t('newSession.settingsReset')}
-                    </Button>
-                  </>
-                )}
               </>
             }
             onSend={async (content, _interrupt, mentions) => {
@@ -536,10 +559,10 @@ export function NewSession({
                   sessionId,
                 );
                 if (mountedRef.current) createdRef.current = true;
-                else setSessionId(crypto.randomUUID());
+                else setSessionId(createUuid());
               } catch (error) {
                 // The id belongs to that submission now, which Retry sends again.
-                setSessionId(crypto.randomUUID());
+                setSessionId(createUuid());
                 toaster.show({
                   type: 'error',
                   title:

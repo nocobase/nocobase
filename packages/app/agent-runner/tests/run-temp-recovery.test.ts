@@ -187,7 +187,8 @@ describe('temporary cleanup during supervisor recovery and GC', () => {
       const run = await supervisor.spawn('app', {
         run: { id: 'run', attempt: 1, firstSeq: 1 },
         tool: { kind: 'claude' },
-        workspace: { readOnly: false },
+        subject: { key: 'attempt', url: 'http://app.test/attempt' },
+        workspace: { readOnly: false, dirs: [] },
       } as RunPayload);
       await writeRecord(paths, record);
       const gc = await pauseGc(allocation.dir);

@@ -7,10 +7,9 @@ import {
   type JobsConfig,
   type JobExecutorServiceDependencies,
 } from '../../src/index.js';
-import {
-  createJobExecutorServiceWith,
-  type ScheduleExecutorFactory,
-} from '../../src/service.js';
+import { createJobExecutorServiceWith } from '../../src/service.js';
+import { testRegistry } from '../helpers/registry.js';
+type ScheduleExecutorFactory = (config: ResolvedJobsConfig) => ScheduleExecutor;
 import type { ResolvedJobsConfig } from '../../src/config.js';
 import type { ScheduleExecutor } from '../../src/schedule/types.js';
 
@@ -45,13 +44,13 @@ function harness(
       onFallback,
       ...dependencies,
     },
-    { memory: factory, redis: factory },
+    testRegistry(factory),
   );
   return { service, created, onFallback };
 }
 
-const redis = {
-  adapter: 'redis',
+const test = {
+  adapter: 'test',
   connection: { host: '127.0.0.1', port: 6379 },
 } as const;
 
@@ -60,15 +59,15 @@ describe('configuration fallback', () => {
     const { service, created, onFallback } = harness({
       default: 'memory',
       memory: { adapter: 'memory' },
-      'redis-1': redis,
+      'test-1': test,
     });
 
-    service.getScheduleExecutor('scope-a', 'redis-1');
+    service.getScheduleExecutor('scope-a', 'test-1');
 
     expect(created).toEqual([
       expect.objectContaining({
-        key: 'redis-1',
-        adapter: 'redis',
+        key: 'test-1',
+        adapter: 'test',
         builtIn: false,
         scope: 'scope-a',
         namespace: 'crm',
@@ -82,8 +81,8 @@ describe('configuration fallback', () => {
 
   it('falls back to jobs.default when no name is given or the name is unknown', () => {
     const { service, created, onFallback } = harness({
-      default: 'redis-1',
-      'redis-1': { ...redis, namespace: '{crm}' },
+      default: 'test-1',
+      'test-1': { ...test, namespace: '{crm}' },
     });
 
     const unnamed = service.getScheduleExecutor('scope-a');
@@ -91,7 +90,7 @@ describe('configuration fallback', () => {
 
     expect(unknown).toBe(unnamed);
     expect(created).toHaveLength(1);
-    expect(created[0]).toMatchObject({ key: 'redis-1', namespace: '{crm}' });
+    expect(created[0]).toMatchObject({ key: 'test-1', namespace: '{crm}' });
     expect(onFallback).not.toHaveBeenCalled();
   });
 
@@ -123,10 +122,10 @@ describe('configuration fallback', () => {
   );
 
   it('rejects a default that names no configuration', () => {
-    const { service } = harness({ default: 'redis-2', 'redis-1': redis });
+    const { service } = harness({ default: 'test-2', 'test-1': test });
 
     expect(() => service.getScheduleExecutor('scope-a')).toThrow(
-      /jobs\.default names "redis-2"/u,
+      /jobs\.default names "test-2"/u,
     );
   });
 
@@ -149,17 +148,6 @@ describe('configuration fallback', () => {
     });
   });
 
-  it('applies bounded retention defaults to redis', () => {
-    const { service, created } = harness({ default: 'r', r: redis });
-
-    service.getScheduleExecutor('scope-a');
-
-    expect(created[0]).toMatchObject({
-      removeOnComplete: { count: 1000 },
-      removeOnFail: { age: 604_800 },
-    });
-  });
-
   it('rejects an unknown adapter', () => {
     const { service } = harness({
       default: 'x',
@@ -167,7 +155,7 @@ describe('configuration fallback', () => {
     });
 
     expect(() => service.getScheduleExecutor('scope-a')).toThrow(
-      /adapter "kafka"/u,
+      /backend "kafka"/u,
     );
   });
 });
@@ -176,7 +164,7 @@ describe('executor identity', () => {
   it('returns one executor per scope and configuration', () => {
     const { service, created } = harness({
       default: 'r',
-      r: redis,
+      r: test,
       m: { adapter: 'memory' },
     });
 
@@ -191,7 +179,7 @@ describe('executor identity', () => {
   it('takes concurrency and attempts from the selected configuration', () => {
     const { service, created } = harness({
       default: 'r',
-      r: { ...redis, concurrency: 5, attempts: 3 },
+      r: { ...test, concurrency: 5, attempts: 3 },
     });
 
     service.getScheduleExecutor('scope-a');
@@ -204,7 +192,7 @@ describe('executor identity', () => {
     (settings) => {
       const { service } = harness({
         default: 'r',
-        r: { ...redis, ...settings },
+        r: { ...test, ...settings },
       });
 
       expect(() => service.getScheduleExecutor('scope-a')).toThrow(
@@ -257,7 +245,7 @@ describe('createJobExecutorService', () => {
     const service = createJobExecutorServiceWith(
       undefined,
       { appName: 'crm', storagePath: '/tmp/s' },
-      { memory: factory, redis: factory },
+      testRegistry(factory),
     );
     service.getScheduleExecutor('a');
     service.getScheduleExecutor('b');

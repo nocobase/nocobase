@@ -1,9 +1,10 @@
-import type { Logger } from '@nocobase/logging';
 import type { DatabaseManager } from '@nocobase/db';
 import type { JobExecutor } from '@nocobase/jobs';
-import { AppI18nError } from '@nocobase/i18n/server';
-import type { NotificationDeliveryStatus, NotificationStore } from './store.js';
+import type { Logger } from '@nocobase/logging';
+import type { ServiceContainer } from '@nocobase/service-provider';
+import type { ChannelConfig, ChannelTypeClass } from './channel-type.js';
 import type { NotificationRegistry } from './registry.js';
+import type { NotificationDeliveryStatus, NotificationStore } from './store.js';
 
 export interface NotificationChannelSchema {
   readonly recipient: object;
@@ -20,9 +21,15 @@ type ChannelSchemaForType<T extends string> =
     : NotificationChannelSchema;
 
 export type ConfiguredNotificationChannels<
-  T extends Readonly<Record<string, NotificationChannelConfig>>,
+  T extends Readonly<Record<string, NotificationChannelConfigInput>>,
 > = {
-  [N in keyof T]: ChannelSchemaForType<T[N]['provider']>;
+  [N in keyof T]: ChannelSchemaForType<
+    T[N] extends { readonly type: infer K extends string }
+      ? K
+      : T[N] extends { readonly provider: infer K extends string }
+        ? K
+        : string
+  >;
 };
 
 export type NotificationChannelMap = Record<string, NotificationChannelSchema>;
@@ -52,9 +59,19 @@ export interface NotificationService {
 }
 
 export interface NotificationExtensionRegistry {
+  registerChannelType<
+    TConfig extends ChannelConfig,
+    TMessage extends object,
+    TRecipient extends object,
+    TPrepared extends object,
+  >(
+    Channel: ChannelTypeClass<TConfig, TMessage, TRecipient, TPrepared>,
+  ): NotificationExtensionRegistry;
+  /** @deprecated Register a ChannelInstance class with registerChannelType instead. */
   registerChannel(
     definition: NotificationChannelDefinition,
   ): NotificationExtensionRegistry;
+  /** @deprecated Register a ChannelInstance class with registerChannelType instead. */
   registerProvider(
     definition: NotificationProviderDefinition,
   ): NotificationExtensionRegistry;
@@ -78,73 +95,6 @@ export function notificationI18nText(
   defaultValue: string,
 ): NotificationI18nText {
   return { ns: NOTIFICATION_NAMESPACE, key, defaultValue };
-}
-
-export function notificationTestError(
-  code: string,
-  key: string,
-  options: {
-    readonly status?: number;
-    readonly params?: Record<string, unknown>;
-    readonly cause?: unknown;
-  } = {},
-): AppI18nError {
-  return new AppI18nError(code, {
-    ns: NOTIFICATION_NAMESPACE,
-    key,
-    ...options,
-  });
-}
-
-export type NotificationTestFieldType = 'text' | 'email' | 'textarea';
-
-export interface NotificationTestFieldDescriptor<
-  TText = string | NotificationI18nText,
-> {
-  readonly name: string;
-  readonly label: TText;
-  readonly type: NotificationTestFieldType;
-  readonly required?: boolean;
-  readonly placeholder?: TText;
-  readonly defaultValue?: TText;
-  readonly maxLength?: number;
-}
-
-export interface NotificationTestTargetDescriptor<
-  TText = string | NotificationI18nText,
-> {
-  readonly channel: {
-    readonly name: string;
-    readonly type: string;
-    readonly label: TText;
-  };
-  readonly provider: NotificationProviderIdentity & {
-    readonly label: TText;
-  };
-  readonly fields: readonly NotificationTestFieldDescriptor<TText>[];
-}
-
-export interface NotificationTestActor {
-  readonly userId: string;
-}
-
-export interface NotificationTestSendRequest {
-  readonly channel: string;
-  readonly values: Readonly<Record<string, string>>;
-}
-
-export type NotificationTestSendInput = object;
-
-export interface NotificationTestAdapter<
-  TConfig extends NotificationChannelConfig = NotificationChannelConfig,
-> {
-  readonly label: string | NotificationI18nText;
-  readonly fields: readonly NotificationTestFieldDescriptor[];
-  toSendInput(input: {
-    readonly actor: NotificationTestActor;
-    readonly values: Readonly<Record<string, string>>;
-    readonly channelConfig: TConfig;
-  }): NotificationTestSendInput;
 }
 
 export interface NotificationSendInput<
@@ -227,14 +177,20 @@ export interface NotificationRetryDeliveryInput {
 }
 
 export interface NotificationProviderConfig {
+  /** @deprecated Use type instead. Application configuration keeps provider as a compatibility alias. */
   readonly provider: string;
   readonly enabled?: boolean;
 }
 
 export type NotificationChannelConfig = NotificationProviderConfig;
 
-export interface NotificationConfig {
-  readonly channels: Readonly<Record<string, NotificationChannelConfig>>;
+/** Named channel configuration before normalization for class or legacy extensions. */
+export type NotificationChannelConfigInput =
+  NotificationChannelConfig | ChannelConfig;
+
+/** Configuration input accepting either type or the deprecated provider alias. */
+export interface NotificationConfigInput {
+  readonly channels: Readonly<Record<string, NotificationChannelConfigInput>>;
   /**
    * The `jobs` configuration Delivery tasks run on. Omitted, they follow
    * `jobs.default`, like every other consumer of the jobs service.
@@ -244,6 +200,13 @@ export interface NotificationConfig {
     readonly maxAttempts?: number;
     readonly intervalMs?: number;
   };
+}
+
+/** Application configuration with the provider alias populated for legacy readers. */
+export interface NotificationConfig extends NotificationConfigInput {
+  readonly channels: Readonly<
+    Record<string, NotificationChannelConfig & { readonly type?: string }>
+  >;
 }
 
 export interface NotificationProviderSendError {
@@ -363,6 +326,7 @@ export interface NotificationChannelContext {
   readonly logger: Logger;
 }
 
+/** @deprecated Implement ChannelInstance and register the class with registerChannelType instead. */
 export interface NotificationProviderDefinition<
   TConfig extends NotificationProviderConfig = NotificationProviderConfig,
   TPrepared = object,
@@ -378,6 +342,7 @@ export interface NotificationProviderDefinition<
   ): Promise<NotificationProvider<TPrepared>>;
 }
 
+/** @deprecated Implement ChannelInstance and register the class with registerChannelType instead. */
 export interface NotificationChannelDefinition<
   TConfig extends NotificationChannelConfig = NotificationChannelConfig,
   TRecipient = object,
@@ -385,7 +350,6 @@ export interface NotificationChannelDefinition<
   TPrepared = object,
 > {
   readonly type: string;
-  readonly test?: NotificationTestAdapter<TConfig>;
   validateConfig?(config: TConfig): void;
   createChannel(
     context: NotificationChannelContext,
@@ -406,8 +370,9 @@ export interface NotificationManagerOptions<
    */
   readonly executor: JobExecutor;
   readonly logger: Logger;
-  readonly config: NotificationConfig;
+  readonly config: NotificationConfigInput;
   readonly registry?: NotificationRegistry;
+  readonly container?: ServiceContainer;
   readonly store?: NotificationStore;
   readonly reconcileIntervalMs?: number;
   readonly reconcileBatchSize?: number;

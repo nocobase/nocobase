@@ -38,7 +38,7 @@ describe('API document', () => {
       ),
     );
     const operationIds = operations.map(({ operationId }) => operationId);
-    expect(operations.length).toBe(56);
+    expect(operations.length).toBe(58);
     expect(new Set(operationIds).size).toBe(operationIds.length);
     for (const operation of operations) {
       expect(operation.operationId).toMatch(/^releases[A-Z]/);
@@ -48,6 +48,7 @@ describe('API document', () => {
       expect.arrayContaining([
         'releasesListApps',
         'releasesDeployApp',
+        'releasesCancelDeployment',
         'releasesUploadRelease',
         'releasesCreateUploadTicket',
         'releasesReadAppLogs',

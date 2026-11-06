@@ -124,7 +124,7 @@ export async function allProjects(
 ): Promise<Array<Record<string, unknown>>> {
   return context.database.repository('policyProjects').findMany({
     select: selection(['id', 'tenantId', 'budget', 'ownerId']),
-  }) as Promise<Array<Record<string, unknown>>>;
+  });
 }
 
 export const TENANT_FIELDS = ['id', 'tenantId', 'name', 'budget'] as const;
@@ -140,7 +140,7 @@ export function selection(fields: readonly string[]): SelectAst {
 /** Record every SQL statement a block issues, so a claim about pushdown can be checked. */
 export async function captureSql<T>(
   context: IntegrationTestContext,
-  run: () => Promise<T>,
+  run: () => PromiseLike<T>,
 ): Promise<{ result: T; statements: string[] }> {
   const statements: string[] = [];
   const listener = (event: { sql: string }) => statements.push(event.sql);

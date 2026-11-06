@@ -22,20 +22,6 @@ export type NotificationLogListQuery = z.infer<typeof NotificationLogListQuery>;
 export const NotificationLogParams: z.ZodObject<{ logId: z.ZodString }> =
   z.object({ logId: z.string().min(1) });
 
-export const NotificationTestSendParams: z.ZodObject<{
-  testSendId: z.ZodString;
-}> = z.object({ testSendId: z.string().min(1) });
-
-/** The body of `POST /notifications/testSends`. */
-export const NotificationTestSendBody: z.ZodObject<
-  { channel: z.ZodString; values: z.ZodRecord<z.ZodString, z.ZodString> },
-  z.core.$strict
-> = z.strictObject({
-  channel: z.string().min(1),
-  values: z.record(z.string(), z.string()),
-});
-export type NotificationTestSendBody = z.infer<typeof NotificationTestSendBody>;
-
 // Response schemas. They describe what the routes send in the API document at `/api/swagger/docs`; nothing validates a
 // response against them.
 
@@ -164,61 +150,3 @@ export const NotificationLogDetailsSchema: z.ZodType = z
     ),
   })
   .meta({ ref: 'NotificationLogDetails' });
-
-export const NotificationTestTargetSchema: z.ZodType = z
-  .object({
-    channel: z.object({
-      name: z.string().meta({
-        description:
-          'The configured channel name to pass as `channel` when sending a test.',
-      }),
-      type: z.string(),
-      label: z.string(),
-    }),
-    provider: z.object({ type: z.string(), label: z.string() }),
-    fields: z
-      .array(
-        z.object({
-          name: z
-            .string()
-            .meta({ description: 'The key of this field in `values`.' }),
-          label: z.string(),
-          type: z.enum(['text', 'email', 'textarea']),
-          required: z.boolean().optional(),
-          placeholder: z.string().optional(),
-          defaultValue: z.string().optional(),
-          maxLength: z.number().int().min(1).optional(),
-        }),
-      )
-      .meta({
-        description:
-          'The values a test send to this channel takes. Labels are in the request locale.',
-      }),
-  })
-  .meta({ ref: 'NotificationTestTarget' });
-
-export const NotificationSendResultSchema: z.ZodType = z
-  .object({
-    notificationId: z.string().meta({
-      description:
-        'Pass it to `GET /api/notifications/testSends/{testSendId}` to follow the delivery.',
-    }),
-    idempotencyKey: z.string(),
-    deduplicated: z.boolean(),
-    status: notificationStatus,
-    deliveries: z.array(
-      z.object({
-        id: z.string(),
-        channelName: z.string(),
-        channelType: z.string(),
-        provider: z.object({ type: z.string() }),
-        attemptCount: z.number().int().min(0),
-        status: deliveryStatus,
-        nextRunAt: z.iso.datetime().optional(),
-        error: errorSnapshot.optional(),
-        createdAt: z.iso.datetime(),
-        updatedAt: z.iso.datetime(),
-      }),
-    ),
-  })
-  .meta({ ref: 'NotificationSendResult' });

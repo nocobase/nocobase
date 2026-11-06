@@ -1,3 +1,4 @@
+import { FeedbackForm } from '#components/feedback-form';
 import { useTranslation } from '@nocobase/i18n/client';
 import { CircleAlert, CircleCheck, CircleX, Clock } from 'lucide-react';
 import {
@@ -125,7 +126,10 @@ function CodeEntry({
     if (code) onSubmit(formatUserCode(code));
   };
   return (
-    <form className={cn('flex flex-col gap-6', className)} onSubmit={submit}>
+    <FeedbackForm
+      className={cn('flex flex-col gap-6', className)}
+      onSubmit={submit}
+    >
       <FieldGroup>
         <Field>
           <FieldLabel htmlFor={id}>
@@ -137,6 +141,7 @@ function CodeEntry({
             autoFocus
             className='font-mono tracking-widest uppercase'
             id={id}
+            name='userCode'
             onChange={(event) => setTyped(event.target.value)}
             placeholder='ABCD-EFGH'
             spellCheck={false}
@@ -152,7 +157,7 @@ function CodeEntry({
       <Button disabled={typed.trim() === ''} type='submit'>
         {t('deviceApproval.continue', { defaultValue: 'Continue' })}
       </Button>
-    </form>
+    </FeedbackForm>
   );
 }
 

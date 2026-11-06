@@ -140,6 +140,8 @@ export interface TokenUsageBreakdown {
 export interface ThreadTokenUsage {
   total: TokenUsageBreakdown;
   last: TokenUsageBreakdown;
+  /** The model's context window, when known. */
+  modelContextWindow?: number | null;
 }
 
 export interface CommandApprovalParams {
@@ -168,11 +170,9 @@ export interface PermissionsApprovalParams {
   permissions: unknown;
 }
 
-/** Streaming deltas the adapter does not need; it reads completed items. */
+/** Notifications not used by the adapter. */
 export const OPTED_OUT_NOTIFICATIONS: readonly string[] = [
-  'item/agentMessage/delta',
   'item/plan/delta',
-  'item/reasoning/summaryTextDelta',
   'item/reasoning/summaryPartAdded',
   'item/reasoning/textDelta',
   'item/commandExecution/outputDelta',

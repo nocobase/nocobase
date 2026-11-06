@@ -67,6 +67,10 @@ export type ExpressionFactory<T = SqlBool> = (
 export type ExpressionInput<T = unknown> = Expression<T> | ExpressionFactory<T>;
 
 export interface FunctionModule {
+  /** SQL LOWER for portable ASCII case-insensitive matching; Unicode casing follows the database. */
+  lower(
+    column: ReferenceExpression | Expression<unknown>,
+  ): Expression<string | null>;
   count<T = number>(
     column: ReferenceExpression | Expression<unknown>,
   ): AggregateExpression<T>;

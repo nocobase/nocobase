@@ -20,6 +20,9 @@ describe('the businesses on the authorization plugin', () => {
         connection: database.connection(),
       });
       registerBusinesses(authz);
+      expect(authz.ui.sections.get(BUSINESS_SECTION)?.parent).toBe(
+        'administration',
+      );
       const type = authz.resourceTypes.get(RESOURCE_TYPE);
       for (const { business, key } of BUSINESS_KEYS) {
         const names = type.items?.get(business)?.actions.map((a) => a.name);
@@ -29,6 +32,11 @@ describe('the businesses on the authorization plugin', () => {
           authz.ui.placementOf({ type: RESOURCE_TYPE, id: business })?.section,
         ).toBe(BUSINESS_SECTION);
       }
+      expect(
+        type.items
+          ?.get('agents.agents')
+          ?.actions.every((action) => action.description),
+      ).toBe(true);
       expect(
         type.items?.get('agents.agents')?.actions.map((a) => a.name),
       ).toEqual(expect.arrayContaining(['edit.related', 'edit.all']));

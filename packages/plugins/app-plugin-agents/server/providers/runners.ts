@@ -22,7 +22,11 @@ import { RUNNERS_TOPIC, type RunnersChanged } from '../../shared/realtime.js';
 import type { Agents } from '../composition.js';
 import type { AgentsConfig } from './agents.js';
 import { agentsToken } from '../tokens.js';
-import { RUN_DATA_PURGE_INTERVAL_MS } from '../core/runs/run-data-purge.js';
+import {
+  ARCHIVED_CONVERSATION_PURGE_INTERVAL_MS,
+  archivedRetentionDays,
+  RUN_DATA_PURGE_INTERVAL_MS,
+} from '../core/runs/run-data-purge.js';
 
 /** How often the sweeper runs, unless `agents.runners.sweepIntervalMs` sets another. */
 export const SWEEP_INTERVAL_MS = 30_000;
@@ -118,6 +122,16 @@ export class RunnersProvider extends ServiceProvider<AppPluginApplication> {
       () => services.purgeRunData(),
       'Run process data cleanup',
     );
+    const purgeArchived = this.guarded(
+      () =>
+        services.conversations.purgeArchived(
+          archivedRetentionDays(
+            this.app.config.get<AgentsConfig>('agents')?.conversations
+              ?.archivedRetentionDays,
+          ),
+        ),
+      'Archived conversations cleanup',
+    );
     if (container.has(jobExecutorServiceToken)) {
       const executor = container
         .resolve(jobExecutorServiceToken)
@@ -140,6 +154,12 @@ export class RunnersProvider extends ServiceProvider<AppPluginApplication> {
         payload: {},
         execute: purge,
       });
+      await executor.addJob({
+        name: 'ArchivedConversationPurge',
+        options: { every: ARCHIVED_CONVERSATION_PURGE_INTERVAL_MS },
+        payload: {},
+        execute: purgeArchived,
+      });
       await executor.setup();
       this.executor = executor;
     } else {
@@ -155,10 +175,16 @@ export class RunnersProvider extends ServiceProvider<AppPluginApplication> {
         RUN_DATA_PURGE_INTERVAL_MS,
       );
       purger.unref();
+      const archivedPurger = setInterval(
+        () => void purgeArchived(),
+        ARCHIVED_CONVERSATION_PURGE_INTERVAL_MS,
+      );
+      archivedPurger.unref();
       this.releases.push(() => {
         clearInterval(timer);
         clearInterval(collector);
         clearInterval(purger);
+        clearInterval(archivedPurger);
       });
     }
 

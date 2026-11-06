@@ -17,11 +17,6 @@ playwright-report/
 test-results/
 client-old/
 
-registry/
-registry.config.json
-registry.json
-public/r/
-scripts/registry.mjs
 sdk/
 .github/
 !.gitignore

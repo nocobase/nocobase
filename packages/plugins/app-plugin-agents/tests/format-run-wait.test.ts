@@ -28,6 +28,37 @@ async function runtimeWith(
 }
 
 describe('formatRunWait', () => {
+  it('words quota reset times and explicitly names an unknown reset in both languages', async () => {
+    const { runtime, t } = await runtimeWith();
+    const until = '2026-11-01T12:30:00.000Z';
+    const formatted = new Intl.DateTimeFormat('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    }).format(new Date(until));
+    expect(
+      formatRunWait(
+        t,
+        { reason: 'toolQuota', tool: 'claude', until },
+        { locale: 'en-US' },
+      ),
+    ).toBe(`Tool quota exhausted; reset time: ${formatted}`);
+    expect(
+      formatRunWait(t, { reason: 'toolQuota', params: { tool: 'claude' } }),
+    ).toBe('Tool quota exhausted; reset time: unknown');
+    await runtime.changeLanguage('zh-CN');
+    expect(
+      formatRunWait(t, { reason: 'toolQuota', params: { tool: 'claude' } }),
+    ).toBe('工具额度用完；恢复时间：未知');
+    expect(
+      formatRunWait(
+        t,
+        { reason: 'toolQuota', params: { tool: 'claude', until } },
+        { locale: 'en-US' },
+      ),
+    ).toContain(formatted);
+  });
   it('words every reason with the values the server sends', async () => {
     const { t } = await runtimeWith();
     const words = (
@@ -39,7 +70,9 @@ describe('formatRunWait', () => {
     );
     expect(
       words('secretsNotAllowed', { variables: ['NPM_TOKEN', 'KEY'] }),
-    ).toBe('Needs a team runtime: NPM_TOKEN, KEY is for team runtimes only');
+    ).toBe(
+      'Needs a shared runtime: NPM_TOKEN, KEY is for shared runtimes only',
+    );
     expect(words('concurrencyFull', { active: 2, limit: 2 })).toBe(
       'Concurrency full (2/2)',
     );
@@ -85,10 +118,10 @@ describe('formatRunWait', () => {
     const { runtime, t } = await runtimeWith();
     const wait = { reason: 'secretsNotAllowed', params: { variables: ['K'] } };
     expect(formatRunWait(t, wait)).toBe(
-      'Needs a team runtime: K is for team runtimes only',
+      'Needs a shared runtime: K is for shared runtimes only',
     );
     await runtime.changeLanguage('zh-CN');
-    expect(formatRunWait(t, wait)).toBe('需要团队运行环境：K 仅限团队运行环境');
+    expect(formatRunWait(t, wait)).toBe('需要共享运行环境：K 仅限共享运行环境');
     expect(formatRunWait(t, { reason: 'somethingNew' })).toBe(
       '排队中（somethingNew）',
     );

@@ -81,6 +81,11 @@ export interface ScheduleTargetType<TConfig extends JsonObject = JsonObject> {
  */
 export interface ScheduleTargetHandle {
   readonly type: string;
+  /**
+   * Accepted while Scheduler's executor or inspections are still draining.
+   * Once that admission window closes, rejects before storage access. Accepted
+   * reports are awaited by drain; callers still observe their own write errors.
+   */
   reportCompletion(
     occurrenceId: string,
     reference: ScheduleTargetReference,

@@ -85,7 +85,7 @@ An overlay reads its context from whichever view it opens over, so every such vi
 
 The list opens all three overlays, so its context carries both sets of fields. It builds the context with `useMemo` and places `<Outlet context={outletContext} />` at the end of its `PageContainer`; the code is the list page, [`example/list-page.md`](example/list-page.md) (`outletContext`, and the `focusSearchAfterReloadRef` effect behind `afterDelete`), explained in [section 9 of `table.md`](table.md#9-child-routes-and-refreshing-the-list).
 
-- Closing an overlay does not reload the parent page: the parent stays mounted, and its form contents and scroll position are kept. When the parent page's data needs refreshing, the child route calls a function from the context.
+- Closing an overlay does not remount or reload the whole parent page: its form contents and scroll position are kept. Data revalidation is separate: lists using `useListLocation` and `useListData` suspend reads while covered and read again on return. A child write calls the context reload function to invalidate the list. Follow [list loading feedback](table.md#6-loading-the-list) so paused parents show no refresh indicator and fast return reads do not flash one.
 - Keep the context stable with `useMemo`: the child route's loading effect lists the context functions as dependencies, so an object that changes on every render causes repeated requests.
 - A child route reads it with `useOutletContext<ProjectsOutletContext>()`. It gets the context of the nearest `<Outlet>` above it: the drawer gets the list's or the dashboard's, and the edit dialog gets the drawer's, or the list's when a row's menu opened it.
 - On a page with tabs, the overlays the header opens render through the tab's `Outlet`, so each tab places one and passes on the page's context, which it reads with `useOutletContext()` ([`example/detail-page-tabs.md`](example/detail-page-tabs.md)). A tab whose own children need more adds their fields to the same object.
@@ -118,6 +118,37 @@ What the components already do:
 - **Closing is navigation**: closing first calls `beforeClose`, then navigates to `closeTo` with `replace`. Because it uses `replace`, pressing the browser's "Forward" after closing does not reopen the overlay.
 - **Focus**: on open, focus moves into the overlay; when the focused element inside the overlay disappears (for example, a button is replaced by a skeleton after clicking "Retry"), focus returns to the overlay panel; after closing, focus returns to the element that had focus before opening (usually the link that opened it; for a row menu's "Edit", the menu's trigger). When a nested overlay closes, focus returns to the element in the parent layer that opened it, or to the parent layer's panel if that element is gone; when `/projects/12/edit` is opened directly, both layers mount at once, and after the dialog closes, focus is on the drawer panel.
 - When the element that focus should return to is no longer on the page after closing (for example, the list row disappears after a delete), the component cannot handle it. Move focus to a stable place yourself; see `afterDelete` above (guideline A6).
+
+#### Declare the presentation
+
+Declare every route whose page renders `RouteDialog` or `RouteDrawer` as its root with a `presentation`, so the overlay opens on the click and not when the module, the authorization check and the data have all arrived:
+
+```ts
+{
+  name: 'project-new',
+  path: 'new',
+  presentation: { kind: 'dialog', title: 'projects.new' },
+  componentLoader: () => import('./pages/projects/new.js'),
+},
+```
+
+- The application opens one panel at once with `title`, a static translation key in the route's package that must not depend on the record. A plugin whose route definitions an application registers under its own package adds `namespace: '<plugin package>'` so the key resolves in the plugin's translations. The authorization check, the module wait, a denial and a load failure render inside it. Retry loads only this module again; because a browser may keep answering a failed module import without fetching it again, a retry that fails too also offers Reload page, which reloads the document, so nothing is added under the page that opened it and its draft and scroll position stay.
+- The page keeps rendering `RouteDialog` or `RouteDrawer` exactly as before. Inside the opened panel it configures that panel instead of opening a second one: its `title`, `description`, `footer`, `closeTo` and `beforeClose` replace the opened panel's. Render it unconditionally as the page's root; its footer renders in the panel's footer slot, so it reads only contexts provided above the route. Its `className` (a width such as `sm:max-w-md`) moves onto the opened panel once the page is ready, so the panel takes the route's default width while it waits.
+- Slot elements (`title`, `description`, `footer`) render under the host, outside the page's providers, including its `NamespaceScope`. A plugin slot component uses `useTranslation(PLUGIN_NAMESPACE)` explicitly or wraps its content in `NamespaceScope`; `presentation.namespace` only translates the static waiting title. Pass needed values as props or wrap the slot in the required provider. Do not assume a React element captures context where it is created; the shared overlay close context remains available in the host.
+- While an authorization recheck hides an allowed page, the panel shows the route's static title and no footer or description, and still applies the page's `beforeClose`.
+- `kind` names the container the page renders: `dialog` for `RouteDialog`, `drawer` for `RouteDrawer`. Nothing infers it from the route depth.
+- A route without `presentation` keeps the earlier behavior: its component builds its own overlay once loaded, and the application renders a page-sized placeholder at the parent's outlet until then. That is the long blank area under the list a slow module shows, so declare it on every route overlay you add or touch.
+- Closing a panel that is still loading goes to the parent route, `..`. A parent route that only forwards to this one, such as an old `:id` link redirecting to `:id/edit`, sends the user back into the overlay; declare the overlay as `:id/edit` beside the forwarding route instead of under it.
+
+#### Asynchronous overlay lifecycle
+
+For one opening, identify the owner of the overlay container through route fallback, lazy module loading, data loading, failure/retry and ready content. Prefer one stable `RouteDrawer` or `RouteDialog` with state-specific children. For example, keep the drawer outside the conditional that chooses loading, error or detail content; on a record change, key the record-specific child by its id when its draft must reset. Do not key the container by loading state, request count or data version.
+
+React preserves identity by component type, position and key. A loading branch returning a drawer and a ready branch returning a business component that creates another drawer can remount even when both look identical. Components defined inside render can also acquire a new type on each render. Inspect the rendered hierarchy, not just JSX names.
+
+When route resolution or navigation must replace the container, define the handoff across module loading: avoid an unexplained blank interval, a second entrance for the same opening, duplicate backdrops or competing focus restoration. Preserve close/back behavior and unsaved-change protection. Use the actual overlay API or local composition; do not assume a universal navigation-state flag exists. This is not a single-instance requirement: a normal new opening and a nested edit dialog each retain their own entrance, backdrop, focus and closing lifecycle.
+
+Verify the transition with pending requests and in the actual application browser; see [asynchronous transitions](testing.md#asynchronous-transitions).
 
 ### 2.4 Close with useRouteOverlay
 
@@ -372,24 +403,38 @@ The details below describe `sheet.tsx` as the registry writes it today; the file
 
 ## 6. Plain dialogs: sizes and scrolling
 
-A `Dialog` from `#components/ui/dialog` defaults to `sm:max-w-lg` and grows with its content without limit. Give it the width guideline I1 assigns to what it holds, and when its content can outgrow the screen, cap its height with the one idiom `max-h-[calc(100dvh-2rem)]` and scroll only its body, so the header and the footer's buttons stay in view (guideline A4):
+A `Dialog` from `#components/ui/dialog` currently defaults to `sm:max-w-lg`, `p-6`, a viewport height cap and `overflow-y-auto` on the whole popup. Inspect the installed source because older or customized copies can differ. For a fixed-footer design, override the popup's scrolling and scroll only its body; changing it to flex alone does not remove its default `overflow-y-auto`:
 
 ```tsx
 // A small form: 1–4 fields, the width alone.
 <DialogContent className='sm:max-w-md'>…</DialogContent>
 
 // Content that can outgrow the screen: a fixed header and footer around a scrolling body.
-<DialogContent className='flex max-h-[calc(100dvh-2rem)] flex-col sm:max-w-2xl'>
-  <DialogHeader>…</DialogHeader>
+<DialogContent className='flex max-h-[calc(100dvh-2rem)] flex-col overflow-hidden sm:max-w-2xl'>
+  <DialogHeader className='shrink-0'>…</DialogHeader>
   <div className='-mx-6 min-h-0 flex-1 overflow-y-auto px-6'>…</div>
-  <DialogFooter>…</DialogFooter>
+  <DialogFooter className='shrink-0'>…</DialogFooter>
 </DialogContent>
 ```
 
 - `flex flex-col` replaces the content's grid, and `min-h-0 flex-1` lets the body shrink and scroll; `-mx-6 … px-6` matches the content's `p-6` and runs its scrollbar along the dialog's edge. When the body is the form, put the classes on the `form` and keep the submit button in `DialogFooter` with `form='…'`.
-- Do not cap the height any other way (`90vh`, `85dvh`, `calc(100svh-2rem)`, `min(40rem,…)`), and do not put `overflow-y-auto` on `DialogContent` itself: the footer would scroll away with the content.
+- `overflow-hidden` overrides the popup's default scrolling; `shrink-0` keeps the header and footer from being compressed. Use the viewport cap above rather than adding a competing cap. Verify actual geometry with long content and at a short viewport height as [the shared acceptance checks](../ui-acceptance.md#overlay-and-action-layout) describe.
 - Large read-only content (a transcript, a diff, a file preview) uses the same structure at `sm:max-w-4xl`, usually with no footer.
 - `RouteDialog` and `RouteDrawer` are built this way already; pass them only a width.
+
+### Footer ownership
+
+In a plain `Dialog`, use one `DialogFooter` directly in the content structure. Its `-mx-6 -mb-6` compensates for the current popup's `p-6`; extra padded wrappers or a different popup padding require checking that relationship. In `RouteDialog` or `RouteDrawer`, pass the buttons (or a component returning them as a fragment) to `footer`: the route wrapper already supplies the footer layout. Do not put another `DialogFooter`, `SheetFooter` or outer padded footer in that slot. Inspect older copies before assuming the latest spacing or mobile order. For an authorized layout exception, use a supported variant or scoped composition and verify it instead of stacking conflicting footer containers.
+
+The template's unlayered `client/styles.css` owns footer action geometry. It matches direct children by `data-slot='button'`, `dialog-close`, `alert-dialog-action` or `alert-dialog-cancel`, including `Button render={<Link />}`; the HTML tag does not determine size. These actions share a minimum height of ten spacing units, horizontal padding of four units and vertical padding of two units (Compact: 36px / 14.4px / 7.2px; Spacious: 40px / 16px / 8px). This footer contract takes precedence over the primitive's `size` height/padding utilities and page `h-*`/`px-*` utilities. Labels may wrap and grow; desktop rows stretch to align their top and bottom edges without forcing equal widths. Keep cancel links as links, use `nativeButton={false}` for `Button render={<Link />}`, and retain disabled/submission guards. Avoid page size patches for footer alignment; buttons outside these footers retain their ordinary size variants. A nested tooltip or wrapper must be checked separately because only direct semantic actions receive this rule.
+
+New applications generated from a template release containing this rule receive it in their source. Existing applications own their copied CSS and Registry components: package updates, Skill sync and UI Library publication do not replace those copies. Use the application-local template upgrade Skill to reconcile `client/styles.css` and applicable copied components, remove obsolete alignment patches, and preserve route, pending and focus behavior. Verify the reconciled application in a browser; do not claim it updated automatically. `tests/playwright/dialog-footer.test.ts` runs against `APP_URL` and checks real geometry with both presets, narrow screens, long English/Chinese labels and pending actions.
+
+## Permission rechecks and drafts
+
+The application keeps a previously allowed page's state in a hidden Activity during permission rechecks. Activity disconnects form effects, including unsaved-change registrations; preserving a `beforeClose` function alone cannot protect those forms. The stable ClientRoute blocks route departures and warns on native document leave while an already mounted page is being rechecked. The overlay host refuses Esc, ×, backdrop and shared `close()` without consulting disconnected form guards, and invalidates pending closes so recovery never resumes an old request. Once allowed again, form effects reconnect and normal draft confirmation applies. A settled denial unmounts protected content and releases the temporary block; cold permission/module loading remains closable. Browser reload/tab-close confirmation is a native warning, not persistent draft recovery.
+
+When merging copied routing and Registry source, update both `client-route.tsx` and `route-leave-boundary.tsx` with `route-overlay.tsx`. The shell boundary cancels pending leave confirmations when concealed, retains registrations during hiding and prunes them on actual removal. Route overlay frames also conceal their own Portal on effect disconnection so a parent route hiding a DOM wrapper cannot leave a nested panel visible. Nested confirmation portals can live outside the hidden form DOM: their boundary must conceal the portal and cancel its question on effect disconnection, because hidden state updates can wait for recovery. Keep the ordinary `useUnsavedChanges` cleanup: a removed form must stop reporting dirty. Verify a real child form, an already open confirmation, parent rechecks/nested panels, recovery and denial; a synthetic `beforeClose={() => false}` misses dirty registration cleanup.
 
 ## 7. Verification checklist
 

@@ -1,6 +1,12 @@
+import { getAvatarInitials } from '@nocobase/app-client';
+import { ListFeedback, ListFeedbackActions } from '#components/list-feedback';
 import { PageContainer } from '#components/page-container';
 import { PageHeader } from '#components/page-header';
-import { useApiClient } from '@nocobase/app-client';
+import {
+  resolveListState,
+  listStateShowsData,
+  useApiClient,
+} from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo, useState, type ReactElement } from 'react';
@@ -11,8 +17,6 @@ import {
   Database,
   FileText,
   Lock,
-  Plug,
-  RefreshCw,
   ShoppingBag,
   Users,
 } from 'lucide-react';
@@ -110,7 +114,15 @@ export default function ExternalCrmPage(): ReactElement {
       maximumFractionDigits: 2,
     }).format(Number(value));
 
-  const rows = useMemo(() => orders.data?.data ?? [], [orders.data?.data]);
+  const state = resolveListState(
+    orders,
+    orders.data?.data.length ?? 0,
+    status !== 'all',
+  );
+  const rows = useMemo(
+    () => (listStateShowsData(state) ? (orders.data?.data ?? []) : []),
+    [state, orders.data?.data],
+  );
 
   const metrics = useMemo(() => {
     const totalRevenue = rows.reduce(
@@ -213,56 +225,13 @@ export default function ExternalCrmPage(): ReactElement {
             </Button>
           ))}
         </div>
-        <Button
-          variant='outline'
-          size='sm'
-          className='h-8 gap-1.5'
-          disabled={orders.isFetching}
-          onClick={() => void orders.refetch()}
-        >
-          <RefreshCw
-            className={`size-3.5 ${orders.isFetching ? 'animate-spin' : ''}`}
-          />
-          {t('externalCrm.refresh')}
-        </Button>
+        <ListFeedbackActions
+          state={state}
+          onRetry={() => void orders.refetch()}
+        />
       </div>
 
-      {orders.isPending ? (
-        <div className='flex flex-col items-center justify-center gap-2 py-16 text-muted-foreground'>
-          <RefreshCw className='size-5 animate-spin' />
-          <p role='status' className='text-sm'>
-            {t('externalCrm.loading')}
-          </p>
-        </div>
-      ) : orders.isError ? (
-        <div
-          role='alert'
-          className='flex flex-col items-center justify-center gap-3 rounded-xl border border-destructive/30 bg-destructive/5 p-8 text-center'
-        >
-          <p className='text-sm font-medium text-destructive'>
-            {t('externalCrm.loadError')}
-          </p>
-          <Button
-            variant='outline'
-            size='sm'
-            onClick={() => void orders.refetch()}
-          >
-            {t('externalCrm.retry')}
-          </Button>
-        </div>
-      ) : rows.length === 0 ? (
-        <div className='flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed py-16 text-center bg-card/40'>
-          <div className='flex size-12 items-center justify-center rounded-full bg-muted'>
-            <Plug className='size-6 text-muted-foreground' />
-          </div>
-          <h2 className='font-heading text-base font-semibold'>
-            {t('externalCrm.empty')}
-          </h2>
-          <p className='max-w-md text-xs text-muted-foreground'>
-            {t('externalCrm.emptyHint')}
-          </p>
-        </div>
-      ) : (
+      <ListFeedback state={state}>
         <div className='overflow-hidden rounded-xl border bg-card shadow-2xs'>
           <Table>
             <TableHeader>
@@ -305,7 +274,11 @@ export default function ExternalCrmPage(): ReactElement {
                       {order.customer ? (
                         <div className='flex items-center gap-2.5'>
                           <div className='flex size-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary font-semibold text-xs'>
-                            {order.customer.displayName.charAt(0).toUpperCase()}
+                            {getAvatarInitials(order.customer.displayName, {
+                              fallback: order.customer.displayName
+                                .charAt(0)
+                                .toUpperCase(),
+                            })}
                           </div>
                           <div className='space-y-0.5'>
                             <div className='font-medium text-foreground text-sm leading-none'>
@@ -355,7 +328,7 @@ export default function ExternalCrmPage(): ReactElement {
             </TableBody>
           </Table>
         </div>
-      )}
+      </ListFeedback>
 
       <div className='flex items-start gap-2.5 rounded-xl border bg-muted/20 p-3.5 text-xs text-muted-foreground'>
         <Database className='size-4 text-muted-foreground shrink-0 mt-0.5' />

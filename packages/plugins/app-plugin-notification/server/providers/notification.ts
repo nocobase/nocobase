@@ -1,28 +1,31 @@
-import { databaseManagerToken } from '@nocobase/db';
-import {
-  authorizationToken,
-  grantBacked,
-  type Authorization,
-} from '@nocobase/app-plugin-authorization';
-import { loggingToken } from '@nocobase/app-server/logging';
 import { jobExecutorServiceToken } from '@nocobase/app-server/jobs';
-import { ServiceProvider } from '@nocobase/service-provider';
+import { loggingToken } from '@nocobase/app-server/logging';
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
+import { databaseManagerToken } from '@nocobase/db';
+import { ServiceProvider } from '@nocobase/service-provider';
 
 import { createNotificationManager } from '../manager.js';
 import { createNotificationRegistry } from '../registry.js';
 import { notificationRuntimeToken } from '../runtime.js';
 import {
+  NotificationTemplateRegistry,
+  notificationTemplateRegistryToken,
+} from '../templates.js';
+import {
   notificationExtensionRegistryToken,
   notificationServiceToken,
 } from '../tokens.js';
-import type { NotificationChannelMap, NotificationConfig } from '../types.js';
+import type {
+  NotificationChannelMap,
+  NotificationConfig,
+  NotificationConfigInput,
+} from '../types.js';
 
 export interface NotificationProviderApplicationConfig {
   readonly app: {
     readonly publicBasePath: string;
   };
-  readonly notification?: NotificationConfig;
+  readonly notification?: NotificationConfigInput;
 }
 
 export type NotificationProviderApplication =
@@ -45,7 +48,13 @@ export class NotificationProvider<
     if (!this.app.container.has(loggingToken))
       throw new Error('Notification core requires the logging dependency.');
     const jobsConfiguration = this.jobsConfiguration();
+    // Keep the startup snapshot; third-party channel configuration may contain functions.
+    const config = this.app.config.get<NotificationConfig>('notification')!;
     const registry = createNotificationRegistry();
+    this.app.container.instance(
+      notificationTemplateRegistryToken,
+      new NotificationTemplateRegistry(),
+    );
     this.app.container.instance(notificationExtensionRegistryToken, registry);
     this.app.container.singleton(notificationRuntimeToken, (container) =>
       createNotificationManager<NotificationChannelMap>({
@@ -59,23 +68,13 @@ export class NotificationProvider<
           .child({
             module: 'notification',
           }),
-        config: this.app.config.get<NotificationConfig>('notification')!,
+        config,
         registry,
+        container: this.app.container,
       }),
     );
     this.app.container.singleton(notificationServiceToken, (container) =>
       container.resolve(notificationRuntimeToken),
-    );
-  }
-
-  public override async boot(): Promise<void> {
-    if (!this.app.container.has(authorizationToken)) {
-      throw new Error(
-        'Notification core requires the authorization dependency.',
-      );
-    }
-    registerNotificationAuthorization(
-      this.app.container.resolve(authorizationToken),
     );
   }
 
@@ -110,17 +109,4 @@ export class NotificationProvider<
     }
     return name;
   }
-}
-
-export function registerNotificationAuthorization(
-  authorization: Pick<Authorization, 'resourceTypes'>,
-): void {
-  // A record type: only `send` exists, and only the `test` notification sends.
-  authorization.resourceTypes.add({
-    type: 'notification',
-    actions: ['send'],
-    authorize: grantBacked({
-      also: async (request) => request.resource.id === 'test',
-    }),
-  });
 }

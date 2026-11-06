@@ -2,7 +2,7 @@
   "name": "@nocobase/app-plugin-users",
   "displayName": "User Management",
   "description": "Reusable user administration APIs and pages for NocoBase applications.",
-  "version": "2.0.0-beta.6",
+  "version": "2.0.0-beta.15",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {
@@ -47,6 +47,7 @@
   "files": [
     "dist",
     "README.md",
+    "MEMBER-ROLES.md",
     "CHANGELOG.md",
     "skills"
   ],
@@ -101,7 +102,8 @@
   },
   "dependencies": {
     "hono": "catalog:",
-    "zod": "catalog:"
+    "zod": "catalog:",
+    "@nocobase/mailer": "workspace:^"
   },
   "peerDependencies": {
     "@base-ui/react": "catalog:",
@@ -134,6 +136,12 @@
     "tailwindcss": "catalog:",
     "tw-animate-css": "catalog:",
     "typescript": "catalog:",
-    "vitest": "catalog:"
+    "vitest": "catalog:",
+    "@nocobase/app-plugin-notification-providers": "workspace:*"
+  },
+  "peerDependenciesMeta": {
+    "@nocobase/app-plugin-notification": {
+      "optional": true
+    }
   }
 }

@@ -3,6 +3,7 @@ import {
   ClientApplication,
   ClientApplicationContext,
   createAppClientConfig,
+  readStoredLocale,
 } from '@nocobase/app-client';
 import { defineClientPlugins } from '@nocobase/app-client/plugins';
 import {
@@ -54,9 +55,106 @@ afterEach(async () => {
   for (const app of applications.splice(0)) await app.shutdown();
   localStorage.clear();
   vi.unstubAllGlobals();
+  document.getElementById('nocobase-runtime-config')?.remove();
 });
 
 describe('application locale requests', () => {
+  it('synchronizes the application choice at startup and persists switches in its own scope', async () => {
+    const config = document.createElement('script');
+    config.id = 'nocobase-runtime-config';
+    config.type = 'application/json';
+    config.textContent = JSON.stringify({
+      version: 1,
+      config: { app: { basePath: '/apps/crm' } },
+    });
+    document.body.append(config);
+    localStorage.setItem('nocobase.locale', 'en-US');
+    localStorage.setItem('nocobase.locale:/apps/crm/', 'zh-CN');
+    localStorage.setItem('nocobase.locale:/studio/', 'zh-CN');
+    const fetchSpy = vi.fn<typeof fetch>().mockImplementation((_url, init) => {
+      const { locale } = JSON.parse(String(init?.body)) as { locale: string };
+      return Promise.resolve(
+        Response.json({
+          data: { locale, requestedLocale: locale, fallback: false },
+        }),
+      );
+    });
+    vi.stubGlobal('fetch', fetchSpy);
+    const app = await createApplication('/apps/crm/api');
+    const hook = renderHook(
+      () => {
+        useSyncServerLocale();
+        return useAppLocale();
+      },
+      { wrapper: wrapperFor(app) },
+    );
+
+    await waitFor(() => expect(fetchSpy).toHaveBeenCalledOnce());
+    expect(hook.result.current.locale).toBe('zh-CN');
+    expect(fetchSpy.mock.calls[0]?.[1]?.body).toBe(
+      JSON.stringify({ locale: 'zh-CN' }),
+    );
+    await act(async () => {
+      await hook.result.current.setLocale('en-US');
+    });
+    expect(localStorage.getItem('nocobase.locale:/apps/crm/')).toBe('en-US');
+    expect(localStorage.getItem('nocobase.locale:/studio/')).toBe('zh-CN');
+    expect(localStorage.getItem('nocobase.locale')).toBe('en-US');
+    expect(
+      fetchSpy.mock.calls.map(([url, init]) => [String(url), init?.body]),
+    ).toEqual([
+      ['/apps/crm/api/i18n/locale', JSON.stringify({ locale: 'zh-CN' })],
+      ['/apps/crm/api/i18n/locale', JSON.stringify({ locale: 'en-US' })],
+    ]);
+  });
+
+  it('orders rapid switches after startup so the last choice owns the session', async () => {
+    const config = document.createElement('script');
+    config.id = 'nocobase-runtime-config';
+    config.type = 'application/json';
+    config.textContent = JSON.stringify({
+      version: 1,
+      config: { app: { basePath: '/' } },
+    });
+    document.body.append(config);
+    let sessionLocale = '';
+    vi.stubGlobal(
+      'fetch',
+      vi.fn<typeof fetch>().mockImplementation(async (_url, init) => {
+        const { locale } = JSON.parse(String(init?.body)) as { locale: string };
+        await new Promise((done) =>
+          setTimeout(done, locale === 'zh-CN' ? 15 : 0),
+        );
+        sessionLocale = locale;
+        return Response.json({
+          data: { locale, requestedLocale: locale, fallback: false },
+        });
+      }),
+    );
+    const app = await createApplication('/ordered/api');
+    const hook = renderHook(
+      () => {
+        useSyncServerLocale();
+        return useAppLocale();
+      },
+      { wrapper: wrapperFor(app) },
+    );
+    const other = renderHook(() => useAppLocale(), {
+      wrapper: wrapperFor(app),
+    });
+    await act(async () => {
+      await Promise.all([
+        hook.result.current.setLocale('zh-CN'),
+        other.result.current.setLocale('en-US'),
+      ]);
+    });
+    expect(sessionLocale).toBe('en-US');
+    expect(hook.result.current.locale).toBe('en-US');
+    expect(readStoredLocale()).toBe('en-US');
+    expect(hook.result.current.switching).toBe(false);
+    expect(other.result.current.switching).toBe(false);
+  });
+
   it('keeps locale switches scoped to each application and its configured API', async () => {
     const response = {
       locale: 'zh-CN',

@@ -60,6 +60,25 @@ const timeline = (messages: AppUIMessage[]) =>
     )
     .sort((a, b) => a.seq - b.seq);
 
+it('refuses Runner resend through both the SDK and HTTP without creating a run', async () => {
+  h = await createHarness();
+  await h.registerRunner();
+  const agentId = await h.createAgent({ source: 'runner' });
+  const agent = await h.services.onlineAgent.realtime(actor(), { agentId });
+  await expect(agent.resend()).rejects.toThrow('message resend');
+  const app = new Hono().route('/agents', createChatRoutes(h.services, guard));
+  const response = await app.request(
+    `/agents/conversations/${agent.sessionId}/resend`,
+    {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: '{}',
+    },
+  );
+  expect(response.status).toBe(400);
+  expect(await agent.history()).toEqual([]);
+});
+
 describe.skipIf(!process.env.PM481_REDIS_PORT)(
   'Runner SDK projection and Redis recovery across independent compositions',
   () => {
@@ -564,7 +583,14 @@ it('does not create a phantom SDK assistant when a Run ends without saved output
   ).toBe(200);
   await sending;
   expect(chat.error).toBeUndefined();
-  expect(chat.messages.map((message) => message.role)).toEqual(['user']);
+  // The live response only said where it stood (`data-phase`); it shows nothing once the run ended.
+  expect(
+    chat.messages
+      .filter((message) =>
+        message.parts.some((part) => part.type !== 'data-phase'),
+      )
+      .map((message) => message.role),
+  ).toEqual(['user']);
   const history = await agent.history();
   expect(history.map((message) => message.role)).toEqual(['user']);
   expect(history[0].metadata!.clientId).toBe(chat.messages[0].id);

@@ -1,15 +1,18 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { claim, createHarness, type Harness } from './harness.js';
+import type { Run } from '../shared/runs.js';
 
 describe('comment personal runner consent', () => {
   let h: Harness;
   let agentId: string;
   let ownerKey = 'assignment-1';
+  let stops: Run[] = [];
   afterEach(async () => h?.close());
   async function setup() {
     h = await createHarness();
     agentId = await h.createAgent();
     ownerKey = 'assignment-1';
+    stops = [];
     const sample = h.services.subjects.get('sample')!;
     h.services.subjects.register({
       ...sample,
@@ -17,6 +20,12 @@ describe('comment personal runner consent', () => {
       actsAs: async () => ({ actorUserId: 'alice' }),
       responsibleUserId: async () => 'alice',
       commentOwnerKey: async () => ownerKey,
+      sink: {
+        ...sample.sink,
+        onCancelRequested: async (_tx, run) => {
+          stops.push(run);
+        },
+      },
     });
   }
   const enqueue = (commentId = 'c1', source = 'bob') =>
@@ -189,6 +198,7 @@ describe('comment personal runner consent', () => {
     const queued = await enqueue();
     const [request] = await pending();
     await h.services.runs.requests.reject(request.id, 'alice');
+    expect(stops).toMatchObject([{ id: queued.runId, cancelledById: 'alice' }]);
     expect((await h.services.runs.get(queued.runId!)).status).toBe('cancelled');
     expect(await claim(h, personal)).toEqual([]);
     const bobs = await h.registerRunner({

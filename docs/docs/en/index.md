@@ -9,3 +9,9 @@ keywords: 'NocoBase,NocoBase 3,AI Agent development,business systems,low-code,op
 When your application is ready to go live, deploy it to your own server with PM2 or Docker.
 
 [View deployment guide](./deployment.md)
+
+## Task Center
+
+Bring approvals, equipment collection and other personal work together using copyable Agent prompts.
+
+[Read the Task Center guide](./capabilities/task-center.md)

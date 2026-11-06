@@ -265,6 +265,9 @@ function EnvironmentFacts({
       className='grid gap-x-6 gap-y-4 rounded-lg border bg-card p-4 text-sm sm:grid-cols-2 lg:grid-cols-3'
       data-slot='environment-facts'
     >
+      <Fact label={t('ui.environments.purpose')}>
+        {t(`ui.environments.purposes.${environment.purpose}`)}
+      </Fact>
       {runsOn ? (
         <Fact label={t('ui.environments.runsOn')}>{runsOn}</Fact>
       ) : null}

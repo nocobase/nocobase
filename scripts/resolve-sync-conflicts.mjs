@@ -3,7 +3,7 @@
 //
 // 只处理规则确定的两类：
 //   package.json  版本号取较大者，其余字段走 git 正常三方合并
-//   CHANGELOG.md  两边条目都保留（union）
+//   CHANGELOG.md / CHANGELOG.zh-CN.md  两边条目都保留（union）
 //
 // 其余任何冲突都不碰，交给人处理。
 //
@@ -137,9 +137,10 @@ for (const file of conflicts) {
     continue;
   }
 
-  if (base === 'CHANGELOG.md') {
+  if (base === 'CHANGELOG.md' || base === 'CHANGELOG.zh-CN.md') {
     // 两边的条目都要留下：main 的 hotfix 记录和 develop 的 beta 记录
     // 都是真实发生过的发布。
+    // The root CHANGELOG.zh-CN.md, written by scripts/changelog.mjs next to CHANGELOG.md, is merged the same way.
     const ours = readStage(2, file);
     const theirs = readStage(3, file);
     if (!ours || !theirs) {

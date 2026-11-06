@@ -10,7 +10,18 @@ it('provides services without owning collections, resource routes, or pages', ()
   const registration = client();
   expect(registration.serviceProviders).toHaveLength(1);
   expect(registration.routes).toEqual([]);
-  expect(Object.keys(registration.locales ?? {})).toEqual(['en-US', 'zh-CN']);
+  expect(Object.keys(registration.locales ?? {})).toEqual([
+    'en-US',
+    'zh-CN',
+    'zh-TW',
+    'ja-JP',
+    'es-ES',
+    'pt-BR',
+    'fr-FR',
+    'de-DE',
+    'vi-VN',
+    'id-ID',
+  ]);
 });
 
 it('publishes the file column contract from the Server entry', () => {

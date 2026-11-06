@@ -79,3 +79,11 @@ Do not trigger production business effects merely to validate integration. Use a
 - **Stuck waiting:** follow the target reference and inspect the real executor, completion notification, and observer. Scheduler's periodic reconciliation does not run the target's job.
 - **Historical occurrence after retargeting:** use the occurrence's recorded target type and reference, not the definition's current target. Follow [Historical Occurrences After Retargeting](targets.md#historical-occurrences-after-retargeting) before assessing a completion callback.
 - **Historical triggered status:** this only indicates that a target previously accepted a request, not successful completion. runCount is not a success count either.
+
+## Shutdown and dependency lifetime
+
+Resolve the public `schedulerServiceToken` and call its service’s `drain()` before closing services that schedule targets use. A final application provider can call it during reverse-order shutdown. Keep dependencies alive until it settles, and propagate errors. The plugin's own final shutdown reuses the same promise; never obtain its private executor or scope to implement this boundary.
+
+Drain stops new reconciliation, waits for accepted checks and the configured executor's state persistence/event delivery, then closes completion-report admission and waits for accepted reports and event records before releasing subscriptions. Reports during the producer-draining phase remain accepted; later reports reject before storage access. Concurrent/repeated calls reuse success or failure without restarting. It does not wait for durable waiting work or human approval, and the host still owns HTTP admission and other business executors. Do not call and await drain from work it must itself await.
+
+Use a Jobs revision with failure-safe Schedule event draining together with this Scheduler contract. Verify both normal and failing shutdown with an in-flight target and reconciliation, and assert that dependency cleanup follows their completion. A successful close alone does not prove dependency lifetime. No additional queries, persistent writes or locks are introduced by the tracking itself; existing state and event persistence still has a real shutdown cost.

@@ -6,7 +6,11 @@
 import type { DatabaseConnection } from '@nocobase/db';
 
 import type { Attachment } from '../../../shared/attachments.js';
-import type { IssueComment, MentionRef } from '../../../shared/comments.js';
+import type {
+  CommentMessage,
+  IssueComment,
+  MentionRef,
+} from '../../../shared/comments.js';
 import type { Actor } from '../../kernel/actor.js';
 import type { Tx } from '../../kernel/tx.js';
 
@@ -19,6 +23,8 @@ export interface CommentWriteOptions {
   readonly kind?: string;
   /** What the writer wants to trace with the comment, such as `{ runId }`; never returned. */
   readonly origin?: Readonly<Record<string, unknown>>;
+  /** Validated display message, stored in origin and projected separately on reads. Server writers only. */
+  readonly message?: CommentMessage;
   /**
    * The person the comment is written for, as the triggers hear it (`CommentChange.userId`): the person a run acted
    * for, say. Their right to mention is not checked; the triggers check whom they may wake.

@@ -157,6 +157,11 @@ export const clientMocks = {
       '@nocobase/app-client',
     );
     return {
+      createUuid: actual.createUuid,
+      createRealtimeRefresh: actual.createRealtimeRefresh,
+      refreshRealtimeQueries: actual.refreshRealtimeQueries,
+      useRealtimeReadiness: () => true,
+      copyText: actual.copyText,
       UnsavedChangesContext: actual.UnsavedChangesContext,
       useGuardedClose: actual.useGuardedClose,
       useUnsavedChanges: actual.useUnsavedChanges,

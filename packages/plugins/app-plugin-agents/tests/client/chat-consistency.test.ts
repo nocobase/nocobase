@@ -47,29 +47,25 @@ afterEach(() => {
   controllers.splice(0).forEach((c) => c.dispose());
   agentsQueryClient().clear();
 });
-it('drains a coalesced fresh refresh after an older page, using loaded messages rather than the server watermark', async () => {
+it('discards an older page that returns after an authoritative refresh begins', async () => {
   const old = deferred<ReturnType<typeof page>>();
-  const messages = vi
-    .fn()
-    .mockReturnValueOnce(old.promise)
-    .mockResolvedValueOnce(page([message(11)], 11));
+  const messages = vi.fn().mockImplementation(async (_id, query) => {
+    if (query?.pageToken) return old.promise;
+    if (query?.ids) return page([message(10)], 11);
+    return page([message(10), message(11)], 11);
+  });
   const c = controller({ messages, conversation: async () => detail('fresh') });
   c.dispatch('c', { type: 'page', page: page([message(10)], 10, 'older') });
   const older = c.loadHistory('c', true);
-  const refresh = c.refresh('c');
-  await vi.waitFor(() => expect(messages).toHaveBeenCalledTimes(1));
-  const again = c.loadHistory('c', false, true);
+  await c.refresh('c');
   old.resolve(page([message(1)], 11));
-  await Promise.all([older, refresh, again]);
-  expect(messages.mock.calls.map((call) => call[1])).toEqual([
-    { pageToken: 'older' },
-    { after: 10 },
-  ]);
+  await older;
+  expect(messages.mock.calls.map((call) => call[1])).toContainEqual({});
   expect(c.history('c').state.items.map((m) => m.metadata?.seq)).toEqual([
-    1, 10, 11,
+    10, 11,
   ]);
 });
-it('does not let an older detail response overwrite a newer refresh', async () => {
+it('shares the first detail read and retains one authoritative trailing refresh', async () => {
   const a = deferred<ConversationDetail>(),
     b = deferred<ConversationDetail>();
   const conversation = vi
@@ -79,10 +75,11 @@ it('does not let an older detail response overwrite a newer refresh', async () =
   const c = controller({ conversation, messages: async () => page([], 0) });
   const first = c.refresh('c'),
     second = c.refresh('c');
-  b.resolve(detail('new'));
-  await second;
+  expect(conversation).toHaveBeenCalledOnce();
   a.resolve(detail('old', 'running'));
-  await first;
+  await vi.waitFor(() => expect(conversation).toHaveBeenCalledTimes(2));
+  b.resolve(detail('new'));
+  await Promise.all([first, second]);
   expect(agentsQueryClient().getQueryData(chatKeys.conversation('c'))).toEqual(
     detail('new'),
   );

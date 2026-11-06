@@ -87,6 +87,7 @@ export function createProjectRoutes(projects: ProjectService): Hono<ViewerEnv> {
       tags,
       summary: 'Create a project',
       operationId: 'projectsCreateProject',
+      security: personOrRunSecurity,
       ...cliRoute({
         command: 'project create',
         args: ['name'],
@@ -282,7 +283,9 @@ export function createProjectRoutes(projects: ProjectService): Hono<ViewerEnv> {
       tags,
       summary: 'Add a working directory to a project',
       operationId: 'projectsCreateProjectResource',
+      security: personOrRunSecurity,
       ...cliRoute({
+        action: 'pm.projects/manage',
         command: 'project resource add',
         flags: {
           projectId: { name: 'project' },
@@ -321,7 +324,9 @@ export function createProjectRoutes(projects: ProjectService): Hono<ViewerEnv> {
       tags,
       summary: 'Update a project’s working directory',
       operationId: 'projectsUpdateProjectResource',
+      security: personOrRunSecurity,
       ...cliRoute({
+        action: 'pm.projects/manage',
         command: 'project resource update',
         flags: {
           projectId: { name: 'project' },
@@ -357,7 +362,9 @@ export function createProjectRoutes(projects: ProjectService): Hono<ViewerEnv> {
       tags,
       summary: 'Remove a project’s working directory',
       operationId: 'projectsDeleteProjectResource',
+      security: personOrRunSecurity,
       ...cliRoute({
+        action: 'pm.projects/manage',
         command: 'project resource remove',
         flags: {
           projectId: { name: 'project' },

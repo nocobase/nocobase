@@ -8,7 +8,44 @@ import inboxEnUS from '#extensions/nocobase-inbox/locales/en-US';
  * upgrade replaces this file, so put the application's own copy in `../en-US.ts` rather than here.
  */
 const systemEnUS = {
+  pendingFeedback: {
+    working: 'Working…',
+    longWait: 'This is taking longer than usual. You can keep waiting.',
+  },
+  taskProgress: {
+    queued: 'Waiting to start',
+    running: 'In progress',
+    completed: 'Completed',
+    failed: 'Failed',
+    canceled: 'Canceled',
+    count: '{{processed}} of {{total}}',
+    processed: '{{processed}} processed',
+    background: 'It keeps running if you leave this page.',
+  },
+  listFeedback: {
+    loading: 'Loading',
+    empty: 'No data yet',
+    noResults: 'No results',
+    forbidden: 'Access denied',
+    unauthenticated: 'Session expired',
+    failed: 'Unable to load list',
+    refreshFailed: 'Refresh failed; showing previous data',
+    retry: 'Retry',
+    retrying: 'Retrying…',
+    clear: 'Clear filters',
+    signIn: 'Sign in',
+  },
   flowDiagram: {
+    controls: 'Diagram controls',
+    fitView: 'Fit to view',
+    fullscreen: 'Fullscreen',
+    exitFullscreen: 'Exit fullscreen',
+    escapeHint: 'Press Escape to exit',
+    leavesTo: 'Leaves to',
+    arrivesFrom: 'Arrives from',
+    otherRoutes: 'Other routes',
+    minimap: 'Diagram overview',
+
     configure: 'Configure',
     overview: 'Diagram overview',
     actualSize: 'Actual size',
@@ -44,6 +81,16 @@ const systemEnUS = {
   ...deviceApprovalEnUS,
   // The UI Library block of the `/inbox` page; the keys below may reword it.
   ...inboxEnUS,
+  // Shared form wording overrides the defaults included by composed blocks.
+  formFeedback: {
+    field: 'This value was rejected. Check it and try again.',
+    invalid: 'Check the highlighted fields and try again.',
+    failed: 'Unable to save. Your input has been kept. Try again.',
+    network:
+      'Unable to connect. Check your connection and try again. Your input has been kept.',
+    denied:
+      'You cannot submit this form with your current access. Your input has been kept.',
+  },
   // The UI Library component of the header's inbox button.
   'inboxButton.title': 'Inbox',
   'inboxButton.pending': 'Inbox, {{count}} waiting',
@@ -55,6 +102,9 @@ const systemEnUS = {
   'auth.loginDescription': 'Sign in with your username or email and password.',
   'auth.registerTitle': 'Create an account',
   'auth.registerDescription': 'Create an account to get started.',
+  'auth.registrationAccepted': 'Registration request submitted',
+  'auth.registrationGuidance':
+    'Try signing in with the username and password you submitted. If this email already has an account, the new details will not take effect. Sign in with your original account or recover your password. Follow any verification instructions provided by the application before signing in.',
   'auth.forgotTitle': 'Forgot password',
   'auth.forgotDescription':
     'Enter your email and we will send a reset link if the account exists.',
@@ -97,9 +147,8 @@ const systemEnUS = {
   'auth.continueWith': 'Continue with {provider}',
   'auth.about': 'About this application',
   'auth.platform': 'AI-native application platform',
-  'auth.marketingTitleFirst': 'Let AI build freely.',
-  'auth.marketingTitleSecond': 'NocoBase keeps it',
-  'auth.marketingTitleThird': 'reliable.',
+  'auth.marketingTitleFirst': 'AI + NocoBase',
+  'auth.marketingTitleSecond': 'Build reliable business systems',
   'auth.marketingDescription':
     'Give AI a flexible frontend framework to shape each experience, while NocoBase secures the data, permissions and governance underneath.',
   'auth.frontend': 'AI-native frontend',
@@ -109,10 +158,14 @@ const systemEnUS = {
   'auth.foundationDescription': 'Reliable data, access control and governance.',
   'auth.marketingFooter': 'Freedom above. Confidence below.',
   'status.loading': 'Loading',
+  'status.refreshing': 'Refreshing',
   'status.loadingPage': 'Loading page',
   'status.denied': 'Access denied',
   'status.pageFailed': 'Unable to load page',
   'status.retry': 'Retry',
+  'status.reloadPage': 'Reload page',
+  'status.retryFailedDescription':
+    'It still could not be loaded. Reloading the whole page may help; unsaved changes on this page may be lost.',
   'navigation.brandHome': 'NocoBase home',
   'navigation.brandApps': 'NocoBase applications',
   'routeOverlay.close': 'Close',
@@ -120,8 +173,8 @@ const systemEnUS = {
   'status.routeFailedDescription':
     'Route {{label}} from {{packageName}} could not be loaded.',
   shell: {
-    buildFreely: 'AI builds freely.',
-    reliability: '<brand>NocoBase</brand> keeps it reliable.',
+    brandPartnership: 'AI + <brand>NocoBase</brand>',
+    buildReliableSystems: 'Build reliable business systems',
   },
   home: {
     platform: 'NocoBase · AI-native application platform',
@@ -334,7 +387,7 @@ const systemEnUS = {
   },
 
   appearance: {
-    title: 'Appearance',
+    title: 'Theme',
     mode: 'Color mode',
     preset: 'Theme',
     light: 'Light',
@@ -377,9 +430,10 @@ const systemEnUS = {
     breadcrumb: 'Breadcrumb',
     breadcrumbMore: 'Show the levels in between',
     back: 'Back',
+    backTo: 'Back to {{label}}',
   },
   dataTable: {
-    noResults: 'No results.',
+    noResults: 'No results',
     sortAscending: 'Asc',
     sortDescending: 'Desc',
     hideColumn: 'Hide',

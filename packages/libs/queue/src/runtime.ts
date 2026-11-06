@@ -1,20 +1,24 @@
 import type { ResolvedQueueConfig } from './config.js';
-import type { QueueDispatcher } from './consumer.js';
+import type { DispatchOutcome, DispatchedJob } from './consumer.js';
 import type { PreparedJob } from './message.js';
 import type { QueueLogger, RateLimitOptions } from './types.js';
 
+/** The only handler capability a backend receives. */
+export interface QueueDispatch {
+  dispatch(job: DispatchedJob, signal?: AbortSignal): Promise<DispatchOutcome>;
+}
 /** What an implementation knows about the queue it backs. */
 export interface QueueRuntimeContext {
   /** The logical queue name. */
   readonly queue: string;
   readonly config: ResolvedQueueConfig;
-  readonly dispatcher: QueueDispatcher;
+  readonly dispatcher: QueueDispatch;
   readonly logger: QueueLogger;
 }
 
 /**
  * One logical queue on one implementation. The service owns the order of
- * calls: `open` first, `close` last and once, the rest in between.
+ * calls: `open` first, `close` on failure/shutdown and again after late initialization.
  */
 export interface QueueRuntime {
   /** Prepares the backend or reads the state file. */
@@ -35,5 +39,7 @@ export interface QueueRuntime {
 }
 
 export interface QueueImplementation {
+  /** Checks backend configuration without connecting or acquiring resources. */
+  validateConfig(config: ResolvedQueueConfig): void;
   createRuntime(context: QueueRuntimeContext): QueueRuntime;
 }

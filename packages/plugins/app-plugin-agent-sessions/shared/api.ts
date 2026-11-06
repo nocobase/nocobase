@@ -144,6 +144,8 @@ export interface Session {
   /** Whether its computer is connected; false once the computer is removed. */
   readonly computerOnline: boolean;
   readonly lastSeq: number;
+  /** Committed read position; permissions are independent of reading. */
+  readonly seenSeq: number;
   /** The project it works for, when its owner chose one. */
   readonly project: SessionProject | null;
   readonly links: readonly SessionLink[];

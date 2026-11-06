@@ -18,6 +18,15 @@ const context: OnlineAgentToolContext = {
   credentials: { kind: 'fixture' },
   sessionId: 'session',
   signal: new AbortController().signal,
+  execution: {
+    id: 'json-contract',
+    async getSandbox() {
+      throw new Error('No Sandbox in this fixture.');
+    },
+    async readSkill() {
+      throw new Error('No Skills in this fixture.');
+    },
+  },
 };
 const options = { toolCallId: 'call', messages: [], context };
 type BoundTool = Tool<unknown, OnlineAgentJson, OnlineAgentToolContext>;

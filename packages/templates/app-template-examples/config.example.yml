@@ -69,39 +69,79 @@ secrets:
     - version: 1
       key: replace-with-a-unique-secret
 
+# Optional shared sender for Auth, Users invitations and email notification channels. This example is commented out;
+# server/config/mailers.ts defaults to an empty configuration, so example values do not enable mail delivery.
+# `system` is only this template's sample name. Values are literal: ${NAME} is not expanded. The mapping explicitly
+# declares MAILERS_SYSTEM_* variables; inject the password through MAILERS_SYSTEM_PASSWORD.
+# mailers:
+#   default: system
+#   system:
+#     provider: smtp
+#     host: smtp.example.com
+#     port: 587
+#     secure: false
+#     auth:
+#       user: notifications@example.com
+#     from: App <notifications@example.com>
+
+# For Resend, use a separate entry with provider: resend, apiKey and from; do not mix provider fields:
+# mailers:
+#   default: system
+#   system:
+#     provider: resend
+#     apiKey: replace-with-the-api-key
+#     from: "Studio <notifications@example.com>"
+#
+# Equivalent SMTP .env example (use the Resend alternative below instead of its provider-specific SMTP fields):
+# MAILERS_DEFAULT=system
+# MAILERS_SYSTEM_PROVIDER=smtp
+# MAILERS_SYSTEM_HOST=smtp.example.com
+# MAILERS_SYSTEM_PORT=587
+# MAILERS_SYSTEM_SECURE=false
+# MAILERS_SYSTEM_USER=notifications@example.com
+# MAILERS_SYSTEM_PASSWORD=replace-with-the-password
+# MAILERS_SYSTEM_FROM=Studio <notifications@example.com>
+# MAILERS_SYSTEM_REPLY_TO=support@example.com
+# MAILERS_SYSTEM_ENABLED=true
+#
+# Resend .env alternative:
+# MAILERS_DEFAULT=system
+# MAILERS_SYSTEM_PROVIDER=resend
+# MAILERS_SYSTEM_API_KEY=replace-with-the-api-key
+# MAILERS_SYSTEM_FROM=Studio <notifications@example.com>
+# MAILERS_SYSTEM_REPLY_TO=support@example.com
+# MAILERS_SYSTEM_ENABLED=true
+
 auth:
+  # Set app.publicOrigin before explicitly enabling automatic password recovery.
+  # passwordReset:
+  #   enabled: true
+  # email:
+  #   mailer: system # omit to use mailers.default
+  # Existing inline auth.email and AUTH_EMAIL_* remain supported for compatibility.
   emailAndPassword:
     enabled: true
-    autoSignIn: false
+    autoSignIn: true
   session:
     storeSessionInDatabase: true
 
 notification:
+  # provider remains a compatibility alias for type; both must match when supplied.
   channels:
     inbox:
-      provider: in-app
+      type: in-app
 
-    # Uncomment and configure independent email Channels.
-    # Values are read as written: ${NAME} is not expanded. To take a secret from the environment instead, map a
-    # variable onto its path in env of server/config/notification.ts, such as SMTP_PASSWORD.
+    # Configuring mailers alone does not create a notification channel.
     # system-email:
-    #   provider: smtp
-    #   host: smtp.example.com
-    #   port: 587
-    #   auth:
-    #     user: notifications@example.com
-    #     pass: replace-with-the-smtp-password
-    #   from: notifications@example.com
-    # marketing-email:
-    #   provider: resend
-    #   apiKey: replace-with-the-resend-api-key
-    #   from: marketing@example.com
+    #   type: email
+    #   mailer: system # omit to use mailers.default
+    # Legacy type: smtp/resend inline channels and SMTP_PASSWORD/RESEND_API_KEY remain supported.
 
     # ops-feishu:
-    #   provider: feishu-webhook
+    #   type: feishu-webhook
     #   webhookUrl: https://open.feishu.cn/open-apis/bot/v2/hook/replace-with-the-token
     # ops-dingtalk:
-    #   provider: dingtalk-webhook
+    #   type: dingtalk-webhook
     #   webhookUrl: https://oapi.dingtalk.com/robot/send?access_token=replace-with-the-token
 
 # DB_DIALECT, DB_HOST, DB_PORT, DB_DATABASE, DB_USERNAME, DB_PASSWORD, DB_SSL and DB_FILENAME override the main
@@ -156,9 +196,13 @@ snowflake:
 # process that is killed loses what changed since it started. It serves one process: every other process or instance
 # would run its own copy. Set default to memory to keep that without the startup warning, or to redis to run several.
 # Redis must persist its data (AOF or RDB) and use maxmemory-policy noeviction, or schedules can be lost.
+# Install the commercial @nocobase/app-plugin-jobs-redis package and register its Server plugin
+# from @nocobase/app-plugin-jobs-redis/server in server/plugins.ts on every producer and consumer.
+# Upgrading deployments must set adapter: redis explicitly; templates no longer supply Redis defaults.
 # jobs:
 #   default: redis
 #   redis:
+#     adapter: redis
 #     connection:
 #       host: 127.0.0.1
 #       port: 6379
@@ -167,6 +211,34 @@ snowflake:
 # The jobs configuration the Scheduler plugin's schedules run on, by name. Left out, they follow jobs.default.
 # scheduler:
 #   jobs: redis
+
+# Knowledge owns one global index shared by all spaces; these are server-only instance definitions.
+# Declaring instances does not enable indexing. Select an instance and Embedding model in Knowledge's
+# global index dialog, then explicitly confirm the all-space rebuild and possible model charges.
+# Agents supplies Embedding models only; its vector collections are not used.
+# knowledge:
+#   # Optional: select an existing host jobs configuration by name; omitted follows jobs.default.
+#   # jobs: redis
+#   indexing:
+#     local:
+#       name: Local semantic index
+#       type: sqlite-vec
+#       # Relative to application storage; use one shared file on one host, not separate pod-local files.
+#       file: knowledge/vectors.sqlite
+#     shared:
+#       name: Shared PostgreSQL index
+#       type: pgvector
+#       # Supply real credentials privately. An administrator must install vector and create this schema.
+#       url: postgresql://kb_user:replace-with-the-password@127.0.0.1:5432/knowledge
+#       schema: knowledge_index
+#       # Deployment-owned generation table prefix (default: knowledge); not a page setting.
+#       table: knowledge
+#       # Optional TLS settings; ca/cert/key are PEM contents, not file paths.
+#       # ssl:
+#       #   rejectUnauthorized: true
+#       #   ca: replace-with-the-ca-pem
+#       #   cert: replace-with-the-client-certificate-pem
+#       #   key: replace-with-the-client-private-key-pem
 
 # File logging is independent of terminal formatting.
 logging:

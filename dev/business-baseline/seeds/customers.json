@@ -1,0 +1,101 @@
+{
+  "version": 1,
+  "scenario": "customers",
+  "actors": {
+    "owner": "owner@baseline.invalid",
+    "otherOwner": "other-owner@baseline.invalid",
+    "reviewer": "reviewer@baseline.invalid",
+    "otherReviewer": "other-reviewer@baseline.invalid",
+    "outsider": "outsider@baseline.invalid"
+  },
+  "catalog": [
+    {
+      "alias": "allowed",
+      "name": "Alpha Office",
+      "active": true,
+      "allowedActors": ["owner", "reviewer"]
+    },
+    {
+      "alias": "allowedOther",
+      "name": "Beta Office",
+      "active": true,
+      "allowedActors": ["owner", "reviewer"]
+    },
+    {
+      "alias": "inactive",
+      "name": "Alpha Inactive",
+      "active": false,
+      "allowedActors": ["owner", "reviewer"]
+    },
+    {
+      "alias": "restricted",
+      "name": "Alpha Restricted",
+      "active": true,
+      "allowedActors": ["otherOwner", "otherReviewer"]
+    }
+  ],
+  "items": [],
+  "roles": {
+    "owner": "account-owner",
+    "otherOwner": "same-as-owner",
+    "reviewer": "no-business-grants",
+    "otherReviewer": "same-as-reviewer",
+    "outsider": "no-business-grants"
+  },
+  "records": [
+    {
+      "alias": "draft",
+      "owner": "owner",
+      "record": {
+        "name": "Alpha Customer",
+        "reference": "allowed",
+        "active": true,
+        "contacts": [
+          {
+            "name": "Ada",
+            "email": "ada@baseline.invalid"
+          },
+          {
+            "name": "Lin",
+            "email": "lin@baseline.invalid"
+          }
+        ]
+      }
+    },
+    {
+      "alias": "foreignDocument",
+      "owner": "otherOwner",
+      "record": {
+        "name": "Alpha Customer",
+        "reference": "restricted",
+        "active": true,
+        "contacts": [
+          {
+            "name": "Ada",
+            "email": "ada@baseline.invalid"
+          },
+          {
+            "name": "Lin",
+            "email": "lin@baseline.invalid"
+          }
+        ]
+      },
+      "childAlias": "foreignChild"
+    }
+  ],
+  "validRecord": {
+    "name": "Alpha Customer",
+    "reference": "allowed",
+    "active": true,
+    "contacts": [
+      {
+        "name": "Ada",
+        "email": "ada@baseline.invalid"
+      },
+      {
+        "name": "Lin",
+        "email": "lin@baseline.invalid"
+      }
+    ]
+  }
+}

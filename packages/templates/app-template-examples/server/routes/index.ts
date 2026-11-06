@@ -1,3 +1,7 @@
+import { onboardingRoutes } from './onboarding.js';
+import { procurementRoutes } from './procurement.js';
+import { skillProjectsRoutes } from './skill-projects.js';
+import { customerContactsRoutes } from './customer-contacts.js';
 import type { Application } from '@nocobase/app-server/application';
 import {
   apiErrorResponse,
@@ -20,6 +24,7 @@ import { structuredExtractionRoutes } from './structured-extraction.js';
 import { EXAMPLES_APP_TAGS as tags } from './domain.js';
 import { ExampleGreeting } from './schemas.js';
 import { aiTranslationRoutes } from './ai-translation.js';
+import { knowledgeDirectoryRoutes } from './knowledge-directory.js';
 
 import { appExampleServiceToken } from '../providers/index.js';
 
@@ -84,6 +89,10 @@ export const rootRoutes: AppRootRouteContribution<Application> =
 
 const routes: readonly AppRouteContribution<Application>[] = [
   apiRoutes,
+  procurementRoutes,
+  onboardingRoutes,
+  skillProjectsRoutes,
+  customerContactsRoutes,
   rootRoutes,
   articlesRoutes,
   workflowRoutes,
@@ -92,6 +101,7 @@ const routes: readonly AppRouteContribution<Application>[] = [
   numericExamplesRoutes,
   aiTranslationRoutes,
   structuredExtractionRoutes,
+  knowledgeDirectoryRoutes,
 ];
 
 export default routes;

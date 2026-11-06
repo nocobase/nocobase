@@ -80,8 +80,9 @@ describe('the identity an application resolves for a request', () => {
 
 describe('what an application configures about its own authorization', () => {
   const member = {
-    owner: PERMISSION_SETS_PROTECTION_OWNER,
-    allow: ['update'],
+    owner: '@nocobase/app-plugin-authorization',
+    allow: ['update', 'assign', 'revoke'],
+    assignableTo: ['user'],
   };
   const root = (key: string) => ({
     [key]: {
@@ -105,9 +106,12 @@ describe('what an application configures about its own authorization', () => {
       { permissionSets: { rootSet: 'owner', defaultSet: 'everyone' } },
       {
         ...root('owner'),
-        everyone: member,
+        everyone: {
+          owner: PERMISSION_SETS_PROTECTION_OWNER,
+          allow: ['update'],
+        },
         root: undefined,
-        member: undefined,
+        member,
       },
     ],
   ] as const)(

@@ -1,22 +1,35 @@
 import { useState } from 'react';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
-import { PermissionEditor } from '../../registry/authorization/permission-editor.js';
+import {
+  PermissionEditor,
+  type PermissionEditorSection,
+} from '../../registry/authorization/permission-editor.js';
+
 const sections = [
   {
     id: 'business',
     title: 'Business actions',
+    description: 'Choose what staff can do.',
     groups: [
       {
         id: 'orders',
         title: 'Orders',
+        hint: 'Order processing.',
         rows: [
-          { id: 'read-orders', label: 'Read orders', enabled: true },
           {
-            id: 'edit-orders',
-            label: 'Edit orders',
-            hint: 'Change the owner',
+            id: 'approve',
+            label: 'Approve order',
+            actionKey: 'approve',
+            hint: 'Confirm the order and reserve stock.',
+            enabled: true,
+          },
+          {
+            id: 'withdraw',
+            label: 'Withdraw order',
+            actionKey: 'withdraw',
+            hint: 'Withdraw an unprocessed order.',
             enabled: false,
           },
         ],
@@ -24,128 +37,176 @@ const sections = [
     ],
   },
   {
-    id: 'settings',
-    title: 'System settings',
+    id: 'configuration',
+    title: 'Application configuration',
     groups: [
       {
-        id: 'users',
-        title: 'Users',
-        rows: [{ id: 'manage-users', label: 'Manage users', enabled: false }],
+        id: 'numbering',
+        title: 'Order numbering',
+        rows: [
+          { id: 'configure', label: 'Configure numbering', enabled: false },
+        ],
       },
     ],
   },
 ];
-describe('permission workspace', () => {
-  it('filters across categories without changing hidden permissions and reports only explicit edits', async () => {
-    const user = userEvent.setup();
-    const enabled = vi.fn();
+
+describe('application-owned permission workspace', () => {
+  it('renders caller order and custom actions without a built-in catalog or CRUD controls', () => {
     render(
       <PermissionEditor
         sections={sections}
-        onEnabledChange={enabled}
+        onEnabledChange={vi.fn()}
         onLevelChange={vi.fn()}
       />,
     );
+    const checkboxes = screen.getAllByRole('checkbox');
+    expect(checkboxes.map((item) => item.textContent)).toHaveLength(2);
+    expect(checkboxes[0]).toHaveAccessibleName('Approve order');
+    expect(checkboxes[1]).toHaveAccessibleName('Withdraw order');
     expect(
-      screen.queryByRole('checkbox', { name: 'Manage users' }),
+      screen.queryByRole('checkbox', { name: 'Configure numbering' }),
     ).not.toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: /System settings/ }));
     expect(
-      screen.getByRole('checkbox', { name: 'Manage users' }),
-    ).not.toBeChecked();
-    await user.type(screen.getByRole('textbox'), 'owner');
+      screen.getByRole('tablist', { name: 'Permission categories' }),
+    ).toBeVisible();
     expect(
-      screen.getByRole('checkbox', { name: /Edit orders/ }),
-    ).not.toBeChecked();
-    expect(enabled).not.toHaveBeenCalled();
-    await user.click(screen.getByRole('checkbox', { name: /Edit orders/ }));
-    expect(enabled).toHaveBeenCalledExactlyOnceWith('edit-orders', true);
-    await user.click(screen.getByRole('button', { name: 'Clear filters' }));
-    expect(
-      screen.getByRole('checkbox', { name: 'Manage users' }),
-    ).not.toBeChecked();
+      screen.getByText('Confirm the order and reserve stock.'),
+    ).toBeVisible();
+    expect(screen.getByText('Order processing.')).toBeVisible();
+    expect(screen.queryByRole('switch')).not.toBeInTheDocument();
+    expect(screen.queryByText('System and tools')).not.toBeInTheDocument();
+    expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
   });
-  it('keeps counts stable, distinguishes no results, and permits searching a readonly workspace', async () => {
-    const user = userEvent.setup();
-    const enabled = vi.fn();
+
+  it('renders a meaningful empty state without adding permissions', () => {
     render(
       <PermissionEditor
-        sections={sections}
-        readOnly
-        onEnabledChange={enabled}
+        sections={[]}
+        onEnabledChange={vi.fn()}
         onLevelChange={vi.fn()}
       />,
     );
-    await user.type(screen.getByRole('textbox'), 'not found');
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'No permissions to configure',
+    );
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Ask the application developer',
+    );
+    expect(screen.queryAllByRole('checkbox')).toHaveLength(0);
+    expect(screen.queryByRole('heading', { level: 2 })).not.toBeInTheDocument();
+  });
+
+  it('filters globally by descriptions and parent names without changing the draft', async () => {
+    const user = userEvent.setup();
+    const change = vi.fn();
+    render(
+      <PermissionEditor
+        sections={sections}
+        onEnabledChange={change}
+        onLevelChange={vi.fn()}
+      />,
+    );
+    await user.type(screen.getByRole('textbox'), 'reserve stock');
+    expect(
+      screen.getByRole('checkbox', { name: 'Approve order' }),
+    ).toBeChecked();
+    expect(
+      screen.queryByRole('checkbox', { name: 'Withdraw order' }),
+    ).not.toBeInTheDocument();
+    expect(change).not.toHaveBeenCalled();
+    await user.clear(screen.getByRole('textbox'));
+    await user.type(screen.getByRole('textbox'), 'Order processing');
+    expect(
+      screen.getByRole('checkbox', { name: 'Withdraw order' }),
+    ).toBeVisible();
+    await user.clear(screen.getByRole('textbox'));
+    await user.type(screen.getByRole('textbox'), 'missing');
     expect(screen.getByRole('status')).toHaveTextContent(
       'No matching permissions',
     );
+    await user.click(screen.getByRole('button', { name: 'Clear filters' }));
+    expect(screen.getByRole('textbox')).toHaveFocus();
     expect(
-      screen.getByRole('button', { name: /Business actions/ }),
-    ).toHaveTextContent('1/2');
-    await user.clear(screen.getByRole('textbox'));
-    expect(
-      screen.getByRole('checkbox', { name: 'Read orders' }),
-    ).toHaveAttribute('aria-disabled', 'true');
-    await user.click(screen.getByRole('checkbox', { name: 'Read orders' }));
-    expect(enabled).not.toHaveBeenCalled();
+      screen.getByRole('checkbox', { name: 'Withdraw order' }),
+    ).not.toBeChecked();
+    expect(change).not.toHaveBeenCalled();
   });
-});
 
-describe('compact resource actions', () => {
-  it('batches only visible editable changes and shows a mixed group checkbox', async () => {
+  it('keeps the original category navigation and restores the selected category after global search', async () => {
     const user = userEvent.setup();
-    const batch = vi.fn();
+    const change = vi.fn();
+    render(
+      <PermissionEditor
+        sections={sections}
+        onEnabledChange={change}
+        onLevelChange={vi.fn()}
+      />,
+    );
+    const category = screen.getByRole('tab', {
+      name: 'Application configuration',
+    });
+    await user.click(category);
+    expect(category).toHaveAttribute('aria-selected', 'true');
+    expect(
+      screen.getByRole('checkbox', { name: 'Configure numbering' }),
+    ).toBeVisible();
+    expect(
+      screen.queryByRole('checkbox', { name: 'Approve order' }),
+    ).not.toBeInTheDocument();
+    await user.type(screen.getByRole('textbox'), 'reserve stock');
+    expect(
+      screen.getByRole('checkbox', { name: 'Approve order' }),
+    ).toBeVisible();
+    await user.click(screen.getByRole('button', { name: 'Clear filters' }));
+    expect(
+      screen.getByRole('checkbox', { name: 'Configure numbering' }),
+    ).toBeVisible();
+    expect(category).toHaveAttribute('aria-selected', 'true');
+    await user.type(screen.getByRole('textbox'), 'missing');
+    await user.click(screen.getByRole('tab', { name: 'Business actions' }));
+    expect(screen.getByRole('textbox')).toHaveValue('');
+    expect(
+      screen.getByRole('checkbox', { name: 'Approve order' }),
+    ).toBeVisible();
+    expect(change).not.toHaveBeenCalled();
+  });
+
+  it('supports normal typing, middle edits and Chinese composition', async () => {
+    const user = userEvent.setup();
     render(
       <PermissionEditor
         sections={[
           {
-            ...sections[0]!,
+            id: 'cn',
+            title: '审批',
             groups: [
               {
-                id: 'orders',
-                title: 'Orders',
-                rows: [
-                  ...sections[0]!.groups[0]!.rows,
-                  {
-                    id: 'locked',
-                    label: 'Protected',
-                    enabled: false,
-                    toggleable: false,
-                  },
-                ],
+                id: 'g',
+                rows: [{ id: 'a', label: '审批借用', enabled: true }],
               },
             ],
           },
         ]}
         onEnabledChange={vi.fn()}
-        onEnabledBatchChange={batch}
         onLevelChange={vi.fn()}
       />,
     );
-    const group = screen.getByRole('checkbox', {
-      name: 'Select visible permissions in Orders',
-    });
-    expect(group).toHaveAttribute('aria-checked', 'mixed');
-    await user.click(group);
-    expect(batch).toHaveBeenLastCalledWith([
-      { id: 'edit-orders', enabled: true },
-    ]);
-    await user.type(screen.getByRole('textbox'), 'owner');
-    await user.click(
-      screen.getByRole('checkbox', {
-        name: 'Select visible permissions in Orders',
-      }),
-    );
-    expect(batch).toHaveBeenLastCalledWith([
-      { id: 'edit-orders', enabled: true },
-    ]);
-    expect(
-      screen.queryByRole('checkbox', { name: 'Protected' }),
-    ).not.toBeInTheDocument();
+    const input = screen.getByRole('textbox');
+    fireEvent.compositionStart(input);
+    fireEvent.change(input, { target: { value: '审批' } });
+    fireEvent.compositionEnd(input, { data: '审批' });
+    expect(input).toHaveValue('审批');
+    expect(screen.getByRole('checkbox', { name: '审批借用' })).toBeVisible();
+    await user.clear(input);
+    await user.type(input, '借用');
+    await user.keyboard('{Home}审批');
+    expect(input).toHaveValue('审批借用');
   });
-  it('restores stable focus when enabled filtering removes the action or group', async () => {
+
+  it('emits only explicit changes and restores focus when an enabled-only result disappears', async () => {
     const user = userEvent.setup();
+    const batch = vi.fn();
     function Draft() {
       const [enabled, setEnabled] = useState(true);
       return (
@@ -155,385 +216,695 @@ describe('compact resource actions', () => {
               id: 's',
               title: 'Section',
               groups: [
-                {
-                  id: 'g',
-                  title: 'Group',
-                  rows: [
-                    { id: 'a', label: 'Action', enabled },
-                    {
-                      id: 'hidden',
-                      label: 'Hidden',
-                      enabled: false,
-                      toggleable: false,
-                    },
-                  ],
-                },
+                { id: 'g', rows: [{ id: 'a', label: 'Approve', enabled }] },
               ],
             },
           ]}
-          onEnabledChange={(_, on) => setEnabled(on)}
-          onEnabledBatchChange={(changes) => setEnabled(changes[0]!.enabled)}
+          onEnabledChange={(_, value) => setEnabled(value)}
+          onEnabledBatchChange={batch}
           onLevelChange={vi.fn()}
         />
       );
     }
-    const view = render(<Draft />);
-    await user.click(screen.getByRole('switch', { name: 'Enabled only' }));
-    await user.click(screen.getByRole('checkbox', { name: 'Action' }));
+    render(<Draft />);
+    await user.click(screen.getByRole('tab', { name: 'Granted' }));
+    await user.click(screen.getByRole('checkbox', { name: 'Approve' }));
     expect(screen.getByRole('textbox')).toHaveFocus();
     expect(screen.getByRole('status')).toHaveTextContent(
       'No matching permissions',
     );
-    view.unmount();
-    render(<Draft />);
-    await user.click(screen.getByRole('switch', { name: 'Enabled only' }));
-    screen
-      .getByRole('checkbox', { name: 'Select visible permissions in Group' })
-      .focus();
-    await user.keyboard('[Space]');
-    expect(screen.getByRole('textbox')).toHaveFocus();
+    expect(batch).not.toHaveBeenCalled();
   });
-  it('keeps scopes attached to actions, readonly scopes disabled and control ids instance-local', async () => {
-    const scoped = [
-      {
-        id: 's',
-        title: 'Section',
-        groups: [
+
+  it('keeps readonly and application-managed checkboxes disabled with visible explanations', async () => {
+    const change = vi.fn();
+    const view = render(
+      <PermissionEditor
+        sections={sections}
+        readOnly
+        onEnabledChange={change}
+        onLevelChange={vi.fn()}
+      />,
+    );
+    const action = screen.getByRole('checkbox', { name: 'Approve order' });
+    expect(action).toHaveAttribute('aria-disabled', 'true');
+    expect(action).toHaveAccessibleDescription(
+      /These permissions are read-only/,
+    );
+    await userEvent.click(action);
+    expect(change).not.toHaveBeenCalled();
+    await userEvent.type(screen.getByRole('textbox'), 'numbering');
+    expect(
+      screen.getByRole('checkbox', { name: 'Configure numbering' }),
+    ).toBeVisible();
+    view.unmount();
+    render(
+      <PermissionEditor
+        sections={[
           {
-            id: 'g',
-            title: 'Orders',
-            rows: [
+            id: 's',
+            title: 'Section',
+            groups: [
               {
-                id: 'edit',
-                label: 'Edit',
-                enabled: true,
-                scopes: [
+                id: 'g',
+                rows: [
                   {
-                    id: 'edit-records',
-                    label: 'Records',
-                    level: 'mine',
-                    levels: [
-                      { value: 'mine', label: 'Mine' },
-                      { value: 'all', label: 'All' },
+                    id: 'fixed',
+                    label: 'Fixed action',
+                    enabled: true,
+                    toggleable: false,
+                  },
+                ],
+              },
+            ],
+          },
+        ]}
+        onEnabledChange={change}
+        onLevelChange={vi.fn()}
+      />,
+    );
+    expect(
+      screen.getByRole('checkbox', { name: 'Fixed action' }),
+    ).toHaveAttribute('aria-disabled', 'true');
+    expect(
+      screen.getByText('This permission is managed by the application.'),
+    ).toBeVisible();
+  });
+
+  it('uses instance-local control ids and does not submit the enclosing form', async () => {
+    const user = userEvent.setup();
+    const submit = vi.fn((event) => event.preventDefault());
+    const change = vi.fn();
+    render(
+      <form onSubmit={submit}>
+        {[1, 2].map((key) => (
+          <PermissionEditor
+            key={key}
+            sections={sections}
+            onEnabledChange={change}
+            onLevelChange={vi.fn()}
+          />
+        ))}
+      </form>,
+    );
+    const actions = screen.getAllByRole('checkbox', { name: 'Withdraw order' });
+    expect(actions[0]!.id).not.toBe(actions[1]!.id);
+    await user.click(actions[0]!);
+    expect(change).toHaveBeenCalledExactlyOnceWith('withdraw', true);
+    actions[1]!.focus();
+    await user.keyboard(' ');
+    expect(change).toHaveBeenCalledTimes(2);
+    expect(change).toHaveBeenLastCalledWith('withdraw', true);
+    screen.getAllByRole('tab', { name: 'Granted' })[0]!.focus();
+    await user.keyboard(' ');
+    expect(change).toHaveBeenCalledTimes(2);
+    await user.type(screen.getAllByRole('textbox')[0]!, 'missing');
+    await user.click(screen.getByRole('button', { name: 'Clear filters' }));
+    await user.click(
+      screen.getAllByRole('tab', { name: 'Application configuration' })[0]!,
+    );
+    screen.getByRole('checkbox', { name: 'Configure numbering' }).focus();
+    await user.keyboard(' ');
+    expect(change).toHaveBeenLastCalledWith('configure', true);
+    expect(submit).not.toHaveBeenCalled();
+  });
+
+  it('uses a page title once for a single access action', () => {
+    render(
+      <PermissionEditor
+        sections={[
+          {
+            id: 'pages',
+            title: 'Pages',
+            groups: [
+              {
+                id: 'p',
+                title: 'Borrowing',
+                accessOnly: true,
+                rows: [{ id: 'page-access', label: 'Access', enabled: true }],
+              },
+            ],
+          },
+        ]}
+        onEnabledChange={vi.fn()}
+        onLevelChange={vi.fn()}
+      />,
+    );
+    expect(screen.getByRole('checkbox', { name: 'Borrowing' })).toBeChecked();
+    expect(screen.queryByText('Access')).not.toBeInTheDocument();
+  });
+});
+
+describe('action-owned data ranges', () => {
+  const scoped = [
+    {
+      id: 's',
+      title: 'Business',
+      groups: [
+        {
+          id: 'g',
+          title: 'Borrowing',
+          rows: [
+            {
+              id: 'approve',
+              label: 'Approve request',
+              enabled: true,
+              scopes: ['Requests', 'Devices'].map((label) => ({
+                id: label.toLowerCase(),
+                label,
+                level: 'own',
+                hint: 'This role adds no records; other roles and rules also apply.',
+                levels: [
+                  { value: 'own', label: 'Own' },
+                  { value: 'all', label: 'All' },
+                ],
+              })),
+            },
+          ],
+        },
+      ],
+    },
+  ];
+
+  it('shows every named range directly and changes only its independently keyed value', async () => {
+    const change = vi.fn();
+    const enabled = vi.fn();
+    const view = render(
+      <PermissionEditor
+        sections={scoped}
+        onEnabledChange={enabled}
+        onLevelChange={change}
+      />,
+    );
+    expect(screen.getByText('Requests')).toBeVisible();
+    expect(screen.getByText('Devices')).toBeVisible();
+    expect(screen.getAllByRole('combobox')).toHaveLength(2);
+    expect(
+      screen.getByText(
+        'This role adds no records; other roles and rules also apply.',
+      ),
+    ).toBeVisible();
+    const row = view.container.querySelector('[data-slot=permission-row]')!;
+    expect(
+      within(row as HTMLElement).getByRole('checkbox'),
+    ).toHaveAccessibleName('Approve request');
+    await userEvent.click(
+      screen.getByRole('combobox', {
+        name: 'How far Approve request · Devices reaches',
+      }),
+    );
+    await userEvent.click(await screen.findByRole('option', { name: 'All' }));
+    expect(change).toHaveBeenCalledExactlyOnceWith('devices', 'all');
+    expect(enabled).not.toHaveBeenCalled();
+  });
+
+  it('disables range controls in readonly mode and hides them only when the action is disabled', () => {
+    const view = render(
+      <PermissionEditor
+        sections={scoped}
+        readOnly
+        onEnabledChange={vi.fn()}
+        onLevelChange={vi.fn()}
+      />,
+    );
+    expect(
+      screen
+        .getAllByRole('combobox')
+        .every((node) => node.hasAttribute('disabled')),
+    ).toBe(true);
+    view.rerender(
+      <PermissionEditor
+        sections={[
+          {
+            ...scoped[0]!,
+            groups: [
+              {
+                ...scoped[0]!.groups[0]!,
+                rows: [{ ...scoped[0]!.groups[0]!.rows[0]!, enabled: false }],
+              },
+            ],
+          },
+        ]}
+        onEnabledChange={vi.fn()}
+        onLevelChange={vi.fn()}
+      />,
+    );
+    expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
+  });
+
+  it('keeps help and parameter configuration separate from authorization toggles', async () => {
+    const enabled = vi.fn();
+    const changed = vi.fn();
+    const view = render(
+      <PermissionEditor
+        sections={[
+          {
+            id: 's',
+            title: 'Business',
+            groups: [
+              {
+                id: 'g',
+                rows: [
+                  {
+                    id: 'view',
+                    label: 'View requests',
+                    enabled: true,
+                    scopes: [
+                      {
+                        id: 'records',
+                        label: 'Requests',
+                        level: '',
+                        hint: 'Default access and sharing still apply.',
+                        levels: [
+                          { value: '', label: 'No additional record access' },
+                          { value: 'all', label: 'All records' },
+                        ],
+                        configuration: (
+                          <button type='button'>Configure filter</button>
+                        ),
+                      },
                     ],
                   },
                 ],
               },
             ],
           },
-        ],
-      },
-    ];
-    const change = vi.fn();
-    const view = render(
-      <PermissionEditor
-        sections={scoped}
-        onEnabledChange={vi.fn()}
-        onLevelChange={change}
+        ]}
+        onEnabledChange={enabled}
+        onLevelChange={changed}
       />,
     );
+    const help = screen.getByRole('button', {
+      name: 'About the data range for View requests · Requests',
+    });
+    await userEvent.click(help);
+    expect(await screen.findByRole('tooltip')).toHaveTextContent(
+      'Default access and sharing still apply.',
+    );
+    await userEvent.keyboard('{Escape}');
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Configure filter' }),
+    );
+    expect(enabled).not.toHaveBeenCalled();
+    expect(changed).not.toHaveBeenCalled();
     expect(
       view.container.querySelectorAll('[data-slot=permission-row]'),
     ).toHaveLength(1);
-    await userEvent.click(
-      screen.getByRole('combobox', { name: 'How far Edit · Records reaches' }),
-    );
-    await userEvent.click(await screen.findByRole('option', { name: 'All' }));
-    expect(change).toHaveBeenCalledWith('edit-records', 'all');
-    view.unmount();
-    render(
-      <>
-        <PermissionEditor
-          sections={scoped}
-          readOnly
-          onEnabledChange={vi.fn()}
-          onLevelChange={vi.fn()}
-        />
-        <PermissionEditor
-          sections={scoped}
-          readOnly
-          onEnabledChange={vi.fn()}
-          onLevelChange={vi.fn()}
-        />
-      </>,
-    );
-    const boxes = screen.getAllByRole('checkbox', { name: 'Edit' });
-    expect(boxes[0]!.id).not.toBe(boxes[1]!.id);
-    expect(screen.getAllByRole('combobox')[0]).toBeDisabled();
-    expect(
-      screen.queryByRole('checkbox', { name: /Select visible/ }),
-    ).not.toBeInTheDocument();
   });
-  it('does not submit an enclosing role form while searching or switching categories', async () => {
-    const submit = vi.fn((event) => event.preventDefault());
+});
+
+const treeSection: PermissionEditorSection = {
+  id: 'pages',
+  title: 'Page access',
+  groups: [
+    {
+      id: 'page-rows',
+      rows: [
+        { id: 'catalog', label: 'Catalog', enabled: true },
+        { id: 'books', label: 'Books', enabled: true },
+        { id: 'review', label: 'Review loans', enabled: false },
+        { id: 'outside', label: 'Independent page', enabled: false },
+      ],
+    },
+  ],
+  navigation: [
+    {
+      id: 'library-group',
+      label: 'Library',
+      children: [
+        {
+          id: 'catalog-node',
+          label: 'Catalog',
+          rowId: 'catalog',
+          children: [
+            {
+              id: 'books-node',
+              label: 'Books',
+              rowId: 'books',
+              path: '/library/books',
+            },
+            {
+              id: 'review-group',
+              label: 'Approvals',
+              children: [
+                { id: 'review-node', label: 'Review loans', rowId: 'review' },
+              ],
+            },
+          ],
+        },
+      ],
+    },
+    { id: 'empty', label: 'Unused group', children: [] },
+    { id: 'missing', label: 'Unknown page', rowId: 'unknown' },
+    { id: 'alias', label: 'Duplicate books', rowId: 'books' },
+  ],
+};
+
+describe('application-owned page navigation', () => {
+  it('renders nested groups and independent parent/page grants without duplicates or invented checkboxes', () => {
+    const change = vi.fn();
+    render(
+      <PermissionEditor
+        sections={[treeSection]}
+        onEnabledChange={change}
+        onLevelChange={vi.fn()}
+      />,
+    );
+    expect(
+      screen.getByRole('button', { name: 'Collapse Library' }),
+    ).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByRole('checkbox', { name: 'Catalog' })).toBeChecked();
+    expect(screen.getByRole('checkbox', { name: 'Books' })).toBeChecked();
+    expect(
+      screen.getByRole('checkbox', { name: 'Review loans' }),
+    ).not.toBeChecked();
+    expect(
+      screen.getByRole('checkbox', { name: 'Independent page' }),
+    ).toBeVisible();
+    expect(
+      screen.queryByRole('checkbox', { name: 'Library' }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText('Unused group')).not.toBeInTheDocument();
+    expect(screen.queryByText('Unknown page')).not.toBeInTheDocument();
+    expect(screen.queryByText('Duplicate books')).not.toBeInTheDocument();
+    expect(screen.getAllByRole('checkbox', { name: 'Books' })).toHaveLength(1);
+    expect(change).not.toHaveBeenCalled();
+  });
+
+  it('separates keyboard disclosure, individual grants and the host form submit', async () => {
+    const user = userEvent.setup();
+    const change = vi.fn();
+    const submit = vi.fn((event: React.FormEvent) => event.preventDefault());
     render(
       <form onSubmit={submit}>
         <PermissionEditor
-          sections={sections}
-          onEnabledChange={vi.fn()}
+          sections={[treeSection]}
+          onEnabledChange={change}
           onLevelChange={vi.fn()}
         />
       </form>,
     );
-    await userEvent.click(
-      screen.getByRole('button', { name: /System settings/ }),
-    );
-    await userEvent.type(screen.getByRole('textbox'), 'no match');
-    await userEvent.click(
-      screen.getByRole('button', { name: 'Clear filters' }),
-    );
+    const collapse = screen.getByRole('button', { name: 'Collapse Catalog' });
+    collapse.focus();
+    await user.keyboard('{Enter}');
+    expect(
+      screen.queryByRole('checkbox', { name: 'Books' }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: 'Catalog' })).toBeChecked();
+    expect(change).not.toHaveBeenCalled();
+    await user.keyboard(' ');
+    expect(screen.getByRole('checkbox', { name: 'Books' })).toBeChecked();
+    await user.click(screen.getByRole('checkbox', { name: 'Catalog' }));
+    expect(change).toHaveBeenCalledExactlyOnceWith('catalog', false);
+    expect(screen.getByRole('checkbox', { name: 'Books' })).toBeChecked();
     expect(submit).not.toHaveBeenCalled();
+  });
+
+  it('searches ancestor names, preserves paths and restores collapse state after Clear', async () => {
+    const user = userEvent.setup();
+    const change = vi.fn();
+    render(
+      <PermissionEditor
+        sections={[treeSection]}
+        onEnabledChange={change}
+        onLevelChange={vi.fn()}
+      />,
+    );
+    await user.click(screen.getByRole('button', { name: 'Collapse Catalog' }));
+    await user.type(screen.getByRole('textbox'), 'Library');
+    expect(screen.getByRole('checkbox', { name: 'Books' })).toBeVisible();
+    expect(
+      screen.getByRole('checkbox', { name: 'Review loans' }),
+    ).toBeVisible();
+    expect(
+      screen.queryByRole('checkbox', { name: 'Independent page' }),
+    ).not.toBeInTheDocument();
+    await user.clear(screen.getByRole('textbox'));
+    await user.type(screen.getByRole('textbox'), 'Review loans');
+    expect(screen.getByText('Library')).toBeVisible();
+    expect(screen.getByText('Approvals')).toBeVisible();
+    expect(
+      screen.queryByRole('checkbox', { name: 'Books' }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('checkbox', { name: 'Catalog' }),
+    ).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Clear filters' }));
+    expect(screen.getByRole('textbox')).toHaveFocus();
+    expect(
+      screen.queryByRole('checkbox', { name: 'Review loans' }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'Expand Catalog' }),
+    ).toHaveAttribute('aria-expanded', 'false');
+    expect(change).not.toHaveBeenCalled();
+  });
+
+  it('retains enabled-only ancestor context and moves focus before a disabled row disappears', async () => {
+    const user = userEvent.setup();
+    function ControlledTree() {
+      const [enabled, setEnabled] = useState(true);
+      return (
+        <PermissionEditor
+          sections={[
+            {
+              ...treeSection,
+              groups: [
+                {
+                  id: 'books',
+                  rows: [{ id: 'books', label: 'Books', enabled }],
+                },
+              ],
+            },
+          ]}
+          onEnabledChange={(_, value) => setEnabled(value)}
+          onLevelChange={vi.fn()}
+        />
+      );
+    }
+    render(<ControlledTree />);
+    await user.click(screen.getByRole('tab', { name: 'Granted' }));
+    expect(screen.getByText('Library')).toBeVisible();
+    expect(screen.getByText('Catalog')).toBeVisible();
+    expect(screen.queryByText('Approvals')).not.toBeInTheDocument();
+    await user.click(screen.getByRole('checkbox', { name: 'Books' }));
+    expect(screen.getByRole('textbox')).toHaveFocus();
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'No matching permissions',
+    );
+  });
+
+  it('keeps a single-level menu flat and allows read-only disclosure without editing grants', async () => {
+    const user = userEvent.setup();
+    const change = vi.fn();
+    const { rerender } = render(
+      <PermissionEditor
+        sections={[
+          {
+            ...treeSection,
+            navigation: [{ id: 'books', label: 'Books', rowId: 'books' }],
+          },
+        ]}
+        onEnabledChange={change}
+        onLevelChange={vi.fn()}
+      />,
+    );
+    expect(screen.getAllByRole('list')).toHaveLength(1);
+    expect(screen.getByRole('button', { name: 'Collapse all' })).toBeDisabled();
+    rerender(
+      <PermissionEditor
+        sections={[treeSection]}
+        readOnly
+        onEnabledChange={change}
+        onLevelChange={vi.fn()}
+      />,
+    );
+    expect(screen.getByRole('checkbox', { name: 'Books' })).toHaveAttribute(
+      'aria-disabled',
+      'true',
+    );
+    await user.click(screen.getByRole('checkbox', { name: 'Books' }));
+    expect(change).not.toHaveBeenCalled();
+    expect(
+      screen.getByRole('checkbox', { name: 'Books' }),
+    ).toHaveAccessibleDescription('These permissions are read-only.');
+    await user.click(screen.getByRole('button', { name: 'Collapse Library' }));
+    expect(
+      screen.getByRole('button', { name: 'Expand Library' }),
+    ).toBeEnabled();
+    expect(change).not.toHaveBeenCalled();
   });
 });
 
-it('shows a single page access checkbox without a duplicate access action or resource counter', async () => {
-  const onEnabledChange = vi.fn();
-  const onEnabledBatchChange = vi.fn();
-  render(
-    <PermissionEditor
-      sections={[
-        {
-          id: 'pages',
-          title: 'Page access',
-          groups: [
-            {
-              id: 'expenses',
-              title: 'Expense registration',
-              accessOnly: true,
-              rows: [
-                { id: 'page-expenses-access', label: 'Access', enabled: true },
-              ],
-            },
-          ],
-        },
-      ]}
-      onEnabledChange={onEnabledChange}
-      onEnabledBatchChange={onEnabledBatchChange}
-      onLevelChange={vi.fn()}
-    />,
-  );
-  expect(screen.getAllByRole('checkbox')).toHaveLength(1);
-  expect(screen.queryByText('Access')).not.toBeInTheDocument();
-  expect(screen.queryByText('1 of 1 enabled')).not.toBeInTheDocument();
-  await userEvent.click(
-    screen.getByRole('checkbox', { name: 'Expense registration' }),
-  );
-  expect(onEnabledChange).toHaveBeenCalledExactlyOnceWith(
-    'page-expenses-access',
-    false,
-  );
-  expect(onEnabledBatchChange).not.toHaveBeenCalled();
-});
+describe('compact permission controls', () => {
+  const leaves: PermissionEditorSection = {
+    id: 'pages',
+    title: 'Pages',
+    groups: [
+      {
+        id: 'borrowing',
+        title: 'Borrowing',
+        accessOnly: true,
+        rows: [{ id: 'borrow', label: 'Access', enabled: true }],
+      },
+      {
+        id: 'catalog',
+        title: 'Catalog',
+        accessOnly: true,
+        rows: [{ id: 'browse', label: 'Access', enabled: false }],
+      },
+    ],
+  };
 
-it('keeps multiple inline scopes independently named and editable', async () => {
-  const change = vi.fn();
-  render(
-    <PermissionEditor
-      sections={[
-        {
-          id: 's',
-          title: 'Business',
-          groups: [
-            {
-              id: 'g',
-              title: 'Expenses',
-              rows: [
-                {
-                  id: 'view',
-                  label: 'View',
-                  enabled: true,
-                  scopes: ['Records', 'Attachments'].map((label) => ({
-                    id: label.toLowerCase(),
-                    label,
-                    level: 'own',
-                    levels: [
-                      { value: 'own', label: 'Own' },
-                      { value: 'all', label: 'All' },
-                    ],
-                  })),
-                },
-              ],
-            },
-          ],
-        },
-      ]}
-      onEnabledChange={vi.fn()}
-      onLevelChange={change}
-    />,
-  );
-  expect(screen.getByText('Records')).toBeVisible();
-  expect(screen.getByText('Attachments')).toBeVisible();
-  await userEvent.click(
-    screen.getByRole('combobox', {
-      name: 'How far View · Attachments reaches',
-    }),
-  );
-  await userEvent.click(await screen.findByRole('option', { name: 'All' }));
-  expect(change).toHaveBeenCalledExactlyOnceWith('attachments', 'all');
-});
+  it('keeps an all-leaf section visible and excludes its rows from bulk disclosure', async () => {
+    const user = userEvent.setup();
+    const change = vi.fn();
+    render(
+      <PermissionEditor
+        sections={[leaves]}
+        onEnabledChange={change}
+        onLevelChange={vi.fn()}
+      />,
+    );
+    const collapse = screen.getByRole('button', { name: 'Collapse all' });
+    expect(collapse).toBeDisabled();
+    await user.click(collapse);
+    expect(screen.getByRole('checkbox', { name: 'Borrowing' })).toBeVisible();
+    expect(screen.getByRole('checkbox', { name: 'Borrowing' })).toBeChecked();
+    expect(screen.getByRole('checkbox', { name: 'Catalog' })).not.toBeChecked();
+    expect(
+      screen.queryByRole('button', { name: 'Expand all' }),
+    ).not.toBeInTheDocument();
+    expect(change).not.toHaveBeenCalled();
+  });
 
-it('keeps the category heading consistent for a single resource and labels bulk selection explicitly', async () => {
-  const batch = vi.fn();
-  render(
-    <PermissionEditor
-      sections={[
-        {
-          id: 'users',
-          title: 'Users',
-          groups: [
-            {
-              id: 'users',
-              title: 'Users',
-              rows: [
-                {
-                  id: 'read',
-                  label: 'View users',
-                  actionKey: 'read',
-                  enabled: true,
-                },
-                {
-                  id: 'edit',
-                  label: 'Edit users',
-                  actionKey: 'update',
-                  enabled: false,
-                },
-              ],
-            },
-          ],
-        },
-      ]}
-      onEnabledChange={vi.fn()}
-      onEnabledBatchChange={batch}
-      onLevelChange={vi.fn()}
-    />,
-  );
-  expect(
-    screen.getByRole('heading', { level: 2, name: 'Users' }),
-  ).toBeInTheDocument();
-  expect(screen.getAllByText('1/2')).toHaveLength(1);
-  expect(
-    screen.getByRole('checkbox', {
-      name: 'Select visible permissions in Users',
-    }),
-  ).toHaveAttribute('aria-checked', 'mixed');
-  await userEvent.click(screen.getByText('All', { selector: 'span' }));
-  expect(batch).toHaveBeenCalledExactlyOnceWith([
-    { id: 'edit', enabled: true },
-  ]);
-});
+  it('collapses only titled groups in a mixed section while leaves stay reachable and unchanged', async () => {
+    const user = userEvent.setup();
+    const change = vi.fn();
+    render(
+      <PermissionEditor
+        sections={[
+          { ...leaves, groups: [...leaves.groups, ...sections[0]!.groups] },
+        ]}
+        onEnabledChange={change}
+        onLevelChange={vi.fn()}
+      />,
+    );
+    for (const action of ['Collapse all', 'Expand all']) {
+      await user.click(screen.getByRole('button', { name: action }));
+      for (const name of ['Borrowing', 'Catalog']) {
+        const checkbox = screen.getByRole('checkbox', { name });
+        expect(checkbox).toBeVisible();
+        checkbox.focus();
+        expect(checkbox).toHaveFocus();
+      }
+      expect(screen.getByRole('checkbox', { name: 'Borrowing' })).toBeChecked();
+      expect(
+        screen.getByRole('checkbox', { name: 'Catalog' }),
+      ).not.toBeChecked();
+      if (action === 'Collapse all') {
+        expect(
+          screen.getByRole('button', { name: 'Expand Orders' }),
+        ).toBeVisible();
+        expect(
+          screen.queryByRole('checkbox', { name: 'Approve order' }),
+        ).not.toBeInTheDocument();
+      } else {
+        expect(
+          screen.getByRole('checkbox', { name: 'Approve order' }),
+        ).toBeChecked();
+        expect(
+          screen.getByRole('checkbox', { name: 'Withdraw order' }),
+        ).not.toBeChecked();
+      }
+    }
+    expect(change).not.toHaveBeenCalled();
+  });
 
-it('aligns semantic actions across resources without dropping special or filtered actions', async () => {
-  const groups = [
-    {
-      id: 'one',
-      title: 'One',
-      rows: [
-        {
-          id: 'edit-one',
-          actionKey: 'update',
-          label: 'Edit one',
-          enabled: true,
-        },
-        { id: 'read-one', actionKey: 'read', label: 'View one', enabled: true },
-      ],
-    },
-    {
-      id: 'two',
-      title: 'Two',
-      rows: [
-        { id: 'read-two', actionKey: 'read', label: 'View two', enabled: true },
-        {
-          id: 'special',
-          actionKey: 'export',
-          label: 'Export two',
-          enabled: false,
-        },
-      ],
-    },
-  ];
-  const view = render(
-    <PermissionEditor
-      sections={[{ id: 'business', title: 'Business', groups }]}
-      onEnabledChange={vi.fn()}
-      onLevelChange={vi.fn()}
-    />,
-  );
-  const column = (name: string) =>
-    screen
-      .getByRole('checkbox', { name })
-      .closest('[data-slot=permission-row]')!
-      .parentElement!.style.getPropertyValue('--permission-column');
-  expect(column('View one')).toBe(column('View two'));
-  expect(column('Edit one')).not.toBe(column('Export two'));
-  expect(screen.getAllByRole('checkbox')).toHaveLength(4);
-  await userEvent.type(screen.getByRole('textbox'), 'Export');
-  expect(
-    screen.getByRole('checkbox', { name: 'Export two' }),
-  ).toBeInTheDocument();
-  expect(column('Export two')).toBe('3');
-  expect(
-    view.container.querySelectorAll('[data-slot=permission-row]'),
-  ).toHaveLength(1);
-});
+  it('ignores an existing collapsed key when a group becomes an access-only leaf', async () => {
+    const user = userEvent.setup();
+    const change = vi.fn();
+    const props = { onEnabledChange: change, onLevelChange: vi.fn() };
+    const { rerender } = render(
+      <PermissionEditor
+        {...props}
+        sections={[
+          {
+            ...leaves,
+            groups: leaves.groups.map((group) => ({
+              ...group,
+              accessOnly: false,
+            })),
+          },
+        ]}
+      />,
+    );
+    await user.click(screen.getByRole('button', { name: 'Collapse all' }));
+    expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
+    rerender(<PermissionEditor {...props} sections={[leaves]} />);
+    expect(screen.getByRole('checkbox', { name: 'Borrowing' })).toBeVisible();
+    expect(screen.getByRole('checkbox', { name: 'Borrowing' })).toBeChecked();
+    expect(screen.getByRole('checkbox', { name: 'Catalog' })).not.toBeChecked();
+    expect(screen.getByRole('button', { name: 'Collapse all' })).toBeDisabled();
+    expect(change).not.toHaveBeenCalled();
+  });
 
-it('keeps scope captions consistent in a category with multiple data ranges, including when filtered', async () => {
-  const level = [{ value: 'all', label: 'All records' }];
-  render(
-    <PermissionEditor
-      sections={[
-        {
-          id: 'business',
-          title: 'Business',
-          groups: [
-            {
-              id: 'quotes',
-              title: 'Quotes',
-              rows: [
-                {
-                  id: 'view',
-                  label: 'View quotes',
-                  enabled: true,
-                  scopes: [
-                    {
-                      id: 'view-records',
-                      label: 'Visible quotes',
-                      level: 'all',
-                      levels: level,
-                    },
-                  ],
-                },
-                {
-                  id: 'submit',
-                  label: 'Submit quote',
-                  enabled: true,
-                  scopes: [
-                    {
-                      id: 'submit-projects',
-                      label: 'Linked projects',
-                      level: 'all',
-                      levels: level,
-                    },
-                    {
-                      id: 'submit-quotes',
-                      label: 'Allowed quotes',
-                      level: 'all',
-                      levels: level,
-                    },
-                  ],
-                },
-              ],
-            },
-          ],
-        },
-      ]}
-      onEnabledChange={vi.fn()}
-      onLevelChange={vi.fn()}
-    />,
-  );
-  expect(screen.getByText('Visible quotes')).toBeVisible();
-  expect(screen.getByText('Linked projects')).toBeVisible();
-  expect(screen.getByText('Allowed quotes')).toBeVisible();
-  await userEvent.type(screen.getByRole('textbox'), 'View quotes');
-  expect(screen.queryByText('Linked projects')).not.toBeInTheDocument();
-  expect(screen.getByText('Visible quotes')).toBeVisible();
+  it('filters ungranted rows globally, resets without editing, and searches actual routes', async () => {
+    const user = userEvent.setup();
+    const change = vi.fn();
+    render(
+      <PermissionEditor
+        sections={[treeSection, ...sections]}
+        onEnabledChange={change}
+        onLevelChange={vi.fn()}
+      />,
+    );
+    await user.click(screen.getByRole('tab', { name: 'Ungranted' }));
+    expect(
+      screen.getByRole('checkbox', { name: 'Review loans' }),
+    ).not.toBeChecked();
+    expect(
+      screen.getByRole('checkbox', { name: 'Configure numbering' }),
+    ).not.toBeChecked();
+    expect(
+      screen.queryByRole('checkbox', { name: 'Books' }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByText('2 of 4 enabled')).toBeVisible();
+    await user.click(screen.getByRole('button', { name: 'Clear filters' }));
+    await user.type(screen.getByRole('textbox'), '/library/books');
+    expect(screen.getByRole('checkbox', { name: 'Books' })).toBeChecked();
+    expect(screen.getByText('/library/books')).toBeVisible();
+    expect(
+      screen.queryByRole('checkbox', { name: 'Review loans' }),
+    ).not.toBeInTheDocument();
+    expect(change).not.toHaveBeenCalled();
+  });
+  it('collapses resources without mutating grants and restores disclosure after search', async () => {
+    const user = userEvent.setup();
+    const change = vi.fn();
+    render(
+      <PermissionEditor
+        sections={sections}
+        onEnabledChange={change}
+        onLevelChange={vi.fn()}
+      />,
+    );
+    await user.click(screen.getByRole('button', { name: 'Collapse all' }));
+    expect(
+      screen.queryByRole('checkbox', { name: 'Approve order' }),
+    ).not.toBeInTheDocument();
+    await user.type(screen.getByRole('textbox'), 'reserve');
+    expect(
+      screen.getByRole('checkbox', { name: 'Approve order' }),
+    ).toBeChecked();
+    await user.click(screen.getByRole('button', { name: 'Clear filters' }));
+    expect(
+      screen.queryByRole('checkbox', { name: 'Approve order' }),
+    ).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Expand all' }));
+    expect(
+      screen.getByRole('checkbox', { name: 'Approve order' }),
+    ).toBeChecked();
+    expect(change).not.toHaveBeenCalled();
+  });
 });

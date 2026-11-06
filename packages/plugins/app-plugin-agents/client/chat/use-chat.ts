@@ -8,7 +8,12 @@
  * namespace, whichever `QueryClientProvider` and namespace are above it, so an application's own chat UI needs only
  * `ChatProvider`.
  */
-import { ApiClientError, useApiClient, useToaster } from '@nocobase/app-client';
+import {
+  ApiClientError,
+  useRealtimeReadiness,
+  useApiClient,
+  useToaster,
+} from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import {
   CancelledError,
@@ -84,6 +89,7 @@ export function isChatPayload(
   const kind = (payload as { kind?: unknown }).kind;
   return (
     kind === 'conversation.messages' ||
+    kind === 'conversation.historyReplaced' ||
     kind === 'conversation.changed' ||
     kind === 'conversation.messageUpdated'
   );
@@ -103,10 +109,6 @@ export function useChatAgents(enabled = true): UseQueryResult<ChatAgent[]> {
     agentsQueryClient(),
   );
   useQuotaExpiry(query.data ?? []);
-  const { refetch } = query;
-  useEffect(() => {
-    if (enabled) void refetch({ cancelRefetch: false });
-  }, [enabled, refetch]);
   return query;
 }
 
@@ -148,26 +150,31 @@ export function useChatModels(enabled = true): UseQueryResult<ModelService[]> {
 /** One conversation; polled while its run is open. */
 export function useConversation(
   conversationId: string | null,
+  options: { passive?: boolean } = {},
 ): UseQueryResult<ConversationDetail> {
-  const api = useChatApi();
   const controller = useChatController();
+  const ready = useRealtimeReadiness([CONVERSATIONS_TOPIC]);
   return useQuery(
     {
       queryKey: chatKeys.conversation(conversationId ?? ''),
       queryFn: async () => {
         const current = controller.detailRequest(conversationId ?? '');
         if (!current()) throw new CancelledError({ silent: true });
-        const detail = await api.conversation(conversationId ?? '');
+        const detail = await controller.readDetail(conversationId ?? '');
         if (!current()) throw new CancelledError({ silent: true });
         controller.observeDetail(detail);
         return detail;
       },
-      enabled: conversationId !== null,
+      enabled: ready && conversationId !== null,
+      ...(options.passive
+        ? { refetchOnMount: false, refetchOnWindowFocus: false }
+        : {}),
       placeholderData: noPlaceholder,
       retry: notRetriedOnClientErrors,
       refetchInterval: (query) =>
-        query.state.data?.run ||
-        query.state.data?.execution?.status === 'running'
+        !options.passive &&
+        (query.state.data?.run ||
+          query.state.data?.execution?.status === 'running')
           ? CHAT_POLL_MS
           : false,
     },
@@ -184,11 +191,14 @@ export type ConversationListPages = InfiniteData<
 /** The viewer's conversations matching `query`, last message first; `fetchNextPage()` loads the next page. */
 export function useConversationList(
   query: ConversationListQuery,
+  enabled = true,
 ): UseInfiniteQueryResult<ConversationListPages> {
   const api = useChatApi();
+  const ready = useRealtimeReadiness([CONVERSATIONS_TOPIC]);
   return useInfiniteQuery(
     {
       queryKey: chatKeys.list(query),
+      enabled: ready && enabled,
       queryFn: ({ pageParam }) =>
         api.conversations({
           ...query,
@@ -208,21 +218,97 @@ export function useConversationList(
  */
 export function useChatRealtime(enabled: boolean): void {
   const queryClient = agentsQueryClient();
-  useRealtimeTopic(enabled ? RUNNERS_TOPIC : null, () => {
-    void queryClient.invalidateQueries({ queryKey: chatKeys.agents });
-  });
-  useRealtimeTopic(enabled ? CONVERSATIONS_TOPIC : null, (payload) => {
-    if (payload === undefined) {
-      void queryClient.invalidateQueries({ queryKey: chatKeys.all });
-      return;
-    }
-    if (!isChatPayload(payload)) return;
-    void queryClient.invalidateQueries({ queryKey: chatKeys.lists });
-    if (payload.kind === 'conversation.changed')
-      void queryClient.invalidateQueries({
-        queryKey: chatKeys.conversation(payload.conversationId),
-      });
-  });
+  const controller = useChatController();
+  useRealtimeTopic(
+    enabled ? RUNNERS_TOPIC : null,
+    () => {
+      controller.invalidateQuery(chatKeys.agents);
+    },
+    true,
+  );
+  useRealtimeTopic(
+    enabled ? CONVERSATIONS_TOPIC : null,
+    (payload) => {
+      if (payload === undefined) {
+        for (const query of queryClient
+          .getQueryCache()
+          .findAll({ queryKey: chatKeys.all })) {
+          const key = query.queryKey;
+          if (
+            key[2] === 'conversation' &&
+            key.length === 4 &&
+            controller.isWatching(String(key[3]))
+          )
+            continue;
+          controller.invalidateQuery(key, true);
+        }
+        controller.reconnect();
+        return;
+      }
+      if (!isChatPayload(payload)) return;
+      const receipt =
+        payload.kind === 'conversation.changed' &&
+        typeof payload.seenSeq === 'number' &&
+        Number.isSafeInteger(payload.seenSeq) &&
+        payload.seenSeq >= 0;
+      if (receipt)
+        controller.observeReceipt(payload.conversationId, payload.seenSeq);
+      const watched = controller.isWatching(payload.conversationId);
+      const ownsSnapshot =
+        watched &&
+        queryClient
+          .getQueryCache()
+          .find({
+            queryKey: chatKeys.conversation(payload.conversationId),
+            exact: true,
+          })
+          ?.isActive();
+      if (
+        !receipt &&
+        !(watched && payload.kind === 'conversation.messageUpdated') &&
+        !(ownsSnapshot && payload.kind === 'conversation.changed')
+      )
+        controller.invalidateLists();
+      if (controller.isWatching(payload.conversationId)) {
+        if (payload.kind === 'conversation.messages')
+          void controller
+            .messagesChanged(payload.conversationId, payload.lastSeq)
+            .catch(() => {});
+        else if (payload.kind === 'conversation.messageUpdated')
+          controller.messageUpdated(
+            payload.conversationId,
+            payload.messageId,
+            payload.revision,
+          );
+        else if (payload.kind === 'conversation.historyReplaced')
+          controller.historyReplaced(payload);
+      }
+      if (payload.kind === 'conversation.changed') {
+        const key = chatKeys.conversation(payload.conversationId);
+        const seenSeq = payload.seenSeq;
+        if (
+          typeof seenSeq === 'number' &&
+          Number.isSafeInteger(seenSeq) &&
+          seenSeq >= 0
+        ) {
+          const current = queryClient.getQueryData<ConversationDetail>(key);
+          if ((current?.seenSeq ?? -1) >= seenSeq) return;
+          const refresh = () => controller.invalidateQuery(key, true);
+          if (
+            !controller.deferReadReceipt(
+              payload.conversationId,
+              seenSeq,
+              refresh,
+            )
+          )
+            refresh();
+        } else {
+          controller.invalidateQuery(key);
+        }
+      }
+    },
+    true,
+  );
 }
 
 export interface ConversationMessages extends MessagesState {
@@ -239,7 +325,8 @@ export function useConversationMessages(
   conversationId: string | null,
 ): ConversationMessages {
   const controller = useChatController();
-  useChatStream(conversationId);
+  const ready = useRealtimeReadiness([CONVERSATIONS_TOPIC]);
+  useChatStream(ready ? conversationId : null);
   useSyncExternalStore(
     controller.subscribe,
     controller.snapshot,
@@ -247,39 +334,17 @@ export function useConversationMessages(
   );
   const [draft, draftDispatch] = useReducer(messagesReducer, EMPTY_MESSAGES);
   useEffect(() => {
-    if (conversationId) void controller.loadHistory(conversationId);
-  }, [controller, conversationId]);
+    if (ready && conversationId)
+      void controller.refresh(conversationId, false).catch(() => {});
+  }, [controller, conversationId, ready]);
   const fetchNewer = useCallback(() => {
-    if (conversationId)
-      void controller.loadHistory(conversationId, false, true);
+    if (conversationId) void controller.refresh(conversationId).catch(() => {});
   }, [controller, conversationId]);
-  useRealtimeTopic(conversationId ? CONVERSATIONS_TOPIC : null, (payload) => {
-    if (!conversationId) return;
-    if (payload === undefined) {
-      void controller
-        .refresh(conversationId)
-        .then(() => controller.resume(conversationId))
-        .catch(() => {});
-      return;
-    }
-    if (!isChatPayload(payload) || payload.conversationId !== conversationId)
-      return;
-    if (payload.kind === 'conversation.messageUpdated')
-      controller.messageUpdated(
-        conversationId,
-        payload.messageId,
-        payload.revision,
-      );
-    else if (
-      payload.kind === 'conversation.messages' &&
-      payload.lastSeq > controller.history(conversationId).loadedThrough
-    )
-      fetchNewer();
-  });
   // One durable subscription/poll owner regardless of how many surfaces display this conversation.
   useEffect(
-    () => (conversationId ? controller.watch(conversationId) : undefined),
-    [controller, conversationId],
+    () =>
+      ready && conversationId ? controller.watch(conversationId) : undefined,
+    [controller, conversationId, ready],
   );
   const loaded = conversationId
     ? controller.history(conversationId)
@@ -334,6 +399,34 @@ export function useConversationMessages(
   };
 }
 
+export function useResendMessage(conversationId: string | null): {
+  isPending: boolean;
+  resend(
+    options: import('../../shared/resend.js').OnlineAgentResendOptions & {
+      messageId: string;
+    },
+  ): Promise<import('./controller.js').ResendResult>;
+} {
+  const controller = useChatController();
+  useSyncExternalStore(
+    controller.subscribe,
+    controller.snapshot,
+    controller.snapshot,
+  );
+  return {
+    isPending: Boolean(
+      conversationId && controller.isResending(conversationId),
+    ),
+    resend: (options): Promise<import('./controller.js').ResendResult> => {
+      if (!conversationId)
+        return Promise.resolve({
+          outcome: 'rejected' as const,
+          error: new Error('A conversation is required.'),
+        });
+      return controller.resend(conversationId, options);
+    },
+  };
+}
 export interface SendInput {
   readonly content: string;
   readonly context: PageContext | undefined;
@@ -352,6 +445,8 @@ export function useSendMessage({
   agentId,
   source,
   selectedModel,
+  webSearch,
+  editorRevision = 0,
   dispatch,
   onCreated,
 }: {
@@ -360,11 +455,14 @@ export function useSendMessage({
   readonly source: ConversationSource;
   /** Snapshotted for a new, explicitly native conversation only; Runner and continuation ignore it. */
   readonly selectedModel?: ModelRef;
+  readonly webSearch?: boolean;
+  /** A fresh blank editor must not share pending/unknown creation admission with its predecessor. */
+  readonly editorRevision?: number;
   readonly dispatch: Dispatch<MessagesAction>;
   readonly onCreated: (conversation: ConversationDetail) => void;
 }): (input: SendInput) => boolean {
   const controller = useChatController();
-  const editorKey = `registry:${source}:${conversationId ?? 'new'}`;
+  const editorKey = `registry:${source}:${conversationId ?? 'new'}:${editorRevision}`;
   const editorRef = useRef(editorKey);
   const observersRef = useRef(new Set<() => void>());
   useLayoutEffect(() => {
@@ -430,7 +528,10 @@ export function useSendMessage({
           ...(agentId ? { agentId } : {}),
           source,
           ...(!conversationId && agentId === 'online' && selectedModel
-            ? { selectedModel }
+            ? {
+                selectedModel,
+                ...(webSearch === undefined ? {} : { config: { webSearch } }),
+              }
             : {}),
         },
       });
@@ -459,6 +560,7 @@ export function useSendMessage({
       agentId,
       source,
       selectedModel,
+      webSearch,
       editorKey,
       dispatch,
       onCreated,
@@ -498,6 +600,8 @@ export interface ConversationActions {
     { readonly id: string; readonly archived: boolean }
   >;
   readonly stop: UseMutationResult<ConversationDetail, unknown, string>;
+  /** Deletes the conversation for good; the lists forget it. */
+  readonly remove: UseMutationResult<void, unknown, string>;
   readonly markRead: (id: string) => void;
 }
 
@@ -554,6 +658,7 @@ export function useConversationActions(): ConversationActions {
       onMutate: scope,
       onSuccess: (detail, input, lifetime) => {
         if (!lifetime.active()) return;
+        controller.invalidateQuery(chatKeys.lists);
         if (!input.archived) {
           toaster.show({ type: 'success', title: t('chat.unarchived') });
           return;
@@ -587,18 +692,25 @@ export function useConversationActions(): ConversationActions {
     queryClient,
   );
 
-  const markRead = useCallback(
-    (id: string) => {
-      void controller
-        .command(
-          id,
-          () => api.markRead(id),
-          (detail) => detail,
-        )
-        .catch(() => undefined);
+  const remove = useMutation(
+    {
+      mutationFn: (id: string) => api.deleteConversation(id),
+      onMutate: scope,
+      onSuccess: (_result, id) => {
+        queryClient.removeQueries({ queryKey: chatKeys.conversation(id) });
+        void queryClient.invalidateQueries({ queryKey: chatKeys.lists });
+      },
+      onError: failed,
     },
-    [api, controller],
+    queryClient,
   );
 
-  return { rename, archive, stop, markRead };
+  const markRead = useCallback(
+    (id: string) => {
+      void controller.markRead(id).catch(() => undefined);
+    },
+    [controller],
+  );
+
+  return { rename, archive, stop, remove, markRead };
 }

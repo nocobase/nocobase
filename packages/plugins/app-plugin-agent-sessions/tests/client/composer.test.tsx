@@ -2,13 +2,17 @@ import { answerApi, renderWithApp } from '@nocobase/app-testing/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react';
 import { useState } from 'react';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { Composer } from '../../client/components/composer.js';
 import plugin from '../../client/plugin.js';
 import { sessionMemoryKey } from '../../client/use-session-memory.js';
 
-async function setup(draftKey: string | undefined) {
+async function setup(
+  draftKey: string | undefined,
+  compact = false,
+  busy = false,
+) {
   const client = new QueryClient();
   const onSend = vi.fn();
   function Harness() {
@@ -22,6 +26,8 @@ async function setup(draftKey: string | undefined) {
         <button onClick={() => setShown(!shown)}>Navigate</button>
         {shown && (
           <Composer
+            compact={compact}
+            busy={busy}
             draftKey={key}
             placeholder='Draft'
             commands={[{ name: 'help', description: 'Show help' }]}
@@ -146,4 +152,127 @@ describe('retained composer drafts', () => {
     });
     await waitFor(() => expect(input).toHaveValue(''));
   });
+});
+
+it('offers an optional context inspection action without removing or changing what is sent', async () => {
+  const { SessionSurfaceContext } = await import('../../client/config.js');
+  const client = new QueryClient();
+  const attachment = {
+    id: 'intent',
+    label: 'Create task',
+    text: 'Full creation intent',
+  };
+  client.setQueryData(sessionMemoryKey('attached:preview'), [attachment]);
+  const inspect = vi.fn();
+  const send = vi.fn();
+  await renderWithApp(
+    <QueryClientProvider client={client}>
+      <SessionSurfaceContext.Provider
+        value={{ panel: true, onInspectAttachment: inspect }}
+      >
+        <Composer draftKey='preview' placeholder='Draft' onSend={send} />
+      </SessionSurfaceContext.Provider>
+    </QueryClientProvider>,
+    {
+      namespace: '@nocobase/app-plugin-agent-sessions',
+      plugins: [plugin({ routes: false })],
+    },
+  );
+  fireEvent.click(
+    screen.getByRole('button', { name: 'Create task', exact: true }),
+  );
+  expect(inspect).toHaveBeenCalledWith(attachment);
+  fireEvent.change(screen.getByRole('textbox', { name: 'Draft' }), {
+    target: { value: 'Please' },
+  });
+  fireEvent.keyDown(screen.getByRole('textbox', { name: 'Draft' }), {
+    key: 'Enter',
+  });
+  await waitFor(() =>
+    expect(send).toHaveBeenCalledWith(
+      [
+        { type: 'text', text: 'Please' },
+        { type: 'text', text: 'Full creation intent' },
+      ],
+      false,
+      [],
+    ),
+  );
+});
+
+describe.each([false, true])('composer keyboard (compact: %s)', (compact) => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  function viewport(width: number) {
+    vi.stubGlobal('matchMedia', (query: string) => ({
+      matches: query === '(max-width: 767px)' && width < 768,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }));
+  }
+
+  it.each([375, 767])(
+    'preserves phone Enter and sends multiline content by button at %ipx',
+    async (width) => {
+      viewport(width);
+      const { onSend } = await setup('phone', compact);
+      const input = screen.getByRole('textbox', { name: 'Draft' });
+      fireEvent.change(input, { target: { value: '/he' } });
+      for (const keys of [
+        {},
+        { ctrlKey: true },
+        { metaKey: true },
+        { shiftKey: true },
+      ]) {
+        expect(fireEvent.keyDown(input, { key: 'Enter', ...keys })).toBe(true);
+      }
+      expect(input).toHaveValue('/he');
+      expect(onSend).not.toHaveBeenCalled();
+      fireEvent.change(input, {
+        target: { value: 'First line\n第二行\nThird line' },
+      });
+      fireEvent.click(
+        screen.getByRole('button', { name: 'Send', exact: true }),
+      );
+      expect(onSend).toHaveBeenCalledExactlyOnceWith(
+        [{ type: 'text', text: 'First line\n第二行\nThird line' }],
+        false,
+        [],
+      );
+    },
+  );
+
+  it.each([768, 1280])(
+    'retains desktop completion, queue, interrupt and IME safety at %ipx',
+    async (width) => {
+      viewport(width);
+      const { onSend } = await setup('desktop', compact, true);
+      const input = screen.getByRole('textbox', { name: 'Draft' });
+      fireEvent.change(input, { target: { value: '/he' } });
+      for (const keys of [{ isComposing: true }, { keyCode: 229 }]) {
+        expect(fireEvent.keyDown(input, { key: 'Enter', ...keys })).toBe(true);
+        expect(input).toHaveValue('/he');
+      }
+      fireEvent.keyDown(input, { key: 'Enter' });
+      expect(input).toHaveValue('/help ');
+      expect(onSend).not.toHaveBeenCalled();
+      expect(fireEvent.keyDown(input, { key: 'Enter', shiftKey: true })).toBe(
+        true,
+      );
+      fireEvent.keyDown(input, { key: 'Enter', metaKey: true });
+      expect(onSend).toHaveBeenLastCalledWith(
+        [{ type: 'text', text: '/help' }],
+        true,
+        [],
+      );
+      await waitFor(() => expect(input).toHaveValue(''));
+      fireEvent.change(input, { target: { value: 'Queue next' } });
+      fireEvent.keyDown(input, { key: 'Enter' });
+      expect(onSend).toHaveBeenLastCalledWith(
+        [{ type: 'text', text: 'Queue next' }],
+        false,
+        [],
+      );
+    },
+  );
 });

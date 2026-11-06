@@ -57,7 +57,12 @@ import type { Run } from '../../shared/runs.js';
 import type { VariableScope } from '../../shared/variables.js';
 import type { AgentsVocabulary } from '../../shared/vocabulary.js';
 import type { Agents } from '../composition.js';
-import { AgentPatchSchema, agentViews } from '../core/agents/index.js';
+import {
+  AgentPatchSchema,
+  agentViews,
+  availableModelGroups,
+  availableModelRows,
+} from '../core/agents/index.js';
 import { ModelPricesSchema } from '../core/reports/index.js';
 import {
   runMachineViewerFor,
@@ -87,8 +92,13 @@ import {
   AgentNameSchema,
   AgentSchema,
   AgentViewSchema,
+  AvailableModelSchema,
+  AvailableModelGroupSchema,
+  AvailableModelsQuerySchema,
   BriefPreviewSchema,
+  RunnerAgentCreateInputSchema,
   ModelUsageReportSchema,
+  PageMetaSchema,
   PageTokenMetaSchema,
   PricesSchema,
   RunBriefSchema,
@@ -431,67 +441,101 @@ export function createAdminRoutes(
     },
   );
 
-  router.put(
-    '/discoveryPreferences',
+  router.get(
+    '/availableModels',
+    guard,
+    can('agents.agents', 'read'),
+    describeRoute({
+      tags,
+      summary: 'List tools, or one tool’s models, to create an agent from',
+      operationId: 'agentsListAvailableModels',
+      ...cliRoute({
+        command: 'agent model list',
+        examples: ['agent model list', 'agent model list --tool codex'],
+      }),
+      description:
+        'Without `tool`: one row per coding tool a runner has selected, with its model count and aggregated availability, for the enable drawer’s group headers. With `tool`: that tool’s models, a page at a time, whether or not an agent exists for each yet. The application’s recommended combinations create and enable themselves as soon as a runner reports them; create the rest with `POST /runnerAgents`. Needs `agents.agents` read.',
+      responses: {
+        200: listResponse(
+          z.union([AvailableModelGroupSchema, AvailableModelSchema]),
+          PageMetaSchema,
+        ),
+        ...apiErrorResponses,
+      },
+    }),
+    apiValidator('query', AvailableModelsQuerySchema),
+    async (context) => {
+      const query = context.req.valid('query');
+      const conn = services.tx.read();
+      const [runners, agents] = await Promise.all([
+        services.runners.all(conn),
+        services.agents.list(),
+      ]);
+      const options = {
+        recommendedModels: services.agents.recommended(),
+        suggestion: services.agents.suggestion,
+      };
+      if (query.tool === undefined) {
+        const data = availableModelGroups(runners, agents, options, {
+          q: query.q,
+          status: query.status,
+        });
+        return context.json({
+          data,
+          meta: { total: data.length, page: 1, pageSize: data.length },
+        });
+      }
+      const rows = availableModelRows(runners, agents, options, query.tool, {
+        q: query.q,
+        status: query.status,
+      });
+      const start = (query.page - 1) * query.pageSize;
+      return context.json({
+        data: rows.slice(start, start + query.pageSize),
+        meta: {
+          total: rows.length,
+          page: query.page,
+          pageSize: query.pageSize,
+        },
+      });
+    },
+  );
+
+  router.post(
+    '/runnerAgents',
     scoped,
     can('agents.agents', 'manage'),
     describeRoute({
       tags,
-      summary: 'Ignore or restore discovery groups',
-      operationId: 'agentsSetDiscoveryPreferences',
-      ...cliRoute({ command: 'agent discovery set', bodyFile: 'input' }),
+      summary: 'Create an agent from an available model',
+      operationId: 'agentsCreateRunnerAgent',
+      ...cliRoute({
+        command: 'agent create',
+        bodyFile: 'input',
+        flags: { description: { name: 'good-at', contentFile: true } },
+        examples: [
+          'agent create --tool gemini --model gemini-2.5-pro --good-at "..."',
+        ],
+      }),
       description:
-        'Shared administrator preferences. Only pending groups can be changed. Batches are atomic and checked against each group revision. Reports do not reset preferences.',
+        'Creates and enables an agent for an available model. An existing agent for the same tool and model returns `AGENT_EXISTS` and can be enabled from the agent list. Needs `agents.agents` manage.',
       responses: {
-        200: listResponse(
-          z.object({
-            key: z.string(),
-            ignored: z.boolean(),
-            revision: z.number().int(),
-          }),
+        201: dataResponse(AgentSchema),
+        400: apiErrorResponse(
+          400,
+          'An agent for this tool and model already exists (`AGENT_EXISTS`), no description was given (`GOOD_AT_REQUIRED`), or the effort is not one its tool takes (`EFFORT_UNSUPPORTED`).',
         ),
-        400: apiErrorResponse(400, 'The group contains a non-pending agent.'),
-        409: apiErrorResponse(409, 'The discovery group changed.'),
         ...apiErrorResponses,
       },
     }),
-    apiValidator(
-      'json',
-      z.strictObject({
-        groups: z
-          .array(
-            z.strictObject({
-              key: z
-                .string()
-                .min(1)
-                .max(256)
-                .meta({ description: 'The discoveryKey from the agent list.' }),
-              expectedRevision: z.number().int().min(0).meta({
-                description: 'The discoveryRevision from the agent list.',
-              }),
-            }),
-          )
-          .min(1)
-          .max(256)
-          .refine(
-            (groups) =>
-              new Set(groups.map((group) => group.key)).size === groups.length,
-            'Groups must be unique.',
-          )
-          .meta({
-            description:
-              'Unique pending discovery groups to update atomically.',
-          }),
-        ignored: z.boolean().meta({
-          description:
-            'True to ignore pending discoveries; false to restore them without enabling.',
-        }),
-      }),
-    ),
+    apiValidator('json', RunnerAgentCreateInputSchema),
     async (context) => {
-      const { groups, ignored } = context.req.valid('json');
-      const data = await services.agents.setIgnored(groups, ignored);
-      return context.json({ data, meta: { total: data.length } });
+      const data = await services.agents.createFromAvailable(
+        context.req.valid('json'),
+        caller(context).userId,
+      );
+      context.status(201);
+      return context.json({ data });
     },
   );
 
@@ -688,7 +732,7 @@ export function createAdminRoutes(
           },
           teamRunnersOnly: {
             description:
-              'Only team runners receive it; personal runners leave a run that gets it.',
+              'Only shared runners receive it; personal runners leave a run that gets it.',
           },
           fromRunner: {
             description:
@@ -701,7 +745,7 @@ export function createAdminRoutes(
           'variable set agent <agent> OPENAI_API_KEY --from-runner',
         ],
       }),
-      description: `Creates or replaces the variable; the value is encrypted at rest and never answered. A run's variables go to the runner that takes it, a personal runner of anyone who may use the agent included, unless one is marked \`teamRunnersOnly\`: then only a team runner takes the run. Leave \`value\` out to change only \`teamRunnersOnly\` of an existing variable. With \`fromRunner\` the variable is a name only: the runner that takes the run provides its value from its own configuration (\`nocobase-runner env set NAME\` or \`--pass-env NAME\`), and a runner that does not fails the run before the agent starts. Needs the right to change the scope. ${scopeAccess}`,
+      description: `Creates or replaces the variable; the value is encrypted at rest and never answered. A run's variables go to the runner that takes it, a personal runner of anyone who may use the agent included, unless one is marked \`teamRunnersOnly\`: then only a shared runner takes the run. Leave \`value\` out to change only \`teamRunnersOnly\` of an existing variable. With \`fromRunner\` the variable is a name only: the runner that takes the run provides its value from its own configuration (\`nocobase-runner env set NAME\` or \`--pass-env NAME\`), and a runner that does not fails the run before the agent starts. Needs the right to change the scope. ${scopeAccess}`,
       responses: {
         200: dataResponse(VariableSchema.nullable()),
         404: noScope,
@@ -1894,6 +1938,7 @@ export function createAdminRoutes(
       );
       const [data] = await agentViews(services.tx.read(), [agent], {
         availability: services.availability,
+        suggestion: services.agents.suggestion,
         userId: who.userId,
         canEdit: await who.can('agents.agents', 'manage'),
         now: services.clock.now(),

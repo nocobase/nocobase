@@ -100,12 +100,22 @@ describe('workflow management', () => {
     const view = render(<WorkflowDefinitionList {...props} />);
     const input = screen.getByRole('textbox');
     expect(screen.queryByText('No definitions')).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Refresh' })).toBeDisabled();
+    expect(
+      screen.queryByRole('button', { name: 'Refresh' }),
+    ).not.toBeInTheDocument();
     view.rerender(<WorkflowDefinitionList {...props} loaded loading={false} />);
     expect(screen.getByRole('textbox')).toBe(input);
     expect(input).toHaveValue('draft');
     expect(screen.getByText('No definitions')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Refresh' }));
+    view.rerender(
+      <WorkflowDefinitionList
+        {...props}
+        loaded
+        loading={false}
+        listState='failed'
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
     expect(onRefresh).toHaveBeenCalledOnce();
   });
 
@@ -356,7 +366,7 @@ it('renders the whole supplied definition page without double pagination or loca
   expect(screen.getAllByRole('row')[1]).toHaveTextContent('Process 0');
 });
 
-it('does not show a no-results message while an execution page is loading', () => {
+it('does not show a no-results message while an execution page is loading', async () => {
   const props = {
     rows: [],
     loaded: false,
@@ -382,7 +392,11 @@ it('does not show a no-results message while an execution page is loading', () =
     onNext: () => {},
   };
   const view = render(<WorkflowExecutionList {...props} />);
-  expect(screen.getByRole('table')).toHaveAttribute('aria-busy', 'true');
+  expect(document.querySelector('[data-slot="loading"]')).toHaveAttribute(
+    'aria-busy',
+    'true',
+  );
+  expect(await screen.findByRole('status')).toHaveTextContent('Loading');
   expect(screen.queryByText('No results.')).not.toBeInTheDocument();
   expect(screen.queryByText('No executions yet')).not.toBeInTheDocument();
   view.rerender(<WorkflowExecutionList {...props} loaded loading={false} />);
@@ -493,4 +507,55 @@ it('preserves execution links and sorting focus while using fresh callbacks', ()
   fireEvent.click(sort);
   expect(props.onSort).not.toHaveBeenCalled();
   expect(nextSort).toHaveBeenCalledOnce();
+});
+
+it('renders static activity when ordering is unavailable and omits redundant secondary names', () => {
+  const labels = {
+    refresh: 'Refresh',
+    workflow: 'Workflow',
+    executionCount: 'Count',
+    executionActivity: 'Activity',
+  };
+  const props = {
+    loaded: true,
+    loading: false,
+    search: null,
+    empty: 'Empty',
+    labels,
+    onRefresh: vi.fn(),
+  };
+  const view = render(
+    <WorkflowDefinitionList
+      {...props}
+      rows={[
+        {
+          id: 'loan',
+          title: 'Loan approval',
+          name: 'Loan approval',
+          activity: 'View executions',
+        },
+      ]}
+    />,
+  );
+  expect(
+    screen.queryByRole('button', { name: 'Activity' }),
+  ).not.toBeInTheDocument();
+  expect(screen.getAllByText('Loan approval')).toHaveLength(1);
+  expect(
+    screen.getByRole('columnheader', { name: 'Activity' }),
+  ).not.toHaveAttribute('aria-sort');
+  const onSort = vi.fn();
+  view.rerender(
+    <WorkflowDefinitionList
+      {...props}
+      onSort={onSort}
+      sort={{ ascending: false }}
+      rows={[
+        { id: 'loan', title: <a href='/loan'>Loan approval</a>, activity: 3 },
+      ]}
+    />,
+  );
+  fireEvent.click(screen.getByRole('button', { name: 'Activity' }));
+  expect(onSort).toHaveBeenCalledOnce();
+  expect(screen.getByRole('link', { name: 'Loan approval' })).toBeVisible();
 });

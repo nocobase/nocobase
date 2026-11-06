@@ -109,6 +109,7 @@ export type ModelWaitReason =
   | 'noSharedRunner'
   | 'toolNotInstalled'
   | 'toolUnavailable'
+  | 'toolQuota'
   | 'unknown'
   | 'concurrencyFull'
   | 'sameWorkActive'
@@ -121,6 +122,8 @@ export interface ModelSelectionWait {
     readonly tool: string;
     readonly model: string | null;
     readonly reason: ModelWaitReason;
+    /** Earliest known quota reset among otherwise fitting runners; absent for other reasons. */
+    readonly until?: string | null;
     readonly compatibleCount: number;
     readonly blockers?: readonly ModelWaitReason[];
     readonly runners: readonly {
@@ -181,7 +184,7 @@ export interface Run {
   readonly threadScope: string;
   /** The run was asked to start a new session; absent on older servers. */
   readonly freshSession?: boolean;
-  /** The person the run acts as: their permissions bound it, and only their own runners (or team runners) take it. */
+  /** The person the run acts as: their permissions bound it, and only their own runners (or shared runners) take it. */
   /** Server-managed authorization for runs caused by one comment, never independent events. */
   readonly commentRootRunId?: string | null;
   readonly commentExecution?: 'owner' | 'requester' | null;
@@ -206,6 +209,7 @@ export interface Run {
   readonly finishedAt: string | null;
   readonly lastActivityAt: string | null;
   readonly cancelRequestedAt: string | null;
+  readonly cancelledById: string | null;
   readonly failureReason: FailureReason | null;
   readonly failureDetail: string | null;
   readonly summary: string | null;
@@ -298,11 +302,12 @@ export interface RunEventPage {
  * - `delayed`: it was given a moment (`fireAt`, or a retry's backoff) that has not come; `until` says when.
  * - `noRunnerOnline`: no runner is online at all.
  * - `runnersOffline`: the agent names its runners, and none of them is online.
+ * - `toolQuota`: otherwise fitting runners have exhausted their quota; `until` is the earliest known reset.
  * - `toolUnavailable`: runners are online, but none has any of the agent's coding tools enabled, installed and
  *   signed in.
  * - `noSharedRunner`: only personal runners could take it, and none belongs to the person who woke the agent.
  * - `missingFeatures`: the runners that could take it lack what it needs (`missing`).
- * - `secretsNotAllowed`: some of its variables are for team runners only (`variables` names them), and the runners
+ * - `secretsNotAllowed`: some of its variables are for shared runners only (`variables` names them), and the runners
  *   that could take it are personal ones.
  * - `sameWorkActive`: the agent is already working on the same subject and thread; this run follows.
  * - `concurrencyFull`: the agent has as many runs held as it may have at once.
@@ -323,6 +328,7 @@ export const RUN_WAIT_REASONS = [
   'delayed',
   'noRunnerOnline',
   'runnersOffline',
+  'toolQuota',
   'toolUnavailable',
   'noSharedRunner',
   'missingFeatures',
@@ -342,9 +348,10 @@ export type RunWaitReason = (typeof RUN_WAIT_REASONS)[number];
  * (`formatRunWait` in `client/runs.ts`, or the application's own). Absent for a reason that needs nothing.
  *
  * - `delayed`: `until` (RFC 3339).
+ * - `toolQuota`: `tool` and, when known, `until` (RFC 3339); an unknown reset has no `until` parameter.
  * - `toolUnavailable`: `tool`, the agent's default coding tool.
  * - `missingFeatures`: `features`, what no fitting runner has.
- * - `secretsNotAllowed`: `variables`, the names of the variables for team runners only.
+ * - `secretsNotAllowed`: `variables`, the names of the variables for shared runners only.
  * - `concurrencyFull`: `active`, `limit`, the agent's runs held and its limit.
  * - `runnersBusy`: `runners`, how many fitting runners have their slots full.
  * - `toolSlotsFull`: `tool`, `used`, `limit`, that tool's runs and limit on the fitting runner closest to room.
@@ -361,7 +368,7 @@ export interface RunWait {
   readonly position: number | null;
   /** Its place among its agent's queued runs, in claim order (1 first). */
   readonly agentPosition: number;
-  /** When a delayed run may be claimed. */
+  /** When a delayed run may be claimed, or the earliest known quota reset for `toolQuota`. */
   readonly until: string | null;
   /**
    * For `toolUnavailable`: the agent's default coding tool (its first entry's); any of its tools would do. For
@@ -372,7 +379,7 @@ export interface RunWait {
   readonly missing: readonly RunnerFeature[];
   /** For `setupRetrying`: why preparing it failed. */
   readonly detail: string | null;
-  /** For `secretsNotAllowed`: the variables that ask for a team runner, by scope; absent when not provided. */
+  /** For `secretsNotAllowed`: the variables that ask for a shared runner, by scope; absent when not provided. */
   readonly variables?: readonly VariableRef[];
   /** What its words need (`RunWaitParams`); absent when nothing, or from a server before they were sent. */
   readonly params?: RunWaitParams;
@@ -456,7 +463,7 @@ export const RUN_EXECUTIONS = ['auto', 'mine'] as const;
 
 /**
  * `auto`: as the subject's responsible, once they confirm it when someone else asked; `mine`: as the person who asked,
- * at once, on a runner they may use (their own, or a team runner).
+ * at once, on a runner they may use (their own, or a shared runner).
  */
 export type RunExecution = (typeof RUN_EXECUTIONS)[number];
 

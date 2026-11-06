@@ -1,10 +1,7 @@
-import { describe, expect, it, vi } from 'vitest';
 import { ApiClientError } from '@nocobase/app-client';
+import { describe, expect, it, vi } from 'vitest';
 
-import {
-  NotificationClient,
-  NotificationTestApiError,
-} from '../client/notification-client.js';
+import { NotificationClient } from '../client/notification-client.js';
 import notificationPlugin from '../client/plugin.js';
 
 describe('@nocobase/app-plugin-notification client', () => {
@@ -32,110 +29,20 @@ describe('@nocobase/app-plugin-notification client', () => {
     });
   });
 
-  it('loads safe test targets and sends through the core test route', async () => {
-    const target = {
-      channel: { name: 'im', type: 'im', label: 'IM' },
-      provider: {
-        name: 'feishu',
-        type: 'feishu-webhook',
-        label: 'Feishu webhook',
-      },
-      fields: [],
-    };
-    const result = {
-      notificationId: 'notification-1',
-      idempotencyKey: 'notification-test:notification-1',
-      deduplicated: false,
-      status: 'pending',
-      deliveries: [],
-    };
-    const request = vi
-      .fn()
-      .mockResolvedValueOnce({ data: [target] })
-      .mockResolvedValueOnce({ data: result });
-    const client = new NotificationClient({ request });
-
-    await expect(client.listTestTargets()).resolves.toEqual([target]);
-    await expect(
-      client.sendTest({
-        channel: 'im',
-        values: { title: 'Test', body: 'Hello' },
-      }),
-    ).resolves.toEqual(result);
-    expect(request).toHaveBeenNthCalledWith(1, {
-      headers: { 'x-nocobase-notification-test': '1' },
-      path: 'notifications/testTargets',
-    });
-    expect(request).toHaveBeenNthCalledWith(2, {
-      headers: { 'x-nocobase-notification-test': '1' },
-      json: {
-        channel: 'im',
-        values: { title: 'Test', body: 'Hello' },
-      },
-      method: 'POST',
-      path: 'notifications/testSends',
-    });
-  });
-
-  it('surfaces the reason and localized message of a standard test error', async () => {
-    const request = vi.fn().mockRejectedValue(
-      new ApiClientError('Notification test send permission is required.', {
+  it('preserves log API failures for the application to handle', async () => {
+    const failure = new ApiClientError(
+      'Notification logs access is required.',
+      {
         status: 403,
-        reason: 'NOTIFICATION_TEST_FORBIDDEN',
+        reason: 'NOTIFICATION_LOGS_FORBIDDEN',
         domain: 'notifications',
-        method: 'POST',
-        url: '/api/notifications/testSends',
-        payload: {
-          error: {
-            code: 403,
-            status: 'PERMISSION_DENIED',
-            reason: 'NOTIFICATION_TEST_FORBIDDEN',
-            domain: 'notifications',
-            message: 'Notification test send permission is required.',
-            localizedMessage: {
-              locale: 'zh-CN',
-              message: '需要发送通知测试的权限。',
-            },
-          },
-        },
-      }),
+        method: 'GET',
+        url: '/api/notifications/logs',
+      },
     );
-
-    await expect(
-      new NotificationClient({ request }).sendTest({
-        channel: 'email',
-        values: { recipient: 'test@example.com' },
-      }),
-    ).rejects.toEqual(
-      expect.objectContaining({
-        name: 'NotificationTestApiError',
-        reason: 'NOTIFICATION_TEST_FORBIDDEN',
-        message: '需要发送通知测试的权限。',
-        status: 403,
-      } satisfies Partial<NotificationTestApiError>),
+    const request = vi.fn().mockRejectedValue(failure);
+    await expect(new NotificationClient({ request }).listLogs()).rejects.toBe(
+      failure,
     );
-  });
-
-  it('reports testing as unavailable when the application has no test routes', async () => {
-    const request = vi.fn().mockRejectedValue(
-      new ApiClientError(
-        'No API route matches GET /api/notifications/testTargets.',
-        {
-          status: 404,
-          reason: 'ROUTE_NOT_FOUND',
-          domain: 'app',
-          method: 'GET',
-          url: '/api/notifications/testTargets',
-        },
-      ),
-    );
-
-    await expect(
-      new NotificationClient({ request }).listTestTargets(),
-    ).rejects.toMatchObject({
-      name: 'NotificationTestApiError',
-      reason: 'NOTIFICATION_TEST_UNAVAILABLE',
-      status: 404,
-    });
   });
 });

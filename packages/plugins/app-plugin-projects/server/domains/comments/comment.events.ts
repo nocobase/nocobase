@@ -4,6 +4,8 @@ import type { EventActor } from '../issues/index.js';
 declare module '../../kernel/events.js' {
   interface DomainEventMap {
     'comment.created': {
+      /** Confirmed insertion with no execution, waiting or mention effects. */
+      readonly discussionOnly?: true;
       readonly issueId: string;
       readonly commentId: string;
       readonly rootId: string;

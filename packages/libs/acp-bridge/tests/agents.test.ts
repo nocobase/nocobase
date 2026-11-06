@@ -1,3 +1,4 @@
+import { CATALOG_IDS } from '../src/catalog.js';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import {
@@ -521,6 +522,7 @@ describe('resolveAgent', () => {
   it('knows every agent by an id the application accepts, with a way to sign in', () => {
     const ids = AGENTS.map((spec) => spec.id);
     expect(new Set(ids).size).toBe(ids.length);
+    expect(ids).toEqual(CATALOG_IDS);
     for (const spec of AGENTS) {
       expect(spec.id).toMatch(/^[a-z0-9][a-z0-9-]{0,39}$/u);
       expect(spec.launchers.length).toBeGreaterThan(0);
@@ -528,6 +530,18 @@ describe('resolveAgent', () => {
       // Full access comes from a mode the agent offers, or from the bridge allowing what it asks.
       expect(Boolean(spec.modes?.length) || spec.allowAll === true).toBe(true);
     }
+  });
+
+  it('starts DeepSeek Harness through ACP with full access and its API key setup command', () => {
+    const dsh = AGENTS.find((spec) => spec.id === 'dsh');
+    expect(dsh).toMatchObject({
+      id: 'dsh',
+      name: 'DeepSeek Harness',
+      launchers: [{ command: 'dsh', args: ['--profile', 'acp'] }],
+      allowAll: true,
+      signIn: 'export DEEPSEEK_API_KEY=...',
+      permissionEnv: { DSH_PERMISSION_MODE: 'danger-full-access' },
+    });
   });
 });
 

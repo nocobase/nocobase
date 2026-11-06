@@ -20,6 +20,10 @@ import {
 test('unreleased arguments select templates and reject incomplete database configuration', () => {
   assert.equal(parseArgs(['smoke']).template, 'default');
   assert.equal(
+    parseArgs(['smoke', '--internal-packages']).internalPackages,
+    true,
+  );
+  assert.equal(
     parseArgs(['smoke', '--template', 'examples']).template,
     'examples',
   );

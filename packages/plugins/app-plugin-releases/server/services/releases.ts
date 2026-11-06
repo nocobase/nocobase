@@ -243,9 +243,8 @@ export interface DeploymentRecord {
   /** The variables it runs with, sealed; null for one made before variables, or with none. */
   readonly env: string | null;
   readonly variablesFingerprint: string | null;
-  /** The first administrator it generated, sealed; cleared once saved or expired. */
+  /** The first administrator it generated, sealed; cleared once saved. */
   readonly initialAdmin: string | null;
-  readonly initialAdminExpiresAt: Date | null;
   readonly initialAdminSavedBy: string | null;
   readonly initialAdminSavedAt: Date | null;
   readonly createdAt: Date;
@@ -289,7 +288,34 @@ export interface StartDeploymentOptions {
   readonly requestId?: string | null;
 }
 
+/** A release's archive opened for download (`ReleasesService.openArchive`). */
+export interface ReleaseArchive {
+  readonly stream: Readable;
+  /** In bytes, when the upload recorded it. */
+  readonly size: number | null;
+  /** The archive's SHA-256, hex. */
+  readonly checksum: string;
+  /** `<appId>-<version>.tar.gz`, reduced to characters safe in a file name. */
+  readonly fileName: string;
+}
+
+/** `<appId>-<version>.tar.gz`, with anything but letters, digits, `.`, `_` and `-` replaced. */
+export function archiveFileName(appId: string, version: string): string {
+  const safe = (text: string): string =>
+    text.replace(/[^A-Za-z0-9._-]+/gu, '_').replace(/^\.+/u, '') || 'release';
+  return `${safe(appId)}-${safe(version)}.tar.gz`;
+}
+
 export class ReleasesService {
+  private readonly dispatch = new Map<
+    string,
+    { appId: string; submitted: boolean; cancelled: boolean }
+  >();
+  private readonly progress = new Map<
+    string,
+    { queueAhead: number | null; cancellable: boolean }
+  >();
+
   private readonly diagnostic: ReturnType<typeof createDiagnosticLogger>;
   private readonly disk: NocoBaseDriveDisk;
   private readonly artifacts: ReleaseArtifactStore;
@@ -405,6 +431,13 @@ export class ReleasesService {
   public async createApp(
     caller: Caller,
     input: CreateAppInput,
+    options: {
+      /** Initialize application-owned records in the creation transaction. Runs before app.created is emitted. */
+      readonly initialize?: (
+        connection: DatabaseConnection,
+        appId: string,
+      ) => Promise<void>;
+    } = {},
   ): Promise<AppSummary> {
     this.options.guard.requireCreate(caller);
     if (!input || typeof input.id !== 'string')
@@ -452,29 +485,33 @@ export class ReleasesService {
             'ALREADY_EXISTS',
           );
         await this.assertEnvironmentCapacity(environment);
-        await this.query()
-          .insertInto('relApps')
-          .values({
-            id,
-            environmentId: environment.id,
-            name,
-            description:
-              typeof input.description === 'string' && input.description.trim()
-                ? input.description.trim()
-                : null,
-            currentDeploymentId: null,
-            enabled: false,
-            activation: policy.activation,
-            idleStopMinutes: policy.idleStopMinutes,
-            dormantAfterHours: policy.dormantAfterHours,
-            labels: JSON.stringify(labels),
-            previewOf,
-            createdBy: caller.userId,
-            createdVia: caller.kind,
-            createdAt: now,
-            updatedAt: now,
-          })
-          .execute();
+        await this.options.database.transaction(async (connection) => {
+          await connection.query
+            .insertInto('relApps')
+            .values({
+              id,
+              environmentId: environment.id,
+              name,
+              description:
+                typeof input.description === 'string' &&
+                input.description.trim()
+                  ? input.description.trim()
+                  : null,
+              currentDeploymentId: null,
+              enabled: false,
+              activation: policy.activation,
+              idleStopMinutes: policy.idleStopMinutes,
+              dormantAfterHours: policy.dormantAfterHours,
+              labels: JSON.stringify(labels),
+              previewOf,
+              createdBy: caller.userId,
+              createdVia: caller.kind,
+              createdAt: now,
+              updatedAt: now,
+            })
+            .execute();
+          await options.initialize?.(connection, id);
+        });
       });
     } catch (error) {
       if (!(error instanceof ReleasesError) && (await this.findApp(id)))
@@ -620,6 +657,59 @@ export class ReleasesService {
     const release = await this.requireRelease(appId, releaseId);
     const images = await this.artifacts.imagesOf([release.id]);
     return releaseView(release, images.get(release.id) ?? []);
+  }
+
+  /**
+   * Several Apps' summaries in one batched read (one runtime status call per environment), for the assembling
+   * application: no caller is checked. Unknown ids are left out; the rest keep the order asked.
+   */
+  public async summarizeApps(appIds: readonly string[]): Promise<AppSummary[]> {
+    const ids = [...new Set(appIds)];
+    if (ids.length === 0) return [];
+    const rows = await this.query()
+      .selectFrom('relApps')
+      .selectAll()
+      .where('id', 'in', ids)
+      .execute<Row>();
+    const byId = new Map(
+      rows.map(decodeApp).map((app) => [app.id, app] as const),
+    );
+    const apps = ids.flatMap((id) => {
+      const app = byId.get(id);
+      return app ? [app] : [];
+    });
+    return this.summarize(apps);
+  }
+
+  /**
+   * A release's archive, to download: `view` on the App. An image release has none (`RELEASE_HAS_NO_ARCHIVE`), and an
+   * archive missing from the disk is `RELEASE_ARCHIVE_NOT_FOUND`. The stream is opened last, so a refusal never touches
+   * the disk.
+   */
+  public async openArchive(
+    caller: Caller,
+    appId: string,
+    releaseId: string,
+  ): Promise<ReleaseArchive> {
+    const app = await this.requireApp(appId);
+    await this.options.guard.requireApp(caller, 'view', app);
+    const release = await this.requireRelease(appId, releaseId);
+    const key = release.artifactKey;
+    if (!key)
+      throw new ReleasesError(
+        'This release is a set of images and has no archive to download.',
+        'RELEASE_HAS_NO_ARCHIVE',
+        'FAILED_PRECONDITION',
+      );
+    // A local disk opens its file lazily, so a missing archive would fail only after the response headers went out.
+    if (!(await this.disk.exists(key)))
+      throw notFound('Archive', 'RELEASE_ARCHIVE_NOT_FOUND', releaseId);
+    return {
+      stream: await this.disk.getStream(key),
+      size: release.size,
+      checksum: release.checksum,
+      fileName: archiveFileName(app.id, release.version),
+    };
   }
 
   /**
@@ -831,7 +921,6 @@ export class ReleasesService {
           createdVia: caller.kind,
           createdAt: new Date(),
         };
-        if (input.deploy) await this.requireNoPendingDeployment(appId);
         // A release whose required variables are not all set is kept, and not deployed: once they are set, it
         // deploys by its ID without another upload.
         const missing = input.deploy
@@ -854,8 +943,6 @@ export class ReleasesService {
             },
           );
           await this.options.database.transaction(async (connection) => {
-            if (deployment)
-              await this.requireNoPendingDeployment(appId, connection);
             await connection.query
               .insertInto('relReleases')
               .values(encodeRelease(release))
@@ -915,7 +1002,15 @@ export class ReleasesService {
         });
         if (missing.length > 0)
           throw variablesMissing(current, release, missing);
-        if (deployment) this.schedule(deployment);
+        if (deployment) {
+          try {
+            await this.replaceQueued(deployment);
+          } catch (error) {
+            await this.markFailed(deployment, error);
+            throw error;
+          }
+          this.schedule(deployment);
+        }
         return { ...view, reused: false, deploymentId: deployment?.id ?? null };
       });
     } finally {
@@ -1089,6 +1184,7 @@ export class ReleasesService {
       );
     assertConfigSize(content);
     return await this.withLock(appId, async () => {
+      await this.waitForAppDeployments(appId);
       const app = await this.requireApp(appId);
       await this.options.guard.requireApp(caller, 'configure', app);
       const deployment = await this.currentDeployment(app);
@@ -1297,14 +1393,16 @@ export class ReleasesService {
       .execute<Row>();
     return {
       items: rows.map((row) =>
-        deploymentView(
-          decodeDeployment(row),
-          typeof row.releaseVersion === 'string'
-            ? {
-                version: row.releaseVersion,
-                checksum: String(row.releaseChecksum),
-              }
-            : null,
+        this.progressView(
+          deploymentView(
+            decodeDeployment(row),
+            typeof row.releaseVersion === 'string'
+              ? {
+                  version: row.releaseVersion,
+                  checksum: String(row.releaseChecksum),
+                }
+              : null,
+          ),
         ),
       ),
       total,
@@ -1327,9 +1425,19 @@ export class ReleasesService {
       await this.options.guard.requireApp(caller, 'deploy', app);
     const deployment = await this.requireDeployment(appId, deploymentId);
     const release = await this.findRelease(appId, deployment.releaseId);
-    return deploymentView(
-      deployment,
-      release ? { version: release.version, checksum: release.checksum } : null,
+    if (['queued', 'deploying', 'cancelling'].includes(deployment.status)) {
+      const progress = await (
+        await this.session(app.environmentId)
+      ).progress?.(deployment.id, app.id);
+      if (progress) this.progress.set(deployment.id, progress);
+    }
+    return this.progressView(
+      deploymentView(
+        deployment,
+        release
+          ? { version: release.version, checksum: release.checksum }
+          : null,
+      ),
     );
   }
 
@@ -1348,8 +1456,9 @@ export class ReleasesService {
       if (!row)
         throw notFound('Deployment', 'DEPLOYMENT_NOT_FOUND', deploymentId);
       const deployment = decodeDeployment(row);
-      const finished =
-        deployment.status !== 'queued' && deployment.status !== 'deploying';
+      const finished = !['queued', 'deploying', 'cancelling'].includes(
+        deployment.status,
+      );
       if (finished || Date.now() >= deadline) {
         // A finished deployment's run still announces it (events, the request it settled); wait for that too, so a
         // waiter never sees the deployment done but its consequences pending.
@@ -1430,6 +1539,7 @@ export class ReleasesService {
 
   public async start(caller: Caller, appId: string): Promise<AppSummary> {
     return await this.withLock(appId, async () => {
+      await this.waitForAppDeployments(appId);
       const app = await this.requireApp(appId);
       await this.options.guard.requireApp(caller, 'operate', app);
       const deployment = await this.currentDeployment(app);
@@ -1462,6 +1572,7 @@ export class ReleasesService {
 
   public async stop(caller: Caller, appId: string): Promise<AppSummary> {
     return await this.withLock(appId, async () => {
+      await this.waitForAppDeployments(appId);
       const app = await this.requireApp(appId);
       await this.options.guard.requireApp(caller, 'operate', app);
       if (!(await this.currentDeployment(app)))
@@ -1487,6 +1598,7 @@ export class ReleasesService {
 
   public async restart(caller: Caller, appId: string): Promise<AppSummary> {
     return await this.withLock(appId, async () => {
+      await this.waitForAppDeployments(appId);
       const app = await this.requireApp(appId);
       await this.options.guard.requireApp(caller, 'operate', app);
       if (!(await this.currentDeployment(app)))
@@ -1522,17 +1634,13 @@ export class ReleasesService {
    * not report every App as stopped or a finished deployment as still running.
    */
   public async restore(): Promise<void> {
-    await this.clearExpiredInitialAdmins().catch((error: unknown) =>
-      this.diagnostic.warn(
-        'Failed to clear expired first administrators',
-        error,
-      ),
-    );
     const interrupted = (
       await this.query()
         .selectFrom('relDeployments')
         .selectAll()
-        .where('status', 'in', ['queued', 'deploying'])
+        .where('status', 'in', ['queued', 'deploying', 'cancelling'])
+        .orderBy('createdAt', 'asc')
+        .orderBy('id', 'asc')
         .execute<Row>()
     ).map(decodeDeployment);
     // A deployment the target recorded (the App Host's operation log) is finalised from what it reports; every other
@@ -1540,7 +1648,11 @@ export class ReleasesService {
     const resumed = new Set<string>();
     const recorded = new Map<string, DeploymentRecord[]>();
     for (const deployment of interrupted) {
-      if (deployment.status !== 'deploying') continue;
+      if (
+        deployment.status !== 'deploying' &&
+        deployment.status !== 'cancelling'
+      )
+        continue;
       const app = await this.findApp(deployment.appId);
       if (!app) continue;
       const session = await this.session(app.environmentId).catch(() => null);
@@ -1574,7 +1686,8 @@ export class ReleasesService {
         .set({
           status: 'failed',
           phase: 'completed',
-          error: 'Deployment was interrupted by a restart.',
+          error:
+            'Deployment was interrupted by a restart. Deploy the release again.',
           finishedAt: new Date(),
         })
         .where(
@@ -1897,7 +2010,7 @@ export class ReleasesService {
 
   /**
    * The first administrator the App's first deployment generated, for a person who may deploy it: until someone
-   * says it is saved, and for 24 hours (a preview App's until the App goes).
+   * says it is saved or the App is removed.
    */
   public async readInitialAdmin(
     caller: Caller,
@@ -1905,11 +2018,10 @@ export class ReleasesService {
   ): Promise<InitialAdminView> {
     const app = await this.requireApp(appId);
     await this.requireInitialAdminReader(caller, app);
-    await this.clearExpiredInitialAdmins();
     const found = await this.initialAdminOf(app);
     if (!found)
       throw new ReleasesError(
-        'This App has no first administrator to show: it was saved, it expired, or the application did not generate one.',
+        'This App has no first administrator to show: it was saved or the application did not generate one.',
         'INITIAL_ADMIN_UNAVAILABLE',
         'NOT_FOUND',
       );
@@ -1932,19 +2044,6 @@ export class ReleasesService {
       })
       .where('appId', '=', appId)
       .where('initialAdmin', 'is not', null)
-      .execute();
-  }
-
-  /** Clears the first administrators whose 24 hours are over. */
-  public async clearExpiredInitialAdmins(
-    now: Date = new Date(),
-  ): Promise<void> {
-    await this.query()
-      .updateTable('relDeployments')
-      .set({ initialAdmin: null })
-      .where('initialAdmin', 'is not', null)
-      .where('initialAdminExpiresAt', 'is not', null)
-      .where('initialAdminExpiresAt', '<=', now)
       .execute();
   }
 
@@ -1975,19 +2074,13 @@ export class ReleasesService {
       .where('initialAdmin', 'is not', null)
       .orderBy('createdAt', 'desc')
       .execute<Row>();
-    const now = new Date();
     for (const deployment of rows.map(decodeDeployment)) {
-      if (
-        deployment.initialAdminExpiresAt &&
-        deployment.initialAdminExpiresAt <= now
-      )
-        continue;
       const admin = this.openInitialAdmin(deployment);
       if (!admin) continue;
       return {
         deploymentId: deployment.id,
         ...admin,
-        expiresAt: iso(deployment.initialAdminExpiresAt),
+        expiresAt: null,
       };
     }
     return null;
@@ -2179,7 +2272,6 @@ export class ReleasesService {
     readonly env: string | null;
     readonly variablesFingerprint: string | null;
     readonly initialAdmin: string | null;
-    readonly initialAdminExpiresAt: Date | null;
   }> {
     let context = await this.variablesContext(app);
     const plan = planGenerated(release.variables, context, configFile);
@@ -2213,7 +2305,6 @@ export class ReleasesService {
     for (const [name, variable] of plan.oneShot)
       generated[name] = generateVariable(variable.generate!);
     let initialAdmin: string | null = null;
-    let initialAdminExpiresAt: Date | null = null;
     if (plan.initialAdmin) {
       const password =
         (await this.earlierInitialAdmin(app))?.password ?? randomPassword();
@@ -2229,10 +2320,6 @@ export class ReleasesService {
         this.options.secrets,
         'initial-admin',
       );
-      // A preview App's goes with the preview; any other's is deleted after a day.
-      initialAdminExpiresAt = app.previewOf
-        ? null
-        : new Date(Date.now() + INITIAL_ADMIN_TTL_MS);
     }
     const resolved = resolveVariables({
       manifest: release.variables,
@@ -2257,7 +2344,6 @@ export class ReleasesService {
       variablesFingerprint:
         release.variables || names.length > 0 ? resolved.fingerprint : null,
       initialAdmin,
-      initialAdminExpiresAt,
     };
   }
 
@@ -2340,7 +2426,6 @@ export class ReleasesService {
     config?: { readonly mode: ConfigMode; readonly content?: string },
     idempotency?: { readonly key: string; readonly fingerprint: string },
   ): Promise<DeploymentView> {
-    await this.requireNoPendingDeployment(app.id);
     const deployment = await this.buildDeploymentRecord(app, release, caller, {
       kind: options.kind,
       rollbackTargetDeploymentId: options.rollbackTargetDeploymentId ?? null,
@@ -2349,7 +2434,6 @@ export class ReleasesService {
     });
     try {
       await this.options.database.transaction(async (connection) => {
-        await this.requireNoPendingDeployment(app.id, connection);
         await connection.query
           .insertInto('relDeployments')
           .values(encodeDeployment(deployment))
@@ -2373,6 +2457,12 @@ export class ReleasesService {
     } catch (error) {
       if (deployment.configPath)
         await rm(deployment.configPath, { force: true });
+      throw error;
+    }
+    try {
+      await this.replaceQueued(deployment);
+    } catch (error) {
+      await this.markFailed(deployment, error);
       throw error;
     }
     this.schedule(deployment);
@@ -2514,6 +2604,7 @@ export class ReleasesService {
   private async removeApp(app: AppRecord, caller: Caller): Promise<void> {
     await this.withLock(`publish:${app.id}`, () =>
       this.withLock(app.id, async () => {
+        await this.waitForAppDeployments(app.id);
         const current = await this.findApp(app.id);
         if (!current) return;
         const releases = await this.query()
@@ -2581,10 +2672,10 @@ export class ReleasesService {
         .execute<Row>(),
       this.query()
         .selectFrom('relDeployments')
-        .select('appId')
-        .distinct()
+        .select(['id', 'appId', 'status', 'createdAt'])
         .where('appId', 'in', ids)
-        .where('status', 'in', ['queued', 'deploying'])
+        .orderBy('createdAt', 'asc')
+        .where('status', 'in', ['queued', 'deploying', 'cancelling'])
         .execute<Row>(),
       this.query()
         .selectFrom('relApps')
@@ -2600,6 +2691,15 @@ export class ReleasesService {
     ]);
     const released = new Set(releases.map((row) => String(row.appId)));
     const pendingApps = new Set(pending.map((row) => String(row.appId)));
+    const pendingByApp = new Map<string, Row>();
+    for (const row of pending) {
+      const previous = pendingByApp.get(String(row.appId));
+      if (
+        !previous ||
+        (previous.status === 'queued' && row.status !== 'queued')
+      )
+        pendingByApp.set(String(row.appId), row);
+    }
     const versions = new Map(
       currentReleases.map((row) => [String(row.appId), String(row.version)]),
     );
@@ -2651,6 +2751,16 @@ export class ReleasesService {
         currentVersion: versions.get(app.id) ?? null,
         hasReleases: released.has(app.id),
         hasPendingDeployment: pendingApps.has(app.id),
+        pendingDeployment: (() => {
+          const row = pendingByApp.get(app.id);
+          return row
+            ? {
+                status: row.status as 'queued' | 'deploying' | 'cancelling',
+                queueAhead:
+                  this.progress.get(String(row.id))?.queueAhead ?? null,
+              }
+            : null;
+        })(),
       };
     });
   }
@@ -2946,9 +3056,7 @@ export class ReleasesService {
 
   private schedule(deployment: DeploymentRecord): void {
     this.logDeployment(deployment, 'queued', 'Deployment queued');
-    const run = this.withLock(deployment.appId, () =>
-      this.runDeployment(deployment.id),
-    )
+    const run = this.dispatchDeployment(deployment)
       .catch((error: unknown) =>
         this.diagnostic.error(
           `Deployment ${deployment.id} failed unexpectedly`,
@@ -2964,24 +3072,51 @@ export class ReleasesService {
     this.runs.set(deployment.id, run);
   }
 
-  private async runDeployment(deploymentId: string): Promise<void> {
+  private async dispatchDeployment(
+    deployment: DeploymentRecord,
+  ): Promise<void> {
+    const app = await this.requireApp(deployment.appId);
+    const session = await this.session(app.environmentId);
+    // Drivers without a native queue keep the previous per-App serialization.
+    if (!session.progress)
+      return this.withLock(app.id, () =>
+        this.runDeployment(deployment.id, deployment.appId),
+      );
+    const lifecycle = this.locks.get(app.id);
+    if (lifecycle) await lifecycle.catch(() => undefined);
+    return this.runDeployment(deployment.id, deployment.appId);
+  }
+
+  /** Lifecycle operations keep the deployment result current before reading its configuration. New dispatches wait on their App lock. */
+  private async waitForAppDeployments(appId: string): Promise<void> {
+    const runs = [...this.dispatch]
+      .filter(([, value]) => value.appId === appId)
+      .map(([id]) => this.runs.get(id))
+      .filter((run): run is Promise<unknown> => Boolean(run));
+    await Promise.allSettled(runs);
+  }
+
+  private async runDeployment(
+    deploymentId: string,
+    appId: string,
+  ): Promise<void> {
+    const dispatch = { appId, submitted: false, cancelled: false };
+    this.dispatch.set(deploymentId, dispatch);
     const deployment = await this.requireDeploymentById(deploymentId);
+    if (deployment.status !== 'queued') {
+      this.dispatch.delete(deploymentId);
+      return;
+    }
     const app = await this.requireApp(deployment.appId);
     const release = await this.requireRelease(app.id, deployment.releaseId);
-    const previous = await this.currentDeployment(app);
+    let settlement: ((work: () => Promise<void>) => Promise<void>) | undefined;
     let phaseWrites = Promise.resolve();
     let lastSequence = 0;
+    let lastPhase: string | undefined;
+    let switchStarted = false;
     let phaseError: Error | undefined;
-    await this.updateDeployment(deploymentId, {
-      status: 'deploying',
-      phase: 'resolving',
-      startedAt: new Date(),
-      error: null,
-      previousDeploymentId: app.currentDeploymentId,
-    });
-    let outcome: { ok: true } | { ok: false; error: string };
+    let outcome: { ok: true } | { ok: false; error: string } | undefined;
     try {
-      this.logDeployment(deployment, 'resolving', 'Deployment started');
       const session = await this.session(app.environmentId);
       const logsEnabled = this.options.logging?.deployments?.enabled !== false;
       const spec = await this.deploymentSpec(
@@ -2995,6 +3130,22 @@ export class ReleasesService {
           deploymentId,
           artifactColumns({ kind: 'tarball' }),
         );
+      if (dispatch.cancelled) {
+        await this.markCancelled(deployment);
+        return;
+      }
+      if (!session.progress) {
+        this.logDeployment(deployment, 'resolving', 'Deployment started');
+        await this.updateDeployment(deploymentId, {
+          status: 'deploying',
+          phase: 'resolving',
+          startedAt: new Date(),
+        });
+      }
+      dispatch.submitted = true;
+      // Reserve in runtime submission order without holding up Host admission or cancellation.
+      settlement = this.reserveSettlement(app.id);
+      let started = false;
       const observed = await session.apply(spec, (entry) => {
         if (typeof entry.sequence === 'number') {
           if (entry.sequence <= lastSequence) return;
@@ -3012,8 +3163,44 @@ export class ReleasesService {
             });
         if (typeof entry.phase === 'string') {
           const phase = entry.phase as DeploymentPhase;
+          const first =
+            !started &&
+            phase !== 'queued' &&
+            phase !== 'cancelled' &&
+            phase !== 'cancelling';
+          if (first) started = true;
+          if (['switching', 'starting', 'health_check'].includes(phase))
+            switchStarted = true;
+          this.progress.set(deploymentId, {
+            queueAhead:
+              phase === 'queued' && typeof entry.queueAhead === 'number'
+                ? entry.queueAhead
+                : null,
+            cancellable:
+              !switchStarted &&
+              !['completed', 'cancelled', 'cancelling'].includes(phase),
+          });
+          const changed = lastPhase !== phase;
+          lastPhase = phase;
           phaseWrites = phaseWrites
-            .then(() => this.updateDeployment(deploymentId, { phase }))
+            .then(async () => {
+              // Queue-position events are transient; they cause no database writes.
+              if (phase === 'queued' || !changed) return;
+              await this.query()
+                .updateTable('relDeployments')
+                .set({
+                  phase,
+                  ...(first
+                    ? {
+                        status: 'deploying',
+                        startedAt: new Date(),
+                      }
+                    : {}),
+                })
+                .where('id', '=', deploymentId)
+                .where('status', 'in', ['queued', 'deploying'])
+                .execute();
+            })
             .catch((error: unknown) => {
               phaseError =
                 error instanceof Error ? error : new Error(String(error));
@@ -3031,30 +3218,73 @@ export class ReleasesService {
       });
       await phaseWrites;
       if (phaseError) throw phaseError;
+      if (observed.state === 'cancelled') {
+        await this.markCancelled(deployment);
+        return;
+      }
       if (observed.state === 'failed' || observed.state === 'unknown')
         throw new Error(
           observed.error ?? 'The runtime did not report the deployment.',
         );
-      await this.markSucceeded(deployment, app.id, previous);
       outcome = { ok: true };
     } catch (error) {
       await phaseWrites.catch(() => undefined);
       outcome = { ok: false, error: errorMessage(error) };
-      await this.markFailed(deployment, error);
     } finally {
-      const policy = this.options.logging?.deployments;
-      await pruneJournals(
-        path.dirname(this.deploymentLogPath(app.id, deployment.id)),
-        {
-          retentionDays: policy?.retentionDays ?? 30,
-          maxSizeMB: policy?.maxTotalSizeMB ?? 1024,
-        },
-        `${deployment.id}.log`,
-      ).catch((error: unknown) =>
-        reportLoggingFailure('Deployment log cleanup failed', error),
-      );
+      const settle = settlement ?? this.reserveSettlement(app.id);
+      const result = settle(async () => {
+        if (!outcome) return;
+        // The predecessor is read only after its writes, cleanup and outcome event have finished.
+        const previous = await this.currentDeployment(
+          await this.requireApp(app.id),
+        );
+        if (outcome.ok) {
+          try {
+            await this.markSucceeded(deployment, app.id, previous);
+          } catch (error) {
+            outcome = { ok: false, error: errorMessage(error) };
+          }
+        }
+        if (!outcome.ok)
+          await this.markFailed(deployment, new Error(outcome.error), previous);
+        await this.emitOutcome(deployment, app, release, outcome);
+      });
+      try {
+        // A queued cancellation is already terminal; it must not wait for the running predecessor.
+        if (outcome) await result;
+      } finally {
+        this.dispatch.delete(deploymentId);
+        this.progress.delete(deploymentId);
+        const policy = this.options.logging?.deployments;
+        await pruneJournals(
+          path.dirname(this.deploymentLogPath(app.id, deployment.id)),
+          {
+            retentionDays: policy?.retentionDays ?? 30,
+            maxSizeMB: policy?.maxTotalSizeMB ?? 1024,
+          },
+          `${deployment.id}.log`,
+        ).catch((error: unknown) =>
+          reportLoggingFailure('Deployment log cleanup failed', error),
+        );
+      }
     }
-    await this.emitOutcome(deployment, app, release, outcome);
+  }
+
+  /** Reuse the local lock chain to order results while the Host continues executing its queue. */
+  private reserveSettlement(
+    appId: string,
+  ): (work: () => Promise<void>) => Promise<void> {
+    let finish!: (work: () => Promise<void>) => void;
+    const ready = new Promise<() => Promise<void>>((resolve) => {
+      finish = resolve;
+    });
+    const result = this.withLock(`deployment-result:${appId}`, async () =>
+      (await ready)(),
+    );
+    return (work) => {
+      finish(work);
+      return result;
+    };
   }
 
   private async markSucceeded(
@@ -3067,7 +3297,12 @@ export class ReleasesService {
     await this.options.database.transaction(async (connection) => {
       await connection.query
         .updateTable('relDeployments')
-        .set({ status: 'succeeded', phase: 'completed', finishedAt })
+        .set({
+          status: 'succeeded',
+          phase: 'completed',
+          finishedAt,
+          previousDeploymentId: previous?.id ?? null,
+        })
         .where('id', '=', deployment.id)
         .execute();
       await connection.query
@@ -3088,6 +3323,7 @@ export class ReleasesService {
   private async markFailed(
     deployment: DeploymentRecord,
     error: unknown,
+    previous?: DeploymentRecord | null,
   ): Promise<void> {
     this.logDeployment(deployment, 'completed', 'Deployment failed', error);
     const finishedAt = new Date();
@@ -3099,6 +3335,9 @@ export class ReleasesService {
           phase: 'completed',
           error: errorMessage(error),
           finishedAt,
+          ...(previous !== undefined
+            ? { previousDeploymentId: previous?.id ?? null }
+            : {}),
         })
         .where('id', '=', deployment.id)
         .execute();
@@ -3113,7 +3352,7 @@ export class ReleasesService {
   private async settleRequest(
     connection: DatabaseConnection,
     deployment: DeploymentRecord,
-    status: 'deployed' | 'failed',
+    status: 'deployed' | 'failed' | 'cancelled',
     at: Date,
   ): Promise<void> {
     if (!deployment.requestId) return;
@@ -3183,17 +3422,17 @@ export class ReleasesService {
         };
       }
       const current = await this.requireDeploymentById(deployment.id);
-      if (current.status !== 'deploying' && current.status !== 'queued') return;
+      if (!['deploying', 'queued', 'cancelling'].includes(current.status))
+        return;
       const app = await this.requireApp(deployment.appId);
       const release = await this.requireRelease(app.id, deployment.releaseId);
       let outcome: { ok: true } | { ok: false; error: string };
+      if (status?.state === 'cancelled') {
+        await this.markCancelled(deployment);
+        return;
+      }
       if (status?.state === 'running') {
-        const previous = deployment.previousDeploymentId
-          ? await this.requireDeployment(
-              app.id,
-              deployment.previousDeploymentId,
-            ).catch(() => null)
-          : null;
+        const previous = await this.currentDeployment(app);
         this.logDeployment(
           deployment,
           'switching',
@@ -3204,7 +3443,7 @@ export class ReleasesService {
       } else {
         const error = status
           ? (status.error ?? 'The deployment failed.')
-          : 'Deployment was interrupted by a restart.';
+          : 'Deployment was interrupted by a restart. Deploy the release again.';
         await this.markFailed(deployment, new Error(error));
         outcome = { ok: false, error };
       }
@@ -3226,21 +3465,169 @@ export class ReleasesService {
     return run;
   }
 
-  private async requireNoPendingDeployment(
+  private progressView(view: DeploymentView): DeploymentView {
+    const progress = this.progress.get(view.id);
+    return {
+      ...view,
+      queueAhead: progress?.queueAhead ?? null,
+      cancellable:
+        ['queued', 'deploying'].includes(view.status) &&
+        (progress?.cancellable ?? view.phase === 'queued'),
+    };
+  }
+
+  public async cancelDeployment(
+    caller: Caller,
     appId: string,
-    connection?: DatabaseConnection,
-  ): Promise<void> {
-    const pending = await (connection?.query ?? this.query())
+    deploymentId: string,
+  ): Promise<DeploymentView> {
+    const app = await this.requireApp(appId);
+    await this.options.guard.requireApp(caller, 'deploy', app);
+    await this.withLock(`cancel:${deploymentId}`, async () => {
+      const deployment = await this.requireDeployment(appId, deploymentId);
+      if (
+        deployment.status === 'cancelled' ||
+        deployment.status === 'cancelling'
+      )
+        return;
+      if (!['queued', 'deploying'].includes(deployment.status))
+        throw new ReleasesError(
+          'The deployment has finished.',
+          'DEPLOYMENT_NOT_CANCELLABLE',
+          'FAILED_PRECONDITION',
+        );
+      const result = await this.requestCancellation(deployment, false);
+      if (result === 'tooLate' || result === 'notFound')
+        throw new ReleasesError(
+          'The deployment has started switching or has finished.',
+          'DEPLOYMENT_NOT_CANCELLABLE',
+          'FAILED_PRECONDITION',
+        );
+    });
+    return this.getDeployment(caller, appId, deploymentId);
+  }
+
+  private async replaceQueued(replacement: DeploymentRecord): Promise<void> {
+    const rows = await this.query()
       .selectFrom('relDeployments')
-      .select('id')
-      .where('appId', '=', appId)
-      .where('status', 'in', ['queued', 'deploying'])
-      .executeTakeFirst<Row>();
-    if (pending)
-      throw new ReleasesError(
-        'A deployment is already in progress.',
-        'DEPLOYMENT_IN_PROGRESS',
-        'FAILED_PRECONDITION',
+      .selectAll()
+      .where('appId', '=', replacement.appId)
+      .where('status', '=', 'queued')
+      .where('id', '!=', replacement.id)
+      .execute<Row>();
+    for (const row of rows)
+      await this.requestCancellation(
+        decodeDeployment(row),
+        true,
+        replacement.id,
+      );
+  }
+
+  private async requestCancellation(
+    deployment: DeploymentRecord,
+    queuedOnly: boolean,
+    replacedBy?: string,
+  ): Promise<'cancelled' | 'cancelling' | 'tooLate' | 'notFound'> {
+    const dispatch = this.dispatch.get(deployment.id);
+    let result: 'cancelled' | 'cancelling' | 'tooLate' | 'notFound';
+    if (
+      (dispatch && !dispatch.submitted) ||
+      (!dispatch && deployment.status === 'queued')
+    ) {
+      if (dispatch) dispatch.cancelled = true;
+      result = 'cancelled';
+    } else {
+      const app = await this.requireApp(deployment.appId);
+      const session = await this.session(app.environmentId);
+      if (!session.cancel)
+        throw new ReleasesError(
+          'The deployment driver does not support cancellation.',
+          'CANCELLATION_UNSUPPORTED',
+          'FAILED_PRECONDITION',
+        );
+      result = await session.cancel(deployment.id, app.id, queuedOnly);
+    }
+    if (result === 'cancelled')
+      await this.markCancelled(deployment, replacedBy);
+    else if (result === 'cancelling') {
+      this.logDeployment(
+        deployment,
+        'cancelling',
+        'Cancellation requested; waiting for the current step to finish',
+      );
+      await this.query()
+        .updateTable('relDeployments')
+        .set({ status: 'cancelling' })
+        .where('id', '=', deployment.id)
+        .where('status', 'in', ['queued', 'deploying'])
+        .execute();
+    }
+    return result;
+  }
+
+  private markCancelled(
+    deployment: DeploymentRecord,
+    replacedBy?: string,
+  ): Promise<void> {
+    return this.withLock(`settle:${deployment.id}`, () =>
+      this.markCancelledUnlocked(deployment, replacedBy),
+    );
+  }
+
+  private async markCancelledUnlocked(
+    deployment: DeploymentRecord,
+    replacedBy?: string,
+  ): Promise<void> {
+    const current = await this.requireDeploymentById(deployment.id);
+    if (!['queued', 'deploying', 'cancelling'].includes(current.status)) return;
+    const reason = replacedBy
+      ? 'Replaced by a newer deployment.'
+      : 'Deployment cancelled.';
+    const finishedAt = new Date();
+    if (deployment.configPath) await rm(deployment.configPath, { force: true });
+    await this.options.database.transaction(async (connection) => {
+      await connection.query
+        .updateTable('relDeployments')
+        .set({
+          status: 'cancelled',
+          phase: 'cancelled',
+          error: reason,
+          finishedAt,
+        })
+        .where('id', '=', deployment.id)
+        .where('status', 'in', ['queued', 'deploying', 'cancelling'])
+        .execute();
+      await this.settleRequest(connection, deployment, 'cancelled', finishedAt);
+    });
+    if (this.options.logging?.deployments?.enabled !== false)
+      this.appendDeploymentLog(deployment, {
+        time: finishedAt.toISOString(),
+        level: 'info',
+        appId: deployment.appId,
+        deploymentId: deployment.id,
+        phase: 'cancelled',
+        msg: reason,
+        reason: replacedBy ? 'superseded' : 'requested',
+        ...(replacedBy ? { replacedBy } : {}),
+      });
+    const app = await this.requireApp(deployment.appId);
+    const release = await this.requireRelease(app.id, deployment.releaseId);
+    await this.options.events
+      .emit({
+        type: 'deployment.cancelled',
+        app: appView(app),
+        release: releaseView(release),
+        deployment: deploymentView(
+          await this.requireDeploymentById(deployment.id),
+          { version: release.version, checksum: release.checksum },
+        ),
+        actor: { userId: deployment.actorId, kind: deployment.actorKind },
+      })
+      .catch((error: unknown) =>
+        this.diagnostic.error(
+          'Failed to announce deployment cancellation',
+          error,
+        ),
       );
   }
 
@@ -3394,8 +3781,6 @@ export class ReleasesService {
 }
 
 // --- Variables --------------------------------------------------------------------------------------------------
-
-const INITIAL_ADMIN_TTL_MS = 24 * 60 * 60 * 1000;
 
 interface VariablesContext {
   readonly environment: EnvironmentRecord;
@@ -3755,7 +4140,7 @@ function runtimeStatus(
     };
   return {
     available: true,
-    state: item.state,
+    state: item.state === 'cancelled' ? 'failed' : item.state,
     version: item.version,
     startedAt: item.startedAt,
     error: item.error,
@@ -3849,7 +4234,6 @@ function decodeDeployment(row: Row): DeploymentRecord {
     env: nullableString(row.env),
     variablesFingerprint: nullableString(row.variablesFingerprint),
     initialAdmin: nullableString(row.initialAdmin),
-    initialAdminExpiresAt: decodeOptionalDate(row.initialAdminExpiresAt),
     initialAdminSavedBy: nullableString(row.initialAdminSavedBy),
     initialAdminSavedAt: decodeOptionalDate(row.initialAdminSavedAt),
     createdAt: decodeDate(row.createdAt),

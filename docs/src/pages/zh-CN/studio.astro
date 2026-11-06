@@ -1,0 +1,14 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import StudioGuide from '../../components/StudioGuide/index.astro';
+import content from '../../components/StudioGuide/content.json';
+---
+
+<BaseLayout
+  language='cn'
+  route='/studio'
+  title={content.title}
+  description={content.description}
+>
+  <StudioGuide language='cn' />
+</BaseLayout>

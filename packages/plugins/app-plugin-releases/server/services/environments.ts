@@ -11,10 +11,13 @@ import type {
   EnvironmentCheckInput,
   EnvironmentCheckResult,
   EnvironmentInput,
+  EnvironmentListItem,
+  EnvironmentPurpose,
   EnvironmentRecord,
   EnvironmentVariableView,
   SetEnvironmentVariableInput,
 } from '../../shared/releases.js';
+import { ENVIRONMENT_PURPOSES } from '../../shared/releases.js';
 import { AccessGuard, type Caller } from '../access/caller.js';
 import {
   capabilitiesFor,
@@ -71,7 +74,7 @@ export class EnvironmentService {
   public constructor(private readonly options: EnvironmentServiceOptions) {}
 
   /** Anyone who may see environment settings, create Apps or open the Apps page may list environments. */
-  public async list(caller: Caller): Promise<readonly EnvironmentRecord[]> {
+  public async list(caller: Caller): Promise<readonly EnvironmentListItem[]> {
     this.requireReader(caller);
     const rows = await this.query()
       .selectFrom('relEnvironments')
@@ -79,7 +82,18 @@ export class EnvironmentService {
       .orderBy('name', 'asc')
       .orderBy('id', 'asc')
       .execute<Row>();
-    return rows.map((row) => this.decode(row));
+    const counts = await this.query()
+      .selectFrom('relApps')
+      .select((eb) => ['environmentId', eb.fn.countAll().as('total')])
+      .groupBy('environmentId')
+      .execute<Row>();
+    const appCounts = new Map(
+      counts.map((row) => [String(row.environmentId), Number(row.total)]),
+    );
+    return rows.map((row) => {
+      const environment = this.decode(row);
+      return { ...environment, appCount: appCounts.get(environment.id) ?? 0 };
+    });
   }
 
   public async get(caller: Caller, id: string): Promise<EnvironmentRecord> {
@@ -531,6 +545,7 @@ export function decodeEnvironment(
     // Filled in from the driver by the service; nothing without one.
     capabilities: { archives: false, images: false, onDemand: false },
     sampleDataOnFirstDeploy: Boolean(row.sampleDataOnFirstDeploy),
+    purpose: row.purpose === 'preview' ? 'preview' : 'test',
     createdAt: decodeDate(row.createdAt).toISOString(),
     updatedAt: decodeDate(row.updatedAt).toISOString(),
   };
@@ -643,6 +658,7 @@ function normalizeSettings(
   defaultDormantAfterHours: number | null;
   registryId: string | null;
   sampleDataOnFirstDeploy: boolean;
+  purpose: EnvironmentPurpose;
 } {
   const publicUrl =
     input.publicUrl === undefined
@@ -666,7 +682,23 @@ function normalizeSettings(
       input.sampleDataOnFirstDeploy,
       current?.sampleDataOnFirstDeploy ?? false,
     ),
+    purpose: optionalPurpose(input.purpose, current?.purpose ?? 'test'),
   };
+}
+
+function optionalPurpose(
+  value: unknown,
+  fallback: EnvironmentPurpose,
+): EnvironmentPurpose {
+  if (value === undefined) return fallback;
+  const found = ENVIRONMENT_PURPOSES.find((purpose) => purpose === value);
+  if (!found)
+    throw new ReleasesError(
+      `An environment's purpose is one of ${ENVIRONMENT_PURPOSES.join(', ')}.`,
+      'INVALID_ENVIRONMENT_PURPOSE',
+      'INVALID_ARGUMENT',
+    );
+  return found;
 }
 
 /** The runtime policy Apps created in the environment take, validated as an App's own. */

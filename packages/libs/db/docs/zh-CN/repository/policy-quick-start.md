@@ -126,10 +126,10 @@ WHERE 只挡住「能碰哪一行」，挡不住「改完跑到哪去」。这�
 
 ## 5. 一次请求绑多张表
 
-一次请求通常要用到多个 Collection，事务里还要重新取 Repository。绑在 Connection 上，两样一起解决：
+A request often touches several Collections and takes fresh repositories inside a transaction. Bind the policy map with `connection.restrict()` to carry the same restrictions through both:
 
 ```ts
-const scoped = db.connection().withPolicies(
+const restricted = db.connection().restrict(
   {
     projects: projectPolicy,
     tasks: (principal: Principal) => taskPolicyFor(principal),
@@ -137,16 +137,16 @@ const scoped = db.connection().withPolicies(
   principal,
 );
 
-scoped.repository('projects'); // 已绑定
-scoped.repository('users'); // 不在 map 里：返回未绑定实例
-await scoped.transaction(async (tx) => tx.repository('projects')); // 事务内自动携带
+restricted.repository('projects'); // Bound to the projects policy.
+// restricted.repository('users'); // Type error; POLICY_REQUIRED at runtime.
+await restricted.transaction(async (tx) => tx.repository('projects'));
 ```
 
-三条契约：
+The returned `RestrictedDatabase` only exposes repositories, transactions, commit/rollback callbacks, and policy explanations. Unlisted direct Collection access throws `POLICY_REQUIRED`. Its repositories can `narrow()` their policies, but cannot replace them, and conservatively return `Partial<TRecord>`.
 
-- **principal 函数求值一次**，在绑定时调用，结果规范化并冻结。
-- **`@nocobase/db` 对 principal 一无所知**，签名里就是个裸泛型；它只是把你给的东西原样传给你自己的函数。
-- **带身份的实例不得跨请求共享**，不要挂到模块级单例上。
+Policy functions run once at binding with the supplied principal; their results are normalized and frozen. Transactions reuse those results. Do not share a principal-bound restricted database across requests.
+
+`withPolicies()` remains supported without deprecation for policy binding with full connection capabilities, including raw database access and unbound repositories for unlisted Collections. See [Restricted database access](../../restricted-database.md) to choose between `withPolicies()` and `restrict()`.
 
 ## 6. 关系
 
@@ -181,7 +181,7 @@ import { ref } from '@nocobase/db';
 
 const open = { scope: true } as const;
 
-db.connection().withPolicies(
+db.connection().restrict(
   {
     projects: {
       read: { scope: true, fields: ['id'], relations: { tasks: ref('tasks') } },
@@ -200,7 +200,7 @@ db.connection().withPolicies(
 );
 ```
 
-`ref` 解析到**同一个 `withPolicies` map 的键**，在绑定时展开并检测环——成环、目标不在 map 里、目标的 `read` 不是规则对象，都在绑定那一刻报 `INVALID_POLICY`。
+`ref` resolves a key in the same policy map, supplied to `restrict()` or `withPolicies()`. Expansion and cycle detection happen at binding time. Cycles, missing targets, and targets whose `read` is not a rule object throw `INVALID_POLICY`.
 
 ## 7. 收窄与检视
 
@@ -265,7 +265,7 @@ defineRepositoryApiRoutes<Session>({
 
 两种写法的检查时机不同：固定 Policy 在**定义路由时**规范化，配错了当场报错；函数做不到，它每个请求才求值，校验也跟着推迟到第一个打进来的请求。那种失败是 `INVALID_POLICY`，交给宿主错误处理器按服务端错误返回，而不是 400——Policy 是服务端拥有的，配错了不是调用方的问题。
 
-请求体里出现 `policy` 或 `scope` 一律 400 `UNSUPPORTED_REPOSITORY_OPTION`。`ref()` 在这条路径上定义期就被拒绝：引用要靠 `withPolicies` 的那张 map 展开，而这里是每个 exposure 绑一份。
+Request bodies containing `policy` or `scope` receive 400 `UNSUPPORTED_REPOSITORY_OPTION`. This route API rejects `ref()` at definition time: references need a shared policy map, as provided by `connection.restrict()`, while each exposure here binds its own policy.
 
 写起来啰嗦的话用 `buildRepositoryPolicy`，没提到的节点就是 `false`：
 

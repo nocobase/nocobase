@@ -21,12 +21,14 @@ import {
 } from '#components/ui/dialog';
 import { Dialog as DialogPrimitive } from '@base-ui/react/dialog';
 import { createPortal } from 'react-dom';
+import { useLocation } from 'react-router';
 import { cn } from 'cn';
 
 import { useChatTranslation } from './chat-i18n.js';
+import { useChatMode } from './chat-mode.js';
 import { ConversationView } from './conversation-view.js';
 import { HistoryList } from './history-list.js';
-import { PanelHeader } from './panel-header.js';
+import { PanelHeader, PanelHistoryHeader } from './panel-header.js';
 import { useMediaQuery } from './use-media-query.js';
 import type { ChatInputAvailability } from './input-availability.js';
 
@@ -79,19 +81,36 @@ function MountedPanel({
     },
     [body],
   );
-  const { mode, setMode, closeChat, open } = panel;
+  const { mode, setMode, setView, closeChat, open } = panel;
+  const { pathname } = useLocation();
+  const pathRef = useRef(pathname);
+  useEffect(() => {
+    const changed = pathRef.current !== pathname;
+    pathRef.current = pathname;
+    // Another page from the navigation: show it beside the panel rather than under it.
+    if (changed && mode === 'expanded') setMode('docked');
+  }, [pathname, mode, setMode]);
+  useEffect(() => {
+    const element = asideRef.current;
+    // The panel takes the focus as it opens, so Escape reaches it while the agents are still loading; a composer that
+    // is ready takes it from there.
+    if (open && !mobile && element && !element.contains(document.activeElement))
+      element.focus();
+  }, [open, mobile]);
   useEffect(() => {
     const element = asideRef.current;
     if (!element || !open) return;
     function onKeyDown(event: KeyboardEvent): void {
       if (event.key !== 'Escape' || event.defaultPrevented) return;
       event.preventDefault();
-      if (mode === 'expanded') setMode('docked');
-      else closeChat();
+      if (mode === 'expanded') {
+        setView('chat');
+        setMode('docked');
+      } else closeChat();
     }
     element.addEventListener('keydown', onKeyDown);
     return () => element.removeEventListener('keydown', onKeyDown);
-  }, [open, mode, setMode, closeChat, mobile]);
+  }, [open, mode, setMode, setView, closeChat, mobile]);
   const marker = { [CHAT_PANEL_ATTRIBUTE]: '' };
   const expanded = mode === 'expanded';
   return (
@@ -125,6 +144,7 @@ function MountedPanel({
       ) : (
         <aside
           ref={asideRef}
+          tabIndex={-1}
           id={CHAT_PANEL_ID}
           {...marker}
           aria-label={t('chat.title')}
@@ -132,7 +152,7 @@ function MountedPanel({
           data-mode={expanded ? 'expanded' : wide ? 'docked' : 'floating'}
           data-testid='chat-panel'
           className={cn(
-            'flex min-h-0 min-w-0 flex-col bg-background',
+            'flex min-h-0 min-w-0 flex-col bg-background outline-none',
             expanded
               ? 'absolute inset-0 z-30'
               : wide
@@ -140,11 +160,57 @@ function MountedPanel({
                 : 'absolute inset-y-0 right-0 z-30 w-[22rem] max-w-full border-l shadow-xl',
           )}
         >
-          <PanelHeader compact={false} />
-          <div ref={attachBody} className='flex min-h-0 flex-1 flex-col' />
+          {expanded ? (
+            // Covering the content: the conversation list on the left, the conversation and its header on the right.
+            <div
+              className='flex min-h-0 min-w-0 flex-1'
+              data-testid='chat-split'
+            >
+              <section
+                className='flex w-[18rem] shrink-0 flex-col border-r bg-muted/30'
+                data-panel-history=''
+              >
+                <PanelHistory header={<PanelHistoryHeader />} />
+              </section>
+              <div className='flex min-h-0 min-w-0 flex-1 flex-col'>
+                <PanelHeader compact={false} />
+                <div
+                  ref={attachBody}
+                  className='flex min-h-0 flex-1 flex-col'
+                />
+              </div>
+            </div>
+          ) : (
+            <>
+              <PanelHeader compact={false} />
+              <div ref={attachBody} className='flex min-h-0 flex-1 flex-col' />
+            </>
+          )}
         </aside>
       )}
     </>
+  );
+}
+
+function PanelHistory({
+  header,
+}: {
+  readonly header?: ReactElement;
+}): ReactElement {
+  const panel = useChatPanel();
+  const chat = useChatMode();
+  return (
+    <HistoryList
+      header={header}
+      mode={chat.mode}
+      activeId={panel.conversationId}
+      onOpen={(id) => {
+        panel.selectConversation(id);
+        panel.focusComposer();
+      }}
+      onOpenPage={panel.openPage}
+      onNew={chat.startNew}
+    />
   );
 }
 
@@ -154,32 +220,26 @@ function PanelBody({
   readonly inputAvailability?: ChatInputAvailability;
 }): ReactElement {
   const panel = useChatPanel();
-  const expanded = panel.mode === 'expanded';
+  const mobile = useMediaQuery(CHAT_MOBILE_QUERY);
+  // While covering the content the list has a column of its own, so the body is the conversation alone.
+  const split = panel.mode === 'expanded' && !mobile;
+  if (!split && panel.view === 'history')
+    return (
+      <div className='flex min-h-0 min-w-0 flex-1 flex-col'>
+        <PanelHistory />
+      </div>
+    );
   return (
     <div
       className={cn(
         'flex min-h-0 min-w-0 flex-1 flex-col p-3',
-        expanded && 'mx-auto w-full max-w-3xl',
+        split && 'mx-auto w-full max-w-3xl',
       )}
     >
-      {panel.view === 'history' ? (
-        <div className='min-h-0 flex-1 overflow-y-auto'>
-          <HistoryList
-            activeId={panel.conversationId}
-            onOpen={(id) => {
-              panel.selectConversation(id);
-              panel.focusComposer();
-            }}
-            onOpenPage={panel.openPage}
-            onNew={() => panel.selectConversation(null)}
-          />
-        </div>
-      ) : (
-        <ConversationView
-          conversationId={panel.conversationId}
-          inputAvailability={inputAvailability}
-        />
-      )}
+      <ConversationView
+        conversationId={panel.conversationId}
+        inputAvailability={inputAvailability}
+      />
     </div>
   );
 }

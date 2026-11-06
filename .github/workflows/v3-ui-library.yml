@@ -104,6 +104,13 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
+      # Preview builds may use workspace exports. Publication must also support the oldest installable runtime.
+      - name: Check published form runtime compatibility
+        if: >-
+          (github.event_name == 'push' && github.ref == 'refs/heads/v3-develop') ||
+          (github.event_name == 'workflow_dispatch' && inputs.publish && github.ref == 'refs/heads/v3-develop')
+        run: node scripts/check-form-feedback-release.mjs
+
       - name: Publish to OSS
         if: >-
           (github.event_name == 'push' && github.ref == 'refs/heads/v3-develop') ||

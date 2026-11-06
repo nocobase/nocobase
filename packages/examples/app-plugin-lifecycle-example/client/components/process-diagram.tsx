@@ -14,7 +14,7 @@ export function ProcessDiagram({
   description,
   current,
   visited = [],
-  history = [],
+  history,
   availableTransitions = [],
   className,
   containerClassName,
@@ -80,7 +80,7 @@ export function ProcessDiagram({
   };
   return (
     <div className={cn('space-y-3', containerClassName)}>
-      {current || history.length || visited.length ? (
+      {current || (history?.length ?? 0) || visited.length ? (
         <div className='flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground'>
           <span className='flex items-center gap-1.5'>
             <span
@@ -99,7 +99,7 @@ export function ProcessDiagram({
             />
             ✓ {t('diagramStatus.visited')}
           </span>
-          {history.length > 0 && (
+          {(history?.length ?? 0) > 0 && (
             <span className='flex items-center gap-1.5'>
               <span className='h-0.5 w-4 rounded-full bg-primary' />
               {t('diagramStatus.traversed')}
@@ -120,10 +120,52 @@ export function ProcessDiagram({
       <NamespaceScope ns={NAMESPACE}>
         <LifecycleDiagram
           description={description}
-          endLabel={t('diagramStatus.end')}
+          presentation='process'
+          stateKind={(state) => {
+            if (description.initialStates.includes(state.name)) return 'start';
+            if (
+              [
+                'rejected',
+                'cancelled',
+                'voided',
+                'exited',
+                'objected',
+              ].includes(state.name)
+            )
+              return 'negative';
+            if (
+              [
+                'needsInfo',
+                'exception',
+                'failed',
+                'blocked',
+                'timedOut',
+                'compensationNeedsAttention',
+              ].includes(state.name) ||
+              state.name.endsWith('Failed')
+            )
+              return 'exception';
+            if (state.final) return 'success';
+            if (
+              [
+                'awaitingManager',
+                'awaitingFinance',
+                'review',
+                'reviewing',
+                'approval',
+                'headReview',
+                'leaderReview',
+                'level1Review',
+                'level2Review',
+                'level3Review',
+              ].includes(state.name)
+            )
+              return 'approval';
+            return 'work';
+          }}
           currentState={current}
           history={history}
-          visitedStates={visited}
+          visitedStates={visited.length ? visited : undefined}
           availableTransitions={availableTransitions}
           ariaLabel={t('lifecycle.diagram')}
           direction='DOWN'

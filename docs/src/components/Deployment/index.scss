@@ -726,10 +726,13 @@
       }
     }
     .deployment-method-tabs {
-      gap: 20px;
+      gap: 8px;
 
       > button {
-        padding-block: 12px;
+        min-width: 0;
+        padding: 12px 8px;
+        font-size: 14px;
+        white-space: nowrap;
       }
     }
     .guide-heading > h2 {

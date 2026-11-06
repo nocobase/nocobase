@@ -7,6 +7,7 @@
  * declares the `features` it has, and the server hands a run only to a runner whose features cover its requirements.
  */
 import { z } from 'zod';
+import { AGENTS, type CatalogAgentId } from '@nocobase/acp-bridge/catalog';
 
 /**
  * The protocol this package describes. A server rejects a runner that speaks another one (`PROTOCOL_UNSUPPORTED`).
@@ -76,8 +77,21 @@ import { z } from 'zod';
  * QuotaReport on FailRequest and event meta.quota are optional additions within version 11.
  * Older runners retain failure-only behavior; receivers ignore absent quota observations.
  */
-/** Version 11 adds runnerUpgrade reports, which older servers cannot parse; version 10 added workspace.key. */
-export const PROTOCOL_VERSION = 11;
+/**
+ * Version 11 adds runnerUpgrade reports, which older servers cannot parse; version 10 added workspace.key.
+ *
+ * Version 12 added code host CLI wrappers (`RunGit.tools`, the `gitTools` feature) and made a run credential's
+ * username the only one git uses. Nothing else of version 11 changed; update the application first.
+ */
+/**
+ * `ToolInfo.statusReason` and `ToolInfo.statusDetail` were added within version 13 as optional fields: why a tool's
+ * status is what it is, beyond the status itself, and the tool's own redacted words about it. Older servers ignore
+ * them; a runner that does not send them is shown by status alone, as before.
+ */
+/** Version 14 adds conversation output-block previews. Update applications before runners. */
+// Version 14 announces outputBlocks. Upgrade applications before runners: older servers reject
+// this version through compatibility handling before parsing the expanded feature enum. Older runners remain supported.
+export const PROTOCOL_VERSION = 14;
 
 /** The oldest protocol a server speaking `PROTOCOL_VERSION` still serves. */
 export const MIN_PROTOCOL_VERSION = 3;
@@ -94,6 +108,7 @@ export function isProtocolSupported(version: number): boolean {
 /**
  * What a runner can do beyond the baseline (claim, lease, events, complete/fail).
  *
+ * - `outputBlocks`: emits redacted realtime previews and completed snapshots for flagged conversations.
  * - `workspaceKey`: honors the separately named work directory in `RunWorkspace.key`.
  * - `input`: accepts input while a run is running (`status.inputs`, and the `handledInputIds` fence on complete).
  * - `steer`: injects input into the running turn instead of waiting for a turn boundary.
@@ -110,8 +125,10 @@ export function isProtocolSupported(version: number): boolean {
  *   package and exact version (`HeartbeatResponse.npmUpgrade`) instead of serving a tarball.
  * - `gitCredentials`: asks for a repository's credential whenever git needs one (`RunGit.onDemand`,
  *   `RUNNER_ROUTES.gitCredential`), instead of keeping the one the claim handed out for the whole run.
+ * - `gitTools` (protocol 12): wraps the code host CLIs a run names (`RunGit.tools`) with the run's credential.
  */
 export const RUNNER_FEATURES = [
+  'outputBlocks',
   'workspaceKey',
   'input',
   'steer',
@@ -125,6 +142,7 @@ export const RUNNER_FEATURES = [
   'mounts',
   'npm',
   'gitCredentials',
+  'gitTools',
 ] as const;
 
 export type RunnerFeature = (typeof RUNNER_FEATURES)[number];
@@ -145,9 +163,26 @@ export function missingFeatures(
 }
 
 /** The coding tools a runner can drive. */
-export const AGENT_TOOLS = ['claude', 'codex', 'opencode', 'pi'] as const;
+export const NATIVE_AGENT_TOOLS = [
+  'claude',
+  'codex',
+  'opencode',
+  'pi',
+] as const;
 
-export type AgentTool = (typeof AGENT_TOOLS)[number];
+export const AGENT_TOOLS: readonly AgentTool[] = [
+  ...new Set<AgentTool>([
+    ...NATIVE_AGENT_TOOLS,
+    ...AGENTS.map((agent) => agent.id),
+  ]),
+];
+export const DEFAULT_AGENT_TOOLS = ['codex', 'claude'] as const;
+export function isNativeTool(tool: string): boolean {
+  return (NATIVE_AGENT_TOOLS as readonly string[]).includes(tool);
+}
+
+export type NativeAgentTool = (typeof NATIVE_AGENT_TOOLS)[number];
+export type AgentTool = NativeAgentTool | CatalogAgentId;
 
 export const AgentToolSchema: z.ZodType<AgentTool> = z.enum(AGENT_TOOLS);
 
@@ -164,7 +199,8 @@ export const AgentToolSchema: z.ZodType<AgentTool> = z.enum(AGENT_TOOLS);
  * the provider publishes; this list does not establish availability on any runner.
  */
 export const TOOL_MODEL_SUGGESTIONS: Readonly<
-  Record<AgentTool, readonly string[]>
+  Record<NativeAgentTool, readonly string[]> &
+    Partial<Record<AgentTool, readonly string[]>>
 > = {
   claude: [
     'opus',
@@ -202,7 +238,10 @@ export const TOOL_MODEL_SUGGESTIONS: Readonly<
  * the tool's default; an adapter passes nothing for a value its tool does not take (an OpenCode model without that
  * variant).
  */
-export const TOOL_EFFORTS: Readonly<Record<AgentTool, readonly string[]>> = {
+export const TOOL_EFFORTS: Readonly<
+  Record<NativeAgentTool, readonly string[]> &
+    Partial<Record<AgentTool, readonly string[]>>
+> = {
   claude: ['low', 'medium', 'high', 'xhigh', 'max'],
   codex: ['low', 'medium', 'high', 'xhigh', 'max', 'ultra'],
   opencode: ['minimal', 'low', 'medium', 'high', 'xhigh', 'max'],

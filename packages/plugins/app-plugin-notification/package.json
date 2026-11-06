@@ -2,7 +2,7 @@
   "name": "@nocobase/app-plugin-notification",
   "displayName": "Notification App Plugin",
   "description": "Provides the application notification runtime, storage, delivery, and logs.",
-  "version": "1.0.0-beta.28",
+  "version": "2.0.0-beta.5",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {
@@ -28,19 +28,10 @@
       "types": "./client/plugin.ts",
       "import": "./client/plugin.ts"
     },
-    "./package.json": "./package.json"
-  },
-  "nocobase": {
-    "registry": {
-      "items": {
-        "logs-ui": "./registry/logs-ui"
-      }
-    },
-    "plugin": {
-      "database": {
-        "migrations": "./database/migrations",
-        "seeds": "./database/seeds"
-      }
+    "./package.json": "./package.json",
+    "./client/templates": {
+      "types": "./client/components/templates.tsx",
+      "import": "./client/components/templates.tsx"
     }
   },
   "publishConfig": {
@@ -62,31 +53,35 @@
         "types": "./dist/client/plugin.d.ts",
         "import": "./dist/client/plugin.js"
       },
-      "./package.json": "./package.json"
+      "./package.json": "./package.json",
+      "./client/templates": {
+        "types": "./dist/client/components/templates.d.ts",
+        "import": "./dist/client/components/templates.js"
+      }
+    },
+    "imports": {
+      "#components/*": "./dist/client/components/*.js",
+      "#lib/*": "./dist/client/lib/*.js",
+      "#hooks/*": "./dist/client/hooks/*.js"
     }
   },
   "files": [
     "dist",
     "CHANGELOG.md",
     "README.md",
-    "skills",
-    "registry",
-    "registry.config.json",
-    "public/r"
+    "skills"
   ],
   "scripts": {
     "clean": "node ./scripts/clean-dist.mjs",
     "build": "node ./scripts/clean-dist.mjs && tsc -p tsconfig.json && nocobase-db-manifests",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.type-tests.json --noEmit",
     "test": "vitest run",
-    "registry:build": "node ../../../scripts/registry.mjs build --package .",
-    "registry:materialize": "node ../../../scripts/registry.mjs materialize --package .",
-    "prepack": "pnpm registry:build && pnpm build",
+    "prepack": "pnpm build",
     "lint": "eslint . --max-warnings 0",
     "lint:fix": "eslint . --fix --max-warnings 0",
     "format": "prettier . --write",
     "format:check": "prettier . --check",
-    "check": "pnpm lint && pnpm format:check && pnpm typecheck && pnpm test && pnpm registry:build && pnpm build",
+    "check": "pnpm lint && pnpm format:check && pnpm typecheck && pnpm test && pnpm build",
     "fix": "pnpm lint:fix && pnpm format"
   },
   "dependencies": {
@@ -106,7 +101,10 @@
     "@nocobase/service-provider": "workspace:^",
     "lucide-react": "catalog:",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "@base-ui/react": "catalog:",
+    "class-variance-authority": "catalog:",
+    "cn": "catalog:"
   },
   "devDependencies": {
     "@nocobase/app-testing": "workspace:*",
@@ -119,6 +117,23 @@
     "eslint": "catalog:",
     "prettier": "catalog:",
     "typescript": "catalog:",
-    "vitest": "catalog:"
+    "vitest": "catalog:",
+    "shadcn": "catalog:",
+    "tailwindcss": "catalog:",
+    "tw-animate-css": "catalog:"
+  },
+  "imports": {
+    "#components/*": {
+      "development": "./client/components/*.js",
+      "default": "./dist/client/components/*.js"
+    },
+    "#lib/*": {
+      "development": "./client/lib/*.js",
+      "default": "./dist/client/lib/*.js"
+    },
+    "#hooks/*": {
+      "development": "./client/hooks/*.js",
+      "default": "./dist/client/hooks/*.js"
+    }
   }
 }

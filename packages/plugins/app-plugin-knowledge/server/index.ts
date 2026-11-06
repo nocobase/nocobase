@@ -1,5 +1,12 @@
 export { default } from './plugin.js';
+export { createKnowledgePlugin } from './plugin.js';
+export * from './indexing/index.js';
 export * from './tokens.js';
+export {
+  knowledgeSystemPrompt,
+  type KnowledgePromptVariables,
+  type KnowledgeRetrievalStrategy,
+} from './online-agent/prompt.js';
 export { KnowledgeError, type KnowledgeErrorStatus } from './errors.js';
 export {
   NO_ACCESS,
@@ -73,4 +80,7 @@ export {
   KnowledgeSpaceSummarySchema,
 } from './routes/schemas.js';
 /** What the plugin registers with the authorization plugin at boot, for an application or a test assembling it by hand. */
-export { registerBusinesses } from './providers/authorization.js';
+export {
+  registerBusinesses,
+  registerSettings,
+} from './providers/authorization.js';

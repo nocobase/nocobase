@@ -1,16 +1,18 @@
+import { resolveChannelType } from '@nocobase/app-server/config';
+import { ServiceContainer } from '@nocobase/service-provider';
 import { randomUUID } from 'node:crypto';
+import { legacyChannelConfig } from './channel-type-adapter.js';
 
 import { Hono } from 'hono';
 
 import { ChannelManager } from './channel-manager.js';
 import { createDeliveryJob, type DeliveryJobClass } from './delivery-job.js';
-import { NotificationLogs } from './logs.js';
-import { NotificationReconcileJob } from './notification-reconcile-job.js';
 import {
   notificationRequestFingerprint,
   validateNotificationIdempotencyKey,
 } from './idempotency.js';
-import { notificationTestError } from './types.js';
+import { NotificationLogs } from './logs.js';
+import { NotificationReconcileJob } from './notification-reconcile-job.js';
 import {
   createNotificationRegistry,
   type NotificationRegistry,
@@ -27,7 +29,6 @@ import {
   type NotificationStore,
 } from './store.js';
 import type {
-  ProviderSendResult,
   NotificationDeliveryStatusSnapshot,
   NotificationManagerOptions,
   NotificationProviderIdentity,
@@ -38,9 +39,7 @@ import type {
   NotificationStatusChangedFilter,
   NotificationStatusChangedListener,
   NotificationStatusSnapshot,
-  NotificationTestActor,
-  NotificationTestSendRequest,
-  NotificationTestTargetDescriptor,
+  ProviderSendResult,
 } from './types.js';
 
 interface ExpandedRecipientTarget {
@@ -74,8 +73,7 @@ export class NotificationIdempotencyConflictError extends Error {
 
 /**
  * A Channel cannot reach its transport: it is not enabled, its Provider changed or is not registered, or creating the
- * Channel or Provider runtime failed (an SMTP transport that cannot be built, for example). Routes answer it with 503;
- * any other error is a defect and is left to the application.
+ * Channel or Provider runtime failed (an SMTP transport that cannot be built, for example).
  */
 export class NotificationTransportUnavailableError extends Error {
   readonly code = 'NOTIFICATION_TRANSPORT_UNAVAILABLE';
@@ -108,6 +106,7 @@ export class NotificationManager<
   readonly store: NotificationStore;
   readonly registry: NotificationRegistry;
   private readonly channelManager: ChannelManager;
+  private readonly container: ServiceContainer;
 
   private readonly deliveryJob: DeliveryJobClass;
   private readonly reconcileJob: NotificationReconcileJob;
@@ -122,8 +121,11 @@ export class NotificationManager<
   private activation?: Promise<void>;
   private started = false;
   private startPromise?: Promise<void>;
+  private closePromise?: Promise<void>;
+  private readonly requests = new Set<Promise<unknown>>();
 
   constructor(private readonly options: NotificationManagerOptions<TChannels>) {
+    this.container = options.container ?? new ServiceContainer();
     this.registry = options.registry ?? createNotificationRegistry();
     this.store =
       options.store ?? createDatabaseNotificationStore(options.database);
@@ -171,88 +173,6 @@ export class NotificationManager<
     await this.options.executor.setup();
     this.activated = true;
     this.reconcileJob.start();
-  }
-
-  listTestTargets(): readonly NotificationTestTargetDescriptor[] {
-    return this.registry.testTargets(this.options.config);
-  }
-
-  async sendTest(
-    request: NotificationTestSendRequest,
-    actor: NotificationTestActor,
-  ): Promise<NotificationSendResult> {
-    const target = this.resolveTestTarget(request);
-    const channelConfig = this.options.config.channels[request.channel];
-    const provider = this.registry.provider(channelConfig.provider);
-    const definition = provider && this.registry.channel(provider.messageType);
-    if (!definition?.test)
-      throw new NotificationTransportUnavailableError(
-        'Notification test target is unavailable.',
-      );
-    const message = definition.test.toSendInput({
-      actor,
-      values: request.values,
-      channelConfig,
-    });
-    return this.send({
-      idempotencyKey: `notification-test:${randomUUID()}`,
-      messages: {
-        [target.channel.name]: message,
-      } as NotificationSendInput<TChannels>['messages'],
-      source: { type: 'notification-test', referenceId: actor.userId },
-    });
-  }
-
-  async getTestStatus(
-    notificationId: string,
-    actor: NotificationTestActor,
-  ): Promise<import('./logs.js').NotificationLogDetails | undefined> {
-    const details = await this.logs.get(notificationId);
-    return details?.log.sourceType === 'notification-test' &&
-      details.log.sourceReferenceId === actor.userId
-      ? details
-      : undefined;
-  }
-
-  private resolveTestTarget(
-    request: NotificationTestSendRequest,
-  ): NotificationTestTargetDescriptor {
-    const target = this.listTestTargets().find(
-      (candidate) => candidate.channel.name === request.channel,
-    );
-    if (!target)
-      throw notificationTestError(
-        'NOTIFICATION_TEST_TARGET_UNAVAILABLE',
-        'errors.testTargetUnavailable',
-      );
-    const fieldNames = new Set(target.fields.map((field) => field.name));
-    for (const name of Object.keys(request.values)) {
-      if (!fieldNames.has(name)) {
-        throw notificationTestError(
-          'NOTIFICATION_TEST_UNKNOWN_FIELD',
-          'errors.testUnknownField',
-          { params: { name } },
-        );
-      }
-    }
-    for (const field of target.fields) {
-      const value = request.values[field.name]?.trim() ?? '';
-      if (field.required && !value) {
-        throw notificationTestError(
-          'NOTIFICATION_TEST_REQUIRED_FIELD',
-          'errors.testRequiredField',
-          { params: { name: field.name } },
-        );
-      }
-      if (field.maxLength !== undefined && value.length > field.maxLength) {
-        throw notificationTestError(
-          'NOTIFICATION_TEST_FIELD_TOO_LONG',
-          'errors.testFieldTooLong',
-          { params: { name: field.name, maxLength: field.maxLength } },
-        );
-      }
-    }
-    return target;
   }
 
   async start(): Promise<void> {
@@ -323,7 +243,14 @@ export class NotificationManager<
   }
 
   /** Credentials must never enter notification snapshots or persistent job payloads. */
-  async sendTransient(input: {
+  sendTransient(input: {
+    readonly channel: string;
+    readonly message: object;
+  }): Promise<readonly ProviderSendResult[]> {
+    return this.trackRequest(() => this.sendTransientInternal(input));
+  }
+
+  private async sendTransientInternal(input: {
     readonly channel: string;
     readonly message: object;
   }): Promise<readonly ProviderSendResult[]> {
@@ -332,7 +259,29 @@ export class NotificationManager<
     return this.channelManager.sendTransient(input.channel, input.message);
   }
 
-  async send(
+  send(
+    input: NotificationSendInput<TChannels>,
+  ): Promise<NotificationSendResult> {
+    return this.trackRequest(() => this.sendInternal(input));
+  }
+
+  private trackRequest<T>(run: () => Promise<T>): Promise<T> {
+    if (this.closePromise)
+      return Promise.reject(
+        new NotificationTransportUnavailableError(
+          'Notification runtime is closing.',
+        ),
+      );
+    const request = run();
+    this.requests.add(request);
+    const remove = (): void => {
+      this.requests.delete(request);
+    };
+    request.then(remove, remove);
+    return request;
+  }
+
+  private async sendInternal(
     input: NotificationSendInput<TChannels>,
   ): Promise<NotificationSendResult> {
     await this.activate();
@@ -566,7 +515,13 @@ export class NotificationManager<
     };
   }
 
-  async retryDelivery(
+  retryDelivery(
+    input: NotificationRetryDeliveryInput,
+  ): Promise<NotificationDeliveryStatusSnapshot> {
+    return this.trackRequest(() => this.retryDeliveryInternal(input));
+  }
+
+  private async retryDeliveryInternal(
     input: NotificationRetryDeliveryInput,
   ): Promise<NotificationDeliveryStatusSnapshot> {
     const reason = input.reason?.trim();
@@ -626,7 +581,15 @@ export class NotificationManager<
     );
   }
 
-  async close(): Promise<void> {
+  close(): Promise<void> {
+    this.closePromise ??= this.closeInternal().finally(() => {
+      this.closePromise = undefined;
+    });
+    return this.closePromise;
+  }
+
+  private async closeInternal(): Promise<void> {
+    await Promise.allSettled([...this.requests]);
     await this.startPromise?.catch(() => undefined);
     const activation = this.activation;
     await activation?.catch(() => undefined);
@@ -637,6 +600,7 @@ export class NotificationManager<
     await this.reconcileJob.stop();
     // Running Deliveries finish before the Channels they send through close.
     if (activation) await this.options.executor.shutdown();
+    await Promise.allSettled([...this.runtimePromises.values()]);
     await this.channelManager.close();
     this.runtimePromises.clear();
     this.started = false;
@@ -884,7 +848,7 @@ export class NotificationManager<
     if (this.channelManager.has(type)) {
       if (
         this.channelManager.providerIdentities(type)[0]?.type !==
-        config.provider
+        resolveChannelType(config)
       )
         return Promise.reject(
           new NotificationTransportUnavailableError(
@@ -905,7 +869,7 @@ export class NotificationManager<
           );
     });
     this.runtimePromises.set(type, operation);
-    void operation.catch(() => {
+    operation.catch(() => {
       if (this.runtimePromises.get(type) === operation) {
         this.runtimePromises.delete(type);
       }
@@ -919,23 +883,34 @@ export class NotificationManager<
       throw new NotificationTransportUnavailableError(
         `Notification Channel "${name}" is not enabled.`,
       );
-    const providerDefinition = this.registry.provider(config.provider);
+    const type = resolveChannelType(config);
+    const registered = this.registry.channelType(type);
+    if (registered) {
+      const runtime = await registered.create(
+        { channelName: name, container: this.container },
+        config,
+      );
+      this.channelManager.register(name, runtime);
+      return;
+    }
+    const legacyConfig = legacyChannelConfig(config);
+    const providerDefinition = this.registry.provider(type);
     const definition =
       providerDefinition &&
       this.registry.channel(providerDefinition.messageType);
     if (!providerDefinition || !definition)
       throw new NotificationTransportUnavailableError(
-        `Notification Provider "${config.provider}" is unavailable.`,
+        `Notification Channel type "${type}" is unavailable.`,
       );
     const channel = await definition.createChannel(
       { logger: this.options.logger },
-      config,
+      legacyConfig,
     );
     const provider = await providerDefinition.createProvider(
       { logger: this.options.logger, now: () => this.store.now() },
-      config,
+      legacyConfig,
     );
-    if (provider.type !== config.provider) {
+    if (provider.type !== type) {
       await provider.close?.();
       throw new Error(
         'Notification Provider runtime type must match its definition.',
@@ -965,7 +940,7 @@ function initialNotificationStatus(
 
 export function createNotificationManager<
   const TConfig extends Readonly<
-    Record<string, import('./types.js').NotificationChannelConfig>
+    Record<string, import('./types.js').NotificationChannelConfigInput>
   >,
 >(
   options: Omit<
@@ -975,7 +950,7 @@ export function createNotificationManager<
     'config'
   > & {
     readonly config: Omit<
-      import('./types.js').NotificationConfig,
+      import('./types.js').NotificationConfigInput,
       'channels'
     > & { readonly channels: TConfig };
   },

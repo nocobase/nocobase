@@ -1,15 +1,10 @@
-import type { BackendFactory, ConnectionOptions, JobsOptions } from 'bullmq';
+import type { QueueImplementation } from './runtime.js';
 
-/**
- * The implementation a configuration runs on: `inMemory` for the in-process
- * queue, `redis` for BullMQ.
- */
-export type QueueAdapter = 'inMemory' | 'redis';
+/** The adapters installed in the application; backend packages augment this map. */
+export type QueueAdapter = keyof QueueAdapterConnections;
 
 /** Connection option types, keyed by adapter. */
 export interface QueueAdapterConnections {
-  /** BullMQ connection options, or what a registered backend factory interprets. */
-  redis: ConnectionOptions;
   inMemory: Record<string, never>;
 }
 
@@ -39,20 +34,24 @@ export interface RateLimitOptions {
  * keeps all of them, a number keeps that many, and `{ count, age }` bounds by
  * count and by age in seconds.
  */
-export type QueueRetentionPolicy = JobsOptions['removeOnComplete'];
+export type QueueRetentionPolicy =
+  boolean | number | { count?: number; age?: number };
 
 /** Retry delay: milliseconds for a fixed delay, or a built-in strategy. */
-export type QueueBackoffOptions = JobsOptions['backoff'];
+export type QueueBackoffOptions =
+  | number
+  | {
+      type: 'fixed' | 'exponential';
+      delay?: number;
+      jitter?: number;
+    };
 
 /** One complete queue configuration. Keys never inherit from each other. */
 export interface QueueConfigEntry<A extends QueueAdapter = QueueAdapter> {
   readonly adapter: A;
-  /**
-   * `redis` only: the name of a BullMQ backend factory registered with
-   * `registerBackend()`. Omitted, BullMQ's Redis backend is used.
-   */
+  /** Optional backend-owned selector; interpreted and validated by the implementation. */
   readonly queueBackend?: string;
-  /** Required for `redis` on BullMQ's Redis backend; omitted for `inMemory`. */
+  /** Backend connection options; Memory accepts no connection. */
   readonly connection?: QueueConnectionOptions<A>;
   /** `inMemory` only: the directory holding the state files. */
   readonly persistence?: { readonly path?: string };
@@ -113,8 +112,11 @@ export interface QueueServiceDefaults {
 }
 
 export interface QueueService {
-  /** Registers a BullMQ backend factory for `queueBackend` to name. Only before `setup()` starts. */
-  registerBackend(name: string, factory: BackendFactory): void;
+  /** Registers an application-owned implementation before setup freezes registration. */
+  registerImplementation(
+    adapter: string,
+    implementation: QueueImplementation,
+  ): void;
   manager(queue: string, configKey?: string): QueueManager;
   producer(queue: string, configKey?: string): QueueProducer;
   consumer(queue: string, configKey?: string): QueueConsumer;
@@ -159,9 +161,9 @@ export interface PublishReceipt {
 }
 
 export interface PublishOptions {
-  readonly priority?: JobsOptions['priority'];
-  readonly delay?: JobsOptions['delay'];
-  readonly attempts?: JobsOptions['attempts'];
+  readonly priority?: number;
+  readonly delay?: number;
+  readonly attempts?: number;
   readonly backoff?: QueueBackoffOptions;
   readonly removeOnComplete?: QueueRetentionPolicy;
   readonly removeOnFail?: QueueRetentionPolicy;

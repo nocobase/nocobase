@@ -1,0 +1,299 @@
+# @nocobase/app-plugin-demo-mode
+
+## 0.2.0-beta.9
+
+### Patch Changes
+
+- b3b3252: Automatically sign anonymous demo visitors in when opening protected deep links, retaining existing accounts and the complete destination URL.
+- Updated dependencies [bfddb40]
+- Updated dependencies [c627337]
+- Updated dependencies [49daa11]
+- Updated dependencies [78bdca8]
+- Updated dependencies [3681eb0]
+- Updated dependencies [7fe7292]
+- Updated dependencies [9998ac4]
+- Updated dependencies [87f1ea5]
+- Updated dependencies [6507d01]
+  - @nocobase/app-plugin-agents@2.0.0-beta.4
+  - @nocobase/app-plugin-authentication@2.0.0-beta.19
+  - @nocobase/app-plugin-authorization@1.0.0-beta.36
+  - @nocobase/app-plugin-users@2.0.0-beta.15
+  - @nocobase/app-client@4.0.0-beta.8
+  - @nocobase/app-server@5.0.0-beta.1
+  - @nocobase/app-cli@1.0.0-beta.32
+
+## 0.2.0-beta.8
+
+### Patch Changes
+
+- cf23bfe: **Breaking:** Remove the deprecated `@nocobase/app-server/mailer` entry and its `Mailer`, `mailerToken`, `createMailer`, `MailerProvider`, and notification configuration exports. Replace `MailExecutions.close(waitMs)` and `drain()` with `stop()` and `wait()`; transport `close()` now cancels supported network work and waits for its original completion without a nested timeout. Application owners must apply the outer shutdown budget. Create exclusive senders with `@nocobase/app-server/mailers` and declare notification config with `@nocobase/app-plugin-notification-providers/config`. Existing inline SMTP/Resend YAML, environment mappings, and provider/channel APIs remain supported.
+
+  Default and Examples now show `mailers.default: system` and explicitly map `MAILERS_SYSTEM_*`; the example configuration remains empty at runtime. The previous `MAILERS_TRANSACTIONAL_*` sample prefix was not published. Applications may still choose any valid mailer name and custom environment prefix.
+
+- Updated dependencies [6cc8acf]
+- Updated dependencies [1f0b3ba]
+- Updated dependencies [4411984]
+- Updated dependencies [9933a9a]
+- Updated dependencies [1e018f1]
+- Updated dependencies [cf23bfe]
+- Updated dependencies [4411984]
+  - @nocobase/app-client@4.0.0-beta.7
+  - @nocobase/app-plugin-agents@2.0.0-beta.3
+  - @nocobase/app-plugin-users@2.0.0-beta.14
+  - @nocobase/app-plugin-authentication@2.0.0-beta.18
+  - @nocobase/db@1.0.0-beta.25
+  - @nocobase/app-server@5.0.0-beta.0
+  - @nocobase/app-cli@1.0.0-beta.32
+  - @nocobase/app-plugin-authorization@1.0.0-beta.35
+
+## 0.2.0-beta.7
+
+### Patch Changes
+
+- cf23bfe: Move Redis realtime broadcasting to the commercial Realtime Redis plugin. Register its Server plugin before selecting Redis in an application, or import the standalone broker from its `/broker` entry. Preserve the Memory default, service identity, authorization and recovery protocol, and republish runtime consumers against the new host and realtime major versions. Install the compatible commercial cohort before deploying the final removal.
+- Updated dependencies [88d35b8]
+- Updated dependencies [83f28b1]
+- Updated dependencies [88d35b8]
+- Updated dependencies [88d35b8]
+- Updated dependencies [88d35b8]
+- Updated dependencies [88d35b8]
+- Updated dependencies [83f28b1]
+- Updated dependencies [d04061e]
+- Updated dependencies [88d35b8]
+- Updated dependencies [88d35b8]
+- Updated dependencies [36f61d0]
+- Updated dependencies [cf23bfe]
+- Updated dependencies [88d35b8]
+- Updated dependencies [b29a336]
+  - @nocobase/app-client@4.0.0-beta.6
+  - @nocobase/app-plugin-authorization@1.0.0-beta.34
+  - @nocobase/app-plugin-agents@2.0.0-beta.1
+  - @nocobase/app-plugin-authentication@2.0.0-beta.17
+  - @nocobase/app-server@4.0.0-beta.0
+  - @nocobase/app-cli@1.0.0-beta.31
+  - @nocobase/app-plugin-users@2.0.0-beta.12
+
+## 0.2.0-beta.6
+
+### Patch Changes
+
+- 182d2d2: Reuse demo clock formatters and bound tracking writes and status reads, log cleanup failure diagnostics, and retry settled daily reset failures with durable claims, including retries after local midnight, while closing unacknowledged attempts only when their reset completed and pausing for manual recovery of an interrupted data operation until it has not moved for an hour, when the schedule takes it over.
+- a0b4568: **Breaking:** Move ordinary and recurring Redis Jobs out of the open-source runtime into the commercial `@nocobase/app-plugin-jobs-redis` Server plugin. Redis deployments must install and register a compatible plugin on every producer and consumer as part of the framework upgrade; selecting an unregistered backend now fails explicitly instead of falling back to Memory. Move Redis-specific type imports from `@nocobase/jobs` to `@nocobase/app-plugin-jobs-redis/config`.
+
+  Add application-owned, paired backend registration through `jobExecutorServiceToken`'s `registerImplementation(name, implementation)` and public `JobsImplementation` contracts from `@nocobase/jobs`, without a separate registry token. Keep the existing Jobs service token, lazy executors and Memory behavior. Registration opens no resources and is not frozen by boot or executor startup. Services require no setup; configuration and missing implementations are validated when an executor is requested, and consumers still own executor startup. Default and Examples templates now declare only Memory. Preserve existing Redis connection, namespace, scopes and job identities; no database or Redis data migration is required. Queue Redis is unchanged.
+
+  Existing YAML overrides that relied on template defaults must explicitly declare `adapter: redis` for each Redis Jobs configuration; `connection` alone no longer selects Redis. Updated template examples document the commercial Server plugin installation and registration prerequisite.
+
+  Selected configurations with missing, empty or non-string adapters are rejected instead of silently using Memory.
+
+  Release the framework first and verify its exact version is downloadable from the customer registry before pinning and releasing the compatible commercial plugin. Redis users must wait through any publication gap and upgrade the framework and plugin together.
+
+- 82f9c1d: BREAKING: Agents 2 removes legacy vector collections, their SQLite/pgvector stores, workers and public types. Migrate consumers before upgrading; active `agents.vectors` settings now fail startup, while `{ store: false }` remains an inert compatibility setting for the 2.x line. Model services, Embedding, usage recording and Knowledge's independent indexing remain available. Historical migrations and existing data are retained. See `@nocobase/app-plugin-agents/docs/vectors-migration.md` for API/configuration migration, backups and rollback. Republish direct consumers against the new Agents major version.
+- Updated dependencies [b6934ad]
+- Updated dependencies [c571810]
+- Updated dependencies [b2c0dfd]
+- Updated dependencies [311f6e1]
+- Updated dependencies [d3f0c92]
+- Updated dependencies [57ecc34]
+- Updated dependencies [4c89e3c]
+- Updated dependencies [a0b4568]
+- Updated dependencies [483ac67]
+- Updated dependencies [12b1f64]
+- Updated dependencies [b6934ad]
+- Updated dependencies [5ce4a7c]
+- Updated dependencies [b6934ad]
+- Updated dependencies [b2eed36]
+- Updated dependencies [82f9c1d]
+- Updated dependencies [8f3e54d]
+- Updated dependencies [171f7fb]
+- Updated dependencies [91b7602]
+- Updated dependencies [eff2cb2]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.16
+  - @nocobase/app-plugin-agents@2.0.0-beta.0
+  - @nocobase/app-client@4.0.0-beta.5
+  - @nocobase/jobs@1.0.0-beta.5
+  - @nocobase/app-server@3.0.0-beta.5
+  - @nocobase/db@1.0.0-beta.24
+  - @nocobase/app-cli@1.0.0-beta.30
+
+## 0.2.0-beta.5
+
+### Minor Changes
+
+- 4721806: Export shared server and client Demo Mode checks and a configurable request guard that refuses external effects before route handlers, with localized errors and explicit method/path exceptions.
+
+### Patch Changes
+
+- f037f2d: Make the demo writable collections environment variable optional in generated deployment manifests.
+- 4721806: Show localized permission set names for demo sign-in accounts without dataset role labels, including existing administrators.
+- 4721806: Prevent encoded line terminators from bypassing demo request guards and translate account role titles in the browser so language changes take effect without additional requests.
+
+  Reduce repeated permission queries during automatic demo sign-in and keep entry independent of dataset role labels.
+
+- 4721806: Display the daily reset time, language, and timezone in one row on wider screens.
+- Updated dependencies [f9ada4a]
+  - @nocobase/app-plugin-agents@1.0.0-beta.29
+
+## 0.2.0-beta.4
+
+### Patch Changes
+
+- 4ccf1c8: Keep language, theme mode and color preset choices made through the Users preference API independent per demo visitor session and application, including when sharing or switching accounts. Return site defaults for new visitors while preserving the existing API protections and ordinary account preferences.
+- Updated dependencies [07b14c0]
+- Updated dependencies [451bf75]
+- Updated dependencies [22748f7]
+- Updated dependencies [5782713]
+- Updated dependencies [22748f7]
+- Updated dependencies [22748f7]
+- Updated dependencies [22748f7]
+- Updated dependencies [22748f7]
+- Updated dependencies [22748f7]
+- Updated dependencies [22748f7]
+- Updated dependencies [22748f7]
+- Updated dependencies [22748f7]
+- Updated dependencies [22748f7]
+- Updated dependencies [e3d9a52]
+- Updated dependencies [22748f7]
+- Updated dependencies [22748f7]
+- Updated dependencies [cc0b521]
+  - @nocobase/app-cli@1.0.0-beta.30
+  - @nocobase/app-client@4.0.0-beta.4
+  - @nocobase/app-plugin-agents@1.0.0-beta.28
+  - @nocobase/app-server@3.0.0-beta.4
+  - @nocobase/app-plugin-users@2.0.0-beta.11
+  - @nocobase/app-plugin-authorization@1.0.0-beta.33
+  - @nocobase/db@1.0.0-beta.23
+  - @nocobase/app-plugin-authentication@2.0.0-beta.15
+
+## 0.2.0-beta.3
+
+### Patch Changes
+
+- df09e63: Ship plugin development guidance with the App's installed Skills, reserve its existing name for @nocobase/app-skills, and guide upgrades through verifying the project replacement before retiring old global installations. Update application and plugin entry points to use the version-matched project Skill.
+
+  Synchronize project Skills as real copies, exclude dependencies installed inside executable examples, and preserve the targets of older project links during migration.
+
+- Updated dependencies [82aa791]
+- Updated dependencies [df09e63]
+  - @nocobase/app-cli@1.0.0-beta.29
+
+## 0.2.0-beta.2
+
+### Patch Changes
+
+- 14e042c: Automatically use secure, partitioned authentication cookies for HTTPS demo deployments so visitors can stay signed in inside a cross-site iframe. Preserve explicit deployment overrides and the existing cookie policy for HTTP development and non-demo applications.
+
+## 0.2.0-beta.1
+
+### Patch Changes
+
+- f5b51a4: Restore the compact Demo Mode header menu with smaller text, tighter spacing, a narrower dropdown and the application's primary color. Keep account preloading, pending and retry states, keyboard access, and location-preserving switching unchanged.
+- Updated dependencies [d78f586]
+  - @nocobase/app-plugin-agents@1.0.0-beta.26
+
+## 0.2.0-beta.0
+
+### Minor Changes
+
+- 97d20de: Replace floating and avatar-menu account switching with a standalone DemoModeMenu for application headers. The dropdown combines the demo environment notice, account names and roles, and the current-account check, with preloading and retryable account switching. Applications must mount the new client/menu component in their header and remove the former DemoAccountMenu, accountSwitcher and showFloatingAccountSwitcher integration.
+
+  Replace calls to the former demoModeReactProviders factory with the static reactProviders export from client/react-providers.
+
+  Ensure account switching reloads the document even when the destination differs only by its hash, so the previous account's client state is discarded while preserving the requested location.
+
+### Patch Changes
+
+- 4001a6e: Make the demo settings page read-only by removing data generation, clear, reset and dataset language controls while retaining status, progress, scheduled reset details and account entry links.
+
+  Remove unused settings controls, mutation error messages and obsolete presentation guidance.
+
+- e525be3: Expire matching legacy unpartitioned authentication cookies when Demo Mode issues partitioned sign-in cookies, preserving custom cookie names and scopes and cross-site iframe sessions. Verify the new session before reloading the demo home page so rejected cookies cannot cause an automatic sign-in reload loop.
+- Updated dependencies [2e5823a]
+- Updated dependencies [2e5823a]
+- Updated dependencies [2e5823a]
+- Updated dependencies [2e5823a]
+- Updated dependencies [2e5823a]
+- Updated dependencies [671e1b3]
+- Updated dependencies [e5d61bd]
+- Updated dependencies [7fbcda4]
+- Updated dependencies [7fbcda4]
+  - @nocobase/app-plugin-agents@1.0.0-beta.25
+
+## 0.2.0-beta
+
+## 0.1.0-beta.3
+
+### Minor Changes
+
+- 756f3df: Offer every enabled person account through Demo Mode quick sign-in and automatically sign anonymous home-page visitors in as an existing Super Admin. Preserve existing sessions, account passwords and permissions. Add trusted server session creation to Authentication so Demo Mode no longer depends on dataset ownership or known passwords. Preload and share the account list so the account submenu opens immediately on hover, including when the floating entry is hidden.
+- 756f3df: Make daily reset deployment-managed and always enabled in Demo Mode. Configure its hour, minute, time zone and dataset language with NOCOBASE_DEMO_RESET_HOUR, NOCOBASE_DEMO_RESET_MINUTE, NOCOBASE_DEMO_RESET_TIMEZONE and NOCOBASE_DEMO_RESET_LANGUAGE (defaults: 03:00 UTC, en-US), then restart the application. Display the resolved schedule and next run as read-only information without save controls or an enable switch. Ignore previously saved schedules and remove schedule writes from the configuration API and service.
+
+### Patch Changes
+
+- 9aaf46e: Publish the Demo Mode enabled flag and provide a shared route helper so applications omit demo management menus and routes outside demo deployments.
+- Updated dependencies [756f3df]
+- Updated dependencies [6380861]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.14
+  - @nocobase/app-plugin-agents@1.0.0-beta.24
+
+## 0.1.0-beta.2
+
+### Patch Changes
+
+- f92d471: Preserve the executing administrator's account and existing permissions during demo business-data cleanup, including failed resets. Reuse retained identities on regeneration, continue cleaning ordinary demo accounts, and persist the operation's actor for scheduled retries.
+- 3dc3f77: Show the demo administration page as a single page instead of two tabs: the demo data, daily reset and demo accounts cards now appear together. The `TabsList` and `TabsTrigger` component slots and the `activeTabLabel` header prop are removed, and a `?tab=` query parameter is ignored.
+- 58531da: Require HTTP-compatible UUID and clipboard helpers in browser source while preserving Node APIs. Use the shared helpers for mail composition, demo links, example records, template copy actions and workflow request identifiers.
+- Updated dependencies [58531da]
+- Updated dependencies [7f36872]
+  - @nocobase/app-client@4.0.0-beta.3
+  - @nocobase/app-plugin-agents@1.0.0-beta.23
+  - @nocobase/jobs@0.1.0-beta.4
+  - @nocobase/app-cli@1.0.0-beta.27
+  - @nocobase/app-server@3.0.0-beta.3
+  - @nocobase/db@1.0.0-beta.22
+  - @nocobase/i18n@2.0.0-beta.1
+  - @nocobase/service-provider@0.0.2-beta.2
+  - @nocobase/app-plugin-authentication@2.0.0-beta.13
+  - @nocobase/app-plugin-authorization@1.0.0-beta.31
+  - @nocobase/app-plugin-users@2.0.0-beta.9
+
+## 0.1.0-beta.1
+
+### Patch Changes
+
+- ef9ae6f: Simplify the demo settings page to Overview and Daily reset by removing visitor write, simulation and AI controls. Remove the obsolete chatTools option and DemoChatTool type, and restrict label kinds to count. Preserve existing write policies and their configuration APIs. Enable registered simulation adapters and integrated demo chat by default, deriving tool behavior from application-provided mocks or explicit local reads while preserving saved overrides. Keep application integration optional and leave ordinary Agent model selection unchanged.
+- Updated dependencies [d490379]
+- Updated dependencies [d490379]
+- Updated dependencies [d490379]
+- Updated dependencies [d490379]
+- Updated dependencies [d490379]
+- Updated dependencies [d490379]
+- Updated dependencies [4c98f67]
+- Updated dependencies [01e03b7]
+  - @nocobase/app-plugin-agents@1.0.0-beta.22
+
+## 0.1.0-beta.0
+
+### Minor Changes
+
+- 9c20e2d: Add Demo Mode for isolated demonstration deployments, enabled by the boolean `NOCOBASE_DEMO_MODE` environment variable or `demoMode.enabled` configuration and disabled by default, with application-owned repeatable datasets, full business cleanup, reusable visitor accounts, application-scoped quick sign-in redirects, progress reporting and daily scheduled resets. Track applied credentials across restarts so reset preserves unchanged sessions and applies password changes.
+
+  Provide request-scoped write protection with logical-collection exceptions while preserving business authorization. Expose permission-gated data management, revision-safe policy APIs, CLI commands and composable settings components.
+
+  Support optional official Agents integration with a persistent simulated model, application-owned Agent simulations and explicitly authorized online conversation policies. Preserve existing global defaults and disable the owned model when Demo Mode is disabled. Document raw OpenAI JSON and streaming response contracts. Non-AI applications can use demo data without installing Agents. Publish structural service contracts and browser-safe shared types.
+
+  Publish a task-focused integration Skill with capability prerequisites, an executable non-AI example, settings-based management authorization and application-owned datasets and cleanup. Distinguish ordinary sample data from dedicated demo deployments, use automatic daily reset defaults and keep customization and simulation guidance conditional on the requested demo.
+
+### Patch Changes
+
+- Updated dependencies [39fa974]
+- Updated dependencies [005418a]
+- Updated dependencies [dfc9be3]
+  - @nocobase/app-plugin-agents@1.0.0-beta.21
+
+## 0.0.1
+
+- Introduce isolated demo deployments enabled by the boolean `NOCOBASE_DEMO_MODE` environment variable or `demoMode.enabled` configuration, disabled by default, with request-scoped write protection, logical-collection exceptions and application-owned repeatable data generation and cleanup.
+- Provide reusable visitor accounts, quick sign-in with application-scoped redirects, permission-gated lifecycle APIs and CLI, reset progress, persisted operation leases and a daily reset on the application's jobs service, firing once a day at the configured local time and every night at 03:00 by default. Preserve sessions for unchanged accounts and apply changed passwords using persisted salted snapshots.
+- Offer optional official Agents integration, a persistent simulated model, application-owned simulations and explicit online conversation policies. Preserve existing global model defaults and disable the owned model when Demo Mode is disabled. Document the gateway's raw OpenAI JSON and server-sent event responses.
+- Publish structural service contracts, composable management components with collection write exceptions, demo accounts and standard localized error handling, and a task-focused integration Skill with settings-based management authorization, an executable non-AI example and application-owned business adaptation. Use automatic reset defaults and keep customization and simulation guidance conditional on the requested demo.

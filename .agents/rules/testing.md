@@ -19,9 +19,9 @@ A plugin, an example or an application template groups its tests by the source d
 | `tests/setup/` (applications only)  | `setupFiles`                                                                  | —           |
 | `tests/playwright/` (templates)     | Playwright tests against a running application; Vitest excludes it            | Browser     |
 
-`packages/tools/app-testing/vitest.config.ts` is the configuration shape, and `pnpm plugin:create` generates it. A package without client code keeps the Node project alone and adds the jsdom one with its first client test. Packages that predate this layout, the application templates among them, move to it as they are worked on; until a package has moved, a new test follows the layout it already has. Libraries and tools are not bound to it: their subdirectories reflect whatever the package needs, such as `tests/unit` and `tests/integration` in `packages/libs/db`.
+`packages/tools/app-testing/vitest.config.ts` is the configuration shape, and `pnpm plugin:create` generates it. A package without client code keeps the Node project alone and adds the jsdom one with its first client test. Packages that predate this layout move to it as they are worked on; until a package has moved, a new test follows the layout it already has. Libraries and tools are not bound to it: their subdirectories reflect whatever the package needs, such as `tests/unit` and `tests/integration` in `packages/libs/db`.
 
-Name test files `*.test.ts` or `*.test.tsx`. Vitest discovers them by filename rather than by directory, so a test placed outside `tests/` still runs and will not fail loudly; keeping the layout consistent is a convention the tooling does not enforce for you.
+Name test files `*.test.ts` or `*.test.tsx`. Vitest discovers them through the configuration’s include patterns; confirm that a new or moved file appears in the intended project’s test summary. A file outside those patterns can be silently omitted, especially when `passWithNoTests` is enabled.
 
 Test files stay out of the build. Keep `include` in the package `tsconfig.json` pointed at `src` so `tests/` is excluded from the emitted output, unless the package deliberately typechecks its tests the way `packages/libs/db` does.
 

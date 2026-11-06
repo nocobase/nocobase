@@ -24,6 +24,7 @@ import {
 } from '../server/online/agent/runner/backend.js';
 import { OnlineAgentService } from '../server/online/agent/service.js';
 import type { ModelRef } from '../shared/models.js';
+import type { OnlineAgentResendOptions } from '../server/index.js';
 
 interface ExpectedBackend {
   readonly kind: 'native' | 'runner';
@@ -105,11 +106,14 @@ function checkContract(): void {
   expectTypeOf<RunnerOnlineAgentAdapter['kind']>().toEqualTypeOf<'runner'>();
 
   expectTypeOf<
-    Extract<keyof BackgroundOnlineAgent, 'send' | 'receive'>
+    Extract<keyof BackgroundOnlineAgent, 'send' | 'receive' | 'resend'>
   >().toEqualTypeOf<never>();
   expectTypeOf<
-    Extract<keyof NativeBackgroundOnlineAgent, 'send' | 'receive'>
+    Extract<keyof NativeBackgroundOnlineAgent, 'send' | 'receive' | 'resend'>
   >().toEqualTypeOf<never>();
+  expectTypeOf<RealtimeOnlineAgent['resend']>().toEqualTypeOf<
+    (options?: OnlineAgentResendOptions) => Promise<number>
+  >();
   expectTypeOf<RealtimeOnlineAgent['approve']>().toEqualTypeOf<
     (input: NativeApproval) => Promise<number>
   >();

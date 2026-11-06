@@ -7,6 +7,10 @@ import { createJobExecutorService } from '@nocobase/jobs';
 import { createLogger } from '@nocobase/logging';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 
+import type {
+  ChannelInstance,
+  ChannelPreparationInput,
+} from '../server/channel-type.js';
 import { createNotificationManager } from '../server/manager.js';
 import type {
   NotificationProviderSendInput,
@@ -36,31 +40,24 @@ function harness(
     database: {} as DatabaseManager,
     executor: service.getJobExecutor('@nocobase/app-plugin-notification'),
     logger: createLogger({ level: 'silent' }),
-    config: { channels: { email: { provider: 'fake' } } },
+    config: { channels: { email: { type: 'fake' } } },
     store: new FakeNotificationStore(),
   });
-  manager.registry
-    .registerChannel({
-      type: 'email',
-      async createChannel() {
-        return {
-          type: 'email',
-          validateMessage(message: object) {
-            return { message, recipients: [{ address: 'buyer@example.com' }] };
-          },
-          async prepare({ message }): Promise<object> {
-            return message;
-          },
-        };
-      },
-    })
-    .registerProvider({
-      type: 'fake',
-      messageType: 'email',
-      async createProvider(_context, config) {
-        return { type: config.provider, send, close };
-      },
-    });
+  class FakeChannel implements ChannelInstance {
+    static readonly type = 'fake';
+    validateMessage(message: unknown) {
+      return {
+        message: message as object,
+        recipients: [{ address: 'buyer@example.com' }],
+      };
+    }
+    async prepare({ message }: ChannelPreparationInput): Promise<object> {
+      return message;
+    }
+    send = send;
+    close = close;
+  }
+  manager.registry.registerChannelType(FakeChannel);
   return {
     manager,
     async close(): Promise<void> {

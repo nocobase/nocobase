@@ -26,6 +26,8 @@ export interface DataTablePaginationProps<
   /** Hide the "n of m selected" summary for tables without row selection. */
   readonly showSelectedCount?: boolean;
   readonly disabled?: boolean;
+  /** The current query has no total yet: keep the controls' place but show no previous count. */
+  readonly countPending?: boolean;
 }
 
 const DEFAULT_PAGE_SIZE_OPTIONS: readonly number[] = [10, 20, 30, 40, 50];
@@ -40,6 +42,7 @@ export function DataTablePagination<TData>({
   pageSizeOptions = DEFAULT_PAGE_SIZE_OPTIONS,
   showSelectedCount = true,
   disabled = false,
+  countPending = false,
   className,
   ...props
 }: DataTablePaginationProps<TData>): ReactElement {
@@ -60,7 +63,13 @@ export function DataTablePagination<TData>({
       )}
       {...props}
     >
-      <div className='flex-1 text-sm text-muted-foreground'>
+      <div
+        className={cn(
+          'flex-1 text-sm text-muted-foreground',
+          countPending && 'invisible',
+        )}
+        aria-hidden={countPending || undefined}
+      >
         {showSelectedCount
           ? t('dataTable.selectedCount', {
               defaultValue: '{{selected}} of {{total}} row(s) selected.',
@@ -69,9 +78,9 @@ export function DataTablePagination<TData>({
             })
           : null}
       </div>
-      <div className='flex flex-wrap items-center gap-6 lg:gap-8'>
-        <div className='flex items-center gap-2'>
-          <p className='text-sm font-medium'>
+      <div className='flex min-w-0 flex-wrap items-center justify-end gap-x-6 gap-y-3 lg:gap-x-8'>
+        <div className='flex shrink-0 items-center gap-2'>
+          <p className='text-sm font-medium whitespace-nowrap'>
             {t('dataTable.rowsPerPage', { defaultValue: 'Rows per page' })}
           </p>
           <Select
@@ -83,7 +92,7 @@ export function DataTablePagination<TData>({
           >
             <SelectTrigger
               size='sm'
-              className='w-[70px]'
+              className='w-[70px] shrink-0'
               aria-label={t('dataTable.rowsPerPage', {
                 defaultValue: 'Rows per page',
               })}
@@ -102,14 +111,20 @@ export function DataTablePagination<TData>({
             </SelectContent>
           </Select>
         </div>
-        <div className='flex w-[100px] items-center justify-center text-sm font-medium'>
+        <div
+          className={cn(
+            'shrink-0 text-sm font-medium whitespace-nowrap tabular-nums',
+            countPending && 'invisible',
+          )}
+          aria-hidden={countPending || undefined}
+        >
           {t('dataTable.pageOf', {
             defaultValue: 'Page {{page}} of {{pageCount}}',
             page: pageIndex + 1,
             pageCount,
           })}
         </div>
-        <div className='flex items-center gap-2'>
+        <div className='flex shrink-0 items-center gap-2'>
           <Button
             variant='outline'
             size='icon-sm'

@@ -159,7 +159,7 @@ export async function gcRunTemps(
           (r) =>
             r.kind !== 'job' &&
             r.workDir !== undefined &&
-            runTempName(r.workDir) === entry.name,
+            runTempName(r.privateDir ?? r.workDir) === entry.name,
         )
       )
         continue;

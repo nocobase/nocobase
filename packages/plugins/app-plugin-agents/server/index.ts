@@ -1,3 +1,4 @@
+export type { OnlineAgentResendOptions } from '../shared/resend.js';
 export { default } from './plugin.js';
 /** What the plugin registers with the authorization plugin at boot, for an application or a test assembling it by hand. */
 export {
@@ -5,6 +6,12 @@ export {
   registerSettings,
 } from './providers/authorization.js';
 
+export { NativeFileInputs } from './online/files/service.js';
+export type {
+  FileInputsConfig,
+  FileInputProfile,
+  ModelInputProtocol,
+} from './online/files/types.js';
 export {
   OnlineAgentService,
   OnlineAgentConfigurator,

@@ -1,8 +1,98 @@
 const settings = {
+  notificationManagementDescription:
+    'View registered notification templates and synthetic content previews.',
+  notificationTemplates: 'Notification templates',
+  notificationManagement: 'Notification management',
+  listChanged: 'The list has changed. Please retry.',
+  setup: {
+    title: 'Feature prerequisites',
+    checking: 'Checking current configuration…',
+    checkAgain: 'Check again',
+    ready: 'The checked prerequisites are ready.',
+    missing: 'Review the configuration items below.',
+    manageMembers: 'Manage members',
+    manageMembersFor: 'Manage {{role}} members',
+    unavailable: 'Unable to check right now. Try again.',
+    signIn: 'Your session expired. Sign in again to check configuration.',
+    forbidden:
+      'You do not have access to check this configuration. Contact an administrator.',
+    invalid:
+      'This prerequisite could not be verified. Ask the application maintainer to check its configuration.',
+  },
+  roleFilterIncomplete:
+    'Choose both a role scope and a role, or clear the filters.',
+  backToSource: 'Return to previous page',
+  roleFilter: 'Filter by role',
+  allRoles: 'All roles',
+
+  permissionManagement: 'Permission management',
+  defaultAccess: {
+    noResourcesShort: 'No configurable objects available',
+    scopeInvalid:
+      'Choose a valid data scope or complete its filter conditions.',
+
+    deleteChanged:
+      'This rule changed or was removed. The list was refreshed; review it before deleting.',
+    filterDescription:
+      'Apply conditions to this rule draft, then save the rule to make them effective.',
+    fieldLabels: { name: 'Name', id: 'ID' },
+    delete: 'Delete',
+    title: 'Default data scopes',
+    description:
+      'Adds data access for users with operation permission, combined with role-granted scopes and subject to restriction rules.',
+    manage: 'Manage default data scopes',
+    new: 'New default scope',
+    edit: 'Default scope details',
+    resource: 'Business object',
+    chooseResource: 'Choose a business object',
+    action: 'Operation',
+    scope: 'Data scope',
+    scopes: 'Operations and data scopes',
+    none: 'No default scope',
+    all: 'All records',
+    custom: 'Custom filter',
+    records: 'Selected records ({{count}})',
+    retained: 'Retain existing configuration',
+    search: 'Search business objects or keys',
+    noResources:
+      'Every available business object already has a default rule, or no configurable objects are registered.',
+    unsupported:
+      'This rule includes configuration absent from the current plugin catalog. It is preserved and shown read-only.',
+    changed:
+      'This rule changed or was removed while you were editing. Reload it before saving. Your draft has not been saved.',
+    duplicate:
+      'This key or business object already has a default rule. Use a different key or edit the existing rule.',
+    invalid:
+      'The configuration is not accepted. Check the business object, operation and data scope.',
+    keyRequired: 'Enter a key other than options, subjects or records.',
+    resourceRequired: 'Choose a business object.',
+    reload: 'Reload rule',
+    saved: 'Saved default scope “{{name}}”',
+    deleted: 'Deleted default scope “{{name}}”',
+    deleteTitle: 'Delete default scope “{{name}}”?',
+    deleteHint:
+      'This removes the baseline access supplied by this rule. Existing role grants and other rules remain. This cannot be undone.',
+    back: 'Back to default scopes',
+    open: 'View / edit',
+  },
+  scopeHintFor: 'About the data range for {{name}}',
+  scopeExplanation:
+    'Each range applies to its corresponding data. The operation must also pass its authorization checks.',
+  noAdditionalScopeHint:
+    'This role adds no records. Effective access also depends on other roles and default, sharing and restriction rules.',
+  systemToolsHint:
+    'Manage system configuration and tools. Review the capabilities each action includes before granting access.',
+  userAccountsHint:
+    'Manage user information, account security and role assignments. Review each permission separately.',
+  businessOperationsHint:
+    'Choose the operations this role can perform and the data each operation can use.',
+  roleAssignment: 'Role assignment',
+  accountSecurity: 'Account security',
+  userInformation: 'User information',
   unnamedPage: 'Unnamed page ({{path}})',
   revokeRoles: 'Revoke roles',
   keyConflict: 'This role key is already in use.',
-  userPermissions: 'User management',
+  userPermissions: 'Users and accounts',
   readUsers: 'View users',
   createUsers: 'Create users',
   updateUsers: 'Edit users',
@@ -13,6 +103,11 @@ const settings = {
 
   assignedRoles: 'Assigned roles',
   actionSaved: 'Updated access for "{{name}}"',
+  userActionSaved: {
+    disable: 'Disabled user "{{name}}"',
+    enable: 'Enabled user "{{name}}"',
+    revokeSessions: 'Revoked active sessions for "{{name}}"',
+  },
 
   identityConflict: 'This email or username is already in use.',
   signInAgain: 'Sign in again',
@@ -20,6 +115,19 @@ const settings = {
 
   reload: 'Reload role',
   title: 'System settings',
+  home: {
+    description:
+      'Accounts, permissions, business configuration and system capabilities are all here.',
+    empty: 'No settings are available to you yet.',
+  },
+  categories: {
+    account: 'Accounts and permissions',
+    business: 'Business configuration',
+    ai: 'AI',
+    system: 'System',
+  },
+  permissionManagementDescription:
+    'Set what each role can open and do, and the data it can see.',
   users: 'Users',
   roles: 'Roles and permissions',
   usersDescription: 'Manage accounts, access and active sessions.',
@@ -27,6 +135,7 @@ const settings = {
   userSearch: 'Search names, usernames or emails',
   roleSearch: 'Search role names',
   newUser: 'New user',
+  editUserFor: 'Edit {{name}}',
   editUser: 'Edit user',
   newRole: 'New role',
   editRole: 'Edit role',
@@ -34,6 +143,7 @@ const settings = {
   username: 'Username',
   email: 'Email',
   password: 'Initial password',
+  roleType: 'Role type',
   roleName: 'Role name',
   key: 'Key',
   status: 'Status',
@@ -46,9 +156,15 @@ const settings = {
   noResults: 'No matching results',
   clearHint: 'Try a different search or clear the filters.',
   noUsers: 'No users yet',
+  noRoleAccess:
+    'This user can still sign in and use account basics. No business access is granted by roles.',
+  noAssignedRoles: 'No assigned roles',
   noRoles: 'No roles yet',
   create: 'Create',
   edit: 'Edit',
+  selectRoles: 'Select roles',
+  searchRoles: 'Search roles',
+  noRolesFound: 'No roles found.',
   save: 'Save',
   cancel: 'Cancel',
   saving: 'Saving…',
@@ -78,27 +194,48 @@ const settings = {
   discardTitle: 'Discard changes?',
   discardHint: 'Your unsaved changes will be lost.',
   failed: 'Unable to complete the request. Try again.',
+  invalidRequest:
+    'Some values are invalid. Check your input or filters and try again.',
   retry: 'Retry',
   loading: 'Loading',
   denied: 'You do not have access. Contact an administrator.',
   missing: 'This record does not exist or has been deleted.',
   conflict:
-    'This role has changed. Reload it and merge your changes before saving.',
+    'The request conflicts with current data. Review the latest record before trying again.',
   sessionEnded: 'Your session has ended. Sign in again.',
   previous: 'Previous',
   next: 'Next',
   total_one: '{{count}} user',
   total_other: '{{count}} users',
   access: 'Access',
+  expandPermissionGroup: 'Expand {{name}}',
+  collapsePermissionGroup: 'Collapse {{name}}',
+  pagesOutsideNavigation: 'Pages outside navigation',
+  configurationPermissions: 'Configuration permissions',
+  configurationPermissionsHint:
+    'Control access and actions for system settings, user management and business configuration. Only actual application features are shown.',
   permissionSearch: 'Search categories, groups or permissions',
+  permissionAll: 'All',
+  permissionGranted: 'Granted',
+  permissionUngranted: 'Ungranted',
+  permissionStatus: 'Authorization status',
+  permissionClearSearch: 'Clear search',
+  permissionCollapseAll: 'Collapse all',
+  permissionExpandAll: 'Expand all',
   enabledOnly: 'Enabled only',
   noPermissions: 'No permissions to configure',
+  permissionEmptyHint:
+    'Ask the application developer to expose the permissions this role can configure.',
+  permissionReadOnlyHint: 'These permissions are read-only.',
+  permissionManagedHint: 'This permission is managed by the application.',
+  permissionSaveHint: 'Permission changes take effect after saving.',
   permissionCategories: 'Permission categories',
   selectAllPermissions: 'All',
+  dataRanges: 'Data ranges ({{count}})',
   selectVisiblePermissions: 'Select visible permissions in {{name}}',
   permissionSummary: '{{enabled}} of {{total}} enabled',
   preservedRecordScope: 'Keep existing configuration',
-  noRecordScope: 'No records (not authorized)',
+  noRecordScope: 'Use default rules',
   permissionFilter: {
     limit: 'Up to 20 conditions',
     configure: 'Conditions',

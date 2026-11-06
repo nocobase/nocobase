@@ -1511,5 +1511,179 @@
       }
     ],
     "promptKey": "ai-knowledge-base"
+  },
+  "task-center": {
+    "markup": "<a class=\"skip\" href=\"#content\">Skip to content</a><main class=\"auth-page\" id=\"content\"><nav class=\"crumbs\" aria-label=\"Breadcrumb\"><a href=\"/\">Documentation</a><span>/</span><a href=\"/#capabilities\">Capabilities</a><span>/</span><span aria-current=\"page\">Task Center</span></nav><section class=\"auth-hero\"><div><div class=\"section-label\"><b>Capability</b><i></i><span>Personal work</span></div><div class=\"auth-title\"><span class=\"icon\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-list-checks\" aria-hidden=\"true\"><path d=\"m3 17 2 2 4-4\"></path><path d=\"m3 7 2 2 4-4\"></path><path d=\"M13 6h8\"></path><path d=\"M13 12h8\"></path><path d=\"M13 18h8\"></path></svg></span><h1>Task Center</h1></div><p class=\"auth-lead\">One place for the work that needs your attention.</p><p class=\"auth-intro\">Ask your Agent to connect approvals, equipment collection and other work: create personal entries, open details, handle work and keep states and counts aligned.</p><div class=\"hero-links\"><a class=\"primary\" href=\"#scenarios\">Get started →</a><a class=\"secondary\" href=\"#scenarios\">Copy a prompt</a></div></div><aside class=\"identity\"><p>Personal work driven by actual business records</p><div class=\"identity-flow\"><div class=\"identity-box\"><strong>Business event</strong><small>Assign recipients</small></div><div class=\"identity-box\"><strong>Personal entry</strong><small>Find your work</small></div><div class=\"identity-box\"><strong>Business action</strong><small>Sync the result</small></div></div><footer>Pending · Completed · Cancelled. Business rules determine who may act.</footer></aside></section><nav class=\"anchor-nav\" aria-label=\"On this page\"><a href=\"#overview\">When to use it</a><a href=\"#scenarios\">Try it</a><a href=\"#references\">Related capabilities</a></nav><section id=\"overview\"><div class=\"section-head\"><h2>When to use it and what improves</h2></div><div class=\"rules\"><article><h3>When work spans different businesses</h3><p>A manager needs one view of leave and expense requests awaiting approval. An employee needs to submit missing documents and confirm equipment collection.</p><p>Use Task Center when personal work is scattered across different businesses.</p></article><article><h3>Find work quickly and keep track</h3><p>Open one entry point to see what needs your attention and enter the relevant business to handle it.</p><p>Reduce switching and overlooked tasks. Updated states and counts show what is finished and what remains.</p></article></div></section><section id=\"scenarios\"><div class=\"section-head\"><h2>Try four steps in your project</h2><p>Start with steps 1–4, then choose optional scenarios. Copy a prompt to the Agent in your application project and check the result.</p></div><div class=\"scenario-shell\"><div class=\"scenario-tabs\" role=\"tablist\" aria-label=\"Task Center integration steps\"></div><div id=\"scenario-panel\" role=\"tabpanel\"><div class=\"scenario-grid\"><div class=\"scenario-about\"><span class=\"badge\" id=\"scenario-status\"></span><h3 id=\"scenario-title\"></h3><p id=\"scenario-summary\"></p><dl class=\"decisions\" aria-label=\"Decisions to make\"></dl><p class=\"scenario-note\" id=\"scenario-note\"></p></div><div class=\"editor-wrap\"><div class=\"editor-head\"><span>Send to your Agent</span><small>Adapt to your business</small></div><textarea id=\"scenario-prompt\" aria-label=\"Scenario prompt\" spellcheck=\"false\"></textarea><div class=\"editor-footer\"><button class=\"reset-button\" id=\"reset\" disabled>Restore default</button><button class=\"primary\" id=\"copy\">Copy prompt</button></div></div></div><div class=\"acceptance\"><div class=\"acceptance-header\"><h4>Verify the result</h4><output id=\"check-count\" aria-live=\"polite\"></output></div><div class=\"check-items\"></div><p class=\"check-note\">This is a manual checklist, not an automated test. Selections last only for this page visit.</p></div></div></div><div class=\"scenario-bottom\"><details class=\"reference-image\"><summary>View the example screenshot</summary><img id=\"reference-image\" alt=\"\" loading=\"lazy\"><p>Example application interface; your business pages may differ.</p></details><a id=\"scenario-doc\" href=\"/capabilities/approval/stages\">Read prompts in Markdown ↗</a></div></section>\n<section id=\"references\"><div class=\"section-head\"><h2>Related capabilities and documentation</h2></div><div class=\"resources\"><a href=\"/capabilities/approval/\"><strong>Approval ↗</strong><p>Configure approval routes and handling rules.</p></a><a href=\"/capabilities/notification/\"><strong>Notifications ↗</strong><p>Add reminders to business work.</p></a><a href=\"/capabilities/task-center.md\"><strong>Markdown documentation ↗</strong><p>Read or download the full guide for your Agent.</p></a></div></section><nav class=\"bottom-links\"><a href=\"/#capabilities\">← Back to capabilities</a><a href=\"#scenarios\">Start building ↑</a></nav><footer class=\"end\"><span>NocoBase 3 · Documentation</span><span>Open source · Self-hosted · Your choice of model and Agent</span></footer></main><div class=\"toast\" role=\"status\" aria-live=\"polite\"></div>",
+    "promptKey": "task-center",
+    "scenarios": [
+      {
+        "id": "start",
+        "title": "Start with My tasks",
+        "summary": "Bring personal work into one place instead of checking each business page.",
+        "decisions": [
+          ["Example", "A manager opens My tasks from the navigation."]
+        ],
+        "checks": [
+          "Signed-in users see their own work and empty states.",
+          "Find work by business and status."
+        ],
+        "note": "Try test records first, then adapt to your business.",
+        "status": "1. Create an entry",
+        "image": null,
+        "doc": "/capabilities/task-center.md"
+      },
+      {
+        "id": "approvals",
+        "title": "Bring in leave and expense approvals",
+        "summary": "Give managers one place to find applications waiting for their decision.",
+        "decisions": [
+          [
+            "Example",
+            "One manager’s leave and expense approvals appear together."
+          ]
+        ],
+        "checks": [
+          "Transfers cancel former recipients and create pending work for new ones.",
+          "Only currently offered approval actions appear."
+        ],
+        "note": "Try test records first, then adapt to your business.",
+        "status": "2. Connect approvals",
+        "image": null,
+        "doc": "/capabilities/task-center.md"
+      },
+      {
+        "id": "handling",
+        "title": "Open details and take action",
+        "summary": "Open a task, use the actions the business allows, and refresh after handling.",
+        "decisions": [
+          [
+            "Example",
+            "Approving an expense moves it to completed and reduces the pending count."
+          ]
+        ],
+        "checks": [
+          "Only people allowed to handle the work can view details and act.",
+          "Handling refreshes lists and all related counts."
+        ],
+        "note": "Try test records first, then adapt to your business.",
+        "status": "3. Handle work",
+        "image": null,
+        "doc": "/capabilities/task-center.md"
+      },
+      {
+        "id": "verification",
+        "title": "Try the flow with two accounts",
+        "summary": "Ask the Agent to verify real business work, then try it yourself.",
+        "decisions": [
+          [
+            "Example",
+            "Alex handles Alex’s work; Jordan cannot read or handle Alex’s personal entries."
+          ]
+        ],
+        "checks": [
+          "Isolation between two accounts is verified.",
+          "Executed and unexecuted scenarios are reported separately."
+        ],
+        "note": "Try test records first, then adapt to your business.",
+        "status": "4. Verify results",
+        "image": null,
+        "doc": "/capabilities/task-center.md"
+      },
+      {
+        "id": "ordinary",
+        "title": "Connect ordinary work",
+        "summary": "Collection, missing documents and delivery confirmation can be tasks without approval stages.",
+        "decisions": [
+          [
+            "Example",
+            "Issuing EQ-001 to Alex creates work; confirming receipt completes it."
+          ]
+        ],
+        "checks": [
+          "The same work does not appear twice.",
+          "Successful collection completes the item; failed collection leaves it pending."
+        ],
+        "note": "Try test records first, then adapt to your business.",
+        "status": "Equipment collection",
+        "image": null,
+        "doc": "/capabilities/task-center.md"
+      },
+      {
+        "id": "dashboard",
+        "title": "See how much work remains",
+        "summary": "Show the pending count without opening the full list.",
+        "decisions": [
+          [
+            "Example",
+            "Two expense tasks and one equipment task give an all-source badge of 3."
+          ]
+        ],
+        "checks": [
+          "The dashboard count matches the task list it opens.",
+          "Business filters show matching work; switching accounts shows only that account’s work."
+        ],
+        "note": "Try test records first, then adapt to your business.",
+        "status": "Dashboard badge",
+        "image": null,
+        "doc": "/capabilities/task-center.md"
+      },
+      {
+        "id": "reassignment",
+        "title": "Transfer work to someone else",
+        "summary": "Cancel the former recipient’s unfinished entry and create work for the new recipient.",
+        "decisions": [
+          [
+            "Example",
+            "Equipment work moves from Alex to Jordan; only Jordan can confirm receipt."
+          ]
+        ],
+        "checks": [
+          "Former recipients cannot handle reassigned work.",
+          "Completed history is retained; unfinished work is cancelled as specified."
+        ],
+        "note": "Try test records first, then adapt to your business.",
+        "status": "Reassignment",
+        "image": null,
+        "doc": "/capabilities/task-center.md"
+      },
+      {
+        "id": "history",
+        "title": "Bring existing work into the center",
+        "summary": "Show old and new work together in an application already in use.",
+        "decisions": [
+          [
+            "Example",
+            "A paused backfill resumes without restoring pending status over online completion."
+          ]
+        ],
+        "checks": [
+          "Interrupted batches resume without duplicate entries.",
+          "Completed work never becomes pending again."
+        ],
+        "note": "Try test records first, then adapt to your business.",
+        "status": "Historical work",
+        "image": null,
+        "doc": "/capabilities/task-center.md"
+      },
+      {
+        "id": "notifications",
+        "title": "Notify recipients when work arrives",
+        "summary": "A notification signals work to do; completion still happens in the business.",
+        "decisions": [
+          [
+            "Example",
+            "Reading a collection reminder does not complete the task."
+          ]
+        ],
+        "checks": [
+          "One reminder per business event and recipient.",
+          "Reading does not complete tasks; delivery failure does not undo business writes."
+        ],
+        "note": "Try test records first, then adapt to your business.",
+        "status": "Reminders",
+        "image": null,
+        "doc": "/capabilities/task-center.md"
+      }
+    ]
   }
 }

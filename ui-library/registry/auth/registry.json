@@ -16,7 +16,8 @@
         "button",
         "field",
         "input",
-        "input-group"
+        "input-group",
+        "@nocobase/feedback-form"
       ],
       "docs": "Presentational: each form calls onSubmit(values) and renders what it is given (submitting, error, fieldErrors, labels with English defaults). Wire onSubmit to @nocobase/app-plugin-authentication/client/actions (the templates' client/pages/auth/ pages are the reference), pass translated labels, and put links in forgotPasswordLink and footer.",
       "files": [
@@ -131,11 +132,18 @@
       },
       "dependencies": [
         "@nocobase/app-plugin-authentication@^2.0.0-beta.0",
-        "@nocobase/i18n@^1.0.0-beta.4",
+        "@nocobase/i18n@^2.0.0-beta.1",
         "cn@^0.4.0",
         "lucide-react@^0.487.0"
       ],
-      "registryDependencies": ["alert", "button", "field", "input", "spinner"],
+      "registryDependencies": [
+        "alert",
+        "button",
+        "field",
+        "input",
+        "spinner",
+        "@nocobase/feedback-form"
+      ],
       "docs": "Needs wiring before it works: enable deviceAuthorization() and bearer() in server/config/auth.ts, add an application migration creating Better Auth's deviceCode table, and register deviceAuthorizationClient() in client/config/auth.ts. Render DeviceApproval on a /device route only signed-in people reach (auth: 'optional', sending others to /login?redirect=), passing ?user_code= as userCode, and spread locales/ into client/locales/. The authentication plugin's Skill (references/better-auth-plugins.md) has the details.",
       "files": [
         {

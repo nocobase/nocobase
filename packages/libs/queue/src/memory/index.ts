@@ -12,6 +12,9 @@ import { MemoryQueueRuntime } from './runtime.js';
  * between a clean shutdown and the next start.
  */
 export class InMemoryQueueService implements QueueImplementation {
+  public validateConfig(): void {
+    // Memory options are validated by the service's common configuration layer.
+  }
   public createRuntime(context: QueueRuntimeContext): QueueRuntime {
     return new MemoryQueueRuntime(context);
   }

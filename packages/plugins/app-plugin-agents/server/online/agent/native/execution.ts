@@ -1,13 +1,23 @@
+import type { NativeExecutionRequest } from './types.js';
+import { WebSearchBudget } from '../../search/budget.js';
+import { validateWebSearch, type OnlineAgentWebSearch } from '../web-search.js';
+import { effectiveTools } from '../configuration.js';
+import { FileInputError } from '../../files/errors.js';
+import {
+  fileInputFailureTitles,
+  isFileInputFailureReason,
+  type FileInputFailureReason,
+} from '../../../../shared/file-input-failures.js';
+import type { NativeFileInputs } from '../../files/service.js';
+import type { OnlineAgentSandboxProvider } from '../../sandbox/types.js';
+import { NativeToolExecution } from '../../sandbox/execution.js';
 import { jsonSafe } from '../messages/json.js';
 import type {
   OnlineAgentJson,
   OnlineAgentOutcome,
   OnlineAgentContext,
-  OnlineAgentOptions,
   OnlineAgentToolContext,
-  NativeApproval,
   NativeSnapshot,
-  NativeInput,
   NativeMessage,
   NativeUIChunk,
 } from '../types.js';
@@ -18,7 +28,6 @@ import {
 import {
   streamText,
   Output,
-  type Schema,
   toUIMessageStream,
   stepCountIs,
   isToolUIPart,
@@ -31,10 +40,7 @@ import {
   appUIMessageMetadataSchema,
   type AppUIMessageMetadata,
 } from '../../../../shared/online-agent.js';
-import {
-  MESSAGE_CONTENT_MAX,
-  type ResolvedPageContext,
-} from '../../../../shared/conversations.js';
+import { MESSAGE_CONTENT_MAX } from '../../../../shared/conversations.js';
 import type { ModelRef } from '../../../../shared/models.js';
 import { conflict, invalid } from '../../../kernel/errors.js';
 import type { IdSource } from '../../../kernel/ids.js';
@@ -56,7 +62,10 @@ export class NativeOnlineAgent {
       uiStreams: OnlineAgentUIStreams;
       ids: IdSource;
       configurator: OnlineAgentConfigurator;
+      sandboxProvider?: OnlineAgentSandboxProvider;
       resolver?: ServiceResolver;
+      webSearch?: OnlineAgentWebSearch;
+      fileInputs?: NativeFileInputs;
       model(ref: ModelRef, sessionId: string): Promise<LanguageModel>;
       onError(error: unknown): void;
       complete(
@@ -85,31 +94,30 @@ export class NativeOnlineAgent {
   async run(
     context: OnlineAgentContext,
     id: string,
-    inputs: NativeInput[],
-    input:
-      | {
-          attachmentIds?: string[][];
-          clientId?: string;
-          messageId?: string;
-          workContext?: ResolvedPageContext;
-          overrides?: OnlineAgentOptions;
-          selectedModel?: ModelRef;
-          boundary?: 'http';
-        }
-      | undefined,
+    request: NativeExecutionRequest,
     execution: NativeExecution,
     accepted: Acceptance,
-    approval?: NativeApproval,
-    schema?: Schema<OnlineAgentJson>,
   ): Promise<void> {
+    const inputs = request.kind === 'append' ? request.inputs : [];
+    const input = request.kind !== 'approval' ? request.input : undefined;
+    const approval = request.kind === 'approval' ? request.approval : undefined;
+    const schema = request.kind === 'append' ? request.schema : undefined;
+    let sourceUserMessageId = inputs.at(-1)?.id;
     let metadata: AppUIMessageMetadata;
     let priorMessage: NativeMessage | undefined;
     let previousPage: ModelMessage | undefined;
-    let tools: ReturnType<OnlineAgentConfigurator['bind']>;
+    let resendHistory:
+      | Awaited<
+          ReturnType<OnlineAgentSessionManager['native']['resend']>
+        >['history']
+      | undefined;
+    let tools!: ReturnType<OnlineAgentConfigurator['bind']>;
     let model: LanguageModel;
     let afterSeq: number;
-    let executionId: string;
+    const executionId = approval?.executionId ?? this.deps.ids.next();
     let messageId: string;
+    let toolContext!: OnlineAgentToolContext;
+    let instructions = '';
     const pending: Promise<unknown>[] = [];
     const begun = new Set<string>();
     const ended = new Set<string>();
@@ -141,43 +149,76 @@ export class NativeOnlineAgent {
             context,
             input.overrides,
             session.config,
-            [],
             input.boundary === 'http',
           )
         : session.config;
       if ((config.agentId ?? 'online') !== (session.config.agentId ?? 'online'))
         throw conflict('Start a new conversation to choose another agent.');
-      const candidate = config.model[0]?.split('/');
+      const candidate = config.model?.[0]?.split('/');
       const selected =
         input?.selectedModel ??
+        (config.model?.length &&
         (input?.overrides?.model !== undefined ||
-        JSON.stringify(config.model) !== JSON.stringify(session.config.model)
+          JSON.stringify(config.model) !== JSON.stringify(session.config.model))
           ? {
               modelService: candidate?.[0] ?? '',
               model: candidate?.slice(1).join('/') ?? '',
             }
           : session.model);
-      if (!config.model.includes(`${selected.modelService}/${selected.model}`))
+      if (
+        config.model?.length &&
+        !config.model.includes(`${selected.modelService}/${selected.model}`)
+      )
         throw invalid('The selected model is outside this configuration.');
-      model = await this.deps.model(selected, id);
-      const boundContext: OnlineAgentToolContext = Object.freeze({
-        ...context,
-        user: Object.freeze({ ...context.user }),
-        variable: config.variable,
-        systemPrompt: config.systemPrompt,
-        sessionId: id,
-        signal: execution.abort.signal,
-      });
-      tools = this.deps.configurator.bind(
+      const changedModel =
+        selected.modelService !== session.model.modelService ||
+        selected.model !== session.model.model;
+      config = structuredClone(config);
+      await validateWebSearch(
         config,
-        boundContext,
-        this.deps.resolver,
-        (task) => {
-          pending.push(task);
-        },
+        selected,
+        this.deps.webSearch,
+        changedModel && input?.overrides?.webSearch === undefined,
       );
+      model = await this.deps.model(selected, id);
+      const searchBudget = new WebSearchBudget();
+      const entryContext: Omit<OnlineAgentToolContext, 'execution'> =
+        Object.freeze({
+          ...context,
+          user: Object.freeze({ ...context.user }),
+          variable: config.variable,
+          systemPrompt: config.systemPrompt,
+          sessionId: id,
+          signal: execution.abort.signal,
+          selectedModel: Object.freeze({ ...selected }),
+          webSearchBudget: searchBudget,
+        });
+      const toolExecution = new NativeToolExecution(
+        executionId,
+        execution,
+        {
+          sessionId: id,
+          executionId,
+          context: entryContext,
+          skill: config.skill ?? [],
+        },
+        this.deps.sandboxProvider,
+      );
+      execution.toolExecution = toolExecution;
+      toolContext = Object.freeze({
+        ...entryContext,
+        execution: toolExecution,
+      });
+      const prepareTools = async () => {
+        instructions = await toolExecution.instructions(effectiveTools(config));
+        tools = this.deps.configurator.bind(
+          config,
+          toolContext,
+          this.deps.resolver,
+          (task) => pending.push(task),
+        );
+      };
       if (approval) {
-        executionId = approval.executionId;
         messageId = approval.messageId;
         response = await this.deps.uiStreams.open(
           context.user.id,
@@ -192,10 +233,13 @@ export class NativeOnlineAgent {
           approval,
         );
         priorMessage = approved.message;
+        searchBudget.restore(approved.message);
         waitingApprovals = approved.waiting;
         afterSeq = session.lastSeq;
+        if (!waitingApprovals) await prepareTools();
       } else {
-        if (!background) {
+        await prepareTools();
+        if (!background && request.kind === 'append') {
           if (inputs.length !== 1)
             throw invalid('Submit only the current user message.');
           const content = inputs[0].parts;
@@ -210,16 +254,14 @@ export class NativeOnlineAgent {
           )
             throw invalid('A valid user input is required.');
         }
-        executionId = this.deps.ids.next();
         messageId = this.deps.ids.next();
-        previousPage = (
-          await this.deps.sessions.native.executionHistory(
+        if (request.kind === 'append')
+          previousPage = await this.deps.sessions.native.pageContext(
             context.user.id,
             id,
             input?.workContext,
             !context.authorization.identity.keyScope,
-          )
-        ).page;
+          );
         execution.abort.signal.throwIfAborted();
         if (!background)
           response = await this.deps.uiStreams.open(
@@ -229,16 +271,49 @@ export class NativeOnlineAgent {
             'native',
             () => execution.abort.abort(),
           );
-        afterSeq = await this.deps.sessions.native.accept(
-          context.user.id,
-          id,
-          background ? inputs : inputs[0],
-          config,
-          selected,
-          executionId,
-          messageId,
-          session,
-        );
+        if (request.kind === 'resend') {
+          const result = await this.deps.sessions.native.resend(
+            context.user.id,
+            id,
+            request.options,
+            config,
+            selected,
+            executionId,
+            messageId,
+            session,
+            !context.authorization.identity.keyScope,
+            async (snapshot, conn) => {
+              if (!this.deps.fileInputs && snapshot.files.length)
+                throw invalid('File input preparation is unavailable.');
+              const prepared = this.deps.fileInputs
+                ? await this.deps.fileInputs.prepare({
+                    model,
+                    snapshot,
+                    userId: context.user.id,
+                    sessionId: id,
+                    signal: execution.abort.signal,
+                    conn,
+                  })
+                : snapshot.replay;
+              execution.abort.signal.throwIfAborted();
+              return prepared;
+            },
+          );
+          afterSeq = result.lastSeq;
+          sourceUserMessageId = result.messageId;
+          resendHistory = result.history;
+        } else {
+          afterSeq = await this.deps.sessions.native.accept(
+            context.user.id,
+            id,
+            background ? inputs : inputs[0],
+            config,
+            selected,
+            executionId,
+            messageId,
+            session,
+          );
+        }
         execution.admitted = true;
       }
       metadata = {
@@ -250,8 +325,8 @@ export class NativeOnlineAgent {
         agentId: config.agentId ?? 'online',
         executionId,
         turnId: executionId,
-        ...(!priorMessage && inputs.length
-          ? { sourceUserMessageId: inputs[inputs.length - 1].id }
+        ...(!priorMessage && sourceUserMessageId
+          ? { sourceUserMessageId }
           : {}),
       };
       if (response) {
@@ -259,6 +334,21 @@ export class NativeOnlineAgent {
         this.executionResponses.set(execution, response);
       }
     } catch (error) {
+      if (execution.toolExecution) {
+        const allocated = execution.toolExecution;
+        execution.finalize = async () => {
+          await allocated.dispose();
+          execution.finalize = undefined;
+          this.deps.complete(id, execution);
+        };
+        try {
+          await this.deps.finish(execution);
+        } catch (cleanupError) {
+          this.deps.onError(cleanupError);
+          accepted.reject(error);
+          return;
+        }
+      }
       if (response)
         await this.deps.uiStreams
           .close(id, response)
@@ -269,7 +359,7 @@ export class NativeOnlineAgent {
     }
     const output = response;
     const publicStream = this.deps.sessions.native.messages.stream(
-      config.tool,
+      effectiveTools(config),
       priorMessage,
     );
     if (waitingApprovals) {
@@ -290,6 +380,7 @@ export class NativeOnlineAgent {
       if (notice) output?.write(notice as NativeUIChunk);
       accepted.resolve(afterSeq);
       execution.finalize = async () => {
+        await execution.toolExecution?.dispose();
         if (output) await this.deps.uiStreams.release(id, output);
         output?.write({ type: 'finish', messageMetadata: metadata });
         output?.close();
@@ -314,18 +405,36 @@ export class NativeOnlineAgent {
       ? structuredClone(priorMessage)
       : { id: messageId, role: 'assistant', parts: [], metadata };
     let outcome: 'completed' | 'cancelled' | 'failed' = 'completed';
+    let preparingFiles = false;
+    let fileInputFailure: FileInputFailureReason | undefined;
     let finishChunk: NativeUIChunk = { type: 'finish' };
     output?.write({ type: 'start', messageId, messageMetadata: metadata });
     try {
-      const trusted = await this.deps.sessions.native.executionHistory(
-        context.user.id,
-        id,
-        input?.workContext,
-        false,
-      );
-      const original = trusted.ui;
-      const history = trusted.model;
-      if (previousPage) history.push(previousPage);
+      const snapshot =
+        resendHistory?.snapshot ??
+        (await this.deps.sessions.native.executionSnapshot(
+          context.user.id,
+          id,
+        ));
+      preparingFiles = snapshot.files.length > 0;
+      if (!this.deps.fileInputs && snapshot.files.length)
+        throw invalid('File input preparation is unavailable.');
+      const prepared =
+        resendHistory?.prepared ??
+        (this.deps.fileInputs
+          ? await this.deps.fileInputs.prepare({
+              model,
+              snapshot,
+              userId: context.user.id,
+              sessionId: id,
+              signal: execution.abort.signal,
+            })
+          : snapshot.replay);
+      preparingFiles = false;
+      const original = snapshot.original;
+      const history = await this.deps.sessions.native.messages.model(prepared);
+      const page = resendHistory?.page ?? previousPage;
+      if (page) history.push(page);
       if (priorMessage)
         privateMessage = structuredClone(
           original.find((message) => message.id === messageId)!,
@@ -341,18 +450,12 @@ export class NativeOnlineAgent {
         output: schema ? Output.object({ schema }) : undefined,
         tools,
         messages: history,
-        system: config.systemPrompt,
+        system:
+          [config.systemPrompt, instructions]
+            .filter((part) => part?.trim())
+            .join('\n\n') || undefined,
         toolsContext: Object.fromEntries(
-          Object.keys(tools).map((name) => [
-            name,
-            Object.freeze({
-              ...context,
-              variable: config.variable,
-              systemPrompt: config.systemPrompt,
-              sessionId: id,
-              signal: execution.abort.signal,
-            }),
-          ]),
+          Object.keys(tools).map((name) => [name, toolContext]),
         ),
         reasoning: reasoningOf(config.thinking),
         abortSignal: execution.abort.signal,
@@ -405,7 +508,7 @@ export class NativeOnlineAgent {
       for await (const chunk of stream) {
         if (chunk.type === 'start') continue;
         if (chunk.type === 'finish') {
-          finishChunk = chunk as NativeUIChunk;
+          finishChunk = chunk;
           continue;
         }
         if (chunk.type === 'error') {
@@ -446,6 +549,12 @@ export class NativeOnlineAgent {
       }
     } catch (error) {
       outcome = execution.abort.signal.aborted ? 'cancelled' : 'failed';
+      if (outcome === 'failed' && preparingFiles)
+        fileInputFailure =
+          error instanceof FileInputError &&
+          isFileInputFailureReason(error.fileInputReason)
+            ? error.fileInputReason
+            : 'preparationFailed';
       execution.abort.abort();
       this.deps.onError(error);
       accepted.resolve(afterSeq);
@@ -504,11 +613,17 @@ export class NativeOnlineAgent {
             ? 'Completed'
             : outcome === 'cancelled'
               ? 'Stopped'
-              : 'Interrupted',
+              : fileInputFailure
+                ? fileInputFailureTitles[fileInputFailure]
+                : 'Interrupted',
+        ...(fileInputFailure
+          ? { params: { fileInputReason: fileInputFailure } }
+          : {}),
       },
     };
     let snapshot: NativeSnapshot | undefined;
     execution.finalize = async () => {
+      await execution.toolExecution?.dispose();
       if (!snapshot) {
         const message = (
           await this.deps.sessions.native.messages.validate([

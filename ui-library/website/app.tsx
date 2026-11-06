@@ -1,3 +1,10 @@
+import { LoadingDemo } from './demo/components/loading.js';
+import { PendingButtonDemo } from './demo/components/pending-button.js';
+import { TaskProgressDemo } from './demo/components/task-progress.js';
+import { ListFeedbackDemo } from './demo/components/list-feedback.js';
+import { FileComponentUiDemo } from './demo/file/file-component-ui.js';
+import { NotificationLogsUiDemo } from './demo/notification/notification-logs-ui.js';
+import { copyText } from '@nocobase/app-client';
 import {
   AlignLeft,
   AppWindow,
@@ -15,6 +22,7 @@ import {
   Layers,
   LayoutTemplate,
   ListChecks,
+  ListTodo,
   Monitor,
   MonitorSmartphone,
   Moon,
@@ -76,6 +84,7 @@ import {
 } from './components/ui/sidebar';
 import { Separator } from './components/ui/separator';
 import { TooltipProvider } from './components/ui/tooltip';
+import { AgentChatDetailsDemo } from './demo/agents/agent-chat-details.js';
 import { AgentChatDemo } from './demo/agents/agent-chat';
 import { AgentComposerDemo } from './demo/agents/agent-composer';
 import { AgentPickerDemo } from './demo/agents/agent-picker';
@@ -89,10 +98,16 @@ import { WorkflowManagementDemo } from './demo/lifecycle/workflow-management';
 import { LifecycleDiagramDemo } from './demo/lifecycle/lifecycle-diagram';
 import { KanbanDemo } from './demo/components/kanban';
 import { ApprovalDemo } from './demo/approval';
+import { TaskCenterUiDemo } from './demo/task-center';
 import { AuthenticationDemo } from './demo/auth';
 import { DeviceApprovalDemo } from './demo/auth/device-approval';
 import { PageContainerDemo } from './demo/components/page-container';
+import { SetupReadinessDemo } from './demo/components/setup-readiness.js';
+import { FeedbackFormDemo } from './demo/components/feedback-form.js';
+import { RecordLinkDemo } from './demo/components/record-link.js';
 import { PageHeaderDemo } from './demo/components/page-header';
+import { DefaultAccessEditorDemo } from './demo/authorization/default-access-editor.js';
+import { RoleListDemo } from './demo/authorization/role-list.js';
 import { PermissionEditorDemo } from './demo/authorization/permission-editor';
 import { RouteOverlaysDemo } from './demo/components/route-overlays';
 import { IssueDetailDemo } from './demo/projects/issue-detail';
@@ -138,6 +153,11 @@ interface ItemPreview {
 
 // Items are not discovered: each one is wired here, and routed to its demo in `AppContent`.
 const itemPreviews: Record<string, ItemPreview> = {
+  'file-component-ui': { path: '/demo/file/file-component-ui', icon: Blocks },
+  'notification-logs-ui': {
+    path: '/demo/notification/notification-logs-ui',
+    icon: Blocks,
+  },
   'auth-centered-layout': {
     path: '/demo/auth/auth-centered-layout',
     icon: ShieldCheck,
@@ -153,7 +173,26 @@ const itemPreviews: Record<string, ItemPreview> = {
     path: '/demo/components/page-container',
     icon: LayoutTemplate,
   },
+  'feedback-form': {
+    path: '/demo/components/feedback-form',
+    icon: ClipboardList,
+  },
+  'record-link': { path: '/demo/components/record-link', icon: Table2 },
   'page-header': { path: '/demo/components/page-header', icon: Heading },
+  loading: { path: '/demo/components/loading', icon: ListChecks },
+  'pending-button': {
+    path: '/demo/components/pending-button',
+    icon: ListChecks,
+  },
+  'task-progress': {
+    path: '/demo/components/task-progress',
+    icon: ListChecks,
+  },
+  'list-feedback': { path: '/demo/components/list-feedback', icon: ListChecks },
+  'setup-readiness': {
+    path: '/demo/components/setup-readiness',
+    icon: ListChecks,
+  },
   // The three route overlays share one demo; each preview opens the route that presents its component.
   'route-dialog': {
     path: '/demo/components/route-overlays/new',
@@ -167,6 +206,11 @@ const itemPreviews: Record<string, ItemPreview> = {
     path: '/demo/components/route-overlays/report',
     icon: Layers,
   },
+  'default-access-editor': {
+    path: '/demo/authorization/default-access-editor',
+    icon: SlidersHorizontal,
+  },
+  'role-list': { path: '/demo/authorization/role-list', icon: ToggleRight },
   'permission-editor': {
     path: '/demo/authorization/permission-editor',
     icon: ToggleRight,
@@ -222,10 +266,18 @@ const itemPreviews: Record<string, ItemPreview> = {
     icon: MessageSquareText,
   },
   'agent-picker': { path: '/demo/agents/agent-picker', icon: UserRoundSearch },
+  'agent-chat-details': {
+    path: '/demo/agents/agent-chat-details',
+    icon: BotMessageSquare,
+  },
   'agent-chat': { path: '/demo/agents/agent-chat', icon: BotMessageSquare },
   inbox: { path: '/demo/inbox/inbox', icon: Inbox },
   'inbox-button': { path: '/demo/inbox/inbox-button', icon: BellDot },
   'approval-ui': { path: '/demo/approval/approval-ui', icon: ListChecks },
+  'task-center-ui': {
+    path: '/demo/task-center/task-center-ui',
+    icon: ListTodo,
+  },
 };
 
 type ThemePreference = 'light' | 'dark' | 'system';
@@ -267,6 +319,10 @@ export function App(): ReactElement {
 
 function AppContent(): ReactElement {
   const { pathname } = window.location;
+  if (pathname.startsWith('/demo/file/file-component-ui'))
+    return <FileComponentUiDemo />;
+  if (pathname.startsWith('/demo/notification/notification-logs-ui'))
+    return <NotificationLogsUiDemo />;
   if (pathname.startsWith('/demo/auth/device-approval')) {
     return <DeviceApprovalDemo />;
   }
@@ -276,12 +332,32 @@ function AppContent(): ReactElement {
   if (pathname.startsWith('/demo/approval/')) {
     return <ApprovalDemo />;
   }
+  if (pathname.startsWith('/demo/task-center/')) {
+    return <TaskCenterUiDemo />;
+  }
   if (pathname.startsWith('/demo/components/page-container')) {
     return <PageContainerDemo />;
   }
+  if (pathname.startsWith('/demo/components/loading')) return <LoadingDemo />;
+  if (pathname.startsWith('/demo/components/pending-button'))
+    return <PendingButtonDemo />;
+  if (pathname.startsWith('/demo/components/task-progress'))
+    return <TaskProgressDemo />;
+  if (pathname.startsWith('/demo/components/list-feedback'))
+    return <ListFeedbackDemo />;
+  if (pathname.startsWith('/demo/components/setup-readiness'))
+    return <SetupReadinessDemo />;
+  if (pathname.startsWith('/demo/components/feedback-form'))
+    return <FeedbackFormDemo />;
+  if (pathname.startsWith('/demo/components/record-link'))
+    return <RecordLinkDemo />;
   if (pathname.startsWith('/demo/components/page-header')) {
     return <PageHeaderDemo />;
   }
+  if (pathname.startsWith('/demo/authorization/default-access-editor'))
+    return <DefaultAccessEditorDemo />;
+  if (pathname.startsWith('/demo/authorization/role-list'))
+    return <RoleListDemo />;
   if (pathname.startsWith('/demo/authorization/permission-editor')) {
     return <PermissionEditorDemo />;
   }
@@ -347,6 +423,8 @@ function AppContent(): ReactElement {
   if (pathname.startsWith('/demo/agents/agent-picker')) {
     return <AgentPickerDemo />;
   }
+  if (pathname.startsWith('/demo/agents/agent-chat-details'))
+    return <AgentChatDetailsDemo />;
   if (pathname.startsWith('/demo/agents/agent-chat')) {
     return <AgentChatDemo />;
   }
@@ -685,23 +763,9 @@ function RegistryPreview({
 
   const copyInstallCommand = async (): Promise<void> => {
     try {
-      if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(installCommand);
-      } else {
-        const input = document.createElement('textarea');
-        input.value = installCommand;
-        input.setAttribute('readonly', '');
-        input.style.position = 'fixed';
-        input.style.opacity = '0';
-        document.body.append(input);
-        try {
-          input.select();
-          if (!document.execCommand('copy')) {
-            throw new Error('Clipboard is unavailable.');
-          }
-        } finally {
-          input.remove();
-        }
+      if (!(await copyText(installCommand))) {
+        setCopied(false);
+        return;
       }
       setCopied(true);
       window.setTimeout(() => setCopied(false), 2000);

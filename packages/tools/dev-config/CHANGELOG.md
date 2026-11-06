@@ -1,5 +1,11 @@
 # @nocobase/dev-config
 
+## 0.1.0-beta.25
+
+### Patch Changes
+
+- 58531da: Require HTTP-compatible UUID and clipboard helpers in browser source while preserving Node APIs. Use the shared helpers for mail composition, demo links, example records, template copy actions and workflow request identifiers.
+
 ## 0.1.0-beta.24
 
 ### Patch Changes

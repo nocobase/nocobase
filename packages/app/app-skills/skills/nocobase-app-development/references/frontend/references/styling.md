@@ -246,7 +246,7 @@ Merge class names with `cn()` from the `cn` package (`import { cn } from 'cn'`),
 
 ```tsx
 import { useTranslation } from '@nocobase/i18n/client';
-import { RefreshCwIcon } from 'lucide-react';
+import { PencilIcon } from 'lucide-react';
 import type { ReactElement } from 'react';
 
 import { Button } from '#components/ui/button';
@@ -256,10 +256,10 @@ import {
   TooltipTrigger,
 } from '#components/ui/tooltip';
 
-export function RefreshButton({
-  onRefresh,
+export function EditButton({
+  onEdit,
 }: {
-  readonly onRefresh: () => void;
+  readonly onEdit: () => void;
 }): ReactElement {
   const { t } = useTranslation();
   return (
@@ -269,14 +269,14 @@ export function RefreshButton({
           <Button
             variant='outline'
             size='icon'
-            aria-label={t('projects.actions.refresh')}
-            onClick={onRefresh}
+            aria-label={t('projects.actions.edit')}
+            onClick={onEdit}
           />
         }
       >
-        <RefreshCwIcon />
+        <PencilIcon />
       </TooltipTrigger>
-      <TooltipContent>{t('projects.actions.refresh')}</TooltipContent>
+      <TooltipContent>{t('projects.actions.edit')}</TooltipContent>
     </Tooltip>
   );
 }
@@ -353,7 +353,7 @@ export function DeleteProjectButton({
 
 ## 13. Loading, empty, and error states
 
-- Every view that loads data needs these three states (for the four list states, see [`table.md`](table.md); for how to handle loading and errors, see [`api.md`](api.md)).
+- Every view that loads data needs loading and failure feedback (for list feedback states, see [`table.md`](table.md); for individual-record loading and errors, see [`api.md`](api.md)).
 - Components: `Loading` (`#components/loading`, the shared loading indicator) and `Spinner` (a small loading indicator in a button or toolbar) ship with the template; `Skeleton` (a skeleton screen that preserves the layout), `Empty` (empty state) and `Alert` (error message) are added with `yes n | pnpm exec shadcn add skeleton empty alert`.
 - Put loading feedback inside the surface that is loading. A page-level loading indicator rendered for a dialog's content appears behind the dialog, not inside it.
 

@@ -4,6 +4,7 @@
  */
 import {
   AGENT_TOOLS,
+  NATIVE_AGENT_TOOLS,
   WorkspaceDecisionSchema,
   WorkspaceCleanupResultSchema,
   RunnerPolicySchema,
@@ -113,15 +114,15 @@ function toolList(value: unknown): ToolInfo[] {
 
 /** A stored tool choice: null (every tool) stays null; otherwise the known tools in their canonical order. */
 export function enabledToolList(value: unknown): AgentTool[] | null {
-  if (value === null || value === undefined) return null;
+  if (value === null || value === undefined) return [...NATIVE_AGENT_TOOLS];
   const list = Array.isArray(value) ? (value as unknown[]) : [];
   return AGENT_TOOLS.filter((tool) => list.includes(tool));
 }
 
-/** A tool choice as stored: every tool collapses to null, so a tool added to the protocol later is offered too. */
+/** A tool choice is always explicit; selecting all tools never opts in to later catalog additions. */
 export function storedToolChoice(value: unknown): AgentTool[] | null {
   const list = enabledToolList(value);
-  return list && list.length === AGENT_TOOLS.length ? null : list;
+  return list;
 }
 
 /**
@@ -329,6 +330,20 @@ export function toRunner(
     slots: Number(record.slots),
     toolSlots: storedToolSlots(record.toolSlots),
     toolLoad: storedToolLoad(record.load),
+    capacityReportedAt:
+      typeof jsonObject(record.load).reportedAt === 'string'
+        ? String(jsonObject(record.load).reportedAt)
+        : undefined,
+    reportedSlots:
+      typeof jsonObject(record.load).slots === 'number'
+        ? Number(jsonObject(record.load).slots)
+        : undefined,
+    capacitySource:
+      jsonObject(record.load).capacitySource === 'online'
+        ? 'online'
+        : jsonObject(record.load).capacitySource === 'legacyLocal'
+          ? 'legacyLocal'
+          : undefined,
     globalFree:
       typeof jsonObject(record.load).free === 'number'
         ? Number(jsonObject(record.load).free)
@@ -338,7 +353,9 @@ export function toRunner(
         ? 'updatePending'
         : jsonObject(record.load).draining === 'pruning'
           ? 'pruning'
-          : undefined,
+          : jsonObject(record.load).draining === 'diskLow'
+            ? 'diskLow'
+            : undefined,
     acceptJobs: Boolean(record.acceptJobs),
     policy: storedPolicy(record.policy),
     variables: storedVariableNames(record.variables),

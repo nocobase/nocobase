@@ -1,15 +1,12 @@
 import {
   ApiError,
   apiErrorHandler,
-  apiErrorStatusFromHttp,
   type ApiErrorStatus,
   type ApiFieldViolation,
 } from '@nocobase/app-server/router';
 import {
-  getRequestLocale,
-  isAppI18nError,
   TRANSLATOR_CONTEXT_KEY,
-  type AppI18nError,
+  getRequestLocale,
   type Translator,
 } from '@nocobase/i18n/server';
 import type { Context, ErrorHandler } from 'hono';
@@ -59,55 +56,7 @@ export function notificationApiError(
   });
 }
 
-/**
- * Translates an `AppI18nError` raised by the notification runtime into the standard error. The runtime throws these
- * because it does not know the request's locale; the route does.
- */
-export function notificationApiErrorFromI18n(
-  context: Context,
-  error: AppI18nError,
-): ApiError {
-  const field = violatedField(error);
-  return notificationApiError(context, {
-    status: apiErrorStatusFromHttp(error.status),
-    reason: error.code,
-    key: error.key,
-    ...(error.params ? { params: error.params } : {}),
-    ...(field ? { fieldViolations: [{ field, description: '' }] } : {}),
-    cause: error,
-  });
-}
-
-/**
- * The `onError` of every notification router. It translates the runtime's localized errors and leaves everything else to
- * the framework's handler, which renders what it recognizes, such as `ApiError`, in the standard body, so a router
- * answers the same way mounted on a bare Hono, and rethrows the rest to the application.
- */
-export const notificationErrorHandler: ErrorHandler = (error, context) =>
-  apiErrorHandler(
-    isNotificationI18nError(error)
-      ? notificationApiErrorFromI18n(context, error)
-      : error,
-    context,
-  );
-
-/** Whether `error` is a notification runtime error this plugin's routes translate. */
-export function isNotificationI18nError(error: unknown): error is AppI18nError {
-  return isAppI18nError(error) && error.ns === NOTIFICATION_NAMESPACE;
-}
-
-function violatedField(error: AppI18nError): string | undefined {
-  if (error.code === 'NOTIFICATION_TEST_TARGET_UNAVAILABLE') return 'channel';
-  const name = error.params?.name;
-  return typeof name === 'string' &&
-    [
-      'NOTIFICATION_TEST_UNKNOWN_FIELD',
-      'NOTIFICATION_TEST_REQUIRED_FIELD',
-      'NOTIFICATION_TEST_FIELD_TOO_LONG',
-    ].includes(error.code)
-    ? `values.${name}`
-    : undefined;
-}
+export const notificationErrorHandler: ErrorHandler = apiErrorHandler;
 
 function localize(
   context: Context,

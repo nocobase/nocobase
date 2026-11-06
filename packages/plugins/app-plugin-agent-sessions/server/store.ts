@@ -200,6 +200,7 @@ export function sessionView(
     waiting: Number(record.pendingPermissions) > 0,
     computerOnline: isOnline(context.computer, context.now),
     lastSeq: Number(record.lastSeq),
+    seenSeq: Number(record.seenSeq),
     project: context.project,
     links: context.links,
     archivedAt: record.archivedAt,

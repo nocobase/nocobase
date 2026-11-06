@@ -622,7 +622,7 @@ describe('persisted Permission Sets and root subjects', () => {
     const protection = (key: string): unknown =>
       body.data.find((set) => set.key === key)?.protection;
     expect(protection('root')).toMatchObject({ assignableTo: ['user'] });
-    expect(protection('member')).not.toHaveProperty('assignableTo');
+    expect(protection('member')).toMatchObject({ assignableTo: ['user'] });
   });
 });
 

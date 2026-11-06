@@ -129,6 +129,8 @@ export interface Knowledge {
 }
 
 export interface KnowledgeDeps {
+  /** Proposal availability; enabled by default. */
+  readonly proposals?: boolean;
   readonly database: Pick<DatabaseManager, 'transaction' | 'connection'>;
   /** The application's spaces and who may do what in them. */
   readonly access: KnowledgeAccessResolver;
@@ -162,7 +164,9 @@ export function createKnowledge(deps: KnowledgeDeps): Knowledge {
   const store = deps.files?.store ?? (() => null);
   const files = createFileService(context, docs, {
     store,
-    extract: deps.files?.extract ?? workerExtractor(),
+    extract:
+      deps.files?.extract ??
+      workerExtractor({ maxInputBytes: deps.files?.maxBytes }),
     ...(deps.files?.maxBytes ? { maxBytes: deps.files.maxBytes } : {}),
   });
   return {
@@ -170,6 +174,7 @@ export function createKnowledge(deps: KnowledgeDeps): Knowledge {
     docs,
     files,
     proposals: createProposalService(context, {
+      enabled: () => deps.proposals !== false,
       store,
       maxBytes: files.maxBytes,
     }),

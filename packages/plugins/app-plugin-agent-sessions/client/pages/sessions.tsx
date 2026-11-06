@@ -13,14 +13,18 @@ import {
   useSearchParams,
 } from 'react-router';
 
+import { useTranslation } from '@nocobase/i18n/client';
+import { ArchiveIcon } from 'lucide-react';
+
 import { useSessions } from '../api.js';
 
 import { NewSession } from '../components/new-session.js';
 import { SessionList } from '../components/session-list.js';
-import { useLinkPanels } from '../config.js';
-
-/** Below this width an open record's panel folds the session list to a rail, so the conversation keeps its room. */
-const ROOMY = '(min-width: 1600px)';
+import { useAgentSessionsConfig } from '../config.js';
+import {
+  SessionsLayoutContext,
+  useSessionsLayout,
+} from '../sessions-layout.js';
 
 function useMatches(query: string): boolean {
   const [matches, setMatches] = useState(
@@ -53,21 +57,38 @@ export default function AgentSessionsPage(): ReactElement {
     );
   }, [params, setParams]);
   const focused = Boolean(open) || params.has('new');
-  const linkPanels = useLinkPanels();
-  const roomy = useMatches(ROOMY);
+  const { linkPanels, layoutStoragePrefix } = useAgentSessionsConfig();
   const opened = Object.keys(linkPanels)
     .filter((kind) => params.has(kind))
     .map((kind) => `${kind}:${params.get(kind) ?? ''}`)
     .join(',');
   const panel = opened !== '';
-  // Unfolded by hand, it stays unfolded while that record is open; the next one folds it again.
-  const [expandedFor, setExpandedFor] = useState<string | null>(null);
-  const expanded = expandedFor === opened;
+  const [element, setElement] = useState<HTMLDivElement | null>(null);
+  const [width, setWidth] = useState<number | null>(null);
+  useEffect(() => {
+    if (!element) return;
+    const observer = new ResizeObserver(([entry]) => {
+      if (entry) setWidth(entry.contentRect.width);
+    });
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [element]);
+  const layout = useSessionsLayout(width, layoutStoragePrefix, panel);
   // Entering the page on a wide screen opens the latest session; a new one only when there is none, or when asked
   // (`?new`). While that read is pending, the new-session editor stays usable. A phone starts on the list.
   const wide = useMatches('(min-width: 768px)');
   const sessions = useSessions(false);
   const latest = sessions.data?.pages[0]?.data[0];
+  // While the list shows archived sessions, an open session that is not one of them, or a new draft, stays mounted but
+  // hidden, so the main area matches the list and an unsent draft survives the trip back.
+  const [archived, setArchived] = useState(false);
+  const archivedSessions = useSessions(archived);
+  const openId = open?.params.sessionId;
+  const showsArchived =
+    archived &&
+    !archivedSessions.data?.pages.some((page) =>
+      page.data.some((session) => session.id === openId),
+    );
   if (!open && !params.has('new') && wide && latest)
     return (
       <Navigate
@@ -79,21 +100,52 @@ export default function AgentSessionsPage(): ReactElement {
       />
     );
   return (
-    <div className='flex h-full min-h-0'>
+    <div ref={setElement} className='relative flex h-full min-h-0'>
       <SessionList
-        activeId={open?.params.sessionId}
+        activeId={openId}
         className={cn(focused && 'hidden md:flex')}
-        rail={panel && !roomy && !expanded}
-        onExpand={() => setExpandedFor(opened)}
+        placement={wide ? layout.list : 'column'}
+        {...(wide
+          ? {
+              onFold: () => layout.setListUnfolded(false),
+              onExpand: () => layout.setListUnfolded(true),
+            }
+          : {})}
+        archived={archived}
+        onArchivedChange={setArchived}
+        onNewSession={() => setArchived(false)}
       />
       <main className={cn('min-w-0 flex-1', !focused && 'hidden md:block')}>
-        {outlet ?? (
-          <NewSession
-            onStart={startNew}
-            deferDiscovery={!params.has('new') && wide && sessions.isPending}
-          />
-        )}
+        {showsArchived && <ArchivedView />}
+        <div
+          className={showsArchived ? undefined : 'contents'}
+          hidden={showsArchived}
+        >
+          <SessionsLayoutContext.Provider value={layout}>
+            {outlet ?? (
+              <NewSession
+                onStart={startNew}
+                deferDiscovery={
+                  !params.has('new') && wide && sessions.isPending
+                }
+              />
+            )}
+          </SessionsLayoutContext.Provider>
+        </div>
       </main>
+    </div>
+  );
+}
+
+function ArchivedView(): ReactElement {
+  const { t } = useTranslation();
+  return (
+    <div className='text-muted-foreground flex h-full flex-col items-center justify-center gap-2 p-6 text-center text-sm'>
+      <ArchiveIcon className='size-5' aria-hidden />
+      <h2 className='text-foreground text-base font-semibold'>
+        {t('list.archived')}
+      </h2>
+      <p>{t('list.archivedView')}</p>
     </div>
   );
 }

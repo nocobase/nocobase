@@ -27,7 +27,6 @@
 '@nocobase/app-plugin-notification-providers': patch
 '@nocobase/app-plugin-office-flows-example': patch
 '@nocobase/app-plugin-projects': patch
-'@nocobase/app-plugin-registry-example': patch
 '@nocobase/app-plugin-releases': patch
 '@nocobase/app-plugin-routes-example': patch
 '@nocobase/app-plugin-scheduler': patch

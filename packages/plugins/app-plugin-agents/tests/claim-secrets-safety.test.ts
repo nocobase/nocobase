@@ -236,7 +236,7 @@ it('queues team-only work whatever runners exist, and answers mayQueue for calle
   ).toBe(false);
   const queued = await h.enqueue(agentId, '1', { actorUserId: 'bob' });
   expect((await h.services.runs.get(queued)).status).toBe('queued');
-  // An offline team runner could still take it later.
+  // An offline shared runner could still take it later.
   const team = await h.registerRunner();
   await h.services.tx
     .read()
@@ -293,7 +293,7 @@ it('clears the team-only variables noted on a run when new input arrives, when i
   expect(await noted()).toBeNull();
 });
 
-it('records no attempt for a refused claim, and one for the team runner that takes the run next', async () => {
+it('records no attempt for a refused claim, and one for the shared runner that takes the run next', async () => {
   h = await createHarness();
   const agentId = await h.createAgent();
   await markTeamOnly('agent', agentId, 'TOKEN');

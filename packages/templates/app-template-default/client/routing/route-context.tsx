@@ -4,6 +4,7 @@ import {
   createContext,
   useContext,
   useMemo,
+  useState,
   type PropsWithChildren,
   type ReactElement,
 } from 'react';
@@ -26,9 +27,42 @@ export interface RouteTrailEntry {
   readonly pathname: string;
 }
 
+const RouteSearchContext = createContext<ReadonlyMap<string, string>>(
+  new Map(),
+);
+
+/** Queries belong to the page that was visited, never to a child currently covering it. */
+export function useRouteSearches(): ReadonlyMap<string, string> {
+  return useContext(RouteSearchContext);
+}
+
 const RouteTreeContext = createContext<readonly AppClientRegisteredRoute[]>([]);
+
+/** The shell's page permission check (`useRouteNavigation`), shared so pages reuse it instead of checking again. */
+export interface RouteAccess {
+  /** Route keys the viewer may not open. */
+  readonly denied: ReadonlySet<string>;
+  /** The check is still running; `denied` is not yet known. */
+  readonly loading: boolean;
+}
+
+const DEFAULT_ACCESS: RouteAccess = { denied: new Set(), loading: false };
+const RouteAccessContext = createContext<RouteAccess>(DEFAULT_ACCESS);
+
 export interface RouteTreeProviderProps extends PropsWithChildren {
   readonly routes: readonly AppClientRegisteredRoute[];
+  /** The shell's page permission result; without it every route counts as open. */
+  readonly access?: RouteAccess;
+}
+
+/** The registered business route tree the shell renders. */
+export function useRouteTree(): readonly AppClientRegisteredRoute[] {
+  return useContext(RouteTreeContext);
+}
+
+/** Which routes the viewer may open, from the shell's single permission check. */
+export function useRouteAccess(): RouteAccess {
+  return useContext(RouteAccessContext);
 }
 
 /**
@@ -41,10 +75,35 @@ export interface RouteTreeProviderProps extends PropsWithChildren {
 export function RouteTreeProvider({
   children,
   routes,
+  access,
 }: RouteTreeProviderProps): ReactElement {
+  const location = useLocation();
+  const pathname = location.pathname.replace(/\/+$/u, '') || '/';
+  const search = location.search;
+  const [visited, setVisited] = useState(() => ({
+    pathname,
+    search,
+    queries: new Map([[pathname, search]]),
+  }));
+  let queries = visited.queries;
+  if (visited.pathname !== pathname || visited.search !== search) {
+    // Keep only the active ancestry. A fresh visit (including an empty query) replaces its old state.
+    // Derive before rendering children so a detail never records its parameters against the parent.
+    queries = new Map(
+      [...queries].filter(([path]) =>
+        pathname.startsWith(`${path.replace(/\/$/u, '')}/`),
+      ),
+    );
+    queries.set(pathname, search);
+    setVisited({ pathname, search, queries });
+  }
   return (
     <RouteTreeContext.Provider value={routes}>
-      {children}
+      <RouteAccessContext.Provider value={access ?? DEFAULT_ACCESS}>
+        <RouteSearchContext.Provider value={queries}>
+          {children}
+        </RouteSearchContext.Provider>
+      </RouteAccessContext.Provider>
     </RouteTreeContext.Provider>
   );
 }

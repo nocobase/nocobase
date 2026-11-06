@@ -88,6 +88,12 @@ describe('redaction', () => {
         type: 'toolResult',
         output: `run.json: {"token":"${token}"}\n${'x'.repeat(70_000)}`,
       },
+      {
+        seq: 4,
+        at: '2026-10-01T00:00:04.000Z',
+        type: 'text',
+        content: '🙂'.repeat(20_000),
+      },
     ];
     expect(
       (await post(runner, `runs/${runId}/events`, { events })).status,
@@ -109,6 +115,10 @@ describe('redaction', () => {
     });
     expect(page.events[2]).toMatchObject({ truncated: true });
     expect(page.events[2]?.output).toContain(`{"token":"${REDACTED}"}`);
+    expect(Buffer.byteLength(page.events[2]!.output!, 'utf8')).toBe(65_535);
+    expect(page.events[3]).toMatchObject({ truncated: true });
+    expect(Buffer.byteLength(page.events[3]!.content!, 'utf8')).toBe(65_532);
+    expect(page.events[3]!.content).not.toContain('\uFFFD');
 
     const done = await post(runner, `runs/${runId}/complete`, {
       summary: `Rotated ${SECRET} and pushed with ${GITHUB}.`,

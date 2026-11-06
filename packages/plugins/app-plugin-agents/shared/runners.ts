@@ -5,6 +5,8 @@ import type { QuotaLocation } from './quota.js';
 
 import {
   AGENT_TOOLS,
+  NATIVE_AGENT_TOOLS,
+  isNativeTool,
   policyAllowsAgent,
   type AgentTool,
   type RunnerFeature,
@@ -17,12 +19,12 @@ import {
   type WorkspaceCleanupResult,
 } from '@nocobase/agent-protocol';
 
-import type { RunnerModelEntry } from './agents.js';
+import { effortsFor, type RunnerModelEntry } from './agents.js';
 import { normalizeModel } from './model-catalog.js';
 
 /**
- * `team` runs anyone's work; `ownerOnly` (shown as "personal") runs only work its owner started. A runner added by its
- * owner starts personal; the owner may share it with the team, and an administrator may add one shared from the start.
+ * `team` (shown as "shared") runs anyone's work; `ownerOnly` (shown as "personal") runs only work its owner started. A runner added by its
+ * owner starts personal; the owner may share it with all users, and an administrator may add one shared from the start.
  */
 export const RUNNER_TRUST = ['team', 'ownerOnly'] as const;
 
@@ -81,18 +83,22 @@ export interface Runner {
   readonly slots: number;
   /**
    * How many runs of each coding tool it may hold at once, beside `slots` (`{ claude: 2, codex: 1 }`); a tool left
-   * out, or every tool when null or absent, is bounded by `slots` only. Set on the web or on registration (`--slots`).
+   * out, or every tool when null or absent, is bounded by `slots` only. Set on the web or by an online registration token.
    * Optional so a runner built by other code than this plugin's server needs none; the server always sets it.
    */
   readonly toolSlots?: ToolSlots | null;
   /**
    * What it last reported per coding tool for the tools its own settings limit: how many runs of each it holds at most
-   * and could take now, across every application it serves. Null or absent when it reported none (unknown: read as
+   * and could take now, within this application. Null or absent when it reported none (unknown: read as
    * room left).
    */
-  /** Last heartbeat free slots across all applications; absent before a heartbeat. */
+  /** Last heartbeat free slots; updated runners report this application only. */
   readonly globalFree?: number;
-  readonly draining?: 'updatePending' | 'pruning';
+  /** Actual capacity from the last heartbeat; absent until reported. */
+  readonly reportedSlots?: number;
+  readonly capacitySource?: 'online' | 'legacyLocal';
+  readonly capacityReportedAt?: string;
+  readonly draining?: 'updatePending' | 'pruning' | 'diskLow';
   readonly toolLoad?: Readonly<Partial<Record<AgentTool, ToolLoad>>> | null;
   /**
    * Its owner (or a manager of runners) lets it take jobs: builds and other steps an application configures, run
@@ -272,6 +278,20 @@ export interface RunnerRecentRun {
   readonly path: string | null;
 }
 
+/** Opaque continuation values use the stored start time, including never-started runs. */
+export interface RunnerRunsCursor {
+  readonly startedAt: string | null;
+  readonly id: string;
+}
+
+export interface RunnerRunsPage {
+  readonly data: RunnerRecentRun[];
+  readonly meta: {
+    readonly nextCursor: string | null;
+    readonly total: number;
+  };
+}
+
 /**
  * A runner in the list, with what the viewer may do with it. What identifies its machine (the host name, the tools'
  * executable paths) is shown only to its owner, the managers of runners and anyone who may wake an agent: `hostname`
@@ -303,12 +323,13 @@ export interface RunnerSummary extends Omit<
    * owner can no longer act (none recorded, or disabled or deleted). A manager does not change someone else's runner.
    */
   readonly canManage: boolean;
-  /** The viewer may switch it between personal and team: whoever may change it (`canManage`). */
+  readonly canManageTools?: boolean;
+  /** The viewer may switch it between personal and shared: whoever may change it (`canManage`). */
   readonly canChangeTrust: boolean;
   /** The viewer may revoke it, and delete it once revoked: its owner, or a manager of runners in an emergency. */
   readonly canRevoke: boolean;
   readonly canClearQuota: boolean;
-  /** Count of the recent (at most ten) run rows, without loading their details. */
+  /** Exact run count, without loading row details. */
   readonly recentRunsCount: number;
   /**
    * A newer runner version the application serves for its platform, which the runner installs on its own between
@@ -340,6 +361,10 @@ export const RUNNER_LIST_FIELDS = {
   ownerName: true,
   status: true,
   slots: true,
+  reportedSlots: true,
+  capacitySource: true,
+  capacityReportedAt: true,
+  toolLoad: true,
   toolSlots: true,
   activeRuns: true,
   activeJobs: true,
@@ -347,6 +372,7 @@ export const RUNNER_LIST_FIELDS = {
   lastSeenAt: true,
   draining: true,
   canManage: true,
+  canManageTools: true,
   canChangeTrust: true,
   canRevoke: true,
   takes: true,
@@ -405,6 +431,7 @@ export interface RunnerPatch {
   /** Limits per coding tool; null, or a tool left out, for none of its own (bounded by `slots`). */
   readonly toolSlots?: ToolSlots | null;
   /** null offers every tool the runner reports. */
+  readonly redetectTools?: boolean;
   readonly enabledTools?: readonly AgentTool[] | null;
   readonly acceptJobs?: boolean;
 }
@@ -415,13 +442,12 @@ export interface RegistrationTokenInput {
   /** The coding tools the runner that registers with this token may run; omitted or null for every tool. */
   readonly enabledTools?: readonly AgentTool[] | null;
   /**
-   * How many runs at once the runner that registers with this token takes (1 to 64); omitted or null leaves it to the
-   * runner. A runner registered with an explicit `--slots` keeps its own number.
+   * How many runs at once the runner that registers with this token takes (1 to 64); omitted or null defaults to three.
    */
   readonly slots?: number | null;
   /**
    * The limits per coding tool the runner that registers with this token gets; omitted or null for none. A runner
-   * registered with its own limits per tool (`--slots claude=2`) keeps its own.
+   * cannot override these online tool limits with legacy local settings.
    */
   readonly toolSlots?: ToolSlots | null;
 }
@@ -458,12 +484,12 @@ export interface DownloadToken {
   readonly maxDownloads: number;
 }
 
-/** Whether people let `runner` run `tool` (whether it is installed and signed in is another matter). */
+/** Whether the explicit server selection permits `tool`; null API input is normalized to the four native tools. */
 export function toolEnabled(
   runner: Pick<Runner, 'enabledTools'>,
   tool: AgentTool,
 ): boolean {
-  return runner.enabledTools === null || runner.enabledTools.includes(tool);
+  return (runner.enabledTools ?? NATIVE_AGENT_TOOLS).includes(tool);
 }
 
 /** Whether `runner` can run `tool`'s work: it is enabled there, installed and signed in. */
@@ -473,7 +499,12 @@ export function runsTool(
 ): boolean {
   return (
     toolEnabled(runner, tool) &&
-    runner.tools.some((item) => item.kind === tool && item.authenticated)
+    runner.tools.some(
+      (item) =>
+        item.kind === tool &&
+        item.authenticated &&
+        (!item.status || item.status === 'ready'),
+    )
   );
 }
 
@@ -489,6 +520,8 @@ export function reportedModels(
   const info = runner.tools.find(
     (item) => item.kind === tool && item.authenticated,
   );
+  if (!isNativeTool(tool) && info?.modelsDetectionStatus === 'unsupported')
+    return [''];
   return [
     ...new Set(
       (info?.models ?? []).map((model) => normalizeModel(tool, model.id)),
@@ -531,7 +564,8 @@ export function jobKindsOf(runner: Pick<Runner, 'features'>): string[] {
 }
 
 /** The state of one of a runner's coding tools, as a page shows it. */
-export type ToolState = 'off' | 'notInstalled' | 'signedOut' | 'signedIn';
+export type ToolState =
+  'off' | 'notInstalled' | 'signedOut' | 'signedIn' | 'checking' | 'failed';
 
 /** Off when people turned it off here; otherwise whether the runner has it installed and signed in. */
 export function toolState(
@@ -540,18 +574,24 @@ export function toolState(
 ): ToolState {
   if (!toolEnabled(runner, tool)) return 'off';
   const info = runner.tools.find((item) => item.kind === tool);
-  if (!info) return 'notInstalled';
+  if (!info) return 'checking';
+  if (
+    info.status === 'notInstalled' ||
+    info.status === 'checking' ||
+    info.status === 'failed'
+  )
+    return info.status;
   return info.authenticated ? 'signedIn' : 'signedOut';
 }
 
-/**
- * The tools a runner lists, in the protocol's order: exactly the tools it reported. A runner reports only the tools it
- * has installed, so a tool it did not report is not listed, even when `enabledTools` names it (turning one tool off
- * from "every tool" stores every other tool the protocol knows).
- */
-export function listedTools(runner: Pick<Runner, 'tools'>): AgentTool[] {
-  return AGENT_TOOLS.filter((tool) =>
-    runner.tools.some((item) => item.kind === tool),
+/** The selected or reported tools, in catalog order, including selected tools awaiting detection. */
+export function listedTools(
+  runner: Pick<Runner, 'tools'> & Partial<Pick<Runner, 'enabledTools'>>,
+): AgentTool[] {
+  return AGENT_TOOLS.filter(
+    (tool) =>
+      runner.tools.some((item) => item.kind === tool) ||
+      (runner.enabledTools ?? []).includes(tool),
   );
 }
 
@@ -581,6 +621,7 @@ export function runnerActivity(
   >,
 ): RunnerActivity {
   if (runner.status !== 'online') return runner.status;
+  if (runner.draining === 'diskLow') return 'low_disk';
   if (runner.draining) return runner.draining;
   if (runnerLowOnDisk(runner)) return 'low_disk';
   return runner.activeRuns + runner.activeJobs >= runner.slots
@@ -734,4 +775,38 @@ export function workspaceSummary(
     else totalBytes += workspace.sizeBytes;
   }
   return { ...usage, totalBytes, sizeUnknownCount, counts };
+}
+
+/** Undefined means capabilities are unknown; an empty list is a known empty intersection. */
+export function chatEffortCapabilities(
+  entry: RunnerModelEntry | undefined,
+  runners: readonly Pick<Runner, 'tools'>[],
+): readonly string[] | undefined {
+  if (!entry?.model || runners.length === 0) return undefined;
+  const reports = runners.map(
+    (runner) =>
+      runner.tools
+        .find((tool) => tool.kind === entry.tool)
+        ?.models?.find(
+          (model) =>
+            normalizeModel(entry.tool, model.id) ===
+            normalizeModel(entry.tool, entry.model!),
+        )?.efforts,
+  );
+  const known = reports.filter((report) => report !== undefined);
+  const options = effortsFor(entry).filter((effort) =>
+    known.every((report) => report.includes(effort)),
+  );
+  // Missing reports cannot widen an already empty intersection of known capabilities.
+  return options.length === 0 || known.length === reports.length
+    ? options
+    : undefined;
+}
+
+/** Known efforts common to every eligible runner; unknown reports hide selection. */
+export function chatEffortsFor(
+  entry: RunnerModelEntry | undefined,
+  runners: readonly Pick<Runner, 'tools'>[],
+): readonly string[] {
+  return chatEffortCapabilities(entry, runners) ?? [];
 }

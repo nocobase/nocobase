@@ -1,25 +1,18 @@
-// Link every Skill committed under `skills/` into `.agents/skills/` and `.claude/skills/`, so the agents working in
-// this repository see them.
-//
-// `skills/` is the one committed source. It is also where `npx skills add` reads from the repository's v3 branch, so a Skill
-// written there reaches a user's global installation and this checkout alike. Agents do not look there on their own:
-// most read `.agents/skills/`, and Claude Code discovers Skills only under `~/.claude/skills/` and
-// `<project>/.claude/skills/`. Without these links a contributor working in this repository gets none of its Skills,
-// while the globally installed NocoBase 2 Skills that the root `AGENTS.md` tells agents to ignore stay available —
-// exactly backwards.
-//
-// This is the same arrangement `nocobase skills sync` sets up inside a generated application: both directories are
-// generated and ignored. The difference is where the Skills come from — an application's are copied from its installed
-// packages, while this repository's are written by hand under `skills/`.
-//
-// Links rather than copies, so editing a Skill through any path edits the one committed file. Relative links, so the
-// checkout stays movable.
+// Link global entry Skills and the shared package-owned plugin development Skill into both Agent directories.
+// The package source overrides the same-named global migration bridge. Never copy the complete guidance.
+// Relative links keep the checkout movable; real local directories are preserved.
 import { lstat, mkdir, readdir, symlink, unlink } from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 
-/** Directory, relative to the repository root, that holds the committed Skills. */
+// Package-owned guidance shared with Apps takes precedence over its global migration bridge.
+export const PACKAGE_SKILLS = {
+  'nocobase-app-plugin-development':
+    'packages/app/app-skills/skills/nocobase-app-plugin-development',
+};
+
+/** Directory, relative to the repository root, that holds global entry Skills. */
 export const SKILLS_DIRECTORY = 'skills';
 
 /** Directories, relative to the repository root, that agents read Skills from. */
@@ -35,15 +28,25 @@ export const AGENT_SKILLS_DIRECTORIES = [
  * make room would delete work it cannot restore. It is reported and skipped instead.
  */
 export async function syncSkills(root) {
-  const names = await readDirectoryNames(path.join(root, SKILLS_DIRECTORY));
+  const sources = Object.fromEntries(
+    (await readDirectoryNames(path.join(root, SKILLS_DIRECTORY))).map(
+      (name) => [name, path.join(SKILLS_DIRECTORY, name)],
+    ),
+  );
+  for (const [name, source] of Object.entries(PACKAGE_SKILLS)) {
+    // Never silently link the bridge as repository development guidance.
+    if (await hasSkill(root, source)) sources[name] = source;
+    else delete sources[name];
+  }
+  const names = Object.keys(sources).sort();
   const results = {};
   for (const directory of AGENT_SKILLS_DIRECTORIES) {
-    results[directory] = await linkInto(root, directory, names);
+    results[directory] = await linkInto(root, directory, names, sources);
   }
   return results;
 }
 
-async function linkInto(root, directory, names) {
+async function linkInto(root, directory, names, sources) {
   const target = path.join(root, directory);
   const linked = [];
   const removed = [];
@@ -61,17 +64,17 @@ async function linkInto(root, directory, names) {
       skipped.push(name);
       continue;
     }
-    await createLink(root, directory, name, linkPath);
+    await createLink(root, directory, sources[name], linkPath);
     linked.push(name);
   }
 
   return { linked, removed, skipped };
 }
 
-async function createLink(root, directory, name, linkPath) {
+async function createLink(root, directory, source, linkPath) {
   const relativeTarget = path.relative(
     path.join(root, directory),
-    path.join(root, SKILLS_DIRECTORY, name),
+    path.join(root, source),
   );
   try {
     await symlink(relativeTarget, linkPath, 'dir');
@@ -79,11 +82,7 @@ async function createLink(root, directory, name, linkPath) {
     if (process.platform !== 'win32') throw error;
     // Windows refuses symbolic links without developer mode or elevation. A junction needs neither, but only accepts
     // an absolute target, so on that platform alone the checkout stops being movable.
-    await symlink(
-      path.join(root, SKILLS_DIRECTORY, name),
-      linkPath,
-      'junction',
-    );
+    await symlink(path.join(root, source), linkPath, 'junction');
   }
 }
 
@@ -126,6 +125,16 @@ async function removeSymbolicLink(linkPath) {
   return true;
 }
 
+async function hasSkill(root, source) {
+  try {
+    return (await lstat(path.join(root, source, 'SKILL.md'))).isFile();
+  } catch (error) {
+    if (isNodeError(error, 'ENOENT') || isNodeError(error, 'ENOTDIR'))
+      return false;
+    throw error;
+  }
+}
+
 function isNodeError(error, code) {
   return error !== null && typeof error === 'object' && error.code === code;
 }
@@ -139,7 +148,7 @@ export async function main(root = path.resolve(import.meta.dirname, '..')) {
     )) {
       if (skipped.length > 0) {
         console.warn(
-          `[nocobase3] Left ${skipped.join(', ')} in ${directory}: not a symbolic link. Remove it to have it linked to ${SKILLS_DIRECTORY}.`,
+          `[nocobase3] Left ${skipped.join(', ')} in ${directory}: not a symbolic link. Move it aside to link the maintained Skill source.`,
         );
       }
       if (linked.length > 0 || removed.length > 0) {

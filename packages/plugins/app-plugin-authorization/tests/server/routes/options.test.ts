@@ -1,6 +1,7 @@
 import {
   AuthorizationDeniedError,
   defineRecordAccess,
+  ResourceItems,
   type AuthorizationContext,
   type CompositeResource,
 } from '@nocobase/authorization/core';
@@ -332,4 +333,36 @@ describe('the options and subject routes', () => {
       });
     },
   );
+});
+
+it('includes optional localized action descriptions in the permission catalog', async () => {
+  const authz = authorization();
+  const items = new ResourceItems();
+  const description = { key: 'access.deleteHint', ns: '@example/tools' };
+  items.add({
+    id: 'tools',
+    title: 'Tools',
+    actions: [{ name: 'delete', title: 'Delete', description }],
+  });
+  authz.resourceTypes.add({ type: 'tools', items });
+  authz.ui.sections.add({
+    name: 'tools',
+    title: 'Tools',
+    parent: 'administration',
+  });
+  authz.ui.place({ type: 'tools', id: 'tools' }, { section: 'tools' });
+  const router = await localizedRouter(authz);
+  for (const locale of ['en-US', 'zh-CN']) {
+    const catalog = await options(router, locale);
+    const resource = catalog.sections
+      .flatMap((section) => section.subsections)
+      .flatMap((sub) => sub.resources)
+      .find((item) => item.type === 'tools');
+    expect(resource?.actions).toHaveLength(1);
+    expect(resource?.actions[0]).toMatchObject({
+      name: 'delete',
+      title: 'Delete',
+      description,
+    });
+  }
 });

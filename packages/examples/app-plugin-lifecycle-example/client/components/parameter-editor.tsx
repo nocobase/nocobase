@@ -1,3 +1,4 @@
+import { createUuid } from '@nocobase/app-client';
 import {
   useEffect,
   useId,
@@ -31,12 +32,6 @@ const businessParameterFields = new Set([
   'reopenDays',
 ]);
 
-function requestKey(): string {
-  return (
-    globalThis.crypto?.randomUUID?.() ??
-    `${Date.now()}-${Math.random().toString(36).slice(2)}`
-  );
-}
 function ReviewerRuleEditor({
   value,
   api,
@@ -203,7 +198,7 @@ export function ParameterEditor({
   const dirty = JSON.stringify(draft) !== JSON.stringify(baseline);
   useEffect(() => onDirtyChange?.(dirty), [dirty, onDirtyChange]);
   const [revision, setRevision] = useState(group.revision);
-  const [requestId, setRequestId] = useState(requestKey);
+  const [requestId, setRequestId] = useState(createUuid);
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState('');
   const [conflict, setConflict] = useState<ParameterGroupView>();
@@ -215,7 +210,7 @@ export function ParameterEditor({
   );
   const change = (key: string, value: JsonObject[string]): void => {
     setDraft((previous) => ({ ...previous, [key]: value }));
-    setRequestId(requestKey());
+    setRequestId(createUuid());
     setNote('');
   };
   const save = async (): Promise<boolean> => {
@@ -392,7 +387,7 @@ export function ParameterEditor({
             onClick={() => {
               setRevision(conflict.revision);
               setConflict(undefined);
-              setRequestId(requestKey());
+              setRequestId(createUuid());
             }}
           >
             {t('parameters.keepDraft')}

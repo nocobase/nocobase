@@ -1,5 +1,16 @@
-import { mailerToken } from '@nocobase/app-server/mailer';
-import { joinBasePath, normalizeBasePath } from '@nocobase/app-server/support';
+import {
+  resolveMailSenderFactory,
+  type MailersConfig,
+} from '@nocobase/app-server/mailers';
+import {
+  createPasswordResetSender,
+  type PasswordResetSenderSelection,
+} from '../reset-sender.js';
+import {
+  createAppCookieScope,
+  joinBasePath,
+  normalizeBasePath,
+} from '@nocobase/app-server/support';
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
 import {
   ServiceProvider,
@@ -39,7 +50,11 @@ import { createAuthStorage } from '../auth-storage.js';
 import { authenticationToken } from '../tokens.js';
 import { userAdministrationServiceToken } from '../tokens.js';
 import { createUserAdministrationService } from '../user-administration.js';
-import { type AuthConfig, resolveAuthSecrets } from '../config.js';
+import {
+  type AuthConfig,
+  resolveAuthSecrets,
+  registrationFeedbackWarning,
+} from '../config.js';
 
 interface RequestInitWithDuplex extends RequestInit {
   duplex?: 'half';
@@ -68,7 +83,31 @@ export class AuthenticationProvider<
 > extends ServiceProvider<TApplication> {
   public readonly name: string = '@nocobase/app-plugin-authentication';
 
+  private emailSnapshot?: Pick<AuthConfig, 'email' | 'passwordReset'>;
+  /** This Provider owns the reset sender and closes it alongside Auth's native work. */
+  private resetSender?: PasswordResetSenderSelection;
+  private shutdownPromise?: Promise<void>;
+
   public override register(): void {
+    // Freeze only the sender selection; other auth settings keep their lazy read so later defaults still apply.
+    const auth = this.app.config.get<AuthConfig>('auth') ?? {};
+    this.emailSnapshot = {
+      email: auth.email && structuredClone(auth.email),
+      passwordReset: auth.passwordReset && { ...auth.passwordReset },
+    };
+    // Select now so an invalid reference fails startup; no transport is allocated until the first send.
+    this.resetSender = createPasswordResetSender(
+      resolveMailSenderFactory(
+        this.app.container,
+        this.app.config.get<MailersConfig>('mailers') ?? {},
+      ),
+      {
+        ...this.emailSnapshot,
+        legacyChannels: this.app.config.get<{
+          channels?: Readonly<Record<string, unknown>>;
+        }>('notification')?.channels,
+      },
+    );
     this.app.container.singleton(authenticationToken, (container) =>
       this.createAuthentication(container),
     );
@@ -120,6 +159,18 @@ export class AuthenticationProvider<
    * does not build Better Auth's schema.
    */
   public override async boot(): Promise<void> {
+    const warning = registrationFeedbackWarning(
+      this.app.config.get<AuthConfig>('auth') ?? {},
+    );
+    if (warning && this.app.container.has(loggingToken)) {
+      this.app.container
+        .resolve(loggingToken)
+        .getLogger('auth')
+        .warn(
+          { configKey: 'auth.emailAndPassword.autoSignIn', fix: warning.fix },
+          warning.message,
+        );
+    }
     // Better Auth's endpoints are the browser's sign-in and session flow: a command line signs in its own way.
     if (this.app.container.has(cliToken))
       this.app.container.resolve(cliToken).exclude({ paths: ['/api/auth/'] });
@@ -137,8 +188,15 @@ export class AuthenticationProvider<
     );
   }
 
-  public override async shutdown(): Promise<void> {
-    await this.app.container.resolveIfCreated(authenticationToken)?.close();
+  public override shutdown(): Promise<void> {
+    this.shutdownPromise ??= settleShutdown(
+      [
+        () => this.app.container.resolveIfCreated(authenticationToken)?.close(),
+        () => this.resetSender?.sender?.close(),
+      ],
+      'Authentication provider shutdown failed.',
+    );
+    return this.shutdownPromise;
   }
 
   private createAuthentication(container: ServiceResolver): Auth {
@@ -185,14 +243,15 @@ export class AuthenticationProvider<
       secondaryStorage: createAuthStorage(caching),
       appName: app.name,
       ...authConfig,
+      ...this.emailSnapshot,
       passwordResetServices: {
-        mailer: container.has(mailerToken)
-          ? container.resolve(mailerToken)
-          : undefined,
+        sender: this.resetSender?.sender,
+        legacySender: this.resetSender?.legacy,
         increment: (key) =>
           caching
             .getCounter({ namespace: 'password-reset-rate-limit' })
             .increment(key, 1, 60_000),
+        warning: (message) => logger?.warn({}, message),
         report: (category) =>
           logger?.warn(
             { category },
@@ -216,6 +275,7 @@ export class AuthenticationProvider<
       basePath: resolvePublicPath('/api/auth', app.publicBasePath),
       advanced: {
         cookiePrefix: createCookiePrefix(app.name, {
+          publicBasePath: app.publicBasePath,
           publicOrigin: app.publicOrigin,
           // Only a standalone app owns its port. An embedded app carries a
           // `server` config all the same, because the template's defaults are
@@ -234,7 +294,7 @@ export class AuthenticationProvider<
             (() => idGenerator.generateString()),
         },
         defaultCookieAttributes: {
-          path: app.publicBasePath || '/',
+          path: normalizeBasePath(app.publicBasePath) || '/',
           ...authConfig.advanced?.defaultCookieAttributes,
         },
       },
@@ -252,7 +312,36 @@ export class AuthenticationProvider<
   }
 }
 
+function settleShutdown(
+  operations: readonly (() => void | Promise<void>)[],
+  message: string,
+): Promise<void> {
+  const started = operations.map((operation) => {
+    try {
+      return Promise.resolve(operation());
+    } catch (error) {
+      return Promise.reject(asError(error));
+    }
+  });
+  return Promise.allSettled(started).then((results) => {
+    const failures: unknown[] = [];
+    for (const result of results)
+      if (result.status === 'rejected') failures.push(result.reason);
+    if (failures.length) throw new AggregateError(failures, message);
+  });
+}
+
+function asError(value: unknown): Error {
+  return value instanceof Error
+    ? value
+    : new Error('Authentication shutdown operation failed.', {
+        cause: value,
+      });
+}
+
 export interface CookiePrefixOptions {
+  /** The complete public mount path, independent of application name and internal routing. */
+  readonly publicBasePath?: string;
   /** The origin browsers reach this app on, when the app knows it. */
   readonly publicOrigin?: string;
   /** The port this app listens on, when it owns one. */
@@ -268,7 +357,7 @@ export interface CookiePrefixOptions {
  * every standalone app defaults to `main`. Appending the port the app is
  * reached on restores the distinction, and is stable for as long as the app
  * stays where it is. An app that owns no port of its own passes none, and
- * keeps the bare name.
+ * keeps the base name. The full mount path also separates root, nested, and similarly named applications.
  */
 export function createCookiePrefix(
   appName: string,
@@ -281,7 +370,8 @@ export function createCookiePrefix(
     .replace(/^-+|-+$/g, '');
   const base = normalized || 'nocobase3';
   const port = resolveCookieScopePort(options);
-  return port === undefined ? base : `${base}-${port}`;
+  const prefix = port === undefined ? base : `${base}-${port}`;
+  return `${prefix}__${createAppCookieScope(options.publicBasePath ?? '')}`;
 }
 
 /**
@@ -290,13 +380,13 @@ export function createCookiePrefix(
  * A configured `publicOrigin` is what browsers actually see, so it wins over
  * the listen port a reverse proxy hides. It deliberately yields nothing when
  * it carries no explicit port: a production `https://example.com` keeps the
- * bare app name, so deployments that already have sessions keep them.
+ * app name without a port suffix.
  *
  * The listen port is the fallback for development, where `publicOrigin` is
  * usually unset and the port is the only thing telling two apps apart. The
  * caller passes it only for a standalone app, which is the one case where the
  * app owns the port it is reached on; embedded apps take their names from
- * their base paths and are already distinct without it.
+ * their full base paths and are separated by the path scope.
  */
 function resolveCookieScopePort(
   options: CookiePrefixOptions,

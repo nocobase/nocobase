@@ -6,6 +6,7 @@ import {
 } from '@nocobase/app-server/plugins';
 
 import serviceProviders from './providers/index.js';
+import locales from './locales/index.js';
 import { createDeviceRoutes } from './routes/devices.js';
 import { createWorkerRoutes, type PushWorkerOptions } from './worker.js';
 
@@ -16,6 +17,7 @@ export function defineWebPushPlugin(
     baseDir: path.resolve(import.meta.dirname, '..'),
     packageName: '@nocobase/app-plugin-notification-web-push',
     serviceProviders,
+    locales,
     routes: [createDeviceRoutes(), createWorkerRoutes(worker)],
     database: {
       migrations: './database/migrations',

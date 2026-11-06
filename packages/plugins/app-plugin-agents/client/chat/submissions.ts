@@ -10,6 +10,8 @@ import type { ChatApi } from './api.js';
 import type { AppUIMessage } from '../../shared/online-agent.js';
 import { createClientId } from './client-id.js';
 export interface SubmissionSend {
+  readonly effort?: string | null;
+  readonly agentId?: string;
   readonly content: string;
   readonly clientId: string;
   readonly context?: PageContext;
@@ -26,6 +28,9 @@ export interface ChatSubmissionApi extends Pick<
 }
 
 export interface SubmissionInput {
+  readonly effort?: string | null;
+  /** Final pending Runner selection, captured together with this message. */
+  readonly agentId?: string;
   readonly content: string;
   readonly context: PageContext | undefined;
   readonly attachments: readonly MessageAttachment[];
@@ -206,6 +211,8 @@ export class ChatSubmissions {
     try {
       const result = await this.deadline(
         this.api.sendMessage(id, {
+          ...(record.agentId ? { agentId: record.agentId } : {}),
+          ...(record.effort !== undefined ? { effort: record.effort } : {}),
           content: record.content,
           clientId: record.clientId,
           ...(record.context ? { context: record.context } : {}),

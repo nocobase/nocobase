@@ -3,7 +3,7 @@
  * thinking and tool calls folded away, its plan, the permission requests waiting for an answer, and at the end of a
  * turn the work it created with the choice to start it.
  */
-import { resolveAppUrl } from '@nocobase/app-client';
+import { copyText, resolveAppUrl, useToaster } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { cn } from 'cn';
 import {
@@ -25,7 +25,7 @@ import {
   WrenchIcon,
   XIcon,
 } from 'lucide-react';
-import { Fragment, useState, type ReactElement } from 'react';
+import { Fragment, useRef, useState, type ReactElement } from 'react';
 import { Link } from 'react-router';
 
 import { MarkdownView } from './markdown-view.js';
@@ -48,6 +48,7 @@ import {
   type ToolKind,
   type TranscriptItem,
 } from '../transcript.js';
+import { useMarkSeen } from '../api.js';
 import { useLinkOpen } from '../config.js';
 import { plainClick } from '../lib/clicks.js';
 import { LinkName } from './link-name.js';
@@ -78,17 +79,21 @@ const TERMINAL =
 
 export function TranscriptView({
   items,
+  readSeq,
   session,
   agentName,
   writable,
   actions,
 }: {
   readonly items: readonly TranscriptItem[];
+  readonly readSeq?: number | undefined;
   readonly session: Session;
   readonly agentName: string;
   readonly writable: boolean;
   readonly actions: TranscriptActions;
 }): ReactElement {
+  const endRef = useRef<HTMLLIElement>(null);
+  useMarkSeen(session.id, readSeq, endRef);
   return (
     <ol className='flex flex-col gap-4'>
       {items.map((item) => (
@@ -102,6 +107,7 @@ export function TranscriptView({
           />
         </li>
       ))}
+      <li ref={endRef} aria-hidden className='h-px' />
     </ol>
   );
 }
@@ -120,6 +126,7 @@ function Item({
   readonly actions: TranscriptActions;
 }): ReactElement | null {
   const { t, i18n } = useTranslation();
+  const toaster = useToaster();
   switch (item.type) {
     case 'prompt':
       return (
@@ -139,7 +146,7 @@ function Item({
             </div>
           )}
           {item.text && (
-            <div className='bg-accent rounded-[12px_12px_4px_12px] px-3.5 py-2 text-sm whitespace-pre-wrap'>
+            <div className='bg-accent max-w-full rounded-[12px_12px_4px_12px] px-3.5 py-2 text-sm wrap-anywhere whitespace-pre-wrap'>
               <MentionedText text={item.text} links={session.links} />
             </div>
           )}
@@ -176,7 +183,15 @@ function Item({
                 <Button
                   size='xs'
                   variant='ghost'
-                  onClick={() => void navigator.clipboard.writeText(item.text)}
+                  onClick={() =>
+                    void copyText(item.text).then((copied) => {
+                      if (!copied)
+                        toaster.show({
+                          type: 'error',
+                          title: t('errors.copy'),
+                        });
+                    })
+                  }
                 >
                   {t('transcript.prompt.copy')}
                 </Button>

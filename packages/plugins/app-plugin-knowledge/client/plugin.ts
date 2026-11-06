@@ -3,6 +3,8 @@ import {
   type AppClientPluginFactory,
 } from '@nocobase/app-client/plugins';
 
+import type { IndexingFormDefinition } from './indexing/types.js';
+import { KnowledgeIndexingFormsProvider } from './indexing/provider.js';
 import locales from './locales/index.js';
 import { createKnowledgeRoutes, type KnowledgeRouteOptions } from './routes.js';
 
@@ -12,12 +14,14 @@ export interface KnowledgeClientOptions extends KnowledgeRouteOptions {
    * `true`.
    */
   readonly routes?: boolean;
+  readonly indexingForms?: readonly IndexingFormDefinition[];
 }
 
 const knowledge: AppClientPluginFactory<KnowledgeClientOptions> =
   defineClientPlugin<KnowledgeClientOptions>({
     packageName: '@nocobase/app-plugin-knowledge',
     locales,
+    serviceProviders: [KnowledgeIndexingFormsProvider],
     routes: (options) =>
       options.routes === false ? [] : createKnowledgeRoutes(options),
   });

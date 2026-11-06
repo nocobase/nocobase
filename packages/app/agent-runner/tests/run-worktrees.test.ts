@@ -1,3 +1,5 @@
+import { legacyPrepareDirs as prepareDirs } from './legacy-workspace-fixture.ts';
+import { deliverFixtureRepos as reportRepos } from './delivery-fixture.ts';
 import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { spawn, spawnSync } from 'node:child_process';
@@ -5,17 +7,13 @@ import { waitFor } from './fake-server.ts';
 import { workspaceHolders } from '../src/core/process-tree.ts';
 import * as fsPromises from 'node:fs/promises';
 import * as checkoutModule from '../src/core/checkout.ts';
-import * as gitModule from '../src/core/git.ts';
 import { collectWorkspaces } from '../src/core/workspaces.ts';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { runnerPaths, type RunnerPaths } from '../src/lib/home.ts';
 import {
-  prepareDirs,
   readWorkspaceMeta,
   checkout,
   acquireLock,
-  markDirsPrepared,
-  reportRepos,
   markWorkspaceEnded,
   writeWorkspaceMeta,
 } from '../src/core/checkout.ts';
@@ -28,7 +26,7 @@ import {
   updateContinuationState,
   readContinuationState,
 } from '../src/core/run-worktrees.ts';
-import { git, makeRemote, removeDir, tempDir } from './helpers.ts';
+import { git, makeRemote, publishSeed, removeDir, tempDir } from './helpers.ts';
 
 vi.mock('node:fs/promises', async (importOriginal) => {
   const actual = await importOriginal<typeof import('node:fs/promises')>();
@@ -156,183 +154,6 @@ describe('per-attempt worktrees', () => {
     ).toBe(true);
     return reports[0];
   }
-  it('preserves the latest delivery when read-only preparation overlaps a writer finishing', async () => {
-    const a = await start('first-delivery');
-    const first = commitFile(a.repo.dir);
-    expect((await finish(a)).pushed).toBe(true);
-    const baseline = (await readContinuationState(paths, 'app', 'PM-300'))!
-      .repos[0].startSha;
-    const writer = await start('writer');
-    const second = commitFile(writer.repo.dir, 'second.txt');
-    const original = (
-      await vi.importActual<typeof fsPromises>('node:fs/promises')
-    ).mkdir;
-    let pause!: () => void;
-    let resume!: () => void;
-    const paused = new Promise<void>((resolve) => {
-      pause = resolve;
-    });
-    const resumed = new Promise<void>((resolve) => {
-      resume = resolve;
-    });
-    let intercepted = false;
-    const spy = vi
-      .spyOn(fsPromises, 'mkdir')
-      .mockImplementation(async (...args) => {
-        if (
-          !intercepted &&
-          String(args[0]) ===
-            `${continuationWorkDir(paths, 'app', 'PM-300')}.lock`
-        ) {
-          intercepted = true;
-          // Pause after reading the first delivery, before registration acquires its existing lock.
-          pause();
-          await resumed;
-        }
-        return original(...args);
-      });
-    const preparing = start('reader', true);
-    try {
-      await paused;
-      expect(
-        (await readContinuationState(paths, 'app', 'PM-300'))!.repos[0]
-          .pushedSha,
-      ).toBe(first);
-      expect((await finish(writer)).pushed).toBe(true);
-      expect(
-        (await readContinuationState(paths, 'app', 'PM-300'))!.repos[0]
-          .pushedSha,
-      ).toBe(second);
-      resume();
-      const reader = await preparing;
-      const record = (await readContinuationState(paths, 'app', 'PM-300'))!
-        .repos[0];
-      const readerBase = reader.repo.deliveryBaseSha;
-      await finish(reader, false);
-      git(
-        ['update-ref', '-d', remoteBranch],
-        path.join(root, 'origin-repo.git'),
-      );
-      const next = await start('after-deletion');
-      const report = await finish(next);
-      expect({
-        startSha: record.startSha,
-        pushedSha: record.pushedSha,
-        readerBase,
-        pushed: report.pushed,
-        remote: remoteHead(),
-      }).toEqual({
-        startSha: baseline,
-        pushedSha: second,
-        readerBase: second,
-        pushed: false,
-        remote: '',
-      });
-    } finally {
-      resume();
-      await preparing.catch(() => undefined);
-      spy.mockRestore();
-    }
-  });
-  it('does not push an untouched checkout when another run advances the shared default ref', async () => {
-    const a = await start('shared-cache');
-    const original = git(['rev-parse', 'HEAD'], a.repo.dir);
-    const seed = path.join(root, 'origin-repo-seed');
-    const upstream = commitFile(seed, 'upstream.txt');
-    git(
-      ['fetch', seed, '+refs/heads/main:refs/remotes/origin/main'],
-      a.repo.cache,
-    );
-    expect(upstream).not.toBe(original);
-    expect((await finish(a)).pushed).toBe(false);
-    expect(remoteHead()).toBe('');
-    expect(
-      git(
-        ['for-each-ref', '--format=%(refname)', resumeRef(a.repo)],
-        a.repo.cache,
-      ),
-    ).toBe('');
-  });
-  it.each(['deleted', 'squashed'] as const)(
-    'does not recreate a %s branch across two further runs',
-    async (kind) => {
-      const a = await start('delivered');
-      const delivered = commitFile(a.repo.dir);
-      expect((await finish(a)).pushed).toBe(true);
-      expect(
-        (await readContinuationState(paths, 'app', 'PM-300'))?.repos[0]
-          .pushedSha,
-      ).toBe(delivered);
-      if (kind === 'squashed') {
-        const seed = path.join(root, 'origin-repo-seed');
-        git(['fetch', remote, remoteBranch], seed);
-        git(['merge', '--squash', 'FETCH_HEAD'], seed);
-        git([...COMMIT, 'commit', '-m', 'Squashed work'], seed);
-        git(['push', remote, 'main'], seed);
-        expect(git(['rev-parse', 'HEAD'], seed)).not.toBe(delivered);
-      }
-      git(
-        ['update-ref', '-d', remoteBranch],
-        path.join(root, 'origin-repo.git'),
-      );
-      for (const id of ['next', 'again']) {
-        const b = await start(id);
-        expect(git(['rev-parse', 'HEAD'], b.repo.dir)).toBe(
-          git(
-            ['rev-parse', 'refs/heads/main'],
-            path.join(root, 'origin-repo.git'),
-          ),
-        );
-        expect(
-          git(
-            ['for-each-ref', '--format=%(refname)', resumeRef(b.repo)],
-            b.repo.cache,
-          ),
-        ).toBe('');
-        expect((await finish(b)).pushed).toBe(false);
-        expect(remoteHead()).toBe('');
-        expect(
-          git(
-            ['for-each-ref', '--format=%(refname)', resumeRef(b.repo)],
-            b.repo.cache,
-          ),
-        ).toBe('');
-      }
-    },
-  );
-  it('clears a branch deleted during a run without saving the stale head again', async () => {
-    const a = await start('published');
-    commitFile(a.repo.dir);
-    await finish(a);
-    const b = await start('delete-during-run');
-    git(['update-ref', '-d', remoteBranch], path.join(root, 'origin-repo.git'));
-    expect((await finish(b)).pushed).toBe(false);
-    expect(remoteHead()).toBe('');
-    expect(
-      git(
-        ['for-each-ref', '--format=%(refname)', resumeRef(b.repo)],
-        b.repo.cache,
-      ),
-    ).toBe('');
-    const c = await start('after-delete');
-    expect((await finish(c)).pushed).toBe(false);
-    expect(remoteHead()).toBe('');
-  });
-  it('retries known pending commits after a rejected first push without another edit', async () => {
-    const a = await start('rejected');
-    const head = commitFile(a.repo.dir);
-    const hook = path.join(root, 'origin-repo.git/hooks/pre-receive');
-    writeFileSync(hook, '#!/bin/sh\nexit 1\n', { mode: 0o755 });
-    expect((await finish(a)).failure).toBeDefined();
-    const state = await readContinuationState(paths, 'app', 'PM-300');
-    expect(state?.repos[0].startSha).not.toBe(head);
-    expect(state?.repos[0].pushedSha).toBeUndefined();
-    rmSync(hook);
-    const b = await start('retry');
-    expect(git(['rev-parse', 'HEAD'], b.repo.dir)).toBe(head);
-    expect((await finish(b)).pushed).toBe(true);
-    expect(remoteHead()).toBe(head);
-  });
   it('keeps new commits beyond a delivered head when the remote branch is deleted', async () => {
     const a = await start('first-delivery');
     commitFile(a.repo.dir);
@@ -361,71 +182,6 @@ describe('per-attempt worktrees', () => {
       (await readContinuationState(paths, 'app', 'PM-300'))?.repos[0].pushedSha,
     ).toBe(head);
     await fsPromises.rename(`${bare}.offline`, bare);
-  });
-  it.each(['offline', 'leaseLost'] as const)(
-    'logs a %s lookup without a push failure for a non-pushing run',
-    async (kind) => {
-      const a = await start('non-pushing-lookup', true);
-      const bare = path.join(root, 'origin-repo.git');
-      if (kind === 'offline') await fsPromises.rename(bare, `${bare}.offline`);
-      const logs: string[] = [];
-      a.repo.remoteMissing = true;
-      try {
-        const [report] = await reportRepos([a.repo], {
-          push: false,
-          ...(kind === 'leaseLost' ? { active: () => false } : {}),
-          log: (message) => logs.push(message),
-        });
-        expect(report.pushed).toBe(false);
-        expect(report.failure).toBeUndefined();
-        expect(a.repo.remoteMissing).toBeUndefined();
-        expect(logs.join('\n')).toContain('report:');
-        await markWorkspaceEnded(paths, a.workDir, [report]);
-        expect(
-          (
-            await finalizeRunWorktrees(paths, a.workDir, () => {}, {
-              repos: [a.repo],
-            })
-          )[0].saved,
-        ).toBe(true);
-      } finally {
-        if (kind === 'offline')
-          await fsPromises.rename(`${bare}.offline`, bare);
-      }
-    },
-  );
-  it('forgets pre-push absence when delivery succeeds but its confirmation lookup fails', async () => {
-    const a = await start('unconfirmed-delivery');
-    const head = commitFile(a.repo.dir);
-    await finalizeRunWorktrees(paths, a.workDir, () => {}, { remove: false });
-    const original = gitModule.git;
-    let lookups = 0;
-    const spy = vi
-      .spyOn(gitModule, 'git')
-      .mockImplementation(async (args, ...rest) => {
-        if (args.includes('ls-remote') && ++lookups === 2)
-          throw new checkoutModule.CheckoutError(
-            'git ls-remote failed: injected confirmation failure',
-          );
-        return original(args, ...rest);
-      });
-    try {
-      const [report] = await reportRepos([a.repo], { push: true });
-      expect(lookups).toBe(2);
-      expect(remoteHead()).toBe(head);
-      expect(report.pushed).toBe(false);
-      expect(report.failure?.message).toContain(
-        'injected confirmation failure',
-      );
-      expect(a.repo.remoteMissing).toBeUndefined();
-      await markWorkspaceEnded(paths, a.workDir, [report]);
-      await finalizeRunWorktrees(paths, a.workDir, () => {}, {
-        repos: [a.repo],
-      });
-      expect(git(['rev-parse', resumeRef(a.repo)], a.repo.cache)).toBe(head);
-    } finally {
-      spy.mockRestore();
-    }
   });
   it('preserves unknown historical continuations without republishing until new work is added', async () => {
     const a = await start('historical');
@@ -485,84 +241,6 @@ describe('per-attempt worktrees', () => {
       expect(remoteHead()).toBe(second);
     },
   );
-
-  it('does not publish historical work already included in the default branch', async () => {
-    const a = await start('included');
-    const head = commitFile(a.repo.dir);
-    await finalizeRunWorktrees(paths, a.workDir, () => {});
-    git(
-      ['fetch', a.repo.cache, `${resumeRef(a.repo)}:refs/heads/main`],
-      path.join(root, 'origin-repo.git'),
-    );
-    const b = await start('default-includes-work');
-    expect(git(['rev-parse', 'HEAD'], b.repo.dir)).toBe(head);
-    expect(
-      git(
-        ['for-each-ref', '--format=%(refname)', resumeRef(b.repo)],
-        b.repo.cache,
-      ),
-    ).toBe('');
-    expect((await finish(b)).pushed).toBe(false);
-    expect(remoteHead()).toBe('');
-  });
-  it('records a baseline for new work added to an unknown resume so a failed push can retry', async () => {
-    const a = await start('old-unknown');
-    commitFile(a.repo.dir);
-    await finalizeRunWorktrees(paths, a.workDir, () => {});
-    await updateContinuationState(paths, 'app', 'PM-300', (state) => ({
-      ...state,
-      repos: state.repos.map((repo) => {
-        const identity = { ...repo };
-        delete identity.startSha;
-        delete identity.pushedSha;
-        return identity;
-      }),
-    }));
-    const b = await start('unknown-add-work');
-    const head = commitFile(b.repo.dir, 'new-pending.txt');
-    const hook = path.join(root, 'origin-repo.git/hooks/pre-receive');
-    writeFileSync(hook, '#!/bin/sh\nexit 1\n', { mode: 0o755 });
-    expect((await finish(b)).failure).toBeDefined();
-    rmSync(hook);
-    const c = await start('unknown-retry');
-    expect((await finish(c)).pushed).toBe(true);
-    expect(remoteHead()).toBe(head);
-  });
-  it('retains the unborn starting point across runs until the first real commit is delivered', async () => {
-    const empty = path.join(root, 'initial.git');
-    git(['init', '--bare', '--initial-branch=main', empty], root);
-    const open = async (id: string) => {
-      const workDir = runWorkDir(paths, 'app', 'initial', id, 1);
-      const prepared = await prepareDirs({
-        paths,
-        workDir,
-        appKey: 'app',
-        subjectKey: 'initial',
-        runId: id,
-        perRun: true,
-        dirs: [
-          {
-            kind: 'repo',
-            url: `file://${empty}`,
-            path: 'repo',
-            branch: 'main',
-            defaultBranch: 'main',
-            initial: true,
-          },
-        ],
-      });
-      return { workDir, prepared, repo: prepared.dirs[0].repo! };
-    };
-    const a = await open('first-root');
-    const head = commitFile(a.repo.dir);
-    await finalizeRunWorktrees(paths, a.workDir, () => {});
-    expect(
-      (await readContinuationState(paths, 'app', 'initial'))?.repos[0].startSha,
-    ).toBe('');
-    const b = await open('deliver-root');
-    expect((await finish(b)).pushed).toBe(true);
-    expect(git(['rev-parse', 'refs/heads/main'], empty)).toBe(head);
-  });
 
   async function pushedRemoval(id: string) {
     const a = await start(id);
@@ -996,7 +674,8 @@ describe('per-attempt worktrees', () => {
     expect(existsSync(session)).toBe(true);
   });
 
-  it('starts two unmarked writers and keeps divergent heads visible without merging', async () => {
+  it('retains divergent legacy heads for manual integration', async () => {
+    await checkoutModule.updateCache(paths, remote);
     const [a, b] = await Promise.all([start('a'), start('b')]);
     expect(a.workDir).not.toBe(b.workDir);
     expect(a.repo.localBranch).not.toBe(b.repo.localBranch);
@@ -1039,6 +718,168 @@ describe('per-attempt worktrees', () => {
     ).toHaveLength(2);
     await finalizeRunWorktrees(paths, c.workDir, () => {});
   });
+  function seedSubmodule() {
+    const child = makeRemote(root, 'child');
+    const seed = path.join(root, 'origin-repo-seed');
+    git(
+      [
+        '-c',
+        'protocol.file.allow=always',
+        'submodule',
+        'add',
+        child,
+        'vendor/core',
+      ],
+      seed,
+    );
+    git([...COMMIT, 'commit', '-am', 'Add submodule fixture'], seed);
+    publishSeed(root);
+  }
+  const oldSubmoduleReason =
+    'Initialized submodules require recovery in the original worktree; their objects are not saved by a parent commit';
+  async function oldSubmoduleRecovery(a: Awaited<ReturnType<typeof start>>) {
+    await writeWorkspaceMeta(paths, a.workDir, {
+      ...(await readWorkspaceMeta(paths, a.workDir))!,
+      recoveryRequired: true,
+      recoveryReason: oldSubmoduleReason,
+    });
+  }
+  it('saves parent changes with uninitialized submodules and resumes without a recovery warning', async () => {
+    seedSubmodule();
+    const a = await start('uninitialized');
+    expect(git(['submodule', 'status', '--recursive'], a.repo.dir)).toMatch(
+      /^-/,
+    );
+    expect(git(['status', '--porcelain'], a.repo.dir)).toBe('');
+    writeFileSync(path.join(a.repo.dir, 'pending.txt'), 'parent work');
+    const saved = await finalizeRunWorktrees(paths, a.workDir, () => {});
+    expect(saved[0].saved).toBe(true);
+    const b = await start('uninitialized-resume');
+    expect(readFileSync(path.join(b.repo.dir, 'pending.txt'), 'utf8')).toBe(
+      'parent work',
+    );
+    expect(b.repo.warnings?.join(' ')).not.toContain('Resolve or recover');
+    expect(
+      (await finalizeRunWorktrees(paths, b.workDir, () => {}))[0].saved,
+    ).toBe(true);
+  });
+  it('still retains initialized submodules and their uncommitted contents', async () => {
+    seedSubmodule();
+    const a = await start('initialized');
+    git(
+      ['-c', 'protocol.file.allow=always', 'submodule', 'update', '--init'],
+      a.repo.dir,
+    );
+    const pending = path.join(a.repo.dir, 'vendor/core/pending.txt');
+    writeFileSync(pending, 'submodule work');
+    const saved = await finalizeRunWorktrees(paths, a.workDir, () => {});
+    expect(saved[0]).toMatchObject({
+      saved: false,
+      reason: oldSubmoduleReason,
+    });
+    expect(readFileSync(pending, 'utf8')).toBe('submodule work');
+    const b = await start('initialized-next');
+    expect(b.repo.warnings?.join(' ')).toContain('Resolve or recover');
+    expect(readFileSync(pending, 'utf8')).toBe('submodule work');
+    await finalizeRunWorktrees(paths, b.workDir, () => {});
+  });
+  it('retains a deinitialized submodule object store with unpublished commits', async () => {
+    seedSubmodule();
+    const a = await start('deinitialized');
+    git(
+      ['-c', 'protocol.file.allow=always', 'submodule', 'update', '--init'],
+      a.repo.dir,
+    );
+    const child = path.join(a.repo.dir, 'vendor/core');
+    const head = commitFile(child, 'unpublished.txt');
+    const childGitDir = git(['rev-parse', '--absolute-git-dir'], child);
+    git(['submodule', 'deinit', '--force', '--', 'vendor/core'], a.repo.dir);
+    expect(git(['submodule', 'status', '--recursive'], a.repo.dir)).toMatch(
+      /^-/,
+    );
+    const saved = await finalizeRunWorktrees(paths, a.workDir, () => {});
+    expect(saved[0]).toMatchObject({
+      saved: false,
+      reason: oldSubmoduleReason,
+    });
+    const b = await start('deinitialized-next');
+    expect(b.repo.warnings?.join(' ')).toContain('Resolve or recover');
+    expect(
+      git(['--git-dir', childGitDir, 'show', `${head}:unpublished.txt`], root),
+    ).toBe('unpublished.txt');
+    await finalizeRunWorktrees(paths, b.workDir, () => {});
+  });
+  it('rechecks an inactive clean legacy submodule false alarm and preserves unpublished commits', async () => {
+    seedSubmodule();
+    const a = await start('legacy-submodule');
+    commitFile(a.repo.dir, 'unpublished.txt');
+    await oldSubmoduleRecovery(a);
+    const b = await start('legacy-resume');
+    expect(existsSync(a.workDir)).toBe(false);
+    expect(b.repo.warnings?.join(' ')).not.toContain('Resolve or recover');
+    expect(readFileSync(path.join(b.repo.dir, 'unpublished.txt'), 'utf8')).toBe(
+      'unpublished.txt',
+    );
+    expect(
+      (await readContinuationState(paths, 'app', 'PM-300'))?.activeWorkDirs,
+    ).not.toContain(a.workDir);
+    await finalizeRunWorktrees(paths, b.workDir, () => {});
+  });
+  it('defers a legacy submodule false alarm while its original attempt is locked', async () => {
+    seedSubmodule();
+    const a = await start('locked-legacy');
+    await oldSubmoduleRecovery(a);
+    const lock = await acquireLock(`${a.workDir}.lock`, { timeoutMs: 0 });
+    let b: Awaited<ReturnType<typeof start>>;
+    try {
+      b = await start('locked-next');
+      expect(existsSync(a.workDir)).toBe(true);
+      expect(b.repo.warnings?.join(' ')).toContain('Resolve or recover');
+    } finally {
+      await lock.release();
+    }
+    await finalizeRunWorktrees(paths, b.workDir, () => {});
+    const c = await start('unlocked-next');
+    expect(existsSync(a.workDir)).toBe(false);
+    expect(c.repo.warnings?.join(' ')).not.toContain('Resolve or recover');
+    await finalizeRunWorktrees(paths, c.workDir, () => {});
+  });
+  it.each(['dirty', 'initialized', 'otherReason', 'otherSubject', 'otherApp'])(
+    'does not auto-finalize an unsafe or unrelated legacy recovery: %s',
+    async (condition) => {
+      seedSubmodule();
+      const a = await start('retained-legacy');
+      await oldSubmoduleRecovery(a);
+      if (condition === 'dirty')
+        writeFileSync(path.join(a.repo.dir, 'pending.txt'), 'retain');
+      if (condition === 'initialized')
+        git(
+          ['-c', 'protocol.file.allow=always', 'submodule', 'update', '--init'],
+          a.repo.dir,
+        );
+      if (['otherReason', 'otherSubject', 'otherApp'].includes(condition)) {
+        await writeWorkspaceMeta(paths, a.workDir, {
+          ...(await readWorkspaceMeta(paths, a.workDir))!,
+          ...(condition === 'otherReason'
+            ? { recoveryReason: 'Unresolved Git operation' }
+            : {}),
+          ...(condition === 'otherSubject' ? { subjectKey: 'OTHER' } : {}),
+          ...(condition === 'otherApp' ? { appKey: 'other-app' } : {}),
+        });
+      }
+      const b = await start('retained-next');
+      expect(existsSync(a.workDir)).toBe(true);
+      expect(
+        (await readWorkspaceMeta(paths, a.workDir))?.recoveryRequired,
+      ).toBe(true);
+      expect(b.repo.warnings?.join(' ')).toContain('Resolve or recover');
+      if (condition === 'dirty')
+        expect(readFileSync(path.join(a.repo.dir, 'pending.txt'), 'utf8')).toBe(
+          'retain',
+        );
+      await finalizeRunWorktrees(paths, b.workDir, () => {});
+    },
+  );
   it('keeps an unresolved user merge instead of committing or deleting it', async () => {
     const a = await start('a');
     git(['checkout', '-b', 'other'], a.repo.dir);
@@ -1322,16 +1163,6 @@ describe('per-attempt worktrees', () => {
     expect(existsSync(legacy.repos[0].dir)).toBe(true);
     await finalizeRunWorktrees(paths, next.workDir, () => {});
   });
-  it('keeps initialization state across disposable worktrees', async () => {
-    const a = await start('a');
-    expect(a.prepared.dirs[0]!.fresh).toBe(true);
-    await markDirsPrepared(paths, a.workDir, a.prepared.dirs);
-    await finalizeRunWorktrees(paths, a.workDir, () => {});
-    const b = await start('b');
-    expect(b.prepared.dirs[0]!.fresh).toBe(false);
-    await finalizeRunWorktrees(paths, b.workDir, () => {});
-  });
-
   it('refuses continuation cleanup during a run and removes only this task refs after finalization', async () => {
     const a = await start('a');
     const stateDir = continuationWorkDir(paths, 'app', 'PM-300');

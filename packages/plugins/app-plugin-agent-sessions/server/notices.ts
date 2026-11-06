@@ -1,11 +1,4 @@
-/**
- * What a session's owner is told of when they are not looking: the agent waits for their permission, or a turn ended,
- * answered or failed (as when the agent could not start). They are told only of what they have not seen a little later
- * (`NOTICE_DELAY_MS`): nothing a session's page already showed them (`POST …/seen`), nor what they did themselves, such
- * as a turn they stopped. The application delivers the notices (`registerNotices`), such as into its inbox, and settles
- * them when the owner sees the session, answers the request or archives the session. The records a session ties to it
- * are not told of here: the application tells of its own records.
- */
+/** Replies settle when read; permission requests settle only when processed, invalidated or archived. */
 import type { SessionEvent } from '@nocobase/acp-bridge/protocol';
 
 export type SessionNoticeType =

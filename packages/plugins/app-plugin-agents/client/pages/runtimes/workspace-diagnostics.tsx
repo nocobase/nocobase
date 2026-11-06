@@ -172,14 +172,14 @@ export function WorkspaceDiagnostics({
               {t('runtimes.workspaces.empty')}
             </p>
           ) : (
-            <Table className='table-fixed min-w-[740px] sm:min-w-0'>
+            <Table className='table-fixed min-w-[680px]'>
               <colgroup>
-                <col className='w-[24%]' />
-                <col className='w-[12%]' />
-                <col className='w-[12%]' />
-                <col className='w-[14%]' />
-                <col className='w-[24%]' />
-                <col className='w-[14%]' />
+                <col />
+                <col className='w-24' />
+                <col className='w-28' />
+                <col className='w-24' />
+                <col className='w-36' />
+                <col className='w-28' />
               </colgroup>
               <TableHeader>
                 <TableRow>
@@ -213,14 +213,14 @@ export function WorkspaceDiagnostics({
                         {workspace.workDir}
                       </div>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className='whitespace-normal'>
                       {t(
                         workspace.workDir.includes('.readonly-')
                           ? 'runtimes.quota.readOnly'
                           : 'runtimes.quota.working',
                       )}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className='truncate tabular-nums'>
                       {workspace.sizeBytes === undefined
                         ? '—'
                         : bytes(workspace.sizeBytes)}

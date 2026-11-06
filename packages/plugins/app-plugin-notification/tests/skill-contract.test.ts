@@ -29,7 +29,6 @@ describe('@nocobase/app-plugin-notification Agent Skill contract', () => {
     expect(skill).toMatch(/missing required input/i);
     expect(skill).toMatch(/high-impact actions/i);
     expect(skill).toMatch(/rollback/i);
-    expect(skill).toContain('`notification:test` `send`');
 
     const references = [
       'notification-concepts.md',

@@ -27,6 +27,7 @@ import {
   type DeploymentView,
   type DriverSummary,
   type EnvironmentCheckResult,
+  type EnvironmentListItem,
   type EnvironmentRecord,
   type RegistryCheckResult,
   type RegistryRecord,
@@ -44,6 +45,7 @@ import {
   type UpdateAppInput,
   type UpdateConfigInput,
 } from '../../shared/releases.js';
+import { ENVIRONMENT_PURPOSES } from '../../shared/releases.js';
 import type { Caller } from '../access/caller.js';
 
 const id = z.string().min(1);
@@ -244,6 +246,10 @@ const environmentFields = {
   sampleDataOnFirstDeploy: z.boolean().optional().meta({
     description:
       'An App’s first deployment here loads its sample data (`APP_SAMPLE_DATA=true`).',
+  }),
+  purpose: z.enum(ENVIRONMENT_PURPOSES).optional().meta({
+    description:
+      'What the environment is for: `preview` (pull request previews) or `test`; `test` when created without one.',
   }),
 };
 
@@ -612,49 +618,67 @@ export const ReleasesDriverSchema: z.ZodType<DriverSummary> = z.object({
     .meta({ description: 'How the application configured the driver itself.' }),
 });
 
-export const ReleasesEnvironmentSchema: z.ZodType<EnvironmentRecord> = z
-  .object({
-    id: z.string(),
-    name: z.string(),
-    driver: z.string(),
-    config: z
-      .record(z.string(), z.unknown())
-      .meta({ description: 'Driver settings without credentials.' }),
-    hasSecret: z.boolean(),
-    secretKeys: z.array(z.string()),
-    publicUrl: z.string().nullable(),
-    protected: z.boolean(),
-    approvers: z.array(z.string()),
-    maxApps: z.number().nullable(),
-    defaultIdleStopMinutes: z.number().nullable(),
-    defaultDormantAfterHours: z.number().nullable(),
-    registryId: z.string().nullable(),
-    sampleDataOnFirstDeploy: z.boolean().meta({
-      description:
-        'An App’s first deployment here loads its sample data (`APP_SAMPLE_DATA=true`).',
-    }),
-    capabilities: z
-      .object({
-        archives: z.boolean().meta({
-          description: 'It runs release archives uploaded to it.',
-        }),
-        images: z.boolean().meta({
-          description:
-            'It runs release images CI registers, not uploaded archives.',
-        }),
-        onDemand: z.boolean().meta({
-          description:
-            'It honours an App’s runtime policy (started by a request, stopped when idle).',
-        }),
-      })
-      .meta({
-        description:
-          'What the environment runs, from its driver and settings; nothing when the driver is missing.',
+const environmentRecordFields = {
+  id: z.string(),
+  name: z.string(),
+  driver: z.string(),
+  config: z
+    .record(z.string(), z.unknown())
+    .meta({ description: 'Driver settings without credentials.' }),
+  hasSecret: z.boolean(),
+  secretKeys: z.array(z.string()),
+  publicUrl: z.string().nullable(),
+  protected: z.boolean(),
+  approvers: z.array(z.string()),
+  maxApps: z.number().nullable(),
+  defaultIdleStopMinutes: z.number().nullable(),
+  defaultDormantAfterHours: z.number().nullable(),
+  registryId: z.string().nullable(),
+  purpose: z.enum(ENVIRONMENT_PURPOSES).meta({
+    description:
+      'What the environment is for: `preview` (pull request previews) or `test`.',
+  }),
+  sampleDataOnFirstDeploy: z.boolean().meta({
+    description:
+      'An App’s first deployment here loads its sample data (`APP_SAMPLE_DATA=true`).',
+  }),
+  capabilities: z
+    .object({
+      archives: z.boolean().meta({
+        description: 'It runs release archives uploaded to it.',
       }),
-    createdAt: dateTime,
-    updatedAt: dateTime,
-  })
+      images: z.boolean().meta({
+        description:
+          'It runs release images CI registers, not uploaded archives.',
+      }),
+      onDemand: z.boolean().meta({
+        description:
+          'It honours an App’s runtime policy (started by a request, stopped when idle).',
+      }),
+    })
+    .meta({
+      description:
+        'What the environment runs, from its driver and settings; nothing when the driver is missing.',
+    }),
+  createdAt: dateTime,
+  updatedAt: dateTime,
+};
+
+export const ReleasesEnvironmentSchema: z.ZodType<EnvironmentRecord> = z
+  .object(environmentRecordFields)
   .meta({ ref: 'ReleasesEnvironment' });
+
+/** An environment in the list, with how many Apps it holds. */
+export const ReleasesEnvironmentListItemSchema: z.ZodType<EnvironmentListItem> =
+  z
+    .object({
+      ...environmentRecordFields,
+      appCount: z
+        .number()
+        .int()
+        .meta({ description: 'How many Apps the environment holds.' }),
+    })
+    .meta({ ref: 'ReleasesEnvironmentListItem' });
 
 export const ReleasesEnvironmentCheckSchema: z.ZodType<EnvironmentCheckResult> =
   z.object({
@@ -745,6 +769,13 @@ export const ReleasesAppSchema: z.ZodType<AppSummary> = z
     currentVersion: z.string().nullable(),
     hasReleases: z.boolean(),
     hasPendingDeployment: z.boolean(),
+    pendingDeployment: z
+      .object({
+        status: z.enum(['queued', 'deploying', 'cancelling']),
+        queueAhead: z.number().int().nonnegative().nullable(),
+      })
+      .nullable()
+      .optional(),
     allowed: z.array(z.enum(BUSINESS_ACTIONS['rel.apps'])).optional().meta({
       description:
         'What the caller may do on this App; only the single-App read answers it.',
@@ -853,6 +884,8 @@ export const ReleasesUploadTicketSchema: z.ZodType<UploadTicketView> = z.object(
 
 const deploymentPhase = z.enum([
   'queued',
+  'cancelling',
+  'cancelled',
   'resolving',
   'verifying',
   'extracting',
@@ -872,7 +905,16 @@ export const ReleasesDeploymentSchema: z.ZodType<DeploymentView> = z
     kind: z.enum(['deploy', 'rollback']),
     rollbackTargetDeploymentId: z.string().nullable(),
     previousDeploymentId: z.string().nullable(),
-    status: z.enum(['queued', 'deploying', 'succeeded', 'failed']),
+    status: z.enum([
+      'queued',
+      'deploying',
+      'cancelling',
+      'cancelled',
+      'succeeded',
+      'failed',
+    ]),
+    queueAhead: z.number().int().nonnegative().nullable().optional(),
+    cancellable: z.boolean().optional(),
     phase: deploymentPhase,
     configMode: z.enum(['file', 'external']),
     error: z.string().nullable(),

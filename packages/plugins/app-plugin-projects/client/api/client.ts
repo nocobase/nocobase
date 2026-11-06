@@ -29,6 +29,7 @@ import {
   type ActivityPage,
   type CreateIssueRequest,
   type Issue,
+  type IssueSummary,
   type IssueBoard,
   type IssueDetail,
   type IssueListItem,
@@ -271,6 +272,11 @@ export class PmApi {
       'projects/issues/board',
       issueQuery({ ...query, cursor: undefined }),
     );
+  }
+
+  /** The visible live card fields of at most 100 IDs or identifiers. */
+  public issueSummaries(refs: readonly string[]): Promise<IssueSummary[]> {
+    return this.get('projects/issues/summaries', { refs: refs.join(',') });
   }
 
   /** One issue, by id or identifier (`PM-12`). */

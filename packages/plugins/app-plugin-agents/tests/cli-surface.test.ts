@@ -45,7 +45,7 @@ describe('run credential', () => {
     });
     expect(await resolve(new Headers())).toBeUndefined();
     await expect(
-      resolve(new Headers({ [HEADERS.runToken]: 'nope' })),
+      resolve(new Headers({ [HEADERS.runToken]: 'fgr_invalid' })),
     ).rejects.toMatchObject({ reason: 'RUN_TOKEN_INVALID' });
 
     const identity = runIdentityOf({

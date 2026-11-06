@@ -1,3 +1,5 @@
+import type { WebSearchBudget } from '../search/budget.js';
+import type { OnlineAgentSandbox } from '../sandbox/types.js';
 import type { Tool, ModelMessage, UIMessage, UIMessageChunk } from 'ai';
 import type { AuthorizationContext } from '@nocobase/authorization/core';
 import type { ServiceResolver } from '@nocobase/service-provider';
@@ -21,10 +23,19 @@ export type OnlineAgentContext = Readonly<{
   variable?: OnlineAgentJson;
   systemPrompt?: string;
 }>;
+/** In-memory capabilities owned by the current execution, never model input or persisted state. */
+export interface OnlineAgentToolExecution {
+  readonly id: string;
+  getSandbox(): Promise<OnlineAgentSandbox>;
+  readSkill(name: string): Promise<{ ok: boolean; output: string }>;
+}
 export type OnlineAgentToolContext = OnlineAgentContext & {
   /** The executing session, supplied by the runtime rather than model or page input. */
   readonly sessionId: string;
   readonly signal: AbortSignal;
+  readonly selectedModel?: Readonly<ModelRef>;
+  readonly webSearchBudget?: WebSearchBudget;
+  readonly execution: OnlineAgentToolExecution;
 };
 export type OnlineAgentScope = {
   agentId?: string;
@@ -36,8 +47,10 @@ export type OnlineAgentScope = {
       };
   context?: { variable?: OnlineAgentJson; systemPrompt?: string };
   tool?: string[];
+  skill?: string[];
   model?: string[];
   thinking?: string;
+  webSearch?: boolean;
   permissions?: never;
 };
 export type OnlineAgentScopeProvider = (
@@ -50,9 +63,12 @@ export type OnlineAgentConfig = {
   systemPrompt: string;
   variable?: OnlineAgentJson;
   tool: string[];
+  skill?: string[];
   toolVersions: Record<string, string>;
-  model: string[];
+  /** Missing and empty lists are unrestricted; preserve their distinct shapes. */
+  model?: string[];
   thinking?: string;
+  webSearch?: boolean;
 };
 export type OnlineAgentToolDefinition<
   I,
@@ -90,6 +106,9 @@ export type OnlineAgentInitialConfiguration = {
 };
 
 export type OnlineAgentSendOptions = {
+  effort?: string | null;
+  /** Pending Runner selection, committed atomically with message admission. */
+  agentId?: string;
   attachmentIds?: string[][];
   clientId?: string;
   messageId?: string;
@@ -98,6 +117,8 @@ export type OnlineAgentSendOptions = {
   selectedModel?: ModelRef;
 };
 export type OnlineAgentRealtimeOptions = OnlineAgentOptions & {
+  projectId?: string | null;
+  effort?: string | null;
   sessionId?: string;
   selectedModel?: ModelRef;
   source?: string;

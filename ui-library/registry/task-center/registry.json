@@ -1,0 +1,107 @@
+{
+  "items": [
+    {
+      "name": "task-center-ui",
+      "type": "registry:block",
+      "title": "Task Center UI",
+      "description": "Presentational components for a personal task center layered as source → subject → status → task cards: a source navigation with subjects folded under each source, pending counts and a client-side subject search; To do / Done / All tabs; day-grouped task cards whose summary each task type contributes; one-type-at-a-time batch selection with a floating action bar and confirmation; and a right-side detail drawer whose form and actions the task's business supplies. Takes data already shaped and translated; pairs with a task index such as @nocobase/app-plugin-task-center.",
+      "categories": ["task-center"],
+      "meta": {
+        "group": "Task Center",
+        "iframeHeight": 820
+      },
+      "dependencies": [
+        "@nocobase/i18n@^1.0.0-beta.4",
+        "cn@^0.4.0",
+        "lucide-react@^0.487.0"
+      ],
+      "registryDependencies": [
+        "alert-dialog",
+        "badge",
+        "button",
+        "card",
+        "checkbox",
+        "collapsible",
+        "empty",
+        "input-group",
+        "sheet",
+        "skeleton",
+        "spinner",
+        "tabs"
+      ],
+      "docs": "Pure presentation: map your task index into TaskNavSource and TaskCardData (types.ts) with translated labels, render each task type's summary with TaskSummaryFields, its batch actions through useTaskSelection, TaskBulkBar and TaskBulkConfirm, and its detail form and actions inside TaskDetailSheet. Merge locales/ into your locale resources.",
+      "files": [
+        {
+          "path": "task-center-ui/index.ts",
+          "type": "registry:lib",
+          "target": "client/extensions/nocobase-task-center-ui/index.ts"
+        },
+        {
+          "path": "task-center-ui/types.ts",
+          "type": "registry:lib",
+          "target": "client/extensions/nocobase-task-center-ui/types.ts"
+        },
+        {
+          "path": "task-center-ui/use-task-selection.ts",
+          "type": "registry:hook",
+          "target": "client/extensions/nocobase-task-center-ui/use-task-selection.ts"
+        },
+        {
+          "path": "task-center-ui/use-task-time.ts",
+          "type": "registry:hook",
+          "target": "client/extensions/nocobase-task-center-ui/use-task-time.ts"
+        },
+        {
+          "path": "task-center-ui/status.ts",
+          "type": "registry:lib",
+          "target": "client/extensions/nocobase-task-center-ui/status.ts"
+        },
+        {
+          "path": "task-center-ui/task-center-layout.tsx",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-task-center-ui/task-center-layout.tsx"
+        },
+        {
+          "path": "task-center-ui/task-source-nav.tsx",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-task-center-ui/task-source-nav.tsx"
+        },
+        {
+          "path": "task-center-ui/task-status-tabs.tsx",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-task-center-ui/task-status-tabs.tsx"
+        },
+        {
+          "path": "task-center-ui/task-card.tsx",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-task-center-ui/task-card.tsx"
+        },
+        {
+          "path": "task-center-ui/task-list.tsx",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-task-center-ui/task-list.tsx"
+        },
+        {
+          "path": "task-center-ui/task-bulk-bar.tsx",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-task-center-ui/task-bulk-bar.tsx"
+        },
+        {
+          "path": "task-center-ui/task-detail-sheet.tsx",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-task-center-ui/task-detail-sheet.tsx"
+        },
+        {
+          "path": "task-center-ui/locales/en-US.ts",
+          "type": "registry:lib",
+          "target": "client/extensions/nocobase-task-center-ui/locales/en-US.ts"
+        },
+        {
+          "path": "task-center-ui/locales/zh-CN.ts",
+          "type": "registry:lib",
+          "target": "client/extensions/nocobase-task-center-ui/locales/zh-CN.ts"
+        }
+      ]
+    }
+  ]
+}

@@ -12,8 +12,7 @@ import {
   type AgentView,
   type AvailableAgent,
 } from '../../../shared/agents.js';
-import { catalogEntry, discoveryKey } from '../../../shared/model-catalog.js';
-import { discoveryPreferences } from './discovery.js';
+import type { AgentService } from './agent.service.js';
 import type { AgentAvailability, Availability } from '../runs/availability.js';
 
 /** Whether a runner reported the agent's tool and model recently enough; an application's own agent always counts. */
@@ -31,7 +30,6 @@ export function unusableReason(
   availability: AgentAvailability | undefined,
   now: Date,
 ): AgentUnusableReason | null {
-  if (agent.status === 'pending') return 'pending';
   if (agent.status === 'disabled') return 'disabled';
   if (agent.modelEntries.length === 0) return 'notConfigured';
   if (!isReported(agent, now)) return 'unreported';
@@ -51,29 +49,16 @@ export async function agentViews(
     readonly availability: Availability;
     readonly userId: string;
     readonly canEdit: boolean;
+    readonly suggestion: AgentService['suggestion'];
     readonly now: Date;
   },
 ): Promise<AgentView[]> {
   const availability = await options.availability(conn, agents, options.userId);
-  const preferences = await discoveryPreferences(conn);
   return agents.map((agent): AgentView => {
     const entry = agent.modelEntries[0];
-    const known =
-      agent.tool && agent.model ? catalogEntry(agent.tool, agent.model) : null;
     const load = availability.get(agent.id);
     return {
       ...agent,
-      ...(agent.tool && agent.model
-        ? {
-            discoveryKey: discoveryKey(agent.tool, agent.model),
-            discoveryRevision:
-              preferences.get(discoveryKey(agent.tool, agent.model))
-                ?.revision ?? 0,
-            ignored:
-              preferences.get(discoveryKey(agent.tool, agent.model))?.ignored ??
-              false,
-          }
-        : {}),
       effort: entry?.effort ?? null,
       efforts: agent.source === 'runner' && entry ? effortsFor(entry) : [],
       reported: isReported(agent, options.now),
@@ -82,7 +67,10 @@ export async function agentViews(
       personalOnly: load?.personalOnly ?? false,
       unusable: unusableReason(agent, load, options.now),
       busy: load?.busy ?? 0,
-      suggestion: known ? known.goodAt : null,
+      suggestion:
+        agent.tool && agent.model
+          ? options.suggestion(agent.tool, agent.model)
+          : null,
       canEdit: options.canEdit && agent.source === 'runner',
     };
   });

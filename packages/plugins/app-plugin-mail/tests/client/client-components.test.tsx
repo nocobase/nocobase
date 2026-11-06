@@ -764,6 +764,41 @@ describe('[UI][SEC] mail client components and capability states', () => {
     expect(onLabelChange).toHaveBeenCalledWith('label-1');
   });
 
+  it.each([
+    ['周建国', 'sender@example.test', '建国'],
+    ['周 建国', 'sender@example.test', '建国'],
+    ['周', 'sender@example.test', '周'],
+    ['Li Lei', 'sender@example.test', 'L'],
+    ['', '周建国@example.test', '周'],
+  ])(
+    'shows sender avatar for %s without changing the sender label',
+    (name, address, expected) => {
+      const { container } = render(
+        <MailConversationView
+          messages={[
+            {
+              ...conversationMessage('avatar-message', name, 'Hello'),
+              from: { name, address },
+            },
+          ]}
+          subject='Avatar check'
+          labels={{
+            attachmentCount: (count) => `${count} attachments`,
+            conversation: (count) => `${count} messages`,
+            loadMore: 'Load more',
+            noSubject: '(no subject)',
+            selectMessage: 'Select a message',
+            unknownSender: 'Unknown sender',
+          }}
+        />,
+      );
+      expect(container.querySelector('header .rounded-full')).toHaveTextContent(
+        expected,
+      );
+      expect(screen.getByLabelText('From')).toHaveTextContent(name || address);
+    },
+  );
+
   it('toggles messages from their headers while keeping message actions independent', () => {
     const reply = vi.fn();
     render(

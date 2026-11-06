@@ -50,6 +50,7 @@ import {
   findAttachments,
   issueAttachments,
   liveCommentAttachments,
+  limitedAttachments,
   ofDeletedComments,
   unattached,
   type AttachmentRecord,
@@ -65,6 +66,12 @@ export interface AttachmentContent {
 }
 
 export interface AttachmentService {
+  /** Bounded own and live comment files, oldest first; at most 100 returned. */
+  listLimited(
+    viewer: Viewer,
+    issueIdOrKey: string,
+    limit?: number,
+  ): Promise<{ data: Attachment[]; truncated: boolean }>;
   /** Latest bounded batch of live Agent comment images, with comment provenance. */
   screenshots(viewer: Viewer, issueIdOrKey: string): Promise<IssueScreenshots>;
   /** An upload of the viewer's, attached to nothing yet. */
@@ -315,6 +322,20 @@ export function createAttachmentService(deps: AttachmentDeps): {
   };
 
   const service: AttachmentService = {
+    async listLimited(viewer, issueIdOrKey, limit = 100) {
+      if (!Number.isInteger(limit) || limit < 1 || limit > 100)
+        throw invalid(
+          'INVALID_FIELD',
+          'limit must be an integer between 1 and 100.',
+        );
+      const conn = deps.tx.read();
+      const issue = await requireVisible(conn, viewer, issueIdOrKey);
+      const rows = await limitedAttachments(conn, issue.id, limit + 1);
+      return {
+        data: await views(conn, rows.slice(0, limit), () => false),
+        truncated: rows.length > limit,
+      };
+    },
     async screenshots(viewer, issueIdOrKey) {
       const conn = deps.tx.read();
       const issue = await requireVisible(conn, viewer, issueIdOrKey);

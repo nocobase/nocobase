@@ -11,3 +11,5 @@ export * from './worker.js';
 export { defineWebPushPlugin } from './plugin.js';
 export { definePushConfig } from './config.js';
 export * from './manifest.js';
+
+export { WebPushChannel } from './channel.js';

@@ -1,5 +1,544 @@
 # @nocobase/app-plugin-agents
 
+## 2.0.0-beta.5
+
+### Patch Changes
+
+- ef04803: Let host applications require fresh tool sessions and read bounded summaries of recent terminal runs for handoff context.
+
+## 2.0.0-beta.4
+
+### Minor Changes
+
+- bfddb40: Add DeepSeek Harness as an ACP coding tool, with runner API-key detection, its CLI version, and full-access permissions.
+
+### Patch Changes
+
+- c627337: Refresh archived conversation lists after archiving, restoring, or undoing an archive.
+- 49daa11: Restart running background agent connections after installing a new CLI version.
+- 7fe7292: Rebalance the column widths of the runtime drawer's overview, workspaces and runs tables: short columns fit their content and the tool quota, directory and issue columns take the remaining width.
+- Updated dependencies [49daa11]
+- Updated dependencies [bfddb40]
+- Updated dependencies [78bdca8]
+- Updated dependencies [9998ac4]
+- Updated dependencies [87f1ea5]
+- Updated dependencies [6507d01]
+  - @nocobase/app-cli-client@0.1.0-beta.18
+  - @nocobase/acp-bridge@1.0.0-beta.5
+  - @nocobase/app-plugin-authentication@2.0.0-beta.19
+  - @nocobase/app-plugin-authorization@1.0.0-beta.36
+  - @nocobase/app-client@4.0.0-beta.8
+  - @nocobase/app-server@5.0.0-beta.1
+  - @nocobase/app-cli@1.0.0-beta.32
+  - @nocobase/app-plugin-file@1.0.0-beta.29
+
+## 2.0.0-beta.3
+
+### Patch Changes
+
+- 1f0b3ba: Include structured wait reasons in queued Runner conversation details and allow withdrawing an unclaimed initial turn before choosing another Agent.
+- 9933a9a: Allow applications to define issued-credential admission consistently with their command policies. Support run-authenticated project creation, activity and label reads, issue uploads and project resources. Restrict comment edits and deletions to the authenticated originating run, and accept run credentials when reading a release.
+
+  Apply the same trusted application admission to knowledge and owner-checked conversation routes without bypassing their business permissions or ownership checks.
+
+  Check issue visibility before collecting plan rehearsal baselines so a refused row cannot disclose hidden issue fields or dependency identifiers.
+
+- cf23bfe: **Breaking:** Remove the deprecated `@nocobase/app-server/mailer` entry and its `Mailer`, `mailerToken`, `createMailer`, `MailerProvider`, and notification configuration exports. Replace `MailExecutions.close(waitMs)` and `drain()` with `stop()` and `wait()`; transport `close()` now cancels supported network work and waits for its original completion without a nested timeout. Application owners must apply the outer shutdown budget. Create exclusive senders with `@nocobase/app-server/mailers` and declare notification config with `@nocobase/app-plugin-notification-providers/config`. Existing inline SMTP/Resend YAML, environment mappings, and provider/channel APIs remain supported.
+
+  Default and Examples now show `mailers.default: system` and explicitly map `MAILERS_SYSTEM_*`; the example configuration remains empty at runtime. The previous `MAILERS_TRANSACTIONAL_*` sample prefix was not published. Applications may still choose any valid mailer name and custom environment prefix.
+
+- Updated dependencies [6cc8acf]
+- Updated dependencies [9933a9a]
+- Updated dependencies [1e018f1]
+- Updated dependencies [cf23bfe]
+- Updated dependencies [4411984]
+  - @nocobase/app-client@4.0.0-beta.7
+  - @nocobase/app-plugin-authentication@2.0.0-beta.18
+  - @nocobase/db@1.0.0-beta.25
+  - @nocobase/app-server@5.0.0-beta.0
+  - @nocobase/app-cli@1.0.0-beta.32
+  - @nocobase/app-plugin-authorization@1.0.0-beta.35
+  - @nocobase/app-plugin-file@1.0.0-beta.29
+
+## 2.0.0-beta.2
+
+### Patch Changes
+
+- a54cf2c: Expose the optional target update time in conversation links so applications can order linked work without fetching each record.
+- 09646a9: Continue queued Runner conversation messages in the next turn after a user stops the current turn, keeping the original messages and excluding received or withdrawn inputs.
+
+  Preserve saved input revisions across stream recovery without allowing older assistant snapshots to overwrite replayed output.
+
+- f206179: Explain quota-blocked queued runs and model diagnostics with `toolQuota` and the earliest known reset time, reusing existing quota marks without changing scheduling or retries.
+
+## 2.0.0-beta.1
+
+### Patch Changes
+
+- 88d35b8: Share conversation snapshot reads, wait for subscription acknowledgement, and avoid redundant agent catalog refreshes.
+- 88d35b8: Reduce idle conversation recovery reads while preserving latest response revisions, missed messages, reconnect recovery and running refreshes.
+- d04061e: Batch linked work in conversation snapshots and share cursor-based message refreshes across chat surfaces. Refresh changed conversation state without repeatedly reading archived lists, and reconcile saved history once after acknowledged reconnection.
+- 88d35b8: Avoid redundant conversation detail and related-data reads after read acknowledgements while preserving cross-tab updates and reconnect recovery.
+- 88d35b8: Allow runs to be filtered by multiple statuses in one paginated request.
+- 36f61d0: Distinguish workspace preparation from Agent startup when reusing a runner workspace.
+
+  Keep received replies before follow-up messages queued during an active conversation.
+
+- cf23bfe: Move Redis realtime broadcasting to the commercial Realtime Redis plugin. Register its Server plugin before selecting Redis in an application, or import the standalone broker from its `/broker` entry. Preserve the Memory default, service identity, authorization and recovery protocol, and republish runtime consumers against the new host and realtime major versions. Install the compatible commercial cohort before deploying the final removal.
+- 88d35b8: Document every allowed run status for single and combined status filters in the API and command reference.
+- b29a336: Keep saved Agent descriptions current when reopening the editor before a list refresh completes, and expose the existing authorization permission topic constants to client integrations.
+- Updated dependencies [88d35b8]
+- Updated dependencies [83f28b1]
+- Updated dependencies [88d35b8]
+- Updated dependencies [88d35b8]
+- Updated dependencies [83f28b1]
+- Updated dependencies [cf23bfe]
+- Updated dependencies [b29a336]
+  - @nocobase/app-client@4.0.0-beta.6
+  - @nocobase/authorization@1.0.0-beta.16
+  - @nocobase/app-plugin-authorization@1.0.0-beta.34
+  - @nocobase/app-plugin-authentication@2.0.0-beta.17
+  - @nocobase/app-server@4.0.0-beta.0
+  - @nocobase/app-cli@1.0.0-beta.31
+  - @nocobase/app-plugin-file@1.0.0-beta.28
+
+## 2.0.0-beta.0
+
+### Minor Changes
+
+- 57ecc34: Allow applications to supply project workspaces for Runner conversations, retain their runner when changing agents, and continue from the latest conversation summary. Project selection is frozen after the first message. Project access checks can use the caller's transaction connection.
+
+  Reject Agent changes when the conversation’s bound project runner cannot run the selected Agent, preserving its workspace and queued work.
+
+- 8f3e54d: Allow Runner conversations to choose and retain reasoning effort from their current model's eligible runtime capabilities, and preserve the selected effort in each turn and run.
+
+### Patch Changes
+
+- c571810: Add batched causal run and input reads on the caller's connection so applications can avoid repeated progress lookups.
+- b2c0dfd: Let runners scan up to two additional pages of queued runs when earlier candidates cannot run on them, preserving claim order and the existing capacity checks.
+- 311f6e1: Offer six editable description templates through a compact selector with one-step Undo when adding or editing runner agents, and suggest a template for newer models in known families.
+- 4c89e3c: Refresh run status when a realtime notification arrives before the first detail request finishes.
+- 483ac67: Use supported Agent defaults for unselected conversation reasoning effort and fall back to coding tool defaults when capabilities are unknown or do not support the Agent default, retain only explicit non-default selections, and expose a display notice when a selected effort falls back to the tool default.
+- b2eed36: Preserve pending conversation history reads when marking messages as read.
+- 82f9c1d: BREAKING: Agents 2 removes legacy vector collections, their SQLite/pgvector stores, workers and public types. Migrate consumers before upgrading; active `agents.vectors` settings now fail startup, while `{ store: false }` remains an inert compatibility setting for the 2.x line. Model services, Embedding, usage recording and Knowledge's independent indexing remain available. Historical migrations and existing data are retained. See `@nocobase/app-plugin-agents/docs/vectors-migration.md` for API/configuration migration, backups and rollback. Republish direct consumers against the new Agents major version.
+- 91b7602: Reuse active conversation streams when returning to a chat, synchronize saved history when a stream cannot be resumed, and release a pending browser subscription after its execution has durably finished.
+- eff2cb2: Paginate runtime run history in groups of twenty with previous/next controls, page numbers and an exact total. Align runtime status and quota badge sizes and spacing, and show quota hints in a warning color.
+
+  Adds a reversible index on runtime, start time and run id. Building the index during an upgrade scans existing run history and can briefly block run writes.
+
+  Show owned conversations by title with their native entry in runtime history. Hide other conversations behind a localized label without exposing their title or link, using current ownership.
+
+  Place the runtime history loading action below the table with the number of displayed runs, and keep dates on older runs readable.
+
+- Updated dependencies [b6934ad]
+- Updated dependencies [d3f0c92]
+- Updated dependencies [a0b4568]
+- Updated dependencies [12b1f64]
+- Updated dependencies [b6934ad]
+- Updated dependencies [5ce4a7c]
+- Updated dependencies [b6934ad]
+- Updated dependencies [171f7fb]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.16
+  - @nocobase/app-client@4.0.0-beta.5
+  - @nocobase/app-server@3.0.0-beta.5
+  - @nocobase/db@1.0.0-beta.24
+  - @nocobase/app-cli@1.0.0-beta.30
+  - @nocobase/app-plugin-file@1.0.0-beta.27
+
+## 2.0.0-beta
+
+### Breaking changes
+
+Remove legacy vector collections and their workers, stores and public types. Model services, Embedding and Knowledge indexing remain available. See [the migration guide](docs/vectors-migration.md) before upgrading. Existing data and historical migrations are retained.
+
+## 1.0.0-beta.29
+
+### Patch Changes
+
+- f9ada4a: Keep conversation message catch-up when a newer detail read supersedes a refresh.
+  Preserve live runner replies while reconciling saved conversation history.
+
+## 1.0.0-beta.28
+
+### Minor Changes
+
+- 22748f7: A message sent while a runner conversation's agent works is no longer refused as busy: `POST /api/agents/conversations/{conversationId}/queue` (`conversation message queue`) joins it to the run at work, which the runner steers into the running turn when its tool can and takes as the next turn otherwise, and `POST /api/agents/conversations/{conversationId}/messages/{messageId}/withdraw` takes it back while its runner has not taken it. A queued message carries `metadata.queue` (`queued`, `withdrawn` or `unanswered`), and the answer to it is its own response. The agent's todo list shows as a `data-plan` part, from Codex's `turn/plan/updated` and ACP plan updates; conversation usage adds `costUsd` from the cost Claude Code, Pi and OpenCode report. A live runner response opens at once and says where it stands before its first output (`data-phase`: `waiting`, `starting`, `thinking`).
+
+  Runs respond faster. Claude Code starts with `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1` unless the runner is started with `NOCOBASE_RUNNER_CLAUDE_NONESSENTIAL_TRAFFIC=1` or the run sets the variable itself. The events answer carries input that arrived for the run (`EventsResponse.inputs`, absent from older servers), so it reaches the agent with the next events rather than the next status poll, and tool steps, input, status, usage and error events are sent as they happen instead of at the next spool interval.
+
+- 22748f7: A conversation no longer loses its context when its kept tool session cannot be resumed. When the brief changed since the session was kept, the claim starts a new session with the conversation's recent history, as a first one gets; when it resumes, the payload carries `prompt.recoveryContext` (that history), which the runner gives a new session should the kept one be gone on its machine. A subject's per-turn rules can now change without ending the kept session (`ConversationRuleLines.turn`).
+
+  `DELETE /api/agents/conversations/{conversationId}` (`conversation delete`) deletes the owner's conversation for good: its open runs are cancelled, its messages, files (and their stored bytes), links and kept sessions are deleted, its inbox notices are settled, and runners remove its working directories and session files on their next workspace report. Conversations archived longer than `agents.conversations.archivedRetentionDays` (30 by default, 0 keeps them) are deleted the same way by a daily cleanup.
+
+- 22748f7: Runners report how full the context window is after a turn, as a `status` event `context` with `{ used, size }`: Claude Code from the turn's per-model context window and the main thread's latest request, Codex from `thread/tokenUsage/updated` when it names the model's window, and ACP agents from their `usage_update`. OpenCode and Pi report none. A runner conversation's response ends with a `data-turn` part once its run has ended (how long the turn took, its input, cached and output tokens, and whether it completed, failed or was cancelled), and `GET /api/agents/conversations/{conversationId}/usage` (`conversation usage`) sums the tokens of a conversation's runs and returns its latest context window.
+- 22748f7: Bind a conversation to the first runner that takes one of its runs: later runs wait for that runner, `ConversationSummary.runner` reports whether it is online, and `POST /api/agents/conversations/{conversationId}/switchRunner` lets the owner move on to another runner, which starts a fresh session with the history. A session whose working directory a runner no longer reports starts fresh as well. Conversations can be tied to records of kinds the application registers (`conversations.links`, `GET|POST|DELETE /api/agents/conversations/{conversationId}/links`, `linkKind` and `linkTargetId` on the conversation list), and every turn lists them as linked work; `conversations.rules.provide` may add `turn` sections, and `conversations.deliver` wakes a Runner conversation with `news.wake`. Conversations keep their owner's read position and what waits for them (`seenSeq`, `needsYou`, `POST …/markSeen`, `GET /api/agents/conversationAttention`, the `conversation.attention` event and the run command `conversation ask-owner`). Adds the `202611010001_ag_conversation_runner_attention` and `202611010002_ag_create_conversation_links` migrations.
+- 22748f7: A runner conversation's responses now carry the agent's tool calls and their results as SDK `dynamic-tool` parts, live while the run streams (`tool-input-available`, then `tool-output-available` or `tool-output-error`) and in history replay, ordered among the response's reasoning and texts by the run's events. Inputs and outputs are bounded in the message; the run's transcript keeps them whole. The runner sends a conversation's tool steps as soon as they happen rather than at its next event interval.
+
+### Patch Changes
+
+- 22748f7: `useChatScroll` no longer takes a reader who just scrolled up back to the end when the layout changes (a window resize, content reflow) before the browser delivers their scroll event.
+- 5782713: Allow Runner messages to confirm the final Agent selection atomically with message admission, avoiding switch notices for unused selections.
+- 22748f7: Show a conversation's new messages and replies sooner. An accepted message is announced with its `seq`, so every page that shows the conversation reads it at once instead of waiting for the run's next announcement. The chat reads lists and details once per burst of announcements instead of once per announcement. The runner sends the first words of a reply preview after 50 ms and later text every 200 ms, instead of holding text for up to a second.
+- 22748f7: A message the owner sends also announces the conversation without a `seq` once it settles what waited for them, so a listener that settles notices on `conversation.changed` (such as an application's inbox) hears that a reply was answered from the CLI or any surface that does not mark it seen. A run that fails after asking its owner a question now waits as `failed` rather than keeping the question. A runner's empty workspace report no longer forgets every session's directory, since it more likely means the runner could not read them. Tying a record a conversation already has answers `200` instead of `201`.
+- 22748f7: Let an owner change the agent of an idle Runner conversation while retaining its history and links; the next message starts a fresh tool session. Refuse changes while any queued, running or finalizing work remains.
+- 22748f7: The "Add runtime" dialog offers its agent prompt as one compact callout after choosing the system: a title, the whole description with a "View prompt" toggle, and "Copy the prompt for the agent" as the primary action, followed by the steps to install it by hand, instead of prompt and manual tabs.
+- 22748f7: The Skills page's empty state shows a puzzle piece, matching the Skills navigation item, so the sparkles stand for conversations with agents alone.
+- cc0b521: Allow task-linked conversation questions to settle when their task resumes, using the recorded status transition time while preserving newer questions and unread replies.
+- Updated dependencies [07b14c0]
+- Updated dependencies [451bf75]
+- Updated dependencies [22748f7]
+- Updated dependencies [22748f7]
+- Updated dependencies [e3d9a52]
+- Updated dependencies [22748f7]
+  - @nocobase/app-cli@1.0.0-beta.30
+  - @nocobase/app-client@4.0.0-beta.4
+  - @nocobase/agent-protocol@0.1.0-beta.16
+  - @nocobase/app-server@3.0.0-beta.4
+  - @nocobase/app-plugin-authorization@1.0.0-beta.33
+  - @nocobase/db@1.0.0-beta.23
+  - @nocobase/app-plugin-authentication@2.0.0-beta.15
+  - @nocobase/app-plugin-file@1.0.0-beta.27
+  - @nocobase/app-cli-client@0.1.0-beta.17
+
+## 1.0.0-beta.27
+
+### Patch Changes
+
+- 05f800a: Publish editable file upload/preview and notification delivery-log UI through the UI Library. Install `@nocobase/file-component-ui` or `@nocobase/notification-logs-ui` with shadcn, and merge their bundled locale resources into the consuming application. Existing application-owned copies remain usable; reconcile upstream changes while preserving customizations. The default template keeps its File UI installation path and now tracks the UI Library source.
+
+  Remove plugin-owned Registry recipes, their build/materialize commands, the Registry example plugin, and the `registry` capability from the plugin scaffold. Plugins can continue to install UI Library items into their own client source. Update plugin development guidance to use this single source distribution channel.
+
+  Preserve custom file download callbacks for images opened from FileList, including preview toolbar and fallback downloads.
+
+- Updated dependencies [05f800a]
+- Updated dependencies [7770b46]
+- Updated dependencies [7770b46]
+  - @nocobase/app-plugin-file@1.0.0-beta.27
+  - @nocobase/app-cli@1.0.0-beta.28
+
+## 1.0.0-beta.26
+
+### Patch Changes
+
+- d78f586: Pin official AI SDK providers to the compatible ai/provider-utils release set to prevent independent provider patch upgrades from breaking Agents builds. The workspace also constrains Ollama's provider-utils dependency; independently installed applications must manage Ollama's transitive dependency alignment themselves.
+
+## 1.0.0-beta.25
+
+### Patch Changes
+
+- 2e5823a: Use the OpenAI-compatible SDK for Alibaba Qwen embeddings while preserving its existing chat SDK, service base URL, credentials, and dimension selection. Version Alibaba Knowledge embedding identities so generations created with the former native transport require an explicit rebuild instead of silently reusing vectors across the protocol change.
+- 2e5823a: Allow Knowledge indexing to use a manually entered fixed Embedding model ID as well as catalog suggestions, including services with empty model lists. Keep unlisted models behind an explicit server-only gateway opt-in, preserve service and model-kind checks, and learn unknown vector dimensions from indexing responses without probing on edit or save. Rename the Chinese settings title and remove duplicate dialog close controls and standalone configuration headings.
+
+  Show deployment guidance whenever no indexing instances are configured, including when earlier settings remain saved. Preserve those settings without presenting a stale form or old progress as configurable.
+
+  Simplify zero-instance guidance and localize a clearer Agent configuration prompt: inspect supported indexing types, let the user choose, and edit knowledge.indexing in the actual config.yaml or existing config.yml without assuming a vector backend.
+
+- 2e5823a: Add permission-filtered all-space Knowledge search and person-only search/read CLI commands for native OnlineAgent credentials. Register optional global Knowledge instructions with on-demand and always retrieval policies through existing context variables, preserving session snapshots and scoped credential restrictions.
+
+  Export the existing native credential type for optional plugin integration.
+
+- 2e5823a: Enable bash and skill as the default tools for new native OnlineAgent sessions, while preserving explicit tool overrides, saved session configuration, lazy sandbox creation, and Runner isolation.
+- 2e5823a: Resolve OnlineAgent configuration in two phases so every prompt template receives final, independently normalized variables while prompt composition remains ordered and HTTP variables remain limited to selected-scope declarations. Preserve saved session snapshots without reevaluating global prompts on variable-only updates.
+- 671e1b3: Retire the pending runner-agent state and obsolete discovery/cleanup interfaces. Migrate unused legacy discoveries away, preserving records with any run, business reference or audit other than automatic system creation as disabled. Ignore creation audits only when action is created and actorUserId is null, regardless of revision or change contents; delete those audits through the existing cascade when removing an otherwise unused agent, and mark models as added only for enabled or disabled runner agents. Deleted agents and their cascaded audits cannot be restored by rolling back the data migration; review custom application references before upgrading. Align all supported Agent page translations with explicit model addition.
+- e5d61bd: Simplify runtime status to show online concurrency settings and optional per-tool limits, removing capacity diagnostics from the list and details.
+- 7fbcda4: Restore completed runner reasoning summaries from existing run events in conversation history without changing message storage or model context.
+- 7fbcda4: Render every logical assistant response as one bubble with ordered text and reasoning. Keep response identity and complete input/output groups consistent across live previews, cancellation and paginated history.
+
+## 1.0.0-beta.24
+
+### Patch Changes
+
+- 6380861: Stream coding-tool conversation replies and supplied reasoning summaries through a bounded, redacted realtime preview channel. Automatically negotiate capable conversation runners, persist one completed snapshot per block, and preserve task execution, public log redaction and prompt history. Preserve token boundaries across chunks and verify that live text and reasoning match their completed snapshots. Preserve complete redaction context when choosing preview boundaries so token-like prose and punctuation remain consistent with completed snapshots.
+
+  Upgrade the application before its runners: protocol 14 announces the outputBlocks feature, while the upgraded application continues serving older runners. Retain ACP partial answers on length limits, refusals and cancellation, safely redact values adjacent to private keys, reconcile divergent previews through normal history refresh, skip empty assistant messages, and suppress unused Codex delta notifications for tasks.
+
+- Updated dependencies [756f3df]
+- Updated dependencies [6380861]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.14
+  - @nocobase/agent-protocol@0.1.0-beta.15
+  - @nocobase/app-cli-client@0.1.0-beta.16
+
+## 1.0.0-beta.23
+
+### Patch Changes
+
+- 58531da: Support plain HTTP origins when creating session and upload identifiers or copying text. Provide shared browser UUID and clipboard helpers so draft, submission and invitation actions work without secure-context APIs.
+
+  Document capability checks and user-facing explanations for secure-context browser features, require HTTP-compatible UUID and copy actions, and return an explicit copy result for localized recovery UI.
+
+- Updated dependencies [58531da]
+  - @nocobase/app-client@4.0.0-beta.3
+  - @nocobase/app-cli@1.0.0-beta.27
+  - @nocobase/app-server@3.0.0-beta.3
+  - @nocobase/authorization@1.0.0-beta.15
+  - @nocobase/db@1.0.0-beta.22
+  - @nocobase/i18n@2.0.0-beta.1
+  - @nocobase/markdown-mermaid@0.1.0-beta.2
+  - @nocobase/service-provider@0.0.2-beta.2
+  - @nocobase/app-plugin-authentication@2.0.0-beta.13
+  - @nocobase/app-plugin-authorization@1.0.0-beta.31
+  - @nocobase/app-plugin-file@1.0.0-beta.26
+
+## 1.0.0-beta.22
+
+### Minor Changes
+
+- d490379: Prepare Native OnlineAgent document attachments in detached user-level model replay copies while preserving original messages, attachment authorization, public history and search text. Reuse the same preparation pipeline for realtime and background execution, history, approvals and message editing or regeneration.
+
+  Apply Provider forwarding defaults with exact service/model/Provider/protocol/base URL overrides, bounded file and text budgets, and an instance-owned TTL/LRU cache that reauthorizes and reads current source bytes before every reuse. Unsupported user inputs become honest parsing-limitation descriptions without hiding permission, validation, budget, cancellation or genuine extraction failures.
+
+  Support connection-pinned Kimi Files extraction for Moonshot documents by default and explicitly configured compatible services. Bound upload and content responses, attempt independent best-effort remote deletion, reuse remote results only within an execution, and keep credentials and remote identifiers out of messages. Preserve canonical tool evidence during approval and finalization recovery, and omit embedded DOCX images from extracted model text.
+
+### Patch Changes
+
+- d490379: Show safe, actionable, localized attachment preparation failures in live chat and saved history, including unconfigured image input, unreadable documents, extraction timeouts, and file or text limits. Keep Provider messages and document contents private, preserve cancellation and model capability checks, and use a generic localized explanation for historical failures without a saved reason.
+- d490379: Declare official DeepSeek Flash JPEG, PNG, GIF, and WebP capability in the shared model capability catalog, and derive native file routing from it regardless of service name. Remove the duplicated Examples profile while preserving exact model and endpoint admission, explicit deployment-policy overrides, local document extraction, and existing file limits.
+- d490379: Restore legacy PDF and image routing defaults for native agent providers while preserving DeepSeek behavior and exact model overrides. Moonshot now uploads supported documents to its selected Kimi Files service by default; an exact local profile disables remote extraction. Extract Ollama PDF text locally by default and describe explicit PDF-original overrides as unavailable when its SDK would silently omit them. Preserve authorization, budgets, cancellation and user-level document replay.
+- d490379: Keep native agent conversations usable when a user attaches an unsupported file type. Describe the filename, MIME type and parsing limitation in user-level model replay instead of failing the execution, including historical follow-up and unsupported image inputs. Preserve original attachments, authorization, input budgets and genuine parsing or Provider failures; update the Examples regression coverage without granting additional image capabilities.
+- d490379: Omit empty or whitespace-only system instructions from native agent model requests instead of sending an empty system message rejected by Moonshot/Kimi and other strict providers. Preserve nonempty instructions verbatim and keep extracted attachment content in user messages.
+- 4c98f67: Clarify personal and shared runtime usage, offer agent prompts and manual installation for macOS, Linux and Windows through WSL, and explain how to recover missing coding tools with the service PATH. New runtimes default to three concurrent runs. Expand installation prompts in full and require Windows agents to verify WSL Ubuntu before continuing.
+- 01e03b7: Keep runner agents visible according to their status, derive their model entry from their tool and model, and repair stale markers or missing model entries in existing installations.
+- Updated dependencies [d490379]
+  - @nocobase/document-extractor@0.1.0-beta.0
+
+## 1.0.0-beta.21
+
+### Minor Changes
+
+- 39fa974: The chat's headless entry tells a panel which kind of agent it shows: `resolveChatAgentMode`, `configuredChatModes`, `agentsOfMode` and `chatAgentMode` split the catalog into the online agent and runner agents, and `useChatPanel()` carries `agentMode` with `setAgentMode` for a panel that switches between them. `GET /api/agents/conversations` takes `mode=online|runner` to list one kind's conversations. `ChatProvider` takes `memoryScope` (the signed-in person's id) and remembers the agent a new conversation last went to in `localStorage` (`lastAgentId`, `rememberAgent`, `readLastAgent`, `rememberLastAgent`); `newConversationAgent` takes it as a third argument, ahead of the person's and the team's defaults. Every addition is optional, and a panel that passes none of it behaves as before.
+
+  The UI Library catalog in `nocobase-app-development` describes the updated `agent-chat` and `agent-composer` items: the panel's mode switch and the agent last used, and context chips that open a preview of what they carry.
+
+- 005418a: Add native realtime message resend and text editing with atomic history replacement, original attachment and context retention, and authoritative cross-view synchronization. Add inline Edit, Copy, and Regenerate controls with direct execution and duplicate-submit protection to the Examples chat while keeping its composer drafts and application readiness safeguards.
+
+  Use a single neutral inline editing surface with Cancel and Send outside the input. Remove the redundant attachment/context hint and hide duplicate message actions while editing.
+
+- dfc9be3: Add opt-in native OnlineAgent web search with provider-level admission for configured OpenAI, Anthropic, Google and Alibaba chat models on official endpoints, using the selected model service with isolated retrieval, execution budgets, cancellation and usage recording. Remove model-name allowlists without claiming universal vendor compatibility. Alibaba uses its existing Chat Completions SDK with an instance-scoped search flag; source-free answers are explicitly unverified, not fabricated evidence, and display no source list. Other platforms retain strict search/source evidence requirements. Incompatible calls fail safely without fallback; other providers and compatible/custom endpoints remain unsupported.
+
+  Expose derived model capabilities and published web-search contracts, preserve the existing configuration and SDK message lifecycle, and add localized search controls and overridable result cards to the Examples chat. Include locked-SDK offline provider fixtures and desktop/mobile compiled-deployment regression coverage; real provider acceptance is not implied.
+
+  Align an unset Alibaba service endpoint with the Beijing default shown by the model-service editor instead of the SDK's implicit Singapore endpoint. Preserve explicitly configured regional endpoints and credentials.
+
+  Present web search as a full-width segmented card with independent four-line result previews and Expand/Collapse controls. Pulse the globe only while searching, omit verification labels and disclaimers from the card, and preserve evidence states and safeguards in model output and persistence.
+
+  Use one retrieval-only prompt across the four providers, returning concise facts and specific evidence gaps instead of polished answers or generic website recommendations. Guide the main model to batch distinct queries and avoid unnecessary repeated searches, while preserving structured source validation and the Alibaba-only unverified policy.
+
+  Require forced search on Alibaba's isolated retrieval calls by sending both enable_search and search_options.forced_search. Keep ordinary chat requests unchanged and retain the unverified classification for source-free answers.
+
+## 1.0.0-beta.20
+
+### Minor Changes
+
+- 4dc982a: Support server-selected runner tools with shared ACP catalog adapters, explicit tool migration, cached detection, model discovery, session recovery and runtime configuration. Native adapters retain precedence. Upgrade the server before protocol-13 runners; new runtimes default to Codex and Claude Code. Tools without model listing use their default model, while unavailable explicit models fail before sending a task.
+
+  A runner's report no longer creates an agent for every tool and model it lists signed in: only a combination the application recommends is still created automatically, already enabled. Every other reported combination joins an available models list instead, for an administrator to create an agent from (`POST /api/agents/runnerAgents`, or select several at once); leftover pending agents from the old behavior that were never enabled and never ran can be listed and removed outright (`GET`/`POST /api/agents/cleanupCandidates`, `/cleanup`). Both lists are grouped by tool and paged (`GET /api/agents/availableModels` and `/cleanupCandidates` return one row per tool, with a `tool` parameter paging that tool's rows), so a tool reporting hundreds of models never ships them all in one response; the enable and cleanup dialogs became large drawers with a combined tool/model search, a four-state availability filter, per-tool collapse, virtualized rows past a threshold, cross-page multi-select and, for cleanup, a second confirmation before removing. Detection reports why a tool's status is what it is (`ToolInfo.statusReason`/`statusDetail`, optional additions within protocol 13), aggregated per tool so one runner's sign-in problem never hides another runner's working one, and runs behind the run's own code-host credential guard, so a tool that depends on a login command the guard refuses fails detection the same way it would fail a run. A run failure keeps the tool's own words instead of a placeholder, consecutive small text chunks of one turn merge into about one event a second, and an agent's generated name no longer breaks an @ mention.
+
+  Confirm Amp authentication only through a reviewed adapter authentication check; unknown login state remains a detection failure. Keep Add agent requests owned by the full two-step flow so pending requests cannot be duplicated by returning or closing. Report ACP protocol incompatibility separately from tool release requirements, and explicitly identify unknown minimum releases.
+
+  Make model selection and cleanup confirmations readable, render setup commands separately from expandable tool diagnostics, reuse catalog model names, and require Good at before adding agents. Show enabled agents with no usable runtime as unavailable without changing scheduling. Give actionable advice for incompatible ACP versions while keeping unknown minimum tool releases explicit.
+
+  Filter available models by each model's status instead of its tool's aggregate state. Merge disjoint status results and counts with complete pagination, preserve per-tool searches when filters change, and show all states when no status is selected.
+
+### Patch Changes
+
+- Updated dependencies [4dc982a]
+  - @nocobase/acp-bridge@1.0.0-beta.4
+  - @nocobase/agent-protocol@0.1.0-beta.14
+  - @nocobase/app-cli-client@0.1.0-beta.15
+
+## 1.0.0-beta.19
+
+### Patch Changes
+
+- c94a01c: Display model-provided OnlineAgent reasoning in live and saved conversations without exposing provider metadata or signatures. Keep reasoning separate from answer text, preserve manual expand/collapse choices during updates, and render each part safely in the shared chat and Examples application.
+- ffe5494: Apply each application's online runner slots and tool limits from heartbeat replies without restarting. Count tasks and build jobs independently per application, wake capacity waits after changes, and keep existing leases during shrinkage. New registrations default to four slots and online registration settings take precedence over legacy client hints.
+
+  Remove local slot configuration flags from register and start. Retain existing local values only for older servers until all connected applications support online capacity. The runner status JSON now reports effective capacity and its source under each apps entry instead of top-level slots and toolSlots. Runtime pages show reported capacity, pending synchronization, legacy compatibility and the last offline report.
+
+- 5875cb9: Expose cancellation actors and a transactional stop request callback, and allow status events to refresh issue progress even when the issue already has the target status.
+- Updated dependencies [0c5c4ff]
+- Updated dependencies [5b72947]
+- Updated dependencies [6e3d66e]
+- Updated dependencies [6e3d66e]
+- Updated dependencies [ffe5494]
+- Updated dependencies [0c5c4ff]
+  - @nocobase/app-server@3.0.0-beta.3
+  - @nocobase/app-plugin-authentication@2.0.0-beta.13
+  - @nocobase/app-cli@1.0.0-beta.27
+  - @nocobase/app-plugin-authorization@1.0.0-beta.31
+  - @nocobase/agent-protocol@0.1.0-beta.13
+  - @nocobase/app-client@4.0.0-beta.2
+  - @nocobase/app-plugin-file@1.0.0-beta.26
+  - @nocobase/app-cli-client@0.1.0-beta.14
+
+## 1.0.0-beta.18
+
+### Minor Changes
+
+- f2712b9: Make run git credentials independent of the code host. Protocol 12 adds `RunGit.tools` and the `gitTools` runner feature: the runner wraps the code host CLIs a run names (such as `gh` or `glab`) so every call runs with the current credential of one of the run's repositories, fetched through the run's credential broker, and fails with the reason instead of falling back to the machine's login. A credential's username is now the only one git uses (`oauth2` for GitLab, `x-access-token` for a GitHub App); the runner no longer defaults it for runs (a build job's token without a username keeps the old default).
+
+  Every run's agent now gets `git`, `gh` and `glab` wrappers that refuse `gh`/`glab` logins and token output, `credential.*` set with `git -c`/`--config-env` or written outside the repository's own config, `http.*.extraHeader` in any git configuration, and git URLs with a user in them.
+
+  Repository access providers are told whether the runner wraps CLIs (`tools`) and who answers for the run's subject now (`responsibleUserId`), at the claim, in `prepare` and on every `issue`, so an application can issue credentials for a task's owner. `RunGit.tools` is dropped for runners without the feature and for repositories without a credential in the payload.
+
+  The runner's workspace notes now tell the agent to open and update change requests with the code host's command line rather than an application `pr open` command.
+
+  Update the application before its runners: a server speaking protocol 11 refuses a runner speaking 12.
+
+- fb3b3c5: Allow applications to supply bilingual description suggestions by tool and model through agent defaults, with model catalog fallback and existing descriptions preserved.
+
+### Patch Changes
+
+- 5d49614: Strip NUL characters from what runners report — run events, summaries, failure details and job events — before storing it. PostgreSQL refuses NUL in text and JSON columns, so one event carrying a NUL byte in tool output failed every later events upload of its run.
+- Updated dependencies [ab68344]
+- Updated dependencies [f2712b9]
+- Updated dependencies [f8f64ad]
+  - @nocobase/app-cli-client@0.1.0-beta.13
+  - @nocobase/agent-protocol@0.1.0-beta.12
+  - @nocobase/app-server@3.0.0-beta.2
+  - @nocobase/app-plugin-authentication@2.0.0-beta.12
+  - @nocobase/app-plugin-file@1.0.0-beta.26
+
+## 1.0.0-beta.17
+
+### Minor Changes
+
+- 4f0d96e: Add opt-in native OnlineAgent Skills and application-branded CLI execution using an isolated, lazily created just-bash environment. Load current Skill support trees, support virtual parameter files and read bindings, retain existing business authorization, and release execution resources across stop, approval and retryable finalization without replaying writes.
+
+  Redact execution credentials and declare intentionally disabled optional archive-native build scripts in workspace, generated-application and deployment installation policies.
+
+### Patch Changes
+
+- b805e54: Reset chat drafts and unsent attachments on every explicit new conversation, apply business-entry prefill atomically, and ignore stale uploads, context snapshots and conversation-creation callbacks while preserving drafts on ordinary close/reopen and first-send promotion.
+- b805e54: Clear carried work context when starting a fresh chat, while preserving page registrations and atomically including explicitly requested business context.
+- 301d309: Reuse a fixed task worktree across runs and tools, preserve dependencies and sessions, isolate per-run files and cancellation, and protect cleanup with nonexclusive usage records covering worker startup. Reclaim sessions only with their owning directory. Leave commits and pushes to agents, give them an explicit HEAD-to-branch refspec for detached workspaces, refresh initialization after lockfile changes or artifact cleanup, and default idle artifact retention to 24 hours. Prefer an immediately available previous runner under the same ordered-model admission rules, aggregate affinity location and occupancy reads, and reserve actual upgrade interruptions for that runner for five minutes.
+
+  Separate ordered-model claim eligibility from full waiting diagnostics, evaluate affinity in queue order, and reuse batched resource metadata without repeating capacity reads for every candidate and machine.
+
+  Serialize cache fetch and worktree creation through a short cache mutex, retry transient Git lock conflicts, fall back to a detached remote branch when another directory owns it, and avoid optional index locks and per-remote-branch reporting commands. Both workspace-cleanup and repository-cache lock waits now time out after two minutes as retryable workspace-busy failures. Report disk pauses as unavailable capacity while continuing claims during periodic workspace collection.
+
+- 1fcc7a8: Hide the built-in online agent and online usage and prices when no chat model is enabled. Reject new online defaults and conversations with a clear error while preserving saved preferences, historical conversations, usage and prices.
+- 4f0d96e: Keep native Sandbox construction internal to Agents composition and unify authentication, preparation, execution, and retryable cleanup ownership.
+- 4f0d96e: Restore detailed bash and skill tool guidance while describing the native Sandbox's current capabilities and limits accurately.
+- 4f0d96e: Bundle a lightweight just-bash runtime with self-contained declarations and third-party licenses instead of installing the full runtime dependency tree.
+- b805e54: Allow idle OnlineAgent conversations to switch models without starting a new conversation. Show a model-only picker for existing native chats, preserve conversation configuration and drafts, and prevent sends while a model change is being saved or reconciled.
+
+  Keep unspecified model restrictions absent instead of replacing them with a default-model allowlist. Treat omitted and explicit empty lists as unrestricted while preserving their distinct stored shapes, and retain nonempty business restrictions when switching models.
+
+- 0b5a9c1: Preserve saved model price precision when editing another price, reopening the editor, or reloading prices.
+- Updated dependencies [62da032]
+- Updated dependencies [8b30952]
+- Updated dependencies [301d309]
+- Updated dependencies [4f0d96e]
+  - @nocobase/app-client@4.0.0-beta.1
+  - @nocobase/app-server@3.0.0-beta.1
+  - @nocobase/app-cli@1.0.0-beta.26
+  - @nocobase/agent-protocol@0.1.0-beta.11
+  - @nocobase/app-plugin-authentication@2.0.0-beta.12
+  - @nocobase/app-plugin-file@1.0.0-beta.26
+  - @nocobase/app-plugin-authorization@1.0.0-beta.30
+  - @nocobase/app-cli-client@0.1.0-beta.12
+
+## 1.0.0-beta.16
+
+### Patch Changes
+
+- 1952789: Complete all ten supported languages in plugin and example plugin catalogues, including model suggestions and test Web Push notifications. Align calendars and invitation emails, support locale-specific plural forms, and validate resource loading and formatting.
+
+  Correct joined translation text and distinguish configuration save actions, refund stages, and domain-specific operation labels.
+
+- 06e53be: Clarify role permission categories, group account actions for individual review, omit bulk-selection controls and authorization counts, expose registered action descriptions, and place Agent administration under system tools. Show labelled selections for multiple data ranges and correctly describe an empty scope as granting no additional record access while preserving default, sharing and restriction rules. Synchronize the Registry and both templates without changing permission identifiers or existing grants.
+- a0ec885: Compare computer discovery data independently of JSON key order, keep runner event text within MySQL storage limits, and make issue searches case-insensitive across database dialects.
+- Updated dependencies [1952789]
+- Updated dependencies [06e53be]
+- Updated dependencies [c63a6e8]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.12
+  - @nocobase/app-plugin-authorization@1.0.0-beta.30
+  - @nocobase/app-plugin-file@1.0.0-beta.26
+  - @nocobase/i18n@2.0.0-beta.1
+  - @nocobase/authorization@1.0.0-beta.15
+  - @nocobase/app-cli-client@0.1.0-beta.11
+  - @nocobase/app-client@4.0.0-beta.0
+  - @nocobase/app-cli@1.0.0-beta.25
+
+## 1.0.0-beta.15
+
+### Major Changes
+
+- baf80fe: Remove the old conversation start, fallback and restore HTTP operations and the conversation fallback/restore CLI commands without aliases. Replace start with POST /api/agents/conversations followed by POST /api/agents/conversations/:id/messages, or conversation create followed by conversation message send. These are two non-atomic requests and may leave an empty conversation if sending fails. Fallback and restore have no same-session replacement: explicitly create a new conversation with the desired executor/agent, without automatically copying history or changing an existing binding. Trusted domain start/fallback/restore methods remain available.
+
+  Historical unbound conversations remain read-only, with owner-authorized cancellation of unfinished old runs. Browser callers must use the narrow configuration input: move tool lists, model lists and system-prompt policy into trusted server configuration, and declare business variables through selected-scope schemas. Existing thinking handling remains unchanged. Apply the visibility migration before serving requests; existing ordinary records default to visible and new background sessions are hidden, with known-session authorization preserved.
+
+  Background run still acknowledges admission. Use get to wait for validated, saved and finalized results, or try with a finite observation budget; observation timeout does not cancel execution. Deliver can return null after saving a notice in the caller's transaction without waking a new-bound conversation. Remove proposed-plan quantity hints from consultation cards while retaining historical data and plan mechanisms, and consolidate the framework and application upgrade documentation.
+
+### Minor Changes
+
+- baf80fe: Add extensible UI context snapshots, application-owned tool renderers, and guarded browser form registries to Agents. Preserve exact originating message linkage through public history and recovery, and demonstrate reviewed, draft-only form proposals in Examples without saving records or continuing completed tools.
+- baf80fe: Add a shared public chat-model catalog hook and explicit model selection when creating Online Agent conversations. Update the Examples chat selector to group models by service alongside Agents, with an online-model-or-runner conversation hint and vertical-only option scrolling, preserving Runner status, metadata, and draft content.
+- baf80fe: Use shared AI SDK Chat owners for public chat clients, render ordered UIMessage parts and Runner source segments, and reconcile durable history, tool approval, recovery and independent Stop across application surfaces.
+- baf80fe: Stream native text increments immediately and support callable Runner agents through the shared OnlineAgent realtime service, atomic conversation admission, canonical block history and unified chat controls. Preserve executor bindings, explicit configuration validation and cancellation confirmation, and exclude server business context from public message metadata.
+- baf80fe: Persist native OnlineAgent UI messages directly, expose standard AI SDK response streams, and bind durable tool approval continuations to the owning conversation and execution. Keep private model evidence separate from public parts and retry failed finalization without rerunning effects.
+- baf80fe: Extract Native execution ownership behind the execution-specific OnlineAgentBackend contract and delegate backend selection, session creation, restoration and configuration from OnlineAgentService. Replace the Runner-specific backend interface and forwarding wrapper with one concrete Runner session, require explicit unsupported-capability rejection, preserve accepted response ownership across failed sends, retain deferred HTTP configuration boundaries, pin shared recovery to accepted submissions and drain Runner admissions before shutdown without cancelling or redispatching remote work.
+
+  Use admission-only Runner receipts to avoid treating post-commit conversation projection failures as failed inputs. The server-side `ConversationService.sendRealtime()` return contract is now `{ seq, run }`; ordinary conversation send and HTTP response contracts are unchanged.
+
+  Keep startup repair on the session manager and shared producer probing on OnlineAgentService instead of duplicating them in every backend. Remove the public Service `isActive()` and `notify()` methods, the backend notification entry and the `OnlineAgentNotification` type. Existing transactional conversation notices and Runner event refresh are unchanged. Restore sessions by authorized persisted mode and binding metadata, reject invalid bindings or unavailable backends explicitly, and never use configuration reads to infer backend identity.
+
+  Organize OnlineAgent internals under `server/online/agent/`, alongside the online model gateway and services, by Native execution, Runner execution, persistence, message conversion/validation and shared transport. Consolidate fragmented helpers and separate interfaces and data types from runtime implementations while preserving the public server entry points and execution behavior.
+
+- baf80fe: Require a plain JSON Schema in OnlineAgent background `run()` calls instead of Zod. Pass the schema to the AI SDK for structured generation and validate the generated result before persistence. Reject invalid, remote-reference and oversized schemas before accepting execution.
+- baf80fe: Add the OnlineAgent server service foundation with versioned conversation configuration, complete SDK message persistence, injectable business tools, shared execution control, and first-subscription stream caching. Preserve ordinary conversation and message identifiers without persistent request deduplication. Connect the original chat HTTP resources and first-subscription events to one shared browser submission and stream controller for application and Registry chat views. Preserve uploaded attachments, per-view drafts and unknown-outcome feedback without hidden retries or Runner fallback.
+
+  Recognize no-content streaming responses by HTTP status even when a browser exposes an empty body, so completed chats read saved history without a false disconnect warning.
+
+  Resolve Scope/Provider model changes consistently through the configuration API. Let users explicitly permit a new input after an unknown send result, and preserve Registry drafts and files when the shared client refuses a submission.
+
+  Let application-provided Organize entries own their availability feedback while retaining default Runner availability hints.
+
+  Bind the authoritative execution session ID to each business tool context so applications can associate business proposals with the current chat without trusting model-supplied identifiers.
+
+- baf80fe: Export validated SDK UI message contracts for OnlineAgent integration and align application SDK dependencies with the matching React client.
+- baf80fe: Project saved Runner blocks into SDK UI messages with stable source identities, support optional cross-instance Redis stream recovery and native Stop, and persist independent native business notifications.
+
+### Patch Changes
+
+- baf80fe: Keep an acknowledged realtime recovery from attaching an older stream after a new chat input has started, preserving the active SDK response and its writing state.
+- baf80fe: Avoid empty assistant bubbles while thinking and redundant success notifications in shared Agents chat. Keep chat transcripts within their available width while preserving bounded scrolling for wide code blocks and tables, application-owned message extras, and actionable execution feedback.
+- baf80fe: Rename the OnlineAgent configuration component to `OnlineAgentConfigurator` and expose it as `onlineAgent.configurator`. Update public exports, tool registration examples, and application consumers to use the consistent naming.
+- baf80fe: Reauthorize bounded references from the most recent historical page for follow-up chat input, preserving current context priority and omitting stale parameters or inaccessible records.
+- baf80fe: Persist partial tool approval decisions without executing tools or continuing the model until every approval in the step is answered. Automatically finalize saved terminal Runner conversations after final synchronization when their projection producer has restarted.
+- baf80fe: Describe Runner cancellation history as a request until termination is confirmed, preserving existing notice identifiers and cancellation behavior.
+- baf80fe: Read the chat Agent directory directly from the conversation service without changing the HTTP response or eligibility checks. Remove `chatAgents` from the OnlineAgent service, runtime contract, and constructor dependencies; server callers should use `conversations.chatAgents(userId)` instead.
+- baf80fe: Show shared chat progress and safe outcomes, follow growing replies only near the bottom, and align Native defaults, read state and cancellation confirmation across chat consumers.
+- baf80fe: Describe conversation configuration, native model selection and SDK message input in generated API and CLI help.
+- baf80fe: Save notices for native and Runner OnlineAgent conversations in the caller's transaction without waking an execution, including when input is supplied. Preserve active execution results and propagate persistence errors.
+
+  Reject direct HTTP tool, model-list and system-prompt overrides. Validate business variables against schemas declared by the selected scopes, while preserving trusted server SDK configuration and existing thinking handling.
+
+  Add showInChatList with a non-null true default. Filter ordinary chat lists before database pagination, allow explicit visibility at ordinary conversation creation, and always hide new background sessions. Known-session ownership checks and direct reads remain unchanged.
+
+- baf80fe: Keep conversation agent identifiers non-null with a default sentinel, keep historical conversations readable and read-only while permitting owners to cancel unfinished old runs, and allow application shutdown to complete with a warning if OnlineAgent finalization fails. Persist tool messages using the existing display roles while retaining their canonical SDK roles. Prefix OnlineAgent integration types, narrow server exports, and document the service and configuration API in the plugin Skill.
+- baf80fe: Wait for the admitted OnlineAgent execution in get(), including validated result persistence, finalization and occupancy release. Add try({ wait }) for bounded observation with distinct pending, failed and cancelled results and safe errors. Preserve run() admission semantics and finalization retries without rerunning model or tools.
+
+  Update translation and structured extraction examples to await results without status polling while preserving deadlines, disconnect handling and cancellation of late admission.
+
+- baf80fe: Use `OnlineAgentService` directly as the application service contract and remove redundant service interfaces. Update application dependencies, tests, and integration guidance to use the complete service type while retaining the shared realtime-session and Runner-backend contracts.
+- baf80fe: Integrate single-instance startup correction, transactional UI notifications and background result observation with standard SDK chat. Preserve approval barriers and actual tool occupancy while making interrupted-effect feedback advisory after finalization.
+- baf80fe: Repair previous-process native conversation occupancy during server startup while preserving saved results. Keep interrupted tool facts in private model history, remove effect-review admission locks, and allow owners to cancel historical runs while keeping historical conversations read-only. Stop continues to wait for actual native tool termination and finalization; cancellation requests for Runner and historical runs still require terminal confirmation.
+- baf80fe: Show OnlineAgent thinking feedback before the first stream event and place animated waiting feedback directly after the latest chat message in Examples and the Registry block.
+- baf80fe: Remove the unused legacy realtime protocol and process-local replay manager after migrating public chat consumers to SDK UI messages. Keep background structured execution and its private model evidence separate from browser streams, and verify the installed application contract.
+
+  Show writing indicators only for the active SDK response so saved partial replies stay still after cancellation, refresh and subsequent turns.
+
+- baf80fe: Store native realtime OnlineAgent messages once as complete SDK UIMessage originals. Derive public history and streams through shared safe projections and model history through current tool converters, enforce lossless JSON tool results, and preserve approval, recovery and finalization idempotency.
+- baf80fe: Keep committed chat messages, execution occupancy, paginated history and command results consistent across views. Confirm uncertain submissions into canonical history without resending or reconnecting, and guard delayed actions and Undo callbacks for the authenticated provider lifetime.
+
+  Keep published client test fixtures, navigation guards and language providers in the same Router and application contexts as application pages, and exercise translation model selection through its keyboard interaction.
+
+- baf80fe: Unify native realtime and background conversations on complete internal SDK UI messages, deriving safe public UI history and private model replay from the same original. Restore the common `OnlineAgent` interface with `RealtimeOnlineAgent` and `BackgroundOnlineAgent` subinterfaces and concrete session implementations. Background agents expose `run`, `get`, and `try` without `send` or browser-stream dependencies; structured results remain independently validated execution data. Update application consumers to use the background interface. Historical background ModelMessage storage is not supported by the new reader.
+- @nocobase/app-server@3.0.0-beta.0
+  - @nocobase/app-plugin-file@1.0.0-beta.25
+
 ## 0.1.0-beta.14
 
 ### Patch Changes

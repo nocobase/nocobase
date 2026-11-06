@@ -1,0 +1,1417 @@
+{
+  "version": 1,
+  "scenario": "procurement",
+  "cases": [
+    {
+      "id": "PROCUREMENT-001",
+      "label": "Save parent and children, then reread persisted data",
+      "category": "business",
+      "channel": "api",
+      "steps": [
+        {
+          "action": "create",
+          "input": {
+            "actor": "owner",
+            "record": {
+              "title": "Office supplies",
+              "reference": "allowed",
+              "reviewer": "reviewer",
+              "lines": [
+                {
+                  "item": "paper",
+                  "description": "Paper",
+                  "quantity": 2,
+                  "unitPrice": "12.34"
+                },
+                {
+                  "item": "pen",
+                  "description": "Pens",
+                  "quantity": 1,
+                  "unitPrice": "6.82"
+                }
+              ]
+            }
+          },
+          "expect": {
+            "accepted": true,
+            "state": "draft",
+            "totalMinor": 3150,
+            "childCount": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "PROCUREMENT-002",
+      "label": "Search and filter actual page list and reference picker",
+      "category": "business",
+      "channel": "browser",
+      "steps": [
+        {
+          "action": "ui",
+          "input": {
+            "actor": "owner",
+            "flow": "search-filter",
+            "query": "Alpha",
+            "active": true
+          },
+          "expect": {
+            "listFiltered": true,
+            "candidates": ["allowed"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "PROCUREMENT-003",
+      "label": "Add, edit and remove children through page, persist and reopen",
+      "category": "business",
+      "channel": "browser",
+      "steps": [
+        {
+          "action": "ui",
+          "input": {
+            "actor": "owner",
+            "flow": "edit-children",
+            "record": {
+              "title": "Office supplies",
+              "reference": "allowed",
+              "reviewer": "reviewer",
+              "lines": [
+                {
+                  "item": "paper",
+                  "description": "Paper",
+                  "quantity": 2,
+                  "unitPrice": "12.34"
+                },
+                {
+                  "item": "pen",
+                  "description": "Pens",
+                  "quantity": 1,
+                  "unitPrice": "6.82"
+                }
+              ]
+            }
+          },
+          "expect": {
+            "reopened": true,
+            "childCount": 2,
+            "editedChildVisible": true,
+            "totalMinor": 3150
+          }
+        }
+      ]
+    },
+    {
+      "id": "PROCUREMENT-004",
+      "label": "Other owner cannot read protected list",
+      "category": "permission",
+      "channel": "api",
+      "steps": [
+        {
+          "action": "read",
+          "input": {
+            "actor": "otherOwner",
+            "surface": "list",
+            "target": "draft"
+          },
+          "expect": {
+            "visible": []
+          }
+        }
+      ]
+    },
+    {
+      "id": "PROCUREMENT-005",
+      "label": "Other owner cannot read protected detail",
+      "category": "permission",
+      "channel": "api",
+      "steps": [
+        {
+          "action": "read",
+          "input": {
+            "actor": "otherOwner",
+            "surface": "detail",
+            "target": "draft"
+          },
+          "expect": {
+            "visible": []
+          }
+        }
+      ]
+    },
+    {
+      "id": "PROCUREMENT-006",
+      "label": "Other owner cannot read protected children",
+      "category": "permission",
+      "channel": "api",
+      "steps": [
+        {
+          "action": "read",
+          "input": {
+            "actor": "otherOwner",
+            "surface": "children",
+            "target": "draft"
+          },
+          "expect": {
+            "visible": []
+          }
+        }
+      ]
+    },
+    {
+      "id": "PROCUREMENT-007",
+      "label": "Anonymous and unassigned users cannot read protected records",
+      "category": "permission",
+      "channel": "api",
+      "steps": [
+        {
+          "action": "read",
+          "input": {
+            "actor": "anonymous",
+            "surface": "detail",
+            "target": "draft"
+          },
+          "expect": {
+            "visible": []
+          }
+        },
+        {
+          "action": "read",
+          "input": {
+            "actor": "outsider",
+            "surface": "detail",
+            "target": "draft"
+          },
+          "expect": {
+            "visible": []
+          }
+        }
+      ]
+    },
+    {
+      "id": "PROCUREMENT-008",
+      "label": "Other owner cannot update parent or child",
+      "category": "permission",
+      "channel": "api",
+      "steps": [
+        {
+          "action": "update",
+          "input": {
+            "actor": "otherOwner",
+            "target": "draft",
+            "record": {
+              "title": "Office supplies",
+              "reference": "allowed",
+              "reviewer": "reviewer",
+              "lines": [
+                {
+                  "item": "paper",
+                  "description": "Paper",
+                  "quantity": 2,
+                  "unitPrice": "12.34"
+                },
+                {
+                  "item": "pen",
+                  "description": "Pens",
+                  "quantity": 1,
+                  "unitPrice": "6.82"
+                }
+              ]
+            }
+          },
+          "expect": {
+            "accepted": false
+          }
+        },
+        {
+          "action": "snapshot",
+          "input": {
+            "target": "draft"
+          },
+          "expect": {
+            "unchanged": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "PROCUREMENT-009",
+      "label": "Candidate API searches and filters permitted active references",
+      "category": "permission",
+      "channel": "api",
+      "steps": [
+        {
+          "action": "read",
+          "input": {
+            "actor": "owner",
+            "surface": "candidates",
+            "query": {
+              "search": "Alpha",
+              "active": true
+            }
+          },
+          "expect": {
+            "visible": ["allowed"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "PROCUREMENT-010",
+      "label": "Save rechecks inactive reference",
+      "category": "permission",
+      "channel": "api",
+      "steps": [
+        {
+          "action": "create",
+          "input": {
+            "actor": "owner",
+            "record": {
+              "title": "Office supplies",
+              "reference": "inactive",
+              "reviewer": "reviewer",
+              "lines": [
+                {
+                  "item": "paper",
+                  "description": "Paper",
+                  "quantity": 2,
+                  "unitPrice": "12.34"
+                },
+                {
+                  "item": "pen",
+                  "description": "Pens",
+                  "quantity": 1,
+                  "unitPrice": "6.82"
+                }
+              ]
+            }
+          },
+          "expect": {
+            "accepted": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "PROCUREMENT-011",
+      "label": "Save rechecks restricted reference",
+      "category": "permission",
+      "channel": "api",
+      "steps": [
+        {
+          "action": "create",
+          "input": {
+            "actor": "owner",
+            "record": {
+              "title": "Office supplies",
+              "reference": "restricted",
+              "reviewer": "reviewer",
+              "lines": [
+                {
+                  "item": "paper",
+                  "description": "Paper",
+                  "quantity": 2,
+                  "unitPrice": "12.34"
+                },
+                {
+                  "item": "pen",
+                  "description": "Pens",
+                  "quantity": 1,
+                  "unitPrice": "6.82"
+                }
+              ]
+            }
+          },
+          "expect": {
+            "accepted": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "PROCUREMENT-012",
+      "label": "Cannot steal a foreign child",
+      "category": "permission",
+      "channel": "api",
+      "steps": [
+        {
+          "action": "update",
+          "input": {
+            "actor": "owner",
+            "target": "draft",
+            "record": {
+              "title": "Office supplies",
+              "reference": "allowed",
+              "reviewer": "reviewer",
+              "lines": [
+                {
+                  "item": "paper",
+                  "description": "Paper",
+                  "quantity": 2,
+                  "unitPrice": "12.34"
+                },
+                {
+                  "item": "pen",
+                  "description": "Pens",
+                  "quantity": 1,
+                  "unitPrice": "6.82"
+                }
+              ],
+              "childId": "foreignChild"
+            }
+          },
+          "expect": {
+            "accepted": false
+          }
+        },
+        {
+          "action": "snapshot",
+          "input": {
+            "target": "foreignDocument"
+          },
+          "expect": {
+            "unchanged": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "PROCUREMENT-013",
+      "label": "Cannot forge ownership or protected workflow/assignment fields",
+      "category": "permission",
+      "channel": "api",
+      "steps": [
+        {
+          "action": "update",
+          "input": {
+            "actor": "owner",
+            "target": "draft",
+            "record": {
+              "owner": "otherOwner",
+              "state": "approved",
+              "reviewer": "otherReviewer",
+              "assignee": "owner"
+            }
+          },
+          "expect": {
+            "forbiddenEffect": false
+          }
+        },
+        {
+          "action": "snapshot",
+          "input": {
+            "target": "draft"
+          },
+          "expect": {
+            "unchanged": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "PROCUREMENT-014",
+      "label": "Failure after first child write rolls back new parent and children",
+      "category": "consistency",
+      "channel": "database",
+      "steps": [
+        {
+          "action": "snapshot",
+          "input": {},
+          "expect": {
+            "fixtureIntact": true
+          }
+        },
+        {
+          "action": "failChildWrite",
+          "input": {
+            "actor": "owner",
+            "mode": "create",
+            "record": {
+              "title": "Office supplies",
+              "reference": "allowed",
+              "reviewer": "reviewer",
+              "lines": [
+                {
+                  "item": "paper",
+                  "description": "Paper",
+                  "quantity": 2,
+                  "unitPrice": "12.34"
+                },
+                {
+                  "item": "pen",
+                  "description": "Pens",
+                  "quantity": 1,
+                  "unitPrice": "6.82"
+                }
+              ]
+            }
+          },
+          "expect": {
+            "accepted": false,
+            "firstChildWritten": true
+          }
+        },
+        {
+          "action": "snapshot",
+          "input": {},
+          "expect": {
+            "unchanged": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "PROCUREMENT-015",
+      "label": "Failure after first child write preserves all existing values",
+      "category": "consistency",
+      "channel": "database",
+      "steps": [
+        {
+          "action": "snapshot",
+          "input": {
+            "target": "draft"
+          },
+          "expect": {
+            "fixtureIntact": true
+          }
+        },
+        {
+          "action": "failChildWrite",
+          "input": {
+            "actor": "owner",
+            "mode": "update",
+            "target": "draft",
+            "record": {
+              "title": "Office supplies",
+              "reference": "allowed",
+              "reviewer": "reviewer",
+              "lines": [
+                {
+                  "item": "paper",
+                  "description": "Paper",
+                  "quantity": 2,
+                  "unitPrice": "12.34"
+                },
+                {
+                  "item": "pen",
+                  "description": "Pens",
+                  "quantity": 1,
+                  "unitPrice": "6.82"
+                }
+              ]
+            }
+          },
+          "expect": {
+            "accepted": false,
+            "firstChildWritten": true
+          }
+        },
+        {
+          "action": "snapshot",
+          "input": {
+            "target": "draft"
+          },
+          "expect": {
+            "unchanged": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "PROCUREMENT-016",
+      "label": "Reject zero quantity",
+      "category": "consistency",
+      "channel": "api",
+      "steps": [
+        {
+          "action": "create",
+          "input": {
+            "actor": "owner",
+            "record": {
+              "title": "Office supplies",
+              "reference": "allowed",
+              "reviewer": "reviewer",
+              "lines": [
+                {
+                  "item": "paper",
+                  "description": "Paper",
+                  "quantity": 0,
+                  "unitPrice": "12.34"
+                }
+              ]
+            }
+          },
+          "expect": {
+            "accepted": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "PROCUREMENT-017",
+      "label": "Reject fractional quantity",
+      "category": "consistency",
+      "channel": "api",
+      "steps": [
+        {
+          "action": "create",
+          "input": {
+            "actor": "owner",
+            "record": {
+              "title": "Office supplies",
+              "reference": "allowed",
+              "reviewer": "reviewer",
+              "lines": [
+                {
+                  "item": "paper",
+                  "description": "Paper",
+                  "quantity": 1.5,
+                  "unitPrice": "12.34"
+                }
+              ]
+            }
+          },
+          "expect": {
+            "accepted": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "PROCUREMENT-018",
+      "label": "Reject negative price",
+      "category": "consistency",
+      "channel": "api",
+      "steps": [
+        {
+          "action": "create",
+          "input": {
+            "actor": "owner",
+            "record": {
+              "title": "Office supplies",
+              "reference": "allowed",
+              "reviewer": "reviewer",
+              "lines": [
+                {
+                  "item": "paper",
+                  "description": "Paper",
+                  "quantity": 2,
+                  "unitPrice": "-0.01"
+                }
+              ]
+            }
+          },
+          "expect": {
+            "accepted": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "PROCUREMENT-019",
+      "label": "Reject excess precision",
+      "category": "consistency",
+      "channel": "api",
+      "steps": [
+        {
+          "action": "create",
+          "input": {
+            "actor": "owner",
+            "record": {
+              "title": "Office supplies",
+              "reference": "allowed",
+              "reviewer": "reviewer",
+              "lines": [
+                {
+                  "item": "paper",
+                  "description": "Paper",
+                  "quantity": 2,
+                  "unitPrice": "1.001"
+                }
+              ]
+            }
+          },
+          "expect": {
+            "accepted": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "PROCUREMENT-020",
+      "label": "Reject unsafe total",
+      "category": "consistency",
+      "channel": "api",
+      "steps": [
+        {
+          "action": "create",
+          "input": {
+            "actor": "owner",
+            "record": {
+              "title": "Office supplies",
+              "reference": "allowed",
+              "reviewer": "reviewer",
+              "lines": [
+                {
+                  "item": "paper",
+                  "description": "Paper",
+                  "quantity": 9007199254740991,
+                  "unitPrice": "999.99"
+                }
+              ]
+            }
+          },
+          "expect": {
+            "accepted": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "PROCUREMENT-021",
+      "label": "Reject forged total and unauthorized material",
+      "category": "consistency",
+      "channel": "api",
+      "steps": [
+        {
+          "action": "create",
+          "input": {
+            "actor": "owner",
+            "record": {
+              "title": "Office supplies",
+              "reference": "allowed",
+              "reviewer": "reviewer",
+              "lines": [
+                {
+                  "item": "paper",
+                  "description": "Paper",
+                  "quantity": 2,
+                  "unitPrice": "12.34"
+                },
+                {
+                  "item": "pen",
+                  "description": "Pens",
+                  "quantity": 1,
+                  "unitPrice": "6.82"
+                }
+              ],
+              "totalMinor": 1
+            }
+          },
+          "expect": {
+            "accepted": false
+          }
+        },
+        {
+          "action": "create",
+          "input": {
+            "actor": "owner",
+            "record": {
+              "title": "Office supplies",
+              "reference": "allowed",
+              "reviewer": "reviewer",
+              "lines": [
+                {
+                  "item": "restrictedItem",
+                  "description": "Paper",
+                  "quantity": 2,
+                  "unitPrice": "12.34"
+                }
+              ]
+            }
+          },
+          "expect": {
+            "accepted": false
+          }
+        },
+        {
+          "action": "create",
+          "input": {
+            "actor": "owner",
+            "record": {
+              "title": "Office supplies",
+              "reference": "allowed",
+              "reviewer": "reviewer",
+              "lines": [
+                {
+                  "item": "inactiveItem",
+                  "description": "Paper",
+                  "quantity": 2,
+                  "unitPrice": "12.34"
+                }
+              ]
+            }
+          },
+          "expect": {
+            "accepted": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "PROCUREMENT-022",
+      "label": "Allow zero price with exact server arithmetic",
+      "category": "business",
+      "channel": "api",
+      "steps": [
+        {
+          "action": "create",
+          "input": {
+            "actor": "owner",
+            "record": {
+              "title": "Office supplies",
+              "reference": "allowed",
+              "reviewer": "reviewer",
+              "lines": [
+                {
+                  "item": "paper",
+                  "description": "Paper",
+                  "quantity": 2,
+                  "unitPrice": "0.00"
+                }
+              ]
+            }
+          },
+          "expect": {
+            "accepted": true,
+            "totalMinor": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "PROCUREMENT-023",
+      "label": "Save incomplete draft; reject incomplete submission",
+      "category": "business",
+      "channel": "api",
+      "steps": [
+        {
+          "action": "create",
+          "input": {
+            "actor": "owner",
+            "record": {
+              "title": "Incomplete"
+            }
+          },
+          "expect": {
+            "accepted": true,
+            "state": "draft"
+          }
+        },
+        {
+          "action": "transition",
+          "input": {
+            "actor": "owner",
+            "target": "document",
+            "to": "submitted"
+          },
+          "expect": {
+            "accepted": false,
+            "state": "draft"
+          }
+        }
+      ]
+    },
+    {
+      "id": "PROCUREMENT-024",
+      "label": "Submit reject correct resubmit approve through page with history",
+      "category": "business",
+      "channel": "browser",
+      "steps": [
+        {
+          "action": "ui",
+          "input": {
+            "flow": "decision-cycle",
+            "owner": "owner",
+            "reviewer": "reviewer",
+            "record": {
+              "title": "Office supplies",
+              "reference": "allowed",
+              "reviewer": "reviewer",
+              "lines": [
+                {
+                  "item": "paper",
+                  "description": "Paper",
+                  "quantity": 2,
+                  "unitPrice": "12.34"
+                },
+                {
+                  "item": "pen",
+                  "description": "Pens",
+                  "quantity": 1,
+                  "unitPrice": "6.82"
+                }
+              ]
+            }
+          },
+          "expect": {
+            "state": "approved",
+            "history": ["submitted", "rejected", "submitted", "approved"],
+            "buttonsCorrect": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "PROCUREMENT-025",
+      "label": "Assigned non-owner reviewer can decide submitted work",
+      "category": "business",
+      "channel": "api",
+      "steps": [
+        {
+          "action": "transition",
+          "input": {
+            "actor": "reviewer",
+            "target": "submitted",
+            "to": "approved"
+          },
+          "expect": {
+            "accepted": true,
+            "state": "approved"
+          }
+        }
+      ]
+    },
+    {
+      "id": "PROCUREMENT-026",
+      "label": "Other reviewer and owner cannot decide; reviewer cannot submit",
+      "category": "permission",
+      "channel": "api",
+      "steps": [
+        {
+          "action": "transition",
+          "input": {
+            "actor": "otherReviewer",
+            "target": "submitted",
+            "to": "approved"
+          },
+          "expect": {
+            "accepted": false,
+            "state": "submitted"
+          }
+        },
+        {
+          "action": "transition",
+          "input": {
+            "actor": "owner",
+            "target": "submitted",
+            "to": "approved"
+          },
+          "expect": {
+            "accepted": false,
+            "state": "submitted"
+          }
+        },
+        {
+          "action": "transition",
+          "input": {
+            "actor": "reviewer",
+            "target": "draft",
+            "to": "submitted"
+          },
+          "expect": {
+            "accepted": false,
+            "state": "draft"
+          }
+        }
+      ]
+    },
+    {
+      "id": "PROCUREMENT-027",
+      "label": "Other reviewer cannot read unassigned work",
+      "category": "permission",
+      "channel": "api",
+      "steps": [
+        {
+          "action": "read",
+          "input": {
+            "actor": "otherReviewer",
+            "surface": "list",
+            "target": "submitted"
+          },
+          "expect": {
+            "visible": []
+          }
+        },
+        {
+          "action": "read",
+          "input": {
+            "actor": "otherReviewer",
+            "surface": "detail",
+            "target": "submitted"
+          },
+          "expect": {
+            "visible": []
+          }
+        },
+        {
+          "action": "read",
+          "input": {
+            "actor": "otherReviewer",
+            "surface": "children",
+            "target": "submitted"
+          },
+          "expect": {
+            "visible": []
+          }
+        }
+      ]
+    },
+    {
+      "id": "PROCUREMENT-028",
+      "label": "Approved work cannot be edited or transitioned",
+      "category": "permission",
+      "channel": "api",
+      "steps": [
+        {
+          "action": "update",
+          "input": {
+            "actor": "owner",
+            "target": "approved",
+            "record": {
+              "title": "Office supplies",
+              "reference": "allowed",
+              "reviewer": "reviewer",
+              "lines": [
+                {
+                  "item": "paper",
+                  "description": "Paper",
+                  "quantity": 2,
+                  "unitPrice": "12.34"
+                },
+                {
+                  "item": "pen",
+                  "description": "Pens",
+                  "quantity": 1,
+                  "unitPrice": "6.82"
+                }
+              ]
+            }
+          },
+          "expect": {
+            "accepted": false
+          }
+        },
+        {
+          "action": "transition",
+          "input": {
+            "actor": "reviewer",
+            "target": "approved",
+            "to": "rejected"
+          },
+          "expect": {
+            "accepted": false,
+            "state": "approved"
+          }
+        },
+        {
+          "action": "snapshot",
+          "input": {
+            "target": "approved"
+          },
+          "expect": {
+            "unchanged": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "PROCUREMENT-029",
+      "label": "Concurrent submit changes state and records history once",
+      "category": "consistency",
+      "channel": "api",
+      "steps": [
+        {
+          "action": "concurrent",
+          "input": {
+            "actor": "owner",
+            "target": "draft",
+            "to": "submitted"
+          },
+          "expect": {
+            "successes": 1,
+            "state": "submitted",
+            "effectCount": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "PROCUREMENT-030",
+      "label": "Repeated submit has only one effect",
+      "category": "consistency",
+      "channel": "api",
+      "steps": [
+        {
+          "action": "transition",
+          "input": {
+            "actor": "owner",
+            "target": "draft",
+            "to": "submitted"
+          },
+          "expect": {
+            "accepted": true,
+            "state": "submitted"
+          }
+        },
+        {
+          "action": "transition",
+          "input": {
+            "actor": "owner",
+            "target": "draft",
+            "to": "submitted"
+          },
+          "expect": {
+            "effectCount": 1,
+            "state": "submitted"
+          }
+        }
+      ]
+    },
+    {
+      "id": "PROCUREMENT-031",
+      "label": "Concurrent approve changes state and records history once",
+      "category": "consistency",
+      "channel": "api",
+      "steps": [
+        {
+          "action": "concurrent",
+          "input": {
+            "actor": "reviewer",
+            "target": "submitted",
+            "to": "approved"
+          },
+          "expect": {
+            "successes": 1,
+            "state": "approved",
+            "effectCount": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "PROCUREMENT-032",
+      "label": "Repeated approve has only one effect",
+      "category": "consistency",
+      "channel": "api",
+      "steps": [
+        {
+          "action": "transition",
+          "input": {
+            "actor": "reviewer",
+            "target": "submitted",
+            "to": "approved"
+          },
+          "expect": {
+            "accepted": true,
+            "state": "approved"
+          }
+        },
+        {
+          "action": "transition",
+          "input": {
+            "actor": "reviewer",
+            "target": "submitted",
+            "to": "approved"
+          },
+          "expect": {
+            "effectCount": 1,
+            "state": "approved"
+          }
+        }
+      ]
+    },
+    {
+      "id": "PROCUREMENT-033",
+      "label": "Stale edit cannot overwrite approval",
+      "category": "consistency",
+      "channel": "api",
+      "steps": [
+        {
+          "action": "transition",
+          "input": {
+            "actor": "reviewer",
+            "target": "submitted",
+            "to": "approved"
+          },
+          "expect": {
+            "accepted": true,
+            "state": "approved"
+          }
+        },
+        {
+          "action": "update",
+          "input": {
+            "actor": "owner",
+            "target": "submitted",
+            "revision": "original",
+            "record": {
+              "title": "Office supplies",
+              "reference": "allowed",
+              "reviewer": "reviewer",
+              "lines": [
+                {
+                  "item": "paper",
+                  "description": "Paper",
+                  "quantity": 2,
+                  "unitPrice": "12.34"
+                },
+                {
+                  "item": "pen",
+                  "description": "Pens",
+                  "quantity": 1,
+                  "unitPrice": "6.82"
+                }
+              ]
+            }
+          },
+          "expect": {
+            "accepted": false,
+            "state": "approved"
+          }
+        }
+      ]
+    },
+    {
+      "id": "PROCUREMENT-034",
+      "label": "Self-designated reviewer is rejected",
+      "category": "permission",
+      "channel": "api",
+      "steps": [
+        {
+          "action": "create",
+          "input": {
+            "actor": "owner",
+            "record": {
+              "title": "Office supplies",
+              "reference": "allowed",
+              "reviewer": "owner",
+              "lines": [
+                {
+                  "item": "paper",
+                  "description": "Paper",
+                  "quantity": 2,
+                  "unitPrice": "12.34"
+                },
+                {
+                  "item": "pen",
+                  "description": "Pens",
+                  "quantity": 1,
+                  "unitPrice": "6.82"
+                }
+              ]
+            }
+          },
+          "expect": {
+            "accepted": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "PROCUREMENT-035",
+      "label": "Anonymous and unassigned actors cannot create edit or decide",
+      "category": "permission",
+      "channel": "api",
+      "steps": [
+        {
+          "action": "create",
+          "input": {
+            "actor": "anonymous",
+            "record": {
+              "title": "Office supplies",
+              "reference": "allowed",
+              "reviewer": "reviewer",
+              "lines": [
+                {
+                  "item": "paper",
+                  "description": "Paper",
+                  "quantity": 2,
+                  "unitPrice": "12.34"
+                },
+                {
+                  "item": "pen",
+                  "description": "Pens",
+                  "quantity": 1,
+                  "unitPrice": "6.82"
+                }
+              ]
+            }
+          },
+          "expect": {
+            "accepted": false
+          }
+        },
+        {
+          "action": "create",
+          "input": {
+            "actor": "outsider",
+            "record": {
+              "title": "Office supplies",
+              "reference": "allowed",
+              "reviewer": "reviewer",
+              "lines": [
+                {
+                  "item": "paper",
+                  "description": "Paper",
+                  "quantity": 2,
+                  "unitPrice": "12.34"
+                },
+                {
+                  "item": "pen",
+                  "description": "Pens",
+                  "quantity": 1,
+                  "unitPrice": "6.82"
+                }
+              ]
+            }
+          },
+          "expect": {
+            "accepted": false
+          }
+        },
+        {
+          "action": "update",
+          "input": {
+            "actor": "anonymous",
+            "target": "draft",
+            "record": {
+              "title": "Office supplies",
+              "reference": "allowed",
+              "reviewer": "reviewer",
+              "lines": [
+                {
+                  "item": "paper",
+                  "description": "Paper",
+                  "quantity": 2,
+                  "unitPrice": "12.34"
+                },
+                {
+                  "item": "pen",
+                  "description": "Pens",
+                  "quantity": 1,
+                  "unitPrice": "6.82"
+                }
+              ]
+            }
+          },
+          "expect": {
+            "accepted": false
+          }
+        },
+        {
+          "action": "update",
+          "input": {
+            "actor": "outsider",
+            "target": "draft",
+            "record": {
+              "title": "Office supplies",
+              "reference": "allowed",
+              "reviewer": "reviewer",
+              "lines": [
+                {
+                  "item": "paper",
+                  "description": "Paper",
+                  "quantity": 2,
+                  "unitPrice": "12.34"
+                },
+                {
+                  "item": "pen",
+                  "description": "Pens",
+                  "quantity": 1,
+                  "unitPrice": "6.82"
+                }
+              ]
+            }
+          },
+          "expect": {
+            "accepted": false
+          }
+        },
+        {
+          "action": "transition",
+          "input": {
+            "actor": "anonymous",
+            "target": "submitted",
+            "to": "approved"
+          },
+          "expect": {
+            "accepted": false,
+            "state": "submitted"
+          }
+        },
+        {
+          "action": "transition",
+          "input": {
+            "actor": "outsider",
+            "target": "submitted",
+            "to": "approved"
+          },
+          "expect": {
+            "accepted": false,
+            "state": "submitted"
+          }
+        }
+      ]
+    },
+    {
+      "id": "PROCUREMENT-036",
+      "label": "Empty lines cannot be submitted with a valid reference",
+      "category": "business",
+      "channel": "api",
+      "steps": [
+        {
+          "action": "create",
+          "input": {
+            "actor": "owner",
+            "record": {
+              "title": "Office supplies",
+              "reference": "allowed",
+              "reviewer": "reviewer",
+              "lines": []
+            }
+          },
+          "expect": {
+            "accepted": true,
+            "state": "draft"
+          }
+        },
+        {
+          "action": "transition",
+          "input": {
+            "actor": "owner",
+            "target": "document",
+            "to": "submitted"
+          },
+          "expect": {
+            "accepted": false,
+            "state": "draft"
+          }
+        }
+      ]
+    },
+    {
+      "id": "PROCUREMENT-037",
+      "label": "Material candidates search excludes inactive and restricted items",
+      "category": "permission",
+      "channel": "api",
+      "steps": [
+        {
+          "action": "read",
+          "input": {
+            "actor": "owner",
+            "surface": "materials",
+            "query": {
+              "search": "Alpha",
+              "active": true
+            }
+          },
+          "expect": {
+            "visible": ["paper"]
+          }
+        }
+      ]
+    }
+  ]
+}

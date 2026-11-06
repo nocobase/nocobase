@@ -172,6 +172,7 @@ This handbook's project endpoints are called like this (`id` is the record id, `
 
 - Encode every id with `encodeURIComponent` before putting it into `path`; ids are strings and may come from a URL parameter or user input.
 - A list takes `q` for search, `orderBy` for ordering, and `page` with `pageSize` (20 by default, at most 100), and answers `{ data, meta: { page, pageSize, total } }`, typed `ProjectList` in [`example/types.md`](example/types.md). A feed or log pages with `pageSize` and `pageToken` instead, and its `meta` carries `nextPageToken` until the last page.
+- Read row summaries with the list response or one batch request for the visible ids, never a child-resource request from every row: client N+1 multiplies network and server work as the page grows. Right: render `row.linkCount` supplied by the list; wrong: each row calls `projects/{id}/links` just to count links. The server batches that summary as [server routes](../../server-routes.md#lists-and-statistics-a-fixed-number-of-queries) describes.
 
 ### Parameters and response bodies
 
@@ -228,13 +229,21 @@ export async function uploadProjectAttachment(
 
 - Authentication uses the application's existing integration. Having the client does not bypass the server's authentication, authorization or the endpoint's own requirements.
 
+### Data invalidation boundaries
+
+Define retention separately for query results, navigation/facets, form drafts and authorization-sensitive data. Sharing one response does not mean all fields have the same lifetime: a category switch may invalidate rows while its navigation remains useful. Preserve navigation only within its valid scope; do not keep query-specific counts as if they were current.
+
+During a same-resource refresh, retain still-authorized content with a visible refresh indicator. For a changed query, clear the result area or explicitly identify retained rows as previous results while loading; never label old tasks as results of the new category. Discard late responses from superseded requests. User, tenant or permission changes invalidate protected data and drafts according to the application contract, even if this requires unmounting. Retention must not bypass a 401/403 or expose a previous identity's content.
+
+Reset record-specific content when the record changes, inside a stable overlay where practical. A request key identifies a fetch; it is not automatically the React key of the overlay or form. See [overlay lifecycle](overlay.md#asynchronous-overlay-lifecycle) and [transition tests](testing.md#asynchronous-transitions).
+
 ## Loading data in a component
 
 For live updates, read the installed `nocobase-realtime` Skill in `.agents/skills/` for server authorization, snapshot recovery, retries, distributed delivery and polling decisions.
 
 Data reloads when the user acts (a search, "Retry", a refresh button) or after the page's own writes. For live updates, declare the server Topic during provider boot and reuse the host client through `useRealtimeTopic` or `useRealtimeRefresh` from `@nocobase/app-client`. A watch's `onReady` runs after that Topic is acknowledged, including reconnects; `onOpen` only describes the transport. Refresh authoritative API data on readiness because disconnected events are not replayed. Use `enabled: false` for inactive pages, return the refresh promise for burst coalescing and one in-flight follow-up, and use `refreshRealtimeQueries(queryClient, filters, signal)` for TanStack Query snapshots. It matches exact keys, prefixes and predicates, waits for pre-event reads (including initial loading), and follows them with a fresh read without repeatedly cancelling slow requests. Bare `invalidateQueries` with `cancelRefetch: false` can reuse a pre-event response and lose the change. For lower-level code, resolve `realtimeClientToken` and call `watch(topic, { onEvent, onReady, onError })`; close its handle on cleanup. Personal inbox usage is documented in the `nocobase-app-plugin-notification-in-app` Skill.
 
-There is no shared data-loading hook; write it directly in the component: `useApiClient()` + `useEffect` + `AbortController`. Do not reach for TanStack Query in a page: one loading pattern across pages keeps states and errors consistent. The component below loads a project by id and displays it, covering loading, retry after failure, record not found, no permission and empty values (`client/pages/projects/project-summary.tsx`):
+For an individual record read, write the request in the component with `useApiClient()` + `useEffect` + `AbortController`; lists use the shared `useListData` and `resolveListState` pattern in [`table.md`](table.md). Do not reach for TanStack Query in a page: one loading pattern across pages keeps states and errors consistent. The component below loads a project by id and displays it, covering loading, retry after failure, record not found, no permission and empty values (`client/pages/projects/project-summary.tsx`):
 
 ```tsx
 // client/pages/projects/project-summary.tsx (excerpt; the complete file is in example/project-summary.md)
@@ -279,7 +288,7 @@ export function ProjectSummary({
   // During a reload this is still the last successful data, so the UI does not have to be cleared.
   const project = result?.project;
 
-  // … reload(), the four states and the card: example/project-summary.md
+  // … reload(), list feedback and the card: example/project-summary.md
 }
 ```
 
@@ -304,7 +313,7 @@ Other points:
 
 When realtime events refresh what a page shows:
 
-- An event that names items refreshes those items: gather the ids of a burst (a few hundred milliseconds), read only those rows, keep one such request in flight, and merge the answer into what the page holds. Read the whole list again only when its membership changed (an item joined or left it, or moved between its groups) or the event names nothing.
+- An event that names items refreshes those items: use its changed fields to select affected sections, gather the ids of a burst (a few hundred milliseconds), read only those rows, keep one such request in flight, and merge the answer into what the page holds. Right: a `name` change refreshes the named row but leaves a status chart alone; wrong: every event refreshes the row, history and every chart. Read the whole list again only when its membership changed (an item joined or left it, or moved between its groups) or the event names nothing.
 - Do not read a whole list or overview again on every event.
 - Recompute a chart's figures at most every few seconds while it is visible, and not at all while the page is hidden; or update only the figure the event affects.
 - Read nothing for a page that is not shown; read it when it is shown again.
@@ -315,7 +324,9 @@ When realtime events refresh what a page shows:
 - Keep request keys stable: build them from the parameters that decide the data, not from values that change on every render or tick, such as the current time, or each change starts a new request.
 - Be careful with data loaded by components mounted on every page, such as navigation or a header badge: they run on every page and in every open tab, so they usually read a small fact rather than a list.
 
-The server side of these reads is in [server routes](../../server-routes.md#lists-and-statistics-a-fixed-number-of-queries).
+Test a complete event-driven refresh cycle with a request spy and an explicit completion signal, excluding the initial load: assert an upper bound on reads per event per open tab, including any follow-up read. Right: `expect(refreshRequests.length).toBeLessThanOrEqual(1)` after the cycle completes and the changed row is visible; wrong: asserting only that a request occurred or that the refresh finished quickly. Counts catch duplicate topics and per-row reads without depending on machine speed.
+
+The server side of these reads is in [list and statistics rules](../../server-routes.md#lists-and-statistics-a-fixed-number-of-queries); normalized log measurements are in [frequently called endpoints](../../server-routes.md#frequently-called-endpoints).
 
 ## Error handling
 
@@ -340,14 +351,15 @@ When the response is not 2xx, `api.request` throws `ApiClientError`:
 
 Write the checks directly in the component that uses them (for example `ProjectSummary` above and `CompleteProjectButton` below); extract them only when several pages share them (["Basic conventions" in `../frontend-dev.md`](../frontend-dev.md#basic-conventions)).
 
-| Case                       | Check                                                                                            | Handling                                                                                                                                                    |
-| -------------------------- | ------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Session ended              | `error instanceof ApiClientError && error.status === 401`                                        | The session expired or was revoked: no Retry; offer "Sign in again" where the error shows (below the table)                                                 |
-| Record not found           | `error instanceof ApiClientError && error.status === 404`                                        | Say the record does not exist or has been deleted, offer a next step (close the overlay, go back to the list) and refresh the list; no retry (guideline R3) |
-| No permission              | `error instanceof ApiClientError && error.status === 403`                                        | Say the user does not have permission; no retry (guideline S4)                                                                                              |
-| Business error reason      | `error instanceof ApiClientError && error.reason === 'PROJECT_NAME_TAKEN'`                       | Show it below the matching field with `form.setError(...)`; see [`form.md`](form.md)                                                                        |
-| Conflict                   | `error instanceof ApiClientError && error.status === 409 && error.reason === 'VERSION_CONFLICT'` | Keep the input and offer "Load latest", not Retry (below the table)                                                                                         |
-| Other (network, 5xx, etc.) | None of the above                                                                                | Say "The request failed. Please try again."; when loading data, offer "Retry"                                                                               |
+| Case                       | Check                                                                                            | Handling                                                                                                                                                                               |
+| -------------------------- | ------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Session ended              | `error instanceof ApiClientError && error.status === 401`                                        | The session expired or was revoked: no Retry; offer "Sign in again" where the error shows (below the table)                                                                            |
+| Record not found           | `error instanceof ApiClientError && error.status === 404`                                        | Say the record does not exist or has been deleted, offer a next step (close the overlay, go back to the list) and refresh the list; no retry (guideline R3)                            |
+| No permission              | `error instanceof ApiClientError && error.status === 403`                                        | Say the user does not have permission; no retry (guideline S4)                                                                                                                         |
+| Invalid input or filters   | `error instanceof ApiClientError && error.status === 400`                                        | Explain which input or filter needs correcting when known; preserve the input and provide a correction path instead of retrying the unchanged request. Never show raw server messages. |
+| Business error reason      | `error instanceof ApiClientError && error.reason === 'PROJECT_NAME_TAKEN'`                       | Show it below the matching field with `form.setError(...)`; see [`form.md`](form.md)                                                                                                   |
+| Conflict                   | `error instanceof ApiClientError && error.status === 409 && error.reason === 'VERSION_CONFLICT'` | Keep the input and offer "Load latest", not Retry (below the table)                                                                                                                    |
+| Other (network, 5xx, etc.) | None of the above                                                                                | Say "The request failed. Please try again."; when loading data, offer "Retry"                                                                                                          |
 
 - **Conflict (409)**: a write the server rejects because the record changed after it was loaded (reason `VERSION_CONFLICT` from a Repository write, or your endpoint's own conflict reason). Keep the input, say that someone else changed the record, and offer "Load latest" (reload the record, then let the user reapply the change) rather than "Retry", which would fail again (guideline R1).
 - **Session ended (401)**: a loader, form or dialog renders `SessionExpiredAlert` ([`example/session-expired-alert.md`](example/session-expired-alert.md)); a single-click write puts the same button in the toast's `action`. The button calls `refresh()` from `useAuthentication()` (`@nocobase/app-plugin-authentication/client`). While it runs, `AuthenticationGuard` renders nothing, so the signed-in pages and their input unmount, and `RequiredAuthentication` then sends the user to sign in. That is why the user starts it: never call `refresh()` from an effect or a `catch` on your own.

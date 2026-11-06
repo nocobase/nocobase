@@ -10,6 +10,9 @@ import {
   type SecretsService,
 } from '@nocobase/app-server/secrets';
 import type { AuthorizationContext } from '@nocobase/authorization/core';
+import { createTestI18nRuntime } from '@nocobase/i18n/testing';
+import { createI18nMiddleware } from '@nocobase/i18n/server';
+import serverLocales from '../server/locales/index.js';
 import { randomUUID } from 'node:crypto';
 import path from 'node:path';
 
@@ -492,6 +495,12 @@ export async function createHarness(
     await next();
   };
   const app = new Hono();
+  app.use(
+    '*',
+    createI18nMiddleware(
+      await createTestI18nRuntime({ namespaces: { [PACKAGE]: serverLocales } }),
+    ),
+  );
   app.route(
     '/agents/runners',
     createRunnerRoutes(runners, { pollTimeoutMs: 200 }),
@@ -630,9 +639,11 @@ export async function createHarness(
         options.ownerUserId === undefined ? 'owner' : options.ownerUserId,
         {
           trust: options.trust ?? 'team',
+          slots: options.slots ?? 2,
+          ...(options.toolSlots ? { toolSlots: options.toolSlots } : {}),
           ...(options.enabledTools !== undefined
             ? { enabledTools: options.enabledTools }
-            : {}),
+            : { enabledTools: ['claude', 'codex', 'opencode', 'pi'] }),
         },
       );
       const registration: RegisterRequest = {

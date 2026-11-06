@@ -256,6 +256,7 @@ export function createReportService(deps: {
   readonly clock: Clock;
   readonly people: People;
   readonly subjects: SubjectRegistry;
+  readonly nativeAvailable: () => Promise<boolean>;
 }): ReportService {
   /** What the subjects' domains say of the runs' subjects, by `kind:id`; unknown kinds are visible and in no group. */
   async function factsOf(
@@ -476,7 +477,8 @@ export function createReportService(deps: {
 
     async modelUsage(caller, query) {
       const range = reportRange(query, deps.clock.now());
-      if (!caller.allRuns) return { from: range.from, to: range.to, rows: [] };
+      if (!caller.allRuns || !(await deps.nativeAvailable()))
+        return { from: range.from, to: range.to, rows: [] };
       const conn = deps.tx.read();
       return {
         from: range.from,
@@ -497,8 +499,13 @@ export function createReportService(deps: {
         userId: query.userId ?? null,
       });
       const prices = await listPrices(conn);
+      const online = await deps.nativeAvailable();
       const first = aggregateUsage(
-        records,
+        online
+          ? records
+          : records.filter(
+              (record) => record.type !== 'online' && record.tool !== 'online',
+            ),
         groupBy,
         prices,
         undefined,

@@ -18,6 +18,10 @@ export interface FlowDiagramNode {
   readonly visited?: boolean;
   readonly highlighted?: boolean;
   readonly className?: string;
+  /** the caller's rendered content draws the whole node, without the default box or state tint. */
+  readonly bare?: boolean;
+  readonly minimapShape?: 'pill' | 'card';
+  readonly minimapColor?: string;
 }
 
 export interface FlowDiagramEdge {
@@ -32,6 +36,10 @@ export interface FlowDiagramEdge {
   readonly visited?: boolean;
   readonly highlighted?: boolean;
   readonly dashed?: boolean;
+  /** a secondary route drawn thin and light, so the main path reads first. */
+  readonly faint?: boolean;
+  /** hover and accessible text for an edge that shows no label on the canvas. */
+  readonly title?: string;
 }
 
 export type FlowDiagramDirection = 'RIGHT' | 'DOWN';
@@ -57,6 +65,28 @@ export interface FlowDiagramLayout {
   })[];
 }
 
+/** Wrap condition labels without splitting words. */
+export function flowLabelLines(text: string): string[] {
+  const lines: string[] = [];
+  let line = '',
+    width = 0;
+  for (const token of text.match(/[a-zA-Z0-9_]+|[^a-zA-Z0-9_]/g) ?? []) {
+    const tokenWidth = [...token].reduce(
+      (n, char) => n + (char.charCodeAt(0) > 255 ? 14 : 7),
+      0,
+    );
+    if (line && width + tokenWidth > 252) {
+      lines.push(line.trim());
+      line = '';
+      width = 0;
+    }
+    line += token;
+    width += tokenWidth;
+  }
+  if (line.trim()) lines.push(line.trim());
+  return lines;
+}
+
 type ElkConstructor = new (args?: ELKConstructorArguments) => ELK;
 let elkPromise: Promise<ELK> | undefined;
 
@@ -73,6 +103,7 @@ function getElk(): Promise<ELK> {
 export async function layoutFlowDiagram(
   graph: FlowDiagramGraph,
   direction: FlowDiagramDirection = 'RIGHT',
+  compact = false,
 ): Promise<FlowDiagramLayout> {
   const ids = new Set<string>();
   for (const node of graph.nodes) {
@@ -104,16 +135,16 @@ export async function layoutFlowDiagram(
       'elk.algorithm': 'layered',
       'elk.direction': direction,
       'elk.edgeRouting': 'ORTHOGONAL',
-      'elk.spacing.nodeNode': '40',
-      'elk.layered.spacing.nodeNodeBetweenLayers': '72',
+      'elk.spacing.nodeNode': compact ? '20' : '40',
+      'elk.layered.spacing.nodeNodeBetweenLayers': compact ? '28' : '72',
       'elk.layered.nodePlacement.strategy': 'NETWORK_SIMPLEX',
       // Declared state order keeps retry edges from moving later states before the start.
       'elk.layered.cycleBreaking.strategy': 'MODEL_ORDER',
       'elk.layered.crossingMinimization.strategy': 'LAYER_SWEEP',
       'elk.layered.thoroughness': '32',
-      'elk.spacing.edgeEdge': '20',
-      'elk.layered.spacing.edgeEdgeBetweenLayers': '20',
-      'elk.layered.spacing.edgeNodeBetweenLayers': '24',
+      'elk.spacing.edgeEdge': compact ? '8' : '20',
+      'elk.layered.spacing.edgeEdgeBetweenLayers': compact ? '8' : '20',
+      'elk.layered.spacing.edgeNodeBetweenLayers': compact ? '8' : '24',
     },
     children: graph.nodes.map((node) => {
       const id = nodeIds.get(node.id)!;
@@ -166,13 +197,13 @@ export async function layoutFlowDiagram(
                 'elk.edgeLabels.inline': 'true',
               },
               width: Math.min(
-                320,
+                268,
                 [...edge.label].reduce(
                   (total, char) => total + (char.charCodeAt(0) > 255 ? 14 : 7),
                   16,
                 ),
               ),
-              height: 24,
+              height: flowLabelLines(edge.label).length * 18 + 8,
             },
           ]
         : [],
@@ -247,4 +278,83 @@ export async function layoutFlowDiagram(
       return { ...edge, points, labelPosition };
     }),
   };
+}
+
+type PlacedFlowNode = FlowDiagramLayout['nodes'][number];
+
+/** a transient route for an edge left out of the layout. It runs in a lane
+ * outside every node it passes, so revealing it never moves the laid-out graph.
+ * Deeper lanes keep nested routes from crossing one another; a self-transition loops
+ * beside its own node. The label sits outside the lane instead of over the nodes. */
+export function revealRoute(
+  nodes: readonly PlacedFlowNode[],
+  source: PlacedFlowNode,
+  target: PlacedFlowNode,
+  direction: FlowDiagramDirection,
+  lane = 0,
+): {
+  points: FlowDiagramPoint[];
+  labelPosition: FlowDiagramPoint;
+  labelAnchor: 'end' | 'middle';
+} {
+  // Measure along the flow (main) and across it; the lane runs before the nodes on the cross axis.
+  const down = direction === 'DOWN';
+  const main = (node: PlacedFlowNode) => (down ? node.y : node.x);
+  const cross = (node: PlacedFlowNode) => (down ? node.x : node.y);
+  const size = (node: PlacedFlowNode) => (down ? node.height : node.width);
+  const point = (along: number, across: number): FlowDiagramPoint =>
+    down ? { x: across, y: along } : { x: along, y: across };
+  const loop = source === target;
+  const start = Math.min(main(source), main(target));
+  const end = Math.max(
+    main(source) + size(source),
+    main(target) + size(target),
+  );
+  const lanePosition =
+    Math.min(
+      ...(loop
+        ? [cross(source)]
+        : nodes
+            .filter(
+              (node) => main(node) < end && main(node) + size(node) > start,
+            )
+            .map(cross)),
+    ) -
+    16 -
+    lane * 10;
+  const from = main(source) + size(source) * (loop ? 0.3 : 0.5);
+  const to = main(target) + size(target) * (loop ? 0.7 : 0.5);
+  return {
+    points: [
+      point(from, cross(source)),
+      point(from, lanePosition),
+      point(to, lanePosition),
+      point(to, cross(target)),
+    ],
+    // DOWN lanes run left of the nodes, so labels end at the lane; RIGHT lanes run above them.
+    labelPosition: point((from + to) / 2, lanePosition - (down ? 6 : 14)),
+    labelAnchor: down ? 'end' : 'middle',
+  };
+}
+
+/** Keep return and self-transitions out of the process layout. Declaration order
+ * describes forward progress; even adjacent returns can become long routes in ELK. */
+export function partitionFlowDiagramReturns(graph: FlowDiagramGraph): {
+  edges: FlowDiagramEdge[];
+  extraEdges: FlowDiagramEdge[];
+} {
+  const order = new Map(graph.nodes.map((node, index) => [node.id, index]));
+  const edges: FlowDiagramEdge[] = [],
+    extraEdges: FlowDiagramEdge[] = [];
+  for (const edge of graph.edges) {
+    const source = order.get(edge.source),
+      target = order.get(edge.target);
+    const returnRoute =
+      !edge.decorative &&
+      source !== undefined &&
+      target !== undefined &&
+      source >= target;
+    (returnRoute ? extraEdges : edges).push(edge);
+  }
+  return { edges, extraEdges };
 }

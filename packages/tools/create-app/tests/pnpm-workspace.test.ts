@@ -88,6 +88,8 @@ describe('buildAllowBuildsYaml', () => {
 
     expect(yaml).toContain('  better-sqlite3: false');
     expect(yaml).toContain('  tesseract.js: false');
+    expect(yaml).toContain("  '@mongodb-js/zstd': false");
+    expect(yaml).toContain('  node-liblzma: false');
   });
 
   /** A leading `@` starts a reserved indicator in YAML, so a scoped name has to be quoted to parse. */
@@ -105,6 +107,12 @@ describe('buildAllowBuildsYaml', () => {
 });
 
 describe('buildWorkspaceYaml', () => {
+  it('makes the application a workspace root for internal packages', () => {
+    expect(parse(buildWorkspaceYaml())).toMatchObject({
+      packages: ['packages/*'],
+    });
+  });
+
   it('disables implicit installation before running application scripts', () => {
     const config = parse(buildWorkspaceYaml()) as {
       verifyDepsBeforeRun: boolean;
@@ -157,6 +165,22 @@ describe('buildWorkspaceYaml', () => {
 });
 
 describe('ensureAllowBuilds', () => {
+  it.each([{ patterns: ['modules/*', '!modules/excluded'] }, { patterns: [] }])(
+    'preserves explicit workspace patterns $patterns',
+    async ({ patterns }) => {
+      const directory = await createTempDirectory();
+      await writeFile(
+        path.join(directory, PNPM_WORKSPACE_FILE),
+        `packages: ${JSON.stringify(patterns)}\n`,
+      );
+      await ensureAllowBuilds(directory);
+      await ensureAllowBuilds(directory);
+      expect(parse(await readWorkspace(directory))).toMatchObject({
+        packages: patterns,
+      });
+    },
+  );
+
   it('adds the startup policy once while retaining an explicit template policy', async () => {
     const directory = await createTempDirectory();
     const file = path.join(directory, PNPM_WORKSPACE_FILE);

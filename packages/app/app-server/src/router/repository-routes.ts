@@ -1,10 +1,12 @@
 import {
   databaseManagerToken,
+  getRepositoryMutationIdentity,
   normalizeRepositoryPolicy,
   type NormalizedReadNode,
   type NormalizedRepositoryPolicy,
   type PolicyRef,
   type RepositoryPolicy,
+  type PolicyScope,
   type AggregateOptions,
   type GroupByOptions,
   type CreateOneOptions,
@@ -27,6 +29,12 @@ import {
   toApiError,
 } from './api-error.js';
 import { defineApiRoutes, type AppApiRouteContribution } from './routes.js';
+import {
+  executeIdempotentMutation,
+  repositoryIdempotencyToken,
+  mutationDigest,
+  type RepositoryIdempotencyConfig,
+} from './idempotency.js';
 import { getRepositoryRequestConstraints } from './repository-constraints.js';
 import type { ApiSchema } from './openapi/describe.js';
 import { describeRepositoryEndpoint } from './openapi/repository-document.js';
@@ -101,6 +109,7 @@ export interface RepositoryApiExposure<P = unknown> {
 
 export interface DefineRepositoryApiRoutesOptions<P = unknown> {
   readonly repositories: readonly RepositoryApiExposure<P>[];
+  readonly idempotency?: RepositoryIdempotencyConfig;
   /**
    * Resolve the principal a Policy function receives. Required as soon as one
    * exposure declares a Policy function, and never called otherwise.
@@ -188,7 +197,7 @@ export function defineRepositoryApiRoutes<P = unknown>(
 ): AppApiRouteContribution<RepositoryApiRoutesApplication> {
   assertConfig(
     options,
-    ['repositories', 'principal'],
+    ['repositories', 'principal', 'idempotency'],
     'Repository API configuration',
   );
   if (
@@ -196,6 +205,20 @@ export function defineRepositoryApiRoutes<P = unknown>(
     typeof options.principal !== 'function'
   )
     throw new Error('Repository API principal must be a function.');
+  if (options.idempotency !== undefined) {
+    assertConfig(
+      options.idempotency,
+      ['required', 'principal'],
+      'Repository idempotency',
+    );
+    if (
+      typeof options.idempotency.required !== 'boolean' ||
+      typeof options.idempotency.principal !== 'function'
+    )
+      throw new Error(
+        'Repository idempotency requires a required boolean and principal resolver.',
+      );
+  }
   if (!Array.isArray(options.repositories))
     throw new Error('repositories must be an array.');
   const names = new Set<string>();
@@ -303,6 +326,11 @@ export function defineRepositoryApiRoutes<P = unknown>(
   );
 
   function createRouter(app: RepositoryApiRoutesApplication): Hono {
+    const protection =
+      options.idempotency ??
+      (app.container.has(repositoryIdempotencyToken)
+        ? app.container.resolve(repositoryIdempotencyToken)
+        : undefined);
     const router = new Hono();
     router.onError(apiErrorHandler);
 
@@ -326,6 +354,11 @@ export function defineRepositoryApiRoutes<P = unknown>(
           // Documented from the Collection when the API document is generated, not declared by hand.
           describeRepositoryEndpoint({
             exposure: entry.name,
+            idempotency: protection
+              ? protection.required
+                ? 'required'
+                : 'optional'
+              : undefined,
             collection: entry.collection,
             connection: entry.connection,
             action,
@@ -387,7 +420,135 @@ export function defineRepositoryApiRoutes<P = unknown>(
             if (action === 'findMany' && acceptsRepositoryStream(context)) {
               return streamFindMany(context, scoped, input);
             }
-            const data = await execute(scoped, action, input);
+            const write = ['createOne', 'updateOne', 'deleteOne'].includes(
+              action,
+            );
+            const key = context.req.header('Idempotency-Key');
+            let data: unknown;
+            if (write && protection && (protection.required || key)) {
+              const principal = await protection.principal(context);
+              if (!principal)
+                fail(
+                  403,
+                  'PRINCIPAL_REQUIRED',
+                  'An authenticated principal is required.',
+                );
+              const policy = scoped.explainPolicy();
+              const policyAction =
+                action === 'createOne'
+                  ? 'create'
+                  : action === 'updateOne'
+                    ? 'update'
+                    : 'delete';
+              if (policy[policyAction] === false)
+                fail(403, 'WRITE_FORBIDDEN', 'This write is not permitted.');
+              if (!key)
+                fail(
+                  400,
+                  'OPERATION_KEY_REQUIRED',
+                  'Standard writes require an Idempotency-Key header.',
+                );
+              const connection = app.container
+                .resolve(databaseManagerToken)
+                .connection(entry.connection);
+              const result = await executeIdempotentMutation<{
+                policy: string;
+                locator?: Readonly<Record<string, unknown>>;
+                data: unknown;
+              }>({
+                connection,
+                key,
+                principal,
+                operation: `${entry.name}/${action}/${action === 'createOne' ? 'new' : mutationDigest(input.filter)}`,
+                input,
+                authorize: () => undefined,
+                authorizeReplay: async (saved) => {
+                  // Re-resolved middleware and the full Policy must still permit the original response shape.
+                  if (saved.policy !== mutationDigest(policy))
+                    fail(
+                      403,
+                      'REPLAY_FORBIDDEN',
+                      'Permissions have changed since this operation.',
+                    );
+                  if (policy.read === false)
+                    fail(
+                      403,
+                      'REPLAY_FORBIDDEN',
+                      'The result is no longer visible.',
+                    );
+                  if (action !== 'deleteOne' && policy.read !== true) {
+                    const record = (saved.data as { record?: RepositoryRecord })
+                      .record;
+                    if (
+                      !record ||
+                      !saved.locator ||
+                      !Object.keys(saved.locator).length
+                    )
+                      fail(
+                        403,
+                        'REPLAY_FORBIDDEN',
+                        'The result cannot be checked for current visibility.',
+                      );
+                    const [visible] = await scoped
+                      .narrow({
+                        read: {
+                          scope: saved.locator as PolicyScope<RepositoryRecord>,
+                        },
+                      })
+                      .findMany({
+                        limit: 1,
+                        ...(input.select
+                          ? {
+                              select:
+                                input.select as unknown as FindManyOptions<RepositoryRecord>['select'],
+                            }
+                          : {}),
+                      });
+                    if (
+                      !visible ||
+                      mutationDigest(visible) !== mutationDigest(record)
+                    )
+                      fail(
+                        403,
+                        'REPLAY_FORBIDDEN',
+                        'The result is no longer visible.',
+                      );
+                  }
+                },
+                execute: async (transaction) => {
+                  const data = await execute(
+                    transaction
+                      .repository(entry.collection)
+                      .withPolicy(policy as RepositoryPolicy),
+                    action,
+                    input,
+                  );
+                  const locator =
+                    data && typeof data === 'object'
+                      ? getRepositoryMutationIdentity(data)
+                      : undefined;
+                  return {
+                    policy: mutationDigest(policy),
+                    locator,
+                    // A scoped deleted row cannot be checked again. Return the same confirmation on first execution and replay.
+                    data:
+                      action === 'deleteOne' && policy.read !== true
+                        ? { deleted: true }
+                        : data,
+                  };
+                },
+              });
+              context.header('Idempotency-Replayed', String(result.replayed));
+              data = result.data.data;
+            } else {
+              if (write && key && !protection)
+                fail(
+                  400,
+                  'IDEMPOTENCY_UNAVAILABLE',
+                  'This server has not enabled operation receipts.',
+                );
+              data = await execute(scoped, action, input);
+            }
             if (action === 'aggregate' || action === 'groupBy') {
               return context.body(
                 JSON.stringify({ data }, (_key, value: unknown) =>
@@ -671,7 +832,11 @@ async function execute(
         ifVersion,
       });
     case 'deleteOne':
-      return repository.deleteOne({ select: read.select, filter, ifVersion });
+      return repository.deleteOne({
+        select: read.select,
+        filter,
+        ifVersion,
+      });
   }
 }
 

@@ -61,6 +61,7 @@ const host = vi.hoisted(() => ({
 }));
 vi.mock('@nocobase/app-client', async (original) => ({
   ...(await original<typeof import('@nocobase/app-client')>()),
+  useRealtimeReadiness: () => true,
   useApiClient: () => host.api,
   useService: () => host.realtime,
 }));
@@ -247,9 +248,14 @@ it('preserves stable source segments and complete SDK objects without manufactur
     metadata: { ...metadata, seq: 3, createdAt: '2026-01-01T00:00:02Z' },
   };
   const segments = chatMessageSegments([logical, notification]);
-  expect(segments.map((segment) => segment.seq)).toEqual([2, 3, 4]);
+  expect(segments.map((segment) => segment.seq)).toEqual([2, 3]);
   expect(segments[0].message).toBe(logical);
-  expect(segments[2].message).toBe(logical);
+  expect(segments[0].partIndexes).toEqual([0, 1]);
+  expect(segments[0].partIndexes.map((index) => logical.parts[index])).toEqual(
+    logical.parts,
+  );
+  expect(segments[0]).toMatchObject({ first: true, last: true });
+  expect(segments[1].message).toBe(notification);
   expect(segments.map((segment) => segment.key)).toEqual(
     chatMessageSegments([logical, notification]).map((segment) => segment.key),
   );
@@ -367,7 +373,7 @@ it.each(
       [{ type: 'text', text: '', state: 'streaming' }],
       [{ type: 'text', text: ' \n\t' }],
       [{ type: 'step-start' }],
-      [{ type: 'reasoning', text: 'Private reasoning', state: 'streaming' }],
+      [{ type: 'reasoning', text: '   ', state: 'streaming' }],
       [
         {
           type: 'data-notice',
@@ -508,4 +514,125 @@ it('bounds custom business cards without imposing layout requirements on their r
   expect(
     screen.getByText('Wide business card').closest('.rounded-lg'),
   ).toHaveClass('min-w-0', 'max-w-full', 'overflow-x-auto');
+});
+
+it('retains per-part manual choice on same-message revisions and keeps multi-step reasoning in order', () => {
+  const message: AppUIMessage = {
+    id: 'reasoned',
+    role: 'assistant',
+    metadata,
+    parts: [
+      { type: 'reasoning', text: 'First thought', state: 'streaming' },
+      { type: 'text', text: 'Between' },
+      { type: 'reasoning', text: 'Second thought', state: 'streaming' },
+    ],
+  };
+  const view = (value: AppUIMessage, streaming = true) => (
+    <ol>
+      <MessageItem
+        message={value}
+        agentName={() => 'Agent'}
+        streaming={streaming}
+      />
+    </ol>
+  );
+  const tree = render(view(message), { wrapper });
+  const buttons = screen.getAllByRole('button', { name: 'Thinking…' });
+  fireEvent.click(buttons[0]);
+  const revised: AppUIMessage = {
+    ...message,
+    metadata: { ...metadata, revision: 2 },
+    parts: [
+      { type: 'reasoning', text: 'First thought delta', state: 'done' },
+      { type: 'text', text: 'Between' },
+      { type: 'reasoning', text: 'Second thought delta', state: 'done' },
+    ],
+  };
+  tree.rerender(view(revised, false));
+  const reasoning = screen.getAllByRole('button', { name: 'Reasoning' });
+  expect(reasoning[0]).toHaveAttribute('aria-expanded', 'false');
+  expect(reasoning[1]).toHaveAttribute('aria-expanded', 'false');
+  fireEvent.click(reasoning[0]);
+  tree.rerender(
+    view({ ...revised, metadata: { ...metadata, revision: 3 } }, false),
+  );
+  expect(
+    screen.getAllByRole('button', { name: 'Reasoning' })[0],
+  ).toHaveAttribute('aria-expanded', 'true');
+  expect(screen.getByText('First thought delta')).toBeVisible();
+  expect(screen.queryByText('Second thought delta')).not.toBeInTheDocument();
+  expect(appUIMessageText(revised)).toBe('Between');
+  const row = tree.container.querySelector('[data-message-id="reasoned"]')!;
+  expect(row.textContent!.indexOf('First thought delta')).toBeLessThan(
+    row.textContent!.indexOf('Between'),
+  );
+  expect(row.querySelector('[data-reasoning-streaming="true"]')).toBeNull();
+});
+
+it('keeps a block in one Markdown part across live updates and a history reload', async () => {
+  const message: AppUIMessage = {
+    id: 'runner:run',
+    role: 'assistant',
+    metadata: {
+      ...metadata,
+      sourceRecords: [
+        {
+          recordId: 'r1',
+          seq: 2,
+          partId: 'record:r1',
+          partIndex: 0,
+          output: { blockId: 'body', phase: 'delta' },
+        },
+      ],
+    },
+    parts: [{ type: 'text', text: '**Hello', state: 'streaming' }],
+  };
+  const view = render(
+    <ol>
+      <MessageItem message={message} agentName={() => 'Agent'} streaming />
+    </ol>,
+    { wrapper },
+  );
+  const completed: AppUIMessage = {
+    ...message,
+    metadata: {
+      ...message.metadata!,
+      revision: 6,
+      sourceRecords: [
+        {
+          ...message.metadata!.sourceRecords![0],
+          output: { blockId: 'body', phase: 'end' },
+        },
+      ],
+    },
+    parts: [
+      {
+        type: 'text',
+        text: '**Hello** world\n\n```ts\nconst ready = true;\n```\n\n[Docs](https://example.test)',
+        state: 'done',
+      },
+    ],
+  };
+  view.rerender(
+    <ol>
+      <MessageItem message={completed} agentName={() => 'Agent'} />
+    </ol>,
+  );
+  await waitFor(() =>
+    expect(screen.getByRole('link', { name: 'Docs' })).toBeVisible(),
+  );
+  expect(screen.getByText('Hello').tagName).toBe('STRONG');
+  expect(view.container.querySelectorAll('code')).toHaveLength(1);
+  const html = view.container.innerHTML;
+  view.unmount();
+  const reloaded = render(
+    <ol>
+      <MessageItem
+        message={JSON.parse(JSON.stringify(completed))}
+        agentName={() => 'Agent'}
+      />
+    </ol>,
+    { wrapper },
+  );
+  await waitFor(() => expect(reloaded.container.innerHTML).toBe(html));
 });

@@ -45,3 +45,5 @@ export {
   type RuntimeEnvironmentVariable,
 } from './runtime-environment.js';
 export type * from './types.js';
+
+export { resolveChannelType } from './channel-type.js';

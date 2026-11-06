@@ -2,11 +2,14 @@ import type { OnlineAgentRecoveryConfig } from '../online/agent/types.js';
 import { mayAccessRun } from '../core/runs/access.js';
 /**
  * Binds the plugin's services, and at boot connects them to the platform: realtime announcements of runs and
- * conversations, and the vector queue's worker. The runners' side (their announcements, the sweeper and the wake-ups of
+ * conversations. The runners' side (their announcements, the sweeper and the wake-ups of
  * work sent back with a back-off) is `runners.ts`.
  */
-import type { RunApp } from '@nocobase/agent-protocol';
-import { runRetentionDays } from '../core/runs/run-data-purge.js';
+import { HEADERS, type RunApp } from '@nocobase/agent-protocol';
+import {
+  archivedRetentionDays,
+  runRetentionDays,
+} from '../core/runs/run-data-purge.js';
 import { retryBaseDelayMs } from '../core/runs/policy.js';
 import { serverFileRepositoryManagerToken } from '@nocobase/app-plugin-file/server';
 import { driveManagerToken } from '@nocobase/app-server/drive';
@@ -32,17 +35,23 @@ import { createAgents, type Agents } from '../composition.js';
 import { createChatFileStorage } from '../core/conversations/index.js';
 import { directoryDisk } from '../core/skills/index.js';
 import { createAgentsSecretsStores } from '../secrets-stores.js';
-import type { VectorsConfig } from '../vectors/index.js';
 import type { DistConfig } from '../distribution/index.js';
-import type { AgentCli } from '../core/runs/index.js';
+import { resolveAgentCli, type AgentCli } from '../core/runs/index.js';
 import { runCredentialResolver } from '../cli/run-credential.js';
-import { bindCliSurface } from '../cli/surface.js';
+import { bindCliSurface, type CliSurface } from '../cli/surface.js';
 import { agentsSecurityFragment } from '../routes/openapi.js';
 import { agentsToken } from '../tokens.js';
+import type { CallerIdentity } from '../core/callers/index.js';
+import type { CommandSurface } from '../online/sandbox/types.js';
+import {
+  OnlineAgentCredentials,
+  onlineAgentCredentialsToken,
+} from '../cli/online-credential.js';
 
 /** `agents` in the application's configuration. */
 export interface AgentsConfig {
   readonly uiRecovery?: OnlineAgentRecoveryConfig;
+  readonly fileInputs?: import('../online/files/types.js').FileInputsConfig;
   /**
    * Completed runs' events and prompt snapshots are kept `retentionDays`: 14 days by default, 0 disables cleanup. A
    * failed attempt waits `retryBaseDelayMs` before the next, doubling up to ten minutes: 30 seconds by default.
@@ -51,6 +60,11 @@ export interface AgentsConfig {
     readonly retentionDays?: number;
     readonly retryBaseDelayMs?: number;
   };
+  /**
+   * Archived conversations are deleted `archivedRetentionDays` days after they were archived, with their messages,
+   * files and links: 30 by default, 0 keeps them. Checked once a day.
+   */
+  readonly conversations?: { readonly archivedRetentionDays?: number };
   /** How often the runners sweep runs (`sweepIntervalMs`): every 30 seconds by default. */
   readonly runners?: { readonly sweepIntervalMs?: number };
   /**
@@ -70,12 +84,8 @@ export interface AgentsConfig {
    * `storage/runners/dist` by default, on the `stable` channel, the highest version unless `versions` pins one.
    */
   readonly dist?: DistConfig;
-  /**
-   * The vector store of vector collections, apart from the application's database: `store` (`sqlite-vec` by default,
-   * in `path`, `storage/vectors.sqlite` by default; `pgvector` with its own `url` or `host`, `port`, `database`,
-   * `user`, `password` and `ssl`; `false` turns vectors off). See `VectorsConfig`.
-   */
-  readonly vectors?: VectorsConfig;
+  /** @deprecated Remove this disabled legacy setting. Active vector stores are no longer supported. */
+  readonly vectors?: { readonly store: false };
   /** Skills: `disk`, the Drive disk their files' contents go to (Drive's default disk by default). */
   readonly skills?: {
     readonly disk?: string;
@@ -89,19 +99,97 @@ const PURGE_INTERVAL_MS = 60 * 60_000;
 export class AgentsProvider extends ServiceProvider<AppPluginApplication> {
   public readonly name: string = ACCESS_NAMESPACE;
   private readonly releases: (() => void)[] = [];
-  private stoppingVectors: Promise<void> | undefined;
+  private surface: CliSurface | undefined;
+
+  /** Historical command surface, with execution-local authentication and cancellation. */
+  private commandsOf(
+    identity: CallerIdentity,
+    token: string,
+  ): Promise<CommandSurface | undefined> {
+    const { container } = this.app;
+    const surface = this.surface;
+    if (!surface || !container.has(cliToken) || !container.has(apiDocsToken))
+      return Promise.resolve(undefined);
+    const cli = container.resolve(cliToken);
+    const base = this.app.publicBasePath.replace(/\/+$/u, '');
+    const config = this.app.config.get<AgentsConfig>('agents');
+    const bin = resolveAgentCli(config?.cli, this.runApp(config)).name;
+    return (async () => {
+      const manifest = cli.manifestFor(
+        await container.resolve(apiDocsToken).getDocument(),
+        await surface.callerOf(identity),
+      );
+      return {
+        bin,
+        commands: manifest.commands,
+        send: async (request, signal) => {
+          const path =
+            base && request.path.startsWith(`${base}/`)
+              ? request.path.slice(base.length)
+              : request.path;
+          return this.app.router.fetch(
+            new Request(`http://application${path}`, {
+              method: request.method,
+              headers: {
+                [HEADERS.runToken]: token,
+                accept: 'application/json',
+                'x-nocobase-client': 'cli',
+                ...(typeof request.body === 'string'
+                  ? { 'content-type': 'application/json' }
+                  : {}),
+              },
+              ...(request.body === undefined ? {} : { body: request.body }),
+              signal,
+            }),
+          );
+        },
+      };
+    })();
+  }
 
   public override register(): void {
+    // Read untyped configuration too: YAML and JavaScript callers can still carry an active legacy store.
+    const vectors: unknown =
+      this.app.config.get<AgentsConfig>('agents')?.vectors;
+    if (
+      vectors !== undefined &&
+      (vectors === null ||
+        typeof vectors !== 'object' ||
+        !('store' in vectors) ||
+        vectors.store !== false)
+    )
+      throw new Error(
+        'Agents vector collections have been removed. Migrate consumers before upgrading and remove agents.vectors; see @nocobase/app-plugin-agents/docs/vectors-migration.md.',
+      );
     runRetentionDays(
       this.app.config.get<AgentsConfig>('agents')?.runs?.retentionDays,
     );
+    archivedRetentionDays(
+      this.app.config.get<AgentsConfig>('agents')?.conversations
+        ?.archivedRetentionDays,
+    );
     retryBaseDelayMs(
       this.app.config.get<AgentsConfig>('agents')?.runs?.retryBaseDelayMs,
+    );
+    this.app.container.singleton(
+      onlineAgentCredentialsToken,
+      () => new OnlineAgentCredentials(),
     );
     this.app.container.singleton(agentsToken, (resolver) => {
       const config = this.app.config.get<AgentsConfig>('agents');
       return createAgents({
         resolver,
+        sandbox: {
+          bin: () => {
+            const config = this.app.config.get<AgentsConfig>('agents');
+            return resolveAgentCli(config?.cli, this.runApp(config)).name;
+          },
+          cli: () => ({
+            auth: resolver.resolve(authenticationToken),
+            credentials: resolver.resolve(onlineAgentCredentialsToken),
+            commandsOf: (identity, token) => this.commandsOf(identity, token),
+          }),
+        },
         retryBaseDelayMs: retryBaseDelayMs(config?.runs?.retryBaseDelayMs),
         runRetentionDays: () =>
           runRetentionDays(
@@ -121,12 +209,8 @@ export class AgentsProvider extends ServiceProvider<AppPluginApplication> {
           : {}),
         ...(config?.cli ? { cli: config.cli } : {}),
         uiRecovery: config?.uiRecovery,
+        fileInputs: config?.fileInputs,
         manifestUrl: `${this.app.publicBasePath}/api/cli/manifest`,
-        ...(config?.vectors ? { vectors: config.vectors } : {}),
-        paths: {
-          root: this.app.paths.root(),
-          storage: this.app.paths.storage(),
-        },
         // The contents of skills' files: on the Drive disk `agents.skills.disk` names (Drive's default), else under the
         // application's storage. Asked on each use, so a configuration reload applies.
         skillDisk: resolver.has(driveManagerToken)
@@ -196,10 +280,6 @@ export class AgentsProvider extends ServiceProvider<AppPluginApplication> {
       );
     this.bindAuthentication(services);
     this.purgeChatFiles(services);
-    services.vectors.start();
-    this.releases.push(() => {
-      this.stoppingVectors = services.vectors.stop();
-    });
     return Promise.resolve();
   }
 
@@ -230,6 +310,9 @@ export class AgentsProvider extends ServiceProvider<AppPluginApplication> {
     const auth = container.resolve(authenticationToken);
     this.releases.push(
       auth.addCredentialResolver(runCredentialResolver(services)),
+      auth.addCredentialResolver(
+        container.resolve(onlineAgentCredentialsToken).resolve,
+      ),
     );
     if (!container.has(cliToken) || !container.has(authorizationToken)) return;
     const authorization = container.resolve(authorizationToken);
@@ -242,7 +325,11 @@ export class AgentsProvider extends ServiceProvider<AppPluginApplication> {
       ),
       gate: services.gate,
     });
-    this.releases.push(() => surface.release());
+    this.surface = surface;
+    this.releases.push(() => {
+      surface.release();
+      this.surface = undefined;
+    });
   }
 
   public override async shutdown(): Promise<void> {
@@ -252,8 +339,6 @@ export class AgentsProvider extends ServiceProvider<AppPluginApplication> {
         ?.onlineAgent.shutdown();
     } finally {
       for (const release of this.releases.splice(0)) release();
-      await this.stoppingVectors;
-      this.stoppingVectors = undefined;
     }
   }
 
@@ -325,6 +410,17 @@ export class AgentsProvider extends ServiceProvider<AppPluginApplication> {
     this.releases.push(
       services.events.onAny((event) => {
         switch (event.type) {
+          case 'conversation.historyReplaced':
+            announceConversation(event.userId, {
+              kind: 'conversation.historyReplaced',
+              conversationId: event.conversationId,
+              messageId: event.messageId,
+              seq: event.seq,
+              revision: event.revision,
+              lastSeq: event.lastSeq,
+              executionId: event.executionId,
+            });
+            return;
           case 'conversation.changed':
             announceConversation(
               event.userId,
@@ -339,6 +435,9 @@ export class AgentsProvider extends ServiceProvider<AppPluginApplication> {
                   ? {
                       kind: 'conversation.changed',
                       conversationId: event.conversationId,
+                      ...(event.seenSeq === undefined
+                        ? {}
+                        : { seenSeq: event.seenSeq }),
                     }
                   : {
                       kind: 'conversation.messages',

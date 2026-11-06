@@ -1,5 +1,71 @@
 # @nocobase/app-cli-client
 
+## 0.1.0-beta.18
+
+### Patch Changes
+
+- 49daa11: Restart running ACP services after CLI updates and tolerate newer Skill registry formats without rewriting them.
+
+  When upgrading from a CLI version without this fix through `<bin> update`, run `<bin> acp service restart` once after the upgrade to restart the existing background connections.
+
+- Updated dependencies [bfddb40]
+  - @nocobase/acp-bridge@1.0.0-beta.5
+
+## 0.1.0-beta.17
+
+### Patch Changes
+
+- Updated dependencies [22748f7]
+- Updated dependencies [22748f7]
+  - @nocobase/agent-protocol@0.1.0-beta.16
+
+## 0.1.0-beta.16
+
+### Patch Changes
+
+- Updated dependencies [6380861]
+  - @nocobase/agent-protocol@0.1.0-beta.15
+
+## 0.1.0-beta.15
+
+### Patch Changes
+
+- Updated dependencies [4dc982a]
+  - @nocobase/acp-bridge@1.0.0-beta.4
+  - @nocobase/agent-protocol@0.1.0-beta.14
+
+## 0.1.0-beta.14
+
+### Patch Changes
+
+- Updated dependencies [ffe5494]
+  - @nocobase/agent-protocol@0.1.0-beta.13
+
+## 0.1.0-beta.13
+
+### Minor Changes
+
+- ab68344: Make `skills install`, `skills status` and the Skill synchronization in `update` handle every Skill a branded CLI package ships, discovered from `skills/*/SKILL.md` at run time, instead of only `nb-studio-cli`. The installation record `skills.json` becomes `{ version: 2, targets }` with a `skill` on each target; the original single-Skill file is still read and migrated on the next write. The result gains a `skills` list and a `skill` on each target; its `skill` and `hash` keep naming `nb-studio-cli`. When an update no longer ships a Skill, its registered copy is removed only if it still matches what was installed; an edited copy is kept with a warning.
+
+### Patch Changes
+
+- Updated dependencies [f2712b9]
+  - @nocobase/agent-protocol@0.1.0-beta.12
+
+## 0.1.0-beta.12
+
+### Patch Changes
+
+- Updated dependencies [301d309]
+- Updated dependencies [4f0d96e]
+  - @nocobase/agent-protocol@0.1.0-beta.11
+
+## 0.1.0-beta.11
+
+### Patch Changes
+
+- c63a6e8: Reuse current registered session Skills without filesystem writes and wait for concurrent Skill installation instead of failing immediately. Record each lock owner and safely recover locks belonging to exited local processes, while preserving locks whose owners cannot be verified.
+
 ## 0.1.0-beta.10
 
 ### Patch Changes

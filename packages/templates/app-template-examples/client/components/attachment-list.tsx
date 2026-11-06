@@ -1,3 +1,11 @@
+/**
+ * Files on a record or a message, presented: safe images as thumbnails and everything else as a chip with its name,
+ * size and a download (`AttachmentList`); the files waiting to go with a message (`PendingAttachments`); and a section
+ * of a record's files that takes uploads by picking, pasting or dropping (`AttachmentPanel`). Purely presentational:
+ * the consumer gives the files and hears about previews, uploads and removals. Without `onPreview`, images open in
+ * the item's own dialog and other files download. Every word comes from `labels`, English by default; `{name}`-style
+ * placeholders are filled in here.
+ */
 import {
   ChevronLeftIcon,
   ChevronRightIcon,
@@ -104,6 +112,8 @@ function bytes(size: number | undefined, locale: string | undefined): string {
 }
 
 export interface AttachmentListProps {
+  /** Override downloads, for example to validate URLs or authenticate a request. */
+  readonly onDownload?: (file: AttachmentFile) => void;
   readonly files: readonly AttachmentFile[];
   /** Previews a file the consumer's way, stepping through `files` from `index`; every file opens it. */
   readonly onPreview?: (
@@ -120,6 +130,7 @@ export interface AttachmentListProps {
 
 export function AttachmentList({
   files,
+  onDownload,
   onPreview,
   onRemove,
   removingId = null,
@@ -229,8 +240,13 @@ export function AttachmentList({
                 size='icon-xs'
                 className='shrink-0 text-muted-foreground'
                 aria-label={fill(labels.download, { name: file.name })}
-                render={<a href={file.downloadUrl} download={file.name} />}
-                nativeButton={false}
+                render={
+                  onDownload ? undefined : (
+                    <a href={file.downloadUrl} download={file.name} />
+                  )
+                }
+                nativeButton={Boolean(onDownload)}
+                onClick={onDownload ? () => onDownload(file) : undefined}
               >
                 <DownloadIcon />
               </Button>

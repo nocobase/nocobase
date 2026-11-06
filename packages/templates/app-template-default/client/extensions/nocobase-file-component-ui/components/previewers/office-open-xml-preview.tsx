@@ -31,7 +31,7 @@ export function OfficeOpenXmlPreview({
   error,
   onDownload,
 }: OfficeOpenXmlPreviewProps): ReactElement {
-  const { t } = useTranslation('@nocobase/app-plugin-file');
+  const { t } = useTranslation();
   const hostRef = useRef<HTMLDivElement>(null);
   const [loaded, setLoaded] = useState(false);
   const [viewerError, setViewerError] = useState<string>();
@@ -53,7 +53,7 @@ export function OfficeOpenXmlPreview({
       setViewerError(
         cause instanceof OfficeOpenXmlPreviewError
           ? cause.message
-          : t('files.ooxmlLoadFailed', {
+          : t('fileUi.files.ooxmlLoadFailed', {
               defaultValue: 'Unable to render this Office Open XML file.',
             }),
       );
@@ -61,7 +61,7 @@ export function OfficeOpenXmlPreview({
     const timeout = window.setTimeout(() => {
       reportViewerError(
         new OfficeOpenXmlPreviewError(
-          t('files.ooxmlLoadTimedOut', {
+          t('fileUi.files.ooxmlLoadTimedOut', {
             defaultValue: `The preview did not finish loading within ${OFFICE_OPEN_XML_PREVIEW_TIMEOUT_MS / 60_000} minutes.`,
             minutes: OFFICE_OPEN_XML_PREVIEW_TIMEOUT_MS / 60_000,
           }),
@@ -110,7 +110,9 @@ export function OfficeOpenXmlPreview({
   if (!url) {
     return (
       <div role='status'>
-        {t('files.loadingPreview', { defaultValue: 'Loading preview...' })}
+        {t('fileUi.files.loadingPreview', {
+          defaultValue: 'Loading preview...',
+        })}
       </div>
     );
   }
@@ -122,7 +124,9 @@ export function OfficeOpenXmlPreview({
           role='status'
           className='absolute inset-0 z-10 flex items-center justify-center bg-background'
         >
-          {t('files.loadingPreview', { defaultValue: 'Loading preview...' })}
+          {t('fileUi.files.loadingPreview', {
+            defaultValue: 'Loading preview...',
+          })}
         </div>
       ) : null}
       <div
@@ -148,7 +152,7 @@ async function fetchOfficeOpenXml(
   });
   if (!response.ok) {
     throw new OfficeOpenXmlPreviewError(
-      t('files.previewRequestFailed', {
+      t('fileUi.files.previewRequestFailed', {
         defaultValue: `Preview request failed (${response.status}).`,
         status: response.status,
       }),
@@ -209,7 +213,7 @@ function OfficeOpenXmlDownloadFallback({
   readonly message: string;
   readonly onDownload?: () => void;
 }): ReactElement {
-  const { t } = useTranslation('@nocobase/app-plugin-file');
+  const { t } = useTranslation();
   return (
     <div className='flex flex-col items-center gap-3 py-8'>
       <div className='h-24 w-24'>
@@ -218,7 +222,7 @@ function OfficeOpenXmlDownloadFallback({
       <p role='alert'>{message}</p>
       {onDownload ? (
         <Button type='button' onClick={onDownload}>
-          {t('files.downloadFile', { defaultValue: 'Download file' })}
+          {t('fileUi.files.downloadFile', { defaultValue: 'Download file' })}
         </Button>
       ) : null}
     </div>

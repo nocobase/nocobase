@@ -3,7 +3,7 @@
  * the places that decide before any run exists: whether an agent can take a person's work now (`availability`),
  * whether work may be queued to run as the person who asks, and whether a conversation should answer with another
  * agent. A runner counts when it fits the agent and the person (`fitsActor`: tool, local policy, named runners, trust,
- * features) and, when the work gets a variable for team runners only (`teamRunnersOnly`), is a team runner.
+ * features) and, when the work gets a variable for shared runners only (`teamRunnersOnly`), is a shared runner.
  *
  * The variables are the agent's and those of the scopes the caller names, which a claim would take from the subject's
  * assembly, merged as a run gets them; the features are those the caller names besides `secrets`, which follows from
@@ -62,14 +62,14 @@ export interface ClaimEligibility {
   /**
    * Whether queuing the work can lead anywhere: false only when runners that fit the agent and the person are
    * registered, online or not, and none of them would take it, such as only personal ones for work that gets a
-   * variable for team runners only. With no fitting runner registered at all, the work may wait for one.
+   * variable for shared runners only. With no fitting runner registered at all, the work may wait for one.
    */
   mayQueue(
     conn: DatabaseConnection,
     agent: Agent,
     request: EligibilityRequest,
   ): Promise<boolean>;
-  /** The variables the work would get that are for team runners only. */
+  /** The variables the work would get that are for shared runners only. */
   teamOnly(
     conn: DatabaseConnection,
     agent: Agent,

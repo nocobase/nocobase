@@ -18,6 +18,7 @@ import {
   notificationServiceToken,
   type NotificationConfig,
 } from '@nocobase/app-plugin-notification/server';
+import { resolveChannelType } from '@nocobase/app-server/config';
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
 import { i18nToken } from '@nocobase/app-server/i18n';
 
@@ -57,7 +58,7 @@ function directNotices(app: AppPluginApplication): ProjectsNotices | null {
   if (
     !config ||
     config.enabled === false ||
-    config.provider !== 'in-app' ||
+    resolveChannelType(config) !== 'in-app' ||
     !container.has(notificationServiceToken)
   )
     return null;

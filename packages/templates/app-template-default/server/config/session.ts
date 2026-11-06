@@ -4,7 +4,10 @@ import {
   type AppConfigFactory,
 } from '@nocobase/app-server/config';
 import type { AppSessionConfigInput } from '@nocobase/app-server/session';
-import { normalizeBasePath } from '@nocobase/app-server/support';
+import {
+  createAppCookieScope,
+  normalizeBasePath,
+} from '@nocobase/app-server/support';
 
 const session: AppConfigFactory<AppSessionConfigInput> = defineAppConfig({
   env: {
@@ -19,10 +22,9 @@ const session: AppConfigFactory<AppSessionConfigInput> = defineAppConfig({
     enabled: true,
     default: 'memory',
     cookie: {
-      name: 'nocobase_session',
-      // The application's own public base path, as `app.publicBasePath` resolves it: applications sharing an origin
-      // under different paths (`/crm`, `/acme`) each keep their own session cookie instead of overwriting one another's.
-      path: normalizeBasePath(routing.publicBasePath || '/main'),
+      name: `nocobase_session_${createAppCookieScope(routing.publicBasePath)}`,
+      // A distinct name also keeps a child application from reading a parent's cookie sent under an overlapping path.
+      path: normalizeBasePath(routing.publicBasePath) || '/',
       secure: env.NODE_ENV === 'production',
       httpOnly: true,
       sameSite: 'lax' as const,

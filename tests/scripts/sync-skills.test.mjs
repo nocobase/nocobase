@@ -159,3 +159,46 @@ async function createRepository(t, skillNames) {
   }
   return root;
 }
+
+test('replaces old bridge links with the package Skill in both Agent directories', async (t) => {
+  const name = 'nocobase-app-plugin-development';
+  const root = await createRepository(t, [name]);
+  const source = path.join('packages/app/app-skills/skills', name);
+  await mkdir(path.join(root, source), { recursive: true });
+  await writeFile(path.join(root, source, 'SKILL.md'), '# complete guidance\n');
+  for (const directory of AGENT_SKILLS_DIRECTORIES) {
+    await mkdir(path.join(root, directory), { recursive: true });
+    await symlink(
+      path.join('..', '..', SKILLS_DIRECTORY, name),
+      path.join(root, directory, name),
+      'dir',
+    );
+  }
+  await syncSkills(root);
+  for (const directory of AGENT_SKILLS_DIRECTORIES) {
+    const link = path.join(root, directory, name);
+    assert.equal(
+      await readlink(link),
+      path.relative(path.dirname(link), path.join(root, source)),
+    );
+    assert.equal(
+      await readFile(path.join(link, 'SKILL.md'), 'utf8'),
+      '# complete guidance\n',
+    );
+  }
+  assert.equal(
+    await readFile(path.join(root, SKILLS_DIRECTORY, name, 'SKILL.md'), 'utf8'),
+    `# ${name}\n`,
+  );
+});
+
+test('does not fall back to the bridge if the complete package Skill is missing', async (t) => {
+  const name = 'nocobase-app-plugin-development';
+  const root = await createRepository(t, [name]);
+  await syncSkills(root);
+  for (const directory of AGENT_SKILLS_DIRECTORIES) {
+    await assert.rejects(lstat(path.join(root, directory, name)), {
+      code: 'ENOENT',
+    });
+  }
+});

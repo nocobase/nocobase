@@ -2,6 +2,13 @@ import { workflowCategoryColors } from '../../shared/workflow-category-colors.js
 import { DescriptionViewSchema } from '@nocobase/app-plugin-lifecycle-example/server';
 import { z } from 'zod';
 
+export const KnowledgeDirectorySearchQuery = z.object({
+  q: z.string().trim().min(1).max(500),
+});
+export const KnowledgeDirectoryMeta = z.object({
+  total: z.number().int().nonnegative(),
+});
+
 export const articleStatuses = ['draft', 'published', 'archived'] as const;
 
 export const ArticleParams = z.object({

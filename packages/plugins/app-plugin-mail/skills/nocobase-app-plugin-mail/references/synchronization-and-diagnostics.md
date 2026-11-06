@@ -69,3 +69,9 @@ Personal diagnostics require workspace permission and ownership. Cross-user oper
 ## Verify this path
 
 For synchronization integration, verify multiple history pages and a message arriving during history import, not merely one successful list request. For recovery changes, verify restart with retained progress, rejection of stale worker writes and invalid-cursor rescan without skipped changes. For incomplete-content UI, verify continued visibility, independent retry and metadata preservation. Confirm local NocoBase labels/notes survive resync. Run only the scenarios relevant to the requested change; provider and job executor mocks do not prove a deployment's live connectivity.
+
+## Incomplete IMAP moves
+
+IMAP movement protects the selected source with a private pending marker before a remote write and records a confirmed destination before source cleanup. The marker survives process restart. Synchronization preserves protected ownership and content, and orphan cleanup retains the business UUID. A synchronization run may remain `partial` while protected locations need verification; this is not permission to remove the protection or reconstruct the message.
+
+MOVE response loss does not trigger COPY, another MOVE, or automatic retry. COPY cleanup uses only UID EXPUNGE, with a fresh UIDPLUS check after setting the source deletion flag. No mailbox-wide EXPUNGE is used. Verify an unknown result through an authorized mailbox client and report the source/destination evidence; this release does not provide an automatic reconciliation or administrative protection-release endpoint.

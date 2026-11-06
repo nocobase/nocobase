@@ -29,8 +29,12 @@ export {
   type ResolvedRef,
 } from './page-context.js';
 export type {
+  ConversationLinkKind,
+  ConversationLinks,
+  ConversationLinkTarget,
   ConversationNews,
   ConversationRef,
+  ConversationWorkspaceProvider,
   ConversationRuleLines,
   ConversationRules,
   ConversationRulesContext,
@@ -40,3 +44,5 @@ export type {
 } from './ports.js';
 export { autoTitle } from './titles.js';
 export { conversationKey } from './prompt.js';
+
+export type { ConversationShares, ConversationShareScope } from './shares.js';

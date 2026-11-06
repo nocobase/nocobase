@@ -313,6 +313,7 @@ export const RecordOptionSchema: z.ZodType = z
 const OptionsActionSchema = z.object({
   name: z.string(),
   title: OptionTextSchema,
+  description: OptionTextSchema.optional(),
 });
 
 /** What every `options` route answers: the workspace catalogue the settings pages render. */

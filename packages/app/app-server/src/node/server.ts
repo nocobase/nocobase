@@ -16,6 +16,13 @@ export const DEFAULT_HTTP_DRAIN_TIMEOUT_MS: number = 30_000;
 export const DEFAULT_FORCE_EXIT_TIMEOUT_MS: number = 35_000;
 
 /**
+ * How long a client may take to send one whole request, body included. Node's own default of five minutes cuts off
+ * an upload of about 100 MB over a slow link, such as a build archive sent to a deployment API, with HTTP 408. The
+ * header phase keeps Node's separate 60 second `headersTimeout`.
+ */
+export const DEFAULT_HTTP_REQUEST_TIMEOUT_MS: number = 10 * 60_000;
+
+/**
  * Total shutdown budget, when the host supplies one. A supervisor that kills
  * the process after a fixed wait — `tsx watch` escalates to SIGKILL after five
  * seconds — makes the 30 second default unreachable, and a hard kill during
@@ -45,6 +52,8 @@ export interface StartNodeAppServerOptions {
   readonly onListen?: (info: AddressInfo) => void;
   readonly logger?: NodeAppServerLogger;
   readonly registerProcessSignals?: boolean;
+  /** Node's `requestTimeout`; `0` turns it off. */
+  readonly requestTimeoutMs?: number;
   readonly httpDrainTimeoutMs?: number;
   readonly forceExitTimeoutMs?: number;
 }
@@ -85,6 +94,31 @@ export function resolveNodeShutdownTimeouts(
   };
 }
 
+/** Headers that describe the connection rather than the response, which Node's HTTP server alone decides. */
+const CONNECTION_HEADERS: readonly string[] = ['connection', 'keep-alive'];
+
+/**
+ * Leaves the connection's headers to Node. A response that names its own, as the AI SDK's streams say
+ * `connection: keep-alive`, contradicts a connection Node then closes because the request asked it to: the client
+ * keeps reusing it, and its next request is refused with a bare 400 before the application sees it.
+ */
+function withoutConnectionHeaders(
+  fetch: AppServer['fetch'],
+): AppServer['fetch'] {
+  return async (...args) => {
+    const response = await fetch(...args);
+    if (!CONNECTION_HEADERS.some((name) => response.headers.has(name)))
+      return response;
+    const headers = new Headers(response.headers);
+    for (const name of CONNECTION_HEADERS) headers.delete(name);
+    return new Response(response.body, {
+      status: response.status,
+      statusText: response.statusText,
+      headers,
+    });
+  };
+}
+
 export function startNodeAppServer(
   app: ClosableNodeAppServer,
   options: StartNodeAppServerOptions,
@@ -96,9 +130,13 @@ export function startNodeAppServer(
     let unregisterShutdownHandlers = (): void => undefined;
     const server = serve(
       {
-        fetch: app.fetch,
+        fetch: withoutConnectionHeaders(app.fetch),
         hostname: options.hostname,
         port: options.port,
+        serverOptions: {
+          requestTimeout:
+            options.requestTimeoutMs ?? DEFAULT_HTTP_REQUEST_TIMEOUT_MS,
+        },
       },
       (info) => {
         listening = true;

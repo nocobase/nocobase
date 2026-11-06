@@ -1,8 +1,60 @@
 import type { AgentChatLocale } from './en-US.js';
-
 const agentChatZhCN: AgentChatLocale = {
   chat: {
+    sharing: {
+      related: '关联记录',
+      title: '分享快照',
+      description:
+        '对方只能看到分享时的内容，不包含正在运行的整轮。再次分享可更新快照。',
+      sensitive: '对话可能包含敏感信息，请仅分享给应当查看的人。',
+      asOf: '截至 {{time}} 的分享',
+      recipient: '选择应用用户（可多选）',
+      share: '分享',
+      update: '更新',
+      revoke: '撤销',
+      copy: '复制链接',
+      copied: '链接已复制',
+      copyFailed: '无法复制链接',
+      none: '尚未分享给任何人。',
+      failed: '无法读取或更新分享，请重试。',
+      failedRecipients: '未能分享给：{{names}}。这些用户仍保留选中，可重试。',
+      older: '加载更早的消息',
+      empty: '此快照尚无已结束的轮次。',
+    },
+    webSearch: {
+      title: '联网搜索',
+      queryCount: '{{count}} 个搜索词',
+      expand: '展开',
+      collapse: '收起',
+      toggle: '联网搜索',
+      unsupported: '请选择支持联网搜索的模型。',
+      searching: '正在搜索…',
+      completed: '已获取来源',
+      unverified: '搜索未经核验',
+      unverifiedNotice:
+        '服务返回了回答，但未提供搜索证据；无法核验是否实际联网搜索、信息时效或来源。',
+      partial: '部分搜索失败',
+      failed: '搜索不可用',
+      cancelled: '搜索已取消',
+      interrupted: '搜索已中断',
+      timeout: '搜索超时。',
+      unavailable: '搜索暂时不可用。',
+      noEvidence: '未返回可验证的网络证据。',
+      sources: '来源',
+    },
     retrySaving: '重试保存',
+    cancel: '取消',
+    editMessage: '编辑',
+    copyMessage: '复制',
+    refreshReply: '重新生成',
+    copyFailed: '无法复制消息。',
+    resendConfirm: '重新发送',
+    resend: {
+      rejected: '消息未重新发送，已保留编辑内容。',
+      unknown:
+        '重新发送的结果未知，请先刷新历史并等待，再决定是否重试；消息可能已经接收。',
+      needsSync: '消息已接收，但历史尚未同步。请刷新历史，不要再次发送。',
+    },
     contextFailed: '无法读取所选上下文或发送消息，请检查当前页面后重试。',
     approval: {
       request: '此工具需要您批准后才能执行。',
@@ -22,7 +74,6 @@ const agentChatZhCN: AgentChatLocale = {
       unknown: '结果或历史保存尚未确认。请刷新历史后再决定是否重新发送。',
       effectReview: '部分操作可能已完成，再次执行前请核对结果。',
     },
-
     executionFailed:
       '执行失败。再次执行前请查看已保存历史，核对可能已完成的操作。',
     historicalReadOnly: '历史会话仅供查看，请新建聊天以继续。',
@@ -71,6 +122,10 @@ const agentChatZhCN: AgentChatLocale = {
       othersPersonal: '只有别人的个人执行机能跑',
       modelUnavailable: '模型不可用',
     },
+    reasoning: {
+      title: '推理过程',
+      thinking: '正在思考…',
+    },
     reply: {
       writing: '正在输入…',
       interrupted: '回复在这里中断了。',
@@ -87,6 +142,29 @@ const agentChatZhCN: AgentChatLocale = {
       fallback: '这条对话改用其他 Agent',
       usingDefault: '这条对话暂时由 {{name}} 代替 {{own}} 回答。',
       restore: '切回 {{own}}',
+    },
+    fileInputFailures: {
+      imageCapability:
+        '所选模型尚未配置图片输入能力，请切换已确认支持图片的模型。',
+      unsupportedFormat:
+        '所选模型尚未配置此格式的文件输入能力，当前也没有适用的文本提取器。请换用支持的文档格式，或已确认支持此类文件的模型。',
+      formatMismatch:
+        '附件的文件名与内容类型不一致，请检查文件格式后重新上传。',
+      invalidInline: '附件数据无效或过大，请重新上传或使用更小的文件。',
+      fileTooLarge: '单个附件大小超出限制，请使用更小的文件。',
+      inputTooLarge: '会话附件总大小超出限制，请缩小文件或新建会话。',
+      documentTooLarge:
+        '附件提取出的文字超出限制，请拆分文档或使用更小的文件。',
+      contextTooLarge: '会话附件的文字总量超出限制，请缩小文件或新建会话。',
+      fileCount: '会话文件输入已超过 100 个，请新建会话。',
+      nativeFileCount:
+        '附件数量超出文件输入限制，请减少附件，或改用可提取文字的文档。',
+      unreadable:
+        '附件中没有可读取的文字。纯图片或扫描文档需要先做 OCR 文字识别。',
+      extractionFailed:
+        '无法提取附件文字，请检查文档是否损坏或受密码保护，然后重新上传。',
+      extractionTimeout: '附件文字提取超时，请使用更小的文件或稍后重试。',
+      preparationFailed: '无法准备附件，请检查文件访问权限和格式后重试。',
     },
     notice: {
       switchedToDefault:
@@ -166,6 +244,14 @@ const agentChatZhCN: AgentChatLocale = {
       filter: '筛选：{{filter}}',
       selection: '选中文字：“{{text}}”',
       remove: '移除上下文：{{label}}',
+      inspect: '查看上下文：{{label}}',
+      preview: '上下文：{{label}}',
+    },
+    modes: {
+      online: '在线 Agent',
+      runner: '执行机 Agent',
+      switchToOnline: '切换到在线 Agent',
+      switchToRunner: '切换到执行机 Agent',
     },
     agents: {
       models: '模型',
@@ -173,6 +259,11 @@ const agentChatZhCN: AgentChatLocale = {
       runnerAgents: 'Agents',
       modelPlaceholder: '选择模型',
       modelSwitch: '模型：{{name}} · {{service}}；选择模型或 Agent',
+      modelOnlySwitch: '模型：{{name}} · {{service}}；选择模型',
+      modelLoadFailed: '无法加载会话模型',
+      modelChangeFailed: '无法确认模型切换结果',
+      modelSearch: '搜索模型',
+      noMatchingModels: '没有匹配的模型',
       modelHint: '选择与在线大模型对话。',
       mixedHint: '选择与在线大模型或执行机中的 Agent 对话。',
       search: '搜索模型或 Agent',
@@ -195,6 +286,8 @@ const agentChatZhCN: AgentChatLocale = {
     },
     history: {
       title: '对话历史',
+      fold: '收起会话列表',
+      unfold: '展开会话列表',
       search: '搜索对话',
       show: '显示',
       active: '进行中',
@@ -206,10 +299,32 @@ const agentChatZhCN: AgentChatLocale = {
       loadFailed: '无法加载对话',
       noMatch: '没有匹配的对话',
       noArchived: '没有已归档的对话',
-      empty: '还没有对话',
+      empty: '没有对话',
       more: '加载更多',
       unread: '有新回复',
       actions: '{{title}} 的操作',
+    },
+    list: {
+      label: '会话',
+      archivedTitle: '已归档',
+      back: '返回会话',
+      all: '全部',
+      filters: '显示',
+      waiting_one: '需要我 {{count}}',
+      waiting_other: '需要我 {{count}}',
+      active_one: '进行中 {{count}}',
+      active_other: '进行中 {{count}}',
+      today: '今天',
+      yesterday: '昨天',
+      week: '本周',
+      earlier: '更早',
+      restore: '恢复',
+      offline: '执行机离线',
+      needsMe: '需要我',
+      working: '进行中',
+      reply: '新回复',
+      failed: '出错了',
+      confirm: '等你回答',
     },
     loading: '加载中',
     retry: '重试',
@@ -241,7 +356,40 @@ const agentChatZhCN: AgentChatLocale = {
         usage: '用量',
       },
     },
+    backToList: '返回列表',
+    showDetails: '显示详情',
+    hideDetails: '隐藏详情',
+    detailsTitle: '会话详情',
+    sessionDetails: '会话',
+    runtime: '运行环境',
+    agent: 'Agent',
+    started: '开始',
+    usageTitle: '用量',
+    relatedWork: '关联工作',
+    unlink: '取消关联',
+    unlinkFailed: '取消关联失败。',
+    expandPanel: '展开为宽面板',
+    restorePanel: '还原面板',
+    delete: '删除',
+    deleteDialog: {
+      menu: '删除',
+      title: '删除“{{title}}”？',
+      description:
+        '对话中的消息、文件和关联会永久删除，正在执行的运行将停止。关联记录会保留。此操作无法撤销。',
+      cancel: '取消',
+      confirm: '删除',
+      done: '已删除“{{title}}”',
+      body: '对话中的消息、文件和关联会永久删除，正在执行的运行将停止。关联记录会保留。此操作无法撤销。',
+    },
+    usage: {
+      title: '用量',
+      context: '上下文 {{used}} / {{size}} tokens（{{percent}}%）',
+      window: '上下文窗口',
+      input: '输入',
+      cached: '缓存',
+      output: '输出',
+      cost: '费用',
+    },
   },
 };
-
 export default agentChatZhCN;

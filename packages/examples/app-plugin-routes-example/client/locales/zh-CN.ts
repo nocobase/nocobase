@@ -1,4 +1,8 @@
-export default {
+import type { LocaleResource } from '@nocobase/i18n';
+
+import type enUS from './en-US.js';
+
+const zhCN: LocaleResource<typeof enUS> = {
   providerDescription: '此页面使用同一客户端插件提供的 Provider。',
   loadError: '无法加载服务端路由。',
   clientExample: '客户端路由示例',
@@ -10,3 +14,5 @@ export default {
   scope: '作用域',
   message: '消息',
 };
+
+export default zhCN;

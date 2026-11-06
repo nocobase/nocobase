@@ -1,4 +1,4 @@
-import { useToaster } from '@nocobase/app-client';
+import { copyText, useToaster } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { useCallback, useEffect, useState } from 'react';
 
@@ -23,11 +23,14 @@ export function useCopy(): CopyState {
   const copy = useCallback(
     async (text: string): Promise<void> => {
       try {
-        await navigator.clipboard.writeText(text);
+        if (!(await copyText(text))) {
+          toaster.show({ type: 'error', title: t('home.prompt.copyFailed') });
+          return;
+        }
         setCopied(true);
         toaster.show({ type: 'success', title: t('home.prompt.copied') });
       } catch {
-        // The Clipboard API is missing outside a secure context and rejects without permission.
+        // Copying can fail when neither browser mechanism is available.
         toaster.show({ type: 'error', title: t('home.prompt.copyFailed') });
       }
     },

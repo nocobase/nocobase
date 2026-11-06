@@ -12,12 +12,34 @@ function visibleAnchor(element: HTMLElement): ScrollAnchor | undefined {
   return undefined;
 }
 
-/** Follow layout growth, including Markdown and same-message deltas, without moving a reader up-thread. */
+/**
+ * Follow layout growth, including Markdown and same-message deltas, without moving a reader up-thread.
+ *
+ * Whether the reader follows the end is learnt from `scroll` events, which arrive a frame after the position changed;
+ * a layout change in between (a resize of the window or of the content) must not take a reader who just scrolled away
+ * back to the end. So the position the log was last left at is remembered (`pinnedRef`), and a position that moved
+ * from it, away from the end, is the reader leaving it, whether or not their `scroll` event came yet.
+ */
 export function useChatScroll(
   firstSeq: number | undefined,
 ): RefObject<HTMLDivElement | null> {
   const ref = useRef<HTMLDivElement>(null);
   const followingRef = useRef(true);
+  const pinnedRef = useRef(0);
+  /** Still following: unless the reader moved away from the end since the log was last positioned. */
+  const follows = (element: HTMLElement): boolean => {
+    if (
+      followingRef.current &&
+      Math.abs(element.scrollTop - pinnedRef.current) > 1 &&
+      !chatNearBottom(element)
+    )
+      followingRef.current = false;
+    return followingRef.current;
+  };
+  const toEnd = (element: HTMLElement): void => {
+    element.scrollTop = element.scrollHeight;
+    pinnedRef.current = element.scrollTop;
+  };
   const previousRef = useRef({
     firstSeq,
     height: 0,
@@ -41,7 +63,8 @@ export function useChatScroll(
           anchor.offset
         : element.scrollHeight - before.height;
       followingRef.current = false;
-    } else if (followingRef.current) element.scrollTop = element.scrollHeight;
+    } else if (follows(element)) toEnd(element);
+    pinnedRef.current = element.scrollTop;
     previousRef.current = {
       firstSeq,
       height: element.scrollHeight,
@@ -53,6 +76,7 @@ export function useChatScroll(
     if (!element) return;
     const onScroll = () => {
       followingRef.current = chatNearBottom(element);
+      pinnedRef.current = element.scrollTop;
       previousRef.current.anchor = visibleAnchor(element);
     };
     element.addEventListener('scroll', onScroll, { passive: true });
@@ -60,7 +84,8 @@ export function useChatScroll(
       typeof ResizeObserver === 'undefined'
         ? undefined
         : new ResizeObserver(() => {
-            if (followingRef.current) element.scrollTop = element.scrollHeight;
+            if (follows(element)) toEnd(element);
+            else pinnedRef.current = element.scrollTop;
             previousRef.current.height = element.scrollHeight;
             previousRef.current.anchor = visibleAnchor(element);
           });

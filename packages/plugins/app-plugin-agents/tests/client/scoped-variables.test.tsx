@@ -121,7 +121,7 @@ describe('variables of several scopes', () => {
     );
   });
 
-  it('marks a variable for team runtimes only, and changes the mark without replacing the value', async () => {
+  it('marks a variable for shared runtimes only, and changes the mark without replacing the value', async () => {
     renderRoute(
       <VariablesPanel
         scopes={SCOPES}

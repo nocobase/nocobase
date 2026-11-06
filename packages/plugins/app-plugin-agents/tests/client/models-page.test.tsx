@@ -107,7 +107,7 @@ function service(extra: Partial<ModelServiceView> = {}): ModelServiceView {
 const servicesList = () =>
   screen.findByRole('table', { name: 'services.list' });
 
-describe('Agent team › Models', () => {
+describe('Agent management › Models', () => {
   beforeEach(() => {
     state.services = [];
     serve();

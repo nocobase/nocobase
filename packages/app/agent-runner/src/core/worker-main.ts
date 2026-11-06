@@ -16,7 +16,6 @@ import {
   listProcesses,
   descendantsOf,
   groupsBelow,
-  workspaceHolders,
 } from './process-tree.ts';
 import {
   jobRecordKey,
@@ -117,6 +116,9 @@ async function main(): Promise<number> {
       paths,
       connection,
       settings,
+      ...(job.toolVersion === undefined
+        ? {}
+        : { toolVersion: job.toolVersion }),
       stopWriters: async () => {
         quiescing = true;
         try {
@@ -132,20 +134,18 @@ async function main(): Promise<number> {
           const tagged = tag === undefined ? 0 : await killTagged([tag]);
           if (left.groups > 0)
             log(
-              `worker: stopped ${left.groups} process group(s) before saving`,
+              `worker: stopped ${left.groups} process group(s) before finishing`,
             );
           if (left.processes + tagged > 0)
             log(
-              `worker: stopped ${left.processes + tagged} process(es) the run left behind before saving`,
+              `worker: stopped ${left.processes + tagged} process(es) the run left behind before finishing`,
             );
           if (
             descendantsOf(process.pid, await listProcesses(strict)).some(
               (entry) => isAlive(entry.pid),
             ) ||
             (tag !== undefined &&
-              (await taggedProcesses([tag], strict)).length > 0) ||
-            (record.workDir !== undefined &&
-              (await workspaceHolders(record.workDir, strict)).length > 0)
+              (await taggedProcesses([tag], strict)).length > 0)
           )
             throw new Error(
               'Writers remain after stopping the tool; preserve the worktree for recovery.',

@@ -1,7 +1,7 @@
 /**
  * This plugin on the authorization plugin, from `shared/access.ts`: its settings items, listed in the permission
- * workspace under an Agent team subsection of administration, and its businesses as the `agents` resource type, each
- * level of a business action its own action, under an Agent team subsection of business. Its pages are client routes;
+ * workspace under an Agent management subsection of administration, and its businesses as the `agents` resource type, each
+ * level of a business action its own action, under an Agent management subsection of administration. Its pages are client routes;
  * the authorization plugin lists them from the route tree.
  */
 import {
@@ -51,7 +51,7 @@ export function registerBusinesses(authz: AppAuthorization): void {
   authz.ui.sections.add({
     name: BUSINESS_SECTION,
     title: accessText('businessSection'),
-    parent: 'business',
+    parent: 'administration',
   });
   const items = new ResourceItems();
   for (const business of Object.keys(BUSINESS_ACTIONS) as Business[])
@@ -65,6 +65,7 @@ export function registerBusinesses(authz: AppAuthorization): void {
         levelActionsOf(key).map(({ level, name }) => ({
           name,
           title: actionText(key, level),
+          description: actionText(key, 'description'),
         })),
       ),
     });

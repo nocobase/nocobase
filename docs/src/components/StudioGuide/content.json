@@ -1,0 +1,233 @@
+{
+  "title": "NocoBase Studio 使用指南",
+  "description": "从部署 Studio、配置 Runner Agent 和 Git，到创建项目、接入 CI、创建与跟进任务，以及使用 Studio CLI 的完整指南。",
+  "eyebrow": "STUDIO / GETTING STARTED",
+  "heading": "开始带领你的",
+  "headingAccent": "Agents 交付项目",
+  "intro": "安装 NocoBase Studio，接入 Coding Agent 和代码仓库，在预览环境里验收 Agent 完成的第一个任务。",
+  "imageHint": "点击截图可放大查看",
+  "flowLabel": "配置与使用概览",
+  "flowTitle": "配置与使用概览",
+  "flow": [
+    {
+      "title": "部署 Studio",
+      "description": "准备服务器，完成安装与验证",
+      "chapterId": "deployment"
+    },
+    {
+      "title": "配置 Runner Agent",
+      "description": "接入运行环境，配置 Agent 与项目经理",
+      "chapterId": "runtimes"
+    },
+    {
+      "title": "配置 Git",
+      "description": "连接全局 Git 服务与个人账号",
+      "chapterId": "git"
+    },
+    {
+      "title": "创建项目与配置 CI",
+      "description": "建立代码仓库，配置工作流和部署密钥",
+      "chapterId": "projects"
+    },
+    {
+      "title": "创建与验收任务",
+      "description": "通过 Runner 或 My agents 创建任务，跟进并验收预览",
+      "chapterId": "issues"
+    },
+    {
+      "title": "使用 Studio CLI（可选）",
+      "description": "让本地 Agent 管理 Studio、协助分析任务",
+      "chapterId": "cli"
+    }
+  ],
+  "toc": "章节目录",
+  "tocToggle": "查看章节目录",
+  "tocTip": "先完成环境、Git 和项目配置，再开始任务协作。展开章节可直接跳到具体操作。",
+  "chapters": [
+    {
+      "id": "deployment",
+      "title": "NocoBase Studio",
+      "summary": "安装并启动 NocoBase Studio，为 Agents 准备好协作环境。",
+      "sections": [
+        {
+          "id": "deployment-prepare",
+          "title": "准备服务器",
+          "html": "<p>准备一台能访问 npm、Docker 镜像仓库和 Git 服务的服务器。</p>",
+          "topics": []
+        },
+        {
+          "id": "deployment-setup",
+          "title": "安装与部署",
+          "html": "<p>\n              以下使用示例域名和部署路径；执行前替换服务器 IP、目录和域名。\n            </p>\n            <div class=\"code-block prompt-card\"><div class=\"code-heading\"><span class=\"code-title\"><svg class=\"\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\" focusable=\"false\"><path d=\"M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z\"/><path d=\"M7 7h10M7 11h7\"/></svg>部署提示词</span><button type=\"button\" class=\"copy-button\" data-copy=\"deployment-prompt\" data-copy-status=\"已复制，可以粘贴到 Agent 中\"><svg class=\"copy-icon\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\" focusable=\"false\"><rect x=\"9\" y=\"9\" width=\"13\" height=\"13\" rx=\"2\"/><path d=\"M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1\"/></svg><svg class=\"copy-check\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\" focusable=\"false\"><path d=\"m5 12 4 4L19 6\"/></svg><span data-copy-label>复制提示词</span></button></div>\n              <pre\n                id=\"deployment-prompt\"\n              ><code>请通过 SSH 登录 root@YOUR_SERVER_IP，安装并部署 NocoBase Studio。\n\n部署配置：\n- Docker 镜像：pkg-v3.nocobase.com/nocobase/studio:latest\n- 镜像仓库 Token：通过私密方式提供\n- 部署目录：/root/deploy/apps/studio\n- 访问地址：https://studio.example.com/main/\n- Studio 部署路径：/main\n- 现有 Caddy Compose 文件：/root/deploy/docker-compose.yml\n\n部署要求：\n1. 先检查现有部署、Docker 网络及 Caddy 配置，避免影响其他服务。\n2. 如果已有 Studio 实例，保留数据库、上传文件和管理员账号；如果是首次部署，管理员使用 nocobase，生成随机密码并保存到权限为 600 的服务器配置文件中。\n3. 配置数据持久化、容器自动重启，以及 Caddy 反向代理和 HTTPS。\n4. 使用独立的容器名称和网络别名，避免与其他 Studio 实例冲突。\n5. 将 Studio、CLI、Agent 和仓库 CI 的站点地址统一为上述 /main 地址，并同步 Git 服务的回调与 Webhook 地址。\n6. 完成后验证容器健康状态、HTTPS 访问、管理员登录，以及重启后的数据持久化。\n7. 汇报部署版本、访问地址、配置文件位置、密码查看方式和验证结果。</code></pre>\n            </div>\n            <aside class=\"note\">\n              <strong>统一使用完整的站点地址</strong>\n              <p>\n                本示例的 Studio 入口是\n                <a\n                  href=\"https://studio.example.com/main/\"\n                  target=\"_blank\"\n                  rel=\"noopener noreferrer\"\n                  >https://studio.example.com/main/</a\n                >。后续 CLI、电脑连接、Runtime 和 CI 配置均使用这个入口，保留\n                <code>/main</code>。\n              </p>\n            </aside>\n            <p class=\"done\">\n              <strong>完成标志</strong> HTTPS\n              可访问、管理员可登录，容器重启后数据仍保留。\n            </p>",
+          "topics": []
+        }
+      ]
+    },
+    {
+      "id": "runtimes",
+      "title": "Runner Agent",
+      "summary": "添加运行环境、设置并发数量，启用 Runner 使用的 Agent，并为项目经理选择执行 Agent。",
+      "sections": [
+        {
+          "id": "runtime-connect",
+          "title": "配置运行环境",
+          "html": "<p>进入 <strong>Agent management → Runtimes</strong>，点击 <strong>Add runtime</strong>。运行环境可以是个人电脑，也可以是服务器；建议使用隔离的虚拟机。</p><figure><a class=\"screenshot\" href=\"./assets/runtime-list.png\" aria-label=\"放大查看：在 Runtimes 页面添加运行环境。\"><img src=\"./assets/runtime-list.png\" width=\"1440\" height=\"1050\" alt=\"在 Runtimes 页面添加运行环境。\" decoding=\"async\" loading=\"lazy\" /></a><figcaption><span>图 01</span>在 Runtimes 页面添加运行环境。</figcaption></figure><ol class=\"steps\"><li>按使用范围选择 <strong>Personal</strong> 或 <strong>Shared</strong>，勾选机器上准备使用的 Coding tools。</li><li>新增运行环境的默认最大并发数为 <strong>3</strong>。调整 <strong>Max concurrent runs</strong>（最大并发运行数）。根据机器资源与模型额度设置，例如需要同时执行 10 个任务时填写 <code>10</code>。</li><li>点击 <strong>Generate install command</strong>，复制当前页面生成的命令。</li></ol><figure><a class=\"screenshot\" href=\"./assets/runtime-setup.png\" aria-label=\"放大查看：根据机器能力调整 Max concurrent runs，再生成安装命令。\"><img src=\"./assets/runtime-setup.png\" width=\"1440\" height=\"1400\" alt=\"根据机器能力调整 Max concurrent runs，再生成安装命令。\" decoding=\"async\" loading=\"lazy\" /></a><figcaption><span>图 02</span>根据机器能力调整 Max concurrent runs，再生成安装命令。</figcaption></figure><p>每个系统都提供「提示词 / 手动安装」（Prompt / Manual）。可复制提示词给目标机器上的 Agent，或自行执行一次性注册命令。Windows 完整提示词首先要求 Agent 判断自己是否在 WSL Ubuntu 中；不在就停止，告知用户到 PowerShell 执行 wsl --install、重启 Windows，再到 WSL Ubuntu 中打开 Agent 重执行提示词。只有在 WSL Ubuntu 中才继续；Node.js 24 和编码工具都装在 WSL 内，无法访问外网时开启镜像网络。个人仅执行所属用户的任务；共享可执行所有用户的任务并收到其变量和密钥。无论哪种范围，都建议隔离运行：Agent 拥有完全权限，执行机不是沙箱。安装后用 nocobase-runner status 确认连接。未检测到工具时，在 which codex / which claude 可用的终端重新执行 nocobase-runner service install 并重启服务，让服务带上正确 PATH。提示词也会指导处理代理、npm 全局安装权限以及避免 snap 版工具。</p><figure><a class=\"screenshot\" href=\"./assets/runtime-install.png\" aria-label=\"放大查看：选择目标系统，复制当前生成的命令，在运行环境中安装 Runner。\"><img src=\"./assets/runtime-install.png\" width=\"1440\" height=\"1400\" alt=\"选择目标系统，复制当前生成的命令，在运行环境中安装 Runner。\" decoding=\"async\" loading=\"lazy\" /></a><figcaption><span>图 03</span>选择目标系统，复制当前生成的命令，在运行环境中安装 Runner。</figcaption></figure>",
+          "topics": []
+        },
+        {
+          "id": "agents-enable",
+          "title": "启动 Agents",
+          "html": "<p>运行环境在线后，进入 <strong>Agent management → Agents</strong>。为发现的 Agent 点击 <strong>Fill in and enable</strong>，完成配置并启用，供 Runner 执行任务时使用。</p><figure><a class=\"screenshot\" href=\"./assets/enable-agents.png\" aria-label=\"放大查看：配置并启用运行环境提供的 Agents。\"><img src=\"./assets/enable-agents.png\" width=\"1440\" height=\"1050\" alt=\"配置并启用运行环境提供的 Agents。\" decoding=\"async\" loading=\"lazy\" /></a><figcaption><span>图 04</span>配置并启用运行环境提供的 Agents。</figcaption></figure><p>还需要给 <strong>Project manager</strong> 配置执行 Agent：在 <strong>The agent it runs with → First choice</strong> 选择可用 Agent，按需设置 Fallback，然后保存。</p><figure><a class=\"screenshot\" href=\"./assets/project-manager.png\" aria-label=\"放大查看：为项目经理选择执行 Agent 并保存。\"><img src=\"./assets/project-manager.png\" width=\"1440\" height=\"1050\" alt=\"为项目经理选择执行 Agent 并保存。\" decoding=\"async\" loading=\"lazy\" /></a><figcaption><span>图 05</span>为项目经理选择执行 Agent 并保存。</figcaption></figure>",
+          "topics": []
+        }
+      ]
+    },
+    {
+      "id": "git",
+      "title": "Git",
+      "summary": "配置全局仓库授权与个人 Git 账号，让项目和代码提交关联到正确的身份。",
+      "sections": [
+        {
+          "id": "git-global",
+          "title": "配置全局 Git 连接",
+          "html": "<p>位置：<strong>设置 → 集成 → Git</strong>。全局 Git 连接让 Studio 能访问 GitHub/GitLab，并与代码仓库协作。</p><p>点击 <strong>Add connection</strong>，选择 GitHub 或 GitLab，按页面指引完成授权。创建项目时选择这个连接；如果准备新建仓库，还需要相应的仓库创建权限。</p><figure><a class=\"screenshot\" href=\"./assets/git-connection.png\" aria-label=\"放大查看：添加全局 GitHub 或 GitLab 连接。\"><img src=\"./assets/git-connection.png\" width=\"3456\" height=\"1992\" alt=\"添加全局 GitHub 或 GitLab 连接。\" decoding=\"async\" loading=\"lazy\" /></a><figcaption><span>图 06</span>添加全局 GitHub 或 GitLab 连接。</figcaption></figure>",
+          "topics": []
+        },
+        {
+          "id": "git-personal",
+          "title": "配置个人 Git 连接",
+          "html": "<p>位置：<strong>个人设置 → 集成 → Git</strong>。连接自己的 Git 账号，用于代码提交时的账号身份信息。</p><figure><a class=\"screenshot\" href=\"./assets/personal-git.png\" aria-label=\"放大查看：在个人设置中连接自己的 Git 账号。\"><img src=\"./assets/personal-git.png\" width=\"3444\" height=\"1992\" alt=\"在个人设置中连接自己的 Git 账号。\" decoding=\"async\" loading=\"lazy\" /></a><figcaption><span>图 07</span>在个人设置中连接自己的 Git 账号。</figcaption></figure>",
+          "topics": []
+        }
+      ]
+    },
+    {
+      "id": "projects",
+      "title": "项目",
+      "summary": "连接代码仓库创建项目，再配置 CI 工作流与部署凭据。",
+      "sections": [
+        {
+          "id": "project-create",
+          "title": "创建项目",
+          "html": "<p>先完成全局 Git 连接。进入 <strong>Projects → New project</strong>，填写项目名称；本指南选择 <strong>New repository</strong>。</p><figure><a class=\"screenshot\" href=\"./assets/project-repository.png\" aria-label=\"放大查看：从 Projects 页面点击 New project。\"><img src=\"./assets/project-repository.png\" width=\"3456\" height=\"1992\" alt=\"从 Projects 页面点击 New project。\" decoding=\"async\" loading=\"lazy\" /></a><figcaption><span>图 08</span>从 Projects 页面点击 New project。</figcaption></figure><p>选择仓库所属账号或组织，填写仓库名称与可见性，并按需要选择初始化模板和执行 Agent。检查配置后创建项目。</p><figure><a class=\"screenshot\" href=\"./assets/new-project.png\" aria-label=\"放大查看：检查仓库和初始化配置后创建项目。\"><img src=\"./assets/new-project.png\" width=\"3456\" height=\"1992\" alt=\"检查仓库和初始化配置后创建项目。\" decoding=\"async\" loading=\"lazy\" /></a><figcaption><span>图 09</span>检查仓库和初始化配置后创建项目。</figcaption></figure>",
+          "topics": []
+        },
+        {
+          "id": "ci",
+          "title": "配置 CI",
+          "html": "<p>如果创建项目时没有配置 CI，进入项目的 <strong>Settings → Deployment</strong>，点击 <strong>Set up CI</strong>，按向导完成配置。</p><figure><a class=\"screenshot\" href=\"./assets/deployment-settings.png\" aria-label=\"放大查看：在项目的 Deployment 设置中打开 CI 向导。\"><img src=\"./assets/deployment-settings.png\" width=\"3456\" height=\"1992\" alt=\"在项目的 Deployment 设置中打开 CI 向导。\" decoding=\"async\" loading=\"lazy\" /></a><figcaption><span>图 10</span>在项目的 Deployment 设置中打开 CI 向导。</figcaption></figure><p>按需要选择触发方式、目标环境、应用目录和 App ID。PR 预览选择 <strong>Pull request</strong> 与 <strong>Preview</strong>；应用位于仓库根目录时，Directory 填 <code>.</code>。</p><figure><a class=\"screenshot\" href=\"./assets/ci-setup.png\" aria-label=\"放大查看：设置触发方式和应用信息，使用界面提供的工作流。\"><img src=\"./assets/ci-setup.png\" width=\"3456\" height=\"1992\" alt=\"设置触发方式和应用信息，使用界面提供的工作流。\" decoding=\"async\" loading=\"lazy\" /></a><figcaption><span>图 11</span>设置触发方式和应用信息，使用界面提供的工作流。</figcaption></figure><ol class=\"steps\"><li>在 Git 仓库添加向导提供的工作流，例如 <code>.github/workflows/nb-studio-test-preview.yml</code>。文件内容使用当前界面生成的版本。</li><li>点击 <strong>Generate key and show it once</strong>（生成密钥并显示一次），复制这个仓库的 CI 部署密钥。</li><li>在 GitHub 仓库打开 <strong>Settings → Secrets and variables → Actions</strong>，添加 <strong>Repository secret</strong>：Name 为 <code>NB_STUDIO_API_KEY</code>，Secret 为刚复制的密钥。</li><li>提交工作流，触发或重跑一次 CI。确认构建和部署成功，再回 Studio 查看上报结果并访问预览。</li></ol><aside class=\"note\"><strong>凭据通常只配置一次</strong><p>后续每次 CI 会自动读取这个 Secret。只有密钥轮换、撤销或到期等情况才需要更新；重新生成密钥后，记得同步更新仓库 Secret。手动通过网页配置这些内容，不要求你的电脑安装 Studio CLI。</p></aside>",
+          "topics": []
+        }
+      ]
+    },
+    {
+      "id": "issues",
+      "title": "任务",
+      "summary": "通过 Runner Agent 或 My agents 创建任务，跟进执行进度，并在详情中审查交付与预览。",
+      "sections": [
+        {
+          "id": "issue-create",
+          "title": "创建任务",
+          "html": "",
+          "topics": [
+            {
+              "id": "issue-create-runner",
+              "title": "通过 Runner Agent",
+              "html": "<p>没有配置 My agents 时，可以让 Runner Agent 帮你整理需求。在项目中点击 <strong>New issue</strong>，描述目标和需要完成的工作。</p><figure><a class=\"screenshot\" href=\"./assets/runner-new-issue.png\" aria-label=\"放大查看：从项目中打开 New issue，开始整理任务。\"><img src=\"./assets/runner-new-issue.png\" width=\"3456\" height=\"1992\" alt=\"从项目中打开 New issue，开始整理任务。\" decoding=\"async\" loading=\"lazy\" /></a><figcaption><span>图 12</span>从项目中打开 New issue，开始整理任务。</figcaption></figure><figure><a class=\"screenshot\" href=\"./assets/runner-issue-details.png\" aria-label=\"放大查看：描述需求，确认整理后的任务内容。\"><img src=\"./assets/runner-issue-details.png\" width=\"3456\" height=\"1992\" alt=\"描述需求，确认整理后的任务内容。\" decoding=\"async\" loading=\"lazy\" /></a><figcaption><span>图 13</span>描述需求，确认整理后的任务内容。</figcaption></figure><figure><a class=\"screenshot\" href=\"./assets/runner-issue-created.png\" aria-label=\"放大查看：检查整理后的任务草稿，确认后创建任务。\"><img src=\"./assets/runner-issue-created.png\" width=\"3456\" height=\"1992\" alt=\"检查整理后的任务草稿，确认后创建任务。\" decoding=\"async\" loading=\"lazy\" /></a><figcaption><span>图 14</span>检查整理后的任务草稿，确认后创建任务。</figcaption></figure>"
+            },
+            {
+              "id": "my-agents",
+              "title": "通过 My agents",
+              "html": "<p>先连接个人电脑。在 <strong>My agents</strong> 或新建任务的会话面板中点击 <strong>Connect your computer</strong>，复制提示词，交给这台电脑上的 Coding Agent 完成安装与浏览器授权。</p><figure><a class=\"screenshot\" href=\"./assets/my-agents.png\" aria-label=\"放大查看：未连接电脑时，从会话入口连接个人电脑。\"><img src=\"./assets/my-agents.png\" width=\"3456\" height=\"1992\" alt=\"未连接电脑时，从会话入口连接个人电脑。\" decoding=\"async\" loading=\"lazy\" /></a><figcaption><span>图 15</span>未连接电脑时，从会话入口连接个人电脑。</figcaption></figure><figure><a class=\"screenshot\" href=\"./assets/computer-setup.png\" aria-label=\"放大查看：把当前页面生成的连接提示词交给本地 Coding Agent。\"><img src=\"./assets/computer-setup.png\" width=\"3456\" height=\"1992\" alt=\"把当前页面生成的连接提示词交给本地 Coding Agent。\" decoding=\"async\" loading=\"lazy\" /></a><figcaption><span>图 16</span>把当前页面生成的连接提示词交给本地 Coding Agent。</figcaption></figure><p>确认电脑在线后，再点击 <strong>New issue</strong>，打开的就是 My agent 会话。在会话里沟通需求、整理范围，并创建任务。</p><figure><a class=\"screenshot\" href=\"./assets/issue-conversation.png\" aria-label=\"放大查看：在 My agent 会话中沟通需求。\"><img src=\"./assets/issue-conversation.png\" width=\"3456\" height=\"1992\" alt=\"在 My agent 会话中沟通需求。\" decoding=\"async\" loading=\"lazy\" /></a><figcaption><span>图 17</span>在 My agent 会话中沟通需求。</figcaption></figure><figure><a class=\"screenshot\" href=\"./assets/issue-created.png\" aria-label=\"放大查看：在会话中确认并创建任务。\"><img src=\"./assets/issue-created.png\" width=\"3456\" height=\"1992\" alt=\"在会话中确认并创建任务。\" decoding=\"async\" loading=\"lazy\" /></a><figcaption><span>图 18</span>在会话中确认并创建任务。</figcaption></figure>"
+            }
+          ]
+        },
+        {
+          "id": "issue-follow",
+          "title": "跟进任务",
+          "html": "",
+          "topics": [
+            {
+              "id": "issue-follow-my-issues",
+              "title": "My issues",
+              "html": "<p>从 <strong>My issues</strong> 查看自己负责或需要跟进的任务，打开条目继续处理。</p><figure><a class=\"screenshot\" href=\"./assets/my-issues.png\" aria-label=\"放大查看：在 My issues 查看与自己相关的任务。\"><img src=\"./assets/my-issues.png\" width=\"3456\" height=\"1992\" alt=\"在 My issues 查看与自己相关的任务。\" decoding=\"async\" loading=\"lazy\" /></a><figcaption><span>图 19</span>在 My issues 查看与自己相关的任务。</figcaption></figure>"
+            },
+            {
+              "id": "issue-follow-my-agents",
+              "title": "My agents",
+              "html": "<p>从 <strong>My agents</strong> 返回已有会话，继续讨论任务并查看会话关联的工作。</p><figure><a class=\"screenshot\" href=\"./assets/my-agent-sessions.png\" aria-label=\"放大查看：在 My agents 中继续已有会话。\"><img src=\"./assets/my-agent-sessions.png\" width=\"3456\" height=\"1992\" alt=\"在 My agents 中继续已有会话。\" decoding=\"async\" loading=\"lazy\" /></a><figcaption><span>图 20</span>在 My agents 中继续已有会话。</figcaption></figure>"
+            },
+            {
+              "id": "issue-follow-issues",
+              "title": "Issues",
+              "html": "<p>从 <strong>Issues</strong> 查看任务列表，按项目或状态查找任务并进入详情。</p><figure><a class=\"screenshot\" href=\"./assets/issues-list.png\" aria-label=\"放大查看：从 Issues 列表查看任务状态并进入详情。\"><img src=\"./assets/issues-list.png\" width=\"3456\" height=\"1992\" alt=\"从 Issues 列表查看任务状态并进入详情。\" decoding=\"async\" loading=\"lazy\" /></a><figcaption><span>图 21</span>从 Issues 列表查看任务状态并进入详情。</figcaption></figure>"
+            }
+          ]
+        },
+        {
+          "id": "issue-details",
+          "title": "任务详情",
+          "html": "<p>任务开始后会按执行流程流转。在详情里查看当前阶段、执行记录和交付结果。</p>",
+          "topics": [
+            {
+              "id": "issue-in-progress",
+              "title": "进行中",
+              "html": "<p>查看当前执行阶段和 Agent 的工作记录，了解任务正在处理什么。</p><figure><a class=\"screenshot\" href=\"./assets/issue-in-progress.png\" aria-label=\"放大查看：在进行中的任务详情里查看执行进度。\"><img src=\"./assets/issue-in-progress.png\" width=\"3456\" height=\"1992\" alt=\"在进行中的任务详情里查看执行进度。\" decoding=\"async\" loading=\"lazy\" /></a><figcaption><span>图 22</span>在进行中的任务详情里查看执行进度。</figcaption></figure>"
+            },
+            {
+              "id": "issue-review",
+              "title": "待审查",
+              "html": "<p>任务进入待审查后，阅读交付说明与验证结果，并按验收要求检查。需要调整时，把具体反馈补充到任务中。</p><figure><a class=\"screenshot\" href=\"./assets/issue-in-review.png\" aria-label=\"放大查看：审查任务的交付结果和验收说明。\"><img src=\"./assets/issue-in-review.png\" width=\"3456\" height=\"1992\" alt=\"审查任务的交付结果和验收说明。\" decoding=\"async\" loading=\"lazy\" /></a><figcaption><span>图 23</span>审查任务的交付结果和验收说明。</figcaption></figure>"
+            },
+            {
+              "id": "issue-preview",
+              "title": "预览环境",
+              "html": "<p>项目 CI 部署成功后，从任务关联的预览入口打开应用，实际检查页面和功能。</p><figure><a class=\"screenshot\" href=\"./assets/issue-preview.png\" aria-label=\"放大查看：打开任务关联的预览环境，检查实际效果。\"><img src=\"./assets/issue-preview.png\" width=\"3456\" height=\"1992\" alt=\"打开任务关联的预览环境，检查实际效果。\" decoding=\"async\" loading=\"lazy\" /></a><figcaption><span>图 24</span>打开任务关联的预览环境，检查实际效果。</figcaption></figure>"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cli",
+      "title": "Studio CLI",
+      "summary": "在本地 Coding Agent 中管理 Studio 的项目与任务，协助分析复杂问题。",
+      "sections": [
+        {
+          "id": "cli-install",
+          "title": "安装与连接",
+          "html": "<p>如果希望在本地 Agent 中操控 Studio，可以安装 Studio CLI。点击右上角头像，选择 <strong>Use Studio in your agent</strong>，复制当前站点生成的配置提示词。</p><figure><a class=\"screenshot\" href=\"./assets/cli-entry.png\" aria-label=\"放大查看：打开连接本地 Coding Agent 的入口。\"><img src=\"./assets/cli-entry.png\" width=\"3456\" height=\"1992\" alt=\"打开连接本地 Coding Agent 的入口。\" decoding=\"async\" loading=\"lazy\" /></a><figcaption><span>图 25</span>打开连接本地 Coding Agent 的入口。</figcaption></figure><figure><a class=\"screenshot\" href=\"./assets/cli-setup.png\" aria-label=\"放大查看：复制当前生成的 Studio CLI 安装与登录提示词。\"><img src=\"./assets/cli-setup.png\" width=\"3456\" height=\"1992\" alt=\"复制当前生成的 Studio CLI 安装与登录提示词。\" decoding=\"async\" loading=\"lazy\" /></a><figcaption><span>图 26</span>复制当前生成的 Studio CLI 安装与登录提示词。</figcaption></figure><ol class=\"steps\"><li>本地需要 <strong>Node.js 24 或更高版本</strong>及 npm。将提示词交给本地 Coding Agent 执行。</li><li>按终端提示在浏览器完成登录授权，确认连接的是目标 Studio。</li><li>登录后检查身份与权限、阅读命令文档，并安装 CLI skill。</li></ol><div class=\"code-block\"><div class=\"code-heading\"><span>登录后的检查与配置</span><button type=\"button\" class=\"copy-button\" data-copy=\"cli-checks\">复制</button></div><pre id=\"cli-checks\"><code>nb-studio whoami\nnb-studio docs\nnb-studio skills install</code></pre></div><aside class=\"note\"><strong>使用当前站点生成的指令</strong><p>截图用于定位入口。安装链接和临时凭据可能过期，请复制当前页面的新指令。</p></aside>",
+          "topics": []
+        },
+        {
+          "id": "cli-analyze",
+          "title": "让本地 Agent 分析任务",
+          "html": "<p>连接后，一些复杂的问题可以交给本地 Agent 协助。把任务链接和需要分析的问题一起提供，例如：</p><div class=\"code-block\"><div class=\"code-heading\"><span>任务分析提示词</span><button type=\"button\" class=\"copy-button\" data-copy=\"issue-analysis-prompt\">复制</button></div><pre id=\"issue-analysis-prompt\"><code>https://studio.example.com/main/issues/YOUR_ISSUE_ID\n帮我分析一下这个任务是什么问题，要怎么处理，只分析，不改动。</code></pre></div>",
+          "topics": []
+        }
+      ]
+    }
+  ],
+  "finishTitle": "开始协作前，逐项确认",
+  "finishDescription": "完成以下检查，你的团队就可以开始在 Studio 中协作。",
+  "checklist": [
+    "Studio 可访问、能登录且数据持久化",
+    "Runtime 在线，并发数量已按需配置",
+    "Runner 使用的 Agent 与项目经理已配置",
+    "全局 Git 连接与个人 Git 账号已配置",
+    "项目已关联正确的代码仓库",
+    "CI 工作流与部署 Secret 已配置，预览可访问",
+    "能创建任务、跟进状态并审查交付",
+    "按需连接 My agents 或安装 Studio CLI"
+  ],
+  "footerNote": "截图为操作示例，以当前界面为准；凭据已遮挡。",
+  "backTop": "返回顶部",
+  "originalImage": "打开原图",
+  "close": "关闭",
+  "skip": "跳到正文",
+  "copied": "已复制",
+  "copyStatus": "内容已复制",
+  "copyFallback": "内容已选中，请按 Ctrl+C 或 ⌘C 复制",
+  "progress": "阅读进度",
+  "subsectionsLabel": "展开或收起小章节"
+}

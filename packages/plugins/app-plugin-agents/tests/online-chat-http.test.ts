@@ -1,3 +1,4 @@
+import { fixtureFileInputs } from './helpers/native-files.js';
 import { ApiDocsService, CliService } from '@nocobase/app-server/router';
 import { appendFile } from 'node:fs/promises';
 import { afterEach, expect, it, vi } from 'vitest';
@@ -7,6 +8,7 @@ import { MockLanguageModelV4 } from 'ai/test';
 import type { AuthorizationContext } from '@nocobase/authorization/core';
 import type { Knex } from 'knex';
 import { z } from 'zod';
+import { createSandboxProvider } from '../server/online/sandbox/provider.js';
 import { claim, createHarness, type Harness } from './harness.js';
 import { createChatRoutes } from '../server/routes/chat.js';
 import type { AdminEnv } from '../server/routes/admin.js';
@@ -82,18 +84,20 @@ async function fixture() {
     },
   });
   const ids = { next: () => `http-${++counter}` };
+  const fileInputs = fixtureFileInputs(model, h.services.chatAttachments);
   service = new OnlineAgentService({
+    sandboxProvider: createSandboxProvider({ skills: h.services.skills }),
     ids,
     sessions: createSessionManager({
       ids,
       tx: h.services.tx,
       attachments: attachments.links,
-      files: h.services.chatAttachments,
       now: () => new Date().toISOString(),
       measure: (phase, durationMs) => measurements.push({ phase, durationMs }),
     }),
     defaultModel: async () => ({ modelService: 'fixture', model: 'chat' }),
-    model: async () => model,
+    fileInputs,
+    model: (ref, id) => fileInputs.model(ref, id),
     onError: () => {},
   });
   let release!: () => void;
@@ -331,6 +335,65 @@ it('uses standard POST streams for authenticated tools, authorized attachments a
     );
 });
 
+it.each(['absent', 'empty'] as const)(
+  'preserves an %s restriction through HTTP creation, idle model changes and configuration reads',
+  async (restriction) => {
+    const f = await fixture();
+    if (restriction === 'empty')
+      service.configurator.registerOnlineAgentScope('unrestricted', {
+        model: [],
+      });
+    const creation = await f.request(
+      '/conversations',
+      'POST',
+      restriction === 'empty' ? { config: { scope: ['unrestricted'] } } : {},
+    );
+    expect(creation.status).toBe(201);
+    const { data: created } = await creation.json();
+    const check = (config: object) => {
+      if (restriction === 'absent') expect(config).not.toHaveProperty('model');
+      else expect(config).toHaveProperty('model', []);
+    };
+    check(
+      (await (await f.request(`/conversations/${created.id}/config`)).json())
+        .data,
+    );
+    for (const selectedModel of [
+      { modelService: 'alternate', model: 'second' },
+      { modelService: 'fixture', model: 'chat' },
+    ]) {
+      const response = await f.request(
+        `/conversations/${created.id}/config`,
+        'PATCH',
+        {
+          config: {},
+          selectedModel,
+        },
+      );
+      expect(response.status).toBe(200);
+      const { data: changed } = await response.json();
+      check(changed);
+      expect(changed.selectedModel).toEqual(selectedModel);
+      const { data: saved } = await (
+        await f.request(`/conversations/${created.id}/config`)
+      ).json();
+      check(saved);
+      expect(saved.selectedModel).toEqual(selectedModel);
+      const row = await h.database
+        .connection()
+        .repository('agConversations')
+        .findOne({
+          filter: { id: created.id },
+        });
+      check(row!.metadata.onlineAgent.config);
+      expect(row).toMatchObject({
+        modelService: selectedModel.modelService,
+        model: selectedModel.model,
+      });
+    }
+  },
+);
+
 it.each(['static', 'provider'])(
   'atomically selects the resolved Scope model through HTTP (%s)',
   async (kind) => {
@@ -475,6 +538,11 @@ it('accepts declared business variables but rejects browser policy overrides on 
     tool: ['business'],
     thinking: 'unregistered-level',
   });
+  const savedBeforeRefusals = (await (await f.request(path)).json()).data;
+  const conversationsBeforeRefusals = await h.database
+    .connection()
+    .repository('agConversations')
+    .count();
   for (const config of [
     { tool: [] },
     { model: ['fixture/forged'] },
@@ -496,6 +564,12 @@ it('accepts declared business variables but rejects browser policy overrides on 
     );
     expect((await f.request(path, 'PATCH', { config })).status).toBe(400);
   }
+  expect((await (await f.request(path)).json()).data).toEqual(
+    savedBeforeRefusals,
+  );
+  expect(
+    await h.database.connection().repository('agConversations').count(),
+  ).toBe(conversationsBeforeRefusals);
   const denied = await f.request(
     path,
     'PATCH',

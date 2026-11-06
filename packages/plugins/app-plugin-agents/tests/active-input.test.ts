@@ -570,10 +570,8 @@ describe('active input revisions', () => {
             "select query from pg_stat_activity where datname = current_database() and wait_event_type = 'Lock'",
           );
           for (const row of result.rows)
-            if (
-              String(row.query).includes(`"${schema}".`) ||
-              /"ag_runs"|"ag_agents"/.test(String(row.query))
-            )
+            // Other files use the same tables in separate test schemas.
+            if (String(row.query).includes(`"${schema}".`))
               lockWaits.push(String(row.query));
           await new Promise((resolve) => setTimeout(resolve, 2));
         }

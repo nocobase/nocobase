@@ -43,6 +43,13 @@ function useSampleContext(): AgentComposerContext {
   return {
     chips,
     onRemove: (key) => setRemoved((current) => [...current, key]),
+    // Clicking a chip shows what it carries.
+    inspect: (chip) =>
+      chip.kind === 'item'
+        ? chip.item
+        : chip.kind === 'filter'
+          ? chip.filter
+          : chip.key,
     build: (): PageContext => ({
       route: '/projects/onboarding/issues',
       items: chips.flatMap((chip) =>

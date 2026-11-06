@@ -55,12 +55,27 @@ export function registerBusinesses(authz: AppAuthorization): void {
     );
 }
 
+/** Global indexing settings are independent of the application's knowledge-space business grants. */
+export function registerSettings(authz: AppAuthorization): void {
+  authz.settings.add({
+    id: 'kb.indexing',
+    title: 'Knowledge indexing',
+    actions: [
+      { name: 'read', title: 'Read' },
+      { name: 'configure', title: 'Configure' },
+      { name: 'rebuild', title: 'Rebuild' },
+    ],
+  });
+}
 export class KnowledgeAuthorizationProvider extends ServiceProvider<AppPluginApplication> {
   public readonly name: string = `${ACCESS_NAMESPACE}/authorization`;
 
   public override boot(): Promise<void> {
-    if (this.app.container.has(authorizationToken))
-      registerBusinesses(this.app.container.resolve(authorizationToken));
+    if (this.app.container.has(authorizationToken)) {
+      const authorization = this.app.container.resolve(authorizationToken);
+      registerBusinesses(authorization);
+      registerSettings(authorization);
+    }
     return Promise.resolve();
   }
 }
