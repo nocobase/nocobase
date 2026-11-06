@@ -115,6 +115,7 @@ export interface ReleasesApiOptions {
   readonly securityLog?: (
     event: string,
     details: Record<string, unknown>,
+    context?: Context,
   ) => void;
 }
 
@@ -1513,12 +1514,17 @@ export function createReleasesApi(
         });
         if (ticketId)
           await services.tickets.recordRelease(ticketId, release.id);
-        log('releases.release.upload', {
-          actorId: caller.userId,
-          via: caller.kind,
-          appId,
-          releaseId: release.id,
-        });
+        log(
+          'releases.release.upload',
+          {
+            actorId: caller.userId,
+            via: caller.kind,
+            appId,
+            releaseId: release.id,
+            ...(ticketId ? { ticketId } : {}),
+          },
+          context,
+        );
         // An upload that also deploys answers before the deployment finishes; its progress is the deployment's.
         return context.json(
           { data: release },
@@ -1787,11 +1793,15 @@ export function createReleasesApi(
             labels === undefined ? {} : { labels },
           ),
       );
-      log('releases.release.promote', {
-        actorId: caller.userId,
-        appId: toAppId,
-        releaseId: release.id,
-      });
+      log(
+        'releases.release.promote',
+        {
+          actorId: caller.userId,
+          appId: toAppId,
+          releaseId: release.id,
+        },
+        context,
+      );
       return context.json({ data: release });
     },
   );
@@ -1846,12 +1856,16 @@ export function createReleasesApi(
         appId,
         input,
       );
-      log('releases.release.image', {
-        actorId: caller.userId,
-        via: caller.kind,
-        appId,
-        releaseId: release.id,
-      });
+      log(
+        'releases.release.image',
+        {
+          actorId: caller.userId,
+          via: caller.kind,
+          appId,
+          releaseId: release.id,
+        },
+        context,
+      );
       if (!deploy)
         return context.json({ data: release }, release.reused ? 200 : 201);
       const deployment = await services.releases.deploy(caller, appId, {
@@ -1904,11 +1918,15 @@ export function createReleasesApi(
         appId,
         context.req.valid('json'),
       );
-      log('releases.ticket.create', {
-        actorId: caller.userId,
-        appId,
-        ticketId: ticket.id,
-      });
+      log(
+        'releases.ticket.create',
+        {
+          actorId: caller.userId,
+          appId,
+          ticketId: ticket.id,
+        },
+        context,
+      );
       return context.json({ data: ticket }, 201);
     },
   );
