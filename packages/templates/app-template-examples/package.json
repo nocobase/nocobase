@@ -23,7 +23,6 @@
     "@ai-sdk/react": "catalog:",
     "@base-ui/react": "catalog:",
     "@dicebear/core": "^9.4.3",
-    "@gchust/agent-annotations": "0.1.9",
     "@hookform/resolvers": "^5.0.1",
     "@nocobase/agent-runner": "workspace:^",
     "@nocobase/app-cli-client": "workspace:^",

@@ -190,5 +190,4 @@ minimumReleaseAgeExclude:
   - nodemailer@10.0.3
   - '@publint/pack@0.1.7'
   - publint@0.3.24
-  - '@gchust/agent-annotations@0.1.9'
   - eslint-plugin-react-refresh@0.5.6

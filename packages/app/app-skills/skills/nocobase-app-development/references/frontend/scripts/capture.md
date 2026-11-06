@@ -77,7 +77,7 @@ The sign-in session is saved to `storage/ui-workflow/auth.json` (`storage/` is i
 }
 ```
 
-At the top level, the configuration can set `base`, `out`, `locale`, `viewport`, `colorScheme`, `theme` and `hide` (elements hidden in screenshots; by default the development toolbar `#agent-annotations-root` is hidden). Each shot can set:
+At the top level, the configuration can set `base`, `out`, `locale`, `viewport`, `colorScheme`, `theme` and `hide` (selectors explicitly hidden in screenshots; empty by default). Each shot can set:
 
 | Field                            | Description                                                                                                                                                                                                    |
 | -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

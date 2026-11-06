@@ -8,7 +8,7 @@
 //    node .agents/skills/nocobase-app-development/references/frontend/scripts/capture.mjs shoot --spec storage/ui-workflow/<feature>/capture.json [--only list,dark]
 //
 // Top-level configuration fields: base, out, locale, viewport, colorScheme, theme, hide (elements hidden in screenshots;
-// the development toolbar by default), shots. Each shot: name, path, setup (steps run before the page opens), steps,
+// none by default), shots. Each shot: name, path, setup (steps run before the page opens), steps,
 // waitUntil, viewport, colorScheme, theme, locale, fullPage, settle (milliseconds to wait before the screenshot),
 // screenshot (false skips the final screenshot). colorScheme and theme are saved as the application's own appearance
 // choices, so they win over client.app.defaultColorScheme and client.app.defaultTheme in config.yml.
@@ -223,7 +223,7 @@ async function shoot(options) {
       colorScheme: toContextColorScheme(shot.colorScheme ?? spec.colorScheme),
       deviceScaleFactor: shot.deviceScaleFactor ?? spec.deviceScaleFactor ?? 1,
     });
-    const hide = spec.hide ?? ['#agent-annotations-root'];
+    const hide = spec.hide ?? [];
     if (hide.length > 0) {
       await context.addInitScript((selectors) => {
         const apply = () => {
