@@ -64,7 +64,7 @@ const jaJP: LocaleResource<typeof enUS> = {
   },
   errors: {
     boundRunnerIncompatible:
-      'このランナーは選択した Agent を実行できません。ランナーを切り替えるか、新しい会話を開始してください。',
+      'この実行環境では選択した Agent を実行できません。実行環境を切り替えて続行してください。',
     CONFLICT: 'そのうちに変わりました。リロードして再試行してください。',
     REVISION_CONFLICT:
       'そのうちに変わりました。リロードして再試行してください。',

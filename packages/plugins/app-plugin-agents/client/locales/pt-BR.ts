@@ -66,7 +66,7 @@ const ptBR: LocaleResource<typeof enUS> = {
   },
   errors: {
     boundRunnerIncompatible:
-      'Este executor não pode executar o Agent selecionado. Troque de executor ou inicie uma nova conversa.',
+      'Este ambiente não pode executar o Agent selecionado. Troque de ambiente para continuar.',
     CONFLICT: 'Entretanto mudou. Recarregue e tente novamente.',
     REVISION_CONFLICT: 'Entretanto mudou. Recarregue e tente novamente.',
     FORBIDDEN: 'Você não tem permissão para fazer isso.',

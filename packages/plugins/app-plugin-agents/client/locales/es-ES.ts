@@ -65,7 +65,7 @@ const esES: LocaleResource<typeof enUS> = {
   },
   errors: {
     boundRunnerIncompatible:
-      'Este ejecutor no puede ejecutar el Agent seleccionado. Cambie de ejecutor o inicie una conversación nueva.',
+      'Este entorno no puede ejecutar el Agent seleccionado. Cambia de entorno para continuar.',
     CONFLICT: 'Entretanto cambió. Vuelva a cargar y vuelva a intentarlo.',
     REVISION_CONFLICT:
       'Entretanto cambió. Vuelva a cargar y vuelva a intentarlo.',
