@@ -32,6 +32,22 @@ describe('projects', () => {
     ]);
   });
 
+  it('names the person who created a project on its creation event', async () => {
+    const created: { projectId: string; creatorUserId: string | null }[] = [];
+    const release = h.services.events.on('project.created', (event) => {
+      created.push({
+        projectId: event.projectId,
+        creatorUserId: event.creatorUserId,
+      });
+    });
+    const led = await h.services.projects.create(h.viewer('alice'), {
+      name: 'Led by someone else',
+      leadUserId: 'lead',
+    });
+    release();
+    expect(created).toEqual([{ projectId: led.id, creatorUserId: 'alice' }]);
+  });
+
   it('hides a private project from those who did not join it', async () => {
     const secret = await h.services.projects.create(h.viewer('lead'), {
       name: 'Secret',
