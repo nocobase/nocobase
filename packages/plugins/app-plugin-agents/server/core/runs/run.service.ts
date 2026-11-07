@@ -544,6 +544,8 @@ export function createRunService(deps: RunServiceDeps): RunService {
       readonly freshSession?: boolean;
       readonly runnerPinId?: string | null;
       readonly sessionId?: string | null;
+      readonly tool?: string | null;
+      readonly model?: string | null;
       readonly actorUserId: string;
       readonly requestedByUserId: string;
       readonly confirmedByUserId: string | null;
@@ -565,6 +567,8 @@ export function createRunService(deps: RunServiceDeps): RunService {
         agentType: 'runner',
         runnerId: null,
         runnerPinId: values.runnerPinId ?? null,
+        tool: values.tool ?? null,
+        model: values.model ?? null,
         status: 'queued',
         priority: values.priority,
         attempt: 1,
@@ -1720,6 +1724,8 @@ export function createRunService(deps: RunServiceDeps): RunService {
           freshSession: run.runnerPinId ? false : run.freshSession,
           runnerPinId: run.runnerPinId,
           sessionId: run.sessionId,
+          tool: run.tool,
+          model: run.model,
         });
         if (renewComment && oldRoot) {
           const origins = await inputsRepo(unit.conn).findMany({

@@ -349,11 +349,13 @@ export function fitsActor(
 function quotaAgent(run: RunRecord, agent: Agent): Agent {
   if (!run.runnerPinId || run.freshSession) return agent;
   const last = toExecutions(run.executionHistory).at(-1);
-  return last
+  const tool = last?.tool ?? run.tool;
+  const model = last ? last.model : run.model;
+  return tool
     ? {
         ...agent,
         modelEntries: agent.modelEntries.filter(
-          (entry) => entry.tool === last.tool && entry.model === last.model,
+          (entry) => entry.tool === tool && entry.model === model,
         ),
       }
     : agent;

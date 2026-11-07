@@ -110,6 +110,7 @@ describe('preserved quota work', () => {
     expect(retry).toMatchObject({
       runnerPinId: runner.runnerId,
       sessionId: 'kept',
+      tool: 'claude',
     });
   });
 });
