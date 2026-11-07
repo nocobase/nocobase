@@ -2,6 +2,7 @@ import { StreamOutput } from './stream-output.ts';
 /** Drives a catalog agent through the same ACP client used by personal sessions. */
 import { execFile } from 'node:child_process';
 import { AGENTS } from '@nocobase/acp-bridge/catalog';
+import { requireRecoverableSession, sessionUnavailable } from './session-recovery.ts';
 import type { AgentSpec } from '@nocobase/acp-bridge/catalog';
 import type { ResolvedAgent } from '@nocobase/acp-bridge/client';
 import {
@@ -583,6 +584,7 @@ function start(spec: AgentSpec, session: AdapterSession): AdapterHandle {
             },
           )
         : undefined;
+      if (session.resumeSessionId && !resumed) requireRecoverableSession(session);
       const opened =
         resumed ??
         (await process.agent.request(methods.agent.session.new, {
@@ -662,6 +664,8 @@ function start(spec: AgentSpec, session: AdapterSession): AdapterHandle {
         };
       return { exit: 'completed', usage, sessionId, summary };
     } catch (error) {
+      const unavailable = sessionUnavailable(error);
+      if (unavailable) return unavailable;
       if (session.outputBlocks && cancelled) flushStreamChunk();
       return {
         exit: cancelled ? 'aborted' : 'error',

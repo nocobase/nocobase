@@ -352,7 +352,8 @@ export function fits(
   run: RunRecord,
   now: number,
 ): boolean {
-  return fitsActor(runner, agent, run.actorUserId, toRun(run).requires, now);
+  return (!run.runnerPinId || run.runnerPinId === runner.id) &&
+    fitsActor(runner, agent, run.actorUserId, toRun(run).requires, now);
 }
 
 /** The runner features a payload needs. */
@@ -1235,7 +1236,8 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       );
     let brief = await render();
     const briefFingerprint = fingerprint(agent, entry, brief.layers, skills);
-    const resume =
+    const strict = Boolean(run.runnerPinId && !run.freshSession);
+    const resume = strict ? Boolean(run.sessionId) :
       !run.freshSession &&
       binding.sessionPolicy?.(effectiveClaim) !== 'fresh' &&
       !clean &&
@@ -1245,7 +1247,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
     // A kept session that cannot be resumed: the new one is told what came before, as a first one is. The history
     // is outside the fingerprint, so it does not change.
     let recoveryContext: string | undefined;
-    if (session) {
+    if (session && !strict) {
       const fresh = await binding.context.assemble(
         conn,
         { ...claim, freshSession: true },
@@ -1301,6 +1303,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       createdAt: nowText,
     });
     const payload: RunPayload = {
+      ...(strict ? { session: { strict: true } } : {}),
       ...(run.subjectKind === 'conversation' &&
       runner.features.includes('outputBlocks')
         ? { outputBlocks: true }
@@ -1331,8 +1334,8 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       prompt: {
         system: brief.prompt,
         turn,
-        session: resume ? 'resume' : 'fresh',
-        ...(resume ? { resumeSessionId: session.sessionId } : {}),
+        session: strict || resume ? 'resume' : 'fresh',
+        ...(strict ? (run.sessionId ? { resumeSessionId: run.sessionId } : {}) : resume && session ? { resumeSessionId: session.sessionId } : {}),
         ...(resume && recoveryContext ? { recoveryContext } : {}),
       },
       inputs,
@@ -1929,6 +1932,8 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
                 : null,
           },
         });
+        if (current.runnerPinId && !current.freshSession)
+          await deps.subjects.get(run.subjectKind)?.sink?.onQuotaResumed?.(unit, toRun(run));
         unit.emit({ type: 'run.changed', runId: run.id, status: 'dispatched' });
         if (variableRefs(candidate.teamOnlyVariables).length > 0)
           unit.emit({

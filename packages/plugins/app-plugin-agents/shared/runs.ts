@@ -142,6 +142,8 @@ export interface ModelSelectionWait {
 }
 
 export interface Run {
+  readonly sessionId?: string | null;
+  readonly runnerPinId?: string | null;
   readonly id: string;
   readonly agentId: string;
   /** The agent's type (`AgentType`): an `online` run is held by the application itself, a `runner` run by a runner. */

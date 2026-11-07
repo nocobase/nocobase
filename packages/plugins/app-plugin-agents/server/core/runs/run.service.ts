@@ -113,6 +113,7 @@ export interface NewInput {
 }
 
 export interface EnqueueRequest {
+  readonly runnerId?: string;
   /** Trusted application dispatch: prefer a compatible authorized active run across comment roots. */
   readonly preferActive?: boolean;
   /** Supplied only by a real comment entry point; subsequent comment dispatches share its first run. */
@@ -410,6 +411,7 @@ export interface RunServiceDeps extends TransitionDeps {
 
 /** Work to queue now, as the person it runs as. */
 interface Work {
+  readonly runnerPinId?: string | null;
   readonly preferActive?: boolean;
   readonly sourceRunId?: string;
   readonly commentRootRunId?: string | null;
@@ -540,6 +542,8 @@ export function createRunService(deps: RunServiceDeps): RunService {
       readonly subject: EnqueueRequest['subject'];
       readonly threadScope: string;
       readonly freshSession?: boolean;
+      readonly runnerPinId?: string | null;
+      readonly sessionId?: string | null;
       readonly actorUserId: string;
       readonly requestedByUserId: string;
       readonly confirmedByUserId: string | null;
@@ -560,6 +564,7 @@ export function createRunService(deps: RunServiceDeps): RunService {
         agentId: agent.id,
         agentType: 'runner',
         runnerId: null,
+        runnerPinId: values.runnerPinId ?? null,
         status: 'queued',
         priority: values.priority,
         attempt: 1,
@@ -594,7 +599,7 @@ export function createRunService(deps: RunServiceDeps): RunService {
         failureReason: null,
         failureDetail: null,
         summary: null,
-        sessionId: null,
+        sessionId: values.sessionId ?? null,
         workDir: null,
         directoryKey: null,
         claimFailures: 0,
@@ -953,6 +958,7 @@ export function createRunService(deps: RunServiceDeps): RunService {
       commentExecution: work.commentExecution,
       commentOwnerKey: work.commentOwnerKey,
       freshSession: work.freshSession,
+      runnerPinId: work.runnerPinId,
       subject: work.subject,
       threadScope: work.threadScope,
       actorUserId: work.actorUserId,
@@ -1387,6 +1393,7 @@ export function createRunService(deps: RunServiceDeps): RunService {
           commentExecution,
           commentOwnerKey,
           freshSession: request.freshSession,
+          runnerPinId: request.runnerId,
           subject: request.subject,
           threadScope,
           actorUserId,
@@ -1710,7 +1717,9 @@ export function createRunService(deps: RunServiceDeps): RunService {
           priority: Number(run.priority),
           requires: toRun(run).requires,
           retryOfRunId: run.id,
-          freshSession: run.freshSession,
+          freshSession: run.runnerPinId ? false : run.freshSession,
+          runnerPinId: run.runnerPinId,
+          sessionId: run.sessionId,
         });
         if (renewComment && oldRoot) {
           const origins = await inputsRepo(unit.conn).findMany({

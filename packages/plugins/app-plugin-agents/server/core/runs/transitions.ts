@@ -166,6 +166,7 @@ function workspaceWaits(run: RunRecord, reporting: boolean): WorkspaceWaits {
     (item) =>
       item.failureReason === 'workspaceBusy' ||
       item.failureReason === 'runnerUpgrade' ||
+      item.failureReason === 'toolQuota' ||
       isPreStartInterruption(item),
   ).length;
   let trailing = 0;

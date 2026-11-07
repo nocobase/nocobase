@@ -29,7 +29,7 @@ import {
   type ToolCapabilities,
 } from '@nocobase/agent-protocol';
 import { boundedModels } from './models.ts';
-import { recoveryEvent, recoveryPrompt } from './session-recovery.ts';
+import { requireRecoverableSession, sessionUnavailable, recoveryEvent, recoveryPrompt } from './session-recovery.ts';
 import { withDetectionEnvironment } from './detection.ts';
 import { classifyCodexFailure } from './codex/classify.ts';
 import { codexQuota } from './quota.ts';
@@ -1031,7 +1031,7 @@ class CodexRun {
       this.rpc?.close(new Error('run finished'));
       await this.shutdown();
     }
-    const result = this.outcome(thrown, processFailed);
+    const result = sessionUnavailable(thrown) ?? this.outcome(thrown, processFailed);
     if (this.session.outputBlocks) this.streaming.end();
     if (result.error)
       this.emit({
@@ -1145,6 +1145,7 @@ class CodexRun {
           this.stopping
         )
           throw error;
+        requireRecoverableSession(session);
         recovered = true;
         this.emit(recoveryEvent('codex'));
       }

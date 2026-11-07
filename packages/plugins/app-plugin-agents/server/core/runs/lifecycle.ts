@@ -1,3 +1,4 @@
+import { waitForQuota } from './quota-wait.js';
 import { OutputPreview } from './output-preview.js';
 import { outputBlock, type RunEvent } from '@nocobase/agent-protocol';
 /**
@@ -784,6 +785,13 @@ export function createRunnerReports(deps: RunnerReportsDeps): RunnerReports {
           request.sessionId,
           request.reason === 'contextOverflow',
         );
+        if (run.cancelRequestedAt === null && deps.subjects.get(run.subjectKind)?.quotaWait &&
+          (request.reason === 'toolQuota' || (run.runnerPinId && request.reason === 'sessionUnavailable'))) {
+          const waiting = await waitForQuota(unit, deps, run, request);
+          if (!waiting) throw new ProtocolError('LEASE_LOST', 'The run moved on; stop it.');
+          secrets.forget(runSecretsKey(run.id));
+          return { status: waiting.status, ...(waiting.availableAt ? { retryAt: waiting.availableAt } : {}) };
+        }
         if (isRetryable(request.reason) && run.cancelRequestedAt === null) {
           const outcome = await requeueRun(
             unit,

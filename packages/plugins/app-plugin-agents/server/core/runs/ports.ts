@@ -188,6 +188,9 @@ export interface SubjectSample {
 }
 
 export interface WorkSink {
+  /** In the quota suspension/resumption transaction, only for opted-in subjects. */
+  onQuotaWait?(tx: Tx, run: Run): Promise<void>;
+  onQuotaResumed?(tx: Tx, run: Run): Promise<void>;
   /** In the stop request's transaction, once, before any terminal callback. A null actor is a system stop. */
   onCancelRequested?(tx: Tx, run: Run): Promise<void>;
   /**
@@ -244,6 +247,8 @@ export interface SubjectReports {
 }
 
 export interface SubjectBinding {
+  /** Preserve quota-limited work on its original runner and session. */
+  readonly quotaWait?: boolean;
   readonly kind: string;
   /** Host policy for tool sessions. Absent preserves normal fingerprint-based reuse. No I/O is performed here. */
   readonly sessionPolicy?: (claim: ClaimContext) => 'fresh' | 'reuse';
