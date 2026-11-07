@@ -360,3 +360,11 @@ export function capabilitiesFor(
 export function expandPublicUrl(pattern: string, appId: string): string {
   return pattern.replaceAll('{appId}', encodeURIComponent(appId));
 }
+
+/**
+ * What an App a failed restore left off its runtime reports as its own error. The environment's restore error may name
+ * any of its Apps or their paths, so it stays on the environment (`HostOccupancy.failedEnvironments`), for those who
+ * may diagnose it, and never rides on an App that someone who sees only that App reads.
+ */
+export const UNRESTORED_APP_ERROR =
+  'The app could not be restored after its host restarted; it is retried in the background.';

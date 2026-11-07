@@ -80,6 +80,7 @@ import {
   type HostOccupancy,
   type ImageArtifact,
   type RegistryAuth,
+  UNRESTORED_APP_ERROR,
 } from '../drivers/types.js';
 import { ReleasesError, forbidden, notFound } from '../errors.js';
 import {
@@ -421,14 +422,22 @@ export class ReleasesService {
         (await this.options.guard.canApp(caller, action, app))
       )
         allowed.push(action);
-    const [variables, host] = await Promise.all([
+    const [variables, shared] = await Promise.all([
       this.appVariablesOf(app).catch(() => null),
       this.hostOf(caller, app).catch(() => null),
     ]);
+    const summary = (await this.summarize([app]))[0];
+    // A driver reporting an environment's restore error on its Apps would reveal the others it names: it is the
+    // environment's diagnosis, for those who may read it (`hostOf`).
+    const runtime =
+      summary.runtime?.error && shared?.hiddenErrors.has(summary.runtime.error)
+        ? { ...summary.runtime, error: UNRESTORED_APP_ERROR }
+        : summary.runtime;
     return {
-      ...(await this.summarize([app]))[0],
+      ...summary,
+      runtime,
       allowed,
-      host,
+      host: shared?.view ?? null,
       ...(variables
         ? {
             variables: {
@@ -448,7 +457,11 @@ export class ReleasesService {
   private async hostOf(
     caller: Caller,
     app: AppRecord,
-  ): Promise<AppHostView | null> {
+  ): Promise<{
+    readonly view: AppHostView;
+    /** The restore errors withheld from the caller, so no other field passes them on. */
+    readonly hiddenErrors: ReadonlySet<string>;
+  } | null> {
     const session = await this.session(app.environmentId);
     const occupancy: HostOccupancy | null =
       (await session.occupancy?.()) ?? null;
@@ -492,10 +505,12 @@ export class ReleasesService {
       'rel.environments',
       'manage',
     );
-    const restoreErrors = new Map(
-      occupancy.failedEnvironments.map(
-        (item) => [item.environmentId, item.error] as const,
-      ),
+    const hiddenErrors = new Set(
+      diagnoses
+        ? []
+        : occupancy.failedEnvironments.flatMap((item) =>
+            item.error ? [item.error] : [],
+          ),
     );
     const occupants: HostOccupantView[] = [];
     for (const item of shown) {
@@ -518,13 +533,10 @@ export class ReleasesService {
         waiting: item.waiting ?? null,
         // A hidden App shows its state only: when it was last used would say who works on what.
         lastAccessedAt: visible ? (item.lastAccessedAt ?? null) : null,
-        // An App a failed restore left off the Host carries the environment's restore error, shown as above.
-        error:
-          !visible ||
-          (!diagnoses &&
-            item.environmentId !== null &&
-            restoreErrors.get(item.environmentId) === item.error)
-            ? null
+        error: !visible
+          ? null
+          : item.error && hiddenErrors.has(item.error)
+            ? UNRESTORED_APP_ERROR
             : item.error,
       });
     }
@@ -533,18 +545,21 @@ export class ReleasesService {
       item.holds.length ? 0 : item.waiting ? 1 : 2;
     occupants.sort((a, b) => rank(a) - rank(b));
     return {
-      memory: occupancy.memory,
-      recycling: occupancy.recycling,
-      deployed: occupancy.apps.length,
-      running: occupancy.apps.filter(
-        (item) => item.state === 'running' || item.state === 'starting',
-      ).length,
-      occupants,
-      failedEnvironments: occupancy.failedEnvironments.map((item) => ({
-        id: item.environmentId,
-        name: environmentNames.get(item.environmentId) ?? null,
-        error: diagnoses ? item.error : null,
-      })),
+      view: {
+        memory: occupancy.memory,
+        recycling: occupancy.recycling,
+        deployed: occupancy.apps.length,
+        running: occupancy.apps.filter(
+          (item) => item.state === 'running' || item.state === 'starting',
+        ).length,
+        occupants,
+        failedEnvironments: occupancy.failedEnvironments.map((item) => ({
+          id: item.environmentId,
+          name: environmentNames.get(item.environmentId) ?? null,
+          error: diagnoses ? item.error : null,
+        })),
+      },
+      hiddenErrors,
     };
   }
 

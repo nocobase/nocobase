@@ -120,8 +120,12 @@ export function createFakeApplication(): FakeApplication {
       identity.subjects.some((subject) => subject.type === 'agent')
         ? 'agent'
         : 'human',
-    relatedAppIds: (userIds: readonly string[]) =>
-      Promise.resolve(userIds.flatMap((userId) => related.get(userId) ?? [])),
+    relatedAppIds: (userIds: readonly string[], _action, among) =>
+      Promise.resolve(
+        userIds
+          .flatMap((userId) => related.get(userId) ?? [])
+          .filter((id) => !among || among.includes(id)),
+      ),
     isRelated: (appId: string, userIds: readonly string[]) =>
       Promise.resolve(
         userIds.some((userId) => (related.get(userId) ?? []).includes(appId)),

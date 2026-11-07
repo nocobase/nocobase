@@ -45,10 +45,15 @@ export interface ReleasesAccess {
    * scoped identity too: `agent` makes it an agent's (such as an agent's run bounded by its scope) rather than a key's.
    */
   actorKindOf?(identity: AuthorizationIdentity): 'human' | 'agent';
-  /** Apps beyond the ones the users created that count as related to any of them for an action (for listing). */
+  /**
+   * Apps beyond the ones the users created that count as related to any of them for an action (for listing). With
+   * `among`, only which of those Apps are: answer it in a fixed number of reads, however many Apps the application
+   * has (a polled read asks it about the Apps sharing a runtime).
+   */
   relatedAppIds?(
     userIds: readonly string[],
     action: AppAction,
+    among?: readonly string[],
   ): Promise<readonly string[]>;
   /** Whether one App counts as related to any of the users for an action, beyond the ones they created. */
   isRelated?(

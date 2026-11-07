@@ -22,6 +22,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
   createHostDriver,
+  UNRESTORED_APP_ERROR,
   type HostEndpointOptions,
 } from '../server/drivers/host/driver.js';
 import type {
@@ -468,9 +469,10 @@ describe('Host driver', () => {
     );
     await expect(staging.restore([])).rejects.toThrow('crm cannot be restored');
     const failed = await staging.status(['crm', 'reports']);
+    // The App says it is not restored; the environment's own error, which may name other Apps, stays on the environment.
     expect(failed.get('reports')).toMatchObject({
       state: 'failed',
-      error: 'crm cannot be restored',
+      error: UNRESTORED_APP_ERROR,
     });
     expect(failed.get('crm')?.state).toBe('running');
     expect(await preview.occupancy!()).toMatchObject({
@@ -526,10 +528,14 @@ describe('Host driver', () => {
     );
     expect(emptied!.apps).toHaveLength(3);
     expect(emptied!.apps.find((item) => item.appId === 'crm')?.error).toBe(
-      'desired replay unavailable',
+      UNRESTORED_APP_ERROR,
     );
+    expect(JSON.stringify(emptied!.apps)).not.toContain('desired replay');
     // The same answer as the environment's own status.
-    expect((await staging.status(['crm'])).get('crm')?.state).toBe('failed');
+    expect((await staging.status(['crm'])).get('crm')).toMatchObject({
+      state: 'failed',
+      error: UNRESTORED_APP_ERROR,
+    });
 
     // Partly restored: the App back on the Host keeps its own state, the missing one stays failed.
     failing = false;

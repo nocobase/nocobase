@@ -38,6 +38,7 @@ import { stringify as stringifyYaml } from 'yaml';
 
 import { ACCESS_NAMESPACE } from '../../../shared/access.js';
 import { writeTextAtomic } from '../../services/config-file.js';
+export { UNRESTORED_APP_ERROR } from '../types.js';
 import {
   expandPublicUrl,
   type AppDeploymentSpec,
@@ -49,6 +50,7 @@ import {
   type DriverSession,
   type HostOccupancy,
   type RegistryAuth,
+  UNRESTORED_APP_ERROR,
 } from '../types.js';
 
 /** The backend of Apps that run in the Host process. */
@@ -961,7 +963,7 @@ export function createHostDriver(
                   version: null,
                   deploymentId: null,
                   startedAt: null,
-                  error: scope.restoreError,
+                  error: UNRESTORED_APP_ERROR,
                 });
           if ((scope.restoring || !status.scope) && appIds)
             for (const appId of appIds)
@@ -1003,8 +1005,7 @@ export function createHostDriver(
             ),
           );
           // A failed restore leaves an environment's Apps off the Host until a background retry succeeds: they are
-          // still deployed, and failed with the restore error, as `status()` reports them. Apps still on the Host keep
-          // their own state.
+          // still deployed, and failed, as `status()` reports them. Apps still on the Host keep their own state.
           const missing = failedScopes.flatMap((other) =>
             [...other.desiredAppIds]
               .filter(
@@ -1015,7 +1016,7 @@ export function createHostDriver(
                 version: null,
                 deploymentId: null,
                 startedAt: null,
-                error: other.restoreError,
+                error: UNRESTORED_APP_ERROR,
                 appId,
                 environmentId: other.environmentId,
               })),
