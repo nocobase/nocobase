@@ -187,6 +187,7 @@ export class AppRuntimeRegistry {
   private rotationPending = false;
   private rotationReady = false;
   private ingress = 0;
+  private readonly ingressWaiters = new Set<() => void>();
   private preparing = 0;
   private readonly appMemory: number;
   private readonly reservations = new Map<string, AppDefinition>();
@@ -859,6 +860,8 @@ export class AppRuntimeRegistry {
       if (!released) {
         released = true;
         this.ingress -= 1;
+        if (this.ingress === 0 && this.rotationReady)
+          for (const resolve of this.ingressWaiters) resolve();
       }
     };
   }
@@ -871,15 +874,33 @@ export class AppRuntimeRegistry {
     return this.rotationPending;
   }
 
-  prepareRotation(ignoreConnections: boolean): boolean {
+  /** Once ingress is gated, existing responses may finish until the bounded drain expires. */
+  drainIngress(timeoutMs: number): Promise<boolean> {
+    if (this.ingress === 0 || timeoutMs === 0)
+      return Promise.resolve(this.ingress === 0);
+    return new Promise((resolve) => {
+      const finish = (): void => {
+        clearTimeout(timer);
+        this.ingressWaiters.delete(finish);
+        resolve(this.ingress === 0);
+      };
+      const timer = setTimeout(finish, timeoutMs);
+      this.ingressWaiters.add(finish);
+    });
+  }
+
+  prepareRotation(
+    ignoreConnections: boolean,
+    drainRequests: boolean = false,
+  ): boolean {
     if (
-      this.ingress > 0 ||
+      (!drainRequests && this.ingress > 0) ||
       this.preparing > 0 ||
       this.operations.size > 0 ||
       this.pendingStarts > 0 ||
       this.list().some(
         (app) =>
-          app.activeRequests > 0 ||
+          (!drainRequests && app.activeRequests > 0) ||
           (!ignoreConnections && (app.activeConnections ?? 0) > 0),
       )
     )
@@ -1071,6 +1092,8 @@ export class AppRuntimeRegistry {
       return this.createRuntime(definition, () => expired);
     });
     try {
+      // Arbitrary application initialization cannot be stopped by Promise.race. After a timeout it may overlap the
+      // next admitted start until it settles; createRuntime then destroys its late handle instead of publishing it.
       return await Promise.race([
         work,
         new Promise<never>((_, reject) => {
@@ -1220,7 +1243,7 @@ export class AppRuntimeRegistry {
     const recent = (id: string) =>
       Date.now() - (this.lastAccessedAt(id) ?? 0) < CAPACITY_RECENT_USE_MS;
     let capacityFull = full();
-    if (capacityFull) {
+    if (capacityFull && !this.rotationPending) {
       const candidate = this.getEvictableSnapshots()
         .filter(
           (app) =>

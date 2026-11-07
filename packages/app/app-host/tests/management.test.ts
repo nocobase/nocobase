@@ -150,6 +150,67 @@ describe('managed host reconciliation', () => {
     expect(host.registry.isRotating()).toBe(false);
   });
 
+  it.each(['complete', 'deadline'] as const)(
+    'gates new requests and drains a real streamed response until %s',
+    async (ending) => {
+      const fixture = await createFixture();
+      await writeFile(
+        path.join(fixture.appRoot, 'dist/server/embedded.js'),
+        `export function createServer() { return { fetch() { return new Response(new ReadableStream({ start(c) { c.enqueue(new TextEncoder().encode('open')); } })); } }; }`,
+      );
+      const artifact = await createArtifact(fixture, '1.2.4');
+      const host = createAppHost({
+        mode: 'managed',
+        host: '127.0.0.1',
+        port: 0,
+        appRevisionsDir: fixture.deploymentsDir,
+        appVolumesDir: fixture.volumesDir,
+        artifact: fsArtifact(fixture.artifactDir),
+        evictionIntervalMs: 0,
+      });
+      hosts.push(host);
+      await host.start();
+      const spec = {
+        ...deploymentSet(1, artifact).deployments[0]!,
+        activation: 'eager' as const,
+      };
+      await host.management.applyDeployment(spec);
+      const address = host.server.address();
+      if (!address || typeof address === 'string')
+        throw new Error('Missing listener');
+      const url = `http://127.0.0.1:${address.port}/customer`;
+      const abort = new AbortController();
+      const response = await fetch(url, { signal: abort.signal });
+      const reader = response.body!.getReader();
+      expect(new TextDecoder().decode((await reader.read()).value)).toBe(
+        'open',
+      );
+      const streamEnded = reader.read().catch((error: unknown) => error);
+      let drained = false;
+      const draining = host.management.prepareRotation!({
+        ignoreConnections: true,
+        drainTimeoutMs: 5000,
+      }).then((ok) => {
+        drained = true;
+        return ok;
+      });
+      expect(host.registry.isRotating()).toBe(true);
+      for (let i = 0; i < 3; i++) {
+        const retry = await fetch(url);
+        expect(retry.status).toBe(503);
+        expect(retry.headers.get('retry-after')).toBe('2');
+        await retry.text();
+      }
+      expect(drained).toBe(false);
+      expect(() => host.management.startDeployment(spec)).toThrow(
+        expect.objectContaining({ code: 'HOST_DRAINING' }),
+      );
+      if (ending === 'complete') abort.abort();
+      expect(await draining).toBe(true);
+      expect(await streamEnded).toBeInstanceOf(Error);
+    },
+  );
+
   it('retries a recorded capacity failure only when explicitly requested and never reruns a successful operation', async () => {
     const fixture = await createFixture();
     const host = createAppHost({

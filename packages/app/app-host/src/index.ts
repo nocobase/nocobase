@@ -191,6 +191,7 @@ export function createAppHost(options: AppHostOptions = {}): AppHost {
     waitMs: options.activationWaitMs ?? DEFAULT_ACTIVATION_WAIT_MS,
   };
   const manager = new HostManager({
+    closeRequests: () => server.closeAllConnections(),
     logger,
     mode,
     registry,

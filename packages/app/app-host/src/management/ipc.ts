@@ -60,9 +60,19 @@ export class IpcHostManagementClient implements HostManagementService {
   prepareRotation(options: {
     pauseOnly?: boolean;
     ignoreConnections?: boolean;
+    /** Gate incoming requests even while responses are active, then drain for this many milliseconds. */
+    drainTimeoutMs?: number;
     resume?: boolean;
   }): Promise<boolean> {
-    return this.call('prepareRotation', options);
+    // A full configured request drain must not race the ordinary management RPC timeout.
+    return this.call(
+      'prepareRotation',
+      options,
+      undefined,
+      options.drainTimeoutMs === undefined
+        ? this.timeoutMs
+        : Math.min(2_147_483_647, this.timeoutMs + options.drainTimeoutMs),
+    );
   }
   cancelDeployment(
     operationId: string,
@@ -174,10 +184,11 @@ export class IpcHostManagementClient implements HostManagementService {
     method: IpcMethod,
     payload?: unknown,
     listener?: DeploymentLogListener,
+    timeoutMs: number = this.timeoutMs,
   ): Promise<T> {
     return callIpc<T>(this.child, {
       session: this.session,
-      timeoutMs: this.timeoutMs,
+      timeoutMs,
       method,
       payload,
       onLog: listener,

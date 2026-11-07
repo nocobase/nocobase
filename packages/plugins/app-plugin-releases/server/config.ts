@@ -122,14 +122,14 @@ export interface ReleasesHostConfig {
   /**
    * Restart the Host once this many Apps were removed, replaced, stopped for idleness or made dormant since it started,
    * replaying the desired set: in-process Apps cannot unload their modules, so every runtime that goes away leaves
-   * memory behind. Requests, startup and deployment work always defer rotation. Off when omitted.
+   * memory behind. Startup and deployment work always defer rotation; HTTP requests drain after the maximum wait. Off when omitted.
    */
   readonly restartAfterChurn?: number;
   /** Heap rotation line; 0 disables, 0.55 when churn rotation is enabled. */
   readonly restartHeapRatio?: number;
-  /** After this wait, pause new revision loads and allow disconnecting WebSockets; requests/deployments still defer (300000). */
+  /** After this wait, gate ingress and drain requests; startup/deployment work still defers (300000). */
   readonly restartMaxWaitMs?: number;
-  /** Maximum graceful shutdown before killing the old child, in milliseconds (30000). */
+  /** Request-drain allowance and, separately, supervisor shutdown allowance, in milliseconds (30000). */
   readonly restartDrainMs?: number;
   /** Live shared-process admission; defaults to 70% heap, 320 MiB start headroom and 1024 MiB system reserve. */
   readonly memoryBudget?: import('@nocobase/app-host/registry').AppMemoryBudget;

@@ -250,6 +250,7 @@ it('serializes cold starts, bounds the queue and cleans a late timed-out runtime
   });
   const slow = host.create('slow').catch((error: unknown) => error);
   await started.promise;
+  expect(host.prepareRotation(true, true)).toBe(false);
   const next = host.create('next');
   await expect(host.create('overflow')).rejects.toMatchObject({
     code: 'APP_CAPACITY_EXCEEDED',
@@ -270,9 +271,10 @@ it('serializes cold starts, bounds the queue and cleans a late timed-out runtime
 });
 
 it('pauses only unloaded revisions while resident traffic and same-revision restarts continue', async () => {
-  const host = registry();
+  const host = registry({ maxActiveApps: 1 });
   await host.create('a');
   await host.register('new');
+  laterThanRecentUse();
   host.pauseNewRevisions();
   await expect(host.ensureActive('new')).rejects.toMatchObject({
     code: 'APP_CAPACITY_EXCEEDED',
@@ -280,6 +282,7 @@ it('pauses only unloaded revisions while resident traffic and same-revision rest
   expect(
     (await host.dispatch('a', new Request('http://localhost/a'))).status,
   ).toBe(200);
+  expect(host.getMetrics().capacityEvictions).toBe(0);
   await host.evict('a');
   await host.ensureActive('a');
   expect(host.isActive('a')).toBe(true);
@@ -428,4 +431,29 @@ it('uses the measured 320 MiB default headroom and the configurable operational 
   available = 2048 * MiB;
   await host.ensureActive('a');
   expect(host.capacity().appMemory).toBe(320 * MiB);
+});
+
+it('keeps ingress gated until existing responses complete or the configured drain expires', async () => {
+  vi.useFakeTimers();
+  const host = registry();
+  const release = host.enterRequest()!;
+  expect(host.prepareRotation(true, true)).toBe(true);
+  expect(host.enterRequest()).toBeNull();
+  let finished = false;
+  const draining = host.drainIngress(100).then(() => {
+    finished = true;
+  });
+  await vi.advanceTimersByTimeAsync(99);
+  expect(finished).toBe(false);
+  await vi.advanceTimersByTimeAsync(1);
+  await draining;
+  expect(finished).toBe(true);
+  release();
+  host.resumeAfterRotationFailure();
+  const releaseNext = host.enterRequest()!;
+  expect(host.prepareRotation(true, true)).toBe(true);
+  const completes = host.drainIngress(100);
+  releaseNext();
+  await completes;
+  expect(vi.getTimerCount()).toBe(0);
 });

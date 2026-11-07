@@ -101,14 +101,14 @@ export interface HostEndpointOptions {
    * Restart the Host once this many Apps were replaced, removed, stopped for idleness or made dormant since it
    * started: in-process Apps cannot unload their modules (ESM has no unload), so every runtime that goes away leaves
    * memory behind; a restart replays the desired sets into a fresh process, where on-demand Apps stay stopped until
-   * requested. Requests, startup and deployment work always defer rotation. Off when omitted.
+   * requested. Startup and deployment work always defer rotation; HTTP requests drain after the maximum wait. Off when omitted.
    */
   readonly restartAfterChurn?: number;
   /** Heap rotation line, 0 disables; defaults to 0.55 when count rotation is enabled. */
   readonly restartHeapRatio?: number;
-  /** After this wait, pause new revisions and ignore established sockets; requests/startup/deployments still defer. */
+  /** After this wait, gate ingress and drain requests; startup/deployment work still defers. */
   readonly restartMaxWaitMs?: number;
-  /** Graceful shutdown allowance before the supervisor kills the old child (30 seconds by default). */
+  /** Request drain and, separately, supervisor shutdown allowance (30 seconds each by default). */
   readonly restartDrainMs?: number;
 }
 
@@ -213,6 +213,7 @@ export function createHostDriver(
   let runtimeChurn = 0;
   let inFlight = 0;
   let restartScheduled: Promise<void> | null = null;
+  let rotationPreparing: Promise<boolean> | null = null;
   let churnTimer: NodeJS.Timeout | null = null;
   let restartDeadline: NodeJS.Timeout | null = null;
   let checkingChurn = false;
@@ -374,6 +375,7 @@ export function createHostDriver(
       })
       .catch((error: unknown) => {
         scope.restoreFailed = true;
+        if (scopes.get(scope.environmentId) === scope) watchChurn(true);
         diagnostic.error(
           `Failed to restore the Apps of environment ${scope.environmentId}`,
           error,
@@ -451,21 +453,15 @@ export function createHostDriver(
 
   const maybeRestart = async (): Promise<void> => {
     const { controller } = inProcess;
-    if (
-      (!inProcess.restartAfterChurn && !heapRatio && !capacityRotation) ||
-      !controller.restart ||
-      restartScheduled
-    )
-      return;
+    if (restartScheduled || rotationPreparing) return;
     if (controller.getInfo().status !== 'ready' || Date.now() < retryCheckAt)
       return;
+    if (
+      (!inProcess.restartAfterChurn && !heapRatio && !capacityRotation) ||
+      !controller.restart
+    )
+      return;
     if (batchBusy() && rotationSince === null && !capacityRotation) return;
-    // A failed desired-set replay is retried by the existing poll instead of disappearing until another restart.
-    if (inFlight === 0 && !batchBusy())
-      for (const scope of scopes.values()) {
-        if (scope.restoreFailed && !scope.restoring)
-          await scheduleRestore(scope);
-      }
     const generation = hostGeneration;
     const service = await managementOf(inProcess);
     // The unfiltered status includes resident, staging and unscoped Apps sharing the process.
@@ -501,23 +497,45 @@ export function createHostDriver(
       restartDeadline.unref?.();
     }
     if (expired) await service.prepareRotation?.({ pauseOnly: true });
-    if (inFlight > 0 || batchBusy() || (counters?.operationsInFlight ?? 0) > 0)
+    if (
+      inFlight > 0 ||
+      batchBusy() ||
+      [...scopes.values()].some(
+        (scope) => scope.host === inProcess && scope.restoring !== null,
+      ) ||
+      (counters?.operationsInFlight ?? 0) > 0
+    )
       return;
     const busy = status.deployments.some(
       (deployment) =>
         deployment.lifecycle?.state === 'starting' ||
-        (deployment.app?.activeRequests ?? 0) > 0 ||
+        (!expired && (deployment.app?.activeRequests ?? 0) > 0) ||
         (!expired && (deployment.app?.activeConnections ?? 0) > 0),
     );
     if (busy) return;
-    // Handshake rechecks current ingress/startup state atomically in the child. Older Hosts fail safe.
-    if (
-      !service.prepareRotation ||
-      !(await service.prepareRotation({ ignoreConnections: expired }))
-    )
-      return;
-    // New tracked work may have entered while the IPC reply was in flight.
-    if (inFlight > 0 || batchBusy() || generation !== hostGeneration) {
+    // Before the deadline reserve only an idle child. At the deadline gate ingress first, then give existing
+    // responses a bounded drain. The old proxy target remains available to return 503 + Retry-After while draining.
+    if (!service.prepareRotation) return;
+    const preparing = service.prepareRotation({
+      ignoreConnections: expired,
+      ...(expired
+        ? { drainTimeoutMs: inProcess.restartDrainMs ?? 30_000 }
+        : {}),
+    });
+    rotationPreparing = preparing;
+    let reserved: boolean;
+    try {
+      reserved = await preparing;
+    } catch (error) {
+      await service.prepareRotation({ resume: true }).catch(() => undefined);
+      throw error;
+    } finally {
+      if (rotationPreparing === preparing) rotationPreparing = null;
+    }
+    if (!reserved) return;
+    // New tracked work waits for the handoff. New control-plane dispatches have not entered the Host yet;
+    // the batch was settled before the handoff began. Existing operations remain protected by the child recheck.
+    if (inFlight > 0 || generation !== hostGeneration) {
       await service.prepareRotation({ resume: true });
       return;
     }
@@ -539,6 +557,19 @@ export function createHostDriver(
       })
       .finally(() => {
         checkingChurn = false;
+        // Retry failed restores after evaluating rotation, never as a foreground management prerequisite. A pending
+        // restore remains protected work, including the interval spent reading its desired set before Host submission.
+        if (
+          !inFlight &&
+          !batchBusy() &&
+          !rotationPreparing &&
+          !restartScheduled &&
+          inProcess.controller.getInfo().status === 'ready' &&
+          Date.now() >= retryCheckAt
+        )
+          for (const scope of scopes.values())
+            if (scope.restoreFailed && !scope.restoring)
+              void scheduleRestore(scope).catch(() => undefined);
         if (recheckChurn) {
           recheckChurn = false;
           queueMicrotask(checkChurn);
@@ -551,8 +582,12 @@ export function createHostDriver(
     churn += 1;
   };
 
-  const watchChurn = (): void => {
-    if (churnTimer || (!inProcess.restartAfterChurn && !heapRatio)) return;
+  const watchChurn = (forRecovery: boolean = false): void => {
+    if (
+      churnTimer ||
+      (!forRecovery && !inProcess.restartAfterChurn && !heapRatio)
+    )
+      return;
     churnTimer = setInterval(
       checkChurn,
       options.churnCheckIntervalMs ?? 60_000,
@@ -584,7 +619,7 @@ export function createHostDriver(
       const timer = setTimeout(
         () => done(false),
         (inProcess.restartMaxWaitMs ?? 300_000) +
-          (inProcess.restartDrainMs ?? 30_000) +
+          2 * (inProcess.restartDrainMs ?? 30_000) +
           (options.churnCheckIntervalMs ?? 60_000),
       );
       rotationWaiters.add(done);
@@ -598,6 +633,7 @@ export function createHostDriver(
     work: () => Promise<T>,
   ): Promise<T> => {
     if (scope.host !== inProcess) return await work();
+    if (rotationPreparing) await rotationPreparing.catch(() => false);
     if (restartScheduled) await restartScheduled.catch(() => undefined);
     inFlight += 1;
     try {
@@ -687,11 +723,9 @@ export function createHostDriver(
       };
       scopes.set(environment.id, scope);
       watchReady(host);
-      const management = async (): Promise<HostManagementService> => {
-        if (scope.restoreFailed) await scheduleRestore(scope);
-        if (scope.restoring) await scope.restoring;
-        return managementOf(host);
-      };
+      // Recovery is retried by the background poll. A broken desired set must not block management or repair.
+      const management = (): Promise<HostManagementService> =>
+        managementOf(host);
       const statusOf = async (appId: string): Promise<AppObservedStatus> => {
         const status = await (
           await management()
@@ -875,8 +909,6 @@ export function createHostDriver(
           });
         },
         async status(appIds) {
-          if (scope.restoring)
-            await Promise.race([scope.restoring, delay(5_000)]);
           const status = await (
             await management()
           ).getStatus({
@@ -1044,12 +1076,6 @@ function unionCapabilities(
     urlModes: [...new Set(list.flatMap((item) => item.urlModes))],
     images: list.some((item) => item.images === true),
   };
-}
-
-function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => {
-    setTimeout(resolve, ms).unref?.();
-  });
 }
 
 /** What a Host child's configuration file holds; see `writeHostConfig`. */

@@ -143,15 +143,23 @@ function fakeHost(restartAfterChurn?: number): FakeHost {
     };
   };
   const management = {
-    prepareRotation: async ({ pauseOnly, ignoreConnections, resume }) => {
+    prepareRotation: async ({
+      pauseOnly,
+      ignoreConnections,
+      drainTimeoutMs,
+      resume,
+    }) => {
       if (pauseOnly || resume) return false;
       return (
-        [...host.requests.values()].every((n) => n === 0) &&
+        (drainTimeoutMs !== undefined ||
+          [...host.requests.values()].every((n) => n === 0)) &&
         [...host.lifecycle.values()].every((state) => state !== 'starting') &&
         (ignoreConnections ||
           [...host.connections.values()].every((n) => n === 0))
       );
     },
+    cancelDeployment: async () => 'notFound' as const,
+    deploymentProgress: async () => null,
     getStatus: (query) => Promise.resolve(status(query)),
     restoreDeploymentSet(set: HostDeploymentSet) {
       host.restored.push(set);
@@ -558,11 +566,49 @@ describe('Host driver', () => {
     expect(driver.churn()).toBe(0);
   });
 
-  it('never forces a resident request, startup or unknown Host state past the maximum wait', async () => {
+  it('gates continuous resident requests at the deadline, drains, and then rotates while new work waits', async () => {
     vi.useFakeTimers();
     const host = fakeHost(1);
+    host.endpoint.restartMaxWaitMs = 1000;
+    host.endpoint.restartDrainMs = 40;
     const driver = driverFor(host);
     const session = await open(driver, [appSpec('crm')]);
+    const service = await host.endpoint.controller.getManagementClient();
+    const original = service.prepareRotation!;
+    const drain = Promise.withResolvers<void>();
+    const prepare = vi
+      .spyOn(service, 'prepareRotation')
+      .mockImplementation(async (options) => {
+        if (options.drainTimeoutMs !== undefined) await drain.promise;
+        return original(options);
+      });
+    host.requests.set('crm', 1);
+    await session.apply(appSpec('crm'));
+    await vi.advanceTimersByTimeAsync(999);
+    expect(host.restarts).toHaveLength(0);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(prepare).toHaveBeenCalledWith({
+      ignoreConnections: true,
+      drainTimeoutMs: 40,
+    });
+    expect(driver.proxyTarget()).not.toBeNull(); // The child answers retryable 503s while its old requests drain.
+    expect(host.restarts).toHaveLength(0);
+    const start = vi.spyOn(service, 'startDeployment');
+    const queued = session.start(appSpec('next'));
+    await vi.advanceTimersByTimeAsync(0);
+    expect(start).not.toHaveBeenCalled();
+    drain.resolve();
+    await vi.advanceTimersByTimeAsync(0);
+    await queued;
+    expect(host.restarts).toHaveLength(1);
+    expect(start).toHaveBeenCalledOnce();
+  });
+
+  it('still protects startup and unknown Host state after the maximum wait', async () => {
+    vi.useFakeTimers();
+    const host = fakeHost(1);
+    const session = await open(driverFor(host), [appSpec('crm')]);
+    host.lifecycle.set('crm', 'starting');
     host.requests.set('crm', 1);
     await session.apply(appSpec('crm'));
     await vi.advanceTimersByTimeAsync(600_000);
@@ -571,14 +617,10 @@ describe('Host driver', () => {
     const reading = vi
       .spyOn(service, 'getStatus')
       .mockRejectedValue(new Error('unavailable'));
-    host.requests.set('crm', 0);
+    host.lifecycle.set('crm', 'running');
     await vi.advanceTimersByTimeAsync(60_000);
     expect(host.restarts).toHaveLength(0);
     reading.mockRestore();
-    host.lifecycle.set('crm', 'starting');
-    await vi.advanceTimersByTimeAsync(60_000);
-    expect(host.restarts).toHaveLength(0);
-    host.lifecycle.set('crm', 'running');
     await vi.advanceTimersByTimeAsync(60_000);
     expect(host.restarts).toHaveLength(1);
   });
@@ -597,7 +639,10 @@ describe('Host driver', () => {
     expect(host.restarts).toHaveLength(0);
     await vi.advanceTimersByTimeAsync(1234);
     expect(prepare).toHaveBeenCalledWith({ pauseOnly: true });
-    expect(prepare).toHaveBeenCalledWith({ ignoreConnections: true });
+    expect(prepare).toHaveBeenCalledWith({
+      ignoreConnections: true,
+      drainTimeoutMs: 30_000,
+    });
     expect(host.restarts).toHaveLength(1);
   });
 
@@ -828,4 +873,53 @@ describe('Host driver', () => {
       '2.0.0',
     );
   });
+  it.each([undefined, 20])(
+    'retries restoration in the background without blocking management or a repair deployment (churn %s)',
+    async (limit) => {
+      vi.useFakeTimers();
+      const host = fakeHost(limit);
+      const session = await open(driverFor(host), [appSpec('site')]);
+      await session.apply(appSpec('site'));
+      const service = await host.endpoint.controller.getManagementClient();
+      const original = service.restoreDeploymentSet.bind(service);
+      const blocked =
+        Promise.withResolvers<Awaited<ReturnType<typeof original>>>();
+      const restore = vi
+        .spyOn(service, 'restoreDeploymentSet')
+        .mockRejectedValueOnce(new Error('invalid desired set'))
+        .mockImplementationOnce(() => blocked.promise);
+      await expect(session.restore([])).rejects.toThrow('invalid desired set');
+      await vi.advanceTimersByTimeAsync(60_000);
+      expect(restore).toHaveBeenCalledTimes(2);
+      host.counters.memory = {
+        heapUsed: 560,
+        heapLimit: 1000,
+        rss: 900,
+        available: 2000,
+      };
+      await vi.advanceTimersByTimeAsync(60_000);
+      expect(host.restarts).toHaveLength(0);
+      delete host.counters.memory;
+      expect((await session.status(['site'])).get('site')?.state).toBe(
+        'running',
+      );
+      expect(await session.cancel!('missing', 'site')).toBe('notFound');
+      expect(await session.progress!('missing', 'site')).toBeNull();
+      expect(
+        await session.apply(
+          appSpec('site', {
+            deploymentId: 'repair',
+            release: { id: 'r2', version: '2.0.0', checksum: CHECKSUM },
+          }),
+        ),
+      ).toMatchObject({ state: 'running', version: '2.0.0' });
+      blocked.reject(new Error('still invalid'));
+      await vi.advanceTimersByTimeAsync(0);
+      restore.mockImplementation(original);
+      await vi.advanceTimersByTimeAsync(60_000);
+      expect(restore).toHaveBeenCalledTimes(3);
+      // The sampled heap trigger stays latched; it may rotate only after the protected restore finishes.
+      expect(host.restarts).toHaveLength(limit ? 1 : 0);
+    },
+  );
 });
