@@ -251,7 +251,11 @@ test('publication gate isolates npm from inherited scope config while checking b
       inheritedConfig,
       '@nocobase:registry=https://registry.npmjs.org\n',
     );
-    writeFileSync(isolatedConfig, `@nocobase:registry=${registryUrl}\n`);
+    // A conflicting scoped registry must not override the registry under test.
+    writeFileSync(
+      isolatedConfig,
+      '@nocobase:registry=http://127.0.0.1:9/\nfetch-retries=0\n',
+    );
     writeFileSync(globalConfig, '');
     writeFileSync(
       runner,
