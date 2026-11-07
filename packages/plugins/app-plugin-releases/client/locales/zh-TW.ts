@@ -172,6 +172,7 @@ const zhTW: LocaleResource<typeof enUS> = {
       runStates: {
         running: '執行中',
         starting: '啟動中',
+        pending: '尚未啟動',
         waiting: '排隊等待',
         stopped: '已停止或休眠',
         failed: '失敗',

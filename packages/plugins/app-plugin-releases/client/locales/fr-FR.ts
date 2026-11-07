@@ -192,6 +192,7 @@ const frFR: LocaleResource<typeof enUS> = {
       runStates: {
         running: 'En cours d’exécution',
         starting: 'En démarrage',
+        pending: 'Pas encore démarrée',
         waiting: 'En attente',
         stopped: 'Arrêtée ou en veille',
         failed: 'En échec',

@@ -191,6 +191,7 @@ const jaJP: LocaleResource<typeof enUS> = {
       runStates: {
         running: '実行中',
         starting: '起動中',
+        pending: '未起動',
         waiting: '待機中',
         stopped: '停止または休止中',
         failed: '失敗',

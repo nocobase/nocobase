@@ -189,6 +189,7 @@ const ruRU: LocaleResource<typeof enUS> = {
       runStates: {
         running: 'Работает',
         starting: 'Запускается',
+        pending: 'Ещё не запущено',
         waiting: 'Ожидает',
         stopped: 'Остановлено или в спящем режиме',
         failed: 'Ошибка',

@@ -191,6 +191,7 @@ const ptBR: LocaleResource<typeof enUS> = {
       runStates: {
         running: 'Em execução',
         starting: 'Iniciando',
+        pending: 'Ainda não iniciado',
         waiting: 'Aguardando',
         stopped: 'Parado ou hibernando',
         failed: 'Com falha',

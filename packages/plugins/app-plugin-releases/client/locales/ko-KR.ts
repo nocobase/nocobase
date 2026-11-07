@@ -178,6 +178,7 @@ const koKR: LocaleResource<typeof enUS> = {
       runStates: {
         running: '실행 중',
         starting: '시작 중',
+        pending: '아직 시작 안 됨',
         waiting: '대기 중',
         stopped: '중지 또는 휴면',
         failed: '실패',

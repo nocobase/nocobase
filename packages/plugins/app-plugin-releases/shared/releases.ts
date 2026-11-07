@@ -354,12 +354,15 @@ export interface RuntimeStatus {
 
 /**
  * An App's runtime as the Apps list shows and filters it, a deployment in progress aside: `failed` first, then
- * `running` and `starting` (what holds a slot on a shared runtime, as its running count counts), `waiting` (a start
- * refused for a slot, memory or a restart), `stopped` (stopped or hibernating) and `unknown` (its runtime did not answer).
+ * `running` and `starting` (what holds a slot on a shared runtime, exactly what its running count counts), `pending`
+ * (not on its runtime yet: a new environment's first start, or a restart restoring it; it holds no slot), `waiting` (a
+ * start refused for a slot, memory or a restart), `stopped` (stopped or hibernating) and `unknown` (its runtime did not
+ * answer).
  */
 export const RUN_STATES = [
   'running',
   'starting',
+  'pending',
   'waiting',
   'stopped',
   'failed',
@@ -371,7 +374,8 @@ export function runStateOf(runtime: RuntimeStatus): RunState {
   const { state, waiting } = runtime;
   if (state === 'failed') return 'failed';
   if (state === 'running') return 'running';
-  if (state === 'starting' || state === 'pending') return 'starting';
+  if (state === 'starting') return 'starting';
+  if (state === 'pending') return 'pending';
   if (waiting) return 'waiting';
   if (state === 'unknown') return 'unknown';
   return 'stopped';

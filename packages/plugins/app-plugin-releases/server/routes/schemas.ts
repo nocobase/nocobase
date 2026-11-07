@@ -120,7 +120,7 @@ export const ListAppsQuery: z.ZodType<
     'An environment identifier; repeat for Apps of any of them.',
   ),
   runtimeState: repeated(z.enum(RUN_STATES)).describe(
-    'A runtime state (`running`, `starting`, `waiting`, `stopped`, `failed`, `unknown`); repeat for Apps in any of them. Applied before the page is cut.',
+    'A runtime state (`running`, `starting`, `pending`, `waiting`, `stopped`, `failed`, `unknown`); repeat for Apps in any of them. Applied before the page is cut.',
   ),
   label: labelFilter.describe('A label for this resource.'),
 });

@@ -44,6 +44,7 @@ const ui = {
     runStates: {
       running: 'Running',
       starting: 'Starting',
+      pending: 'Not started yet',
       waiting: 'Waiting',
       stopped: 'Stopped or hibernating',
       failed: 'Failed',

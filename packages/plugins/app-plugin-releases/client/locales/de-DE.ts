@@ -193,6 +193,7 @@ const deDE: LocaleResource<typeof enUS> = {
       runStates: {
         running: 'Läuft',
         starting: 'Startet',
+        pending: 'Noch nicht gestartet',
         waiting: 'Wartet',
         stopped: 'Gestoppt oder ruhend',
         failed: 'Fehlgeschlagen',

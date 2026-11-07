@@ -192,6 +192,7 @@ const esES: LocaleResource<typeof enUS> = {
       runStates: {
         running: 'En ejecución',
         starting: 'Iniciándose',
+        pending: 'Aún sin iniciar',
         waiting: 'En espera',
         stopped: 'Detenida o hibernando',
         failed: 'Con error',

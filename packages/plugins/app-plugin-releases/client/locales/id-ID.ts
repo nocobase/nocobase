@@ -192,6 +192,7 @@ const idID: LocaleResource<typeof enUS> = {
       runStates: {
         running: 'Berjalan',
         starting: 'Sedang dimulai',
+        pending: 'Belum dimulai',
         waiting: 'Menunggu',
         stopped: 'Berhenti atau hibernasi',
         failed: 'Gagal',

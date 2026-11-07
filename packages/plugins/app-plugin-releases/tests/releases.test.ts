@@ -97,6 +97,42 @@ describe('releases', () => {
     };
   }
 
+  it('keeps an App not yet on the host, pending a first start or a restore, out of the running count and its link alike', async () => {
+    const admin = await createApp('restoring');
+    observe('restoring', { state: 'pending' });
+    // A restart restoring it: the host lists it pending, holding no slot.
+    harness.fake.occupancy = occupancyOf([
+      ['restoring', 'staging', { state: 'pending' }],
+    ]);
+    const [host] = await harness.services.releases.listHosts(admin);
+    expect(host?.running).toBe(0);
+    const linked = await harness.services.releases.listApps(admin, {
+      environmentIds: ['staging'],
+      runStates: ['running', 'starting'],
+    });
+    expect(linked.total).toBe(host?.running);
+    // It is found under its own state.
+    const pending = await harness.services.releases.listApps(admin, {
+      runStates: ['pending'],
+    });
+    expect(pending.items.map((item) => item.app.id)).toEqual(['restoring']);
+    // Once it starts, the card and the link count it alike.
+    observe('restoring', { state: 'starting' });
+    harness.fake.occupancy = occupancyOf([
+      ['restoring', 'staging', { state: 'starting' }],
+    ]);
+    const [started] = await harness.services.releases.listHosts(admin);
+    expect(started?.running).toBe(1);
+    expect(
+      (
+        await harness.services.releases.listApps(admin, {
+          environmentIds: ['staging'],
+          runStates: ['running', 'starting'],
+        })
+      ).total,
+    ).toBe(1);
+  });
+
   it('answers the shared runtime on the single-App read as whole-host totals, naming no other App', async () => {
     const admin = await createApp('crm');
     const contributor = await harness.as('dev', 'contributor');

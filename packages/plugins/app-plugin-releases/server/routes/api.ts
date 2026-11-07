@@ -894,7 +894,7 @@ export function createReleasesApi(
           runtimeState: {
             name: 'state',
             description:
-              'A runtime state (running, starting, waiting, stopped, failed, unknown); repeat for more.',
+              'A runtime state (running, starting, pending, waiting, stopped, failed, unknown); repeat for more.',
           },
           q: { name: 'search' },
           label: { description: 'A label (key=value); repeat for more.' },

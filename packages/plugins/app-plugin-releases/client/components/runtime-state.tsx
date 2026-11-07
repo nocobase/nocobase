@@ -16,7 +16,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip.js';
 
 const TONE: Readonly<Record<string, Tone>> = {
   running: 'green',
-  pending: 'blue',
+  pending: 'grey',
   starting: 'blue',
   stopped: 'grey',
   dormant: 'violet',
@@ -39,7 +39,10 @@ export function RuntimeStateBadge({
   const key = runtimeStateKey(runtime);
   const tag = (
     <Tag tone={TONE[key] ?? 'grey'} dot>
-      {t(`ui.state.${key}`)}
+      {/* Not on its runtime yet holds no slot: it is not worded as starting, unlike an App's own badge. */}
+      {key === 'pending'
+        ? t('ui.apps.runStates.pending')
+        : t(`ui.state.${key}`)}
     </Tag>
   );
   const reasons = runtimeReasons(runtime).map((reason) => t(reason));

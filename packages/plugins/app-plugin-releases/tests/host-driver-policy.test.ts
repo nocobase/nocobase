@@ -22,7 +22,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { hostNoticeOf } from '../client/lib/runtime-state.js';
 import { runtimeStatus } from '../server/services/releases.js';
-import type { AppSummary } from '../shared/releases.js';
+import { runStateOf, type AppSummary } from '../shared/releases.js';
 import { appSummary } from './helpers/app-summary.js';
 
 import {
@@ -330,6 +330,27 @@ describe('Host driver', () => {
       desired: () =>
         Promise.resolve(typeof desired === 'function' ? desired() : desired),
     });
+  it('reports an App of a new environment, before anything is deployed, as pending: no slot, so out of the running link', async () => {
+    const host = fakeHost();
+    const session = await open(driverFor(host), []);
+    try {
+      const runtime = runtimeStatus(
+        await session.status(['never-deployed']),
+        'never-deployed',
+      );
+      expect(runtime.state).toBe('pending');
+      expect(runStateOf(runtime)).toBe('pending');
+      const occupancy = (await session.occupancy!())!;
+      expect(
+        occupancy.apps.filter(
+          (app) => app.state === 'running' || app.state === 'starting',
+        ),
+      ).toHaveLength(0);
+    } finally {
+      await session.close();
+    }
+  });
+
   it('starts an App on deployment and leaves an on-demand one stopped on restore', async () => {
     const host = fakeHost();
     const preview = appSpec('fg-1--app', {

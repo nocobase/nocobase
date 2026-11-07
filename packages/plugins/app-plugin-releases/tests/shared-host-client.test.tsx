@@ -332,6 +332,31 @@ describe('shared app host', () => {
     ).toBeNull();
   });
 
+  it('leaves out the link for someone who may open the apps page but view no app', async () => {
+    const permissions = allPermissions();
+    await render('/release-environments', {
+      permissions: {
+        ...permissions,
+        scopes: { ...permissions.scopes, 'rel.apps/view': 'none' },
+      },
+    });
+    expect(await screen.findByText('Shared app host')).toBeTruthy();
+    expect(
+      screen.queryByRole('link', { name: /running or starting apps/ }),
+    ).toBeNull();
+    cleanup();
+    // Viewing only some Apps is enough: the list shows those.
+    await render('/release-environments', {
+      permissions: {
+        ...permissions,
+        scopes: { ...permissions.scopes, 'rel.apps/view': { users: ['user'] } },
+      },
+    });
+    expect(
+      await screen.findByRole('link', { name: /running or starting apps/ }),
+    ).toBeTruthy();
+  });
+
   it('leaves the card out of the environments page when no environment shares a host', async () => {
     await render('/release-environments', { hosts: [] });
     await screen.findByText('Staging');
@@ -342,8 +367,10 @@ describe('shared app host', () => {
     const running = appSummary('running', 'busy-app');
     const queued = appSummary('stopped', 'queued-app');
     const deploying = appSummary('running', 'deploying-app');
+    const pending = appSummary('pending', 'pending-app');
     await render('/releases', {
       apps: [
+        pending,
         {
           ...running,
           runtime: {
@@ -360,6 +387,10 @@ describe('shared app host', () => {
       within((await screen.findAllByText(id))[0]!.closest('tr') as HTMLElement);
     // The runtime's own state; a deployment in progress is marked beside it rather than hiding it.
     expect((await row('deploying-app')).getByText('Running')).toBeTruthy();
+    // Not on its runtime yet is not worded as starting: it holds no slot.
+    expect(
+      (await row('pending-app')).getByText('Not started yet'),
+    ).toBeTruthy();
     expect((await row('deploying-app')).getByText('Deploying')).toBeTruthy();
     expect(
       (await row('queued-app')).getByText('Waiting for memory'),

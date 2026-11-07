@@ -192,6 +192,7 @@ const viVN: LocaleResource<typeof enUS> = {
       runStates: {
         running: 'Đang chạy',
         starting: 'Đang khởi động',
+        pending: 'Chưa khởi động',
         waiting: 'Đang chờ',
         stopped: 'Đã dừng hoặc ngủ đông',
         failed: 'Thất bại',

@@ -40,6 +40,7 @@ const zhCN: typeof enUS = {
       runStates: {
         running: '运行中',
         starting: '启动中',
+        pending: '尚未启动',
         waiting: '排队等待',
         stopped: '已停止或休眠',
         failed: '失败',
