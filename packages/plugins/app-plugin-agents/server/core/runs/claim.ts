@@ -417,6 +417,7 @@ function fingerprint(
   entry: RunnerModelEntry,
   layers: Pick<BriefLayers, 'system' | 'agent'>,
   skills: readonly { readonly slug: string; readonly hash: string }[],
+  readOnly: boolean,
 ): string {
   return createHash('sha256')
     .update(
@@ -427,6 +428,8 @@ function fingerprint(
         layers.system,
         layers.agent,
         skills.map((skill) => [skill.slug, skill.hash]),
+        // Keep existing writable fingerprints unchanged across upgrades.
+        ...(readOnly ? [{ readOnly: true }] : []),
       ]),
     )
     .digest('hex');
@@ -1245,7 +1248,13 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
         deps.app.name,
       );
     let brief = await render();
-    const briefFingerprint = fingerprint(agent, entry, brief.layers, skills);
+    const briefFingerprint = fingerprint(
+      agent,
+      entry,
+      brief.layers,
+      skills,
+      assembly.readOnly === true,
+    );
     const resume =
       !run.freshSession &&
       binding.sessionPolicy?.(effectiveClaim) !== 'fresh' &&

@@ -1,4 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest';
+import { createHash } from 'node:crypto';
+import { renderBrief } from '../server/core/brief/index.js';
 import type { EnqueueRequest } from '../server/core/runs/index.js';
 import {
   claim,
@@ -63,6 +65,95 @@ describe('fresh run sessions', () => {
       ).status,
     ).toBe(200);
   }
+
+  it.each([
+    [true, false, 'fresh'],
+    [false, true, 'fresh'],
+    [true, true, 'resume'],
+    [false, false, 'resume'],
+  ] as const)(
+    'uses %s → %s read-only mode with a %s session',
+    async (firstReadOnly, nextReadOnly, expected) => {
+      h = await createHarness();
+      let readOnly = firstReadOnly;
+      const binding = h.services.subjects.get('sample')!;
+      h.services.subjects.register({
+        ...binding,
+        kind: 'mode',
+        context: {
+          ...binding.context,
+          async assemble(conn, context) {
+            return {
+              ...(await binding.context.assemble(conn, context)),
+              readOnly,
+            };
+          },
+        },
+      });
+      const agent = await h.createAgent();
+      const runner = await h.registerRunner();
+      const subject = { kind: 'mode', id: '1' };
+      await enqueue(agent, false, { subject });
+      const [first] = await claim(h, runner);
+      await finish(runner, first, 'previous-session');
+      readOnly = nextReadOnly;
+      await enqueue(agent, false, { subject });
+      const [next] = await claim(h, runner);
+      expect(next.prompt.session).toBe(expected);
+      if (expected === 'resume')
+        expect(next.prompt.resumeSessionId).toBe('previous-session');
+      else expect(next.prompt).not.toHaveProperty('resumeSessionId');
+      if (nextReadOnly) expect(next.workspace.readOnly).toBe(true);
+      else expect(next.workspace).not.toHaveProperty('readOnly');
+    },
+  );
+
+  it('resumes an existing writable session with its pre-upgrade fingerprint', async () => {
+    h = await createHarness();
+    const instructions = 'Keep changes focused.';
+    const agent = await h.createAgent({ instructions });
+    const runner = await h.registerRunner();
+    await enqueue(agent);
+    const [first] = await claim(h, runner);
+    await finish(runner, first, 'legacy-writable');
+    const layers = renderBrief({
+      agentName: 'Coder',
+      subject: { noun: 'sample', key: 'SMP-1' },
+      task: 'Work on the sample.',
+      context: 'Sample 1',
+      instructions,
+      dirs: [],
+      skills: [],
+      cli: 'acme',
+      appName: 'Acme',
+    });
+    // Frozen pre-upgrade algorithm: writable sessions must keep this exact digest.
+    const legacyFingerprint = createHash('sha256')
+      .update(
+        JSON.stringify([
+          first.tool.kind,
+          first.tool.model,
+          instructions,
+          layers.system,
+          layers.agent,
+          [],
+        ]),
+      )
+      .digest('hex');
+    const sessions = h.database.connection().repository('agSessions');
+    const stored = await sessions.findOne({ filter: { agentId: agent } });
+    expect(stored!.fingerprint).toBe(legacyFingerprint);
+    await sessions.updateOne({
+      filter: { id: stored!.id },
+      values: { fingerprint: legacyFingerprint },
+    });
+    await enqueue(agent);
+    const [next] = await claim(h, runner);
+    expect(next.prompt).toMatchObject({
+      session: 'resume',
+      resumeSessionId: 'legacy-writable',
+    });
+  });
 
   it('lets the host force fresh sessions while other agents still reuse their session', async () => {
     h = await createHarness();
