@@ -227,6 +227,7 @@ const systemZhCN: SystemResource = {
   datePicker: {
     placeholder: '选择日期',
     rangePlaceholder: '选择日期范围',
+    clear: '清除',
   },
 };
 
