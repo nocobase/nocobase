@@ -1056,7 +1056,7 @@ const viVN: LocaleResource<typeof enUS> = {
     },
     flags: {
       label: 'Nó ảnh hưởng gì',
-      startsRun: 'Bắt đầu hoạt động của đại lý',
+      startsRun: 'Bắt đầu hoạt động của Agent',
       finalStatus: 'Đóng một nhiệm vụ',
       ownerChange: 'Thay đổi chủ sở hữu',
       createsProject: 'Tạo một dự án',
@@ -1139,7 +1139,7 @@ const viVN: LocaleResource<typeof enUS> = {
     count: '{{count}} / {{max}}',
     files: 'Tệp',
     filesHint:
-      'Tối đa các tệp {{count}}, mỗi tệp {{size}} MB. Văn bản, Markdown, CSV, Word, Excel, PowerPoint và PDF được đọc; Cho phép một đại lý tổ chức có thể đọc hình ảnh PNG/JPEG bằng các công cụ hình ảnh của mình; nếu đọc không thành công, hãy quay lại chỉnh sửa và thử lại. Phân chia quy tắc chỉ sử dụng tên tệp hình ảnh.',
+      'Tối đa các tệp {{count}}, mỗi tệp {{size}} MB. Văn bản, Markdown, CSV, Word, Excel, PowerPoint và PDF được đọc; Cho phép một Agent tổ chức có thể đọc hình ảnh PNG/JPEG bằng các công cụ hình ảnh của mình; nếu đọc không thành công, hãy quay lại chỉnh sửa và thử lại. Phân chia quy tắc chỉ sử dụng tên tệp hình ảnh.',
     addFiles: 'Thêm tập tin',
     dropFiles: 'Thả file vào đây',
     removeFile: 'Loại bỏ {{name}}',
@@ -1210,7 +1210,7 @@ const viVN: LocaleResource<typeof enUS> = {
       'Hiện tại không có môi trường chạy nào trực tuyến: yêu cầu sẽ đợi cho đến khi một yêu cầu kết nối.',
     unavailable: {
       noAgent:
-        'AI không khả dụng: chọn một tác nhân trò chuyện mặc định trong hồ sơ của bạn hoặc yêu cầu quản trị viên thiết lập một tác nhân.',
+        'AI không khả dụng: chọn một Agent trò chuyện mặc định trong hồ sơ của bạn hoặc yêu cầu quản trị viên thiết lập một Agent.',
     },
     removed_one: 'Đã xóa bản nháp {{count}}: {{titles}}',
     removed_other: 'Đã xóa bản nháp {{count}}: {{titles}}',

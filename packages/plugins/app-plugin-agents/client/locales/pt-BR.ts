@@ -112,7 +112,7 @@ const ptBR: LocaleResource<typeof enUS> = {
     unavailableNow: 'Indisponível agora',
     title: 'Agentes',
     description:
-      'Adicione agentes a partir dos modelos que os ambientes de execução informam. O Lead Agent entrega cada etapa de uma tarefa ao agente cuja descrição combina.',
+      'Adicione Agents a partir dos modelos que os ambientes de execução informam. O Lead Agent entrega cada etapa de uma tarefa ao Agent cuja descrição combina.',
     fromRunners: 'Agentes de ambientes de execução',
     display: {
       search: 'Pesquisar modelos ou provedores',
@@ -120,20 +120,20 @@ const ptBR: LocaleResource<typeof enUS> = {
       showDisabled: 'Mostrar desabilitados',
       hideDisabled: 'Ocultar desabilitados',
     },
-    filterLabel: 'Mostrar agentes',
+    filterLabel: 'Mostrar Agents',
     filters: {
       all: 'Todos {{count}}',
       enabled: '{{count}} habilitado',
       unreported: 'Nenhum ambiente de execução {{count}}',
     },
-    loadFailed: 'Não foi possível carregar os agentes',
+    loadFailed: 'Não foi possível carregar os Agents',
     loadMore: 'Carregar mais',
-    emptyTitle: 'Nenhum agente ainda',
+    emptyTitle: 'Nenhum Agent ainda',
     emptyDescription:
-      'Conecte um ambiente de execução com uma ferramenta de codificação autenticada e adicione um agente em “Modelos disponíveis”.',
-    noneInFilter: 'Nenhum agente aqui.',
+      'Conecte um ambiente de execução com uma ferramenta de codificação autenticada e adicione um Agent em “Modelos disponíveis”.',
+    noneInFilter: 'Nenhum Agent aqui.',
     howToAdd:
-      'Para adicionar um agente, instale uma ferramenta de programação em um ambiente de execução e entre em um modelo que você pode usar: quando o ambiente o informar, adicione-o em Modelos disponíveis escrevendo em que ele é bom. Um agente que só ambientes pessoais têm trabalha apenas em tarefas iniciadas pelos donos desses ambientes.',
+      'Para adicionar um Agent, instale uma ferramenta de programação em um ambiente de execução e entre em um modelo que você pode usar: quando o ambiente o informar, adicione-o em Modelos disponíveis escrevendo em que ele é bom. Um Agent que só ambientes pessoais têm trabalha apenas em tarefas iniciadas pelos donos desses ambientes.',
     goodAtMissing: 'Ainda não escrito',
     columns: {
       agent: 'Agente',
@@ -179,7 +179,7 @@ const ptBR: LocaleResource<typeof enUS> = {
         'Relatado por ambientes de execução {{count}} online: {{names}}.',
       noRunnerNow: 'Nenhum ambiente de execução que o tenha está online agora.',
       goodAtHint:
-        'O Lead Agent decide o que entregar a este agente com estas palavras. Diga o que é adequado e o que não é.',
+        'O Lead Agent decide o que entregar a este Agent com estas palavras. Diga o que é adequado e o que não é.',
       goodAtRequired: 'Escreva em que ele é bom antes de ativá-lo.',
       effortHint: 'O Lead Agent não pode alterá-lo quando entrega o trabalho.',
       personalOnly:
@@ -195,10 +195,10 @@ const ptBR: LocaleResource<typeof enUS> = {
       done: '{{name}} salvo',
     },
     available: {
-      open: 'Adicionar agente',
+      open: 'Adicionar Agent',
       title: 'Modelos disponíveis',
       description:
-        'Somente as ferramentas marcadas no ambiente de execução são detectadas e aparecem aqui. As combinações recomendadas pela aplicação se criam e habilitam por conta própria assim que um ambiente de execução as relata; adicione um agente a partir de qualquer outra.',
+        'Somente as ferramentas marcadas no ambiente de execução são detectadas e aparecem aqui. As combinações recomendadas pela aplicação se criam e habilitam por conta própria assim que um ambiente de execução as relata; adicione um Agent a partir de qualquer outra.',
       recommended: 'Habilitado automaticamente ao ser relatado',
       added: 'Adicionado',
       add: 'Adicionar',
@@ -231,15 +231,15 @@ const ptBR: LocaleResource<typeof enUS> = {
       selectedCount_other: '{{count}} selecionados',
       selectedCount_many: '{{count}} selecionados',
       addSelected: 'Adicionar {{count}}',
-      confirmTitle_one: 'Adicionar {{count}} agente',
-      confirmTitle_other: 'Adicionar {{count}} agentes',
+      confirmTitle_one: 'Adicionar {{count}} Agent',
+      confirmTitle_other: 'Adicionar {{count}} Agents',
       confirmTitle_many: 'Adicionar {{count}} agentes',
       confirmAction_one: 'Adicionar {{count}}',
       confirmAction_other: 'Adicionar {{count}}',
       confirmAction_many: 'Adicionar {{count}}',
       goodAtNeeded: 'Em que ele é bom?',
-      addedCount_one: '{{count}} agente adicionado.',
-      addedCount_other: '{{count}} agentes adicionados.',
+      addedCount_one: '{{count}} Agent adicionado.',
+      addedCount_other: '{{count}} Agents adicionados.',
       addedCount_many: '{{count}} agentes adicionados.',
       addedPartial:
         '{{succeeded}} adicionados, {{failed}} não puderam ser adicionados. O motivo está abaixo de cada um.',
@@ -249,31 +249,30 @@ const ptBR: LocaleResource<typeof enUS> = {
   },
   agentTypes: {
     label: 'Tipo de agente',
-    question: 'Que tipo de agente?',
+    question: 'Que tipo de Agent?',
     online: 'On-line',
     runner: 'Executor',
     onlineHint:
       'Respostas em segundos no servidor através de um serviço modelo. Não é necessário ambiente de execução; não pode tocar no código.',
     runnerHint:
       'Aciona uma ferramenta de codificação em ambiente de execução e funciona em um diretório de trabalho: código, arquivos, comandos.',
-    immutable:
-      'Um agente mantém seu tipo; crie outro agente para o outro tipo.',
+    immutable: 'Um Agent mantém seu tipo; crie outro Agent para o outro tipo.',
     onServer: 'No servidor',
     filterAll: 'Todos os tipos',
-    noneOfType: 'Nenhum agente deste tipo.',
+    noneOfType: 'Nenhum Agent deste tipo.',
   },
   agentSkills: {
     title: 'Habilidades',
     description:
-      'Manuais que o agente lê quando uma tarefa corresponde à sua descrição. Colocado em seu diretório de trabalho antes de cada execução.',
+      'Manuais que o Agent lê quando uma tarefa corresponde à sua descrição. Colocado em seu diretório de trabalho antes de cada execução.',
     manage: 'Gerenciar habilidades',
     placeholder: 'Selecionar habilidades',
     empty: 'Nenhuma habilidade ainda.',
     save: 'Salvar habilidades',
     descriptionOnline:
-      'Manuais que o agente lê quando uma tarefa corresponde à sua descrição, em uma sandbox somente leitura no servidor.',
+      'Manuais que o Agent lê quando uma tarefa corresponde à sua descrição, em uma sandbox somente leitura no servidor.',
     onlineScripts:
-      'Os scripts não são executados para agentes online: o agente pode lê-los, não executá-los.',
+      'Os scripts não são executados para Agents online: o Agent pode lê-los, não executá-los.',
     skippedScripts: ': {{paths}}',
     pathSeparator: ', ',
   },
@@ -281,7 +280,7 @@ const ptBR: LocaleResource<typeof enUS> = {
     preview: 'Pré-visualização do prompt completo',
     previewTitle: 'Pré-visualização do prompt completo',
     previewDescription:
-      'Que série deste agente seria enviada agora, sobre um assunto inventado. Nada está na fila.',
+      'Que série deste Agent seria enviada agora, sobre um assunto inventado. Nada está na fila.',
     scenario: 'Cenário',
     sample:
       'Sobre um assunto inventado: {{subject}}. Os valores marcados como [amostra] são compostos.',
@@ -293,9 +292,9 @@ const ptBR: LocaleResource<typeof enUS> = {
     platform:
       'Regras e tarefas da plataforma · sobre caracteres {{size}} (Inglês)',
     platformNote:
-      'As regras da plataforma são enviadas em inglês; o agente ainda responde no seu idioma.',
+      'As regras da plataforma são enviadas em inglês; o Agent ainda responde no seu idioma.',
     agentPrompt: 'Solicitação do agente (escrita por você)',
-    noAgentPrompt: 'Este agente não possui prompt próprio.',
+    noAgentPrompt: 'Este Agent não possui prompt próprio.',
     firstMessage: 'Primeira mensagem',
     empty: 'Vazio',
     previewPlaceholders:
@@ -313,7 +312,7 @@ const ptBR: LocaleResource<typeof enUS> = {
   envVars: {
     title: 'Variáveis de ambiente',
     description:
-      'Passado para a ferramenta de codificação em cada execução e mascarado nos registros de execução; os valores não são mostrados novamente após salvar. Qualquer pessoa que utilize um agente compartilhado pode receber esses valores em seu próprio computador; marque segredos de alto risco como "Somente ambientes de execução da equipe".',
+      'Passado para a ferramenta de codificação em cada execução e mascarado nos registros de execução; os valores não são mostrados novamente após salvar. Qualquer pessoa que utilize um Agent compartilhado pode receber esses valores em seu próprio computador; marque segredos de alto risco como "Somente ambientes de execução da equipe".',
     add: 'Adicionar variável',
     addTitle: 'Adicionar variável de ambiente',
     editTitle: 'Substituir {{name}}',
@@ -326,7 +325,7 @@ const ptBR: LocaleResource<typeof enUS> = {
     keepValueHint: 'Deixe em branco para manter o valor atual.',
     teamRunnersOnly: 'Somente ambientes de execução de equipe',
     teamRunnersOnlyHint:
-      'Sem ele, uma execução envia o valor para o ambiente de execução que o utiliza, incluindo o ambiente de execução pessoal de qualquer pessoa que possa usar o agente. Com ele, apenas um ambiente de execução de equipe realiza execuções que obtenham essa variável.',
+      'Sem ele, uma execução envia o valor para o ambiente de execução que o utiliza, incluindo o ambiente de execução pessoal de qualquer pessoa que possa usar o Agent. Com ele, apenas um ambiente de execução de equipe realiza execuções que obtenham essa variável.',
     teamRunnersOnlyBadge: 'Somente ambientes de execução de equipe',
     fromRunner: 'Extrair do ambiente de execução',
     fromRunnerHint:
@@ -377,7 +376,7 @@ const ptBR: LocaleResource<typeof enUS> = {
   scopeVariables: {
     title: 'Variáveis e segredos',
     description:
-      'Dado a todos os agentes que trabalham aqui. Variáveis ​​mais específicas (de um diretório de trabalho e depois do agente) prevalecem sobre elas.',
+      'Dado a todos os Agents que trabalham aqui. Variáveis ​​mais específicas (de um diretório de trabalho e depois do Agent) prevalecem sobre elas.',
   },
   scopes: {
     workdir: 'Diretório de trabalho',
@@ -390,7 +389,7 @@ const ptBR: LocaleResource<typeof enUS> = {
     otherUse: {
       title: 'Outro uso de modelo',
       description:
-        'Chamadas de modelo fora das execuções do agente, como indexação e pesquisa na base de conhecimento.',
+        'Chamadas de modelo fora das execuções do Agent, como indexação e pesquisa na base de conhecimento.',
       purpose: 'Uso',
       source: 'Perguntado por',
       model: 'Modelo',
@@ -404,7 +403,7 @@ const ptBR: LocaleResource<typeof enUS> = {
     },
     title: 'Uso',
     description:
-      'Quais execuções de agentes são usadas e quanto custam nos preços do modelo atual.',
+      'Quais execuções de Agents são usadas e quanto custam nos preços do modelo atual.',
     loadFailed: 'Não foi possível carregar o uso',
     groupBy: 'Agrupar por',
     groupByValue: 'Agrupar por {{group}}',
@@ -427,7 +426,7 @@ const ptBR: LocaleResource<typeof enUS> = {
     filters: {
       allGroups: 'Todos: {{group}}',
       agent: 'Agente',
-      allAgents: 'Todos os agentes',
+      allAgents: 'Todos os Agents',
       person: 'Acordado por',
       allPeople: 'Todos',
       range: 'Período',
@@ -463,7 +462,7 @@ const ptBR: LocaleResource<typeof enUS> = {
   defaultSkills: {
     title: 'Habilidades padrão',
     description:
-      'Cada agente que trabalha aqui também adquire essas habilidades.',
+      'Cada Agent que trabalha aqui também adquire essas habilidades.',
     save: 'Salvar habilidades',
     saved: 'Habilidades padrão salvas.',
   },
@@ -480,7 +479,7 @@ const ptBR: LocaleResource<typeof enUS> = {
     filters: {
       agent: 'Agente',
       status: 'Status',
-      allAgents: 'Todos os agentes',
+      allAgents: 'Todos os Agents',
       allStatuses: 'Todos os status',
     },
     noMatch: 'Nenhuma execução corresponde a esses filtros.',
@@ -494,7 +493,7 @@ const ptBR: LocaleResource<typeof enUS> = {
     viewBrief: 'Ver prompt completo',
     briefTitle: 'Solicitação completa',
     briefDescription:
-      'O que o agente foi informado quando esta corrida foi reivindicada pela última vez.',
+      'O que o Agent foi informado quando esta corrida foi reivindicada pela última vez.',
     briefOf: 'Tentativa {{attempt}}, reivindicada {{time}}',
     briefUnavailable:
       'Nenhum prompt completo está disponível para esta execução.',
@@ -541,7 +540,7 @@ const ptBR: LocaleResource<typeof enUS> = {
   transcript: {
     title: 'Transcrição da execução',
     notFound: 'Esta execução não existe.',
-    waiting: 'Aguardando o início do agente…',
+    waiting: 'Aguardando o início do Agent…',
     empty: 'Esta execução não registrou eventos.',
     fetchFailed: 'Não foi possível buscar novos eventos. Tentando novamente…',
     expand: 'Mostrar tudo',
@@ -550,10 +549,10 @@ const ptBR: LocaleResource<typeof enUS> = {
     summary_one: 'Criado evento {{created}} · {{count}}',
     summary_other: 'Criados eventos {{created}} · {{count}}',
     took: 'pegou {{duration}}',
-    pendingInputs_one: 'Comentário {{count}} aguardando o agente',
-    pendingInputs_other: 'Comentários {{count}} aguardando o agente',
-    inputDelivered_one: 'Entregue ao agente',
-    inputDelivered_other: 'Entradas {{count}} entregues ao agente',
+    pendingInputs_one: 'Comentário {{count}} aguardando o Agent',
+    pendingInputs_other: 'Comentários {{count}} aguardando o Agent',
+    inputDelivered_one: 'Entregue ao Agent',
+    inputDelivered_other: 'Entradas {{count}} entregues ao Agent',
     tokens: 'Entrada de tokens {{input}}, saída {{output}}',
     kinds: {
       text: 'Agente',
@@ -583,7 +582,7 @@ const ptBR: LocaleResource<typeof enUS> = {
     leaseExpired: 'O ambiente de execução parou de relatar.',
     startTimeout: 'O ambiente de execução não iniciou a execução a tempo.',
     cancelled: 'Cancelado.',
-    idleTimeout: 'O agente parou de progredir.',
+    idleTimeout: 'O Agent parou de progredir.',
     setupFailed: 'A corrida não pôde ser preparada.',
     cliUnavailable:
       'O ambiente de execução não pôde instalar a CLI do aplicativo.',
@@ -602,8 +601,8 @@ const ptBR: LocaleResource<typeof enUS> = {
     contextOverflow: 'A conversa tornou-se demasiado longa para o modelo.',
     delegatedQueueTimeout: 'Tempo limite da fila de delegação; retirado',
     queuedExpired: 'Nenhum ambiente de execução demorou a ser executado.',
-    modelUnavailable: 'O modelo do agente não está disponível.',
-    stepLimit: 'O agente chamou as ferramentas muitas vezes sem responder.',
+    modelUnavailable: 'O modelo do Agent não está disponível.',
+    stepLimit: 'O Agent chamou as ferramentas muitas vezes sem responder.',
     policyRefused:
       'Nenhuma política de ambiente de execução permite esse trabalho.',
     prepareNetwork:
@@ -643,7 +642,7 @@ const ptBR: LocaleResource<typeof enUS> = {
       marks_one: 'Marca de cota {{count}}',
       marks_other: 'Marcas de cota {{count}}',
       queueHint:
-        'Um agente na cota ainda pode ser selecionado. O trabalho ficará na fila com o prazo de espera existente.',
+        'Um Agent na cota ainda pode ser selecionado. O trabalho ficará na fila com o prazo de espera existente.',
       partial: 'Executa em {{available}} · {{blocked}} na cota',
       workspaceSize: 'Tamanho do espaço de trabalho: {{value}}',
       providers_one: 'Provedor {{count}} na cota',
@@ -751,12 +750,12 @@ const ptBR: LocaleResource<typeof enUS> = {
     },
     title: 'Ambientes de execução',
     description:
-      'Os ambientes de execução que executam os agentes e as ferramentas de codificação relatadas por cada um.',
+      'Os ambientes de execução que executam os Agents e as ferramentas de codificação relatadas por cada um.',
     add: 'Adicionar ambiente de execução',
     loadFailed: 'Não foi possível carregar os ambientes de execução',
     emptyTitle: 'Nenhum ambiente de execução conectado ainda',
     emptyDescription:
-      'Depois que um ambiente de execução é conectado, os agentes ambientes de execução assumem o trabalho lá com suas ferramentas de codificação.',
+      'Depois que um ambiente de execução é conectado, os Agents ambientes de execução assumem o trabalho lá com suas ferramentas de codificação.',
     noneConnected: 'Nenhum ambiente de execução está conectado.',
     revokedList_one: '{{count}} ambiente de execução revogado',
     revokedList_other: '{{count}} ambientes de execução revogados',
@@ -854,9 +853,9 @@ const ptBR: LocaleResource<typeof enUS> = {
     upgradeRequired: {
       title: 'Este ambiente de execução precisa de uma atualização',
       older:
-        'Seu ambiente de execução {{version}} fala o protocolo do agente {{protocol}}; esta aplicação precisa do protocolo {{required}}. Ele permanece conectado, mas não executa nada até ser atualizado.',
+        'Seu ambiente de execução {{version}} fala o protocolo do Agent {{protocol}}; esta aplicação precisa do protocolo {{required}}. Ele permanece conectado, mas não executa nada até ser atualizado.',
       newer:
-        'Seu ambiente de execução {{version}} fala o protocolo do agente {{protocol}}, mais recente que esta aplicação (protocolo {{required}}). Ele permanece conectado, mas não executa nada até executar um ambiente de execução que este aplicativo atende.',
+        'Seu ambiente de execução {{version}} fala o protocolo do Agent {{protocol}}, mais recente que esta aplicação (protocolo {{required}}). Ele permanece conectado, mas não executa nada até executar um ambiente de execução que este aplicativo atende.',
       latest:
         'Esta aplicação atende ao ambiente de execução {{latest}}. Execute isto em seu host para atualizá-lo:',
       noLatest:
@@ -880,7 +879,7 @@ const ptBR: LocaleResource<typeof enUS> = {
     },
     trust: {
       isolationHint:
-        'Em ambientes de execução pessoais ou compartilhados, execute o runner em uma VM ou ambiente isolado: os agentes têm acesso total e o runner não é um sandbox.',
+        'Em ambientes de execução pessoais ou compartilhados, execute o runner em uma VM ou ambiente isolado: os Agents têm acesso total e o runner não é um sandbox.',
       label: 'Para quem trabalha',
       team: 'Equipe',
       teamHint:
@@ -912,7 +911,7 @@ const ptBR: LocaleResource<typeof enUS> = {
       badge: 'Atualizável',
       title: 'Um ambiente de execução mais recente para {{name}}',
       description: '{{version}} instalado, esta aplicação atende {{latest}}.',
-      hint: 'Ele se atualiza quando nenhum agente está em execução. Para atualizá-lo agora, execute-o em seu host.',
+      hint: 'Ele se atualiza quando nenhum Agent está em execução. Para atualizá-lo agora, execute-o em seu host.',
     },
     revoke: {
       title: 'Revogar a credencial de {{name}}?',
@@ -932,12 +931,12 @@ const ptBR: LocaleResource<typeof enUS> = {
   },
   connect: {
     manual: 'Ou instale você mesmo',
-    promptTitle: 'Deixe um agente configurar',
-    promptCopy: 'Copiar a instrução para o agente',
+    promptTitle: 'Deixe um Agent configurar',
+    promptCopy: 'Copiar a instrução para o Agent',
     promptShow: 'Ver instrução',
     promptHide: 'Ocultar instrução',
     promptHint:
-      'Copie esta instrução para um agente (Claude Code, Codex e similares) na máquina de destino, e ele fará os passos abaixo por você. Ela contém uma credencial de uso único: entregue-a apenas a esse agente.',
+      'Copie esta instrução para um Agent (Claude Code, Codex e similares) na máquina de destino, e ele fará os passos abaixo por você. Ela contém uma credencial de uso único: entregue-a apenas a esse Agent.',
     windowsPowerShell:
       '1. Instale o WSL: execute no PowerShell e reinicie o Windows:',
     windowsUbuntu:
@@ -945,9 +944,9 @@ const ptBR: LocaleResource<typeof enUS> = {
     windowsNetwork:
       'Se o WSL não conseguir acessar a internet, ative a rede espelhada no WSL.',
     promptWindows:
-      'PRIMEIRO, verifique se você está rodando dentro do WSL Ubuntu. Se NÃO estiver no WSL Ubuntu, PARE: não execute nenhum comando de instalação ou registro. Diga ao usuário para executar wsl --install no PowerShell, reiniciar o Windows, abrir o agente dentro do WSL Ubuntu e executar esta instrução de novo. Continue com os passos abaixo SOMENTE dentro do WSL Ubuntu. Instale o Node.js e as ferramentas de programação dentro do WSL. Se o WSL não conseguir acessar a internet, ative a rede espelhada.\n\n',
+      'PRIMEIRO, verifique se você está rodando dentro do WSL Ubuntu. Se NÃO estiver no WSL Ubuntu, PARE: não execute nenhum comando de instalação ou registro. Diga ao usuário para executar wsl --install no PowerShell, reiniciar o Windows, abrir o Agent dentro do WSL Ubuntu e executar esta instrução de novo. Continue com os passos abaixo SOMENTE dentro do WSL Ubuntu. Instale o Node.js e as ferramentas de programação dentro do WSL. Se o WSL não conseguir acessar a internet, ative a rede espelhada.\n\n',
     promptBody:
-      'Configure esta máquina como ambiente de execução do NocoBase. Use uma VM ou um ambiente isolado: os agentes têm acesso total e o runner não é um sandbox.\n\nVerifique se há Node.js 24 ou mais recente e se estas ferramentas de programação estão instaladas e com login feito: {{tools}}. Use os métodos de instalação oficiais, não pacotes snap.\n\nExecute este comando de registro de uso único para instalar o runner e a CLI da aplicação, registrá-lo e instalar seu serviço em segundo plano:\n{{command}}\n\nResolva problemas comuns de configuração: garanta que o PATH do serviço contenha as ferramentas de programação (verifique which codex / which claude no terminal de instalação, execute nocobase-runner service install de novo e reinicie o serviço); configure o proxy necessário para downloads e para o serviço; resolva permissões de instalação global do npm com um prefixo do próprio usuário ou um gerenciador de versões do Node, sem sudo npm install.\n\nTermine com nocobase-runner status e confirme a conexão e as ferramentas de programação. Informe os passos de login ou de rede que ainda faltam para eu concluir. Trate a credencial de registro como segredo e não a inclua no seu relatório.',
+      'Configure esta máquina como ambiente de execução do NocoBase. Use uma VM ou um ambiente isolado: os Agents têm acesso total e o runner não é um sandbox.\n\nVerifique se há Node.js 24 ou mais recente e se estas ferramentas de programação estão instaladas e com login feito: {{tools}}. Use os métodos de instalação oficiais, não pacotes snap.\n\nExecute este comando de registro de uso único para instalar o runner e a CLI da aplicação, registrá-lo e instalar seu serviço em segundo plano:\n{{command}}\n\nResolva problemas comuns de configuração: garanta que o PATH do serviço contenha as ferramentas de programação (verifique which codex / which claude no terminal de instalação, execute nocobase-runner service install de novo e reinicie o serviço); configure o proxy necessário para downloads e para o serviço; resolva permissões de instalação global do npm com um prefixo do próprio usuário ou um gerenciador de versões do Node, sem sudo npm install.\n\nTermine com nocobase-runner status e confirme a conexão e as ferramentas de programação. Informe os passos de login ou de rede que ainda faltam para eu concluir. Trate a credencial de registro como segredo e não a inclua no seu relatório.',
     title: 'Adicionar ambiente de execução',
     description:
       'Execute o comando abaixo em um host que possua uma ferramenta de codificação instalada: um servidor, uma VM ou seu próprio dispositivo. Os agentes são executados lá com acesso total, como o usuário que executa o ambiente de execução, e podem ler e alterar qualquer coisa que o usuário possa, incluindo chaves SSH e outras credenciais. O ambiente de execução não é um limite de segurança: execute-o como um usuário dedicado, em um contêiner ou em uma VM.',
@@ -1031,9 +1030,9 @@ const ptBR: LocaleResource<typeof enUS> = {
       modelUnavailable: 'Modelo indisponível',
     },
     offline: {
-      fallbackDone: 'Esta conversa agora usa outro agente',
+      fallbackDone: 'Esta conversa agora usa outro Agent',
       restoreDone: 'Mudou de volta',
-      newSession: 'O agente inicia uma nova sessão e lê esta conversa.',
+      newSession: 'O Agent inicia uma nova sessão e lê esta conversa.',
     },
     notice: {
       switchedToDefault:
@@ -1041,16 +1040,16 @@ const ptBR: LocaleResource<typeof enUS> = {
       switchedToOnline:
         '{{own}} não tem nenhum ambiente de execução para você agora, então {{name}} responde até que {{own}} retorne.',
       onlineFallbackUnavailable:
-        'O agente substituto online não pode responder ({{reason}}). Esta conversa permanece com {{own}} enquanto espera por um runner.',
+        'O Agent substituto online não pode responder ({{reason}}). Esta conversa permanece com {{own}} enquanto espera por um runner.',
       switchedAgent:
         'Alterado para {{name}}, mantendo o histórico desta conversa.',
       switchedBack: 'De volta com {{name}}.',
-      runFailed: 'O agente parou antes de responder.',
-      runFailedReason: 'O agente parou antes de responder: {{reason}}',
+      runFailed: 'O Agent parou antes de responder.',
+      runFailedReason: 'O Agent parou antes de responder: {{reason}}',
       runCancelled: 'Cancelamento solicitado.',
     },
     consultation: {
-      unavailableTitle: 'Agente consultado indisponível',
+      unavailableTitle: 'Agent consultado indisponível',
       snapshotTitle: '{{name}} solicitado no momento',
       title: 'Consultado {{name}}',
     },
@@ -1061,33 +1060,33 @@ const ptBR: LocaleResource<typeof enUS> = {
     },
     agents: {
       personalOnly: 'Somente ambientes de execução pessoais',
-      hint: 'Lista os agentes habilitados e diz por que nenhum deles pode responder agora. As respostas são executadas em um ambiente de execução: a primeira resposta espera que alguém a responda, geralmente alguns segundos.',
-      chooseFor: 'Escolha um agente',
-      empty: 'Nenhum agente que você possa escolher',
-      none: 'Nenhum agente',
-      unknown: 'Agente desconhecido',
-      placeholder: 'Escolha um agente',
+      hint: 'Lista os Agents habilitados e diz por que nenhum deles pode responder agora. As respostas são executadas em um ambiente de execução: a primeira resposta espera que alguém a responda, geralmente alguns segundos.',
+      chooseFor: 'Escolha um Agent',
+      empty: 'Nenhum Agent que você possa escolher',
+      none: 'Nenhum Agent',
+      unknown: 'Agent desconhecido',
+      placeholder: 'Escolha um Agent',
       myDefault: 'Meu padrão',
       systemDefault: 'Padrão do sistema',
     },
   },
   chatProfile: {
-    loadFailed: 'Não foi possível carregar as configurações do seu agente',
-    defaultAgent: 'Meu agente de chat padrão',
+    loadFailed: 'Não foi possível carregar as configurações do seu Agent',
+    defaultAgent: 'My Agent de chat padrão',
     systemDefault: 'Padrão do sistema',
     systemDefaultNamed: 'Padrão do sistema ({{name}})',
     noDefault: 'Nenhum padrão do sistema está definido.',
-    saved: 'Agente de chat padrão salvo',
+    saved: 'Agent de chat padrão salvo',
   },
   models: {
     title: 'Modelos',
     description:
-      'Os modelos de atendimento online que os agentes chamam e os modelos que cada um oferece: modelos de chat para agentes, modelos de incorporação e reclassificação para pesquisa.',
+      'Os modelos de atendimento online que os Agents chamam e os modelos que cada um oferece: modelos de chat para Agents, modelos de incorporação e reclassificação para pesquisa.',
   },
   defaultModel: {
     title: 'Modelo de bate-papo padrão',
     description:
-      'Agentes on-line sem modelos próprios de resposta, como um novo agente ou um que veio com o aplicativo.',
+      'Agents on-line sem modelos próprios de resposta, como um novo Agent ou um que veio com o aplicativo.',
     none: 'Nenhum modelo de chat está ativado ainda. Adicione um serviço de modelo e ative um modelo de chat: o primeiro se torna o padrão.',
     saved: 'O modelo de chat padrão agora é {{model}}.',
   },
@@ -1102,7 +1101,7 @@ const ptBR: LocaleResource<typeof enUS> = {
     empty: {
       title: 'Nenhum serviço modelo ainda',
       description:
-        'Depois de adicionar um serviço modelo, os agentes online poderão responder por meio dele.',
+        'Depois de adicionar um serviço modelo, os Agents online poderão responder por meio dele.',
       readOnly: 'Peça a um administrador para adicionar um serviço modelo.',
     },
     add: {
@@ -1128,7 +1127,7 @@ const ptBR: LocaleResource<typeof enUS> = {
       name: 'Nome',
       enabled: 'Habilitado',
       enabledHint:
-        'Os agentes online podem usar seus modelos somente enquanto ele estiver ativado.',
+        'Os Agents online podem usar seus modelos somente enquanto ele estiver ativado.',
       saved: '{{title}} salvo.',
       delete: 'Excluir',
       deleteTitle: 'Excluir {{title}}?',
@@ -1154,7 +1153,7 @@ const ptBR: LocaleResource<typeof enUS> = {
     models: {
       title: 'Modelos',
       description:
-        'Verifique os modelos que este serviço oferece e diga para que serve cada um: modelos de chat respondem a agentes, incorporação de texto de índice de modelos para pesquisa, reclassificação de modelos ordenam resultados de pesquisa. Um modelo de incorporação pode solicitar vetores de um tamanho.',
+        'Verifique os modelos que este serviço oferece e diga para que serve cada um: modelos de chat respondem a Agents, incorporação de texto de índice de modelos para pesquisa, reclassificação de modelos ordenam resultados de pesquisa. Um modelo de incorporação pode solicitar vetores de um tamanho.',
       fetching: 'Buscando os modelos do provedor…',
       fetchFailed: 'O provedor não listou seus modelos: {{message}}',
       fetch: 'Buscar modelos',
@@ -1265,11 +1264,11 @@ const ptBR: LocaleResource<typeof enUS> = {
     backToList: 'Voltar às habilidades',
     emptyTitle: 'Nenhuma habilidade ainda',
     emptyDescription:
-      'Depois de adicionar uma habilidade, os agentes leem seu SKILL.md sempre que uma tarefa exigir isso.',
+      'Depois de adicionar uma habilidade, os Agents leem seu SKILL.md sempre que uma tarefa exigir isso.',
     emptyReadOnly: 'Peça a um administrador para adicionar uma habilidade.',
     content: 'SKILL.md',
     contentHint:
-      'O nome do front issue é o nome da pasta da habilidade: alterá-lo renomeia a habilidade. A descrição informa aos agentes quando lê-la.',
+      'O nome do front issue é o nome da pasta da habilidade: alterá-lo renomeia a habilidade. A descrição informa aos Agents quando lê-la.',
     contentTooLarge: 'SKILL.md é maior que {{max}}.',
     emptyContent: 'Esta habilidade ainda não tem conteúdo.',
     created: 'Habilidade criada "{{name}}"',
@@ -1283,7 +1282,7 @@ const ptBR: LocaleResource<typeof enUS> = {
     delete: 'Excluir habilidade',
     deleteTitle: 'Excluir habilidade "{{name}}"?',
     deleteDescription:
-      'Todo agente e todo lugar que usa essa habilidade como padrão a perde.',
+      'Todo Agent e todo lugar que usa essa habilidade como padrão a perde.',
     readOnly:
       'Somente o criador da habilidade e os administradores do espaço de trabalho podem alterar essa habilidade.',
     conflict:
@@ -1292,8 +1291,8 @@ const ptBR: LocaleResource<typeof enUS> = {
     conflictDraft:
       'Alguém salvou uma nova versão depois que você começou a editar, portanto suas alterações não foram salvas. Copie o que deseja manter, carregue a versão mais recente e edite novamente.',
     loadLatest: 'Carregar a versão mais recente',
-    mountedAgents: 'Agentes vinculados',
-    noAgents: 'Ainda não vinculado a nenhum agente.',
+    mountedAgents: 'Agents vinculados',
+    noAgents: 'Ainda não vinculado a nenhum Agent.',
     defaults: 'Habilidade padrão de: {{places}}.',
     defaultsSeparator: ', ',
     files: 'Arquivos',
@@ -1308,7 +1307,7 @@ const ptBR: LocaleResource<typeof enUS> = {
     executable: 'Executável',
     scriptBadge: 'Roteiro',
     scriptsNote:
-      'Possui scripts: os agentes online podem lê-los, mas nunca executá-los',
+      'Possui scripts: os Agents online podem lê-los, mas nunca executá-los',
     compatibility: 'Compatibilidade: {{value}}',
     fileContent: 'Conteúdo de {{path}}',
     export: 'Exportar',
@@ -1341,8 +1340,8 @@ const ptBR: LocaleResource<typeof enUS> = {
       renameTitle: 'Renomear "{{name}}"',
       conventional: {
         scripts:
-          'Os agentes de código podem ser executados. Os agentes online apenas leem.',
-        references: 'Os agentes de documentação leem quando precisam.',
+          'Os Agents de código podem ser executados. Os Agents online apenas leem.',
+        references: 'Os Agents de documentação leem quando precisam.',
         assets: 'Modelos, imagens e outros recursos.',
       },
       problems: {
@@ -1380,7 +1379,7 @@ const ptBR: LocaleResource<typeof enUS> = {
       },
     },
     template: {
-      description: 'O que esta habilidade faz e quando um agente deve usá-la.',
+      description: 'O que esta habilidade faz e quando um Agent deve usá-la.',
       title: 'Nova habilidade',
       whenToUse: 'Quando usar',
       whenToUseHint: 'Descrever as tarefas que exigem esta habilidade.',
@@ -1400,7 +1399,7 @@ const ptBR: LocaleResource<typeof enUS> = {
     versions: {
       title: 'Versões',
       description:
-        'Cada salvamento cria uma nova versão; os agentes sempre recebem a versão mais recente.',
+        'Cada salvamento cria uma nova versão; os Agents sempre recebem a versão mais recente.',
       current: 'Atual',
       compare: 'Comparar',
       compareTitle: 'Versão {{version}} → versão {{current}}',
@@ -1410,7 +1409,7 @@ const ptBR: LocaleResource<typeof enUS> = {
       restore: 'Restaurar',
       restoreTitle: 'Restaurar versão {{version}}?',
       restoreDescription:
-        'É salvo novamente como a versão mais recente; os agentes obtêm-no na próxima corrida. Nada se perde: a versão atual fica no histórico.',
+        'É salvo novamente como a versão mais recente; os Agents obtêm-no na próxima corrida. Nada se perde: a versão atual fica no histórico.',
       restored: 'Versão {{version}} restaurada como versão {{current}}.',
     },
   },
@@ -1429,7 +1428,7 @@ const ptBR: LocaleResource<typeof enUS> = {
       restricted:
         'Política do ambiente de execução, diretório ou restrições de variáveis',
       unknown: 'A elegibilidade da carga de trabalho não foi estabelecida',
-      agentArchived: 'O agente é arquivado',
+      agentArchived: 'O Agent é arquivado',
       delayed: 'Programado para {{until}}',
       noRunnerOnline: 'Sem ambiente de execução online',
       runnersOffline: 'Seus ambientes de execução estão offline',
@@ -1461,15 +1460,15 @@ const ptBR: LocaleResource<typeof enUS> = {
         description: 'Os agentes da equipe e as habilidades que utilizam.',
         actions: {
           edit: {
-            title: 'Agentes de mudança e competências',
+            title: 'Agents de mudança e competências',
             description:
-              'Altere as configurações, habilidades e variáveis de um agente, arquive, restaure e exclua, e edite habilidades. Um agente não recebe nenhuma capacidade além da do próprio editor',
+              'Altere as configurações, habilidades e variáveis de um Agent, arquive, restaure e exclua, e edite habilidades. Um Agent não recebe nenhuma capacidade além da do próprio editor',
             related:
-              'Agentes de mudança e habilidades (agentes que eles possuem e habilidades que eles criaram)',
+              'Agents de mudança e habilidades (Agents que eles possuem e habilidades que eles criaram)',
             relatedLabel: 'Agentes que possuo e habilidades que criei',
             relatedHint:
               'Agentes dos quais sou proprietário e habilidades que criei',
-            all: 'Agentes de mudança e habilidades (todos)',
+            all: 'Agents de mudança e habilidades (todos)',
           },
         },
       },
@@ -1490,7 +1489,7 @@ const ptBR: LocaleResource<typeof enUS> = {
       agents: {
         title: 'Agentes',
         description:
-          'Veja agentes, habilidades e corridas; altere agentes e habilidades, cancele e tente novamente.',
+          'Veja Agents, habilidades e corridas; altere Agents e habilidades, cancele e tente novamente.',
       },
       runners: {
         title: 'Ambientes de execução',

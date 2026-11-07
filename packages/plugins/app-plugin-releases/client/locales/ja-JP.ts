@@ -332,7 +332,7 @@ const jaJP: LocaleResource<typeof enUS> = {
     },
     actors: {
       human: '人',
-      agent: 'エージェント',
+      agent: 'Agent',
       key: 'キー',
       rule: 'ルール',
       system: 'システム',

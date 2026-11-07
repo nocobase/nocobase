@@ -116,18 +116,18 @@ const zhTW: LocaleResource<typeof enUS> = {
       showDisabled: '顯示已停用',
       hideDisabled: '隱藏已停用',
     },
-    filterLabel: '顯示代理',
+    filterLabel: '顯示Agents',
     filters: {
       all: '全部{{count}}',
       enabled: '啟用 {{count}}',
       unreported: '無參賽者 {{count}}',
     },
-    loadFailed: '無法載入代理',
+    loadFailed: '無法載入Agents',
     loadMore: '載入更多',
-    emptyTitle: '還沒有代理',
+    emptyTitle: '還沒有Agents',
     emptyDescription:
-      '連接已登入編碼工具的執行環境，再從「可用模型」新增代理。',
-    noneInFilter: '這裡沒有代理。',
+      '連接已登入編碼工具的執行環境，再從「可用模型」新增Agent。',
+    noneInFilter: '這裡沒有Agent。',
     howToAdd:
       '要新增 Agent，請在執行環境上安裝程式設計工具並登入你可使用的模型：執行環境回報後，從「可用模型」寫下它擅長的事來新增。只有個人執行環境擁有的 Agent，只會處理其擁有者啟動的任務。',
     goodAtMissing: '還沒寫',
@@ -171,7 +171,7 @@ const zhTW: LocaleResource<typeof enUS> = {
       reportedBy_other: '{{count}} 執行環境線上檢舉：{{names}}。',
       noRunnerNow: '目前沒有擁有它的執行環境線上。',
       goodAtHint:
-        'Lead Agent透過這句話來決定交給該代理什麼。說一下它適合什麼，不適合什麼。',
+        'Lead Agent透過這句話來決定交給該Agent什麼。說一下它適合什麼，不適合什麼。',
       goodAtRequired: '在啟用它之前寫下它擅長什麼。',
       effortHint: 'Lead Agent交接工作時不能更改。',
       personalOnly:
@@ -231,17 +231,17 @@ const zhTW: LocaleResource<typeof enUS> = {
   },
   agentTypes: {
     label: '代理型別',
-    question: '什麼樣的代理人？',
+    question: '什麼樣的Agent？',
     online: '線上',
     runner: '執行環境',
     onlineHint:
       '透過模型服務在伺服器上幾秒鐘內做出答覆。無需執行環境；它不能觸及程式碼。',
     runnerHint:
       '在執行環境驅動編碼工具並在工作目錄中工作：程式碼、檔案、命令。',
-    immutable: '代理保持其型別；為另一種型別建立另一個代理。',
+    immutable: 'Agent保持其型別；為另一種型別建立另一個Agent。',
     onServer: '在伺服器上',
     filterAll: '所有型別',
-    noneOfType: '沒有此類代理。',
+    noneOfType: '沒有此類Agent。',
   },
   agentSkills: {
     title: '技能',
@@ -252,8 +252,9 @@ const zhTW: LocaleResource<typeof enUS> = {
     empty: '還沒有技能。',
     save: '儲存技能',
     descriptionOnline:
-      '當任務與其描述相符時，代理程式在伺服器上的唯讀沙箱中手動讀取。',
-    onlineScripts: '線上代理不會執行指令碼：代理可以讀取它們，但不能執行它們。',
+      '當任務與其描述相符時，Agent在伺服器上的唯讀沙箱中手動讀取。',
+    onlineScripts:
+      '線上Agents不會執行指令碼：Agent可以讀取它們，但不能執行它們。',
     skippedScripts: ': {{paths}}',
     pathSeparator: ', ',
   },
@@ -261,7 +262,7 @@ const zhTW: LocaleResource<typeof enUS> = {
     preview: '預覽完整提示',
     previewTitle: '預覽完整提示',
     previewDescription:
-      '這個代理現在會在一個虛構的主題上傳送什麼樣的訊息。沒有任何東西排隊。',
+      '這個Agent現在會在一個虛構的主題上傳送什麼樣的訊息。沒有任何東西排隊。',
     scenario: '場景',
     sample: '關於虛構的主題：{{subject}}。標記為[樣本]的值是虛構的。',
     previewFailed: '無法呈現完整提示。',
@@ -270,9 +271,9 @@ const zhTW: LocaleResource<typeof enUS> = {
     rendered: '渲染',
     raw: '原料',
     platform: '平臺規則與任務·關於{{size}}人物（英文）',
-    platformNote: '平臺規則以英文傳送；客服人員仍用您的語言回覆。',
+    platformNote: '平臺規則以英文傳送；Agent仍用您的語言回覆。',
     agentPrompt: '代理提示（由您撰寫）',
-    noAgentPrompt: '該代理沒有自己的提示。',
+    noAgentPrompt: '該Agent沒有自己的提示。',
     firstMessage: '第一則訊息',
     empty: '空',
     previewPlaceholders:
@@ -290,7 +291,7 @@ const zhTW: LocaleResource<typeof enUS> = {
   envVars: {
     title: '環境變數',
     description:
-      '每次執行環境傳遞給編碼工具並在執行記錄中遮蔽；儲存後不會再次顯示值。任何使用共享代理的人都可以在自己的電腦上接收這些值；將高風險機密標記為「僅限團隊執行環境」。',
+      '每次執行環境傳遞給編碼工具並在執行記錄中遮蔽；儲存後不會再次顯示值。任何使用共享Agent的人都可以在自己的電腦上接收這些值；將高風險機密標記為「僅限團隊執行環境」。',
     add: '新增變數',
     addTitle: '新增環境變數',
     editTitle: '替代{{name}}',
@@ -302,7 +303,7 @@ const zhTW: LocaleResource<typeof enUS> = {
     keepValueHint: '將其留空以保留當前值。',
     teamRunnersOnly: '僅限團隊執行環境',
     teamRunnersOnlyHint:
-      '如果沒有它，執行會將值傳送到接受它的執行環境，包括可能使用代理的任何人的個人執行環境。有了它，只有團隊執行環境才能獲取此變數。',
+      '如果沒有它，執行會將值傳送到接受它的執行環境，包括可能使用Agent的任何人的個人執行環境。有了它，只有團隊執行環境才能獲取此變數。',
     teamRunnersOnlyBadge: '僅限團隊執行環境',
     fromRunner: '從執行環境獲取',
     fromRunnerHint:
@@ -350,7 +351,7 @@ const zhTW: LocaleResource<typeof enUS> = {
   scopeVariables: {
     title: '變數與機密',
     description:
-      '發給在這裡工作的每一位代理。更具體的變數（工作目錄，然後是代理的）勝過這些。',
+      '發給在這裡工作的每一位Agent。更具體的變數（工作目錄，然後是Agent的）勝過這些。',
   },
   scopes: {
     workdir: '工作目錄',
@@ -362,7 +363,7 @@ const zhTW: LocaleResource<typeof enUS> = {
   usage: {
     otherUse: {
       title: '其他型號使用',
-      description: '模型呼叫外部代理執行，例如索引和搜尋知識庫。',
+      description: '模型呼叫外部Agent執行，例如索引和搜尋知識庫。',
       purpose: '使用',
       source: '提問者',
       model: '模型',
@@ -375,7 +376,7 @@ const zhTW: LocaleResource<typeof enUS> = {
       },
     },
     title: '使用量',
-    description: '使用什麼代理執行以及它們在當前模型價格下的成本是多少。',
+    description: '使用什麼Agent執行以及它們在當前模型價格下的成本是多少。',
     loadFailed: '無法載入使用情況',
     groupBy: '分組依據',
     groupByValue: '組 {{group}}',
@@ -398,7 +399,7 @@ const zhTW: LocaleResource<typeof enUS> = {
     filters: {
       allGroups: '全部：{{group}}',
       agent: '代理',
-      allAgents: '所有代理',
+      allAgents: '所有Agents',
       person: '被喚醒',
       allPeople: '大家',
       range: '日期範圍',
@@ -433,7 +434,7 @@ const zhTW: LocaleResource<typeof enUS> = {
   },
   defaultSkills: {
     title: '預設技能',
-    description: '在這裡工作的每個代理也都獲得了這些技能。',
+    description: '在這裡工作的每個Agent也都獲得了這些技能。',
     save: '儲存技能',
     saved: '已儲存預設技能。',
   },
@@ -450,7 +451,7 @@ const zhTW: LocaleResource<typeof enUS> = {
     filters: {
       agent: '代理',
       status: '狀態',
-      allAgents: '所有代理',
+      allAgents: '所有Agents',
       allStatuses: '所有狀態',
     },
     noMatch: '沒有執行與這些過濾器匹配。',
@@ -463,7 +464,7 @@ const zhTW: LocaleResource<typeof enUS> = {
     retried: '執行已重新加入佇列',
     viewBrief: '看完整提示',
     briefTitle: '完整提示',
-    briefDescription: '最後一次申領此輪運轉時代理人被告知的內容。',
+    briefDescription: '最後一次申領此輪運轉時Agent被告知的內容。',
     briefOf: '嘗試 {{attempt}}，聲稱為 {{time}}',
     briefUnavailable: '此執行沒有可用的完整提示。',
     processDataCleared: '執行過程資料已根據保留策略清除。',
@@ -508,7 +509,7 @@ const zhTW: LocaleResource<typeof enUS> = {
   transcript: {
     title: '執行記錄',
     notFound: '此執行不存在。',
-    waiting: '等待代理啟動...',
+    waiting: '等待Agent啟動...',
     empty: '此執行未記錄任何事件。',
     fetchFailed: '無法取得新事件。正在重試...',
     expand: '顯示全部',
@@ -516,10 +517,10 @@ const zhTW: LocaleResource<typeof enUS> = {
     summary_one: '建立了 {{created}} · {{count}} 事件',
     summary_other: '建立了 {{created}} · {{count}} 事件',
     took: '拿了{{duration}}',
-    pendingInputs_one: '{{count}} 評論等待代理',
-    pendingInputs_other: '{{count}} 評論等待代理',
-    inputDelivered_one: '交付給代理',
-    inputDelivered_other: '{{count}} 輸入傳遞給代理',
+    pendingInputs_one: '{{count}} 評論等待Agent',
+    pendingInputs_other: '{{count}} 評論等待Agent',
+    inputDelivered_one: '交付給Agent',
+    inputDelivered_other: '{{count}} 輸入傳遞給Agent',
     tokens: '{{input}} 代幣輸入，{{output}} 輸出',
     kinds: {
       text: '代理',
@@ -543,7 +544,7 @@ const zhTW: LocaleResource<typeof enUS> = {
     leaseExpired: '運轉時停止報告。',
     startTimeout: '運轉時未及時啟動運轉。',
     cancelled: '取消。',
-    idleTimeout: '代理停止取得進展。',
+    idleTimeout: 'Agent停止取得進展。',
     setupFailed: '無法準備執行。',
     cliUnavailable: '執行環境無法安裝應用程式 CLI。',
     workspaceBusy: '工作目錄正忙；等待另一次嘗試。',
@@ -557,8 +558,8 @@ const zhTW: LocaleResource<typeof enUS> = {
     contextOverflow: '對話對於模型來說太長了。',
     delegatedQueueTimeout: '委託佇列逾時；退縮的',
     queuedExpired: '沒有執行環境及時執行。',
-    modelUnavailable: '代理型號不可用。',
-    stepLimit: '客服人員多次呼叫工具卻無人接聽。',
+    modelUnavailable: 'Agent型號不可用。',
+    stepLimit: 'Agent多次呼叫工具卻無人接聽。',
     policyRefused: '沒有執行環境的策略允許它承擔這項工作。',
     prepareNetwork: '準備執行環境運作時無法到達儲存庫主機。',
     repoAccessUnavailable: '暫時無法存取倉庫。',
@@ -593,7 +594,7 @@ const zhTW: LocaleResource<typeof enUS> = {
       since: '自 {{time}}',
       marks_one: '{{count}} 配額標誌',
       marks_other: '{{count}} 配額標記',
-      queueHint: '仍有配額選擇代理。工作將按照現有的等待期限排隊。',
+      queueHint: '仍有配額選擇Agent。工作將按照現有的等待期限排隊。',
       partial: '以配額在 {{available}} · {{blocked}} 上執行',
       workspaceSize: '工作空間尺寸：{{value}}',
       providers_one: '{{count}} 配額供應商',
@@ -688,12 +689,12 @@ const zhTW: LocaleResource<typeof enUS> = {
       },
     },
     title: '執行環境',
-    description: '執行代理程式的執行環境以及每個報告的編碼工具。',
+    description: '執行Agents的執行環境以及每個報告的編碼工具。',
     add: '新增執行環境',
     loadFailed: '無法載入執行環境',
     emptyTitle: '尚未連線執行環境',
     emptyDescription:
-      '連線執行環境後，執行環境代理程式將使用其編碼工具開始工作。',
+      '連線執行環境後，執行環境Agents將使用其編碼工具開始工作。',
     noneConnected: '未連線執行環境。',
     revokedList_one: '{{count}} 撤銷執行環境',
     revokedList_other: '{{count}} 已撤銷執行環境',
@@ -788,9 +789,9 @@ const zhTW: LocaleResource<typeof enUS> = {
     upgradeRequired: {
       title: '此執行環境需要升級',
       older:
-        '它的執行者 {{version}} 講代理協議 {{protocol}}；該應用程式需要協議 {{required}}。它保持連線，但在更新之前不執行任何內容。',
+        '它的執行者 {{version}} 講Agent協議 {{protocol}}；該應用程式需要協議 {{required}}。它保持連線，但在更新之前不執行任何內容。',
       newer:
-        '它的執行程式 {{version}} 使用代理協定 {{protocol}}，比該應用程式（協定 {{required}}）更新。它保持連線，但不執行任何內容，直到執行該應用程式所服務的執行程式。',
+        '它的執行程式 {{version}} 使用Agent協定 {{protocol}}，比該應用程式（協定 {{required}}）更新。它保持連線，但不執行任何內容，直到執行該應用程式所服務的執行程式。',
       latest:
         '該應用程式服務於執行環境{{latest}}。在其主機上執行此命令以更新它：',
       noLatest:
@@ -844,7 +845,7 @@ const zhTW: LocaleResource<typeof enUS> = {
       badge: '可升級',
       title: '{{name}} 的較新執行環境',
       description: '安裝了{{version}}，該應用程式服務於{{latest}}。',
-      hint: '一旦沒有代理程式執行，它就會自行更新。要立即更新它，請在其主機上執行它。',
+      hint: '一旦沒有Agent執行，它就會自行更新。要立即更新它，請在其主機上執行它。',
     },
     revoke: {
       title: '撤銷{{name}}的憑證？',
@@ -876,7 +877,7 @@ const zhTW: LocaleResource<typeof enUS> = {
     promptWindows:
       '首先，確認你是否在 WSL Ubuntu 中執行。若不是在 WSL Ubuntu 中，請停止：不要執行任何安裝或註冊命令。請告訴使用者在 PowerShell 執行 wsl --install、重新啟動 Windows，然後在 WSL Ubuntu 中開啟 Agent 並重新執行此提示。只有在 WSL Ubuntu 中才繼續下列步驟。Node.js 與程式設計工具都安裝在 WSL 中。若 WSL 無法連上網際網路，請啟用鏡像網路。\n\n',
     promptBody:
-      '將這台機器設定為 NocoBase 執行環境。請使用虛擬機或隔離環境：Agent 擁有完整權限，而 runner 不是沙箱。\n\n確認已安裝 Node.js 24 或更新版本，且下列程式設計工具已安裝並登入：{{tools}}。請使用官方安裝方式，不要用 snap 套件。\n\n執行這個一次性註冊命令，安裝 runner 與應用程式 CLI、完成註冊並安裝背景服務：\n{{command}}\n\n排除常見的設定問題：確保服務的 PATH 包含程式設計工具（在安裝用的終端機確認 which codex / which claude，然後重新執行 nocobase-runner service install 並重新啟動服務）；為下載與服務設定所需的代理；以使用者擁有的 prefix 或 Node 版本管理工具解決 npm 全域安裝權限問題，不要使用 sudo npm install。\n\n最後執行 nocobase-runner status，確認連線與程式設計工具。回報仍需我完成的登入或網路步驟。註冊憑證屬於機密，不要寫進回報。',
+      '將這台機器設定為 NocoBase 執行環境。請使用虛擬機或隔離環境：Agent 擁有完整權限，而 runner 不是沙箱。\n\n確認已安裝 Node.js 24 或更新版本，且下列程式設計工具已安裝並登入：{{tools}}。請使用官方安裝方式，不要用 snap 套件。\n\n執行這個一次性註冊命令，安裝 runner 與應用程式 CLI、完成註冊並安裝背景服務：\n{{command}}\n\n排除常見的設定問題：確保服務的 PATH 包含程式設計工具（在安裝用的終端機確認 which codex / which claude，然後重新執行 nocobase-runner service install 並重新啟動服務）；為下載與服務設定所需的Agents；以使用者擁有的 prefix 或 Node 版本管理工具解決 npm 全域安裝權限問題，不要使用 sudo npm install。\n\n最後執行 nocobase-runner status，確認連線與程式設計工具。回報仍需我完成的登入或網路步驟。註冊憑證屬於機密，不要寫進回報。',
     title: '新增執行環境',
     description:
       '在安裝了編碼工具的主機上執行以下命令：伺服器、虛擬機器或您自己的裝置。代理程式以完全存取許可權執行，就像執行執行程式的使用者一樣，並且可以讀取和更改使用者可以讀取的任何內容，包括 SSH 金鑰和其他憑證。執行程式不是安全邊界：它作為專用使用者在容器或虛擬機器中執行。',
@@ -948,24 +949,24 @@ const zhTW: LocaleResource<typeof enUS> = {
       modelUnavailable: '型號不可用',
     },
     offline: {
-      fallbackDone: '此對話現在使用另一個代理',
+      fallbackDone: '此對話現在使用另一個Agent',
       restoreDone: '切換回來',
-      newSession: '代理程式啟動新會話並讀取此對話。',
+      newSession: 'Agent啟動新會話並讀取此對話。',
     },
     notice: {
       switchedToDefault: '切換為系統預設{{name}}，直到{{own}}回來。',
       switchedToOnline:
         '{{own}} 現在沒有適合您的執行環境，所以 {{name}} 會回答，直到 {{own}} 回來。',
       onlineFallbackUnavailable:
-        '線上備援代理無法回覆（{{reason}}）。等待執行環境期間，此對話仍由 {{own}} 負責。',
+        '線上備援Agent無法回覆（{{reason}}）。等待執行環境期間，此對話仍由 {{own}} 負責。',
       switchedAgent: '已切換到 {{name}}，保留此對話的歷史。',
       switchedBack: '返回 {{name}}。',
-      runFailed: '客服人員在回答之前停了下來。',
-      runFailedReason: '客服人員在回答前停了下來：{{reason}}',
+      runFailed: 'Agent在回答之前停了下來。',
+      runFailedReason: 'Agent在回答前停了下來：{{reason}}',
       runCancelled: '已請求取消。',
     },
     consultation: {
-      unavailableTitle: '諮詢代理不可用',
+      unavailableTitle: '諮詢Agent不可用',
       snapshotTitle: '當時請求{{name}}',
       title: '諮詢{{name}}',
     },
@@ -976,33 +977,33 @@ const zhTW: LocaleResource<typeof enUS> = {
     },
     agents: {
       personalOnly: '僅限個人執行環境',
-      hint: '列出已啟用的代理程式並說明為什麼現在無法回答您。答案在執行環境身上跑：第一個回覆等待一個人接受，通常是幾秒鐘。',
-      chooseFor: '選擇代理',
-      empty: '沒有您可以選擇的代理',
-      none: '無代理',
-      unknown: '未知代理',
-      placeholder: '選擇代理',
+      hint: '列出已啟用的Agents並說明為什麼現在無法回答您。答案在執行環境身上跑：第一個回覆等待一個人接受，通常是幾秒鐘。',
+      chooseFor: '選擇Agent',
+      empty: '沒有您可以選擇的Agent',
+      none: '無Agent',
+      unknown: '未知Agent',
+      placeholder: '選擇Agent',
       myDefault: '我的預設',
       systemDefault: '系統預設',
     },
   },
   chatProfile: {
-    loadFailed: '無法載入您的代理設定',
-    defaultAgent: '我的預設聊天代理',
+    loadFailed: '無法載入您的Agent設定',
+    defaultAgent: '我的預設聊天Agent',
     systemDefault: '系統預設',
     systemDefaultNamed: '系統預設（{{name}}）',
     noDefault: '未設定係統預設值。',
-    saved: '已儲存預設聊天代理',
+    saved: '已儲存預設聊天Agent',
   },
   models: {
     title: '模型',
     description:
-      '線上代理呼叫的模型服務，以及每個模型提供的模型：代理聊天模型、搜尋嵌入和重新排序模型。',
+      '線上Agents呼叫的模型服務，以及每個模型提供的模型：Agents聊天模型、搜尋嵌入和重新排序模型。',
   },
   defaultModel: {
     title: '預設聊天模式',
     description:
-      '沒有自己答案模型的線上代理，例如新代理或隨應用程式附帶的代理。',
+      '沒有自己答案模型的線上Agents，例如新Agent或隨應用程式附帶的Agent。',
     none: '尚未開啟聊天模式。新增模型服務並開啟聊天模型：第一個模型成為預設模型。',
     saved: '預設聊天模型現在為 {{model}}。',
   },
@@ -1041,7 +1042,7 @@ const zhTW: LocaleResource<typeof enUS> = {
       turnedOff: '{{title}} 已關閉。',
       name: '名稱',
       enabled: '已啟用',
-      enabledHint: '線上代理只能在其模型開啟時使用其模型。',
+      enabledHint: '線上Agents只能在其模型開啟時使用其模型。',
       saved: '{{title}} 已儲存。',
       delete: '刪除',
       deleteTitle: '刪除{{title}}？',
@@ -1067,7 +1068,7 @@ const zhTW: LocaleResource<typeof enUS> = {
     models: {
       title: '模型',
       description:
-        '檢查此服務提供的模型，並說明每個模型的用途：聊天模型回答代理、嵌入模型索引文字以進行搜尋、重新排列模型順序搜尋結果。嵌入模型可能需要一定大小的向量。',
+        '檢查此服務提供的模型，並說明每個模型的用途：聊天模型回答Agents、嵌入模型索引文字以進行搜尋、重新排列模型順序搜尋結果。嵌入模型可能需要一定大小的向量。',
       fetching: '正在取得提供者的模型...',
       fetchFailed: '供應商不會列出其型號：{{message}}',
       fetch: '取得模型',
@@ -1168,11 +1169,11 @@ const zhTW: LocaleResource<typeof enUS> = {
     loadFailed: '無法載入技能',
     backToList: '回到技能',
     emptyTitle: '還沒有技能',
-    emptyDescription: '增加技能後，只要任務需要，代理就會讀取其 SKILL.md。',
+    emptyDescription: '增加技能後，只要任務需要，Agents就會讀取其 SKILL.md。',
     emptyReadOnly: '請求管理員新增技能。',
     content: 'SKILL.md',
     contentHint:
-      '前面的內容名稱是技能的資料夾名稱：更改它會重新命名技能。描述告訴代理何時閱讀它。',
+      '前面的內容名稱是技能的資料夾名稱：更改它會重新命名技能。描述告訴Agents何時閱讀它。',
     contentTooLarge: 'SKILL.md 大於 {{max}}。',
     emptyContent: '該技能還沒有內容。',
     created: '創造技能“{{name}}”',
@@ -1185,15 +1186,15 @@ const zhTW: LocaleResource<typeof enUS> = {
     edit: '編輯',
     delete: '刪除技能',
     deleteTitle: '刪除技能「{{name}}」？',
-    deleteDescription: '每個代理和每個預設使用該技能的地方都會失去它。',
+    deleteDescription: '每個Agent和每個預設使用該技能的地方都會失去它。',
     readOnly: '只有技能的建立者和工作區管理員可以更改此技能。',
     conflict: '別人剛剛改變了這個技能。最新版本已載入；再試一次。',
     conflictTitle: '別人剛剛改變了這個技能',
     conflictDraft:
       '在您開始編輯後，有人儲存了新版本，因此您的變更未儲存。複製您要保留的內容，然後載入最新版本並再次編輯。',
     loadLatest: '載入最新版本',
-    mountedAgents: '附屬代理',
-    noAgents: '尚未附屬於任何代理。',
+    mountedAgents: '附屬Agents',
+    noAgents: '尚未附屬於任何Agent。',
     defaults: '預設技能：{{places}}。',
     defaultsSeparator: ', ',
     files: '檔案',
@@ -1206,7 +1207,7 @@ const zhTW: LocaleResource<typeof enUS> = {
     binaryFile: '二進位檔案，{{size}}。此處無法對其進行編輯。',
     executable: '執行檔',
     scriptBadge: '指令碼',
-    scriptsNote: '有指令碼：線上代理可以讀取它們，但從不執行它們',
+    scriptsNote: '有指令碼：線上Agents可以讀取它們，但從不執行它們',
     compatibility: '相容性：{{value}}',
     fileContent: '{{path}} 的內容',
     export: '出口',
@@ -1237,8 +1238,8 @@ const zhTW: LocaleResource<typeof enUS> = {
       name: '名稱',
       renameTitle: '重新命名“{{name}}”',
       conventional: {
-        scripts: '程式碼代理可以執行。線上代理只能閱讀。',
-        references: '檔案代理在需要時閱讀。',
+        scripts: '程式碼Agents可以執行。線上Agents只能閱讀。',
+        references: '檔案Agents在需要時閱讀。',
         assets: '模板、影像和其他資源。',
       },
       problems: {
@@ -1275,7 +1276,7 @@ const zhTW: LocaleResource<typeof enUS> = {
       },
     },
     template: {
-      description: '該技能的用途以及代理何時應使用該技能。',
+      description: '該技能的用途以及Agent何時應使用該技能。',
       title: '新技能',
       whenToUse: '何時使用',
       whenToUseHint: '描述需要此技能的任務。',
@@ -1294,7 +1295,7 @@ const zhTW: LocaleResource<typeof enUS> = {
     },
     versions: {
       title: '版本',
-      description: '每次儲存都會建立新版本；代理程式一律取得最新版本。',
+      description: '每次儲存都會建立新版本；Agents一律取得最新版本。',
       current: '當前',
       compare: '比較',
       compareTitle: '版本 {{version}} → 版本 {{current}}',
@@ -1303,7 +1304,7 @@ const zhTW: LocaleResource<typeof enUS> = {
       restore: '恢復',
       restoreTitle: '恢復版本{{version}}？',
       restoreDescription:
-        '再次儲存為最新版本；代理在下次執行環境會得到它。不會遺失任何內容：目前版本保留在歷史記錄中。',
+        '再次儲存為最新版本；Agents在下次執行環境會得到它。不會遺失任何內容：目前版本保留在歷史記錄中。',
       restored: '將版本 {{version}} 還原為版本 {{current}}。',
     },
   },
@@ -1317,7 +1318,7 @@ const zhTW: LocaleResource<typeof enUS> = {
       incompatible: '連線的執行環境不支援此工作負載；需要升級',
       restricted: '執行環境策略、目錄或變數限制',
       unknown: '工作量資格未建立',
-      agentArchived: '代理程式已存檔',
+      agentArchived: 'Agent已存檔',
       delayed: '預定{{until}}',
       noRunnerOnline: '無線上執行環境',
       runnersOffline: '運轉時離線',
@@ -1346,13 +1347,13 @@ const zhTW: LocaleResource<typeof enUS> = {
         description: '團隊的代理人及其所使用的技能。',
         actions: {
           edit: {
-            title: '改變代理人和技能',
+            title: '改變Agents和技能',
             description:
-              '更改代理的設定、技能和變數、存檔、恢復和刪除以及編輯技能。代理人沒有被賦予編輯者自己以外的任何能力',
-            related: '改變代理人和技能（他們擁有的代理人和他們建立的技能）',
+              '更改Agent的設定、技能和變數、存檔、恢復和刪除以及編輯技能。Agent沒有被賦予編輯者自己以外的任何能力',
+            related: '改變Agents和技能（他們擁有的Agents和他們建立的技能）',
             relatedLabel: '我擁有的代理和我建立的技能',
             relatedHint: '我擁有的代理以及我建立的技能',
-            all: '變更代理人與技能（全部）',
+            all: '變更Agents與技能（全部）',
           },
         },
       },
@@ -1372,7 +1373,8 @@ const zhTW: LocaleResource<typeof enUS> = {
     keyScopes: {
       agents: {
         title: '代理',
-        description: '檢視代理、技能和跑動；更改代理和技能，取消並重試執行。',
+        description:
+          '檢視Agents、技能和跑動；更改Agents和技能，取消並重試執行。',
       },
       runners: {
         title: '執行環境',

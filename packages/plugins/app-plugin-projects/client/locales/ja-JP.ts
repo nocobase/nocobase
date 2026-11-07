@@ -669,7 +669,7 @@ const jaJP: LocaleResource<typeof enUS> = {
     empty: 'リポジトリやディレクトリは接続されていません。',
     initPrompt: '初期化プロンプト',
     initPromptHint:
-      'オプション。エージェントが初めてタスクを実行するときに、タスクを開始する前に従う単純な指示。スクリプトではありません。それ自体では何も実行されません。',
+      'オプション。Agentが初めてタスクを実行するときに、タスクを開始する前に従う単純な指示。スクリプトではありません。それ自体では何も実行されません。',
     initPromptPlaceholder:
       'pnpm install を実行し、.env.example を .env にコピーします。',
     initPromptTooLong: '初期化プロンプトが長すぎます。',
@@ -1061,7 +1061,7 @@ const jaJP: LocaleResource<typeof enUS> = {
     },
     flags: {
       label: '影響を受けるもの',
-      startsRun: 'エージェントの実行を開始します',
+      startsRun: 'Agentの実行を開始します',
       finalStatus: 'タスクを閉じる',
       ownerChange: '所有者を変更します',
       createsProject: 'プロジェクトを作成します',
@@ -1144,7 +1144,7 @@ const jaJP: LocaleResource<typeof enUS> = {
     count: '{{count}} / {{max}}',
     files: 'ファイル',
     filesHint:
-      '最大 {{count}} ファイル、それぞれ {{size}} MB。テキスト、Markdown、CSV、Word、Excel、PowerPoint、PDF が読み取られます。エージェントが画像ツールを使用して PNG/JPEG 画像を読み取ることができるようにします。読み取りに失敗した場合は、編集に戻って再試行してください。ルール分割では画像ファイル名のみが使用されます。',
+      '最大 {{count}} ファイル、それぞれ {{size}} MB。テキスト、Markdown、CSV、Word、Excel、PowerPoint、PDF が読み取られます。Agentが画像ツールを使用して PNG/JPEG 画像を読み取ることができるようにします。読み取りに失敗した場合は、編集に戻って再試行してください。ルール分割では画像ファイル名のみが使用されます。',
     addFiles: 'ファイルの追加',
     dropFiles: 'ここにファイルをドロップします',
     removeFile: '{{name}}を削除',
@@ -1214,7 +1214,7 @@ const jaJP: LocaleResource<typeof enUS> = {
       '現在オンラインの実行環境はありません。リクエストは接続されるまで待機します。',
     unavailable: {
       noAgent:
-        'AI は利用できません。プロファイルでデフォルトのチャット エージェントを選択するか、管理者に設定を依頼してください。',
+        'AI は利用できません。プロファイルでデフォルトのチャット Agentを選択するか、管理者に設定を依頼してください。',
     },
     removed_one: '{{count}} ドラフトを削除: {{titles}}',
     removed_other: '{{count}} ドラフトを削除: {{titles}}',

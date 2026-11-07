@@ -32,7 +32,7 @@ const ptBR: LocaleResource<typeof enUS> = {
       workBlocked: 'não começou a trabalhar: a tarefa está aguardando',
       workDormant: 'não começou a trabalhar enquanto a tarefa está em',
       workLimited:
-        'não começou a trabalhar: os comentários dos agentes atingiram o limite de execuções da tarefa',
+        'não começou a trabalhar: os comentários dos Agents atingiram o limite de execuções da tarefa',
       workWithdrawn:
         'retirou o trabalho da fila: agora a tarefa está aguardando',
       stageActionFailed: 'não foi possível executar uma regra de status',
@@ -441,9 +441,9 @@ const ptBR: LocaleResource<typeof enUS> = {
       updated: 'Atualizado',
     },
     agentsDescription:
-      'Trabalho para pessoas e agentes de codificação. Atribua um agente como executor para iniciar uma execução.',
+      'Trabalho para pessoas e Agents de codificação. Atribua um Agent como executor para iniciar uma execução.',
     agentsEmptyDescription:
-      'Crie uma tarefa e escolha um agente como executor para entregar o trabalho a ele.',
+      'Crie uma tarefa e escolha um Agent como executor para entregar o trabalho a ele.',
     description: 'Tudo o que a equipe trabalha, como quadro ou lista.',
     emptyDescription: 'Crie uma tarefa e escolha quem vai executá-la.',
     emptyTitle: 'Ainda não há tarefas',
@@ -662,7 +662,7 @@ const ptBR: LocaleResource<typeof enUS> = {
     empty: 'Nenhum repositório ou diretório anexado.',
     initPrompt: 'Solicitação de inicialização',
     initPromptHint:
-      'Opcional. Instruções simples que um agente segue na primeira vez que trabalha aqui para uma tarefa, antes de começar. Não é um script: ele não executa nada sozinho.',
+      'Opcional. Instruções simples que um Agent segue na primeira vez que trabalha aqui para uma tarefa, antes de começar. Não é um script: ele não executa nada sozinho.',
     initPromptPlaceholder:
       'Execute pnpm install e copie .env.example para .env.',
     initPromptTooLong: 'O prompt de inicialização é muito longo.',
@@ -1060,11 +1060,11 @@ const ptBR: LocaleResource<typeof enUS> = {
     },
     flags: {
       label: 'O que afeta',
-      startsRun: 'Inicia a execução de um agente',
+      startsRun: 'Inicia a execução de um Agent',
       finalStatus: 'Fecha uma tarefa',
       ownerChange: 'Muda de proprietário',
       createsProject: 'Cria um projeto',
-      agentExecutor: 'Faz de um agente o executor',
+      agentExecutor: 'Faz de um Agent o executor',
     },
     ops: {
       'issue.create': 'Nova tarefa',
@@ -1146,7 +1146,7 @@ const ptBR: LocaleResource<typeof enUS> = {
     count: '{{count}}/{{max}}',
     files: 'Arquivos',
     filesHint:
-      'Até arquivos {{count}}, {{size}} MB cada. São lidos texto, Markdown, CSV, Word, Excel, PowerPoint e PDF; Deixe um agente organizar a leitura de imagens PNG/JPEG com suas ferramentas de imagem; se a leitura falhar, volte para editar e tente novamente. A divisão de regras usa apenas nomes de arquivos de imagem.',
+      'Até arquivos {{count}}, {{size}} MB cada. São lidos texto, Markdown, CSV, Word, Excel, PowerPoint e PDF; Deixe um Agent organizar a leitura de imagens PNG/JPEG com suas ferramentas de imagem; se a leitura falhar, volte para editar e tente novamente. A divisão de regras usa apenas nomes de arquivos de imagem.',
     addFiles: 'Adicionar arquivos',
     dropFiles: 'Solte os arquivos aqui',
     removeFile: 'Remover {{name}}',
@@ -1221,7 +1221,7 @@ const ptBR: LocaleResource<typeof enUS> = {
       'Nenhum ambiente de execução está online no momento: uma solicitação espera até que alguém se conecte.',
     unavailable: {
       noAgent:
-        'AI não está disponível: escolha um agente de chat padrão em seu perfil ou peça a um administrador para definir um.',
+        'AI não está disponível: escolha um Agent de chat padrão em seu perfil ou peça a um administrador para definir um.',
     },
     removed_one: 'Rascunho {{count}} removido: {{titles}}',
     removed_other: 'Rascunhos {{count}} removidos: {{titles}}',

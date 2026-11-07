@@ -333,7 +333,7 @@ const idID: LocaleResource<typeof enUS> = {
     },
     actors: {
       human: 'orang',
-      agent: 'agen',
+      agent: 'Agent',
       key: 'kunci',
       rule: 'aturan',
       system: 'sistem',

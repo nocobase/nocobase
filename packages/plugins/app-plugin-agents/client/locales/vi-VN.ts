@@ -118,18 +118,18 @@ const viVN: LocaleResource<typeof enUS> = {
       showDisabled: 'Hiện đã tắt',
       hideDisabled: 'Ẩn đã tắt',
     },
-    filterLabel: 'Hiển thị đại lý',
+    filterLabel: 'Hiển thị Agents',
     filters: {
       all: 'Tất cả {{count}}',
       enabled: 'Đã bật {{count}}',
       unreported: 'Không có môi trường chạy {{count}}',
     },
-    loadFailed: 'Không thể tải các đại lý',
+    loadFailed: 'Không thể tải các Agents',
     loadMore: 'Tải thêm',
-    emptyTitle: 'Chưa có đại lý',
+    emptyTitle: 'Chưa có Agents',
     emptyDescription:
-      'Kết nối môi trường chạy có công cụ lập trình đã đăng nhập, rồi thêm tác nhân từ “Các mô hình khả dụng”.',
-    noneInFilter: 'Không có đại lý ở đây.',
+      'Kết nối môi trường chạy có công cụ lập trình đã đăng nhập, rồi thêm Agent từ “Các mô hình khả dụng”.',
+    noneInFilter: 'Không có Agent ở đây.',
     howToAdd:
       'Để thêm Agent, hãy cài công cụ lập trình trên một môi trường chạy và đăng nhập một mô hình bạn được dùng: khi môi trường chạy báo cáo nó, hãy thêm từ Mô hình khả dụng và ghi rõ nó giỏi việc gì. Agent chỉ có trên môi trường chạy cá nhân chỉ làm các nhiệm vụ do chủ sở hữu của chúng khởi động.',
     goodAtMissing: 'Chưa viết',
@@ -142,10 +142,10 @@ const viVN: LocaleResource<typeof enUS> = {
     },
     where: {
       none: 'Không có môi trường chạy',
-      team_one: 'Á quân đội {{count}}',
-      team_other: 'Vận động viên đội {{count}}',
-      personal_one: 'Trình chạy cá nhân {{count}} trực tuyến',
-      personal_other: 'Máy chạy bộ cá nhân {{count}} trực tuyến',
+      team_one: '{{count}} môi trường chạy của nhóm',
+      team_other: '{{count}} môi trường chạy của nhóm',
+      personal_one: '{{count}} môi trường chạy cá nhân đang trực tuyến',
+      personal_other: '{{count}} môi trường chạy cá nhân đang trực tuyến',
       both: 'Nhóm {{team}} · {{personal}} cá nhân',
       names: '{{names}}',
       noneOnline: 'Hiện tại không có môi trường chạy nào trực tuyến',
@@ -174,7 +174,7 @@ const viVN: LocaleResource<typeof enUS> = {
         'Báo cáo của các vận động viên {{count}} trực tuyến: {{names}}.',
       noRunnerNow: 'Hiện tại không có môi trường chạy nào có nó trực tuyến.',
       goodAtHint:
-        'Lead Agent quyết định những gì sẽ giao cho người đại diện này bằng những lời này. Nói những gì nó phù hợp và những gì nó không.',
+        'Lead Agent quyết định những gì sẽ giao cho Agent này bằng những lời này. Nói những gì nó phù hợp và những gì nó không.',
       goodAtRequired: 'Viết ra nó giỏi về cái gì trước khi kích hoạt nó.',
       effortHint: 'Lead Agent không thể thay đổi nó khi bàn giao công việc.',
       personalOnly:
@@ -236,7 +236,7 @@ const viVN: LocaleResource<typeof enUS> = {
   },
   agentTypes: {
     label: 'Loại tác nhân',
-    question: 'Đại lý kiểu gì thế?',
+    question: 'Agent kiểu gì thế?',
     online: 'Trực tuyến',
     runner: 'Trình chạy',
     onlineHint:
@@ -244,23 +244,23 @@ const viVN: LocaleResource<typeof enUS> = {
     runnerHint:
       'Điều khiển công cụ mã hóa trong môi trường chạy và hoạt động trong thư mục đang hoạt động: mã, tệp, lệnh.',
     immutable:
-      'Một đại lý giữ nguyên loại của nó; tạo một tác nhân khác cho loại khác.',
+      'Một Agent giữ nguyên loại của nó; tạo một Agent khác cho loại khác.',
     onServer: 'Trên máy chủ',
     filterAll: 'Tất cả các loại',
-    noneOfType: 'Không có đại lý thuộc loại này.',
+    noneOfType: 'Không có Agent thuộc loại này.',
   },
   agentSkills: {
     title: 'Kỹ năng',
     description:
-      'Hướng dẫn sử dụng mà tác nhân đọc khi một nhiệm vụ phù hợp với mô tả của họ. Được đặt trong thư mục làm việc của nó trước mỗi lần chạy.',
+      'Hướng dẫn sử dụng mà Agent đọc khi một nhiệm vụ phù hợp với mô tả của họ. Được đặt trong thư mục làm việc của nó trước mỗi lần chạy.',
     manage: 'Quản lý kỹ năng',
     placeholder: 'Chọn kỹ năng',
     empty: 'Chưa có kỹ năng.',
     save: 'Lưu kỹ năng',
     descriptionOnline:
-      'Hướng dẫn tác nhân đọc khi tác vụ khớp với mô tả của họ, trong hộp cát chỉ đọc trên máy chủ.',
+      'Hướng dẫn Agent đọc khi tác vụ khớp với mô tả của họ, trong hộp cát chỉ đọc trên máy chủ.',
     onlineScripts:
-      'Các tập lệnh không được thực thi cho các tác nhân trực tuyến: tác nhân có thể đọc chúng chứ không thể chạy chúng.',
+      'Các tập lệnh không được thực thi cho các Agents trực tuyến: Agent có thể đọc chúng chứ không thể chạy chúng.',
     skippedScripts: ': {{paths}}',
     pathSeparator: ', ',
   },
@@ -268,7 +268,7 @@ const viVN: LocaleResource<typeof enUS> = {
     preview: 'Xem trước lời nhắc đầy đủ',
     previewTitle: 'Xem trước lời nhắc đầy đủ',
     previewDescription:
-      'Thật là một hành động của đặc vụ này sẽ được gửi đi bây giờ, với một chủ đề bịa đặt. Không có gì được xếp hàng.',
+      'Thật là một hành động của Agent này sẽ được gửi đi bây giờ, với một chủ đề bịa đặt. Không có gì được xếp hàng.',
     scenario: 'Kịch bản',
     sample:
       'Về một chủ đề bịa đặt: {{subject}}. Các giá trị được đánh dấu [mẫu] được tạo thành.',
@@ -280,9 +280,9 @@ const viVN: LocaleResource<typeof enUS> = {
     platform:
       'Các quy tắc và nhiệm vụ của nền tảng · về các ký tự {{size}} (tiếng Anh)',
     platformNote:
-      'Quy tắc nền tảng được gửi bằng tiếng Anh; đại lý vẫn trả lời bằng ngôn ngữ của bạn.',
+      'Quy tắc nền tảng được gửi bằng tiếng Anh; Agent vẫn trả lời bằng ngôn ngữ của bạn.',
     agentPrompt: 'Lời nhắc của đại lý (do bạn viết)',
-    noAgentPrompt: 'Tác nhân này không có lời nhắc riêng.',
+    noAgentPrompt: 'Agent này không có lời nhắc riêng.',
     firstMessage: 'Tin nhắn đầu tiên',
     empty: 'Trống rỗng',
     previewPlaceholders:
@@ -300,7 +300,7 @@ const viVN: LocaleResource<typeof enUS> = {
   envVars: {
     title: 'Biến môi trường',
     description:
-      'Được chuyển đến công cụ mã hóa trong mỗi lần chạy và được ẩn trong các bản ghi lần chạy; các giá trị không được hiển thị lại sau khi lưu. Bất kỳ ai có thể sử dụng tác nhân dùng chung đều có thể nhận các giá trị này trên máy tính của riêng họ; đánh dấu các bí mật có rủi ro cao "Chỉ môi trường chạy của nhóm".',
+      'Được chuyển đến công cụ mã hóa trong mỗi lần chạy và được ẩn trong các bản ghi lần chạy; các giá trị không được hiển thị lại sau khi lưu. Bất kỳ ai có thể sử dụng Agent dùng chung đều có thể nhận các giá trị này trên máy tính của riêng họ; đánh dấu các bí mật có rủi ro cao "Chỉ môi trường chạy của nhóm".',
     add: 'Thêm biến',
     addTitle: 'Thêm biến môi trường',
     editTitle: 'Thay thế {{name}}',
@@ -312,7 +312,7 @@ const viVN: LocaleResource<typeof enUS> = {
     keepValueHint: 'Để trống để giữ giá trị hiện tại.',
     teamRunnersOnly: 'Chỉ môi trường chạy của nhóm',
     teamRunnersOnlyHint:
-      'Nếu không có nó, một lần chạy sẽ gửi giá trị đến môi trường chạy thực hiện nó, bao gồm cả môi trường chạy cá nhân của bất kỳ ai có thể sử dụng tác nhân. Với nó, chỉ có môi trường chạy nhóm mới thực hiện các lần chạy có biến này.',
+      'Nếu không có nó, một lần chạy sẽ gửi giá trị đến môi trường chạy thực hiện nó, bao gồm cả môi trường chạy cá nhân của bất kỳ ai có thể sử dụng Agent. Với nó, chỉ có môi trường chạy nhóm mới thực hiện các lần chạy có biến này.',
     teamRunnersOnlyBadge: 'Chỉ môi trường chạy của nhóm',
     fromRunner: 'Lấy từ môi trường chạy',
     fromRunnerHint:
@@ -363,7 +363,7 @@ const viVN: LocaleResource<typeof enUS> = {
   scopeVariables: {
     title: 'Các biến và bí mật',
     description:
-      'Trao cho mọi đặc vụ làm việc ở đây. Các biến cụ thể hơn (của thư mục làm việc, sau đó của tác nhân) sẽ vượt qua được những biến này.',
+      'Trao cho mọi Agent làm việc ở đây. Các biến cụ thể hơn (của thư mục làm việc, sau đó của Agent) sẽ vượt qua được những biến này.',
   },
   scopes: {
     workdir: 'Thư mục làm việc',
@@ -376,7 +376,7 @@ const viVN: LocaleResource<typeof enUS> = {
     otherUse: {
       title: 'Sử dụng mô hình khác',
       description:
-        'Mô hình gọi các hoạt động tác nhân bên ngoài, chẳng hạn như lập chỉ mục và tìm kiếm cơ sở kiến thức.',
+        'Mô hình gọi các hoạt động Agent bên ngoài, chẳng hạn như lập chỉ mục và tìm kiếm cơ sở kiến thức.',
       purpose: 'Sử dụng',
       source: 'Được hỏi bởi',
       model: 'Mô hình',
@@ -390,7 +390,7 @@ const viVN: LocaleResource<typeof enUS> = {
     },
     title: 'Mức sử dụng',
     description:
-      'Đại lý nào đang chạy đã được sử dụng và giá của chúng ở mức giá mẫu hiện tại.',
+      'Agent nào đang chạy đã được sử dụng và giá của chúng ở mức giá mẫu hiện tại.',
     loadFailed: 'Không thể tải việc sử dụng',
     groupBy: 'Nhóm theo',
     groupByValue: 'Nhóm bởi {{group}}',
@@ -413,7 +413,7 @@ const viVN: LocaleResource<typeof enUS> = {
     filters: {
       allGroups: 'Tất cả: {{group}}',
       agent: 'Tác nhân',
-      allAgents: 'Tất cả đại lý',
+      allAgents: 'Tất cả Agents',
       person: 'Bị đánh thức bởi',
       allPeople: 'Mọi người',
       range: 'Phạm vi ngày',
@@ -448,7 +448,7 @@ const viVN: LocaleResource<typeof enUS> = {
   },
   defaultSkills: {
     title: 'Kỹ năng mặc định',
-    description: 'Mọi đặc vụ làm việc ở đây đều có những kỹ năng này.',
+    description: 'Mọi Agent làm việc ở đây đều có những kỹ năng này.',
     save: 'Lưu kỹ năng',
     saved: 'Đã lưu các kỹ năng mặc định.',
   },
@@ -465,7 +465,7 @@ const viVN: LocaleResource<typeof enUS> = {
     filters: {
       agent: 'Tác nhân',
       status: 'Trạng thái',
-      allAgents: 'Tất cả đại lý',
+      allAgents: 'Tất cả Agents',
       allStatuses: 'Tất cả trạng thái',
     },
     noMatch: 'Không có lượt chạy nào phù hợp với các bộ lọc này.',
@@ -479,7 +479,7 @@ const viVN: LocaleResource<typeof enUS> = {
     viewBrief: 'Xem toàn bộ lời nhắc',
     briefTitle: 'Lời nhắc đầy đủ',
     briefDescription:
-      'Những gì đại lý đã được thông báo khi lần chạy này được yêu cầu lần cuối.',
+      'Những gì Agent đã được thông báo khi lần chạy này được yêu cầu lần cuối.',
     briefOf: 'Thử {{attempt}}, đã xác nhận {{time}}',
     briefUnavailable: 'Không có lời nhắc đầy đủ cho lần chạy này.',
     processDataCleared:
@@ -525,7 +525,7 @@ const viVN: LocaleResource<typeof enUS> = {
   transcript: {
     title: 'Bản ghi lượt chạy',
     notFound: 'Hoạt động này không tồn tại.',
-    waiting: 'Đang chờ đại lý bắt đầu…',
+    waiting: 'Đang chờ Agent bắt đầu…',
     empty: 'Lần chạy này không ghi nhận sự kiện nào.',
     fetchFailed: 'Không thể tìm nạp sự kiện mới. Đang thử lại…',
     expand: 'Hiển thị tất cả',
@@ -533,10 +533,10 @@ const viVN: LocaleResource<typeof enUS> = {
     summary_one: 'Đã tạo sự kiện {{created}} · {{count}}',
     summary_other: 'Đã tạo sự kiện {{created}} · {{count}}',
     took: 'lấy {{duration}}',
-    pendingInputs_one: '{{count}} bình luận chờ đại lý',
-    pendingInputs_other: '{{count}} bình luận chờ đại lý',
-    inputDelivered_one: 'Giao cho đại lý',
-    inputDelivered_other: 'Đầu vào {{count}} được gửi tới đại lý',
+    pendingInputs_one: '{{count}} bình luận chờ Agent',
+    pendingInputs_other: '{{count}} bình luận chờ Agent',
+    inputDelivered_one: 'Giao cho Agent',
+    inputDelivered_other: 'Đầu vào {{count}} được gửi tới Agent',
     tokens: 'Đầu vào mã thông báo {{input}}, đầu ra {{output}}',
     kinds: {
       text: 'Tác nhân',
@@ -562,7 +562,7 @@ const viVN: LocaleResource<typeof enUS> = {
     leaseExpired: 'Thời gian chạy đã ngừng báo cáo.',
     startTimeout: 'Thời gian chạy không bắt đầu chạy đúng lúc.',
     cancelled: 'Đã hủy.',
-    idleTimeout: 'Đại lý ngừng tiến triển.',
+    idleTimeout: 'Agent ngừng tiến triển.',
     setupFailed: 'Không thể chuẩn bị được cuộc chạy.',
     cliUnavailable: 'Thời gian chạy không thể cài đặt ứng dụng CLI.',
     workspaceBusy: 'Thư mục làm việc đang bận; chờ đợi một nỗ lực khác.',
@@ -577,8 +577,8 @@ const viVN: LocaleResource<typeof enUS> = {
     contextOverflow: 'Cuộc trò chuyện kéo dài quá lâu đối với người mẫu.',
     delegatedQueueTimeout: 'Hết thời gian xếp hàng đại biểu; rút tiền',
     queuedExpired: 'Không có môi trường chạy nào được thực hiện kịp thời.',
-    modelUnavailable: 'Không có mô hình của đại lý.',
-    stepLimit: 'Nhân viên gọi tool quá nhiều lần mà không trả lời.',
+    modelUnavailable: 'Không có mô hình của Agent.',
+    stepLimit: 'Agent gọi tool quá nhiều lần mà không trả lời.',
     policyRefused:
       'Không có chính sách nào của môi trường chạy cho phép nó thực hiện công việc này.',
     prepareNetwork:
@@ -617,7 +617,7 @@ const viVN: LocaleResource<typeof enUS> = {
       marks_one: 'Dấu hạn ngạch {{count}}',
       marks_other: 'Dấu hạn ngạch {{count}}',
       queueHint:
-        'Một đại lý đạt hạn ngạch vẫn có thể được chọn. Công việc sẽ xếp hàng với thời hạn chờ đợi hiện có.',
+        'Một Agent đạt hạn ngạch vẫn có thể được chọn. Công việc sẽ xếp hàng với thời hạn chờ đợi hiện có.',
       partial: 'Chạy trên {{available}} · {{blocked}} theo hạn ngạch',
       workspaceSize: 'Kích thước không gian làm việc: {{value}}',
       providers_one: 'Nhà cung cấp {{count}} đạt hạn ngạch',
@@ -722,12 +722,12 @@ const viVN: LocaleResource<typeof enUS> = {
     },
     title: 'Môi trường chạy',
     description:
-      'Thời gian chạy chạy tác nhân và từng công cụ mã hóa được báo cáo.',
+      'Thời gian chạy chạy Agents và từng công cụ mã hóa được báo cáo.',
     add: 'Thêm môi trường chạy',
     loadFailed: 'Không thể tải môi trường chạy',
     emptyTitle: 'Chưa có môi trường chạy nào được kết nối',
     emptyDescription:
-      'Sau khi môi trường chạy được kết nối, các tác nhân chạy sẽ đảm nhận công việc ở đó bằng các công cụ mã hóa của nó.',
+      'Sau khi môi trường chạy được kết nối, các Agents chạy sẽ đảm nhận công việc ở đó bằng các công cụ mã hóa của nó.',
     noneConnected: 'Không có môi trường chạy nào được kết nối.',
     revokedList_one: '{{count}} đã thu hồi môi trường chạy',
     revokedList_other: '{{count}} đã thu hồi môi trường chạy',
@@ -824,9 +824,9 @@ const viVN: LocaleResource<typeof enUS> = {
     upgradeRequired: {
       title: 'Thời gian chạy này cần nâng cấp',
       older:
-        'Trình chạy {{version}} của nó nói giao thức tác nhân {{protocol}}; ứng dụng này cần giao thức {{required}}. Nó vẫn được kết nối nhưng không chạy gì cho đến khi được cập nhật.',
+        'Trình chạy {{version}} của nó nói giao thức Agent {{protocol}}; ứng dụng này cần giao thức {{required}}. Nó vẫn được kết nối nhưng không chạy gì cho đến khi được cập nhật.',
       newer:
-        'Trình chạy {{version}} của nó nói giao thức tác nhân {{protocol}}, mới hơn ứng dụng này (giao thức {{required}}). Nó vẫn được kết nối nhưng không chạy gì cho đến khi chạy một môi trường chạy mà ứng dụng này phục vụ.',
+        'Trình chạy {{version}} của nó nói giao thức Agent {{protocol}}, mới hơn ứng dụng này (giao thức {{required}}). Nó vẫn được kết nối nhưng không chạy gì cho đến khi chạy một môi trường chạy mà ứng dụng này phục vụ.',
       latest:
         'Ứng dụng này phục vụ Á hậu {{latest}}. Chạy cái này trên máy chủ của nó để cập nhật nó:',
       noLatest:
@@ -882,7 +882,7 @@ const viVN: LocaleResource<typeof enUS> = {
       badge: 'Có thể nâng cấp',
       title: 'Á hậu mới hơn cho {{name}}',
       description: 'Đã cài đặt {{version}}, ứng dụng này phục vụ {{latest}}.',
-      hint: 'Nó tự cập nhật khi không có tác nhân nào đang chạy. Để cập nhật nó ngay bây giờ, hãy chạy cái này trên máy chủ của nó.',
+      hint: 'Nó tự cập nhật khi không có Agent nào đang chạy. Để cập nhật nó ngay bây giờ, hãy chạy cái này trên máy chủ của nó.',
     },
     revoke: {
       title: 'Thu hồi thông tin xác thực của {{name}}?',
@@ -1000,9 +1000,9 @@ const viVN: LocaleResource<typeof enUS> = {
       modelUnavailable: 'Mẫu không có sẵn',
     },
     offline: {
-      fallbackDone: 'Cuộc trò chuyện này hiện sử dụng một tác nhân khác',
+      fallbackDone: 'Cuộc trò chuyện này hiện sử dụng một Agent khác',
       restoreDone: 'Đã chuyển trở lại',
-      newSession: 'Nhân viên bắt đầu phiên mới và đọc cuộc trò chuyện này.',
+      newSession: 'Agent bắt đầu phiên mới và đọc cuộc trò chuyện này.',
     },
     notice: {
       switchedToDefault:
@@ -1010,16 +1010,16 @@ const viVN: LocaleResource<typeof enUS> = {
       switchedToOnline:
         '{{own}} hiện không có môi trường chạy nào dành cho bạn, vì vậy {{name}} sẽ trả lời cho đến khi {{own}} quay trở lại.',
       onlineFallbackUnavailable:
-        'Tác nhân dự phòng trực tuyến không thể trả lời ({{reason}}). Cuộc trò chuyện này vẫn ở lại với {{own}} trong khi chờ môi trường chạy.',
+        'Agent dự phòng trực tuyến không thể trả lời ({{reason}}). Cuộc trò chuyện này vẫn ở lại với {{own}} trong khi chờ môi trường chạy.',
       switchedAgent:
         'Đã chuyển sang {{name}}, giữ nguyên lịch sử cuộc trò chuyện.',
       switchedBack: 'Quay lại với {{name}}.',
-      runFailed: 'Người đại diện dừng lại trước khi trả lời.',
-      runFailedReason: 'Nhân viên dừng lại trước khi trả lời: {{reason}}',
+      runFailed: 'Agent dừng lại trước khi trả lời.',
+      runFailedReason: 'Agent dừng lại trước khi trả lời: {{reason}}',
       runCancelled: 'Yêu cầu hủy bỏ.',
     },
     consultation: {
-      unavailableTitle: 'Đại lý được tư vấn không có sẵn',
+      unavailableTitle: 'Agent được tư vấn không có sẵn',
       snapshotTitle: 'Đã yêu cầu {{name}} vào thời điểm đó',
       title: 'Đã tư vấn {{name}}',
     },
@@ -1030,33 +1030,33 @@ const viVN: LocaleResource<typeof enUS> = {
     },
     agents: {
       personalOnly: 'Chỉ dành cho vận động viên chạy bộ cá nhân',
-      hint: 'Liệt kê các tác nhân được kích hoạt và cho biết lý do tại sao hiện tại người ta không thể trả lời bạn. Các câu trả lời chạy theo trình tự: câu trả lời đầu tiên đợi một người nhận, thường là vài giây.',
-      chooseFor: 'Chọn đại lý',
-      empty: 'Không có đại lý nào bạn có thể chọn',
-      none: 'Không có đại lý',
-      unknown: 'Đặc vụ vô danh',
-      placeholder: 'Chọn đại lý',
+      hint: 'Liệt kê các Agents được kích hoạt và cho biết lý do tại sao hiện tại người ta không thể trả lời bạn. Các câu trả lời chạy theo trình tự: câu trả lời đầu tiên đợi một người nhận, thường là vài giây.',
+      chooseFor: 'Chọn Agent',
+      empty: 'Không có Agent nào bạn có thể chọn',
+      none: 'Không có Agent',
+      unknown: 'Agent vô danh',
+      placeholder: 'Chọn Agent',
       myDefault: 'Mặc định của tôi',
       systemDefault: 'Mặc định hệ thống',
     },
   },
   chatProfile: {
-    loadFailed: 'Không thể tải cài đặt đại lý của bạn',
-    defaultAgent: 'Tác nhân trò chuyện mặc định của tôi',
+    loadFailed: 'Không thể tải cài đặt Agent của bạn',
+    defaultAgent: 'Agent trò chuyện mặc định của tôi',
     systemDefault: 'Mặc định hệ thống',
     systemDefaultNamed: 'Mặc định hệ thống ({{name}})',
     noDefault: 'Không có mặc định hệ thống nào được đặt.',
-    saved: 'Đã lưu tác nhân trò chuyện mặc định',
+    saved: 'Đã lưu Agent trò chuyện mặc định',
   },
   models: {
     title: 'Mô hình',
     description:
-      'Các dịch vụ mô hình gọi đại lý trực tuyến và các mô hình mà mỗi dịch vụ cung cấp: mô hình trò chuyện cho các đại lý, mô hình nhúng và xếp hạng lại để tìm kiếm.',
+      'Các dịch vụ mô hình gọi Agents trực tuyến và các mô hình mà mỗi dịch vụ cung cấp: mô hình trò chuyện cho các Agents, mô hình nhúng và xếp hạng lại để tìm kiếm.',
   },
   defaultModel: {
     title: 'Mô hình trò chuyện mặc định',
     description:
-      'Các đại lý trực tuyến không có mô hình trả lời riêng của họ với nó, chẳng hạn như một đại lý mới hoặc một đại lý đi kèm với ứng dụng.',
+      'Các Agents trực tuyến không có mô hình trả lời riêng của họ với nó, chẳng hạn như một Agent mới hoặc một Agent đi kèm với ứng dụng.',
     none: 'Chưa có mô hình trò chuyện nào được bật. Thêm dịch vụ mô hình và bật mô hình trò chuyện: mô hình đầu tiên trở thành mặc định.',
     saved: 'Mô hình trò chuyện mặc định hiện là {{model}}.',
   },
@@ -1071,7 +1071,7 @@ const viVN: LocaleResource<typeof enUS> = {
     empty: {
       title: 'Chưa có dịch vụ mẫu',
       description:
-        'Sau khi bạn thêm dịch vụ mẫu, các đại lý trực tuyến có thể trả lời thông qua dịch vụ đó.',
+        'Sau khi bạn thêm dịch vụ mẫu, các Agents trực tuyến có thể trả lời thông qua dịch vụ đó.',
       readOnly: 'Yêu cầu quản trị viên thêm dịch vụ mẫu.',
     },
     add: {
@@ -1097,7 +1097,7 @@ const viVN: LocaleResource<typeof enUS> = {
       name: 'Tên',
       enabled: 'Đã bật',
       enabledHint:
-        'Các đại lý trực tuyến chỉ có thể sử dụng các mô hình của nó khi nó đang bật.',
+        'Các Agents trực tuyến chỉ có thể sử dụng các mô hình của nó khi nó đang bật.',
       saved: '{{title}} đã được lưu.',
       delete: 'Xóa',
       deleteTitle: 'Xóa {{title}}?',
@@ -1123,7 +1123,7 @@ const viVN: LocaleResource<typeof enUS> = {
     models: {
       title: 'Mô hình',
       description:
-        'Kiểm tra các mô hình mà dịch vụ này cung cấp và cho biết mỗi mô hình dùng để làm gì: mô hình trò chuyện trả lời tác nhân, mô hình nhúng văn bản chỉ mục cho tìm kiếm, sắp xếp lại mô hình theo thứ tự kết quả tìm kiếm. Một mô hình nhúng có thể yêu cầu các vectơ có kích thước.',
+        'Kiểm tra các mô hình mà dịch vụ này cung cấp và cho biết mỗi mô hình dùng để làm gì: mô hình trò chuyện trả lời Agents, mô hình nhúng văn bản chỉ mục cho tìm kiếm, sắp xếp lại mô hình theo thứ tự kết quả tìm kiếm. Một mô hình nhúng có thể yêu cầu các vectơ có kích thước.',
       fetching: 'Đang tìm nạp mô hình của nhà cung cấp…',
       fetchFailed:
         'Nhà cung cấp sẽ không liệt kê các model của mình: {{message}}',
@@ -1233,11 +1233,11 @@ const viVN: LocaleResource<typeof enUS> = {
     backToList: 'Trở lại kỹ năng',
     emptyTitle: 'Chưa có kỹ năng',
     emptyDescription:
-      'Sau khi bạn thêm một kỹ năng, các đặc vụ sẽ đọc SKILL.md của nó bất cứ khi nào có nhiệm vụ yêu cầu.',
+      'Sau khi bạn thêm một kỹ năng, các Agents sẽ đọc SKILL.md của nó bất cứ khi nào có nhiệm vụ yêu cầu.',
     emptyReadOnly: 'Yêu cầu quản trị viên thêm một kỹ năng.',
     content: 'SKILL.md',
     contentHint:
-      'Tên của vấn đề phía trước là tên thư mục của kỹ năng: thay đổi nó sẽ đổi tên kỹ năng. Mô tả cho các đại lý biết khi nào nên đọc nó.',
+      'Tên của vấn đề phía trước là tên thư mục của kỹ năng: thay đổi nó sẽ đổi tên kỹ năng. Mô tả cho các Agents biết khi nào nên đọc nó.',
     contentTooLarge: 'SKILL.md lớn hơn {{max}}.',
     emptyContent: 'Kỹ năng này chưa có nội dung.',
     created: 'Tạo ra kỹ năng "{{name}}"',
@@ -1251,7 +1251,7 @@ const viVN: LocaleResource<typeof enUS> = {
     delete: 'Xóa kỹ năng',
     deleteTitle: 'Xóa kỹ năng "{{name}}"?',
     deleteDescription:
-      'Mọi đặc vụ và mọi nơi sử dụng kỹ năng này làm mặc định đều sẽ mất nó.',
+      'Mọi Agent và mọi nơi sử dụng kỹ năng này làm mặc định đều sẽ mất nó.',
     readOnly:
       'Chỉ người tạo kỹ năng và quản trị viên không gian làm việc mới có thể thay đổi kỹ năng này.',
     conflict:
@@ -1260,8 +1260,8 @@ const viVN: LocaleResource<typeof enUS> = {
     conflictDraft:
       'Ai đó đã lưu phiên bản mới sau khi bạn bắt đầu chỉnh sửa nên những thay đổi của bạn không được lưu. Sao chép những gì bạn muốn giữ lại, sau đó tải phiên bản mới nhất và chỉnh sửa lại.',
     loadLatest: 'Tải phiên bản mới nhất',
-    mountedAgents: 'Đại lý kèm theo',
-    noAgents: 'Chưa gắn bó với bất kỳ đại lý nào.',
+    mountedAgents: 'Agents kèm theo',
+    noAgents: 'Chưa gắn bó với bất kỳ Agent nào.',
     defaults: 'Kỹ năng mặc định của: {{places}}.',
     defaultsSeparator: ', ',
     files: 'Tệp',
@@ -1275,7 +1275,7 @@ const viVN: LocaleResource<typeof enUS> = {
     executable: 'Có thể thực thi được',
     scriptBadge: 'Kịch bản',
     scriptsNote:
-      'Có tập lệnh: đại lý trực tuyến có thể đọc chúng nhưng không bao giờ chạy chúng',
+      'Có tập lệnh: Agents trực tuyến có thể đọc chúng nhưng không bao giờ chạy chúng',
     compatibility: 'Khả năng tương thích: {{value}}',
     fileContent: 'Nội dung của {{path}}',
     export: 'Xuất khẩu',
@@ -1307,8 +1307,8 @@ const viVN: LocaleResource<typeof enUS> = {
       name: 'Tên',
       renameTitle: 'Đổi tên "{{name}}"',
       conventional: {
-        scripts: 'Đại lý mã có thể chạy. Đại lý trực tuyến chỉ đọc nó.',
-        references: 'Đại lý tài liệu đọc khi họ cần.',
+        scripts: 'Agents mã có thể chạy. Agents trực tuyến chỉ đọc nó.',
+        references: 'Agents tài liệu đọc khi họ cần.',
         assets: 'Mẫu, hình ảnh và các tài nguyên khác.',
       },
       problems: {
@@ -1348,7 +1348,7 @@ const viVN: LocaleResource<typeof enUS> = {
     },
     template: {
       description:
-        'Kỹ năng này có tác dụng gì và khi nào đặc vụ nên sử dụng nó.',
+        'Kỹ năng này có tác dụng gì và khi nào Agent nên sử dụng nó.',
       title: 'Kỹ năng mới',
       whenToUse: 'Khi nào nên sử dụng',
       whenToUseHint: 'Mô tả các nhiệm vụ đòi hỏi kỹ năng này.',
@@ -1378,7 +1378,7 @@ const viVN: LocaleResource<typeof enUS> = {
       restore: 'Khôi phục',
       restoreTitle: 'Khôi phục phiên bản {{version}}?',
       restoreDescription:
-        'Nó được lưu lại dưới dạng phiên bản mới nhất; các đại lý có được nó trong lần chạy tiếp theo của họ. Không có gì bị mất: phiên bản hiện tại vẫn còn trong lịch sử.',
+        'Nó được lưu lại dưới dạng phiên bản mới nhất; các Agents có được nó trong lần chạy tiếp theo của họ. Không có gì bị mất: phiên bản hiện tại vẫn còn trong lịch sử.',
       restored:
         'Đã khôi phục phiên bản {{version}} thành phiên bản {{current}}.',
     },
@@ -1394,7 +1394,7 @@ const viVN: LocaleResource<typeof enUS> = {
         'Trình chạy được kết nối không hỗ trợ khối lượng công việc này; yêu cầu nâng cấp',
       restricted: 'Chính sách của môi trường chạy, thư mục hoặc hạn chế biến',
       unknown: 'Tính đủ điều kiện của khối lượng công việc chưa được thiết lập',
-      agentArchived: 'Đại lý được lưu trữ',
+      agentArchived: 'Agent được lưu trữ',
       delayed: 'Đã lên lịch cho {{until}}',
       noRunnerOnline: 'Không có môi trường chạy trực tuyến',
       runnersOffline: 'Thời gian chạy của nó đang ngoại tuyến',
@@ -1426,15 +1426,15 @@ const viVN: LocaleResource<typeof enUS> = {
         description: 'Các đặc vụ của đội và kỹ năng họ sử dụng.',
         actions: {
           edit: {
-            title: 'Thay đổi tác nhân và kỹ năng',
+            title: 'Thay đổi Agents và kỹ năng',
             description:
-              'Thay đổi cài đặt, kỹ năng và biến của tác nhân, lưu trữ, khôi phục và xóa nó cũng như chỉnh sửa kỹ năng. Một đại diện không được cấp khả năng nào ngoài khả năng của người biên tập',
+              'Thay đổi cài đặt, kỹ năng và biến của Agent, lưu trữ, khôi phục và xóa nó cũng như chỉnh sửa kỹ năng. Một Agent không được cấp khả năng nào ngoài khả năng của người biên tập',
             related:
-              'Thay đổi tác nhân và kỹ năng (tác nhân họ sở hữu và kỹ năng họ tạo ra)',
+              'Thay đổi Agents và kỹ năng (Agents họ sở hữu và kỹ năng họ tạo ra)',
             relatedLabel: 'Đại lý tôi sở hữu và kỹ năng tôi tạo',
             relatedHint:
               'Đại lý mà tôi là chủ sở hữu và các kỹ năng tôi đã tạo',
-            all: 'Thay đổi tác nhân và kỹ năng (tất cả)',
+            all: 'Thay đổi Agents và kỹ năng (tất cả)',
           },
         },
       },
@@ -1455,7 +1455,7 @@ const viVN: LocaleResource<typeof enUS> = {
       agents: {
         title: 'Tác nhân',
         description:
-          'Xem các đại lý, kỹ năng và cách chạy; thay đổi tác nhân và kỹ năng, hủy và thử lại.',
+          'Xem các Agents, kỹ năng và cách chạy; thay đổi Agents và kỹ năng, hủy và thử lại.',
       },
       runners: {
         title: 'Môi trường chạy',

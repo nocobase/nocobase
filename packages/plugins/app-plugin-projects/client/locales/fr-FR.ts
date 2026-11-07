@@ -34,7 +34,7 @@ const frFR: LocaleResource<typeof enUS> = {
       workBlocked: 'n’a pas commencé le travail : la tâche attend',
       workDormant: 'n’a pas commencé le travail tant que la tâche est dans',
       workLimited:
-        'n’a pas commencé le travail : les commentaires des agents ont atteint la limite d’exécutions de la tâche',
+        'n’a pas commencé le travail : les commentaires des Agents ont atteint la limite d’exécutions de la tâche',
       workWithdrawn:
         'a retiré son travail en file d’attente : la tâche attend désormais',
       stageActionFailed: "n'a pas pu exécuter une règle de statut",
@@ -450,9 +450,9 @@ const frFR: LocaleResource<typeof enUS> = {
       updated: 'Mis à jour',
     },
     agentsDescription:
-      'Du travail pour les personnes et les agents de développement. Désignez un agent comme exécutant pour lancer une exécution.',
+      'Du travail pour les personnes et les Agents de développement. Désignez un Agent comme exécutant pour lancer une exécution.',
     agentsEmptyDescription:
-      'Créez une tâche et choisissez un agent comme exécutant pour lui confier le travail.',
+      'Créez une tâche et choisissez un Agent comme exécutant pour lui confier le travail.',
     description:
       "Tout ce sur quoi travaille l'équipe, sous forme de tableau ou de liste.",
     emptyDescription: 'Créez une tâche et choisissez qui l’exécute.',
@@ -674,7 +674,7 @@ const frFR: LocaleResource<typeof enUS> = {
     empty: 'Aucun référentiel ou répertoire attaché.',
     initPrompt: "Invite d'initialisation",
     initPromptHint:
-      "Facultatif. Des instructions simples qu'un agent suit la première fois qu'il travaille ici pour une tâche, avant qu'elle ne démarre. Ce n'est pas un script : il n'exécute rien tout seul.",
+      "Facultatif. Des instructions simples qu'un Agent suit la première fois qu'il travaille ici pour une tâche, avant qu'elle ne démarre. Ce n'est pas un script : il n'exécute rien tout seul.",
     initPromptPlaceholder:
       'Exécutez pnpm install, puis copiez .env.example dans .env.',
     initPromptTooLong: "L'invite d'initialisation est trop longue.",
@@ -1082,11 +1082,11 @@ const frFR: LocaleResource<typeof enUS> = {
     },
     flags: {
       label: 'Ce que cela affecte',
-      startsRun: "Démarre l'exécution d'un agent",
+      startsRun: "Démarre l'exécution d'un Agent",
       finalStatus: 'Clôt une tâche',
       ownerChange: 'Change un propriétaire',
       createsProject: 'Crée un projet',
-      agentExecutor: 'Désigne un agent comme exécutant',
+      agentExecutor: 'Désigne un Agent comme exécutant',
     },
     ops: {
       'issue.create': 'Nouvelle tâche',
@@ -1169,7 +1169,7 @@ const frFR: LocaleResource<typeof enUS> = {
     count: '{{count}} / {{max}}',
     files: 'Fichiers',
     filesHint:
-      "Jusqu'à des fichiers {{count}}, {{size}} Mo chacun. Le texte, Markdown, CSV, Word, Excel, PowerPoint et PDF sont lus ; Laissez un agent organiser lire les images PNG/JPEG avec ses outils d'image ; si la lecture échoue, revenez à l'édition et réessayez. La répartition des règles utilise uniquement les noms de fichiers d'images.",
+      "Jusqu'à des fichiers {{count}}, {{size}} Mo chacun. Le texte, Markdown, CSV, Word, Excel, PowerPoint et PDF sont lus ; Laissez un Agent organiser lire les images PNG/JPEG avec ses outils d'image ; si la lecture échoue, revenez à l'édition et réessayez. La répartition des règles utilise uniquement les noms de fichiers d'images.",
     addFiles: 'Ajouter des fichiers',
     dropFiles: 'Déposez les fichiers ici',
     removeFile: 'Supprimer {{name}}',
@@ -1244,7 +1244,7 @@ const frFR: LocaleResource<typeof enUS> = {
       "Aucun runtime n'est en ligne pour le moment : une requête attend qu'on se connecte.",
     unavailable: {
       noAgent:
-        "L'IA n'est pas disponible : choisissez un agent de chat par défaut dans votre profil ou demandez à un administrateur d'en définir un.",
+        "L'IA n'est pas disponible : choisissez un Agent de chat par défaut dans votre profil ou demandez à un administrateur d'en définir un.",
     },
     removed_one: 'Suppression du brouillon {{count}} : {{titles}}',
     removed_other: 'Brouillons {{count}} supprimés : {{titles}}',

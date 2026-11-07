@@ -441,7 +441,7 @@ const idID: LocaleResource<typeof enUS> = {
       updated: 'Diperbarui',
     },
     agentsDescription:
-      'Bekerja untuk manusia dan agen pengkodean. Tetapkan agen sebagai eksekutor untuk memulai proses.',
+      'Bekerja untuk manusia dan Agent pengkodean. Tetapkan Agent sebagai eksekutor untuk memulai proses.',
     agentsEmptyDescription:
       'Buat tugas dan pilih Agent sebagai pelaksana untuk menyerahkan pekerjaan kepadanya.',
     description:
@@ -664,7 +664,7 @@ const idID: LocaleResource<typeof enUS> = {
     empty: 'Tidak ada repositori atau direktori yang terlampir.',
     initPrompt: 'Perintah inisialisasi',
     initPromptHint:
-      'Opsional. Instruksi sederhana yang diikuti agen saat pertama kali bekerja di sini untuk suatu tugas, sebelum dimulai. Bukan skrip: ia tidak menjalankan apa pun dengan sendirinya.',
+      'Opsional. Instruksi sederhana yang diikuti Agent saat pertama kali bekerja di sini untuk suatu tugas, sebelum dimulai. Bukan skrip: ia tidak menjalankan apa pun dengan sendirinya.',
     initPromptPlaceholder:
       'Jalankan pnpm install, lalu salin .env.example ke .env.',
     initPromptTooLong: 'Perintah inisialisasi terlalu panjang.',
@@ -1061,11 +1061,11 @@ const idID: LocaleResource<typeof enUS> = {
     },
     flags: {
       label: 'Apa pengaruhnya',
-      startsRun: 'Memulai menjalankan agen',
+      startsRun: 'Memulai menjalankan Agent',
       finalStatus: 'Menutup tugas',
       ownerChange: 'Mengubah pemilik',
       createsProject: 'Membuat proyek',
-      agentExecutor: 'Menjadikan agen sebagai eksekutor',
+      agentExecutor: 'Menjadikan Agent sebagai eksekutor',
     },
     ops: {
       'issue.create': 'Tugas baru',
@@ -1145,7 +1145,7 @@ const idID: LocaleResource<typeof enUS> = {
     count: '{{count}} / {{max}}',
     files: 'File',
     filesHint:
-      'Hingga file {{count}}, masing-masing {{size}} MB. Teks, Markdown, CSV, Word, Excel, PowerPoint dan PDF dibaca; Biarkan agen yang mengatur dapat membaca gambar PNG/JPEG dengan alat gambarnya; jika pembacaan gagal, kembali mengedit dan coba lagi. Pemisahan aturan hanya menggunakan nama file gambar.',
+      'Hingga file {{count}}, masing-masing {{size}} MB. Teks, Markdown, CSV, Word, Excel, PowerPoint dan PDF dibaca; Biarkan Agent yang mengatur dapat membaca gambar PNG/JPEG dengan alat gambarnya; jika pembacaan gagal, kembali mengedit dan coba lagi. Pemisahan aturan hanya menggunakan nama file gambar.',
     addFiles: 'Tambahkan file',
     dropFiles: 'Letakkan file di sini',
     removeFile: 'Hapus {{name}}',
@@ -1216,7 +1216,7 @@ const idID: LocaleResource<typeof enUS> = {
       'Saat ini tidak ada runtime yang online: permintaan menunggu hingga ada yang terhubung.',
     unavailable: {
       noAgent:
-        'AI tidak tersedia: pilih agen obrolan default di profil Anda, atau minta administrator untuk mengaturnya.',
+        'AI tidak tersedia: pilih Agent obrolan default di profil Anda, atau minta administrator untuk mengaturnya.',
     },
     removed_one: 'Draf {{count}} dihapus: {{titles}}',
     removed_other: 'Draf {{count}} dihapus: {{titles}}',

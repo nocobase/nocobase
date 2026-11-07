@@ -35,7 +35,7 @@ const esES: LocaleResource<typeof enUS> = {
       workBlocked: 'no empezó a trabajar: la tarea está esperando a',
       workDormant: 'no empezó a trabajar mientras la tarea está en',
       workLimited:
-        'no empezó a trabajar: los comentarios de los agentes alcanzaron el límite de ejecuciones de la tarea',
+        'no empezó a trabajar: los comentarios de los Agents alcanzaron el límite de ejecuciones de la tarea',
       workWithdrawn:
         'retiró su trabajo en cola: la tarea ahora está esperando a',
       stageActionFailed: 'no pudo ejecutar una regla del estado',
@@ -449,9 +449,9 @@ const esES: LocaleResource<typeof enUS> = {
       updated: 'Actualizado',
     },
     agentsDescription:
-      'Trabajo para personas y agentes codificadores. Asigne un agente como ejecutor para iniciar una ejecución.',
+      'Trabajo para personas y Agents codificadores. Asigne un Agent como ejecutor para iniciar una ejecución.',
     agentsEmptyDescription:
-      'Crea una tarea y elige un agente como ejecutor para encargarle el trabajo.',
+      'Crea una tarea y elige un Agent como ejecutor para encargarle el trabajo.',
     description:
       'Todo aquello en lo que trabaja el equipo, ya sea como tablero o lista.',
     emptyDescription: 'Crea una tarea y elige quién la ejecuta.',
@@ -672,7 +672,7 @@ const esES: LocaleResource<typeof enUS> = {
     empty: 'No se adjuntan repositorios ni directorios.',
     initPrompt: 'Mensaje de inicialización',
     initPromptHint:
-      'Opcional. Instrucciones sencillas que un agente sigue la primera vez que trabaja aquí para una tarea, antes de comenzar. No es un script: no ejecuta nada por sí solo.',
+      'Opcional. Instrucciones sencillas que un Agent sigue la primera vez que trabaja aquí para una tarea, antes de comenzar. No es un script: no ejecuta nada por sí solo.',
     initPromptPlaceholder:
       'Ejecute pnpm install, luego copie .env.example a .env.',
     initPromptTooLong: 'El mensaje de inicialización es demasiado largo.',
@@ -1070,11 +1070,11 @@ const esES: LocaleResource<typeof enUS> = {
     },
     flags: {
       label: 'Qué afecta',
-      startsRun: 'Inicia la ejecución de un agente',
+      startsRun: 'Inicia la ejecución de un Agent',
       finalStatus: 'Cierra una tarea',
       ownerChange: 'Cambia de propietario',
       createsProject: 'Crea un proyecto',
-      agentExecutor: 'Convierte a un agente en albacea',
+      agentExecutor: 'Convierte a un Agent en albacea',
     },
     ops: {
       'issue.create': 'Nueva tarea',
@@ -1157,7 +1157,7 @@ const esES: LocaleResource<typeof enUS> = {
     count: '{{count}} / {{max}}',
     files: 'Archivos',
     filesHint:
-      'Hasta archivos {{count}}, {{size}} MB cada uno. Se leen texto, Markdown, CSV, Word, Excel, PowerPoint y PDF; Deje que un agente organizado pueda leer imágenes PNG/JPEG con sus herramientas de imágenes; Si la lectura falla, vuelva a editar y vuelva a intentarlo. La división de reglas utiliza únicamente nombres de archivos de imágenes.',
+      'Hasta archivos {{count}}, {{size}} MB cada uno. Se leen texto, Markdown, CSV, Word, Excel, PowerPoint y PDF; Deje que un Agent organizado pueda leer imágenes PNG/JPEG con sus herramientas de imágenes; Si la lectura falla, vuelva a editar y vuelva a intentarlo. La división de reglas utiliza únicamente nombres de archivos de imágenes.',
     addFiles: 'Añadir archivos',
     dropFiles: 'Suelta archivos aquí',
     removeFile: 'Eliminar {{name}}',
@@ -1231,7 +1231,7 @@ const esES: LocaleResource<typeof enUS> = {
       'No hay ningún entorno de ejecución en línea en este momento: una solicitud espera hasta que uno se conecta.',
     unavailable: {
       noAgent:
-        'La ​​IA no está disponible: elija un agente de chat predeterminado en su perfil o pídale a un administrador que configure uno.',
+        'La ​​IA no está disponible: elija un Agent de chat predeterminado en su perfil o pídale a un administrador que configure uno.',
     },
     removed_one: 'Se eliminó el borrador de {{count}}: {{titles}}.',
     removed_other: 'Borradores de {{count}} eliminados: {{titles}}',

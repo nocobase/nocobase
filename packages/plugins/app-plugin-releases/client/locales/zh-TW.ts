@@ -303,7 +303,7 @@ const zhTW: LocaleResource<typeof enUS> = {
     },
     actors: {
       human: '人',
-      agent: '代理',
+      agent: 'Agent',
       key: '鑰匙',
       rule: '規則',
       system: '系統',

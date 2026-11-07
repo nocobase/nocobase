@@ -4,7 +4,7 @@ import type enUS from './en-US.js';
 
 const zhTW: LocaleResource<typeof enUS> = {
   navigation: {
-    agentSessions: '我的經紀人',
+    agentSessions: 'My Agents',
   },
   actions: {
     close: '關閉',
@@ -28,7 +28,7 @@ const zhTW: LocaleResource<typeof enUS> = {
     fold: '收合工作階段列表',
     expand: '展示場次',
     label: '會議',
-    title: '我的經紀人',
+    title: 'My Agents',
     archived: '已封存',
     archivedView:
       '選擇一個已封存的會話查看內容。目前開啟的會話和未送出的草稿會保留。',
@@ -49,7 +49,7 @@ const zhTW: LocaleResource<typeof enUS> = {
       week: '本週',
       earlier: '較早',
     },
-    empty: '還沒有會話。啟動一個與您電腦上的代理程式交談。',
+    empty: '還沒有會話。啟動一個與您電腦上的Agent交談。',
     noArchived: '沒有存檔的會話。',
     noMatch: '沒有會話匹配。',
     more: '顯示更多',
@@ -65,7 +65,7 @@ const zhTW: LocaleResource<typeof enUS> = {
     count_one: '{{count}} 任務',
     count_other: '{{count}} 任務',
     none: '沒有任務',
-    empty: '此會話還沒有任務。請客服人員將您討論的內容轉化為任務。',
+    empty: '此會話還沒有任務。請Agent將您討論的內容轉化為任務。',
     created_one: '建立了 {{count}} 任務',
     created_other: '建立了 {{count}} 任務',
     start_one: '啟動{{count}}任務',
@@ -88,23 +88,23 @@ const zhTW: LocaleResource<typeof enUS> = {
       '此電腦的命令列對於此應用程式而言太舊。在那裡更新它，如“我的電腦”所示。',
     settingsOffline: '此計算機處於離線狀態。重新連線其橋接器以載入設定並傳送。',
     settingsLoading: '正在載入設定...',
-    settingsFailed: '無法載入代理設定。',
+    settingsFailed: '無法載入Agent設定。',
     settingsRetry: '重試設定',
-    settingsReset: '使用代理預設值',
-    settingsUnsupported: '此代理不公開設定。將使用其預設值。',
-    settingsEmpty: '該代理沒有可配置的設定。將使用其預設值。',
+    settingsReset: '使用Agent預設值',
+    settingsUnsupported: '此Agent不公開設定。將使用其預設值。',
+    settingsEmpty: '該Agent沒有可配置的設定。將使用其預設值。',
     pickComputer: '選擇電腦',
-    noAgent: '無可用代理',
+    noAgent: '無可用Agent',
     folder: '計算機上的目錄',
     placeholder: '說出您的需求。一次做幾件事情或截圖都可以。',
     accessHint:
       '代理在您選擇的目錄中以完全訪問許可權執行，就像在您自己的終端中一樣。',
     noComputer: '先連線電腦',
     noComputerHint:
-      '會話在您自己的電腦上執行：代理使用您自己的帳戶登入，在您允許的資料夾中工作，並且對話儲存在此處。連線一次，只要電腦開啟，它就線上。我的代理協助討論和澄清需求、記錄任務並追蹤進度；啟動後，Studio 的專案經理會協調代理進行開發。',
+      '會話在您自己的電腦上執行：Agent使用您自己的帳戶登入，在您允許的資料夾中工作，並且對話儲存在此處。連線一次，只要電腦開啟，它就線上。My Agent協助討論和澄清需求、記錄任務並追蹤進度；啟動後，Studio 的專案經理會協調Agents進行開發。',
     allOffline: '您的電腦處於離線狀態',
     offlineHint: '在電腦上執行此程式以保持每次登入時的連線。',
-    noAgentTitle: '此計算機上沒有準備就緒的代理',
+    noAgentTitle: '此計算機上沒有準備就緒的Agent',
     noAgentHint:
       '在那裡安裝其中任何一個並使用自己的命令登入。橋接器每分鐘檢查一次，並在設定和啟動成功後列出它，而無需再次連線。',
     supported: '支援：{{names}}',
@@ -113,9 +113,9 @@ const zhTW: LocaleResource<typeof enUS> = {
     computers: '我的電腦',
     manageComputers: '管理我的電腦...',
     agents: '此計算機上的代理',
-    availableAgents: '可用代理',
+    availableAgents: '可用Agents',
     agentsHint:
-      '僅列出已安裝的代理程式。橋每分鐘都會檢查一次；設定和啟動必須在代理準備就緒之前完成。',
+      '僅列出已安裝的Agents。橋每分鐘都會檢查一次；設定和啟動必須在Agent準備就緒之前完成。',
     alsoSupported: '也支援：{{names}}',
     thisComputer: '這臺電腦',
     recentFolders: '最近使用過',
@@ -136,10 +136,10 @@ const zhTW: LocaleResource<typeof enUS> = {
     offline: '{{computer}} 已離線',
     offlineBody:
       '對話及其任務保留在這裡，以便像往常一樣閱讀。計算機恢復後會話將繼續。',
-    working: '代理正在工作...',
+    working: 'Agent正在工作...',
     startup: {
-      starting: '正在電腦上啟動代理程式...',
-      opening: '開啟代理會話...',
+      starting: '正在電腦上啟動Agent...',
+      opening: '開啟Agent會話...',
       configuring: '應用設定...',
     },
     answering: '正在接聽',
@@ -180,7 +180,7 @@ const zhTW: LocaleResource<typeof enUS> = {
     expand: '擴充輸入',
     collapse: '折疊輸入',
     placeholder: '回覆，或詢問接下來的事情…',
-    busy: '客服人員正在接聽。完成後您的訊息就會傳送。',
+    busy: 'Agent正在接聽。完成後您的訊息就會傳送。',
     waiting: '回答上面的請求，或寫一則訊息在其後傳送。',
     offline: '計算機離線。',
     archived: '會話已存檔。',
@@ -190,7 +190,7 @@ const zhTW: LocaleResource<typeof enUS> = {
     removeImage: '刪除影像',
     attached: '附帶訊息',
     removeAttached: '刪除 {{name}}',
-    commands: '代理的命令',
+    commands: 'Agent的命令',
     mentions: '提及任務',
     keys: {
       send: '傳送',
@@ -297,7 +297,7 @@ const zhTW: LocaleResource<typeof enUS> = {
     offline: '目前離線',
     title: '我的電腦',
     description:
-      '這些計算機僅執行您自己的會話，代理將像您一樣工作。執行團隊後臺工作的機器是單獨管理的。',
+      '這些計算機僅執行您自己的會話，Agents將像您一樣工作。執行團隊後臺工作的機器是單獨管理的。',
     none: '尚未連線電腦。',
     online: '線上',
     lastSeen: '最後出現 {{time}}',
@@ -307,7 +307,7 @@ const zhTW: LocaleResource<typeof enUS> = {
       notInstalled: '未安裝',
       failed: '無法啟動',
     },
-    recheckHint: '連線後，橋接器每分鐘自動再次檢查代理程式。',
+    recheckHint: '連線後，橋接器每分鐘自動再次檢查Agents。',
     ready: '準備就緒',
     name: '名稱',
     system: '系統',
@@ -325,7 +325,7 @@ const zhTW: LocaleResource<typeof enUS> = {
     foldersChosenHint: '會話只能在這些資料夾中運作。',
     add: '連線電腦',
     steps: {
-      agent: '安裝編碼代理並登入',
+      agent: '安裝編碼Agent並登入',
       agentHint:
         'Codex、Claude Code、Gemini CLI、GitHub Copilot、Cursor、Qwen Code、Kimi CLI 等：使用自己的指令登入。盡可能使用最強大的模型。',
       login: '使用您的帳號登入',

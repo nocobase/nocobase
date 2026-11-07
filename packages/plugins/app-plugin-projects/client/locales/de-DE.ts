@@ -1089,7 +1089,7 @@ const deDE: LocaleResource<typeof enUS> = {
     },
     flags: {
       label: 'Was es beeinflusst',
-      startsRun: 'Startet die Ausführung eines Agenten',
+      startsRun: 'Startet die Ausführung eines Agent',
       finalStatus: 'Schließt eine Aufgabe',
       ownerChange: 'Wechselt einen Besitzer',
       createsProject: 'Erstellt ein Projekt',
@@ -1173,7 +1173,7 @@ const deDE: LocaleResource<typeof enUS> = {
     count: '{{count}} / {{max}}',
     files: 'Dateien',
     filesHint:
-      'Bis zu {{count}} Dateien, jeweils {{size}} MB. Text, Markdown, CSV, Word, Excel, PowerPoint und PDF werden gelesen; Lassen Sie einen Agenten organisieren, der mit seinen Bildtools PNG-/JPEG-Bilder lesen kann. Wenn das Lesen fehlschlägt, kehren Sie zum Bearbeiten zurück und versuchen Sie es erneut. Bei der Regelaufteilung werden nur Bilddateinamen verwendet.',
+      'Bis zu {{count}} Dateien, jeweils {{size}} MB. Text, Markdown, CSV, Word, Excel, PowerPoint und PDF werden gelesen; Lassen Sie einen Agent organisieren, der mit seinen Bildtools PNG-/JPEG-Bilder lesen kann. Wenn das Lesen fehlschlägt, kehren Sie zum Bearbeiten zurück und versuchen Sie es erneut. Bei der Regelaufteilung werden nur Bilddateinamen verwendet.',
     addFiles: 'Dateien hinzufügen',
     dropFiles: 'Dateien hier ablegen',
     removeFile: '{{name}} entfernen',
@@ -1246,7 +1246,7 @@ const deDE: LocaleResource<typeof enUS> = {
       'Im Moment ist keine Laufzeitumgebung online: Eine Anfrage wartet, bis eine Verbindung hergestellt wird.',
     unavailable: {
       noAgent:
-        'KI ist nicht verfügbar: Wählen Sie einen Standard-Chat-Agenten in Ihrem Profil oder bitten Sie einen Administrator, einen festzulegen.',
+        'KI ist nicht verfügbar: Wählen Sie einen Standard-Chat-Agent in Ihrem Profil oder bitten Sie einen Administrator, einen festzulegen.',
     },
     removed_one: '{{count}}-Entwurf entfernt: {{titles}}',
     removed_other: '{{count}}-Entwürfe entfernt: {{titles}}',

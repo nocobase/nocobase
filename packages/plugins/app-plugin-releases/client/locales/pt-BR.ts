@@ -334,7 +334,7 @@ const ptBR: LocaleResource<typeof enUS> = {
     },
     actors: {
       human: 'pessoa',
-      agent: 'agente',
+      agent: 'Agent',
       key: 'tecla',
       rule: 'regra',
       system: 'sistema',

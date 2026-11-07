@@ -15,19 +15,19 @@ const frFR: LocaleResource<typeof enUS> = {
     submissionConflict:
       'Cet ID de soumission est déjà utilisé pour une autre demande.',
     authenticationRequired:
-      "Connectez-vous pour utiliser les sessions d'agent.",
+      "Connectez-vous pour utiliser les sessions d'Agent.",
     computerNotFound:
       "Aucun ordinateur portant cet identifiant n'est connecté à votre compte.",
     sessionNotFound: 'Aucune session avec cet identifiant ne vous appartient.',
     computerOffline:
       "L'ordinateur est hors ligne. Démarrez le pont dessus, puis réessayez.",
-    agentUnavailable: "L'ordinateur ne peut pas exécuter cet agent.",
+    agentUnavailable: "L'ordinateur ne peut pas exécuter cet Agent.",
     directoryNotAllowed:
       'Les sessions sur cet ordinateur fonctionnent uniquement sous les répertoires autorisés par son pont.',
     sessionArchived: "La session est archivée. Restaurez-le d'abord.",
     permissionRequestNotFound:
       "Cette demande d'autorisation a déjà reçu une réponse ou n'est plus en attente.",
-    choiceNotFound: "L'agent n'offre pas ce choix ou cette valeur.",
+    choiceNotFound: "L'Agent n'offre pas ce choix ou cette valeur.",
     linkNotFound:
       "Rien de ce genre avec cet identifiant n'est lié à la session, ou son travail ne peut pas commencer à partir d'ici.",
     invalidPageToken: "Le jeton de page n'a pas été émis par cette liste.",
@@ -37,7 +37,7 @@ const frFR: LocaleResource<typeof enUS> = {
       "L'ordinateur n'a pas répondu à temps. Vérifiez que sa connexion fonctionne, puis réessayez.",
     folderUnavailable: "Le dossier ne peut pas être ouvert sur l'ordinateur.",
     discoveryFailed:
-      'Impossible de charger les paramètres de l’agent. Mettez à jour la ligne de commande sur cet ordinateur et redémarrez la connexion en arrière-plan, puis réessayez.',
+      'Impossible de charger les paramètres de l’Agent. Mettez à jour la ligne de commande sur cet ordinateur et redémarrez la connexion en arrière-plan, puis réessayez.',
     projectNotFound:
       "Un tel projet n'existe pas ou vous ne pouvez pas le voir.",
     referenceNotFound:

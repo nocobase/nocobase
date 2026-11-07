@@ -418,7 +418,7 @@ const zhTW: LocaleResource<typeof enUS> = {
       updated: '已更新',
     },
     agentsDescription:
-      '為人員和編碼代理工作。指定代理程式作為執行者來開始執行。',
+      '為人員和編碼Agents工作。指定Agent作為執行者來開始執行。',
     agentsEmptyDescription: '建立任務並選擇 Agent 作為執行人，將工作交給它。',
     description: '團隊工作的所有內容，如看板或清單。',
     emptyDescription: '建立任務並選擇執行人。',
@@ -633,7 +633,7 @@ const zhTW: LocaleResource<typeof enUS> = {
     empty: '沒有附加儲存庫或目錄。',
     initPrompt: '初始化提示',
     initPromptHint:
-      '可選。代理首次在此處執行任務時（在任務開始之前）將遵循簡單的指示。不是指令碼：它本身不執行任何內容。',
+      '可選。Agent首次在此處執行任務時（在任務開始之前）將遵循簡單的指示。不是指令碼：它本身不執行任何內容。',
     initPromptPlaceholder: '執行pnpm install，然後將.env.example複製到.env。',
     initPromptTooLong: '初始化提示太長。',
     label: '標籤',
@@ -1011,11 +1011,11 @@ const zhTW: LocaleResource<typeof enUS> = {
     },
     flags: {
       label: '它的影響',
-      startsRun: '啟動代理執行',
+      startsRun: '啟動Agent執行',
       finalStatus: '關閉任務',
       ownerChange: '更換所有者',
       createsProject: '建立專案',
-      agentExecutor: '讓代理人成為執行人',
+      agentExecutor: '讓Agent成為執行人',
     },
     ops: {
       'issue.create': '新增任務',
@@ -1094,7 +1094,7 @@ const zhTW: LocaleResource<typeof enUS> = {
     count: '{{count}} / {{max}}',
     files: '檔案',
     filesHint:
-      '最多 {{count}} 檔案，每個 {{size}} MB。讀取文字、Markdown、CSV、Word、Excel、PowerPoint 和 PDF；讓代理人使用其影像工具組織可以讀取 PNG/JPEG 影像；如果讀取失敗，返回編輯並重試。規則分割僅使用影像檔案名稱。',
+      '最多 {{count}} 檔案，每個 {{size}} MB。讀取文字、Markdown、CSV、Word、Excel、PowerPoint 和 PDF；讓Agent使用其影像工具組織可以讀取 PNG/JPEG 影像；如果讀取失敗，返回編輯並重試。規則分割僅使用影像檔案名稱。',
     addFiles: '新增檔案',
     dropFiles: '將檔案拖曳到此處',
     removeFile: '刪除 {{name}}',
@@ -1158,7 +1158,7 @@ const zhTW: LocaleResource<typeof enUS> = {
     waitsHint: '目前沒有執行環境線上：請求會等待，直到連線為止。',
     unavailable: {
       noAgent:
-        'AI 不可用：在您的個人資料中選擇預設聊天代理，或要求管理員設定一個。',
+        'AI 不可用：在您的個人資料中選擇預設聊天Agent，或要求管理員設定一個。',
     },
     removed_one: '刪除了 {{count}} 草稿：{{titles}}',
     removed_other: '刪除了 {{count}} 草稿：{{titles}}',

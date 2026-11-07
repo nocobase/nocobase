@@ -119,18 +119,18 @@ const jaJP: LocaleResource<typeof enUS> = {
       showDisabled: '無効を表示',
       hideDisabled: '無効を隠す',
     },
-    filterLabel: 'ショーエージェント',
+    filterLabel: 'ショーAgents',
     filters: {
       all: 'すべての{{count}}',
       enabled: '{{count}}を有効にしました',
       unreported: '実行環境なし {{count}}',
     },
-    loadFailed: 'エージェントをロードできませんでした',
+    loadFailed: 'Agentsをロードできませんでした',
     loadMore: 'もっと読み込む',
-    emptyTitle: 'まだエージェントがいません',
+    emptyTitle: 'まだAgentsがいません',
     emptyDescription:
-      'コーディングツールにサインイン済みの実行環境を接続し、「利用可能なモデル」からエージェントを追加してください。',
-    noneInFilter: 'ここにはエージェントがいません。',
+      'コーディングツールにサインイン済みの実行環境を接続し、「利用可能なモデル」からAgentを追加してください。',
+    noneInFilter: 'ここにはAgentがいません。',
     howToAdd:
       'Agent を追加するには、実行環境にコーディングツールをインストールし、利用できるモデルにサインインします。実行環境が報告したら、得意なことを書いて「利用可能なモデル」から追加します。個人用の実行環境にしかない Agent は、その所有者が開始したタスクだけを担当します。',
     goodAtMissing: 'まだ書かれていません',
@@ -176,7 +176,7 @@ const jaJP: LocaleResource<typeof enUS> = {
         'オンラインの {{count}} 実行環境によって報告されました: {{names}}。',
       noRunnerNow: '現在オンラインにこれ​​を持っている実行環境はいません。',
       goodAtHint:
-        'Lead Agentはこの言葉によってこのエージェントに何を渡すかを決定します。何が合うのか、何が合わないのかを言います。',
+        'Lead Agentはこの言葉によってこのAgentに何を渡すかを決定します。何が合うのか、何が合わないのかを言います。',
       goodAtRequired: '有効にする前に、何が得意かを書いてください。',
       effortHint:
         'Lead Agentは、作業を引き継ぐときに変更することはできません。',
@@ -191,7 +191,7 @@ const jaJP: LocaleResource<typeof enUS> = {
       done: '{{name}} が保存されました',
     },
     available: {
-      open: 'エージェントを追加',
+      open: 'Agentを追加',
       title: '利用可能なモデル',
       description:
         '実行環境でチェックされたツールのみが検出され、ここに表示されます。アプリケーションの推奨組み合わせは、実行環境が報告すると自動的に作成・有効化されます。その他のものはここから選んで追加してください。',
@@ -223,13 +223,13 @@ const jaJP: LocaleResource<typeof enUS> = {
       selectedCount_one: '{{count}} 件選択中',
       selectedCount_other: '{{count}} 件選択中',
       addSelected: '{{count}} 件を追加',
-      confirmTitle_one: '{{count}} 件のエージェントを追加',
-      confirmTitle_other: '{{count}} 件のエージェントを追加',
+      confirmTitle_one: '{{count}} 件のAgentを追加',
+      confirmTitle_other: '{{count}} 件のAgentsを追加',
       confirmAction_one: '{{count}} 件を追加',
       confirmAction_other: '{{count}} 件を追加',
       goodAtNeeded: '得意なことは？',
-      addedCount_one: '{{count}} 件のエージェントを追加しました。',
-      addedCount_other: '{{count}} 件のエージェントを追加しました。',
+      addedCount_one: '{{count}} 件のAgentを追加しました。',
+      addedCount_other: '{{count}} 件のAgentsを追加しました。',
       addedPartial:
         '{{succeeded}} 件を追加しました。{{failed}} 件は追加できませんでした。理由は各項目の下に表示されています。',
       addFailed:
@@ -238,7 +238,7 @@ const jaJP: LocaleResource<typeof enUS> = {
   },
   agentTypes: {
     label: 'エージェントの種類',
-    question: 'エージェントは何ですか？',
+    question: 'Agentは何ですか？',
     online: 'オンライン',
     runner: '実行環境',
     onlineHint:
@@ -246,23 +246,23 @@ const jaJP: LocaleResource<typeof enUS> = {
     runnerHint:
       '実行環境上でコーディング ツールを駆動し、作業ディレクトリ内で動作します: コード、ファイル、コマンド。',
     immutable:
-      'エージェントはそのタイプを保持します。他の種類の別のエージェントを作成します。',
+      'Agentはそのタイプを保持します。他の種類の別のAgentを作成します。',
     onServer: 'サーバー上',
     filterAll: '全種類',
-    noneOfType: 'このタイプのエージェントは存在しません。',
+    noneOfType: 'このタイプのAgentは存在しません。',
   },
   agentSkills: {
     title: 'スキル',
     description:
-      'タスクが説明と一致する場合にエージェントが読むマニュアル。毎回の実行前に作業ディレクトリに配置されます。',
+      'タスクが説明と一致する場合にAgentが読むマニュアル。毎回の実行前に作業ディレクトリに配置されます。',
     manage: 'スキルを管理する',
     placeholder: 'スキル選択',
     empty: 'まだスキルがありません。',
     save: 'スキルを保存',
     descriptionOnline:
-      'サーバー上の読み取り専用サンドボックスで、タスクがその説明に一致したときにエージェントが読むマニュアル。',
+      'サーバー上の読み取り専用サンドボックスで、タスクがその説明に一致したときにAgentが読むマニュアル。',
     onlineScripts:
-      'オンライン エージェントに対してスクリプトは実行されません。エージェントはスクリプトを読み取ることができますが、実行することはできません。',
+      'オンライン Agentsに対してスクリプトは実行されません。Agentはスクリプトを読み取ることができますが、実行することはできません。',
     skippedScripts: ': {{paths}}',
     pathSeparator: ', ',
   },
@@ -270,7 +270,7 @@ const jaJP: LocaleResource<typeof enUS> = {
     preview: 'プロンプト全体をプレビューする',
     previewTitle: 'プロンプト全体をプレビューする',
     previewDescription:
-      'でっちあげの件名で、このエージェントの実行内容が今送信されることになるでしょう。何もキューに入れられていません。',
+      'でっちあげの件名で、このAgentの実行内容が今送信されることになるでしょう。何もキューに入れられていません。',
     scenario: 'シナリオ',
     sample:
       'でっちあげの話題について: {{subject}}。 [sample]とマークされた値は作成されます。',
@@ -281,9 +281,9 @@ const jaJP: LocaleResource<typeof enUS> = {
     raw: '生',
     platform: 'プラットフォームのルールとタスク・{{size}} 文字について (英語)',
     platformNote:
-      'プラットフォーム ルールは英語で送信されます。エージェントは引き続きあなたの言語で応答します。',
+      'プラットフォーム ルールは英語で送信されます。Agentは引き続きあなたの言語で応答します。',
     agentPrompt: 'エージェント プロンプト (あなたが作成した)',
-    noAgentPrompt: 'このエージェントには独自のプロンプトがありません。',
+    noAgentPrompt: 'このAgentには独自のプロンプトがありません。',
     firstMessage: '最初のメッセージ',
     empty: '空',
     previewPlaceholders:
@@ -301,7 +301,7 @@ const jaJP: LocaleResource<typeof enUS> = {
   envVars: {
     title: '環境変数',
     description:
-      '実行ごとにコーディング ツールに渡され、実行レコードでマスクされます。値は保存後に再度表示されません。共有エージェントを使用する可能性のある人は誰でも、自分のコンピュータでこれらの値を受け取ることができます。高リスクのシークレットには「チーム 実行環境のみ」のマークを付けます。',
+      '実行ごとにコーディング ツールに渡され、実行レコードでマスクされます。値は保存後に再度表示されません。共有Agentを使用する可能性のある人は誰でも、自分のコンピュータでこれらの値を受け取ることができます。高リスクのシークレットには「チーム 実行環境のみ」のマークを付けます。',
     add: '変数の追加',
     addTitle: '環境変数を追加する',
     editTitle: '{{name}}を置き換えます',
@@ -313,7 +313,7 @@ const jaJP: LocaleResource<typeof enUS> = {
     keepValueHint: '現在の値を保持するには、空のままにしておきます。',
     teamRunnersOnly: 'チーム実行環境のみ',
     teamRunnersOnlyHint:
-      'これがないと、実行は、エージェントを使用する可能性のある人の個人実行環境を含む、値を受け取る実行環境に値を送信します。これを使用すると、チーム 実行環境のみがこの変数を取得する実行を実行します。',
+      'これがないと、実行は、Agentを使用する可能性のある人の個人実行環境を含む、値を受け取る実行環境に値を送信します。これを使用すると、チーム 実行環境のみがこの変数を取得する実行を実行します。',
     teamRunnersOnlyBadge: 'チーム実行環境のみ',
     fromRunner: '実行環境から取得',
     fromRunnerHint:
@@ -362,7 +362,7 @@ const jaJP: LocaleResource<typeof enUS> = {
   scopeVariables: {
     title: '変数とシークレット',
     description:
-      'ここで働くすべてのエージェントに与えられます。より具体的な変数 (作業ディレクトリ、次にエージェント) がこれらよりも優先されます。',
+      'ここで働くすべてのAgentに与えられます。より具体的な変数 (作業ディレクトリ、次にAgent) がこれらよりも優先されます。',
   },
   scopes: {
     workdir: '作業ディレクトリ',
@@ -375,7 +375,7 @@ const jaJP: LocaleResource<typeof enUS> = {
     otherUse: {
       title: '他機種用',
       description:
-        'モデルは、知識ベースのインデックス作成や検索など、エージェント実行の外部で呼び出します。',
+        'モデルは、知識ベースのインデックス作成や検索など、Agent実行の外部で呼び出します。',
       purpose: '使用',
       source: '質問者',
       model: 'モデル',
@@ -389,7 +389,7 @@ const jaJP: LocaleResource<typeof enUS> = {
     },
     title: '利用状況',
     description:
-      'どのエージェントが中古で動作するか、および現在のモデルの価格でいくらかかるか。',
+      'どのAgentが中古で動作するか、および現在のモデルの価格でいくらかかるか。',
     loadFailed: '使用状況を読み込めませんでした',
     groupBy: 'グループ化',
     groupByValue: '{{group}} ごとにグループ化',
@@ -412,7 +412,7 @@ const jaJP: LocaleResource<typeof enUS> = {
     filters: {
       allGroups: '全員：{{group}}',
       agent: 'エージェント',
-      allAgents: 'すべてのエージェント',
+      allAgents: 'すべてのAgents',
       person: '目覚めたのは',
       allPeople: 'みんな',
       range: '日付範囲',
@@ -447,7 +447,7 @@ const jaJP: LocaleResource<typeof enUS> = {
   },
   defaultSkills: {
     title: 'デフォルトスキル',
-    description: 'ここで働くすべてのエージェントもこれらのスキルを取得します。',
+    description: 'ここで働くすべてのAgentもこれらのスキルを取得します。',
     save: 'スキルを保存',
     saved: 'デフォルトスキルが保存されました。',
   },
@@ -464,7 +464,7 @@ const jaJP: LocaleResource<typeof enUS> = {
     filters: {
       agent: 'エージェント',
       status: '状態',
-      allAgents: 'すべてのエージェント',
+      allAgents: 'すべてのAgents',
       allStatuses: '全ステータス',
     },
     noMatch: '条件に一致する実行はありません。',
@@ -478,8 +478,7 @@ const jaJP: LocaleResource<typeof enUS> = {
     retried: '実行が再びキューに追加されました',
     viewBrief: 'プロンプト全体を表示',
     briefTitle: '完全なプロンプト',
-    briefDescription:
-      'この実行が最後に請求されたときにエージェントに告げられた内容。',
+    briefDescription: 'この実行が最後に請求されたときにAgentに告げられた内容。',
     briefOf: '{{attempt}}を試み、{{time}}を主張',
     briefUnavailable: 'この実行では完全なプロンプトは利用できません。',
     processDataCleared:
@@ -525,7 +524,7 @@ const jaJP: LocaleResource<typeof enUS> = {
   transcript: {
     title: '実行の記録',
     notFound: 'このランは存在しません。',
-    waiting: 'エージェントの起動を待っています…',
+    waiting: 'Agentの起動を待っています…',
     empty: 'この走行ではイベントは記録されませんでした。',
     fetchFailed: '新しいイベントを取得できません。再試行中…',
     expand: '全て表示',
@@ -533,10 +532,10 @@ const jaJP: LocaleResource<typeof enUS> = {
     summary_one: '{{created}}・{{count}}イベントを作成しました',
     summary_other: '{{created}}・{{count}}イベントを作成しました',
     took: '{{duration}} を取りました',
-    pendingInputs_one: '{{count}} コメントがエージェントを待っています',
-    pendingInputs_other: '{{count}} のコメントがエージェントを待っています',
+    pendingInputs_one: '{{count}} コメントがAgentを待っています',
+    pendingInputs_other: '{{count}} のコメントがAgentを待っています',
     inputDelivered_one: '代理店に納品',
-    inputDelivered_other: '{{count}} 入力がエージェントに配信されました',
+    inputDelivered_other: '{{count}} 入力がAgentに配信されました',
     tokens: '{{input}} トークン入力、{{output}} 出力',
     kinds: {
       text: 'エージェント',
@@ -562,7 +561,7 @@ const jaJP: LocaleResource<typeof enUS> = {
     leaseExpired: '実行環境がレポートを停止しました。',
     startTimeout: '実行環境が時間内に実行を開始しませんでした。',
     cancelled: 'キャンセルされました。',
-    idleTimeout: 'エージェントの進行が停止しました。',
+    idleTimeout: 'Agentの進行が停止しました。',
     setupFailed: '実行を準備できませんでした。',
     cliUnavailable:
       '実行環境はアプリケーション CLI をインストールできませんでした。',
@@ -578,8 +577,8 @@ const jaJP: LocaleResource<typeof enUS> = {
     contextOverflow: 'モデルにとって会話が長すぎました。',
     delegatedQueueTimeout: '委任キューのタイムアウト。撤回された',
     queuedExpired: '実行環境が間に合わなかった。',
-    modelUnavailable: 'エージェントのモデルが利用できません。',
-    stepLimit: 'エージェントが応答せずにツールを何度も呼び出しました。',
+    modelUnavailable: 'Agentのモデルが利用できません。',
+    stepLimit: 'Agentが応答せずにツールを何度も呼び出しました。',
     policyRefused: 'この作業を許可する実行環境のポリシーはありません。',
     prepareNetwork:
       '実行環境は実行の準備中にリポジトリ ホストに到達できませんでした。',
@@ -617,7 +616,7 @@ const jaJP: LocaleResource<typeof enUS> = {
       marks_one: '{{count}} クォータマーク',
       marks_other: '{{count}} クォータ マーク',
       queueHint:
-        'クォータに達したエージェントは引き続き選択できます。作業は既存の待機期限に従ってキューに追加されます。',
+        'クォータに達したAgentは引き続き選択できます。作業は既存の待機期限に従ってキューに追加されます。',
       partial: '{{available}}・{{blocked}}でクォータで実行',
       workspaceSize: 'ワークスペースのサイズ: {{value}}',
       providers_one: '{{count}} プロバイダーがクォータに達しました',
@@ -722,12 +721,12 @@ const jaJP: LocaleResource<typeof enUS> = {
     },
     title: '実行環境',
     description:
-      'エージェントを実行する実行環境とコーディング ツールがそれぞれ報告されました。',
+      'Agentsを実行する実行環境とコーディング ツールがそれぞれ報告されました。',
     add: '実行環境の追加',
     loadFailed: '実行環境をロードできませんでした',
     emptyTitle: '実行環境がまだ接続されていません',
     emptyDescription:
-      '実行環境が接続されると、実行環境 エージェントはコーディング ツールを使用してそこで作業を引き受けます。',
+      '実行環境が接続されると、実行環境 Agentsはコーディング ツールを使用してそこで作業を引き受けます。',
     noneConnected: '実行環境が接続されていません。',
     revokedList_one: '{{count}} は実行環境を取り消しました',
     revokedList_other: '{{count}} は実行環境を取り消しました',
@@ -825,9 +824,9 @@ const jaJP: LocaleResource<typeof enUS> = {
     upgradeRequired: {
       title: 'この実行環境にはアップグレードが必要です',
       older:
-        'その実行環境 {{version}} はエージェント プロトコル {{protocol}} を話します。このアプリケーションにはプロトコル {{required}} が必要です。接続されたままですが、更新されるまで何も実行されません。',
+        'その実行環境 {{version}} はAgent プロトコル {{protocol}} を話します。このアプリケーションにはプロトコル {{required}} が必要です。接続されたままですが、更新されるまで何も実行されません。',
       newer:
-        'その実行環境 {{version}} は、このアプリケーション (プロトコル {{required}}) よりも新しいエージェント プロトコル {{protocol}} を話します。接続は維持されますが、このアプリケーションが提供する実行環境を実行するまでは何も実行されません。',
+        'その実行環境 {{version}} は、このアプリケーション (プロトコル {{required}}) よりも新しいAgent プロトコル {{protocol}} を話します。接続は維持されますが、このアプリケーションが提供する実行環境を実行するまでは何も実行されません。',
       latest:
         'このアプリケーションは実行環境 {{latest}} にサービスを提供します。ホスト上でこれを実行して更新します。',
       noLatest:
@@ -883,7 +882,7 @@ const jaJP: LocaleResource<typeof enUS> = {
       title: '{{name}} の新しい実行環境',
       description:
         '{{version}} がインストールされており、このアプリケーションは {{latest}} を提供します。',
-      hint: 'エージェントが実行されなくなると、自動的に更新されます。今すぐ更新するには、ホスト上でこれを実行します。',
+      hint: 'Agentが実行されなくなると、自動的に更新されます。今すぐ更新するには、ホスト上でこれを実行します。',
     },
     revoke: {
       title: '{{name}} の資格情報を取り消しますか?',
@@ -1002,10 +1001,9 @@ const jaJP: LocaleResource<typeof enUS> = {
       modelUnavailable: 'モデルが利用できません',
     },
     offline: {
-      fallbackDone: 'この会話では別のエージェントが使用されています',
+      fallbackDone: 'この会話では別のAgentが使用されています',
       restoreDone: 'スイッチバックしました',
-      newSession:
-        'エージェントは新しいセッションを開始し、この会話を読み取ります。',
+      newSession: 'Agentは新しいセッションを開始し、この会話を読み取ります。',
     },
     notice: {
       switchedToDefault:
@@ -1013,15 +1011,15 @@ const jaJP: LocaleResource<typeof enUS> = {
       switchedToOnline:
         '{{own}} には現在あなたの実行環境がいないため、{{own}} が戻ってくるまで {{name}} が応答します。',
       onlineFallbackUnavailable:
-        'オンライン フォールバック エージェントが応答できません ({{reason}})。この会話は、実行環境を待つ間、{{own}} に残ります。',
+        'オンライン フォールバック Agentが応答できません ({{reason}})。この会話は、実行環境を待つ間、{{own}} に残ります。',
       switchedAgent: '会話の履歴を保持して {{name}} に切り替えました。',
       switchedBack: '{{name}} で戻ります。',
-      runFailed: 'エージェントは応答する前に停止しました。',
-      runFailedReason: 'エージェントは応答する前に停止しました: {{reason}}',
+      runFailed: 'Agentは応答する前に停止しました。',
+      runFailedReason: 'Agentは応答する前に停止しました: {{reason}}',
       runCancelled: 'キャンセルが要求されました。',
     },
     consultation: {
-      unavailableTitle: '相談したエージェントが不在です',
+      unavailableTitle: '相談したAgentが不在です',
       snapshotTitle: '当時{{name}}をリクエストしました',
       title: '{{name}}に相談しました',
     },
@@ -1032,33 +1030,33 @@ const jaJP: LocaleResource<typeof enUS> = {
     },
     agents: {
       personalOnly: '個人実行環境限定',
-      hint: '有効なエージェントをリストし、現在応答できない理由を示します。回答は実行環境上で実行されます。最初の回答は、実行環境が回答するまで待機します (通常は数秒)。',
-      chooseFor: 'エージェントを選択してください',
-      empty: '選択できるエージェントはありません',
-      none: 'エージェントなし',
-      unknown: '不明なエージェント',
-      placeholder: 'エージェントを選択してください',
+      hint: '有効なAgentsをリストし、現在応答できない理由を示します。回答は実行環境上で実行されます。最初の回答は、実行環境が回答するまで待機します (通常は数秒)。',
+      chooseFor: 'Agentを選択してください',
+      empty: '選択できるAgentはありません',
+      none: 'Agentなし',
+      unknown: '不明なAgent',
+      placeholder: 'Agentを選択してください',
       myDefault: '私のデフォルト',
       systemDefault: 'システムデフォルト',
     },
   },
   chatProfile: {
-    loadFailed: 'エージェント設定をロードできませんでした',
-    defaultAgent: '私のデフォルトのチャットエージェント',
+    loadFailed: 'Agent設定をロードできませんでした',
+    defaultAgent: '私のデフォルトのチャットAgent',
     systemDefault: 'システムデフォルト',
     systemDefaultNamed: 'システムデフォルト ({{name}})',
     noDefault: 'システムデフォルトは設定されていません。',
-    saved: 'デフォルトのチャットエージェントが保存されました',
+    saved: 'デフォルトのチャットAgentが保存されました',
   },
   models: {
     title: 'モデル',
     description:
-      'オンライン エージェントが呼び出すモデル サービス、および各エージェントが提供するモデル: エージェント用のチャット モデル、検索用の埋め込みおよび再ランク付けモデル。',
+      'オンライン Agentsが呼び出すモデル サービス、および各Agentsが提供するモデル: Agent用のチャット モデル、検索用の埋め込みおよび再ランク付けモデル。',
   },
   defaultModel: {
     title: 'デフォルトのチャットモデル',
     description:
-      '新しいエージェントやアプリケーションに付属のエージェントなど、独自の応答モデルを持たないオンライン エージェント。',
+      '新しいAgentsやアプリケーションに付属のAgentなど、独自の応答モデルを持たないオンライン Agent。',
     none: 'チャット モデルはまだオンになっていません。モデル サービスを追加し、チャット モデルをオンにします。最初のモデルがデフォルトになります。',
     saved: 'デフォルトのチャットモデルは{{model}}になりました。',
   },
@@ -1073,7 +1071,7 @@ const jaJP: LocaleResource<typeof enUS> = {
     empty: {
       title: 'モデルサービスはまだありません',
       description:
-        'モデル サービスを追加すると、オンライン エージェントはそれを通じて応答できるようになります。',
+        'モデル サービスを追加すると、オンライン Agentsはそれを通じて応答できるようになります。',
       readOnly: '管理者にモデル サービスの追加を依頼します。',
     },
     add: {
@@ -1099,7 +1097,7 @@ const jaJP: LocaleResource<typeof enUS> = {
       name: '名前',
       enabled: '有効',
       enabledHint:
-        'オンラインエージェントは、そのモデルがオンになっている間のみ使用できます。',
+        'オンラインAgentsは、そのモデルがオンになっている間のみ使用できます。',
       saved: '{{title}} が保存されました。',
       delete: '削除',
       deleteTitle: '{{title}}を削除しますか？',
@@ -1125,7 +1123,7 @@ const jaJP: LocaleResource<typeof enUS> = {
     models: {
       title: 'モデル',
       description:
-        'このサービスが提供するモデルを確認し、それぞれの目的を説明します。チャット モデルはエージェントに応答し、埋め込みモデルは検索用のテキストにインデックスを付け、再ランク付けモデルは検索結果を並べ替えます。埋め込みモデルは、あるサイズのベクトルを要求する場合があります。',
+        'このサービスが提供するモデルを確認し、それぞれの目的を説明します。チャット モデルはAgentsに応答し、埋め込みモデルは検索用のテキストにインデックスを付け、再ランク付けモデルは検索結果を並べ替えます。埋め込みモデルは、あるサイズのベクトルを要求する場合があります。',
       fetching: 'プロバイダーのモデルを取得しています…',
       fetchFailed: 'プロバイダーはモデルをリストしません: {{message}}',
       fetch: 'モデルのフェッチ',
@@ -1235,11 +1233,11 @@ const jaJP: LocaleResource<typeof enUS> = {
     backToList: 'スキルに戻る',
     emptyTitle: 'まだスキルがありません',
     emptyDescription:
-      'スキルを追加すると、タスクでそのスキルが呼び出されるたびに、エージェントはその SKILL.md を読み取ります。',
+      'スキルを追加すると、タスクでそのスキルが呼び出されるたびに、Agentsはその SKILL.md を読み取ります。',
     emptyReadOnly: '管理者にスキルの追加を依頼してください。',
     content: 'SKILL.md',
     contentHint:
-      '前付の名前はスキルのフォルダー名です。これを変更するとスキルの名前が変更されます。説明はエージェントにいつ読むべきかを伝えます。',
+      '前付の名前はスキルのフォルダー名です。これを変更するとスキルの名前が変更されます。説明はAgentsにいつ読むべきかを伝えます。',
     contentTooLarge: 'SKILL.mdは{{max}}より大きいです。',
     emptyContent: 'このスキルにはまだコンテンツがありません。',
     created: 'スキル「{{name}}」を作成しました',
@@ -1253,7 +1251,7 @@ const jaJP: LocaleResource<typeof enUS> = {
     delete: 'スキル削除',
     deleteTitle: 'スキル「{{name}}」を削除しますか？',
     deleteDescription:
-      'このスキルをデフォルトとして使用しているすべてのエージェントとすべての場所は、それを失います。',
+      'このスキルをデフォルトとして使用しているすべてのAgentとすべての場所は、それを失います。',
     readOnly:
       'このスキルを変更できるのは、スキルの作成者とワークスペース管理者だけです。',
     conflict:
@@ -1262,8 +1260,8 @@ const jaJP: LocaleResource<typeof enUS> = {
     conflictDraft:
       '編集を開始した後に誰かが新しいバージョンを保存したため、変更は保存されませんでした。残しておきたいものをコピーし、最新バージョンをロードして再度編集します。',
     loadLatest: '最新バージョンをロードする',
-    mountedAgents: '付属エージェント',
-    noAgents: 'まだエージェントに所属していません。',
+    mountedAgents: '付属Agents',
+    noAgents: 'まだAgentに所属していません。',
     defaults: 'デフォルトスキル: {{places}}。',
     defaultsSeparator: ', ',
     files: 'ファイル',
@@ -1278,7 +1276,7 @@ const jaJP: LocaleResource<typeof enUS> = {
     executable: '実行可能ファイル',
     scriptBadge: 'スクリプト',
     scriptsNote:
-      'スクリプトがあります: オンライン エージェントはスクリプトを読み取ることはできますが、実行することはできません',
+      'スクリプトがあります: オンライン Agentsはスクリプトを読み取ることはできますが、実行することはできません',
     compatibility: '互換性: {{value}}',
     fileContent: '{{path}}の内容',
     export: '輸出',
@@ -1312,8 +1310,8 @@ const jaJP: LocaleResource<typeof enUS> = {
       renameTitle: '「{{name}}」の名前を変更',
       conventional: {
         scripts:
-          'コードエージェントを実行できます。オンライン エージェントは読むだけです。',
-        references: '文書エージェントは必要なときに読みます。',
+          'コードAgentsを実行できます。オンライン Agentsは読むだけです。',
+        references: '文書Agentsは必要なときに読みます。',
         assets: 'テンプレート、画像、その他のリソース。',
       },
       problems: {
@@ -1355,7 +1353,7 @@ const jaJP: LocaleResource<typeof enUS> = {
       },
     },
     template: {
-      description: 'このスキルの機能とエージェントがいつ使用する必要があるか。',
+      description: 'このスキルの機能とAgentがいつ使用する必要があるか。',
       title: '新スキル',
       whenToUse: '使用する場合',
       whenToUseHint: 'このスキルが必要なタスクについて説明します。',
@@ -1375,7 +1373,7 @@ const jaJP: LocaleResource<typeof enUS> = {
     versions: {
       title: 'バージョン',
       description:
-        '保存するたびに新しいバージョンが作成され、エージェントには常に最新のバージョンが渡されます。',
+        '保存するたびに新しいバージョンが作成され、Agentsには常に最新のバージョンが渡されます。',
       current: '現在',
       compare: '比較する',
       compareTitle: 'バージョン{{version}} → バージョン{{current}}',
@@ -1384,7 +1382,7 @@ const jaJP: LocaleResource<typeof enUS> = {
       restore: '復元',
       restoreTitle: 'バージョン {{version}} を復元しますか?',
       restoreDescription:
-        '最新バージョンとして再保存されます。エージェントは次回の実行時にそれを取得します。何も失われません。現在のバージョンが履歴に残ります。',
+        '最新バージョンとして再保存されます。Agentsは次回の実行時にそれを取得します。何も失われません。現在のバージョンが履歴に残ります。',
       restored:
         'バージョン{{version}}をバージョン{{current}}として復元しました。',
     },
@@ -1401,7 +1399,7 @@ const jaJP: LocaleResource<typeof enUS> = {
         '接続された実行環境はこのワークロードをサポートしません。アップグレードが必要です',
       restricted: '実行環境ポリシー、ディレクトリ、または変数の制限',
       unknown: 'ワークロードの適格性が確立されていません',
-      agentArchived: 'エージェントはアーカイブされています',
+      agentArchived: 'Agentはアーカイブされています',
       delayed: '{{until}}予定',
       noRunnerOnline: 'オンラインでは実行環境がありません',
       runnersOffline: '実行環境がオフラインです',
@@ -1432,14 +1430,13 @@ const jaJP: LocaleResource<typeof enUS> = {
         description: 'チームのエージェントと彼らが使用するスキル。',
         actions: {
           edit: {
-            title: 'エージェントとスキルの変更',
+            title: 'Agentsとスキルの変更',
             description:
-              'エージェントの設定、スキル、変数の変更、アーカイブ、復元、削除、スキルの編集を行います。エージェントには編集者以上の権限は与えられません',
-            related:
-              'エージェントとスキルの変更（所有するエージェントと作成したスキル）',
+              'Agentの設定、スキル、変数の変更、アーカイブ、復元、削除、スキルの編集を行います。Agentには編集者以上の権限は与えられません',
+            related: 'Agentsとスキルの変更（所有するAgentsと作成したスキル）',
             relatedLabel: '私が所有するエージェントと私が作成したスキル',
             relatedHint: '私がオーナーであるエージェントと私が作成したスキル',
-            all: 'チェンジエージェントとスキル(全て)',
+            all: 'チェンジAgentsとスキル(全て)',
           },
         },
       },
@@ -1460,7 +1457,7 @@ const jaJP: LocaleResource<typeof enUS> = {
       agents: {
         title: 'エージェント',
         description:
-          'エージェント、スキル、ランを参照。エージェントとスキルを変更し、実行をキャンセルして再試行します。',
+          'Agents、スキル、ランを参照。Agentsとスキルを変更し、実行をキャンセルして再試行します。',
       },
       runners: {
         title: '実行環境',

@@ -334,7 +334,7 @@ const viVN: LocaleResource<typeof enUS> = {
     },
     actors: {
       human: 'người',
-      agent: 'đại lý',
+      agent: 'Agent',
       key: 'phím',
       rule: 'quy tắc',
       system: 'hệ thống',

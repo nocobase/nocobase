@@ -123,17 +123,17 @@ const deDE: LocaleResource<typeof enUS> = {
       showDisabled: 'Deaktivierte anzeigen',
       hideDisabled: 'Deaktivierte ausblenden',
     },
-    filterLabel: 'Agenten anzeigen',
+    filterLabel: 'Agents anzeigen',
     filters: {
       all: 'Alle {{count}}',
       enabled: 'Aktiviert {{count}}',
       unreported: 'Kein Runner {{count}}',
     },
-    loadFailed: 'Die Agenten konnten nicht geladen werden',
+    loadFailed: 'Die Agents konnten nicht geladen werden',
     loadMore: 'Mehr laden',
-    emptyTitle: 'Noch keine Agenten',
+    emptyTitle: 'Noch keine Agents',
     emptyDescription:
-      'Verbinden Sie einen Runner mit einem angemeldeten Codierungstool und fügen Sie dann unter „Verfügbare Modelle“ einen Agenten hinzu.',
+      'Verbinden Sie einen Runner mit einem angemeldeten Codierungstool und fügen Sie dann unter „Verfügbare Modelle“ einen Agent hinzu.',
     noneInFilter: 'Kein Agent hier.',
     howToAdd:
       'Um einen Agent hinzuzufügen, installieren Sie ein Coding-Tool in einer Laufzeitumgebung und melden Sie sich bei einem Modell an, das Sie nutzen dürfen: Sobald die Laufzeitumgebung es meldet, fügen Sie es unter Verfügbare Modelle hinzu und beschreiben, worin es gut ist. Ein Agent, den nur persönliche Laufzeitumgebungen haben, arbeitet nur an Aufgaben, die ihre Besitzer starten.',
@@ -178,7 +178,7 @@ const deDE: LocaleResource<typeof enUS> = {
       reportedBy_other: 'Von {{count}}-Runnern online gemeldet: {{names}}.',
       noRunnerNow: 'Kein Runner, der es hat, ist jetzt online.',
       goodAtHint:
-        'Mit diesen Worten entscheidet der Lead Agent, was er diesem Agenten geben soll. Sagen Sie, was Ihnen passt und was nicht.',
+        'Mit diesen Worten entscheidet der Lead Agent, was er diesem Agent geben soll. Sagen Sie, was Ihnen passt und was nicht.',
       goodAtRequired:
         'Schreiben Sie, was es gut kann, bevor Sie es aktivieren.',
       effortHint:
@@ -197,7 +197,7 @@ const deDE: LocaleResource<typeof enUS> = {
       open: 'Agent hinzufügen',
       title: 'Verfügbare Modelle',
       description:
-        'Nur die auf der Laufzeitumgebung ausgewählten Tools werden jemals erkannt und hier aufgeführt. Die von der Anwendung empfohlenen Kombinationen erstellen und aktivieren sich selbst, sobald ein Runner sie meldet; fügen Sie aus jeder anderen einen Agenten hinzu.',
+        'Nur die auf der Laufzeitumgebung ausgewählten Tools werden jemals erkannt und hier aufgeführt. Die von der Anwendung empfohlenen Kombinationen erstellen und aktivieren sich selbst, sobald ein Runner sie meldet; fügen Sie aus jeder anderen einen Agent hinzu.',
       recommended: 'Wird beim Melden automatisch aktiviert',
       added: 'Hinzugefügt',
       add: 'Hinzufügen',
@@ -228,12 +228,12 @@ const deDE: LocaleResource<typeof enUS> = {
       selectedCount_other: '{{count}} ausgewählt',
       addSelected: '{{count}} hinzufügen',
       confirmTitle_one: '{{count}} Agent hinzufügen',
-      confirmTitle_other: '{{count}} Agenten hinzufügen',
+      confirmTitle_other: '{{count}} Agents hinzufügen',
       confirmAction_one: '{{count}} hinzufügen',
       confirmAction_other: '{{count}} hinzufügen',
       goodAtNeeded: 'Worin ist er gut?',
       addedCount_one: '{{count}} Agent hinzugefügt.',
-      addedCount_other: '{{count}} Agenten hinzugefügt.',
+      addedCount_other: '{{count}} Agents hinzugefügt.',
       addedPartial:
         '{{succeeded}} hinzugefügt, {{failed}} konnten nicht hinzugefügt werden. Grund jeweils darunter.',
       addFailed:
@@ -250,7 +250,7 @@ const deDE: LocaleResource<typeof enUS> = {
     runnerHint:
       'Treibt ein Codierungstool zur Laufzeitumgebung an und arbeitet in einem Arbeitsverzeichnis: Code, Dateien, Befehle.',
     immutable:
-      'Ein Agent behält seinen Typ; Erstellen Sie einen anderen Agenten für die andere Art.',
+      'Ein Agent behält seinen Typ; Erstellen Sie einen anderen Agent für die andere Art.',
     onServer: 'Auf dem Server',
     filterAll: 'Alle Typen',
     noneOfType: 'Kein Agent dieser Art.',
@@ -266,7 +266,7 @@ const deDE: LocaleResource<typeof enUS> = {
     descriptionOnline:
       'Handbücher, die der Agent liest, wenn eine Aufgabe mit ihrer Beschreibung übereinstimmt, in einer schreibgeschützten Sandbox auf dem Server.',
     onlineScripts:
-      'Skripte werden für Online-Agenten nicht ausgeführt: Der Agent kann sie lesen, nicht ausführen.',
+      'Skripte werden für Online-Agents nicht ausgeführt: Der Agent kann sie lesen, nicht ausführen.',
     skippedScripts: ': {{paths}}',
     pathSeparator: ', ',
   },
@@ -274,7 +274,7 @@ const deDE: LocaleResource<typeof enUS> = {
     preview: 'Vorschau der vollständigen Eingabeaufforderung',
     previewTitle: 'Vorschau der vollständigen Eingabeaufforderung',
     previewDescription:
-      'Was für ein Lauf dieses Agenten würde jetzt zu einem erfundenen Thema geschickt werden. Es steht nichts in der Warteschlange.',
+      'Was für ein Lauf dieses Agent würde jetzt zu einem erfundenen Thema geschickt werden. Es steht nichts in der Warteschlange.',
     scenario: 'Szenario',
     sample:
       'Zu einem erfundenen Thema: {{subject}}. Mit [Beispiel] gekennzeichnete Werte sind erfunden.',
@@ -321,7 +321,7 @@ const deDE: LocaleResource<typeof enUS> = {
     keepValueHint: 'Lassen Sie es leer, um den aktuellen Wert beizubehalten.',
     teamRunnersOnly: 'Nur Teamlaufzeiten',
     teamRunnersOnlyHint:
-      'Ohne sie sendet ein Lauf den Wert an die Laufzeitumgebung, die ihn annimmt, einschließlich der persönlichen Laufzeitumgebung aller Personen, die den Agenten verwenden. Damit benötigt nur eine Teamlaufzeit Läufe, die diese Variable erhalten.',
+      'Ohne sie sendet ein Lauf den Wert an die Laufzeitumgebung, die ihn annimmt, einschließlich der persönlichen Laufzeitumgebung aller Personen, die den Agent verwenden. Damit benötigt nur eine Teamlaufzeit Läufe, die diese Variable erhalten.',
     teamRunnersOnlyBadge: 'Nur Teamlaufzeiten',
     fromRunner: 'Aus der Laufzeitumgebung übernehmen',
     fromRunnerHint:
@@ -374,7 +374,7 @@ const deDE: LocaleResource<typeof enUS> = {
   scopeVariables: {
     title: 'Variablen und Geheimnisse',
     description:
-      'Wird jedem hier tätigen Agenten gegeben. Spezifischere Variablen (die eines Arbeitsverzeichnisses, dann die des Agenten) überzeugen diese.',
+      'Wird jedem hier tätigen Agent gegeben. Spezifischere Variablen (die eines Arbeitsverzeichnisses, dann die des Agent) überzeugen diese.',
   },
   scopes: {
     workdir: 'Arbeitsverzeichnis',
@@ -401,7 +401,7 @@ const deDE: LocaleResource<typeof enUS> = {
     },
     title: 'Verwendung',
     description:
-      'Welche Agenten laufen gebraucht und was kosten sie bei den aktuellen Modellpreisen?',
+      'Welche Agent laufen gebraucht und was kosten sie bei den aktuellen Modellpreisen?',
     loadFailed: 'Die Nutzung konnte nicht geladen werden',
     groupBy: 'Gruppieren nach',
     groupByValue: 'Gruppierung nach {{group}}',
@@ -424,7 +424,7 @@ const deDE: LocaleResource<typeof enUS> = {
     filters: {
       allGroups: 'Alle: {{group}}',
       agent: 'Agent',
-      allAgents: 'Alle Agenten',
+      allAgents: 'Alle Agents',
       person: 'Geweckt von',
       allPeople: 'Alle',
       range: 'Datumsbereich',
@@ -477,7 +477,7 @@ const deDE: LocaleResource<typeof enUS> = {
     filters: {
       agent: 'Agent',
       status: 'Status',
-      allAgents: 'Alle Agenten',
+      allAgents: 'Alle Agents',
       allStatuses: 'Alle Status',
     },
     noMatch: 'Keine Läufe entsprechen diesen Filtern.',
@@ -492,7 +492,7 @@ const deDE: LocaleResource<typeof enUS> = {
     viewBrief: 'Vollständige Eingabeaufforderung anzeigen',
     briefTitle: 'Vollständige Eingabeaufforderung',
     briefDescription:
-      'Was dem Agenten mitgeteilt wurde, als dieser Lauf zuletzt beansprucht wurde.',
+      'Was dem Agent mitgeteilt wurde, als dieser Lauf zuletzt beansprucht wurde.',
     briefOf: 'Versuch {{attempt}}, beanspruchte {{time}}',
     briefUnavailable:
       'Für diesen Lauf ist keine vollständige Eingabeaufforderung verfügbar.',
@@ -541,7 +541,7 @@ const deDE: LocaleResource<typeof enUS> = {
   transcript: {
     title: 'Protokoll der Ausführung',
     notFound: 'Dieser Lauf existiert nicht.',
-    waiting: 'Warten auf den Start des Agenten…',
+    waiting: 'Warten auf den Start des Agent…',
     empty: 'Bei diesem Lauf wurden keine Ereignisse aufgezeichnet.',
     fetchFailed:
       'Neue Ereignisse können nicht abgerufen werden. Erneuter Versuch…',
@@ -551,11 +551,10 @@ const deDE: LocaleResource<typeof enUS> = {
     summary_one: 'Erstelltes {{created}} · {{count}}-Ereignis',
     summary_other: 'Erstellte {{created}} · {{count}}-Ereignisse',
     took: 'nahm {{duration}}',
-    pendingInputs_one: '{{count}} Kommentar wartet auf den Agenten',
-    pendingInputs_other: '{{count}} Kommentare warten auf den Agenten',
-    inputDelivered_one: 'An den Agenten geliefert',
-    inputDelivered_other:
-      '{{count}}-Eingaben werden an den Agenten übermittelt',
+    pendingInputs_one: '{{count}} Kommentar wartet auf den Agent',
+    pendingInputs_other: '{{count}} Kommentare warten auf den Agent',
+    inputDelivered_one: 'An den Agent geliefert',
+    inputDelivered_other: '{{count}}-Eingaben werden an den Agent übermittelt',
     tokens: '{{input}}-Tokens rein, {{output}} raus',
     kinds: {
       text: 'Agent',
@@ -601,7 +600,7 @@ const deDE: LocaleResource<typeof enUS> = {
     delegatedQueueTimeout:
       'Zeitüberschreitung in der Delegationswarteschlange; zurückgezogen',
     queuedExpired: 'Keine Laufzeitumgebung hat den Lauf rechtzeitig geschafft.',
-    modelUnavailable: 'Das Modell des Agenten ist nicht verfügbar.',
+    modelUnavailable: 'Das Modell des Agent ist nicht verfügbar.',
     stepLimit: 'Der Agent rief Tools zu oft an, ohne zu antworten.',
     policyRefused: 'Keine Laufzeitumgebungrichtlinie lässt diese Arbeit zu.',
     prepareNetwork:
@@ -749,7 +748,7 @@ const deDE: LocaleResource<typeof enUS> = {
     },
     title: 'Laufzeitumgebungen',
     description:
-      'Die Laufzeitumgebungen, die Agenten ausführen, und die jeweils gemeldeten Codierungstools.',
+      'Die Laufzeitumgebungen, die Agents ausführen, und die jeweils gemeldeten Codierungstools.',
     add: 'Laufzeitumgebung hinzufügen',
     loadFailed: 'Die Laufzeitumgebungen konnten nicht geladen werden',
     emptyTitle: 'Noch keine Laufzeitumgebungen verbunden',
@@ -1030,7 +1029,7 @@ const deDE: LocaleResource<typeof enUS> = {
       modelUnavailable: 'Modell nicht verfügbar',
     },
     offline: {
-      fallbackDone: 'Diese Konversation verwendet jetzt einen anderen Agenten',
+      fallbackDone: 'Diese Konversation verwendet jetzt einen anderen Agent',
       restoreDone: 'Zurückgeschaltet',
       newSession:
         'Der Agent startet eine neue Sitzung und liest dieses Gespräch.',
@@ -1061,12 +1060,12 @@ const deDE: LocaleResource<typeof enUS> = {
     },
     agents: {
       personalOnly: 'Nur für Privatläufer',
-      hint: 'Listet die aktivierten Agenten auf und sagt, warum man Ihnen jetzt nicht antworten kann. Antworten laufen auf einem Runner: Die erste Antwort wartet darauf, dass jemand sie annimmt, normalerweise ein paar Sekunden.',
-      chooseFor: 'Wählen Sie einen Agenten',
+      hint: 'Listet die aktivierten Agents auf und sagt, warum man Ihnen jetzt nicht antworten kann. Antworten laufen auf einem Runner: Die erste Antwort wartet darauf, dass jemand sie annimmt, normalerweise ein paar Sekunden.',
+      chooseFor: 'Wählen Sie einen Agent',
       empty: 'Kein Agent, den Sie wählen können',
       none: 'Kein Agent',
       unknown: 'Unbekannter Agent',
-      placeholder: 'Wählen Sie einen Agenten',
+      placeholder: 'Wählen Sie einen Agent',
       myDefault: 'Mein Standard',
       systemDefault: 'Systemstandard',
     },
@@ -1082,12 +1081,12 @@ const deDE: LocaleResource<typeof enUS> = {
   models: {
     title: 'Modelle',
     description:
-      'Die von Online-Agenten aufgerufenen Modelldienste und die jeweils angebotenen Modelle: Chat-Modelle für Agenten, Einbettung und Neubewertung von Modellen für die Suche.',
+      'Die von Online-Agents aufgerufenen Modelldienste und die jeweils angebotenen Modelle: Chat-Modelle für Agents, Einbettung und Neubewertung von Modellen für die Suche.',
   },
   defaultModel: {
     title: 'Standard-Chat-Modell',
     description:
-      'Online-Agenten ohne eigene Modelle antworten damit, z. B. ein neuer Agent oder einer, der mit der Anwendung geliefert wurde.',
+      'Online-Agents ohne eigene Modelle antworten damit, z. B. ein neuer Agent oder einer, der mit der Anwendung geliefert wurde.',
     none: 'Es ist noch kein Chat-Modell aktiviert. Fügen Sie einen Modelldienst hinzu und aktivieren Sie ein Chat-Modell: Das erste wird zum Standard.',
     saved: 'Das Standard-Chat-Modell ist jetzt {{model}}.',
   },
@@ -1102,7 +1101,7 @@ const deDE: LocaleResource<typeof enUS> = {
     empty: {
       title: 'Noch kein Modellservice',
       description:
-        'Sobald Sie einen Modelldienst hinzufügen, können Online-Agenten über diesen antworten.',
+        'Sobald Sie einen Modelldienst hinzufügen, können Online-Agents über diesen antworten.',
       readOnly:
         'Bitten Sie einen Administrator, einen Modelldienst hinzuzufügen.',
     },
@@ -1129,7 +1128,7 @@ const deDE: LocaleResource<typeof enUS> = {
       name: 'Name',
       enabled: 'Aktiviert',
       enabledHint:
-        'Online-Agenten dürfen ihre Modelle nur verwenden, solange sie aktiv sind.',
+        'Online-Agents dürfen ihre Modelle nur verwenden, solange sie aktiv sind.',
       saved: '{{title}} gespeichert.',
       delete: 'Löschen',
       deleteTitle: '{{title}} löschen?',
@@ -1156,7 +1155,7 @@ const deDE: LocaleResource<typeof enUS> = {
     models: {
       title: 'Modelle',
       description:
-        'Sehen Sie sich die Modelle an, die dieser Dienst anbietet, und geben Sie an, wofür sie jeweils gedacht sind: Chat-Modelle, Antworten auf Agenten, Einbetten von Modellindextexten für die Suche, Neuordnen von Modellen in der Reihenfolge der Suchergebnisse. Ein Einbettungsmodell kann nach Vektoren einer Größe fragen.',
+        'Sehen Sie sich die Modelle an, die dieser Dienst anbietet, und geben Sie an, wofür sie jeweils gedacht sind: Chat-Modelle, Antworten auf Agents, Einbetten von Modellindextexten für die Suche, Neuordnen von Modellen in der Reihenfolge der Suchergebnisse. Ein Einbettungsmodell kann nach Vektoren einer Größe fragen.',
       fetching: 'Die Modelle des Anbieters werden abgerufen…',
       fetchFailed:
         'Der Anbieter würde seine Modelle nicht auflisten: {{message}}',
@@ -1268,12 +1267,12 @@ const deDE: LocaleResource<typeof enUS> = {
     backToList: 'Zurück zu den Fähigkeiten',
     emptyTitle: 'Noch keine Fähigkeiten',
     emptyDescription:
-      'Sobald Sie eine Fertigkeit hinzugefügt haben, lesen Agenten deren SKILL.md, wann immer eine Aufgabe sie erfordert.',
+      'Sobald Sie eine Fertigkeit hinzugefügt haben, lesen Agents deren SKILL.md, wann immer eine Aufgabe sie erfordert.',
     emptyReadOnly:
       'Bitten Sie einen Administrator, eine Fertigkeit hinzuzufügen.',
     content: 'SKILL.md',
     contentHint:
-      'Der Name der Titelseite ist der Ordnername des Skills: Durch Ändern wird der Skill umbenannt. Die Beschreibung sagt den Agenten, wann sie sie lesen sollen.',
+      'Der Name der Titelseite ist der Ordnername des Skills: Durch Ändern wird der Skill umbenannt. Die Beschreibung sagt den Agents, wann sie sie lesen sollen.',
     contentTooLarge: 'SKILL.md ist größer als {{max}}.',
     emptyContent: 'Dieser Skill hat noch keinen Inhalt.',
     created: 'Fertigkeit „{{name}}“ erstellt',
@@ -1296,8 +1295,8 @@ const deDE: LocaleResource<typeof enUS> = {
     conflictDraft:
       'Jemand hat eine neue Version gespeichert, nachdem Sie mit der Bearbeitung begonnen haben, sodass Ihre Änderungen nicht gespeichert wurden. Kopieren Sie, was Sie behalten möchten, laden Sie dann die neueste Version und bearbeiten Sie sie erneut.',
     loadLatest: 'Neueste Version laden',
-    mountedAgents: 'Angeschlossene Agenten',
-    noAgents: 'Noch keinem Agenten zugeordnet.',
+    mountedAgents: 'Angeschlossene Agents',
+    noAgents: 'Noch keinem Agent zugeordnet.',
     defaults: 'Standardfähigkeit von: {{places}}.',
     defaultsSeparator: ', ',
     files: 'Dateien',
@@ -1312,7 +1311,7 @@ const deDE: LocaleResource<typeof enUS> = {
     executable: 'Ausführbar',
     scriptBadge: 'Skript',
     scriptsNote:
-      'Verfügt über Skripte: Online-Agenten können sie lesen, aber niemals ausführen',
+      'Verfügt über Skripte: Online-Agents können sie lesen, aber niemals ausführen',
     compatibility: 'Kompatibilität: {{value}}',
     fileContent: 'Inhalt von {{path}}',
     export: 'Exportieren',
@@ -1348,7 +1347,7 @@ const deDE: LocaleResource<typeof enUS> = {
       renameTitle: '„{{name}}“ umbenennen',
       conventional: {
         scripts:
-          'Code-Agenten können ausgeführt werden. Online-Agenten lesen es nur.',
+          'Code-Agents können ausgeführt werden. Online-Agents lesen es nur.',
         references: 'Dokumentationsagenten lesen, wenn sie es brauchen.',
         assets: 'Vorlagen, Bilder und andere Ressourcen.',
       },
@@ -1412,7 +1411,7 @@ const deDE: LocaleResource<typeof enUS> = {
     versions: {
       title: 'Versionen',
       description:
-        'Jeder Speichervorgang erstellt eine neue Version; Agenten erhalten immer die neueste Version.',
+        'Jeder Speichervorgang erstellt eine neue Version; Agents erhalten immer die neueste Version.',
       current: 'Strom',
       compare: 'Vergleiche',
       compareTitle: 'Version {{version}} → Version {{current}}',
@@ -1422,7 +1421,7 @@ const deDE: LocaleResource<typeof enUS> = {
       restore: 'Wiederherstellen',
       restoreTitle: 'Version {{version}} wiederherstellen?',
       restoreDescription:
-        'Es wird erneut als neueste Version gespeichert; Agenten bekommen es bei ihrem nächsten Lauf. Es geht nichts verloren: Die aktuelle Version bleibt im Verlauf.',
+        'Es wird erneut als neueste Version gespeichert; Agents bekommen es bei ihrem nächsten Lauf. Es geht nichts verloren: Die aktuelle Version bleibt im Verlauf.',
       restored:
         'Version {{version}} als Version {{current}} wiederhergestellt.',
     },
@@ -1474,9 +1473,9 @@ const deDE: LocaleResource<typeof enUS> = {
           edit: {
             title: 'Change Agents und Fähigkeiten',
             description:
-              'Ändern Sie die Einstellungen, Fähigkeiten und Variablen eines Agenten, archivieren, wiederherstellen und löschen Sie ihn und bearbeiten Sie Fähigkeiten. Einem Agenten werden keine Befugnisse eingeräumt, die über die des Herausgebers hinausgehen',
+              'Ändern Sie die Einstellungen, Fähigkeiten und Variablen eines Agent, archivieren, wiederherstellen und löschen Sie ihn und bearbeiten Sie Fähigkeiten. Einem Agent werden keine Befugnisse eingeräumt, die über die des Herausgebers hinausgehen',
             related:
-              'Agenten und Fähigkeiten ändern (Agenten, die sie besitzen, und Fähigkeiten, die sie erstellt haben)',
+              'Agents und Fähigkeiten ändern (Agents, die sie besitzen, und Fähigkeiten, die sie erstellt haben)',
             relatedLabel:
               'Agenten, die ich besitze, und Fähigkeiten, die ich erstellt habe',
             relatedHint:
@@ -1502,7 +1501,7 @@ const deDE: LocaleResource<typeof enUS> = {
       agents: {
         title: 'Agenten',
         description:
-          'Siehe Agenten, Fähigkeiten und Läufe; Agenten und Fähigkeiten ändern, Läufe abbrechen und wiederholen.',
+          'Siehe Agents, Fähigkeiten und Läufe; Agents und Fähigkeiten ändern, Läufe abbrechen und wiederholen.',
       },
       runners: {
         title: 'Laufzeitumgebungen',

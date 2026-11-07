@@ -335,7 +335,7 @@ const esES: LocaleResource<typeof enUS> = {
     },
     actors: {
       human: 'persona',
-      agent: 'agente',
+      agent: 'Agent',
       key: 'clave',
       rule: 'regla',
       system: 'sistema',
