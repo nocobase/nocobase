@@ -101,10 +101,12 @@ export interface HostEndpointOptions {
    * Restart the Host once this many Apps were replaced, removed, stopped for idleness or made dormant since it
    * started: in-process Apps cannot unload their modules (ESM has no unload), so every runtime that goes away leaves
    * memory behind; a restart replays the desired sets into a fresh process, where on-demand Apps stay stopped until
-   * requested. Busy Apps defer rotation only up to `restartMaxWaitMs`. Off when omitted.
+   * requested. Requests, startup and deployment work always defer rotation. Off when omitted.
    */
   readonly restartAfterChurn?: number;
-  /** Maximum deferral after reaching the churn threshold or memory pressure (five minutes by default). */
+  /** Heap rotation line, 0 disables; defaults to 0.55 when count rotation is enabled. */
+  readonly restartHeapRatio?: number;
+  /** After this wait, pause new revisions and ignore established sockets; requests/startup/deployments still defer. */
   readonly restartMaxWaitMs?: number;
   /** Graceful shutdown allowance before the supervisor kills the old child (30 seconds by default). */
   readonly restartDrainMs?: number;
@@ -177,9 +179,9 @@ interface OpenScope {
   scope: HostScope;
   readonly publicUrl: string | null;
   readonly desired: () => Promise<readonly AppDeploymentSpec[]>;
-  /** The on-demand Apps: a Host restart waits while one of them runs. */
-  readonly onDemand: Set<string>;
   restoring: Promise<void> | null;
+  restoreFailed: boolean;
+  deploymentBatchBusy?: DriverContext['deploymentBatchBusy'];
 }
 
 export function createHostDriver(
@@ -214,7 +216,23 @@ export function createHostDriver(
   let churnTimer: NodeJS.Timeout | null = null;
   let restartDeadline: NodeJS.Timeout | null = null;
   let checkingChurn = false;
+  let recheckChurn = false;
+  let retryCheckAt = 0;
+  const capacityWaiting = new Set<string>();
+  const batchBusy = (): boolean =>
+    [...scopes.values()].some(
+      (scope) =>
+        scope.host === inProcess &&
+        scope.deploymentBatchBusy?.(capacityWaiting),
+    );
   let hostGeneration = 0;
+  let rotationSince: number | null = null;
+  let capacityRotation = false;
+  const rotationWaiters = new Set<(ok: boolean) => void>();
+  const heapRatio =
+    inProcess.restartHeapRatio ?? (inProcess.restartAfterChurn ? 0.55 : 0);
+  if (!Number.isFinite(heapRatio) || heapRatio < 0 || heapRatio >= 1)
+    throw new Error('Invalid Host restart heap ratio');
 
   const hostOf = (backend: string): HostEndpointOptions => {
     const host = options.hosts[backend];
@@ -329,16 +347,10 @@ export function createHostDriver(
     };
   };
 
-  const track = (scope: OpenScope, spec: AppDeploymentSpec): void => {
-    if (spec.activation === 'onDemand') scope.onDemand.add(spec.appId);
-    else scope.onDemand.delete(spec.appId);
-  };
-
   /** Sends one environment's complete desired set as a new revision of its scope. */
   const sendSet = async (scope: OpenScope): Promise<void> => {
     const management = await managementOf(scope.host);
     const specs = await scope.desired();
-    for (const spec of specs) track(scope, spec);
     const deployments = specs.map((spec) => toHostSpec(scope, spec));
     const send = async (revision: number) => {
       revisions.set(scope.environmentId, revision);
@@ -355,13 +367,19 @@ export function createHostDriver(
   };
 
   const scheduleRestore = (scope: OpenScope): Promise<void> => {
+    if (scope.restoring) return scope.restoring;
     const current = sendSet(scope)
-      .catch((error: unknown) =>
+      .then(() => {
+        scope.restoreFailed = false;
+      })
+      .catch((error: unknown) => {
+        scope.restoreFailed = true;
         diagnostic.error(
           `Failed to restore the Apps of environment ${scope.environmentId}`,
           error,
-        ),
-      )
+        );
+        throw error;
+      })
       .finally(() => {
         if (scope.restoring === current) scope.restoring = null;
       });
@@ -384,29 +402,18 @@ export function createHostDriver(
         runtimeChurn = 0;
         if (restartDeadline) clearTimeout(restartDeadline);
         restartDeadline = null;
+        rotationSince = null;
+        capacityRotation = false;
       }
-      void restoreHost(host);
+      if (!restartScheduled) void restoreHost(host).catch(() => undefined);
     });
   };
 
   // --- Recycling the in-process Host (`restartAfterChurn`) ---------------------------------------------------------
 
-  /** Each of the Host's open scopes with its status. */
-  const statusesOf = async (
-    host: HostEndpointOptions,
-  ): Promise<readonly (readonly [OpenScope, HostStatus])[]> => {
-    const management = await managementOf(host);
-    return await Promise.all(
-      [...scopes.values()]
-        .filter((scope) => scope.host === host)
-        .map(
-          async (scope) =>
-            [
-              scope,
-              await management.getStatus({ scope: scope.environmentId }),
-            ] as const,
-        ),
-    );
+  const finishRotation = (ok: boolean): void => {
+    for (const resolve of rotationWaiters) resolve(ok);
+    rotationWaiters.clear();
   };
 
   const restartHost = async (reason: string): Promise<void> => {
@@ -418,14 +425,23 @@ export function createHostDriver(
         hostGeneration += 1;
         if (restartDeadline) clearTimeout(restartDeadline);
         restartDeadline = null;
-        // SIGTERM closes the child's listener and drains its management operations and HTTP requests. The
-        // supervisor's single deadline also bounds deployments, sockets and shutdown hooks that never finish.
         await controller.restart!(reason, {
           shutdownTimeoutMs: inProcess.restartDrainMs ?? 30_000,
         });
         churn = 0;
         runtimeChurn = 0;
+        rotationSince = null;
+        capacityRotation = false;
         await restoreHost(inProcess);
+        finishRotation(true);
+      } catch (error) {
+        // If restart failed before the child exited, serving traffic can resume. New revisions remain paused.
+        const service = await managementOf(inProcess).catch(() => null);
+        await service
+          ?.prepareRotation?.({ resume: true })
+          .catch(() => undefined);
+        finishRotation(false);
+        throw error;
       } finally {
         restartScheduled = null;
       }
@@ -433,91 +449,148 @@ export function createHostDriver(
     await restartScheduled;
   };
 
-  /** Whether an on-demand App is starting or has work or connections a restart would cut off. */
-  const onDemandBusy = (
-    statuses: readonly (readonly [OpenScope, HostStatus])[],
-  ): boolean =>
-    statuses.some(([scope, status]) =>
-      status.deployments.some((deployment) => {
-        const state = observed(deployment).state;
-        return (
-          scope.onDemand.has(deployment.appId) &&
-          (state === 'starting' ||
-            (state === 'running' &&
-              ((deployment.app?.activeRequests ?? 0) > 0 ||
-                (deployment.app?.activeConnections ?? 0) > 0)))
-        );
-      }),
-    );
-
-  /**
-   * Rotates after churn, as soon as Apps are idle or at the fixed maximum-wait deadline.
-   */
   const maybeRestart = async (): Promise<void> => {
-    const limit = inProcess.restartAfterChurn;
     const { controller } = inProcess;
-    if (!limit || !controller.restart || restartScheduled) return;
-    if (controller.getInfo().status !== 'ready') return;
-    const scheduleDeadline = () => {
-      if (restartDeadline !== null || churn + runtimeChurn < limit) return;
+    if (
+      (!inProcess.restartAfterChurn && !heapRatio && !capacityRotation) ||
+      !controller.restart ||
+      restartScheduled
+    )
+      return;
+    if (controller.getInfo().status !== 'ready' || Date.now() < retryCheckAt)
+      return;
+    if (batchBusy() && rotationSince === null && !capacityRotation) return;
+    // A failed desired-set replay is retried by the existing poll instead of disappearing until another restart.
+    if (inFlight === 0 && !batchBusy())
+      for (const scope of scopes.values()) {
+        if (scope.restoreFailed && !scope.restoring)
+          await scheduleRestore(scope);
+      }
+    const generation = hostGeneration;
+    const service = await managementOf(inProcess);
+    // The unfiltered status includes resident, staging and unscoped Apps sharing the process.
+    const status = await service.getStatus();
+    if (restartScheduled || generation !== hostGeneration) return;
+    const counters = status.counters;
+    runtimeChurn =
+      (counters?.idleStops ?? 0) +
+      (counters?.dormancies ?? 0) +
+      (counters?.capacityStops ?? 0) +
+      (counters?.startupTimeouts ?? 0);
+    const total = churn + runtimeChurn;
+    const memory = counters?.memory;
+    const threshold =
+      total > 0 &&
+      (capacityRotation ||
+        (inProcess.restartAfterChurn && total >= inProcess.restartAfterChurn) ||
+        (heapRatio > 0 &&
+          memory &&
+          memory.heapUsed >= memory.heapLimit * heapRatio));
+    if (!threshold && rotationSince === null) return;
+    rotationSince ??= Date.now();
+    const wait = inProcess.restartMaxWaitMs ?? 5 * 60_000;
+    const expired = Date.now() - rotationSince >= wait;
+    if (!expired && !restartDeadline) {
       restartDeadline = setTimeout(
         () => {
           restartDeadline = null;
-          void restartHost('App Host rotation maximum wait reached').catch(
-            (error: unknown) =>
-              diagnostic.error('Failed to restart the App Host', error),
-          );
+          checkChurn();
         },
-        inProcess.restartMaxWaitMs ?? 5 * 60_000,
+        Math.max(1, wait - (Date.now() - rotationSince)),
       );
       restartDeadline.unref?.();
-    };
-    scheduleDeadline();
-    const generation = hostGeneration;
-    const statuses = await statusesOf(inProcess).catch(() => null);
-    if (restartScheduled || generation !== hostGeneration) return;
-    const counters = statuses?.find(([, status]) => status.counters)?.[1]
-      .counters;
-    if (counters) {
-      runtimeChurn =
-        (counters.idleStops ?? 0) +
-        (counters.dormancies ?? 0) +
-        (counters.capacityStops ?? 0);
     }
-    scheduleDeadline();
-    const total = churn + runtimeChurn;
-    if (total < limit || inFlight > 0) return;
-    if (!statuses || onDemandBusy(statuses)) return;
+    if (expired) await service.prepareRotation?.({ pauseOnly: true });
+    if (inFlight > 0 || batchBusy() || (counters?.operationsInFlight ?? 0) > 0)
+      return;
+    const busy = status.deployments.some(
+      (deployment) =>
+        deployment.lifecycle?.state === 'starting' ||
+        (deployment.app?.activeRequests ?? 0) > 0 ||
+        (!expired && (deployment.app?.activeConnections ?? 0) > 0),
+    );
+    if (busy) return;
+    // Handshake rechecks current ingress/startup state atomically in the child. Older Hosts fail safe.
+    if (
+      !service.prepareRotation ||
+      !(await service.prepareRotation({ ignoreConnections: expired }))
+    )
+      return;
+    // New tracked work may have entered while the IPC reply was in flight.
+    if (inFlight > 0 || batchBusy() || generation !== hostGeneration) {
+      await service.prepareRotation({ resume: true });
+      return;
+    }
     await restartHost(
-      `${total} applications replaced, removed, stopped or made dormant`,
+      `${total} applications deployed, replaced, removed, stopped or made dormant; recycling Host memory`,
     );
   };
 
   const checkChurn = (): void => {
-    if (checkingChurn) return;
+    if (checkingChurn) {
+      recheckChurn = true;
+      return;
+    }
     checkingChurn = true;
     void maybeRestart()
-      .catch((error: unknown) =>
-        diagnostic.error('Failed to restart the App Host', error),
-      )
+      .catch((error: unknown) => {
+        retryCheckAt = Date.now() + (options.churnCheckIntervalMs ?? 60_000);
+        diagnostic.error('Failed to recycle the App Host', error);
+      })
       .finally(() => {
         checkingChurn = false;
+        if (recheckChurn) {
+          recheckChurn = false;
+          queueMicrotask(checkChurn);
+        }
       });
   };
 
   const countChurn = (scope: OpenScope): void => {
     if (scope.host !== inProcess) return;
     churn += 1;
-    checkChurn();
   };
 
   const watchChurn = (): void => {
-    if (churnTimer || !inProcess.restartAfterChurn) return;
+    if (churnTimer || (!inProcess.restartAfterChurn && !heapRatio)) return;
     churnTimer = setInterval(
       checkChurn,
       options.churnCheckIntervalMs ?? 60_000,
     );
     churnTimer.unref?.();
+  };
+
+  /** Several failed admissions share one rotation, never hold inFlight while waiting for it. */
+  const recycleForCapacity = async (signal: AbortSignal): Promise<boolean> => {
+    if (!inProcess.controller.restart || signal.aborted) return false;
+    const status = await (await managementOf(inProcess)).getStatus();
+    const counters = status.counters;
+    runtimeChurn =
+      (counters?.idleStops ?? 0) +
+      (counters?.dormancies ?? 0) +
+      (counters?.capacityStops ?? 0) +
+      (counters?.startupTimeouts ?? 0);
+    if (churn + runtimeChurn <= 0) return false;
+    capacityRotation = true;
+    return new Promise<boolean>((resolve) => {
+      const done = (ok: boolean): void => {
+        clearTimeout(timer);
+        rotationWaiters.delete(done);
+        signal.removeEventListener('abort', cancelled);
+        resolve(ok);
+      };
+      const cancelled = (): void => done(false);
+      signal.addEventListener('abort', cancelled, { once: true });
+      const timer = setTimeout(
+        () => done(false),
+        (inProcess.restartMaxWaitMs ?? 300_000) +
+          (inProcess.restartDrainMs ?? 30_000) +
+          (options.churnCheckIntervalMs ?? 60_000),
+      );
+      rotationWaiters.add(done);
+      if (signal.aborted) cancelled();
+      else checkChurn();
+    });
   };
 
   const tracked = async <T>(
@@ -531,6 +604,7 @@ export function createHostDriver(
       return await work();
     } finally {
       inFlight -= 1;
+      if (inFlight === 0) queueMicrotask(checkChurn);
     }
   };
 
@@ -606,12 +680,18 @@ export function createHostDriver(
         scope: scopeOf(environment, settings),
         publicUrl: environment.publicUrl,
         desired: () => context.desired(),
-        onDemand: new Set(),
         restoring: null,
+        restoreFailed: false,
+        deploymentBatchBusy: (excluding) =>
+          context.deploymentBatchBusy?.(excluding) ?? false,
       };
       scopes.set(environment.id, scope);
       watchReady(host);
-      const management = () => managementOf(host);
+      const management = async (): Promise<HostManagementService> => {
+        if (scope.restoreFailed) await scheduleRestore(scope);
+        if (scope.restoring) await scope.restoring;
+        return managementOf(host);
+      };
       const statusOf = async (appId: string): Promise<AppObservedStatus> => {
         const status = await (
           await management()
@@ -632,9 +712,15 @@ export function createHostDriver(
 
       const pendingDeployments = new Map<
         string,
-        { appId: string; submitted: boolean; cancelled: boolean }
+        {
+          appId: string;
+          submitted: boolean;
+          cancelled: boolean;
+          abortController: AbortController;
+        }
       >();
       return {
+        deploymentSettled: checkChurn,
         async check() {
           try {
             const url = (await host.controller.ensureStarted()).toString();
@@ -655,6 +741,7 @@ export function createHostDriver(
           const pending = pendingDeployments.get(deploymentId);
           if (pending && pending.appId === appId && !pending.submitted) {
             pending.cancelled = true;
+            pending.abortController.abort();
             return 'cancelled';
           }
           return (await management()).cancelDeployment(deploymentId, appId, {
@@ -663,6 +750,11 @@ export function createHostDriver(
           });
         },
         async progress(deploymentId, appId) {
+          if (
+            pendingDeployments.get(deploymentId)?.appId === appId &&
+            capacityWaiting.has(deploymentId)
+          )
+            return { state: 'queued', queueAhead: 0, cancellable: true };
           return (await management()).deploymentProgress(deploymentId, appId, {
             scope: scope.scope,
           });
@@ -672,36 +764,69 @@ export function createHostDriver(
             appId: spec.appId,
             submitted: false,
             cancelled: false,
+            abortController: new AbortController(),
           };
           pendingDeployments.set(spec.deploymentId, pending);
-          track(scope, spec);
-          let replacing = false;
+          let sequence = 0;
+          const forward = (
+            entry: Parameters<NonNullable<typeof onEvent>>[0],
+          ): void => {
+            onEvent?.({ ...entry, sequence: ++sequence });
+          };
           try {
-            const status = await tracked(scope, async () => {
-              const service = await management();
-              const before = await service
-                .getStatus({ scope: environment.id, appIds: [spec.appId] })
-                .catch(() => null);
-              replacing = Boolean(
-                before?.deployments.some(
-                  (deployment) => deployment.app?.state === 'active',
-                ),
-              );
+            const submit = (retryCapacity: boolean): Promise<HostStatus> =>
+              tracked(scope, async () => {
+                const service = await management();
+                if (pending.cancelled)
+                  throw Object.assign(new Error('Deployment cancelled.'), {
+                    code: 'DEPLOYMENT_CANCELLED',
+                  });
+                pending.submitted = true;
+                const status = await service.applyDeployment(
+                  {
+                    ...toHostSpec(scope, spec, 'running', 'eager'),
+                    scope: scope.scope,
+                    ...(retryCapacity ? { retryCapacity: true } : {}),
+                  },
+                  onEvent ? forward : undefined,
+                );
+                if (
+                  status.deployments.some(
+                    (deployment) =>
+                      deployment.appId === spec.appId &&
+                      deployment.observedState !== 'failed',
+                  )
+                )
+                  countChurn(scope);
+                return status;
+              });
+            let status = await submit(false);
+            const capacity =
+              status.deployments.find(
+                (deployment) => deployment.appId === spec.appId,
+              )?.errorCode === 'APP_CAPACITY_EXCEEDED';
+            if (capacity && scope.host === inProcess) {
+              pending.submitted = false;
+              capacityWaiting.add(spec.deploymentId);
+              forward({
+                phase: 'queued',
+                msg: 'Waiting for Host memory recycling',
+                queueAhead: 0,
+                cancellable: true,
+              });
+              try {
+                if (await recycleForCapacity(pending.abortController.signal)) {
+                  capacityWaiting.delete(spec.deploymentId);
+                  status = await submit(true);
+                }
+              } finally {
+                capacityWaiting.delete(spec.deploymentId);
+              }
               if (pending.cancelled)
                 throw Object.assign(new Error('Deployment cancelled.'), {
                   code: 'DEPLOYMENT_CANCELLED',
                 });
-              pending.submitted = true;
-              // A deployment always starts the App once, so it proves the release runs.
-              return await service.applyDeployment(
-                {
-                  ...toHostSpec(scope, spec, 'running', 'eager'),
-                  scope: scope.scope,
-                },
-                onEvent ? (entry) => onEvent(entry) : undefined,
-              );
-            });
-            if (replacing) countChurn(scope);
+            }
             const deployed = status.deployments.find(
               (deployment) => deployment.appId === spec.appId,
             );
@@ -723,7 +848,6 @@ export function createHostDriver(
           }
         },
         async start(spec) {
-          track(scope, spec);
           await tracked(scope, async () =>
             (await management()).startDeployment({
               ...toHostSpec(scope, spec, 'running'),
@@ -745,11 +869,10 @@ export function createHostDriver(
           return await statusOf(appId);
         },
         async remove(appId, { purgeData }) {
-          await tracked(scope, async () =>
-            (await management()).removeDeployment(appId, { purgeData }),
-          );
-          scope.onDemand.delete(appId);
-          countChurn(scope);
+          await tracked(scope, async () => {
+            await (await management()).removeDeployment(appId, { purgeData });
+            countChurn(scope);
+          });
         },
         async status(appIds) {
           if (scope.restoring)
@@ -776,8 +899,10 @@ export function createHostDriver(
           return result;
         },
         async restore() {
-          await host.controller.ensureStarted();
-          await scheduleRestore(scope);
+          await tracked(scope, async () => {
+            await host.controller.ensureStarted();
+            await scheduleRestore(scope);
+          });
         },
         async reloadConfig(appId, content) {
           await tracked(scope, async () =>
@@ -848,7 +973,10 @@ function outcomeOf(
       ...status,
       state: 'failed',
       deploymentId,
-      error: item.error ?? status.error ?? 'The deployment failed.',
+      error: item.errorCode
+        ? `[${item.errorCode}] ${item.error ?? status.error ?? 'The deployment failed.'}`
+        : (item.error ?? status.error ?? 'The deployment failed.'),
+      ...(item.errorCode ? { errorCode: item.errorCode } : {}),
     };
   return { ...status, state: 'running', deploymentId, error: null };
 }
@@ -865,6 +993,7 @@ function operationOutcome(result: HostOperation): AppObservedStatus {
     };
   return {
     state: result.state === 'cancelled' ? 'cancelled' : 'failed',
+    ...(result.status?.errorCode ? { errorCode: result.status.errorCode } : {}),
     version: result.status?.version ?? null,
     deploymentId: result.operationId,
     startedAt: null,

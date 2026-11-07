@@ -33,6 +33,7 @@ import type {
 } from './types.ts';
 
 type IpcMethod =
+  | 'prepareRotation'
   | 'cancelDeployment'
   | 'deploymentProgress'
   | 'publishAppConfig'
@@ -56,6 +57,13 @@ export interface IpcHostManagementClientOptions {
 }
 
 export class IpcHostManagementClient implements HostManagementService {
+  prepareRotation(options: {
+    pauseOnly?: boolean;
+    ignoreConnections?: boolean;
+    resume?: boolean;
+  }): Promise<boolean> {
+    return this.call('prepareRotation', options);
+  }
   cancelDeployment(
     operationId: string,
     appId: string,
@@ -230,6 +238,15 @@ export class IpcHostManagementServer {
         result = await this.service.publishAppConfig(
           payloadAppId(request),
           (request.payload as { content: string }).content,
+        );
+        break;
+      case 'prepareRotation':
+        if (!this.service.prepareRotation)
+          throw new Error('Host rotation handshake is unavailable');
+        result = await this.service.prepareRotation(
+          request.payload as Parameters<
+            NonNullable<HostManagementService['prepareRotation']>
+          >[0],
         );
         break;
       case 'getStatus':

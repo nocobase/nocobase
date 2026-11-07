@@ -1,5 +1,8 @@
 import { artifactWorker } from './artifact-worker-client.js';
-import { deploymentCheckpoint } from './deployment-control.js';
+import {
+  deploymentCheckpoint,
+  deploymentSignal,
+} from './deployment-control.js';
 /**
  * This file is part of the NocoBase (R) project.
  * Copyright (c) 2020-2024 NocoBase Co., Ltd.
@@ -505,10 +508,17 @@ async function downloadArtifact(
   key: string,
   destination: string,
 ): Promise<void> {
-  await pipeline(
-    await disk.getStream(key),
-    createWriteStream(destination, { flags: 'wx', mode: 0o600 }),
-  );
+  const signal = deploymentSignal();
+  try {
+    await pipeline(
+      await disk.getStream(key),
+      createWriteStream(destination, { flags: 'wx', mode: 0o600 }),
+      { signal },
+    );
+  } catch (error) {
+    signal?.throwIfAborted();
+    throw error;
+  }
 }
 
 function validateArtifactReference(reference: ArtifactReference): void {

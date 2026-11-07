@@ -292,6 +292,14 @@ export function createAppHost(options: AppHostOptions = {}): AppHost {
   };
 
   const server = createServer((req, res) => {
+    const release = registry.enterRequest();
+    if (!release) {
+      res.writeHead(503, { 'retry-after': '2' });
+      res.end('Host memory recycling; retry shortly');
+      return;
+    }
+    res.once('finish', release);
+    res.once('close', release);
     const requestPromise = handleRequest(req, res);
     requestPromise.catch((error: unknown) => {
       logger.error({ err: error }, 'Unhandled request error');
@@ -302,6 +310,11 @@ export function createAppHost(options: AppHostOptions = {}): AppHost {
   });
 
   server.on('upgrade', (req, socket, head) => {
+    const release = registry.enterRequest();
+    if (!release) {
+      rejectWebSocketUpgrade(socket, 503, new Headers({ 'retry-after': '2' }));
+      return;
+    }
     const upgradePromise = dispatchAppWebSocket(
       req,
       socket,
@@ -309,7 +322,7 @@ export function createAppHost(options: AppHostOptions = {}): AppHost {
       registry,
       onDemand,
     );
-    upgradePromise.catch((error: unknown) => {
+    void upgradePromise.finally(release).catch((error: unknown) => {
       logger.error({ err: error }, 'WebSocket upgrade failed');
       rejectWebSocketUpgrade(
         socket,

@@ -47,6 +47,12 @@ import type {
  * a scope every call behaves as it did before scopes existed.
  */
 export interface HostManagementService {
+  /** Pause new revision loads, or atomically reserve an idle Host for process rotation. */
+  prepareRotation?(options: {
+    pauseOnly?: boolean;
+    ignoreConnections?: boolean;
+    resume?: boolean;
+  }): Promise<boolean>;
   cancelDeployment(
     operationId: string,
     appId: string,
@@ -175,6 +181,7 @@ export class HostManager implements HostManagementService {
   ): Promise<AppConfigReloadResult | null> {
     if (this.state.mode !== 'managed')
       throw new Error('Configuration publishing requires managed host mode');
+    this.state.scopes.assertAccepting();
     return this.state.reconciler.publishAppConfig(appId, content);
   }
   restoreDeploymentSet(
@@ -190,6 +197,7 @@ export class HostManager implements HostManagementService {
   reloadAppConfig(
     appId: string,
   ): ReturnType<HostManagementService['reloadAppConfig']> {
+    if (this.state.mode === 'managed') this.state.scopes.assertAccepting();
     return this.registry.reloadAppConfig(appId);
   }
   private readonly registry: AppRuntimeRegistry;
@@ -344,6 +352,27 @@ export class HostManager implements HostManagementService {
     if (this.state.mode !== 'managed')
       throw new Error('App logs require managed host mode');
     return this.state.scopes.logs(appId, query ?? {});
+  }
+
+  async prepareRotation(options: {
+    pauseOnly?: boolean;
+    ignoreConnections?: boolean;
+    resume?: boolean;
+  }): Promise<boolean> {
+    if (options.resume) {
+      this.registry.resumeAfterRotationFailure();
+      return false;
+    }
+    if (options.pauseOnly) {
+      this.registry.pauseNewRevisions();
+      return false;
+    }
+    if (
+      this.admissions.size ||
+      (this.state.mode === 'managed' && this.state.reconciler.isBusy())
+    )
+      return false;
+    return this.registry.prepareRotation(options.ignoreConnections ?? false);
   }
 
   /**

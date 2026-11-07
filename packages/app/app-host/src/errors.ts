@@ -111,14 +111,14 @@ export class AppReloadFailedError extends AppRegistryError {
 }
 
 export class AppCapacityExceededError extends AppRegistryError {
-  constructor(maxActiveApps: number) {
-    super(
-      `Active app capacity exceeded and no idle app can be evicted. maxActiveApps=${maxActiveApps}`,
-      {
-        status: 503,
-        code: 'APP_CAPACITY_EXCEEDED',
-      },
-    );
+  constructor(
+    maxActiveApps: number,
+    reason: string = 'Active app capacity exceeded and no idle app can be evicted.',
+  ) {
+    super(`${reason} maxActiveApps=${maxActiveApps}`, {
+      status: 503,
+      code: 'APP_CAPACITY_EXCEEDED',
+    });
   }
 }
 
@@ -145,4 +145,18 @@ function describeCause(cause: unknown, id: string): string {
 function withoutAppPrefix(message: string, id: string): string {
   const prefix = `App "${id}" `;
   return message.startsWith(prefix) ? message.slice(prefix.length) : message;
+}
+
+/** Finds a stable deployment error code through activation/rollback wrappers. */
+export function deploymentErrorCode(error: unknown): string | undefined {
+  if (!(error instanceof Error)) return undefined;
+  if (error instanceof AppCapacityExceededError) return error.code;
+  if (error instanceof AggregateError) {
+    for (const cause of error.errors) {
+      const code = deploymentErrorCode(cause);
+      if (code === 'APP_CAPACITY_EXCEEDED') return code;
+    }
+  }
+  const nested = deploymentErrorCode(error.cause);
+  return nested ?? (error as Error & { code?: string }).code;
 }

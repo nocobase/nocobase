@@ -127,6 +127,7 @@ export class ReleasesProvider extends ServiceProvider<ReleasesProviderApplicatio
                 maxActiveApps: host.maxActiveApps,
               }),
             ...(host.publicUrl ? { publicUrl: host.publicUrl } : {}),
+            restartHeapRatio: host.restartHeapRatio,
             restartMaxWaitMs: host.restartMaxWaitMs,
             restartDrainMs: host.restartDrainMs,
             ...(host.restartAfterChurn

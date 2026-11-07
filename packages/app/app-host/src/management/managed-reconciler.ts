@@ -1,3 +1,4 @@
+import { deploymentErrorCode } from '../errors.js';
 import {
   beginDeploymentSwitch,
   deploymentCheckpoint,
@@ -502,6 +503,7 @@ export class ManagedReconciler {
             ...status,
             observedState: 'failed',
             error: fullErrorMessage(error),
+            errorCode: deploymentErrorCode(error),
           });
           throw error;
         }
@@ -674,6 +676,10 @@ export class ManagedReconciler {
     });
   }
 
+  isBusy(): boolean {
+    return this.busy || this.queue.length > 0;
+  }
+
   getStatus(): HostStatus {
     const deployments = [...this.statuses.values()]
       .map((status) => {
@@ -718,6 +724,10 @@ export class ManagedReconciler {
           dormancies: metrics.dormancies,
           materializations: metrics.materializations,
           capacityStops: metrics.capacityEvictions,
+          startupTimeouts: metrics.startupTimeouts,
+          memory: this.registry.memoryUsage(),
+          rotationPending: this.registry.isRotationPending(),
+          operationsInFlight: this.registry.pendingOperationCount(),
         };
       })(),
     };
@@ -983,6 +993,7 @@ export class ManagedReconciler {
         cacheHit: null,
         app: this.registry.snapshot(spec.appId) ?? null,
         error: fullErrorMessage(error),
+        errorCode: deploymentErrorCode(error),
       });
     }
   }
@@ -1124,6 +1135,7 @@ export class ManagedReconciler {
         cacheHit: null,
         app: this.registry.snapshot(spec.appId) ?? null,
         error: fullErrorMessage(error),
+        errorCode: deploymentErrorCode(error),
       });
     }
   }

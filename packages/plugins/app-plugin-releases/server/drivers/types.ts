@@ -44,6 +44,8 @@ export interface DriverEnvironment {
 
 /** What the plugin offers a session besides the environment. */
 export interface DriverContext {
+  /** Includes queued dispatch and durable outcome settlement. Capacity waiters hold no Host work and may be excluded. */
+  deploymentBatchBusy?(excluding: ReadonlySet<string>): boolean;
   /**
    * The complete desired set for this environment, read fresh from the plugin's tables. A driver whose backend
    * restarts (the Host child, a daemon) calls it and re-applies the result.
@@ -163,6 +165,8 @@ export interface DeploymentEvent {
   readonly msg?: string;
   /** Increasing per deployment; the plugin drops repeats. */
   readonly sequence?: number;
+  /** Preparation has re-entered a cancellable wait after a rejected attempt. */
+  readonly cancellable?: boolean;
   /**
    * What the target runs for this deployment, from a driver with `images`, once it knows: the image it pulled by
    * digest. The plugin records it on the deployment.
@@ -191,11 +195,14 @@ export interface AppObservedStatus {
   readonly deploymentId: string | null;
   readonly startedAt: string | null;
   readonly error: string | null;
+  readonly errorCode?: string;
   /** The App's last request (or start), when the driver knows it. */
   readonly lastAccessedAt?: string | null;
 }
 
 export interface DriverSession {
+  /** The control plane has persisted the deployment outcome and released its dispatch entry. */
+  deploymentSettled?(): void;
   /** Outside the deployment queue. queuedOnly preserves a deployment that has started. */
   cancel?(
     deploymentId: string,

@@ -309,7 +309,12 @@ export function archiveFileName(appId: string, version: string): string {
 export class ReleasesService {
   private readonly dispatch = new Map<
     string,
-    { appId: string; submitted: boolean; cancelled: boolean }
+    {
+      appId: string;
+      submitted: boolean;
+      cancelled: boolean;
+      environmentId?: string;
+    }
   >();
   private readonly progress = new Map<
     string,
@@ -2797,6 +2802,12 @@ export class ReleasesService {
         .then(({ driver, target }) =>
           driver.open(target, {
             desired: () => this.desiredSet(environmentId),
+            deploymentBatchBusy: (excluding) =>
+              [...this.dispatch].some(
+                ([id, item]) =>
+                  !excluding.has(id) &&
+                  (!item.environmentId || item.environmentId === environmentId),
+              ),
           }),
         );
       session.catch(() => {
@@ -3077,14 +3088,35 @@ export class ReleasesService {
   ): Promise<void> {
     const app = await this.requireApp(deployment.appId);
     const session = await this.session(app.environmentId);
-    // Drivers without a native queue keep the previous per-App serialization.
-    if (!session.progress)
-      return this.withLock(app.id, () =>
-        this.runDeployment(deployment.id, deployment.appId),
+    try {
+      // Drivers without a native queue keep the previous per-App serialization.
+      if (!session.progress)
+        return await this.withLock(app.id, () =>
+          this.runDeployment(
+            deployment.id,
+            deployment.appId,
+            app.environmentId,
+          ),
+        );
+      const lifecycle = this.locks.get(app.id);
+      if (lifecycle) await lifecycle.catch(() => undefined);
+      return await this.runDeployment(
+        deployment.id,
+        deployment.appId,
+        app.environmentId,
       );
-    const lifecycle = this.locks.get(app.id);
-    if (lifecycle) await lifecycle.catch(() => undefined);
-    return this.runDeployment(deployment.id, deployment.appId);
+    } finally {
+      // Metadata/initial-admission failures must not leave the batch busy forever either.
+      this.dispatch.delete(deployment.id);
+      try {
+        session.deploymentSettled?.();
+      } catch (error) {
+        this.diagnostic.error(
+          'Failed to notify the deployment driver after settlement',
+          error,
+        );
+      }
+    }
   }
 
   /** Lifecycle operations keep the deployment result current before reading its configuration. New dispatches wait on their App lock. */
@@ -3099,8 +3131,14 @@ export class ReleasesService {
   private async runDeployment(
     deploymentId: string,
     appId: string,
+    environmentId: string,
   ): Promise<void> {
-    const dispatch = { appId, submitted: false, cancelled: false };
+    const dispatch: {
+      appId: string;
+      submitted: boolean;
+      cancelled: boolean;
+      environmentId?: string;
+    } = { appId, submitted: false, cancelled: false, environmentId };
     this.dispatch.set(deploymentId, dispatch);
     const deployment = await this.requireDeploymentById(deploymentId);
     if (deployment.status !== 'queued') {
@@ -3163,6 +3201,8 @@ export class ReleasesService {
             });
         if (typeof entry.phase === 'string') {
           const phase = entry.phase as DeploymentPhase;
+          // A completed capacity rejection may re-enter a cancellable wait before one retry.
+          if (entry.cancellable === true) switchStarted = false;
           const first =
             !started &&
             phase !== 'queued' &&

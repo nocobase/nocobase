@@ -143,6 +143,15 @@ function fakeHost(restartAfterChurn?: number): FakeHost {
     };
   };
   const management = {
+    prepareRotation: async ({ pauseOnly, ignoreConnections, resume }) => {
+      if (pauseOnly || resume) return false;
+      return (
+        [...host.requests.values()].every((n) => n === 0) &&
+        [...host.lifecycle.values()].every((state) => state !== 'starting') &&
+        (ignoreConnections ||
+          [...host.connections.values()].every((n) => n === 0))
+      );
+    },
     getStatus: (query) => Promise.resolve(status(query)),
     restoreDeploymentSet(set: HostDeploymentSet) {
       host.restored.push(set);
@@ -245,6 +254,14 @@ function fakeHost(restartAfterChurn?: number): FakeHost {
           host.restarts.push(reason ?? '');
           // A new child knows no scope yet.
           scopes = new Map();
+          host.requests.clear();
+          host.connections.clear();
+          host.counters = {
+            ...host.counters,
+            idleStops: 0,
+            capacityStops: 0,
+            dormancies: 0,
+          };
           return Promise.resolve(new URL('http://127.0.0.1:1/'));
         },
       },
@@ -512,147 +529,303 @@ describe('Host driver', () => {
     });
   });
 
-  it('counts idle stops and dormancies as churn and restarts once no on-demand App is in use', async () => {
-    vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] });
-    const host = fakeHost(3);
-    const driver = driverFor(host);
-    const preview = appSpec('fg-1--app', {
-      activation: 'onDemand',
-      idleStopMinutes: 10,
-    });
-    const session = await open(driver, [preview]);
-    await session.apply(preview);
-    host.connections.set('fg-1--app', 1);
-    host.counters = {
-      activations: 4,
-      idleStops: 2,
-      dormancies: 1,
-      materializations: 0,
-    };
-    await vi.advanceTimersByTimeAsync(60_000);
-    expect(driver.churn()).toBe(3);
-    // Someone is using the preview: the restart waits.
-    expect(host.restarts).toHaveLength(0);
-
-    host.lifecycle.set('fg-1--app', 'stopped');
-    await vi.advanceTimersByTimeAsync(60_000);
-    expect(host.restarts).toHaveLength(1);
-    expect(host.restarts[0]).toContain('stopped or made dormant');
-    expect(driver.churn()).toBe(0);
-    // The fresh child got the environment's set again.
-    expect(host.restored.at(-1)!.deployments.map((spec) => spec.appId)).toEqual(
-      ['fg-1--app'],
-    );
-  });
-
-  it('rotates by the maximum wait under continuous requests even when later status reads fail', async () => {
-    vi.useFakeTimers();
-    const host = fakeHost(1);
-    host.endpoint.restartMaxWaitMs = 5 * 60_000 + 1234;
-    const driver = driverFor(host);
-    const preview = appSpec('busy', { activation: 'onDemand' });
-    const session = await open(driver, [preview]);
-    await session.apply(preview);
-    host.requests.set('busy', 1);
-    host.counters.idleStops = 1;
-    await vi.advanceTimersByTimeAsync(60_000);
-    expect(host.restarts).toHaveLength(0);
-    const management = await host.endpoint.controller.getManagementClient();
-    vi.spyOn(management, 'getStatus').mockRejectedValue(
-      new Error('unavailable'),
-    );
-    await vi.advanceTimersByTimeAsync(5 * 60_000 + 1234 - 1);
-    expect(host.restarts).toHaveLength(0);
-    await vi.advanceTimersByTimeAsync(1);
-    expect(host.restarts).toHaveLength(1);
-    expect(driver.churn()).toBe(0);
-  });
-
-  it('retries a failed deadline restart through a new timer without polling the expired deadline', async () => {
-    vi.useFakeTimers();
-    const host = fakeHost(1);
-    host.endpoint.restartMaxWaitMs = 5 * 60_000 + 1;
-    const restart = vi.spyOn(host.endpoint.controller, 'restart');
-    restart.mockRejectedValueOnce(new Error('restart failed'));
-    const driver = driverFor(host);
-    const preview = appSpec('busy', { activation: 'onDemand' });
-    const session = await open(driver, [preview]);
-    await session.apply(preview);
-    host.requests.set('busy', 1);
-    host.counters.idleStops = 1;
-    await vi.advanceTimersByTimeAsync(60_000 + 5 * 60_000 + 1);
-    expect(restart).toHaveBeenCalledTimes(1);
-    // The next check arms a fresh maximum-wait timer instead of retrying an expired deadline.
-    await vi.advanceTimersByTimeAsync(60_000 - 1);
-    expect(restart).toHaveBeenCalledTimes(1);
-    await vi.advanceTimersByTimeAsync(5 * 60_000);
-    expect(restart).toHaveBeenCalledTimes(1);
-    await vi.advanceTimersByTimeAsync(1);
-    expect(restart).toHaveBeenCalledTimes(2);
-    expect(host.restarts).toHaveLength(1);
-    expect(driver.churn()).toBe(0);
-  });
-
-  it('rotates immediately when running Apps have neither requests nor connections', async () => {
+  it('combines churn with memory pressure and restores all scopes after one rotation', async () => {
     vi.useFakeTimers();
     const host = fakeHost(20);
     const driver = driverFor(host);
-    const preview = appSpec('idle', { activation: 'onDemand' });
-    const session = await open(driver, [preview]);
-    await session.apply(preview);
-    host.counters.capacityStops = 20;
+    const session = await open(driver, [appSpec('a')]);
+    const resident = await open(driver, [appSpec('crm')], 'staging');
+    await resident.restore([]);
+    host.requests.set('crm', 1);
+    host.counters.memory = {
+      heapUsed: 560,
+      heapLimit: 1000,
+      rss: 900,
+      available: 2000,
+    };
+    await session.apply(appSpec('a'));
+    await vi.advanceTimersByTimeAsync(0);
+    expect(host.restarts).toHaveLength(0);
+    host.requests.set('crm', 0);
+    await vi.advanceTimersByTimeAsync(60_000);
+    expect(host.restarts).toHaveLength(1);
+    expect(
+      host.restored
+        .slice(-2)
+        .map((set) => set.scope!.id)
+        .sort(),
+    ).toEqual(['preview', 'staging']);
+    expect(driver.churn()).toBe(0);
+  });
+
+  it('never forces a resident request, startup or unknown Host state past the maximum wait', async () => {
+    vi.useFakeTimers();
+    const host = fakeHost(1);
+    const driver = driverFor(host);
+    const session = await open(driver, [appSpec('crm')]);
+    host.requests.set('crm', 1);
+    await session.apply(appSpec('crm'));
+    await vi.advanceTimersByTimeAsync(600_000);
+    expect(host.restarts).toHaveLength(0);
+    const service = await host.endpoint.controller.getManagementClient();
+    const reading = vi
+      .spyOn(service, 'getStatus')
+      .mockRejectedValue(new Error('unavailable'));
+    host.requests.set('crm', 0);
+    await vi.advanceTimersByTimeAsync(60_000);
+    expect(host.restarts).toHaveLength(0);
+    reading.mockRestore();
+    host.lifecycle.set('crm', 'starting');
+    await vi.advanceTimersByTimeAsync(60_000);
+    expect(host.restarts).toHaveLength(0);
+    host.lifecycle.set('crm', 'running');
     await vi.advanceTimersByTimeAsync(60_000);
     expect(host.restarts).toHaveLength(1);
   });
 
-  it('does not let a hung deployment extend the deadline, and gates ingress and new work during rotation', async () => {
+  it('pauses new revisions after the wait and allows rotation with sockets only', async () => {
+    vi.useFakeTimers();
+    const host = fakeHost(1);
+    host.endpoint.restartMaxWaitMs = 1234;
+    const driver = driverFor(host);
+    const session = await open(driver, [appSpec('crm')]);
+    host.connections.set('crm', 1);
+    const service = await host.endpoint.controller.getManagementClient();
+    const prepare = vi.spyOn(service, 'prepareRotation');
+    await session.apply(appSpec('crm'));
+    await vi.advanceTimersByTimeAsync(0);
+    expect(host.restarts).toHaveLength(0);
+    await vi.advanceTimersByTimeAsync(1234);
+    expect(prepare).toHaveBeenCalledWith({ pauseOnly: true });
+    expect(prepare).toHaveBeenCalledWith({ ignoreConnections: true });
+    expect(host.restarts).toHaveLength(1);
+  });
+
+  it('rechecks in the child when a request arrives between status and restart', async () => {
     vi.useFakeTimers();
     const host = fakeHost(1);
     const driver = driverFor(host);
-    const preview = appSpec('busy', { activation: 'onDemand' });
-    const session = await open(driver, [preview]);
-    await session.apply(preview);
-    const management = await host.endpoint.controller.getManagementClient();
-    let finishDeployment!: () => void;
-    let entered!: () => void;
-    const deploymentEntered = new Promise<void>((resolve) => {
-      entered = resolve;
-    });
-    const deploymentGate = new Promise<void>((resolve) => {
-      finishDeployment = resolve;
-    });
-    vi.spyOn(management, 'applyDeployment').mockImplementationOnce(async () => {
-      entered();
-      await deploymentGate;
-      return management.getStatus({ scope: 'preview' });
-    });
-    const deploying = session.apply(preview);
-    await deploymentEntered;
-    let finishRestart!: () => void;
-    const restartGate = new Promise<void>((resolve) => {
-      finishRestart = resolve;
-    });
+    const session = await open(driver, [appSpec('site')]);
+    const service = await host.endpoint.controller.getManagementClient();
+    const original = service.prepareRotation!;
+    vi.spyOn(service, 'prepareRotation').mockImplementationOnce(
+      async (options) => {
+        host.requests.set('site', 1);
+        return original(options);
+      },
+    );
+    await session.apply(appSpec('site'));
+    await vi.advanceTimersByTimeAsync(0);
+    expect(host.restarts).toHaveLength(0);
+    host.requests.set('site', 0);
+    await vi.advanceTimersByTimeAsync(60_000);
+    expect(host.restarts).toHaveLength(1);
+  });
+
+  it('defers rotation until the deployment batch is empty and gates new operations during restart', async () => {
+    vi.useFakeTimers();
+    const host = fakeHost(1);
+    const driver = driverFor(host);
+    const session = await open(driver, [appSpec('busy')]);
+    const service = await host.endpoint.controller.getManagementClient();
+    const entered = Promise.withResolvers<void>();
+    const gate = Promise.withResolvers<void>();
+    const originalApply = service.applyDeployment.bind(service);
+    vi.spyOn(service, 'applyDeployment').mockImplementationOnce(
+      async (spec, listener) => {
+        entered.resolve();
+        await gate.promise;
+        return originalApply(spec, listener);
+      },
+    );
+    const deploying = session.apply(appSpec('busy'));
+    await entered.promise;
+    host.counters.idleStops = 1;
+    await vi.advanceTimersByTimeAsync(600_000);
+    expect(host.restarts).toHaveLength(0);
+    const restartGate = Promise.withResolvers<void>();
     const originalRestart = host.endpoint.controller.restart!;
-    const restart = vi
+    const restarting = vi
       .spyOn(host.endpoint.controller, 'restart')
       .mockImplementation(async (reason, options) => {
-        await restartGate;
+        await restartGate.promise;
         return originalRestart(reason, options);
       });
-    host.counters.idleStops = 1;
-    await vi.advanceTimersByTimeAsync(60_000 + 5 * 60_000);
-    expect(restart).toHaveBeenCalledExactlyOnceWith(expect.any(String), {
-      shutdownTimeoutMs: 30_000,
-    });
+    gate.resolve();
+    await deploying;
+    await vi.advanceTimersByTimeAsync(0);
+    expect(restarting).toHaveBeenCalledOnce();
     expect(driver.proxyTarget()).toBeNull();
-    const start = vi.spyOn(management, 'startDeployment');
-    const starting = session.start(appSpec('new'));
+    const start = vi.spyOn(service, 'startDeployment');
+    const starting = session.start(appSpec('next'));
     await vi.advanceTimersByTimeAsync(0);
     expect(start).not.toHaveBeenCalled();
-    finishRestart();
+    restartGate.resolve();
     await starting;
     expect(start).toHaveBeenCalledOnce();
-    finishDeployment();
-    await deploying;
+    expect(host.restarts).toHaveLength(1);
+  });
+
+  it('retries failed desired-set restoration using the existing rotation poll', async () => {
+    vi.useFakeTimers();
+    const host = fakeHost(1);
+    const driver = driverFor(host);
+    const session = await open(driver, [appSpec('site')]);
+    const service = await host.endpoint.controller.getManagementClient();
+    const restore = vi
+      .spyOn(service, 'restoreDeploymentSet')
+      .mockRejectedValueOnce(new Error('temporary failure'));
+    await session.apply(appSpec('site'));
+    await vi.advanceTimersByTimeAsync(0);
+    expect(restore).toHaveBeenCalledOnce();
+    await vi.advanceTimersByTimeAsync(60_000);
+    expect(restore).toHaveBeenCalledTimes(2);
+    expect((await session.status()).get('site')?.state).toBe('running');
+    expect(host.restarts).toHaveLength(1);
+  });
+
+  it('rotates after capacity rejection and retries only once, retaining a retryable error on failure', async () => {
+    vi.useFakeTimers();
+    const host = fakeHost(20);
+    const driver = driverFor(host);
+    const session = await open(driver, [appSpec('site')]);
+    await session.apply(appSpec('site'));
+    const service = await host.endpoint.controller.getManagementClient();
+    const status = await service.getStatus();
+    const failed = {
+      ...status,
+      deployments: status.deployments.map((item) => ({
+        ...item,
+        observedState: 'failed' as const,
+        error: 'full',
+        errorCode: 'APP_CAPACITY_EXCEEDED',
+      })),
+    };
+    const submit = vi
+      .spyOn(service, 'applyDeployment')
+      .mockResolvedValue(failed);
+    const result = session.apply(appSpec('site', { deploymentId: 'next' }));
+    await vi.advanceTimersByTimeAsync(0);
+    expect(await result).toMatchObject({
+      state: 'failed',
+      errorCode: 'APP_CAPACITY_EXCEEDED',
+    });
+    expect(host.restarts).toHaveLength(1);
+    expect(submit).toHaveBeenCalledTimes(2);
+    expect(submit.mock.calls[1]![0]).toMatchObject({
+      retryCapacity: true,
+      operationId: 'next',
+    });
+  });
+  it('releases a failed restart reservation and retries safely on the next poll', async () => {
+    vi.useFakeTimers();
+    const host = fakeHost(1);
+    const service = await host.endpoint.controller.getManagementClient();
+    const prepare = vi.spyOn(service, 'prepareRotation');
+    const restart = vi
+      .spyOn(host.endpoint.controller, 'restart')
+      .mockRejectedValueOnce(new Error('restart failed'));
+    const session = await open(driverFor(host), [appSpec('site')]);
+    await session.apply(appSpec('site'));
+    await vi.advanceTimersByTimeAsync(0);
+    expect(prepare).toHaveBeenCalledWith({ resume: true });
+    expect(host.restarts).toHaveLength(0);
+    await vi.advanceTimersByTimeAsync(60_000);
+    expect(restart).toHaveBeenCalledTimes(2);
+    expect(host.restarts).toHaveLength(1);
+  });
+
+  it('succeeds after one shared capacity rotation and cancels a capacity wait promptly', async () => {
+    vi.useFakeTimers();
+    const host = fakeHost(20);
+    const session = await open(driverFor(host), [appSpec('site')]);
+    await session.apply(appSpec('site'));
+    const service = await host.endpoint.controller.getManagementClient();
+    const status = await service.getStatus();
+    const failed = {
+      ...status,
+      deployments: status.deployments.map((item) => ({
+        ...item,
+        observedState: 'failed' as const,
+        error: 'full',
+        errorCode: 'APP_CAPACITY_EXCEEDED',
+      })),
+    };
+    const originalApply = service.applyDeployment.bind(service);
+    const submit = vi
+      .spyOn(service, 'applyDeployment')
+      .mockImplementationOnce(async (_spec, listener) => {
+        listener?.({
+          time: new Date().toISOString(),
+          level: 'info',
+          phase: 'starting',
+          msg: 'First attempt',
+          sequence: 1,
+        });
+        return failed;
+      })
+      .mockImplementationOnce(async (spec, listener) => {
+        listener?.({
+          time: new Date().toISOString(),
+          level: 'info',
+          phase: 'resolving',
+          msg: 'Retry attempt',
+          sequence: 1,
+        });
+        return originalApply(spec, listener);
+      });
+    const events: Record<string, unknown>[] = [];
+    const retrying = session.apply(
+      appSpec('site', { deploymentId: 'next' }),
+      (entry) => events.push(entry),
+    );
+    await vi.advanceTimersByTimeAsync(0);
+    expect(await retrying).toMatchObject({
+      state: 'running',
+      deploymentId: 'next',
+    });
+    expect(submit).toHaveBeenCalledTimes(2);
+    expect(events.map((entry) => entry.sequence)).toEqual([1, 2, 3]);
+    expect(events[1]).toMatchObject({ phase: 'queued', cancellable: true });
+    expect(host.restarts).toHaveLength(1);
+    host.requests.set('site', 1);
+    submit.mockResolvedValueOnce(failed);
+    const cancelled = session.apply(
+      appSpec('site', { deploymentId: 'cancelled' }),
+    );
+    await vi.advanceTimersByTimeAsync(0);
+    expect(await session.progress!('cancelled', 'site')).toMatchObject({
+      state: 'queued',
+      cancellable: true,
+    });
+    expect(await session.cancel!('cancelled', 'site')).toBe('cancelled');
+    expect(await cancelled).toMatchObject({ state: 'cancelled' });
+    expect(submit).toHaveBeenCalledTimes(3);
+  });
+  it('waits for durable outcome settlement before restoring the current version', async () => {
+    vi.useFakeTimers();
+    const host = fakeHost(1);
+    const busy = new Set(['site-d1']);
+    let desired = [appSpec('site')];
+    const session = await driverFor(host).open(environment('preview'), {
+      desired: async () => desired,
+      deploymentBatchBusy: (excluding) =>
+        [...busy].some((id) => !excluding.has(id)),
+    });
+    await session.apply(appSpec('site'));
+    await vi.advanceTimersByTimeAsync(0);
+    expect(host.restarts).toHaveLength(0);
+    desired = [
+      appSpec('site', {
+        release: { id: 'r2', version: '2.0.0', checksum: CHECKSUM },
+      }),
+    ];
+    busy.clear();
+    session.deploymentSettled!();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(host.restarts).toHaveLength(1);
+    expect(host.restored.at(-1)?.deployments[0]?.artifact.version).toBe(
+      '2.0.0',
+    );
   });
 });

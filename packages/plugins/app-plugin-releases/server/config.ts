@@ -122,16 +122,18 @@ export interface ReleasesHostConfig {
   /**
    * Restart the Host once this many Apps were removed, replaced, stopped for idleness or made dormant since it started,
    * replaying the desired set: in-process Apps cannot unload their modules, so every runtime that goes away leaves
-   * memory behind. Busy Apps defer rotation only up to `restartMaxWaitMs`. Off when omitted.
+   * memory behind. Requests, startup and deployment work always defer rotation. Off when omitted.
    */
   readonly restartAfterChurn?: number;
-  /** Maximum wait before rotating a busy Host, in milliseconds (300000). */
+  /** Heap rotation line; 0 disables, 0.55 when churn rotation is enabled. */
+  readonly restartHeapRatio?: number;
+  /** After this wait, pause new revision loads and allow disconnecting WebSockets; requests/deployments still defer (300000). */
   readonly restartMaxWaitMs?: number;
   /** Maximum graceful shutdown before killing the old child, in milliseconds (30000). */
   readonly restartDrainMs?: number;
-  /** Shared in-process heap admission; defaults to 70%, 256 MiB baseline minimum and 256 MiB per App. */
+  /** Live shared-process admission; defaults to 70% heap, 320 MiB start headroom and 1024 MiB system reserve. */
   readonly memoryBudget?: import('@nocobase/app-host/registry').AppMemoryBudget;
-  /** Optional additional ceiling, which cannot raise the memory-derived capacity. */
+  /** Optional running/starting count ceiling, independent of deployed record count. */
   readonly maxActiveApps?: number;
   /** How often the Host's idle stops and dormancies are read for `restartAfterChurn`, in milliseconds (60000). */
   readonly churnCheckIntervalMs?: number;
