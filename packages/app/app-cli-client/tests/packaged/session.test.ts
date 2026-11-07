@@ -301,6 +301,7 @@ describe('signing in, profiles and the global flags', () => {
     expect(kept.stderr).toContain('The API key stays valid');
   });
 
+  // Eight real CLI processes and device-authorization polling can exceed 30 seconds on a shared CI runner.
   it('keeps a profile per server, and acts as the one --profile or ACME_PROFILE names', async () => {
     await login();
     await cli(
@@ -344,7 +345,7 @@ describe('signing in, profiles and the global flags', () => {
     });
     expect(missing.code).toBe(3);
     expect(missing.stderr).toContain('There is no profile ci');
-  });
+  }, 60_000);
 
   it('acts with ACME_SERVER and ACME_API_KEY without signing in', async () => {
     const result = await cli(
