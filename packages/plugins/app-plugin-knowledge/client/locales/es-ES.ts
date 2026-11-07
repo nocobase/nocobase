@@ -176,7 +176,7 @@ const esES: LocaleResource<typeof enUS> = {
           propose: {
             title: 'Proponer conocimiento',
             description:
-              'Proponer un cambio para que alguien que pueda editar decida; qué agentes se pueden administrar',
+              'Proponer un cambio para que alguien que pueda editar decida; qué Agents se pueden administrar',
             related: 'Proponer conocimientos (espacios relacionados con ellos)',
             relatedLabel: 'Espacios relacionados conmigo',
             relatedHint:
@@ -333,7 +333,7 @@ const esES: LocaleResource<typeof enUS> = {
         parsing:
           'El texto está siendo extraído; La búsqueda encuentra el archivo una vez que está listo.',
         ready:
-          'Su texto se extrae, por lo que la búsqueda y los agentes lo leen.',
+          'Su texto se extrae, por lo que la búsqueda y los Agents lo leen.',
         failed: 'No se pudo extraer el texto.',
         unsupported:
           'El texto no se extrae de archivos de este tipo; se almacena tal cual.',
@@ -419,7 +419,7 @@ const esES: LocaleResource<typeof enUS> = {
       archive: 'Archivar',
       archiveTitle: '¿Archivar “{{title}}”?',
       archiveDescription:
-        'Desaparece del árbol y de los agentes. Puedes restaurarlo más tarde; sus versiones se mantienen.',
+        'Desaparece del árbol y de los Agents. Puedes restaurarlo más tarde; sus versiones se mantienen.',
       archivedToast: 'Archivado.',
       restore: 'Restaurar',
       restoredToast: 'Restaurado.',
@@ -439,7 +439,7 @@ const esES: LocaleResource<typeof enUS> = {
       editing: 'Edición',
       proposing: 'Proponer cambios',
       properties: 'Propiedades',
-      propertiesHint: 'Qué leen los agentes y enlaces sobre este documento.',
+      propertiesHint: 'Qué leen los Agents y enlaces sobre este documento.',
       nothingToPreview: 'Aún no hay nada que ver.',
       reasonPlaceholder: 'Por qué esto debería cambiar, para quien decida',
       submitProposal: 'Enviar propuesta',
@@ -447,9 +447,9 @@ const esES: LocaleResource<typeof enUS> = {
       title: 'Título',
       slug: 'Babosa',
       slugHint:
-        'Letras minúsculas, dígitos y guiones; cómo lo nombran los agentes y enlaces. Si se deja vacío, se elabora a partir del título.',
+        'Letras minúsculas, dígitos y guiones; cómo lo nombran los Agents y enlaces. Si se deja vacío, se elabora a partir del título.',
       summary: 'Resumen',
-      summaryHint: 'Agentes de una línea leen en el índice.',
+      summaryHint: 'Agents de una línea leen en el índice.',
       content: 'Contenido',
       contentPlaceholder: 'Markdown',
       write: 'Escribir',

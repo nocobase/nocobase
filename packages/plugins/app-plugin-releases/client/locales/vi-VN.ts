@@ -13,12 +13,12 @@ const viVN: LocaleResource<typeof enUS> = {
       apps: {
         title: 'Ứng dụng',
         description:
-          'Ứng dụng, bản phát hành, quá trình triển khai và thời gian chạy của chúng.',
+          'Ứng dụng, bản phát hành, quá trình triển khai và môi trường chạy của chúng.',
         actions: {
           view: {
             title: 'Xem ứng dụng',
             description:
-              'Xem Ứng dụng, bản phát hành, hoạt động triển khai và trạng thái thời gian chạy của chúng',
+              'Xem Ứng dụng, bản phát hành, hoạt động triển khai và trạng thái môi trường chạy của chúng',
             related: 'Xem ứng dụng (những ứng dụng liên quan đến chúng)',
             relatedLabel: 'Những cái tôi đã tạo ra',
             relatedHint:
@@ -213,9 +213,9 @@ const viVN: LocaleResource<typeof enUS> = {
       },
       activationHint: {
         eager:
-          'Bắt đầu khi được triển khai và bất cứ khi nào thời gian chạy khởi động lại.',
+          'Bắt đầu khi được triển khai và bất cứ khi nào môi trường chạy khởi động lại.',
         onDemand:
-          'Bắt đầu bằng lượt truy cập đầu tiên sau khi triển khai hoặc khởi động lại thời gian chạy.',
+          'Bắt đầu bằng lượt truy cập đầu tiên sau khi triển khai hoặc khởi động lại môi trường chạy.',
       },
       idleLabel: 'Dừng lại khi không được ghé thăm',
       dormantLabel: 'Ngủ đông khi không được truy cập',
@@ -334,7 +334,7 @@ const viVN: LocaleResource<typeof enUS> = {
     },
     actors: {
       human: 'người',
-      agent: 'đại lý',
+      agent: 'Agent',
       key: 'phím',
       rule: 'quy tắc',
       system: 'hệ thống',
@@ -526,7 +526,7 @@ const viVN: LocaleResource<typeof enUS> = {
           syntax: 'Dòng {{line}}: ghi là KEY=value.',
           name: 'Dòng {{line}}: {{name}} không phải là tên hợp lệ. Sử dụng chữ in hoa, chữ số và dấu gạch dưới, bắt đầu bằng một chữ cái.',
           reserved:
-            'Dòng {{line}}: {{name}} được đặt theo thời gian chạy và không thể là một biến.',
+            'Dòng {{line}}: {{name}} được đặt theo môi trường chạy và không thể là một biến.',
           duplicate: 'Dòng {{line}}: {{name}} đã được đặt trên dòng trước đó.',
           unterminated:
             'Dòng {{line}}: báo giá xung quanh giá trị của {{name}} chưa được đóng.',
@@ -754,7 +754,7 @@ const viVN: LocaleResource<typeof enUS> = {
         VARIABLES_MISSING:
           'Các biến bắt buộc không được đặt: {{names}}. Đặt chúng trong các biến của ứng dụng hoặc môi trường của ứng dụng, sau đó triển khai lại.',
         VARIABLE_RESERVED:
-          'Tên này được đặt theo thời gian chạy và không thể là biến.',
+          'Tên này được đặt theo môi trường chạy và không thể là biến.',
         INVALID_VARIABLE_NAME:
           'Tên biến là chữ in hoa, chữ số và dấu gạch dưới, bắt đầu bằng một chữ cái.',
         INVALID_VARIABLE_VALUE: 'Giá trị quá dài.',
@@ -871,7 +871,7 @@ const viVN: LocaleResource<typeof enUS> = {
       policyDescription: 'Ai có thể triển khai ở đây.',
       appDefaults: 'Ứng dụng',
       appDefaultsDescription:
-        'Nhiều nhất là nhiều Ứng dụng như vậy và khi một Ứng dụng được tạo mà không có chính sách thời gian chạy riêng sẽ dừng và không hoạt động. Trống rỗng: không có giới hạn, không bao giờ.',
+        'Nhiều nhất là nhiều Ứng dụng như vậy và khi một Ứng dụng được tạo mà không có chính sách môi trường chạy riêng sẽ dừng và không hoạt động. Trống rỗng: không có giới hạn, không bao giờ.',
       maxApps: 'Hầu hết ứng dụng',
       defaultIdle: 'Dừng sau (phút chưa truy cập)',
       defaultDormant: 'Không hoạt động sau (giờ không được thăm)',

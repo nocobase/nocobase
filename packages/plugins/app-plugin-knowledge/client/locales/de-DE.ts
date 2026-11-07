@@ -329,7 +329,7 @@ const deDE: LocaleResource<typeof enUS> = {
         parsing:
           'Der Text wird extrahiert; Die Suche findet die Datei, sobald sie fertig ist.',
         ready:
-          'Der Text wird extrahiert, sodass die Suche und die Agenten ihn lesen können.',
+          'Der Text wird extrahiert, sodass die Suche und die Agents ihn lesen können.',
         failed: 'Der Text konnte nicht extrahiert werden.',
         unsupported:
           'Text wird aus Dateien dieses Typs nicht extrahiert; es wird so gespeichert, wie es ist.',
@@ -415,7 +415,7 @@ const deDE: LocaleResource<typeof enUS> = {
       archive: 'Archivieren',
       archiveTitle: 'Archiv „{{title}}“?',
       archiveDescription:
-        'Es verschwindet vom Baum und von den Agenten. Sie können es später wiederherstellen; seine Versionen bleiben erhalten.',
+        'Es verschwindet vom Baum und von den Agents. Sie können es später wiederherstellen; seine Versionen bleiben erhalten.',
       archivedToast: 'Archiviert.',
       restore: 'Wiederherstellen',
       restoredToast: 'Restauriert.',
@@ -435,7 +435,7 @@ const deDE: LocaleResource<typeof enUS> = {
       proposing: 'Änderungen vorschlagen',
       properties: 'Eigenschaften',
       propertiesHint:
-        'Welche Agenten und Links über dieses Dokument gelesen haben.',
+        'Welche Agents und Links über dieses Dokument gelesen haben.',
       nothingToPreview: 'Es gibt noch keine Vorschau.',
       reasonPlaceholder:
         'Warum sich das ändern sollte, wer auch immer entscheidet',
@@ -444,9 +444,9 @@ const deDE: LocaleResource<typeof enUS> = {
       title: 'Titel',
       slug: 'Schnecke',
       slugHint:
-        'Kleinbuchstaben, Ziffern und Bindestriche; wie Agenten und Links es benennen. Bleibt es leer, wird es aus dem Titel erstellt.',
+        'Kleinbuchstaben, Ziffern und Bindestriche; wie Agents und Links es benennen. Bleibt es leer, wird es aus dem Titel erstellt.',
       summary: 'Zusammenfassung',
-      summaryHint: 'Einzeilige Agenten lesen den Index ein.',
+      summaryHint: 'Einzeilige Agents lesen den Index ein.',
       content: 'Inhalt',
       contentPlaceholder: 'Markdown',
       write: 'Schreiben',

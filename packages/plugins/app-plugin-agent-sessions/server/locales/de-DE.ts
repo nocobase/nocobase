@@ -21,7 +21,7 @@ const deDE: LocaleResource<typeof enUS> = {
     sessionNotFound: 'Keine Sitzung mit dieser ID gehört Ihnen.',
     computerOffline:
       'Der Computer ist offline. Starten Sie die Bridge darauf und versuchen Sie es dann erneut.',
-    agentUnavailable: 'Der Computer kann diesen Agenten nicht ausführen.',
+    agentUnavailable: 'Der Computer kann diesen Agent nicht ausführen.',
     directoryNotAllowed:
       'Sitzungen auf diesem Computer funktionieren nur unter den Verzeichnissen, die seine Bridge zulässt.',
     sessionArchived:

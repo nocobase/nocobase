@@ -13,20 +13,20 @@ const jaJP: LocaleResource<typeof enUS> = {
       '別のブリッジがこのコンピュータを登録しました。この接続を再起動します。',
     submissionConflict: 'この送信IDはすでに別のリクエストで使用されています。',
     authenticationRequired:
-      'エージェントセッションを使用するにはサインインしてください。',
+      'Agentセッションを使用するにはサインインしてください。',
     computerNotFound:
       'この ID を持つコンピュータはあなたのアカウントに接続されていません。',
     sessionNotFound: 'この ID のセッションはあなたのものではありません。',
     computerOffline:
       'コンピューターはオフラインです。その上でブリッジを開始してから、再試行してください。',
-    agentUnavailable: 'コンピュータはこのエージェントを実行できません。',
+    agentUnavailable: 'コンピュータはこのAgentを実行できません。',
     directoryNotAllowed:
       'このコンピュータ上のセッションは、ブリッジが許可するディレクトリの下でのみ機能します。',
     sessionArchived:
       'セッションはアーカイブされます。まずは元に戻してください。',
     permissionRequestNotFound:
       'この許可リクエストはすでに回答されているか、もう待機していません。',
-    choiceNotFound: 'エージェントはこの選択肢や値を提供しません。',
+    choiceNotFound: 'Agentはこの選択肢や値を提供しません。',
     linkNotFound:
       'この ID を持つこの種のものはセッションに関連付けられていない、またはセッションの作業をここから開始することはできません。',
     invalidPageToken:
@@ -37,7 +37,7 @@ const jaJP: LocaleResource<typeof enUS> = {
       'コンピュータの応答が間に合いませんでした。接続が実行中であることを確認してから、再試行してください。',
     folderUnavailable: 'パソコン上でフォルダーを開けません。',
     discoveryFailed:
-      'エージェント設定を読み込めませんでした。このコンピューターのコマンドラインを更新し、バックグラウンド接続を再起動してから再試行してください。',
+      'Agent設定を読み込めませんでした。このコンピューターのコマンドラインを更新し、バックグラウンド接続を再起動してから再試行してください。',
     projectNotFound: '該当するプロジェクトが存在しないか、ご覧いただけません。',
     referenceNotFound:
       '言及されているものは存在しないか、見ることができません。',

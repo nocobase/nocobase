@@ -1,6 +1,4 @@
-import runtimesEnUS from './runtimes.en-US.js';
 import type { LocaleResource } from '@nocobase/i18n';
-import chatEnUS from './chat.en-US.js';
 
 import type enUS from './en-US.js';
 
@@ -114,28 +112,28 @@ const frFR: LocaleResource<typeof enUS> = {
     unavailableNow: 'Indisponible actuellement',
     title: 'Agents',
     description:
-      'Ajoutez des agents à partir des modèles signalés par les exécuteurs. Le Lead Agent confie chaque étape d’une tâche à l’agent dont la description convient.',
-    fromRunners: 'Agents des exécuteurs',
+      'Ajoutez des Agents à partir des modèles signalés par les environnements d’exécution. Le Lead Agent confie chaque étape d’une tâche à l’Agent dont la description correspond.',
+    fromRunners: 'Agents des environnements d’exécution',
     display: {
       search: 'Rechercher des modèles ou des fournisseurs',
       select: 'Sélectionnez {{name}}',
       showDisabled: 'Afficher désactivés',
       hideDisabled: 'Masquer désactivés',
     },
-    filterLabel: 'Afficher les agents',
+    filterLabel: 'Afficher les Agents',
     filters: {
       all: 'Tous les {{count}}',
       enabled: 'Activé {{count}}',
-      unreported: 'Aucun exécuteur {{count}}',
+      unreported: 'Aucun environnement d’exécution {{count}}',
     },
-    loadFailed: 'Impossible de charger les agents',
+    loadFailed: 'Impossible de charger les Agents',
     loadMore: 'Charger plus',
-    emptyTitle: "Aucun agent pour l'instant",
+    emptyTitle: "Aucun Agent pour l'instant",
     emptyDescription:
-      'Connectez un exécuteur disposant d’un outil de codage avec une session ouverte, puis ajoutez un agent depuis « Modèles disponibles ».',
-    noneInFilter: 'Aucun agent ici.',
+      'Connectez un environnement d’exécution disposant d’un outil de codage avec une session ouverte, puis ajoutez un Agent depuis « Modèles disponibles ».',
+    noneInFilter: 'Aucun Agent ici.',
     howToAdd:
-      'Pour ajouter un agent, installez un outil de codage sur un exécuteur et connectez-vous pour utiliser un modèle disponible. Une fois le modèle signalé par l’exécuteur, ajoutez l’agent depuis « Modèles disponibles » en décrivant ses points forts. Il est activé dès son ajout. Un agent disponible uniquement sur des exécuteurs personnels ne travaille que sur les tâches lancées par leurs propriétaires.',
+      'Pour ajouter un Agent, installez un outil de développement sur un environnement d’exécution et connectez-vous à un modèle que vous pouvez utiliser : une fois signalé par l’environnement, ajoutez-le depuis Modèles disponibles en décrivant ses points forts. Un Agent présent uniquement sur des environnements personnels ne travaille que sur les tâches lancées par leurs propriétaires.',
     goodAtMissing: 'Pas encore écrit',
     columns: {
       agent: 'Agent',
@@ -145,14 +143,14 @@ const frFR: LocaleResource<typeof enUS> = {
       state: 'Statut',
     },
     where: {
-      none: 'Aucun exécuteur',
+      none: 'Aucun environnement d’exécution',
       team_one: "Exécuteur d'équipe {{count}}",
       team_other: "Exécuteurs de l'équipe {{count}}",
       personal_one: 'Exécuteur personnel {{count}} en ligne',
       personal_other: 'Exécuteurs personnels {{count}} en ligne',
       both: 'Équipe {{team}} · Personnel {{personal}}',
       names: '{{names}}',
-      noneOnline: 'Aucun exécuteur en ligne actuellement',
+      noneOnline: 'Aucun environnement d’exécution en ligne actuellement',
       personalOnly: 'Exécuteurs personnels uniquement',
       lastReported: 'Dernier rapport {{when}}',
       team_many: "Exécuteurs de l'équipe {{count}}",
@@ -161,7 +159,7 @@ const frFR: LocaleResource<typeof enUS> = {
     state: {
       enabled: 'Activé',
       disabled: 'Désactivé',
-      unreported: 'Aucun exécuteur',
+      unreported: 'Aucun environnement d’exécution',
     },
     effort: {
       default: "Valeur par défaut de l'outil",
@@ -176,19 +174,20 @@ const frFR: LocaleResource<typeof enUS> = {
     },
     enable: {
       reportedBy_one:
-        'Rapporté par le exécuteur {{count}} en ligne : {{names}}.',
+        'Rapporté par le environnement d’exécution {{count}} en ligne : {{names}}.',
       reportedBy_other:
-        'Rapporté par les exécuteurs de {{count}} en ligne : {{names}}.',
-      noRunnerNow: "Aucun exécuteur qui l'a n'est en ligne actuellement.",
+        'Rapporté par les environnements d’exécution de {{count}} en ligne : {{names}}.',
+      noRunnerNow:
+        "Aucun environnement d’exécution qui l'a n'est en ligne actuellement.",
       goodAtHint:
-        "Le Lead Agent décide ce qu'il doit donner à cet agent par ces mots. Dites ce qui convient et ce qui ne convient pas.",
+        "Le Lead Agent décide ce qu'il doit donner à cet Agent par ces mots. Dites ce qui convient et ce qui ne convient pas.",
       goodAtRequired: "Écrivez ce pour quoi il est bon avant de l'activer.",
       effortHint:
         "Le Lead Agent ne peut pas le modifier lorsqu'il lui confie le travail.",
       personalOnly:
-        "Seuls les exécuteurs personnels l'ont : le Lead Agent ne lui confie le travail que sur les problèmes lancés par ses propriétaires.",
+        'Seuls des environnements personnels l’ont : le Lead Agent ne lui confie que les tâches lancées par leurs propriétaires.',
       reportedBy_many:
-        'Rapporté par les exécuteurs de {{count}} en ligne : {{names}}.',
+        'Rapporté par les environnements d’exécution de {{count}} en ligne : {{names}}.',
     },
     edit: {
       button: 'Modifier',
@@ -198,10 +197,10 @@ const frFR: LocaleResource<typeof enUS> = {
       done: '{{name}} enregistré',
     },
     available: {
-      open: 'Ajouter un agent',
+      open: 'Ajouter un Agent',
       title: 'Modèles disponibles',
       description:
-        'Seuls les outils cochés sur l’environnement d’exécution sont détectés et apparaissent ici. Les combinaisons recommandées par l’application se créent et s’activent d’elles-mêmes dès qu’un exécuteur les signale ; ajoutez-en un agent à partir de n’importe quelle autre.',
+        'Seuls les outils cochés sur l’environnement d’exécution sont détectés et apparaissent ici. Les combinaisons recommandées par l’application se créent et s’activent d’elles-mêmes dès qu’un environnement d’exécution les signale ; ajoutez-en un Agent à partir de n’importe quelle autre.',
       recommended: 'Activé automatiquement dès le signalement',
       added: 'Ajouté',
       add: 'Ajouter',
@@ -226,23 +225,23 @@ const frFR: LocaleResource<typeof enUS> = {
       group_one: '{{tool}} · {{count}} modèle · {{runners}}',
       group_other: '{{tool}} · {{count}} modèles · {{runners}}',
       group_many: '{{tool}} · {{count}} modèles · {{runners}}',
-      runners_one: '{{count}} exécuteur',
-      runners_other: '{{count}} exécuteurs',
-      runners_many: '{{count}} exécuteurs',
+      runners_one: '{{count}} environnement d’exécution',
+      runners_other: '{{count}} environnements d’exécution',
+      runners_many: '{{count}} environnements d’exécution',
       noModels: 'Aucun modèle ici.',
       selectedCount_one: '{{count}} sélectionné',
       selectedCount_other: '{{count}} sélectionnés',
       selectedCount_many: '{{count}} sélectionnés',
       addSelected: 'Ajouter {{count}}',
-      confirmTitle_one: 'Ajouter {{count}} agent',
-      confirmTitle_other: 'Ajouter {{count}} agents',
+      confirmTitle_one: 'Ajouter {{count}} Agent',
+      confirmTitle_other: 'Ajouter {{count}} Agents',
       confirmTitle_many: 'Ajouter {{count}} agents',
       confirmAction_one: 'Ajouter {{count}}',
       confirmAction_other: 'Ajouter {{count}}',
       confirmAction_many: 'Ajouter {{count}}',
       goodAtNeeded: 'En quoi est-il bon ?',
-      addedCount_one: '{{count}} agent ajouté.',
-      addedCount_other: '{{count}} agents ajoutés.',
+      addedCount_one: '{{count}} Agent ajouté.',
+      addedCount_other: '{{count}} Agents ajoutés.',
       addedCount_many: '{{count}} agents ajoutés.',
       addedPartial:
         '{{succeeded}} ajoutés, {{failed}} n’ont pas pu être ajoutés. Raison sous chacun.',
@@ -252,7 +251,7 @@ const frFR: LocaleResource<typeof enUS> = {
   },
   agentTypes: {
     label: "Type d'agent",
-    question: "Quel genre d'agent?",
+    question: "Quel genre d'Agent?",
     online: 'En ligne',
     runner: 'Exécuteur',
     onlineHint:
@@ -260,23 +259,23 @@ const frFR: LocaleResource<typeof enUS> = {
     runnerHint:
       'Pilote un outil de codage sur un runtime et travaille dans un répertoire de travail : code, fichiers, commandes.',
     immutable:
-      "Un agent garde son type ; créer un autre agent pour l'autre type.",
+      "Un Agent garde son type ; créer un autre Agent pour l'autre type.",
     onServer: 'Sur le serveur',
     filterAll: 'Tous types',
-    noneOfType: 'Aucun agent de ce type.',
+    noneOfType: 'Aucun Agent de ce type.',
   },
   agentSkills: {
     title: 'Compétences',
     description:
-      "Manuels que l'agent lit lorsqu'une tâche correspond à sa description. Placé dans son répertoire de travail avant chaque exécution.",
+      "Manuels que l'Agent lit lorsqu'une tâche correspond à sa description. Placé dans son répertoire de travail avant chaque exécution.",
     manage: 'Gérer les compétences',
     placeholder: 'Sélectionner les compétences',
     empty: "Aucune compétence pour l'instant.",
     save: 'Sauvegarder les compétences',
     descriptionOnline:
-      "Manuels que l'agent lit lorsqu'une tâche correspond à sa description, dans un bac à sable en lecture seule sur le serveur.",
+      "Manuels que l'Agent lit lorsqu'une tâche correspond à sa description, dans un bac à sable en lecture seule sur le serveur.",
     onlineScripts:
-      "Les scripts ne sont pas exécutés pour les agents en ligne : l'agent peut les lire, pas les exécuter.",
+      "Les scripts ne sont pas exécutés pour les Agents en ligne : l'Agent peut les lire, pas les exécuter.",
     skippedScripts: ': {{paths}}',
     pathSeparator: ', ',
   },
@@ -284,7 +283,7 @@ const frFR: LocaleResource<typeof enUS> = {
     preview: "Aperçu de l'invite complète",
     previewTitle: "Aperçu de l'invite complète",
     previewDescription:
-      "Quelle série de cet agent serait envoyée maintenant, sur un sujet inventé. Rien n'est mis en file d'attente.",
+      "Quelle série de cet Agent serait envoyée maintenant, sur un sujet inventé. Rien n'est mis en file d'attente.",
     scenario: 'Scénario',
     sample:
       'Sur un sujet inventé : {{subject}}. Les valeurs marquées [échantillon] sont constituées.',
@@ -296,9 +295,9 @@ const frFR: LocaleResource<typeof enUS> = {
     platform:
       'Règles et tâches de la plateforme · à propos des caractères {{size}} (anglais)',
     platformNote:
-      "Les règles de la plateforme sont envoyées en anglais ; l'agent répond toujours dans votre langue.",
+      "Les règles de la plateforme sont envoyées en anglais ; l'Agent répond toujours dans votre langue.",
     agentPrompt: "Invite de l'agent (écrite par vous)",
-    noAgentPrompt: "Cet agent n'a pas d'invite propre.",
+    noAgentPrompt: "Cet Agent n'a pas d'invite propre.",
     firstMessage: 'Premier message',
     empty: 'Vide',
     previewPlaceholders:
@@ -316,7 +315,7 @@ const frFR: LocaleResource<typeof enUS> = {
   envVars: {
     title: "Variables d'environnement",
     description:
-      "Transmis à l'outil de codage à chaque exécution et masqué dans les enregistrements d'exécution ; les valeurs ne s’affichent plus après l’enregistrement. Toute personne pouvant utiliser un agent partagé peut recevoir ces valeurs sur son propre ordinateur ; marquez les secrets à haut risque « Exécutions d'équipe uniquement ».",
+      "Transmis à l'outil de codage à chaque exécution et masqué dans les enregistrements d'exécution ; les valeurs ne s’affichent plus après l’enregistrement. Toute personne pouvant utiliser un Agent partagé peut recevoir ces valeurs sur son propre ordinateur ; marquez les secrets à haut risque « Exécutions d'équipe uniquement ».",
     add: 'Ajouter une variable',
     addTitle: "Ajouter une variable d'environnement",
     editTitle: 'Remplacer {{name}}',
@@ -329,7 +328,7 @@ const frFR: LocaleResource<typeof enUS> = {
     keepValueHint: 'Laissez-le vide pour conserver la valeur actuelle.',
     teamRunnersOnly: "Runtimes d'équipe uniquement",
     teamRunnersOnlyHint:
-      "Sans cela, une exécution envoie la valeur au runtime qui la prend, y compris le runtime personnel de toute personne susceptible d'utiliser l'agent. Avec lui, seul un runtime d'équipe effectue des exécutions qui obtiennent cette variable.",
+      "Sans cela, une exécution envoie la valeur au runtime qui la prend, y compris le runtime personnel de toute personne susceptible d'utiliser l'Agent. Avec lui, seul un runtime d'équipe effectue des exécutions qui obtiennent cette variable.",
     teamRunnersOnlyBadge: "Runtimes d'équipe uniquement",
     fromRunner: 'Extraire du runtime',
     fromRunnerHint:
@@ -382,7 +381,7 @@ const frFR: LocaleResource<typeof enUS> = {
   scopeVariables: {
     title: 'Variables et secrets',
     description:
-      'Donné à chaque agent travaillant ici. Des variables plus spécifiques (celui d’un répertoire de travail, puis celui de l’agent) l’emportent.',
+      'Donné à chaque Agent travaillant ici. Des variables plus spécifiques (celui d’un répertoire de travail, puis celui de l’Agent) l’emportent.',
   },
   scopes: {
     workdir: 'Répertoire de travail',
@@ -395,7 +394,7 @@ const frFR: LocaleResource<typeof enUS> = {
     otherUse: {
       title: 'Autre utilisation du modèle',
       description:
-        "Appels de modèles en dehors des exécutions d'agents, comme l'indexation et la recherche dans la base de connaissances.",
+        "Appels de modèles en dehors des exécutions d'Agents, comme l'indexation et la recherche dans la base de connaissances.",
       purpose: 'Utiliser',
       source: 'Interrogé par',
       model: 'Modèle',
@@ -409,7 +408,7 @@ const frFR: LocaleResource<typeof enUS> = {
     },
     title: 'Utilisation',
     description:
-      "Quelles sont les exécutions d'agent utilisées et leur coût aux prix actuels des modèles.",
+      "Quelles sont les exécutions d'Agent utilisées et leur coût aux prix actuels des modèles.",
     loadFailed: "Impossible de charger l'utilisation",
     groupBy: 'Regrouper par',
     groupByValue: 'Groupe par {{group}}',
@@ -432,7 +431,7 @@ const frFR: LocaleResource<typeof enUS> = {
     filters: {
       allGroups: 'Tous : {{group}}',
       agent: 'Agent',
-      allAgents: 'Tous les agents',
+      allAgents: 'Tous les Agents',
       person: 'Réveillé par',
       allPeople: 'Tout le monde',
       range: 'Plage de dates',
@@ -468,7 +467,7 @@ const frFR: LocaleResource<typeof enUS> = {
   defaultSkills: {
     title: 'Compétences par défaut',
     description:
-      'Chaque agent travaillant ici acquiert également ces compétences.',
+      'Chaque Agent travaillant ici acquiert également ces compétences.',
     save: 'Sauvegarder les compétences',
     saved: 'Compétences par défaut enregistrées.',
   },
@@ -485,7 +484,7 @@ const frFR: LocaleResource<typeof enUS> = {
     filters: {
       agent: 'Agent',
       status: 'Statut',
-      allAgents: 'Tous les agents',
+      allAgents: 'Tous les Agents',
       allStatuses: 'Tous les statuts',
     },
     noMatch: 'Aucune exécution ne correspond à ces filtres.',
@@ -499,7 +498,7 @@ const frFR: LocaleResource<typeof enUS> = {
     viewBrief: "Afficher l'invite complète",
     briefTitle: 'Invite complète',
     briefDescription:
-      "Ce qu'on a dit à l'agent lors de la dernière réclamation de ce run.",
+      "Ce qu'on a dit à l'Agent lors de la dernière réclamation de ce run.",
     briefOf: 'Tentative {{attempt}}, réclamation {{time}}',
     briefUnavailable:
       "Aucune invite complète n'est disponible pour cette exécution.",
@@ -546,7 +545,7 @@ const frFR: LocaleResource<typeof enUS> = {
   transcript: {
     title: 'Transcription de l’exécution',
     notFound: "Cette exécution n'existe pas.",
-    waiting: "En attente du démarrage de l'agent…",
+    waiting: "En attente du démarrage de l'Agent…",
     empty: "Cette exécution n'a enregistré aucun événement.",
     fetchFailed:
       'Impossible de récupérer de nouveaux événements. Nouvelle tentative…',
@@ -555,10 +554,10 @@ const frFR: LocaleResource<typeof enUS> = {
     summary_one: "Création d'un événement {{created}} · {{count}}",
     summary_other: 'Événements {{created}} · {{count}} créés',
     took: 'a pris {{duration}}',
-    pendingInputs_one: "Commentaire {{count}} en attente de l'agent",
-    pendingInputs_other: "Commentaires {{count}} en attente de l'agent",
-    inputDelivered_one: "Remis à l'agent",
-    inputDelivered_other: "Entrées {{count}} fournies à l'agent",
+    pendingInputs_one: "Commentaire {{count}} en attente de l'Agent",
+    pendingInputs_other: "Commentaires {{count}} en attente de l'Agent",
+    inputDelivered_one: "Remis à l'Agent",
+    inputDelivered_other: "Entrées {{count}} fournies à l'Agent",
     tokens: 'Jetons {{input}} entrants, {{output}} sortants',
     kinds: {
       text: 'Agent',
@@ -588,7 +587,7 @@ const frFR: LocaleResource<typeof enUS> = {
     leaseExpired: "Le moteur d'exécution a arrêté de générer des rapports.",
     startTimeout: "Le moteur d'exécution n'a pas démarré l'exécution à temps.",
     cancelled: 'Annulé.',
-    idleTimeout: "L'agent cesse de progresser.",
+    idleTimeout: "L'Agent cesse de progresser.",
     setupFailed: "Le run n'a pas pu être préparé.",
     cliUnavailable:
       "Le moteur d'exécution n'a pas pu installer la CLI de l'application.",
@@ -605,9 +604,9 @@ const frFR: LocaleResource<typeof enUS> = {
     contextOverflow: 'La conversation est devenue trop longue pour le modèle.',
     delegatedQueueTimeout:
       "Expiration du délai d'attente de la file d'attente de délégation ; retiré",
-    queuedExpired: 'Aucun runtime n’a pris le temps d’exécution.',
-    modelUnavailable: 'Le modèle de l’agent n’est pas disponible.',
-    stepLimit: "L'agent a appelé tools trop souvent sans répondre.",
+    queuedExpired: 'Aucun runtime n’a pris le environnement d’exécution.',
+    modelUnavailable: 'Le modèle de l’Agent n’est pas disponible.',
+    stepLimit: "L'Agent a appelé tools trop souvent sans répondre.",
     policyRefused:
       'Aucune politique d’exécution ne lui permet d’effectuer ce travail.',
     prepareNetwork:
@@ -618,7 +617,8 @@ const frFR: LocaleResource<typeof enUS> = {
     unknown: "L'exécution a échoué.",
   },
   runtimes: {
-    pathHint: runtimesEnUS.runtimes.pathHint,
+    pathHint:
+      'Le runner trouve les outils de développement avec son propre PATH. Dans un terminal où which codex / which claude fonctionne, relancez nocobase-runner service install et redémarrez le service (ou relancez nocobase-runner start) pour qu’il obtienne le bon PATH.',
     quota: {
       workspaceStatus: {
         active: 'Les travaux continuent',
@@ -645,13 +645,13 @@ const frFR: LocaleResource<typeof enUS> = {
       marks_one: 'Quota {{count}}',
       marks_other: 'Quotas {{count}}',
       queueHint:
-        "Un agent au quota peut toujours être sélectionné. Les travaux seront mis en file d'attente avec leur délai d'attente existant.",
+        "Un Agent au quota peut toujours être sélectionné. Les travaux seront mis en file d'attente avec leur délai d'attente existant.",
       partial: 'Fonctionne sur {{available}} · {{blocked}} au quota',
       workspaceSize: "Taille de l'espace de travail : {{value}}",
       providers_one: 'Fournisseur {{count}} au quota',
       providers_other: 'Fournisseurs {{count}} au quota',
       runColumns: {
-        issue: 'Problème/conversation',
+        issue: 'Tâche / conversation',
         agent: 'Agent',
         status: 'Statut',
         started: 'Démarré',
@@ -721,7 +721,8 @@ const frFR: LocaleResource<typeof enUS> = {
       ended: 'Terminé',
       active: 'Les travaux continuent',
       unknown: 'Impossible de confirmer si le travail est terminé',
-      oldRunner: "Ce exécuteur n'a pas fourni de raisons de diagnostic",
+      oldRunner:
+        "Ce environnement d’exécution n'a pas fourni de raisons de diagnostic",
       noCleanup: "Le résultat du nettoyage local n'a pas été reçu",
       discardsUntracked: 'Le nettoyage supprimera les fichiers non suivis',
       decision: {
@@ -730,7 +731,7 @@ const frFR: LocaleResource<typeof enUS> = {
         active: 'Les travaux continuent',
         runNotFound: 'Impossible de confirmer : exécution introuvable',
         ownershipUnknown:
-          "Impossible de confirmer : la propriété du exécuteur n'a pas pu être vérifiée",
+          "Impossible de confirmer : la propriété du environnement d’exécution n'a pas pu être vérifiée",
         ambiguousSubject: "Impossible de confirmer : clé d'objet ambiguë",
         bindingUnavailable:
           "Impossible de confirmer : l'application n'a pas de liaison d'espace de travail",
@@ -751,12 +752,12 @@ const frFR: LocaleResource<typeof enUS> = {
     },
     title: 'Environnements d’exécution',
     description:
-      "Les environnements d'exécution qui exécutent les agents et les outils de codage signalés par chacun.",
+      "Les environnements d'exécution qui exécutent les Agents et les outils de codage signalés par chacun.",
     add: "Ajouter un environnement d'exécution",
     loadFailed: 'Impossible de charger les runtimes',
     emptyTitle: "Aucun environnement d'exécution connecté pour le moment",
     emptyDescription:
-      "Une fois qu'un runtime est connecté, les agents d'exécution y travaillent avec ses outils de codage.",
+      "Une fois qu'un runtime est connecté, les Agents d'exécution y travaillent avec ses outils de codage.",
     noneConnected: 'Aucun runtime n’est connecté.',
     revokedList_one: 'Exécution révoquée {{count}}',
     revokedList_other:
@@ -807,13 +808,13 @@ const frFR: LocaleResource<typeof enUS> = {
         "Les variables qu'il fournit aux exécutions qui les extraient du runtime, par leur nom ; les valeurs restent sur la machine. Définissez-en un ici avec `nocobase-runner env set NAME`, ou transmettez-le avec `--pass-env NAME`.",
       none: 'Aucun : une exécution qui prend une variable du runtime échoue ici avant de démarrer.',
       unknown:
-        'Non signalé : son runner est plus ancien que cette fonctionnalité. Mettez à jour le exécuteur pour les voir.',
+        'Non signalé : son runner est plus ancien que cette fonctionnalité. Mettez à jour le environnement d’exécution pour les voir.',
     },
     jobs: {
       allow: 'Autoriser les tâches de build',
       hint: 'Les builds et autres étapes configurées par cette application sont exécutés sans modèle. Ce runtime rapporte : {{kinds}}.',
       unsupported:
-        "Le programme d'exécution de ce runtime ne prend pas de tâches. Mettez à jour le exécuteur pour l'activer.",
+        "Le programme d'exécution de ce runtime ne prend pas de tâches. Mettez à jour le environnement d’exécution pour l'activer.",
     },
     noTools: 'Aucun outil de codage trouvé',
     actionsFor: 'Actions pour {{name}}',
@@ -854,13 +855,13 @@ const frFR: LocaleResource<typeof enUS> = {
     upgradeRequired: {
       title: 'Ce runtime nécessite une mise à niveau',
       older:
-        "Son exécuteur {{version}} parle le protocole d'agent {{protocol}} ; cette application nécessite le protocole {{required}}. Il reste connecté mais n'exécute rien jusqu'à ce qu'il soit mis à jour.",
+        "Son environnement d’exécution {{version}} parle le protocole d'Agent {{protocol}} ; cette application nécessite le protocole {{required}}. Il reste connecté mais n'exécute rien jusqu'à ce qu'il soit mis à jour.",
       newer:
-        "Son runner {{version}} parle le protocole d'agent {{protocol}}, plus récent que cette application (protocole {{required}}). Il reste connecté mais n'exécute rien jusqu'à ce qu'il exécute un exécuteur servi par cette application.",
+        "Son runner {{version}} parle le protocole d'Agent {{protocol}}, plus récent que cette application (protocole {{required}}). Il reste connecté mais n'exécute rien jusqu'à ce qu'il exécute un environnement d’exécution servi par cette application.",
       latest:
         "Cette application sert le programme d'exécution {{latest}}. Exécutez ceci sur son hôte pour le mettre à jour :",
       noLatest:
-        'Installez un exécuteur qui parle le protocole {{required}}, ou exécutez-le sur son hôte pour le mettre à jour :',
+        'Installez un environnement d’exécution qui parle le protocole {{required}}, ou exécutez-le sur son hôte pour le mettre à jour :',
       reinstall:
         'Son runner ne précise pas comment il a été installé. Installez-le à nouveau sur son hôte avec la commande de Add runtime.',
     },
@@ -879,7 +880,8 @@ const frFR: LocaleResource<typeof enUS> = {
       version: 'Version {{version}}',
     },
     trust: {
-      isolationHint: runtimesEnUS.runtimes.trust.isolationHint,
+      isolationHint:
+        'Pour les environnements d’exécution personnels comme partagés, exécutez le runner dans une machine virtuelle ou un environnement isolé : les Agents ont un accès complet et le runner n’est pas un bac à sable.',
       label: 'Pour qui ça marche',
       team: 'Équipe',
       teamHint:
@@ -909,9 +911,9 @@ const frFR: LocaleResource<typeof enUS> = {
       show: 'Version {{version}} : un runner plus récent est disponible',
       available: 'Mise à jour disponible',
       badge: 'Évolutif',
-      title: 'Un exécuteur plus récent pour {{name}}',
+      title: 'Un environnement d’exécution plus récent pour {{name}}',
       description: '{{version}} installée, cette application sert {{latest}}.',
-      hint: "Il se met à jour lorsqu'aucun agent n'est en cours d'exécution. Pour le mettre à jour maintenant, exécutez-le sur son hôte.",
+      hint: "Il se met à jour lorsqu'aucun Agent n'est en cours d'exécution. Pour le mettre à jour maintenant, exécutez-le sur son hôte.",
     },
     revoke: {
       title: "Révoquer les informations d'identification de {{name}} ?",
@@ -931,10 +933,26 @@ const frFR: LocaleResource<typeof enUS> = {
       "Les environnements d'exécution {{count}} ont été révoqués.",
   },
   connect: {
-    ...runtimesEnUS.connect,
+    manual: 'Ou installez-le vous-même',
+    promptTitle: 'Laisser un Agent le configurer',
+    promptCopy: 'Copier l’instruction pour l’Agent',
+    promptShow: 'Voir l’instruction',
+    promptHide: 'Masquer l’instruction',
+    promptHint:
+      'Copiez cette instruction vers un Agent (Claude Code, Codex, etc.) sur la machine cible : il effectuera les étapes ci-dessous à votre place. Elle contient un identifiant à usage unique : ne la donnez qu’à cet Agent.',
+    windowsPowerShell:
+      '1. Installez WSL : exécutez dans PowerShell, puis redémarrez Windows :',
+    windowsUbuntu:
+      '2. Ouvrez Ubuntu et exécutez la commande Linux ci-dessous. Installez Node.js et les outils de développement dans WSL Ubuntu.',
+    windowsNetwork:
+      'Si WSL n’a pas accès à Internet, activez la mise en réseau en miroir dans WSL.',
+    promptWindows:
+      'D’ABORD, détermine si tu t’exécutes dans WSL Ubuntu. Si tu n’es PAS dans WSL Ubuntu, ARRÊTE-TOI : n’exécute aucune commande d’installation ou d’enregistrement. Dis à l’utilisateur d’exécuter wsl --install dans PowerShell, de redémarrer Windows, puis d’ouvrir l’Agent dans WSL Ubuntu et de relancer cette instruction. Poursuis les étapes ci-dessous UNIQUEMENT dans WSL Ubuntu. Installe Node.js et les outils de développement dans WSL. Si WSL n’a pas accès à Internet, active la mise en réseau en miroir.\n\n',
+    promptBody:
+      'Configure cette machine comme environnement d’exécution NocoBase. Utilise une machine virtuelle ou un environnement isolé : les Agents ont un accès complet et le runner n’est pas un bac à sable.\n\nVérifie que Node.js 24 ou plus récent est présent et que ces outils de développement sont installés et connectés : {{tools}}. Utilise leurs méthodes d’installation officielles, pas les paquets snap.\n\nExécute cette commande d’enregistrement à usage unique pour installer le runner et la CLI de l’application, l’enregistrer et installer son service en arrière-plan :\n{{command}}\n\nRésous les problèmes de configuration courants : assure-toi que le PATH du service contient les outils de développement (vérifie which codex / which claude dans le terminal d’installation, puis relance nocobase-runner service install et redémarre le service) ; configure le proxy nécessaire pour les téléchargements et pour le service ; résous les droits d’installation globale npm avec un préfixe appartenant à l’utilisateur ou un gestionnaire de versions Node, sans sudo npm install.\n\nTermine par nocobase-runner status et confirme la connexion et les outils de développement. Signale-moi les étapes de connexion ou de réseau qu’il me reste à faire. Traite l’identifiant d’enregistrement comme un secret et ne l’inclus pas dans ton rapport.',
     title: "Ajouter un environnement d'exécution",
     description:
-      "Exécutez la commande ci-dessous sur un hôte sur lequel un outil de codage est installé : un serveur, une VM ou votre propre appareil. Les agents y fonctionnent avec un accès complet, en tant qu'utilisateur qui exécute le exécuteur, et peuvent lire et modifier tout ce que l'utilisateur peut faire, clés SSH et autres informations d'identification incluses. Le runner n'est pas une barrière de sécurité : exécutez-le en tant qu'utilisateur dédié, dans un conteneur ou dans une VM.",
+      "Exécutez la commande ci-dessous sur un hôte sur lequel un outil de codage est installé : un serveur, une VM ou votre propre appareil. Les agents y fonctionnent avec un accès complet, en tant qu'utilisateur qui exécute le environnement d’exécution, et peuvent lire et modifier tout ce que l'utilisateur peut faire, clés SSH et autres informations d'identification incluses. Le runner n'est pas une barrière de sécurité : exécutez-le en tant qu'utilisateur dédié, dans un conteneur ou dans une VM.",
     createCredential: "Générer la commande d'installation",
     advanced: 'Avancé : limites par outil de codage',
     run: 'Exécutez ceci sur cet hôte. Il télécharge le runner (nocobase-runner) et la CLI de cette application à partir de cette application, enregistre le runner et le démarre à la connexion :',
@@ -965,8 +983,38 @@ const frFR: LocaleResource<typeof enUS> = {
   },
   chat: {
     // Keep new guidance available in English until this locale is translated.
-    executionFailed: chatEnUS.chat.executionFailed,
-    fileInputFailures: chatEnUS.chat.fileInputFailures,
+    executionFailed:
+      'L’exécution a échoué. Relisez la conversation enregistrée avant de réessayer.',
+    fileInputFailures: {
+      imageCapability:
+        'L’entrée d’images n’est pas configurée pour ce modèle. Passez à un modèle dont la prise en charge des images est vérifiée.',
+      unsupportedFormat:
+        'L’entrée pour ce format de pièce jointe n’est pas configurée pour le modèle sélectionné, et aucun extracteur de texte local ne le prend en charge. Utilisez un format de document pris en charge ou un modèle dont la prise en charge des fichiers est vérifiée.',
+      formatMismatch:
+        'Le nom du fichier joint et son type de média indiquent des formats de document différents. Vérifiez le format du fichier et téléversez-le à nouveau.',
+      invalidInline:
+        'Les données du fichier joint sont invalides ou trop volumineuses. Téléversez-le à nouveau ou utilisez un fichier plus petit.',
+      fileTooLarge:
+        'Une pièce jointe dépasse sa taille maximale. Utilisez un fichier plus petit.',
+      inputTooLarge:
+        'Les pièces jointes de la conversation dépassent la limite d’entrée. Utilisez des fichiers plus petits ou démarrez une nouvelle conversation.',
+      documentTooLarge:
+        'La pièce jointe dépasse la limite de texte extrait. Utilisez un fichier plus petit.',
+      contextTooLarge:
+        'Les pièces jointes de la conversation dépassent la limite de texte extrait. Utilisez des fichiers plus petits ou démarrez une nouvelle conversation.',
+      fileCount:
+        'La conversation dépasse la limite de 100 fichiers en entrée. Démarrez une nouvelle conversation.',
+      nativeFileCount:
+        'La conversation dépasse la limite configurée de fichiers natifs. Utilisez moins de pièces jointes ou convertissez-les en un document texte pris en charge.',
+      unreadable:
+        'La pièce jointe ne contient aucun texte lisible. Les documents numérisés nécessitent l’OCR.',
+      extractionFailed:
+        'Impossible d’extraire le texte de la pièce jointe. Vérifiez que le document est lisible et téléversez-le à nouveau.',
+      extractionTimeout:
+        'L’extraction du texte de la pièce jointe a expiré. Utilisez un fichier plus petit ou réessayez.',
+      preparationFailed:
+        'Impossible de préparer la pièce jointe. Vérifiez votre accès et le format du fichier, puis réessayez.',
+    },
     untitled: 'Conversation sans titre',
     renamed: 'Renommé',
     archivedNamed: 'Archivé « {{title}} »',
@@ -979,28 +1027,29 @@ const frFR: LocaleResource<typeof enUS> = {
       agentArchived: 'Non activé',
       forbidden: 'Non disponible pour vous',
       noModel: "Configurez d'abord un modèle de chat",
-      noRunner: 'Aucun exécuteur en ligne, ne peut être choisi',
-      othersPersonal: "Seuls les exécuteurs personnels des autres l'ont",
+      noRunner: 'Aucun environnement d’exécution en ligne, ne peut être choisi',
+      othersPersonal:
+        "Seuls les environnements d’exécution personnels des autres l'ont",
       modelUnavailable: 'Modèle indisponible',
     },
     offline: {
-      fallbackDone: 'Cette conversation utilise désormais un autre agent',
+      fallbackDone: 'Cette conversation utilise désormais un autre Agent',
       restoreDone: 'Rebasculé',
       newSession:
-        "L'agent démarre une nouvelle session et lit cette conversation.",
+        "L'Agent démarre une nouvelle session et lit cette conversation.",
     },
     notice: {
       switchedToDefault:
         "Passé à {{name}}, la valeur par défaut du système, jusqu'à ce que {{own}} soit de retour.",
       switchedToOnline:
-        "{{own}} n'a pas de exécuteur pour vous maintenant, donc {{name}} répond jusqu'à ce que {{own}} soit de retour.",
+        "{{own}} n'a pas de environnement d’exécution pour vous maintenant, donc {{name}} répond jusqu'à ce que {{own}} soit de retour.",
       onlineFallbackUnavailable:
-        "L'agent de secours en ligne ne peut pas répondre ({{reason}}). Cette conversation reste avec {{own}} en attendant un exécuteur.",
+        "L'Agent de secours en ligne ne peut pas répondre ({{reason}}). Cette conversation reste avec {{own}} en attendant un environnement d’exécution.",
       switchedAgent:
         'Passage à {{name}} en conservant l’historique de cette conversation.',
       switchedBack: 'De retour avec {{name}}.',
-      runFailed: "L'agent s'arrête avant de répondre.",
-      runFailedReason: "L'agent s'arrête avant de répondre : {{reason}}",
+      runFailed: "L'Agent s'arrête avant de répondre.",
+      runFailedReason: "L'Agent s'arrête avant de répondre : {{reason}}",
       runCancelled: 'Annulation demandée.',
     },
     consultation: {
@@ -1015,19 +1064,19 @@ const frFR: LocaleResource<typeof enUS> = {
     },
     agents: {
       personalOnly: 'Exécuteurs personnels uniquement',
-      hint: "Répertorie les agents activés et explique pourquoi on ne peut pas vous répondre maintenant. Les réponses courent sur un exécuteur : la première réponse attend qu'on la prenne, généralement quelques secondes.",
-      chooseFor: 'Choisissez un agent',
-      empty: 'Aucun agent que vous ne pouvez choisir',
-      none: 'Aucun agent',
+      hint: "Répertorie les Agents activés et explique pourquoi on ne peut pas vous répondre maintenant. Les réponses courent sur un environnement d’exécution : la première réponse attend qu'on la prenne, généralement quelques secondes.",
+      chooseFor: 'Choisissez un Agent',
+      empty: 'Aucun Agent que vous ne pouvez choisir',
+      none: 'Aucun Agent',
       unknown: 'Agent inconnu',
-      placeholder: 'Choisissez un agent',
+      placeholder: 'Choisissez un Agent',
       myDefault: 'Mon défaut',
       systemDefault: 'Valeur par défaut du système',
     },
   },
   chatProfile: {
-    loadFailed: 'Impossible de charger les paramètres de votre agent',
-    defaultAgent: 'Mon agent de chat par défaut',
+    loadFailed: 'Impossible de charger les paramètres de votre Agent',
+    defaultAgent: 'My Agent de chat par défaut',
     systemDefault: 'Valeur par défaut du système',
     systemDefaultNamed: 'Valeur par défaut du système ({{name}})',
     noDefault: "Aucune valeur par défaut du système n'est définie.",
@@ -1036,12 +1085,12 @@ const frFR: LocaleResource<typeof enUS> = {
   models: {
     title: 'Modèles',
     description:
-      "Les services modèles que les agents en ligne appellent et les modèles que chacun propose : modèles de chat pour les agents, modèles d'intégration et de reclassement pour la recherche.",
+      "Les services modèles que les Agents en ligne appellent et les modèles que chacun propose : modèles de chat pour les Agents, modèles d'intégration et de reclassement pour la recherche.",
   },
   defaultModel: {
     title: 'Modèle de discussion par défaut',
     description:
-      "Les agents en ligne sans modèle de leur propre réponse, comme un nouvel agent ou un agent fourni avec l'application.",
+      "Les Agents en ligne sans modèle de leur propre réponse, comme un nouvel Agent ou un Agent fourni avec l'application.",
     none: "Aucun modèle de chat n'est encore activé. Ajoutez un service de modèle et activez un modèle de discussion : le premier devient le modèle par défaut.",
     saved: 'Le modèle de discussion par défaut est désormais {{model}}.',
   },
@@ -1056,7 +1105,7 @@ const frFR: LocaleResource<typeof enUS> = {
     empty: {
       title: 'Pas encore de service modèle',
       description:
-        'Une fois que vous avez ajouté un service modèle, les agents en ligne peuvent répondre via celui-ci.',
+        'Une fois que vous avez ajouté un service modèle, les Agents en ligne peuvent répondre via celui-ci.',
       readOnly: "Demandez à un administrateur d'ajouter un service modèle.",
     },
     add: {
@@ -1082,7 +1131,7 @@ const frFR: LocaleResource<typeof enUS> = {
       name: 'Nom',
       enabled: 'Activé',
       enabledHint:
-        "Les agents en ligne ne peuvent utiliser ses modèles que lorsqu'il est activé.",
+        "Les Agents en ligne ne peuvent utiliser ses modèles que lorsqu'il est activé.",
       saved: '{{title}} enregistré.',
       delete: 'Supprimer',
       deleteTitle: 'Supprimer {{title}} ?',
@@ -1109,7 +1158,7 @@ const frFR: LocaleResource<typeof enUS> = {
     models: {
       title: 'Modèles',
       description:
-        "Vérifiez les modèles proposés par ce service et indiquez à quoi chacun sert : les modèles de chat répondent aux agents, intègrent le texte d'index des modèles pour la recherche, reclassent les modèles dans l'ordre des résultats de recherche. Un modèle d'intégration peut demander des vecteurs d'une taille.",
+        "Vérifiez les modèles proposés par ce service et indiquez à quoi chacun sert : les modèles de chat répondent aux Agents, intègrent le texte d'index des modèles pour la recherche, reclassent les modèles dans l'ordre des résultats de recherche. Un modèle d'intégration peut demander des vecteurs d'une taille.",
       fetching: 'Récupération des modèles du fournisseur…',
       fetchFailed: 'Le fournisseur ne liste pas ses modèles : {{message}}',
       fetch: 'Récupérer des modèles',
@@ -1220,11 +1269,11 @@ const frFR: LocaleResource<typeof enUS> = {
     backToList: 'Retour aux compétences',
     emptyTitle: "Aucune compétence pour l'instant",
     emptyDescription:
-      "Une fois que vous avez ajouté une compétence, les agents lisent son SKILL.md chaque fois qu'une tâche l'exige.",
+      "Une fois que vous avez ajouté une compétence, les Agents lisent son SKILL.md chaque fois qu'une tâche l'exige.",
     emptyReadOnly: "Demandez à un administrateur d'ajouter une compétence.",
     content: 'SKILL.md',
     contentHint:
-      'Le nom du dossier est le nom du dossier de la compétence : le modifier renomme la compétence. La description indique aux agents quand la lire.',
+      'Le nom du dossier est le nom du dossier de la compétence : le modifier renomme la compétence. La description indique aux Agents quand la lire.',
     contentTooLarge: 'SKILL.md est plus grand que {{max}}.',
     emptyContent: "Cette compétence n'a pas encore de contenu.",
     created: 'Compétence créée "{{name}}"',
@@ -1238,7 +1287,7 @@ const frFR: LocaleResource<typeof enUS> = {
     delete: 'Supprimer la compétence',
     deleteTitle: 'Supprimer la compétence "{{name}}" ?',
     deleteDescription:
-      'Tout agent et tout lieu utilisant cette compétence par défaut la perd.',
+      'Tout Agent et tout lieu utilisant cette compétence par défaut la perd.',
     readOnly:
       "Seuls le créateur de la compétence et les administrateurs de l'espace de travail peuvent modifier cette compétence.",
     conflict:
@@ -1248,7 +1297,7 @@ const frFR: LocaleResource<typeof enUS> = {
       "Quelqu'un a enregistré une nouvelle version après que vous ayez commencé à modifier, vos modifications n'ont donc pas été enregistrées. Copiez ce que vous souhaitez conserver, puis chargez la dernière version et modifiez-la à nouveau.",
     loadLatest: 'Charger la dernière version',
     mountedAgents: 'Agents attachés',
-    noAgents: 'Pas encore attaché à un agent.',
+    noAgents: 'Pas encore attaché à un Agent.',
     defaults: 'Compétence par défaut de : {{places}}.',
     defaultsSeparator: ', ',
     files: 'Fichiers',
@@ -1263,7 +1312,7 @@ const frFR: LocaleResource<typeof enUS> = {
     executable: 'Exécutable',
     scriptBadge: 'Scénario',
     scriptsNote:
-      'Possède des scripts : les agents en ligne peuvent les lire mais ne les exécutent jamais',
+      'Possède des scripts : les Agents en ligne peuvent les lire mais ne les exécutent jamais',
     compatibility: 'Compatibilité : {{value}}',
     fileContent: 'Contenu de {{path}}',
     export: 'Exporter',
@@ -1298,9 +1347,9 @@ const frFR: LocaleResource<typeof enUS> = {
       renameTitle: 'Renommer "{{name}}"',
       conventional: {
         scripts:
-          "Les agents de code peuvent s'exécuter. Les agents en ligne le lisent uniquement.",
+          "Les Agents de code peuvent s'exécuter. Les Agents en ligne le lisent uniquement.",
         references:
-          'Les agents de documentation lisent quand ils en ont besoin.',
+          'Les Agents de documentation lisent quand ils en ont besoin.',
         assets: 'Modèles, images et autres ressources.',
       },
       problems: {
@@ -1342,7 +1391,7 @@ const frFR: LocaleResource<typeof enUS> = {
     },
     template: {
       description:
-        "Que fait cette compétence et quand un agent doit l'utiliser.",
+        "Que fait cette compétence et quand un Agent doit l'utiliser.",
       title: 'Nouvelle compétence',
       whenToUse: 'Quand utiliser',
       whenToUseHint: 'Décrire les tâches qui font appel à cette compétence.',
@@ -1362,7 +1411,7 @@ const frFR: LocaleResource<typeof enUS> = {
     versions: {
       title: 'Versions',
       description:
-        'Chaque enregistrement crée une nouvelle version ; les agents reçoivent toujours la plus récente.',
+        'Chaque enregistrement crée une nouvelle version ; les Agents reçoivent toujours la plus récente.',
       current: 'Actuel',
       compare: 'Comparer',
       compareTitle: 'Version {{version}} → version {{current}}',
@@ -1372,7 +1421,7 @@ const frFR: LocaleResource<typeof enUS> = {
       restore: 'Restaurer',
       restoreTitle: 'Restaurer la version {{version}} ?',
       restoreDescription:
-        "Elle est à nouveau enregistrée en tant que version la plus récente ; les agents l'obtiennent lors de leur prochaine exécution. Rien n'est perdu : la version actuelle reste dans l'historique.",
+        "Elle est à nouveau enregistrée en tant que version la plus récente ; les Agents l'obtiennent lors de leur prochaine exécution. Rien n'est perdu : la version actuelle reste dans l'historique.",
       restored: 'Version restaurée {{version}} comme version {{current}}.',
     },
   },
@@ -1384,13 +1433,14 @@ const frFR: LocaleResource<typeof enUS> = {
         'Runner en attente de mise à jour ; le nouveau travail est suspendu',
       pruning:
         'Exécuteur nettoyant magasin partagé; le nouveau travail est suspendu',
-      toolNotInstalled: "Aucun exécuteur connecté n'a installé cet outil",
+      toolNotInstalled:
+        "Aucun environnement d’exécution connecté n'a installé cet outil",
       incompatible:
-        'Les exécuteurs connectés ne prennent pas en charge cette charge de travail ; mise à niveau requise',
+        'Les environnements d’exécution connectés ne prennent pas en charge cette charge de travail ; mise à niveau requise',
       restricted:
         "Restrictions liées à la stratégie d'exécution, au répertoire ou aux variables",
       unknown: "L'éligibilité à la charge de travail n'est pas établie",
-      agentArchived: "L'agent est archivé",
+      agentArchived: "L'Agent est archivé",
       delayed: 'Prévu pour {{until}}',
       noRunnerOnline: "Pas d'exécution en ligne",
       runnersOffline: "Ses environnements d'exécution sont hors ligne",
@@ -1398,14 +1448,14 @@ const frFR: LocaleResource<typeof enUS> = {
       toolUnavailable:
         'Outil non connecté, désactivé ou modèle demandé indisponible ({{tool}})',
       noSharedRunner:
-        'Seuls les exécuteurs personnels des autres personnes sont en ligne',
+        'Seuls les environnements d’exécution personnels des autres personnes sont en ligne',
       missingFeatures:
         "Aucun moteur d'exécution ne prend en charge {{features}}",
       secretsNotAllowed:
         "Nécessite un environnement d'exécution en équipe : {{variables}} est uniquement destiné aux environnements d'exécution en équipe.",
       sameWorkActive: 'Après la course, déjà dessus',
       concurrencyFull: 'Accès simultané complet ({{active}}/{{limit}})',
-      runnersBusy: 'Les exécuteurs compatibles sont pleins',
+      runnersBusy: 'Les environnements d’exécution compatibles sont pleins',
       toolSlotsFull: 'Emplacements {{tool}} pleins ({{used}}/{{limit}})',
       setupRetrying:
         'La préparation a échoué ; nouvelle tentative : {{detail}}',
@@ -1427,9 +1477,9 @@ const frFR: LocaleResource<typeof enUS> = {
           edit: {
             title: 'Agents de changement et compétences',
             description:
-              "Modifier les paramètres, les compétences et les variables d'un agent, l'archiver, le restaurer et le supprimer, et modifier les compétences. Un agent ne dispose d'aucune capacité autre que celle de l'éditeur.",
+              "Modifier les paramètres, les compétences et les variables d'un Agent, l'archiver, le restaurer et le supprimer, et modifier les compétences. Un Agent ne dispose d'aucune capacité autre que celle de l'éditeur.",
             related:
-              "Agents de changement et compétences (agents qu'ils possèdent et compétences qu'ils ont créées)",
+              "Agents de changement et compétences (Agents qu'ils possèdent et compétences qu'ils ont créées)",
             relatedLabel:
               "Agents que je possède et compétences que j'ai créées",
             relatedHint:
@@ -1455,12 +1505,12 @@ const frFR: LocaleResource<typeof enUS> = {
       agents: {
         title: 'Agents',
         description:
-          "Voir agents, compétences et courses ; changer d'agent et de compétence, annuler et réessayer les exécutions.",
+          "Voir Agents, compétences et courses ; changer d'Agent et de compétence, annuler et réessayer les exécutions.",
       },
       runners: {
         title: 'Environnements d’exécution',
         description:
-          "Voir exécuteurs et jetons d'inscription ; gérer les exécuteurs.",
+          "Voir environnements d’exécution et jetons d'inscription ; gérer les environnements d’exécution.",
       },
       prices: {
         title: 'Tarifs des modèles',

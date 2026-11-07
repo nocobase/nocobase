@@ -13,12 +13,12 @@ const ptBR: LocaleResource<typeof enUS> = {
       apps: {
         title: 'Aplicativos',
         description:
-          'Aplicativos, seus lançamentos, implantações e tempo de execução.',
+          'Aplicativos, seus lançamentos, implantações e ambiente de execução.',
         actions: {
           view: {
             title: 'Ver aplicativos',
             description:
-              'Veja Apps, seus lançamentos, implantações e status de tempo de execução',
+              'Veja Apps, seus lançamentos, implantações e status de ambiente de execução',
             related: 'Ver aplicativos (aqueles relacionados a eles)',
             relatedLabel: 'Aqueles que eu criei',
             relatedHint:
@@ -213,9 +213,9 @@ const ptBR: LocaleResource<typeof enUS> = {
       },
       activationHint: {
         eager:
-          'Iniciado quando implantado e sempre que o tempo de execução for reiniciado.',
+          'Iniciado quando implantado e sempre que o ambiente de execução for reiniciado.',
         onDemand:
-          'Iniciado pela primeira visita após uma implantação ou reinicialização do tempo de execução.',
+          'Iniciado pela primeira visita após uma implantação ou reinicialização do ambiente de execução.',
       },
       idleLabel: 'Parar quando não for visitado por',
       dormantLabel: 'Hibernar quando não for visitado por',
@@ -334,7 +334,7 @@ const ptBR: LocaleResource<typeof enUS> = {
     },
     actors: {
       human: 'pessoa',
-      agent: 'agente',
+      agent: 'Agent',
       key: 'tecla',
       rule: 'regra',
       system: 'sistema',
@@ -527,7 +527,7 @@ const ptBR: LocaleResource<typeof enUS> = {
           syntax: 'Linha {{line}}: escreva como KEY=valor.',
           name: 'Linha {{line}}: {{name}} não é um nome válido. Use letras maiúsculas, dígitos e sublinhados, começando com uma letra.',
           reserved:
-            'Linha {{line}}: {{name}} é definido pelo tempo de execução e não pode ser uma variável.',
+            'Linha {{line}}: {{name}} é definido pelo ambiente de execução e não pode ser uma variável.',
           duplicate:
             'Linha {{line}}: {{name}} já está configurado em uma linha anterior.',
           unterminated:
@@ -763,7 +763,7 @@ const ptBR: LocaleResource<typeof enUS> = {
         VARIABLES_MISSING:
           'Variáveis obrigatórias não estão definidas: {{names}}. Defina-os nas variáveis ​​do aplicativo ou de seu ambiente e, em seguida, implante novamente.',
         VARIABLE_RESERVED:
-          'Este nome é definido pelo tempo de execução e não pode ser uma variável.',
+          'Este nome é definido pelo ambiente de execução e não pode ser uma variável.',
         INVALID_VARIABLE_NAME:
           'O nome de uma variável consiste em letras maiúsculas, dígitos e sublinhados, começando com uma letra.',
         INVALID_VARIABLE_VALUE: 'O valor é muito longo.',
@@ -785,13 +785,14 @@ const ptBR: LocaleResource<typeof enUS> = {
           'O host não pode implementar o aplicativo em que é executado.',
         noStatus: 'O host não informou como foi a implantação.',
         interrupted: 'A implantação foi interrompida por uma reinicialização.',
-        notReported: 'O tempo de execução não relatou o aplicativo.',
+        notReported: 'O ambiente de execução não relatou o aplicativo.',
         notRunning: 'O aplicativo não está em execução após a reinicialização.',
-        deploymentNotReported: 'O tempo de execução não relatou a implantação.',
+        deploymentNotReported:
+          'O ambiente de execução não relatou a implantação.',
         notReady: 'Ainda não está pronto; tente novamente em um momento.',
         checkTimeout: 'O teste não foi concluído em 20 segundos.',
         hostNoSettings:
-          'O tempo de execução local não requer configurações de conexão.',
+          'O ambiente de execução local não requer configurações de conexão.',
       },
       prefixed: {
         startFailed: 'Falha na inicialização: {{detail}}',
@@ -884,7 +885,7 @@ const ptBR: LocaleResource<typeof enUS> = {
       policyDescription: 'Quem pode implantar aqui.',
       appDefaults: 'Aplicativos',
       appDefaultsDescription:
-        'No máximo este número de aplicativos, e quando um aplicativo criado sem sua própria política de tempo de execução para e fica inativo. Vazio: sem limite, nunca.',
+        'No máximo este número de aplicativos, e quando um aplicativo criado sem sua própria política de ambiente de execução para e fica inativo. Vazio: sem limite, nunca.',
       maxApps: 'A maioria dos aplicativos',
       defaultIdle: 'Parar após (minutos sem visita)',
       defaultDormant: 'Inativo após (horas sem visita)',

@@ -4,7 +4,7 @@ import type enUS from './en-US.js';
 
 const idID: LocaleResource<typeof enUS> = {
   navigation: {
-    agentSessions: 'Agen saya',
+    agentSessions: 'My Agents',
   },
   actions: {
     close: 'Tutup',
@@ -28,7 +28,7 @@ const idID: LocaleResource<typeof enUS> = {
     fold: 'Sembunyikan sesi',
     expand: 'Tampilkan sesi',
     label: 'Sesi',
-    title: 'Agen saya',
+    title: 'My Agents',
     archived: 'Diarsipkan',
     archivedView:
       'Pilih sesi yang diarsipkan untuk membacanya. Sesi yang terbuka dan draf yang belum dikirim tetap disimpan.',
@@ -49,7 +49,7 @@ const idID: LocaleResource<typeof enUS> = {
       week: 'Minggu ini',
       earlier: 'Sebelumnya',
     },
-    empty: 'Belum ada sesi. Mulailah berbicara dengan agen di komputer Anda.',
+    empty: 'Belum ada sesi. Mulailah berbicara dengan Agent di komputer Anda.',
     noArchived: 'Tidak ada sesi yang diarsipkan.',
     noMatch: 'Tidak ada pertandingan sesi.',
     more: 'Tampilkan lebih banyak',
@@ -66,7 +66,7 @@ const idID: LocaleResource<typeof enUS> = {
     count_other: 'tugas {{count}}',
     none: 'Tidak ada tugas',
     empty:
-      'Sesi ini belum memiliki tugas. Minta agen untuk mengubah apa yang Anda diskusikan menjadi tugas.',
+      'Sesi ini belum memiliki tugas. Minta Agent untuk mengubah apa yang Anda diskusikan menjadi tugas.',
     created_one: 'Membuat tugas {{count}}',
     created_other: 'Membuat tugas {{count}}',
     start_one: 'Mulai tugas {{count}}',
@@ -91,15 +91,15 @@ const idID: LocaleResource<typeof enUS> = {
     settingsOffline:
       'Komputer ini sedang offline. Hubungkan kembali jembatannya untuk memuat pengaturan dan mengirim.',
     settingsLoading: 'Memuat pengaturan…',
-    settingsFailed: 'Tidak dapat memuat pengaturan agen.',
+    settingsFailed: 'Tidak dapat memuat pengaturan Agent.',
     settingsRetry: 'Coba lagi pengaturan',
-    settingsReset: 'Gunakan default agen',
+    settingsReset: 'Gunakan default Agent',
     settingsUnsupported:
-      'Agen ini tidak memaparkan pengaturan. Standarnya akan digunakan.',
+      'Agent ini tidak memaparkan pengaturan. Standarnya akan digunakan.',
     settingsEmpty:
-      'Agen ini tidak memiliki pengaturan yang dapat dikonfigurasi. Standarnya akan digunakan.',
+      'Agent ini tidak memiliki pengaturan yang dapat dikonfigurasi. Standarnya akan digunakan.',
     pickComputer: 'Pilih komputer',
-    noAgent: 'Tidak ada agen yang tersedia',
+    noAgent: 'Tidak ada Agent yang tersedia',
     folder: 'Direktori di komputer',
     placeholder:
       'Katakan apa yang Anda butuhkan. Beberapa hal sekaligus, atau tangkapan layar, baik-baik saja.',
@@ -107,11 +107,11 @@ const idID: LocaleResource<typeof enUS> = {
       'Agen berjalan dengan akses penuh di direktori yang Anda pilih, seperti di terminal Anda sendiri.',
     noComputer: 'Hubungkan komputer Anda terlebih dahulu',
     noComputerHint:
-      'Sesi dijalankan di komputer Anda sendiri: agen bekerja di sana, masuk dengan akun Anda sendiri, di folder yang Anda izinkan, dan percakapan disimpan di sini. Hubungkan sekali dan online setiap kali komputer menyala. Agen Saya membantu mendiskusikan dan memperjelas persyaratan, mencatat tugas, dan mengikuti kemajuan; setelah Anda memulainya, manajer proyek Studio mengoordinasikan agen untuk mengembangkannya.',
+      'Sesi dijalankan di komputer Anda sendiri: Agent bekerja di sana, masuk dengan akun Anda sendiri, di folder yang Anda izinkan, dan percakapan disimpan di sini. Hubungkan sekali dan online setiap kali komputer menyala. My Agent membantu mendiskusikan dan memperjelas persyaratan, mencatat tugas, dan mengikuti kemajuan; setelah Anda memulainya, manajer proyek Studio mengoordinasikan Agent untuk mengembangkannya.',
     allOffline: 'Komputer Anda sedang offline',
     offlineHint:
       'Jalankan ini di komputer agar tetap terhubung dari setiap login.',
-    noAgentTitle: 'Tidak ada agen yang siap di komputer ini',
+    noAgentTitle: 'Tidak ada Agent yang siap di komputer ini',
     noAgentHint:
       'Instal salah satu dari mereka di sana dan masuk dengan perintahnya sendiri. Bridge memeriksa setiap menit dan mencantumkannya setelah pengaturan dan startup berhasil, tanpa menghubungkan lagi.',
     supported: 'Didukung: {{names}}',
@@ -121,9 +121,9 @@ const idID: LocaleResource<typeof enUS> = {
     computers: 'Komputer saya',
     manageComputers: 'Kelola komputer saya…',
     agents: 'Agen di komputer ini',
-    availableAgents: 'Agen yang tersedia',
+    availableAgents: 'Agent yang tersedia',
     agentsHint:
-      'Hanya agen terinstal yang terdaftar. Jembatan memeriksa setiap menit; penyiapan dan permulaan harus selesai sebelum agen siap.',
+      'Hanya Agent terinstal yang terdaftar. Jembatan memeriksa setiap menit; penyiapan dan permulaan harus selesai sebelum Agent siap.',
     alsoSupported: 'Juga didukung: {{names}}',
     thisComputer: 'Komputer ini',
     recentFolders: 'Baru-baru ini digunakan',
@@ -144,10 +144,10 @@ const idID: LocaleResource<typeof enUS> = {
     offline: '{{computer}} sedang offline',
     offlineBody:
       'Percakapan dan tugasnya disimpan di sini untuk dibaca seperti biasa. Sesi berlanjut setelah komputer kembali.',
-    working: 'Agen sedang bekerja…',
+    working: 'Agent sedang bekerja…',
     startup: {
-      starting: 'Memulai agen di komputer Anda…',
-      opening: 'Membuka sesi agen…',
+      starting: 'Memulai Agent di komputer Anda…',
+      opening: 'Membuka sesi Agent…',
       configuring: 'Menerapkan pengaturan…',
     },
     answering: 'Menjawab',
@@ -190,7 +190,7 @@ const idID: LocaleResource<typeof enUS> = {
     expand: 'Perluas masukan',
     collapse: 'Ciutkan masukan',
     placeholder: 'Balas, atau tanyakan hal berikutnya…',
-    busy: 'Agen menjawab. Pesan Anda akan dikirim setelah selesai.',
+    busy: 'Agent menjawab. Pesan Anda akan dikirim setelah selesai.',
     waiting:
       'Jawab permintaan di atas, atau tulis pesan untuk dikirim setelahnya.',
     offline: 'Komputer sedang offline.',
@@ -201,7 +201,7 @@ const idID: LocaleResource<typeof enUS> = {
     removeImage: 'Hapus gambar',
     attached: 'Sesuai dengan pesannya',
     removeAttached: 'Hapus {{name}}',
-    commands: 'Perintah agen',
+    commands: 'Perintah Agent',
     mentions: 'Sebutkan sebuah tugas',
     keys: {
       send: 'kirim',
@@ -254,11 +254,11 @@ const idID: LocaleResource<typeof enUS> = {
       delete_other: 'menghapus file {{count}}',
       move_one: 'memindahkan file {{count}}',
       move_other: 'memindahkan file {{count}}',
-      search_one: 'mencari sekali',
+      search_one: 'mencari {{count}} kali',
       search_other: 'mencari {{count}} kali',
       execute_one: 'menjalankan perintah {{count}}',
       execute_other: 'menjalankan perintah {{count}}',
-      think_one: 'berpikir sekali',
+      think_one: 'berpikir {{count}} kali',
       think_other: 'berpikir {{count}} kali',
       fetch_one: 'mengambil halaman {{count}}',
       fetch_other: 'mengambil halaman {{count}}',
@@ -311,7 +311,7 @@ const idID: LocaleResource<typeof enUS> = {
     offline: 'Luring',
     title: 'Komputer saya',
     description:
-      'Komputer ini hanya menjalankan sesi Anda sendiri, dan agen bekerja seperti Anda. Mesin yang menjalankan pekerjaan latar belakang tim dikelola secara terpisah.',
+      'Komputer ini hanya menjalankan sesi Anda sendiri, dan Agent bekerja seperti Anda. Mesin yang menjalankan pekerjaan latar belakang tim dikelola secara terpisah.',
     none: 'Belum ada komputer yang terhubung.',
     online: 'Daring',
     lastSeen: 'Terakhir terlihat {{time}}',
@@ -322,7 +322,7 @@ const idID: LocaleResource<typeof enUS> = {
       failed: 'tidak dapat memulai',
     },
     recheckHint:
-      'Saat terhubung, bridge secara otomatis memeriksa agen lagi setiap menit.',
+      'Saat terhubung, bridge secara otomatis memeriksa Agent lagi setiap menit.',
     ready: 'Siap',
     name: 'Nama',
     system: 'Sistem',
@@ -340,7 +340,7 @@ const idID: LocaleResource<typeof enUS> = {
     foldersChosenHint: 'Sesi hanya dapat berfungsi di folder ini.',
     add: 'Hubungkan komputer',
     steps: {
-      agent: 'Instal agen pengkodean dan masuk ke dalamnya',
+      agent: 'Instal Agent pengkodean dan masuk ke dalamnya',
       agentHint:
         'Codex, Claude Code, Gemini CLI, GitHub Copilot, Cursor, Qwen Code, Kimi CLI dan banyak lagi: masuk dengan perintahnya sendiri. Gunakan model terkuat yang Anda bisa.',
       login: 'Masuk dengan akun Anda',

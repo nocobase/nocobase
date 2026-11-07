@@ -12,16 +12,16 @@ const idID: LocaleResource<typeof enUS> = {
         description: 'Agen tim dan keterampilan yang mereka gunakan.',
         actions: {
           edit: {
-            title: 'Ubah agen dan keterampilan',
+            title: 'Ubah Agent dan keterampilan',
             description:
-              'Mengubah pengaturan agen, keterampilan dan variabel, mengarsipkan, memulihkan dan menghapusnya, dan mengedit keterampilan. Seorang agen tidak diberikan kemampuan selain kemampuan editor',
+              'Mengubah pengaturan Agent, keterampilan dan variabel, mengarsipkan, memulihkan dan menghapusnya, dan mengedit keterampilan. Seorang Agent tidak diberikan kemampuan selain kemampuan editor',
             related:
-              'Agen perubahan dan keterampilan (agen yang mereka miliki dan keterampilan yang mereka ciptakan)',
+              'Agent perubahan dan keterampilan (Agent yang mereka miliki dan keterampilan yang mereka ciptakan)',
             relatedLabel:
               'Agen yang saya miliki dan keterampilan yang saya buat',
             relatedHint:
               'Agen yang saya miliki, dan keterampilan yang saya ciptakan',
-            all: 'Agen perubahan dan keterampilan (semua)',
+            all: 'Agent perubahan dan keterampilan (semua)',
           },
         },
       },
@@ -42,7 +42,7 @@ const idID: LocaleResource<typeof enUS> = {
       agents: {
         title: 'Agen',
         description:
-          'Lihat agen, keterampilan, dan lari; ubah agen dan keterampilan, batalkan dan coba lagi.',
+          'Lihat Agent, keterampilan, dan lari; ubah Agent dan keterampilan, batalkan dan coba lagi.',
       },
       runners: {
         title: 'Lingkungan runtime',

@@ -28,6 +28,8 @@ it('updates the calendar locale without remounting, including Traditional Chines
     ['de-DE', 'de'],
     ['vi-VN', 'vi'],
     ['id-ID', 'id'],
+    ['ru-RU', 'ru'],
+    ['ko-KR', 'ko'],
   ]) {
     await act(() => runtime.changeLanguage(language));
     expect(hook.result.current.code).toBe(code);

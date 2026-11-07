@@ -4,7 +4,7 @@ import type enUS from './en-US.js';
 
 const frFR: LocaleResource<typeof enUS> = {
   navigation: {
-    agentSessions: 'Mes agents',
+    agentSessions: 'My Agents',
   },
   actions: {
     close: 'Fermer',
@@ -29,7 +29,7 @@ const frFR: LocaleResource<typeof enUS> = {
     fold: 'Masquer les sessions',
     expand: 'Afficher les sessions',
     label: 'Séances',
-    title: 'Mes agents',
+    title: 'My Agents',
     archived: 'Archivé',
     archivedView:
       'Choisissez une séance archivée pour la lire. Votre séance ouverte et votre brouillon non envoyé sont conservés.',
@@ -53,7 +53,7 @@ const frFR: LocaleResource<typeof enUS> = {
       earlier: 'Plus tôt',
     },
     empty:
-      "Aucune session pour l'instant. Démarrez-en un pour parler avec un agent sur votre ordinateur.",
+      "Aucune session pour l'instant. Démarrez-en un pour parler avec un Agent sur votre ordinateur.",
     noArchived: 'Aucune session archivée.',
     noMatch: 'Aucune correspondance de session.',
     more: 'Afficher plus',
@@ -70,7 +70,7 @@ const frFR: LocaleResource<typeof enUS> = {
     count_other: 'Tâches {{count}}',
     none: 'Aucune tâche',
     empty:
-      "Cette session n'a pas encore de tâches. Demandez à l'agent de transformer ce dont vous avez discuté en tâches.",
+      "Cette session n'a pas encore de tâches. Demandez à l'Agent de transformer ce dont vous avez discuté en tâches.",
     created_one: 'Tâche {{count}} créée',
     created_other: 'Tâches {{count}} créées',
     start_one: 'Démarrer la tâche {{count}}',
@@ -99,15 +99,15 @@ const frFR: LocaleResource<typeof enUS> = {
     settingsOffline:
       'Cet ordinateur est hors ligne. Reconnectez son pont pour charger les paramètres et envoyer.',
     settingsLoading: 'Chargement des paramètres…',
-    settingsFailed: "Impossible de charger les paramètres de l'agent.",
+    settingsFailed: "Impossible de charger les paramètres de l'Agent.",
     settingsRetry: 'Réessayer les paramètres',
-    settingsReset: "Utiliser les valeurs par défaut de l'agent",
+    settingsReset: "Utiliser les valeurs par défaut de l'Agent",
     settingsUnsupported:
-      "Cet agent n'expose pas les paramètres. Ses valeurs par défaut seront utilisées.",
+      "Cet Agent n'expose pas les paramètres. Ses valeurs par défaut seront utilisées.",
     settingsEmpty:
-      "Cet agent n'a aucun paramètre configurable. Ses valeurs par défaut seront utilisées.",
+      "Cet Agent n'a aucun paramètre configurable. Ses valeurs par défaut seront utilisées.",
     pickComputer: 'Choisissez un ordinateur',
-    noAgent: 'Aucun agent disponible',
+    noAgent: 'Aucun Agent disponible',
     folder: "Répertoire sur l'ordinateur",
     placeholder:
       "Dites ce dont vous avez besoin. Plusieurs choses à la fois, ou une capture d'écran, suffisent.",
@@ -115,11 +115,11 @@ const frFR: LocaleResource<typeof enUS> = {
       "Les agents s'exécutent avec un accès complet dans le répertoire que vous choisissez, comme dans votre propre terminal.",
     noComputer: "Connectez d'abord votre ordinateur",
     noComputerHint:
-      "Les sessions s'exécutent sur votre propre ordinateur : l'agent y travaille connecté avec votre propre compte, dans les dossiers que vous autorisez, et les conversations sont conservées ici. Connectez-le une fois et il est en ligne chaque fois que l'ordinateur est allumé. Mon agent aide à discuter et à clarifier les exigences, à enregistrer les tâches et à suivre les progrès ; une fois que vous les avez démarrés, le chef de projet de Studio coordonne les agents pour les développer.",
+      "Les sessions s'exécutent sur votre propre ordinateur : l'Agent y travaille connecté avec votre propre compte, dans les dossiers que vous autorisez, et les conversations sont conservées ici. Connectez-le une fois et il est en ligne chaque fois que l'ordinateur est allumé. My Agent aide à discuter et à clarifier les exigences, à enregistrer les tâches et à suivre les progrès ; une fois que vous les avez démarrés, le chef de projet de Studio coordonne les Agents pour les développer.",
     allOffline: 'Vos ordinateurs sont hors ligne',
     offlineHint:
       "Exécutez ceci sur l'ordinateur pour le garder connecté à chaque connexion.",
-    noAgentTitle: "Aucun agent n'est prêt sur cet ordinateur",
+    noAgentTitle: "Aucun Agent n'est prêt sur cet ordinateur",
     noAgentHint:
       "Installez-en un et connectez-vous avec sa propre commande. Le pont vérifie toutes les minutes et les répertorie une fois l'installation et le démarrage réussis, sans se reconnecter.",
     supported: 'Pris en charge : {{names}}',
@@ -131,7 +131,7 @@ const frFR: LocaleResource<typeof enUS> = {
     agents: 'Agents sur cet ordinateur',
     availableAgents: 'Agents disponibles',
     agentsHint:
-      "Seuls les agents installés sont répertoriés. Le pont vérifie toutes les minutes ; l'installation et le démarrage doivent être terminés avant qu'un agent soit prêt.",
+      "Seuls les Agents installés sont répertoriés. Le pont vérifie toutes les minutes ; l'installation et le démarrage doivent être terminés avant qu'un Agent soit prêt.",
     alsoSupported: 'Également pris en charge : {{names}}',
     thisComputer: 'Cet ordinateur',
     recentFolders: 'Récemment utilisé',
@@ -153,10 +153,10 @@ const frFR: LocaleResource<typeof enUS> = {
     offline: '{{computer}} est hors ligne',
     offlineBody:
       "La conversation et ses tâches sont conservées ici pour être lues comme d'habitude. La session se poursuit une fois l'ordinateur de retour.",
-    working: "L'agent travaille…",
+    working: "L'Agent travaille…",
     startup: {
-      starting: "Démarrage de l'agent sur votre ordinateur…",
-      opening: "Ouverture de la session de l'agent…",
+      starting: "Démarrage de l'Agent sur votre ordinateur…",
+      opening: "Ouverture de la session de l'Agent…",
       configuring: 'Application des paramètres…',
     },
     answering: 'Répondre',
@@ -199,7 +199,7 @@ const frFR: LocaleResource<typeof enUS> = {
     expand: "Développer l'entrée",
     collapse: "Réduire l'entrée",
     placeholder: 'Répondez ou demandez la chose suivante…',
-    busy: "L'agent répond. Votre message est envoyé une fois terminé.",
+    busy: "L'Agent répond. Votre message est envoyé une fois terminé.",
     waiting:
       'Répondez à la demande ci-dessus ou écrivez un message à envoyer après.',
     offline: "L'ordinateur est hors ligne.",
@@ -210,7 +210,7 @@ const frFR: LocaleResource<typeof enUS> = {
     removeImage: "Supprimer l'image",
     attached: 'Va avec le message',
     removeAttached: 'Supprimer {{name}}',
-    commands: "Les ordres de l'agent",
+    commands: "Les ordres de l'Agent",
     mentions: 'Mentionner une tâche',
     keys: {
       send: 'envoyer',
@@ -263,11 +263,11 @@ const frFR: LocaleResource<typeof enUS> = {
       delete_other: 'fichiers {{count}} supprimés',
       move_one: 'fichier {{count}} déplacé',
       move_other: 'fichiers {{count}} déplacés',
-      search_one: 'recherché une fois',
+      search_one: 'recherché {{count}} fois',
       search_other: 'recherche {{count}} fois',
       execute_one: 'exécution de la commande {{count}}',
       execute_other: 'a exécuté les commandes {{count}}',
-      think_one: "j'ai pensé une fois",
+      think_one: 'a réfléchi {{count}} fois',
       think_other: 'pensé fois {{count}}',
       fetch_one: 'page {{count}} récupérée',
       fetch_other: 'pages {{count}} récupérées',
@@ -332,7 +332,7 @@ const frFR: LocaleResource<typeof enUS> = {
     offline: 'Hors ligne',
     title: 'Mes ordinateurs',
     description:
-      'Ces ordinateurs exécutent uniquement vos propres sessions et les agents travaillent comme vous. Les machines qui exécutent le travail en arrière-plan de l’équipe sont gérées séparément.',
+      'Ces ordinateurs exécutent uniquement vos propres sessions et les Agents travaillent comme vous. Les machines qui exécutent le travail en arrière-plan de l’équipe sont gérées séparément.',
     none: "Aucun ordinateur n'est encore connecté.",
     online: 'En ligne',
     lastSeen: 'Vu pour la dernière fois {{time}}',
@@ -343,7 +343,7 @@ const frFR: LocaleResource<typeof enUS> = {
       failed: "n'a pas pu démarrer",
     },
     recheckHint:
-      'Une fois connecté, le pont vérifie automatiquement les agents toutes les minutes.',
+      'Une fois connecté, le pont vérifie automatiquement les Agents toutes les minutes.',
     ready: 'Prêt',
     name: 'Nom',
     system: 'Système',
@@ -363,7 +363,7 @@ const frFR: LocaleResource<typeof enUS> = {
       'Les sessions ne peuvent fonctionner que dans ces dossiers.',
     add: 'Connecter un ordinateur',
     steps: {
-      agent: 'Installez un agent de codage et connectez-vous à celui-ci.',
+      agent: 'Installez un Agent de codage et connectez-vous à celui-ci.',
       agentHint:
         'Codex, Claude Code, Gemini CLI, GitHub Copilot, Cursor, Qwen Code, Kimi CLI et d’autres : connectez-vous avec la commande propre à chaque outil. Utilisez le modèle le plus performant possible.',
       login: 'Connectez-vous avec votre compte',
