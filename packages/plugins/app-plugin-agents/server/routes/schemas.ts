@@ -1244,6 +1244,16 @@ const runObject = z.object({
   actualEffortSource: z.string().nullable().optional(),
   actualEffortAt: dateTime.nullable().optional(),
   machineHidden: z.boolean().optional(),
+  runnerPinId: z
+    .string()
+    .nullable()
+    .optional()
+    .describe('The original Runner holding preserved quota work.'),
+  sessionId: z
+    .string()
+    .nullable()
+    .optional()
+    .describe('The original tool session for strict continuation.'),
   runnerId: z.string().nullable().meta({
     description:
       'The runner holding it; `server:<instance>` for an online run held by an application instance.',

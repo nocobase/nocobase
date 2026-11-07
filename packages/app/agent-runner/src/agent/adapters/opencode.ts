@@ -26,7 +26,12 @@ import { access } from 'node:fs/promises';
 import path from 'node:path';
 import type { ToolCapabilities } from '@nocobase/agent-protocol';
 import { boundedModels } from './models.ts';
-import { requireRecoverableSession, sessionUnavailable, recoveryEvent, recoveryPrompt } from './session-recovery.ts';
+import {
+  requireRecoverableSession,
+  sessionUnavailable,
+  recoveryEvent,
+  recoveryPrompt,
+} from './session-recovery.ts';
 import { withDetectionEnvironment } from './detection.ts';
 
 import { detectExec } from './detect-exec.ts';

@@ -41,7 +41,12 @@ import { claudeQuota } from './quota.ts';
 import { detectExec } from './detect-exec.ts';
 import { withDetectionEnvironment } from './detection.ts';
 import { boundedModels } from './models.ts';
-import { requireRecoverableSession, sessionUnavailable, recoveryEvent, recoveryPrompt } from './session-recovery.ts';
+import {
+  requireRecoverableSession,
+  sessionUnavailable,
+  recoveryEvent,
+  recoveryPrompt,
+} from './session-recovery.ts';
 import type { ClaudeFailureSignal } from './classify.ts';
 import { MAX_EVENT_TEXT_BYTES } from './types.ts';
 import type {

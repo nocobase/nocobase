@@ -948,7 +948,10 @@ export class RunWorker {
     for (;;) {
       this.lastActivity = Date.now();
       if (payload.session?.strict && !this.sessionId)
-        return this.finishFailed('sessionUnavailable', 'The original session id was not reported. Restore the session or explicitly change Agent.');
+        return this.finishFailed(
+          'sessionUnavailable',
+          'The original session id was not reported. Restore the session or explicitly change Agent.',
+        );
       const handle = adapter.start({
         ...(payload.outputBlocks ? { outputBlocks: true } : {}),
         strictSession: payload.session?.strict,

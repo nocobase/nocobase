@@ -136,7 +136,12 @@ export async function finishRun(
   );
   await revokeTokens(tx, run.id, now);
   const ended = (await findRunRecord(tx.conn, run.id))!;
-  tx.emit({ type: 'run.changed', runId: run.id, status: ended.status });
+  tx.emit({
+    type: 'run.changed',
+    ...(run.runnerPinId ? { quotaWait: false } : {}),
+    runId: run.id,
+    status: ended.status,
+  });
   await deps.subjects
     .get(ended.subjectKind)
     ?.sink?.onRunFinished?.(tx, toRun(ended));

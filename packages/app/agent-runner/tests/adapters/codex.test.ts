@@ -110,6 +110,25 @@ async function handshake(
 }
 
 describe('reported execution settings', () => {
+  it('refuses a missing strict rollout without creating a new thread', async () => {
+    const { adapter } = adapterWith(async (fake) => {
+      fake.respond(await fake.nextRequest('initialize'), {});
+      const resume = await fake.nextRequest('thread/resume');
+      fake.emit({
+        id: resume.id,
+        error: { code: -32000, message: 'no rollout found for thread id old' },
+      });
+    });
+    const handle = adapter.start(
+      session({ resumeSessionId: 'old', strictSession: true }),
+    );
+    await drain(handle);
+    expect(await handle.result).toMatchObject({
+      exit: 'error',
+      error: { reason: 'sessionUnavailable' },
+    });
+  });
+
   it('starts a new thread only when resume reports a missing rollout, retaining prompt and early input', async () => {
     const { adapter, spawn } = adapterWith(async (fake) => {
       fake.respond(await fake.nextRequest('initialize'), {});

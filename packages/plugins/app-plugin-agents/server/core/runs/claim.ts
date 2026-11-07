@@ -345,6 +345,20 @@ export function fitsActor(
   return runner.trust === 'team' || runner.ownerUserId === actorUserId;
 }
 
+/** A strict continuation keeps the tool/model that owns its original session. */
+function quotaAgent(run: RunRecord, agent: Agent): Agent {
+  if (!run.runnerPinId || run.freshSession) return agent;
+  const last = toExecutions(run.executionHistory).at(-1);
+  return last
+    ? {
+        ...agent,
+        modelEntries: agent.modelEntries.filter(
+          (entry) => entry.tool === last.tool && entry.model === last.model,
+        ),
+      }
+    : agent;
+}
+
 /** Whether `runner` may run `run` of `agent`, before any lock is taken and before its payload is known. */
 export function fits(
   runner: Runner,
@@ -352,8 +366,16 @@ export function fits(
   run: RunRecord,
   now: number,
 ): boolean {
-  return (!run.runnerPinId || run.runnerPinId === runner.id) &&
-    fitsActor(runner, agent, run.actorUserId, toRun(run).requires, now);
+  return (
+    (!run.runnerPinId || run.runnerPinId === runner.id) &&
+    fitsActor(
+      runner,
+      quotaAgent(run, agent),
+      run.actorUserId,
+      toRun(run).requires,
+      now,
+    )
+  );
 }
 
 /** The runner features a payload needs. */
@@ -1237,13 +1259,14 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
     let brief = await render();
     const briefFingerprint = fingerprint(agent, entry, brief.layers, skills);
     const strict = Boolean(run.runnerPinId && !run.freshSession);
-    const resume = strict ? Boolean(run.sessionId) :
-      !run.freshSession &&
-      binding.sessionPolicy?.(effectiveClaim) !== 'fresh' &&
-      !clean &&
-      session &&
-      !session.poisoned &&
-      session.fingerprint === briefFingerprint;
+    const resume = strict
+      ? Boolean(run.sessionId)
+      : !run.freshSession &&
+        binding.sessionPolicy?.(effectiveClaim) !== 'fresh' &&
+        !clean &&
+        session &&
+        !session.poisoned &&
+        session.fingerprint === briefFingerprint;
     // A kept session that cannot be resumed: the new one is told what came before, as a first one is. The history
     // is outside the fingerprint, so it does not change.
     let recoveryContext: string | undefined;
@@ -1291,6 +1314,11 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
             'The previous attempt was interrupted by a runner upgrade. Continue from the current state.',
           ]
         : []),
+      ...(strict
+        ? [
+            'Quota recovery: continue the interrupted step from the existing session, progress and files.',
+          ]
+        : []),
       ...resumeNotes,
       ...(sessionNote ? [sessionNote] : []),
     ].join('\n\n');
@@ -1335,7 +1363,13 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
         system: brief.prompt,
         turn,
         session: strict || resume ? 'resume' : 'fresh',
-        ...(strict ? (run.sessionId ? { resumeSessionId: run.sessionId } : {}) : resume && session ? { resumeSessionId: session.sessionId } : {}),
+        ...(strict
+          ? run.sessionId
+            ? { resumeSessionId: run.sessionId }
+            : {}
+          : resume && session
+            ? { resumeSessionId: session.sessionId }
+            : {}),
         ...(resume && recoveryContext ? { recoveryContext } : {}),
       },
       inputs,
@@ -1688,6 +1722,8 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
     candidate: RunRecord,
     reported: ToolRoom,
   ): Promise<Attempt> {
+    if (candidate.runnerPinId && candidate.runnerPinId !== runner.id)
+      return { kind: 'skipped' };
     const conn = tx.read();
     // Rules that do not depend on who the run acts as come first, and settle the rest of the pass: an agent at its
     // limit is checked once per poll, not once per queued run.
@@ -1933,8 +1969,15 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
           },
         });
         if (current.runnerPinId && !current.freshSession)
-          await deps.subjects.get(run.subjectKind)?.sink?.onQuotaResumed?.(unit, toRun(run));
-        unit.emit({ type: 'run.changed', runId: run.id, status: 'dispatched' });
+          await deps.subjects
+            .get(run.subjectKind)
+            ?.sink?.onQuotaResumed?.(unit, toRun(run));
+        unit.emit({
+          type: 'run.changed',
+          ...(current.runnerPinId ? { quotaWait: false } : {}),
+          runId: run.id,
+          status: 'dispatched',
+        });
         if (variableRefs(candidate.teamOnlyVariables).length > 0)
           unit.emit({
             type: 'notice.cleared',
@@ -2350,9 +2393,15 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
         ? deps.runners.all(conn)
         : Promise.resolve([runner]));
     for (const candidate of queued) {
-      if (seen.has(candidate.id) || full.has(candidate.agentId)) continue;
+      if (
+        seen.has(candidate.id) ||
+        full.has(candidate.agentId) ||
+        (candidate.runnerPinId && candidate.runnerPinId !== runner.id)
+      )
+        continue;
       seen.add(candidate.id);
-      const agent = agents.get(candidate.agentId);
+      const configured = agents.get(candidate.agentId);
+      const agent = configured ? quotaAgent(candidate, configured) : undefined;
       if (
         !agent ||
         (!deps.subjects.get(candidate.subjectKind)?.actsAs &&
@@ -2367,7 +2416,9 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       if (reserved && reserved !== runner.id) continue;
       // Work bound to another runner waits for it; work bound here takes no other preference.
       const pin = deps.subjects.get(candidate.subjectKind)?.runnerPin;
-      const pinned = pin ? await pin.runnerOf(conn, toRun(candidate)) : null;
+      const pinned =
+        candidate.runnerPinId ??
+        (pin ? await pin.runnerOf(conn, toRun(candidate)) : null);
       if (pinned !== null && pinned !== runner.id) continue;
       const preferred = affinity.preferred.get(candidate.id);
       if (

@@ -31,7 +31,12 @@ import { stripVTControlCharacters } from 'node:util';
 import { TOOL_EFFORTS } from '@nocobase/agent-protocol';
 import type { ToolCapabilities, ToolModel } from '@nocobase/agent-protocol';
 import { boundedModels } from './models.ts';
-import { SessionUnavailableError, sessionUnavailable, recoveryEvent, recoveryPrompt } from './session-recovery.ts';
+import {
+  SessionUnavailableError,
+  sessionUnavailable,
+  recoveryEvent,
+  recoveryPrompt,
+} from './session-recovery.ts';
 import { detectExec } from './detect-exec.ts';
 
 import {

@@ -1,7 +1,11 @@
 import type { AdapterEvent, AdapterResult, AdapterSession } from './types.ts';
 
 export class SessionUnavailableError extends Error {
-  constructor() { super('The original session cannot be resumed. Restore it on this runner and retry, or explicitly change Agent.'); }
+  constructor() {
+    super(
+      'The original session cannot be resumed. Restore it on this runner and retry, or explicitly change Agent.',
+    );
+  }
 }
 
 export function requireRecoverableSession(session: AdapterSession): void {
@@ -9,7 +13,13 @@ export function requireRecoverableSession(session: AdapterSession): void {
 }
 
 export function sessionUnavailable(error: unknown): AdapterResult | undefined {
-  return error instanceof SessionUnavailableError ? { exit: 'error', usage: [], error: { reason: 'sessionUnavailable', message: error.message } } : undefined;
+  return error instanceof SessionUnavailableError
+    ? {
+        exit: 'error',
+        usage: [],
+        error: { reason: 'sessionUnavailable', message: error.message },
+      }
+    : undefined;
 }
 
 export const SESSION_RECOVERY_PROMPT: string =
