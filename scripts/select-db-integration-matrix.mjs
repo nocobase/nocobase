@@ -84,6 +84,16 @@ export const packageSuites = [
     filter: '@nocobase/app-plugin-agents',
     tests: ['tests/claim-pagination.test.ts'],
   },
+  ...['postgres', 'mysql'].map((dialect) => ({
+    // A replacement that read an older REPEATABLE READ snapshot before the agent lock must not also take a retried run.
+    paths: [
+      'packages/plugins/app-plugin-agents/server/core/runs/run.service.ts',
+      'packages/plugins/app-plugin-agents/tests/quota-replacement-race.test.ts',
+    ],
+    dialect,
+    filter: '@nocobase/app-plugin-agents',
+    tests: ['tests/quota-replacement-race.test.ts'],
+  })),
   {
     // SQL Server requires rebuilding the unique index before shrinking the legacy artifact-key column.
     paths: [

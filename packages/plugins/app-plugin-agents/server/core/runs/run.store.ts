@@ -32,6 +32,7 @@ export interface RunRecord {
   readonly agentId: string;
   readonly agentType: string;
   readonly runnerId: string | null;
+  readonly runnerPinId?: string | null;
   readonly executionHistory?: JsonColumn;
   readonly tool?: string | null;
   readonly modelService?: string | null;
@@ -238,6 +239,8 @@ export function toRun(record: RunRecord): Run {
     agentId: record.agentId,
     agentType: record.agentType === 'online' ? 'online' : 'runner',
     runnerId: record.runnerId,
+    runnerPinId: record.runnerPinId ?? null,
+    sessionId: record.sessionId,
     executions,
     runnerName: latest?.runnerName ?? null,
     runnerOwnerUserId: latest?.runnerOwnerUserId ?? null,

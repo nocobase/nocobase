@@ -220,7 +220,11 @@ export function createProjectService(deps: ProjectDeps): ProjectService {
           await addMember(tx.conn, deps.ids.next(), id, viewer.userId);
         if (leadUserId && leadUserId !== viewer.userId)
           await addMember(tx.conn, deps.ids.next(), id, leadUserId);
-        tx.emit({ type: 'project.created', projectId: id });
+        tx.emit({
+          type: 'project.created',
+          projectId: id,
+          creatorUserId: person ? viewer.userId : null,
+        });
       });
       return detail(deps, deps.tx.read(), id);
     },

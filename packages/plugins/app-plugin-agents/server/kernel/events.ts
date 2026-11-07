@@ -70,6 +70,8 @@ export type AgentsEvent =
     }
   | {
       readonly type: 'run.changed';
+      /** Present only on preserved quota suspension or settlement; ordinary listeners do no extra reads. */
+      readonly quotaWait?: boolean;
       readonly runId: string;
       readonly status: RunStatus;
     }

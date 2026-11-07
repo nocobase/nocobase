@@ -569,6 +569,8 @@ const pages = {
     checkoutFailed: 'The repository checkout failed.',
     toolAuth: 'The coding tool is not signed in on the runtime.',
     toolQuota: 'The coding tool ran out of quota.',
+    sessionUnavailable:
+      'The original coding-tool session could not be resumed.',
     toolRateLimit: 'The coding tool was rate limited.',
     toolNetwork: 'The coding tool could not reach its service.',
     toolProcess: 'The coding tool exited unexpectedly.',

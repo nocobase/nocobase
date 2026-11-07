@@ -253,6 +253,9 @@ const deDE: LocaleResource<typeof enUS> = {
       stopped: 'Angehalten',
       stoppedOnDemand: 'Angehalten (beginnt bei Besuch)',
       dormant: 'Winterschlaf (bei Besuch vorbereitet)',
+      waitingCapacity: 'Wartet auf freien Platz',
+      waitingMemory: 'Wartet auf Speicher',
+      waitingRecycle: 'Wartet auf Host-Neustart',
       failed: 'Fehlgeschlagen',
       unknown: 'Unbekannt',
       deploying: 'Bereitstellung',
@@ -539,6 +542,47 @@ const deDE: LocaleResource<typeof enUS> = {
       deployments: 'Bereitstellungen',
       variables: 'Variablen',
       settings: 'Einstellungen',
+    },
+    sharedHost: {
+      title: 'Gemeinsamer App-Host',
+      description:
+        'Apps aller Umgebungen auf diesem Host teilen sich einen Prozess und dessen Speicher.',
+      summary:
+        '{{running}} von {{deployed}} bereitgestellten Apps laufen oder starten',
+      memory:
+        'Heap {{heapUsed}} von {{heapLimit}} · Prozessspeicher {{rss}} · {{available}} auf dem Server verfügbar',
+      memoryNote: 'Summen des gesamten Prozesses, nicht einer einzelnen App.',
+      recycling: {
+        pending:
+          'Alter Code wird durch einen Neustart dieses Hosts freigegeben, sobald keine App mehr genutzt wird. Neue Versionen warten bis dahin; laufende Apps antworten weiter.',
+        restarting:
+          'Dieser Host startet neu. Seine Apps antworten „gleich erneut versuchen“, bis sie zurück sind.',
+      },
+      restoreFailed:
+        '{{name}}: Die Apps konnten nicht wiederhergestellt werden; neuer Versuch im Hintergrund.',
+      columns: {
+        app: 'App',
+        state: 'Status',
+        why: 'Grund',
+        lastAccess: 'Letzter Zugriff',
+      },
+      hidden: 'Eine App, die Sie nicht sehen dürfen',
+      empty: 'Auf diesem Host läuft keine App.',
+      idle: 'Untätig; wird zuerst angehalten, wenn Platz gebraucht wird',
+      holds: {
+        requests: 'Bearbeitet Anfragen',
+        connections: 'Offene Verbindungen',
+        starting: 'Startet',
+        operation: 'Wird bereitgestellt oder angehalten',
+        resident: 'Läuft dauerhaft',
+        busy: 'Beschäftigt',
+        recent: 'In der letzten Minute genutzt',
+      },
+      waiting: {
+        capacity: 'Start abgelehnt: App-Limit oder Startwarteschlange voll',
+        memory: 'Start abgelehnt: nicht genug Speicher',
+        recycle: 'Start abgelehnt: neuer Code wartet auf den Host-Neustart',
+      },
     },
     overview: {
       currentRelease: 'Aktuelle Version',

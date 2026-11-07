@@ -232,6 +232,27 @@ test('claim pagination changes select the PostgreSQL boundary and competition su
   }
 });
 
+const replacementRace = ['postgres', 'mysql'].map((dialect) => ({
+  dialect,
+  filter: '@nocobase/app-plugin-agents',
+  tests: 'tests/quota-replacement-race.test.ts',
+}));
+
+test('run replacement changes select the REPEATABLE READ interleaving on both server dialects', () => {
+  assert.deepEqual(
+    selectPackageSuites([
+      'packages/plugins/app-plugin-agents/server/core/runs/run.service.ts',
+    ]),
+    [claimConcurrency, ...replacementRace],
+  );
+  assert.deepEqual(
+    selectPackageSuites([
+      'packages/plugins/app-plugin-agents/tests/quota-replacement-race.test.ts',
+    ]),
+    replacementRace,
+  );
+});
+
 const receiptConcurrency = ['postgres', 'mysql'].map((dialect) => ({
   dialect,
   filter: '@nocobase/app-server',
@@ -347,6 +368,7 @@ test('missing or unavailable comparison commits conservatively select every data
       ...withdrawalConcurrency,
       claimConcurrency,
       claimPagination,
+      ...replacementRace,
       artifactKeyMigration,
     ]);
   }

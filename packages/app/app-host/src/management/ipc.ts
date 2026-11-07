@@ -33,6 +33,7 @@ import type {
 } from './types.ts';
 
 type IpcMethod =
+  | 'prepareRotation'
   | 'cancelDeployment'
   | 'deploymentProgress'
   | 'publishAppConfig'
@@ -56,6 +57,23 @@ export interface IpcHostManagementClientOptions {
 }
 
 export class IpcHostManagementClient implements HostManagementService {
+  prepareRotation(options: {
+    pauseOnly?: boolean;
+    ignoreConnections?: boolean;
+    /** Gate incoming requests even while responses are active, then drain for this many milliseconds. */
+    drainTimeoutMs?: number;
+    resume?: boolean;
+  }): Promise<boolean> {
+    // A full configured request drain must not race the ordinary management RPC timeout.
+    return this.call(
+      'prepareRotation',
+      options,
+      undefined,
+      options.drainTimeoutMs === undefined
+        ? this.timeoutMs
+        : Math.min(2_147_483_647, this.timeoutMs + options.drainTimeoutMs),
+    );
+  }
   cancelDeployment(
     operationId: string,
     appId: string,
@@ -166,10 +184,11 @@ export class IpcHostManagementClient implements HostManagementService {
     method: IpcMethod,
     payload?: unknown,
     listener?: DeploymentLogListener,
+    timeoutMs: number = this.timeoutMs,
   ): Promise<T> {
     return callIpc<T>(this.child, {
       session: this.session,
-      timeoutMs: this.timeoutMs,
+      timeoutMs,
       method,
       payload,
       onLog: listener,
@@ -230,6 +249,15 @@ export class IpcHostManagementServer {
         result = await this.service.publishAppConfig(
           payloadAppId(request),
           (request.payload as { content: string }).content,
+        );
+        break;
+      case 'prepareRotation':
+        if (!this.service.prepareRotation)
+          throw new Error('Host rotation handshake is unavailable');
+        result = await this.service.prepareRotation(
+          request.payload as Parameters<
+            NonNullable<HostManagementService['prepareRotation']>
+          >[0],
         );
         break;
       case 'getStatus':

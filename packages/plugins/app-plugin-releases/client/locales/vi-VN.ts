@@ -251,6 +251,9 @@ const viVN: LocaleResource<typeof enUS> = {
       stopped: 'Đã dừng',
       stoppedOnDemand: 'Đã dừng (bắt đầu truy cập)',
       dormant: 'Ngủ đông (chuẩn bị khi ghé thăm)',
+      waitingCapacity: 'Đang chờ chỗ trống',
+      waitingMemory: 'Đang chờ bộ nhớ',
+      waitingRecycle: 'Đang chờ máy chủ khởi động lại',
       failed: 'Thất bại',
       unknown: 'Không rõ',
       deploying: 'Triển khai',
@@ -536,6 +539,48 @@ const viVN: LocaleResource<typeof enUS> = {
       deployments: 'Triển khai',
       variables: 'Biến',
       settings: 'Cài đặt',
+    },
+    sharedHost: {
+      title: 'Máy chủ ứng dụng dùng chung',
+      description:
+        'Ứng dụng của mọi môi trường trên máy chủ này dùng chung một tiến trình và bộ nhớ của nó.',
+      summary:
+        '{{running}} trên {{deployed}} ứng dụng đã triển khai đang chạy hoặc đang khởi động',
+      memory:
+        'Heap {{heapUsed}} / {{heapLimit}} · bộ nhớ tiến trình {{rss}} · còn {{available}} trên máy chủ',
+      memoryNote: 'Tổng của cả tiến trình, không phải của một ứng dụng.',
+      recycling: {
+        pending:
+          'Mã cũ được giải phóng bằng cách khởi động lại máy chủ này khi không còn ứng dụng nào được dùng. Phiên bản mới chờ đến lúc đó; ứng dụng đang chạy vẫn phục vụ.',
+        restarting:
+          'Máy chủ này đang khởi động lại. Các ứng dụng sẽ trả lời “thử lại sau giây lát” cho đến khi hoạt động trở lại.',
+      },
+      restoreFailed:
+        '{{name}}: không khôi phục được các ứng dụng; đang thử lại ở chế độ nền.',
+      columns: {
+        app: 'Ứng dụng',
+        state: 'Trạng thái',
+        why: 'Lý do',
+        lastAccess: 'Truy cập gần nhất',
+      },
+      hidden: 'Một ứng dụng bạn không có quyền xem',
+      empty: 'Không có ứng dụng nào đang chạy trên máy chủ này.',
+      idle: 'Rảnh; bị dừng trước khi cần chỗ',
+      holds: {
+        requests: 'Đang xử lý yêu cầu',
+        connections: 'Kết nối đang mở',
+        starting: 'Đang khởi động',
+        operation: 'Đang triển khai hoặc dừng',
+        resident: 'Luôn chạy',
+        busy: 'Bận',
+        recent: 'Được dùng trong một phút qua',
+      },
+      waiting: {
+        capacity:
+          'Từ chối khởi động: đã đạt giới hạn ứng dụng hoạt động hoặc hàng đợi khởi động đầy',
+        memory: 'Từ chối khởi động: không đủ bộ nhớ',
+        recycle: 'Từ chối khởi động: mã mới chờ máy chủ khởi động lại',
+      },
     },
     overview: {
       currentRelease: 'Bản phát hành hiện tại',

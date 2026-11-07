@@ -177,6 +177,7 @@ export class ManagedScopes {
     this.assertAccepting();
     const scope = set.scope!;
     const state = await this.bind(scope);
+    this.assertAccepting();
     if (!Number.isSafeInteger(set.revision) || set.revision < 1)
       throw new Error(
         'Deployment set revision must be a positive safe integer',
@@ -235,6 +236,7 @@ export class ManagedScopes {
     this.assertAccepting();
     const scope = spec.scope!;
     const state = await this.bind(scope);
+    this.assertAccepting();
     const scoped = { ...spec, scope };
     this.assertOwnership(scope.id, [spec.appId]);
     this.assertBackend(scoped);
@@ -248,8 +250,38 @@ export class ManagedScopes {
     if (running) return await running;
     const recorded = await this.operations.get(scope.id, spec.operationId);
     if (recorded?.state === 'cancelled') throw new DeploymentCancelledError();
-    if (recorded && recorded.state !== 'running' && recorded.state !== 'queued')
-      return this.status({ scope: scope.id });
+    this.assertAccepting();
+    if (
+      recorded &&
+      recorded.state !== 'running' &&
+      recorded.state !== 'queued' &&
+      !(
+        spec.retryCapacity &&
+        recorded.state === 'failed' &&
+        recorded.status?.errorCode === 'APP_CAPACITY_EXCEEDED'
+      )
+    ) {
+      const status = this.status({ scope: scope.id });
+      if (recorded.state !== 'failed') return status;
+      // A restore or a later deployment can be running now; that must not turn this recorded failure green.
+      const failure = recorded.status ?? {
+        id: spec.id,
+        appId: spec.appId,
+        desiredState: spec.desiredState,
+        observedState: 'failed' as const,
+        revision: status.desiredRevision,
+        cacheHit: null,
+        app: null,
+        error: recorded.error ?? 'The recorded deployment failed.',
+      };
+      return {
+        ...status,
+        deployments: [
+          ...status.deployments.filter((item) => item.appId !== spec.appId),
+          failure,
+        ],
+      };
+    }
     const work = this.record(scope.id, scoped, () => {
       beforeRun?.();
       return this.run(state, scoped, listener);
@@ -279,6 +311,7 @@ export class ManagedScopes {
     this.assertAccepting();
     const scope = spec.scope!;
     await this.bind(scope);
+    this.assertAccepting();
     this.assertOwnership(scope.id, [spec.appId]);
     const scoped = { ...spec, scope };
     this.assertBackend(scoped);
@@ -383,7 +416,7 @@ export class ManagedScopes {
   }
 
   assertAccepting(): void {
-    if (this.draining)
+    if (this.draining || this.options.registry.isRotating())
       throw new HostManagementError(
         'The Host is shutting down and takes no more changes',
         'HOST_DRAINING',

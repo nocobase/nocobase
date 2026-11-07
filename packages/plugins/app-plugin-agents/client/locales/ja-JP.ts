@@ -572,6 +572,8 @@ const jaJP: LocaleResource<typeof enUS> = {
     checkoutFailed: 'リポジトリのチェックアウトに失敗しました。',
     toolAuth: 'コーディング ツールがランタイムにサインインしていません。',
     toolQuota: 'コーディングツールがクォータを使い果たしました。',
+    sessionUnavailable:
+      '元のコーディングツールのセッションを再開できませんでした。',
     toolRateLimit: 'コーディングツールにはレート制限がありました。',
     toolNetwork: 'コーディング ツールがサービスに到達できませんでした。',
     toolProcess: 'コーディングツールが予期せず終了しました。',

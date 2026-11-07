@@ -253,8 +253,6 @@ export class InProcessAppHandle implements AppScope, ActiveAppHandle {
     const requestId = `${this.id}-${++this.requestSequence}`;
     const startedAt = Date.now();
     this.activeRequests += 1;
-    this.lastAccessedAt = new Date();
-    this.touch();
     this.emit('app:requestStart', {
       requestId,
       method: metadata.method ?? request.method,
@@ -273,6 +271,8 @@ export class InProcessAppHandle implements AppScope, ActiveAppHandle {
         signal: this.abortSignal,
       });
 
+      if (response.status !== 401 && response.status !== 403)
+        this.recordAccess();
       this.emit('app:requestEnd', {
         requestId,
         method: metadata.method ?? request.method,
@@ -287,6 +287,7 @@ export class InProcessAppHandle implements AppScope, ActiveAppHandle {
       );
       return addBasePathToRedirectResponse(mountedResponse, this.basePath);
     } catch (error) {
+      this.recordAccess();
       this.lastError = error instanceof Error ? error.message : String(error);
       this.emit('app:requestError', {
         requestId,
@@ -333,8 +334,6 @@ export class InProcessAppHandle implements AppScope, ActiveAppHandle {
     const requestId = `${this.id}-ws-${++this.requestSequence}`;
     const startedAt = Date.now();
     this.activeRequests += 1;
-    this.lastAccessedAt = new Date();
-    this.touch();
     this.emit('app:requestStart', {
       requestId,
       method: metadata.method ?? request.method,
@@ -356,6 +355,11 @@ export class InProcessAppHandle implements AppScope, ActiveAppHandle {
         signal: this.abortSignal,
       });
 
+      if (
+        !(result instanceof Response) ||
+        (result.status !== 401 && result.status !== 403)
+      )
+        this.recordAccess();
       this.emit('app:requestEnd', {
         requestId,
         method: metadata.method ?? request.method,
@@ -392,6 +396,7 @@ export class InProcessAppHandle implements AppScope, ActiveAppHandle {
         },
       };
     } catch (error) {
+      this.recordAccess();
       this.lastError = error instanceof Error ? error.message : String(error);
       this.emit('app:requestError', {
         requestId,
@@ -527,6 +532,11 @@ export class InProcessAppHandle implements AppScope, ActiveAppHandle {
 
   private transitionTo(state: AppState): void {
     this.state = state;
+    this.touch();
+  }
+
+  private recordAccess(): void {
+    this.lastAccessedAt = new Date();
     this.touch();
   }
 

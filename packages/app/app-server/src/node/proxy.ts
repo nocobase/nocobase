@@ -97,7 +97,8 @@ export class NodeServerProxy {
           outgoing.end();
         }
       });
-    } catch {
+    } catch (error) {
+      if (isConnectionFailure(error)) return unavailableResponse();
       return Response.json(
         { error: 'Upstream server is unavailable.' },
         { status: 502 },
@@ -111,7 +112,7 @@ export class NodeServerProxy {
     head: Buffer,
   ): Promise<void> {
     if (this.closed || this.upgradesClosed) {
-      rejectWebSocketUpgrade(socket, 503);
+      rejectWebSocketUpgrade(socket, 503, retryHeaders());
       return;
     }
     this.webSockets.add(socket);
@@ -127,7 +128,7 @@ export class NodeServerProxy {
       const target = await this.resolveTarget(request);
       if (socket.destroyed) return;
       if (!target || this.closed || this.upgradesClosed) {
-        rejectWebSocketUpgrade(socket, 503);
+        rejectWebSocketUpgrade(socket, 503, retryHeaders());
         return;
       }
       const headers = forwardedHeaders(request);
@@ -152,7 +153,8 @@ export class NodeServerProxy {
           resolve();
         };
         outgoing.once('error', () => {
-          if (!socket.destroyed) rejectWebSocketUpgrade(socket, 502);
+          if (!socket.destroyed)
+            rejectWebSocketUpgrade(socket, 503, retryHeaders());
           finish();
         });
         outgoing.once('response', (incoming) => {
@@ -197,7 +199,8 @@ export class NodeServerProxy {
         outgoing.end();
       });
     } catch {
-      if (!socket.destroyed) rejectWebSocketUpgrade(socket, 502);
+      if (!socket.destroyed)
+        rejectWebSocketUpgrade(socket, 503, retryHeaders());
     }
   }
 
@@ -262,10 +265,25 @@ function readHeaders(message: IncomingMessage): Headers {
 function unavailableResponse(): Response {
   return Response.json(
     { error: 'Upstream server is not ready.' },
-    { status: 503 },
+    { status: 503, headers: retryHeaders() },
   );
 }
 
 function toError(error: unknown): Error {
   return error instanceof Error ? error : new Error(String(error));
+}
+
+function retryHeaders(): Headers {
+  return new Headers({ 'retry-after': '2', 'cache-control': 'no-store' });
+}
+
+function isConnectionFailure(error: unknown): boolean {
+  return [
+    'ECONNREFUSED',
+    'ECONNRESET',
+    'EPIPE',
+    'ETIMEDOUT',
+    'EHOSTUNREACH',
+    'ENETUNREACH',
+  ].includes((error as NodeJS.ErrnoException | undefined)?.code ?? '');
 }

@@ -574,6 +574,7 @@ const idID: LocaleResource<typeof enUS> = {
     checkoutFailed: 'Checkout repositori gagal.',
     toolAuth: 'Alat pengkodean tidak masuk pada saat runtime.',
     toolQuota: 'Alat pengkodean kehabisan kuota.',
+    sessionUnavailable: 'Sesi awal alat pemrograman tidak dapat dilanjutkan.',
     toolRateLimit: 'Alat pengkodean memiliki tingkat terbatas.',
     toolNetwork: 'Alat pengkodean tidak dapat mencapai layanannya.',
     toolProcess: 'Alat pengkodean keluar secara tidak terduga.',

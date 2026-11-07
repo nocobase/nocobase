@@ -36,7 +36,9 @@ import type {
   ActorKind,
   AppActivation,
   AppPage,
+  AppHostView,
   AppSummary,
+  HostOccupantView,
   AppView,
   ConfigDocument,
   ConfigMode,
@@ -75,8 +77,10 @@ import {
   type AppObservedStatus,
   type DeploymentEvent,
   type DriverSession,
+  type HostOccupancy,
   type ImageArtifact,
   type RegistryAuth,
+  UNRESTORED_APP_ERROR,
 } from '../drivers/types.js';
 import { ReleasesError, forbidden, notFound } from '../errors.js';
 import {
@@ -309,7 +313,12 @@ export function archiveFileName(appId: string, version: string): string {
 export class ReleasesService {
   private readonly dispatch = new Map<
     string,
-    { appId: string; submitted: boolean; cancelled: boolean }
+    {
+      appId: string;
+      submitted: boolean;
+      cancelled: boolean;
+      environmentId?: string;
+    }
   >();
   private readonly progress = new Map<
     string,
@@ -413,10 +422,22 @@ export class ReleasesService {
         (await this.options.guard.canApp(caller, action, app))
       )
         allowed.push(action);
-    const variables = await this.appVariablesOf(app).catch(() => null);
+    const [variables, shared] = await Promise.all([
+      this.appVariablesOf(app).catch(() => null),
+      this.hostOf(caller, app).catch(() => null),
+    ]);
+    const summary = (await this.summarize([app]))[0];
+    // A driver reporting an environment's restore error on its Apps would reveal the others it names: it is the
+    // environment's diagnosis, for those who may read it (`hostOf`).
+    const runtime =
+      summary.runtime?.error && shared?.hiddenErrors.has(summary.runtime.error)
+        ? { ...summary.runtime, error: UNRESTORED_APP_ERROR }
+        : summary.runtime;
     return {
-      ...(await this.summarize([app]))[0],
+      ...summary,
+      runtime,
       allowed,
+      host: shared?.view ?? null,
       ...(variables
         ? {
             variables: {
@@ -425,6 +446,120 @@ export class ReleasesService {
             },
           }
         : {}),
+    };
+  }
+
+  /**
+   * Who shares the App's runtime: one status call to the driver, one read of the occupants' rows and at most one
+   * lookup of related Apps however many occupants there are. Occupants the caller may not view show their state only,
+   * and an environment's restore error only reaches those who manage environments.
+   */
+  private async hostOf(
+    caller: Caller,
+    app: AppRecord,
+  ): Promise<{
+    readonly view: AppHostView;
+    /** The restore errors withheld from the caller, so no other field passes them on. */
+    readonly hiddenErrors: ReadonlySet<string>;
+  } | null> {
+    const session = await this.session(app.environmentId);
+    const occupancy: HostOccupancy | null =
+      (await session.occupancy?.()) ?? null;
+    if (!occupancy) return null;
+    const shown = occupancy.apps.filter(
+      (item) =>
+        item.state === 'running' ||
+        item.state === 'starting' ||
+        item.state === 'failed' ||
+        item.waiting,
+    );
+    const ids = [...new Set(shown.map((item) => item.appId))];
+    const rows = ids.length
+      ? await this.query()
+          .selectFrom('relApps')
+          .selectAll()
+          .where('id', 'in', ids)
+          .execute<Row>()
+      : [];
+    const records = new Map(
+      rows.map(decodeApp).map((record) => [record.id, record] as const),
+    );
+    const environmentIds = new Set([
+      ...[...records.values()].map((record) => record.environmentId),
+      ...occupancy.failedEnvironments.map((item) => item.environmentId),
+    ]);
+    const environmentNames = new Map<string, string | null>();
+    for (const id of environmentIds)
+      environmentNames.set(
+        id,
+        (await this.options.environments.find(id))?.name ?? null,
+      );
+    // One batched check for every occupant: the detail is polled, so its cost must not grow per App.
+    const allowed = await this.options.guard.allowedApps(caller, 'view', [
+      ...records.values(),
+    ]);
+    // An environment's restore error may name any of its Apps or their paths: only those who manage environments
+    // read it; everyone else learns that the restore failed.
+    const diagnoses = this.options.guard.hasSetting(
+      caller,
+      'rel.environments',
+      'manage',
+    );
+    const hiddenErrors = new Set(
+      diagnoses
+        ? []
+        : occupancy.failedEnvironments.flatMap((item) =>
+            item.error ? [item.error] : [],
+          ),
+    );
+    const occupants: HostOccupantView[] = [];
+    for (const item of shown) {
+      const record = records.get(item.appId);
+      const visible = record !== undefined && allowed.has(record.id);
+      occupants.push({
+        app: visible
+          ? {
+              id: record.id,
+              name: record.name,
+              environmentId: record.environmentId,
+              environmentName:
+                environmentNames.get(record.environmentId) ??
+                record.environmentId,
+              previewOf: record.previewOf,
+            }
+          : null,
+        state: item.state === 'cancelled' ? 'failed' : item.state,
+        holds: item.holds ?? [],
+        waiting: item.waiting ?? null,
+        // A hidden App shows its state only: when it was last used would say who works on what.
+        lastAccessedAt: visible ? (item.lastAccessedAt ?? null) : null,
+        error: !visible
+          ? null
+          : item.error && hiddenErrors.has(item.error)
+            ? UNRESTORED_APP_ERROR
+            : item.error,
+      });
+    }
+    // Who holds the runtime first, then who waits, then the rest.
+    const rank = (item: HostOccupantView) =>
+      item.holds.length ? 0 : item.waiting ? 1 : 2;
+    occupants.sort((a, b) => rank(a) - rank(b));
+    return {
+      view: {
+        memory: occupancy.memory,
+        recycling: occupancy.recycling,
+        deployed: occupancy.apps.length,
+        running: occupancy.apps.filter(
+          (item) => item.state === 'running' || item.state === 'starting',
+        ).length,
+        occupants,
+        failedEnvironments: occupancy.failedEnvironments.map((item) => ({
+          id: item.environmentId,
+          name: environmentNames.get(item.environmentId) ?? null,
+          error: diagnoses ? item.error : null,
+        })),
+      },
+      hiddenErrors,
     };
   }
 
@@ -2797,6 +2932,12 @@ export class ReleasesService {
         .then(({ driver, target }) =>
           driver.open(target, {
             desired: () => this.desiredSet(environmentId),
+            deploymentBatchBusy: (excluding) =>
+              [...this.dispatch].some(
+                ([id, item]) =>
+                  !excluding.has(id) &&
+                  (!item.environmentId || item.environmentId === environmentId),
+              ),
           }),
         );
       session.catch(() => {
@@ -3077,14 +3218,35 @@ export class ReleasesService {
   ): Promise<void> {
     const app = await this.requireApp(deployment.appId);
     const session = await this.session(app.environmentId);
-    // Drivers without a native queue keep the previous per-App serialization.
-    if (!session.progress)
-      return this.withLock(app.id, () =>
-        this.runDeployment(deployment.id, deployment.appId),
+    try {
+      // Drivers without a native queue keep the previous per-App serialization.
+      if (!session.progress)
+        return await this.withLock(app.id, () =>
+          this.runDeployment(
+            deployment.id,
+            deployment.appId,
+            app.environmentId,
+          ),
+        );
+      const lifecycle = this.locks.get(app.id);
+      if (lifecycle) await lifecycle.catch(() => undefined);
+      return await this.runDeployment(
+        deployment.id,
+        deployment.appId,
+        app.environmentId,
       );
-    const lifecycle = this.locks.get(app.id);
-    if (lifecycle) await lifecycle.catch(() => undefined);
-    return this.runDeployment(deployment.id, deployment.appId);
+    } finally {
+      // Metadata/initial-admission failures must not leave the batch busy forever either.
+      this.dispatch.delete(deployment.id);
+      try {
+        session.deploymentSettled?.();
+      } catch (error) {
+        this.diagnostic.error(
+          'Failed to notify the deployment driver after settlement',
+          error,
+        );
+      }
+    }
   }
 
   /** Lifecycle operations keep the deployment result current before reading its configuration. New dispatches wait on their App lock. */
@@ -3099,8 +3261,14 @@ export class ReleasesService {
   private async runDeployment(
     deploymentId: string,
     appId: string,
+    environmentId: string,
   ): Promise<void> {
-    const dispatch = { appId, submitted: false, cancelled: false };
+    const dispatch: {
+      appId: string;
+      submitted: boolean;
+      cancelled: boolean;
+      environmentId?: string;
+    } = { appId, submitted: false, cancelled: false, environmentId };
     this.dispatch.set(deploymentId, dispatch);
     const deployment = await this.requireDeploymentById(deploymentId);
     if (deployment.status !== 'queued') {
@@ -3163,6 +3331,8 @@ export class ReleasesService {
             });
         if (typeof entry.phase === 'string') {
           const phase = entry.phase as DeploymentPhase;
+          // A completed capacity rejection may re-enter a cancellable wait before one retry.
+          if (entry.cancellable === true) switchStarted = false;
           const first =
             !started &&
             phase !== 'queued' &&
@@ -4145,6 +4315,8 @@ function runtimeStatus(
     startedAt: item.startedAt,
     error: item.error,
     lastAccessedAt: item.lastAccessedAt ?? null,
+    ...(item.holds?.length ? { holds: item.holds } : {}),
+    ...(item.waiting ? { waiting: item.waiting } : {}),
   };
 }
 

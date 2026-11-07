@@ -735,6 +735,16 @@ describe('management over IPC', () => {
         }),
       ).rejects.toMatchObject({ code: 'APP_OWNED_BY_OTHER_SCOPE' });
       await client.removeDeployment('b', { purgeData: false });
+      expect(await client.prepareRotation({ pauseOnly: true })).toBe(false);
+      expect((await client.getStatus()).counters?.rotationPending).toBe(true);
+      const release = host.registry.enterRequest()!;
+      expect(await client.prepareRotation({})).toBe(false);
+      release();
+      expect(await client.prepareRotation({})).toBe(true);
+      await expect(
+        client.startDeployment({ ...spec('c'), scope }),
+      ).rejects.toMatchObject({ code: 'HOST_DRAINING' });
+      expect(await client.prepareRotation({ resume: true })).toBe(false);
       expect(child.listenerCount('message')).toBe(0);
     } finally {
       server.close();

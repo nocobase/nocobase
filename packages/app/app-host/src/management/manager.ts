@@ -47,6 +47,14 @@ import type {
  * a scope every call behaves as it did before scopes existed.
  */
 export interface HostManagementService {
+  /** Pause new revision loads, or reserve the Host for rotation with an optional bounded request drain. */
+  prepareRotation?(options: {
+    pauseOnly?: boolean;
+    ignoreConnections?: boolean;
+    /** Gate incoming requests even while responses are active, then drain for this many milliseconds. */
+    drainTimeoutMs?: number;
+    resume?: boolean;
+  }): Promise<boolean>;
   cancelDeployment(
     operationId: string,
     appId: string,
@@ -100,6 +108,8 @@ export interface HostManagementService {
 }
 
 export interface HostManagerOptions {
+  /** Close remaining HTTP connections after a reserved rotation exhausts its request drain. */
+  closeRequests?: () => void;
   logger?: Logger;
   mode: AppHostMode;
   registry: AppRuntimeRegistry;
@@ -175,6 +185,7 @@ export class HostManager implements HostManagementService {
   ): Promise<AppConfigReloadResult | null> {
     if (this.state.mode !== 'managed')
       throw new Error('Configuration publishing requires managed host mode');
+    this.state.scopes.assertAccepting();
     return this.state.reconciler.publishAppConfig(appId, content);
   }
   restoreDeploymentSet(
@@ -190,13 +201,16 @@ export class HostManager implements HostManagementService {
   reloadAppConfig(
     appId: string,
   ): ReturnType<HostManagementService['reloadAppConfig']> {
+    if (this.state.mode === 'managed') this.state.scopes.assertAccepting();
     return this.registry.reloadAppConfig(appId);
   }
   private readonly registry: AppRuntimeRegistry;
+  private readonly closeRequests: (() => void) | undefined;
   private readonly state: HostModeState;
 
   constructor(options: HostManagerOptions) {
     this.registry = options.registry;
+    this.closeRequests = options.closeRequests;
     if (options.mode === 'standalone')
       this.state = {
         mode: 'standalone',
@@ -344,6 +358,48 @@ export class HostManager implements HostManagementService {
     if (this.state.mode !== 'managed')
       throw new Error('App logs require managed host mode');
     return this.state.scopes.logs(appId, query ?? {});
+  }
+
+  async prepareRotation(options: {
+    pauseOnly?: boolean;
+    ignoreConnections?: boolean;
+    /** Gate incoming requests even while responses are active, then drain for this many milliseconds. */
+    drainTimeoutMs?: number;
+    resume?: boolean;
+  }): Promise<boolean> {
+    if (
+      options.drainTimeoutMs !== undefined &&
+      (!Number.isSafeInteger(options.drainTimeoutMs) ||
+        options.drainTimeoutMs < 0 ||
+        options.drainTimeoutMs > 2_147_483_647)
+    )
+      throw new Error('Invalid Host request drain timeout');
+    if (options.resume) {
+      this.registry.resumeAfterRotationFailure();
+      return false;
+    }
+    if (options.pauseOnly) {
+      this.registry.pauseNewRevisions();
+      return false;
+    }
+    if (
+      this.admissions.size ||
+      (this.state.mode === 'managed' && this.state.reconciler.isBusy())
+    )
+      return false;
+    if (
+      !this.registry.prepareRotation(
+        options.ignoreConnections ?? false,
+        options.drainTimeoutMs !== undefined,
+      )
+    )
+      return false;
+    if (
+      options.drainTimeoutMs !== undefined &&
+      !(await this.registry.drainIngress(options.drainTimeoutMs))
+    )
+      this.closeRequests?.();
+    return true;
   }
 
   /**

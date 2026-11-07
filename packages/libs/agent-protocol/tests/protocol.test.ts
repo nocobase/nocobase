@@ -117,8 +117,8 @@ const payload: RunPayload = {
 };
 
 describe('agent protocol', () => {
-  it('is version 14 and still serves versions 3 to 13', () => {
-    expect(PROTOCOL_VERSION).toBe(14);
+  it('is version 15 and still serves versions 3 to 14', () => {
+    expect(PROTOCOL_VERSION).toBe(15);
     expect(MIN_PROTOCOL_VERSION).toBe(3);
     expect(isProtocolSupported(3)).toBe(true);
     expect(isProtocolSupported(4)).toBe(true);
@@ -133,7 +133,8 @@ describe('agent protocol', () => {
     expect(isProtocolSupported(12)).toBe(true);
     expect(isProtocolSupported(13)).toBe(true);
     expect(isProtocolSupported(14)).toBe(true);
-    expect(isProtocolSupported(15)).toBe(false);
+    expect(isProtocolSupported(15)).toBe(true);
+    expect(isProtocolSupported(16)).toBe(false);
     expect(isProtocolSupported(3.5)).toBe(false);
   });
 
