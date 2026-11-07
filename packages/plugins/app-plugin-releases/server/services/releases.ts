@@ -441,8 +441,9 @@ export class ReleasesService {
   }
 
   /**
-   * Who shares the App's runtime: one status call to the driver and one read of the occupants' rows. Occupants the
-   * caller may not view are listed without their names.
+   * Who shares the App's runtime: one status call to the driver, one read of the occupants' rows and at most one
+   * lookup of related Apps however many occupants there are. Occupants the caller may not view show their state only,
+   * and an environment's restore error only reaches those who manage environments.
    */
   private async hostOf(
     caller: Caller,
@@ -480,11 +481,26 @@ export class ReleasesService {
         id,
         (await this.options.environments.find(id))?.name ?? null,
       );
+    // One batched check for every occupant: the detail is polled, so its cost must not grow per App.
+    const allowed = await this.options.guard.allowedApps(caller, 'view', [
+      ...records.values(),
+    ]);
+    // An environment's restore error may name any of its Apps or their paths: only those who manage environments
+    // read it; everyone else learns that the restore failed.
+    const diagnoses = this.options.guard.hasSetting(
+      caller,
+      'rel.environments',
+      'manage',
+    );
+    const restoreErrors = new Map(
+      occupancy.failedEnvironments.map(
+        (item) => [item.environmentId, item.error] as const,
+      ),
+    );
     const occupants: HostOccupantView[] = [];
     for (const item of shown) {
       const record = records.get(item.appId);
-      const visible =
-        record && (await this.options.guard.canApp(caller, 'view', record));
+      const visible = record !== undefined && allowed.has(record.id);
       occupants.push({
         app: visible
           ? {
@@ -500,8 +516,16 @@ export class ReleasesService {
         state: item.state === 'cancelled' ? 'failed' : item.state,
         holds: item.holds ?? [],
         waiting: item.waiting ?? null,
-        lastAccessedAt: item.lastAccessedAt ?? null,
-        error: visible ? item.error : null,
+        // A hidden App shows its state only: when it was last used would say who works on what.
+        lastAccessedAt: visible ? (item.lastAccessedAt ?? null) : null,
+        // An App a failed restore left off the Host carries the environment's restore error, shown as above.
+        error:
+          !visible ||
+          (!diagnoses &&
+            item.environmentId !== null &&
+            restoreErrors.get(item.environmentId) === item.error)
+            ? null
+            : item.error,
       });
     }
     // Who holds the runtime first, then who waits, then the rest.
@@ -519,7 +543,7 @@ export class ReleasesService {
       failedEnvironments: occupancy.failedEnvironments.map((item) => ({
         id: item.environmentId,
         name: environmentNames.get(item.environmentId) ?? null,
-        error: item.error,
+        error: diagnoses ? item.error : null,
       })),
     };
   }

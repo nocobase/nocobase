@@ -184,6 +184,8 @@ interface OpenScope {
   restoreFailed: boolean;
   /** Why its last restore failed, while `restoreFailed`. */
   restoreError: string | null;
+  /** The Apps of its last desired set, so Apps a failed restore left off the Host can still be reported. */
+  desiredAppIds: Set<string>;
   deploymentBatchBusy?: DriverContext['deploymentBatchBusy'];
 }
 
@@ -356,6 +358,7 @@ export function createHostDriver(
   const sendSet = async (scope: OpenScope): Promise<void> => {
     const management = await managementOf(scope.host);
     const specs = await scope.desired();
+    scope.desiredAppIds = new Set(specs.map((spec) => spec.appId));
     const deployments = specs.map((spec) => toHostSpec(scope, spec));
     const send = async (revision: number) => {
       revisions.set(scope.environmentId, revision);
@@ -746,6 +749,7 @@ export function createHostDriver(
         restoring: null,
         restoreFailed: false,
         restoreError: null,
+        desiredAppIds: new Set(),
         deploymentBatchBusy: (excluding) =>
           context.deploymentBatchBusy?.(excluding) ?? false,
       };
@@ -894,6 +898,7 @@ export function createHostDriver(
             );
             if (!deployed)
               return failed(spec, 'The Host did not report the deployment.');
+            scope.desiredAppIds.add(spec.appId);
             return outcomeOf(deployed, spec.deploymentId);
           } catch (error) {
             if ((error as { code?: string }).code === 'DEPLOYMENT_CANCELLED')
@@ -933,6 +938,7 @@ export function createHostDriver(
         async remove(appId, { purgeData }) {
           await tracked(scope, async () => {
             await (await management()).removeDeployment(appId, { purgeData });
+            scope.desiredAppIds.delete(appId);
             countChurn(scope);
           });
         },
@@ -984,6 +990,36 @@ export function createHostDriver(
           if (host !== inProcess) return null;
           // The unfiltered status: every scope sharing the process, and Apps deployed without one.
           const status = await (await management()).getStatus();
+          const failedScopes = [...scopes.values()].filter(
+            (other) =>
+              other.host === inProcess &&
+              other.restoreFailed &&
+              !other.restoring,
+          );
+          const present = new Set(
+            status.deployments.map(
+              (deployment) =>
+                `${deployment.scopeId ?? ''}\u0000${deployment.appId}`,
+            ),
+          );
+          // A failed restore leaves an environment's Apps off the Host until a background retry succeeds: they are
+          // still deployed, and failed with the restore error, as `status()` reports them. Apps still on the Host keep
+          // their own state.
+          const missing = failedScopes.flatMap((other) =>
+            [...other.desiredAppIds]
+              .filter(
+                (appId) => !present.has(`${other.environmentId}\u0000${appId}`),
+              )
+              .map((appId) => ({
+                state: 'failed' as const,
+                version: null,
+                deploymentId: null,
+                startedAt: null,
+                error: other.restoreError,
+                appId,
+                environmentId: other.environmentId,
+              })),
+          );
           return {
             memory: status.counters?.memory ?? null,
             recycling:
@@ -994,22 +1030,18 @@ export function createHostDriver(
                 : rotationSince !== null || status.counters?.rotationPending
                   ? 'pending'
                   : null,
-            apps: status.deployments.map((deployment) => ({
-              ...observed(deployment),
-              appId: deployment.appId,
-              environmentId: deployment.scopeId ?? null,
-            })),
-            failedEnvironments: [...scopes.values()]
-              .filter(
-                (other) =>
-                  other.host === inProcess &&
-                  other.restoreFailed &&
-                  !other.restoring,
-              )
-              .map((other) => ({
-                environmentId: other.environmentId,
-                error: other.restoreError,
+            apps: [
+              ...status.deployments.map((deployment) => ({
+                ...observed(deployment),
+                appId: deployment.appId,
+                environmentId: deployment.scopeId ?? null,
               })),
+              ...missing,
+            ],
+            failedEnvironments: failedScopes.map((other) => ({
+              environmentId: other.environmentId,
+              error: other.restoreError,
+            })),
           };
         },
         async logs(appId: string, query: JournalQuery): Promise<JournalPage> {

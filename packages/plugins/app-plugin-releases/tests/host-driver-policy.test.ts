@@ -482,6 +482,85 @@ describe('Host driver', () => {
     await staging.close();
   });
 
+  it('keeps Apps a failed restore left off the Host in the occupancy, failed, until a retry restores them', async () => {
+    vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] });
+    const host = fakeHost();
+    const driver = driverFor(host);
+    const preview = await open(driver, [appSpec('pr-1')]);
+    const staging = await open(
+      driver,
+      [appSpec('crm'), appSpec('reports')],
+      'staging',
+    );
+    await preview.restore([]);
+    await staging.restore([]);
+    const service = await host.endpoint.controller.getManagementClient();
+    const original = service.restoreDeploymentSet.bind(service);
+    let failing = true;
+    const restoreSpy = vi
+      .spyOn(service, 'restoreDeploymentSet')
+      .mockImplementation((set) =>
+        failing && set.scope!.id === 'staging'
+          ? Promise.reject(new Error('desired replay unavailable'))
+          : original(set),
+      );
+
+    // The child restarted empty and staging's replay failed before any App came back.
+    await host.endpoint.controller.restart!('test', {});
+    await preview.restore([]);
+    await expect(staging.restore([])).rejects.toThrow(
+      'desired replay unavailable',
+    );
+    const emptied = await preview.occupancy!();
+    expect(emptied!.failedEnvironments).toEqual([
+      { environmentId: 'staging', error: 'desired replay unavailable' },
+    ]);
+    expect(
+      emptied!.apps.map((item) => [item.appId, item.environmentId, item.state]),
+    ).toEqual(
+      expect.arrayContaining([
+        ['pr-1', 'preview', 'running'],
+        ['crm', 'staging', 'failed'],
+        ['reports', 'staging', 'failed'],
+      ]),
+    );
+    expect(emptied!.apps).toHaveLength(3);
+    expect(emptied!.apps.find((item) => item.appId === 'crm')?.error).toBe(
+      'desired replay unavailable',
+    );
+    // The same answer as the environment's own status.
+    expect((await staging.status(['crm'])).get('crm')?.state).toBe('failed');
+
+    // Partly restored: the App back on the Host keeps its own state, the missing one stays failed.
+    failing = false;
+    await staging.restore([]);
+    const service2 = await host.endpoint.controller.getManagementClient();
+    await service2.removeDeployment('reports');
+    failing = true;
+    await expect(staging.restore([])).rejects.toThrow();
+    const partial = await preview.occupancy!();
+    expect(
+      partial!.apps
+        .filter((item) => item.environmentId === 'staging')
+        .map((item) => [item.appId, item.state])
+        .sort(),
+    ).toEqual([
+      ['crm', 'running'],
+      ['reports', 'failed'],
+    ]);
+
+    // A retry that succeeds leaves no failed App and no failed environment.
+    failing = false;
+    await staging.restore([]);
+    const restored = await preview.occupancy!();
+    expect(restored!.failedEnvironments).toEqual([]);
+    expect(restored!.apps.every((item) => item.state === 'running')).toBe(true);
+    expect(restored!.apps).toHaveLength(3);
+    restoreSpy.mockRestore();
+    await preview.close();
+    await staging.close();
+  });
+
   it('reports why a deployment failed while the previous version keeps serving', async () => {
     const host = fakeHost();
     const session = await open(driverFor(host), []);

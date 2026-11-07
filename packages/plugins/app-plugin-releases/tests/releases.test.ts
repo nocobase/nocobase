@@ -15,6 +15,7 @@ import {
   createFakeDriver,
   createHarness,
   streamOf,
+  testKeyScope,
   type Harness,
 } from './harness.js';
 
@@ -93,11 +94,15 @@ describe('releases', () => {
           state: 'running',
           holds: ['requests', 'resident'],
           error: 'crm detail',
+          lastAccessedAt: '2026-11-07T01:00:00.000Z',
         }),
         app('outside', null, { state: 'running', holds: ['recent'] }),
       ],
       failedEnvironments: [
-        { environmentId: 'staging', error: 'cannot restore' },
+        {
+          environmentId: 'staging',
+          error: 'secret-crm internal-archive-path cannot restore',
+        },
       ],
     };
     const seen = await harness.services.releases.getApp(contributor, 'pr-1');
@@ -138,11 +143,37 @@ describe('releases', () => {
           error: null,
         },
       ],
-      failedEnvironments: [
-        { id: 'staging', name: 'Staging', error: 'cannot restore' },
-      ],
+      // Reading environments does not reveal what their restore error says about Apps the caller cannot view.
+      failedEnvironments: [{ id: 'staging', name: 'Staging', error: null }],
     });
+    // Nothing of the hidden App reaches the caller in any field.
+    expect(JSON.stringify(seen.host)).not.toMatch(/crm|internal-archive-path/);
+    // Nor through a key limited to the caller's own App.
+    const key = await harness.services.callerOf({
+      principal: { type: 'user', id: 'admin' },
+      subjects: [{ type: 'authenticated', id: '*' }],
+      keyScope: testKeyScope({ actions: ['rel.apps/view'], apps: ['pr-1'] }),
+    });
+    const scoped = await harness.services.releases.getApp(key, 'pr-1');
+    expect(scoped.host?.occupants.map((item) => item.app?.id ?? null)).toEqual([
+      null,
+      null,
+      'pr-1',
+    ]);
+    expect(JSON.stringify(scoped.host)).not.toMatch(
+      /crm|internal-archive-path/,
+    );
     const all = await harness.services.releases.getApp(admin, 'pr-1');
+    expect(all.host?.failedEnvironments).toEqual([
+      {
+        id: 'staging',
+        name: 'Staging',
+        error: 'secret-crm internal-archive-path cannot restore',
+      },
+    ]);
+    expect(all.host?.occupants[0]?.lastAccessedAt).toBe(
+      '2026-11-07T01:00:00.000Z',
+    );
     expect(all.host?.occupants[0]?.app).toMatchObject({
       id: 'crm',
       environmentName: 'Staging',
@@ -151,6 +182,67 @@ describe('releases', () => {
     // Lists stay cheap: only the single-App read asks the driver about the runtime.
     const page = await harness.services.releases.listApps(admin, {});
     expect(page.items.every((item) => item.host === undefined)).toBe(true);
+  });
+
+  it('checks who may view the shared runtime occupants with at most one related-App lookup per read', async () => {
+    const admin = await harness.as('admin', 'admin');
+    const contributor = await harness.as('dev', 'contributor');
+    await harness.services.releases.createApp(contributor, {
+      id: 'own',
+      name: 'Own',
+      environmentId: 'staging',
+    });
+    const lookups = { related: 0, list: 0 };
+    const { isRelated, relatedAppIds } = harness.application;
+    harness.application.isRelated = (...args) => {
+      lookups.related += 1;
+      return isRelated!(...args);
+    };
+    harness.application.relatedAppIds = (...args) => {
+      lookups.list += 1;
+      return relatedAppIds!(...args);
+    };
+    const occupant = (appId: string) => ({
+      appId,
+      environmentId: 'staging',
+      version: '1.0.0',
+      deploymentId: null,
+      startedAt: null,
+      error: null,
+      lastAccessedAt: null,
+      state: 'running' as const,
+      holds: ['resident' as const],
+    });
+    for (const count of [1, 10, 25]) {
+      const others = Array.from(
+        { length: count },
+        (_, i) => `other-${count}-${i}`,
+      );
+      for (const id of others)
+        await harness.services.releases.createApp(admin, {
+          id,
+          name: id,
+          environmentId: 'staging',
+        });
+      // One of them is related to the contributor, so the lookup must still find it.
+      harness.application.related.set('dev', [others[0]!]);
+      harness.fake.occupancy = {
+        memory: null,
+        recycling: null,
+        apps: [occupant('own'), ...others.map(occupant)],
+        failedEnvironments: [],
+      };
+      lookups.related = 0;
+      lookups.list = 0;
+      const seen = await harness.services.releases.getApp(contributor, 'own');
+      expect(lookups.related + lookups.list).toBe(1);
+      expect(
+        seen.host?.occupants
+          .map((item) => item.app?.id)
+          .filter(Boolean)
+          .sort(),
+      ).toEqual(['own', others[0]].sort());
+    }
   });
 
   it('refuses the App IDs `new` and `requests`, which the pages take beside an App', async () => {

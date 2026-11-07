@@ -146,6 +146,42 @@ export class AccessGuard {
     );
   }
 
+  /**
+   * The IDs among `apps` the caller may take `action` on, decided with at most one lookup of related Apps however many
+   * there are (`canApp` asks once per App).
+   */
+  public async allowedApps(
+    caller: Caller,
+    action: AppAction,
+    apps: readonly AppOwnership[],
+  ): Promise<Set<string>> {
+    const picked = pickedApps(caller);
+    const candidates = picked
+      ? apps.filter((app) => picked.includes(app.id))
+      : apps;
+    const scope = this.scope(caller, action);
+    if (scope === 'none' || candidates.length === 0) return new Set();
+    if (scope === 'all') return new Set(candidates.map((app) => app.id));
+    const allowed = new Set(
+      candidates
+        .filter((app) => reaches(scope, app.createdBy))
+        .map((app) => app.id),
+    );
+    const rest = candidates.filter((app) => !allowed.has(app.id));
+    if (rest.length === 0 || scope.users.length === 0) return allowed;
+    const access = this.access();
+    // One App is cheapest asked about directly; more are matched against one list of related Apps.
+    if (rest.length > 1 && access?.relatedAppIds) {
+      const related = new Set(await access.relatedAppIds(scope.users, action));
+      for (const app of rest) if (related.has(app.id)) allowed.add(app.id);
+    } else if (access?.isRelated) {
+      for (const app of rest)
+        if (await access.isRelated(app.id, scope.users, action))
+          allowed.add(app.id);
+    }
+    return allowed;
+  }
+
   public async requireApp(
     caller: Caller,
     action: AppAction,
