@@ -191,21 +191,28 @@ export function createGitCredentialService(
     } catch (error) {
       if (error instanceof RepoAccessError) {
         if (error.kind === 'denied' && typeof error.params.code === 'string') {
-          await runsRepo(deps.tx.read()).updateMany({
-            filter: (f) =>
-              f.and([
-                f.string('id').eq(run.id),
-                f.string('runnerId').eq(runner.id),
-                f.number('attempt').eq(request.attempt),
-                f.string('actorUserId').eq(run.actorUserId),
-                f.or([
-                  f.string('status').eq('running'),
-                  f.string('status').eq('dispatched'),
+          try {
+            await runsRepo(deps.tx.read()).updateMany({
+              filter: (f) =>
+                f.and([
+                  f.string('id').eq(run.id),
+                  f.string('runnerId').eq(runner.id),
+                  f.number('attempt').eq(request.attempt),
+                  f.string('actorUserId').eq(run.actorUserId),
+                  f.or([
+                    f.string('status').eq('running'),
+                    f.string('status').eq('dispatched'),
+                  ]),
+                  f.date('leaseExpiresAt').after(deps.clock.now()),
                 ]),
-                f.date('leaseExpiresAt').after(deps.clock.now()),
-              ]),
-            values: { failureParams: error.params },
-          });
+              values: { failureParams: error.params },
+            });
+          } catch (writeError) {
+            deps.onError?.(
+              `Agents could not save the repository refusal reason for run ${run.id}.`,
+              writeError,
+            );
+          }
         }
         throw new ProtocolError(
           error.kind === 'denied'
