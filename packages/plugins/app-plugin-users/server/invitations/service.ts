@@ -26,7 +26,11 @@ import {
   type UserRoleScope,
   type UserRoleValue,
 } from '../tokens.js';
-import { buildInvitationEmail, type InvitationMailer } from './mail.js';
+import {
+  buildInvitationEmail,
+  NO_EMAIL_CHANNEL_MESSAGE,
+  type InvitationMailer,
+} from './mail.js';
 import {
   INVITATION_TTL_MS,
   hashToken,
@@ -128,7 +132,7 @@ export function createInvitationManager(
     row: InvitationRecord,
     url: string,
     deadline: number,
-  ): Promise<boolean> {
+  ): Promise<string | null> {
     let error: string | null = null;
     let timeout: ReturnType<typeof setTimeout> | undefined;
     try {
@@ -163,7 +167,7 @@ export function createInvitationManager(
       if (timeout) clearTimeout(timeout);
     }
     await recordInvitationDelivery(database.connection(), row, error);
-    return error === null;
+    return error;
   }
 
   /** Submits each email after the rows committed and records the outcome on the row. */
@@ -179,6 +183,7 @@ export function createInvitationManager(
     async function sendNext(): Promise<void> {
       for (const [index, { row, token }] of pending) {
         let emailSent = false;
+        let emailError: string | null = null;
         // Check before sending and again afterwards so concurrent closure or rotation never returns a stale link.
         const before = await findInvitation(database.connection(), {
           id: row.id,
@@ -188,12 +193,14 @@ export function createInvitationManager(
           Date.now() < deadline &&
           before?.tokenHash === row.tokenHash &&
           statusOf(before) === 'pending'
-        )
-          emailSent = await sendInvitation(
+        ) {
+          emailError = await sendInvitation(
             row,
             `${base}/invite/${token}`,
             deadline,
           );
+          emailSent = emailError === null;
+        }
         const current = await findInvitation(database.connection(), {
           id: row.id,
         });
@@ -205,6 +212,14 @@ export function createInvitationManager(
           outcome: 'invited',
           invitationId: row.id,
           emailSent: isOpen && emailSent,
+          ...(isOpen && emailError
+            ? {
+                emailError:
+                  emailError === NO_EMAIL_CHANNEL_MESSAGE
+                    ? emailError
+                    : 'Email not sent: email delivery failed',
+              }
+            : {}),
           ...(isOpen ? { inviteUrl: `${base}/invite/${token}` } : {}),
         };
       }

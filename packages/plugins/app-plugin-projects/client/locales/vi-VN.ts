@@ -364,6 +364,8 @@ const viVN: LocaleResource<typeof enUS> = {
       added: 'Có tài khoản — được thêm vào dự án',
       alreadyMember: 'Đã là thành viên',
       notSent: 'Email không được gửi',
+      noEmailChannel: 'Email chưa được gửi: chưa cấu hình kênh email',
+      deliveryFailed: 'Email chưa được gửi: gửi email thất bại',
       sent: 'Đã gửi email',
     },
     pending: 'Chờ đợi',

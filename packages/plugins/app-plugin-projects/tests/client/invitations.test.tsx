@@ -124,7 +124,12 @@ it('reports failed delivery without offering a missing link for another inviter'
     { ...invitation, invitedBy: { userId: 'other', name: 'Other' } },
   ];
   api.routes['projects/invitations/i1/resend?sendEmail=true'] = () => ({
-    data: { email: invitation.email, outcome: 'invited', emailSent: false },
+    data: {
+      email: invitation.email,
+      outcome: 'invited',
+      emailSent: false,
+      emailError: 'Email not sent: no email channel configured',
+    },
   });
   const user = userEvent.setup();
   const client = new QueryClient({
@@ -152,7 +157,7 @@ it('reports failed delivery without offering a missing link for another inviter'
   await waitFor(() =>
     expect(toasts).toContainEqual({
       type: 'warning',
-      title: 'invitations.outcome.notSent',
+      title: 'invitations.outcome.noEmailChannel',
     }),
   );
   expect(screen.queryByRole('dialog')).toBeNull();

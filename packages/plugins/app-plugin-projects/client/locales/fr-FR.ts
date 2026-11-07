@@ -373,6 +373,8 @@ const frFR: LocaleResource<typeof enUS> = {
       added: 'Possède un compte — ajouté aux projets',
       alreadyMember: 'Déjà membre',
       notSent: 'E-mail non envoyé',
+      noEmailChannel: 'E-mail non envoyé : aucun canal e-mail n’est configuré',
+      deliveryFailed: 'E-mail non envoyé : échec de la livraison de l’e-mail',
       sent: 'E-mail envoyé',
     },
     pending: 'En attente',

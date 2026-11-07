@@ -342,6 +342,8 @@ const pages = {
       added: '已有账号，已加入项目',
       alreadyMember: '已是成员',
       notSent: '邮件未发送',
+      noEmailChannel: '邮件未发送：未配置邮件渠道',
+      deliveryFailed: '邮件未发送：邮件发送失败',
       sent: '邮件已发送',
     },
     pending: '等待接受',

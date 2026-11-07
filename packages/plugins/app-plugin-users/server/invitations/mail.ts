@@ -21,9 +21,11 @@ export interface InvitationMailer {
 }
 
 /** Used when no channel is configured: delivery fails; authorized inviters can deliver the link themselves. */
+export const NO_EMAIL_CHANNEL_MESSAGE =
+  'Email not sent: no email channel configured';
+
 export const unconfiguredMailer: InvitationMailer = {
-  send: () =>
-    Promise.reject(new Error('No invitation email channel is configured.')),
+  send: () => Promise.reject(new Error(NO_EMAIL_CHANNEL_MESSAGE)),
 };
 
 function fill(

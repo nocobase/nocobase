@@ -98,6 +98,7 @@ export type UserInvitationResult =
       readonly outcome: 'invited';
       readonly invitationId: string;
       readonly emailSent: boolean;
+      readonly emailError?: string;
       readonly inviteUrl?: string;
     }
   | {

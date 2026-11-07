@@ -37,6 +37,7 @@ import { pmKeys } from '../../../api/keys.js';
 import { useNotify } from '../../../hooks/use-notify.js';
 import { usePmApi } from '../../../hooks/use-pm-api.js';
 import { isEmailAddress, parseEmailList } from './emails.js';
+import { invitationEmailError } from './invitation-email-error.js';
 
 export interface InviteProjectOption {
   readonly id: string;
@@ -254,7 +255,10 @@ export function InviteResults({
 }): ReactElement {
   const { t } = useTranslation();
   return (
-    <ul className='space-y-3' aria-label={t('invitations.resultsLabel')}>
+    <ul
+      className='min-w-0 space-y-3'
+      aria-label={t('invitations.resultsLabel')}
+    >
       {results.map((result) => (
         <li key={result.email} className='space-y-2'>
           <div className='flex items-center justify-between gap-3'>
@@ -269,6 +273,14 @@ export function InviteResults({
               {linkOnly ? t('invitations.linkReady') : outcomeLabel(t, result)}
             </PmTag>
           </div>
+          {!linkOnly &&
+          result.outcome === 'invited' &&
+          !result.emailSent &&
+          result.emailError ? (
+            <p className='text-sm text-muted-foreground'>
+              {invitationEmailError(t, result)}
+            </p>
+          ) : null}
           {result.inviteUrl ? <CopyLink url={result.inviteUrl} /> : null}
         </li>
       ))}
@@ -292,12 +304,12 @@ function CopyLink({ url }: { readonly url: string }): ReactElement {
     if (!copied) notify.error(null, t('connect.copyFailed'));
   }
   return (
-    <div className='flex gap-2'>
+    <div className='flex min-w-0 gap-2'>
       <Input
         value={url}
         readOnly
         aria-label={t('invitations.link')}
-        className='font-mono text-xs'
+        className='min-w-0 flex-1 font-mono text-xs'
       />
       <Button
         type='button'
