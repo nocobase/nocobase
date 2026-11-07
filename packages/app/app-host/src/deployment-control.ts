@@ -10,6 +10,7 @@ export class DeploymentCancelledError extends Error {
 export interface DeploymentControl {
   cancelled: boolean;
   switching: boolean;
+  signal?: AbortSignal;
 }
 const context = new AsyncLocalStorage<DeploymentControl>();
 export const withDeploymentControl = <T>(
@@ -23,4 +24,9 @@ export function beginDeploymentSwitch(): void {
   deploymentCheckpoint();
   const control = context.getStore();
   if (control) control.switching = true;
+}
+
+/** Cancellation of long-running preparation work in the current deployment. */
+export function deploymentSignal(): AbortSignal | undefined {
+  return context.getStore()?.signal;
 }

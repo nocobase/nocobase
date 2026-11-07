@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { fork } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import * as fsPromises from 'node:fs/promises';
 import {
@@ -34,9 +35,14 @@ vi.mock('node:fs/promises', async (importOriginal) => {
   const actual = await importOriginal<typeof import('node:fs/promises')>();
   return { ...actual, readdir: vi.fn(actual.readdir) };
 });
+vi.mock('node:child_process', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('node:child_process')>();
+  return { ...actual, fork: vi.fn(actual.fork) };
+});
 const hosts: AppHost[] = [];
 
 afterEach(async () => {
+  vi.useRealTimers();
   await Promise.all(hosts.splice(0).map((host) => host.close('test cleanup')));
   await Promise.all(
     tempDirs.splice(0).map((dir) => rm(dir, { recursive: true, force: true })),
@@ -44,6 +50,92 @@ afterEach(async () => {
 });
 
 describe('managed host reconciliation', () => {
+  it.each(['cancel', 'timeout', 'exit'] as const)(
+    'cleans a stalled extraction on %s and lets the next deployment finish',
+    async (outcome) => {
+      const fixture = await createFixture();
+      const host = createAppHost({
+        mode: 'managed',
+        appRevisionsDir: fixture.deploymentsDir,
+        appVolumesDir: fixture.volumesDir,
+        artifact: fsArtifact(fixture.artifactDir),
+        evictionIntervalMs: 0,
+      });
+      hosts.push(host);
+      const actual =
+        await vi.importActual<typeof import('node:child_process')>(
+          'node:child_process',
+        );
+      let child!: ReturnType<typeof fork>;
+      const ready = Promise.withResolvers<void>();
+      let intercept = true;
+      const spy = vi
+        .mocked(fork)
+        .mockImplementation((worker, args, options) => {
+          if (args?.[0] === 'extract' && intercept) {
+            intercept = false;
+            child = actual.fork(
+              new URL(
+                './fixtures/stalled-artifact-worker.mjs',
+                import.meta.url,
+              ),
+              args,
+              options,
+            );
+            child.once('message', () => ready.resolve());
+            return child;
+          }
+          return actual.fork(worker, args, options);
+        });
+      const spec = deploymentSet(1, fixture.artifact).deployments[0]!;
+      const logs: Record<string, unknown>[] = [];
+      const first = host.management.applyDeployment(
+        { ...spec, operationId: 'stalled' },
+        (entry) => {
+          logs.push(entry);
+          if (outcome === 'timeout' && entry.phase === 'extracting')
+            vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+        },
+      );
+      const firstResult = first.catch((error: unknown) => error);
+      await ready.promise;
+      const second = host.management.applyDeployment({
+        ...spec,
+        operationId: 'next',
+      });
+      if (outcome === 'cancel') {
+        expect(
+          await host.management.cancelDeployment('stalled', 'customer'),
+        ).toBe('cancelling');
+      } else if (outcome === 'timeout') {
+        await vi.advanceTimersByTimeAsync(121_000);
+        vi.useRealTimers();
+      } else child.kill('SIGKILL');
+      await firstResult;
+      expect(child.signalCode).toBe('SIGKILL');
+      expect(() => process.kill(child.pid!, 0)).toThrow();
+      const operation = await host.management.getOperation('stalled');
+      expect(operation).toMatchObject({
+        state: outcome === 'cancel' ? 'cancelled' : 'failed',
+      });
+      if (outcome === 'timeout')
+        expect(JSON.stringify(operation)).toContain('timed out');
+      await second;
+      expect(await host.management.getOperation('next')).toMatchObject({
+        state: 'succeeded',
+      });
+      expect(
+        await readdir(path.join(fixture.deploymentsDir, 'customer')),
+      ).toEqual([
+        '.active-revision',
+        '.lifecycle.json',
+        fixture.artifact.checksum,
+      ]);
+      expect(logs.some((entry) => entry.phase === 'extracting')).toBe(true);
+      spy.mockRestore();
+    },
+  );
+
   it('cancels while the Host is recording admission, before it can enter the queue', async () => {
     const fixture = await createFixture();
     const host = createAppHost({

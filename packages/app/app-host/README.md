@@ -52,6 +52,8 @@ storage/
   apps/volumes/<appId>/      persistent configuration and storage/
 ```
 
+Archive hashing and extraction run one child process at a time per Host. Each worker has a 120-second execution deadline (queue wait excluded). Deployment cancellation aborts queued or running archive work. On cancellation, timeout or worker error, the Host sends SIGTERM, escalates to SIGKILL after one second if necessary, and waits for process close before cleaning temporary archives/staging directories and advancing the queue. A failed or cancelled candidate does not replace the selected revision.
+
 ## Host modes
 
 The host defaults to `standalone` mode. It discovers local app definitions and
