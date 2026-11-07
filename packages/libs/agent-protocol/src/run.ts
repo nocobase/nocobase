@@ -798,6 +798,8 @@ export const RunHeaderSchema: z.ZodType<RunHeader> = z.object({
  * here and only once.
  */
 export interface RunPayload {
+  /** Require the original session; never fall back to a fresh one. */
+  readonly session?: { readonly strict: boolean };
   /** Enable realtime-only previews for a conversation claimed by a capable runner. Never set on tasks. */
   readonly outputBlocks?: boolean;
   readonly run: RunHeader;
@@ -827,6 +829,7 @@ export interface RunAgentRef {
 }
 
 export const RunPayloadSchema: z.ZodType<RunPayload> = z.object({
+  session: z.object({ strict: z.boolean() }).optional(),
   outputBlocks: z.boolean().optional(),
   run: RunHeaderSchema,
   app: RunAppSchema,

@@ -60,6 +60,9 @@ export function createRunDataPurge(deps: {
         .where('status', 'in', ['completed', 'failed', 'cancelled'])
         .where('finishedAt', '<', cutoff)
         .where((eb) =>
+          eb.or([eb('runnerPinId', 'is', null), eb('status', '!=', 'failed')]),
+        )
+        .where((eb) =>
           eb.or([
             eb.exists(
               eb

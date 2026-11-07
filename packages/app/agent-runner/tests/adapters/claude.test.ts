@@ -79,6 +79,18 @@ beforeEach(async () => {
 });
 
 describe('missing conversations', () => {
+  it('keeps a missing strict session blocked without starting a new query', async () => {
+    const handle = adapterWith('9.0.0', dir).start(
+      session({ resumeSessionId: 'missing', strictSession: true }),
+    );
+    await collect(handle.events);
+    expect(await handle.result).toMatchObject({
+      exit: 'error',
+      error: { reason: 'sessionUnavailable' },
+    });
+    expect(calls).toHaveLength(0);
+  });
+
   it('starts a fresh query for a missing file without consuming or duplicating queued input', async () => {
     setScript(async function* (ctx) {
       expect(ctx.options.resume).toBeUndefined();

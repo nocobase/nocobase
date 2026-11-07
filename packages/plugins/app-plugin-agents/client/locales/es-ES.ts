@@ -596,6 +596,8 @@ const esES: LocaleResource<typeof enUS> = {
     toolAuth:
       'La herramienta de codificación no está registrada en el tiempo de ejecución.',
     toolQuota: 'La herramienta de codificación se quedó sin cuota.',
+    sessionUnavailable:
+      'No se pudo reanudar la sesión original de la herramienta de programación.',
     toolRateLimit:
       'La herramienta de codificación tenía una velocidad limitada.',
     toolNetwork: 'La herramienta de codificación no pudo alcanzar su servicio.',

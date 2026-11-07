@@ -592,6 +592,8 @@ const ptBR: LocaleResource<typeof enUS> = {
     toolAuth:
       'A ferramenta de codificação não está conectada no tempo de execução.',
     toolQuota: 'A ferramenta de codificação ficou sem cota.',
+    sessionUnavailable:
+      'Não foi possível retomar a sessão original da ferramenta de programação.',
     toolRateLimit: 'A ferramenta de codificação tinha taxa limitada.',
     toolNetwork:
       'A ferramenta de codificação não conseguiu acessar seu serviço.',

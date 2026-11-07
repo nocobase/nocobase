@@ -551,6 +551,7 @@ const zhTW: LocaleResource<typeof enUS> = {
     checkoutFailed: '儲存庫檢出失敗。',
     toolAuth: '編碼工具未在執行時登入。',
     toolQuota: '編碼工具超出配額。',
+    sessionUnavailable: '無法恢復原編碼工具工作階段。',
     toolRateLimit: '編碼工具受到速率限制。',
     toolNetwork: '編碼工具無法存取其服務。',
     toolProcess: '編碼工具意外退出。',

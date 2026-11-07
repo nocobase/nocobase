@@ -593,6 +593,8 @@ const deDE: LocaleResource<typeof enUS> = {
     checkoutFailed: 'Das Auschecken des Repositorys ist fehlgeschlagen.',
     toolAuth: 'Das Codierungstool ist bei der Laufzeit nicht angemeldet.',
     toolQuota: 'Das Kontingent des Codierungstools ist erschöpft.',
+    sessionUnavailable:
+      'Die ursprüngliche Sitzung des Programmierwerkzeugs konnte nicht fortgesetzt werden.',
     toolRateLimit: 'Das Codierungstool war geschwindigkeitsbegrenzt.',
     toolNetwork: 'Das Codierungstool konnte seinen Dienst nicht erreichen.',
     toolProcess: 'Das Codierungstool wurde unerwartet beendet.',

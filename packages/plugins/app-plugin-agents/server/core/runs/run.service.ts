@@ -113,6 +113,13 @@ export interface NewInput {
 }
 
 export interface EnqueueRequest {
+  readonly runnerId?: string;
+  /**
+   * Hands a queued or failed run's work to the new run: the original is cancelled by `actorUserId` and the new run
+   * becomes its replacement (`retryOfRunId`). The original agent's lock serializes this with its retry and claim, so a
+   * run is replaced or retried once. Refused with `RUN_ALREADY_RETRIED`, `RUN_NOT_RETRYABLE` or `AGENT_BUSY`.
+   */
+  readonly replacesRunId?: string;
   /** Trusted application dispatch: prefer a compatible authorized active run across comment roots. */
   readonly preferActive?: boolean;
   /** Supplied only by a real comment entry point; subsequent comment dispatches share its first run. */
@@ -410,6 +417,9 @@ export interface RunServiceDeps extends TransitionDeps {
 
 /** Work to queue now, as the person it runs as. */
 interface Work {
+  readonly runnerPinId?: string | null;
+  /** A replacement is always a new run; it never merges into other work. */
+  readonly retryOfRunId?: string;
   readonly preferActive?: boolean;
   readonly sourceRunId?: string;
   readonly commentRootRunId?: string | null;
@@ -540,6 +550,10 @@ export function createRunService(deps: RunServiceDeps): RunService {
       readonly subject: EnqueueRequest['subject'];
       readonly threadScope: string;
       readonly freshSession?: boolean;
+      readonly runnerPinId?: string | null;
+      readonly sessionId?: string | null;
+      readonly tool?: string | null;
+      readonly model?: string | null;
       readonly actorUserId: string;
       readonly requestedByUserId: string;
       readonly confirmedByUserId: string | null;
@@ -560,6 +574,9 @@ export function createRunService(deps: RunServiceDeps): RunService {
         agentId: agent.id,
         agentType: 'runner',
         runnerId: null,
+        runnerPinId: values.runnerPinId ?? null,
+        tool: values.tool ?? null,
+        model: values.model ?? null,
         status: 'queued',
         priority: values.priority,
         attempt: 1,
@@ -595,7 +612,7 @@ export function createRunService(deps: RunServiceDeps): RunService {
         failureDetail: null,
         failureParams: null,
         summary: null,
-        sessionId: null,
+        sessionId: values.sessionId ?? null,
         workDir: null,
         directoryKey: null,
         claimFailures: 0,
@@ -919,6 +936,14 @@ export function createRunService(deps: RunServiceDeps): RunService {
     }
     const waiting = open.find((run) => run.status === 'queued');
     const target = working ?? waiting;
+    if (target && work.retryOfRunId)
+      throw precondition(
+        'AGENT_BUSY',
+        'The agent is already working on this.',
+        {
+          runId: target.id,
+        },
+      );
     const commentInput = (rootId: string | null | undefined): NewInput =>
       rootId
         ? {
@@ -954,6 +979,7 @@ export function createRunService(deps: RunServiceDeps): RunService {
       commentExecution: work.commentExecution,
       commentOwnerKey: work.commentOwnerKey,
       freshSession: work.freshSession,
+      runnerPinId: work.runnerPinId,
       subject: work.subject,
       threadScope: work.threadScope,
       actorUserId: work.actorUserId,
@@ -962,7 +988,7 @@ export function createRunService(deps: RunServiceDeps): RunService {
       ownerUserId: work.ownerUserId,
       priority: work.priority,
       requires: work.requires,
-      retryOfRunId: null,
+      retryOfRunId: work.retryOfRunId ?? null,
       availableAt: work.fireAt,
       ...(work.parentRunId ? { parentRunId: work.parentRunId } : {}),
       ...(work.maxAttempts ? { maxAttempts: work.maxAttempts } : {}),
@@ -975,6 +1001,65 @@ export function createRunService(deps: RunServiceDeps): RunService {
       ),
     );
     return { runId, outcome: 'created', status: 'queued', inputId };
+  }
+
+  /**
+   * Cancels a queued or failed run that is being replaced (`EnqueueRequest.replacesRunId`), under its agent's lock and
+   * revision. Not a stop request: the subject's cancel hooks do not run, since its work continues in the replacement.
+   */
+  async function withdrawReplaced(
+    unit: Tx,
+    runId: string,
+    subject: EnqueueRequest['subject'],
+    byUserId: string,
+  ): Promise<void> {
+    const target = await require(unit.conn, runId);
+    await lockAgentForClaim(
+      unit.conn,
+      target.agentId,
+      clock.now().toISOString(),
+    );
+    const run = await require(unit.conn, runId);
+    if (run.subjectKind !== subject.kind || run.subjectId !== subject.id)
+      throw invalid('A replacement cannot cross subjects.');
+    const retried = await runsRepo(unit.conn).findOne({
+      filter: { retryOfRunId: run.id },
+    });
+    if (retried)
+      throw precondition(
+        'RUN_ALREADY_RETRIED',
+        'This run has already been retried.',
+        { runId: retried.id },
+      );
+    if (run.status === 'queued') {
+      const ended = await finishRun(
+        unit,
+        deps,
+        run,
+        { status: 'cancelled', reason: 'cancelled', cancelledById: byUserId },
+        true,
+      );
+      if (!ended) throw conflict('The run changed; try again.');
+      return;
+    }
+    if (run.status !== 'failed')
+      throw precondition(
+        'RUN_NOT_RETRYABLE',
+        'Only a queued or failed run can be replaced.',
+      );
+    const now = clock.now().toISOString();
+    const changed = await runsRepo(unit.conn).updateMany({
+      filter: { id: run.id, status: 'failed', revision: run.revision },
+      values: { status: 'cancelled', cancelledById: byUserId, updatedAt: now },
+    });
+    if (changed.updatedCount !== 1)
+      throw conflict('The run changed; try again.');
+    unit.emit({
+      type: 'run.changed',
+      ...(run.runnerPinId ? { quotaWait: false } : {}),
+      runId: run.id,
+      status: 'cancelled',
+    });
   }
 
   /** The source of the chain of work a request belongs to (`EnqueueRequest.requestedByUserId`). */
@@ -1381,13 +1466,24 @@ export function createRunService(deps: RunServiceDeps): RunService {
             actorUserId,
             request.requires ?? [],
           );
+        if (request.replacesRunId)
+          await withdrawReplaced(
+            unit,
+            request.replacesRunId,
+            request.subject,
+            request.actorUserId ?? actorUserId,
+          );
         const result = await queue(unit, agent, {
+          ...(request.replacesRunId
+            ? { retryOfRunId: request.replacesRunId }
+            : {}),
           preferActive: request.preferActive,
           sourceRunId: request.causedByRunId,
           commentRootRunId,
           commentExecution,
           commentOwnerKey,
           freshSession: request.freshSession,
+          runnerPinId: request.runnerId,
           subject: request.subject,
           threadScope,
           actorUserId,
@@ -1617,6 +1713,15 @@ export function createRunService(deps: RunServiceDeps): RunService {
               runId: retried.id,
             },
           );
+        // Take the original over by its revision. The conditional write reads the latest row on every dialect, so a
+        // replacement (`replacesRunId`) whose transaction read an older snapshot before the lock fails to cancel it,
+        // and this retry fails if a replacement committed first.
+        const taken = await runsRepo(unit.conn).updateMany({
+          filter: { id: run.id, status: run.status, revision: run.revision },
+          values: { updatedAt: clock.now().toISOString() },
+        });
+        if (taken.updatedCount !== 1)
+          throw conflict('The run changed; try again.');
         const previousInputs = await inputsRepo(unit.conn).findMany({
           filter: { runId: run.id },
         });
@@ -1711,7 +1816,11 @@ export function createRunService(deps: RunServiceDeps): RunService {
           priority: Number(run.priority),
           requires: toRun(run).requires,
           retryOfRunId: run.id,
-          freshSession: run.freshSession,
+          freshSession: run.runnerPinId ? false : run.freshSession,
+          runnerPinId: run.runnerPinId,
+          sessionId: run.sessionId,
+          tool: run.tool,
+          model: run.model,
         });
         if (renewComment && oldRoot) {
           const origins = await inputsRepo(unit.conn).findMany({
