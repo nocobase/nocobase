@@ -36,7 +36,9 @@ import type {
   ActorKind,
   AppActivation,
   AppPage,
+  AppHostView,
   AppSummary,
+  HostOccupantView,
   AppView,
   ConfigDocument,
   ConfigMode,
@@ -75,6 +77,7 @@ import {
   type AppObservedStatus,
   type DeploymentEvent,
   type DriverSession,
+  type HostOccupancy,
   type ImageArtifact,
   type RegistryAuth,
 } from '../drivers/types.js';
@@ -418,10 +421,14 @@ export class ReleasesService {
         (await this.options.guard.canApp(caller, action, app))
       )
         allowed.push(action);
-    const variables = await this.appVariablesOf(app).catch(() => null);
+    const [variables, host] = await Promise.all([
+      this.appVariablesOf(app).catch(() => null),
+      this.hostOf(caller, app).catch(() => null),
+    ]);
     return {
       ...(await this.summarize([app]))[0],
       allowed,
+      host,
       ...(variables
         ? {
             variables: {
@@ -430,6 +437,90 @@ export class ReleasesService {
             },
           }
         : {}),
+    };
+  }
+
+  /**
+   * Who shares the App's runtime: one status call to the driver and one read of the occupants' rows. Occupants the
+   * caller may not view are listed without their names.
+   */
+  private async hostOf(
+    caller: Caller,
+    app: AppRecord,
+  ): Promise<AppHostView | null> {
+    const session = await this.session(app.environmentId);
+    const occupancy: HostOccupancy | null =
+      (await session.occupancy?.()) ?? null;
+    if (!occupancy) return null;
+    const shown = occupancy.apps.filter(
+      (item) =>
+        item.state === 'running' ||
+        item.state === 'starting' ||
+        item.state === 'failed' ||
+        item.waiting,
+    );
+    const ids = [...new Set(shown.map((item) => item.appId))];
+    const rows = ids.length
+      ? await this.query()
+          .selectFrom('relApps')
+          .selectAll()
+          .where('id', 'in', ids)
+          .execute<Row>()
+      : [];
+    const records = new Map(
+      rows.map(decodeApp).map((record) => [record.id, record] as const),
+    );
+    const environmentIds = new Set([
+      ...[...records.values()].map((record) => record.environmentId),
+      ...occupancy.failedEnvironments.map((item) => item.environmentId),
+    ]);
+    const environmentNames = new Map<string, string | null>();
+    for (const id of environmentIds)
+      environmentNames.set(
+        id,
+        (await this.options.environments.find(id))?.name ?? null,
+      );
+    const occupants: HostOccupantView[] = [];
+    for (const item of shown) {
+      const record = records.get(item.appId);
+      const visible =
+        record && (await this.options.guard.canApp(caller, 'view', record));
+      occupants.push({
+        app: visible
+          ? {
+              id: record.id,
+              name: record.name,
+              environmentId: record.environmentId,
+              environmentName:
+                environmentNames.get(record.environmentId) ??
+                record.environmentId,
+              previewOf: record.previewOf,
+            }
+          : null,
+        state: item.state === 'cancelled' ? 'failed' : item.state,
+        holds: item.holds ?? [],
+        waiting: item.waiting ?? null,
+        lastAccessedAt: item.lastAccessedAt ?? null,
+        error: visible ? item.error : null,
+      });
+    }
+    // Who holds the runtime first, then who waits, then the rest.
+    const rank = (item: HostOccupantView) =>
+      item.holds.length ? 0 : item.waiting ? 1 : 2;
+    occupants.sort((a, b) => rank(a) - rank(b));
+    return {
+      memory: occupancy.memory,
+      recycling: occupancy.recycling,
+      deployed: occupancy.apps.length,
+      running: occupancy.apps.filter(
+        (item) => item.state === 'running' || item.state === 'starting',
+      ).length,
+      occupants,
+      failedEnvironments: occupancy.failedEnvironments.map((item) => ({
+        id: item.environmentId,
+        name: environmentNames.get(item.environmentId) ?? null,
+        error: item.error,
+      })),
     };
   }
 
@@ -4185,6 +4276,8 @@ function runtimeStatus(
     startedAt: item.startedAt,
     error: item.error,
     lastAccessedAt: item.lastAccessedAt ?? null,
+    ...(item.holds?.length ? { holds: item.holds } : {}),
+    ...(item.waiting ? { waiting: item.waiting } : {}),
   };
 }
 

@@ -198,6 +198,59 @@ export interface AppObservedStatus {
   readonly errorCode?: string;
   /** The App's last request (or start), when the driver knows it. */
   readonly lastAccessedAt?: string | null;
+  /** Why a running or starting App holds a slot on a shared runtime (see `HostOccupancy`). */
+  readonly holds?: readonly AppHoldReason[];
+  /** Why its last start was refused, while that is recent (see `HostOccupancy`). */
+  readonly waiting?: AppWaitReason;
+}
+
+/**
+ * Why an App holds a slot on a shared runtime: `requests` or `connections` in flight, `starting`, another `operation`,
+ * `resident` (it never stops when idle), `busy` or `recent` (requested within the last minute).
+ */
+export type AppHoldReason =
+  | 'requests'
+  | 'connections'
+  | 'starting'
+  | 'operation'
+  | 'resident'
+  | 'busy'
+  | 'recent';
+
+/**
+ * Why a start was refused: `capacity` (the active App limit or the start queue), `memory` (the memory budget) or
+ * `recycle` (no new code loads until the shared runtime restarts to free the old).
+ */
+export type AppWaitReason = 'capacity' | 'memory' | 'recycle';
+
+/**
+ * Who shares the runtime an environment's Apps run in, every environment on it included. Memory is the shared
+ * process's total: it cannot be divided among the Apps.
+ */
+export interface HostOccupancy {
+  readonly memory: {
+    readonly heapUsed: number;
+    readonly heapLimit: number;
+    readonly rss: number;
+    /** What the machine or container still has available. */
+    readonly available: number;
+  } | null;
+  /**
+   * `pending`: the runtime is to be restarted to free old code once nothing holds it, and new code may wait for that;
+   * `restarting`: it is restarting or restoring its Apps, which answer "retry" meanwhile.
+   */
+  readonly recycling: 'pending' | 'restarting' | null;
+  /** Every App deployed on the runtime, running or not. */
+  readonly apps: readonly (AppObservedStatus & {
+    readonly appId: string;
+    /** The environment the App belongs to; null for one deployed outside release management. */
+    readonly environmentId: string | null;
+  })[];
+  /** Environments whose Apps could not be restored after the runtime restarted, retried in the background. */
+  readonly failedEnvironments: readonly {
+    readonly environmentId: string;
+    readonly error: string | null;
+  }[];
 }
 
 export interface DriverSession {
@@ -261,6 +314,8 @@ export interface DriverSession {
     readonly deploymentId: string;
     readonly appId: string;
   }): Promise<AppObservedStatus | null>;
+  /** Who shares the runtime this environment's Apps run in, from a driver whose environments share one. */
+  occupancy?(): Promise<HostOccupancy | null>;
   /** Absolute public URL, or null when the environment has no reachable address yet. */
   url(appId: string): string | null;
   close(): Promise<void>;

@@ -517,3 +517,64 @@ it('protects an unfinished request and starts the idle interval at its successfu
   await host.sweep(finishedAt + 101);
   expect(host.isActive('a')).toBe(false);
 });
+
+it('reports why running Apps hold capacity and why a refused start waits, until it starts or a minute passes', async () => {
+  let heapUsed = 100 * MiB;
+  const host = registry({
+    maxActiveApps: 2,
+    sampleMemory: () => ({
+      heapUsed,
+      heapLimit: 1280 * MiB,
+      rss: 200 * MiB,
+      available: 8192 * MiB,
+    }),
+  });
+  await host.create('resident', { tier: 'dedicated' });
+  await host.create('idle');
+  await host.register('stopped');
+  expect(host.lifecycle('resident')).toMatchObject({
+    state: 'running',
+    holds: expect.arrayContaining(['resident', 'busy']),
+  });
+  expect(host.lifecycle('idle')).toMatchObject({
+    state: 'running',
+    holds: ['recent'],
+  });
+  expect(host.lifecycle('stopped')).toEqual(
+    expect.not.objectContaining({ holds: expect.anything() }),
+  );
+
+  // The count limit: the recently used App is not reclaimed, so the start waits for capacity.
+  await expect(host.ensureActive('stopped')).rejects.toMatchObject({
+    code: 'APP_CAPACITY_EXCEEDED',
+  });
+  expect(host.lifecycle('stopped')).toMatchObject({
+    state: 'stopped',
+    waiting: 'capacity',
+  });
+
+  // Memory: the idle App is reclaimed, yet the heap is still above the budget.
+  laterThanRecentUse();
+  expect(host.lifecycle('idle')?.holds).toBeUndefined();
+  heapUsed = 1000 * MiB;
+  await expect(host.ensureActive('stopped')).rejects.toMatchObject({
+    code: 'APP_CAPACITY_EXCEEDED',
+  });
+  expect(host.lifecycle('stopped')?.waiting).toBe('memory');
+
+  // A successful start clears it.
+  heapUsed = 100 * MiB;
+  await host.ensureActive('stopped');
+  expect(host.lifecycle('stopped')).toMatchObject({ state: 'running' });
+  expect(host.lifecycle('stopped')?.waiting).toBeUndefined();
+
+  // A rotation pending: new code waits for the Host to be recycled, and the mark lapses after a minute.
+  await host.register('fresh');
+  host.pauseNewRevisions();
+  await expect(host.ensureActive('fresh')).rejects.toMatchObject({
+    code: 'APP_CAPACITY_EXCEEDED',
+  });
+  expect(host.lifecycle('fresh')?.waiting).toBe('recycle');
+  vi.setSystemTime(Date.now() + 61_000);
+  expect(host.lifecycle('fresh')?.waiting).toBeUndefined();
+});

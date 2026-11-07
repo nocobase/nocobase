@@ -51,6 +51,108 @@ describe('releases', () => {
     return admin;
   }
 
+  it('answers the shared runtime on the single-App read, naming only the occupants the caller may view', async () => {
+    const admin = await createApp('crm');
+    const contributor = await harness.as('dev', 'contributor');
+    await harness.environment({
+      id: 'preview',
+      name: 'Preview',
+      driver: 'fake',
+    });
+    await harness.services.releases.createApp(contributor, {
+      id: 'pr-1',
+      name: 'PR 1',
+      environmentId: 'preview',
+    });
+    await harness.services.releases.createApp(contributor, {
+      id: 'pr-2',
+      name: 'PR 2',
+      environmentId: 'preview',
+    });
+    const app = (
+      appId: string,
+      environmentId: string | null,
+      fields: Record<string, unknown>,
+    ) => ({
+      appId,
+      environmentId,
+      version: '1.0.0',
+      deploymentId: null,
+      startedAt: null,
+      error: null,
+      lastAccessedAt: null,
+      ...fields,
+    });
+    harness.fake.occupancy = {
+      memory: { heapUsed: 1, heapLimit: 2, rss: 3, available: 4 },
+      recycling: 'pending',
+      apps: [
+        app('pr-2', 'preview', { state: 'stopped' }),
+        app('pr-1', 'preview', { state: 'stopped', waiting: 'recycle' }),
+        app('crm', 'staging', {
+          state: 'running',
+          holds: ['requests', 'resident'],
+          error: 'crm detail',
+        }),
+        app('outside', null, { state: 'running', holds: ['recent'] }),
+      ],
+      failedEnvironments: [
+        { environmentId: 'staging', error: 'cannot restore' },
+      ],
+    };
+    const seen = await harness.services.releases.getApp(contributor, 'pr-1');
+    expect(seen.host).toEqual({
+      memory: { heapUsed: 1, heapLimit: 2, rss: 3, available: 4 },
+      recycling: 'pending',
+      deployed: 4,
+      running: 2,
+      occupants: [
+        {
+          app: null,
+          state: 'running',
+          holds: ['requests', 'resident'],
+          waiting: null,
+          lastAccessedAt: null,
+          error: null,
+        },
+        {
+          app: null,
+          state: 'running',
+          holds: ['recent'],
+          waiting: null,
+          lastAccessedAt: null,
+          error: null,
+        },
+        {
+          app: {
+            id: 'pr-1',
+            name: 'PR 1',
+            environmentId: 'preview',
+            environmentName: 'Preview',
+            previewOf: null,
+          },
+          state: 'stopped',
+          holds: [],
+          waiting: 'recycle',
+          lastAccessedAt: null,
+          error: null,
+        },
+      ],
+      failedEnvironments: [
+        { id: 'staging', name: 'Staging', error: 'cannot restore' },
+      ],
+    });
+    const all = await harness.services.releases.getApp(admin, 'pr-1');
+    expect(all.host?.occupants[0]?.app).toMatchObject({
+      id: 'crm',
+      environmentName: 'Staging',
+    });
+    expect(all.host?.occupants[0]?.error).toBe('crm detail');
+    // Lists stay cheap: only the single-App read asks the driver about the runtime.
+    const page = await harness.services.releases.listApps(admin, {});
+    expect(page.items.every((item) => item.host === undefined)).toBe(true);
+  });
+
   it('refuses the App IDs `new` and `requests`, which the pages take beside an App', async () => {
     await expect(createApp('new')).rejects.toMatchObject({
       reason: 'INVALID_APP_ID',

@@ -47,6 +47,7 @@ import {
   type DriverContext,
   type DriverEnvironment,
   type DriverSession,
+  type HostOccupancy,
   type RegistryAuth,
 } from '../types.js';
 
@@ -181,6 +182,8 @@ interface OpenScope {
   readonly desired: () => Promise<readonly AppDeploymentSpec[]>;
   restoring: Promise<void> | null;
   restoreFailed: boolean;
+  /** Why its last restore failed, while `restoreFailed`. */
+  restoreError: string | null;
   deploymentBatchBusy?: DriverContext['deploymentBatchBusy'];
 }
 
@@ -373,9 +376,12 @@ export function createHostDriver(
     const current = sendSet(scope)
       .then(() => {
         scope.restoreFailed = false;
+        scope.restoreError = null;
       })
       .catch((error: unknown) => {
         scope.restoreFailed = true;
+        scope.restoreError =
+          error instanceof Error ? error.message : String(error);
         if (scopes.get(scope.environmentId) === scope) watchChurn(true);
         diagnostic.error(
           `Failed to restore the Apps of environment ${scope.environmentId}`,
@@ -739,6 +745,7 @@ export function createHostDriver(
         desired: () => context.desired(),
         restoring: null,
         restoreFailed: false,
+        restoreError: null,
         deploymentBatchBusy: (excluding) =>
           context.deploymentBatchBusy?.(excluding) ?? false,
       };
@@ -939,6 +946,17 @@ export function createHostDriver(
           const result = new Map<string, AppObservedStatus>();
           for (const deployment of status.deployments)
             result.set(deployment.appId, observed(deployment));
+          // A failed restore left these Apps off the Host until a background retry succeeds.
+          if (scope.restoreFailed && !scope.restoring && appIds)
+            for (const appId of appIds)
+              if (!result.has(appId))
+                result.set(appId, {
+                  state: 'failed',
+                  version: null,
+                  deploymentId: null,
+                  startedAt: null,
+                  error: scope.restoreError,
+                });
           if ((scope.restoring || !status.scope) && appIds)
             for (const appId of appIds)
               if (!result.has(appId))
@@ -961,6 +979,38 @@ export function createHostDriver(
           await tracked(scope, async () =>
             (await management()).publishAppConfig(appId, content),
           );
+        },
+        async occupancy(): Promise<HostOccupancy | null> {
+          if (host !== inProcess) return null;
+          // The unfiltered status: every scope sharing the process, and Apps deployed without one.
+          const status = await (await management()).getStatus();
+          return {
+            memory: status.counters?.memory ?? null,
+            recycling:
+              restartScheduled ||
+              readyRestoring ||
+              inProcess.controller.getInfo().status !== 'ready'
+                ? 'restarting'
+                : rotationSince !== null || status.counters?.rotationPending
+                  ? 'pending'
+                  : null,
+            apps: status.deployments.map((deployment) => ({
+              ...observed(deployment),
+              appId: deployment.appId,
+              environmentId: deployment.scopeId ?? null,
+            })),
+            failedEnvironments: [...scopes.values()]
+              .filter(
+                (other) =>
+                  other.host === inProcess &&
+                  other.restoreFailed &&
+                  !other.restoring,
+              )
+              .map((other) => ({
+                environmentId: other.environmentId,
+                error: other.restoreError,
+              })),
+          };
         },
         async logs(appId: string, query: JournalQuery): Promise<JournalPage> {
           return await (await management()).readAppLogs(appId, query);
@@ -1011,6 +1061,10 @@ function observed(item: HostDeploymentStatus): AppObservedStatus {
         item.lifecycle?.lastFailure?.error ??
         null),
     lastAccessedAt: item.lifecycle?.lastAccessedAt ?? null,
+    ...(item.lifecycle?.holds?.length ? { holds: item.lifecycle.holds } : {}),
+    ...(item.lifecycle?.waiting && !active
+      ? { waiting: item.lifecycle.waiting }
+      : {}),
   };
 }
 

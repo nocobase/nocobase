@@ -33,7 +33,9 @@ import type {
   AppDefinition,
   AppDeploymentResult,
   AppDestroyOptions,
+  AppHoldReason,
   AppLifecycleView,
+  AppWaitReason,
   AppRequestMetadata,
   AppSnapshot,
   ReplaceAppDefinitionOptions,
@@ -200,6 +202,11 @@ export class AppRuntimeRegistry {
   private readonly dormantApps = new Set<string>();
   private readonly activating = new Set<string>();
   private readonly failures = new Map<string, { at: number; error: string }>();
+  /** The last refused start of each App, shown as `waiting` for CAPACITY_RECENT_USE_MS. In memory only. */
+  private readonly capacityWaits = new Map<
+    string,
+    { at: number; reason: AppWaitReason }
+  >();
   private readonly lifecycleListeners = new Set<
     (event: AppLifecycleEvent) => void
   >();
@@ -698,6 +705,7 @@ export class AppRuntimeRegistry {
         this.lastAccess.delete(id);
         this.dormantApps.delete(id);
         this.failures.delete(id);
+        this.capacityWaits.delete(id);
       }
 
       return Boolean(runtime || hadDefinition);
@@ -1000,13 +1008,18 @@ export class AppRuntimeRegistry {
   ): Promise<ActiveAppHandle> {
     if (definition.backend !== 'in-process')
       return this.activateAdmitted(definition);
-    if (this.pendingStarts >= this.maxPendingStarts)
+    if (this.pendingStarts >= this.maxPendingStarts) {
+      this.capacityWaits.set(definition.id, {
+        at: Date.now(),
+        reason: 'capacity',
+      });
       return Promise.reject(
         new AppCapacityExceededError(
           this.maxActiveApps,
           'Cold-start queue is full; retry later',
         ),
       );
+    }
     this.pendingStarts += 1;
     const signal = deploymentSignal();
     const work = this.admission
@@ -1035,6 +1048,7 @@ export class AppRuntimeRegistry {
       // Publish before releasing the reservation: another activation must always see this slot occupied.
       this.runtimes.set(definition.id, runtime);
       this.failures.delete(definition.id);
+      this.capacityWaits.delete(definition.id);
       this.touch(definition.id);
       this.emitLifecycle(definition.id, 'activated');
       return runtime;
@@ -1210,17 +1224,23 @@ export class AppRuntimeRegistry {
   }
 
   private memoryFull(definition: AppDefinition): boolean {
+    return this.memoryWait(definition) !== null;
+  }
+
+  /** Why the Host's memory refuses `definition` a start now: `recycle`, `memory`, or null when it fits. */
+  private memoryWait(definition: AppDefinition): 'recycle' | 'memory' | null {
     if (
       this.rotationPending &&
       !this.loadedRevisions.has(this.revisionKey(definition))
     )
-      return true;
+      return 'recycle';
     const memory = this.memoryUsage();
-    return (
-      memory.heapUsed + this.appMemory > memory.heapLimit * this.targetRatio ||
+    return memory.heapUsed + this.appMemory >
+      memory.heapLimit * this.targetRatio ||
       memory.available < this.appMemory + this.reserveMemory ||
       (this.rssBudget > 0 && memory.rss + this.appMemory > this.rssBudget)
-    );
+      ? 'memory'
+      : null;
   }
 
   private async reserveCapacityUnlocked(
@@ -1232,13 +1252,16 @@ export class AppRuntimeRegistry {
         ...this.list().map((app) => [app.id, app] as const),
         ...this.reservations,
       ]);
-    const full = () => {
+    const fullReason = (): AppWaitReason | null => {
       const apps = occupied();
-      const countFull =
-        apps.size + (apps.has(definition.id) ? 0 : 1) > this.maxActiveApps;
-      if (!shared) return countFull;
-      return countFull || this.memoryFull(definition);
+      // Waiting for recycling comes first: no reclaimed slot would let this unloaded revision start.
+      const memory = shared ? this.memoryWait(definition) : null;
+      if (memory === 'recycle') return memory;
+      return apps.size + (apps.has(definition.id) ? 0 : 1) > this.maxActiveApps
+        ? 'capacity'
+        : memory;
     };
+    const full = () => fullReason() !== null;
     const recent = (id: string) =>
       Date.now() - (this.lastAccessedAt(id) ?? 0) < CAPACITY_RECENT_USE_MS;
     let capacityFull = full();
@@ -1274,33 +1297,21 @@ export class AppRuntimeRegistry {
         capacityFull = full();
       }
     }
-    if (capacityFull) {
+    const waiting = capacityFull ? fullReason() : null;
+    if (waiting) {
+      this.capacityWaits.set(definition.id, {
+        at: Date.now(),
+        reason: waiting,
+      });
       this.logger?.warn(
         {
           appId: definition.id,
           memory: this.memoryUsage(),
           rotationPending: this.rotationPending,
-          occupants: [...occupied().keys()].map((id) => {
-            const app = this.snapshot(id);
-            const policy = this.definitions.get(id);
-            return {
-              appId: id,
-              reasons: [
-                app?.activeRequests ? 'requests' : null,
-                app?.activeConnections ? 'connections' : null,
-                this.activating.has(id) ? 'starting' : null,
-                this.operations.has(id) && !this.activating.has(id)
-                  ? 'operation'
-                  : null,
-                policy?.tier === 'dedicated' ||
-                policy?.resourcePolicy?.idleTtlMs === 0
-                  ? 'resident'
-                  : null,
-                app && !this.isEvictable(app) ? 'busy' : null,
-                app && this.isEvictable(app) && recent(id) ? 'recent' : null,
-              ].filter(Boolean),
-            };
-          }),
+          occupants: [...occupied().keys()].map((id) => ({
+            appId: id,
+            reasons: this.holdsOf(id),
+          })),
         },
         'App Host capacity full; retry later',
       );
@@ -1460,12 +1471,51 @@ export class AppRuntimeRegistry {
       : null;
   }
 
+  /**
+   * Why an App holds a capacity slot, as admission and its "capacity full" log see it; empty for one that neither runs,
+   * starts nor holds a reservation.
+   */
+  private holdsOf(id: string): AppHoldReason[] {
+    const app = this.snapshot(id);
+    if (!app && !this.reservations.has(id) && !this.activating.has(id))
+      return [];
+    const policy = this.definitions.get(id);
+    const evictable = app ? this.isEvictable(app) : false;
+    const holds: (AppHoldReason | null)[] = [
+      app?.activeRequests ? 'requests' : null,
+      app?.activeConnections ? 'connections' : null,
+      this.activating.has(id) ? 'starting' : null,
+      this.operations.has(id) && !this.activating.has(id) ? 'operation' : null,
+      policy?.tier === 'dedicated' || policy?.resourcePolicy?.idleTtlMs === 0
+        ? 'resident'
+        : null,
+      app && !evictable ? 'busy' : null,
+      evictable &&
+      Date.now() - (this.lastAccessedAt(id) ?? 0) < CAPACITY_RECENT_USE_MS
+        ? 'recent'
+        : null,
+    ];
+    return holds.filter((hold): hold is AppHoldReason => hold !== null);
+  }
+
   lifecycle(id: string): AppLifecycleView | undefined {
     if (!this.definitions.has(id)) return undefined;
     const runtime = this.runtimes.get(id);
     const lastAccessedAt = this.lastAccessedAt(id);
     const failure = this.recentFailure(id);
+    const holds = this.holdsOf(id);
+    const wait = this.capacityWaits.get(id);
+    const waiting =
+      !runtime &&
+      !this.activating.has(id) &&
+      wait &&
+      Date.now() - wait.at < CAPACITY_RECENT_USE_MS
+        ? wait.reason
+        : undefined;
+    if (wait && !waiting) this.capacityWaits.delete(id);
     return {
+      ...(holds.length ? { holds } : {}),
+      ...(waiting ? { waiting } : {}),
       state: this.activating.has(id)
         ? 'starting'
         : runtime

@@ -26,6 +26,8 @@ import {
 } from '../server/drivers/host/driver.js';
 import type {
   AppDeploymentSpec,
+  AppHoldReason,
+  AppWaitReason,
   DriverEnvironment,
 } from '../server/drivers/types.js';
 
@@ -69,6 +71,11 @@ interface FakeHost {
   readonly lifecycle: Map<string, Lifecycle>;
   readonly requests: Map<string, number>;
   readonly connections: Map<string, number>;
+  /** What each App's lifecycle adds: why it holds a slot, why its start was refused. */
+  readonly occupancy: Map<
+    string,
+    { holds?: AppHoldReason[]; waiting?: AppWaitReason }
+  >;
   counters: NonNullable<HostStatus['counters']>;
   /** When set, the next deployment fails with it while the previous runtime keeps serving (a start-first switch). */
   failure: string | null;
@@ -120,6 +127,7 @@ function fakeHost(restartAfterChurn?: number): FakeHost {
         state,
         lastAccessedAt: '2026-10-02T01:00:00.000Z',
         lastFailure: null,
+        ...host.occupancy.get(spec.appId),
       },
     };
   };
@@ -245,6 +253,7 @@ function fakeHost(restartAfterChurn?: number): FakeHost {
     lifecycle: new Map(),
     requests: new Map(),
     connections: new Map(),
+    occupancy: new Map(),
     counters: {
       activations: 0,
       idleStops: 0,
@@ -399,6 +408,78 @@ describe('Host driver', () => {
       state: 'running',
       deploymentId: 'd-d1',
     });
+  });
+
+  it('reports who occupies the shared Host across environments, and a failed restore as failed Apps', async () => {
+    vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] });
+    const host = fakeHost();
+    const driver = driverFor(host);
+    const preview = await open(driver, [appSpec('pr-1'), appSpec('pr-2')]);
+    const staging = await open(driver, [appSpec('crm')], 'staging');
+    await preview.restore([]);
+    await staging.restore([]);
+    host.occupancy.set('crm', { holds: ['requests', 'resident', 'busy'] });
+    host.lifecycle.set('pr-2', 'stopped');
+    host.occupancy.set('pr-2', { waiting: 'memory' });
+    host.counters = {
+      ...host.counters,
+      memory: {
+        heapUsed: 900 * 1024 ** 2,
+        heapLimit: 2048 * 1024 ** 2,
+        rss: 1500 * 1024 ** 2,
+        available: 3000 * 1024 ** 2,
+      },
+    };
+    const occupancy = await preview.occupancy!();
+    expect(occupancy).toMatchObject({
+      memory: { heapUsed: 900 * 1024 ** 2, rss: 1500 * 1024 ** 2 },
+      recycling: null,
+      failedEnvironments: [],
+    });
+    expect(occupancy!.apps).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          appId: 'crm',
+          environmentId: 'staging',
+          state: 'running',
+          holds: ['requests', 'resident', 'busy'],
+        }),
+        expect.objectContaining({
+          appId: 'pr-2',
+          environmentId: 'preview',
+          state: 'stopped',
+          waiting: 'memory',
+        }),
+        expect.objectContaining({ appId: 'pr-1', state: 'running' }),
+      ]),
+    );
+    expect((await preview.status(['pr-2'])).get('pr-2')).toMatchObject({
+      state: 'stopped',
+      waiting: 'memory',
+    });
+
+    // Staging cannot be restored: its Apps missing from the Host are failed with the error; present ones keep theirs.
+    const service = await host.endpoint.controller.getManagementClient();
+    const original = service.restoreDeploymentSet.bind(service);
+    vi.spyOn(service, 'restoreDeploymentSet').mockImplementation((set) =>
+      set.scope!.id === 'staging'
+        ? Promise.reject(new Error('crm cannot be restored'))
+        : original(set),
+    );
+    await expect(staging.restore([])).rejects.toThrow('crm cannot be restored');
+    const failed = await staging.status(['crm', 'reports']);
+    expect(failed.get('reports')).toMatchObject({
+      state: 'failed',
+      error: 'crm cannot be restored',
+    });
+    expect(failed.get('crm')?.state).toBe('running');
+    expect(await preview.occupancy!()).toMatchObject({
+      failedEnvironments: [
+        { environmentId: 'staging', error: 'crm cannot be restored' },
+      ],
+    });
+    await preview.close();
+    await staging.close();
   });
 
   it('reports why a deployment failed while the previous version keeps serving', async () => {

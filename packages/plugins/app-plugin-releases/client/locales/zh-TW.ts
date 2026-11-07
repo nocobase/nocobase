@@ -226,6 +226,9 @@ const zhTW: LocaleResource<typeof enUS> = {
       stopped: '已停止',
       stoppedOnDemand: '已停止（訪問時開始）',
       dormant: '冬眠（訪問時準備）',
+      waitingCapacity: '等待空閒名額',
+      waitingMemory: '等待記憶體',
+      waitingRecycle: '等待宿主重啟回收',
       failed: '失敗',
       unknown: '未知',
       deploying: '部署中',
@@ -495,6 +498,43 @@ const zhTW: LocaleResource<typeof enUS> = {
       deployments: '部署',
       variables: '變數',
       settings: '設定',
+    },
+    sharedHost: {
+      title: '共用應用宿主',
+      description: '這個宿主上所有環境的應用共用一個程序和它的記憶體。',
+      summary: '已部署 {{deployed}} 個應用，{{running}} 個執行或啟動中',
+      memory:
+        '堆積 {{heapUsed}} / {{heapLimit}} · 程序記憶體 {{rss}} · 伺服器可用 {{available}}',
+      memoryNote: '這是整個程序的總量，不是某個應用的佔用。',
+      recycling: {
+        pending:
+          '沒有應用在使用時，會重新啟動這個宿主來釋放舊程式碼。新版本要等到那時才能啟動；執行中的應用照常服務。',
+        restarting: '這個宿主正在重新啟動，恢復前它的應用會提示「稍後重試」。',
+      },
+      restoreFailed: '{{name}}：應用恢復失敗，背景重試中。',
+      columns: {
+        app: '應用',
+        state: '狀態',
+        why: '原因',
+        lastAccess: '最近存取',
+      },
+      hidden: '你無權查看的應用',
+      empty: '這個宿主上沒有執行中的應用。',
+      idle: '閒置，需要空間時優先停止',
+      holds: {
+        requests: '正在處理請求',
+        connections: '有活動連線',
+        starting: '啟動中',
+        operation: '部署或停止中',
+        resident: '常駐執行',
+        busy: '忙碌',
+        recent: '最近一分鐘內有存取',
+      },
+      waiting: {
+        capacity: '啟動被拒：執行數量上限或啟動佇列已滿',
+        memory: '啟動被拒：記憶體不足',
+        recycle: '啟動被拒：新程式碼要等宿主重新啟動回收',
+      },
     },
     overview: {
       currentRelease: '當前版本',

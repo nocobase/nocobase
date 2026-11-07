@@ -250,6 +250,9 @@ const idID: LocaleResource<typeof enUS> = {
       stopped: 'Berhenti',
       stoppedOnDemand: 'Berhenti (mulai berkunjung)',
       dormant: 'Hibernasi (disiapkan saat berkunjung)',
+      waitingCapacity: 'Menunggu slot kosong',
+      waitingMemory: 'Menunggu memori',
+      waitingRecycle: 'Menunggu host dimulai ulang',
       failed: 'Gagal',
       unknown: 'Tidak diketahui',
       deploying: 'Penyebaran',
@@ -534,6 +537,48 @@ const idID: LocaleResource<typeof enUS> = {
       deployments: 'Penerapan',
       variables: 'Variabel',
       settings: 'Pengaturan',
+    },
+    sharedHost: {
+      title: 'Host aplikasi bersama',
+      description:
+        'Aplikasi dari semua lingkungan di host ini berbagi satu proses dan memorinya.',
+      summary:
+        '{{running}} dari {{deployed}} aplikasi yang di-deploy berjalan atau sedang dimulai',
+      memory:
+        'Heap {{heapUsed}} dari {{heapLimit}} · memori proses {{rss}} · {{available}} tersedia di server',
+      memoryNote: 'Total untuk seluruh proses, bukan untuk satu aplikasi.',
+      recycling: {
+        pending:
+          'Kode lama dibebaskan dengan memulai ulang host ini saat tidak ada aplikasi yang digunakan. Versi baru menunggu sampai saat itu; aplikasi yang berjalan tetap melayani.',
+        restarting:
+          'Host ini sedang dimulai ulang. Aplikasinya menjawab “coba lagi sebentar” sampai kembali.',
+      },
+      restoreFailed:
+        '{{name}}: aplikasinya tidak dapat dipulihkan; mencoba lagi di latar belakang.',
+      columns: {
+        app: 'Aplikasi',
+        state: 'Status',
+        why: 'Alasan',
+        lastAccess: 'Akses terakhir',
+      },
+      hidden: 'Aplikasi yang tidak dapat Anda lihat',
+      empty: 'Tidak ada aplikasi yang berjalan di host ini.',
+      idle: 'Menganggur; dihentikan lebih dulu saat ruang dibutuhkan',
+      holds: {
+        requests: 'Melayani permintaan',
+        connections: 'Koneksi terbuka',
+        starting: 'Sedang dimulai',
+        operation: 'Sedang di-deploy atau dihentikan',
+        resident: 'Selalu berjalan',
+        busy: 'Sibuk',
+        recent: 'Digunakan dalam satu menit terakhir',
+      },
+      waiting: {
+        capacity:
+          'Mulai ditolak: batas aplikasi aktif atau antrean mulai penuh',
+        memory: 'Mulai ditolak: memori tidak cukup',
+        recycle: 'Mulai ditolak: kode baru menunggu host dimulai ulang',
+      },
     },
     overview: {
       currentRelease: 'Rilis saat ini',

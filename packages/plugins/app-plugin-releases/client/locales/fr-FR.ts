@@ -253,6 +253,9 @@ const frFR: LocaleResource<typeof enUS> = {
       stopped: 'Arrêté',
       stoppedOnDemand: 'Arrêté (démarrage sur visite)',
       dormant: 'Hibernation (préparé en visite)',
+      waitingCapacity: 'En attente d’une place libre',
+      waitingMemory: 'En attente de mémoire',
+      waitingRecycle: 'En attente du redémarrage de l’hôte',
       failed: 'Échec',
       unknown: 'Inconnu',
       deploying: 'Déploiement',
@@ -543,6 +546,49 @@ const frFR: LocaleResource<typeof enUS> = {
       deployments: 'Déploiements',
       variables: 'Variables',
       settings: 'Paramètres',
+    },
+    sharedHost: {
+      title: 'Hôte d’applications partagé',
+      description:
+        'Les applications de tous les environnements de cet hôte partagent un processus et sa mémoire.',
+      summary:
+        '{{running}} sur {{deployed}} applications déployées en cours d’exécution ou de démarrage',
+      memory:
+        'Tas {{heapUsed}} sur {{heapLimit}} · mémoire du processus {{rss}} · {{available}} disponibles sur le serveur',
+      memoryNote: 'Totaux du processus entier, pas d’une seule application.',
+      recycling: {
+        pending:
+          'L’ancien code est libéré en redémarrant cet hôte dès qu’aucune application n’est utilisée. Les nouvelles versions attendent jusque-là ; les applications en cours continuent de répondre.',
+        restarting:
+          'Cet hôte redémarre. Ses applications répondent « réessayez dans un instant » jusqu’à leur retour.',
+      },
+      restoreFailed:
+        '{{name}} : ses applications n’ont pas pu être restaurées ; nouvel essai en arrière-plan.',
+      columns: {
+        app: 'Application',
+        state: 'État',
+        why: 'Raison',
+        lastAccess: 'Dernier accès',
+      },
+      hidden: 'Une application que vous ne pouvez pas voir',
+      empty: 'Aucune application ne tourne sur cet hôte.',
+      idle: 'Inactive ; arrêtée en premier quand de la place est nécessaire',
+      holds: {
+        requests: 'Traite des requêtes',
+        connections: 'Connexions ouvertes',
+        starting: 'Démarrage',
+        operation: 'Déploiement ou arrêt en cours',
+        resident: 'Toujours en marche',
+        busy: 'Occupée',
+        recent: 'Utilisée dans la dernière minute',
+      },
+      waiting: {
+        capacity:
+          'Démarrage refusé : limite d’applications actives ou file de démarrage pleine',
+        memory: 'Démarrage refusé : mémoire insuffisante',
+        recycle:
+          'Démarrage refusé : le nouveau code attend le redémarrage de l’hôte',
+      },
     },
     overview: {
       currentRelease: 'Version actuelle',

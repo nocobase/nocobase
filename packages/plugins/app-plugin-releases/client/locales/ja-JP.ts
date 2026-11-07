@@ -250,6 +250,9 @@ const jaJP: LocaleResource<typeof enUS> = {
       stopped: '停止しました',
       stoppedOnDemand: '停止中（訪問時に開始）',
       dormant: '冬眠中（訪問時に準備）',
+      waitingCapacity: '空き枠を待機中',
+      waitingMemory: 'メモリを待機中',
+      waitingRecycle: 'ホストの再起動を待機中',
       failed: '失敗しました',
       unknown: '不明',
       deploying: '配備中',
@@ -531,6 +534,47 @@ const jaJP: LocaleResource<typeof enUS> = {
       deployments: '展開',
       variables: '変数',
       settings: '設定',
+    },
+    sharedHost: {
+      title: '共有アプリホスト',
+      description:
+        'このホスト上のすべての環境のアプリが、1 つのプロセスとそのメモリを共有します。',
+      summary:
+        'デプロイ済み {{deployed}} 個のうち {{running}} 個が実行中または起動中',
+      memory:
+        'ヒープ {{heapUsed}} / {{heapLimit}} · プロセスメモリ {{rss}} · サーバーの空き {{available}}',
+      memoryNote: 'プロセス全体の合計で、個々のアプリの使用量ではありません。',
+      recycling: {
+        pending:
+          '使用中のアプリがなくなったら、このホストを再起動して古いコードを解放します。新しいバージョンはそれまで待機し、実行中のアプリは引き続き応答します。',
+        restarting:
+          'このホストは再起動中です。戻るまで、アプリは「しばらくしてから再試行」と応答します。',
+      },
+      restoreFailed:
+        '{{name}}：アプリを復元できませんでした。バックグラウンドで再試行しています。',
+      columns: {
+        app: 'アプリ',
+        state: '状態',
+        why: '理由',
+        lastAccess: '最終アクセス',
+      },
+      hidden: '表示権限のないアプリ',
+      empty: 'このホストで実行中のアプリはありません。',
+      idle: 'アイドル。空きが必要なときに最初に停止されます',
+      holds: {
+        requests: 'リクエストを処理中',
+        connections: '接続中',
+        starting: '起動中',
+        operation: 'デプロイまたは停止中',
+        resident: '常駐',
+        busy: 'ビジー',
+        recent: '直近 1 分以内に使用',
+      },
+      waiting: {
+        capacity: '起動拒否：実行数の上限または起動キューが満杯',
+        memory: '起動拒否：メモリ不足',
+        recycle: '起動拒否：新しいコードはホストの再起動を待っています',
+      },
     },
     overview: {
       currentRelease: '現在のリリース',
