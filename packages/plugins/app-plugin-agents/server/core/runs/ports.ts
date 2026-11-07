@@ -65,6 +65,8 @@ export interface SubjectScope {
 
 /** The subject's part of a run payload; the runs domain adds the rules, the workspace and the skills. */
 export interface SubjectAssembly {
+  /** Render fixed instructions before task and runner details; server-only, with no session-policy effect. */
+  readonly briefLayout?: 'stable-prefix';
   /** Subject-specific effort for this run only; null uses the tool default, absent uses the Agent entry. */
   readonly effort?: string | null;
   /**

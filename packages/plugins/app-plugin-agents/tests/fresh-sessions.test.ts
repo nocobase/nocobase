@@ -209,7 +209,26 @@ describe('fresh run sessions', () => {
 
   it('replaces only the requested agent session and resumes the new session on a comment', async () => {
     h = await createHarness();
-    const reviewer = await h.createAgent();
+    const binding = h.services.subjects.get('sample')!;
+    h.services.subjects.register({
+      ...binding,
+      kind: 'prefix',
+      context: {
+        ...binding.context,
+        async assemble(conn, claim) {
+          const assembly = await binding.context.assemble(conn, claim);
+          return {
+            ...assembly,
+            ...(claim.run.freshSession
+              ? { briefLayout: 'stable-prefix' as const }
+              : {}),
+          };
+        },
+      },
+    });
+    const enqueueLayout = (id: string, fresh = false) =>
+      enqueue(id, fresh, { subject: { kind: 'prefix', id: '1' } });
+    const reviewer = await h.createAgent({ instructions: 'Review carefully.' });
     const developer = await h.createAgent({ name: 'Developer' });
     const runner = await h.registerRunner();
     h.dirs = [
@@ -220,21 +239,24 @@ describe('fresh run sessions', () => {
         scopeId: 'sample-work',
       },
     ];
-    await enqueue(reviewer);
+    await enqueueLayout(reviewer);
     const [old] = await claim(h, runner);
     await finish(runner, old, 'old-review');
-    await enqueue(developer);
+    await enqueueLayout(developer);
     const [dev] = await claim(h, runner);
     await finish(runner, dev, 'dev-session');
     for (const sessionId of ['new-review', 'next-review']) {
-      await enqueue(reviewer, true);
+      await enqueueLayout(reviewer, true);
       const [fresh] = await claim(h, runner);
       expect(fresh.prompt.session).toBe('fresh');
+      expect(fresh.prompt.system).toMatch(
+        /^The following[\s\S]*Review carefully\.[\s\S]*Rules:/u,
+      );
       expect(fresh.prompt).not.toHaveProperty('resumeSessionId');
       expect(fresh.workspace).not.toHaveProperty('clean');
       expect(fresh.workspace.dirs).toEqual(old.workspace.dirs);
       await finish(runner, fresh, sessionId);
-      await enqueue(reviewer);
+      await enqueueLayout(reviewer);
       const [comment] = await claim(h, runner);
       expect(comment.prompt).toMatchObject({
         session: 'resume',
@@ -243,7 +265,7 @@ describe('fresh run sessions', () => {
       expect(comment.workspace).not.toHaveProperty('clean');
       await finish(runner, comment, sessionId);
     }
-    await enqueue(developer);
+    await enqueueLayout(developer);
     const [returned] = await claim(h, runner);
     expect(returned.prompt).toMatchObject({
       session: 'resume',
