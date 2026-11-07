@@ -1,7 +1,7 @@
 // The static capability guide: the catalog and its wording, shared by the guide pages and the application home page.
 import enUS from './content/en-US.js';
 import zhCN from './content/zh-CN.js';
-import type { GuideContent } from './content/types.js';
+import type { CapabilityContent, GuideContent } from './content/types.js';
 
 export * from './catalog.js';
 export type * from './content/types.js';
@@ -24,4 +24,14 @@ export function format(
   return text.replace(/{{(\w+)}}/g, (match, key: string) =>
     key in values ? String(values[key]) : match,
   );
+}
+
+/** One capability's wording, looked up by an id that may come from a URL. */
+export function capabilityContent(
+  content: GuideContent,
+  id: string,
+): CapabilityContent | undefined {
+  return (content.capabilities as Readonly<Record<string, CapabilityContent>>)[
+    id
+  ];
 }

@@ -1,11 +1,16 @@
-import type { CapabilityGroupId, CapabilityPrerequisite } from '../catalog.js';
+import type {
+  CapabilityGroupId,
+  CapabilityId,
+  CapabilityPrerequisite,
+  PromptIdOf,
+} from '../catalog.js';
 
 export interface PromptContent {
   readonly label: string;
   readonly text: string;
 }
 
-export interface CapabilityContent {
+export interface CapabilityContent<P extends string = string> {
   readonly title: string;
   /** One sentence: the business problem it solves. Shown on cards and searched. */
   readonly summary: string;
@@ -13,7 +18,7 @@ export interface CapabilityContent {
   readonly scenarios: readonly string[];
   /** What to prepare before asking, beyond the prerequisite badge. */
   readonly prerequisite: string;
-  readonly prompts: Readonly<Record<string, PromptContent>>;
+  readonly prompts: Readonly<Record<P, PromptContent>>;
 }
 
 /** Everything the guide shows in one language. A language file must carry every key, so the two never drift. */
@@ -67,5 +72,8 @@ export interface GuideContent {
     readonly viewAll: string;
     readonly open: string;
   };
-  readonly capabilities: Readonly<Record<string, CapabilityContent>>;
+  /** Exactly the catalog's capabilities, each with exactly its declared prompts. */
+  readonly capabilities: {
+    readonly [K in CapabilityId]: CapabilityContent<PromptIdOf<K>>;
+  };
 }

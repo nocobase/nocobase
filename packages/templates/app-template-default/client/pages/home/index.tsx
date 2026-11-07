@@ -16,6 +16,7 @@ import {
 import { type ReactElement } from 'react';
 import { Link } from 'react-router';
 import {
+  capabilityContent,
   CAPABILITIES,
   CAPABILITY_GUIDE_PATH,
   FEATURED_CAPABILITIES,
@@ -165,7 +166,7 @@ function CapabilityCard({
   readonly capability: GuideCapability;
   readonly content: GuideContent;
 }): ReactElement {
-  const text = content.capabilities[capability.id];
+  const text = capabilityContent(content, capability.id);
   const Icon = HOME_ICONS[capability.id] ?? SparklesIcon;
 
   return (

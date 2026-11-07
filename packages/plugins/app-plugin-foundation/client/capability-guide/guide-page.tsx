@@ -3,6 +3,7 @@ import { useState, type ReactElement } from 'react';
 import { Link } from 'react-router';
 
 import {
+  capabilityContent,
   CAPABILITIES,
   CAPABILITY_GROUP_IDS,
   capabilityPath,
@@ -20,7 +21,7 @@ function searchText(
   capability: GuideCapability,
   content: GuideContent,
 ): string {
-  const text = content.capabilities[capability.id];
+  const text = capabilityContent(content, capability.id);
   if (!text) return capability.id;
   return [
     text.title,
@@ -177,7 +178,7 @@ function CapabilityCard({
   readonly capability: GuideCapability;
   readonly content: GuideContent;
 }): ReactElement {
-  const text = content.capabilities[capability.id];
+  const text = capabilityContent(content, capability.id);
   return (
     <Link
       to={capabilityPath(capability.id)}

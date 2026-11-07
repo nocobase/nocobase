@@ -72,6 +72,7 @@ const enUS: GuideContent = {
     builtIn: 'Built in',
     config: 'Needs configuration',
     plugin: 'Needs a plugin',
+    agentBuilt: 'Built by your agent',
     commercial: 'Commercial plugin',
   },
   detail: {
@@ -205,7 +206,7 @@ const enUS: GuideContent = {
         'Export a statement for each customer.',
       ],
       prerequisite:
-        'Needs the template printing plugin and your Office template files. PDF output needs a converter on the server.',
+        'Your agent builds it for your business; there is no ready-made print service to install. Have it read the template printing Skill first, and prepare your Word or Excel templates. PDF output needs a converter on the server.',
       prompts: {
         orderPdf: {
           label: 'Print an order',
@@ -268,7 +269,7 @@ const enUS: GuideContent = {
         'The navigation shows how many tasks are pending and updates as they are done.',
       ],
       prerequisite:
-        'Built by the application for its business; no extra plugin. Works best once approvals or processes exist.',
+        'Your agent builds it for your business; no extra plugin. Works best once the application has approvals or processes.',
       prompts: {
         myTasks: {
           label: 'My tasks',

@@ -14,6 +14,7 @@ import { useState, type ReactElement } from 'react';
 import { Link, useParams } from 'react-router';
 
 import {
+  capabilityContent,
   CAPABILITY_GUIDE_PATH,
   capabilityPath,
   docsUrl,
@@ -38,7 +39,9 @@ export function CapabilityDetailPage(): ReactElement {
   const { capabilityId = '' } = useParams();
   const { content, locale } = useGuideContent();
   const capability = findCapability(capabilityId);
-  const text = capability ? content.capabilities[capability.id] : undefined;
+  const text = capability
+    ? capabilityContent(content, capability.id)
+    : undefined;
 
   if (!capability || !text)
     return (
@@ -154,7 +157,7 @@ export function CapabilityDetailPage(): ReactElement {
                           className='size-4 text-primary'
                         />
                         <span className='flex-1'>
-                          {content.capabilities[id]?.title}
+                          {capabilityContent(content, id)?.title}
                         </span>
                         <ChevronRight
                           className='size-4 text-muted-foreground'
@@ -180,7 +183,7 @@ function PromptEditor({
   readonly capability: GuideCapability;
   readonly content: GuideContent;
 }): ReactElement {
-  const prompts = content.capabilities[capability.id]?.prompts ?? {};
+  const prompts = capabilityContent(content, capability.id)?.prompts ?? {};
   const [current, setCurrent] = useState(capability.prompts[0] ?? '');
   const [edits, setEdits] = useState<Readonly<Record<string, string>>>({});
   const [status, setStatus] = useState<'idle' | 'copied' | 'failed'>('idle');

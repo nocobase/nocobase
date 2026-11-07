@@ -1,8 +1,8 @@
 /**
  * The static capability catalog shared by the capability guide and the application home page. It holds only what is
  * the same in every language: ids, groups, documentation paths, related entries and the developer reference. Titles,
- * descriptions and prompts live in `./content/<locale>.ts`, typed by `GuideContent` so every language carries every
- * entry.
+ * descriptions and prompts live in `./content/<locale>.ts`, typed by `GuideContent` against the ids declared here, so a
+ * language file that misses a capability or a prompt does not compile.
  */
 
 export const CAPABILITY_GROUP_IDS = [
@@ -24,6 +24,10 @@ export type CapabilityPrerequisite =
   | 'config'
   /** Needs a plugin added to the application. */
   | 'plugin'
+  /**
+   * No runtime package provides it: the agent builds it for the business, following a Skill or the documentation.
+   */
+  | 'agentBuilt'
   /** Needs a commercial plugin and its license. */
   | 'commercial';
 
@@ -35,13 +39,13 @@ export interface CapabilityReference {
 }
 
 export interface GuideCapability {
-  readonly id: string;
+  readonly id: CapabilityId;
   readonly group: CapabilityGroupId;
   /** Path on the documentation site, without the language prefix. */
   readonly docs: string;
   /** Prompt ids, in display order; their wording is in the content files. */
   readonly prompts: readonly string[];
-  readonly related: readonly string[];
+  readonly related: readonly CapabilityId[];
   readonly prerequisite: CapabilityPrerequisite;
   /** App-relative path of a runnable demonstration in the Examples template. */
   readonly demo?: string;
@@ -50,13 +54,41 @@ export interface GuideCapability {
   readonly reference: CapabilityReference;
 }
 
+/**
+ * Every capability's prompt ids, in display order. The ids type the content files: a language that misses a
+ * capability or one of its prompts does not compile.
+ */
+export const CAPABILITY_PROMPTS = {
+  auth: ['disableSignUp', 'companySso', 'apiKeys'],
+  authorization: ['jobs', 'dataScopes', 'restrictions'],
+  dataSources: ['postgres', 'externalDatabase'],
+  file: ['attachments', 'avatar'],
+  templatePrint: ['orderPdf'],
+  workflow: ['stages', 'backgroundExport', 'history'],
+  approval: ['multiLevel', 'handover'],
+  taskCenter: ['myTasks', 'approvals'],
+  notification: ['inApp', 'email'],
+  mail: ['providers', 'mailCenter', 'correspondence'],
+  scheduler: ['reminder', 'weeklyReport'],
+  theme: ['changeTheme', 'newTheme'],
+  i18n: ['addLanguage', 'defaultLanguage'],
+  aiEmployee: ['assistant'],
+  aiKnowledgeBase: ['policies'],
+} as const;
+
+export type CapabilityId = keyof typeof CAPABILITY_PROMPTS;
+
+/** The prompt ids one capability declares. */
+export type PromptIdOf<K extends CapabilityId> =
+  (typeof CAPABILITY_PROMPTS)[K][number];
+
 /** In the order of the documentation's Capabilities chapter within each group. */
 export const CAPABILITIES: readonly GuideCapability[] = [
   {
     id: 'auth',
     group: 'access',
     docs: '/capabilities/auth/',
-    prompts: ['disableSignUp', 'companySso', 'apiKeys'],
+    prompts: CAPABILITY_PROMPTS.auth,
     related: ['authorization'],
     prerequisite: 'builtIn',
     reference: {
@@ -76,7 +108,7 @@ export const CAPABILITIES: readonly GuideCapability[] = [
     id: 'authorization',
     group: 'access',
     docs: '/capabilities/authorization/',
-    prompts: ['jobs', 'dataScopes', 'restrictions'],
+    prompts: CAPABILITY_PROMPTS.authorization,
     related: ['auth', 'workflow'],
     prerequisite: 'builtIn',
     featured: true,
@@ -95,7 +127,7 @@ export const CAPABILITIES: readonly GuideCapability[] = [
     id: 'dataSources',
     group: 'data',
     docs: '/capabilities/data-sources',
-    prompts: ['postgres', 'externalDatabase'],
+    prompts: CAPABILITY_PROMPTS.dataSources,
     related: ['authorization'],
     prerequisite: 'builtIn',
     reference: {
@@ -107,7 +139,7 @@ export const CAPABILITIES: readonly GuideCapability[] = [
     id: 'file',
     group: 'data',
     docs: '/capabilities/file',
-    prompts: ['attachments', 'avatar'],
+    prompts: CAPABILITY_PROMPTS.file,
     related: ['templatePrint', 'authorization'],
     prerequisite: 'builtIn',
     featured: true,
@@ -121,9 +153,9 @@ export const CAPABILITIES: readonly GuideCapability[] = [
     id: 'templatePrint',
     group: 'data',
     docs: '/capabilities/template-print/',
-    prompts: ['orderPdf'],
+    prompts: CAPABILITY_PROMPTS.templatePrint,
     related: ['file'],
-    prerequisite: 'plugin',
+    prerequisite: 'agentBuilt',
     demo: '/template-print-example',
     reference: {
       packages: ['@nocobase/app-plugin-template-print'],
@@ -134,7 +166,7 @@ export const CAPABILITIES: readonly GuideCapability[] = [
     id: 'workflow',
     group: 'process',
     docs: '/capabilities/workflow/',
-    prompts: ['stages', 'backgroundExport', 'history'],
+    prompts: CAPABILITY_PROMPTS.workflow,
     related: ['approval', 'notification', 'scheduler'],
     prerequisite: 'builtIn',
     featured: true,
@@ -153,7 +185,7 @@ export const CAPABILITIES: readonly GuideCapability[] = [
     id: 'approval',
     group: 'process',
     docs: '/capabilities/approval/',
-    prompts: ['multiLevel', 'handover'],
+    prompts: CAPABILITY_PROMPTS.approval,
     related: ['workflow', 'taskCenter', 'notification'],
     prerequisite: 'commercial',
     reference: {
@@ -165,16 +197,16 @@ export const CAPABILITIES: readonly GuideCapability[] = [
     id: 'taskCenter',
     group: 'process',
     docs: '/capabilities/task-center',
-    prompts: ['myTasks', 'approvals'],
+    prompts: CAPABILITY_PROMPTS.taskCenter,
     related: ['approval', 'notification'],
-    prerequisite: 'builtIn',
+    prerequisite: 'agentBuilt',
     reference: { packages: [], skills: [] },
   },
   {
     id: 'notification',
     group: 'messages',
     docs: '/capabilities/notification',
-    prompts: ['inApp', 'email'],
+    prompts: CAPABILITY_PROMPTS.notification,
     related: ['workflow', 'scheduler', 'mail'],
     prerequisite: 'builtIn',
     featured: true,
@@ -197,7 +229,7 @@ export const CAPABILITIES: readonly GuideCapability[] = [
     id: 'mail',
     group: 'messages',
     docs: '/capabilities/mail/',
-    prompts: ['providers', 'mailCenter', 'correspondence'],
+    prompts: CAPABILITY_PROMPTS.mail,
     related: ['notification'],
     prerequisite: 'config',
     demo: '/mail-example',
@@ -210,7 +242,7 @@ export const CAPABILITIES: readonly GuideCapability[] = [
     id: 'scheduler',
     group: 'messages',
     docs: '/capabilities/scheduler',
-    prompts: ['reminder', 'weeklyReport'],
+    prompts: CAPABILITY_PROMPTS.scheduler,
     related: ['notification', 'workflow'],
     prerequisite: 'builtIn',
     featured: true,
@@ -224,7 +256,7 @@ export const CAPABILITIES: readonly GuideCapability[] = [
     id: 'theme',
     group: 'experience',
     docs: '/capabilities/theme',
-    prompts: ['changeTheme', 'newTheme'],
+    prompts: CAPABILITY_PROMPTS.theme,
     related: ['i18n'],
     prerequisite: 'builtIn',
     reference: { packages: [], skills: ['nocobase-app-development'] },
@@ -233,7 +265,7 @@ export const CAPABILITIES: readonly GuideCapability[] = [
     id: 'i18n',
     group: 'experience',
     docs: '/capabilities/i18n',
-    prompts: ['addLanguage', 'defaultLanguage'],
+    prompts: CAPABILITY_PROMPTS.i18n,
     related: ['theme'],
     prerequisite: 'builtIn',
     reference: {
@@ -245,7 +277,7 @@ export const CAPABILITIES: readonly GuideCapability[] = [
     id: 'aiEmployee',
     group: 'ai',
     docs: '/capabilities/ai-employee/',
-    prompts: ['assistant'],
+    prompts: CAPABILITY_PROMPTS.aiEmployee,
     related: ['aiKnowledgeBase', 'authorization'],
     prerequisite: 'plugin',
     featured: true,
@@ -261,7 +293,7 @@ export const CAPABILITIES: readonly GuideCapability[] = [
     id: 'aiKnowledgeBase',
     group: 'ai',
     docs: '/capabilities/ai-knowledge-base/',
-    prompts: ['policies'],
+    prompts: CAPABILITY_PROMPTS.aiKnowledgeBase,
     related: ['aiEmployee', 'file'],
     prerequisite: 'plugin',
     reference: { packages: ['@nocobase/app-plugin-knowledge'], skills: [] },

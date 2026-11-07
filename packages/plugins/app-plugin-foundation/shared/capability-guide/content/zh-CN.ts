@@ -48,6 +48,7 @@ const zhCN: GuideContent = {
     builtIn: '已内置',
     config: '需要配置',
     plugin: '需要添加插件',
+    agentBuilt: '由 Agent 实现',
     commercial: '商业插件',
   },
   detail: {
@@ -170,7 +171,7 @@ const zhCN: GuideContent = {
       summary: '用 Word 或 Excel 模板填入业务数据，生成合同、单据并下载。',
       scenarios: ['采购订单一键生成盖章用的 PDF。', '按客户批量导出对账单。'],
       prerequisite:
-        '需要添加模板打印插件，并准备好 Office 模板文件。转 PDF 需要服务器上有转换工具。',
+        '由 Agent 按业务实现，没有可直接安装的打印服务：先让它查看模板打印 Skill，再准备好 Word 或 Excel 模板；需要 PDF 时，服务器上要有转换工具。',
       prompts: {
         orderPdf: {
           label: '打印采购订单',
@@ -230,7 +231,7 @@ const zhCN: GuideContent = {
         '导航栏显示待处理数量，办完后自动减少。',
       ],
       prerequisite:
-        '由应用按业务实现，不需要额外插件。已有审批或流程时效果最好。',
+        '由 Agent 按业务实现，不需要额外插件。应用里已有审批或流程时效果最好。',
       prompts: {
         myTasks: {
           label: '我的待办',
