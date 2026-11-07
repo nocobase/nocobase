@@ -546,38 +546,146 @@ it('throttles small usage changes, saves boundary transitions and broadcasts onl
   expect(broadcasts).toHaveLength(1);
   stop();
 });
-it('rejects manual clearing of known resets and retains default Claude weekly marks', async () => {
+it('lets the owner or an administrator clear a known-reset mark so the runtime takes work at once, and marks it again when the quota is still exhausted', async () => {
   h = await createHarness();
+  const agent = await h.createAgent();
   const runner = await h.registerRunner({ ownerUserId: 'alice' });
-  await h.services.tx.run((unit) =>
-    h.services.runners.reportQuota(unit, runner.runnerId, 'claude', null, {
-      windows: [
-        {
-          scope: 'model',
-          target: 'claude-opus-5-5',
-          window: 'seven_day_opus',
-          resetsAt: '2026-10-01T01:00:00.000Z',
-          exhausted: true,
-        },
-      ],
-    }),
-  );
+  const cleared: unknown[] = [];
+  const notices: unknown[] = [];
+  const stops = [
+    h.services.events.on('notice.cleared', ({ notice }) =>
+      cleared.push(notice),
+    ),
+    h.services.events.on('notice', ({ notice }) => notices.push(notice)),
+  ];
+  const exhaust = () =>
+    h.services.tx.run((unit) =>
+      h.services.runners.reportQuota(unit, runner.runnerId, 'claude', null, {
+        windows: [
+          {
+            scope: 'model',
+            target: 'claude-opus-5-5',
+            window: 'seven_day_opus',
+            resetsAt: '2026-10-01T01:00:00.000Z',
+            exhausted: true,
+          },
+        ],
+      }),
+    );
+  await exhaust();
   const mark = (await h.services.runners.get(runner.runnerId))
     .unavailableModels![0];
-  expect(mark).toMatchObject({ scope: 'tool', model: '' });
-  const result = await h.request(
-    'POST',
-    `/agents/runners/${runner.runnerId}/quota/clear`,
-    { user: 'alice', body: targetOf(mark) },
-  );
-  expect(result.status).toBe(400);
-  expect(result.body.error).toMatchObject({
-    status: 'FAILED_PRECONDITION',
-    reason: 'QUOTA_RESET_KNOWN',
+  // A default Claude lease cannot prove the model, so the whole tool is marked.
+  expect(mark).toMatchObject({
+    scope: 'tool',
+    model: '',
+    resetsAt: '2026-10-01T01:00:00.000Z',
   });
+  expect(notices).toHaveLength(1);
+  const queued = await h.enqueue(agent, 'waiting');
+  expect(await claim(h, runner)).toEqual([]);
+  const path = `/agents/runners/${runner.runnerId}/quota/clear`;
+  expect(
+    (
+      await h.request('POST', path, {
+        user: 'bob',
+        can: ['agents.runners/read'],
+        body: targetOf(mark),
+      })
+    ).status,
+  ).toBe(403);
   expect(
     (await h.services.runners.get(runner.runnerId)).unavailableModels,
   ).toHaveLength(1);
+  expect(
+    (await h.request('POST', path, { user: 'alice', body: targetOf(mark) }))
+      .status,
+  ).toBe(204);
+  expect(
+    (await h.services.runners.get(runner.runnerId)).unavailableModels,
+  ).toEqual([]);
+  expect(cleared).toEqual([
+    {
+      type: 'runner_quota',
+      subject: expect.objectContaining({ kind: 'runner', id: runner.runnerId }),
+      key: JSON.stringify(['claude', 'tool', '', 'seven_day_opus']),
+    },
+  ]);
+  expect((await claim(h, runner))[0].run.id).toBe(queued);
+  await exhaust();
+  expect(
+    (await h.services.runners.get(runner.runnerId)).unavailableModels,
+  ).toEqual([
+    expect.objectContaining({ scope: 'tool', window: 'seven_day_opus' }),
+  ]);
+  expect(notices).toHaveLength(2);
+  expect(
+    (
+      await h.request('POST', path, {
+        user: 'root',
+        can: ['agents.runners/manage'],
+        body: targetOf(mark),
+      })
+    ).status,
+  ).toBe(204);
+  expect(
+    (await h.services.runners.get(runner.runnerId)).unavailableModels,
+  ).toEqual([]);
+  for (const stop of stops) stop();
+});
+it('lifts only the mark of a window later reported with quota left and settles its notice', async () => {
+  h = await createHarness();
+  const runner = await h.registerRunner({ ownerUserId: 'alice' });
+  const cleared: unknown[] = [];
+  const stop = h.services.events.on('notice.cleared', ({ notice }) =>
+    cleared.push(notice),
+  );
+  const window = (name: string, exhausted: boolean) => ({
+    scope: 'tool' as const,
+    target: '',
+    window: name,
+    resetsAt: '2026-10-01T01:00:00.000Z',
+    exhausted,
+  });
+  const report = (...windows: ReturnType<typeof window>[]) =>
+    h.services.tx.run((unit) =>
+      h.services.runners.reportQuota(unit, runner.runnerId, 'codex', null, {
+        windows,
+      }),
+    );
+  await report(window('5h', true), window('7d', true));
+  await h.services.tx.run((unit) =>
+    h.services.runners.reportQuota(unit, runner.runnerId, 'claude', null, {
+      windows: [window('5h', true)],
+    }),
+  );
+  expect(
+    (await h.services.runners.get(runner.runnerId)).unavailableModels,
+  ).toHaveLength(3);
+  await report(window('5h', false));
+  expect(
+    (await h.services.runners.get(runner.runnerId)).unavailableModels?.map(
+      (mark) => [mark.tool, mark.window],
+    ),
+  ).toEqual([
+    ['codex', '7d'],
+    ['claude', '5h'],
+  ]);
+  expect(cleared).toEqual([
+    {
+      type: 'runner_quota',
+      subject: expect.objectContaining({ kind: 'runner', id: runner.runnerId }),
+      key: JSON.stringify(['codex', 'tool', '', '5h']),
+    },
+  ]);
+  const revision = (await h.services.runners.get(runner.runnerId))
+    .quotaRevision;
+  await report(window('5h', false));
+  expect(cleared).toHaveLength(1);
+  expect((await h.services.runners.get(runner.runnerId)).quotaRevision).toBe(
+    revision,
+  );
+  stop();
 });
 it('coalesces quota observations in a batch and reads only quota event metadata at final failure', async () => {
   h = await createHarness();

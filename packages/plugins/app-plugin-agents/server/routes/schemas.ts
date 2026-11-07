@@ -2108,7 +2108,9 @@ const runnerObject = z.object({
         resetsAt: z
           .string()
           .nullable()
-          .describe('Known reset instant; null means manual recovery.'),
+          .describe(
+            'Known reset instant; null when the reset time is unknown.',
+          ),
         observedAt: z
           .string()
           .describe('When the usage snapshot was accepted.'),
@@ -2193,9 +2195,7 @@ const runnerSummaryObject = runnerObject
     canManageTools: z.boolean().optional(),
     canChangeTrust: z.boolean(),
     canRevoke: z.boolean(),
-    canClearQuota: z
-      .boolean()
-      .describe('The viewer may clear an unknown-reset quota mark.'),
+    canClearQuota: z.boolean().describe('The viewer may clear a quota mark.'),
     recentRunsCount: z
       .number()
       .int()

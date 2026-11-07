@@ -680,12 +680,14 @@ const deDE: LocaleResource<typeof enUS> = {
       resets: 'Setzt {{time}} zurück',
       near: 'Nahe an der Grenze',
       clear: 'Leeren',
-      clearMark: 'Klare Markierung',
-      confirm: 'Diese Markierung löschen? {{target}} bekommt wieder Arbeit.',
+      clearMark: 'Markierung löschen',
+      confirmTitle: 'Kontingentmarkierung für {{target}} löschen?',
+      confirm:
+        'Löschen Sie sie erst, wenn das Kontingent wiederhergestellt ist. {{target}} bekommt sofort wieder Arbeit; ist das Kontingent noch erschöpft, markiert der nächste Lauf es erneut.',
       observed: 'Zuletzt gemeldet {{time}}',
       usedPercent: '{{percent}}% verwendet',
       ok: 'OK',
-      hint: 'Bekannte Reset-Zeiten stellen die Berechtigung automatisch wieder her. Stellen Sie bei unbekannten Zurücksetzungen das Kontingent wieder her und löschen Sie die Markierung. Nur der Laufzeitbesitzer und Administratoren können Markierungen löschen.',
+      hint: 'Eine Markierung verschwindet zur bekannten Reset-Zeit oder sobald das Tool wieder verfügbares Kontingent meldet. Löschen Sie sie manuell erst, wenn das Kontingent wiederhergestellt ist. Nur der Laufzeitbesitzer und Administratoren können Markierungen löschen.',
     },
     workspaces: {
       paused:

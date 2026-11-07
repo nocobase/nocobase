@@ -658,12 +658,14 @@ const viVN: LocaleResource<typeof enUS> = {
       resets: 'Đặt lại {{time}}',
       near: 'Gần đến giới hạn',
       clear: 'Xóa',
-      clearMark: 'Đánh dấu rõ ràng',
-      confirm: 'Xóa dấu này? {{target}} hoạt động trở lại.',
+      clearMark: 'Xóa dấu',
+      confirmTitle: 'Xóa dấu hạn ngạch của {{target}}?',
+      confirm:
+        'Chỉ xóa sau khi xác nhận hạn ngạch đã được khôi phục. {{target}} nhận việc trở lại ngay; nếu hạn ngạch vẫn hết, lần chạy tiếp theo sẽ đánh dấu lại.',
       observed: '{{time}} được báo cáo lần cuối',
       usedPercent: '{{percent}}% đã sử dụng',
       ok: 'Được rồi',
-      hint: 'Thời gian đặt lại đã biết sẽ tự động khôi phục tính đủ điều kiện. Đối với các lần đặt lại không xác định, hãy khôi phục hạn ngạch và xóa dấu. Chỉ chủ sở hữu thời gian chạy và quản trị viên mới có thể xóa điểm.',
+      hint: 'Dấu tự xóa vào thời điểm đặt lại đã biết, hoặc khi công cụ báo lại còn hạn ngạch. Chỉ xóa thủ công sau khi xác nhận hạn ngạch đã được khôi phục. Chỉ chủ sở hữu thời gian chạy và quản trị viên mới có thể xóa dấu.',
     },
     workspaces: {
       paused:

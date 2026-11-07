@@ -692,6 +692,8 @@ export function createAdminRoutes(
     describeRoute({
       tags,
       summary: 'Clear a runtime quota mark',
+      description:
+        'Removes the selected quota mark, whether or not its reset time is known, so the runtime takes that work again at once. Clear it only after the quota is restored: the next exhausted report marks it again.',
       operationId: 'agentsClearRunnerQuota',
       ...cliRoute({
         command: 'runtime quota clear',
@@ -703,13 +705,9 @@ export function createAdminRoutes(
         ...apiErrorResponses,
         403: apiErrorResponse(
           403,
-          'Only the runtime owner or a runtime administrator may clear an unknown-reset quota mark.',
+          'Only the runtime owner or a runtime administrator may clear a quota mark.',
         ),
         404: notVisible,
-        400: apiErrorResponse(
-          400,
-          'A known reset clears automatically (QUOTA_RESET_KNOWN, FAILED_PRECONDITION).',
-        ),
         409: apiErrorResponse(
           409,
           'A concurrent quota change requires retrying (REVISION_CONFLICT).',
@@ -721,7 +719,7 @@ export function createAdminRoutes(
       'json',
       z.strictObject({
         tool: AgentToolSchema.describe(
-          'The coding tool whose unknown-reset mark is selected.',
+          'The coding tool whose quota mark is selected.',
         ),
         scope: z
           .enum(['tool', 'provider', 'model'])

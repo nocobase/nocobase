@@ -661,12 +661,14 @@ const idID: LocaleResource<typeof enUS> = {
       resets: 'Mereset {{time}}',
       near: 'Mendekati batas',
       clear: 'Bersihkan',
-      clearMark: 'Tanda yang jelas',
-      confirm: 'Hapus tanda ini? {{target}} mulai berfungsi lagi.',
+      clearMark: 'Hapus tanda',
+      confirmTitle: 'Hapus tanda kuota pada {{target}}?',
+      confirm:
+        'Hapus hanya setelah memastikan kuota sudah pulih. {{target}} langsung menerima pekerjaan lagi; jika kuota masih habis, eksekusi berikutnya menandainya lagi.',
       observed: 'Terakhir dilaporkan {{time}}',
       usedPercent: '{{percent}}% digunakan',
       ok: 'Oke',
-      hint: 'Waktu reset yang diketahui memulihkan kelayakan secara otomatis. Untuk penyetelan ulang yang tidak diketahui, pulihkan kuota dan hapus tandanya. Hanya pemilik runtime dan administrator yang dapat menghapus tanda.',
+      hint: 'Tanda hilang dengan sendirinya pada waktu reset yang diketahui, atau saat alat melaporkan kuota tersedia lagi. Hapus secara manual hanya setelah memastikan kuota sudah pulih. Hanya pemilik runtime dan administrator yang dapat menghapus tanda.',
     },
     workspaces: {
       paused:

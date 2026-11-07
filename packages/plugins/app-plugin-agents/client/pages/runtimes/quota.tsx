@@ -7,6 +7,16 @@ import type {
 } from '../../../shared/runners.js';
 import { compactDateTime, quotaWindowLabel } from '../../lib/format.js';
 import { QuotaLabel } from '../../components/quota-status.js';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '../../components/ui/alert-dialog.js';
 import { Button } from '../../components/ui/button.js';
 
 export function QuotaCell({
@@ -80,7 +90,7 @@ export function QuotaCell({
               })}
             </span>
           ) : null}
-          {!mark.resetsAt && runner.canClearQuota ? (
+          {runner.canClearQuota ? (
             <Button
               type='button'
               size='xs'
@@ -148,35 +158,49 @@ export function QuotaCell({
   );
 }
 
-export function QuotaClearConfirmation({
+/** Asks before a quota mark is cleared; `name` is the tool or model the mark holds back, null while closed. */
+export function QuotaClearDialog({
   name,
   pending,
   onClear,
   onCancel,
 }: {
-  readonly name: string;
+  readonly name: string | null;
   readonly pending: boolean;
   readonly onClear: () => void;
   readonly onCancel: () => void;
 }): ReactElement {
   const { t } = useTranslation();
   return (
-    <div className='flex flex-wrap items-center justify-between gap-2 text-xs'>
-      <span>{t('runtimes.quota.confirm', { target: name })}</span>
-      <div className='flex gap-2'>
-        <Button type='button' size='xs' disabled={pending} onClick={onClear}>
-          {t('runtimes.quota.clearMark')}
-        </Button>
-        <Button
-          type='button'
-          size='xs'
-          variant='outline'
-          disabled={pending}
-          onClick={onCancel}
-        >
-          {t('actions.cancel')}
-        </Button>
-      </div>
-    </div>
+    <AlertDialog
+      open={name !== null}
+      onOpenChange={(open) => {
+        if (!open && !pending) onCancel();
+      }}
+    >
+      {/* Opened from the runtime sheet, so its backdrop must be forced to cover the sheet. */}
+      <AlertDialogContent nested>
+        <AlertDialogHeader>
+          <AlertDialogTitle>
+            {t('runtimes.quota.confirmTitle', { target: name ?? '' })}
+          </AlertDialogTitle>
+          <AlertDialogDescription>
+            {t('runtimes.quota.confirm', { target: name ?? '' })}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={pending}>
+            {t('actions.cancel')}
+          </AlertDialogCancel>
+          <AlertDialogAction
+            variant='destructive'
+            disabled={pending}
+            onClick={onClear}
+          >
+            {t('runtimes.quota.clearMark')}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }
