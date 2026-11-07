@@ -4,7 +4,7 @@ import type enUS from './en-US.js';
 
 const jaJP: LocaleResource<typeof enUS> = {
   navigation: {
-    agentSessions: '私のエージェント',
+    agentSessions: 'My Agents',
   },
   actions: {
     close: '閉じる',
@@ -29,7 +29,7 @@ const jaJP: LocaleResource<typeof enUS> = {
     fold: 'セッションを非表示',
     expand: 'ショーセッション',
     label: 'セッション',
-    title: '私のエージェント',
+    title: 'My Agents',
     archived: 'アーカイブ済み',
     archivedView:
       'アーカイブ済みのセッションを選ぶと内容を表示します。開いているセッションと未送信の下書きはそのまま残ります。',
@@ -51,7 +51,7 @@ const jaJP: LocaleResource<typeof enUS> = {
       earlier: '以前',
     },
     empty:
-      'まだセッションがありません。エージェントを開始して、コンピュータ上のエージェントと会話します。',
+      'まだセッションがありません。Agentを開始して、コンピュータ上のAgentと会話します。',
     noArchived: 'アーカイブされたセッションはありません。',
     noMatch: '一致するセッションはありません。',
     more: 'もっと見る',
@@ -68,7 +68,7 @@ const jaJP: LocaleResource<typeof enUS> = {
     count_other: '{{count}}タスク',
     none: 'タスクはありません',
     empty:
-      'このセッションにはまだタスクがありません。エージェントに、話し合った内容をタスクに変換するよう依頼します。',
+      'このセッションにはまだタスクがありません。Agentに、話し合った内容をタスクに変換するよう依頼します。',
     created_one: '{{count}}タスクを作成しました',
     created_other: '{{count}} タスクを作成しました',
     start_one: '{{count}}タスクを開始します',
@@ -93,15 +93,15 @@ const jaJP: LocaleResource<typeof enUS> = {
     settingsOffline:
       'このコンピュータはオフラインです。ブリッジを再接続して設定をロードし、送信します。',
     settingsLoading: '設定を読み込み中…',
-    settingsFailed: 'エージェント設定を読み込めませんでした。',
+    settingsFailed: 'Agent設定を読み込めませんでした。',
     settingsRetry: 'リトライ設定',
-    settingsReset: 'エージェントのデフォルトを使用する',
+    settingsReset: 'Agentのデフォルトを使用する',
     settingsUnsupported:
-      'このエージェントは設定を公開しません。デフォルトが使用されます。',
+      'このAgentは設定を公開しません。デフォルトが使用されます。',
     settingsEmpty:
-      'このエージェントには構成可能な設定がありません。デフォルトが使用されます。',
+      'このAgentには構成可能な設定がありません。デフォルトが使用されます。',
     pickComputer: 'コンピュータを選択してください',
-    noAgent: '利用可能なエージェントがいません',
+    noAgent: '利用可能なAgentがいません',
     folder: 'コンピュータ上のディレクトリ',
     placeholder:
       '必要なことを言ってください。一度に複数のことを行ったり、スクリーンショットを撮ったりしても問題ありません。',
@@ -109,12 +109,11 @@ const jaJP: LocaleResource<typeof enUS> = {
       'エージェントは、自分の端末と同様に、選択したディレクトリ内でフルアクセスで実行されます。',
     noComputer: 'まずコンピュータを接続してください',
     noComputerHint:
-      'セッションは自分のコンピュータ上で実行されます。エージェントは自分のアカウントでサインインし、許可されたフォルダ内で作業し、会話はここに保存されます。一度接続すれば、コンピュータの電源が入っているときはいつでもオンラインになります。私のエージェントは、要件について話し合い、明確にし、タスクを記録し、進捗状況を追跡するのに役立ちます。それらを開始すると、Studio のプロジェクト マネージャーがエージェントを調整して開発します。',
+      'セッションは自分のコンピュータ上で実行されます。Agentは自分のアカウントでサインインし、許可されたフォルダ内で作業し、会話はここに保存されます。一度接続すれば、コンピュータの電源が入っているときはいつでもオンラインになります。My Agentは、要件について話し合い、明確にし、タスクを記録し、進捗状況を追跡するのに役立ちます。それらを開始すると、Studio のプロジェクト マネージャーがAgentsを調整して開発します。',
     allOffline: 'コンピューターがオフラインです',
     offlineHint:
       'ログインするたびに接続を維持するには、これをコンピュータ上で実行します。',
-    noAgentTitle:
-      'このコンピュータでは準備ができているエージェントがありません',
+    noAgentTitle: 'このコンピュータでは準備ができているAgentがありません',
     noAgentHint:
       'それらのいずれかをそこにインストールし、独自のコマンドでサインインします。ブリッジは 1 分ごとにチェックし、セットアップと起動が成功した後に再接続することなくリストします。',
     supported: 'サポート: {{names}}',
@@ -124,9 +123,9 @@ const jaJP: LocaleResource<typeof enUS> = {
     computers: '私のコンピューター',
     manageComputers: 'コンピューターを管理してください…',
     agents: 'このコンピュータ上のエージェント',
-    availableAgents: '利用可能なエージェント',
+    availableAgents: '利用可能なAgents',
     agentsHint:
-      'インストールされているエージェントのみがリストされます。ブリッジは毎分チェックします。エージェントの準備が整う前に、セットアップと起動を完了する必要があります。',
+      'インストールされているAgentsのみがリストされます。ブリッジは毎分チェックします。Agentの準備が整う前に、セットアップと起動を完了する必要があります。',
     alsoSupported: '{{names}} もサポートされています',
     thisComputer: 'このコンピュータ',
     recentFolders: '最近使用した',
@@ -148,10 +147,10 @@ const jaJP: LocaleResource<typeof enUS> = {
     offline: '{{computer}} はオフラインです',
     offlineBody:
       '会話とそのタスクは、通常どおり読むためにここに保存されます。コンピュータが戻ってもセッションは継続します。',
-    working: 'エージェントは動作しています…',
+    working: 'Agentは動作しています…',
     startup: {
-      starting: 'コンピュータ上でエージェントを開始しています…',
-      opening: 'エージェントのセッションを開始しています…',
+      starting: 'コンピュータ上でAgentを開始しています…',
+      opening: 'Agentのセッションを開始しています…',
       configuring: '設定を適用中…',
     },
     answering: '応答する',
@@ -194,7 +193,7 @@ const jaJP: LocaleResource<typeof enUS> = {
     expand: '拡張入力',
     collapse: '入力を折りたたむ',
     placeholder: '返信したり、次のことを聞いたり…',
-    busy: 'エージェントが応答中です。完了するとメッセージが送信されます。',
+    busy: 'Agentが応答中です。完了するとメッセージが送信されます。',
     waiting:
       '上記のリクエストに答えるか、その後に送信するメッセージを書いてください。',
     offline: 'コンピューターはオフラインです。',
@@ -205,7 +204,7 @@ const jaJP: LocaleResource<typeof enUS> = {
     removeImage: '画像を削除',
     attached: 'メッセージと一緒です',
     removeAttached: '{{name}}を削除',
-    commands: 'エージェントのコマンド',
+    commands: 'Agentのコマンド',
     mentions: 'タスクについて言及する',
     keys: {
       send: '送信',
@@ -258,11 +257,11 @@ const jaJP: LocaleResource<typeof enUS> = {
       delete_other: '{{count}} ファイルを削除しました',
       move_one: '{{count}} ファイルを移動しました',
       move_other: '{{count}} ファイルを移動しました',
-      search_one: '1 回検索しました',
+      search_one: '{{count}} 回検索しました',
       search_other: '{{count}} 回検索しました',
       execute_one: '{{count}} コマンドを実行しました',
       execute_other: '{{count}} コマンドを実行しました',
-      think_one: '1 回思考しました',
+      think_one: '{{count}} 回思考しました',
       think_other: '{{count}} 回思考しました',
       fetch_one: '{{count}} ページをフェッチしました',
       fetch_other: '{{count}} ページをフェッチしました',
@@ -315,7 +314,7 @@ const jaJP: LocaleResource<typeof enUS> = {
     offline: 'オフライン',
     title: '私のコンピューター',
     description:
-      'これらのコンピュータは自分のセッションのみを実行し、エージェントはあなたと同じように動作します。チームのバックグラウンド作業を実行するマシンは個別に管理されます。',
+      'これらのコンピュータは自分のセッションのみを実行し、Agentsはあなたと同じように動作します。チームのバックグラウンド作業を実行するマシンは個別に管理されます。',
     none: 'まだコンピュータが接続されていません。',
     online: 'オンライン',
     lastSeen: '最後に見た {{time}}',
@@ -326,7 +325,7 @@ const jaJP: LocaleResource<typeof enUS> = {
       failed: 'を開始できませんでした',
     },
     recheckHint:
-      '接続中、ブリッジは 1 分ごとにエージェントを自動的に再度チェックします。',
+      '接続中、ブリッジは 1 分ごとにAgentsを自動的に再度チェックします。',
     ready: '準備完了',
     name: '名前',
     system: 'システム',
@@ -345,7 +344,7 @@ const jaJP: LocaleResource<typeof enUS> = {
       'セッションはこれらのフォルダー内でのみ機能する可能性があります。',
     add: 'コンピューターを接続する',
     steps: {
-      agent: 'コーディング エージェントをインストールし、サインインします。',
+      agent: 'コーディング Agentをインストールし、サインインします。',
       agentHint:
         'Codex、Claude Code、Gemini CLI、GitHub Copilot、Cursor、Qwen Code、Kimi CLI など: 独自のコマンドでサインインします。可能な限り強力なモデルを使用してください。',
       login: 'アカウントでサインインする',

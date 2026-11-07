@@ -4,7 +4,7 @@ import type enUS from './en-US.js';
 
 const viVN: LocaleResource<typeof enUS> = {
   navigation: {
-    agentSessions: 'Đại lý của tôi',
+    agentSessions: 'My Agents',
   },
   actions: {
     close: 'Đóng',
@@ -28,7 +28,7 @@ const viVN: LocaleResource<typeof enUS> = {
     fold: 'Ẩn phiên',
     expand: 'Hiển thị phiên',
     label: 'Phiên',
-    title: 'Đại lý của tôi',
+    title: 'My Agents',
     archived: 'Đã lưu trữ',
     archivedView:
       'Chọn một phiên đã lưu trữ để đọc. Phiên đang mở và bản nháp chưa gửi vẫn được giữ lại.',
@@ -50,7 +50,7 @@ const viVN: LocaleResource<typeof enUS> = {
       earlier: 'Trước đó',
     },
     empty:
-      'Chưa có phiên nào. Bắt đầu một cuộc nói chuyện với một đại lý trên máy tính của bạn.',
+      'Chưa có phiên nào. Bắt đầu một cuộc nói chuyện với một Agent trên máy tính của bạn.',
     noArchived: 'Không có phiên lưu trữ.',
     noMatch: 'Không có phiên nào phù hợp.',
     more: 'Hiển thị thêm',
@@ -67,7 +67,7 @@ const viVN: LocaleResource<typeof enUS> = {
     count_other: 'Nhiệm vụ {{count}}',
     none: 'Không có nhiệm vụ',
     empty:
-      'Phiên này chưa có nhiệm vụ nào. Yêu cầu người đại diện chuyển những gì bạn đã thảo luận thành nhiệm vụ.',
+      'Phiên này chưa có nhiệm vụ nào. Yêu cầu Agent chuyển những gì bạn đã thảo luận thành nhiệm vụ.',
     created_one: 'Đã tạo tác vụ {{count}}',
     created_other: 'Đã tạo nhiệm vụ {{count}}',
     start_one: 'Bắt đầu tác vụ {{count}}',
@@ -75,7 +75,7 @@ const viVN: LocaleResource<typeof enUS> = {
     startOne: 'Bắt đầu',
     skip: 'Không phải bây giờ',
     startHint:
-      'Đại lý trong thời gian chạy có kế hoạch và thực hiện công việc.',
+      'Đại lý trong môi trường chạy có kế hoạch và thực hiện công việc.',
     notStarted: 'Chưa bắt đầu',
     started_one: 'đã khởi động {{count}}',
     started_other: 'đã khởi động {{count}}',
@@ -93,15 +93,15 @@ const viVN: LocaleResource<typeof enUS> = {
     settingsOffline:
       'Máy tính này đang ngoại tuyến. Kết nối lại cầu nối của nó để tải cài đặt và gửi.',
     settingsLoading: 'Đang tải cài đặt…',
-    settingsFailed: 'Không thể tải cài đặt tác nhân.',
+    settingsFailed: 'Không thể tải cài đặt Agent.',
     settingsRetry: 'Thử lại cài đặt',
-    settingsReset: 'Sử dụng mặc định của tác nhân',
+    settingsReset: 'Sử dụng mặc định của Agent',
     settingsUnsupported:
-      'Tác nhân này không hiển thị cài đặt. Mặc định của nó sẽ được sử dụng.',
+      'Agent này không hiển thị cài đặt. Mặc định của nó sẽ được sử dụng.',
     settingsEmpty:
-      'Tác nhân này không có cài đặt có thể định cấu hình. Mặc định của nó sẽ được sử dụng.',
+      'Agent này không có cài đặt có thể định cấu hình. Mặc định của nó sẽ được sử dụng.',
     pickComputer: 'Chọn máy tính',
-    noAgent: 'Không có đại lý',
+    noAgent: 'Không có Agent',
     folder: 'Thư mục trên máy tính',
     placeholder:
       'Hãy nói những gì bạn cần. Nhiều thứ cùng một lúc hoặc chụp ảnh màn hình đều được.',
@@ -109,11 +109,11 @@ const viVN: LocaleResource<typeof enUS> = {
       'Các đại lý chạy với toàn quyền truy cập vào thư mục bạn chọn, như trong thiết bị đầu cuối của riêng bạn.',
     noComputer: 'Trước tiên hãy kết nối máy tính của bạn',
     noComputerHint:
-      'Phiên chạy trên máy tính của riêng bạn: nhân viên làm việc ở đó đã đăng nhập bằng tài khoản của chính bạn, trong các thư mục bạn cho phép và các cuộc hội thoại được lưu giữ ở đây. Kết nối nó một lần và nó trực tuyến bất cứ khi nào máy tính bật. Đại diện của tôi giúp thảo luận và làm rõ các yêu cầu, ghi lại các nhiệm vụ và theo dõi tiến độ; sau khi bạn khởi động chúng, người quản lý dự án của Studio sẽ điều phối các đại lý để phát triển chúng.',
+      'Phiên chạy trên máy tính của riêng bạn: Agent làm việc ở đó đã đăng nhập bằng tài khoản của chính bạn, trong các thư mục bạn cho phép và các cuộc hội thoại được lưu giữ ở đây. Kết nối nó một lần và nó trực tuyến bất cứ khi nào máy tính bật. My Agent giúp thảo luận và làm rõ các yêu cầu, ghi lại các nhiệm vụ và theo dõi tiến độ; sau khi bạn khởi động chúng, người quản lý dự án của Studio sẽ điều phối các Agents để phát triển chúng.',
     allOffline: 'Máy tính của bạn đang ngoại tuyến',
     offlineHint:
       'Chạy cái này trên máy tính để giữ cho nó được kết nối sau mỗi lần đăng nhập.',
-    noAgentTitle: 'Không có tác nhân nào sẵn sàng trên máy tính này',
+    noAgentTitle: 'Không có Agent nào sẵn sàng trên máy tính này',
     noAgentHint:
       'Cài đặt bất kỳ cái nào trong số chúng ở đó và đăng nhập bằng lệnh riêng của nó. Cầu kiểm tra từng phút và liệt kê nó sau khi thiết lập và khởi động thành công mà không cần kết nối lại.',
     supported: 'Được hỗ trợ: {{names}}',
@@ -123,9 +123,9 @@ const viVN: LocaleResource<typeof enUS> = {
     computers: 'Máy tính của tôi',
     manageComputers: 'Quản lý máy tính của tôi…',
     agents: 'Tác nhân trên máy tính này',
-    availableAgents: 'Đại lý có sẵn',
+    availableAgents: 'Agents có sẵn',
     agentsHint:
-      'Chỉ các tác nhân được cài đặt mới được liệt kê. Cây cầu kiểm tra từng phút; quá trình thiết lập và khởi động phải hoàn tất trước khi tác nhân sẵn sàng.',
+      'Chỉ các Agents được cài đặt mới được liệt kê. Cây cầu kiểm tra từng phút; quá trình thiết lập và khởi động phải hoàn tất trước khi Agent sẵn sàng.',
     alsoSupported: 'Cũng được hỗ trợ: {{names}}',
     thisComputer: 'Chiếc máy tính này',
     recentFolders: 'Được sử dụng gần đây',
@@ -146,10 +146,10 @@ const viVN: LocaleResource<typeof enUS> = {
     offline: '{{computer}} đang ngoại tuyến',
     offlineBody:
       'Đoạn hội thoại và nhiệm vụ của nó được giữ ở đây để đọc như bình thường. Phiên tiếp tục khi máy tính hoạt động trở lại.',
-    working: 'Người đại diện đang làm việc…',
+    working: 'Agent đang làm việc…',
     startup: {
-      starting: 'Khởi động tác nhân trên máy tính của bạn…',
-      opening: 'Khai mạc phiên đại lý…',
+      starting: 'Khởi động Agent trên máy tính của bạn…',
+      opening: 'Khai mạc phiên Agent…',
       configuring: 'Đang áp dụng cài đặt…',
     },
     answering: 'Trả lời',
@@ -192,7 +192,7 @@ const viVN: LocaleResource<typeof enUS> = {
     expand: 'Mở rộng đầu vào',
     collapse: 'Thu gọn đầu vào',
     placeholder: 'Trả lời, hoặc yêu cầu việc tiếp theo…',
-    busy: 'Người đại diện đang trả lời. Tin nhắn của bạn sẽ đi sau khi nó được thực hiện.',
+    busy: 'Agent đang trả lời. Tin nhắn của bạn sẽ đi sau khi nó được thực hiện.',
     waiting: 'Trả lời yêu cầu trên hoặc viết tin nhắn để gửi sau đó.',
     offline: 'Máy tính đang ngoại tuyến.',
     archived: 'Phiên được lưu trữ.',
@@ -202,7 +202,7 @@ const viVN: LocaleResource<typeof enUS> = {
     removeImage: 'Xóa hình ảnh',
     attached: 'Đi kèm với tin nhắn',
     removeAttached: 'Loại bỏ {{name}}',
-    commands: 'Lệnh của đặc vụ',
+    commands: 'Lệnh của Agent',
     mentions: 'Đề cập đến một nhiệm vụ',
     keys: {
       send: 'gửi',
@@ -255,11 +255,11 @@ const viVN: LocaleResource<typeof enUS> = {
       delete_other: 'đã xóa các tệp {{count}}',
       move_one: 'đã di chuyển tệp {{count}}',
       move_other: 'đã di chuyển {{count}} tệp',
-      search_one: 'đã tìm kiếm một lần',
+      search_one: 'đã tìm kiếm {{count}} lần',
       search_other: 'đã tìm kiếm {{count}} lần',
       execute_one: 'đã chạy lệnh {{count}}',
       execute_other: 'đã chạy lệnh {{count}}',
-      think_one: 'đã nghĩ một lần',
+      think_one: 'đã suy nghĩ {{count}} lần',
       think_other: 'nghĩ {{count}} lần',
       fetch_one: 'đã tìm nạp trang {{count}}',
       fetch_other: 'đã tìm nạp các trang {{count}}',
@@ -312,7 +312,7 @@ const viVN: LocaleResource<typeof enUS> = {
     offline: 'Ngoại tuyến',
     title: 'Máy tính của tôi',
     description:
-      'Những máy tính này chỉ chạy các phiên của riêng bạn và các tác nhân hoạt động như bạn. Các máy chạy công việc nền của nhóm được quản lý riêng.',
+      'Những máy tính này chỉ chạy các phiên của riêng bạn và các Agents hoạt động như bạn. Các máy chạy công việc nền của nhóm được quản lý riêng.',
     none: 'Chưa có máy tính nào được kết nối.',
     online: 'Trực tuyến',
     lastSeen: 'Nhìn thấy lần cuối {{time}}',
@@ -323,7 +323,7 @@ const viVN: LocaleResource<typeof enUS> = {
       failed: 'không thể bắt đầu',
     },
     recheckHint:
-      'Trong khi được kết nối, cầu nối sẽ tự động kiểm tra lại các tác nhân mỗi phút.',
+      'Trong khi được kết nối, cầu nối sẽ tự động kiểm tra lại các Agents mỗi phút.',
     ready: 'Sẵn sàng',
     name: 'Tên',
     system: 'Hệ thống',
@@ -342,7 +342,7 @@ const viVN: LocaleResource<typeof enUS> = {
     foldersChosenHint: 'Phiên chỉ có thể hoạt động trong các thư mục này.',
     add: 'Kết nối máy tính',
     steps: {
-      agent: 'Cài đặt tác nhân mã hóa và đăng nhập vào nó',
+      agent: 'Cài đặt Agent mã hóa và đăng nhập vào nó',
       agentHint:
         'Codex, Claude Code, Gemini CLI, GitHub Copilot, Cursor, Qwen Code, Kimi CLI và hơn thế nữa: đăng nhập bằng lệnh riêng. Sử dụng mô hình mạnh nhất bạn có thể.',
       login: 'Đăng nhập bằng tài khoản của bạn',

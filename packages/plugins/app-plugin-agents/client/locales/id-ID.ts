@@ -1,6 +1,4 @@
-import runtimesEnUS from './runtimes.en-US.js';
 import type { LocaleResource } from '@nocobase/i18n';
-import chatEnUS from './chat.en-US.js';
 
 import type enUS from './en-US.js';
 
@@ -113,7 +111,7 @@ const idID: LocaleResource<typeof enUS> = {
     unavailableNow: 'Tidak tersedia saat ini',
     title: 'Agen',
     description:
-      'Tambahkan agen dari model yang dilaporkan runner. Lead Agent menugaskan setiap langkah tugas kepada agen yang deskripsinya sesuai.',
+      'Tambahkan Agent dari model yang dilaporkan lingkungan runtime. Lead Agent menyerahkan setiap langkah tugas kepada Agent yang deskripsinya sesuai.',
     fromRunners: 'Agen dari runner',
     display: {
       search: 'Model atau penyedia pencarian',
@@ -121,20 +119,20 @@ const idID: LocaleResource<typeof enUS> = {
       showDisabled: 'Tampilkan nonaktif',
       hideDisabled: 'Sembunyikan nonaktif',
     },
-    filterLabel: 'Tunjukkan agen',
+    filterLabel: 'Tunjukkan Agent',
     filters: {
       all: 'Semua {{count}}',
       enabled: 'Mengaktifkan {{count}}',
       unreported: 'Tidak ada runner {{count}}',
     },
-    loadFailed: 'Tidak dapat memuat agen',
+    loadFailed: 'Tidak dapat memuat Agent',
     loadMore: 'Muat lebih banyak',
-    emptyTitle: 'Belum ada agen',
+    emptyTitle: 'Belum ada Agent',
     emptyDescription:
-      'Hubungkan runner dengan alat pengkodean yang sudah masuk ke akun, lalu tambahkan agen melalui “Model yang tersedia”.',
-    noneInFilter: 'Tidak ada agen di sini.',
+      'Hubungkan runner dengan alat pengkodean yang sudah masuk ke akun, lalu tambahkan Agent melalui “Model yang tersedia”.',
+    noneInFilter: 'Tidak ada Agent di sini.',
     howToAdd:
-      'Untuk menambahkan agen, instal alat pengkodean pada runner dan masuk ke akun untuk menggunakan model yang tersedia. Setelah runner melaporkannya, tambahkan agen melalui “Model yang tersedia” dan tuliskan keahliannya. Agen langsung diaktifkan saat ditambahkan. Agen yang hanya tersedia pada runner pribadi hanya mengerjakan tugas yang dimulai oleh pemiliknya.',
+      'Untuk menambahkan Agent, pasang alat pemrograman di lingkungan runtime dan masuk ke model yang boleh Anda gunakan: setelah lingkungan runtime melaporkannya, tambahkan dari Model yang tersedia dengan menuliskan keunggulannya. Agent yang hanya dimiliki lingkungan runtime pribadi hanya mengerjakan tugas yang dimulai pemiliknya.',
     goodAtMissing: 'Belum ditulis',
     columns: {
       agent: 'Agen',
@@ -176,12 +174,12 @@ const idID: LocaleResource<typeof enUS> = {
       reportedBy_other: 'Dilaporkan oleh runner online {{count}}: {{names}}.',
       noRunnerNow: 'Tidak ada runner yang memilikinya yang online sekarang.',
       goodAtHint:
-        'Lead Agent memutuskan apa yang akan diserahkan kepada agen ini dengan kata-kata ini. Katakan apa yang cocok dan apa yang tidak.',
+        'Lead Agent memutuskan apa yang akan diserahkan kepada Agent ini dengan kata-kata ini. Katakan apa yang cocok dan apa yang tidak.',
       goodAtRequired: 'Tulis kelebihannya sebelum mengaktifkannya.',
       effortHint:
         'Lead Agent tidak dapat mengubahnya ketika penyerahan pekerjaan.',
       personalOnly:
-        'Hanya runner pribadi yang memilikinya: Lead Agent menyerahkan pekerjaan hanya pada masalah yang dimulai oleh pemiliknya.',
+        'Hanya lingkungan runtime pribadi yang memilikinya: Lead Agent hanya menyerahkan tugas yang dimulai pemiliknya.',
     },
     edit: {
       button: 'Edit',
@@ -191,10 +189,10 @@ const idID: LocaleResource<typeof enUS> = {
       done: '{{name}} disimpan',
     },
     available: {
-      open: 'Tambahkan agen',
+      open: 'Tambahkan Agent',
       title: 'Model yang tersedia',
       description:
-        'Hanya alat yang dicentang di runtime yang akan dideteksi dan ditampilkan di sini. Kombinasi yang direkomendasikan aplikasi akan membuat dan mengaktifkan dirinya sendiri begitu runner melaporkannya; tambahkan agen dari yang lainnya.',
+        'Hanya alat yang dicentang di runtime yang akan dideteksi dan ditampilkan di sini. Kombinasi yang direkomendasikan aplikasi akan membuat dan mengaktifkan dirinya sendiri begitu runner melaporkannya; tambahkan Agent dari yang lainnya.',
       recommended: 'Diaktifkan otomatis saat dilaporkan',
       added: 'Ditambahkan',
       add: 'Tambahkan',
@@ -224,13 +222,13 @@ const idID: LocaleResource<typeof enUS> = {
       selectedCount_one: '{{count}} dipilih',
       selectedCount_other: '{{count}} dipilih',
       addSelected: 'Tambahkan {{count}}',
-      confirmTitle_one: 'Tambahkan {{count}} agen',
-      confirmTitle_other: 'Tambahkan {{count}} agen',
+      confirmTitle_one: 'Tambahkan {{count}} Agent',
+      confirmTitle_other: 'Tambahkan {{count}} Agent',
       confirmAction_one: 'Tambahkan {{count}}',
       confirmAction_other: 'Tambahkan {{count}}',
       goodAtNeeded: 'Apa keahliannya?',
-      addedCount_one: '{{count}} agen ditambahkan.',
-      addedCount_other: '{{count}} agen ditambahkan.',
+      addedCount_one: '{{count}} Agent ditambahkan.',
+      addedCount_other: '{{count}} Agent ditambahkan.',
       addedPartial:
         '{{succeeded}} ditambahkan, {{failed}} tidak dapat ditambahkan. Alasan ada di bawah masing-masing.',
       addFailed:
@@ -239,31 +237,31 @@ const idID: LocaleResource<typeof enUS> = {
   },
   agentTypes: {
     label: 'Tipe agen',
-    question: 'Agen macam apa?',
+    question: 'Agent macam apa?',
     online: 'Daring',
     runner: 'Runner',
     onlineHint:
-      'Jawaban dalam hitungan detik di server melalui layanan model. Tidak diperlukan waktu proses; itu tidak dapat menyentuh kode.',
+      'Jawaban dalam hitungan detik di server melalui layanan model. Tidak diperlukan lingkungan runtime; itu tidak dapat menyentuh kode.',
     runnerHint:
       'Menggerakan alat pengkodean saat runtime dan bekerja di direktori kerja: kode, file, perintah.',
     immutable:
-      'Seorang agen menjaga tipenya; buat agen lain untuk jenis lainnya.',
+      'Seorang Agent menjaga tipenya; buat Agent lain untuk jenis lainnya.',
     onServer: 'Di server',
     filterAll: 'Semua tipe',
-    noneOfType: 'Tidak ada agen jenis ini.',
+    noneOfType: 'Tidak ada Agent jenis ini.',
   },
   agentSkills: {
     title: 'Keterampilan',
     description:
-      'Manual yang dibaca agen ketika suatu tugas cocok dengan deskripsinya. Ditempatkan di direktori kerjanya sebelum dijalankan.',
+      'Manual yang dibaca Agent ketika suatu tugas cocok dengan deskripsinya. Ditempatkan di direktori kerjanya sebelum dijalankan.',
     manage: 'Kelola keterampilan',
     placeholder: 'Pilih keterampilan',
     empty: 'Belum ada keterampilan.',
     save: 'Simpan keterampilan',
     descriptionOnline:
-      'Manual yang dibaca agen ketika tugas cocok dengan deskripsinya, dalam kotak pasir hanya-baca di server.',
+      'Manual yang dibaca Agent ketika tugas cocok dengan deskripsinya, dalam kotak pasir hanya-baca di server.',
     onlineScripts:
-      'Skrip tidak dijalankan untuk agen online: agen dapat membacanya, bukan menjalankannya.',
+      'Skrip tidak dijalankan untuk Agent online: Agent dapat membacanya, bukan menjalankannya.',
     skippedScripts: ': {{paths}}',
     pathSeparator: ', ',
   },
@@ -271,7 +269,7 @@ const idID: LocaleResource<typeof enUS> = {
     preview: 'Pratinjau perintah lengkap',
     previewTitle: 'Pratinjau perintah lengkap',
     previewDescription:
-      'Gambaran apa yang akan dikirimkan agen ini sekarang, dengan subjek yang dibuat-buat. Tidak ada yang antri.',
+      'Gambaran apa yang akan dikirimkan Agent ini sekarang, dengan subjek yang dibuat-buat. Tidak ada yang antri.',
     scenario: 'Skenario',
     sample:
       'Tentang subjek yang dibuat-buat: {{subject}}. Nilai yang ditandai [sampel] dibuat-buat.',
@@ -283,9 +281,9 @@ const idID: LocaleResource<typeof enUS> = {
     platform:
       'Aturan dan tugas platform · tentang karakter {{size}} (Bahasa Inggris)',
     platformNote:
-      'Aturan platform dikirim dalam bahasa Inggris; agen masih membalas dalam bahasa Anda.',
+      'Aturan platform dikirim dalam bahasa Inggris; Agent masih membalas dalam bahasa Anda.',
     agentPrompt: 'Perintah agen (ditulis oleh Anda)',
-    noAgentPrompt: 'Agen ini tidak memiliki perintahnya sendiri.',
+    noAgentPrompt: 'Agent ini tidak memiliki perintahnya sendiri.',
     firstMessage: 'Pesan pertama',
     empty: 'Kosong',
     previewPlaceholders:
@@ -303,7 +301,7 @@ const idID: LocaleResource<typeof enUS> = {
   envVars: {
     title: 'Variabel lingkungan',
     description:
-      'Diteruskan ke alat pengkodean pada setiap proses dan disembunyikan dalam catatan proses; nilai tidak ditampilkan lagi setelah disimpan. Siapapun yang mungkin menggunakan agen bersama dapat menerima nilai-nilai ini di komputer mereka sendiri; tandai rahasia berisiko tinggi "Hanya runtime tim".',
+      'Diteruskan ke alat pengkodean pada setiap proses dan disembunyikan dalam catatan proses; nilai tidak ditampilkan lagi setelah disimpan. Siapapun yang mungkin menggunakan Agent bersama dapat menerima nilai-nilai ini di komputer mereka sendiri; tandai rahasia berisiko tinggi "Hanya runtime tim".',
     add: 'Tambahkan variabel',
     addTitle: 'Tambahkan variabel lingkungan',
     editTitle: 'Ganti {{name}}',
@@ -315,12 +313,12 @@ const idID: LocaleResource<typeof enUS> = {
     keepValueHint: 'Biarkan kosong untuk mempertahankan nilai saat ini.',
     teamRunnersOnly: 'Waktu proses tim saja',
     teamRunnersOnlyHint:
-      'Tanpanya, proses akan mengirimkan nilai ke waktu proses yang memerlukannya, termasuk waktu proses pribadi siapa pun yang mungkin menggunakan agen tersebut. Dengan itu, hanya runtime tim yang menjalankan variabel ini yang dijalankan.',
+      'Tanpanya, proses akan mengirimkan nilai ke lingkungan runtime yang memerlukannya, termasuk lingkungan runtime pribadi siapa pun yang mungkin menggunakan Agent tersebut. Dengan itu, hanya runtime tim yang menjalankan variabel ini yang dijalankan.',
     teamRunnersOnlyBadge: 'Waktu proses tim saja',
     fromRunner: 'Ambil dari runtime',
     fromRunnerHint:
-      'Tidak ada nilai yang disimpan di sini: waktu proses yang dijalankan menyediakannya dari mesinnya sendiri, disetel di sana dengan {{command}} atau diteruskan dengan `--pass-env`. Runtime yang tidak menyediakannya akan gagal dijalankan sebelum dimulai.',
-    fromRunnerBadge: 'Dari waktu proses',
+      'Tidak ada nilai yang disimpan di sini: lingkungan runtime yang dijalankan menyediakannya dari mesinnya sendiri, disetel di sana dengan {{command}} atau diteruskan dengan `--pass-env`. Runtime yang tidak menyediakannya akan gagal dijalankan sebelum dimulai.',
+    fromRunnerBadge: 'Dari lingkungan runtime',
     valueRequired: 'Masukkan nilai, atau terus ambil dari runtime.',
     empty: 'Tidak ada variabel lingkungan.',
     scope: 'Cakupan',
@@ -365,7 +363,7 @@ const idID: LocaleResource<typeof enUS> = {
   scopeVariables: {
     title: 'Variabel dan rahasia',
     description:
-      'Diberikan kepada setiap agen yang bekerja di sini. Variabel yang lebih spesifik (direktori kerja, kemudian agen) menang atas hal ini.',
+      'Diberikan kepada setiap Agent yang bekerja di sini. Variabel yang lebih spesifik (direktori kerja, kemudian Agent) menang atas hal ini.',
   },
   scopes: {
     workdir: 'Direktori kerja',
@@ -378,7 +376,7 @@ const idID: LocaleResource<typeof enUS> = {
     otherUse: {
       title: 'Penggunaan model lainnya',
       description:
-        'Panggilan model di luar menjalankan agen, seperti pengindeksan dan pencarian basis pengetahuan.',
+        'Panggilan model di luar menjalankan Agent, seperti pengindeksan dan pencarian basis pengetahuan.',
       purpose: 'Gunakan',
       source: 'Ditanyakan oleh',
       model: 'Model',
@@ -392,7 +390,7 @@ const idID: LocaleResource<typeof enUS> = {
     },
     title: 'Penggunaan',
     description:
-      'Agen apa yang digunakan dan berapa biayanya dengan harga model saat ini.',
+      'Agent apa yang digunakan dan berapa biayanya dengan harga model saat ini.',
     loadFailed: 'Tidak dapat memuat penggunaan',
     groupBy: 'Kelompokkan menurut',
     groupByValue: 'Kelompokkan berdasarkan {{group}}',
@@ -415,7 +413,7 @@ const idID: LocaleResource<typeof enUS> = {
     filters: {
       allGroups: 'Semua: {{group}}',
       agent: 'Agen',
-      allAgents: 'Semua agen',
+      allAgents: 'Semua Agent',
       person: 'Dibangunkan oleh',
       allPeople: 'Semuanya',
       range: 'Rentang tanggal',
@@ -451,7 +449,7 @@ const idID: LocaleResource<typeof enUS> = {
   defaultSkills: {
     title: 'Keterampilan bawaan',
     description:
-      'Setiap agen yang bekerja di sini mendapatkan keterampilan ini juga.',
+      'Setiap Agent yang bekerja di sini mendapatkan keterampilan ini juga.',
     save: 'Simpan keterampilan',
     saved: 'Keterampilan default disimpan.',
   },
@@ -468,7 +466,7 @@ const idID: LocaleResource<typeof enUS> = {
     filters: {
       agent: 'Agen',
       status: 'Status',
-      allAgents: 'Semua agen',
+      allAgents: 'Semua Agent',
       allStatuses: 'Semua status',
     },
     noMatch: 'Tidak ada proses yang cocok dengan filter ini.',
@@ -483,7 +481,7 @@ const idID: LocaleResource<typeof enUS> = {
     viewBrief: 'Lihat perintah lengkap',
     briefTitle: 'Perintah penuh',
     briefDescription:
-      'Apa yang diberitahukan kepada agen saat proses ini terakhir kali diklaim.',
+      'Apa yang diberitahukan kepada Agent saat proses ini terakhir kali diklaim.',
     briefOf: 'Percobaan {{attempt}}, diklaim {{time}}',
     briefUnavailable:
       'Tidak ada perintah lengkap yang tersedia untuk proses ini.',
@@ -494,7 +492,7 @@ const idID: LocaleResource<typeof enUS> = {
       button: 'Bersihkan direktori kerja',
       title: 'Bersihkan direktori kerja?',
       description:
-        'Proses selanjutnya dimulai dari checkout baru dan diberikan perintah inisialisasi lagi. Perubahan yang tidak didorong akan hilang pada waktu proses tersebut. Direktori yang digunakan di tempatnya tidak pernah dihapus.',
+        'Proses selanjutnya dimulai dari checkout baru dan diberikan perintah inisialisasi lagi. Perubahan yang tidak didorong akan hilang pada lingkungan runtime tersebut. Direktori yang digunakan di tempatnya tidak pernah dihapus.',
       confirm: 'Bersih',
       done: 'Proses selanjutnya dimulai dari checkout baru.',
     },
@@ -530,7 +528,7 @@ const idID: LocaleResource<typeof enUS> = {
   transcript: {
     title: 'Transkrip proses',
     notFound: 'Proses ini tidak ada.',
-    waiting: 'Menunggu agen memulai…',
+    waiting: 'Menunggu Agent memulai…',
     empty: 'Lari ini tidak mencatat kejadian apa pun.',
     fetchFailed: 'Tidak dapat mengambil acara baru. Mencoba lagi…',
     expand: 'Tunjukkan semuanya',
@@ -538,10 +536,10 @@ const idID: LocaleResource<typeof enUS> = {
     summary_one: 'Membuat acara {{created}} · {{count}}',
     summary_other: 'Membuat acara {{created}} · {{count}}',
     took: 'mengambil {{duration}}',
-    pendingInputs_one: 'Komentar {{count}} menunggu agen',
-    pendingInputs_other: 'Komentar {{count}} menunggu agen',
-    inputDelivered_one: 'Dikirim ke agen',
-    inputDelivered_other: 'Input {{count}} dikirim ke agen',
+    pendingInputs_one: 'Komentar {{count}} menunggu Agent',
+    pendingInputs_other: 'Komentar {{count}} menunggu Agent',
+    inputDelivered_one: 'Dikirim ke Agent',
+    inputDelivered_other: 'Input {{count}} dikirim ke Agent',
     tokens: 'Token {{input}} masuk, {{output}} keluar',
     kinds: {
       text: 'Agen',
@@ -567,7 +565,7 @@ const idID: LocaleResource<typeof enUS> = {
     leaseExpired: 'Waktu proses berhenti melaporkan.',
     startTimeout: 'Waktu proses tidak memulai proses tepat waktu.',
     cancelled: 'Dibatalkan.',
-    idleTimeout: 'Agen berhenti membuat kemajuan.',
+    idleTimeout: 'Agent berhenti membuat kemajuan.',
     setupFailed: 'Pelarian tidak dapat dipersiapkan.',
     cliUnavailable: 'Runtime tidak dapat menginstal aplikasi CLI.',
     workspaceBusy: 'Direktori kerja sedang sibuk; menunggu upaya lain.',
@@ -581,8 +579,8 @@ const idID: LocaleResource<typeof enUS> = {
     contextOverflow: 'Percakapan menjadi terlalu panjang bagi sang model.',
     delegatedQueueTimeout: 'Batas waktu antrian delegasi; ditarik',
     queuedExpired: 'Tidak ada runtime yang berjalan tepat waktu.',
-    modelUnavailable: 'Model agen tidak tersedia.',
-    stepLimit: 'Agen terlalu sering memanggil alat tanpa menjawab.',
+    modelUnavailable: 'Model Agent tidak tersedia.',
+    stepLimit: 'Agent terlalu sering memanggil alat tanpa menjawab.',
     policyRefused:
       'Tidak ada kebijakan runtime yang memungkinkan hal ini dilakukan.',
     prepareNetwork:
@@ -593,7 +591,8 @@ const idID: LocaleResource<typeof enUS> = {
     unknown: 'Pelariannya gagal.',
   },
   runtimes: {
-    pathHint: runtimesEnUS.runtimes.pathHint,
+    pathHint:
+      'Runner mencari alat pemrograman menggunakan PATH miliknya sendiri. Di terminal tempat which codex / which claude berfungsi, jalankan lagi nocobase-runner service install dan mulai ulang layanan (atau jalankan lagi nocobase-runner start) agar runner mendapat PATH yang benar.',
     quota: {
       workspaceStatus: {
         active: 'Pekerjaan berlanjut',
@@ -620,13 +619,13 @@ const idID: LocaleResource<typeof enUS> = {
       marks_one: 'tanda kuota {{count}}',
       marks_other: 'tanda kuota {{count}}',
       queueHint:
-        'Agen dengan kuota masih dapat dipilih. Pekerjaan akan mengantri dengan batas waktu tunggu yang ada.',
+        'Agent dengan kuota masih dapat dipilih. Pekerjaan akan mengantri dengan batas waktu tunggu yang ada.',
       partial: 'Berjalan pada {{available}} · {{blocked}} sesuai kuota',
       workspaceSize: 'Ukuran ruang kerja: {{value}}',
       providers_one: 'Penyedia {{count}} dengan kuota',
       providers_other: 'Penyedia {{count}} dengan kuota',
       runColumns: {
-        issue: 'Masalah / percakapan',
+        issue: 'Tugas / percakapan',
         agent: 'Agen',
         status: 'Status',
         started: 'Dimulai',
@@ -725,12 +724,12 @@ const idID: LocaleResource<typeof enUS> = {
     },
     title: 'Lingkungan runtime',
     description:
-      'Runtime yang menjalankan agen, dan alat pengkodean masing-masing dilaporkan.',
-    add: 'Tambahkan waktu proses',
+      'Runtime yang menjalankan Agent, dan alat pengkodean masing-masing dilaporkan.',
+    add: 'Tambahkan lingkungan runtime',
     loadFailed: 'Tidak dapat memuat runtime',
     emptyTitle: 'Belum ada runtime yang terhubung',
     emptyDescription:
-      'Setelah runtime terhubung, agen runner mulai bekerja di sana dengan alat pengkodeannya.',
+      'Setelah runtime terhubung, Agent runner mulai bekerja di sana dengan alat pengkodeannya.',
     noneConnected: 'Tidak ada runtime yang terhubung.',
     revokedList_one: '{{count}} mencabut runtime',
     revokedList_other: '{{count}} mencabut runtime',
@@ -777,8 +776,8 @@ const idID: LocaleResource<typeof enUS> = {
     variables: {
       title: 'Variabel dari mesin ini',
       description:
-        'Variabel yang disediakan untuk proses yang mengambilnya dari waktu proses, berdasarkan nama; nilainya tetap ada di mesin. Tetapkan satu di sana dengan `nocobase-runner env set NAME`, atau teruskan dengan `--pass-env NAME`.',
-      none: 'Tidak ada: proses yang mengambil variabel dari waktu proses gagal di sini sebelum dimulai.',
+        'Variabel yang disediakan untuk proses yang mengambilnya dari lingkungan runtime, berdasarkan nama; nilainya tetap ada di mesin. Tetapkan satu di sana dengan `nocobase-runner env set NAME`, atau teruskan dengan `--pass-env NAME`.',
+      none: 'Tidak ada: proses yang mengambil variabel dari lingkungan runtime gagal di sini sebelum dimulai.',
       unknown:
         'Tidak dilaporkan: runnernya lebih tua dari fitur ini. Perbarui runner untuk melihatnya.',
     },
@@ -827,9 +826,9 @@ const idID: LocaleResource<typeof enUS> = {
     upgradeRequired: {
       title: 'Waktu proses ini memerlukan peningkatan',
       older:
-        'Runnernya {{version}} berbicara protokol agen {{protocol}}; aplikasi ini membutuhkan protokol {{required}}. Itu tetap terhubung tetapi tidak menjalankan apa pun sampai diperbarui.',
+        'Runnernya {{version}} berbicara protokol Agent {{protocol}}; aplikasi ini membutuhkan protokol {{required}}. Itu tetap terhubung tetapi tidak menjalankan apa pun sampai diperbarui.',
       newer:
-        'Runnernya {{version}} menggunakan protokol agen {{protocol}}, lebih baru dari aplikasi ini (protokol {{required}}). Itu tetap terhubung tetapi tidak menjalankan apa pun sampai menjalankan runner yang dilayani aplikasi ini.',
+        'Runnernya {{version}} menggunakan protokol Agent {{protocol}}, lebih baru dari aplikasi ini (protokol {{required}}). Itu tetap terhubung tetapi tidak menjalankan apa pun sampai menjalankan runner yang dilayani aplikasi ini.',
       latest:
         'Aplikasi ini melayani runner {{latest}}. Jalankan ini di hostnya untuk memperbaruinya:',
       noLatest:
@@ -851,7 +850,8 @@ const idID: LocaleResource<typeof enUS> = {
       version: 'Versi {{version}}',
     },
     trust: {
-      isolationHint: runtimesEnUS.runtimes.trust.isolationHint,
+      isolationHint:
+        'Untuk lingkungan runtime pribadi maupun bersama, jalankan runner di VM atau lingkungan terisolasi: Agent memiliki akses penuh dan runner bukan sandbox.',
       label: 'Untuk siapa ini bekerja',
       team: 'Tim',
       teamHint:
@@ -884,7 +884,7 @@ const idID: LocaleResource<typeof enUS> = {
       title: 'Runner baru untuk {{name}}',
       description:
         'Menginstal {{version}}, aplikasi ini menyajikan {{latest}}.',
-      hint: 'Ia memperbarui dirinya sendiri setelah tidak ada agen yang berjalan. Untuk memperbaruinya sekarang, jalankan ini di hostnya.',
+      hint: 'Ia memperbarui dirinya sendiri setelah tidak ada Agent yang berjalan. Untuk memperbaruinya sekarang, jalankan ini di hostnya.',
     },
     revoke: {
       title: 'Cabut kredensial {{name}}?',
@@ -902,8 +902,24 @@ const idID: LocaleResource<typeof enUS> = {
     },
   },
   connect: {
-    ...runtimesEnUS.connect,
-    title: 'Tambahkan waktu proses',
+    manual: 'Atau pasang sendiri',
+    promptTitle: 'Biarkan Agent menyiapkannya',
+    promptCopy: 'Salin prompt untuk Agent',
+    promptShow: 'Lihat prompt',
+    promptHide: 'Sembunyikan prompt',
+    promptHint:
+      'Salin prompt ini ke Agent (Claude Code, Codex, dan sejenisnya) di mesin tujuan, dan Agent akan menjalankan langkah di bawah untuk Anda. Prompt ini berisi kredensial sekali pakai: berikan hanya kepada Agent tersebut.',
+    windowsPowerShell:
+      '1. Pasang WSL: jalankan di PowerShell, lalu mulai ulang Windows:',
+    windowsUbuntu:
+      '2. Buka Ubuntu dan jalankan perintah Linux di bawah. Pasang Node.js dan alat pemrograman di dalam WSL Ubuntu.',
+    windowsNetwork:
+      'Jika WSL tidak dapat mengakses internet, aktifkan jaringan mirrored di WSL.',
+    promptWindows:
+      'PERTAMA, pastikan apakah kamu berjalan di dalam WSL Ubuntu. Jika TIDAK di WSL Ubuntu, BERHENTI: jangan jalankan perintah pemasangan atau pendaftaran apa pun. Minta pengguna menjalankan wsl --install di PowerShell, memulai ulang Windows, lalu membuka Agent di dalam WSL Ubuntu dan menjalankan prompt ini lagi. Lanjutkan langkah di bawah HANYA di dalam WSL Ubuntu. Pasang Node.js dan alat pemrograman di dalam WSL. Jika WSL tidak dapat mengakses internet, aktifkan jaringan mirrored.\n\n',
+    promptBody:
+      'Siapkan mesin ini sebagai lingkungan runtime NocoBase. Gunakan VM atau lingkungan terisolasi: Agent memiliki akses penuh dan runner bukan sandbox.\n\nPeriksa bahwa Node.js 24 atau lebih baru tersedia dan alat pemrograman berikut sudah terpasang dan masuk: {{tools}}. Gunakan cara pemasangan resminya, bukan paket snap.\n\nJalankan perintah pendaftaran sekali pakai ini untuk memasang runner dan CLI aplikasi, mendaftarkannya, dan memasang layanan latar belakangnya:\n{{command}}\n\nAtasi masalah penyiapan umum: pastikan PATH layanan berisi alat pemrograman (periksa which codex / which claude di terminal pemasangan, lalu jalankan lagi nocobase-runner service install dan mulai ulang layanan); atur proxy yang diperlukan untuk unduhan dan layanan; atasi izin pemasangan global npm dengan prefix milik pengguna atau pengelola versi Node, tanpa sudo npm install.\n\nAkhiri dengan nocobase-runner status dan pastikan koneksi serta alat pemrograman. Laporkan langkah masuk atau jaringan yang masih perlu saya selesaikan. Perlakukan kredensial pendaftaran sebagai rahasia dan jangan cantumkan dalam laporan.',
+    title: 'Tambahkan lingkungan runtime',
     description:
       'Jalankan perintah di bawah ini pada host yang memiliki alat pengkodean terpasang: server, VM, atau perangkat Anda sendiri. Agen berjalan di sana dengan akses penuh, sebagai pengguna yang menjalankan runner, dan dapat membaca serta mengubah apa pun yang dapat dilakukan pengguna, termasuk kunci SSH dan kredensial lainnya. Runner bukanlah batasan keamanan: jalankan sebagai pengguna khusus, dalam container, atau di VM.',
     createCredential: 'Hasilkan perintah instalasi',
@@ -936,8 +952,38 @@ const idID: LocaleResource<typeof enUS> = {
   },
   chat: {
     // Keep new guidance available in English until this locale is translated.
-    executionFailed: chatEnUS.chat.executionFailed,
-    fileInputFailures: chatEnUS.chat.fileInputFailures,
+    executionFailed:
+      'Eksekusi gagal. Tinjau percakapan yang tersimpan sebelum mencoba lagi.',
+    fileInputFailures: {
+      imageCapability:
+        'Input gambar belum dikonfigurasi untuk model ini. Beralihlah ke model yang dukungan gambarnya sudah terverifikasi.',
+      unsupportedFormat:
+        'Input untuk format lampiran ini belum dikonfigurasi pada model yang dipilih, dan tidak ada ekstraktor teks lokal yang mendukungnya. Gunakan format dokumen yang didukung atau model yang dukungan filenya sudah terverifikasi.',
+      formatMismatch:
+        'Nama file lampiran dan jenis medianya menunjukkan format dokumen yang berbeda. Periksa format file lalu unggah ulang.',
+      invalidInline:
+        'Data file lampiran tidak valid atau terlalu besar. Unggah ulang file atau gunakan file yang lebih kecil.',
+      fileTooLarge:
+        'Sebuah lampiran melebihi batas ukurannya. Gunakan file yang lebih kecil.',
+      inputTooLarge:
+        'Lampiran percakapan melebihi batas input. Gunakan file yang lebih kecil atau mulai percakapan baru.',
+      documentTooLarge:
+        'Lampiran melebihi batas teks yang diekstrak. Gunakan file yang lebih kecil.',
+      contextTooLarge:
+        'Lampiran percakapan melebihi batas teks yang diekstrak. Gunakan file yang lebih kecil atau mulai percakapan baru.',
+      fileCount:
+        'Percakapan melebihi batas 100 file input. Mulai percakapan baru.',
+      nativeFileCount:
+        'Percakapan melebihi batas file native yang dikonfigurasi. Gunakan lebih sedikit lampiran atau ubah menjadi dokumen teks yang didukung.',
+      unreadable:
+        'Lampiran tidak berisi teks yang dapat dibaca. Dokumen hasil pindaian memerlukan OCR.',
+      extractionFailed:
+        'Teks lampiran tidak dapat diekstrak. Pastikan dokumen dapat dibaca lalu unggah ulang.',
+      extractionTimeout:
+        'Ekstraksi teks lampiran melewati batas waktu. Gunakan file yang lebih kecil atau coba lagi.',
+      preparationFailed:
+        'Lampiran tidak dapat disiapkan. Periksa akses Anda dan format file, lalu coba lagi.',
+    },
     untitled: 'Percakapan tanpa judul',
     renamed: 'Berganti nama',
     archivedNamed: 'Diarsipkan “{{title}}”',
@@ -955,9 +1001,9 @@ const idID: LocaleResource<typeof enUS> = {
       modelUnavailable: 'Model tidak tersedia',
     },
     offline: {
-      fallbackDone: 'Percakapan ini sekarang menggunakan agen lain',
+      fallbackDone: 'Percakapan ini sekarang menggunakan Agent lain',
       restoreDone: 'Beralih kembali',
-      newSession: 'Agen memulai sesi baru dan membaca percakapan ini.',
+      newSession: 'Agent memulai sesi baru dan membaca percakapan ini.',
     },
     notice: {
       switchedToDefault:
@@ -965,16 +1011,16 @@ const idID: LocaleResource<typeof enUS> = {
       switchedToOnline:
         '{{own}} tidak memiliki runner untuk Anda sekarang, jadi {{name}} menjawab hingga {{own}} kembali.',
       onlineFallbackUnavailable:
-        'Agen fallback online tidak dapat menjawab ({{reason}}). Percakapan ini tetap ada di {{own}} sambil menunggu runner.',
+        'Agent fallback online tidak dapat menjawab ({{reason}}). Percakapan ini tetap ada di {{own}} sambil menunggu runner.',
       switchedAgent:
         'Beralih ke {{name}} dengan mempertahankan riwayat percakapan ini.',
       switchedBack: 'Kembali dengan {{name}}.',
-      runFailed: 'Agen itu berhenti sebelum menjawab.',
-      runFailedReason: 'Agen berhenti sebelum menjawab: {{reason}}',
+      runFailed: 'Agent itu berhenti sebelum menjawab.',
+      runFailedReason: 'Agent berhenti sebelum menjawab: {{reason}}',
       runCancelled: 'Pembatalan diminta.',
     },
     consultation: {
-      unavailableTitle: 'Agen yang berkonsultasi tidak tersedia',
+      unavailableTitle: 'Agent yang berkonsultasi tidak tersedia',
       snapshotTitle: 'Meminta {{name}} pada saat itu',
       title: 'Berkonsultasi dengan {{name}}',
     },
@@ -985,33 +1031,33 @@ const idID: LocaleResource<typeof enUS> = {
     },
     agents: {
       personalOnly: 'Hanya runner pribadi',
-      hint: 'Mencantumkan agen yang diaktifkan dan menjelaskan mengapa seseorang tidak dapat menjawab Anda sekarang. Jawaban dijalankan pada runner: balasan pertama menunggu seseorang untuk mengambilnya, biasanya beberapa detik.',
-      chooseFor: 'Pilih agen',
-      empty: 'Tidak ada agen yang boleh Anda pilih',
-      none: 'Tidak ada agen',
-      unknown: 'Agen tidak dikenal',
-      placeholder: 'Pilih agen',
+      hint: 'Mencantumkan Agent yang diaktifkan dan menjelaskan mengapa seseorang tidak dapat menjawab Anda sekarang. Jawaban dijalankan pada runner: balasan pertama menunggu seseorang untuk mengambilnya, biasanya beberapa detik.',
+      chooseFor: 'Pilih Agent',
+      empty: 'Tidak ada Agent yang boleh Anda pilih',
+      none: 'Tidak ada Agent',
+      unknown: 'Agent tidak dikenal',
+      placeholder: 'Pilih Agent',
       myDefault: 'Default saya',
       systemDefault: 'Default sistem',
     },
   },
   chatProfile: {
-    loadFailed: 'Tidak dapat memuat pengaturan agen Anda',
-    defaultAgent: 'Agen obrolan default saya',
+    loadFailed: 'Tidak dapat memuat pengaturan Agent Anda',
+    defaultAgent: 'Agent obrolan default saya',
     systemDefault: 'Default sistem',
     systemDefaultNamed: 'Default sistem ({{name}})',
     noDefault: 'Tidak ada default sistem yang ditetapkan.',
-    saved: 'Agen obrolan default disimpan',
+    saved: 'Agent obrolan default disimpan',
   },
   models: {
     title: 'Model',
     description:
-      'Model layanan panggilan agen online, dan model yang ditawarkan masing-masing: model obrolan untuk agen, model penyematan dan peringkat ulang untuk pencarian.',
+      'Model layanan panggilan Agent online, dan model yang ditawarkan masing-masing: model obrolan untuk Agent, model penyematan dan peringkat ulang untuk pencarian.',
   },
   defaultModel: {
     title: 'Model obrolan default',
     description:
-      'Agen online yang tidak memiliki model jawaban sendiri, seperti agen baru atau yang disertakan dengan aplikasi.',
+      'Agent online yang tidak memiliki model jawaban sendiri, seperti Agent baru atau yang disertakan dengan aplikasi.',
     none: 'Belum ada model obrolan yang diaktifkan. Tambahkan layanan model dan aktifkan model obrolan: yang pertama menjadi default.',
     saved: 'Model obrolan default sekarang adalah {{model}}.',
   },
@@ -1026,7 +1072,7 @@ const idID: LocaleResource<typeof enUS> = {
     empty: {
       title: 'Belum ada layanan model',
       description:
-        'Setelah Anda menambahkan layanan model, agen online dapat menjawabnya.',
+        'Setelah Anda menambahkan layanan model, Agent online dapat menjawabnya.',
       readOnly: 'Minta administrator untuk menambahkan layanan model.',
     },
     add: {
@@ -1052,7 +1098,7 @@ const idID: LocaleResource<typeof enUS> = {
       name: 'Nama',
       enabled: 'Aktif',
       enabledHint:
-        'Agen online hanya dapat menggunakan modelnya saat modelnya aktif.',
+        'Agent online hanya dapat menggunakan modelnya saat modelnya aktif.',
       saved: '{{title}} disimpan.',
       delete: 'Hapus',
       deleteTitle: 'Hapus {{title}}?',
@@ -1078,7 +1124,7 @@ const idID: LocaleResource<typeof enUS> = {
     models: {
       title: 'Model',
       description:
-        'Periksa model yang ditawarkan layanan ini, dan jelaskan kegunaan masing-masing model: agen penjawab model obrolan, penyematan teks indeks model untuk pencarian, peringkat ulang model hasil pencarian pesanan. Model penyematan mungkin meminta vektor dengan ukuran tertentu.',
+        'Periksa model yang ditawarkan layanan ini, dan jelaskan kegunaan masing-masing model: Agent penjawab model obrolan, penyematan teks indeks model untuk pencarian, peringkat ulang model hasil pencarian pesanan. Model penyematan mungkin meminta vektor dengan ukuran tertentu.',
       fetching: 'Mengambil model penyedia…',
       fetchFailed: 'Penyedia tidak akan mencantumkan modelnya: {{message}}',
       fetch: 'Ambil model',
@@ -1188,11 +1234,11 @@ const idID: LocaleResource<typeof enUS> = {
     backToList: 'Kembali ke keterampilan',
     emptyTitle: 'Belum ada keterampilan',
     emptyDescription:
-      'Setelah Anda menambahkan keterampilan, agen membaca SKILL.md-nya setiap kali ada tugas yang memerlukannya.',
+      'Setelah Anda menambahkan keterampilan, Agent membaca SKILL.md-nya setiap kali ada tugas yang memerlukannya.',
     emptyReadOnly: 'Minta administrator untuk menambahkan keterampilan.',
     content: 'SKILL.md',
     contentHint:
-      'Nama bagian depan adalah nama folder skill: mengubahnya akan mengganti nama skill. Deskripsi tersebut memberi tahu agen kapan harus membacanya.',
+      'Nama bagian depan adalah nama folder skill: mengubahnya akan mengganti nama skill. Deskripsi tersebut memberi tahu Agent kapan harus membacanya.',
     contentTooLarge: 'SKILL.md lebih besar dari {{max}}.',
     emptyContent: 'Keterampilan ini belum memiliki konten.',
     created: 'Menciptakan keterampilan "{{name}}"',
@@ -1206,7 +1252,7 @@ const idID: LocaleResource<typeof enUS> = {
     delete: 'Hapus keterampilan',
     deleteTitle: 'Hapus keterampilan "{{name}}"?',
     deleteDescription:
-      'Setiap agen dan setiap tempat yang menggunakan keterampilan ini sebagai default akan kehilangannya.',
+      'Setiap Agent dan setiap tempat yang menggunakan keterampilan ini sebagai default akan kehilangannya.',
     readOnly:
       'Hanya pembuat keterampilan dan administrator ruang kerja yang dapat mengubah keterampilan ini.',
     conflict:
@@ -1215,8 +1261,8 @@ const idID: LocaleResource<typeof enUS> = {
     conflictDraft:
       'Seseorang menyimpan versi baru setelah Anda mulai mengedit, jadi perubahan Anda tidak disimpan. Salin apa yang ingin Anda simpan, lalu muat versi terbaru dan edit lagi.',
     loadLatest: 'Muat versi terbaru',
-    mountedAgents: 'Agen terlampir',
-    noAgents: 'Belum terikat pada agen mana pun.',
+    mountedAgents: 'Agent terlampir',
+    noAgents: 'Belum terikat pada Agent mana pun.',
     defaults: 'Keterampilan default: {{places}}.',
     defaultsSeparator: ', ',
     files: 'File',
@@ -1231,7 +1277,7 @@ const idID: LocaleResource<typeof enUS> = {
     executable: 'Dapat dieksekusi',
     scriptBadge: 'Naskah',
     scriptsNote:
-      'Memiliki skrip: agen online dapat membacanya tetapi tidak pernah menjalankannya',
+      'Memiliki skrip: Agent online dapat membacanya tetapi tidak pernah menjalankannya',
     compatibility: 'Kompatibilitas: {{value}}',
     fileContent: 'Konten {{path}}',
     export: 'Ekspor',
@@ -1264,8 +1310,8 @@ const idID: LocaleResource<typeof enUS> = {
       name: 'Nama',
       renameTitle: 'Ganti nama "{{name}}"',
       conventional: {
-        scripts: 'Agen kode dapat berjalan. Agen online hanya membacanya.',
-        references: 'Agen dokumentasi membaca saat mereka membutuhkannya.',
+        scripts: 'Agent kode dapat berjalan. Agent online hanya membacanya.',
+        references: 'Agent dokumentasi membaca saat mereka membutuhkannya.',
         assets: 'Templat, gambar, dan sumber daya lainnya.',
       },
       problems: {
@@ -1305,7 +1351,7 @@ const idID: LocaleResource<typeof enUS> = {
     },
     template: {
       description:
-        'Apa fungsi keterampilan ini, dan kapan agen harus menggunakannya.',
+        'Apa fungsi keterampilan ini, dan kapan Agent harus menggunakannya.',
       title: 'Keterampilan baru',
       whenToUse: 'Kapan digunakan',
       whenToUseHint: 'Jelaskan tugas-tugas yang membutuhkan keterampilan ini.',
@@ -1325,7 +1371,7 @@ const idID: LocaleResource<typeof enUS> = {
     versions: {
       title: 'Versi',
       description:
-        'Setiap penyimpanan membuat versi baru; agen selalu mendapatkan versi terbaru.',
+        'Setiap penyimpanan membuat versi baru; Agent selalu mendapatkan versi terbaru.',
       current: 'Saat ini',
       compare: 'Bandingkan',
       compareTitle: 'Versi {{version}} → versi {{current}}',
@@ -1335,7 +1381,7 @@ const idID: LocaleResource<typeof enUS> = {
       restore: 'Pulihkan',
       restoreTitle: 'Pulihkan versi {{version}}?',
       restoreDescription:
-        'Disimpan lagi sebagai versi terbaru; agen mendapatkannya pada putaran berikutnya. Tidak ada yang hilang: versi saat ini tetap ada dalam sejarah.',
+        'Disimpan lagi sebagai versi terbaru; Agent mendapatkannya pada putaran berikutnya. Tidak ada yang hilang: versi saat ini tetap ada dalam sejarah.',
       restored: 'Versi {{version}} yang dipulihkan sebagai versi {{current}}.',
     },
   },
@@ -1350,15 +1396,16 @@ const idID: LocaleResource<typeof enUS> = {
         'Runner yang terhubung tidak mendukung beban kerja ini; diperlukan peningkatan',
       restricted: 'Kebijakan runner, direktori, atau pembatasan variabel',
       unknown: 'Kelayakan beban kerja belum ditetapkan',
-      agentArchived: 'Agen diarsipkan',
+      agentArchived: 'Agent diarsipkan',
       delayed: 'Dijadwalkan untuk {{until}}',
-      noRunnerOnline: 'Tidak ada waktu proses online',
+      noRunnerOnline: 'Tidak ada lingkungan runtime online',
       runnersOffline: 'Waktu prosesnya sedang offline',
       toolQuota: 'Kuota alat habis; waktu reset: {{until}}',
       toolUnavailable:
         'Alat tidak masuk, dinonaktifkan, atau model yang diminta tidak tersedia ({{tool}})',
       noSharedRunner: 'Hanya runner pribadi orang lain yang online',
-      missingFeatures: 'Tidak ada waktu proses yang mendukung {{features}}',
+      missingFeatures:
+        'Tidak ada lingkungan runtime yang mendukung {{features}}',
       secretsNotAllowed:
         'Membutuhkan runtime tim: {{variables}} hanya untuk runtime tim',
       sameWorkActive: 'Setelah dijalankan sudah di atasnya',
@@ -1381,16 +1428,16 @@ const idID: LocaleResource<typeof enUS> = {
         description: 'Agen tim dan keterampilan yang mereka gunakan.',
         actions: {
           edit: {
-            title: 'Ubah agen dan keterampilan',
+            title: 'Ubah Agent dan keterampilan',
             description:
-              'Mengubah pengaturan agen, keterampilan dan variabel, mengarsipkan, memulihkan dan menghapusnya, dan mengedit keterampilan. Seorang agen tidak diberikan kemampuan selain kemampuan editor',
+              'Mengubah pengaturan Agent, keterampilan dan variabel, mengarsipkan, memulihkan dan menghapusnya, dan mengedit keterampilan. Seorang Agent tidak diberikan kemampuan selain kemampuan editor',
             related:
-              'Agen perubahan dan keterampilan (agen yang mereka miliki dan keterampilan yang mereka ciptakan)',
+              'Agent perubahan dan keterampilan (Agent yang mereka miliki dan keterampilan yang mereka ciptakan)',
             relatedLabel:
               'Agen yang saya miliki dan keterampilan yang saya buat',
             relatedHint:
               'Agen yang saya miliki, dan keterampilan yang saya ciptakan',
-            all: 'Agen perubahan dan keterampilan (semua)',
+            all: 'Agent perubahan dan keterampilan (semua)',
           },
         },
       },
@@ -1411,7 +1458,7 @@ const idID: LocaleResource<typeof enUS> = {
       agents: {
         title: 'Agen',
         description:
-          'Lihat agen, keterampilan, dan lari; ubah agen dan keterampilan, batalkan dan coba lagi.',
+          'Lihat Agent, keterampilan, dan lari; ubah Agent dan keterampilan, batalkan dan coba lagi.',
       },
       runners: {
         title: 'Lingkungan runtime',

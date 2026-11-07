@@ -173,7 +173,7 @@ const ptBR: LocaleResource<typeof enUS> = {
           propose: {
             title: 'Propor conhecimento',
             description:
-              'Propor uma mudança para que alguém que possa editar decida; quais agentes podem receber',
+              'Propor uma mudança para que alguém que possa editar decida; quais Agents podem receber',
             related: 'Propor conhecimentos (espaços a eles relacionados)',
             relatedLabel: 'Espaços relacionados a mim',
             relatedHint:
@@ -330,7 +330,7 @@ const ptBR: LocaleResource<typeof enUS> = {
       statusHint: {
         parsing:
           'O texto está sendo extraído; search encontra o arquivo quando ele estiver pronto.',
-        ready: 'Seu texto é extraído, então a busca e os agentes o leem.',
+        ready: 'Seu texto é extraído, então a busca e os Agents o leem.',
         failed: 'O texto não pôde ser extraído.',
         unsupported:
           'O texto não é extraído de arquivos deste tipo; ele é armazenado como está.',
@@ -416,7 +416,7 @@ const ptBR: LocaleResource<typeof enUS> = {
       archive: 'Arquivar',
       archiveTitle: 'Arquivar “{{title}}”?',
       archiveDescription:
-        'Desaparece da árvore e dos agentes. Você pode restaurá-lo mais tarde; suas versões são mantidas.',
+        'Desaparece da árvore e dos Agents. Você pode restaurá-lo mais tarde; suas versões são mantidas.',
       archivedToast: 'Arquivado.',
       restore: 'Restaurar',
       restoredToast: 'Restaurado.',
@@ -436,7 +436,7 @@ const ptBR: LocaleResource<typeof enUS> = {
       editing: 'Edição',
       proposing: 'Propor alterações',
       properties: 'Propriedades',
-      propertiesHint: 'Quais agentes e links leem sobre este documento.',
+      propertiesHint: 'Quais Agents e links leem sobre este documento.',
       nothingToPreview: 'Nada para visualizar ainda.',
       reasonPlaceholder: 'Por que isso deveria mudar, para quem decide',
       submitProposal: 'Enviar proposta',
@@ -444,9 +444,9 @@ const ptBR: LocaleResource<typeof enUS> = {
       title: 'Título',
       slug: 'Lesma',
       slugHint:
-        'Letras minúsculas, dígitos e hífens; como os agentes e links o nomeiam. Deixado em branco, é feito a partir do título.',
+        'Letras minúsculas, dígitos e hífens; como os Agents e links o nomeiam. Deixado em branco, é feito a partir do título.',
       summary: 'Resumo',
-      summaryHint: 'Agentes de uma linha leem o índice.',
+      summaryHint: 'Agents de uma linha leem o índice.',
       content: 'Conteúdo',
       contentPlaceholder: 'Markdown',
       write: 'Escreva',

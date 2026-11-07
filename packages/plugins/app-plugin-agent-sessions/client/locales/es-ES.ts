@@ -4,7 +4,7 @@ import type enUS from './en-US.js';
 
 const esES: LocaleResource<typeof enUS> = {
   navigation: {
-    agentSessions: 'Mis agentes',
+    agentSessions: 'My Agents',
   },
   actions: {
     close: 'Cerrar',
@@ -28,7 +28,7 @@ const esES: LocaleResource<typeof enUS> = {
     fold: 'Ocultar sesiones',
     expand: 'Mostrar sesiones',
     label: 'Sesiones',
-    title: 'Mis agentes',
+    title: 'My Agents',
     archived: 'Archivado',
     archivedView:
       'Elige una sesión archivada para leerla. Tu sesión abierta y tu borrador sin enviar se conservan.',
@@ -52,7 +52,7 @@ const esES: LocaleResource<typeof enUS> = {
       earlier: 'Antes',
     },
     empty:
-      'Aún no hay sesiones. Inicie uno para hablar con un agente en su computadora.',
+      'Aún no hay sesiones. Inicie uno para hablar con un Agent en su computadora.',
     noArchived: 'No hay sesiones archivadas.',
     noMatch: 'No hay coincidencias de sesiones.',
     more: 'Mostrar más',
@@ -69,14 +69,14 @@ const esES: LocaleResource<typeof enUS> = {
     count_other: 'Tareas {{count}}',
     none: 'Sin tareas',
     empty:
-      'Esta sesión aún no tiene tareas. Pídale al agente que convierta lo que discutieron en tareas.',
+      'Esta sesión aún no tiene tareas. Pídale al Agent que convierta lo que discutieron en tareas.',
     created_one: 'Tarea {{count}} creada',
     created_other: 'Tareas {{count}} creadas',
     start_one: 'Iniciar tarea {{count}}',
     start_other: 'Iniciar tareas {{count}}',
     startOne: 'Iniciar',
     skip: 'Ahora no',
-    startHint: 'Agentes en el plan de tiempo de ejecución y hacen el trabajo.',
+    startHint: 'Agentes en el plan de entorno de ejecución y hacen el trabajo.',
     notStarted: 'No iniciado',
     started_one: 'iniciado {{count}}',
     started_other: 'iniciado {{count}}',
@@ -98,15 +98,15 @@ const esES: LocaleResource<typeof enUS> = {
     settingsOffline:
       'Esta computadora está fuera de línea. Vuelva a conectar su puente para cargar la configuración y enviar.',
     settingsLoading: 'Cargando configuraciones…',
-    settingsFailed: 'No se pudo cargar la configuración del agente.',
+    settingsFailed: 'No se pudo cargar la configuración del Agent.',
     settingsRetry: 'Reintentar configuración',
-    settingsReset: 'Usar los valores predeterminados del agente',
+    settingsReset: 'Usar los valores predeterminados del Agent',
     settingsUnsupported:
-      'Este agente no expone configuraciones. Se utilizarán sus valores predeterminados.',
+      'Este Agent no expone configuraciones. Se utilizarán sus valores predeterminados.',
     settingsEmpty:
-      'Este agente no tiene ajustes configurables. Se utilizarán sus valores predeterminados.',
+      'Este Agent no tiene ajustes configurables. Se utilizarán sus valores predeterminados.',
     pickComputer: 'Elija una computadora',
-    noAgent: 'Ningún agente disponible',
+    noAgent: 'Ningún Agent disponible',
     folder: 'Directorio en la computadora',
     placeholder:
       'Di lo que necesites. Varias cosas a la vez, o una captura de pantalla, está bien.',
@@ -114,11 +114,11 @@ const esES: LocaleResource<typeof enUS> = {
       'Los agentes se ejecutan con acceso completo en el directorio que elijas, como en tu propia terminal.',
     noComputer: 'Conecte su computadora primero',
     noComputerHint:
-      'Las sesiones se ejecutan en tu propia computadora: el agente trabaja ahí ingresado con tu propia cuenta, en las carpetas que tú permites, y las conversaciones se guardan aquí. Conéctelo una vez y estará en línea siempre que la computadora esté encendida. Mi Agente ayuda a discutir y aclarar requisitos, registrar tareas y seguir el progreso; Después de iniciarlos, el director de proyectos de Studio coordina a los agentes para desarrollarlos.',
+      'Las sesiones se ejecutan en tu propia computadora: el Agent trabaja ahí ingresado con tu propia cuenta, en las carpetas que tú permites, y las conversaciones se guardan aquí. Conéctelo una vez y estará en línea siempre que la computadora esté encendida. My Agent ayuda a discutir y aclarar requisitos, registrar tareas y seguir el progreso; Después de iniciarlos, el director de proyectos de Studio coordina a los Agents para desarrollarlos.',
     allOffline: 'Tus computadoras están desconectadas',
     offlineHint:
       'Ejecute esto en la computadora para mantenerla conectada cada vez que inicie sesión.',
-    noAgentTitle: 'Ningún agente está listo en esta computadora',
+    noAgentTitle: 'Ningún Agent está listo en esta computadora',
     noAgentHint:
       'Instale cualquiera de ellos allí e inicie sesión con su propio comando. El puente comprueba cada minuto y lo enumera después de que la configuración y el inicio se realizan correctamente, sin volver a conectarse.',
     supported: 'Soportado: {{names}}',
@@ -128,9 +128,9 @@ const esES: LocaleResource<typeof enUS> = {
     computers: 'Mis computadoras',
     manageComputers: 'Administrar mis computadoras…',
     agents: 'Agentes en esta computadora',
-    availableAgents: 'Agentes disponibles',
+    availableAgents: 'Agents disponibles',
     agentsHint:
-      'Solo se enumeran los agentes instalados. El puente controla cada minuto; La configuración y el inicio deben finalizar antes de que un agente esté listo.',
+      'Solo se enumeran los Agents instalados. El puente controla cada minuto; La configuración y el inicio deben finalizar antes de que un Agent esté listo.',
     alsoSupported: 'También soportado: {{names}}',
     thisComputer: 'Esta computadora',
     recentFolders: 'Usado recientemente',
@@ -152,10 +152,10 @@ const esES: LocaleResource<typeof enUS> = {
     offline: '{{computer}} está desconectado',
     offlineBody:
       'La conversación y sus tareas se guardan aquí para su lectura habitual. La sesión continúa una vez que la computadora regresa.',
-    working: 'El agente está trabajando…',
+    working: 'El Agent está trabajando…',
     startup: {
-      starting: 'Iniciando el agente en su computadora…',
-      opening: 'Abriendo la sesión del agente…',
+      starting: 'Iniciando el Agent en su computadora…',
+      opening: 'Abriendo la sesión del Agent…',
       configuring: 'Aplicando ajustes…',
     },
     answering: 'Respondiendo',
@@ -197,7 +197,7 @@ const esES: LocaleResource<typeof enUS> = {
     expand: 'Ampliar entrada',
     collapse: 'Contraer entrada',
     placeholder: 'Responder o preguntar por lo siguiente…',
-    busy: 'El agente está respondiendo. Su mensaje va una vez que esté hecho.',
+    busy: 'El Agent está respondiendo. Su mensaje va una vez que esté hecho.',
     waiting:
       'Responda la solicitud anterior o escriba un mensaje para enviarlo después.',
     offline: 'La computadora está fuera de línea.',
@@ -208,7 +208,7 @@ const esES: LocaleResource<typeof enUS> = {
     removeImage: 'Eliminar imagen',
     attached: 'Va con el mensaje',
     removeAttached: 'Eliminar {{name}}',
-    commands: 'Las órdenes del agente',
+    commands: 'Las órdenes del Agent',
     mentions: 'Mencionar una tarea',
     keys: {
       send: 'enviar',
@@ -261,11 +261,11 @@ const esES: LocaleResource<typeof enUS> = {
       delete_other: 'archivos {{count}} eliminados',
       move_one: 'movió el archivo {{count}}',
       move_other: 'movió archivos {{count}}',
-      search_one: 'buscado una vez',
+      search_one: 'buscó {{count}} vez',
       search_other: 'buscado {{count}} veces',
       execute_one: 'ejecutó el comando {{count}}',
       execute_other: 'ejecutó comandos {{count}}',
-      think_one: 'pensó una vez',
+      think_one: 'pensó {{count}} vez',
       think_other: 'pensó {{count}} veces',
       fetch_one: 'página {{count}} recuperada',
       fetch_other: 'páginas {{count}} recuperadas',
@@ -328,7 +328,7 @@ const esES: LocaleResource<typeof enUS> = {
     offline: 'Sin conexión',
     title: 'Mis computadoras',
     description:
-      'Estas computadoras ejecutan solo sus propias sesiones y los agentes trabajan como usted. Las máquinas que ejecutan el trabajo en segundo plano del equipo se administran por separado.',
+      'Estas computadoras ejecutan solo sus propias sesiones y los Agents trabajan como usted. Las máquinas que ejecutan el trabajo en segundo plano del equipo se administran por separado.',
     none: 'Aún no hay ninguna computadora conectada.',
     online: 'En línea',
     lastSeen: 'Visto por última vez {{time}}',
@@ -339,7 +339,7 @@ const esES: LocaleResource<typeof enUS> = {
       failed: 'no se pudo iniciar',
     },
     recheckHint:
-      'Mientras está conectado, el puente verifica automáticamente a los agentes nuevamente cada minuto.',
+      'Mientras está conectado, el puente verifica automáticamente a los Agents nuevamente cada minuto.',
     ready: 'Listo',
     name: 'Nombre',
     system: 'Sistema',
@@ -358,7 +358,7 @@ const esES: LocaleResource<typeof enUS> = {
     foldersChosenHint: 'Las sesiones pueden funcionar sólo en estas carpetas.',
     add: 'Conectar una computadora',
     steps: {
-      agent: 'Instale un agente de codificación e inicie sesión en él',
+      agent: 'Instale un Agent de codificación e inicie sesión en él',
       agentHint:
         'Codex, Claude Code, Gemini CLI, GitHub Copilot, Cursor, Qwen Code, Kimi CLI y más: inicia sesión con su propio comando. Utilice el modelo más fuerte que pueda.',
       login: 'Inicia sesión con tu cuenta',

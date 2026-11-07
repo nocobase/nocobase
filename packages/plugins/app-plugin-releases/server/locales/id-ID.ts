@@ -12,7 +12,8 @@ const idID: LocaleResource<typeof enUS> = {
     businesses: {
       apps: {
         title: 'Aplikasi',
-        description: 'Aplikasi, rilisnya, penerapannya, dan waktu prosesnya.',
+        description:
+          'Aplikasi, rilisnya, penerapannya, dan lingkungan runtimenya.',
         actions: {
           view: {
             title: 'Lihat Aplikasi',

@@ -12,7 +12,7 @@ it('includes every server language for an invitee without a saved language', asy
     url: 'https://example.com/invite?token=test&view=accept',
     expiresAt: new Date('2030-01-01T00:00:00Z'),
   });
-  expect(Object.keys(locales)).toHaveLength(10);
+  expect(Object.keys(locales)).toHaveLength(12);
   for (const load of Object.values(locales)) {
     const { default: resource } = (await load()) as {
       default: { invitationEmail: { action: string } };

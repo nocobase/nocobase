@@ -12,15 +12,15 @@ const esES: LocaleResource<typeof enUS> = {
         description: 'Los agentes del equipo y las habilidades que utilizan.',
         actions: {
           edit: {
-            title: 'Agentes de cambio y habilidades',
+            title: 'Agents de cambio y habilidades',
             description:
-              'Cambiar la configuración, habilidades y variables de un agente, archivarlo, restaurarlo y eliminarlo, y editar habilidades. Un agente no tiene ninguna capacidad más allá de la del editor.',
+              'Cambiar la configuración, habilidades y variables de un Agent, archivarlo, restaurarlo y eliminarlo, y editar habilidades. Un Agent no tiene ninguna capacidad más allá de la del editor.',
             related:
-              'Agentes de cambio y habilidades (agentes que poseen y habilidades que crearon)',
+              'Agents de cambio y habilidades (Agents que poseen y habilidades que crearon)',
             relatedLabel: 'Agentes que poseo y habilidades que creé',
             relatedHint:
               'Agentes de los que soy propietario y habilidades que creé',
-            all: 'Agentes de cambio y habilidades (todos)',
+            all: 'Agents de cambio y habilidades (todos)',
           },
         },
       },
@@ -41,12 +41,12 @@ const esES: LocaleResource<typeof enUS> = {
       agents: {
         title: 'Agentes',
         description:
-          'Ver agentes, habilidades y carreras; cambiar agentes y habilidades, cancelar y reintentar ejecuciones.',
+          'Ver Agents, habilidades y carreras; cambiar Agents y habilidades, cancelar y reintentar ejecuciones.',
       },
       runners: {
         title: 'Entornos de ejecución',
         description:
-          'Ver ejecutores y tokens de registro; gestionar ejecutores.',
+          'Ver entornos de ejecución y tokens de registro; gestionar entornos de ejecución.',
       },
       prices: {
         title: 'Precios de los modelos',

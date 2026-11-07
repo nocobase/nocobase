@@ -11,7 +11,7 @@ const ptBR: LocaleResource<typeof enUS> = {
   access: {
     sections: {
       projects: 'Projetos',
-      issues: 'Questões',
+      issues: 'Tarefas',
       settings: 'Configurações do projeto',
       members: 'Membros e funções',
     },
@@ -50,97 +50,93 @@ const ptBR: LocaleResource<typeof enUS> = {
         },
       },
       issues: {
-        title: 'Questões',
-        description:
-          'Questões e seus comentários, em projeto ou por conta própria.',
+        title: 'Tarefas',
+        description: 'Tarefas e seus comentários, em um projeto ou avulsas.',
         actions: {
           view: {
-            title: 'Ver problemas',
-            description: 'Ver problemas em listas, quadros e seus detalhes',
-            related: 'Ver problemas (aqueles que eles podem ver)',
+            title: 'Ver tarefas',
+            description: 'Ver tarefas em listas, quadros e nos detalhes',
+            related: 'Ver tarefas (as que pode ver)',
             relatedLabel: 'Em projetos posso ver',
             relatedHint:
-              'Problemas sem projeto e problemas em projetos que posso ver',
-            all: 'Ver problemas (todos)',
+              'Tarefas sem projeto e tarefas de projetos que posso ver',
+            all: 'Ver tarefas (todas)',
           },
           create: {
-            title: 'Criar problemas',
-            description: 'Criar problemas, em um projeto ou por conta própria',
-            related: 'Criar problemas (em projetos que eles possam ver)',
+            title: 'Criar tarefas',
+            description: 'Criar tarefas, em um projeto ou avulsas',
+            related: 'Criar tarefas (em projetos que pode ver)',
             relatedLabel: 'Em projetos posso ver',
-            relatedHint: 'Problemas sem projeto, ou em projetos que posso ver',
-            all: 'Criar problemas (todos)',
+            relatedHint: 'Tarefas sem projeto ou em projetos que posso ver',
+            all: 'Criar tarefas (todas)',
           },
           edit: {
-            title: 'Editar problemas',
+            title: 'Editar tarefas',
             description:
               'Título, descrição, prioridade, datas, rótulos, executores e status abertos',
-            related: 'Editar problemas (aqueles que eles podem ver)',
+            related: 'Editar tarefas (as que pode ver)',
             relatedLabel: 'Em projetos posso ver',
             relatedHint:
-              'Problemas sem projeto e problemas em projetos que posso ver',
-            all: 'Editar problemas (todos)',
+              'Tarefas sem projeto e tarefas de projetos que posso ver',
+            all: 'Editar tarefas (todas)',
           },
           comment: {
-            title: 'Comentário sobre questões',
+            title: 'Comentar em tarefas',
             description:
               'Comentar, responder e resolver tópicos; editar e excluir seus próprios comentários',
-            related: 'Comente sobre questões (aquelas que eles podem ver)',
+            related: 'Comentar em tarefas (as que pode ver)',
             relatedLabel: 'Em projetos posso ver',
             relatedHint:
-              'Problemas sem projeto e problemas em projetos que posso ver',
-            all: 'Comentário sobre questões (todas)',
+              'Tarefas sem projeto e tarefas de projetos que posso ver',
+            all: 'Comentar em tarefas (todas)',
           },
           moderateComments: {
             title: 'Comentários moderados',
             description: 'Excluir comentários de outras pessoas',
             related:
-              'Comentários moderados (sobre questões de sua propriedade ou cujo projeto lideram)',
-            relatedLabel: 'Em questões que possuo ou em projetos que lidero',
+              'Moderar comentários (nas suas tarefas ou em projetos que lidera)',
+            relatedLabel: 'Nas minhas tarefas ou em projetos que lidero',
             relatedHint:
-              'Comentários sobre questões de minha propriedade e sobre questões de projetos que lidero',
+              'Comentários nas minhas tarefas e em tarefas de projetos que lidero',
             all: 'Comentários moderados (todos)',
           },
           close: {
-            title: 'Encerrar problemas',
-            description: 'Marcar um problema como concluído ou cancelado',
-            related:
-              'Questões encerradas (de sua propriedade ou cujo projeto lideram)',
+            title: 'Fechar tarefas',
+            description: 'Marcar uma tarefa como concluída ou cancelada',
+            related: 'Fechar tarefas (as suas ou de projetos que lidera)',
             relatedLabel: 'Dos que possuo ou em projetos que lidero',
-            relatedHint:
-              'Questões que possuo e questões em projetos que lidero',
-            all: 'Encerrar problemas (todos)',
+            relatedHint: 'Minhas tarefas e tarefas de projetos que lidero',
+            all: 'Fechar tarefas (todas)',
           },
           changeOwner: {
             title: 'Alterar o proprietário',
             description:
-              'Entregar um problema a outra pessoa para que ele seja responsável por ele',
+              'Passar uma tarefa para outra pessoa ser responsável por ela',
             related:
               'Mudar o proprietário (aqueles que possuem ou cujo projeto lideram)',
             relatedLabel: 'Dos que possuo ou em projetos que lidero',
-            relatedHint:
-              'Questões que possuo e questões em projetos que lidero',
+            relatedHint: 'Minhas tarefas e tarefas de projetos que lidero',
             all: 'Alterar o proprietário (todos)',
           },
           delete: {
-            title: 'Excluir e restaurar problemas',
-            description: 'Excluir problemas e restaurar os excluídos',
-            all: 'Excluir e restaurar problemas',
+            title: 'Excluir e restaurar tarefas',
+            description: 'Excluir tarefas e restaurar as excluídas',
+            all: 'Excluir e restaurar tarefas',
           },
         },
       },
       attachments: {
         title: 'Anexos',
-        description: 'Arquivos anexados a questões e comentários.',
+        description: 'Arquivos anexados a tarefas e comentários.',
         actions: {
           upload: {
             title: 'Carregar anexos',
             description:
-              'Anexe arquivos a problemas que eles possam editar e aos seus comentários',
-            related: 'Carregar anexos (sobre problemas que eles possam ver)',
-            relatedLabel: 'Em questões em projetos posso ver',
+              'Anexar arquivos às tarefas que pode editar e aos seus comentários',
+            related: 'Enviar anexos (em tarefas que pode ver)',
+            relatedLabel: 'Em tarefas de projetos que posso ver',
             relatedHint:
-              'Arquivos sobre problemas sem projeto e sobre problemas em projetos que posso ver',
+              'Arquivos em tarefas sem projeto e em tarefas de projetos que posso ver',
             all: 'Carregar anexos (todos)',
           },
         },
@@ -148,11 +144,11 @@ const ptBR: LocaleResource<typeof enUS> = {
     },
     collections: {
       pmProjects: 'Projetos',
-      pmIssues: 'Questões',
+      pmIssues: 'Tarefas',
     },
     recordAccess: {
-      visible: 'Projetos e problemas que eles podem ver',
-      managed: 'Projetos que lideram e questões de sua propriedade',
+      visible: 'Projetos e tarefas que pode ver',
+      managed: 'Projetos que lidera e tarefas pelas quais responde',
     },
     settings: {
       pm: {
@@ -168,9 +164,9 @@ const ptBR: LocaleResource<typeof enUS> = {
         objects: 'Projetos',
       },
       issues: {
-        title: 'Questões',
+        title: 'Tarefas',
         description:
-          'Ver questões; criar, editar, comentar, fechar e reatribuir; moderar comentários e excluir problemas.',
+          'Ver tarefas; criar, editar, comentar, fechar e reatribuir; moderar comentários e excluir tarefas.',
       },
       settings: {
         title: 'Configurações do projeto',
@@ -196,9 +192,9 @@ const ptBR: LocaleResource<typeof enUS> = {
     },
   },
   notifications: {
-    batchDone: 'Todas as subedições de {{identifier}} foram concluídas',
+    batchDone: 'Todas as subtarefas de {{identifier}} foram concluídas',
     batchDoneStage:
-      'A etapa {{stage}} das subedições de {{identifier}} foi concluída',
+      'A etapa {{stage}} das subtarefas de {{identifier}} foi concluída',
     commented: '{{actor}} comentou em {{identifier}}',
     dependencyReleased:
       '{{releasedBy}} foi finalizado, então {{identifier}} pode iniciar',

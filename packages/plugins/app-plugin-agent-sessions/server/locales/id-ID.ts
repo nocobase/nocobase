@@ -12,19 +12,19 @@ const idID: LocaleResource<typeof enUS> = {
       'Bridge lain telah mendaftarkan komputer ini. Mulai ulang koneksi ini.',
     submissionConflict:
       'ID pengiriman ini sudah digunakan untuk permintaan lain.',
-    authenticationRequired: 'Masuk untuk menggunakan sesi agen.',
+    authenticationRequired: 'Masuk untuk menggunakan sesi Agent.',
     computerNotFound:
       'Tidak ada komputer dengan id ini yang terhubung ke akun Anda.',
     sessionNotFound: 'Tidak ada sesi dengan id ini yang menjadi milik Anda.',
     computerOffline:
       'Komputer sedang offline. Mulai jembatan di atasnya, lalu coba lagi.',
-    agentUnavailable: 'Komputer tidak dapat menjalankan agen ini.',
+    agentUnavailable: 'Komputer tidak dapat menjalankan Agent ini.',
     directoryNotAllowed:
       'Sesi di komputer ini hanya berfungsi di bawah direktori yang diizinkan oleh jembatannya.',
     sessionArchived: 'Sesi diarsipkan. Pulihkan dulu.',
     permissionRequestNotFound:
       'Permintaan izin ini telah dijawab atau tidak lagi menunggu.',
-    choiceNotFound: 'Agen tidak menawarkan pilihan atau nilai ini.',
+    choiceNotFound: 'Agent tidak menawarkan pilihan atau nilai ini.',
     linkNotFound:
       'Tidak ada hal semacam ini dengan id ini yang terikat pada sesi, atau pekerjaannya tidak dapat dimulai dari sini.',
     invalidPageToken: 'Token halaman tidak dikeluarkan oleh daftar ini.',
@@ -34,7 +34,7 @@ const idID: LocaleResource<typeof enUS> = {
       'Komputer tidak menjawab tepat waktu. Periksa apakah koneksinya berjalan, lalu coba lagi.',
     folderUnavailable: 'Folder tidak dapat dibuka di komputer.',
     discoveryFailed:
-      'Tidak dapat memuat pengaturan agen. Perbarui baris perintah di komputer ini dan mulai ulang koneksi latar belakang, lalu coba lagi.',
+      'Tidak dapat memuat pengaturan Agent. Perbarui baris perintah di komputer ini dan mulai ulang koneksi latar belakang, lalu coba lagi.',
     projectNotFound:
       'Tidak ada proyek seperti itu, atau Anda tidak dapat melihatnya.',
     referenceNotFound:

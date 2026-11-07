@@ -4,7 +4,7 @@ import type enUS from './en-US.js';
 
 const deDE: LocaleResource<typeof enUS> = {
   navigation: {
-    agentSessions: 'Meine Agenten',
+    agentSessions: 'My Agents',
   },
   actions: {
     close: 'Schließen',
@@ -29,7 +29,7 @@ const deDE: LocaleResource<typeof enUS> = {
     fold: 'Sitzungen ausblenden',
     expand: 'Sitzungen anzeigen',
     label: 'Sitzungen',
-    title: 'Meine Agenten',
+    title: 'My Agents',
     archived: 'Archiviert',
     archivedView:
       'Wählen Sie eine archivierte Sitzung, um sie zu lesen. Ihre offene Sitzung und nicht gesendete Entwürfe bleiben erhalten.',
@@ -51,7 +51,7 @@ const deDE: LocaleResource<typeof enUS> = {
       earlier: 'Früher',
     },
     empty:
-      'Noch keine Sitzungen. Starten Sie eine, um mit einem Agenten auf Ihrem Computer zu sprechen.',
+      'Noch keine Sitzungen. Starten Sie eine, um mit einem Agent auf Ihrem Computer zu sprechen.',
     noArchived: 'Keine archivierten Sitzungen.',
     noMatch: 'Keine Session-Matches.',
     more: 'Mehr anzeigen',
@@ -68,14 +68,14 @@ const deDE: LocaleResource<typeof enUS> = {
     count_other: '{{count}}-Aufgaben',
     none: 'Keine Aufgaben',
     empty:
-      'Diese Sitzung hat noch keine Aufgaben. Bitten Sie den Agenten, das, was Sie besprochen haben, in Aufgaben umzuwandeln.',
+      'Diese Sitzung hat noch keine Aufgaben. Bitten Sie den Agent, das, was Sie besprochen haben, in Aufgaben umzuwandeln.',
     created_one: '{{count}}-Aufgabe erstellt',
     created_other: '{{count}}-Aufgaben erstellt',
     start_one: '{{count}}-Task starten',
     start_other: '{{count}}-Aufgaben starten',
     startOne: 'Starten',
     skip: 'Nicht jetzt',
-    startHint: 'Agenten im Laufzeitplan und erledigen die Arbeit.',
+    startHint: 'Agenten im Laufzeitumgebungplan und erledigen die Arbeit.',
     notStarted: 'Nicht gestartet',
     started_one: '{{count}} gestartet',
     started_other: '{{count}} gestartet',
@@ -109,7 +109,7 @@ const deDE: LocaleResource<typeof enUS> = {
       'Agenten werden mit vollem Zugriff in dem von Ihnen gewählten Verzeichnis ausgeführt, wie in Ihrem eigenen Terminal.',
     noComputer: 'Schließen Sie zuerst Ihren Computer an',
     noComputerHint:
-      'Sitzungen werden auf Ihrem eigenen Computer ausgeführt: Der Agent arbeitet dort, angemeldet mit Ihrem eigenen Konto, in den von Ihnen zugelassenen Ordnern, und die Konversationen werden hier gespeichert. Schließen Sie es einmal an und es ist online, wann immer der Computer eingeschaltet ist. Mein Agent hilft bei der Besprechung und Klärung von Anforderungen, bei der Aufzeichnung von Aufgaben und bei der Verfolgung des Fortschritts. Nachdem Sie sie gestartet haben, koordiniert der Projektmanager von Studio die Agenten, um sie zu entwickeln.',
+      'Sitzungen werden auf Ihrem eigenen Computer ausgeführt: Der Agent arbeitet dort, angemeldet mit Ihrem eigenen Konto, in den von Ihnen zugelassenen Ordnern, und die Konversationen werden hier gespeichert. Schließen Sie es einmal an und es ist online, wann immer der Computer eingeschaltet ist. My Agent hilft bei der Besprechung und Klärung von Anforderungen, bei der Aufzeichnung von Aufgaben und bei der Verfolgung des Fortschritts. Nachdem Sie sie gestartet haben, koordiniert der Projektmanager von Studio die Agent, um sie zu entwickeln.',
     allOffline: 'Ihre Computer sind offline',
     offlineHint:
       'Führen Sie dies auf dem Computer aus, um die Verbindung bei jeder Anmeldung aufrechtzuerhalten.',
@@ -123,9 +123,9 @@ const deDE: LocaleResource<typeof enUS> = {
     computers: 'Meine Computer',
     manageComputers: 'Meine Computer verwalten…',
     agents: 'Agenten auf diesem Computer',
-    availableAgents: 'Verfügbare Agenten',
+    availableAgents: 'Verfügbare Agents',
     agentsHint:
-      'Es werden nur installierte Agenten aufgelistet. Die Brücke überprüft jede Minute; Einrichtung und Start müssen abgeschlossen sein, bevor ein Agent bereit ist.',
+      'Es werden nur installierte Agents aufgelistet. Die Brücke überprüft jede Minute; Einrichtung und Start müssen abgeschlossen sein, bevor ein Agent bereit ist.',
     alsoSupported: 'Auch unterstützt: {{names}}',
     thisComputer: 'Dieser Computer',
     recentFolders: 'Kürzlich verwendet',
@@ -149,7 +149,7 @@ const deDE: LocaleResource<typeof enUS> = {
       'Das Gespräch und seine Aufgaben werden hier wie gewohnt zum Nachlesen aufbewahrt. Die Sitzung wird fortgesetzt, sobald der Computer wieder verfügbar ist.',
     working: 'Der Agent arbeitet…',
     startup: {
-      starting: 'Starten des Agenten auf Ihrem Computer…',
+      starting: 'Starten des Agent auf Ihrem Computer…',
       opening: 'Agentensitzung wird geöffnet…',
       configuring: 'Einstellungen übernehmen…',
     },
@@ -204,7 +204,7 @@ const deDE: LocaleResource<typeof enUS> = {
     removeImage: 'Bild entfernen',
     attached: 'Geht mit der Nachricht',
     removeAttached: '{{name}} entfernen',
-    commands: 'Die Befehle des Agenten',
+    commands: 'Die Befehle des Agent',
     mentions: 'Erwähnen Sie eine Aufgabe',
     keys: {
       send: 'senden',
@@ -257,11 +257,11 @@ const deDE: LocaleResource<typeof enUS> = {
       delete_other: '{{count}}-Dateien gelöscht',
       move_one: '{{count}}-Datei verschoben',
       move_other: '{{count}}-Dateien verschoben',
-      search_one: 'einmal gesucht',
+      search_one: '{{count}}-mal gesucht',
       search_other: '{{count}} mal durchsucht',
       execute_one: 'Befehl {{count}} ausgeführt',
       execute_other: 'führte {{count}}-Befehle aus',
-      think_one: 'dachte einmal',
+      think_one: 'dachte {{count}}-mal',
       think_other: 'dachte mal {{count}}',
       fetch_one: '{{count}}-Seite abgerufen',
       fetch_other: '{{count}}-Seiten abgerufen',
@@ -315,7 +315,7 @@ const deDE: LocaleResource<typeof enUS> = {
     offline: 'Offline',
     title: 'Meine Computer',
     description:
-      'Diese Computer führen nur Ihre eigenen Sitzungen aus und die Agenten arbeiten wie Sie. Maschinen, auf denen die Hintergrundarbeit des Teams ausgeführt wird, werden separat verwaltet.',
+      'Diese Computer führen nur Ihre eigenen Sitzungen aus und die Agents arbeiten wie Sie. Maschinen, auf denen die Hintergrundarbeit des Teams ausgeführt wird, werden separat verwaltet.',
     none: 'Es ist noch kein Computer angeschlossen.',
     online: 'Online',
     lastSeen: 'Zuletzt gesehen {{time}}',
@@ -326,7 +326,7 @@ const deDE: LocaleResource<typeof enUS> = {
       failed: 'konnte nicht gestartet werden',
     },
     recheckHint:
-      'Während der Verbindung überprüft die Bridge die Agenten automatisch jede Minute erneut.',
+      'Während der Verbindung überprüft die Bridge die Agents automatisch jede Minute erneut.',
     ready: 'Bereit',
     name: 'Name',
     system: 'System',

@@ -13,7 +13,7 @@ const esES: LocaleResource<typeof enUS> = {
       apps: {
         title: 'Aplicaciones',
         description:
-          'Aplicaciones, sus lanzamientos, implementaciones y tiempo de ejecución.',
+          'Aplicaciones, sus lanzamientos, implementaciones y entorno de ejecución.',
         actions: {
           view: {
             title: 'Ver aplicaciones',
@@ -214,9 +214,9 @@ const esES: LocaleResource<typeof enUS> = {
       },
       activationHint: {
         eager:
-          'Se inicia cuando se implementa y cada vez que se reinicia el tiempo de ejecución.',
+          'Se inicia cuando se implementa y cada vez que se reinicia el entorno de ejecución.',
         onDemand:
-          'Iniciado en su primera visita después de una implementación o un reinicio del tiempo de ejecución.',
+          'Iniciado en su primera visita después de una implementación o un reinicio del entorno de ejecución.',
       },
       idleLabel: 'Detener cuando no haya sido visitado por',
       dormantLabel: 'Hibernar cuando no sea visitado durante',
@@ -335,7 +335,7 @@ const esES: LocaleResource<typeof enUS> = {
     },
     actors: {
       human: 'persona',
-      agent: 'agente',
+      agent: 'Agent',
       key: 'clave',
       rule: 'regla',
       system: 'sistema',
@@ -527,7 +527,7 @@ const esES: LocaleResource<typeof enUS> = {
           syntax: 'Línea {{line}}: escribirla como CLAVE=valor.',
           name: 'Línea {{line}}: {{name}} no es un nombre válido. Utilice letras mayúsculas, dígitos y guiones bajos, comenzando con una letra.',
           reserved:
-            'Línea {{line}}: {{name}} lo establece el tiempo de ejecución y no puede ser una variable.',
+            'Línea {{line}}: {{name}} lo establece el entorno de ejecución y no puede ser una variable.',
           duplicate:
             'Línea {{line}}: {{name}} ya está configurado en una línea anterior.',
           unterminated:
@@ -762,7 +762,7 @@ const esES: LocaleResource<typeof enUS> = {
         VARIABLES_MISSING:
           'Las variables requeridas no están configuradas: {{names}}. Configúrelos en las variables de la aplicación o de su entorno y luego impleméntelos nuevamente.',
         VARIABLE_RESERVED:
-          'Este nombre lo establece el tiempo de ejecución y no puede ser una variable.',
+          'Este nombre lo establece el entorno de ejecución y no puede ser una variable.',
         INVALID_VARIABLE_NAME:
           'El nombre de una variable consta de letras mayúsculas, dígitos y guiones bajos, que comienzan con una letra.',
         INVALID_VARIABLE_VALUE: 'El valor es demasiado largo.',
@@ -784,14 +784,14 @@ const esES: LocaleResource<typeof enUS> = {
           'El host no puede implementar la aplicación en la que se ejecuta.',
         noStatus: 'El host no informó cómo fue la implementación.',
         interrupted: 'La implementación fue interrumpida por un reinicio.',
-        notReported: 'El tiempo de ejecución no informó la aplicación.',
+        notReported: 'El entorno de ejecución no informó la aplicación.',
         notRunning: 'La aplicación no se ejecuta después del reinicio.',
         deploymentNotReported:
-          'El tiempo de ejecución no informó la implementación.',
+          'El entorno de ejecución no informó la implementación.',
         notReady: 'Aún no está listo; Inténtalo de nuevo en un momento.',
         checkTimeout: 'La prueba no finalizó en 20 segundos.',
         hostNoSettings:
-          'El tiempo de ejecución local no requiere configuración de conexión.',
+          'El entorno de ejecución local no requiere configuración de conexión.',
       },
       prefixed: {
         startFailed: 'Error al iniciar: {{detail}}',
@@ -882,7 +882,7 @@ const esES: LocaleResource<typeof enUS> = {
       policyDescription: 'Quién puede desplegarse aquí.',
       appDefaults: 'Aplicaciones',
       appDefaultsDescription:
-        'Como máximo, esta cantidad de aplicaciones, y cuando una aplicación creada sin su propia política de tiempo de ejecución se detiene y queda inactiva. Vacío: sin límite, nunca.',
+        'Como máximo, esta cantidad de aplicaciones, y cuando una aplicación creada sin su propia política de entorno de ejecución se detiene y queda inactiva. Vacío: sin límite, nunca.',
       maxApps: 'La mayoría de las aplicaciones',
       defaultIdle: 'Detener después (minutos sin visita)',
       defaultDormant: 'Inactivo después (horas sin visitas)',
