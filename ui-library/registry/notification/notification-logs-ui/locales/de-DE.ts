@@ -12,7 +12,7 @@ const deDE: NotificationResource = {
     description:
       'Verfolgen Sie die Zustellung der Benachrichtigung und jeden Provider-Versuch. Nachrichtentexte, Empfänger und Lease-Tokens werden geschwärzt.',
     refreshing: 'Erfrischend…',
-    refresh: 'Aktualisieren',
+    retryRead: 'Erneut versuchen',
     deliveriesShown: 'Lieferungen angezeigt',
     needAttention: 'Brauche Aufmerksamkeit',
     unavailable: 'Protokolle nicht verfügbar',

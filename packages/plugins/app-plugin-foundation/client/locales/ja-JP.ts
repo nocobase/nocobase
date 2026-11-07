@@ -4,8 +4,14 @@ const jaJP: FoundationResource = {
   nav: {
     settings: 'システム設定',
     foundation: 'アプリ基盤',
+    foundationDescription: 'このアプリが利用している NocoBase の基盤機能。',
   },
   page: {
+    otherCapabilities: 'その他の機能',
+    notCounted: '未集計',
+    updatingHistory: '更新中です。前回の結果を表示しています。',
+    previousKernel:
+      'カーネル {{version}} の履歴を表示中。実行中のカーネルは {{current}} です。',
     identified: '識別済み {{value}}',
     counted: '集計済み {{value}}',
     partial: '一部のデータは更新待ちです',
@@ -117,6 +123,7 @@ const jaJP: FoundationResource = {
     legendUnused: '未使用 {{count}}',
   },
   detail: {
+    selectedCapability: '選択中の機能',
     retainedAt: '前回確認 {{time}}',
     readNotes: '読み取りの詳細',
     collectionCount: 'データテーブル {{count}} 件',
@@ -285,7 +292,7 @@ const jaJP: FoundationResource = {
       '{{count}} 個のデータテーブルを識別済み（{{names}} など）。',
     applicationCollections:
       '{{count}} 個のデータテーブルを識別済み：{{names}}。',
-    relations: '関連 {{count}} 件。',
+    relations: '論理リレーションフィールドが {{count}} 件あります。',
     fileCollections: 'ファイル用コレクション {{count}} 件：{{names}}。',
     accounts: 'NocoBase 認証でログインするアカウント {{count}} 件。',
     permissionSets: '無制限以外の権限セット {{count}} 件：{{names}}。',
@@ -334,7 +341,8 @@ const jaJP: FoundationResource = {
     businessCollections: 'データテーブル',
     views: 'ビュー',
     fields: 'フィールド',
-    relations: '関連',
+    relations: '論理リレーションフィールド',
+    physicalForeignKeys: '物理外部キー',
     systemCollections: 'NocoBase システムコレクション',
     files: 'ファイル',
     storedBytes: '記録済み保存容量',
@@ -386,6 +394,7 @@ const jaJP: FoundationResource = {
     seeds: '実行済みシード',
   },
   dynamic: {
+    extension: '拡張機能',
     pending: '識別待ち',
     pendingDescription:
       'このプラグインは登録済みです。設定と実際の使用状況は未確認です。',

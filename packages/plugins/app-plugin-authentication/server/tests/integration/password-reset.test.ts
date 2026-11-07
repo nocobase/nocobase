@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createAuthFixture } from './support.js';
 import { MailExecutions } from '@nocobase/mailer';
 import type { betterAuth } from 'better-auth';
-import { createMailer } from '@nocobase/app-server/mailer';
+import * as mailer from '@nocobase/mailer';
 import { defaultPasswordResetEmail } from '../../password-reset.js';
 import { createAuthMiddleware } from 'better-auth/api';
 
@@ -17,6 +17,7 @@ afterEach(async () => {
       await fixture.dispose();
     }),
   );
+  vi.restoreAllMocks();
 });
 const json = (body: unknown) => ({
   method: 'POST',
@@ -36,7 +37,9 @@ describe('password reset policy', () => {
       baseURL: undefined,
       passwordReset: { enabled: true },
       passwordResetServices: {
-        mailer: { available: () => true, send, close: async () => undefined },
+        legacyChannels: {
+          'system-email': { provider: 'smtp', host: 'localhost', port: 25 },
+        },
       },
     });
     expect(fixture.auth.passwordResetAvailable()).toBe(false);
@@ -249,21 +252,19 @@ describe('password reset policy', () => {
   });
 
   it.each([{}, { enabled: false }, { enabled: true }])(
-    'does not install an automatic callback without an enabled valid host channel: %j',
+    'does not install an automatic callback without an enabled valid legacy channel: %j',
     async (passwordReset) => {
       const fixture = await setup({
         passwordReset,
         passwordResetServices: {
-          mailer: createMailer({
-            channels: {
-              'system-email': {
-                provider: 'smtp',
-                enabled: false,
-                host: 'localhost',
-                port: 25,
-              },
+          legacyChannels: {
+            'system-email': {
+              provider: 'smtp',
+              enabled: false,
+              host: 'localhost',
+              port: 25,
             },
-          }),
+          },
         },
       });
       expect(fixture.auth.passwordResetAvailable()).toBe(false);
@@ -283,11 +284,17 @@ describe('password reset policy', () => {
         message: 'Synthetic SMTP failure.',
       },
     });
+    vi.spyOn(mailer, 'createMailTransport').mockReturnValue({
+      send,
+      close: async () => undefined,
+    });
     const fixture = await setup({
       passwordReset: { enabled: true },
       emailAndPassword: { enabled: true, revokeSessionsOnPasswordReset: false },
       passwordResetServices: {
-        mailer: { available: () => true, send, close: async () => undefined },
+        legacyChannels: {
+          'system-email': { provider: 'smtp', host: 'localhost', port: 25 },
+        },
       },
     });
     await fixture.signUp();

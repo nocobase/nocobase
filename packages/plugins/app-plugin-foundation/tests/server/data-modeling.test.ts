@@ -86,6 +86,7 @@ it('keeps observed statistics and explicit counts when a registered extension ha
       expect.objectContaining({ key: 'views', value: 1 }),
       expect.objectContaining({ key: 'fields', value: 1 }),
       expect.objectContaining({ key: 'relations', value: 1 }),
+      expect.objectContaining({ key: 'physicalForeignKeys', value: 0 }),
       expect.objectContaining({ key: 'businessRecords', value: 7 }),
     ]),
   );
@@ -124,6 +125,72 @@ it('keeps observed statistics and explicit counts when a registered extension ha
       value: 0,
       complete: true,
     }),
+  );
+});
+
+it('counts physical foreign keys separately and deduplicates by ordered column mapping', async () => {
+  const { get, createService } = await application();
+  get.mockImplementation(
+    async (name) =>
+      ({
+        name,
+        fields:
+          name === 'orders' ? [{ name: 'customerId', type: 'integer' }] : [],
+        constraints:
+          name === 'orders'
+            ? [
+                {
+                  type: 'foreignKey',
+                  name: 'customer_fk',
+                  fields: ['customerId'],
+                  references: { collection: 'customers', fields: ['id'] },
+                },
+                {
+                  type: 'foreignKey',
+                  name: 'customer_fk_duplicate',
+                  fields: ['customerId'],
+                  references: { collection: 'customers', fields: ['id'] },
+                },
+                {
+                  type: 'foreignKey',
+                  fields: ['tenantId', 'customerRef'],
+                  references: {
+                    collection: 'customers',
+                    fields: ['tenantId', 'id'],
+                  },
+                },
+                {
+                  type: 'foreignKey',
+                  name: 'composite_duplicate',
+                  fields: ['customerRef', 'tenantId'],
+                  references: {
+                    collection: 'customers',
+                    fields: ['id', 'tenantId'],
+                  },
+                },
+                {
+                  type: 'foreignKey',
+                  name: 'composite_swapped_mapping',
+                  fields: ['tenantId', 'customerRef'],
+                  references: {
+                    collection: 'customers',
+                    fields: ['id', 'tenantId'],
+                  },
+                },
+              ]
+            : [],
+      }) as CollectionDefinition,
+  );
+  const data = (await createService().overview()).capabilities[0]!;
+  expect(data.metrics).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({ key: 'relations', value: 0, complete: true }),
+      expect.objectContaining({
+        key: 'physicalForeignKeys',
+        value: 3,
+        complete: true,
+      }),
+    ]),
   );
 });
 
@@ -195,7 +262,9 @@ it.each([false, true])(
       .capabilities[0]!;
     expect(
       noDefinitions.metrics
-        .filter((item) => ['fields', 'relations'].includes(item.key))
+        .filter((item) =>
+          ['fields', 'relations', 'physicalForeignKeys'].includes(item.key),
+        )
         .every((item) => item.value === null),
     ).toBe(true);
     get.mockImplementation(
@@ -215,6 +284,11 @@ it.each([false, true])(
       expect.arrayContaining([
         expect.objectContaining({ key: 'fields', value: 0, complete: true }),
         expect.objectContaining({ key: 'relations', value: 0, complete: true }),
+        expect.objectContaining({
+          key: 'physicalForeignKeys',
+          value: 0,
+          complete: true,
+        }),
         expect.objectContaining({
           key: 'businessRecords',
           value: 0,
@@ -270,6 +344,11 @@ it.each(['missing', 'throwing'] as const)(
           value: 1,
           complete: false,
         }),
+        expect.objectContaining({
+          key: 'physicalForeignKeys',
+          value: 0,
+          complete: false,
+        }),
       ]),
     );
     expect(JSON.stringify(overview)).not.toContain('private driver');
@@ -309,6 +388,12 @@ it.each(['missing', 'throwing'] as const)(
           checkedAt: first.checkedAt,
         }),
         expect.objectContaining({
+          key: 'physicalForeignKeys',
+          value: 0,
+          complete: true,
+          checkedAt: first.checkedAt,
+        }),
+        expect.objectContaining({
           key: 'businessRecords',
           value: 7,
           complete: true,
@@ -328,6 +413,11 @@ it.each(['missing', 'throwing'] as const)(
       expect.arrayContaining([
         expect.objectContaining({ key: 'fields', value: 0, complete: true }),
         expect.objectContaining({ key: 'relations', value: 0, complete: true }),
+        expect.objectContaining({
+          key: 'physicalForeignKeys',
+          value: 0,
+          complete: true,
+        }),
       ]),
     );
     expect(recovered.recordCountCheckedAt).toBe(first.recordCountCheckedAt);
@@ -374,6 +464,11 @@ it('treats a present definition with omitted optional fields as an exact empty d
     expect.arrayContaining([
       expect.objectContaining({ key: 'fields', value: 0, complete: true }),
       expect.objectContaining({ key: 'relations', value: 0, complete: true }),
+      expect.objectContaining({
+        key: 'physicalForeignKeys',
+        value: 0,
+        complete: true,
+      }),
     ]),
   );
 });

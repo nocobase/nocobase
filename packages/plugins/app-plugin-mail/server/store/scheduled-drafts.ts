@@ -11,10 +11,16 @@ export async function assertDraftEditable(
 ): Promise<void> {
   const row = await query
     .selectFrom<MessageRow>('mailMessages')
-    .select('scheduledSubmissionId')
+    .select([
+      'scheduledSubmissionId',
+      'imapIdSource',
+      'providerDraftMessageIdSource',
+    ])
     .where('accountId', '=', accountId)
     .where('id', '=', messageId)
     .executeTakeFirst<MessageRow>();
+  if (row?.imapIdSource || row?.providerDraftMessageIdSource)
+    await assertNoPendingMove(query, accountId, messageId);
   if (row?.scheduledSubmissionId)
     throw mailFailedPrecondition(
       'MAIL_DRAFT_SCHEDULED',
@@ -31,10 +37,16 @@ export async function assertDraftDeletable(
 ): Promise<void> {
   const row = await query
     .selectFrom<MessageRow>('mailMessages')
-    .select('scheduledSubmissionId')
+    .select([
+      'scheduledSubmissionId',
+      'imapIdSource',
+      'providerDraftMessageIdSource',
+    ])
     .where('accountId', '=', accountId)
     .where('id', '=', messageId)
     .executeTakeFirst<MessageRow>();
+  if (row?.imapIdSource || row?.providerDraftMessageIdSource)
+    await assertNoPendingMove(query, accountId, messageId);
   if (!row?.scheduledSubmissionId) return;
   if (acceptedSubmissionId === row.scheduledSubmissionId) {
     const submission = await query
@@ -54,4 +66,25 @@ export async function assertDraftDeletable(
     'MAIL_DRAFT_SCHEDULED',
     'Cancel the scheduled delivery before deleting this draft.',
   );
+}
+
+/** The schedule/edit lock must respect durable IMAP protection while the network is in flight. */
+async function assertNoPendingMove(
+  query: QueryAdapter,
+  accountId: string,
+  messageId: string,
+): Promise<void> {
+  const pending = await query
+    .selectFrom('mailMessageImapLocations')
+    .select('id')
+    .where('accountId', '=', accountId)
+    .where('messageId', '=', messageId)
+    .where('status', '=', 'pending')
+    .where('invalidationReason', 'like', 'move-%')
+    .executeTakeFirst();
+  if (pending)
+    throw mailFailedPrecondition(
+      'MAIL_IMAP_MOVE_OUTCOME_UNKNOWN',
+      'Verify the pending move before editing or scheduling this draft.',
+    );
 }

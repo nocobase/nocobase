@@ -280,6 +280,11 @@ describe('runner end to end', () => {
       events.map((_, index) => index + 1),
     );
     expect(events[0]).toMatchObject({
+      type: 'status',
+      content: 'preparing',
+      meta: { phase: 'dirs' },
+    });
+    expect(events[1]).toMatchObject({
       type: 'checkout',
       meta: {
         kind: 'repo',

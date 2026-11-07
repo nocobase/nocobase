@@ -1,14 +1,23 @@
 import {
+  assertMailerReference,
+  type MailersConfig,
+} from '@nocobase/app-server/mailers/config';
+import { authEmailIssues, type AuthEmailConfig } from './email-config.js';
+export type { AuthEmailConfig } from './email-config.js';
+import {
   ApplicationNotConfiguredError,
   assertSecretIsNotPlaceholder,
   defineAppConfig,
   envString,
+  envBoolean,
+  envInteger,
   type AppConfigDefinition,
   type AppConfigFactory,
   type ConfigValidator,
 } from '@nocobase/app-server/config';
 
 export type AuthConfig = import('better-auth').BetterAuthOptions & {
+  readonly email?: AuthEmailConfig;
   readonly passwordReset?: import('./password-reset.js').PasswordResetConfig;
 };
 
@@ -23,6 +32,44 @@ export const AUTH_PUBLIC_PATHS: readonly string[] = [
 
 /** The environment variables that set `auth` fields, which this plugin reads. */
 const AUTH_ENVIRONMENT = {
+  AUTH_EMAIL_PROVIDER: envString('email.provider', {
+    required: false,
+    description: 'Authentication email provider: smtp or resend.',
+  }),
+  AUTH_EMAIL_HOST: envString('email.host', {
+    required: false,
+    description: 'Authentication SMTP host.',
+  }),
+  AUTH_EMAIL_PORT: envInteger('email.port', {
+    required: false,
+    description: 'Authentication SMTP port.',
+  }),
+  AUTH_EMAIL_SECURE: envBoolean('email.secure', {
+    required: false,
+    description: 'Use TLS for authentication SMTP.',
+  }),
+  AUTH_EMAIL_USER: envString('email.auth.user', {
+    required: false,
+    description: 'Authentication SMTP username.',
+  }),
+  AUTH_EMAIL_PASSWORD: envString('email.auth.pass', {
+    required: false,
+    description: 'Authentication SMTP password.',
+    secret: true,
+  }),
+  AUTH_EMAIL_FROM: envString('email.from', {
+    required: false,
+    description: 'Authentication email sender.',
+  }),
+  AUTH_EMAIL_REPLY_TO: envString('email.replyTo', {
+    required: false,
+    description: 'Authentication email reply address.',
+  }),
+  AUTH_EMAIL_API_KEY: envString('email.apiKey', {
+    required: false,
+    description: 'Authentication Resend API key.',
+    secret: true,
+  }),
   AUTH_SECRET: envString('secret', {
     description:
       'The legacy sign-in secret; keys are derived from SECRETS_KEYS when it is set.',
@@ -38,6 +85,27 @@ export const validateAuthConfig: ConfigValidator<AuthConfig> = (
   auth,
   context,
 ) => {
+  if (
+    auth.email &&
+    typeof auth.email === 'object' &&
+    'mailer' in auth.email &&
+    context.get
+  ) {
+    try {
+      assertMailerReference(
+        (context.get('mailers') ?? {}) as MailersConfig,
+        auth.email.mailer,
+        'auth.email.mailer',
+      );
+    } catch (error) {
+      context.error(
+        'email.mailer',
+        error instanceof Error ? error.message : 'Invalid mailer reference.',
+      );
+    }
+  }
+  for (const issue of authEmailIssues(auth.email))
+    context.error(issue.path, issue.message);
   if (
     auth.passwordReset?.enabled !== undefined &&
     typeof auth.passwordReset.enabled !== 'boolean'
@@ -57,6 +125,14 @@ export const validateAuthConfig: ConfigValidator<AuthConfig> = (
       context.error(`emailAndPassword.${field}`, 'must be true or false.');
     }
   }
+  const registrationWarning = registrationFeedbackWarning(auth);
+  if (registrationWarning) {
+    context.warning(
+      'emailAndPassword.autoSignIn',
+      registrationWarning.message,
+      { fix: registrationWarning.fix },
+    );
+  }
   if (
     emailAndPassword.enabled === false &&
     emailAndPassword.disableSignUp === false &&
@@ -69,6 +145,26 @@ export const validateAuthConfig: ConfigValidator<AuthConfig> = (
   }
 };
 
+/** Shared by configuration checks and startup logging, which does not emit configuration warnings. */
+export function registrationFeedbackWarning(
+  auth: AuthConfig,
+): { readonly message: string; readonly fix: string } | undefined {
+  const options = auth.emailAndPassword;
+  if (
+    options?.enabled === false ||
+    options?.disableSignUp === true ||
+    options?.autoSignIn !== false ||
+    options.requireEmailVerification ||
+    options.onExistingUserSignUp
+  )
+    return undefined;
+  return {
+    message:
+      'Sign-up can return an accepted response for an existing email without creating an account or signing in. Without email verification or an existing-user notification, users receive no account-specific guidance.',
+    fix: 'In server/config/auth.ts or config.yml, set auth.emailAndPassword.autoSignIn to true, enable requireEmailVerification with a verification email sender, or configure onExistingUserSignUp to notify the email owner. Keep unsigned-in responses neutral.',
+  };
+}
+
 /**
  * Declares the `auth` section with this plugin's validation and public fields, in place of `defineAppConfig`.
  *
@@ -79,6 +175,14 @@ export const validateAuthConfig: ConfigValidator<AuthConfig> = (
 export function defineAuthConfig(
   definition: AppConfigDefinition<AuthConfig>,
 ): AppConfigFactory<AuthConfig> {
+  if (
+    definition.public?.some(
+      (path) => path === 'email' || path.startsWith('email.'),
+    )
+  )
+    throw new Error(
+      'Authentication email configuration must remain private. Remove email fields from public configuration.',
+    );
   const extra =
     definition.validate === undefined
       ? []

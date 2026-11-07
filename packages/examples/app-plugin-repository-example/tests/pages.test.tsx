@@ -143,7 +143,7 @@ describe('Repository pages with real HTTP and SQLite', () => {
     );
     await waitFor(() =>
       expect(
-        screen.getByRole('button', { name: 'Refresh', exact: true }),
+        screen.getByRole('button', { name: 'Search', exact: true }),
       ).toBeEnabled(),
     );
     await user.type(
@@ -220,6 +220,55 @@ describe('Repository pages with real HTTP and SQLite', () => {
         'No records yet. Create the first record to get started.',
       ),
     ).not.toBeInTheDocument();
+  });
+  it('keeps rows during a same-query refresh and hides them for a new search', async () => {
+    const customers = repository(f.api, 'customers');
+    await customers.createOne({
+      values: {
+        id: 'customer-a',
+        name: 'Acorn Supplies',
+        company: 'Example Co',
+        email: 'acorn@example.test',
+      },
+    });
+    let hold: Promise<ExampleRecord[]> | undefined;
+    let last: ExampleRecord[] = [];
+    const findMany = vi.fn(
+      async (input: Parameters<typeof customers.findMany>[0]) =>
+        hold ?? (last = await customers.findMany(input)),
+    );
+    vi.spyOn(f.api, 'repository').mockReturnValue({ ...customers, findMany });
+    await show('crm', 'en-US', undefined, false);
+    await screen.findByText('Acorn Supplies');
+    let release!: () => void;
+    hold = new Promise<ExampleRecord[]>((resolve) => {
+      release = () => resolve(last);
+    });
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Search', exact: true }),
+    );
+    // Same query: rows stay and exactly one delayed refresh status appears.
+    expect(screen.getByText('Acorn Supplies')).toBeVisible();
+    expect(
+      await screen.findByRole('status', { name: 'Refreshing' }),
+    ).toBeInTheDocument();
+    expect(screen.getAllByRole('status')).toHaveLength(1);
+    expect(screen.getByText('Acorn Supplies')).toBeVisible();
+    hold = undefined;
+    release();
+    await waitFor(() =>
+      expect(screen.queryByRole('status', { name: 'Refreshing' })).toBeNull(),
+    );
+    // A new search never shows the previous query's rows while it loads.
+    hold = new Promise<ExampleRecord[]>(() => undefined);
+    await userEvent.type(
+      screen.getByRole('textbox', { name: 'Search by name / number / ID' }),
+      'zzz{Enter}',
+    );
+    await waitFor(() =>
+      expect(screen.queryByText('Acorn Supplies')).not.toBeInTheDocument(),
+    );
+    expect(await screen.findByRole('status')).toHaveTextContent('Loading');
   });
   it('keeps the custom empty copy on other repository example lists', async () => {
     await show('orders');
@@ -350,7 +399,9 @@ describe('Repository pages with real HTTP and SQLite', () => {
     );
     expect(await screen.findByText('Customer 00')).toBeVisible();
     await waitFor(() =>
-      expect(screen.getByRole('button', { name: 'Refresh' })).toBeEnabled(),
+      expect(
+        screen.getByRole('button', { name: 'Search', exact: true }),
+      ).toBeEnabled(),
     );
     findMany.mockRejectedValueOnce(new Error('Page load failed'));
     await user.click(screen.getByRole('button', { name: 'Next' }));
@@ -376,18 +427,26 @@ describe('Repository pages with real HTTP and SQLite', () => {
     ).toBe(true);
 
     findMany.mockRejectedValueOnce(new Error('Refresh timed out'));
-    await user.click(screen.getByRole('button', { name: 'Refresh' }));
+    await user.click(
+      screen.getAllByRole('button', { name: 'Delete', exact: true })[0]!,
+    );
+    await user.click(
+      await screen.findByRole('button', {
+        name: 'Confirm deletion',
+        exact: true,
+      }),
+    );
     expect(
       await screen.findByText('Refresh failed; showing previous data'),
     ).toBeVisible();
-    expect(screen.getByText('Customer 10')).toBeVisible();
+    expect(screen.getByText('Customer 11')).toBeVisible();
     await user.click(screen.getByRole('button', { name: 'Retry' }));
     await waitFor(() =>
       expect(
         screen.queryByText('Refresh failed; showing previous data'),
       ).not.toBeInTheDocument(),
     );
-    expect(screen.getByText('Customer 10')).toBeVisible();
+    expect(screen.getByText('Customer 11')).toBeVisible();
   });
   it('creates an order and a product-linked item through relation selectors', async () => {
     await repository(f.api, 'customers').createOne({
@@ -522,7 +581,7 @@ describe('Repository pages with real HTTP and SQLite', () => {
     });
     const user = userEvent.setup();
     await user.click(
-      screen.getByRole('button', { name: 'Refresh', exact: true }),
+      screen.getByRole('button', { name: 'Search', exact: true }),
     );
     await user.click(
       await screen.findByRole('button', { name: 'Edit', exact: true }),

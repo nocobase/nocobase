@@ -1,3 +1,4 @@
+import { JobsBackendNotRegisteredError } from '@nocobase/jobs';
 import type {
   AppPluginApplication,
   AppPluginProviderConstructor,
@@ -97,7 +98,8 @@ export function indexingProvider(
       try {
         this.runtime = this.app.container.resolve(runtimeToken);
         await this.runtime.start();
-      } catch {
+      } catch (error) {
+        if (error instanceof JobsBackendNotRegisteredError) throw error;
         this.onError('INDEXING_UNAVAILABLE');
       }
     }

@@ -32,6 +32,7 @@ export interface RunRecord {
   readonly agentId: string;
   readonly agentType: string;
   readonly runnerId: string | null;
+  readonly runnerPinId?: string | null;
   readonly executionHistory?: JsonColumn;
   readonly tool?: string | null;
   readonly modelService?: string | null;
@@ -69,6 +70,7 @@ export interface RunRecord {
   readonly cancelledById: string | null;
   readonly failureReason: string | null;
   readonly failureDetail: string | null;
+  readonly failureParams?: JsonColumn;
   readonly summary: string | null;
   readonly sessionId: string | null;
   readonly workDir: string | null;
@@ -237,6 +239,8 @@ export function toRun(record: RunRecord): Run {
     agentId: record.agentId,
     agentType: record.agentType === 'online' ? 'online' : 'runner',
     runnerId: record.runnerId,
+    runnerPinId: record.runnerPinId ?? null,
+    sessionId: record.sessionId,
     executions,
     runnerName: latest?.runnerName ?? null,
     runnerOwnerUserId: latest?.runnerOwnerUserId ?? null,
@@ -279,6 +283,8 @@ export function toRun(record: RunRecord): Run {
     cancelledById: record.cancelledById,
     failureReason: record.failureReason as FailureReason | null,
     failureDetail: record.failureDetail,
+    failureParams:
+      record.failureParams == null ? null : jsonObject(record.failureParams),
     summary: record.summary,
     createdAt: record.createdAt,
     updatedAt: record.updatedAt,
@@ -523,6 +529,65 @@ export async function inputsOnSince(
 }
 
 const summaryRead = transactionRead<string | null>();
+
+/** Bounded handoff history; empty summaries remain visible rather than inventing a result. */
+export interface RecentRunSummary {
+  readonly id: string;
+  readonly status: RunStatus;
+  readonly finishedAt: string | null;
+  readonly summary: string | null;
+}
+
+const recentSummaryRead = transactionRead<RecentRunSummary[]>();
+
+export function recentSummaries(
+  conn: DatabaseConnection,
+  key: {
+    readonly agentId: string;
+    readonly subjectKind: string;
+    readonly subjectId: string;
+  },
+  exceptRunId: string,
+): Promise<RecentRunSummary[]> {
+  return recentSummaryRead(
+    conn,
+    JSON.stringify([key.agentId, key.subjectKind, key.subjectId, exceptRunId]),
+    async () => {
+      const records = await runsRepo(conn).findMany({
+        select: (select) =>
+          select.fields('id', 'status', 'finishedAt', 'summary'),
+        filter: (f) =>
+          f.and([
+            f.string('agentId').eq(key.agentId),
+            f.string('subjectKind').eq(key.subjectKind),
+            f.string('subjectId').eq(key.subjectId),
+            f.or(
+              ['completed', 'failed', 'cancelled'].map((status) =>
+                f.string('status').eq(status),
+              ),
+            ),
+            f.string('id').ne(exceptRunId),
+          ]),
+        sort: (sort) => [
+          sort.field('finishedAt').desc(),
+          sort.field('id').desc(),
+        ],
+        limit: 5,
+      });
+      return records.map((record) => ({
+        id: record.id,
+        status: record.status,
+        finishedAt:
+          record.finishedAt == null
+            ? null
+            : new Date(record.finishedAt).toISOString(),
+        summary: record.summary
+          ? Array.from(record.summary).slice(0, 400).join('')
+          : null,
+      }));
+    },
+  );
+}
 
 /** The summary of the newest completed run of an agent on a subject, other than `exceptRunId`. */
 export async function lastSummary(

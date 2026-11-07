@@ -14,6 +14,7 @@ import type { DatabaseConnection } from '@nocobase/db';
 
 import { entryTools, type Agent } from '../../../shared/agents.js';
 import {
+  quotaForAgent,
   runsEntry,
   runsTool,
   toolLimit,
@@ -30,7 +31,7 @@ import {
   type WorkloadRun,
 } from '../../../shared/runs.js';
 import type { Clock } from '../../kernel/clock.js';
-import { covers } from '../../kernel/values.js';
+import { covers, jsonObject } from '../../kernel/values.js';
 import { variableRefs } from '../variables/index.js';
 import { listAgents } from '../agents/index.js';
 import {
@@ -91,7 +92,9 @@ type WaitFacts = Pick<
   RunRecord,
   'actorUserId' | 'availableAt' | 'claimFailures' | 'failureDetail'
 > &
-  Partial<Pick<RunRecord, 'teamOnlyVariables'>> & {
+  Partial<
+    Pick<RunRecord, 'teamOnlyVariables' | 'failureParams' | 'failureReason'>
+  > & {
     readonly requires: readonly RunnerFeature[];
   };
 
@@ -121,6 +124,15 @@ export function explainWait(
   const availableAt = time(run.availableAt);
   if (availableAt !== null && availableAt > context.now.getTime()) {
     const until = iso(run.availableAt);
+    if (run.failureReason === 'repoAccessUnavailable')
+      return wait('setupRetrying', {
+        until,
+        detail: run.failureDetail,
+        params: {
+          ...jsonObject(run.failureParams),
+          ...(until ? { until } : {}),
+        },
+      });
     return wait('delayed', { until, params: until ? { until } : {} });
   }
   const tools = entryTools(agent);
@@ -133,7 +145,24 @@ export function explainWait(
       runsEntry(runner, entry, context.now.getTime()),
     ),
   );
-  if (fitting.length === 0)
+  if (fitting.length === 0) {
+    const quota = quotaForAgent(
+      context.runners,
+      agent,
+      run.actorUserId,
+      context.now.getTime(),
+    );
+    if (quota.length > 0) {
+      const until =
+        quota
+          .flatMap((item) => (item.resetsAt ? [item.resetsAt] : []))
+          .sort()[0] ?? null;
+      return wait('toolQuota', {
+        tool,
+        until,
+        params: { ...(tool ? { tool } : {}), ...(until ? { until } : {}) },
+      });
+    }
     return wait('toolUnavailable', {
       tool,
       params: {
@@ -141,6 +170,7 @@ export function explainWait(
         ...(model ? { model } : {}),
       },
     });
+  }
   fitting = fitting.filter(
     (runner) =>
       runner.trust === 'team' || runner.ownerUserId === run.actorUserId,
@@ -217,10 +247,16 @@ export function explainWait(
       params: full ? { tool: full, ...(closest ? closest : {}) } : {},
     });
   }
-  if (Number(run.claimFailures) > 0)
+  if (
+    Number(run.claimFailures) > 0 ||
+    run.failureReason === 'repoAccessUnavailable'
+  )
     return wait('setupRetrying', {
       detail: run.failureDetail,
-      params: run.failureDetail ? { detail: run.failureDetail } : {},
+      params: {
+        ...jsonObject(run.failureParams),
+        ...(run.failureDetail ? { detail: run.failureDetail } : {}),
+      },
     });
   return wait('next');
 }
@@ -393,6 +429,7 @@ const DIAGNOSTIC_CODES: Readonly<Record<string, RunWait['reason']>> = {
   sameWorkActive: 'sameWorkActive',
   delayed: 'delayed',
   toolUnavailable: 'toolUnavailable',
+  toolQuota: 'toolQuota',
   toolNotInstalled: 'toolNotInstalled',
   noSharedRunner: 'noSharedRunner',
   unknown: 'unknown',
@@ -434,8 +471,11 @@ function refineWait(
     );
   return {
     ...previous,
+    until: entry.reason === 'toolQuota' ? (entry.until ?? null) : null,
     reason:
-      entry.reason === 'ready' && Number(record.claimFailures) > 0
+      entry.reason === 'ready' &&
+      (Number(record.claimFailures) > 0 ||
+        record.failureReason === 'repoAccessUnavailable')
         ? 'setupRetrying'
         : toolFull
           ? 'toolSlotsFull'
@@ -445,6 +485,9 @@ function refineWait(
         .filter((reason) => reason !== entry.reason)
         .map((reason) => DIAGNOSTIC_CODES[reason]),
       tool: entry.tool,
+      ...(entry.reason === 'toolQuota' && entry.until
+        ? { until: entry.until }
+        : {}),
       ...(entry.reason === 'concurrencyFull'
         ? { active, limit: agent!.maxConcurrentRuns }
         : entry.reason === 'busy'
@@ -649,13 +692,41 @@ export async function readQueueWait(
   runnerSource: WorkloadRunners,
   runId: string,
   diagnose?: ClaimService['diagnose'],
+  conversationRunnerId?: string | null,
 ): Promise<RunWait | null> {
   const record = await runsRepo(conn).findOne({ filter: { id: runId } });
-  if (!record || record.status !== 'queued') return null;
+  if (!record || record.status !== 'queued' || record.runnerId !== null)
+    return null;
   const state = await readQueueState(conn, clock, runnerSource);
   const run = toRun(record);
   const agent = state.agentById.get(run.agentId);
-  const previous = quickWait(record, run.requires, state);
+  // Conversation binding is stricter than an Agent's general availability. This is read-only; claim is unchanged.
+  const scoped = conversationRunnerId
+    ? {
+        ...state,
+        online: state.online.filter(
+          (runner) => runner.id === conversationRunnerId,
+        ),
+      }
+    : state;
+  let previous = quickWait(record, run.requires, scoped);
+  if (conversationRunnerId && scoped.online.length === 0)
+    return { ...wait('runnersOffline'), position: null, agentPosition: 1 };
+  if (conversationRunnerId && previous.reason === 'runnersBusy') {
+    const runner = scoped.online[0];
+    const limit = Math.min(runner.slots, runner.reportedSlots ?? runner.slots);
+    previous = {
+      ...previous,
+      params: {
+        ...previous.params,
+        used: Math.max(
+          state.runnerUsed.get(runner.id) ?? 0,
+          limit - (runner.globalFree ?? limit),
+        ),
+        limit,
+      },
+    };
+  }
   const diagnostic =
     agent?.status === 'enabled' && diagnose
       ? await diagnose(conn, run, agent)

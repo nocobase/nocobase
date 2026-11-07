@@ -26,6 +26,11 @@ export interface RoleListProps {
     readonly custom: string;
   };
   readonly ariaLabel?: string;
+  /**
+   * The host is refreshing these current roles. Pass false while another
+   * control, such as a retry after a refresh failure, already announces the wait.
+   */
+  readonly loading?: boolean;
   readonly tableState?: Pick<
     DataTableProps<RoleListRole>,
     | 'paginationState'
@@ -41,6 +46,7 @@ export function RoleList({
   roles,
   labels,
   ariaLabel,
+  loading = false,
   tableState,
 }: RoleListProps): ReactElement {
   const columns = useMemo<ColumnDef<RoleListRole>[]>(
@@ -95,6 +101,7 @@ export function RoleList({
         data={roles}
         getRowId={(role) => role.key}
         showSelectedCount={false}
+        loading={loading}
       />
     </div>
   );

@@ -62,6 +62,8 @@ import {
 } from '@nocobase/agent-protocol';
 import type { DistService } from '../../distribution/index.js';
 import {
+  chatEffortCapabilities,
+  quotaForAgent,
   runnerLowOnDisk,
   runsEntry,
   toolLimit,
@@ -105,6 +107,7 @@ import {
   mountsFor,
   prepareExtensions,
   repoAccessFor,
+  RepoAccessError,
   responsibleOf,
   type RepoAccessRegistry,
   sessionKeyOf,
@@ -343,6 +346,22 @@ export function fitsActor(
   return runner.trust === 'team' || runner.ownerUserId === actorUserId;
 }
 
+/** A strict continuation keeps the tool/model that owns its original session. */
+function quotaAgent(run: RunRecord, agent: Agent): Agent {
+  if (!run.runnerPinId || run.freshSession) return agent;
+  const last = toExecutions(run.executionHistory).at(-1);
+  const tool = last?.tool ?? run.tool;
+  const model = last ? last.model : run.model;
+  return tool
+    ? {
+        ...agent,
+        modelEntries: agent.modelEntries.filter(
+          (entry) => entry.tool === tool && entry.model === model,
+        ),
+      }
+    : agent;
+}
+
 /** Whether `runner` may run `run` of `agent`, before any lock is taken and before its payload is known. */
 export function fits(
   runner: Runner,
@@ -350,7 +369,16 @@ export function fits(
   run: RunRecord,
   now: number,
 ): boolean {
-  return fitsActor(runner, agent, run.actorUserId, toRun(run).requires, now);
+  return (
+    (!run.runnerPinId || run.runnerPinId === runner.id) &&
+    fitsActor(
+      runner,
+      quotaAgent(run, agent),
+      run.actorUserId,
+      toRun(run).requires,
+      now,
+    )
+  );
 }
 
 /** The runner features a payload needs. */
@@ -414,6 +442,7 @@ function fingerprint(
   entry: RunnerModelEntry,
   layers: Pick<BriefLayers, 'system' | 'agent'>,
   skills: readonly { readonly slug: string; readonly hash: string }[],
+  readOnly: boolean,
 ): string {
   return createHash('sha256')
     .update(
@@ -424,6 +453,8 @@ function fingerprint(
         layers.system,
         layers.agent,
         skills.map((skill) => [skill.slug, skill.hash]),
+        // Keep existing writable fingerprints unchanged across upgrades.
+        ...(readOnly ? [{ readOnly: true }] : []),
       ]),
     )
     .digest('hex');
@@ -448,7 +479,10 @@ export function briefOf(
   cli: string,
   appName: string,
 ): RenderedBrief {
-  const rendered = renderBrief({
+  // Custom system prompts (such as conversations) keep their own layout.
+  const stablePrefix =
+    assembly.briefLayout === 'stable-prefix' && assembly.system === undefined;
+  const input = {
     agentName: agent.name,
     subject: { noun: assembly.subject.noun, key: assembly.subject.key },
     task: assembly.task,
@@ -459,7 +493,8 @@ export function briefOf(
     cli,
     appName,
     ...(assembly.guidance ? { guidance: assembly.guidance } : {}),
-  });
+  };
+  const rendered = renderBrief(input);
   const layers =
     assembly.system === undefined
       ? rendered
@@ -467,7 +502,12 @@ export function briefOf(
   const turn = assembly.turn.previousSummary
     ? `${assembly.turn.prompt}\n\nWhat earlier runs on this already did:\n\n${assembly.turn.previousSummary}`
     : assembly.turn.prompt;
-  return { layers, turn, prompt: joinBrief(layers) };
+  // Keep the logical layers (and their session fingerprint) unchanged. Only the outgoing text is reordered,
+  // so an ordinary follow-up can still resume the session created by an independent review.
+  const prompt = stablePrefix
+    ? joinBrief(renderBrief({ ...input, stablePrefix: true }), true)
+    : joinBrief(layers);
+  return { layers, turn, prompt };
 }
 
 /** What a claim produces: the payload, the run's requirements and directories, and the brief's fingerprint. */
@@ -698,9 +738,17 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
         (runner) =>
           runner.trust === 'team' || runner.ownerUserId === run.actorUserId,
       );
+      const quota = usable.length
+        ? []
+        : quotaForAgent(installed, single, run.actorUserId, now.getTime());
       const compatible: Runner[] = [];
       const loads: ModelSelectionWait['entries'][number]['runners'][number][] =
-        [];
+        quota.map((runner) => ({
+          name: runner.runnerName,
+          ownerUserId: installed.find((item) => item.id === runner.runnerId)!
+            .ownerUserId,
+          reason: 'toolQuota',
+        }));
       let unknown = false;
       let incompatible = false;
       let ready = false;
@@ -810,11 +858,13 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
             : 'restricted'
           : usable.length
             ? 'noSharedRunner'
-            : installed.length
-              ? 'toolUnavailable'
-              : connected.length
-                ? 'toolNotInstalled'
-                : 'offline';
+            : quota.length
+              ? 'toolQuota'
+              : installed.length
+                ? 'toolUnavailable'
+                : connected.length
+                  ? 'toolNotInstalled'
+                  : 'offline';
       if (
         !ready &&
         compatible.length > 0 &&
@@ -840,6 +890,16 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
         tool: entry.tool,
         model: entry.model,
         reason,
+        ...(reason === 'toolQuota'
+          ? {
+              until:
+                quota
+                  .flatMap((runner) =>
+                    runner.resetsAt ? [runner.resetsAt] : [],
+                  )
+                  .sort()[0] ?? null,
+            }
+          : {}),
         compatibleCount: compatible.length,
         blockers: [
           ...(unknown ? ['unknown' as const] : []),
@@ -1084,8 +1144,17 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       claim,
       prepared.get('subject'),
     );
-    if (assembly.effort !== undefined)
+    if (assembly.effort !== undefined) {
       entry = { ...entry, effort: assembly.effort };
+      if (entry.effort) {
+        const efforts = chatEffortCapabilities(entry, [runner]);
+        if (efforts === undefined) entry = { ...entry, effort: null };
+        else if (!efforts.includes(entry.effort))
+          throw new Error(
+            `The reasoning effort "${entry.effort}" is not supported by this runtime for the selected model.`,
+          );
+      }
+    }
     // workspace.key is required for coordinating runs; old runners must not silently ignore it.
     if (
       (await assemblyCompatibility(
@@ -1169,6 +1238,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       deps.repoAccess,
       {
         claim,
+        readOnly: assembly.readOnly === true,
         repos: dirs.filter(
           (dir): dir is Extract<WorkspaceDir, { kind: 'repo' }> =>
             dir.kind === 'repo',
@@ -1203,17 +1273,26 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
         deps.app.name,
       );
     let brief = await render();
-    const briefFingerprint = fingerprint(agent, entry, brief.layers, skills);
-    const resume =
-      !run.freshSession &&
-      !clean &&
-      session &&
-      !session.poisoned &&
-      session.fingerprint === briefFingerprint;
+    const briefFingerprint = fingerprint(
+      agent,
+      entry,
+      brief.layers,
+      skills,
+      assembly.readOnly === true,
+    );
+    const strict = Boolean(run.runnerPinId && !run.freshSession);
+    const resume = strict
+      ? Boolean(run.sessionId)
+      : !run.freshSession &&
+        binding.sessionPolicy?.(effectiveClaim) !== 'fresh' &&
+        !clean &&
+        session &&
+        !session.poisoned &&
+        session.fingerprint === briefFingerprint;
     // A kept session that cannot be resumed: the new one is told what came before, as a first one is. The history
     // is outside the fingerprint, so it does not change.
     let recoveryContext: string | undefined;
-    if (session) {
+    if (session && !strict) {
       const fresh = await binding.context.assemble(
         conn,
         { ...claim, freshSession: true },
@@ -1257,6 +1336,11 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
             'The previous attempt was interrupted by a runner upgrade. Continue from the current state.',
           ]
         : []),
+      ...(strict
+        ? [
+            'Quota recovery: continue the interrupted step from the existing session, progress and files.',
+          ]
+        : []),
       ...resumeNotes,
       ...(sessionNote ? [sessionNote] : []),
     ].join('\n\n');
@@ -1269,6 +1353,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       createdAt: nowText,
     });
     const payload: RunPayload = {
+      ...(strict ? { session: { strict: true } } : {}),
       ...(run.subjectKind === 'conversation' &&
       runner.features.includes('outputBlocks')
         ? { outputBlocks: true }
@@ -1299,8 +1384,14 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       prompt: {
         system: brief.prompt,
         turn,
-        session: resume ? 'resume' : 'fresh',
-        ...(resume ? { resumeSessionId: session.sessionId } : {}),
+        session: strict || resume ? 'resume' : 'fresh',
+        ...(strict
+          ? run.sessionId
+            ? { resumeSessionId: run.sessionId }
+            : {}
+          : resume && session
+            ? { resumeSessionId: session.sessionId }
+            : {}),
         ...(resume && recoveryContext ? { recoveryContext } : {}),
       },
       inputs,
@@ -1653,6 +1744,8 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
     candidate: RunRecord,
     reported: ToolRoom,
   ): Promise<Attempt> {
+    if (candidate.runnerPinId && candidate.runnerPinId !== runner.id)
+      return { kind: 'skipped' };
     const conn = tx.read();
     // Rules that do not depend on who the run acts as come first, and settle the rest of the pass: an agent at its
     // limit is checked once per poll, not once per queued run.
@@ -1773,6 +1866,8 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
           status: 'dispatched',
           failureReason: null,
           failureDetail: null,
+          failureParams: null,
+          claimFailures: 0,
           runnerId: runner.id,
           // Brief providers observe this reservation inside the claim transaction.
           // Replace a previous attempt's tool before computing the roster.
@@ -1897,7 +1992,16 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
                 : null,
           },
         });
-        unit.emit({ type: 'run.changed', runId: run.id, status: 'dispatched' });
+        if (current.runnerPinId && !current.freshSession)
+          await deps.subjects
+            .get(run.subjectKind)
+            ?.sink?.onQuotaResumed?.(unit, toRun(run));
+        unit.emit({
+          type: 'run.changed',
+          ...(current.runnerPinId ? { quotaWait: false } : {}),
+          runId: run.id,
+          status: 'dispatched',
+        });
         if (variableRefs(candidate.teamOnlyVariables).length > 0)
           unit.emit({
             type: 'notice.cleared',
@@ -1946,27 +2050,120 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
     }
   }
 
-  /** Counts a failed assembly; the run fails once it has failed too often. */
-  async function recordFailure(runId: string, error: AssemblyError) {
-    deps.onClaimFailure?.(runId, error.cause);
+  /** Repository failures have their own budget; ordinary assembly failures keep the existing three-try limit. */
+  async function recordFailure(candidate: RunRecord, error: AssemblyError) {
+    deps.onClaimFailure?.(candidate.id, error.cause);
     await tx.run(async (unit) => {
-      const run = await findRunRecord(unit.conn, runId);
-      if (!run || run.status !== 'queued') return;
-      const failures = Number(run.claimFailures) + 1;
-      if (failures >= MAX_CLAIM_FAILURES) {
-        await finishRun(unit, deps, run, {
-          status: 'failed',
-          reason: 'setupFailed',
-          detail: error.message,
+      const run = await findRunRecord(unit.conn, candidate.id);
+      if (
+        !run ||
+        run.status !== 'queued' ||
+        run.revision !== candidate.revision ||
+        Number(run.attempt) !== Number(candidate.attempt) ||
+        run.actorUserId !== candidate.actorUserId ||
+        !(await queuedIdentityCurrent(unit.conn, deps, run))
+      )
+        return;
+      const previous = jsonObject(run.failureParams);
+      const cause = error.cause;
+      if (cause instanceof RepoAccessError) {
+        const now = clock.now().getTime();
+        const repoFailures = Number(previous.repoFailures ?? 0) + 1;
+        const first =
+          typeof previous.repoFirstFailureAt === 'string'
+            ? Date.parse(previous.repoFirstFailureAt)
+            : now;
+        const retryAt =
+          typeof cause.params.retryAt === 'string'
+            ? Date.parse(cause.params.retryAt)
+            : NaN;
+        const delays = [1, 2, 4, 8, 15];
+        const next = Math.max(
+          now + (delays[repoFailures - 1] ?? 15) * 60_000,
+          Number.isFinite(retryAt) ? retryAt : 0,
+        );
+        const params = {
+          ...cause.params,
+          repoFailures,
+          repoFirstFailureAt: new Date(first).toISOString(),
+        };
+        const reason =
+          cause.kind === 'denied'
+            ? 'repoAccessDenied'
+            : 'repoAccessUnavailable';
+        if (
+          cause.kind === 'denied' ||
+          repoFailures >= 6 ||
+          next > first + 60 * 60_000
+        ) {
+          await finishRun(
+            unit,
+            deps,
+            run,
+            {
+              status: 'failed',
+              reason,
+              detail: cause.message,
+              failureParams: params,
+            },
+            true,
+          );
+          return;
+        }
+        const availableAt = new Date(next).toISOString();
+        const changed = await runsRepo(unit.conn).updateMany({
+          filter: {
+            id: run.id,
+            status: 'queued',
+            revision: run.revision,
+            attempt: Number(run.attempt),
+            actorUserId: run.actorUserId,
+          },
+          values: {
+            availableAt,
+            failureReason: reason,
+            failureDetail: cause.message.slice(0, 10_000),
+            failureParams: params,
+            updatedAt: clock.now().toISOString(),
+          },
         });
+        if (changed.updatedCount > 0) {
+          unit.emit({ type: 'run.changed', runId: run.id, status: 'queued' });
+          unit.emit({ type: 'run.requeued', runId: run.id, availableAt });
+        }
+        return;
+      }
+      const failures = Number(run.claimFailures) + 1;
+      // Preserve only the independent repository retry budget across an unrelated preparation failure.
+      const budget = previous.repoFailures
+        ? {
+            repoFailures: previous.repoFailures,
+            repoFirstFailureAt: previous.repoFirstFailureAt,
+            repoAccess: previous.repoAccess ?? previous,
+          }
+        : null;
+      if (failures >= MAX_CLAIM_FAILURES) {
+        await finishRun(
+          unit,
+          deps,
+          run,
+          {
+            status: 'failed',
+            reason: 'setupFailed',
+            detail: error.message,
+            failureParams: null,
+          },
+          true,
+        );
         return;
       }
       await runsRepo(unit.conn).updateMany({
-        filter: { id: runId },
+        filter: { id: run.id, status: 'queued', revision: run.revision },
         values: {
           claimFailures: failures,
           failureReason: 'setupFailed',
           failureDetail: error.message.slice(0, 10_000),
+          failureParams: budget,
         },
       });
     });
@@ -2313,9 +2510,15 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
         ? deps.runners.all(conn)
         : Promise.resolve([runner]));
     for (const candidate of queued) {
-      if (seen.has(candidate.id) || full.has(candidate.agentId)) continue;
+      if (
+        seen.has(candidate.id) ||
+        full.has(candidate.agentId) ||
+        (candidate.runnerPinId && candidate.runnerPinId !== runner.id)
+      )
+        continue;
       seen.add(candidate.id);
-      const agent = agents.get(candidate.agentId);
+      const configured = agents.get(candidate.agentId);
+      const agent = configured ? quotaAgent(candidate, configured) : undefined;
       if (
         !agent ||
         (!deps.subjects.get(candidate.subjectKind)?.actsAs &&
@@ -2330,7 +2533,9 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       if (reserved && reserved !== runner.id) continue;
       // Work bound to another runner waits for it; work bound here takes no other preference.
       const pin = deps.subjects.get(candidate.subjectKind)?.runnerPin;
-      const pinned = pin ? await pin.runnerOf(conn, toRun(candidate)) : null;
+      const pinned =
+        candidate.runnerPinId ??
+        (pin ? await pin.runnerOf(conn, toRun(candidate)) : null);
       if (pinned !== null && pinned !== runner.id) continue;
       const preferred = affinity.preferred.get(candidate.id);
       if (
@@ -2371,7 +2576,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
         // Rolled back: the run stays queued for a runner it fits.
         if (error instanceof NotForThisRunner) continue;
         if (!(error instanceof AssemblyError)) throw error;
-        await recordFailure(candidate.id, error);
+        await recordFailure(candidate, error);
       }
     }
     return null;

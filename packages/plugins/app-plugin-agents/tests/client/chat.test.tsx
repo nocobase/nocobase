@@ -406,10 +406,11 @@ function useChat(
   return { messages, send };
 }
 
-const { ChatClientProvider } = await import('../../client/chat/controller.js');
 const wrapper = ({ children }: { readonly children: ReactNode }) => (
   <QueryClientProvider client={chatClient()}>
-    <ChatClientProvider>{children}</ChatClientProvider>
+    <MemoryRouter>
+      <ChatProvider>{children}</ChatProvider>
+    </MemoryRouter>
   </QueryClientProvider>
 );
 

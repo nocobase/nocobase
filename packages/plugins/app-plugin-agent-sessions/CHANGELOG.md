@@ -1,5 +1,103 @@
 # @nocobase/app-plugin-agent-sessions
 
+## 1.0.0-beta.19
+
+### Patch Changes
+
+- 4f0370e: Keep agent settings available when agents return long display text or invalid choice identifiers, and show concrete discovery failures with field details.
+- Updated dependencies [4f0370e]
+- Updated dependencies [7c25f88]
+- Updated dependencies [7c25f88]
+- Updated dependencies [7c25f88]
+- Updated dependencies [215795d]
+  - @nocobase/acp-bridge@1.0.0-beta.6
+  - @nocobase/app-client@4.0.0-beta.9
+  - @nocobase/app-plugin-authentication@2.0.0-beta.19
+  - @nocobase/app-plugin-file@1.0.0-beta.29
+
+## 1.0.0-beta.18
+
+### Patch Changes
+
+- f27c1d9: Give a linked task's title the whole first line in a session's details, with its key and status on the line below.
+- 2bef509: Show a session's usage in its details the same way as a runner conversation: a thin context bar, then one row each for input, cached and output tokens and the cost.
+- 49daa11: Explain how to recover agent settings discovery by updating the CLI and restarting the background connection.
+- e800687: Remove the project name from session list rows while keeping project filtering available.
+- Updated dependencies [bfddb40]
+- Updated dependencies [78bdca8]
+- Updated dependencies [9998ac4]
+- Updated dependencies [87f1ea5]
+- Updated dependencies [6507d01]
+  - @nocobase/acp-bridge@1.0.0-beta.5
+  - @nocobase/app-plugin-authentication@2.0.0-beta.19
+  - @nocobase/app-client@4.0.0-beta.8
+  - @nocobase/app-server@5.0.0-beta.1
+  - @nocobase/app-plugin-file@1.0.0-beta.29
+
+## 1.0.0-beta.17
+
+### Patch Changes
+
+- cf23bfe: **Breaking:** Remove the deprecated `@nocobase/app-server/mailer` entry and its `Mailer`, `mailerToken`, `createMailer`, `MailerProvider`, and notification configuration exports. Replace `MailExecutions.close(waitMs)` and `drain()` with `stop()` and `wait()`; transport `close()` now cancels supported network work and waits for its original completion without a nested timeout. Application owners must apply the outer shutdown budget. Create exclusive senders with `@nocobase/app-server/mailers` and declare notification config with `@nocobase/app-plugin-notification-providers/config`. Existing inline SMTP/Resend YAML, environment mappings, and provider/channel APIs remain supported.
+
+  Default and Examples now show `mailers.default: system` and explicitly map `MAILERS_SYSTEM_*`; the example configuration remains empty at runtime. The previous `MAILERS_TRANSACTIONAL_*` sample prefix was not published. Applications may still choose any valid mailer name and custom environment prefix.
+
+- de91b90: Allow applications to render a shared conversation header for saved and empty sessions, including panel navigation and native actions. Preserve an explicit list entry when the panel also supports a wide history column.
+
+  Dismiss page detail overlays when opening a linked record, while retaining desktop detail columns.
+
+- Updated dependencies [6cc8acf]
+- Updated dependencies [9933a9a]
+- Updated dependencies [1e018f1]
+- Updated dependencies [cf23bfe]
+- Updated dependencies [4411984]
+  - @nocobase/app-client@4.0.0-beta.7
+  - @nocobase/app-plugin-authentication@2.0.0-beta.18
+  - @nocobase/db@1.0.0-beta.25
+  - @nocobase/app-server@5.0.0-beta.0
+  - @nocobase/app-plugin-file@1.0.0-beta.29
+
+## 1.0.0-beta.16
+
+### Patch Changes
+
+- 6a340f9: Use Enter for new lines on phones and the send button to submit messages. Keep desktop shortcuts and prevent IME confirmation from sending.
+
+## 1.0.0-beta.15
+
+### Patch Changes
+
+- cf23bfe: Move Redis realtime broadcasting to the commercial Realtime Redis plugin. Register its Server plugin before selecting Redis in an application, or import the standalone broker from its `/broker` entry. Preserve the Memory default, service identity, authorization and recovery protocol, and republish runtime consumers against the new host and realtime major versions. Install the compatible commercial cohort before deploying the final removal.
+- 43a0d7b: Show the session list before the details when the page has room for only one of them, and keep the details open or closed through the shared session layout.
+- Updated dependencies [88d35b8]
+- Updated dependencies [88d35b8]
+- Updated dependencies [83f28b1]
+- Updated dependencies [cf23bfe]
+  - @nocobase/app-client@4.0.0-beta.6
+  - @nocobase/app-plugin-authentication@2.0.0-beta.17
+  - @nocobase/app-server@4.0.0-beta.0
+  - @nocobase/app-plugin-file@1.0.0-beta.28
+
+## 1.0.0-beta.14
+
+### Patch Changes
+
+- ab9d1c6: Align the session page toolbar with full session lists, and support folding and reopening the sidebar with shared layout preferences.
+- da84b86: Wrap long unbroken strings, such as hashes, URLs and words without spaces, inside a person's message bubble instead of letting the bubble grow past the conversation and cut off the start of each line.
+- Updated dependencies [b6934ad]
+- Updated dependencies [d3f0c92]
+- Updated dependencies [a0b4568]
+- Updated dependencies [12b1f64]
+- Updated dependencies [b6934ad]
+- Updated dependencies [5ce4a7c]
+- Updated dependencies [b6934ad]
+- Updated dependencies [171f7fb]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.16
+  - @nocobase/app-client@4.0.0-beta.5
+  - @nocobase/app-server@3.0.0-beta.5
+  - @nocobase/db@1.0.0-beta.24
+  - @nocobase/app-plugin-file@1.0.0-beta.27
+
 ## 1.0.0-beta.13
 
 ### Patch Changes

@@ -42,6 +42,16 @@ const jaJP: LocaleResource<typeof enUS> = {
     refresh: '更新',
   },
   workspace: {
+    imapSourceRequired:
+      'このメッセージを移動または削除する前に、移動元のフォルダーを開いてください。',
+    imapTrashMissing:
+      'このアカウントにはゴミ箱フォルダーがありません。メールクライアントで操作してください。',
+    deleteUnsupported:
+      'このアカウントは削除に対応していません。メールクライアントで操作してください。',
+    imapScheduled:
+      'この下書きを削除する前に、予約送信をキャンセルしてください。',
+    invalidRecipient:
+      'メールアドレスまたは表示名を修正してください: {{value}}。各欄の宛先は最大100件です。',
     senderLabel: 'から',
     attachmentNumber: 'アタッチメント {{number}}',
     pendingDelivery:

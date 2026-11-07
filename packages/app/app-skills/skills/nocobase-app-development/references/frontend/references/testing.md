@@ -89,6 +89,57 @@ Use the page's actual translated labels and response shape. Node identity is use
 
 jsdom verifies DOM continuity and request behavior, not layout or visible animation. In the actual application browser, exercise the affected flow from its entry through loading, completion and closing, with controlled slow responses or failures where relevant. Observe layout, animation, focus and scroll throughout; inspect animation events or computed animation when checking entrance replay. A final screenshot or CSS class assertion is insufficient. Distinguish component or synthetic fixture checks from actual application checks, which also cover routing, permissions and business APIs. Follow the workflow's session rules and report unavailable browser checks as unverified.
 
+### Browser stability
+
+Assert the final result a user sees with auto-retrying locators; do not wait for an uncontrolled intermediate state or sleep a fixed duration, because a fast response can skip that state and a slow one can outlast the sleep. Right: `await expect(page.getByText('Project saved')).toBeVisible()`; wrong: waiting for a brief spinner before asserting success, or `await page.waitForTimeout(1000)`. Controlled pending-state tests above deliberately hold the response, so their loading assertions are deterministic.
+
+Retry geometry assertions with `expect.poll` or `toPass` until the intended layout settles; one `boundingBox()` snapshot can capture an animation frame. For example, with a `panel` locator and the expected content edge `contentRight`:
+
+```ts
+// Right: re-read geometry on each attempt.
+await expect
+  .poll(async () => (await panel.boundingBox())?.x)
+  .toBeGreaterThanOrEqual(contentRight);
+// Wrong: const box = await panel.boundingBox(); expect(box!.x).toBe(600);
+```
+
+After navigation or opening an overlay, wait for an existing control's interactive signal before clicking: visible markup or a changed URL can precede loaded controls and the end of an opening transition. Right: `await expect(saveButton).toBeEnabled(); await saveButton.click()` when Save is enabled after loading, or `await expect(nameInput).toBeFocused()` when focus is placed after opening; wrong: click immediately after `page.goto()` or seeing the dialog shell. Use the application's existing enabled state or focus behavior rather than adding a test-only ready marker or a fixed wait.
+
+Register a request interceptor once per page-scoped test, let subsequent traffic through with `route.fallback()`, and release every held request in `finally`: failed assertions otherwise leave requests blocked and hang teardown. Do not call `unroute` or replace a handler while it is running. This schematic gate holds all matching requests; `appUrl` is the running application's entry URL:
+
+```ts
+const gate = Promise.withResolvers<void>();
+const handlers = new Set<Promise<void>>();
+let holding = true;
+await page.route('**/api/projects*', (route) => {
+  const done = (async () => {
+    if (holding) await gate.promise;
+    await route.fallback();
+  })();
+  handlers.add(done);
+  return done.finally(() => {
+    handlers.delete(done);
+  });
+});
+try {
+  await page.goto(appUrl);
+  // Exercise the controlled pending state, then allow final results.
+  holding = false;
+  gate.resolve();
+  await expect(page.getByRole('heading', { name: 'Projects' })).toBeVisible();
+} finally {
+  holding = false;
+  gate.resolve();
+  await Promise.allSettled([...handlers]);
+}
+// Keep the fallback handler until the page fixture closes.
+// Wrong: page.unroute(pattern) while its handler is still awaiting the gate.
+```
+
+Use `Promise.allSettled` during cleanup so a fallback failure after the page closes does not replace the original assertion failure.
+
+Investigate intermittent failures as possible product races first: if a late response overwrites the current record, fix response ownership in the product and keep a regression test. Right: reproduce with controlled response ordering and correct the product; wrong: add retries, increase timeouts or weaken the assertion so the race passes unnoticed.
+
 ## Running tests
 
 Run the related test files with the application's matching React configuration, then lint them. Inspect its tsconfig includes before claiming the tests were typechecked; many templates exclude Vitest tests from their build configs. The complete client example uses `--config vitest.client.config.ts`:
@@ -108,3 +159,19 @@ End-to-end tests run against a running application. `playwright.config.ts` sets 
 ```bash
 pnpm test:e2e
 ```
+
+Each case creates and cleans up its own records and can run alone or in any order; depending on an earlier test's data makes failures order-dependent. Right: create a uniquely named project in that case's fixture; wrong: edit the project created by the previous case. Parallel workers must not write a shared state file: use a per-worker path such as `storage/e2e/auth-${workerIndex}.json` for mutable authentication state. A single global setup may produce a read-only authentication snapshot shared by independent contexts; cases must not overwrite it or mutate shared account settings.
+
+To find unstable cases, run the whole suite N times on the same runner, then use `--repeat-each` for suspects: isolated repetition alone misses interference from other cases. Keep each run's raw reporter output, including full `testId`, project, repeat index, retry and error/trace attachments; abbreviated titles lose the identity needed to compare failures. For example, with an authenticated application already running and `N` set to the desired suite count:
+
+```bash
+mkdir -p storage/e2e/results
+for run in $(seq 1 "$N"); do
+  PLAYWRIGHT_BLOB_OUTPUT_FILE="storage/e2e/results/suite-$run.zip" \
+    pnpm test:e2e --reporter=blob --retries=0
+done
+PLAYWRIGHT_BLOB_OUTPUT_FILE=storage/e2e/results/suspect.zip \
+  pnpm test:e2e tests/playwright/projects.test.ts --repeat-each=20 --reporter=blob --retries=0
+```
+
+Right: retain all blob reports (which carry full test ids) and their failures, plus the tested commit and command; wrong: rerun until green and keep only a title-only summary. Repetition diagnoses failures; it is not a retry policy for accepting them.

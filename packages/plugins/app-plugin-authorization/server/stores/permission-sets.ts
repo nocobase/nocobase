@@ -81,6 +81,16 @@ export class DatabasePermissionSetStore implements PermissionSetStore<DatabaseCo
     return permissionSetFromRow(row);
   }
 
+  async getMany(keys: readonly string[]): Promise<readonly PermissionSet[]> {
+    if (keys.length === 0) return [];
+    const rows = await this.connection()
+      .query.selectFrom('authorizationPermissionSets')
+      .select(['key', 'title', 'grants', 'revision'])
+      .where('key', 'in', [...new Set(keys)])
+      .execute();
+    return rows.map(permissionSetFromRow);
+  }
+
   async create(input: PermissionSet): Promise<PermissionSet> {
     const now = new Date();
     const revision = crypto.randomUUID();

@@ -1,24 +1,20 @@
 # Notification App Plugin
 
-The notification runtime sends complete messages through configured Channels. A Channel is a named configuration, such as `system-email`; its `type` selects a registered class, such as `SmtpChannel`. SMTP, Resend, in-app, Feishu webhook, DingTalk webhook and Web Push are peer channel types supplied by their respective plugins.
+The notification runtime sends complete messages through configured Channels. A Channel is a named configuration, such as `system-email`; its `type` selects a registered class, such as `EmailChannel`. Email (application mailers), legacy SMTP/Resend, in-app, Feishu webhook, DingTalk webhook and Web Push are peer channel types supplied by their respective plugins.
 
 ```yaml
+mailers:
+  default: system
+  system:
+    provider: smtp
+    host: smtp.example.com
+    port: 587
+    from: notifications@example.com
 notification:
   channels:
     system-email:
-      type: smtp
-      host: smtp.example.com
-      port: 587
-      auth:
-        {
-          user: notifications@example.com,
-          pass: replace-with-the-smtp-password,
-        }
-      from: notifications@example.com
-    marketing-email:
-      type: resend
-      apiKey: replace-with-the-resend-api-key
-      from: marketing@example.com
+      type: email
+      # mailer: system
     ops-feishu:
       type: feishu-webhook
       webhookUrl: https://open.feishu.cn/open-apis/bot/v2/hook/replace-with-the-token
@@ -55,7 +51,7 @@ All messages are validated before persistence. Email and in-app arrays produce o
 
 `type` is the preferred discriminator. Existing `provider` configuration remains supported as a deprecated alias; when both are present they must match. Application configuration reads expose both `type` and `provider` with the same value after loading, merging defaults, and reloading, so existing business code reading `config.provider` continues to work. New code should read `type`. The host mailer accepts the same aliases.
 
-Values in YAML are literal: map secrets from environment variables in `server/config/notification.ts` using `defineMailChannelsConfig` and `envString`. Its default `SMTP_PASSWORD` mapping targets `channels.system-email.auth.pass`; map a marketing Resend key explicitly to `channels.marketing-email.apiKey`.
+Values in YAML are literal: map secrets from environment variables in `server/config/notification.ts` using `defineMailChannelsConfig` from `@nocobase/app-plugin-notification-providers/config` and `envString` from `@nocobase/app-server/config`. Its default `SMTP_PASSWORD` mapping targets `channels.system-email.auth.pass`; map a marketing Resend key explicitly to `channels.marketing-email.apiKey`.
 
 Extend notifications with a class implementing `ChannelInstance`, then call `registry.registerChannelType(MyChannel)`. Its context contains only `channelName` and `container`. Official plugins and examples use `registerChannelType()` exclusively for channel extensions. Deprecated `registerChannel()` / `registerProvider()` APIs and factory exports remain supported for existing third-party extensions. Built-in server plugins install their legacy message handlers through dedicated compatibility modules; new extensions need no separate message-handler registration. This extension change preserves `send()`, `sendTransient()`, `messages`, result DTOs and stored delivery identities; it adds no `submit()` API or database migration.
 
@@ -64,3 +60,5 @@ See the [integration guide](skills/nocobase-app-plugin-notification/references/i
 ### Sensitive messages
 
 Use `notificationService.sendTransient({ channel, message })` for a message containing a one-time credential. It validates and prepares the message with the configured channel and submits it once with the provider timeout, without creating notification rows, jobs, retry state, or status events. The result is one provider outcome per recipient; raw provider diagnostics are replaced with generic errors while retaining an allowlisted category and submission status for credential-free troubleshooting. There is no durable idempotency or automatic retry, and a timeout is `submission_unknown`. The caller owns safe recovery, rate limits, and any credential-free audit. The external mail provider and recipient still receive the message.
+
+Prefer `type: email` with application mailers. Declare `defineMailersConfig` and explicit `mailerEnvironment` mappings from `@nocobase/app-server/mailers/config`. Restart to apply sender changes. Every email Channel, including legacy inline SMTP/Resend Channels and their mappings, creates an exclusive sender through the application's `MailSenderFactory` and closes it with itself.

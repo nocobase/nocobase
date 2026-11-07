@@ -4,6 +4,20 @@ import type enUS from './en-US.js';
 
 const deDE: LocaleResource<typeof enUS> = {
   errors: {
+    imapMoveLocationChanged:
+      'Der ausgewählte Ordner oder die Kopie wurde geändert. Synchronisieren Sie das Postfach und öffnen Sie den Quellordner erneut.',
+    imapMoveNotWritable:
+      'Der ausgewählte Ordner erlaubt diesen Vorgang nicht. Prüfen Sie die Postfachberechtigungen.',
+    imapMoveSourceRequired:
+      'Öffnen Sie den Quellordner, bevor Sie diese Nachricht verschieben oder löschen.',
+    imapMoveUnsupported:
+      'Dieser Server kann Nachrichten nicht sicher verschieben. Verwenden Sie Ihren E-Mail-Client.',
+    imapTrashNotFound:
+      'Dieses Konto hat keinen Papierkorb. Verwenden Sie Ihren E-Mail-Client.',
+    imapMoveOutcomeUnknown:
+      'Der Verschiebevorgang ist unvollständig oder das Ergebnis ist unbekannt. Prüfen Sie das Postfach vor einem erneuten Versuch.',
+    invalidRecipient:
+      'Korrigieren Sie vor dem Senden die E-Mail-Adressen und Anzeigenamen der Empfänger.',
     accessDenied: 'E-Mail-Zugriff ist erforderlich.',
     idempotencyConflict:
       'Der Idempotenzschlüssel ist bereits einer anderen Anfrage zugeordnet.',

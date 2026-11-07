@@ -109,6 +109,7 @@ export type ModelWaitReason =
   | 'noSharedRunner'
   | 'toolNotInstalled'
   | 'toolUnavailable'
+  | 'toolQuota'
   | 'unknown'
   | 'concurrencyFull'
   | 'sameWorkActive'
@@ -121,6 +122,8 @@ export interface ModelSelectionWait {
     readonly tool: string;
     readonly model: string | null;
     readonly reason: ModelWaitReason;
+    /** Earliest known quota reset among otherwise fitting runners; absent for other reasons. */
+    readonly until?: string | null;
     readonly compatibleCount: number;
     readonly blockers?: readonly ModelWaitReason[];
     readonly runners: readonly {
@@ -139,6 +142,8 @@ export interface ModelSelectionWait {
 }
 
 export interface Run {
+  readonly sessionId?: string | null;
+  readonly runnerPinId?: string | null;
   readonly id: string;
   readonly agentId: string;
   /** The agent's type (`AgentType`): an `online` run is held by the application itself, a `runner` run by a runner. */
@@ -209,6 +214,8 @@ export interface Run {
   readonly cancelledById: string | null;
   readonly failureReason: FailureReason | null;
   readonly failureDetail: string | null;
+  /** Safe structured repository preparation diagnostics; absent on older servers. */
+  readonly failureParams?: Readonly<Record<string, unknown>> | null;
   readonly summary: string | null;
   readonly createdAt: string;
   readonly updatedAt: string;
@@ -299,6 +306,7 @@ export interface RunEventPage {
  * - `delayed`: it was given a moment (`fireAt`, or a retry's backoff) that has not come; `until` says when.
  * - `noRunnerOnline`: no runner is online at all.
  * - `runnersOffline`: the agent names its runners, and none of them is online.
+ * - `toolQuota`: otherwise fitting runners have exhausted their quota; `until` is the earliest known reset.
  * - `toolUnavailable`: runners are online, but none has any of the agent's coding tools enabled, installed and
  *   signed in.
  * - `noSharedRunner`: only personal runners could take it, and none belongs to the person who woke the agent.
@@ -324,6 +332,7 @@ export const RUN_WAIT_REASONS = [
   'delayed',
   'noRunnerOnline',
   'runnersOffline',
+  'toolQuota',
   'toolUnavailable',
   'noSharedRunner',
   'missingFeatures',
@@ -343,6 +352,7 @@ export type RunWaitReason = (typeof RUN_WAIT_REASONS)[number];
  * (`formatRunWait` in `client/runs.ts`, or the application's own). Absent for a reason that needs nothing.
  *
  * - `delayed`: `until` (RFC 3339).
+ * - `toolQuota`: `tool` and, when known, `until` (RFC 3339); an unknown reset has no `until` parameter.
  * - `toolUnavailable`: `tool`, the agent's default coding tool.
  * - `missingFeatures`: `features`, what no fitting runner has.
  * - `secretsNotAllowed`: `variables`, the names of the variables for shared runners only.
@@ -362,7 +372,7 @@ export interface RunWait {
   readonly position: number | null;
   /** Its place among its agent's queued runs, in claim order (1 first). */
   readonly agentPosition: number;
-  /** When a delayed run may be claimed. */
+  /** When a delayed run may be claimed, or the earliest known quota reset for `toolQuota`. */
   readonly until: string | null;
   /**
    * For `toolUnavailable`: the agent's default coding tool (its first entry's); any of its tools would do. For

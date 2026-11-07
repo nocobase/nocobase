@@ -2,7 +2,7 @@
   "name": "@nocobase/app-plugin-foundation",
   "displayName": "App Foundation",
   "description": "Shows which NocoBase Core capabilities an application uses, with live evidence, for its unrestricted administrators.",
-  "version": "0.1.0-beta.9",
+  "version": "0.1.0-beta.16",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {
@@ -97,7 +97,7 @@
     }
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.json && nocobase-db-manifests",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run --passWithNoTests",
     "lint": "eslint . --max-warnings 0",
@@ -121,6 +121,7 @@
     "@nocobase/app-server": "workspace:^",
     "@nocobase/db": "workspace:^",
     "@nocobase/i18n": "workspace:^",
+    "@nocobase/jobs": "workspace:^",
     "@nocobase/service-provider": "workspace:^",
     "@tanstack/react-query": "catalog:",
     "class-variance-authority": "catalog:",

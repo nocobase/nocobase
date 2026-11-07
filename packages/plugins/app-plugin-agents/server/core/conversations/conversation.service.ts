@@ -1,3 +1,11 @@
+import {
+  conversationAccess,
+  createConversationShares,
+  sharesRepo,
+} from './shares.js';
+import { runnerUIPage } from '../../online/agent/runner/projection.js';
+import { NativeMessages } from '../../online/agent/messages/projection.js';
+import { OnlineAgentConfigurator } from '../../online/agent/configuration.js';
 import { outputBlock, TERMINAL_RUN_STATUSES } from '@nocobase/agent-protocol';
 import {
   historicalPageContext,
@@ -25,7 +33,11 @@ import {
  *   and bumps `thread`, so every switch starts a new session.
  */
 import { isDeepStrictEqual } from 'node:util';
-import { quotaForAgent, chatEffortsFor } from '../../../shared/runners.js';
+import {
+  quotaForAgent,
+  chatEffortsFor,
+  chatEffortCapabilities,
+} from '../../../shared/runners.js';
 import type { DatabaseConnection } from '@nocobase/db';
 
 import type { Agent } from '../../../shared/agents.js';
@@ -148,6 +160,8 @@ import type { AppUIMessage, AppUIJson } from '../../../shared/online-agent.js';
 const SYNC_PAGE = 500;
 
 export interface ConversationServiceDeps {
+  /** Reuse the native backend's registered public tool projections, without an executable session facade. */
+  readonly nativeHistory?: (messages: unknown[]) => Promise<AppUIMessage[]>;
   readonly nativeNotice?: (
     unit: Tx,
     record: ConversationRecord,
@@ -166,7 +180,7 @@ export interface ConversationServiceDeps {
   >;
   readonly runs: Pick<
     RunService,
-    'enqueue' | 'cancel' | 'withdrawQueued' | 'get' | 'detail'
+    'enqueue' | 'cancel' | 'withdrawQueued' | 'get' | 'detail' | 'queueWait'
   >;
   readonly people: People;
   readonly settings: ChatSettingsService;
@@ -394,6 +408,12 @@ export function createConversationService(
   }
 
   const sources = createSources();
+  const shares = createConversationShares({
+    tx,
+    ids,
+    people: deps.people,
+    now,
+  });
   const links = createConversationLinks({
     tx,
     ids,
@@ -415,6 +435,27 @@ export function createConversationService(
     const record = await findConversation(conn, id);
     if (!record || record.userId !== userId) throw notFound('Conversation');
     return record;
+  }
+
+  /** Titles for the current owner's conversations, read together for runner history. */
+  async function ownedTitles(
+    conn: DatabaseConnection,
+    userId: string,
+    ids: readonly string[],
+  ): Promise<ReadonlyMap<string, string>> {
+    const uniqueIds = [...new Set(ids)];
+    if (uniqueIds.length === 0) return new Map();
+    const records = await conversationsRepo(conn).findMany({
+      filter: (f) =>
+        f.and([
+          f.string('userId').eq(userId),
+          f.or(uniqueIds.map((id) => f.string('id').eq(id))),
+        ]),
+      select: (s) => s.fields('id', 'title'),
+    });
+    return new Map(
+      records.map((record) => [String(record.id), record.title ?? '']),
+    );
   }
 
   /** Locks the conversation if `userId` owns it; 404 otherwise. */
@@ -456,6 +497,7 @@ export function createConversationService(
     conn: DatabaseConnection,
     records: readonly ConversationRecord[],
   ): Promise<ConversationSummary[]> {
+    const linked = await links.summaries(conn, records);
     const agents = new Map<string, Agent | null>();
     for (const record of records)
       for (const id of [
@@ -481,6 +523,7 @@ export function createConversationService(
     return Promise.all(
       records.map(async (record) => ({
         id: record.id,
+        links: linked.get(record.id) ?? [],
         title: record.title,
         titleSource: record.titleSource,
         category: record.category,
@@ -578,11 +621,11 @@ export function createConversationService(
     conn: DatabaseConnection,
     agent: Agent,
     userId: string,
-  ): Promise<readonly string[]> {
+  ): Promise<readonly string[] | undefined> {
     const eligible = await deps.eligibility.runnersFor(conn, agent, {
       actorUserId: userId,
     });
-    return chatEffortsFor(agent.modelEntries[0], eligible);
+    return chatEffortCapabilities(agent.modelEntries[0], eligible);
   }
 
   async function validateEffort(
@@ -590,29 +633,18 @@ export function createConversationService(
     agent: Agent,
     userId: string,
     selected: string | null | undefined,
-    saved: unknown,
   ): Promise<string | null> {
+    // Only an explicitly selected non-default value is a conversation preference.
     const preference =
-      selected === undefined
-        ? typeof saved === 'string'
-          ? saved
-          : null
-        : selected;
-    // Unknown capabilities preserve default execution, but never silently replace an explicit preference.
+      selected && selected !== agent.modelEntries[0]?.effort ? selected : null;
+    if (preference === null) return null;
     const options = await effortOptions(conn, agent, userId);
-    const effective = preference ?? agent.modelEntries[0]?.effort ?? null;
-    if (
-      (preference !== null && !options.includes(preference)) ||
-      (options.length > 0 && effective !== null && !options.includes(effective))
-    )
+    if (options !== undefined && !options.includes(preference))
       throw invalid(
         'The reasoning effort is no longer supported. Select an available effort or restore the Agent default.',
-        { reason: 'EFFORT_UNSUPPORTED', effort: effective, efforts: options },
+        { reason: 'EFFORT_UNSUPPORTED', effort: preference, efforts: options },
       );
-    return (
-      preference ??
-      (effective && options.includes(effective) ? effective : null)
-    );
+    return preference;
   }
 
   async function canAnswer(
@@ -671,6 +703,10 @@ export function createConversationService(
         typeof jsonObject(record.metadata).effort === 'string'
           ? (jsonObject(record.metadata).effort as string)
           : null,
+      wait:
+        summary.mode === 'runner' && summary.run?.status === 'queued'
+          ? await deps.runs.queueWait(summary.run.id, record.runnerId)
+          : null,
       availability: await availabilityFor(conn, agent, record.userId),
       canFallback: Boolean(target),
       canRestore:
@@ -681,7 +717,50 @@ export function createConversationService(
 
   async function detail(userId: string, id: string) {
     const conn = tx.read();
-    return detailOf(conn, await owned(conn, userId, id));
+    const { record, share } = await conversationAccess(conn, userId, id);
+    if (!share) return detailOf(conn, record);
+    // Whitelist snapshot fields: no latest runner, project, execution, usage, wait or owner attention.
+    return {
+      id,
+      title: share.title,
+      titleSource: 'user',
+      category: 'chat',
+      showInChatList: false,
+      source: 'panel',
+      mode: record.mode,
+      agent: jsonObject(record.metadata).onlineAgent
+        ? {
+            id: 'online',
+            name: 'Online agent',
+            nameText: null,
+            avatar: null,
+            archived: false,
+          }
+        : {
+            ...agentRef(
+              record.agentId,
+              record.agentId ? await findAgent(conn, record.agentId) : null,
+            ),
+            avatar: null,
+            archived: false,
+          },
+      fallbackFrom: null,
+      read: true,
+      lastMessageAt: share.snapshotAt,
+      archivedAt: null,
+      createdAt: record.createdAt,
+      updatedAt: share.updatedAt,
+      run: null,
+      lastSeq: Number(share.cutoffSeq),
+      links: [],
+      availability: { online: false, reason: null, onlineRunners: 0 },
+      canFallback: false,
+      canRestore: false,
+      snapshot: {
+        cutoffSeq: Number(share.cutoffSeq),
+        snapshotAt: share.snapshotAt,
+      },
+    } satisfies ConversationDetail;
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -691,7 +770,10 @@ export function createConversationService(
   function changed(
     unit: Tx,
     record: ConversationRecord,
-    at?: number | { readonly messageId: string; readonly revision: number },
+    at?:
+      | number
+      | { readonly messageId: string; readonly revision: number }
+      | { readonly seenSeq: number },
   ) {
     unit.emit({
       type: 'conversation.changed',
@@ -943,9 +1025,15 @@ export function createConversationService(
   // -------------------------------------------------------------------------------------------------------------------
 
   /** Appends the run's new text events as assistant messages, in the caller's transaction. */
-  async function syncIn(unit: Tx, run: Run): Promise<void> {
+  async function syncIn(
+    unit: Tx,
+    run: Run,
+    lockedRecord?: ConversationRecord,
+  ): Promise<void> {
     if (run.subject.kind !== CONVERSATION_SUBJECT) return;
-    const record = await lockConversation(unit.conn, run.subject.id, now());
+    const record =
+      lockedRecord ??
+      (await lockConversation(unit.conn, run.subject.id, now()));
     if (!record || record.userId !== run.actorUserId) return;
     let after: number;
     if (record.syncRunId === run.id) after = Number(record.syncSeq);
@@ -1105,6 +1193,9 @@ export function createConversationService(
     const released = deps.attachments
       ? await deps.attachments.release(unit.conn, record.id)
       : async () => {};
+    await sharesRepo(unit.conn).deleteMany({
+      filter: { conversationId: record.id },
+    });
     await messagesRepo(unit.conn).deleteMany({
       filter: { conversationId: record.id },
     });
@@ -1398,10 +1489,21 @@ export function createConversationService(
         const preference =
           jsonObject(record.metadata).turnEffort ??
           jsonObject(record.metadata).effort;
-        const withEffort =
+        const defaultEffort = claim.agent.modelEntries[0]?.effort;
+        const capabilities = chatEffortCapabilities(
+          claim.agent.modelEntries[0],
+          claim.runner ? [claim.runner] : [],
+        );
+        const effort =
           typeof preference === 'string'
-            ? { ...assembly, effort: preference }
-            : assembly;
+            ? preference
+            : capabilities === undefined
+              ? null
+              : defaultEffort && !capabilities.includes(defaultEffort)
+                ? null
+                : undefined;
+        const withEffort =
+          effort === undefined ? assembly : { ...assembly, effort };
         const config = runnerBinding(record.metadata)?.config;
         return config
           ? {
@@ -1520,6 +1622,38 @@ export function createConversationService(
             messageId: `runner:${run.id}`,
             revision: Number(answered.seq) + 1,
           });
+        // Stop ends this turn; messages the Agent never acknowledged retain their identity in the next one.
+        // A queued withdrawal or system cancellation must not start more work.
+        if (
+          run.status === 'cancelled' &&
+          run.cancelRequestedAt !== null &&
+          run.cancelledById === record.userId &&
+          record.mode === 'runner' &&
+          record.agentId === run.agentId
+        ) {
+          const queued = await messagesRepo(unit.conn).findMany({
+            filter: (f) =>
+              f.and([
+                f.string('conversationId').eq(record.id),
+                f.string('runId').eq(run.id),
+                f.string('role').eq('user'),
+                f.json('metadata').path(['queued']).eq(true),
+              ]),
+            sort: (sort) => sort.field('seq').asc(),
+          });
+          const pending = queued.filter((message) => {
+            const metadata = metadataOf(message);
+            return !metadata.pickedUp && !metadata.withdrawn;
+          });
+          if (pending.length) {
+            await wake(unit, record, pending);
+            for (const message of pending)
+              changed(unit, record, {
+                messageId: message.id,
+                revision: Number(message.seq),
+              });
+          }
+        }
         await attend(unit, record.id, run);
       },
     },
@@ -1689,21 +1823,24 @@ export function createConversationService(
             !(await canAnswer(unit.conn, agent, userId)))
         )
           throw conflict('This agent has no available execution environment.');
+        if (realtime.queue) {
+          // Keep already received replies before this follow-up, under the admission's existing conversation lock.
+          const working = open.find((run) => run.status !== 'queued')!;
+          await syncIn(unit, working, record);
+          record = (await findConversation(unit.conn, id))!;
+        }
         turnEffort =
-          (typeof jsonObject(record.metadata).effort === 'string'
-            ? (jsonObject(record.metadata).effort as string)
-            : null) ??
-          agent.modelEntries[0]?.effort ??
-          null;
+          typeof jsonObject(record.metadata).turnEffort === 'string'
+            ? (jsonObject(record.metadata).turnEffort as string)
+            : null;
         if (!realtime.queue) {
           const effort = await validateEffort(
             unit.conn,
             agent,
             userId,
             request.effort,
-            switching ? null : jsonObject(record.metadata).effort,
           );
-          turnEffort = effort ?? agent.modelEntries[0]?.effort ?? null;
+          turnEffort = effort;
           if (
             effort !== (jsonObject(record.metadata).effort ?? null) ||
             turnEffort !== (jsonObject(record.metadata).turnEffort ?? null)
@@ -1831,8 +1968,99 @@ export function createConversationService(
 
   const service: ConversationService = {
     binding,
+    shares,
+    async snapshotMessages(userId, id, query) {
+      const conn = tx.read();
+      const { record, share } = await conversationAccess(conn, userId, id);
+      if (!share) return null;
+      const cutoff = Number(share.cutoffSeq);
+      let page;
+      if (record.mode === 'runner' || !jsonObject(record.metadata).onlineAgent)
+        page = await runnerUIPage(
+          tx,
+          id,
+          cutoff,
+          query,
+          deps.basePath?.() ?? '',
+          cutoff,
+        );
+      else {
+        const rows = await messagesRepo(conn).findMany({
+          filter: (f) =>
+            f.and([
+              f.string('conversationId').eq(id),
+              f.number('seq').lte(cutoff),
+              ...(query.ids
+                ? [f.or(query.ids.map((key) => f.string('id').eq(key)))]
+                : []),
+              ...(query.before !== undefined
+                ? [f.number('seq').lt(query.before)]
+                : []),
+              ...(query.after !== undefined
+                ? [f.number('seq').gt(query.after)]
+                : []),
+            ]),
+          sort: (s) =>
+            query.after !== undefined || query.ids
+              ? s.field('seq').asc()
+              : s.field('seq').desc(),
+          limit: query.ids ? query.ids.length : query.limit + 1,
+        });
+        const hasMore = !query.ids && rows.length > query.limit;
+        const selected = rows.slice(0, query.ids ? rows.length : query.limit);
+        if (query.after === undefined && !query.ids) selected.reverse();
+        const native = new NativeMessages(new OnlineAgentConfigurator());
+        page = {
+          items: selected.length
+            ? await (
+                deps.nativeHistory ??
+                (async (values) => native.public(await native.validate(values)))
+              )(selected.map((row) => jsonObject(row.content).original))
+            : [],
+          lastSeq: cutoff,
+          hasMore,
+          ...(query.after !== undefined && hasMore && selected.length
+            ? { nextAfter: Number(selected.at(-1)!.seq) }
+            : {}),
+        };
+      }
+      for (const message of page.items) {
+        if (message.metadata) {
+          delete message.metadata.queue;
+          delete message.metadata.executionId;
+          delete message.metadata.turnId;
+        }
+        // A shared transcript contains historical content; linked records are always resolved as this viewer.
+        if (message.metadata?.context) {
+          const context = message.metadata.context;
+          message.metadata.context = await deps.contextKinds.resolve(
+            conn,
+            userId,
+            {
+              route: '',
+              items: context.items.map(({ kind, id }) => ({ kind, id })),
+            },
+          );
+        }
+        const indexes = message.parts.flatMap((part, index) =>
+          part.type === 'data-turn' || part.type === 'data-phase'
+            ? []
+            : [index],
+        );
+        if (message.metadata?.sourceRecords)
+          message.metadata.sourceRecords = message.metadata.sourceRecords
+            .filter((source) => indexes.includes(source.partIndex))
+            .map((source) => ({
+              ...source,
+              partIndex: indexes.indexOf(source.partIndex),
+            }));
+        message.parts = indexes.map((index) => message.parts[index]);
+      }
+      return page;
+    },
     contextKinds: deps.contextKinds,
     sources,
+    ownedTitles,
 
     async list(userId, query) {
       const conn = tx.read();
@@ -1947,7 +2175,6 @@ export function createConversationService(
           agent,
           userId,
           request.effort,
-          null,
         );
         const title =
           request.title === undefined
@@ -2162,39 +2389,66 @@ export function createConversationService(
 
     async withdraw(userId, id, messageId) {
       await tx.run(async (unit) => {
-        const record = await lockOwned(unit, userId, id, true);
+        let record = await owned(unit.conn, userId, id);
         const message = await messagesRepo(unit.conn).findOne({
           filter: { id: messageId, conversationId: id },
         });
         if (!message || message.role !== 'user') throw notFound('Message');
         const metadata = jsonObject(message.metadata);
         if (metadata.withdrawn) return;
-        // Taken back only while no runner has it: one conditional update, which a delivery racing it cannot both
-        // pass (`markDelivered` updates only an input not handled).
-        const taken =
-          !metadata.queued ||
-          metadata.pickedUp ||
-          typeof metadata.inputId !== 'string' ||
-          (
-            await inputsRepo(unit.conn).updateMany({
-              filter: (f) =>
-                f.and([
-                  f.string('id').eq(metadata.inputId as string),
-                  f.date('deliveredAt').empty(),
-                  f.date('handledAt').empty(),
-                ]),
-              values: { handledAt: now() },
-            })
-          ).updatedCount !== 1;
-        if (taken)
-          throw conversationConflict(
-            'messageTaken',
-            'The agent already has this message.',
+        if (!metadata.queued && message.runId) {
+          // Match claim's run-before-conversation order. An initial turn has no queued-follow-up marker.
+          // End only a still-unclaimed run, using the existing guarded queued withdrawal. If claim wins, the transaction rolls back and the running turn is kept.
+          const run = await findRunRecord(unit.conn, message.runId);
+          if (!run || run.status !== 'queued' || run.runnerId !== null)
+            throw conversationConflict(
+              'messageTaken',
+              'The agent already has this message.',
+            );
+          const ended = await deps.runs.withdrawQueued(
+            {
+              subject: subjectOf(id),
+              agentId: record.agentId,
+              actorUserId: userId,
+              byUserId: userId,
+            },
+            unit,
           );
+          if (!ended.some((run) => run.id === message.runId))
+            throw conversationConflict(
+              'messageTaken',
+              'The agent already has this message.',
+            );
+          record = await lockOwned(unit, userId, id, true);
+        } else {
+          record = await lockOwned(unit, userId, id, true);
+          // Taken back only while no runner has it: one conditional update, which a delivery racing it cannot both
+          // pass (`markDelivered` updates only an input not handled).
+          const taken =
+            !metadata.queued ||
+            metadata.pickedUp ||
+            typeof metadata.inputId !== 'string' ||
+            (
+              await inputsRepo(unit.conn).updateMany({
+                filter: (f) =>
+                  f.and([
+                    f.string('id').eq(metadata.inputId as string),
+                    f.date('deliveredAt').empty(),
+                    f.date('handledAt').empty(),
+                  ]),
+                values: { handledAt: now() },
+              })
+            ).updatedCount !== 1;
+          if (taken)
+            throw conversationConflict(
+              'messageTaken',
+              'The agent already has this message.',
+            );
+        }
         await messagesRepo(unit.conn).updateMany({
           filter: { id: message.id },
           values: {
-            metadata: asJson({ ...metadata, withdrawn: true }),
+            metadata: asJson({ ...metadata, queued: true, withdrawn: true }),
             updatedAt: now(),
           },
         });
@@ -2267,7 +2521,13 @@ export function createConversationService(
           filter: { id },
           values,
         });
-        changed(unit, record);
+        changed(
+          unit,
+          record,
+          values.seenSeq === undefined
+            ? undefined
+            : { seenSeq: values.seenSeq },
+        );
       });
       return detail(userId, id);
     },

@@ -1,4 +1,5 @@
 // Supported package API. Internal modules are intentionally not re-exported.
+export { isUniqueConstraintViolation } from './database/unique-constraint.js';
 export {
   CollectionMetadataStoreRequiredError,
   createDatabaseManager,

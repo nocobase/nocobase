@@ -34,6 +34,33 @@ export interface UploaderRef {
 const files = (conn: DatabaseConnection) =>
   conn.repository<AttachmentRecord>(ATTACHMENTS);
 
+/** Own and live comment files, limited in the database before materialization. */
+export async function limitedAttachments(
+  conn: DatabaseConnection,
+  issueId: string,
+  limit: number,
+): Promise<AttachmentRecord[]> {
+  return files(conn).findMany({
+    filter: (f) =>
+      f.and([
+        f.string('issueId').eq(issueId),
+        f.or([
+          f.string('commentId').eq(null),
+          f
+            .relation('comment')
+            .some((c) =>
+              c.and([
+                c.string('issueId').eq(issueId),
+                c.date('deletedAt').empty(),
+              ]),
+            ),
+        ]),
+      ]),
+    sort: (s) => [s.field('createdAt').asc(), s.field('id').asc()],
+    limit,
+  });
+}
+
 /** Filter and limit in the database before loading any comment metadata. */
 export async function agentCommentImages(
   conn: DatabaseConnection,

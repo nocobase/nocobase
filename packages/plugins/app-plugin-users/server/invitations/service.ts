@@ -10,7 +10,10 @@
  */
 import { randomUUID } from 'node:crypto';
 
-import type { UserAdministrationService } from '@nocobase/app-plugin-authentication';
+import {
+  UserAdministrationError,
+  type UserAdministrationService,
+} from '@nocobase/app-plugin-authentication';
 import type { DatabaseConnection, DatabaseManager } from '@nocobase/db';
 
 import {
@@ -375,11 +378,40 @@ export function createInvitationManager(
           );
         let userId = existing;
         if (!userId) {
-          const created = await users.withConnection(connection).create({
-            name: input.name,
-            email: row.email,
-            password: input.password,
-          });
+          // Account creation checks duplicate usernames. Also exclude other accounts' email sign-in identities here.
+          const username = input.username?.trim().toLowerCase() || undefined;
+          if (username) {
+            const conflicting = await connection.query
+              .selectFrom('user')
+              .select('id')
+              .where('email', '=', username)
+              .executeTakeFirst();
+            if (conflicting)
+              throw new UserAdministrationError(
+                'USER_IDENTITY_CONFLICT',
+                'A user with this email or username already exists',
+              );
+          }
+          const created = await users
+            .withConnection(connection)
+            .create({
+              name: input.name,
+              username,
+              email: row.email,
+              password: input.password,
+            })
+            .catch((error: unknown) => {
+              if (
+                error instanceof UserAdministrationError &&
+                (error.code === 'USER_USERNAME_CONFLICT' ||
+                  error.code === 'USER_EMAIL_CONFLICT')
+              )
+                throw new UserAdministrationError(
+                  'USER_IDENTITY_CONFLICT',
+                  'A user with this email or username already exists',
+                );
+              throw error;
+            });
           userId = created.id;
           for (const [key, value] of Object.entries(row.roleScopes))
             await options.requireScope(key).replace(userId, value, connection);

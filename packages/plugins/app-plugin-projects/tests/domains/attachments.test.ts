@@ -100,6 +100,64 @@ describe('uploads', () => {
 });
 
 describe('an issue’s own files', () => {
+  it('bounds own and live comment evidence, reports truncation and retains visibility checks', async () => {
+    const issue = await anIssue();
+    const own = await h.services.attachments.uploadToIssue(
+      alice(),
+      issue.id,
+      png('own.png'),
+    );
+    const dead = await h.services.attachments.upload(bob(), png('deleted.png'));
+    const { comment } = await h.services.comments.create(bob(), issue.id, {
+      content: 'Removed evidence',
+      attachmentIds: [dead.id],
+    });
+    await h.services.comments.remove(bob(), comment.id);
+    const live = await h.services.attachments.upload(bob(), png('live.png'));
+    await h.services.comments.create(bob(), issue.id, {
+      content: 'Current evidence',
+      attachmentIds: [live.id],
+    });
+    const first = await h.services.attachments.listLimited(
+      alice(),
+      issue.id,
+      1,
+    );
+    expect(first.data.map((f) => f.id)).toEqual([own.id]);
+    expect(first.truncated).toBe(true);
+    const all = await h.services.attachments.listLimited(alice(), issue.id, 2);
+    expect(all.data.map((f) => f.id)).toEqual([own.id, live.id]);
+    expect(all.truncated).toBe(false);
+    for (let index = 0; index < 99; index++)
+      await h.services.attachments.uploadToIssue(
+        alice(),
+        issue.id,
+        log(`evidence-${index}.log`),
+      );
+    const capped = await h.services.attachments.listLimited(alice(), issue.id);
+    expect(capped.data).toHaveLength(100);
+    expect(capped.truncated).toBe(true);
+    expect(
+      await codeOf(
+        h.services.attachments.listLimited(
+          {
+            ...alice(),
+            permissions: {
+              ...alice().permissions,
+              scopes: { 'pm.issues/view': 'none' },
+            },
+          },
+          issue.id,
+        ),
+      ),
+    ).toBe('NOT_FOUND');
+    for (const limit of [0, 101, 1.5])
+      expect(
+        await codeOf(
+          h.services.attachments.listLimited(alice(), issue.id, limit),
+        ),
+      ).toBe('INVALID_FIELD');
+  });
   it('uploads onto the issue, lists them and records the activity', async () => {
     const issue = await anIssue();
     const file = await h.services.attachments.uploadToIssue(

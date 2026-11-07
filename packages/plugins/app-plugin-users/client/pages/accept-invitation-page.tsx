@@ -184,11 +184,18 @@ function Problem({ children }: { readonly children: ReactNode }): ReactElement {
   );
 }
 
-function LoginLink({ redirect }: { readonly redirect?: string }): ReactElement {
+function LoginLink({
+  redirect,
+  variant = 'default',
+}: {
+  readonly redirect?: string;
+  readonly variant?: 'default' | 'link';
+}): ReactElement {
   const { t } = useTranslation(NS);
   return (
     <Button
       className='w-full'
+      variant={variant}
       nativeButton={false}
       render={
         <Link
@@ -200,7 +207,7 @@ function LoginLink({ redirect }: { readonly redirect?: string }): ReactElement {
         />
       }
     >
-      {t('accept.goToLogin')}
+      {t(variant === 'link' ? 'accept.alreadyHaveAccount' : 'accept.goToLogin')}
     </Button>
   );
 }
@@ -222,6 +229,8 @@ function AcceptForm({
   const { session, client, refresh } = useAuthentication();
   const login = usePasswordLogin();
   const [name, setName] = useState('');
+  const [username, setUsername] = useState('');
+  const [usernameProblem, setUsernameProblem] = useState<string>();
   const [password, setPassword] = useState('');
   const [problem, setProblem] = useState<string>();
   const [saving, setSaving] = useState(false);
@@ -276,6 +285,7 @@ function AcceptForm({
     if (!invitedSession && password.length < MIN_PASSWORD)
       return setProblem(t('accept.passwordTooShort', { min: MIN_PASSWORD }));
     setProblem(undefined);
+    setUsernameProblem(undefined);
     setSaving(true);
     try {
       const accepted = await users.acceptInvitation({
@@ -284,6 +294,9 @@ function AcceptForm({
           ? session?.user.name || invitation.email
           : name.trim(),
         password: invitedSession ? '' : password,
+        ...(!invitedSession && username.trim()
+          ? { username: username.trim() }
+          : {}),
       });
       setDone('signedUp');
       onJoined();
@@ -304,6 +317,13 @@ function AcceptForm({
             error.reason === 'INVITATION_SIGN_IN_REQUIRED'
           )
             setDone('existing');
+          else if (
+            !invitedSession &&
+            username.trim() &&
+            error instanceof ApiClientError &&
+            error.reason === 'USER_IDENTITY_CONFLICT'
+          )
+            setUsernameProblem(t('accept.errors.usernameConflict'));
           else setProblem(t(`accept.errors.${errorKey(error)}`));
         });
       }}
@@ -326,6 +346,39 @@ function AcceptForm({
             />
           </div>
           <div className='space-y-2'>
+            <Label htmlFor='invite-username'>{t('accept.username')}</Label>
+            <Input
+              id='invite-username'
+              autoComplete='username'
+              value={username}
+              aria-invalid={!!usernameProblem}
+              aria-describedby={
+                usernameProblem
+                  ? 'invite-username-hint invite-username-error'
+                  : 'invite-username-hint'
+              }
+              onChange={(event) => {
+                setUsername(event.target.value);
+                setUsernameProblem(undefined);
+              }}
+            />
+            <p
+              id='invite-username-hint'
+              className='text-sm text-muted-foreground'
+            >
+              {t('accept.usernameHint')}
+            </p>
+            {usernameProblem ? (
+              <p
+                id='invite-username-error'
+                role='alert'
+                className='text-sm text-destructive'
+              >
+                {usernameProblem}
+              </p>
+            ) : null}
+          </div>
+          <div className='space-y-2'>
             <Label htmlFor='invite-password'>{t('accept.password')}</Label>
             <Input
               id='invite-password'
@@ -337,9 +390,6 @@ function AcceptForm({
             />
           </div>
         </>
-      ) : null}
-      {!session ? (
-        <LoginLink redirect={`/invite/${encodeURIComponent(token)}`} />
       ) : null}
       {problem ? <Problem>{problem}</Problem> : null}
       {done === 'signedUp' && login.error ? (
@@ -360,6 +410,12 @@ function AcceptForm({
           ? t('accept.submitting')
           : t(invitedSession ? 'accept.join' : 'accept.submit')}
       </Button>
+      {!session ? (
+        <LoginLink
+          variant='link'
+          redirect={`/invite/${encodeURIComponent(token)}`}
+        />
+      ) : null}
     </form>
   );
 }

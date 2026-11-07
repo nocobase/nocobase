@@ -12,15 +12,15 @@ const viVN: LocaleResource<typeof enUS> = {
         description: 'Các đặc vụ của đội và kỹ năng họ sử dụng.',
         actions: {
           edit: {
-            title: 'Thay đổi tác nhân và kỹ năng',
+            title: 'Thay đổi Agents và kỹ năng',
             description:
-              'Thay đổi cài đặt, kỹ năng và biến của tác nhân, lưu trữ, khôi phục và xóa nó cũng như chỉnh sửa kỹ năng. Một đại diện không được cấp khả năng nào ngoài khả năng của người biên tập',
+              'Thay đổi cài đặt, kỹ năng và biến của Agent, lưu trữ, khôi phục và xóa nó cũng như chỉnh sửa kỹ năng. Một Agent không được cấp khả năng nào ngoài khả năng của người biên tập',
             related:
-              'Thay đổi tác nhân và kỹ năng (tác nhân họ sở hữu và kỹ năng họ tạo ra)',
+              'Thay đổi Agents và kỹ năng (Agents họ sở hữu và kỹ năng họ tạo ra)',
             relatedLabel: 'Đại lý tôi sở hữu và kỹ năng tôi tạo',
             relatedHint:
               'Đại lý mà tôi là chủ sở hữu và các kỹ năng tôi đã tạo',
-            all: 'Thay đổi tác nhân và kỹ năng (tất cả)',
+            all: 'Thay đổi Agents và kỹ năng (tất cả)',
           },
         },
       },
@@ -41,12 +41,12 @@ const viVN: LocaleResource<typeof enUS> = {
       agents: {
         title: 'Tác nhân',
         description:
-          'Xem các đại lý, kỹ năng và cách chạy; thay đổi tác nhân và kỹ năng, hủy và thử lại.',
+          'Xem các Agents, kỹ năng và cách chạy; thay đổi Agents và kỹ năng, hủy và thử lại.',
       },
       runners: {
         title: 'Môi trường chạy',
         description:
-          'Xem trình chạy và mã thông báo đăng ký; quản lý trình chạy.',
+          'Xem môi trường chạy và mã thông báo đăng ký; quản lý môi trường chạy.',
       },
       prices: {
         title: 'Giá mẫu',
@@ -59,6 +59,11 @@ const viVN: LocaleResource<typeof enUS> = {
           'Xem các dịch vụ mẫu và các mẫu họ cung cấp, không bao giờ xem chìa khóa của họ.',
       },
     },
+  },
+  runnerConversation: {
+    title: 'Cuộc trò chuyện: {{title}}',
+    other: 'Cuộc trò chuyện của người khác',
+    untitled: 'Cuộc trò chuyện mới',
   },
 };
 

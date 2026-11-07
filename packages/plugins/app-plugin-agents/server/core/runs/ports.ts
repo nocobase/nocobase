@@ -65,8 +65,10 @@ export interface SubjectScope {
 
 /** The subject's part of a run payload; the runs domain adds the rules, the workspace and the skills. */
 export interface SubjectAssembly {
-  /** Subject-specific effort for this run only; absent uses the Agent entry. */
-  readonly effort?: string;
+  /** Render fixed instructions before task and runner details; server-only, with no session-policy effect. */
+  readonly briefLayout?: 'stable-prefix';
+  /** Subject-specific effort for this run only; null uses the tool default, absent uses the Agent entry. */
+  readonly effort?: string | null;
   /**
    * `key` names the run's working directory (and a checkout's branch, as the subject's domain chooses); `title` and
    * `url` are what a person sees of the subject; `noun` is what the brief calls it (`ticket`, `document`).
@@ -188,6 +190,9 @@ export interface SubjectSample {
 }
 
 export interface WorkSink {
+  /** In the quota suspension/resumption transaction, only for opted-in subjects. */
+  onQuotaWait?(tx: Tx, run: Run): Promise<void>;
+  onQuotaResumed?(tx: Tx, run: Run): Promise<void>;
   /** In the stop request's transaction, once, before any terminal callback. A null actor is a system stop. */
   onCancelRequested?(tx: Tx, run: Run): Promise<void>;
   /**
@@ -244,7 +249,11 @@ export interface SubjectReports {
 }
 
 export interface SubjectBinding {
+  /** Preserve quota-limited work on its original runner and session. */
+  readonly quotaWait?: boolean;
   readonly kind: string;
+  /** Host policy for tool sessions. Absent preserves normal fingerprint-based reuse. No I/O is performed here. */
+  readonly sessionPolicy?: (claim: ClaimContext) => 'fresh' | 'reuse';
   /** Reads current issue visibility outside database transactions for comment-origin work. */
   readonly commentActorMayRead?: (
     subjectId: string,

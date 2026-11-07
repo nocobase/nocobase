@@ -9,12 +9,24 @@ import type { AgentsResource } from './en-US.js';
 
 const zhCN: AgentsResource = {
   modelSuggestions: {
-    design: '方案、架构、疑难排查、重要改动的评审。',
-    routine: '范围清楚的常规实现、小修复、补测试、文案。',
-    small: '小改动、机械性修改，便宜、快。',
-    explanation: '理解需求、写方案和说明。',
-    large: '较大的实现、跨包改动、重构。',
-    review: '代码评审、读 CI 失败。',
+    design:
+      '推理最强：方案设计、架构、疑难排查、重要改动的代码评审；也能做常规实现、跨包改动、写方案',
+    large:
+      '较大的实现、跨包改动、重构、常规实现；也能写方案、做代码评审和小改动',
+    review: '代码评审、读 CI 失败原因；也能做方案设计和疑难排查',
+    routine: '常规实现、小修复、补测试、改文案；也能读 CI 失败原因',
+    small: '小改动、机械性修改、补测试，便宜、快；也能读 CI 失败原因',
+    explanation: '理解需求、讲解说明、编写方案',
+  },
+  goodAtTemplates: {
+    fill: '从模板填写',
+    design: '方案设计与评审',
+    large: '较大实现',
+    review: '代码评审与 CI',
+    routine: '常规实现',
+    small: '小改动',
+    explanation: '讲解与方案',
+    undo: '撤销',
   },
 
   actions: {
@@ -55,7 +67,7 @@ const zhCN: AgentsResource = {
     RUNNER_REFRESH_UNAVAILABLE: '此运行环境已撤销。',
 
     boundRunnerIncompatible:
-      '此执行机无法运行所选 Agent。请更换执行机或新建对话。',
+      '当前运行环境无法运行所选 Agent。请更换运行环境后继续。',
     CONFLICT: '它已被修改，请刷新后重试。',
     REVISION_CONFLICT: '它已被修改，请刷新后重试。',
     FORBIDDEN: '你没有权限执行此操作。',
@@ -96,12 +108,13 @@ const zhCN: AgentsResource = {
     cline: 'Cline',
     amp: 'Amp',
     vibe: 'Mistral Vibe',
+    dsh: 'DeepSeek Harness',
   },
   agents: {
     unavailableNow: '当前不可用',
     title: 'Agent',
     description:
-      '从执行机上报的模型中添加 agent。项目经理按「擅长什么」把任务的每一步派给它们。',
+      '从执行机上报的模型中添加 agent。Lead Agent按「擅长什么」把任务的每一步派给它们。',
     fromRunners: '来自执行机的 agent',
     display: {
       search: '搜索模型或服务商',
@@ -164,11 +177,11 @@ const zhCN: AgentsResource = {
       reportedBy_other: '由 {{count}} 台在线执行机上报：{{names}}。',
       noRunnerNow: '现在没有在线的执行机有它。',
       goodAtHint:
-        '项目经理靠这段话决定派什么活给它。写清楚适合做什么、不适合做什么。',
+        'Lead Agent靠这段话决定派什么活给它。写清楚适合做什么、不适合做什么。',
       goodAtRequired: '先写好擅长什么，再启用。',
-      effortHint: '项目经理派活时不能调。',
+      effortHint: 'Lead Agent派活时不能调。',
       personalOnly:
-        '只有个人执行机能跑：只有这些执行机的主人自己发起的任务，项目经理才会派给它。',
+        '只有个人执行机能跑：只有这些执行机的主人自己发起的任务，Lead Agent才会派给它。',
     },
     edit: {
       button: '编辑',
@@ -538,6 +551,7 @@ const zhCN: AgentsResource = {
     checkoutFailed: '仓库检出失败。',
     toolAuth: '运行环境中的编码工具未登录。',
     toolQuota: '编码工具的额度已用完。',
+    sessionUnavailable: '无法恢复原编码工具会话。',
     toolRateLimit: '编码工具被限流。',
     toolNetwork: '编码工具无法连接到它的服务。',
     toolProcess: '编码工具意外退出。',
@@ -548,7 +562,7 @@ const zhCN: AgentsResource = {
     stepLimit: 'Agent 调用工具次数过多，仍未作答。',
     policyRefused: '没有运行环境的策略允许接这项工作。',
     prepareNetwork: '准备运行时运行环境无法连接到仓库所在的服务器。',
-    repoAccessUnavailable: '暂时无法签发仓库凭据，运行会重试。',
+    repoAccessUnavailable: '暂时无法访问仓库。',
     repoAccessDenied: '应用拒绝为运行的某个仓库签发凭据。',
     unknown: '运行失败。',
   },

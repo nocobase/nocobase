@@ -30,3 +30,6 @@ packages/app/app-host/fixtures/app-dist/hub/dist/**
 packages/app/app-host/storage/
 
 packages/templates/app-template-default/workflows
+
+# Independent Default business baseline instances and private evidence.
+/.business-baseline/

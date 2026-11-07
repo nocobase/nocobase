@@ -46,7 +46,7 @@ const deDE: LocaleResource<typeof enUS> = {
       actions: 'Aktionen',
     },
     view: 'Details anzeigen',
-    refresh: 'Aktualisieren',
+    retryRead: 'Erneut versuchen',
     previous: 'Zurück',
     next: 'Weiter',
     page: 'Seite {{page}}',
@@ -65,7 +65,7 @@ const deDE: LocaleResource<typeof enUS> = {
     notificationHint:
       'Nachdem eine Aufgabe gespeichert wurde, werden die zugehörigen Personen außer dem aktuellen Bearbeiter benachrichtigt: der Ersteller und der aktuelle Beauftragte. Wenn sich der Beauftragte ändert, werden sowohl der bisherige als auch der neue Beauftragte benachrichtigt.',
     edit: 'Aufgabe bearbeiten',
-    refresh: 'Aktualisieren',
+    retryRead: 'Erneut versuchen',
     save: 'Änderungen speichern',
     cancel: 'Abbrechen',
     back: 'Zurück zu den Aufgaben',

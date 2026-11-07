@@ -1,6 +1,24 @@
-/** Every key the agent chat looks up, so each locale is checked against the same list. */
 export interface AgentChatLocale {
   readonly chat: {
+    readonly sharing: {
+      readonly related: string;
+      readonly title: string;
+      readonly description: string;
+      readonly sensitive: string;
+      readonly asOf: string;
+      readonly recipient: string;
+      readonly share: string;
+      readonly update: string;
+      readonly revoke: string;
+      readonly copy: string;
+      readonly copied: string;
+      readonly copyFailed: string;
+      readonly none: string;
+      readonly failed: string;
+      readonly failedRecipients: string;
+      readonly older: string;
+      readonly empty: string;
+    };
     readonly webSearch: {
       readonly title: string;
       readonly queryCount: string;
@@ -52,9 +70,9 @@ export interface AgentChatLocale {
       readonly unknown: string;
       readonly effectReview: string;
     };
-    readonly connectionUnknown: string;
-    readonly historicalReadOnly: string;
     readonly executionFailed: string;
+    readonly historicalReadOnly: string;
+    readonly connectionUnknown: string;
     readonly allowAnother: string;
     readonly refreshHistory: string;
     readonly title: string;
@@ -250,6 +268,8 @@ export interface AgentChatLocale {
     };
     readonly history: {
       readonly title: string;
+      readonly fold: string;
+      readonly unfold: string;
       readonly search: string;
       readonly show: string;
       readonly active: string;
@@ -265,6 +285,28 @@ export interface AgentChatLocale {
       readonly more: string;
       readonly unread: string;
       readonly actions: string;
+    };
+    readonly list: {
+      readonly label: string;
+      readonly archivedTitle: string;
+      readonly back: string;
+      readonly all: string;
+      readonly filters: string;
+      readonly waiting_one: string;
+      readonly waiting_other: string;
+      readonly active_one: string;
+      readonly active_other: string;
+      readonly today: string;
+      readonly yesterday: string;
+      readonly week: string;
+      readonly earlier: string;
+      readonly restore: string;
+      readonly offline: string;
+      readonly needsMe: string;
+      readonly working: string;
+      readonly reply: string;
+      readonly failed: string;
+      readonly confirm: string;
     };
     readonly loading: string;
     readonly retry: string;
@@ -296,11 +338,65 @@ export interface AgentChatLocale {
         readonly usage: string;
       };
     };
+    readonly backToList: string;
+    readonly showDetails: string;
+    readonly hideDetails: string;
+    readonly detailsTitle: string;
+    readonly sessionDetails: string;
+    readonly runtime: string;
+    readonly agent: string;
+    readonly started: string;
+    readonly usageTitle: string;
+    readonly relatedWork: string;
+    readonly unlink: string;
+    readonly unlinkFailed: string;
+    readonly expandPanel: string;
+    readonly restorePanel: string;
+    readonly delete: string;
+    readonly deleteDialog: {
+      readonly menu: string;
+      readonly title: string;
+      readonly description: string;
+      readonly cancel: string;
+      readonly confirm: string;
+      readonly done: string;
+      readonly body: string;
+    };
+    readonly usage: {
+      readonly title: string;
+      readonly context: string;
+      readonly window: string;
+      readonly input: string;
+      readonly cached: string;
+      readonly output: string;
+      readonly cost: string;
+    };
   };
 }
-
 const agentChatEnUS: AgentChatLocale = {
   chat: {
+    sharing: {
+      related: 'Related records',
+      title: 'Share snapshot',
+      description:
+        'Recipients can only see content from the time you share. An unfinished turn is excluded. Share again to update the snapshot.',
+      sensitive:
+        'This conversation may contain sensitive information. Share only with people who should see it.',
+      asOf: 'Shared as of {{time}}',
+      recipient: 'Select application users',
+      share: 'Share',
+      update: 'Update',
+      revoke: 'Revoke',
+      copy: 'Copy link',
+      copied: 'Link copied',
+      copyFailed: 'Could not copy the link',
+      none: 'No recipients yet.',
+      failed: 'Could not load or update sharing. Please try again.',
+      failedRecipients:
+        'Could not share with: {{names}}. These users remain selected for retry.',
+      older: 'Load older messages',
+      empty: 'There are no finished turns in this snapshot.',
+    },
     webSearch: {
       title: 'Web search',
       queryCount: 'Queries · {{count}}',
@@ -361,7 +457,6 @@ const agentChatEnUS: AgentChatLocale = {
       effectReview:
         'Some actions may have completed. Check their results before repeating them.',
     },
-
     executionFailed:
       'Execution failed. Check saved history and possibly completed actions before repeating them.',
     historicalReadOnly:
@@ -411,7 +506,6 @@ const agentChatEnUS: AgentChatLocale = {
       noModel: 'Configure a chat model first',
       noRunner: 'No runner online, cannot be chosen',
       othersPersonal: "Only others' personal runners have it",
-      // The reason earlier versions wrote on a notice that their online fallback could not answer.
       modelUnavailable: 'Model unavailable',
     },
     reasoning: {
@@ -589,6 +683,8 @@ const agentChatEnUS: AgentChatLocale = {
     },
     history: {
       title: 'Conversations',
+      fold: 'Fold the conversation list',
+      unfold: 'Expand the conversation list',
       search: 'Search conversations',
       show: 'Show',
       active: 'Open',
@@ -604,6 +700,28 @@ const agentChatEnUS: AgentChatLocale = {
       more: 'Load more',
       unread: 'New reply',
       actions: 'Actions for {{title}}',
+    },
+    list: {
+      label: 'Conversations',
+      archivedTitle: 'Archived',
+      back: 'Back to conversations',
+      all: 'All',
+      filters: 'Show',
+      waiting_one: 'Needs me {{count}}',
+      waiting_other: 'Needs me {{count}}',
+      active_one: 'In progress {{count}}',
+      active_other: 'In progress {{count}}',
+      today: 'Today',
+      yesterday: 'Yesterday',
+      week: 'This week',
+      earlier: 'Earlier',
+      restore: 'Restore',
+      offline: 'Runtime offline',
+      needsMe: 'Needs me',
+      working: 'In progress',
+      reply: 'New reply',
+      failed: 'Failed',
+      confirm: 'Question for you',
     },
     loading: 'Loading',
     retry: 'Retry',
@@ -635,7 +753,40 @@ const agentChatEnUS: AgentChatLocale = {
         usage: 'Usage',
       },
     },
+    backToList: 'Back to list',
+    showDetails: 'Show details',
+    hideDetails: 'Hide details',
+    detailsTitle: 'Session details',
+    sessionDetails: 'Session',
+    runtime: 'Runtime',
+    agent: 'Agent',
+    started: 'Started',
+    usageTitle: 'Usage',
+    relatedWork: 'Related work',
+    unlink: 'Remove association',
+    unlinkFailed: 'The association could not be removed.',
+    expandPanel: 'Full width',
+    restorePanel: 'Restore panel',
+    delete: 'Delete',
+    deleteDialog: {
+      menu: 'Delete',
+      title: 'Delete “{{title}}”?',
+      description:
+        'Its messages, files and associations are deleted for good, and an active run is stopped. Related records stay. This cannot be undone.',
+      cancel: 'Cancel',
+      confirm: 'Delete',
+      done: 'Deleted “{{title}}”',
+      body: 'Its messages, files and associations are deleted for good, and an active run is stopped. Related records stay. This cannot be undone.',
+    },
+    usage: {
+      title: 'Usage',
+      context: 'Context {{used}} / {{size}} tokens ({{percent}}%)',
+      window: 'Context window',
+      input: 'Input',
+      cached: 'Cached',
+      output: 'Output',
+      cost: 'Cost',
+    },
   },
 };
-
 export default agentChatEnUS;

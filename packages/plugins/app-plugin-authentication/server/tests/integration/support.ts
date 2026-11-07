@@ -132,6 +132,7 @@ export async function createAuthFixture(
     router,
     signUp,
     async dispose() {
+      await auth.close();
       await caching.dispose();
       await destroy();
     },

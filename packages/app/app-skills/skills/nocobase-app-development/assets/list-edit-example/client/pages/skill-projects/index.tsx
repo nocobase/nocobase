@@ -7,6 +7,7 @@ import type { ColumnDef } from '@tanstack/react-table';
 import { DataTable } from '#components/data-table';
 import { PageContainer } from '#components/page-container';
 import { PageHeader } from '#components/page-header';
+import { RecordLink } from '#components/record-link';
 import { Alert, AlertDescription } from '#components/ui/alert';
 import {
   Table,
@@ -94,9 +95,13 @@ export default function SkillProjectsPage(): ReactElement {
         accessorKey: 'name',
         header: t('skillProjects.name'),
         cell: ({ row }) => (
-          <span className='block max-w-64 truncate' title={row.original.name}>
+          <RecordLink
+            to={`${row.original.id}/details`}
+            className='block max-w-64 truncate'
+            title={row.original.name}
+          >
             {row.original.name}
-          </span>
+          </RecordLink>
         ),
       },
       {

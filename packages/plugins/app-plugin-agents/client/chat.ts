@@ -262,3 +262,9 @@ export {
   appUIToolApprovalInputSchema,
   type AppUIToolApprovalInput,
 } from '../shared/online-agent.js';
+
+export {
+  chatNoticeKind,
+  type ChatNoticeKind,
+  type ChatNoticeConditions,
+} from './chat/notices.js';

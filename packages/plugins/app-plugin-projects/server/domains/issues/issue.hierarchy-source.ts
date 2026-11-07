@@ -4,11 +4,20 @@ import type { Knex } from 'knex';
 import type { Viewer } from '../../access/viewer.js';
 import { scopeOf } from '../../access/viewer.js';
 import type { IssueListQuery } from '../../../shared/issues.js';
+import {
+  FIXED_STATUSES,
+  isTerminalCategory,
+} from '../../../shared/statuses.js';
 import { visibleProjects } from '../projects/index.js';
 
 /** No records are materialized: consumers may aggregate or page these relations in the database. */
 export interface IssueHierarchySource {
   readonly visible: {
+    readonly sql: string;
+    readonly parameters: readonly unknown[];
+  };
+  /** Visible unfinished issues blocked by dependencies or earlier stages, revealing no blocker identities. */
+  readonly blocked: {
     readonly sql: string;
     readonly parameters: readonly unknown[];
   };
@@ -92,7 +101,9 @@ export async function hierarchySource(
     'parentIssueId as parent',
     'statusKey as status',
     'revision',
+    'stage',
     'updatedAt as updated',
+    'lastActivityAt as activity',
     'createdAt as created',
     'number',
     'priorityRank as priority',
@@ -123,8 +134,53 @@ export async function hierarchySource(
     );
   }
   const sql = selected.toSQL();
+  const finished = FIXED_STATUSES.filter((s) =>
+    isTerminalCategory(s.category),
+  ).map((s) => s.key);
+  const blocked = visible
+    .where('statusKey', 'not in', finished)
+    .where((eb) =>
+      eb.or([
+        eb.exists(
+          eb
+            .selectFrom('pmIssueDependencies as d')
+            .select('d.issueId')
+            .whereRef('d.issueId', '=', 'pmIssues.id')
+            .where('d.type', '=', 'blockedBy')
+            .whereRef('d.dependsOnIssueId', '<>', 'pmIssues.id')
+            .where((inner) =>
+              inner.exists(
+                inner
+                  .selectFrom('pmIssues as target')
+                  .select('target.id')
+                  .whereRef('target.id', '=', 'd.dependsOnIssueId')
+                  .where('target.deletedAt', 'is', null)
+                  .where('target.statusKey', 'not in', finished),
+              ),
+            ),
+        ),
+        eb.and([
+          eb('pmIssues.stage', 'is not', null),
+          eb('pmIssues.parentIssueId', 'is not', null),
+          eb.exists(
+            eb
+              .selectFrom('pmIssues as sibling')
+              .select('sibling.id')
+              .whereRef('sibling.parentIssueId', '=', 'pmIssues.parentIssueId')
+              .whereRef('sibling.id', '<>', 'pmIssues.id')
+              .where('sibling.stage', 'is not', null)
+              .whereRef('sibling.stage', '<', 'pmIssues.stage')
+              .where('sibling.deletedAt', 'is', null)
+              .where('sibling.statusKey', 'not in', finished),
+          ),
+        ]),
+      ]),
+    )
+    .select('id')
+    .compile();
   return {
     visible: visible.select(fields).compile(),
+    blocked,
     matching: { sql: sql.sql, parameters: sql.bindings },
   };
 }

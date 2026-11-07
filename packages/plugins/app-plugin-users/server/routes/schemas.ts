@@ -178,12 +178,18 @@ export const AcceptInvitationInput: z.ZodObject<
   {
     token: z.ZodString;
     name: z.ZodString;
+    username: z.ZodOptional<z.ZodString>;
     password: z.ZodString;
   },
   z.core.$strict
 > = z.strictObject({
   token: nonEmpty.describe('The personal access token.'),
   name: nonEmpty.describe('The name to display.'),
+  username: nonEmpty
+    .optional()
+    .describe(
+      'Optional username used to sign in. Ignored for existing accounts.',
+    ),
   // Existing accounts authenticate through their session; account creation still validates password strength.
   password: z.string().describe('The password to set.'),
 });
@@ -202,10 +208,19 @@ export const PreferencesInput: z.ZodRecord<z.ZodString, z.ZodUnknown> =
 
 /** One preference's value: application-defined JSON, checked by the preferences service. */
 export const PreferenceInput: z.ZodObject<
-  { value: z.ZodUnknown },
+  { value: z.ZodUnknown; expectedUserId: z.ZodOptional<z.ZodString> },
   z.core.$strict
 > = z
-  .strictObject({ value: z.unknown().describe('The value to store.') })
+  .strictObject({
+    value: z.unknown().describe('The value to store.'),
+    expectedUserId: z
+      .string()
+      .min(1)
+      .optional()
+      .describe(
+        'Refuse the write if the authenticated user changed before it reached the server.',
+      ),
+  })
   .refine((input) => 'value' in input, {
     message: 'A preference is { value }.',
     path: ['value'],

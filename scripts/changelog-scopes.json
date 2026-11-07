@@ -53,7 +53,7 @@
   "migrations": { "en": "Database", "zh": "数据库" },
   "caching": { "en": "Caching", "zh": "缓存" },
   "concurrency": { "en": "Concurrency", "zh": "并发控制" },
-  "concurrency-mutex": { "en": "Concurrency", "zh": "并发控制" },
+  "app-plugin-concurrency": { "en": "Concurrency", "zh": "并发控制" },
   "logging": { "en": "Logging", "zh": "日志" },
   "lifecycle": { "en": "Plugin lifecycle", "zh": "插件生命周期" },
   "service-provider": { "en": "Plugin lifecycle", "zh": "插件生命周期" },

@@ -10,9 +10,13 @@ import { aiTranslationRoutes } from '../../server/routes/ai-translation.ts';
 import { knowledgeDirectoryRoutes } from '../../server/routes/knowledge-directory.js';
 import { skillProjectsRoutes } from '../../server/routes/skill-projects.js';
 import { customerContactsRoutes } from '../../server/routes/customer-contacts.js';
+import { procurementRoutes } from '../../server/routes/procurement.js';
+import { onboardingRoutes } from '../../server/routes/onboarding.js';
 import AIFormFillProvider from '../../server/providers/ai-form-fill.js';
 import KnowledgeChatProvider from '../../server/providers/knowledge-chat.js';
 import CustomerContactsAuthorizationProvider from '../../server/providers/customer-contacts-authorization.js';
+import ProcurementRegistration from '../../server/providers/procurement-registration.js';
+import OnboardingRegistration from '../../server/providers/onboarding-registration.js';
 
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
@@ -354,6 +358,8 @@ describe('app server', () => {
             route !== knowledgeDirectoryRoutes &&
             route !== skillProjectsRoutes &&
             route !== customerContactsRoutes &&
+            route !== procurementRoutes &&
+            route !== onboardingRoutes &&
             route !== aiTranslationRoutes,
         ),
         serviceProviders: [
@@ -361,6 +367,8 @@ describe('app server', () => {
             (provider) =>
               provider !== AIFormFillProvider &&
               provider !== CustomerContactsAuthorizationProvider &&
+              provider !== ProcurementRegistration &&
+              provider !== OnboardingRegistration &&
               provider !== KnowledgeChatProvider,
           ),
           TestRuntimeApplicationProvider,

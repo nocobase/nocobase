@@ -32,6 +32,7 @@ import {
   TOOL_SIGN_IN,
 } from '../../../shared/model-catalog.js';
 import { modelSuggestion } from '../../model-suggestion.js';
+import { GoodAtTemplates } from './good-at-templates.js';
 import { agentsKeys } from '../../api/keys.js';
 import { AgListSkeleton, AgLoadError } from '../../components/ag-states.js';
 import { AgTag, type Tone } from '../../components/ag-tag.js';
@@ -821,9 +822,17 @@ function ConfirmStep({
           const rowError = rowErrors.get(key);
           return (
             <Field key={key} data-invalid={missing ? true : undefined}>
-              <FieldLabel htmlFor={`confirm-good-at-${key}`}>
-                {modelName(model)}
-              </FieldLabel>
+              <p className='text-sm font-medium'>{modelName(model)}</p>
+              <div className='flex flex-wrap items-center justify-between gap-2'>
+                <FieldLabel htmlFor={`confirm-good-at-${key}`}>
+                  {t('agents.columns.goodAt')}
+                </FieldLabel>
+                <GoodAtTemplates
+                  value={goodAt}
+                  onChange={(value) => onDraftChange(key, value)}
+                  disabled={pending}
+                />
+              </div>
               <Textarea
                 id={`confirm-good-at-${key}`}
                 rows={3}

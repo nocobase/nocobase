@@ -1,3 +1,4 @@
+import { refreshRealtimeQueries } from '@nocobase/app-client';
 import {
   QueryClient,
   QueryClientProvider,
@@ -20,9 +21,11 @@ it.each([
   ['threads', 'detail-first'],
   ['threads', 'history-first'],
   ['threads', 'history-ahead'],
+  ['threads', 'realtime'],
   ['activities', 'detail-first'],
   ['activities', 'history-first'],
   ['activities', 'history-ahead'],
+  ['activities', 'realtime'],
 ] as const)(
   'retains loaded %s across a multi-page burst (%s)',
   async (kind, order) => {
@@ -85,9 +88,14 @@ it.each([
     if (order === 'history-ahead') rows.push({ id: '18', text: 'ahead' });
     if (order !== 'detail-first') {
       await act(async () => {
-        await client.invalidateQueries({
-          queryKey: ['pm', 'issue', 'issue-one'],
-        });
+        if (order === 'realtime')
+          await refreshRealtimeQueries(client, {
+            queryKey: ['pm', 'issue', 'issue-one'],
+          });
+        else
+          await client.invalidateQueries({
+            queryKey: ['pm', 'issue', 'issue-one'],
+          });
       });
     }
     rerender({ issue: 'issue-one', cursor: '16', boundary: '16' });

@@ -48,7 +48,7 @@ async function fakeTool(dir: string, name: string): Promise<string> {
   const file = path.join(dir, name);
   await writeFile(
     file,
-    `#!/bin/sh\necho "args=$*"\necho "token=$GITLAB_TOKEN$GH_TOKEN$GITEE_TOKEN"\necho "user=$GITLAB_USER"\necho "host=$GITLAB_HOST"\necho "protocol=$API_PROTOCOL"\n`,
+    `#!/bin/sh\necho "args=$*"\necho "token=$GITLAB_TOKEN$GH_TOKEN$GITEE_TOKEN$GITEA_TOKEN"\necho "user=$GITLAB_USER"\necho "host=$GITLAB_HOST"\necho "protocol=$API_PROTOCOL"\n`,
   );
   await chmod(file, 0o755);
   return file;
@@ -101,6 +101,7 @@ describe('code host CLI wrappers', () => {
     await fakeTool(realDir, 'glab');
     await fakeTool(realDir, 'gh');
     await fakeTool(realDir, 'gitee');
+    await fakeTool(realDir, 'gt');
     const broker = new GitCredentialBroker({
       client,
       runId: 'r1',
@@ -145,6 +146,73 @@ describe('code host CLI wrappers', () => {
     });
     expect(result.wrapped).not.toContain('gitee');
     expect(messages.join(' ')).toContain('npm install -g @gitee/gitee-cli');
+  });
+
+  it('runs gt with an isolated instance and refuses credential/config mutations and host overrides', async () => {
+    answers = [
+      () => ({
+        username: 'oauth2',
+        password: 'gitea-fixture',
+        expiresAt: new Date(Date.now() + 60 * MINUTE).toISOString(),
+      }),
+    ];
+    const { binDir, env } = await setUp([
+      {
+        bin: 'gt',
+        url: REPO,
+        env: {
+          GITEA_TOKEN: { credential: 'password' },
+          GITEA_INSTANCE_URL: 'https://gitea.local/code',
+        },
+      },
+    ]);
+    const command = path.join(binDir, 'gt');
+    const allowed = await run(
+      command,
+      [
+        'pr',
+        'create',
+        '--title',
+        'auth',
+        '--body',
+        'login',
+        '--repo',
+        'org/app',
+      ],
+      env,
+    );
+    expect(allowed.code).toBe(0);
+    expect(allowed.stdout).toContain('token=gitea-fixture');
+    expect(allowed.stdout).toContain('--host https://gitea.local/code');
+    for (const args of [
+      ['auth', 'login'],
+      ['--no-input', 'auth', 'token'],
+      ['auth', 'status', '--show-token'],
+      ['config', 'set', 'token', 'value'],
+      ['account', 'add'],
+      ['alias', 'set', 'x', 'auth token'],
+      ['--host', 'https://evil.test', 'pr', 'list'],
+      ['pr', 'list', '--host=https://evil.test'],
+      ['pr', 'list', '--repo', 'https://evil.test/org/app'],
+      ['pr', 'list', '--repo', 'https://gitea.local/code/../other/org/app'],
+      ['api', '/../other/api/v1/user'],
+      ['pr', 'list', '-Rhttps://evil.test/org/app'],
+      ['api', 'https://evil.test/api/v1/user'],
+      ['api', '//evil.test/user'],
+      ['extension', 'exec', 'x'],
+      ['repo', 'set-default', 'other/app'],
+    ])
+      expect((await run(command, args, env)).code).not.toBe(0);
+    expect((await run(command, ['api', '/user'], env)).code).toBe(0);
+    expect(
+      (
+        await run(
+          command,
+          ['pr', 'list', '--repo', 'https://gitea.local/code/org/app'],
+          env,
+        )
+      ).code,
+    ).toBe(0);
   });
 
   it('injects the Gitee credential, denies fallback and blocks credential persistence with global flags', async () => {

@@ -3,6 +3,44 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const jaJP: LocaleResource<typeof enUS> = {
+  templates: {
+    title: '通知テンプレート',
+    coverage:
+      '登録済みのシナリオのみ表示します。動的送信、カスタムコールバック、個人用メールテンプレートは対象外です。定義とプレビューは読み取り専用です。',
+    search: 'シナリオを検索',
+    category: '業務分類',
+    channel: 'チャネル',
+    all: 'すべて',
+    details: '詳細を表示',
+    close: '詳細を閉じる',
+    trigger: 'トリガー',
+    recipients: '受信者ルール',
+    businessRule: '業務の有効化条件',
+    contributor: 'ソース',
+    languagePolicy: '言語の動作',
+    status: 'チャネル設定',
+    statusHelp:
+      '定義の登録は通知の有効化を意味しません。設定の存在は接続を保証しません。',
+    configured: '設定済み',
+    unconfigured: '未設定',
+    enabled: '有効',
+    disabled: '無効',
+    unknown: '不明',
+    variables: '利用可能な変数',
+    language: 'コンテンツの言語',
+    synthetic:
+      '合成サンプルデータのみ使用します。通知送信や設定変更は行いません。',
+    definition: 'テンプレート定義',
+    preview: '合成プレビュー',
+    html: 'HTML ソース（実行されないテキスト）',
+    loading: '読み込み中…',
+    failed: 'テンプレートを読み込めませんでした。',
+    forbidden: '通知テンプレートを表示する権限がありません。',
+    notFound: 'このテンプレートは登録されていません。',
+    retry: '再試行',
+    empty: '通知シナリオは登録されていません。',
+    noResults: '条件に一致するシナリオはありません。',
+  },
   logs: {
     deliveryOperations: '配送業務',
     recipeDescription:

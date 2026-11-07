@@ -21,7 +21,10 @@ import { useSessions } from '../api.js';
 import { NewSession } from '../components/new-session.js';
 import { SessionList } from '../components/session-list.js';
 import { useAgentSessionsConfig } from '../config.js';
-import { useSessionsLayout } from '../sessions-layout.js';
+import {
+  SessionsLayoutContext,
+  useSessionsLayout,
+} from '../sessions-layout.js';
 
 function useMatches(query: string): boolean {
   const [matches, setMatches] = useState(
@@ -118,12 +121,16 @@ export default function AgentSessionsPage(): ReactElement {
           className={showsArchived ? undefined : 'contents'}
           hidden={showsArchived}
         >
-          {outlet ?? (
-            <NewSession
-              onStart={startNew}
-              deferDiscovery={!params.has('new') && wide && sessions.isPending}
-            />
-          )}
+          <SessionsLayoutContext.Provider value={layout}>
+            {outlet ?? (
+              <NewSession
+                onStart={startNew}
+                deferDiscovery={
+                  !params.has('new') && wide && sessions.isPending
+                }
+              />
+            )}
+          </SessionsLayoutContext.Provider>
         </div>
       </main>
     </div>

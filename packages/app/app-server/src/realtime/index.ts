@@ -4,3 +4,4 @@ export * from './service.js';
 export * from './types.js';
 export * from './websocket.js';
 export * from './config.js';
+export * from './broker-registry.js';

@@ -1,5 +1,27 @@
 # @nocobase/agent-runner
 
+## 0.1.0-beta.23
+
+### Minor Changes
+
+- bfddb40: Add DeepSeek Harness as an ACP coding tool, with runner API-key detection, its CLI version, and full-access permissions.
+
+### Patch Changes
+
+- 4d08c21: Support the official Gitea gt CLI with run credentials, isolated configuration and instance guards.
+- Updated dependencies [49daa11]
+- Updated dependencies [bfddb40]
+  - @nocobase/app-cli-client@0.1.0-beta.18
+  - @nocobase/acp-bridge@1.0.0-beta.5
+
+## 0.1.0-beta.22
+
+### Patch Changes
+
+- 36f61d0: Distinguish workspace preparation from Agent startup when reusing a runner workspace.
+
+  Keep received replies before follow-up messages queued during an active conversation.
+
 ## 0.1.0-beta.21
 
 ### Minor Changes

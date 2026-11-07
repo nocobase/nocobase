@@ -9,7 +9,7 @@ import {
   type AppIdentityConfig,
 } from '@nocobase/app-server/config';
 import { defineAppDatabaseConfig } from '@nocobase/app-server/database';
-import { defineMailChannelsConfig } from '@nocobase/app-server/mailer';
+import { defineMailChannelsConfig } from '@nocobase/app-plugin-notification-providers/config';
 import { defineServerPlugins } from '@nocobase/app-server/plugins';
 import {
   defineAppRuntime,

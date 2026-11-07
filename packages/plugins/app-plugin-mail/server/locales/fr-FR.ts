@@ -4,6 +4,20 @@ import type enUS from './en-US.js';
 
 const frFR: LocaleResource<typeof enUS> = {
   errors: {
+    imapMoveLocationChanged:
+      'Le dossier ou la copie sélectionné a changé. Synchronisez la boîte aux lettres et rouvrez le dossier source.',
+    imapMoveNotWritable:
+      'Le dossier sélectionné ne permet pas cette opération. Vérifiez les autorisations de la boîte aux lettres.',
+    imapMoveSourceRequired:
+      'Ouvrez le dossier source avant de déplacer ou de supprimer ce message.',
+    imapMoveUnsupported:
+      'Ce serveur ne peut pas déplacer les messages en toute sécurité. Utilisez votre client de messagerie.',
+    imapTrashNotFound:
+      'Ce compte ne possède pas de corbeille. Utilisez votre client de messagerie.',
+    imapMoveOutcomeUnknown:
+      'Le déplacement est incomplet ou son résultat est inconnu. Vérifiez la boîte aux lettres avant de réessayer.',
+    invalidRecipient:
+      'Corrigez les adresses e-mail et les noms affichés des destinataires avant l’envoi.',
     accessDenied: "L'accès à la messagerie est requis.",
     idempotencyConflict:
       "La clé d'idempotence est déjà associée à une autre requête.",

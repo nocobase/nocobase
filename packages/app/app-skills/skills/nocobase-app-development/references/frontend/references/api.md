@@ -172,6 +172,7 @@ This handbook's project endpoints are called like this (`id` is the record id, `
 
 - Encode every id with `encodeURIComponent` before putting it into `path`; ids are strings and may come from a URL parameter or user input.
 - A list takes `q` for search, `orderBy` for ordering, and `page` with `pageSize` (20 by default, at most 100), and answers `{ data, meta: { page, pageSize, total } }`, typed `ProjectList` in [`example/types.md`](example/types.md). A feed or log pages with `pageSize` and `pageToken` instead, and its `meta` carries `nextPageToken` until the last page.
+- Read row summaries with the list response or one batch request for the visible ids, never a child-resource request from every row: client N+1 multiplies network and server work as the page grows. Right: render `row.linkCount` supplied by the list; wrong: each row calls `projects/{id}/links` just to count links. The server batches that summary as [server routes](../../server-routes.md#lists-and-statistics-a-fixed-number-of-queries) describes.
 
 ### Parameters and response bodies
 
@@ -312,7 +313,7 @@ Other points:
 
 When realtime events refresh what a page shows:
 
-- An event that names items refreshes those items: gather the ids of a burst (a few hundred milliseconds), read only those rows, keep one such request in flight, and merge the answer into what the page holds. Read the whole list again only when its membership changed (an item joined or left it, or moved between its groups) or the event names nothing.
+- An event that names items refreshes those items: use its changed fields to select affected sections, gather the ids of a burst (a few hundred milliseconds), read only those rows, keep one such request in flight, and merge the answer into what the page holds. Right: a `name` change refreshes the named row but leaves a status chart alone; wrong: every event refreshes the row, history and every chart. Read the whole list again only when its membership changed (an item joined or left it, or moved between its groups) or the event names nothing.
 - Do not read a whole list or overview again on every event.
 - Recompute a chart's figures at most every few seconds while it is visible, and not at all while the page is hidden; or update only the figure the event affects.
 - Read nothing for a page that is not shown; read it when it is shown again.
@@ -323,7 +324,9 @@ When realtime events refresh what a page shows:
 - Keep request keys stable: build them from the parameters that decide the data, not from values that change on every render or tick, such as the current time, or each change starts a new request.
 - Be careful with data loaded by components mounted on every page, such as navigation or a header badge: they run on every page and in every open tab, so they usually read a small fact rather than a list.
 
-The server side of these reads is in [server routes](../../server-routes.md#lists-and-statistics-a-fixed-number-of-queries).
+Test a complete event-driven refresh cycle with a request spy and an explicit completion signal, excluding the initial load: assert an upper bound on reads per event per open tab, including any follow-up read. Right: `expect(refreshRequests.length).toBeLessThanOrEqual(1)` after the cycle completes and the changed row is visible; wrong: asserting only that a request occurred or that the refresh finished quickly. Counts catch duplicate topics and per-row reads without depending on machine speed.
+
+The server side of these reads is in [list and statistics rules](../../server-routes.md#lists-and-statistics-a-fixed-number-of-queries); normalized log measurements are in [frequently called endpoints](../../server-routes.md#frequently-called-endpoints).
 
 ## Error handling
 

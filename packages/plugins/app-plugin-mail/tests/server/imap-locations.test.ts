@@ -1,3 +1,4 @@
+import { ImapSmtpAdapter } from '../../server/adapters/imap-smtp/adapter.js';
 import { randomUUID } from 'node:crypto';
 import { resolve } from 'node:path';
 import { Readable } from 'node:stream';
@@ -26,6 +27,19 @@ const server = vi.hoisted(() => {
     logouts: 0,
     locks: 0,
     expunges: [] as string[],
+    transfers: [] as string[],
+    mapping: 'valid' as
+      | 'valid'
+      | 'missing'
+      | 'wrong-source'
+      | 'wrong-generation'
+      | 'invalid-generation'
+      | 'deleted'
+      | 'untagged'
+      | 'conflict',
+    failTransfer: false,
+    loseResponse: false,
+    onTransfer: undefined as (() => Promise<void> | void) | undefined,
     stores: [] as string[],
     onList: undefined as (() => void) | undefined,
     onFlag: undefined as (() => void) | undefined,
@@ -40,6 +54,11 @@ const server = vi.hoisted(() => {
       this.logouts = 0;
       this.locks = 0;
       this.expunges.length = 0;
+      this.transfers.length = 0;
+      this.mapping = 'valid';
+      this.failTransfer = false;
+      this.loseResponse = false;
+      this.onTransfer = undefined;
       this.stores.length = 0;
       this.onList = undefined;
       this.onFlag = undefined;
@@ -236,7 +255,72 @@ vi.mock('imapflow', () => {
     public async messageFlagsRemove(range: string, flags: string[]) {
       return this.flag(range, flags, false);
     }
-    public async exec(command: string, attributes: { value: string }[]) {
+    public readonly enabled = new Set<string>();
+    public async exec(
+      command: string,
+      attributes: { value: string }[],
+      options?: { untagged: { OK(response: unknown): Promise<void> } },
+    ) {
+      if (command === 'UID MOVE' || command === 'UID COPY') {
+        const source = this.selected();
+        const uid = Number(attributes[0].value);
+        const destination = server.folders.get(attributes[1].value)!;
+        server.transfers.push(
+          `${command}:${this.mailbox && this.mailbox.path}:${uid}:${attributes[1].value}`,
+        );
+        if (server.failTransfer)
+          throw Object.assign(new Error('COPY rejected'), {
+            responseStatus: 'NO',
+          });
+        const original = source.messages.get(uid)!;
+        const copied = destination.uidNext++;
+        destination.messages.set(copied, {
+          ...original,
+          flags: new Set(original.flags),
+        });
+        if (server.mapping === 'deleted')
+          destination.messages.get(copied)!.flags.add('\\Deleted');
+        if (command === 'UID MOVE') source.messages.delete(uid);
+        await server.onTransfer?.();
+        if (server.loseResponse)
+          throw new Error('Connection lost after transfer');
+        const response = {
+          attributes: [
+            {
+              section: [
+                { value: 'COPYUID' },
+                {
+                  value:
+                    server.mapping === 'invalid-generation'
+                      ? '1:1'
+                      : String(
+                          server.mapping === 'wrong-generation'
+                            ? destination.uidValidity + 1n
+                            : destination.uidValidity,
+                        ),
+                },
+                {
+                  value: String(
+                    server.mapping === 'wrong-source' ? uid + 1 : uid,
+                  ),
+                },
+                { value: String(copied) },
+              ],
+            },
+          ],
+        };
+        if (server.mapping === 'untagged' || server.mapping === 'conflict')
+          await options?.untagged.OK(response);
+        if (server.mapping === 'conflict')
+          response.attributes[0].section[3].value = String(copied + 1);
+        return {
+          next() {},
+          response:
+            server.mapping === 'missing' || server.mapping === 'untagged'
+              ? {}
+              : response,
+        };
+      }
       if (command !== 'UID EXPUNGE')
         throw new Error('Global EXPUNGE is forbidden.');
       server.expunges.push(command);
@@ -275,7 +359,12 @@ import type {
   MailAccount,
   MailProviderAdapter,
   MailStore,
+  NormalizedMailMessage,
 } from '../../server/types.js';
+import {
+  encodeAttachmentLocator,
+  parseAttachmentLocator,
+} from '../../server/adapters/imap-smtp/locators.js';
 
 const accountId = '10000000-0000-4000-8000-000000000001';
 const owner = { actorId: 'owner' };
@@ -399,12 +488,13 @@ async function sync(
     import('../../shared/mail.js').MailStartSyncInput,
     'mode' | 'receivedAfter'
   > = {},
+  expectedStatus = 'completed',
 ): Promise<string> {
   const run = await service().startSync(owner, { accountId, ...input });
   for (let index = 0; index < 50 && (await step()); index += 1);
   expect((await store.getSyncRun(run.id))?.error).toBeUndefined();
   expect(await store.getSyncRun(run.id)).toMatchObject({
-    status: 'completed',
+    status: expectedStatus,
   });
   return run.id;
 }
@@ -2432,5 +2522,1074 @@ describe('IMAP shared mutation boundary validation', () => {
       id: original.id,
       read: false,
     });
+  });
+});
+
+describe('IMAP selected-copy move and durable protection', () => {
+  async function prepareContent(
+    identity: 'rfc' | 'objectid' | 'gmail' | 'locator' = 'rfc',
+    native = false,
+    copies = false,
+    attachments = true,
+  ) {
+    folder('INBOX');
+    folder('Trash');
+    folder('Sent');
+    server.capabilities.add(native ? 'MOVE' : 'UIDPLUS');
+    if (identity === 'objectid') server.capabilities.add('OBJECTID');
+    if (identity === 'gmail') server.capabilities.add('X-GM-EXT-1');
+    const content = {
+      raw: raw(
+        identity === 'locator'
+          ? 'not-a-message-id'
+          : '<late-content@example.com>',
+      ),
+      emailId:
+        identity === 'objectid'
+          ? 'CONTENT-OBJECT'
+          : identity === 'gmail'
+            ? '123456'
+            : undefined,
+      structure: attachments
+        ? {
+            type: 'multipart/mixed',
+            childNodes: [
+              { type: 'text/plain', part: '1', size: 5 },
+              {
+                type: 'application/pdf',
+                part: '2',
+                size: 10,
+                id: '<file@example.com>',
+                disposition: 'inline',
+                dispositionParameters: { filename: 'file.pdf' },
+              },
+            ],
+          }
+        : undefined,
+    };
+    deliver('INBOX', content);
+    if (copies) deliver('Sent', content);
+    await sync();
+    const original = (await messages())[0];
+    await store.updateMessageState(accountId, original.id, {
+      note: 'Keep content note',
+      todo: true,
+    });
+    await database
+      .query()
+      .updateTable('mailMessages')
+      .set({
+        text: 'previous body',
+        html: 'previous html',
+        contentStatus: 'deferred',
+        contentError: 'body-limit',
+      })
+      .where('id', '=', original.id)
+      .execute();
+    return original;
+  }
+  async function loadContent(
+    providerMessageId: string,
+  ): Promise<NormalizedMailMessage> {
+    const reader = await adapters.resolve((await store.getAccount(accountId))!);
+    try {
+      const loaded = await reader.getMessage!(providerMessageId);
+      if (!loaded.ok) throw new Error(loaded.error.message);
+      return loaded.value;
+    } finally {
+      await reader.close?.();
+    }
+  }
+  async function expectAttachmentDownload(messageId: string) {
+    const saved = (await store.getMessageForAccount(accountId, messageId))!;
+    expect(saved.attachments[0]).toMatchObject({
+      contentId: 'file@example.com',
+      inline: true,
+    });
+    const content = await service().getAttachment(
+      owner,
+      accountId,
+      messageId,
+      saved.attachments[0].id!,
+    );
+    expect(await new Response(content.stream).text()).toBe('attachment');
+  }
+  it.each([
+    ['rfc', false],
+    ['rfc', true],
+    ['objectid', false],
+    ['objectid', true],
+    ['gmail', false],
+    ['gmail', true],
+    ['locator', false],
+    ['locator', true],
+  ] as const)(
+    'discards late content after a confirmed move and permits a fresh retry (%s, MOVE=%s)',
+    async (identity, native) => {
+      const original = await prepareContent(identity, native);
+      const loaded = await loadContent(original.providerMessageId);
+      expect(loaded).toMatchObject({
+        contentStatus: 'complete',
+        text: 'Hello',
+      });
+      expect(await move(original, 'INBOX')).toMatchObject({ ok: true });
+      const moved = (await store.getMessageForAccount(accountId, original.id))!;
+      expect((await messages())[0].locations).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ folder: 'INBOX', status: 'invalid' }),
+          expect.objectContaining({ folder: 'Trash', status: 'valid' }),
+        ]),
+      );
+      expect(
+        (await messages())[0].locations.some(
+          (location) => location.status === 'pending',
+        ),
+      ).toBe(false);
+      expect(moved.attachments[0].id).not.toBe(
+        `${original.id}:${loaded.attachments[0].providerAttachmentId}`,
+      );
+      expect(
+        await store.saveMessageContent(accountId, original.id, loaded),
+      ).toEqual(moved);
+      expect(moved).toMatchObject({
+        id: original.id,
+        text: 'previous body',
+        html: 'previous html',
+        contentStatus: 'deferred',
+        note: 'Keep content note',
+        todo: true,
+      });
+      await expectAttachmentDownload(original.id);
+      const refreshed = await service().retryMessageContent(
+        owner,
+        accountId,
+        original.id,
+      );
+      expect(refreshed).toMatchObject({
+        id: original.id,
+        contentStatus: 'complete',
+        text: 'Hello',
+        note: 'Keep content note',
+        todo: true,
+      });
+      expect(refreshed.attachments).toEqual(moved.attachments);
+      await expectAttachmentDownload(original.id);
+    },
+  );
+  it.each([false, true])(
+    'discards content while its source is protected by a pending move (MOVE=%s)',
+    async (native) => {
+      const original = await prepareContent('rfc', native);
+      const loaded = await loadContent(original.providerMessageId);
+      server.onTransfer = async () => {
+        expect((await messages())[0].locations).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({ folder: 'INBOX', status: 'pending' }),
+          ]),
+        );
+        const current = (await store.getMessageForAccount(
+          accountId,
+          original.id,
+        ))!;
+        expect(
+          await store.saveMessageContent(accountId, original.id, loaded),
+        ).toEqual(current);
+      };
+      expect(await move(original, 'INBOX')).toMatchObject({ ok: true });
+      expect(
+        (await store.getMessageForAccount(accountId, original.id))!
+          .contentStatus,
+      ).toBe('deferred');
+      await expectAttachmentDownload(original.id);
+    },
+  );
+  it('relocates attachments when the content write completes before the move', async () => {
+    const original = await prepareContent();
+    const loaded = await loadContent(original.providerMessageId);
+    const saved = await store.saveMessageContent(
+      accountId,
+      original.id,
+      loaded,
+    );
+    expect(saved).toMatchObject({ text: 'Hello', contentStatus: 'complete' });
+    expect(await move(original, 'INBOX')).toMatchObject({ ok: true });
+    const moved = (await store.getMessageForAccount(accountId, original.id))!;
+    expect(moved).toMatchObject({
+      id: original.id,
+      text: saved.text,
+      html: saved.html,
+      contentStatus: 'complete',
+    });
+    expect(moved.attachments[0].id).not.toBe(saved.attachments[0].id);
+    await expectAttachmentDownload(original.id);
+    expect(
+      await store.saveMessageContent(accountId, original.id, loaded),
+    ).toEqual(moved);
+    const valid = await loadContent(moved.providerMessageId);
+    const incomplete = {
+      ...valid,
+      text: 'incomplete body',
+      attachments: [],
+      contentStatus: 'deferred' as const,
+    };
+    expect(
+      await store.saveMessageContent(accountId, original.id, incomplete),
+    ).toEqual(moved);
+  });
+  it('accepts complete content and updated metadata from an unmoved valid copy', async () => {
+    const original = await prepareContent('objectid', false, true);
+    const sentMessage = server.folders.get('Sent')!.messages.get(1)!;
+    sentMessage.structure = {
+      type: 'multipart/mixed',
+      childNodes: [
+        { type: 'text/plain', part: '1', size: 5 },
+        {
+          type: 'application/pdf',
+          part: '2',
+          size: 11,
+          id: '<file@example.com>',
+          disposition: 'inline',
+          dispositionParameters: { filename: 'file.pdf' },
+        },
+      ],
+    };
+    const persistence = createImapLocationPersistence(database, accountId);
+    const sent = (
+      await persistence.listValidLocations(original.providerMessageId)
+    ).find((location) => location.folder === 'Sent')!;
+    const reader = new ImapSmtpAdapter(
+      {
+        publicBasePath: '/test',
+        credentials: {
+          put: vi.fn(),
+          get: vi.fn(),
+          replace: vi.fn(),
+          getOrRefresh: vi.fn(),
+          delete: vi.fn(),
+        },
+      },
+      config,
+      (await store.getAccount(accountId))!,
+      { username: 'u', password: 'p' },
+      {
+        ...persistence,
+        listValidLocations: async () => [sent],
+      },
+    );
+    let loaded: NormalizedMailMessage;
+    try {
+      const result = await reader.getMessage(original.providerMessageId);
+      if (!result.ok) throw new Error(result.error.message);
+      loaded = result.value;
+    } finally {
+      await reader.close();
+    }
+    expect(
+      parseAttachmentLocator(loaded.attachments[0].providerAttachmentId)
+        ?.folder,
+    ).toBe('Sent');
+    expect(await move(original, 'INBOX')).toMatchObject({ ok: true });
+    expect(
+      (await store.getMessageForAccount(accountId, original.id))!.attachments[0]
+        .size,
+    ).toBe(10);
+    const updated = {
+      ...loaded,
+      text: 'complete valid body',
+      html: '<p>complete valid body</p>',
+    };
+    const saved = await store.saveMessageContent(
+      accountId,
+      original.id,
+      updated,
+    );
+    expect(saved).toMatchObject({
+      text: updated.text,
+      html: updated.html,
+      contentStatus: 'complete',
+      note: 'Keep content note',
+      todo: true,
+    });
+    expect(saved.attachments[0].id).toBe(
+      `${original.id}:${loaded.attachments[0].providerAttachmentId}`,
+    );
+    expect(saved.attachments[0].size).toBe(11);
+    expect(saved.folderIds).toEqual(expect.arrayContaining(['Sent', 'Trash']));
+    await expectAttachmentDownload(original.id);
+  });
+  it.each([false, true])(
+    'keeps attachment-free content writable after a move (locator=%s)',
+    async (locator) => {
+      const original = await prepareContent(
+        locator ? 'locator' : 'rfc',
+        false,
+        false,
+        false,
+      );
+      const loaded = await loadContent(original.providerMessageId);
+      expect(loaded.attachments).toEqual([]);
+      expect(await move(original, 'INBOX')).toMatchObject({ ok: true });
+      const moved = (await store.getMessageForAccount(accountId, original.id))!;
+      const saved = await store.saveMessageContent(
+        accountId,
+        original.id,
+        loaded,
+      );
+      expect(saved.contentStatus).toBe(locator ? 'deferred' : 'complete');
+      if (locator) expect(saved).toEqual(moved);
+      const refreshed = await service().retryMessageContent(
+        owner,
+        accountId,
+        original.id,
+      );
+      expect(refreshed).toMatchObject({
+        id: original.id,
+        text: 'Hello',
+        contentStatus: 'complete',
+        attachments: [],
+      });
+    },
+  );
+  it.each(['invalid', 'missing', 'wrong-owner', 'wrong-generation'] as const)(
+    'rejects all content when one attachment locator is %s',
+    async (kind) => {
+      const original = await prepareContent();
+      const loaded = await loadContent(original.providerMessageId);
+      const locator = parseAttachmentLocator(
+        loaded.attachments[0].providerAttachmentId,
+      )!;
+      const invalid =
+        kind === 'invalid'
+          ? 'imap-attachment:invalid'
+          : encodeAttachmentLocator({
+              ...locator,
+              uid: kind === 'wrong-generation' ? locator.uid : 2,
+              uidValidity:
+                kind === 'wrong-generation' ? '2' : locator.uidValidity,
+            });
+      if (kind === 'wrong-owner') {
+        deliver('INBOX', { raw: raw('<other-owner@example.com>') });
+        // The original message intentionally remains deferred during this import.
+        await sync({ mode: 'incremental' }, 'partial');
+      }
+      const before = (await store.getMessageForAccount(
+        accountId,
+        original.id,
+      ))!;
+      expect(
+        await store.saveMessageContent(accountId, original.id, {
+          ...loaded,
+          attachments: [
+            loaded.attachments[0],
+            { ...loaded.attachments[0], providerAttachmentId: invalid },
+          ],
+        }),
+      ).toEqual(before);
+    },
+  );
+  async function recordContentSave(
+    messageId: string,
+    content: NormalizedMailMessage,
+  ) {
+    const statements: string[] = [];
+    const client = await database.connection().client<{
+      on(event: 'query', listener: (statement: { sql: string }) => void): void;
+      off(event: 'query', listener: (statement: { sql: string }) => void): void;
+    }>();
+    const observe = (statement: { sql: string }) =>
+      statements.push(statement.sql.trimStart());
+    const transactions = vi.spyOn(database, 'transaction');
+    client.on('query', observe);
+    try {
+      const saved = await store.saveMessageContent(
+        accountId,
+        messageId,
+        content,
+      );
+      expect(transactions).toHaveBeenCalledTimes(1);
+      expect(
+        statements.filter(
+          (sql) => /left join/i.test(sql) && /\bfrom\s+[`"[]?mail_/i.test(sql),
+        ),
+      ).toHaveLength(1);
+      // Count Mail data queries separately from the driver's schema/type inspection.
+      expect(
+        statements.filter(
+          (sql) => /^select/i.test(sql) && /\bfrom\s+[`"[]?mail_/i.test(sql),
+        ),
+      ).toHaveLength(5);
+      const writes = statements.filter((sql) =>
+        /^(update|insert|delete)/i.test(sql),
+      );
+      expect(writes.every((sql) => /^update/i.test(sql))).toBe(true);
+      return { saved, writes: writes.length };
+    } finally {
+      client.off('query', observe);
+      transactions.mockRestore();
+    }
+  }
+  it('uses one existing transaction and account lock for stale and valid content writes', async () => {
+    const original = await prepareContent();
+    const loaded = await loadContent(original.providerMessageId);
+    expect(await move(original, 'INBOX')).toMatchObject({ ok: true });
+    const moved = (await store.getMessageForAccount(accountId, original.id))!;
+    const stale = await recordContentSave(original.id, loaded);
+    expect(stale).toEqual({ saved: moved, writes: 1 });
+    const valid = await recordContentSave(
+      original.id,
+      await loadContent(moved.providerMessageId),
+    );
+    expect(valid.writes).toBe(2);
+    expect(valid.saved).toMatchObject({
+      text: 'Hello',
+      contentStatus: 'complete',
+    });
+  });
+  it.each(['gmail', 'microsoft'])(
+    'preserves %s content write semantics without IMAP attachment locators',
+    async (provider) => {
+      const original = await prepareContent();
+      const loaded = await loadContent(original.providerMessageId);
+      await store.saveAccount({
+        ...(await store.getAccount(accountId))!,
+        provider: { type: provider, name: provider },
+      });
+      const content = {
+        ...loaded,
+        providerMessageId: `${provider}-content`,
+        attachments: loaded.attachments.map((attachment) => ({
+          ...attachment,
+          providerAttachmentId: `${provider}-attachment`,
+        })),
+      };
+      const message = await store.saveMessage(accountId, {
+        ...content,
+        contentStatus: 'deferred',
+        text: 'previous body',
+      });
+      const updated = {
+        ...content,
+        text: 'complete body',
+        html: '<p>Complete body</p>',
+        attachments: content.attachments.map((attachment) => ({
+          ...attachment,
+          size: 42,
+        })),
+      };
+      const { saved, writes } = await recordContentSave(message.id, updated);
+      expect(writes).toBe(2);
+      expect(saved).toMatchObject({
+        id: message.id,
+        text: updated.text,
+        html: updated.html,
+        contentStatus: 'complete',
+        attachments: [{ size: 42 }],
+      });
+      expect(saved.attachments[0].id).toBe(
+        `${message.id}:${provider}-attachment`,
+      );
+      expect(
+        await store.saveMessageContent(accountId, message.id, {
+          ...updated,
+          text: 'incomplete body',
+          attachments: [],
+          contentStatus: 'deferred',
+        }),
+      ).toEqual(saved);
+    },
+  );
+  async function prepare(native = false, copies = false, locator = false) {
+    folder('INBOX');
+    folder('Trash');
+    folder('Sent');
+    if (native) server.capabilities.add('MOVE');
+    else server.capabilities.add('UIDPLUS');
+    if (copies) server.capabilities.add('OBJECTID');
+    deliver('INBOX', {
+      raw: raw(locator ? 'not-a-message-id' : '<move@example.com>'),
+      emailId: copies ? 'MOVE-OBJECT' : undefined,
+    });
+    if (copies)
+      deliver('Sent', {
+        raw: raw('<move@example.com>'),
+        emailId: 'MOVE-OBJECT',
+      });
+    await sync();
+    const message = (await messages())[0];
+    await store.updateMessageState(accountId, message.id, {
+      note: 'Keep my note',
+      todo: true,
+    });
+    return message;
+  }
+  async function move(
+    message: Awaited<ReturnType<typeof messages>>[number],
+    sourceProviderFolderId?: string,
+    destinationProviderFolderId = 'Trash',
+  ) {
+    const base = (await adapters.resolve(
+      (await store.getAccount(accountId))!,
+    )) as ImapSmtpAdapter;
+    let bound: ImapSmtpAdapter | undefined;
+    try {
+      bound = await base.forMessage(
+        message.id,
+        message.providerMessageId,
+        'move',
+        { sourceProviderFolderId, destinationProviderFolderId },
+      );
+      return await bound.moveMessage(
+        message.providerMessageId,
+        destinationProviderFolderId,
+      );
+    } finally {
+      await bound?.close();
+      await base.close();
+    }
+  }
+  it.each([false, true])(
+    'moves one selected native-identity copy, preserving other copies and business UUID (MOVE=%s)',
+    async (native) => {
+      const original = await prepare(native, true);
+      deliver('INBOX', {
+        raw: raw('<external-deleted@example.com>'),
+        flags: ['\\Deleted'],
+      });
+      let activeTransactions = 0;
+      const executeTransaction = database.transaction.bind(database);
+      const transactions = vi
+        .spyOn(database, 'transaction')
+        .mockImplementation(async (work, name) =>
+          executeTransaction(async (connection) => {
+            activeTransactions += 1;
+            try {
+              return await work(connection);
+            } finally {
+              activeTransactions -= 1;
+            }
+          }, name),
+        );
+      server.onTransfer = () => {
+        expect(activeTransactions).toBe(0);
+      };
+      server.onFlag = () => {
+        expect(activeTransactions).toBe(0);
+      };
+      const result = await move(original, 'INBOX');
+      expect(transactions).toHaveBeenCalledTimes(3);
+      expect(result).toEqual({
+        ok: true,
+        value: { providerMessageId: 'MOVE-OBJECT' },
+      });
+      expect((await messages())[0]).toMatchObject({
+        id: original.id,
+        note: 'Keep my note',
+        folders: ['Sent', 'Trash'],
+      });
+      expect(server.folders.get('INBOX')!.messages.has(2)).toBe(true);
+      expect(server.folders.get('Sent')!.messages.size).toBe(1);
+      expect(server.transfers).toEqual([
+        `${native ? 'UID MOVE' : 'UID COPY'}:INBOX:1:Trash`,
+      ]);
+      expect(server.expunges).toEqual(native ? [] : ['UID EXPUNGE']);
+    },
+  );
+  it('changes a locator provider ID while keeping the UUID and subsequent flags usable', async () => {
+    const original = await prepare(false, false, true);
+    expect(await move(original)).toMatchObject({ ok: true });
+    const moved = (await messages())[0];
+    expect(moved.id).toBe(original.id);
+    expect(moved.providerMessageId).not.toBe(original.providerMessageId);
+    expect(moved.folders).toEqual(['Trash']);
+    await service().updateMessage(owner, {
+      accountId,
+      messageId: moved.id,
+      read: true,
+    });
+    expect(
+      server.folders.get('Trash')!.messages.get(1)!.flags.has('\\Seen'),
+    ).toBe(true);
+    await sync({ mode: 'incremental' });
+    expect((await messages()).map((message) => message.id)).toEqual([
+      original.id,
+    ]);
+  });
+  it('rejects ambiguous or incorrect sources before issuing any remote write', async () => {
+    const original = await prepare(false, true);
+    await expect(move(original)).rejects.toMatchObject({
+      reason: 'MAIL_IMAP_MOVE_SOURCE_REQUIRED',
+    });
+    await expect(move(original, 'Other')).rejects.toMatchObject({
+      reason: 'MAIL_IMAP_MOVE_SOURCE_REQUIRED',
+    });
+    expect(server.transfers).toEqual([]);
+  });
+  it('rejects servers without a safe MOVE or UIDPLUS path', async () => {
+    const original = await prepare();
+    server.capabilities.clear();
+    await expect(move(original, 'INBOX')).rejects.toMatchObject({
+      reason: 'MAIL_IMAP_MOVE_UNSUPPORTED',
+    });
+    expect(server.transfers).toEqual([]);
+    expect(server.stores).toEqual([]);
+  });
+  it('validates an existing source for a same-folder no-op', async () => {
+    const original = await prepare();
+    expect(await move(original, 'INBOX', 'INBOX')).toEqual({
+      ok: true,
+      value: { providerMessageId: original.providerMessageId },
+    });
+    expect(server.transfers).toEqual([]);
+    expect((await messages())[0].locations[0].status).toBe('valid');
+  });
+  it.each([
+    'missing',
+    'wrong-source',
+    'wrong-generation',
+    'invalid-generation',
+    'deleted',
+    'conflict',
+  ] as const)(
+    'never clears a source when COPYUID/target evidence is %s',
+    async (mapping) => {
+      const original = await prepare();
+      server.mapping = mapping;
+      await expect(move(original, 'INBOX')).rejects.toMatchObject({
+        reason: 'MAIL_IMAP_MOVE_OUTCOME_UNKNOWN',
+      });
+      expect(server.stores).toEqual([]);
+      expect(server.expunges).toEqual([]);
+      expect(server.folders.get('INBOX')!.messages.size).toBe(1);
+      expect((await messages())[0]).toMatchObject({
+        id: original.id,
+        note: 'Keep my note',
+      });
+      await expect(move(original, 'INBOX')).rejects.toMatchObject({
+        reason: 'MAIL_IMAP_MOVE_OUTCOME_UNKNOWN',
+      });
+      expect(server.transfers).toHaveLength(1);
+    },
+  );
+  it('accepts the untagged COPYUID from native MOVE without UIDPLUS', async () => {
+    const original = await prepare(true);
+    server.mapping = 'untagged';
+    expect(await move(original, 'INBOX')).toMatchObject({ ok: true });
+    expect(server.expunges).toEqual([]);
+  });
+  it('does not fallback or reissue native MOVE after response loss, even through synchronization', async () => {
+    const original = await prepare(true, true);
+    server.loseResponse = true;
+    await expect(move(original, 'INBOX')).rejects.toMatchObject({
+      reason: 'MAIL_IMAP_MOVE_OUTCOME_UNKNOWN',
+    });
+    server.loseResponse = false;
+    await database.disconnect();
+    await database.reconnect();
+    await sync({ mode: 'incremental' }, 'partial');
+    const retained = (await messages()).find(
+      (message) => message.id === original.id,
+    )!;
+    expect(retained).toMatchObject({
+      note: 'Keep my note',
+      folders: ['INBOX', 'Sent'],
+    });
+    expect(
+      retained.locations.find((location) => location.folder === 'INBOX')
+        ?.status,
+    ).toBe('pending');
+    await expect(move(original, 'INBOX')).rejects.toMatchObject({
+      reason: 'MAIL_IMAP_MOVE_OUTCOME_UNKNOWN',
+    });
+    expect(server.transfers).toHaveLength(1);
+    expect(server.expunges).toEqual([]);
+  });
+  it.each(['after-copy', 'after-store'])(
+    'does not globally expunge when UIDPLUS disappears %s and resumes one confirmed copy',
+    async (phase) => {
+      const original = await prepare();
+      if (phase === 'after-copy')
+        server.onTransfer = () => {
+          server.capabilities.delete('UIDPLUS');
+        };
+      else
+        server.onFlag = () => {
+          server.capabilities.delete('UIDPLUS');
+        };
+      await expect(move(original, 'INBOX')).rejects.toMatchObject({
+        reason: 'MAIL_IMAP_MOVE_OUTCOME_UNKNOWN',
+      });
+      expect(server.expunges).toEqual([]);
+      server.onTransfer = undefined;
+      server.onFlag = undefined;
+      server.capabilities.add('UIDPLUS');
+      server.folders.get('Trash')!.messages.get(1)!.flags.add('\\Seen');
+      server.folders.get('Trash')!.messages.get(1)!.flags.add('\\Flagged');
+      expect(await move(original, 'INBOX')).toMatchObject({ ok: true });
+      expect((await messages())[0]).toMatchObject({
+        read: true,
+        starred: true,
+      });
+      expect(server.transfers).toHaveLength(1);
+      expect(server.expunges).toEqual(['UID EXPUNGE']);
+      expect((await messages())[0].id).toBe(original.id);
+    },
+  );
+  it('preserves pending source and destination through sync and orphan cleanup before explicit recovery', async () => {
+    const original = await prepare(false, true);
+    server.failFlags.add('INBOX');
+    await expect(move(original, 'INBOX')).rejects.toMatchObject({
+      reason: 'MAIL_IMAP_MOVE_OUTCOME_UNKNOWN',
+    });
+    await sync({ mode: 'incremental' }, 'partial');
+    const retained = (await messages()).find(
+      (message) => message.id === original.id,
+    )!;
+    expect(
+      retained.locations.filter((location) => location.status === 'pending'),
+    ).toHaveLength(2);
+    expect(retained.note).toBe('Keep my note');
+    server.failFlags.clear();
+    expect(await move(original, 'INBOX')).toMatchObject({ ok: true });
+    expect(server.transfers).toHaveLength(1);
+  });
+  it.each(['stale-generation', 'deleted-source'])(
+    'rejects %s before copying and releases only its fresh protection',
+    async (fault) => {
+      const original = await prepare();
+      if (fault === 'stale-generation')
+        server.folders.get('INBOX')!.uidValidity += 1n;
+      else server.folders.get('INBOX')!.messages.get(1)!.flags.add('\\Deleted');
+      await expect(move(original, 'INBOX')).rejects.toThrow();
+      expect(server.transfers).toEqual([]);
+      expect(server.stores).toEqual([]);
+      expect((await messages())[0].locations[0].status).toBe('valid');
+    },
+  );
+  it('releases protection for a definite failed COPY and permits a later explicit attempt', async () => {
+    const original = await prepare();
+    server.failTransfer = true;
+    await expect(move(original, 'INBOX')).resolves.toMatchObject({ ok: false });
+    expect(server.stores).toEqual([]);
+    expect(server.expunges).toEqual([]);
+    expect((await messages())[0].locations[0].status).toBe('valid');
+    server.failTransfer = false;
+    expect(await move(original, 'INBOX')).toMatchObject({ ok: true });
+  });
+  it('preserves body, local metadata and attachment bytes while issuing a new attachment API ID', async () => {
+    folder('INBOX');
+    folder('Trash');
+    server.capabilities.add('UIDPLUS');
+    deliver('INBOX', {
+      raw: raw('not-a-message-id'),
+      structure: {
+        type: 'multipart/mixed',
+        childNodes: [
+          { type: 'text/plain', part: '1', size: 5 },
+          {
+            type: 'application/pdf',
+            part: '2',
+            size: 10,
+            disposition: 'attachment',
+            dispositionParameters: { filename: 'file.pdf' },
+          },
+        ],
+      },
+    });
+    await sync();
+    const original = (await messages())[0];
+    await store.updateMessageState(accountId, original.id, {
+      note: 'Protected note',
+      todo: true,
+    });
+    const before = (await store.getMessageForAccount(accountId, original.id))!;
+    expect(await move(original, 'INBOX')).toMatchObject({ ok: true });
+    const after = (await store.getMessageForAccount(accountId, original.id))!;
+    expect(after).toMatchObject({
+      id: original.id,
+      note: 'Protected note',
+      todo: true,
+      text: before.text,
+      html: before.html,
+    });
+    expect(after.attachments[0].id).not.toBe(before.attachments[0].id);
+    expect(after.attachments[0]).toMatchObject({
+      fileName: before.attachments[0].fileName,
+      size: before.attachments[0].size,
+    });
+    const content = await service().getAttachment(
+      owner,
+      accountId,
+      original.id,
+      after.attachments[0].id!,
+    );
+    expect(await new Response(content.stream).text()).toBe('attachment');
+  });
+  it('uses imap-loc for long destination paths while retaining access to the new tuple', async () => {
+    const original = await prepare(false, false, true);
+    const path = 'Long/'.repeat(95);
+    folder(path);
+    await sync({ mode: 'incremental' });
+    expect(await move(original, 'INBOX', path)).toMatchObject({ ok: true });
+    const moved = (await messages())[0];
+    expect(moved.providerMessageId).toMatch(/^imap-loc:/);
+    expect(moved.id).toBe(original.id);
+    await service().updateMessage(owner, {
+      accountId,
+      messageId: moved.id,
+      starred: true,
+    });
+    expect(
+      server.folders.get(path)!.messages.get(1)!.flags.has('\\Flagged'),
+    ).toBe(true);
+  });
+  it('rejects scheduled targets at binding and destination ownership conflicts before source cleanup', async () => {
+    const original = await prepare();
+    await database
+      .query()
+      .updateTable('mailMessages')
+      .set({ scheduledSubmissionId: 'pending-delivery' })
+      .where('id', '=', original.id)
+      .execute();
+    await expect(move(original, 'INBOX')).rejects.toThrow(
+      'Invalid IMAP move target',
+    );
+    expect(server.transfers).toEqual([]);
+    await database
+      .query()
+      .updateTable('mailMessages')
+      .set({ scheduledSubmissionId: null })
+      .where('id', '=', original.id)
+      .execute();
+    const otherId = randomUUID();
+    const other = await store.saveMessage(accountId, {
+      providerMessageId: 'other-owner',
+      providerFolderIds: [],
+      to: [],
+      cc: [],
+      bcc: [],
+      replyTo: [],
+      references: [],
+      subject: 'Other UUID',
+      read: true,
+      starred: false,
+      draft: false,
+      attachments: [],
+    });
+    await database
+      .query()
+      .insertInto('mailMessageImapLocations')
+      .values({
+        id: otherId,
+        accountId,
+        messageId: other.id,
+        providerFolderId: 'Trash',
+        uidValidity: '1',
+        uid: 1,
+        status: 'invalid',
+        read: false,
+        starred: false,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      })
+      .execute();
+    await expect(move(original, 'INBOX')).rejects.toMatchObject({
+      reason: 'MAIL_IMAP_MOVE_OUTCOME_UNKNOWN',
+    });
+    expect(server.stores).toEqual([]);
+    expect(server.expunges).toEqual([]);
+  });
+  it('rejects stale binding and fences remote flags while a move is pending', async () => {
+    const original = await prepare();
+    const persistence = createImapLocationPersistence(database, accountId);
+    const binding = await persistence.bindMessage(
+      original.id,
+      original.providerMessageId,
+      'move',
+      { sourceProviderFolderId: 'INBOX', destinationProviderFolderId: 'Trash' },
+    );
+    await database
+      .query()
+      .updateTable('mailMessageImapLocations')
+      .set({ uid: 2 })
+      .where('messageId', '=', original.id)
+      .execute();
+    await expect(binding.persistence.beginMove()).rejects.toThrow(
+      'selected IMAP source changed',
+    );
+    await database
+      .query()
+      .updateTable('mailMessageImapLocations')
+      .set({ uid: 1 })
+      .where('messageId', '=', original.id)
+      .execute();
+    server.mapping = 'missing';
+    await expect(move(original, 'INBOX')).rejects.toMatchObject({
+      reason: 'MAIL_IMAP_MOVE_OUTCOME_UNKNOWN',
+    });
+    await expect(
+      service().updateMessage(owner, {
+        accountId,
+        messageId: original.id,
+        read: true,
+      }),
+    ).rejects.toMatchObject({ reason: 'MAIL_IMAP_MOVE_OUTCOME_UNKNOWN' });
+    expect(server.stores).toEqual([]);
+  });
+  it('reuses a concurrently recorded mapped destination only for the original UUID', async () => {
+    const original = await prepare(false, true);
+    const destinationId = randomUUID();
+    await database
+      .query()
+      .insertInto('mailMessageImapLocations')
+      .values({
+        id: destinationId,
+        accountId,
+        messageId: original.id,
+        providerFolderId: 'Trash',
+        uidValidity: '1',
+        uid: 1,
+        status: 'valid',
+        read: true,
+        starred: false,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      })
+      .execute();
+    expect(await move(original, 'INBOX')).toMatchObject({ ok: true });
+    expect(
+      (await messages())[0].locations.find(
+        (location) => location.folder === 'Trash',
+      ),
+    ).toMatchObject({ id: destinationId, status: 'valid' });
+  });
+  it('fences scheduling and keeps bounded durable tokens while network cleanup is incomplete', async () => {
+    const original = await prepare();
+    server.failFlags.add('INBOX');
+    await expect(move(original, 'INBOX')).rejects.toMatchObject({
+      reason: 'MAIL_IMAP_MOVE_OUTCOME_UNKNOWN',
+    });
+    const protectedRows = await database
+      .query()
+      .selectFrom('mailMessageImapLocations')
+      .select('invalidationReason')
+      .where('messageId', '=', original.id)
+      .where('status', '=', 'pending')
+      .execute<{ invalidationReason: string }>();
+    expect(
+      protectedRows.map((row) => row.invalidationReason.length).sort(),
+    ).toEqual([34, 39]);
+    await expect(
+      store.createScheduledSubmission(
+        {
+          id: randomUUID(),
+          accountId,
+          status: 'pending',
+          scheduledAt: '2099-01-01T00:00:00.000Z',
+        },
+        'pending-move-schedule',
+        'fingerprint',
+        owner.actorId,
+        {
+          accountId,
+          idempotencyKey: 'pending-move-schedule',
+          draftMessageId: original.id,
+          to: [{ address: 'test@example.com' }],
+          subject: 'Scheduled',
+          text: 'Draft',
+        },
+        {
+          providerMessageId: original.providerMessageId,
+          providerFolderIds: ['INBOX'],
+          to: [],
+          cc: [],
+          bcc: [],
+          replyTo: [],
+          references: [],
+          subject: 'Draft',
+          read: true,
+          starred: false,
+          draft: true,
+          attachments: [],
+        },
+      ),
+    ).rejects.toMatchObject({ reason: 'MAIL_IMAP_MOVE_OUTCOME_UNKNOWN' });
+    expect(server.transfers).toHaveLength(1);
+  });
+
+  it('retains a localized draft identity while relocating its remote locator', async () => {
+    const original = await prepare(false, false, true);
+    await database
+      .query()
+      .updateTable('mailMessages')
+      .set({ draft: true })
+      .where('id', '=', original.id)
+      .execute();
+    const localized = await store.localizeDraft(accountId, original.id);
+    const moved = await service().moveMessage(owner, {
+      accountId,
+      messageId: original.id,
+      providerFolderId: 'Trash',
+      sourceProviderFolderId: 'INBOX',
+    });
+    expect(moved.id).toBe(original.id);
+    expect(moved.providerMessageId).toBe(localized.providerMessageId);
+    expect(moved.providerDraftMessageId).not.toBe(
+      localized.providerDraftMessageId,
+    );
+    expect(moved.providerMessageId).toMatch(/^local-draft:/);
+    await service().updateMessage(owner, {
+      accountId,
+      messageId: original.id,
+      read: true,
+    });
+    expect(
+      server.folders.get('Trash')!.messages.get(1)!.flags.has('\\Seen'),
+    ).toBe(true);
+  });
+
+  it('reloads the explicit IMAP move through private persistence without calling generic store movement', async () => {
+    const original = await prepare();
+    const generic = vi.spyOn(store, 'moveMessage');
+    const moved = await service().moveMessage(owner, {
+      accountId,
+      messageId: original.id,
+      providerFolderId: 'Trash',
+      sourceProviderFolderId: 'INBOX',
+    });
+    expect(moved.id).toBe(original.id);
+    expect(moved.folderIds).toEqual(['Trash']);
+    expect(generic).not.toHaveBeenCalled();
+  });
+
+  it('soft deletion goes to Trash, retaining the business UUID', async () => {
+    const original = await prepare();
+    await service().deleteMessage(owner, {
+      accountId,
+      messageId: original.id,
+      sourceProviderFolderId: 'INBOX',
+    });
+    expect((await messages())[0]).toMatchObject({
+      id: original.id,
+      folders: ['Trash'],
+      note: 'Keep my note',
+    });
+  });
+  it('fails ordinary deletion when Trash is missing without issuing permanent deletion', async () => {
+    const original = await prepare();
+    await database
+      .query()
+      .deleteFrom('mailFolders')
+      .where('accountId', '=', accountId)
+      .where('providerFolderId', '=', 'Trash')
+      .execute();
+    await expect(
+      service().deleteMessage(owner, {
+        accountId,
+        messageId: original.id,
+        sourceProviderFolderId: 'INBOX',
+      }),
+    ).rejects.toMatchObject({ reason: 'MAIL_IMAP_TRASH_NOT_FOUND' });
+    expect(server.expunges).toEqual([]);
+    expect(server.stores).toEqual([]);
   });
 });

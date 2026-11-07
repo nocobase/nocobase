@@ -12,7 +12,7 @@ const jaJP: LocaleResource<typeof enUS> = {
     businesses: {
       apps: {
         title: 'アプリ',
-        description: 'アプリ、そのリリース、デプロイメント、およびランタイム。',
+        description: 'アプリ、そのリリース、デプロイメント、および実行環境。',
         actions: {
           view: {
             title: 'アプリを見る',
@@ -211,9 +211,9 @@ const jaJP: LocaleResource<typeof enUS> = {
         onDemand: '訪問から開始',
       },
       activationHint: {
-        eager: 'デプロイ時およびランタイムが再起動されるたびに開始されます。',
+        eager: 'デプロイ時および実行環境が再起動されるたびに開始されます。',
         onDemand:
-          'デプロイメントまたはランタイムの再起動後の最初のアクセスによって開始されます。',
+          'デプロイメントまたは実行環境の再起動後の最初のアクセスによって開始されます。',
       },
       idleLabel: '未訪問時は停止',
       dormantLabel: '訪問者がいない場合は休止状態にします',
@@ -250,6 +250,9 @@ const jaJP: LocaleResource<typeof enUS> = {
       stopped: '停止しました',
       stoppedOnDemand: '停止中（訪問時に開始）',
       dormant: '冬眠中（訪問時に準備）',
+      waitingCapacity: '空き枠を待機中',
+      waitingMemory: 'メモリを待機中',
+      waitingRecycle: 'ホストの再起動を待機中',
       failed: '失敗しました',
       unknown: '不明',
       deploying: '配備中',
@@ -298,6 +301,11 @@ const jaJP: LocaleResource<typeof enUS> = {
         'この環境は保護されています。 「{{appId}}」と入力してデプロイします。',
     },
     deployments: {
+      cancel: 'デプロイをキャンセル',
+      replaced: '新しいデプロイに置き換えられました。',
+      cancelAccepted: 'キャンセルを受け付けました。',
+      queueAhead: '待機中 · 前に {{ahead}} 件',
+      restartHint: 'デプロイが中断されました。再度デプロイしてください。',
       title: '展開',
       kind: '種類',
       status: '状態',
@@ -314,6 +322,8 @@ const jaJP: LocaleResource<typeof enUS> = {
       hideLogs: 'ログを非表示にする',
       noLogs: 'ログ行はありません。',
       statuses: {
+        cancelling: 'キャンセル中',
+        cancelled: 'キャンセル済み',
         queued: 'キューに登録されました',
         deploying: '配備中',
         succeeded: '成功しました',
@@ -322,7 +332,7 @@ const jaJP: LocaleResource<typeof enUS> = {
     },
     actors: {
       human: '人',
-      agent: 'エージェント',
+      agent: 'Agent',
       key: 'キー',
       rule: 'ルール',
       system: 'システム',
@@ -511,7 +521,7 @@ const jaJP: LocaleResource<typeof enUS> = {
           syntax: '{{line}}行目：KEY=valueと書きます。',
           name: '{{line}} 行: {{name}} は有効な名前ではありません。文字で始まる大文字、数字、アンダースコアを使用してください。',
           reserved:
-            '{{line}} 行: {{name}} はランタイムによって設定され、変数にすることはできません。',
+            '{{line}} 行: {{name}} は実行環境によって設定され、変数にすることはできません。',
           duplicate: '{{line}}行: {{name}}はすでに前の行に設定されています。',
           unterminated:
             '{{line}} 行: {{name}} の値の周囲の引用符が閉じられていません。',
@@ -524,6 +534,47 @@ const jaJP: LocaleResource<typeof enUS> = {
       deployments: '展開',
       variables: '変数',
       settings: '設定',
+    },
+    sharedHost: {
+      title: '共有アプリホスト',
+      description:
+        'このホスト上のすべての環境のアプリが、1 つのプロセスとそのメモリを共有します。',
+      summary:
+        'デプロイ済み {{deployed}} 個のうち {{running}} 個が実行中または起動中',
+      memory:
+        'ヒープ {{heapUsed}} / {{heapLimit}} · プロセスメモリ {{rss}} · サーバーの空き {{available}}',
+      memoryNote: 'プロセス全体の合計で、個々のアプリの使用量ではありません。',
+      recycling: {
+        pending:
+          '使用中のアプリがなくなったら、このホストを再起動して古いコードを解放します。新しいバージョンはそれまで待機し、実行中のアプリは引き続き応答します。',
+        restarting:
+          'このホストは再起動中です。戻るまで、アプリは「しばらくしてから再試行」と応答します。',
+      },
+      restoreFailed:
+        '{{name}}：アプリを復元できませんでした。バックグラウンドで再試行しています。',
+      columns: {
+        app: 'アプリ',
+        state: '状態',
+        why: '理由',
+        lastAccess: '最終アクセス',
+      },
+      hidden: '表示権限のないアプリ',
+      empty: 'このホストで実行中のアプリはありません。',
+      idle: 'アイドル。空きが必要なときに最初に停止されます',
+      holds: {
+        requests: 'リクエストを処理中',
+        connections: '接続中',
+        starting: '起動中',
+        operation: 'デプロイまたは停止中',
+        resident: '常駐',
+        busy: 'ビジー',
+        recent: '直近 1 分以内に使用',
+      },
+      waiting: {
+        capacity: '起動拒否：実行数の上限または起動キューが満杯',
+        memory: '起動拒否：メモリ不足',
+        recycle: '起動拒否：新しいコードはホストの再起動を待っています',
+      },
     },
     overview: {
       currentRelease: '現在のリリース',
@@ -570,7 +621,7 @@ const jaJP: LocaleResource<typeof enUS> = {
       clear: 'クリア{{path}}',
     },
     settings: {
-      edit: 'ランタイムとラベル',
+      edit: '実行環境とラベル',
       editShort: '編集',
       editDescription:
         'アプリがいつ実行されるか、およびそのラベルがどのように付けられるか。変更は再起動しなくても適用されます。',
@@ -626,6 +677,10 @@ const jaJP: LocaleResource<typeof enUS> = {
           '設定は保存されましたが、アプリは設定をリロードできませんでした。',
         CONFIG_TOO_LARGE: '構成が大きすぎます。',
         CONFIRMATION_REQUIRED: '確認のためアプリ ID を入力します。',
+        DEPLOYMENT_NOT_CANCELLABLE:
+          'デプロイは切り替え中か、すでに終了しています。',
+        CANCELLATION_UNSUPPORTED:
+          'このデプロイドライバーはキャンセルに対応していません。',
         DEPLOYMENT_IN_PROGRESS: 'このアプリの展開はすでに進行中です。',
         DEPLOYMENT_NOT_FOUND: 'デプロイメントが存在しません。',
         DRIVER_UNAVAILABLE: '環境のドライバーが利用できません。',
@@ -685,7 +740,7 @@ const jaJP: LocaleResource<typeof enUS> = {
         VARIABLES_MISSING:
           '必要な変数が設定されていません: {{names}}。それらをアプリまたはその環境変数に設定して、再度デプロイします。',
         VARIABLE_RESERVED:
-          'この名前はランタイムによって設定され、変数にすることはできません。',
+          'この名前は実行環境によって設定され、変数にすることはできません。',
         INVALID_VARIABLE_NAME:
           '変数名は、文字で始まる大文字、数字、アンダースコアです。',
         INVALID_VARIABLE_VALUE: '値が長すぎます。',
@@ -704,14 +759,13 @@ const jaJP: LocaleResource<typeof enUS> = {
           'ホストは、実行されているアプリケーションをデプロイできません。',
         noStatus: 'ホストは展開がどのように行われたかを報告しませんでした。',
         interrupted: '再起動によりデプロイメントが中断されました。',
-        notReported: 'ランタイムがアプリを報告しませんでした。',
+        notReported: '実行環境がアプリを報告しませんでした。',
         notRunning: '再起動後、アプリが起動しません。',
-        deploymentNotReported:
-          'ランタイムがデプロイメントを報告しませんでした。',
+        deploymentNotReported: '実行環境がデプロイメントを報告しませんでした。',
         notReady:
           'まだ準備ができていません。しばらくしてからもう一度試してください。',
         checkTimeout: 'テストは 20 秒以内に終了しませんでした。',
-        hostNoSettings: 'ローカル ランタイムは接続設定を必要としません。',
+        hostNoSettings: 'ローカル 実行環境は接続設定を必要としません。',
       },
       prefixed: {
         startFailed: '起動に失敗しました: {{detail}}',
@@ -803,7 +857,7 @@ const jaJP: LocaleResource<typeof enUS> = {
       policyDescription: 'ここに配置できるのは誰ですか。',
       appDefaults: 'アプリ',
       appDefaultsDescription:
-        '最大でもこの数のアプリがあり、独自のランタイム ポリシーなしで作成されたアプリが停止して休止状態になる場合。空: 制限なし、決してありません。',
+        '最大でもこの数のアプリがあり、独自の実行環境 ポリシーなしで作成されたアプリが停止して休止状態になる場合。空: 制限なし、決してありません。',
       maxApps: 'ほとんどのアプリ',
       defaultIdle: '停止時間 (未訪問分)',
       defaultDormant: '休止後（未訪問時間）',

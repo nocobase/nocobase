@@ -42,6 +42,15 @@ const idID: LocaleResource<typeof enUS> = {
     refresh: 'Segarkan',
   },
   workspace: {
+    imapSourceRequired:
+      'Buka folder sumber sebelum memindahkan atau menghapus pesan ini.',
+    imapTrashMissing:
+      'Akun ini tidak memiliki folder Sampah. Gunakan aplikasi email Anda.',
+    deleteUnsupported:
+      'Akun ini tidak mendukung penghapusan. Gunakan aplikasi email Anda.',
+    imapScheduled: 'Batalkan pengiriman terjadwal sebelum menghapus draf ini.',
+    invalidRecipient:
+      'Perbaiki alamat email atau nama tampilan: {{value}}. Gunakan maksimal 100 penerima per kolom.',
     senderLabel: 'Dari',
     attachmentNumber: 'Lampiran {{number}}',
     pendingDelivery:

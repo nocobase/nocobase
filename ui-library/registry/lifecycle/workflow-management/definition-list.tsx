@@ -27,7 +27,8 @@ export interface WorkflowDefinitionListProps {
   loading: boolean;
   empty?: ReactNode;
   labels: {
-    refresh: string;
+    /** Legacy adapter label; ready lists no longer render a Refresh control. */
+    refresh?: string;
     workflow: string;
     executionCount: string;
     executionActivity: string;
@@ -66,14 +67,6 @@ export function WorkflowDefinitionList({
       <div className='flex w-full min-w-0 flex-1 flex-col gap-4'>
         <div className='flex flex-col items-stretch justify-between gap-2 sm:flex-row sm:items-center'>
           <div className='min-w-0 flex-1 sm:max-w-xs'>{search}</div>
-          <Button
-            className='shrink-0 self-start sm:self-auto'
-            variant='outline'
-            disabled={loading}
-            onClick={onRefresh}
-          >
-            {labels.refresh}
-          </Button>
         </div>
         {status}
         {(listState !== undefined || loaded || loading) && (

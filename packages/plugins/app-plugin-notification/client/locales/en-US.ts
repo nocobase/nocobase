@@ -1,6 +1,44 @@
 import type { LocaleResource } from '@nocobase/i18n';
 
 const enUS = {
+  templates: {
+    title: 'Notification templates',
+    coverage:
+      'Registered scenarios only. Dynamic sends, custom callbacks and private mail templates are outside this directory. Definitions and previews are read-only.',
+    search: 'Search scenarios',
+    category: 'Business category',
+    channel: 'Channel',
+    all: 'All',
+    details: 'View details',
+    close: 'Close details',
+    trigger: 'Trigger',
+    recipients: 'Recipient rule',
+    businessRule: 'Business activation',
+    contributor: 'Source',
+    languagePolicy: 'Language behavior',
+    status: 'Channel configuration',
+    statusHelp:
+      'A registered definition does not imply delivery is enabled. Configuration presence does not verify connectivity.',
+    configured: 'Configured',
+    unconfigured: 'Not configured',
+    enabled: 'Enabled',
+    disabled: 'Disabled',
+    unknown: 'Unknown',
+    variables: 'Available variables',
+    language: 'Content language',
+    synthetic:
+      'Synthetic example data only. Preview sends no notifications and changes no configuration.',
+    definition: 'Template definition',
+    preview: 'Synthetic preview',
+    html: 'HTML source (inert text)',
+    loading: 'Loading…',
+    failed: 'Templates could not be loaded.',
+    forbidden: 'You do not have permission to view notification templates.',
+    notFound: 'This template is no longer registered.',
+    retry: 'Retry',
+    empty: 'No notification scenarios are registered.',
+    noResults: 'No scenarios match these filters.',
+  },
   logs: {
     deliveryOperations: 'Delivery operations',
     recipeDescription: 'Trace each channel handoff and every provider attempt.',

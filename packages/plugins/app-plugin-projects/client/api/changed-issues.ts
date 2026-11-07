@@ -21,20 +21,20 @@ export function announcedIssueIds(
 export function changedIssueSegments(
   client: Pick<QueryClient, 'getQueryCache'>,
   issueIds: ReadonlySet<string>,
+  prefixes: readonly (readonly [string, string])[] = [['pm', 'issue']],
 ): Set<string> {
   const segments = new Set(issueIds);
-  for (const query of client
-    .getQueryCache()
-    .findAll({ queryKey: ['pm', 'issue'] })) {
-    const segment = query.queryKey[2];
-    const id = (query.state.data as { id?: unknown } | undefined)?.id;
-    if (
-      typeof segment === 'string' &&
-      typeof id === 'string' &&
-      issueIds.has(id)
-    )
-      segments.add(segment);
-  }
+  for (const queryKey of prefixes)
+    for (const query of client.getQueryCache().findAll({ queryKey })) {
+      const segment = query.queryKey[2];
+      const id = (query.state.data as { id?: unknown } | undefined)?.id;
+      if (
+        typeof segment === 'string' &&
+        typeof id === 'string' &&
+        issueIds.has(id)
+      )
+        segments.add(segment);
+    }
   return segments;
 }
 

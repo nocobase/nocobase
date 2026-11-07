@@ -12,14 +12,13 @@ const jaJP: LocaleResource<typeof enUS> = {
         description: 'チームのエージェントと彼らが使用するスキル。',
         actions: {
           edit: {
-            title: 'エージェントとスキルの変更',
+            title: 'Agentsとスキルの変更',
             description:
-              'エージェントの設定、スキル、変数の変更、アーカイブ、復元、削除、スキルの編集を行います。エージェントには編集者以上の権限は与えられません',
-            related:
-              'エージェントとスキルの変更（所有するエージェントと作成したスキル）',
+              'Agentの設定、スキル、変数の変更、アーカイブ、復元、削除、スキルの編集を行います。Agentには編集者以上の権限は与えられません',
+            related: 'Agentsとスキルの変更（所有するAgentsと作成したスキル）',
             relatedLabel: '私が所有するエージェントと私が作成したスキル',
             relatedHint: '私がオーナーであるエージェントと私が作成したスキル',
-            all: 'チェンジエージェントとスキル(全て)',
+            all: 'チェンジAgentsとスキル(全て)',
           },
         },
       },
@@ -40,11 +39,11 @@ const jaJP: LocaleResource<typeof enUS> = {
       agents: {
         title: 'エージェント',
         description:
-          'エージェント、スキル、ランを参照。エージェントとスキルを変更し、実行をキャンセルして再試行します。',
+          'Agents、スキル、ランを参照。Agentsとスキルを変更し、実行をキャンセルして再試行します。',
       },
       runners: {
         title: '実行環境',
-        description: 'ランナーと登録トークンを参照。ランナーを管理します。',
+        description: '実行環境と登録トークンを参照。実行環境を管理します。',
       },
       prices: {
         title: 'モデルの価格',
@@ -57,6 +56,11 @@ const jaJP: LocaleResource<typeof enUS> = {
           'モデル サービスとそれらが提供するモデルを参照し、そのキーを参照しないでください。',
       },
     },
+  },
+  runnerConversation: {
+    title: '会話：{{title}}',
+    other: '他の人の会話',
+    untitled: '新しい会話',
   },
 };
 

@@ -7,9 +7,6 @@ export class ConcurrentAcquireError extends Error {
 export class ConcurrentAbortError extends Error {
   override name: string = 'ConcurrentAbortError';
 }
-export class ConcurrentLeaseLostError extends Error {
-  override name: string = 'ConcurrentLeaseLostError';
-}
 export class ConcurrentReleaseError extends Error {
   override name: string = 'ConcurrentReleaseError';
 }

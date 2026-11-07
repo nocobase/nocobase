@@ -4,6 +4,7 @@ import type enUS from './en-US.js';
 
 const viVN: LocaleResource<typeof enUS> = {
   business: {
+    longWait: 'Việc này lâu hơn bình thường. Bạn có thể tiếp tục chờ.',
     scenarios: 'Kịch bản thời gian thực',
     tabs: {
       tasks: 'Tác vụ',
@@ -88,6 +89,8 @@ const viVN: LocaleResource<typeof enUS> = {
         'Tạo nhiệm vụ được giao cho chính bạn trong Nhiệm vụ, sau đó quay lại đây.',
     },
     exports: {
+      ready:
+        '{{count}} dòng đã sẵn sàng. Tải CSV tại đây; tệp vẫn nằm trong danh sách này.',
       missing:
         'Tệp xuất này không còn có sẵn. Tạo một bản xuất mới để tải xuống các tác vụ hiện tại của bạn.',
       title: 'Xuất nhiệm vụ',
@@ -232,6 +235,16 @@ const viVN: LocaleResource<typeof enUS> = {
     capacity: 'Cuộc biểu tình đang bận rộn. Hãy thử lại sau.',
     subscription:
       'Việc đăng ký không thành công. Kết nối lại hoặc thử lại sau khi khôi phục quyền truy cập.',
+  },
+  taskProgress: {
+    queued: 'Đang chờ bắt đầu',
+    running: 'Đang thực hiện',
+    completed: 'Hoàn tất',
+    failed: 'Thất bại',
+    canceled: 'Đã hủy',
+    count: '{{processed}} / {{total}}',
+    processed: 'Đã xử lý {{processed}}',
+    background: 'Vẫn tiếp tục chạy nếu bạn rời trang này.',
   },
 };
 

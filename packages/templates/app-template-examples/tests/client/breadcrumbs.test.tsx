@@ -335,6 +335,8 @@ describe('Breadcrumbs', () => {
         <RouteTreeProvider
           routes={[
             route('order', '/orders/:id', { breadcrumb: { title: 'Order' } }),
+            route('customers', '/customers'),
+            route('customer', '/customers/:id'),
           ]}
         >
           <PageBreadcrumbProvider>

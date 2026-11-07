@@ -24,6 +24,7 @@ const host = vi.hoisted(() => ({
 }));
 vi.mock('@nocobase/app-client', async (original) => ({
   ...(await original<typeof import('@nocobase/app-client')>()),
+  useRealtimeReadiness: () => true,
   useApiClient: () => host.api,
   useService: () => host.realtime,
 }));

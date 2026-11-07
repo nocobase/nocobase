@@ -12,19 +12,19 @@ const esES: LocaleResource<typeof enUS> = {
     bridgeReplaced:
       'Otro puente ha registrado esta computadora. Reinicie esta conexión.',
     submissionConflict: 'Este ID de envío ya se utiliza para otra solicitud.',
-    authenticationRequired: 'Inicie sesión para utilizar sesiones de agente.',
+    authenticationRequired: 'Inicie sesión para utilizar sesiones de Agent.',
     computerNotFound:
       'Ninguna computadora con esta identificación está conectada a su cuenta.',
     sessionNotFound: 'Ninguna sesión con esta identificación es tuya.',
     computerOffline:
       'La computadora está fuera de línea. Inicie el puente sobre él y vuelva a intentarlo.',
-    agentUnavailable: 'La computadora no puede ejecutar este agente.',
+    agentUnavailable: 'La computadora no puede ejecutar este Agent.',
     directoryNotAllowed:
       'Las sesiones en esta computadora funcionan solo en los directorios que permite su puente.',
     sessionArchived: 'La sesión está archivada. Restaurarlo primero.',
     permissionRequestNotFound:
       'Esta solicitud de permiso ya ha sido respondida o ya no está en espera.',
-    choiceNotFound: 'El agente no ofrece esta opción o valor.',
+    choiceNotFound: 'El Agent no ofrece esta opción o valor.',
     linkNotFound:
       'Nada de este tipo con esta identificación está vinculado a la sesión, o su trabajo no puede comenzar desde aquí.',
     invalidPageToken: 'Esta lista no emitió el token de página.',
@@ -34,7 +34,7 @@ const esES: LocaleResource<typeof enUS> = {
       'La computadora no respondió a tiempo. Verifique que su conexión esté funcionando y vuelva a intentarlo.',
     folderUnavailable: 'La carpeta no se puede abrir en la computadora.',
     discoveryFailed:
-      'No se pudo cargar la configuración del agente. Verifique el agente en esta computadora y vuelva a intentarlo.',
+      'No se pudo cargar la configuración del Agent. Actualiza la línea de comandos de este equipo y reinicia la conexión en segundo plano; luego vuelve a intentarlo.',
     projectNotFound: 'No existe tal proyecto o no se puede ver.',
     referenceNotFound: 'Algo mencionado no existe o no se puede ver.',
     imageNotFound: 'No se envió ninguna imagen con este nombre en la sesión.',

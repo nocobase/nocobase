@@ -23,7 +23,11 @@ function commitsCopies(adapter: MailProviderAdapter): boolean {
 
 type MessageMutationStore = Pick<
   MailStore,
-  'listFolders' | 'updateMessageState' | 'moveMessage' | 'deleteMessage'
+  | 'listFolders'
+  | 'getMessage'
+  | 'updateMessageState'
+  | 'moveMessage'
+  | 'deleteMessage'
 >;
 
 /** Executes mutations after the caller has authorized and resolved the target. */
@@ -140,6 +144,50 @@ export class MailMessageMutations {
     }
   }
 
+  private async moveImap(
+    context: MailOperationContext,
+    account: MailAccount,
+    message: MailMessage,
+    base: ImapSmtpAdapter,
+    destinationProviderFolderId: string,
+    sourceProviderFolderId?: string,
+  ): Promise<MailMessage> {
+    let bound: ImapSmtpAdapter | undefined;
+    try {
+      bound = await base.forMessage(
+        message.id,
+        remoteMessageId(message)!,
+        'move',
+        {
+          sourceProviderFolderId,
+          destinationProviderFolderId,
+        },
+      );
+      assertProviderResult(
+        await bound.moveMessage(
+          remoteMessageId(message)!,
+          destinationProviderFolderId,
+          context.signal,
+        ),
+      );
+      const updated = await this.dependencies.store.getMessage(
+        account.userId,
+        account.id,
+        message.id,
+      );
+      if (!updated)
+        throw new Error('Mail message was not found after IMAP move.');
+      return updated;
+    } finally {
+      if (bound) await closeAdapter(bound);
+      notifyMailMessageChange(
+        this.dependencies.messageChangeNotifier,
+        account.userId,
+        this.dependencies.logger,
+      );
+    }
+  }
+
   public async moveMessage(
     context: MailOperationContext,
     account: MailAccount,
@@ -177,6 +225,15 @@ export class MailMessageMutations {
           'The selected Mail Provider cannot move messages.',
         );
       }
+      if (adapter instanceof ImapSmtpAdapter && commitsCopies(adapter))
+        return await this.moveImap(
+          context,
+          account,
+          message,
+          adapter,
+          input.providerFolderId,
+          input.sourceProviderFolderId,
+        );
       const moved = assertProviderResult(
         await adapter.moveMessage(
           providerMessageId,
@@ -264,6 +321,25 @@ export class MailMessageMutations {
       context.signal,
     );
     try {
+      if (!input.permanently && adapter instanceof ImapSmtpAdapter) {
+        const trash = (
+          await this.dependencies.store.listFolders(account.id)
+        ).find((folder) => folder.type === 'trash');
+        if (!trash)
+          throw mailFailedPrecondition(
+            'MAIL_IMAP_TRASH_NOT_FOUND',
+            'This account has no Trash folder. Use your mail client.',
+          );
+        await this.moveImap(
+          context,
+          account,
+          message,
+          adapter,
+          trash.providerFolderId,
+          input.sourceProviderFolderId,
+        );
+        return;
+      }
       if (
         !input.permanently &&
         adapter.capabilities.moveMessage &&

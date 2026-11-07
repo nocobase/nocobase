@@ -41,7 +41,12 @@ import { claudeQuota } from './quota.ts';
 import { detectExec } from './detect-exec.ts';
 import { withDetectionEnvironment } from './detection.ts';
 import { boundedModels } from './models.ts';
-import { recoveryEvent, recoveryPrompt } from './session-recovery.ts';
+import {
+  requireRecoverableSession,
+  sessionUnavailable,
+  recoveryEvent,
+  recoveryPrompt,
+} from './session-recovery.ts';
 import type { ClaudeFailureSignal } from './classify.ts';
 import { MAX_EVENT_TEXT_BYTES } from './types.ts';
 import type {
@@ -611,6 +616,7 @@ class ClaudeRun {
       if (this.stopping) throw new Error('aborted before start');
       const options = await this.buildOptions();
       if (options.resume && !(await this.sessionExists(options.resume))) {
+        requireRecoverableSession(this.session);
         this.recovered = true;
         delete options.resume;
         this.initialMessage.message.content = recoveryPrompt(
@@ -634,7 +640,7 @@ class ClaudeRun {
       this.finished = true;
       this.input.close();
     }
-    const result = this.outcome(thrown);
+    const result = sessionUnavailable(thrown) ?? this.outcome(thrown);
     if (this.session.outputBlocks)
       this.streaming.end(this.stopping && thrown instanceof AbortError);
     if (result.error)

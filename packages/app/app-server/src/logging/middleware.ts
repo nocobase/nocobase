@@ -22,6 +22,81 @@ const defaultRequestHeaders = [
   'user-agent',
 ] as const;
 
+const integer = (minimum: number, maximum: number) => (value: string) =>
+  /^(?:0|[1-9]\d*)$/u.test(value) &&
+  Number(value) >= minimum &&
+  Number(value) <= maximum;
+const paginationParameters: Readonly<
+  Record<string, (value: string) => boolean>
+> = {
+  limit: integer(1, 1000),
+  offset: integer(0, 1_000_000_000),
+  page: integer(1, 1_000_000_000),
+  pageSize: integer(1, 1000),
+};
+const shortValue = (value: string) =>
+  /^-?(?:0|[1-9]\d{0,2})$/u.test(value) ||
+  /^[a-z][a-zA-Z_-]{0,15}$/u.test(value);
+const identifierValue = (value: string) =>
+  /^(?:0|[1-9]\d{0,19})$/u.test(value) ||
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu.test(
+    value,
+  );
+const sensitiveParameterName =
+  /password|passwd|token|secret|authorization|cookie|api[-_]?key|credential|signature|code|state|session|ticket|otp|nonce|^key$/iu;
+
+function acceptsParameter(key: string, value: string): boolean {
+  // Reject length before validating; never make a rejected value acceptable by
+  // truncating it. Pagination is bounded independently of identifier shapes.
+  if (value.length > 100 || sensitiveParameterName.test(key)) return false;
+  if (Object.hasOwn(paginationParameters, key))
+    return paginationParameters[key](value);
+  return (
+    shortValue(value) ||
+    ((key === 'id' || key.endsWith('Id')) && identifierValue(value))
+  );
+}
+
+function safeParameters(
+  values: Record<string, string>,
+  redact: boolean,
+): Record<string, string> {
+  const safe = Object.create(null) as Record<string, string>;
+  for (const [key, value] of Object.entries(values)) {
+    if (Object.keys(safe).length >= 20) break;
+    if (key.length > 64) continue;
+    if (acceptsParameter(key, value)) safe[key] = value;
+    else if (redact) safe[key] = '[REDACTED]';
+  }
+  return safe;
+}
+
+function safeQuery(context: Context): Record<string, string> {
+  return safeParameters(context.req.query(), false);
+}
+
+function safePath(context: Context): string {
+  // Hono has already matched routes before middleware runs. Templates also
+  // protect wildcard mounts whose nested router owns the token parameter.
+  let concrete: string | undefined;
+  let wildcard = '*';
+  for (const { path } of context.req.matchedRoutes) {
+    if (!path.endsWith('*')) concrete = path;
+    else if (path.length > wildcard.length) wildcard = path;
+  }
+  return concrete ?? wildcard;
+}
+
+/** A transport hint for traffic analysis, never an authentication decision. */
+function callerOf(context: Context): string {
+  if (context.req.header('x-nocobase-runner-key')) return 'runner';
+  if (context.req.header('x-nocobase-run-token')) return 'agentRun';
+  if (context.req.header('x-nocobase-client') === 'cli') return 'cli';
+  if (context.req.header('x-api-key')) return 'apiKey';
+  if (context.req.header('cookie')) return 'browser';
+  return 'anonymous';
+}
+
 export interface RequestLoggerOptions {
   logger: Logger;
   app?: string;
@@ -42,7 +117,7 @@ export function requestLogger(
     const startedAt = Date.now();
     const app = options.app;
     const method = context.req.method;
-    const path = context.req.path;
+    const path = safePath(context);
 
     logger.debug(
       {
@@ -50,7 +125,8 @@ export function requestLogger(
         req: {
           method,
           path,
-          query: context.req.query(),
+          query: safeQuery(context),
+          caller: callerOf(context),
           headers: selectHeaders(
             context,
             options.requestHeaders ?? defaultRequestHeaders,
@@ -139,11 +215,11 @@ function completionBindings(
     req: {
       method,
       path,
-      route: context.req.routePath,
-      params: context.req.param(),
+      params: safeParameters(context.req.param(), true),
+      query: safeQuery(context),
+      caller: callerOf(context),
       ...(status >= 400
         ? {
-            query: context.req.query(),
             headers: selectHeaders(context, requestHeaders),
           }
         : {}),
@@ -187,7 +263,16 @@ function selectHeaders(
   const headers: Record<string, string> = {};
   for (const name of names) {
     const value = context.req.header(name);
-    if (value !== undefined) headers[name.toLowerCase()] = value;
+    if (value === undefined) continue;
+    const key = name.toLowerCase();
+    if (key === 'referer') {
+      // Referrers can repeat the same private path or query as the request.
+      try {
+        headers[key] = new URL(value).origin;
+      } catch {
+        // An invalid referrer is not useful diagnostic context.
+      }
+    } else headers[key] = value;
   }
   return headers;
 }

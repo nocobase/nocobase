@@ -5,10 +5,9 @@
  *   open task, 500px, which takes the details' place).
  * - The **breakpoint** is `W`'s band: `md` below 1280px, `lg` below 1600px, `xl` from there.
  * - **The person decides** whether the list is unfolded and whether the details are open; each choice is kept per
- *   breakpoint, per viewer, across reloads. Until they choose: the details start open whenever they fit as a column
- *   beside the conversation, with the list folded to a rail to make room if need be (beside the list itself when the
- *   person chose to keep it unfolded), and the list starts unfolded when it fits beside the conversation and the right
- *   panel, folded otherwise.
+ *   breakpoint, per viewer, across reloads. Until they choose, the regions join as the width grows: the conversation
+ *   alone (with the list folded to a rail), then the list beside it, then the details once all three fit. An open task
+ *   still folds the list when it does not fit beside them.
  * - **The conversation never gets narrower than its minimum.** What does not fit beside it covers it instead: first
  *   the right panel becomes a sheet over the conversation, then an unfolded list does (an overlay over it).
  * - **Both toggles are always there**: a folded list is a rail with an unfold button, an unfolded or overlaid list has a
@@ -17,7 +16,14 @@
  * - On a phone (`W` below 768px) the regions take turns instead; this model does not apply there.
  */
 import { useAuthentication } from '@nocobase/app-plugin-authentication/client';
-import { useCallback, useMemo, useState } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useMemo,
+  useState,
+  type Context,
+} from 'react';
 
 export const LIST_WIDTH = 264;
 const RAIL_WIDTH = 48;
@@ -58,10 +64,7 @@ export function sessionsLayout(
   const breakpoint = breakpointOf(width);
   const detailsOpen = choice.details
     ? choice.details === 'open'
-    : width -
-        (choice.list === 'unfolded' ? LIST_WIDTH : RAIL_WIDTH) -
-        DETAILS_WIDTH >=
-      MIN_CONVERSATION_WIDTH;
+    : width - LIST_WIDTH - DETAILS_WIDTH >= MIN_CONVERSATION_WIDTH;
   const right = taskOpen ? TASK_PANEL_WIDTH : detailsOpen ? DETAILS_WIDTH : 0;
   const unfolded = choice.list
     ? choice.list === 'unfolded'
@@ -151,4 +154,12 @@ export function useSessionsLayout(
     }),
     [breakpoint, list, detailsOpen, right, choose],
   );
+}
+
+/** The page's layout for the session open in it; null outside the page, such as in an embedded panel. */
+export const SessionsLayoutContext: Context<SessionsLayoutState | null> =
+  createContext<SessionsLayoutState | null>(null);
+
+export function useSessionsLayoutContext(): SessionsLayoutState | null {
+  return useContext(SessionsLayoutContext);
 }

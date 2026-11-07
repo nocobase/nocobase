@@ -51,6 +51,7 @@ export function dataModelingSummary(probe: Probe): CapabilityFindings {
       metric('views', own.length - tables.length),
       metric('fields', null),
       metric('relations', null),
+      metric('physicalForeignKeys', null),
       metric(
         'systemCollections',
         probe.inventory.collections.length - own.length,
@@ -91,6 +92,37 @@ export const dataModeling: CapabilityCollector = {
             ).length,
       ),
     );
+    const physicalForeignKeySignatures = new Set<string>();
+    let physicalForeignKeysComplete = true;
+    let hasReadablePhysicalForeignKeyDefinition = false;
+    definitions.forEach((definition, index) => {
+      if (definition === null) {
+        physicalForeignKeysComplete = false;
+        return;
+      }
+      hasReadablePhysicalForeignKeyDefinition = true;
+      const collection = own[index];
+      for (const constraint of definition.constraints ?? []) {
+        if (constraint.type !== 'foreignKey') continue;
+        const columns = constraint.fields
+          .map((field, fieldIndex) => [
+            field,
+            constraint.references.fields?.[fieldIndex] ?? null,
+          ])
+          .sort((left, right) => {
+            const leftKey = JSON.stringify(left);
+            const rightKey = JSON.stringify(right);
+            return leftKey < rightKey ? -1 : leftKey > rightKey ? 1 : 0;
+          });
+        physicalForeignKeySignatures.add(
+          JSON.stringify([
+            collection.name,
+            constraint.references.collection,
+            columns,
+          ]),
+        );
+      }
+    });
     const fields = total(
       definitions.map((definition) =>
         definition === null
@@ -131,6 +163,15 @@ export const dataModeling: CapabilityCollector = {
         metric('views', own.length - tables.length),
         metric('fields', fields.value, { complete: fields.complete }),
         metric('relations', relations.value, { complete: relations.complete }),
+        metric(
+          'physicalForeignKeys',
+          hasReadablePhysicalForeignKeyDefinition
+            ? physicalForeignKeySignatures.size
+            : null,
+          {
+            complete: physicalForeignKeysComplete,
+          },
+        ),
         metric(
           'systemCollections',
           probe.inventory.collections.length - own.length,

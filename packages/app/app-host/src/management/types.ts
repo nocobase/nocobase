@@ -95,6 +95,8 @@ export interface HostDeploymentSpec {
    * artifact store again and starts it. `0` or omitted never makes it dormant.
    */
   dormantAfterMs?: number;
+  /** Reattempt only a previously failed capacity admission; successful operations stay deduplicated. */
+  retryCapacity?: boolean;
   basePath?: string;
   config?: HostFileConfig;
   /**
@@ -132,12 +134,18 @@ export interface HostDeploymentStatus {
   cacheHit: boolean | null;
   app: AppSnapshot | null;
   error: string | null;
+  errorCode?: string;
   /** Where the App's runtime stands (`running`, `starting`, `stopped`, `dormant`) and when it was last requested. */
   lifecycle?: AppLifecycleView | null;
 }
 
 /** Runtime changes since this Host process started; a supervisor uses them to decide when to recycle it. */
 export interface HostRuntimeCounters {
+  capacityStops?: number;
+  startupTimeouts?: number;
+  memory?: import('../memory.js').HostMemoryUsage;
+  rotationPending?: boolean;
+  operationsInFlight?: number;
   activations: number;
   idleStops: number;
   dormancies: number;
@@ -188,7 +196,7 @@ export interface ApplyDeploymentSetResult {
 
 /** How a recorded deployment stands. `interrupted`: the Host that ran it stopped before it finished. */
 export type HostOperationState =
-  'running' | 'succeeded' | 'failed' | 'interrupted';
+  'queued' | 'running' | 'succeeded' | 'failed' | 'interrupted' | 'cancelled';
 
 /** A deployment's outcome as the operation log keeps it, also after the Host or its control plane restarted. */
 export interface HostOperation {
@@ -239,4 +247,12 @@ export interface HostScopeCheck {
   ok: boolean;
   message?: string;
   details?: Record<string, unknown>;
+}
+
+export type HostCancelResult =
+  'cancelled' | 'cancelling' | 'tooLate' | 'notFound';
+export interface HostDeploymentProgress {
+  state: 'queued' | 'running' | 'cancelling';
+  queueAhead: number | null;
+  cancellable: boolean;
 }

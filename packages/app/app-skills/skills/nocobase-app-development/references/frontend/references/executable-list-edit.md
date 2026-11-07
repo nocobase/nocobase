@@ -1,11 +1,14 @@
 # Executable list and edit example
 
-Start here for the tested core list/create/edit interaction. The source runs as the `/skill-projects` page in the Examples application. These [published source files](../../../assets/list-edit-example/client/pages/skill-projects/index.tsx) are generated from that application's compiled source, not independently maintained Markdown snippets. Adapt the business names, permission resource, schema and copy to your requirement; the example's page grant allows management of one shared learning dataset, not a production authorization policy.
+For parent/child transactions, scoped reference selection, exact amounts and a designated reviewer, see the [business example catalogue](../../business-examples.md). Keep this shared-dataset list/edit example's permission policy distinct from those business record scopes.
+
+Start here for the tested core list/detail/create/edit interaction. The source runs as the `/skill-projects` page in the Examples application. These [published source files](../../../assets/list-edit-example/client/pages/skill-projects/index.tsx) are generated from that application's compiled source, not independently maintained Markdown snippets. Adapt the business names, permission resource, schema and copy to your requirement; the example's page grant allows management of one shared learning dataset, not a production authorization policy.
 
 ## Source
 
 - [List page](../../../assets/list-edit-example/client/pages/skill-projects/index.tsx): the real DataTable, preserved parent list, active request guard, cancellable 300 ms feedback and a permanently reserved feedback slot.
-- [Create/edit dialog](../../../assets/list-edit-example/client/pages/skill-projects/edit.tsx): fresh record read, FeedbackForm, validation inside the submission lock, corrected-field revalidation, retry, original-input recovery after reload, and successful return to the list.
+- [Independent detail page](../../../assets/list-edit-example/client/pages/skill-projects/detail.tsx): the record name, a stable list parent before loading succeeds and after failed/missing record reads, and an edit dialog whose Cancel returns to this detail. The shell supplies desktop breadcrumbs and the mobile parent arrow; no duplicate page back link.
+- [Create/edit dialog](../../../assets/list-edit-example/client/pages/skill-projects/edit.tsx): fresh record read, FeedbackForm, validation inside the submission lock, corrected-field revalidation, retry, original-input recovery after reload, and successful return to its owning list or detail.
 - [English and Chinese copy](../../../assets/list-edit-example/client/pages/skill-projects/locales.ts).
 - [Authenticated API](../../../assets/list-edit-example/server/routes/skill-projects.ts), [database service](../../../assets/list-edit-example/server/providers/skill-projects.ts) and [migration](../../../assets/list-edit-example/database/main/migrations/202611030001_create_skill_projects.ts): server validation, explicit page permission, transaction-bound writes and idempotency receipts. An existing App must already have the submission receipt migration and authentication/authorization providers; do not silently expose these routes without them. Give a copied migration a new, unused name and filename before its first application.
 - [Client regression tests](../../../assets/list-edit-example/tests/client/skill-projects.test.tsx), [actual application/API tests](../../../assets/list-edit-example/tests/server/skill-projects.test.ts) and [migration reversal test](../../../assets/list-edit-example/tests/database/skill-projects-migration.test.ts).
@@ -14,7 +17,38 @@ Start here for the tested core list/create/edit interaction. The source runs as 
 
 In a NocoBase source checkout, the application is `packages/templates/app-template-examples`. Follow its normal configuration, database apply and `pnpm dev` instructions, then sign in and open `skill-projects` under the printed application entry URL. Use the existing root administrator or explicitly assign its page permission; never broaden all members' access just to run an example. No extra database service is required for the default SQLite configuration.
 
-In an existing application, copy the required source files into the matching application-owned directories, merge `enUS`/`zhCN` from the example's `locales.ts` as `skillProjects` in your locale resources, and register `skillProjectsRoutes` in `server/routes/index.ts`. Register a parent page named `skill-projects` at `/skill-projects`, requiring authentication and `{ resource: { type: 'page', id: 'skill-projects' }, action: 'access' }`, loading `client/pages/skill-projects/index.tsx`. Its `new` and `:projectId/edit` child routes both load `edit.tsx`. Give the parent navigation the `skillProjects.title` key, and give the overlay permission titles the `skillProjects.create` and `skillProjects.edit` keys. Use your own feature's identifiers when adapting it. The source imports template components through `#components` and hooks through `#hooks`; it is application code, not a standalone React package. The client tests use the Examples template's authenticated rendering helper and locale resources; adapt those imports to your application's test harness.
+In an existing application, copy the required source files into the matching application-owned directories, merge `enUS`/`zhCN` from the example's `locales.ts` as `skillProjects` in your locale resources, and register `skillProjectsRoutes` in `server/routes/index.ts`. Register a parent page named `skill-projects` at `/skill-projects`, requiring authentication and `{ resource: { type: 'page', id: 'skill-projects' }, action: 'access' }`, loading `client/pages/skill-projects/index.tsx`. Its `new` and `:projectId/edit` child routes both load `edit.tsx`. Add the `:projectId/details` child loading `detail.tsx`, with `breadcrumb: { title: 'skillProjects.detail' }`, and its `edit` child loading `edit.tsx`. The detail inherits the parent page grant; its edit is a dialog and declares no breadcrumb. Give the parent navigation the `skillProjects.title` key, and give the overlay permission titles the `skillProjects.create` and `skillProjects.edit` keys, including the detail's edit child. Use your own feature's identifiers when adapting it. The source imports template components through `#components` and hooks through `#hooks`; it is application code, not a standalone React package. The client tests use the Examples template's authenticated rendering helper and locale resources; adapt those imports to your application's test harness.
+
+```ts
+// Children of the protected skill-projects list route.
+children: [
+  {
+    name: 'skill-projects-new',
+    path: 'new',
+    componentLoader: () => import('./pages/skill-projects/edit.js'),
+  },
+  {
+    name: 'skill-projects-detail',
+    path: ':projectId/details',
+    breadcrumb: { title: 'skillProjects.detail' },
+    componentLoader: () => import('./pages/skill-projects/detail.js'),
+    children: [
+      {
+        name: 'skill-projects-detail-edit',
+        path: 'edit',
+        componentLoader: () => import('./pages/skill-projects/edit.js'),
+      },
+    ],
+  },
+  {
+    name: 'skill-projects-edit',
+    path: ':projectId/edit',
+    componentLoader: () => import('./pages/skill-projects/edit.js'),
+  },
+];
+```
+
+The list's record link opens `:projectId/details`; the detail supplies the edit dialog's refresh/save outlet context. Its breadcrumb returns to the list's recorded query, including a safe empty default on direct entry or reload. Keep these routes together when copying the published files. For an independent edit page instead of this dialog, follow the [detail → edit navigation pattern](navigation.md).
 
 From the Examples application, run the behavior and database checks with:
 

@@ -1,3 +1,9 @@
+import { PageBreadcrumbProvider } from '@nocobase/app-client';
+import { resolveAppClientContributions } from '@nocobase/app-client/plugins';
+import { Breadcrumbs } from '../../client/components/breadcrumbs.js';
+import { RouteTreeProvider } from '../../client/routing/route-context.js';
+import applicationRoutes from '../../client/routes.js';
+import SkillProjectDetailPage from '../../client/pages/skill-projects/detail.js';
 import { answerApi } from '@nocobase/app-testing/client';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -34,6 +40,33 @@ const mount = (
       </Route>
     </Routes>,
     { route, namespace, namespaces, locale, fetch },
+  );
+const detailRoutes = resolveAppClientContributions([
+  { packageName: namespace, source: 'application', routes: applicationRoutes },
+]).routes;
+const mountDetail = (fetch: typeof globalThis.fetch) =>
+  renderSettingsClient(
+    <Routes>
+      <Route
+        path='/skill-projects'
+        element={
+          <RouteTreeProvider routes={detailRoutes}>
+            <PageBreadcrumbProvider>
+              <Breadcrumbs />
+              <SkillProjectsPage />
+            </PageBreadcrumbProvider>
+          </RouteTreeProvider>
+        }
+      >
+        <Route path=':projectId/details' element={<SkillProjectDetailPage />} />
+      </Route>
+    </Routes>,
+    {
+      route: '/skill-projects/abc/details?detailTab=activity',
+      namespace,
+      namespaces,
+      fetch,
+    },
   );
 afterEach(() => {
   vi.useRealTimers();
@@ -733,3 +766,58 @@ it('keeps a retryable pending operation after an ordinary recovery 404 without c
   );
   expect(writes).toBe(3);
 });
+
+it('keeps a default list parent while a directly opened record loads, then names the record', async () => {
+  let finish!: (value: { data: typeof original }) => void;
+  const pending = new Promise<{ data: typeof original }>((resolve) => {
+    finish = resolve;
+  });
+  const view = await mountDetail(
+    answerApi(({ path }) => (path === 'skillProjects/abc' ? pending : list())),
+  );
+  const trail = screen.getByRole('navigation', { name: 'Breadcrumb' });
+  expect(trail).toHaveTextContent('Projects');
+  expect(trail).toHaveTextContent('Project details');
+  expect(
+    screen.getByRole('link', { name: 'Back to Projects' }),
+  ).toHaveAttribute('href', '/skill-projects');
+  await act(async () => {
+    finish({ data: original });
+  });
+  await screen.findByRole('heading', { name: 'Alpha' });
+  expect(trail).toHaveTextContent('Alpha');
+  view.unmount();
+});
+
+it.each([403, 404, 500])(
+  'keeps its parent and fallback title after record error %s',
+  async (status) => {
+    const view = await mountDetail(
+      answerApi(({ path }) =>
+        path === 'skillProjects/abc'
+          ? Response.json(
+              {
+                error: {
+                  status: 'NOT_FOUND',
+                  reason: 'TEST_RECORD_ERROR',
+                  message: 'Test record error',
+                },
+              },
+              { status },
+            )
+          : list(),
+      ),
+    );
+    await screen.findByRole('alert');
+    expect(
+      screen.getByRole('navigation', { name: 'Breadcrumb' }),
+    ).toHaveTextContent('Project details');
+    expect(
+      screen.getByRole('link', { name: 'Back to Projects' }),
+    ).toHaveAttribute('href', '/skill-projects');
+    expect(
+      screen.queryByRole('heading', { name: 'Alpha' }),
+    ).not.toBeInTheDocument();
+    view.unmount();
+  },
+);

@@ -21,6 +21,8 @@ it('provides services without owning collections, resource routes, or pages', ()
     'de-DE',
     'vi-VN',
     'id-ID',
+    'ru-RU',
+    'ko-KR',
   ]);
 });
 

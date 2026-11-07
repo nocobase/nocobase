@@ -27,6 +27,8 @@ const messages = {
   'files.retry': '再試行',
   'files.done': '完了',
   'files.uploading': 'アップロード中',
+  'files.longWait':
+    'アップロード中です。このまま待つか、キャンセルしてください。',
   'files.failed': '失敗しました',
   'files.pending': '保留中',
   'files.previous': '前のファイル',

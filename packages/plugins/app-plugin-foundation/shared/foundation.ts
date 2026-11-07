@@ -138,6 +138,20 @@ export interface FoundationCollectionPage {
   readonly total: number;
 }
 
+/** Durable scan state. Completion time belongs to the snapshot, never to an attempt. */
+export interface FoundationScanStatus {
+  readonly kernelVersion: string;
+  readonly snapshotKernelVersion?: string;
+  readonly generation?: string;
+  readonly status: 'idle' | 'queued' | 'running' | 'succeeded' | 'failed';
+  readonly needsScan: boolean;
+  readonly checkedAt?: string;
+}
+
+export interface FoundationSnapshot extends FoundationScanStatus {
+  readonly overview?: FoundationOverview;
+}
+
 export const FOUNDATION_API_CONDITIONS = [
   'databaseAvailable',
   'authenticated',
@@ -239,6 +253,11 @@ export const FOUNDATION_HIGHLIGHTS: readonly {
   readonly capability: FoundationCapabilityKey;
   readonly metric: string;
 }[] = [
+  { capability: 'dataModeling', metric: 'businessCollections' },
+  { capability: 'dataModeling', metric: 'fields' },
+  { capability: 'dataModeling', metric: 'views' },
+  { capability: 'dataModeling', metric: 'relations' },
+  { capability: 'dataModeling', metric: 'physicalForeignKeys' },
   { capability: 'dataModeling', metric: 'businessRecords' },
   { capability: 'usersAndOrganizations', metric: 'accounts' },
   { capability: 'permissions', metric: 'grants' },

@@ -11,28 +11,23 @@ Application configuration snapshots populate both aliases for channels with a va
 Use `NotificationConfigInput` for code defaults and standalone manager input, accepting either discriminator. Use `app.config.get<NotificationConfig>('notification')` for application reads: its channel entries retain the required `provider: string` type for existing consumers. `type` remains optional in this legacy-compatible type so existing provider-only code defaults still compile. Class extensions continue receiving a `ChannelConfig` with `type`; the application-level compatibility alias is not passed to their constructors.
 
 ```yaml
+mailers:
+  default: system
+  system:
+    provider: smtp
+    host: smtp.example.com
+    port: 587
+    from: notifications@example.com
 notification:
   channels:
     system-email:
-      type: smtp
-      host: smtp.example.com
-      port: 587
-      auth:
-        {
-          user: notifications@example.com,
-          pass: replace-with-the-smtp-password,
-        }
-      from: notifications@example.com
-    marketing-email:
-      type: resend
-      apiKey: replace-with-the-resend-api-key
-      from: marketing@example.com
+      type: email
+      # mailer: system
     ops-feishu:
       type: feishu-webhook
       webhookUrl: https://open.feishu.cn/open-apis/bot/v2/hook/replace-with-the-token
     inbox:
       type: in-app
-
   retry:
     maxAttempts: 1
     intervalMs: 5000
@@ -40,7 +35,7 @@ notification:
 
 `notification.retry.maxAttempts` is the maximum number of automatic attempts for one Delivery, including the first attempt; it defaults to `1`, so automatic retries are disabled by default. `notification.retry.intervalMs` is the fixed wait between automatic attempts and defaults to `5000` milliseconds. A validated Provider `Retry-After` hint takes precedence over this interval.
 
-YAML values are literal; `${NAME}` is not interpolated. The application maps environment variables in `server/config/notification.ts`. `defineMailChannelsConfig` supports both discriminators independently of notification plugins. Its default `SMTP_PASSWORD` mapping targets `channels.system-email.auth.pass`; add `RESEND_API_KEY: envString('channels.marketing-email.apiKey', { secret: true, required: false })` for the marketing channel above. SMTP supports `host`, `port`, `secure`, `auth`, `from`, and `replyTo`; Resend uses `apiKey`, `from`, and optional `replyTo`. Webhook Providers use `webhookUrl` and optional signing `secret`. Feishu requires HTTPS on `open.feishu.cn` or `open.larksuite.com`; DingTalk requires HTTPS on `oapi.dingtalk.com`. Redirects are rejected. Keep credentials out of public descriptors and logs.
+YAML values are literal; `${NAME}` is not interpolated. The application maps environment variables in `server/config/notification.ts`. `defineMailChannelsConfig` from `@nocobase/app-plugin-notification-providers/config` supports both discriminators without starting a notification plugin. This pure configuration entry does not load email transports or provider SDKs. Its default `SMTP_PASSWORD` mapping targets `channels.system-email.auth.pass`; for legacy inline marketing channels, add `RESEND_API_KEY: envString('channels.marketing-email.apiKey', { secret: true, required: false })` for a legacy marketing channel. SMTP supports `host`, `port`, `secure`, `auth`, `from`, and `replyTo`; Resend uses `apiKey`, `from`, and optional `replyTo`. Webhook Providers use `webhookUrl` and optional signing `secret`. Feishu requires HTTPS on `open.feishu.cn` or `open.larksuite.com`; DingTalk requires HTTPS on `oapi.dingtalk.com`. Redirects are rejected. Keep credentials out of public descriptors and logs.
 
 Keep Channel names and Provider identifiers stable while deliveries remain pending or retryable. Removing, disabling, or changing a Channel's Provider prevents the old Delivery from being retried elsewhere.
 
@@ -63,3 +58,5 @@ Verify channels through the normal business flow or a server-side command resolv
 The running application documents the log routes under the `Notification` tag at `/api/swagger/docs` (JSON at `/api/swagger`, signed in). Their operation IDs are `notificationsListLogs` and `notificationsGetLog`. The plugin does not expose a generic HTTP send endpoint or test form metadata. An application-owned send endpoint must enforce its business authorization and recipient rules.
 
 Verification creates a real delivery. Scope the channel and recipient before sending, and preserve existing logs, including historical test notifications.
+
+Prefer `type: email` with application mailers. Declare `defineMailersConfig` and explicit `mailerEnvironment` mappings from `@nocobase/app-server/mailers/config`. Restart to apply sender changes. Every email Channel, including legacy inline SMTP/Resend Channels and their mappings, creates an exclusive sender through the application's `MailSenderFactory` and closes it with itself.

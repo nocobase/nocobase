@@ -18,6 +18,8 @@ import {
   de,
   vi,
   id,
+  ru,
+  ko,
 } from 'react-day-picker/locale';
 
 import { useMediaQuery } from '../../hooks/use-media-query.js';
@@ -47,6 +49,8 @@ const calendarLocales: Readonly<Record<string, typeof enUS>> = {
   'de-DE': de,
   'vi-VN': vi,
   'id-ID': id,
+  'ru-RU': ru,
+  'ko-KR': ko,
 };
 
 export function DateRangePicker({

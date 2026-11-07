@@ -1,3 +1,4 @@
+import mailers from './mailers.js';
 import agents from './agents.js';
 import mail from './mail.js';
 import {
@@ -14,6 +15,7 @@ import spa from './spa.js';
 import heartbeat from './heartbeat.js';
 import logging from './logging.js';
 import drive from './drive.js';
+import concurrency from './concurrency.js';
 import queue from './queue.js';
 import queueExample from './queue-example.js';
 import jobs from './jobs.js';
@@ -29,6 +31,7 @@ import knowledge from './knowledge.js';
 
 const defaultConfigs: AppConfigFactory<{
   agents: ReturnType<typeof agents>;
+  mailers: ReturnType<typeof mailers>;
   auth: ReturnType<typeof auth>;
   authorization: ReturnType<typeof authorization>;
   notification: ReturnType<typeof notification>;
@@ -39,6 +42,7 @@ const defaultConfigs: AppConfigFactory<{
   heartbeat: ReturnType<typeof heartbeat>;
   logging: ReturnType<typeof logging>;
   drive: ReturnType<typeof drive>;
+  concurrency: ReturnType<typeof concurrency>;
   queue: ReturnType<typeof queue>;
   queueExample: ReturnType<typeof queueExample>;
   jobs: ReturnType<typeof jobs>;
@@ -53,6 +57,7 @@ const defaultConfigs: AppConfigFactory<{
   knowledge: ReturnType<typeof knowledge>;
   mail: ReturnType<typeof mail>;
 }> = defaultAppConfigs({
+  mailers,
   agents,
   auth,
   authorization,
@@ -64,6 +69,7 @@ const defaultConfigs: AppConfigFactory<{
   heartbeat,
   logging,
   drive,
+  concurrency,
   queue,
   queueExample,
   jobs,

@@ -94,7 +94,8 @@ import { AGENTS, type CatalogAgentId } from '@nocobase/acp-bridge/catalog';
 /** Version 14 adds conversation output-block previews. Update applications before runners. */
 // Version 14 announces outputBlocks. Upgrade applications before runners: older servers reject
 // this version through compatibility handling before parsing the expanded feature enum. Older runners remain supported.
-export const PROTOCOL_VERSION = 14;
+// Version 15 adds strictSession and sessionUnavailable. Deploy the application before upgrading runners.
+export const PROTOCOL_VERSION = 15;
 
 /** The oldest protocol a server speaking `PROTOCOL_VERSION` still serves. */
 export const MIN_PROTOCOL_VERSION = 3;
@@ -132,6 +133,7 @@ export function isProtocolSupported(version: number): boolean {
  * - `gitTools` (protocol 12): wraps the code host CLIs a run names (`RunGit.tools`) with the run's credential.
  */
 export const RUNNER_FEATURES = [
+  'strictSession',
   'outputBlocks',
   'workspaceKey',
   'input',

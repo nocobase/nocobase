@@ -1,5 +1,16 @@
 # @nocobase/app-cli-client
 
+## 0.1.0-beta.18
+
+### Patch Changes
+
+- 49daa11: Restart running ACP services after CLI updates and tolerate newer Skill registry formats without rewriting them.
+
+  When upgrading from a CLI version without this fix through `<bin> update`, run `<bin> acp service restart` once after the upgrade to restart the existing background connections.
+
+- Updated dependencies [bfddb40]
+  - @nocobase/acp-bridge@1.0.0-beta.5
+
 ## 0.1.0-beta.17
 
 ### Patch Changes

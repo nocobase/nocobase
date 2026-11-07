@@ -1,3 +1,4 @@
+import { DeploymentCancelledError } from '../deployment-control.js';
 import type { JournalPage, JournalQuery, Logger } from '@nocobase/logging';
 import type { DeploymentLogListener } from './../deployment-log.js';
 /**
@@ -28,6 +29,8 @@ import type {
   HostDeploymentSet,
   HostDescription,
   HostOperation,
+  HostCancelResult,
+  HostDeploymentProgress,
   HostScope,
   HostScopeCheck,
   HostStatus,
@@ -44,6 +47,25 @@ import type {
  * a scope every call behaves as it did before scopes existed.
  */
 export interface HostManagementService {
+  /** Pause new revision loads, or reserve the Host for rotation with an optional bounded request drain. */
+  prepareRotation?(options: {
+    pauseOnly?: boolean;
+    ignoreConnections?: boolean;
+    /** Gate incoming requests even while responses are active, then drain for this many milliseconds. */
+    drainTimeoutMs?: number;
+    resume?: boolean;
+  }): Promise<boolean>;
+  cancelDeployment(
+    operationId: string,
+    appId: string,
+    options?: { scope?: HostScope; queuedOnly?: boolean },
+  ): Promise<HostCancelResult>;
+  deploymentProgress(
+    operationId: string,
+    appId: string,
+    options?: { scope?: HostScope },
+  ): Promise<HostDeploymentProgress | null>;
+
   restoreDeploymentSet(
     deploymentSet: HostDeploymentSet,
   ): Promise<ApplyDeploymentSetResult>;
@@ -86,6 +108,8 @@ export interface HostManagementService {
 }
 
 export interface HostManagerOptions {
+  /** Close remaining HTTP connections after a reserved rotation exhausts its request drain. */
+  closeRequests?: () => void;
   logger?: Logger;
   mode: AppHostMode;
   registry: AppRuntimeRegistry;
@@ -104,12 +128,64 @@ type HostModeState =
     };
 
 export class HostManager implements HostManagementService {
+  private readonly admissions = new Map<
+    string,
+    {
+      appId: string;
+      waiting: boolean;
+      cancelled: boolean;
+      work?: Promise<HostStatus>;
+    }
+  >();
+
+  cancelDeployment(
+    operationId: string,
+    appId: string,
+    options: { scope?: HostScope; queuedOnly?: boolean } = {},
+  ): Promise<HostCancelResult> {
+    if (this.state.mode !== 'managed')
+      throw new Error('Deployments require managed host mode');
+    const result = this.state.reconciler.cancelDeployment(
+      operationId,
+      appId,
+      options.scope?.id,
+      options.queuedOnly,
+    );
+    const admission = this.admissions.get(
+      `${options.scope?.id ?? ''}\u0000${operationId}`,
+    );
+    if (
+      result === 'notFound' &&
+      admission?.appId === appId &&
+      admission.waiting
+    ) {
+      admission.cancelled = true;
+      return Promise.resolve('cancelled');
+    }
+    return Promise.resolve(result);
+  }
+  deploymentProgress(
+    operationId: string,
+    appId: string,
+    options: { scope?: HostScope } = {},
+  ): Promise<HostDeploymentProgress | null> {
+    if (this.state.mode !== 'managed') return Promise.resolve(null);
+    return Promise.resolve(
+      this.state.reconciler.deploymentProgress(
+        operationId,
+        appId,
+        options.scope?.id,
+      ),
+    );
+  }
+
   publishAppConfig(
     appId: string,
     content: string,
   ): Promise<AppConfigReloadResult | null> {
     if (this.state.mode !== 'managed')
       throw new Error('Configuration publishing requires managed host mode');
+    this.state.scopes.assertAccepting();
     return this.state.reconciler.publishAppConfig(appId, content);
   }
   restoreDeploymentSet(
@@ -125,13 +201,16 @@ export class HostManager implements HostManagementService {
   reloadAppConfig(
     appId: string,
   ): ReturnType<HostManagementService['reloadAppConfig']> {
+    if (this.state.mode === 'managed') this.state.scopes.assertAccepting();
     return this.registry.reloadAppConfig(appId);
   }
   private readonly registry: AppRuntimeRegistry;
+  private readonly closeRequests: (() => void) | undefined;
   private readonly state: HostModeState;
 
   constructor(options: HostManagerOptions) {
     this.registry = options.registry;
+    this.closeRequests = options.closeRequests;
     if (options.mode === 'standalone')
       this.state = {
         mode: 'standalone',
@@ -194,11 +273,31 @@ export class HostManager implements HostManagementService {
       throw new Error('Deployments require managed host mode');
     }
     const { reconciler, scopes } = this.state;
-    if (deployment?.scope) return scopes.applyDeployment(deployment, listener);
     scopes.assertAccepting();
-    return scopes.recordUnscoped(deployment, () =>
-      reconciler.applyDeployment(deployment, listener),
-    );
+    const key = `${deployment.scope?.id ?? ''}\u0000${deployment.operationId ?? deployment.id}`;
+    const existing = this.admissions.get(key);
+    if (existing?.work && deployment.operationId) return existing.work;
+    const admission: {
+      appId: string;
+      waiting: boolean;
+      cancelled: boolean;
+      work?: Promise<HostStatus>;
+    } = { appId: deployment.appId, waiting: true, cancelled: false };
+    this.admissions.set(key, admission);
+    const beforeRun = (): void => {
+      if (admission.cancelled) throw new DeploymentCancelledError();
+      admission.waiting = false;
+    };
+    const work = deployment.scope
+      ? scopes.applyDeployment(deployment, listener, beforeRun)
+      : scopes.recordUnscoped(deployment, () => {
+          beforeRun();
+          return reconciler.applyDeployment(deployment, listener);
+        });
+    admission.work = work.finally(() => {
+      if (this.admissions.get(key) === admission) this.admissions.delete(key);
+    });
+    return admission.work;
   }
 
   startDeployment(deployment: HostDeploymentSpec): Promise<HostStatus> {
@@ -259,6 +358,48 @@ export class HostManager implements HostManagementService {
     if (this.state.mode !== 'managed')
       throw new Error('App logs require managed host mode');
     return this.state.scopes.logs(appId, query ?? {});
+  }
+
+  async prepareRotation(options: {
+    pauseOnly?: boolean;
+    ignoreConnections?: boolean;
+    /** Gate incoming requests even while responses are active, then drain for this many milliseconds. */
+    drainTimeoutMs?: number;
+    resume?: boolean;
+  }): Promise<boolean> {
+    if (
+      options.drainTimeoutMs !== undefined &&
+      (!Number.isSafeInteger(options.drainTimeoutMs) ||
+        options.drainTimeoutMs < 0 ||
+        options.drainTimeoutMs > 2_147_483_647)
+    )
+      throw new Error('Invalid Host request drain timeout');
+    if (options.resume) {
+      this.registry.resumeAfterRotationFailure();
+      return false;
+    }
+    if (options.pauseOnly) {
+      this.registry.pauseNewRevisions();
+      return false;
+    }
+    if (
+      this.admissions.size ||
+      (this.state.mode === 'managed' && this.state.reconciler.isBusy())
+    )
+      return false;
+    if (
+      !this.registry.prepareRotation(
+        options.ignoreConnections ?? false,
+        options.drainTimeoutMs !== undefined,
+      )
+    )
+      return false;
+    if (
+      options.drainTimeoutMs !== undefined &&
+      !(await this.registry.drainIngress(options.drainTimeoutMs))
+    )
+      this.closeRequests?.();
+    return true;
   }
 
   /**

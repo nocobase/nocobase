@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/app-server",
-  "version": "3.0.0-beta.4",
+  "version": "5.0.0-beta.1",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {
@@ -98,9 +98,13 @@
       "types": "./src/secrets/index.ts",
       "import": "./src/secrets/index.ts"
     },
-    "./mailer": {
-      "types": "./src/mailer/index.ts",
-      "import": "./src/mailer/index.ts"
+    "./mailers": {
+      "types": "./src/mailers/index.ts",
+      "import": "./src/mailers/index.ts"
+    },
+    "./mailers/config": {
+      "types": "./src/mailers/config.ts",
+      "import": "./src/mailers/config.ts"
     }
   },
   "files": [
@@ -196,9 +200,13 @@
         "types": "./dist/secrets/index.d.ts",
         "import": "./dist/secrets/index.js"
       },
-      "./mailer": {
-        "types": "./dist/mailer/index.d.ts",
-        "import": "./dist/mailer/index.js"
+      "./mailers": {
+        "types": "./dist/mailers/index.d.ts",
+        "import": "./dist/mailers/index.js"
+      },
+      "./mailers/config": {
+        "types": "./dist/mailers/config.d.ts",
+        "import": "./dist/mailers/config.js"
       }
     },
     "access": "public"

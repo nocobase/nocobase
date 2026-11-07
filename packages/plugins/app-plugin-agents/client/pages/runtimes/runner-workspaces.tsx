@@ -7,6 +7,7 @@ import { useAgentsApi } from '../../hooks/use-agents-api.js';
 import { AgLoadError } from '../../components/ag-states.js';
 import { Button } from '../../components/ui/button.js';
 import { Spinner } from '../../components/ui/spinner.js';
+import { RunnerPagination } from './runner-pagination.js';
 import { WorkspaceDiagnostics } from './workspace-diagnostics.js';
 
 export function RunnerWorkspaces({
@@ -16,13 +17,18 @@ export function RunnerWorkspaces({
 }): ReactElement {
   const { t } = useTranslation();
   const api = useAgentsApi();
-  const [status, setStatus] = useState('all');
+  const [status, setStatus] = useState<'all' | 'active' | 'retained' | 'ended'>(
+    'all',
+  );
   const [page, setPage] = useState(1);
   const result = useQuery({
     queryKey: [...agentsKeys.runners, 'workspaces', runner.id, status, page],
     queryFn: () => api.runnerWorkspaces(runner.id, status, page),
   });
   const totals = result.data?.meta.usage ?? runner.workspaceUsage;
+  const pageSize = result.data?.meta.pageSize ?? 50;
+  const total = result.data?.meta.total ?? totals?.counts?.[status] ?? 0;
+  const pageCount = Math.max(1, Math.ceil(total / pageSize));
   const filters = (
     <div
       className='flex flex-wrap gap-2'
@@ -73,30 +79,20 @@ export function RunnerWorkspaces({
           onRetry={() => void result.refetch()}
         />
       ) : null}
-      <div className='flex gap-2'>
-        <Button
-          type='button'
-          size='sm'
-          variant='outline'
-          disabled={page === 1 || result.isPending}
-          onClick={() => setPage(page - 1)}
-        >
-          {t('runtimes.quota.previous')}
-        </Button>
-        <Button
-          type='button'
-          size='sm'
-          variant='outline'
-          disabled={
-            !result.data ||
-            page * result.data.meta.pageSize >= result.data.meta.total ||
-            result.isPending
-          }
-          onClick={() => setPage(page + 1)}
-        >
-          {t('runtimes.quota.next')}
-        </Button>
-      </div>
+      <RunnerPagination
+        ariaLabel={t('runtimes.quota.workspaces')}
+        pageLabel={t('runtimes.detail.runsPage', { page, pageCount })}
+        previousLabel={t('runtimes.quota.previous')}
+        nextLabel={t('runtimes.quota.next')}
+        canGoPrevious={page > 1 && !result.isPending}
+        canGoNext={Boolean(
+          result.data &&
+          page * pageSize < result.data.meta.total &&
+          !result.isPending,
+        )}
+        onPrevious={() => setPage(page - 1)}
+        onNext={() => setPage(page + 1)}
+      />
     </div>
   );
 }

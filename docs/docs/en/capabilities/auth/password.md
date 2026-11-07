@@ -75,6 +75,31 @@ Click **Forgot password?** and enter the account email.
 
 A working email delivery channel is required to complete the request → email → reset link → new password flow. The email link must point to an application address the employee can reach.
 
+### Configure the recovery sender
+
+Set the application's `auth.email` to an SMTP or Resend sender, explicitly enable `auth.passwordReset.enabled: true`, and configure `app.publicOrigin` with the application address users can reach. The `defineAuthConfig` factory validates the sender and supplies `AUTH_EMAIL_*` environment mappings, including secret password and API-key metadata. Notification and mailbox plugins are not required. Adding a sender alone does not enable password recovery.
+
+```yaml
+auth:
+  passwordReset:
+    enabled: true
+  email:
+    provider: smtp
+    host: smtp.example.com
+    port: 587
+    secure: false
+    auth:
+      user: noreply@example.com
+      pass: replace-with-the-smtp-password
+    from: App <noreply@example.com>
+```
+
+For Resend, replace the entire `auth.email` block with `provider: resend`, `apiKey` and `from`; do not mix SMTP fields. The environment variables are `AUTH_EMAIL_PROVIDER`, `AUTH_EMAIL_HOST`, `AUTH_EMAIL_PORT`, `AUTH_EMAIL_SECURE`, `AUTH_EMAIL_USER`, `AUTH_EMAIL_PASSWORD`, `AUTH_EMAIL_FROM`, `AUTH_EMAIL_REPLY_TO` and `AUTH_EMAIL_API_KEY`. Do not reuse mailbox `MAIL_*` variables.
+
+Existing custom `auth.emailAndPassword.sendResetPassword` callbacks keep priority and work when the recovery switch is absent. Explicitly disabling recovery also disables custom callbacks. `auth.passwordReset.template` still supports TypeScript email customization. An invalid new sender is a configuration error; failed or uncertain delivery never switches senders or automatically resends.
+
+**Legacy migration:** `auth.passwordReset.emailChannel` is deprecated and supported only for old applications, defaulting to `system-email` through Authentication’s own compatibility adapter when neither a custom callback nor `auth.email` is present. Startup prints a safe migration warning when that path is selected. Move its SMTP or Resend sender fields into `auth.email`, remove the explicit legacy entry, and keep notification and mailbox configuration unchanged. No MailerProvider or installed notification/mailbox plugin is required, including for opted-in applications that previously lacked that provider. There is no scheduled removal date.
+
 ## Sessions and disabled accounts
 
 Offboarding, suspended accounts or revoked access require blocking future sign-ins and invalidating existing sessions. Disable accounts while preserving associated business records, with the option to enable them again.

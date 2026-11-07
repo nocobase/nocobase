@@ -3,6 +3,44 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const esES: LocaleResource<typeof enUS> = {
+  templates: {
+    title: 'Plantillas de notificación',
+    coverage:
+      'Solo escenarios registrados. Los envíos dinámicos, las funciones personalizadas y las plantillas privadas quedan fuera. Las definiciones y vistas previas son de solo lectura.',
+    search: 'Buscar escenarios',
+    category: 'Categoría',
+    channel: 'Canal',
+    all: 'Todos',
+    details: 'Ver detalles',
+    close: 'Cerrar detalles',
+    trigger: 'Activador',
+    recipients: 'Regla de destinatarios',
+    businessRule: 'Activación del negocio',
+    contributor: 'Origen',
+    languagePolicy: 'Comportamiento del idioma',
+    status: 'Configuración del canal',
+    statusHelp:
+      'Registrar una definición no activa las notificaciones. Tener configuración no garantiza conectividad.',
+    configured: 'Configurado',
+    unconfigured: 'Sin configurar',
+    enabled: 'Activado',
+    disabled: 'Desactivado',
+    unknown: 'Desconocido',
+    variables: 'Variables disponibles',
+    language: 'Idioma del contenido',
+    synthetic:
+      'Solo datos sintéticos. La vista previa no envía notificaciones ni cambia la configuración.',
+    definition: 'Definición de plantilla',
+    preview: 'Vista previa sintética',
+    html: 'Código HTML (texto inerte)',
+    loading: 'Cargando…',
+    failed: 'No se pudieron cargar las plantillas.',
+    forbidden: 'No tienes permiso para ver las plantillas.',
+    notFound: 'Esta plantilla ya no está registrada.',
+    retry: 'Reintentar',
+    empty: 'No hay escenarios registrados.',
+    noResults: 'Ningún escenario coincide con los filtros.',
+  },
   logs: {
     deliveryOperations: 'Operaciones de entrega',
     recipeDescription:

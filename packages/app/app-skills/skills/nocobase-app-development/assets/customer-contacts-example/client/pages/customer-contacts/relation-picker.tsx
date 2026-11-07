@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState, type Ref } from 'react';
-import { useApiClient } from '@nocobase/app-client';
+import { useApiClient, usePendingFeedback } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { useAuthorizationRevision } from '@nocobase/app-plugin-authorization/client';
 import { useInfiniteQuery } from '@tanstack/react-query';
@@ -16,7 +16,8 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '#components/ui/popover';
-import { Spinner } from '#components/ui/spinner';
+import { Loading } from '#components/loading';
+import { BrandLoadingMark } from '#components/brand-loading-mark';
 import { ToggleGroup, ToggleGroupItem } from '#components/ui/toggle-group';
 import { useListData } from '#hooks/use-list-data';
 import { ReadFeedback } from './shared.js';
@@ -95,9 +96,14 @@ function Picker({
     isFetchNextPageError,
     fetchNextPage,
   } = options;
+  // The application keeps previous query data as a placeholder; those options
+  // belong to the previous search or filter and must not appear as matches.
+  const current = !options.isPlaceholderData;
+  // A new search or filter restarts the display delay of its own wait.
+  const queryIdentity = JSON.stringify([search, filter ?? null]);
   const items = [
     ...new Map(
-      (options.data?.pages ?? [])
+      ((current && options.data?.pages) || [])
         .flatMap((page) => page.data)
         .map((option) => [option.id, option]),
     ).values(),
@@ -212,16 +218,13 @@ function Picker({
             </ToggleGroup>
           )}
         </div>
-        <div
-          ref={listRef}
-          className='min-h-0 flex-1 overflow-y-auto p-1'
-          aria-live='polite'
-          aria-busy={options.isFetching}
-        >
-          {options.isPending ? (
-            <div className='flex justify-center py-6'>
-              <Spinner className='text-muted-foreground' />
-            </div>
+        <div ref={listRef} className='min-h-0 flex-1 overflow-y-auto p-1'>
+          {options.isPending || !current ? (
+            <Loading
+              identity={queryIdentity}
+              label={t('customerContacts.loading')}
+              className='py-6'
+            />
           ) : options.isError && !isFetchNextPageError ? (
             <div className='p-1'>
               <ReadFeedback
@@ -258,11 +261,11 @@ function Picker({
                   />
                 </div>
               ) : hasNextPage ? (
-                <div ref={endRef} className='flex justify-center py-2'>
-                  {isFetchingNextPage && (
-                    <Spinner className='size-4 text-muted-foreground' />
-                  )}
-                </div>
+                <NextPagePending
+                  ref={endRef}
+                  pending={isFetchingNextPage}
+                  identity={queryIdentity}
+                />
               ) : null}
             </div>
           ) : (
@@ -277,5 +280,52 @@ function Picker({
         </div>
       </PopoverContent>
     </Popover>
+  );
+}
+
+/**
+ * The next page appends below kept options. Its mark follows the shared
+ * display delay and a slow page explains itself; the polite status stays
+ * mounted outside the busy row so the change is announced, not dropped.
+ */
+function NextPagePending({
+  pending,
+  identity,
+  ref,
+}: {
+  pending: boolean;
+  identity: unknown;
+  ref: Ref<HTMLDivElement>;
+}) {
+  const { t } = useTranslation();
+  const feedback = usePendingFeedback(pending, identity);
+  const message = feedback.longWaiting
+    ? t('pendingFeedback.longWait')
+    : t('customerContacts.loading');
+  return (
+    <>
+      <div
+        ref={ref}
+        aria-busy={pending}
+        className='flex min-h-8 flex-col items-center justify-center gap-1 py-2'
+      >
+        {feedback.visible ? (
+          <>
+            <BrandLoadingMark className='size-4 text-muted-foreground' />
+            {feedback.longWaiting ? (
+              <span
+                aria-hidden='true'
+                className='text-xs text-muted-foreground'
+              >
+                {message}
+              </span>
+            ) : null}
+          </>
+        ) : null}
+      </div>
+      <span role='status' aria-live='polite' className='sr-only'>
+        {feedback.visible ? message : ''}
+      </span>
+    </>
   );
 }

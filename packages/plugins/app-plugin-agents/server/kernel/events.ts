@@ -70,6 +70,8 @@ export type AgentsEvent =
     }
   | {
       readonly type: 'run.changed';
+      /** Present only on preserved quota suspension or settlement; ordinary listeners do no extra reads. */
+      readonly quotaWait?: boolean;
       readonly runId: string;
       readonly status: RunStatus;
     }
@@ -102,6 +104,8 @@ export type AgentsEvent =
       readonly conversationId: string;
       readonly userId: string;
       readonly lastSeq?: number;
+      /** Present only when the change acknowledges the owner's read position. */
+      readonly seenSeq?: number;
       readonly messageId?: string;
       readonly revision?: number;
     }
@@ -169,7 +173,8 @@ export type AgentsEvent =
   | { readonly type: 'notice'; readonly notice: AgentsNotice }
   /**
    * What a notice told no longer holds, so the application settles it where people look: for
-   * `runner_upgrade_required`, the runner connected again speaking a protocol the application serves.
+   * `runner_upgrade_required`, the runner connected again speaking a protocol the application serves; for
+   * `runner_quota`, the mark named by `key` (its quota key) was cleared by hand or its window reported quota left.
    */
   | {
       readonly type: 'notice.cleared';

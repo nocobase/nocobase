@@ -13,7 +13,7 @@ const esES: LocaleResource<typeof enUS> = {
       apps: {
         title: 'Aplicaciones',
         description:
-          'Aplicaciones, sus lanzamientos, implementaciones y tiempo de ejecución.',
+          'Aplicaciones, sus lanzamientos, implementaciones y entorno de ejecución.',
         actions: {
           view: {
             title: 'Ver aplicaciones',
@@ -214,9 +214,9 @@ const esES: LocaleResource<typeof enUS> = {
       },
       activationHint: {
         eager:
-          'Se inicia cuando se implementa y cada vez que se reinicia el tiempo de ejecución.',
+          'Se inicia cuando se implementa y cada vez que se reinicia el entorno de ejecución.',
         onDemand:
-          'Iniciado en su primera visita después de una implementación o un reinicio del tiempo de ejecución.',
+          'Iniciado en su primera visita después de una implementación o un reinicio del entorno de ejecución.',
       },
       idleLabel: 'Detener cuando no haya sido visitado por',
       dormantLabel: 'Hibernar cuando no sea visitado durante',
@@ -253,6 +253,9 @@ const esES: LocaleResource<typeof enUS> = {
       stopped: 'Detenido',
       stoppedOnDemand: 'Detenido (comienza en la visita)',
       dormant: 'Hibernando (preparado en visita)',
+      waitingCapacity: 'Esperando un hueco libre',
+      waitingMemory: 'Esperando memoria',
+      waitingRecycle: 'Esperando el reinicio del host',
       failed: 'Falló',
       unknown: 'Desconocido',
       deploying: 'Despliegue',
@@ -301,6 +304,11 @@ const esES: LocaleResource<typeof enUS> = {
         'Este entorno está protegido. Escriba {{appId}} para implementar.',
     },
     deployments: {
+      cancel: 'Cancelar despliegue',
+      replaced: 'Sustituido por un despliegue más reciente.',
+      cancelAccepted: 'Cancelación aceptada.',
+      queueAhead: 'En cola · {{ahead}} por delante',
+      restartHint: 'Despliegue interrumpido. Vuelva a desplegar la versión.',
       title: 'Despliegues',
       kind: 'Amable',
       status: 'Estado',
@@ -317,6 +325,8 @@ const esES: LocaleResource<typeof enUS> = {
       hideLogs: 'Ocultar registros',
       noLogs: 'Sin líneas de registro.',
       statuses: {
+        cancelling: 'Cancelando',
+        cancelled: 'Cancelado',
         queued: 'En cola',
         deploying: 'Despliegue',
         succeeded: 'Tuvo éxito',
@@ -325,7 +335,7 @@ const esES: LocaleResource<typeof enUS> = {
     },
     actors: {
       human: 'persona',
-      agent: 'agente',
+      agent: 'Agent',
       key: 'clave',
       rule: 'regla',
       system: 'sistema',
@@ -517,7 +527,7 @@ const esES: LocaleResource<typeof enUS> = {
           syntax: 'Línea {{line}}: escribirla como CLAVE=valor.',
           name: 'Línea {{line}}: {{name}} no es un nombre válido. Utilice letras mayúsculas, dígitos y guiones bajos, comenzando con una letra.',
           reserved:
-            'Línea {{line}}: {{name}} lo establece el tiempo de ejecución y no puede ser una variable.',
+            'Línea {{line}}: {{name}} lo establece el entorno de ejecución y no puede ser una variable.',
           duplicate:
             'Línea {{line}}: {{name}} ya está configurado en una línea anterior.',
           unterminated:
@@ -536,6 +546,49 @@ const esES: LocaleResource<typeof enUS> = {
       deployments: 'Despliegues',
       variables: 'Variables',
       settings: 'Configuración',
+    },
+    sharedHost: {
+      title: 'Host de apps compartido',
+      description:
+        'Las apps de todos los entornos de este host comparten un proceso y su memoria.',
+      summary:
+        '{{running}} de {{deployed}} apps desplegadas en ejecución o iniciándose',
+      memory:
+        'Heap {{heapUsed}} de {{heapLimit}} · memoria del proceso {{rss}} · {{available}} disponibles en el servidor',
+      memoryNote: 'Totales de todo el proceso, no de una sola app.',
+      recycling: {
+        pending:
+          'El código antiguo se libera reiniciando este host cuando ninguna app esté en uso. Las nuevas versiones esperan hasta entonces; las apps en ejecución siguen respondiendo.',
+        restarting:
+          'Este host se está reiniciando. Sus apps responden «inténtalo de nuevo en breve» hasta que vuelvan.',
+      },
+      restoreFailed:
+        '{{name}}: no se pudieron restaurar sus apps; reintentando en segundo plano.',
+      columns: {
+        app: 'App',
+        state: 'Estado',
+        why: 'Motivo',
+        lastAccess: 'Último acceso',
+      },
+      hidden: 'Una app que no puedes ver',
+      empty: 'No hay ninguna app en ejecución en este host.',
+      idle: 'Inactiva; se detiene primero cuando se necesita espacio',
+      holds: {
+        requests: 'Atendiendo solicitudes',
+        connections: 'Conexiones abiertas',
+        starting: 'Iniciándose',
+        operation: 'Desplegando o deteniendo',
+        resident: 'Siempre en ejecución',
+        busy: 'Ocupada',
+        recent: 'Usada en el último minuto',
+      },
+      waiting: {
+        capacity:
+          'Inicio rechazado: límite de apps activas o cola de inicio llena',
+        memory: 'Inicio rechazado: memoria insuficiente',
+        recycle:
+          'Inicio rechazado: el código nuevo espera al reinicio del host',
+      },
     },
     overview: {
       currentRelease: 'Versión actual',
@@ -640,6 +693,9 @@ const esES: LocaleResource<typeof enUS> = {
           'La configuración se guardó, pero la aplicación no pudo recargarla.',
         CONFIG_TOO_LARGE: 'La configuración es demasiado grande.',
         CONFIRMATION_REQUIRED: 'Escriba la ID de la aplicación para confirmar.',
+        DEPLOYMENT_NOT_CANCELLABLE:
+          'El despliegue ha empezado a cambiar de versión o ha terminado.',
+        CANCELLATION_UNSUPPORTED: 'Este controlador no admite la cancelación.',
         DEPLOYMENT_IN_PROGRESS: 'Ya se está implementando esta aplicación.',
         DEPLOYMENT_NOT_FOUND: 'La implementación no existe.',
         DRIVER_UNAVAILABLE: 'El controlador del entorno no está disponible.',
@@ -706,7 +762,7 @@ const esES: LocaleResource<typeof enUS> = {
         VARIABLES_MISSING:
           'Las variables requeridas no están configuradas: {{names}}. Configúrelos en las variables de la aplicación o de su entorno y luego impleméntelos nuevamente.',
         VARIABLE_RESERVED:
-          'Este nombre lo establece el tiempo de ejecución y no puede ser una variable.',
+          'Este nombre lo establece el entorno de ejecución y no puede ser una variable.',
         INVALID_VARIABLE_NAME:
           'El nombre de una variable consta de letras mayúsculas, dígitos y guiones bajos, que comienzan con una letra.',
         INVALID_VARIABLE_VALUE: 'El valor es demasiado largo.',
@@ -728,14 +784,14 @@ const esES: LocaleResource<typeof enUS> = {
           'El host no puede implementar la aplicación en la que se ejecuta.',
         noStatus: 'El host no informó cómo fue la implementación.',
         interrupted: 'La implementación fue interrumpida por un reinicio.',
-        notReported: 'El tiempo de ejecución no informó la aplicación.',
+        notReported: 'El entorno de ejecución no informó la aplicación.',
         notRunning: 'La aplicación no se ejecuta después del reinicio.',
         deploymentNotReported:
-          'El tiempo de ejecución no informó la implementación.',
+          'El entorno de ejecución no informó la implementación.',
         notReady: 'Aún no está listo; Inténtalo de nuevo en un momento.',
         checkTimeout: 'La prueba no finalizó en 20 segundos.',
         hostNoSettings:
-          'El tiempo de ejecución local no requiere configuración de conexión.',
+          'El entorno de ejecución local no requiere configuración de conexión.',
       },
       prefixed: {
         startFailed: 'Error al iniciar: {{detail}}',
@@ -826,7 +882,7 @@ const esES: LocaleResource<typeof enUS> = {
       policyDescription: 'Quién puede desplegarse aquí.',
       appDefaults: 'Aplicaciones',
       appDefaultsDescription:
-        'Como máximo, esta cantidad de aplicaciones, y cuando una aplicación creada sin su propia política de tiempo de ejecución se detiene y queda inactiva. Vacío: sin límite, nunca.',
+        'Como máximo, esta cantidad de aplicaciones, y cuando una aplicación creada sin su propia política de entorno de ejecución se detiene y queda inactiva. Vacío: sin límite, nunca.',
       maxApps: 'La mayoría de las aplicaciones',
       defaultIdle: 'Detener después (minutos sin visita)',
       defaultDormant: 'Inactivo después (horas sin visitas)',

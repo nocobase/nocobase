@@ -330,7 +330,7 @@ it('keeps an unpersisted active response across duplicate replacement events and
   expect(f.stream).toHaveBeenCalledTimes(1);
 });
 
-it('does not infer physical deletion when any bounded ID reconciliation batch fails', async () => {
+it('does not infer physical deletion when a required reconciliation history page fails', async () => {
   const f = fixture();
   f.state.messages = Array.from({ length: 105 }, (_, index) =>
     uiMessage(index + 1),
@@ -338,11 +338,14 @@ it('does not infer physical deletion when any bounded ID reconciliation batch fa
   await f.controller.loadHistory('c1');
   const before = f.controller.chat('c1').messages;
   f.state.messages = [f.state.messages[0]!];
-  const read = f.api.messages.bind(f.api);
-  vi.spyOn(f.api, 'messages').mockImplementation((id, query) => {
-    if (query?.ids?.includes('m101'))
-      throw new Error('Second batch unavailable');
-    return read(id, query);
+  vi.spyOn(f.api, 'messages').mockImplementation((_id, query) => {
+    if (query?.pageToken) throw new Error('Second batch unavailable');
+    return Promise.resolve({
+      items: [before.at(-1)!],
+      lastSeq: 105,
+      hasMore: true,
+      nextCursor: 'older',
+    });
   });
   await expect(f.controller.refresh('c1')).rejects.toThrow(
     'Second batch unavailable',

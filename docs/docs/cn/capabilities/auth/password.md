@@ -79,6 +79,31 @@ Northstar 的运输系统只供公司员工使用，账号由管理员统一创�
 
 应用需要接通邮件发件渠道，才能完成“提交申请 → 收到邮件 → 打开重置链接 → 设置新密码”的完整流程。邮件链接应指向员工实际可以访问的应用地址。
 
+### 配置找回密码发件服务
+
+在应用的 `auth.email` 中配置 SMTP 或 Resend，显式设置 `auth.passwordReset.enabled: true`，并通过 `app.publicOrigin` 设置用户能访问的应用地址。`defineAuthConfig` 校验配置并提供 `AUTH_EMAIL_*` 环境变量映射，密码与 API Key 标记为私密字段。无需安装通知或邮箱插件；仅配置发件服务不会自动开启找回密码。
+
+```yaml
+auth:
+  passwordReset:
+    enabled: true
+  email:
+    provider: smtp
+    host: smtp.example.com
+    port: 587
+    secure: false
+    auth:
+      user: noreply@example.com
+      pass: replace-with-the-smtp-password
+    from: App <noreply@example.com>
+```
+
+使用 Resend 时，将整个 `auth.email` 替换为 `provider: resend`、`apiKey` 和 `from`，不要混入 SMTP 参数。可使用 `AUTH_EMAIL_PROVIDER`、`AUTH_EMAIL_HOST`、`AUTH_EMAIL_PORT`、`AUTH_EMAIL_SECURE`、`AUTH_EMAIL_USER`、`AUTH_EMAIL_PASSWORD`、`AUTH_EMAIL_FROM`、`AUTH_EMAIL_REPLY_TO` 和 `AUTH_EMAIL_API_KEY` 配置，不复用邮箱插件的 `MAIL_*` 变量。
+
+已有的 `auth.emailAndPassword.sendResetPassword` 自定义函数优先，未设置找回密码开关时保持可用；显式关闭找回密码也会禁用自定义函数。`auth.passwordReset.template` 继续支持在 TypeScript 中自定义邮件。新配置不合法会报配置错误；发送失败或提交结果不确定时，不切换服务或自动补发。
+
+**旧应用迁移：** `auth.passwordReset.emailChannel` 已废弃，仅为旧应用保留。没有自定义函数和 `auth.email` 时，由认证插件兼容适配器解析旧渠道，默认 `system-email`；实际采用时在启动期提示迁移。将所用 SMTP 或 Resend 发件参数复制到 `auth.email`，移除显式旧入口，保留通知与邮箱自身配置。旧链路由认证插件持有发件实例，无需注册 MailerProvider 或安装通知、邮箱插件；已显式开启且具有有效旧配置的应用现在可以正常找回密码。旧入口仍受支持，没有设定移除日期。
+
 ## 登录状态与停用账号
 
 人员离职、账号暂停使用或访问资格取消时，需要阻止再次登录，并使已有登录会话失效。停用账号可以保留关联业务记录，后续也可以重新启用。

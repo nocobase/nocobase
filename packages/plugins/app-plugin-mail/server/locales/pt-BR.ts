@@ -4,6 +4,20 @@ import type enUS from './en-US.js';
 
 const ptBR: LocaleResource<typeof enUS> = {
   errors: {
+    imapMoveLocationChanged:
+      'A pasta ou cópia selecionada mudou. Sincronize a caixa de correio e abra novamente a pasta de origem.',
+    imapMoveNotWritable:
+      'A pasta selecionada não permite esta operação. Verifique as permissões da caixa de correio.',
+    imapMoveSourceRequired:
+      'Abra a pasta de origem antes de mover ou excluir esta mensagem.',
+    imapMoveUnsupported:
+      'Este servidor não pode mover mensagens com segurança. Use seu cliente de e-mail.',
+    imapTrashNotFound:
+      'Esta conta não tem uma pasta Lixeira. Use seu cliente de e-mail.',
+    imapMoveOutcomeUnknown:
+      'A movimentação está incompleta ou o resultado é desconhecido. Verifique a caixa de correio antes de tentar novamente.',
+    invalidRecipient:
+      'Corrija os endereços de e-mail e os nomes de exibição dos destinatários antes de enviar.',
     accessDenied: 'O acesso ao correio é necessário.',
     idempotencyConflict:
       'A chave de idempotência já está associada a outra solicitação.',

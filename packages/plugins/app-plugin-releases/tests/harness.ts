@@ -42,6 +42,7 @@ import {
   type AppObservedStatus,
   type DeploymentDriver,
   type DriverSession,
+  type HostOccupancy,
 } from '../server/drivers/types.js';
 import { createReleasesApi } from '../server/routes/api.js';
 import type { AppDriveConfig } from '@nocobase/drive';
@@ -119,8 +120,12 @@ export function createFakeApplication(): FakeApplication {
       identity.subjects.some((subject) => subject.type === 'agent')
         ? 'agent'
         : 'human',
-    relatedAppIds: (userIds: readonly string[]) =>
-      Promise.resolve(userIds.flatMap((userId) => related.get(userId) ?? [])),
+    relatedAppIds: (userIds: readonly string[], _action, among) =>
+      Promise.resolve(
+        userIds
+          .flatMap((userId) => related.get(userId) ?? [])
+          .filter((id) => !among || among.includes(id)),
+      ),
     isRelated: (appId: string, userIds: readonly string[]) =>
       Promise.resolve(
         userIds.some((userId) => (related.get(userId) ?? []).includes(appId)),
@@ -172,6 +177,8 @@ export interface FakeDriverState {
   readonly reported: Map<string, Partial<AppObservedStatus>>;
   /** The configuration each App was last asked to reload, as the runtime received it. */
   readonly reloaded: Map<string, string>;
+  /** What `occupancy` answers: who shares the runtime; null for a driver whose environments share none. */
+  occupancy: HostOccupancy | null;
 }
 
 /**
@@ -191,6 +198,7 @@ export function createFakeDriver(kind: string = 'fake'): {
     resumable: new Map(),
     reported: new Map(),
     reloaded: new Map(),
+    occupancy: null,
   };
   const observed = (
     spec: AppDeploymentSpec | undefined,
@@ -289,6 +297,7 @@ export function createFakeDriver(kind: string = 'fake'): {
             available: false,
             reset: false,
           }),
+        occupancy: () => Promise.resolve(state.occupancy),
         operation: ({ deploymentId }) =>
           Promise.resolve(state.resumable.get(deploymentId) ?? null),
         url: (appId) =>

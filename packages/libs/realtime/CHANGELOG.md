@@ -1,5 +1,23 @@
 # @nocobase/realtime
 
+## 1.0.0-beta.1
+
+### Patch Changes
+
+- 215795d: Keep active preview connections alive, suspend hidden tabs after ten minutes, limit shared applications by heap budget without reclaiming applications used in the last minute, and rotate busy hosts within a bounded wait.
+
+## 1.0.0-beta.0
+
+### Major Changes
+
+- cf23bfe: Move Redis realtime broadcasting to the commercial Realtime Redis plugin. Register its Server plugin before selecting Redis in an application, or import the standalone broker from its `/broker` entry. Preserve the Memory default, service identity, authorization and recovery protocol, and republish runtime consumers against the new host and realtime major versions. Install the compatible commercial cohort before deploying the final removal.
+
+## 1.0.0-beta
+
+### Breaking changes
+
+Remove the built-in Redis broker and its public factory and options type. Standalone Redis consumers must import them from `@nocobase/app-plugin-realtime-redis/broker`; host applications register its Server plugin. Memory, authorization, the browser protocol and generic recovery/control contracts remain open source. Deploy the compatible commercial cohort before this final-removal version.
+
 ## 0.1.0-beta.3
 
 ### Minor Changes

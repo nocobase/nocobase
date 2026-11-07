@@ -19,6 +19,7 @@ const runWaitEnUS = {
       delayed: 'Scheduled for {{until}}',
       noRunnerOnline: 'No runtime online',
       runnersOffline: 'Its runtimes are offline',
+      toolQuota: 'Tool quota exhausted; reset time: {{until}}',
       toolUnavailable:
         'Tool not signed in, disabled, or requested model unavailable ({{tool}})',
       noSharedRunner: 'Only other people’s personal runners are online',
@@ -35,6 +36,7 @@ const runWaitEnUS = {
     /** A reason this version does not know, such as one a newer server sends. */
     unknown: 'Queued ({{reason}})',
     /** When a parameter the text names was not sent. */
+    quotaResetUnknown: 'unknown',
     unknownValue: '—',
   },
 };

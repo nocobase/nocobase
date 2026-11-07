@@ -709,3 +709,13 @@ Foundation identifies the Articles database dependency on the proven normal-succ
 ## Internal workspace packages
 
 The application can also be the root of a pnpm workspace, with internal packages under `packages/*` and the existing `client/`, `server/` and `database/` directories unchanged. New projects receive this workspace pattern automatically. Internal packages use `workspace:*` dependencies and may remain private. Run installation, development and deployment builds from the application root; `pnpm check` includes the internal packages' own checks. See [internal packages](.agents/rules/workspace.md) for configuration and development conventions.
+
+## Procurement business example
+
+The [procurement guide](docs/procurement.md) covers scoped references, atomic parent/line saves, exact amounts, native roles, a designated reviewer and test-data reset. The [business scenario index](docs/business-examples/index.json) identifies runnable resources and integration dependencies. Existing before-change experiment records remain separate from example verification and later Default adaptation results.
+
+### Registration feedback
+
+Password registration signs in new accounts by default (`auth.emailAndPassword.autoSignIn: true` in `server/config/auth.ts` and `config.example.yml`). An existing email returns an explicit error, exposing whether that email is registered. For enumeration protection, explicitly set `autoSignIn: false` and configure email verification with a sender or `onExistingUserSignUp` to notify the email owner. Existing explicit overrides remain effective; no configuration migration is performed. The authentication plugin warns at startup about registration with auto sign-in disabled and neither verification nor an existing-user notification.
+
+The registration page treats `usePasswordRegistration().isSuccess` as request acceptance only. A refreshed session navigates signed-in users into the application. Visitors who remain signed out see neutral sign-in and recovery guidance, without an account-creation or email-delivery promise. Applications customizing this page must keep that distinction.

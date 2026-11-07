@@ -535,6 +535,10 @@ export function createAgents(deps: AgentsDeps): Agents {
     people,
     settings: chat,
     nativeAvailable,
+    nativeHistory: async (values) =>
+      sessions.native.messages.public(
+        await sessions.native.messages.validate(values),
+      ),
     nativeNotice: (unit, row, id, parts) =>
       sessions.native.deliver(row.userId, row.id, id, parts, { unit, row }),
     runnerBusy: (id) => runnerOnlineAgent.busy(id),
@@ -666,7 +670,13 @@ export function createAgents(deps: AgentsDeps): Agents {
     app,
     cli,
     runners,
-    runnerView: createRunnerView({ agents, subjects, tx, clock }),
+    runnerView: createRunnerView({
+      agents,
+      conversations,
+      subjects,
+      tx,
+      clock,
+    }),
     workspaces: createRunnerWorkspaces({ tx, clock, subjects }),
     jobs,
     slots,

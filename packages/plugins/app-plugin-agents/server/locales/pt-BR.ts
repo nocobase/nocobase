@@ -12,15 +12,15 @@ const ptBR: LocaleResource<typeof enUS> = {
         description: 'Os agentes da equipe e as habilidades que utilizam.',
         actions: {
           edit: {
-            title: 'Agentes de mudança e competências',
+            title: 'Agents de mudança e competências',
             description:
-              'Altere as configurações, habilidades e variáveis de um agente, arquive, restaure e exclua, e edite habilidades. Um agente não recebe nenhuma capacidade além da do próprio editor',
+              'Altere as configurações, habilidades e variáveis de um Agent, arquive, restaure e exclua, e edite habilidades. Um Agent não recebe nenhuma capacidade além da do próprio editor',
             related:
-              'Agentes de mudança e habilidades (agentes que eles possuem e habilidades que eles criaram)',
+              'Agents de mudança e habilidades (Agents que eles possuem e habilidades que eles criaram)',
             relatedLabel: 'Agentes que possuo e habilidades que criei',
             relatedHint:
               'Agentes dos quais sou proprietário e habilidades que criei',
-            all: 'Agentes de mudança e habilidades (todos)',
+            all: 'Agents de mudança e habilidades (todos)',
           },
         },
       },
@@ -41,12 +41,12 @@ const ptBR: LocaleResource<typeof enUS> = {
       agents: {
         title: 'Agentes',
         description:
-          'Veja agentes, habilidades e corridas; altere agentes e habilidades, cancele e tente novamente.',
+          'Veja Agents, habilidades e corridas; altere Agents e habilidades, cancele e tente novamente.',
       },
       runners: {
         title: 'Ambientes de execução',
         description:
-          'Veja executores e tokens de registro; gerenciar executores.',
+          'Veja ambientes de execução e tokens de registro; gerenciar ambientes de execução.',
       },
       prices: {
         title: 'Preços dos modelos',
@@ -59,6 +59,11 @@ const ptBR: LocaleResource<typeof enUS> = {
           'Veja os serviços de modelo e os modelos que eles oferecem, nunca suas chaves.',
       },
     },
+  },
+  runnerConversation: {
+    title: 'Conversa: {{title}}',
+    other: 'Conversa de outra pessoa',
+    untitled: 'Nova conversa',
   },
 };
 

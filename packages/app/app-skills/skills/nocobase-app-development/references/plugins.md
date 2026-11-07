@@ -9,6 +9,7 @@ Read this before registering, updating, customizing or removing a plugin, and be
 | The requirement sounds like                                                                  | Read the Skill for                                                                                                                        |
 | -------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
 | Email, IM, or in-app messages; notifying someone that something happened                     | `@nocobase/app-plugin-notification`                                                                                                       |
+| Knowledge bases, document spaces, search and document review                                 | `@nocobase/app-plugin-knowledge`; follow [knowledge integration](#knowledge-base-integration)                                             |
 | Approval processes, joint decisions and approval tasks                                       | `@nocobase/app-plugin-approval` (commercial Pro plugin; check [prerequisites](lifecycle.md#approval-requests-check-the-pro-plugin-first)) |
 | Roles, permissions, "user A may only see their own records", field-level or row-level access | `@nocobase/app-plugin-authorization`                                                                                                      |
 | Sign-in, registration, sessions, password reset                                              | `@nocobase/app-plugin-authentication`                                                                                                     |
@@ -21,6 +22,12 @@ Run `pnpm nocobase skills sync` if `.agents/skills/` is missing or looks out of 
 Building a permission system, a notification sender, or a job scheduler by hand when a registered plugin already provides one is the most expensive mistake available here. Prefer the plugin; write your own only when you have read its Skill and confirmed it genuinely does not fit.
 
 `.agents/skills/` is generated output: gitignored, and every synchronized package-owned directory is replaced wholesale on the next sync, so never edit a file there. The same sync mirrors each synchronized directory into `.claude/skills/` as a symbolic link, because Claude Code discovers skills only there; that mirror is generated and gitignored too. Put application-specific guidance in the application's committed `.agents/rules/`, linked from its `AGENTS.md`.
+
+## Knowledge base integration
+
+When requirements include a knowledge base, document spaces, versioned articles/files, document proposals/review or knowledge search, first inspect `@nocobase/app-plugin-knowledge` and its runtime registration. For required installation or updates, follow [commercial package access](#commercial-package-access) for this package: automatically probe pkg-v3 with existing credentials and install/register a compatible accessible version without prompting. If access is unavailable, leave a brief conversation notice and continue independent work; keep knowledge integration pending rather than building a substitute document/search engine.
+
+Read the synchronized plugin Skill when available. A package without a Skill is not an unavailable plugin: inspect its installed `README.md`, `docs/` and public exports before integration. Verify the target version's configuration and access contracts, and distinguish built-in document/keyword search from optional indexing or semantic-search backends. Check each required backend package separately; knowledge package access does not establish authorization for an additional package or availability of a configured model/indexer.
 
 ## The composition roots
 
@@ -52,7 +59,33 @@ A full package name such as `@my-company/app-plugin-demo-tools` keeps the chosen
 
 Install plugins with `pnpm nocobase plugin register <name>`. All application plugins belong in `dependencies`, including client-only and disabled plugins, because deployment dependencies come from that field. Plugin frontend libraries remain peers and are not automatically installed in the deployment. Re-registering migrates legacy `devDependencies` entries while preserving the declared range; verify the manifest and lockfile afterward. With an older CLI, use `pnpm add --save-prod <package>@<declared-range>` to correct the declaration; `--no-install` leaves lockfile synchronization to the caller.
 
+For a commercial plugin, follow [commercial package access](#commercial-package-access) before installation or update; registry access is checked automatically, without a separate licensing prompt.
+
 To update a registered plugin, use `pnpm nocobase plugin update @nocobase/app-plugin-authentication`, or omit the name to update all registered plugins. Prefer the full package name; `authentication` is also accepted as a short name. The name is a positional argument, not `--plugin`. Use `--dry-run` to preview. With pnpm, updates stay within declared version ranges; after a successful update, all registered plugin Skills are re-synchronized. See the Plugins section of the application's `README.MD` for version-range behavior and examples.
+
+## Commercial package access
+
+Apply this workflow to every required NocoBase Pro package, including approval and Redis backend plugins, commercial database drivers and commercial packages introduced later. It applies to installation and updates; do not probe or install unrelated commercial packages. First inspect the application's installed packages, registrations and synchronized Skills. A missing runtime registration does not require downloading an already compatible installed package again.
+
+Automatically request the required package's metadata from `https://pkg-v3.nocobase.com/` in the application directory using existing npm/pnpm credentials. Registry health, access to a public package or access to another commercial package does not establish authorization for this package. For example, replace `<package>` with the actual package name:
+
+```bash
+env 'npm_config_@nocobase:registry=https://pkg-v3.nocobase.com/' npm_config_registry=https://pkg-v3.nocobase.com/ pnpm view <package> versions --json
+```
+
+Keep both registry overrides local to the command so an existing scoped registry cannot redirect the request to public npm or another registry, and let the install subprocess inherit them. Reuse credentials already configured for pkg-v3 without printing tokens or copying credentials between hosts. Use a bounded request timeout/retry policy; do not repeatedly probe a denied package. Successful metadata access is the package-access signal for automatic installation, not proof that every version is compatible or that installation has succeeded. Inspect the selected version's metadata and peer requirements with `view <package>@<compatible-version> --json` under the same overrides; preserve the application's declared range and installed runtime compatibility instead of blindly choosing `latest`.
+
+When access and a compatible version are available, automatically download and install the package without asking for confirmation or displaying a licensing/install prerequisite prompt. For a new plugin, use:
+
+```bash
+env 'npm_config_@nocobase:registry=https://pkg-v3.nocobase.com/' npm_config_registry=https://pkg-v3.nocobase.com/ pnpm nocobase plugin register <package> --version <compatible-version>
+```
+
+For an existing plugin update, use `pnpm nocobase plugin update <package>` under the same registry overrides and the supported declared range. For a non-plugin package such as a database driver, use `pnpm add --save-prod <package>@<compatible-version>` under the same overrides; do not run plugin registration on it. Verify the manifest, lockfile, applicable runtime registrations and configuration. Synchronize Skills with `pnpm nocobase skills sync` if needed and read the installed package's Skill before using its APIs. Verify actual runtime behavior separately from package access and installation.
+
+If the registry explicitly denies authorization, leave one brief conversation notice that commercial authorization for the named package is unavailable to the current environment and its integration remains pending. Missing credentials mean authorization could not be verified; a timeout, network failure, server error, 404 or lack of a compatible version is an access/version issue, not proof that the user has no commercial license. A download or registration failure after a successful probe is an installation failure; report that concrete reason accurately.
+
+In all unavailable cases, continue the current agent's independent work immediately: do not ask the user to purchase, log in, supply a token or approve installation, and do not end the turn or wait for a response. The conversation notice lets the user decide what to do later. Keep package-dependent work explicitly pending and existing working configuration intact. Do not claim completion, invent package APIs, build a substitute or silently switch to a backend/dialect that cannot meet the requested deployment or business requirements.
 
 ## Customizing a page a plugin owns
 

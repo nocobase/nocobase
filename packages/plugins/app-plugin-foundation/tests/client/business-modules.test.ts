@@ -49,6 +49,230 @@ const inventory: FoundationProviderInventory = {
 };
 
 describe('automatic business modules', () => {
+  it('merges matching static top-level navigation groups and deduplicates pages by route id', () => {
+    const routes = [
+      page('settingsA', {
+        id: 'plugin:settings-a',
+        packageName: '@vendor/hr',
+        path: '/settings/',
+        componentLoader: undefined,
+        navigation: { title: 'settings.title' },
+        breadcrumb: { title: 'settings.title' },
+        children: [
+          page('users', {
+            id: 'plugin:user-list',
+            packageName: '@vendor/hr',
+          }),
+        ],
+      }),
+      page('settingsB', {
+        id: 'plugin:settings-b',
+        packageName: '@vendor/hr',
+        path: '/settings',
+        componentLoader: undefined,
+        navigation: { title: 'settings.title' },
+        breadcrumb: { title: 'settings.title' },
+        children: [
+          page('usersDuplicate', {
+            id: 'plugin:user-list',
+            packageName: '@vendor/hr',
+          }),
+          page('roles', { id: 'plugin:roles', packageName: '@vendor/hr' }),
+        ],
+      }),
+    ];
+    const sources = {
+      complete: false,
+      routes: [
+        {
+          packageName: '@vendor/hr',
+          routeName: 'users',
+          providers: ['@nocobase/app-plugin-file'],
+          complete: true,
+        },
+        {
+          packageName: '@vendor/hr',
+          routeName: 'usersDuplicate',
+          providers: ['@vendor/pro'],
+          complete: true,
+        },
+        {
+          packageName: '@vendor/hr',
+          routeName: 'roles',
+          providers: [],
+          complete: false,
+        },
+      ],
+    };
+
+    expect(
+      businessModules(routes, inventory, sources, [
+        'interface',
+        'files',
+        'extension:@vendor/pro',
+      ]),
+    ).toEqual([
+      {
+        id: 'plugin:settings-a',
+        title: { key: 'settings.title', ns: '@vendor/hr' },
+        pageCount: 2,
+        complete: false,
+        links: [
+          { capability: 'interface', evidence: ['page'], providers: [] },
+          {
+            capability: 'files',
+            evidence: ['source'],
+            providers: ['@nocobase/app-plugin-file'],
+          },
+          {
+            capability: 'extension:@vendor/pro',
+            evidence: ['source'],
+            providers: ['@vendor/pro'],
+          },
+        ],
+      },
+    ]);
+  });
+
+  it('keeps required pages when a matching guest group appears first', () => {
+    const group = (
+      name: string,
+      auth: 'guest' | 'required',
+      childName: string,
+    ): AppClientRegisteredRoute =>
+      page(name, {
+        id: `plugin:${name}`,
+        packageName: '@vendor/hr',
+        path: '/settings',
+        auth,
+        componentLoader: undefined,
+        navigation: { title: 'settings.title' },
+        breadcrumb: { title: 'settings.title' },
+        children: [
+          page(childName, {
+            id: `plugin:${childName}`,
+            packageName: '@vendor/hr',
+          }),
+        ],
+      });
+    const guest = group('guest-settings', 'guest', 'guest-page');
+    const required = group('required-settings', 'required', 'people-page');
+
+    for (const routes of [
+      [guest, required],
+      [required, guest],
+    ] satisfies AppClientRegisteredRoute[][]) {
+      expect(
+        businessModules(routes, inventory, undefined, [
+          'interface',
+          'usersAndOrganizations',
+        ]),
+      ).toMatchObject([
+        {
+          id: 'plugin:required-settings',
+          pageCount: 1,
+          links: [
+            { capability: 'interface', evidence: ['page'] },
+            {
+              capability: 'usersAndOrganizations',
+              evidence: ['authentication'],
+            },
+          ],
+        },
+      ]);
+    }
+    expect(
+      businessModules([guest], inventory, undefined, ['interface']),
+    ).toEqual([]);
+  });
+
+  it('does not merge matching static settings groups across authentication modes', () => {
+    const group = (
+      name: string,
+      auth: 'optional' | 'required',
+    ): AppClientRegisteredRoute =>
+      page(name, {
+        id: `plugin:${name}`,
+        packageName: '@vendor/hr',
+        path: '/settings',
+        auth,
+        componentLoader: undefined,
+        navigation: { title: 'settings.title' },
+        breadcrumb: { title: 'settings.title' },
+        children: [page(`${name}-page`, { packageName: '@vendor/hr' })],
+      });
+
+    const modules = businessModules(
+      [
+        group('optional-settings', 'optional'),
+        group('required-settings', 'required'),
+      ],
+      inventory,
+      undefined,
+      ['interface', 'usersAndOrganizations'],
+    );
+
+    expect(modules).toHaveLength(2);
+    expect(modules.map((module) => module.pageCount)).toEqual([1, 1]);
+  });
+
+  it('does not merge groups with another package, path, title, descriptor, dynamic path, or loader', () => {
+    const shared = {
+      componentLoader: undefined,
+      breadcrumb: { title: 'settings.title' },
+    } as const;
+    const routes = [
+      page('one', {
+        id: 'a:one',
+        packageName: '@vendor/a',
+        path: '/settings',
+        ...shared,
+        children: [page('onePage')],
+      }),
+      page('otherPackage', {
+        id: 'b:one',
+        packageName: '@vendor/b',
+        path: '/settings',
+        ...shared,
+        children: [page('otherPackagePage')],
+      }),
+      page('otherPath', {
+        id: 'a:other-path',
+        packageName: '@vendor/a',
+        path: '/settings/:tab',
+        ...shared,
+        children: [page('otherPathPage')],
+      }),
+      page('otherTitle', {
+        id: 'a:other-title',
+        packageName: '@vendor/a',
+        path: '/settings',
+        navigation: { title: 'nav.different' },
+        ...shared,
+        children: [page('otherTitlePage')],
+      }),
+      page('otherDescriptor', {
+        id: 'a:other-descriptor',
+        packageName: '@vendor/a',
+        path: '/settings',
+        ...shared,
+        breadcrumb: { title: 'settings.other' },
+        children: [page('otherDescriptorPage')],
+      }),
+      page('pageWithLoader', {
+        id: 'a:page-with-loader',
+        packageName: '@vendor/a',
+        path: '/settings',
+        ...shared,
+        componentLoader: loader,
+      }),
+    ];
+
+    expect(
+      businessModules(routes, inventory, undefined, ['interface']),
+    ).toHaveLength(6);
+  });
+
   it('groups descendants, preserves translated menu titles and links only evidence present in the current capability list', () => {
     const routes = [
       page('customOrders', {

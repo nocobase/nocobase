@@ -42,6 +42,15 @@ const frFR: LocaleResource<typeof enUS> = {
     refresh: 'Actualiser',
   },
   workspace: {
+    imapSourceRequired:
+      'Ouvrez le dossier source avant de déplacer ou de supprimer ce message.',
+    imapTrashMissing:
+      'Ce compte ne possède pas de corbeille. Utilisez votre client de messagerie.',
+    deleteUnsupported:
+      'Ce compte ne permet pas la suppression. Utilisez votre client de messagerie.',
+    imapScheduled: 'Annulez l’envoi programmé avant de supprimer ce brouillon.',
+    invalidRecipient:
+      'Corrigez l’adresse e-mail ou le nom affiché : {{value}}. Utilisez au maximum 100 destinataires par champ.',
     senderLabel: 'De',
     attachmentNumber: 'Pièce jointe {{number}}',
     pendingDelivery:

@@ -58,7 +58,8 @@ describe('development client file watching', () => {
       'junction',
     );
 
-    vi.stubEnv('AGENT_ANNOTATIONS_ENABLED', 'false');
+    // A leftover opt-in from an existing application must not restore the removed toolbar.
+    vi.stubEnv('AGENT_ANNOTATIONS_ENABLED', 'true');
     vi.stubEnv('PROXY_TARGET_URL', '');
     // `pnpm dev` always passes the mount path; the Vite preset refuses to serve without one.
     vi.stubEnv('APP_BASE_PATH', '/main');
@@ -75,6 +76,12 @@ describe('development client file watching', () => {
         watch: { usePolling: true, interval: 20 },
       },
     });
+    const html = await server.transformIndexHtml(
+      '/main/',
+      '<!doctype html><html><head></head><body></body></html>',
+    );
+    expect(html).not.toContain('agent-annotations');
+
     const watcher = server.watcher;
     const changes: string[] = [];
     watcher.on('change', (file) => changes.push(file));

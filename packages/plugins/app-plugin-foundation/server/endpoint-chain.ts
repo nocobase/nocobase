@@ -25,6 +25,18 @@ function matches(request: string, endpoint: string): Match {
       }
       return 'maybe';
     }
+    // Hono permits a named parameter constrained to literal alternatives. Only this finite subset can
+    // disprove an overlap; other regular expressions remain unknown and are never executed here.
+    const constrained = /^:\w+\{([\w:|-]+)\}$/.exec(part);
+    if (constrained) {
+      const alternatives = constrained[1].split('|');
+      if (alternatives.length > 32 || alternatives.some((value) => !value))
+        return 'maybe';
+      if (!left[index]) return 'no';
+      if (left[index].startsWith(':')) result = 'maybe';
+      else if (!alternatives.includes(left[index])) return 'no';
+      continue;
+    }
     if (/[{}*?]/.test(part) || (part.startsWith(':') && !/^:\w+$/.test(part)))
       return 'maybe';
     if (!left[index]) return 'no';

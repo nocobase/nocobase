@@ -473,9 +473,12 @@ export function createSubtaskService(deps: SubtaskDeps): SubtaskService {
     extras: {
       async relations(conn, viewer, issue) {
         const catalogs = catalogsFor(deps.statuses, conn);
-        const allChildren = await liveChildren(conn, [issue.id]);
-        const out = await outgoing(conn, [issue.id]);
-        const into = await incoming(conn, [issue.id]);
+        const [allChildren, out, into, blockers] = await Promise.all([
+          liveChildren(conn, [issue.id]),
+          outgoing(conn, [issue.id]),
+          incoming(conn, [issue.id]),
+          blockersOf(conn, catalogs, issue),
+        ]);
         const others = new Map(
           (
             await findIssues(conn, [
@@ -484,7 +487,6 @@ export function createSubtaskService(deps: SubtaskDeps): SubtaskService {
             ])
           ).map((other) => [other.id, other]),
         );
-        const blockers = await blockersOf(conn, catalogs, issue);
         const loaded = new Map([
           ...allChildren.map((child) => [child.id, child] as const),
           ...others,
@@ -496,11 +498,15 @@ export function createSubtaskService(deps: SubtaskDeps): SubtaskService {
           loaded.set(other.id, other);
         const visible = await visibleIssueIds(conn, viewer, [...loaded.keys()]);
         const children = allChildren.filter((child) => visible.has(child.id));
-        const counts = await blockedCounts(conn, catalogs, children);
-        const name = await deps.kinds.nameAll(
-          conn,
-          children.flatMap((child) => (child.executor ? [child.executor] : [])),
-        );
+        const [counts, name] = await Promise.all([
+          blockedCounts(conn, catalogs, children),
+          deps.kinds.nameAll(
+            conn,
+            children.flatMap((child) =>
+              child.executor ? [child.executor] : [],
+            ),
+          ),
+        ]);
         const subtasks: SubtaskSummary[] = [];
         for (const child of children)
           subtasks.push({

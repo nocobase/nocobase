@@ -8,6 +8,7 @@
  * Internal SDK envelopes, tool payloads and provider metadata never enter this public DTO.
  */
 import type { QuotaLocation } from './quota.js';
+import type { RunWait } from './runs.js';
 
 import type {
   OutputBlock,
@@ -233,6 +234,8 @@ export interface ConversationRun {
 
 /** A conversation in the history list. */
 export interface ConversationSummary {
+  /** Linked work resolved for this conversation's owner in the list/detail snapshot. */
+  readonly links?: readonly ConversationLink[];
   /** The optional project whose code this Runner conversation uses. */
   readonly projectId?: string | null;
   readonly execution?: {
@@ -329,6 +332,8 @@ export interface ConversationUsage {
 
 /** How the application shows something a conversation is tied to, as its link kind resolves it for the viewer. */
 export interface ConversationLinkView {
+  /** When the resolved target was last updated, for ordering linked work without another read. */
+  readonly targetUpdatedAt?: string;
   /** Its short identifier, such as an issue's `ST-58`. */
   readonly key: string | null;
   readonly title: string;
@@ -363,8 +368,29 @@ export interface ConversationLink {
 export const CONVERSATION_LINK_KIND_PATTERN: RegExp =
   /^[a-z][a-zA-Z0-9_-]{0,63}$/u;
 
+/** One recipient's bounded view, updated only when the owner shares again. */
+export interface ConversationShare {
+  readonly userId: string;
+  readonly name: string | null;
+  readonly cutoffSeq: number;
+  readonly snapshotAt: string;
+  readonly updatedAt: string;
+}
+export interface ConversationShareCandidate {
+  readonly id: string;
+  readonly name: string;
+}
+
 /** One conversation as the panel opens it. */
 export interface ConversationDetail extends ConversationSummary {
+  /** Present only for a recipient: never mount execution, input or live subscriptions. */
+  readonly snapshot?: {
+    readonly cutoffSeq: number;
+    readonly snapshotAt: string;
+  };
+
+  /** Diagnosed only for the latest queued, unclaimed Runner turn, on the existing detail read. */
+  readonly wait?: RunWait | null;
   /** Saved per-conversation preference; null uses the current Agent default. */
   readonly effort?: string | null;
   readonly availability: ChatAvailability;
@@ -672,7 +698,7 @@ export interface OnlineChatConfigSnapshot {
 }
 export interface CreateConversationRequest {
   readonly projectId?: string | null;
-  /** Runner reasoning effort; null explicitly restores the Agent default. */
+  /** Explicit non-default Runner effort; omission or null uses the Agent default when supported, otherwise the tool default. */
   readonly effort?: string | null;
   /** Defaults to true; background SDK sessions are always hidden. */
   readonly showInChatList?: boolean;
@@ -727,7 +753,7 @@ export interface MessagePage {
 
 /** `POST messages`. */
 export interface SendMessageRequest {
-  /** Runner reasoning effort; null explicitly restores the Agent default. */
+  /** Explicit non-default Runner effort; omission or null uses the Agent default when supported, otherwise the tool default. */
   readonly effort?: string | null;
   /** Confirm this Runner agent only if the message is accepted while idle. */
   readonly agentId?: string;
@@ -853,4 +879,6 @@ export type ConversationChanged =
   | {
       readonly kind: 'conversation.changed';
       readonly conversationId: string;
+      /** A read acknowledgement; other conversation data is unchanged. */
+      readonly seenSeq?: number;
     };

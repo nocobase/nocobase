@@ -71,6 +71,8 @@ import {
   isActive,
   isTerminal,
   lastSummary,
+  recentSummaries,
+  type RecentRunSummary,
   openRunsOn,
   openRunsOnEach,
   pendingInputs,
@@ -111,6 +113,13 @@ export interface NewInput {
 }
 
 export interface EnqueueRequest {
+  readonly runnerId?: string;
+  /**
+   * Hands a queued or failed run's work to the new run: the original is cancelled by `actorUserId` and the new run
+   * becomes its replacement (`retryOfRunId`). The original agent's lock serializes this with its retry and claim, so a
+   * run is replaced or retried once. Refused with `RUN_ALREADY_RETRIED`, `RUN_NOT_RETRYABLE` or `AGENT_BUSY`.
+   */
+  readonly replacesRunId?: string;
   /** Trusted application dispatch: prefer a compatible authorized active run across comment roots. */
   readonly preferActive?: boolean;
   /** Supplied only by a real comment entry point; subsequent comment dispatches share its first run. */
@@ -211,7 +220,7 @@ export interface RunFilter {
   readonly subjectKind?: string;
   readonly subjectId?: string;
   readonly agentId?: string;
-  readonly status?: RunStatus;
+  readonly status?: RunStatus | readonly RunStatus[];
   /** Only runs this user started or is owner of. */
   readonly involvingUserId?: string;
   readonly limit?: number;
@@ -282,6 +291,12 @@ export interface RunService {
     readonly source: string;
   } | null>;
   list(filter: RunFilter): Promise<Run[]>;
+  /** The agents that have a run on the subject (only the runs `involvingUserId` started or owns, when given), each once. */
+  agentIds(filter: {
+    readonly subjectKind: string;
+    readonly subjectId: string;
+    readonly involvingUserId?: string;
+  }): Promise<string[]>;
   inputTriggers(
     runIds: readonly string[],
   ): Promise<
@@ -305,7 +320,11 @@ export interface RunService {
    * candidate runners; null when the run does not exist or is not queued. Whoever calls decides what of it a person may
    * see.
    */
-  queueWait(runId: string): Promise<RunWait | null>;
+  /** A conversation supplies its binding (null when unbound), restricting the existing queue facts to that runner. */
+  queueWait(
+    runId: string,
+    conversationRunnerId?: string | null,
+  ): Promise<RunWait | null>;
   events(
     runId: string,
     afterSeq: number,
@@ -362,6 +381,16 @@ export interface RunService {
     },
     exceptRunId: string,
   ): Promise<string | null>;
+  /** The five latest terminal runs of this agent on this subject, with summaries capped at 400 characters. */
+  recentSummaries(
+    conn: DatabaseConnection,
+    key: {
+      readonly agentId: string;
+      readonly subjectKind: string;
+      readonly subjectId: string;
+    },
+    exceptRunId: string,
+  ): Promise<RecentRunSummary[]>;
 }
 
 export interface RunServiceDeps extends TransitionDeps {
@@ -388,6 +417,9 @@ export interface RunServiceDeps extends TransitionDeps {
 
 /** Work to queue now, as the person it runs as. */
 interface Work {
+  readonly runnerPinId?: string | null;
+  /** A replacement is always a new run; it never merges into other work. */
+  readonly retryOfRunId?: string;
   readonly preferActive?: boolean;
   readonly sourceRunId?: string;
   readonly commentRootRunId?: string | null;
@@ -518,6 +550,10 @@ export function createRunService(deps: RunServiceDeps): RunService {
       readonly subject: EnqueueRequest['subject'];
       readonly threadScope: string;
       readonly freshSession?: boolean;
+      readonly runnerPinId?: string | null;
+      readonly sessionId?: string | null;
+      readonly tool?: string | null;
+      readonly model?: string | null;
       readonly actorUserId: string;
       readonly requestedByUserId: string;
       readonly confirmedByUserId: string | null;
@@ -538,6 +574,9 @@ export function createRunService(deps: RunServiceDeps): RunService {
         agentId: agent.id,
         agentType: 'runner',
         runnerId: null,
+        runnerPinId: values.runnerPinId ?? null,
+        tool: values.tool ?? null,
+        model: values.model ?? null,
         status: 'queued',
         priority: values.priority,
         attempt: 1,
@@ -571,8 +610,9 @@ export function createRunService(deps: RunServiceDeps): RunService {
         cancelledById: null,
         failureReason: null,
         failureDetail: null,
+        failureParams: null,
         summary: null,
-        sessionId: null,
+        sessionId: values.sessionId ?? null,
         workDir: null,
         directoryKey: null,
         claimFailures: 0,
@@ -896,6 +936,14 @@ export function createRunService(deps: RunServiceDeps): RunService {
     }
     const waiting = open.find((run) => run.status === 'queued');
     const target = working ?? waiting;
+    if (target && work.retryOfRunId)
+      throw precondition(
+        'AGENT_BUSY',
+        'The agent is already working on this.',
+        {
+          runId: target.id,
+        },
+      );
     const commentInput = (rootId: string | null | undefined): NewInput =>
       rootId
         ? {
@@ -931,6 +979,7 @@ export function createRunService(deps: RunServiceDeps): RunService {
       commentExecution: work.commentExecution,
       commentOwnerKey: work.commentOwnerKey,
       freshSession: work.freshSession,
+      runnerPinId: work.runnerPinId,
       subject: work.subject,
       threadScope: work.threadScope,
       actorUserId: work.actorUserId,
@@ -939,7 +988,7 @@ export function createRunService(deps: RunServiceDeps): RunService {
       ownerUserId: work.ownerUserId,
       priority: work.priority,
       requires: work.requires,
-      retryOfRunId: null,
+      retryOfRunId: work.retryOfRunId ?? null,
       availableAt: work.fireAt,
       ...(work.parentRunId ? { parentRunId: work.parentRunId } : {}),
       ...(work.maxAttempts ? { maxAttempts: work.maxAttempts } : {}),
@@ -952,6 +1001,65 @@ export function createRunService(deps: RunServiceDeps): RunService {
       ),
     );
     return { runId, outcome: 'created', status: 'queued', inputId };
+  }
+
+  /**
+   * Cancels a queued or failed run that is being replaced (`EnqueueRequest.replacesRunId`), under its agent's lock and
+   * revision. Not a stop request: the subject's cancel hooks do not run, since its work continues in the replacement.
+   */
+  async function withdrawReplaced(
+    unit: Tx,
+    runId: string,
+    subject: EnqueueRequest['subject'],
+    byUserId: string,
+  ): Promise<void> {
+    const target = await require(unit.conn, runId);
+    await lockAgentForClaim(
+      unit.conn,
+      target.agentId,
+      clock.now().toISOString(),
+    );
+    const run = await require(unit.conn, runId);
+    if (run.subjectKind !== subject.kind || run.subjectId !== subject.id)
+      throw invalid('A replacement cannot cross subjects.');
+    const retried = await runsRepo(unit.conn).findOne({
+      filter: { retryOfRunId: run.id },
+    });
+    if (retried)
+      throw precondition(
+        'RUN_ALREADY_RETRIED',
+        'This run has already been retried.',
+        { runId: retried.id },
+      );
+    if (run.status === 'queued') {
+      const ended = await finishRun(
+        unit,
+        deps,
+        run,
+        { status: 'cancelled', reason: 'cancelled', cancelledById: byUserId },
+        true,
+      );
+      if (!ended) throw conflict('The run changed; try again.');
+      return;
+    }
+    if (run.status !== 'failed')
+      throw precondition(
+        'RUN_NOT_RETRYABLE',
+        'Only a queued or failed run can be replaced.',
+      );
+    const now = clock.now().toISOString();
+    const changed = await runsRepo(unit.conn).updateMany({
+      filter: { id: run.id, status: 'failed', revision: run.revision },
+      values: { status: 'cancelled', cancelledById: byUserId, updatedAt: now },
+    });
+    if (changed.updatedCount !== 1)
+      throw conflict('The run changed; try again.');
+    unit.emit({
+      type: 'run.changed',
+      ...(run.runnerPinId ? { quotaWait: false } : {}),
+      runId: run.id,
+      status: 'cancelled',
+    });
   }
 
   /** The source of the chain of work a request belongs to (`EnqueueRequest.requestedByUserId`). */
@@ -1358,13 +1466,24 @@ export function createRunService(deps: RunServiceDeps): RunService {
             actorUserId,
             request.requires ?? [],
           );
+        if (request.replacesRunId)
+          await withdrawReplaced(
+            unit,
+            request.replacesRunId,
+            request.subject,
+            request.actorUserId ?? actorUserId,
+          );
         const result = await queue(unit, agent, {
+          ...(request.replacesRunId
+            ? { retryOfRunId: request.replacesRunId }
+            : {}),
           preferActive: request.preferActive,
           sourceRunId: request.causedByRunId,
           commentRootRunId,
           commentExecution,
           commentOwnerKey,
           freshSession: request.freshSession,
+          runnerPinId: request.runnerId,
           subject: request.subject,
           threadScope,
           actorUserId,
@@ -1594,6 +1713,15 @@ export function createRunService(deps: RunServiceDeps): RunService {
               runId: retried.id,
             },
           );
+        // Take the original over by its revision. The conditional write reads the latest row on every dialect, so a
+        // replacement (`replacesRunId`) whose transaction read an older snapshot before the lock fails to cancel it,
+        // and this retry fails if a replacement committed first.
+        const taken = await runsRepo(unit.conn).updateMany({
+          filter: { id: run.id, status: run.status, revision: run.revision },
+          values: { updatedAt: clock.now().toISOString() },
+        });
+        if (taken.updatedCount !== 1)
+          throw conflict('The run changed; try again.');
         const previousInputs = await inputsRepo(unit.conn).findMany({
           filter: { runId: run.id },
         });
@@ -1688,7 +1816,11 @@ export function createRunService(deps: RunServiceDeps): RunService {
           priority: Number(run.priority),
           requires: toRun(run).requires,
           retryOfRunId: run.id,
-          freshSession: run.freshSession,
+          freshSession: run.runnerPinId ? false : run.freshSession,
+          runnerPinId: run.runnerPinId,
+          sessionId: run.sessionId,
+          tool: run.tool,
+          model: run.model,
         });
         if (renewComment && oldRoot) {
           const origins = await inputsRepo(unit.conn).findMany({
@@ -1896,7 +2028,16 @@ export function createRunService(deps: RunServiceDeps): RunService {
               ? [f.string('subjectId').eq(filter.subjectId)]
               : []),
             ...(filter.agentId ? [f.string('agentId').eq(filter.agentId)] : []),
-            ...(filter.status ? [f.string('status').eq(filter.status)] : []),
+            ...(filter.status
+              ? [
+                  f.or(
+                    (typeof filter.status === 'string'
+                      ? [filter.status]
+                      : filter.status
+                    ).map((status) => f.string('status').eq(status)),
+                  ),
+                ]
+              : []),
             ...(filter.involvingUserId
               ? [
                   f.or([
@@ -1914,6 +2055,25 @@ export function createRunService(deps: RunServiceDeps): RunService {
         ...(filter.cursor ? { cursor: filter.cursor } : {}),
       });
       return readRuns(records);
+    },
+
+    async agentIds(filter) {
+      let query = tx
+        .read()
+        .query.selectFrom('agRuns')
+        .select('agentId')
+        .distinct()
+        .where('subjectKind', '=', filter.subjectKind)
+        .where('subjectId', '=', filter.subjectId);
+      const userId = filter.involvingUserId;
+      if (userId !== undefined)
+        query = query.where((eb) =>
+          eb.or([
+            eb('actorUserId', '=', userId),
+            eb('ownerUserId', '=', userId),
+          ]),
+        );
+      return (await query.execute()).map((row) => String(row.agentId));
     },
 
     async lastEnded(subjectKind, subjectIds) {
@@ -1973,13 +2133,14 @@ export function createRunService(deps: RunServiceDeps): RunService {
       return readWorkload(tx.read(), clock, deps.runners, query);
     },
 
-    queueWait(runId) {
+    queueWait(runId, conversationRunnerId) {
       return readQueueWait(
         tx.read(),
         clock,
         deps.runners,
         runId,
-        deps.diagnose,
+        conversationRunnerId === undefined ? deps.diagnose : undefined,
+        conversationRunnerId,
       );
     },
 
@@ -2096,5 +2257,6 @@ export function createRunService(deps: RunServiceDeps): RunService {
       (await pendingInputs(conn, runId)).map(toInput),
     inputsSince: inputsOnSince,
     lastSummary,
+    recentSummaries,
   };
 }

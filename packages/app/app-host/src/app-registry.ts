@@ -7,6 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { sampleHostMemory, type HostMemoryUsage } from './memory.js';
+import {
+  deploymentSignal,
+  withPreparationSignal,
+} from './deployment-control.js';
 import { deploymentLog } from './deployment-log.js';
 import type { AppConfigReloadResult } from '@nocobase/app-server/config';
 import {
@@ -28,7 +33,9 @@ import type {
   AppDefinition,
   AppDeploymentResult,
   AppDestroyOptions,
+  AppHoldReason,
   AppLifecycleView,
+  AppWaitReason,
   AppRequestMetadata,
   AppSnapshot,
   ReplaceAppDefinitionOptions,
@@ -54,6 +61,12 @@ export interface RegistryHealth {
     idleTtlMs: number;
     evictionIntervalMs: number;
     evictionLoopRunning: boolean;
+    /** Deprecated: no static memory-derived application count. */
+    memorySlots?: number;
+    memory: HostMemoryUsage;
+    rotationPending: boolean;
+    heapTarget: number;
+    appMemory: number;
   };
   metrics: RegistryMetrics;
   registered: number;
@@ -93,8 +106,19 @@ export interface AppLifecycleEvent {
 
 /** How long a failed activation keeps answering requests with its error before one may try again. */
 const ACTIVATION_FAILURE_HOLD_MS = 10_000;
+/**
+ * An App requested more recently than this is in use even between requests (a page polling every few seconds), so
+ * capacity admission never reclaims it: evicting it would only make its next request evict another App, and the Host
+ * would restart Apps every few seconds instead of answering the newcomer that it is full.
+ */
+export const CAPACITY_RECENT_USE_MS = 60_000;
 
 export interface AppRuntimeRegistryOptions {
+  /** Live heap/system admission, with headroom for one serialized cold start. */
+  memoryBudget?: AppMemoryBudget;
+  /** Legacy heap sampler; called again for every admission. */
+  sampleHeap?: () => { heapUsed: number; heapLimit: number };
+  sampleMemory?: () => HostMemoryUsage;
   backend?: AppActivationBackend;
   backends?: AppActivationBackend[];
   resolveFactory?: (
@@ -108,6 +132,20 @@ export interface AppRuntimeRegistryOptions {
   logger?: Logger;
 }
 
+export interface AppMemoryBudget {
+  targetRatio?: number;
+  /** Deprecated; accepted but ignored. */
+  baseMemoryMb?: number;
+  /** Cold-start headroom, not a per-App estimate; 320 MiB covers the measured non-first cold-start peaks. */
+  appMemoryMb?: number;
+  /** Optional OS/process reserve in MiB; defaults to 0 and has not been measured on the target server. */
+  reserveMb?: number;
+  /** Optional whole-process RSS ceiling; heap is checked separately, never added to RSS. */
+  rssBudgetMb?: number;
+  startupTimeoutMs?: number;
+  maxPendingStarts?: number;
+}
+
 export interface RegistryMetrics {
   activations: number;
   coldActivations: number;
@@ -118,6 +156,7 @@ export interface RegistryMetrics {
   capacityEvictions: number;
   destroys: number;
   activationFailures: number;
+  startupTimeouts: number;
   /** Apps made dormant, and dormant Apps prepared again. */
   dormancies: number;
   materializations: number;
@@ -139,6 +178,23 @@ export class AppRuntimeRegistry {
   private readonly idleTtlMs: number;
   private readonly evictionIntervalMs: number;
   private readonly logger: Logger | undefined;
+  private readonly targetRatio: number;
+  private readonly sampleMemory: () => HostMemoryUsage;
+  private readonly reserveMemory: number;
+  private readonly rssBudget: number;
+  private readonly startupTimeoutMs: number;
+  private readonly maxPendingStarts: number;
+  private pendingStarts = 0;
+  private readonly loadedRevisions = new Set<string>();
+  private rotationPending = false;
+  private rotationReady = false;
+  private ingress = 0;
+  private readonly ingressWaiters = new Set<() => void>();
+  private preparing = 0;
+  private readonly appMemory: number;
+  private readonly reservations = new Map<string, AppDefinition>();
+  private admission: Promise<unknown> = Promise.resolve();
+  private capacityAdmission: Promise<unknown> = Promise.resolve();
   private evictionLoop: NodeJS.Timeout | null = null;
   private dormancy: AppDormancyHooks | undefined;
   /** The last request (or activation, or registration) per App; it outlives the runtime. */
@@ -146,6 +202,11 @@ export class AppRuntimeRegistry {
   private readonly dormantApps = new Set<string>();
   private readonly activating = new Set<string>();
   private readonly failures = new Map<string, { at: number; error: string }>();
+  /** The last refused start of each App, shown as `waiting` for CAPACITY_RECENT_USE_MS. In memory only. */
+  private readonly capacityWaits = new Map<
+    string,
+    { at: number; reason: AppWaitReason }
+  >();
   private readonly lifecycleListeners = new Set<
     (event: AppLifecycleEvent) => void
   >();
@@ -159,6 +220,7 @@ export class AppRuntimeRegistry {
     capacityEvictions: 0,
     destroys: 0,
     activationFailures: 0,
+    startupTimeouts: 0,
     dormancies: 0,
     materializations: 0,
     lastActivationDurationMs: null,
@@ -179,7 +241,33 @@ export class AppRuntimeRegistry {
       (() => {
         throw new Error('No app factory resolver configured');
       });
-    this.maxActiveApps = options.maxActiveApps ?? 500;
+    this.maxActiveApps = options.maxActiveApps ?? Number.MAX_SAFE_INTEGER;
+    this.sampleMemory = () => ({
+      ...(options.sampleMemory ?? sampleHostMemory)(),
+      ...options.sampleHeap?.(),
+    });
+    this.targetRatio = options.memoryBudget?.targetRatio ?? 0.7;
+    this.appMemory = (options.memoryBudget?.appMemoryMb ?? 320) * 1024 ** 2;
+    // Extra system reserve is opt-in and independent of the measured cold-start headroom.
+    this.reserveMemory = (options.memoryBudget?.reserveMb ?? 0) * 1024 ** 2;
+    this.rssBudget = (options.memoryBudget?.rssBudgetMb ?? 0) * 1024 ** 2;
+    this.startupTimeoutMs = options.memoryBudget?.startupTimeoutMs ?? 120_000;
+    this.maxPendingStarts = options.memoryBudget?.maxPendingStarts ?? 32;
+    if (
+      !(this.targetRatio > 0 && this.targetRatio < 1) ||
+      !Number.isFinite(this.appMemory) ||
+      this.appMemory <= 0 ||
+      !Number.isFinite(this.reserveMemory) ||
+      this.reserveMemory < 0 ||
+      !Number.isFinite(this.rssBudget) ||
+      this.rssBudget < 0 ||
+      !Number.isSafeInteger(this.startupTimeoutMs) ||
+      this.startupTimeoutMs <= 0 ||
+      this.startupTimeoutMs > 2_147_483_647 ||
+      !Number.isSafeInteger(this.maxPendingStarts) ||
+      this.maxPendingStarts < 1
+    )
+      throw new Error('Invalid App Host memory budget');
     this.idleTtlMs = options.idleTtlMs ?? 5 * 60_000;
     this.evictionIntervalMs = options.evictionIntervalMs ?? 60_000;
     this.dormancy = options.dormancy;
@@ -293,10 +381,6 @@ export class AppRuntimeRegistry {
         return { definition: nextDefinition, app: null, changed: true };
       }
 
-      if (!currentRuntime) {
-        await this.evictForCapacity();
-      }
-
       const strategy =
         currentRuntime &&
         currentDefinition &&
@@ -382,6 +466,7 @@ export class AppRuntimeRegistry {
           reason: 'idle app eviction',
         },
         'idle',
+        now,
       );
 
       if (didEvict) {
@@ -451,10 +536,6 @@ export class AppRuntimeRegistry {
       }
 
       try {
-        if (!oldRuntime) {
-          await this.evictForCapacity();
-        }
-
         const newRuntime = await this.replaceRuntimeStopFirst({
           id,
           currentDefinition,
@@ -544,6 +625,14 @@ export class AppRuntimeRegistry {
     } = options;
 
     if (currentRuntime) {
+      if (
+        nextDefinition.backend === 'in-process' &&
+        this.memoryFull(nextDefinition)
+      )
+        throw new AppCapacityExceededError(
+          this.maxActiveApps,
+          'Insufficient memory for replacement; current runtime kept serving',
+        );
       deploymentLog('starting', 'Stopping previous application instance');
       await currentRuntime.destroy({
         reason,
@@ -616,6 +705,7 @@ export class AppRuntimeRegistry {
         this.lastAccess.delete(id);
         this.dormantApps.delete(id);
         this.failures.delete(id);
+        this.capacityWaits.delete(id);
       }
 
       return Boolean(runtime || hadDefinition);
@@ -729,13 +819,103 @@ export class AppRuntimeRegistry {
   }
 
   capacity(): RegistryHealth['capacity'] {
+    const memory = this.memoryUsage();
     return {
       maxActiveApps: this.maxActiveApps,
       activeTotal: this.runtimes.size,
       idleTtlMs: this.idleTtlMs,
       evictionIntervalMs: this.evictionIntervalMs,
       evictionLoopRunning: this.evictionLoop !== null,
+      memory,
+      rotationPending: this.rotationPending,
+      heapTarget: memory.heapLimit * this.targetRatio,
+      appMemory: this.appMemory,
     };
+  }
+
+  memoryUsage(): HostMemoryUsage {
+    return this.sampleMemory();
+  }
+
+  private revisionKey(definition: AppDefinition): string {
+    const code = definition.code ?? definition.release;
+    const server = definition.server ?? definition.api;
+    return JSON.stringify([
+      definition.id,
+      code?.rootDir ?? server?.rootDir ?? definition.rootDir,
+      code?.entrypoint ?? server?.entrypoint,
+      code?.fingerprint ?? code?.version ?? definition.desiredVersion,
+    ]);
+  }
+
+  /** Existing running Apps keep serving while only new revision loads are paused. */
+  pauseNewRevisions(): void {
+    this.rotationPending = true;
+  }
+  resumeAfterRotationFailure(): void {
+    this.rotationReady = false;
+  }
+  isRotating(): boolean {
+    return this.rotationReady;
+  }
+
+  /** The listener leases ingress before its first await, including assets and upgrade handshakes. */
+  enterRequest(): (() => void) | null {
+    if (this.rotationReady) return null;
+    this.ingress += 1;
+    let released = false;
+    return () => {
+      if (!released) {
+        released = true;
+        this.ingress -= 1;
+        if (this.ingress === 0 && this.rotationReady)
+          for (const resolve of this.ingressWaiters) resolve();
+      }
+    };
+  }
+
+  /** Atomic with ingress admission in this process; a successful check closes the check/request race. */
+  pendingOperationCount(): number {
+    return this.operations.size;
+  }
+  isRotationPending(): boolean {
+    return this.rotationPending;
+  }
+
+  /** Once ingress is gated, existing responses may finish until the bounded drain expires. */
+  drainIngress(timeoutMs: number): Promise<boolean> {
+    if (this.ingress === 0 || timeoutMs === 0)
+      return Promise.resolve(this.ingress === 0);
+    return new Promise((resolve) => {
+      const finish = (): void => {
+        clearTimeout(timer);
+        this.ingressWaiters.delete(finish);
+        resolve(this.ingress === 0);
+      };
+      const timer = setTimeout(finish, timeoutMs);
+      this.ingressWaiters.add(finish);
+    });
+  }
+
+  prepareRotation(
+    ignoreConnections: boolean,
+    drainRequests: boolean = false,
+  ): boolean {
+    if (
+      (!drainRequests && this.ingress > 0) ||
+      this.preparing > 0 ||
+      this.operations.size > 0 ||
+      this.pendingStarts > 0 ||
+      this.list().some(
+        (app) =>
+          (!drainRequests && app.activeRequests > 0) ||
+          (!ignoreConnections && (app.activeConnections ?? 0) > 0),
+      )
+    )
+      return false;
+    this.pauseNewRevisions();
+    this.rotationReady = true;
+    return true;
   }
 
   getMetrics(): RegistryMetrics {
@@ -792,7 +972,6 @@ export class AppRuntimeRegistry {
   }
 
   async ensureActiveHandle(id: string): Promise<ActiveAppHandle> {
-    if (this.definitions.has(id)) this.touch(id);
     // A serving runtime answers at once, even while the App's lock is held: a start-first replacement keeps the
     // previous runtime serving until it switches. A runtime that is draining or being replaced waits for the lock.
     const serving = this.runtimes.get(id);
@@ -804,7 +983,6 @@ export class AppRuntimeRegistry {
       }
 
       const definition = this.requireDefinition(id);
-      await this.evictForCapacity();
       const runtime = await this.activateDefinition(definition);
       this.metrics.coldActivations += 1;
       this.runtimes.set(id, runtime);
@@ -819,14 +997,44 @@ export class AppRuntimeRegistry {
     }
 
     const definition = this.requireDefinition(id);
-    await this.evictForCapacity();
     const runtime = await this.activateDefinition(definition);
     this.metrics.coldActivations += 1;
     this.runtimes.set(id, runtime);
     return runtime.snapshot();
   }
 
-  private async activateDefinition(
+  private activateDefinition(
+    definition: AppDefinition,
+  ): Promise<ActiveAppHandle> {
+    if (definition.backend !== 'in-process')
+      return this.activateAdmitted(definition);
+    if (this.pendingStarts >= this.maxPendingStarts) {
+      this.capacityWaits.set(definition.id, {
+        at: Date.now(),
+        reason: 'capacity',
+      });
+      return Promise.reject(
+        new AppCapacityExceededError(
+          this.maxActiveApps,
+          'Cold-start queue is full; retry later',
+        ),
+      );
+    }
+    this.pendingStarts += 1;
+    const signal = deploymentSignal();
+    const work = this.admission
+      .catch(() => undefined)
+      .then(() => {
+        signal?.throwIfAborted();
+        return this.activateAdmitted(definition);
+      });
+    this.admission = work;
+    return work.finally(() => {
+      this.pendingStarts -= 1;
+    });
+  }
+
+  private async activateAdmitted(
     definition: AppDefinition,
   ): Promise<ActiveAppHandle> {
     if (!definition.enabled) {
@@ -835,15 +1043,17 @@ export class AppRuntimeRegistry {
 
     this.activating.add(definition.id);
     try {
-      if (this.dormantApps.has(definition.id)) {
-        await this.materializeUnlocked(definition);
-      }
-      const runtime = await this.createRuntime(definition);
+      await this.reserveCapacity(definition);
+      const runtime = await this.createRuntimeBounded(definition);
+      // Publish before releasing the reservation: another activation must always see this slot occupied.
+      this.runtimes.set(definition.id, runtime);
       this.failures.delete(definition.id);
+      this.capacityWaits.delete(definition.id);
       this.touch(definition.id);
       this.emitLifecycle(definition.id, 'activated');
       return runtime;
     } catch (error) {
+      if (error instanceof AppCapacityExceededError) throw error;
       this.failures.set(definition.id, {
         at: Date.now(),
         error: error instanceof Error ? error.message : String(error),
@@ -851,12 +1061,74 @@ export class AppRuntimeRegistry {
       this.emitLifecycle(definition.id, 'activation-failed');
       throw error;
     } finally {
+      this.reservations.delete(definition.id);
       this.activating.delete(definition.id);
+    }
+  }
+
+  private async createRuntimeBounded(
+    definition: AppDefinition,
+  ): Promise<ActiveAppHandle> {
+    if (definition.backend !== 'in-process') {
+      if (this.dormantApps.has(definition.id))
+        await this.materializeUnlocked(definition);
+      return this.createRuntime(definition);
+    }
+    const timeoutMs =
+      definition.resourcePolicy?.startupTimeoutMs ?? this.startupTimeoutMs;
+    if (
+      !Number.isSafeInteger(timeoutMs) ||
+      timeoutMs <= 0 ||
+      timeoutMs > 2_147_483_647
+    )
+      throw new Error('Invalid application startup timeout');
+    const abort = new AbortController();
+    const parentSignal = deploymentSignal();
+    const signal = parentSignal
+      ? AbortSignal.any([parentSignal, abort.signal])
+      : abort.signal;
+    let expired = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const work = withPreparationSignal(signal, async () => {
+      if (this.dormantApps.has(definition.id)) {
+        this.preparing += 1;
+        try {
+          await this.materializeUnlocked(definition);
+        } finally {
+          this.preparing -= 1;
+        }
+      }
+      if (expired)
+        throw new Error(
+          'App materialization completed after the startup deadline',
+        );
+      return this.createRuntime(definition, () => expired);
+    });
+    try {
+      // Arbitrary application initialization cannot be stopped by Promise.race. After a timeout it may overlap the
+      // next admitted start until it settles; createRuntime then destroys its late handle instead of publishing it.
+      return await Promise.race([
+        work,
+        new Promise<never>((_, reject) => {
+          timer = setTimeout(() => {
+            expired = true;
+            this.metrics.startupTimeouts += 1;
+            const error = new Error(
+              `App "${definition.id}" startup timed out after ${timeoutMs} ms`,
+            );
+            abort.abort(error);
+            reject(error);
+          }, timeoutMs);
+        }),
+      ]);
+    } finally {
+      clearTimeout(timer);
     }
   }
 
   private async createRuntime(
     definition: AppDefinition,
+    expired: () => boolean = () => false,
   ): Promise<ActiveAppHandle> {
     const version = ++this.versionSequence;
 
@@ -880,6 +1152,8 @@ export class AppRuntimeRegistry {
           `App backend "${definition.backend}" is not available on this host`,
         );
       }
+      if (definition.backend === 'in-process')
+        this.loadedRevisions.add(this.revisionKey(definition));
       const factoryStartedAt = Date.now();
       // A backend that runs the App elsewhere loads no server module here.
       const createApp: AppFactory =
@@ -890,6 +1164,8 @@ export class AppRuntimeRegistry {
               );
             }
           : await this.resolveFactory(definition);
+      if (expired())
+        throw new Error('App module resolved after the startup deadline');
       const factoryDurationMs = Date.now() - factoryStartedAt;
       const backendStartedAt = Date.now();
       const runtime = await backend.activate({
@@ -898,6 +1174,13 @@ export class AppRuntimeRegistry {
         createApp,
       });
       const backendDurationMs = Date.now() - backendStartedAt;
+      if (expired()) {
+        await runtime.destroy({
+          reason: 'Late completion after startup timeout',
+          timeoutMs: 1000,
+        });
+        throw new Error('Application completed after its startup deadline');
+      }
 
       // In-process runtimes emit `created` only after activation.
       const activatableRuntime = runtime as ActiveAppHandle & {
@@ -932,57 +1215,161 @@ export class AppRuntimeRegistry {
     }
   }
 
-  private async evictForCapacity(): Promise<void> {
-    if (this.runtimes.size < this.maxActiveApps) {
-      return;
+  private reserveCapacity(definition: AppDefinition): Promise<void> {
+    const work = this.capacityAdmission
+      .catch(() => undefined)
+      .then(() => this.reserveCapacityUnlocked(definition));
+    this.capacityAdmission = work;
+    return work;
+  }
+
+  private memoryFull(definition: AppDefinition): boolean {
+    return this.memoryWait(definition) !== null;
+  }
+
+  /** Why the Host's memory refuses `definition` a start now: `recycle`, `memory`, or null when it fits. */
+  private memoryWait(definition: AppDefinition): 'recycle' | 'memory' | null {
+    if (
+      this.rotationPending &&
+      !this.loadedRevisions.has(this.revisionKey(definition))
+    )
+      return 'recycle';
+    const memory = this.memoryUsage();
+    return memory.heapUsed + this.appMemory >
+      memory.heapLimit * this.targetRatio ||
+      memory.available < this.appMemory + this.reserveMemory ||
+      (this.rssBudget > 0 && memory.rss + this.appMemory > this.rssBudget)
+      ? 'memory'
+      : null;
+  }
+
+  private async reserveCapacityUnlocked(
+    definition: AppDefinition,
+  ): Promise<void> {
+    const shared = definition.backend === 'in-process';
+    const occupied = () =>
+      new Map<string, { backend: AppDefinition['backend'] }>([
+        ...this.list().map((app) => [app.id, app] as const),
+        ...this.reservations,
+      ]);
+    const fullReason = (): AppWaitReason | null => {
+      const apps = occupied();
+      // Waiting for recycling comes first: no reclaimed slot would let this unloaded revision start.
+      const memory = shared ? this.memoryWait(definition) : null;
+      if (memory === 'recycle') return memory;
+      return apps.size + (apps.has(definition.id) ? 0 : 1) > this.maxActiveApps
+        ? 'capacity'
+        : memory;
+    };
+    const full = () => fullReason() !== null;
+    const recent = (id: string) =>
+      Date.now() - (this.lastAccessedAt(id) ?? 0) < CAPACITY_RECENT_USE_MS;
+    let capacityFull = full();
+    if (
+      capacityFull &&
+      (!shared ||
+        !this.rotationPending ||
+        this.loadedRevisions.has(this.revisionKey(definition)))
+    ) {
+      const candidate = this.getEvictableSnapshots()
+        .filter(
+          (app) =>
+            app.id !== definition.id &&
+            !this.operations.has(app.id) &&
+            !recent(app.id) &&
+            (!shared || app.backend === 'in-process'),
+        )
+        .reduce<AppSnapshot | undefined>(
+          (oldest, app) =>
+            !oldest ||
+            (this.lastAccessedAt(app.id) ?? 0) <
+              (this.lastAccessedAt(oldest.id) ?? 0)
+              ? app
+              : oldest,
+          undefined,
+        );
+      if (candidate) {
+        await this.evictWithSource(
+          candidate.id,
+          { reason: 'App Host capacity reached' },
+          'capacity',
+        );
+        capacityFull = full();
+      }
+    }
+    const waiting = capacityFull ? fullReason() : null;
+    if (waiting) {
+      this.capacityWaits.set(definition.id, {
+        at: Date.now(),
+        reason: waiting,
+      });
+      this.logger?.warn(
+        {
+          appId: definition.id,
+          memory: this.memoryUsage(),
+          rotationPending: this.rotationPending,
+          occupants: [...occupied().keys()].map((id) => ({
+            appId: id,
+            reasons: this.holdsOf(id),
+          })),
+        },
+        'App Host capacity full; retry later',
+      );
+      throw new AppCapacityExceededError(
+        this.maxActiveApps,
+        this.rotationPending
+          ? 'Waiting for Host memory recycling; retry later'
+          : 'App Host capacity exceeded: insufficient memory or active application capacity; retry later',
+      );
     }
 
-    const candidates = this.getEvictableSnapshots().sort(sortByLastAccessed);
-
-    const candidate = candidates[0];
-    if (!candidate) {
-      throw new AppCapacityExceededError(this.maxActiveApps);
-    }
-
-    const didEvict = await this.evictWithSource(
-      candidate.id,
-      {
-        reason: 'max active apps reached',
-      },
-      'capacity',
-    );
-
-    if (!didEvict) {
-      throw new AppCapacityExceededError(this.maxActiveApps);
-    }
+    this.reservations.set(definition.id, definition);
   }
 
   private async evictWithSource(
     id: string,
     options: string | AppDestroyOptions,
     source: 'manual' | 'idle' | 'capacity',
+    idleNow: number = Date.now(),
   ): Promise<boolean> {
-    return this.withAppLock(id, () => this.evictUnlocked(id, options, source));
+    return this.withAppLock(id, () =>
+      this.evictUnlocked(id, options, source, idleNow),
+    );
   }
 
   private async evictUnlocked(
     id: string,
     options: string | AppDestroyOptions = {},
-    source: 'manual' | 'idle' | 'capacity' = 'manual',
+    source: 'manual' | 'idle' | 'capacity' | 'dormant' = 'manual',
+    idleNow: number = Date.now(),
   ): Promise<boolean> {
     const runtime = this.runtimes.get(id);
     if (!runtime) {
       return false;
     }
+    if (source !== 'manual') {
+      const snapshot = runtime.snapshot();
+      if (
+        !this.isEvictable(snapshot) ||
+        (source === 'idle' && !this.isIdle(snapshot, idleNow)) ||
+        (source === 'capacity' &&
+          Date.now() - (this.lastAccessedAt(id) ?? 0) < CAPACITY_RECENT_USE_MS)
+      )
+        return false;
+    }
 
     const startedAt = Date.now();
     await runtime.destroy(options);
+    const lastAccessedAt = this.lastAccessedAt(id);
+    if (lastAccessedAt !== null) this.touch(id, lastAccessedAt);
     this.runtimes.delete(id);
     this.metrics.evictions += 1;
     this.metrics.lastEvictionDurationMs = Date.now() - startedAt;
 
-    if (source === 'idle') {
+    if (source === 'idle' || source === 'dormant') {
       this.metrics.idleEvictions += 1;
+    }
+    if (source === 'idle') {
       this.emitLifecycle(id, 'idle-stopped');
     }
 
@@ -996,10 +1383,18 @@ export class AppRuntimeRegistry {
   private getEvictableSnapshots(): AppSnapshot[] {
     return [...this.runtimes.values()]
       .map((runtime) => runtime.snapshot())
-      .filter(
-        (snapshot) =>
-          snapshot.activeRequests === 0 && snapshot.tier !== 'dedicated',
-      );
+      .filter((snapshot) => this.isEvictable(snapshot));
+  }
+
+  private isEvictable(snapshot: AppSnapshot): boolean {
+    return (
+      snapshot.state === 'active' &&
+      snapshot.activeRequests === 0 &&
+      (snapshot.activeConnections ?? 0) === 0 &&
+      snapshot.tier !== 'dedicated' &&
+      !this.activating.has(snapshot.id) &&
+      this.definitions.get(snapshot.id)?.resourcePolicy?.idleTtlMs !== 0
+    );
   }
 
   private isIdle(snapshot: AppSnapshot, now: number): boolean {
@@ -1076,12 +1471,51 @@ export class AppRuntimeRegistry {
       : null;
   }
 
+  /**
+   * Why an App holds a capacity slot, as admission and its "capacity full" log see it; empty for one that neither runs,
+   * starts nor holds a reservation.
+   */
+  private holdsOf(id: string): AppHoldReason[] {
+    const app = this.snapshot(id);
+    if (!app && !this.reservations.has(id) && !this.activating.has(id))
+      return [];
+    const policy = this.definitions.get(id);
+    const evictable = app ? this.isEvictable(app) : false;
+    const holds: (AppHoldReason | null)[] = [
+      app?.activeRequests ? 'requests' : null,
+      app?.activeConnections ? 'connections' : null,
+      this.activating.has(id) ? 'starting' : null,
+      this.operations.has(id) && !this.activating.has(id) ? 'operation' : null,
+      policy?.tier === 'dedicated' || policy?.resourcePolicy?.idleTtlMs === 0
+        ? 'resident'
+        : null,
+      app && !evictable ? 'busy' : null,
+      evictable &&
+      Date.now() - (this.lastAccessedAt(id) ?? 0) < CAPACITY_RECENT_USE_MS
+        ? 'recent'
+        : null,
+    ];
+    return holds.filter((hold): hold is AppHoldReason => hold !== null);
+  }
+
   lifecycle(id: string): AppLifecycleView | undefined {
     if (!this.definitions.has(id)) return undefined;
     const runtime = this.runtimes.get(id);
     const lastAccessedAt = this.lastAccessedAt(id);
     const failure = this.recentFailure(id);
+    const holds = this.holdsOf(id);
+    const wait = this.capacityWaits.get(id);
+    const waiting =
+      !runtime &&
+      !this.activating.has(id) &&
+      wait &&
+      Date.now() - wait.at < CAPACITY_RECENT_USE_MS
+        ? wait.reason
+        : undefined;
+    if (wait && !waiting) this.capacityWaits.delete(id);
     return {
+      ...(holds.length ? { holds } : {}),
+      ...(waiting ? { waiting } : {}),
       state: this.activating.has(id)
         ? 'starting'
         : runtime
@@ -1132,8 +1566,14 @@ export class AppRuntimeRegistry {
         if (!definition || !this.isDormancyDue(definition, now)) return false;
         const runtime = this.runtimes.get(id);
         if (runtime) {
-          if (runtime.snapshot().activeRequests > 0) return false;
-          await this.evictUnlocked(id, { reason: 'dormant app' }, 'idle');
+          if (
+            !(await this.evictUnlocked(
+              id,
+              { reason: 'dormant app' },
+              'dormant',
+            ))
+          )
+            return false;
         }
         await hibernate(definition, this.lastAccessedAt(id) ?? now);
         this.dormantApps.add(id);
@@ -1148,6 +1588,7 @@ export class AppRuntimeRegistry {
   }
 
   private isDormancyDue(definition: AppDefinition, now: number): boolean {
+    if (definition.tier === 'dedicated') return false;
     const after = definition.resourcePolicy?.dormantAfterMs ?? 0;
     if (!(after > 0) || !definition.enabled) return false;
     if (this.dormantApps.has(definition.id)) return false;

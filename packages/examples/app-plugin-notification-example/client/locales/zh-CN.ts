@@ -41,7 +41,7 @@ const messages = {
       actions: '操作',
     },
     view: '查看详情',
-    refresh: '刷新',
+    retryRead: '重试',
     previous: '上一页',
     next: '下一页',
     page: '第 {{page}} 页',
@@ -59,7 +59,7 @@ const messages = {
     notificationHint:
       '任务保存成功后，除当前操作者外，会通知相关人员：创建人和当前负责人。若负责人发生变更，原负责人和新负责人都会收到通知。',
     edit: '编辑任务',
-    refresh: '刷新',
+    retryRead: '重试',
     save: '保存修改',
     cancel: '取消',
     back: '返回任务列表',

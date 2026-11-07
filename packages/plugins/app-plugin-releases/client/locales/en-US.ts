@@ -102,6 +102,9 @@ const ui = {
     stopped: 'Stopped',
     stoppedOnDemand: 'Stopped (starts on visit)',
     dormant: 'Hibernating (prepared on visit)',
+    waitingCapacity: 'Waiting for a free slot',
+    waitingMemory: 'Waiting for memory',
+    waitingRecycle: 'Waiting for the host to restart',
     failed: 'Failed',
     unknown: 'Unknown',
     deploying: 'Deploying',
@@ -149,6 +152,11 @@ const ui = {
       'This environment is protected. Type {{appId}} to deploy.',
   },
   deployments: {
+    cancel: 'Cancel deployment',
+    replaced: 'Replaced by a newer deployment.',
+    cancelAccepted: 'Cancellation accepted.',
+    queueAhead: 'Queued · {{ahead}} ahead',
+    restartHint: 'Deployment interrupted. Deploy the release again.',
     title: 'Deployments',
     kind: 'Kind',
     status: 'Status',
@@ -165,6 +173,8 @@ const ui = {
     hideLogs: 'Hide logs',
     noLogs: 'No log lines.',
     statuses: {
+      cancelling: 'Cancelling',
+      cancelled: 'Cancelled',
       queued: 'Queued',
       deploying: 'Deploying',
       succeeded: 'Succeeded',
@@ -368,6 +378,46 @@ const ui = {
     variables: 'Variables',
     settings: 'Settings',
   },
+  sharedHost: {
+    title: 'Shared app host',
+    description:
+      'Apps of every environment on this host share one process and its memory.',
+    summary: '{{running}} of {{deployed}} deployed apps running or starting',
+    memory:
+      'Heap {{heapUsed}} of {{heapLimit}} · process memory {{rss}} · {{available}} available on the server',
+    memoryNote: 'Totals of the whole process, not of any one app.',
+    recycling: {
+      pending:
+        'Old code is freed by restarting this host once no app is in use. New versions wait until then; running apps keep serving.',
+      restarting:
+        'This host is restarting. Its apps answer “try again shortly” until they are back.',
+    },
+    restoreFailed:
+      '{{name}}: its apps could not be restored; retrying in the background.',
+    columns: {
+      app: 'App',
+      state: 'State',
+      why: 'Why',
+      lastAccess: 'Last access',
+    },
+    hidden: 'An app you cannot view',
+    empty: 'No app is running on this host.',
+    idle: 'Idle; stopped first when room is needed',
+    holds: {
+      requests: 'Serving requests',
+      connections: 'Open connections',
+      starting: 'Starting',
+      operation: 'Deploying or stopping',
+      resident: 'Always running',
+      busy: 'Busy',
+      recent: 'Used in the last minute',
+    },
+    waiting: {
+      capacity: 'Start refused: the active app limit or start queue is full',
+      memory: 'Start refused: not enough memory',
+      recycle: 'Start refused: new code waits for the host to restart',
+    },
+  },
   overview: {
     currentRelease: 'Current release',
     recent: 'Recent deployments',
@@ -466,6 +516,10 @@ const ui = {
         'The configuration was saved, but the app could not reload it.',
       CONFIG_TOO_LARGE: 'The configuration is too large.',
       CONFIRMATION_REQUIRED: 'Type the app ID to confirm.',
+      DEPLOYMENT_NOT_CANCELLABLE:
+        'The deployment has started switching or has finished.',
+      CANCELLATION_UNSUPPORTED:
+        'This deployment driver does not support cancellation.',
       DEPLOYMENT_IN_PROGRESS:
         'A deployment of this app is already in progress.',
       DEPLOYMENT_NOT_FOUND: 'The deployment does not exist.',

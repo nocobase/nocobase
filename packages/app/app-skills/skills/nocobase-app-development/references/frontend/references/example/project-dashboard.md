@@ -17,7 +17,7 @@ The endpoint contract this assumes: `GET /api/projects/dashboard` returns `{ dat
 import { ApiClientError, useApiClient } from '@nocobase/app-client';
 import { useLocale, useTranslation } from '@nocobase/i18n/client';
 import type { ColumnDef } from '@tanstack/react-table';
-import { AlertCircleIcon, FolderKanbanIcon, RefreshCwIcon } from 'lucide-react';
+import { AlertCircleIcon, FolderKanbanIcon } from 'lucide-react';
 import {
   type ReactElement,
   type RefObject,
@@ -96,7 +96,7 @@ interface ProjectDashboard {
 export default function ProjectDashboardPage(): ReactElement {
   const { t } = useTranslation();
   const api = useApiClient();
-  const refreshRef = useRef<HTMLButtonElement>(null);
+  const headerRef = useRef<HTMLDivElement>(null);
   const viewAllRef = useRef<HTMLAnchorElement>(null);
 
   // The same loading pattern as the list: the result carries the request it answers, and "loading" is derived from it.
@@ -178,8 +178,8 @@ export default function ProjectDashboardPage(): ReactElement {
               size='sm'
               onClick={() => {
                 reload();
-                // This button disappears after a retry; move focus to "Refresh" (guideline A6).
-                refreshRef.current?.focus();
+                // The retry control disappears; return focus to the page heading (guideline A6).
+                headerRef.current?.focus();
               }}
             >
               {t('status.retry')}
@@ -196,21 +196,21 @@ export default function ProjectDashboardPage(): ReactElement {
 
   return (
     <PageContainer>
-      <PageHeader
-        title={t('projectDashboard.title')}
-        description={t('projectDashboard.description')}
-        actions={
-          // A page-level action. A reload keeps the numbers on screen and shows its progress here (guideline I4).
-          <Button ref={refreshRef} variant='outline' onClick={() => reload()}>
-            {loading && dashboard !== undefined ? (
-              <Spinner data-icon='inline-start' />
-            ) : (
-              <RefreshCwIcon data-icon='inline-start' />
-            )}
-            {t('projectDashboard.refresh')}
-          </Button>
-        }
-      />
+      <div ref={headerRef} tabIndex={-1}>
+        <PageHeader
+          title={t('projectDashboard.title')}
+          description={t('projectDashboard.description')}
+        />
+      </div>
+      {loading && dashboard !== undefined && (
+        <div
+          role='status'
+          className='flex items-center gap-2 text-sm text-muted-foreground'
+        >
+          <Spinner />
+          {t('status.loading')}
+        </div>
+      )}
       {content}
       {/* The project drawer and its edit dialog render here, over the dashboard. */}
       <Outlet context={outletContext} />
@@ -484,5 +484,5 @@ function DashboardSkeleton({
 - **A short list in a card** (guideline T5.3): the endpoint returns the five most recently updated projects, so the table has plain headers and `pagination={false}`; "View all" leads to the list. `DataTable` sits in an ordinary `CardContent`: there it drops its frame, reaches the card's edges and pads its outer cells with the card's spacing, so the names line up with "Recently updated".
 - **Metrics** (guideline T5.1): the label is `CardDescription`, the value `CardTitle` at `text-3xl` with `tabular-nums`, formatted with `Intl.NumberFormat` for the current language.
 - **The chart** (guideline T5.2): its one series takes `--chart-1` through the `ChartConfig`, the status names and the tooltip label go through `t`, and the container has the fixed height styling.md describes.
-- **States** (guideline T5.4): the skeleton has the page's shape; a failure shows an `Alert`, with "Retry" unless the request was denied; with no projects yet, the chart and the list each say so in their card. A reload, from "Refresh" or after the drawer changed a project, keeps the numbers on screen and shows a `Spinner` in the button.
-- **Focus** (guideline A6): after "Retry", focus moves to "Refresh"; after a delete in the drawer, to "View all", once the page has reloaded.
+- **States** (guideline T5.4): the skeleton has the page's shape; a failure shows an `Alert`, with "Retry" unless the request was denied; with no projects yet, the chart and the list each say so in their card. A reload after a drawer write keeps the numbers on screen; failed reads retain contextual Retry.
+- **Focus** (guideline A6): after "Retry", focus moves to the page heading; after a delete in the drawer, to "View all", once the page has reloaded.

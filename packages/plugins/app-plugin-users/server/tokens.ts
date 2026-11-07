@@ -204,6 +204,8 @@ export interface PublicUserInvitation {
 export interface AcceptUserInvitationInput {
   readonly token: string;
   readonly name: string;
+  /** Optional sign-in name for a new account; ignored for an existing account. */
+  readonly username?: string;
   readonly password: string;
 }
 
@@ -356,6 +358,8 @@ export interface UsersConfig {
   /** Disable when an application provides its own assignment scope. */
   readonly permissionSets?: boolean;
   readonly invitations?: {
+    /** Named application mailer; otherwise the application default is used. */
+    readonly mailer?: string;
     /** The notification Channel invitation emails go through; `system-email` by default. */
     readonly emailChannel?: string;
   };

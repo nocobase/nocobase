@@ -5,6 +5,20 @@ import inboxZhCN from '#extensions/nocobase-inbox/locales/zh-CN';
 
 /** The Chinese copy of what the template ships; see `./en-US.ts`. */
 const systemZhCN: SystemResource = {
+  pendingFeedback: {
+    working: '正在处理…',
+    longWait: '耗时比平常更长，您可以继续等待。',
+  },
+  taskProgress: {
+    queued: '等待开始',
+    running: '进行中',
+    completed: '已完成',
+    failed: '失败',
+    canceled: '已取消',
+    count: '{{processed}} / {{total}}',
+    processed: '已处理 {{processed}}',
+    background: '离开此页面后任务会继续运行。',
+  },
   listFeedback: {
     loading: '加载中',
     empty: '暂无数据',
@@ -81,6 +95,9 @@ const systemZhCN: SystemResource = {
   'auth.loginDescription': '使用用户名或邮箱和密码登录',
   'auth.registerTitle': '创建账户',
   'auth.registerDescription': '创建账户以开始使用',
+  'auth.registrationAccepted': '注册请求已提交',
+  'auth.registrationGuidance':
+    '请尝试使用刚填写的用户名和密码登录。如果此邮箱已有账户，新填写的信息不会生效，请使用原账户登录或找回密码。如应用提供了验证指引，请先完成验证。',
   'auth.forgotTitle': '忘记密码',
   'auth.forgotDescription': '输入邮箱，如果账户存在，我们将发送重置链接',
   'auth.passwordResetUnavailable': '未开启自助找回，请联系管理员重置密码。',
@@ -120,9 +137,8 @@ const systemZhCN: SystemResource = {
   'auth.continueWith': '使用 {provider} 继续',
   'auth.about': '关于此应用',
   'auth.platform': 'AI 原生应用平台',
-  'auth.marketingTitleFirst': '让 AI 自由构建',
-  'auth.marketingTitleSecond': 'NocoBase 保障',
-  'auth.marketingTitleThird': '可靠运行',
+  'auth.marketingTitleFirst': 'AI + NocoBase',
+  'auth.marketingTitleSecond': 'Build reliable business systems',
   'auth.marketingDescription':
     '让 AI 在灵活的前端框架上构建体验，由 NocoBase 保障底层数据、权限与治理',
   'auth.frontend': 'AI 原生前端',
@@ -131,10 +147,14 @@ const systemZhCN: SystemResource = {
   'auth.foundationDescription': '可靠的数据、访问控制与治理',
   'auth.marketingFooter': '自由构建，可靠支撑',
   'status.loading': '加载中',
+  'status.refreshing': '正在刷新',
   'status.loadingPage': '正在加载页面',
   'status.denied': '无权访问',
   'status.pageFailed': '无法加载页面',
   'status.retry': '重试',
+  'status.reloadPage': '重新加载页面',
+  'status.retryFailedDescription':
+    '仍然无法加载。可以重新加载整个页面，但本页未保存的修改可能丢失。',
   'navigation.brandHome': 'NocoBase 首页',
   'navigation.brandApps': 'NocoBase 应用',
   'routeOverlay.close': '关闭',
@@ -142,11 +162,11 @@ const systemZhCN: SystemResource = {
   'status.routeFailedDescription':
     '无法加载 {{packageName}} 的路由 {{label}}。',
   shell: {
-    buildFreely: 'AI 自由构建',
-    reliability: '<brand>NocoBase</brand> 保障可靠',
+    brandPartnership: 'AI + <brand>NocoBase</brand>',
+    buildReliableSystems: 'Build reliable business systems',
   },
   appearance: {
-    title: '外观',
+    title: '主题',
     mode: '颜色模式',
     preset: '主题',
     light: '浅色',
@@ -187,6 +207,7 @@ const systemZhCN: SystemResource = {
     breadcrumb: '面包屑',
     breadcrumbMore: '显示中间层级',
     back: '返回',
+    backTo: '返回{{label}}',
   },
   dataTable: {
     noResults: '无结果',
@@ -206,6 +227,7 @@ const systemZhCN: SystemResource = {
   datePicker: {
     placeholder: '选择日期',
     rangePlaceholder: '选择日期范围',
+    clear: '清除',
   },
 };
 

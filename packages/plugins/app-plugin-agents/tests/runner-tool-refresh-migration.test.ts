@@ -11,9 +11,13 @@ const sources: readonly MigrationSource[] = [
   },
 ];
 
-describeMigration('202611070002_ag_add_runner_tool_refresh', {
+describeMigration('202611080003_ag_add_runner_tool_refresh', {
   sources,
   up: async ({ expectCollection }) => {
+    await expectCollection('agRuns').toHaveField('failureParams', {
+      type: 'json',
+      nullable: true,
+    });
     await expectCollection('agConversations').toHaveField('projectId', {
       type: 'string',
       nullable: true,
@@ -44,6 +48,10 @@ describeMigration('202611070002_ag_add_runner_tool_refresh', {
     });
   },
   down: async ({ expectCollection }) => {
+    await expectCollection('agRuns').toHaveField('failureParams', {
+      type: 'json',
+      nullable: true,
+    });
     await expectCollection('agConversations').toHaveField('projectId', {
       type: 'string',
       nullable: true,

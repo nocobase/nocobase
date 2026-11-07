@@ -48,6 +48,7 @@
         "isSortableFieldType",
         "isTaskLockBusyError",
         "isTemporalType",
+        "isUniqueConstraintViolation",
         "loadMigrations",
         "loadSeeds",
         "narrowRepositoryPolicy",

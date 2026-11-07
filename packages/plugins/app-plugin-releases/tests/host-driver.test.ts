@@ -176,7 +176,7 @@ describe('Host driver end to end', () => {
       status: 'succeeded',
     });
     expect((await served('demo')).version).toBe('2.0.0');
-    expect(driver.churn()).toBe(1);
+    expect(driver.churn()).toBe(2);
 
     const rollback = await harness.services.releases.rollback(admin, 'demo', {
       deploymentId: first.id,

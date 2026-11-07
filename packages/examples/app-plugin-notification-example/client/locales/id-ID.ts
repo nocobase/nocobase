@@ -45,7 +45,7 @@ const idID: LocaleResource<typeof enUS> = {
       actions: 'Tindakan',
     },
     view: 'Lihat detailnya',
-    refresh: 'Segarkan',
+    retryRead: 'Coba lagi',
     previous: 'Sebelumnya',
     next: 'Berikutnya',
     page: 'Halaman {{page}}',
@@ -64,7 +64,7 @@ const idID: LocaleResource<typeof enUS> = {
     notificationHint:
       'Setelah tugas disimpan, orang terkait selain editor saat ini akan diberitahu: pembuat dan penerima tugas saat ini. Jika penerima tugas berubah, penerima tugas sebelumnya dan baru akan diberitahu.',
     edit: 'Edit tugas',
-    refresh: 'Segarkan',
+    retryRead: 'Coba lagi',
     save: 'Simpan perubahan',
     cancel: 'Batal',
     back: 'Kembali ke tugas',

@@ -1,4 +1,5 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import type { Knex } from 'knex';
 import { claim, createHarness, type Harness } from './harness.js';
 
 const ALICE = 'alice';
@@ -10,6 +11,68 @@ describe('conversation links', () => {
     await h?.close();
   });
   const domain = () => h.services.conversations;
+
+  it('resolves ten conversations with one links query and one call per kind', async () => {
+    h = await createHarness();
+    const resolve = vi.fn(
+      async (_conn, userId: string, targetIds: string[]) =>
+        new Map(
+          targetIds.map((id) => [
+            id,
+            {
+              key: id,
+              title: `${userId} ${id}`,
+              status: null,
+              url: null,
+            },
+          ]),
+        ),
+    );
+    domain().links.registerKind({ key: 'issue', resolve });
+    const agentId = await h.createAgent({ name: 'Batch links' });
+    const ids: string[] = [];
+    for (let i = 0; i < 10; i++) {
+      const conversation = await domain().create(ALICE, { agentId });
+      ids.push(conversation.id);
+      await domain().links.add(ALICE, conversation.id, {
+        kind: 'issue',
+        targetId: `ST-${i}`,
+      });
+    }
+    resolve.mockClear();
+    const client = await h.database.connection().client<Knex>();
+    const statements: string[] = [];
+    const listener = (query: { sql: string }) => statements.push(query.sql);
+    client.on('query', listener);
+    let listed: Awaited<ReturnType<ReturnType<typeof domain>['list']>>;
+    try {
+      listed = await domain().list(ALICE, { pageSize: 10 });
+    } finally {
+      client.removeListener('query', listener);
+    }
+    expect(
+      statements.filter((sql) =>
+        /agConversationLinks|ag_conversation_links/iu.test(sql),
+      ),
+    ).toHaveLength(1);
+    expect(resolve).toHaveBeenCalledOnce();
+    expect(resolve.mock.calls[0]![2]).toHaveLength(10);
+    expect(listed!.items).toHaveLength(10);
+    for (const item of listed!.items) {
+      expect(item.links).toHaveLength(1);
+      expect(item.links![0]!.conversationId).toBe(item.id);
+      expect(item.links![0]!.view?.title).toMatch(/^alice ST-/u);
+    }
+    const detail = await domain().get(ALICE, ids[0]!);
+    expect(detail.links).toEqual(
+      listed!.items.find((item) => item.id === detail.id)!.links,
+    );
+    expect(
+      (await h.request('GET', `/agents/conversations/${ids[0]}`, { user: BOB }))
+        .status,
+    ).toBe(404);
+    expect((await h.request('GET', '/agents/conversations')).status).toBe(401);
+  });
 
   /** Issues `ST-1` and `ST-2`; Bob may not see `ST-2`. */
   async function fixture() {

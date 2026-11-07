@@ -154,7 +154,10 @@ function RealtimeRefresh(): null {
 }
 
 /** This plugin's query cache, kept current by the server's change announcements. */
-export function PmQueryProvider({ children }: PropsWithChildren): ReactElement {
+export function PmQueryProvider({
+  children,
+  realtime = true,
+}: PropsWithChildren<{ realtime?: boolean }>): ReactElement {
   const [client] = useState(
     () =>
       new PmQueryClient({
@@ -165,7 +168,7 @@ export function PmQueryProvider({ children }: PropsWithChildren): ReactElement {
   );
   return (
     <QueryClientProvider client={client}>
-      <RealtimeRefresh />
+      {realtime && <RealtimeRefresh />}
       {children}
     </QueryClientProvider>
   );

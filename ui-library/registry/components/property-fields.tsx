@@ -11,7 +11,7 @@
  * click and edits on a double-click; a link, which a click and a double-click would open, is edited from a pencil
  * shown on hover.
  */
-import { copyText } from '@nocobase/app-client';
+import { copyText, getAvatarInitials } from '@nocobase/app-client';
 
 import { format, type Locale } from 'date-fns';
 import {
@@ -1293,7 +1293,9 @@ export function PeopleAvatars({
                   <AvatarImage src={person.avatar} alt='' />
                 ) : null}
                 <AvatarFallback className='whitespace-nowrap'>
-                  {initials(person.name)}
+                  {getAvatarInitials(person.name, {
+                    fallback: initials(person.name),
+                  })}
                 </AvatarFallback>
               </Avatar>
             }

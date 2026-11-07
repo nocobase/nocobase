@@ -1,4 +1,4 @@
-import { isUniqueConstraintViolation } from '../../database/internal/unique-constraint.js';
+import { isUniqueConstraintViolation } from '../../database/unique-constraint.js';
 import { decimalString } from '../../numeric/decimal.js';
 import {
   decodeJsonValue,

@@ -1,5 +1,173 @@
 # @nocobase/app-plugin-agents
 
+## 2.0.0-beta.6
+
+### Minor Changes
+
+- 1f98579: Add named-user read-only conversation snapshots with completed-turn cutoffs, attachment authorization, revocation and application-defined recipient scopes. Include multi-recipient share management with per-recipient retries and historical views in the chat recipes and the example application.
+
+### Patch Changes
+
+- 7c25f88: Bind plugin peers to the shared client runtime version at release time and keep generated application session and draft-protection tests aligned with permission rechecks.
+- d43fc18: Format shared conversation cutoffs in the application language and show the actual agent name in snapshot replies, with a deleted-agent fallback.
+- 7c25f88: Preserve unsaved forms during permission rechecks by blocking departures and invalidating pending closes until authorization settles. Conceal disconnected confirmation portals and keep Projects rich-text editor effects safe when hidden content reconnects.
+- 7c25f88: Share the route container contexts through `@nocobase/app-client/route-containers` so plugin dialogs, drawers and child pages open in the container the application shows while they load, keep a hosted child page's layout classes, and declare presentations for the remaining Examples and plugin overlays.
+- Updated dependencies [4f0370e]
+- Updated dependencies [7c25f88]
+- Updated dependencies [7c25f88]
+- Updated dependencies [7c25f88]
+- Updated dependencies [215795d]
+  - @nocobase/acp-bridge@1.0.0-beta.6
+  - @nocobase/app-client@4.0.0-beta.9
+  - @nocobase/app-cli@1.0.0-beta.32
+  - @nocobase/app-plugin-authentication@2.0.0-beta.19
+  - @nocobase/app-plugin-file@1.0.0-beta.29
+
+## 2.0.0-beta.5
+
+### Patch Changes
+
+- ef04803: Let host applications require fresh tool sessions and read bounded summaries of recent terminal runs for handoff context.
+
+## 2.0.0-beta.4
+
+### Minor Changes
+
+- bfddb40: Add DeepSeek Harness as an ACP coding tool, with runner API-key detection, its CLI version, and full-access permissions.
+
+### Patch Changes
+
+- c627337: Refresh archived conversation lists after archiving, restoring, or undoing an archive.
+- 49daa11: Restart running background agent connections after installing a new CLI version.
+- 7fe7292: Rebalance the column widths of the runtime drawer's overview, workspaces and runs tables: short columns fit their content and the tool quota, directory and issue columns take the remaining width.
+- Updated dependencies [49daa11]
+- Updated dependencies [bfddb40]
+- Updated dependencies [78bdca8]
+- Updated dependencies [9998ac4]
+- Updated dependencies [87f1ea5]
+- Updated dependencies [6507d01]
+  - @nocobase/app-cli-client@0.1.0-beta.18
+  - @nocobase/acp-bridge@1.0.0-beta.5
+  - @nocobase/app-plugin-authentication@2.0.0-beta.19
+  - @nocobase/app-plugin-authorization@1.0.0-beta.36
+  - @nocobase/app-client@4.0.0-beta.8
+  - @nocobase/app-server@5.0.0-beta.1
+  - @nocobase/app-cli@1.0.0-beta.32
+  - @nocobase/app-plugin-file@1.0.0-beta.29
+
+## 2.0.0-beta.3
+
+### Patch Changes
+
+- 1f0b3ba: Include structured wait reasons in queued Runner conversation details and allow withdrawing an unclaimed initial turn before choosing another Agent.
+- 9933a9a: Allow applications to define issued-credential admission consistently with their command policies. Support run-authenticated project creation, activity and label reads, issue uploads and project resources. Restrict comment edits and deletions to the authenticated originating run, and accept run credentials when reading a release.
+
+  Apply the same trusted application admission to knowledge and owner-checked conversation routes without bypassing their business permissions or ownership checks.
+
+  Check issue visibility before collecting plan rehearsal baselines so a refused row cannot disclose hidden issue fields or dependency identifiers.
+
+- cf23bfe: **Breaking:** Remove the deprecated `@nocobase/app-server/mailer` entry and its `Mailer`, `mailerToken`, `createMailer`, `MailerProvider`, and notification configuration exports. Replace `MailExecutions.close(waitMs)` and `drain()` with `stop()` and `wait()`; transport `close()` now cancels supported network work and waits for its original completion without a nested timeout. Application owners must apply the outer shutdown budget. Create exclusive senders with `@nocobase/app-server/mailers` and declare notification config with `@nocobase/app-plugin-notification-providers/config`. Existing inline SMTP/Resend YAML, environment mappings, and provider/channel APIs remain supported.
+
+  Default and Examples now show `mailers.default: system` and explicitly map `MAILERS_SYSTEM_*`; the example configuration remains empty at runtime. The previous `MAILERS_TRANSACTIONAL_*` sample prefix was not published. Applications may still choose any valid mailer name and custom environment prefix.
+
+- Updated dependencies [6cc8acf]
+- Updated dependencies [9933a9a]
+- Updated dependencies [1e018f1]
+- Updated dependencies [cf23bfe]
+- Updated dependencies [4411984]
+  - @nocobase/app-client@4.0.0-beta.7
+  - @nocobase/app-plugin-authentication@2.0.0-beta.18
+  - @nocobase/db@1.0.0-beta.25
+  - @nocobase/app-server@5.0.0-beta.0
+  - @nocobase/app-cli@1.0.0-beta.32
+  - @nocobase/app-plugin-authorization@1.0.0-beta.35
+  - @nocobase/app-plugin-file@1.0.0-beta.29
+
+## 2.0.0-beta.2
+
+### Patch Changes
+
+- a54cf2c: Expose the optional target update time in conversation links so applications can order linked work without fetching each record.
+- 09646a9: Continue queued Runner conversation messages in the next turn after a user stops the current turn, keeping the original messages and excluding received or withdrawn inputs.
+
+  Preserve saved input revisions across stream recovery without allowing older assistant snapshots to overwrite replayed output.
+
+- f206179: Explain quota-blocked queued runs and model diagnostics with `toolQuota` and the earliest known reset time, reusing existing quota marks without changing scheduling or retries.
+
+## 2.0.0-beta.1
+
+### Patch Changes
+
+- 88d35b8: Share conversation snapshot reads, wait for subscription acknowledgement, and avoid redundant agent catalog refreshes.
+- 88d35b8: Reduce idle conversation recovery reads while preserving latest response revisions, missed messages, reconnect recovery and running refreshes.
+- d04061e: Batch linked work in conversation snapshots and share cursor-based message refreshes across chat surfaces. Refresh changed conversation state without repeatedly reading archived lists, and reconcile saved history once after acknowledged reconnection.
+- 88d35b8: Avoid redundant conversation detail and related-data reads after read acknowledgements while preserving cross-tab updates and reconnect recovery.
+- 88d35b8: Allow runs to be filtered by multiple statuses in one paginated request.
+- 36f61d0: Distinguish workspace preparation from Agent startup when reusing a runner workspace.
+
+  Keep received replies before follow-up messages queued during an active conversation.
+
+- cf23bfe: Move Redis realtime broadcasting to the commercial Realtime Redis plugin. Register its Server plugin before selecting Redis in an application, or import the standalone broker from its `/broker` entry. Preserve the Memory default, service identity, authorization and recovery protocol, and republish runtime consumers against the new host and realtime major versions. Install the compatible commercial cohort before deploying the final removal.
+- 88d35b8: Document every allowed run status for single and combined status filters in the API and command reference.
+- b29a336: Keep saved Agent descriptions current when reopening the editor before a list refresh completes, and expose the existing authorization permission topic constants to client integrations.
+- Updated dependencies [88d35b8]
+- Updated dependencies [83f28b1]
+- Updated dependencies [88d35b8]
+- Updated dependencies [88d35b8]
+- Updated dependencies [83f28b1]
+- Updated dependencies [cf23bfe]
+- Updated dependencies [b29a336]
+  - @nocobase/app-client@4.0.0-beta.6
+  - @nocobase/authorization@1.0.0-beta.16
+  - @nocobase/app-plugin-authorization@1.0.0-beta.34
+  - @nocobase/app-plugin-authentication@2.0.0-beta.17
+  - @nocobase/app-server@4.0.0-beta.0
+  - @nocobase/app-cli@1.0.0-beta.31
+  - @nocobase/app-plugin-file@1.0.0-beta.28
+
+## 2.0.0-beta.0
+
+### Minor Changes
+
+- 57ecc34: Allow applications to supply project workspaces for Runner conversations, retain their runner when changing agents, and continue from the latest conversation summary. Project selection is frozen after the first message. Project access checks can use the caller's transaction connection.
+
+  Reject Agent changes when the conversation’s bound project runner cannot run the selected Agent, preserving its workspace and queued work.
+
+- 8f3e54d: Allow Runner conversations to choose and retain reasoning effort from their current model's eligible runtime capabilities, and preserve the selected effort in each turn and run.
+
+### Patch Changes
+
+- c571810: Add batched causal run and input reads on the caller's connection so applications can avoid repeated progress lookups.
+- b2c0dfd: Let runners scan up to two additional pages of queued runs when earlier candidates cannot run on them, preserving claim order and the existing capacity checks.
+- 311f6e1: Offer six editable description templates through a compact selector with one-step Undo when adding or editing runner agents, and suggest a template for newer models in known families.
+- 4c89e3c: Refresh run status when a realtime notification arrives before the first detail request finishes.
+- 483ac67: Use supported Agent defaults for unselected conversation reasoning effort and fall back to coding tool defaults when capabilities are unknown or do not support the Agent default, retain only explicit non-default selections, and expose a display notice when a selected effort falls back to the tool default.
+- b2eed36: Preserve pending conversation history reads when marking messages as read.
+- 82f9c1d: BREAKING: Agents 2 removes legacy vector collections, their SQLite/pgvector stores, workers and public types. Migrate consumers before upgrading; active `agents.vectors` settings now fail startup, while `{ store: false }` remains an inert compatibility setting for the 2.x line. Model services, Embedding, usage recording and Knowledge's independent indexing remain available. Historical migrations and existing data are retained. See `@nocobase/app-plugin-agents/docs/vectors-migration.md` for API/configuration migration, backups and rollback. Republish direct consumers against the new Agents major version.
+- 91b7602: Reuse active conversation streams when returning to a chat, synchronize saved history when a stream cannot be resumed, and release a pending browser subscription after its execution has durably finished.
+- eff2cb2: Paginate runtime run history in groups of twenty with previous/next controls, page numbers and an exact total. Align runtime status and quota badge sizes and spacing, and show quota hints in a warning color.
+
+  Adds a reversible index on runtime, start time and run id. Building the index during an upgrade scans existing run history and can briefly block run writes.
+
+  Show owned conversations by title with their native entry in runtime history. Hide other conversations behind a localized label without exposing their title or link, using current ownership.
+
+  Place the runtime history loading action below the table with the number of displayed runs, and keep dates on older runs readable.
+
+- Updated dependencies [b6934ad]
+- Updated dependencies [d3f0c92]
+- Updated dependencies [a0b4568]
+- Updated dependencies [12b1f64]
+- Updated dependencies [b6934ad]
+- Updated dependencies [5ce4a7c]
+- Updated dependencies [b6934ad]
+- Updated dependencies [171f7fb]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.16
+  - @nocobase/app-client@4.0.0-beta.5
+  - @nocobase/app-server@3.0.0-beta.5
+  - @nocobase/db@1.0.0-beta.24
+  - @nocobase/app-cli@1.0.0-beta.30
+  - @nocobase/app-plugin-file@1.0.0-beta.27
+
 ## 2.0.0-beta
 
 ### Breaking changes

@@ -60,12 +60,18 @@ function ReplyingDot({
 }
 
 /** The header button: opens and closes the panel. */
-export function ChatHeaderButton(): ReactElement | null {
+export function ChatHeaderButton({
+  onOpen,
+}: { readonly onOpen?: () => void } = {}): ReactElement | null {
   const panel = useChatPanel();
-  return panel.available ? <HeaderButton /> : null;
+  return panel.available ? <HeaderButton onOpen={onOpen} /> : null;
 }
 
-function HeaderButton(): ReactElement {
+function HeaderButton({
+  onOpen,
+}: {
+  readonly onOpen: (() => void) | undefined;
+}): ReactElement {
   const { t } = useChatTranslation();
   const panel = useChatPanel();
   const replying = useReplying();
@@ -83,7 +89,13 @@ function HeaderButton(): ReactElement {
               aria-expanded={panel.open}
               aria-controls={CHAT_PANEL_ID}
               aria-keyshortcuts='Meta+J Control+J'
-              onClick={panel.toggleChat}
+              onClick={() =>
+                panel.open
+                  ? panel.closeChat()
+                  : onOpen
+                    ? onOpen()
+                    : panel.openChat()
+              }
               data-testid='chat-header-button'
             />
           }
@@ -105,12 +117,20 @@ function HeaderButton(): ReactElement {
  * the bottom of the screen, such as a comment composer, rather than covering it, and above an agent composer wherever
  * it sits, hiding when it cannot (`floating-clearance.ts`).
  */
-export function ChatFloatingButton(): ReactElement | null {
+export function ChatFloatingButton({
+  onOpen,
+}: { readonly onOpen?: () => void } = {}): ReactElement | null {
   const panel = useChatPanel();
-  return panel.available && !panel.open ? <FloatingButton /> : null;
+  return panel.available && !panel.open ? (
+    <FloatingButton onOpen={onOpen} />
+  ) : null;
 }
 
-function FloatingButton(): ReactElement {
+function FloatingButton({
+  onOpen,
+}: {
+  readonly onOpen: (() => void) | undefined;
+}): ReactElement {
   const { t } = useChatTranslation();
   const panel = useChatPanel();
   const replying = useReplying();
@@ -129,7 +149,7 @@ function FloatingButton(): ReactElement {
       aria-label={t('chat.title')}
       aria-controls={CHAT_PANEL_ID}
       aria-expanded={false}
-      onClick={() => panel.openChat()}
+      onClick={() => (onOpen ? onOpen() : panel.openChat())}
       data-testid='chat-floating-button'
     >
       <BotMessageSquareIcon className='size-5' />

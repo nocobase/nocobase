@@ -18,6 +18,19 @@ const controls = new Map([
   ['dialog', 'Dialog or the owning route overlay'],
   ['summary', 'Accordion or Collapsible'],
 ]);
+// Native date interactions: the browser's own calendar, not the shadcn Date Picker composition.
+const dateTypes = new Map([
+  [
+    'date',
+    "the application's DatePicker (#components/date-picker); if it does not exist, compose it there once from the calendar, popover and button primitives following https://ui.shadcn.com/docs/components/base/date-picker and the Skill's references/frontend/references/form.md (Dates)",
+  ],
+  [
+    'datetime-local',
+    "the application's DatePicker for the day plus an Input type='time' for the time, combined into one value at the component boundary (the Time Picker example of https://ui.shadcn.com/docs/components/base/date-picker); keep the time, do not replace it with a date-only picker",
+  ],
+]);
+// Primitive exports that render a native <input> and pass `type` through to it.
+const inputPrimitives = new Set(['Input', 'InputGroupInput']);
 const widgetRoles = new Set([
   'button',
   'checkbox',
@@ -96,6 +109,8 @@ export function inspectSource(ts, text, file, root) {
   }
   const primitives = new Set();
   const namespaces = new Set();
+  // Local names bound to an input primitive, including aliases.
+  const inputs = new Set();
   for (const statement of source.statements) {
     if (
       !ts.isImportDeclaration(statement) ||
@@ -116,7 +131,10 @@ export function inspectSource(ts, text, file, root) {
     if (clause.name) primitives.add(clause.name.text);
     if (clause.namedBindings && ts.isNamedImports(clause.namedBindings)) {
       for (const item of clause.namedBindings.elements) {
-        if (!item.isTypeOnly) primitives.add(item.name.text);
+        if (item.isTypeOnly) continue;
+        primitives.add(item.name.text);
+        if (inputPrimitives.has((item.propertyName ?? item.name).text))
+          inputs.add(item.name.text);
       }
     } else if (clause.namedBindings)
       namespaces.add(clause.namedBindings.name.text);
@@ -180,15 +198,59 @@ export function inspectSource(ts, text, file, root) {
           namespaces.has(tag.expression.text);
   }
 
+  /** A primitive that renders a native input: `Input`, an alias of it, or `UI.Input` from a namespace import. */
+  function inputPrimitive(tag) {
+    if (ts.isIdentifier(tag)) return inputs.has(tag.text);
+    return (
+      ts.isPropertyAccessExpression(tag) &&
+      ts.isIdentifier(tag.expression) &&
+      namespaces.has(tag.expression.text) &&
+      inputPrimitives.has(tag.name.text)
+    );
+  }
+
   const findings = [];
   const accepted = [];
+  function report(node, tag, replacement, type) {
+    const position = source.getLineAndCharacterOfPosition(
+      node.getStart(source),
+    );
+    const exception = [...exceptions.values()].find(
+      (item) =>
+        item.nextLine === position.line &&
+        !item.used &&
+        /^\s*$/.test(text.slice(item.end, node.getStart(source))),
+    );
+    const finding = {
+      file,
+      line: position.line + 1,
+      column: position.character + 1,
+      tag,
+      ...(type ? { type } : {}),
+      replacement,
+    };
+    if (exception?.reason && !/^(todo|n\/a|none)$/i.test(exception.reason)) {
+      exception.used = true;
+      accepted.push({ ...finding, reason: exception.reason });
+    } else findings.push(finding);
+  }
   function visit(node) {
     if (ts.isJsxOpeningElement(node) || ts.isJsxSelfClosingElement(node)) {
       const tag = node.tagName.getText(source);
-      if (/^[a-z]/.test(tag) && !tag.includes('.')) {
-        const hidden =
-          tag === 'input' &&
-          literal(ts, attribute(ts, node, 'type')?.initializer) === 'hidden';
+      // Only a statically known type is checked; `type={kind}` and spread props are left to source review.
+      const type = literal(
+        ts,
+        attribute(ts, node, 'type')?.initializer,
+      )?.toLowerCase();
+      const dateReplacement = dateTypes.get(type);
+      if (
+        dateReplacement &&
+        (tag === 'input' || inputPrimitive(node.tagName))
+      ) {
+        // A date input stays a native calendar even inside a primitive's `render`.
+        report(node, tag, dateReplacement, type);
+      } else if (/^[a-z]/.test(tag) && !tag.includes('.')) {
+        const hidden = tag === 'input' && type === 'hidden';
         const role = literal(ts, attribute(ts, node, 'role')?.initializer);
         const clickable =
           passiveTags.has(tag) &&
@@ -200,31 +262,8 @@ export function inspectSource(ts, text, file, root) {
           (widgetRoles.has(role) || clickable
             ? 'the matching shadcn interaction or an existing business component'
             : undefined);
-        if (replacement && !hidden && !renderedByPrimitive(node)) {
-          const position = source.getLineAndCharacterOfPosition(
-            node.getStart(source),
-          );
-          const exception = [...exceptions.values()].find(
-            (item) =>
-              item.nextLine === position.line &&
-              !item.used &&
-              /^\s*$/.test(text.slice(item.end, node.getStart(source))),
-          );
-          const finding = {
-            file,
-            line: position.line + 1,
-            column: position.character + 1,
-            tag,
-            replacement,
-          };
-          if (
-            exception?.reason &&
-            !/^(todo|n\/a|none)$/i.test(exception.reason)
-          ) {
-            exception.used = true;
-            accepted.push({ ...finding, reason: exception.reason });
-          } else findings.push(finding);
-        }
+        if (replacement && !hidden && !renderedByPrimitive(node))
+          report(node, tag, replacement);
       }
     }
     ts.forEachChild(node, visit);
@@ -272,6 +311,10 @@ function collectFiles(root, requested) {
   return { files: [...files].sort(), skipped };
 }
 
+function label(item) {
+  return item.type ? `<${item.tag} type="${item.type}">` : `<${item.tag}>`;
+}
+
 export function main(args) {
   let root = process.cwd();
   const requested = [];
@@ -307,12 +350,12 @@ export function main(args) {
     const result = inspectSource(ts, readFileSync(file, 'utf8'), file, root);
     for (const item of result.findings) {
       console.log(
-        `${relative(root, file)}:${item.line}:${item.column} <${item.tag}>: use ${item.replacement}.`,
+        `${relative(root, file)}:${item.line}:${item.column} ${label(item)}: use ${item.replacement}.`,
       );
     }
     for (const item of result.accepted) {
       console.log(
-        `${relative(root, file)}:${item.line}:${item.column} REVIEW EXCEPTION <${item.tag}>: ${item.reason}`,
+        `${relative(root, file)}:${item.line}:${item.column} REVIEW EXCEPTION ${label(item)}: ${item.reason}`,
       );
     }
     findings += result.findings.length;

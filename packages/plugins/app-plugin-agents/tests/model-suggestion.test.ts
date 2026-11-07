@@ -4,6 +4,7 @@ import { expect, it } from 'vitest';
 import {
   MODEL_SUGGESTION_KEYS,
   modelSuggestion,
+  modelTemplateKey,
 } from '../client/model-suggestion.js';
 import enUS from '../client/locales/en-US.js';
 import locales from '../client/locales/index.js';
@@ -100,3 +101,59 @@ it.each([
     ).toBe(expected);
   },
 );
+
+it.each([
+  ['claude-haiku-5-5', 'small'],
+  ['anthropic/claude-opus-6', 'design'],
+  ['claude-sonnet-6-1', 'routine'],
+  ['openai/gpt-7.1-sol', 'large'],
+  ['gpt-7-astra', 'review'],
+  ['gpt-7-luna', 'small'],
+])(
+  'prefills the family template for %s when there is no suggestion',
+  (model, template) => {
+    expect(
+      modelSuggestion(
+        { tool: 'claude', model, suggestion: null },
+        'en-US',
+        (key) => key,
+      ),
+    ).toBe(`modelSuggestions.${template}`);
+  },
+);
+
+it('prefers exact catalog aliases to family guesses and leaves unknown families empty', () => {
+  expect(modelTemplateKey('claude', 'opus')).toBe('modelSuggestions.design');
+  expect(modelTemplateKey('claude', 'claude-fable-5-1')).toBe(
+    'modelSuggestions.explanation',
+  );
+  for (const model of [
+    'unrecognized',
+    'solaris',
+    'custom-haiku',
+    'gpt-7',
+    '',
+  ]) {
+    expect(
+      modelSuggestion(
+        { tool: 'claude', model, suggestion: null },
+        'en-US',
+        (key) => key,
+      ),
+    ).toBe('');
+  }
+});
+
+it('keeps an external suggestion ahead of a recognized family', () => {
+  expect(
+    modelSuggestion(
+      {
+        tool: 'claude',
+        model: 'claude-haiku-5-5',
+        suggestion: { en: 'Custom text', zh: '自定义' },
+      },
+      'zh-CN',
+      (key) => key,
+    ),
+  ).toBe('自定义');
+});

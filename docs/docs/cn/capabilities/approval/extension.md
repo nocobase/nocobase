@@ -29,14 +29,16 @@ description: '组织审批接入、自定义策略与操作、界面、时限和
 
 ## 页面与审批中心
 
-| 契约                                | 用途                           |
-| ----------------------------------- | ------------------------------ |
-| `previewRoute`                      | 提交前路线预览                 |
-| `runViewsFor` / `upcomingStagesFor` | 当前与历史审批轮次、后续环节   |
-| `actionsFor` / `runActionsFor`      | 当前用户可做的任务或本轮操作   |
-| `candidatesFor`                     | 转交、加签等操作的合格候选人   |
-| `perform` / `performBatch`          | 办理与逐项返回结果的批量办理   |
-| `tasksOf`                           | 汇总审批任务；接口仍需业务鉴权 |
+| 契约                                | 用途                                           |
+| ----------------------------------- | ---------------------------------------------- |
+| `previewRoute`                      | 提交前路线预览                                 |
+| `runViewsFor` / `upcomingStagesFor` | 当前与历史审批轮次、后续环节                   |
+| `actionsFor` / `runActionsFor`      | 当前用户可做的任务或本轮操作                   |
+| `candidatesFor`                     | 转交、加签等操作的合格候选人                   |
+| `perform` / `performBatch`          | 办理与逐项返回结果的批量办理                   |
+| `tasksFor` / `runsFor`              | 按业务单据读取权威任务与轮次；接口仍需业务鉴权 |
+
+宿主应用负责待交接任务的发现范围与完整性：待办中心投影仅用于候选发现，需要业务单据补全，并通过 `tasksFor()` / `runsFor()` 核实原负责人、当前轮次、环节和版本。对明确 `taskId` 使用业务操作入口或 `performBatch({ action: 'reassign', targets, ... })`，改派后重新检查剩余责任。按负责人跨单据查询的 `tasksOf()` 和自动发现全部任务的全局 `reassign()` 已移除；单任务 `reassign` 操作及其权限、资格、并发、事务和审计校验保留。
 
 UI Library 的 `approval-ui` 提供进度、时间线、路线预览、操作栏、分支和阅知展示组件；Agent 将服务端数据映射到组件，业务表单与页面由应用实现。审批中心可汇总其他工作来源，每个来源独立校验权限与执行操作。
 

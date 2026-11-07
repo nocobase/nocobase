@@ -4,6 +4,20 @@ import type enUS from './en-US.js';
 
 const idID: LocaleResource<typeof enUS> = {
   errors: {
+    imapMoveLocationChanged:
+      'Folder atau salinan yang dipilih telah berubah. Sinkronkan kotak surat dan buka kembali folder sumber.',
+    imapMoveNotWritable:
+      'Folder yang dipilih tidak mengizinkan operasi ini. Periksa izin kotak surat.',
+    imapMoveSourceRequired:
+      'Buka folder sumber sebelum memindahkan atau menghapus pesan ini.',
+    imapMoveUnsupported:
+      'Server ini tidak dapat memindahkan pesan dengan aman. Gunakan aplikasi email Anda.',
+    imapTrashNotFound:
+      'Akun ini tidak memiliki folder Sampah. Gunakan aplikasi email Anda.',
+    imapMoveOutcomeUnknown:
+      'Pemindahan belum selesai atau hasilnya tidak diketahui. Periksa kotak surat sebelum mencoba lagi.',
+    invalidRecipient:
+      'Perbaiki alamat email dan nama tampilan penerima sebelum mengirim.',
     accessDenied: 'Akses email diperlukan.',
     idempotencyConflict:
       'Kunci idempotensi telah dikaitkan dengan permintaan lain.',

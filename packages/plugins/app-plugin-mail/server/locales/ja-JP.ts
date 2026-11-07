@@ -4,6 +4,20 @@ import type enUS from './en-US.js';
 
 const jaJP: LocaleResource<typeof enUS> = {
   errors: {
+    imapMoveLocationChanged:
+      '選択したフォルダーまたはコピーが変更されました。メールボックスを同期し、移動元のフォルダーを開き直してください。',
+    imapMoveNotWritable:
+      '選択したフォルダーではこの操作が許可されていません。メールボックスの権限を確認してください。',
+    imapMoveSourceRequired:
+      'このメッセージを移動または削除する前に、移動元のフォルダーを開いてください。',
+    imapMoveUnsupported:
+      'このサーバーではメッセージを安全に移動できません。メールクライアントで操作してください。',
+    imapTrashNotFound:
+      'このアカウントにはゴミ箱フォルダーがありません。メールクライアントで操作してください。',
+    imapMoveOutcomeUnknown:
+      '移動が未完了か、結果が不明です。再試行する前にメールボックスを確認してください。',
+    invalidRecipient:
+      '送信する前に、宛先のメールアドレスと表示名を修正してください。',
     accessDenied: 'メールアクセスが必要です。',
     idempotencyConflict:
       '冪等キーはすでに別のリクエストに関連付けられています。',

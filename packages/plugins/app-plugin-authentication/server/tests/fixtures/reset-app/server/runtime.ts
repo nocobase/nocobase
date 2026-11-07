@@ -1,3 +1,4 @@
+import { defineMailersConfig } from '@nocobase/app-server/mailers/config';
 // A minimal application laid out the way a generated one is: its configuration file is the deployment's, and its
 // database configuration names no connection of its own, so every database it opens is one a test provisioned.
 import {
@@ -19,7 +20,6 @@ import {
 } from '@nocobase/app-server/runtime';
 
 import authenticationPlugin, { defineAuthConfig } from '../../../../index.js';
-import { defineMailChannelsConfig } from '@nocobase/app-server/mailer';
 
 const appRuntime: AppRuntimeDefinition = defineAppRuntime({
   createAppConfig: (context) => {
@@ -45,6 +45,7 @@ const appRuntime: AppRuntimeDefinition = defineAppRuntime({
         };
       },
     }),
+    mailers: defineMailersConfig(),
     auth: defineAuthConfig({
       defaults: {
         secret: 'synthetic-auth-secret-at-least-32-characters',
@@ -52,7 +53,8 @@ const appRuntime: AppRuntimeDefinition = defineAppRuntime({
         passwordReset: { enabled: true },
       },
     }),
-    notification: defineMailChannelsConfig({ defaults: { channels: {} } }),
+    // Legacy input only; no notification plugin or configuration helper is needed.
+    notification: defineAppConfig({ defaults: { channels: {} } }),
     caching: defineAppConfig({
       defaults: {
         default: 'memory',

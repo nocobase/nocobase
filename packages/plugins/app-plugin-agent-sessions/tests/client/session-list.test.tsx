@@ -73,6 +73,7 @@ it('shows an unread mark and a permission label together, including an offline c
   const session = {
     id: 's',
     title: 'Pending conversation',
+    project: { id: 'project', name: 'Hidden project name' },
     links: [],
     waiting: true,
     computerOnline: false,
@@ -101,6 +102,9 @@ it('shows an unread mark and a permission label together, including an offline c
     },
   );
   expect(await screen.findByText('Waiting for your permission')).toBeVisible();
+  expect(screen.queryByText('Hidden project name')).toBeNull();
+  expect(screen.queryByTitle('Hidden project name')).toBeNull();
+  expect(screen.getByText('No tasks')).toBeVisible();
   expect(screen.getByRole('img', { name: 'Unread reply' })).toBeVisible();
 });
 

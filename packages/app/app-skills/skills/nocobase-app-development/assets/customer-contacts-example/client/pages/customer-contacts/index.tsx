@@ -1,10 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
 import { useAuthentication } from '@nocobase/app-plugin-authentication/client';
 import {
+  resolveListState,
   useApiClient,
   useToaster,
-  ApiClientError,
-  type ListState,
 } from '@nocobase/app-client';
 import {
   useCan,
@@ -14,7 +13,6 @@ import { useTranslation } from '@nocobase/i18n/client';
 import { useEffect, useRef, useState } from 'react';
 import { Link, Outlet, useLocation } from 'react-router';
 import type { ColumnDef } from '@tanstack/react-table';
-import { RefreshCw } from 'lucide-react';
 import { DataTable } from '#components/data-table';
 import { PageContainer } from '#components/page-container';
 import { PageHeader } from '#components/page-header';
@@ -193,23 +191,15 @@ function CustomerContactsContent() {
       cell: ({ row }) => <OwnerName id={row.original.ownerId} />,
     },
   ];
-  const state: ListState = request.error
-    ? request.error instanceof ApiClientError && request.error.status === 403
-      ? 'forbidden'
-      : request.error instanceof ApiClientError && request.error.status === 401
-        ? 'unauthenticated'
-        : rows.length
-          ? 'refresh-failed'
-          : 'failed'
-    : request.loading
-      ? rows.length
-        ? 'ready'
-        : 'loading'
-      : rows.length
-        ? 'ready'
-        : search || status !== 'all' || owner
-          ? 'no-results'
-          : 'empty';
+  const state = resolveListState(
+    {
+      data: currentData,
+      error: request.error,
+      isPending: request.loading && !currentData,
+    },
+    rows.length,
+    Boolean(search || status !== 'all' || owner),
+  );
   const reload = () => {
     setSelection({ key: '', ids: [] });
     request.reload();
@@ -259,15 +249,6 @@ function CustomerContactsContent() {
                   {t('customerContacts.reset')}
                 </Button>
               )}
-              <Button
-                variant='outline'
-                onClick={reload}
-                disabled={request.loading}
-                aria-label={t('customerContacts.refresh')}
-              >
-                <RefreshCw className={request.loading ? 'animate-spin' : ''} />
-                {t('customerContacts.refresh')}
-              </Button>
             </>
           }
         />
@@ -339,6 +320,7 @@ function CustomerContactsContent() {
         showSelectedCount={false}
         listState={state}
         loading={active && request.loading}
+        loadingIdentity={path}
         onRetry={reload}
       />
       <AlertDialog

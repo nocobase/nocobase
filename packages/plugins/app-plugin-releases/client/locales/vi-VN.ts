@@ -13,12 +13,12 @@ const viVN: LocaleResource<typeof enUS> = {
       apps: {
         title: 'Ứng dụng',
         description:
-          'Ứng dụng, bản phát hành, quá trình triển khai và thời gian chạy của chúng.',
+          'Ứng dụng, bản phát hành, quá trình triển khai và môi trường chạy của chúng.',
         actions: {
           view: {
             title: 'Xem ứng dụng',
             description:
-              'Xem Ứng dụng, bản phát hành, hoạt động triển khai và trạng thái thời gian chạy của chúng',
+              'Xem Ứng dụng, bản phát hành, hoạt động triển khai và trạng thái môi trường chạy của chúng',
             related: 'Xem ứng dụng (những ứng dụng liên quan đến chúng)',
             relatedLabel: 'Những cái tôi đã tạo ra',
             relatedHint:
@@ -213,9 +213,9 @@ const viVN: LocaleResource<typeof enUS> = {
       },
       activationHint: {
         eager:
-          'Bắt đầu khi được triển khai và bất cứ khi nào thời gian chạy khởi động lại.',
+          'Bắt đầu khi được triển khai và bất cứ khi nào môi trường chạy khởi động lại.',
         onDemand:
-          'Bắt đầu bằng lượt truy cập đầu tiên sau khi triển khai hoặc khởi động lại thời gian chạy.',
+          'Bắt đầu bằng lượt truy cập đầu tiên sau khi triển khai hoặc khởi động lại môi trường chạy.',
       },
       idleLabel: 'Dừng lại khi không được ghé thăm',
       dormantLabel: 'Ngủ đông khi không được truy cập',
@@ -251,6 +251,9 @@ const viVN: LocaleResource<typeof enUS> = {
       stopped: 'Đã dừng',
       stoppedOnDemand: 'Đã dừng (bắt đầu truy cập)',
       dormant: 'Ngủ đông (chuẩn bị khi ghé thăm)',
+      waitingCapacity: 'Đang chờ chỗ trống',
+      waitingMemory: 'Đang chờ bộ nhớ',
+      waitingRecycle: 'Đang chờ máy chủ khởi động lại',
       failed: 'Thất bại',
       unknown: 'Không rõ',
       deploying: 'Triển khai',
@@ -299,6 +302,12 @@ const viVN: LocaleResource<typeof enUS> = {
         'Môi trường này được bảo vệ. Gõ {{appId}} để triển khai.',
     },
     deployments: {
+      cancel: 'Hủy triển khai',
+      replaced: 'Đã được thay thế bằng lần triển khai mới hơn.',
+      cancelAccepted: 'Đã nhận yêu cầu hủy.',
+      queueAhead: 'Đang chờ · còn {{ahead}} lượt phía trước',
+      restartHint:
+        'Triển khai bị gián đoạn. Vui lòng triển khai lại bản phát hành.',
       title: 'Triển khai',
       kind: 'Loại',
       status: 'Trạng thái',
@@ -315,6 +324,8 @@ const viVN: LocaleResource<typeof enUS> = {
       hideLogs: 'Ẩn nhật ký',
       noLogs: 'Không có dòng nhật ký.',
       statuses: {
+        cancelling: 'Đang hủy',
+        cancelled: 'Đã hủy',
         queued: 'Đã xếp hàng',
         deploying: 'Triển khai',
         succeeded: 'Đã thành công',
@@ -323,7 +334,7 @@ const viVN: LocaleResource<typeof enUS> = {
     },
     actors: {
       human: 'người',
-      agent: 'đại lý',
+      agent: 'Agent',
       key: 'phím',
       rule: 'quy tắc',
       system: 'hệ thống',
@@ -515,7 +526,7 @@ const viVN: LocaleResource<typeof enUS> = {
           syntax: 'Dòng {{line}}: ghi là KEY=value.',
           name: 'Dòng {{line}}: {{name}} không phải là tên hợp lệ. Sử dụng chữ in hoa, chữ số và dấu gạch dưới, bắt đầu bằng một chữ cái.',
           reserved:
-            'Dòng {{line}}: {{name}} được đặt theo thời gian chạy và không thể là một biến.',
+            'Dòng {{line}}: {{name}} được đặt theo môi trường chạy và không thể là một biến.',
           duplicate: 'Dòng {{line}}: {{name}} đã được đặt trên dòng trước đó.',
           unterminated:
             'Dòng {{line}}: báo giá xung quanh giá trị của {{name}} chưa được đóng.',
@@ -528,6 +539,48 @@ const viVN: LocaleResource<typeof enUS> = {
       deployments: 'Triển khai',
       variables: 'Biến',
       settings: 'Cài đặt',
+    },
+    sharedHost: {
+      title: 'Máy chủ ứng dụng dùng chung',
+      description:
+        'Ứng dụng của mọi môi trường trên máy chủ này dùng chung một tiến trình và bộ nhớ của nó.',
+      summary:
+        '{{running}} trên {{deployed}} ứng dụng đã triển khai đang chạy hoặc đang khởi động',
+      memory:
+        'Heap {{heapUsed}} / {{heapLimit}} · bộ nhớ tiến trình {{rss}} · còn {{available}} trên máy chủ',
+      memoryNote: 'Tổng của cả tiến trình, không phải của một ứng dụng.',
+      recycling: {
+        pending:
+          'Mã cũ được giải phóng bằng cách khởi động lại máy chủ này khi không còn ứng dụng nào được dùng. Phiên bản mới chờ đến lúc đó; ứng dụng đang chạy vẫn phục vụ.',
+        restarting:
+          'Máy chủ này đang khởi động lại. Các ứng dụng sẽ trả lời “thử lại sau giây lát” cho đến khi hoạt động trở lại.',
+      },
+      restoreFailed:
+        '{{name}}: không khôi phục được các ứng dụng; đang thử lại ở chế độ nền.',
+      columns: {
+        app: 'Ứng dụng',
+        state: 'Trạng thái',
+        why: 'Lý do',
+        lastAccess: 'Truy cập gần nhất',
+      },
+      hidden: 'Một ứng dụng bạn không có quyền xem',
+      empty: 'Không có ứng dụng nào đang chạy trên máy chủ này.',
+      idle: 'Rảnh; bị dừng trước khi cần chỗ',
+      holds: {
+        requests: 'Đang xử lý yêu cầu',
+        connections: 'Kết nối đang mở',
+        starting: 'Đang khởi động',
+        operation: 'Đang triển khai hoặc dừng',
+        resident: 'Luôn chạy',
+        busy: 'Bận',
+        recent: 'Được dùng trong một phút qua',
+      },
+      waiting: {
+        capacity:
+          'Từ chối khởi động: đã đạt giới hạn ứng dụng hoạt động hoặc hàng đợi khởi động đầy',
+        memory: 'Từ chối khởi động: không đủ bộ nhớ',
+        recycle: 'Từ chối khởi động: mã mới chờ máy chủ khởi động lại',
+      },
     },
     overview: {
       currentRelease: 'Bản phát hành hiện tại',
@@ -633,6 +686,9 @@ const viVN: LocaleResource<typeof enUS> = {
           'Cấu hình đã được lưu nhưng ứng dụng không thể tải lại.',
         CONFIG_TOO_LARGE: 'Cấu hình quá lớn.',
         CONFIRMATION_REQUIRED: 'Nhập ID ứng dụng để xác nhận.',
+        DEPLOYMENT_NOT_CANCELLABLE:
+          'Triển khai đã bắt đầu chuyển phiên bản hoặc đã kết thúc.',
+        CANCELLATION_UNSUPPORTED: 'Trình triển khai này không hỗ trợ hủy.',
         DEPLOYMENT_IN_PROGRESS:
           'Quá trình triển khai ứng dụng này đang được tiến hành.',
         DEPLOYMENT_NOT_FOUND: 'Việc triển khai không tồn tại.',
@@ -698,7 +754,7 @@ const viVN: LocaleResource<typeof enUS> = {
         VARIABLES_MISSING:
           'Các biến bắt buộc không được đặt: {{names}}. Đặt chúng trong các biến của ứng dụng hoặc môi trường của ứng dụng, sau đó triển khai lại.',
         VARIABLE_RESERVED:
-          'Tên này được đặt theo thời gian chạy và không thể là biến.',
+          'Tên này được đặt theo môi trường chạy và không thể là biến.',
         INVALID_VARIABLE_NAME:
           'Tên biến là chữ in hoa, chữ số và dấu gạch dưới, bắt đầu bằng một chữ cái.',
         INVALID_VARIABLE_VALUE: 'Giá trị quá dài.',
@@ -815,7 +871,7 @@ const viVN: LocaleResource<typeof enUS> = {
       policyDescription: 'Ai có thể triển khai ở đây.',
       appDefaults: 'Ứng dụng',
       appDefaultsDescription:
-        'Nhiều nhất là nhiều Ứng dụng như vậy và khi một Ứng dụng được tạo mà không có chính sách thời gian chạy riêng sẽ dừng và không hoạt động. Trống rỗng: không có giới hạn, không bao giờ.',
+        'Nhiều nhất là nhiều Ứng dụng như vậy và khi một Ứng dụng được tạo mà không có chính sách môi trường chạy riêng sẽ dừng và không hoạt động. Trống rỗng: không có giới hạn, không bao giờ.',
       maxApps: 'Hầu hết ứng dụng',
       defaultIdle: 'Dừng sau (phút chưa truy cập)',
       defaultDormant: 'Không hoạt động sau (giờ không được thăm)',

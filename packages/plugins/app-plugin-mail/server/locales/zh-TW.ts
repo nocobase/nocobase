@@ -4,6 +4,15 @@ import type enUS from './en-US.js';
 
 const zhTW: LocaleResource<typeof enUS> = {
   errors: {
+    imapMoveLocationChanged:
+      '所選資料夾或副本已變更，請同步信箱後重新開啟來源資料夾。',
+    imapMoveNotWritable: '所選資料夾不允許此操作，請檢查信箱權限。',
+    imapMoveSourceRequired: '請開啟來源資料夾後再移動或刪除這封郵件。',
+    imapMoveUnsupported: '此信箱不支援安全移動，請到郵件用戶端中操作。',
+    imapTrashNotFound: '此信箱沒有垃圾桶資料夾，請到郵件用戶端中操作。',
+    imapMoveOutcomeUnknown:
+      '移動尚未完成或結果未知，請先核對遠端信箱，勿盲目重試。',
+    invalidRecipient: '請修正收件人電子郵件地址和顯示名稱後再傳送。',
     accessDenied: '需要郵件存取許可權。',
     idempotencyConflict: '冪等金鑰已與另一個請求關聯。',
     invalidRequest: '郵件請求無效。',

@@ -1217,6 +1217,70 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
     );
   });
 
+  it('records old invalid scheduled recipients as a nonretryable input failure without resolving a provider', async () => {
+    const adapters = { resolve: vi.fn(async () => baseAdapter()) };
+    executor = await InlineJobExecutor.ready();
+    runtime = createMailRuntime({ store, adapters, executor });
+    const service = new DefaultMailService({
+      store,
+      adapters,
+      outbox: runtime,
+    });
+    const submission = await service.sendMessage(
+      { actorId: 'user-1' },
+      {
+        accountId: ACCOUNT_ID,
+        identityId: IDENTITY_ID,
+        to: [{ address: 'recipient@example.com' }],
+        subject: 'Legacy recipient validation',
+        text: 'Body',
+        scheduledAt: new Date(Date.now() + 60_000).toISOString(),
+        idempotencyKey: 'old-invalid-input',
+      },
+    );
+    const getScheduled = store.getScheduledSubmission.bind(store);
+    vi.spyOn(store, 'getScheduledSubmission').mockImplementation(async (id) => {
+      const saved = await getScheduled(id);
+      return saved
+        ? {
+            ...saved,
+            input: {
+              ...saved.input,
+              to: [{ address: 'Old Name <recipient@example.com>' }],
+            },
+          }
+        : undefined;
+    });
+    const due = await store.claimOutbox(
+      new Date(Date.now() + 61_000).toISOString(),
+      'due-lease',
+      new Date(Date.now() + 90_000).toISOString(),
+      1,
+    );
+    await store.releaseOutbox(
+      due[0].id,
+      due[0].leaseToken ?? '',
+      new Date().toISOString(),
+    );
+    adapters.resolve.mockClear();
+    await runtime.publishPending();
+    expect(adapters.resolve).not.toHaveBeenCalled();
+    expect(
+      await store.getSubmissionByIdempotencyKey(
+        ACCOUNT_ID,
+        'old-invalid-input',
+      ),
+    ).toMatchObject({
+      id: submission.id,
+      status: 'failed',
+      error: {
+        code: 'INVALID_MAIL_REQUEST',
+        category: 'content',
+        retryable: false,
+      },
+    });
+  });
+
   it('persists a scheduled message and sends it only after its due time', async () => {
     const sendMessage = vi.fn<MailProviderAdapter['sendMessage']>(async () => ({
       status: 'accepted',

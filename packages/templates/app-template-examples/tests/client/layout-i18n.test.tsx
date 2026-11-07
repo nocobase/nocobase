@@ -1,5 +1,6 @@
 import {
   ClientApplicationContext,
+  NavigationGuardProvider,
   type ClientApplication,
   createAppClientConfig,
 } from '@nocobase/app-client';
@@ -74,7 +75,9 @@ async function setup(children: ReactNode) {
     <I18nProvider runtime={runtime}>
       <ClientApplicationContext.Provider value={app}>
         <SidebarPreferenceProvider value={sidebarPreference}>
-          <MemoryRouter initialEntries={['/']}>{children}</MemoryRouter>
+          <MemoryRouter initialEntries={['/']}>
+            <NavigationGuardProvider>{children}</NavigationGuardProvider>
+          </MemoryRouter>
         </SidebarPreferenceProvider>
       </ClientApplicationContext.Provider>
     </I18nProvider>,
@@ -89,13 +92,13 @@ describe('shell translations', () => {
     expect(
       screen.getByRole('navigation', { name: 'Breadcrumb' }),
     ).toHaveTextContent('Overview');
-    expect(screen.getByText('AI builds freely.')).toBeVisible();
+    expect(screen.getByText('Build reliable business systems')).toBeVisible();
     await act(() => runtime.changeLanguage('zh-CN'));
     expect(screen.getByRole('navigation', { name: '面包屑' })).toBeVisible();
-    expect(screen.getByText('AI 自由构建')).toBeVisible();
+    expect(screen.getByText('Build reliable business systems')).toBeVisible();
     expect(
       screen.getByRole('link', { name: 'NocoBase' }).parentElement,
-    ).toHaveTextContent('NocoBase 保障可靠');
+    ).toHaveTextContent('AI + NocoBase');
     expect(
       screen.getByRole('button', { name: '展开或收起导航' }),
     ).toHaveAttribute('title', '展开或收起导航');
