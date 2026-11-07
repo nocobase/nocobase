@@ -21,8 +21,6 @@ export interface ChatSubmissionApi extends Pick<
   ChatApi,
   'createConversation' | 'messages'
 > {
-  /** Lets an explicit settlement check that nothing is still being admitted before it concludes a send failed. */
-  conversation?(id: string): Promise<ConversationDetail>;
   sendMessage(
     id: string,
     input: SubmissionSend,
@@ -257,12 +255,12 @@ export class ChatSubmissions {
     if (changed) this.publish();
   }
   /**
-   * Looks for an uncertain message in the saved history. With `settle`, a person asked to resolve it: when the
-   * conversation, read first, has no run open or queued and the complete history read after it still lacks the
-   * message, the send is concluded not to have been written and becomes `notSubmitted` so its input can be returned.
-   * The automatic check right after a failed send never concludes this, since the server may still be admitting it.
+   * Looks for an uncertain message in the saved history and confirms it once it appears. It never concludes the send
+   * failed: the request may have timed out only in the page while the server still writes it, so an idle conversation
+   * whose history lacks the message proves nothing. Only a refusal the server returns before writing (`refused`)
+   * makes a send `notSubmitted`.
    */
-  public async reconcile(clientId: string, settle = false): Promise<void> {
+  public async reconcile(clientId: string): Promise<void> {
     const record = this.records.find((item) => item.clientId === clientId);
     if (!record?.conversationId || record.status !== 'unknown') return;
     const generation = this.generation;
@@ -270,11 +268,6 @@ export class ChatSubmissions {
     let cursor: string | null = null;
     const seen = new Set<string>();
     try {
-      const detail =
-        settle && this.api.conversation
-          ? await this.deadline(this.api.conversation(record.conversationId))
-          : undefined;
-      if (!this.valid(record, generation, operation)) return;
       do {
         const page: Awaited<ReturnType<ChatApi['messages']>> =
           await this.deadline(
@@ -289,15 +282,6 @@ export class ChatSubmissions {
         if (cursor && seen.has(cursor)) return;
         if (cursor) seen.add(cursor);
       } while (cursor);
-      if (
-        detail &&
-        !detail.run &&
-        detail.execution?.status !== 'running' &&
-        !record.released
-      ) {
-        record.status = 'notSubmitted';
-        this.publish();
-      }
     } catch {
       /* A failed read or absent message cannot prove a write failed. */
     }

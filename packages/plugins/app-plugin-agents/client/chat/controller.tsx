@@ -232,7 +232,6 @@ export class ChatController {
       {
         createConversation: (input) => api.createConversation(input),
         messages: (id, query) => api.messages(id, query),
-        conversation: (id) => api.conversation(id),
         sendMessage: (id, input) =>
           this.command(
             id,
