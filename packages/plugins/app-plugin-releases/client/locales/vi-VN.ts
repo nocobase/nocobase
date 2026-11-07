@@ -558,7 +558,8 @@ const viVN: LocaleResource<typeof enUS> = {
       restoreFailed:
         '{{name}}: không khôi phục được các ứng dụng; đang thử lại ở chế độ nền.',
       environments: 'Môi trường trên máy chủ này: {{names}}',
-      failed: 'Không thể khôi phục ứng dụng sau khi máy chủ dùng chung khởi động lại; đang thử lại ở chế độ nền.',
+      failed:
+        'Không thể khôi phục ứng dụng sau khi máy chủ dùng chung khởi động lại; đang thử lại ở chế độ nền.',
       view: 'Xem mức sử dụng máy chủ',
       columns: {
         app: 'Ứng dụng',
