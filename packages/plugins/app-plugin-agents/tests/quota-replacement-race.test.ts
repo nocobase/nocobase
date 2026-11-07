@@ -29,7 +29,11 @@ describe('replacing preserved quota work', () => {
   async function waiting() {
     h = await createHarness();
     const binding = h.services.subjects.get('sample')!;
-    h.services.subjects.register({ ...binding, kind: 'quota', quotaWait: true });
+    h.services.subjects.register({
+      ...binding,
+      kind: 'quota',
+      quotaWait: true,
+    });
     const agentId = await h.createAgent({ maxAttempts: 1 });
     const other = await h.createAgent({ maxAttempts: 1 });
     const runner = await h.registerRunner({
