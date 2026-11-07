@@ -44,6 +44,19 @@ export function foundationDefinition(
   };
 }
 
+/** An opt-in design preview; existing applications keep their original foundation route. */
+export function foundationPreviewDefinitions(): AppClientRoutePageDefinition[] {
+  return ['/foundation-preview', '/foundation-preview/:capability'].map(
+    (path, index) => ({
+      name: index ? 'foundation-preview-detail' : 'foundation-preview',
+      path,
+      auth: 'required',
+      authz: 'unrestricted',
+      componentLoader: () => import('./components/foundation-preview.js'),
+    }),
+  );
+}
+
 export function createFoundationRoutes(
   options: FoundationRouteOptions = {},
 ): AppClientAppRoutesContribution {

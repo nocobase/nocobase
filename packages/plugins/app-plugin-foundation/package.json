@@ -127,7 +127,8 @@
     "class-variance-authority": "catalog:",
     "cn": "catalog:",
     "lucide-react": "catalog:",
-    "react": "^19.0.0"
+    "react": "^19.0.0",
+    "react-router": "catalog:"
   },
   "devDependencies": {
     "@nocobase/app-plugin-api-keys": "workspace:*",
@@ -146,7 +147,6 @@
     "jsdom": "catalog:",
     "prettier": "catalog:",
     "react-dom": "catalog:",
-    "react-router": "catalog:",
     "shadcn": "catalog:",
     "tailwindcss": "catalog:",
     "tw-animate-css": "catalog:",

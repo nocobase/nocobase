@@ -1,3 +1,4 @@
+import { zhCN as foundationGuide } from '../pages/foundation-guide/locales.js';
 import { zhCN as onboarding } from '../pages/onboarding/locales.js';
 import { zhCN as procurement } from '../pages/procurement/locales.js';
 import { zhCN as customerContacts } from '../pages/customer-contacts/locales.js';
@@ -8,6 +9,7 @@ import agentChatZhCN from '#extensions/nocobase-agent-chat/locales/zh-CN';
 import systemZhCN from './system/zh-CN.js';
 
 const zhCN: AppResource = {
+  foundationGuide,
   procurement,
   onboarding,
   customerContacts,

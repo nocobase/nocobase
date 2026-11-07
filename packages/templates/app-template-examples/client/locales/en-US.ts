@@ -1,3 +1,4 @@
+import { enUS as foundationGuide } from '../pages/foundation-guide/locales.js';
 import { enUS as onboarding } from '../pages/onboarding/locales.js';
 import { enUS as procurement } from '../pages/procurement/locales.js';
 import { enUS as customerContacts } from '../pages/customer-contacts/locales.js';
@@ -9,6 +10,7 @@ import agentChatEnUS from '#extensions/nocobase-agent-chat/locales/en-US';
 import systemEnUS from './system/en-US.js';
 
 const enUS = {
+  foundationGuide,
   procurement,
   onboarding,
   customerContacts,

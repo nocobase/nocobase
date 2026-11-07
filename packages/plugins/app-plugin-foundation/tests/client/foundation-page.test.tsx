@@ -323,13 +323,20 @@ describe('App Foundation page', () => {
       />,
       { plugins: [plugin()], namespace: FOUNDATION_I18N_NAMESPACE },
     );
+    const expand = screen.getByRole('button', {
+      name: /Business modules and foundation capabilities/,
+    });
+    expect(expand).toHaveAttribute('aria-expanded', 'false');
+    fireEvent.click(expand);
     const matrix = screen.getByRole('region', {
       name: 'Business modules and foundation capabilities',
     });
     expect(
       within(matrix).getAllByText('Capabilities: 3 · Pages: 1')[0],
     ).toBeInTheDocument();
-    const chip = screen.getByRole('button', { name: 'Orders 3' });
+    const chip = within(matrix).getAllByRole('button', {
+      name: 'Inspect Orders × Permissions',
+    })[0]!;
     fireEvent.focus(chip);
     expect(
       screen
@@ -367,6 +374,40 @@ describe('App Foundation page', () => {
     expect(
       within(matrix).getAllByLabelText('Not identified').length,
     ).toBeGreaterThan(0);
+  });
+
+  it('searches the directory without replacing the selected detail or its evidence', async () => {
+    await render();
+    const search = await screen.findByRole('searchbox', {
+      name: 'Search capabilities',
+    });
+    fireEvent.change(search, { target: { value: 'mail' } });
+    expect(
+      screen.getByRole('button', { name: 'Mail: Ready, needs setup' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Permissions: In use' }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('region', { name: /Data modeling/ }),
+    ).toBeInTheDocument();
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Mail: Ready, needs setup' }),
+    );
+    expect(
+      screen.getByRole('region', { name: /Mail Ready, needs setup/ }),
+    ).toBeInTheDocument();
+    fireEvent.change(search, { target: { value: 'no-such-capability' } });
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'No matching capabilities.',
+    );
+    fireEvent.change(search, { target: { value: '' } });
+    expect(
+      screen.getByRole('button', { name: 'Mail: Ready, needs setup' }),
+    ).toHaveAttribute('aria-pressed', 'true');
+    expect(
+      screen.getByRole('button', { name: 'Permissions: In use' }),
+    ).toBeInTheDocument();
   });
 
   it('shows the selected capability’s evidence, numbers and packages', async () => {
@@ -773,6 +814,14 @@ describe('App Foundation page', () => {
           ]}
         />,
         { plugins: [plugin()], namespace: FOUNDATION_I18N_NAMESPACE, locale },
+      );
+      fireEvent.click(
+        screen.getByRole('button', {
+          name:
+            locale === 'en-US'
+              ? /Business modules and foundation capabilities/
+              : /业务模块与底座能力/,
+        }),
       );
       const matrix = screen.getByRole('region', {
         name:

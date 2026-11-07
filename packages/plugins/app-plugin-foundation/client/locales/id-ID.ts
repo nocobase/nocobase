@@ -1,12 +1,28 @@
 import type { FoundationResource } from './en-US.js';
 
 const idID: FoundationResource = {
+  preview: {
+    label: 'Pratinjau desain',
+    description: 'Jelajahi kapabilitas yang mendukung aplikasi ini.',
+    refresh: 'Periksa kembali',
+    technical: 'Detail teknis',
+    close: 'Tutup',
+    data: 'Data dan berkas',
+    people: 'Identitas dan akses',
+    process: 'Proses dan pesan',
+    intelligence: 'AI dan pengetahuan',
+    platform: 'Antarmuka dan operasi',
+    integration: 'Integrasi dan audit',
+  },
   nav: {
     settings: 'Pengaturan sistem',
     foundation: 'Fondasi aplikasi',
     foundationDescription: 'Kemampuan NocoBase yang digunakan aplikasi ini.',
   },
   page: {
+    catalogTitle: 'Kapabilitas',
+    searchCapabilities: 'Cari kapabilitas',
+    noCapabilities: 'Tidak ada kapabilitas yang cocok.',
     otherCapabilities: 'Kemampuan lainnya',
     notCounted: 'Belum dihitung',
     updatingHistory: 'Memperbarui… Menampilkan hasil sebelumnya.',

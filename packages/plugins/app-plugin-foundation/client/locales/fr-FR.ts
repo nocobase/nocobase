@@ -1,6 +1,19 @@
 import type { FoundationResource } from './en-US.js';
 
 const frFR: FoundationResource = {
+  preview: {
+    label: 'Aperçu du design',
+    description: 'Découvrez les capacités qui soutiennent cette application.',
+    refresh: 'Vérifier à nouveau',
+    technical: 'Détails techniques',
+    close: 'Fermer',
+    data: 'Données et fichiers',
+    people: 'Identité et accès',
+    process: 'Processus et messages',
+    intelligence: 'IA et connaissances',
+    platform: 'Interface et exploitation',
+    integration: 'Intégrations et audit',
+  },
   nav: {
     settings: 'Paramètres système',
     foundation: 'Socle de l’application',
@@ -8,6 +21,9 @@ const frFR: FoundationResource = {
       'Les capacités NocoBase sur lesquelles repose cette application.',
   },
   page: {
+    catalogTitle: 'Fonctionnalités',
+    searchCapabilities: 'Rechercher des fonctionnalités',
+    noCapabilities: 'Aucune fonctionnalité correspondante.',
     otherCapabilities: 'Autres capacités',
     notCounted: 'Non compté',
     updatingHistory: 'Mise à jour… Affichage du résultat précédent.',

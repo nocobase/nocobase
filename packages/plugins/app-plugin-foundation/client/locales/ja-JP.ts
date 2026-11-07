@@ -1,12 +1,28 @@
 import type { FoundationResource } from './en-US.js';
 
 const jaJP: FoundationResource = {
+  preview: {
+    label: 'デザインプレビュー',
+    description: 'このアプリを支える基盤機能を確認します。',
+    refresh: '再確認',
+    technical: '技術情報',
+    close: '閉じる',
+    data: 'データとファイル',
+    people: 'ユーザーと権限',
+    process: 'プロセスとメッセージ',
+    intelligence: 'AI とナレッジ',
+    platform: '画面と運用',
+    integration: '連携と監査',
+  },
   nav: {
     settings: 'システム設定',
     foundation: 'アプリ基盤',
     foundationDescription: 'このアプリが利用している NocoBase の基盤機能。',
   },
   page: {
+    catalogTitle: '機能一覧',
+    searchCapabilities: '機能を検索',
+    noCapabilities: '一致する機能がありません。',
     otherCapabilities: 'その他の機能',
     notCounted: '未集計',
     updatingHistory: '更新中です。前回の結果を表示しています。',

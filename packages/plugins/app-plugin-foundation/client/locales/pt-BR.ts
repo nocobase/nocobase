@@ -1,6 +1,19 @@
 import type { FoundationResource } from './en-US.js';
 
 const ptBR: FoundationResource = {
+  preview: {
+    label: 'Prévia do design',
+    description: 'Conheça os recursos que sustentam este aplicativo.',
+    refresh: 'Verificar novamente',
+    technical: 'Detalhes técnicos',
+    close: 'Fechar',
+    data: 'Dados e arquivos',
+    people: 'Identidade e acesso',
+    process: 'Processos e mensagens',
+    intelligence: 'IA e conhecimento',
+    platform: 'Interface e operações',
+    integration: 'Integrações e auditoria',
+  },
   nav: {
     settings: 'Configurações do sistema',
     foundation: 'Base do aplicativo',
@@ -8,6 +21,9 @@ const ptBR: FoundationResource = {
       'Os recursos do NocoBase em que este aplicativo se baseia.',
   },
   page: {
+    catalogTitle: 'Recursos',
+    searchCapabilities: 'Buscar recursos',
+    noCapabilities: 'Nenhum recurso correspondente.',
     otherCapabilities: 'Outras capacidades',
     notCounted: 'Não contado',
     updatingHistory: 'Atualizando… Exibindo o resultado anterior.',

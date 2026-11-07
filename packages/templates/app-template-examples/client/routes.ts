@@ -1,3 +1,4 @@
+import { foundationPreviewDefinitions } from '@nocobase/app-plugin-foundation/client/routes';
 import { includeNotificationTemplateRoutes } from './pages/settings/notification-routes.js';
 import systemSettingsRoutes from './pages/settings/routes.js';
 import { knowledgeDefinition } from '@nocobase/app-plugin-knowledge/client/routes';
@@ -34,6 +35,61 @@ import {
 } from '@nocobase/app-client/plugins';
 
 const appRoutes: AppClientRouteContribution = defineAppRoutes([
+  ...foundationPreviewDefinitions(),
+  {
+    name: 'foundation-guide',
+    path: '/foundation-guide',
+    auth: 'required',
+    authz: 'unrestricted',
+    componentLoader: () => import('./pages/foundation-guide/index.js'),
+    children: [
+      {
+        name: 'foundation-guide-all',
+        path: 'all',
+        componentLoader: async () => ({
+          default: (await import('./pages/foundation-guide/catalog-view.js'))
+            .AllCatalog,
+        }),
+        children: [
+          {
+            name: 'foundation-guide-all-detail',
+            path: ':packageId',
+            componentLoader: () => import('./pages/foundation-guide/detail.js'),
+          },
+        ],
+      },
+      {
+        name: 'foundation-guide-kernel',
+        path: 'kernel',
+        componentLoader: async () => ({
+          default: (await import('./pages/foundation-guide/catalog-view.js'))
+            .KernelCatalog,
+        }),
+        children: [
+          {
+            name: 'foundation-guide-kernel-detail',
+            path: ':packageId',
+            componentLoader: () => import('./pages/foundation-guide/detail.js'),
+          },
+        ],
+      },
+      {
+        name: 'foundation-guide-plugins',
+        path: 'plugins',
+        componentLoader: async () => ({
+          default: (await import('./pages/foundation-guide/catalog-view.js'))
+            .PluginCatalog,
+        }),
+        children: [
+          {
+            name: 'foundation-guide-plugins-detail',
+            path: ':packageId',
+            componentLoader: () => import('./pages/foundation-guide/detail.js'),
+          },
+        ],
+      },
+    ],
+  },
   {
     name: 'conversation',
     path: '/chat/:conversationId',

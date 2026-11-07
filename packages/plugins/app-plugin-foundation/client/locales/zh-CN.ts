@@ -1,12 +1,28 @@
 import type { FoundationResource } from './en-US.js';
 
 const zhCN: FoundationResource = {
+  preview: {
+    label: '设计预览',
+    description: '了解应用使用的基础能力，以及它们如何支撑业务。',
+    refresh: '重新检查',
+    technical: '技术明细',
+    close: '关闭',
+    data: '数据与文件',
+    people: '身份与权限',
+    process: '流程与消息',
+    intelligence: 'AI 与知识',
+    platform: '界面与运维',
+    integration: '集成与审计',
+  },
   nav: {
     settings: '系统设置',
     foundation: '应用底座',
     foundationDescription: '这个应用用到了哪些 NocoBase 基础能力。',
   },
   page: {
+    catalogTitle: '能力目录',
+    searchCapabilities: '搜索能力',
+    noCapabilities: '没有匹配的能力。',
     otherCapabilities: '其他能力',
     notCounted: '未统计',
     updatingHistory: '正在更新，当前展示上次结果。',

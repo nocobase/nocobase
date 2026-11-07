@@ -1,12 +1,28 @@
 import type { FoundationResource } from './en-US.js';
 
 const zhTW: FoundationResource = {
+  preview: {
+    label: '設計預覽',
+    description: '瞭解應用使用的基礎能力，以及它們如何支撐業務。',
+    refresh: '重新檢查',
+    technical: '技術明細',
+    close: '關閉',
+    data: '資料與檔案',
+    people: '身分與權限',
+    process: '流程與訊息',
+    intelligence: 'AI 與知識',
+    platform: '介面與維運',
+    integration: '整合與稽核',
+  },
   nav: {
     settings: '系統設定',
     foundation: '應用底座',
     foundationDescription: '這個應用用到了哪些 NocoBase 基礎能力。',
   },
   page: {
+    catalogTitle: '能力目錄',
+    searchCapabilities: '搜尋能力',
+    noCapabilities: '沒有符合的能力。',
     otherCapabilities: '其他能力',
     notCounted: '未統計',
     updatingHistory: '正在更新，目前顯示上次結果。',

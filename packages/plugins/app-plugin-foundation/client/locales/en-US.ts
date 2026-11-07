@@ -1,6 +1,19 @@
 import type { LocaleResource } from '@nocobase/i18n';
 
 const enUS = {
+  preview: {
+    label: 'Design preview',
+    description: 'Explore the foundation behind this application.',
+    refresh: 'Check again',
+    technical: 'Technical details',
+    close: 'Close',
+    data: 'Data & files',
+    people: 'People & access',
+    process: 'Processes & messaging',
+    intelligence: 'AI & knowledge',
+    platform: 'Interface & operations',
+    integration: 'Integrations & audit',
+  },
   nav: {
     settings: 'System settings',
     foundation: 'App foundation',
@@ -8,6 +21,9 @@ const enUS = {
       'The NocoBase capabilities this application is built on.',
   },
   page: {
+    catalogTitle: 'Capabilities',
+    searchCapabilities: 'Search capabilities',
+    noCapabilities: 'No matching capabilities.',
     otherCapabilities: 'Other capabilities',
     notCounted: 'Not counted',
     updatingHistory: 'Updating… Showing the previous result.',

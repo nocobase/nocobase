@@ -10,14 +10,9 @@ import {
   Package,
   Plug,
   RefreshCw,
+  Search,
 } from 'lucide-react';
-import {
-  Fragment,
-  useCallback,
-  useMemo,
-  useState,
-  type ReactElement,
-} from 'react';
+import { Fragment, useMemo, useState, type ReactElement } from 'react';
 
 import {
   FOUNDATION_HIGHLIGHTS,
@@ -32,6 +27,7 @@ import { withAvailableCapabilities } from '../../shared/available-capabilities.j
 import { businessModules } from '../business-modules.js';
 import { Button } from './ui/button.js';
 import { Skeleton } from './ui/skeleton.js';
+import { Input } from './ui/input.js';
 import {
   Collapsible,
   CollapsibleTrigger,
@@ -162,7 +158,7 @@ export function FoundationOverviewView({
   clientProviders = [],
   registeredRoutes = [],
 }: FoundationOverviewViewProps): ReactElement {
-  const { t, locale, text } = useFoundationTranslation();
+  const { t, locale } = useFoundationTranslation();
   const overview = useMemo(() => {
     const resolved = serverOverview.inventory
       ? withAvailableCapabilities(
@@ -204,18 +200,13 @@ export function FoundationOverviewView({
     overview.capabilities[0];
   if (selectedCapability && selected !== selectedCapability.key)
     setSelected(selectedCapability.key);
-  const select = useCallback((key: FoundationCapabilityKey) => {
-    setSelected(key);
-    document
-      .getElementById('foundation-capability-detail')
-      ?.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' });
-  }, []);
+  const select = setSelected;
 
   return (
     <>
       <section
         aria-labelledby='foundation-band-title'
-        className='overflow-hidden rounded-xl border bg-card text-card-foreground'
+        className='overflow-hidden rounded-xl border bg-card pb-4 text-card-foreground md:pb-5'
       >
         <div className='flex flex-wrap items-end justify-between gap-x-6 gap-y-3 px-4 pt-4 md:px-5 md:pt-5'>
           <div className='flex min-w-0 flex-col gap-1'>
@@ -292,70 +283,73 @@ export function FoundationOverviewView({
             />
           ) : null}
         </ul>
-        <CapabilityBand
-          capabilities={overview.capabilities}
-          selected={selected}
-          onSelect={select}
-          focusKeys={focusKeys}
-        />
-        {modules.length ? (
-          <div
-            aria-label={t('matrix.modules')}
-            className='flex flex-col gap-2.5 border-t px-4 py-3.5 md:px-5'
-          >
-            <span className='text-sm font-medium'>{t('matrix.modules')}</span>
-            <div className='flex flex-wrap items-center gap-2'>
-              {modules.map((module) => (
-                <Button
-                  key={module.id}
-                  variant='outline'
-                  size='xs'
-                  aria-pressed={module.id === focusedModule}
-                  className={cn(
-                    'h-7! gap-1.5 rounded-full! border-border bg-card pr-1.5 pl-3 text-sm font-normal shadow-none',
-                    module.id === focusedModule &&
-                      'border-primary/40 bg-primary/10 text-primary',
-                  )}
-                  onMouseEnter={() => setFocusedModule(module.id)}
-                  onMouseLeave={() => setFocusedModule(null)}
-                  onFocus={() => setFocusedModule(module.id)}
-                  onBlur={() => setFocusedModule(null)}
-                  onClick={() => setFocusedModule(module.id)}
-                >
-                  {text(module.title)}{' '}
-                  <span className='min-w-5 rounded-full bg-muted px-1.5 text-center text-xs leading-5 tabular-nums text-muted-foreground'>
-                    {module.links.length}
-                  </span>
-                </Button>
-              ))}
-            </div>
-          </div>
-        ) : null}
       </section>
 
       <Highlights overview={overview} onSelect={select} />
 
-      {selectedCapability ? (
-        <CapabilityDetail
-          capability={selectedCapability}
-          inventory={overview.inventory}
-          counting={refreshing}
-          onCountRecords={onCountRecords}
-          recordCountCheckedAt={overview.recordCountCheckedAt}
-          modules={modules.filter((module) =>
-            module.links.some(
-              (link) => link.capability === selectedCapability.key,
-            ),
-          )}
-        />
-      ) : null}
+      <div className='grid min-w-0 items-start gap-4 lg:grid-cols-[18rem_minmax(0,1fr)]'>
+        <section
+          aria-labelledby='foundation-catalog-title'
+          className='min-w-0 rounded-xl border bg-card text-card-foreground lg:sticky lg:top-4'
+        >
+          <h2
+            id='foundation-catalog-title'
+            className='px-4 pt-4 text-base font-semibold'
+          >
+            {t('page.catalogTitle')}
+          </h2>
+          <CapabilityBand
+            capabilities={overview.capabilities}
+            selected={selected}
+            onSelect={select}
+            focusKeys={focusKeys}
+          />
+        </section>
+        {selectedCapability ? (
+          <CapabilityDetail
+            capability={selectedCapability}
+            inventory={overview.inventory}
+            counting={refreshing}
+            onCountRecords={onCountRecords}
+            recordCountCheckedAt={overview.recordCountCheckedAt}
+            modules={modules.filter((module) =>
+              module.links.some(
+                (link) => link.capability === selectedCapability.key,
+              ),
+            )}
+          />
+        ) : null}
+      </div>
 
-      <ModuleMatrix
-        modules={modules}
-        capabilities={overview.capabilities}
-        onSelect={setSelected}
-        onFocusModule={setFocusedModule}
-      />
+      <Collapsible className='min-w-0 rounded-xl border bg-card text-card-foreground'>
+        <CollapsibleTrigger
+          render={
+            <Button
+              variant='ghost'
+              className='group h-auto w-full justify-between gap-3 p-4 text-left whitespace-normal md:p-5'
+            />
+          }
+        >
+          <span className='flex flex-col gap-1'>
+            <span className='text-base font-semibold'>{t('matrix.title')}</span>
+            <span className='text-sm font-normal text-muted-foreground'>
+              {t('matrix.description')}
+            </span>
+          </span>
+          <ChevronRight
+            className='size-4 shrink-0 transition-transform group-aria-expanded:rotate-90 motion-reduce:transition-none'
+            aria-hidden
+          />
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <ModuleMatrix
+            modules={modules}
+            capabilities={overview.capabilities}
+            onSelect={setSelected}
+            onFocusModule={setFocusedModule}
+          />
+        </CollapsibleContent>
+      </Collapsible>
     </>
   );
 }
@@ -412,97 +406,113 @@ function CapabilityBand({
   readonly focusKeys?: ReadonlySet<string>;
 }): ReactElement {
   const { t, text, locale } = useFoundationTranslation();
+  const [query, setQuery] = useState('');
+  const matching = capabilities.filter((capability) => {
+    const title = capability.title
+      ? text(capability.title)
+      : t(`capabilities.${capability.key}.name`);
+    return `${title} ${capability.key}`
+      .toLocaleLowerCase(locale)
+      .includes(query.trim().toLocaleLowerCase(locale));
+  });
   return (
-    <ul className='mx-4 mt-3 mb-4 flex flex-col overflow-hidden rounded-lg border sm:mx-5 sm:mb-5 sm:grid sm:grid-cols-[repeat(auto-fill,minmax(9.5rem,1fr))] sm:gap-2 sm:overflow-visible sm:rounded-none sm:border-0'>
-      {capabilities.map((capability) => {
-        const Icon = CAPABILITY_ICONS[capability.key] ?? Plug;
-        const isSelected = capability.key === selected;
-        const extension = capability.key.startsWith('extension:');
-        const identifier = extension
-          ? capability.key.slice('extension:'.length)
-          : undefined;
-        const title = capability.title
-          ? text(capability.title)
-          : t(`capabilities.${capability.key}.name`);
-        // Without a display name an extension is titled by its package; drop the scope for reading, keep it in the title.
-        const name =
-          identifier && title === identifier
-            ? identifier.replace(/^@[^/]+\//, '')
-            : title;
-        const pending = capability.reason === 'unrecognizedExtension';
-        const status = t(
-          pending
-            ? 'dynamic.pending'
-            : `status.${capability.status ?? 'undetermined'}`,
-        );
-        const statusLabel = capability.checkedAt
-          ? `${status} · ${t('detail.retainedAt', { time: formatTime(capability.checkedAt, locale) })}`
-          : status;
-        return (
-          <li
-            key={capability.key}
-            className={cn(
-              'border-t first:border-t-0 sm:border-t-0 transition-opacity motion-reduce:transition-none',
-              focusKeys && !focusKeys.has(capability.key) && 'opacity-40',
-            )}
-          >
-            <Button
-              variant='ghost'
-              type='button'
-              onClick={() => onSelect(capability.key)}
-              aria-pressed={isSelected}
-              aria-label={`${title}: ${statusLabel}`}
-              title={
-                identifier ? `${identifier} · ${statusLabel}` : statusLabel
-              }
-              data-status={capability.status ?? 'undetermined'}
+    <>
+      <div className='relative m-4'>
+        <Search
+          className='pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground'
+          aria-hidden
+        />
+        <Input
+          type='search'
+          aria-label={t('page.searchCapabilities')}
+          placeholder={t('page.searchCapabilities')}
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          className='pl-8'
+        />
+      </div>
+      <ul className='flex max-h-64 flex-col overflow-y-auto overscroll-contain border-t p-2 lg:max-h-[32rem]'>
+        {matching.map((capability) => {
+          const Icon = CAPABILITY_ICONS[capability.key] ?? Plug;
+          const isSelected = capability.key === selected;
+          const extension = capability.key.startsWith('extension:');
+          const identifier = extension
+            ? capability.key.slice('extension:'.length)
+            : undefined;
+          const title = capability.title
+            ? text(capability.title)
+            : t(`capabilities.${capability.key}.name`);
+          // Without a display name an extension is titled by its package; drop the scope for reading, keep it in the title.
+          const name =
+            identifier && title === identifier
+              ? identifier.replace(/^@[^/]+\//, '')
+              : title;
+          const pending = capability.reason === 'unrecognizedExtension';
+          const status = t(
+            pending
+              ? 'dynamic.pending'
+              : `status.${capability.status ?? 'undetermined'}`,
+          );
+          const statusLabel = capability.checkedAt
+            ? `${status} · ${t('detail.retainedAt', { time: formatTime(capability.checkedAt, locale) })}`
+            : status;
+          return (
+            <li
+              key={capability.key}
               className={cn(
-                'relative flex h-full w-full items-center justify-between gap-3 rounded-none border-0 bg-card px-3 py-2.5 text-left font-normal whitespace-normal hover:bg-hover active:not-aria-[haspopup]:translate-y-0',
-                'sm:flex-col sm:items-stretch sm:gap-2.5 sm:rounded-lg sm:border sm:border-border sm:pb-3',
-                'focus-visible:z-10 focus-visible:border-border focus-visible:ring-0 focus-visible:outline-2 focus-visible:outline-solid focus-visible:-outline-offset-2 focus-visible:outline-ring sm:focus-visible:outline-offset-2',
-                isSelected &&
-                  'shadow-[inset_4px_0_0_var(--primary)] sm:border-primary sm:shadow-[inset_0_0_0_1px_var(--primary)] sm:focus-visible:border-primary',
+                'min-w-0 transition-opacity motion-reduce:transition-none',
+                focusKeys && !focusKeys.has(capability.key) && 'opacity-40',
               )}
             >
-              {isSelected ? (
-                <span
-                  aria-hidden
-                  className='absolute top-2 right-2 hidden size-3.5 rounded-full border-2 border-primary bg-card after:absolute after:inset-0.5 after:rounded-full after:bg-primary sm:block'
-                />
-              ) : null}
-              <span className='flex min-w-0 flex-1 items-center gap-2.5 sm:min-h-10 sm:flex-none sm:items-start sm:pr-3'>
-                <span
-                  className={cn(
-                    'grid size-8 shrink-0 place-items-center rounded-md bg-muted text-foreground',
-                    isSelected && 'bg-primary text-primary-foreground',
-                  )}
-                >
-                  <Icon className='size-4' aria-hidden />
-                </span>
-                <span className='flex min-w-0 flex-col gap-0.5'>
-                  <span className='text-sm leading-tight font-medium text-balance wrap-normal'>
-                    {identifier ? breakableName(name) : name}
+              <Button
+                variant='ghost'
+                type='button'
+                onClick={() => onSelect(capability.key)}
+                aria-pressed={isSelected}
+                aria-label={`${title}: ${statusLabel}`}
+                title={
+                  identifier ? `${identifier} · ${statusLabel}` : statusLabel
+                }
+                data-status={capability.status ?? 'undetermined'}
+                className={cn(
+                  'relative flex h-auto w-full items-start justify-start gap-2.5 rounded-lg px-3 py-3 text-left font-normal whitespace-normal hover:bg-hover active:not-aria-[haspopup]:translate-y-0',
+                  'focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-ring focus-visible:-outline-offset-2',
+                  isSelected &&
+                    'bg-primary/10 text-primary hover:bg-primary/10',
+                )}
+              >
+                <span className='flex min-w-0 flex-1 items-start gap-2.5'>
+                  <span
+                    className={cn(
+                      'grid size-8 shrink-0 place-items-center rounded-md bg-muted text-foreground',
+                      isSelected && 'bg-primary text-primary-foreground',
+                    )}
+                  >
+                    <Icon className='size-4' aria-hidden />
                   </span>
-                  {extension ? (
-                    <span className='text-xs text-muted-foreground'>
-                      {t('dynamic.extension')}
+                  <span className='flex min-w-0 flex-col gap-0.5'>
+                    <span className='text-sm leading-snug font-medium wrap-anywhere'>
+                      {identifier ? breakableName(name) : name}
                     </span>
-                  ) : null}
-                  {capability.checkedAt ? (
-                    <RetainedAt at={capability.checkedAt} />
-                  ) : null}
+                    {extension ? (
+                      <span className='text-xs text-muted-foreground'>
+                        {t('dynamic.extension')}
+                      </span>
+                    ) : null}
+                    <StatusBadge status={capability.status} pending={pending} />
+                  </span>
                 </span>
-              </span>
-              <StatusBadge
-                status={capability.status}
-                pending={pending}
-                className='max-w-[46%] shrink-0 sm:max-w-full'
-              />
-            </Button>
-          </li>
-        );
-      })}
-    </ul>
+              </Button>
+            </li>
+          );
+        })}
+      </ul>
+      {matching.length === 0 ? (
+        <p role='status' className='px-4 pb-4 text-sm text-muted-foreground'>
+          {t('page.noCapabilities')}
+        </p>
+      ) : null}
+    </>
   );
 }
 
@@ -765,7 +775,7 @@ function CapabilityDetail({
     <section
       id='foundation-capability-detail'
       aria-labelledby='foundation-capability-title'
-      className='flex flex-col gap-5 rounded-xl border bg-card p-4 text-card-foreground md:p-5'
+      className='flex min-w-0 flex-col gap-5 rounded-xl border bg-card p-4 text-card-foreground md:p-5'
     >
       <header className='flex flex-col gap-1'>
         <p className='text-xs text-muted-foreground'>
@@ -854,7 +864,7 @@ function CapabilityDetail({
         </div>
       ) : null}
 
-      <div className='grid gap-5 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]'>
+      <div className='grid min-w-0 gap-5 xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]'>
         <div className='flex flex-col gap-4'>
           {capability.facts.length > 0 || inUse || modules.length > 0 ? (
             <div className='flex flex-col gap-2'>

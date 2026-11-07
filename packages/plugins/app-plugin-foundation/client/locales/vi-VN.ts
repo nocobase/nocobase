@@ -1,12 +1,28 @@
 import type { FoundationResource } from './en-US.js';
 
 const viVN: FoundationResource = {
+  preview: {
+    label: 'Xem trước thiết kế',
+    description: 'Khám phá các khả năng nền tảng hỗ trợ ứng dụng này.',
+    refresh: 'Kiểm tra lại',
+    technical: 'Chi tiết kỹ thuật',
+    close: 'Đóng',
+    data: 'Dữ liệu và tệp',
+    people: 'Danh tính và quyền',
+    process: 'Quy trình và tin nhắn',
+    intelligence: 'AI và kiến thức',
+    platform: 'Giao diện và vận hành',
+    integration: 'Tích hợp và kiểm toán',
+  },
   nav: {
     settings: 'Cài đặt hệ thống',
     foundation: 'Nền tảng ứng dụng',
     foundationDescription: 'Các năng lực NocoBase mà ứng dụng này sử dụng.',
   },
   page: {
+    catalogTitle: 'Danh mục khả năng',
+    searchCapabilities: 'Tìm khả năng',
+    noCapabilities: 'Không có khả năng phù hợp.',
     otherCapabilities: 'Các khả năng khác',
     notCounted: 'Chưa thống kê',
     updatingHistory: 'Đang cập nhật… Hiển thị kết quả trước đó.',

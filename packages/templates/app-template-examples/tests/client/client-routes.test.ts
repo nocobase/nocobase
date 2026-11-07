@@ -247,6 +247,17 @@ describe('app client routes', () => {
     const resolved = resolveRoutes();
 
     expect(pageAuthorizations(resolved.routes)).toEqual([
+      { name: 'foundation-preview', authorizedAs: 'unrestricted' },
+      { name: 'foundation-preview-detail', authorizedAs: 'unrestricted' },
+      ...[
+        'foundation-guide',
+        'foundation-guide-all',
+        'foundation-guide-all-detail',
+        'foundation-guide-kernel',
+        'foundation-guide-kernel-detail',
+        'foundation-guide-plugins',
+        'foundation-guide-plugins-detail',
+      ].map((name) => ({ name, authorizedAs: 'unrestricted' })),
       // A shared conversation opts out of page authorization: the agents API checks ownership or a snapshot grant.
       { name: 'conversation', authorizedAs: null },
       ...['onboarding', 'onboarding-new', 'onboarding-detail'].map((name) => ({
