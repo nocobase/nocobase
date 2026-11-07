@@ -450,6 +450,7 @@ const systemEnUS = {
   datePicker: {
     placeholder: 'Pick a date',
     rangePlaceholder: 'Pick a date range',
+    clear: 'Clear',
   },
 };
 

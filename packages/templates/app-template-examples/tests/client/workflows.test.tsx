@@ -34,6 +34,7 @@ import {
   waitFor,
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { format, parseISO } from 'date-fns';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ReactNode } from 'react';
@@ -78,6 +79,16 @@ const routes: AppClientRegisteredRoute[] = [
   authz: 'skip',
   componentLoader: async () => ({ default: () => null }),
 }));
+
+/** Picks a holiday date from the calendar the way a user does; the dates in these tests are in January 2026. */
+async function pickHolidayDate(value: string) {
+  await userEvent.click(await screen.findByLabelText('Date'));
+  await userEvent.click(
+    await screen.findByRole('button', {
+      name: new RegExp(format(parseISO(value), 'PPPP')),
+    }),
+  );
+}
 
 async function view(
   children: ReactNode,
@@ -834,9 +845,7 @@ describe('workflow management pages', () => {
       'en-US',
       '/workflows/definitions/office.dataRequests/parameters',
     );
-    fireEvent.change(await screen.findByLabelText('Date'), {
-      target: { value: '2026-01-02' },
-    });
+    await pickHolidayDate('2026-01-02');
     expect(
       screen.getAllByRole('button', { name: 'Save parameters' }),
     ).toHaveLength(1);
@@ -1373,16 +1382,12 @@ it('saves office parameters inline and keeps the next save on the current revisi
     'en-US',
     '/workflows/definitions/office.dataRequests',
   );
-  fireEvent.change(await screen.findByLabelText('Date'), {
-    target: { value: '2026-01-02' },
-  });
+  await pickHolidayDate('2026-01-02');
   await userEvent.click(
     screen.getByRole('button', { name: 'Save parameters' }),
   );
   await screen.findByText('Parameters saved.');
-  fireEvent.change(screen.getByLabelText('Date'), {
-    target: { value: '2026-01-03' },
-  });
+  await pickHolidayDate('2026-01-03');
   await userEvent.click(
     screen.getByRole('button', { name: 'Save parameters' }),
   );
@@ -1427,9 +1432,7 @@ it('reloads the complete office snapshot after a conflict before the next inline
     'en-US',
     '/workflows/definitions/office.dataRequests',
   );
-  fireEvent.change(await screen.findByLabelText('Date'), {
-    target: { value: '2026-01-02' },
-  });
+  await pickHolidayDate('2026-01-02');
   await userEvent.click(
     screen.getByRole('button', { name: 'Save parameters' }),
   );
@@ -1450,11 +1453,9 @@ it('reloads the complete office snapshot after a conflict before the next inline
   await waitFor(() =>
     expect(screen.getByLabelText('Name')).toHaveValue('Updated elsewhere'),
   );
-  expect(screen.getByLabelText('Date')).toHaveValue('2026-01-01');
+  expect(screen.getByLabelText('Date')).toHaveTextContent('January 1st, 2026');
   conflict = false;
-  fireEvent.change(screen.getByLabelText('Date'), {
-    target: { value: '2026-01-03' },
-  });
+  await pickHolidayDate('2026-01-03');
   await userEvent.click(
     screen.getByRole('button', { name: 'Save parameters' }),
   );
