@@ -1712,6 +1712,15 @@ export function createRunService(deps: RunServiceDeps): RunService {
               runId: retried.id,
             },
           );
+        // Take the original over by its revision. The conditional write reads the latest row on every dialect, so a
+        // replacement (`replacesRunId`) whose transaction read an older snapshot before the lock fails to cancel it,
+        // and this retry fails if a replacement committed first.
+        const taken = await runsRepo(unit.conn).updateMany({
+          filter: { id: run.id, status: run.status, revision: run.revision },
+          values: { updatedAt: clock.now().toISOString() },
+        });
+        if (taken.updatedCount !== 1)
+          throw conflict('The run changed; try again.');
         const previousInputs = await inputsRepo(unit.conn).findMany({
           filter: { runId: run.id },
         });
