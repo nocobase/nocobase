@@ -6,11 +6,9 @@ import {
   type ResendProviderConfig,
 } from '@nocobase/mailer';
 
-/** Reference an application mailer, or retain a private legacy inline configuration. */
+/** Private legacy inline configuration. Named references belong to passwordReset.mailer. */
 export type AuthEmailConfig =
-  | { readonly mailer: string }
-  | Omit<SmtpProviderConfig, 'enabled'>
-  | Omit<ResendProviderConfig, 'enabled'>;
+  Omit<SmtpProviderConfig, 'enabled'> | Omit<ResendProviderConfig, 'enabled'>;
 
 export function authEmailIssues(
   email: unknown,
@@ -25,17 +23,6 @@ export function authEmailIssues(
     return issues;
   }
   const config = email as Record<string, unknown>;
-  if ('mailer' in config) {
-    if (
-      typeof config.mailer !== 'string' ||
-      !config.mailer.trim() ||
-      config.mailer !== config.mailer.trim()
-    )
-      error('mailer', 'must reference a named mailer.');
-    if (Object.keys(config).some((key) => key !== 'mailer'))
-      error('', 'cannot mix a mailer reference with inline configuration.');
-    return issues;
-  }
   if (config.provider !== 'smtp' && config.provider !== 'resend') {
     error(
       'provider',

@@ -12,7 +12,6 @@ import { defineAuthConfig } from '../../config.js';
 const smtp = { provider: 'smtp', host: 'localhost', port: 25 } as const;
 afterEach(() => vi.restoreAllMocks());
 it.each([
-  { email: { mailer: 'other' }, channel: undefined, expected: true },
   { email: undefined, channel: undefined, expected: true },
   { email: undefined, channel: 'missing', expected: false },
   { email: smtp, channel: 'missing', expected: true },
@@ -50,10 +49,10 @@ it.each([undefined, false])(
   async (enabled) => {
     const { sender } = createPasswordResetSender(
       new MailSenderFactory({ default: 'main', main: smtp }),
-      { passwordReset: { enabled } },
+      { passwordReset: { enabled, mailer: 'main' } },
     );
     const policy = new PasswordResetPolicy(
-      { enabled },
+      { enabled, mailer: 'main' },
       { baseURL: 'https://example.test' },
       {} as never,
       { sender },
@@ -63,30 +62,65 @@ it.each([undefined, false])(
   },
 );
 
-it.each([
-  { mailer: 'absent' },
-  { mailer: 'main', provider: 'smtp' },
-  { mailer: 'disabled' },
-])(
-  'rejects invalid auth references without exposing secrets: %j',
-  async (email) => {
+it.each(['absent', 'disabled', '', ' main ', 7])(
+  'rejects an invalid direct reference during validation and assembly: %j',
+  async (mailer) => {
+    const mailers = {
+      default: 'main',
+      main: smtp,
+      disabled: { ...smtp, enabled: false },
+    };
     const config = new AppConfig();
     await config.loadAll();
     const definitions = defaultAppConfigs({
-      mailers: defineMailersConfig({
-        defaults: { main: smtp, disabled: { ...smtp, enabled: false } },
+      mailers: defineMailersConfig({ defaults: mailers }),
+      auth: defineAuthConfig({
+        defaults: {
+          passwordReset: { mailer: mailer as never, enabled: false },
+          emailAndPassword: { sendResetPassword: async () => {} },
+        },
       }),
-      auth: defineAuthConfig({ defaults: { email: email as never } }),
     });
     config.mergeDefaults(definitions({} as never));
     config.defineSections(definitions.sections!);
-    expect(
-      (await config.validate()).some((issue) =>
-        issue.path.startsWith('auth.email'),
-      ),
-    ).toBe(true);
+    expect(await config.validate()).toContainEqual(
+      expect.objectContaining({
+        level: 'error',
+        path: 'auth.passwordReset.mailer',
+      }),
+    );
+    expect(() =>
+      createPasswordResetSender(new MailSenderFactory(mailers), {
+        passwordReset: { mailer: mailer as never, enabled: false },
+      }),
+    ).toThrow('auth.passwordReset.mailer');
   },
 );
+
+it('selects the direct reference before inline, channel and default choices without allocating a transport', async () => {
+  const factory = new MailSenderFactory({
+    default: 'main',
+    main: smtp,
+    other: smtp,
+  });
+  const create = vi.spyOn(factory, 'create');
+  const inline = vi.spyOn(factory, 'createFromConfig');
+  const transport = vi.spyOn(transports, 'createMailTransport');
+  const { sender } = createPasswordResetSender(factory, {
+    email: smtp,
+    passwordReset: { enabled: true, mailer: 'other', emailChannel: 'legacy' },
+  });
+  expect(create).toHaveBeenCalledWith('other', 'auth.passwordReset.mailer');
+  expect(inline).not.toHaveBeenCalled();
+  expect(transport).not.toHaveBeenCalled();
+  await sender?.close();
+});
+
+it('does not select the first named service without a default', () => {
+  expect(
+    createPasswordResetSender(new MailSenderFactory({ main: smtp }), {}).sender,
+  ).toBeUndefined();
+});
 
 it('rejects mismatched legacy aliases instead of selecting a referenced default sender', async () => {
   const { sender } = createPasswordResetSender(

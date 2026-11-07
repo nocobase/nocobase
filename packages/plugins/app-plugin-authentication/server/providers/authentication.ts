@@ -96,18 +96,16 @@ export class AuthenticationProvider<
       passwordReset: auth.passwordReset && { ...auth.passwordReset },
     };
     // Select now so an invalid reference fails startup; no transport is allocated until the first send.
-    this.resetSender = createPasswordResetSender(
-      resolveMailSenderFactory(
-        this.app.container,
-        this.app.config.get<MailersConfig>('mailers') ?? {},
-      ),
-      {
-        ...this.emailSnapshot,
-        legacyChannels: this.app.config.get<{
-          channels?: Readonly<Record<string, unknown>>;
-        }>('notification')?.channels,
-      },
+    const mailerFactory = resolveMailSenderFactory(
+      this.app.container,
+      this.app.config.get<MailersConfig>('mailers') ?? {},
     );
+    this.resetSender = createPasswordResetSender(mailerFactory, {
+      ...this.emailSnapshot,
+      legacyChannels: this.app.config.get<{
+        channels?: Readonly<Record<string, unknown>>;
+      }>('notification')?.channels,
+    });
     this.app.container.singleton(authenticationToken, (container) =>
       this.createAuthentication(container),
     );
