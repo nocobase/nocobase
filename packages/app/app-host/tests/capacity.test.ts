@@ -206,7 +206,7 @@ it('samples live heap on each admission, does not count records and recovers whe
   expect(sampleHeap.mock.calls.length).toBeGreaterThan(4);
 });
 
-it('keeps system reserve and RSS budget separate from the heap and recovers without a restart', async () => {
+it('keeps explicit system reserve and RSS budget separate from the heap and recovers without a restart', async () => {
   let available = 1200 * MiB;
   let rss = 400 * MiB;
   const host = registry({
@@ -419,11 +419,12 @@ it('cancels dormant artifact preparation at the startup deadline and protects it
   expect(host.prepareRotation(false)).toBe(true);
 });
 
-it('uses the measured 320 MiB default headroom and the configurable operational reserve', async () => {
-  let available = 1330 * MiB;
+it('defaults to no extra system reserve while retaining 320 MiB headroom and heap admission', async () => {
+  let available = 320 * MiB - 1;
+  let heapUsed = 100 * MiB;
   const host = registry({
     sampleMemory: () => ({
-      heapUsed: 100 * MiB,
+      heapUsed,
       heapLimit: 2240 * MiB,
       rss: 400 * MiB,
       available,
@@ -432,9 +433,14 @@ it('uses the measured 320 MiB default headroom and the configurable operational 
   await expect(host.create('a')).rejects.toMatchObject({
     code: 'APP_CAPACITY_EXCEEDED',
   });
-  available = 2048 * MiB;
+  available = 320 * MiB;
   await host.ensureActive('a');
+  expect(host.isActive('a')).toBe(true);
   expect(host.capacity().appMemory).toBe(320 * MiB);
+  heapUsed = 1300 * MiB;
+  await expect(host.create('b')).rejects.toMatchObject({
+    code: 'APP_CAPACITY_EXCEEDED',
+  });
 });
 
 it('keeps ingress gated until existing responses complete or the configured drain expires', async () => {

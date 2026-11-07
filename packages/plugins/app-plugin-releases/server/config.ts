@@ -131,7 +131,7 @@ export interface ReleasesHostConfig {
   readonly restartMaxWaitMs?: number;
   /** Request-drain allowance and, separately, supervisor shutdown allowance, in milliseconds (30000). */
   readonly restartDrainMs?: number;
-  /** Live shared-process admission; defaults to 70% heap, 320 MiB start headroom and 1024 MiB system reserve. */
+  /** Live shared-process admission; defaults to 70% heap, 320 MiB start headroom and no extra system reserve. */
   readonly memoryBudget?: import('@nocobase/app-host/registry').AppMemoryBudget;
   /** Optional running/starting count ceiling, independent of deployed record count. */
   readonly maxActiveApps?: number;

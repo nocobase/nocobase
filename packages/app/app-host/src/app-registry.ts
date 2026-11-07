@@ -138,7 +138,7 @@ export interface AppMemoryBudget {
   baseMemoryMb?: number;
   /** Cold-start headroom, not a per-App estimate; 320 MiB covers the measured non-first cold-start peaks. */
   appMemoryMb?: number;
-  /** Operational OS/process reserve; the 1024 MiB default has not been measured on the target server. */
+  /** Optional OS/process reserve in MiB; defaults to 0 and has not been measured on the target server. */
   reserveMb?: number;
   /** Optional whole-process RSS ceiling; heap is checked separately, never added to RSS. */
   rssBudgetMb?: number;
@@ -248,8 +248,8 @@ export class AppRuntimeRegistry {
     });
     this.targetRatio = options.memoryBudget?.targetRatio ?? 0.7;
     this.appMemory = (options.memoryBudget?.appMemoryMb ?? 320) * 1024 ** 2;
-    // Operational reserve, not derived from the cold-start measurements; keep configurable.
-    this.reserveMemory = (options.memoryBudget?.reserveMb ?? 1024) * 1024 ** 2;
+    // Extra system reserve is opt-in and independent of the measured cold-start headroom.
+    this.reserveMemory = (options.memoryBudget?.reserveMb ?? 0) * 1024 ** 2;
     this.rssBudget = (options.memoryBudget?.rssBudgetMb ?? 0) * 1024 ** 2;
     this.startupTimeoutMs = options.memoryBudget?.startupTimeoutMs ?? 120_000;
     this.maxPendingStarts = options.memoryBudget?.maxPendingStarts ?? 32;
