@@ -333,6 +333,76 @@ export interface RuntimeStatus {
   readonly error: string | null;
   /** The last request the runtime saw (or its last start), when the driver reports it. */
   readonly lastAccessedAt: string | null;
+  /**
+   * Why a running or starting App holds a slot on its shared runtime: `requests` or `connections` in flight,
+   * `starting`, another `operation`, `resident` (never stopped when idle), `busy` or `recent` (requested in the last
+   * minute). Empty when nothing holds it or the driver does not say.
+   */
+  readonly holds?: readonly HostHoldReason[];
+  /**
+   * Why its last start was refused, for a minute or until it starts: `capacity` (the active App limit or the start
+   * queue), `memory` (the shared runtime's memory budget) or `recycle` (no new code loads until the shared runtime
+   * restarts to free old code). Absent otherwise.
+   */
+  readonly waiting?: HostWaitReason;
+}
+
+export type HostHoldReason =
+  | 'requests'
+  | 'connections'
+  | 'starting'
+  | 'operation'
+  | 'resident'
+  | 'busy'
+  | 'recent';
+
+export type HostWaitReason = 'capacity' | 'memory' | 'recycle';
+
+/** An App on the shared runtime, as the single-App read reports it. */
+export interface HostOccupantView {
+  /** The App and its environment; null for one the caller may not see (or not managed here). */
+  readonly app: {
+    readonly id: string;
+    readonly name: string;
+    readonly environmentId: string;
+    readonly environmentName: string;
+    /** The App it previews, for a preview App. */
+    readonly previewOf: string | null;
+  } | null;
+  readonly state: ObservedState;
+  readonly holds: readonly HostHoldReason[];
+  readonly waiting: HostWaitReason | null;
+  readonly lastAccessedAt: string | null;
+  readonly error: string | null;
+}
+
+/**
+ * The runtime an App shares with other Apps, every environment on it included. `memory` is the shared process's
+ * total, never divided among its Apps.
+ */
+export interface AppHostView {
+  readonly memory: {
+    readonly heapUsed: number;
+    readonly heapLimit: number;
+    readonly rss: number;
+    readonly available: number;
+  } | null;
+  /**
+   * `pending`: it is to restart to free old code once nothing holds it, and new code waits for that; `restarting`: it
+   * restarts or restores its Apps, which answer "retry" meanwhile; null otherwise.
+   */
+  readonly recycling: 'pending' | 'restarting' | null;
+  /** Apps deployed on it, and those of them running or starting. */
+  readonly deployed: number;
+  readonly running: number;
+  /** The Apps that run, start, wait for a start or failed, those holding a slot first. */
+  readonly occupants: readonly HostOccupantView[];
+  /** Environments whose Apps could not be restored after it restarted; retried in the background. */
+  readonly failedEnvironments: readonly {
+    readonly id: string;
+    readonly name: string | null;
+    readonly error: string | null;
+  }[];
 }
 
 export interface AppView {
@@ -386,6 +456,8 @@ export interface AppSummary {
     readonly missing: readonly string[];
     readonly changed: boolean;
   };
+  /** The runtime it shares with other Apps, from an environment whose driver shares one. Only the single-App read. */
+  readonly host?: AppHostView | null;
 }
 
 export interface AppPage {

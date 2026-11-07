@@ -252,6 +252,9 @@ const ptBR: LocaleResource<typeof enUS> = {
       stopped: 'Parado',
       stoppedOnDemand: 'Parado (inicia na visita)',
       dormant: 'Hibernação (preparado na visita)',
+      waitingCapacity: 'Aguardando vaga livre',
+      waitingMemory: 'Aguardando memória',
+      waitingRecycle: 'Aguardando reinício do host',
       failed: 'Falha',
       unknown: 'Desconhecido',
       deploying: 'Implantação',
@@ -543,6 +546,48 @@ const ptBR: LocaleResource<typeof enUS> = {
       deployments: 'Implantações',
       variables: 'Variáveis',
       settings: 'Configurações',
+    },
+    sharedHost: {
+      title: 'Host de apps compartilhado',
+      description:
+        'Os apps de todos os ambientes deste host compartilham um processo e sua memória.',
+      summary:
+        '{{running}} de {{deployed}} apps implantados em execução ou iniciando',
+      memory:
+        'Heap {{heapUsed}} de {{heapLimit}} · memória do processo {{rss}} · {{available}} disponíveis no servidor',
+      memoryNote: 'Totais do processo inteiro, não de um app.',
+      recycling: {
+        pending:
+          'O código antigo é liberado reiniciando este host quando nenhum app estiver em uso. Novas versões aguardam até lá; os apps em execução continuam atendendo.',
+        restarting:
+          'Este host está reiniciando. Seus apps respondem “tente novamente em instantes” até voltarem.',
+      },
+      restoreFailed:
+        '{{name}}: não foi possível restaurar seus apps; tentando novamente em segundo plano.',
+      columns: {
+        app: 'App',
+        state: 'Estado',
+        why: 'Motivo',
+        lastAccess: 'Último acesso',
+      },
+      hidden: 'Um app que você não pode ver',
+      empty: 'Nenhum app em execução neste host.',
+      idle: 'Ocioso; parado primeiro quando é preciso espaço',
+      holds: {
+        requests: 'Atendendo requisições',
+        connections: 'Conexões abertas',
+        starting: 'Iniciando',
+        operation: 'Implantando ou parando',
+        resident: 'Sempre em execução',
+        busy: 'Ocupado',
+        recent: 'Usado no último minuto',
+      },
+      waiting: {
+        capacity:
+          'Início recusado: limite de apps ativos ou fila de início cheia',
+        memory: 'Início recusado: memória insuficiente',
+        recycle: 'Início recusado: o código novo aguarda o reinício do host',
+      },
     },
     overview: {
       currentRelease: 'Versão atual',

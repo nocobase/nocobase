@@ -7,6 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { fork } from 'node:child_process';
+import { PassThrough, Readable } from 'node:stream';
+import type { NocoBaseDriveDisk } from '@nocobase/drive';
+import { DriveArtifactResolver } from '../dist/artifact-resolver.js';
 import { createHash } from 'node:crypto';
 import * as fsPromises from 'node:fs/promises';
 import {
@@ -34,9 +38,14 @@ vi.mock('node:fs/promises', async (importOriginal) => {
   const actual = await importOriginal<typeof import('node:fs/promises')>();
   return { ...actual, readdir: vi.fn(actual.readdir) };
 });
+vi.mock('node:child_process', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('node:child_process')>();
+  return { ...actual, fork: vi.fn(actual.fork) };
+});
 const hosts: AppHost[] = [];
 
 afterEach(async () => {
+  vi.useRealTimers();
   await Promise.all(hosts.splice(0).map((host) => host.close('test cleanup')));
   await Promise.all(
     tempDirs.splice(0).map((dir) => rm(dir, { recursive: true, force: true })),
@@ -44,6 +53,303 @@ afterEach(async () => {
 });
 
 describe('managed host reconciliation', () => {
+  it('cancels a stalled artifact stream, cleans its files and lets the next deployment continue', async () => {
+    const fixture = await createFixture();
+    const entered = Promise.withResolvers<void>();
+    const stream = new PassThrough();
+    const disk = {
+      getStream: vi
+        .fn()
+        .mockImplementationOnce(async () => {
+          entered.resolve();
+          return stream;
+        })
+        .mockImplementation(async () =>
+          Readable.from(
+            await readFile(
+              path.join(fixture.artifactDir, fixture.artifact.key),
+            ),
+          ),
+        ),
+    } as unknown as NocoBaseDriveDisk;
+    const catalog = new DeploymentCatalog({
+      deploymentsDir: fixture.deploymentsDir,
+      volumesDir: fixture.volumesDir,
+    });
+    const host = createAppHost({
+      mode: 'managed',
+      appRevisionsDir: fixture.deploymentsDir,
+      appVolumesDir: fixture.volumesDir,
+      artifactResolver: new DriveArtifactResolver(disk, catalog, {
+        appRevisionsDir: fixture.deploymentsDir,
+      }),
+      evictionIntervalMs: 0,
+    });
+    hosts.push(host);
+    const spec = deploymentSet(1, fixture.artifact).deployments[0]!;
+    const first = host.management
+      .applyDeployment({ ...spec, operationId: 'stream' })
+      .catch((error: unknown) => error);
+    await entered.promise;
+    stream.write('partial');
+    expect(await host.management.cancelDeployment('stream', 'customer')).toBe(
+      'cancelling',
+    );
+    expect(await first).toMatchObject({ code: 'DEPLOYMENT_CANCELLED' });
+    expect(stream.destroyed).toBe(true);
+    expect(
+      await readdir(path.join(fixture.deploymentsDir, 'customer')),
+    ).toEqual([]);
+    await host.management.applyDeployment({
+      ...spec,
+      operationId: 'after-stream',
+    });
+    expect(await host.management.getOperation('after-stream')).toMatchObject({
+      state: 'succeeded',
+    });
+  });
+
+  it('atomically gates ingress after a streamed request ends, without interrupting that request', async () => {
+    const fixture = await createFixture();
+    await writeFile(
+      path.join(fixture.appRoot, 'dist/server/embedded.js'),
+      `export function createServer() { return { fetch() { return new Response(new ReadableStream({ start(c) { c.enqueue(new TextEncoder().encode('open')); } })); } }; }`,
+    );
+    const artifact = await createArtifact(fixture, '1.2.4');
+    const host = createAppHost({
+      mode: 'managed',
+      host: '127.0.0.1',
+      port: 0,
+      appRevisionsDir: fixture.deploymentsDir,
+      appVolumesDir: fixture.volumesDir,
+      artifact: fsArtifact(fixture.artifactDir),
+      evictionIntervalMs: 0,
+    });
+    hosts.push(host);
+    await host.start();
+    await host.management.applyDeployment({
+      ...deploymentSet(1, artifact).deployments[0]!,
+      activation: 'eager',
+    });
+    const address = host.server.address();
+    if (!address || typeof address === 'string')
+      throw new Error('Missing listener');
+    const url = `http://127.0.0.1:${address.port}/customer`;
+    const abort = new AbortController();
+    const response = await fetch(url, { signal: abort.signal });
+    expect(response.status).toBe(200);
+    expect(await host.management.prepareRotation!({})).toBe(false);
+    abort.abort();
+    await vi.waitFor(async () =>
+      expect(await host.management.prepareRotation!({})).toBe(true),
+    );
+    const gated = await fetch(url);
+    expect(gated.status).toBe(503);
+    expect(gated.headers.get('retry-after')).toBe('2');
+    await host.management.prepareRotation!({ resume: true });
+    expect(host.registry.isRotating()).toBe(false);
+  });
+
+  it.each(['complete', 'deadline'] as const)(
+    'gates new requests and drains a real streamed response until %s',
+    async (ending) => {
+      const fixture = await createFixture();
+      await writeFile(
+        path.join(fixture.appRoot, 'dist/server/embedded.js'),
+        `export function createServer() { return { fetch() { return new Response(new ReadableStream({ start(c) { c.enqueue(new TextEncoder().encode('open')); } })); } }; }`,
+      );
+      const artifact = await createArtifact(fixture, '1.2.4');
+      const host = createAppHost({
+        mode: 'managed',
+        host: '127.0.0.1',
+        port: 0,
+        appRevisionsDir: fixture.deploymentsDir,
+        appVolumesDir: fixture.volumesDir,
+        artifact: fsArtifact(fixture.artifactDir),
+        evictionIntervalMs: 0,
+      });
+      hosts.push(host);
+      await host.start();
+      const spec = {
+        ...deploymentSet(1, artifact).deployments[0]!,
+        activation: 'eager' as const,
+      };
+      await host.management.applyDeployment(spec);
+      const address = host.server.address();
+      if (!address || typeof address === 'string')
+        throw new Error('Missing listener');
+      const url = `http://127.0.0.1:${address.port}/customer`;
+      const abort = new AbortController();
+      const response = await fetch(url, { signal: abort.signal });
+      const reader = response.body!.getReader();
+      expect(new TextDecoder().decode((await reader.read()).value)).toBe(
+        'open',
+      );
+      const streamEnded = reader.read().catch((error: unknown) => error);
+      let drained = false;
+      const draining = host.management.prepareRotation!({
+        ignoreConnections: true,
+        drainTimeoutMs: ending === 'deadline' ? 200 : 5000,
+      }).then((ok) => {
+        drained = true;
+        return ok;
+      });
+      expect(host.registry.isRotating()).toBe(true);
+      for (let i = 0; i < 3; i++) {
+        const retry = await fetch(url);
+        expect(retry.status).toBe(503);
+        expect(retry.headers.get('retry-after')).toBe('2');
+        await retry.text();
+      }
+      expect(drained).toBe(false);
+      expect(() => host.management.startDeployment(spec)).toThrow(
+        expect.objectContaining({ code: 'HOST_DRAINING' }),
+      );
+      if (ending === 'complete') abort.abort();
+      expect(await draining).toBe(true);
+      expect(await streamEnded).toBeInstanceOf(Error);
+    },
+  );
+
+  it('retries a recorded capacity failure only when explicitly requested and never reruns a successful operation', async () => {
+    const fixture = await createFixture();
+    const host = createAppHost({
+      mode: 'managed',
+      appRevisionsDir: fixture.deploymentsDir,
+      appVolumesDir: fixture.volumesDir,
+      artifact: fsArtifact(fixture.artifactDir),
+      evictionIntervalMs: 0,
+    });
+    hosts.push(host);
+    const memory = host.registry.memoryUsage.bind(host.registry);
+    const sampler = vi.spyOn(host.registry, 'memoryUsage').mockReturnValue({
+      heapUsed: 1000,
+      heapLimit: 1000,
+      rss: 1000,
+      available: 0,
+    });
+    const spec = {
+      ...deploymentSet(1, fixture.artifact).deployments[0]!,
+      operationId: 'capacity-retry',
+      scope: { id: 'preview', backend: 'in-process' },
+      activation: 'eager' as const,
+    };
+    expect(
+      (await host.management.applyDeployment(spec)).deployments[0],
+    ).toMatchObject({
+      observedState: 'failed',
+      errorCode: 'APP_CAPACITY_EXCEEDED',
+    });
+    sampler.mockImplementation(memory);
+    await host.management.applyDeployment({
+      ...spec,
+      operationId: 'healthy-other-operation',
+    });
+    expect(host.registry.isActive('customer')).toBe(true);
+    expect(
+      (await host.management.applyDeployment(spec)).deployments[0]
+        ?.observedState,
+    ).toBe('failed');
+    expect(
+      (await host.management.applyDeployment({ ...spec, retryCapacity: true }))
+        .deployments[0]?.observedState,
+    ).toBe('running');
+    const active = host.registry.getMetrics().activations;
+    await host.management.applyDeployment({ ...spec, retryCapacity: true });
+    expect(host.registry.getMetrics().activations).toBe(active);
+    expect(
+      await host.management.getOperation('capacity-retry', {
+        scope: spec.scope,
+      }),
+    ).toMatchObject({ state: 'succeeded' });
+  });
+
+  it.each(['cancel', 'timeout', 'exit'] as const)(
+    'cleans a stalled extraction on %s and lets the next deployment finish',
+    async (outcome) => {
+      const fixture = await createFixture();
+      const host = createAppHost({
+        mode: 'managed',
+        appRevisionsDir: fixture.deploymentsDir,
+        appVolumesDir: fixture.volumesDir,
+        artifact: fsArtifact(fixture.artifactDir),
+        evictionIntervalMs: 0,
+      });
+      hosts.push(host);
+      const actual =
+        await vi.importActual<typeof import('node:child_process')>(
+          'node:child_process',
+        );
+      let child!: ReturnType<typeof fork>;
+      const ready = Promise.withResolvers<void>();
+      let intercept = true;
+      const spy = vi
+        .mocked(fork)
+        .mockImplementation((worker, args, options) => {
+          if (args?.[0] === 'extract' && intercept) {
+            intercept = false;
+            child = actual.fork(
+              new URL(
+                './fixtures/stalled-artifact-worker.mjs',
+                import.meta.url,
+              ),
+              args,
+              options,
+            );
+            child.once('message', () => ready.resolve());
+            return child;
+          }
+          return actual.fork(worker, args, options);
+        });
+      const spec = deploymentSet(1, fixture.artifact).deployments[0]!;
+      const logs: Record<string, unknown>[] = [];
+      const first = host.management.applyDeployment(
+        { ...spec, operationId: 'stalled' },
+        (entry) => {
+          logs.push(entry);
+          if (outcome === 'timeout' && entry.phase === 'extracting')
+            vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+        },
+      );
+      const firstResult = first.catch((error: unknown) => error);
+      await ready.promise;
+      const second = host.management.applyDeployment({
+        ...spec,
+        operationId: 'next',
+      });
+      if (outcome === 'cancel') {
+        expect(
+          await host.management.cancelDeployment('stalled', 'customer'),
+        ).toBe('cancelling');
+      } else if (outcome === 'timeout') {
+        await vi.advanceTimersByTimeAsync(121_000);
+        vi.useRealTimers();
+      } else child.kill('SIGKILL');
+      await firstResult;
+      expect(child.signalCode).toBe('SIGKILL');
+      expect(() => process.kill(child.pid!, 0)).toThrow();
+      const operation = await host.management.getOperation('stalled');
+      expect(operation).toMatchObject({
+        state: outcome === 'cancel' ? 'cancelled' : 'failed',
+      });
+      if (outcome === 'timeout')
+        expect(JSON.stringify(operation)).toContain('timed out');
+      await second;
+      expect(await host.management.getOperation('next')).toMatchObject({
+        state: 'succeeded',
+      });
+      expect(
+        await readdir(path.join(fixture.deploymentsDir, 'customer')),
+      ).toEqual([
+        '.active-revision',
+        '.lifecycle.json',
+        fixture.artifact.checksum,
+      ]);
+      expect(logs.some((entry) => entry.phase === 'extracting')).toBe(true);
+      spy.mockRestore();
+    },
+  );
+
   it('cancels while the Host is recording admission, before it can enter the queue', async () => {
     const fixture = await createFixture();
     const host = createAppHost({

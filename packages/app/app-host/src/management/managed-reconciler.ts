@@ -1,3 +1,4 @@
+import { deploymentErrorCode } from '../errors.js';
 import {
   beginDeploymentSwitch,
   deploymentCheckpoint,
@@ -94,6 +95,7 @@ export class ManagedReconciler {
       appId: string;
       scopeId: string | undefined;
       control: DeploymentControl;
+      abortController: AbortController;
       started: boolean;
       notify(queueAhead?: number): void;
       cancel(): void;
@@ -296,6 +298,7 @@ export class ManagedReconciler {
     if (item.control.cancelled)
       return item.started ? 'cancelling' : 'cancelled';
     item.control.cancelled = true;
+    item.abortController.abort(new DeploymentCancelledError());
     if (!item.started) {
       item.cancel();
       this.controls.delete(`${scopeId ?? ''}\u0000${operationId}`);
@@ -318,7 +321,12 @@ export class ManagedReconciler {
   ): Promise<HostStatus> {
     validateDeploymentSet({ revision: 1, deployments: [deployment] });
     const operationId = deployment.operationId ?? deployment.id;
-    const control: DeploymentControl = { cancelled: false, switching: false };
+    const abortController = new AbortController();
+    const control: DeploymentControl = {
+      cancelled: false,
+      switching: false,
+      signal: abortController.signal,
+    };
     let sequence = 0;
     const queuedAt = Date.now();
     const emit = (phase: string, msg: string, details = {}): void =>
@@ -336,6 +344,7 @@ export class ManagedReconciler {
       appId: deployment.appId,
       scopeId: deployment.scope?.id,
       control,
+      abortController,
       started: false,
       notify: (ahead?: number): void => {
         if (item.started)
@@ -494,6 +503,7 @@ export class ManagedReconciler {
             ...status,
             observedState: 'failed',
             error: fullErrorMessage(error),
+            errorCode: deploymentErrorCode(error),
           });
           throw error;
         }
@@ -666,6 +676,10 @@ export class ManagedReconciler {
     });
   }
 
+  isBusy(): boolean {
+    return this.busy || this.queue.length > 0;
+  }
+
   getStatus(): HostStatus {
     const deployments = [...this.statuses.values()]
       .map((status) => {
@@ -710,6 +724,10 @@ export class ManagedReconciler {
           dormancies: metrics.dormancies,
           materializations: metrics.materializations,
           capacityStops: metrics.capacityEvictions,
+          startupTimeouts: metrics.startupTimeouts,
+          memory: this.registry.memoryUsage(),
+          rotationPending: this.registry.isRotationPending(),
+          operationsInFlight: this.registry.pendingOperationCount(),
         };
       })(),
     };
@@ -975,6 +993,7 @@ export class ManagedReconciler {
         cacheHit: null,
         app: this.registry.snapshot(spec.appId) ?? null,
         error: fullErrorMessage(error),
+        errorCode: deploymentErrorCode(error),
       });
     }
   }
@@ -1116,6 +1135,7 @@ export class ManagedReconciler {
         cacheHit: null,
         app: this.registry.snapshot(spec.appId) ?? null,
         error: fullErrorMessage(error),
+        errorCode: deploymentErrorCode(error),
       });
     }
   }

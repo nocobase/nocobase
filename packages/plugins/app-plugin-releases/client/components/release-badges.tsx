@@ -23,6 +23,9 @@ const APP_STATE_TONE: Readonly<Record<string, Tone>> = {
   stopped: 'grey',
   stoppedOnDemand: 'grey',
   dormant: 'violet',
+  waitingCapacity: 'amber',
+  waitingMemory: 'amber',
+  waitingRecycle: 'amber',
   failed: 'red',
   unknown: 'grey',
 };

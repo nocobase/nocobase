@@ -8,6 +8,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { parse as parseYaml } from 'yaml';
 
+import { UNRESTORED_APP_ERROR } from '../server/drivers/types.js';
 import { ReleasesError } from '../server/errors.js';
 import { CONFIG_SECRET_MASK } from '../shared/releases.js';
 import {
@@ -15,6 +16,7 @@ import {
   createFakeDriver,
   createHarness,
   streamOf,
+  testKeyScope,
   type Harness,
 } from './harness.js';
 
@@ -50,6 +52,274 @@ describe('releases', () => {
     });
     return admin;
   }
+
+  it('answers the shared runtime on the single-App read, naming only the occupants the caller may view', async () => {
+    const admin = await createApp('crm');
+    const contributor = await harness.as('dev', 'contributor');
+    await harness.environment({
+      id: 'preview',
+      name: 'Preview',
+      driver: 'fake',
+    });
+    await harness.services.releases.createApp(contributor, {
+      id: 'pr-1',
+      name: 'PR 1',
+      environmentId: 'preview',
+    });
+    await harness.services.releases.createApp(contributor, {
+      id: 'pr-2',
+      name: 'PR 2',
+      environmentId: 'preview',
+    });
+    const app = (
+      appId: string,
+      environmentId: string | null,
+      fields: Record<string, unknown>,
+    ) => ({
+      appId,
+      environmentId,
+      version: '1.0.0',
+      deploymentId: null,
+      startedAt: null,
+      error: null,
+      lastAccessedAt: null,
+      ...fields,
+    });
+    harness.fake.occupancy = {
+      memory: { heapUsed: 1, heapLimit: 2, rss: 3, available: 4 },
+      recycling: 'pending',
+      apps: [
+        app('pr-2', 'preview', { state: 'stopped' }),
+        app('pr-1', 'preview', { state: 'stopped', waiting: 'recycle' }),
+        app('crm', 'staging', {
+          state: 'running',
+          holds: ['requests', 'resident'],
+          error: 'crm detail',
+          lastAccessedAt: '2026-11-07T01:00:00.000Z',
+        }),
+        app('outside', null, { state: 'running', holds: ['recent'] }),
+      ],
+      failedEnvironments: [
+        {
+          environmentId: 'staging',
+          error: 'secret-crm internal-archive-path cannot restore',
+        },
+      ],
+    };
+    const seen = await harness.services.releases.getApp(contributor, 'pr-1');
+    expect(seen.host).toEqual({
+      memory: { heapUsed: 1, heapLimit: 2, rss: 3, available: 4 },
+      recycling: 'pending',
+      deployed: 4,
+      running: 2,
+      occupants: [
+        {
+          app: null,
+          state: 'running',
+          holds: ['requests', 'resident'],
+          waiting: null,
+          lastAccessedAt: null,
+          error: null,
+        },
+        {
+          app: null,
+          state: 'running',
+          holds: ['recent'],
+          waiting: null,
+          lastAccessedAt: null,
+          error: null,
+        },
+        {
+          app: {
+            id: 'pr-1',
+            name: 'PR 1',
+            environmentId: 'preview',
+            environmentName: 'Preview',
+            previewOf: null,
+          },
+          state: 'stopped',
+          holds: [],
+          waiting: 'recycle',
+          lastAccessedAt: null,
+          error: null,
+        },
+      ],
+      // Reading environments does not reveal what their restore error says about Apps the caller cannot view.
+      failedEnvironments: [{ id: 'staging', name: 'Staging', error: null }],
+    });
+    // Nothing of the hidden App reaches the caller in any field.
+    expect(JSON.stringify(seen)).not.toMatch(/crm|internal-archive-path/);
+    // Nor through a key limited to the caller's own App.
+    const key = await harness.services.callerOf({
+      principal: { type: 'user', id: 'admin' },
+      subjects: [{ type: 'authenticated', id: '*' }],
+      keyScope: testKeyScope({ actions: ['rel.apps/view'], apps: ['pr-1'] }),
+    });
+    const scoped = await harness.services.releases.getApp(key, 'pr-1');
+    expect(scoped.host?.occupants.map((item) => item.app?.id ?? null)).toEqual([
+      null,
+      null,
+      'pr-1',
+    ]);
+    expect(JSON.stringify(scoped)).not.toMatch(/crm|internal-archive-path/);
+    const all = await harness.services.releases.getApp(admin, 'pr-1');
+    expect(all.host?.failedEnvironments).toEqual([
+      {
+        id: 'staging',
+        name: 'Staging',
+        error: 'secret-crm internal-archive-path cannot restore',
+      },
+    ]);
+    expect(all.host?.occupants[0]?.lastAccessedAt).toBe(
+      '2026-11-07T01:00:00.000Z',
+    );
+    expect(all.host?.occupants[0]?.app).toMatchObject({
+      id: 'crm',
+      environmentName: 'Staging',
+    });
+    expect(all.host?.occupants[0]?.error).toBe('crm detail');
+    // Lists stay cheap: only the single-App read asks the driver about the runtime.
+    const page = await harness.services.releases.listApps(admin, {});
+    expect(page.items.every((item) => item.host === undefined)).toBe(true);
+  });
+
+  it('keeps an environment restore diagnostic out of the whole App detail for callers who may not read it', async () => {
+    const admin = await harness.as('admin', 'admin');
+    const contributor = await harness.as('dev', 'contributor');
+    await harness.services.releases.createApp(contributor, {
+      id: 'own',
+      name: 'Own',
+      environmentId: 'staging',
+    });
+    await harness.services.releases.createApp(admin, {
+      id: 'secret-crm',
+      name: 'Secret CRM',
+      environmentId: 'staging',
+    });
+    const artifact = await createArtifact(harness.rootDir, '1.0.0');
+    const release = await harness.services.releases.uploadRelease(
+      contributor,
+      'own',
+      { stream: streamOf(artifact.bytes), checksum: artifact.checksum },
+    );
+    const deployment = await harness.services.releases.deploy(
+      contributor,
+      'own',
+      { releaseId: release.id },
+    );
+    await harness.services.releases.waitForDeployment(deployment.id);
+    const diagnosis = 'secret-crm internal-archive-path cannot restore';
+    // Even a driver that put the environment's restore error on each of its Apps.
+    harness.fake.reported.set('own', { state: 'failed', error: diagnosis });
+    const failed = (appId: string) => ({
+      appId,
+      environmentId: 'staging',
+      state: 'failed' as const,
+      version: null,
+      deploymentId: null,
+      startedAt: null,
+      error: diagnosis,
+      lastAccessedAt: '2026-11-07T01:00:00.000Z',
+    });
+    harness.fake.occupancy = {
+      memory: null,
+      recycling: null,
+      apps: [failed('own'), failed('secret-crm')],
+      failedEnvironments: [{ environmentId: 'staging', error: diagnosis }],
+    };
+    const key = await harness.services.callerOf({
+      principal: { type: 'user', id: 'admin' },
+      subjects: [{ type: 'authenticated', id: '*' }],
+      keyScope: testKeyScope({ actions: ['rel.apps/view'], apps: ['own'] }),
+    });
+    for (const caller of [contributor, key]) {
+      const detail = await harness.services.releases.getApp(caller, 'own');
+      expect(JSON.stringify(detail)).not.toMatch(
+        /secret-crm|Secret CRM|internal-archive-path/,
+      );
+      // The failure itself is still said, on the App and on its environment.
+      expect(detail.runtime).toMatchObject({
+        state: 'failed',
+        error: UNRESTORED_APP_ERROR,
+      });
+      expect(detail.host?.failedEnvironments).toEqual([
+        { id: 'staging', name: 'Staging', error: null },
+      ]);
+    }
+    const all = await harness.services.releases.getApp(admin, 'own');
+    expect(all.runtime?.error).toBe(diagnosis);
+    expect(all.host?.failedEnvironments[0]?.error).toBe(diagnosis);
+  });
+
+  it('checks who may view the shared runtime occupants with at most one related-App lookup per read', async () => {
+    const admin = await harness.as('admin', 'admin');
+    const contributor = await harness.as('dev', 'contributor');
+    await harness.services.releases.createApp(contributor, {
+      id: 'own',
+      name: 'Own',
+      environmentId: 'staging',
+    });
+    const lookups = {
+      related: 0,
+      list: 0,
+      among: [] as (readonly string[] | undefined)[],
+    };
+    const { isRelated, relatedAppIds } = harness.application;
+    harness.application.isRelated = (...args) => {
+      lookups.related += 1;
+      return isRelated!(...args);
+    };
+    harness.application.relatedAppIds = (...args) => {
+      lookups.list += 1;
+      lookups.among.push(args[2]);
+      return relatedAppIds!(...args);
+    };
+    const occupant = (appId: string) => ({
+      appId,
+      environmentId: 'staging',
+      version: '1.0.0',
+      deploymentId: null,
+      startedAt: null,
+      error: null,
+      lastAccessedAt: null,
+      state: 'running' as const,
+      holds: ['resident' as const],
+    });
+    for (const count of [1, 10, 25]) {
+      const others = Array.from(
+        { length: count },
+        (_, i) => `other-${count}-${i}`,
+      );
+      for (const id of others)
+        await harness.services.releases.createApp(admin, {
+          id,
+          name: id,
+          environmentId: 'staging',
+        });
+      // One of them is related to the contributor, so the lookup must still find it.
+      harness.application.related.set('dev', [others[0]!]);
+      harness.fake.occupancy = {
+        memory: null,
+        recycling: null,
+        apps: [occupant('own'), ...others.map(occupant)],
+        failedEnvironments: [],
+      };
+      lookups.related = 0;
+      lookups.list = 0;
+      lookups.among = [];
+      const seen = await harness.services.releases.getApp(contributor, 'own');
+      // One lookup, limited to the occupants: Apps elsewhere (the earlier rounds' are off this Host) are not asked.
+      expect(lookups.related).toBe(0);
+      expect(lookups.list).toBe(1);
+      expect([...(lookups.among[0] ?? [])].sort()).toEqual([...others].sort());
+      expect(
+        seen.host?.occupants
+          .map((item) => item.app?.id)
+          .filter(Boolean)
+          .sort(),
+      ).toEqual(['own', others[0]].sort());
+    }
+  });
 
   it('refuses the App IDs `new` and `requests`, which the pages take beside an App', async () => {
     await expect(createApp('new')).rejects.toMatchObject({

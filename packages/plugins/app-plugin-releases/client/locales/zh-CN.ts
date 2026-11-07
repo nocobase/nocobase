@@ -95,6 +95,9 @@ const zhCN: typeof enUS = {
       stopped: '已停止',
       stoppedOnDemand: '已停止（访问时启动）',
       dormant: '已休眠（访问时重新准备）',
+      waitingCapacity: '等待空闲名额',
+      waitingMemory: '等待内存',
+      waitingRecycle: '等待宿主重启回收',
       failed: '失败',
       unknown: '未知',
       deploying: '部署中',
@@ -357,6 +360,43 @@ const zhCN: typeof enUS = {
       deployments: '部署',
       variables: '变量',
       settings: '设置',
+    },
+    sharedHost: {
+      title: '共享应用宿主',
+      description: '这个宿主上所有环境的应用共用一个进程和它的内存。',
+      summary: '已部署 {{deployed}} 个应用，{{running}} 个运行或启动中',
+      memory:
+        '堆 {{heapUsed}} / {{heapLimit}} · 进程内存 {{rss}} · 服务器可用 {{available}}',
+      memoryNote: '这是整个进程的总量，不是某个应用的占用。',
+      recycling: {
+        pending:
+          '没有应用在使用时，会重启这个宿主来释放旧代码。新版本要等到那时才能启动；正在运行的应用照常服务。',
+        restarting: '这个宿主正在重启，恢复前它的应用会提示“稍后重试”。',
+      },
+      restoreFailed: '{{name}}：应用恢复失败，后台重试中。',
+      columns: {
+        app: '应用',
+        state: '状态',
+        why: '原因',
+        lastAccess: '最近访问',
+      },
+      hidden: '你无权查看的应用',
+      empty: '这个宿主上没有正在运行的应用。',
+      idle: '闲置，需要空间时优先停止',
+      holds: {
+        requests: '正在处理请求',
+        connections: '有活动连接',
+        starting: '启动中',
+        operation: '部署或停止中',
+        resident: '常驻运行',
+        busy: '忙碌',
+        recent: '最近一分钟内有访问',
+      },
+      waiting: {
+        capacity: '启动被拒：运行数量上限或启动队列已满',
+        memory: '启动被拒：内存不足',
+        recycle: '启动被拒：新代码要等宿主重启回收',
+      },
     },
     overview: {
       currentRelease: '当前版本',

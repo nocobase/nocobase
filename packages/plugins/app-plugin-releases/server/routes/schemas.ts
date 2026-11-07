@@ -543,6 +543,16 @@ export const UploadHeaders: z.ZodType<{
 
 const dateTime = z.string().meta({ format: 'date-time' });
 const nullableDateTime = dateTime.nullable();
+const hostHoldReason = z.enum([
+  'requests',
+  'connections',
+  'starting',
+  'operation',
+  'resident',
+  'busy',
+  'recent',
+]);
+const hostWaitReason = z.enum(['capacity', 'memory', 'recycle']);
 const outputLabels = z
   .record(z.string(), z.string())
   .meta({ ref: 'ReleasesLabels', description: 'Opaque key/value labels.' });
@@ -764,6 +774,14 @@ export const ReleasesAppSchema: z.ZodType<AppSummary> = z
       startedAt: nullableDateTime,
       error: z.string().nullable(),
       lastAccessedAt: nullableDateTime,
+      holds: z.array(hostHoldReason).optional().meta({
+        description:
+          'Why a running or starting App holds a slot on its shared runtime.',
+      }),
+      waiting: hostWaitReason.optional().meta({
+        description:
+          'Why its last start was refused, for a minute or until it starts.',
+      }),
     }),
     url: z.string().nullable(),
     currentVersion: z.string().nullable(),
@@ -789,6 +807,66 @@ export const ReleasesAppSchema: z.ZodType<AppSummary> = z
       .meta({
         description:
           'The current release’s required variables nothing supplies, and whether a value changed since the running deployment; only the single-App read answers it.',
+      }),
+    host: z
+      .object({
+        memory: z
+          .object({
+            heapUsed: z.number(),
+            heapLimit: z.number(),
+            rss: z.number(),
+            available: z.number(),
+          })
+          .nullable()
+          .meta({
+            description:
+              'The shared process’s memory in bytes, never divided among its Apps.',
+          }),
+        recycling: z.enum(['pending', 'restarting']).nullable(),
+        deployed: z.number().int().nonnegative(),
+        running: z.number().int().nonnegative(),
+        occupants: z.array(
+          z.object({
+            app: z
+              .object({
+                id: z.string(),
+                name: z.string(),
+                environmentId: z.string(),
+                environmentName: z.string(),
+                previewOf: z.string().nullable(),
+              })
+              .nullable()
+              .meta({
+                description: 'Null for an App the caller may not view.',
+              }),
+            state: z.enum([
+              'pending',
+              'running',
+              'starting',
+              'stopped',
+              'dormant',
+              'failed',
+              'unknown',
+            ]),
+            holds: z.array(hostHoldReason),
+            waiting: hostWaitReason.nullable(),
+            lastAccessedAt: nullableDateTime,
+            error: z.string().nullable(),
+          }),
+        ),
+        failedEnvironments: z.array(
+          z.object({
+            id: z.string(),
+            name: z.string().nullable(),
+            error: z.string().nullable(),
+          }),
+        ),
+      })
+      .nullable()
+      .optional()
+      .meta({
+        description:
+          'The runtime the App shares with other Apps, every environment on it included; only the single-App read answers it.',
       }),
   })
   .meta({ ref: 'ReleasesApp' });

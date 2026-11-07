@@ -29,6 +29,7 @@ const hosts: AppHost[] = [];
 
 afterEach(async () => {
   vi.unstubAllGlobals();
+  vi.useRealTimers();
   await Promise.all(hosts.splice(0).map((host) => host.close('test cleanup')));
   await Promise.all(
     tempDirs.splice(0).map((dir) => rm(dir, { recursive: true, force: true })),
@@ -36,6 +37,52 @@ afterEach(async () => {
 });
 
 describe('on-demand Apps on a managed Host', () => {
+  it.each([401, 403])(
+    'lets status %i traffic expire and refuses its repeated background wakes',
+    async (status) => {
+      const fixture = await createFixture({ deniedStatus: status });
+      const host = await startHost(fixture);
+      await host.management.applyDeployment(
+        spec(fixture.artifact, { activation: 'lazy', idleStopMs: 1000 }),
+      );
+      const url = `${baseUrl(host)}/customer/api/pulse`;
+      const headers = { authorization: 'Bearer expired' };
+      expect((await fetch(url, { headers })).status).toBe(status);
+      const lastAccess = host.registry.lastAccessedAt('customer');
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(Date.now() + 2000);
+      expect((await fetch(url, { headers })).status).toBe(status);
+      expect(host.registry.lastAccessedAt('customer')).toBe(lastAccess);
+      await host.registry.sweep();
+      expect(host.registry.isActive('customer')).toBe(false);
+      const starts = host.registry.getMetrics().activations;
+      for (let i = 0; i < 3; i++) {
+        const denied = await fetch(url, { headers });
+        expect(denied.status).toBe(503);
+        expect(denied.headers.get('retry-after')).toBe('2');
+        expect(host.registry.isActive('customer')).toBe(false);
+      }
+      expect(host.registry.getMetrics().activations).toBe(starts);
+      expect(
+        (await fetch(url, { headers: { authorization: 'Bearer valid' } }))
+          .status,
+      ).toBe(200);
+      expect(host.registry.isActive('customer')).toBe(true);
+      expect(host.registry.getMetrics().activations).toBe(starts + 1);
+      vi.setSystemTime(Date.now() + 2000);
+      await host.registry.sweep();
+      expect(host.registry.isActive('customer')).toBe(false);
+      expect(
+        (
+          await fetch(`${baseUrl(host)}/customer/`, {
+            headers: { accept: 'text/html' },
+          })
+        ).status,
+      ).toBe(200);
+      expect(host.registry.isActive('customer')).toBe(true);
+    },
+  );
+
   it('lets a hidden tab release its slot without waking the App again until visible', async () => {
     const document = Object.assign(new EventTarget(), {
       visibilityState: 'visible',
@@ -79,6 +126,7 @@ describe('on-demand Apps on a managed Host', () => {
     } finally {
       client.close();
       vi.unstubAllGlobals();
+      vi.useRealTimers();
     }
   });
 
@@ -439,7 +487,7 @@ interface Fixture {
 }
 
 async function createFixture(
-  options: { startDelayMs?: number } = {},
+  options: { startDelayMs?: number; deniedStatus?: number } = {},
 ): Promise<Fixture> {
   const rootDir = await mkdtemp(path.join(os.tmpdir(), 'nocobase-on-demand-'));
   tempDirs.push(rootDir);
@@ -472,6 +520,8 @@ async function createFixture(
         },
         fetch(request) {
           const url = new URL(request.url);
+          if (url.pathname === '/api/pulse' && request.headers.get('authorization') !== 'Bearer valid')
+            return new Response('denied', { status: ${options.deniedStatus ?? 401} });
           if (url.pathname === '/') return new Response('<!doctype html><title>Customer</title>', { headers: { 'content-type': 'text/html' } });
           return new Response('ok');
         },
