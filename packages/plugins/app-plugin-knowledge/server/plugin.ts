@@ -20,6 +20,7 @@ export function createKnowledgePlugin(
   return defineServerPlugin({
     baseDir: path.resolve(import.meta.dirname, '..'),
     packageName: '@nocobase/app-plugin-knowledge',
+    locales: () => import('./locales/index.js'),
     serviceProviders: [
       ...serviceProviders,
       indexingProvider([
