@@ -4,7 +4,7 @@
  * last visit — on hover or focus, and on a tap where there is no hover.
  */
 import { useTranslation } from '@nocobase/i18n/client';
-import { useState, type ReactElement } from 'react';
+import { useRef, useState, type ReactElement } from 'react';
 
 import { ACCESS_NAMESPACE } from '../../shared/access.js';
 import type { RuntimeStatus } from '../../shared/releases.js';
@@ -34,6 +34,8 @@ export function RuntimeStateBadge({
 }): ReactElement {
   const { t, i18n } = useTranslation(ACCESS_NAMESPACE);
   const [open, setOpen] = useState(false);
+  // Opened by a press (a tap where there is no hover): the pointer leaving does not close it.
+  const pressedRef = useRef(false);
   const key = runtimeStateKey(runtime);
   const tag = (
     <Tag tone={TONE[key] ?? 'grey'} dot>
@@ -57,9 +59,12 @@ export function RuntimeStateBadge({
     <Tooltip
       open={open}
       onOpenChange={(next, details) => {
-        // A press opens it (below) rather than closing it, so a tap shows it where there is no hover; leaving, a press
-        // elsewhere and Escape close it.
-        if (details.reason !== 'trigger-press') setOpen(next);
+        // A press opens it (below) rather than closing it; a press elsewhere, Escape or leaving the focus closes it.
+        if (details.reason === 'trigger-press') return;
+        if (!next && details.reason === 'trigger-hover' && pressedRef.current)
+          return;
+        if (!next) pressedRef.current = false;
+        setOpen(next);
       }}
     >
       <TooltipTrigger
@@ -71,6 +76,7 @@ export function RuntimeStateBadge({
             // A tap opens it where there is no hover; on the list it does not open the row.
             onClick={(event) => {
               event.stopPropagation();
+              pressedRef.current = true;
               setOpen(true);
             }}
           />

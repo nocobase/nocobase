@@ -383,8 +383,9 @@ describe('shared app host', () => {
     expect(within(tooltip).getByText('Always running')).toBeTruthy();
     expect(within(tooltip).getByText(/^Last visit: /)).toBeTruthy();
     expect(screen.getByTestId('location').textContent).toBe('/releases');
-    // A second tap keeps it open; Escape closes it.
+    // A second tap keeps it open, and so does the pointer leaving after a tap, as a touch does; Escape closes it.
     await userEvent.click(trigger);
+    await userEvent.unhover(trigger);
     expect(await openTooltip()).toBeTruthy();
     await userEvent.keyboard('{Escape}');
     await waitFor(() =>
