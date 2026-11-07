@@ -597,6 +597,8 @@ const frFR: LocaleResource<typeof enUS> = {
     checkoutFailed: "L'extraction du référentiel a échoué.",
     toolAuth: "L'outil de codage n'est pas connecté au runtime.",
     toolQuota: "L'outil de codage n'a plus de quota.",
+    sessionUnavailable:
+      'La session d’origine de l’outil de programmation n’a pas pu être reprise.',
     toolRateLimit: "L'outil de codage était limité en débit.",
     toolNetwork: "L'outil de codage n'a pas pu atteindre son service.",
     toolProcess: "L'outil de codage s'est arrêté de manière inattendue.",

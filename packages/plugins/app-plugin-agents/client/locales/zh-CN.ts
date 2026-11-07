@@ -548,6 +548,7 @@ const zhCN: AgentsResource = {
     checkoutFailed: '仓库检出失败。',
     toolAuth: '运行环境中的编码工具未登录。',
     toolQuota: '编码工具的额度已用完。',
+    sessionUnavailable: '无法恢复原编码工具会话。',
     toolRateLimit: '编码工具被限流。',
     toolNetwork: '编码工具无法连接到它的服务。',
     toolProcess: '编码工具意外退出。',

@@ -571,6 +571,8 @@ const viVN: LocaleResource<typeof enUS> = {
     checkoutFailed: 'Việc kiểm tra kho lưu trữ không thành công.',
     toolAuth: 'Công cụ mã hóa không được đăng nhập trong thời gian chạy.',
     toolQuota: 'Công cụ mã hóa đã hết hạn ngạch.',
+    sessionUnavailable:
+      'Không thể tiếp tục phiên ban đầu của công cụ lập trình.',
     toolRateLimit: 'Công cụ mã hóa bị giới hạn tốc độ.',
     toolNetwork: 'Công cụ mã hóa không thể tiếp cận dịch vụ của nó.',
     toolProcess: 'Công cụ mã hóa thoát bất ngờ.',
