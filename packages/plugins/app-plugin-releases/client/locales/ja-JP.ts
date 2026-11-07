@@ -553,7 +553,7 @@ const jaJP: LocaleResource<typeof enUS> = {
       restoreFailed:
         '{{name}}：アプリを復元できませんでした。バックグラウンドで再試行しています。',
       environments: 'このホストの環境：{{names}}',
-      failed: 'アプリは共有ホスト上で起動に失敗しました。',
+      failed: '共有ホストの再起動後にアプリを復元できませんでした。バックグラウンドで再試行しています。',
       view: 'ホストの使用状況を見る',
       columns: {
         app: 'アプリ',

@@ -565,7 +565,7 @@ const frFR: LocaleResource<typeof enUS> = {
       restoreFailed:
         '{{name}} : ses applications n’ont pas pu être restaurées ; nouvel essai en arrière-plan.',
       environments: 'Environnements sur cet hôte : {{names}}',
-      failed: 'L’application n’a pas pu démarrer sur son hôte partagé.',
+      failed: 'L’application n’a pas pu être restaurée après le redémarrage de son hôte partagé ; nouvel essai en arrière-plan.',
       view: 'Voir l’occupation de l’hôte',
       columns: {
         app: 'Application',

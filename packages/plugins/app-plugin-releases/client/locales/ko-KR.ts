@@ -535,7 +535,7 @@ const koKR: LocaleResource<typeof enUS> = {
       restoreFailed:
         '{{name}}: 앱을 복원할 수 없어 백그라운드에서 다시 시도하는 중입니다.',
       environments: '이 호스트의 환경: {{names}}',
-      failed: '앱이 공유 호스트에서 시작하지 못했습니다.',
+      failed: '공유 호스트가 다시 시작된 후 앱을 복원하지 못했습니다. 백그라운드에서 다시 시도합니다.',
       view: '호스트 사용 현황 보기',
       columns: {
         app: '앱',

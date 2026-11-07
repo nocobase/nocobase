@@ -561,7 +561,7 @@ const deDE: LocaleResource<typeof enUS> = {
       restoreFailed:
         '{{name}}: Die Apps konnten nicht wiederhergestellt werden; neuer Versuch im Hintergrund.',
       environments: 'Umgebungen darauf: {{names}}',
-      failed: 'Die App konnte auf ihrem gemeinsamen Host nicht starten.',
+      failed: 'Die App konnte nach dem Neustart ihres gemeinsamen Hosts nicht wiederhergestellt werden; neuer Versuch im Hintergrund.',
       view: 'Host-Auslastung ansehen',
       columns: {
         app: 'App',

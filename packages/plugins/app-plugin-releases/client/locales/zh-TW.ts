@@ -513,7 +513,7 @@ const zhTW: LocaleResource<typeof enUS> = {
       },
       restoreFailed: '{{name}}：應用恢復失敗，背景重試中。',
       environments: '使用它的環境：{{names}}',
-      failed: '應用在共用宿主上啟動失敗。',
+      failed: '共用宿主重新啟動後未能恢復這個應用，正在背景重試。',
       view: '查看宿主佔用',
       columns: {
         app: '應用',

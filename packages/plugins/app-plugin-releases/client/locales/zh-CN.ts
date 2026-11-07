@@ -375,7 +375,7 @@ const zhCN: typeof enUS = {
       },
       restoreFailed: '{{name}}：应用恢复失败，后台重试中。',
       environments: '使用它的环境：{{names}}',
-      failed: '应用在共享宿主上启动失败。',
+      failed: '共享宿主重启后未能恢复这个应用，正在后台重试。',
       view: '查看宿主占用',
       columns: {
         app: '应用',

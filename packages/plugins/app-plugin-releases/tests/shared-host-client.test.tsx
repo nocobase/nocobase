@@ -23,6 +23,7 @@ import type {
   EnvironmentListItem,
   SharedHostView,
 } from '../shared/releases.js';
+import { hostNoticeOf } from '../client/lib/host-occupants.js';
 import { appSummary } from './helpers/app-summary.js';
 
 afterEach(cleanup);
@@ -186,17 +187,35 @@ function onHost(
   {
     waiting = null,
     recycling = null,
+    unrestored = false,
+    error = null,
   }: {
     readonly waiting?: 'capacity' | 'memory' | 'recycle' | null;
     readonly recycling?: 'pending' | 'restarting' | null;
+    /** The host could not restore this App's environment after it restarted. */
+    readonly unrestored?: boolean;
+    readonly error?: string | null;
   } = {},
 ): AppSummary {
   const summary = appSummary(state);
   const { environments: _environments, ...host } = HOST;
   return {
     ...summary,
-    runtime: { ...summary.runtime, waiting },
-    host: { ...host, recycling },
+    runtime: { ...summary.runtime, waiting, error },
+    host: {
+      ...host,
+      recycling,
+      failedEnvironments: unrestored
+        ? [
+            ...host.failedEnvironments,
+            {
+              id: summary.environment.id,
+              name: summary.environment.name,
+              error: null,
+            },
+          ]
+        : host.failedEnvironments,
+    },
   };
 }
 
@@ -223,6 +242,27 @@ describe('shared app host', () => {
         runtime: { ...base.runtime, waiting: 'memory' },
       }),
     ).toBe('deploying');
+  });
+
+  it('blames the host for a failed start only when the host could not restore the App', () => {
+    expect(
+      hostNoticeOf(
+        onHost('failed', {
+          error: 'App failed to initialize: database password is invalid',
+        }),
+      ),
+    ).toBeNull();
+    expect(hostNoticeOf(onHost('failed', { unrestored: true }))).toBe(
+      'ui.sharedHost.failed',
+    );
+    // Another environment's restore failure is not this App's.
+    expect(HOST.failedEnvironments.map((item) => item.id)).not.toContain(
+      appSummary('failed').environment.id,
+    );
+    expect(hostNoticeOf(onHost('stopped', { waiting: 'memory' }))).toBe(
+      'ui.sharedHost.waiting.memory',
+    );
+    expect(hostNoticeOf(appSummary('failed'))).toBeNull();
   });
 
   it('lists every occupant of the host on the environments page once, with why it holds or waits and the process memory as one total', async () => {
@@ -298,7 +338,14 @@ describe('shared app host', () => {
   });
 
   it('says nothing of the host on the page of an App it does not affect', async () => {
-    for (const summary of [onHost('running'), onHost('stopped')]) {
+    for (const summary of [
+      onHost('running'),
+      onHost('stopped'),
+      // The App's own failure, on a healthy host: its error says why, not the host.
+      onHost('failed', {
+        error: 'App failed to initialize: database password is invalid',
+      }),
+    ]) {
       await render('/apps/shop', { summary });
       await screen.findByRole('tab', { name: 'Overview' });
       expect(screen.queryByText('Shared app host')).toBeNull();
@@ -322,7 +369,10 @@ describe('shared app host', () => {
         onHost('stopped', { waiting: 'memory' }),
         'Start refused: not enough memory',
       ],
-      [onHost('failed'), 'The app failed to start on its shared host.'],
+      [
+        onHost('failed', { unrestored: true }),
+        'The app could not be restored after its shared host restarted; retrying in the background.',
+      ],
       [
         onHost('running', { recycling: 'restarting' }),
         'This host is restarting. Its apps answer “try again shortly” until they are back.',

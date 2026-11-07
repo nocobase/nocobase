@@ -565,7 +565,7 @@ const esES: LocaleResource<typeof enUS> = {
       restoreFailed:
         '{{name}}: no se pudieron restaurar sus apps; reintentando en segundo plano.',
       environments: 'Entornos en él: {{names}}',
-      failed: 'La app no pudo iniciarse en su host compartido.',
+      failed: 'La app no se pudo restaurar tras reiniciarse su host compartido; se reintenta en segundo plano.',
       view: 'Ver uso del host',
       columns: {
         app: 'App',

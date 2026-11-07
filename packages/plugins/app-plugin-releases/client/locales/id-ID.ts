@@ -557,7 +557,7 @@ const idID: LocaleResource<typeof enUS> = {
       restoreFailed:
         '{{name}}: aplikasinya tidak dapat dipulihkan; mencoba lagi di latar belakang.',
       environments: 'Lingkungan di host ini: {{names}}',
-      failed: 'Aplikasi gagal dimulai di host bersamanya.',
+      failed: 'Aplikasi tidak dapat dipulihkan setelah host bersamanya dimulai ulang; dicoba lagi di latar belakang.',
       view: 'Lihat penggunaan host',
       columns: {
         app: 'Aplikasi',

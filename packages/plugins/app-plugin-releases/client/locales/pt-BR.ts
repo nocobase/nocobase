@@ -565,7 +565,7 @@ const ptBR: LocaleResource<typeof enUS> = {
       restoreFailed:
         '{{name}}: não foi possível restaurar seus apps; tentando novamente em segundo plano.',
       environments: 'Ambientes nele: {{names}}',
-      failed: 'O app não conseguiu iniciar no host compartilhado.',
+      failed: 'O app não pôde ser restaurado após o reinício do host compartilhado; tentando novamente em segundo plano.',
       view: 'Ver uso do host',
       columns: {
         app: 'App',
