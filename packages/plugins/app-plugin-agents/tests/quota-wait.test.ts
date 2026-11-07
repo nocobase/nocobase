@@ -113,4 +113,74 @@ describe('preserved quota work', () => {
       tool: 'claude',
     });
   });
+
+  it('records a replacement once, so the original cannot also be retried or replaced again', async () => {
+    const { runner, runId } = await setup();
+    const machine = await h.services.runners.get(runner.runnerId);
+    await h.runners.reports.fail(machine, runId, {
+      reason: 'toolQuota',
+      sessionId: 'kept',
+    });
+    const other = await h.createAgent({ maxAttempts: 1 });
+    const replace = () =>
+      h.services.runs.enqueue({
+        agentId: other,
+        subject: { kind: 'quota', id: '1' },
+        actorUserId: 'owner',
+        runnerId: runner.runnerId,
+        freshSession: true,
+        replacesRunId: runId,
+        input: {
+          type: 'signal',
+          actor: { kind: 'user', id: 'owner', name: 'Owner' },
+          text: 'Take over the step',
+        },
+      });
+    const next = await replace();
+    expect(next.outcome).toBe('created');
+    expect(await h.services.runs.get(runId)).toMatchObject({
+      status: 'cancelled',
+      cancelledById: 'owner',
+    });
+    expect(await h.services.runs.retryInfo(runId)).toMatchObject({
+      runId: next.runId,
+    });
+    await expect(h.services.runs.retry(runId, 'owner')).rejects.toMatchObject({
+      code: 'RUN_ALREADY_RETRIED',
+    });
+    await expect(replace()).rejects.toMatchObject({
+      code: 'RUN_ALREADY_RETRIED',
+    });
+  });
+
+  it('refuses a replacement after the original was retried, and cancels a queued original it replaces', async () => {
+    const { runner, runId } = await setup();
+    const machine = await h.services.runners.get(runner.runnerId);
+    await h.runners.reports.fail(machine, runId, { reason: 'toolQuota' });
+    const retry = await h.services.runs.retry(runId, 'owner');
+    const other = await h.createAgent({ maxAttempts: 1 });
+    const replace = (target: string) =>
+      h.services.runs.enqueue({
+        agentId: other,
+        subject: { kind: 'quota', id: '1' },
+        actorUserId: 'owner',
+        runnerId: runner.runnerId,
+        freshSession: true,
+        replacesRunId: target,
+        input: {
+          type: 'signal',
+          actor: { kind: 'user', id: 'owner', name: 'Owner' },
+          text: 'Take over the step',
+        },
+      });
+    await expect(replace(runId)).rejects.toMatchObject({
+      code: 'RUN_ALREADY_RETRIED',
+    });
+    // The queued retry is itself replaceable while it waits.
+    const next = await replace(retry.id);
+    expect(next.outcome).toBe('created');
+    expect(await h.services.runs.get(retry.id)).toMatchObject({
+      status: 'cancelled',
+    });
+  });
 });
