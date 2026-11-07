@@ -7,6 +7,8 @@
  * idle stops and dormancies count towards `restartAfterChurn` without cutting off an on-demand App someone is using.
  */
 import { Readable } from 'node:stream';
+import { createServer } from 'node:http';
+import { NodeServerProxy } from '@nocobase/app-server/node';
 
 import type {
   HostDeploymentSet,
@@ -874,6 +876,100 @@ describe('Host driver', () => {
       '2.0.0',
     );
   });
+  it('releases initial ready-recovery ingress after failure and serves other environments during background retries', async () => {
+    vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] });
+    const host = fakeHost();
+    let ready = (): void => {};
+    vi.spyOn(host.endpoint.controller, 'onReady').mockImplementation(
+      (listener) => {
+        ready = listener;
+        return () => {};
+      },
+    );
+    const upstream = createServer((_req, res) =>
+      res.end('healthy environment'),
+    );
+    await new Promise<void>((resolve) =>
+      upstream.listen(0, '127.0.0.1', resolve),
+    );
+    const address = upstream.address();
+    if (!address || typeof address === 'string')
+      throw new Error('Missing listener');
+    vi.spyOn(host.endpoint.controller, 'getInfo').mockReturnValue({
+      status: 'ready',
+      targetUrl: `http://127.0.0.1:${address.port}/`,
+    });
+    const driver = driverFor(host);
+    const broken = await open(driver, [appSpec('broken-app')], 'broken');
+    const healthy = await open(driver, [appSpec('healthy-app')], 'healthy');
+    const service = await host.endpoint.controller.getManagementClient();
+    const original = service.restoreDeploymentSet.bind(service);
+    const first = Promise.withResolvers<Awaited<ReturnType<typeof original>>>();
+    const retry = Promise.withResolvers<Awaited<ReturnType<typeof original>>>();
+    let attempts = 0;
+    vi.spyOn(service, 'restoreDeploymentSet').mockImplementation((set) =>
+      set.scope!.id === 'broken'
+        ? ++attempts === 1
+          ? first.promise
+          : retry.promise
+        : original(set),
+    );
+    const proxy = new NodeServerProxy({
+      match: () => true,
+      target: () => driver.proxyTarget(),
+    });
+    try {
+      ready();
+      expect(driver.proxyTarget()).toBeNull();
+      const unavailable = await proxy.fetch(
+        new Request('http://preview.test/healthy-app/'),
+      );
+      expect(unavailable.status).toBe(503);
+      expect(unavailable.headers.get('retry-after')).toBe('2');
+      const apply = vi.spyOn(service, 'applyDeployment');
+      const updated = healthy.apply(
+        appSpec('healthy-app', {
+          deploymentId: 'new-deploy',
+          release: { id: 'r2', version: '2.0.0', checksum: CHECKSUM },
+        }),
+      );
+      await Promise.resolve();
+      expect(apply).not.toHaveBeenCalled();
+      first.reject(new Error('broken environment cannot restore'));
+      await vi.waitFor(() => expect(driver.proxyTarget()).not.toBeNull());
+      expect(await updated).toMatchObject({
+        state: 'running',
+        version: '2.0.0',
+      });
+      expect(
+        (await healthy.status(['healthy-app'])).get('healthy-app')?.version,
+      ).toBe('2.0.0');
+      expect(host.restored.some((set) => set.scope!.id === 'healthy')).toBe(
+        true,
+      );
+      expect(
+        await (
+          await proxy.fetch(new Request('http://preview.test/healthy-app/'))
+        ).text(),
+      ).toBe('healthy environment');
+      await vi.advanceTimersByTimeAsync(60_000);
+      expect(attempts).toBe(2);
+      expect(driver.proxyTarget()).not.toBeNull();
+      expect(
+        await (
+          await proxy.fetch(new Request('http://preview.test/healthy-app/'))
+        ).text(),
+      ).toBe('healthy environment');
+    } finally {
+      first.reject(new Error('test cleanup'));
+      retry.reject(new Error('background retry still fails'));
+      proxy.close();
+      await broken.close();
+      await healthy.close();
+      upstream.closeAllConnections();
+      await new Promise<void>((resolve) => upstream.close(() => resolve()));
+    }
+  });
   it('finishes an in-progress desired-set read before deploying a newer revision', async () => {
     const host = fakeHost();
     const desired = Promise.withResolvers<readonly AppDeploymentSpec[]>();
@@ -888,7 +984,7 @@ describe('Host driver', () => {
     await session.apply(appSpec('site'));
     const restoring = session.restore([]);
     await reading.promise;
-    expect(driver.proxyTarget()).toBeNull();
+    expect(driver.proxyTarget()).not.toBeNull(); // Explicit/environment recovery does not gate healthy traffic.
     const service = await host.endpoint.controller.getManagementClient();
     const apply = vi.spyOn(service, 'applyDeployment');
     const deployment = session.apply(

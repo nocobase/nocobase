@@ -40,3 +40,28 @@ it('bounds retained rejection fingerprints', () => {
     true,
   );
 });
+
+it('allows corrected cookie-only form submissions to wake an idle App and still guards API-key clients', () => {
+  const guard = new RejectedWakeGuard();
+  const login = {
+    method: 'POST',
+    url: '/a/api/auth/sign-in/email',
+    headers: { cookie: 'session=test' },
+  } as IncomingMessage;
+  guard.record('a-v1', login, 401);
+  expect(guard.blocks('a-v1', login)).toBe(false);
+  guard.record('a-v1', login, 403);
+  expect(guard.blocks('a-v1', login)).toBe(false);
+  const api = {
+    ...login,
+    headers: { 'x-api-key': 'test-invalid-key' },
+  } as IncomingMessage;
+  guard.record('a-v1', api, 401);
+  expect(guard.blocks('a-v1', api)).toBe(true);
+  expect(
+    guard.blocks('a-v1', {
+      ...api,
+      headers: { 'x-api-key': 'test-fresh-key' },
+    } as IncomingMessage),
+  ).toBe(false);
+});

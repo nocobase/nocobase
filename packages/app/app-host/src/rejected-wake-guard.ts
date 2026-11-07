@@ -9,6 +9,7 @@ export class RejectedWakeGuard {
   private readonly rejected = new Map<string, true>();
 
   blocks(revision: string, req: IncomingMessage): boolean {
+    if (!req.headers.authorization && !req.headers['x-api-key']) return false;
     const mode = req.headers['sec-fetch-mode'];
     if (
       (req.method === 'GET' || req.method === 'HEAD') &&
@@ -20,6 +21,9 @@ export class RejectedWakeGuard {
   }
 
   record(revision: string, req: IncomingMessage, status: number): void {
+    // Cookie-only form submissions may change their body (for example a corrected password). They never enter
+    // this background-client guard, whose identity deliberately does not include a request body.
+    if (!req.headers.authorization && !req.headers['x-api-key']) return;
     if (status !== 401 && status !== 403 && this.rejected.size === 0) return;
     const key = this.key(revision, req);
     this.rejected.delete(key);

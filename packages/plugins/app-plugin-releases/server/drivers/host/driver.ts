@@ -214,6 +214,7 @@ export function createHostDriver(
   let inFlight = 0;
   let restartScheduled: Promise<void> | null = null;
   let rotationPreparing: Promise<boolean> | null = null;
+  let readyRestoring: Promise<void> | null = null;
   let churnTimer: NodeJS.Timeout | null = null;
   let restartDeadline: NodeJS.Timeout | null = null;
   let checkingChurn = false;
@@ -390,8 +391,14 @@ export function createHostDriver(
   };
 
   const restoreHost = async (host: HostEndpointOptions): Promise<void> => {
+    const failures: unknown[] = [];
     for (const scope of scopes.values())
-      if (scope.host === host) await scheduleRestore(scope);
+      if (scope.host === host)
+        await scheduleRestore(scope).catch((error: unknown) => {
+          failures.push(error);
+        });
+    // A broken environment must not prevent the remaining environments from being restored.
+    if (failures.length) throw failures[0];
   };
 
   const watchReady = (host: HostEndpointOptions): void => {
@@ -407,7 +414,15 @@ export function createHostDriver(
         rotationSince = null;
         capacityRotation = false;
       }
-      if (!restartScheduled) void restoreHost(host).catch(() => undefined);
+      if (!restartScheduled) {
+        const restoring = restoreHost(host);
+        if (host === inProcess) readyRestoring = restoring;
+        void restoring
+          .catch(() => undefined)
+          .finally(() => {
+            if (readyRestoring === restoring) readyRestoring = null;
+          });
+      }
     });
   };
 
@@ -635,6 +650,7 @@ export function createHostDriver(
     if (scope.host !== inProcess) return await work();
     if (rotationPreparing) await rotationPreparing.catch(() => false);
     if (restartScheduled) await restartScheduled.catch(() => undefined);
+    if (readyRestoring) await readyRestoring.catch(() => undefined);
     // A pending replay may still hold an older desired set. Let it finish before submitting any mutation.
     // Failure leaves management usable; only the background poll initiates another recovery attempt.
     if (scope.restoring) await scope.restoring.catch(() => undefined);
@@ -698,15 +714,9 @@ export function createHostDriver(
     churn: () => churn + runtimeChurn,
     restartHost: (reason = 'restart requested') => restartHost(reason),
     proxyTarget() {
-      if (
-        restartScheduled ||
-        [...scopes.values()].some(
-          (scope) =>
-            scope.host === inProcess &&
-            (scope.restoring !== null || scope.restoreFailed),
-        )
-      )
-        return null;
+      // Only the initial replay after the child becomes ready gates ingress. Failed environments and their
+      // background retries must not take healthy applications on this shared Host offline.
+      if (restartScheduled || readyRestoring) return null;
       const info = inProcess.controller.getInfo();
       return info.status === 'ready' && info.targetUrl
         ? new URL(info.targetUrl)
