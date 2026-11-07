@@ -1,6 +1,3 @@
-import { existsSync, readFileSync } from 'node:fs';
-import path from 'node:path';
-
 import { Hono } from 'hono';
 import {
   defineRootRoutes,
@@ -15,13 +12,17 @@ import {
 import { type SpaConfig } from './config.js';
 import { createMountedOriginProxyHandler } from '../proxy/index.js';
 import { joinBasePath } from '../support/index.js';
+import {
+  readAppPackage,
+  type AppPackageIdentity,
+} from '../support/app-package.js';
 import type { SpaClientConfigMap } from './types.js';
 
 export interface SpaRoutesApplication {
   readonly config: AppConfigAccessor;
   readonly mode: 'standalone' | 'embedded';
   readonly publicBasePath: string;
-  /** Where the application's `package.json` is, read for the name and version the page shows. */
+  /** Application root; its manifest may be in `dist/` for an embedded deployment. */
   readonly paths: { readonly rootDir: string };
 }
 
@@ -104,23 +105,6 @@ function createPublicConfig(
         : {}),
       ...(appPackage.version ? { version: appPackage.version } : {}),
     },
-  };
-}
-
-interface AppPackageIdentity {
-  readonly displayName?: string;
-  readonly version?: string;
-}
-
-function readAppPackage(rootDir: string): AppPackageIdentity {
-  const packagePath = path.join(rootDir, 'package.json');
-  if (!existsSync(packagePath)) return {};
-  const value = JSON.parse(readFileSync(packagePath, 'utf8')) as unknown;
-  if (typeof value !== 'object' || value === null) return {};
-  const { displayName, version } = value as Record<string, unknown>;
-  return {
-    ...(typeof displayName === 'string' ? { displayName } : {}),
-    ...(typeof version === 'string' ? { version } : {}),
   };
 }
 
