@@ -64,6 +64,10 @@ const esES: LocaleResource<typeof enUS> = {
     title: '¿Descartar cambios no guardados?',
   },
   errors: {
+    TOOLS_REFRESH_UNSUPPORTED:
+      'Este runner no admite actualizar el estado. Reinícialo.',
+    RUNNER_REFRESH_UNAVAILABLE:
+      'No se puede actualizar el estado de un runner revocado.',
     boundRunnerIncompatible:
       'Este entorno no puede ejecutar el Agent seleccionado. Cambia de entorno para continuar.',
     CONFLICT: 'Entretanto cambió. Vuelva a cargar y vuelva a intentarlo.',
@@ -617,6 +621,11 @@ const esES: LocaleResource<typeof enUS> = {
     unknown: 'La ejecución falló.',
   },
   runtimes: {
+    refresh: {
+      button: 'Actualizar estado',
+      checking: 'Comprobando…',
+      restart: 'Reinicia el runner para actualizar su estado.',
+    },
     pathHint: runtimesEnUS.runtimes.pathHint,
     quota: {
       workspaceStatus: {

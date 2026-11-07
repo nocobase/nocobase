@@ -56,6 +56,9 @@ import { AGENTS, type CatalogAgentId } from '@nocobase/acp-bridge/catalog';
  * `RunWorkspace.readOnly` was added within version 9 as an optional field: a run that only reads gets a work directory
  * of its own and pushes nothing. A runner that ignores it shares the subject's work directory, as before.
  *
+ * Requested tool detection is announced through optional `toolsRefreshSupported` on register and heartbeat.
+ * The server stores it as `tools.refresh`; runners omit that enum value on the wire so receivers of a supported protocol accept them.
+ *
  * `RepoDir.initializeIfEmpty` optionally permits a coding run to make the first commit of a verified empty remote.
  * Older runners ignore it and retain their missing-branch refusal. Unlike `initial`, it never allows a default-branch
  * update: the runner only grants branch creation after checking all remote refs.
@@ -120,6 +123,7 @@ export function isProtocolSupported(version: number): boolean {
  * - `archives`: installs the application's CLI from a standalone tarball the application serves (`CliPackage` of
  *   kind `archive`).
  * - `jobs.build`: executes build jobs (`jobs.ts`, `jobFeature`).
+ * - `tools.refresh`: accepts a tool detection request on heartbeat and acknowledges the fresh report.
  * - `mounts`: places the run's mounts (`RunPayload.mounts`) in its work directory before the agent starts.
  * - `npm` (`NPM_UPGRADE_FEATURE`, protocol 8): updates itself from the npm registry when the application names a
  *   package and exact version (`HeartbeatResponse.npmUpgrade`) instead of serving a tarball.
@@ -140,6 +144,7 @@ export const RUNNER_FEATURES = [
   'archives',
   'jobs.build',
   'mounts',
+  'tools.refresh',
   'npm',
   'gitCredentials',
   'gitTools',

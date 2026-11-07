@@ -312,6 +312,12 @@ export class AgentsApi {
     return this.runnersApi.revokeRunner(runnerId);
   }
 
+  public refreshRunnerStatus(
+    runnerId: string,
+  ): Promise<Omit<Runner, 'quotaRevision'>> {
+    return this.runnersApi.refreshRunnerStatus(runnerId);
+  }
+
   public deleteRunner(runnerId: string): Promise<void> {
     return this.runnersApi.deleteRunner(runnerId);
   }
