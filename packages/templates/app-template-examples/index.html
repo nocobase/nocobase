@@ -69,10 +69,16 @@
     <noscript>You need to enable JavaScript to run this app.</noscript>
     <div id="root">
       <!--
-        The language is unknown until the client starts, so this placeholder carries no text and no accessible name:
-        only the brand mark, marked busy. The localized loading of the client replaces it once the language is ready.
+        The language is unknown until the client starts, so this placeholder shows no text. A screen reader still
+        perceives it as an indeterminate progress bar, a role it announces in its own language, named after the
+        brand in <title>, which reads the same in every language. The client's localized loading, a polite status,
+        replaces it once the language is ready, so nothing is announced twice.
       -->
-      <div class="app-bootstrap-loading" aria-busy="true">
+      <div
+        class="app-bootstrap-loading"
+        role="progressbar"
+        aria-label="NocoBase"
+      >
         <svg
           data-slot="loading-indicator"
           viewBox="0 0 64 64"
