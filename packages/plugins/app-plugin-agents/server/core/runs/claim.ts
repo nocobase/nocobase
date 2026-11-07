@@ -107,6 +107,7 @@ import {
   mountsFor,
   prepareExtensions,
   repoAccessFor,
+  RepoAccessError,
   responsibleOf,
   type RepoAccessRegistry,
   sessionKeyOf,
@@ -1209,6 +1210,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       deps.repoAccess,
       {
         claim,
+        readOnly: assembly.readOnly === true,
         repos: dirs.filter(
           (dir): dir is Extract<WorkspaceDir, { kind: 'repo' }> =>
             dir.kind === 'repo',
@@ -1814,6 +1816,8 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
           status: 'dispatched',
           failureReason: null,
           failureDetail: null,
+          failureParams: null,
+          claimFailures: 0,
           runnerId: runner.id,
           // Brief providers observe this reservation inside the claim transaction.
           // Replace a previous attempt's tool before computing the roster.
@@ -1987,27 +1991,120 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
     }
   }
 
-  /** Counts a failed assembly; the run fails once it has failed too often. */
-  async function recordFailure(runId: string, error: AssemblyError) {
-    deps.onClaimFailure?.(runId, error.cause);
+  /** Repository failures have their own budget; ordinary assembly failures keep the existing three-try limit. */
+  async function recordFailure(candidate: RunRecord, error: AssemblyError) {
+    deps.onClaimFailure?.(candidate.id, error.cause);
     await tx.run(async (unit) => {
-      const run = await findRunRecord(unit.conn, runId);
-      if (!run || run.status !== 'queued') return;
-      const failures = Number(run.claimFailures) + 1;
-      if (failures >= MAX_CLAIM_FAILURES) {
-        await finishRun(unit, deps, run, {
-          status: 'failed',
-          reason: 'setupFailed',
-          detail: error.message,
+      const run = await findRunRecord(unit.conn, candidate.id);
+      if (
+        !run ||
+        run.status !== 'queued' ||
+        run.revision !== candidate.revision ||
+        Number(run.attempt) !== Number(candidate.attempt) ||
+        run.actorUserId !== candidate.actorUserId ||
+        !(await queuedIdentityCurrent(unit.conn, deps, run))
+      )
+        return;
+      const previous = jsonObject(run.failureParams);
+      const cause = error.cause;
+      if (cause instanceof RepoAccessError) {
+        const now = clock.now().getTime();
+        const repoFailures = Number(previous.repoFailures ?? 0) + 1;
+        const first =
+          typeof previous.repoFirstFailureAt === 'string'
+            ? Date.parse(previous.repoFirstFailureAt)
+            : now;
+        const retryAt =
+          typeof cause.params.retryAt === 'string'
+            ? Date.parse(cause.params.retryAt)
+            : NaN;
+        const delays = [1, 2, 4, 8, 15];
+        const next = Math.max(
+          now + (delays[repoFailures - 1] ?? 15) * 60_000,
+          Number.isFinite(retryAt) ? retryAt : 0,
+        );
+        const params = {
+          ...cause.params,
+          repoFailures,
+          repoFirstFailureAt: new Date(first).toISOString(),
+        };
+        const reason =
+          cause.kind === 'denied'
+            ? 'repoAccessDenied'
+            : 'repoAccessUnavailable';
+        if (
+          cause.kind === 'denied' ||
+          repoFailures >= 6 ||
+          next > first + 60 * 60_000
+        ) {
+          await finishRun(
+            unit,
+            deps,
+            run,
+            {
+              status: 'failed',
+              reason,
+              detail: cause.message,
+              failureParams: params,
+            },
+            true,
+          );
+          return;
+        }
+        const availableAt = new Date(next).toISOString();
+        const changed = await runsRepo(unit.conn).updateMany({
+          filter: {
+            id: run.id,
+            status: 'queued',
+            revision: run.revision,
+            attempt: Number(run.attempt),
+            actorUserId: run.actorUserId,
+          },
+          values: {
+            availableAt,
+            failureReason: reason,
+            failureDetail: cause.message.slice(0, 10_000),
+            failureParams: params,
+            updatedAt: clock.now().toISOString(),
+          },
         });
+        if (changed.updatedCount > 0) {
+          unit.emit({ type: 'run.changed', runId: run.id, status: 'queued' });
+          unit.emit({ type: 'run.requeued', runId: run.id, availableAt });
+        }
+        return;
+      }
+      const failures = Number(run.claimFailures) + 1;
+      // Preserve only the independent repository retry budget across an unrelated preparation failure.
+      const budget = previous.repoFailures
+        ? {
+            repoFailures: previous.repoFailures,
+            repoFirstFailureAt: previous.repoFirstFailureAt,
+            repoAccess: previous.repoAccess ?? previous,
+          }
+        : null;
+      if (failures >= MAX_CLAIM_FAILURES) {
+        await finishRun(
+          unit,
+          deps,
+          run,
+          {
+            status: 'failed',
+            reason: 'setupFailed',
+            detail: error.message,
+            failureParams: null,
+          },
+          true,
+        );
         return;
       }
       await runsRepo(unit.conn).updateMany({
-        filter: { id: runId },
+        filter: { id: run.id, status: 'queued', revision: run.revision },
         values: {
           claimFailures: failures,
           failureReason: 'setupFailed',
           failureDetail: error.message.slice(0, 10_000),
+          failureParams: budget,
         },
       });
     });
@@ -2412,7 +2509,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
         // Rolled back: the run stays queued for a runner it fits.
         if (error instanceof NotForThisRunner) continue;
         if (!(error instanceof AssemblyError)) throw error;
-        await recordFailure(candidate.id, error);
+        await recordFailure(candidate, error);
       }
     }
     return null;

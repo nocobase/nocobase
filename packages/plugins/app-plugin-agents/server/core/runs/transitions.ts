@@ -40,6 +40,7 @@ export interface FinishOutcome {
   readonly status: 'completed' | 'failed' | 'cancelled';
   readonly reason?: FailureReason | null;
   readonly detail?: string;
+  readonly failureParams?: Readonly<Record<string, unknown>> | null;
   readonly summary?: string;
   readonly sessionId?: string;
   readonly cancelledById?: string | null;
@@ -82,11 +83,20 @@ export async function finishRun(
   if (outcome.status === 'completed') {
     values.failureReason = null;
     values.failureDetail = null;
+    values.failureParams = null;
   } else if (outcome.reason !== undefined) {
     values.failureReason = outcome.reason;
     values.failureDetail = outcome.detail?.slice(0, 10_000) ?? null;
   } else if (outcome.detail !== undefined)
     values.failureDetail = outcome.detail.slice(0, 10_000);
+  if (outcome.failureParams !== undefined)
+    values.failureParams = outcome.failureParams;
+  else if (
+    outcome.reason !== undefined &&
+    outcome.reason !== 'repoAccessDenied' &&
+    outcome.reason !== 'repoAccessUnavailable'
+  )
+    values.failureParams = null;
   if (outcome.summary !== undefined) values.summary = outcome.summary;
   if (outcome.sessionId !== undefined) values.sessionId = outcome.sessionId;
   if (outcome.cancelledById !== undefined)
@@ -274,6 +284,7 @@ export async function requeueRun(
       startedAt: null,
       acceptsInput: false,
       claimFailures: 0,
+      failureParams: null,
       failureReason: reason,
       failureDetail: detail === undefined ? null : detail.slice(0, 10_000),
       updatedAt: nowText,

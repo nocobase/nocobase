@@ -93,6 +93,15 @@ export async function refreshQueuedIdentity(
     actorUserId: plan.actorUserId,
     ownerUserId: plan.actorUserId,
     requestedByUserId: run.requestedByUserId ?? run.actorUserId,
+    // Preparation failures and their retry budget belong to the previous execution identity.
+    ...(run.actorUserId !== plan.actorUserId
+      ? {
+          failureParams: null,
+          failureReason: null,
+          failureDetail: null,
+          availableAt: null,
+        }
+      : {}),
     updatedAt: deps.clock.now().toISOString(),
   };
   const updated = await runsRepo(unit.conn).updateMany({

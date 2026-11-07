@@ -69,6 +69,7 @@ export interface RunRecord {
   readonly cancelledById: string | null;
   readonly failureReason: string | null;
   readonly failureDetail: string | null;
+  readonly failureParams?: JsonColumn;
   readonly summary: string | null;
   readonly sessionId: string | null;
   readonly workDir: string | null;
@@ -279,6 +280,8 @@ export function toRun(record: RunRecord): Run {
     cancelledById: record.cancelledById,
     failureReason: record.failureReason as FailureReason | null,
     failureDetail: record.failureDetail,
+    failureParams:
+      record.failureParams == null ? null : jsonObject(record.failureParams),
     summary: record.summary,
     createdAt: record.createdAt,
     updatedAt: record.updatedAt,

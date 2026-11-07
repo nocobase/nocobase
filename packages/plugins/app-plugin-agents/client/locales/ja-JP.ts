@@ -583,8 +583,7 @@ const jaJP: LocaleResource<typeof enUS> = {
     policyRefused: 'この作業を許可するランタイムのポリシーはありません。',
     prepareNetwork:
       'ランタイムは実行の準備中にリポジトリ ホストに到達できませんでした。',
-    repoAccessUnavailable:
-      'たった今、リポジトリの認証情報を発行できませんでした。実行は再度試行されます。',
+    repoAccessUnavailable: 'リポジトリに一時的にアクセスできません。',
     repoAccessDenied:
       'アプリケーションは、実行のリポジトリの 1 つに対して認証情報を発行しません。',
     unknown: '実行に失敗しました。',

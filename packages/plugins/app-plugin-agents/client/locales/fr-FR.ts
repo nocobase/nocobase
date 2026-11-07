@@ -610,8 +610,7 @@ const frFR: LocaleResource<typeof enUS> = {
       'Aucune politique d’exécution ne lui permet d’effectuer ce travail.',
     prepareNetwork:
       "Le moteur d'exécution n'a pas pu atteindre l'hôte du référentiel lors de la préparation de l'exécution.",
-    repoAccessUnavailable:
-      "L’accréditation d’un référentiel ne pouvait pas être délivrée pour l’instant ; l'exécution sera réessayée.",
+    repoAccessUnavailable: 'L’accès au dépôt est temporairement indisponible.',
     repoAccessDenied:
       'L’application ne délivrera pas d’informations d’identification pour l’un des référentiels de l’exécution.',
     unknown: "L'exécution a échoué.",

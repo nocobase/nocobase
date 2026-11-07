@@ -593,6 +593,7 @@ export function createRunService(deps: RunServiceDeps): RunService {
         cancelledById: null,
         failureReason: null,
         failureDetail: null,
+        failureParams: null,
         summary: null,
         sessionId: null,
         workDir: null,

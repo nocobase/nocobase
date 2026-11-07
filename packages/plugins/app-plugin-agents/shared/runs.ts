@@ -212,6 +212,8 @@ export interface Run {
   readonly cancelledById: string | null;
   readonly failureReason: FailureReason | null;
   readonly failureDetail: string | null;
+  /** Safe structured repository preparation diagnostics; absent on older servers. */
+  readonly failureParams?: Readonly<Record<string, unknown>> | null;
   readonly summary: string | null;
   readonly createdAt: string;
   readonly updatedAt: string;

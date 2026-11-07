@@ -187,6 +187,47 @@ describe('subject-selected execution identity', () => {
     expect(assembledFor).toEqual(['bob']);
   });
 
+  it('drops the previous actor’s preparation failure and retry budget before preparing for the new owner', async () => {
+    const { enqueue, setOwner } = await setup();
+    const result = await enqueue();
+    await h.database
+      .connection()
+      .repository('agRuns')
+      .updateMany({
+        filter: { id: result.runId },
+        values: {
+          failureReason: 'repoAccessUnavailable',
+          failureDetail: 'The previous owner could not refresh authorization.',
+          failureParams: {
+            code: 'serverError',
+            personalAuthorization: true,
+            connectionId: 'old',
+            repoFailures: 5,
+          },
+          availableAt: new Date(h.clock.now().getTime() + 60_000).toISOString(),
+        },
+      });
+    setOwner('bob');
+    const context = h.services.subjects.get('owned')!.context;
+    context.prepare = async (run) => {
+      expect(run.actorUserId).toBe('bob');
+      expect(run.failureParams).toBeNull();
+      expect(run.failureReason).toBeNull();
+      expect(run.failureDetail).toBeNull();
+      expect(run.availableAt).toBeNull();
+    };
+    const bob = await h.registerRunner({
+      trust: 'ownerOnly',
+      ownerUserId: 'bob',
+    });
+    h.clock.advance(60_000);
+    expect((await claim(h, bob))[0].run.id).toBe(result.runId);
+    expect(await h.services.runs.get(result.runId!)).toMatchObject({
+      actorUserId: 'bob',
+      failureParams: null,
+    });
+  });
+
   it('refuses an absent owner and cancels queued work rather than falling back', async () => {
     const { enqueue, setOwner } = await setup();
     const result = await enqueue();

@@ -606,7 +606,7 @@ const ptBR: LocaleResource<typeof enUS> = {
     prepareNetwork:
       'O tempo de execução não pôde alcançar o host do repositório durante a preparação da execução.',
     repoAccessUnavailable:
-      'A credencial de um repositório não pôde ser emitida agora; a execução será tentada novamente.',
+      'O acesso ao repositório está temporariamente indisponível.',
     repoAccessDenied:
       'A aplicação não emitirá credencial para um dos repositórios da execução.',
     unknown: 'A execução falhou.',

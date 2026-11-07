@@ -31,7 +31,7 @@ import {
   type WorkloadRun,
 } from '../../../shared/runs.js';
 import type { Clock } from '../../kernel/clock.js';
-import { covers } from '../../kernel/values.js';
+import { covers, jsonObject } from '../../kernel/values.js';
 import { variableRefs } from '../variables/index.js';
 import { listAgents } from '../agents/index.js';
 import {
@@ -92,7 +92,9 @@ type WaitFacts = Pick<
   RunRecord,
   'actorUserId' | 'availableAt' | 'claimFailures' | 'failureDetail'
 > &
-  Partial<Pick<RunRecord, 'teamOnlyVariables'>> & {
+  Partial<
+    Pick<RunRecord, 'teamOnlyVariables' | 'failureParams' | 'failureReason'>
+  > & {
     readonly requires: readonly RunnerFeature[];
   };
 
@@ -122,6 +124,15 @@ export function explainWait(
   const availableAt = time(run.availableAt);
   if (availableAt !== null && availableAt > context.now.getTime()) {
     const until = iso(run.availableAt);
+    if (run.failureReason === 'repoAccessUnavailable')
+      return wait('setupRetrying', {
+        until,
+        detail: run.failureDetail,
+        params: {
+          ...jsonObject(run.failureParams),
+          ...(until ? { until } : {}),
+        },
+      });
     return wait('delayed', { until, params: until ? { until } : {} });
   }
   const tools = entryTools(agent);
@@ -236,10 +247,16 @@ export function explainWait(
       params: full ? { tool: full, ...(closest ? closest : {}) } : {},
     });
   }
-  if (Number(run.claimFailures) > 0)
+  if (
+    Number(run.claimFailures) > 0 ||
+    run.failureReason === 'repoAccessUnavailable'
+  )
     return wait('setupRetrying', {
       detail: run.failureDetail,
-      params: run.failureDetail ? { detail: run.failureDetail } : {},
+      params: {
+        ...jsonObject(run.failureParams),
+        ...(run.failureDetail ? { detail: run.failureDetail } : {}),
+      },
     });
   return wait('next');
 }
@@ -456,7 +473,9 @@ function refineWait(
     ...previous,
     until: entry.reason === 'toolQuota' ? (entry.until ?? null) : null,
     reason:
-      entry.reason === 'ready' && Number(record.claimFailures) > 0
+      entry.reason === 'ready' &&
+      (Number(record.claimFailures) > 0 ||
+        record.failureReason === 'repoAccessUnavailable')
         ? 'setupRetrying'
         : toolFull
           ? 'toolSlotsFull'
