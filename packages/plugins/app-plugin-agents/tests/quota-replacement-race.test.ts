@@ -130,9 +130,9 @@ describe('replacing preserved quota work', () => {
       expect(await store.findRunRecord(conn, runId)).toMatchObject({
         status: 'failed',
       });
-      const open = await store.runsRepo(conn).findMany({
-        filter: (f) => f.string('status').in(['queued', 'dispatched']),
-      });
+      const open = (await store.runsRepo(conn).findMany()).filter((run) =>
+        ['queued', 'dispatched'].includes(run.status),
+      );
       expect(open.map((run) => run.id)).toEqual([retried.id]);
     },
   );
