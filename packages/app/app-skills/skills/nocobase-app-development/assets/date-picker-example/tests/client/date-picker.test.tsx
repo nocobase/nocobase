@@ -16,7 +16,7 @@ import zhCN from '../../client/locales/zh-CN.js';
 async function view(
   ui: ReactElement,
   locale: 'en-US' | 'zh-CN' = 'en-US',
-): Promise<void> {
+): Promise<(next: ReactElement) => void> {
   const runtime = await createTestI18nRuntime({
     locale,
     application: {
@@ -24,7 +24,11 @@ async function view(
       resources: locale === 'en-US' ? enUS : zhCN,
     },
   });
-  render(<TestI18nProvider runtime={runtime}>{ui}</TestI18nProvider>);
+  const { rerender } = render(
+    <TestI18nProvider runtime={runtime}>{ui}</TestI18nProvider>,
+  );
+  return (next) =>
+    rerender(<TestI18nProvider runtime={runtime}>{next}</TestI18nProvider>);
 }
 
 /** A form field the way a business page wires it: a label, and a `'yyyy-MM-dd'` value at the boundary. */
@@ -112,6 +116,34 @@ describe('DatePicker', () => {
     const trigger = screen.getByLabelText('Holiday');
     expect(trigger).toBeDisabled();
     await userEvent.click(trigger);
+    expect(screen.queryByRole('grid')).toBeNull();
+  });
+
+  it('closes and ignores the calendar when it becomes disabled while open', async () => {
+    const changes = vi.fn();
+    const rerender = await view(
+      <HolidayField initial='2026-01-01' onChange={changes} />,
+    );
+    await userEvent.click(screen.getByRole('button', { name: /Holiday/ }));
+    const day = await screen.findByRole('button', {
+      name: /January 2nd, 2026/,
+    });
+    const clear = screen.getByRole('button', { name: 'Clear' });
+
+    rerender(<HolidayField initial='2026-01-01' onChange={changes} disabled />);
+    expect(screen.getByLabelText('Holiday')).toBeDisabled();
+    // Whatever is still on screen while the popover closes, neither picking a day nor clearing changes the value.
+    for (const control of [day, clear]) {
+      if (control.isConnected) control.click();
+    }
+    await waitFor(() => expect(screen.queryByRole('grid')).toBeNull());
+    expect(changes).not.toHaveBeenCalled();
+    expect(screen.getByLabelText('Holiday')).toHaveTextContent(
+      'January 1st, 2026',
+    );
+
+    // Enabling the field again does not reopen the calendar on its own.
+    rerender(<HolidayField initial='2026-01-01' onChange={changes} />);
     expect(screen.queryByRole('grid')).toBeNull();
   });
 

@@ -78,12 +78,18 @@ export function DatePicker({
   const dateLocale = locale ?? interfaceDateLocale(language);
   const [open, setOpen] = useState(false);
   const calendarRef = useRef<HTMLDivElement>(null);
+  // A field that becomes disabled or locked while its calendar is open closes it, and stays closed once re-enabled.
+  if (disabled && open) setOpen(false);
   const select = (date: Date | undefined): void => {
+    if (disabled) return;
     onChange(date);
     setOpen(false);
   };
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover
+      open={open && !disabled}
+      onOpenChange={(next) => setOpen(next && !disabled)}
+    >
       <PopoverTrigger
         render={
           <Button
