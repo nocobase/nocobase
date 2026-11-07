@@ -48,9 +48,14 @@ describe('repository preparation recovery', () => {
     'defers %s and starts the same input after recovery',
     async (code) => {
       const s = await setup();
+      const changed: string[] = [];
+      h.services.events.on('run.changed', (event) => {
+        if (event.status === 'queued') changed.push(event.runId);
+      });
       const retryAt = new Date(h.clock.now().getTime() + 120_000).toISOString();
       s.fail(outage(code, code === 'rateLimited' ? retryAt : undefined));
       expect(await claim(h, s.runner)).toEqual([]);
+      expect(changed).toContain(s.runId);
       const run = await h.services.runs.get(s.runId);
       expect(run).toMatchObject({
         status: 'queued',

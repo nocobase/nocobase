@@ -2068,8 +2068,10 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
             updatedAt: clock.now().toISOString(),
           },
         });
-        if (changed.updatedCount > 0)
+        if (changed.updatedCount > 0) {
+          unit.emit({ type: 'run.changed', runId: run.id, status: 'queued' });
           unit.emit({ type: 'run.requeued', runId: run.id, availableAt });
+        }
         return;
       }
       const failures = Number(run.claimFailures) + 1;
