@@ -635,6 +635,9 @@ export function createHostDriver(
     if (scope.host !== inProcess) return await work();
     if (rotationPreparing) await rotationPreparing.catch(() => false);
     if (restartScheduled) await restartScheduled.catch(() => undefined);
+    // A pending replay may still hold an older desired set. Let it finish before submitting any mutation.
+    // Failure leaves management usable; only the background poll initiates another recovery attempt.
+    if (scope.restoring) await scope.restoring.catch(() => undefined);
     inFlight += 1;
     try {
       return await work();

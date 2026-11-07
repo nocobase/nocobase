@@ -873,8 +873,47 @@ describe('Host driver', () => {
       '2.0.0',
     );
   });
+  it('finishes an in-progress desired-set read before deploying a newer revision', async () => {
+    const host = fakeHost();
+    const desired = Promise.withResolvers<readonly AppDeploymentSpec[]>();
+    const reading = Promise.withResolvers<void>();
+    const session = await driverFor(host).open(environment('preview'), {
+      desired: () => {
+        reading.resolve();
+        return desired.promise;
+      },
+    });
+    await session.apply(appSpec('site'));
+    const restoring = session.restore([]);
+    await reading.promise;
+    const service = await host.endpoint.controller.getManagementClient();
+    const apply = vi.spyOn(service, 'applyDeployment');
+    const deployment = session.apply(
+      appSpec('site', {
+        deploymentId: 'update',
+        release: { id: 'r2', version: '2.0.0', checksum: CHECKSUM },
+      }),
+    );
+    // These reads also give the deployment's asynchronous submission a turn to reach the Host if it is not gated.
+    expect((await session.status(['site'])).get('site')?.version).toBe('1.0.0');
+    expect(await session.cancel!('missing', 'site')).toBe('notFound');
+    expect(await session.progress!('missing', 'site')).toBeNull();
+    expect(apply).not.toHaveBeenCalled();
+    desired.resolve([appSpec('site')]);
+    await restoring;
+    expect(await deployment).toMatchObject({
+      state: 'running',
+      version: '2.0.0',
+    });
+    expect(host.restored.at(-1)?.deployments[0]?.artifact.version).toBe(
+      '1.0.0',
+    );
+    expect((await session.status(['site'])).get('site')?.version).toBe('2.0.0');
+    expect(apply).toHaveBeenCalledOnce();
+    await session.close();
+  });
   it.each([undefined, 20])(
-    'retries restoration in the background without blocking management or a repair deployment (churn %s)',
+    'keeps management available during recovery and submits a repair after recovery fails (churn %s)',
     async (limit) => {
       vi.useFakeTimers();
       const host = fakeHost(limit);
@@ -905,15 +944,20 @@ describe('Host driver', () => {
       );
       expect(await session.cancel!('missing', 'site')).toBe('notFound');
       expect(await session.progress!('missing', 'site')).toBeNull();
-      expect(
-        await session.apply(
-          appSpec('site', {
-            deploymentId: 'repair',
-            release: { id: 'r2', version: '2.0.0', checksum: CHECKSUM },
-          }),
-        ),
-      ).toMatchObject({ state: 'running', version: '2.0.0' });
+      const apply = vi.spyOn(service, 'applyDeployment');
+      const repair = session.apply(
+        appSpec('site', {
+          deploymentId: 'repair',
+          release: { id: 'r2', version: '2.0.0', checksum: CHECKSUM },
+        }),
+      );
+      await vi.advanceTimersByTimeAsync(0);
+      expect(apply).not.toHaveBeenCalled();
       blocked.reject(new Error('still invalid'));
+      expect(await repair).toMatchObject({
+        state: 'running',
+        version: '2.0.0',
+      });
       await vi.advanceTimersByTimeAsync(0);
       restore.mockImplementation(original);
       await vi.advanceTimersByTimeAsync(60_000);

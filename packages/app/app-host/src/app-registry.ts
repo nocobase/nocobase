@@ -1243,7 +1243,12 @@ export class AppRuntimeRegistry {
     const recent = (id: string) =>
       Date.now() - (this.lastAccessedAt(id) ?? 0) < CAPACITY_RECENT_USE_MS;
     let capacityFull = full();
-    if (capacityFull && !this.rotationPending) {
+    if (
+      capacityFull &&
+      (!shared ||
+        !this.rotationPending ||
+        this.loadedRevisions.has(this.revisionKey(definition)))
+    ) {
       const candidate = this.getEvictableSnapshots()
         .filter(
           (app) =>

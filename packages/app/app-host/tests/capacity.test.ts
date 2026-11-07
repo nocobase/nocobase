@@ -273,6 +273,8 @@ it('serializes cold starts, bounds the queue and cleans a late timed-out runtime
 it('pauses only unloaded revisions while resident traffic and same-revision restarts continue', async () => {
   const host = registry({ maxActiveApps: 1 });
   await host.create('a');
+  await host.evict('a');
+  await host.create('b');
   await host.register('new');
   laterThanRecentUse();
   host.pauseNewRevisions();
@@ -280,12 +282,14 @@ it('pauses only unloaded revisions while resident traffic and same-revision rest
     code: 'APP_CAPACITY_EXCEEDED',
   });
   expect(
-    (await host.dispatch('a', new Request('http://localhost/a'))).status,
+    (await host.dispatch('b', new Request('http://localhost/b'))).status,
   ).toBe(200);
   expect(host.getMetrics().capacityEvictions).toBe(0);
-  await host.evict('a');
+  laterThanRecentUse();
   await host.ensureActive('a');
   expect(host.isActive('a')).toBe(true);
+  expect(host.isActive('b')).toBe(false);
+  expect(host.getMetrics().capacityEvictions).toBe(1);
 });
 
 it('does not reclaim an App with a live socket to admit another App', async () => {

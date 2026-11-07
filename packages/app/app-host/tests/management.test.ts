@@ -189,7 +189,7 @@ describe('managed host reconciliation', () => {
       let drained = false;
       const draining = host.management.prepareRotation!({
         ignoreConnections: true,
-        drainTimeoutMs: 5000,
+        drainTimeoutMs: ending === 'deadline' ? 200 : 5000,
       }).then((ok) => {
         drained = true;
         return ok;
