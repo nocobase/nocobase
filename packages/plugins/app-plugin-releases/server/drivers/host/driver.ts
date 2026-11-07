@@ -1022,6 +1022,7 @@ export function createHostDriver(
               })),
           );
           return {
+            id: IN_PROCESS_BACKEND,
             memory: status.counters?.memory ?? null,
             recycling:
               restartScheduled ||

@@ -37,6 +37,7 @@ import type {
   AppActivation,
   AppPage,
   AppHostView,
+  SharedHostView,
   AppSummary,
   HostOccupantView,
   AppView,
@@ -466,6 +467,67 @@ export class ReleasesService {
     const occupancy: HostOccupancy | null =
       (await session.occupancy?.()) ?? null;
     if (!occupancy) return null;
+    return await this.hostView(caller, occupancy);
+  }
+
+  /**
+   * The runtimes the environments with Apps share, each once however many environments run on it, for the
+   * environments page: one driver status call per such environment, then what `hostOf` reads per runtime. Requires the
+   * `rel.environments` `read` setting; occupants and restore errors are withheld as on an App's page.
+   */
+  public async listHosts(caller: Caller): Promise<SharedHostView[]> {
+    this.options.guard.requireSetting(caller, 'rel.environments', 'read');
+    // The sessions restore opened already: an environment without Apps runs nothing on any runtime.
+    const rows = await this.query()
+      .selectFrom('relApps')
+      .select('environmentId')
+      .distinct()
+      .execute<Row>();
+    const found = await Promise.all(
+      rows.map(async (row) => {
+        const environmentId = String(row.environmentId);
+        const occupancy = await this.session(environmentId)
+          .then((session) => session.occupancy?.() ?? null)
+          .catch(() => null);
+        return occupancy ? { environmentId, occupancy } : null;
+      }),
+    );
+    const hosts = new Map<
+      string,
+      { occupancy: HostOccupancy; environmentIds: string[] }
+    >();
+    for (const item of found) {
+      if (!item) continue;
+      const host = hosts.get(item.occupancy.id);
+      if (host) host.environmentIds.push(item.environmentId);
+      else
+        hosts.set(item.occupancy.id, {
+          occupancy: item.occupancy,
+          environmentIds: [item.environmentId],
+        });
+    }
+    const views: SharedHostView[] = [];
+    for (const { occupancy, environmentIds } of hosts.values()) {
+      const { view } = await this.hostView(caller, occupancy);
+      const environments = [];
+      for (const id of environmentIds.sort())
+        environments.push({
+          id,
+          name: (await this.options.environments.find(id))?.name ?? id,
+        });
+      views.push({ ...view, environments });
+    }
+    return views.sort((a, b) => a.id.localeCompare(b.id));
+  }
+
+  /** What `occupancy` says of the runtime, limited to what the caller may read. */
+  private async hostView(
+    caller: Caller,
+    occupancy: HostOccupancy,
+  ): Promise<{
+    readonly view: AppHostView;
+    readonly hiddenErrors: ReadonlySet<string>;
+  }> {
     const shown = occupancy.apps.filter(
       (item) =>
         item.state === 'running' ||
@@ -546,6 +608,7 @@ export class ReleasesService {
     occupants.sort((a, b) => rank(a) - rank(b));
     return {
       view: {
+        id: occupancy.id,
         memory: occupancy.memory,
         recycling: occupancy.recycling,
         deployed: occupancy.apps.length,

@@ -228,6 +228,11 @@ export type AppWaitReason = 'capacity' | 'memory' | 'recycle';
  * process's total: it cannot be divided among the Apps.
  */
 export interface HostOccupancy {
+  /**
+   * The runtime itself, the same for every environment on it, so the environments page shows a runtime the
+   * environments share once.
+   */
+  readonly id: string;
   readonly memory: {
     readonly heapUsed: number;
     readonly heapLimit: number;

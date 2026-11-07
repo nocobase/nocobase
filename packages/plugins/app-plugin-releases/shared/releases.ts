@@ -381,6 +381,8 @@ export interface HostOccupantView {
  * total, never divided among its Apps.
  */
 export interface AppHostView {
+  /** The runtime, the same for every environment and App on it. */
+  readonly id: string;
   readonly memory: {
     readonly heapUsed: number;
     readonly heapLimit: number;
@@ -402,6 +404,14 @@ export interface AppHostView {
     readonly id: string;
     readonly name: string | null;
     readonly error: string | null;
+  }[];
+}
+
+/** A shared runtime as the environments page lists it: the host and the environments whose Apps run on it. */
+export interface SharedHostView extends AppHostView {
+  readonly environments: readonly {
+    readonly id: string;
+    readonly name: string;
   }[];
 }
 

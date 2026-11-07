@@ -8,6 +8,7 @@ import type { ReactElement, ReactNode } from 'react';
 import { cn } from 'cn';
 
 export function Section({
+  id,
   title,
   count,
   description,
@@ -15,6 +16,7 @@ export function Section({
   children,
   className,
 }: {
+  readonly id?: string;
   readonly title: ReactNode;
   readonly count?: number;
   readonly description?: ReactNode;
@@ -23,7 +25,7 @@ export function Section({
   readonly className?: string;
 }): ReactElement {
   return (
-    <section className={cn('space-y-3', className)}>
+    <section id={id} className={cn('space-y-3', className)}>
       <div className='flex items-start justify-between gap-3'>
         <div className='min-w-0'>
           <h2 className='flex items-center gap-2 font-heading text-sm font-semibold'>

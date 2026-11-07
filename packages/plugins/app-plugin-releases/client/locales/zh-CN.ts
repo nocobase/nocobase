@@ -374,6 +374,9 @@ const zhCN: typeof enUS = {
         restarting: '这个宿主正在重启，恢复前它的应用会提示“稍后重试”。',
       },
       restoreFailed: '{{name}}：应用恢复失败，后台重试中。',
+      environments: '使用它的环境：{{names}}',
+      failed: '应用在共享宿主上启动失败。',
+      view: '查看宿主占用',
       columns: {
         app: '应用',
         state: '状态',

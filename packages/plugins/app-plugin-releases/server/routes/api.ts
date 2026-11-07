@@ -53,6 +53,7 @@ import {
   PromoteBody,
   RegisterImageReleaseBody,
   ReleasesAppSchema,
+  ReleasesSharedHostSchema,
   ReleasesCallerSchema,
   ReleasesConfigSchema,
   ReleasesConfigTemplateSchema,
@@ -235,6 +236,29 @@ export function createReleasesApi(
     }),
     (context) => {
       const data = services.environments.drivers(person(context));
+      return context.json({ data, meta: { total: data.length } });
+    },
+  );
+
+  // The runtimes environments share, for the environments page; outside `/environments`, where every segment names one.
+  api.get(
+    '/hosts',
+    settings('read'),
+    describeRoute({
+      tags,
+      summary: 'List shared app hosts',
+      operationId: 'releasesListHosts',
+      // The environments page's block; `app get` answers an App's own host.
+      ...cliRoute(false),
+      description:
+        'Requires the `rel.environments` `read` setting. Each runtime the environments with Apps share, once: its memory, counts and occupants. An occupant the caller may not view shows its state only, and an environment’s restore error only reaches those with the `manage` setting.',
+      responses: {
+        200: listResponse(ReleasesSharedHostSchema, ReleasesTotalMeta),
+        ...apiErrorResponses,
+      },
+    }),
+    async (context) => {
+      const data = await services.releases.listHosts(person(context));
       return context.json({ data, meta: { total: data.length } });
     },
   );

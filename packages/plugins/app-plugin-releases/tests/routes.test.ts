@@ -167,6 +167,17 @@ describe('HTTP API', () => {
     expect(removed).toEqual({ status: 204, body: undefined });
   });
 
+  it('lists shared app hosts for those who read environments', async () => {
+    expect((await call('/hosts')).status).toBe(401);
+    harness.application.roles.set('guest', 'nobody');
+    expect((await call('/hosts', { user: 'guest' })).status).toBe(403);
+    // `hosts` is outside `/environments`, so no environment ID is taken from anyone.
+    expect(await call('/hosts', { user: 'carol' })).toEqual({
+      status: 200,
+      body: { data: [], meta: { total: 0 } },
+    });
+  });
+
   it('uploads once with a ticket and deploys when the ticket says so', async () => {
     await call('/apps', {
       method: 'POST',

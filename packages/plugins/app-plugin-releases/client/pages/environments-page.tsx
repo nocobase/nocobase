@@ -2,7 +2,8 @@
  * Environments settings: where Apps are deployed. Reading lists them with their driver; a row opens the environment's
  * page at `:environmentId` (the child route, `environment-page.tsx`), where it is viewed and edited. Adding one is a
  * dialog (`components/environment-form.tsx`); a row's menu also checks the environment and deletes it. Outcomes are
- * toasts.
+ * toasts. Below the list, each app host environments share is shown once (`components/shared-host.tsx`); an App's page
+ * links to its host's block by its anchor.
  */
 import type { ColumnDef } from '@tanstack/react-table';
 import {
@@ -13,12 +14,13 @@ import {
   ServerIcon,
   Trash2Icon,
 } from 'lucide-react';
-import { useState, type ReactElement, type ReactNode } from 'react';
-import { Link, useNavigate, useOutlet } from 'react-router';
+import { useEffect, useState, type ReactElement, type ReactNode } from 'react';
+import { Link, useLocation, useNavigate, useOutlet } from 'react-router';
 
 import type {
   EnvironmentListItem,
   EnvironmentRecord,
+  SharedHostView,
 } from '../../shared/releases.js';
 import { ActorName } from '../components/actor-name.js';
 import { useConfirmDialog } from '../components/confirm-dialog.js';
@@ -28,6 +30,7 @@ import { PageContainer } from '../components/page-container.js';
 import { PageHeader } from '../components/page-header.js';
 import { EnvironmentBadges } from '../components/release-badges.js';
 import { RowActions } from '../components/row-actions.js';
+import { SharedHostSection } from '../components/shared-host.js';
 import { EmptyState, ListSkeleton, LoadError } from '../components/states.js';
 import { Button } from '../components/ui/button.js';
 import { Dialog, DialogContent } from '../components/ui/dialog.js';
@@ -68,6 +71,19 @@ export function EnvironmentsList({
       api.list<EnvironmentListItem>('environments').then((page) => page.items),
     'environments',
   );
+  // A secondary block: when it cannot be read the list still stands, so it is left out rather than failing the page.
+  const hosts = useLoad(
+    () => api.list<SharedHostView>('hosts').then((page) => page.items),
+    'hosts',
+  );
+  const { hash } = useLocation();
+  // An App's page links here to its host's block; the block exists only once the hosts are read.
+  useEffect(() => {
+    if (!hash || !hosts.data) return;
+    document
+      .getElementById(decodeURIComponent(hash.slice(1)))
+      ?.scrollIntoView({ block: 'start' });
+  }, [hash, hosts.data]);
   const { drivers, driverName, t } = useDriverNames();
   const [adding, setAdding] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
@@ -264,6 +280,9 @@ export function EnvironmentsList({
         }
       />
       {content}
+      {hosts.data?.map((host) => (
+        <SharedHostSection key={host.id} host={host} />
+      ))}
       <Dialog open={adding} onOpenChange={setAdding}>
         <DialogContent className='flex max-h-[calc(100dvh-2rem)] flex-col sm:max-w-2xl'>
           {adding ? (

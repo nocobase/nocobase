@@ -512,6 +512,9 @@ const zhTW: LocaleResource<typeof enUS> = {
         restarting: '這個宿主正在重新啟動，恢復前它的應用會提示「稍後重試」。',
       },
       restoreFailed: '{{name}}：應用恢復失敗，背景重試中。',
+      environments: '使用它的環境：{{names}}',
+      failed: '應用在共用宿主上啟動失敗。',
+      view: '查看宿主佔用',
       columns: {
         app: '應用',
         state: '狀態',

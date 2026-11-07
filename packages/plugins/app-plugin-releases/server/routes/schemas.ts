@@ -32,6 +32,7 @@ import {
   type RegistryCheckResult,
   type RegistryRecord,
   type ReleaseView,
+  type SharedHostView,
   type UploadTicketView,
   type CreateAppInput,
   type CreateDeploymentRequestInput,
@@ -750,6 +751,63 @@ const appView = z
   })
   .meta({ ref: 'ReleasesAppView' });
 
+const appHostFields = {
+  id: z.string().meta({
+    description: 'The runtime, the same for every environment and App on it.',
+  }),
+  memory: z
+    .object({
+      heapUsed: z.number(),
+      heapLimit: z.number(),
+      rss: z.number(),
+      available: z.number(),
+    })
+    .nullable()
+    .meta({
+      description:
+        'The shared process’s memory in bytes, never divided among its Apps.',
+    }),
+  recycling: z.enum(['pending', 'restarting']).nullable(),
+  deployed: z.number().int().nonnegative(),
+  running: z.number().int().nonnegative(),
+  occupants: z.array(
+    z.object({
+      app: z
+        .object({
+          id: z.string(),
+          name: z.string(),
+          environmentId: z.string(),
+          environmentName: z.string(),
+          previewOf: z.string().nullable(),
+        })
+        .nullable()
+        .meta({
+          description: 'Null for an App the caller may not view.',
+        }),
+      state: z.enum([
+        'pending',
+        'running',
+        'starting',
+        'stopped',
+        'dormant',
+        'failed',
+        'unknown',
+      ]),
+      holds: z.array(hostHoldReason),
+      waiting: hostWaitReason.nullable(),
+      lastAccessedAt: nullableDateTime,
+      error: z.string().nullable(),
+    }),
+  ),
+  failedEnvironments: z.array(
+    z.object({
+      id: z.string(),
+      name: z.string().nullable(),
+      error: z.string().nullable(),
+    }),
+  ),
+};
+
 export const ReleasesAppSchema: z.ZodType<AppSummary> = z
   .object({
     app: appView,
@@ -808,66 +866,10 @@ export const ReleasesAppSchema: z.ZodType<AppSummary> = z
         description:
           'The current release’s required variables nothing supplies, and whether a value changed since the running deployment; only the single-App read answers it.',
       }),
-    host: z
-      .object({
-        memory: z
-          .object({
-            heapUsed: z.number(),
-            heapLimit: z.number(),
-            rss: z.number(),
-            available: z.number(),
-          })
-          .nullable()
-          .meta({
-            description:
-              'The shared process’s memory in bytes, never divided among its Apps.',
-          }),
-        recycling: z.enum(['pending', 'restarting']).nullable(),
-        deployed: z.number().int().nonnegative(),
-        running: z.number().int().nonnegative(),
-        occupants: z.array(
-          z.object({
-            app: z
-              .object({
-                id: z.string(),
-                name: z.string(),
-                environmentId: z.string(),
-                environmentName: z.string(),
-                previewOf: z.string().nullable(),
-              })
-              .nullable()
-              .meta({
-                description: 'Null for an App the caller may not view.',
-              }),
-            state: z.enum([
-              'pending',
-              'running',
-              'starting',
-              'stopped',
-              'dormant',
-              'failed',
-              'unknown',
-            ]),
-            holds: z.array(hostHoldReason),
-            waiting: hostWaitReason.nullable(),
-            lastAccessedAt: nullableDateTime,
-            error: z.string().nullable(),
-          }),
-        ),
-        failedEnvironments: z.array(
-          z.object({
-            id: z.string(),
-            name: z.string().nullable(),
-            error: z.string().nullable(),
-          }),
-        ),
-      })
-      .nullable()
-      .optional()
-      .meta({
-        description:
-          'The runtime the App shares with other Apps, every environment on it included; only the single-App read answers it.',
-      }),
+    host: z.object(appHostFields).nullable().optional().meta({
+      description:
+        'The runtime the App shares with other Apps, every environment on it included; only the single-App read answers it.',
+    }),
   })
   .meta({ ref: 'ReleasesApp' });
 
@@ -890,6 +892,15 @@ export const ReleasesConfigTemplateSchema: z.ZodType<{
     .nullable()
     .meta({ description: 'The release’s configuration template, if any.' }),
 });
+
+export const ReleasesSharedHostSchema: z.ZodType<SharedHostView> = z
+  .object({
+    ...appHostFields,
+    environments: z.array(z.object({ id: z.string(), name: z.string() })).meta({
+      description: 'The environments with Apps on this runtime.',
+    }),
+  })
+  .meta({ ref: 'ReleasesSharedHost' });
 
 const releaseArtifact = z.discriminatedUnion('kind', [
   z.object({

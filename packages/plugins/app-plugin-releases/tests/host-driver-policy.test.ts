@@ -433,6 +433,8 @@ describe('Host driver', () => {
     };
     const occupancy = await preview.occupancy!();
     expect(occupancy).toMatchObject({
+      // Every environment on the in-process Host names the same runtime.
+      id: 'in-process',
       memory: { heapUsed: 900 * 1024 ** 2, rss: 1500 * 1024 ** 2 },
       recycling: null,
       failedEnvironments: [],

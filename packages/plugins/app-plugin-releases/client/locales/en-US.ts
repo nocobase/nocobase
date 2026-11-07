@@ -394,6 +394,9 @@ const ui = {
     },
     restoreFailed:
       '{{name}}: its apps could not be restored; retrying in the background.',
+    environments: 'Environments on it: {{names}}',
+    failed: 'The app failed to start on its shared host.',
+    view: 'View host usage',
     columns: {
       app: 'App',
       state: 'State',

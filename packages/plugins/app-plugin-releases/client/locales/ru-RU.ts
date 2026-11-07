@@ -566,6 +566,9 @@ const ruRU: LocaleResource<typeof enUS> = {
       },
       restoreFailed:
         '{{name}}: не удалось восстановить приложения; повтор выполняется в фоне.',
+      environments: 'Среды на нём: {{names}}',
+      failed: 'Приложение не смогло запуститься на общем хосте.',
+      view: 'Посмотреть загрузку хоста',
       columns: {
         app: 'Приложение',
         state: 'Состояние',

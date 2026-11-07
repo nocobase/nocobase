@@ -212,6 +212,9 @@ function serve(
       return Promise.resolve({ data: environments });
     if (options.path === 'releases/apps')
       return Promise.resolve({ data: apps, meta: { total: apps.length } });
+    // No environment here shares an app host (`shared-host-client.test.tsx` covers the block).
+    if (options.path === 'releases/hosts')
+      return Promise.resolve({ data: [], meta: { total: 0 } });
     if (options.path.endsWith('/declaredVariables'))
       return Promise.resolve({
         data: declared,
