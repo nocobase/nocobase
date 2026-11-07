@@ -964,7 +964,6 @@ export class AppRuntimeRegistry {
   }
 
   async ensureActiveHandle(id: string): Promise<ActiveAppHandle> {
-    if (this.definitions.has(id)) this.touch(id);
     // A serving runtime answers at once, even while the App's lock is held: a start-first replacement keeps the
     // previous runtime serving until it switches. A runtime that is draining or being replaced waits for the lock.
     const serving = this.runtimes.get(id);

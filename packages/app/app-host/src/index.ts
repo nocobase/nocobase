@@ -1,3 +1,7 @@
+import {
+  RejectedWakeGuard,
+  rejectedWakeResponse,
+} from './rejected-wake-guard.js';
 /**
  * This file is part of the NocoBase (R) project.
  * Copyright (c) 2020-2024 NocoBase Co., Ltd.
@@ -190,6 +194,7 @@ export function createAppHost(options: AppHostOptions = {}): AppHost {
     holdMs: options.activationHoldMs ?? DEFAULT_ACTIVATION_HOLD_MS,
     waitMs: options.activationWaitMs ?? DEFAULT_ACTIVATION_WAIT_MS,
   };
+  const rejectedWake = new RejectedWakeGuard();
   const manager = new HostManager({
     closeRequests: () => server.closeAllConnections(),
     logger,
@@ -259,7 +264,14 @@ export function createAppHost(options: AppHostOptions = {}): AppHost {
         }
 
         const response = definition.server
-          ? await dispatchAppServer(req, path, registry, appId, onDemand)
+          ? await dispatchAppServer(
+              req,
+              path,
+              registry,
+              appId,
+              onDemand,
+              rejectedWake,
+            )
           : notFoundResponse();
         await applyFetchResponse(res, response);
         return;
@@ -322,6 +334,7 @@ export function createAppHost(options: AppHostOptions = {}): AppHost {
       head,
       registry,
       onDemand,
+      rejectedWake,
     );
     void upgradePromise.finally(release).catch((error: unknown) => {
       logger.error({ err: error }, 'WebSocket upgrade failed');
@@ -401,17 +414,23 @@ async function dispatchAppServer(
   registry: AppRuntimeRegistry,
   appId: string,
   onDemand: OnDemandActivationOptions,
+  rejectedWake: RejectedWakeGuard,
 ): Promise<Response> {
+  const revision = requestRevision(registry, appId);
+  if (!registry.isActive(appId) && rejectedWake.blocks(revision, req))
+    return rejectedWakeResponse();
   const runtime = await activateForRequest(registry, appId, req, onDemand);
   if (runtime instanceof Response) return runtime;
   const request = toFetchRequest(req, {
     basePath: runtime.basePath,
     signal: runtime.signal,
   });
-  return runtime.dispatch(request, {
+  const response = await runtime.dispatch(request, {
     method: req.method,
     path,
   });
+  rejectedWake.record(revision, req, response.status);
+  return response;
 }
 
 async function dispatchAppWebSocket(
@@ -420,6 +439,7 @@ async function dispatchAppWebSocket(
   head: Buffer,
   registry: AppRuntimeRegistry,
   onDemand: OnDemandActivationOptions,
+  rejectedWake: RejectedWakeGuard,
 ): Promise<void> {
   if (!isWebSocketUpgrade(req)) {
     rejectWebSocketUpgrade(socket, 400);
@@ -454,6 +474,12 @@ async function dispatchAppWebSocket(
     return;
   }
 
+  const revision = requestRevision(registry, appId);
+  if (!registry.isActive(appId) && rejectedWake.blocks(revision, req)) {
+    const response = rejectedWakeResponse();
+    rejectWebSocketUpgrade(socket, response.status, response.headers);
+    return;
+  }
   const runtime = await activateForUpgrade(registry, appId, onDemand);
   if (!runtime) {
     rejectWebSocketUpgrade(socket, 503, new Headers({ 'retry-after': '2' }));
@@ -468,6 +494,11 @@ async function dispatchAppWebSocket(
     path,
   });
 
+  rejectedWake.record(
+    revision,
+    req,
+    result instanceof Response ? result.status : result ? 101 : 404,
+  );
   if (result instanceof Response) {
     rejectWebSocketUpgrade(socket, result.status, result.headers);
     return;
@@ -996,4 +1027,14 @@ function numberFromValue(value: unknown): number | undefined {
   return typeof value === 'number' && Number.isFinite(value)
     ? value
     : undefined;
+}
+
+function requestRevision(registry: AppRuntimeRegistry, appId: string): string {
+  const definition = registry.definition(appId);
+  return JSON.stringify([
+    appId,
+    definition?.rootDir,
+    definition?.desiredVersion,
+    definition?.configVersion,
+  ]);
 }

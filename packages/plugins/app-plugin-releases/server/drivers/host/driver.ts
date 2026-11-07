@@ -698,7 +698,15 @@ export function createHostDriver(
     churn: () => churn + runtimeChurn,
     restartHost: (reason = 'restart requested') => restartHost(reason),
     proxyTarget() {
-      if (restartScheduled) return null;
+      if (
+        restartScheduled ||
+        [...scopes.values()].some(
+          (scope) =>
+            scope.host === inProcess &&
+            (scope.restoring !== null || scope.restoreFailed),
+        )
+      )
+        return null;
       const info = inProcess.controller.getInfo();
       return info.status === 'ready' && info.targetUrl
         ? new URL(info.targetUrl)

@@ -461,3 +461,59 @@ it('keeps ingress gated until existing responses complete or the configured drai
   await completes;
   expect(vi.getTimerCount()).toBe(0);
 });
+
+it.each([401, 403])(
+  'does not treat a denied WebSocket handshake (%i) as activity',
+  async (status) => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    const host = registry({
+      idleTtlMs: 100,
+      resolveFactory: () => () => ({
+        config: new AppConfig(),
+        fetch: () => new Response('ok'),
+        websocket: () => new Response('denied', { status }),
+      }),
+    });
+    await host.create('a');
+    const lastAccess = host.lastAccessedAt('a');
+    vi.setSystemTime(Date.now() + 101);
+    const handle = await host.ensureActiveHandle('a');
+    expect(
+      await handle.acceptWebSocket!(new Request('http://localhost/a/ws')),
+    ).toBeInstanceOf(Response);
+    expect(host.lastAccessedAt('a')).toBe(lastAccess);
+    await host.sweep();
+    expect(host.isActive('a')).toBe(false);
+  },
+);
+
+it('protects an unfinished request and starts the idle interval at its successful completion', async () => {
+  vi.useFakeTimers({ toFake: ['Date'] });
+  const gate = Promise.withResolvers<Response>();
+  const entered = Promise.withResolvers<void>();
+  const host = registry({
+    idleTtlMs: 100,
+    resolveFactory: () => () => ({
+      config: new AppConfig(),
+      fetch: () => {
+        entered.resolve();
+        return gate.promise;
+      },
+    }),
+  });
+  await host.create('a');
+  const request = host.dispatch('a', new Request('http://localhost/a'));
+  await entered.promise;
+  vi.setSystemTime(Date.now() + 200);
+  await host.sweep();
+  expect(host.isActive('a')).toBe(true);
+  expect(host.requireSnapshot('a').activeRequests).toBe(1);
+  gate.resolve(new Response('ok'));
+  await request;
+  const finishedAt = Date.now();
+  expect(host.lastAccessedAt('a')).toBe(finishedAt);
+  await host.sweep(finishedAt + 99);
+  expect(host.isActive('a')).toBe(true);
+  await host.sweep(finishedAt + 101);
+  expect(host.isActive('a')).toBe(false);
+});

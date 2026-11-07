@@ -852,7 +852,8 @@ describe('Host driver', () => {
     const host = fakeHost(1);
     const busy = new Set(['site-d1']);
     let desired = [appSpec('site')];
-    const session = await driverFor(host).open(environment('preview'), {
+    const driver = driverFor(host);
+    const session = await driver.open(environment('preview'), {
       desired: async () => desired,
       deploymentBatchBusy: (excluding) =>
         [...busy].some((id) => !excluding.has(id)),
@@ -877,7 +878,8 @@ describe('Host driver', () => {
     const host = fakeHost();
     const desired = Promise.withResolvers<readonly AppDeploymentSpec[]>();
     const reading = Promise.withResolvers<void>();
-    const session = await driverFor(host).open(environment('preview'), {
+    const driver = driverFor(host);
+    const session = await driver.open(environment('preview'), {
       desired: () => {
         reading.resolve();
         return desired.promise;
@@ -886,6 +888,7 @@ describe('Host driver', () => {
     await session.apply(appSpec('site'));
     const restoring = session.restore([]);
     await reading.promise;
+    expect(driver.proxyTarget()).toBeNull();
     const service = await host.endpoint.controller.getManagementClient();
     const apply = vi.spyOn(service, 'applyDeployment');
     const deployment = session.apply(
@@ -910,6 +913,7 @@ describe('Host driver', () => {
     );
     expect((await session.status(['site'])).get('site')?.version).toBe('2.0.0');
     expect(apply).toHaveBeenCalledOnce();
+    expect(driver.proxyTarget()).not.toBeNull();
     await session.close();
   });
   it.each([undefined, 20])(
