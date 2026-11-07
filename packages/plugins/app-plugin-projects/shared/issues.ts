@@ -198,8 +198,6 @@ export interface IssueListQuery {
 }
 
 export interface CreateIssueRequest {
-  /** The creator's unattached uploads, bound before work starts. */
-  readonly attachmentIds?: readonly string[];
   readonly title: string;
   readonly description?: string;
   /** `in_progress` (start now) or `backlog` (later, the default; `START_STATUSES`). */
@@ -224,6 +222,11 @@ export interface CreateIssueRequest {
    * for it until it is finished. Only in a project the creator manages that has no unfinished setup issue.
    */
   readonly projectSetup?: boolean;
+  /**
+   * The creator's uploads attached to nothing (`shared/attachments.ts`), attached to the new issue as its own files in
+   * the same transaction; at most `ATTACHMENTS_PER_REQUEST_MAX`. Needs `upload` on `pm.attachments`.
+   */
+  readonly attachmentIds?: readonly string[];
 }
 
 export interface UpdateIssueRequest {

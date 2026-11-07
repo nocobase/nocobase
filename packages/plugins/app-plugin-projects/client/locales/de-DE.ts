@@ -449,6 +449,7 @@ const deDE: LocaleResource<typeof enUS> = {
     projectLabel: 'Projekt',
     titleLabel: 'Titel',
     titleRequired: 'Geben Sie einen Titel ein.',
+    uploadsPending: 'Warten Sie, bis die Dateien vollständig hochgeladen sind.',
   },
   issues: {
     allStatuses: 'Alle Status',

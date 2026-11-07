@@ -430,6 +430,7 @@ const viVN: LocaleResource<typeof enUS> = {
     projectLabel: 'Dự án',
     titleLabel: 'Tiêu đề',
     titleRequired: 'Nhập tiêu đề.',
+    uploadsPending: 'Vui lòng đợi các tệp tải lên hoàn tất.',
   },
   issues: {
     allStatuses: 'Tất cả trạng thái',

@@ -440,6 +440,7 @@ const frFR: LocaleResource<typeof enUS> = {
     projectLabel: 'Projet',
     titleLabel: 'Titre',
     titleRequired: 'Entrez un titre.',
+    uploadsPending: 'Attendez la fin du téléversement des fichiers.',
   },
   issues: {
     allStatuses: 'Tous les statuts',

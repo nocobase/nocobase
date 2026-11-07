@@ -405,6 +405,7 @@ const zhTW: LocaleResource<typeof enUS> = {
     projectLabel: '專案',
     titleLabel: '標題',
     titleRequired: '輸入標題。',
+    uploadsPending: '請等候檔案上傳完成。',
   },
   issues: {
     allStatuses: '所有狀態',

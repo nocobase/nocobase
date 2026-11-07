@@ -434,6 +434,7 @@ const idID: LocaleResource<typeof enUS> = {
     projectLabel: 'Proyek',
     titleLabel: 'Judul',
     titleRequired: 'Masukkan judul.',
+    uploadsPending: 'Tunggu hingga semua file selesai diunggah.',
   },
   issues: {
     allStatuses: 'Semua status',
