@@ -188,12 +188,15 @@ function onHost(
     waiting = null,
     recycling = null,
     unrestored = false,
+    environmentFailed = unrestored,
     error = null,
   }: {
     readonly waiting?: 'capacity' | 'memory' | 'recycle' | null;
     readonly recycling?: 'pending' | 'restarting' | null;
-    /** The host could not restore this App's environment after it restarted. */
+    /** The host restarted and could not put this App back (its environment's restore failed too). */
     readonly unrestored?: boolean;
+    /** Its environment's restore failed, whether or not this App is back on the host. */
+    readonly environmentFailed?: boolean;
     readonly error?: string | null;
   } = {},
 ): AppSummary {
@@ -201,11 +204,16 @@ function onHost(
   const { environments: _environments, ...host } = HOST;
   return {
     ...summary,
-    runtime: { ...summary.runtime, waiting, error },
+    runtime: {
+      ...summary.runtime,
+      waiting,
+      error,
+      ...(unrestored ? { unrestored: true } : {}),
+    },
     host: {
       ...host,
       recycling,
-      failedEnvironments: unrestored
+      failedEnvironments: environmentFailed
         ? [
             ...host.failedEnvironments,
             {
@@ -255,6 +263,15 @@ describe('shared app host', () => {
     expect(hostNoticeOf(onHost('failed', { unrestored: true }))).toBe(
       'ui.sharedHost.failed',
     );
+    // Its environment's restore failed, but this App is back on the host and fails on its own.
+    expect(
+      hostNoticeOf(
+        onHost('failed', {
+          environmentFailed: true,
+          error: 'App failed to initialize: database password is invalid',
+        }),
+      ),
+    ).toBeNull();
     // Another environment's restore failure is not this App's.
     expect(HOST.failedEnvironments.map((item) => item.id)).not.toContain(
       appSummary('failed').environment.id,

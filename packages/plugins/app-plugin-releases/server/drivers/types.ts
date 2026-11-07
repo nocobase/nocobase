@@ -202,6 +202,12 @@ export interface AppObservedStatus {
   readonly holds?: readonly AppHoldReason[];
   /** Why its last start was refused, while that is recent (see `HostOccupancy`). */
   readonly waiting?: AppWaitReason;
+  /**
+   * The shared runtime restarted and could not put this App back (its environment's restore failed and the App is not
+   * on the runtime); retried in the background. Set by the driver per App, never inferred from the environment: an App
+   * of the same environment that is back on the runtime and fails on its own does not carry it.
+   */
+  readonly unrestored?: true;
 }
 
 /**

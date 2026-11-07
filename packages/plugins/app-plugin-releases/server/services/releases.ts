@@ -4348,7 +4348,8 @@ function normalizeBuild(value: unknown): string | null {
   return value;
 }
 
-function runtimeStatus(
+/** What the driver observed of an App, as an App summary reports its runtime. */
+export function runtimeStatus(
   status: ReadonlyMap<string, AppObservedStatus> | Error | undefined,
   appId: string,
 ): RuntimeStatus {
@@ -4380,6 +4381,7 @@ function runtimeStatus(
     lastAccessedAt: item.lastAccessedAt ?? null,
     ...(item.holds?.length ? { holds: item.holds } : {}),
     ...(item.waiting ? { waiting: item.waiting } : {}),
+    ...(item.unrestored ? { unrestored: true } : {}),
   };
 }
 

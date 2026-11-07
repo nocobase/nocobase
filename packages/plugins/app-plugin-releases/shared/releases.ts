@@ -345,6 +345,11 @@ export interface RuntimeStatus {
    * restarts to free old code). Absent otherwise.
    */
   readonly waiting?: HostWaitReason;
+  /**
+   * Its shared runtime restarted and could not put this App back; retried in the background. Reported by the driver
+   * for this App alone, so an App that is back on the runtime and fails on its own never carries it. Absent otherwise.
+   */
+  readonly unrestored?: boolean;
 }
 
 export type HostHoldReason =

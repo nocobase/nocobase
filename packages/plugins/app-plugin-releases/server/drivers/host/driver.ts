@@ -964,6 +964,7 @@ export function createHostDriver(
                   deploymentId: null,
                   startedAt: null,
                   error: UNRESTORED_APP_ERROR,
+                  unrestored: true,
                 });
           if ((scope.restoring || !status.scope) && appIds)
             for (const appId of appIds)
@@ -1017,6 +1018,7 @@ export function createHostDriver(
                 deploymentId: null,
                 startedAt: null,
                 error: UNRESTORED_APP_ERROR,
+                unrestored: true as const,
                 appId,
                 environmentId: other.environmentId,
               })),

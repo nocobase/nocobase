@@ -840,6 +840,10 @@ export const ReleasesAppSchema: z.ZodType<AppSummary> = z
         description:
           'Why its last start was refused, for a minute or until it starts.',
       }),
+      unrestored: z.boolean().optional().meta({
+        description:
+          'Its shared runtime restarted and could not put this App back; retried in the background.',
+      }),
     }),
     url: z.string().nullable(),
     currentVersion: z.string().nullable(),
