@@ -33,6 +33,22 @@ const ui = {
       'Letters, digits, underscores and hyphens; part of its address. It cannot change later.',
     noEnvironment: 'No environment yet',
     lastAccess: 'Last visit',
+    stateFilter: 'State',
+    anyState: 'Any state',
+    filteredEnvironments: 'Environments: {{names}}',
+    clearFilters: 'Clear filters',
+    noMatches: 'No app matches the filters.',
+    page: 'Page {{page}} of {{pages}}',
+    previousPage: 'Previous page',
+    nextPage: 'Next page',
+    runStates: {
+      running: 'Running',
+      starting: 'Starting',
+      waiting: 'Waiting',
+      stopped: 'Stopped or hibernating',
+      failed: 'Failed',
+      unknown: 'Unknown',
+    },
   },
   advanced: 'Advanced (optional)',
   labels: {
@@ -382,10 +398,7 @@ const ui = {
     title: 'Shared app host',
     description:
       'Apps of every environment on this host share one process and its memory.',
-    summary: '{{running}} of {{deployed}} deployed apps running or starting',
-    memory:
-      'Heap {{heapUsed}} of {{heapLimit}} · process memory {{rss}} · {{available}} available on the server',
-    memoryNote: 'Totals of the whole process, not of any one app.',
+    environments: 'Environments on it: {{names}}',
     recycling: {
       pending:
         'Old code is freed by restarting this host once no app is in use. New versions wait until then; running apps keep serving.',
@@ -394,19 +407,21 @@ const ui = {
     },
     restoreFailed:
       '{{name}}: its apps could not be restored; retrying in the background.',
-    environments: 'Environments on it: {{names}}',
     failed:
       'The app could not be restored after its shared host restarted; retrying in the background.',
     view: 'View host usage',
-    columns: {
-      app: 'App',
-      state: 'State',
-      why: 'Why',
-      lastAccess: 'Last access',
-    },
-    hidden: 'An app you cannot view',
-    empty: 'No app is running on this host.',
-    idle: 'Idle; stopped first when room is needed',
+    running: '{{running}} of {{limit}} apps running or starting',
+    runningUnlimited: '{{running}} apps running or starting · no limit',
+    deployed: 'Deployed: {{count}}',
+    heap: 'Heap {{used}} of {{limit}}',
+    process:
+      'Process memory {{rss}} · {{available}} still available on the server',
+    wholeHost:
+      'Totals of the whole host, every environment on it included; memory cannot be divided among its apps.',
+    viewApps: 'View {{count}} running or starting apps',
+    viewAppsNote: 'Lists only the apps you can view.',
+  },
+  runtime: {
     holds: {
       requests: 'Serving requests',
       connections: 'Open connections',
@@ -421,6 +436,8 @@ const ui = {
       memory: 'Start refused: not enough memory',
       recycle: 'Start refused: new code waits for the host to restart',
     },
+    idle: 'Idle; stopped first when room is needed',
+    lastVisit: 'Last visit: {{time}}',
   },
   overview: {
     currentRelease: 'Current release',

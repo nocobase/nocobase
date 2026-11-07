@@ -181,6 +181,22 @@ const frFR: LocaleResource<typeof enUS> = {
         "Lettres, chiffres, traits de soulignement et traits d'union ; une partie de son adresse. Cela ne peut pas changer plus tard.",
       noEnvironment: "Pas encore d'environnement",
       lastAccess: 'Dernière visite',
+      stateFilter: 'État',
+      anyState: 'Tous les états',
+      filteredEnvironments: 'Environnements : {{names}}',
+      clearFilters: 'Effacer les filtres',
+      noMatches: 'Aucune application ne correspond aux filtres.',
+      page: 'Page {{page}} sur {{pages}}',
+      previousPage: 'Page précédente',
+      nextPage: 'Page suivante',
+      runStates: {
+        running: 'En cours d’exécution',
+        starting: 'En démarrage',
+        waiting: 'En attente',
+        stopped: 'Arrêtée ou en veille',
+        failed: 'En échec',
+        unknown: 'Inconnu',
+      },
     },
     advanced: 'Avancé (facultatif)',
     labels: {
@@ -551,11 +567,7 @@ const frFR: LocaleResource<typeof enUS> = {
       title: 'Hôte d’applications partagé',
       description:
         'Les applications de tous les environnements de cet hôte partagent un processus et sa mémoire.',
-      summary:
-        '{{running}} sur {{deployed}} applications déployées en cours d’exécution ou de démarrage',
-      memory:
-        'Tas {{heapUsed}} sur {{heapLimit}} · mémoire du processus {{rss}} · {{available}} disponibles sur le serveur',
-      memoryNote: 'Totaux du processus entier, pas d’une seule application.',
+      environments: 'Environnements sur cet hôte : {{names}}',
       recycling: {
         pending:
           'L’ancien code est libéré en redémarrant cet hôte dès qu’aucune application n’est utilisée. Les nouvelles versions attendent jusque-là ; les applications en cours continuent de répondre.',
@@ -564,19 +576,25 @@ const frFR: LocaleResource<typeof enUS> = {
       },
       restoreFailed:
         '{{name}} : ses applications n’ont pas pu être restaurées ; nouvel essai en arrière-plan.',
-      environments: 'Environnements sur cet hôte : {{names}}',
       failed:
         'L’application n’a pas pu être restaurée après le redémarrage de son hôte partagé ; nouvel essai en arrière-plan.',
       view: 'Voir l’occupation de l’hôte',
-      columns: {
-        app: 'Application',
-        state: 'État',
-        why: 'Raison',
-        lastAccess: 'Dernier accès',
-      },
-      hidden: 'Une application que vous ne pouvez pas voir',
-      empty: 'Aucune application ne tourne sur cet hôte.',
-      idle: 'Inactive ; arrêtée en premier quand de la place est nécessaire',
+      running:
+        '{{running}} applications sur {{limit}} en cours d’exécution ou de démarrage',
+      runningUnlimited:
+        '{{running}} applications en cours d’exécution ou de démarrage · sans limite',
+      deployed: 'Déployées : {{count}}',
+      heap: 'Tas {{used}} sur {{limit}}',
+      process:
+        'Mémoire du processus {{rss}} · {{available}} encore disponibles sur le serveur',
+      wholeHost:
+        'Totaux de tout l’hôte, tous ses environnements compris ; la mémoire ne se répartit pas entre ses applications.',
+      viewApps:
+        'Voir les {{count}} applications en cours d’exécution ou de démarrage',
+      viewAppsNote:
+        'Seules les applications que vous pouvez voir sont listées.',
+    },
+    runtime: {
       holds: {
         requests: 'Traite des requêtes',
         connections: 'Connexions ouvertes',
@@ -593,6 +611,8 @@ const frFR: LocaleResource<typeof enUS> = {
         recycle:
           'Démarrage refusé : le nouveau code attend le redémarrage de l’hôte',
       },
+      idle: 'Inactive ; arrêtée en premier quand de la place est nécessaire',
+      lastVisit: 'Dernière visite : {{time}}',
     },
     overview: {
       currentRelease: 'Version actuelle',

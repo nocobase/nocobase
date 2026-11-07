@@ -19,7 +19,11 @@ export interface Me {
 
 type Method = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
-type Query = Record<string, string | number | boolean | undefined>;
+/** A repeated parameter (`?environmentId=a&environmentId=b`) is an array. */
+type Query = Record<
+  string,
+  string | number | boolean | readonly string[] | undefined
+>;
 
 /** A list answer: its items, and what `meta` says about them (`total`, and `page`/`pageSize` when it pages). */
 export interface ListResult<T> {

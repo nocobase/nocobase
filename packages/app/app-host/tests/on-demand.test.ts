@@ -179,6 +179,8 @@ describe('on-demand Apps on a managed Host', () => {
     const stopped = await host.management.getStatus();
     expect(lifecycle(stopped)?.state).toBe('stopped');
     expect(stopped.counters?.idleStops).toBe(1);
+    // No `maxActiveApps` configured: nothing limits how many run at once.
+    expect(stopped.counters?.maxActiveApps).toBeNull();
     expect(existsSync(fixture.revisionDir())).toBe(true);
 
     const response = await fetch(`${baseUrl(host)}/customer/api/info`);

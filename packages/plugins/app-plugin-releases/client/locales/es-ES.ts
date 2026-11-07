@@ -181,6 +181,22 @@ const esES: LocaleResource<typeof enUS> = {
         'Letras, dígitos, guiones bajos y guiones; parte de su dirección. No puede cambiar más tarde.',
       noEnvironment: 'Aún no hay entorno',
       lastAccess: 'Última visita',
+      stateFilter: 'Estado',
+      anyState: 'Cualquier estado',
+      filteredEnvironments: 'Entornos: {{names}}',
+      clearFilters: 'Quitar filtros',
+      noMatches: 'Ninguna app coincide con los filtros.',
+      page: 'Página {{page}} de {{pages}}',
+      previousPage: 'Página anterior',
+      nextPage: 'Página siguiente',
+      runStates: {
+        running: 'En ejecución',
+        starting: 'Iniciándose',
+        waiting: 'En espera',
+        stopped: 'Detenida o hibernando',
+        failed: 'Con error',
+        unknown: 'Desconocido',
+      },
     },
     advanced: 'Avanzado (opcional)',
     labels: {
@@ -551,11 +567,7 @@ const esES: LocaleResource<typeof enUS> = {
       title: 'Host de apps compartido',
       description:
         'Las apps de todos los entornos de este host comparten un proceso y su memoria.',
-      summary:
-        '{{running}} de {{deployed}} apps desplegadas en ejecución o iniciándose',
-      memory:
-        'Heap {{heapUsed}} de {{heapLimit}} · memoria del proceso {{rss}} · {{available}} disponibles en el servidor',
-      memoryNote: 'Totales de todo el proceso, no de una sola app.',
+      environments: 'Entornos en él: {{names}}',
       recycling: {
         pending:
           'El código antiguo se libera reiniciando este host cuando ninguna app esté en uso. Las nuevas versiones esperan hasta entonces; las apps en ejecución siguen respondiendo.',
@@ -564,19 +576,22 @@ const esES: LocaleResource<typeof enUS> = {
       },
       restoreFailed:
         '{{name}}: no se pudieron restaurar sus apps; reintentando en segundo plano.',
-      environments: 'Entornos en él: {{names}}',
       failed:
         'La app no se pudo restaurar tras reiniciarse su host compartido; se reintenta en segundo plano.',
       view: 'Ver uso del host',
-      columns: {
-        app: 'App',
-        state: 'Estado',
-        why: 'Motivo',
-        lastAccess: 'Último acceso',
-      },
-      hidden: 'Una app que no puedes ver',
-      empty: 'No hay ninguna app en ejecución en este host.',
-      idle: 'Inactiva; se detiene primero cuando se necesita espacio',
+      running: '{{running}} de {{limit}} apps en ejecución o iniciándose',
+      runningUnlimited:
+        '{{running}} apps en ejecución o iniciándose · sin límite',
+      deployed: 'Desplegadas: {{count}}',
+      heap: 'Heap {{used}} de {{limit}}',
+      process:
+        'Memoria del proceso {{rss}} · {{available}} aún disponibles en el servidor',
+      wholeHost:
+        'Totales de todo el host, con todos sus entornos; la memoria no se puede repartir entre sus apps.',
+      viewApps: 'Ver {{count}} apps en ejecución o iniciándose',
+      viewAppsNote: 'Solo muestra las apps que puedes ver.',
+    },
+    runtime: {
       holds: {
         requests: 'Atendiendo solicitudes',
         connections: 'Conexiones abiertas',
@@ -593,6 +608,8 @@ const esES: LocaleResource<typeof enUS> = {
         recycle:
           'Inicio rechazado: el código nuevo espera al reinicio del host',
       },
+      idle: 'Inactiva; se detiene primero cuando se necesita espacio',
+      lastVisit: 'Última visita: {{time}}',
     },
     overview: {
       currentRelease: 'Versión actual',

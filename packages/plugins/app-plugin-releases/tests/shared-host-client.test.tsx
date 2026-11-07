@@ -1,7 +1,8 @@
 /**
- * The shared app host: the environments page shows each host once with its memory, counts and occupants, an occupant
- * the reader may not view hidden; an App's page says only why the host affects it, linking to that block for those who
- * may read environments.
+ * The shared app host: the environments page shows each host once as a capacity card (running against its limit, the
+ * process memory as one total, its restart state) linking to its running Apps in the Apps list; the Apps list shows
+ * each App's runtime state with why on hover or a tap, and filters by environment and state from the address; an
+ * App's page says only why the host affects it, linking to the card for those who may read environments.
  */
 import { answerApi, renderWithApp } from '@nocobase/app-testing/client';
 import { cleanup, screen, waitFor, within } from '@testing-library/react';
@@ -12,6 +13,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import releases from '../client/plugin.js';
 import { appStateOf } from '../client/lib/app-state.js';
 import AppPage from '../client/pages/app-page.js';
+import AppsPage from '../client/pages/apps-page.js';
 import EnvironmentsPage from '../client/pages/environments-page.js';
 import {
   allPermissions,
@@ -23,8 +25,11 @@ import type {
   EnvironmentListItem,
   SharedHostView,
 } from '../shared/releases.js';
-import { hostNoticeOf } from '../client/lib/host-occupants.js';
+import { hostNoticeOf } from '../client/lib/runtime-state.js';
 import { appSummary } from './helpers/app-summary.js';
+
+const NO_LIMIT_NOTE =
+  /Totals of the whole host, every environment on it included/;
 
 afterEach(cleanup);
 
@@ -37,7 +42,7 @@ afterEach(() => scrolled.mockClear());
 
 const MiB = 1024 ** 2;
 
-/** A preview host with a resident Staging App in use, an idle PR preview, a hidden App and a PR waiting for memory. */
+/** A host Preview and Staging share: 3 of 6 Apps running, a restart pending and Demo not restored. */
 const HOST: SharedHostView = {
   id: 'in-process',
   environments: [
@@ -53,58 +58,7 @@ const HOST: SharedHostView = {
   recycling: 'pending',
   deployed: 12,
   running: 3,
-  occupants: [
-    {
-      app: {
-        id: 'studio-staging',
-        name: 'Studio staging',
-        environmentId: 'staging',
-        environmentName: 'Staging',
-        previewOf: null,
-      },
-      state: 'running',
-      holds: ['requests', 'resident', 'busy'],
-      waiting: null,
-      lastAccessedAt: null,
-      error: null,
-    },
-    {
-      app: null,
-      state: 'running',
-      holds: ['recent'],
-      waiting: null,
-      lastAccessedAt: null,
-      error: null,
-    },
-    {
-      app: {
-        id: 'pr-433',
-        name: 'PR #433',
-        environmentId: 'preview',
-        environmentName: 'Preview',
-        previewOf: 'studio',
-      },
-      state: 'stopped',
-      holds: [],
-      waiting: 'memory',
-      lastAccessedAt: null,
-      error: null,
-    },
-    {
-      app: {
-        id: 'pr-430',
-        name: 'PR #430',
-        environmentId: 'preview',
-        environmentName: 'Preview',
-        previewOf: 'studio',
-      },
-      state: 'running',
-      holds: [],
-      waiting: null,
-      lastAccessedAt: null,
-      error: null,
-    },
-  ],
+  maxActive: 6,
   failedEnvironments: [
     { id: 'demo', name: 'Demo', error: 'The release archive is missing.' },
   ],
@@ -131,7 +85,9 @@ const ENVIRONMENT: EnvironmentListItem = {
 function Location() {
   const location = useLocation();
   return (
-    <output data-testid='location'>{location.pathname + location.hash}</output>
+    <output data-testid='location'>
+      {location.pathname + location.search + location.hash}
+    </output>
   );
 }
 
@@ -140,19 +96,25 @@ async function render(
   {
     summary = appSummary('running'),
     hosts = [HOST],
+    apps = [],
     permissions = allPermissions(),
     locale = 'en-US',
   }: {
     readonly summary?: AppSummary;
     readonly hosts?: readonly SharedHostView[];
+    /** What the Apps list answers, whatever it asks. */
+    readonly apps?: readonly AppSummary[];
     readonly permissions?: ReleasesPermissions;
     readonly locale?: string;
   } = {},
 ) {
   const calls: string[] = [];
+  /** The Apps list's queries, as the server received them. */
+  const listed: URLSearchParams[] = [];
   await renderWithApp(
     <>
       <Routes>
+        <Route path='/releases' element={<AppsPage />} />
         <Route path='/apps/:appId' element={<AppPage />} />
         <Route path='/release-environments' element={<EnvironmentsPage />} />
       </Routes>
@@ -171,6 +133,14 @@ async function render(
           return { data: hosts, meta: { total: hosts.length } };
         if (call.path === 'releases/environments')
           return { data: [ENVIRONMENT], meta: { total: 1 } };
+        if (call.path === 'releases/apps') {
+          const query = new URLSearchParams();
+          for (const [name, value] of Object.entries(call.query ?? {}))
+            for (const item of typeof value === 'string' ? [value] : value)
+              query.append(name, item);
+          listed.push(query);
+          return { data: apps, meta: { total: apps.length } };
+        }
         if (/releases\/apps\/[^/]+$/.test(call.path)) return { data: summary };
         if (call.path.endsWith('/initialAdmin'))
           return new Response(null, { status: 404 });
@@ -178,7 +148,7 @@ async function render(
       }),
     },
   );
-  return calls;
+  return { calls, listed };
 }
 
 /** An App on the shared host: its own runtime, and the host as the single-App read answers it. */
@@ -277,36 +247,40 @@ describe('shared app host', () => {
       appSummary('failed').environment.id,
     );
     expect(hostNoticeOf(onHost('stopped', { waiting: 'memory' }))).toBe(
-      'ui.sharedHost.waiting.memory',
+      'ui.runtime.waiting.memory',
     );
     expect(hostNoticeOf(appSummary('failed'))).toBeNull();
   });
 
-  it('lists every occupant of the host on the environments page once, with why it holds or waits and the process memory as one total', async () => {
+  it('shows each host once on the environments page as a capacity card, its totals the whole host’s', async () => {
     await render('/release-environments');
-    const section = (
-      await screen.findByRole('heading', { name: /Shared app host/ })
-    ).closest('section')!;
-    // One block for the host however many environments share it.
-    expect(
-      screen.getAllByRole('heading', { name: /Shared app host/ }),
-    ).toHaveLength(1);
-    expect(section.id).toBe('shared-host-in-process');
-    const scoped = within(section as HTMLElement);
+    const card = (await screen.findByText('Shared app host')).closest(
+      '[data-slot="card"]',
+    ) as HTMLElement;
+    // One card for the host however many environments share it, and no table of Apps.
+    expect(screen.getAllByText('Shared app host')).toHaveLength(1);
+    expect(card.id).toBe('shared-host-in-process');
+    expect(card.querySelector('table')).toBeNull();
+    const scoped = within(card);
     expect(
       scoped.getByText('Environments on it: Preview, Staging'),
     ).toBeTruthy();
-    expect(
-      scoped.getByText('3 of 12 deployed apps running or starting'),
-    ).toBeTruthy();
+    // Running against the limit, the heap and the process memory, each as a bar.
+    expect(scoped.getByText('3 of 6 apps running or starting')).toBeTruthy();
+    expect(scoped.getByText('Heap 900.0 MiB of 2048.0 MiB')).toBeTruthy();
     expect(
       scoped.getByText(
-        /Heap 900\.0 MiB of 2048\.0 MiB · process memory 1536\.0 MiB · 3072\.0 MiB available/,
+        'Process memory 1536.0 MiB · 3072.0 MiB still available on the server',
       ),
     ).toBeTruthy();
+    expect(scoped.getAllByRole('progressbar')).toHaveLength(3);
     expect(
-      scoped.getByText('Totals of the whole process, not of any one app.'),
-    ).toBeTruthy();
+      scoped
+        .getAllByRole('progressbar')
+        .map((bar) => bar.getAttribute('aria-valuenow')),
+    ).toEqual(['50', String((900 / 2048) * 100), String((1536 / 4608) * 100)]);
+    expect(scoped.getByText(NO_LIMIT_NOTE)).toBeTruthy();
+    expect(scoped.getByText(/Deployed: 12/)).toBeTruthy();
     expect(scoped.getByText(/Old code is freed by restarting/)).toBeTruthy();
     expect(
       scoped.getByText(
@@ -314,44 +288,153 @@ describe('shared app host', () => {
       ),
     ).toBeTruthy();
     expect(scoped.getByText('The release archive is missing.')).toBeTruthy();
-
-    const row = (name: string) =>
-      within(scoped.getByText(name).closest('tr') as HTMLElement);
-    expect(row('Studio staging').getByText('Staging')).toBeTruthy();
-    expect(
-      row('Studio staging').getByText('Serving requests · Always running'),
-    ).toBeTruthy();
-    expect(row('PR #433').getByText('Waiting for memory')).toBeTruthy();
-    expect(
-      row('PR #433').getByText('Start refused: not enough memory'),
-    ).toBeTruthy();
-    expect(
-      row('PR #430').getByText('Idle; stopped first when room is needed'),
-    ).toBeTruthy();
-    // No per-App memory: the process total is never divided among its Apps.
-    expect(scoped.queryByText(/MiB/, { selector: 'td *' })).toBeNull();
+    expect(scoped.getByText('Lists only the apps you can view.')).toBeTruthy();
   });
 
-  it('shows an app the reader may not view as hidden, with its state only', async () => {
-    await render('/release-environments');
-    const section = (
-      await screen.findByRole('heading', { name: /Shared app host/ })
-    ).closest('section') as HTMLElement;
-    const hidden = within(
-      within(section)
-        .getByText('An app you cannot view')
-        .closest('tr') as HTMLElement,
+  it('says when nothing limits how many apps run', async () => {
+    await render('/release-environments', {
+      hosts: [{ ...HOST, maxActive: null, memory: null }],
+    });
+    expect(
+      await screen.findByText('3 apps running or starting · no limit'),
+    ).toBeTruthy();
+    expect(screen.queryByRole('progressbar')).toBeNull();
+  });
+
+  it('links a card to its running apps in the apps list, filtered there before the page is cut', async () => {
+    const { listed } = await render('/release-environments');
+    await userEvent.click(
+      await screen.findByRole('link', {
+        name: 'View 3 running or starting apps',
+      }),
     );
-    expect(hidden.getByText('Running')).toBeTruthy();
-    expect(hidden.getByText('Used in the last minute')).toBeTruthy();
-    // No name, environment or last access of it.
-    expect(hidden.getAllByText('—')).toHaveLength(1);
+    await waitFor(() =>
+      expect(screen.getByTestId('location').textContent).toBe(
+        '/releases?environmentId=preview&environmentId=staging&runtimeState=running&runtimeState=starting',
+      ),
+    );
+    // The list asks the server for exactly that, so its total counts every match, not one page of them.
+    await waitFor(() => expect(listed.length).toBeGreaterThan(0));
+    const query = listed.at(-1)!;
+    expect(query.getAll('environmentId')).toEqual(['preview', 'staging']);
+    expect(query.getAll('runtimeState')).toEqual(['running', 'starting']);
+    expect(query.get('page')).toBe('1');
   });
 
-  it('leaves the block out of the environments page when no environment shares a host', async () => {
+  it('leaves out the link to the apps list for someone who may not open it', async () => {
+    const permissions = allPermissions();
+    await render('/release-environments', {
+      permissions: { ...permissions, pages: { 'rel-apps': false } },
+    });
+    expect(await screen.findByText('Shared app host')).toBeTruthy();
+    expect(
+      screen.queryByRole('link', { name: /running or starting apps/ }),
+    ).toBeNull();
+  });
+
+  it('leaves the card out of the environments page when no environment shares a host', async () => {
     await render('/release-environments', { hosts: [] });
     await screen.findByText('Staging');
     expect(screen.queryByText('Shared app host')).toBeNull();
+  });
+
+  it('shows each app’s runtime state in the list, with why on hover and on a tap', async () => {
+    const running = appSummary('running', 'busy-app');
+    const queued = appSummary('stopped', 'queued-app');
+    const deploying = appSummary('running', 'deploying-app');
+    await render('/releases', {
+      apps: [
+        {
+          ...running,
+          runtime: {
+            ...running.runtime,
+            holds: ['requests', 'resident'],
+            lastAccessedAt: '2026-11-07T01:00:00.000Z',
+          },
+        },
+        { ...queued, runtime: { ...queued.runtime, waiting: 'memory' } },
+        { ...deploying, hasPendingDeployment: true },
+      ],
+    });
+    const row = async (id: string) =>
+      within((await screen.findAllByText(id))[0]!.closest('tr') as HTMLElement);
+    // The runtime's own state; a deployment in progress is marked beside it rather than hiding it.
+    expect((await row('deploying-app')).getByText('Running')).toBeTruthy();
+    expect((await row('deploying-app')).getByText('Deploying')).toBeTruthy();
+    expect(
+      (await row('queued-app')).getByText('Waiting for memory'),
+    ).toBeTruthy();
+    // Why it runs, from a tap as on a phone (hover and focus open it too), without opening the App.
+    const trigger = (await row('busy-app')).getByRole('button', {
+      name: /Running/,
+    });
+    /** The open tooltip: Base UI's popup carries no `tooltip` role of its own. */
+    const openTooltip = async () =>
+      await waitFor(() => {
+        const popup = document.querySelector<HTMLElement>(
+          '[data-slot="tooltip-content"]',
+        );
+        expect(popup).toBeTruthy();
+        return popup!;
+      });
+    await userEvent.click(trigger);
+    const tooltip = await openTooltip();
+    expect(within(tooltip).getByText('Serving requests')).toBeTruthy();
+    expect(within(tooltip).getByText('Always running')).toBeTruthy();
+    expect(within(tooltip).getByText(/^Last visit: /)).toBeTruthy();
+    expect(screen.getByTestId('location').textContent).toBe('/releases');
+    // A second tap keeps it open; Escape closes it.
+    await userEvent.click(trigger);
+    expect(await openTooltip()).toBeTruthy();
+    await userEvent.keyboard('{Escape}');
+    await waitFor(() =>
+      expect(
+        document.querySelector('[data-slot="tooltip-content"]'),
+      ).toBeNull(),
+    );
+    await userEvent.hover((await row('queued-app')).getByRole('button'));
+    expect(
+      within(await openTooltip()).getByText('Start refused: not enough memory'),
+    ).toBeTruthy();
+  });
+
+  it('keeps the list’s filters in the address, so a reload restores them, and starts again at the first page when they change', async () => {
+    const { listed } = await render(
+      '/releases?environmentId=preview&runtimeState=failed&page=3',
+      { apps: [appSummary('failed', 'broken')] },
+    );
+    expect((await screen.findAllByText('broken')).length).toBeGreaterThan(0);
+    const first = listed.at(-1)!;
+    expect(first.getAll('environmentId')).toEqual(['preview']);
+    expect(first.getAll('runtimeState')).toEqual(['failed']);
+    expect(first.get('page')).toBe('3');
+    expect(screen.getByText('Environments: preview')).toBeTruthy();
+    // Adding a state through the menu keeps the others and the environments, and goes back to page 1.
+    await userEvent.click(
+      screen.getByRole('button', { name: 'State: Failed' }),
+    );
+    await userEvent.click(
+      await screen.findByRole('menuitemcheckbox', { name: 'Waiting' }),
+    );
+    await waitFor(() =>
+      expect(screen.getByTestId('location').textContent).toBe(
+        '/releases?environmentId=preview&runtimeState=waiting&runtimeState=failed',
+      ),
+    );
+    await waitFor(() =>
+      expect(listed.at(-1)!.getAll('runtimeState')).toEqual([
+        'waiting',
+        'failed',
+      ]),
+    );
+    expect(listed.at(-1)!.get('page')).toBe('1');
+    await userEvent.keyboard('{Escape}');
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Clear filters' }),
+    );
+    await waitFor(() =>
+      expect(screen.getByTestId('location').textContent).toBe('/releases'),
+    );
   });
 
   it('says nothing of the host on the page of an App it does not affect', async () => {
@@ -367,7 +450,7 @@ describe('shared app host', () => {
       await screen.findByRole('tab', { name: 'Overview' });
       expect(screen.queryByText('Shared app host')).toBeNull();
       expect(screen.queryByText('View host usage')).toBeNull();
-      expect(screen.queryByText(/deployed apps running/)).toBeNull();
+      expect(screen.queryByText(/apps running or starting/)).toBeNull();
       cleanup();
     }
     // Nor on an App whose driver shares no host.
@@ -409,20 +492,18 @@ describe('shared app host', () => {
         return element as HTMLElement;
       });
       expect(within(notice).getByText(reason)).toBeTruthy();
-      // Only the line: the host's counts and occupants stay on the environments page.
+      // Only the line: the host's counts stay on the environments page.
       expect(screen.queryByText('Shared app host')).toBeNull();
-      expect(screen.queryByText(/deployed apps running/)).toBeNull();
+      expect(screen.queryByText(/apps running or starting/)).toBeNull();
       cleanup();
     }
-    const calls = await render('/apps/shop', {
+    const { calls } = await render('/apps/shop', {
       summary: onHost('stopped', { waiting: 'memory' }),
     });
     await userEvent.click(
       await screen.findByRole('link', { name: 'View host usage' }),
     );
-    expect(
-      await screen.findByRole('heading', { name: /Shared app host/ }),
-    ).toBeTruthy();
+    expect(await screen.findByText('Shared app host')).toBeTruthy();
     expect(screen.getByTestId('location').textContent).toBe(
       '/release-environments#shared-host-in-process',
     );
@@ -458,12 +539,12 @@ describe('shared app host', () => {
     });
     expect(await screen.findByText('共享应用宿主')).toBeTruthy();
     expect(screen.getByText('使用它的环境：Preview, Staging')).toBeTruthy();
-    expect(screen.getByText('已部署 12 个应用，3 个运行或启动中')).toBeTruthy();
+    expect(screen.getByText('3 / 6 个应用运行或启动中')).toBeTruthy();
     expect(
       screen.getByText('这个宿主正在重启，恢复前它的应用会提示“稍后重试”。'),
     ).toBeTruthy();
-    expect(screen.getByText('启动被拒：内存不足')).toBeTruthy();
     expect(screen.getByText('Demo：应用恢复失败，后台重试中。')).toBeTruthy();
+    expect(screen.getByText('查看 3 个运行或启动中的应用')).toBeTruthy();
     cleanup();
     await render('/apps/shop', {
       summary: onHost('stopped', { waiting: 'memory' }),

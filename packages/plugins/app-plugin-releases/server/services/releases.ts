@@ -31,7 +31,11 @@ import type { Knex } from 'knex';
 import { parse as parseYaml } from 'yaml';
 
 import { BUSINESS_ACTIONS, type AppAction } from '../../shared/access.js';
-import { RESERVED_VARIABLE_NAMES } from '../../shared/releases.js';
+import {
+  RESERVED_VARIABLE_NAMES,
+  runStateOf,
+  type RunState,
+} from '../../shared/releases.js';
 import type {
   ActorKind,
   AppActivation,
@@ -39,7 +43,6 @@ import type {
   AppHostView,
   SharedHostView,
   AppSummary,
-  HostOccupantView,
   AppView,
   ConfigDocument,
   ConfigMode,
@@ -281,6 +284,10 @@ export interface UploadReleaseInput {
 export interface ListAppsOptions {
   readonly search?: string;
   readonly environmentId?: string;
+  /** Apps of any of these environments (with `environmentId`, of it too). */
+  readonly environmentIds?: readonly string[];
+  /** Apps whose runtime is in any of these states (`runStateOf`), applied before the page is cut. */
+  readonly runStates?: readonly RunState[];
   readonly labels?: Labels;
   readonly page?: number;
   readonly pageSize?: number;
@@ -384,8 +391,12 @@ export class ReleasesService {
           ? eb('id', 'in', [...searchIds])
           : eb('id', 'is', null),
       );
-    if (options.environmentId)
-      query = query.where('environmentId', '=', options.environmentId);
+    const environmentIds = [
+      ...(options.environmentId ? [options.environmentId] : []),
+      ...(options.environmentIds ?? []),
+    ];
+    if (environmentIds.length > 0)
+      query = query.where('environmentId', 'in', [...new Set(environmentIds)]);
     const only = filter.only;
     if (only)
       query = query.where((eb) =>
@@ -401,16 +412,34 @@ export class ReleasesService {
       );
     }
     // Labels are opaque JSON, matched here rather than in SQL.
-    const rows = (await query.execute<Row>())
+    let rows = (await query.execute<Row>())
       .map(decodeApp)
       .filter((app) => matchesLabels(app.labels, options.labels));
+    // A state filter needs every candidate's runtime before the page is cut: one batched status call per environment,
+    // reused for the page's summaries.
+    let statuses: RuntimeStatuses | undefined;
+    if (options.runStates?.length) {
+      const wanted = new Set(options.runStates);
+      statuses = await this.runtimeStatuses(rows);
+      const known = statuses;
+      rows = rows.filter((app) =>
+        wanted.has(
+          runStateOf(runtimeStatus(known.get(app.environmentId), app.id)),
+        ),
+      );
+    }
     const total = rows.length;
     const page = Math.min(
       requestedPage,
       Math.max(1, Math.ceil(total / pageSize)),
     );
     const slice = rows.slice((page - 1) * pageSize, page * pageSize);
-    return { items: await this.summarize(slice), total, page, pageSize };
+    return {
+      items: await this.summarize(slice, statuses),
+      total,
+      page,
+      pageSize,
+    };
   }
 
   public async getApp(caller: Caller, appId: string): Promise<AppSummary> {
@@ -451,9 +480,8 @@ export class ReleasesService {
   }
 
   /**
-   * Who shares the App's runtime: one status call to the driver, one read of the occupants' rows and at most one
-   * lookup of related Apps however many occupants there are. Occupants the caller may not view show their state only,
-   * and an environment's restore error only reaches those who manage environments.
+   * The runtime the App shares: one status call to the driver. Its counts and memory are totals of the whole runtime;
+   * no other App is named, and an environment's restore error only reaches those who manage environments.
    */
   private async hostOf(
     caller: Caller,
@@ -473,7 +501,7 @@ export class ReleasesService {
   /**
    * The runtimes the environments with Apps share, each once however many environments run on it, for the
    * environments page: one driver status call per such environment, then what `hostOf` reads per runtime. Requires the
-   * `rel.environments` `read` setting; occupants and restore errors are withheld as on an App's page.
+   * `rel.environments` `read` setting; restore errors are withheld as on an App's page.
    */
   public async listHosts(caller: Caller): Promise<SharedHostView[]> {
     this.options.guard.requireSetting(caller, 'rel.environments', 'read');
@@ -528,38 +556,13 @@ export class ReleasesService {
     readonly view: AppHostView;
     readonly hiddenErrors: ReadonlySet<string>;
   }> {
-    const shown = occupancy.apps.filter(
-      (item) =>
-        item.state === 'running' ||
-        item.state === 'starting' ||
-        item.state === 'failed' ||
-        item.waiting,
-    );
-    const ids = [...new Set(shown.map((item) => item.appId))];
-    const rows = ids.length
-      ? await this.query()
-          .selectFrom('relApps')
-          .selectAll()
-          .where('id', 'in', ids)
-          .execute<Row>()
-      : [];
-    const records = new Map(
-      rows.map(decodeApp).map((record) => [record.id, record] as const),
-    );
-    const environmentIds = new Set([
-      ...[...records.values()].map((record) => record.environmentId),
-      ...occupancy.failedEnvironments.map((item) => item.environmentId),
-    ]);
     const environmentNames = new Map<string, string | null>();
-    for (const id of environmentIds)
+    for (const item of occupancy.failedEnvironments)
       environmentNames.set(
-        id,
-        (await this.options.environments.find(id))?.name ?? null,
+        item.environmentId,
+        (await this.options.environments.find(item.environmentId))?.name ??
+          null,
       );
-    // One batched check for every occupant: the detail is polled, so its cost must not grow per App.
-    const allowed = await this.options.guard.allowedApps(caller, 'view', [
-      ...records.values(),
-    ]);
     // An environment's restore error may name any of its Apps or their paths: only those who manage environments
     // read it; everyone else learns that the restore failed.
     const diagnoses = this.options.guard.hasSetting(
@@ -574,48 +577,17 @@ export class ReleasesService {
             item.error ? [item.error] : [],
           ),
     );
-    const occupants: HostOccupantView[] = [];
-    for (const item of shown) {
-      const record = records.get(item.appId);
-      const visible = record !== undefined && allowed.has(record.id);
-      occupants.push({
-        app: visible
-          ? {
-              id: record.id,
-              name: record.name,
-              environmentId: record.environmentId,
-              environmentName:
-                environmentNames.get(record.environmentId) ??
-                record.environmentId,
-              previewOf: record.previewOf,
-            }
-          : null,
-        state: item.state === 'cancelled' ? 'failed' : item.state,
-        holds: item.holds ?? [],
-        waiting: item.waiting ?? null,
-        // A hidden App shows its state only: when it was last used would say who works on what.
-        lastAccessedAt: visible ? (item.lastAccessedAt ?? null) : null,
-        error: !visible
-          ? null
-          : item.error && hiddenErrors.has(item.error)
-            ? UNRESTORED_APP_ERROR
-            : item.error,
-      });
-    }
-    // Who holds the runtime first, then who waits, then the rest.
-    const rank = (item: HostOccupantView) =>
-      item.holds.length ? 0 : item.waiting ? 1 : 2;
-    occupants.sort((a, b) => rank(a) - rank(b));
     return {
       view: {
         id: occupancy.id,
         memory: occupancy.memory,
         recycling: occupancy.recycling,
         deployed: occupancy.apps.length,
+        // Running or starting Apps hold the runtime; a failed one holds nothing and is not counted.
         running: occupancy.apps.filter(
           (item) => item.state === 'running' || item.state === 'starting',
         ).length,
-        occupants,
+        maxActive: occupancy.maxActive,
         failedEnvironments: occupancy.failedEnvironments.map((item) => ({
           id: item.environmentId,
           name: environmentNames.get(item.environmentId) ?? null,
@@ -2856,7 +2828,39 @@ export class ReleasesService {
     });
   }
 
-  private async summarize(apps: readonly AppRecord[]): Promise<AppSummary[]> {
+  /** Each environment's driver status of these Apps, one call per environment; the error when its driver failed. */
+  private async runtimeStatuses(
+    apps: readonly AppRecord[],
+  ): Promise<RuntimeStatuses> {
+    const statuses = new Map<
+      string,
+      ReadonlyMap<string, AppObservedStatus> | Error
+    >();
+    for (const environmentId of new Set(apps.map((app) => app.environmentId)))
+      try {
+        const session = await this.session(environmentId);
+        statuses.set(
+          environmentId,
+          await session.status(
+            apps
+              .filter((app) => app.environmentId === environmentId)
+              .map((app) => app.id),
+          ),
+        );
+      } catch (error) {
+        statuses.set(
+          environmentId,
+          error instanceof Error ? error : new Error(String(error)),
+        );
+      }
+    return statuses;
+  }
+
+  private async summarize(
+    apps: readonly AppRecord[],
+    /** Statuses already read for these Apps (a superset is fine), so they are not asked again. */
+    known?: RuntimeStatuses,
+  ): Promise<AppSummary[]> {
     if (!apps.length) return [];
     if (this.restoring)
       await Promise.race([this.restoring, delay(DEFAULT_STARTUP_WAIT_MS)]);
@@ -2902,33 +2906,19 @@ export class ReleasesService {
       currentReleases.map((row) => [String(row.appId), String(row.version)]),
     );
     const environments = new Map<string, EnvironmentRecord | null>();
-    const statuses = new Map<
-      string,
-      ReadonlyMap<string, AppObservedStatus> | Error
-    >();
+    const statuses = known ?? (await this.runtimeStatuses(apps));
     const sessions = new Map<string, DriverSession | null>();
     for (const environmentId of new Set(apps.map((app) => app.environmentId))) {
       environments.set(
         environmentId,
         await this.options.environments.find(environmentId),
       );
-      const environmentApps = apps.filter(
-        (app) => app.environmentId === environmentId,
+      sessions.set(
+        environmentId,
+        statuses.get(environmentId) instanceof Error
+          ? null
+          : await this.session(environmentId).catch(() => null),
       );
-      try {
-        const session = await this.session(environmentId);
-        sessions.set(environmentId, session);
-        statuses.set(
-          environmentId,
-          await session.status(environmentApps.map((app) => app.id)),
-        );
-      } catch (error) {
-        sessions.set(environmentId, null);
-        statuses.set(
-          environmentId,
-          error instanceof Error ? error : new Error(String(error)),
-        );
-      }
     }
     return apps.map((app) => {
       const environment = environments.get(app.environmentId) ?? null;
@@ -4347,6 +4337,12 @@ function normalizeBuild(value: unknown): string | null {
     );
   return value;
 }
+
+/** Each environment's driver status of some of its Apps, or the error its driver answered. */
+type RuntimeStatuses = ReadonlyMap<
+  string,
+  ReadonlyMap<string, AppObservedStatus> | Error
+>;
 
 /** What the driver observed of an App, as an App summary reports its runtime. */
 export function runtimeStatus(

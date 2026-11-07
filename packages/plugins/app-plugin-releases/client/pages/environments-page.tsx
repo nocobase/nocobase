@@ -281,7 +281,11 @@ export function EnvironmentsList({
       />
       {content}
       {hosts.data?.map((host) => (
-        <SharedHostSection key={host.id} host={host} />
+        <SharedHostSection
+          key={host.id}
+          host={host}
+          canListApps={me.permissions.pages['rel-apps']}
+        />
       ))}
       <Dialog open={adding} onOpenChange={setAdding}>
         <DialogContent className='flex max-h-[calc(100dvh-2rem)] flex-col sm:max-w-2xl'>

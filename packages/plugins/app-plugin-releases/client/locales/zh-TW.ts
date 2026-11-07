@@ -161,6 +161,22 @@ const zhTW: LocaleResource<typeof enUS> = {
       idHint: '字母、數字、底線和連字元；其地址的一部分。以後無法改變。',
       noEnvironment: '還沒有環境',
       lastAccess: '最後一次訪問',
+      stateFilter: '狀態',
+      anyState: '全部狀態',
+      filteredEnvironments: '環境：{{names}}',
+      clearFilters: '清除篩選',
+      noMatches: '沒有符合篩選條件的應用。',
+      page: '第 {{page}} / {{pages}} 頁',
+      previousPage: '上一頁',
+      nextPage: '下一頁',
+      runStates: {
+        running: '執行中',
+        starting: '啟動中',
+        waiting: '排隊等待',
+        stopped: '已停止或休眠',
+        failed: '失敗',
+        unknown: '未知',
+      },
     },
     advanced: '進階（可選）',
     labels: {
@@ -502,28 +518,26 @@ const zhTW: LocaleResource<typeof enUS> = {
     sharedHost: {
       title: '共用應用宿主',
       description: '這個宿主上所有環境的應用共用一個程序和它的記憶體。',
-      summary: '已部署 {{deployed}} 個應用，{{running}} 個執行或啟動中',
-      memory:
-        '堆積 {{heapUsed}} / {{heapLimit}} · 程序記憶體 {{rss}} · 伺服器可用 {{available}}',
-      memoryNote: '這是整個程序的總量，不是某個應用的佔用。',
+      environments: '使用它的環境：{{names}}',
       recycling: {
         pending:
           '沒有應用在使用時，會重新啟動這個宿主來釋放舊程式碼。新版本要等到那時才能啟動；執行中的應用照常服務。',
         restarting: '這個宿主正在重新啟動，恢復前它的應用會提示「稍後重試」。',
       },
       restoreFailed: '{{name}}：應用恢復失敗，背景重試中。',
-      environments: '使用它的環境：{{names}}',
       failed: '共用宿主重新啟動後未能恢復這個應用，正在背景重試。',
       view: '查看宿主佔用',
-      columns: {
-        app: '應用',
-        state: '狀態',
-        why: '原因',
-        lastAccess: '最近存取',
-      },
-      hidden: '你無權查看的應用',
-      empty: '這個宿主上沒有執行中的應用。',
-      idle: '閒置，需要空間時優先停止',
+      running: '{{running}} / {{limit}} 個應用執行或啟動中',
+      runningUnlimited: '{{running}} 個應用執行或啟動中 · 不限數量',
+      deployed: '已部署：{{count}}',
+      heap: '堆積 {{used}} / {{limit}}',
+      process: '程序記憶體 {{rss}} · 伺服器還可用 {{available}}',
+      wholeHost:
+        '這是整個宿主的總量，包含它上面的所有環境；記憶體分不到單個應用。',
+      viewApps: '查看 {{count}} 個執行或啟動中的應用',
+      viewAppsNote: '只列出你有權查看的應用。',
+    },
+    runtime: {
       holds: {
         requests: '正在處理請求',
         connections: '有活動連線',
@@ -538,6 +552,8 @@ const zhTW: LocaleResource<typeof enUS> = {
         memory: '啟動被拒：記憶體不足',
         recycle: '啟動被拒：新程式碼要等宿主重新啟動回收',
       },
+      idle: '閒置，需要空間時優先停止',
+      lastVisit: '最近存取：{{time}}',
     },
     overview: {
       currentRelease: '當前版本',

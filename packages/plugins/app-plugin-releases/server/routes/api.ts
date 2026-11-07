@@ -251,7 +251,7 @@ export function createReleasesApi(
       // The environments page's block; `app get` answers an App's own host.
       ...cliRoute(false),
       description:
-        'Requires the `rel.environments` `read` setting. Each runtime the environments with Apps share, once: its memory, counts and occupants. An occupant the caller may not view shows its state only, and an environment’s restore error only reaches those with the `manage` setting.',
+        'Requires the `rel.environments` `read` setting. Each runtime the environments with Apps share, once: its memory, how many Apps run or start on it against its limit, and its restart state — totals of the whole runtime, every environment on it included. An environment’s restore error only reaches those with the `manage` setting.',
       responses: {
         200: listResponse(ReleasesSharedHostSchema, ReleasesTotalMeta),
         ...apiErrorResponses,
@@ -887,7 +887,15 @@ export function createReleasesApi(
         command: 'app list',
         flags: {
           pageSize: { name: 'limit' },
-          environmentId: { name: 'env' },
+          environmentId: {
+            name: 'env',
+            description: 'An environment; repeat for more.',
+          },
+          runtimeState: {
+            name: 'state',
+            description:
+              'A runtime state (running, starting, waiting, stopped, failed, unknown); repeat for more.',
+          },
           q: { name: 'search' },
           label: { description: 'A label (key=value); repeat for more.' },
         },
@@ -902,7 +910,7 @@ export function createReleasesApi(
         action: 'rel.apps/view',
       }),
       description:
-        'Requires the `view` action; lists the Apps it reaches. `q` searches, `label=key=value` (repeatable) filters by label.',
+        'Requires the `view` action; lists the Apps it reaches. `q` searches, `environmentId` (repeatable) keeps the Apps of those environments, `runtimeState` (repeatable) those whose runtime is in those states, and `label=key=value` (repeatable) filters by label; every filter applies before the page is cut, so `total` counts the matches.',
       responses: {
         200: listResponse(ReleasesAppSchema, ReleasesPageMeta),
         ...apiErrorResponses,
@@ -915,9 +923,8 @@ export function createReleasesApi(
         page: query.page,
         pageSize: query.pageSize,
         ...(query.q === undefined ? {} : { search: query.q }),
-        ...(query.environmentId === undefined
-          ? {}
-          : { environmentId: query.environmentId }),
+        environmentIds: query.environmentId,
+        runStates: query.runtimeState,
         labels: parseLabelFilter(query.label),
       });
       return context.json({ data: result.items, meta: pageMeta(result) });

@@ -1026,6 +1026,7 @@ export function createHostDriver(
           return {
             id: IN_PROCESS_BACKEND,
             memory: status.counters?.memory ?? null,
+            maxActive: status.counters?.maxActiveApps ?? null,
             recycling:
               restartScheduled ||
               readyRestoring ||

@@ -181,6 +181,22 @@ const idID: LocaleResource<typeof enUS> = {
         'Huruf, angka, garis bawah dan tanda hubung; bagian dari alamatnya. Itu tidak bisa diubah nanti.',
       noEnvironment: 'Belum ada lingkungan',
       lastAccess: 'Kunjungan terakhir',
+      stateFilter: 'Status',
+      anyState: 'Semua status',
+      filteredEnvironments: 'Lingkungan: {{names}}',
+      clearFilters: 'Hapus filter',
+      noMatches: 'Tidak ada aplikasi yang cocok dengan filter.',
+      page: 'Halaman {{page}} dari {{pages}}',
+      previousPage: 'Halaman sebelumnya',
+      nextPage: 'Halaman berikutnya',
+      runStates: {
+        running: 'Berjalan',
+        starting: 'Sedang dimulai',
+        waiting: 'Menunggu',
+        stopped: 'Berhenti atau hibernasi',
+        failed: 'Gagal',
+        unknown: 'Tidak diketahui',
+      },
     },
     advanced: 'Tingkat Lanjut (opsional)',
     labels: {
@@ -543,11 +559,7 @@ const idID: LocaleResource<typeof enUS> = {
       title: 'Host aplikasi bersama',
       description:
         'Aplikasi dari semua lingkungan di host ini berbagi satu proses dan memorinya.',
-      summary:
-        '{{running}} dari {{deployed}} aplikasi yang di-deploy berjalan atau sedang dimulai',
-      memory:
-        'Heap {{heapUsed}} dari {{heapLimit}} · memori proses {{rss}} · {{available}} tersedia di server',
-      memoryNote: 'Total untuk seluruh proses, bukan untuk satu aplikasi.',
+      environments: 'Lingkungan di host ini: {{names}}',
       recycling: {
         pending:
           'Kode lama dibebaskan dengan memulai ulang host ini saat tidak ada aplikasi yang digunakan. Versi baru menunggu sampai saat itu; aplikasi yang berjalan tetap melayani.',
@@ -556,19 +568,22 @@ const idID: LocaleResource<typeof enUS> = {
       },
       restoreFailed:
         '{{name}}: aplikasinya tidak dapat dipulihkan; mencoba lagi di latar belakang.',
-      environments: 'Lingkungan di host ini: {{names}}',
       failed:
         'Aplikasi tidak dapat dipulihkan setelah host bersamanya dimulai ulang; dicoba lagi di latar belakang.',
       view: 'Lihat penggunaan host',
-      columns: {
-        app: 'Aplikasi',
-        state: 'Status',
-        why: 'Alasan',
-        lastAccess: 'Akses terakhir',
-      },
-      hidden: 'Aplikasi yang tidak dapat Anda lihat',
-      empty: 'Tidak ada aplikasi yang berjalan di host ini.',
-      idle: 'Menganggur; dihentikan lebih dulu saat ruang dibutuhkan',
+      running:
+        '{{running}} dari {{limit}} aplikasi berjalan atau sedang dimulai',
+      runningUnlimited:
+        '{{running}} aplikasi berjalan atau sedang dimulai · tanpa batas',
+      deployed: 'Di-deploy: {{count}}',
+      heap: 'Heap {{used}} dari {{limit}}',
+      process: 'Memori proses {{rss}} · {{available}} masih tersedia di server',
+      wholeHost:
+        'Total seluruh host, termasuk semua lingkungan di dalamnya; memori tidak bisa dibagi per aplikasi.',
+      viewApps: 'Lihat {{count}} aplikasi yang berjalan atau sedang dimulai',
+      viewAppsNote: 'Hanya menampilkan aplikasi yang bisa Anda lihat.',
+    },
+    runtime: {
       holds: {
         requests: 'Melayani permintaan',
         connections: 'Koneksi terbuka',
@@ -584,6 +599,8 @@ const idID: LocaleResource<typeof enUS> = {
         memory: 'Mulai ditolak: memori tidak cukup',
         recycle: 'Mulai ditolak: kode baru menunggu host dimulai ulang',
       },
+      idle: 'Menganggur; dihentikan lebih dulu saat ruang dibutuhkan',
+      lastVisit: 'Kunjungan terakhir: {{time}}',
     },
     overview: {
       currentRelease: 'Rilis saat ini',

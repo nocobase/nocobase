@@ -1,8 +1,9 @@
 /**
- * A shared app host: the environments page lists each one once (`SharedHostSection`) with who runs there and why, who
- * waits and for what, and the shared process's memory as one total (it cannot be divided among the Apps). An App's page
- * mentions its host only when the host affects it (`SharedHostNotice`), with a link to that block for those who may
- * read the environments page.
+ * A shared app host: the environments page shows each one once as a capacity card (`SharedHostSection`) — how many
+ * Apps run or start against its limit, the shared process's memory as one total (it cannot be divided among the Apps),
+ * its restart state and the environments it could not restore — with a link to those Apps in the Apps list. An App's
+ * page mentions its host only when the host affects it (`SharedHostNotice`), linking to the card for those who may read
+ * the environments page.
  */
 import { useTranslation } from '@nocobase/i18n/client';
 import { RefreshCwIcon, TriangleAlertIcon } from 'lucide-react';
@@ -12,25 +13,23 @@ import { Link } from 'react-router';
 import { ACCESS_NAMESPACE } from '../../shared/access.js';
 import type { AppSummary, SharedHostView } from '../../shared/releases.js';
 import { messageText } from '../lib/errors.js';
-import {
-  hostNoticeOf,
-  occupantReasons,
-  occupantState,
-  sharedHostAnchor,
-} from '../lib/host-occupants.js';
-import { formatDate, formatSize } from '../lib/format.js';
+import { formatSize } from '../lib/format.js';
 import { useReleasesPaths } from '../lib/paths.js';
-import { DataTable } from './data-table.js';
-import { Section } from './section.js';
-import { Tag, type Tone } from './tag.js';
+import {
+  hostAppsSearch,
+  hostNoticeOf,
+  sharedHostAnchor,
+} from '../lib/runtime-state.js';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert.js';
-
-const STATE_TONE: Readonly<Record<string, Tone>> = {
-  running: 'green',
-  starting: 'blue',
-  pending: 'blue',
-  failed: 'red',
-};
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from './ui/card.js';
+import { Progress, ProgressLabel, ProgressValue } from './ui/progress.js';
 
 /**
  * One line on an App's page while its shared host affects it, null otherwise. `canReadEnvironments` adds the link to
@@ -69,151 +68,138 @@ export function SharedHostNotice({
   );
 }
 
+function Meter({
+  label,
+  value,
+  max,
+}: {
+  readonly label: string;
+  readonly value: number;
+  readonly max: number;
+}): ReactElement {
+  return (
+    <Progress
+      value={max > 0 ? Math.min(100, (value / max) * 100) : 0}
+      className='gap-1.5'
+    >
+      <ProgressLabel className='text-sm font-normal tabular-nums'>
+        {label}
+      </ProgressLabel>
+      <ProgressValue className='sr-only' />
+    </Progress>
+  );
+}
+
+/**
+ * One host's capacity card. Its counts are the whole host's, every environment on it included; the link to the Apps
+ * list shows `canListApps` readers the running Apps they may view.
+ */
 export function SharedHostSection({
   host,
+  canListApps,
 }: {
   readonly host: SharedHostView;
+  readonly canListApps: boolean;
 }): ReactElement {
-  const { t, i18n } = useTranslation(ACCESS_NAMESPACE);
+  const { t } = useTranslation(ACCESS_NAMESPACE);
+  const paths = useReleasesPaths();
   const memory = host.memory;
   return (
-    <Section
-      id={sharedHostAnchor(host.id)}
-      className='scroll-mt-4'
-      title={t('ui.sharedHost.title')}
-      count={host.occupants.length}
-      description={t('ui.sharedHost.description')}
-    >
-      <div className='space-y-1 text-sm' data-slot='shared-host-summary'>
-        {host.environments.length > 0 ? (
-          <p className='text-muted-foreground'>
-            {t('ui.sharedHost.environments', {
-              names: host.environments
-                .map((environment) => environment.name)
-                .join(', '),
-            })}
-          </p>
-        ) : null}
-        <p>
-          {t('ui.sharedHost.summary', {
-            running: host.running,
-            deployed: host.deployed,
-          })}
-        </p>
-        {memory ? (
-          <p className='text-muted-foreground tabular-nums'>
-            {t('ui.sharedHost.memory', {
-              heapUsed: formatSize(memory.heapUsed),
-              heapLimit: formatSize(memory.heapLimit),
-              rss: formatSize(memory.rss),
-              available: formatSize(memory.available),
-            })}{' '}
-            <span className='text-xs'>{t('ui.sharedHost.memoryNote')}</span>
-          </p>
-        ) : null}
-      </div>
-      {host.recycling ? (
-        <Alert role='status' data-slot='shared-host-recycling'>
-          <RefreshCwIcon />
-          <AlertTitle className='font-normal'>
-            {t(`ui.sharedHost.recycling.${host.recycling}`)}
-          </AlertTitle>
-        </Alert>
-      ) : null}
-      {host.failedEnvironments.map((environment) => (
-        <Alert
-          key={environment.id}
-          variant='destructive'
-          data-slot='shared-host-restore-failed'
-        >
-          <TriangleAlertIcon />
-          <AlertTitle className='font-normal'>
-            {t('ui.sharedHost.restoreFailed', {
-              name: environment.name ?? environment.id,
-            })}
-          </AlertTitle>
-          {environment.error ? (
-            <AlertDescription className='break-words'>
-              {messageText(t, environment.error)}
-            </AlertDescription>
+    <Card id={sharedHostAnchor(host.id)} className='scroll-mt-4'>
+      <CardHeader>
+        <CardTitle>{t('ui.sharedHost.title')}</CardTitle>
+        <CardDescription>
+          {host.environments.length > 0
+            ? t('ui.sharedHost.environments', {
+                names: host.environments
+                  .map((environment) => environment.name)
+                  .join(', '),
+              })
+            : t('ui.sharedHost.description')}
+        </CardDescription>
+      </CardHeader>
+      <CardContent className='space-y-4'>
+        <div className='grid gap-4 md:grid-cols-3'>
+          {host.maxActive ? (
+            <Meter
+              label={t('ui.sharedHost.running', {
+                running: host.running,
+                limit: host.maxActive,
+              })}
+              value={host.running}
+              max={host.maxActive}
+            />
+          ) : (
+            <p className='text-sm tabular-nums'>
+              {t('ui.sharedHost.runningUnlimited', { running: host.running })}
+            </p>
+          )}
+          {memory ? (
+            <>
+              <Meter
+                label={t('ui.sharedHost.heap', {
+                  used: formatSize(memory.heapUsed),
+                  limit: formatSize(memory.heapLimit),
+                })}
+                value={memory.heapUsed}
+                max={memory.heapLimit}
+              />
+              <Meter
+                label={t('ui.sharedHost.process', {
+                  rss: formatSize(memory.rss),
+                  available: formatSize(memory.available),
+                })}
+                value={memory.rss}
+                max={memory.rss + memory.available}
+              />
+            </>
           ) : null}
-        </Alert>
-      ))}
-      <DataTable
-        columns={[
-          {
-            id: 'app',
-            header: t('ui.sharedHost.columns.app'),
-            cell: ({ row }) =>
-              row.original.app ? (
-                <div className='min-w-0'>
-                  <div className='truncate font-medium'>
-                    {row.original.app.name}
-                  </div>
-                  <div className='truncate text-xs text-muted-foreground'>
-                    {row.original.app.environmentName}
-                  </div>
-                </div>
-              ) : (
-                <span className='text-muted-foreground'>
-                  {t('ui.sharedHost.hidden')}
-                </span>
-              ),
-          },
-          {
-            id: 'state',
-            header: t('ui.sharedHost.columns.state'),
-            meta: { className: 'w-48' },
-            cell: ({ row }) => {
-              const state = occupantState(row.original);
-              return (
-                <Tag
-                  tone={
-                    STATE_TONE[state] ??
-                    (state.startsWith('waiting') ? 'amber' : 'grey')
-                  }
-                  dot
-                  title={
-                    row.original.error
-                      ? messageText(t, row.original.error)
-                      : undefined
-                  }
-                >
-                  {t(`ui.state.${state}`)}
-                </Tag>
-              );
-            },
-          },
-          {
-            id: 'why',
-            header: t('ui.sharedHost.columns.why'),
-            cell: ({ row }) => (
-              <span className='text-muted-foreground'>
-                {occupantReasons(row.original)
-                  .map((key) => t(key))
-                  .join(' · ')}
-              </span>
-            ),
-          },
-          {
-            id: 'lastAccess',
-            header: t('ui.sharedHost.columns.lastAccess'),
-            meta: { className: 'w-44' },
-            cell: ({ row }) => (
-              <span className='tabular-nums'>
-                {formatDate(row.original.lastAccessedAt, i18n.language)}
-              </span>
-            ),
-          },
-        ]}
-        data={host.occupants}
-        getRowId={(occupant) =>
-          occupant.app?.id ??
-          `hidden-${host.occupants.indexOf(occupant).toString()}`
-        }
-        emptyMessage={t('ui.sharedHost.empty')}
-        scroll
-      />
-    </Section>
+        </div>
+        <p className='text-xs text-muted-foreground'>
+          {t('ui.sharedHost.deployed', { count: host.deployed })} ·{' '}
+          {t('ui.sharedHost.wholeHost')}
+        </p>
+        {host.recycling ? (
+          <Alert role='status' data-slot='shared-host-recycling'>
+            <RefreshCwIcon />
+            <AlertTitle className='font-normal'>
+              {t(`ui.sharedHost.recycling.${host.recycling}`)}
+            </AlertTitle>
+          </Alert>
+        ) : null}
+        {host.failedEnvironments.map((environment) => (
+          <Alert
+            key={environment.id}
+            variant='destructive'
+            data-slot='shared-host-restore-failed'
+          >
+            <TriangleAlertIcon />
+            <AlertTitle className='font-normal'>
+              {t('ui.sharedHost.restoreFailed', {
+                name: environment.name ?? environment.id,
+              })}
+            </AlertTitle>
+            {environment.error ? (
+              <AlertDescription className='break-words'>
+                {messageText(t, environment.error)}
+              </AlertDescription>
+            ) : null}
+          </Alert>
+        ))}
+      </CardContent>
+      {canListApps && host.environments.length > 0 ? (
+        <CardFooter className='flex flex-wrap items-baseline gap-x-3 gap-y-1'>
+          <Link
+            to={`${paths.apps}${hostAppsSearch(host)}`}
+            className='text-sm text-primary underline-offset-4 hover:underline'
+          >
+            {t('ui.sharedHost.viewApps', { count: host.running })}
+          </Link>
+          <span className='text-xs text-muted-foreground'>
+            {t('ui.sharedHost.viewAppsNote')}
+          </span>
+        </CardFooter>
+      ) : null}
+    </Card>
   );
 }

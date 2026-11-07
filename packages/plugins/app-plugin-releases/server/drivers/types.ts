@@ -251,6 +251,8 @@ export interface HostOccupancy {
    * `restarting`: it is restarting or restoring its Apps, which answer "retry" meanwhile.
    */
   readonly recycling: 'pending' | 'restarting' | null;
+  /** How many Apps may run or start on the runtime at once; null when nothing limits it. */
+  readonly maxActive: number | null;
   /** Every App deployed on the runtime, running or not. */
   readonly apps: readonly (AppObservedStatus & {
     readonly appId: string;

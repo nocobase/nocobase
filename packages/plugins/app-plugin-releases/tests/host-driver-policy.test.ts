@@ -20,7 +20,7 @@ import type {
 } from '@nocobase/app-host/management';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { hostNoticeOf } from '../client/lib/host-occupants.js';
+import { hostNoticeOf } from '../client/lib/runtime-state.js';
 import { runtimeStatus } from '../server/services/releases.js';
 import type { AppSummary } from '../shared/releases.js';
 import { appSummary } from './helpers/app-summary.js';
@@ -435,12 +435,15 @@ describe('Host driver', () => {
         rss: 1500 * 1024 ** 2,
         available: 3000 * 1024 ** 2,
       },
+      maxActiveApps: 6,
     };
     const occupancy = await preview.occupancy!();
     expect(occupancy).toMatchObject({
       // Every environment on the in-process Host names the same runtime.
       id: 'in-process',
       memory: { heapUsed: 900 * 1024 ** 2, rss: 1500 * 1024 ** 2 },
+      // The Host's own active App limit, passed through.
+      maxActive: 6,
       recycling: null,
       failedEnvironments: [],
     });

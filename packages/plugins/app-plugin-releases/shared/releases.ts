@@ -352,6 +352,31 @@ export interface RuntimeStatus {
   readonly unrestored?: boolean;
 }
 
+/**
+ * An App's runtime as the Apps list shows and filters it, a deployment in progress aside: `failed` first, then
+ * `running` and `starting` (what holds a slot on a shared runtime, as its running count counts), `waiting` (a start
+ * refused for a slot, memory or a restart), `stopped` (stopped or hibernating) and `unknown` (its runtime did not answer).
+ */
+export const RUN_STATES = [
+  'running',
+  'starting',
+  'waiting',
+  'stopped',
+  'failed',
+  'unknown',
+] as const;
+export type RunState = (typeof RUN_STATES)[number];
+
+export function runStateOf(runtime: RuntimeStatus): RunState {
+  const { state, waiting } = runtime;
+  if (state === 'failed') return 'failed';
+  if (state === 'running') return 'running';
+  if (state === 'starting' || state === 'pending') return 'starting';
+  if (waiting) return 'waiting';
+  if (state === 'unknown') return 'unknown';
+  return 'stopped';
+}
+
 export type HostHoldReason =
   | 'requests'
   | 'connections'
@@ -362,24 +387,6 @@ export type HostHoldReason =
   | 'recent';
 
 export type HostWaitReason = 'capacity' | 'memory' | 'recycle';
-
-/** An App on the shared runtime, as the single-App read reports it. */
-export interface HostOccupantView {
-  /** The App and its environment; null for one the caller may not see (or not managed here). */
-  readonly app: {
-    readonly id: string;
-    readonly name: string;
-    readonly environmentId: string;
-    readonly environmentName: string;
-    /** The App it previews, for a preview App. */
-    readonly previewOf: string | null;
-  } | null;
-  readonly state: ObservedState;
-  readonly holds: readonly HostHoldReason[];
-  readonly waiting: HostWaitReason | null;
-  readonly lastAccessedAt: string | null;
-  readonly error: string | null;
-}
 
 /**
  * The runtime an App shares with other Apps, every environment on it included. `memory` is the shared process's
@@ -399,11 +406,11 @@ export interface AppHostView {
    * restarts or restores its Apps, which answer "retry" meanwhile; null otherwise.
    */
   readonly recycling: 'pending' | 'restarting' | null;
-  /** Apps deployed on it, and those of them running or starting. */
+  /** Apps deployed on it, and those of them running or starting (a failed App holds nothing and is not counted). */
   readonly deployed: number;
   readonly running: number;
-  /** The Apps that run, start, wait for a start or failed, those holding a slot first. */
-  readonly occupants: readonly HostOccupantView[];
+  /** How many Apps may run or start on it at once; null when nothing limits it. */
+  readonly maxActive: number | null;
   /** Environments whose Apps could not be restored after it restarted; retried in the background. */
   readonly failedEnvironments: readonly {
     readonly id: string;

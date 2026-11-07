@@ -46,7 +46,11 @@ import {
   type UpdateAppInput,
   type UpdateConfigInput,
 } from '../../shared/releases.js';
-import { ENVIRONMENT_PURPOSES } from '../../shared/releases.js';
+import {
+  ENVIRONMENT_PURPOSES,
+  RUN_STATES,
+  type RunState,
+} from '../../shared/releases.js';
 import type { Caller } from '../access/caller.js';
 
 const id = z.string().min(1);
@@ -92,13 +96,32 @@ const labelFilter = z
     value === undefined ? [] : Array.isArray(value) ? value : [value],
   );
 
+/** A repeatable query value: one arrives as a string, several as an array. */
+const repeated = <T extends z.ZodType<string>>(item: T) =>
+  z
+    .union([item, z.array(item)])
+    .optional()
+    .transform((value): z.output<T>[] =>
+      value === undefined ? [] : Array.isArray(value) ? value : [value],
+    );
+
 export const ListAppsQuery: z.ZodType<
-  Paging & { q?: string; environmentId?: string; label: string[] }
+  Paging & {
+    q?: string;
+    environmentId: string[];
+    runtimeState: RunState[];
+    label: string[];
+  }
 > = z.object({
   page: page.describe('The page number, starting at 1.'),
   pageSize: pageSize.describe('The maximum number of records to return.'),
   q: z.string().trim().max(100).optional().describe('Text to search for.'),
-  environmentId: z.string().optional().describe('The environment identifier.'),
+  environmentId: repeated(z.string().min(1)).describe(
+    'An environment identifier; repeat for Apps of any of them.',
+  ),
+  runtimeState: repeated(z.enum(RUN_STATES)).describe(
+    'A runtime state (`running`, `starting`, `waiting`, `stopped`, `failed`, `unknown`); repeat for Apps in any of them. Applied before the page is cut.',
+  ),
   label: labelFilter.describe('A label for this resource.'),
 });
 
@@ -769,36 +792,14 @@ const appHostFields = {
     }),
   recycling: z.enum(['pending', 'restarting']).nullable(),
   deployed: z.number().int().nonnegative(),
-  running: z.number().int().nonnegative(),
-  occupants: z.array(
-    z.object({
-      app: z
-        .object({
-          id: z.string(),
-          name: z.string(),
-          environmentId: z.string(),
-          environmentName: z.string(),
-          previewOf: z.string().nullable(),
-        })
-        .nullable()
-        .meta({
-          description: 'Null for an App the caller may not view.',
-        }),
-      state: z.enum([
-        'pending',
-        'running',
-        'starting',
-        'stopped',
-        'dormant',
-        'failed',
-        'unknown',
-      ]),
-      holds: z.array(hostHoldReason),
-      waiting: hostWaitReason.nullable(),
-      lastAccessedAt: nullableDateTime,
-      error: z.string().nullable(),
-    }),
-  ),
+  running: z.number().int().nonnegative().meta({
+    description:
+      'Apps running or starting on it; a failed App holds nothing and is not counted.',
+  }),
+  maxActive: z.number().int().positive().nullable().meta({
+    description:
+      'How many Apps may run or start on it at once; null when nothing limits it.',
+  }),
   failedEnvironments: z.array(
     z.object({
       id: z.string(),
