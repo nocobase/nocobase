@@ -44,7 +44,7 @@ const jaJP: LocaleResource<typeof enUS> = {
       },
       runners: {
         title: '実行環境',
-        description: 'ランナーと登録トークンを参照。ランナーを管理します。',
+        description: '実行環境と登録トークンを参照。実行環境を管理します。',
       },
       prices: {
         title: 'モデルの価格',

@@ -46,7 +46,7 @@ const ptBR: LocaleResource<typeof enUS> = {
       runners: {
         title: 'Ambientes de execução',
         description:
-          'Veja executores e tokens de registro; gerenciar executores.',
+          'Veja ambientes de execução e tokens de registro; gerenciar ambientes de execução.',
       },
       prices: {
         title: 'Preços dos modelos',

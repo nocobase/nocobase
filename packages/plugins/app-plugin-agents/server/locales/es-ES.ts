@@ -46,7 +46,7 @@ const esES: LocaleResource<typeof enUS> = {
       runners: {
         title: 'Entornos de ejecución',
         description:
-          'Ver ejecutores y tokens de registro; gestionar ejecutores.',
+          'Ver entornos de ejecución y tokens de registro; gestionar entornos de ejecución.',
       },
       prices: {
         title: 'Precios de los modelos',

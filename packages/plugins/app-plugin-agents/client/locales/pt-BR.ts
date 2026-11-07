@@ -1,6 +1,4 @@
-import runtimesEnUS from './runtimes.en-US.js';
 import type { LocaleResource } from '@nocobase/i18n';
-import chatEnUS from './chat.en-US.js';
 
 import type enUS from './en-US.js';
 
@@ -114,8 +112,8 @@ const ptBR: LocaleResource<typeof enUS> = {
     unavailableNow: 'Indisponível agora',
     title: 'Agentes',
     description:
-      'Adicione agentes a partir dos modelos informados pelos executores. O Lead Agent atribui cada etapa de uma tarefa ao agente cuja descrição é adequada.',
-    fromRunners: 'Agentes de executores',
+      'Adicione agentes a partir dos modelos que os ambientes de execução informam. O Lead Agent entrega cada etapa de uma tarefa ao agente cuja descrição combina.',
+    fromRunners: 'Agentes de ambientes de execução',
     display: {
       search: 'Pesquisar modelos ou provedores',
       select: 'Selecione {{name}}',
@@ -126,16 +124,16 @@ const ptBR: LocaleResource<typeof enUS> = {
     filters: {
       all: 'Todos {{count}}',
       enabled: '{{count}} habilitado',
-      unreported: 'Nenhum executor {{count}}',
+      unreported: 'Nenhum ambiente de execução {{count}}',
     },
     loadFailed: 'Não foi possível carregar os agentes',
     loadMore: 'Carregar mais',
     emptyTitle: 'Nenhum agente ainda',
     emptyDescription:
-      'Conecte um executor com uma ferramenta de codificação autenticada e adicione um agente em “Modelos disponíveis”.',
+      'Conecte um ambiente de execução com uma ferramenta de codificação autenticada e adicione um agente em “Modelos disponíveis”.',
     noneInFilter: 'Nenhum agente aqui.',
     howToAdd:
-      'Para adicionar um agente, instale uma ferramenta de codificação em um executor e entre na conta para usar um modelo disponível. Quando o executor informar o modelo, adicione o agente em “Modelos disponíveis”, descrevendo suas especialidades. Ele será habilitado ao ser adicionado. Um agente disponível apenas em executores pessoais trabalha somente nas tarefas iniciadas pelos proprietários desses executores.',
+      'Para adicionar um agente, instale uma ferramenta de programação em um ambiente de execução e entre em um modelo que você pode usar: quando o ambiente o informar, adicione-o em Modelos disponíveis escrevendo em que ele é bom. Um agente que só ambientes pessoais têm trabalha apenas em tarefas iniciadas pelos donos desses ambientes.',
     goodAtMissing: 'Ainda não escrito',
     columns: {
       agent: 'Agente',
@@ -145,15 +143,15 @@ const ptBR: LocaleResource<typeof enUS> = {
       state: 'Status',
     },
     where: {
-      none: 'Sem executor',
+      none: 'Sem ambiente de execução',
       team_one: 'Executor da equipe {{count}}',
       team_other: 'Executores da equipe {{count}}',
       personal_one: 'Executor pessoal {{count}} online',
       personal_other: 'Executores pessoais {{count}} online',
       both: 'Equipe {{team}} · Pessoal {{personal}}',
       names: '{{names}}',
-      noneOnline: 'Nenhum executor online agora',
-      personalOnly: 'Somente executores pessoais',
+      noneOnline: 'Nenhum ambiente de execução online agora',
+      personalOnly: 'Somente ambientes de execução pessoais',
       lastReported: 'Último relatório {{when}}',
       team_many: 'Executores da equipe {{count}}',
       personal_many: 'Executores pessoais {{count}} online',
@@ -161,7 +159,7 @@ const ptBR: LocaleResource<typeof enUS> = {
     state: {
       enabled: 'Habilitado',
       disabled: 'Desabilitado',
-      unreported: 'Sem executor',
+      unreported: 'Sem ambiente de execução',
     },
     effort: {
       default: 'Padrão da ferramenta',
@@ -175,16 +173,19 @@ const ptBR: LocaleResource<typeof enUS> = {
       ultra: 'Ultra',
     },
     enable: {
-      reportedBy_one: 'Relatado pelo executor {{count}} online: {{names}}.',
-      reportedBy_other: 'Relatado por executores {{count}} online: {{names}}.',
-      noRunnerNow: 'Nenhum executor que o tenha está online agora.',
+      reportedBy_one:
+        'Relatado pelo ambiente de execução {{count}} online: {{names}}.',
+      reportedBy_other:
+        'Relatado por ambientes de execução {{count}} online: {{names}}.',
+      noRunnerNow: 'Nenhum ambiente de execução que o tenha está online agora.',
       goodAtHint:
         'O Lead Agent decide o que entregar a este agente com estas palavras. Diga o que é adequado e o que não é.',
       goodAtRequired: 'Escreva em que ele é bom antes de ativá-lo.',
       effortHint: 'O Lead Agent não pode alterá-lo quando entrega o trabalho.',
       personalOnly:
-        'Apenas os executores pessoais o possuem: o Lead Agent entrega o trabalho apenas nas questões que seus proprietários iniciam.',
-      reportedBy_many: 'Relatado por executores {{count}} online: {{names}}.',
+        'Só ambientes pessoais o têm: o Lead Agent entrega trabalho a ele apenas em tarefas iniciadas pelos donos desses ambientes.',
+      reportedBy_many:
+        'Relatado por ambientes de execução {{count}} online: {{names}}.',
     },
     edit: {
       button: 'Editar',
@@ -197,7 +198,7 @@ const ptBR: LocaleResource<typeof enUS> = {
       open: 'Adicionar agente',
       title: 'Modelos disponíveis',
       description:
-        'Somente as ferramentas marcadas no ambiente de execução são detectadas e aparecem aqui. As combinações recomendadas pela aplicação se criam e habilitam por conta própria assim que um executor as relata; adicione um agente a partir de qualquer outra.',
+        'Somente as ferramentas marcadas no ambiente de execução são detectadas e aparecem aqui. As combinações recomendadas pela aplicação se criam e habilitam por conta própria assim que um ambiente de execução as relata; adicione um agente a partir de qualquer outra.',
       recommended: 'Habilitado automaticamente ao ser relatado',
       added: 'Adicionado',
       add: 'Adicionar',
@@ -222,9 +223,9 @@ const ptBR: LocaleResource<typeof enUS> = {
       group_one: '{{tool}} · {{count}} modelo · {{runners}}',
       group_other: '{{tool}} · {{count}} modelos · {{runners}}',
       group_many: '{{tool}} · {{count}} modelos · {{runners}}',
-      runners_one: '{{count}} executor',
-      runners_other: '{{count}} executores',
-      runners_many: '{{count}} executores',
+      runners_one: '{{count}} ambiente de execução',
+      runners_other: '{{count}} ambientes de execução',
+      runners_many: '{{count}} ambientes de execução',
       noModels: 'Nenhum modelo aqui.',
       selectedCount_one: '{{count}} selecionado',
       selectedCount_other: '{{count}} selecionados',
@@ -252,9 +253,9 @@ const ptBR: LocaleResource<typeof enUS> = {
     online: 'On-line',
     runner: 'Executor',
     onlineHint:
-      'Respostas em segundos no servidor através de um serviço modelo. Não é necessário tempo de execução; não pode tocar no código.',
+      'Respostas em segundos no servidor através de um serviço modelo. Não é necessário ambiente de execução; não pode tocar no código.',
     runnerHint:
-      'Aciona uma ferramenta de codificação em tempo de execução e funciona em um diretório de trabalho: código, arquivos, comandos.',
+      'Aciona uma ferramenta de codificação em ambiente de execução e funciona em um diretório de trabalho: código, arquivos, comandos.',
     immutable:
       'Um agente mantém seu tipo; crie outro agente para o outro tipo.',
     onServer: 'No servidor',
@@ -298,9 +299,9 @@ const ptBR: LocaleResource<typeof enUS> = {
     firstMessage: 'Primeira mensagem',
     empty: 'Vazio',
     previewPlaceholders:
-      'As notas entre colchetes sobre o tempo de execução são preenchidas pelo tempo de execução que o executa: seus diretórios de trabalho e os prompts de inicialização dos diretórios que ele acabou de preparar.',
+      'As notas entre colchetes sobre o ambiente de execução são preenchidas pelo ambiente de execução que o executa: seus diretórios de trabalho e os prompts de inicialização dos diretórios que ele acabou de preparar.',
     placeholders:
-      'Os espaços reservados {{runner.…}} são preenchidos pelo tempo de execução que o executa: seus diretórios de trabalho e os prompts de inicialização dos diretórios que ele acabou de preparar.',
+      'Os espaços reservados {{runner.…}} são preenchidos pelo ambiente de execução que o executa: seus diretórios de trabalho e os prompts de inicialização dos diretórios que ele acabou de preparar.',
     layers: {
       system: 'Regras',
       task: 'Tarefa',
@@ -312,7 +313,7 @@ const ptBR: LocaleResource<typeof enUS> = {
   envVars: {
     title: 'Variáveis de ambiente',
     description:
-      'Passado para a ferramenta de codificação em cada execução e mascarado nos registros de execução; os valores não são mostrados novamente após salvar. Qualquer pessoa que utilize um agente compartilhado pode receber esses valores em seu próprio computador; marque segredos de alto risco como "Somente tempos de execução da equipe".',
+      'Passado para a ferramenta de codificação em cada execução e mascarado nos registros de execução; os valores não são mostrados novamente após salvar. Qualquer pessoa que utilize um agente compartilhado pode receber esses valores em seu próprio computador; marque segredos de alto risco como "Somente ambientes de execução da equipe".',
     add: 'Adicionar variável',
     addTitle: 'Adicionar variável de ambiente',
     editTitle: 'Substituir {{name}}',
@@ -323,16 +324,16 @@ const ptBR: LocaleResource<typeof enUS> = {
     value: 'Valor',
     valueTooLong: 'O valor é maior que 8 KB.',
     keepValueHint: 'Deixe em branco para manter o valor atual.',
-    teamRunnersOnly: 'Somente tempos de execução de equipe',
+    teamRunnersOnly: 'Somente ambientes de execução de equipe',
     teamRunnersOnlyHint:
-      'Sem ele, uma execução envia o valor para o tempo de execução que o utiliza, incluindo o tempo de execução pessoal de qualquer pessoa que possa usar o agente. Com ele, apenas um tempo de execução de equipe realiza execuções que obtenham essa variável.',
-    teamRunnersOnlyBadge: 'Somente tempos de execução de equipe',
-    fromRunner: 'Extrair do tempo de execução',
+      'Sem ele, uma execução envia o valor para o ambiente de execução que o utiliza, incluindo o ambiente de execução pessoal de qualquer pessoa que possa usar o agente. Com ele, apenas um ambiente de execução de equipe realiza execuções que obtenham essa variável.',
+    teamRunnersOnlyBadge: 'Somente ambientes de execução de equipe',
+    fromRunner: 'Extrair do ambiente de execução',
     fromRunnerHint:
-      'Nenhum valor é mantido aqui: o tempo de execução que realiza uma execução o fornece a partir de sua própria máquina, ali configurada com {{command}} ou passada com `--pass-env`. Um tempo de execução que não fornece falha na execução antes de iniciar.',
-    fromRunnerBadge: 'Do tempo de execução',
+      'Nenhum valor é mantido aqui: o ambiente de execução que realiza uma execução o fornece a partir de sua própria máquina, ali configurada com {{command}} ou passada com `--pass-env`. Um ambiente de execução que não fornece falha na execução antes de iniciar.',
+    fromRunnerBadge: 'Do ambiente de execução',
     valueRequired:
-      'Insira um valor ou continue extraindo-o do tempo de execução.',
+      'Insira um valor ou continue extraindo-o do ambiente de execução.',
     empty: 'Sem variáveis ​​de ambiente.',
     scope: 'Escopo',
     updated: 'Atualizado',
@@ -504,7 +505,7 @@ const ptBR: LocaleResource<typeof enUS> = {
       button: 'Limpar diretório de trabalho',
       title: 'Limpar o diretório de trabalho?',
       description:
-        'A próxima execução começa com uma nova verificação e recebe novamente os prompts de inicialização. As alterações que não foram enviadas por push serão perdidas nesse tempo de execução. Um diretório usado no local nunca é excluído.',
+        'A próxima execução começa com uma nova verificação e recebe novamente os prompts de inicialização. As alterações que não foram enviadas por push serão perdidas nesse ambiente de execução. Um diretório usado no local nunca é excluído.',
       confirm: 'Limpar',
       done: 'A próxima execução começa com uma nova verificação.',
     },
@@ -577,20 +578,20 @@ const ptBR: LocaleResource<typeof enUS> = {
       'Interrompido para atualização da máquina de execução; a corrida continuará.',
     runnerDiskFull: 'A máquina de execução ficou sem espaço em disco.',
     runnerOfflineBeforeStart:
-      'O tempo de execução ficou off-line antes de iniciar a execução.',
-    runnerOffline: 'O tempo de execução ficou offline.',
-    leaseExpired: 'O tempo de execução parou de relatar.',
-    startTimeout: 'O tempo de execução não iniciou a execução a tempo.',
+      'O ambiente de execução ficou off-line antes de iniciar a execução.',
+    runnerOffline: 'O ambiente de execução ficou offline.',
+    leaseExpired: 'O ambiente de execução parou de relatar.',
+    startTimeout: 'O ambiente de execução não iniciou a execução a tempo.',
     cancelled: 'Cancelado.',
     idleTimeout: 'O agente parou de progredir.',
     setupFailed: 'A corrida não pôde ser preparada.',
     cliUnavailable:
-      'O tempo de execução não pôde instalar a CLI do aplicativo.',
+      'O ambiente de execução não pôde instalar a CLI do aplicativo.',
     workspaceBusy:
       'O diretório de trabalho está ocupado; esperando por outra tentativa.',
     checkoutFailed: 'A verificação do repositório falhou.',
     toolAuth:
-      'A ferramenta de codificação não está conectada no tempo de execução.',
+      'A ferramenta de codificação não está conectada no ambiente de execução.',
     toolQuota: 'A ferramenta de codificação ficou sem cota.',
     sessionUnavailable:
       'Não foi possível retomar a sessão original da ferramenta de programação.',
@@ -600,13 +601,13 @@ const ptBR: LocaleResource<typeof enUS> = {
     toolProcess: 'A ferramenta de codificação foi encerrada inesperadamente.',
     contextOverflow: 'A conversa tornou-se demasiado longa para o modelo.',
     delegatedQueueTimeout: 'Tempo limite da fila de delegação; retirado',
-    queuedExpired: 'Nenhum tempo de execução demorou a ser executado.',
+    queuedExpired: 'Nenhum ambiente de execução demorou a ser executado.',
     modelUnavailable: 'O modelo do agente não está disponível.',
     stepLimit: 'O agente chamou as ferramentas muitas vezes sem responder.',
     policyRefused:
-      'Nenhuma política de tempo de execução permite esse trabalho.',
+      'Nenhuma política de ambiente de execução permite esse trabalho.',
     prepareNetwork:
-      'O tempo de execução não pôde alcançar o host do repositório durante a preparação da execução.',
+      'O ambiente de execução não pôde alcançar o host do repositório durante a preparação da execução.',
     repoAccessUnavailable:
       'O acesso ao repositório está temporariamente indisponível.',
     repoAccessDenied:
@@ -614,7 +615,8 @@ const ptBR: LocaleResource<typeof enUS> = {
     unknown: 'A execução falhou.',
   },
   runtimes: {
-    pathHint: runtimesEnUS.runtimes.pathHint,
+    pathHint:
+      'O runner encontra as ferramentas de programação pelo próprio PATH. Em um terminal onde which codex / which claude funcione, execute nocobase-runner service install de novo e reinicie o serviço (ou execute nocobase-runner start de novo) para que ele receba o PATH correto.',
     quota: {
       workspaceStatus: {
         active: 'O trabalho continua',
@@ -647,7 +649,7 @@ const ptBR: LocaleResource<typeof enUS> = {
       providers_one: 'Provedor {{count}} na cota',
       providers_other: 'Provedores {{count}} na cota',
       runColumns: {
-        issue: 'Questão/conversa',
+        issue: 'Tarefa / conversa',
         agent: 'Agente',
         status: 'Status',
         started: 'Iniciado',
@@ -689,7 +691,7 @@ const ptBR: LocaleResource<typeof enUS> = {
       observed: 'Último {{time}} relatado',
       usedPercent: '{{percent}}% usado',
       ok: 'OK',
-      hint: 'Uma marca some sozinha no horário de reinicialização conhecido ou quando a ferramenta volta a informar cota disponível. Limpe-a manualmente somente depois de confirmar que a cota foi restaurada. Somente o proprietário e os administradores do tempo de execução podem limpar as marcas.',
+      hint: 'Uma marca some sozinha no horário de reinicialização conhecido ou quando a ferramenta volta a informar cota disponível. Limpe-a manualmente somente depois de confirmar que a cota foi restaurada. Somente o proprietário e os administradores do ambiente de execução podem limpar as marcas.',
       marks_many: 'Marcas de cota {{count}}',
       providers_many: 'Provedores {{count}} na cota',
     },
@@ -718,7 +720,8 @@ const ptBR: LocaleResource<typeof enUS> = {
       ended: 'Terminado',
       active: 'O trabalho continua',
       unknown: 'Não é possível confirmar se o trabalho terminou',
-      oldRunner: 'Este executor não forneceu motivos de diagnóstico',
+      oldRunner:
+        'Este ambiente de execução não forneceu motivos de diagnóstico',
       noCleanup: 'O resultado da limpeza local não foi recebido',
       discardsUntracked: 'A limpeza descartará arquivos não rastreados',
       decision: {
@@ -727,7 +730,7 @@ const ptBR: LocaleResource<typeof enUS> = {
         active: 'O trabalho continua',
         runNotFound: 'Não é possível confirmar: execução não encontrada',
         ownershipUnknown:
-          'Não é possível confirmar: a propriedade do executor não pôde ser verificada',
+          'Não é possível confirmar: a propriedade do ambiente de execução não pôde ser verificada',
         ambiguousSubject: 'Não é possível confirmar: chave de assunto ambígua',
         bindingUnavailable:
           'Não é possível confirmar: o aplicativo não possui vinculação ao espaço de trabalho',
@@ -748,15 +751,15 @@ const ptBR: LocaleResource<typeof enUS> = {
     },
     title: 'Ambientes de execução',
     description:
-      'Os tempos de execução que executam os agentes e as ferramentas de codificação relatadas por cada um.',
-    add: 'Adicionar tempo de execução',
-    loadFailed: 'Não foi possível carregar os tempos de execução',
-    emptyTitle: 'Nenhum tempo de execução conectado ainda',
+      'Os ambientes de execução que executam os agentes e as ferramentas de codificação relatadas por cada um.',
+    add: 'Adicionar ambiente de execução',
+    loadFailed: 'Não foi possível carregar os ambientes de execução',
+    emptyTitle: 'Nenhum ambiente de execução conectado ainda',
     emptyDescription:
-      'Depois que um tempo de execução é conectado, os agentes executores assumem o trabalho lá com suas ferramentas de codificação.',
-    noneConnected: 'Nenhum tempo de execução está conectado.',
-    revokedList_one: '{{count}} tempo de execução revogado',
-    revokedList_other: '{{count}} tempos de execução revogados',
+      'Depois que um ambiente de execução é conectado, os agentes ambientes de execução assumem o trabalho lá com suas ferramentas de codificação.',
+    noneConnected: 'Nenhum ambiente de execução está conectado.',
+    revokedList_one: '{{count}} ambiente de execução revogado',
+    revokedList_other: '{{count}} ambientes de execução revogados',
     lastSeen: 'Visto pela última vez {{time}}',
     activity: {
       online: '{{active}}/{{slots}} on-line',
@@ -790,7 +793,7 @@ const ptBR: LocaleResource<typeof enUS> = {
     policy: {
       title: 'Política local',
       description:
-        'O que o proprietário do tempo de execução permite, conforme relatado. É alterado na máquina, não aqui.',
+        'O que o proprietário do ambiente de execução permite, conforme relatado. É alterado na máquina, não aqui.',
       none: 'Nenhuma política local: aceita qualquer trabalho para o qual esteja registrado.',
       any: 'Qualquer',
       nothing: 'Nenhum',
@@ -801,16 +804,16 @@ const ptBR: LocaleResource<typeof enUS> = {
     variables: {
       title: 'Variáveis desta máquina',
       description:
-        'As variáveis ​​que ele fornece às execuções que as retiram do tempo de execução, por nome; os valores ficam na máquina. Defina um lá com `nocobase-runner env set NAME` ou passe-o com `--pass-env NAME`.',
-      none: 'Nenhum: uma execução que utiliza uma variável do tempo de execução falha aqui antes de ser iniciada.',
+        'As variáveis ​​que ele fornece às execuções que as retiram do ambiente de execução, por nome; os valores ficam na máquina. Defina um lá com `nocobase-runner env set NAME` ou passe-o com `--pass-env NAME`.',
+      none: 'Nenhum: uma execução que utiliza uma variável do ambiente de execução falha aqui antes de ser iniciada.',
       unknown:
-        'Não relatado: seu runner é mais antigo que esse recurso. Atualize o executor para vê-los.',
+        'Não relatado: seu runner é mais antigo que esse recurso. Atualize o ambiente de execução para vê-los.',
     },
     jobs: {
       allow: 'Permitir trabalhos de construção',
-      hint: 'Builds e outras etapas configuradas por este aplicativo são executadas sem um modelo. Este tempo de execução relata: {{kinds}}.',
+      hint: 'Builds e outras etapas configuradas por este aplicativo são executadas sem um modelo. Este ambiente de execução relata: {{kinds}}.',
       unsupported:
-        'O executor deste tempo de execução não aceita jobs. Atualize o runner para ativar isso.',
+        'O ambiente de execução deste ambiente de execução não aceita jobs. Atualize o runner para ativar isso.',
     },
     noTools: 'Nenhuma ferramenta de codificação encontrada',
     actionsFor: 'Ações para {{name}}',
@@ -849,17 +852,17 @@ const ptBR: LocaleResource<typeof enUS> = {
       upgrade_required: 'Atualização necessária',
     },
     upgradeRequired: {
-      title: 'Este tempo de execução precisa de uma atualização',
+      title: 'Este ambiente de execução precisa de uma atualização',
       older:
-        'Seu executor {{version}} fala o protocolo do agente {{protocol}}; esta aplicação precisa do protocolo {{required}}. Ele permanece conectado, mas não executa nada até ser atualizado.',
+        'Seu ambiente de execução {{version}} fala o protocolo do agente {{protocol}}; esta aplicação precisa do protocolo {{required}}. Ele permanece conectado, mas não executa nada até ser atualizado.',
       newer:
-        'Seu executor {{version}} fala o protocolo do agente {{protocol}}, mais recente que esta aplicação (protocolo {{required}}). Ele permanece conectado, mas não executa nada até executar um executor que este aplicativo atende.',
+        'Seu ambiente de execução {{version}} fala o protocolo do agente {{protocol}}, mais recente que esta aplicação (protocolo {{required}}). Ele permanece conectado, mas não executa nada até executar um ambiente de execução que este aplicativo atende.',
       latest:
-        'Esta aplicação atende ao executor {{latest}}. Execute isto em seu host para atualizá-lo:',
+        'Esta aplicação atende ao ambiente de execução {{latest}}. Execute isto em seu host para atualizá-lo:',
       noLatest:
-        'Instale um executor que fale o protocolo {{required}} ou execute-o em seu host para atualizá-lo:',
+        'Instale um ambiente de execução que fale o protocolo {{required}} ou execute-o em seu host para atualizá-lo:',
       reinstall:
-        'Seu executor não diz como foi instalado. Instale-o novamente em seu host com o comando Adicionar tempo de execução.',
+        'Seu ambiente de execução não diz como foi instalado. Instale-o novamente em seu host com o comando Adicionar ambiente de execução.',
     },
     tool: {
       checking: 'Aguardando detecção',
@@ -871,26 +874,27 @@ const ptBR: LocaleResource<typeof enUS> = {
       notInstalled: 'Não instalado',
       off: 'Desligado',
       offHint:
-        'Desligado: o trabalho desta ferramenta não é enviado para este tempo de execução.',
+        'Desligado: o trabalho desta ferramenta não é enviado para este ambiente de execução.',
       enableLabel: 'Execute {{tool}} em {{name}}',
       version: 'Versão {{version}}',
     },
     trust: {
-      isolationHint: runtimesEnUS.runtimes.trust.isolationHint,
+      isolationHint:
+        'Em ambientes de execução pessoais ou compartilhados, execute o runner em uma VM ou ambiente isolado: os agentes têm acesso total e o runner não é um sandbox.',
       label: 'Para quem trabalha',
       team: 'Equipe',
       teamHint:
         'Executa o trabalho iniciado por qualquer pessoa da equipe, com suas variáveis ​​e segredos. Para servidores compartilhados e VMs.',
       ownerOnly: 'Pessoal',
       ownerOnlyHint:
-        'Executa apenas o trabalho que você inicia. O padrão para um tempo de execução que você adiciona.',
+        'Executa apenas o trabalho que você inicia. O padrão para um ambiente de execução que você adiciona.',
       personalOnly:
-        'Este tempo de execução será pessoal: ele executa apenas o trabalho que você iniciar. Você pode compartilhá-lo com a equipe mais tarde.',
+        'Este ambiente de execução será pessoal: ele executa apenas o trabalho que você iniciar. Você pode compartilhá-lo com a equipe mais tarde.',
     },
     share: {
       title: 'Compartilhar {{name}} com a equipe?',
       description:
-        'As execuções de outras pessoas serão executadas neste tempo de execução, com suas variáveis e segredos, e poderão ler o que está nele. Compartilhe apenas se estiver tudo bem.',
+        'As execuções de outras pessoas serão executadas neste ambiente de execução, com suas variáveis e segredos, e poderão ler o que está nele. Compartilhe apenas se estiver tudo bem.',
       confirm: 'Compartilhe com a equipe',
     },
     edit: {
@@ -898,57 +902,73 @@ const ptBR: LocaleResource<typeof enUS> = {
       title: 'Editar {{name}}',
       name: 'Nome',
       nameRequired: 'Digite um nome.',
-      slotsHint: 'Quantas execuções o tempo de execução leva de uma só vez.',
+      slotsHint: 'Quantas execuções o ambiente de execução leva de uma só vez.',
       slotsInvalid: 'Insira um número inteiro de 1 a 64.',
       saved: '{{name}} salvo',
     },
     upgrade: {
-      show: 'Versão {{version}}: um executor mais recente está disponível',
+      show: 'Versão {{version}}: um ambiente de execução mais recente está disponível',
       available: 'Atualização disponível',
       badge: 'Atualizável',
-      title: 'Um executor mais recente para {{name}}',
+      title: 'Um ambiente de execução mais recente para {{name}}',
       description: '{{version}} instalado, esta aplicação atende {{latest}}.',
       hint: 'Ele se atualiza quando nenhum agente está em execução. Para atualizá-lo agora, execute-o em seu host.',
     },
     revoke: {
       title: 'Revogar a credencial de {{name}}?',
       description:
-        'Seu executor para na próxima solicitação e suas execuções voltam para a fila. Para conectá-lo novamente, adicione o tempo de execução novamente.',
+        'Seu ambiente de execução para na próxima solicitação e suas execuções voltam para a fila. Para conectá-lo novamente, adicione o ambiente de execução novamente.',
       confirm: 'Revogar',
       done: 'Revogada a credencial de {{name}}',
     },
     delete: {
       title: 'Excluir {{name}}?',
       description:
-        'O tempo de execução revogado é removido da lista. Suas corridas passadas permanecem.',
+        'O ambiente de execução revogado é removido da lista. Suas corridas passadas permanecem.',
       confirm: 'Excluir',
       done: '{{name}} excluído',
     },
-    revokedList_many: '{{count}} tempos de execução revogados',
+    revokedList_many: '{{count}} ambientes de execução revogados',
   },
   connect: {
-    ...runtimesEnUS.connect,
-    title: 'Adicionar tempo de execução',
+    manual: 'Ou instale você mesmo',
+    promptTitle: 'Deixe um agente configurar',
+    promptCopy: 'Copiar a instrução para o agente',
+    promptShow: 'Ver instrução',
+    promptHide: 'Ocultar instrução',
+    promptHint:
+      'Copie esta instrução para um agente (Claude Code, Codex e similares) na máquina de destino, e ele fará os passos abaixo por você. Ela contém uma credencial de uso único: entregue-a apenas a esse agente.',
+    windowsPowerShell:
+      '1. Instale o WSL: execute no PowerShell e reinicie o Windows:',
+    windowsUbuntu:
+      '2. Abra o Ubuntu e execute o comando de Linux abaixo. Instale o Node.js e as ferramentas de programação dentro do WSL Ubuntu.',
+    windowsNetwork:
+      'Se o WSL não conseguir acessar a internet, ative a rede espelhada no WSL.',
+    promptWindows:
+      'PRIMEIRO, verifique se você está rodando dentro do WSL Ubuntu. Se NÃO estiver no WSL Ubuntu, PARE: não execute nenhum comando de instalação ou registro. Diga ao usuário para executar wsl --install no PowerShell, reiniciar o Windows, abrir o agente dentro do WSL Ubuntu e executar esta instrução de novo. Continue com os passos abaixo SOMENTE dentro do WSL Ubuntu. Instale o Node.js e as ferramentas de programação dentro do WSL. Se o WSL não conseguir acessar a internet, ative a rede espelhada.\n\n',
+    promptBody:
+      'Configure esta máquina como ambiente de execução do NocoBase. Use uma VM ou um ambiente isolado: os agentes têm acesso total e o runner não é um sandbox.\n\nVerifique se há Node.js 24 ou mais recente e se estas ferramentas de programação estão instaladas e com login feito: {{tools}}. Use os métodos de instalação oficiais, não pacotes snap.\n\nExecute este comando de registro de uso único para instalar o runner e a CLI da aplicação, registrá-lo e instalar seu serviço em segundo plano:\n{{command}}\n\nResolva problemas comuns de configuração: garanta que o PATH do serviço contenha as ferramentas de programação (verifique which codex / which claude no terminal de instalação, execute nocobase-runner service install de novo e reinicie o serviço); configure o proxy necessário para downloads e para o serviço; resolva permissões de instalação global do npm com um prefixo do próprio usuário ou um gerenciador de versões do Node, sem sudo npm install.\n\nTermine com nocobase-runner status e confirme a conexão e as ferramentas de programação. Informe os passos de login ou de rede que ainda faltam para eu concluir. Trate a credencial de registro como segredo e não a inclua no seu relatório.',
+    title: 'Adicionar ambiente de execução',
     description:
-      'Execute o comando abaixo em um host que possua uma ferramenta de codificação instalada: um servidor, uma VM ou seu próprio dispositivo. Os agentes são executados lá com acesso total, como o usuário que executa o executor, e podem ler e alterar qualquer coisa que o usuário possa, incluindo chaves SSH e outras credenciais. O executor não é um limite de segurança: execute-o como um usuário dedicado, em um contêiner ou em uma VM.',
+      'Execute o comando abaixo em um host que possua uma ferramenta de codificação instalada: um servidor, uma VM ou seu próprio dispositivo. Os agentes são executados lá com acesso total, como o usuário que executa o ambiente de execução, e podem ler e alterar qualquer coisa que o usuário possa, incluindo chaves SSH e outras credenciais. O ambiente de execução não é um limite de segurança: execute-o como um usuário dedicado, em um contêiner ou em uma VM.',
     createCredential: 'Gerar comando de instalação',
     advanced: 'Avançado: limites por ferramenta de codificação',
-    run: 'Execute isso nesse host. Ele baixa o executor (nocobase-runner) e a CLI deste aplicativo, registra o executor e o inicia no login:',
+    run: 'Execute isso nesse host. Ele baixa o ambiente de execução (nocobase-runner) e a CLI deste aplicativo, registra o ambiente de execução e o inicia no login:',
     nodeRequired:
       'O host precisa do Node.js 24 ou mais recente (verifique com node --version). O comando para e diz como instalá-lo quando estiver faltando.',
     installed: 'Já tem o nocobase-runner instalado? Em vez disso, registre-o:',
     tokenOnce:
-      'O comando carrega uma credencial única para um tempo de execução "{{trust}}". Funciona uma vez, até {{time}}.',
+      'O comando carrega uma credencial única para um ambiente de execução "{{trust}}". Funciona uma vez, até {{time}}.',
     after:
-      'Em segundos, o tempo de execução aparece na lista, com cada ferramenta de codificação encontrada…',
+      'Em segundos, o ambiente de execução aparece na lista, com cada ferramenta de codificação encontrada…',
     tokenTools: 'Ferramentas de codificação: {{tools}}.',
     tools: 'Ferramentas de codificação',
     toolsHint:
-      'Este tempo de execução oferece trabalho apenas para as ferramentas verificadas. Você pode alterá-lo na página Runtimes a qualquer momento.',
+      'Este ambiente de execução oferece trabalho apenas para as ferramentas verificadas. Você pode alterá-lo na página Runtimes a qualquer momento.',
     toolsRequired: 'Escolha pelo menos uma ferramenta de codificação.',
     slots: 'Máximo de execuções simultâneas',
     slotsHint:
-      'Quantas execuções o tempo de execução leva de uma só vez. Você pode alterá-lo na página Runtimes a qualquer momento.',
+      'Quantas execuções o ambiente de execução leva de uma só vez. Você pode alterá-lo na página Runtimes a qualquer momento.',
     tokenSlots: 'Máximo de execuções simultâneas: {{slots}}.',
     tokenToolSlots: 'Por ferramenta de codificação: {{limits}}.',
     connected: '{{name}} está conectado.',
@@ -961,8 +981,38 @@ const ptBR: LocaleResource<typeof enUS> = {
   },
   chat: {
     // Keep new guidance available in English until this locale is translated.
-    executionFailed: chatEnUS.chat.executionFailed,
-    fileInputFailures: chatEnUS.chat.fileInputFailures,
+    executionFailed:
+      'A execução falhou. Revise a conversa salva antes de tentar de novo.',
+    fileInputFailures: {
+      imageCapability:
+        'A entrada de imagens não está configurada para este modelo. Mude para um modelo com suporte a imagens verificado.',
+      unsupportedFormat:
+        'A entrada para este formato de anexo não está configurada no modelo selecionado, e nenhum extrator de texto local o suporta. Use um formato de documento compatível ou um modelo com suporte a arquivos verificado.',
+      formatMismatch:
+        'O nome do arquivo anexado e o tipo de mídia indicam formatos de documento diferentes. Verifique o formato e envie o arquivo de novo.',
+      invalidInline:
+        'Os dados do arquivo anexado são inválidos ou grandes demais. Envie o arquivo de novo ou use um arquivo menor.',
+      fileTooLarge:
+        'Um anexo excede o limite de tamanho. Use um arquivo menor.',
+      inputTooLarge:
+        'Os anexos da conversa excedem o limite de entrada. Use arquivos menores ou inicie uma nova conversa.',
+      documentTooLarge:
+        'O anexo excede o limite de texto extraído. Use um arquivo menor.',
+      contextTooLarge:
+        'Os anexos da conversa excedem o limite de texto extraído. Use arquivos menores ou inicie uma nova conversa.',
+      fileCount:
+        'A conversa excede o limite de 100 arquivos de entrada. Inicie uma nova conversa.',
+      nativeFileCount:
+        'A conversa excede o limite configurado de arquivos nativos. Use menos anexos ou converta-os em um documento de texto compatível.',
+      unreadable:
+        'O anexo não contém texto legível. Documentos digitalizados precisam de OCR.',
+      extractionFailed:
+        'Não foi possível extrair o texto do anexo. Verifique se o documento é legível e envie-o de novo.',
+      extractionTimeout:
+        'A extração do texto do anexo excedeu o tempo limite. Use um arquivo menor ou tente de novo.',
+      preparationFailed:
+        'Não foi possível preparar o anexo. Verifique seu acesso e o formato do arquivo e tente de novo.',
+    },
     untitled: 'Conversa sem título',
     renamed: 'Renomeado',
     archivedNamed: 'Arquivado “{{title}}”',
@@ -975,9 +1025,9 @@ const ptBR: LocaleResource<typeof enUS> = {
       agentArchived: 'Não habilitado',
       forbidden: 'Não disponível para você',
       noModel: 'Configure primeiro um modelo de chat',
-      noRunner: 'Nenhum executor online, não pode ser escolhido',
+      noRunner: 'Nenhum ambiente de execução online, não pode ser escolhido',
       othersPersonal:
-        'Somente os executores pessoais de outras pessoas o possuem',
+        'Somente os ambientes de execução pessoais de outras pessoas o possuem',
       modelUnavailable: 'Modelo indisponível',
     },
     offline: {
@@ -989,7 +1039,7 @@ const ptBR: LocaleResource<typeof enUS> = {
       switchedToDefault:
         'Mudou para {{name}}, o padrão do sistema, até {{own}} retornar.',
       switchedToOnline:
-        '{{own}} não tem nenhum executor para você agora, então {{name}} responde até que {{own}} retorne.',
+        '{{own}} não tem nenhum ambiente de execução para você agora, então {{name}} responde até que {{own}} retorne.',
       onlineFallbackUnavailable:
         'O agente substituto online não pode responder ({{reason}}). Esta conversa permanece com {{own}} enquanto espera por um runner.',
       switchedAgent:
@@ -1010,8 +1060,8 @@ const ptBR: LocaleResource<typeof enUS> = {
       working: 'Trabalhando em {{subject}}',
     },
     agents: {
-      personalOnly: 'Somente executores pessoais',
-      hint: 'Lista os agentes habilitados e diz por que nenhum deles pode responder agora. As respostas são executadas em um executor: a primeira resposta espera que alguém a responda, geralmente alguns segundos.',
+      personalOnly: 'Somente ambientes de execução pessoais',
+      hint: 'Lista os agentes habilitados e diz por que nenhum deles pode responder agora. As respostas são executadas em um ambiente de execução: a primeira resposta espera que alguém a responda, geralmente alguns segundos.',
       chooseFor: 'Escolha um agente',
       empty: 'Nenhum agente que você possa escolher',
       none: 'Nenhum agente',
@@ -1373,29 +1423,30 @@ const ptBR: LocaleResource<typeof enUS> = {
       pruning:
         'Executor de limpeza de loja compartilhada; novo trabalho está pausado',
       toolNotInstalled:
-        'Nenhum executor conectado possui esta ferramenta instalada',
+        'Nenhum ambiente de execução conectado possui esta ferramenta instalada',
       incompatible:
-        'Os executores conectados não suportam esta carga de trabalho; atualização necessária',
-      restricted: 'Política do executor, diretório ou restrições de variáveis',
+        'Os ambientes de execução conectados não suportam esta carga de trabalho; atualização necessária',
+      restricted:
+        'Política do ambiente de execução, diretório ou restrições de variáveis',
       unknown: 'A elegibilidade da carga de trabalho não foi estabelecida',
       agentArchived: 'O agente é arquivado',
       delayed: 'Programado para {{until}}',
-      noRunnerOnline: 'Sem tempo de execução online',
-      runnersOffline: 'Seus tempos de execução estão offline',
+      noRunnerOnline: 'Sem ambiente de execução online',
+      runnersOffline: 'Seus ambientes de execução estão offline',
       toolQuota: 'Cota da ferramenta esgotada; redefinição: {{until}}',
       toolUnavailable:
         'Ferramenta não conectada, desativada ou modelo solicitado indisponível ({{tool}})',
       noSharedRunner:
-        'Somente executores pessoais de outras pessoas estão online',
-      missingFeatures: 'Nenhum tempo de execução suporta {{features}}',
+        'Somente ambientes de execução pessoais de outras pessoas estão online',
+      missingFeatures: 'Nenhum ambiente de execução suporta {{features}}',
       secretsNotAllowed:
-        'Precisa de um tempo de execução de equipe: {{variables}} é apenas para tempos de execução de equipe',
+        'Precisa de um ambiente de execução de equipe: {{variables}} é apenas para ambientes de execução de equipe',
       sameWorkActive: 'Depois da corrida já nele',
       concurrencyFull: 'Simultaneidade completa ({{active}}/{{limit}})',
-      runnersBusy: 'Os executores compatíveis estão cheios',
+      runnersBusy: 'Os ambientes de execução compatíveis estão cheios',
       toolSlotsFull: 'Slots {{tool}} cheios ({{used}}/{{limit}})',
       setupRetrying: 'A preparação falhou; tentando novamente: {{detail}}',
-      next: 'Próximo para um tempo de execução gratuito',
+      next: 'Próximo para um ambiente de execução gratuito',
     },
     unknown: 'Na fila ({{reason}})',
     quotaResetUnknown: 'desconhecida',
@@ -1444,7 +1495,7 @@ const ptBR: LocaleResource<typeof enUS> = {
       runners: {
         title: 'Ambientes de execução',
         description:
-          'Veja executores e tokens de registro; gerenciar executores.',
+          'Veja ambientes de execução e tokens de registro; gerenciar ambientes de execução.',
       },
       prices: {
         title: 'Preços dos modelos',

@@ -75,7 +75,7 @@ const deDE: LocaleResource<typeof enUS> = {
     start_other: '{{count}}-Aufgaben starten',
     startOne: 'Starten',
     skip: 'Nicht jetzt',
-    startHint: 'Agenten im Laufzeitplan und erledigen die Arbeit.',
+    startHint: 'Agenten im Laufzeitumgebungplan und erledigen die Arbeit.',
     notStarted: 'Nicht gestartet',
     started_one: '{{count}} gestartet',
     started_other: '{{count}} gestartet',

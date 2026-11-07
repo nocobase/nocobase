@@ -1,6 +1,4 @@
-import runtimesEnUS from './runtimes.en-US.js';
 import type { LocaleResource } from '@nocobase/i18n';
-import chatEnUS from './chat.en-US.js';
 
 import type enUS from './en-US.js';
 
@@ -113,8 +111,8 @@ const jaJP: LocaleResource<typeof enUS> = {
     unavailableNow: '現在利用不可',
     title: 'エージェント',
     description:
-      'ランナーが報告したモデルからエージェントを追加します。Lead Agentは、説明が適したエージェントに課題の各ステップを割り当てます。',
-    fromRunners: 'ランナーからのエージェント',
+      '実行環境が報告したモデルから Agent を追加します。Lead Agent はタスクの各ステップを、説明が最も合う Agent に任せます。',
+    fromRunners: '実行環境からのエージェント',
     display: {
       search: 'モデルまたはプロバイダーの検索',
       select: '{{name}}を選択してください',
@@ -125,16 +123,16 @@ const jaJP: LocaleResource<typeof enUS> = {
     filters: {
       all: 'すべての{{count}}',
       enabled: '{{count}}を有効にしました',
-      unreported: 'ランナーなし {{count}}',
+      unreported: '実行環境なし {{count}}',
     },
     loadFailed: 'エージェントをロードできませんでした',
     loadMore: 'もっと読み込む',
     emptyTitle: 'まだエージェントがいません',
     emptyDescription:
-      'コーディングツールにサインイン済みのランナーを接続し、「利用可能なモデル」からエージェントを追加してください。',
+      'コーディングツールにサインイン済みの実行環境を接続し、「利用可能なモデル」からエージェントを追加してください。',
     noneInFilter: 'ここにはエージェントがいません。',
     howToAdd:
-      'エージェントを追加するには、ランナーにコーディングツールをインストールし、利用できるモデルを使うためにサインインします。ランナーがモデルを報告したら、「利用可能なモデル」で得意分野を入力してエージェントを追加します。追加と同時に有効になります。個人用ランナーだけで利用できるエージェントは、その所有者が開始した課題のみを担当します。',
+      'Agent を追加するには、実行環境にコーディングツールをインストールし、利用できるモデルにサインインします。実行環境が報告したら、得意なことを書いて「利用可能なモデル」から追加します。個人用の実行環境にしかない Agent は、その所有者が開始したタスクだけを担当します。',
     goodAtMissing: 'まだ書かれていません',
     columns: {
       agent: 'エージェント',
@@ -144,21 +142,21 @@ const jaJP: LocaleResource<typeof enUS> = {
       state: '状態',
     },
     where: {
-      none: 'ランナーなし',
-      team_one: '{{count}} チームランナー',
-      team_other: '{{count}} チームランナー',
-      personal_one: '{{count}} 個人ランナー オンライン',
-      personal_other: '{{count}} 個人ランナー オンライン',
+      none: '実行環境なし',
+      team_one: '{{count}} チーム実行環境',
+      team_other: '{{count}} チーム実行環境',
+      personal_one: '{{count}} 個人実行環境 オンライン',
+      personal_other: '{{count}} 個人実行環境 オンライン',
       both: '{{team}}チーム・{{personal}}個人',
       names: '{{names}}',
-      noneOnline: '現在オンラインのランナーはいません',
-      personalOnly: '個人ランナー限定',
+      noneOnline: '現在オンラインの実行環境はいません',
+      personalOnly: '個人実行環境限定',
       lastReported: '最後に報告されたのは {{when}}',
     },
     state: {
       enabled: '有効',
       disabled: '無効',
-      unreported: 'ランナーなし',
+      unreported: '実行環境なし',
     },
     effort: {
       default: 'ツールのデフォルト',
@@ -173,17 +171,17 @@ const jaJP: LocaleResource<typeof enUS> = {
     },
     enable: {
       reportedBy_one:
-        'オンラインの {{count}} ランナーによって報告されました: {{names}}。',
+        'オンラインの {{count}} 実行環境によって報告されました: {{names}}。',
       reportedBy_other:
-        'オンラインの {{count}} ランナーによって報告されました: {{names}}。',
-      noRunnerNow: '現在オンラインにこれ​​を持っているランナーはいません。',
+        'オンラインの {{count}} 実行環境によって報告されました: {{names}}。',
+      noRunnerNow: '現在オンラインにこれ​​を持っている実行環境はいません。',
       goodAtHint:
         'Lead Agentはこの言葉によってこのエージェントに何を渡すかを決定します。何が合うのか、何が合わないのかを言います。',
       goodAtRequired: '有効にする前に、何が得意かを書いてください。',
       effortHint:
         'Lead Agentは、作業を引き継ぐときに変更することはできません。',
       personalOnly:
-        'これを持っているのは個人ランナーのみです。Lead Agentは、オーナーが開始した問題に対してのみ作業を実行します。',
+        '個人用の実行環境にしかありません：Lead Agent は、その所有者が開始したタスクだけを任せます。',
     },
     edit: {
       button: '編集',
@@ -196,7 +194,7 @@ const jaJP: LocaleResource<typeof enUS> = {
       open: 'エージェントを追加',
       title: '利用可能なモデル',
       description:
-        'ランタイムでチェックされたツールのみが検出され、ここに表示されます。アプリケーションの推奨組み合わせは、ランナーが報告すると自動的に作成・有効化されます。その他のものはここから選んで追加してください。',
+        '実行環境でチェックされたツールのみが検出され、ここに表示されます。アプリケーションの推奨組み合わせは、実行環境が報告すると自動的に作成・有効化されます。その他のものはここから選んで追加してください。',
       recommended: '報告されると自動的に有効化されます',
       added: '追加済み',
       add: '追加',
@@ -207,7 +205,7 @@ const jaJP: LocaleResource<typeof enUS> = {
         failed: '検出失敗',
       },
       details: 'ツールの詳細',
-      setupCommand: 'ランタイムで {{command}} を実行してください。',
+      setupCommand: '実行環境で {{command}} を実行してください。',
       setupUnknown: 'このツールには設定が必要ですが、コマンドが分かりません。',
       upgradeAdvice:
         '実行環境でツールと ACP アダプターを最新版に更新し、検出を更新してください。',
@@ -219,8 +217,8 @@ const jaJP: LocaleResource<typeof enUS> = {
       groupSearchPlaceholder: 'このツールのモデルを検索',
       group_one: '{{tool}} · {{count}} モデル · {{runners}}',
       group_other: '{{tool}} · {{count}} モデル · {{runners}}',
-      runners_one: '{{count}} 台のランタイム',
-      runners_other: '{{count}} 台のランタイム',
+      runners_one: '{{count}} 台の実行環境',
+      runners_other: '{{count}} 台の実行環境',
       noModels: 'ここにはモデルがありません。',
       selectedCount_one: '{{count}} 件選択中',
       selectedCount_other: '{{count}} 件選択中',
@@ -242,11 +240,11 @@ const jaJP: LocaleResource<typeof enUS> = {
     label: 'エージェントの種類',
     question: 'エージェントは何ですか？',
     online: 'オンライン',
-    runner: 'ランナー',
+    runner: '実行環境',
     onlineHint:
-      'モデル サービスを通じてサーバー上で数秒で応答します。ランタイムは必要ありません。コードには触れられません。',
+      'モデル サービスを通じてサーバー上で数秒で応答します。実行環境は必要ありません。コードには触れられません。',
     runnerHint:
-      'ランタイム上でコーディング ツールを駆動し、作業ディレクトリ内で動作します: コード、ファイル、コマンド。',
+      '実行環境上でコーディング ツールを駆動し、作業ディレクトリ内で動作します: コード、ファイル、コマンド。',
     immutable:
       'エージェントはそのタイプを保持します。他の種類の別のエージェントを作成します。',
     onServer: 'サーバー上',
@@ -289,9 +287,9 @@ const jaJP: LocaleResource<typeof enUS> = {
     firstMessage: '最初のメッセージ',
     empty: '空',
     previewPlaceholders:
-      'ランタイムに関する括弧で囲まれたメモは、ランタイムを実行するランタイムによって記入されます。作業ディレクトリと、準備したばかりのディレクトリの初期化プロンプトです。',
+      '実行環境に関する括弧で囲まれたメモは、実行環境を実行する実行環境によって記入されます。作業ディレクトリと、準備したばかりのディレクトリの初期化プロンプトです。',
     placeholders:
-      '{{runner.…}} プレースホルダーは、ランタイムを実行するランタイムによって埋められます。ランタイムの作業ディレクトリと、準備したばかりのディレクトリの初期化プロンプトです。',
+      '{{runner.…}} プレースホルダーは、実行環境を実行する実行環境によって埋められます。実行環境の作業ディレクトリと、準備したばかりのディレクトリの初期化プロンプトです。',
     layers: {
       system: 'ルール',
       task: 'タスク',
@@ -303,7 +301,7 @@ const jaJP: LocaleResource<typeof enUS> = {
   envVars: {
     title: '環境変数',
     description:
-      '実行ごとにコーディング ツールに渡され、実行レコードでマスクされます。値は保存後に再度表示されません。共有エージェントを使用する可能性のある人は誰でも、自分のコンピュータでこれらの値を受け取ることができます。高リスクのシークレットには「チーム ランタイムのみ」のマークを付けます。',
+      '実行ごとにコーディング ツールに渡され、実行レコードでマスクされます。値は保存後に再度表示されません。共有エージェントを使用する可能性のある人は誰でも、自分のコンピュータでこれらの値を受け取ることができます。高リスクのシークレットには「チーム 実行環境のみ」のマークを付けます。',
     add: '変数の追加',
     addTitle: '環境変数を追加する',
     editTitle: '{{name}}を置き換えます',
@@ -313,15 +311,15 @@ const jaJP: LocaleResource<typeof enUS> = {
     value: '値',
     valueTooLong: '値が8KBを超えています。',
     keepValueHint: '現在の値を保持するには、空のままにしておきます。',
-    teamRunnersOnly: 'チームランタイムのみ',
+    teamRunnersOnly: 'チーム実行環境のみ',
     teamRunnersOnlyHint:
-      'これがないと、実行は、エージェントを使用する可能性のある人の個人ランタイムを含む、値を受け取るランタイムに値を送信します。これを使用すると、チーム ランタイムのみがこの変数を取得する実行を実行します。',
-    teamRunnersOnlyBadge: 'チームランタイムのみ',
-    fromRunner: 'ランタイムから取得',
+      'これがないと、実行は、エージェントを使用する可能性のある人の個人実行環境を含む、値を受け取る実行環境に値を送信します。これを使用すると、チーム 実行環境のみがこの変数を取得する実行を実行します。',
+    teamRunnersOnlyBadge: 'チーム実行環境のみ',
+    fromRunner: '実行環境から取得',
     fromRunnerHint:
-      'ここには値は保持されません。実行を受けるランタイムは、それ自体のマシンから値を提供し、{{command}} で設定するか、`--pass-env` で渡します。これを提供しないランタイムは、開始前に実行に失敗します。',
-    fromRunnerBadge: 'ランタイムから',
-    valueRequired: '値を入力するか、ランタイムから値を取得し続けます。',
+      'ここには値は保持されません。実行を受ける実行環境は、それ自体のマシンから値を提供し、{{command}} で設定するか、`--pass-env` で渡します。これを提供しない実行環境は、開始前に実行に失敗します。',
+    fromRunnerBadge: '実行環境から',
+    valueRequired: '値を入力するか、実行環境から値を取得し続けます。',
     empty: '環境変数はありません。',
     scope: 'スコープ',
     updated: '更新しました',
@@ -345,7 +343,7 @@ const jaJP: LocaleResource<typeof enUS> = {
     revealAudit: '公開すると名前と時刻がアクセスログに記録されます。',
     revealedTitle: '変数の値',
     revealedNote: 'この暴露は記録されました。完了したら閉じてください。',
-    runner: 'ランタイム {{id}}',
+    runner: '実行環境 {{id}}',
     auditsEmpty: 'まだ何も記録されていません。',
     auditAction: {
       reveal: '明らかになった',
@@ -491,7 +489,7 @@ const jaJP: LocaleResource<typeof enUS> = {
       button: '作業ディレクトリをクリーンアップする',
       title: '作業ディレクトリをクリーンアップしますか?',
       description:
-        '次回の実行は新しいチェックアウトから開始され、再び初期化プロンプトが表示されます。プッシュされなかった変更は、そのランタイムでは失われます。適切に使用されているディレクトリは削除されません。',
+        '次回の実行は新しいチェックアウトから開始され、再び初期化プロンプトが表示されます。プッシュされなかった変更は、その実行環境では失われます。適切に使用されているディレクトリは削除されません。',
       confirm: 'クリーン',
       done: '次の実行は新しいチェックアウトから始まります。',
     },
@@ -559,18 +557,18 @@ const jaJP: LocaleResource<typeof enUS> = {
       '実行マシンの更新のために中断されました。走行は続行されます。',
     runnerDiskFull: '実行マシンのディスク容量が不足しました。',
     runnerOfflineBeforeStart:
-      '実行を開始する前にランタイムがオフラインになりました。',
-    runnerOffline: 'ランタイムがオフラインになりました。',
-    leaseExpired: 'ランタイムがレポートを停止しました。',
-    startTimeout: 'ランタイムが時間内に実行を開始しませんでした。',
+      '実行を開始する前に実行環境がオフラインになりました。',
+    runnerOffline: '実行環境がオフラインになりました。',
+    leaseExpired: '実行環境がレポートを停止しました。',
+    startTimeout: '実行環境が時間内に実行を開始しませんでした。',
     cancelled: 'キャンセルされました。',
     idleTimeout: 'エージェントの進行が停止しました。',
     setupFailed: '実行を準備できませんでした。',
     cliUnavailable:
-      'ランタイムはアプリケーション CLI をインストールできませんでした。',
+      '実行環境はアプリケーション CLI をインストールできませんでした。',
     workspaceBusy: '作業ディレクトリがビジー状態です。別の試みを待っています。',
     checkoutFailed: 'リポジトリのチェックアウトに失敗しました。',
-    toolAuth: 'コーディング ツールがランタイムにサインインしていません。',
+    toolAuth: 'コーディング ツールが実行環境にサインインしていません。',
     toolQuota: 'コーディングツールがクォータを使い果たしました。',
     sessionUnavailable:
       '元のコーディングツールのセッションを再開できませんでした。',
@@ -579,19 +577,20 @@ const jaJP: LocaleResource<typeof enUS> = {
     toolProcess: 'コーディングツールが予期せず終了しました。',
     contextOverflow: 'モデルにとって会話が長すぎました。',
     delegatedQueueTimeout: '委任キューのタイムアウト。撤回された',
-    queuedExpired: 'ランタイムが間に合わなかった。',
+    queuedExpired: '実行環境が間に合わなかった。',
     modelUnavailable: 'エージェントのモデルが利用できません。',
     stepLimit: 'エージェントが応答せずにツールを何度も呼び出しました。',
-    policyRefused: 'この作業を許可するランタイムのポリシーはありません。',
+    policyRefused: 'この作業を許可する実行環境のポリシーはありません。',
     prepareNetwork:
-      'ランタイムは実行の準備中にリポジトリ ホストに到達できませんでした。',
+      '実行環境は実行の準備中にリポジトリ ホストに到達できませんでした。',
     repoAccessUnavailable: 'リポジトリに一時的にアクセスできません。',
     repoAccessDenied:
       'アプリケーションは、実行のリポジトリの 1 つに対して認証情報を発行しません。',
     unknown: '実行に失敗しました。',
   },
   runtimes: {
-    pathHint: runtimesEnUS.runtimes.pathHint,
+    pathHint:
+      'runner は自身の PATH でコーディングツールを探します。which codex / which claude が動作するターミナルで nocobase-runner service install を再実行してサービスを再起動（または nocobase-runner start を再実行）し、正しい PATH を取得させてください。',
     quota: {
       workspaceStatus: {
         active: '仕事は続く',
@@ -624,7 +623,7 @@ const jaJP: LocaleResource<typeof enUS> = {
       providers_one: '{{count}} プロバイダーがクォータに達しました',
       providers_other: '{{count}} プロバイダーがクォータに達しています',
       runColumns: {
-        issue: '問題・会話',
+        issue: 'タスク / 会話',
         agent: 'エージェント',
         status: '状態',
         started: '開始しました',
@@ -666,7 +665,7 @@ const jaJP: LocaleResource<typeof enUS> = {
       observed: '最後に報告されたのは {{time}}',
       usedPercent: '{{percent}}% 使用',
       ok: 'わかりました',
-      hint: 'マークは既知のリセット時刻、またはツールがクォータの残りを再び報告したときに自動的に解除されます。手動でクリアするのはクォータの回復を確認してからにしてください。マークをクリアできるのは、ランタイムの所有者と管理者だけです。',
+      hint: 'マークは既知のリセット時刻、またはツールがクォータの残りを再び報告したときに自動的に解除されます。手動でクリアするのはクォータの回復を確認してからにしてください。マークをクリアできるのは、実行環境の所有者と管理者だけです。',
     },
     workspaces: {
       paused:
@@ -692,7 +691,7 @@ const jaJP: LocaleResource<typeof enUS> = {
       ended: '終了しました',
       active: '仕事は続く',
       unknown: '作業が終了したかどうかが確認できない',
-      oldRunner: 'このランナーは診断理由を提供していません',
+      oldRunner: 'この実行環境は診断理由を提供していません',
       noCleanup: 'ローカルクリーンアップ結果を受信していません',
       discardsUntracked:
         'クリーンアップでは追跡されていないファイルが破棄されます',
@@ -702,7 +701,7 @@ const jaJP: LocaleResource<typeof enUS> = {
         active: '仕事は続く',
         runNotFound: '確認できません: 実行が見つかりません',
         ownershipUnknown:
-          '確認できません: ランナーの所有権を確認できませんでした',
+          '確認できません: 実行環境の所有権を確認できませんでした',
         ambiguousSubject: '確認できません: 件名キーがあいまいです',
         bindingUnavailable:
           '確認できません: アプリケーションにワークスペース バインディングがありません',
@@ -723,15 +722,15 @@ const jaJP: LocaleResource<typeof enUS> = {
     },
     title: '実行環境',
     description:
-      'エージェントを実行するランタイムとコーディング ツールがそれぞれ報告されました。',
-    add: 'ランタイムの追加',
-    loadFailed: 'ランタイムをロードできませんでした',
-    emptyTitle: 'ランタイムがまだ接続されていません',
+      'エージェントを実行する実行環境とコーディング ツールがそれぞれ報告されました。',
+    add: '実行環境の追加',
+    loadFailed: '実行環境をロードできませんでした',
+    emptyTitle: '実行環境がまだ接続されていません',
     emptyDescription:
-      'ランタイムが接続されると、ランナー エージェントはコーディング ツールを使用してそこで作業を引き受けます。',
-    noneConnected: 'ランタイムが接続されていません。',
-    revokedList_one: '{{count}} はランタイムを取り消しました',
-    revokedList_other: '{{count}} はランタイムを取り消しました',
+      '実行環境が接続されると、実行環境 エージェントはコーディング ツールを使用してそこで作業を引き受けます。',
+    noneConnected: '実行環境が接続されていません。',
+    revokedList_one: '{{count}} は実行環境を取り消しました',
+    revokedList_other: '{{count}} は実行環境を取り消しました',
     lastSeen: '最後に見た {{time}}',
     activity: {
       online: 'オンライン {{active}}/{{slots}}',
@@ -765,7 +764,7 @@ const jaJP: LocaleResource<typeof enUS> = {
     policy: {
       title: '地域政策',
       description:
-        '報告されているように、ランタイムの所有者が許可しているもの。ここではなく、マシン上で変更されます。',
+        '報告されているように、実行環境の所有者が許可しているもの。ここではなく、マシン上で変更されます。',
       none: 'ローカル ポリシーはありません。登録されているすべての作業が必要です。',
       any: '任意',
       nothing: 'なし',
@@ -776,16 +775,16 @@ const jaJP: LocaleResource<typeof enUS> = {
     variables: {
       title: 'このマシンからの変数',
       description:
-        'ランタイムから名前を取得して実行に提供する変数。値はマシン上に残ります。 `nocobase-runner env set NAME` でそこに設定するか、`--pass-env NAME` で渡します。',
-      none: 'なし: ランタイムから変数を取得する実行は、開始する前にここで失敗します。',
+        '実行環境から名前を取得して実行に提供する変数。値はマシン上に残ります。 `nocobase-runner env set NAME` でそこに設定するか、`--pass-env NAME` で渡します。',
+      none: 'なし: 実行環境から変数を取得する実行は、開始する前にここで失敗します。',
       unknown:
-        '未報告: そのランナーはこの機能よりも古いです。ランナーを更新して表示します。',
+        '未報告: その実行環境はこの機能よりも古いです。実行環境を更新して表示します。',
     },
     jobs: {
       allow: 'ビルドジョブを許可する',
-      hint: 'このアプリケーションが構成するビルドおよびその他のステップは、モデルなしで実行されます。このランタイムは次のようにレポートします: {{kinds}}。',
+      hint: 'このアプリケーションが構成するビルドおよびその他のステップは、モデルなしで実行されます。この実行環境は次のようにレポートします: {{kinds}}。',
       unsupported:
-        'このランタイムのランナーはジョブを受け取りません。これをオンにするには、ランナーを更新します。',
+        'この実行環境の実行環境はジョブを受け取りません。これをオンにするには、実行環境を更新します。',
     },
     noTools: 'コーディングツールが見つかりませんでした',
     actionsFor: '{{name}}のアクション',
@@ -794,7 +793,7 @@ const jaJP: LocaleResource<typeof enUS> = {
       status: '状態',
       tools: 'ツール',
       sharing: '共有',
-      version: 'ランナー',
+      version: '実行環境',
       lastSeen: '最後に見た',
       slots: '最大同時実行',
     },
@@ -803,7 +802,7 @@ const jaJP: LocaleResource<typeof enUS> = {
       tools: 'ツール',
       toolsDescription:
         '報告されたコーディングツール。オフになっているツール、またはクォータが使い果たされているツールの作業は、ここには送信されません。スイッチとリミットは「保存」で保存されます。',
-      version: 'ランナー {{version}}',
+      version: '実行環境 {{version}}',
       runs: '最近の走行',
       runsEmpty: 'まだ実行はありません。',
       runsTotal: '全 {{count}} 件',
@@ -816,25 +815,25 @@ const jaJP: LocaleResource<typeof enUS> = {
       owner: 'オーナー {{name}}',
     },
     status: {
-      updatePending: 'アップデートを待っているランナー',
-      pruning: 'ランナークリーニング共用店舗',
+      updatePending: 'アップデートを待っている実行環境',
+      pruning: '実行環境クリーニング共用店舗',
       online: 'オンライン',
       offline: 'オフライン',
       revoked: '取り消されました',
       upgrade_required: 'アップグレードが必要です',
     },
     upgradeRequired: {
-      title: 'このランタイムにはアップグレードが必要です',
+      title: 'この実行環境にはアップグレードが必要です',
       older:
-        'そのランナー {{version}} はエージェント プロトコル {{protocol}} を話します。このアプリケーションにはプロトコル {{required}} が必要です。接続されたままですが、更新されるまで何も実行されません。',
+        'その実行環境 {{version}} はエージェント プロトコル {{protocol}} を話します。このアプリケーションにはプロトコル {{required}} が必要です。接続されたままですが、更新されるまで何も実行されません。',
       newer:
-        'そのランナー {{version}} は、このアプリケーション (プロトコル {{required}}) よりも新しいエージェント プロトコル {{protocol}} を話します。接続は維持されますが、このアプリケーションが提供するランナーを実行するまでは何も実行されません。',
+        'その実行環境 {{version}} は、このアプリケーション (プロトコル {{required}}) よりも新しいエージェント プロトコル {{protocol}} を話します。接続は維持されますが、このアプリケーションが提供する実行環境を実行するまでは何も実行されません。',
       latest:
-        'このアプリケーションはランナー {{latest}} にサービスを提供します。ホスト上でこれを実行して更新します。',
+        'このアプリケーションは実行環境 {{latest}} にサービスを提供します。ホスト上でこれを実行して更新します。',
       noLatest:
-        'プロトコル {{required}} を話すランナーをインストールするか、これをホスト上で実行して更新します。',
+        'プロトコル {{required}} を話す実行環境をインストールするか、これをホスト上で実行して更新します。',
       reinstall:
-        'そのランナーには、どのように設置されたかが記載されていません。 「ランタイムの追加」のコマンドを使用して、ホストに再度インストールします。',
+        'その実行環境には、どのように設置されたかが記載されていません。 「実行環境の追加」のコマンドを使用して、ホストに再度インストールします。',
     },
     tool: {
       checking: '検出待ち',
@@ -845,26 +844,27 @@ const jaJP: LocaleResource<typeof enUS> = {
       signedOut: 'サインインしていません',
       notInstalled: 'インストールされていません',
       off: 'オフ',
-      offHint: 'オフ: このツールの作業はこのランタイムに送信されません。',
+      offHint: 'オフ: このツールの作業はこの実行環境に送信されません。',
       enableLabel: '{{name}}で{{tool}}を実行',
       version: 'バージョン {{version}}',
     },
     trust: {
-      isolationHint: runtimesEnUS.runtimes.trust.isolationHint,
+      isolationHint:
+        '個人用・共有の実行環境のどちらでも、runner は VM または隔離された環境で実行してください。Agent はフルアクセスを持ち、runner はサンドボックスではありません。',
       label: '誰に効果があるか',
       team: 'チーム',
       teamHint:
         'チームの誰もが開始した作業を、変数とシークレットを使用して実行します。共有サーバーと VM の場合。',
       ownerOnly: '個人',
       ownerOnlyHint:
-        '開始した作業のみを実行します。追加するランタイムのデフォルト。',
+        '開始した作業のみを実行します。追加する実行環境のデフォルト。',
       personalOnly:
-        'このランタイムは個人用です。ユーザーが開始した作業のみが実行されます。後でチームと共有できます。',
+        'この実行環境は個人用です。ユーザーが開始した作業のみが実行されます。後でチームと共有できます。',
     },
     share: {
       title: '{{name}} をチームと共有しますか?',
       description:
-        '他の人の実行は、変数とシークレットを使用してこのランタイム上で実行され、そこにあるものを読み取ることができます。それでもいい場合のみ共有してください。',
+        '他の人の実行は、変数とシークレットを使用してこの実行環境上で実行され、そこにあるものを読み取ることができます。それでもいい場合のみ共有してください。',
       confirm: 'チームで共有',
     },
     edit: {
@@ -872,15 +872,15 @@ const jaJP: LocaleResource<typeof enUS> = {
       title: '{{name}}を編集',
       name: '名前',
       nameRequired: '名前を入力します。',
-      slotsHint: 'ランタイムが一度に実行する回数。',
+      slotsHint: '実行環境が一度に実行する回数。',
       slotsInvalid: '1 ～ 64 の整数を入力します。',
       saved: '{{name}}を保存しました',
     },
     upgrade: {
-      show: 'バージョン {{version}}: 新しいランナーが利用可能です',
+      show: 'バージョン {{version}}: 新しい実行環境が利用可能です',
       available: 'アップデートが利用可能',
       badge: 'アップグレード可能',
-      title: '{{name}} の新しいランナー',
+      title: '{{name}} の新しい実行環境',
       description:
         '{{version}} がインストールされており、このアプリケーションは {{latest}} を提供します。',
       hint: 'エージェントが実行されなくなると、自動的に更新されます。今すぐ更新するには、ホスト上でこれを実行します。',
@@ -888,42 +888,58 @@ const jaJP: LocaleResource<typeof enUS> = {
     revoke: {
       title: '{{name}} の資格情報を取り消しますか?',
       description:
-        'そのランナーは次のリクエストで停止し、その実行はキューに戻ります。再度接続するには、ランタイムを再度追加します。',
+        'その実行環境は次のリクエストで停止し、その実行はキューに戻ります。再度接続するには、実行環境を再度追加します。',
       confirm: '取り消し',
       done: '{{name}} の資格情報を取り消しました',
     },
     delete: {
       title: '{{name}}を削除しますか？',
       description:
-        '取り消されたランタイムはリストから削除されます。過去の実績はそのまま残ります。',
+        '取り消された実行環境はリストから削除されます。過去の実績はそのまま残ります。',
       confirm: '削除',
       done: '{{name}}を削除しました',
     },
   },
   connect: {
-    ...runtimesEnUS.connect,
-    title: 'ランタイムの追加',
+    manual: 'または自分でインストール',
+    promptTitle: 'Agent に設定を任せる',
+    promptCopy: 'Agent 用のプロンプトをコピー',
+    promptShow: 'プロンプトを表示',
+    promptHide: 'プロンプトを隠す',
+    promptHint:
+      'このプロンプトを対象マシン上の Agent（Claude Code、Codex など）にコピーすると、以下の手順を代わりに実行します。一回限りの認証情報が含まれるため、その Agent にだけ渡してください。',
+    windowsPowerShell:
+      '1. WSL をインストール：PowerShell で実行し、Windows を再起動します：',
+    windowsUbuntu:
+      '2. Ubuntu を開き、下の Linux 用コマンドを実行します。Node.js とコーディングツールは WSL Ubuntu 内にインストールしてください。',
+    windowsNetwork:
+      'WSL からインターネットに接続できない場合は、WSL のミラーモード ネットワークを有効にしてください。',
+    promptWindows:
+      'まず、WSL Ubuntu 内で実行しているかを確認してください。WSL Ubuntu でない場合は停止し、インストールや登録のコマンドは一切実行しないでください。ユーザーに、PowerShell で wsl --install を実行して Windows を再起動し、WSL Ubuntu 内で Agent を開いてこのプロンプトを再実行するよう伝えてください。以下の手順は WSL Ubuntu 内でのみ進めてください。Node.js とコーディングツールはどちらも WSL 内にインストールしてください。WSL からインターネットに接続できない場合は、ミラーモード ネットワークを有効にしてください。\n\n',
+    promptBody:
+      'このマシンを NocoBase の実行環境として設定してください。VM または隔離された環境を使ってください：Agent はフルアクセスを持ち、runner はサンドボックスではありません。\n\nNode.js 24 以降があること、次のコーディングツールがインストール済みでサインイン済みであることを確認してください：{{tools}}。snap パッケージではなく公式のインストール方法を使ってください。\n\n次の一回限りの登録コマンドを実行して、runner とアプリケーション CLI をインストールし、登録し、バックグラウンドサービスをインストールしてください：\n{{command}}\n\nよくある設定の問題を解決してください：サービスの PATH にコーディングツールが含まれるようにする（インストールしたターミナルで which codex / which claude を確認し、nocobase-runner service install を再実行してサービスを再起動する）；ダウンロードとサービスに必要なプロキシを設定する；npm のグローバルインストール権限の問題は sudo npm install を使わず、ユーザー所有の prefix か Node のバージョンマネージャーで解決する。\n\n最後に nocobase-runner status を実行し、接続とコーディングツールを確認してください。私が行う必要のあるサインインやネットワークの手順が残っていれば報告してください。登録用の認証情報は秘密として扱い、報告に含めないでください。',
+    title: '実行環境の追加',
     description:
-      'コーディング ツールがインストールされているホスト (サーバー、VM、または独自のデバイス) で以下のコマンドを実行します。エージェントは、ランナーを実行するユーザーとして完全なアクセス権で実行され、SSH キーやその他の資格情報を含め、ユーザーができることはすべて読み取りおよび変更できます。ランナーはセキュリティ境界ではありません。コンテナまたは VM 内で専用ユーザーとして実行します。',
+      'コーディング ツールがインストールされているホスト (サーバー、VM、または独自のデバイス) で以下のコマンドを実行します。エージェントは、実行環境を実行するユーザーとして完全なアクセス権で実行され、SSH キーやその他の資格情報を含め、ユーザーができることはすべて読み取りおよび変更できます。実行環境はセキュリティ境界ではありません。コンテナまたは VM 内で専用ユーザーとして実行します。',
     createCredential: 'インストールコマンドを生成する',
     advanced: '詳細: コーディング ツールごとの制限',
-    run: 'そのホスト上でこれを実行します。このアプリケーションからランナー (nocobase-runner) とこのアプリケーションの CLI をダウンロードし、ランナーを登録してログイン時に開始します。',
+    run: 'そのホスト上でこれを実行します。このアプリケーションから実行環境 (nocobase-runner) とこのアプリケーションの CLI をダウンロードし、実行環境を登録してログイン時に開始します。',
     nodeRequired:
       'ホストには Node.js 24 以降が必要です (node --version で確認してください)。コマンドが停止し、コマンドが見つからない場合はインストール方法が表示されます。',
     installed:
       'nocobase-runner はすでにインストールされていますか?代わりに登録してください:',
     tokenOnce:
-      'このコマンドには、「{{trust}}」ランタイムのワンタイム認証情報が含まれています。 {{time}} までは 1 回だけ動作します。',
+      'このコマンドには、「{{trust}}」実行環境のワンタイム認証情報が含まれています。 {{time}} までは 1 回だけ動作します。',
     after:
-      '数秒以内に、見つかった各コーディング ツールとともにランタイムがリストに表示されます…',
+      '数秒以内に、見つかった各コーディング ツールとともに実行環境がリストに表示されます…',
     tokenTools: 'コーディングツール: {{tools}}。',
     tools: 'コーディングツール',
     toolsHint:
-      'このランタイムは、チェックされたツールに対してのみ動作を提供されます。 [ランタイム] ページでいつでも変更できます。',
+      'この実行環境は、チェックされたツールに対してのみ動作を提供されます。 [実行環境] ページでいつでも変更できます。',
     toolsRequired: '少なくとも 1 つのコーディング ツールを選択してください。',
     slots: '最大同時実行',
     slotsHint:
-      'ランタイムが一度に実行する回数。 [ランタイム] ページでいつでも変更できます。',
+      '実行環境が一度に実行する回数。 [実行環境] ページでいつでも変更できます。',
     tokenSlots: '最大同時実行数: {{slots}}。',
     tokenToolSlots: 'コーディング ツールごと: {{limits}}。',
     connected: '{{name}} が接続されました。',
@@ -936,8 +952,38 @@ const jaJP: LocaleResource<typeof enUS> = {
   },
   chat: {
     // Keep new guidance available in English until this locale is translated.
-    executionFailed: chatEnUS.chat.executionFailed,
-    fileInputFailures: chatEnUS.chat.fileInputFailures,
+    executionFailed:
+      '実行に失敗しました。再試行する前に保存された会話を確認してください。',
+    fileInputFailures: {
+      imageCapability:
+        'このモデルには画像入力が設定されていません。画像対応が確認済みのモデルに切り替えてください。',
+      unsupportedFormat:
+        '選択したモデルにはこの添付形式の入力が設定されておらず、対応するローカルのテキスト抽出機能もありません。対応する文書形式か、ファイル対応が確認済みのモデルを使用してください。',
+      formatMismatch:
+        '添付ファイルのファイル名とメディアタイプが異なる文書形式を示しています。ファイル形式を確認して再アップロードしてください。',
+      invalidInline:
+        '添付ファイルのデータが無効か大きすぎます。再アップロードするか、より小さいファイルを使用してください。',
+      fileTooLarge:
+        '添付ファイルがサイズ上限を超えています。より小さいファイルを使用してください。',
+      inputTooLarge:
+        '会話の添付ファイルが入力サイズの上限を超えています。より小さいファイルを使うか、新しい会話を始めてください。',
+      documentTooLarge:
+        '添付ファイルが抽出テキストの上限を超えています。より小さいファイルを使用してください。',
+      contextTooLarge:
+        '会話の添付ファイルが抽出テキストの上限を超えています。より小さいファイルを使うか、新しい会話を始めてください。',
+      fileCount:
+        '会話のファイル入力が上限の 100 件を超えました。新しい会話を始めてください。',
+      nativeFileCount:
+        '会話が設定されたネイティブファイルの上限を超えました。添付を減らすか、対応するテキスト文書に変換してください。',
+      unreadable:
+        '添付ファイルに読み取れるテキストがありません。スキャン文書には OCR が必要です。',
+      extractionFailed:
+        '添付ファイルのテキストを抽出できませんでした。文書が読み取れることを確認して再アップロードしてください。',
+      extractionTimeout:
+        '添付ファイルのテキスト抽出がタイムアウトしました。より小さいファイルを使うか、もう一度お試しください。',
+      preparationFailed:
+        '添付ファイルを準備できませんでした。アクセス権とファイル形式を確認して再試行してください。',
+    },
     untitled: 'タイトルのない会話',
     renamed: '名前変更',
     archivedNamed: 'アーカイブ「{{title}}」',
@@ -951,8 +997,8 @@ const jaJP: LocaleResource<typeof enUS> = {
       agentArchived: '有効ではありません',
       forbidden: 'あなたは利用できません',
       noModel: '最初にチャットモデルを設定します',
-      noRunner: 'オンラインのランナーがいないため、選択できません',
-      othersPersonal: '他人の個人ランナーのみが所持',
+      noRunner: 'オンラインの実行環境がいないため、選択できません',
+      othersPersonal: '他人の個人実行環境のみが所持',
       modelUnavailable: 'モデルが利用できません',
     },
     offline: {
@@ -965,9 +1011,9 @@ const jaJP: LocaleResource<typeof enUS> = {
       switchedToDefault:
         '{{own}} が戻るまで、システムのデフォルトである {{name}} に切り替えました。',
       switchedToOnline:
-        '{{own}} には現在あなたのランナーがいないため、{{own}} が戻ってくるまで {{name}} が応答します。',
+        '{{own}} には現在あなたの実行環境がいないため、{{own}} が戻ってくるまで {{name}} が応答します。',
       onlineFallbackUnavailable:
-        'オンライン フォールバック エージェントが応答できません ({{reason}})。この会話は、ランナーを待つ間、{{own}} に残ります。',
+        'オンライン フォールバック エージェントが応答できません ({{reason}})。この会話は、実行環境を待つ間、{{own}} に残ります。',
       switchedAgent: '会話の履歴を保持して {{name}} に切り替えました。',
       switchedBack: '{{name}} で戻ります。',
       runFailed: 'エージェントは応答する前に停止しました。',
@@ -985,8 +1031,8 @@ const jaJP: LocaleResource<typeof enUS> = {
       working: '{{subject}}作業中',
     },
     agents: {
-      personalOnly: '個人ランナー限定',
-      hint: '有効なエージェントをリストし、現在応答できない理由を示します。回答はランナー上で実行されます。最初の回答は、ランナーが回答するまで待機します (通常は数秒)。',
+      personalOnly: '個人実行環境限定',
+      hint: '有効なエージェントをリストし、現在応答できない理由を示します。回答は実行環境上で実行されます。最初の回答は、実行環境が回答するまで待機します (通常は数秒)。',
       chooseFor: 'エージェントを選択してください',
       empty: '選択できるエージェントはありません',
       none: 'エージェントなし',
@@ -1127,7 +1173,7 @@ const jaJP: LocaleResource<typeof enUS> = {
       online: 'オンライン（モデルサービス）',
       noOnline:
         'まだ価格が設定されていないモデル。まず、モデル サービスとそのモデルをオンにします。',
-      runner: 'ランナー (コーディングツール)',
+      runner: '実行環境 (コーディングツール)',
     },
     price: {
       model: 'モデル',
@@ -1347,31 +1393,31 @@ const jaJP: LocaleResource<typeof enUS> = {
     capacity:
       'ここで使用されるスロット {{used}}/{{limit}}; {{detail}};アプリ全体で無料と報告されています {{reportedFree}}',
     reasons: {
-      updatePending: '更新を待っているランナー;新作は一時停止中です',
-      pruning: 'ランナークリーニング共用店舗。新作は一時停止中です',
+      updatePending: '更新を待っている実行環境;新作は一時停止中です',
+      pruning: '実行環境クリーニング共用店舗。新作は一時停止中です',
       toolNotInstalled:
-        'このツールがインストールされている接続されたランナーはありません',
+        'このツールがインストールされている接続された実行環境はありません',
       incompatible:
-        '接続されたランナーはこのワークロードをサポートしません。アップグレードが必要です',
-      restricted: 'ランナーポリシー、ディレクトリ、または変数の制限',
+        '接続された実行環境はこのワークロードをサポートしません。アップグレードが必要です',
+      restricted: '実行環境ポリシー、ディレクトリ、または変数の制限',
       unknown: 'ワークロードの適格性が確立されていません',
       agentArchived: 'エージェントはアーカイブされています',
       delayed: '{{until}}予定',
-      noRunnerOnline: 'オンラインではランタイムがありません',
-      runnersOffline: 'ランタイムがオフラインです',
+      noRunnerOnline: 'オンラインでは実行環境がありません',
+      runnersOffline: '実行環境がオフラインです',
       toolQuota: 'ツールの利用枠を使い切りました；リセット時刻：{{until}}',
       toolUnavailable:
         'ツールがサインインしていないか、無効になっているか、要求されたモデルが利用できません ({{tool}})',
-      noSharedRunner: '他人の個人ランナーのみがオンラインです',
-      missingFeatures: '{{features}} に対応するランタイムはありません',
+      noSharedRunner: '他人の個人実行環境のみがオンラインです',
+      missingFeatures: '{{features}} に対応する実行環境はありません',
       secretsNotAllowed:
-        'チーム ランタイムが必要: {{variables}} はチーム ランタイム専用です',
+        'チーム 実行環境が必要: {{variables}} はチーム 実行環境専用です',
       sameWorkActive: 'すでに実行した後',
       concurrencyFull: '同時実行フル ({{active}}/{{limit}})',
-      runnersBusy: '互換ランナーがいっぱいです',
+      runnersBusy: '互換実行環境がいっぱいです',
       toolSlotsFull: '{{tool}} スロットがいっぱいです ({{used}}/{{limit}})',
       setupRetrying: '準備に失敗しました。再試行中: {{detail}}',
-      next: '次は無料ランタイムへ',
+      next: '次は無料実行環境へ',
     },
     unknown: 'キューに登録されました ({{reason}})',
     quotaResetUnknown: '不明',
@@ -1418,7 +1464,7 @@ const jaJP: LocaleResource<typeof enUS> = {
       },
       runners: {
         title: '実行環境',
-        description: 'ランナーと登録トークンを参照。ランナーを管理します。',
+        description: '実行環境と登録トークンを参照。実行環境を管理します。',
       },
       prices: {
         title: 'モデルの価格',

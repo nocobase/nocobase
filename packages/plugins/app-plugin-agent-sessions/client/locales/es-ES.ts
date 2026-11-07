@@ -76,7 +76,7 @@ const esES: LocaleResource<typeof enUS> = {
     start_other: 'Iniciar tareas {{count}}',
     startOne: 'Iniciar',
     skip: 'Ahora no',
-    startHint: 'Agentes en el plan de tiempo de ejecución y hacen el trabajo.',
+    startHint: 'Agentes en el plan de entorno de ejecución y hacen el trabajo.',
     notStarted: 'No iniciado',
     started_one: 'iniciado {{count}}',
     started_other: 'iniciado {{count}}',

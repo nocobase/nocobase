@@ -76,7 +76,8 @@ const ptBR: LocaleResource<typeof enUS> = {
     start_other: 'Iniciar tarefas {{count}}',
     startOne: 'Iniciar',
     skip: 'Agora não',
-    startHint: 'Os agentes no tempo de execução planejam e fazem o trabalho.',
+    startHint:
+      'Os agentes no ambiente de execução planejam e fazem o trabalho.',
     notStarted: 'Não iniciado',
     started_one: 'iniciou {{count}}',
     started_other: 'iniciou {{count}}',

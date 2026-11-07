@@ -1,6 +1,4 @@
-import runtimesEnUS from './runtimes.en-US.js';
 import type { LocaleResource } from '@nocobase/i18n';
-import chatEnUS from './chat.en-US.js';
 
 import type enUS from './en-US.js';
 
@@ -114,8 +112,8 @@ const frFR: LocaleResource<typeof enUS> = {
     unavailableNow: 'Indisponible actuellement',
     title: 'Agents',
     description:
-      'Ajoutez des agents à partir des modèles signalés par les exécuteurs. Le Lead Agent confie chaque étape d’une tâche à l’agent dont la description convient.',
-    fromRunners: 'Agents des exécuteurs',
+      'Ajoutez des agents à partir des modèles signalés par les environnements d’exécution. Le Lead Agent confie chaque étape d’une tâche à l’agent dont la description correspond.',
+    fromRunners: 'Agents des environnements d’exécution',
     display: {
       search: 'Rechercher des modèles ou des fournisseurs',
       select: 'Sélectionnez {{name}}',
@@ -126,16 +124,16 @@ const frFR: LocaleResource<typeof enUS> = {
     filters: {
       all: 'Tous les {{count}}',
       enabled: 'Activé {{count}}',
-      unreported: 'Aucun exécuteur {{count}}',
+      unreported: 'Aucun environnement d’exécution {{count}}',
     },
     loadFailed: 'Impossible de charger les agents',
     loadMore: 'Charger plus',
     emptyTitle: "Aucun agent pour l'instant",
     emptyDescription:
-      'Connectez un exécuteur disposant d’un outil de codage avec une session ouverte, puis ajoutez un agent depuis « Modèles disponibles ».',
+      'Connectez un environnement d’exécution disposant d’un outil de codage avec une session ouverte, puis ajoutez un agent depuis « Modèles disponibles ».',
     noneInFilter: 'Aucun agent ici.',
     howToAdd:
-      'Pour ajouter un agent, installez un outil de codage sur un exécuteur et connectez-vous pour utiliser un modèle disponible. Une fois le modèle signalé par l’exécuteur, ajoutez l’agent depuis « Modèles disponibles » en décrivant ses points forts. Il est activé dès son ajout. Un agent disponible uniquement sur des exécuteurs personnels ne travaille que sur les tâches lancées par leurs propriétaires.',
+      'Pour ajouter un agent, installez un outil de développement sur un environnement d’exécution et connectez-vous à un modèle que vous pouvez utiliser : une fois signalé par l’environnement, ajoutez-le depuis Modèles disponibles en décrivant ses points forts. Un agent présent uniquement sur des environnements personnels ne travaille que sur les tâches lancées par leurs propriétaires.',
     goodAtMissing: 'Pas encore écrit',
     columns: {
       agent: 'Agent',
@@ -145,14 +143,14 @@ const frFR: LocaleResource<typeof enUS> = {
       state: 'Statut',
     },
     where: {
-      none: 'Aucun exécuteur',
+      none: 'Aucun environnement d’exécution',
       team_one: "Exécuteur d'équipe {{count}}",
       team_other: "Exécuteurs de l'équipe {{count}}",
       personal_one: 'Exécuteur personnel {{count}} en ligne',
       personal_other: 'Exécuteurs personnels {{count}} en ligne',
       both: 'Équipe {{team}} · Personnel {{personal}}',
       names: '{{names}}',
-      noneOnline: 'Aucun exécuteur en ligne actuellement',
+      noneOnline: 'Aucun environnement d’exécution en ligne actuellement',
       personalOnly: 'Exécuteurs personnels uniquement',
       lastReported: 'Dernier rapport {{when}}',
       team_many: "Exécuteurs de l'équipe {{count}}",
@@ -161,7 +159,7 @@ const frFR: LocaleResource<typeof enUS> = {
     state: {
       enabled: 'Activé',
       disabled: 'Désactivé',
-      unreported: 'Aucun exécuteur',
+      unreported: 'Aucun environnement d’exécution',
     },
     effort: {
       default: "Valeur par défaut de l'outil",
@@ -176,19 +174,20 @@ const frFR: LocaleResource<typeof enUS> = {
     },
     enable: {
       reportedBy_one:
-        'Rapporté par le exécuteur {{count}} en ligne : {{names}}.',
+        'Rapporté par le environnement d’exécution {{count}} en ligne : {{names}}.',
       reportedBy_other:
-        'Rapporté par les exécuteurs de {{count}} en ligne : {{names}}.',
-      noRunnerNow: "Aucun exécuteur qui l'a n'est en ligne actuellement.",
+        'Rapporté par les environnements d’exécution de {{count}} en ligne : {{names}}.',
+      noRunnerNow:
+        "Aucun environnement d’exécution qui l'a n'est en ligne actuellement.",
       goodAtHint:
         "Le Lead Agent décide ce qu'il doit donner à cet agent par ces mots. Dites ce qui convient et ce qui ne convient pas.",
       goodAtRequired: "Écrivez ce pour quoi il est bon avant de l'activer.",
       effortHint:
         "Le Lead Agent ne peut pas le modifier lorsqu'il lui confie le travail.",
       personalOnly:
-        "Seuls les exécuteurs personnels l'ont : le Lead Agent ne lui confie le travail que sur les problèmes lancés par ses propriétaires.",
+        'Seuls des environnements personnels l’ont : le Lead Agent ne lui confie que les tâches lancées par leurs propriétaires.',
       reportedBy_many:
-        'Rapporté par les exécuteurs de {{count}} en ligne : {{names}}.',
+        'Rapporté par les environnements d’exécution de {{count}} en ligne : {{names}}.',
     },
     edit: {
       button: 'Modifier',
@@ -201,7 +200,7 @@ const frFR: LocaleResource<typeof enUS> = {
       open: 'Ajouter un agent',
       title: 'Modèles disponibles',
       description:
-        'Seuls les outils cochés sur l’environnement d’exécution sont détectés et apparaissent ici. Les combinaisons recommandées par l’application se créent et s’activent d’elles-mêmes dès qu’un exécuteur les signale ; ajoutez-en un agent à partir de n’importe quelle autre.',
+        'Seuls les outils cochés sur l’environnement d’exécution sont détectés et apparaissent ici. Les combinaisons recommandées par l’application se créent et s’activent d’elles-mêmes dès qu’un environnement d’exécution les signale ; ajoutez-en un agent à partir de n’importe quelle autre.',
       recommended: 'Activé automatiquement dès le signalement',
       added: 'Ajouté',
       add: 'Ajouter',
@@ -226,9 +225,9 @@ const frFR: LocaleResource<typeof enUS> = {
       group_one: '{{tool}} · {{count}} modèle · {{runners}}',
       group_other: '{{tool}} · {{count}} modèles · {{runners}}',
       group_many: '{{tool}} · {{count}} modèles · {{runners}}',
-      runners_one: '{{count}} exécuteur',
-      runners_other: '{{count}} exécuteurs',
-      runners_many: '{{count}} exécuteurs',
+      runners_one: '{{count}} environnement d’exécution',
+      runners_other: '{{count}} environnements d’exécution',
+      runners_many: '{{count}} environnements d’exécution',
       noModels: 'Aucun modèle ici.',
       selectedCount_one: '{{count}} sélectionné',
       selectedCount_other: '{{count}} sélectionnés',
@@ -605,7 +604,7 @@ const frFR: LocaleResource<typeof enUS> = {
     contextOverflow: 'La conversation est devenue trop longue pour le modèle.',
     delegatedQueueTimeout:
       "Expiration du délai d'attente de la file d'attente de délégation ; retiré",
-    queuedExpired: 'Aucun runtime n’a pris le temps d’exécution.',
+    queuedExpired: 'Aucun runtime n’a pris le environnement d’exécution.',
     modelUnavailable: 'Le modèle de l’agent n’est pas disponible.',
     stepLimit: "L'agent a appelé tools trop souvent sans répondre.",
     policyRefused:
@@ -618,7 +617,8 @@ const frFR: LocaleResource<typeof enUS> = {
     unknown: "L'exécution a échoué.",
   },
   runtimes: {
-    pathHint: runtimesEnUS.runtimes.pathHint,
+    pathHint:
+      'Le runner trouve les outils de développement avec son propre PATH. Dans un terminal où which codex / which claude fonctionne, relancez nocobase-runner service install et redémarrez le service (ou relancez nocobase-runner start) pour qu’il obtienne le bon PATH.',
     quota: {
       workspaceStatus: {
         active: 'Les travaux continuent',
@@ -651,7 +651,7 @@ const frFR: LocaleResource<typeof enUS> = {
       providers_one: 'Fournisseur {{count}} au quota',
       providers_other: 'Fournisseurs {{count}} au quota',
       runColumns: {
-        issue: 'Problème/conversation',
+        issue: 'Tâche / conversation',
         agent: 'Agent',
         status: 'Statut',
         started: 'Démarré',
@@ -721,7 +721,8 @@ const frFR: LocaleResource<typeof enUS> = {
       ended: 'Terminé',
       active: 'Les travaux continuent',
       unknown: 'Impossible de confirmer si le travail est terminé',
-      oldRunner: "Ce exécuteur n'a pas fourni de raisons de diagnostic",
+      oldRunner:
+        "Ce environnement d’exécution n'a pas fourni de raisons de diagnostic",
       noCleanup: "Le résultat du nettoyage local n'a pas été reçu",
       discardsUntracked: 'Le nettoyage supprimera les fichiers non suivis',
       decision: {
@@ -730,7 +731,7 @@ const frFR: LocaleResource<typeof enUS> = {
         active: 'Les travaux continuent',
         runNotFound: 'Impossible de confirmer : exécution introuvable',
         ownershipUnknown:
-          "Impossible de confirmer : la propriété du exécuteur n'a pas pu être vérifiée",
+          "Impossible de confirmer : la propriété du environnement d’exécution n'a pas pu être vérifiée",
         ambiguousSubject: "Impossible de confirmer : clé d'objet ambiguë",
         bindingUnavailable:
           "Impossible de confirmer : l'application n'a pas de liaison d'espace de travail",
@@ -807,13 +808,13 @@ const frFR: LocaleResource<typeof enUS> = {
         "Les variables qu'il fournit aux exécutions qui les extraient du runtime, par leur nom ; les valeurs restent sur la machine. Définissez-en un ici avec `nocobase-runner env set NAME`, ou transmettez-le avec `--pass-env NAME`.",
       none: 'Aucun : une exécution qui prend une variable du runtime échoue ici avant de démarrer.',
       unknown:
-        'Non signalé : son runner est plus ancien que cette fonctionnalité. Mettez à jour le exécuteur pour les voir.',
+        'Non signalé : son runner est plus ancien que cette fonctionnalité. Mettez à jour le environnement d’exécution pour les voir.',
     },
     jobs: {
       allow: 'Autoriser les tâches de build',
       hint: 'Les builds et autres étapes configurées par cette application sont exécutés sans modèle. Ce runtime rapporte : {{kinds}}.',
       unsupported:
-        "Le programme d'exécution de ce runtime ne prend pas de tâches. Mettez à jour le exécuteur pour l'activer.",
+        "Le programme d'exécution de ce runtime ne prend pas de tâches. Mettez à jour le environnement d’exécution pour l'activer.",
     },
     noTools: 'Aucun outil de codage trouvé',
     actionsFor: 'Actions pour {{name}}',
@@ -854,13 +855,13 @@ const frFR: LocaleResource<typeof enUS> = {
     upgradeRequired: {
       title: 'Ce runtime nécessite une mise à niveau',
       older:
-        "Son exécuteur {{version}} parle le protocole d'agent {{protocol}} ; cette application nécessite le protocole {{required}}. Il reste connecté mais n'exécute rien jusqu'à ce qu'il soit mis à jour.",
+        "Son environnement d’exécution {{version}} parle le protocole d'agent {{protocol}} ; cette application nécessite le protocole {{required}}. Il reste connecté mais n'exécute rien jusqu'à ce qu'il soit mis à jour.",
       newer:
-        "Son runner {{version}} parle le protocole d'agent {{protocol}}, plus récent que cette application (protocole {{required}}). Il reste connecté mais n'exécute rien jusqu'à ce qu'il exécute un exécuteur servi par cette application.",
+        "Son runner {{version}} parle le protocole d'agent {{protocol}}, plus récent que cette application (protocole {{required}}). Il reste connecté mais n'exécute rien jusqu'à ce qu'il exécute un environnement d’exécution servi par cette application.",
       latest:
         "Cette application sert le programme d'exécution {{latest}}. Exécutez ceci sur son hôte pour le mettre à jour :",
       noLatest:
-        'Installez un exécuteur qui parle le protocole {{required}}, ou exécutez-le sur son hôte pour le mettre à jour :',
+        'Installez un environnement d’exécution qui parle le protocole {{required}}, ou exécutez-le sur son hôte pour le mettre à jour :',
       reinstall:
         'Son runner ne précise pas comment il a été installé. Installez-le à nouveau sur son hôte avec la commande de Add runtime.',
     },
@@ -879,7 +880,8 @@ const frFR: LocaleResource<typeof enUS> = {
       version: 'Version {{version}}',
     },
     trust: {
-      isolationHint: runtimesEnUS.runtimes.trust.isolationHint,
+      isolationHint:
+        'Pour les environnements d’exécution personnels comme partagés, exécutez le runner dans une machine virtuelle ou un environnement isolé : les agents ont un accès complet et le runner n’est pas un bac à sable.',
       label: 'Pour qui ça marche',
       team: 'Équipe',
       teamHint:
@@ -909,7 +911,7 @@ const frFR: LocaleResource<typeof enUS> = {
       show: 'Version {{version}} : un runner plus récent est disponible',
       available: 'Mise à jour disponible',
       badge: 'Évolutif',
-      title: 'Un exécuteur plus récent pour {{name}}',
+      title: 'Un environnement d’exécution plus récent pour {{name}}',
       description: '{{version}} installée, cette application sert {{latest}}.',
       hint: "Il se met à jour lorsqu'aucun agent n'est en cours d'exécution. Pour le mettre à jour maintenant, exécutez-le sur son hôte.",
     },
@@ -931,10 +933,26 @@ const frFR: LocaleResource<typeof enUS> = {
       "Les environnements d'exécution {{count}} ont été révoqués.",
   },
   connect: {
-    ...runtimesEnUS.connect,
+    manual: 'Ou installez-le vous-même',
+    promptTitle: 'Laisser un agent le configurer',
+    promptCopy: 'Copier l’instruction pour l’agent',
+    promptShow: 'Voir l’instruction',
+    promptHide: 'Masquer l’instruction',
+    promptHint:
+      'Copiez cette instruction vers un agent (Claude Code, Codex, etc.) sur la machine cible : il effectuera les étapes ci-dessous à votre place. Elle contient un identifiant à usage unique : ne la donnez qu’à cet agent.',
+    windowsPowerShell:
+      '1. Installez WSL : exécutez dans PowerShell, puis redémarrez Windows :',
+    windowsUbuntu:
+      '2. Ouvrez Ubuntu et exécutez la commande Linux ci-dessous. Installez Node.js et les outils de développement dans WSL Ubuntu.',
+    windowsNetwork:
+      'Si WSL n’a pas accès à Internet, activez la mise en réseau en miroir dans WSL.',
+    promptWindows:
+      'D’ABORD, détermine si tu t’exécutes dans WSL Ubuntu. Si tu n’es PAS dans WSL Ubuntu, ARRÊTE-TOI : n’exécute aucune commande d’installation ou d’enregistrement. Dis à l’utilisateur d’exécuter wsl --install dans PowerShell, de redémarrer Windows, puis d’ouvrir l’agent dans WSL Ubuntu et de relancer cette instruction. Poursuis les étapes ci-dessous UNIQUEMENT dans WSL Ubuntu. Installe Node.js et les outils de développement dans WSL. Si WSL n’a pas accès à Internet, active la mise en réseau en miroir.\n\n',
+    promptBody:
+      'Configure cette machine comme environnement d’exécution NocoBase. Utilise une machine virtuelle ou un environnement isolé : les agents ont un accès complet et le runner n’est pas un bac à sable.\n\nVérifie que Node.js 24 ou plus récent est présent et que ces outils de développement sont installés et connectés : {{tools}}. Utilise leurs méthodes d’installation officielles, pas les paquets snap.\n\nExécute cette commande d’enregistrement à usage unique pour installer le runner et la CLI de l’application, l’enregistrer et installer son service en arrière-plan :\n{{command}}\n\nRésous les problèmes de configuration courants : assure-toi que le PATH du service contient les outils de développement (vérifie which codex / which claude dans le terminal d’installation, puis relance nocobase-runner service install et redémarre le service) ; configure le proxy nécessaire pour les téléchargements et pour le service ; résous les droits d’installation globale npm avec un préfixe appartenant à l’utilisateur ou un gestionnaire de versions Node, sans sudo npm install.\n\nTermine par nocobase-runner status et confirme la connexion et les outils de développement. Signale-moi les étapes de connexion ou de réseau qu’il me reste à faire. Traite l’identifiant d’enregistrement comme un secret et ne l’inclus pas dans ton rapport.',
     title: "Ajouter un environnement d'exécution",
     description:
-      "Exécutez la commande ci-dessous sur un hôte sur lequel un outil de codage est installé : un serveur, une VM ou votre propre appareil. Les agents y fonctionnent avec un accès complet, en tant qu'utilisateur qui exécute le exécuteur, et peuvent lire et modifier tout ce que l'utilisateur peut faire, clés SSH et autres informations d'identification incluses. Le runner n'est pas une barrière de sécurité : exécutez-le en tant qu'utilisateur dédié, dans un conteneur ou dans une VM.",
+      "Exécutez la commande ci-dessous sur un hôte sur lequel un outil de codage est installé : un serveur, une VM ou votre propre appareil. Les agents y fonctionnent avec un accès complet, en tant qu'utilisateur qui exécute le environnement d’exécution, et peuvent lire et modifier tout ce que l'utilisateur peut faire, clés SSH et autres informations d'identification incluses. Le runner n'est pas une barrière de sécurité : exécutez-le en tant qu'utilisateur dédié, dans un conteneur ou dans une VM.",
     createCredential: "Générer la commande d'installation",
     advanced: 'Avancé : limites par outil de codage',
     run: 'Exécutez ceci sur cet hôte. Il télécharge le runner (nocobase-runner) et la CLI de cette application à partir de cette application, enregistre le runner et le démarre à la connexion :',
@@ -965,8 +983,38 @@ const frFR: LocaleResource<typeof enUS> = {
   },
   chat: {
     // Keep new guidance available in English until this locale is translated.
-    executionFailed: chatEnUS.chat.executionFailed,
-    fileInputFailures: chatEnUS.chat.fileInputFailures,
+    executionFailed:
+      'L’exécution a échoué. Relisez la conversation enregistrée avant de réessayer.',
+    fileInputFailures: {
+      imageCapability:
+        'L’entrée d’images n’est pas configurée pour ce modèle. Passez à un modèle dont la prise en charge des images est vérifiée.',
+      unsupportedFormat:
+        'L’entrée pour ce format de pièce jointe n’est pas configurée pour le modèle sélectionné, et aucun extracteur de texte local ne le prend en charge. Utilisez un format de document pris en charge ou un modèle dont la prise en charge des fichiers est vérifiée.',
+      formatMismatch:
+        'Le nom du fichier joint et son type de média indiquent des formats de document différents. Vérifiez le format du fichier et téléversez-le à nouveau.',
+      invalidInline:
+        'Les données du fichier joint sont invalides ou trop volumineuses. Téléversez-le à nouveau ou utilisez un fichier plus petit.',
+      fileTooLarge:
+        'Une pièce jointe dépasse sa taille maximale. Utilisez un fichier plus petit.',
+      inputTooLarge:
+        'Les pièces jointes de la conversation dépassent la limite d’entrée. Utilisez des fichiers plus petits ou démarrez une nouvelle conversation.',
+      documentTooLarge:
+        'La pièce jointe dépasse la limite de texte extrait. Utilisez un fichier plus petit.',
+      contextTooLarge:
+        'Les pièces jointes de la conversation dépassent la limite de texte extrait. Utilisez des fichiers plus petits ou démarrez une nouvelle conversation.',
+      fileCount:
+        'La conversation dépasse la limite de 100 fichiers en entrée. Démarrez une nouvelle conversation.',
+      nativeFileCount:
+        'La conversation dépasse la limite configurée de fichiers natifs. Utilisez moins de pièces jointes ou convertissez-les en un document texte pris en charge.',
+      unreadable:
+        'La pièce jointe ne contient aucun texte lisible. Les documents numérisés nécessitent l’OCR.',
+      extractionFailed:
+        'Impossible d’extraire le texte de la pièce jointe. Vérifiez que le document est lisible et téléversez-le à nouveau.',
+      extractionTimeout:
+        'L’extraction du texte de la pièce jointe a expiré. Utilisez un fichier plus petit ou réessayez.',
+      preparationFailed:
+        'Impossible de préparer la pièce jointe. Vérifiez votre accès et le format du fichier, puis réessayez.',
+    },
     untitled: 'Conversation sans titre',
     renamed: 'Renommé',
     archivedNamed: 'Archivé « {{title}} »',
@@ -979,8 +1027,9 @@ const frFR: LocaleResource<typeof enUS> = {
       agentArchived: 'Non activé',
       forbidden: 'Non disponible pour vous',
       noModel: "Configurez d'abord un modèle de chat",
-      noRunner: 'Aucun exécuteur en ligne, ne peut être choisi',
-      othersPersonal: "Seuls les exécuteurs personnels des autres l'ont",
+      noRunner: 'Aucun environnement d’exécution en ligne, ne peut être choisi',
+      othersPersonal:
+        "Seuls les environnements d’exécution personnels des autres l'ont",
       modelUnavailable: 'Modèle indisponible',
     },
     offline: {
@@ -993,9 +1042,9 @@ const frFR: LocaleResource<typeof enUS> = {
       switchedToDefault:
         "Passé à {{name}}, la valeur par défaut du système, jusqu'à ce que {{own}} soit de retour.",
       switchedToOnline:
-        "{{own}} n'a pas de exécuteur pour vous maintenant, donc {{name}} répond jusqu'à ce que {{own}} soit de retour.",
+        "{{own}} n'a pas de environnement d’exécution pour vous maintenant, donc {{name}} répond jusqu'à ce que {{own}} soit de retour.",
       onlineFallbackUnavailable:
-        "L'agent de secours en ligne ne peut pas répondre ({{reason}}). Cette conversation reste avec {{own}} en attendant un exécuteur.",
+        "L'agent de secours en ligne ne peut pas répondre ({{reason}}). Cette conversation reste avec {{own}} en attendant un environnement d’exécution.",
       switchedAgent:
         'Passage à {{name}} en conservant l’historique de cette conversation.',
       switchedBack: 'De retour avec {{name}}.',
@@ -1015,7 +1064,7 @@ const frFR: LocaleResource<typeof enUS> = {
     },
     agents: {
       personalOnly: 'Exécuteurs personnels uniquement',
-      hint: "Répertorie les agents activés et explique pourquoi on ne peut pas vous répondre maintenant. Les réponses courent sur un exécuteur : la première réponse attend qu'on la prenne, généralement quelques secondes.",
+      hint: "Répertorie les agents activés et explique pourquoi on ne peut pas vous répondre maintenant. Les réponses courent sur un environnement d’exécution : la première réponse attend qu'on la prenne, généralement quelques secondes.",
       chooseFor: 'Choisissez un agent',
       empty: 'Aucun agent que vous ne pouvez choisir',
       none: 'Aucun agent',
@@ -1384,9 +1433,10 @@ const frFR: LocaleResource<typeof enUS> = {
         'Runner en attente de mise à jour ; le nouveau travail est suspendu',
       pruning:
         'Exécuteur nettoyant magasin partagé; le nouveau travail est suspendu',
-      toolNotInstalled: "Aucun exécuteur connecté n'a installé cet outil",
+      toolNotInstalled:
+        "Aucun environnement d’exécution connecté n'a installé cet outil",
       incompatible:
-        'Les exécuteurs connectés ne prennent pas en charge cette charge de travail ; mise à niveau requise',
+        'Les environnements d’exécution connectés ne prennent pas en charge cette charge de travail ; mise à niveau requise',
       restricted:
         "Restrictions liées à la stratégie d'exécution, au répertoire ou aux variables",
       unknown: "L'éligibilité à la charge de travail n'est pas établie",
@@ -1398,14 +1448,14 @@ const frFR: LocaleResource<typeof enUS> = {
       toolUnavailable:
         'Outil non connecté, désactivé ou modèle demandé indisponible ({{tool}})',
       noSharedRunner:
-        'Seuls les exécuteurs personnels des autres personnes sont en ligne',
+        'Seuls les environnements d’exécution personnels des autres personnes sont en ligne',
       missingFeatures:
         "Aucun moteur d'exécution ne prend en charge {{features}}",
       secretsNotAllowed:
         "Nécessite un environnement d'exécution en équipe : {{variables}} est uniquement destiné aux environnements d'exécution en équipe.",
       sameWorkActive: 'Après la course, déjà dessus',
       concurrencyFull: 'Accès simultané complet ({{active}}/{{limit}})',
-      runnersBusy: 'Les exécuteurs compatibles sont pleins',
+      runnersBusy: 'Les environnements d’exécution compatibles sont pleins',
       toolSlotsFull: 'Emplacements {{tool}} pleins ({{used}}/{{limit}})',
       setupRetrying:
         'La préparation a échoué ; nouvelle tentative : {{detail}}',
@@ -1460,7 +1510,7 @@ const frFR: LocaleResource<typeof enUS> = {
       runners: {
         title: 'Environnements d’exécution',
         description:
-          "Voir exécuteurs et jetons d'inscription ; gérer les exécuteurs.",
+          "Voir environnements d’exécution et jetons d'inscription ; gérer les environnements d’exécution.",
       },
       prices: {
         title: 'Tarifs des modèles',

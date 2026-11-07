@@ -11,6 +11,8 @@ import {
   de,
   vi,
   id,
+  ru,
+  ko,
 } from 'date-fns/locale';
 import { useMemo } from 'react';
 
@@ -25,6 +27,8 @@ const calendarLocales: Readonly<Record<string, Locale>> = {
   'de-DE': de,
   'vi-VN': vi,
   'id-ID': id,
+  'ru-RU': ru,
+  'ko-KR': ko,
 };
 
 export interface PmFormatters {

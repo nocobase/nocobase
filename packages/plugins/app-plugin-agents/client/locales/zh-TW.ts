@@ -1,6 +1,4 @@
-import runtimesEnUS from './runtimes.en-US.js';
 import type { LocaleResource } from '@nocobase/i18n';
-import chatEnUS from './chat.en-US.js';
 
 import type enUS from './en-US.js';
 
@@ -110,8 +108,8 @@ const zhTW: LocaleResource<typeof enUS> = {
     unavailableNow: '目前無法使用',
     title: '代理',
     description:
-      '從執行器回報的模型中新增代理。Lead Agent依據代理的擅長領域分派議題的每個步驟。',
-    fromRunners: '執行器代理',
+      '從執行環境回報的模型新增 Agent。Lead Agent 會把任務的每個步驟交給描述最相符的 Agent。',
+    fromRunners: '執行環境代理',
     display: {
       search: '搜尋型號或供應商',
       select: '選擇{{name}}',
@@ -127,10 +125,11 @@ const zhTW: LocaleResource<typeof enUS> = {
     loadFailed: '無法載入代理',
     loadMore: '載入更多',
     emptyTitle: '還沒有代理',
-    emptyDescription: '連接已登入編碼工具的執行器，再從「可用模型」新增代理。',
+    emptyDescription:
+      '連接已登入編碼工具的執行環境，再從「可用模型」新增代理。',
     noneInFilter: '這裡沒有代理。',
     howToAdd:
-      '要新增代理，請在執行器上安裝編碼工具並登入可用的模型。執行器回報後，從「可用模型」填寫擅長領域即可新增並啟用代理。只有個人執行器可執行的代理，只能處理其擁有者發起的議題。',
+      '要新增 Agent，請在執行環境上安裝程式設計工具並登入你可使用的模型：執行環境回報後，從「可用模型」寫下它擅長的事來新增。只有個人執行環境擁有的 Agent，只會處理其擁有者啟動的任務。',
     goodAtMissing: '還沒寫',
     columns: {
       agent: '代理',
@@ -140,21 +139,21 @@ const zhTW: LocaleResource<typeof enUS> = {
       state: '狀態',
     },
     where: {
-      none: '沒有執行器',
-      team_one: '{{count}} 團隊執行器',
-      team_other: '{{count}} 團隊執行器',
-      personal_one: '{{count}} 個人執行器上線',
-      personal_other: '{{count}} 個人執行器上線',
+      none: '沒有執行環境',
+      team_one: '{{count}} 團隊執行環境',
+      team_other: '{{count}} 團隊執行環境',
+      personal_one: '{{count}} 個人執行環境上線',
+      personal_other: '{{count}} 個人執行環境上線',
       both: '{{team}} 團隊 · {{personal}} 個人',
       names: '{{names}}',
-      noneOnline: '目前沒有執行器線上',
-      personalOnly: '僅限個人執行器',
+      noneOnline: '目前沒有執行環境線上',
+      personalOnly: '僅限個人執行環境',
       lastReported: '最後報告 {{when}}',
     },
     state: {
       enabled: '已啟用',
       disabled: '已停用',
-      unreported: '沒有執行器',
+      unreported: '沒有執行環境',
     },
     effort: {
       default: '工具預設值',
@@ -168,15 +167,15 @@ const zhTW: LocaleResource<typeof enUS> = {
       ultra: '超',
     },
     enable: {
-      reportedBy_one: '{{count}} 執行器線上報道：{{names}}。',
-      reportedBy_other: '{{count}} 執行器線上檢舉：{{names}}。',
-      noRunnerNow: '目前沒有擁有它的執行器線上。',
+      reportedBy_one: '{{count}} 執行環境線上報道：{{names}}。',
+      reportedBy_other: '{{count}} 執行環境線上檢舉：{{names}}。',
+      noRunnerNow: '目前沒有擁有它的執行環境線上。',
       goodAtHint:
         'Lead Agent透過這句話來決定交給該代理什麼。說一下它適合什麼，不適合什麼。',
       goodAtRequired: '在啟用它之前寫下它擅長什麼。',
       effortHint: 'Lead Agent交接工作時不能更改。',
       personalOnly:
-        '只有個人執行器擁有它：Lead Agent只在其所有者開始的議題上才讓它工作。',
+        '只有個人執行環境擁有它：Lead Agent 只會把其擁有者啟動的任務交給它。',
     },
     edit: {
       button: '編輯',
@@ -234,7 +233,7 @@ const zhTW: LocaleResource<typeof enUS> = {
     label: '代理型別',
     question: '什麼樣的代理人？',
     online: '線上',
-    runner: '執行器',
+    runner: '執行環境',
     onlineHint:
       '透過模型服務在伺服器上幾秒鐘內做出答覆。無需執行環境；它不能觸及程式碼。',
     runnerHint:
@@ -567,7 +566,8 @@ const zhTW: LocaleResource<typeof enUS> = {
     unknown: '執行失敗。',
   },
   runtimes: {
-    pathHint: runtimesEnUS.runtimes.pathHint,
+    pathHint:
+      'runner 會依自己的 PATH 尋找程式設計工具。請在可執行 which codex / which claude 的終端機中重新執行 nocobase-runner service install 並重新啟動服務（或重新執行 nocobase-runner start），讓它取得正確的 PATH。',
     quota: {
       workspaceStatus: {
         active: '工作仍在繼續',
@@ -599,7 +599,7 @@ const zhTW: LocaleResource<typeof enUS> = {
       providers_one: '{{count}} 配額供應商',
       providers_other: '{{count}} 配額供應商',
       runColumns: {
-        issue: '議題/對話',
+        issue: '任務 / 對話',
         agent: '代理',
         status: '狀態',
         started: '開始',
@@ -665,14 +665,14 @@ const zhTW: LocaleResource<typeof enUS> = {
       ended: '已結束',
       active: '工作仍在繼續',
       unknown: '無法確認工作是否結束',
-      oldRunner: '該執行器未提供診斷原因',
+      oldRunner: '該執行環境未提供診斷原因',
       noCleanup: '未收到本地清理結果',
       discardsUntracked: '清理將丟棄未追蹤的檔案',
       decision: {
         settled: '工作結束；需進行區域性清理檢查',
         active: '工作仍在繼續',
         runNotFound: '無法確認：未找到執行',
-        ownershipUnknown: '無法確認：無法驗證執行器所有權',
+        ownershipUnknown: '無法確認：無法驗證執行環境所有權',
         ambiguousSubject: '無法確認：主題金鑰不明確',
         bindingUnavailable: '無法確認：應用程式沒有工作區繫結',
         subjectUnknown: '無法確認：應用程式無法解決該主題',
@@ -693,7 +693,7 @@ const zhTW: LocaleResource<typeof enUS> = {
     loadFailed: '無法載入執行環境',
     emptyTitle: '尚未連線執行環境',
     emptyDescription:
-      '連線執行環境後，執行器代理程式將使用其編碼工具開始工作。',
+      '連線執行環境後，執行環境代理程式將使用其編碼工具開始工作。',
     noneConnected: '未連線執行環境。',
     revokedList_one: '{{count}} 撤銷執行環境',
     revokedList_other: '{{count}} 已撤銷執行環境',
@@ -742,12 +742,12 @@ const zhTW: LocaleResource<typeof enUS> = {
       description:
         '它提供給執行的變數，這些變數按名稱從執行環境獲取；這些值保留在機器上。用 `nocobase-runner env set NAME` 在那裡設定一個，或用 `--pass-env NAME` 傳遞它。',
       none: '無：從執行環境取得變數的執行在開始之前在此失敗。',
-      unknown: '未報告：其執行程式比此功能更舊。更新執行器以檢視它們。',
+      unknown: '未報告：其執行程式比此功能更舊。更新執行環境以檢視它們。',
     },
     jobs: {
       allow: '允許建置作業',
       hint: '此應用程式配置的構建和其他步驟，無需模型即可執行。此執行環境報告：{{kinds}}。',
-      unsupported: '此執行時的執行程式不接受作業。更新執行器以開啟此功能。',
+      unsupported: '此執行時的執行程式不接受作業。更新執行環境以開啟此功能。',
     },
     noTools: '未找到編碼工具',
     actionsFor: '{{name}} 的操作',
@@ -756,7 +756,7 @@ const zhTW: LocaleResource<typeof enUS> = {
       status: '狀態',
       tools: '工具',
       sharing: '分享',
-      version: '執行器',
+      version: '執行環境',
       lastSeen: '最後出現',
       slots: '最大並發執行數',
     },
@@ -765,7 +765,7 @@ const zhTW: LocaleResource<typeof enUS> = {
       tools: '工具',
       toolsDescription:
         '它報道的編碼工具。已關閉或配額已用完的工具的工作不會傳送到此處。透過「儲存」儲存開關和限制。',
-      version: '執行器 {{version}}',
+      version: '執行環境 {{version}}',
       runs: '最近執行',
       runsEmpty: '尚未執行。',
       runsTotal: '共 {{count}} 條',
@@ -778,8 +778,8 @@ const zhTW: LocaleResource<typeof enUS> = {
       owner: '所有者 {{name}}',
     },
     status: {
-      updatePending: '執行器等待更新',
-      pruning: '執行器清潔共享商店',
+      updatePending: '執行環境等待更新',
+      pruning: '執行環境清潔共享商店',
       online: '線上',
       offline: '目前離線',
       revoked: '已撤銷',
@@ -792,7 +792,7 @@ const zhTW: LocaleResource<typeof enUS> = {
       newer:
         '它的執行程式 {{version}} 使用代理協定 {{protocol}}，比該應用程式（協定 {{required}}）更新。它保持連線，但不執行任何內容，直到執行該應用程式所服務的執行程式。',
       latest:
-        '該應用程式服務於執行器{{latest}}。在其主機上執行此命令以更新它：',
+        '該應用程式服務於執行環境{{latest}}。在其主機上執行此命令以更新它：',
       noLatest:
         '安裝使用 {{required}} 協定的執行程式，或在其主機上執行它來更新它：',
       reinstall:
@@ -812,7 +812,8 @@ const zhTW: LocaleResource<typeof enUS> = {
       version: '版本 {{version}}',
     },
     trust: {
-      isolationHint: runtimesEnUS.runtimes.trust.isolationHint,
+      isolationHint:
+        '不論個人或共用執行環境，都請在虛擬機或隔離環境中執行 runner：Agent 擁有完整權限，而 runner 不是沙箱。',
       label: '它適用於誰',
       team: '團隊',
       teamHint:
@@ -841,7 +842,7 @@ const zhTW: LocaleResource<typeof enUS> = {
       show: '版本 {{version}}：有更新的執行程式可用',
       available: '有更新',
       badge: '可升級',
-      title: '{{name}} 的較新執行器',
+      title: '{{name}} 的較新執行環境',
       description: '安裝了{{version}}，該應用程式服務於{{latest}}。',
       hint: '一旦沒有代理程式執行，它就會自行更新。要立即更新它，請在其主機上執行它。',
     },
@@ -860,7 +861,22 @@ const zhTW: LocaleResource<typeof enUS> = {
     },
   },
   connect: {
-    ...runtimesEnUS.connect,
+    manual: '或自行安裝',
+    promptTitle: '讓 Agent 幫你設定',
+    promptCopy: '複製給 Agent 的提示',
+    promptShow: '檢視提示',
+    promptHide: '隱藏提示',
+    promptHint:
+      '將此提示複製給目標機器上的 Agent（Claude Code、Codex 等），它會替你完成下列步驟。提示內含一次性憑證：只交給該 Agent。',
+    windowsPowerShell:
+      '1. 安裝 WSL：在 PowerShell 中執行，然後重新啟動 Windows：',
+    windowsUbuntu:
+      '2. 開啟 Ubuntu 並執行下方的 Linux 命令。請在 WSL Ubuntu 中安裝 Node.js 與程式設計工具。',
+    windowsNetwork: '若 WSL 無法連上網際網路，請在 WSL 中啟用鏡像網路。',
+    promptWindows:
+      '首先，確認你是否在 WSL Ubuntu 中執行。若不是在 WSL Ubuntu 中，請停止：不要執行任何安裝或註冊命令。請告訴使用者在 PowerShell 執行 wsl --install、重新啟動 Windows，然後在 WSL Ubuntu 中開啟 Agent 並重新執行此提示。只有在 WSL Ubuntu 中才繼續下列步驟。Node.js 與程式設計工具都安裝在 WSL 中。若 WSL 無法連上網際網路，請啟用鏡像網路。\n\n',
+    promptBody:
+      '將這台機器設定為 NocoBase 執行環境。請使用虛擬機或隔離環境：Agent 擁有完整權限，而 runner 不是沙箱。\n\n確認已安裝 Node.js 24 或更新版本，且下列程式設計工具已安裝並登入：{{tools}}。請使用官方安裝方式，不要用 snap 套件。\n\n執行這個一次性註冊命令，安裝 runner 與應用程式 CLI、完成註冊並安裝背景服務：\n{{command}}\n\n排除常見的設定問題：確保服務的 PATH 包含程式設計工具（在安裝用的終端機確認 which codex / which claude，然後重新執行 nocobase-runner service install 並重新啟動服務）；為下載與服務設定所需的代理；以使用者擁有的 prefix 或 Node 版本管理工具解決 npm 全域安裝權限問題，不要使用 sudo npm install。\n\n最後執行 nocobase-runner status，確認連線與程式設計工具。回報仍需我完成的登入或網路步驟。註冊憑證屬於機密，不要寫進回報。',
     title: '新增執行環境',
     description:
       '在安裝了編碼工具的主機上執行以下命令：伺服器、虛擬機器或您自己的裝置。代理程式以完全存取許可權執行，就像執行執行程式的使用者一樣，並且可以讀取和更改使用者可以讀取的任何內容，包括 SSH 金鑰和其他憑證。執行程式不是安全邊界：它作為專用使用者在容器或虛擬機器中執行。',
@@ -893,8 +909,28 @@ const zhTW: LocaleResource<typeof enUS> = {
   },
   chat: {
     // Keep new guidance available in English until this locale is translated.
-    executionFailed: chatEnUS.chat.executionFailed,
-    fileInputFailures: chatEnUS.chat.fileInputFailures,
+    executionFailed: '執行失敗。重試前請先檢查已儲存的對話。',
+    fileInputFailures: {
+      imageCapability: '此模型未設定圖片輸入。請切換到已驗證支援圖片的模型。',
+      unsupportedFormat:
+        '所選模型未設定此附件格式的輸入，也沒有本機文字擷取器支援此格式。請使用支援的文件格式，或已驗證支援檔案的模型。',
+      formatMismatch:
+        '附件的檔名與媒體類型指向不同的文件格式。請檢查檔案格式後重新上傳。',
+      invalidInline: '附件資料無效或過大。請重新上傳，或改用較小的檔案。',
+      fileTooLarge: '附件超過大小上限。請改用較小的檔案。',
+      inputTooLarge:
+        '對話的附件超過輸入大小上限。請改用較小的檔案，或開始新的對話。',
+      documentTooLarge: '附件超過擷取文字的上限。請改用較小的檔案。',
+      contextTooLarge:
+        '對話的附件超過擷取文字的上限。請改用較小的檔案，或開始新的對話。',
+      fileCount: '對話已超過 100 個檔案的輸入上限。請開始新的對話。',
+      nativeFileCount:
+        '對話已超過設定的原生檔案上限。請減少附件，或將其轉換為支援的文字文件。',
+      unreadable: '附件沒有可讀取的文字。掃描文件需要 OCR。',
+      extractionFailed: '無法擷取附件文字。請確認文件可讀取後重新上傳。',
+      extractionTimeout: '擷取附件文字逾時。請改用較小的檔案或重試。',
+      preparationFailed: '無法準備附件。請檢查存取權限與檔案格式後重試。',
+    },
     untitled: '無標題對話',
     renamed: '已更名',
     archivedNamed: '存檔“{{title}}”',
@@ -908,7 +944,7 @@ const zhTW: LocaleResource<typeof enUS> = {
       forbidden: '不適合您',
       noModel: '先配置聊天模型',
       noRunner: '無參賽者線上，無法選擇',
-      othersPersonal: '只有別人的私人執行器才有',
+      othersPersonal: '只有別人的私人執行環境才有',
       modelUnavailable: '型號不可用',
     },
     offline: {
@@ -919,9 +955,9 @@ const zhTW: LocaleResource<typeof enUS> = {
     notice: {
       switchedToDefault: '切換為系統預設{{name}}，直到{{own}}回來。',
       switchedToOnline:
-        '{{own}} 現在沒有適合您的執行器，所以 {{name}} 會回答，直到 {{own}} 回來。',
+        '{{own}} 現在沒有適合您的執行環境，所以 {{name}} 會回答，直到 {{own}} 回來。',
       onlineFallbackUnavailable:
-        '線上備援代理無法回覆（{{reason}}）。等待執行器期間，此對話仍由 {{own}} 負責。',
+        '線上備援代理無法回覆（{{reason}}）。等待執行環境期間，此對話仍由 {{own}} 負責。',
       switchedAgent: '已切換到 {{name}}，保留此對話的歷史。',
       switchedBack: '返回 {{name}}。',
       runFailed: '客服人員在回答之前停了下來。',
@@ -939,8 +975,8 @@ const zhTW: LocaleResource<typeof enUS> = {
       working: '正在 {{subject}} 上工作',
     },
     agents: {
-      personalOnly: '僅限個人執行器',
-      hint: '列出已啟用的代理程式並說明為什麼現在無法回答您。答案在執行器身上跑：第一個回覆等待一個人接受，通常是幾秒鐘。',
+      personalOnly: '僅限個人執行環境',
+      hint: '列出已啟用的代理程式並說明為什麼現在無法回答您。答案在執行環境身上跑：第一個回覆等待一個人接受，通常是幾秒鐘。',
       chooseFor: '選擇代理',
       empty: '沒有您可以選擇的代理',
       none: '無代理',
@@ -1275,11 +1311,11 @@ const zhTW: LocaleResource<typeof enUS> = {
     capacity:
       '這裡使用的插槽{{used}}/{{limit}};{{detail}};跨應用程式報告免費 {{reportedFree}}',
     reasons: {
-      updatePending: '執行器等待更新；新工作已暫停',
-      pruning: '執行器清理共享商店；新工作已暫停',
-      toolNotInstalled: '沒有連線的執行器安裝此工具',
-      incompatible: '連線的執行器不支援此工作負載；需要升級',
-      restricted: '執行器策略、目錄或變數限制',
+      updatePending: '執行環境等待更新；新工作已暫停',
+      pruning: '執行環境清理共享商店；新工作已暫停',
+      toolNotInstalled: '沒有連線的執行環境安裝此工具',
+      incompatible: '連線的執行環境不支援此工作負載；需要升級',
+      restricted: '執行環境策略、目錄或變數限制',
       unknown: '工作量資格未建立',
       agentArchived: '代理程式已存檔',
       delayed: '預定{{until}}',
@@ -1287,12 +1323,12 @@ const zhTW: LocaleResource<typeof enUS> = {
       runnersOffline: '運轉時離線',
       toolQuota: '工具額度用完；恢復時間：{{until}}',
       toolUnavailable: '工具未登入、已停用或要求的模型不可用 ({{tool}})',
-      noSharedRunner: '只有別人的私人執行器線上',
+      noSharedRunner: '只有別人的私人執行環境線上',
       missingFeatures: '沒有執行環境支援 {{features}}',
       secretsNotAllowed: '需要團隊執行時：{{variables}} 僅適用於團隊執行時',
       sameWorkActive: '跑步後就可以了',
       concurrencyFull: '並發滿（{{active}}/{{limit}}）',
-      runnersBusy: '相容執行器已滿',
+      runnersBusy: '相容執行環境已滿',
       toolSlotsFull: '{{tool}} 插槽已滿 ({{used}}/{{limit}})',
       setupRetrying: '準備失敗；重試：{{detail}}',
       next: '接下來是免費執行環境',
@@ -1340,7 +1376,7 @@ const zhTW: LocaleResource<typeof enUS> = {
       },
       runners: {
         title: '執行環境',
-        description: '檢視執行器和註冊令牌；管理執行器。',
+        description: '檢視執行環境和註冊令牌；管理執行環境。',
       },
       prices: {
         title: '型號價格',

@@ -46,7 +46,7 @@ const viVN: LocaleResource<typeof enUS> = {
       runners: {
         title: 'Môi trường chạy',
         description:
-          'Xem trình chạy và mã thông báo đăng ký; quản lý trình chạy.',
+          'Xem môi trường chạy và mã thông báo đăng ký; quản lý môi trường chạy.',
       },
       prices: {
         title: 'Giá mẫu',

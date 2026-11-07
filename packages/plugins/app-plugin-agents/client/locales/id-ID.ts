@@ -1,6 +1,4 @@
-import runtimesEnUS from './runtimes.en-US.js';
 import type { LocaleResource } from '@nocobase/i18n';
-import chatEnUS from './chat.en-US.js';
 
 import type enUS from './en-US.js';
 
@@ -113,7 +111,7 @@ const idID: LocaleResource<typeof enUS> = {
     unavailableNow: 'Tidak tersedia saat ini',
     title: 'Agen',
     description:
-      'Tambahkan agen dari model yang dilaporkan runner. Lead Agent menugaskan setiap langkah tugas kepada agen yang deskripsinya sesuai.',
+      'Tambahkan Agent dari model yang dilaporkan lingkungan runtime. Lead Agent menyerahkan setiap langkah tugas kepada Agent yang deskripsinya sesuai.',
     fromRunners: 'Agen dari runner',
     display: {
       search: 'Model atau penyedia pencarian',
@@ -134,7 +132,7 @@ const idID: LocaleResource<typeof enUS> = {
       'Hubungkan runner dengan alat pengkodean yang sudah masuk ke akun, lalu tambahkan agen melalui “Model yang tersedia”.',
     noneInFilter: 'Tidak ada agen di sini.',
     howToAdd:
-      'Untuk menambahkan agen, instal alat pengkodean pada runner dan masuk ke akun untuk menggunakan model yang tersedia. Setelah runner melaporkannya, tambahkan agen melalui “Model yang tersedia” dan tuliskan keahliannya. Agen langsung diaktifkan saat ditambahkan. Agen yang hanya tersedia pada runner pribadi hanya mengerjakan tugas yang dimulai oleh pemiliknya.',
+      'Untuk menambahkan Agent, pasang alat pemrograman di lingkungan runtime dan masuk ke model yang boleh Anda gunakan: setelah lingkungan runtime melaporkannya, tambahkan dari Model yang tersedia dengan menuliskan keunggulannya. Agent yang hanya dimiliki lingkungan runtime pribadi hanya mengerjakan tugas yang dimulai pemiliknya.',
     goodAtMissing: 'Belum ditulis',
     columns: {
       agent: 'Agen',
@@ -181,7 +179,7 @@ const idID: LocaleResource<typeof enUS> = {
       effortHint:
         'Lead Agent tidak dapat mengubahnya ketika penyerahan pekerjaan.',
       personalOnly:
-        'Hanya runner pribadi yang memilikinya: Lead Agent menyerahkan pekerjaan hanya pada masalah yang dimulai oleh pemiliknya.',
+        'Hanya lingkungan runtime pribadi yang memilikinya: Lead Agent hanya menyerahkan tugas yang dimulai pemiliknya.',
     },
     edit: {
       button: 'Edit',
@@ -243,7 +241,7 @@ const idID: LocaleResource<typeof enUS> = {
     online: 'Daring',
     runner: 'Runner',
     onlineHint:
-      'Jawaban dalam hitungan detik di server melalui layanan model. Tidak diperlukan waktu proses; itu tidak dapat menyentuh kode.',
+      'Jawaban dalam hitungan detik di server melalui layanan model. Tidak diperlukan lingkungan runtime; itu tidak dapat menyentuh kode.',
     runnerHint:
       'Menggerakan alat pengkodean saat runtime dan bekerja di direktori kerja: kode, file, perintah.',
     immutable:
@@ -315,12 +313,12 @@ const idID: LocaleResource<typeof enUS> = {
     keepValueHint: 'Biarkan kosong untuk mempertahankan nilai saat ini.',
     teamRunnersOnly: 'Waktu proses tim saja',
     teamRunnersOnlyHint:
-      'Tanpanya, proses akan mengirimkan nilai ke waktu proses yang memerlukannya, termasuk waktu proses pribadi siapa pun yang mungkin menggunakan agen tersebut. Dengan itu, hanya runtime tim yang menjalankan variabel ini yang dijalankan.',
+      'Tanpanya, proses akan mengirimkan nilai ke lingkungan runtime yang memerlukannya, termasuk lingkungan runtime pribadi siapa pun yang mungkin menggunakan agen tersebut. Dengan itu, hanya runtime tim yang menjalankan variabel ini yang dijalankan.',
     teamRunnersOnlyBadge: 'Waktu proses tim saja',
     fromRunner: 'Ambil dari runtime',
     fromRunnerHint:
-      'Tidak ada nilai yang disimpan di sini: waktu proses yang dijalankan menyediakannya dari mesinnya sendiri, disetel di sana dengan {{command}} atau diteruskan dengan `--pass-env`. Runtime yang tidak menyediakannya akan gagal dijalankan sebelum dimulai.',
-    fromRunnerBadge: 'Dari waktu proses',
+      'Tidak ada nilai yang disimpan di sini: lingkungan runtime yang dijalankan menyediakannya dari mesinnya sendiri, disetel di sana dengan {{command}} atau diteruskan dengan `--pass-env`. Runtime yang tidak menyediakannya akan gagal dijalankan sebelum dimulai.',
+    fromRunnerBadge: 'Dari lingkungan runtime',
     valueRequired: 'Masukkan nilai, atau terus ambil dari runtime.',
     empty: 'Tidak ada variabel lingkungan.',
     scope: 'Cakupan',
@@ -494,7 +492,7 @@ const idID: LocaleResource<typeof enUS> = {
       button: 'Bersihkan direktori kerja',
       title: 'Bersihkan direktori kerja?',
       description:
-        'Proses selanjutnya dimulai dari checkout baru dan diberikan perintah inisialisasi lagi. Perubahan yang tidak didorong akan hilang pada waktu proses tersebut. Direktori yang digunakan di tempatnya tidak pernah dihapus.',
+        'Proses selanjutnya dimulai dari checkout baru dan diberikan perintah inisialisasi lagi. Perubahan yang tidak didorong akan hilang pada lingkungan runtime tersebut. Direktori yang digunakan di tempatnya tidak pernah dihapus.',
       confirm: 'Bersih',
       done: 'Proses selanjutnya dimulai dari checkout baru.',
     },
@@ -593,7 +591,8 @@ const idID: LocaleResource<typeof enUS> = {
     unknown: 'Pelariannya gagal.',
   },
   runtimes: {
-    pathHint: runtimesEnUS.runtimes.pathHint,
+    pathHint:
+      'Runner mencari alat pemrograman menggunakan PATH miliknya sendiri. Di terminal tempat which codex / which claude berfungsi, jalankan lagi nocobase-runner service install dan mulai ulang layanan (atau jalankan lagi nocobase-runner start) agar runner mendapat PATH yang benar.',
     quota: {
       workspaceStatus: {
         active: 'Pekerjaan berlanjut',
@@ -626,7 +625,7 @@ const idID: LocaleResource<typeof enUS> = {
       providers_one: 'Penyedia {{count}} dengan kuota',
       providers_other: 'Penyedia {{count}} dengan kuota',
       runColumns: {
-        issue: 'Masalah / percakapan',
+        issue: 'Tugas / percakapan',
         agent: 'Agen',
         status: 'Status',
         started: 'Dimulai',
@@ -726,7 +725,7 @@ const idID: LocaleResource<typeof enUS> = {
     title: 'Lingkungan runtime',
     description:
       'Runtime yang menjalankan agen, dan alat pengkodean masing-masing dilaporkan.',
-    add: 'Tambahkan waktu proses',
+    add: 'Tambahkan lingkungan runtime',
     loadFailed: 'Tidak dapat memuat runtime',
     emptyTitle: 'Belum ada runtime yang terhubung',
     emptyDescription:
@@ -777,8 +776,8 @@ const idID: LocaleResource<typeof enUS> = {
     variables: {
       title: 'Variabel dari mesin ini',
       description:
-        'Variabel yang disediakan untuk proses yang mengambilnya dari waktu proses, berdasarkan nama; nilainya tetap ada di mesin. Tetapkan satu di sana dengan `nocobase-runner env set NAME`, atau teruskan dengan `--pass-env NAME`.',
-      none: 'Tidak ada: proses yang mengambil variabel dari waktu proses gagal di sini sebelum dimulai.',
+        'Variabel yang disediakan untuk proses yang mengambilnya dari lingkungan runtime, berdasarkan nama; nilainya tetap ada di mesin. Tetapkan satu di sana dengan `nocobase-runner env set NAME`, atau teruskan dengan `--pass-env NAME`.',
+      none: 'Tidak ada: proses yang mengambil variabel dari lingkungan runtime gagal di sini sebelum dimulai.',
       unknown:
         'Tidak dilaporkan: runnernya lebih tua dari fitur ini. Perbarui runner untuk melihatnya.',
     },
@@ -851,7 +850,8 @@ const idID: LocaleResource<typeof enUS> = {
       version: 'Versi {{version}}',
     },
     trust: {
-      isolationHint: runtimesEnUS.runtimes.trust.isolationHint,
+      isolationHint:
+        'Untuk lingkungan runtime pribadi maupun bersama, jalankan runner di VM atau lingkungan terisolasi: Agent memiliki akses penuh dan runner bukan sandbox.',
       label: 'Untuk siapa ini bekerja',
       team: 'Tim',
       teamHint:
@@ -902,8 +902,24 @@ const idID: LocaleResource<typeof enUS> = {
     },
   },
   connect: {
-    ...runtimesEnUS.connect,
-    title: 'Tambahkan waktu proses',
+    manual: 'Atau pasang sendiri',
+    promptTitle: 'Biarkan Agent menyiapkannya',
+    promptCopy: 'Salin prompt untuk Agent',
+    promptShow: 'Lihat prompt',
+    promptHide: 'Sembunyikan prompt',
+    promptHint:
+      'Salin prompt ini ke Agent (Claude Code, Codex, dan sejenisnya) di mesin tujuan, dan Agent akan menjalankan langkah di bawah untuk Anda. Prompt ini berisi kredensial sekali pakai: berikan hanya kepada Agent tersebut.',
+    windowsPowerShell:
+      '1. Pasang WSL: jalankan di PowerShell, lalu mulai ulang Windows:',
+    windowsUbuntu:
+      '2. Buka Ubuntu dan jalankan perintah Linux di bawah. Pasang Node.js dan alat pemrograman di dalam WSL Ubuntu.',
+    windowsNetwork:
+      'Jika WSL tidak dapat mengakses internet, aktifkan jaringan mirrored di WSL.',
+    promptWindows:
+      'PERTAMA, pastikan apakah kamu berjalan di dalam WSL Ubuntu. Jika TIDAK di WSL Ubuntu, BERHENTI: jangan jalankan perintah pemasangan atau pendaftaran apa pun. Minta pengguna menjalankan wsl --install di PowerShell, memulai ulang Windows, lalu membuka Agent di dalam WSL Ubuntu dan menjalankan prompt ini lagi. Lanjutkan langkah di bawah HANYA di dalam WSL Ubuntu. Pasang Node.js dan alat pemrograman di dalam WSL. Jika WSL tidak dapat mengakses internet, aktifkan jaringan mirrored.\n\n',
+    promptBody:
+      'Siapkan mesin ini sebagai lingkungan runtime NocoBase. Gunakan VM atau lingkungan terisolasi: Agent memiliki akses penuh dan runner bukan sandbox.\n\nPeriksa bahwa Node.js 24 atau lebih baru tersedia dan alat pemrograman berikut sudah terpasang dan masuk: {{tools}}. Gunakan cara pemasangan resminya, bukan paket snap.\n\nJalankan perintah pendaftaran sekali pakai ini untuk memasang runner dan CLI aplikasi, mendaftarkannya, dan memasang layanan latar belakangnya:\n{{command}}\n\nAtasi masalah penyiapan umum: pastikan PATH layanan berisi alat pemrograman (periksa which codex / which claude di terminal pemasangan, lalu jalankan lagi nocobase-runner service install dan mulai ulang layanan); atur proxy yang diperlukan untuk unduhan dan layanan; atasi izin pemasangan global npm dengan prefix milik pengguna atau pengelola versi Node, tanpa sudo npm install.\n\nAkhiri dengan nocobase-runner status dan pastikan koneksi serta alat pemrograman. Laporkan langkah masuk atau jaringan yang masih perlu saya selesaikan. Perlakukan kredensial pendaftaran sebagai rahasia dan jangan cantumkan dalam laporan.',
+    title: 'Tambahkan lingkungan runtime',
     description:
       'Jalankan perintah di bawah ini pada host yang memiliki alat pengkodean terpasang: server, VM, atau perangkat Anda sendiri. Agen berjalan di sana dengan akses penuh, sebagai pengguna yang menjalankan runner, dan dapat membaca serta mengubah apa pun yang dapat dilakukan pengguna, termasuk kunci SSH dan kredensial lainnya. Runner bukanlah batasan keamanan: jalankan sebagai pengguna khusus, dalam container, atau di VM.',
     createCredential: 'Hasilkan perintah instalasi',
@@ -936,8 +952,38 @@ const idID: LocaleResource<typeof enUS> = {
   },
   chat: {
     // Keep new guidance available in English until this locale is translated.
-    executionFailed: chatEnUS.chat.executionFailed,
-    fileInputFailures: chatEnUS.chat.fileInputFailures,
+    executionFailed:
+      'Eksekusi gagal. Tinjau percakapan yang tersimpan sebelum mencoba lagi.',
+    fileInputFailures: {
+      imageCapability:
+        'Input gambar belum dikonfigurasi untuk model ini. Beralihlah ke model yang dukungan gambarnya sudah terverifikasi.',
+      unsupportedFormat:
+        'Input untuk format lampiran ini belum dikonfigurasi pada model yang dipilih, dan tidak ada ekstraktor teks lokal yang mendukungnya. Gunakan format dokumen yang didukung atau model yang dukungan filenya sudah terverifikasi.',
+      formatMismatch:
+        'Nama file lampiran dan jenis medianya menunjukkan format dokumen yang berbeda. Periksa format file lalu unggah ulang.',
+      invalidInline:
+        'Data file lampiran tidak valid atau terlalu besar. Unggah ulang file atau gunakan file yang lebih kecil.',
+      fileTooLarge:
+        'Sebuah lampiran melebihi batas ukurannya. Gunakan file yang lebih kecil.',
+      inputTooLarge:
+        'Lampiran percakapan melebihi batas input. Gunakan file yang lebih kecil atau mulai percakapan baru.',
+      documentTooLarge:
+        'Lampiran melebihi batas teks yang diekstrak. Gunakan file yang lebih kecil.',
+      contextTooLarge:
+        'Lampiran percakapan melebihi batas teks yang diekstrak. Gunakan file yang lebih kecil atau mulai percakapan baru.',
+      fileCount:
+        'Percakapan melebihi batas 100 file input. Mulai percakapan baru.',
+      nativeFileCount:
+        'Percakapan melebihi batas file native yang dikonfigurasi. Gunakan lebih sedikit lampiran atau ubah menjadi dokumen teks yang didukung.',
+      unreadable:
+        'Lampiran tidak berisi teks yang dapat dibaca. Dokumen hasil pindaian memerlukan OCR.',
+      extractionFailed:
+        'Teks lampiran tidak dapat diekstrak. Pastikan dokumen dapat dibaca lalu unggah ulang.',
+      extractionTimeout:
+        'Ekstraksi teks lampiran melewati batas waktu. Gunakan file yang lebih kecil atau coba lagi.',
+      preparationFailed:
+        'Lampiran tidak dapat disiapkan. Periksa akses Anda dan format file, lalu coba lagi.',
+    },
     untitled: 'Percakapan tanpa judul',
     renamed: 'Berganti nama',
     archivedNamed: 'Diarsipkan “{{title}}”',
@@ -1352,13 +1398,14 @@ const idID: LocaleResource<typeof enUS> = {
       unknown: 'Kelayakan beban kerja belum ditetapkan',
       agentArchived: 'Agen diarsipkan',
       delayed: 'Dijadwalkan untuk {{until}}',
-      noRunnerOnline: 'Tidak ada waktu proses online',
+      noRunnerOnline: 'Tidak ada lingkungan runtime online',
       runnersOffline: 'Waktu prosesnya sedang offline',
       toolQuota: 'Kuota alat habis; waktu reset: {{until}}',
       toolUnavailable:
         'Alat tidak masuk, dinonaktifkan, atau model yang diminta tidak tersedia ({{tool}})',
       noSharedRunner: 'Hanya runner pribadi orang lain yang online',
-      missingFeatures: 'Tidak ada waktu proses yang mendukung {{features}}',
+      missingFeatures:
+        'Tidak ada lingkungan runtime yang mendukung {{features}}',
       secretsNotAllowed:
         'Membutuhkan runtime tim: {{variables}} hanya untuk runtime tim',
       sameWorkActive: 'Setelah dijalankan sudah di atasnya',

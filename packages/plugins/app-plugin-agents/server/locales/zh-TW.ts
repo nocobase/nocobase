@@ -42,7 +42,7 @@ const zhTW: LocaleResource<typeof enUS> = {
       },
       runners: {
         title: '執行環境',
-        description: '檢視執行器和註冊令牌；管理執行器。',
+        description: '檢視執行環境和註冊令牌；管理執行環境。',
       },
       prices: {
         title: '型號價格',

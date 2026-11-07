@@ -75,7 +75,7 @@ const viVN: LocaleResource<typeof enUS> = {
     startOne: 'Bắt đầu',
     skip: 'Không phải bây giờ',
     startHint:
-      'Đại lý trong thời gian chạy có kế hoạch và thực hiện công việc.',
+      'Đại lý trong môi trường chạy có kế hoạch và thực hiện công việc.',
     notStarted: 'Chưa bắt đầu',
     started_one: 'đã khởi động {{count}}',
     started_other: 'đã khởi động {{count}}',

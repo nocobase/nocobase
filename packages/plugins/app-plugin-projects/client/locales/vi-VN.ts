@@ -31,34 +31,33 @@ const viVN: LocaleResource<typeof enUS> = {
       stageActionSuppressed:
         'đã chặn một hành động trên sân khấu (quá nhiều lần chạy)',
       stageActionBlocked:
-        'đã bỏ qua một hành động ở giai đoạn: sự cố đang chờ xử lý',
-      workBlocked: 'chưa bắt đầu hoạt động: sự cố đang chờ xử lý',
-      workDormant: 'không bắt đầu hoạt động trong khi sự cố đang diễn ra',
+        'đã bỏ qua một hành động của giai đoạn: nhiệm vụ đang chờ',
+      workBlocked: 'chưa bắt đầu làm việc: nhiệm vụ đang chờ',
+      workDormant: 'chưa bắt đầu làm việc khi nhiệm vụ đang ở',
       workLimited:
-        'không bắt đầu hoạt động: nhận xét của nhân viên đã đạt đến giới hạn chạy của vấn đề',
-      workWithdrawn:
-        'đã rút công việc đã xếp hàng đợi của mình: vấn đề hiện đang chờ xử lý',
+        'chưa bắt đầu làm việc: bình luận của Agent đã chạm giới hạn lượt chạy của nhiệm vụ',
+      workWithdrawn: 'đã rút công việc đang xếp hàng: nhiệm vụ hiện đang chờ',
       stageActionFailed: 'không thể chạy quy tắc trạng thái',
-      created: 'đã tạo ra vấn đề',
+      created: 'đã tạo nhiệm vụ',
       datesChanged: 'đã thay đổi ngày tháng',
-      deleted: 'đã xóa vấn đề',
+      deleted: 'đã xóa nhiệm vụ',
       descriptionChanged: 'đã chỉnh sửa mô tả',
-      executorChanged: 'đã thay đổi người thi hành',
-      executorRemoved: 'người thực thi {{name}} đã bị xóa',
+      executorChanged: 'đã đổi người thực hiện',
+      executorRemoved: 'người thực hiện {{name}} đã bị gỡ',
       labelsChanged: 'đã thay đổi nhãn',
       ownerChanged: 'đã đổi chủ',
-      parentChanged: 'đã thay đổi vấn đề gốc',
+      parentChanged: 'đã đổi nhiệm vụ cha',
       priorityChanged: 'đã thay đổi mức độ ưu tiên',
-      projectChanged: 'đã chuyển vấn đề này sang một dự án khác',
-      restored: 'đã khôi phục vấn đề',
+      projectChanged: 'đã chuyển nhiệm vụ sang dự án khác',
+      restored: 'đã khôi phục nhiệm vụ',
       statusChanged: 'đã thay đổi trạng thái',
-      titleChanged: 'đã đổi tên vấn đề',
-      updated: 'đã cập nhật vấn đề',
-      subtaskAdded: 'đã thêm vấn đề phụ',
+      titleChanged: 'đã đổi tên nhiệm vụ',
+      updated: 'đã cập nhật nhiệm vụ',
+      subtaskAdded: 'đã thêm nhiệm vụ con',
       dependencyAdded: 'đã thêm sự phụ thuộc vào',
       dependencyRemoved: 'đã loại bỏ sự phụ thuộc vào',
       stageChanged: 'thay đổi sân khấu',
-      autoMoveSkipped: 'không thể tự động chuyển vấn đề sang',
+      autoMoveSkipped: 'không thể tự động chuyển nhiệm vụ sang',
     },
     afterEvent: '(tự động, trên “{{event}}”)',
     empty: 'Chưa có hoạt động nào.',
@@ -80,16 +79,16 @@ const viVN: LocaleResource<typeof enUS> = {
       cancel: 'Việc di chuyển bị hủy bỏ.',
       end: 'Đã rơi trên {{status}}.',
       instructions:
-        'Nhấn phím cách hoặc enter để chọn vấn đề, sử dụng các phím mũi tên để chuyển sang trạng thái khác, sau đó nhấn phím cách hoặc nhập lại để thả vấn đề hoặc thoát để hủy.',
+        'Nhấn phím cách hoặc Enter để nhấc một nhiệm vụ, dùng phím mũi tên để chuyển nó sang trạng thái khác, rồi nhấn phím cách hoặc Enter lần nữa để thả, hoặc Escape để hủy.',
       over: 'Trên {{status}}.',
       start: 'Đã nhặt được {{identifier}}.',
     },
     boardView: 'Ban',
-    cardRole: 'Sự cố có thể kéo được',
+    cardRole: 'Nhiệm vụ có thể kéo',
     closeDenied:
       'Chỉ chủ sở hữu, trưởng dự án hoặc quản trị viên mới có thể đóng {{identifier}}.',
-    emptyColumn: 'Không có vấn đề gì',
-    label: 'Ban phát hành',
+    emptyColumn: 'Không có nhiệm vụ',
+    label: 'Bảng nhiệm vụ',
     listView: 'Danh sách',
     moveRejected: '{{identifier}} không thể chuyển sang trạng thái đó.',
     viewLabel: 'Xem',
@@ -187,11 +186,11 @@ const viVN: LocaleResource<typeof enUS> = {
       created: 'Đã tạo nhãn "{{name}}"',
       delete: 'Xóa nhãn',
       deleteDescription:
-        'Nó bị loại bỏ khỏi mọi vấn đề có nó. Điều này không thể hoàn tác được.',
+        'Nhãn sẽ bị gỡ khỏi mọi nhiệm vụ đang có nó. Không thể hoàn tác.',
       deleteTitle: 'Xóa nhãn "{{name}}"?',
       deleted: 'Đã xóa nhãn "{{name}}"',
-      description: 'Dán nhãn các vấn đề của nhóm trong các dự án.',
-      emptyDescription: 'Tạo nhãn cho các vấn đề nhóm.',
+      description: 'Nhãn nhóm các nhiệm vụ trên nhiều dự án.',
+      emptyDescription: 'Tạo nhãn để nhóm các nhiệm vụ.',
       emptyNoAccess: 'Yêu cầu quản trị viên tạo nhãn.',
       emptyTitle: 'Chưa có nhãn',
       loadFailed: 'Không thể tải nhãn',
@@ -206,8 +205,7 @@ const viVN: LocaleResource<typeof enUS> = {
     },
   },
   configPage: {
-    description:
-      'Thành viên, vai trò, nhãn hiệu và tiền tố phát hành của dự án.',
+    description: 'Thành viên, vai trò, nhãn và tiền tố nhiệm vụ của các dự án.',
     noAccess: 'Không có gì để thiết lập ở đây',
     noAccessDescription:
       'Vai trò của bạn không bao gồm bất kỳ bối cảnh dự án nào. Hãy hỏi chủ sở hữu hoặc quản trị viên nếu bạn cần.',
@@ -252,12 +250,12 @@ const viVN: LocaleResource<typeof enUS> = {
     GRANT_NOT_ALLOWED:
       'Một vai trò chỉ giữ các trang, cài đặt và hành động của plugin này.',
     INVALID_DATE: 'Ngày không hợp lệ.',
-    INVALID_EXECUTOR: 'Người thực thi này không thể được chọn.',
+    INVALID_EXECUTOR: 'Không thể chọn người thực hiện này.',
     INVALID_INVITATION: 'Kiểm tra địa chỉ email.',
     INVALID_LABEL: 'Nhãn không còn tồn tại.',
     INVALID_LEAD: 'Trưởng nhóm phải là thành viên tích cực.',
     INVALID_OWNER: 'Chủ sở hữu phải là thành viên tích cực.',
-    INVALID_PARENT: 'Không thể sử dụng vấn đề gốc.',
+    INVALID_PARENT: 'Không thể dùng nhiệm vụ cha này.',
     INVALID_PREFIX:
       'Sử dụng từ 1 đến 10 chữ cái và chữ số viết hoa, bắt đầu bằng một chữ cái.',
     INVALID_PROJECT: 'Dự án không tồn tại.',
@@ -269,7 +267,7 @@ const viVN: LocaleResource<typeof enUS> = {
     LABEL_EXISTS: 'Nhãn có tên này đã tồn tại.',
     LAST_OWNER: 'Chủ sở hữu cuối cùng không thể mất vai trò chủ sở hữu.',
     LEAD_MEMBER: 'Chọn một trưởng dự án khác trước khi loại bỏ thành viên này.',
-    OWNER_REQUIRED: 'Một vấn đề cần có chủ nhân.',
+    OWNER_REQUIRED: 'Nhiệm vụ cần có người phụ trách.',
     REVISION_CONFLICT:
       'Trong khi đó, ai đó đã thay đổi điều này. Phiên bản mới nhất được hiển thị; áp dụng lại thay đổi của bạn.',
     REVISION_REQUIRED: 'Trang này đã lỗi thời. Tải lại và thử lại.',
@@ -278,20 +276,20 @@ const viVN: LocaleResource<typeof enUS> = {
       'Vẫn có người giữ vai trò này; thay đổi vai trò của họ đầu tiên',
     ROLE_NOT_EDITABLE:
       'Vai trò chủ sở hữu nắm giữ mọi thứ; nó không thể được chỉnh sửa.',
-    TRANSITION_NOT_ALLOWED: 'Bạn không thể chuyển vấn đề sang trạng thái này.',
+    TRANSITION_NOT_ALLOWED:
+      'Bạn không thể chuyển nhiệm vụ sang trạng thái này.',
     UNKNOWN_ROLE: 'Vai trò không còn tồn tại.',
     USER_DISABLED: 'Tài khoản bị vô hiệu hóa không thể được cấp vai trò.',
     DEPENDENCY_CYCLE: 'Sự phụ thuộc đó sẽ tạo ra một chu kỳ.',
     DEPENDENCY_CHANGED: 'Mối quan hệ đã thay đổi. Tải lại và thử lại.',
     DEPENDENCY_GRAPH_CHANGED:
-      'Vấn đề phụ thuộc đã thay đổi. Tải lại và thử lại.',
+      'Quan hệ phụ thuộc của nhiệm vụ đã thay đổi. Hãy tải lại và thử lại.',
     DEPENDENCY_EXISTS: 'Sự phụ thuộc đó đã tồn tại.',
     DEPENDENCY_TOO_DEEP: 'Chuỗi phụ thuộc quá dài.',
-    INVALID_DEPENDENCY: 'Vấn đề đó không thể là vấn đề phụ thuộc ở đây.',
+    INVALID_DEPENDENCY: 'Nhiệm vụ đó không thể là phụ thuộc ở đây.',
     INVALID_STAGE: 'Nhập số nguyên từ 0 đến 1000 hoặc để trống.',
-    ISSUE_BLOCKED: 'Sự cố vẫn đang chờ các sự cố chặn nó.',
-    SUBTASKS_OPEN:
-      'Trước tiên hãy hoàn thành hoặc hủy bỏ các vấn đề phụ của nó.',
+    ISSUE_BLOCKED: 'Nhiệm vụ vẫn đang chờ các nhiệm vụ chặn nó.',
+    SUBTASKS_OPEN: 'Hãy hoàn thành hoặc hủy các nhiệm vụ con trước.',
     PLAN_INVALID: 'Một số thay đổi trong kế hoạch không được thông qua.',
     PLAN_NOT_OPEN: 'Kế hoạch không còn chờ quyết định nữa.',
     PLAN_EXPIRED: 'Kế hoạch đã hết hạn.',
@@ -306,13 +304,13 @@ const viVN: LocaleResource<typeof enUS> = {
     FILES_UNAVAILABLE: 'Ứng dụng này không lưu trữ tập tin nào.',
   },
   dependencies: {
-    add: 'Thêm vấn đề chặn',
+    add: 'Thêm nhiệm vụ chặn',
     added: 'Đã thêm phụ thuộc.',
-    addPlaceholder: 'Sự cố tìm kiếm cần thêm làm trình chặn',
+    addPlaceholder: 'Tìm nhiệm vụ để thêm làm nhiệm vụ chặn',
     blockedBy: 'Bị chặn bởi',
     blocks: 'Khối',
-    hidden_one: '{{count}} có thêm vấn đề chặn mà bạn không thể thấy.',
-    hidden_other: '{{count}} có thêm nhiều sự cố chặn mà bạn không thể thấy.',
+    hidden_one: 'Còn {{count}} nhiệm vụ chặn mà bạn không thể xem.',
+    hidden_other: 'Còn {{count}} nhiệm vụ chặn mà bạn không thể xem.',
     related: 'Liên quan',
     remove: 'Loại bỏ {{identifier}}',
     removed: 'Đã xóa phần phụ thuộc.',
@@ -327,9 +325,9 @@ const viVN: LocaleResource<typeof enUS> = {
   filters: {
     allLabels: 'Tất cả nhãn',
     allProjects: 'Tất cả dự án',
-    anyExecutor: 'Bất cứ người thi hành nào',
+    anyExecutor: 'Mọi người thực hiện',
     anyOwner: 'Bất kỳ chủ sở hữu nào',
-    executor: 'Lọc theo người thực thi',
+    executor: 'Lọc theo người thực hiện',
     label: 'Lọc theo nhãn',
     owner: 'Lọc theo chủ sở hữu',
     project: 'Lọc theo dự án',
@@ -393,18 +391,18 @@ const viVN: LocaleResource<typeof enUS> = {
     title: 'Lời mời đang chờ xử lý',
   },
   issue: {
-    backToList: 'Quay lại vấn đề',
-    delete: 'Xóa vấn đề',
+    backToList: 'Quay lại danh sách nhiệm vụ',
+    delete: 'Xóa nhiệm vụ',
     deleteDescription:
       'Nó biến mất khỏi danh sách và tìm kiếm. Quản trị viên có thể khôi phục nó.',
     deleteTitle: 'Xóa {{identifier}}?',
     deleted: '{{identifier}} đã bị xóa.',
     editDescription: 'Chỉnh sửa mô tả',
     editTitle: 'Chỉnh sửa tiêu đề',
-    conflict: 'Sự cố này đã thay đổi, đang tải lại.',
-    loadFailed: 'Không thể tải vấn đề này',
+    conflict: 'Nhiệm vụ này đã thay đổi, đang tải lại.',
+    loadFailed: 'Không thể tải nhiệm vụ này',
     noDescription: 'Không có mô tả.',
-    parent: 'Vấn đề phụ của',
+    parent: 'Nhiệm vụ con của',
   },
   issueAdd: {
     dependency: 'Trình chặn',
@@ -412,7 +410,7 @@ const viVN: LocaleResource<typeof enUS> = {
     none: 'không có',
   },
   issuePicker: {
-    empty: 'Không có vấn đề trùng khớp',
+    empty: 'Không có nhiệm vụ phù hợp',
     placeholder: 'Tìm kiếm theo tiêu đề hoặc mã định danh',
   },
   issueForm: {
@@ -420,12 +418,13 @@ const viVN: LocaleResource<typeof enUS> = {
     descriptionLabel: 'Mô tả',
     descriptionPlaceholder: 'Markdown được hỗ trợ.',
     noProject: 'Không có dự án',
-    ownerHint: 'Người chịu trách nhiệm về vấn đề này. Mặc định cho bạn.',
+    ownerHint: 'Người chịu trách nhiệm về nhiệm vụ. Mặc định là bạn.',
     startLabel: 'Khi nào bắt đầu',
-    startNow: 'Bắt đầu ngay bây giờ',
+    startNow: 'Bắt đầu ngay',
     startNowHint: 'Người quản lý dự án bắt đầu sắp xếp ngay lập tức.',
-    startLater: 'Sau này',
-    startLaterHint: 'Nó chờ trong Backlog; bắt đầu nó từ trang vấn đề.',
+    startLater: 'Để sau',
+    startLaterHint:
+      'Nhiệm vụ chờ trong Tồn đọng; hãy bắt đầu từ trang nhiệm vụ.',
     createAndStart: 'Tạo và bắt đầu',
     projectLabel: 'Dự án',
     titleLabel: 'Tiêu đề',
@@ -434,7 +433,7 @@ const viVN: LocaleResource<typeof enUS> = {
   issues: {
     allStatuses: 'Tất cả trạng thái',
     columns: {
-      executor: 'Người thi hành án',
+      executor: 'Người thực hiện',
       identifier: 'ID',
       owner: 'Người phụ trách',
       priority: 'Ưu tiên',
@@ -443,21 +442,21 @@ const viVN: LocaleResource<typeof enUS> = {
       updated: 'Đã cập nhật',
     },
     agentsDescription:
-      'Làm việc cho mọi người và các tác nhân mã hóa. Chỉ định một tác nhân làm người thực thi để bắt đầu chạy.',
+      'Công việc cho con người và Agent lập trình. Giao một Agent làm người thực hiện để bắt đầu chạy.',
     agentsEmptyDescription:
-      'Tạo một vấn đề và chọn một đại lý làm người thực thi để giao công việc cho nó.',
+      'Tạo nhiệm vụ và chọn một Agent làm người thực hiện để giao việc cho nó.',
     description: 'Mọi thứ mà nhóm làm việc, dưới dạng bảng hoặc danh sách.',
-    emptyDescription: 'Tạo một vấn đề và chọn người thực hiện nó.',
-    emptyTitle: 'Chưa có vấn đề gì',
-    loadFailed: 'Không thể tải vấn đề',
-    new: 'Số mới',
-    noResults: 'Không có vấn đề trùng khớp.',
+    emptyDescription: 'Tạo nhiệm vụ và chọn người thực hiện.',
+    emptyTitle: 'Chưa có nhiệm vụ',
+    loadFailed: 'Không thể tải nhiệm vụ',
+    new: 'Nhiệm vụ mới',
+    noResults: 'Không có nhiệm vụ phù hợp.',
     restore: 'Khôi phục',
     restored: '{{identifier}} được khôi phục.',
-    searchLabel: 'Sự cố tìm kiếm',
+    searchLabel: 'Tìm nhiệm vụ',
     searchPlaceholder: 'Tìm kiếm theo tiêu đề hoặc mã định danh',
     statusFilterLabel: 'Lọc theo trạng thái',
-    title: 'Vấn đề',
+    title: 'Nhiệm vụ',
   },
   labelColors: {
     for: 'Màu sắc của {{name}}',
@@ -481,27 +480,26 @@ const viVN: LocaleResource<typeof enUS> = {
     title: 'Thành viên',
   },
   myIssues: {
-    description:
-      'Những vấn đề bạn phải chịu trách nhiệm và những vấn đề bạn đang tự mình giải quyết.',
+    description: 'Nhiệm vụ bạn chịu trách nhiệm và nhiệm vụ bạn tự thực hiện.',
     empty: {
-      executing: 'Bạn hiện không thực hiện bất kỳ vấn đề nào',
-      owned: 'Bạn không sở hữu bất kỳ vấn đề nào',
+      executing: 'Bạn không thực hiện nhiệm vụ nào',
+      owned: 'Bạn không phụ trách nhiệm vụ nào',
     },
     emptyDescription:
-      'Các vấn đề được giao cho bạn sẽ hiển thị ở đây. Tạo một hoặc chọn một từ danh sách vấn đề.',
+      'Nhiệm vụ được giao cho bạn sẽ hiện ở đây. Hãy tạo một nhiệm vụ hoặc nhận một nhiệm vụ từ danh sách.',
     tabs: {
       executing: 'Tôi thi hành',
       owned: 'Tôi sở hữu',
     },
-    tabsLabel: 'Quan điểm của tôi',
-    title: 'Vấn đề của tôi',
+    tabsLabel: 'Các chế độ xem Nhiệm vụ của tôi',
+    title: 'Nhiệm vụ của tôi',
   },
   nav: {
     general: 'Đại tướng',
-    issues: 'Vấn đề',
+    issues: 'Nhiệm vụ',
     labels: 'Nhãn',
     members: 'Thành viên',
-    myIssues: 'Vấn đề của tôi',
+    myIssues: 'Nhiệm vụ của tôi',
     projects: 'Dự án',
     roles: 'Vai trò',
     settings: 'Cài đặt',
@@ -512,7 +510,7 @@ const viVN: LocaleResource<typeof enUS> = {
       manual: 'Thủ công',
     },
     tabsLabel: 'Các cách tạo',
-    title: 'Số mới',
+    title: 'Nhiệm vụ mới',
   },
   pagination: {
     countMore: '{{count}}+',
@@ -528,7 +526,7 @@ const viVN: LocaleResource<typeof enUS> = {
   },
   projectForm: {
     created: 'Đã tạo dự án {{name}}',
-    description: 'Các vấn đề của nhóm dự án và các kho lưu trữ mà họ quan tâm.',
+    description: 'Dự án nhóm các nhiệm vụ và kho mã liên quan.',
     descriptionHint:
       'Những điều mà mọi người làm việc trong dự án này nên biết.',
     descriptionPlaceholder: 'Dự án này nói về cái gì.',
@@ -555,24 +553,24 @@ const viVN: LocaleResource<typeof enUS> = {
   projectMore: {
     delete: 'Xóa dự án',
     deleteDescription:
-      'Dự án, các thành viên và kho lưu trữ của nó bị xóa. Các vấn đề của nó vẫn tồn tại và không còn thuộc về một dự án nữa.',
+      'Dự án, thành viên và kho mã của nó sẽ bị xóa. Các nhiệm vụ vẫn còn và không còn thuộc dự án nào.',
     deleteTitle: 'Xóa {{name}}?',
     deleted: 'Dự án {{name}} đã bị xóa',
     label: 'Thêm dự án hành động',
   },
   projectPage: {
     distribution: 'Theo trạng thái',
-    noIssues: 'Chưa có vấn đề gì.',
+    noIssues: 'Chưa có nhiệm vụ.',
     numbers: 'Số chính',
-    openInList: 'Mở trong danh sách vấn đề',
+    openInList: 'Mở trong danh sách nhiệm vụ',
     stats: {
       done: 'Hoàn thành',
       review: 'Đang xét duyệt',
       started: 'Đang thực hiện',
-      total: 'Vấn đề',
+      total: 'Nhiệm vụ',
     },
     tabs: {
-      issues: 'Vấn đề',
+      issues: 'Nhiệm vụ',
       label: 'Phần dự án',
       overview: 'Tổng quan',
     },
@@ -595,13 +593,12 @@ const viVN: LocaleResource<typeof enUS> = {
       progress: 'Tiến độ',
       status: 'Trạng thái',
     },
-    description:
-      'Nhóm các vấn đề, liên kết các kho lưu trữ của họ và theo dõi tiến trình.',
+    description: 'Nhóm nhiệm vụ, liên kết kho mã và theo dõi tiến độ.',
     descriptionLabel: 'Mô tả',
     detailLoadFailed: 'Không thể tải dự án này',
     editDescription: 'Chỉnh sửa mô tả',
     emptyDescription:
-      'Tạo một dự án để nhóm các vấn đề và liên kết các kho lưu trữ mà chúng quan tâm.',
+      'Tạo dự án để nhóm nhiệm vụ và liên kết các kho mã liên quan.',
     emptyNoAccess: 'Yêu cầu quản trị viên tạo dự án.',
     emptyTitle: 'Chưa có dự án nào',
     loadFailed: 'Không thể tải dự án',
@@ -610,7 +607,7 @@ const viVN: LocaleResource<typeof enUS> = {
     noLead: 'Không có chì',
     noResults: 'Không có dự án nào phù hợp.',
     notFound: 'Dự án này không tồn tại hoặc bạn không thể nhìn thấy nó.',
-    progressLabel: '{{done}} của {{total}} đã hoàn thành sự cố',
+    progressLabel: 'Đã xong {{done}}/{{total}} nhiệm vụ',
     search: 'Tìm kiếm dự án',
     sidePanel: 'Chi tiết dự án',
     title: 'Dự án',
@@ -622,7 +619,7 @@ const viVN: LocaleResource<typeof enUS> = {
       everyone:
         'Mọi thành viên trong không gian làm việc đều có thể xem dự án này.',
       members:
-        'Chỉ các thành viên dự án và quản trị viên không gian làm việc mới có thể xem dự án này và các vấn đề của nó.',
+        'Chỉ thành viên dự án và quản trị viên không gian làm việc mới xem được dự án này và các nhiệm vụ của nó.',
     },
     visibilityLabel: 'Khả năng hiển thị',
   },
@@ -630,7 +627,7 @@ const viVN: LocaleResource<typeof enUS> = {
     assignToMe: 'Giao cho tôi',
     created: 'Đã tạo',
     details: 'Chi tiết',
-    executor: 'Người thi hành án',
+    executor: 'Người thực hiện',
     labels: 'Nhãn',
     owner: 'Người phụ trách',
     priority: 'Ưu tiên',
@@ -673,24 +670,24 @@ const viVN: LocaleResource<typeof enUS> = {
     newDescription:
       'Nơi thực hiện dự án này. Cái đầu tiên là thư mục làm việc chính.',
     newTitle: 'Thêm thư mục làm việc',
-    noRunners: 'Chưa có thời gian chạy',
+    noRunners: 'Chưa có môi trường chạy',
     path: 'Đường dẫn thư mục',
     pathHint:
-      'Đường dẫn tuyệt đối của thư mục trong thời gian chạy đó. Các đại lý làm việc tại chỗ, mỗi lần một nhiệm vụ.',
+      'Đường dẫn tuyệt đối của thư mục trong môi trường chạy đó. Các đại lý làm việc tại chỗ, mỗi lần một nhiệm vụ.',
     pathInvalid: 'Nhập đường dẫn tuyệt đối, chẳng hạn như /Users/me/work/app.',
     pathRequired: 'Nhập đường dẫn thư mục.',
     primary: 'Tiểu học',
     remove: 'Loại bỏ {{name}}',
     removed: 'Đã xóa.',
     runner: 'Môi trường chạy',
-    runnerHint: 'Chỉ thời gian chạy này hoạt động trong thư mục.',
-    runnerIdPlaceholder: 'Id thời gian chạy',
-    runnerPlaceholder: 'Chọn thời gian chạy',
-    runnerRequired: 'Chọn thời gian chạy của thư mục.',
+    runnerHint: 'Chỉ môi trường chạy này hoạt động trong thư mục.',
+    runnerIdPlaceholder: 'Id môi trường chạy',
+    runnerPlaceholder: 'Chọn môi trường chạy',
+    runnerRequired: 'Chọn môi trường chạy của thư mục.',
     title: 'Kho lưu trữ và thư mục',
     type: 'Loại',
     types: {
-      directory: 'Thư mục trong thời gian chạy',
+      directory: 'Thư mục trong môi trường chạy',
       gitRepo: 'Kho lưu trữ Git',
     },
     url: 'Kho lưu trữ URL',
@@ -729,28 +726,28 @@ const viVN: LocaleResource<typeof enUS> = {
     abilities: {
       issues: {
         changeOwner: {
-          hint: 'Đưa vấn đề ra cho người khác chịu trách nhiệm',
+          hint: 'Giao nhiệm vụ cho người khác chịu trách nhiệm',
           title: 'Thay đổi chủ sở hữu',
         },
         close: {
-          hint: 'Đánh dấu một vấn đề đã được thực hiện hoặc đã hủy',
-          title: 'Đóng vấn đề',
+          hint: 'Đánh dấu nhiệm vụ là xong hoặc đã hủy',
+          title: 'Đóng nhiệm vụ',
         },
         create: {
-          hint: 'Tạo vấn đề, trong một dự án hoặc tự mình',
-          title: 'Tạo vấn đề',
+          hint: 'Tạo nhiệm vụ trong dự án hoặc độc lập',
+          title: 'Tạo nhiệm vụ',
         },
         delete: {
-          hint: 'Xóa các vấn đề và khôi phục những vấn đề đã xóa',
-          title: 'Vấn đề xóa và khôi phục',
+          hint: 'Xóa nhiệm vụ và khôi phục nhiệm vụ đã xóa',
+          title: 'Xóa và khôi phục nhiệm vụ',
         },
         edit: {
-          hint: 'Tiêu đề, mô tả, mức độ ưu tiên, ngày tháng, nhãn, người thực thi và trạng thái mở',
-          title: 'Vấn đề chỉnh sửa',
+          hint: 'Tiêu đề, mô tả, mức ưu tiên, ngày, nhãn, người thực hiện và các trạng thái mở',
+          title: 'Sửa nhiệm vụ',
         },
         view: {
-          hint: 'Xem các vấn đề trong danh sách, bảng và chi tiết của chúng',
-          title: 'Xem vấn đề',
+          hint: 'Xem nhiệm vụ trong danh sách, bảng và chi tiết',
+          title: 'Xem nhiệm vụ',
         },
       },
       projects: {
@@ -775,7 +772,7 @@ const viVN: LocaleResource<typeof enUS> = {
     capabilities: {
       general: {
         read: 'Xem cài đặt chung',
-        update: 'Thay đổi tiền tố vấn đề',
+        update: 'Đổi tiền tố nhiệm vụ',
       },
       labels: {
         read: 'Xem nhãn',
@@ -818,7 +815,7 @@ const viVN: LocaleResource<typeof enUS> = {
     holders: 'Được nắm giữ bởi {{count}}',
     legend: {
       issues:
-        'Những vấn đề có thể nhìn thấy: các vấn đề không có dự án và các vấn đề trong dự án mà họ có thể nhìn thấy. Những vấn đề họ lãnh đạo hoặc sở hữu: các vấn đề họ sở hữu và các vấn đề trong dự án họ lãnh đạo. Tất cả: mọi vấn đề.',
+        'Nhìn thấy được: nhiệm vụ không thuộc dự án và nhiệm vụ trong các dự án họ xem được. Họ dẫn dắt hoặc phụ trách: nhiệm vụ họ phụ trách và nhiệm vụ trong dự án họ dẫn dắt. Tất cả: mọi nhiệm vụ.',
       projects:
         'Những cái có thể nhìn thấy: các dự án công cộng và những dự án tư nhân mà họ tham gia. Những dự án họ lãnh đạo hoặc sở hữu: các dự án họ lãnh đạo. Tất cả: mọi dự án.',
     },
@@ -830,7 +827,7 @@ const viVN: LocaleResource<typeof enUS> = {
     },
     loadFailed: 'Không thể tải vai trò',
     modules: {
-      issues: 'Vấn đề',
+      issues: 'Nhiệm vụ',
       projects: 'Dự án',
       settings: 'Cài đặt',
     },
@@ -853,21 +850,21 @@ const viVN: LocaleResource<typeof enUS> = {
     member: 'Thành viên',
   },
   search: {
-    description: 'Tìm kiếm vấn đề theo tiêu đề hoặc mã định danh.',
-    hint: 'Nhập để tìm kiếm vấn đề.',
-    issues: 'Vấn đề',
-    noResults: 'Không có vấn đề trùng khớp.',
+    description: 'Tìm nhiệm vụ theo tiêu đề hoặc mã.',
+    hint: 'Nhập để tìm nhiệm vụ.',
+    issues: 'Nhiệm vụ',
+    noResults: 'Không có nhiệm vụ phù hợp.',
     placeholder: 'Tìm kiếm theo tiêu đề hoặc mã định danh…',
-    title: 'Sự cố tìm kiếm',
+    title: 'Tìm nhiệm vụ',
     trigger: 'Tìm kiếm',
   },
   settingsPage: {
     general: {
-      prefix: 'Tiền tố định danh vấn đề',
+      prefix: 'Tiền tố mã nhiệm vụ',
       prefixHint:
-        'Các vấn đề mới được đánh số như {{example}}. Các vấn đề hiện tại giữ nguyên số nhận dạng của chúng.',
+        'Nhiệm vụ mới được đánh số như {{example}}. Nhiệm vụ hiện có giữ nguyên mã.',
       saved: 'Đã lưu cài đặt.',
-      title: 'Vấn đề về số nhận dạng',
+      title: 'Mã nhiệm vụ',
     },
     readOnly:
       'Chỉ đọc: bạn có thể xem nội dung này nhưng không thể thay đổi nó.',
@@ -875,18 +872,18 @@ const viVN: LocaleResource<typeof enUS> = {
   },
   subtasks: {
     aiIntro:
-      'AI đọc số này và soạn thảo các số phụ của nó. Bạn xem xét, chỉnh sửa bản nháp; không có gì được tạo ra cho đến khi bạn xác nhận.',
+      'AI đọc nhiệm vụ này và soạn thảo các nhiệm vụ con. Bạn xem lại và sửa bản nháp; không có gì được tạo cho đến khi bạn xác nhận.',
     blockedByHint:
       'Nó sẽ không bắt đầu cho đến khi những việc này được thực hiện hoặc hủy bỏ.',
     blockedByLabel: 'Chờ đợi',
-    blockedByPlaceholder: 'Chọn anh chị em tiểu vấn đề',
-    count_one: 'Vấn đề phụ {{count}}',
-    count_other: 'Các vấn đề phụ của {{count}}',
-    new: 'Vấn đề phụ mới',
+    blockedByPlaceholder: 'Chọn nhiệm vụ con cùng cấp',
+    count_one: '{{count}} nhiệm vụ con',
+    count_other: '{{count}} nhiệm vụ con',
+    new: 'Nhiệm vụ con mới',
     newDescription:
-      'Các vấn đề phụ ở giai đoạn sau chỉ bắt đầu sau khi mọi giai đoạn trước đó được hoàn thành.',
-    newTitle: 'Vấn đề phụ mới',
-    noSiblings: 'Chưa có vấn đề phụ nào khác.',
+      'Nhiệm vụ con ở giai đoạn sau chỉ bắt đầu khi mọi giai đoạn trước đã xong.',
+    newTitle: 'Nhiệm vụ con mới',
+    noSiblings: 'Chưa có nhiệm vụ con nào khác.',
     noStage: 'Không có sân khấu',
     stage: 'Sân khấu {{stage}}',
     stageHint: 'Tùy chọn. Giai đoạn thấp hơn chạy đầu tiên.',
@@ -896,7 +893,7 @@ const viVN: LocaleResource<typeof enUS> = {
       ai: 'Sự cố AI',
       manual: 'Thủ công',
     },
-    title: 'Các vấn đề phụ',
+    title: 'Nhiệm vụ con',
     waiting_one: 'Đang chờ {{count}}',
     waiting_other: 'Đang chờ {{count}}',
   },
@@ -927,16 +924,16 @@ const viVN: LocaleResource<typeof enUS> = {
     reason: {
       commenter: 'đã bình luận',
       creator: 'đã tạo ra nó',
-      executor: 'người thi hành',
+      executor: 'người thực hiện',
       manual: 'đã đăng ký',
       mentioned: 'đã đề cập',
       owner: 'chủ sở hữu',
     },
     subscribe: 'Theo dõi',
-    subscribed: 'Bạn sẽ được thông báo về vấn đề này.',
+    subscribed: 'Bạn sẽ nhận thông báo về nhiệm vụ này.',
     title: 'Người tham gia và người theo dõi',
     unsubscribe: 'Hủy đăng ký',
-    unsubscribed: 'Bạn sẽ không còn được thông báo về vấn đề này nữa.',
+    unsubscribed: 'Bạn sẽ không còn nhận thông báo về nhiệm vụ này.',
   },
   threads: {
     collapse: 'Thu gọn chủ đề',
@@ -954,7 +951,7 @@ const viVN: LocaleResource<typeof enUS> = {
     loadFailed: 'Không thể tải kế hoạch',
     notFound: 'Kế hoạch không tồn tại hoặc nó không phải là của bạn để xem.',
     open: 'Mở kế hoạch',
-    backToList: 'Quay lại vấn đề',
+    backToList: 'Quay lại danh sách nhiệm vụ',
     source: {
       intake: 'Từ lượng vào',
       conversation: 'Từ một cuộc trò chuyện',
@@ -985,14 +982,14 @@ const viVN: LocaleResource<typeof enUS> = {
     edit: 'Chỉnh sửa',
     doneEditing: 'Hoàn thành',
     execute: 'Thực thi',
-    createIssues_one: 'Tạo vấn đề {{count}}',
-    createIssues_other: 'Tạo sự cố {{count}}',
+    createIssues_one: 'Tạo {{count}} nhiệm vụ',
+    createIssues_other: 'Tạo {{count}} nhiệm vụ',
     retry: 'Kiểm tra lại',
     void: 'Vô hiệu',
     undo: 'Hoàn tác',
     executed: 'Kế hoạch đã được thực hiện.',
-    executedIssues_one: 'Đã tạo sự cố {{count}}.',
-    executedIssues_other: 'Đã tạo sự cố {{count}}.',
+    executedIssues_one: 'Đã tạo {{count}} nhiệm vụ.',
+    executedIssues_other: 'Đã tạo {{count}} nhiệm vụ.',
     executeFailed: 'Kế hoạch không được thực hiện; không có gì thay đổi.',
     staleNotice:
       'Một cái gì đó mà kế hoạch này thay đổi đã được người khác thay đổi sau khi nó được kiểm tra. Không có gì được áp dụng; kiểm tra lại để thực thi nó với các giá trị hiện tại.',
@@ -1019,7 +1016,7 @@ const viVN: LocaleResource<typeof enUS> = {
       failed: 'Không thể kiểm tra việc hoàn tác sẽ làm gì.',
       confirm: 'Hoàn tác',
       ops: {
-        'issue.retract': 'Xóa vấn đề {{target}}',
+        'issue.retract': 'Xóa nhiệm vụ {{target}}',
         'comment.retract': 'Xóa bình luận trên {{target}}',
         'project.retract': 'Xóa dự án {{target}}',
         dependency: 'Đảo ngược thay đổi phụ thuộc trên {{target}}',
@@ -1050,8 +1047,8 @@ const viVN: LocaleResource<typeof enUS> = {
     wakeSkip: {
       deferred: 'chưa',
       denied: 'chúng có thể không hoạt động trên đó',
-      blocked: 'sự cố đã bị chặn',
-      dormant: 'vấn đề tồn đọng',
+      blocked: 'nhiệm vụ đang bị chặn',
+      dormant: 'nhiệm vụ đang ở Tồn đọng',
       duplicate: 'nó đang hoạt động rồi',
       archived: 'nó được lưu trữ',
       noRunner: 'không có Á hậu nào trực tuyến',
@@ -1060,23 +1057,23 @@ const viVN: LocaleResource<typeof enUS> = {
     flags: {
       label: 'Nó ảnh hưởng gì',
       startsRun: 'Bắt đầu hoạt động của đại lý',
-      finalStatus: 'Đóng một vấn đề',
+      finalStatus: 'Đóng một nhiệm vụ',
       ownerChange: 'Thay đổi chủ sở hữu',
       createsProject: 'Tạo một dự án',
-      agentExecutor: 'Làm cho một đại lý trở thành người thi hành án',
+      agentExecutor: 'Đặt một Agent làm người thực hiện',
     },
     ops: {
-      'issue.create': 'Số mới',
-      'issue.update': 'Vấn đề thay đổi',
+      'issue.create': 'Nhiệm vụ mới',
+      'issue.update': 'Thay đổi nhiệm vụ',
       'comment.create': 'Bình luận',
       dependency: 'Phụ thuộc',
       'project.create': 'Dự án mới',
-      'issue.retract': 'Xóa vấn đề',
+      'issue.retract': 'Gỡ nhiệm vụ',
       'comment.retract': 'Xóa bình luận',
       'project.retract': 'Xóa dự án',
     },
     dependsOn: '{{issue}} chờ {{dependsOn}}',
-    dependencyRemove: '{{issue}} không còn chờ {{dependsOn}} nữa',
+    dependencyRemove: '{{issue}} không còn chờ {{dependsOn}}',
     becomes: 'trở thành',
     openResult: 'Mở',
     rowDone: 'Hoàn thành',
@@ -1085,11 +1082,11 @@ const viVN: LocaleResource<typeof enUS> = {
     restoreRow: 'Giữ {{title}}',
     removed: 'Bị loại khỏi kế hoạch',
     referenced: 'Những thay đổi khác phụ thuộc vào nó',
-    indent: 'Đặt {{title}} thành vấn đề phụ của hàng trên',
+    indent: 'Biến {{title}} thành nhiệm vụ con của hàng phía trên',
     outdent: 'Di chuyển {{title}} lên một cấp',
     editDescription: 'Mô tả về {{title}}',
     untitled: 'Chưa có tiêu đề',
-    unknownIssue: 'Một vấn đề',
+    unknownIssue: 'Một nhiệm vụ',
     noParent: 'Cấp cao nhất',
     visibility: {
       public: 'Mọi người',
@@ -1100,7 +1097,7 @@ const viVN: LocaleResource<typeof enUS> = {
       project: 'Dự án',
       priority: 'Ưu tiên',
       labels: 'Nhãn',
-      executor: 'Người thi hành án',
+      executor: 'Người thực hiện',
       owner: 'Người phụ trách',
       stage: 'Giai đoạn',
       actions: 'Thao tác',
@@ -1109,12 +1106,12 @@ const viVN: LocaleResource<typeof enUS> = {
       title: 'Tiêu đề',
       description: 'Mô tả',
       projectId: 'Dự án',
-      parentIssueId: 'Vấn đề gốc',
+      parentIssueId: 'Nhiệm vụ cha',
       stage: 'Giai đoạn',
       statusKey: 'Trạng thái',
       priority: 'Ưu tiên',
       ownerUserId: 'Người phụ trách',
-      executor: 'Người thi hành án',
+      executor: 'Người thực hiện',
       labelIds: 'Nhãn',
       startDate: 'Bắt đầu',
       dueDate: 'Đến hạn',
@@ -1137,7 +1134,7 @@ const viVN: LocaleResource<typeof enUS> = {
     textPlaceholder:
       '# Đăng nhập\n- Thiết kế biểu mẫu [high] #frontend\n  - Xác thực email\n- Giới hạn số lần thử @stage2',
     textHint:
-      'Tiêu đề trở thành vấn đề cha, mục trong danh sách thành vấn đề, mục thụt lề thành vấn đề con. ! hoặc [high] đặt độ ưu tiên, #nhãn thêm nhãn và @stage2 đặt giai đoạn. CSV cần có cột title.',
+      'Tiêu đề thành nhiệm vụ cha, mục danh sách thành nhiệm vụ, mục thụt lề thành nhiệm vụ con; ! hoặc [high] đặt mức ưu tiên, #nhãn đặt nhãn, @stage2 đặt giai đoạn. CSV cần cột title.',
     textTooLong: 'Tối đa {{max}} ký tự; chia phần còn lại thành một đợt khác.',
     count: '{{count}} / {{max}}',
     files: 'Tệp',
@@ -1152,8 +1149,8 @@ const viVN: LocaleResource<typeof enUS> = {
     fileTooLarge: '{{name}} lớn hơn {{size}} MB.',
     project: 'Dự án mặc định',
     projectHint:
-      'Mọi vấn đề đều đi đến đó; bạn có thể thay đổi từng cái bên dưới.',
-    splitAction: 'Vấn đề dự thảo',
+      'Mọi nhiệm vụ vào dự án này; bạn có thể đổi từng cái bên dưới.',
+    splitAction: 'Soạn nháp nhiệm vụ',
     splitDone_one: 'Chia thành bản nháp {{count}}',
     splitDone_other: 'Chia thành bản nháp {{count}}',
     splitting: 'Tách ra…',
@@ -1165,16 +1162,16 @@ const viVN: LocaleResource<typeof enUS> = {
     draftTitle: 'Bản nháp ({{count}})',
     draftHint:
       'Không có gì được tạo cho đến khi bạn nhấp vào Tạo. Liên kết này giữ bản nháp trong 24 giờ.',
-    draftCreated: 'Những vấn đề này đã được tạo ra.',
+    draftCreated: 'Các nhiệm vụ này đã được tạo.',
     draftClosed:
-      'Bản nháp này đã được thay thế hoặc hết hạn; soạn thảo lại các vấn đề.',
+      'Bản nháp này đã bị thay thế hoặc hết hạn; hãy soạn nháp nhiệm vụ lại.',
     invalidDraft:
-      'Một số vấn đề vẫn chưa được giải quyết. Sửa chúng trong văn bản và chia lại.',
+      'Một số nhiệm vụ chưa hợp lệ. Hãy sửa trong văn bản rồi tách lại.',
     unknownLabels: 'Các nhãn này không tồn tại và bị bỏ qua: {{labels}}',
     dropped_one:
-      'Chỉ có 50 vấn đề đầu tiên là dự thảo; {{count}} còn nhiều hơn nữa.',
+      'Bản nháp chỉ gồm 50 nhiệm vụ đầu tiên; {{count}} nhiệm vụ nữa bị bỏ qua.',
     dropped_other:
-      'Chỉ có 50 vấn đề đầu tiên là dự thảo; {{count}} còn nhiều hơn nữa.',
+      'Bản nháp chỉ gồm 50 nhiệm vụ đầu tiên; {{count}} nhiệm vụ nữa bị bỏ qua.',
     fileStates: {
       read: 'đọc',
       truncated: 'đọc một phần',
@@ -1188,19 +1185,19 @@ const viVN: LocaleResource<typeof enUS> = {
   },
   intakeAi: {
     splitByRules: 'Chia theo quy tắc',
-    breakdown: 'Chia thành các vấn đề phụ',
+    breakdown: 'Chia thành nhiệm vụ con',
     breakdownHint:
-      'Bản nháp của các vấn đề phụ cho {{issue}}: xem xét và chỉnh sửa chúng, sau đó tạo chúng. Không có gì được tạo ra cho đến khi bạn làm điều đó.',
-    drafted: 'AI soạn thảo các vấn đề',
+      'Bản nháp nhiệm vụ con cho {{issue}}: xem lại, sửa rồi tạo. Không có gì được tạo cho đến khi bạn làm vậy.',
+    drafted: 'AI đã soạn nháp các nhiệm vụ',
     revised: 'Bản thảo sửa đổi',
     startFailed: 'Không thể hỏi AI.',
-    failed: 'AI không thể soạn thảo các vấn đề. Hãy thử lại.',
-    failedWhy: 'AI không thể soạn thảo các vấn đề: {{message}}',
+    failed: 'AI không thể soạn nháp nhiệm vụ. Hãy thử lại.',
+    failedWhy: 'AI không thể soạn nháp nhiệm vụ: {{message}}',
     cancel: 'Hủy',
     progress: {
-      split: 'AI đang soạn thảo các vấn đề…',
+      split: 'AI đang soạn nháp các nhiệm vụ…',
       revise: 'AI đang sửa đổi bản nháp…',
-      breakdown: 'AI đang phá vỡ {{issue}}…',
+      breakdown: 'AI đang chia nhỏ {{issue}}…',
     },
     working: '{{name}} có trên đó',
     workingAnonymous: 'Đang xử lý nó',
@@ -1210,7 +1207,7 @@ const viVN: LocaleResource<typeof enUS> = {
       reason: 'Đang chờ bắt đầu ({{reason}})…',
     },
     waitsHint:
-      'Hiện tại không có thời gian chạy nào trực tuyến: yêu cầu sẽ đợi cho đến khi một yêu cầu kết nối.',
+      'Hiện tại không có môi trường chạy nào trực tuyến: yêu cầu sẽ đợi cho đến khi một yêu cầu kết nối.',
     unavailable: {
       noAgent:
         'AI không khả dụng: chọn một tác nhân trò chuyện mặc định trong hồ sơ của bạn hoặc yêu cầu quản trị viên thiết lập một tác nhân.',
@@ -1237,7 +1234,7 @@ const viVN: LocaleResource<typeof enUS> = {
   access: {
     sections: {
       projects: 'Dự án',
-      issues: 'Vấn đề',
+      issues: 'Nhiệm vụ',
       settings: 'Cài đặt dự án',
       members: 'Thành viên và vai trò',
     },
@@ -1277,102 +1274,98 @@ const viVN: LocaleResource<typeof enUS> = {
         },
       },
       issues: {
-        title: 'Vấn đề',
+        title: 'Nhiệm vụ',
         description:
-          'Các vấn đề và nhận xét của họ, trong một dự án hoặc của chính họ.',
+          'Nhiệm vụ và bình luận của chúng, trong dự án hoặc độc lập.',
         actions: {
           view: {
-            title: 'Xem vấn đề',
-            description:
-              'Xem các vấn đề trong danh sách, bảng và chi tiết của chúng',
-            related: 'Xem vấn đề (những vấn đề họ có thể thấy)',
+            title: 'Xem nhiệm vụ',
+            description: 'Xem nhiệm vụ trong danh sách, bảng và chi tiết',
+            related: 'Xem nhiệm vụ (những nhiệm vụ họ xem được)',
             relatedLabel: 'Trong các dự án tôi có thể thấy',
             relatedHint:
-              'Các vấn đề không có dự án và các vấn đề trong dự án tôi có thể thấy',
-            all: 'Xem vấn đề (tất cả)',
+              'Nhiệm vụ không thuộc dự án và nhiệm vụ trong các dự án tôi xem được',
+            all: 'Xem nhiệm vụ (tất cả)',
           },
           create: {
-            title: 'Tạo vấn đề',
-            description: 'Tạo vấn đề, trong một dự án hoặc tự mình',
-            related: 'Tạo vấn đề (trong các dự án họ có thể nhìn thấy)',
+            title: 'Tạo nhiệm vụ',
+            description: 'Tạo nhiệm vụ trong dự án hoặc độc lập',
+            related: 'Tạo nhiệm vụ (trong các dự án họ xem được)',
             relatedLabel: 'Trong các dự án tôi có thể thấy',
             relatedHint:
-              'Các vấn đề không có dự án, hoặc trong dự án tôi có thể thấy',
-            all: 'Tạo vấn đề (tất cả)',
+              'Nhiệm vụ không thuộc dự án hoặc trong các dự án tôi xem được',
+            all: 'Tạo nhiệm vụ (tất cả)',
           },
           edit: {
-            title: 'Vấn đề chỉnh sửa',
+            title: 'Sửa nhiệm vụ',
             description:
-              'Tiêu đề, mô tả, mức độ ưu tiên, ngày tháng, nhãn, người thực thi và trạng thái mở',
-            related: 'Chỉnh sửa vấn đề (những vấn đề họ có thể thấy)',
+              'Tiêu đề, mô tả, mức ưu tiên, ngày, nhãn, người thực hiện và các trạng thái mở',
+            related: 'Sửa nhiệm vụ (những nhiệm vụ họ xem được)',
             relatedLabel: 'Trong các dự án tôi có thể thấy',
             relatedHint:
-              'Các vấn đề không có dự án và các vấn đề trong dự án tôi có thể thấy',
-            all: 'Chỉnh sửa vấn đề (tất cả)',
+              'Nhiệm vụ không thuộc dự án và nhiệm vụ trong các dự án tôi xem được',
+            all: 'Sửa nhiệm vụ (tất cả)',
           },
           comment: {
-            title: 'Bình luận về vấn đề',
+            title: 'Bình luận nhiệm vụ',
             description:
               'Bình luận, trả lời và giải quyết chủ đề; chỉnh sửa và xóa bình luận của riêng họ',
-            related:
-              'Bình luận về các vấn đề (những vấn đề họ có thể nhìn thấy)',
+            related: 'Bình luận nhiệm vụ (những nhiệm vụ họ xem được)',
             relatedLabel: 'Trong các dự án tôi có thể thấy',
             relatedHint:
-              'Các vấn đề không có dự án và các vấn đề trong dự án tôi có thể thấy',
-            all: 'Bình luận về vấn đề (tất cả)',
+              'Nhiệm vụ không thuộc dự án và nhiệm vụ trong các dự án tôi xem được',
+            all: 'Bình luận nhiệm vụ (tất cả)',
           },
           moderateComments: {
             title: 'Bình luận vừa phải',
             description: 'Xóa bình luận của người khác',
             related:
-              'Bình luận vừa phải (về các vấn đề họ sở hữu hoặc dự án mà họ lãnh đạo)',
-            relatedLabel:
-              'Về những vấn đề tôi sở hữu hoặc trong những dự án tôi lãnh đạo',
+              'Kiểm duyệt bình luận (ở nhiệm vụ họ phụ trách hoặc dự án họ dẫn dắt)',
+            relatedLabel: 'Ở nhiệm vụ tôi phụ trách hoặc dự án tôi dẫn dắt',
             relatedHint:
-              'Nhận xét về các vấn đề tôi sở hữu và về các vấn đề trong dự án tôi lãnh đạo',
+              'Bình luận ở nhiệm vụ tôi phụ trách và ở nhiệm vụ trong dự án tôi dẫn dắt',
             all: 'Bình luận vừa phải (tất cả)',
           },
           close: {
-            title: 'Đóng vấn đề',
-            description: 'Đánh dấu một vấn đề đã được thực hiện hoặc đã hủy',
-            related:
-              'Đóng các vấn đề (những vấn đề họ sở hữu hoặc dự án mà họ lãnh đạo)',
+            title: 'Đóng nhiệm vụ',
+            description: 'Đánh dấu nhiệm vụ là xong hoặc đã hủy',
+            related: 'Đóng nhiệm vụ (họ phụ trách hoặc trong dự án họ dẫn dắt)',
             relatedLabel:
               'Những người tôi sở hữu hoặc trong các dự án tôi lãnh đạo',
             relatedHint:
-              'Những vấn đề tôi sở hữu, và những vấn đề trong dự án tôi lãnh đạo',
-            all: 'Đóng các vấn đề (tất cả)',
+              'Nhiệm vụ tôi phụ trách và nhiệm vụ trong dự án tôi dẫn dắt',
+            all: 'Đóng nhiệm vụ (tất cả)',
           },
           changeOwner: {
             title: 'Thay đổi chủ sở hữu',
-            description: 'Đưa vấn đề ra cho người khác chịu trách nhiệm',
+            description: 'Giao nhiệm vụ cho người khác chịu trách nhiệm',
             related:
               'Thay đổi chủ sở hữu (người họ sở hữu hoặc người đứng đầu dự án)',
             relatedLabel:
               'Những người tôi sở hữu hoặc trong các dự án tôi lãnh đạo',
             relatedHint:
-              'Những vấn đề tôi sở hữu, và những vấn đề trong dự án tôi lãnh đạo',
+              'Nhiệm vụ tôi phụ trách và nhiệm vụ trong dự án tôi dẫn dắt',
             all: 'Đổi chủ (tất cả)',
           },
           delete: {
-            title: 'Vấn đề xóa và khôi phục',
-            description: 'Xóa các vấn đề và khôi phục những vấn đề đã xóa',
-            all: 'Vấn đề xóa và khôi phục',
+            title: 'Xóa và khôi phục nhiệm vụ',
+            description: 'Xóa nhiệm vụ và khôi phục nhiệm vụ đã xóa',
+            all: 'Xóa và khôi phục nhiệm vụ',
           },
         },
       },
       attachments: {
         title: 'Tệp đính kèm',
-        description: 'Các tập tin đính kèm các vấn đề và bình luận.',
+        description: 'Tệp đính kèm vào nhiệm vụ và bình luận.',
         actions: {
           upload: {
             title: 'Tải lên tệp đính kèm',
             description:
-              'Đính kèm tập tin vào các vấn đề họ có thể chỉnh sửa và vào nhận xét của họ',
-            related: 'Tải lên tệp đính kèm (về các vấn đề họ có thể thấy)',
-            relatedLabel: 'Về các vấn đề trong dự án tôi có thể thấy',
+              'Đính kèm tệp vào nhiệm vụ họ sửa được và vào bình luận của họ',
+            related: 'Tải lên tệp đính kèm (ở nhiệm vụ họ xem được)',
+            relatedLabel: 'Ở nhiệm vụ trong các dự án tôi xem được',
             relatedHint:
-              'Tệp về các vấn đề không có dự án và về các vấn đề trong dự án tôi có thể xem',
+              'Tệp ở nhiệm vụ không thuộc dự án và ở nhiệm vụ trong các dự án tôi xem được',
             all: 'Tải lên file đính kèm (tất cả)',
           },
         },
@@ -1380,11 +1373,11 @@ const viVN: LocaleResource<typeof enUS> = {
     },
     collections: {
       pmProjects: 'Dự án',
-      pmIssues: 'Vấn đề',
+      pmIssues: 'Nhiệm vụ',
     },
     recordAccess: {
-      visible: 'Các dự án và vấn đề họ có thể thấy',
-      managed: 'Các dự án họ lãnh đạo và các vấn đề họ sở hữu',
+      visible: 'Dự án và nhiệm vụ họ xem được',
+      managed: 'Dự án họ dẫn dắt và nhiệm vụ họ phụ trách',
     },
     settings: {
       pm: {
@@ -1400,9 +1393,9 @@ const viVN: LocaleResource<typeof enUS> = {
         objects: 'Dự án',
       },
       issues: {
-        title: 'Vấn đề',
+        title: 'Nhiệm vụ',
         description:
-          'Xem vấn đề; tạo, chỉnh sửa, nhận xét, đóng và gán lại chúng; kiểm duyệt bình luận và xóa các vấn đề.',
+          'Xem nhiệm vụ; tạo, sửa, bình luận, đóng và giao lại; kiểm duyệt bình luận và xóa nhiệm vụ.',
       },
       settings: {
         title: 'Cài đặt dự án',

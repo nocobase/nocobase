@@ -48,7 +48,7 @@ const frFR: LocaleResource<typeof enUS> = {
       runners: {
         title: 'Environnements d’exécution',
         description:
-          "Voir exécuteurs et jetons d'inscription ; gérer les exécuteurs.",
+          "Voir environnements d’exécution et jetons d'inscription ; gérer les environnements d’exécution.",
       },
       prices: {
         title: 'Tarifs des modèles',

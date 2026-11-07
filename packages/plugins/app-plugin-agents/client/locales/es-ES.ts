@@ -1,6 +1,4 @@
-import runtimesEnUS from './runtimes.en-US.js';
 import type { LocaleResource } from '@nocobase/i18n';
-import chatEnUS from './chat.en-US.js';
 
 import type enUS from './en-US.js';
 
@@ -114,8 +112,8 @@ const esES: LocaleResource<typeof enUS> = {
     unavailableNow: 'No disponible ahora',
     title: 'Agentes',
     description:
-      'Añada agentes a partir de los modelos que informan los ejecutores. El Lead Agent asigna cada paso de una tarea al agente cuya descripción encaja con ella.',
-    fromRunners: 'Agentes de ejecutores',
+      'Añade agentes a partir de los modelos que informan los entornos de ejecución. El Lead Agent encarga cada paso de una tarea al agente cuya descripción encaja.',
+    fromRunners: 'Agentes de entornos de ejecución',
     display: {
       search: 'Búsqueda de modelos o proveedores',
       select: 'Seleccione {{name}}',
@@ -126,16 +124,16 @@ const esES: LocaleResource<typeof enUS> = {
     filters: {
       all: 'Todos {{count}}',
       enabled: 'Habilitado {{count}}',
-      unreported: 'Sin ejecutor {{count}}',
+      unreported: 'Sin entorno de ejecución {{count}}',
     },
     loadFailed: 'No se pudieron cargar los agentes',
     loadMore: 'Cargar más',
     emptyTitle: 'Aún no hay agentes',
     emptyDescription:
-      'Conecte un ejecutor con una herramienta de codificación con la sesión iniciada y añada un agente desde «Modelos disponibles».',
+      'Conecte un entorno de ejecución con una herramienta de codificación con la sesión iniciada y añada un agente desde «Modelos disponibles».',
     noneInFilter: 'Ningún agente aquí.',
     howToAdd:
-      'Para añadir un agente, instale una herramienta de codificación en un ejecutor e inicie sesión para usar un modelo disponible. Cuando el ejecutor lo informe, añada el agente desde «Modelos disponibles» indicando en qué destaca. Quedará habilitado al añadirlo. Un agente disponible solo en ejecutores personales trabaja únicamente en las tareas que inician sus propietarios.',
+      'Para añadir un agente, instala una herramienta de programación en un entorno de ejecución e inicia sesión en un modelo que puedas usar: cuando el entorno lo informe, añádelo desde Modelos disponibles escribiendo en qué es bueno. Un agente que solo tienen entornos personales trabaja solo en tareas que inician sus propietarios.',
     goodAtMissing: 'Aún no escrito',
     columns: {
       agent: 'Agente',
@@ -145,23 +143,23 @@ const esES: LocaleResource<typeof enUS> = {
       state: 'Estado',
     },
     where: {
-      none: 'Ningún ejecutor',
+      none: 'Ningún entorno de ejecución',
       team_one: 'Ejecutor del equipo {{count}}',
       team_other: 'Ejecutores del equipo {{count}}',
       personal_one: 'Ejecutor personal {{count}} en línea',
-      personal_other: '{{count}} ejecutores personales en línea',
+      personal_other: '{{count}} entornos de ejecución personales en línea',
       both: 'Equipo {{team}} · Personal {{personal}}',
       names: '{{names}}',
-      noneOnline: 'Ningún ejecutor en línea ahora',
-      personalOnly: 'Solo ejecutores personales',
+      noneOnline: 'Ningún entorno de ejecución en línea ahora',
+      personalOnly: 'Solo entornos de ejecución personales',
       lastReported: 'Último reportado {{when}}',
       team_many: 'Ejecutores del equipo {{count}}',
-      personal_many: '{{count}} ejecutores personales en línea',
+      personal_many: '{{count}} entornos de ejecución personales en línea',
     },
     state: {
       enabled: 'Habilitado',
       disabled: 'Deshabilitado',
-      unreported: 'Ningún ejecutor',
+      unreported: 'Ningún entorno de ejecución',
     },
     effort: {
       default: 'Valor predeterminado de la herramienta',
@@ -176,18 +174,19 @@ const esES: LocaleResource<typeof enUS> = {
     },
     enable: {
       reportedBy_one:
-        'Reportado por el ejecutor {{count}} en línea: {{names}}.',
+        'Reportado por el entorno de ejecución {{count}} en línea: {{names}}.',
       reportedBy_other:
-        'Reportado por ejecutores {{count}} en línea: {{names}}.',
-      noRunnerNow: 'Ningún ejecutor que lo tenga está en línea ahora.',
+        'Reportado por entornos de ejecución {{count}} en línea: {{names}}.',
+      noRunnerNow:
+        'Ningún entorno de ejecución que lo tenga está en línea ahora.',
       goodAtHint:
         'El Lead Agent decide qué entregarle a este agente con estas palabras. Di lo que conviene y lo que no.',
       goodAtRequired: 'Escriba en qué es bueno antes de habilitarlo.',
       effortHint: 'El Lead Agent no puede cambiarlo cuando entrega el trabajo.',
       personalOnly:
-        'Sólo lo tienen los ejecutores personales: el Lead Agent lo entrega trabajo sólo en los problemas que inician sus propietarios.',
+        'Solo lo tienen entornos personales: el Lead Agent le encarga trabajo solo en tareas que inician sus propietarios.',
       reportedBy_many:
-        'Reportado por ejecutores {{count}} en línea: {{names}}.',
+        'Reportado por entornos de ejecución {{count}} en línea: {{names}}.',
     },
     edit: {
       button: 'Editar',
@@ -200,7 +199,7 @@ const esES: LocaleResource<typeof enUS> = {
       open: 'Añadir agente',
       title: 'Modelos disponibles',
       description:
-        'Solo las herramientas marcadas en el tiempo de ejecución se detectan y aparecen aquí. Las combinaciones recomendadas por la aplicación se crean y habilitan solas en cuanto un ejecutor las reporta; añada un agente a partir de cualquier otra.',
+        'Solo las herramientas marcadas en el entorno de ejecución se detectan y aparecen aquí. Las combinaciones recomendadas por la aplicación se crean y habilitan solas en cuanto un entorno de ejecución las reporta; añada un agente a partir de cualquier otra.',
       recommended: 'Se habilita automáticamente al reportarse',
       added: 'Añadido',
       add: 'Añadir',
@@ -211,7 +210,7 @@ const esES: LocaleResource<typeof enUS> = {
         failed: 'Detección fallida',
       },
       details: 'Detalles de la herramienta',
-      setupCommand: 'Ejecute {{command}} en el tiempo de ejecución.',
+      setupCommand: 'Ejecute {{command}} en el entorno de ejecución.',
       setupUnknown:
         'Esta herramienta necesita configuración, pero no conocemos el comando para ello.',
       upgradeAdvice:
@@ -225,9 +224,9 @@ const esES: LocaleResource<typeof enUS> = {
       group_one: '{{tool}} · {{count}} modelo · {{runners}}',
       group_other: '{{tool}} · {{count}} modelos · {{runners}}',
       group_many: '{{tool}} · {{count}} modelos · {{runners}}',
-      runners_one: '{{count}} ejecutor',
-      runners_other: '{{count}} ejecutores',
-      runners_many: '{{count}} ejecutores',
+      runners_one: '{{count}} entorno de ejecución',
+      runners_other: '{{count}} entornos de ejecución',
+      runners_many: '{{count}} entornos de ejecución',
       noModels: 'No hay ningún modelo aquí.',
       selectedCount_one: '{{count}} seleccionado',
       selectedCount_other: '{{count}} seleccionados',
@@ -255,9 +254,9 @@ const esES: LocaleResource<typeof enUS> = {
     online: 'En línea',
     runner: 'Ejecutor',
     onlineHint:
-      'Respuestas en segundos en el servidor a través de un servicio modelo. No se necesita tiempo de ejecución; no puede tocar el código.',
+      'Respuestas en segundos en el servidor a través de un servicio modelo. No se necesita entorno de ejecución; no puede tocar el código.',
     runnerHint:
-      'Controla una herramienta de codificación en tiempo de ejecución y funciona en un directorio de trabajo: código, archivos, comandos.',
+      'Controla una herramienta de codificación en entorno de ejecución y funciona en un directorio de trabajo: código, archivos, comandos.',
     immutable:
       'Un agente mantiene su tipo; crear otro agente para el otro tipo.',
     onServer: 'En el servidor',
@@ -301,9 +300,9 @@ const esES: LocaleResource<typeof enUS> = {
     firstMessage: 'Primer mensaje',
     empty: 'Vacío',
     previewPlaceholders:
-      'Las notas entre corchetes sobre el tiempo de ejecución son completadas por el tiempo de ejecución que lo ejecuta: sus directorios de trabajo y las indicaciones de inicialización de los directorios que acaba de preparar.',
+      'Las notas entre corchetes sobre el entorno de ejecución son completadas por el entorno de ejecución que lo ejecuta: sus directorios de trabajo y las indicaciones de inicialización de los directorios que acaba de preparar.',
     placeholders:
-      'Los marcadores de posición {{runner.…}} son completados por el tiempo de ejecución que lo ejecuta: sus directorios de trabajo y las indicaciones de inicialización de los directorios que acaba de preparar.',
+      'Los marcadores de posición {{runner.…}} son completados por el entorno de ejecución que lo ejecuta: sus directorios de trabajo y las indicaciones de inicialización de los directorios que acaba de preparar.',
     layers: {
       system: 'Reglas',
       task: 'Tarea',
@@ -315,7 +314,7 @@ const esES: LocaleResource<typeof enUS> = {
   envVars: {
     title: 'Variables de entorno',
     description:
-      'Pasado a la herramienta de codificación en cada ejecución y enmascarado en los registros de ejecución; Los valores no se muestran nuevamente después de guardarlos. Cualquiera que utilice un agente compartido puede recibir estos valores en su propia computadora; marque los secretos de alto riesgo como "Solo tiempos de ejecución de equipo".',
+      'Pasado a la herramienta de codificación en cada ejecución y enmascarado en los registros de ejecución; Los valores no se muestran nuevamente después de guardarlos. Cualquiera que utilice un agente compartido puede recibir estos valores en su propia computadora; marque los secretos de alto riesgo como "Solo entornos de ejecución de equipo".',
     add: 'Añadir variable',
     addTitle: 'Añadir variable de entorno',
     editTitle: 'Reemplazar {{name}}',
@@ -325,16 +324,16 @@ const esES: LocaleResource<typeof enUS> = {
     value: 'Valor',
     valueTooLong: 'El valor es mayor que 8 KB.',
     keepValueHint: 'Déjelo vacío para mantener el valor actual.',
-    teamRunnersOnly: 'Solo tiempos de ejecución en equipo',
+    teamRunnersOnly: 'Solo entornos de ejecución en equipo',
     teamRunnersOnlyHint:
-      'Sin él, una ejecución envía el valor al tiempo de ejecución que lo toma, incluido el tiempo de ejecución personal de cualquiera que pueda usar el agente. Con él, solo el tiempo de ejecución del equipo realiza ejecuciones que obtienen esta variable.',
-    teamRunnersOnlyBadge: 'Solo tiempos de ejecución en equipo',
-    fromRunner: 'Tomar del tiempo de ejecución',
+      'Sin él, una ejecución envía el valor al entorno de ejecución que lo toma, incluido el entorno de ejecución personal de cualquiera que pueda usar el agente. Con él, solo el entorno de ejecución del equipo realiza ejecuciones que obtienen esta variable.',
+    teamRunnersOnlyBadge: 'Solo entornos de ejecución en equipo',
+    fromRunner: 'Tomar del entorno de ejecución',
     fromRunnerHint:
-      'Aquí no se guarda ningún valor: el tiempo de ejecución que realiza una ejecución lo proporciona desde su propia máquina, configurado allí con {{command}} o pasado con `--pass-env`. Un tiempo de ejecución que no lo proporciona falla en la ejecución antes de comenzar.',
-    fromRunnerBadge: 'Desde el tiempo de ejecución',
+      'Aquí no se guarda ningún valor: el entorno de ejecución que realiza una ejecución lo proporciona desde su propia máquina, configurado allí con {{command}} o pasado con `--pass-env`. Un entorno de ejecución que no lo proporciona falla en la ejecución antes de comenzar.',
+    fromRunnerBadge: 'Desde el entorno de ejecución',
     valueRequired:
-      'Ingrese un valor o continúe tomándolo del tiempo de ejecución.',
+      'Ingrese un valor o continúe tomándolo del entorno de ejecución.',
     empty: 'Sin variables de entorno.',
     scope: 'Ámbito',
     updated: 'Actualizado',
@@ -508,7 +507,7 @@ const esES: LocaleResource<typeof enUS> = {
       button: 'Limpiar directorio de trabajo',
       title: '¿Limpiar el directorio de trabajo?',
       description:
-        'La siguiente ejecución comienza desde una nueva verificación y recibe nuevamente las indicaciones de inicialización. Los cambios que no se implementaron se pierden en ese tiempo de ejecución. Un directorio utilizado en su lugar nunca se elimina.',
+        'La siguiente ejecución comienza desde una nueva verificación y recibe nuevamente las indicaciones de inicialización. Los cambios que no se implementaron se pierden en ese entorno de ejecución. Un directorio utilizado en su lugar nunca se elimina.',
       confirm: 'Limpiar',
       done: 'La siguiente ejecución comienza desde una nueva compra.',
     },
@@ -581,20 +580,20 @@ const esES: LocaleResource<typeof enUS> = {
       'Interrumpido por actualización de la máquina de ejecución; la carrera continuará.',
     runnerDiskFull: 'La máquina de ejecución se quedó sin espacio en disco.',
     runnerOfflineBeforeStart:
-      'El tiempo de ejecución se desconectó antes de iniciar la ejecución.',
-    runnerOffline: 'El tiempo de ejecución se desconectó.',
-    leaseExpired: 'El tiempo de ejecución dejó de informar.',
-    startTimeout: 'El tiempo de ejecución no inició la ejecución a tiempo.',
+      'El entorno de ejecución se desconectó antes de iniciar la ejecución.',
+    runnerOffline: 'El entorno de ejecución se desconectó.',
+    leaseExpired: 'El entorno de ejecución dejó de informar.',
+    startTimeout: 'El entorno de ejecución no inició la ejecución a tiempo.',
     cancelled: 'Cancelado.',
     idleTimeout: 'El agente dejó de avanzar.',
     setupFailed: 'No se pudo preparar la ejecución.',
     cliUnavailable:
-      'El tiempo de ejecución no pudo instalar la CLI de la aplicación.',
+      'El entorno de ejecución no pudo instalar la CLI de la aplicación.',
     workspaceBusy:
       'El directorio de trabajo está ocupado; esperando otro intento.',
     checkoutFailed: 'Falló la verificación del repositorio.',
     toolAuth:
-      'La herramienta de codificación no está registrada en el tiempo de ejecución.',
+      'La herramienta de codificación no está registrada en el entorno de ejecución.',
     toolQuota: 'La herramienta de codificación se quedó sin cuota.',
     sessionUnavailable:
       'No se pudo reanudar la sesión original de la herramienta de programación.',
@@ -604,14 +603,14 @@ const esES: LocaleResource<typeof enUS> = {
     toolProcess: 'La herramienta de codificación se cerró inesperadamente.',
     contextOverflow: 'La conversación se hizo demasiado larga para la modelo.',
     delegatedQueueTimeout: 'Tiempo de espera de cola de delegación; retirado',
-    queuedExpired: 'Ningún tiempo de ejecución tomó la ejecución a tiempo.',
+    queuedExpired: 'Ningún entorno de ejecución tomó la ejecución a tiempo.',
     modelUnavailable: 'El modelo del agente no está disponible.',
     stepLimit:
       'El agente llamó a las herramientas demasiadas veces sin responder.',
     policyRefused:
-      'Ninguna política de tiempo de ejecución le permite realizar este trabajo.',
+      'Ninguna política de entorno de ejecución le permite realizar este trabajo.',
     prepareNetwork:
-      'El tiempo de ejecución no pudo alcanzar el host del repositorio mientras preparaba la ejecución.',
+      'El entorno de ejecución no pudo alcanzar el host del repositorio mientras preparaba la ejecución.',
     repoAccessUnavailable:
       'El acceso al repositorio no está disponible temporalmente.',
     repoAccessDenied:
@@ -619,7 +618,8 @@ const esES: LocaleResource<typeof enUS> = {
     unknown: 'La ejecución falló.',
   },
   runtimes: {
-    pathHint: runtimesEnUS.runtimes.pathHint,
+    pathHint:
+      'El runner busca las herramientas de programación con su propio PATH. En un terminal donde funcione which codex / which claude, vuelve a ejecutar nocobase-runner service install y reinicia el servicio (o vuelve a ejecutar nocobase-runner start) para que obtenga el PATH correcto.',
     quota: {
       workspaceStatus: {
         active: 'El trabajo continúa',
@@ -652,7 +652,7 @@ const esES: LocaleResource<typeof enUS> = {
       providers_one: 'Proveedor {{count}} en cuota',
       providers_other: 'Proveedores {{count}} en cuota',
       runColumns: {
-        issue: 'Asunto / conversación',
+        issue: 'Tarea / conversación',
         agent: 'Agente',
         status: 'Estado',
         started: 'Iniciado',
@@ -694,7 +694,7 @@ const esES: LocaleResource<typeof enUS> = {
       observed: 'Último reportado {{time}}',
       usedPercent: '{{percent}}% usado',
       ok: 'Aceptar',
-      hint: 'Una marca se borra sola a la hora de reinicio conocida o cuando la herramienta vuelve a informar cuota disponible. Bórrela a mano solo después de confirmar que la cuota se ha restablecido. Sólo el propietario y los administradores del tiempo de ejecución pueden borrar las marcas.',
+      hint: 'Una marca se borra sola a la hora de reinicio conocida o cuando la herramienta vuelve a informar cuota disponible. Bórrela a mano solo después de confirmar que la cuota se ha restablecido. Sólo el propietario y los administradores del entorno de ejecución pueden borrar las marcas.',
       marks_many: 'Marcas de cuota {{count}}',
       providers_many: 'Proveedores {{count}} en cuota',
     },
@@ -725,7 +725,8 @@ const esES: LocaleResource<typeof enUS> = {
       ended: 'Finalizado',
       active: 'El trabajo continúa',
       unknown: 'No se puede confirmar si el trabajo finalizó',
-      oldRunner: 'Este ejecutor no ha proporcionado razones de diagnóstico',
+      oldRunner:
+        'Este entorno de ejecución no ha proporcionado razones de diagnóstico',
       noCleanup: 'No se ha recibido el resultado de la limpieza local',
       discardsUntracked: 'La limpieza descartará los archivos sin seguimiento',
       decision: {
@@ -734,7 +735,7 @@ const esES: LocaleResource<typeof enUS> = {
         active: 'El trabajo continúa',
         runNotFound: 'No se puede confirmar: ejecución no encontrada',
         ownershipUnknown:
-          'No se puede confirmar: no se pudo verificar la propiedad del ejecutor',
+          'No se puede confirmar: no se pudo verificar la propiedad del entorno de ejecución',
         ambiguousSubject: 'No se puede confirmar: clave de asunto ambigua',
         bindingUnavailable:
           'No se puede confirmar: la aplicación no tiene enlace de espacio de trabajo',
@@ -755,15 +756,15 @@ const esES: LocaleResource<typeof enUS> = {
     },
     title: 'Entornos de ejecución',
     description:
-      'Los tiempos de ejecución que ejecutan los agentes y las herramientas de codificación que cada uno reportó.',
-    add: 'Añadir tiempo de ejecución',
-    loadFailed: 'No se pudieron cargar los tiempos de ejecución',
-    emptyTitle: 'Aún no hay tiempos de ejecución conectados',
+      'Los entornos de ejecución que ejecutan los agentes y las herramientas de codificación que cada uno reportó.',
+    add: 'Añadir entorno de ejecución',
+    loadFailed: 'No se pudieron cargar los entornos de ejecución',
+    emptyTitle: 'Aún no hay entornos de ejecución conectados',
     emptyDescription:
-      'Una vez que se conecta un tiempo de ejecución, los agentes ejecutores asumen el trabajo allí con sus herramientas de codificación.',
-    noneConnected: 'No hay ningún tiempo de ejecución conectado.',
-    revokedList_one: '{{count}} revocó el tiempo de ejecución',
-    revokedList_other: '{{count}} revocó tiempos de ejecución',
+      'Una vez que se conecta un entorno de ejecución, los agentes entornos de ejecución asumen el trabajo allí con sus herramientas de codificación.',
+    noneConnected: 'No hay ningún entorno de ejecución conectado.',
+    revokedList_one: '{{count}} revocó el entorno de ejecución',
+    revokedList_other: '{{count}} revocó entornos de ejecución',
     lastSeen: 'Visto por última vez {{time}}',
     activity: {
       online: 'En línea {{active}}/{{slots}}',
@@ -797,7 +798,7 @@ const esES: LocaleResource<typeof enUS> = {
     policy: {
       title: 'Política local',
       description:
-        'Lo que el propietario del tiempo de ejecución le permite tomar, según informó. Se cambia en la máquina, no aquí.',
+        'Lo que el propietario del entorno de ejecución le permite tomar, según informó. Se cambia en la máquina, no aquí.',
       none: 'No hay política local: acepta cualquier trabajo para el que esté registrado.',
       any: 'Cualquiera',
       nothing: 'Ninguno',
@@ -808,16 +809,16 @@ const esES: LocaleResource<typeof enUS> = {
     variables: {
       title: 'Variables de esta máquina',
       description:
-        'Las variables que proporciona a las ejecuciones que las toman del tiempo de ejecución, por nombre; Los valores permanecen en la máquina. Configure uno allí con `nocobase-runner env set NAME` o páselo con `--pass-env NAME`.',
-      none: 'Ninguno: una ejecución que toma una variable del tiempo de ejecución falla aquí antes de comenzar.',
+        'Las variables que proporciona a las ejecuciones que las toman del entorno de ejecución, por nombre; Los valores permanecen en la máquina. Configure uno allí con `nocobase-runner env set NAME` o páselo con `--pass-env NAME`.',
+      none: 'Ninguno: una ejecución que toma una variable del entorno de ejecución falla aquí antes de comenzar.',
       unknown:
-        'No informado: su ejecutor es más antiguo que esta característica. Actualiza el ejecutor para verlos.',
+        'No informado: su entorno de ejecución es más antiguo que esta característica. Actualiza el entorno de ejecución para verlos.',
     },
     jobs: {
       allow: 'Permitir trabajos de construcción',
-      hint: 'Compilaciones y otros pasos que configura esta aplicación, ejecutados sin un modelo. Este tiempo de ejecución informa: {{kinds}}.',
+      hint: 'Compilaciones y otros pasos que configura esta aplicación, ejecutados sin un modelo. Este entorno de ejecución informa: {{kinds}}.',
       unsupported:
-        'El ejecutor de este tiempo de ejecución no acepta trabajos. Actualice el ejecutor para activar esto.',
+        'El entorno de ejecución de este entorno de ejecución no acepta trabajos. Actualice el entorno de ejecución para activar esto.',
     },
     noTools: 'No se encontró ninguna herramienta de codificación',
     actionsFor: 'Acciones para {{name}}',
@@ -856,17 +857,17 @@ const esES: LocaleResource<typeof enUS> = {
       upgrade_required: 'Actualización requerida',
     },
     upgradeRequired: {
-      title: 'Este tiempo de ejecución necesita una actualización',
+      title: 'Este entorno de ejecución necesita una actualización',
       older:
-        'Su ejecutor {{version}} habla el protocolo de agente {{protocol}}; esta aplicación necesita el protocolo {{required}}. Permanece conectado pero no ejecuta nada hasta que se actualiza.',
+        'Su entorno de ejecución {{version}} habla el protocolo de agente {{protocol}}; esta aplicación necesita el protocolo {{required}}. Permanece conectado pero no ejecuta nada hasta que se actualiza.',
       newer:
-        'Su ejecutor {{version}} habla el protocolo de agente {{protocol}}, más nuevo que esta aplicación (protocolo {{required}}). Permanece conectado pero no ejecuta nada hasta que ejecuta un ejecutor al que sirve esta aplicación.',
+        'Su entorno de ejecución {{version}} habla el protocolo de agente {{protocol}}, más nuevo que esta aplicación (protocolo {{required}}). Permanece conectado pero no ejecuta nada hasta que ejecuta un entorno de ejecución al que sirve esta aplicación.',
       latest:
-        'Esta aplicación sirve al ejecutor {{latest}}. Ejecute esto en su host para actualizarlo:',
+        'Esta aplicación sirve al entorno de ejecución {{latest}}. Ejecute esto en su host para actualizarlo:',
       noLatest:
-        'Instale un ejecutor que hable el protocolo {{required}} o ejecútelo en su host para actualizarlo:',
+        'Instale un entorno de ejecución que hable el protocolo {{required}} o ejecútelo en su host para actualizarlo:',
       reinstall:
-        'Su ejecutor no dice cómo fue instalado. Instálelo nuevamente en su host con el comando de Añadir tiempo de ejecución.',
+        'Su entorno de ejecución no dice cómo fue instalado. Instálelo nuevamente en su host con el comando de Añadir entorno de ejecución.',
     },
     tool: {
       checking: 'Esperando detección',
@@ -878,26 +879,27 @@ const esES: LocaleResource<typeof enUS> = {
       notInstalled: 'No instalado',
       off: 'Desactivado',
       offHint:
-        'Desactivado: el trabajo para esta herramienta no se envía a este tiempo de ejecución.',
+        'Desactivado: el trabajo para esta herramienta no se envía a este entorno de ejecución.',
       enableLabel: 'Ejecute {{tool}} en {{name}}',
       version: 'Versión {{version}}',
     },
     trust: {
-      isolationHint: runtimesEnUS.runtimes.trust.isolationHint,
+      isolationHint:
+        'Tanto en entornos de ejecución personales como compartidos, ejecuta el runner en una máquina virtual o un entorno aislado: los agentes tienen acceso total y el runner no es un sandbox.',
       label: 'Para quién funciona',
       team: 'Equipo',
       teamHint:
         'Las ejecuciones son las que inicia cualquier miembro del equipo, con sus variables y secretos. Para servidores compartidos y máquinas virtuales.',
       ownerOnly: 'Personales',
       ownerOnlyHint:
-        'Ejecuta sólo el trabajo que inicia. El valor predeterminado para un tiempo de ejecución que añada.',
+        'Ejecuta sólo el trabajo que inicia. El valor predeterminado para un entorno de ejecución que añada.',
       personalOnly:
-        'Este tiempo de ejecución será personal: ejecuta sólo el trabajo que usted inicia. Puedes compartirlo con el equipo más tarde.',
+        'Este entorno de ejecución será personal: ejecuta sólo el trabajo que usted inicia. Puedes compartirlo con el equipo más tarde.',
     },
     share: {
       title: '¿Compartir {{name}} con el equipo?',
       description:
-        'Las ejecuciones de otras personas se ejecutarán en este tiempo de ejecución, con sus variables y secretos, y podrán leer lo que contiene. Compártelo sólo si te parece bien.',
+        'Las ejecuciones de otras personas se ejecutarán en este entorno de ejecución, con sus variables y secretos, y podrán leer lo que contiene. Compártelo sólo si te parece bien.',
       confirm: 'Compartir con el equipo',
     },
     edit: {
@@ -905,15 +907,15 @@ const esES: LocaleResource<typeof enUS> = {
       title: 'Editar {{name}}',
       name: 'Nombre',
       nameRequired: 'Ingrese un nombre.',
-      slotsHint: 'Cuántas ejecuciones toma el tiempo de ejecución a la vez.',
+      slotsHint: 'Cuántas ejecuciones toma el entorno de ejecución a la vez.',
       slotsInvalid: 'Ingrese un número entero del 1 al 64.',
       saved: 'Guardado {{name}}',
     },
     upgrade: {
-      show: 'Versión {{version}}: hay un ejecutor más nuevo disponible',
+      show: 'Versión {{version}}: hay un entorno de ejecución más nuevo disponible',
       available: 'Actualización disponible',
       badge: 'Actualizable',
-      title: 'Un ejecutor más nuevo para {{name}}',
+      title: 'Un entorno de ejecución más nuevo para {{name}}',
       description:
         'Instalado {{version}}, esta aplicación sirve para {{latest}}.',
       hint: 'Se actualiza solo una vez que no se está ejecutando ningún agente. Para actualizarlo ahora, ejecútelo en su host.',
@@ -921,42 +923,58 @@ const esES: LocaleResource<typeof enUS> = {
     revoke: {
       title: '¿Revocar la credencial de {{name}}?',
       description:
-        'Su ejecutor se detiene en su siguiente solicitud y sus ejecuciones regresan a la cola. Para volver a conectarlo, añada nuevamente el tiempo de ejecución.',
+        'Su entorno de ejecución se detiene en su siguiente solicitud y sus ejecuciones regresan a la cola. Para volver a conectarlo, añada nuevamente el entorno de ejecución.',
       confirm: 'Revocar',
       done: 'Revocada la credencial de {{name}}',
     },
     delete: {
       title: '¿Eliminar {{name}}?',
       description:
-        'El tiempo de ejecución revocado se elimina de la lista. Sus carreras pasadas permanecen.',
+        'El entorno de ejecución revocado se elimina de la lista. Sus carreras pasadas permanecen.',
       confirm: 'Eliminar',
       done: 'Eliminado {{name}}',
     },
-    revokedList_many: '{{count}} revocó tiempos de ejecución',
+    revokedList_many: '{{count}} revocó entornos de ejecución',
   },
   connect: {
-    ...runtimesEnUS.connect,
-    title: 'Añadir tiempo de ejecución',
+    manual: 'O instálalo tú mismo',
+    promptTitle: 'Deja que un agente lo configure',
+    promptCopy: 'Copiar la instrucción para el agente',
+    promptShow: 'Ver la instrucción',
+    promptHide: 'Ocultar la instrucción',
+    promptHint:
+      'Copia esta instrucción a un agente (Claude Code, Codex y similares) en la máquina de destino y realizará por ti los pasos siguientes. Contiene una credencial de un solo uso: dásela solo a ese agente.',
+    windowsPowerShell:
+      '1. Instala WSL: ejecútalo en PowerShell y reinicia Windows:',
+    windowsUbuntu:
+      '2. Abre Ubuntu y ejecuta el comando de Linux de abajo. Instala Node.js y las herramientas de programación dentro de WSL Ubuntu.',
+    windowsNetwork:
+      'Si WSL no puede acceder a internet, activa la red en modo espejo en WSL.',
+    promptWindows:
+      'PRIMERO, determina si te ejecutas dentro de WSL Ubuntu. Si NO estás en WSL Ubuntu, DETENTE: no ejecutes ningún comando de instalación ni de registro. Dile al usuario que ejecute wsl --install en PowerShell, reinicie Windows, abra el agente dentro de WSL Ubuntu y vuelva a ejecutar esta instrucción. Continúa con los pasos siguientes SOLO dentro de WSL Ubuntu. Instala tanto Node.js como las herramientas de programación dentro de WSL. Si WSL no puede acceder a internet, activa la red en modo espejo.\n\n',
+    promptBody:
+      'Configura esta máquina como entorno de ejecución de NocoBase. Usa una máquina virtual o un entorno aislado: los agentes tienen acceso total y el runner no es un sandbox.\n\nComprueba que hay Node.js 24 o posterior y que estas herramientas de programación están instaladas y con sesión iniciada: {{tools}}. Usa sus métodos de instalación oficiales, no paquetes snap.\n\nEjecuta este comando de registro de un solo uso para instalar el runner y la CLI de la aplicación, registrarlo e instalar su servicio en segundo plano:\n{{command}}\n\nResuelve los problemas habituales de configuración: asegúrate de que el PATH del servicio contiene las herramientas de programación (comprueba which codex / which claude en el terminal de instalación y vuelve a ejecutar nocobase-runner service install y reinicia el servicio); configura el proxy necesario para las descargas y para el servicio; resuelve los permisos de instalación global de npm con un prefijo propiedad del usuario o un gestor de versiones de Node, sin sudo npm install.\n\nTermina con nocobase-runner status y confirma la conexión y las herramientas de programación. Indícame los pasos de inicio de sesión o de red que queden por hacer. Trata la credencial de registro como un secreto y no la incluyas en tu informe.',
+    title: 'Añadir entorno de ejecución',
     description:
-      'Ejecute el siguiente comando en un host que tenga una herramienta de codificación instalada: un servidor, una máquina virtual o su propio dispositivo. Los agentes se ejecutan allí con acceso completo, como el usuario que ejecuta el ejecutor, y pueden leer y cambiar cualquier cosa que el usuario pueda, incluidas las claves SSH y otras credenciales. El ejecutor no es un límite de seguridad: ejecútelo como un usuario dedicado, en un contenedor o en una VM.',
+      'Ejecute el siguiente comando en un host que tenga una herramienta de codificación instalada: un servidor, una máquina virtual o su propio dispositivo. Los agentes se ejecutan allí con acceso completo, como el usuario que ejecuta el entorno de ejecución, y pueden leer y cambiar cualquier cosa que el usuario pueda, incluidas las claves SSH y otras credenciales. El entorno de ejecución no es un límite de seguridad: ejecútelo como un usuario dedicado, en un contenedor o en una VM.',
     createCredential: 'Generar comando de instalación',
     advanced: 'Avanzado: límites por herramienta de codificación',
-    run: 'Ejecute esto en ese host. Descarga el ejecutor (nocobase-runner) y la CLI de esta aplicación desde esta aplicación, registra el ejecutor y lo inicia al iniciar sesión:',
+    run: 'Ejecute esto en ese host. Descarga el entorno de ejecución (nocobase-runner) y la CLI de esta aplicación desde esta aplicación, registra el entorno de ejecución y lo inicia al iniciar sesión:',
     nodeRequired:
       'El host necesita Node.js 24 o posterior (verifique con node --version). El comando se detiene y dice cómo instalarlo cuando falta.',
     installed: '¿Ya tienes instalado nocobase-runner? Regístrelo en su lugar:',
     tokenOnce:
-      'El comando lleva una credencial de un solo uso para un tiempo de ejecución "{{trust}}". Funciona una vez, hasta {{time}}.',
+      'El comando lleva una credencial de un solo uso para un entorno de ejecución "{{trust}}". Funciona una vez, hasta {{time}}.',
     after:
-      'En cuestión de segundos, el tiempo de ejecución aparece en la lista, con cada herramienta de codificación que encontró...',
+      'En cuestión de segundos, el entorno de ejecución aparece en la lista, con cada herramienta de codificación que encontró...',
     tokenTools: 'Herramientas de codificación: {{tools}}.',
     tools: 'Herramientas de codificación',
     toolsHint:
-      'Este tiempo de ejecución se ofrece para funcionar solo para las herramientas marcadas. Puede cambiarlo en la página Runtimes en cualquier momento.',
+      'Este entorno de ejecución se ofrece para funcionar solo para las herramientas marcadas. Puede cambiarlo en la página Runtimes en cualquier momento.',
     toolsRequired: 'Elija al menos una herramienta de codificación.',
     slots: 'Máximo de ejecuciones simultáneas',
     slotsHint:
-      'Cuántas ejecuciones toma el tiempo de ejecución a la vez. Puede cambiarlo en la página Runtimes en cualquier momento.',
+      'Cuántas ejecuciones toma el entorno de ejecución a la vez. Puede cambiarlo en la página Runtimes en cualquier momento.',
     tokenSlots: 'Ejecuciones simultáneas máximas: {{slots}}.',
     tokenToolSlots: 'Por herramienta de codificación: {{limits}}.',
     connected: '{{name}} está conectado.',
@@ -969,8 +987,38 @@ const esES: LocaleResource<typeof enUS> = {
   },
   chat: {
     // Keep new guidance available in English until this locale is translated.
-    executionFailed: chatEnUS.chat.executionFailed,
-    fileInputFailures: chatEnUS.chat.fileInputFailures,
+    executionFailed:
+      'La ejecución falló. Revisa la conversación guardada antes de reintentar.',
+    fileInputFailures: {
+      imageCapability:
+        'Este modelo no tiene configurada la entrada de imágenes. Cambia a un modelo con soporte de imágenes verificado.',
+      unsupportedFormat:
+        'El modelo seleccionado no tiene configurada la entrada para este formato de adjunto y ningún extractor de texto local lo admite. Usa un formato de documento compatible o un modelo con soporte de archivos verificado.',
+      formatMismatch:
+        'El nombre del archivo adjunto y su tipo de contenido indican formatos de documento distintos. Comprueba el formato y vuelve a subirlo.',
+      invalidInline:
+        'Los datos del archivo adjunto no son válidos o son demasiado grandes. Vuelve a subirlo o usa un archivo más pequeño.',
+      fileTooLarge:
+        'Un adjunto supera su límite de tamaño. Usa un archivo más pequeño.',
+      inputTooLarge:
+        'Los adjuntos de la conversación superan el límite de entrada. Usa archivos más pequeños o empieza una conversación nueva.',
+      documentTooLarge:
+        'El adjunto supera el límite de texto extraído. Usa un archivo más pequeño.',
+      contextTooLarge:
+        'Los adjuntos de la conversación superan el límite de texto extraído. Usa archivos más pequeños o empieza una conversación nueva.',
+      fileCount:
+        'La conversación supera el límite de 100 archivos de entrada. Empieza una conversación nueva.',
+      nativeFileCount:
+        'La conversación supera el límite configurado de archivos nativos. Usa menos adjuntos o conviértelos a un documento de texto compatible.',
+      unreadable:
+        'El adjunto no contiene texto legible. Los documentos escaneados requieren OCR.',
+      extractionFailed:
+        'No se pudo extraer el texto del adjunto. Comprueba que el documento sea legible y vuelve a subirlo.',
+      extractionTimeout:
+        'Se agotó el tiempo de extracción del texto del adjunto. Usa un archivo más pequeño o inténtalo de nuevo.',
+      preparationFailed:
+        'No se pudo preparar el adjunto. Comprueba tu acceso y el formato del archivo e inténtalo de nuevo.',
+    },
     untitled: 'Conversación sin título',
     renamed: 'Renombrado',
     archivedNamed: 'Archivado “{{title}}”',
@@ -983,8 +1031,9 @@ const esES: LocaleResource<typeof enUS> = {
       agentArchived: 'No habilitado',
       forbidden: 'No disponible para ti',
       noModel: 'Configurar un modelo de chat primero',
-      noRunner: 'Ningún ejecutor en línea, no se puede elegir',
-      othersPersonal: 'Sólo los ejecutores personales de otros lo tienen.',
+      noRunner: 'Ningún entorno de ejecución en línea, no se puede elegir',
+      othersPersonal:
+        'Sólo los entornos de ejecución personales de otros lo tienen.',
       modelUnavailable: 'Modelo no disponible',
     },
     offline: {
@@ -996,9 +1045,9 @@ const esES: LocaleResource<typeof enUS> = {
       switchedToDefault:
         'Se cambió a {{name}}, el valor predeterminado del sistema, hasta que regrese {{own}}.',
       switchedToOnline:
-        '{{own}} no tiene ningún ejecutor para usted ahora, por lo que {{name}} responde hasta que {{own}} regrese.',
+        '{{own}} no tiene ningún entorno de ejecución para usted ahora, por lo que {{name}} responde hasta que {{own}} regrese.',
       onlineFallbackUnavailable:
-        'El agente de reserva en línea no puede responder ({{reason}}). Esta conversación permanece con {{own}} mientras espera un ejecutor.',
+        'El agente de reserva en línea no puede responder ({{reason}}). Esta conversación permanece con {{own}} mientras espera un entorno de ejecución.',
       switchedAgent:
         'Se cambió a {{name}}, conservando el historial de esta conversación.',
       switchedBack: 'De vuelta con {{name}}.',
@@ -1017,8 +1066,8 @@ const esES: LocaleResource<typeof enUS> = {
       working: 'Trabajando en {{subject}}',
     },
     agents: {
-      personalOnly: 'Solo ejecutores personales',
-      hint: 'Enumera los agentes habilitados y dice por qué uno no puede responderle ahora. Las respuestas se ejecutan en un ejecutor: la primera respuesta espera a que uno la tome, generalmente unos segundos.',
+      personalOnly: 'Solo entornos de ejecución personales',
+      hint: 'Enumera los agentes habilitados y dice por qué uno no puede responderle ahora. Las respuestas se ejecutan en un entorno de ejecución: la primera respuesta espera a que uno la tome, generalmente unos segundos.',
       chooseFor: 'Elige un agente',
       empty: 'Ningún agente puedes elegir',
       none: 'Ningún agente',
@@ -1385,30 +1434,30 @@ const esES: LocaleResource<typeof enUS> = {
       pruning:
         'Ejecutor limpiando tienda compartida; el nuevo trabajo está en pausa',
       toolNotInstalled:
-        'Ningún ejecutor conectado tiene esta herramienta instalada',
+        'Ningún entorno de ejecución conectado tiene esta herramienta instalada',
       incompatible:
-        'Los ejecutores conectados no soportan esta carga de trabajo; actualización requerida',
+        'Los entornos de ejecución conectados no soportan esta carga de trabajo; actualización requerida',
       restricted:
-        'Restricciones de políticas, directorios o variables del ejecutor',
+        'Restricciones de políticas, directorios o variables del entorno de ejecución',
       unknown: 'La elegibilidad de la carga de trabajo no está establecida',
       agentArchived: 'El agente está archivado',
       delayed: 'Programado para {{until}}',
-      noRunnerOnline: 'Sin tiempo de ejecución en línea',
-      runnersOffline: 'Sus tiempos de ejecución están fuera de línea',
+      noRunnerOnline: 'Sin entorno de ejecución en línea',
+      runnersOffline: 'Sus entornos de ejecución están fuera de línea',
       toolQuota: 'Cuota de la herramienta agotada; restablecimiento: {{until}}',
       toolUnavailable:
         'Herramienta no iniciada, deshabilitada o modelo solicitado no disponible ({{tool}})',
       noSharedRunner:
-        'Sólo los ejecutores personales de otras personas están en línea',
-      missingFeatures: 'Ningún tiempo de ejecución admite {{features}}',
+        'Sólo los entornos de ejecución personales de otras personas están en línea',
+      missingFeatures: 'Ningún entorno de ejecución admite {{features}}',
       secretsNotAllowed:
-        'Necesita un tiempo de ejecución en equipo: {{variables}} es solo para tiempos de ejecución en equipo',
+        'Necesita un entorno de ejecución en equipo: {{variables}} es solo para entornos de ejecución en equipo',
       sameWorkActive: 'Después de la ejecución ya en él',
       concurrencyFull: 'Simultaneidad completa ({{active}}/{{limit}})',
-      runnersBusy: 'Los ejecutores compatibles están llenos',
+      runnersBusy: 'Los entornos de ejecución compatibles están llenos',
       toolSlotsFull: 'Ranuras {{tool}} llenas ({{used}}/{{limit}})',
       setupRetrying: 'Falló su preparación; reintentando: {{detail}}',
-      next: 'Siguiente para un tiempo de ejecución gratuito',
+      next: 'Siguiente para un entorno de ejecución gratuito',
     },
     unknown: 'En cola ({{reason}})',
     quotaResetUnknown: 'desconocido',
@@ -1457,7 +1506,7 @@ const esES: LocaleResource<typeof enUS> = {
       runners: {
         title: 'Entornos de ejecución',
         description:
-          'Ver ejecutores y tokens de registro; gestionar ejecutores.',
+          'Ver entornos de ejecución y tokens de registro; gestionar entornos de ejecución.',
       },
       prices: {
         title: 'Precios de los modelos',

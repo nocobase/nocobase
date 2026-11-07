@@ -68,10 +68,31 @@ export function resolveSupportedLocale(
   if (exact) return exact;
 
   const language = normalized.split('-')[0];
-  return supported.find(
+  const sameLanguage = supported.filter(
     (candidate) => candidate.toLowerCase().split('-')[0] === language,
   );
+  // Chinese is written in two scripts, so the language alone is not enough: a browser asking for zh-HK or
+  // zh-Hant-TW reads Traditional characters and should land on a Traditional locale such as zh-TW, not zh-CN.
+  if (language === 'zh' && sameLanguage.length > 1) {
+    const traditional = isTraditionalChinese(normalized);
+    const sameScript = sameLanguage.find(
+      (candidate) =>
+        isTraditionalChinese(candidate.toLowerCase()) === traditional,
+    );
+    if (sameScript) return sameScript;
+  }
+  return sameLanguage[0];
 }
+
+/** Whether a lower-case Chinese tag names Traditional script, explicitly (Hant) or by a region that uses it. */
+function isTraditionalChinese(tag: string): boolean {
+  const subtags = tag.split('-').slice(1);
+  if (subtags.includes('hant')) return true;
+  if (subtags.includes('hans')) return false;
+  return subtags.some((subtag) => TRADITIONAL_CHINESE_REGIONS.has(subtag));
+}
+
+const TRADITIONAL_CHINESE_REGIONS = new Set(['tw', 'hk', 'mo']);
 
 /**
  * Parses an `Accept-Language` header into the locales it lists, most preferred first.
