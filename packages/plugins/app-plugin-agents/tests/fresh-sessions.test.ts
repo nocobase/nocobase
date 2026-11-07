@@ -143,10 +143,6 @@ describe('fresh run sessions', () => {
     const sessions = h.database.connection().repository('agSessions');
     const stored = await sessions.findOne({ filter: { agentId: agent } });
     expect(stored!.fingerprint).toBe(legacyFingerprint);
-    await sessions.updateOne({
-      filter: { id: stored!.id },
-      values: { fingerprint: legacyFingerprint },
-    });
     await enqueue(agent);
     const [next] = await claim(h, runner);
     expect(next.prompt).toMatchObject({
