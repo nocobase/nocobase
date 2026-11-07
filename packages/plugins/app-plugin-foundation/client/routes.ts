@@ -3,7 +3,7 @@ import {
   type AppClientAppRoutesContribution,
   type AppClientRoutePageDefinition,
 } from '@nocobase/app-client/plugins';
-import { Layers, Settings } from 'lucide-react';
+import { Compass, Layers, Settings } from 'lucide-react';
 
 export interface FoundationRouteOptions {
   /** Wrap the entry in a settings group for a bare application. */
@@ -44,6 +44,35 @@ export function foundationDefinition(
   };
 }
 
+/**
+ * Mockup of the capability guide: a static page every signed-in user can open, listing the built-in capabilities with
+ * prompts to copy. It loads nothing from the server.
+ */
+export function capabilityGuideDefinitions(): AppClientRoutePageDefinition[] {
+  return [
+    {
+      name: 'capabilityGuide',
+      path: '/capabilities',
+      auth: 'required',
+      authz: 'skip',
+      navigation: {
+        title: 'nav.capabilityGuide',
+        description: 'nav.capabilityGuideDescription',
+        icon: Compass,
+        order: 10,
+      },
+      componentLoader: () => import('./capability-guide/guide-page.js'),
+    },
+    {
+      name: 'capabilityGuideDetail',
+      path: '/capabilities/:capabilityId',
+      auth: 'required',
+      authz: 'skip',
+      componentLoader: () => import('./capability-guide/detail-page.js'),
+    },
+  ];
+}
+
 export function createFoundationRoutes(
   options: FoundationRouteOptions = {},
 ): AppClientAppRoutesContribution {
@@ -55,8 +84,9 @@ export function createFoundationRoutes(
             navigation: { title: 'nav.settings', icon: Settings, order: 100 },
             children: [foundationDefinition(options)],
           },
+          ...capabilityGuideDefinitions(),
         ]
-      : [foundationDefinition(options)],
+      : [foundationDefinition(options), ...capabilityGuideDefinitions()],
   );
 }
 

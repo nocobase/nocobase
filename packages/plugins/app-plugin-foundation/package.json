@@ -30,6 +30,10 @@
       "types": "./client/components/foundation-page.tsx",
       "import": "./client/components/foundation-page.tsx"
     },
+    "./capability-guide": {
+      "types": "./shared/capability-guide/index.ts",
+      "import": "./shared/capability-guide/index.ts"
+    },
     "./cli": {
       "types": "./cli/index.ts",
       "import": "./cli/index.ts"
@@ -83,6 +87,10 @@
         "types": "./dist/client/components/foundation-page.d.ts",
         "import": "./dist/client/components/foundation-page.js"
       },
+      "./capability-guide": {
+        "types": "./dist/shared/capability-guide/index.d.ts",
+        "import": "./dist/shared/capability-guide/index.js"
+      },
       "./cli": {
         "types": "./dist/cli/index.d.ts",
         "import": "./dist/cli/index.js"
@@ -127,7 +135,8 @@
     "class-variance-authority": "catalog:",
     "cn": "catalog:",
     "lucide-react": "catalog:",
-    "react": "^19.0.0"
+    "react": "^19.0.0",
+    "react-router": "catalog:"
   },
   "devDependencies": {
     "@nocobase/app-plugin-api-keys": "workspace:*",
@@ -146,7 +155,6 @@
     "jsdom": "catalog:",
     "prettier": "catalog:",
     "react-dom": "catalog:",
-    "react-router": "catalog:",
     "shadcn": "catalog:",
     "tailwindcss": "catalog:",
     "tw-animate-css": "catalog:",

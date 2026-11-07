@@ -6,6 +6,9 @@ const enUS = {
     foundation: 'App foundation',
     foundationDescription:
       'The NocoBase capabilities this application is built on.',
+    capabilityGuide: 'Capability guide',
+    capabilityGuideDescription:
+      'What the built-in capabilities solve, and how to ask your agent for them.',
   },
   page: {
     otherCapabilities: 'Other capabilities',

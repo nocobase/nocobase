@@ -5,6 +5,9 @@ const viVN: FoundationResource = {
     settings: 'Cài đặt hệ thống',
     foundation: 'Nền tảng ứng dụng',
     foundationDescription: 'Các năng lực NocoBase mà ứng dụng này sử dụng.',
+    capabilityGuide: 'Hướng dẫn năng lực',
+    capabilityGuideDescription:
+      'Các năng lực tích hợp giải quyết được gì và cách yêu cầu agent của bạn.',
   },
   page: {
     otherCapabilities: 'Các khả năng khác',
