@@ -709,4 +709,35 @@ describe('repository credentials on demand', () => {
       },
     ]);
   });
+  it('persists a structured refusal only while this runner still holds the attempt', async () => {
+    h = await createHarness();
+    repos(APP);
+    provide({
+      issue: async () => {
+        throw new RepoAccessError('denied', 'Reconnect your account.', {
+          code: 'authorizationExpired',
+          phase: 'authorization',
+          host: 'github.com',
+        });
+      },
+    });
+    const agentId = await h.createAgent();
+    const runId = await h.enqueue(agentId);
+    const runner = await h.registerRunner({
+      features: [...FEATURES, 'gitCredentials'] as never,
+    });
+    await claim(h, runner);
+    expect((await ask(runner, runId, { attempt: 1, url: APP })).status).toBe(
+      403,
+    );
+    expect(await h.services.runs.get(runId)).toMatchObject({
+      failureParams: { code: 'authorizationExpired' },
+    });
+    await h.services.runs.cancel(runId, 'owner');
+    const before = (await h.services.runs.get(runId)).failureParams;
+    expect(
+      (await ask(runner, runId, { attempt: 1, url: APP })).status,
+    ).not.toBe(200);
+    expect((await h.services.runs.get(runId)).failureParams).toEqual(before);
+  });
 });

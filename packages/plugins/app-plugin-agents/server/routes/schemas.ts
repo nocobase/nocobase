@@ -1307,6 +1307,7 @@ const runObject = z.object({
   cancelledById: z.string().nullable(),
   failureReason: FailureReasonSchema.nullable(),
   failureDetail: z.string().nullable(),
+  failureParams: z.record(z.string(), z.unknown()).nullable().optional(),
   summary: z.string().nullable(),
   createdAt: dateTime,
   updatedAt: dateTime,

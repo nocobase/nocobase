@@ -561,7 +561,7 @@ const zhTW: LocaleResource<typeof enUS> = {
     stepLimit: '客服人員多次呼叫工具卻無人接聽。',
     policyRefused: '沒有執行環境的策略允許它承擔這項工作。',
     prepareNetwork: '準備執行環境運作時無法到達儲存庫主機。',
-    repoAccessUnavailable: '剛才無法頒發倉庫的憑證；將再次嘗試執行。',
+    repoAccessUnavailable: '暫時無法存取倉庫。',
     repoAccessDenied: '應用程式不會為正在執行的儲存庫之一頒發憑證。',
     unknown: '執行失敗。',
   },

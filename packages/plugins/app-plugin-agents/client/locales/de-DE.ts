@@ -606,7 +606,7 @@ const deDE: LocaleResource<typeof enUS> = {
     prepareNetwork:
       'Die Laufzeit konnte den Repository-Host während der Vorbereitung der Ausführung nicht erreichen.',
     repoAccessUnavailable:
-      'Der Berechtigungsnachweis für ein Repository konnte derzeit nicht ausgestellt werden; Der Lauf wird erneut versucht.',
+      'Der Repository-Zugriff ist vorübergehend nicht verfügbar.',
     repoAccessDenied:
       'Die Anwendung stellt keine Anmeldeinformationen für eines der Repositorys des Laufs aus.',
     unknown: 'Der Lauf ist fehlgeschlagen.',

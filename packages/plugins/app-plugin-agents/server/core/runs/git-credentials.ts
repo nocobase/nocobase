@@ -34,7 +34,7 @@ import {
 } from './extensions.js';
 import type { SubjectRegistry } from './ports.js';
 import type { RunnerReports } from './lifecycle.js';
-import { findRunRecord, toRun, type RunRecord } from './run.store.js';
+import { findRunRecord, runsRepo, toRun, type RunRecord } from './run.store.js';
 
 /** How long the server waits for the application to issue a credential before answering `REPO_ACCESS_UNAVAILABLE`. */
 export const ISSUE_TIMEOUT_MS = 15_000;
@@ -189,7 +189,24 @@ export function createGitCredentialService(
       }
       return null;
     } catch (error) {
-      if (error instanceof RepoAccessError)
+      if (error instanceof RepoAccessError) {
+        if (error.kind === 'denied' && typeof error.params.code === 'string') {
+          await runsRepo(deps.tx.read()).updateMany({
+            filter: (f) =>
+              f.and([
+                f.string('id').eq(run.id),
+                f.string('runnerId').eq(runner.id),
+                f.number('attempt').eq(request.attempt),
+                f.string('actorUserId').eq(run.actorUserId),
+                f.or([
+                  f.string('status').eq('running'),
+                  f.string('status').eq('dispatched'),
+                ]),
+                f.date('leaseExpiresAt').after(deps.clock.now()),
+              ]),
+            values: { failureParams: error.params },
+          });
+        }
         throw new ProtocolError(
           error.kind === 'denied'
             ? 'REPO_ACCESS_DENIED'
@@ -197,6 +214,7 @@ export function createGitCredentialService(
           error.message,
           { url: request.url },
         );
+      }
       deps.onError?.(
         `Agents could not issue a repository credential for run ${run.id}.`,
         error,

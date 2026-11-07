@@ -611,7 +611,7 @@ const esES: LocaleResource<typeof enUS> = {
     prepareNetwork:
       'El tiempo de ejecución no pudo alcanzar el host del repositorio mientras preparaba la ejecución.',
     repoAccessUnavailable:
-      'La credencial de un repositorio no se pudo emitir en este momento; La ejecución se intentará nuevamente.',
+      'El acceso al repositorio no está disponible temporalmente.',
     repoAccessDenied:
       'La aplicación no emitirá una credencial para uno de los repositorios de la ejecución.',
     unknown: 'La ejecución falló.',

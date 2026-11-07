@@ -586,8 +586,7 @@ const idID: LocaleResource<typeof enUS> = {
       'Tidak ada kebijakan runtime yang memungkinkan hal ini dilakukan.',
     prepareNetwork:
       'Runtime tidak dapat mencapai host repositori saat mempersiapkan proses.',
-    repoAccessUnavailable:
-      'Kredensial repositori tidak dapat diterbitkan saat ini; lari akan dicoba lagi.',
+    repoAccessUnavailable: 'Akses repositori untuk sementara tidak tersedia.',
     repoAccessDenied:
       'Aplikasi tidak akan mengeluarkan kredensial untuk salah satu repositori proses.',
     unknown: 'Pelariannya gagal.',

@@ -234,6 +234,8 @@ export interface RepoAccessContext {
   readonly claim: ClaimContext;
   /** The run's checkouts, as the runner receives them. */
   readonly repos: readonly RepoDir[];
+  /** The subject assembled this run for reading only. */
+  readonly readOnly?: boolean;
   /**
    * Whether the runner asks for credentials on demand (the `gitCredentials` feature). Then a provider that implements
    * `issue` answers `onDemand` with the URLs it issues for, and no `credentials`.
@@ -292,7 +294,11 @@ export class RepoAccessError extends Error {
   override name = 'RepoAccessError';
   readonly kind: 'unavailable' | 'denied';
 
-  constructor(kind: 'unavailable' | 'denied', message: string) {
+  constructor(
+    kind: 'unavailable' | 'denied',
+    message: string,
+    public readonly params: Readonly<Record<string, unknown>> = {},
+  ) {
     super(message);
     this.kind = kind;
   }

@@ -583,8 +583,7 @@ const viVN: LocaleResource<typeof enUS> = {
       'Không có chính sách nào của thời gian chạy cho phép nó thực hiện công việc này.',
     prepareNetwork:
       'Thời gian chạy không thể tiếp cận máy chủ lưu trữ trong khi chuẩn bị chạy.',
-    repoAccessUnavailable:
-      'Chứng chỉ của kho lưu trữ không thể được cấp ngay bây giờ; việc chạy sẽ được thử lại.',
+    repoAccessUnavailable: 'Tạm thời không thể truy cập kho mã.',
     repoAccessDenied:
       'Ứng dụng sẽ không cấp thông tin xác thực cho một trong các kho lưu trữ của lần chạy.',
     unknown: 'Việc chạy không thành công.',
