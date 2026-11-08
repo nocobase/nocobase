@@ -52,6 +52,8 @@ const pages = {
       subtaskAdded: '添加了子任务',
       dependencyAdded: '添加了依赖',
       dependencyRemoved: '移除了依赖',
+      relationAdded: '添加了关联',
+      relationRemoved: '移除了关联',
       stageChanged: '修改了阶段',
       autoMoveSkipped: '没能自动改为',
     },

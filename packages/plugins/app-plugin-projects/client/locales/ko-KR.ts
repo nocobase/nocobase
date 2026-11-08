@@ -55,6 +55,8 @@ const koKR: LocaleResource<typeof enUS> = {
       subtaskAdded: '하위 작업을 추가했습니다',
       dependencyAdded: '다음에 대한 의존성을 추가했습니다',
       dependencyRemoved: '다음에 대한 의존성을 삭제했습니다',
+      relationAdded: '다음과의 관련을 추가했습니다',
+      relationRemoved: '다음과의 관련을 삭제했습니다',
       stageChanged: '단계를 변경했습니다',
       autoMoveSkipped: '작업을 다음으로 자동 이동할 수 없었습니다',
     },
