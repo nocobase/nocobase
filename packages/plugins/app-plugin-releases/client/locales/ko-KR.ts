@@ -550,11 +550,13 @@ const koKR: LocaleResource<typeof enUS> = {
       failed:
         '공유 호스트가 다시 시작된 후 앱을 복원하지 못했습니다. 백그라운드에서 다시 시도합니다.',
       view: '호스트 사용 현황 보기',
-      running: '앱 {{limit}}개 중 {{running}}개 실행 중이거나 시작 중',
-      runningUnlimited: '앱 {{running}}개 실행 중이거나 시작 중 · 제한 없음',
       deployed: '배포됨: {{count}}',
-      heap: '힙 {{used}} / {{limit}}',
-      process: '프로세스 메모리 {{rss}} · 서버에 {{available}} 남음',
+      appsLabel: '실행 또는 시작 중',
+      heapLabel: '힙',
+      processLabel: '프로세스 메모리',
+      ratio: '{{used}} / {{limit}}',
+      runningUnlimited: '{{running}} · 제한 없음',
+      available: '서버에 {{available}} 남음',
       wholeHost:
         '이 호스트 전체(모든 환경 포함)의 합계이며, 메모리는 앱별로 나눌 수 없습니다.',
       viewApps: '실행 중이거나 시작 중인 앱 {{count}}개 보기',

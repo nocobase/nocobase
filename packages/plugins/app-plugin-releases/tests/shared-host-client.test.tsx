@@ -265,20 +265,39 @@ describe('shared app host', () => {
     expect(
       scoped.getByText('Environments on it: Preview, Staging'),
     ).toBeTruthy();
-    // Running against the limit, the heap and the process memory, each as a bar.
-    expect(scoped.getByText('3 of 6 apps running or starting')).toBeTruthy();
-    expect(scoped.getByText('Heap 900.0 MiB of 2048.0 MiB')).toBeTruthy();
-    expect(
-      scoped.getByText(
-        'Process memory 1536.0 MiB · 3072.0 MiB still available on the server',
+    // Three metrics built alike — a short label, `used / limit`, a bar — so they line up; no `.0` in the numbers.
+    const metrics = [
+      ...card.querySelectorAll<HTMLElement>('[data-slot="shared-host-metric"]'),
+    ].map((metric) =>
+      [...metric.querySelectorAll(':scope > div:first-child > span')].map(
+        (part) => part.textContent,
       ),
-    ).toBeTruthy();
-    expect(scoped.getAllByRole('progressbar')).toHaveLength(3);
+    );
+    expect(metrics).toEqual([
+      ['Running or starting', '3 / 6'],
+      ['Heap', '900 MiB / 2 GiB'],
+      ['Process memory', '1.5 GiB / 4.5 GiB'],
+    ]);
+    const bars = scoped.getAllByRole('progressbar');
+    expect(bars.map((bar) => bar.getAttribute('aria-label'))).toEqual([
+      'Running or starting',
+      'Heap',
+      'Process memory',
+    ]);
+    expect(bars.map((bar) => bar.getAttribute('aria-valuenow'))).toEqual([
+      '50',
+      String((900 / 2048) * 100),
+      String((1536 / 4608) * 100),
+    ]);
+    expect(bars.map((bar) => bar.getAttribute('aria-valuetext'))).toEqual([
+      '3 / 6',
+      '900 MiB / 2 GiB',
+      '1.5 GiB / 4.5 GiB',
+    ]);
+    // What the server has free is a side note, not part of a metric.
     expect(
-      scoped
-        .getAllByRole('progressbar')
-        .map((bar) => bar.getAttribute('aria-valuenow')),
-    ).toEqual(['50', String((900 / 2048) * 100), String((1536 / 4608) * 100)]);
+      scoped.getByText(/Deployed: 12 · 3 GiB still free on the server · /),
+    ).toBeTruthy();
     expect(scoped.getByText(NO_LIMIT_NOTE)).toBeTruthy();
     expect(scoped.getByText(/Deployed: 12/)).toBeTruthy();
     expect(scoped.getByText(/Old code is freed by restarting/)).toBeTruthy();
@@ -295,10 +314,13 @@ describe('shared app host', () => {
     await render('/release-environments', {
       hosts: [{ ...HOST, maxActive: null, memory: null }],
     });
-    expect(
-      await screen.findByText('3 apps running or starting · no limit'),
-    ).toBeTruthy();
+    expect(await screen.findByText('3 · no limit')).toBeTruthy();
+    expect(screen.getByText('Running or starting')).toBeTruthy();
+    // No bar to fill, but the metric keeps the same shape.
     expect(screen.queryByRole('progressbar')).toBeNull();
+    expect(
+      document.querySelectorAll('[data-slot="shared-host-metric"]'),
+    ).toHaveLength(1);
   });
 
   it('links a card to its running apps in the apps list, filtered there before the page is cut', async () => {
@@ -571,7 +593,9 @@ describe('shared app host', () => {
     });
     expect(await screen.findByText('共享应用宿主')).toBeTruthy();
     expect(screen.getByText('使用它的环境：Preview, Staging')).toBeTruthy();
-    expect(screen.getByText('3 / 6 个应用运行或启动中')).toBeTruthy();
+    expect(screen.getByText('运行或启动中')).toBeTruthy();
+    expect(screen.getByText('进程内存')).toBeTruthy();
+    expect(screen.getByText(/服务器还剩 3 GiB/)).toBeTruthy();
     expect(
       screen.getByText('这个宿主正在重启，恢复前它的应用会提示“稍后重试”。'),
     ).toBeTruthy();

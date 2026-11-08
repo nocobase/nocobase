@@ -580,14 +580,13 @@ const frFR: LocaleResource<typeof enUS> = {
       failed:
         'L’application n’a pas pu être restaurée après le redémarrage de son hôte partagé ; nouvel essai en arrière-plan.',
       view: 'Voir l’occupation de l’hôte',
-      running:
-        '{{running}} applications sur {{limit}} en cours d’exécution ou de démarrage',
-      runningUnlimited:
-        '{{running}} applications en cours d’exécution ou de démarrage · sans limite',
       deployed: 'Déployées : {{count}}',
-      heap: 'Tas {{used}} sur {{limit}}',
-      process:
-        'Mémoire du processus {{rss}} · {{available}} encore disponibles sur le serveur',
+      appsLabel: 'En cours ou en démarrage',
+      heapLabel: 'Tas',
+      processLabel: 'Mémoire du processus',
+      ratio: '{{used}} / {{limit}}',
+      runningUnlimited: '{{running}} · sans limite',
+      available: '{{available}} encore libres sur le serveur',
       wholeHost:
         'Totaux de tout l’hôte, tous ses environnements compris ; la mémoire ne se répartit pas entre ses applications.',
       viewApps:

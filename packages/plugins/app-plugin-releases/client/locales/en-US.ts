@@ -411,12 +411,13 @@ const ui = {
     failed:
       'The app could not be restored after its shared host restarted; retrying in the background.',
     view: 'View host usage',
-    running: '{{running}} of {{limit}} apps running or starting',
-    runningUnlimited: '{{running}} apps running or starting · no limit',
     deployed: 'Deployed: {{count}}',
-    heap: 'Heap {{used}} of {{limit}}',
-    process:
-      'Process memory {{rss}} · {{available}} still available on the server',
+    appsLabel: 'Running or starting',
+    heapLabel: 'Heap',
+    processLabel: 'Process memory',
+    ratio: '{{used}} / {{limit}}',
+    runningUnlimited: '{{running}} · no limit',
+    available: '{{available}} still free on the server',
     wholeHost:
       'Totals of the whole host, every environment on it included; memory cannot be divided among its apps.',
     viewApps: 'View {{count}} running or starting apps',

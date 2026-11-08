@@ -13,7 +13,7 @@ import { Link } from 'react-router';
 import { ACCESS_NAMESPACE } from '../../shared/access.js';
 import type { AppSummary, SharedHostView } from '../../shared/releases.js';
 import { messageText } from '../lib/errors.js';
-import { formatSize } from '../lib/format.js';
+import { formatMemory } from '../lib/format.js';
 import { useReleasesPaths } from '../lib/paths.js';
 import {
   hostAppsSearch,
@@ -29,7 +29,7 @@ import {
   CardHeader,
   CardTitle,
 } from './ui/card.js';
-import { Progress, ProgressLabel, ProgressValue } from './ui/progress.js';
+import { Progress } from './ui/progress.js';
 
 /**
  * One line on an App's page while its shared host affects it, null otherwise. `canReadEnvironments` adds the link to
@@ -68,24 +68,46 @@ export function SharedHostNotice({
   );
 }
 
+/**
+ * One of the card's metrics, all built alike so their bars line up: a short label and its value on one line (the label
+ * truncates rather than wrapping), then the bar. Without a `max` (no limit) a blank track keeps the line's height.
+ */
 function Meter({
   label,
   value,
+  used,
   max,
 }: {
   readonly label: string;
-  readonly value: number;
-  readonly max: number;
+  /** What the value reads, such as `900 MiB / 2 GiB`. */
+  readonly value: string;
+  readonly used: number;
+  readonly max: number | null;
 }): ReactElement {
+  const head = (
+    <div className='flex min-w-0 items-baseline justify-between gap-3 text-sm'>
+      <span className='min-w-0 truncate text-muted-foreground'>{label}</span>
+      <span className='shrink-0 font-medium whitespace-nowrap tabular-nums'>
+        {value}
+      </span>
+    </div>
+  );
+  if (!max)
+    return (
+      <div className='grid gap-1.5' data-slot='shared-host-metric'>
+        {head}
+        <div className='h-1 rounded-full bg-muted' aria-hidden />
+      </div>
+    );
   return (
     <Progress
-      value={max > 0 ? Math.min(100, (value / max) * 100) : 0}
-      className='gap-1.5'
+      value={Math.min(100, (used / max) * 100)}
+      getAriaValueText={() => value}
+      aria-label={label}
+      className='grid gap-1.5'
+      data-slot='shared-host-metric'
     >
-      <ProgressLabel className='text-sm font-normal tabular-nums'>
-        {label}
-      </ProgressLabel>
-      <ProgressValue className='sr-only' />
+      {head}
     </Progress>
   );
 }
@@ -119,45 +141,56 @@ export function SharedHostSection({
         </CardDescription>
       </CardHeader>
       <CardContent className='space-y-4'>
-        <div className='grid gap-4 md:grid-cols-3'>
-          {host.maxActive ? (
-            <Meter
-              label={t('ui.sharedHost.running', {
-                running: host.running,
-                limit: host.maxActive,
-              })}
-              value={host.running}
-              max={host.maxActive}
-            />
-          ) : (
-            <p className='text-sm tabular-nums'>
-              {t('ui.sharedHost.runningUnlimited', { running: host.running })}
-            </p>
-          )}
+        <div className='grid gap-x-6 gap-y-4 sm:grid-cols-2 lg:grid-cols-3'>
+          <Meter
+            label={t('ui.sharedHost.appsLabel')}
+            value={
+              host.maxActive
+                ? t('ui.sharedHost.ratio', {
+                    used: host.running,
+                    limit: host.maxActive,
+                  })
+                : t('ui.sharedHost.runningUnlimited', { running: host.running })
+            }
+            used={host.running}
+            max={host.maxActive}
+          />
           {memory ? (
             <>
               <Meter
-                label={t('ui.sharedHost.heap', {
-                  used: formatSize(memory.heapUsed),
-                  limit: formatSize(memory.heapLimit),
+                label={t('ui.sharedHost.heapLabel')}
+                value={t('ui.sharedHost.ratio', {
+                  used: formatMemory(memory.heapUsed),
+                  limit: formatMemory(memory.heapLimit),
                 })}
-                value={memory.heapUsed}
+                used={memory.heapUsed}
                 max={memory.heapLimit}
               />
+              {/* What the process uses against what it could reach: its own memory plus what the server has free. */}
               <Meter
-                label={t('ui.sharedHost.process', {
-                  rss: formatSize(memory.rss),
-                  available: formatSize(memory.available),
+                label={t('ui.sharedHost.processLabel')}
+                value={t('ui.sharedHost.ratio', {
+                  used: formatMemory(memory.rss),
+                  limit: formatMemory(memory.rss + memory.available),
                 })}
-                value={memory.rss}
+                used={memory.rss}
                 max={memory.rss + memory.available}
               />
             </>
           ) : null}
         </div>
         <p className='text-xs text-muted-foreground'>
-          {t('ui.sharedHost.deployed', { count: host.deployed })} ·{' '}
-          {t('ui.sharedHost.wholeHost')}
+          {[
+            t('ui.sharedHost.deployed', { count: host.deployed }),
+            ...(memory
+              ? [
+                  t('ui.sharedHost.available', {
+                    available: formatMemory(memory.available),
+                  }),
+                ]
+              : []),
+            t('ui.sharedHost.wholeHost'),
+          ].join(' · ')}
         </p>
         {host.recycling ? (
           <Alert role='status' data-slot='shared-host-recycling'>

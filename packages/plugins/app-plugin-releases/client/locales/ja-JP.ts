@@ -568,11 +568,13 @@ const jaJP: LocaleResource<typeof enUS> = {
       failed:
         '共有ホストの再起動後にアプリを復元できませんでした。バックグラウンドで再試行しています。',
       view: 'ホストの使用状況を見る',
-      running: '{{limit}} 個中 {{running}} 個のアプリが実行中または起動中',
-      runningUnlimited: '{{running}} 個のアプリが実行中または起動中 · 上限なし',
       deployed: 'デプロイ済み：{{count}}',
-      heap: 'ヒープ {{used}} / {{limit}}',
-      process: 'プロセスメモリ {{rss}} · サーバーの空き {{available}}',
+      appsLabel: '実行中・起動中',
+      heapLabel: 'ヒープ',
+      processLabel: 'プロセスメモリ',
+      ratio: '{{used}} / {{limit}}',
+      runningUnlimited: '{{running}} · 上限なし',
+      available: 'サーバーの空き {{available}}',
       wholeHost:
         'ホスト全体（上のすべての環境を含む）の合計です。メモリはアプリごとに分けられません。',
       viewApps: '実行中または起動中の {{count}} 個のアプリを見る',

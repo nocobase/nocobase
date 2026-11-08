@@ -572,13 +572,13 @@ const idID: LocaleResource<typeof enUS> = {
       failed:
         'Aplikasi tidak dapat dipulihkan setelah host bersamanya dimulai ulang; dicoba lagi di latar belakang.',
       view: 'Lihat penggunaan host',
-      running:
-        '{{running}} dari {{limit}} aplikasi berjalan atau sedang dimulai',
-      runningUnlimited:
-        '{{running}} aplikasi berjalan atau sedang dimulai · tanpa batas',
       deployed: 'Di-deploy: {{count}}',
-      heap: 'Heap {{used}} dari {{limit}}',
-      process: 'Memori proses {{rss}} · {{available}} masih tersedia di server',
+      appsLabel: 'Berjalan atau dimulai',
+      heapLabel: 'Heap',
+      processLabel: 'Memori proses',
+      ratio: '{{used}} / {{limit}}',
+      runningUnlimited: '{{running}} · tanpa batas',
+      available: '{{available}} masih kosong di server',
       wholeHost:
         'Total seluruh host, termasuk semua lingkungan di dalamnya; memori tidak bisa dibagi per aplikasi.',
       viewApps: 'Lihat {{count}} aplikasi yang berjalan atau sedang dimulai',

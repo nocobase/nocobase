@@ -573,13 +573,13 @@ const viVN: LocaleResource<typeof enUS> = {
       failed:
         'Không thể khôi phục ứng dụng sau khi máy chủ dùng chung khởi động lại; đang thử lại ở chế độ nền.',
       view: 'Xem mức sử dụng máy chủ',
-      running:
-        '{{running}} trên {{limit}} ứng dụng đang chạy hoặc đang khởi động',
-      runningUnlimited:
-        '{{running}} ứng dụng đang chạy hoặc đang khởi động · không giới hạn',
       deployed: 'Đã triển khai: {{count}}',
-      heap: 'Heap {{used}} / {{limit}}',
-      process: 'Bộ nhớ tiến trình {{rss}} · máy chủ còn {{available}}',
+      appsLabel: 'Đang chạy hoặc khởi động',
+      heapLabel: 'Heap',
+      processLabel: 'Bộ nhớ tiến trình',
+      ratio: '{{used}} / {{limit}}',
+      runningUnlimited: '{{running}} · không giới hạn',
+      available: 'Máy chủ còn trống {{available}}',
       wholeHost:
         'Tổng của cả máy chủ, gồm mọi môi trường trên đó; không thể chia bộ nhớ cho từng ứng dụng.',
       viewApps: 'Xem {{count}} ứng dụng đang chạy hoặc đang khởi động',

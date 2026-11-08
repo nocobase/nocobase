@@ -576,13 +576,13 @@ const deDE: LocaleResource<typeof enUS> = {
       failed:
         'Die App konnte nach dem Neustart ihres gemeinsamen Hosts nicht wiederhergestellt werden; neuer Versuch im Hintergrund.',
       view: 'Host-Auslastung ansehen',
-      running: '{{running}} von {{limit}} Apps laufen oder starten',
-      runningUnlimited:
-        '{{running}} Apps laufen oder starten · keine Obergrenze',
       deployed: 'Bereitgestellt: {{count}}',
-      heap: 'Heap {{used}} von {{limit}}',
-      process:
-        'Prozessspeicher {{rss}} · {{available}} noch auf dem Server verfügbar',
+      appsLabel: 'Laufend oder startend',
+      heapLabel: 'Heap',
+      processLabel: 'Prozessspeicher',
+      ratio: '{{used}} / {{limit}}',
+      runningUnlimited: '{{running}} · keine Obergrenze',
+      available: '{{available}} noch frei auf dem Server',
       wholeHost:
         'Summen des gesamten Hosts mit allen Umgebungen darauf; der Speicher lässt sich nicht auf einzelne Apps aufteilen.',
       viewApps: '{{count}} laufende oder startende Apps ansehen',

@@ -580,13 +580,13 @@ const esES: LocaleResource<typeof enUS> = {
       failed:
         'La app no se pudo restaurar tras reiniciarse su host compartido; se reintenta en segundo plano.',
       view: 'Ver uso del host',
-      running: '{{running}} de {{limit}} apps en ejecución o iniciándose',
-      runningUnlimited:
-        '{{running}} apps en ejecución o iniciándose · sin límite',
       deployed: 'Desplegadas: {{count}}',
-      heap: 'Heap {{used}} de {{limit}}',
-      process:
-        'Memoria del proceso {{rss}} · {{available}} aún disponibles en el servidor',
+      appsLabel: 'En ejecución o iniciándose',
+      heapLabel: 'Heap',
+      processLabel: 'Memoria del proceso',
+      ratio: '{{used}} / {{limit}}',
+      runningUnlimited: '{{running}} · sin límite',
+      available: '{{available}} aún libres en el servidor',
       wholeHost:
         'Totales de todo el host, con todos sus entornos; la memoria no se puede repartir entre sus apps.',
       viewApps: 'Ver {{count}} apps en ejecución o iniciándose',
