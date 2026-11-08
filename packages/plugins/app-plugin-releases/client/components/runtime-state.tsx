@@ -1,5 +1,5 @@
 /**
- * An App's runtime state as the Apps list shows it: a tag with the runtime alone (a deployment in progress is marked
+ * An App's runtime state as an environment's Apps show it: a tag with the runtime alone (a deployment in progress is marked
  * beside it), and why it is in that state — what holds it on its runtime, what its start waits for, its error and its
  * last visit — on hover or focus, and on a tap where there is no hover.
  */

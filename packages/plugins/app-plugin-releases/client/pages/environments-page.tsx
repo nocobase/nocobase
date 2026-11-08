@@ -5,6 +5,7 @@
  * toasts. Below the list, each app host environments share is shown once (`components/shared-host.tsx`); an App's page
  * links to its host's block by its anchor.
  */
+import { useTranslation } from '@nocobase/i18n/client';
 import type { ColumnDef } from '@tanstack/react-table';
 import {
   ArrowRightIcon,
@@ -12,11 +13,13 @@ import {
   PlugZapIcon,
   PlusIcon,
   ServerIcon,
+  ShieldXIcon,
   Trash2Icon,
 } from 'lucide-react';
 import { useEffect, useState, type ReactElement, type ReactNode } from 'react';
 import { Link, useLocation, useNavigate, useOutlet } from 'react-router';
 
+import { ACCESS_NAMESPACE } from '../../shared/access.js';
 import type {
   EnvironmentListItem,
   EnvironmentRecord,
@@ -41,7 +44,13 @@ import {
 import { useDriverNames } from '../hooks/use-driver-names.js';
 import { useEnvironmentCheck } from '../hooks/use-environment-check.js';
 import { useNotify } from '../hooks/use-notify.js';
-import { useLoad, useMe, useReleasesApi } from '../hooks/use-releases.js';
+import {
+  useLoad,
+  useMe,
+  useMeLoad,
+  useReleasesApi,
+} from '../hooks/use-releases.js';
+import { canEnterEnvironments } from '../lib/permissions.js';
 
 /** The page's heading, when the application that mounts it names the page in its own words. */
 export interface EnvironmentsPageProps {
@@ -53,6 +62,34 @@ export default function EnvironmentsPage(
   props: EnvironmentsPageProps,
 ): ReactElement {
   const outlet = useOutlet();
+  const me = useMeLoad();
+  const { t } = useTranslation(ACCESS_NAMESPACE);
+  // Its route declares no grant (`routes.ts`): a route names one, and this page opens to either of two, as the server
+  // reads environments for either (`EnvironmentService.requireReader`). So the page decides, for itself and the
+  // environment's page below it.
+  if (!me.data)
+    return (
+      <PageContainer>
+        {me.error ? (
+          <LoadError
+            title={t('ui.environments.loadFailed')}
+            error={me.error}
+            onRetry={me.reload}
+          />
+        ) : (
+          <ListSkeleton />
+        )}
+      </PageContainer>
+    );
+  if (!canEnterEnvironments(me.data))
+    return (
+      <PageContainer>
+        <EmptyState
+          icon={<ShieldXIcon />}
+          title={t('ui.errors.reasons.FORBIDDEN')}
+        />
+      </PageContainer>
+    );
   if (outlet) return <>{outlet}</>;
   return <EnvironmentsList {...props} />;
 }
@@ -66,8 +103,10 @@ export function EnvironmentsList({
   const notify = useNotify();
   const navigate = useNavigate();
   const canManage = me.permissions.settings['rel.environments/manage'];
-  // The Apps list needs its page and the `view` action on some App, as the server checks both.
-  const canListApps =
+  // The page is open to App readers too (they list and create Apps here); checking an environment needs the setting.
+  const canRead = me.permissions.settings['rel.environments/read'];
+  // An environment's Apps are read from `/apps`, which needs the Apps page and the `view` action on some App.
+  const canViewApps =
     me.permissions.pages['rel-apps'] &&
     me.permissions.scopes['rel.apps/view'] !== 'none';
   const environments = useLoad(
@@ -211,10 +250,12 @@ export function EnvironmentsList({
                 {t('ui.environments.edit')}
               </DropdownMenuItem>
             ) : null}
-            <DropdownMenuItem onClick={() => void check(row.original)}>
-              <PlugZapIcon />
-              {t('ui.environments.check')}
-            </DropdownMenuItem>
+            {canRead ? (
+              <DropdownMenuItem onClick={() => void check(row.original)}>
+                <PlugZapIcon />
+                {t('ui.environments.check')}
+              </DropdownMenuItem>
+            ) : null}
             {canManage ? (
               <>
                 <DropdownMenuSeparator />
@@ -288,7 +329,7 @@ export function EnvironmentsList({
         <SharedHostSection
           key={host.id}
           host={host}
-          canListApps={canListApps}
+          canViewApps={canViewApps}
         />
       ))}
       <Dialog open={adding} onOpenChange={setAdding}>

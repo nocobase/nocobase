@@ -151,13 +151,10 @@ const ptBR: LocaleResource<typeof enUS> = {
   },
   ui: {
     nav: {
-      apps: 'Aplicativos',
       environments: 'Implantar ambientes',
     },
     apps: {
       title: 'Aplicativos',
-      description: 'Aplicativos, suas versões e onde são implantados.',
-      search: 'Pesquise por ID ou nome',
       create: 'Criar aplicativo',
       id: 'ID do aplicativo',
       name: 'Nome',
@@ -168,26 +165,16 @@ const ptBR: LocaleResource<typeof enUS> = {
       labels: 'Etiquetas',
       loadFailed: 'Não foi possível carregar os aplicativos.',
       loadOneFailed: 'Não foi possível carregar o aplicativo.',
-      emptyTitle: 'Nenhum aplicativo ainda',
-      emptyNoAccess: 'Peça a um administrador para criar um aplicativo.',
-      emptyDescription:
-        'Crie um aplicativo, carregue uma versão e implante-o em um ambiente.',
-      noResults: 'Nenhum aplicativo corresponde à pesquisa.',
       created: '{{name}} criado.',
       createDescription:
         'Um aplicativo é implantado em um ambiente; seus lançamentos são carregados posteriormente.',
       idHint:
         'Letras, dígitos, sublinhados e hífens; parte do seu endereço. Não pode mudar mais tarde.',
-      noEnvironment: 'Nenhum ambiente ainda',
       lastAccess: 'Última visita',
       stateFilter: 'Estado',
       anyState: 'Qualquer estado',
-      filteredEnvironments: 'Ambientes: {{names}}',
       clearFilters: 'Limpar filtros',
       noMatches: 'Nenhum app corresponde aos filtros.',
-      page: 'Página {{page}} de {{pages}}',
-      previousPage: 'Página anterior',
-      nextPage: 'Próxima página',
       runStates: {
         running: 'Em execução',
         starting: 'Iniciando',
@@ -197,6 +184,9 @@ const ptBR: LocaleResource<typeof enUS> = {
         failed: 'Com falha',
         unknown: 'Desconhecido',
       },
+      page: 'Página {{page}} de {{pages}}',
+      previousPage: 'Página anterior',
+      nextPage: 'Próxima página',
     },
     advanced: 'Avançado (opcional)',
     labels: {
@@ -589,8 +579,8 @@ const ptBR: LocaleResource<typeof enUS> = {
       available: '{{available}} ainda livres no servidor',
       wholeHost:
         'Totais do host inteiro, com todos os ambientes nele; a memória não pode ser dividida entre os apps.',
-      viewApps: 'Ver {{count}} apps em execução ou iniciando',
       viewAppsNote: 'Mostra apenas os apps que você pode ver.',
+      byEnvironment: 'Em execução ou iniciando, por ambiente:',
     },
     runtime: {
       holds: {

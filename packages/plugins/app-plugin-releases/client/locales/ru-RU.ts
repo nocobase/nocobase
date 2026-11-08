@@ -149,13 +149,10 @@ const ruRU: LocaleResource<typeof enUS> = {
   },
   ui: {
     nav: {
-      apps: 'Приложения',
       environments: 'Среды развёртывания',
     },
     apps: {
       title: 'Приложения',
-      description: 'Приложения, их релизы и места развёртывания.',
-      search: 'Поиск по ID или имени',
       create: 'Создать приложение',
       id: 'ID приложения',
       name: 'Имя',
@@ -166,26 +163,16 @@ const ruRU: LocaleResource<typeof enUS> = {
       labels: 'Метки',
       loadFailed: 'Не удалось загрузить приложения.',
       loadOneFailed: 'Не удалось загрузить приложение.',
-      emptyTitle: 'Приложений пока нет',
-      emptyNoAccess: 'Попросите администратора создать приложение.',
-      emptyDescription:
-        'Создайте приложение, затем загрузите релиз и разверните его в среде.',
-      noResults: 'Нет приложений, подходящих под поиск.',
       created: '{{name}} создано.',
       createDescription:
         'Приложение развёртывается в одной среде; его релизы загружаются позже.',
       idHint:
         'Буквы, цифры, подчёркивания и дефисы; входит в адрес. Позже изменить нельзя.',
-      noEnvironment: 'Сред пока нет',
       lastAccess: 'Последнее посещение',
       stateFilter: 'Состояние',
       anyState: 'Любое состояние',
-      filteredEnvironments: 'Среды: {{names}}',
       clearFilters: 'Сбросить фильтры',
       noMatches: 'Нет приложений, подходящих под фильтры.',
-      page: 'Страница {{page}} из {{pages}}',
-      previousPage: 'Предыдущая страница',
-      nextPage: 'Следующая страница',
       runStates: {
         running: 'Работает',
         starting: 'Запускается',
@@ -195,6 +182,9 @@ const ruRU: LocaleResource<typeof enUS> = {
         failed: 'Ошибка',
         unknown: 'Неизвестно',
       },
+      page: 'Страница {{page}} из {{pages}}',
+      previousPage: 'Предыдущая страница',
+      nextPage: 'Следующая страница',
     },
     advanced: 'Дополнительно (необязательно)',
     labels: {
@@ -591,8 +581,8 @@ const ruRU: LocaleResource<typeof enUS> = {
       available: 'На сервере свободно ещё {{available}}',
       wholeHost:
         'Итоги всего хоста со всеми его средами; память нельзя разделить между приложениями.',
-      viewApps: 'Посмотреть {{count}} работающих или запускающихся приложений',
       viewAppsNote: 'Показаны только приложения, которые вам доступны.',
+      byEnvironment: 'Работают или запускаются, по средам:',
     },
     runtime: {
       holds: {

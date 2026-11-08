@@ -152,13 +152,10 @@ const idID: LocaleResource<typeof enUS> = {
   },
   ui: {
     nav: {
-      apps: 'Aplikasi',
       environments: 'Menyebarkan lingkungan',
     },
     apps: {
       title: 'Aplikasi',
-      description: 'Aplikasi, rilisnya, dan di mana penerapannya.',
-      search: 'Cari berdasarkan ID atau nama',
       create: 'Buat aplikasi',
       id: 'ID Aplikasi',
       name: 'Nama',
@@ -169,26 +166,16 @@ const idID: LocaleResource<typeof enUS> = {
       labels: 'Label',
       loadFailed: 'Tidak dapat memuat aplikasi.',
       loadOneFailed: 'Tidak dapat memuat aplikasi.',
-      emptyTitle: 'Belum ada aplikasi',
-      emptyNoAccess: 'Minta administrator untuk membuat aplikasi.',
-      emptyDescription:
-        'Buat aplikasi, lalu unggah rilis dan terapkan ke suatu lingkungan.',
-      noResults: 'Tidak ada aplikasi yang cocok dengan pencarian.',
       created: '{{name}} dibuat.',
       createDescription:
         'Sebuah aplikasi diterapkan ke satu lingkungan; rilisnya diunggah setelahnya.',
       idHint:
         'Huruf, angka, garis bawah dan tanda hubung; bagian dari alamatnya. Itu tidak bisa diubah nanti.',
-      noEnvironment: 'Belum ada lingkungan',
       lastAccess: 'Kunjungan terakhir',
       stateFilter: 'Status',
       anyState: 'Semua status',
-      filteredEnvironments: 'Lingkungan: {{names}}',
       clearFilters: 'Hapus filter',
       noMatches: 'Tidak ada aplikasi yang cocok dengan filter.',
-      page: 'Halaman {{page}} dari {{pages}}',
-      previousPage: 'Halaman sebelumnya',
-      nextPage: 'Halaman berikutnya',
       runStates: {
         running: 'Berjalan',
         starting: 'Sedang dimulai',
@@ -198,6 +185,9 @@ const idID: LocaleResource<typeof enUS> = {
         failed: 'Gagal',
         unknown: 'Tidak diketahui',
       },
+      page: 'Halaman {{page}} dari {{pages}}',
+      previousPage: 'Halaman sebelumnya',
+      nextPage: 'Halaman berikutnya',
     },
     advanced: 'Tingkat Lanjut (opsional)',
     labels: {
@@ -581,8 +571,8 @@ const idID: LocaleResource<typeof enUS> = {
       available: '{{available}} masih kosong di server',
       wholeHost:
         'Total seluruh host, termasuk semua lingkungan di dalamnya; memori tidak bisa dibagi per aplikasi.',
-      viewApps: 'Lihat {{count}} aplikasi yang berjalan atau sedang dimulai',
       viewAppsNote: 'Hanya menampilkan aplikasi yang bisa Anda lihat.',
+      byEnvironment: 'Berjalan atau sedang dimulai, per lingkungan:',
     },
     runtime: {
       holds: {
