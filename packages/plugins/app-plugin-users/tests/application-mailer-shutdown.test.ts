@@ -111,7 +111,7 @@ it('drains real Auth, invitation bookkeeping and Notification Jobs, each closing
         file: { enabled: false },
         console: { enabled: false },
       },
-      jobs: { default: 'memory', memory: { adapter: 'memory' } },
+      jobs: { default: 'memory', backends: { memory: { adapter: 'memory' } } },
     },
   });
   const json = (body: object) => ({

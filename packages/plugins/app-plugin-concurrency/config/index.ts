@@ -26,7 +26,7 @@ export function defineConcurrencyConfig(
     ...definition,
     defaults: definition.defaults ?? {
       default: 'memory',
-      memory: { adapter: 'mutex' },
+      backends: { memory: { adapter: 'mutex' } },
     },
     env: { CONCURRENCY_DEFAULT: envString('default'), ...definition.env },
     validate: [

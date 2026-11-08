@@ -82,7 +82,7 @@ describe('host concurrency provider in a real Application', () => {
   it('injects the original token into two consumers that contend with Lock and Executor', async () => {
     const app = await application({
       default: 'memory',
-      memory: { adapter: 'mutex' },
+      backends: { memory: { adapter: 'mutex' } },
     });
     const references: ConcurrencyService[] = [];
     class First extends ServiceProvider<Application<AppConfig>> {
@@ -141,7 +141,7 @@ describe('host concurrency provider in a real Application', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     for (const value of [
       undefined,
-      { default: 'memory', memory: { adapter: 'mutex' } },
+      { default: 'memory', backends: { memory: { adapter: 'mutex' } } },
     ]) {
       const app = await application(value);
       // The provider's explicit option uses the application's deployment environment, not global process.env.

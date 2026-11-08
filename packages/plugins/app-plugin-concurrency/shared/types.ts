@@ -17,7 +17,7 @@ export type ConcurrencyConfigEntry = {
 }[keyof ConcurrencyAdapterConnections];
 export interface AppConcurrencyConfig {
   readonly default?: string;
-  readonly [key: string]: ConcurrencyConfigEntry | string | undefined;
+  readonly backends?: Readonly<Record<string, ConcurrencyConfigEntry>>;
 }
 export type ResolvedConcurrencyConfig = ConcurrencyConfigEntry & {
   readonly key: string;
