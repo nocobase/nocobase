@@ -43,19 +43,19 @@
   "imports": {
     "#components/*": {
       "development": "./client/components/*.js",
-      "default": "./dist/client/components/*.js"
+      "default": "./client/components/*.js"
     },
     "#hooks/*": {
       "development": "./client/hooks/*.js",
-      "default": "./dist/client/hooks/*.js"
+      "default": "./client/hooks/*.js"
     },
     "#lib/*": {
       "development": "./client/lib/*.js",
-      "default": "./dist/client/lib/*.js"
+      "default": "./client/lib/*.js"
     },
     "#extensions/*": {
       "development": "./client/extensions/*.js",
-      "default": "./dist/client/extensions/*.js"
+      "default": "./client/extensions/*.js"
     }
   },
   "files": [
