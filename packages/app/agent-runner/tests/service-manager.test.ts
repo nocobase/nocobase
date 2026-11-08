@@ -8,6 +8,7 @@ import {
 } from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
+import { spawn } from 'node:child_process';
 import {
   afterAll,
   afterEach,
@@ -28,8 +29,15 @@ import { readSettings, writeSettings } from '../src/lib/config.ts';
 import { runnerPaths } from '../src/lib/home.ts';
 import { readDaemonPid } from '../src/core/loop.ts';
 import { readLauncherPid } from '../src/core/launcher.ts';
-import { FakeServer } from './fake-server.ts';
-import { cli, cliEnv, registerRunner, removeDir, tempDir } from './helpers.ts';
+import { FakeServer, waitFor } from './fake-server.ts';
+import {
+  BIN,
+  cli,
+  cliEnv,
+  registerRunner,
+  removeDir,
+  tempDir,
+} from './helpers.ts';
 
 const root = tempDir('service-manager-');
 afterAll(() => removeDir(root));
@@ -164,6 +172,67 @@ describe('installed service migration', () => {
     ).toBe(false);
     expect(recorded()).toEqual([]);
   });
+
+  it.runIf(process.platform === 'linux')(
+    'runs despite a migration failure and retries migration on the next service start',
+    async () => {
+      const server = new FakeServer();
+      await server.listen();
+      const env = cliEnv(home, { HOME: home, NOCOBASE_RUNNER_SERVICE: '1' });
+      const paths = runnerPaths(home);
+      const plan = servicePlan({
+        paths,
+        command: [process.execPath, BIN],
+        label: 'com.example.retry-migration',
+        platform: 'linux',
+        home,
+        env: {},
+      });
+      const old = plan.content.replace('Restart=always', 'Restart=on-failure');
+      mkdirSync(path.dirname(plan.file), { recursive: true });
+      writeFileSync(plan.file, old);
+      try {
+        await registerRunner(server.url, env);
+        await writeSettings(
+          { ...(await readSettings(paths)), serviceLabel: plan.label },
+          paths,
+        );
+        for (const managerExit of ['1', '0']) {
+          const previousHeartbeats = server.lastHeartbeat();
+          const child = spawn(process.execPath, [BIN, 'service', 'run'], {
+            env: { ...env, TEST_MANAGER_EXIT: managerExit },
+            stdio: 'ignore',
+          });
+          const exited = new Promise((resolve) => child.once('exit', resolve));
+          try {
+            await waitFor(() => {
+              const heartbeat = server.lastHeartbeat();
+              return (
+                heartbeat !== undefined && heartbeat !== previousHeartbeats
+              );
+            });
+            expect(await readDaemonPid(paths)).toBeDefined();
+            expect(readFileSync(plan.file, 'utf8')).toBe(
+              managerExit === '1' ? old : plan.content,
+            );
+            expect(readFileSync(paths.daemonLog, 'utf8')).toContain(
+              'Service migration failed; continuing with the installed policy and retrying on the next start:',
+            );
+          } finally {
+            child.kill('SIGTERM');
+            await exited;
+          }
+        }
+        expect(recorded()).toEqual([
+          ['--user', 'daemon-reload'],
+          ['--user', 'daemon-reload'],
+        ]);
+      } finally {
+        await server.close();
+        removeDir(`${home}-work`);
+      }
+    },
+  );
 });
 
 describe('service stop command', () => {
@@ -295,7 +364,7 @@ describe('service stop command', () => {
     ]);
   });
 
-  it('keeps the independent migration job alive while replacing the runner job', async () => {
+  it('removes the independent migration job only after replacing the runner job', async () => {
     await restartService('com.example.migration', 'darwin', true);
     expect(recorded()).toEqual([
       ['bootout', `gui/${process.getuid?.() ?? 501}/com.example.migration`],
@@ -307,6 +376,7 @@ describe('service stop command', () => {
           'Library/LaunchAgents/com.example.migration.plist',
         ),
       ],
+      ['remove', '_nocobase-runner.reload.com.example.migration'],
     ]);
   });
 

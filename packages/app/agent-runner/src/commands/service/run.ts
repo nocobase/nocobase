@@ -12,12 +12,18 @@ export default class ServiceRun extends RunnerCommand {
     const log = new RotatingLog(this.paths.daemonLog);
     try {
       if (process.env[SERVICE_ENV] === '1') {
-        const { serviceLabel } = await readSettings(this.paths);
-        if (serviceLabel !== undefined) {
-          const migrated = await migrateService(serviceLabel, {
-            relaunch: selfCommand(),
-          });
-          if (migrated && process.platform === 'darwin') process.exit(0);
+        try {
+          const { serviceLabel } = await readSettings(this.paths);
+          if (serviceLabel !== undefined) {
+            const migrated = await migrateService(serviceLabel, {
+              relaunch: selfCommand(),
+            });
+            if (migrated && process.platform === 'darwin') process.exit(0);
+          }
+        } catch (error) {
+          log.write(
+            `Service migration failed; continuing with the installed policy and retrying on the next start: ${String(error)}\n`,
+          );
         }
       }
       const code = await runService({

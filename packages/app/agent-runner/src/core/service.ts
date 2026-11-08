@@ -405,6 +405,9 @@ export async function restartService(
         serviceFile(label, platform, os.homedir()),
       ],
     ]);
+    // Submitted jobs stay alive by default. Remove this job only after its replacement is loaded;
+    // removing it can terminate this process, so it must be the last operation.
+    if (fromMigration) await run('launchctl', ['remove', reloadLabel(label)]);
   } else if (platform === 'linux')
     await run('systemctl', ['--user', 'restart', systemdUnit(label)]);
   else
