@@ -1,7 +1,5 @@
 import { describe, expect, it } from 'vitest';
 
-import defaultManifest from '../../../../templates/app-template-default/package.json' with { type: 'json' };
-import examplesManifest from '../../../../templates/app-template-examples/package.json' with { type: 'json' };
 import {
   createCapabilityCatalog,
   entryContent,
@@ -10,27 +8,8 @@ import {
   GUIDE_GROUP_IDS,
   guideContent,
   searchableText,
-  type DependencyManifest,
 } from '../../shared/capability-guide/index.js';
-
-const LISTED_KERNEL = [
-  'concurrency',
-  'db',
-  'i18n',
-  'jobs',
-  'lifecycle',
-  'queue',
-  'realtime',
-];
-
-function declaredPlugins(manifest: DependencyManifest): string[] {
-  return Object.keys({
-    ...manifest.dependencies,
-    ...manifest.devDependencies,
-  })
-    .filter((name) => /app-plugin-/.test(name))
-    .sort();
-}
+import { SAMPLE_MANIFEST } from '../fixtures/capability-manifest.js';
 
 function blankStrings(value: unknown, path = ''): string[] {
   if (typeof value === 'string') return value.trim() ? [] : [path];
@@ -41,54 +20,42 @@ function blankStrings(value: unknown, path = ''): string[] {
 }
 
 describe('capability catalog', () => {
-  it.each([
-    ['Default', defaultManifest],
-    ['Examples', examplesManifest],
-  ] as const)(
-    'lists every plugin the %s template declares and the core modules introduced on their own',
-    (_name, manifest) => {
-      const { entries } = createCapabilityCatalog(manifest);
-      expect(
-        entries
-          .filter((entry) => entry.source === 'plugin')
-          .map((entry) => entry.packageName)
-          .sort(),
-      ).toEqual(declaredPlugins(manifest));
-      expect(
-        entries
-          .filter((entry) => entry.source === 'kernel')
-          .map((entry) => entry.name),
-      ).toEqual(LISTED_KERNEL);
-      for (const hidden of [
-        '@nocobase/app-client',
-        '@nocobase/app-server',
-        '@nocobase/service-provider',
-        '@nocobase/authorization',
-        '@nocobase/drive',
-      ])
-        expect(entries.map((entry) => entry.packageName)).not.toContain(hidden);
-      expect(entries.map((entry) => entry.name)).toEqual(
-        entries.map((entry) => entry.name).toSorted(),
-      );
-      expect(entries.map((entry) => entry.index)).toEqual(
-        entries.map((_entry, position) => position + 1),
-      );
-      // Every entry the templates list has its own wording; none falls back to the generic text.
-      expect(entries.filter((entry) => !entry.known)).toEqual([]);
-    },
-  );
+  it('lists every declared plugin and only the core modules introduced on their own, sorted and numbered', () => {
+    const { entries } = createCapabilityCatalog(SAMPLE_MANIFEST);
+    expect(
+      entries.map((entry) => [entry.index, entry.name, entry.source]),
+    ).toEqual([
+      [1, 'acme--app-plugin-crm', 'plugin'],
+      [2, 'app-plugin-authorization', 'plugin'],
+      [3, 'app-plugin-file', 'plugin'],
+      [4, 'app-plugin-lifecycle-example', 'plugin'],
+      [5, 'app-plugin-template-print', 'plugin'],
+      [6, 'db', 'kernel'],
+      [7, 'jobs', 'kernel'],
+      [8, 'lifecycle', 'kernel'],
+    ]);
+    const roles = Object.fromEntries(
+      entries.map((entry) => [entry.id, entry.role]),
+    );
+    expect(roles['app-plugin-lifecycle-example']).toBe('example');
+    expect(roles['app-plugin-template-print']).toBe('skill');
+    // Folded core modules show inside the plugin built on them.
+    expect(
+      entries.find((entry) => entry.id === 'app-plugin-file')?.covers,
+    ).toEqual(['@nocobase/drive']);
+    expect(
+      entries.find((entry) => entry.id === 'app-plugin-authorization')?.covers,
+    ).toEqual(['@nocobase/authorization']);
+  });
 
-  it('gives the two templates different catalogs, examples only where they are declared', () => {
-    const defaults = createCapabilityCatalog(defaultManifest).entries;
-    const examples = createCapabilityCatalog(examplesManifest).entries;
-    expect(defaults.filter((entry) => entry.role === 'example')).toEqual([]);
-    expect(
-      examples.filter((entry) => entry.role === 'example').length,
-    ).toBeGreaterThan(0);
-    expect(defaults.length).toBeLessThan(examples.length);
-    expect(
-      defaults.find((entry) => entry.id === 'app-plugin-file')?.related,
-    ).not.toContain('app-plugin-file-example');
+  it('links only related entries the application also lists', () => {
+    const catalog = createCapabilityCatalog(SAMPLE_MANIFEST);
+    const ids = new Set(catalog.entries.map((entry) => entry.id));
+    for (const entry of catalog.entries)
+      for (const related of entry.related) expect(ids.has(related)).toBe(true);
+    expect(catalog.find('app-plugin-file')?.related).not.toContain(
+      'app-plugin-file-example',
+    );
   });
 
   it('lists a declared plugin it has no wording for, with the generic wording', () => {
@@ -112,7 +79,7 @@ describe('capability catalog', () => {
 
   it('combines the source filter with keywords', () => {
     const content = guideContent('zh-CN');
-    const { entries } = createCapabilityCatalog(examplesManifest);
+    const { entries } = createCapabilityCatalog(SAMPLE_MANIFEST);
     const text = (entry: (typeof entries)[number]) =>
       searchableText(content, entry);
     const kernelFiles = filterCatalog(

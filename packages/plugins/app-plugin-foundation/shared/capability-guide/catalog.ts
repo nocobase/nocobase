@@ -58,7 +58,6 @@ export interface CatalogEntry {
   readonly demo?: string;
   readonly docs?: string;
   readonly featured: boolean;
-  readonly sourcePath?: string;
   readonly skills: readonly string[];
   readonly prompts: readonly string[];
   /** `false` for a declared plugin the guide has no wording for yet. */
@@ -120,7 +119,6 @@ export function createCapabilityCatalog(
         demo: definition?.demo,
         docs: definition?.docs,
         featured: definition?.featured === true,
-        sourcePath: definition?.sourcePath,
         skills: definition?.skills ?? [],
         prompts: definition?.prompts ?? ['main'],
         known: Boolean(definition),
@@ -179,7 +177,7 @@ export function docsUrl(path: string, locale: string): string {
   return `https://docs.nocobase.com${prefix}${path}`;
 }
 
-/** Source link for the developer reference. */
-export function sourceUrl(path: string): string {
-  return `https://github.com/nocobase/nocobase/tree/v3-develop/${path}`;
+/** The package's registry page, for the developer reference; it links its README and source repository. */
+export function packageUrl(packageName: string): string {
+  return `https://www.npmjs.com/package/${packageName}`;
 }

@@ -86,7 +86,7 @@ const zhCN: GuideContent = {
     reference: '开发者参考',
     packageName: '包名',
     skills: 'Agent 会读的 Skill',
-    source: '查看源码',
+    source: '查看包页面',
     missing: '当前应用没有这一项能力。',
   },
   home: {

@@ -89,7 +89,7 @@ const enUS: GuideContent = {
     reference: 'Developer reference',
     packageName: 'Package',
     skills: 'Skills the agent reads',
-    source: 'View source',
+    source: 'View the package',
     missing: 'This application does not provide this capability.',
   },
   home: {

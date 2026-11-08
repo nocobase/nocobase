@@ -30,6 +30,56 @@ function guideSearch(filter: GuideFilter): string {
   return value ? `?${value}` : '';
 }
 
+interface FilterState {
+  readonly filter: GuideFilter;
+  /** The URL search this state last matched. */
+  readonly url: string;
+  /** Searches this page requested that the URL has not shown yet, oldest first. */
+  readonly pending: readonly string[];
+}
+
+/**
+ * The filter shown on the page, kept in step with the URL in both directions. The page writes the URL as people type;
+ * navigation renders in a transition, so the URL can trail the typing for a moment, and each search the page itself
+ * requested is recognised when it arrives instead of resetting the box. Any other change of the URL, such as the
+ * browser's back button, replaces the filter with the one the URL carries.
+ */
+function useUrlFilter(params: URLSearchParams): {
+  readonly current: GuideFilter;
+  readonly request: (filter: GuideFilter) => void;
+} {
+  const fromUrl = readGuideFilter(params);
+  const url = guideSearch(fromUrl);
+  const [state, setState] = useState<FilterState>(() => ({
+    filter: fromUrl,
+    url,
+    pending: [],
+  }));
+  let current = state;
+  if (url !== state.url) {
+    const own = state.pending.indexOf(url);
+    current =
+      own >= 0
+        ? { ...state, url, pending: state.pending.slice(own + 1) }
+        : { filter: fromUrl, url, pending: [] };
+    setState(current);
+  }
+  return {
+    current: current.filter,
+    request: (filter) => {
+      const next = guideSearch(filter);
+      setState((previous) => ({
+        ...previous,
+        filter,
+        pending:
+          next === (previous.pending.at(-1) ?? previous.url)
+            ? previous.pending
+            : [...previous.pending, next],
+      }));
+    },
+  };
+}
+
 const SOURCE_FILTERS: readonly GuideSourceFilter[] = [
   'all',
   'kernel',
@@ -49,11 +99,9 @@ export function CapabilityGuidePage({
   const { entryId } = useParams();
   const [params, setParams] = useSearchParams();
   const { content } = useGuideContent();
-  // The URL carries the filter so that leaving for an entry and coming back restores it; this page reads it once when
-  // it mounts and then owns it, because the URL lags behind fast typing while the router navigates.
-  const [filter, setFilter] = useState(() => readGuideFilter(params));
-  const { source: activeSource, query } = filter;
-  const search = guideSearch(filter);
+  const filter = useUrlFilter(params);
+  const { source: activeSource, query } = filter.current;
+  const search = guideSearch(filter.current);
   const selected = entryId ? catalog.find(entryId) : undefined;
 
   const text = (entry: CatalogEntry): string => searchableText(content, entry);
@@ -70,8 +118,8 @@ export function CapabilityGuidePage({
   ) as Record<GuideSourceFilter, number>;
 
   function update(next: Partial<GuideFilter>): void {
-    const merged = { ...filter, ...next };
-    setFilter(merged);
+    const merged = { ...filter.current, ...next };
+    filter.request(merged);
     setParams(new URLSearchParams(guideSearch(merged)), { replace: true });
   }
 
@@ -105,7 +153,7 @@ export function CapabilityGuidePage({
                 key={source}
                 type='button'
                 role='tab'
-                aria-selected={filter.source === source}
+                aria-selected={activeSource === source}
                 onClick={() => update({ source })}
                 className='flex flex-1 items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground aria-selected:bg-background aria-selected:font-medium aria-selected:text-foreground aria-selected:shadow-sm'
               >
@@ -123,7 +171,7 @@ export function CapabilityGuidePage({
             />
             <input
               type='search'
-              value={filter.query}
+              value={query}
               onChange={(event) => update({ query: event.target.value })}
               placeholder={content.page.search}
               aria-label={content.page.search}

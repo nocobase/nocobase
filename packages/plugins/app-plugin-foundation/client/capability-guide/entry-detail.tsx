@@ -1,4 +1,4 @@
-import { copyText } from '@nocobase/app-client';
+import { copyText, useClientApplication } from '@nocobase/app-client';
 import { cn } from 'cn';
 import {
   ArrowLeft,
@@ -18,7 +18,7 @@ import {
   docsUrl,
   entryContent,
   entryPrerequisite,
-  sourceUrl,
+  packageUrl,
   type CapabilityCatalog,
   type CatalogEntry,
   type EntryContent,
@@ -51,6 +51,7 @@ export function EntryDetail({
   readonly search: string;
 }): ReactElement {
   const { locale } = useGuideContent();
+  const routes = useRegisteredPaths();
   const back = (
     <Link
       to={backTo}
@@ -71,6 +72,7 @@ export function EntryDetail({
     );
 
   const text = entryContent(content, entry);
+  const demo = entry.demo && routes.has(entry.demo) ? entry.demo : undefined;
   return (
     <article className='flex flex-col gap-6' aria-labelledby='entry-title'>
       {back}
@@ -100,10 +102,10 @@ export function EntryDetail({
           </div>
         </div>
         <p className='max-w-3xl text-base leading-7'>{text.summary}</p>
-        {entry.docs || entry.demo ? (
+        {entry.docs || demo ? (
           <div className='flex flex-wrap gap-2'>
-            {entry.demo ? (
-              <Link to={entry.demo} className={linkButton}>
+            {demo ? (
+              <Link to={demo} className={linkButton}>
                 <Play className='size-4' aria-hidden />
                 {content.detail.demo}
               </Link>
@@ -203,6 +205,29 @@ export function EntryDetail({
       </div>
     </article>
   );
+}
+
+interface RouteNode {
+  readonly path?: string;
+  readonly children?: readonly RouteNode[];
+}
+
+/**
+ * Every page path the application registered. A demo button appears only when its page is one of them: an application
+ * may declare an example plugin without registering its pages, and the entry then keeps its guidance without a dead
+ * link.
+ */
+function useRegisteredPaths(): ReadonlySet<string> {
+  const { runtime } = useClientApplication();
+  const paths = new Set<string>();
+  const walk = (nodes: readonly RouteNode[]): void => {
+    for (const node of nodes) {
+      if (node.path) paths.add(node.path);
+      walk(node.children ?? []);
+    }
+  };
+  walk(runtime.routes);
+  return paths;
 }
 
 type Variant = 'template' | 'example';
@@ -375,17 +400,15 @@ function DeveloperReference({
             <li key={step}>{step}</li>
           ))}
         </ol>
-        {entry.sourcePath ? (
-          <a
-            href={sourceUrl(entry.sourcePath)}
-            target='_blank'
-            rel='noreferrer'
-            className='inline-flex w-fit items-center gap-1 text-primary hover:underline'
-          >
-            <ArrowUpRight className='size-4' aria-hidden />
-            {content.detail.source}
-          </a>
-        ) : null}
+        <a
+          href={packageUrl(entry.packageName)}
+          target='_blank'
+          rel='noreferrer'
+          className='inline-flex w-fit items-center gap-1 text-primary hover:underline'
+        >
+          <ArrowUpRight className='size-4' aria-hidden />
+          {content.detail.source}
+        </a>
       </CollapsibleContent>
     </Collapsible>
   );

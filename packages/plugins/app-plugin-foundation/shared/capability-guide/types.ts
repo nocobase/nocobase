@@ -36,8 +36,6 @@ export interface GuideEntryDefinition {
   readonly docs?: string;
   /** Shown on the application home page. */
   readonly featured?: boolean;
-  /** Repository path of the package, for the developer reference. */
-  readonly sourcePath: string;
   /** Skills the agent reads for this entry. */
   readonly skills: readonly string[];
   /** Prompt ids in display order; the wording is in the content files. */

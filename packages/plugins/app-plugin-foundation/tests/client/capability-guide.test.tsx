@@ -1,17 +1,44 @@
 import { renderWithApp } from '@nocobase/app-testing/client';
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
-import { Route, Routes, useLocation } from 'react-router';
+import {
+  defineAppRoutes,
+  defineClientPlugin,
+} from '@nocobase/app-client/plugins';
+import { Route, Routes, useLocation, useNavigate } from 'react-router';
 import { describe, expect, it, vi } from 'vitest';
 
-import examplesManifest from '../../../../templates/app-template-examples/package.json' with { type: 'json' };
 import { CapabilityGuidePage } from '../../client/capability-guide/guide-page.js';
 import plugin from '../../client/plugin.js';
 import {
   createCapabilityCatalog,
   guideContent,
 } from '../../shared/capability-guide/index.js';
+import { SAMPLE_MANIFEST } from '../fixtures/capability-manifest.js';
 
-const catalog = createCapabilityCatalog(examplesManifest);
+const catalog = createCapabilityCatalog(SAMPLE_MANIFEST);
+
+/** Stands in for the lifecycle example registering its demo page. */
+const lifecycleDemo = defineClientPlugin({
+  packageName: '@nocobase/app-plugin-lifecycle-example',
+  routes: defineAppRoutes([
+    {
+      name: 'tickets',
+      path: '/lifecycle-example/tickets',
+      auth: 'required',
+      authz: 'skip',
+      componentLoader: () => Promise.resolve({ default: () => null }),
+    },
+  ]),
+});
+
+function HistoryBack(): React.ReactElement {
+  const navigate = useNavigate();
+  return (
+    <button type='button' onClick={() => void navigate(-1)}>
+      history back
+    </button>
+  );
+}
 const en = guideContent('en-US');
 
 function Location(): React.ReactElement {
@@ -23,7 +50,10 @@ function Location(): React.ReactElement {
   );
 }
 
-async function renderGuide(route: string) {
+async function renderGuide(
+  route: string,
+  options: { readonly demo?: boolean } = {},
+) {
   return renderWithApp(
     <>
       <Routes>
@@ -37,9 +67,10 @@ async function renderGuide(route: string) {
         />
       </Routes>
       <Location />
+      <HistoryBack />
     </>,
     {
-      plugins: [plugin()],
+      plugins: [plugin(), ...(options.demo ? [lifecycleDemo()] : [])],
       namespace: '@nocobase/app-plugin-foundation',
       route,
       locale: 'en-US',
@@ -48,9 +79,9 @@ async function renderGuide(route: string) {
 }
 
 function rows(): HTMLElement[] {
-  return within(screen.getByRole('list', { name: en.page.title })).getAllByRole(
-    'link',
-  );
+  return within(
+    screen.getByRole('list', { name: en.page.title }),
+  ).queryAllByRole('link');
 }
 
 describe('capability guide page', () => {
@@ -62,7 +93,7 @@ describe('capability guide page', () => {
     fireEvent.click(
       screen.getByRole('tab', { name: new RegExp(`^${en.sources.kernel}`) }),
     );
-    await waitFor(() => expect(rows()).toHaveLength(7));
+    await waitFor(() => expect(rows()).toHaveLength(3));
     expect(screen.getByTestId('location')).toHaveTextContent(
       '/capabilities?source=kernel',
     );
@@ -145,7 +176,9 @@ describe('capability guide page', () => {
   });
 
   it('shows an example plugin with how to adapt it and its own demo', async () => {
-    await renderGuide('/capabilities/app-plugin-lifecycle-example');
+    await renderGuide('/capabilities/app-plugin-lifecycle-example', {
+      demo: true,
+    });
     expect(
       screen.getByRole('heading', { name: en.detail.adapt.title }),
     ).toBeInTheDocument();
@@ -160,5 +193,55 @@ describe('capability guide page', () => {
     expect(
       screen.queryByRole('link', { name: en.detail.demo }),
     ).not.toBeInTheDocument();
+  });
+
+  it('keeps the guidance but shows no demo when the example page is not registered', async () => {
+    await renderGuide('/capabilities/app-plugin-lifecycle-example');
+    expect(
+      screen.getByRole('heading', { name: en.detail.adapt.title }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('link', { name: en.detail.demo }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('restores the tab, keywords and list the URL carries after the browser goes back', async () => {
+    await renderGuide('/capabilities/jobs?source=kernel&q=background');
+    expect(screen.getByRole('searchbox')).toHaveValue('background');
+
+    fireEvent.click(
+      screen.getByRole('link', {
+        name: new RegExp(en.entries.lifecycle.title),
+      }),
+    );
+    await waitFor(() =>
+      expect(screen.getByTestId('location')).toHaveTextContent(
+        /^\/capabilities\/lifecycle\?/,
+      ),
+    );
+    fireEvent.change(screen.getByRole('searchbox'), { target: { value: '' } });
+    fireEvent.click(
+      screen.getByRole('tab', { name: new RegExp(`^${en.sources.all}`) }),
+    );
+    await waitFor(() =>
+      expect(screen.getByTestId('location')).toHaveTextContent(
+        /^\/capabilities\/lifecycle$/,
+      ),
+    );
+    expect(rows()).toHaveLength(catalog.entries.length);
+
+    fireEvent.click(screen.getByRole('button', { name: 'history back' }));
+    await waitFor(() =>
+      expect(screen.getByTestId('location')).toHaveTextContent(
+        '/capabilities/jobs?source=kernel&q=background',
+      ),
+    );
+    expect(screen.getByRole('searchbox')).toHaveValue('background');
+    expect(
+      screen.getByRole('tab', { name: new RegExp(`^${en.sources.kernel}`) }),
+    ).toHaveAttribute('aria-selected', 'true');
+    expect(
+      rows().every((row) => row.textContent?.includes(en.sources.kernel)),
+    ).toBe(true);
   });
 });

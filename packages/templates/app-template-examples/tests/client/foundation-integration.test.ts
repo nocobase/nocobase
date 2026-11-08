@@ -8,7 +8,10 @@ import {
   type RouteNavigationItem,
 } from '../../client/routing/route-navigation.js';
 import packageMetadata from '../../package.json' with { type: 'json' };
-import { createCapabilityCatalog } from '@nocobase/app-plugin-foundation/capability-guide';
+import {
+  createCapabilityCatalog,
+  type DependencyManifest,
+} from '@nocobase/app-plugin-foundation/capability-guide';
 
 function pages(items: readonly RouteNavigationItem[]): RouteNavigationItem[] {
   return items.flatMap((item) => [item, ...pages(item.children)]);
@@ -79,5 +82,40 @@ describe('Examples Foundation integration', () => {
       .map((entry) => [entry.id, entry.demo]);
     expect(demos.length).toBeGreaterThan(0);
     expect(demos.filter(([, demo]) => !paths.has(demo!))).toEqual([]);
+  });
+
+  it('lists every plugin this application declares in the capability guide, with the seven core modules introduced on their own', () => {
+    const manifest = packageMetadata as DependencyManifest;
+    const { entries } = createCapabilityCatalog(manifest);
+    const declared = Object.keys({
+      ...manifest.dependencies,
+      ...manifest.devDependencies,
+    })
+      .filter((name) => name.includes('app-plugin-'))
+      .sort();
+    expect(
+      entries
+        .filter((entry) => entry.source === 'plugin')
+        .map((entry) => entry.packageName)
+        .sort(),
+    ).toEqual(declared);
+    expect(
+      entries
+        .filter((entry) => entry.source === 'kernel')
+        .map((entry) => entry.name),
+    ).toEqual([
+      'concurrency',
+      'db',
+      'i18n',
+      'jobs',
+      'lifecycle',
+      'queue',
+      'realtime',
+    ]);
+    // Every entry has its own wording; none falls back to the generic text.
+    expect(entries.filter((entry) => !entry.known)).toEqual([]);
+    expect(
+      entries.filter((entry) => entry.role === 'example').length,
+    ).toBeGreaterThan(0);
   });
 });

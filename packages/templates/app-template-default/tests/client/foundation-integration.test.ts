@@ -1,4 +1,9 @@
 import { describe, expect, it } from 'vitest';
+import {
+  createCapabilityCatalog,
+  type DependencyManifest,
+} from '@nocobase/app-plugin-foundation/capability-guide';
+import packageMetadata from '../../package.json' with { type: 'json' };
 import { resolveAppRuntime } from '@nocobase/app-client/runtime';
 import { defineAppRuntime } from '@nocobase/app-client/runtime';
 import appRuntime from '../../client/runtime.js';
@@ -84,5 +89,38 @@ describe('default Foundation integration', () => {
       ],
       ['settingsSystem', [['foundation', '/foundation']]],
     ]);
+  });
+
+  it('lists every plugin this application declares in the capability guide, with the seven core modules introduced on their own', () => {
+    const manifest = packageMetadata as DependencyManifest;
+    const { entries } = createCapabilityCatalog(manifest);
+    const declared = Object.keys({
+      ...manifest.dependencies,
+      ...manifest.devDependencies,
+    })
+      .filter((name) => name.includes('app-plugin-'))
+      .sort();
+    expect(
+      entries
+        .filter((entry) => entry.source === 'plugin')
+        .map((entry) => entry.packageName)
+        .sort(),
+    ).toEqual(declared);
+    expect(
+      entries
+        .filter((entry) => entry.source === 'kernel')
+        .map((entry) => entry.name),
+    ).toEqual([
+      'concurrency',
+      'db',
+      'i18n',
+      'jobs',
+      'lifecycle',
+      'queue',
+      'realtime',
+    ]);
+    // Every entry has its own wording; none falls back to the generic text.
+    expect(entries.filter((entry) => !entry.known)).toEqual([]);
+    expect(entries.filter((entry) => entry.role === 'example').length).toBe(0);
   });
 });
