@@ -280,7 +280,7 @@ export class Auth {
     }
     let resetServices: PasswordResetServices = passwordResetServices ?? {};
     if (!Object.hasOwn(resetServices, 'sender')) {
-      // Standalone construction: this instance selects and owns its sender.
+      // Preserve standalone inline/legacy/default selection; named mailers are injected by the caller.
       const selection = createPasswordResetSender(resolveMailSenderFactory(), {
         email,
         passwordReset,
