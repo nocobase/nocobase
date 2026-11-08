@@ -419,11 +419,14 @@ describe('claim query cost', () => {
     const runner = await h.services.runners.authenticate(registered.key, {
       touch: false,
     });
-    vi.spyOn(h.services.slots, 'held').mockResolvedValue({
-      jobs: 0,
-      runs: 1,
-      byTool: { claude: 1 },
-    });
+    // Free when the claim starts, full when its transaction checks again.
+    vi.spyOn(h.services.slots, 'held')
+      .mockResolvedValueOnce({ jobs: 0, runs: 0, byTool: {} })
+      .mockResolvedValue({
+        jobs: 0,
+        runs: 1,
+        byTool: { claude: 1 },
+      });
     const knex = await h.database.connection().client<QueryEvents>();
     const writes: string[] = [];
     const listener = ({ sql }: { sql: string }) => {

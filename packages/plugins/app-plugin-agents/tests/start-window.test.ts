@@ -3,6 +3,7 @@ import { TIMINGS } from '@nocobase/agent-protocol';
 import { RunExecutionSnapshotSchema } from '../server/routes/schemas.js';
 import {
   claim,
+  claimRepeatedly,
   createHarness,
   type Harness,
   type RegisteredRunner,
@@ -49,7 +50,7 @@ it.each([46_000, 299_000])(
       },
       section: async () => null,
     });
-    expect(await claim(h, runner, 2)).toHaveLength(2);
+    expect(await claimRepeatedly(h, runner, 2)).toHaveLength(2);
     expect(await h.sweep()).toMatchObject({ requeued: 0, failed: 0 });
     expect(
       await h.services.reports.start({ id: runner.runnerId }, runId, start),
