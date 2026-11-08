@@ -50,7 +50,7 @@ const block = (issue: Issue, on: Issue, type?: 'blockedBy' | 'relatedTo') =>
     ...(type ? { type } : {}),
   });
 
-/** The issue's link activities, oldest first, as `action type identifier`. */
+/** The issue's link activities, in the order the activity page lists them, as `action type identifier`. */
 async function linkActivities(issueId: string): Promise<string[]> {
   const page = await h.services.issueQueries.activities(admin(), issueId, {});
   return page.data
@@ -58,8 +58,7 @@ async function linkActivities(issueId: string): Promise<string[]> {
     .map(
       (activity) =>
         `${activity.action} ${String(activity.details.type)} ${String(activity.details.identifier)}`,
-    )
-    .reverse();
+    );
 }
 
 async function actions(issueId: string): Promise<string[]> {
@@ -241,7 +240,12 @@ describe('dependency type changes', () => {
     const c = await create('C');
     await block(a, b, 'relatedTo');
     await block(a, c);
-    await h.services.subtasks.removeDependencyTo(admin(), b.id, a.identifier, 'relatedTo');
+    await h.services.subtasks.removeDependencyTo(
+      admin(),
+      b.id,
+      a.identifier,
+      'relatedTo',
+    );
     await h.services.subtasks.removeDependencyTo(admin(), a.id, c.identifier);
     expect(await linkActivities(a.id)).toEqual([
       `dependency_added relatedTo ${b.identifier}`,
@@ -260,14 +264,24 @@ describe('dependency type changes', () => {
     const a = await create('A');
     const b = await create('B');
     const link = await block(a, b, 'relatedTo');
-    await h.services.subtasks.updateDependency(admin(), b.id, link.dependencyId, {
-      expectedType: 'relatedTo',
-      type: 'blockedBy',
-    });
-    await h.services.subtasks.updateDependency(admin(), b.id, link.dependencyId, {
-      expectedType: 'blockedBy',
-      type: 'relatedTo',
-    });
+    await h.services.subtasks.updateDependency(
+      admin(),
+      b.id,
+      link.dependencyId,
+      {
+        expectedType: 'relatedTo',
+        type: 'blockedBy',
+      },
+    );
+    await h.services.subtasks.updateDependency(
+      admin(),
+      b.id,
+      link.dependencyId,
+      {
+        expectedType: 'blockedBy',
+        type: 'relatedTo',
+      },
+    );
     expect(await linkActivities(a.id)).toEqual([
       `dependency_added relatedTo ${b.identifier}`,
       `dependency_removed relatedTo ${b.identifier}`,

@@ -1253,6 +1253,15 @@ describe('dependencies over HTTP', () => {
           (activity) => activity.action === 'dependency_removed',
         ),
       ).toEqual([
+        // The conversion ended the relation, which B recorded as well.
+        expect.objectContaining({
+          details: expect.objectContaining({
+            dependencyId: related.dependencyId,
+            dependsOnIssueId: b.id,
+            identifier: a.identifier,
+            type: 'relatedTo',
+          }),
+        }),
         expect.objectContaining({
           details: expect.objectContaining({
             dependencyId: related.dependencyId,
@@ -1290,7 +1299,8 @@ describe('dependencies over HTTP', () => {
         final.activities.filter(
           (activity) =>
             activity.action === 'dependency_removed' &&
-            activity.details.type === 'relatedTo',
+            activity.details.type === 'relatedTo' &&
+            activity.details.dependencyId === blocker.dependencyId,
         ),
       ).toEqual([
         expect.objectContaining({
