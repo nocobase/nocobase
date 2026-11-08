@@ -1,3 +1,4 @@
+// db-test-portability: dialect-specific — UI fixtures describe SQLite and PostgreSQL connections returned by a mocked API; no database is opened.
 import {
   answerApi,
   renderWithApp,

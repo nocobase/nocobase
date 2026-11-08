@@ -98,12 +98,14 @@ export function InterfaceItem({
   title,
   description,
   icon,
+  missingState = 'unconfigured',
 }: {
   names: readonly string[];
   paths?: readonly string[];
   title: string;
   description?: string;
   icon?: LucideIcon;
+  missingState?: 'unconfigured' | 'unknown';
 }): ReactElement | null {
   const { t } = useDetailCopy();
   const routes = useRouteTree();
@@ -113,7 +115,7 @@ export function InterfaceItem({
     <ConfigurationItem
       title={title}
       description={description}
-      state={!!page}
+      state={page ? true : missingState === 'unknown' ? undefined : false}
       icon={icon}
     >
       {page ? (

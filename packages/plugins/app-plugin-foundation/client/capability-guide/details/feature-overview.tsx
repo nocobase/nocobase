@@ -6,14 +6,10 @@ import {
   FEATURE_OVERVIEWS,
   type FeatureOverviewId,
 } from './feature-overview-catalog.js';
-import { capabilityPages } from './capability-pages.js';
-import {
-  CurrentApplication,
-  ConfigurationItem,
-  InterfaceItem,
-  ConfigurationActions,
-  ConfigurationAction,
-} from './detail-layout.js';
+import { ConfigurationAction } from './detail-layout.js';
+import { ModuleOverview } from './module-overview.js';
+import { moduleOverviews } from './module-overviews.js';
+import { exampleOverviews } from './example-overviews.js';
 
 export default function FeatureOverview(): ReactElement | null {
   const { entryId } = useParams();
@@ -21,10 +17,9 @@ export default function FeatureOverview(): ReactElement | null {
   return <Overview key={entryId} id={entryId as FeatureOverviewId} />;
 }
 
-function Overview({ id }: { id: FeatureOverviewId }) {
+function Overview({ id }: { id: FeatureOverviewId }): ReactElement | null {
   const { t } = useDetailCopy();
   const prefix = `featureOverview.entries.${id}`;
-  const ui = `featureOverview.layout.entries.${id}`;
   if (id === 'app-plugin-api-keys') {
     return (
       <ApiKeysReadiness
@@ -49,41 +44,6 @@ function Overview({ id }: { id: FeatureOverviewId }) {
       />
     );
   }
-  const page = capabilityPages[id];
-  const steps = [0, 1, 2, 3].map((i) => t(`${prefix}.steps.${i}`));
-  const title = t(`${ui}.title`);
-  const extendTitle = t(`${ui}.extendTitle`);
-  return (
-    <div className='flex min-w-0 flex-col gap-6'>
-      <CurrentApplication>
-        {page ? (
-          <InterfaceItem {...page} title={title} />
-        ) : (
-          <ConfigurationItem
-            title={title}
-            description={t('featureOverview.layout.inspectHint')}
-          />
-        )}
-      </CurrentApplication>
-      <ConfigurationActions>
-        <ConfigurationAction
-          title={t('featureOverview.layout.setupFor', { feature: title })}
-          description={t('featureOverview.layout.setupDescription')}
-          prompt={t(`${prefix}.prompt`)}
-          steps={steps}
-        />
-        <ConfigurationAction
-          title={extendTitle}
-          description={t(`${ui}.extendDescription`)}
-          prompt={`${t('featureOverview.layout.improvePrompt', { goal: extendTitle })}\n\n${t(`${prefix}.prompt`)}`}
-          steps={steps}
-          configuration={
-            <p className='text-sm leading-6 text-muted-foreground'>
-              {t(`${prefix}.configuration`)}
-            </p>
-          }
-        />
-      </ConfigurationActions>
-    </div>
-  );
+  const definition = moduleOverviews[id] ?? exampleOverviews[id];
+  return definition ? <ModuleOverview definition={definition} /> : null;
 }
