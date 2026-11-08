@@ -74,16 +74,13 @@ it('groups the modules an administrator may open into categories of cards that o
     'AI',
     'System',
   ]);
-  // Examples configures the built-in invitation mailer, so Notifications joins System beside the database explorer.
+  // Examples configures the built-in invitation mailer, so System offers Notifications.
   const system = screen.getByRole('region', { name: 'System' });
   expect(
     within(system)
       .getAllByRole('link')
       .map((card) => card.getAttribute('href')),
-  ).toEqual([
-    '/main/settings/notifications/templates',
-    '/main/settings/database-explorer',
-  ]);
+  ).toEqual(['/main/settings/notifications/templates']);
   cards[1].focus();
   await user.keyboard('{Enter}');
   await waitFor(() =>

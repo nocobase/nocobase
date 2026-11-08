@@ -212,10 +212,7 @@ describe('app client routes', () => {
       ['settingsAi', [['knowledgeIndexing', '/knowledge/indexing']]],
       [
         'settingsSystem',
-        [
-          ['notificationManagement', '/settings/notifications/templates'],
-          ['databaseExplorer', '/settings/database-explorer'],
-        ],
+        [['notificationManagement', '/settings/notifications/templates']],
       ],
     ]);
     expect(catalog[2].modules[0].route).toMatchObject({
