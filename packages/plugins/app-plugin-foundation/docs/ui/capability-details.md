@@ -195,11 +195,11 @@ Agent 操作为「配置文件存储（drive）」「新增或配置文件表」
 
 相对本设计文档的主要源码入口：
 
-- [公共详情布局](../../packages/templates/app-template-default/client/pages/capabilities/detail-layout.tsx)：当前应用卡片、配置项、界面入口、可展开的 Agent 操作和提示词编辑复制。
-- [详情 loader 注册](../../packages/templates/app-template-default/client/plugins.ts)：为具体模块指定专用概览，避免继续复用不合适的通用文案。
-- [目录中文内容](../../packages/plugins/app-plugin-foundation/shared/capability-guide/content/zh-CN.ts)：名称、用途和目录内容；英文同步维护。
-- [并发详情](../../packages/templates/app-template-default/client/pages/capabilities/concurrency-overview.tsx)、[数据库浏览器详情](../../packages/templates/app-template-default/client/pages/capabilities/database-explorer-overview.tsx)、[文件管理详情](../../packages/templates/app-template-default/client/pages/capabilities/file-overview.tsx)：本轮新增专用页面。
-- [文件插件 Skill](../../packages/plugins/app-plugin-file/skills/nocobase-app-plugin-file/SKILL.md)、[Drive Skill](../../packages/libs/drive/skills/nocobase-drive/SKILL.md)、[并发插件 Skill](../../packages/plugins/app-plugin-concurrency/skills/nocobase-app-plugin-concurrency/SKILL.md)、[数据库浏览器 Skill](../../packages/plugins/app-plugin-database-explorer/skills/nocobase-app-plugin-database-explorer/SKILL.md)：本轮核对的实现约束来源。
+- [公共详情布局](../../../../templates/app-template-default/client/pages/capabilities/detail-layout.tsx)：当前应用卡片、配置项、界面入口、可展开的 Agent 操作和提示词编辑复制。
+- [详情 loader 注册](../../../../templates/app-template-default/client/plugins.ts)：为具体模块指定专用概览，避免继续复用不合适的通用文案。
+- [目录中文内容](../../shared/capability-guide/content/zh-CN.ts)：名称、用途和目录内容；英文同步维护。
+- [并发详情](../../../../templates/app-template-default/client/pages/capabilities/concurrency-overview.tsx)、[数据库浏览器详情](../../../../templates/app-template-default/client/pages/capabilities/database-explorer-overview.tsx)、[文件管理详情](../../../../templates/app-template-default/client/pages/capabilities/file-overview.tsx)：本轮新增专用页面。
+- [文件插件 Skill](../../../app-plugin-file/skills/nocobase-app-plugin-file/SKILL.md)、[Drive Skill](../../../../libs/drive/skills/nocobase-drive/SKILL.md)、[并发插件 Skill](../../../app-plugin-concurrency/skills/nocobase-app-plugin-concurrency/SKILL.md)、[数据库浏览器 Skill](../../../app-plugin-database-explorer/skills/nocobase-app-plugin-database-explorer/SKILL.md)：本轮核对的实现约束来源。
 
 模板本轮维护中英文文案。复用主题 token 和现有组件，不为每一篇重新定义布局；配置密集型与界面型可以使用不同的卡片内容，但整体三块结构保持一致。
 
