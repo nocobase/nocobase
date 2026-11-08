@@ -12,6 +12,7 @@ import {
   type AppDatabaseTaskOperation,
 } from '../src/database/index.js';
 import { executeAppDatabasePlan } from '../src/database/tasks.js';
+import * as storage from '../src/database/storage.js';
 import {
   IdGeneratorProvider,
   idGeneratorLifecycleToken,
@@ -23,6 +24,7 @@ const provision = useTestDatabases();
 const applications: Application[] = [];
 const roots: string[] = [];
 afterEach(async () => {
+  vi.restoreAllMocks();
   for (const app of applications.splice(0))
     await app.shutdown().catch(() => {});
   for (const root of roots.splice(0))
@@ -135,6 +137,60 @@ await query.insertInto('generated').values({ id: container.resolve(idGeneratorTo
 }
 
 describe('ID initialization around real database tasks', () => {
+  it.each([undefined, 'manual', 'no-provider', 'no-container'] as const)(
+    'does not prepare storage for an empty %s plan or touch the default connection for named tasks',
+    async (mode) => {
+      const databases = await provision(['main', 'reports']);
+      const database: AppDatabaseConfig = {
+        default: 'main',
+        connections: {
+          main: databases.connectionConfig('main'),
+          reports: databases.connectionConfig('reports'),
+        },
+      };
+      const config = new AppConfig();
+      await config.loadAll();
+      config.mergeDefaults({
+        database,
+        snowflake: mode === 'manual' ? { mode } : {},
+      });
+      const app = new Application({ config });
+      applications.push(app);
+      app.addServiceProviders(
+        mode === 'no-provider'
+          ? [DatabaseProvider]
+          : [DatabaseProvider, IdGeneratorProvider],
+      );
+      app.registerProviders();
+      const prepare = vi.spyOn(storage, 'prepareAppDatabaseStorage');
+      const manager = app.container.resolve(databaseManagerToken);
+      const options = {
+        container: mode === 'no-container' ? undefined : app.container,
+        runtimeConfig: config,
+      };
+      await executeAppDatabasePlan(manager, database, [], options);
+      expect(prepare).not.toHaveBeenCalled();
+      await executeAppDatabasePlan(
+        manager,
+        database,
+        [
+          {
+            connection: 'reports',
+            kind: 'migrations',
+            config: { sources: [] },
+          },
+        ],
+        options,
+      );
+      expect(prepare).toHaveBeenCalled();
+      expect(
+        prepare.mock.calls.every((call) =>
+          call[2]?.every((name) => name === 'reports'),
+        ),
+      ).toBe(true);
+    },
+  );
+
   it('starts after all registration and before migrations and seeds, then returns before destroying connections', async () => {
     const { app, events, managed } = await fixture();
     await app.start();
@@ -177,6 +233,7 @@ describe('ID initialization around real database tasks', () => {
   it('initializes an empty startup plan and cleans up a later route-registration failure', async () => {
     const { app, managed, events } = await fixture({ tasks: false });
     app.registerProviders();
+    const prepare = vi.spyOn(storage, 'prepareAppDatabaseStorage');
     await executeAppDatabasePlan(
       app.container.resolve(databaseManagerToken),
       app.config.get<AppDatabaseConfig>('database')!,
@@ -188,6 +245,15 @@ describe('ID initialization around real database tasks', () => {
       },
     );
     expect(events).toEqual(['registered', 'initialize']);
+    expect(prepare).toHaveBeenCalledWith(
+      app.config.get('database'),
+      app.paths,
+      ['main'],
+      undefined,
+    );
+    expect(prepare.mock.invocationCallOrder[0]).toBeLessThan(
+      managed.initialize.mock.invocationCallOrder[0]!,
+    );
     app.addRoutes({
       scope: 'api',
       createRouter: () => {

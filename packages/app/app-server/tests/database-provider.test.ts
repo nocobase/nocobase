@@ -81,6 +81,7 @@ describe('DatabaseProvider', () => {
       expect(existsSync(path.join(root, 'storage'))).toBe(true);
     });
     container.instance(idGeneratorLifecycleToken, {
+      mode: 'manual',
       registerFactory: vi.fn(),
       initialize,
       shutdown: vi.fn(async () => {}),
@@ -96,6 +97,7 @@ describe('DatabaseProvider', () => {
     const { provider, container } = await createProvider(createConfig());
     const calls: string[] = [];
     container.instance(idGeneratorLifecycleToken, {
+      mode: 'manual',
       registerFactory: vi.fn(),
       initialize: vi.fn(async () => {}),
       shutdown: async () => {

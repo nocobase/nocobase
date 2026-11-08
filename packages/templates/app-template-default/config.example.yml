@@ -175,7 +175,6 @@ database:
     # descriptions and relations are read from database/<connection>/metadata/<name>.json unless metadataStore says otherwise.
 
 snowflake:
-  mode: manual
   # Assign a unique worker ID (0..31) to each concurrently running manual instance.
   workerId: 0
   epoch: 1605024000

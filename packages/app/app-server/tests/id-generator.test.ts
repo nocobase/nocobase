@@ -27,20 +27,23 @@ describe('host ID generator lifecycle', () => {
     await ids.shutdown();
   });
 
-  it('preserves manual synchronous generation and the original sequence', async () => {
-    const ids = new AppIdGenerator({ workerId: 0 });
-    const first = ids.generate();
-    await ids.initialize();
-    const second = Number(ids.generateString());
-    expect(second).toBeGreaterThan(first);
-    expect(
-      new SnowflakeIdGenerator({ workerId: 0 }).parse(second).workerId,
-    ).toBe(0);
-    const stop = ids.shutdown();
-    expect(ids.shutdown()).toBe(stop);
-    expect(() => ids.generate()).toThrow('permanently closed');
-    await stop;
-  });
+  it.each([undefined, 'manual'] as const)(
+    'preserves %s manual synchronous generation and the original sequence',
+    async (mode) => {
+      const ids = new AppIdGenerator({ mode, workerId: 0 });
+      const first = ids.generate();
+      await ids.initialize();
+      const second = Number(ids.generateString());
+      expect(second).toBeGreaterThan(first);
+      expect(
+        new SnowflakeIdGenerator({ workerId: 0 }).parse(second).workerId,
+      ).toBe(0);
+      const stop = ids.shutdown();
+      expect(ids.shutdown()).toBe(stop);
+      expect(() => ids.generate()).toThrow('permanently closed');
+      await stop;
+    },
+  );
 
   it('constructs once, shares initialization, and does not open generation early', async () => {
     let ready!: () => void;

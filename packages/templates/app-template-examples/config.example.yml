@@ -186,7 +186,6 @@ database:
     #   # metadataStore: database/shared-crm/metadata
 
 snowflake:
-  mode: manual
   # Assign a unique worker ID (0..31) to each concurrently running manual instance.
   workerId: 0
   epoch: 1605024000

@@ -14,6 +14,7 @@ export interface ManagedIdGenerator extends IdGeneratorService {
 }
 
 export interface IdGeneratorLifecycle {
+  readonly mode: 'manual' | 'auto';
   /** Register exactly one auto factory during Provider.register(), without replacing the business Token. */
   registerFactory(factory: IdGeneratorFactory): void;
   initialize(): Promise<void>;
@@ -34,6 +35,10 @@ export class AppIdGenerator
   private closed = false;
 
   public constructor(private readonly config: AppSnowflakeConfig) {}
+
+  public get mode(): 'manual' | 'auto' {
+    return this.isAuto() ? 'auto' : 'manual';
+  }
 
   public registerFactory(factory: IdGeneratorFactory): void {
     if (this.factory || this.initialized || this.closed) {

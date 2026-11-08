@@ -159,22 +159,14 @@ export async function executeAppDatabasePlan(
     !dryRun &&
     (operation === 'run' || operation === 'rollback' || operation === 'sample')
   ) {
-    // The factory may use the default connection even when the selected task uses another connection.
-    const primary = defaultConnectionName(config);
-    await prepareAppDatabaseStorage(
-      config,
-      paths,
-      [
-        ...new Set([
-          ...(!primary || primary === 'none' ? [] : [primary]),
-          ...plan
-            .filter((task) => !task.skipReason)
-            .map((task) => task.connection),
-        ]),
-      ],
-      drivers,
-    );
-    await container?.resolveIfCreated(idGeneratorLifecycleToken)?.initialize();
+    const lifecycle = container?.resolveIfCreated(idGeneratorLifecycleToken);
+    if (lifecycle?.mode === 'auto') {
+      // Only the automatic factory needs default storage before the task's own preparation.
+      const primary = defaultConnectionName(config);
+      if (primary && primary !== 'none')
+        await prepareAppDatabaseStorage(config, paths, [primary], drivers);
+    }
+    await lifecycle?.initialize();
   }
   const taskContainer = createTaskServiceResolver(container);
   const taskConfig = snapshotDatabaseTaskConfig(runtimeConfig);
