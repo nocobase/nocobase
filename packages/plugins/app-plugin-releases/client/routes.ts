@@ -107,10 +107,13 @@ export function environmentsDefinition(
     name: 'rel-environments',
     path: normalizePath(path),
     auth: 'required',
-    // The plugin's entry: Apps are listed and created on an environment's page, so the Apps page grant opens it, as
-    // `/api/releases/environments` lets it read them (`EnvironmentService.requireReader`). Managing environments and
-    // the shared hosts' capacity keep checking the `rel.environments` setting, on the server and in the page.
-    authz: page('rel-apps'),
+    // The plugin's entry opens to environment readers (the `rel.environments` `read` setting) and to App readers (the
+    // Apps page), who list and create an environment's Apps there, as the server reads environments for either
+    // (`EnvironmentService.requireReader`). A route names a single grant, so this one names none and the page decides
+    // (`canEnterEnvironments`, `environments-page.tsx`); its menu entry shows to every signed-in user. Each part of the
+    // pages keeps its own check: the Apps and Create App the Apps grants, the variables, the connection check and the
+    // shared hosts' capacity the setting, on the server and in the page.
+    authz: 'skip',
     navigation: { title: 'ui.nav.environments', icon: Server },
     componentLoader: loader(
       () => import('./pages/environments-page.js'),

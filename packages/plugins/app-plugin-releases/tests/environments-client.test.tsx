@@ -988,6 +988,75 @@ describe('environment page', () => {
     expect(screen.queryByRole('button', { name: 'Check' })).toBeNull();
   });
 
+  it('opens to environment readers without the Apps page, with no Apps section', async () => {
+    const permissions = allPermissions();
+    const sent = serve([environment()], undefined, [], [], {
+      apps: [app],
+      permissions: {
+        ...permissions,
+        pages: { ...permissions.pages, 'rel-apps': false },
+        settings: { ...permissions.settings, 'rel.environments/manage': false },
+      },
+    });
+    renderPage('/environments');
+    expect(
+      await screen.findByRole('link', { name: 'Remote one' }),
+    ).toBeInTheDocument();
+    cleanup();
+    renderPage('/environments/remote-1');
+    expect(
+      await screen.findByRole('button', { name: 'Check' }),
+    ).toBeInTheDocument();
+    expect(screen.getAllByRole('tab').map((tab) => tab.textContent)).toEqual([
+      'Overview',
+      'Variables',
+      'Settings',
+    ]);
+    // Its Apps are read from `/apps`, which needs the Apps page: neither the section nor Create App, nor the read.
+    expect(screen.queryByRole('link', { name: 'Shop' })).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Create app' })).toBeNull();
+    expect(sent.some((item) => item.path === 'releases/apps')).toBe(false);
+  });
+
+  it('opens the environments to app readers without the environments setting', async () => {
+    const permissions = allPermissions();
+    serve([environment()], undefined, [], [], {
+      apps: [app],
+      permissions: {
+        ...permissions,
+        settings: {
+          ...permissions.settings,
+          'rel.environments/read': false,
+          'rel.environments/manage': false,
+        },
+      },
+    });
+    renderPage('/environments');
+    expect(
+      await screen.findByRole('link', { name: 'Remote one' }),
+    ).toBeInTheDocument();
+  });
+
+  it('turns away those with neither the environments setting nor the Apps page, before reading anything', async () => {
+    const permissions = allPermissions();
+    const sent = serve([environment()], undefined, [], [], {
+      permissions: {
+        ...permissions,
+        pages: { ...permissions.pages, 'rel-apps': false },
+        settings: {
+          ...permissions.settings,
+          'rel.environments/read': false,
+          'rel.environments/manage': false,
+        },
+      },
+    });
+    renderPage('/environments/remote-1');
+    expect(
+      await screen.findByText('You do not have permission to do this.'),
+    ).toBeInTheDocument();
+    expect(sent.map((item) => item.path)).toEqual(['releases/me']);
+  });
+
   it('offers no Create App to those who may not create apps', async () => {
     const permissions = allPermissions();
     serve([environment()], undefined, [], [], {

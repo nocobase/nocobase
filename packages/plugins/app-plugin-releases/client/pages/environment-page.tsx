@@ -89,6 +89,10 @@ export default function EnvironmentPage(): ReactElement {
   const canManage = me.permissions.settings['rel.environments/manage'];
   // App readers open the page for its Apps; the variables and the connection check need the environments setting.
   const canRead = me.permissions.settings['rel.environments/read'];
+  // Environment readers without the Apps page see no Apps section: its Apps are read from `/apps`, which needs it.
+  const canViewApps =
+    me.permissions.pages['rel-apps'] &&
+    me.permissions.scopes['rel.apps/view'] !== 'none';
   const [tab, setTab] = useTabParam<EnvironmentTab>(
     canRead ? ['overview', 'variables', 'settings'] : ['overview', 'settings'],
   );
@@ -227,7 +231,9 @@ export default function EnvironmentPage(): ReactElement {
             t={t}
             runsOn={driverName(record.driver, record.config)}
           />
-          <EnvironmentApps key={appsKey} environmentId={record.id} t={t} />
+          {canViewApps ? (
+            <EnvironmentApps key={appsKey} environmentId={record.id} t={t} />
+          ) : null}
         </>
       ),
     },

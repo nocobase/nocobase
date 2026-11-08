@@ -5,6 +5,7 @@
  * toasts. Below the list, each app host environments share is shown once (`components/shared-host.tsx`); an App's page
  * links to its host's block by its anchor.
  */
+import { useTranslation } from '@nocobase/i18n/client';
 import type { ColumnDef } from '@tanstack/react-table';
 import {
   ArrowRightIcon,
@@ -12,11 +13,13 @@ import {
   PlugZapIcon,
   PlusIcon,
   ServerIcon,
+  ShieldXIcon,
   Trash2Icon,
 } from 'lucide-react';
 import { useEffect, useState, type ReactElement, type ReactNode } from 'react';
 import { Link, useLocation, useNavigate, useOutlet } from 'react-router';
 
+import { ACCESS_NAMESPACE } from '../../shared/access.js';
 import type {
   EnvironmentListItem,
   EnvironmentRecord,
@@ -41,7 +44,13 @@ import {
 import { useDriverNames } from '../hooks/use-driver-names.js';
 import { useEnvironmentCheck } from '../hooks/use-environment-check.js';
 import { useNotify } from '../hooks/use-notify.js';
-import { useLoad, useMe, useReleasesApi } from '../hooks/use-releases.js';
+import {
+  useLoad,
+  useMe,
+  useMeLoad,
+  useReleasesApi,
+} from '../hooks/use-releases.js';
+import { canEnterEnvironments } from '../lib/permissions.js';
 
 /** The page's heading, when the application that mounts it names the page in its own words. */
 export interface EnvironmentsPageProps {
@@ -53,6 +62,34 @@ export default function EnvironmentsPage(
   props: EnvironmentsPageProps,
 ): ReactElement {
   const outlet = useOutlet();
+  const me = useMeLoad();
+  const { t } = useTranslation(ACCESS_NAMESPACE);
+  // Its route declares no grant (`routes.ts`): a route names one, and this page opens to either of two, as the server
+  // reads environments for either (`EnvironmentService.requireReader`). So the page decides, for itself and the
+  // environment's page below it.
+  if (!me.data)
+    return (
+      <PageContainer>
+        {me.error ? (
+          <LoadError
+            title={t('ui.environments.loadFailed')}
+            error={me.error}
+            onRetry={me.reload}
+          />
+        ) : (
+          <ListSkeleton />
+        )}
+      </PageContainer>
+    );
+  if (!canEnterEnvironments(me.data))
+    return (
+      <PageContainer>
+        <EmptyState
+          icon={<ShieldXIcon />}
+          title={t('ui.errors.reasons.FORBIDDEN')}
+        />
+      </PageContainer>
+    );
   if (outlet) return <>{outlet}</>;
   return <EnvironmentsList {...props} />;
 }

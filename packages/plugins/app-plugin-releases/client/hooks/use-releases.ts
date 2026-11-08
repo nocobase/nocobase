@@ -150,7 +150,13 @@ export function useLoad<T>(load: () => Promise<T>, key: string): Loaded<T> {
 
 /** The signed-in user's permissions; nothing until they are known. */
 export function useMe(): Me {
-  const api = useReleasesApi();
-  const { data } = useLoad(() => api.get<Me>('me'), 'me');
-  return data ?? { userId: null, kind: 'human', permissions: noPermissions() };
+  return useMeLoad().data ?? noOne;
 }
+
+/** The signed-in user's permissions with whether they are known yet, for a page that decides who may enter it. */
+export function useMeLoad(): Loaded<Me> {
+  const api = useReleasesApi();
+  return useLoad(() => api.get<Me>('me'), 'me');
+}
+
+const noOne: Me = { userId: null, kind: 'human', permissions: noPermissions() };

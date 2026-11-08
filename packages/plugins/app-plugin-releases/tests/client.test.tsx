@@ -152,14 +152,14 @@ describe('client', () => {
       ['rel-apps', '/deploy/apps'],
       ['rel-environments', '/release-environments'],
     ]);
-    // Both open with the Apps page grant: the environments page is where Apps are listed and created now, so an App
-    // reader without the environments setting still has an entry. Managing environments and the hosts' capacity keep
-    // checking the setting.
-    for (const route of routes)
-      expect(route.authz).toEqual({
-        resource: { type: 'page', id: 'rel-apps' },
-        action: 'access',
-      });
+    expect(routes[0]?.authz).toEqual({
+      resource: { type: 'page', id: 'rel-apps' },
+      action: 'access',
+    });
+    // The environments open to either the environments setting or the Apps page, which a route cannot name: the page
+    // decides (`environments-client.test.tsx`).
+    expect(routes[1]?.authz).toBe('skip');
+    expect(routes[1]?.auth).toBe('required');
   });
 
   it('registers no routes with routes: false', () => {
