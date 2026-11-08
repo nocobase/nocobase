@@ -54,6 +54,8 @@ const pages = {
       subtaskAdded: 'added the sub-issue',
       dependencyAdded: 'added the dependency on',
       dependencyRemoved: 'removed the dependency on',
+      relationAdded: 'added a relation to',
+      relationRemoved: 'removed the relation to',
       stageChanged: 'changed the stage',
       autoMoveSkipped: 'could not move the issue on automatically to',
     },

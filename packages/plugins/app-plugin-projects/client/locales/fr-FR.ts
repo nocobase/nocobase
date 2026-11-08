@@ -56,6 +56,8 @@ const frFR: LocaleResource<typeof enUS> = {
       subtaskAdded: 'a ajouté la sous-tâche',
       dependencyAdded: 'a ajouté la dépendance sur',
       dependencyRemoved: 'a supprimé la dépendance sur',
+      relationAdded: 'a ajouté une relation avec',
+      relationRemoved: 'a supprimé la relation avec',
       stageChanged: 'a changé la scène',
       autoMoveSkipped: 'n’a pas pu déplacer automatiquement la tâche vers',
     },

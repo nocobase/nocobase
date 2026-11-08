@@ -54,6 +54,8 @@ const ptBR: LocaleResource<typeof enUS> = {
       subtaskAdded: 'adicionou a subtarefa',
       dependencyAdded: 'adicionou a dependência em',
       dependencyRemoved: 'removeu a dependência de',
+      relationAdded: 'adicionou uma relação com',
+      relationRemoved: 'removeu a relação com',
       stageChanged: 'mudou de cenário',
       autoMoveSkipped: 'não conseguiu mover a tarefa automaticamente para',
     },

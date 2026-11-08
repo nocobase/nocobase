@@ -57,6 +57,8 @@ const esES: LocaleResource<typeof enUS> = {
       subtaskAdded: 'añadió la subtarea',
       dependencyAdded: 'agregó la dependencia de',
       dependencyRemoved: 'eliminó la dependencia de',
+      relationAdded: 'agregó una relación con',
+      relationRemoved: 'eliminó la relación con',
       stageChanged: 'cambió el escenario',
       autoMoveSkipped: 'no pudo mover la tarea automáticamente a',
     },

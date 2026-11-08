@@ -54,6 +54,8 @@ const ruRU: LocaleResource<typeof enUS> = {
       subtaskAdded: 'добавил(а) подзадачу',
       dependencyAdded: 'добавил(а) зависимость от',
       dependencyRemoved: 'удалил(а) зависимость от',
+      relationAdded: 'добавил(а) связь с',
+      relationRemoved: 'удалил(а) связь с',
       stageChanged: 'сменил(а) этап',
       autoMoveSkipped: 'не удалось автоматически перевести задачу в',
     },

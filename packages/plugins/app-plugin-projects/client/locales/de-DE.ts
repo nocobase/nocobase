@@ -58,6 +58,8 @@ const deDE: LocaleResource<typeof enUS> = {
       subtaskAdded: 'hat die Unteraufgabe hinzugefügt',
       dependencyAdded: 'fügte die Abhängigkeit von hinzu',
       dependencyRemoved: 'entfernte die Abhängigkeit von',
+      relationAdded: 'verknüpfte die Aufgabe mit',
+      relationRemoved: 'entfernte die Verknüpfung mit',
       stageChanged: 'wechselte die Bühne',
       autoMoveSkipped: 'konnte die Aufgabe nicht automatisch verschieben nach',
     },

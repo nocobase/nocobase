@@ -52,6 +52,8 @@ const zhTW: LocaleResource<typeof enUS> = {
       subtaskAdded: '新增了子任務',
       dependencyAdded: '新增了對',
       dependencyRemoved: '刪除了對',
+      relationAdded: '新增了關聯',
+      relationRemoved: '移除了關聯',
       stageChanged: '改變了舞臺',
       autoMoveSkipped: '無法自動將任務移到',
     },
