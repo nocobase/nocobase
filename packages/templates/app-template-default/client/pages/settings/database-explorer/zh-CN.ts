@@ -20,8 +20,10 @@ export default {
   tablesMatched_other: '{{total}} 张表中有 {{count}} 张匹配',
   loadingTables_one: '正在加载数据表…已读取 {{count}} 张',
   loadingTables_other: '正在加载数据表…已读取 {{count}} 张',
-  truncated: '仅列出前 {{count}} 张表，搜索只覆盖这些表。',
-  partial: '加载到第 {{count}} 张表时中断，搜索只覆盖已加载的表。',
+  truncated_one: '仅列出前 {{count}} 张表，搜索只覆盖这些表。',
+  truncated_other: '仅列出前 {{count}} 张表，搜索只覆盖这些表。',
+  partial_one: '加载到第 {{count}} 张表时中断，搜索只覆盖已加载的表。',
+  partial_other: '加载到第 {{count}} 张表时中断，搜索只覆盖已加载的表。',
   selectedHidden: '当前打开的表“{{table}}”不在搜索结果中。',
   kind: {
     table: '表',

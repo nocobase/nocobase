@@ -124,10 +124,16 @@ export function TablesPanel({
           }}
         >
           <SelectTrigger id='database-connection' className='w-full min-w-0'>
-            <SelectValue placeholder={t('databaseExplorer.chooseConnection')}>
-              {(value: string | null) => (
-                <span className='truncate'>{value}</span>
-              )}
+            <SelectValue>
+              {(value: string | null) =>
+                value ? (
+                  <span className='truncate'>{value}</span>
+                ) : (
+                  <span className='text-muted-foreground'>
+                    {t('databaseExplorer.chooseConnection')}
+                  </span>
+                )
+              }
             </SelectValue>
           </SelectTrigger>
           <SelectContent>
@@ -150,9 +156,10 @@ export function TablesPanel({
               {[
                 summary.dialect,
                 summary.databaseName,
-                t(
-                  `databaseExplorer.schemaManagement.${summary.schemaManagement}`,
-                ),
+                summary.schemaManagement &&
+                  t(
+                    `databaseExplorer.schemaManagement.${summary.schemaManagement}`,
+                  ),
               ]
                 .filter(Boolean)
                 .join(' · ')}

@@ -19,9 +19,13 @@ export default {
   tablesMatched_other: '{{count}} of {{total}} tables match',
   loadingTables_one: 'Loading tables… {{count}} read so far',
   loadingTables_other: 'Loading tables… {{count}} read so far',
-  truncated:
+  truncated_one:
+    'Only the first {{count}} table is listed; search covers it only.',
+  truncated_other:
     'Only the first {{count}} tables are listed; search covers these tables only.',
-  partial:
+  partial_one:
+    'Loading stopped after {{count}} table; search covers these tables only.',
+  partial_other:
     'Loading stopped after {{count}} tables; search covers these tables only.',
   selectedHidden: 'The open table “{{table}}” does not match the search.',
   kind: {

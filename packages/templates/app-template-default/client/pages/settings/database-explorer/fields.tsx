@@ -18,7 +18,7 @@ import { cn } from 'cn';
 import type { ReactElement } from 'react';
 import { Link } from 'react-router';
 import { Badge } from '#components/ui/badge';
-import { Button } from '#components/ui/button';
+import { buttonVariants } from '#components/ui/button';
 import {
   Collapsible,
   CollapsibleContent,
@@ -102,16 +102,16 @@ export function FieldsPanel({
       className='flex min-w-0 flex-col overflow-hidden rounded-lg border bg-card'
     >
       <div className='flex flex-col gap-2 border-b p-4'>
-        <Button
-          variant='ghost'
-          size='sm'
-          className='-ml-2 self-start lg:hidden'
-          nativeButton={false}
-          render={<Link to={backLink} />}
+        <Link
+          to={backLink}
+          className={cn(
+            buttonVariants({ variant: 'ghost', size: 'sm' }),
+            '-ml-2 self-start lg:hidden',
+          )}
         >
           <ArrowLeft aria-hidden='true' />
           {t('databaseExplorer.backToTables')}
-        </Button>
+        </Link>
         <p className='flex min-w-0 items-center gap-1 text-xs text-muted-foreground'>
           <Database aria-hidden='true' className='size-3.5 shrink-0' />
           <span className='truncate'>{connection}</span>

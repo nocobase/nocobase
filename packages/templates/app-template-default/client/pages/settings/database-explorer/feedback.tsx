@@ -13,7 +13,7 @@ import {
 import type { ReactElement } from 'react';
 import { Link } from 'react-router';
 import { Loading } from '#components/loading';
-import { Button } from '#components/ui/button';
+import { Button, buttonVariants } from '#components/ui/button';
 import { canRetry, type Failure } from './read.js';
 
 export type Notice =
@@ -77,14 +77,10 @@ export function Recovery({
   const { t } = useTranslation();
   if (failure === 'unauthenticated')
     return (
-      <Button
-        variant='outline'
-        nativeButton={false}
-        render={<Link to='/login' />}
-      >
+      <Link to='/login' className={buttonVariants({ variant: 'outline' })}>
         <LogIn aria-hidden='true' />
         {t('databaseExplorer.signIn')}
-      </Button>
+      </Link>
     );
   if (!canRetry(failure)) return null;
   return (
