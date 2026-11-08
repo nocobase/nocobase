@@ -164,6 +164,49 @@ describe('installed service migration', () => {
 });
 
 describe('service stop command', () => {
+  it('keeps an old launchd registration available to an older updater until the new launcher migrates it', async () => {
+    const label = 'com.example.legacy-update';
+    const plan = servicePlan({
+      paths: runnerPaths(home),
+      command: ['/runner'],
+      label,
+      platform: 'darwin',
+      home,
+      env: {},
+    });
+    mkdirSync(path.dirname(plan.file), { recursive: true });
+    writeFileSync(
+      plan.file,
+      plan.content.replace(
+        '<key>KeepAlive</key>\n  <true/>',
+        '<key>KeepAlive</key><dict><key>SuccessfulExit</key><false/></dict>',
+      ),
+    );
+    await stopService(label, 'darwin', home);
+    expect(recorded()).toEqual([
+      [
+        'bootout',
+        `gui/${process.getuid?.() ?? 501}/_nocobase-runner.reload.${label}`,
+      ],
+      ['kill', 'SIGTERM', `gui/${process.getuid?.() ?? 501}/${label}`],
+    ]);
+    expect(
+      await migrateService(label, {
+        platform: 'darwin',
+        home,
+        relaunch: ['/runner'],
+      }),
+    ).toBe(true);
+    await stopService(label, 'darwin', home);
+    expect(recorded().slice(-2)).toEqual([
+      [
+        'bootout',
+        `gui/${process.getuid?.() ?? 501}/_nocobase-runner.reload.${label}`,
+      ],
+      ['bootout', `gui/${process.getuid?.() ?? 501}/${label}`],
+    ]);
+  });
+
   it.each([3, 113])(
     'can stop and restart a launchd job already unloaded (exit %s)',
     async (code) => {

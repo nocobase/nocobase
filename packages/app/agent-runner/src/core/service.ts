@@ -333,22 +333,41 @@ export async function migrateService(
 export async function stopService(
   label: string,
   platform: NodeJS.Platform = process.platform,
+  home: string = os.homedir(),
 ): Promise<void> {
-  serviceFile(label, platform, os.homedir());
+  const file = serviceFile(label, platform, home);
   if (platform === 'linux')
     await run('systemctl', ['--user', 'stop', systemdUnit(label)]);
   else {
-    await unloadLaunchd(reloadLabel(label));
-    await unloadLaunchd(label);
+    await stopLaunchd(reloadLabel(label));
+    const content = await readFile(file, 'utf8').catch(
+      (error: NodeJS.ErrnoException) => {
+        if (error.code === 'ENOENT') return '';
+        throw error;
+      },
+    );
+    if (
+      /<key>KeepAlive<\/key>\s*<dict>\s*<key>SuccessfulExit<\/key>\s*<false\s*\/>\s*<\/dict>/u.test(
+        content,
+      )
+    ) {
+      // An older updater invokes the new binary's stop, then kickstarts the still-loaded job. Its old policy
+      // already keeps a clean stop stopped; the new launcher migrates and reloads the plist when kickstarted.
+      await stopLaunchd(label, 'kill');
+    } else await stopLaunchd(label);
   }
 }
 
-async function unloadLaunchd(label: string): Promise<void> {
+async function stopLaunchd(
+  label: string,
+  action: 'kill' | 'bootout' = 'bootout',
+): Promise<void> {
   try {
-    await run('launchctl', [
-      'bootout',
-      `gui/${process.getuid?.() ?? 501}/${label}`,
-    ]);
+    const target = `gui/${process.getuid?.() ?? 501}/${label}`;
+    await run(
+      'launchctl',
+      action === 'bootout' ? ['bootout', target] : ['kill', 'SIGTERM', target],
+    );
   } catch (error) {
     // ESRCH and launchd's service-not-found code mean it is already unloaded.
     const code = (error as NodeJS.ErrnoException).code as
@@ -367,7 +386,7 @@ export async function restartService(
   if (!SERVICE_LABEL_PATTERN.test(label))
     throw new Error(`Not a service label: ${label}`);
   if (platform === 'darwin') {
-    if (fromMigration) await unloadLaunchd(label);
+    if (fromMigration) await stopLaunchd(label);
     else await stopService(label, platform);
     await loadService('launchd', [
       [
