@@ -89,10 +89,14 @@ export default function EnvironmentPage(): ReactElement {
   const canManage = me.permissions.settings['rel.environments/manage'];
   // App readers open the page for its Apps; the variables and the connection check need the environments setting.
   const canRead = me.permissions.settings['rel.environments/read'];
-  // Environment readers without the Apps page see no Apps section: its Apps are read from `/apps`, which needs it.
+  // The Apps section needs the Apps page. Its list is read from `/apps`, which needs `view` on some App; Create App
+  // needs only `create`, so those who may create but not view get the section with Create App alone.
   const canViewApps =
     me.permissions.pages['rel-apps'] &&
     me.permissions.scopes['rel.apps/view'] !== 'none';
+  const canCreateApps =
+    me.permissions.pages['rel-apps'] &&
+    me.permissions.scopes['rel.apps/create'] === 'all';
   const [tab, setTab] = useTabParam<EnvironmentTab>(
     canRead ? ['overview', 'variables', 'settings'] : ['overview', 'settings'],
   );
@@ -233,6 +237,12 @@ export default function EnvironmentPage(): ReactElement {
           />
           {canViewApps ? (
             <EnvironmentApps key={appsKey} environmentId={record.id} t={t} />
+          ) : canCreateApps ? (
+            <Section
+              title={t('ui.environments.apps')}
+              description={t('ui.environments.appsDescription')}
+              actions={<CreateAppLink environmentId={record.id} t={t} />}
+            />
           ) : null}
         </>
       ),
@@ -562,13 +572,7 @@ function EnvironmentApps({
       actions={
         <>
           {canCreate ? (
-            <Link
-              to={`${links.environment(environmentId)}/apps/new`}
-              className={buttonVariants()}
-            >
-              <PlusIcon data-icon='inline-start' />
-              {t('ui.apps.create')}
-            </Link>
+            <CreateAppLink environmentId={environmentId} t={t} />
           ) : null}
           <RefreshButton
             refreshing={apps.loading || pending.loading}
@@ -668,5 +672,25 @@ function EnvironmentApps({
         <ListSkeleton rows={2} />
       )}
     </Section>
+  );
+}
+
+/** Create App over the environment, the App going to it. */
+function CreateAppLink({
+  environmentId,
+  t,
+}: {
+  readonly environmentId: string;
+  readonly t: Translate;
+}): ReactElement {
+  const links = useReleasesLinks();
+  return (
+    <Link
+      to={`${links.environment(environmentId)}/apps/new`}
+      className={buttonVariants()}
+    >
+      <PlusIcon data-icon='inline-start' />
+      {t('ui.apps.create')}
+    </Link>
   );
 }

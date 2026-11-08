@@ -1018,6 +1018,26 @@ describe('environment page', () => {
     expect(sent.some((item) => item.path === 'releases/apps')).toBe(false);
   });
 
+  it('offers Create App without the list to those who may create apps but view none', async () => {
+    const permissions = allPermissions();
+    const sent = serve([environment()], undefined, [], [], {
+      apps: [app],
+      permissions: {
+        ...permissions,
+        scopes: { ...permissions.scopes, 'rel.apps/view': 'none' },
+      },
+    });
+    renderPage('/environments/remote-1');
+    expect(
+      await screen.findByRole('link', { name: 'Create app' }),
+    ).toHaveAttribute('href', '/environments/remote-1/apps/new');
+    expect(screen.getByText('Apps')).toBeInTheDocument();
+    // No list: neither its rows, its filter nor the read of `/apps`.
+    expect(screen.queryByRole('link', { name: 'Shop' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Any state' })).toBeNull();
+    expect(sent.some((item) => item.path === 'releases/apps')).toBe(false);
+  });
+
   it('opens the environments to app readers without the environments setting', async () => {
     const permissions = allPermissions();
     serve([environment()], undefined, [], [], {
