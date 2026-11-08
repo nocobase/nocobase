@@ -172,14 +172,13 @@ const viVN: LocaleResource<typeof enUS> = {
       emptyTitle: 'Chưa có ứng dụng nào',
       emptyNoAccess: 'Yêu cầu quản trị viên tạo ứng dụng.',
       emptyDescription:
-        'Tạo một ứng dụng, sau đó tải bản phát hành lên và triển khai nó vào một môi trường.',
+        'Tạo ứng dụng từ trang của một môi trường, sau đó tải bản phát hành lên và triển khai.',
       noResults: 'Không có ứng dụng nào phù hợp với tìm kiếm.',
       created: '{{name}} đã được tạo.',
       createDescription:
         'Một ứng dụng được triển khai trên một môi trường; bản phát hành của nó được tải lên sau đó.',
       idHint:
         'Chữ cái, chữ số, dấu gạch dưới và dấu gạch nối; một phần địa chỉ của nó. Nó không thể thay đổi sau này.',
-      noEnvironment: 'Chưa có môi trường',
       lastAccess: 'Lần cuối ghé thăm',
       stateFilter: 'Trạng thái',
       anyState: 'Mọi trạng thái',

@@ -171,14 +171,13 @@ const ptBR: LocaleResource<typeof enUS> = {
       emptyTitle: 'Nenhum aplicativo ainda',
       emptyNoAccess: 'Peça a um administrador para criar um aplicativo.',
       emptyDescription:
-        'Crie um aplicativo, carregue uma versão e implante-o em um ambiente.',
+        'Crie um aplicativo na página de um ambiente; depois carregue uma versão e implante-o.',
       noResults: 'Nenhum aplicativo corresponde à pesquisa.',
       created: '{{name}} criado.',
       createDescription:
         'Um aplicativo é implantado em um ambiente; seus lançamentos são carregados posteriormente.',
       idHint:
         'Letras, dígitos, sublinhados e hífens; parte do seu endereço. Não pode mudar mais tarde.',
-      noEnvironment: 'Nenhum ambiente ainda',
       lastAccess: 'Última visita',
       stateFilter: 'Estado',
       anyState: 'Qualquer estado',

@@ -3,11 +3,13 @@ import { usePageBreadcrumb } from '@nocobase/app-client';
  * One environment, in tabs kept in the URL (`?tab=`): Overview (how it runs, who may deploy, the defaults its Apps
  * take, and the Apps deployed to it), Variables (what every App here gets), and Settings (the form, and deleting the
  * environment). Those who may only read environments see the same page read-only. Checking it is a header action.
+ * Create App opens over it at `apps/new` (`new-app-page.tsx`) for those who may create Apps, the App going to this
+ * environment.
  */
 import type { ColumnDef } from '@tanstack/react-table';
-import { PlugZapIcon } from 'lucide-react';
-import { useState, type ReactElement, type ReactNode } from 'react';
-import { Link, useNavigate, useParams } from 'react-router';
+import { PlugZapIcon, PlusIcon } from 'lucide-react';
+import { useMemo, useState, type ReactElement, type ReactNode } from 'react';
+import { Link, Outlet, useNavigate, useParams } from 'react-router';
 
 import type { AppSummary, EnvironmentRecord } from '../../shared/releases.js';
 import { ActorName } from '../components/actor-name.js';
@@ -24,7 +26,7 @@ import {
 } from '../components/release-badges.js';
 import { Section } from '../components/section.js';
 import { ListSkeleton, LoadError } from '../components/states.js';
-import { Button } from '../components/ui/button.js';
+import { Button, buttonVariants } from '../components/ui/button.js';
 import {
   Card,
   CardContent,
@@ -43,6 +45,7 @@ import { useRegistries } from '../hooks/use-registries.js';
 import { useLoad, useMe, useReleasesApi } from '../hooks/use-releases.js';
 import { useTabParam } from '../hooks/use-tab-param.js';
 import { useReleasesLinks, useReleasesPaths } from '../lib/paths.js';
+import type { AppsOutletContext } from './new-app-page.js';
 
 type EnvironmentTab = 'overview' | 'variables' | 'settings';
 
@@ -64,6 +67,12 @@ export default function EnvironmentPage(): ReactElement {
   const [busy, setBusy] = useState<string | null>(null);
   // Starts the form again from what is saved, after a save or when changes are discarded.
   const [formKey, setFormKey] = useState(0);
+  // Loads the environment's Apps again once Create App, over this page, has created one.
+  const [appsKey, setAppsKey] = useState(0);
+  const outletContext = useMemo<AppsOutletContext>(
+    () => ({ reload: () => setAppsKey((value) => value + 1) }),
+    [],
+  );
   const confirmDialog = useConfirmDialog();
   const check = useEnvironmentCheck(t, setBusy);
   const environment = useLoad(
@@ -189,7 +198,7 @@ export default function EnvironmentPage(): ReactElement {
             t={t}
             runsOn={driverName(record.driver, record.config)}
           />
-          <EnvironmentApps environmentId={record.id} t={t} />
+          <EnvironmentApps key={appsKey} environmentId={record.id} t={t} />
         </>
       ),
     },
@@ -239,6 +248,7 @@ export default function EnvironmentPage(): ReactElement {
         label={t('ui.tabs.label', { name: record.name })}
       />
       {confirmDialog.dialog}
+      <Outlet context={outletContext} />
     </PageContainer>
   );
 }
@@ -343,7 +353,7 @@ function Fact({
   );
 }
 
-/** The Apps deployed to this environment, each opening its own page. */
+/** The Apps deployed to this environment, each opening its own page, and Create App for those who may create one. */
 function EnvironmentApps({
   environmentId,
   t,
@@ -352,8 +362,10 @@ function EnvironmentApps({
   readonly t: Translate;
 }): ReactElement {
   const api = useReleasesApi();
+  const me = useMe();
   const links = useReleasesLinks();
   const navigate = useNavigate();
+  const canCreate = me.permissions.scopes['rel.apps/create'] === 'all';
   const apps = useLoad(
     () => api.list<AppSummary>('apps', { environmentId, pageSize: 100 }),
     `environment-apps:${environmentId}`,
@@ -420,7 +432,18 @@ function EnvironmentApps({
       description={t('ui.environments.appsDescription')}
       // The Apps' states change on their own; the rest of the page is the environment's settings.
       actions={
-        <RefreshButton refreshing={apps.loading} onRefresh={apps.reload} />
+        <>
+          {canCreate ? (
+            <Link
+              to={`${links.environment(environmentId)}/apps/new`}
+              className={buttonVariants()}
+            >
+              <PlusIcon data-icon='inline-start' />
+              {t('ui.apps.create')}
+            </Link>
+          ) : null}
+          <RefreshButton refreshing={apps.loading} onRefresh={apps.reload} />
+        </>
       }
     >
       {apps.data ? (

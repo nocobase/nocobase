@@ -61,3 +61,14 @@ export function withReleasesPaths(
   }
   return WithReleasesPaths;
 }
+
+/**
+ * Where Create App's old address below the Apps page (`new`) leads: Create App on the one environment its search names
+ * (`?environmentId=`, as the Apps list's filter kept it), or the environments, to pick one.
+ */
+export function newAppTarget(search: string, paths: ReleasesPaths): string {
+  const named = new URLSearchParams(search).getAll('environmentId');
+  return named.length === 1
+    ? `${paths.environments}/${encodeURIComponent(named[0])}/apps/new`
+    : paths.environments;
+}

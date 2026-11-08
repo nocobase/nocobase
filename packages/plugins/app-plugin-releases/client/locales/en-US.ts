@@ -24,14 +24,13 @@ const ui = {
     emptyTitle: 'No apps yet',
     emptyNoAccess: 'Ask an administrator to create an app.',
     emptyDescription:
-      'Create an app, then upload a release and deploy it to an environment.',
+      "Create an app from an environment's page, then upload a release and deploy it.",
     noResults: 'No app matches the search.',
     created: '{{name}} created.',
     createDescription:
       'An app is deployed to one environment; its releases are uploaded afterwards.',
     idHint:
       'Letters, digits, underscores and hyphens; part of its address. It cannot change later.',
-    noEnvironment: 'No environment yet',
     lastAccess: 'Last visit',
     stateFilter: 'State',
     anyState: 'Any state',

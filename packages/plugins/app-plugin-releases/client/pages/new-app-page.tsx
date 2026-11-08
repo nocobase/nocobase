@@ -1,10 +1,11 @@
 /**
- * Create App, at `new` below the Apps page: a route dialog over the list, so a link opens it and a refresh keeps it.
- * Creating one opens the new App in place of the dialog.
+ * Create App, at `apps/new` below an environment's page: a route dialog over the environment, so a link opens it and a
+ * refresh keeps it. The App goes to that environment, which the form shows but does not offer to change. Creating one
+ * opens the new App's page in place of the dialog.
  */
 import { useTranslation } from '@nocobase/i18n/client';
 import { useRef, useState, type FormEvent, type ReactElement } from 'react';
-import { useNavigate, useOutletContext } from 'react-router';
+import { useNavigate, useOutletContext, useParams } from 'react-router';
 
 import type { EnvironmentRecord } from '../../shared/releases.js';
 import { ACCESS_NAMESPACE } from '../../shared/access.js';
@@ -20,13 +21,6 @@ import {
   FieldLabel,
 } from '../components/ui/field.js';
 import { Input } from '../components/ui/input.js';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '../components/ui/select.js';
 import { Spinner } from '../components/ui/spinner.js';
 import { useRouteOverlay } from '../components/use-route-overlay.js';
 import { useNotify } from '../hooks/use-notify.js';
@@ -37,6 +31,7 @@ import {
   labelsOf,
   type LabelRow,
 } from '../lib/labels.js';
+import { useReleasesLinks } from '../lib/paths.js';
 import {
   DEFAULT_POLICY_DRAFT,
   parsePolicyDraft,
@@ -44,9 +39,9 @@ import {
   type RuntimePolicyDraft,
 } from '../lib/runtime-policy.js';
 
-/** What the Apps page hands the dialog. */
+/** What the page under the dialog hands it: the environment's page for Create App, the Apps page for a request. */
 export interface AppsOutletContext {
-  /** Loads the list again once an App is created. */
+  /** Loads the list again once an App is created or a request decided. */
   readonly reload: () => void;
   /** Loads the requests waiting for the caller again once one is decided (`request-page.tsx`). */
   readonly reloadRequests?: () => void;
@@ -59,15 +54,16 @@ export default function NewAppPage(): ReactElement {
   const api = useReleasesApi();
   const notify = useNotify();
   const navigate = useNavigate();
-  const { reload } = useOutletContext<AppsOutletContext>();
-  const environments = useLoad(
-    () =>
-      api.list<EnvironmentRecord>('environments').then((page) => page.items),
-    'environments',
+  const links = useReleasesLinks();
+  const { environmentId = '' } = useParams();
+  // The page under the dialog may hand nothing (an application routing it itself); then nothing is reloaded.
+  const context = useOutletContext<AppsOutletContext | undefined>();
+  const environment = useLoad(
+    () => api.get<EnvironmentRecord>(`environments/${environmentId}`),
+    `environment:${environmentId}`,
   );
   const [id, setId] = useState('');
   const [name, setName] = useState('');
-  const [environmentId, setEnvironmentId] = useState<string | null>(null);
   const [labels, setLabels] = useState<LabelRow[]>([]);
   const [policy, setPolicy] =
     useState<RuntimePolicyDraft>(DEFAULT_POLICY_DRAFT);
@@ -98,12 +94,7 @@ export default function NewAppPage(): ReactElement {
   ]
     .filter(Boolean)
     .join(' · ');
-  const options = environments.data ?? [];
-  const selected = environmentId ?? options[0]?.id ?? null;
-  const items = options.map((environment) => ({
-    value: environment.id,
-    label: environment.name,
-  }));
+  const selected = environment.data?.id ?? null;
 
   const setSubmitting = (next: boolean): void => {
     busyRef.current = next;
@@ -131,9 +122,9 @@ export default function NewAppPage(): ReactElement {
       });
       notify.success(t('ui.apps.created', { name: name.trim() }));
       setSubmitting(false);
-      reload();
-      // The new App replaces the dialog, so going back returns to the list.
-      void navigate(`../${encodeURIComponent(created)}`, { replace: true });
+      context?.reload();
+      // The new App replaces the dialog, so going back returns to the environment.
+      void navigate(links.app(created), { replace: true });
     } catch (reason) {
       notify.error(reason);
       setSubmitting(false);
@@ -189,23 +180,13 @@ export default function NewAppPage(): ReactElement {
             <FieldLabel htmlFor='rel-app-environment'>
               {t('ui.apps.environment')}
             </FieldLabel>
-            <Select
-              items={items}
-              value={selected}
-              disabled={busy}
-              onValueChange={(next: string | null) => setEnvironmentId(next)}
-            >
-              <SelectTrigger id='rel-app-environment' className='w-full'>
-                <SelectValue placeholder={t('ui.apps.noEnvironment')} />
-              </SelectTrigger>
-              <SelectContent className='w-auto max-w-[min(var(--container-sm),var(--available-width))] min-w-(--anchor-width) [&_[data-slot=select-item]>:first-child]:whitespace-normal'>
-                {items.map((item) => (
-                  <SelectItem key={item.value} value={item.value}>
-                    {item.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {/* Fixed: the App is created from this environment's page. */}
+            <Input
+              id='rel-app-environment'
+              value={environment.data?.name ?? environmentId}
+              readOnly
+              disabled
+            />
           </Field>
           <AdvancedSection summary={advancedSummary || null}>
             <RuntimePolicyFields

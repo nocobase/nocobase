@@ -54,17 +54,16 @@ export function appsDefinition(
     navigation: { title: 'ui.nav.apps', icon: Boxes },
     componentLoader: loader(() => import('./pages/apps-page.js'), paths),
     children: [
-      // Before `:appId`: an App may not be called `new` or `requests`. `requests/:requestId` over the list is kept
-      // for older links; the App's page opens its requests over itself.
+      // Before `:appId`: an App may not be called `new` or `requests`. Create App's old address leads to the
+      // environments, where an App is created now; `requests/:requestId` over the list is kept for older links; the
+      // App's page opens its requests over itself.
       {
         name: 'rel-app-new',
         path: 'new',
-        presentation: {
-          kind: 'dialog',
-          title: 'ui.apps.create',
-          namespace: '@nocobase/app-plugin-releases',
-        },
-        componentLoader: loader(() => import('./pages/new-app-page.js'), paths),
+        componentLoader: loader(
+          () => import('./pages/new-app-redirect.js'),
+          paths,
+        ),
       },
       {
         name: 'rel-request',
@@ -125,6 +124,22 @@ export function environmentsDefinition(
           () => import('./pages/environment-page.js'),
           paths,
         ),
+        children: [
+          // Create App over the environment, the App going to it.
+          {
+            name: 'rel-environment-app-new',
+            path: 'apps/new',
+            presentation: {
+              kind: 'dialog',
+              title: 'ui.apps.create',
+              namespace: '@nocobase/app-plugin-releases',
+            },
+            componentLoader: loader(
+              () => import('./pages/new-app-page.js'),
+              paths,
+            ),
+          },
+        ],
       },
     ],
   };

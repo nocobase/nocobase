@@ -11,10 +11,11 @@ import {
   within,
 } from '@testing-library/react';
 import { useEffect, useRef, type ReactElement } from 'react';
-import { MemoryRouter, Route, Routes, useLocation } from 'react-router';
+import { MemoryRouter, Outlet, Route, Routes, useLocation } from 'react-router';
 import { describe, expect, it, vi } from 'vitest';
 
 import { labelsHeader, uploadLabels } from '../client/lib/format.js';
+import { newAppTarget } from '../client/lib/paths.js';
 import enUS from '../client/locales/en-US.js';
 import zhCN from '../client/locales/zh-CN.js';
 import { allPermissions, noPermissions } from '../shared/access.js';
@@ -104,7 +105,7 @@ import {
   policySummary,
 } from '../client/lib/runtime-policy.js';
 import { ReleasesSystemLabelsContext } from '../client/lib/system-labels.js';
-import AppsPage, { AppsCatalog } from '../client/pages/apps-page.js';
+import { AppsCatalog } from '../client/pages/apps-page.js';
 import NewAppPage from '../client/pages/new-app-page.js';
 import { useState } from 'react';
 import plugin from '../client/plugin.js';
@@ -170,11 +171,25 @@ describe('client', () => {
     expect(contribution ?? []).toEqual([]);
   });
 
+  it('leads Create App’s old address to the one environment it names, or to the environments', () => {
+    const paths = { apps: '/apps', environments: '/envs' };
+    expect(newAppTarget('?environmentId=staging', paths)).toBe(
+      '/envs/staging/apps/new',
+    );
+    expect(
+      newAppTarget(
+        '?environmentId=a&environmentId=b&runtimeState=running',
+        paths,
+      ),
+    ).toBe('/envs');
+    expect(newAppTarget('', paths)).toBe('/envs');
+  });
+
   it('has the same keys in both locales', () => {
     expect(keys(zhCN).sort()).toEqual(keys(enUS).sort());
   });
 
-  it('lists Apps and offers creation only with the create grant', async () => {
+  it('lists Apps and offers no creation, which moved to an environment’s page', async () => {
     const answer = (permissions: unknown) => (options: { path: string }) => {
       if (options.path === 'releases/me')
         return Promise.resolve({
@@ -232,11 +247,9 @@ describe('client', () => {
         <AppsCatalog />
       </MemoryRouter>,
     );
-    await waitFor(() =>
-      expect(
-        screen.getByRole('link', { name: 'Create app' }),
-      ).toBeInTheDocument(),
-    );
+    expect(await screen.findByText('Shop')).toBeInTheDocument();
+    // Even with the create grant: an App is created from its environment's page.
+    expect(screen.queryByRole('link', { name: 'Create app' })).toBeNull();
 
     // Refresh reads the Apps and the pending requests again.
     const reads = (path: string) =>
@@ -250,8 +263,9 @@ describe('client', () => {
     expect(reads('releases/deploymentRequests')).toBe(requests + 1);
   });
 
-  it('opens Create App over the list at `new` and the new App in its place', async () => {
+  it('opens Create App over an environment at `apps/new`, the environment fixed, and the new App in its place', async () => {
     const sent: { path: string; method?: string; json?: unknown }[] = [];
+    const reload = vi.fn();
     mocks.request.mockImplementation(
       (options: { path: string; method?: string; json?: unknown }) => {
         sent.push(options);
@@ -259,11 +273,8 @@ describe('client', () => {
           return Promise.resolve({
             data: { userId: 'u', kind: 'human', permissions: allPermissions() },
           });
-        if (options.path === 'releases/environments')
-          return Promise.resolve({
-            data: [{ id: 'staging', name: 'Staging' }],
-            meta: { total: 1 },
-          });
+        if (options.path === 'releases/environments/staging')
+          return Promise.resolve({ data: { id: 'staging', name: 'Staging' } });
         if (options.method === 'POST' && options.path === 'releases/apps')
           return Promise.resolve({ data: {} });
         return Promise.resolve({ data: [], meta: { total: 0 } });
@@ -273,28 +284,27 @@ describe('client', () => {
       return <span data-testid='where'>{useLocation().pathname}</span>;
     }
     render(
-      <MemoryRouter initialEntries={['/apps']}>
+      <MemoryRouter initialEntries={['/envs/staging/apps/new']}>
         <Routes>
-          <Route path='/apps' element={<AppsPage />}>
-            <Route path='new' element={<NewAppPage />} />
-            <Route path=':appId' element={<Where />} />
+          <Route
+            path='/envs/:environmentId'
+            element={<Outlet context={{ reload }} />}
+          >
+            <Route path='apps/new' element={<NewAppPage />} />
           </Route>
+          <Route path='/releases/:appId' element={<Where />} />
         </Routes>
       </MemoryRouter>,
     );
-    fireEvent.click(await screen.findByRole('link', { name: 'Create app' }));
-    let dialog = await screen.findByRole('dialog');
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }));
-    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    const dialog = await screen.findByRole('dialog');
+    // The App goes to the environment it is created from, which cannot be changed here.
+    const environment = within(dialog).getByLabelText('Environment');
+    await waitFor(() => expect(environment).toHaveValue('Staging'));
+    expect(environment).toHaveAttribute('readonly');
+    expect(environment).toBeDisabled();
     expect(
-      sent.filter(
-        (item) => item.method === 'POST' && item.path === 'releases/apps',
-      ),
-    ).toHaveLength(0);
-    fireEvent.click(await screen.findByRole('link', { name: 'Create app' }));
-    dialog = await screen.findByRole('dialog');
-    // The list stays behind the dialog.
-    expect(screen.getByText('No apps yet')).toBeInTheDocument();
+      within(dialog).queryByRole('combobox', { name: 'Environment' }),
+    ).toBeNull();
     fireEvent.change(within(dialog).getByLabelText('Name'), {
       target: { value: 'Shop' },
     });
@@ -319,7 +329,10 @@ describe('client', () => {
       ).toBeEnabled(),
     );
     fireEvent.click(within(dialog).getByRole('button', { name: 'Create app' }));
-    expect(await screen.findByTestId('where')).toHaveTextContent('/apps/shop');
+    expect(await screen.findByTestId('where')).toHaveTextContent(
+      '/releases/shop',
+    );
+    expect(reload).toHaveBeenCalledTimes(1);
     expect(
       sent.find(
         (item) => item.method === 'POST' && item.path === 'releases/apps',
@@ -430,18 +443,15 @@ describe('client', () => {
                 permissions: allPermissions(),
               },
             });
-          if (options.path === 'releases/environments')
+          if (options.path === 'releases/environments/staging')
             return Promise.resolve({
-              data: [
-                {
-                  id: 'staging',
-                  name: 'Staging',
-                  defaultIdleStopMinutes: 1,
-                  defaultDormantAfterHours: 0.5,
-                  maxApps: 2,
-                },
-              ],
-              meta: { total: 1 },
+              data: {
+                id: 'staging',
+                name: 'Staging',
+                defaultIdleStopMinutes: 1,
+                defaultDormantAfterHours: 0.5,
+                maxApps: 2,
+              },
             });
           if (options.method === 'POST' && options.path === 'releases/apps') {
             sent.push(options.json);
@@ -461,16 +471,15 @@ describe('client', () => {
         return <span data-testid='where'>{useLocation().pathname}</span>;
       }
       render(
-        <MemoryRouter initialEntries={['/apps']}>
+        <MemoryRouter initialEntries={['/envs/staging/apps/new']}>
           <Routes>
-            <Route path='/apps' element={<AppsPage />}>
-              <Route path='new' element={<NewAppPage />} />
-              <Route path=':appId' element={<Where />} />
+            <Route path='/envs/:environmentId'>
+              <Route path='apps/new' element={<NewAppPage />} />
             </Route>
+            <Route path='/releases/:appId' element={<Where />} />
           </Routes>
         </MemoryRouter>,
       );
-      fireEvent.click(await screen.findByRole('link', { name: 'Create app' }));
       const dialog = await screen.findByRole('dialog');
       fireEvent.change(within(dialog).getByLabelText('Name'), {
         target: { value: 'Shop' },
@@ -564,7 +573,7 @@ describe('client', () => {
       }
       fireEvent.click(createButton);
       expect(await screen.findByTestId('where')).toHaveTextContent(
-        '/apps/shop',
+        '/releases/shop',
       );
       expect(sent).toEqual([payload, payload]);
     },

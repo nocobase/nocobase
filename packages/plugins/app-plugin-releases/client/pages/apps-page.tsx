@@ -3,9 +3,10 @@
  * a deployment in progress and a pending deployment request ("Pending approval") marked beside it; the request itself
  * is decided on the App's page, at its top. The search, the environments, the runtime states and the page are in the
  * address (`?q=`, `?environmentId=` and `?runtimeState=`, repeatable, `?page=`), so a host's capacity card links to the
- * Apps it counts and a reload keeps them; the server filters before it cuts the page. Create App opens over the list at
- * `new` (`new-app-page.tsx`), a deployment request at `requests/:requestId` (`request-page.tsx`, kept for links to
- * it); an App opens at `:appId` in place of the list.
+ * Apps it counts and a reload keeps them; the server filters before it cuts the page. The list only shows Apps: one is
+ * created from its environment's page (`environment-page.tsx`), and `new` leads there (`new-app-redirect.tsx`). A
+ * deployment request opens over the list at `requests/:requestId` (`request-page.tsx`, kept for links to it); an App
+ * opens at `:appId` in place of the list.
  */
 import { useTranslation } from '@nocobase/i18n/client';
 import type { ColumnDef } from '@tanstack/react-table';
@@ -14,7 +15,6 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
   ListFilterIcon,
-  PlusIcon,
   SearchIcon,
   XIcon,
 } from 'lucide-react';
@@ -22,7 +22,6 @@ import { useMemo, type ReactElement } from 'react';
 import {
   Link,
   Outlet,
-  useLocation,
   useNavigate,
   useOutlet,
   useParams,
@@ -44,7 +43,7 @@ import { RefreshButton } from '../components/refresh-button.js';
 import { AppLabels, EnvironmentName } from '../components/release-badges.js';
 import { EmptyState, ListSkeleton, LoadError } from '../components/states.js';
 import { RuntimeStateBadge } from '../components/runtime-state.js';
-import { Button, buttonVariants } from '../components/ui/button.js';
+import { Button } from '../components/ui/button.js';
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -65,7 +64,7 @@ const PAGE_SIZE = 100;
 
 export default function AppsPage(): ReactElement {
   const outlet = useOutlet();
-  // An App replaces the list; Create App (`new`, no `appId`) opens over it.
+  // An App replaces the list; a deployment request (`requests/:requestId`, no `appId`) opens over it.
   const { appId } = useParams();
   if (outlet && appId !== undefined) return <>{outlet}</>;
   return <AppsCatalog />;
@@ -76,7 +75,6 @@ export function AppsCatalog(): ReactElement {
   const api = useReleasesApi();
   const me = useMe();
   const navigate = useNavigate();
-  const location = useLocation();
   const [params, setParams] = useSearchParams();
   const search = params.get('q') ?? '';
   const environmentIds = params.getAll('environmentId');
@@ -148,23 +146,11 @@ export function AppsCatalog(): ReactElement {
     [reloadApps, reloadPending],
   );
 
-  const createButton = canCreate ? (
-    <Link
-      to={{ pathname: 'new', search: location.search }}
-      className={buttonVariants()}
-    >
-      <PlusIcon data-icon='inline-start' />
-      {t('ui.apps.create')}
-    </Link>
-  ) : null;
-
   const items = apps.data?.items ?? [];
   const total = apps.data?.meta.total ?? items.length;
   const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const page = Math.min(requestedPage, pages);
   const narrowed = search.trim() !== '' || filtered;
-  // The header offers "create" only once there is a list; the empty state offers it before.
-  const listed = apps.data !== undefined && (items.length > 0 || narrowed);
   const environmentNames = environmentIds.map(
     (id) => environments.data?.find((item) => item.id === id)?.name ?? id,
   );
@@ -205,7 +191,6 @@ export function AppsCatalog(): ReactElement {
         description={
           canCreate ? t('ui.apps.emptyDescription') : t('ui.apps.emptyNoAccess')
         }
-        action={createButton}
       />
     );
   else
@@ -322,7 +307,6 @@ export function AppsCatalog(): ReactElement {
         description={t('ui.apps.description')}
         actions={
           <>
-            {listed ? createButton : null}
             {/* Deployments, runtime states and requests change on their own; nothing announces them. */}
             <RefreshButton
               refreshing={apps.loading || pending.loading}

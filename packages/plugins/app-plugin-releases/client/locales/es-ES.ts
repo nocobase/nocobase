@@ -172,14 +172,13 @@ const esES: LocaleResource<typeof enUS> = {
       emptyTitle: 'Aún no hay aplicaciones',
       emptyNoAccess: 'Solicite a un administrador que cree una aplicación.',
       emptyDescription:
-        'Cree una aplicación, luego cargue una versión e impleméntela en un entorno.',
+        'Cree una aplicación desde la página de un entorno; luego cargue una versión e impleméntela.',
       noResults: 'Ninguna aplicación coincide con la búsqueda.',
       created: '{{name}} creado.',
       createDescription:
         'Una aplicación se implementa en un entorno; sus lanzamientos se cargan después.',
       idHint:
         'Letras, dígitos, guiones bajos y guiones; parte de su dirección. No puede cambiar más tarde.',
-      noEnvironment: 'Aún no hay entorno',
       lastAccess: 'Última visita',
       stateFilter: 'Estado',
       anyState: 'Cualquier estado',

@@ -172,14 +172,13 @@ const frFR: LocaleResource<typeof enUS> = {
       emptyTitle: "Aucune application pour l'instant",
       emptyNoAccess: 'Demandez à un administrateur de créer une application.',
       emptyDescription:
-        'Créez une application, puis téléchargez une version et déployez-la dans un environnement.',
+        "Créez une application depuis la page d'un environnement, puis téléversez une version et déployez-la.",
       noResults: 'Aucune application ne correspond à la recherche.',
       created: '{{name}} créé.',
       createDescription:
         'Une application est déployée dans un environnement ; ses sorties sont téléchargées par la suite.',
       idHint:
         "Lettres, chiffres, traits de soulignement et traits d'union ; une partie de son adresse. Cela ne peut pas changer plus tard.",
-      noEnvironment: "Pas encore d'environnement",
       lastAccess: 'Dernière visite',
       stateFilter: 'État',
       anyState: 'Tous les états',

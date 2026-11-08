@@ -172,14 +172,13 @@ const idID: LocaleResource<typeof enUS> = {
       emptyTitle: 'Belum ada aplikasi',
       emptyNoAccess: 'Minta administrator untuk membuat aplikasi.',
       emptyDescription:
-        'Buat aplikasi, lalu unggah rilis dan terapkan ke suatu lingkungan.',
+        'Buat aplikasi dari halaman sebuah lingkungan, lalu unggah rilis dan terapkan.',
       noResults: 'Tidak ada aplikasi yang cocok dengan pencarian.',
       created: '{{name}} dibuat.',
       createDescription:
         'Sebuah aplikasi diterapkan ke satu lingkungan; rilisnya diunggah setelahnya.',
       idHint:
         'Huruf, angka, garis bawah dan tanda hubung; bagian dari alamatnya. Itu tidak bisa diubah nanti.',
-      noEnvironment: 'Belum ada lingkungan',
       lastAccess: 'Kunjungan terakhir',
       stateFilter: 'Status',
       anyState: 'Semua status',

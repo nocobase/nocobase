@@ -80,6 +80,8 @@ import {
 } from '../client/driver-forms/index.js';
 import EnvironmentPage from '../client/pages/environment-page.js';
 import EnvironmentsPage from '../client/pages/environments-page.js';
+import NewAppPage from '../client/pages/new-app-page.js';
+import { ReleasesPathsContext } from '../client/lib/paths.js';
 
 /** A driver form with a setting, a default, a virtual field and a credential, as a driver package would write it. */
 const remoteForm: DriverFormDescription = {
@@ -244,15 +246,21 @@ function serve(
   return sent;
 }
 
-/** The environments page, or with `path` one environment's page below it. */
+/** The environments page, or with `path` one environment's page below it, with Create App over it. */
 function renderPage(path = '/environments'): void {
   render(
     <MemoryRouter initialEntries={[path]}>
-      <Routes>
-        <Route path='/environments' element={<EnvironmentsPage />}>
-          <Route path=':environmentId' element={<EnvironmentPage />} />
-        </Route>
-      </Routes>
+      <ReleasesPathsContext.Provider
+        value={{ apps: '/releases', environments: '/environments' }}
+      >
+        <Routes>
+          <Route path='/environments' element={<EnvironmentsPage />}>
+            <Route path=':environmentId' element={<EnvironmentPage />}>
+              <Route path='apps/new' element={<NewAppPage />} />
+            </Route>
+          </Route>
+        </Routes>
+      </ReleasesPathsContext.Provider>
     </MemoryRouter>,
   );
 }
@@ -878,6 +886,42 @@ describe('environment page', () => {
         ),
       ).toBe(true),
     );
+  });
+
+  it('offers Create App over its apps, creating in this environment only', async () => {
+    serve([environment()], undefined, [], [], { apps: [app] });
+    renderPage('/environments/remote-1');
+    const create = await screen.findByRole('link', { name: 'Create app' });
+    expect(create).toHaveAttribute('href', '/environments/remote-1/apps/new');
+    fireEvent.click(create);
+    const dialog = await screen.findByRole('dialog');
+    // The page stays behind the dialog; the App goes to this environment, which cannot be changed.
+    expect(
+      screen.getByRole('heading', {
+        level: 1,
+        name: 'Remote one',
+        hidden: true,
+      }),
+    ).toBeInTheDocument();
+    const field = within(dialog).getByLabelText('Environment');
+    await waitFor(() => expect(field).toHaveValue('Remote one'));
+    expect(field).toBeDisabled();
+  });
+
+  it('offers no Create App to those who may not create apps', async () => {
+    const permissions = allPermissions();
+    serve([environment()], undefined, [], [], {
+      apps: [app],
+      permissions: {
+        ...permissions,
+        scopes: { ...permissions.scopes, 'rel.apps/create': 'none' },
+      },
+    });
+    renderPage('/environments/remote-1');
+    expect(
+      await screen.findByRole('link', { name: 'Shop' }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Create app' })).toBeNull();
   });
 
   it('is read-only for those who may not manage environments', async () => {

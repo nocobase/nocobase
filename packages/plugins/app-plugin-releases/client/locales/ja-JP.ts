@@ -171,14 +171,13 @@ const jaJP: LocaleResource<typeof enUS> = {
       emptyTitle: 'アプリはまだありません',
       emptyNoAccess: '管理者にアプリの作成を依頼します。',
       emptyDescription:
-        'アプリを作成し、リリースをアップロードして環境にデプロイします。',
+        '環境の詳細ページからアプリを作成し、リリースをアップロードしてデプロイします。',
       noResults: '検索に一致するアプリはありません。',
       created: '{{name}} を作成しました。',
       createDescription:
         'アプリは 1 つの環境にデプロイされます。そのリリースは後でアップロードされます。',
       idHint:
         '文字、数字、アンダースコア、ハイフン。その住所の一部。後から変更することはできません。',
-      noEnvironment: 'まだ環境がありません',
       lastAccess: '最後の訪問',
       stateFilter: '状態',
       anyState: 'すべての状態',

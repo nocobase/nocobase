@@ -173,14 +173,13 @@ const deDE: LocaleResource<typeof enUS> = {
       emptyTitle: 'Noch keine Apps',
       emptyNoAccess: 'Bitten Sie einen Administrator, eine App zu erstellen.',
       emptyDescription:
-        'Erstellen Sie eine App, laden Sie dann eine Version hoch und stellen Sie sie in einer Umgebung bereit.',
+        'Erstellen Sie eine App auf der Seite einer Umgebung, laden Sie dann eine Version hoch und stellen Sie sie bereit.',
       noResults: 'Keine App entspricht der Suche.',
       created: '{{name}} erstellt.',
       createDescription:
         'Eine App wird in einer Umgebung bereitgestellt. Die Veröffentlichungen werden anschließend hochgeladen.',
       idHint:
         'Buchstaben, Ziffern, Unterstriche und Bindestriche; Teil seiner Adresse. Es kann sich später nicht mehr ändern.',
-      noEnvironment: 'Noch keine Umgebung',
       lastAccess: 'Letzter Besuch',
       stateFilter: 'Status',
       anyState: 'Jeder Status',

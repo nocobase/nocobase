@@ -158,14 +158,14 @@ const koKR: LocaleResource<typeof enUS> = {
       loadOneFailed: '앱을 불러올 수 없습니다.',
       emptyTitle: '아직 앱이 없습니다',
       emptyNoAccess: '관리자에게 앱 생성을 요청하세요.',
-      emptyDescription: '앱을 만든 뒤 릴리스를 업로드하고 환경에 배포하세요.',
+      emptyDescription:
+        '환경 상세 페이지에서 앱을 만든 뒤 릴리스를 업로드하고 배포하세요.',
       noResults: '검색과 일치하는 앱이 없습니다.',
       created: '{{name}}을(를) 만들었습니다.',
       createDescription:
         '앱은 하나의 환경에 배포되며 릴리스는 나중에 업로드합니다.',
       idHint:
         '영문자, 숫자, 밑줄, 하이픈을 사용하며 주소의 일부가 됩니다. 나중에 변경할 수 없습니다.',
-      noEnvironment: '아직 환경이 없습니다',
       lastAccess: '마지막 방문',
       stateFilter: '상태',
       anyState: '모든 상태',
