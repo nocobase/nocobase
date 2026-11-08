@@ -47,6 +47,8 @@ export interface GuideContent {
   readonly roles: Readonly<Record<GuidePluginRole, string>>;
   readonly groups: Readonly<Record<GuideGroupId, string>>;
   readonly detail: {
+    readonly currentApplication: string;
+    readonly dependencyOnly: string;
     readonly back: string;
     readonly scenarios: string;
     readonly prerequisite: string;

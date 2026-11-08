@@ -1,8 +1,11 @@
+import { splitSidebarNavigation } from '../../client/lib/navigation-transform.js';
 import { resolveAppRuntime } from '@nocobase/app-client/runtime';
 import { describe, expect, it } from 'vitest';
 
 import appRuntime from '../../client/runtime.js';
 import {
+  routeKey,
+  selectedNavigationId,
   buildRouteNavigation,
   buildSettingsCatalog,
 } from '../../client/routing/route-navigation.js';
@@ -19,12 +22,23 @@ describe('Examples Foundation integration', () => {
     );
   });
 
-  it('shows the capability catalog as the System card and preserves the protected runtime route', async () => {
+  it('keeps Features and extensions in the sidebar footer, outside System settings', async () => {
     const runtime = await resolveAppRuntime(appRuntime);
     const menu = buildRouteNavigation(runtime.routes, new Set());
-    expect(menu.some(({ route }) => route.name === 'capabilityGuide')).toBe(
+    const { main, footer } = splitSidebarNavigation(menu);
+    expect(main.some(({ route }) => route.name === 'capabilityGuide')).toBe(
       false,
     );
+    expect(footer).toHaveLength(1);
+    const guide = footer[0].route;
+    for (const path of ['/capabilities', '/capabilities/app-plugin-file']) {
+      expect(selectedNavigationId(runtime.routes, path)).toBe(routeKey(guide));
+    }
+    expect(
+      splitSidebarNavigation(
+        buildRouteNavigation(runtime.routes, new Set([routeKey(guide)])),
+      ).footer,
+    ).toEqual([]);
     expect(
       menu.filter(({ route }) => route.name === 'settingsHome'),
     ).toHaveLength(1);
@@ -34,9 +48,7 @@ describe('Examples Foundation integration', () => {
     expect(modules.some(({ route }) => route.name === 'foundation')).toBe(
       false,
     );
-    expect(
-      modules.find(({ route }) => route.name === 'capabilityGuide')?.route,
-    ).toMatchObject({
+    expect(guide).toMatchObject({
       path: '/capabilities',
       auth: 'required',
       authz: 'skip',
@@ -52,12 +64,14 @@ describe('Examples Foundation integration', () => {
       authz: 'unrestricted',
     });
     expect(legacy?.navigation).toBeUndefined();
-    const deniedLegacy = new Set([legacy!.id]);
+    expect(modules.some(({ route }) => route.name === 'capabilityGuide')).toBe(
+      false,
+    );
+    const deniedLegacy = new Set([routeKey(legacy!)]);
     expect(
-      buildSettingsCatalog(runtime.routes, deniedLegacy)
-        .flatMap(({ modules }) => modules)
-        .some(({ route }) => route.name === 'capabilityGuide'),
-    ).toBe(true);
+      splitSidebarNavigation(buildRouteNavigation(runtime.routes, deniedLegacy))
+        .footer,
+    ).toHaveLength(1);
   });
 
   it('lists the capability guide, and every demo it offers opens a page this application registers', async () => {
@@ -98,7 +112,7 @@ describe('Examples Foundation integration', () => {
       entries
         .filter((entry) => entry.source === 'kernel')
         .map((entry) => entry.name),
-    ).toEqual(['db', 'i18n', 'jobs', 'lifecycle', 'queue', 'realtime']);
+    ).toEqual(['db', 'jobs', 'lifecycle', 'queue', 'realtime']);
     // Every entry has its own wording; none falls back to the generic text.
     expect(entries.filter((entry) => !entry.known)).toEqual([]);
     expect(

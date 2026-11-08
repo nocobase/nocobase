@@ -13,6 +13,7 @@ export {
 } from './routes.js';
 export {
   fetchFoundationOverview,
+  fetchFoundationRegistrations,
   useFoundationOverview,
   type FoundationLoadError,
   type FoundationOverviewState,

@@ -1,3 +1,4 @@
+import { splitSidebarNavigation } from '../../client/lib/navigation-transform.js';
 import { describe, expect, it } from 'vitest';
 import {
   createCapabilityCatalog,
@@ -12,6 +13,8 @@ import cliPlugins from '../../cli/plugins.js';
 import serverPlugins from '../../server/plugins.js';
 import settingsRoutes from '../../client/pages/settings/routes.js';
 import {
+  routeKey,
+  selectedNavigationId,
   buildRouteNavigation,
   buildSettingsCatalog,
 } from '../../client/routing/route-navigation.js';
@@ -24,12 +27,23 @@ describe('default Foundation integration', () => {
       ),
     ).toHaveLength(1);
   });
-  it('shows the capability catalog as the System card and preserves the protected runtime route', async () => {
+  it('keeps Features and extensions in the sidebar footer, outside System settings', async () => {
     const runtime = await resolveAppRuntime(appRuntime);
     const menu = buildRouteNavigation(runtime.routes, new Set());
-    expect(menu.some(({ route }) => route.name === 'capabilityGuide')).toBe(
+    const { main, footer } = splitSidebarNavigation(menu);
+    expect(main.some(({ route }) => route.name === 'capabilityGuide')).toBe(
       false,
     );
+    expect(footer).toHaveLength(1);
+    const guide = footer[0].route;
+    for (const path of ['/capabilities', '/capabilities/app-plugin-file']) {
+      expect(selectedNavigationId(runtime.routes, path)).toBe(routeKey(guide));
+    }
+    expect(
+      splitSidebarNavigation(
+        buildRouteNavigation(runtime.routes, new Set([routeKey(guide)])),
+      ).footer,
+    ).toEqual([]);
     expect(
       menu.filter(({ route }) => route.name === 'settingsHome'),
     ).toHaveLength(1);
@@ -39,9 +53,7 @@ describe('default Foundation integration', () => {
     expect(modules.some(({ route }) => route.name === 'foundation')).toBe(
       false,
     );
-    expect(
-      modules.find(({ route }) => route.name === 'capabilityGuide')?.route,
-    ).toMatchObject({
+    expect(guide).toMatchObject({
       path: '/capabilities',
       auth: 'required',
       authz: 'skip',
@@ -62,12 +74,14 @@ describe('default Foundation integration', () => {
         (plugin) => plugin.packageName === '@nocobase/app-plugin-foundation',
       ),
     ).toHaveLength(1);
-    const deniedLegacy = new Set([legacy!.id]);
+    expect(modules.some(({ route }) => route.name === 'capabilityGuide')).toBe(
+      false,
+    );
+    const deniedLegacy = new Set([routeKey(legacy!)]);
     expect(
-      buildSettingsCatalog(runtime.routes, deniedLegacy)
-        .flatMap(({ modules }) => modules)
-        .some(({ route }) => route.name === 'capabilityGuide'),
-    ).toBe(true);
+      splitSidebarNavigation(buildRouteNavigation(runtime.routes, deniedLegacy))
+        .footer,
+    ).toHaveLength(1);
   });
 
   it('keeps Foundation beside business settings without changing its protected URL', async () => {
@@ -94,13 +108,7 @@ describe('default Foundation integration', () => {
           ['permissionManagement', '/settings/roles'],
         ],
       ],
-      [
-        'settingsSystem',
-        [
-          ['databaseExplorer', '/settings/database-explorer'],
-          ['capabilityGuide', '/capabilities'],
-        ],
-      ],
+      ['settingsSystem', [['databaseExplorer', '/settings/database-explorer']]],
     ]);
   });
 
@@ -123,7 +131,7 @@ describe('default Foundation integration', () => {
       entries
         .filter((entry) => entry.source === 'kernel')
         .map((entry) => entry.name),
-    ).toEqual(['db', 'i18n', 'jobs', 'lifecycle', 'queue', 'realtime']);
+    ).toEqual(['db', 'jobs', 'lifecycle', 'queue', 'realtime']);
     // Every entry has its own wording; none falls back to the generic text.
     expect(entries.filter((entry) => !entry.known)).toEqual([]);
     expect(entries.filter((entry) => entry.role === 'example').length).toBe(0);

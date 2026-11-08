@@ -1,3 +1,8 @@
+import { featureOverview } from '../../pages/capabilities/feature-overview-zh-CN.js';
+import authorizationOverview from '../../pages/capabilities/authorization-overview-zh-CN.js';
+import i18nOverview from '../../pages/capabilities/i18n-overview-zh-CN.js';
+import agentsOverview from '../../pages/capabilities/agents-overview-zh-CN.js';
+import databaseOverview from '../../pages/capabilities/database-overview-zh-CN.js';
 import databaseExplorer from '../../pages/settings/database-explorer/zh-CN.js';
 import settings from './settings-zh-CN.js';
 import type { SystemResource } from './en-US.js';
@@ -7,6 +12,11 @@ import inboxZhCN from '#extensions/nocobase-inbox/locales/zh-CN';
 /** The Chinese copy of what the template ships; see `./en-US.ts`. */
 const systemZhCN: SystemResource = {
   databaseExplorer,
+  databaseOverview,
+  agentsOverview,
+  authorizationOverview,
+  featureOverview,
+  i18nOverview,
   pendingFeedback: {
     working: '正在处理…',
     longWait: '耗时比平常更长，您可以继续等待。',
@@ -198,6 +208,7 @@ const systemZhCN: SystemResource = {
     signingOut: '正在退出…',
   },
   navigation: {
+    resources: '参考资料',
     home: '首页',
     open: '打开导航',
     close: '关闭导航',

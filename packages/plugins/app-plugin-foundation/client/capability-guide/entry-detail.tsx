@@ -9,7 +9,7 @@ import {
   Play,
   RotateCcw,
 } from 'lucide-react';
-import { useState, type ReactElement } from 'react';
+import { useState, type ReactElement, type ReactNode } from 'react';
 import { Link } from 'react-router';
 
 import {
@@ -41,11 +41,13 @@ export function EntryDetail({
   catalog,
   content,
   search,
+  children,
 }: {
   readonly entry: CatalogEntry | undefined;
   readonly catalog: CapabilityCatalog;
   readonly content: GuideContent;
   readonly search: string;
+  readonly children?: ReactNode;
 }): ReactElement {
   const { locale } = useGuideContent();
   const routes = useRegisteredPaths();
@@ -76,11 +78,6 @@ export function EntryDetail({
                 {text.title}
               </h2>
               <EntryBadges entry={entry} content={content} />
-              {entry.group ? (
-                <span className='text-xs text-muted-foreground'>
-                  {content.groups[entry.group]}
-                </span>
-              ) : null}
             </div>
             <code className='wrap-anywhere font-mono text-xs text-muted-foreground'>
               {entry.packageName}
@@ -88,107 +85,117 @@ export function EntryDetail({
           </div>
         </div>
         <p className='max-w-3xl text-base leading-7'>{text.summary}</p>
-        {entry.docs || demo ? (
-          <div className='flex flex-wrap gap-2'>
-            {demo ? (
-              <Link to={demo} className={linkButton}>
-                <Play className='size-4' aria-hidden />
-                {content.detail.demo}
-              </Link>
-            ) : null}
-            {entry.docs ? (
-              <a
-                href={docsUrl(entry.docs, locale)}
-                target='_blank'
-                rel='noreferrer'
-                className={linkButton}
-              >
-                <ArrowUpRight className='size-4' aria-hidden />
-                {content.detail.docs}
-              </a>
-            ) : null}
-          </div>
-        ) : null}
+        <div className='flex flex-wrap gap-2'>
+          {demo ? (
+            <Link to={demo} className={linkButton}>
+              <Play className='size-4' aria-hidden />
+              {content.detail.demo}
+            </Link>
+          ) : null}
+          <a
+            href={
+              entry.docs
+                ? docsUrl(entry.docs, locale)
+                : packageUrl(entry.packageName)
+            }
+            target='_blank'
+            rel='noreferrer'
+            className={linkButton}
+          >
+            <ArrowUpRight className='size-4' aria-hidden />
+            {content.detail.docs}
+          </a>
+        </div>
       </header>
 
-      <div className='grid gap-6 xl:grid-cols-[minmax(0,1fr)_15rem]'>
-        <div className='flex min-w-0 flex-col gap-6'>
-          <section className='flex flex-col gap-2'>
-            <h3 className='text-sm font-semibold'>
-              {content.detail.scenarios}
-            </h3>
-            <ul className='flex flex-col gap-1.5 text-sm leading-6 text-muted-foreground'>
-              {text.scenarios.map((scenario) => (
-                <li key={scenario} className='flex gap-2'>
-                  <span
-                    className='mt-2.5 size-1.5 shrink-0 rounded-full bg-primary/50'
-                    aria-hidden
-                  />
-                  {scenario}
-                </li>
-              ))}
-            </ul>
-          </section>
-          {entry.role === 'example' ? (
-            <section className='flex flex-col gap-2 rounded-xl border border-dashed p-4'>
-              <h3 className='text-sm font-semibold'>
-                {content.detail.adapt.title}
+      {children ?? (
+        <div className='grid gap-6 xl:grid-cols-[minmax(0,1fr)_15rem]'>
+          <div className='flex min-w-0 flex-col gap-6'>
+            <section className='space-y-2 rounded-lg border p-4'>
+              <h3 className='text-base font-semibold'>
+                {content.detail.currentApplication}
               </h3>
-              <ol className='flex list-decimal flex-col gap-1 pl-5 text-sm leading-6 text-muted-foreground'>
-                {content.detail.adapt.steps.map((step) => (
-                  <li key={step}>{step}</li>
-                ))}
-              </ol>
+              <p className='text-sm leading-6 text-muted-foreground'>
+                {content.detail.dependencyOnly}
+              </p>
             </section>
-          ) : null}
-          <PromptEditor entry={entry} text={text} content={content} />
-          <DeveloperReference entry={entry} text={text} content={content} />
-        </div>
-
-        <aside className='flex flex-col gap-6'>
-          <section className='flex flex-col gap-2 rounded-xl border bg-card p-4'>
-            <h3 className='text-sm font-semibold'>
-              {content.detail.prerequisite}
-            </h3>
-            <p className='text-sm leading-6 text-muted-foreground'>
-              {entryPrerequisite(content, entry)}
-            </p>
-          </section>
-          {entry.related.length ? (
             <section className='flex flex-col gap-2'>
               <h3 className='text-sm font-semibold'>
-                {content.detail.related}
+                {content.detail.scenarios}
               </h3>
-              <ul className='flex flex-col gap-1.5'>
-                {entry.related.map((id) => {
-                  const related = catalog.find(id);
-                  if (!related) return null;
-                  return (
-                    <li key={id}>
-                      <Link
-                        to={capabilityPath(id, search)}
-                        className='flex items-center gap-2 rounded-lg border bg-card px-3 py-2 text-sm hover:bg-hover'
-                      >
-                        <EntryIcon
-                          entry={related}
-                          className='size-4 shrink-0 text-primary'
-                        />
-                        <span className='flex-1'>
-                          {entryContent(content, related).title}
-                        </span>
-                        <ChevronRight
-                          className='size-4 text-muted-foreground'
-                          aria-hidden
-                        />
-                      </Link>
-                    </li>
-                  );
-                })}
+              <ul className='flex flex-col gap-1.5 text-sm leading-6 text-muted-foreground'>
+                {text.scenarios.map((scenario) => (
+                  <li key={scenario} className='flex gap-2'>
+                    <span
+                      className='mt-2.5 size-1.5 shrink-0 rounded-full bg-primary/50'
+                      aria-hidden
+                    />
+                    {scenario}
+                  </li>
+                ))}
               </ul>
             </section>
-          ) : null}
-        </aside>
-      </div>
+            {entry.role === 'example' ? (
+              <section className='flex flex-col gap-2 rounded-xl border border-dashed p-4'>
+                <h3 className='text-sm font-semibold'>
+                  {content.detail.adapt.title}
+                </h3>
+                <ol className='flex list-decimal flex-col gap-1 pl-5 text-sm leading-6 text-muted-foreground'>
+                  {content.detail.adapt.steps.map((step) => (
+                    <li key={step}>{step}</li>
+                  ))}
+                </ol>
+              </section>
+            ) : null}
+            <PromptEditor entry={entry} text={text} content={content} />
+            <DeveloperReference entry={entry} text={text} content={content} />
+          </div>
+
+          <aside className='flex flex-col gap-6'>
+            <section className='flex flex-col gap-2 rounded-xl border bg-card p-4'>
+              <h3 className='text-sm font-semibold'>
+                {content.detail.prerequisite}
+              </h3>
+              <p className='text-sm leading-6 text-muted-foreground'>
+                {entryPrerequisite(content, entry)}
+              </p>
+            </section>
+            {entry.related.length ? (
+              <section className='flex flex-col gap-2'>
+                <h3 className='text-sm font-semibold'>
+                  {content.detail.related}
+                </h3>
+                <ul className='flex flex-col gap-1.5'>
+                  {entry.related.map((id) => {
+                    const related = catalog.find(id);
+                    if (!related) return null;
+                    return (
+                      <li key={id}>
+                        <Link
+                          to={capabilityPath(id, search)}
+                          className='flex items-center gap-2 rounded-lg border bg-card px-3 py-2 text-sm hover:bg-hover'
+                        >
+                          <EntryIcon
+                            entry={related}
+                            className='size-4 shrink-0 text-primary'
+                          />
+                          <span className='flex-1'>
+                            {entryContent(content, related).title}
+                          </span>
+                          <ChevronRight
+                            className='size-4 text-muted-foreground'
+                            aria-hidden
+                          />
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </section>
+            ) : null}
+          </aside>
+        </div>
+      )}
     </article>
   );
 }

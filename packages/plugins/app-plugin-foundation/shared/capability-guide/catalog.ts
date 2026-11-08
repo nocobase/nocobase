@@ -97,6 +97,9 @@ export function createCapabilityCatalog(
     ).map(([id, definition]) => [definition.packageName, [id, definition]]),
   );
   const listed = [...declared].filter((name) => {
+    // Keep a standalone core entry only when the application has no i18n plugin.
+    if (name === '@nocobase/i18n' && declared.has('@nocobase/app-plugin-i18n'))
+      return false;
     if (KERNEL_NOT_LISTED[name]) return false;
     if (PLUGIN_NAME.test(name)) return true;
     return known.get(name)?.[1].source === 'kernel';
@@ -132,7 +135,8 @@ export function createCapabilityCatalog(
   const byId = new Map(entries.map((entry) => [entry.id, entry]));
   return {
     entries,
-    find: (id) => byId.get(id),
+    find: (id) =>
+      byId.get(id) ?? (id === 'i18n' ? byId.get('app-plugin-i18n') : undefined),
     featured: entries.filter((entry) => entry.featured),
   };
 }

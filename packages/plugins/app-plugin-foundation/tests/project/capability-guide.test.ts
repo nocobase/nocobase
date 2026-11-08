@@ -160,3 +160,35 @@ describe('capability catalog', () => {
     },
   );
 });
+
+it('merges i18n into one searchable plugin entry and resolves the old core id', () => {
+  const catalog = createCapabilityCatalog({
+    dependencies: {
+      '@nocobase/i18n': '*',
+      '@nocobase/app-plugin-i18n': '*',
+    },
+  });
+  expect(catalog.entries.map((entry) => entry.id)).toEqual(['app-plugin-i18n']);
+  expect(catalog.find('i18n')).toBe(catalog.find('app-plugin-i18n'));
+  expect(catalog.find('i18n')?.covers).toEqual(['@nocobase/i18n']);
+  for (const query of [
+    '@nocobase/i18n',
+    '@nocobase/app-plugin-i18n',
+    '多语言',
+  ]) {
+    expect(
+      filterCatalog(catalog.entries, { source: 'all', query }, (entry) =>
+        searchableText(guideContent('zh-CN'), entry),
+      ),
+    ).toHaveLength(1);
+  }
+});
+
+it('retains i18n for applications with only the core dependency', () => {
+  const catalog = createCapabilityCatalog({
+    dependencies: { '@nocobase/i18n': '*' },
+  });
+  expect(catalog.entries.map((entry) => entry.id)).toEqual(['i18n']);
+  expect(catalog.find('i18n')?.source).toBe('kernel');
+  expect(catalog.find('app-plugin-i18n')).toBeUndefined();
+});

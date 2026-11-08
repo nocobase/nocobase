@@ -5,9 +5,9 @@ const idID: FoundationResource = {
     settings: 'Pengaturan sistem',
     foundation: 'Fondasi aplikasi',
     foundationDescription: 'Kemampuan NocoBase yang digunakan aplikasi ini.',
-    capabilityGuide: 'Inti dan plugin',
+    capabilityGuide: 'Fitur dan ekstensi',
     capabilityGuideDescription:
-      'Apa yang diselesaikan kemampuan bawaan dan cara memintanya ke agen Anda.',
+      'Pelajari cara menggunakan fitur yang tersedia di aplikasi ini untuk membangun proses bisnis Anda.',
   },
   page: {
     otherCapabilities: 'Kemampuan lainnya',

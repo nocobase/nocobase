@@ -3,13 +3,13 @@ import type { GuideContent } from './types.js';
 // Mockup content. Placeholders are in 【】 and stay in the copied text for the reader to replace.
 const zhCN: GuideContent = {
   nav: {
-    title: '内核与插件',
-    description: '了解应用提供的内核与插件，以及如何使用它们。',
+    title: '功能与扩展',
+    description: '了解当前应用已有的功能，以及如何用它们搭建业务。',
   },
   page: {
-    title: '内核与插件',
+    title: '功能与扩展',
     description:
-      '这里列出当前应用依赖的全部内核模块和插件。选一项，看它能解决什么业务问题，再复制提示词交给 Agent。',
+      '了解当前应用已具备的功能，通过使用说明、业务示例和 Agent 提示词搭建你的业务。',
     search: '搜索名称、业务或场景',
     count: '共 {{total}} 项，显示 {{shown}} 项',
     noResults: '没有匹配的能力。',
@@ -51,6 +51,9 @@ const zhCN: GuideContent = {
     development: '开发与运行',
   },
   detail: {
+    currentApplication: '当前应用',
+    dependencyOnly:
+      '应用依赖中已声明此项。这里暂未提供专属运行信息，使用前请核对实际接入与业务配置。',
     back: '返回目录',
     scenarios: '适用场景',
     prerequisite: '使用前提',
@@ -62,11 +65,11 @@ const zhCN: GuideContent = {
       skill:
         '这是给 Agent 读的开发 Skill，界面上没有单独入口；向 Agent 提需求时它会自动参考。',
     },
-    prompts: '交给 Agent 的提示词',
+    prompts: '让 Agent 实现业务',
     promptHint:
       '把【】里的内容换成你的业务，可以直接在框里修改；复制的就是框里显示的全部文字。',
     template: '模板',
-    example: '已填好的案例',
+    example: '业务示例',
     copy: '复制提示词',
     copied: '已复制，粘贴到 Agent 对话里即可。',
     copyFailed: '复制失败，请选中文字手动复制。',
@@ -92,7 +95,7 @@ const zhCN: GuideContent = {
   home: {
     title: '当前应用已经提供的能力',
     description: '挑一项看看它能解决什么问题，再把提示词交给 Agent。',
-    viewAll: '查看全部 {{count}} 项能力',
+    viewAll: '探索全部 {{count}} 项功能与扩展',
     open: '查看能力',
   },
   unlisted: {
@@ -113,15 +116,16 @@ const zhCN: GuideContent = {
   },
   entries: {
     'app-plugin-agents': {
-      title: 'AI 智能体',
-      summary: '把 AI 助手接入业务，辅助查资料、整理信息和完成指定工作。',
+      title: 'AI Agent',
+      summary: '把 AI Agent 接入业务，辅助查资料、整理信息和完成指定工作。',
       scenarios: ['知识问答、客户信息整理和业务处理辅助。'],
-      prerequisite: '需要先配置一个大模型服务和它的密钥。',
+      prerequisite:
+        '先完成插件注册和应用集成。业务 Agent 需要模型服务；Runner 任务则按所选工具完成授权和配置。',
       prompts: {
         main: {
           label: '让 Agent 实现',
           template:
-            '为【业务应用】增加一个【业务助手】。它帮助【使用者】完成【具体任务】，只能访问该用户有权查看的资料。列出允许自动执行的操作，以及必须由用户确认的操作；信息不足时说明缺少什么。提供对话入口并用真实业务问题验证回答与操作边界。',
+            '为【业务应用】增加一个【业务 Agent】。它帮助【使用者】完成【具体任务】，只能访问该用户有权查看的资料。列出允许自动执行的操作，以及必须由用户确认的操作；信息不足时说明缺少什么。提供对话入口并用真实业务问题验证回答与操作边界。',
         },
       },
       reference: [
@@ -369,17 +373,19 @@ const zhCN: GuideContent = {
       ],
     },
     'app-plugin-foundation': {
-      title: '内核与插件能力展示',
-      summary: '展示应用提供的内核与插件能力、适用场景和使用方法。',
+      title: '功能与扩展',
+      summary:
+        '介绍当前应用已有的功能、适用场景，以及如何通过 Agent 实现业务需求。',
       scenarios: [
         '了解当前应用能做什么，选择可复用的能力，再向 Agent 描述搭建需求。',
       ],
-      prerequisite: '当前应用已提供“内核与插件”页面，登录后即可查看。',
+      prerequisite:
+        '当前应用已提供“功能与扩展”页面，登录后可从侧边栏底部打开。',
       prompts: {
         main: {
           label: '让 Agent 实现',
           template:
-            '结合【当前应用】的内核与插件能力，为【准备搭建的功能】选择可复用的能力。说明每项能力能解决什么问题、适用场景和使用前提，再整理成可交给 Agent 执行的业务需求。区分应用已提供的能力与已经搭建完成的业务功能，不要仅凭安装了插件就判断功能已经完成。',
+            '参考【当前应用】的“功能与扩展”，为【准备搭建的功能】选择可复用的能力。说明每项能力能解决什么问题、适用场景和使用前提，再整理成可交给 Agent 执行的业务需求。区分应用已提供的能力与已经搭建完成的业务功能，不要仅凭安装了插件就判断功能已经完成。',
         },
       },
       reference: [
@@ -768,7 +774,7 @@ const zhCN: GuideContent = {
     },
     db: {
       title: '数据库',
-      summary: '管理相互关联的业务信息，让列表、详情和统计使用一致的数据。',
+      summary: '接入数据库，查看当前连接的配置、数据表和字段。',
       scenarios: [
         '客户、联系人和跟进记录需要长期维护，并且互相关联。',
         '订单和订单明细一起保存，汇总金额不能对不上。',

@@ -6,9 +6,9 @@ const ptBR: FoundationResource = {
     foundation: 'Base do aplicativo',
     foundationDescription:
       'Os recursos do NocoBase em que este aplicativo se baseia.',
-    capabilityGuide: 'Núcleo e plugins',
+    capabilityGuide: 'Recursos e extensões',
     capabilityGuideDescription:
-      'O que os recursos integrados resolvem e como pedi-los ao seu agente.',
+      'Saiba como usar os recursos disponíveis neste aplicativo para desenvolver seu negócio.',
   },
   page: {
     otherCapabilities: 'Outras capacidades',

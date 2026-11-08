@@ -3,14 +3,14 @@ import type { GuideContent } from './types.js';
 // Mockup content. Placeholders are in square brackets and stay in the copied text for the reader to replace.
 const enUS: GuideContent = {
   nav: {
-    title: 'Core and plugins',
+    title: 'Features and extensions',
     description:
-      'Explore the application’s core modules and plugins, and how to use them.',
+      'Learn how to use the features available in this application to build your business.',
   },
   page: {
-    title: 'Core and plugins',
+    title: 'Features and extensions',
     description:
-      'Every core module and plugin this application depends on. Pick one to see the business problem it solves, then copy a prompt for your agent.',
+      'Explore the features available in this application, with usage instructions, business examples and agent prompts to build your business.',
     search: 'Search names, business terms or scenarios',
     count: '{{shown}} of {{total}} shown',
     noResults: 'No matching capabilities.',
@@ -39,7 +39,7 @@ const enUS: GuideContent = {
     plugin: 'Plugins',
   },
   roles: {
-    example: 'Example',
+    example: 'Business example',
     skill: 'Skill',
   },
   groups: {
@@ -52,6 +52,9 @@ const enUS: GuideContent = {
     development: 'Development & runtime',
   },
   detail: {
+    currentApplication: 'This application',
+    dependencyOnly:
+      'This package is declared in the application dependencies. No dedicated runtime overview is available here; inspect its integration and business configuration before using it.',
     back: 'Back to the catalog',
     scenarios: 'When to use it',
     prerequisite: 'Before you start',
@@ -65,7 +68,7 @@ const enUS: GuideContent = {
       skill:
         'A development Skill the agent reads; it has no page of its own. The agent consults it when you ask for related work.',
     },
-    prompts: 'Prompts for your agent',
+    prompts: 'Build with an agent',
     promptHint:
       'Replace the bracketed text with your business; you can edit it right here. Copy takes exactly the text shown.',
     template: 'Template',
@@ -96,7 +99,7 @@ const enUS: GuideContent = {
     title: 'What this application already provides',
     description:
       'Pick one to see the problem it solves, then hand its prompt to your agent.',
-    viewAll: 'See all {{count}} capabilities',
+    viewAll: 'Explore all {{count}} features and extensions',
     open: 'View capability',
   },
   unlisted: {
@@ -125,7 +128,8 @@ const enUS: GuideContent = {
       scenarios: [
         'Knowledge questions, customer information and business assistance.',
       ],
-      prerequisite: 'Configure a model provider and its key first.',
+      prerequisite:
+        'Complete plugin registration and application integration first. Business assistants use model services; Runner tasks depend on the selected tool and its authentication.',
       prompts: {
         main: {
           label: 'Ask the agent',
@@ -405,19 +409,19 @@ const enUS: GuideContent = {
       ],
     },
     'app-plugin-foundation': {
-      title: 'Core and plugin capabilities',
+      title: 'Features and extensions',
       summary:
-        'Explore the core and plugin capabilities available in the application, their use cases and how to use them.',
+        'Explore available features, their use cases and how to turn business requirements into working features with an agent.',
       scenarios: [
         'Understand what the application offers, choose reusable capabilities and describe the business requirements to an agent.',
       ],
       prerequisite:
-        'The application already provides the Core and plugins page, available after signing in.',
+        'After signing in, open Features and extensions at the bottom of the sidebar.',
       prompts: {
         main: {
           label: 'Ask the agent',
           template:
-            'Use the core and plugin catalog in [current application] to select reusable capabilities for [planned feature]. Explain the problem each capability solves, its use cases and prerequisites, then turn these into business requirements an agent can implement. Distinguish available capabilities from completed business features; installing a plugin alone does not mean a feature is complete.',
+            'Use Features and extensions in [current application] to select reusable capabilities for [planned feature]. Explain the problem each capability solves, its use cases and prerequisites, then turn these into business requirements an agent can implement. Distinguish available capabilities from completed business features; installing a plugin alone does not mean a feature is complete.',
         },
       },
       reference: [
@@ -846,9 +850,9 @@ const enUS: GuideContent = {
       ],
     },
     db: {
-      title: 'Business data',
+      title: 'Database',
       summary:
-        'Manage connected business information consistently across lists, details and reports.',
+        'Connect databases and inspect configured connections, tables and fields.',
       scenarios: [
         'Customers, contacts and follow-ups that are maintained for years and linked to each other.',
         'Orders saved together with their lines, where totals must always add up.',

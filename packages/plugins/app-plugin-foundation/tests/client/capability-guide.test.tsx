@@ -73,7 +73,11 @@ function BreadcrumbHeader() {
 
 async function renderGuide(
   route: string,
-  options: { readonly demo?: boolean } = {},
+  options: {
+    readonly demo?: boolean;
+    readonly catalog?: typeof catalog;
+    readonly entryComponents?: Readonly<Record<string, React.ComponentType>>;
+  } = {},
 ) {
   return renderWithApp(
     <PageBreadcrumbProvider>
@@ -82,13 +86,21 @@ async function renderGuide(
         <Route
           path='/capabilities'
           element={
-            <CapabilityGuidePage catalog={catalog} settingsPath='/settings' />
+            <CapabilityGuidePage
+              catalog={options.catalog ?? catalog}
+              settingsPath='/settings'
+              entryComponents={options.entryComponents}
+            />
           }
         />
         <Route
           path='/capabilities/:entryId'
           element={
-            <CapabilityGuidePage catalog={catalog} settingsPath='/settings' />
+            <CapabilityGuidePage
+              catalog={options.catalog ?? catalog}
+              settingsPath='/settings'
+              entryComponents={options.entryComponents}
+            />
           }
         />
       </Routes>
@@ -288,4 +300,72 @@ describe('capability guide page', () => {
       rows().every((row) => row.textContent?.includes(en.sources.kernel)),
     ).toBe(true);
   });
+});
+
+it('uses an app-owned database detail body while retaining catalog navigation', async () => {
+  await renderGuide('/capabilities/db?source=kernel&q=db', {
+    entryComponents: { db: () => <p>Live database overview</p> },
+  });
+  expect(await screen.findByText('Live database overview')).toBeInTheDocument();
+  expect(
+    screen.queryByRole('button', { name: en.detail.copy }),
+  ).not.toBeInTheDocument();
+  expect(screen.queryByText(en.detail.prerequisite)).not.toBeInTheDocument();
+  expect(
+    screen.getByRole('navigation', { name: 'Breadcrumb' }),
+  ).toHaveTextContent(en.entries.db.title);
+});
+
+it.each(
+  catalog.entries.map(
+    (entry) => [entry.id, entry.packageName, entry.docs] as const,
+  ),
+)(
+  'keeps documentation and application context available for %s',
+  async (id, packageName, docs) => {
+    await renderGuide(`/capabilities/${id}`);
+    const article = screen.getByRole('article');
+    expect(
+      within(article).getByRole('link', { name: en.detail.docs }),
+    ).toHaveAttribute(
+      'href',
+      docs
+        ? `https://docs.nocobase.com${docs}`
+        : `https://www.npmjs.com/package/${packageName}`,
+    );
+    expect(
+      within(article).getByRole('heading', { name: 'This application' }),
+    ).toBeVisible();
+    expect(
+      within(article).getByText(/No dedicated runtime overview is available/),
+    ).toBeVisible();
+  },
+);
+
+it('redirects the old i18n detail to the merged entry and keeps filters', async () => {
+  const merged = createCapabilityCatalog({
+    dependencies: {
+      '@nocobase/i18n': '*',
+      '@nocobase/app-plugin-i18n': '*',
+    },
+  });
+  await renderGuide('/capabilities/i18n?source=plugin&q=i18n', {
+    catalog: merged,
+    entryComponents: {
+      'app-plugin-i18n': () => <p>Combined language configuration</p>,
+    },
+  });
+  await waitFor(() =>
+    expect(screen.getByTestId('location')).toHaveTextContent(
+      '/capabilities/app-plugin-i18n?source=plugin&q=i18n',
+    ),
+  );
+  expect(
+    await screen.findByText('Combined language configuration'),
+  ).toBeVisible();
+  expect(rows()).toHaveLength(1);
+  expect(rows()[0]).toHaveAttribute(
+    'href',
+    '/capabilities/app-plugin-i18n?source=plugin&q=i18n',
+  );
 });

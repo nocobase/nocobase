@@ -6,9 +6,9 @@ const enUS = {
     foundation: 'App usage',
     foundationDescription:
       'The NocoBase capabilities this application is built on.',
-    capabilityGuide: 'Core and plugins',
+    capabilityGuide: 'Features and extensions',
     capabilityGuideDescription:
-      'Explore the application’s core modules and plugins, and how to use them.',
+      'Learn how to use the features available in this application to build your business.',
   },
   page: {
     otherCapabilities: 'Other capabilities',

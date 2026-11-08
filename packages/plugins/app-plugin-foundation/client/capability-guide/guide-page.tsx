@@ -2,8 +2,13 @@ import { usePageBreadcrumb } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { cn } from 'cn';
 import { Search, X } from 'lucide-react';
-import { useState, type ReactElement } from 'react';
-import { Link, useParams, useSearchParams } from 'react-router';
+import {
+  Suspense,
+  useState,
+  type ComponentType,
+  type ReactElement,
+} from 'react';
+import { Link, Navigate, useParams, useSearchParams } from 'react-router';
 
 import {
   CAPABILITY_GUIDE_PATH,
@@ -96,9 +101,11 @@ const SOURCE_FILTERS: readonly GuideSourceFilter[] = [
 export function CapabilityGuidePage({
   catalog,
   settingsPath,
+  entryComponents,
 }: {
   readonly catalog: CapabilityCatalog;
   readonly settingsPath?: string;
+  readonly entryComponents?: Readonly<Record<string, ComponentType>>;
 }): ReactElement {
   const { t } = useTranslation('@nocobase/app-plugin-foundation');
   const { entryId } = useParams();
@@ -108,6 +115,7 @@ export function CapabilityGuidePage({
   const { source: activeSource, query } = filter.current;
   const search = guideSearch(filter.current);
   const selected = entryId ? catalog.find(entryId) : undefined;
+  const EntryContent = selected ? entryComponents?.[selected.id] : undefined;
 
   usePageBreadcrumb([
     ...(settingsPath ? [{ label: t('nav.settings'), to: settingsPath }] : []),
@@ -145,6 +153,16 @@ export function CapabilityGuidePage({
     setParams(new URLSearchParams(guideSearch(merged)), { replace: true });
   }
 
+  if (entryId && selected && entryId !== selected.id) {
+    const queryString = params.toString();
+    return (
+      <Navigate
+        replace
+        to={capabilityPath(selected.id, queryString ? `?${queryString}` : '')}
+      />
+    );
+  }
+
   return (
     <div className='mx-auto flex w-full max-w-7xl flex-col gap-5 p-4 md:p-6'>
       <header
@@ -153,9 +171,11 @@ export function CapabilityGuidePage({
         <h1 className='font-heading text-2xl font-semibold tracking-tight'>
           {content.page.title}
         </h1>
-        <p className='max-w-3xl text-sm leading-6 text-muted-foreground'>
-          {content.page.description}
-        </p>
+        {!EntryContent ? (
+          <p className='max-w-3xl text-sm leading-6 text-muted-foreground'>
+            {content.page.description}
+          </p>
+        ) : null}
       </header>
 
       <div className='grid gap-6 lg:grid-cols-[minmax(0,26rem)_minmax(0,1fr)]'>
@@ -235,7 +255,13 @@ export function CapabilityGuidePage({
               catalog={catalog}
               content={content}
               search={search}
-            />
+            >
+              {EntryContent ? (
+                <Suspense fallback={<p role='status'>{t('page.loading')}</p>}>
+                  <EntryContent />
+                </Suspense>
+              ) : undefined}
+            </EntryDetail>
           ) : (
             <HowToAsk content={content} />
           )}

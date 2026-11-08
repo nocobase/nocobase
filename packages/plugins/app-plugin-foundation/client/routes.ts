@@ -4,7 +4,7 @@ import {
   type AppClientRoutePageDefinition,
 } from '@nocobase/app-client/plugins';
 import { Layers, Settings } from 'lucide-react';
-import { createElement } from 'react';
+import { createElement, lazy, type ComponentType } from 'react';
 
 import {
   CAPABILITY_GUIDE_PATH,
@@ -28,6 +28,10 @@ export interface FoundationRouteOptions {
   readonly guideNavigation?: boolean;
   /** Optional host settings home to include in the catalog breadcrumb. */
   readonly guideSettingsPath?: string;
+  /** App-owned detail bodies, loaded only when their catalog entry is opened. */
+  readonly guideEntryLoaders?: Readonly<
+    Record<string, () => Promise<{ default: ComponentType }>>
+  >;
 }
 
 /**
@@ -62,7 +66,8 @@ export function foundationDefinition(
 
 /**
  * The capability guide: a static page listing every core module and plugin the application depends on, with business
- * descriptions and prompts. It loads nothing from the server, so every signed-in user may open it, like the home page.
+ * descriptions. Every signed-in user may open the catalog. App-owned detail bodies enforce their own data access
+ * through the APIs they use; the catalog itself does not grant access to configuration.
  * Both paths render the same page: the list alone on a narrow screen, the list beside the entry on a wide one.
  */
 export function capabilityGuideDefinitions(
@@ -70,8 +75,15 @@ export function capabilityGuideDefinitions(
   options: {
     readonly navigation?: boolean;
     readonly settingsPath?: string;
+    readonly entryLoaders?: FoundationRouteOptions['guideEntryLoaders'];
   } = {},
 ): AppClientRoutePageDefinition[] {
+  const entryComponents = Object.fromEntries(
+    Object.entries(options.entryLoaders ?? {}).map(([id, loader]) => [
+      id,
+      lazy(loader),
+    ]),
+  );
   const componentLoader = async () => {
     const { CapabilityGuidePage } =
       await import('./capability-guide/guide-page.js');
@@ -80,6 +92,7 @@ export function capabilityGuideDefinitions(
         return createElement(CapabilityGuidePage, {
           catalog,
           settingsPath: options.settingsPath,
+          entryComponents,
         });
       },
     };
@@ -121,6 +134,7 @@ export function createFoundationRoutes(
     ? capabilityGuideDefinitions(createCapabilityCatalog(options.manifest), {
         navigation: options.guideNavigation,
         settingsPath: options.guideSettingsPath,
+        entryLoaders: options.guideEntryLoaders,
       })
     : [];
   return defineAppRoutes(
