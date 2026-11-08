@@ -65,13 +65,7 @@ describe('default Foundation integration', () => {
           ['permissionManagement', '/settings/roles'],
         ],
       ],
-      [
-        'settingsSystem',
-        [
-          ['databaseExplorer', '/settings/database-explorer'],
-          ['capabilityGuide', '/capabilities'],
-        ],
-      ],
+      ['settingsSystem', [['capabilityGuide', '/capabilities']]],
     ]);
   });
 
