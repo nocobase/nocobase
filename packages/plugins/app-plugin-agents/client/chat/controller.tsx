@@ -1626,10 +1626,13 @@ export class ChatController {
     if (synchronizeLists) this.syncLists(detail);
     if (detail.execution?.status === 'running') this.receive(detail.id, detail);
     if (!chatIsRunning(detail)) {
+      // A stream that failed (a phone suspending the page, a dropped network) leaves its error on the SDK Chat. Once
+      // the conversation is idle, catching history up to this detail clears it, as an explicit refresh would.
       if (
         refresh &&
-        (this.chats.get(detail.id)?.status === 'streaming' ||
-          this.chats.get(detail.id)?.status === 'submitted')
+        ['streaming', 'submitted', 'error'].includes(
+          this.chats.get(detail.id)?.status ?? '',
+        )
       )
         void this.refreshOnce(detail.id, false, false, detail).catch(() => {});
       this.stopRequests.delete(detail.id);

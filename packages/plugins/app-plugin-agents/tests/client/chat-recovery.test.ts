@@ -438,3 +438,83 @@ it('reports a failed history read without inventing a transport error or sending
   expect(f.controller.state('c1')?.recovery).toBe('history');
   expect(f.stream).toHaveBeenCalledOnce();
 });
+
+it('clears a transport error once the conversation query reads the idle conversation, without an explicit refresh', async () => {
+  const f = fixture(),
+    output = f.output();
+  const sending = f.controller
+    .chat('c1')
+    .sendMessage({ id: 'input', role: 'user', parts: user.parts });
+  await vi.waitFor(() => expect(output.attached).toBe(true));
+  f.state.messages = [user];
+  await f.controller.refresh('c1');
+  // A phone suspending the page drops the answer stream mid-turn.
+  output.error(new TypeError('Load failed'));
+  await sending;
+  expect(f.controller.state('c1')?.error).toBeDefined();
+  f.state.messages = [user, answer];
+  f.state.detail = {
+    ...f.state.detail,
+    lastSeq: 2,
+    execution: { status: 'idle', outcome: 'completed' },
+  };
+  // What the conversation query does on focus or invalidation.
+  const current = f.controller.detailRequest('c1');
+  const detail = await f.controller.readDetail('c1', true);
+  expect(current()).toBe(true);
+  f.controller.observeDetail(detail);
+  await vi.waitFor(() =>
+    expect(f.controller.state('c1')).toMatchObject({
+      status: 'ready',
+      error: undefined,
+      recovery: undefined,
+    }),
+  );
+  expect(f.controller.chat('c1').messages).toEqual([user, answer]);
+  expect(f.stream).toHaveBeenCalledOnce();
+});
+
+it('clears a transport error when a background conversation read supersedes an explicit refresh', async () => {
+  const f = fixture(),
+    output = f.output();
+  const sending = f.controller
+    .chat('c1')
+    .sendMessage({ id: 'input', role: 'user', parts: user.parts });
+  await vi.waitFor(() => expect(output.attached).toBe(true));
+  f.state.messages = [user];
+  await f.controller.refresh('c1');
+  output.error(new TypeError('Load failed'));
+  await sending;
+  expect(f.controller.state('c1')?.error).toBeDefined();
+  f.state.messages = [user, answer];
+  f.state.detail = {
+    ...f.state.detail,
+    lastSeq: 2,
+    execution: { status: 'idle', outcome: 'completed' },
+  };
+  // The person's Refresh reads the conversation, but that read is slow.
+  let release!: () => void;
+  const held = new Promise<void>((resolve) => (release = resolve));
+  const read = f.api.conversation.bind(f.api);
+  vi.spyOn(f.api, 'conversation').mockImplementationOnce(async (id) => {
+    await held;
+    return read(id);
+  });
+  const refreshing = f.controller.refresh('c1');
+  await vi.waitFor(() => expect(f.api.conversation).toHaveBeenCalledOnce());
+  // The conversation query refetches on focus meanwhile, so the explicit read is no longer the newest.
+  const current = f.controller.detailRequest('c1');
+  const detail = await read('c1');
+  expect(current()).toBe(true);
+  f.controller.observeDetail(detail);
+  release();
+  await refreshing;
+  await vi.waitFor(() =>
+    expect(f.controller.state('c1')).toMatchObject({
+      status: 'ready',
+      error: undefined,
+      recovery: undefined,
+    }),
+  );
+  expect(f.controller.chat('c1').messages).toEqual([user, answer]);
+});

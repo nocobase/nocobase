@@ -254,6 +254,12 @@ export class ChatSubmissions {
     }
     if (changed) this.publish();
   }
+  /**
+   * Looks for an uncertain message in the saved history and confirms it once it appears. It never concludes the send
+   * failed: the request may have timed out only in the page while the server still writes it, so an idle conversation
+   * whose history lacks the message proves nothing. Only a refusal the server returns before writing (`refused`)
+   * makes a send `notSubmitted`.
+   */
   public async reconcile(clientId: string): Promise<void> {
     const record = this.records.find((item) => item.clientId === clientId);
     if (!record?.conversationId || record.status !== 'unknown') return;
