@@ -1,0 +1,33 @@
+export default {
+  title: 'Database Explorer',
+  description:
+    'Browse the application’s database connections, tables and fields.',
+  connections: 'Database connection',
+  defaultConnection: 'Default',
+  tables: 'Tables',
+  searchTables: 'Search tables',
+  fields: 'Fields',
+  searchFields: 'Search fields',
+  name: 'Name',
+  type: 'Type',
+  nullable: 'Nullable',
+  primaryKey: 'Primary key',
+  target: 'Related table',
+  yes: 'Yes',
+  no: 'No',
+  unknown: 'Not specified',
+  emptyConnections: 'No database connections are configured.',
+  emptyTables: 'No tables found.',
+  emptyFields: 'No fields found.',
+  selectTable: 'Select a table to view its fields.',
+  loading: 'Loading…',
+  failed: 'Unable to load database information.',
+  forbidden: 'You do not have permission to browse this database.',
+  expired: 'Your session has expired. Sign in again to continue.',
+  signIn: 'Sign in',
+  retry: 'Retry',
+  truncated:
+    'Only part of the table list could be loaded. Narrow the database scope to browse the remaining tables.',
+  warnings:
+    'Some fields could not be fully resolved. The displayed structure may be incomplete.',
+};
