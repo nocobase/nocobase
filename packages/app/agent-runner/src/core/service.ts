@@ -1,18 +1,17 @@
 // Runs the daemon as a per-user service: a launchd agent on macOS, a systemd user unit on Linux. The service runs
-// `nocobase-runner service run` through the current launcher, restarts on unexpected failure or self-update, and
-// leaves daemon log rotation and permanent authentication stops to that launcher. Each plan
+// `nocobase-runner service run` through the current launcher and restarts after every exit unless explicitly stopped.
+// The launcher owns daemon log rotation. Each plan
 // lists the file it writes and the commands it runs, so `--dry-run` can show them. The service gets the installing
 // shell's PATH, proxy and CA variables and `--pass-env` names (`serviceEnvironment`), and its file is readable by its
 // owner only. Installing again replaces the service in place. A label other than the default lets a second runner (a
 // test, or another state directory) run beside the first.
 import { execFile } from 'node:child_process';
-import { chmod, mkdir, rm, writeFile } from 'node:fs/promises';
+import { chmod, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { promisify } from 'node:util';
 
 import { CA_ENV, forbidden, PROXY_ENV } from '../agent/env.ts';
-import { EXIT_CODES } from '../protocol/index.ts';
 import type { RunnerPaths } from '../lib/home.ts';
 
 const run = promisify(execFile);
@@ -29,6 +28,22 @@ export const SERVICE_LABEL_PATTERN: RegExp =
 /** The systemd unit for `label`: `nocobase-runner.service` for the default label. */
 export function systemdUnit(label: string = LAUNCHD_LABEL): string {
   return label === LAUNCHD_LABEL ? SYSTEMD_UNIT : `${label}.service`;
+}
+
+function serviceFile(
+  label: string,
+  platform: NodeJS.Platform,
+  home: string,
+): string {
+  if (!SERVICE_LABEL_PATTERN.test(label))
+    throw new Error(`Not a service label: ${label}`);
+  if (platform === 'darwin')
+    return path.join(home, 'Library', 'LaunchAgents', `${label}.plist`);
+  if (platform === 'linux')
+    return path.join(home, '.config', 'systemd', 'user', systemdUnit(label));
+  throw new Error(
+    `Running the runner as a service is not supported on ${platform}.`,
+  );
 }
 
 export interface ServicePlan {
@@ -119,7 +134,7 @@ export function servicePlan(options: ServiceOptions): ServicePlan {
     [SERVICE_ENV]: '1',
   };
   if (platform === 'darwin') {
-    const file = path.join(home, 'Library', 'LaunchAgents', `${label}.plist`);
+    const file = serviceFile(label, platform, home);
     const uid = options.uid ?? process.getuid?.() ?? 501;
     const content = `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -143,10 +158,7 @@ ${Object.entries(environment)
   <key>RunAtLoad</key>
   <true/>
   <key>KeepAlive</key>
-  <dict>
-    <key>SuccessfulExit</key>
-    <false/>
-  </dict>
+  <true/>
   <key>ThrottleInterval</key>
   <integer>60</integer>
   <key>StandardOutPath</key>
@@ -169,20 +181,18 @@ ${Object.entries(environment)
   }
   if (platform === 'linux') {
     const unit = systemdUnit(label);
-    const file = path.join(home, '.config', 'systemd', 'user', unit);
+    const file = serviceFile(label, platform, home);
     const content = `[Unit]
 Description=NocoBase runner
 After=network-online.target
-StartLimitIntervalSec=300
-StartLimitBurst=5
+StartLimitIntervalSec=0
 
 [Service]
 ExecStart=${args.map(systemdQuote).join(' ')}
 ${Object.entries(environment)
   .map(([key, value]) => systemdEnvironment(key, value))
   .join('\n')}
-Restart=on-failure
-RestartPreventExitStatus=${EXIT_CODES.auth}
+Restart=always
 RestartSec=60
 StandardOutput=null
 StandardError=journal
@@ -226,14 +236,21 @@ export async function installService(
   // Only its owner reads it: the variables written into it may hold a proxy's password or a key.
   await writeFile(plan.file, plan.content, { mode: 0o600 });
   await chmod(plan.file, 0o600);
-  for (const [command = '', ...args] of plan.install) {
+  await loadService(plan.platform, plan.install);
+}
+
+async function loadService(
+  platform: ServicePlan['platform'],
+  commands: string[][],
+): Promise<void> {
+  for (const [command = '', ...args] of commands) {
     // launchd may still be removing the previous instance right after `bootout`; try again for a few seconds.
     for (let attempt = 1; ; attempt += 1) {
       try {
         await run(command, args);
         break;
       } catch (error) {
-        if (plan.platform !== 'launchd' || attempt >= 10) throw error;
+        if (platform !== 'launchd' || attempt >= 10) throw error;
         await new Promise((resolve) => setTimeout(resolve, 500));
       }
     }
@@ -248,20 +265,101 @@ export async function uninstallService(plan: ServicePlan): Promise<void> {
   await rm(plan.file, { force: true });
 }
 
-/** Restart an installed service without rewriting its captured environment or definition. */
+/** Upgrade only restart policy, retaining the installed command, paths and captured environment. */
+export async function migrateService(
+  label: string,
+  options: {
+    platform?: NodeJS.Platform;
+    home?: string;
+    /** On launchd, submit an independent reload job so bootout cannot kill its own replacement. */
+    relaunch?: string[];
+  } = {},
+): Promise<boolean> {
+  const platform = options.platform ?? process.platform;
+  const file = serviceFile(label, platform, options.home ?? os.homedir());
+  let previous: string;
+  try {
+    previous = await readFile(file, 'utf8');
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return false;
+    throw error;
+  }
+  const content =
+    platform === 'darwin'
+      ? previous.replace(
+          /<key>KeepAlive<\/key>\s*(?:<dict>[\s\S]*?<\/dict>|<(?:true|false)\s*\/>)/u,
+          '<key>KeepAlive</key>\n  <true/>',
+        )
+      : previous
+          .replace(/^Restart=.*$/mu, 'Restart=always')
+          .replace(/^RestartPreventExitStatus=.*\n?/gmu, '')
+          .replace(/^StartLimitIntervalSec=.*$/mu, 'StartLimitIntervalSec=0')
+          .replace(/^StartLimitBurst=.*\n?/gmu, '');
+  if (content === previous) return false;
+  await writeFile(file, content, { mode: 0o600 });
+  await chmod(file, 0o600);
+  try {
+    if (platform === 'linux')
+      await run('systemctl', ['--user', 'daemon-reload']);
+    else if (options.relaunch !== undefined)
+      await run('launchctl', [
+        'submit',
+        '-l',
+        `${label}.reload`,
+        '--',
+        ...options.relaunch,
+        'service',
+        'restart',
+        '--label',
+        label,
+      ]);
+  } catch (error) {
+    // Retry migration on the next start if the manager could not load the new policy.
+    await writeFile(file, previous, { mode: 0o600 });
+    throw error;
+  }
+  return true;
+}
+
+/** Stop through the manager so its always-restart policy knows this stop is intentional. */
+export async function stopService(
+  label: string,
+  platform: NodeJS.Platform = process.platform,
+): Promise<void> {
+  serviceFile(label, platform, os.homedir());
+  if (platform === 'linux')
+    await run('systemctl', ['--user', 'stop', systemdUnit(label)]);
+  else {
+    const target = `gui/${process.getuid?.() ?? 501}/${label}`;
+    try {
+      await run('launchctl', ['bootout', target]);
+    } catch (error) {
+      // ESRCH and launchd's service-not-found code mean it is already unloaded.
+      const code = (error as NodeJS.ErrnoException).code as
+        string | number | undefined;
+      if (code !== 3 && code !== 113) throw error;
+    }
+  }
+}
+
+/** Restart an installed service, including one explicitly stopped with bootout on macOS. */
 export async function restartService(
   label: string,
   platform: NodeJS.Platform = process.platform,
 ): Promise<void> {
   if (!SERVICE_LABEL_PATTERN.test(label))
     throw new Error(`Not a service label: ${label}`);
-  if (platform === 'darwin')
-    await run('launchctl', [
-      'kickstart',
-      '-k',
-      `gui/${process.getuid?.() ?? 501}/${label}`,
+  if (platform === 'darwin') {
+    await stopService(label, platform);
+    await loadService('launchd', [
+      [
+        'launchctl',
+        'bootstrap',
+        `gui/${process.getuid?.() ?? 501}`,
+        serviceFile(label, platform, os.homedir()),
+      ],
     ]);
-  else if (platform === 'linux')
+  } else if (platform === 'linux')
     await run('systemctl', ['--user', 'restart', systemdUnit(label)]);
   else
     throw new Error(

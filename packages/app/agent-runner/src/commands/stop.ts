@@ -7,6 +7,8 @@ import { readLauncherPid } from '../core/launcher.ts';
 import { EXIT_CODES } from '../protocol/index.ts';
 import { readDaemonPid, type DaemonPid } from '../core/loop.ts';
 import { isAlive } from '../core/supervisor.ts';
+import { readSettings } from '../lib/config.ts';
+import { stopService } from '../core/service.ts';
 
 export default class Stop extends RunnerCommand {
   static override summary: string = 'Stop the runner daemon.';
@@ -16,13 +18,24 @@ export default class Stop extends RunnerCommand {
     timeout: Interfaces.OptionFlag<number>;
   } = {
     timeout: Flags.integer({
-      description: 'Seconds to wait before killing the daemon.',
+      description:
+        'Seconds to wait before killing a non-service daemon; services use their manager’s timeout.',
       default: 30,
     }),
   };
 
   async run(): Promise<{ stopped: boolean; pid?: number }> {
     const { flags } = await this.parse(Stop);
+    const settings = await readSettings(this.paths);
+    if (settings.serviceLabel !== undefined) {
+      const running = await readDaemonPid(this.paths);
+      await stopService(settings.serviceLabel);
+      this.log('Runner service stopped.');
+      return {
+        stopped: true,
+        ...(running === undefined ? {} : { pid: running.pid }),
+      };
+    }
     const launcher = await readLauncherPid(this.paths);
     const running = await readDaemonPid(this.paths);
     if (launcher !== undefined) {
