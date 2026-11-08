@@ -1,11 +1,13 @@
 import { createTaskServiceResolver } from './task-container.js';
 import { loggingToken } from '../logging/token.js';
+import { idGeneratorLifecycleToken } from '../id-generator/token.js';
 import type { ServiceResolver } from '@nocobase/service-provider';
 import { snapshotDatabaseTaskConfig } from './task-config.js';
 import type { DatabaseTaskConfig } from '@nocobase/db';
 import { resolveDatabaseConfig } from './resolve-config.js';
 import {
   planAppDatabaseTasks,
+  defaultConnectionName,
   type AppDatabaseTaskPlanOptions,
   type AppDatabaseTask,
   type AppDatabaseTaskKind,
@@ -130,6 +132,7 @@ export async function executeAppDatabasePlan(
   }: AppDatabasePlanExecutionOptions = {},
 ): Promise<AppDatabaseTasksResult> {
   if (fresh) {
+    assertFreshAllowed(runtimeConfig);
     if (operation !== 'run')
       throw new Error(`A fresh run cannot be combined with ${operation}.`);
     assertFreshPlanOrder(plan);
@@ -151,6 +154,27 @@ export async function executeAppDatabasePlan(
   }
   if (operation === 'unlock' && dryRun) {
     throw new Error('An unlock has no dry run; it reports the lock it finds.');
+  }
+  if (
+    !dryRun &&
+    (operation === 'run' || operation === 'rollback' || operation === 'sample')
+  ) {
+    // The factory may use the default connection even when the selected task uses another connection.
+    const primary = defaultConnectionName(config);
+    await prepareAppDatabaseStorage(
+      config,
+      paths,
+      [
+        ...new Set([
+          ...(!primary || primary === 'none' ? [] : [primary]),
+          ...plan
+            .filter((task) => !task.skipReason)
+            .map((task) => task.connection),
+        ]),
+      ],
+      drivers,
+    );
+    await container?.resolveIfCreated(idGeneratorLifecycleToken)?.initialize();
   }
   const taskContainer = createTaskServiceResolver(container);
   const taskConfig = snapshotDatabaseTaskConfig(runtimeConfig);
@@ -460,6 +484,7 @@ export async function runAppDatabaseTasks(
   config: AppDatabaseConfig,
   options: AppDatabaseTaskRunOptions,
 ): Promise<AppDatabaseTasksResult> {
+  if (options.fresh) assertFreshAllowed(options.runtimeConfig);
   const { paths, drivers } = options;
   const kinds = Array.isArray(options.kind)
     ? (options.kind as readonly AppDatabaseTaskKind[])
@@ -518,7 +543,23 @@ export async function runAppDatabaseTasks(
       container: options.container,
     });
   } finally {
-    if (!options.database) await database.destroy();
+    if (!options.database) {
+      try {
+        await options.container
+          ?.resolveIfCreated(idGeneratorLifecycleToken)
+          ?.shutdown();
+      } finally {
+        await database.destroy();
+      }
+    }
+  }
+}
+
+function assertFreshAllowed(config?: DatabaseTaskConfig): void {
+  if (config?.get('snowflake.mode') === 'auto') {
+    throw new Error(
+      'Database fresh is forbidden in automatic Snowflake mode because it can destroy worker allocations and release audit.',
+    );
   }
 }
 

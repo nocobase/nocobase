@@ -339,7 +339,20 @@ export class Application<
   }
 
   public start(): Promise<void> {
-    this.startPromise ??= this.startServiceProviders();
+    this.startPromise ??= this.startServiceProviders().catch(
+      async (error: unknown) => {
+        try {
+          await this.shutdown();
+        } catch (cleanupError) {
+          throw new AggregateError(
+            [error, cleanupError],
+            'Application startup and shutdown both failed.',
+              { cause: cleanupError },
+          );
+        }
+        throw error;
+      },
+    );
     return this.startPromise;
   }
 

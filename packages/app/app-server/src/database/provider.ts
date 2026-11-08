@@ -23,6 +23,7 @@ import { snapshotDatabaseTaskConfig } from './task-config.js';
 import { createSampleDataService } from '../sample-data/registry.js';
 import { sampleDataToken } from '../sample-data/token.js';
 import { loggingToken } from '../logging/token.js';
+import { idGeneratorLifecycleToken } from '../id-generator/token.js';
 import type { Logger } from '@nocobase/logging';
 import type { AppConfigAccessor, AppPaths } from '../config/index.js';
 import type {
@@ -204,7 +205,15 @@ export class DatabaseProvider extends ServiceProvider<DatabaseProviderApplicatio
   }
 
   public override async shutdown(): Promise<void> {
-    await this.app.container.resolveIfCreated(databaseManagerToken)?.destroy();
+    try {
+      await this.app.container
+        .resolveIfCreated(idGeneratorLifecycleToken)
+        ?.shutdown();
+    } finally {
+      await this.app.container
+        .resolveIfCreated(databaseManagerToken)
+        ?.destroy();
+    }
   }
 
   private getDatabaseConfig(): AppDatabaseConfig {
