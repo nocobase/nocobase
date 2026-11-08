@@ -1,3 +1,4 @@
+import authenticationOverview from '../../pages/capabilities/authentication-overview-en-US.js';
 import { featureOverview } from '../../pages/capabilities/feature-overview-en-US.js';
 import authorizationOverview from '../../pages/capabilities/authorization-overview-en-US.js';
 import i18nOverview from '../../pages/capabilities/i18n-overview-en-US.js';
@@ -16,6 +17,7 @@ import inboxEnUS from '#extensions/nocobase-inbox/locales/en-US';
 const systemEnUS = {
   databaseExplorer,
   databaseOverview,
+  authenticationOverview,
   agentsOverview,
   authorizationOverview,
   featureOverview,

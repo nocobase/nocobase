@@ -47,6 +47,8 @@ const clientPlugins: AppClientPlugins = defineClientPlugins([
     guideSettingsPath: '/settings',
     guideEntryLoaders: {
       ...featureOverviewLoaders,
+      'app-plugin-authentication': () =>
+        import('./pages/capabilities/authentication-overview.js'),
       i18n: () => import('./pages/capabilities/i18n-overview.js'),
       'app-plugin-authorization': loadAuthorizationOverview,
       'app-plugin-authz-default-access': loadAuthorizationOverview,

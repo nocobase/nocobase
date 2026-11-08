@@ -1,3 +1,4 @@
+import authenticationOverview from '../../pages/capabilities/authentication-overview-zh-CN.js';
 import { featureOverview } from '../../pages/capabilities/feature-overview-zh-CN.js';
 import authorizationOverview from '../../pages/capabilities/authorization-overview-zh-CN.js';
 import i18nOverview from '../../pages/capabilities/i18n-overview-zh-CN.js';
@@ -13,6 +14,7 @@ import inboxZhCN from '#extensions/nocobase-inbox/locales/zh-CN';
 const systemZhCN: SystemResource = {
   databaseExplorer,
   databaseOverview,
+  authenticationOverview,
   agentsOverview,
   authorizationOverview,
   featureOverview,
