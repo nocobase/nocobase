@@ -11,9 +11,10 @@ import { UserOutlined } from '@ant-design/icons';
 import { css, cx } from '@emotion/css';
 import { FlowModel, FlowModelRenderer, observer } from '@nocobase/flow-engine';
 import { Divider, Dropdown, Empty, Select, Spin, theme } from 'antd';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useContext, useEffect, useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { createAclSnippetAllow } from '../../../acl/createAclSnippetAllow';
+import { MobileTopbarActionsContext } from '../../admin-shell/admin-layout/MobileTopbarActionsContext';
 import { TopbarActionModel } from './TopbarActionModel';
 
 export const USER_CENTER_ACTION_ID = 'user-center';
@@ -452,6 +453,11 @@ const UserCenterTopbarActionView = observer(
   (props: { model: UserCenterTopbarActionModel }) => {
     const { model } = props;
     const [open, setOpen] = useState(false);
+    const closeMobileTopbar = useContext(MobileTopbarActionsContext);
+    const closeDropdown = useCallback(() => {
+      setOpen(false);
+      closeMobileTopbar?.();
+    }, [closeMobileTopbar]);
 
     return model.renderWrapper(
       <Dropdown
@@ -459,9 +465,7 @@ const UserCenterTopbarActionView = observer(
         placement="bottomRight"
         open={open}
         onOpenChange={setOpen}
-        dropdownRender={() => (
-          <UserCenterDropdownPanel model={model} open={open} closeDropdown={() => setOpen(false)} />
-        )}
+        dropdownRender={() => <UserCenterDropdownPanel model={model} open={open} closeDropdown={closeDropdown} />}
       >
         <span className={userCenterTriggerClassName}>{model.renderButton()}</span>
       </Dropdown>,

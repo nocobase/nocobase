@@ -11,13 +11,14 @@ import { EllipsisOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { FlowModelRenderer } from '@nocobase/flow-engine';
 import { ConfigProvider, Divider, Popover, theme } from 'antd';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { useAclSnippets } from '../../../acl/useAclSnippets';
 import type { CustomToken } from '../../../theme';
 import { TopbarActionModel } from '../../models/topbar/TopbarActionModel';
 import { USER_CENTER_ACTION_ID } from '../../models/topbar/UserCenterTopbarActionModel';
 import { HelpLite } from './HelpLite';
+import { MobileTopbarActionsContext } from './MobileTopbarActionsContext';
 
 const topbarActionsBarClassName = css`
   display: inline-flex;
@@ -206,11 +207,21 @@ export const TopbarActionsBar = React.memo((props: { actions: TopbarActionModel[
     setOpen(false);
   }, []);
 
+  useEffect(() => {
+    if (!props.isMobile) {
+      setOpen(false);
+    }
+  }, [props.isMobile]);
+
   if (props.isMobile) {
     return (
       <Popover
         rootClassName={popoverStyle}
-        content={<TopbarActionsContent actions={props.actions} onActionClick={handleContentClick} />}
+        content={
+          <MobileTopbarActionsContext.Provider value={handleContentClick}>
+            <TopbarActionsContent actions={props.actions} onActionClick={handleContentClick} />
+          </MobileTopbarActionsContext.Provider>
+        }
         color={customToken.colorBgHeader}
         trigger="click"
         open={open}
