@@ -14,6 +14,7 @@ import { useTranslation } from 'react-i18next';
 import {
   ActionContextProvider,
   DropdownVisibleContext,
+  useSchemaSettings,
   ExtendCollectionsProvider,
   RemoteSchemaComponent,
   SchemaComponent,
@@ -122,6 +123,7 @@ const ProfileEditForm = () => {
 
 export const EditProfile = () => {
   const ctx = useContext(DropdownVisibleContext);
+  const settings = useSchemaSettings();
   const [visible, setVisible] = useState(false);
   const { t } = useTranslation();
   const { data } = useSystemSettings() || {};
@@ -133,10 +135,11 @@ export const EditProfile = () => {
   const handleClick = useCallback(
     (e) => {
       e.stopPropagation();
+      settings?.setVisible?.(false);
       ctx?.setVisible?.(false);
       setVisible((prev) => (prev ? prev : true)); // 只有 `visible` 变化时才触发更新
     },
-    [ctx],
+    [ctx, settings],
   );
 
   // 避免 `SchemaComponent` 结构重新创建
