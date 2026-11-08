@@ -19,7 +19,7 @@ describe('default Foundation integration', () => {
       ),
     ).toHaveLength(1);
   });
-  it('exposes Foundation in System settings for an unrestricted administrator and removes the entry when denied', async () => {
+  it('exposes Foundation and Database Explorer in System settings and removes the entry when both are denied', async () => {
     const runtime = await resolveAppRuntime(appRuntime);
     const menu = buildRouteNavigation(runtime.routes, new Set());
     // One System settings entry; Foundation is a card on its home, not a sidebar entry of its own.
@@ -39,7 +39,22 @@ describe('default Foundation integration', () => {
       authz: 'unrestricted',
     });
     if (!page) throw new Error('Foundation route missing');
-    const denied = new Set([`${page.packageName}:${page.path}:${page.id}`]);
+    const explorer = category?.modules.find(
+      ({ route }) => route.name === 'databaseExplorer',
+    )?.route;
+    if (!explorer) throw new Error('Database Explorer route missing');
+    const key = (route: typeof page) =>
+      `${route.packageName}:${route.path}:${route.id}`;
+    // Denying Foundation alone keeps System settings for Database Explorer, which has its own grant.
+    expect(
+      buildSettingsCatalog(runtime.routes, new Set([key(page)])).map(
+        (entry) => [
+          entry.route.name,
+          entry.modules.map(({ route }) => route.name),
+        ],
+      ),
+    ).toEqual([['settingsSystem', ['databaseExplorer']]]);
+    const denied = new Set([key(page), key(explorer)]);
     expect(
       buildRouteNavigation(runtime.routes, denied).map(
         ({ route }) => route.name,
@@ -77,7 +92,13 @@ describe('default Foundation integration', () => {
           ['permissionManagement', '/settings/roles'],
         ],
       ],
-      ['settingsSystem', [['foundation', '/foundation']]],
+      [
+        'settingsSystem',
+        [
+          ['databaseExplorer', '/settings/database-explorer'],
+          ['foundation', '/foundation'],
+        ],
+      ],
     ]);
   });
 });
