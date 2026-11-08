@@ -341,7 +341,8 @@ export function createRunnerRoutes(
   // Runs and jobs share the runner's slots: jobs first (they are short and people wait on them), then runs. Jobs run
   // no coding tool, so only runs are bounded by the runner's room per tool. One run per request: the runner asks
   // again at once, and each claim waits by how busy the runner already is with the run's tool, so idler runners
-  // take the next run first (`ClaimService.claim`). A request that goes away while it waits takes nothing.
+  // take the next run first (`ClaimService.claim`). A request that goes away while it waits takes nothing. A request
+  // that took jobs takes no run, so its jobs are not held by a run's wait: the runner asks again at once for the run.
   const claimWork = async (
     runner: Runner,
     request: ClaimRequest,
@@ -351,7 +352,7 @@ export function createRunnerRoutes(
     const { free } = request;
     const jobs = await services.jobs.runner.claim(runner, free);
     const runs =
-      free - jobs.length > 0
+      jobs.length === 0 && free > 0
         ? await services.claims.claim(runner, 1, request.tools, scan, signal)
         : [];
     return { runs, jobs };
@@ -366,7 +367,7 @@ export function createRunnerRoutes(
       // Runner protocol: only a runner calls it.
       ...cliRoute(false),
       description: [
-        "Hands the runner work for its free slots: jobs first, up to `free`, then at most one agent run. A run is handed out after a wait of up to one second after it entered the queue, longer the more of the run's coding tool the runner already holds against its limit for that tool, so the idlest runners take queued runs first; the runner asks again at once for the next. A request that ends while it waits takes nothing. With `wait=true` and nothing to hand out, the request is held as a long poll for up to `pollTimeoutMs` (25 seconds by default) until work arrives, and then answers what it found, possibly nothing; the runner asks again at once. Without `wait`, it answers immediately.",
+        "Hands the runner work for its free slots: jobs first, up to `free`, or, when there is no job to hand out, at most one agent run. A run is handed out after a wait of up to one second after it entered the queue, longer the more of the run's coding tool the runner already holds against its limit for that tool, so the idlest runners take queued runs first; the runner asks again at once for the next. A request that ends while it waits takes nothing. With `wait=true` and nothing to hand out, the request is held as a long poll for up to `pollTimeoutMs` (25 seconds by default) until work arrives, and then answers what it found, possibly nothing; the runner asks again at once. Without `wait`, it answers immediately.",
         '',
         'A runner of a protocol this application does not serve is given no work (its poll is still held). `jobs` is present only when jobs are handed out.',
       ].join('\n'),

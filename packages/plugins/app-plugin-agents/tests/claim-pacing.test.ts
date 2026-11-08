@@ -177,6 +177,58 @@ describe('claims paced by how busy each runner is with the tool', () => {
     expect(harness.clock.now().getTime() - queuedAt).toBe((7 / 8) * 1000);
   });
 
+  it('hands out jobs at once, without a run and its wait', async () => {
+    const waits: number[] = [];
+    h = await createHarness({
+      claimPause: (ms) => {
+        waits.push(ms);
+        return Promise.resolve();
+      },
+    });
+    h.runners.jobs.register('build', {});
+    const agent = await h.createAgent({ maxConcurrentRuns: 8 });
+    const registered = await h.registerRunner({
+      features: ['input', 'checkout', 'secrets', 'jobs.build'],
+      slots: 4,
+    });
+    await h.runners.runners.update(registered.runnerId, { acceptJobs: true });
+    await h.enqueue(agent, 'held');
+    h.clock.advance(LONG_QUEUED_MS);
+    expect(await claim(h, registered, 4)).toHaveLength(1);
+
+    // One of four held: a run would wait a quarter of a second. The job does not: the request takes no run.
+    const run = await h.enqueue(agent, 'next');
+    await h.runners.jobs.enqueue({
+      kind: 'build',
+      spec: {
+        repo: {
+          url: 'https://example.com/acme/app.git',
+          ref: 'main',
+          sha: 'a1b2c3d4e5f60718293a4b5c6d7e8f9012345678',
+        },
+        command: { argv: ['pnpm', 'build'] },
+        outputs: [],
+        timeoutSec: 600,
+      },
+      actorUserId: 'owner',
+    });
+    const response = await h.request('POST', api(RUNNER_ROUTES.claim), {
+      runnerKey: registered.key,
+      body: { free: 3 },
+    });
+    expect(response.body.data).toMatchObject({
+      runs: [],
+      jobs: [{ job: { kind: 'build' } }],
+    });
+    expect(waits.filter((ms) => ms > 0)).toEqual([]);
+    expect(await h.services.runs.get(run)).toMatchObject({ status: 'queued' });
+
+    // The runner asks again at once and takes the run after its wait.
+    const next = await claim(h, registered, 2);
+    expect(next.map((payload) => payload.run.id)).toEqual([run]);
+    expect(waits.filter((ms) => ms > 0)).toHaveLength(1);
+  });
+
   it('takes nothing when the request ends while it waits', async () => {
     // The request ends once the claim is in its wait, not after a guessed delay.
     let entered: () => void = () => undefined;
