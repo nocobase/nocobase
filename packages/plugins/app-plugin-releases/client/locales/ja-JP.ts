@@ -180,6 +180,23 @@ const jaJP: LocaleResource<typeof enUS> = {
         '文字、数字、アンダースコア、ハイフン。その住所の一部。後から変更することはできません。',
       noEnvironment: 'まだ環境がありません',
       lastAccess: '最後の訪問',
+      stateFilter: '状態',
+      anyState: 'すべての状態',
+      filteredEnvironments: '環境：{{names}}',
+      clearFilters: 'フィルターをクリア',
+      noMatches: 'フィルターに一致するアプリはありません。',
+      page: '{{page}} / {{pages}} ページ',
+      previousPage: '前のページ',
+      nextPage: '次のページ',
+      runStates: {
+        running: '実行中',
+        starting: '起動中',
+        pending: '未起動',
+        waiting: '待機中',
+        stopped: '停止または休止中',
+        failed: '失敗',
+        unknown: '不明',
+      },
     },
     advanced: 'アドバンスト (オプション)',
     labels: {
@@ -539,11 +556,7 @@ const jaJP: LocaleResource<typeof enUS> = {
       title: '共有アプリホスト',
       description:
         'このホスト上のすべての環境のアプリが、1 つのプロセスとそのメモリを共有します。',
-      summary:
-        'デプロイ済み {{deployed}} 個のうち {{running}} 個が実行中または起動中',
-      memory:
-        'ヒープ {{heapUsed}} / {{heapLimit}} · プロセスメモリ {{rss}} · サーバーの空き {{available}}',
-      memoryNote: 'プロセス全体の合計で、個々のアプリの使用量ではありません。',
+      environments: 'このホストの環境：{{names}}',
       recycling: {
         pending:
           '使用中のアプリがなくなったら、このホストを再起動して古いコードを解放します。新しいバージョンはそれまで待機し、実行中のアプリは引き続き応答します。',
@@ -552,15 +565,22 @@ const jaJP: LocaleResource<typeof enUS> = {
       },
       restoreFailed:
         '{{name}}：アプリを復元できませんでした。バックグラウンドで再試行しています。',
-      columns: {
-        app: 'アプリ',
-        state: '状態',
-        why: '理由',
-        lastAccess: '最終アクセス',
-      },
-      hidden: '表示権限のないアプリ',
-      empty: 'このホストで実行中のアプリはありません。',
-      idle: 'アイドル。空きが必要なときに最初に停止されます',
+      failed:
+        '共有ホストの再起動後にアプリを復元できませんでした。バックグラウンドで再試行しています。',
+      view: 'ホストの使用状況を見る',
+      deployed: 'デプロイ済み：{{count}}',
+      appsLabel: '実行中・起動中',
+      heapLabel: 'ヒープ',
+      processLabel: 'プロセスメモリ',
+      ratio: '{{used}} / {{limit}}',
+      runningUnlimited: '{{running}} · 上限なし',
+      available: 'サーバーの空き {{available}}',
+      wholeHost:
+        'ホスト全体（上のすべての環境を含む）の合計です。メモリはアプリごとに分けられません。',
+      viewApps: '実行中または起動中の {{count}} 個のアプリを見る',
+      viewAppsNote: '表示権限のあるアプリだけが一覧に出ます。',
+    },
+    runtime: {
       holds: {
         requests: 'リクエストを処理中',
         connections: '接続中',
@@ -575,6 +595,8 @@ const jaJP: LocaleResource<typeof enUS> = {
         memory: '起動拒否：メモリ不足',
         recycle: '起動拒否：新しいコードはホストの再起動を待っています',
       },
+      idle: 'アイドル。空きが必要なときに最初に停止されます',
+      lastVisit: '最終アクセス：{{time}}',
     },
     overview: {
       currentRelease: '現在のリリース',

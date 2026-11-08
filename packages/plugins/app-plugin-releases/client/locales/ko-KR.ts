@@ -167,6 +167,23 @@ const koKR: LocaleResource<typeof enUS> = {
         '영문자, 숫자, 밑줄, 하이픈을 사용하며 주소의 일부가 됩니다. 나중에 변경할 수 없습니다.',
       noEnvironment: '아직 환경이 없습니다',
       lastAccess: '마지막 방문',
+      stateFilter: '상태',
+      anyState: '모든 상태',
+      filteredEnvironments: '환경: {{names}}',
+      clearFilters: '필터 지우기',
+      noMatches: '필터와 일치하는 앱이 없습니다.',
+      page: '{{pages}}페이지 중 {{page}}페이지',
+      previousPage: '이전 페이지',
+      nextPage: '다음 페이지',
+      runStates: {
+        running: '실행 중',
+        starting: '시작 중',
+        pending: '아직 시작 안 됨',
+        waiting: '대기 중',
+        stopped: '중지 또는 휴면',
+        failed: '실패',
+        unknown: '알 수 없음',
+      },
     },
     advanced: '고급(선택)',
     labels: {
@@ -521,11 +538,7 @@ const koKR: LocaleResource<typeof enUS> = {
       title: '공유 앱 호스트',
       description:
         '이 호스트의 모든 환경의 앱이 하나의 프로세스와 메모리를 공유합니다.',
-      summary:
-        '배포된 앱 {{deployed}}개 중 {{running}}개가 실행 중이거나 시작 중',
-      memory:
-        '힙 {{heapUsed}} / {{heapLimit}} · 프로세스 메모리 {{rss}} · 서버에서 사용 가능 {{available}}',
-      memoryNote: '개별 앱이 아닌 전체 프로세스의 합계입니다.',
+      environments: '이 호스트의 환경: {{names}}',
       recycling: {
         pending:
           '사용 중인 앱이 없을 때 이 호스트를 재시작해 이전 코드를 해제합니다. 새 버전은 그때까지 대기하며 실행 중인 앱은 계속 요청을 처리합니다.',
@@ -534,15 +547,22 @@ const koKR: LocaleResource<typeof enUS> = {
       },
       restoreFailed:
         '{{name}}: 앱을 복원할 수 없어 백그라운드에서 다시 시도하는 중입니다.',
-      columns: {
-        app: '앱',
-        state: '상태',
-        why: '이유',
-        lastAccess: '마지막 접근',
-      },
-      hidden: '볼 수 없는 앱',
-      empty: '이 호스트에서 실행 중인 앱이 없습니다.',
-      idle: '유휴 상태, 공간이 필요하면 먼저 중지됨',
+      failed:
+        '공유 호스트가 다시 시작된 후 앱을 복원하지 못했습니다. 백그라운드에서 다시 시도합니다.',
+      view: '호스트 사용 현황 보기',
+      deployed: '배포됨: {{count}}',
+      appsLabel: '실행 또는 시작 중',
+      heapLabel: '힙',
+      processLabel: '프로세스 메모리',
+      ratio: '{{used}} / {{limit}}',
+      runningUnlimited: '{{running}} · 제한 없음',
+      available: '서버에 {{available}} 남음',
+      wholeHost:
+        '이 호스트 전체(모든 환경 포함)의 합계이며, 메모리는 앱별로 나눌 수 없습니다.',
+      viewApps: '실행 중이거나 시작 중인 앱 {{count}}개 보기',
+      viewAppsNote: '볼 수 있는 앱만 표시됩니다.',
+    },
+    runtime: {
       holds: {
         requests: '요청 처리 중',
         connections: '열린 연결',
@@ -557,6 +577,8 @@ const koKR: LocaleResource<typeof enUS> = {
         memory: '시작 거부: 메모리 부족',
         recycle: '시작 거부: 새 코드가 호스트 재시작을 기다리는 중',
       },
+      idle: '유휴 상태, 공간이 필요하면 먼저 중지됨',
+      lastVisit: '마지막 방문: {{time}}',
     },
     overview: {
       currentRelease: '현재 릴리스',

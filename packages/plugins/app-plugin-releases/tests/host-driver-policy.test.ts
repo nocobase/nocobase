@@ -20,6 +20,11 @@ import type {
 } from '@nocobase/app-host/management';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { hostNoticeOf } from '../client/lib/runtime-state.js';
+import { runtimeStatus } from '../server/services/releases.js';
+import { runStateOf, type AppSummary } from '../shared/releases.js';
+import { appSummary } from './helpers/app-summary.js';
+
 import {
   createHostDriver,
   UNRESTORED_APP_ERROR,
@@ -325,6 +330,27 @@ describe('Host driver', () => {
       desired: () =>
         Promise.resolve(typeof desired === 'function' ? desired() : desired),
     });
+  it('reports an App of a new environment, before anything is deployed, as pending: no slot, so out of the running link', async () => {
+    const host = fakeHost();
+    const session = await open(driverFor(host), []);
+    try {
+      const runtime = runtimeStatus(
+        await session.status(['never-deployed']),
+        'never-deployed',
+      );
+      expect(runtime.state).toBe('pending');
+      expect(runStateOf(runtime)).toBe('pending');
+      const occupancy = (await session.occupancy!())!;
+      expect(
+        occupancy.apps.filter(
+          (app) => app.state === 'running' || app.state === 'starting',
+        ),
+      ).toHaveLength(0);
+    } finally {
+      await session.close();
+    }
+  });
+
   it('starts an App on deployment and leaves an on-demand one stopped on restore', async () => {
     const host = fakeHost();
     const preview = appSpec('fg-1--app', {
@@ -430,10 +456,15 @@ describe('Host driver', () => {
         rss: 1500 * 1024 ** 2,
         available: 3000 * 1024 ** 2,
       },
+      maxActiveApps: 6,
     };
     const occupancy = await preview.occupancy!();
     expect(occupancy).toMatchObject({
+      // Every environment on the in-process Host names the same runtime.
+      id: 'in-process',
       memory: { heapUsed: 900 * 1024 ** 2, rss: 1500 * 1024 ** 2 },
+      // The Host's own active App limit, passed through.
+      maxActive: 6,
       recycling: null,
       failedEnvironments: [],
     });
@@ -473,8 +504,10 @@ describe('Host driver', () => {
     expect(failed.get('reports')).toMatchObject({
       state: 'failed',
       error: UNRESTORED_APP_ERROR,
+      unrestored: true,
     });
     expect(failed.get('crm')?.state).toBe('running');
+    expect(failed.get('crm')?.unrestored).toBeUndefined();
     expect(await preview.occupancy!()).toMatchObject({
       failedEnvironments: [
         { environmentId: 'staging', error: 'crm cannot be restored' },
@@ -527,9 +560,10 @@ describe('Host driver', () => {
       ]),
     );
     expect(emptied!.apps).toHaveLength(3);
-    expect(emptied!.apps.find((item) => item.appId === 'crm')?.error).toBe(
-      UNRESTORED_APP_ERROR,
-    );
+    expect(emptied!.apps.find((item) => item.appId === 'crm')).toMatchObject({
+      error: UNRESTORED_APP_ERROR,
+      unrestored: true,
+    });
     expect(JSON.stringify(emptied!.apps)).not.toContain('desired replay');
     // The same answer as the environment's own status.
     expect((await staging.status(['crm'])).get('crm')).toMatchObject({
@@ -555,6 +589,11 @@ describe('Host driver', () => {
       ['reports', 'failed'],
     ]);
 
+    // Only the missing App is marked: the environment failing does not make every App in it unrestored.
+    expect(
+      partial!.apps.filter((item) => item.unrestored).map((item) => item.appId),
+    ).toEqual(['reports']);
+
     // A retry that succeeds leaves no failed App and no failed environment.
     failing = false;
     await staging.restore([]);
@@ -567,6 +606,89 @@ describe('Host driver', () => {
     await staging.close();
   });
 
+  it('marks only the App a failed restore left off the Host, not one of the same environment that fails on its own', async () => {
+    const host = fakeHost();
+    const driver = driverFor(host);
+    const staging = await open(
+      driver,
+      [appSpec('crm'), appSpec('reports')],
+      'staging',
+    );
+    await staging.restore([]);
+    const service = await host.endpoint.controller.getManagementClient();
+    await service.removeDeployment('reports');
+    // crm is back on the Host but fails on its own; staging's replay fails, so reports stays off the Host.
+    const getStatus = service.getStatus.bind(service);
+    vi.spyOn(service, 'getStatus').mockImplementation(async (query) => {
+      const result = await getStatus(query);
+      return {
+        ...result,
+        deployments: result.deployments.map((item) =>
+          item.appId === 'crm'
+            ? {
+                ...item,
+                app: null,
+                observedState: 'failed' as const,
+                error: 'App failed to initialize: database password is invalid',
+              }
+            : item,
+        ),
+      };
+    });
+    vi.spyOn(service, 'restoreDeploymentSet').mockRejectedValue(
+      new Error('desired replay unavailable'),
+    );
+    await expect(staging.restore([])).rejects.toThrow(
+      'desired replay unavailable',
+    );
+    const status = await staging.status(['crm', 'reports']);
+    const occupancy = (await staging.occupancy!())!;
+    // The environment failed as a whole, with no restart in progress …
+    expect(occupancy.recycling).toBeNull();
+    expect(
+      occupancy.failedEnvironments.map((item) => item.environmentId),
+    ).toEqual(['staging']);
+    // … yet only the missing App is the Host's doing.
+    expect(status.get('reports')).toMatchObject({
+      state: 'failed',
+      error: UNRESTORED_APP_ERROR,
+      unrestored: true,
+    });
+    expect(status.get('crm')).toMatchObject({
+      state: 'failed',
+      error: 'App failed to initialize: database password is invalid',
+    });
+    expect(status.get('crm')?.unrestored).toBeUndefined();
+    expect(
+      occupancy.apps
+        .filter((item) => item.unrestored)
+        .map((item) => item.appId),
+    ).toEqual(['reports']);
+    // What the App's page makes of them: the host line for reports, nothing for crm.
+    const summaryOf = (appId: string): AppSummary => {
+      const base = appSummary('failed', appId);
+      return {
+        ...base,
+        runtime: runtimeStatus(status, appId),
+        host: {
+          id: occupancy.id,
+          memory: occupancy.memory,
+          recycling: occupancy.recycling,
+          deployed: occupancy.apps.length,
+          running: 0,
+          occupants: [],
+          failedEnvironments: occupancy.failedEnvironments.map((item) => ({
+            id: item.environmentId,
+            name: 'Staging',
+            error: item.error,
+          })),
+        },
+      };
+    };
+    expect(hostNoticeOf(summaryOf('crm'))).toBeNull();
+    expect(hostNoticeOf(summaryOf('reports'))).toBe('ui.sharedHost.failed');
+    await staging.close();
+  });
   it('reports why a deployment failed while the previous version keeps serving', async () => {
     const host = fakeHost();
     const session = await open(driverFor(host), []);

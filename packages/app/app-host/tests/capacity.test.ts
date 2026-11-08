@@ -270,6 +270,11 @@ it('serializes cold starts, bounds the queue and cleans a late timed-out runtime
   await host.ensureActive('overflow');
 });
 
+it('reports its active App limit, null when none is configured', () => {
+  expect(registry({ maxActiveApps: 3 }).activeAppLimit()).toBe(3);
+  expect(registry({}).activeAppLimit()).toBeNull();
+});
+
 it('pauses only unloaded revisions while resident traffic and same-revision restarts continue', async () => {
   const host = registry({ maxActiveApps: 1 });
   await host.create('a');

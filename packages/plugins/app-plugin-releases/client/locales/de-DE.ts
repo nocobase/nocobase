@@ -182,6 +182,23 @@ const deDE: LocaleResource<typeof enUS> = {
         'Buchstaben, Ziffern, Unterstriche und Bindestriche; Teil seiner Adresse. Es kann sich später nicht mehr ändern.',
       noEnvironment: 'Noch keine Umgebung',
       lastAccess: 'Letzter Besuch',
+      stateFilter: 'Status',
+      anyState: 'Jeder Status',
+      filteredEnvironments: 'Umgebungen: {{names}}',
+      clearFilters: 'Filter zurücksetzen',
+      noMatches: 'Keine App passt zu den Filtern.',
+      page: 'Seite {{page}} von {{pages}}',
+      previousPage: 'Vorherige Seite',
+      nextPage: 'Nächste Seite',
+      runStates: {
+        running: 'Läuft',
+        starting: 'Startet',
+        pending: 'Noch nicht gestartet',
+        waiting: 'Wartet',
+        stopped: 'Gestoppt oder ruhend',
+        failed: 'Fehlgeschlagen',
+        unknown: 'Unbekannt',
+      },
     },
     advanced: 'Erweitert (optional)',
     labels: {
@@ -547,11 +564,7 @@ const deDE: LocaleResource<typeof enUS> = {
       title: 'Gemeinsamer App-Host',
       description:
         'Apps aller Umgebungen auf diesem Host teilen sich einen Prozess und dessen Speicher.',
-      summary:
-        '{{running}} von {{deployed}} bereitgestellten Apps laufen oder starten',
-      memory:
-        'Heap {{heapUsed}} von {{heapLimit}} · Prozessspeicher {{rss}} · {{available}} auf dem Server verfügbar',
-      memoryNote: 'Summen des gesamten Prozesses, nicht einer einzelnen App.',
+      environments: 'Umgebungen darauf: {{names}}',
       recycling: {
         pending:
           'Alter Code wird durch einen Neustart dieses Hosts freigegeben, sobald keine App mehr genutzt wird. Neue Versionen warten bis dahin; laufende Apps antworten weiter.',
@@ -560,15 +573,22 @@ const deDE: LocaleResource<typeof enUS> = {
       },
       restoreFailed:
         '{{name}}: Die Apps konnten nicht wiederhergestellt werden; neuer Versuch im Hintergrund.',
-      columns: {
-        app: 'App',
-        state: 'Status',
-        why: 'Grund',
-        lastAccess: 'Letzter Zugriff',
-      },
-      hidden: 'Eine App, die Sie nicht sehen dürfen',
-      empty: 'Auf diesem Host läuft keine App.',
-      idle: 'Untätig; wird zuerst angehalten, wenn Platz gebraucht wird',
+      failed:
+        'Die App konnte nach dem Neustart ihres gemeinsamen Hosts nicht wiederhergestellt werden; neuer Versuch im Hintergrund.',
+      view: 'Host-Auslastung ansehen',
+      deployed: 'Bereitgestellt: {{count}}',
+      appsLabel: 'Laufend oder startend',
+      heapLabel: 'Heap',
+      processLabel: 'Prozessspeicher',
+      ratio: '{{used}} / {{limit}}',
+      runningUnlimited: '{{running}} · keine Obergrenze',
+      available: '{{available}} noch frei auf dem Server',
+      wholeHost:
+        'Summen des gesamten Hosts mit allen Umgebungen darauf; der Speicher lässt sich nicht auf einzelne Apps aufteilen.',
+      viewApps: '{{count}} laufende oder startende Apps ansehen',
+      viewAppsNote: 'Zeigt nur die Apps, die du sehen darfst.',
+    },
+    runtime: {
       holds: {
         requests: 'Bearbeitet Anfragen',
         connections: 'Offene Verbindungen',
@@ -583,6 +603,8 @@ const deDE: LocaleResource<typeof enUS> = {
         memory: 'Start abgelehnt: nicht genug Speicher',
         recycle: 'Start abgelehnt: neuer Code wartet auf den Host-Neustart',
       },
+      idle: 'Untätig; wird zuerst angehalten, wenn Platz gebraucht wird',
+      lastVisit: 'Letzter Besuch: {{time}}',
     },
     overview: {
       currentRelease: 'Aktuelle Version',

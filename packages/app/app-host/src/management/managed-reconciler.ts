@@ -727,6 +727,7 @@ export class ManagedReconciler {
           startupTimeouts: metrics.startupTimeouts,
           memory: this.registry.memoryUsage(),
           rotationPending: this.registry.isRotationPending(),
+          maxActiveApps: this.registry.activeAppLimit(),
           operationsInFlight: this.registry.pendingOperationCount(),
         };
       })(),

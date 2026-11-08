@@ -181,6 +181,23 @@ const viVN: LocaleResource<typeof enUS> = {
         'Chữ cái, chữ số, dấu gạch dưới và dấu gạch nối; một phần địa chỉ của nó. Nó không thể thay đổi sau này.',
       noEnvironment: 'Chưa có môi trường',
       lastAccess: 'Lần cuối ghé thăm',
+      stateFilter: 'Trạng thái',
+      anyState: 'Mọi trạng thái',
+      filteredEnvironments: 'Môi trường: {{names}}',
+      clearFilters: 'Xóa bộ lọc',
+      noMatches: 'Không có ứng dụng nào khớp bộ lọc.',
+      page: 'Trang {{page}} / {{pages}}',
+      previousPage: 'Trang trước',
+      nextPage: 'Trang sau',
+      runStates: {
+        running: 'Đang chạy',
+        starting: 'Đang khởi động',
+        pending: 'Chưa khởi động',
+        waiting: 'Đang chờ',
+        stopped: 'Đã dừng hoặc ngủ đông',
+        failed: 'Thất bại',
+        unknown: 'Không rõ',
+      },
     },
     advanced: 'Nâng cao (tùy chọn)',
     labels: {
@@ -544,11 +561,7 @@ const viVN: LocaleResource<typeof enUS> = {
       title: 'Máy chủ ứng dụng dùng chung',
       description:
         'Ứng dụng của mọi môi trường trên máy chủ này dùng chung một tiến trình và bộ nhớ của nó.',
-      summary:
-        '{{running}} trên {{deployed}} ứng dụng đã triển khai đang chạy hoặc đang khởi động',
-      memory:
-        'Heap {{heapUsed}} / {{heapLimit}} · bộ nhớ tiến trình {{rss}} · còn {{available}} trên máy chủ',
-      memoryNote: 'Tổng của cả tiến trình, không phải của một ứng dụng.',
+      environments: 'Môi trường trên máy chủ này: {{names}}',
       recycling: {
         pending:
           'Mã cũ được giải phóng bằng cách khởi động lại máy chủ này khi không còn ứng dụng nào được dùng. Phiên bản mới chờ đến lúc đó; ứng dụng đang chạy vẫn phục vụ.',
@@ -557,15 +570,22 @@ const viVN: LocaleResource<typeof enUS> = {
       },
       restoreFailed:
         '{{name}}: không khôi phục được các ứng dụng; đang thử lại ở chế độ nền.',
-      columns: {
-        app: 'Ứng dụng',
-        state: 'Trạng thái',
-        why: 'Lý do',
-        lastAccess: 'Truy cập gần nhất',
-      },
-      hidden: 'Một ứng dụng bạn không có quyền xem',
-      empty: 'Không có ứng dụng nào đang chạy trên máy chủ này.',
-      idle: 'Rảnh; bị dừng trước khi cần chỗ',
+      failed:
+        'Không thể khôi phục ứng dụng sau khi máy chủ dùng chung khởi động lại; đang thử lại ở chế độ nền.',
+      view: 'Xem mức sử dụng máy chủ',
+      deployed: 'Đã triển khai: {{count}}',
+      appsLabel: 'Đang chạy hoặc khởi động',
+      heapLabel: 'Heap',
+      processLabel: 'Bộ nhớ tiến trình',
+      ratio: '{{used}} / {{limit}}',
+      runningUnlimited: '{{running}} · không giới hạn',
+      available: 'Máy chủ còn trống {{available}}',
+      wholeHost:
+        'Tổng của cả máy chủ, gồm mọi môi trường trên đó; không thể chia bộ nhớ cho từng ứng dụng.',
+      viewApps: 'Xem {{count}} ứng dụng đang chạy hoặc đang khởi động',
+      viewAppsNote: 'Chỉ liệt kê các ứng dụng bạn được xem.',
+    },
+    runtime: {
       holds: {
         requests: 'Đang xử lý yêu cầu',
         connections: 'Kết nối đang mở',
@@ -581,6 +601,8 @@ const viVN: LocaleResource<typeof enUS> = {
         memory: 'Từ chối khởi động: không đủ bộ nhớ',
         recycle: 'Từ chối khởi động: mã mới chờ máy chủ khởi động lại',
       },
+      idle: 'Rảnh; bị dừng trước khi cần chỗ',
+      lastVisit: 'Lần truy cập cuối: {{time}}',
     },
     overview: {
       currentRelease: 'Bản phát hành hiện tại',

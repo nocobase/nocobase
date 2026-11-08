@@ -202,6 +202,12 @@ export interface AppObservedStatus {
   readonly holds?: readonly AppHoldReason[];
   /** Why its last start was refused, while that is recent (see `HostOccupancy`). */
   readonly waiting?: AppWaitReason;
+  /**
+   * The shared runtime restarted and could not put this App back (its environment's restore failed and the App is not
+   * on the runtime); retried in the background. Set by the driver per App, never inferred from the environment: an App
+   * of the same environment that is back on the runtime and fails on its own does not carry it.
+   */
+  readonly unrestored?: true;
 }
 
 /**
@@ -228,6 +234,11 @@ export type AppWaitReason = 'capacity' | 'memory' | 'recycle';
  * process's total: it cannot be divided among the Apps.
  */
 export interface HostOccupancy {
+  /**
+   * The runtime itself, the same for every environment on it, so the environments page shows a runtime the
+   * environments share once.
+   */
+  readonly id: string;
   readonly memory: {
     readonly heapUsed: number;
     readonly heapLimit: number;
@@ -240,6 +251,8 @@ export interface HostOccupancy {
    * `restarting`: it is restarting or restoring its Apps, which answer "retry" meanwhile.
    */
   readonly recycling: 'pending' | 'restarting' | null;
+  /** How many Apps may run or start on the runtime at once; null when nothing limits it. */
+  readonly maxActive: number | null;
   /** Every App deployed on the runtime, running or not. */
   readonly apps: readonly (AppObservedStatus & {
     readonly appId: string;

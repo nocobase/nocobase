@@ -145,6 +145,8 @@ export interface HostRuntimeCounters {
   startupTimeouts?: number;
   memory?: import('../memory.js').HostMemoryUsage;
   rotationPending?: boolean;
+  /** How many Apps may run or start at once (`maxActiveApps`); null when nothing limits it. */
+  maxActiveApps?: number | null;
   operationsInFlight?: number;
   activations: number;
   idleStops: number;

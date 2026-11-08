@@ -70,7 +70,7 @@ import {
 } from '../components/release-badges.js';
 import { RowActions } from '../components/row-actions.js';
 import { Section } from '../components/section.js';
-import { SharedHostSection } from '../components/shared-host.js';
+import { SharedHostNotice } from '../components/shared-host.js';
 import { EmptyState, ListSkeleton, LoadError } from '../components/states.js';
 import { Tag } from '../components/tag.js';
 import { Alert, AlertAction, AlertTitle } from '../components/ui/alert.js';
@@ -516,7 +516,10 @@ function AppPageContent({ appId }: { readonly appId: string }): ReactElement {
         </Overview>
       </dl>
       {origin ? <origin.Origin appId={appId} /> : null}
-      {summary.host ? <SharedHostSection host={summary.host} /> : null}
+      <SharedHostNotice
+        summary={summary}
+        canReadEnvironments={canReadEnvironments}
+      />
       <Section
         title={t('ui.overview.recent')}
         actions={

@@ -8,7 +8,12 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { parse as parseYaml } from 'yaml';
 
-import { UNRESTORED_APP_ERROR } from '../server/drivers/types.js';
+import {
+  UNRESTORED_APP_ERROR,
+  type AppDeploymentSpec,
+  type AppObservedStatus,
+  type HostOccupancy,
+} from '../server/drivers/types.js';
 import { ReleasesError } from '../server/errors.js';
 import { CONFIG_SECRET_MASK } from '../shared/releases.js';
 import {
@@ -53,7 +58,82 @@ describe('releases', () => {
     return admin;
   }
 
-  it('answers the shared runtime on the single-App read, naming only the occupants the caller may view', async () => {
+  /** Marks an App as running on the fake driver, with what its status reports instead. */
+  function observe(
+    appId: string,
+    reported: Partial<AppObservedStatus> = {},
+  ): void {
+    harness.fake.running.set(appId, {
+      appId,
+      deploymentId: null,
+      release: { version: '1.0.0' },
+    } as unknown as AppDeploymentSpec);
+    harness.fake.reported.set(appId, reported);
+  }
+
+  /** What the host reports: the Apps on it with their environment and observed state. */
+  function occupancyOf(
+    apps: readonly [string, string | null, Partial<AppObservedStatus>][],
+    fields: Partial<HostOccupancy> = {},
+  ): HostOccupancy {
+    return {
+      id: 'in-process',
+      memory: { heapUsed: 1, heapLimit: 2, rss: 3, available: 4 },
+      recycling: null,
+      maxActive: 4,
+      apps: apps.map(([appId, environmentId, observed]) => ({
+        appId,
+        environmentId,
+        state: 'running',
+        version: '1.0.0',
+        deploymentId: null,
+        startedAt: null,
+        error: null,
+        lastAccessedAt: null,
+        ...observed,
+      })),
+      failedEnvironments: [],
+      ...fields,
+    };
+  }
+
+  it('keeps an App not yet on the host, pending a first start or a restore, out of the running count and its link alike', async () => {
+    const admin = await createApp('restoring');
+    observe('restoring', { state: 'pending' });
+    // A restart restoring it: the host lists it pending, holding no slot.
+    harness.fake.occupancy = occupancyOf([
+      ['restoring', 'staging', { state: 'pending' }],
+    ]);
+    const [host] = await harness.services.releases.listHosts(admin);
+    expect(host?.running).toBe(0);
+    const linked = await harness.services.releases.listApps(admin, {
+      environmentIds: ['staging'],
+      runStates: ['running', 'starting'],
+    });
+    expect(linked.total).toBe(host?.running);
+    // It is found under its own state.
+    const pending = await harness.services.releases.listApps(admin, {
+      runStates: ['pending'],
+    });
+    expect(pending.items.map((item) => item.app.id)).toEqual(['restoring']);
+    // Once it starts, the card and the link count it alike.
+    observe('restoring', { state: 'starting' });
+    harness.fake.occupancy = occupancyOf([
+      ['restoring', 'staging', { state: 'starting' }],
+    ]);
+    const [started] = await harness.services.releases.listHosts(admin);
+    expect(started?.running).toBe(1);
+    expect(
+      (
+        await harness.services.releases.listApps(admin, {
+          environmentIds: ['staging'],
+          runStates: ['running', 'starting'],
+        })
+      ).total,
+    ).toBe(1);
+  });
+
+  it('answers the shared runtime on the single-App read as whole-host totals, naming no other App', async () => {
     const admin = await createApp('crm');
     const contributor = await harness.as('dev', 'contributor');
     await harness.environment({
@@ -66,102 +146,39 @@ describe('releases', () => {
       name: 'PR 1',
       environmentId: 'preview',
     });
-    await harness.services.releases.createApp(contributor, {
-      id: 'pr-2',
-      name: 'PR 2',
-      environmentId: 'preview',
-    });
-    const app = (
-      appId: string,
-      environmentId: string | null,
-      fields: Record<string, unknown>,
-    ) => ({
-      appId,
-      environmentId,
-      version: '1.0.0',
-      deploymentId: null,
-      startedAt: null,
-      error: null,
-      lastAccessedAt: null,
-      ...fields,
-    });
-    harness.fake.occupancy = {
-      memory: { heapUsed: 1, heapLimit: 2, rss: 3, available: 4 },
-      recycling: 'pending',
-      apps: [
-        app('pr-2', 'preview', { state: 'stopped' }),
-        app('pr-1', 'preview', { state: 'stopped', waiting: 'recycle' }),
-        app('crm', 'staging', {
-          state: 'running',
-          holds: ['requests', 'resident'],
-          error: 'crm detail',
-          lastAccessedAt: '2026-11-07T01:00:00.000Z',
-        }),
-        app('outside', null, { state: 'running', holds: ['recent'] }),
+    harness.fake.occupancy = occupancyOf(
+      [
+        ['crm', 'staging', { holds: ['requests'], error: 'crm detail' }],
+        ['pr-1', 'preview', { state: 'stopped', waiting: 'memory' }],
+        ['broken', 'preview', { state: 'failed', error: 'boom' }],
+        ['outside', null, { state: 'starting' }],
       ],
-      failedEnvironments: [
-        {
-          environmentId: 'staging',
-          error: 'secret-crm internal-archive-path cannot restore',
-        },
-      ],
-    };
+      {
+        recycling: 'pending',
+        failedEnvironments: [
+          {
+            environmentId: 'staging',
+            error: 'secret-crm internal-archive-path cannot restore',
+          },
+        ],
+      },
+    );
     const seen = await harness.services.releases.getApp(contributor, 'pr-1');
     expect(seen.host).toEqual({
+      id: 'in-process',
       memory: { heapUsed: 1, heapLimit: 2, rss: 3, available: 4 },
       recycling: 'pending',
       deployed: 4,
+      // Running or starting; the failed App holds nothing.
       running: 2,
-      occupants: [
-        {
-          app: null,
-          state: 'running',
-          holds: ['requests', 'resident'],
-          waiting: null,
-          lastAccessedAt: null,
-          error: null,
-        },
-        {
-          app: null,
-          state: 'running',
-          holds: ['recent'],
-          waiting: null,
-          lastAccessedAt: null,
-          error: null,
-        },
-        {
-          app: {
-            id: 'pr-1',
-            name: 'PR 1',
-            environmentId: 'preview',
-            environmentName: 'Preview',
-            previewOf: null,
-          },
-          state: 'stopped',
-          holds: [],
-          waiting: 'recycle',
-          lastAccessedAt: null,
-          error: null,
-        },
-      ],
+      maxActive: 4,
       // Reading environments does not reveal what their restore error says about Apps the caller cannot view.
       failedEnvironments: [{ id: 'staging', name: 'Staging', error: null }],
     });
-    // Nothing of the hidden App reaches the caller in any field.
-    expect(JSON.stringify(seen)).not.toMatch(/crm|internal-archive-path/);
-    // Nor through a key limited to the caller's own App.
-    const key = await harness.services.callerOf({
-      principal: { type: 'user', id: 'admin' },
-      subjects: [{ type: 'authenticated', id: '*' }],
-      keyScope: testKeyScope({ actions: ['rel.apps/view'], apps: ['pr-1'] }),
-    });
-    const scoped = await harness.services.releases.getApp(key, 'pr-1');
-    expect(scoped.host?.occupants.map((item) => item.app?.id ?? null)).toEqual([
-      null,
-      null,
-      'pr-1',
-    ]);
-    expect(JSON.stringify(scoped)).not.toMatch(/crm|internal-archive-path/);
+    // Nothing of another App reaches the caller in any field.
+    expect(JSON.stringify(seen)).not.toMatch(
+      /crm|internal-archive-path|broken/,
+    );
     const all = await harness.services.releases.getApp(admin, 'pr-1');
     expect(all.host?.failedEnvironments).toEqual([
       {
@@ -170,17 +187,167 @@ describe('releases', () => {
         error: 'secret-crm internal-archive-path cannot restore',
       },
     ]);
-    expect(all.host?.occupants[0]?.lastAccessedAt).toBe(
-      '2026-11-07T01:00:00.000Z',
-    );
-    expect(all.host?.occupants[0]?.app).toMatchObject({
-      id: 'crm',
-      environmentName: 'Staging',
-    });
-    expect(all.host?.occupants[0]?.error).toBe('crm detail');
     // Lists stay cheap: only the single-App read asks the driver about the runtime.
     const page = await harness.services.releases.listApps(admin, {});
     expect(page.items.every((item) => item.host === undefined)).toBe(true);
+  });
+
+  it('lists each shared runtime once for the environments page, with its environments, limit and running count', async () => {
+    const admin = await createApp('crm');
+    const contributor = await harness.as('dev', 'contributor');
+    await harness.environment({
+      id: 'preview',
+      name: 'Preview',
+      driver: 'fake',
+    });
+    // An environment without Apps runs nothing on a runtime: it is not listed with it.
+    await harness.environment({ id: 'empty', name: 'Empty', driver: 'fake' });
+    await harness.services.releases.createApp(contributor, {
+      id: 'pr-1',
+      name: 'PR 1',
+      environmentId: 'preview',
+    });
+    // A driver whose environments share no runtime lists none.
+    expect(await harness.services.releases.listHosts(admin)).toEqual([]);
+    harness.fake.occupancy = occupancyOf(
+      [
+        ['crm', 'staging', {}],
+        ['pr-1', 'preview', { state: 'failed', error: 'boom' }],
+      ],
+      {
+        recycling: 'restarting',
+        maxActive: null,
+        failedEnvironments: [
+          { environmentId: 'staging', error: 'crm internal-archive-path' },
+        ],
+      },
+    );
+    // Both environments report the same runtime: it is listed once, naming both.
+    const all = await harness.services.releases.listHosts(admin);
+    expect(all).toEqual([
+      {
+        id: 'in-process',
+        memory: { heapUsed: 1, heapLimit: 2, rss: 3, available: 4 },
+        recycling: 'restarting',
+        deployed: 2,
+        running: 1,
+        maxActive: null,
+        environments: [
+          { id: 'preview', name: 'Preview' },
+          { id: 'staging', name: 'Staging' },
+        ],
+        failedEnvironments: [
+          {
+            id: 'staging',
+            name: 'Staging',
+            error: 'crm internal-archive-path',
+          },
+        ],
+      },
+    ]);
+    // Someone who reads environments but not their restore errors gets the same totals without them.
+    const seen = await harness.services.releases.listHosts(contributor);
+    expect(seen[0]).toMatchObject({ running: 1, deployed: 2 });
+    expect(seen[0]!.failedEnvironments).toEqual([
+      { id: 'staging', name: 'Staging', error: null },
+    ]);
+    expect(JSON.stringify(seen)).not.toMatch(/crm|internal-archive-path/);
+    // Without the environments setting there is nothing to list.
+    const nobody = await harness.as('guest', 'nobody');
+    await expect(
+      harness.services.releases.listHosts(nobody),
+    ).rejects.toMatchObject({ status: 'PERMISSION_DENIED' });
+  });
+
+  it('filters Apps by environments and runtime state before it cuts the page, among the Apps the caller may view', async () => {
+    const admin = await harness.as('admin', 'admin');
+    const contributor = await harness.as('dev', 'contributor');
+    await harness.environment({
+      id: 'preview',
+      name: 'Preview',
+      driver: 'fake',
+    });
+    await harness.environment({ id: 'other', name: 'Other', driver: 'fake' });
+    const create = async (
+      caller: typeof admin,
+      id: string,
+      environmentId: string,
+    ) =>
+      await harness.services.releases.createApp(caller, {
+        id,
+        name: id,
+        environmentId,
+      });
+    // Twelve running Apps spread over the list, created between stopped ones so no single page holds them all.
+    for (let i = 0; i < 12; i += 1) {
+      await create(admin, `run-${i}`, i % 2 ? 'preview' : 'staging');
+      observe(`run-${i}`);
+      await create(admin, `idle-${i}`, 'staging');
+    }
+    await create(admin, 'starting', 'preview');
+    observe('starting', { state: 'starting' });
+    await create(admin, 'broken', 'staging');
+    observe('broken', { state: 'failed', error: 'boom' });
+    await create(admin, 'queued', 'preview');
+    observe('queued', { state: 'stopped', waiting: 'memory' });
+    await create(admin, 'elsewhere', 'other');
+    observe('elsewhere');
+    await create(contributor, 'mine', 'preview');
+    observe('mine');
+
+    const list = async (
+      caller: typeof admin,
+      options: Parameters<typeof harness.services.releases.listApps>[1],
+    ) => await harness.services.releases.listApps(caller, options);
+    const ids = (page: { items: readonly { app: { id: string } }[] }) =>
+      page.items.map((item) => item.app.id).sort();
+
+    // What the host card links to: running or starting Apps of its environments; failed and waiting ones are not.
+    const card = {
+      environmentIds: ['staging', 'preview'],
+      runStates: ['running', 'starting'] as const,
+    };
+    const first = await list(admin, { ...card, pageSize: 5 });
+    expect(first.total).toBe(14);
+    expect(first.items).toHaveLength(5);
+    const pages = [first];
+    for (let page = 2; page <= 3; page += 1)
+      pages.push(await list(admin, { ...card, pageSize: 5, page }));
+    expect(pages.flatMap((page) => ids(page)).sort()).toEqual(
+      [
+        ...Array.from({ length: 12 }, (_, i) => `run-${i}`),
+        'starting',
+        'mine',
+      ].sort(),
+    );
+    expect(first.items[0]?.runtime.state).toMatch(/running|starting/);
+    expect(ids(await list(admin, { runStates: ['failed'] }))).toEqual([
+      'broken',
+    ]);
+    expect(ids(await list(admin, { runStates: ['waiting'] }))).toEqual([
+      'queued',
+    ]);
+    expect(
+      (
+        await list(admin, {
+          runStates: ['stopped'],
+          environmentIds: ['staging'],
+        })
+      ).total,
+    ).toBe(12);
+    // Another environment's App is left out unless named.
+    expect(
+      ids(
+        await list(admin, {
+          runStates: ['running'],
+          environmentIds: ['other'],
+        }),
+      ),
+    ).toEqual(['elsewhere']);
+    // The same filter for someone who views only their own App: the subset they may view, no hidden rows.
+    const own = await list(contributor, { ...card });
+    expect(ids(own)).toEqual(['mine']);
+    expect(own.total).toBe(1);
   });
 
   it('keeps an environment restore diagnostic out of the whole App detail for callers who may not read it', async () => {
@@ -222,8 +389,10 @@ describe('releases', () => {
       lastAccessedAt: '2026-11-07T01:00:00.000Z',
     });
     harness.fake.occupancy = {
+      id: 'in-process',
       memory: null,
       recycling: null,
+      maxActive: null,
       apps: [failed('own'), failed('secret-crm')],
       failedEnvironments: [{ environmentId: 'staging', error: diagnosis }],
     };
@@ -249,76 +418,6 @@ describe('releases', () => {
     const all = await harness.services.releases.getApp(admin, 'own');
     expect(all.runtime?.error).toBe(diagnosis);
     expect(all.host?.failedEnvironments[0]?.error).toBe(diagnosis);
-  });
-
-  it('checks who may view the shared runtime occupants with at most one related-App lookup per read', async () => {
-    const admin = await harness.as('admin', 'admin');
-    const contributor = await harness.as('dev', 'contributor');
-    await harness.services.releases.createApp(contributor, {
-      id: 'own',
-      name: 'Own',
-      environmentId: 'staging',
-    });
-    const lookups = {
-      related: 0,
-      list: 0,
-      among: [] as (readonly string[] | undefined)[],
-    };
-    const { isRelated, relatedAppIds } = harness.application;
-    harness.application.isRelated = (...args) => {
-      lookups.related += 1;
-      return isRelated!(...args);
-    };
-    harness.application.relatedAppIds = (...args) => {
-      lookups.list += 1;
-      lookups.among.push(args[2]);
-      return relatedAppIds!(...args);
-    };
-    const occupant = (appId: string) => ({
-      appId,
-      environmentId: 'staging',
-      version: '1.0.0',
-      deploymentId: null,
-      startedAt: null,
-      error: null,
-      lastAccessedAt: null,
-      state: 'running' as const,
-      holds: ['resident' as const],
-    });
-    for (const count of [1, 10, 25]) {
-      const others = Array.from(
-        { length: count },
-        (_, i) => `other-${count}-${i}`,
-      );
-      for (const id of others)
-        await harness.services.releases.createApp(admin, {
-          id,
-          name: id,
-          environmentId: 'staging',
-        });
-      // One of them is related to the contributor, so the lookup must still find it.
-      harness.application.related.set('dev', [others[0]!]);
-      harness.fake.occupancy = {
-        memory: null,
-        recycling: null,
-        apps: [occupant('own'), ...others.map(occupant)],
-        failedEnvironments: [],
-      };
-      lookups.related = 0;
-      lookups.list = 0;
-      lookups.among = [];
-      const seen = await harness.services.releases.getApp(contributor, 'own');
-      // One lookup, limited to the occupants: Apps elsewhere (the earlier rounds' are off this Host) are not asked.
-      expect(lookups.related).toBe(0);
-      expect(lookups.list).toBe(1);
-      expect([...(lookups.among[0] ?? [])].sort()).toEqual([...others].sort());
-      expect(
-        seen.host?.occupants
-          .map((item) => item.app?.id)
-          .filter(Boolean)
-          .sort(),
-      ).toEqual(['own', others[0]].sort());
-    }
   });
 
   it('refuses the App IDs `new` and `requests`, which the pages take beside an App', async () => {
