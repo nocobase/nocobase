@@ -1,7 +1,11 @@
 /**
  * Runners share a queue by how busy each is with the run's coding tool, not by who asks first: the runners' route hands
  * out one run per request, and a claim waits until the run has been queued for the share of the tool's limit the
- * runner already runs, times one second (`claimPace`). These tests run on the wall clock with real waits.
+ * runner already runs, times one second (`claimPace`).
+ *
+ * The waits run on the harness's clock, not the wall clock, so the outcome does not depend on how fast requests are:
+ * a waiting claim parks, and once every runner of the test is parked, the clock moves to the earliest moment and that
+ * claim goes on (`virtualTime`).
  */
 import {
   HEADERS,
@@ -17,12 +21,58 @@ import {
   claimRepeatedly,
   createHarness,
   type Harness,
+  type RegisteredRunner,
 } from './harness.js';
 
 const CLAUDE = { kind: 'claude', authenticated: true } as const;
 const CODEX = { kind: 'codex', authenticated: true } as const;
 /** Longer than any claim's share of a second: work queued this long is taken at once. */
 const LONG_QUEUED_MS = 60_000;
+
+/**
+ * Claims' waits on the harness clock. `drive` runs one runner the way it polls (`claimRepeatedly`); a wait parks it,
+ * and when every driven runner is parked or done, the earliest parked wait moves the clock to its moment and goes on.
+ */
+function virtualTime() {
+  let h: Harness | undefined;
+  let running = 0;
+  const parked: { at: number; wake: () => void }[] = [];
+  const waits: number[] = [];
+  const settle = () => {
+    if (running > 0 || parked.length === 0) return;
+    let next = 0;
+    for (let index = 1; index < parked.length; index += 1)
+      if (parked[index]!.at < parked[next]!.at) next = index;
+    const [{ at, wake }] = parked.splice(next, 1);
+    const now = h!.clock.now().getTime();
+    if (at > now) h!.clock.advance(at - now);
+    running += 1;
+    wake();
+  };
+  return {
+    waits,
+    attach(harness: Harness) {
+      h = harness;
+    },
+    pause(ms: number): Promise<void> {
+      waits.push(ms);
+      return new Promise((wake) => {
+        parked.push({ at: h!.clock.now().getTime() + ms, wake });
+        running -= 1;
+        settle();
+      });
+    },
+    async drive(runner: RegisteredRunner, free: number) {
+      running += 1;
+      try {
+        return await claimRepeatedly(h!, runner, free);
+      } finally {
+        running -= 1;
+        settle();
+      }
+    },
+  };
+}
 
 describe('claims paced by how busy each runner is with the tool', () => {
   let h: Harness | undefined;
@@ -31,17 +81,11 @@ describe('claims paced by how busy each runner is with the tool', () => {
     h = undefined;
   });
 
-  /** A harness on the wall clock whose claims wait for real, with each wait recorded. */
   async function paced() {
-    const waits: number[] = [];
-    h = await createHarness({
-      realTime: true,
-      claimPause: async (ms, signal) => {
-        waits.push(ms);
-        await pause(ms, signal);
-      },
-    });
-    return { harness: h, waits };
+    const time = virtualTime();
+    h = await createHarness({ claimPause: (ms) => time.pause(ms) });
+    time.attach(h);
+    return { harness: h, time };
   }
 
   it.each([
@@ -50,7 +94,7 @@ describe('claims paced by how busy each runner is with the tool', () => {
   ])(
     'splits %i runs of one tool between runners with limits 2 and 6 as %i and %i',
     async (runs, small, large) => {
-      const { harness } = await paced();
+      const { harness, time } = await paced();
       const agent = await harness.createAgent({ maxConcurrentRuns: 8 });
       const two = await harness.registerRunner({
         slots: 8,
@@ -64,8 +108,8 @@ describe('claims paced by how busy each runner is with the tool', () => {
         await harness.enqueue(agent, String(index));
 
       const [fromTwo, fromSix] = await Promise.all([
-        claimRepeatedly(harness, two, 8),
-        claimRepeatedly(harness, six, 8),
+        time.drive(two, 8),
+        time.drive(six, 8),
       ]);
       expect([fromTwo.length, fromSix.length]).toEqual([small, large]);
       expect(
@@ -75,7 +119,7 @@ describe('claims paced by how busy each runner is with the tool', () => {
   );
 
   it("takes another tool's run at once while the runner is full of the first", async () => {
-    const { harness, waits } = await paced();
+    const { harness, time } = await paced();
     const claude = await harness.createAgent({ maxConcurrentRuns: 8 });
     const codex = await harness.createAgent({
       modelEntries: [{ tool: 'codex', model: null }],
@@ -88,92 +132,83 @@ describe('claims paced by how busy each runner is with the tool', () => {
     for (let index = 0; index < 6; index += 1)
       await harness.enqueue(claude, String(index));
     harness.clock.advance(LONG_QUEUED_MS);
-    expect(await claimRepeatedly(harness, runner, 8)).toHaveLength(6);
-    expect(waits).toEqual([]);
+    expect(await time.drive(runner, 6)).toHaveLength(6);
+    expect(time.waits).toEqual([]);
 
     const waiting = await harness.enqueue(claude, 'waiting');
     const run = await harness.enqueue(codex, 'codex');
-    const taken = await claim(harness, runner, 2);
+    const taken = await time.drive(runner, 2);
     expect(taken.map((payload) => payload.run.id)).toEqual([run]);
-    expect(waits).toEqual([]);
+    expect(time.waits).toEqual([]);
     expect(await harness.services.runs.get(waiting)).toMatchObject({
       status: 'queued',
     });
   });
 
   it('hands a lone busy runner a new run within a second of its queueing', async () => {
-    const { harness, waits } = await paced();
+    const { harness, time } = await paced();
     const agent = await harness.createAgent({ maxConcurrentRuns: 8 });
     const runner = await harness.registerRunner({ slots: 6 });
     for (let index = 0; index < 5; index += 1)
       await harness.enqueue(agent, String(index));
     harness.clock.advance(LONG_QUEUED_MS);
-    expect(await claimRepeatedly(harness, runner, 6)).toHaveLength(5);
+    expect(await time.drive(runner, 6)).toHaveLength(5);
 
-    const queuedAt = performance.now();
     const run = await harness.enqueue(agent, 'next');
-    const taken = await claim(harness, runner, 1);
-    const elapsed = performance.now() - queuedAt;
+    const queuedAt = harness.clock.now().getTime();
+    const taken = await time.drive(runner, 1);
     expect(taken.map((payload) => payload.run.id)).toEqual([run]);
     // Five of six held: five sixths of a second after the run was queued.
-    expect(waits).toHaveLength(1);
-    expect(waits[0]).toBeGreaterThan(0);
-    expect(waits[0]).toBeLessThanOrEqual((5 / 6) * 1000);
-    expect(elapsed).toBeGreaterThanOrEqual((5 / 6) * 1000 - 50);
+    expect(time.waits).toHaveLength(1);
+    expect(time.waits[0]).toBeCloseTo((5 / 6) * 1000, 3);
+    expect(harness.clock.now().getTime() - queuedAt).toBeLessThan(1000);
   });
 
   it('fills an idle runner within a second of the runs entering the queue', async () => {
-    const { harness, waits } = await paced();
+    const { harness, time } = await paced();
     const agent = await harness.createAgent({ maxConcurrentRuns: 8 });
     const runner = await harness.registerRunner({ slots: 8 });
-    const queuedAt = performance.now();
+    const queuedAt = harness.clock.now().getTime();
     for (let index = 0; index < 8; index += 1)
       await harness.enqueue(agent, String(index));
-    expect(await claimRepeatedly(harness, runner, 8)).toHaveLength(8);
-    // Each run is taken at its share of the second after the queueing, not after the previous claim's.
-    expect(waits.reduce((sum, ms) => sum + ms, 0)).toBeLessThan((7 / 8) * 1000);
-    expect(performance.now() - queuedAt).toBeGreaterThanOrEqual(
-      (7 / 8) * 1000 - 50,
-    );
+    expect(await time.drive(runner, 8)).toHaveLength(8);
+    // Each run is taken at its share of the second after the queueing, not after the previous claim: the eighth at
+    // seven eighths of a second, where waits counted from each request would add up to three and a half.
+    expect(harness.clock.now().getTime() - queuedAt).toBe((7 / 8) * 1000);
   });
 
   it('takes nothing when the request ends while it waits', async () => {
-    const { harness, waits } = await paced();
-    const agent = await harness.createAgent({ maxConcurrentRuns: 8 });
-    const registered = await harness.registerRunner({ slots: 2 });
-    await harness.enqueue(agent, 'held');
-    harness.clock.advance(LONG_QUEUED_MS);
-    expect(await claim(harness, registered, 2)).toHaveLength(1);
+    h = await createHarness({ claimPause: pause });
+    const agent = await h.createAgent({ maxConcurrentRuns: 8 });
+    const registered = await h.registerRunner({ slots: 2 });
+    await h.enqueue(agent, 'held');
+    h.clock.advance(LONG_QUEUED_MS);
+    expect(await claim(h, registered, 2)).toHaveLength(1);
 
-    const run = await harness.enqueue(agent, 'next');
+    // One of two held: the claim waits half a second, and the request ends first.
+    const run = await h.enqueue(agent, 'next');
     const controller = new AbortController();
-    const started = performance.now();
-    const pending = harness.app.request(
-      `${api(RUNNER_ROUTES.claim)}?wait=true`,
-      {
-        method: 'POST',
-        headers: {
-          'content-type': 'application/json',
-          [HEADERS.protocol]: String(PROTOCOL_VERSION),
-          [HEADERS.runnerKey]: registered.key,
-        },
-        body: JSON.stringify({ free: 1 }),
-        signal: controller.signal,
+    const pending = h.app.request(`${api(RUNNER_ROUTES.claim)}?wait=true`, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        [HEADERS.protocol]: String(PROTOCOL_VERSION),
+        [HEADERS.runnerKey]: registered.key,
       },
-    );
-    setTimeout(() => controller.abort(), 100);
+      body: JSON.stringify({ free: 1 }),
+      signal: controller.signal,
+    });
+    setTimeout(() => controller.abort(), 50);
     const response = await pending;
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({ data: { runs: [] } });
-    // It ended with the request, before its half-second turn.
-    expect(performance.now() - started).toBeLessThan(450);
-    expect(waits).toHaveLength(1);
-    expect(await harness.services.runs.get(run)).toMatchObject({
+    expect(await h.services.runs.get(run)).toMatchObject({
       status: 'queued',
       runnerId: null,
     });
 
-    const next = await claim(harness, registered, 1);
+    h.clock.advance(LONG_QUEUED_MS);
+    const next = await claim(h, registered, 1);
     expect(next.map((payload) => payload.run.id)).toEqual([run]);
   });
 });

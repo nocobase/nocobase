@@ -304,12 +304,7 @@ export async function createHarness(
     readonly secrets?: SecretsService | null;
     readonly dist?: DistConfig;
     readonly retryBaseDelayMs?: number;
-    /**
-     * Claims wait their turn for real (`claimPace`) and the clock runs with the wall clock from its start. Off by
-     * default: the clock stands still and a claim's wait is skipped, so a test sees who is first, not how long it took.
-     */
-    readonly realTime?: boolean;
-    /** How a claim waits its turn, in place of the default for `realTime`. */
+    /** How a claim waits its turn (`claimPace`); skipped by default, so a test sees who is first, not how long. */
     readonly claimPause?: (ms: number, signal?: AbortSignal) => Promise<void>;
   } = {},
 ): Promise<Harness> {
@@ -319,13 +314,8 @@ export async function createHarness(
     .latest();
 
   let current = Date.parse('2026-10-01T00:00:00.000Z');
-  const started = performance.now();
   const clock: FakeClock = {
-    now: () =>
-      new Date(
-        current +
-          (options.realTime ? Math.round(performance.now() - started) : 0),
-      ),
+    now: () => new Date(current),
     advance: (ms) => {
       current += ms;
     },
@@ -355,11 +345,7 @@ export async function createHarness(
       ? {}
       : { secrets: options.secrets ?? testSecrets() }),
     clock,
-    ...(options.claimPause
-      ? { claimPause: options.claimPause }
-      : options.realTime
-        ? {}
-        : { claimPause: async () => undefined }),
+    claimPause: options.claimPause ?? (async () => undefined),
     onError: () => undefined,
   });
 
