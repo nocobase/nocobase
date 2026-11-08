@@ -1,12 +1,3 @@
-import fileOverview from '../../pages/capabilities/file-overview-en-US.js';
-import databaseExplorerOverview from '../../pages/capabilities/database-explorer-overview-en-US.js';
-import concurrencyOverview from '../../pages/capabilities/concurrency-overview-en-US.js';
-import authenticationOverview from '../../pages/capabilities/authentication-overview-en-US.js';
-import { featureOverview } from '../../pages/capabilities/feature-overview-en-US.js';
-import authorizationOverview from '../../pages/capabilities/authorization-overview-en-US.js';
-import i18nOverview from '../../pages/capabilities/i18n-overview-en-US.js';
-import agentsOverview from '../../pages/capabilities/agents-overview-en-US.js';
-import databaseOverview from '../../pages/capabilities/database-overview-en-US.js';
 import databaseExplorer from '../../pages/settings/database-explorer/en-US.js';
 import settings from './settings-en-US.js';
 import type { LocaleResource } from '@nocobase/i18n';
@@ -19,15 +10,6 @@ import inboxEnUS from '#extensions/nocobase-inbox/locales/en-US';
  */
 const systemEnUS = {
   databaseExplorer,
-  fileOverview,
-  databaseExplorerOverview,
-  databaseOverview,
-  authenticationOverview,
-  concurrencyOverview,
-  agentsOverview,
-  authorizationOverview,
-  featureOverview,
-  i18nOverview,
   pendingFeedback: {
     working: 'Working…',
     longWait: 'This is taking longer than usual. You can keep waiting.',

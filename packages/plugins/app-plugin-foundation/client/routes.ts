@@ -4,6 +4,7 @@ import {
   type AppClientRoutePageDefinition,
 } from '@nocobase/app-client/plugins';
 import { Layers, Settings } from 'lucide-react';
+import { builtInDetailLoaders } from './capability-guide/details/feature-overview-loaders.js';
 import { createElement, lazy, type ComponentType } from 'react';
 
 import {
@@ -28,7 +29,7 @@ export interface FoundationRouteOptions {
   readonly guideNavigation?: boolean;
   /** Optional host settings home to include in the catalog breadcrumb. */
   readonly guideSettingsPath?: string;
-  /** App-owned detail bodies, loaded only when their catalog entry is opened. */
+  /** Optional overrides for the plugin-owned detail bodies, loaded only when their entry is opened. */
   readonly guideEntryLoaders?: Readonly<
     Record<string, () => Promise<{ default: ComponentType }>>
   >;
@@ -66,7 +67,7 @@ export function foundationDefinition(
 
 /**
  * The capability guide: a static page listing every core module and plugin the application depends on, with business
- * descriptions. Every signed-in user may open the catalog. App-owned detail bodies enforce their own data access
+ * descriptions. Every signed-in user may open the catalog. Plugin-owned detail bodies enforce their data access
  * through the APIs they use; the catalog itself does not grant access to configuration.
  * Both paths render the same page: the list alone on a narrow screen, the list beside the entry on a wide one.
  */
@@ -79,21 +80,27 @@ export function capabilityGuideDefinitions(
   } = {},
 ): AppClientRoutePageDefinition[] {
   const entryComponents = Object.fromEntries(
-    Object.entries(options.entryLoaders ?? {}).map(([id, loader]) => [
-      id,
-      lazy(loader),
-    ]),
+    Object.entries({ ...builtInDetailLoaders, ...options.entryLoaders }).map(
+      ([id, loader]) => [id, lazy(loader)],
+    ),
   );
   const componentLoader = async () => {
-    const { CapabilityGuidePage } =
-      await import('./capability-guide/guide-page.js');
+    const [{ CapabilityGuidePage }, { GuideRuntimeProvider }] =
+      await Promise.all([
+        import('./capability-guide/guide-page.js'),
+        import('./capability-guide/details/runtime-provider.js'),
+      ]);
     return {
       default: function CapabilityGuideRoute() {
-        return createElement(CapabilityGuidePage, {
-          catalog,
-          settingsPath: options.settingsPath,
-          entryComponents,
-        });
+        return createElement(
+          GuideRuntimeProvider,
+          null,
+          createElement(CapabilityGuidePage, {
+            catalog,
+            settingsPath: options.settingsPath,
+            entryComponents,
+          }),
+        );
       },
     };
   };
