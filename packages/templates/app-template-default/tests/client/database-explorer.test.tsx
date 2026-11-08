@@ -38,7 +38,7 @@ const detail = (
 const main = {
   name: 'main',
   isDefault: true,
-  dialect: 'sqlite',
+  dialect: 'mysql',
   schemaManagement: 'managed',
 };
 const external = {
