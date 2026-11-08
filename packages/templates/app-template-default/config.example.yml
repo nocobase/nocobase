@@ -22,13 +22,19 @@
 #     max: 600
 #     window: 1m
 
-# Realtime events are transient and local to this process. Clients refetch after subscription acknowledgement.
+# Realtime defaults to inMemory when broker is omitted. An explicit broker requires adapter.
+# For local-only selection: realtime: { broker: { adapter: inMemory } }.
+# For multiple processes, install @nocobase/app-plugin-realtime-redis and register its
+# @nocobase/app-plugin-realtime-redis/server definition in server/plugins.ts on every instance.
+# Realtime events are transient; clients refetch after subscription acknowledgement.
 # realtime:
-#   adapter: inMemory # Use redis for multiple application processes.
-#   redis:
+#   broker:
+#     adapter: redis
+#     setupTimeoutMs: 5000
 #     connection:
 #       host: 127.0.0.1
 #       port: 6379
+#       commandTimeout: 5000
 #   namespace: my-app # Defaults to the application name; keep applications isolated.
 #   authorizationTimeoutMs: 5000
 #   sessionCheckIntervalMs: 30000
