@@ -26,7 +26,10 @@ import {
 } from '../src/core/service.ts';
 import { readSettings, writeSettings } from '../src/lib/config.ts';
 import { runnerPaths } from '../src/lib/home.ts';
-import { cli, cliEnv, removeDir, tempDir } from './helpers.ts';
+import { readDaemonPid } from '../src/core/loop.ts';
+import { readLauncherPid } from '../src/core/launcher.ts';
+import { FakeServer } from './fake-server.ts';
+import { cli, cliEnv, registerRunner, removeDir, tempDir } from './helpers.ts';
 
 const root = tempDir('service-manager-');
 afterAll(() => removeDir(root));
@@ -164,6 +167,49 @@ describe('installed service migration', () => {
 });
 
 describe('service stop command', () => {
+  it('stops a manual daemon even when its home retains a service label', async () => {
+    const server = new FakeServer();
+    await server.listen();
+    const env = cliEnv(home, { HOME: home });
+    const paths = runnerPaths(home);
+    try {
+      await registerRunner(server.url, env);
+      expect((await cli(['start'], env)).code).toBe(0);
+      await writeSettings(
+        {
+          ...(await readSettings(paths)),
+          serviceLabel: 'com.example.manual-daemon',
+        },
+        paths,
+      );
+      expect(await readDaemonPid(paths)).toBeDefined();
+      expect((await cli(['stop'], env)).code).toBe(0);
+      expect(await readLauncherPid(paths)).toBeUndefined();
+      expect(await readDaemonPid(paths)).toBeUndefined();
+    } finally {
+      await cli(['stop', '--timeout', '0'], env);
+      await server.close();
+      removeDir(`${home}-work`);
+    }
+  });
+
+  it.runIf(process.platform === 'linux')(
+    'tolerates an uninstalled systemd unit remembered in settings',
+    async () => {
+      const paths = runnerPaths(home);
+      await writeSettings(
+        { ...(await readSettings(paths)), serviceLabel: 'com.example.removed' },
+        paths,
+      );
+      const result = await cli(
+        ['stop', '--json'],
+        cliEnv(home, { TEST_MANAGER_EXIT: '5' }),
+      );
+      expect(result.code).toBe(0);
+      expect(JSON.parse(result.stdout).result.stopped).toBe(false);
+    },
+  );
+
   it('keeps an old launchd registration available to an older updater until the new launcher migrates it', async () => {
     const label = 'com.example.legacy-update';
     const plan = servicePlan({

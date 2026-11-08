@@ -334,11 +334,18 @@ export async function stopService(
   label: string,
   platform: NodeJS.Platform = process.platform,
   home: string = os.homedir(),
-): Promise<void> {
+): Promise<boolean> {
   const file = serviceFile(label, platform, home);
-  if (platform === 'linux')
-    await run('systemctl', ['--user', 'stop', systemdUnit(label)]);
-  else {
+  if (platform === 'linux') {
+    try {
+      await run('systemctl', ['--user', 'stop', systemdUnit(label)]);
+      return true;
+    } catch (error) {
+      // A remembered label can outlive service uninstall; a manually started daemon still needs stopping.
+      if ((error as { code?: number }).code === 5) return false;
+      throw error;
+    }
+  } else {
     await stopLaunchd(reloadLabel(label));
     const content = await readFile(file, 'utf8').catch(
       (error: NodeJS.ErrnoException) => {
@@ -353,26 +360,28 @@ export async function stopService(
     ) {
       // An older updater invokes the new binary's stop, then kickstarts the still-loaded job. Its old policy
       // already keeps a clean stop stopped; the new launcher migrates and reloads the plist when kickstarted.
-      await stopLaunchd(label, 'kill');
-    } else await stopLaunchd(label);
+      return stopLaunchd(label, 'kill');
+    } else return stopLaunchd(label);
   }
 }
 
 async function stopLaunchd(
   label: string,
   action: 'kill' | 'bootout' = 'bootout',
-): Promise<void> {
+): Promise<boolean> {
   try {
     const target = `gui/${process.getuid?.() ?? 501}/${label}`;
     await run(
       'launchctl',
       action === 'bootout' ? ['bootout', target] : ['kill', 'SIGTERM', target],
     );
+    return true;
   } catch (error) {
     // ESRCH and launchd's service-not-found code mean it is already unloaded.
     const code = (error as NodeJS.ErrnoException).code as
       string | number | undefined;
     if (code !== 3 && code !== 113) throw error;
+    return false;
   }
 }
 

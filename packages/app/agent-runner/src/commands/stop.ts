@@ -27,15 +27,12 @@ export default class Stop extends RunnerCommand {
   async run(): Promise<{ stopped: boolean; pid?: number }> {
     const { flags } = await this.parse(Stop);
     const settings = await readSettings(this.paths);
+    let serviceStopped = false;
     if (settings.serviceLabel !== undefined) {
-      const running = await readDaemonPid(this.paths);
-      await stopService(settings.serviceLabel);
-      this.log('Runner service stopped.');
-      return {
-        stopped: true,
-        ...(running === undefined ? {} : { pid: running.pid }),
-      };
+      serviceStopped = await stopService(settings.serviceLabel);
     }
+    // A foreground or background start can share the home of a stopped or uninstalled service.
+    // Stop the manager first to cancel automatic restarts, then clean up any remaining manual daemon.
     const launcher = await readLauncherPid(this.paths);
     const running = await readDaemonPid(this.paths);
     if (launcher !== undefined) {
@@ -74,6 +71,10 @@ export default class Stop extends RunnerCommand {
       return { stopped: true, pid: running?.pid ?? launcher.pid };
     }
     if (running === undefined) {
+      if (serviceStopped) {
+        this.log('Runner service stopped.');
+        return { stopped: true };
+      }
       this.log('The runner is not running.');
       return { stopped: false };
     }
