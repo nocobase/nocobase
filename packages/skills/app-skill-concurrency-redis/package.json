@@ -1,0 +1,38 @@
+{
+  "name": "@nocobase/app-skill-concurrency-redis",
+  "version": "0.0.1",
+  "description": "Public agent Skill for installing and using @nocobase/app-plugin-concurrency-redis.",
+  "type": "module",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nocobase/nocobase.git",
+    "directory": "packages/skills/app-skill-concurrency-redis"
+  },
+  "prettier": "@nocobase/dev-config/prettier",
+  "exports": {
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "skills"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "nocobase": {
+    "skill": {
+      "plugin": "@nocobase/app-plugin-concurrency-redis",
+      "pluginVersion": "0.0.2-beta.0",
+      "sourceRevision": "c12cc82e7a50a568a2c416c7470cbac9dcb2c350"
+    }
+  },
+  "scripts": {
+    "format": "prettier . --write",
+    "format:check": "prettier . --check",
+    "check": "pnpm format:check"
+  },
+  "devDependencies": {
+    "@nocobase/dev-config": "workspace:*",
+    "prettier": "catalog:"
+  }
+}
