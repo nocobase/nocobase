@@ -171,7 +171,15 @@ describe('service stop command', () => {
       await stopService('com.example.unloaded', 'darwin');
       await restartService('com.example.unloaded', 'darwin');
       expect(recorded()).toEqual([
+        [
+          'bootout',
+          `gui/${process.getuid?.() ?? 501}/com.example.unloaded.reload`,
+        ],
         ['bootout', `gui/${process.getuid?.() ?? 501}/com.example.unloaded`],
+        [
+          'bootout',
+          `gui/${process.getuid?.() ?? 501}/com.example.unloaded.reload`,
+        ],
         ['bootout', `gui/${process.getuid?.() ?? 501}/com.example.unloaded`],
         [
           'bootstrap',
@@ -191,7 +199,22 @@ describe('service stop command', () => {
       restartService('com.example.denied', 'darwin'),
     ).rejects.toThrow();
     expect(recorded()).toEqual([
-      ['bootout', `gui/${process.getuid?.() ?? 501}/com.example.denied`],
+      ['bootout', `gui/${process.getuid?.() ?? 501}/com.example.denied.reload`],
+    ]);
+  });
+
+  it('keeps the independent migration job alive while replacing the runner job', async () => {
+    await restartService('com.example.migration', 'darwin', true);
+    expect(recorded()).toEqual([
+      ['bootout', `gui/${process.getuid?.() ?? 501}/com.example.migration`],
+      [
+        'bootstrap',
+        `gui/${process.getuid?.() ?? 501}`,
+        path.join(
+          os.homedir(),
+          'Library/LaunchAgents/com.example.migration.plist',
+        ),
+      ],
     ]);
   });
 
@@ -216,7 +239,7 @@ describe('service stop command', () => {
         expect(result.code).toBe(managerExit);
         expect(recorded()[0]).toEqual([
           'bootout',
-          `gui/${process.getuid?.() ?? 501}/com.example.stop`,
+          `gui/${process.getuid?.() ?? 501}/com.example.stop.reload`,
         ]);
       }
       if (result.code === 0)

@@ -176,7 +176,10 @@ ${Object.entries(environment)
       content,
       captured: Object.keys(captured),
       install: [['launchctl', 'bootstrap', domain, file]],
-      uninstall: [['launchctl', 'bootout', `${domain}/${label}`]],
+      uninstall: [
+        ['launchctl', 'bootout', `${domain}/${label}.reload`],
+        ['launchctl', 'bootout', `${domain}/${label}`],
+      ],
     };
   }
   if (platform === 'linux') {
@@ -330,15 +333,22 @@ export async function stopService(
   if (platform === 'linux')
     await run('systemctl', ['--user', 'stop', systemdUnit(label)]);
   else {
-    const target = `gui/${process.getuid?.() ?? 501}/${label}`;
-    try {
-      await run('launchctl', ['bootout', target]);
-    } catch (error) {
-      // ESRCH and launchd's service-not-found code mean it is already unloaded.
-      const code = (error as NodeJS.ErrnoException).code as
-        string | number | undefined;
-      if (code !== 3 && code !== 113) throw error;
-    }
+    await unloadLaunchd(`${label}.reload`);
+    await unloadLaunchd(label);
+  }
+}
+
+async function unloadLaunchd(label: string): Promise<void> {
+  try {
+    await run('launchctl', [
+      'bootout',
+      `gui/${process.getuid?.() ?? 501}/${label}`,
+    ]);
+  } catch (error) {
+    // ESRCH and launchd's service-not-found code mean it is already unloaded.
+    const code = (error as NodeJS.ErrnoException).code as
+      string | number | undefined;
+    if (code !== 3 && code !== 113) throw error;
   }
 }
 
@@ -346,11 +356,14 @@ export async function stopService(
 export async function restartService(
   label: string,
   platform: NodeJS.Platform = process.platform,
+  /** The independent migration job must survive its own restart until bootstrap succeeds. */
+  fromMigration = false,
 ): Promise<void> {
   if (!SERVICE_LABEL_PATTERN.test(label))
     throw new Error(`Not a service label: ${label}`);
   if (platform === 'darwin') {
-    await stopService(label, platform);
+    if (fromMigration) await unloadLaunchd(label);
+    else await stopService(label, platform);
     await loadService('launchd', [
       [
         'launchctl',

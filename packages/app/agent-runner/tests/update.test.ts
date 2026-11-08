@@ -182,6 +182,7 @@ describe('installation layout', () => {
     );
     expect(plan.content).toContain('<key>NOCOBASE_RUNNER_SERVICE</key>');
     expect(plan.uninstall).toEqual([
+      ['launchctl', 'bootout', 'gui/501/com.example.test-runner.reload'],
       ['launchctl', 'bootout', 'gui/501/com.example.test-runner'],
     ]);
     const linux = servicePlan({
@@ -753,31 +754,27 @@ describe('served tarballs', () => {
         .trim()
         .split('\n')
         .map((line) => JSON.parse(line));
-      expect(commands).toEqual(
+      const domain = `gui/${process.getuid?.() ?? 501}`;
+      const expected =
         process.platform === 'darwin'
-          ? managerExit === 0
-            ? [
-                [
-                  'bootout',
-                  `gui/${process.getuid?.() ?? 501}/com.example.manual-update`,
-                ],
-                [
-                  'bootstrap',
-                  `gui/${process.getuid?.() ?? 501}`,
-                  path.join(
-                    process.env.HOME!,
-                    'Library/LaunchAgents/com.example.manual-update.plist',
-                  ),
-                ],
-              ]
-            : [
-                [
-                  'bootout',
-                  `gui/${process.getuid?.() ?? 501}/com.example.manual-update`,
-                ],
-              ]
-          : [['--user', 'restart', 'com.example.manual-update.service']],
-      );
+          ? [
+              ['bootout', `${domain}/com.example.manual-update.reload`],
+              ...(managerExit === 0
+                ? [
+                    ['bootout', `${domain}/com.example.manual-update`],
+                    [
+                      'bootstrap',
+                      domain,
+                      path.join(
+                        process.env.HOME!,
+                        'Library/LaunchAgents/com.example.manual-update.plist',
+                      ),
+                    ],
+                  ]
+                : []),
+            ]
+          : [['--user', 'restart', 'com.example.manual-update.service']];
+      expect(commands).toEqual(expected);
     },
   );
 

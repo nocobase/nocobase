@@ -12,6 +12,6 @@ export default class ServiceRestart extends RunnerCommand {
 
   async run(): Promise<void> {
     const { flags } = await this.parse(ServiceRestart);
-    await restartService(flags.label);
+    await restartService(flags.label, process.platform, true);
   }
 }
