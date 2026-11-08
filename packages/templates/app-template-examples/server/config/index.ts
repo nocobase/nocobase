@@ -21,6 +21,7 @@ import queueExample from './queue-example.js';
 import jobs from './jobs.js';
 import scheduler from './scheduler.js';
 import caching from './caching.js';
+import realtime from './realtime.js';
 import i18n from './i18n.js';
 import app from './app.js';
 import api from './api.js';
@@ -48,6 +49,7 @@ const defaultConfigs: AppConfigFactory<{
   jobs: ReturnType<typeof jobs>;
   scheduler: ReturnType<typeof scheduler>;
   caching: ReturnType<typeof caching>;
+  realtime: ReturnType<typeof realtime>;
   i18n: ReturnType<typeof i18n>;
   app: ReturnType<typeof app>;
   api: ReturnType<typeof api>;
@@ -75,6 +77,7 @@ const defaultConfigs: AppConfigFactory<{
   jobs,
   scheduler,
   caching,
+  realtime,
   i18n,
   app,
   api,
