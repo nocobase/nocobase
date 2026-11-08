@@ -83,130 +83,25 @@ async function mount(
   return { ...view, calls };
 }
 
-it.each(Object.keys(FEATURE_OVERVIEWS) as FeatureOverviewId[])(
-  'renders complete bilingual guidance and an editable request for %s',
+it.each(['jobs', 'queue', 'app-plugin-mail', 'app-plugin-knowledge'] as const)(
+  'keeps unavailable configuration explicit for %s without querying registrations',
   async (id) => {
-    const user = userEvent.setup();
-    const { app, calls } = await mount(id);
+    const { calls } = await mount(id);
     expect(
       screen.getByRole('heading', { name: 'This application' }),
     ).toBeVisible();
-    if (id !== 'app-plugin-api-keys')
-      expect(
-        screen.getByRole('heading', { name: 'What to configure and where' }),
-      ).toBeVisible();
-    await user.click(
-      screen.getByRole('button', {
-        name:
-          id === 'app-plugin-api-keys'
-            ? 'Add My API keys with an Agent'
-            : 'How to integrate and verify',
-      }),
-    );
-    expect(
-      screen.getByRole('textbox', { name: 'Editable request' }),
-    ).not.toHaveValue('');
-    await user.click(screen.getByRole('tab', { name: 'Configuration steps' }));
-    expect(screen.getAllByRole('listitem')).toHaveLength(
-      id === 'app-plugin-api-keys' ? 4 : 7,
-    );
-    await act(async () => {
-      await app.runtime.i18n.changeLanguage('zh-CN');
-    });
-    if (id !== 'app-plugin-api-keys')
-      expect(
-        screen.getByRole('heading', { name: '可以配置什么，在哪里配置' }),
-      ).toBeVisible();
-    await user.click(screen.getByRole('tab', { name: '开发提示词' }));
-    expect(
-      screen.getByRole('textbox', { name: '可编辑的需求' }),
-    ).not.toHaveValue('');
-    for (const [call] of calls.mock.calls) {
-      expect(call.method).toBe('GET');
-      expect(call.path).toBe(
-        id === 'app-plugin-api-keys'
-          ? 'apiKeys/scopeOptions'
-          : 'foundation/registrations',
-      );
-    }
-    if (
-      id === 'app-plugin-api-keys' ||
-      ['core', 'cli', 'reference'].includes(FEATURE_OVERVIEWS[id].mode)
-    )
-      expect(calls).not.toHaveBeenCalled();
+    expect(screen.getAllByText('Not available yet').length).toBeGreaterThan(0);
+    expect(screen.queryByText('Configured')).not.toBeInTheDocument();
+    expect(calls).not.toHaveBeenCalled();
   },
 );
-
-it.each([
-  ['app-plugin-concurrency', false, true, 'Configured'],
-  ['app-plugin-concurrency', false, false, 'Not configured'],
-  ['app-plugin-file', true, true, 'Configured'],
-  ['app-plugin-file', false, true, 'Configuration incomplete'],
-  ['app-plugin-file', false, false, 'Not configured'],
-] as const)(
-  'checks only the required integration for %s (%s/%s)',
-  async (id, client, server, expected) => {
-    await mount(id, {
-      fileRegistered: client,
-      answer: () => ({
-        data: {
-          serverPlugins: server ? [FEATURE_OVERVIEWS[id].packageName] : [],
-        },
-      }),
-    });
-    expect(await screen.findByText(expected)).toBeVisible();
-    expect(
-      screen.getByText(/This shows basic plugin configuration/),
-    ).toBeVisible();
-    expect(screen.queryByText('Server plugin')).not.toBeInTheDocument();
-  },
-);
-
-it.each([401, 403, 503])(
-  'keeps a failed registration read unknown and preserves guidance (%s)',
-  async (status) => {
-    await mount('app-plugin-notification', {
-      answer: () => new Response(null, { status }),
-    });
-    expect(await screen.findByRole('alert')).toBeVisible();
-    expect(
-      screen.getByText('Configuration could not be confirmed'),
-    ).toBeVisible();
-    expect(screen.queryByText('Not configured')).not.toBeInTheDocument();
-    expect(
-      screen.getByRole('heading', { name: 'What it provides' }),
-    ).toBeVisible();
-  },
-);
-
-it('retries a failed read without scanning or writing configuration', async () => {
-  const user = userEvent.setup();
-  let count = 0;
-  const { calls } = await mount('app-plugin-concurrency', {
-    answer: () =>
-      ++count === 1
-        ? new Response(null, { status: 503 })
-        : { data: { serverPlugins: ['@nocobase/app-plugin-concurrency'] } },
-  });
-  await screen.findByRole('alert');
-  await user.click(
-    screen.getByRole('button', { name: 'Refresh configuration status' }),
-  );
-  expect(await screen.findByText('Configured')).toBeVisible();
-  expect(calls).toHaveBeenCalledTimes(2);
-  for (const [call] of calls.mock.calls)
-    expect(call).toMatchObject({
-      method: 'GET',
-      path: 'foundation/registrations',
-    });
-});
 
 it('retains a draft across tabs and collapse but never carries it into another guide', async () => {
   const user = userEvent.setup();
   const copy = vi.spyOn(navigator.clipboard, 'writeText').mockResolvedValue();
   await mount('jobs');
   const toggle = screen.getByRole('button', {
-    name: 'How to integrate and verify',
+    name: 'Adjust concurrency and retries',
   });
   await user.click(toggle);
   const input = screen.getByRole('textbox', { name: 'Editable request' });
@@ -221,7 +116,7 @@ it('retains a draft across tabs and collapse but never carries it into another g
   expect(copy).toHaveBeenCalledWith('Export monthly sales');
   await user.click(screen.getByRole('link', { name: 'Queue guide' }));
   await user.click(
-    screen.getByRole('button', { name: 'How to integrate and verify' }),
+    screen.getByRole('button', { name: 'Adjust queue processing speed' }),
   );
   expect(
     screen.getByRole('textbox', { name: 'Editable request' }),
@@ -251,9 +146,9 @@ const managementRoutes = resolveAppClientContributions([
 it('requires a management interface instead of inferring readiness from an installed plugin', async () => {
   const { calls, app } = await mount('app-plugin-api-keys');
   expect(
-    within(screen.getByRole('group', { name: 'My API keys' })).getByText(
-      'Not configured',
-    ),
+    within(
+      screen.getByRole('group', { name: 'My API keys interface' }),
+    ).getByText('Not configured'),
   ).toBeVisible();
 
   expect(
@@ -265,7 +160,7 @@ it('requires a management interface instead of inferring readiness from an insta
   });
   expect(
     screen.getByRole('button', {
-      name: '通过 Agent 添加「我的 API 密钥」界面',
+      name: '我的 API 密钥界面',
     }),
   ).toBeVisible();
 });
@@ -276,7 +171,7 @@ it('copies an editable implementation request without dispatching tasks or creat
   const { calls } = await mount('app-plugin-api-keys');
   await user.click(
     screen.getByRole('button', {
-      name: 'Add My API keys with an Agent',
+      name: 'My API keys interface',
     }),
   );
   const input = screen.getByRole('textbox', { name: 'Editable request' });
@@ -284,15 +179,12 @@ it('copies an editable implementation request without dispatching tasks or creat
     'nocobase-app-plugin-api-keys',
   );
   expect((input as HTMLTextAreaElement).value).toContain('apiKeysManagement');
-  expect((input as HTMLTextAreaElement).value).toContain('user-menu.tsx');
   await user.clear(input);
   await user.type(input, 'Add My API keys to the account menu');
   await user.click(screen.getByRole('tab', { name: 'Configuration steps' }));
   await user.click(screen.getByRole('tab', { name: 'Development request' }));
   expect(input).toHaveValue('Add My API keys to the account menu');
-  await user.click(
-    screen.getByRole('button', { name: 'Copy integration request' }),
-  );
+  await user.click(screen.getByRole('button', { name: 'Copy request' }));
   expect(copy).toHaveBeenCalledWith('Add My API keys to the account menu');
   expect(calls).not.toHaveBeenCalled();
 });
@@ -301,7 +193,11 @@ it.each(['en-US', 'zh-CN'])(
   'keeps the API Keys detail focused on setup in %s',
   async (locale) => {
     const { calls } = await mount('app-plugin-api-keys', { locale });
-    expect(screen.getAllByRole('heading')).toHaveLength(3);
+    expect(
+      screen.getByRole('heading', {
+        name: locale === 'zh-CN' ? '当前应用' : 'This application',
+      }),
+    ).toBeVisible();
     expect(screen.getAllByRole('button')).toHaveLength(2);
     expect(screen.queryByRole('list')).not.toBeInTheDocument();
     expect(calls).not.toHaveBeenCalled();
@@ -314,9 +210,9 @@ it('offers the registered management page without loading personal keys', async 
   expect(screen.getByText('Configured')).toBeVisible();
   expect(
     screen.queryByRole('button', {
-      name: 'Add My API keys with an Agent',
+      name: 'My API keys interface',
     }),
-  ).not.toBeInTheDocument();
+  ).toBeVisible();
   expect(calls).not.toHaveBeenCalled();
   const link = screen.getByRole('link', { name: 'Manage my API keys' });
   expect(link).toHaveAttribute('href', '/account/api-keys');
@@ -343,9 +239,9 @@ it.each(['denied', 'loading'] as const)(
     ).not.toBeInTheDocument();
     expect(
       screen.queryByRole('button', {
-        name: 'Add My API keys with an Agent',
+        name: 'My API keys interface',
       }),
-    ).not.toBeInTheDocument();
+    ).toBeVisible();
     expect(
       screen.getByText(
         state === 'denied'
@@ -370,9 +266,9 @@ it.each(['group', 'dynamic'] as const)(
       ],
     });
     expect(
-      within(screen.getByRole('group', { name: 'My API keys' })).getByText(
-        'Not configured',
-      ),
+      within(
+        screen.getByRole('group', { name: 'My API keys interface' }),
+      ).getByText('Not configured'),
     ).toBeVisible();
     expect(
       screen.queryByRole('link', { name: 'Manage my API keys' }),
@@ -402,15 +298,15 @@ it.each([
     });
     for (const [name, configured, setup, link] of [
       [
-        'My API keys',
+        'My API keys interface',
         personal,
-        'Add My API keys with an Agent',
+        'My API keys interface',
         'Manage my API keys',
       ],
       [
-        'Application API keys',
+        'Application API keys interface',
         application,
-        'Add Application API keys with an Agent',
+        'Application API keys interface',
         'Manage application API keys',
       ],
     ] as const) {
@@ -420,13 +316,11 @@ it.each([
       ).toBeVisible();
       if (configured) {
         expect(row.getByRole('link', { name: link })).toBeVisible();
-        expect(
-          screen.queryByRole('button', { name: setup }),
-        ).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: setup })).toBeVisible();
       } else {
         const trigger = screen.getByRole('button', { name: setup });
         expect(trigger).toBeVisible();
-        expect(trigger.closest('section')).toBeNull();
+        expect(trigger.closest('section')).not.toBeNull();
         expect(row.queryByRole('link')).not.toBeInTheDocument();
       }
     }
@@ -440,16 +334,16 @@ it('keeps a denied application interface configured without offering its link or
     denied: new Set([routeKey(applicationRoutes[0])]),
   });
   const row = within(
-    screen.getByRole('group', { name: 'Application API keys' }),
+    screen.getByRole('group', { name: 'Application API keys interface' }),
   );
   expect(row.getByText('Configured')).toBeVisible();
   expect(row.getByText(/this account cannot open it/)).toBeVisible();
   expect(row.queryByRole('link')).not.toBeInTheDocument();
   expect(
     screen.queryByRole('button', {
-      name: 'Add Application API keys with an Agent',
+      name: 'Application API keys interface',
     }),
-  ).not.toBeInTheDocument();
+  ).toBeVisible();
 });
 
 it('copies the application interface request without assuming a credential identity or dispatching a task', async () => {
@@ -458,7 +352,7 @@ it('copies the application interface request without assuming a credential ident
   const { calls } = await mount('app-plugin-api-keys');
   await user.click(
     screen.getByRole('button', {
-      name: 'Add Application API keys with an Agent',
+      name: 'Application API keys interface',
     }),
   );
   const input = screen.getByRole('textbox', { name: 'Editable request' });
@@ -473,9 +367,7 @@ it('copies the application interface request without assuming a credential ident
     input,
     'Add an application API keys page under System settings',
   );
-  await user.click(
-    screen.getByRole('button', { name: 'Copy integration request' }),
-  );
+  await user.click(screen.getByRole('button', { name: 'Copy request' }));
   expect(copy).toHaveBeenCalledWith(
     'Add an application API keys page under System settings',
   );

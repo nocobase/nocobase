@@ -1,4 +1,3 @@
-import { splitSidebarNavigation } from '../../client/lib/navigation-transform.js';
 import { describe, expect, it } from 'vitest';
 import {
   createCapabilityCatalog,
@@ -10,11 +9,9 @@ import { defineAppRuntime } from '@nocobase/app-client/runtime';
 import appRuntime from '../../client/runtime.js';
 import { createApplicationRoutes } from '../../client/routes.js';
 import cliPlugins from '../../cli/plugins.js';
-import serverPlugins from '../../server/plugins.js';
 import settingsRoutes from '../../client/pages/settings/routes.js';
 import {
   routeKey,
-  selectedNavigationId,
   buildRouteNavigation,
   buildSettingsCatalog,
 } from '../../client/routing/route-navigation.js';
@@ -27,61 +24,21 @@ describe('default Foundation integration', () => {
       ),
     ).toHaveLength(1);
   });
-  it('keeps Features and extensions in the sidebar footer, outside System settings', async () => {
+  it('provides Features and extensions in System settings with its existing route', async () => {
     const runtime = await resolveAppRuntime(appRuntime);
-    const menu = buildRouteNavigation(runtime.routes, new Set());
-    const { main, footer } = splitSidebarNavigation(menu);
-    expect(main.some(({ route }) => route.name === 'capabilityGuide')).toBe(
-      false,
-    );
-    expect(footer).toHaveLength(1);
-    const guide = footer[0].route;
-    for (const path of ['/capabilities', '/capabilities/app-plugin-file']) {
-      expect(selectedNavigationId(runtime.routes, path)).toBe(routeKey(guide));
-    }
-    expect(
-      splitSidebarNavigation(
-        buildRouteNavigation(runtime.routes, new Set([routeKey(guide)])),
-      ).footer,
-    ).toEqual([]);
-    expect(
-      menu.filter(({ route }) => route.name === 'settingsHome'),
-    ).toHaveLength(1);
-    const modules = buildSettingsCatalog(runtime.routes, new Set()).find(
+    const category = buildSettingsCatalog(runtime.routes, new Set()).find(
       ({ route }) => route.name === 'settingsSystem',
-    )!.modules;
-    expect(modules.some(({ route }) => route.name === 'foundation')).toBe(
-      false,
     );
-    expect(guide).toMatchObject({
-      path: '/capabilities',
-      auth: 'required',
-      authz: 'skip',
-      navigation: { title: 'nav.capabilityGuide' },
-    });
-    const walk = (routes: typeof runtime.routes): typeof runtime.routes =>
-      routes.flatMap((route) => [route, ...walk(route.children ?? [])]);
-    const legacy = walk(runtime.routes).find(
-      (route) => route.name === 'foundation',
+    const guide = category?.modules.find(
+      ({ route }) => route.name === 'capabilityGuide',
     );
-    expect(legacy).toMatchObject({
-      path: '/foundation',
-      authz: 'unrestricted',
-    });
-    expect(legacy?.navigation).toBeUndefined();
+    expect(guide?.target.path).toBe('/capabilities');
+    expect(guide?.route.auth).toBe('required');
     expect(
-      serverPlugins.plugins.filter(
-        (plugin) => plugin.packageName === '@nocobase/app-plugin-foundation',
-      ),
-    ).toHaveLength(1);
-    expect(modules.some(({ route }) => route.name === 'capabilityGuide')).toBe(
-      false,
-    );
-    const deniedLegacy = new Set([routeKey(legacy!)]);
-    expect(
-      splitSidebarNavigation(buildRouteNavigation(runtime.routes, deniedLegacy))
-        .footer,
-    ).toHaveLength(1);
+      buildSettingsCatalog(runtime.routes, new Set([routeKey(guide!.route)]))
+        .flatMap((item) => item.modules)
+        .some((item) => item.route.name === 'capabilityGuide'),
+    ).toBe(false);
   });
 
   it('keeps Foundation beside business settings without changing its protected URL', async () => {
@@ -108,7 +65,13 @@ describe('default Foundation integration', () => {
           ['permissionManagement', '/settings/roles'],
         ],
       ],
-      ['settingsSystem', [['databaseExplorer', '/settings/database-explorer']]],
+      [
+        'settingsSystem',
+        [
+          ['databaseExplorer', '/settings/database-explorer'],
+          ['capabilityGuide', '/capabilities'],
+        ],
+      ],
     ]);
   });
 

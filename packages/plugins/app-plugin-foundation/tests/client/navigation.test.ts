@@ -90,16 +90,16 @@ describe('Foundation navigation grouping', () => {
   });
 });
 
-it('keeps the capability catalog outside settings without changing its URL or access', () => {
+it('groups the capability catalog into settings without changing its URL or access', () => {
   const guide = page('capabilityGuide', '@nocobase/app-plugin-foundation');
   const item = {
     ...guide,
     route: { ...guide.route, path: '/capabilities', authz: 'skip' as const },
   };
   const grouped = groupFoundationNavigation([settings, item]);
-  expect(grouped).toHaveLength(2);
-  expect(grouped[0]?.children).toEqual([permissions]);
-  expect(grouped[1]?.route).toMatchObject({
+  expect(grouped).toHaveLength(1);
+  expect(grouped[0]?.children).toEqual([permissions, item]);
+  expect(grouped[0]?.children?.[1]?.route).toMatchObject({
     path: '/capabilities',
     authz: 'skip',
   });

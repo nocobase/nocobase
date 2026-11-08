@@ -48,15 +48,12 @@ it('shows configured connections, safe effective values and connection-specific 
   expect(
     await screen.findByText('2 configured connections'),
   ).toBeInTheDocument();
-  const cards = screen.getAllByRole('listitem');
-  expect(within(cards[0]).getByText('Default')).toBeInTheDocument();
-  expect(within(cards[1]).queryByText('Default')).not.toBeInTheDocument();
-  expect(
-    within(cards[1]).getByRole('link', { name: 'Browse tables and fields' }),
-  ).toHaveAttribute(
-    'href',
-    '/settings/database-explorer?connection=reports+%26+history',
+  const cards = ['main', 'reports & history'].map((name) =>
+    screen.getByRole('group', { name }),
   );
+  expect(within(cards[0]).getByText(/Default/)).toBeInTheDocument();
+  expect(within(cards[1]).queryByText('Default')).not.toBeInTheDocument();
+  expect(within(cards[1]).queryByRole('link')).not.toBeInTheDocument();
   await user.click(
     within(cards[1]).getByRole('button', {
       name: 'View effective configuration',
@@ -64,33 +61,26 @@ it('shows configured connections, safe effective values and connection-specific 
   );
   expect(within(cards[1]).getByText('Externally managed')).toBeInTheDocument();
   expect(within(cards[1]).getByText('public')).toBeInTheDocument();
-  expect(within(cards[1]).getByText('No')).toBeInTheDocument();
+  expect(within(cards[1]).getByText('Disabled')).toBeInTheDocument();
   expect(
     within(cards[1]).getByText(/Their individual source/),
   ).toBeInTheDocument();
   await user.click(
-    screen.getByRole('button', { name: 'How to add a database connection' }),
+    screen.getByRole('button', { name: 'Add a database connection' }),
   );
-  await user.click(screen.getByRole('tab', { name: 'Manual configuration' }));
+  await user.click(screen.getByRole('tab', { name: 'Configuration steps' }));
   expect(
     screen.getByText(
       /Keep existing connections and database.default unchanged/,
     ),
   ).toBeInTheDocument();
-  expect(screen.getByText('pnpm nocobase config check')).toBeInTheDocument();
+  expect(
+    screen.getByText(/Run pnpm nocobase config check from/),
+  ).toBeInTheDocument();
   expect(
     screen.getByText(/schemaManagement: external/, { selector: 'code' }),
   ).toBeInTheDocument();
   expect(screen.queryByText('must-not-render')).not.toBeInTheDocument();
-  expect(
-    screen.queryByText(/not an export of this application/),
-  ).not.toBeInTheDocument();
-  await user.click(
-    screen.getByRole('button', { name: 'Configuration keys and YAML example' }),
-  );
-  expect(
-    screen.getByText(/not an export of this application/),
-  ).toBeInTheDocument();
 });
 
 it('does not report zero connections while loading, and retries a failed read', async () => {
@@ -106,9 +96,7 @@ it('does not report zero connections while loading, and retries a failed read', 
     screen.queryByText('0 configured connections'),
   ).not.toBeInTheDocument();
   await user.click(screen.getByRole('button', { name: 'Retry' }));
-  expect(
-    await screen.findByText('No database connections are configured.'),
-  ).toBeInTheDocument();
+  expect(await screen.findByText('Not configured')).toBeInTheDocument();
   expect(screen.getByText('0 configured connections')).toBeInTheDocument();
 });
 
@@ -142,12 +130,11 @@ it('defaults to Agent, generates requirements, preserves edits across tabs and c
     .mockResolvedValue();
   await mount(() => ({ data: [] }));
   await user.click(
-    screen.getByRole('button', { name: 'How to add a database connection' }),
+    screen.getByRole('button', { name: 'Add a database connection' }),
   );
-  expect(screen.getByRole('tab', { name: 'Use Agent' })).toHaveAttribute(
-    'aria-selected',
-    'true',
-  );
+  expect(
+    screen.getByRole('tab', { name: 'Development request' }),
+  ).toHaveAttribute('aria-selected', 'true');
   const purpose = screen.getByRole('textbox', { name: 'Purpose' });
   await user.type(purpose, 'Sales reports');
   await user.click(screen.getByRole('button', { name: 'Update prompt' }));
@@ -157,10 +144,10 @@ it('defaults to Agent, generates requirements, preserves edits across tabs and c
   );
   await user.clear(prompt);
   await user.type(prompt, 'My edited connection request');
-  await user.click(screen.getByRole('tab', { name: 'Manual configuration' }));
-  expect(screen.getByText('pnpm nocobase config check')).toBeVisible();
+  await user.click(screen.getByRole('tab', { name: 'Configuration steps' }));
+  expect(screen.getByText(/Run pnpm nocobase config check from/)).toBeVisible();
   expect(prompt).not.toBeVisible();
-  await user.click(screen.getByRole('tab', { name: 'Use Agent' }));
+  await user.click(screen.getByRole('tab', { name: 'Development request' }));
   expect(prompt).toHaveValue('My edited connection request');
   await user.click(screen.getByRole('button', { name: 'Copy prompt' }));
   expect(await screen.findByText('Copied')).toBeInTheDocument();
@@ -168,10 +155,10 @@ it('defaults to Agent, generates requirements, preserves edits across tabs and c
   await user.type(prompt, ' amended');
   expect(screen.queryByText('Copied')).not.toBeInTheDocument();
   await user.click(
-    screen.getByRole('button', { name: 'How to add a database connection' }),
+    screen.getByRole('button', { name: 'Add a database connection' }),
   );
   await user.click(
-    screen.getByRole('button', { name: 'How to add a database connection' }),
+    screen.getByRole('button', { name: 'Add a database connection' }),
   );
   expect(screen.getByRole('textbox', { name: 'Editable prompt' })).toHaveValue(
     'My edited connection request amended',
@@ -185,7 +172,7 @@ it('offers manual copying when the clipboard is unavailable', async () => {
   );
   await mount(() => ({ data: [] }));
   await user.click(
-    screen.getByRole('button', { name: 'How to add a database connection' }),
+    screen.getByRole('button', { name: 'Add a database connection' }),
   );
   await user.click(screen.getByRole('button', { name: 'Copy prompt' }));
   expect(

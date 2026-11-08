@@ -178,7 +178,10 @@ export function ConfigurationAction({
   const { t } = useDetailCopy();
   return (
     <Collapsible className='overflow-hidden rounded-xl border bg-card'>
-      <CollapsibleTrigger className='group flex w-full items-center justify-between gap-3 p-4 text-left text-sm font-medium transition-colors hover:bg-accent/50'>
+      <CollapsibleTrigger
+        aria-label={title}
+        className='group flex w-full items-center justify-between gap-3 p-4 text-left text-sm font-medium transition-colors hover:bg-accent/50'
+      >
         <span className='flex min-w-0 items-center gap-3'>
           <span className='flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary'>
             <ArrowUpRight className='size-4' aria-hidden />
