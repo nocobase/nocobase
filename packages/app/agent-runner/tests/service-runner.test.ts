@@ -20,9 +20,9 @@ const logFor = () => new RotatingLog(path.join(root, `runner-${serial++}.log`));
 const command = (script: string) => [process.execPath, '-e', script];
 
 describe('service launch policy', () => {
-  it.each(['darwin', 'linux'] as const)(
-    'stops on 0/auth and preserves update exit 75 on %s',
-    async (platform) => {
+  it.each(['0', '1'])(
+    'preserves clean, authentication and update exits (service=%s)',
+    async (service) => {
       for (const code of [0, 3, 75]) {
         const log = logFor();
         const waits: number[] = [];
@@ -33,16 +33,40 @@ describe('service launch policy', () => {
             `console.log('exit ${code}'); process.exit(${code})`,
           ),
           log,
-          platform,
+          env: { ...process.env, NOCOBASE_RUNNER_SERVICE: service },
           wait: async (ms) => {
             waits.push(ms);
           },
         });
-        expect(exit).toBe(code === 3 && platform === 'darwin' ? 0 : code);
+        expect(exit).toBe(code);
         expect(waits).toEqual([]);
         expect(existsSync(launcherPidPath(paths))).toBe(false);
         expect(readFileSync(log.file, 'utf8')).toBe(`exit ${code}\n`);
       }
+    },
+  );
+
+  it.each([
+    'process.exit(1)',
+    "process.kill(process.pid, 'SIGTERM')",
+    'missing executable',
+  ])(
+    'delegates service failures immediately to the manager: %s',
+    async (script) => {
+      const waits: number[] = [];
+      const result = await runService({
+        command:
+          script === 'missing executable'
+            ? [path.join(root, 'missing')]
+            : command(script),
+        env: { ...process.env, NOCOBASE_RUNNER_SERVICE: '1' },
+        log: logFor(),
+        wait: async (ms) => {
+          waits.push(ms);
+        },
+      });
+      expect(result).toBe(1);
+      expect(waits).toEqual([]);
     },
   );
 
@@ -200,7 +224,7 @@ describe('service launch policy', () => {
     expect(readFileSync(file, 'utf8')).toBe('tail');
   });
 
-  it('generates restart conditions that stop authentication and normal exits, while restarting 75', () => {
+  it('restarts every service exit after 60 seconds without a failure budget', () => {
     for (const platform of ['darwin', 'linux'] as const) {
       const plan = servicePlan({
         paths: runnerPaths(root, root),
@@ -210,19 +234,16 @@ describe('service launch policy', () => {
         env: {},
       });
       if (platform === 'darwin') {
-        expect(plan.content).toContain(
-          '<key>SuccessfulExit</key>\n    <false/>',
-        );
+        expect(plan.content).toContain('<key>KeepAlive</key>\n  <true/>');
         expect(plan.content).toContain(
           '<string>service</string>\n    <string>run</string>',
         );
         expect(plan.content).not.toContain(root + '/logs/runner.log');
       } else {
-        expect(plan.content).toContain(
-          'Restart=on-failure\nRestartPreventExitStatus=3',
-        );
+        expect(plan.content).toContain('Restart=always');
         expect(plan.content).toContain('RestartSec=60');
-        expect(plan.content).not.toContain('RestartPreventExitStatus=75');
+        expect(plan.content).not.toContain('RestartPreventExitStatus');
+        expect(plan.content).toContain('StartLimitIntervalSec=0');
       }
     }
   });

@@ -4,13 +4,10 @@ import accessEnUS from '../../shared/locales/access.en-US.js';
 
 const ui = {
   nav: {
-    apps: 'Apps',
     environments: 'Deploy environments',
   },
   apps: {
     title: 'Apps',
-    description: 'Applications, their releases and where they are deployed.',
-    search: 'Search by ID or name',
     create: 'Create app',
     id: 'App ID',
     name: 'Name',
@@ -21,26 +18,16 @@ const ui = {
     labels: 'Labels',
     loadFailed: 'Could not load the apps.',
     loadOneFailed: 'Could not load the app.',
-    emptyTitle: 'No apps yet',
-    emptyNoAccess: 'Ask an administrator to create an app.',
-    emptyDescription:
-      'Create an app, then upload a release and deploy it to an environment.',
-    noResults: 'No app matches the search.',
     created: '{{name}} created.',
     createDescription:
       'An app is deployed to one environment; its releases are uploaded afterwards.',
     idHint:
       'Letters, digits, underscores and hyphens; part of its address. It cannot change later.',
-    noEnvironment: 'No environment yet',
     lastAccess: 'Last visit',
     stateFilter: 'State',
     anyState: 'Any state',
-    filteredEnvironments: 'Environments: {{names}}',
     clearFilters: 'Clear filters',
     noMatches: 'No app matches the filters.',
-    page: 'Page {{page}} of {{pages}}',
-    previousPage: 'Previous page',
-    nextPage: 'Next page',
     runStates: {
       running: 'Running',
       starting: 'Starting',
@@ -50,6 +37,9 @@ const ui = {
       failed: 'Failed',
       unknown: 'Unknown',
     },
+    page: 'Page {{page}} of {{pages}}',
+    previousPage: 'Previous page',
+    nextPage: 'Next page',
   },
   advanced: 'Advanced (optional)',
   labels: {
@@ -420,8 +410,8 @@ const ui = {
     available: '{{available}} still free on the server',
     wholeHost:
       'Totals of the whole host, every environment on it included; memory cannot be divided among its apps.',
-    viewApps: 'View {{count}} running or starting apps',
     viewAppsNote: 'Lists only the apps you can view.',
+    byEnvironment: 'Running or starting, by environment:',
   },
   runtime: {
     holds: {

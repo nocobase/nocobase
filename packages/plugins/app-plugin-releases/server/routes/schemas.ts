@@ -901,9 +901,20 @@ export const ReleasesConfigTemplateSchema: z.ZodType<{
 export const ReleasesSharedHostSchema: z.ZodType<SharedHostView> = z
   .object({
     ...appHostFields,
-    environments: z.array(z.object({ id: z.string(), name: z.string() })).meta({
-      description: 'The environments with Apps on this runtime.',
-    }),
+    environments: z
+      .array(
+        z.object({
+          id: z.string(),
+          name: z.string(),
+          running: z.number().int().meta({
+            description:
+              'How many of the environment’s Apps run or start on this runtime (part of `running`).',
+          }),
+        }),
+      )
+      .meta({
+        description: 'The environments with Apps on this runtime.',
+      }),
   })
   .meta({ ref: 'ReleasesSharedHost' });
 

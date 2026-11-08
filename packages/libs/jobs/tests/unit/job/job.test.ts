@@ -26,7 +26,10 @@ afterEach(async () => {
 });
 function service(attempts = 3, concurrency = 1) {
   const subject = createJobExecutorService(
-    { default: 'm', m: { adapter: 'memory', attempts, concurrency } },
+    {
+      default: 'm',
+      backends: { m: { adapter: 'memory', attempts, concurrency } },
+    },
     { appName: 'test', storagePath: directory },
   );
   services.push(subject);

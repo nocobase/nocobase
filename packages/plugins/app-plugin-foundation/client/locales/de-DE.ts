@@ -6,6 +6,9 @@ const deDE: FoundationResource = {
     foundation: 'Anwendungsbasis',
     foundationDescription:
       'Die NocoBase-Funktionen, auf denen diese Anwendung aufbaut.',
+    capabilityGuide: 'Funktionen und Erweiterungen',
+    capabilityGuideDescription:
+      'Erfahren Sie, wie Sie die verfügbaren Funktionen dieser Anwendung für Ihre Geschäftsabläufe nutzen.',
   },
   page: {
     otherCapabilities: 'Weitere Fähigkeiten',

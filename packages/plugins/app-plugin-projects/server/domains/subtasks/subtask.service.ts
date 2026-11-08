@@ -165,7 +165,10 @@ export function createSubtaskService(deps: SubtaskDeps): SubtaskService {
     return other;
   }
 
-  /** Inserts the link (409 when it exists) and records it on the issue that waits. */
+  /**
+   * Inserts the link (409 when it exists) and records it on the issue that waits. A `relatedTo` link belongs to both
+   * issues, so the other issue records it too, naming this one.
+   */
   async function link(
     tx: Tx,
     issue: Issue,
@@ -201,6 +204,13 @@ export function createSubtaskService(deps: SubtaskDeps): SubtaskService {
       identifier: other.identifier,
       type,
     });
+    if (type === 'relatedTo')
+      await record(tx, other.id, actor, 'dependency_added', {
+        dependencyId: dependency.id,
+        dependsOnIssueId: other.id,
+        identifier: issue.identifier,
+        type,
+      });
     tx.emit({ type: 'issue.changed', issueId: issue.id });
     tx.emit({ type: 'issue.changed', issueId: other.id });
     return dependency;
@@ -238,6 +248,14 @@ export function createSubtaskService(deps: SubtaskDeps): SubtaskService {
           dependencyId: dependency.id,
           dependsOnIssueId: dependency.dependsOnIssueId,
           identifier: other?.identifier ?? null,
+          type: dependency.type,
+        });
+      // A relation was recorded on both issues when it was added.
+      if (dependency.type === 'relatedTo' && other)
+        await record(tx, other.id, viewer.actor, 'dependency_removed', {
+          dependencyId: dependency.id,
+          dependsOnIssueId: dependency.dependsOnIssueId,
+          identifier: waiting?.identifier ?? null,
           type: dependency.type,
         });
       for (const id of [dependency.issueId, dependency.dependsOnIssueId])
@@ -383,12 +401,35 @@ export function createSubtaskService(deps: SubtaskDeps): SubtaskService {
             before.issueId === issue.id ? other.identifier : issue.identifier,
           type: before.type,
         });
+        if (before.type === 'relatedTo')
+          await record(
+            tx,
+            before.dependsOnIssueId,
+            viewer.actor,
+            'dependency_removed',
+            {
+              dependencyId,
+              dependsOnIssueId: before.dependsOnIssueId,
+              identifier:
+                before.issueId === issue.id
+                  ? issue.identifier
+                  : other.identifier,
+              type: before.type,
+            },
+          );
         await record(tx, issue.id, viewer.actor, 'dependency_added', {
           dependencyId,
           dependsOnIssueId: other.id,
           identifier: other.identifier,
           type,
         });
+        if (type === 'relatedTo')
+          await record(tx, other.id, viewer.actor, 'dependency_added', {
+            dependencyId,
+            dependsOnIssueId: other.id,
+            identifier: issue.identifier,
+            type,
+          });
         tx.emit({ type: 'issue.changed', issueId: issue.id });
         tx.emit({ type: 'issue.changed', issueId: other.id });
         if (type === 'blockedBy') {

@@ -18,7 +18,7 @@ export function groupFoundationNavigation<
   );
   const isFoundation = (item: T): boolean =>
     item.route.packageName === '@nocobase/app-plugin-foundation' &&
-    item.route.name === 'foundation';
+    (item.route.name === 'foundation' || item.route.name === 'capabilityGuide');
   const isFoundationGroup = (item: T): boolean =>
     item.route.packageName === '@nocobase/app-plugin-foundation' &&
     item.route.name === 'foundationSettings';

@@ -198,6 +198,7 @@ const systemZhCN: SystemResource = {
     signingOut: '正在退出…',
   },
   navigation: {
+    resources: '参考资料',
     home: '首页',
     open: '打开导航',
     close: '关闭导航',

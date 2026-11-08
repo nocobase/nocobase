@@ -55,15 +55,16 @@ function implementation(open: () => Promise<void> = async () => undefined) {
 it('validates unused common options but defers absent backend validation', async () => {
   const queue = service({
     default: 'memory',
-    memory: { adapter: 'inMemory' },
-    redis: { adapter: 'redis' },
+    backends: { memory: { adapter: 'inMemory' }, redis: { adapter: 'redis' } },
   });
   await queue.setup();
   await queue.producer('memory').publish('x', {});
   expect(() => queue.producer('later', 'redis')).toThrow(
     /configuration "redis".*adapter "redis".*not registered/u,
   );
-  const invalid = service({ redis: { adapter: 'redis', concurrency: 0 } });
+  const invalid = service({
+    backends: { redis: { adapter: 'redis', concurrency: 0 } },
+  });
   await expect(invalid.setup()).rejects.toThrow(/positive integer/u);
 });
 
@@ -72,7 +73,7 @@ it.each(['default', 'early'])(
   async (selection) => {
     const queue = service({
       ...(selection === 'default' ? { default: 'redis' } : {}),
-      redis: { adapter: 'redis' },
+      backends: { redis: { adapter: 'redis' } },
     });
     if (selection === 'early') queue.producer('early', 'redis');
     await expect(queue.setup()).rejects.toThrow(
@@ -84,8 +85,7 @@ it.each(['default', 'early'])(
 it('binds early entry points, validates every registered backend configuration without opening unused runtimes and freezes registration', async () => {
   const queue = service({
     default: 'one',
-    one: { adapter: 'external' },
-    two: { adapter: 'external' },
+    backends: { one: { adapter: 'external' }, two: { adapter: 'external' } },
   });
   const producer = queue.producer('mail');
   queue.consumer('mail').consume(async () => undefined);
@@ -106,7 +106,7 @@ it('binds early entry points, validates every registered backend configuration w
 });
 
 it('fully validates even unused configurations of registered implementations', async () => {
-  const queue = service({ unused: { adapter: 'external' } });
+  const queue = service({ backends: { unused: { adapter: 'external' } } });
   queue.registerImplementation('external', {
     ...implementation().backend,
     validateConfig: () => {
@@ -121,7 +121,7 @@ it('cleans up a late successful open after its independent initialization deadli
   const backend = implementation(() => gate.promise);
   const queue = service({
     default: 'external',
-    external: { adapter: 'external', setupTimeoutMs: 20 },
+    backends: { external: { adapter: 'external', setupTimeoutMs: 20 } },
   });
   queue.registerImplementation('external', backend.backend);
   queue.producer('late');
@@ -137,8 +137,10 @@ it('keeps a running service and other queues healthy after lazy initialization f
     if (fail) throw new Error('offline');
   });
   const queue = service({
-    memory: { adapter: 'inMemory' },
-    external: { adapter: 'external' },
+    backends: {
+      memory: { adapter: 'inMemory' },
+      external: { adapter: 'external' },
+    },
   });
   queue.registerImplementation('external', backend.backend);
   await queue.setup();
@@ -158,7 +160,7 @@ it('keeps shared initialization alive when the first publish exhausts its own te
   const backend = implementation(() => gate.promise);
   const queue = service({
     default: 'external',
-    external: { adapter: 'external', setupTimeoutMs: 20000 },
+    backends: { external: { adapter: 'external', setupTimeoutMs: 20000 } },
   });
   queue.registerImplementation('external', backend.backend);
   try {

@@ -19,6 +19,12 @@ import { ACTIVE_JOB, jobsRepo } from '../../jobs/job.store.js';
  * agent's entries whose tool the runner runs and has room for, so an agent listing two tools runs with the second while
  * the first is full; a run none of whose tools has room is passed over for the runs behind it.
  *
+ * Runners share a queue in proportion to each tool's limit, not by who asks first: before it locks anything, a claim
+ * waits until the run has been queued for the share of the tool's limit the runner already runs, times one second
+ * (`claimPace`). The runners' route hands out one run per request and the runner asks again at once, so of several
+ * runners woken for the same runs, the least busy with each tool takes the next one. A request that ends while it
+ * waits takes nothing.
+ *
  * Variables are checked and opened in the claim's own transaction, on its connection: which ones the assembled payload
  * gets, whether any is for shared runners only, and their values, so what the runner receives is what was checked. The
  * names taken from the runner go in `workspace.passthrough`, without values.
@@ -83,7 +89,7 @@ import type {
   ModelWaitReason,
   RunExecutionSnapshot,
 } from '../../../shared/runs.js';
-import { later, type Clock } from '../../kernel/clock.js';
+import { later, pause, type Clock } from '../../kernel/clock.js';
 import { notFound } from '../../kernel/errors.js';
 import type { People } from '../../kernel/people.js';
 import type { IdSource } from '../../kernel/ids.js';
@@ -156,6 +162,8 @@ import { consumeReset, saveBrief } from './workspace.store.js';
 const CANDIDATES = 50;
 /** The initial page plus at most two further pages per claim request, shared by all free slots. */
 const CANDIDATE_PAGES = 3;
+/** The longest a claim waits its turn: what a runner waits for a run when it already runs its tool at the limit. */
+const PACE_MS = 1000;
 
 /** Request-local read budget, also shared by a long poll's post-wait check. */
 export interface ClaimScan {
@@ -180,13 +188,15 @@ export interface ClaimService {
   /**
    * Up to `free` runs for `runner`, each with its payload; empty when nothing fits. `tools` is what the runner said it
    * can take of each coding tool it keeps a limit for (`ClaimRequest.tools`); a tool left out is bounded by `free`.
-   * A request-local `scan` shares the page cap with a long poll's post-wait check.
+   * A request-local `scan` shares the page cap with a long poll's post-wait check. Each run is taken no earlier than
+   * `claimPace` says, waited out before any lock; when `signal` aborts meanwhile, the claim ends with what it took.
    */
   claim(
     runner: Runner,
     free: number,
     tools?: Readonly<Partial<Record<AgentTool, number>>>,
     scan?: ClaimScan,
+    signal?: AbortSignal,
   ): Promise<RunPayload[]>;
   /** The skills a run gets, worked out the way its claim works them out. The caller checks who holds the run. */
   runSkills(runner: Runner, runId: string): Promise<RunSkill[]>;
@@ -214,10 +224,8 @@ export interface ClaimDeps extends TransitionDeps {
   readonly dist?: Pick<DistService, 'find'>;
   /** What a runner holds now (its slots); runs and jobs share them. */
   readonly slotsHeld: Slots['held'];
-  readonly slotsUsed: (
-    conn: DatabaseConnection,
-    runnerId: string,
-  ) => Promise<number>;
+  /** How a claim waits its turn (`claimPace`); real timers when left out. */
+  readonly pause?: (ms: number, signal?: AbortSignal) => Promise<void>;
   /** Sections the application adds to every brief's context layer. */
   readonly sections?: BriefSectionRegistry;
   /** Directories of files the application places beside the agent, for runners with the `mounts` feature. */
@@ -279,8 +287,38 @@ function toolRoom(
 type Attempt =
   | { readonly kind: 'claimed'; readonly payload: RunPayload }
   | { readonly kind: 'skipped' }
+  /** The request went away while the claim waited its turn: nothing more is taken. */
+  | { readonly kind: 'aborted' }
   /** Nothing else of this agent (`agent`) or for this runner (`runner`) can be claimed in this pass. */
   | { readonly kind: 'full'; readonly scope: 'agent' | 'runner' };
+
+/** What one claim pass knows before any lock: the runs `runner` holds by tool, and the request it answers. */
+interface ClaimPass {
+  readonly byTool: Readonly<Partial<Record<AgentTool, number>>>;
+  readonly signal?: AbortSignal;
+}
+
+/**
+ * How long `runner` waits before it takes `run` with `tool`, at `now`: the share of the tool's limit it already runs
+ * (`toolLimit`), of the busier of what this application counts (`byTool`) and what the runner last reported
+ * (`Runner.toolLoad`), times one second, counted from when the run entered the queue (`queueStart`). Several runners
+ * woken for one run take it in order of how busy each is with its tool, whichever asked first and however many runs
+ * each took before; an idle runner, and work queued longer than its share, wait nothing.
+ */
+export function claimPace(
+  runner: Pick<Runner, 'slots' | 'toolSlots' | 'toolLoad'>,
+  tool: AgentTool,
+  byTool: Readonly<Partial<Record<AgentTool, number>>>,
+  run: Pick<Run, 'queueEnteredAt' | 'createdAt' | 'availableAt'>,
+  now: number,
+): number {
+  const limit = toolLimit(runner, tool);
+  if (limit <= 0) return 0;
+  const load = runner.toolLoad?.[tool];
+  const used = Math.max(byTool[tool] ?? 0, load ? load.slots - load.free : 0);
+  const share = (Math.min(used, limit) / limit) * PACE_MS;
+  return Math.min(share, Math.max(0, queueStart(run) + share - now));
+}
 
 /**
  * The entry `runner` takes a run of `agent` with: the first whose tool it has enabled, installed and signed in, with
@@ -1743,6 +1781,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
     agent: Agent,
     candidate: RunRecord,
     reported: ToolRoom,
+    pass: ClaimPass,
   ): Promise<Attempt> {
     if (candidate.runnerPinId && candidate.runnerPinId !== runner.id)
       return { kind: 'skipped' };
@@ -1777,6 +1816,26 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       return { kind: 'skipped' };
     const consent = await commentConsentFor(conn, runner, candidate);
     if (!consent.allowed) return { kind: 'skipped' };
+    // Wait this runner's turn for the run, after every read-only rule and before any lock or write. The transaction
+    // checks again whether the run is still queued and which tool has room.
+    const paced = pickOpenEntry(
+      runner,
+      agent,
+      (tool) =>
+        (pass.byTool[tool] ?? 0) < toolLimit(runner, tool) &&
+        reported.has(tool),
+      clock.now().getTime(),
+    );
+    if (!paced) return { kind: 'skipped' };
+    const wait = claimPace(
+      runner,
+      paced.tool,
+      pass.byTool,
+      candidate,
+      clock.now().getTime(),
+    );
+    if (wait > 0) await (deps.pause ?? pause)(wait, pass.signal);
+    if (pass.signal?.aborted) return { kind: 'aborted' };
     // Read once, before the transaction, and handed to every repository access hook of this claim. A failed read
     // leaves the run queued for the next poll rather than letting a provider pick an identity without it.
     let responsibleUserId: string | null = null;
@@ -2487,13 +2546,14 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
     return true;
   }
 
-  /** False stops the whole request when a transactional capacity check finds the runner full. */
+  /** False stops the whole request when a transactional capacity check finds the runner full, or the request ended. */
   async function claimPage(
     runner: Runner,
     seen: Set<string>,
     reported: ToolRoom,
     queued: readonly RunRecord[],
     full: Set<string>,
+    pass: ClaimPass,
   ): Promise<RunPayload | false | null> {
     const conn = tx.read();
     const affinity = await affinityBatch(queued, runner);
@@ -2564,8 +2624,9 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       )
         continue;
       try {
-        const result = await attempt(runner, agent, candidate, reported);
+        const result = await attempt(runner, agent, candidate, reported, pass);
         if (result.kind === 'claimed') return result.payload;
+        if (result.kind === 'aborted') return false;
         if (result.kind === 'full') {
           if (result.scope === 'runner') return false;
           // Seen candidates are passed over for good in this claim; unvisited ones stay eligible for the next pass.
@@ -2627,7 +2688,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       const agent = await findAgent(conn, run.agentId);
       return agent ? selectionFacts(conn, toRun(run), agent, false) : null;
     },
-    async claim(runner, free, tools, scan = createClaimScan()) {
+    async claim(runner, free, tools, scan = createClaimScan(), signal) {
       if (
         scan.remainingPages <= 0 ||
         runner.status !== 'online' ||
@@ -2642,7 +2703,9 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       const pages = candidates(runner, scan);
       let queued: readonly RunRecord[] = [];
       while (payloads.length < limit) {
-        if ((await deps.slotsUsed(tx.read(), runner.id)) >= runner.slots) break;
+        const held = await deps.slotsHeld(tx.read(), runner.id);
+        if (held.runs + held.jobs >= runner.slots) break;
+        const pass: ClaimPass = { byTool: held.byTool ?? {}, signal };
         const full = new Set<string>();
         let payload: RunPayload | false | null;
         do {
@@ -2651,7 +2714,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
             if (page.done) return payloads;
             queued = page.value;
           }
-          payload = await claimPage(runner, seen, reported, queued, full);
+          payload = await claimPage(runner, seen, reported, queued, full, pass);
           if (payload === false) return payloads;
           if (!payload) queued = [];
         } while (!payload);

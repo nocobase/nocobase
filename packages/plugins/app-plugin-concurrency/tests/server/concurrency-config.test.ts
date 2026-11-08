@@ -15,7 +15,7 @@ describe('concurrency pure configuration', () => {
       namespace: 'crm',
     });
     const explicit = resolveConcurrencyConfig(
-      { default: 'memory', memory: { adapter: 'mutex' } },
+      { default: 'memory', backends: { memory: { adapter: 'mutex' } } },
       'crm',
     );
     expect(explicit.defaultKey).toBe('memory');
@@ -31,13 +31,13 @@ describe('concurrency pure configuration', () => {
     { default: '' },
     { default: 'missing' },
     { default: 'default' },
-    { default: 'memory', memory: [] },
-    { default: 'memory', memory: 'mutex' },
-    { 'bad.name': { adapter: 'mutex' } },
+    { default: 'memory', backends: { memory: [] } },
+    { default: 'memory', backends: { memory: 'mutex' } },
+    { backends: { 'bad.name': { adapter: 'mutex' } } },
     { memory: {} },
-    { memory: { adapter: '' } },
-    { memory: { adapter: 'mutex', namespace: null } },
-    { memory: { adapter: 'mutex', connection: undefined } },
+    { backends: { memory: { adapter: '' } } },
+    { backends: { memory: { adapter: 'mutex', namespace: null } } },
+    { backends: { memory: { adapter: 'mutex', connection: undefined } } },
     ...[
       'timeoutMs',
       'autoRenew',
@@ -46,9 +46,11 @@ describe('concurrency pure configuration', () => {
       'permits',
       'acquireTimeoutMs',
       'session',
-    ].map((field) => ({ memory: { adapter: 'mutex', [field]: false } })),
+    ].map((field) => ({
+      backends: { memory: { adapter: 'mutex', [field]: false } },
+    })),
     ...[0, -1, NaN, Infinity, '30000', 2147483648].map((ttl) => ({
-      memory: { adapter: 'mutex', ttl },
+      backends: { memory: { adapter: 'mutex', ttl } },
     })),
   ])('rejects malformed or obsolete configuration %#', (value) => {
     expect(() => resolveConcurrencyConfig(value, 'crm')).toThrow(
@@ -63,33 +65,42 @@ describe('concurrency pure configuration', () => {
     );
     expect(error).toHaveBeenCalledWith(
       'default',
-      'Must name an existing configuration.',
+      'Must name an existing configuration in concurrency.backends.',
     );
     expect(JSON.stringify(error.mock.calls)).not.toContain('secret-value');
   });
   it('allows unused unknown adapters but validates their common fields', () => {
     expect(() =>
       resolveConcurrencyConfig(
-        { remote: { adapter: 'future', connection: { password: 'secret' } } },
+        {
+          backends: {
+            remote: { adapter: 'future', connection: { password: 'secret' } },
+          },
+        },
         'crm',
       ),
     ).not.toThrow();
     expect(() =>
       resolveConcurrencyConfig(
-        { remote: { adapter: 'future', ttl: 0 } },
+        { backends: { remote: { adapter: 'future', ttl: 0 } } },
         'crm',
       ),
     ).toThrow();
     const service = new ManagedConcurrencyService({ appName: 'crm' });
     expect(() =>
-      service.boot({ default: 'remote', remote: { adapter: 'future' } }),
+      service.boot({
+        default: 'remote',
+        backends: { remote: { adapter: 'future' } },
+      }),
     ).toThrow(ConcurrentConfigurationError);
   });
   it('validates every registered item at boot and deep-freezes independent snapshots', () => {
     const validate = vi.fn();
     const create = vi.fn();
     const config = {
-      remote: { adapter: 'test', connection: { nested: { value: 1 } } },
+      backends: {
+        remote: { adapter: 'test', connection: { nested: { value: 1 } } },
+      },
     };
     const service = new ManagedConcurrencyService({ appName: 'crm' });
     service.registerImplementation('test', { validate, create });
@@ -98,7 +109,7 @@ describe('concurrency pure configuration', () => {
     const entry = validate.mock.calls[0]![0] as {
       connection: { nested: { value: number } };
     };
-    config.remote.connection.nested.value = 2;
+    config.backends.remote.connection.nested.value = 2;
     expect(entry.connection.nested.value).toBe(1);
     expect(Object.isFrozen(entry.connection.nested)).toBe(true);
     expect(create).not.toHaveBeenCalled();

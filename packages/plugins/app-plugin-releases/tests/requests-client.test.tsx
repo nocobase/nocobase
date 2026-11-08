@@ -42,6 +42,9 @@ vi.mock('@nocobase/app-client', () => ({
   },
   useApiClient: () => mocks,
   usePageBreadcrumb: () => undefined,
+  useClientApplication: () => ({
+    services: { has: () => false, resolve: () => undefined },
+  }),
   useToaster: () => ({
     show: (toast: { type: string; title: string }) => {
       mocks.toasts.push(toast);
@@ -73,7 +76,8 @@ vi.mock('@nocobase/i18n/client', () => {
 import { AppLabels } from '../client/components/release-badges.js';
 import { ReleasesAppOriginContext } from '../client/lib/app-origin.js';
 import { ReleasesSystemLabelsContext } from '../client/lib/system-labels.js';
-import AppsPage from '../client/pages/apps-page.js';
+import AppsOutlet from '../client/pages/apps-outlet.js';
+import EnvironmentPage from '../client/pages/environment-page.js';
 import RequestPage from '../client/pages/request-page.js';
 
 function pending(
@@ -169,6 +173,25 @@ function serve(request: DeploymentRequestView): Sent[] {
         data: [app('crm-production', 'CRM'), app('shop', 'Shop')],
         meta: { total: 2 },
       });
+    if (options.path === 'releases/environments/production')
+      return Promise.resolve({
+        data: {
+          id: 'production',
+          name: 'Production',
+          driver: 'host',
+          config: {},
+          hasSecret: false,
+          secretKeys: [],
+          publicUrl: null,
+          protected: true,
+          approvers: [],
+          maxApps: null,
+          capabilities: { archives: true, images: false, onDemand: true },
+          sampleDataOnFirstDeploy: false,
+          createdAt: '2026-10-01T00:00:00.000Z',
+          updatedAt: '2026-10-01T00:00:00.000Z',
+        },
+      });
     if (options.path === 'releases/deploymentRequests')
       return Promise.resolve({ data: [request], meta: { total: 1 } });
     if (options.path === `releases/deploymentRequests/${request.id}`)
@@ -184,15 +207,20 @@ function Where(): ReactElement {
   return <span data-testid='where'>{useLocation().pathname}</span>;
 }
 
-function renderApps(path = '/apps'): void {
+/** An environment's page, whose Apps carry the marks, and a request's old address below the Apps path. */
+function renderApps(path = '/environments/production'): void {
   render(
     <MemoryRouter initialEntries={[path]}>
       <Routes>
         <Route
+          path='/environments/:environmentId'
+          element={<EnvironmentPage />}
+        />
+        <Route
           path='/apps'
           element={
             <>
-              <AppsPage />
+              <AppsOutlet />
               <Where />
             </>
           }
@@ -211,7 +239,7 @@ afterEach(() => {
   mocks.toasts.length = 0;
 });
 
-describe('pending requests on the Apps list', () => {
+describe('pending requests on an environment’s Apps', () => {
   it('marks an App with a pending request "Pending approval", and lists no requests above the Apps', async () => {
     const sent = serve(pending());
     renderApps();

@@ -126,10 +126,12 @@ describe('JobExecutorServiceProvider', () => {
   it('shares the selected default for omitted, default, and unknown configuration names', async () => {
     const { app, container, logger } = await application({
       default: 'memory',
-      memory: {
-        adapter: 'memory',
-        namespace: 'crm-legacy',
-        persistence: { path: path.join(rootDir, 'custom') },
+      backends: {
+        memory: {
+          adapter: 'memory',
+          namespace: 'crm-legacy',
+          persistence: { path: path.join(rootDir, 'custom') },
+        },
       },
     });
     const provider = new JobExecutorServiceProvider(app, {
@@ -161,8 +163,7 @@ describe('JobExecutorServiceProvider', () => {
   it('shares one ordinary memory executor between keys naming the same file', async () => {
     const { app, container } = await application({
       default: 'first',
-      first: { adapter: 'memory' },
-      second: { adapter: 'memory' },
+      backends: { first: { adapter: 'memory' }, second: { adapter: 'memory' } },
     });
     const provider = new JobExecutorServiceProvider(app);
     provider.register();
@@ -242,7 +243,7 @@ describe('JobExecutorServiceProvider', () => {
   it('shuts down every ordinary and schedule executor through the same provider', async () => {
     const { app, container } = await application({
       default: 'memory',
-      memory: { adapter: 'memory' },
+      backends: { memory: { adapter: 'memory' } },
     });
     const provider = new JobExecutorServiceProvider(app);
     provider.register();
@@ -364,10 +365,12 @@ describe('JobExecutorServiceProvider', () => {
   it('uses the configured default and namespace without warning', async () => {
     const { app, container, logger } = await application({
       default: 'memory',
-      memory: {
-        adapter: 'memory',
-        namespace: 'crm-legacy',
-        persistence: { path: path.join(rootDir, 'custom') },
+      backends: {
+        memory: {
+          adapter: 'memory',
+          namespace: 'crm-legacy',
+          persistence: { path: path.join(rootDir, 'custom') },
+        },
       },
     });
     const provider = new JobExecutorServiceProvider(app, {

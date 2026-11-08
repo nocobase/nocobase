@@ -1,5 +1,8 @@
 import { type AppPluginApplication } from '@nocobase/app-server/plugins';
-import { jobExecutorServiceToken } from '@nocobase/app-server/jobs';
+import {
+  jobExecutorServiceToken,
+  type AppJobsConfig,
+} from '@nocobase/app-server/jobs';
 import { databaseManagerToken } from '@nocobase/db';
 import type { ScheduleExecutor, Unsubscribe } from '@nocobase/jobs';
 import {
@@ -114,8 +117,11 @@ export class SchedulerProvider extends ServiceProvider<AppPluginApplication> {
   private jobsConfiguration(): string | undefined {
     const name = this.app.config.get<SchedulerConfig>('scheduler')?.jobs;
     if (name === undefined) return undefined;
-    const jobs = this.app.config.get<Record<string, unknown>>('jobs');
-    const selected = name === 'default' ? undefined : jobs?.[name];
+    const jobs = this.app.config.get<AppJobsConfig>('jobs');
+    const selected =
+      name !== 'default' && jobs?.backends && Object.hasOwn(jobs.backends, name)
+        ? jobs.backends[name]
+        : undefined;
     if (!selected || typeof selected !== 'object') {
       throw new Error(
         `scheduler.jobs names "${name}", which is not a jobs configuration.`,

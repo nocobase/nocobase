@@ -222,7 +222,8 @@ describe('releases', () => {
         ],
       },
     );
-    // Both environments report the same runtime: it is listed once, naming both.
+    // Both environments report the same runtime: it is listed once, naming both with their running Apps (the failed
+    // one holds nothing), which add up to the host's.
     const all = await harness.services.releases.listHosts(admin);
     expect(all).toEqual([
       {
@@ -233,8 +234,8 @@ describe('releases', () => {
         running: 1,
         maxActive: null,
         environments: [
-          { id: 'preview', name: 'Preview' },
-          { id: 'staging', name: 'Staging' },
+          { id: 'preview', name: 'Preview', running: 0 },
+          { id: 'staging', name: 'Staging', running: 1 },
         ],
         failedEnvironments: [
           {

@@ -74,7 +74,7 @@ it('groups the modules an administrator may open into categories of cards that o
     'AI',
     'System',
   ]);
-  // Examples configures the built-in invitation mailer, so Notifications joins System beside Database Explorer.
+  // Examples configures the built-in invitation mailer, so Notifications joins System beside the database explorer.
   const system = screen.getByRole('region', { name: 'System' });
   expect(
     within(system)

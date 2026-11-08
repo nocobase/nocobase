@@ -1,3 +1,4 @@
+export { validateQueueConfig } from './validate-config.js';
 export { withChannel } from './consumer.js';
 export type {
   QueueImplementation,

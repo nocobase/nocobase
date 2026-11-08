@@ -23,6 +23,7 @@ import {
   RUNNER_ROUTES,
   type ClaimRequest,
   type RegisterRequest,
+  type RunPayload,
   type RunnerFeature,
   type AgentTool,
   type ToolInfo,
@@ -303,6 +304,8 @@ export async function createHarness(
     readonly secrets?: SecretsService | null;
     readonly dist?: DistConfig;
     readonly retryBaseDelayMs?: number;
+    /** How a claim waits its turn (`claimPace`); skipped by default, so a test sees who is first, not how long. */
+    readonly claimPause?: (ms: number, signal?: AbortSignal) => Promise<void>;
   } = {},
 ): Promise<Harness> {
   const { database, drop } = await openDatabase();
@@ -342,6 +345,7 @@ export async function createHarness(
       ? {}
       : { secrets: options.secrets ?? testSecrets() }),
     clock,
+    claimPause: options.claimPause ?? (async () => undefined),
     onError: () => undefined,
   });
 
@@ -727,6 +731,40 @@ export async function claim(
   if (response.status !== 200)
     throw new Error(`Claim failed: ${JSON.stringify(response.body)}`);
   return response.body.data.runs as any[];
+}
+
+/**
+ * Claims as a runner does: one run per request, asking again at once with one slot fewer, until `free` runs are taken
+ * or a request takes none; the payloads claimed.
+ */
+export async function claimRepeatedly(
+  harness: Harness,
+  runner: RegisteredRunner,
+  free: number,
+  tools?: ClaimRequest['tools'],
+): Promise<any[]> {
+  const payloads: any[] = [];
+  while (payloads.length < free) {
+    const runs = await claim(harness, runner, free - payloads.length, tools);
+    if (runs.length === 0) break;
+    payloads.push(...runs);
+  }
+  return payloads;
+}
+
+/**
+ * Claims up to `free` runs for a runner in one call of the claim service, as one request did before the runners'
+ * route handed out one run per request; the payloads claimed.
+ */
+export async function claimMany(
+  harness: Harness,
+  registered: RegisteredRunner,
+  free: number,
+): Promise<RunPayload[]> {
+  const runner = await harness.services.runners.authenticate(registered.key, {
+    touch: false,
+  });
+  return harness.services.claims.claim(runner, free);
 }
 
 /** A protocol route as the harness serves it: without the `/api` prefix. */

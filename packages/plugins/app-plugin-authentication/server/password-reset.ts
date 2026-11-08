@@ -19,13 +19,15 @@ type ResetData = Parameters<ResetSender>[0];
 
 export interface PasswordResetConfig {
   readonly enabled?: boolean;
+  /** Named application mailer; omission retains existing inline/channel/default selection. */
+  readonly mailer?: string;
   /** @deprecated Legacy applications only. Configure mailers instead. */
   readonly emailChannel?: string;
   readonly template?: (data: ResetData, appName: string) => EmailMessage;
 }
 
 export interface PasswordResetServices {
-  /** The built-in sender chosen by the assembly owner, which also closes it. */
+  /** A caller-created sender. Auth uses it but does not close or revalidate it. */
   readonly sender?: MailSendView;
   /** Whether `sender` came from a deprecated notification channel. */
   readonly legacySender?: boolean;
@@ -75,15 +77,24 @@ export class PasswordResetPolicy {
       config.enabled !== false &&
       (Boolean(custom) || this.automatic);
     if (this.available) {
+      if (custom && config.mailer !== undefined)
+        services.warning?.(
+          'auth.passwordReset.mailer is unused; auth.emailAndPassword.sendResetPassword takes precedence.',
+        );
       if (custom && email !== undefined)
         services.warning?.(
           'auth.email is unused for password reset; auth.emailAndPassword.sendResetPassword takes precedence.',
         );
-      if (config.emailChannel !== undefined && (custom || email !== undefined))
+      if (
+        config.emailChannel !== undefined &&
+        (custom || config.mailer !== undefined || email !== undefined)
+      )
         services.warning?.(
           custom
             ? 'auth.passwordReset.emailChannel is unused; auth.emailAndPassword.sendResetPassword takes precedence.'
-            : 'auth.passwordReset.emailChannel is unused; auth.email takes precedence.',
+            : config.mailer !== undefined
+              ? 'auth.passwordReset.emailChannel is unused; auth.passwordReset.mailer takes precedence.'
+              : 'auth.passwordReset.emailChannel is unused; auth.email takes precedence.',
         );
       if (
         this.automatic &&
@@ -91,7 +102,7 @@ export class PasswordResetPolicy {
         services.legacySender === true
       )
         services.warning?.(
-          'auth.passwordReset.emailChannel is deprecated. Migrate to mailers; legacy applications remain supported.',
+          'auth.passwordReset.emailChannel is deprecated. Migrate to mailers and auth.passwordReset.mailer; legacy applications remain supported.',
         );
     }
     this.sender = this.available

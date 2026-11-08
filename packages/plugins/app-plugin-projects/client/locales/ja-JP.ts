@@ -57,6 +57,8 @@ const jaJP: LocaleResource<typeof enUS> = {
       subtaskAdded: 'サブタスクを追加しました',
       dependencyAdded: 'への依存関係を追加しました',
       dependencyRemoved: 'への依存関係を削除しました',
+      relationAdded: 'との関連を追加しました',
+      relationRemoved: 'との関連を削除しました',
       stageChanged: 'ステージが変わりました',
       autoMoveSkipped: 'タスクを自動で次へ移動できませんでした：',
     },

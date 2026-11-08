@@ -1,4 +1,5 @@
 import path from 'node:path';
+import { validateQueueConfig } from './validate-config.js';
 
 import { assertQueueName } from './naming.js';
 import {
@@ -15,7 +16,6 @@ import type {
   QueueAdapter,
   QueueConfig,
   QueueConfigEntry,
-  QueueLogger,
   RateLimitOptions,
 } from './types.js';
 
@@ -23,9 +23,6 @@ import type {
 export const IN_MEMORY_ADAPTER: QueueAdapter = 'inMemory';
 /** The key queues on the built-in memory configuration are bound to. */
 export const BUILT_IN_MEMORY_KEY: string = '\0built-in-memory';
-
-/** Fields of the `@boringnode/queue` section, which is no longer read. */
-const LEGACY_FIELDS: readonly string[] = ['connections', 'worker', 'jobs'];
 
 const ENTRY_FIELDS: ReadonlySet<string> = new Set([
   'adapter',
@@ -49,49 +46,6 @@ const DEFAULT_SETUP_TIMEOUT_MS = 10_000;
 const DEFAULT_SHUTDOWN_TIMEOUT_MS = 30_000;
 const DEFAULT_CANCELLATION_GRACE_MS = 5000;
 
-export const LEGACY_CONFIG_WARNING: string =
-  'The queue configuration uses the removed connections/worker/jobs format and is ignored. Declare configuration keys instead, such as { default: "redis", redis: { adapter: "redis", connection: { host, port } } }, or remove the section to run on the built-in memory configuration.';
-
-/**
- * Drops the fields of the former queue format. When they are present, a
- * `default` naming anything but a configuration of the current format is
- * dropped as well, so the section falls back to the built-in memory
- * configuration instead of failing to start. Warns once when anything was
- * ignored.
- */
-export function normalizeQueueConfig(
-  config: QueueConfig | undefined,
-  logger: QueueLogger | undefined,
-): QueueConfig | undefined {
-  if (config === undefined || config === null) return undefined;
-  if (typeof config !== 'object' || Array.isArray(config)) {
-    throw new TypeError('The queue configuration section must be an object.');
-  }
-  if (!LEGACY_FIELDS.some((field) => Object.hasOwn(config, field))) {
-    return config;
-  }
-  const normalized: Record<string, QueueConfigEntry | string | undefined> = {};
-  for (const [key, value] of Object.entries(config)) {
-    if (!LEGACY_FIELDS.includes(key)) normalized[key] = value;
-  }
-  const defaultKey = normalized.default;
-  if (typeof defaultKey === 'string' && !isCurrentEntry(config[defaultKey])) {
-    delete normalized.default;
-  }
-  const message = LEGACY_CONFIG_WARNING;
-  if (logger) logger.warn({}, message);
-  else console.warn(message);
-  return normalized;
-}
-
-function isCurrentEntry(value: unknown): boolean {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    typeof (value as { adapter?: unknown }).adapter === 'string'
-  );
-}
-
 export interface QueueConfigSelection {
   readonly key: string;
   /** `undefined` selects the built-in memory configuration. */
@@ -106,8 +60,12 @@ export function selectQueueConfig(
   config: QueueConfig | undefined,
   configKey: string | undefined,
 ): QueueConfigSelection {
+  validateQueueConfig(config);
   if (configKey !== undefined && configKey !== 'default') {
-    const named = config?.[configKey];
+    const named =
+      config?.backends && Object.hasOwn(config.backends, configKey)
+        ? config.backends[configKey]
+        : undefined;
     if (named !== undefined && typeof named !== 'string') {
       return { key: configKey, entry: named };
     }
@@ -119,10 +77,10 @@ export function selectQueueConfig(
   if (typeof defaultKey !== 'string') {
     throw new TypeError('queue.default must name a configuration key.');
   }
-  const selected = defaultKey === 'default' ? undefined : config?.[defaultKey];
-  if (selected === undefined || typeof selected === 'string') {
+  const selected = config?.backends?.[defaultKey];
+  if (selected === undefined) {
     throw new Error(
-      `queue.default names "${defaultKey}", which is not a queue configuration.`,
+      'queue.default must name an existing configuration in queue.backends.',
     );
   }
   return { key: defaultKey, entry: selected };
@@ -259,6 +217,6 @@ export function resolveQueueConfig(
 
 /** Every configuration key of the section, in declaration order. */
 export function queueConfigKeys(config: QueueConfig | undefined): string[] {
-  if (config === undefined) return [];
-  return Object.keys(config).filter((key) => key !== 'default');
+  validateQueueConfig(config);
+  return Object.keys(config?.backends ?? {});
 }

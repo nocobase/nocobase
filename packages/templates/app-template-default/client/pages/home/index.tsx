@@ -5,8 +5,28 @@ import {
   CopyIcon,
   MessageSquareTextIcon,
   SparklesIcon,
+  ShieldCheckIcon,
+  PaperclipIcon,
+  GitBranchIcon,
+  BellIcon,
+  CalendarClockIcon,
+  BotIcon,
+  type LucideIcon,
 } from 'lucide-react';
-import { type ReactElement, useState } from 'react';
+import { type ReactElement } from 'react';
+import { Link } from 'react-router';
+import {
+  CAPABILITY_GUIDE_PATH,
+  capabilityPath,
+  createCapabilityCatalog,
+  entryContent,
+  format,
+  guideContent,
+  type CatalogEntry,
+  type GuideContent,
+} from '@nocobase/app-plugin-foundation/capability-guide';
+
+import applicationManifest from '../../../package.json' with { type: 'json' };
 
 import { PageContainer } from '#components/page-container';
 import { Button } from '#components/ui/button';
@@ -18,24 +38,25 @@ import {
   CardTitle,
 } from '#components/ui/card';
 
-import { CAPABILITIES, type Capability } from './capabilities.js';
-import { PromptDialog } from './prompt-dialog.js';
 import { useCopy } from './use-copy.js';
+
+// The cards and their wording come from the capability guide, built from this application's own dependencies, so
+// the home page and the guide never disagree; only the icons are the page's own.
+const catalog = createCapabilityCatalog(applicationManifest);
+const HOME_ICONS: Readonly<Record<string, LucideIcon>> = {
+  'app-plugin-authorization': ShieldCheckIcon,
+  'app-plugin-file': PaperclipIcon,
+  lifecycle: GitBranchIcon,
+  'app-plugin-notification': BellIcon,
+  'app-plugin-scheduler': CalendarClockIcon,
+  'app-plugin-agents': BotIcon,
+};
 
 const STEPS = ['describe', 'build', 'review'] as const;
 
 export default function HomePage(): ReactElement {
-  const { t } = useTranslation();
-  const [selected, setSelected] = useState<Capability>();
-  const [open, setOpen] = useState(false);
-  // Changes on every opening, so the dialog remounts and drops the edits of the previous one.
-  const [openCount, setOpenCount] = useState(0);
-
-  const openCapability = (capability: Capability): void => {
-    setSelected(capability);
-    setOpenCount((count) => count + 1);
-    setOpen(true);
-  };
+  const { i18n } = useTranslation();
+  const content = guideContent(i18n.language);
 
   return (
     <PageContainer className='mx-auto max-w-6xl'>
@@ -44,33 +65,31 @@ export default function HomePage(): ReactElement {
         aria-labelledby='home-capabilities'
         className='flex flex-col gap-4'
       >
-        <div className='flex flex-col gap-1'>
-          <h2 id='home-capabilities' className='text-base font-medium'>
-            {t('home.capabilitiesTitle')}
-          </h2>
-          <p className='text-sm text-muted-foreground'>
-            {t('home.capabilitiesDescription')}
-          </p>
+        <div className='flex flex-wrap items-end justify-between gap-2'>
+          <div className='flex flex-col gap-1'>
+            <h2 id='home-capabilities' className='text-base font-medium'>
+              {content.home.title}
+            </h2>
+            <p className='text-sm text-muted-foreground'>
+              {content.home.description}
+            </p>
+          </div>
+          <Link
+            to={CAPABILITY_GUIDE_PATH}
+            className='inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline'
+          >
+            {format(content.home.viewAll, { count: catalog.entries.length })}
+            <ArrowRightIcon className='size-4' aria-hidden />
+          </Link>
         </div>
         <ul className='grid gap-4 sm:grid-cols-2 xl:grid-cols-3'>
-          {CAPABILITIES.map((capability) => (
-            <li key={capability.id} className='flex'>
-              <CapabilityCard
-                capability={capability}
-                onOpen={() => openCapability(capability)}
-              />
+          {catalog.featured.map((entry) => (
+            <li key={entry.id} className='flex'>
+              <CapabilityCard entry={entry} content={content} />
             </li>
           ))}
         </ul>
       </section>
-      {selected ? (
-        <PromptDialog
-          key={openCount}
-          capability={selected}
-          open={open}
-          onOpenChange={setOpen}
-        />
-      ) : null}
     </PageContainer>
   );
 }
@@ -144,26 +163,22 @@ function AgentIntro(): ReactElement {
 }
 
 function CapabilityCard({
-  capability,
-  onOpen,
+  entry,
+  content,
 }: {
-  readonly capability: Capability;
-  readonly onOpen: () => void;
+  readonly entry: CatalogEntry;
+  readonly content: GuideContent;
 }): ReactElement {
-  const { t } = useTranslation();
-  const prefix = `home.capabilities.${capability.id}`;
-  const Icon = capability.icon;
+  const text = entryContent(content, entry);
+  const Icon = HOME_ICONS[entry.id] ?? SparklesIcon;
 
   return (
-    <button
-      type='button'
-      onClick={onOpen}
+    <Link
+      to={capabilityPath(entry.id)}
       className='group flex w-full cursor-pointer rounded-xl text-left outline-none focus-visible:ring-3 focus-visible:ring-ring/50'
     >
       <Card className='w-full transition-[translate,box-shadow,background-color] duration-200 ease-out group-hover:-translate-y-0.5 group-hover:bg-hover group-hover:shadow-md motion-reduce:transition-none motion-reduce:group-hover:translate-y-0'>
         <CardHeader className='gap-3'>
-          {/* The chip only deepens its tint on hover rather than inverting: swapping a light background and a dark icon
-              passes both through the same color halfway, where the icon vanishes for a moment and reads as a flicker. */}
           <span className='flex size-9 items-center justify-center rounded-lg bg-primary/5 text-primary ring-1 ring-transparent transition-[background-color,box-shadow] duration-200 ease-out group-hover:bg-primary/10 group-hover:ring-border motion-reduce:transition-none'>
             <Icon
               className='size-4 transition-transform duration-200 ease-out group-hover:scale-110 motion-reduce:transition-none'
@@ -171,20 +186,20 @@ function CapabilityCard({
             />
           </span>
           <div className='flex flex-col gap-1'>
-            <CardTitle>{t(`${prefix}.title`)}</CardTitle>
+            <CardTitle>{text.title}</CardTitle>
             <CardDescription className='leading-6'>
-              {t(`${prefix}.description`)}
+              {text.summary}
             </CardDescription>
           </div>
         </CardHeader>
         <CardFooter className='mt-auto justify-between text-sm text-muted-foreground transition-colors duration-200 ease-out group-hover:text-foreground'>
-          {t('home.viewPrompts', { count: capability.prompts.length })}
+          {content.home.open}
           <ArrowRightIcon
             className='size-4 transition-transform duration-200 ease-out group-hover:translate-x-1 motion-reduce:transition-none'
             aria-hidden
           />
         </CardFooter>
       </Card>
-    </button>
+    </Link>
   );
 }

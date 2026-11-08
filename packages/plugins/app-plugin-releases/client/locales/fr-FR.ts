@@ -152,13 +152,10 @@ const frFR: LocaleResource<typeof enUS> = {
   },
   ui: {
     nav: {
-      apps: 'Applications',
       environments: 'Déployer des environnements',
     },
     apps: {
       title: 'Applications',
-      description: 'Applications, leurs versions et où elles sont déployées.',
-      search: 'Recherche par ID ou nom',
       create: 'Créer une application',
       id: "Identifiant de l'application",
       name: 'Nom',
@@ -169,26 +166,16 @@ const frFR: LocaleResource<typeof enUS> = {
       labels: 'Etiquettes',
       loadFailed: 'Impossible de charger les applications.',
       loadOneFailed: "Impossible de charger l'application.",
-      emptyTitle: "Aucune application pour l'instant",
-      emptyNoAccess: 'Demandez à un administrateur de créer une application.',
-      emptyDescription:
-        'Créez une application, puis téléchargez une version et déployez-la dans un environnement.',
-      noResults: 'Aucune application ne correspond à la recherche.',
       created: '{{name}} créé.',
       createDescription:
         'Une application est déployée dans un environnement ; ses sorties sont téléchargées par la suite.',
       idHint:
         "Lettres, chiffres, traits de soulignement et traits d'union ; une partie de son adresse. Cela ne peut pas changer plus tard.",
-      noEnvironment: "Pas encore d'environnement",
       lastAccess: 'Dernière visite',
       stateFilter: 'État',
       anyState: 'Tous les états',
-      filteredEnvironments: 'Environnements : {{names}}',
       clearFilters: 'Effacer les filtres',
       noMatches: 'Aucune application ne correspond aux filtres.',
-      page: 'Page {{page}} sur {{pages}}',
-      previousPage: 'Page précédente',
-      nextPage: 'Page suivante',
       runStates: {
         running: 'En cours d’exécution',
         starting: 'En démarrage',
@@ -198,6 +185,9 @@ const frFR: LocaleResource<typeof enUS> = {
         failed: 'En échec',
         unknown: 'Inconnu',
       },
+      page: 'Page {{page}} sur {{pages}}',
+      previousPage: 'Page précédente',
+      nextPage: 'Page suivante',
     },
     advanced: 'Avancé (facultatif)',
     labels: {
@@ -589,10 +579,10 @@ const frFR: LocaleResource<typeof enUS> = {
       available: '{{available}} encore libres sur le serveur',
       wholeHost:
         'Totaux de tout l’hôte, tous ses environnements compris ; la mémoire ne se répartit pas entre ses applications.',
-      viewApps:
-        'Voir les {{count}} applications en cours d’exécution ou de démarrage',
       viewAppsNote:
         'Seules les applications que vous pouvez voir sont listées.',
+      byEnvironment:
+        "En cours d'exécution ou de démarrage, par environnement :",
     },
     runtime: {
       holds: {

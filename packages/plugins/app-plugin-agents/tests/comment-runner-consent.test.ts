@@ -1,5 +1,10 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { claim, createHarness, type Harness } from './harness.js';
+import {
+  claim,
+  claimRepeatedly,
+  createHarness,
+  type Harness,
+} from './harness.js';
 import type { Run } from '../shared/runs.js';
 
 describe('comment personal runner consent', () => {
@@ -395,7 +400,7 @@ describe('comment personal runner consent', () => {
       expect((await h.services.runs.requests.get(request.id)).runId).toBe(
         switched.run.runId,
       );
-      const claims = await claim(h, bobs, 2);
+      const claims = await claimRepeatedly(h, bobs, 2);
       expect(claims.map((taken) => taken.run.id).sort()).toEqual(
         queued.map((run) => run.id).sort(),
       );

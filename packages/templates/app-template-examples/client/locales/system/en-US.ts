@@ -211,6 +211,7 @@ const systemEnUS = {
     signingOut: 'Signing out…',
   },
   navigation: {
+    resources: 'Resources',
     home: 'Home',
     open: 'Open navigation',
     close: 'Close navigation',

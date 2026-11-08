@@ -152,14 +152,10 @@ const deDE: LocaleResource<typeof enUS> = {
   },
   ui: {
     nav: {
-      apps: 'Apps',
       environments: 'Umgebungen bereitstellen',
     },
     apps: {
       title: 'Apps',
-      description:
-        'Anwendungen, ihre Veröffentlichungen und der Ort, an dem sie bereitgestellt werden.',
-      search: 'Suche nach ID oder Name',
       create: 'App erstellen',
       id: 'App-ID',
       name: 'Name',
@@ -170,26 +166,16 @@ const deDE: LocaleResource<typeof enUS> = {
       labels: 'Etiketten',
       loadFailed: 'Die Apps konnten nicht geladen werden.',
       loadOneFailed: 'Die App konnte nicht geladen werden.',
-      emptyTitle: 'Noch keine Apps',
-      emptyNoAccess: 'Bitten Sie einen Administrator, eine App zu erstellen.',
-      emptyDescription:
-        'Erstellen Sie eine App, laden Sie dann eine Version hoch und stellen Sie sie in einer Umgebung bereit.',
-      noResults: 'Keine App entspricht der Suche.',
       created: '{{name}} erstellt.',
       createDescription:
         'Eine App wird in einer Umgebung bereitgestellt. Die Veröffentlichungen werden anschließend hochgeladen.',
       idHint:
         'Buchstaben, Ziffern, Unterstriche und Bindestriche; Teil seiner Adresse. Es kann sich später nicht mehr ändern.',
-      noEnvironment: 'Noch keine Umgebung',
       lastAccess: 'Letzter Besuch',
       stateFilter: 'Status',
       anyState: 'Jeder Status',
-      filteredEnvironments: 'Umgebungen: {{names}}',
       clearFilters: 'Filter zurücksetzen',
       noMatches: 'Keine App passt zu den Filtern.',
-      page: 'Seite {{page}} von {{pages}}',
-      previousPage: 'Vorherige Seite',
-      nextPage: 'Nächste Seite',
       runStates: {
         running: 'Läuft',
         starting: 'Startet',
@@ -199,6 +185,9 @@ const deDE: LocaleResource<typeof enUS> = {
         failed: 'Fehlgeschlagen',
         unknown: 'Unbekannt',
       },
+      page: 'Seite {{page}} von {{pages}}',
+      previousPage: 'Vorherige Seite',
+      nextPage: 'Nächste Seite',
     },
     advanced: 'Erweitert (optional)',
     labels: {
@@ -585,8 +574,8 @@ const deDE: LocaleResource<typeof enUS> = {
       available: '{{available}} noch frei auf dem Server',
       wholeHost:
         'Summen des gesamten Hosts mit allen Umgebungen darauf; der Speicher lässt sich nicht auf einzelne Apps aufteilen.',
-      viewApps: '{{count}} laufende oder startende Apps ansehen',
       viewAppsNote: 'Zeigt nur die Apps, die du sehen darfst.',
+      byEnvironment: 'Laufend oder startend, nach Umgebung:',
     },
     runtime: {
       holds: {

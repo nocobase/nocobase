@@ -55,6 +55,8 @@ const idID: LocaleResource<typeof enUS> = {
       subtaskAdded: 'menambahkan subtugas',
       dependencyAdded: 'menambahkan ketergantungan pada',
       dependencyRemoved: 'menghilangkan ketergantungan pada',
+      relationAdded: 'menambahkan relasi dengan',
+      relationRemoved: 'menghapus relasi dengan',
       stageChanged: 'mengubah panggung',
       autoMoveSkipped: 'tidak dapat memindahkan tugas secara otomatis ke',
     },

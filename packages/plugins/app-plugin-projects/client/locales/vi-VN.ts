@@ -56,6 +56,8 @@ const viVN: LocaleResource<typeof enUS> = {
       subtaskAdded: 'đã thêm nhiệm vụ con',
       dependencyAdded: 'đã thêm sự phụ thuộc vào',
       dependencyRemoved: 'đã loại bỏ sự phụ thuộc vào',
+      relationAdded: 'đã thêm liên kết với',
+      relationRemoved: 'đã xóa liên kết với',
       stageChanged: 'thay đổi sân khấu',
       autoMoveSkipped: 'không thể tự động chuyển nhiệm vụ sang',
     },

@@ -542,6 +542,12 @@ export class ReleasesService {
         environments.push({
           id,
           name: (await this.options.environments.find(id))?.name ?? id,
+          // Counted as the host's `running`, so the environment's Apps filtered to running or starting are as many.
+          running: occupancy.apps.filter(
+            (item) =>
+              item.environmentId === id &&
+              (item.state === 'running' || item.state === 'starting'),
+          ).length,
         });
       views.push({ ...view, environments });
     }
