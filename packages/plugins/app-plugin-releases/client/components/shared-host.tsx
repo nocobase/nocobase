@@ -224,7 +224,7 @@ export function SharedHostSection({
       {host.environments.length > 0 ? (
         <CardFooter
           className='flex flex-wrap items-baseline gap-x-3 gap-y-1'
-          data-slot='shared-host-environments'
+          data-host-environments=''
         >
           <span className='text-sm text-muted-foreground'>
             {t('ui.sharedHost.byEnvironment')}

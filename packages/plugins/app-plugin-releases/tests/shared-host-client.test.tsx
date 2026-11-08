@@ -331,7 +331,7 @@ describe('shared app host', () => {
     const { listed } = await render('/release-environments');
     const footer = (
       await screen.findByText('Running or starting, by environment:')
-    ).closest('[data-slot="shared-host-environments"]') as HTMLElement;
+    ).closest('[data-host-environments]') as HTMLElement;
     expect(
       within(footer).getByRole('link', { name: 'Preview 2' }),
     ).toHaveAttribute(
