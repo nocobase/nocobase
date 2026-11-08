@@ -1,320 +1,185 @@
 /**
- * The static capability catalog shared by the capability guide and the application home page. It holds only what is
- * the same in every language: ids, groups, documentation paths, related entries and the developer reference. Titles,
- * descriptions and prompts live in `./content/<locale>.ts`, typed by `GuideContent` against the ids declared here, so a
- * language file that misses a capability or a prompt does not compile.
+ * The capability catalog of one application. What is listed comes from the application's own `package.json`: every
+ * declared plugin (examples and Skill-only plugins included) and the core modules the guide introduces on their own.
+ * `GUIDE_ENTRIES` only adds wording to packages it knows; a declared plugin it does not know still gets an entry.
  */
+import { GUIDE_ENTRIES } from './entries.js';
+import type {
+  GuideEntryDefinition,
+  GuideGroupId,
+  GuidePluginRole,
+  GuideSource,
+  GuideSourceFilter,
+} from './types.js';
 
-export const CAPABILITY_GROUP_IDS = [
-  'access',
-  'data',
-  'process',
-  'messages',
-  'experience',
-  'ai',
-] as const;
+export { GUIDE_ENTRIES };
 
-export type CapabilityGroupId = (typeof CAPABILITY_GROUP_IDS)[number];
+export type GuideEntryId = keyof typeof GUIDE_ENTRIES;
 
-/** What a builder needs before the agent can use a capability. */
-export type CapabilityPrerequisite =
-  /** Registered in the default template; nothing to install. */
-  | 'builtIn'
-  /** Registered, but needs a provider or an account configured first. */
-  | 'config'
-  /** Needs a plugin added to the application. */
-  | 'plugin'
-  /**
-   * No runtime package provides it: the agent builds it for the business, following a Skill or the documentation.
-   */
-  | 'agentBuilt'
-  /** Needs a commercial plugin and its license. */
-  | 'commercial';
-
-export interface CapabilityReference {
-  /** Packages the agent wires in. */
-  readonly packages: readonly string[];
-  /** Skills the agent reads for this capability. */
-  readonly skills: readonly string[];
-}
-
-export interface GuideCapability {
-  readonly id: CapabilityId;
-  readonly group: CapabilityGroupId;
-  /** Path on the documentation site, without the language prefix. */
-  readonly docs: string;
-  /** Prompt ids, in display order; their wording is in the content files. */
-  readonly prompts: readonly string[];
-  readonly related: readonly CapabilityId[];
-  readonly prerequisite: CapabilityPrerequisite;
-  /** App-relative path of a runnable demonstration in the Examples template. */
-  readonly demo?: string;
-  /** Shown on the home page. */
-  readonly featured?: boolean;
-  readonly reference: CapabilityReference;
-}
+/** The prompt ids one known entry declares. */
+export type PromptIdOf<K extends GuideEntryId> =
+  (typeof GUIDE_ENTRIES)[K]['prompts'][number];
 
 /**
- * Every capability's prompt ids, in display order. The ids type the content files: a language that misses a
- * capability or one of its prompts does not compile.
+ * Core packages that are not listed on their own: the application frame (`app-client`, `app-server`,
+ * `service-provider`) and those introduced inside the plugin built on them.
  */
-export const CAPABILITY_PROMPTS = {
-  auth: ['disableSignUp', 'companySso', 'apiKeys'],
-  authorization: ['jobs', 'dataScopes', 'restrictions'],
-  dataSources: ['postgres', 'externalDatabase'],
-  file: ['attachments', 'avatar'],
-  templatePrint: ['orderPdf'],
-  workflow: ['stages', 'backgroundExport', 'history'],
-  approval: ['multiLevel', 'handover'],
-  taskCenter: ['myTasks', 'approvals'],
-  notification: ['inApp', 'email'],
-  mail: ['providers', 'mailCenter', 'correspondence'],
-  scheduler: ['reminder', 'weeklyReport'],
-  theme: ['changeTheme', 'newTheme'],
-  i18n: ['addLanguage', 'defaultLanguage'],
-  aiEmployee: ['assistant'],
-  aiKnowledgeBase: ['policies'],
-} as const;
+export const KERNEL_NOT_LISTED: Readonly<Record<string, string>> = {
+  '@nocobase/app-client': 'frame',
+  '@nocobase/app-server': 'frame',
+  '@nocobase/service-provider': 'frame',
+  '@nocobase/authorization': 'app-plugin-authorization',
+  '@nocobase/drive': 'app-plugin-file',
+};
 
-export type CapabilityId = keyof typeof CAPABILITY_PROMPTS;
-
-/** The prompt ids one capability declares. */
-export type PromptIdOf<K extends CapabilityId> =
-  (typeof CAPABILITY_PROMPTS)[K][number];
-
-/** In the order of the documentation's Capabilities chapter within each group. */
-export const CAPABILITIES: readonly GuideCapability[] = [
-  {
-    id: 'auth',
-    group: 'access',
-    docs: '/capabilities/auth/',
-    prompts: CAPABILITY_PROMPTS.auth,
-    related: ['authorization'],
-    prerequisite: 'builtIn',
-    reference: {
-      packages: [
-        '@nocobase/app-plugin-authentication',
-        '@nocobase/app-plugin-users',
-        '@nocobase/app-plugin-api-keys',
-      ],
-      skills: [
-        'nocobase-app-plugin-authentication',
-        'nocobase-app-plugin-users',
-        'nocobase-app-plugin-api-keys',
-      ],
-    },
-  },
-  {
-    id: 'authorization',
-    group: 'access',
-    docs: '/capabilities/authorization/',
-    prompts: CAPABILITY_PROMPTS.authorization,
-    related: ['auth', 'workflow'],
-    prerequisite: 'builtIn',
-    featured: true,
-    demo: '/authorization-example',
-    reference: {
-      packages: [
-        '@nocobase/app-plugin-authorization',
-        '@nocobase/app-plugin-authz-default-access',
-        '@nocobase/app-plugin-authz-sharing-rules',
-        '@nocobase/app-plugin-authz-restriction-rules',
-      ],
-      skills: ['nocobase-app-plugin-authorization'],
-    },
-  },
-  {
-    id: 'dataSources',
-    group: 'data',
-    docs: '/capabilities/data-sources',
-    prompts: CAPABILITY_PROMPTS.dataSources,
-    related: ['authorization'],
-    prerequisite: 'builtIn',
-    reference: {
-      packages: ['@nocobase/db', '@nocobase/app-plugin-database-explorer'],
-      skills: ['nocobase-db', 'nocobase-app-plugin-database-explorer'],
-    },
-  },
-  {
-    id: 'file',
-    group: 'data',
-    docs: '/capabilities/file',
-    prompts: CAPABILITY_PROMPTS.file,
-    related: ['templatePrint', 'authorization'],
-    prerequisite: 'builtIn',
-    featured: true,
-    demo: '/file-repository',
-    reference: {
-      packages: ['@nocobase/app-plugin-file', '@nocobase/drive'],
-      skills: ['nocobase-app-plugin-file', 'nocobase-drive'],
-    },
-  },
-  {
-    id: 'templatePrint',
-    group: 'data',
-    docs: '/capabilities/template-print/',
-    prompts: CAPABILITY_PROMPTS.templatePrint,
-    related: ['file'],
-    prerequisite: 'agentBuilt',
-    demo: '/template-print-example',
-    reference: {
-      packages: ['@nocobase/app-plugin-template-print'],
-      skills: ['nocobase-app-plugin-template-print'],
-    },
-  },
-  {
-    id: 'workflow',
-    group: 'process',
-    docs: '/capabilities/workflow/',
-    prompts: CAPABILITY_PROMPTS.workflow,
-    related: ['approval', 'notification', 'scheduler'],
-    prerequisite: 'builtIn',
-    featured: true,
-    demo: '/lifecycle-example/tickets',
-    reference: {
-      packages: [
-        '@nocobase/lifecycle',
-        '@nocobase/jobs',
-        '@nocobase/queue',
-        '@nocobase/concurrency',
-      ],
-      skills: [],
-    },
-  },
-  {
-    id: 'approval',
-    group: 'process',
-    docs: '/capabilities/approval/',
-    prompts: CAPABILITY_PROMPTS.approval,
-    related: ['workflow', 'taskCenter', 'notification'],
-    prerequisite: 'commercial',
-    reference: {
-      packages: ['@nocobase/app-plugin-approval'],
-      skills: [],
-    },
-  },
-  {
-    id: 'taskCenter',
-    group: 'process',
-    docs: '/capabilities/task-center',
-    prompts: CAPABILITY_PROMPTS.taskCenter,
-    related: ['approval', 'notification'],
-    prerequisite: 'agentBuilt',
-    reference: { packages: [], skills: [] },
-  },
-  {
-    id: 'notification',
-    group: 'messages',
-    docs: '/capabilities/notification',
-    prompts: CAPABILITY_PROMPTS.notification,
-    related: ['workflow', 'scheduler', 'mail'],
-    prerequisite: 'builtIn',
-    featured: true,
-    demo: '/notification-example',
-    reference: {
-      packages: [
-        '@nocobase/app-plugin-notification',
-        '@nocobase/app-plugin-notification-in-app',
-        '@nocobase/app-plugin-notification-providers',
-        '@nocobase/realtime',
-      ],
-      skills: [
-        'nocobase-app-plugin-notification',
-        'nocobase-app-plugin-notification-in-app',
-        'nocobase-realtime',
-      ],
-    },
-  },
-  {
-    id: 'mail',
-    group: 'messages',
-    docs: '/capabilities/mail/',
-    prompts: CAPABILITY_PROMPTS.mail,
-    related: ['notification'],
-    prerequisite: 'config',
-    demo: '/mail-example',
-    reference: {
-      packages: ['@nocobase/app-plugin-mail'],
-      skills: ['nocobase-app-plugin-mail'],
-    },
-  },
-  {
-    id: 'scheduler',
-    group: 'messages',
-    docs: '/capabilities/scheduler',
-    prompts: CAPABILITY_PROMPTS.scheduler,
-    related: ['notification', 'workflow'],
-    prerequisite: 'builtIn',
-    featured: true,
-    demo: '/jobs-example/jobs',
-    reference: {
-      packages: ['@nocobase/app-plugin-scheduler', '@nocobase/jobs'],
-      skills: ['nocobase-app-plugin-scheduler'],
-    },
-  },
-  {
-    id: 'theme',
-    group: 'experience',
-    docs: '/capabilities/theme',
-    prompts: CAPABILITY_PROMPTS.theme,
-    related: ['i18n'],
-    prerequisite: 'builtIn',
-    reference: { packages: [], skills: ['nocobase-app-development'] },
-  },
-  {
-    id: 'i18n',
-    group: 'experience',
-    docs: '/capabilities/i18n',
-    prompts: CAPABILITY_PROMPTS.i18n,
-    related: ['theme'],
-    prerequisite: 'builtIn',
-    reference: {
-      packages: ['@nocobase/i18n', '@nocobase/app-plugin-i18n'],
-      skills: ['nocobase-app-plugin-i18n'],
-    },
-  },
-  {
-    id: 'aiEmployee',
-    group: 'ai',
-    docs: '/capabilities/ai-employee/',
-    prompts: CAPABILITY_PROMPTS.aiEmployee,
-    related: ['aiKnowledgeBase', 'authorization'],
-    prerequisite: 'plugin',
-    featured: true,
-    reference: {
-      packages: [
-        '@nocobase/app-plugin-agents',
-        '@nocobase/app-plugin-agent-sessions',
-      ],
-      skills: ['nocobase-app-plugin-agents'],
-    },
-  },
-  {
-    id: 'aiKnowledgeBase',
-    group: 'ai',
-    docs: '/capabilities/ai-knowledge-base/',
-    prompts: CAPABILITY_PROMPTS.aiKnowledgeBase,
-    related: ['aiEmployee', 'file'],
-    prerequisite: 'plugin',
-    reference: { packages: ['@nocobase/app-plugin-knowledge'], skills: [] },
-  },
-];
-
-export function findCapability(id: string): GuideCapability | undefined {
-  return CAPABILITIES.find((capability) => capability.id === id);
+/** The fields of a `package.json` the catalog reads. */
+export interface DependencyManifest {
+  readonly dependencies?: Readonly<Record<string, string>>;
+  readonly devDependencies?: Readonly<Record<string, string>>;
+  readonly optionalDependencies?: Readonly<Record<string, string>>;
+  readonly peerDependencies?: Readonly<Record<string, string>>;
 }
 
-export const FEATURED_CAPABILITIES: readonly GuideCapability[] =
-  CAPABILITIES.filter((capability) => capability.featured);
+export interface CatalogEntry {
+  /** Stable id used in the URL: the package name without the `@nocobase/` scope. */
+  readonly id: string;
+  /** 1-based position in the full catalog, shown before each row. */
+  readonly index: number;
+  readonly packageName: string;
+  /** Sort key and the name shown in the list: the module or plugin name. */
+  readonly name: string;
+  readonly source: GuideSource;
+  readonly role?: GuidePluginRole;
+  readonly group?: GuideGroupId;
+  /** Covered core packages the application declares. */
+  readonly covers: readonly string[];
+  /** Related entries present in this catalog. */
+  readonly related: readonly string[];
+  readonly demo?: string;
+  readonly docs?: string;
+  readonly featured: boolean;
+  readonly sourcePath?: string;
+  readonly skills: readonly string[];
+  readonly prompts: readonly string[];
+  /** `false` for a declared plugin the guide has no wording for yet. */
+  readonly known: boolean;
+}
 
-/** App-relative path of the guide, and of one capability in it. */
+export interface CapabilityCatalog {
+  readonly entries: readonly CatalogEntry[];
+  readonly find: (id: string) => CatalogEntry | undefined;
+  readonly featured: readonly CatalogEntry[];
+}
+
+const PLUGIN_NAME = /^(?:@[^/]+\/)?app-plugin-/;
+
+function idOf(packageName: string): string {
+  return packageName.startsWith('@nocobase/')
+    ? packageName.slice('@nocobase/'.length)
+    : packageName.replace(/^@/, '').replace('/', '--');
+}
+
+/** Builds the catalog for the dependencies an application declares. */
+export function createCapabilityCatalog(
+  manifest: DependencyManifest,
+): CapabilityCatalog {
+  const declared = new Set(
+    [
+      manifest.dependencies,
+      manifest.devDependencies,
+      manifest.optionalDependencies,
+      manifest.peerDependencies,
+    ].flatMap((section) => Object.keys(section ?? {})),
+  );
+  const known = new Map<string, [string, GuideEntryDefinition]>(
+    Object.entries(
+      GUIDE_ENTRIES as Readonly<Record<string, GuideEntryDefinition>>,
+    ).map(([id, definition]) => [definition.packageName, [id, definition]]),
+  );
+  const listed = [...declared].filter((name) => {
+    if (KERNEL_NOT_LISTED[name]) return false;
+    if (PLUGIN_NAME.test(name)) return true;
+    return known.get(name)?.[1].source === 'kernel';
+  });
+  const ids = new Set(listed.map((name) => known.get(name)?.[0] ?? idOf(name)));
+  const rows = listed
+    .map((packageName) => {
+      const match = known.get(packageName);
+      const id = match?.[0] ?? idOf(packageName);
+      const definition = match?.[1];
+      return {
+        id,
+        packageName,
+        name: id,
+        source: definition?.source ?? 'plugin',
+        role:
+          definition?.role ?? (/-example$/.test(id) ? 'example' : undefined),
+        group: definition?.group,
+        covers: (definition?.covers ?? []).filter((name) => declared.has(name)),
+        related: (definition?.related ?? []).filter((other) => ids.has(other)),
+        demo: definition?.demo,
+        docs: definition?.docs,
+        featured: definition?.featured === true,
+        sourcePath: definition?.sourcePath,
+        skills: definition?.skills ?? [],
+        prompts: definition?.prompts ?? ['main'],
+        known: Boolean(definition),
+      } satisfies Omit<CatalogEntry, 'index'>;
+    })
+    .sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
+  const entries: readonly CatalogEntry[] = rows.map((row, position) =>
+    Object.freeze({ ...row, index: position + 1 }),
+  );
+  const byId = new Map(entries.map((entry) => [entry.id, entry]));
+  return {
+    entries,
+    find: (id) => byId.get(id),
+    featured: entries.filter((entry) => entry.featured),
+  };
+}
+
+/** Narrows the catalog by source and keywords; every keyword must appear in the entry's searchable text. */
+export function filterCatalog(
+  entries: readonly CatalogEntry[],
+  filter: { readonly source: GuideSourceFilter; readonly query: string },
+  searchableText: (entry: CatalogEntry) => string,
+): readonly CatalogEntry[] {
+  const terms = filter.query.toLowerCase().split(/\s+/).filter(Boolean);
+  return entries.filter(
+    (entry) =>
+      (filter.source === 'all' || entry.source === filter.source) &&
+      (terms.length === 0 ||
+        terms.every((term) =>
+          searchableText(entry).toLowerCase().includes(term),
+        )),
+  );
+}
+
+/** Reads the guide's filter from URL search parameters, so a detail page can return to the same list. */
+export function readGuideFilter(params: URLSearchParams): {
+  readonly source: GuideSourceFilter;
+  readonly query: string;
+} {
+  const source = params.get('source');
+  return {
+    source: source === 'kernel' || source === 'plugin' ? source : 'all',
+    query: params.get('q') ?? '',
+  };
+}
+
+/** App-relative path of the guide, and of one entry in it. */
 export const CAPABILITY_GUIDE_PATH = '/capabilities';
-export function capabilityPath(id: string): string {
-  return `${CAPABILITY_GUIDE_PATH}/${id}`;
+export function capabilityPath(id: string, search = ''): string {
+  return `${CAPABILITY_GUIDE_PATH}/${encodeURIComponent(id)}${search}`;
 }
 
 /** Absolute documentation URL for a page path, in the closest documented language. */
 export function docsUrl(path: string, locale: string): string {
   const prefix = locale.startsWith('zh') ? '/zh-CN' : '';
   return `https://docs.nocobase.com${prefix}${path}`;
+}
+
+/** Source link for the developer reference. */
+export function sourceUrl(path: string): string {
+  return `https://github.com/nocobase/nocobase/tree/v3-develop/${path}`;
 }

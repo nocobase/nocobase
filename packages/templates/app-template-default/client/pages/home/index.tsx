@@ -16,16 +16,17 @@ import {
 import { type ReactElement } from 'react';
 import { Link } from 'react-router';
 import {
-  capabilityContent,
-  CAPABILITIES,
   CAPABILITY_GUIDE_PATH,
-  FEATURED_CAPABILITIES,
   capabilityPath,
+  createCapabilityCatalog,
+  entryContent,
   format,
   guideContent,
-  type GuideCapability,
+  type CatalogEntry,
   type GuideContent,
 } from '@nocobase/app-plugin-foundation/capability-guide';
+
+import applicationManifest from '../../../package.json' with { type: 'json' };
 
 import { PageContainer } from '#components/page-container';
 import { Button } from '#components/ui/button';
@@ -39,14 +40,16 @@ import {
 
 import { useCopy } from './use-copy.js';
 
-// Mockup: the cards and their wording come from the capability guide's catalog; only the icons are the page's own.
+// The cards and their wording come from the capability guide, built from this application's own dependencies, so
+// the home page and the guide never disagree; only the icons are the page's own.
+const catalog = createCapabilityCatalog(applicationManifest);
 const HOME_ICONS: Readonly<Record<string, LucideIcon>> = {
-  authorization: ShieldCheckIcon,
-  file: PaperclipIcon,
-  workflow: GitBranchIcon,
-  notification: BellIcon,
-  scheduler: CalendarClockIcon,
-  aiEmployee: BotIcon,
+  'app-plugin-authorization': ShieldCheckIcon,
+  'app-plugin-file': PaperclipIcon,
+  lifecycle: GitBranchIcon,
+  'app-plugin-notification': BellIcon,
+  'app-plugin-scheduler': CalendarClockIcon,
+  'app-plugin-agents': BotIcon,
 };
 
 const STEPS = ['describe', 'build', 'review'] as const;
@@ -75,14 +78,14 @@ export default function HomePage(): ReactElement {
             to={CAPABILITY_GUIDE_PATH}
             className='inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline'
           >
-            {format(content.home.viewAll, { count: CAPABILITIES.length })}
+            {format(content.home.viewAll, { count: catalog.entries.length })}
             <ArrowRightIcon className='size-4' aria-hidden />
           </Link>
         </div>
         <ul className='grid gap-4 sm:grid-cols-2 xl:grid-cols-3'>
-          {FEATURED_CAPABILITIES.map((capability) => (
-            <li key={capability.id} className='flex'>
-              <CapabilityCard capability={capability} content={content} />
+          {catalog.featured.map((entry) => (
+            <li key={entry.id} className='flex'>
+              <CapabilityCard entry={entry} content={content} />
             </li>
           ))}
         </ul>
@@ -160,18 +163,18 @@ function AgentIntro(): ReactElement {
 }
 
 function CapabilityCard({
-  capability,
+  entry,
   content,
 }: {
-  readonly capability: GuideCapability;
+  readonly entry: CatalogEntry;
   readonly content: GuideContent;
 }): ReactElement {
-  const text = capabilityContent(content, capability.id);
-  const Icon = HOME_ICONS[capability.id] ?? SparklesIcon;
+  const text = entryContent(content, entry);
+  const Icon = HOME_ICONS[entry.id] ?? SparklesIcon;
 
   return (
     <Link
-      to={capabilityPath(capability.id)}
+      to={capabilityPath(entry.id)}
       className='group flex w-full cursor-pointer rounded-xl text-left outline-none focus-visible:ring-3 focus-visible:ring-ring/50'
     >
       <Card className='w-full transition-[translate,box-shadow,background-color] duration-200 ease-out group-hover:-translate-y-0.5 group-hover:bg-hover group-hover:shadow-md motion-reduce:transition-none motion-reduce:group-hover:translate-y-0'>
@@ -183,14 +186,14 @@ function CapabilityCard({
             />
           </span>
           <div className='flex flex-col gap-1'>
-            <CardTitle>{text?.title}</CardTitle>
+            <CardTitle>{text.title}</CardTitle>
             <CardDescription className='leading-6'>
-              {text?.summary}
+              {text.summary}
             </CardDescription>
           </div>
         </CardHeader>
         <CardFooter className='mt-auto justify-between text-sm text-muted-foreground transition-colors duration-200 ease-out group-hover:text-foreground'>
-          {content.home.open} ({capability.prompts.length})
+          {content.home.open}
           <ArrowRightIcon
             className='size-4 transition-transform duration-200 ease-out group-hover:translate-x-1 motion-reduce:transition-none'
             aria-hidden

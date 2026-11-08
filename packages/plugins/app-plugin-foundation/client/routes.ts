@@ -4,6 +4,14 @@ import {
   type AppClientRoutePageDefinition,
 } from '@nocobase/app-client/plugins';
 import { Compass, Layers, Settings } from 'lucide-react';
+import { createElement } from 'react';
+
+import {
+  CAPABILITY_GUIDE_PATH,
+  createCapabilityCatalog,
+  type CapabilityCatalog,
+  type DependencyManifest,
+} from '../shared/capability-guide/index.js';
 
 export interface FoundationRouteOptions {
   /** Wrap the entry in a settings group for a bare application. */
@@ -12,6 +20,12 @@ export interface FoundationRouteOptions {
   readonly path?: string;
   /** `false` keeps the page out of the menu, for an application that links to it from elsewhere. Defaults to `true`. */
   readonly navigation?: boolean;
+  /**
+   * The application's own `package.json`. Given, the capability guide is registered and lists what it declares.
+   */
+  readonly manifest?: DependencyManifest;
+  /** `false` keeps the guide out of the menu. Defaults to `true`. */
+  readonly guideNavigation?: boolean;
 }
 
 /**
@@ -45,30 +59,47 @@ export function foundationDefinition(
 }
 
 /**
- * Mockup of the capability guide: a static page every signed-in user can open, listing the built-in capabilities with
- * prompts to copy. It loads nothing from the server.
+ * The capability guide: a static page listing every core module and plugin the application depends on, with business
+ * descriptions and prompts. It loads nothing from the server, so every signed-in user may open it, like the home page.
+ * Both paths render the same page: the list alone on a narrow screen, the list beside the entry on a wide one.
  */
-export function capabilityGuideDefinitions(): AppClientRoutePageDefinition[] {
+export function capabilityGuideDefinitions(
+  catalog: CapabilityCatalog,
+  options: { readonly navigation?: boolean } = {},
+): AppClientRoutePageDefinition[] {
+  const componentLoader = async () => {
+    const { CapabilityGuidePage } =
+      await import('./capability-guide/guide-page.js');
+    return {
+      default: function CapabilityGuideRoute() {
+        return createElement(CapabilityGuidePage, { catalog });
+      },
+    };
+  };
   return [
     {
       name: 'capabilityGuide',
-      path: '/capabilities',
+      path: CAPABILITY_GUIDE_PATH,
       auth: 'required',
       authz: 'skip',
-      navigation: {
-        title: 'nav.capabilityGuide',
-        description: 'nav.capabilityGuideDescription',
-        icon: Compass,
-        order: 10,
-      },
-      componentLoader: () => import('./capability-guide/guide-page.js'),
+      ...(options.navigation === false
+        ? {}
+        : {
+            navigation: {
+              title: 'nav.capabilityGuide',
+              description: 'nav.capabilityGuideDescription',
+              icon: Compass,
+              order: 10,
+            },
+          }),
+      componentLoader,
     },
     {
-      name: 'capabilityGuideDetail',
-      path: '/capabilities/:capabilityId',
+      name: 'capabilityGuideEntry',
+      path: `${CAPABILITY_GUIDE_PATH}/:entryId`,
       auth: 'required',
       authz: 'skip',
-      componentLoader: () => import('./capability-guide/detail-page.js'),
+      componentLoader,
     },
   ];
 }
@@ -76,6 +107,13 @@ export function capabilityGuideDefinitions(): AppClientRoutePageDefinition[] {
 export function createFoundationRoutes(
   options: FoundationRouteOptions = {},
 ): AppClientAppRoutesContribution {
+  // Without the application's manifest there is nothing to list: an application that has not opted in keeps exactly
+  // the App usage page it had.
+  const guide = options.manifest
+    ? capabilityGuideDefinitions(createCapabilityCatalog(options.manifest), {
+        navigation: options.guideNavigation,
+      })
+    : [];
   return defineAppRoutes(
     options.settingsGroup
       ? [
@@ -84,9 +122,9 @@ export function createFoundationRoutes(
             navigation: { title: 'nav.settings', icon: Settings, order: 100 },
             children: [foundationDefinition(options)],
           },
-          ...capabilityGuideDefinitions(),
+          ...guide,
         ]
-      : [foundationDefinition(options), ...capabilityGuideDefinitions()],
+      : [foundationDefinition(options), ...guide],
   );
 }
 

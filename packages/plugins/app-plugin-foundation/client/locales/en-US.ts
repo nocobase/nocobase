@@ -3,12 +3,12 @@ import type { LocaleResource } from '@nocobase/i18n';
 const enUS = {
   nav: {
     settings: 'System settings',
-    foundation: 'App foundation',
+    foundation: 'App usage',
     foundationDescription:
       'The NocoBase capabilities this application is built on.',
     capabilityGuide: 'Capability guide',
     capabilityGuideDescription:
-      'What the built-in capabilities solve, and how to ask your agent for them.',
+      'What this application already provides, and how to have your agent use it.',
   },
   page: {
     otherCapabilities: 'Other capabilities',
@@ -19,7 +19,7 @@ const enUS = {
     identified: 'Identified {{value}}',
     counted: 'Counted {{value}}',
     partial: 'Some data is pending update',
-    title: 'App foundation',
+    title: 'App usage',
     description:
       'Your application focuses on business. Data, permissions and workflows are supported by NocoBase Core: common capabilities developed, tested and maintained by NocoBase, and upgraded with official releases.',
     bandTitle: 'NocoBase Core',

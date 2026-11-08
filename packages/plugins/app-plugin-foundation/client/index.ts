@@ -6,6 +6,7 @@ export {
   type FoundationNavigationNode,
 } from './navigation.js';
 export {
+  capabilityGuideDefinitions,
   createFoundationRoutes,
   foundationDefinition,
   type FoundationRouteOptions,

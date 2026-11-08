@@ -22,11 +22,16 @@ describe('default Foundation integration', () => {
   it('exposes Foundation in System settings for an unrestricted administrator and removes the entry when denied', async () => {
     const runtime = await resolveAppRuntime(appRuntime);
     const menu = buildRouteNavigation(runtime.routes, new Set());
-    // One System settings entry; Foundation is a card on its home, not a sidebar entry of its own.
+    // The capability guide is a sidebar entry for every signed-in user; App usage stays a card on the System
+    // settings home, not a sidebar entry of its own.
     expect(menu.map(({ route }) => route.name)).toEqual([
       'home',
+      'capabilityGuide',
       'settingsHome',
     ]);
+    expect(
+      runtime.routes.find((route) => route.name === 'capabilityGuide'),
+    ).toMatchObject({ path: '/capabilities', auth: 'required', authz: 'skip' });
     const category = buildSettingsCatalog(runtime.routes, new Set()).find(
       ({ route }) => route.name === 'settingsSystem',
     );
@@ -44,7 +49,7 @@ describe('default Foundation integration', () => {
       buildRouteNavigation(runtime.routes, denied).map(
         ({ route }) => route.name,
       ),
-    ).toEqual(['home']);
+    ).toEqual(['home', 'capabilityGuide']);
     expect(buildSettingsCatalog(runtime.routes, denied)).toEqual([]);
     expect(
       serverPlugins.plugins.filter(

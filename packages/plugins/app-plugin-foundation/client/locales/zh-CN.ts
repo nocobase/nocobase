@@ -3,11 +3,11 @@ import type { FoundationResource } from './en-US.js';
 const zhCN: FoundationResource = {
   nav: {
     settings: '系统设置',
-    foundation: '应用底座',
+    foundation: '应用使用情况',
     foundationDescription: '这个应用用到了哪些 NocoBase 基础能力。',
     capabilityGuide: '能力指南',
     capabilityGuideDescription:
-      '内置能力能解决什么问题，以及怎么向 Agent 提需求。',
+      '当前应用已经提供的能力，以及怎样让 Agent 用起来。',
   },
   page: {
     otherCapabilities: '其他能力',
@@ -18,7 +18,7 @@ const zhCN: FoundationResource = {
     identified: '已识别 {{value}}',
     counted: '已统计 {{value}}',
     partial: '部分数据待更新',
-    title: '应用底座',
+    title: '应用使用情况',
     description:
       '你的应用专注业务，数据、权限和流程由 NocoBase Core 支撑。这些通用能力由 NocoBase 持续研发、测试和维护，并随官方版本升级。',
     bandTitle: 'NocoBase Core',

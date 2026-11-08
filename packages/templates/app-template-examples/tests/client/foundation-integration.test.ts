@@ -8,6 +8,7 @@ import {
   type RouteNavigationItem,
 } from '../../client/routing/route-navigation.js';
 import packageMetadata from '../../package.json' with { type: 'json' };
+import { createCapabilityCatalog } from '@nocobase/app-plugin-foundation/capability-guide';
 
 function pages(items: readonly RouteNavigationItem[]): RouteNavigationItem[] {
   return items.flatMap((item) => [item, ...pages(item.children)]);
@@ -59,5 +60,24 @@ describe('Examples Foundation integration', () => {
         .map(({ route }) => route.name)
         .filter((name) => name !== 'foundation'),
     );
+  });
+
+  it('lists the capability guide, and every demo it offers opens a page this application registers', async () => {
+    const runtime = await resolveAppRuntime(appRuntime);
+    expect(
+      runtime.routes.find((route) => route.name === 'capabilityGuide'),
+    ).toMatchObject({ path: '/capabilities', auth: 'required', authz: 'skip' });
+    type Node = { readonly path?: string; readonly children?: readonly Node[] };
+    const walk = (nodes: readonly Node[]): string[] =>
+      nodes.flatMap((node) => [
+        ...(node.path ? [node.path] : []),
+        ...walk(node.children ?? []),
+      ]);
+    const paths = new Set(walk(runtime.routes as readonly Node[]));
+    const demos = createCapabilityCatalog(packageMetadata)
+      .entries.filter((entry) => entry.demo)
+      .map((entry) => [entry.id, entry.demo]);
+    expect(demos.length).toBeGreaterThan(0);
+    expect(demos.filter(([, demo]) => !paths.has(demo!))).toEqual([]);
   });
 });

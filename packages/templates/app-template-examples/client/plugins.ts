@@ -29,6 +29,7 @@ import fileExample from '@nocobase/app-plugin-file-example/client';
 import apiKeys from '@nocobase/app-plugin-api-keys/client';
 import agents from '@nocobase/app-plugin-agents/client';
 import foundation from '@nocobase/app-plugin-foundation/client';
+import applicationManifest from '../package.json' with { type: 'json' };
 import knowledge from '@nocobase/app-plugin-knowledge/client';
 
 // Array order is contribution order. A plugin is enabled by appearing in this
@@ -60,7 +61,8 @@ const clientPlugins: AppClientPlugins = defineClientPlugins([
   mail(),
   mailExample(),
   agents(),
-  foundation(),
+  // The manifest is what the capability guide lists: every plugin this application declares.
+  foundation({ manifest: applicationManifest }),
   knowledge({ routes: false }),
 ]);
 

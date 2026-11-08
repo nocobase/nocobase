@@ -1,425 +1,998 @@
 import type { GuideContent } from './types.js';
 
+// Mockup content. Placeholders are in square brackets and stay in the copied text for the reader to replace.
 const enUS: GuideContent = {
   nav: {
     title: 'Capability guide',
     description:
-      'What the built-in capabilities solve, and how to ask your agent for them.',
+      'What this application already provides, and how to have your agent use it.',
   },
   page: {
     title: 'Capability guide',
     description:
-      'These capabilities are built into NocoBase, and your agent uses them directly instead of building them from scratch. Find one close to your business, copy its prompt, adapt it to your situation, and give it to your agent.',
-    requestTitle: 'A good request has four parts',
-    requestHint:
-      'Write these four points in plain words; no technical knowledge needed. Every prompt in this guide follows this shape.',
-    requestParts: [
-      {
-        title: 'Who uses it',
-        example: 'Applicants, reviewers, administrators',
-      },
-      {
-        title: 'What it records',
-        example: 'Order number, item, amount, status',
-      },
-      {
-        title: 'What the rules are',
-        example:
-          'Applicants see only their own orders; a rejection needs a reason',
-      },
-      {
-        title: 'When it is done',
-        example:
-          'After a decision, the applicant gets a message linking to the order',
-      },
-    ],
-    search:
-      'Search capabilities or problems, such as "attachment" or "reminder"',
+      'Every core module and plugin this application depends on. Pick one to see the business problem it solves, then copy a prompt for your agent.',
+    search: 'Search names, business terms or scenarios',
+    count: '{{shown}} of {{total}} shown',
+    noResults: 'No matching capabilities.',
+    clear: 'Clear filters',
+    columns: {
+      index: 'No.',
+      name: 'Name',
+      source: 'Source',
+    },
+    empty: {
+      title: 'Tell your agent these five things',
+      description:
+        'Pick a capability on the left. Its prompts already follow these five parts; replace the bracketed text with your own.',
+      parts: [
+        'Who uses it: which roles, and what each is responsible for.',
+        'Business objects: what is managed, such as customers, contracts or purchase requests.',
+        'Business rules: numbering, amounts, state changes and other rules that must hold.',
+        'Permission boundary: who may view, who may change, and who sees nothing.',
+        'Acceptance: how to check the result, such as signing in as two roles and comparing.',
+      ],
+    },
+  },
+  sources: {
     all: 'All',
-    noResults: 'No capability matches. Try other words.',
-    clear: 'Clear search',
-    count: '{{count}} capabilities',
+    kernel: 'Core',
+    plugin: 'Plugins',
+  },
+  roles: {
+    example: 'Example',
+    skill: 'Skill',
   },
   groups: {
-    access: {
-      title: 'People and access',
-      description: 'Who can sign in, and who can see and do what.',
-    },
-    data: {
-      title: 'Data and files',
-      description:
-        'Where data lives, and how attachments and printed documents work.',
-    },
-    process: {
-      title: 'Processes and tasks',
-      description:
-        'Move records through stages, and show everyone what to do next.',
-    },
-    messages: {
-      title: 'Messages and reminders',
-      description: 'Tell the right people at the right time.',
-    },
-    experience: {
-      title: 'Look and language',
-      description: "The application's appearance and languages.",
-    },
-    ai: {
-      title: 'AI',
-      description: 'Add AI assistants and company knowledge to business pages.',
-    },
-  },
-  prerequisites: {
-    builtIn: 'Built in',
-    config: 'Needs configuration',
-    plugin: 'Needs a plugin',
-    agentBuilt: 'Built by your agent',
-    commercial: 'Commercial plugin',
+    data: 'Data & files',
+    access: 'Identity & access',
+    process: 'Processes & execution',
+    integration: 'Messages & integrations',
+    experience: 'Interface & experience',
+    ai: 'AI & knowledge',
+    development: 'Development & runtime',
   },
   detail: {
-    back: 'Back to the capability guide',
-    scenarios: 'Typical situations',
-    prompts: 'Prompts',
-    promptHint:
-      'Adapt it to your business before copying, then paste it into Claude Code, Codex, Cursor, or any coding agent opened in this project. Edits are not saved.',
-    copy: 'Copy prompt',
-    copied: 'Copied',
-    copyFailed: 'Unable to copy. Select the text and copy it manually.',
-    reset: 'Restore default',
+    back: 'Back to the catalog',
+    scenarios: 'When to use it',
     prerequisite: 'Before you start',
-    related: 'Often used together',
-    docs: 'Read the documentation',
-    demo: 'See a demo',
-    demoHint: 'The demo page is in the Examples template.',
+    defaultPrerequisite: {
+      kernel:
+        'Already part of this application; nothing to install. Describe your business need to your agent.',
+      plugin:
+        'This plugin is installed in this application. Describe your business need to your agent.',
+      example:
+        'This is an example plugin; its data is for demonstration only. To adapt it, ask the agent to build your version in your own plugin, without changing the example plugin.',
+      skill:
+        'A development Skill the agent reads; it has no page of its own. The agent consults it when you ask for related work.',
+    },
+    prompts: 'Prompts for your agent',
+    promptHint:
+      'Replace the bracketed text with your business; you can edit it right here. Copy takes exactly the text shown.',
+    template: 'Template',
+    example: 'Filled-in example',
+    copy: 'Copy prompt',
+    copied: 'Copied. Paste it into your agent conversation.',
+    copyFailed: 'Could not copy. Select the text and copy it manually.',
+    reset: 'Restore',
+    related: 'Related capabilities',
+    docs: 'Read the docs',
+    demo: 'Open the demo',
+    adapt: {
+      title: 'Adapt it to your business',
+      steps: [
+        'Open the demo and walk through it to see what it demonstrates.',
+        'Copy the prompt below and replace the bracketed example objects with your own objects and rules.',
+        'Ask the agent to build it in your own plugin, leaving the example plugin untouched for later comparison.',
+      ],
+    },
+    covers: 'Core modules covered here',
     reference: 'Developer reference',
-    packages: 'Packages',
-    skills: 'Skills your agent reads',
-    applicationOwned: 'Built by the application itself; no separate package.',
-    missing: 'This capability does not exist.',
+    packageName: 'Package',
+    skills: 'Skills the agent reads',
+    source: 'View source',
+    missing: 'This application does not provide this capability.',
   },
   home: {
-    title: 'Built-in capabilities',
+    title: 'What this application already provides',
     description:
-      'Your agent uses these directly instead of building them from scratch. Open one to see what it solves and get a prompt you can edit and copy.',
-    viewAll: 'View all {{count}} capabilities',
-    open: 'View prompts',
+      'Pick one to see the problem it solves, then hand its prompt to your agent.',
+    viewAll: 'See all {{count}} capabilities',
+    open: 'View capability',
   },
-  capabilities: {
-    auth: {
+  unlisted: {
+    title: '{{name}}',
+    summary:
+      'This application depends on this plugin, but the guide has no business description for it yet. Ask your agent to read its documentation and judge what it can solve.',
+    scenarios: [
+      'Checking whether this plugin helps with a feature you are planning.',
+    ],
+    prompts: {
+      main: {
+        label: 'Assess this plugin first',
+        template:
+          'This application depends on {{name}}. Read its README and Skill first, then tell me what it can solve for [my business need] and what it needs; do not guess from its name.\nOnce confirmed, build it within the agreed scope and explain how to accept it.',
+      },
+    },
+    reference: [
+      'Package: {{name}}. The guide has no developer notes for it yet; see the README and skills folder in the package.',
+    ],
+  },
+  entries: {
+    'app-plugin-agents': {
+      title: 'AI & agents',
+      summary:
+        'Bring AI assistants into business work to find information, organize it and perform defined tasks.',
+      scenarios: [
+        'Knowledge questions, customer information and business assistance.',
+      ],
+      prerequisite: 'Configure a model provider and its key first.',
+      prompts: {
+        main: {
+          label: 'Ask the agent',
+          template:
+            'Add a [business assistant] to [application] to help [users] with [specific task]. It may access only information the user is allowed to see. Specify automatic actions and actions requiring user confirmation, and identify missing information rather than guessing. Provide a conversation entry and verify answers and action boundaries with realistic questions.',
+        },
+      },
+      reference: [
+        'Register Agents and configure model services and access.',
+        'Integrate OnlineAgent sessions or register a runner for the scenario.',
+        'Supply business context and authorized tools, then track runs and usage.',
+      ],
+    },
+    'app-plugin-api-keys': {
+      title: 'API keys',
+      summary:
+        'Allow approved external systems to access the application for a specific user.',
+      scenarios: ['System integrations and scheduled synchronization.'],
+      prerequisite:
+        'Decide which user the external system acts as and which data it actually needs.',
+      prompts: {
+        main: {
+          label: 'Ask the agent',
+          template:
+            'Provide access-key management for [external system] connecting to [application]. Each key belongs to a specific user and is limited to [purpose]. Let users create and revoke keys and see their purpose. Do not repeatedly expose complete keys in pages or logs. Verify revocation and that access cannot exceed the owning user’s permissions.',
+        },
+      },
+      reference: [
+        'Register the server plugin and the API key extensions in authentication configuration.',
+        'Create a personal key through the application UI, limiting its scope as needed.',
+        'Send x-api-key; requests still follow the owning user permissions.',
+      ],
+    },
+    'app-plugin-authentication': {
       title: 'Authentication',
       summary:
-        'Sign-in, registration, password reset, company single sign-on, and API keys.',
-      scenarios: [
-        'The app is for employees only; administrators create accounts and sign-up is closed.',
-        'Employees sign in with the company identity platform (OIDC, SAML).',
-        'Other systems call the application with API keys.',
-      ],
-      prerequisite:
-        'Built in. Company sign-in needs details from your identity platform administrator and a registered callback URL.',
+        'Let users sign in with their own identities and manage their sessions.',
+      scenarios: ['Application access for employees, customers or partners.'],
       prompts: {
-        disableSignUp: {
-          label: 'Close sign-up',
-          text: 'This application is for company employees only. Administrators create all accounts.\nDisable self-registration and remove the registration link from the sign-in page.\nExisting employees must still be able to sign in with their accounts and passwords.\nKeep the forgot-password link.',
-        },
-        companySso: {
-          label: 'Company SSO',
-          text: "Let employees sign in with our company identity platform using OIDC.\n\nKeep account-password sign-in and add a Company account button.\nThe button opens the company identity platform. After successful sign-in, return to the application's home page.\n\nAllow first sign-in to create an application account, identified by the platform's stable user identifier.\nDo not automatically link accounts by matching names or emails. New accounts use the application's default permissions.\n\nList the information the identity platform administrator must provide and the callback URL they need to register.",
-        },
-        apiKeys: {
-          label: 'API keys',
-          text: "Add an Integration keys entry to the user menu, using the application's built-in API keys capability.\nEmployees manage only the keys they created, entering a purpose and a validity period in days.\nShow the full key only once after creation, with a prompt to copy and store it right away.\nList each key's name, an identifiable fragment, status, expiry, and last use, and allow revoking it after confirmation.\nNever show the full key in the list, logs, or details.",
+        main: {
+          label: 'Ask the agent',
+          template:
+            'Complete sign-in, sign-out and session-expiry handling for [application], using [existing account method]. Clarify whether self-registration is allowed. Return users to their intended page after sign-in and prevent protected access after sign-out or expiry. Verify successful, failed and expired sessions.',
         },
       },
-    },
-    authorization: {
-      title: 'Permissions',
-      summary:
-        'Control who can open which pages, run which actions, and see which records.',
-      scenarios: [
-        'Applicants see their own orders; reviewers see every pending order.',
-        'Grant access by job, and let administrators adjust it later.',
-        'Someone helping out temporarily sees only records below an amount.',
+      reference: [
+        'Register authentication and configure the application sign-in methods.',
+        'Connect sign-in and session state on the client.',
+        'Require authentication on each private API, then enforce business permissions.',
       ],
-      prerequisite: 'Built in; nothing to prepare.',
+    },
+    'app-plugin-authorization': {
+      title: 'Application permissions',
+      summary: 'Define who may view, change and act on business information.',
+      scenarios: [
+        'Salespeople accessing their customers, managers viewing team data and finance handling selected records.',
+      ],
       prompts: {
-        jobs: {
-          label: 'Jobs',
-          text: "Create Purchase requester and Order reviewer jobs for the application.\nPurchase requesters can enter the orders page and view orders they requested.\nOrder reviewers can enter the orders page, view orders, and approve or reject pending orders.\nOnly application administrators can change permissions and assignments.\nUse the application's existing authorization capability so administrators can adjust permissions and assign people later.",
-        },
-        dataScopes: {
-          label: 'Data scopes',
-          text: "Let purchase requesters view only their own orders, using the order's requester field to determine ownership.\nOrder reviewers can view all orders and process pending approvals.\nAdministrators can adjust each job's order-viewing scope in its permission set.",
-        },
-        restrictions: {
-          label: 'Restrictions',
-          text: 'Bob is temporarily helping review purchase orders and may view only orders of 2,000 or less.\nAdd an amount limit to his View orders action, keeping his existing job and data scopes.\nApply the limit to his own orders and to orders shared with him.\nAdministrators can change the amount or remove the rule; before removal, explain that his visible scope may grow.',
+        main: {
+          label: 'Ask the agent',
+          template:
+            'Configure [sales management] permissions: salespeople view and edit their own customers; managers view team customers; finance sees only [payment information]. Specify pages, actions and record scopes for each role and provide explicit member assignment in administration. Verify page, operation and data access with different roles.',
         },
       },
-    },
-    dataSources: {
-      title: 'Data sources',
-      summary:
-        'Choose the application database and use business data from existing external databases.',
-      scenarios: [
-        'Move from SQLite to PostgreSQL or MySQL before going live.',
-        'Show settlement data from the finance system in supplier details.',
+      reference: [
+        'Register the plugin and declare business resources and actions.',
+        'Manage permission sets and assignments in application-owned pages.',
+        'Enforce authorization in APIs and data access, with matching client visibility.',
       ],
-      prerequisite:
-        'SQLite by default. Another database needs its driver; an external database needs its connection details.',
+    },
+    'app-plugin-authorization-example': {
+      title: 'Sales permissions example',
+      summary:
+        'Explore how roles differ across projects, quotations and orders.',
+      scenarios: [
+        'Designing responsibility and data access in a sales application.',
+      ],
       prompts: {
-        postgres: {
-          label: 'Switch database',
-          text: "Switch the application database from SQLite to PostgreSQL.\nRead the connection details from the server's runtime configuration, not from source code.\nExplain which database driver to install and which settings to fill in, and remind me that existing data is not migrated automatically.",
-        },
-        externalDatabase: {
-          label: 'External database',
-          text: "Connect the company's existing finance database as a read-only external data source; do not modify its tables.\nMatch records by supplier number and add a Settlement section to supplier details showing the settlement cycle, credit limit, and settlement status, labeled with its source.\nKeep reading supplier contact details from the application database, and read settlement data directly from the external database without importing it.\nRead the connection credentials from the server's runtime configuration.",
+        main: {
+          label: 'Ask the agent',
+          template:
+            'Use the sales permissions example to design project, quotation and order access in [my sales app] for [sales, managers and finance]. Define actions and data scopes before building administration and business pages. Keep explicit role assignment and verify sharing and restrictions with different accounts.',
         },
       },
+      reference: [
+        'Use the Examples registration of Authorization and the optional rule plugins.',
+        'Apply the example migrations and seeds in an example database.',
+        'Open the guide and compare access with the documented example identities.',
+      ],
     },
-    file: {
-      title: 'Files',
+    'app-plugin-authz-default-access': {
+      title: 'Default record access',
       summary:
-        'Upload files, attach them to records, and preview or download them.',
+        'Set a shared baseline of visible records for people who already have the relevant permissions.',
       scenarios: [
-        'Attach quotes, contracts, and delivery receipts to purchase orders.',
-        'Upload an avatar to each employee profile.',
+        'Public customers or shared resources visible to team members.',
+      ],
+      prompts: {
+        main: {
+          label: 'Ask the agent',
+          template:
+            'In [customer management], let [team members] who already have view permission see [public customers] by default. Define public records and restricted fields. Do not add edit or delete permissions, and verify people without view permission still cannot see these records.',
+        },
+      },
+      reference: [
+        'Register the Client and Server plugins with Authorization.',
+        'Add the defaultAccess() factory to the authorization configuration.',
+        'Configure resource actions and their record selections in the authorization settings.',
+      ],
+    },
+    'app-plugin-authz-restriction-rules': {
+      title: 'Restriction rules',
+      summary:
+        'Further narrow selected users’ data access to protect sensitive records.',
+      scenarios: [
+        'Temporary collaborators limited to selected projects or restricted customer records.',
+      ],
+      prompts: {
+        main: {
+          label: 'Ask the agent',
+          template:
+            'Limit [specified people] in [application] to [allowed records]. Explain the combined effect of existing roles and sharing rules and make restrictions visible in administration. Verify allowed records remain accessible and records outside the scope are blocked even if previously shared.',
+        },
+      },
+      reference: [
+        'Register the Client and Server plugins with Authorization.',
+        'Add the restrictionRules() factory to the authorization configuration.',
+        'Define the records that remain allowed and verify the combined permission result.',
+      ],
+    },
+    'app-plugin-authz-sharing-rules': {
+      title: 'Sharing rules',
+      summary:
+        'Share selected business records with collaborators across teams.',
+      scenarios: [
+        'Customer collaboration, project support and order handovers.',
+      ],
+      prompts: {
+        main: {
+          label: 'Ask the agent',
+          template:
+            'Add sharing rules for [customers or projects], sharing [matching records] with [specified collaborators]. Define the scope and how sharing is removed while respecting recipients’ existing action permissions. Verify visibility before, during and after sharing.',
+        },
+      },
+      reference: [
+        'Register the Client and Server plugins with Authorization.',
+        'Add the sharingRules() factory to the authorization configuration.',
+        'Select recipients, resource actions and records; test with a recipient account.',
+      ],
+    },
+    'app-plugin-cli-example': {
+      title: 'Maintenance tool example',
+      summary:
+        'Show how an Agent can create maintenance commands for repetitive work.',
+      scenarios: ['Operator-run data checks or report generation.'],
+      prompts: {
+        main: {
+          label: 'Ask the agent',
+          template:
+            'Use the command extension example to add an operator-run [data check] tool to [application]. Define inputs, scope and results; inspect without modifying by default. Explain success and failure clearly and provide usage steps and a test result.',
+        },
+      },
+      reference: [
+        'Register the CLI entry in cli/plugins.ts.',
+        'Run pnpm nocobase cli-example --help from the application.',
+        'Try greet world --json and inspect the command implementation and tests.',
+      ],
+    },
+    'app-plugin-concurrency': {
+      title: 'Concurrency service',
+      summary:
+        'Connect business operations to shared coordination to reduce simultaneous execution conflicts.',
+      scenarios: [
+        'Repeated handling of the same order or users competing for one resource.',
+      ],
+      prompts: {
+        main: {
+          label: 'Ask the agent',
+          template:
+            'Coordinate [order processing] so concurrent handling of [the same order] does not conflict. Check the coverage of the current deployment and explain whether it supports multiple running application instances. Provide waiting or conflict feedback and verify processing can resume after errors.',
+        },
+      },
+      reference: [
+        'Register the Server plugin before the business plugins that consume it.',
+        'Compose defineConcurrencyConfig() under the concurrency configuration key.',
+        'Resolve the concurrency service; the built-in mutex coordinates only one process.',
+      ],
+    },
+    'app-plugin-database-example': {
+      title: 'Data setup example',
+      summary:
+        'Use an example to prepare data structures and initial content for a new business feature.',
+      scenarios: ['Preparing consistent data for a new module.'],
+      prompts: {
+        main: {
+          label: 'Ask the agent',
+          template:
+            'Use the data extension example to prepare fields, relationships and initial settings for [new module]. Separate required setup from demonstration data and preserve existing records. Verify a new environment works and an existing environment retains its data after updating.',
+        },
+      },
+      reference: [
+        'Inspect the plugin migration, seed and Server declaration.',
+        'Register its Server entry in an example application.',
+        'Run the normal database apply workflow and inspect the contributed schema and data.',
+      ],
+    },
+    'app-plugin-database-explorer': {
+      title: 'Database explorer',
+      summary:
+        'Help administrators understand what business information the application stores and how it is organized.',
+      scenarios: [
+        'Review existing data before planning new pages and features.',
+      ],
+      prompts: {
+        main: {
+          label: 'Ask the agent',
+          template:
+            'Provide [administrators] a read-only view of business data structures, fields and relationships with understandable labels. Do not offer data or structure modification. Verify ordinary users cannot enter, then identify which existing data [new feature] can reuse.',
+        },
+      },
+      reference: [
+        'Register Authentication, Authorization and this plugin on Client and Server.',
+        'Grant page:database-explorer/access to the intended administrators.',
+        'Build the application view with DatabaseExplorerClient; this package supplies no standalone page.',
+      ],
+    },
+    'app-plugin-file': {
+      title: 'Files & attachments',
+      summary:
+        'Attach files to business records with upload, preview, download and access controls.',
+      scenarios: [
+        'Signed contracts and quotations kept with the business record they belong to.',
+        'Receipt photos on an expense claim, previewed by finance during review.',
+        'One ID photo or avatar on an employee profile.',
       ],
       prerequisite:
-        'Built in, storing files locally. Object storage needs a bucket and access keys from your provider.',
+        'The file plugin is part of this application. Files are stored on the server by default; to use object storage instead, prepare a bucket and its access credentials for your operator to configure.',
       prompts: {
         attachments: {
-          label: 'Attachments',
-          text: 'Add purchase attachments to my existing order management application.\n\nAdd an attachment area to order details. Each order can have multiple files, including PDF, images, and DOCX.\nShow filenames and sizes, with actions to preview, download, and remove attachments.\nAfter uploading, let users save the attachments to the current order. Keep them available when the order is reopened.\nAnyone with access to an order can view and download its attachments. Applicants and reviewers can add or remove attachments.\nRemoving an attachment only unlinks it from the current order; retain the file.',
+          label: 'Attachments on a record',
+          template:
+            'Add attachments to [business record].\nWho uses it: [owner] uploads and deletes; [participants] view and download.\nBusiness rules: each record accepts several [file types], up to [size] each, with preview, download and delete.\nPermission boundary: people without access to the record can neither see nor download its attachments.\nAcceptance: a failed upload keeps the form and allows a retry; verify permissions with different roles and confirm each attachment stays on its own record.',
+          example:
+            'Add attachments to contracts.\nWho uses it: the contract owner uploads and deletes; participants view and download.\nBusiness rules: each contract accepts several PDFs or images, up to 20 MB each, with preview, download and delete.\nPermission boundary: people without access to the contract can neither see nor download its attachments.\nAcceptance: a failed upload keeps the form and allows a retry; verify with the owner, a participant and an unrelated colleague, and confirm each attachment stays on its own contract.',
         },
-        avatar: {
-          label: 'Avatar',
-          text: 'Add an avatar to each employee, with one image per employee.\nSupport uploading and replacing the avatar, and show it in employee lists and details.\nUse the new avatar after replacement and keep it visible after refreshing the page.',
+        single: {
+          label: 'One image field',
+          template:
+            'Add one [image name] to [business record].\nWho uses it: [who uploads and replaces it].\nBusiness rules: accept only [image formats], up to [size]; a replaced image is no longer shown.\nPermission boundary: [who may see the image].\nAcceptance: lists and details show a thumbnail; replacing or deleting it updates both.',
+          example:
+            'Add one ID photo to employee profiles.\nWho uses it: HR uploads and replaces it; employees can only view their own.\nBusiness rules: accept only JPG and PNG, up to 5 MB; a replaced photo is no longer shown.\nPermission boundary: colleagues in the same department and HR may see it; nobody else.\nAcceptance: the employee list and detail show a thumbnail; replacing or deleting it updates both.',
         },
       },
+      reference: [
+        'Register Server and Client entries; configure Database and Drive.',
+        'Declare a business file collection and expose authorized operations with defineFileRepositoryApiRoutes.',
+        'Install file-component-ui and connect upload, list and preview components.',
+      ],
     },
-    templatePrint: {
-      title: 'Template printing',
+    'app-plugin-file-example': {
+      title: 'File attachments example',
       summary:
-        'Fill Word or Excel templates with business data to produce contracts and forms for download.',
+        'Try employee photos and order attachments to see how files fit different business records.',
+      scenarios: ['Adding file operations to employee or order pages.'],
+      prompts: {
+        main: {
+          label: 'Ask the agent',
+          template:
+            'Use the attachment example to add one profile photo to [employee records] and multiple attachments to [orders]. Support replacement, upload and viewing with defined file types and size limits. Restrict permissions and verify record consistency after replacing or deleting files.',
+        },
+      },
+      reference: [
+        'Register File and the example on Client and Server, then apply their migrations.',
+        'Open the attachment repository, employee avatar or order attachment page.',
+        'Upload a sample file and inspect how the business record links to its file record.',
+      ],
+    },
+    'app-plugin-foundation': {
+      title: 'Foundation usage',
+      summary:
+        'Inspect which foundation capabilities the application actually uses before extending it.',
       scenarios: [
-        'Turn a purchase order into a PDF ready for signing.',
-        'Export a statement for each customer.',
+        'Taking over an existing application and planning further work.',
       ],
       prerequisite:
-        'Your agent builds it for your business; there is no ready-made print service to install. Have it read the template printing Skill first, and prepare your Word or Excel templates. PDF output needs a converter on the server.',
+        'The App usage page is open only to administrators with unrestricted access.',
       prompts: {
-        orderPdf: {
-          label: 'Print an order',
-          text: 'Add a Print order button to purchase order details that fills the Word template I provide.\nFill in the order number, item, applicant, amount, approval status, and line items.\nDownload the result as a PDF whose filename includes the order number.\nOnly people who can view the order can print it; keep the template in the project so an administrator can replace it.',
+        main: {
+          label: 'Ask the agent',
+          template:
+            'Inspect the capabilities actually used by [current application]. Explain which business features are integrated and which are merely available dependencies. Provide a way to verify usage, then identify reusable parts and missing prerequisites for [planned feature].',
         },
       },
-    },
-    workflow: {
-      title: 'Workflows',
-      summary:
-        'Move business records through stages, with waiting, timeouts, retries, and a history of who did what.',
-      scenarios: [
-        'Purchase orders go from pending approval to pending purchase, received, and completed.',
-        'Large exports run in the background and offer a download when done.',
-        'See who handled each step of an order, and when.',
+      reference: [
+        'Register the Client and Server plugins with Authentication and Authorization.',
+        'Open the Foundation page with an unrestricted administrator account.',
+        'Inspect capability details and runtime evidence; dependency presence alone is not usage.',
       ],
-      prerequisite: 'Built in; nothing to prepare.',
-      prompts: {
-        stages: {
-          label: 'Stages',
-          text: "Add a process to purchase orders: Pending approval → Pending purchase → Received → Completed.\nReviewers approve or reject; a rejection requires a reason and returns the order to the applicant to revise and resubmit.\nAfter the buyer places the purchase, the order is pending purchase; confirming delivery with a signed receipt moves it to Received, and the applicant's confirmation completes it.\nOrder details offer only the actions of the current stage, and ordinary edits cannot change the stage.\nCheck stages and required information on the server, and never overwrite a result someone else has already submitted.",
-        },
-        backgroundExport: {
-          label: 'Background export',
-          text: 'Add an order report page that exports existing orders to CSV.\nAfter submission the export waits to be processed, is generated in the background, and completes with a download link.\nShow the current stage, filename, number of exported orders, and the submission and system processing records.\nRetry failed generation according to rules, and keep a final failure for the owner to handle; running it again must not create duplicate report files.\nKeep the progress and result visible after a page refresh, and allow only authorized people to export orders.',
-        },
-        history: {
-          label: 'History',
-          text: 'Show the current stage and processing history in order details.\nEach entry shows who acted, when, the action, the stage before and after, and any rejection reason or signed receipt.\nMark actions performed automatically as done by the system.\nKeep the progress and history after a page refresh, so the whole process can be reviewed once completed.',
-        },
-      },
     },
-    approval: {
-      title: 'Approval',
+    'app-plugin-i18n': {
+      title: 'Language switching',
       summary:
-        'Multi-level and joint approval, delegation and transfer, with a record of every decision.',
+        'Let users switch the application language and retain their preference.',
       scenarios: [
-        'Orders above 10,000 go to the manager first, then to finance.',
-        'A reviewer on a trip hands pending approvals to a colleague.',
+        'Chinese- and English-speaking teams using the same application.',
       ],
-      prerequisite:
-        'Needs the commercial plugin @nocobase/app-plugin-approval and its license. For a single confirmation, a workflow is enough.',
       prompts: {
-        multiLevel: {
-          label: 'Multi-level approval',
-          text: 'Add approval to purchase orders.\nOrders of 10,000 or less are approved by the department manager; larger orders go to the department manager and then to finance.\nA rejection at any level returns the order to the applicant with a required reason, and the applicant can resubmit after revising.\nShow the expected route before submission, and the current reviewer and history afterwards.\nAn approved order moves to pending purchase; approval does not mean it has been paid.',
-        },
-        handover: {
-          label: 'Add a reviewer or transfer',
-          text: 'Let reviewers add a reviewer or transfer a purchase order approval.\nAdding a reviewer asks a colleague for an opinion first, then returns the decision to the original reviewer.\nTransferring hands the current task to someone else in the same job, with a reason.\nRecord every addition, transfer, and decision in the approval history, and show the applicant who is handling it now.',
+        main: {
+          label: 'Ask the agent',
+          template:
+            'Add a [Chinese, English] language selector to [application], defaulting to [Chinese] and retaining each user’s preference. Update menus, forms and feedback together and preserve the choice on refresh. Verify the first visit and signing in again.',
         },
       },
+      reference: [
+        'Register the Client and Server plugins.',
+        'Declare locale loaders in the application and configure its default locale.',
+        'Connect the language picker to the plugin hooks and verify translated resources.',
+      ],
     },
-    taskCenter: {
-      title: 'Task center',
+    'app-plugin-jobs-example': {
+      title: 'Jobs and schedules example',
       summary:
-        'Gather personal to-dos such as approvals and confirmations in one place, with status and counts.',
+        'Try task submission, progress and recurring execution before adapting them to business work.',
+      scenarios: ['Bulk exports or daily data preparation.'],
+      prompts: {
+        main: {
+          label: 'Ask the agent',
+          template:
+            'Use the background jobs example to build [bulk export] and [daily preparation] in [application]. Provide task lists, progress, results, failure details, safe retries and recurring-task controls. Verify results remain accessible after leaving the page and repeated operations do not repeat business effects.',
+        },
+      },
+      reference: [
+        'Use the registered example with the application Jobs service configured.',
+        'Open One-off jobs to submit sample work and inspect its progress.',
+        'Open Schedules to start or stop the predefined recurring rules.',
+      ],
+    },
+    'app-plugin-knowledge': {
+      title: 'Knowledge management',
+      summary:
+        'Organize knowledge so teams can find and use information within their permissions.',
       scenarios: [
-        'A manager handles leave, expense, and purchase approvals on one page.',
-        'The navigation shows how many tasks are pending and updates as they are done.',
+        'Employee handbooks, product information, procedures and project documents.',
       ],
       prerequisite:
-        'Your agent builds it for your business; no extra plugin. Works best once the application has approvals or processes.',
+        'Gather the documents first and decide who may read which parts.',
       prompts: {
-        myTasks: {
-          label: 'My tasks',
-          text: 'Add a My tasks page where each person sees only what they need to handle.\nSeparate pending, completed, and canceled tasks, and show how many there are of each.\nOpening a task leads to the business record to handle it; status and counts update afterwards.\nShow the pending count in the navigation.',
-        },
-        approvals: {
-          label: 'Bring in approvals',
-          text: 'Add the existing purchase order approvals to My tasks, so the people who actually approve them see the request type, number, and submission time.\nKeep the approval rules unchanged; approving works straight from the task.',
+        main: {
+          label: 'Ask the agent',
+          template:
+            'Build [team knowledge base] organized by [department or topic], with navigation, search and reading. Define who may read, edit and manage each area. Make common answers easy to find and verify search and content access with authorized and unauthorized accounts.',
         },
       },
+      reference: [
+        'Register Knowledge and define application spaces and access policies.',
+        'Compose KnowledgeView and document features in application pages.',
+        'Connect search providers and agent retrieval as needed while preserving user access rules.',
+      ],
     },
-    notification: {
-      title: 'Notifications',
+    'app-plugin-lifecycle-example': {
+      title: 'Business process examples',
       summary:
-        'Send in-app messages, email, or group bot messages when something happens.',
+        'Use ticket, expense and order examples to organize business states and processing.',
       scenarios: [
-        'After a decision, the applicant gets an in-app message that opens the order.',
-        'Also send the applicant an email.',
+        'Moving an offline ticket, expense or purchase request into the application, after first seeing how states change.',
+        'Walking through a complete process in the example before deciding who handles which step.',
       ],
       prerequisite:
-        'In-app messages are built in. Email and group bots need a sending channel configured.',
+        'This is an example plugin; its data is for demonstration only. To adapt it, ask the agent to build your version in your own plugin following the example, without changing the example plugin.',
       prompts: {
-        inApp: {
-          label: 'In-app message',
-          text: "Add order approval to the current application and notify applicants of the results through in-app messages.\n\nOrders include a number, name, applicant, amount, and approval status.\nApplicants can view their own orders. Reviewers can view pending orders and approve or reject them. Reuse existing order and approval features if available.\n\nAfter approval or rejection, send one in-app message only to the order's applicant.\nThe title indicates whether the order was approved or rejected. The body includes the order number, name, and approval result.\nClicking the message opens the corresponding order details.\nDo not send while approval is pending. Notify only once for the same approval result.\nA notification failure does not affect the saved approval result.",
+        adapt: {
+          label: 'Adapt to my process',
+          template:
+            'Following the business process example (tickets), build [offline process name] in this application, in my own plugin, without changing the example plugin.\nWho uses it: [requesters] submit, [handlers] process, [managers] view everything.\nStates: [draft → in review → approved / returned → closed]; say who handles each step and what must be true to move on.\nBusiness rules: [for example, amounts above a limit need a second review; a return needs a reason].\nPermission boundary: requesters see only their own requests; handlers process only what is assigned to them.\nAcceptance: complete one real run; then verify returns, withdrawals and unauthorized actions are blocked and the history is complete.',
+          example:
+            'Following the business process example (tickets), build purchase requests in this application, in my own plugin, without changing the example plugin.\nWho uses it: employees submit purchase requests, department managers review, buyers place orders, finance views everything.\nStates: draft → manager review → awaiting purchase → ordered → closed; managers can return a request to draft.\nBusiness rules: requests above 50,000 also need a finance review; a return needs a reason; the amount cannot change once ordered.\nPermission boundary: employees see only their own requests; managers review only their department; buyers handle only approved requests.\nAcceptance: complete one real request; then verify returns, withdrawals, the extra finance review and unauthorized actions are blocked and the history is complete.',
         },
-        email: {
-          label: 'Email',
-          text: "Add email to the existing order approval notifications, using the application's configured email channel.\n\nAfter an order is approved or rejected, send the result to the applicant's account email.\nInclude the order number in the subject and the order name and result in the body.\nKeep the existing in-app messages. If the applicant has no email address, send only the in-app message.\nAn email failure must not affect the approval result or in-app message.",
+        review: {
+          label: 'Explain the example first',
+          template:
+            'Open the business process example first and explain which states, roles and actions it demonstrates, which parts can be reused for [my process] as they are, and which need changing for my business.\nDo not write code yet; list the [business rules and permissions] you need me to confirm.',
+          example:
+            'Open the business process example first and explain which states, roles and actions it demonstrates, which parts can be reused for our expense claims as they are, and which need changing for our business.\nDo not write code yet; list the approval levels, amount rules and finance permissions you need me to confirm.',
         },
       },
+      reference: [
+        'Use the registered example with its migrations and seeds.',
+        'Open a workflow example and perform its documented business actions.',
+        'Inspect state changes, history and effects alongside the lifecycle source.',
+      ],
     },
-    mail: {
-      title: 'Mail',
+    'app-plugin-mail': {
+      title: 'User mailboxes',
       summary:
-        'Connect personal mailboxes, then read, reply to, and send business email.',
+        'Connect email accounts, sending, receiving and synchronization to business work.',
       scenarios: [
-        'Sales sees and replies to customer emails right in customer details.',
-        'Employees handle work email inside the application.',
+        'Customer follow-up, quotations and business correspondence.',
       ],
       prerequisite:
-        'Needs a mail provider configured (IMAP and SMTP servers); each user then connects their own mailbox.',
+        'Needs a mailbox account you may authorize; verify with a test mailbox before connecting a real one.',
       prompts: {
-        providers: {
-          label: 'Mail provider',
-          text: "Configure mailbox.org for the application in the server configuration's mail.providers:\n- IMAP incoming server: imap.mailbox.org, port 993, SSL/TLS.\n- SMTP outgoing server: smtp.mailbox.org, port 465, SSL/TLS.\nUsers enter their own email address, username, and password on the mailbox accounts page and choose the date to start the first synchronization from; never write mailbox passwords into configuration or source code.",
-        },
-        mailCenter: {
-          label: 'Mail center',
-          text: 'Mail is built into this application; reuse it instead of building it again or installing another plugin.\nAdd Mail center and Mailbox accounts pages to the navigation, using the mail workspace and mailbox accounts pages the mail capability provides.\nUsers can connect their own mailboxes, synchronize incoming messages, read messages and attachments, and reply, keeping the original subject and conversation context and addressing the reply to the original sender.\nEach user works with their own connected mailboxes.',
-        },
-        correspondence: {
-          label: 'Customer emails',
-          text: "Add a correspondence section to customer details, reusing the application's built-in mail reading and compose components.\nShow messages whose sender or recipient matches the current customer's contact email addresses. Sales representatives can read messages, view attachments, and reply using their own connected mailboxes.",
+        main: {
+          label: 'Ask the agent',
+          template:
+            'Connect [authorized mailbox] to [customer management]. Provide reading, composing and sending with clear send or sync failures. Define how messages relate to customers and restrict mailbox use to authorized people. Verify with a test mailbox and test recipients before real business use.',
         },
       },
-    },
-    scheduler: {
-      title: 'Scheduled tasks',
-      summary:
-        'Run business work at set times, and see the next run and its results.',
-      scenarios: [
-        'Remind reviewers of pending orders every weekday morning.',
-        "Build last week's sales summary every Monday.",
+      reference: [
+        'Register Mail and add mailConfig to application configuration.',
+        'Configure providers and let users authorize their mailboxes.',
+        'Integrate inbox, composition, sending and sync through mail services and components.',
       ],
-      prerequisite: 'Built in; nothing to prepare.',
-      prompts: {
-        reminder: {
-          label: 'Daily reminder',
-          text: 'Add a Pending order reminder to the existing order application.\n\nAt 09:00 Beijing time every weekday, find orders awaiting approval, group them by reviewer, and send each reviewer one in-app notification.\nInclude the pending order count and link to the pending order list. Send nothing when there are no pending orders.\nAdministrators can view the schedule and execution records, and pause or resume reminders.',
-        },
-        weeklyReport: {
-          label: 'Weekly report',
-          text: "At 08:00 Beijing time every Monday, generate last week's sales summary and notify the sales manager.\nInclude sales revenue, order count, and regional totals. Administrators can view the task and execution records.",
-        },
-      },
     },
-    theme: {
-      title: 'Themes',
+    'app-plugin-mail-example': {
+      title: 'Offline mail example',
       summary:
-        'Adjust colors, fonts, and density, and switch between light and dark.',
-      scenarios: [
-        'Use the company brand color.',
-        'Use a compact layout for data-heavy pages.',
-      ],
-      prerequisite: 'Built in; nothing to prepare.',
+        'Explore mail management with simulated mailboxes before connecting a real account.',
+      scenarios: ['Validating email workflows before business integration.'],
       prompts: {
-        changeTheme: {
-          label: 'Change a theme',
-          text: 'Update the Compact theme: use blue as the primary color and slightly increase the corner radius. Keep the current fonts, text sizes, and compact spacing.',
-        },
-        newTheme: {
-          label: 'New theme',
-          text: 'Create a Forest theme with green as the primary color, soft backgrounds, moderately rounded corners, and subtle shadows.',
+        main: {
+          label: 'Ask the agent',
+          template:
+            'Demonstrate [team mailbox] account management, sync, composing, templates and signatures with the mail example. Keep delivery simulated and send nothing to real recipients. Identify reusable pages and features and the prerequisites for connecting [my mail service].',
         },
       },
+      reference: [
+        'Use the three mock provider configurations included in Examples.',
+        'Open Mail example to initialize and synchronize its sample mailboxes.',
+        'Try composing, templates, signatures and sync logs; delivery stays simulated.',
+      ],
+    },
+    'app-plugin-notification': {
+      title: 'System notifications',
+      summary:
+        'Notify the right people when business events need their attention.',
+      scenarios: ['Task assignments, status changes and work reminders.'],
+      prompts: {
+        main: {
+          label: 'Ask the agent',
+          template:
+            'In [task management], notify [relevant people] when a task is assigned or its status changes to [specified state]. Explain the event and link to the task. Define delivery channels, avoid duplicate alerts for the same event, handle failures and verify recipients and access scope.',
+        },
+      },
+      reference: [
+        'Register Notification and the required channel providers.',
+        'Configure named channels and prepare channel-specific messages.',
+        'Send through the notification service with an idempotency key and inspect delivery results.',
+      ],
+    },
+    'app-plugin-notification-example': {
+      title: 'Task notification example',
+      summary: 'See how task assignment triggers a personal notification.',
+      scenarios: ['Adding reminders to task or support-ticket applications.'],
+      prompts: {
+        main: {
+          label: 'Ask the agent',
+          template:
+            'Use the task notification example to notify [assigned handlers] when [tickets] are assigned or updated. Include a summary and a link to the ticket. Test assignment and a status update with two accounts, verifying correct recipients and ticket access.',
+        },
+      },
+      reference: [
+        'Use the registered notification runtime and in-app channel.',
+        'Create a sample task and assign it to an application user.',
+        'Open its notification as the recipient and inspect task updates.',
+      ],
+    },
+    'app-plugin-notification-in-app': {
+      title: 'In-app inbox',
+      summary:
+        'Collect personal notifications inside the application for convenient review.',
+      scenarios: [
+        'Task reminders, status changes and personal business updates.',
+      ],
+      prompts: {
+        main: {
+          label: 'Ask the agent',
+          template:
+            'Add a personal inbox to [application] for [task assignments and status changes]. Show unread status, allow marking messages read and link to related records. Users may see only their own messages. Verify empty states, inaccessible linked records and switching accounts.',
+        },
+      },
+      reference: [
+        'Register the Server plugin after the notification runtime for message delivery.',
+        'Configure a named channel with type: in-app.',
+        'Integrate the authenticated inbox APIs or UI; its Client page is for development.',
+      ],
+    },
+    'app-plugin-notification-providers': {
+      title: 'Notification providers',
+      summary:
+        'Deliver business notifications through email, Feishu or DingTalk.',
+      scenarios: [
+        'Important reminders that should reach people outside the application.',
+      ],
+      prerequisite:
+        "Before sending to email, Feishu or DingTalk, prepare that channel's account or bot credentials.",
+      prompts: {
+        main: {
+          label: 'Ask the agent',
+          template:
+            'Send [business notifications] through [email, Feishu or DingTalk]. Check existing channels and recipient settings and identify missing connection information. Provide channel management and delivery results. Verify formatting and delivery with test recipients before connecting real business events.',
+        },
+      },
+      reference: [
+        'Register this Server plugin after the notification runtime.',
+        'Configure named channels and their required mailers or provider credentials.',
+        'Send through the notification service and inspect delivery results.',
+      ],
+    },
+    'app-plugin-office-flows-example': {
+      title: 'Office process examples',
+      summary:
+        'Use data requests, incoming documents and office tasks to organize collaboration.',
+      scenarios: [
+        'Department coordination, information requests and related tasks.',
+      ],
+      prompts: {
+        main: {
+          label: 'Ask the agent',
+          template:
+            'Use the office process example to build [data-use requests]. Requesters provide purpose and scope; [designated people] handle requests and create related collaboration tasks when needed. Provide My requests, My work and history and verify linked task and request states stay consistent.',
+        },
+      },
+      reference: [
+        'Use the example migrations, seeds and office configuration.',
+        'Open Data requests or Incoming documents to start a sample process.',
+        'Follow related work in My tasks and inspect the record lifecycles.',
+      ],
+    },
+    'app-plugin-queue-example': {
+      title: 'Queued work example',
+      summary:
+        'Use an example to process batches of work item by item in the background.',
+      scenarios: ['Digest generation, messages and order follow-up.'],
+      prompts: {
+        main: {
+          label: 'Ask the agent',
+          template:
+            'Use the queue example to process [batch business work] item by item. Show submission and processing results and define retry and duplicate handling. Verify all-success, partial-failure and resubmission with test data and provide an entry point or usage instructions.',
+        },
+      },
+      reference: [
+        'Register the Server plugin and configure an application queue backend.',
+        'Inspect its queue handlers and the authenticated API in the API document.',
+        'Publish sample work through the documented API and inspect processing results.',
+      ],
+    },
+    'app-plugin-realtime-example': {
+      title: 'Realtime business examples',
+      summary:
+        'Try live task collaboration, personal notifications and export progress.',
+      scenarios: ['Adding automatic updates to business pages.'],
+      prompts: {
+        main: {
+          label: 'Ask the agent',
+          template:
+            'Use the realtime business example to update [team tasks] automatically. Changes by one person should reach other authorized users, while personal messages remain private. Test with two accounts, disconnect and reconnect, and confirm the latest data is restored.',
+        },
+      },
+      reference: [
+        'Use the registered Client and Server example with Realtime enabled.',
+        'Open Tasks, Inbox or Exports and compare updates in two sessions.',
+        'Use the capability lab to inspect subscriptions, snapshots and recovery.',
+      ],
+    },
+    'app-plugin-repository-example': {
+      title: 'Business data examples',
+      summary:
+        'Use customer, order and reporting examples to build connected business pages.',
+      scenarios: ['Customer contacts, order items and sales summaries.'],
+      prompts: {
+        main: {
+          label: 'Ask the agent',
+          template:
+            'Use the business data examples to build [customers, contacts, orders and line items]. Support related views, filters and sales summaries and keep related information consistent within each submission. Verify totals, relationship changes and role-specific data scopes.',
+        },
+      },
+      reference: [
+        'Use the example registration and apply its migrations and sample seeds.',
+        'Open CRM, Orders or a focused Repository example.',
+        'Compare page operations with the declared resources and API implementations.',
+      ],
+    },
+    'app-plugin-routes-example': {
+      title: 'Page integration example',
+      summary:
+        'Use an example to add a business page with real data to the application.',
+      scenarios: ['A new business entry point or small feature page.'],
+      prompts: {
+        main: {
+          label: 'Ask the agent',
+          template:
+            'Use the page integration example to add [business page] and navigation to [application]. Display [required information] with loading, empty and failure states. Limit access to [specified roles] and verify refresh and direct links work.',
+        },
+      },
+      reference: [
+        'Register the Server and Client entries with Authentication.',
+        'Open the example page and inspect its API result.',
+        'Compare the route declarations, React provider and lazy page implementation.',
+      ],
+    },
+    'app-plugin-scheduler': {
+      title: 'Scheduling',
+      summary: 'Run recurring work at specified times and inspect each result.',
+      scenarios: [
+        'Daily customer synchronization, weekly summaries and scheduled reminders.',
+      ],
+      prompts: {
+        main: {
+          label: 'Ask the agent',
+          template:
+            'Create a recurring [daily customer sync] in [application], running at [time] in [timezone]. Provide a task list, enable/disable controls and execution history with results and failure reasons. Define repeat and catch-up behavior. Test one run and verify the next scheduled time.',
+        },
+      },
+      reference: [
+        'Register Scheduler and compose the application jobs service.',
+        'Register a target type, then declare cron and timezone with defineSchedule.',
+        'Configure a suitable Jobs backend and inspect occurrence results.',
+      ],
+    },
+    'app-plugin-service-provider-example': {
+      title: 'Background service example',
+      summary:
+        'Use a service-status example to understand ongoing background work.',
+      scenarios: [
+        'Business capabilities that need a continuously running service.',
+      ],
+      prompts: {
+        main: {
+          label: 'Ask the agent',
+          template:
+            'Use the service example to plan operation and status checks for [ongoing business work]. Define startup, shutdown and error recovery and restrict access to status information. Verify with simulated work first, then identify prerequisites for real integration.',
+        },
+      },
+      reference: [
+        'Register the Server plugin in an example application.',
+        'Inspect its token, service and provider implementations.',
+        'Read the documented status API after startup; add authentication to sensitive business APIs.',
+      ],
+    },
+    'app-plugin-skills-example': {
+      title: 'Agent guidance example',
+      summary:
+        'Show how reusable capability guidance helps an Agent build consistently.',
+      scenarios: [
+        'Repeated reuse of existing components and business capabilities.',
+      ],
+      prompts: {
+        main: {
+          label: 'Ask the agent',
+          template:
+            'Use the capability-guidance example to document [existing team feature] for an Agent. Explain suitable scenarios, required business information, reusable entry points and verification. Have the Agent build a [business notice] example from the guidance and identify missing or ambiguous instructions.',
+        },
+      },
+      reference: [
+        'Register the Server entry and synchronize the application Skills.',
+        'Read the package Skill and import the public AppNotice component.',
+        'Compose the component in an application page using the authenticated notice API.',
+      ],
+    },
+    'app-plugin-template-print': {
+      title: 'Template printing Skill',
+      summary:
+        'Give the Agent guidance for building documents that follow business templates.',
+      scenarios: [
+        'Contracts, quotations and invoices with a prescribed layout.',
+      ],
+      prerequisite:
+        'A development Skill the agent reads; it has no page of its own. Prepare an Office template; PDF output needs a converter on the server.',
+      prompts: {
+        main: {
+          label: 'Ask the agent',
+          template:
+            'Use the template-printing guidance to build document generation for [quotations] from [my template]. Fill customer details, line items, amounts and dates and allow Word downloads; offer PDF only after checking environment support. Restrict generation to authorized users and verify pagination, amounts and missing data.',
+        },
+      },
+      reference: [
+        'Keep this package as a direct development dependency.',
+        'Run pnpm nocobase skills sync from the application.',
+        'Follow the Skill to implement printing; use the separate example to try DOCX and PDF output.',
+      ],
+    },
+    'app-plugin-template-print-example': {
+      title: 'Template printing example',
+      summary:
+        'Try filling a document template with sales data and downloading the result.',
+      scenarios: ['Verifying quotation or invoice printing workflows.'],
+      prompts: {
+        main: {
+          label: 'Ask the agent',
+          template:
+            'Use the printing example to generate downloadable Word documents for [my sales records] using [specified template] and authorized data. Verify customer details, line items, amounts and pagination. Enable PDF only after confirming conversion support and explain permission or missing-data failures.',
+        },
+      },
+      reference: [
+        'Use the registered example with its migrations, seeds and Sales Quotes permissions.',
+        'Open Template printing and download a sample invoice as DOCX.',
+        'Install LibreOffice on the server to try PDF conversion.',
+      ],
+    },
+    'app-plugin-users': {
+      title: 'User administration',
+      summary: 'Manage application members, account status and assigned roles.',
+      scenarios: [
+        'Onboarding, departures, team changes and responsibility updates.',
+      ],
+      prompts: {
+        main: {
+          label: 'Ask the agent',
+          template:
+            'Provide member management for [application]. Administrators can add members, assign [roles] and deactivate departing users. Assign roles only to explicitly selected people and make assignments visible and editable. Verify ordinary members cannot administer other accounts and deactivated accounts cannot sign in.',
+        },
+      },
+      reference: [
+        'Register Users after Authentication and Authorization.',
+        'Grant administrators the required user actions.',
+        'Build application-owned pages with UsersClient and optional role scopes.',
+      ],
+    },
+    concurrency: {
+      title: 'Concurrent operations',
+      summary:
+        'Coordinate simultaneous changes to the same business record to reduce conflicts.',
+      scenarios: [
+        'Competing order claims, balance updates or inventory operations.',
+      ],
+      prerequisite:
+        'Already part of this application. When several servers run at once, confirm the coordination covers all of them.',
+      prompts: {
+        main: {
+          label: 'Ask the agent',
+          template:
+            'Handle concurrent changes to [record] in [business]. Decide which operations wait and which reject duplicates, with clear waiting, conflict and retry feedback. Check whether coordination covers all running application instances, then verify the result when two users act simultaneously.',
+        },
+      },
+      reference: [
+        'Obtain a ConcurrentManager from the application concurrency service.',
+        'Use a stable resource name to create a lock or synchronous executor.',
+        'Choose waiting or bounded acquisition and ensure release; coordination scope depends on the backend.',
+      ],
+    },
+    db: {
+      title: 'Business data',
+      summary:
+        'Manage connected business information consistently across lists, details and reports.',
+      scenarios: [
+        'Customers, contacts and follow-ups that are maintained for years and linked to each other.',
+        'Orders saved together with their lines, where totals must always add up.',
+        'Moving data out of an old spreadsheet, removing duplicates and checking required fields.',
+      ],
+      prerequisite:
+        'Already part of this application; nothing to install. Before asking, decide which business objects you have, how they relate, and who may view or change them.',
+      prompts: {
+        records: {
+          label: 'Build data management',
+          template:
+            'Build data management for [business name] in this application.\nWho uses it: [which roles and what each is responsible for].\nBusiness objects: [object A, object B, object C]; relationship: [one object A has many object B]; required information: [...].\nBusiness rules: [for example, numbers are unique; object A cannot be deleted while it has unfinished object B].\nPermission boundary: [who may create and edit, who may only view the records they own].\nAcceptance: provide lists, search, filters, create, edit and detail views; sign in with different roles to verify what each can see, and confirm duplicates are rejected and related records and totals are correct.',
+          example:
+            'Build data management for customer follow-up in this application.\nWho uses it: salespeople maintain their own customers; sales managers view every customer in their team.\nBusiness objects: customers, contacts and follow-ups; one customer has many contacts and many follow-ups; customer name and owner are required.\nBusiness rules: two customers cannot have the same name; a customer with an open follow-up cannot be deleted.\nPermission boundary: salespeople create and edit only customers they own; managers view all and can change the owner.\nAcceptance: provide lists, search, filters, create, edit and detail views; sign in as a salesperson and a manager to verify what each can see, and confirm duplicate customers are rejected and each customer shows the right contacts and follow-ups.',
+        },
+        import: {
+          label: 'Import existing data',
+          template:
+            'Import [business object] from [an old spreadsheet or system] into this application.\nWho uses it: [the person importing] imports; [other roles] maintain the records in the application afterwards.\nBusiness rules: remove duplicates by [unique field]; rows missing [required information] are skipped and listed with the reason.\nPermission boundary: only [role] may import; imported records follow the existing permissions.\nAcceptance: try a [10-row] sample first and report the result, then import everything; importing the same file twice creates no duplicates.',
+          example:
+            "Import the purchasing team's supplier spreadsheet into this application.\nWho uses it: the purchasing coordinator imports; buyers maintain suppliers in the application afterwards.\nBusiness rules: remove duplicates by tax registration number; rows missing the supplier name or contact phone are skipped and listed with the reason.\nPermission boundary: only the purchasing coordinator may import; imported suppliers are visible to every buyer.\nAcceptance: try a 10-row sample first and report the result, then import everything; importing the same file twice creates no duplicate suppliers.",
+        },
+      },
+      reference: [
+        'Configure a database connection in the application.',
+        'Define tables and relations in migrations, then generate Collection types.',
+        'Resolve repositories from the application database service for queries and transactions.',
+      ],
     },
     i18n: {
-      title: 'Languages',
+      title: 'Multilingual content',
       summary:
-        'Switch the interface language, add languages, and set the default one.',
+        'Make pages, form guidance and operation results understandable across languages.',
       scenarios: [
-        'Add Spanish for colleagues abroad.',
-        'Show Chinese to people who have not chosen a language.',
+        'Teams in different regions sharing customer, order or employee applications.',
       ],
-      prerequisite: 'Built in; nothing to prepare.',
       prompts: {
-        addLanguage: {
-          label: 'Add a language',
-          text: 'Add Spanish to my application. Translate the interface and server messages, and add Spanish to the language menu.',
-        },
-        defaultLanguage: {
-          label: 'Default language',
-          text: "Make Simplified Chinese the application's default language for people who have not chosen one. Keep English available in the language menu.",
+        main: {
+          label: 'Ask the agent',
+          template:
+            'Add [Chinese and English] interface content to [business]. Cover menus, field labels, validation, empty states and operation results with consistent business terminology. Check long text and missing translations. Do not automatically rewrite user-entered business content.',
         },
       },
+      reference: [
+        'Provide language resources under a namespace.',
+        'Register resources through application or plugin declarations.',
+        'Use translation bindings; the i18n plugin supplies language switching.',
+      ],
     },
-    aiEmployee: {
-      title: 'AI employees',
+    jobs: {
+      title: 'Background jobs',
       summary:
-        'Add AI assistants to business pages that understand the page, query data, and act within rules.',
+        'Run lengthy work in the background while users continue other tasks.',
       scenarios: [
-        'Ask "where is this order stuck?" from its details.',
-        "Find this month's orders above 10,000 in one sentence.",
+        'Bulk exports, data preparation or external synchronization.',
       ],
-      prerequisite:
-        'Needs the Agents plugin and a working model service, in the cloud or local.',
       prompts: {
-        assistant: {
-          label: 'Purchasing assistant',
-          text: "Add a Purchasing assistant to the purchase order application, using the model service I have configured.\nIt explains orders, finds orders awaiting approval, and gives advice based on the purchasing policy.\nConnect a read-orders business action that keeps the current user's data access; allow queries only for now, without changing orders or sending notifications.\nOffer a conversation entry in the order list and details, where employees can ask follow-up questions and open the orders in an answer.",
+        main: {
+          label: 'Ask the agent',
+          template:
+            'Add a background [bulk export] task to [business]. Show a task record immediately, with progress, results and failure reasons available after leaving the page. Define safe retries and prevent duplicate business results from repeated clicks. Restrict result access and downloads to authorized users.',
         },
       },
+      reference: [
+        'Resolve a scoped executor from the application jobs service.',
+        'Register job classes or recurring rules and set up the executor.',
+        'Submit work with retry and idempotency handling; choose a suitable backend for multiple instances.',
+      ],
     },
-    aiKnowledgeBase: {
-      title: 'AI knowledge bases',
+    lifecycle: {
+      title: 'Business processes',
       summary:
-        'Organize policies, manuals, and notes for employees to read and for AI to answer from.',
+        'Organize business records into clear states, allowed actions and processing history.',
       scenarios: [
-        'Employees look up the purchasing policy and supplier admission rules.',
-        'The purchasing assistant cites the policy text it answers from.',
+        'Support tickets, expenses, purchase requests and order fulfillment.',
       ],
-      prerequisite:
-        'Needs the knowledge plugin. AI answers need a model; semantic search also needs an index.',
       prompts: {
-        policies: {
-          label: 'Purchasing policies',
-          text: 'Add a knowledge center to the purchase order application with the purchasing policy, supplier admission rules, and FAQs.\nProvide reading and search for folders, articles, and files, with access controlled by job.\nLet the purchasing assistant answer from these materials and link to the relevant documents and passages.',
+        main: {
+          label: 'Ask the agent',
+          template:
+            'Create a [draft, pending, completed, closed] process for [business record]. Define who handles each state, allowed actions and conditions for the next step. Provide process guidance, work queues and history. Verify that unauthorized actions and invalid state changes are blocked.',
         },
       },
+      reference: [
+        'Declare states and transitions with defineLifecycle.',
+        'Configure a repository store and an effect dispatcher.',
+        'Fire transitions from authorized APIs and display state and history.',
+      ],
+    },
+    queue: {
+      title: 'Queued work',
+      summary:
+        'Process bursts of work in a queue without keeping users waiting.',
+      scenarios: ['Order follow-up, bulk messages and data synchronization.'],
+      prompts: {
+        main: {
+          label: 'Ask the agent',
+          template:
+            'Queue [follow-up work] in [business]. Define when it is queued, the successful outcome and how failures are retried or handled manually. Receiving the same work twice must not duplicate business effects. Provide a way to inspect processing status.',
+        },
+      },
+      reference: [
+        'Use the application-configured QueueService.',
+        'Register channel handlers, then publish JSON messages.',
+        'Choose an appropriate backend and design failure handling.',
+      ],
+    },
+    realtime: {
+      title: 'Live updates',
+      summary: 'Keep pages up to date as business information changes.',
+      scenarios: ['Collaborative tasks, notifications and export progress.'],
+      prompts: {
+        main: {
+          label: 'Ask the agent',
+          template:
+            'Update [business page] when other users change records. Show only changes the current user may access. Indicate disconnection and recover the latest data after reconnecting. Verify updates, access isolation and recovery with two accounts.',
+        },
+      },
+      reference: [
+        'Declare topics and subscription permissions.',
+        'Publish events after business state changes.',
+        'Subscribe and refetch data; resynchronize authoritative state after reconnecting.',
+      ],
     },
   },
 };
