@@ -107,7 +107,7 @@ describe('installed service migration', () => {
               [
                 'submit',
                 '-l',
-                `${label}.reload`,
+                `_nocobase-runner.reload.${label}`,
                 '--',
                 '/old/current/bin/nocobase-runner',
                 'service',
@@ -173,12 +173,12 @@ describe('service stop command', () => {
       expect(recorded()).toEqual([
         [
           'bootout',
-          `gui/${process.getuid?.() ?? 501}/com.example.unloaded.reload`,
+          `gui/${process.getuid?.() ?? 501}/_nocobase-runner.reload.com.example.unloaded`,
         ],
         ['bootout', `gui/${process.getuid?.() ?? 501}/com.example.unloaded`],
         [
           'bootout',
-          `gui/${process.getuid?.() ?? 501}/com.example.unloaded.reload`,
+          `gui/${process.getuid?.() ?? 501}/_nocobase-runner.reload.com.example.unloaded`,
         ],
         ['bootout', `gui/${process.getuid?.() ?? 501}/com.example.unloaded`],
         [
@@ -199,7 +199,10 @@ describe('service stop command', () => {
       restartService('com.example.denied', 'darwin'),
     ).rejects.toThrow();
     expect(recorded()).toEqual([
-      ['bootout', `gui/${process.getuid?.() ?? 501}/com.example.denied.reload`],
+      [
+        'bootout',
+        `gui/${process.getuid?.() ?? 501}/_nocobase-runner.reload.com.example.denied`,
+      ],
     ]);
   });
 
@@ -239,7 +242,7 @@ describe('service stop command', () => {
         expect(result.code).toBe(managerExit);
         expect(recorded()[0]).toEqual([
           'bootout',
-          `gui/${process.getuid?.() ?? 501}/com.example.stop.reload`,
+          `gui/${process.getuid?.() ?? 501}/_nocobase-runner.reload.com.example.stop`,
         ]);
       }
       if (result.code === 0)

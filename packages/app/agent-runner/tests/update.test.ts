@@ -182,7 +182,11 @@ describe('installation layout', () => {
     );
     expect(plan.content).toContain('<key>NOCOBASE_RUNNER_SERVICE</key>');
     expect(plan.uninstall).toEqual([
-      ['launchctl', 'bootout', 'gui/501/com.example.test-runner.reload'],
+      [
+        'launchctl',
+        'bootout',
+        'gui/501/_nocobase-runner.reload.com.example.test-runner',
+      ],
       ['launchctl', 'bootout', 'gui/501/com.example.test-runner'],
     ]);
     const linux = servicePlan({
@@ -701,7 +705,7 @@ describe('served tarballs', () => {
       const bytes = tarball(
         'nocobase-runner',
         next,
-        `#!/bin/sh\nprintf called > '${unexpectedStop}'\n`,
+        '#!/bin/sh\nprintf called > "$RUNNER_TEST_STOP_FILE"\n',
       );
       server.distFiles.set(`nocobase-runner/${next}/runner.tar.gz`, bytes);
       server.resolution.artifact = {
@@ -735,6 +739,7 @@ describe('served tarballs', () => {
       const result = await cli(
         ['update'],
         cliEnv(home, {
+          RUNNER_TEST_STOP_FILE: unexpectedStop,
           PATH: `${bin}${path.delimiter}${process.env.PATH}`,
           NOCOBASE_RUNNER_INSTALLATION: path.join(
             prefix,
@@ -758,7 +763,10 @@ describe('served tarballs', () => {
       const expected =
         process.platform === 'darwin'
           ? [
-              ['bootout', `${domain}/com.example.manual-update.reload`],
+              [
+                'bootout',
+                `${domain}/_nocobase-runner.reload.com.example.manual-update`,
+              ],
               ...(managerExit === 0
                 ? [
                     ['bootout', `${domain}/com.example.manual-update`],

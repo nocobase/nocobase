@@ -30,6 +30,11 @@ export function systemdUnit(label: string = LAUNCHD_LABEL): string {
   return label === LAUNCHD_LABEL ? SYSTEMD_UNIT : `${label}.service`;
 }
 
+/** The leading underscore cannot collide with a valid custom runner service label. */
+function reloadLabel(label: string): string {
+  return `_nocobase-runner.reload.${label}`;
+}
+
 function serviceFile(
   label: string,
   platform: NodeJS.Platform,
@@ -177,7 +182,7 @@ ${Object.entries(environment)
       captured: Object.keys(captured),
       install: [['launchctl', 'bootstrap', domain, file]],
       uninstall: [
-        ['launchctl', 'bootout', `${domain}/${label}.reload`],
+        ['launchctl', 'bootout', `${domain}/${reloadLabel(label)}`],
         ['launchctl', 'bootout', `${domain}/${label}`],
       ],
     };
@@ -308,7 +313,7 @@ export async function migrateService(
       await run('launchctl', [
         'submit',
         '-l',
-        `${label}.reload`,
+        reloadLabel(label),
         '--',
         ...options.relaunch,
         'service',
@@ -333,7 +338,7 @@ export async function stopService(
   if (platform === 'linux')
     await run('systemctl', ['--user', 'stop', systemdUnit(label)]);
   else {
-    await unloadLaunchd(`${label}.reload`);
+    await unloadLaunchd(reloadLabel(label));
     await unloadLaunchd(label);
   }
 }
