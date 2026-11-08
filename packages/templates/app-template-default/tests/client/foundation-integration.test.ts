@@ -104,7 +104,7 @@ describe('default Foundation integration', () => {
     ]);
   });
 
-  it('lists every plugin this application declares in the capability guide, with the seven core modules introduced on their own', () => {
+  it('lists every plugin this application declares in the capability guide, with the six core modules introduced on their own', () => {
     const manifest = packageMetadata as DependencyManifest;
     const { entries } = createCapabilityCatalog(manifest);
     const declared = Object.keys({
