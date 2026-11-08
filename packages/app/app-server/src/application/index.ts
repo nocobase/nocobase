@@ -347,7 +347,7 @@ export class Application<
           throw new AggregateError(
             [error, cleanupError],
             'Application startup and shutdown both failed.',
-              { cause: cleanupError },
+            { cause: cleanupError },
           );
         }
         throw error;
