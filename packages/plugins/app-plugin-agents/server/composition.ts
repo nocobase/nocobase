@@ -173,6 +173,8 @@ export interface AgentsDeps {
   /** The application CLI a run exposes to its agent (`agents.cli`); named after `app` when left out (`resolveAgentCli`). */
   readonly cli?: Partial<AgentCli>;
   readonly clock?: Clock;
+  /** How a runner's claim waits its turn for a run (`claimPace`); real timers when left out. */
+  readonly claimPause?: (ms: number, signal?: AbortSignal) => Promise<void>;
   /**
    * Where the contents of skills' files are stored: the application's drive, asked on each use. Memory when absent,
    * which only tests and a throwaway application should rely on.
@@ -449,8 +451,8 @@ export function createAgents(deps: AgentsDeps): Agents {
     mounts,
     repoAccess,
     dist,
-    slotsUsed: (conn, runnerId) => slots.used(conn, runnerId),
     slotsHeld: (conn, runnerId) => slots.held(conn, runnerId),
+    ...(deps.claimPause ? { pause: deps.claimPause } : {}),
     ...transitions,
     tx,
     ids,

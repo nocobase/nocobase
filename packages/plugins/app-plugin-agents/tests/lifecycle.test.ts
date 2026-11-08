@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 
 import {
   claim,
+  claimRepeatedly,
   createHarness,
   type Harness,
   type RegisteredRunner,
@@ -924,10 +925,12 @@ describe('run lifecycle', () => {
     });
 
     const runner = await h.registerRunner({ slots: 5 });
-    const first = (await claim(h, runner, 5)).map((p) => p.run.id).sort();
+    const first = (await claimRepeatedly(h, runner, 5))
+      .map((p) => p.run.id)
+      .sort();
     expect(first).toEqual([merged.runId, past.runId].sort());
     h.clock.advance(10 * 60_000);
-    expect((await claim(h, runner, 5)).map((p) => p.run.id)).toEqual([
+    expect((await claimRepeatedly(h, runner, 5)).map((p) => p.run.id)).toEqual([
       delayed.runId,
     ]);
     await expect(
