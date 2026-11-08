@@ -115,8 +115,6 @@ export function FieldsPanel({
         <p className='flex min-w-0 items-center gap-1 text-xs text-muted-foreground'>
           <Database aria-hidden='true' className='size-3.5 shrink-0' />
           <span className='truncate'>{connection}</span>
-          <ChevronRight aria-hidden='true' className='size-3.5 shrink-0' />
-          <span className='truncate'>{table}</span>
         </p>
         <h2
           id='database-explorer-fields-heading'

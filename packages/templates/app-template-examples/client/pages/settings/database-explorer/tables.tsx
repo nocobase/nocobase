@@ -87,7 +87,7 @@ export function TablesPanel({
   // Only the list scrolls, so the page keeps its own position.
   useEffect(() => {
     const list = listRef.current;
-    const item = list?.querySelector<HTMLElement>('[aria-current="page"]');
+    const item = list?.querySelector<HTMLElement>('[aria-current="true"]');
     if (!ready || !list || !item || list.scrollHeight <= list.clientHeight)
       return;
     const top = item.offsetTop;
@@ -192,7 +192,7 @@ export function TablesPanel({
                 onKeyDown={(event) => {
                   if (event.key !== 'ArrowDown') return;
                   const current = listRef.current?.querySelector<HTMLElement>(
-                    '[aria-current="page"]',
+                    '[aria-current="true"]',
                   );
                   if (current) current.focus();
                   else moveFocus(listRef.current, 'Home');
@@ -300,7 +300,7 @@ export function TablesPanel({
                     <Link
                       to={tableLink(item.name)}
                       data-table={item.name}
-                      aria-current={current ? 'page' : undefined}
+                      aria-current={current ? 'true' : undefined}
                       title={[primary, secondary].filter(Boolean).join('\n')}
                       className={cn(
                         'flex min-w-0 flex-col gap-0.5 rounded-md px-3 py-2 text-sm outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50',

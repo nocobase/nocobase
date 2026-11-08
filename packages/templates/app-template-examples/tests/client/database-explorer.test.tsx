@@ -207,7 +207,7 @@ it('restores the browsing context from the URL and follows Back', async () => {
   ).toHaveValue('name');
   expect(
     within(tableList()).getByRole('link', { name: 'contacts' }),
-  ).toHaveAttribute('aria-current', 'page');
+  ).toHaveAttribute('aria-current', 'true');
 
   await user.click(within(tableList()).getByRole('link', { name: 'accounts' }));
   expect(
