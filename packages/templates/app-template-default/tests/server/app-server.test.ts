@@ -1170,12 +1170,14 @@ interface CreateTestAppOptions {
 function createTestQueueConfig(): AppQueueConfig {
   return {
     default: 'memory',
-    memory: {
-      adapter: 'inMemory',
-      persistence: {
-        path: mkdtempSync(
-          path.join(tmpdir(), 'nocobase-app-template-default-queue-'),
-        ),
+    backends: {
+      memory: {
+        adapter: 'inMemory',
+        persistence: {
+          path: mkdtempSync(
+            path.join(tmpdir(), 'nocobase-app-template-default-queue-'),
+          ),
+        },
       },
     },
   };
@@ -1537,17 +1539,21 @@ async function writeRuntimeTestConfig(
       // another suite may be using at the same time.
       jobs: {
         default: 'memory',
-        memory: {
-          adapter: 'memory',
-          persistence: { path: path.join(directory, 'jobs') },
+        backends: {
+          memory: {
+            adapter: 'memory',
+            persistence: { path: path.join(directory, 'jobs') },
+          },
         },
       },
       // Queue state files likewise stay beside the test database.
       queue: {
         default: 'memory',
-        memory: {
-          adapter: 'inMemory',
-          persistence: { path: path.join(directory, 'queue') },
+        backends: {
+          memory: {
+            adapter: 'inMemory',
+            persistence: { path: path.join(directory, 'queue') },
+          },
         },
       },
       database: {

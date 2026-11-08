@@ -355,9 +355,11 @@ describe('public releaser tools', () => {
 it('S02/S03/S04/S05: strict selectors, optional TTL, frozen lazy entries, namespace uniqueness', async () => {
   const config = {
     default: 'memory',
-    memory: { adapter: 'mutex' },
-    lazy: { adapter: 'mutex', namespace: 'other' },
-    duplicate: { adapter: 'mutex' },
+    backends: {
+      memory: { adapter: 'mutex' },
+      lazy: { adapter: 'mutex', namespace: 'other' },
+      duplicate: { adapter: 'mutex' },
+    },
   };
   const snapshot = resolveConcurrencyConfig(config, 'app');
   expect(snapshot.entries.get('memory')?.ttl).toBeUndefined();
@@ -367,7 +369,7 @@ it('S02/S03/S04/S05: strict selectors, optional TTL, frozen lazy entries, namesp
     nodeEnv: 'development',
   });
   service.boot(config);
-  config.lazy.namespace = 'changed';
+  config.backends.lazy.namespace = 'changed';
   service.configurationChanged();
   await service.start();
   const [a, b] = await Promise.all([
@@ -388,7 +390,7 @@ it('S02/S03/S04/S05: strict selectors, optional TTL, frozen lazy entries, namesp
   ])
     expect(() =>
       resolveConcurrencyConfig(
-        { memory: { adapter: 'mutex', [field]: 10 } },
+        { backends: { memory: { adapter: 'mutex', [field]: 10 } } },
         'app',
       ),
     ).toThrow(ConcurrentConfigurationError);

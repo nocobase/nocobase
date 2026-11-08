@@ -51,7 +51,7 @@ describe('app service providers', () => {
         },
         queue: {
           default: 'memory',
-          memory: { adapter: 'inMemory' },
+          backends: { memory: { adapter: 'inMemory' } },
         },
         session: createNullSessionConfig(),
         snowflake: {
@@ -142,7 +142,7 @@ describe('app service providers', () => {
     } as unknown as DatabaseManager;
     const queueConfig = {
       default: 'test',
-      test: { adapter: 'inMemory' as const },
+      backends: { test: { adapter: 'inMemory' as const } },
     };
     const app = createProviderApplication(
       {

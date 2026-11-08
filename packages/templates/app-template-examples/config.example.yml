@@ -206,12 +206,13 @@ snowflake:
 # Upgrading deployments must set adapter: redis explicitly; templates no longer supply Redis defaults.
 # jobs:
 #   default: redis
-#   redis:
-#     adapter: redis
-#     connection:
-#       host: 127.0.0.1
-#       port: 6379
-#     # namespace: my-app # defaults to the application name; set it when deployments share one Redis
+#   backends:
+#     redis:
+#       adapter: redis
+#       connection:
+#         host: 127.0.0.1
+#         port: 6379
+#       # namespace: my-app # defaults to the application name; set it when deployments share one Redis
 
 # The jobs configuration the Scheduler plugin's schedules run on, by name. Left out, they follow jobs.default.
 # scheduler:

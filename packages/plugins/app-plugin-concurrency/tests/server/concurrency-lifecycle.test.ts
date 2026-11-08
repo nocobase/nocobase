@@ -72,9 +72,11 @@ function fixture() {
 }
 const config = {
   default: 'memory',
-  memory: { adapter: 'mutex' },
-  remote: { adapter: 'fixture', connection: {} },
-  second: { adapter: 'fixture', connection: {} },
+  backends: {
+    memory: { adapter: 'mutex' },
+    remote: { adapter: 'fixture', connection: {} },
+    second: { adapter: 'fixture', connection: {} },
+  },
 };
 it('S01/S06/E02: validate and synchronous create do not acquire; named initialization is shared', async () => {
   const f = fixture();
@@ -168,7 +170,7 @@ it('S07: synchronous reentrant shutdown from create saves the returned instance 
   });
   service.boot({
     default: 'remote',
-    remote: { adapter: 'fixture', connection: {} },
+    backends: { remote: { adapter: 'fixture', connection: {} } },
   });
   await expect(service.start()).rejects.toBeInstanceOf(ConcurrentAbortError);
   await closing;

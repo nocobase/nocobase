@@ -49,8 +49,10 @@ function recordingLogger(): QueueLogger & { warnings: string[] } {
 describe('configuration key selection', () => {
   const config: QueueConfig = {
     default: 'memory',
-    memory: { adapter: 'inMemory' },
-    background: { adapter: 'inMemory', namespace: 'background' },
+    backends: {
+      memory: { adapter: 'inMemory' },
+      background: { adapter: 'inMemory', namespace: 'background' },
+    },
   };
 
   it('uses the named key, then default, then the built-in memory configuration', () => {
@@ -60,10 +62,10 @@ describe('configuration key selection', () => {
     expect(selectQueueConfig(config, 'missing').key).toBe('memory');
     expect(selectQueueConfig(undefined, 'anything').entry).toBeUndefined();
     expect(() => selectQueueConfig({ default: 'missing' }, undefined)).toThrow(
-      /not a queue configuration/u,
+      /queue.backends/u,
     );
     expect(() => selectQueueConfig({ default: 'default' }, undefined)).toThrow(
-      /not a queue configuration/u,
+      /queue.backends/u,
     );
   });
 
@@ -126,7 +128,7 @@ describe('queue service configuration', () => {
 
     const explicit = vi.fn();
     const memory = service(
-      { default: 'memory', memory: { adapter: 'inMemory' } },
+      { default: 'memory', backends: { memory: { adapter: 'inMemory' } } },
       { onFallback: explicit },
     );
     memory.producer('a');
@@ -134,58 +136,53 @@ describe('queue service configuration', () => {
     expect(explicit).not.toHaveBeenCalled();
   });
 
-  it('ignores the former connections/worker/jobs section with one warning', async () => {
-    const logger = recordingLogger();
-    const onFallback = vi.fn();
-    const legacy = service(
-      {
-        default: 'sync',
-        connections: { sync: { driver: 'sync' } },
-        worker: { concurrency: 1 },
-        jobs: { locations: [] },
-      } as unknown as QueueConfig,
-      { logger, onFallback },
-    );
-    legacy.producer('legacy');
-    await legacy.setup();
-    await legacy.producer('legacy').publish('x', {});
-    expect(logger.warnings).toHaveLength(1);
-    expect(logger.warnings[0]).toMatch(/removed connections\/worker\/jobs/u);
-    expect(onFallback).toHaveBeenCalledTimes(1);
-  });
-
-  it('keeps a default that names a current key next to legacy fields', async () => {
-    const logger = recordingLogger();
-    const onFallback = vi.fn();
-    const mixed = service(
-      {
-        default: 'memory',
-        memory: { adapter: 'inMemory' },
-        worker: {},
-      } as unknown as QueueConfig,
-      { logger, onFallback },
-    );
-    mixed.producer('mixed');
-    await mixed.setup();
-    expect(logger.warnings).toHaveLength(1);
-    expect(onFallback).not.toHaveBeenCalled();
-  });
+  it.each([
+    {
+      default: 'sync',
+      connections: { sync: { driver: 'sync' } },
+      worker: {},
+      jobs: {},
+    },
+    { default: 'missing', connections: {} },
+    { worker: {} },
+    {
+      default: 'memory',
+      backends: { memory: { adapter: 'inMemory' } },
+      worker: {},
+    },
+  ])(
+    'rejects historical queue fields without warning or fallback: %j',
+    async (config) => {
+      const logger = recordingLogger();
+      const onFallback = vi.fn();
+      const legacy = service(config as unknown as QueueConfig, {
+        logger,
+        onFallback,
+      });
+      expect(() => legacy.producer('legacy')).toThrow(
+        /old configuration format/u,
+      );
+      await expect(legacy.setup()).rejects.toThrow(/old configuration format/u);
+      expect(logger.warnings).toEqual([]);
+      expect(onFallback).not.toHaveBeenCalled();
+    },
+  );
 
   it('validates every key and backend name at setup', async () => {
     const unknownBackend = service({
       default: 'memory',
-      memory: { adapter: 'inMemory' },
-      other: { adapter: 'redis', queueBackend: 'custom', connection: {} },
+      backends: {
+        memory: { adapter: 'inMemory' },
+        other: { adapter: 'redis', queueBackend: 'custom', connection: {} },
+      },
     });
     await expect(unknownBackend.setup()).resolves.toBeUndefined();
     expect(() => unknownBackend.producer('selected', 'other')).toThrow(
       /not registered/u,
     );
 
-    const nonObject = service({
-      memory: 'inMemory' as never,
-    });
-    await expect(nonObject.setup()).rejects.toThrow(/configuration object/u);
+    const nonObject = service({ backends: { memory: 'inMemory' as never } });
+    await expect(nonObject.setup()).rejects.toThrow(/plain object/u);
   });
 
   it('keeps registration names unique per service', () => {
