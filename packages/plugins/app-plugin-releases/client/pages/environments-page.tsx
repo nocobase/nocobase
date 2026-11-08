@@ -66,6 +66,8 @@ export function EnvironmentsList({
   const notify = useNotify();
   const navigate = useNavigate();
   const canManage = me.permissions.settings['rel.environments/manage'];
+  // The page is open to App readers too (they list and create Apps here); checking an environment needs the setting.
+  const canRead = me.permissions.settings['rel.environments/read'];
   // An environment's Apps are read from `/apps`, which needs the Apps page and the `view` action on some App.
   const canViewApps =
     me.permissions.pages['rel-apps'] &&
@@ -211,10 +213,12 @@ export function EnvironmentsList({
                 {t('ui.environments.edit')}
               </DropdownMenuItem>
             ) : null}
-            <DropdownMenuItem onClick={() => void check(row.original)}>
-              <PlugZapIcon />
-              {t('ui.environments.check')}
-            </DropdownMenuItem>
+            {canRead ? (
+              <DropdownMenuItem onClick={() => void check(row.original)}>
+                <PlugZapIcon />
+                {t('ui.environments.check')}
+              </DropdownMenuItem>
+            ) : null}
             {canManage ? (
               <>
                 <DropdownMenuSeparator />

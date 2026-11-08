@@ -152,10 +152,14 @@ describe('client', () => {
       ['rel-apps', '/deploy/apps'],
       ['rel-environments', '/release-environments'],
     ]);
-    expect(routes[0]?.authz).toEqual({
-      resource: { type: 'page', id: 'rel-apps' },
-      action: 'access',
-    });
+    // Both open with the Apps page grant: the environments page is where Apps are listed and created now, so an App
+    // reader without the environments setting still has an entry. Managing environments and the hosts' capacity keep
+    // checking the setting.
+    for (const route of routes)
+      expect(route.authz).toEqual({
+        resource: { type: 'page', id: 'rel-apps' },
+        action: 'access',
+      });
   });
 
   it('registers no routes with routes: false', () => {

@@ -37,6 +37,9 @@ const zhCN: typeof enUS = {
         failed: '失败',
         unknown: '未知',
       },
+      page: '第 {{page}} / {{pages}} 页',
+      previousPage: '上一页',
+      nextPage: '下一页',
     },
     advanced: '高级（可选）',
     labels: {

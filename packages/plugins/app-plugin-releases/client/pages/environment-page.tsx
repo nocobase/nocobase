@@ -3,11 +3,19 @@ import { usePageBreadcrumb } from '@nocobase/app-client';
  * One environment, in tabs kept in the URL (`?tab=`): Overview (how it runs, who may deploy, the defaults its Apps
  * take, and the Apps deployed to it with their runtime states, filtered by `?runtimeState=`), Variables (what every App here gets), and Settings (the form, and deleting the
  * environment). Those who may only read environments see the same page read-only. Checking it is a header action.
+ * App readers without the environments setting open it too, for its Apps: they get no Variables tab and no check.
  * Create App opens over it at `apps/new` (`new-app-page.tsx`) for those who may create Apps, the App going to this
  * environment.
  */
 import type { ColumnDef } from '@tanstack/react-table';
-import { ListFilterIcon, PlugZapIcon, PlusIcon, XIcon } from 'lucide-react';
+import {
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  ListFilterIcon,
+  PlugZapIcon,
+  PlusIcon,
+  XIcon,
+} from 'lucide-react';
 import { useMemo, useState, type ReactElement, type ReactNode } from 'react';
 import {
   Link,
@@ -67,6 +75,9 @@ import type { AppsOutletContext } from './new-app-page.js';
 
 type EnvironmentTab = 'overview' | 'variables' | 'settings';
 
+/** An environment's Apps a page; more are a page further (`?page=`), so none is out of reach. */
+const APPS_PAGE_SIZE = 100;
+
 type Translate = (key: string, options?: Record<string, unknown>) => string;
 
 export default function EnvironmentPage(): ReactElement {
@@ -76,12 +87,12 @@ export default function EnvironmentPage(): ReactElement {
   const notify = useNotify();
   const navigate = useNavigate();
   const canManage = me.permissions.settings['rel.environments/manage'];
+  // App readers open the page for its Apps; the variables and the connection check need the environments setting.
+  const canRead = me.permissions.settings['rel.environments/read'];
+  const [tab, setTab] = useTabParam<EnvironmentTab>(
+    canRead ? ['overview', 'variables', 'settings'] : ['overview', 'settings'],
+  );
   const { drivers, driverName, t } = useDriverNames();
-  const [tab, setTab] = useTabParam<EnvironmentTab>([
-    'overview',
-    'variables',
-    'settings',
-  ]);
   const [busy, setBusy] = useState<string | null>(null);
   // Starts the form again from what is saved, after a save or when changes are discarded.
   const [formKey, setFormKey] = useState(0);
@@ -220,13 +231,20 @@ export default function EnvironmentPage(): ReactElement {
         </>
       ),
     },
-    {
-      value: 'variables',
-      label: t('ui.tabs.variables'),
-      content: (
-        <EnvironmentVariables environmentId={record.id} canEdit={canManage} />
-      ),
-    },
+    ...(canRead
+      ? [
+          {
+            value: 'variables' as const,
+            label: t('ui.tabs.variables'),
+            content: (
+              <EnvironmentVariables
+                environmentId={record.id}
+                canEdit={canManage}
+              />
+            ),
+          },
+        ]
+      : []),
     { value: 'settings', label: t('ui.tabs.settings'), content: settings },
   ];
 
@@ -244,18 +262,20 @@ export default function EnvironmentPage(): ReactElement {
             </span>
           }
           actions={
-            <Button
-              variant='outline'
-              disabled={busy !== null}
-              onClick={() => void check(record)}
-            >
-              {busy === `check:${record.id}` ? (
-                <Spinner data-icon='inline-start' />
-              ) : (
-                <PlugZapIcon data-icon='inline-start' />
-              )}
-              {t('ui.environments.check')}
-            </Button>
+            canRead ? (
+              <Button
+                variant='outline'
+                disabled={busy !== null}
+                onClick={() => void check(record)}
+              >
+                {busy === `check:${record.id}` ? (
+                  <Spinner data-icon='inline-start' />
+                ) : (
+                  <PlugZapIcon data-icon='inline-start' />
+                )}
+                {t('ui.environments.check')}
+              </Button>
+            ) : null
           }
         />
       </div>
@@ -375,7 +395,8 @@ function Fact({
  * The Apps deployed to this environment, each opening its own page, with its runtime state (why it is in it on hover
  * or a tap), a deployment in progress and a pending deployment request marked beside it. The states shown are a filter
  * kept in the address (`?runtimeState=`, repeatable), which a shared host's capacity card links with, so a reload
- * keeps it; the server filters before it cuts the page. Create App is here for those who may create one.
+ * keeps it; the server filters before it cuts the page, and further pages are a step in the address (`?page=`, back
+ * to the first when the states change). Create App is here for those who may create one.
  */
 function EnvironmentApps({
   environmentId,
@@ -395,15 +416,31 @@ function EnvironmentApps({
     .filter((state): state is RunState =>
       (RUN_STATES as readonly string[]).includes(state),
     );
+  const requestedPage = Math.max(1, Number(params.get('page')) || 1);
   const apps = useLoad(
     () =>
       api.list<AppSummary>('apps', {
         environmentId,
         runtimeState: runStates,
-        pageSize: 100,
+        page: requestedPage,
+        pageSize: APPS_PAGE_SIZE,
       }),
-    `environment-apps:${environmentId}|${runStates.join(',')}`,
+    `environment-apps:${environmentId}|${runStates.join(',')}|${requestedPage}`,
   );
+  const total = apps.data?.meta.total ?? apps.data?.items.length ?? 0;
+  const pages = Math.max(1, Math.ceil(total / APPS_PAGE_SIZE));
+  const page = Math.min(requestedPage, pages);
+  /** Another page of the Apps, as a step the browser's back undoes. */
+  const goTo = (target: number): void =>
+    setParams(
+      (current) => {
+        const next = new URLSearchParams(current);
+        if (target > 1) next.set('page', String(target));
+        else next.delete('page');
+        return next;
+      },
+      { replace: false },
+    );
   // Pending requests on the Apps the caller may see, for the "Pending approval" marks.
   const pending = useLoad(
     () =>
@@ -417,11 +454,12 @@ function EnvironmentApps({
     () => pendingByApp(pending.data?.items ?? []),
     [pending.data],
   );
-  /** Changes the states shown, keeping the rest of the address (the tab). */
+  /** Changes the states shown, keeping the rest of the address (the tab), from the first page. */
   const setStates = (states: readonly RunState[]): void =>
     setParams(
       (current) => {
         const next = new URLSearchParams(current);
+        next.delete('page');
         next.delete('runtimeState');
         for (const value of RUN_STATES)
           if (states.includes(value)) next.append('runtimeState', value);
@@ -575,18 +613,45 @@ function EnvironmentApps({
         ) : null}
       </div>
       {apps.data ? (
-        <DataTable
-          columns={columns}
-          data={apps.data.items}
-          getRowId={(item) => item.app.id}
-          onRowClick={(row) => void navigate(links.app(row.original.app.id))}
-          emptyMessage={
-            runStates.length > 0
-              ? t('ui.apps.noMatches')
-              : t('ui.environments.appsEmpty')
-          }
-          scroll
-        />
+        <div className='space-y-3'>
+          <DataTable
+            columns={columns}
+            data={apps.data.items}
+            getRowId={(item) => item.app.id}
+            onRowClick={(row) => void navigate(links.app(row.original.app.id))}
+            emptyMessage={
+              runStates.length > 0
+                ? t('ui.apps.noMatches')
+                : t('ui.environments.appsEmpty')
+            }
+            scroll
+          />
+          {pages > 1 ? (
+            <nav className='flex items-center justify-end gap-2 text-sm'>
+              <span className='text-muted-foreground tabular-nums'>
+                {t('ui.apps.page', { page, pages })}
+              </span>
+              <Button
+                variant='outline'
+                size='icon'
+                aria-label={t('ui.apps.previousPage')}
+                disabled={page <= 1}
+                onClick={() => goTo(page - 1)}
+              >
+                <ChevronLeftIcon />
+              </Button>
+              <Button
+                variant='outline'
+                size='icon'
+                aria-label={t('ui.apps.nextPage')}
+                disabled={page >= pages}
+                onClick={() => goTo(page + 1)}
+              >
+                <ChevronRightIcon />
+              </Button>
+            </nav>
+          ) : null}
+        </div>
       ) : apps.error !== undefined ? (
         <LoadError
           title={t('ui.apps.loadFailed')}

@@ -185,6 +185,9 @@ const frFR: LocaleResource<typeof enUS> = {
         failed: 'En échec',
         unknown: 'Inconnu',
       },
+      page: 'Page {{page}} sur {{pages}}',
+      previousPage: 'Page précédente',
+      nextPage: 'Page suivante',
     },
     advanced: 'Avancé (facultatif)',
     labels: {

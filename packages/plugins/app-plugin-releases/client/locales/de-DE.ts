@@ -185,6 +185,9 @@ const deDE: LocaleResource<typeof enUS> = {
         failed: 'Fehlgeschlagen',
         unknown: 'Unbekannt',
       },
+      page: 'Seite {{page}} von {{pages}}',
+      previousPage: 'Vorherige Seite',
+      nextPage: 'Nächste Seite',
     },
     advanced: 'Erweitert (optional)',
     labels: {

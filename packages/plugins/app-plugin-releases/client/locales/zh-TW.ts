@@ -166,6 +166,9 @@ const zhTW: LocaleResource<typeof enUS> = {
         failed: '失敗',
         unknown: '未知',
       },
+      page: '第 {{page}} / {{pages}} 頁',
+      previousPage: '上一頁',
+      nextPage: '下一頁',
     },
     advanced: '進階（可選）',
     labels: {

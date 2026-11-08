@@ -182,6 +182,9 @@ const ruRU: LocaleResource<typeof enUS> = {
         failed: 'Ошибка',
         unknown: 'Неизвестно',
       },
+      page: 'Страница {{page}} из {{pages}}',
+      previousPage: 'Предыдущая страница',
+      nextPage: 'Следующая страница',
     },
     advanced: 'Дополнительно (необязательно)',
     labels: {

@@ -185,6 +185,9 @@ const viVN: LocaleResource<typeof enUS> = {
         failed: 'Thất bại',
         unknown: 'Không rõ',
       },
+      page: 'Trang {{page}} / {{pages}}',
+      previousPage: 'Trang trước',
+      nextPage: 'Trang sau',
     },
     advanced: 'Nâng cao (tùy chọn)',
     labels: {

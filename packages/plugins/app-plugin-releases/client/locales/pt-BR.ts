@@ -184,6 +184,9 @@ const ptBR: LocaleResource<typeof enUS> = {
         failed: 'Com falha',
         unknown: 'Desconhecido',
       },
+      page: 'Página {{page}} de {{pages}}',
+      previousPage: 'Página anterior',
+      nextPage: 'Próxima página',
     },
     advanced: 'Avançado (opcional)',
     labels: {

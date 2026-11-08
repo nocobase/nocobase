@@ -185,6 +185,9 @@ const idID: LocaleResource<typeof enUS> = {
         failed: 'Gagal',
         unknown: 'Tidak diketahui',
       },
+      page: 'Halaman {{page}} dari {{pages}}',
+      previousPage: 'Halaman sebelumnya',
+      nextPage: 'Halaman berikutnya',
     },
     advanced: 'Tingkat Lanjut (opsional)',
     labels: {

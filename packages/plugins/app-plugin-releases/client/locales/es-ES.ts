@@ -185,6 +185,9 @@ const esES: LocaleResource<typeof enUS> = {
         failed: 'Con error',
         unknown: 'Desconocido',
       },
+      page: 'Página {{page}} de {{pages}}',
+      previousPage: 'Página anterior',
+      nextPage: 'Página siguiente',
     },
     advanced: 'Avanzado (opcional)',
     labels: {

@@ -184,6 +184,9 @@ const jaJP: LocaleResource<typeof enUS> = {
         failed: '失敗',
         unknown: '不明',
       },
+      page: '{{page}} / {{pages}} ページ',
+      previousPage: '前のページ',
+      nextPage: '次のページ',
     },
     advanced: 'アドバンスト (オプション)',
     labels: {

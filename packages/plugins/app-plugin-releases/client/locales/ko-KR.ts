@@ -172,6 +172,9 @@ const koKR: LocaleResource<typeof enUS> = {
         failed: '실패',
         unknown: '알 수 없음',
       },
+      page: '{{pages}}페이지 중 {{page}}페이지',
+      previousPage: '이전 페이지',
+      nextPage: '다음 페이지',
     },
     advanced: '고급(선택)',
     labels: {

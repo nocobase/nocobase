@@ -107,10 +107,10 @@ export function environmentsDefinition(
     name: 'rel-environments',
     path: normalizePath(path),
     auth: 'required',
-    authz: {
-      resource: { type: 'settings', id: 'rel.environments' },
-      action: 'read',
-    },
+    // The plugin's entry: Apps are listed and created on an environment's page, so the Apps page grant opens it, as
+    // `/api/releases/environments` lets it read them (`EnvironmentService.requireReader`). Managing environments and
+    // the shared hosts' capacity keep checking the `rel.environments` setting, on the server and in the page.
+    authz: page('rel-apps'),
     navigation: { title: 'ui.nav.environments', icon: Server },
     componentLoader: loader(
       () => import('./pages/environments-page.js'),

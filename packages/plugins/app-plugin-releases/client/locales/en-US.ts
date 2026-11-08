@@ -37,6 +37,9 @@ const ui = {
       failed: 'Failed',
       unknown: 'Unknown',
     },
+    page: 'Page {{page}} of {{pages}}',
+    previousPage: 'Previous page',
+    nextPage: 'Next page',
   },
   advanced: 'Advanced (optional)',
   labels: {

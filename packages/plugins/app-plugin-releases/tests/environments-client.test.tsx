@@ -910,6 +910,84 @@ describe('environment page', () => {
     expect(field).toBeDisabled();
   });
 
+  it('pages through more apps than fit one page, from the first page again when the states change', async () => {
+    const sent = serve([environment()]);
+    const named = (id: string) =>
+      ({
+        ...app,
+        app: { ...app.app, id, name: id },
+      }) as AppSummary;
+    const base = mocks.request.getMockImplementation()!;
+    mocks.request.mockImplementation((options: Sent) => {
+      if (options.path !== 'releases/apps') return base(options);
+      sent.push(options);
+      // 101 Apps: the server cuts them into pages of 100.
+      return Promise.resolve({
+        data:
+          options.query?.page === 2 ? [named('app-101')] : [named('app-001')],
+        meta: { total: 101 },
+      });
+    });
+    renderPage('/environments/remote-1');
+    expect(await screen.findByText('Page 1 of 2')).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'Previous page' }),
+    ).toBeDisabled();
+    fireEvent.click(screen.getByRole('button', { name: 'Next page' }));
+    expect(
+      await screen.findByRole('link', { name: 'app-101' }),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Page 2 of 2')).toBeInTheDocument();
+    const appsQueries = () =>
+      sent
+        .filter((item) => item.path === 'releases/apps')
+        .map((item) => item.query);
+    expect(appsQueries().at(-1)).toMatchObject({
+      environmentId: 'remote-1',
+      page: 2,
+      pageSize: 100,
+    });
+    // Choosing states starts again at the first page.
+    await userEvent.click(screen.getByRole('button', { name: 'Any state' }));
+    await userEvent.click(
+      await screen.findByRole('menuitemcheckbox', { name: 'Running' }),
+    );
+    await waitFor(() =>
+      expect(appsQueries().at(-1)).toMatchObject({
+        page: 1,
+        runtimeState: ['running'],
+      }),
+    );
+  });
+
+  it('opens to app readers without the environments setting, for its apps only', async () => {
+    const permissions = allPermissions();
+    serve([environment()], undefined, [], [], {
+      apps: [app],
+      permissions: {
+        ...permissions,
+        settings: {
+          ...permissions.settings,
+          'rel.environments/read': false,
+          'rel.environments/manage': false,
+        },
+      },
+    });
+    renderPage('/environments/remote-1?tab=variables');
+    // They list and create its Apps; its variables and the connection check stay with the setting.
+    expect(
+      await screen.findByRole('link', { name: 'Shop' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('link', { name: 'Create app' }),
+    ).toBeInTheDocument();
+    expect(screen.getAllByRole('tab').map((tab) => tab.textContent)).toEqual([
+      'Overview',
+      'Settings',
+    ]);
+    expect(screen.queryByRole('button', { name: 'Check' })).toBeNull();
+  });
+
   it('offers no Create App to those who may not create apps', async () => {
     const permissions = allPermissions();
     serve([environment()], undefined, [], [], {
