@@ -4311,6 +4311,9 @@ importers:
       react:
         specifier: ^19.0.0
         version: 19.2.8
+      react-router:
+        specifier: 'catalog:'
+        version: 7.18.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
@@ -4321,6 +4324,15 @@ importers:
       '@nocobase/app-plugin-api-keys':
         specifier: workspace:*
         version: link:../app-plugin-api-keys
+      '@nocobase/app-plugin-database-explorer':
+        specifier: workspace:*
+        version: link:../app-plugin-database-explorer
+      '@nocobase/app-plugin-file':
+        specifier: workspace:*
+        version: link:../app-plugin-file
+      '@nocobase/app-plugin-i18n':
+        specifier: workspace:*
+        version: link:../app-plugin-i18n
       '@nocobase/app-plugin-mail':
         specifier: workspace:*
         version: link:../app-plugin-mail
@@ -4345,6 +4357,9 @@ importers:
       '@testing-library/react':
         specifier: 'catalog:'
         version: 16.3.2(@testing-library/dom@10.4.1)(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      '@testing-library/user-event':
+        specifier: 'catalog:'
+        version: 14.6.4(@testing-library/dom@10.4.1)
       '@types/node':
         specifier: 'catalog:'
         version: 24.13.3
@@ -4366,9 +4381,6 @@ importers:
       react-dom:
         specifier: 'catalog:'
         version: 19.2.8(react@19.2.8)
-      react-router:
-        specifier: 'catalog:'
-        version: 7.18.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       shadcn:
         specifier: 'catalog:'
         version: 4.18.0(@cfworker/json-schema@4.1.1)(typescript@6.0.3)

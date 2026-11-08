@@ -1,3 +1,4 @@
+import databaseExplorer from '../../pages/settings/database-explorer/en-US.js';
 import settings from './settings-en-US.js';
 import type { LocaleResource } from '@nocobase/i18n';
 import deviceApprovalEnUS from '#extensions/nocobase-device-approval/locales/en-US';
@@ -8,6 +9,7 @@ import inboxEnUS from '#extensions/nocobase-inbox/locales/en-US';
  * replaces this file, so put the application's own copy in `../en-US.ts` rather than here.
  */
 const systemEnUS = {
+  databaseExplorer,
   pendingFeedback: {
     working: 'Working…',
     longWait: 'This is taking longer than usual. You can keep waiting.',
@@ -209,6 +211,7 @@ const systemEnUS = {
     signingOut: 'Signing out…',
   },
   navigation: {
+    resources: 'Resources',
     home: 'Home',
     open: 'Open navigation',
     close: 'Close navigation',

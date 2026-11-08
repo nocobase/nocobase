@@ -6,12 +6,14 @@ export {
   type FoundationNavigationNode,
 } from './navigation.js';
 export {
+  capabilityGuideDefinitions,
   createFoundationRoutes,
   foundationDefinition,
   type FoundationRouteOptions,
 } from './routes.js';
 export {
   fetchFoundationOverview,
+  fetchFoundationRegistrations,
   useFoundationOverview,
   type FoundationLoadError,
   type FoundationOverviewState,

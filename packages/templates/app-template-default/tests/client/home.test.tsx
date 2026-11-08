@@ -1,13 +1,23 @@
 import { renderWithApp } from '@nocobase/app-testing/client';
-import { screen, waitFor, within } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import packageMetadata from '../../package.json' with { type: 'json' };
 import enUS from '../../client/locales/en-US.js';
-import zhCN from '../../client/locales/zh-CN.js';
 import HomePage from '../../client/pages/home/index.js';
-import { CAPABILITIES } from '../../client/pages/home/capabilities.js';
+import {
+  CAPABILITY_GUIDE_PATH,
+  capabilityPath,
+  createCapabilityCatalog,
+  entryContent,
+  format,
+  guideContent,
+} from '@nocobase/app-plugin-foundation/capability-guide';
+
+const catalog = createCapabilityCatalog(packageMetadata);
+const escape = (text: string): string =>
+  text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 function renderHome() {
   return renderWithApp(<HomePage />, {
@@ -48,79 +58,28 @@ describe('home page', () => {
     expect(screen.getByText(enUS.home.steps.describe.title)).toBeVisible();
   });
 
-  it('shows one card per built-in capability', async () => {
+  it('features capabilities from the shared guide catalog, each linking to its entry', async () => {
     await renderHome();
+    const content = guideContent('en-US');
 
-    for (const { id } of CAPABILITIES) {
-      const title =
-        enUS.home.capabilities[id as keyof typeof enUS.home.capabilities].title;
+    expect(catalog.featured.length).toBeGreaterThan(0);
+    for (const entry of catalog.featured) {
+      const title = entryContent(content, entry).title;
       expect(
-        screen.getByRole('button', { name: new RegExp(title) }),
-      ).toBeInTheDocument();
+        screen.getByRole('link', { name: new RegExp(escape(title)) }),
+      ).toHaveAttribute('href', capabilityPath(entry.id));
     }
   });
 
-  it('opens a capability, switches prompts, and copies the edited text', async () => {
-    const user = setup();
-    const view = await renderHome();
-    const scheduler = enUS.home.capabilities.scheduler;
-
-    await user.click(
-      screen.getByRole('button', { name: new RegExp(scheduler.title) }),
-    );
-    const dialog = await screen.findByRole('dialog');
-    const prompt = within(dialog).getByRole('textbox', {
-      name: enUS.home.prompt.label,
-    });
-    expect(prompt).toHaveValue(scheduler.prompts.reminder.text);
-
-    await user.click(
-      within(dialog).getByRole('tab', {
-        name: scheduler.prompts.weeklyReport.label,
-      }),
-    );
-    expect(prompt).toHaveValue(scheduler.prompts.weeklyReport.text);
-
-    await user.clear(prompt);
-    await user.type(prompt, 'Every Friday');
-    await user.click(
-      within(dialog).getByRole('button', { name: enUS.home.prompt.copy }),
-    );
-
-    expect(writeText).toHaveBeenCalledWith('Every Friday');
-    expect(view.toasts()).toEqual([
-      expect.objectContaining({
-        type: 'success',
-        title: enUS.home.prompt.copied,
-      }),
-    ]);
-
-    await user.click(
-      within(dialog).getByRole('button', { name: enUS.home.prompt.reset }),
-    );
-    expect(prompt).toHaveValue(scheduler.prompts.weeklyReport.text);
-  });
-
-  it('starts from the default prompt each time the dialog opens', async () => {
-    const user = setup();
+  it('leads to the full catalog, counted from the dependencies this application declares', async () => {
     await renderHome();
-    const theme = enUS.home.capabilities.theme;
-    const card = screen.getByRole('button', { name: new RegExp(theme.title) });
+    const content = guideContent('en-US');
 
-    await user.click(card);
-    const prompt = within(await screen.findByRole('dialog')).getByRole(
-      'textbox',
-    );
-    await user.type(prompt, ' Edited.');
-    await user.keyboard('{Escape}');
-    await waitFor(() =>
-      expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
-    );
-
-    await user.click(card);
     expect(
-      within(await screen.findByRole('dialog')).getByRole('textbox'),
-    ).toHaveValue(theme.prompts.changeTheme.text);
+      screen.getByRole('link', {
+        name: format(content.home.viewAll, { count: catalog.entries.length }),
+      }),
+    ).toHaveAttribute('href', CAPABILITY_GUIDE_PATH);
   });
 
   it('reports a copy the browser refuses', async () => {
@@ -138,23 +97,5 @@ describe('home page', () => {
         title: enUS.home.prompt.copyFailed,
       }),
     ]);
-  });
-});
-
-describe('home page copy', () => {
-  it('translates every capability prompt into Chinese', () => {
-    for (const { id, prompts } of CAPABILITIES) {
-      const key = id as keyof typeof zhCN.home.capabilities;
-      for (const prompt of prompts) {
-        const zh = (
-          zhCN.home.capabilities[key].prompts as Record<
-            string,
-            { label: string; text: string }
-          >
-        )[prompt];
-        expect(zh?.text, `${id}.${prompt}`).toBeTruthy();
-        expect(zh?.label, `${id}.${prompt}`).toBeTruthy();
-      }
-    }
   });
 });
