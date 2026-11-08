@@ -15,10 +15,10 @@ import { MemoryRouter, Outlet, Route, Routes, useLocation } from 'react-router';
 import { describe, expect, it, vi } from 'vitest';
 
 import { labelsHeader, uploadLabels } from '../client/lib/format.js';
-import { newAppTarget } from '../client/lib/paths.js';
+import { newAppTarget, ReleasesPathsContext } from '../client/lib/paths.js';
 import enUS from '../client/locales/en-US.js';
 import zhCN from '../client/locales/zh-CN.js';
-import { allPermissions, noPermissions } from '../shared/access.js';
+import { allPermissions } from '../shared/access.js';
 
 const mocks = vi.hoisted(() => ({
   request: vi.fn(),
@@ -105,7 +105,7 @@ import {
   policySummary,
 } from '../client/lib/runtime-policy.js';
 import { ReleasesSystemLabelsContext } from '../client/lib/system-labels.js';
-import { AppsCatalog } from '../client/pages/apps-page.js';
+import AppsOutlet from '../client/pages/apps-outlet.js';
 import NewAppPage from '../client/pages/new-app-page.js';
 import { useState } from 'react';
 import plugin from '../client/plugin.js';
@@ -189,78 +189,53 @@ describe('client', () => {
     expect(keys(zhCN).sort()).toEqual(keys(enUS).sort());
   });
 
-  it('lists Apps and offers no creation, which moved to an environment’s page', async () => {
-    const answer = (permissions: unknown) => (options: { path: string }) => {
-      if (options.path === 'releases/me')
-        return Promise.resolve({
-          data: { userId: 'u', kind: 'human', permissions },
-        });
-      if (options.path === 'releases/apps')
-        return Promise.resolve({
-          data: [
-            {
-              app: {
-                id: 'shop',
-                name: 'Shop',
-                labels: { branch: 'main' },
-              },
-              environment: {
-                id: 'prod',
-                name: 'Production',
-                protected: true,
-                runsImages: false,
-              },
-              runtime: {
-                available: true,
-                state: 'running',
-                version: '1.0.0',
-                startedAt: null,
-                error: null,
-              },
-              url: null,
-              currentVersion: '1.0.0',
-              hasReleases: true,
-              hasPendingDeployment: false,
-            },
-          ],
-          meta: { total: 1, page: 1, pageSize: 100 },
-        });
-      if (options.path === 'releases/environments')
-        return Promise.resolve({ data: [], meta: { total: 0 } });
-      return Promise.resolve({ data: [], meta: { total: 0 } });
+  it('has no Apps list or menu entry: the Apps path alone leads to the environments, its children still open', async () => {
+    const { routes } = createReleasesRoutes() as unknown as {
+      routes: readonly {
+        name: string;
+        navigation?: unknown;
+        children?: { name: string; path: string }[];
+      }[];
     };
-    mocks.request.mockImplementation(answer(noPermissions()));
+    // The environments page is the plugin's only entry; an App, a request and Create App's old address stay below.
+    expect(
+      routes.filter((route) => route.navigation).map((route) => route.name),
+    ).toEqual(['rel-environments']);
+    expect(routes[0]?.children?.map((child) => child.path)).toEqual([
+      'new',
+      'requests/:requestId',
+      ':appId',
+    ]);
+    function Where(): ReactElement {
+      const location = useLocation();
+      return <span data-testid='where'>{location.pathname}</span>;
+    }
     const view = render(
-      <MemoryRouter>
-        <AppsCatalog />
+      <MemoryRouter initialEntries={['/releases']}>
+        <ReleasesPathsContext.Provider
+          value={{ apps: '/releases', environments: '/envs' }}
+        >
+          <Routes>
+            <Route path='/releases' element={<AppsOutlet />}>
+              <Route path=':appId' element={<p>App page</p>} />
+            </Route>
+            <Route path='/envs' element={<Where />} />
+          </Routes>
+        </ReleasesPathsContext.Provider>
       </MemoryRouter>,
     );
-    expect(await screen.findByText('Shop')).toBeInTheDocument();
-    expect(screen.getByText('Protected')).toBeInTheDocument();
-    expect(screen.getByText('branch=main')).toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: 'Create app' })).toBeNull();
+    expect(await screen.findByTestId('where')).toHaveTextContent('/envs');
     view.unmount();
-
-    mocks.request.mockImplementation(answer(allPermissions()));
     render(
-      <MemoryRouter>
-        <AppsCatalog />
+      <MemoryRouter initialEntries={['/releases/shop']}>
+        <Routes>
+          <Route path='/releases' element={<AppsOutlet />}>
+            <Route path=':appId' element={<p>App page</p>} />
+          </Route>
+        </Routes>
       </MemoryRouter>,
     );
-    expect(await screen.findByText('Shop')).toBeInTheDocument();
-    // Even with the create grant: an App is created from its environment's page.
-    expect(screen.queryByRole('link', { name: 'Create app' })).toBeNull();
-
-    // Refresh reads the Apps and the pending requests again.
-    const reads = (path: string) =>
-      mocks.request.mock.calls.filter(
-        ([options]) => (options as { path: string }).path === path,
-      ).length;
-    const apps = reads('releases/apps');
-    const requests = reads('releases/deploymentRequests');
-    fireEvent.click(screen.getByRole('button', { name: 'Refresh' }));
-    await waitFor(() => expect(reads('releases/apps')).toBe(apps + 1));
-    expect(reads('releases/deploymentRequests')).toBe(requests + 1);
+    expect(await screen.findByText('App page')).toBeInTheDocument();
   });
 
   it('opens Create App over an environment at `apps/new`, the environment fixed, and the new App in its place', async () => {

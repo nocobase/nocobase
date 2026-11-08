@@ -1,17 +1,29 @@
 import { usePageBreadcrumb } from '@nocobase/app-client';
 /**
  * One environment, in tabs kept in the URL (`?tab=`): Overview (how it runs, who may deploy, the defaults its Apps
- * take, and the Apps deployed to it), Variables (what every App here gets), and Settings (the form, and deleting the
+ * take, and the Apps deployed to it with their runtime states, filtered by `?runtimeState=`), Variables (what every App here gets), and Settings (the form, and deleting the
  * environment). Those who may only read environments see the same page read-only. Checking it is a header action.
  * Create App opens over it at `apps/new` (`new-app-page.tsx`) for those who may create Apps, the App going to this
  * environment.
  */
 import type { ColumnDef } from '@tanstack/react-table';
-import { PlugZapIcon, PlusIcon } from 'lucide-react';
+import { ListFilterIcon, PlugZapIcon, PlusIcon, XIcon } from 'lucide-react';
 import { useMemo, useState, type ReactElement, type ReactNode } from 'react';
-import { Link, Outlet, useNavigate, useParams } from 'react-router';
+import {
+  Link,
+  Outlet,
+  useNavigate,
+  useParams,
+  useSearchParams,
+} from 'react-router';
 
-import type { AppSummary, EnvironmentRecord } from '../../shared/releases.js';
+import {
+  RUN_STATES,
+  type AppSummary,
+  type DeploymentRequestView,
+  type EnvironmentRecord,
+  type RunState,
+} from '../../shared/releases.js';
 import { ActorName } from '../components/actor-name.js';
 import { useConfirmDialog } from '../components/confirm-dialog.js';
 import { DataTable } from '../components/data-table.js';
@@ -20,13 +32,18 @@ import { PageContainer } from '../components/page-container.js';
 import { PageHeader } from '../components/page-header.js';
 import { RefreshButton } from '../components/refresh-button.js';
 import { PageTabs, type PageTab } from '../components/page-tabs.js';
-import {
-  AppStateBadge,
-  EnvironmentBadges,
-} from '../components/release-badges.js';
+import { EnvironmentBadges } from '../components/release-badges.js';
+import { RuntimeStateBadge } from '../components/runtime-state.js';
+import { Tag } from '../components/tag.js';
 import { Section } from '../components/section.js';
 import { ListSkeleton, LoadError } from '../components/states.js';
 import { Button, buttonVariants } from '../components/ui/button.js';
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from '../components/ui/dropdown-menu.js';
 import {
   Card,
   CardContent,
@@ -44,6 +61,7 @@ import { useNotify } from '../hooks/use-notify.js';
 import { useRegistries } from '../hooks/use-registries.js';
 import { useLoad, useMe, useReleasesApi } from '../hooks/use-releases.js';
 import { useTabParam } from '../hooks/use-tab-param.js';
+import { pendingByApp } from '../lib/pending-requests.js';
 import { useReleasesLinks, useReleasesPaths } from '../lib/paths.js';
 import type { AppsOutletContext } from './new-app-page.js';
 
@@ -353,7 +371,12 @@ function Fact({
   );
 }
 
-/** The Apps deployed to this environment, each opening its own page, and Create App for those who may create one. */
+/**
+ * The Apps deployed to this environment, each opening its own page, with its runtime state (why it is in it on hover
+ * or a tap), a deployment in progress and a pending deployment request marked beside it. The states shown are a filter
+ * kept in the address (`?runtimeState=`, repeatable), which a shared host's capacity card links with, so a reload
+ * keeps it; the server filters before it cuts the page. Create App is here for those who may create one.
+ */
 function EnvironmentApps({
   environmentId,
   t,
@@ -365,11 +388,47 @@ function EnvironmentApps({
   const me = useMe();
   const links = useReleasesLinks();
   const navigate = useNavigate();
+  const [params, setParams] = useSearchParams();
   const canCreate = me.permissions.scopes['rel.apps/create'] === 'all';
+  const runStates = params
+    .getAll('runtimeState')
+    .filter((state): state is RunState =>
+      (RUN_STATES as readonly string[]).includes(state),
+    );
   const apps = useLoad(
-    () => api.list<AppSummary>('apps', { environmentId, pageSize: 100 }),
-    `environment-apps:${environmentId}`,
+    () =>
+      api.list<AppSummary>('apps', {
+        environmentId,
+        runtimeState: runStates,
+        pageSize: 100,
+      }),
+    `environment-apps:${environmentId}|${runStates.join(',')}`,
   );
+  // Pending requests on the Apps the caller may see, for the "Pending approval" marks.
+  const pending = useLoad(
+    () =>
+      api.list<DeploymentRequestView>('deploymentRequests', {
+        status: 'pending',
+        pageSize: 100,
+      }),
+    'pending',
+  );
+  const pendingApps = useMemo(
+    () => pendingByApp(pending.data?.items ?? []),
+    [pending.data],
+  );
+  /** Changes the states shown, keeping the rest of the address (the tab). */
+  const setStates = (states: readonly RunState[]): void =>
+    setParams(
+      (current) => {
+        const next = new URLSearchParams(current);
+        next.delete('runtimeState');
+        for (const value of RUN_STATES)
+          if (states.includes(value)) next.append('runtimeState', value);
+        return next;
+      },
+      { replace: true },
+    );
   const columns: ColumnDef<AppSummary, unknown>[] = [
     {
       id: 'name',
@@ -393,8 +452,33 @@ function EnvironmentApps({
     {
       id: 'state',
       header: t('ui.apps.state'),
-      meta: { className: 'w-48' },
-      cell: ({ row }) => <AppStateBadge summary={row.original} />,
+      meta: { className: 'w-56' },
+      cell: ({ row }) => {
+        const request = pendingApps.get(row.original.app.id);
+        const deployment = row.original.hasPendingDeployment
+          ? (row.original.pendingDeployment?.status ?? 'deploying')
+          : null;
+        return (
+          <span className='inline-flex flex-wrap items-center gap-1.5'>
+            <RuntimeStateBadge runtime={row.original.runtime} />
+            {deployment ? (
+              <Tag tone={deployment === 'cancelling' ? 'amber' : 'blue'}>
+                {deployment === 'deploying'
+                  ? t('ui.state.deploying')
+                  : t(`ui.deployments.statuses.${deployment}`)}
+              </Tag>
+            ) : null}
+            {request ? (
+              <span
+                className='inline-flex'
+                data-pending-approval={request.decidable ? 'mine' : 'other'}
+              >
+                <Tag tone='amber'>{t('ui.requests.pendingApproval')}</Tag>
+              </span>
+            ) : null}
+          </span>
+        );
+      },
     },
     {
       id: 'version',
@@ -428,7 +512,7 @@ function EnvironmentApps({
   return (
     <Section
       title={t('ui.environments.apps')}
-      count={apps.data?.items.length}
+      count={apps.data?.meta.total}
       description={t('ui.environments.appsDescription')}
       // The Apps' states change on their own; the rest of the page is the environment's settings.
       actions={
@@ -442,17 +526,65 @@ function EnvironmentApps({
               {t('ui.apps.create')}
             </Link>
           ) : null}
-          <RefreshButton refreshing={apps.loading} onRefresh={apps.reload} />
+          <RefreshButton
+            refreshing={apps.loading || pending.loading}
+            onRefresh={() => {
+              apps.reload();
+              pending.reload();
+            }}
+          />
         </>
       }
     >
+      <div className='flex flex-wrap items-center gap-2'>
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            render={<Button variant='outline' />}
+            data-slot='state-filter'
+          >
+            <ListFilterIcon data-icon='inline-start' />
+            {runStates.length > 0
+              ? `${t('ui.apps.stateFilter')}: ${runStates
+                  .map((state) => t(`ui.apps.runStates.${state}`))
+                  .join(', ')}`
+              : t('ui.apps.anyState')}
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align='start'>
+            {RUN_STATES.map((state) => (
+              <DropdownMenuCheckboxItem
+                key={state}
+                checked={runStates.includes(state)}
+                onCheckedChange={(checked) =>
+                  setStates(
+                    checked
+                      ? [...runStates, state]
+                      : runStates.filter((value) => value !== state),
+                  )
+                }
+              >
+                {t(`ui.apps.runStates.${state}`)}
+              </DropdownMenuCheckboxItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+        {runStates.length > 0 ? (
+          <Button variant='ghost' onClick={() => setStates([])}>
+            <XIcon data-icon='inline-start' />
+            {t('ui.apps.clearFilters')}
+          </Button>
+        ) : null}
+      </div>
       {apps.data ? (
         <DataTable
           columns={columns}
           data={apps.data.items}
           getRowId={(item) => item.app.id}
           onRowClick={(row) => void navigate(links.app(row.original.app.id))}
-          emptyMessage={t('ui.environments.appsEmpty')}
+          emptyMessage={
+            runStates.length > 0
+              ? t('ui.apps.noMatches')
+              : t('ui.environments.appsEmpty')
+          }
           scroll
         />
       ) : apps.error !== undefined ? (

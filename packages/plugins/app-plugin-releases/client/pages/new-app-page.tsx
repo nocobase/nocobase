@@ -39,12 +39,10 @@ import {
   type RuntimePolicyDraft,
 } from '../lib/runtime-policy.js';
 
-/** What the page under the dialog hands it: the environment's page for Create App, the Apps page for a request. */
+/** What the environment's page under the dialog hands it. */
 export interface AppsOutletContext {
-  /** Loads the list again once an App is created or a request decided. */
+  /** Loads the environment's Apps again once one is created. */
   readonly reload: () => void;
-  /** Loads the requests waiting for the caller again once one is decided (`request-page.tsx`). */
-  readonly reloadRequests?: () => void;
 }
 
 const FORM_ID = 'rel-create-app';

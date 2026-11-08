@@ -152,13 +152,10 @@ const idID: LocaleResource<typeof enUS> = {
   },
   ui: {
     nav: {
-      apps: 'Aplikasi',
       environments: 'Menyebarkan lingkungan',
     },
     apps: {
       title: 'Aplikasi',
-      description: 'Aplikasi, rilisnya, dan di mana penerapannya.',
-      search: 'Cari berdasarkan ID atau nama',
       create: 'Buat aplikasi',
       id: 'ID Aplikasi',
       name: 'Nama',
@@ -169,11 +166,6 @@ const idID: LocaleResource<typeof enUS> = {
       labels: 'Label',
       loadFailed: 'Tidak dapat memuat aplikasi.',
       loadOneFailed: 'Tidak dapat memuat aplikasi.',
-      emptyTitle: 'Belum ada aplikasi',
-      emptyNoAccess: 'Minta administrator untuk membuat aplikasi.',
-      emptyDescription:
-        'Buat aplikasi dari halaman sebuah lingkungan, lalu unggah rilis dan terapkan.',
-      noResults: 'Tidak ada aplikasi yang cocok dengan pencarian.',
       created: '{{name}} dibuat.',
       createDescription:
         'Sebuah aplikasi diterapkan ke satu lingkungan; rilisnya diunggah setelahnya.',
@@ -182,12 +174,8 @@ const idID: LocaleResource<typeof enUS> = {
       lastAccess: 'Kunjungan terakhir',
       stateFilter: 'Status',
       anyState: 'Semua status',
-      filteredEnvironments: 'Lingkungan: {{names}}',
       clearFilters: 'Hapus filter',
       noMatches: 'Tidak ada aplikasi yang cocok dengan filter.',
-      page: 'Halaman {{page}} dari {{pages}}',
-      previousPage: 'Halaman sebelumnya',
-      nextPage: 'Halaman berikutnya',
       runStates: {
         running: 'Berjalan',
         starting: 'Sedang dimulai',
@@ -580,8 +568,8 @@ const idID: LocaleResource<typeof enUS> = {
       available: '{{available}} masih kosong di server',
       wholeHost:
         'Total seluruh host, termasuk semua lingkungan di dalamnya; memori tidak bisa dibagi per aplikasi.',
-      viewApps: 'Lihat {{count}} aplikasi yang berjalan atau sedang dimulai',
       viewAppsNote: 'Hanya menampilkan aplikasi yang bisa Anda lihat.',
+      byEnvironment: 'Berjalan atau sedang dimulai, per lingkungan:',
     },
     runtime: {
       holds: {

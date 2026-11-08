@@ -152,13 +152,10 @@ const viVN: LocaleResource<typeof enUS> = {
   },
   ui: {
     nav: {
-      apps: 'Ứng dụng',
       environments: 'Triển khai môi trường',
     },
     apps: {
       title: 'Ứng dụng',
-      description: 'Các ứng dụng, bản phát hành và nơi chúng được triển khai.',
-      search: 'Tìm kiếm theo ID hoặc tên',
       create: 'Tạo ứng dụng',
       id: 'ID ứng dụng',
       name: 'Tên',
@@ -169,11 +166,6 @@ const viVN: LocaleResource<typeof enUS> = {
       labels: 'Nhãn',
       loadFailed: 'Không thể tải ứng dụng.',
       loadOneFailed: 'Không thể tải ứng dụng.',
-      emptyTitle: 'Chưa có ứng dụng nào',
-      emptyNoAccess: 'Yêu cầu quản trị viên tạo ứng dụng.',
-      emptyDescription:
-        'Tạo ứng dụng từ trang của một môi trường, sau đó tải bản phát hành lên và triển khai.',
-      noResults: 'Không có ứng dụng nào phù hợp với tìm kiếm.',
       created: '{{name}} đã được tạo.',
       createDescription:
         'Một ứng dụng được triển khai trên một môi trường; bản phát hành của nó được tải lên sau đó.',
@@ -182,12 +174,8 @@ const viVN: LocaleResource<typeof enUS> = {
       lastAccess: 'Lần cuối ghé thăm',
       stateFilter: 'Trạng thái',
       anyState: 'Mọi trạng thái',
-      filteredEnvironments: 'Môi trường: {{names}}',
       clearFilters: 'Xóa bộ lọc',
       noMatches: 'Không có ứng dụng nào khớp bộ lọc.',
-      page: 'Trang {{page}} / {{pages}}',
-      previousPage: 'Trang trước',
-      nextPage: 'Trang sau',
       runStates: {
         running: 'Đang chạy',
         starting: 'Đang khởi động',
@@ -581,8 +569,8 @@ const viVN: LocaleResource<typeof enUS> = {
       available: 'Máy chủ còn trống {{available}}',
       wholeHost:
         'Tổng của cả máy chủ, gồm mọi môi trường trên đó; không thể chia bộ nhớ cho từng ứng dụng.',
-      viewApps: 'Xem {{count}} ứng dụng đang chạy hoặc đang khởi động',
       viewAppsNote: 'Chỉ liệt kê các ứng dụng bạn được xem.',
+      byEnvironment: 'Đang chạy hoặc đang khởi động, theo môi trường:',
     },
     runtime: {
       holds: {

@@ -2,8 +2,9 @@
  * The pages, for an application that routes them itself (`releases({ routes: false })`): the route definitions with
  * their page grants, and the components bound to this plugin's namespace for use inside the application's own pages.
  * An environment's page goes below the environments page (`:environmentId`) with Create App over it (`apps/new`), as an
- * App's goes below the Apps page, beside Create App's old address (`new`, `ReleasesNewAppRedirect`) and a deployment
- * request (`requests/:requestId`), both declared before `:appId`.
+ * App's goes below the Apps path, which has no page of its own (an environment's page lists its Apps), beside Create
+ * App's old address (`new`, `ReleasesNewAppRedirect`) and a deployment request (`requests/:requestId`), both declared
+ * before `:appId`.
  * When the application mounts them elsewhere than `/releases` and `/release-environments`, it provides
  * `ReleasesPathsContext` (or wraps them with `withReleasesPaths`) so the pages link to one another.
  */
@@ -12,7 +13,6 @@ import type { ComponentType } from 'react';
 
 import { ACCESS_NAMESPACE } from '../shared/access.js';
 import AppPage from './pages/app-page.js';
-import AppsPage from './pages/apps-page.js';
 import EnvironmentPage from './pages/environment-page.js';
 import EnvironmentsPage, {
   type EnvironmentsPageProps,
@@ -28,10 +28,6 @@ export {
   type ReleasesPaths,
 } from './lib/paths.js';
 
-export const ReleasesAppsPage: ComponentType = withNamespace(
-  ACCESS_NAMESPACE,
-  AppsPage,
-);
 export const ReleasesAppPage: ComponentType = withNamespace(
   ACCESS_NAMESPACE,
   AppPage,

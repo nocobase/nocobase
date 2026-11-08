@@ -66,8 +66,8 @@ export function EnvironmentsList({
   const notify = useNotify();
   const navigate = useNavigate();
   const canManage = me.permissions.settings['rel.environments/manage'];
-  // The Apps list needs its page and the `view` action on some App, as the server checks both.
-  const canListApps =
+  // An environment's Apps are read from `/apps`, which needs the Apps page and the `view` action on some App.
+  const canViewApps =
     me.permissions.pages['rel-apps'] &&
     me.permissions.scopes['rel.apps/view'] !== 'none';
   const environments = useLoad(
@@ -288,7 +288,7 @@ export function EnvironmentsList({
         <SharedHostSection
           key={host.id}
           host={host}
-          canListApps={canListApps}
+          canViewApps={canViewApps}
         />
       ))}
       <Dialog open={adding} onOpenChange={setAdding}>

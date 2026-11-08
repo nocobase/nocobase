@@ -152,13 +152,10 @@ const esES: LocaleResource<typeof enUS> = {
   },
   ui: {
     nav: {
-      apps: 'Aplicaciones',
       environments: 'Implementar entornos',
     },
     apps: {
       title: 'Aplicaciones',
-      description: 'Aplicaciones, sus lanzamientos y dónde se implementan.',
-      search: 'Buscar por ID o nombre',
       create: 'Crear aplicación',
       id: 'ID de aplicación',
       name: 'Nombre',
@@ -169,11 +166,6 @@ const esES: LocaleResource<typeof enUS> = {
       labels: 'Etiquetas',
       loadFailed: 'No se pudieron cargar las aplicaciones.',
       loadOneFailed: 'No se pudo cargar la aplicación.',
-      emptyTitle: 'Aún no hay aplicaciones',
-      emptyNoAccess: 'Solicite a un administrador que cree una aplicación.',
-      emptyDescription:
-        'Cree una aplicación desde la página de un entorno; luego cargue una versión e impleméntela.',
-      noResults: 'Ninguna aplicación coincide con la búsqueda.',
       created: '{{name}} creado.',
       createDescription:
         'Una aplicación se implementa en un entorno; sus lanzamientos se cargan después.',
@@ -182,12 +174,8 @@ const esES: LocaleResource<typeof enUS> = {
       lastAccess: 'Última visita',
       stateFilter: 'Estado',
       anyState: 'Cualquier estado',
-      filteredEnvironments: 'Entornos: {{names}}',
       clearFilters: 'Quitar filtros',
       noMatches: 'Ninguna app coincide con los filtros.',
-      page: 'Página {{page}} de {{pages}}',
-      previousPage: 'Página anterior',
-      nextPage: 'Página siguiente',
       runStates: {
         running: 'En ejecución',
         starting: 'Iniciándose',
@@ -588,8 +576,8 @@ const esES: LocaleResource<typeof enUS> = {
       available: '{{available}} aún libres en el servidor',
       wholeHost:
         'Totales de todo el host, con todos sus entornos; la memoria no se puede repartir entre sus apps.',
-      viewApps: 'Ver {{count}} apps en ejecución o iniciándose',
       viewAppsNote: 'Solo muestra las apps que puedes ver.',
+      byEnvironment: 'En ejecución o iniciándose, por entorno:',
     },
     runtime: {
       holds: {

@@ -135,13 +135,10 @@ const zhTW: LocaleResource<typeof enUS> = {
   },
   ui: {
     nav: {
-      apps: '應用程式',
       environments: '部署環境',
     },
     apps: {
       title: '應用程式',
-      description: '應用程式、其版本以及部署位置。',
-      search: '依 ID 或姓名搜尋',
       create: '建立應用程式',
       id: '應用程式 ID',
       name: '名稱',
@@ -152,22 +149,14 @@ const zhTW: LocaleResource<typeof enUS> = {
       labels: '標籤',
       loadFailed: '無法載入應用程式。',
       loadOneFailed: '無法載入應用程式。',
-      emptyTitle: '還沒有應用程式',
-      emptyNoAccess: '請求管理員建立應用程式。',
-      emptyDescription: '在環境詳情頁建立應用程式，再上傳版本並部署。',
-      noResults: '沒有與搜尋相符的應用程式。',
       created: '{{name}} 建立。',
       createDescription: '一個應用程式部署到一個環境；隨後上傳其版本。',
       idHint: '字母、數字、底線和連字元；其地址的一部分。以後無法改變。',
       lastAccess: '最後一次訪問',
       stateFilter: '狀態',
       anyState: '全部狀態',
-      filteredEnvironments: '環境：{{names}}',
       clearFilters: '清除篩選',
       noMatches: '沒有符合篩選條件的應用。',
-      page: '第 {{page}} / {{pages}} 頁',
-      previousPage: '上一頁',
-      nextPage: '下一頁',
       runStates: {
         running: '執行中',
         starting: '啟動中',
@@ -536,8 +525,8 @@ const zhTW: LocaleResource<typeof enUS> = {
       available: '伺服器還剩 {{available}}',
       wholeHost:
         '這是整個宿主的總量，包含它上面的所有環境；記憶體分不到單個應用。',
-      viewApps: '查看 {{count}} 個執行或啟動中的應用',
       viewAppsNote: '只列出你有權查看的應用。',
+      byEnvironment: '按環境，執行或啟動中：',
     },
     runtime: {
       holds: {

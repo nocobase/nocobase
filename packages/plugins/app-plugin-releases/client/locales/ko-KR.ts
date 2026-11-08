@@ -139,13 +139,10 @@ const koKR: LocaleResource<typeof enUS> = {
   },
   ui: {
     nav: {
-      apps: '앱',
       environments: '배포 환경',
     },
     apps: {
       title: '앱',
-      description: '애플리케이션과 릴리스, 배포 위치입니다.',
-      search: 'ID 또는 이름으로 검색',
       create: '앱 만들기',
       id: '앱 ID',
       name: '이름',
@@ -156,11 +153,6 @@ const koKR: LocaleResource<typeof enUS> = {
       labels: '라벨',
       loadFailed: '앱을 불러올 수 없습니다.',
       loadOneFailed: '앱을 불러올 수 없습니다.',
-      emptyTitle: '아직 앱이 없습니다',
-      emptyNoAccess: '관리자에게 앱 생성을 요청하세요.',
-      emptyDescription:
-        '환경 상세 페이지에서 앱을 만든 뒤 릴리스를 업로드하고 배포하세요.',
-      noResults: '검색과 일치하는 앱이 없습니다.',
       created: '{{name}}을(를) 만들었습니다.',
       createDescription:
         '앱은 하나의 환경에 배포되며 릴리스는 나중에 업로드합니다.',
@@ -169,12 +161,8 @@ const koKR: LocaleResource<typeof enUS> = {
       lastAccess: '마지막 방문',
       stateFilter: '상태',
       anyState: '모든 상태',
-      filteredEnvironments: '환경: {{names}}',
       clearFilters: '필터 지우기',
       noMatches: '필터와 일치하는 앱이 없습니다.',
-      page: '{{pages}}페이지 중 {{page}}페이지',
-      previousPage: '이전 페이지',
-      nextPage: '다음 페이지',
       runStates: {
         running: '실행 중',
         starting: '시작 중',
@@ -559,8 +547,8 @@ const koKR: LocaleResource<typeof enUS> = {
       available: '서버에 {{available}} 남음',
       wholeHost:
         '이 호스트 전체(모든 환경 포함)의 합계이며, 메모리는 앱별로 나눌 수 없습니다.',
-      viewApps: '실행 중이거나 시작 중인 앱 {{count}}개 보기',
       viewAppsNote: '볼 수 있는 앱만 표시됩니다.',
+      byEnvironment: '환경별 실행 중 또는 시작 중:',
     },
     runtime: {
       holds: {

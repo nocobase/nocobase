@@ -425,9 +425,11 @@ export interface AppHostView {
 
 /** A shared runtime as the environments page lists it: the host and the environments whose Apps run on it. */
 export interface SharedHostView extends AppHostView {
+  /** The environments with Apps on it, each with how many of its Apps run or start there (part of `running`). */
   readonly environments: readonly {
     readonly id: string;
     readonly name: string;
+    readonly running: number;
   }[];
 }
 

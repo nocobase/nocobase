@@ -1,8 +1,4 @@
-import type {
-  AppSummary,
-  RuntimeStatus,
-  SharedHostView,
-} from '../../shared/releases.js';
+import type { AppSummary, RuntimeStatus } from '../../shared/releases.js';
 
 /**
  * An App's runtime as its state badge words it (a `ui.state.*` key), a deployment in progress aside: a refused start
@@ -64,14 +60,4 @@ export function hostNoticeOf(summary: AppSummary): string | null {
   if (summary.host.recycling)
     return `ui.sharedHost.recycling.${summary.host.recycling}`;
   return null;
-}
-
-/** The Apps list showing what the card counts: running or starting Apps of the host's environments. */
-export function hostAppsSearch(host: SharedHostView): string {
-  const params = new URLSearchParams();
-  for (const environment of host.environments)
-    params.append('environmentId', environment.id);
-  params.append('runtimeState', 'running');
-  params.append('runtimeState', 'starting');
-  return `?${params.toString()}`;
 }

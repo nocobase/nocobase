@@ -151,13 +151,10 @@ const jaJP: LocaleResource<typeof enUS> = {
   },
   ui: {
     nav: {
-      apps: 'アプリ',
       environments: '環境の展開',
     },
     apps: {
       title: 'アプリ',
-      description: 'アプリケーション、そのリリース、および展開場所。',
-      search: 'IDまたは名前で検索',
       create: 'アプリの作成',
       id: 'アプリID',
       name: '名前',
@@ -168,11 +165,6 @@ const jaJP: LocaleResource<typeof enUS> = {
       labels: 'ラベル',
       loadFailed: 'アプリを読み込めませんでした。',
       loadOneFailed: 'アプリを読み込めませんでした。',
-      emptyTitle: 'アプリはまだありません',
-      emptyNoAccess: '管理者にアプリの作成を依頼します。',
-      emptyDescription:
-        '環境の詳細ページからアプリを作成し、リリースをアップロードしてデプロイします。',
-      noResults: '検索に一致するアプリはありません。',
       created: '{{name}} を作成しました。',
       createDescription:
         'アプリは 1 つの環境にデプロイされます。そのリリースは後でアップロードされます。',
@@ -181,12 +173,8 @@ const jaJP: LocaleResource<typeof enUS> = {
       lastAccess: '最後の訪問',
       stateFilter: '状態',
       anyState: 'すべての状態',
-      filteredEnvironments: '環境：{{names}}',
       clearFilters: 'フィルターをクリア',
       noMatches: 'フィルターに一致するアプリはありません。',
-      page: '{{page}} / {{pages}} ページ',
-      previousPage: '前のページ',
-      nextPage: '次のページ',
       runStates: {
         running: '実行中',
         starting: '起動中',
@@ -576,8 +564,8 @@ const jaJP: LocaleResource<typeof enUS> = {
       available: 'サーバーの空き {{available}}',
       wholeHost:
         'ホスト全体（上のすべての環境を含む）の合計です。メモリはアプリごとに分けられません。',
-      viewApps: '実行中または起動中の {{count}} 個のアプリを見る',
       viewAppsNote: '表示権限のあるアプリだけが一覧に出ます。',
+      byEnvironment: '環境別の実行中または起動中：',
     },
     runtime: {
       holds: {

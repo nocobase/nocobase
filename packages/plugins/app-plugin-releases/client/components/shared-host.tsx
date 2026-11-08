@@ -1,7 +1,8 @@
 /**
  * A shared app host: the environments page shows each one once as a capacity card (`SharedHostSection`) — how many
  * Apps run or start against its limit, the shared process's memory as one total (it cannot be divided among the Apps),
- * its restart state and the environments it could not restore — with a link to those Apps in the Apps list. An App's
+ * its restart state and the environments it could not restore — with those Apps by environment, each linking to the
+ * environment's Apps filtered to them. An App's
  * page mentions its host only when the host affects it (`SharedHostNotice`), linking to the card for those who may read
  * the environments page.
  */
@@ -14,12 +15,8 @@ import { ACCESS_NAMESPACE } from '../../shared/access.js';
 import type { AppSummary, SharedHostView } from '../../shared/releases.js';
 import { messageText } from '../lib/errors.js';
 import { formatMemory } from '../lib/format.js';
-import { useReleasesPaths } from '../lib/paths.js';
-import {
-  hostAppsSearch,
-  hostNoticeOf,
-  sharedHostAnchor,
-} from '../lib/runtime-state.js';
+import { useReleasesLinks, useReleasesPaths } from '../lib/paths.js';
+import { hostNoticeOf, sharedHostAnchor } from '../lib/runtime-state.js';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert.js';
 import {
   Card,
@@ -112,19 +109,23 @@ function Meter({
   );
 }
 
+/** An environment's Apps filtered to those the card counts: running or starting. */
+const RUNNING_SEARCH = '?runtimeState=running&runtimeState=starting';
+
 /**
- * One host's capacity card. Its counts are the whole host's, every environment on it included; the link to the Apps
- * list shows `canListApps` readers the running Apps they may view.
+ * One host's capacity card. Its counts are the whole host's, every environment on it included. Its footer splits the
+ * running or starting Apps by environment, each linking `canViewApps` readers to the environment's Apps filtered to
+ * them; the server counts with the same states the filter keeps, so the two agree.
  */
 export function SharedHostSection({
   host,
-  canListApps,
+  canViewApps,
 }: {
   readonly host: SharedHostView;
-  readonly canListApps: boolean;
+  readonly canViewApps: boolean;
 }): ReactElement {
   const { t } = useTranslation(ACCESS_NAMESPACE);
-  const paths = useReleasesPaths();
+  const links = useReleasesLinks();
   const memory = host.memory;
   return (
     <Card id={sharedHostAnchor(host.id)} className='scroll-mt-4'>
@@ -220,17 +221,43 @@ export function SharedHostSection({
           </Alert>
         ))}
       </CardContent>
-      {canListApps && host.environments.length > 0 ? (
-        <CardFooter className='flex flex-wrap items-baseline gap-x-3 gap-y-1'>
-          <Link
-            to={`${paths.apps}${hostAppsSearch(host)}`}
-            className='text-sm text-primary underline-offset-4 hover:underline'
-          >
-            {t('ui.sharedHost.viewApps', { count: host.running })}
-          </Link>
-          <span className='text-xs text-muted-foreground'>
-            {t('ui.sharedHost.viewAppsNote')}
+      {host.environments.length > 0 ? (
+        <CardFooter
+          className='flex flex-wrap items-baseline gap-x-3 gap-y-1'
+          data-slot='shared-host-environments'
+        >
+          <span className='text-sm text-muted-foreground'>
+            {t('ui.sharedHost.byEnvironment')}
           </span>
+          <ul className='flex flex-wrap items-baseline gap-x-3 gap-y-1 text-sm'>
+            {host.environments.map((environment) => {
+              const label = (
+                <>
+                  {environment.name}{' '}
+                  <span className='tabular-nums'>{environment.running}</span>
+                </>
+              );
+              return (
+                <li key={environment.id}>
+                  {canViewApps ? (
+                    <Link
+                      to={`${links.environment(environment.id)}${RUNNING_SEARCH}`}
+                      className='text-primary underline-offset-4 hover:underline'
+                    >
+                      {label}
+                    </Link>
+                  ) : (
+                    label
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+          {canViewApps ? (
+            <span className='text-xs text-muted-foreground'>
+              {t('ui.sharedHost.viewAppsNote')}
+            </span>
+          ) : null}
         </CardFooter>
       ) : null}
     </Card>

@@ -4,11 +4,11 @@ import type enUS from './en-US.js';
 const zhCN: typeof enUS = {
   ...accessZhCN,
   ui: {
-    nav: { apps: '应用', environments: '部署环境' },
+    nav: {
+      environments: '部署环境',
+    },
     apps: {
       title: '应用',
-      description: '应用、它们的版本，以及部署在哪里。',
-      search: '按 ID 或名称搜索',
       create: '创建应用',
       id: '应用 ID',
       name: '名称',
@@ -19,10 +19,6 @@ const zhCN: typeof enUS = {
       labels: '标签',
       loadFailed: '应用加载失败。',
       loadOneFailed: '应用加载失败。',
-      emptyTitle: '还没有应用',
-      emptyNoAccess: '请管理员创建应用。',
-      emptyDescription: '在环境详情页创建应用，再上传版本并部署。',
-      noResults: '没有符合搜索的应用。',
       created: '已创建 {{name}}。',
       createDescription: '应用部署到一个环境；创建后再上传它的版本。',
       idHint:
@@ -30,12 +26,8 @@ const zhCN: typeof enUS = {
       lastAccess: '最近访问',
       stateFilter: '状态',
       anyState: '全部状态',
-      filteredEnvironments: '环境：{{names}}',
       clearFilters: '清除筛选',
       noMatches: '没有符合筛选条件的应用。',
-      page: '第 {{page}} / {{pages}} 页',
-      previousPage: '上一页',
-      nextPage: '下一页',
       runStates: {
         running: '运行中',
         starting: '启动中',
@@ -398,8 +390,8 @@ const zhCN: typeof enUS = {
       available: '服务器还剩 {{available}}',
       wholeHost:
         '这是整个宿主的总量，包含它上面的所有环境；内存分不到单个应用。',
-      viewApps: '查看 {{count}} 个运行或启动中的应用',
       viewAppsNote: '只列出你有权查看的应用。',
+      byEnvironment: '按环境，运行或启动中：',
     },
     runtime: {
       holds: {
