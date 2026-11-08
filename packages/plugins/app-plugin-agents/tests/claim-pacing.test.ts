@@ -178,7 +178,17 @@ describe('claims paced by how busy each runner is with the tool', () => {
   });
 
   it('takes nothing when the request ends while it waits', async () => {
-    h = await createHarness({ claimPause: pause });
+    // The request ends once the claim is in its wait, not after a guessed delay.
+    let entered: () => void = () => undefined;
+    const waiting = new Promise<void>((resolve) => {
+      entered = resolve;
+    });
+    h = await createHarness({
+      claimPause: (ms, signal) => {
+        if (ms > 0) entered();
+        return pause(ms, signal);
+      },
+    });
     const agent = await h.createAgent({ maxConcurrentRuns: 8 });
     const registered = await h.registerRunner({ slots: 2 });
     await h.enqueue(agent, 'held');
@@ -198,7 +208,8 @@ describe('claims paced by how busy each runner is with the tool', () => {
       body: JSON.stringify({ free: 1 }),
       signal: controller.signal,
     });
-    setTimeout(() => controller.abort(), 50);
+    await waiting;
+    controller.abort();
     const response = await pending;
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({ data: { runs: [] } });
