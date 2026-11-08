@@ -27,7 +27,7 @@ const detail = (name: string) => ({
   },
 });
 const connections = {
-  data: [{ name: 'main', isDefault: true, dialect: 'sqlite' }],
+  data: [{ name: 'main', isDefault: true, dialect: 'postgres' }],
 };
 function mount(api: (call: ApiCall) => unknown) {
   return renderWithApp(<DatabaseExplorerPage />, {
