@@ -3,7 +3,7 @@ import {
   type AppClientAppRoutesContribution,
   type AppClientRoutePageDefinition,
 } from '@nocobase/app-client/plugins';
-import { Compass, Layers, Settings } from 'lucide-react';
+import { Layers, Settings } from 'lucide-react';
 import { createElement } from 'react';
 
 import {
@@ -26,6 +26,8 @@ export interface FoundationRouteOptions {
   readonly manifest?: DependencyManifest;
   /** `false` keeps the guide out of the menu. Defaults to `true`. */
   readonly guideNavigation?: boolean;
+  /** Optional host settings home to include in the catalog breadcrumb. */
+  readonly guideSettingsPath?: string;
 }
 
 /**
@@ -65,14 +67,20 @@ export function foundationDefinition(
  */
 export function capabilityGuideDefinitions(
   catalog: CapabilityCatalog,
-  options: { readonly navigation?: boolean } = {},
+  options: {
+    readonly navigation?: boolean;
+    readonly settingsPath?: string;
+  } = {},
 ): AppClientRoutePageDefinition[] {
   const componentLoader = async () => {
     const { CapabilityGuidePage } =
       await import('./capability-guide/guide-page.js');
     return {
       default: function CapabilityGuideRoute() {
-        return createElement(CapabilityGuidePage, { catalog });
+        return createElement(CapabilityGuidePage, {
+          catalog,
+          settingsPath: options.settingsPath,
+        });
       },
     };
   };
@@ -88,7 +96,7 @@ export function capabilityGuideDefinitions(
             navigation: {
               title: 'nav.capabilityGuide',
               description: 'nav.capabilityGuideDescription',
-              icon: Compass,
+              icon: Layers,
               order: 10,
             },
           }),
@@ -112,6 +120,7 @@ export function createFoundationRoutes(
   const guide = options.manifest
     ? capabilityGuideDefinitions(createCapabilityCatalog(options.manifest), {
         navigation: options.guideNavigation,
+        settingsPath: options.guideSettingsPath,
       })
     : [];
   return defineAppRoutes(

@@ -89,3 +89,19 @@ describe('Foundation navigation grouping', () => {
     expect(result[0]?.children).toEqual([permissions, foundation]);
   });
 });
+
+it('groups the capability catalog in settings without changing its public URL or access', () => {
+  const guide = page('capabilityGuide', '@nocobase/app-plugin-foundation');
+  const item = {
+    ...guide,
+    route: { ...guide.route, path: '/capabilities', authz: 'skip' as const },
+  };
+  const grouped = groupFoundationNavigation([settings, item]);
+  expect(grouped).toHaveLength(1);
+  expect(grouped[0]?.children).toEqual([permissions, item]);
+  expect(grouped[0]?.children[1]?.route).toMatchObject({
+    path: '/capabilities',
+    authz: 'skip',
+  });
+  expect(groupFoundationNavigation(grouped)).toEqual(grouped);
+});

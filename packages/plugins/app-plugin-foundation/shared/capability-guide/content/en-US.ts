@@ -3,12 +3,12 @@ import type { GuideContent } from './types.js';
 // Mockup content. Placeholders are in square brackets and stay in the copied text for the reader to replace.
 const enUS: GuideContent = {
   nav: {
-    title: 'Capability guide',
+    title: 'Core and plugins',
     description:
-      'What this application already provides, and how to have your agent use it.',
+      'Explore the application’s core modules and plugins, and how to use them.',
   },
   page: {
-    title: 'Capability guide',
+    title: 'Core and plugins',
     description:
       'Every core module and plugin this application depends on. Pick one to see the business problem it solves, then copy a prompt for your agent.',
     search: 'Search names, business terms or scenarios',
@@ -178,8 +178,8 @@ const enUS: GuideContent = {
       ],
     },
     'app-plugin-authorization': {
-      title: 'Application permissions',
-      summary: 'Define who may view, change and act on business information.',
+      title: 'Authorization',
+      summary: 'Control the pages, actions and data each user can access.',
       scenarios: [
         'Salespeople accessing their customers, managers viewing team data and finance handling selected records.',
       ],
@@ -217,7 +217,7 @@ const enUS: GuideContent = {
       ],
     },
     'app-plugin-authz-default-access': {
-      title: 'Default record access',
+      title: 'Authorization: default record access',
       summary:
         'Set a shared baseline of visible records for people who already have the relevant permissions.',
       scenarios: [
@@ -237,7 +237,7 @@ const enUS: GuideContent = {
       ],
     },
     'app-plugin-authz-restriction-rules': {
-      title: 'Restriction rules',
+      title: 'Authorization: restriction rules',
       summary:
         'Further narrow selected users’ data access to protect sensitive records.',
       scenarios: [
@@ -257,7 +257,7 @@ const enUS: GuideContent = {
       ],
     },
     'app-plugin-authz-sharing-rules': {
-      title: 'Sharing rules',
+      title: 'Authorization: sharing rules',
       summary:
         'Share selected business records with collaborators across teams.',
       scenarios: [
@@ -295,9 +295,9 @@ const enUS: GuideContent = {
       ],
     },
     'app-plugin-concurrency': {
-      title: 'Concurrency service',
+      title: 'Concurrency',
       summary:
-        'Connect business operations to shared coordination to reduce simultaneous execution conflicts.',
+        'Configure concurrency control to prevent conflicts from duplicate submissions or simultaneous operations.',
       scenarios: [
         'Repeated handling of the same order or users competing for one resource.',
       ],
@@ -311,6 +311,7 @@ const enUS: GuideContent = {
       reference: [
         'Register the Server plugin before the business plugins that consume it.',
         'Compose defineConcurrencyConfig() under the concurrency configuration key.',
+        'Use ConcurrentManager from @nocobase/concurrency to create resource locks or synchronizers, configure waiting and timeouts, and ensure release.',
         'Resolve the concurrency service; the built-in mutex coordinates only one process.',
       ],
     },
@@ -404,25 +405,25 @@ const enUS: GuideContent = {
       ],
     },
     'app-plugin-foundation': {
-      title: 'Foundation usage',
+      title: 'Core and plugin capabilities',
       summary:
-        'Inspect which foundation capabilities the application actually uses before extending it.',
+        'Explore the core and plugin capabilities available in the application, their use cases and how to use them.',
       scenarios: [
-        'Taking over an existing application and planning further work.',
+        'Understand what the application offers, choose reusable capabilities and describe the business requirements to an agent.',
       ],
       prerequisite:
-        'The App usage page is open only to administrators with unrestricted access.',
+        'The application already provides the Core and plugins page, available after signing in.',
       prompts: {
         main: {
           label: 'Ask the agent',
           template:
-            'Inspect the capabilities actually used by [current application]. Explain which business features are integrated and which are merely available dependencies. Provide a way to verify usage, then identify reusable parts and missing prerequisites for [planned feature].',
+            'Use the core and plugin catalog in [current application] to select reusable capabilities for [planned feature]. Explain the problem each capability solves, its use cases and prerequisites, then turn these into business requirements an agent can implement. Distinguish available capabilities from completed business features; installing a plugin alone does not mean a feature is complete.',
         },
       },
       reference: [
         'Register the Client and Server plugins with Authentication and Authorization.',
-        'Open the Foundation page with an unrestricted administrator account.',
-        'Inspect capability details and runtime evidence; dependency presence alone is not usage.',
+        'Generate the catalog from the application manifest and present business descriptions, use cases and agent prompts.',
+        'The runtime usage page still requires unrestricted administrator access; catalog dependencies do not prove business integration.',
       ],
     },
     'app-plugin-i18n': {
@@ -593,7 +594,7 @@ const enUS: GuideContent = {
       ],
     },
     'app-plugin-notification-in-app': {
-      title: 'In-app inbox',
+      title: 'Notification: in-app messages',
       summary:
         'Collect personal notifications inside the application for convenient review.',
       scenarios: [
@@ -613,7 +614,7 @@ const enUS: GuideContent = {
       ],
     },
     'app-plugin-notification-providers': {
-      title: 'Notification providers',
+      title: 'Notification: built-in channels',
       summary:
         'Deliver business notifications through email, Feishu or DingTalk.',
       scenarios: [
@@ -844,28 +845,6 @@ const enUS: GuideContent = {
         'Build application-owned pages with UsersClient and optional role scopes.',
       ],
     },
-    concurrency: {
-      title: 'Concurrent operations',
-      summary:
-        'Coordinate simultaneous changes to the same business record to reduce conflicts.',
-      scenarios: [
-        'Competing order claims, balance updates or inventory operations.',
-      ],
-      prerequisite:
-        'Already part of this application. When several servers run at once, confirm the coordination covers all of them.',
-      prompts: {
-        main: {
-          label: 'Ask the agent',
-          template:
-            'Handle concurrent changes to [record] in [business]. Decide which operations wait and which reject duplicates, with clear waiting, conflict and retry feedback. Check whether coordination covers all running application instances, then verify the result when two users act simultaneously.',
-        },
-      },
-      reference: [
-        'Obtain a ConcurrentManager from the application concurrency service.',
-        'Use a stable resource name to create a lock or synchronous executor.',
-        'Choose waiting or bounded acquisition and ensure release; coordination scope depends on the backend.',
-      ],
-    },
     db: {
       title: 'Business data',
       summary:
@@ -942,7 +921,7 @@ const enUS: GuideContent = {
     lifecycle: {
       title: 'Business processes',
       summary:
-        'Organize business records into clear states, allowed actions and processing history.',
+        'Define business record states, transition rules and follow-up actions, and keep a history of the process.',
       scenarios: [
         'Support tickets, expenses, purchase requests and order fulfillment.',
       ],

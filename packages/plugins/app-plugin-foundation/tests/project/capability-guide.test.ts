@@ -48,6 +48,33 @@ describe('capability catalog', () => {
     ).toEqual(['@nocobase/authorization']);
   });
 
+  it('folds the concurrency core into its plugin and finds it by either package name', () => {
+    const catalog = createCapabilityCatalog({
+      dependencies: {
+        '@nocobase/concurrency': '*',
+        '@nocobase/app-plugin-concurrency': '*',
+      },
+    });
+    expect(catalog.entries.map((entry) => entry.id)).toEqual([
+      'app-plugin-concurrency',
+    ]);
+    expect(catalog.find('concurrency')).toBeUndefined();
+    expect(catalog.find('app-plugin-concurrency')?.covers).toEqual([
+      '@nocobase/concurrency',
+    ]);
+    const content = guideContent('zh-CN');
+    for (const query of [
+      '@nocobase/concurrency',
+      '@nocobase/app-plugin-concurrency',
+    ]) {
+      expect(
+        filterCatalog(catalog.entries, { source: 'all', query }, (entry) =>
+          searchableText(content, entry),
+        ).map((entry) => entry.id),
+      ).toEqual(['app-plugin-concurrency']);
+    }
+  });
+
   it('links only related entries the application also lists', () => {
     const catalog = createCapabilityCatalog(SAMPLE_MANIFEST);
     const ids = new Set(catalog.entries.map((entry) => entry.id));

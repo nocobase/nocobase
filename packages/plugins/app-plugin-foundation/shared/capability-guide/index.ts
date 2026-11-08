@@ -75,6 +75,7 @@ export function searchableText(
   return [
     entry.name,
     entry.packageName,
+    ...entry.covers,
     text.title,
     text.summary,
     ...text.scenarios,

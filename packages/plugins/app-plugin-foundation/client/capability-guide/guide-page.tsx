@@ -1,3 +1,5 @@
+import { usePageBreadcrumb } from '@nocobase/app-client';
+import { useTranslation } from '@nocobase/i18n/client';
 import { cn } from 'cn';
 import { Search, X } from 'lucide-react';
 import { useState, type ReactElement } from 'react';
@@ -93,9 +95,12 @@ const SOURCE_FILTERS: readonly GuideSourceFilter[] = [
  */
 export function CapabilityGuidePage({
   catalog,
+  settingsPath,
 }: {
   readonly catalog: CapabilityCatalog;
+  readonly settingsPath?: string;
 }): ReactElement {
+  const { t } = useTranslation('@nocobase/app-plugin-foundation');
   const { entryId } = useParams();
   const [params, setParams] = useSearchParams();
   const { content } = useGuideContent();
@@ -103,6 +108,23 @@ export function CapabilityGuidePage({
   const { source: activeSource, query } = filter.current;
   const search = guideSearch(filter.current);
   const selected = entryId ? catalog.find(entryId) : undefined;
+
+  usePageBreadcrumb([
+    ...(settingsPath ? [{ label: t('nav.settings'), to: settingsPath }] : []),
+    {
+      label: content.page.title,
+      ...(entryId ? { to: CAPABILITY_GUIDE_PATH + search } : {}),
+    },
+    ...(entryId
+      ? [
+          {
+            label: selected
+              ? entryContent(content, selected).title
+              : content.detail.missing,
+          },
+        ]
+      : []),
+  ]);
 
   const text = (entry: CatalogEntry): string => searchableText(content, entry);
   const visible = filterCatalog(
@@ -212,7 +234,6 @@ export function CapabilityGuidePage({
               entry={selected}
               catalog={catalog}
               content={content}
-              backTo={`${CAPABILITY_GUIDE_PATH}${search}`}
               search={search}
             />
           ) : (
@@ -262,8 +283,8 @@ function CatalogList({
                   <span className='font-medium'>{text.title}</span>
                   <EntryBadges entry={entry} content={content} />
                 </span>
-                <code className='truncate font-mono text-xs text-muted-foreground'>
-                  {entry.name}
+                <code className='wrap-anywhere font-mono text-xs text-muted-foreground'>
+                  {entry.packageName}
                 </code>
                 <span className='line-clamp-1 text-xs text-muted-foreground'>
                   {text.summary}

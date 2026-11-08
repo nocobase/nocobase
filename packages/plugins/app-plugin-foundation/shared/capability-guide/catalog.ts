@@ -29,6 +29,7 @@ export const KERNEL_NOT_LISTED: Readonly<Record<string, string>> = {
   '@nocobase/app-server': 'frame',
   '@nocobase/service-provider': 'frame',
   '@nocobase/authorization': 'app-plugin-authorization',
+  '@nocobase/concurrency': 'app-plugin-concurrency',
   '@nocobase/drive': 'app-plugin-file',
 };
 

@@ -1,7 +1,6 @@
 import { copyText, useClientApplication } from '@nocobase/app-client';
 import { cn } from 'cn';
 import {
-  ArrowLeft,
   ArrowUpRight,
   Check,
   ChevronDown,
@@ -41,30 +40,18 @@ export function EntryDetail({
   entry,
   catalog,
   content,
-  backTo,
   search,
 }: {
   readonly entry: CatalogEntry | undefined;
   readonly catalog: CapabilityCatalog;
   readonly content: GuideContent;
-  readonly backTo: string;
   readonly search: string;
 }): ReactElement {
   const { locale } = useGuideContent();
   const routes = useRegisteredPaths();
-  const back = (
-    <Link
-      to={backTo}
-      className='-ml-1 inline-flex w-fit items-center gap-1 text-sm text-muted-foreground hover:text-foreground lg:hidden'
-    >
-      <ArrowLeft className='size-4' aria-hidden />
-      {content.detail.back}
-    </Link>
-  );
   if (!entry)
     return (
       <div className='flex flex-col items-start gap-4 rounded-xl border border-dashed p-6'>
-        {back}
         <p role='status' className='text-sm text-muted-foreground'>
           {content.detail.missing}
         </p>
@@ -75,7 +62,6 @@ export function EntryDetail({
   const demo = entry.demo && routes.has(entry.demo) ? entry.demo : undefined;
   return (
     <article className='flex flex-col gap-6' aria-labelledby='entry-title'>
-      {back}
       <header className='flex flex-col gap-3'>
         <div className='flex items-start gap-3'>
           <span className='flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary/5 text-primary'>
@@ -96,7 +82,7 @@ export function EntryDetail({
                 </span>
               ) : null}
             </div>
-            <code className='font-mono text-xs text-muted-foreground'>
+            <code className='wrap-anywhere font-mono text-xs text-muted-foreground'>
               {entry.packageName}
             </code>
           </div>

@@ -5,9 +5,8 @@ const zhCN: FoundationResource = {
     settings: '系统设置',
     foundation: '应用使用情况',
     foundationDescription: '这个应用用到了哪些 NocoBase 基础能力。',
-    capabilityGuide: '能力指南',
-    capabilityGuideDescription:
-      '当前应用已经提供的能力，以及怎样让 Agent 用起来。',
+    capabilityGuide: '内核与插件',
+    capabilityGuideDescription: '了解应用提供的内核与插件，以及如何使用它们。',
   },
   page: {
     otherCapabilities: '其他能力',

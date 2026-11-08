@@ -1,10 +1,14 @@
+import {
+  PageBreadcrumbProvider,
+  usePageBreadcrumbLevels,
+} from '@nocobase/app-client';
 import { renderWithApp } from '@nocobase/app-testing/client';
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import {
   defineAppRoutes,
   defineClientPlugin,
 } from '@nocobase/app-client/plugins';
-import { Route, Routes, useLocation, useNavigate } from 'react-router';
+import { Link, Route, Routes, useLocation, useNavigate } from 'react-router';
 import { describe, expect, it, vi } from 'vitest';
 
 import { CapabilityGuidePage } from '../../client/capability-guide/guide-page.js';
@@ -50,25 +54,47 @@ function Location(): React.ReactElement {
   );
 }
 
+function BreadcrumbHeader() {
+  const levels = usePageBreadcrumbLevels() ?? [];
+  return (
+    <nav aria-label='Breadcrumb'>
+      {levels.map((level, index) =>
+        index < levels.length - 1 && level.to ? (
+          <Link key={level.label} to={level.to}>
+            {level.label}
+          </Link>
+        ) : (
+          <span key={level.label}>{level.label}</span>
+        ),
+      )}
+    </nav>
+  );
+}
+
 async function renderGuide(
   route: string,
   options: { readonly demo?: boolean } = {},
 ) {
   return renderWithApp(
-    <>
+    <PageBreadcrumbProvider>
+      <BreadcrumbHeader />
       <Routes>
         <Route
           path='/capabilities'
-          element={<CapabilityGuidePage catalog={catalog} />}
+          element={
+            <CapabilityGuidePage catalog={catalog} settingsPath='/settings' />
+          }
         />
         <Route
           path='/capabilities/:entryId'
-          element={<CapabilityGuidePage catalog={catalog} />}
+          element={
+            <CapabilityGuidePage catalog={catalog} settingsPath='/settings' />
+          }
         />
       </Routes>
       <Location />
       <HistoryBack />
-    </>,
+    </PageBreadcrumbProvider>,
     {
       plugins: [plugin(), ...(options.demo ? [lifecycleDemo()] : [])],
       namespace: '@nocobase/app-plugin-foundation',
@@ -89,6 +115,12 @@ describe('capability guide page', () => {
     await renderGuide('/capabilities');
     expect(rows()).toHaveLength(catalog.entries.length);
     expect(rows()[0]).toHaveTextContent(/^1/);
+    const list = screen.getByRole('list', { name: en.page.title });
+    expect(within(list).getByText('@nocobase/app-plugin-file')).toBeVisible();
+    expect(within(list).getByText('@nocobase/db')).toBeVisible();
+    expect(
+      within(list).getByText('@acme/app-plugin-crm', { selector: 'code' }),
+    ).toBeVisible();
 
     fireEvent.click(
       screen.getByRole('tab', { name: new RegExp(`^${en.sources.kernel}`) }),
@@ -140,7 +172,19 @@ describe('capability guide page', () => {
         name: en.entries['app-plugin-file'].title,
       }),
     ).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('link', { name: en.detail.back }));
+    expect(
+      screen.queryByRole('link', { name: en.detail.back }),
+    ).not.toBeInTheDocument();
+    const breadcrumb = screen.getByRole('navigation', { name: 'Breadcrumb' });
+    expect(
+      within(breadcrumb).getByRole('link', { name: 'System settings' }),
+    ).toHaveAttribute('href', '/settings');
+    expect(
+      within(breadcrumb).getByText(en.entries['app-plugin-file'].title),
+    ).toBeInTheDocument();
+    fireEvent.click(
+      within(breadcrumb).getByRole('link', { name: en.page.title }),
+    );
     await waitFor(() =>
       expect(screen.getByTestId('location')).toHaveTextContent(
         /^\/capabilities\?source=plugin&q=attach$/,

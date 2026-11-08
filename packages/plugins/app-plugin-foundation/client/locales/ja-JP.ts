@@ -5,7 +5,7 @@ const jaJP: FoundationResource = {
     settings: 'システム設定',
     foundation: 'アプリ基盤',
     foundationDescription: 'このアプリが利用している NocoBase の基盤機能。',
-    capabilityGuide: '機能ガイド',
+    capabilityGuide: 'コアとプラグイン',
     capabilityGuideDescription:
       '組み込み機能で解決できることと、エージェントへの依頼方法。',
   },

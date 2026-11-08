@@ -37,7 +37,12 @@ const clientPlugins: AppClientPlugins = defineClientPlugins([
   scheduler(),
   mail(),
   // The manifest is what the capability guide lists: every plugin this application declares.
-  foundation({ settingsGroup: true, manifest: applicationManifest }),
+  foundation({
+    settingsGroup: true,
+    manifest: applicationManifest,
+    guideSettingsPath: '/settings',
+    navigation: false,
+  }),
 ]);
 
 export default clientPlugins;

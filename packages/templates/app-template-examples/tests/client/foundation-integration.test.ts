@@ -5,17 +5,12 @@ import appRuntime from '../../client/runtime.js';
 import {
   buildRouteNavigation,
   buildSettingsCatalog,
-  type RouteNavigationItem,
 } from '../../client/routing/route-navigation.js';
 import packageMetadata from '../../package.json' with { type: 'json' };
 import {
   createCapabilityCatalog,
   type DependencyManifest,
 } from '@nocobase/app-plugin-foundation/capability-guide';
-
-function pages(items: readonly RouteNavigationItem[]): RouteNavigationItem[] {
-  return items.flatMap((item) => [item, ...pages(item.children)]);
-}
 
 describe('Examples Foundation integration', () => {
   it('ships the plugin as a deployment dependency', () => {
@@ -24,45 +19,45 @@ describe('Examples Foundation integration', () => {
     );
   });
 
-  it('exposes one protected Foundation card in System settings and hides it when unrestricted access is denied', async () => {
+  it('shows the capability catalog as the System card and preserves the protected runtime route', async () => {
     const runtime = await resolveAppRuntime(appRuntime);
     const menu = buildRouteNavigation(runtime.routes, new Set());
-    // One System settings entry; Foundation is a card on its home, never a sidebar entry.
-    expect(pages(menu).some(({ route }) => route.name === 'foundation')).toBe(
+    expect(menu.some(({ route }) => route.name === 'capabilityGuide')).toBe(
       false,
     );
     expect(
       menu.filter(({ route }) => route.name === 'settingsHome'),
     ).toHaveLength(1);
-    const catalog = buildSettingsCatalog(runtime.routes, new Set());
-    const owners = catalog.flatMap((category) =>
-      category.modules
-        .filter(({ route }) => route.name === 'foundation')
-        .map(() => category.route.name),
+    const modules = buildSettingsCatalog(runtime.routes, new Set()).find(
+      ({ route }) => route.name === 'settingsSystem',
+    )!.modules;
+    expect(modules.some(({ route }) => route.name === 'foundation')).toBe(
+      false,
     );
-    expect(owners).toEqual(['settingsSystem']);
-    const page = catalog
-      .flatMap((category) => category.modules)
-      .find(({ route }) => route.name === 'foundation')!.route;
-    expect(page).toMatchObject({
-      path: '/foundation',
+    expect(
+      modules.find(({ route }) => route.name === 'capabilityGuide')?.route,
+    ).toMatchObject({
+      path: '/capabilities',
       auth: 'required',
+      authz: 'skip',
+      navigation: { title: 'nav.capabilityGuide' },
+    });
+    const walk = (routes: typeof runtime.routes): typeof runtime.routes =>
+      routes.flatMap((route) => [route, ...walk(route.children ?? [])]);
+    const legacy = walk(runtime.routes).find(
+      (route) => route.name === 'foundation',
+    );
+    expect(legacy).toMatchObject({
+      path: '/foundation',
       authz: 'unrestricted',
     });
-    await expect(page.componentLoader!()).resolves.toMatchObject({
-      default: expect.any(Function),
-    });
-    const denied = new Set([`${page.packageName}:${page.path}:${page.id}`]);
+    expect(legacy?.navigation).toBeUndefined();
+    const deniedLegacy = new Set([legacy!.id]);
     expect(
-      buildSettingsCatalog(runtime.routes, denied)
-        .flatMap((category) => category.modules)
-        .map(({ route }) => route.name),
-    ).toEqual(
-      catalog
-        .flatMap((category) => category.modules)
-        .map(({ route }) => route.name)
-        .filter((name) => name !== 'foundation'),
-    );
+      buildSettingsCatalog(runtime.routes, deniedLegacy)
+        .flatMap(({ modules }) => modules)
+        .some(({ route }) => route.name === 'capabilityGuide'),
+    ).toBe(true);
   });
 
   it('lists the capability guide, and every demo it offers opens a page this application registers', async () => {
@@ -103,15 +98,7 @@ describe('Examples Foundation integration', () => {
       entries
         .filter((entry) => entry.source === 'kernel')
         .map((entry) => entry.name),
-    ).toEqual([
-      'concurrency',
-      'db',
-      'i18n',
-      'jobs',
-      'lifecycle',
-      'queue',
-      'realtime',
-    ]);
+    ).toEqual(['db', 'i18n', 'jobs', 'lifecycle', 'queue', 'realtime']);
     // Every entry has its own wording; none falls back to the generic text.
     expect(entries.filter((entry) => !entry.known)).toEqual([]);
     expect(

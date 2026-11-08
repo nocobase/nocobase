@@ -3,11 +3,11 @@ import type { GuideContent } from './types.js';
 // Mockup content. Placeholders are in 【】 and stay in the copied text for the reader to replace.
 const zhCN: GuideContent = {
   nav: {
-    title: '能力指南',
-    description: '当前应用已经提供的能力，以及怎样让 Agent 用起来。',
+    title: '内核与插件',
+    description: '了解应用提供的内核与插件，以及如何使用它们。',
   },
   page: {
-    title: '能力指南',
+    title: '内核与插件',
     description:
       '这里列出当前应用依赖的全部内核模块和插件。选一项，看它能解决什么业务问题，再复制提示词交给 Agent。',
     search: '搜索名称、业务或场景',
@@ -113,7 +113,7 @@ const zhCN: GuideContent = {
   },
   entries: {
     'app-plugin-agents': {
-      title: 'AI 与 Agent',
+      title: 'AI 智能体',
       summary: '把 AI 助手接入业务，辅助查资料、整理信息和完成指定工作。',
       scenarios: ['知识问答、客户信息整理和业务处理辅助。'],
       prerequisite: '需要先配置一个大模型服务和它的密钥。',
@@ -166,8 +166,8 @@ const zhCN: GuideContent = {
       ],
     },
     'app-plugin-authorization': {
-      title: '应用权限',
-      summary: '定义谁能查看、修改和处理哪些业务数据。',
+      title: '授权',
+      summary: '控制用户可以访问的页面、执行的操作和数据范围。',
       scenarios: ['销售只能看自己的客户，主管查看团队数据，财务处理指定单据。'],
       prompts: {
         main: {
@@ -200,7 +200,7 @@ const zhCN: GuideContent = {
       ],
     },
     'app-plugin-authz-default-access': {
-      title: '默认数据访问',
+      title: '授权：默认数据范围',
       summary: '为已有操作权限的人员设置共同可见的数据范围。',
       scenarios: ['让团队成员都能查看公共客户或公共资料。'],
       prompts: {
@@ -217,7 +217,7 @@ const zhCN: GuideContent = {
       ],
     },
     'app-plugin-authz-restriction-rules': {
-      title: '数据限制规则',
+      title: '授权：限制规则',
       summary: '进一步缩小特定人员的数据可见范围，保护敏感记录。',
       scenarios: ['临时协作者只能查看指定项目，或敏感客户限制访问。'],
       prompts: {
@@ -234,7 +234,7 @@ const zhCN: GuideContent = {
       ],
     },
     'app-plugin-authz-sharing-rules': {
-      title: '数据共享规则',
+      title: '授权：共享规则',
       summary: '把指定业务记录共享给协作人员，支持跨团队配合。',
       scenarios: ['客户协作、项目支援和订单交接。'],
       prompts: {
@@ -268,8 +268,8 @@ const zhCN: GuideContent = {
       ],
     },
     'app-plugin-concurrency': {
-      title: '并发协调服务',
-      summary: '为需要协调的业务操作接入统一处理方式，减少同时执行的冲突。',
+      title: '并发',
+      summary: '为应用配置并发控制，避免重复提交或同时操作造成冲突。',
       scenarios: ['同一笔订单被多次处理，或多人同时争用同一资源。'],
       prompts: {
         main: {
@@ -281,6 +281,7 @@ const zhCN: GuideContent = {
       reference: [
         '在消费并发服务的业务插件之前注册 Server 插件。',
         '在 concurrency 配置项下组合 defineConcurrencyConfig()。',
+        '通过 @nocobase/concurrency 提供的 ConcurrentManager 为资源创建锁或同步执行器，设置等待与超时并确保释放。',
         '通过服务 Token 使用并发能力；内置 Mutex 只协调单个进程。',
       ],
     },
@@ -302,7 +303,7 @@ const zhCN: GuideContent = {
       ],
     },
     'app-plugin-database-explorer': {
-      title: '数据库结构浏览',
+      title: '数据库浏览器',
       summary: '帮助管理员了解应用保存了哪些业务信息以及它们的结构。',
       scenarios: ['梳理已有数据，再规划新页面和业务功能。'],
       prompts: {
@@ -319,7 +320,7 @@ const zhCN: GuideContent = {
       ],
     },
     'app-plugin-file': {
-      title: '文件与附件',
+      title: '文件管理',
       summary: '为业务记录添加附件，支持上传、预览和下载，并控制谁能访问。',
       scenarios: [
         '合同原件、报价单等需要随业务记录保存的文件。',
@@ -368,25 +369,27 @@ const zhCN: GuideContent = {
       ],
     },
     'app-plugin-foundation': {
-      title: '底座使用情况',
-      summary: '查看当前应用实际使用了哪些基础能力，为后续搭建提供依据。',
-      scenarios: ['接手已有应用，了解现有能力和使用情况。'],
-      prerequisite: '“应用使用情况”页面只对拥有全部权限的管理员开放。',
+      title: '内核与插件能力展示',
+      summary: '展示应用提供的内核与插件能力、适用场景和使用方法。',
+      scenarios: [
+        '了解当前应用能做什么，选择可复用的能力，再向 Agent 描述搭建需求。',
+      ],
+      prerequisite: '当前应用已提供“内核与插件”页面，登录后即可查看。',
       prompts: {
         main: {
           label: '让 Agent 实现',
           template:
-            '检查【当前应用】实际使用的基础能力，向我说明哪些业务功能已接入、哪些只有依赖但尚未使用。提供可核对的使用情况入口，并结合【准备搭建的功能】列出可复用的部分和仍缺少的条件。',
+            '结合【当前应用】的内核与插件能力，为【准备搭建的功能】选择可复用的能力。说明每项能力能解决什么问题、适用场景和使用前提，再整理成可交给 Agent 执行的业务需求。区分应用已提供的能力与已经搭建完成的业务功能，不要仅凭安装了插件就判断功能已经完成。',
         },
       },
       reference: [
         '与认证、授权一起注册本插件的 Client 和 Server 入口。',
-        '使用具有不受限权限的管理员账号打开应用底座页面。',
-        '查看能力详情和运行证据；声明依赖不等于已经使用。',
+        '通过应用 manifest 生成能力目录，展示业务说明、使用场景与 Agent 提示词。',
+        '运行情况页面仍要求不受限管理员权限；目录中的依赖不等于业务已经接入。',
       ],
     },
     'app-plugin-i18n': {
-      title: '语言切换',
+      title: '多语言',
       summary: '让用户切换应用语言，并在下次访问时保留选择。',
       scenarios: ['中英文团队使用同一套业务应用。'],
       prompts: {
@@ -420,7 +423,7 @@ const zhCN: GuideContent = {
       ],
     },
     'app-plugin-knowledge': {
-      title: '知识管理',
+      title: '知识库',
       summary: '集中管理知识资料，让团队按权限查找和使用内容。',
       scenarios: ['员工手册、产品资料、操作规范和项目文档。'],
       prerequisite: '需要先准备要收录的资料，并想清楚谁能看哪些内容。',
@@ -469,7 +472,7 @@ const zhCN: GuideContent = {
       ],
     },
     'app-plugin-mail': {
-      title: '用户邮箱',
+      title: '邮箱',
       summary: '把邮件往来接入业务，处理账号、收发和同步。',
       scenarios: ['客户跟进、报价发送和业务邮件归档。'],
       prerequisite:
@@ -505,7 +508,7 @@ const zhCN: GuideContent = {
       ],
     },
     'app-plugin-notification': {
-      title: '系统通知',
+      title: '通知',
       summary: '在业务发生变化时通知相关人员，帮助他们及时处理。',
       scenarios: ['任务分配、状态变化和待办提醒。'],
       prompts: {
@@ -539,7 +542,7 @@ const zhCN: GuideContent = {
       ],
     },
     'app-plugin-notification-in-app': {
-      title: '站内通知',
+      title: '通知：站内信',
       summary: '把通知放进应用内的个人收件箱，方便集中查看和处理。',
       scenarios: ['任务提醒、状态变化和与个人相关的业务消息。'],
       prompts: {
@@ -556,7 +559,7 @@ const zhCN: GuideContent = {
       ],
     },
     'app-plugin-notification-providers': {
-      title: '通知投递渠道',
+      title: '通知：内置渠道',
       summary: '通过邮件、飞书或钉钉等渠道把业务通知送达团队。',
       scenarios: ['用户离开应用后仍需及时收到重要提醒。'],
       prerequisite:
@@ -660,7 +663,7 @@ const zhCN: GuideContent = {
       ],
     },
     'app-plugin-scheduler': {
-      title: '定时调度',
+      title: '定时任务',
       summary: '按指定时间重复执行工作，并查看每次执行的结果。',
       scenarios: ['每天同步客户、每周汇总数据和定时提醒。'],
       prompts: {
@@ -763,27 +766,8 @@ const zhCN: GuideContent = {
         '用 UsersClient 构建应用自己的用户页面，按需接入角色范围。',
       ],
     },
-    concurrency: {
-      title: '并发操作协调',
-      summary: '协调多人同时操作同一条业务记录，减少相互覆盖和冲突。',
-      scenarios: ['多人抢单、同时修改余额或操作同一笔库存。'],
-      prerequisite:
-        '当前应用已包含。多台服务器同时运行时，要先确认协调范围覆盖所有实例。',
-      prompts: {
-        main: {
-          label: '让 Agent 实现',
-          template:
-            '在【业务名称】中处理多人同时操作【业务记录】的情况。明确哪些操作需要排队或拒绝重复执行，为用户显示等待、冲突和重试提示。先确认当前部署是否能覆盖所有同时运行的应用，再验证两人同时操作时的数据结果。',
-        },
-      },
-      reference: [
-        '通过应用并发服务取得 ConcurrentManager。',
-        '为资源指定稳定名称，创建锁或同步执行器。',
-        '选择等待或限时尝试，并确保释放；协调范围取决于后端。',
-      ],
-    },
     db: {
-      title: '业务数据',
+      title: '数据库',
       summary: '管理相互关联的业务信息，让列表、详情和统计使用一致的数据。',
       scenarios: [
         '客户、联系人和跟进记录需要长期维护，并且互相关联。',
@@ -815,7 +799,7 @@ const zhCN: GuideContent = {
       ],
     },
     i18n: {
-      title: '多语言运行时',
+      title: '多语言',
       summary: '让不同语言的团队读懂页面、表单提示和操作结果。',
       scenarios: ['跨地区团队共用客户、订单或员工管理应用。'],
       prompts: {
@@ -849,8 +833,8 @@ const zhCN: GuideContent = {
       ],
     },
     lifecycle: {
-      title: '业务生命周期',
-      summary: '把业务单据的状态、可执行操作和处理记录组织成清晰流程。',
+      title: '业务流程',
+      summary: '定义业务单据的状态、流转规则和后续动作，并记录处理过程。',
       scenarios: ['工单、报销、采购申请和订单履约。'],
       prompts: {
         main: {
@@ -866,7 +850,7 @@ const zhCN: GuideContent = {
       ],
     },
     queue: {
-      title: '任务排队',
+      title: '队列',
       summary: '把集中到来的工作排队处理，避免用户一直等待。',
       scenarios: ['订单后续处理、批量消息发送和数据同步。'],
       prompts: {

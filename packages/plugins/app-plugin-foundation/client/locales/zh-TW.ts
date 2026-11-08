@@ -5,7 +5,7 @@ const zhTW: FoundationResource = {
     settings: '系統設定',
     foundation: '應用底座',
     foundationDescription: '這個應用用到了哪些 NocoBase 基礎能力。',
-    capabilityGuide: '能力指南',
+    capabilityGuide: '內核與外掛',
     capabilityGuideDescription:
       '內建能力能解決什麼問題，以及怎麼向 Agent 提需求。',
   },

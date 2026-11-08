@@ -1,3 +1,4 @@
+import databaseExplorer from '../../pages/settings/database-explorer/zh-CN.js';
 import settings from './settings-zh-CN.js';
 import type { SystemResource } from './en-US.js';
 import deviceApprovalZhCN from '#extensions/nocobase-device-approval/locales/zh-CN';
@@ -5,6 +6,7 @@ import inboxZhCN from '#extensions/nocobase-inbox/locales/zh-CN';
 
 /** The Chinese copy of what the template ships; see `./en-US.ts`. */
 const systemZhCN: SystemResource = {
+  databaseExplorer,
   pendingFeedback: {
     working: '正在处理…',
     longWait: '耗时比平常更长，您可以继续等待。',

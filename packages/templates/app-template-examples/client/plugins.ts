@@ -62,7 +62,11 @@ const clientPlugins: AppClientPlugins = defineClientPlugins([
   mailExample(),
   agents(),
   // The manifest is what the capability guide lists: every plugin this application declares.
-  foundation({ manifest: applicationManifest }),
+  foundation({
+    manifest: applicationManifest,
+    guideSettingsPath: '/settings',
+    navigation: false,
+  }),
   knowledge({ routes: false }),
 ]);
 
