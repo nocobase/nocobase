@@ -20,6 +20,13 @@ function runtime(initialize: () => Promise<void> = async () => {}) {
 }
 
 describe('host ID generator lifecycle', () => {
+  it('keeps manual construction lazy when initialization is requested', async () => {
+    const ids = new AppIdGenerator({ workerId: 32 });
+    await ids.initialize();
+    expect(() => ids.generate()).toThrow('between 0 and 31');
+    await ids.shutdown();
+  });
+
   it('preserves manual synchronous generation and the original sequence', async () => {
     const ids = new AppIdGenerator({ workerId: 0 });
     const first = ids.generate();
@@ -91,12 +98,14 @@ describe('host ID generator lifecycle', () => {
     const ids = new AppIdGenerator({ mode: 'auto' });
     ids.registerFactory(() => managed);
     const start = ids.initialize();
-    const failed = await expect(start).rejects.toThrow('permanently closed');
+    const failed = start.catch((error: unknown) => error);
     await Promise.resolve();
     await ids.shutdown();
     expect(managed.shutdown).toHaveBeenCalledOnce();
     ready();
-    await failed;
+    expect(await failed).toMatchObject({
+      message: 'ID generation is permanently closed.',
+    });
     expect(() => ids.generate()).toThrow('permanently closed');
   });
 
@@ -117,9 +126,11 @@ describe('host ID generator lifecycle', () => {
     ids.registerFactory(() => managed);
     await ids.initialize();
     const stop = ids.shutdown();
-    const failed = await expect(stop).rejects.toThrow('return is unknown');
+    const failed = stop.catch((error: unknown) => error);
     await vi.advanceTimersByTimeAsync(ID_GENERATOR_SHUTDOWN_TIMEOUT_MS);
-    await failed;
+    expect(await failed).toMatchObject({
+      message: expect.stringContaining('return is unknown'),
+    });
     expect(ids.shutdown()).toBe(stop);
     expect(() => ids.generateString()).toThrow('permanently closed');
   });

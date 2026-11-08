@@ -64,8 +64,6 @@ export class AppIdGenerator
         await this.managed.initialize();
         this.assertOpen();
         this.generator = this.managed;
-      } else {
-        this.manualGenerator();
       }
     });
     return this.initialized;

@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 
 import { AppConfig } from '../src/config/index.js';
+import { idGeneratorLifecycleToken } from '../src/id-generator/index.js';
 import {
   databaseManagerToken,
   type DatabaseDriverDefinition,
@@ -73,6 +74,46 @@ afterEach(() => {
 });
 
 describe('DatabaseProvider', () => {
+  it('prepares storage before ID initialization even with automatic tasks disabled', async () => {
+    const root = createTempDirectory();
+    const { provider, container } = await createProvider(createConfig(root));
+    const initialize = vi.fn(async () => {
+      expect(existsSync(path.join(root, 'storage'))).toBe(true);
+    });
+    container.instance(idGeneratorLifecycleToken, {
+      registerFactory: vi.fn(),
+      initialize,
+      shutdown: vi.fn(async () => {}),
+    });
+    createDatabaseManagerMock.mockReturnValue(createMockDatabase());
+    provider.register();
+    await provider.boot();
+    expect(initialize).toHaveBeenCalledOnce();
+    await provider.shutdown();
+  });
+
+  it('destroys connections after a failed ID return', async () => {
+    const { provider, container } = await createProvider(createConfig());
+    const calls: string[] = [];
+    container.instance(idGeneratorLifecycleToken, {
+      registerFactory: vi.fn(),
+      initialize: vi.fn(async () => {}),
+      shutdown: async () => {
+        calls.push('closed');
+        throw new Error('return unknown');
+      },
+    });
+    createDatabaseManagerMock.mockReturnValue(
+      createMockDatabase(() => {
+        calls.push('destroy');
+      }),
+    );
+    provider.register();
+    container.resolve(databaseManagerToken);
+    await expect(provider.shutdown()).rejects.toThrow('return unknown');
+    expect(calls).toEqual(['closed', 'destroy']);
+  });
+
   it('registers a lazy database manager created from runtime config', async () => {
     const database = createMockDatabase();
     createDatabaseManagerMock.mockReturnValue(database);

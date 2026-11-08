@@ -10,6 +10,8 @@ Service contract → owner-created Token → implementation → ServiceProvider 
 
 ## Define the public capability
 
+For automatic Snowflake IDs, keep the host's `idGeneratorToken` binding. In Provider `register()`, resolve `idGeneratorLifecycleToken` from `@nocobase/app-server/id-generator` and call `registerFactory(() => managedRuntime)` once. The synchronous, resource-free factory returns `ManagedIdGenerator` with synchronous generation and asynchronous `initialize()` / `shutdown()`. The host initializes after storage preparation and before business migrations/seeds/rollback, sharing one Promise without implicit retry. Shutdown closes generation synchronously, handles partial initialization and finishes bounded cleanup before database destruction; the host's final 15-second wait bound is not request cancellation. Management CLI uses `withApp()` and `registerProviders()` without initialization or `app.start()`. Auto mode requires the plugin and its prepared storage, forbids workerId/epoch overrides and refuses `db reset`/fresh. Generation must remain memory-only; allocation and diagnostics stay inside the plugin.
+
 The plugin that owns a capability defines and exports its contract and original Token object:
 
 ```ts

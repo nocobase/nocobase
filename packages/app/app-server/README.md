@@ -1,5 +1,9 @@
 # `@nocobase/app-server`
 
+## ID generation
+
+Business services keep using `idGeneratorToken`. Manual generation remains synchronous and lazy; automatic allocation plugins register a host-owned factory and initialize before business database tasks. See the [ID generator lifecycle contract](docs/id-generator.md) for registration, shutdown, CLI exclusions and deployment dependencies.
+
 ## Ordinary and recurring jobs
 
 `JobExecutorServiceProvider` and `jobExecutorServiceToken` from `@nocobase/app-server/jobs` compose both `JobExecutor` and `ScheduleExecutor` from `@nocobase/jobs`. The provider lazily creates one service from the application's `jobs` configuration, application name, storage paths and logger. Owners set up their executors; the provider starts no worker by itself and shuts down all ordinary and schedule executors when the application stops. Repeated shutdown is safe, including executors their owners already stopped.

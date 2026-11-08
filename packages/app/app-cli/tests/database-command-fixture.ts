@@ -8,6 +8,8 @@ import {
 } from '@nocobase/app-server/database';
 import { IdGeneratorProvider } from '@nocobase/app-server/id-generator';
 import type { Application } from '@nocobase/app-server';
+import type { ApplicationServiceProviderConstructor } from '@nocobase/app-server/application';
+import type { AppSnowflakeConfig } from '@nocobase/app-server/id-generator';
 import {
   AppConfig,
   createAppPaths,
@@ -51,11 +53,15 @@ export function removeFixtureRoots(): void {
 export interface DatabaseCommandFixtureOptions {
   /** The application's database configuration; without it the application configures no database. */
   readonly database?: (paths: AppPaths) => AppDatabaseConfig;
+  readonly snowflake?: AppSnowflakeConfig;
+  readonly serviceProviders?: readonly ApplicationServiceProviderConstructor[];
 }
 
 /** An application in a directory of its own, whose `db` commands run against `database`. */
 export function databaseCommandFixture({
   database: configure,
+  snowflake = { workerId: 0 },
+  serviceProviders = [],
 }: DatabaseCommandFixtureOptions = {}) {
   const parent = path.resolve('tests/.tmp');
   mkdirSync(parent, { recursive: true });
@@ -81,7 +87,7 @@ export function databaseCommandFixture({
           },
           defaultConfigs: () => ({
             database,
-            snowflake: { workerId: 0 },
+            snowflake,
           }),
           plugins: { plugins: [] },
           serviceProviders: [],
@@ -94,6 +100,7 @@ export function databaseCommandFixture({
       app.addServiceProvider(DatabaseProvider);
       app.addServiceProvider(IdGeneratorProvider);
       app.addServiceProvider(TaskServiceProvider);
+      app.addServiceProviders(serviceProviders);
       app.addRuntimeContributions(loaded);
       return app;
     },
