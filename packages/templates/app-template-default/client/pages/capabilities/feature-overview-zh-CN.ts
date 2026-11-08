@@ -822,8 +822,9 @@ export const featureOverview = {
         },
         'app-plugin-database-explorer': {
           title: '数据库浏览器界面',
-          extendTitle: '调整数据库查看范围',
-          extendDescription: '为不同人员配置可查看的连接、数据表和字段。',
+          extendTitle: '调整浏览器访问权限',
+          extendDescription:
+            '确定哪些人员可以访问应用整体数据库结构的浏览界面。',
         },
         'app-plugin-file': {
           title: '文件管理',

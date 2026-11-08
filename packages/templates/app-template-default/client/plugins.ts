@@ -47,6 +47,11 @@ const clientPlugins: AppClientPlugins = defineClientPlugins([
     guideSettingsPath: '/settings',
     guideEntryLoaders: {
       ...featureOverviewLoaders,
+      'app-plugin-file': () => import('./pages/capabilities/file-overview.js'),
+      'app-plugin-database-explorer': () =>
+        import('./pages/capabilities/database-explorer-overview.js'),
+      'app-plugin-concurrency': () =>
+        import('./pages/capabilities/concurrency-overview.js'),
       'app-plugin-authentication': () =>
         import('./pages/capabilities/authentication-overview.js'),
       i18n: () => import('./pages/capabilities/i18n-overview.js'),

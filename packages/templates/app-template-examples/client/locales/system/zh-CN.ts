@@ -1,3 +1,6 @@
+import fileOverview from '../../pages/capabilities/file-overview-zh-CN.js';
+import databaseExplorerOverview from '../../pages/capabilities/database-explorer-overview-zh-CN.js';
+import concurrencyOverview from '../../pages/capabilities/concurrency-overview-zh-CN.js';
 import authenticationOverview from '../../pages/capabilities/authentication-overview-zh-CN.js';
 import { featureOverview } from '../../pages/capabilities/feature-overview-zh-CN.js';
 import authorizationOverview from '../../pages/capabilities/authorization-overview-zh-CN.js';
@@ -13,8 +16,11 @@ import inboxZhCN from '#extensions/nocobase-inbox/locales/zh-CN';
 /** The Chinese copy of what the template ships; see `./en-US.ts`. */
 const systemZhCN: SystemResource = {
   databaseExplorer,
+  fileOverview,
+  databaseExplorerOverview,
   databaseOverview,
   authenticationOverview,
+  concurrencyOverview,
   agentsOverview,
   authorizationOverview,
   featureOverview,

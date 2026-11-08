@@ -273,7 +273,7 @@ const zhCN: GuideContent = {
     },
     'app-plugin-concurrency': {
       title: '并发',
-      summary: '为应用配置并发控制，避免重复提交或同时操作造成冲突。',
+      summary: '协调同一业务资源上的同时操作，避免关键步骤互相冲突。',
       scenarios: ['同一笔订单被多次处理，或多人同时争用同一资源。'],
       prompts: {
         main: {
@@ -308,7 +308,7 @@ const zhCN: GuideContent = {
     },
     'app-plugin-database-explorer': {
       title: '数据库浏览器',
-      summary: '帮助管理员了解应用保存了哪些业务信息以及它们的结构。',
+      summary: '查看应用的数据库连接、数据表和字段，了解数据结构。',
       scenarios: ['梳理已有数据，再规划新页面和业务功能。'],
       prompts: {
         main: {

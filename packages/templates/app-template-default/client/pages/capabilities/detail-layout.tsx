@@ -167,14 +167,20 @@ export function InterfaceItem({
   );
 }
 
-export function ConfigurationActions({ children }: { children: ReactNode }) {
+export function ConfigurationActions({
+  children,
+  title,
+}: {
+  children: ReactNode;
+  title?: string;
+}) {
   const { t } = useTranslation(packageMetadata.name);
   return (
     <section className='space-y-3'>
       <div className='flex items-center gap-2'>
         <Sparkles className='size-4 text-primary' aria-hidden />
         <h3 className='text-base font-semibold'>
-          {t('featureOverview.layout.actionsTitle')}
+          {title ?? t('featureOverview.layout.actionsTitle')}
         </h3>
       </div>
       <div className='space-y-3'>{children}</div>

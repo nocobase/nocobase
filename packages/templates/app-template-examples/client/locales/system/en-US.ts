@@ -1,3 +1,6 @@
+import fileOverview from '../../pages/capabilities/file-overview-en-US.js';
+import databaseExplorerOverview from '../../pages/capabilities/database-explorer-overview-en-US.js';
+import concurrencyOverview from '../../pages/capabilities/concurrency-overview-en-US.js';
 import authenticationOverview from '../../pages/capabilities/authentication-overview-en-US.js';
 import { featureOverview } from '../../pages/capabilities/feature-overview-en-US.js';
 import authorizationOverview from '../../pages/capabilities/authorization-overview-en-US.js';
@@ -16,8 +19,11 @@ import inboxEnUS from '#extensions/nocobase-inbox/locales/en-US';
  */
 const systemEnUS = {
   databaseExplorer,
+  fileOverview,
+  databaseExplorerOverview,
   databaseOverview,
   authenticationOverview,
+  concurrencyOverview,
   agentsOverview,
   authorizationOverview,
   featureOverview,

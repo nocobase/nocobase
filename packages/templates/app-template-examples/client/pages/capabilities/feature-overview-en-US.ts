@@ -856,9 +856,9 @@ export const featureOverview = {
         },
         'app-plugin-database-explorer': {
           title: 'Database Explorer interface',
-          extendTitle: 'Adjust database visibility',
+          extendTitle: 'Adjust browser access',
           extendDescription:
-            'Choose which connections, tables and fields people may inspect.',
+            'Choose who can access the application-wide database structure browser.',
         },
         'app-plugin-file': {
           title: 'File management',

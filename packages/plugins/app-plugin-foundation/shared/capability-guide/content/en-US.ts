@@ -301,7 +301,7 @@ const enUS: GuideContent = {
     'app-plugin-concurrency': {
       title: 'Concurrency',
       summary:
-        'Configure concurrency control to prevent conflicts from duplicate submissions or simultaneous operations.',
+        'Coordinate simultaneous operations on the same business resource to avoid conflicts during critical steps.',
       scenarios: [
         'Repeated handling of the same order or users competing for one resource.',
       ],
@@ -340,7 +340,7 @@ const enUS: GuideContent = {
     'app-plugin-database-explorer': {
       title: 'Database explorer',
       summary:
-        'Help administrators understand what business information the application stores and how it is organized.',
+        'Browse the application’s database connections, collections and fields to understand its data structure.',
       scenarios: [
         'Review existing data before planning new pages and features.',
       ],

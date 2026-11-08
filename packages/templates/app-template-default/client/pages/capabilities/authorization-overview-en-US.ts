@@ -1,4 +1,112 @@
 const authorizationOverview = {
+  management: {
+    hint: 'Status indicates whether each management interface is provided, not whether users have grants or rules exist. A missing rule is not necessarily a gap; open the relevant interface to inspect actual configuration.',
+    roles: {
+      title: 'Role and permission configuration interface',
+      description:
+        'Configure the pages, business operations and data scopes available to a role.',
+    },
+    assignments: {
+      title: 'User role assignment interface',
+      description:
+        'Assign or adjust roles for specific users through User management.',
+    },
+    defaultAccess: {
+      title: 'Default data scope management interface',
+      description:
+        'Configure a shared record baseline for existing action holders, without granting new operations.',
+    },
+    sharing: {
+      title: 'Sharing rule management interface',
+      description:
+        'Share additional records with specific recipients who already hold the relevant action.',
+    },
+    restriction: {
+      title: 'Restriction rule management interface',
+      description:
+        'Narrow the records recipients may access, including access from roles, defaults and sharing.',
+    },
+  },
+  actions: {
+    business: {
+      title: 'Add permission controls to a business feature',
+      description:
+        'Support the page, action and record boundaries required by new or existing business features.',
+      prompt:
+        'Add permission controls to [business feature] for [people or jobs, pages, operations, records and exceptions]. Read nocobase-app-plugin-authorization and inspect actual pages, requests, the permission model and server enforcement. Reuse configuration where supported; develop missing actions, scopes or enforcement where necessary. Matching names alone do not prove support. Fields and relations belong to business implementation; do not create an arbitrary raw-field permission editor. Reuse the application role editor and expose real business actions and scopes. Confirm recipients before applying editable permission sets and assignments, without granting access to all signed-in users. Preserve other administrator choices. Verify allowed and denied pages, direct requests, record scopes and relations with ordinary accounts; report applied configuration and unresolved decisions.',
+      inspect:
+        'Map responsibilities to actual pages, actions, record scopes, fields and relations. Separate existing configuration options from missing business support.',
+      configure:
+        'Implement missing model and server enforcement, expose real actions and supported scopes in the existing editor, and complete editable role configuration and assignments for confirmed recipients.',
+      verify:
+        'Use ordinary accounts to check page entries and direct requests, allowed and denied records, and relation operations. Administrator access does not verify ordinary-user boundaries.',
+    },
+    roles: {
+      title: 'Configure a role’s pages, operations and data scopes',
+      description:
+        'Define responsibilities for roles such as sales staff or project owners, or refine existing roles.',
+      prompt:
+        'Configure [role name] for [pages, business operations and each operation’s record scope]. Read the authorization Skill and inspect existing roles, the editor and supported actions/scopes. Propose changes tied to the responsibility. Reuse roles and management entries; add an editor only if missing. Use existing management APIs or authorized services to update editable permission sets while preserving unrelated configuration and handling concurrent edits. Configure pages and actions separately and confirm read, edit and submit scopes independently. Report missing business support instead of granting broader access. Configure the role only; confirm recipient names separately before assignment. Verify allowed and denied access with ordinary accounts and report changes.',
+      inspect:
+        'Decide whether to create or update a role. List its pages, operations and individual scopes, and check the application’s available options.',
+      configure:
+        'Update the permission set in the role editor, granting pages and actions separately. Implement missing business support first, preserve unrelated settings and handle revision conflicts.',
+      verify:
+        'Inspect saved configuration and verify operations and scopes with an identified test account. Saving a role does not assign it to business users.',
+    },
+    assignments: {
+      title: 'Assign or adjust roles for specific users',
+      description:
+        'Identify recipients and review direct and inherited access.',
+      prompt:
+        'Adjust role assignments for [explicit users and role mappings]. Read the authorization Skill and verify identities, existing roles and all effective permission sources. Ask for unclear recipients or access decisions instead of guessing. Reuse the protected role-assignment controls in User management and existing management APIs; add an interface only if missing. Preserve unrelated direct assignments and inheritance. Do not widen access through all-user assignments or the default member role. Explain when other sources preserve access after a role is removed. Verify assignments and removals with new requests from the affected ordinary users, and report exactly which relationships changed.',
+      inspect:
+        'Confirm users, existing roles, direct assignments and inherited sources, as well as who may administer assignments.',
+      configure:
+        'Open each user in User management to adjust roles. If the control is missing, add the interface and protected operation. Change only confirmed users and role relationships.',
+      verify:
+        'Check effective access on fresh requests from the target users. Investigate other roles or inheritance when access remains after one source is removed.',
+    },
+    defaultAccess: {
+      title: 'Configure a shared default data scope',
+      description:
+        'For example, let existing read-action holders see a public customer pool when the business needs it.',
+      prompt:
+        'Configure [shared record baseline] for [business action]. Read nocobase-app-plugin-authz-default-access and the main authorization Skill. Confirm supported actions/scopes and inspect existing rules and management entries. Reuse rules and pages; add a management page through protected plugin APIs only if missing. A default baseline adds to existing scopes, rather than applying only when a personal scope is absent. It grants no action, page or field permission. Confirm read and write scopes separately and retain other action/scope entries when updating a resource rule. Verify action holders, people without the action, and applicable restrictions with ordinary accounts.',
+      inspect:
+        'Identify records that every existing action holder should receive, confirm business support and inspect the resource’s existing rule.',
+      configure:
+        'Use default data scope management to configure the action and scope. Update an existing resource rule while retaining other operations. Add a page using existing APIs only if necessary.',
+      verify:
+        'Confirm action holders gain the baseline, people without the action remain denied, restrictions still apply and write access is not unintentionally widened.',
+    },
+    sharing: {
+      title: 'Add sharing management and sharing rules',
+      description:
+        'Share specific business records with collaborators and support reviewing, changing and revoking sharing.',
+      prompt:
+        'Provide sharing for [business feature], giving [explicit people or teams] access to [records or supported record selection] for [actions]. Read nocobase-app-plugin-authz-sharing-rules and the main authorization Skill. Inspect existing interfaces, rule services, actions and scopes. Improve and configure an existing interface; otherwise provide listing, recipients, action/scope selection, editing and revocation through protected plugin APIs. Register the real settingsSharingRules route under Permission management; if reusing another route, update its Features and extensions mapping. Sharing extends record access only for existing action holders, granting no page, field, action or implicit related-record access. Confirm recipients, preserve unrelated rules and verify sharing, restrictions, related records and remaining sources after revocation with ordinary accounts.',
+      inspect:
+        'Confirm records, actions and collaborators. Check recipients’ existing action permissions and related scopes required by the operation.',
+      configure:
+        'Reuse an existing sharing page or add maintainable rule management and a Permission management entry. Save explicit recipients, actions and scopes through plugin APIs rather than writing rule tables.',
+      verify:
+        'Verify before/after access, recipients without the action, restricted records and revocation. Removing sharing removes that source only, not access granted elsewhere.',
+    },
+    restriction: {
+      title: 'Add restriction management and restriction rules',
+      description:
+        'Narrow existing access to a required record range for selected people.',
+      prompt:
+        'Provide restriction management for [business feature], allowing [explicit people or teams] to reach only [remaining allowed records] for [actions]. Read nocobase-app-plugin-authz-restriction-rules and the main authorization Skill. Inspect existing pages, rule services, actions and scopes. Improve and configure an existing interface; otherwise provide listing, recipients, actions, allowed ranges, editing and deletion through protected plugin APIs. Register the real settingsRestrictionRules route under Permission management; update Features and extensions mapping if reusing another route. Conditions describe records still allowed, not records to hide. Matching restrictions all apply and cannot grant actions or expand access. Preserve other rules, confirm recipients/boundaries, and verify that role, default and shared access is restricted with ordinary accounts. Removing a restriction must not create an absent grant.',
+      inspect:
+        'Confirm recipients, actions and the remaining allowed records. Review roles, defaults, sharing and other restrictions.',
+      configure:
+        'Reuse or add restriction management and save recipients, actions and allowed ranges through plugin APIs. Label selections as allowed ranges rather than exclusion conditions.',
+      verify:
+        'Use ordinary accounts to verify that every grant source is narrowed and all matching restrictions apply. Deleting a restriction removes that narrowing without granting a new action.',
+    },
+  },
   currentHint:
     'A configured plugin does not establish that users have been granted access. Inspect permission sets, user assignments and effective rules in application permission management. This view does not read personal permissions or rule contents.',
   layersTitle: 'Start with the business responsibility',

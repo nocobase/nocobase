@@ -1,69 +1,67 @@
 import { useTranslation } from '@nocobase/i18n/client';
-import { ShieldCheck } from 'lucide-react';
+import { KeyRound, Users, ListFilter, Share2, ShieldCheck } from 'lucide-react';
 import packageMetadata from '../../../package.json' with { type: 'json' };
 import {
   CurrentApplication,
-  ConfigurationItem,
   InterfaceItem,
   ConfigurationActions,
   ConfigurationAction,
 } from './detail-layout.js';
 
+const managementEntries = [
+  { key: 'roles', names: ['settingsRoles'], icon: KeyRound },
+  { key: 'assignments', names: ['settingsUsers'], icon: Users },
+  { key: 'defaultAccess', names: ['settingsDefaultAccess'], icon: ListFilter },
+  { key: 'sharing', names: ['settingsSharingRules'], icon: Share2 },
+  {
+    key: 'restriction',
+    names: ['settingsRestrictionRules'],
+    icon: ShieldCheck,
+  },
+] as const;
+
 export default function AuthorizationOverview() {
   const { t } = useTranslation(packageMetadata.name);
-  const steps = [
-    'responsibility',
-    'model',
-    'grant',
-    'rules',
-    'verify',
-    'revoke',
-  ].map((key) => t(`authorizationOverview.steps.${key}`));
   return (
     <div className='flex min-w-0 flex-col gap-6'>
-      <CurrentApplication>
-        <InterfaceItem
-          names={['settingsRoles']}
-          title={t('featureOverview.layout.authorizationInterface')}
-          description={t('featureOverview.layout.authorizationDescription')}
-          icon={ShieldCheck}
-        />
-        <InterfaceItem
-          names={['settingsDefaultAccess']}
-          title={t('featureOverview.layout.defaultAccessInterface')}
-          icon={ShieldCheck}
-        />
-        {(['sharing', 'restriction'] as const).map((key) => (
-          <ConfigurationItem
+      <CurrentApplication
+        footer={<p>{t('authorizationOverview.management.hint')}</p>}
+      >
+        {managementEntries.map(({ key, names, icon }) => (
+          <InterfaceItem
             key={key}
-            title={t(`authorizationOverview.roles.${key}.title`)}
-            description={t('featureOverview.layout.inspectHint')}
-            icon={ShieldCheck}
+            names={names}
+            title={t(`authorizationOverview.management.${key}.title`)}
+            description={t(
+              `authorizationOverview.management.${key}.description`,
+            )}
+            icon={icon}
           />
         ))}
       </CurrentApplication>
       <ConfigurationActions>
-        <ConfigurationAction
-          title={t('featureOverview.layout.authorizationActionTitle')}
-          description={t(
-            'featureOverview.layout.authorizationActionDescription',
-          )}
-          prompt={t('authorizationOverview.prompt')}
-          steps={steps}
-        />
-        <ConfigurationAction
-          title={t('featureOverview.layout.authorizationRulesTitle')}
-          description={t(
-            'featureOverview.layout.authorizationRulesDescription',
-          )}
-          prompt={`${t('featureOverview.layout.improvePrompt', { goal: t('featureOverview.layout.authorizationRulesTitle') })}\n\n${t('authorizationOverview.prompt')}`}
-          steps={steps}
-          configuration={
-            <p className='text-sm leading-6 text-muted-foreground'>
-              {t('authorizationOverview.configurationHint')}
-            </p>
-          }
-        />
+        {(
+          [
+            'business',
+            'roles',
+            'assignments',
+            'defaultAccess',
+            'sharing',
+            'restriction',
+          ] as const
+        ).map((action) => (
+          <ConfigurationAction
+            key={action}
+            title={t(`authorizationOverview.actions.${action}.title`)}
+            description={t(
+              `authorizationOverview.actions.${action}.description`,
+            )}
+            prompt={t(`authorizationOverview.actions.${action}.prompt`)}
+            steps={['inspect', 'configure', 'verify'].map((step) =>
+              t(`authorizationOverview.actions.${action}.${step}`),
+            )}
+          />
+        ))}
       </ConfigurationActions>
     </div>
   );
