@@ -84,21 +84,28 @@ export interface NpmrcEntry {
 }
 
 /**
- * One `key=value` line as `ini` reads it, its key and value with the environment references `env` resolves, or null for
- * a comment, a section or a blank line. Each line is read on its own, so a setting under a section is read too.
+ * How `ini` splits an npmrc into lines: at every run of CR and LF, so a lone CR ends a line as LF and CRLF do. The
+ * rules below split the same way, so each line they judge is one line to `ini`, and so to npm and pnpm.
  */
-export function entryOf(line: string, env: Env = {}): NpmrcEntry | null {
-  const [entry] = Object.entries(parse(line));
-  if (entry === undefined) return null;
-  const [key, raw] = entry;
-  // A string, `true` for a key without `=`, an array for `key[]`, an object for a section.
-  const first: unknown = Array.isArray(raw) ? (raw as unknown[])[0] : raw;
-  const value =
-    typeof first === 'string' || typeof first === 'boolean'
-      ? String(first)
-      : null;
-  if (value === null) return null;
-  return { key: expandEnv(key, env), value: expandEnv(value, env) };
+export const NPMRC_LINE_BREAK: RegExp = /[\r\n]+/u;
+
+/**
+ * Every `key=value` setting `ini` reads in `line`, its key and value with the environment references `env` resolves;
+ * none for a comment, a section or a blank line. Each line is read on its own, so a setting under a section is read too.
+ */
+export function entriesOf(line: string, env: Env = {}): NpmrcEntry[] {
+  const entries: NpmrcEntry[] = [];
+  for (const [key, raw] of Object.entries(parse(line))) {
+    // A string, `true` for a key without `=`, an array for `key[]`, an object for a section.
+    for (const item of Array.isArray(raw) ? (raw as unknown[]) : [raw]) {
+      if (typeof item !== 'string' && typeof item !== 'boolean') continue;
+      entries.push({
+        key: expandEnv(key, env),
+        value: expandEnv(String(item), env),
+      });
+    }
+  }
+  return entries;
 }
 
 const isRegistryKey = (key: string): boolean =>
@@ -119,9 +126,9 @@ export function maskPrivate(
   env: Env = {},
 ): { readonly text: string; readonly masked: number } {
   let masked = 0;
-  const kept = text.split(/\r?\n/u).filter((line) => {
-    const entry = entryOf(line, env);
-    if (entry === null || !pointsAtPrivate(entry, registry)) return true;
+  const kept = text.split(NPMRC_LINE_BREAK).filter((line) => {
+    if (!entriesOf(line, env).some((entry) => pointsAtPrivate(entry, registry)))
+      return true;
     masked += 1;
     return false;
   });
@@ -144,13 +151,13 @@ export function declaration(
   let declared = false;
   let elsewhere = false;
   for (const text of texts)
-    for (const line of text.split(/\r?\n/u)) {
-      const entry = entryOf(line, env);
-      if (entry === null || !isRegistryKey(entry.key)) continue;
-      if (isPrivate(entry.value, registry)) declared = true;
-      else if (entry.key.toLowerCase() === `${NOCOBASE_SCOPE}:registry`)
-        elsewhere = true;
-    }
+    for (const line of text.split(NPMRC_LINE_BREAK))
+      for (const entry of entriesOf(line, env)) {
+        if (!isRegistryKey(entry.key)) continue;
+        if (isPrivate(entry.value, registry)) declared = true;
+        else if (entry.key.toLowerCase() === `${NOCOBASE_SCOPE}:registry`)
+          elsewhere = true;
+      }
   return { private: declared, nocobaseElsewhere: elsewhere };
 }
 

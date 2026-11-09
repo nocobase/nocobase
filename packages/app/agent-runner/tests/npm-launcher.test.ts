@@ -277,6 +277,32 @@ describe('the npm launcher', () => {
     }
   });
 
+  it('keeps out private registry settings on lines ended by a lone CR, in ~/.npmrc and pnpm’s auth.ini', async () => {
+    const port = new URL(privateRegistry.url).port;
+    const target = project(
+      { '@nocobase/fx-public': '1.0.0', 'left-pad-fx': '1.0.0' },
+      {
+        userNpmrc: `registry=${mirror.url}\r@nocobase:registry=${privateRegistry.url}\r`,
+        authIni: `strict-ssl=false\r\n@acme:registry=${privateRegistry.url}\r//127.0.0.1:${port}/:_authToken=stale\n`,
+      },
+    );
+    const { server, asked } = await worker(TOKEN);
+    try {
+      const result = await install(target, server);
+      expect({ code: result.code, output: result.output }).toMatchObject({
+        code: 0,
+      });
+      expect(asked).toEqual([]);
+      expect(privateRequests()).toEqual([]);
+      expect(mirrorRequests().map((seen) => seen.url)).toContain(
+        '/@nocobase/fx-public',
+      );
+      expect(leftovers(target)).toEqual([]);
+    } finally {
+      await server.close();
+    }
+  });
+
   it('uses the private registry after a 404 only for the repository that needed it', async () => {
     const needing = project({ '@nocobase/fx-private': '1.0.0' });
     const other = {
@@ -403,6 +429,27 @@ describe('the npm launcher', () => {
     const target = project(
       { '@nocobase/fx-private': '1.0.0' },
       { npmrc: `"@nocobase:registry"="${privateRegistry.url}"\n` },
+    );
+    const { server, asked } = await worker(TOKEN);
+    try {
+      const result = await install(target, server);
+      expect({ code: result.code, output: result.output }).toMatchObject({
+        code: 0,
+      });
+      expect(asked).toEqual([{ reason: 'declared', pkg: undefined }]);
+      expect(result.output).not.toContain('retrying');
+      expect(privateRequests().length).toBeGreaterThan(0);
+    } finally {
+      await server.close();
+    }
+  });
+
+  it('reads a declaration on a line ended by a lone CR in the repository’s .npmrc', async () => {
+    const target = project(
+      { '@nocobase/fx-private': '1.0.0' },
+      {
+        npmrc: `auto-install-peers=true\r@nocobase:registry=${privateRegistry.url}\r`,
+      },
     );
     const { server, asked } = await worker(TOKEN);
     try {

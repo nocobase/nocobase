@@ -115,6 +115,45 @@ describe('the private npm registry rules', () => {
     ).toEqual({ private: false, nocobaseElsewhere: true });
   });
 
+  it('splits lines as ini does, at a lone CR and at mixed line breaks', () => {
+    const lines = [
+      'registry=https://registry.npmmirror.com/',
+      '@nocobase:registry=https://pkg-v3.nocobase.com/',
+      'cafile=/etc/ssl/corp.pem',
+      '//pkg-v3.nocobase.com/:_authToken=stale-token',
+      '"@acme:registry"="https://pkg-v3.nocobase.com"',
+    ];
+    const kept = [
+      'registry=https://registry.npmmirror.com/',
+      'cafile=/etc/ssl/corp.pem',
+    ];
+    for (const text of [
+      lines.join('\r'),
+      `${lines[0]}\r${lines[1]}\n${lines[2]}\r\n${lines[3]}\n\r${lines[4]}`,
+    ]) {
+      const result = maskPrivate(text, PRIVATE);
+      expect(result.masked).toBe(3);
+      expect(result.text.split('\n')).toEqual(kept);
+      expect(result.text).not.toContain('pkg-v3');
+    }
+    expect(
+      declaration(
+        [
+          'auto-install-peers=true\r@nocobase:registry=https://pkg-v3.nocobase.com/',
+        ],
+        PRIVATE,
+      ),
+    ).toEqual({ private: true, nocobaseElsewhere: false });
+    expect(
+      declaration(
+        [
+          'auto-install-peers=true\r\n\rregistry=https://registry.npmmirror.com/\r@nocobase:registry=https://npm.acme.test/',
+        ],
+        PRIVATE,
+      ),
+    ).toEqual({ private: false, nocobaseElsewhere: true });
+  });
+
   it('reads a declaration from committed npmrc files', () => {
     expect(declaration([], PRIVATE)).toEqual({
       private: false,
