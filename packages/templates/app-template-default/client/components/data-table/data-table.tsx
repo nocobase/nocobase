@@ -630,7 +630,7 @@ function DataTableCard<TData>({
   const actions = cell ? (
     <div
       data-slot='data-table-card-actions'
-      className='flex shrink-0 items-center gap-1 [&_[data-slot=button]]:min-h-8 [&_[data-slot=button]]:min-w-8'
+      className='flex shrink-0 items-center gap-1 [&_button]:min-h-8 [&_button]:min-w-8 [&_a]:min-h-8'
     >
       {flexRender(cell.column.columnDef.cell, cell.getContext())}
     </div>

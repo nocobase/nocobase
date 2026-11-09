@@ -13,7 +13,13 @@ Rules: [section 2 of `overlay.md`](../overlay.md#2-overlays-as-child-routes), an
 import { ApiClientError, useApiClient } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { AlertCircleIcon } from 'lucide-react';
-import { type ReactElement, useEffect, useRef, useState } from 'react';
+import {
+  type ReactElement,
+  type RefObject,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 import { useOutletContext, useParams } from 'react-router';
 
 import { RouteDialog } from '#components/route-dialog';
@@ -55,6 +61,10 @@ function EditProject({
     submittingRef.current = value;
     setSubmitting(value);
   };
+  // Unsaved changes, as the form reports them; the dialog asks "Discard changes?" before every way out while they
+  // exist (T3.9, M7.4). savedRef lets the save's own close through without asking.
+  const [dirty, setDirty] = useState(false);
+  const savedRef = useRef(false);
 
   // On open, load the latest data by id before rendering the form, instead of the drawer's or the list's possibly stale data (guidelines T3.8 and R1).
   const [reloadCount, setReloadCount] = useState(0);
@@ -153,6 +163,8 @@ function EditProject({
       <EditProjectBody
         project={project}
         onSubmittingChange={handleSubmittingChange}
+        onDirtyChange={setDirty}
+        savedRef={savedRef}
         onNotFound={() => {
           setGoneOnSave(true);
           onNotFound();
@@ -169,6 +181,7 @@ function EditProject({
       className='sm:max-w-lg'
       // No closing while submitting: the × button, Esc, clicking the backdrop and close() all go through beforeClose first (guideline T3.5).
       beforeClose={() => !submittingRef.current}
+      dirty={() => dirty && !savedRef.current}
       footer={footer}
     >
       {body}
@@ -180,10 +193,14 @@ function EditProject({
 function EditProjectBody({
   project,
   onSubmittingChange,
+  onDirtyChange,
+  savedRef,
   onNotFound,
 }: {
   readonly project: Project;
   readonly onSubmittingChange: (submitting: boolean) => void;
+  readonly onDirtyChange: (dirty: boolean) => void;
+  readonly savedRef: RefObject<boolean>;
   readonly onNotFound: () => void;
 }): ReactElement {
   const { close } = useRouteOverlay();
@@ -193,8 +210,10 @@ function EditProjectBody({
       formId={FORM_ID}
       project={project}
       onSubmittingChange={onSubmittingChange}
+      onDirtyChange={onDirtyChange}
       onNotFound={onNotFound}
       onSubmitted={(saved) => {
+        savedRef.current = true;
         // First let the view behind show the saved record (the drawer at once, the list by refreshing), then close the dialog (guideline R2).
         onSaved(saved);
         void close();

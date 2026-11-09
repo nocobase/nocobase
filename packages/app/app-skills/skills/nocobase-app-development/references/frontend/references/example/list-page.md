@@ -6,11 +6,11 @@ Part of the [projects worked example](../example.md). For the runnable, continuo
 
 **Add first**: `yes n | pnpm exec shadcn add alert empty input-group select skeleton table`, then format the files it creates ([how](../shadcn.md#1-what-the-template-ships-and-how-to-add-the-rest)), and reuse the template's shipped `DataTable` in `client/components/data-table/` with its supported `@tanstack/react-table` v8 dependency ([section 1 of `table.md`](../table.md#1-choosing-a-table-component)).
 
-**On phones**: `ProjectCard` ends with the same `ProjectRowMenu` as the row (M3.1 in [the phone experience](../../mobile.md)); keep it when adapting this page. Leave it out only together with the row's menu, for one of the three cases M3.1 names.
+**On phones**: `DataTable` hands `ProjectCard` the row's own actions cell (`ProjectRowMenu`) as `card.actions`, and the card ends with it (M3.1 in [the phone experience](../../mobile.md)); keep it when adapting this page, and do not add a different action control to the card. Leave it out only together with the row's menu, for one of the three cases M3.1 names. The search box, the filter and the sort sit on one row through `DataTable`'s `search`, `filters` and `getColumnLabel` (M4.1); never lay them out yourself in the `toolbar`.
 
 **Links to**: the [create dialog](create-dialog.md), the [detail drawer](detail-drawer.md) and the [edit dialog](edit-dialog.md), which a row's menu opens alone, are its child routes. Without a detail view, render the name as plain text: a link to a route that does not exist lands on the home page.
 
-**Without detail and delete** (a list with only a create dialog), remove: the `actions` column, `ProjectRowMenu` and its use in `ProjectCard`, the `deletion` state, `ProjectDeleteDialog` at the end, `focusSearchAfterReloadRef` with its effect, and `afterDelete`, `onSaved` and `onNotFound`, which leaves `outletContext` as `{ reload }`, `ProjectsOutletContext` in `types.ts` with only `reload` and no `ProjectEditOutletContext`; render the name as plain text.
+**Without detail and delete** (a list with only a create dialog), remove: the `actions` column, `ProjectRowMenu` and the `actions` slot of `ProjectCard`, the `deletion` state, `ProjectDeleteDialog` at the end, `focusSearchAfterReloadRef` with its effect, and `afterDelete`, `onSaved` and `onNotFound`, which leaves `outletContext` as `{ reload }`, `ProjectsOutletContext` in `types.ts` with only `reload` and no `ProjectEditOutletContext`; render the name as plain text.
 
 Use the application's existing authorization hook to resolve create permission before rendering the page-level action. Put the standard create action only in the page header, including for a successful empty query; never wire it through the empty state's `emptyAction`. Let `DataTable` render each built-in state with its matching icon and one short line, and keep clear, retry and sign-in actions in the existing toolbar or authentication flow. Follow [shared list feedback](../list-feedback.md) for the state and request contract.
 
@@ -31,13 +31,20 @@ import {
   SearchIcon,
   Trash2Icon,
 } from 'lucide-react';
-import { type ReactElement, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  type ReactElement,
+  type ReactNode,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { Link, Outlet, useLocation } from 'react-router';
 
 import {
   DataTable,
   DataTableColumnHeader,
-  DataTableSortMenu,
+  DataTableFilter,
 } from '#components/data-table';
 import { useUrlSearch } from '#hooks/use-url-search';
 import { useListData } from '#hooks/use-list-data';
@@ -319,30 +326,31 @@ export default function ProjectsPage(): ReactElement {
         filtered={hasFilters}
         // No row selection on this page, so no "0 of N row(s) selected" summary.
         showSelectedCount={false}
-        // The page's controls live in the table's toolbar, so on a phone the search box, the status filter and an
-        // icon "Sort" share one row above the cards (M4.1 in mobile.md); the shared Clear and Retry actions join that
-        // row. Desktop keeps the sortable headers, so the sort menu is hidden from md up.
-        toolbar={(table) => (
-          <>
-            <InputGroup className='min-w-0 flex-1 md:max-w-xs md:flex-none'>
-              <InputGroupAddon>
-                <SearchIcon />
-              </InputGroupAddon>
-              <InputGroupInput
-                ref={searchRef}
-                {...inputProps}
-                placeholder={t('projects.search.placeholder')}
-                aria-label={t('projects.search.label')}
-              />
-            </InputGroup>
+        // One row on every width (M4.1 in mobile.md): DataTable puts the search box first, then the filter inline
+        // from md up or, on a phone, behind an icon "Filters" button with the applied count that opens a bottom sheet,
+        // and on a phone an icon "Sort" menu with these translated column names. Desktop sorts from the headers.
+        search={
+          <InputGroup className='min-w-0 flex-1'>
+            <InputGroupAddon>
+              <SearchIcon />
+            </InputGroupAddon>
+            <InputGroupInput
+              ref={searchRef}
+              {...inputProps}
+              placeholder={t('projects.search.placeholder')}
+              aria-label={t('projects.search.label')}
+            />
+          </InputGroup>
+        }
+        filters={
+          <DataTableFilter label={t('projects.filters.status')}>
             <Select
               items={statusItems}
               value={status ?? 'all'}
               onValueChange={changeStatus}
             >
-              {/* The page's only filter stays inline at a compact width on a phone (M4.2). */}
               <SelectTrigger
-                className='w-32 shrink-0 md:w-40'
+                className='w-40'
                 aria-label={t('projects.filters.status')}
               >
                 <SelectValue />
@@ -357,27 +365,26 @@ export default function ProjectsPage(): ReactElement {
                 </SelectGroup>
               </SelectContent>
             </Select>
-            <DataTableSortMenu
-              table={table}
-              compact
-              className='md:hidden'
-              getColumnLabel={(column) => t(`projects.fields.${column.id}`)}
-            />
-            {/* Reserve space even when a fast refresh finishes before feedback appears. On a phone the card list shows
-                DataTable's own refresh indicator, so this slot does not take a place in the row. */}
-            <div className='ml-auto hidden h-8 w-8 shrink-0 items-center justify-center md:flex'>
-              {active && loading && rows !== undefined ? (
-                <RefreshIndicator />
-              ) : null}
-            </div>
-          </>
+          </DataTableFilter>
+        }
+        filterCount={status === undefined ? 0 : 1}
+        getColumnLabel={(column) => t(`projects.fields.${column.id}`)}
+        // Other controls on that row. Reserve space even when a fast refresh finishes before feedback appears; on a
+        // phone the card list shows DataTable's own refresh indicator, so this slot does not take a place there.
+        toolbar={() => (
+          <div className='ml-auto hidden h-8 w-8 shrink-0 items-center justify-center md:flex'>
+            {active && loading && rows !== undefined ? (
+              <RefreshIndicator />
+            ) : null}
+          </div>
         )}
-        renderCard={(row) => (
+        // `card.actions` is the row's actions cell (ProjectRowMenu), which the card ends with.
+        renderCard={(row, card) => (
           <ProjectCard
             project={row.original}
             search={location.search}
             updated={dateFormat.format(new Date(row.original.updatedAt))}
-            onDelete={(project) => setDeletion({ open: true, project })}
+            actions={card.actions}
           />
         )}
       />
@@ -501,12 +508,13 @@ function ProjectCard({
   project,
   search,
   updated,
-  onDelete,
+  actions,
 }: {
   readonly project: Project;
   readonly search: string;
   readonly updated: string;
-  readonly onDelete: (project: Project) => void;
+  /** The row's own menu, which `DataTable` passes as `card.actions` at a phone tap size. */
+  readonly actions: ReactNode;
 }): ReactElement {
   const { t } = useTranslation();
   return (
@@ -532,12 +540,7 @@ function ProjectCard({
           <dd>{updated}</dd>
         </dl>
       </div>
-      <ProjectRowMenu
-        project={project}
-        search={search}
-        onDelete={onDelete}
-        size='icon'
-      />
+      {actions}
     </div>
   );
 }
@@ -545,72 +548,34 @@ function ProjectCard({
 
 ## Two or more filters on a phone
 
-This page has one filter, so it stays inline (M4.1). As soon as a list has a second filter, put the filters behind an icon "Filters" button on the search box's row on phones and keep them inline from `md` up (M4.2). The runnable reference is the customer list of the [executable relation and batch example](../executable-relation-batch.md) (`client/pages/customer-contacts/index.tsx`, tested at phone width in `tests/client/customer-contacts.test.tsx`). Its shape, with this page's names:
+Every filter goes into `filters` as a `DataTableFilter` with its label, and `filterCount` counts the applied ones. `DataTable` then keeps them inline from `md` up and, on a phone, shows one icon "Filters" button on the search box's row, named and badged with the count (`Filters · 2`), that opens a bottom sheet listing each filter under its label (M4.2). The runnable reference is the customer list of the [executable relation and batch example](../executable-relation-batch.md) (`client/pages/customer-contacts/index.tsx`, tested at phone width in `tests/client/customer-contacts.test.tsx`). Its shape, with this page's names:
 
 ```tsx
 const appliedFilters = [status, owner].filter(Boolean).length;
 
-// Inside DataTable's `toolbar`, as above, so a sort menu can share the row.
-<>
-  {search /* the search box: `min-w-0 flex-1` on a phone, as above */}
-  {/* Desktop: the filters inline. `hidden` removes them from the accessibility tree on a phone. */}
-  <div className='hidden md:contents'>
-    <StatusFilter value={status} onChange={changeStatus} />
-    <OwnerFilter value={owner} onChange={changeOwner} />
-  </div>
-  <Sheet open={filtersOpen} onOpenChange={setFiltersOpen}>
-    {/* An icon button on the search box's row, named with the applied count; the badge shows the same count. */}
-    <SheetTrigger
-      render={
-        <Button
-          variant='outline'
-          size='icon'
-          className='relative shrink-0 md:hidden'
-          aria-label={
-            appliedFilters > 0
-              ? t('projects.filters.applied', { count: appliedFilters })
-              : t('projects.filters.title')
-          }
-        />
-      }
-    >
-      <FilterIcon />
-      {appliedFilters > 0 ? (
-        <span
-          aria-hidden='true'
-          className='absolute -top-1.5 -right-1.5 flex size-4 items-center justify-center rounded-full bg-primary text-xs font-medium text-primary-foreground tabular-nums'
-        >
-          {appliedFilters}
-        </span>
-      ) : null}
-    </SheetTrigger>
-    <SheetContent side='bottom' className='max-h-[calc(100dvh-2rem)] gap-0'>
-      <SheetHeader>
-        <SheetTitle>{t('projects.filters.title')}</SheetTitle>
-      </SheetHeader>
-      {/* No Apply button: each control writes the URL as it changes, exactly as the inline ones do. */}
-      <div className='flex min-h-0 flex-col gap-4 overflow-y-auto px-4 pb-[max(1rem,env(safe-area-inset-bottom))]'>
+<DataTable
+  // …as above
+  search={search /* the search box */}
+  filters={
+    <>
+      <DataTableFilter label={t('projects.filters.status')}>
         <StatusFilter value={status} onChange={changeStatus} />
+      </DataTableFilter>
+      <DataTableFilter label={t('projects.filters.owner')}>
         <OwnerFilter value={owner} onChange={changeOwner} />
-      </div>
-    </SheetContent>
-  </Sheet>
-  <DataTableSortMenu
-    table={table}
-    compact
-    className='md:hidden'
-    getColumnLabel={(column) => t(`projects.fields.${column.id}`)}
-  />
-</>;
-// On DataTable, as above: onClearFilters={clearFilters} and filtered={hasFilters}, so "Clear filters" shows on the
-// list's row while any filter is applied, without reopening the sheet (M4.2).
+      </DataTableFilter>
+    </>
+  }
+  filterCount={appliedFilters}
+  // "Clear filters" shows on the list's row while any filter is applied, without reopening the sheet (M4.2).
+  filtered={hasFilters}
+  onClearFilters={clearFilters}
+  getColumnLabel={(column) => t(`projects.fields.${column.id}`)}
+/>;
 ```
 
-The same filter component renders in two places, so it must not carry a fixed identity:
-
-- **Each instance owns its IDs.** A control that pairs a `<Label htmlFor>` with an input, or points `aria-describedby` at a hint, takes its ID from `useId()` inside the component, never from a constant or a prop shared by both places. Two elements with one `id` leave the second label pointing at the first control, which is how the sheet's pickers lose their names.
-- **Each instance has its accessible name.** Give the trigger `aria-label` (or a visible label wired with its own ID) in both places: the sheet's visible group heading is not a name for the control.
-- **Only one instance is reachable at a time.** Hide the inline copy with `hidden md:contents` (display none, so it is out of the accessibility tree), and let the sheet mount its copy only while open (the default). Never hide one copy with `opacity-0`, `sr-only` or off-screen positioning.
-- When a filter is too heavy to render twice (it loads options, or keeps local state), render it once and move it: choose the container with the template's `useIsMobile()` from `#hooks/use-mobile` (the same `md` breakpoint) instead of rendering both.
+- **No Apply button.** Each control writes the URL as it changes, exactly as on desktop; the sheet is a temporary panel.
+- **One copy at a time.** `DataTable` mounts the filters either inline or in the sheet, never both, so a control may use its own `useId()` IDs and keeps one accessible name. Give each control an `aria-label` for the inline row, where no label shows; in the sheet `DataTableFilter` shows its label above the control, which takes the full width.
+- **Not in `toolbar`.** A filter placed in `toolbar`, or a search box and filters wrapped in a `flex-col` of the page's own, stack into rows on a phone and push the first card below the first screen (M1.1).
 
 Test it the way a phone user meets it: at phone width open "Filters", find each control by role and name (`getByRole('combobox', { name: 'Owner' })`), change it, and check the URL and the count on the button; at desktop width find the same controls inline by the same names.
