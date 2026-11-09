@@ -133,8 +133,12 @@ it('shows an existing administrator with its localized role label', async () => 
       ],
     }),
   });
+  // The label is also present during mounting; wait for the menu trigger's interaction state.
   fireEvent.click(
-    await screen.findByRole('button', { name: '演示模式 · 切换账户' }),
+    await screen.findByRole('button', {
+      name: '演示模式 · 切换账户',
+      expanded: false,
+    }),
   );
   const administrator = await screen.findByRole('menuitemradio', {
     name: /Super Admin/u,
