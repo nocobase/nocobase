@@ -2,7 +2,9 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { expect, it } from 'vitest';
 import ArticlesPage from '../../client/pages/articles.tsx';
-import { renderAuthenticatedClient } from '../helpers/authenticated-client.js';
+import { createAuthenticatedClientRenderer } from '../helpers/authenticated-client.js';
+
+const renderAuthenticatedClient = createAuthenticatedClientRenderer();
 
 async function mount(
   options: {

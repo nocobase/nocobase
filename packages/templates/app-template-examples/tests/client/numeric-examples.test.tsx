@@ -8,7 +8,9 @@ import {
 } from '@testing-library/react';
 import { expect, it } from 'vitest';
 import NumericExamplesPage from '../../client/pages/numeric-examples.tsx';
-import { renderAuthenticatedClient } from '../helpers/authenticated-client.js';
+import { createAuthenticatedClientRenderer } from '../helpers/authenticated-client.js';
+
+const renderAuthenticatedClient = createAuthenticatedClientRenderer();
 
 function mount(options: Parameters<typeof renderAuthenticatedClient>[1] = {}) {
   return renderAuthenticatedClient(

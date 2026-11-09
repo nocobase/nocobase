@@ -35,6 +35,8 @@ import {
 import type { FoundationOverviewOptions } from '../tokens.js';
 
 export interface FoundationServiceOptions {
+  /** Stops a background scan when its owning job is interrupted. */
+  readonly signal?: AbortSignal;
   readonly container: ServiceContainer;
   readonly config: Pick<AppConfigAccessor, 'get'>;
   /** The application's root, where its `package.json` and `node_modules` are. */
@@ -109,6 +111,7 @@ export class DefaultFoundationService {
   public async overview(
     options: FoundationOverviewOptions = {},
   ): Promise<FoundationOverview> {
+    this.options.signal?.throwIfAborted();
     const container = this.options.container;
     const database = container.has(databaseManagerToken)
       ? container.resolve(databaseManagerToken)
@@ -138,7 +141,9 @@ export class DefaultFoundationService {
         : result;
     }
     const counts = options.countRecords === true;
-    const result = this.collect(counts).finally(() => {
+    const result = this.collect(counts).finally(async () => {
+      // Aborting a queued read does not cancel a query already inside the driver.
+      if (this.options.signal?.aborted) await this.reads.settled();
       this.pending = undefined;
     });
     this.pending = { counts, result };
@@ -147,7 +152,8 @@ export class DefaultFoundationService {
 
   private async collect(countRecords: boolean): Promise<FoundationOverview> {
     const started = this.now();
-    const { container } = this.options;
+    const { container, signal } = this.options;
+    signal?.throwIfAborted();
     const database = container.has(databaseManagerToken)
       ? container.resolve(databaseManagerToken)
       : undefined;
@@ -157,13 +163,19 @@ export class DefaultFoundationService {
       const abort = new AbortController();
       const timer = setTimeout(() => abort.abort(), this.collectorTimeoutMs);
       try {
-        inventory = await Inventory.read(database, this.reads, abort.signal);
+        inventory = await Inventory.read(
+          database,
+          this.reads,
+          signal ? AbortSignal.any([signal, abort.signal]) : abort.signal,
+        );
       } catch {
+        signal?.throwIfAborted();
         databaseUnreadable = true;
       } finally {
         clearTimeout(timer);
       }
     }
+    signal?.throwIfAborted();
     const applicationName = await this.packages.applicationName();
     const ownedCollections = inventory
       ? applicationCollections(new Probe(inventory))
@@ -187,10 +199,12 @@ export class DefaultFoundationService {
               countRecords,
             }),
     );
+    signal?.throwIfAborted();
     const inventoryOfProviders = await collectProviderInventory(
       this.options.rootDir,
       this.options.runtimeProviders?.(),
       this.options.serverRegistrationsComplete?.(),
+      signal,
     );
     if (inventory)
       this.catalogScope = JSON.stringify(
@@ -298,7 +312,9 @@ export class DefaultFoundationService {
     const moduleSources = await this.moduleSources.read(
       this.options.rootDir,
       this.options.runtimeProviders?.(),
+      signal,
     );
+    signal?.throwIfAborted();
     const finished = this.now();
     for (let index = 0; index < capabilities.length; index++)
       capabilities[index] = this.history.retain(
@@ -383,11 +399,15 @@ export class DefaultFoundationService {
     collector: CapabilityCollector,
     context: CollectorContext,
   ): Promise<FoundationCapability> {
+    this.options.signal?.throwIfAborted();
     let timer: ReturnType<typeof setTimeout> | undefined;
     let progress: CapabilityFindings | undefined;
     const abort = new AbortController();
+    const signal = this.options.signal
+      ? AbortSignal.any([this.options.signal, abort.signal])
+      : abort.signal;
     const probe = context.probe
-      ? new Probe(context.probe.inventory, abort.signal)
+      ? new Probe(context.probe.inventory, signal)
       : undefined;
     let deadlineIssues: readonly FoundationIssue[] = [];
     const timeout = new Promise<'timeout'>((resolve) => {
@@ -403,7 +423,7 @@ export class DefaultFoundationService {
           ...context,
           probe,
           report: (finding) => {
-            if (abort.signal.aborted) return;
+            if (signal.aborted) return;
             const status =
               progress?.status === 'active' || finding.status === 'active'
                 ? 'active'
@@ -454,6 +474,7 @@ export class DefaultFoundationService {
         issues: [...issues],
       };
     } catch {
+      this.options.signal?.throwIfAborted();
       return {
         ...failed(collector, [{ code: 'COLLECTOR_FAILED' }]),
         ...(progress ? { ...progress, completeness: 'partial' as const } : {}),
@@ -524,6 +545,9 @@ async function mapWithConcurrency<T, R>(
       }
     },
   );
-  await Promise.all(workers);
+  // Do not leave another collector dispatching reads after one worker is interrupted.
+  const settled = await Promise.allSettled(workers);
+  for (const result of settled)
+    if (result.status === 'rejected') throw result.reason;
   return results;
 }

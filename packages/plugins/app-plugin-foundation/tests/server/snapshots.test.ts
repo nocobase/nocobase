@@ -380,3 +380,74 @@ it('submits no scan at start when told not to, yet delivers a generation that wa
     overview: base,
   });
 });
+
+it('interrupts an active scan on worker shutdown and resumes its generation without replacing the saved snapshot', async () => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), 'foundation-stop-'));
+  const createJobs = () =>
+    createJobExecutorService(undefined, {
+      appName: 'test',
+      storagePath: directory,
+    });
+  let jobsService = createJobs();
+  let block = false;
+  const entered = Promise.withResolvers<void>();
+  const createSnapshots = (worker: JobExecutor) =>
+    new FoundationSnapshots({
+      database: database.database,
+      appName: 'test',
+      executor: worker,
+      collector: (signal) => {
+        if (block) {
+          block = false;
+          collect.mockImplementationOnce(
+            () =>
+              new Promise((_resolve, reject) => {
+                signal.addEventListener('abort', () => reject(signal.reason), {
+                  once: true,
+                });
+                entered.resolve();
+              }),
+          );
+        }
+        return collector;
+      },
+    });
+  try {
+    let worker = jobsService.getJobExecutor('foundation-test');
+    const first = createSnapshots(worker);
+    worker.registerJob(first.job);
+    await worker.setup();
+    await first.start(false);
+    await expect
+      .poll(async () => (await first.scanStatus()).status)
+      .toBe('succeeded');
+    block = true;
+    const pending = await first.ensureScan({ refresh: true });
+    await entered.promise;
+    await jobsService.shutdown();
+    expect(await first.snapshot()).toMatchObject({
+      status: 'running',
+      generation: pending.generation,
+      overview: base,
+    });
+
+    result = { ...base, checkedAt: '2026-10-21T08:00:00.000Z' };
+    jobsService = createJobs();
+    worker = jobsService.getJobExecutor('foundation-test');
+    const restarted = createSnapshots(worker);
+    worker.registerJob(restarted.job);
+    await restarted.recoverMemory();
+    await worker.setup();
+    await restarted.start(false);
+    await expect
+      .poll(async () => (await restarted.scanStatus()).status)
+      .toBe('succeeded');
+    expect(await restarted.snapshot()).toMatchObject({
+      generation: pending.generation,
+      overview: result,
+    });
+  } finally {
+    await jobsService.shutdown();
+    await rm(directory, { recursive: true, force: true });
+  }
+});

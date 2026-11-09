@@ -6,12 +6,9 @@ import { act, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { ClientRoute } from '../../client/routing/client-route.js';
 import { useRouteNavigation } from '../../client/routing/route-navigation.js';
-import { renderAuthenticatedClient } from '../helpers/authenticated-client.js';
+import { createAuthenticatedClientRenderer } from '../helpers/authenticated-client.js';
 
-const member = {
-  email: 'member@example.test',
-  password: 'test-member-password',
-};
+const renderAuthenticatedClient = createAuthenticatedClientRenderer();
 const routes: AppClientRegisteredRoute[] = ['apps', 'users'].map((name) => ({
   id: name,
   name,
@@ -72,8 +69,8 @@ async function changePermissions(
 ) {
   await view.server.application.container
     .resolve(authorizationToken)
-    .permissionSets.update('test-access', {
-      key: 'test-access',
+    .permissionSets.update(view.permissionSetKey, {
+      key: view.permissionSetKey,
       grants: grants(full),
     });
 }
@@ -87,7 +84,7 @@ describe('account permission changes without a browser reload', () => {
     await expectMenu(false);
     await view.signInAs(DEFAULT_ADMIN_CREDENTIALS);
     await expectMenu(true);
-    await view.signInAs(member);
+    await view.signInAs(view.credentials);
     await expectMenu(false);
     await view.signInAs(DEFAULT_ADMIN_CREDENTIALS);
     await expectMenu(true);
@@ -106,7 +103,7 @@ describe('account permission changes without a browser reload', () => {
       screen.getByRole('navigation', { name: 'Pages' }),
     ).toBeEmptyDOMElement();
     await changePermissions(view, false);
-    await view.signInAs(member);
+    await view.signInAs(view.credentials);
     expect(view.identity().session!.session.id).not.toBe(firstSession);
     await expectMenu(false);
   });
@@ -160,7 +157,7 @@ describe('account permission changes without a browser reload', () => {
     try {
       await received.promise;
       await changePermissions(view, false);
-      await view.signInAs(member);
+      await view.signInAs(view.credentials);
       await expectMenu(false);
       await act(async () => {
         old.resolve();

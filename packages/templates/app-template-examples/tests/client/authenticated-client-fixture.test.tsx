@@ -1,5 +1,13 @@
-import { expect, it } from 'vitest';
+import { afterAll, beforeAll, expect, it, vi } from 'vitest';
 import { createAuthenticatedClientRenderer } from '../helpers/authenticated-client.js';
+
+// A developer's preview origin must not change this in-process fixture's authentication boundary.
+beforeAll(() => {
+  vi.stubEnv('APP_PUBLIC_ORIGIN', 'https://preview.example.test');
+});
+afterAll(() => {
+  vi.unstubAllEnvs();
+});
 
 const render = createAuthenticatedClientRenderer();
 const identities = new Set<string>();

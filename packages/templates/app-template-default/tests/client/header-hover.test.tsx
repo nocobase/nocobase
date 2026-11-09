@@ -5,7 +5,9 @@ import { AppThemeProvider } from '../../client/theme/theme-provider';
 import { HeaderActions } from '../../client/layouts/components/header-actions';
 import { UserMenu } from '../../client/layouts/components/user-menu';
 
-import { renderAuthenticatedClient } from '../helpers/authenticated-client.js';
+import { createAuthenticatedClientRenderer } from '../helpers/authenticated-client.js';
+
+const renderAuthenticatedClient = createAuthenticatedClientRenderer();
 
 beforeEach(() => {
   // jsdom does not implement the media queries used by the real theme provider.

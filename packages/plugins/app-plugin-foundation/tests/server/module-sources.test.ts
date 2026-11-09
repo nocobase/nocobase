@@ -56,6 +56,25 @@ afterEach(async () => {
 });
 
 describe('static module dependencies', () => {
+  it('stops a source scan on interruption instead of returning a partial result', async () => {
+    const root = await fixture({
+      'client/routes.ts': `export default [{name:'example',componentLoader:()=>import('./page.js')}];`,
+      'client/page.ts': `export default () => null;`,
+    });
+    const abort = new AbortController();
+    const observation = {
+      async watch(file: string) {
+        if (file === path.join(root, 'client/routes.ts'))
+          abort.abort(new Error('Application is stopping.'));
+      },
+      unreadable() {},
+    };
+    await expect(
+      collectModuleSources(root, [], observation, abort.signal),
+    ).rejects.toThrow('Application is stopping.');
+    expect((await collectModuleSources(root)).routes).toHaveLength(1);
+  });
+
   it.each(['local', 'property', 'parameter', 'nested', 'imported'])(
     'resolves %s child route references with invocation-local bindings',
     async (kind) => {
