@@ -81,7 +81,7 @@ export default function OnboardingPage() {
       ) : null}
       <div className='flex flex-wrap gap-3'>
         <Input
-          className='max-w-sm'
+          className='md:max-w-sm'
           aria-label={t('onboarding.search')}
           placeholder={t('onboarding.search')}
           value={q}
@@ -117,6 +117,27 @@ export default function OnboardingPage() {
         onPaginationChange={table.onPaginationChange}
         showSelectedCount={false}
         emptyMessage={t('onboarding.empty')}
+        // Phones show one card per person (mobile.md M3): the name and status, then the work email.
+        renderCard={(row) => (
+          <div className='flex flex-col gap-1 rounded-lg border p-4 text-sm'>
+            <div className='flex flex-wrap items-center justify-between gap-2'>
+              <RecordLink
+                to={{ pathname: row.original.id, search: location.search }}
+                className='min-w-0 break-words'
+              >
+                {row.original.fullName || t('onboarding.draft')}
+              </RecordLink>
+              <span className='text-muted-foreground'>
+                {t(`onboarding.${row.original.status}`)}
+              </span>
+            </div>
+            {row.original.workEmail ? (
+              <span className='break-all text-muted-foreground'>
+                {row.original.workEmail}
+              </span>
+            ) : null}
+          </div>
+        )}
       />
       <Outlet context={{ reload: request.reload }} />
     </PageContainer>

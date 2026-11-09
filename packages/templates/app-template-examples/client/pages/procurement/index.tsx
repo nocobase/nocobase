@@ -81,7 +81,7 @@ export default function ProcurementPage() {
       ) : null}
       <div className='flex flex-wrap gap-3'>
         <Input
-          className='max-w-sm'
+          className='md:max-w-sm'
           aria-label={t('procurement.search')}
           placeholder={t('procurement.search')}
           value={q}
@@ -116,6 +116,25 @@ export default function ProcurementPage() {
         onPaginationChange={table.onPaginationChange}
         showSelectedCount={false}
         emptyMessage={t('procurement.empty')}
+        // Phones show one card per request (mobile.md M3): title and status first, the total on the right.
+        renderCard={(row) => (
+          <div className='flex items-start justify-between gap-3 rounded-lg border p-4 text-sm'>
+            <div className='flex min-w-0 flex-col gap-1'>
+              <RecordLink
+                to={{ pathname: row.original.id, search: location.search }}
+                className='break-words'
+              >
+                {row.original.title || t('procurement.draft')}
+              </RecordLink>
+              <span className='text-muted-foreground'>
+                {t(`procurement.${row.original.status}`)}
+              </span>
+            </div>
+            <span className='shrink-0 tabular-nums'>
+              {(row.original.totalMinor / 100).toFixed(2)}
+            </span>
+          </div>
+        )}
       />
       <Outlet context={{ reload: request.reload }} />
     </PageContainer>
