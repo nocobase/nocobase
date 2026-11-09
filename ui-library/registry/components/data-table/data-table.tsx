@@ -102,6 +102,43 @@ export interface DataTableProps<TData, TValue = unknown> {
    * indeterminate states) renders above the cards with a visible label.
    */
   readonly selectionColumnId?: string;
+  /**
+   * The column ids the URL and the endpoint accept for sorting, such as the
+   * `sortColumns` given to `useTableUrlState`, which passes this on when its
+   * result is spread into the table. Every other column then offers no sort,
+   * in its header or in `DataTableSortMenu`, so no control writes a sort the
+   * list would ignore. Omit it to keep each column's own `enableSorting`.
+   */
+  readonly sortableColumns?: readonly string[];
+}
+
+/** The id TanStack Table gives a column definition. */
+function columnId<TData, TValue>(
+  column: ColumnDef<TData, TValue>,
+): string | undefined {
+  if (column.id) return column.id;
+  if ('accessorKey' in column && typeof column.accessorKey === 'string')
+    return column.accessorKey.replaceAll('.', '_');
+  return typeof column.header === 'string' ? column.header : undefined;
+}
+
+function limitSorting<TData, TValue>(
+  columns: readonly ColumnDef<TData, TValue>[],
+  sortable: readonly string[],
+): ColumnDef<TData, TValue>[] {
+  return columns.map((column) => {
+    const id = columnId(column);
+    const limited = {
+      ...column,
+      enableSorting:
+        column.enableSorting !== false &&
+        id !== undefined &&
+        sortable.includes(id),
+    };
+    return 'columns' in column && column.columns
+      ? { ...limited, columns: limitSorting(column.columns, sortable) }
+      : limited;
+  });
 }
 
 /** Below the `md` breakpoint, the width `useIsMobile` and the sidebar also use. */
@@ -169,10 +206,20 @@ export function DataTable<TData, TValue = unknown>({
   emptyAction,
   renderCard,
   selectionColumnId = 'select',
+  sortableColumns,
 }: DataTableProps<TData, TValue>): ReactElement {
   const { t } = useTranslation();
   const cards = useIsPhone(renderCard !== undefined) && renderCard;
   const tableData = useMemo(() => [...data], [data]);
+  // Compare by content: hosts usually pass a new array literal on every render.
+  const sortableKey = sortableColumns?.join('\u0000');
+  const tableColumns = useMemo(
+    () =>
+      sortableKey === undefined
+        ? columns
+        : limitSorting(columns, sortableKey ? sortableKey.split('\u0000') : []),
+    [columns, sortableKey],
+  );
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
@@ -184,7 +231,7 @@ export function DataTable<TData, TValue = unknown>({
   // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({
     data: tableData,
-    columns,
+    columns: tableColumns,
     manualPagination,
     // Controlled hosts own URL page resets and correction after writes.
     autoResetPageIndex: paginationState === undefined,

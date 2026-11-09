@@ -24,15 +24,20 @@ export interface DataTableSortMenuProps<TData> {
    * applied sort.
    */
   readonly compact?: boolean;
-  /** Label for a sortable column in the menu; defaults to the column id. */
-  readonly getColumnLabel?: (column: Column<TData, unknown>) => ReactNode;
+  /**
+   * The translated label of a sortable column, as its header shows it. Required:
+   * a column id is not a label, in any language.
+   */
+  readonly getColumnLabel: (column: Column<TData, unknown>) => ReactNode;
 }
 
 /**
  * A "Sort" menu offering every sortable column in both directions, for the
  * card list `DataTable` shows on phones, where there are no column headers.
  * It drives the table's own sorting state, so a controlled `onSortingChange`
- * (and the URL it writes) behaves exactly as a header click does. Render it
+ * (and the URL it writes) behaves exactly as a header click does. A column is
+ * sortable when the table allows it: `DataTable`'s `sortableColumns` (spread
+ * from `useTableUrlState`) leaves only the columns the URL accepts. Render it
  * from the `toolbar`, usually with `className='md:hidden'`.
  */
 export function DataTableSortMenu<TData>({
@@ -98,7 +103,7 @@ export function DataTableSortMenu<TData>({
             }}
           >
             {columns.flatMap((column) => {
-              const label = getColumnLabel ? getColumnLabel(column) : column.id;
+              const label = getColumnLabel(column);
               return (['asc', 'desc'] as const).map((direction) => (
                 <DropdownMenuRadioItem
                   key={`${direction}:${column.id}`}

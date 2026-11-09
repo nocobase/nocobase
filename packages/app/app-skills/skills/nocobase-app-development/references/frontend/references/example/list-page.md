@@ -597,7 +597,12 @@ const appliedFilters = [status, owner].filter(Boolean).length;
       </div>
     </SheetContent>
   </Sheet>
-  <DataTableSortMenu table={table} compact className='md:hidden' />
+  <DataTableSortMenu
+    table={table}
+    compact
+    className='md:hidden'
+    getColumnLabel={(column) => t(`projects.fields.${column.id}`)}
+  />
   {hasFilters ? clearButton : null}
 </>;
 ```

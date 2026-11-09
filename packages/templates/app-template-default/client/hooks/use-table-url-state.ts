@@ -210,6 +210,8 @@ export function useTableUrlState({
     onPaginationChange,
     sortingState,
     onSortingChange,
+    // Spread into DataTable, this limits its headers and sort menu to the columns the URL accepts.
+    sortableColumns: sortColumns,
     pageSizeOptions,
   };
 }

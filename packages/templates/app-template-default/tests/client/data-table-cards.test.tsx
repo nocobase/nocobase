@@ -4,12 +4,15 @@ import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { act } from 'react';
+import { useTranslation } from '@nocobase/i18n/client';
+import { useLocation } from 'react-router';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   DataTable,
   DataTableColumnHeader,
   DataTableSortMenu,
 } from '../../client/components/data-table/index.js';
+import { useTableUrlState } from '../../client/hooks/use-table-url-state.js';
 import enUS from '../../client/locales/en-US.js';
 import zhCN from '../../client/locales/zh-CN.js';
 
@@ -247,6 +250,105 @@ describe('DataTable cards on phones', () => {
     expect(screen.queryByText(/row\(s\) selected/u)).toHaveTextContent(
       '0 of 12 row(s) selected.',
     );
+  });
+
+  it.each([
+    ['en-US', ['Amount · Asc', 'Amount · Desc'], 'Amount · Desc'],
+    ['zh-CN', ['金额 · 升序', '金额 · 降序'], '金额 · 降序'],
+  ] as const)(
+    'offers only the sorts the URL accepts, with translated labels, in %s',
+    async (locale, items, choice) => {
+      stubViewport(true);
+      const user = userEvent.setup();
+      type Repair = { id: string; amount: number; status: string };
+      const repairs: Repair[] = rows.map((row) => ({
+        ...row,
+        status: row.amount % 2 ? 'open' : 'done',
+      }));
+      // Every accessor column is sortable by default; the URL accepts only amount.
+      const repairColumns: ColumnDef<Repair>[] = [
+        { accessorKey: 'id', header: 'ID' },
+        { accessorKey: 'amount', header: 'Amount' },
+        { accessorKey: 'status', header: 'Status' },
+      ];
+      function Repairs(): React.ReactElement {
+        const { i18n } = useTranslation();
+        const location = useLocation();
+        const tableState = useTableUrlState({ sortColumns: ['amount'] });
+        const labels: Record<string, string> =
+          i18n.language === 'zh-CN'
+            ? { amount: '金额', status: '状态', id: '编号' }
+            : { amount: 'Amount', status: 'Status', id: 'ID' };
+        return (
+          <>
+            <output aria-label='search'>{location.search}</output>
+            <DataTable
+              columns={repairColumns}
+              data={repairs}
+              getRowId={(row) => row.id}
+              {...tableState}
+              toolbar={(table) => (
+                <DataTableSortMenu
+                  table={table}
+                  compact
+                  getColumnLabel={(column) => labels[column.id]}
+                />
+              )}
+              renderCard={(row) => (
+                <article aria-label={row.original.id}>
+                  {row.original.id}
+                </article>
+              )}
+            />
+          </>
+        );
+      }
+      await renderWithApp(<Repairs />, {
+        namespace,
+        namespaces,
+        locale,
+        route: '/repairs?page=1&pageSize=10',
+      });
+      await user.click(
+        screen.getByRole('button', {
+          name: locale === 'zh-CN' ? '排序' : 'Sort',
+        }),
+      );
+      const options = await screen.findAllByRole('menuitemradio');
+      expect(options.map((option) => option.textContent)).toEqual(items);
+      await user.click(screen.getByRole('menuitemradio', { name: choice }));
+      expect(screen.getByLabelText('search')).toHaveTextContent(
+        '?pageSize=10&sort=amount&order=desc',
+      );
+    },
+  );
+
+  it('offers no header sort for a column the URL does not accept', async () => {
+    stubViewport(false);
+    function Desktop(): React.ReactElement {
+      const tableState = useTableUrlState({ sortColumns: ['id'] });
+      return (
+        <DataTable
+          columns={[
+            {
+              accessorKey: 'id',
+              header: ({ column }) => (
+                <DataTableColumnHeader column={column} title='ID' />
+              ),
+            },
+            ...columns.slice(1),
+          ]}
+          data={rows}
+          {...tableState}
+        />
+      );
+    }
+    await renderWithApp(<Desktop />, { namespace, namespaces });
+    expect(screen.getByRole('button', { name: /^ID/u })).toBeVisible();
+    expect(
+      screen.queryByRole('button', { name: /^Amount/u }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Amount' })).toBeVisible();
   });
 
   it('keeps the table on wider screens', async () => {
