@@ -26,7 +26,7 @@ For an overlay or footer change, use the actual installed components in a browse
 
 Check [the phone checklist](mobile.md#checklist) for every page the change creates or alters, at 375×667, a 390–412px width and a desktop width, with phone emulation (`isMobile`, `hasTouch`).
 
-- Look at the first screen without scrolling: main content is visible (M1.1). Measure page overflow with `document.documentElement.scrollWidth <= innerWidth` in every checked state, including long Chinese and English content and the largest action set (M1.2).
+- Look at the first screen without scrolling: main content is visible (M1.1). On a list, measure at 375×667 the height between the page header and the first card (at most 150px) and the first card's top (at most 300px); a primary action, view tabs, search, Filters and Sort on rows of their own fail M1.1 and M4.1. Measure page overflow with `document.documentElement.scrollWidth <= innerWidth` in every checked state, including long Chinese and English content and the largest action set (M1.2).
 - Walk the page's main task on the phone width: find, filter and sort, open a record, edit with a validation error, save, cancel, confirm a destructive action, and return to the same filtered list and scroll position (M2–M7). Check the desktop width afterwards for regressions.
 - Reach the list context the other ways too (M10): a direct URL with `page=2` and a filter, a reload of it, and saving an edit opened by its URL from page 2 each leave the list on page 2.
 - With a dirty form, Cancel, ×, Esc and browser back each ask before discarding (M7.4); with the write request held, the primary button shows its pending label and is disabled, and Cancel cannot close.

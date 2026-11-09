@@ -30,7 +30,7 @@ These are the shared UI guidelines for NocoBase 3 applications and embedded plug
 
 ## L Page structure
 
-**L1 [Must]** A business page is wrapped in PageContainer, with a PageHeader at the top: a title (required), a one-sentence description (recommended) and page-level actions, right-aligned in the same row as the title block and never wrapped below the description; this holds inside a settings dialog too. Below `sm`, `PageHeader` puts the actions under the title block by itself; keep at most one primary action and two buttons there, with the rest in a "More" menu (M1.1). An auxiliary note is one muted line under the description, or an `Alert`, never a second description.
+**L1 [Must]** A business page is wrapped in PageContainer, with a PageHeader at the top: a title (required), a one-sentence description (recommended) and page-level actions, right-aligned in the same row as the title block and never wrapped below the description; this holds inside a settings dialog too. `PageHeader` keeps the actions on the title's row on phones too; keep one primary action there (an icon button with the same accessible name when its label does not fit beside the title at 375px), with the rest in a "More" menu (M1.1). An auxiliary note is one muted line under the description, or an `Alert`, never a second description.
 
 **L2 [Must]** A view (page, dialog, drawer) has at most one primary button (the default style); other buttons use outline, ghost or destructive, or go into a menu. Each Card of a settings page saves on its own (T4.2) and counts as its own view, so each Card's Save may be primary.
 
@@ -52,7 +52,7 @@ These are the shared UI guidelines for NocoBase 3 applications and embedded plug
 
 The T1 guidelines apply to a list page. A short list of records inside a card, such as a dashboard's, follows T5.3 instead: no search, filters, sorting or pagination.
 
-Structure, top to bottom: PageHeader (primary action "New X") → toolbar (search box and filters on the left, secondary actions on the right) → table → pagination. On a phone the same page shows the search box, one row with "Filters" (several filters move into a sheet) and "Sort", then one card per record, then pagination (M3, M4).
+Structure, top to bottom: PageHeader (primary action "New X") → toolbar (search box and filters on the left, secondary actions on the right) → table → pagination. On a phone the same page shows the title with "New X" on one row, then one row with the search box and the icon "Filters" (several filters move into a sheet) and "Sort" buttons, then one card per record, then pagination (M1.1, M3, M4).
 
 - **T1.1 [Must]** The search box has a placeholder that says which fields it searches, for example "Search by name or email".
 - **T1.2 [Must]** Filter controls show their current value; while a search or filter is applied, show "Clear filters".

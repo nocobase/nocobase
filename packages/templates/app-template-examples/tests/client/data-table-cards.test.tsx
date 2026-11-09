@@ -59,6 +59,7 @@ function List(): React.ReactElement {
         toolbar={(table) => (
           <DataTableSortMenu
             table={table}
+            compact
             getColumnLabel={(column) =>
               column.id === 'amount' ? 'Amount' : column.id
             }

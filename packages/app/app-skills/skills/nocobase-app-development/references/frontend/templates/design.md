@@ -104,7 +104,7 @@ Decide this with the page structure, not after it ([the phone experience](../mob
 | ------------- | ------------------------------------- | --------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- | --------------------------------------- | ----------------------------------------------- |
 |               |                                       |                                                                             |                                                                                          |                                         |                                                 |
 
-Also state the dark theme, long Chinese and English text, touch alternatives for any hover, double-click or drag interaction, and keyboard or safe-area concerns for fixed bars and forms near the bottom. Map the phone decisions to acceptance criteria below (checked at 375×667, a 390–412px width and desktop).
+For a list, sketch its first screen at 375×667: the title row with the primary action, view tabs if any, the one search/Filters/Sort row, and where the first card starts (M1.1, M4.1). Also state the dark theme, long Chinese and English text, touch alternatives for any hover, double-click or drag interaction, and keyboard or safe-area concerns for fixed bars and forms near the bottom. Map the phone decisions to acceptance criteria below (checked at 375×667, a 390–412px width and desktop).
 
 ## 9. Acceptance criteria
 

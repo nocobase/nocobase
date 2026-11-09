@@ -646,6 +646,12 @@ describe('detail drawer, edit dialog and a confirmation', () => {
     expect(
       screen.queryByRole('dialog', { name: 'Order 42' }),
     ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('dialog', { name: 'Edit order' }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('textbox', { name: 'Name' }),
+    ).not.toBeInTheDocument();
     expect(screen.getAllByRole('alertdialog')).toHaveLength(1);
     await user.click(
       within(prompt).getByRole('button', { name: 'Keep editing' }),

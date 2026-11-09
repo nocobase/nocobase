@@ -19,6 +19,11 @@ import { cn } from 'cn';
 export interface DataTableSortMenuProps<TData> {
   readonly table: TableInstance<TData>;
   readonly className?: string;
+  /**
+   * An icon button named "Sort" instead of a labelled one, to share the search box's row on a phone. A dot marks an
+   * applied sort.
+   */
+  readonly compact?: boolean;
   /** Label for a sortable column in the menu; defaults to the column id. */
   readonly getColumnLabel?: (column: Column<TData, unknown>) => ReactNode;
 }
@@ -33,6 +38,7 @@ export interface DataTableSortMenuProps<TData> {
 export function DataTableSortMenu<TData>({
   table,
   className,
+  compact = false,
   getColumnLabel,
 }: DataTableSortMenuProps<TData>): ReactElement | null {
   const { t } = useTranslation();
@@ -45,15 +51,33 @@ export function DataTableSortMenu<TData>({
     <DropdownMenu>
       <DropdownMenuTrigger
         render={
-          <Button
-            variant='outline'
-            size='sm'
-            className={cn('h-8', className)}
-          />
+          compact ? (
+            <Button
+              variant='outline'
+              size='icon'
+              aria-label={t('dataTable.sort', { defaultValue: 'Sort' })}
+              className={cn('relative shrink-0', className)}
+            />
+          ) : (
+            <Button
+              variant='outline'
+              size='sm'
+              className={cn('h-8', className)}
+            />
+          )
         }
       >
         <ArrowUpDownIcon />
-        {t('dataTable.sort', { defaultValue: 'Sort' })}
+        {compact ? (
+          current ? (
+            <span
+              aria-hidden='true'
+              className='absolute top-1 right-1 size-1.5 rounded-full bg-primary'
+            />
+          ) : null
+        ) : (
+          t('dataTable.sort', { defaultValue: 'Sort' })
+        )}
       </DropdownMenuTrigger>
       <DropdownMenuContent align='end' className='w-auto min-w-40'>
         <DropdownMenuGroup>

@@ -135,12 +135,12 @@ export default function ProjectsPage(): ReactElement {
 }
 ```
 
-- **`PageContainer`** (`#components/page-container`) renders a `section` that owns the full width, the spacing between blocks and the responsive padding (`w-full space-y-6 p-6 md:p-8`); the back button, the title, actions, content and the loading, empty and error states all go inside it. Do not hand-write an outer `div`, `main` or `section` with page padding, and do not change its spacing on one page (to change it everywhere, change the component).
+- **`PageContainer`** (`#components/page-container`) renders a `section` that owns the full width, the spacing between blocks and the responsive padding (`w-full space-y-4 p-4 sm:space-y-6 sm:p-6 md:p-8`, tighter on phones); the back button, the title, actions, content and the loading, empty and error states all go inside it. Do not hand-write an outer `div`, `main` or `section` with page padding, and do not change its spacing on one page (to change it everywhere, change the component).
 - **`PageContainer` is provided by the component that owns the page, one per page**:
   - An inline child page (including tab content) renders inside the parent page's `PageContainer`; do not add another one.
   - A covering child page uses its own `PageContainer` inside `RouteChildPage` (see [`child-routes.md`](child-routes.md)). A child route that returns a bare `PageContainer` is neither: it renders at the parent's `Outlet`, below the parent's content.
   - Dialog and drawer content uses the overlay's own container; do not add `PageContainer`.
-- **`PageHeader`** (`#components/page-header`) props: `title` (required), `description`, `actions` (on the right, for page-level actions). The title matches the menu name (guidelines L1, L3 and L5).
+- **`PageHeader`** (`#components/page-header`) props: `title` (required), `description`, `actions` (on the right of the title on every width, for page-level actions; one primary action on phones, M1.1 of [the phone experience](../mobile.md)). The title matches the menu name (guidelines L1, L3 and L5).
 - A page with child routes must place `<Outlet />` itself, or the child route content does not render; put it at the end of `PageContainer`. For how to write child routes, see [`child-routes.md`](child-routes.md) and [`overlay.md`](overlay.md).
 - Navigate to a child route with a relative path (`new`, `id`, `` `edit/${id}` ``) and keep the query string, as [section 2.2 of `overlay.md`](overlay.md#22-place-the-outlet-in-the-parent-page) explains.
 

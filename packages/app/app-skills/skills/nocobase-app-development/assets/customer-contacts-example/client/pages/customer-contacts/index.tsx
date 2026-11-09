@@ -267,8 +267,9 @@ function CustomerContactsContent() {
         />
       </div>
       {!confirmReset && <WriteFeedback error={resetError} />}
-      {/* Desktop: search, both filters and Clear in one row. Phone (mobile.md M4): the search box, then one row with
-          a Filters button showing how many filters apply, opening the same controls in a bottom sheet, and Clear. */}
+      {/* One row on every width (mobile.md M4.1). Desktop: search, both filters and Clear. Phone: the search box and
+          an icon Filters button named with how many filters apply, opening the same controls in a bottom sheet;
+          Clear joins while something is applied. */}
       <div className='flex flex-wrap items-center gap-2'>
         <CustomerSearch
           value={search}
@@ -291,12 +292,30 @@ function CustomerContactsContent() {
         </div>
         <Sheet open={filtersOpen} onOpenChange={setFiltersOpen}>
           <SheetTrigger
-            render={<Button variant='outline' className='md:hidden' />}
+            render={
+              <Button
+                variant='outline'
+                size='icon'
+                className='relative shrink-0 md:hidden'
+                aria-label={
+                  appliedFilters > 0
+                    ? t('customerContacts.filtersApplied', {
+                        count: appliedFilters,
+                      })
+                    : t('customerContacts.filters')
+                }
+              />
+            }
           >
-            <FilterIcon data-icon='inline-start' />
-            {appliedFilters > 0
-              ? t('customerContacts.filtersApplied', { count: appliedFilters })
-              : t('customerContacts.filters')}
+            <FilterIcon />
+            {appliedFilters > 0 ? (
+              <span
+                aria-hidden='true'
+                className='absolute -top-1.5 -right-1.5 flex size-4 items-center justify-center rounded-full bg-primary text-xs font-medium text-primary-foreground tabular-nums'
+              >
+                {appliedFilters}
+              </span>
+            ) : null}
           </SheetTrigger>
           <SheetContent
             side='bottom'
@@ -597,7 +616,7 @@ function CustomerSearch({
         setComposing(false);
         setText(e.currentTarget.value);
       }}
-      className='w-full md:max-w-xs'
+      className='min-w-0 flex-1 md:max-w-xs md:flex-none'
     />
   );
 }

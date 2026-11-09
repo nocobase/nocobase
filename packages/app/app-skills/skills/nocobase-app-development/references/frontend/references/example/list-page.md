@@ -316,14 +316,63 @@ export default function ProjectsPage(): ReactElement {
         onClearFilters={clearFilters}
         // No row selection on this page, so no "0 of N row(s) selected" summary.
         showSelectedCount={false}
-        // Phones show one card per project instead of a row (M3 in mobile.md), and sort from a menu because the
-        // cards have no column headers; desktop keeps the sortable headers, so the menu is hidden from md up.
+        // The page's controls live in the table's toolbar, so on a phone the search box, the status filter and an
+        // icon "Sort" share one row above the cards (M4.1 in mobile.md); the shared Clear and Retry actions join that
+        // row. Desktop keeps the sortable headers, so the sort menu is hidden from md up.
         toolbar={(table) => (
-          <DataTableSortMenu
-            table={table}
-            className='md:hidden'
-            getColumnLabel={(column) => t(`projects.fields.${column.id}`)}
-          />
+          <>
+            <InputGroup className='min-w-0 flex-1 md:max-w-xs md:flex-none'>
+              <InputGroupAddon>
+                <SearchIcon />
+              </InputGroupAddon>
+              <InputGroupInput
+                ref={searchRef}
+                {...inputProps}
+                placeholder={t('projects.search.placeholder')}
+                aria-label={t('projects.search.label')}
+              />
+            </InputGroup>
+            <Select
+              items={statusItems}
+              value={status ?? 'all'}
+              onValueChange={changeStatus}
+            >
+              {/* The page's only filter stays inline at a compact width on a phone (M4.2). */}
+              <SelectTrigger
+                className='w-32 shrink-0 md:w-40'
+                aria-label={t('projects.filters.status')}
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className='w-auto max-w-[min(var(--container-sm),var(--available-width))] min-w-(--anchor-width) [&_[data-slot=select-item]>:first-child]:whitespace-normal'>
+                <SelectGroup>
+                  {statusItems.map((item) => (
+                    <SelectItem key={item.value} value={item.value}>
+                      {item.label}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+            <DataTableSortMenu
+              table={table}
+              compact
+              className='md:hidden'
+              getColumnLabel={(column) => t(`projects.fields.${column.id}`)}
+            />
+            {hasFilters && listState !== 'no-results' ? (
+              <Button variant='ghost' onClick={clearFilters}>
+                {t('projects.filters.clear')}
+              </Button>
+            ) : null}
+            {/* Reserve space even when a fast refresh finishes before feedback appears. On a phone the card list shows
+                DataTable's own refresh indicator, so this slot does not take a place in the row. */}
+            <div className='ml-auto hidden h-8 w-8 shrink-0 items-center justify-center md:flex'>
+              {active && loading && rows !== undefined ? (
+                <RefreshIndicator />
+              ) : null}
+            </div>
+          </>
         )}
         renderCard={(row) => (
           <ProjectCard
@@ -356,52 +405,6 @@ export default function ProjectsPage(): ReactElement {
           ) : null
         }
       />
-      <div className='flex flex-wrap items-center gap-2'>
-        <InputGroup className='w-full md:max-w-xs'>
-          <InputGroupAddon>
-            <SearchIcon />
-          </InputGroupAddon>
-          <InputGroupInput
-            ref={searchRef}
-            {...inputProps}
-            placeholder={t('projects.search.placeholder')}
-            aria-label={t('projects.search.label')}
-          />
-        </InputGroup>
-        <Select
-          items={statusItems}
-          value={status ?? 'all'}
-          onValueChange={changeStatus}
-        >
-          {/* The page's only filter stays inline: on a phone it shares the second row with "Clear filters" (M4.2). */}
-          <SelectTrigger
-            className='min-w-0 flex-1 md:w-40 md:flex-none'
-            aria-label={t('projects.filters.status')}
-          >
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent className='w-auto max-w-[min(var(--container-sm),var(--available-width))] min-w-(--anchor-width) [&_[data-slot=select-item]>:first-child]:whitespace-normal'>
-            <SelectGroup>
-              {statusItems.map((item) => (
-                <SelectItem key={item.value} value={item.value}>
-                  {item.label}
-                </SelectItem>
-              ))}
-            </SelectGroup>
-          </SelectContent>
-        </Select>
-        {hasFilters && listState !== 'no-results' ? (
-          <Button variant='ghost' onClick={clearFilters}>
-            {t('projects.filters.clear')}
-          </Button>
-        ) : null}
-        {/* Reserve space even when a fast refresh finishes before feedback appears. */}
-        <div className='ml-auto flex h-8 w-8 shrink-0 items-center justify-center'>
-          {active && loading && rows !== undefined ? (
-            <RefreshIndicator />
-          ) : null}
-        </div>
-      </div>
       {content}
 
       <ProjectDeleteDialog
@@ -544,24 +547,44 @@ function ProjectCard({
 
 ## Two or more filters on a phone
 
-This page has one filter, so it stays inline (M4.1). As soon as a list has a second filter, put the filters behind a "Filters" button on phones and keep them inline from `md` up (M4.2). The runnable reference is the customer list of the [executable relation and batch example](../executable-relation-batch.md) (`client/pages/customer-contacts/index.tsx`, tested at phone width in `tests/client/customer-contacts.test.tsx`). Its shape, with this page's names:
+This page has one filter, so it stays inline (M4.1). As soon as a list has a second filter, put the filters behind an icon "Filters" button on the search box's row on phones and keep them inline from `md` up (M4.2). The runnable reference is the customer list of the [executable relation and batch example](../executable-relation-batch.md) (`client/pages/customer-contacts/index.tsx`, tested at phone width in `tests/client/customer-contacts.test.tsx`). Its shape, with this page's names:
 
 ```tsx
 const appliedFilters = [status, owner].filter(Boolean).length;
 
-<div className='flex flex-wrap items-center gap-2'>
-  {search /* the search box: full width on a phone, as above */}
+// Inside DataTable's `toolbar`, as above, so a sort menu can share the row.
+<>
+  {search /* the search box: `min-w-0 flex-1` on a phone, as above */}
   {/* Desktop: the filters inline. `hidden` removes them from the accessibility tree on a phone. */}
   <div className='hidden md:contents'>
     <StatusFilter value={status} onChange={changeStatus} />
     <OwnerFilter value={owner} onChange={changeOwner} />
   </div>
   <Sheet open={filtersOpen} onOpenChange={setFiltersOpen}>
-    <SheetTrigger render={<Button variant='outline' className='md:hidden' />}>
-      <FilterIcon data-icon='inline-start' />
-      {appliedFilters > 0
-        ? t('projects.filters.applied', { count: appliedFilters })
-        : t('projects.filters.title')}
+    {/* An icon button on the search box's row, named with the applied count; the badge shows the same count. */}
+    <SheetTrigger
+      render={
+        <Button
+          variant='outline'
+          size='icon'
+          className='relative shrink-0 md:hidden'
+          aria-label={
+            appliedFilters > 0
+              ? t('projects.filters.applied', { count: appliedFilters })
+              : t('projects.filters.title')
+          }
+        />
+      }
+    >
+      <FilterIcon />
+      {appliedFilters > 0 ? (
+        <span
+          aria-hidden='true'
+          className='absolute -top-1.5 -right-1.5 flex size-4 items-center justify-center rounded-full bg-primary text-xs font-medium text-primary-foreground tabular-nums'
+        >
+          {appliedFilters}
+        </span>
+      ) : null}
     </SheetTrigger>
     <SheetContent side='bottom' className='max-h-[calc(100dvh-2rem)] gap-0'>
       <SheetHeader>
@@ -574,8 +597,9 @@ const appliedFilters = [status, owner].filter(Boolean).length;
       </div>
     </SheetContent>
   </Sheet>
+  <DataTableSortMenu table={table} compact className='md:hidden' />
   {hasFilters ? clearButton : null}
-</div>;
+</>;
 ```
 
 The same filter component renders in two places, so it must not carry a fixed identity:
