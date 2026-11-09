@@ -231,6 +231,7 @@ const systemEnUS = {
     sortDescending: 'Desc',
     sort: 'Sort',
     sortBy: 'Sort by',
+    selectPage: 'Select all on this page',
     hideColumn: 'Hide',
     view: 'View',
     toggleColumns: 'Toggle columns',

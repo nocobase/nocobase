@@ -32,6 +32,7 @@ Check [the phone checklist](mobile.md#checklist) for every page the change creat
 - With a dirty form, Cancel, ×, Esc and browser back each ask before discarding (M7.4); with the write request held, the primary button shows its pending label and is disabled, and Cancel cannot close.
 - Find every control by role and accessible name at each width, the sheet's filters included; a check that falls back to positions or CSS selectors has found a naming defect (M4.2, M8.5).
 - For overlays and forms near the bottom of the screen, check the short height and landscape, focus a field near the footer and submit with an error; the focused field, its error and the footer stay visible. Soft keyboard, dynamic toolbar and safe areas need a real device or simulator; without one they are Not verified.
+- Count the controls on a card: it has the row's menu with the same items, or the list's recorded M3.1 case explains why rows and cards have none; a selectable list shows "Select all on this page" with its partly selected state. For a detail drawer with an edit dialog, walk drawer → edit → discard or delete confirmation at 375×667: only the top layer responds and each way back returns one layer (M7.2).
 - A wrapping desktop toolbar or a sideways-scrolling ordinary list is a G issue against A4 and M3/M4, not a pass. An exception needs its recorded reason (M3.4, M5.4).
 
 ## Loading transitions

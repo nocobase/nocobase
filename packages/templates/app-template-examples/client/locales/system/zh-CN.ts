@@ -218,6 +218,7 @@ const systemZhCN: SystemResource = {
     sortDescending: '降序',
     sort: '排序',
     sortBy: '排序方式',
+    selectPage: '全选本页',
     hideColumn: '隐藏',
     view: '视图',
     toggleColumns: '显示列',

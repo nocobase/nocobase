@@ -100,9 +100,9 @@ Link existing copy keys for reused patterns; specify new or changed wording in e
 
 Decide this with the page structure, not after it ([the phone experience](../mobile.md)). One row per page or overlay; say "same as desktop" only where nothing changes:
 
-| Page / region | Main task on a phone and first screen | Phone pattern (cards, Filters sheet, one-row tabs, stacked fields, steps …) | What moves into a disclosure, and where | Exceptions kept on purpose (M3.4, M5.4) and why |
-| ------------- | ------------------------------------- | --------------------------------------------------------------------------- | --------------------------------------- | ----------------------------------------------- |
-|               |                                       |                                                                             |                                         |                                                 |
+| Page / region | Main task on a phone and first screen | Phone pattern (cards, Filters sheet, one-row tabs, stacked fields, steps …) | Card actions: the row's menu items, or M3.1 case (a)/(b)/(c); select all when selectable | What moves into a disclosure, and where | Exceptions kept on purpose (M3.4, M5.4) and why |
+| ------------- | ------------------------------------- | --------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- | --------------------------------------- | ----------------------------------------------- |
+|               |                                       |                                                                             |                                                                                          |                                         |                                                 |
 
 Also state the dark theme, long Chinese and English text, touch alternatives for any hover, double-click or drag interaction, and keyboard or safe-area concerns for fixed bars and forms near the bottom. Map the phone decisions to acceptance criteria below (checked at 375×667, a 390–412px width and desktop).
 

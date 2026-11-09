@@ -97,7 +97,22 @@ function switchableViewport(): (phone: boolean) => void {
 const selectableColumns: ColumnDef<Item>[] = [
   {
     id: 'select',
-    header: 'Select',
+    header: ({ table }) => (
+      <input
+        type='checkbox'
+        aria-label='Select all'
+        checked={table.getIsAllPageRowsSelected()}
+        ref={(input) => {
+          if (input)
+            input.indeterminate =
+              table.getIsSomePageRowsSelected() &&
+              !table.getIsAllPageRowsSelected();
+        }}
+        onChange={(event) =>
+          table.toggleAllPageRowsSelected(event.target.checked)
+        }
+      />
+    ),
     cell: ({ row }) => (
       <input
         type='checkbox'
@@ -184,6 +199,53 @@ describe('DataTable cards on phones', () => {
     expect(
       screen.getByRole('checkbox', { name: 'Select row-0' }),
     ).toBeChecked();
+  });
+
+  it('keeps select all on this page above the cards, with partial selection', async () => {
+    stubViewport(true);
+    const user = userEvent.setup();
+    await renderWithApp(
+      <DataTable
+        columns={selectableColumns}
+        data={rows}
+        getRowId={(row) => row.id}
+        renderCard={(row) => (
+          <article aria-label={row.original.id}>
+            <input
+              type='checkbox'
+              aria-label={`Select card ${row.original.id}`}
+              checked={row.getIsSelected()}
+              onChange={(event) => row.toggleSelected(event.target.checked)}
+            />
+          </article>
+        )}
+      />,
+      { namespace, namespaces },
+    );
+    const all = screen.getByRole('checkbox', { name: 'Select all' });
+    expect(screen.getByText('Select all on this page')).toBeVisible();
+
+    await user.click(
+      screen.getByRole('checkbox', { name: 'Select card row-0' }),
+    );
+    expect(all).not.toBeChecked();
+    expect(all).toHaveProperty('indeterminate', true);
+
+    // The visible label is part of the control, a larger target for a finger.
+    await user.click(screen.getByText('Select all on this page'));
+    expect(all).toBeChecked();
+    expect(screen.getByText('10 of 12 row(s) selected.')).toBeVisible();
+
+    // Select all covers the current page only.
+    await user.click(screen.getByRole('button', { name: 'Go to next page' }));
+    expect(all).not.toBeChecked();
+    await user.click(
+      screen.getByRole('button', { name: 'Go to previous page' }),
+    );
+    await user.click(all);
+    expect(screen.queryByText(/row\(s\) selected/u)).toHaveTextContent(
+      '0 of 12 row(s) selected.',
+    );
   });
 
   it('keeps the table on wider screens', async () => {

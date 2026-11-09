@@ -143,15 +143,18 @@ function CustomerContactsContent() {
     ...(edit.can || assign.can
       ? [
           {
-            id: 'selection',
+            // DataTable shows this header above the phone cards too, as "Select all on this page".
+            id: 'select',
             header: () => (
               <Checkbox
-                aria-label={t('customerContacts.selected', {
-                  count: rows.length,
-                })}
+                aria-label={t('customerContacts.selectAll')}
                 checked={
                   rows.length > 0 &&
                   rows.every((row) => selected.includes(row.id))
+                }
+                indeterminate={
+                  selected.length > 0 &&
+                  !rows.every((row) => selected.includes(row.id))
                 }
                 disabled={request.loading || !active}
                 onCheckedChange={(checked) =>
@@ -472,7 +475,9 @@ function FilterField({
 }
 /**
  * One customer on a phone (mobile.md M3): the selection checkbox when batch actions exist, the name link and status
- * first, then the owner. The table's columns stay for wider screens.
+ * first, then the owner. The table's columns stay for wider screens. Like the rows, the card has no action menu: this
+ * list changes customers through selection and the batch action, and a customer's own edit belongs with its contacts
+ * on the customer's page (case (c) of M3.1).
  */
 function CustomerCard({
   customer,

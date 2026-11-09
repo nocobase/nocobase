@@ -6,6 +6,8 @@ Part of the [projects worked example](../example.md). For the runnable, continuo
 
 **Add first**: `yes n | pnpm exec shadcn add alert empty input-group select skeleton table`, then format the files it creates ([how](../shadcn.md#1-what-the-template-ships-and-how-to-add-the-rest)), and reuse the template's shipped `DataTable` in `client/components/data-table/` with its supported `@tanstack/react-table` v8 dependency ([section 1 of `table.md`](../table.md#1-choosing-a-table-component)).
 
+**On phones**: `ProjectCard` ends with the same `ProjectRowMenu` as the row (M3.1 in [the phone experience](../../mobile.md)); keep it when adapting this page. Leave it out only together with the row's menu, for one of the three cases M3.1 names.
+
 **Links to**: the [create dialog](create-dialog.md), the [detail drawer](detail-drawer.md) and the [edit dialog](edit-dialog.md), which a row's menu opens alone, are its child routes. Without a detail view, render the name as plain text: a link to a route that does not exist lands on the home page.
 
 **Without detail and delete** (a list with only a create dialog), remove: the `actions` column, `ProjectRowMenu` and its use in `ProjectCard`, the `deletion` state, `ProjectDeleteDialog` at the end, `focusSearchAfterReloadRef` with its effect, and `afterDelete`, `onSaved` and `onNotFound`, which leaves `outletContext` as `{ reload }`, `ProjectsOutletContext` in `types.ts` with only `reload` and no `ProjectEditOutletContext`; render the name as plain text.

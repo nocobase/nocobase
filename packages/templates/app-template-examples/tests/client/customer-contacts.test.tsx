@@ -722,3 +722,94 @@ it('shows cards and a filter sheet with the applied count on a phone', async () 
     await screen.findByRole('button', { name: 'Filters · 2' }),
   ).toBeVisible();
 });
+
+it('selects and clears the whole page from the phone cards and keeps the batch target across widths', async () => {
+  let phone = true;
+  const listeners = new Set<() => void>();
+  vi.stubGlobal('matchMedia', (query: string) => ({
+    get matches() {
+      return phone;
+    },
+    media: query,
+    addEventListener: (_: string, listener: () => void) =>
+      listeners.add(listener),
+    removeEventListener: (_: string, listener: () => void) =>
+      listeners.delete(listener),
+  }));
+  const setPhone = (next: boolean) => {
+    phone = next;
+    act(() => {
+      for (const listener of listeners) listener();
+    });
+  };
+  const birch = { ...customer, id: 'customer-02', name: 'Birch 02' };
+  const cedar = { ...customer, id: 'customer-11', name: 'Cedar 11' };
+  await mount(({ path, query }) => {
+    if (path === 'customerContacts/customers') {
+      if (query?.status === 'paused') return list([]);
+      return Number(query?.page) === 2
+        ? list([cedar], 2, 12)
+        : list([customer, birch], 1, 12);
+    }
+    throw new Error(`Unexpected ${path}`);
+  });
+  // On a phone the visible label names the page's select-all checkbox; the page re-renders it, so query it each time.
+  const selectAll = () =>
+    screen.getByRole('checkbox', { name: /Select all on this page/u });
+  await screen.findByRole('checkbox', { name: /Select all on this page/u });
+  expect(screen.queryByRole('table')).not.toBeInTheDocument();
+
+  // One card selected: the page is partly selected.
+  await userEvent.click(
+    screen.getByRole('checkbox', { name: 'Select Acorn 01' }),
+  );
+  expect(selectAll()).toHaveAttribute('aria-checked', 'mixed');
+  // One tap on the label selects the rest of the page.
+  await userEvent.click(screen.getByText('Select all on this page'));
+  await screen.findByText('2 selected on this page');
+  expect(selectAll()).toHaveAttribute('aria-checked', 'true');
+
+  // The selection survives a switch to the desktop table and back.
+  setPhone(false);
+  expect(await screen.findByRole('table')).toBeVisible();
+  expect(screen.getByText('2 selected on this page')).toBeVisible();
+  setPhone(true);
+  await waitFor(() =>
+    expect(screen.queryByRole('table')).not.toBeInTheDocument(),
+  );
+  expect(screen.getByText('2 selected on this page')).toBeVisible();
+
+  // A second tap clears the page; a third selects it again, and the batch action targets exactly this page.
+  await userEvent.click(selectAll());
+  expect(screen.queryByText(/selected on this page/u)).not.toBeInTheDocument();
+  await userEvent.click(selectAll());
+  await screen.findByText('2 selected on this page');
+  await userEvent.click(
+    screen.getByRole('button', { name: 'Edit selected customers' }),
+  );
+  await screen.findByText('This assignment will change 2 selected customers.');
+  await userEvent.keyboard('{Escape}');
+  await waitFor(() =>
+    expect(
+      screen.queryByText('This assignment will change 2 selected customers.'),
+    ).not.toBeInTheDocument(),
+  );
+
+  // Selection is scoped to the page and the query: paging and filtering clear it.
+  // Closing the batch dialog without applying keeps the page's selection.
+  expect(screen.getByText('2 selected on this page')).toBeVisible();
+  await userEvent.click(screen.getByRole('button', { name: /next page/i }));
+  await screen.findByRole('checkbox', { name: 'Select Cedar 11' });
+  expect(screen.queryByText(/selected on this page/u)).not.toBeInTheDocument();
+  await userEvent.click(screen.getByText('Select all on this page'));
+  await screen.findByText('1 selected on this page');
+  await userEvent.click(screen.getByRole('button', { name: 'Filters' }));
+  const sheet = await screen.findByRole('dialog', { name: 'Filters' });
+  await userEvent.click(
+    within(sheet).getByRole('combobox', { name: 'Status' }),
+  );
+  await userEvent.click(await screen.findByRole('option', { name: 'Paused' }));
+  await userEvent.keyboard('{Escape}');
+  await screen.findByText('No results');
+  expect(screen.queryByText(/selected on this page/u)).not.toBeInTheDocument();
+});

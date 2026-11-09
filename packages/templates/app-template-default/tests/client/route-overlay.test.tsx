@@ -15,7 +15,7 @@ import {
   NavigationGuardProvider,
   useNavigationGuard,
 } from '@nocobase/app-client';
-import { useEffect, useRef, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import {
   createMemoryRouter,
   Link,
@@ -31,6 +31,15 @@ import { describe, expect, it, vi } from 'vitest';
 import { RouteDialog } from '../../client/components/route-dialog';
 import { RouteDrawer } from '../../client/components/route-drawer';
 import { useRouteOverlay } from '../../client/components/use-route-overlay';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '../../client/components/ui/alert-dialog';
 import enUS from '../../client/locales/en-US.js';
 
 const runtime = await createTestI18nRuntime({
@@ -522,5 +531,158 @@ describe('unsaved changes in a route overlay', () => {
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
     );
     expect(history.path).toBe('/orders?page=2');
+  });
+});
+
+describe('detail drawer, edit dialog and a confirmation', () => {
+  // The one three-layer path the phone experience allows (mobile.md M7.2, guideline I1): a detail drawer opens an edit
+  // dialog, whose unsaved-changes question is the single confirmation. Only the top layer takes input, and leaving
+  // returns one layer at a time to the URL below it.
+  function EditOrder() {
+    const dirtyRef = useRef(false);
+    const [answer, setAnswer] = useState<((discard: boolean) => void) | null>(
+      null,
+    );
+    useNavigationGuard(() =>
+      dirtyRef.current
+        ? new Promise<boolean>((resolve) => setAnswer(() => resolve))
+        : true,
+    );
+    const reply = (discard: boolean) => {
+      answer?.(discard);
+      setAnswer(null);
+    };
+    return (
+      <RouteDialog title='Edit order' footer={<Actions />}>
+        <input
+          aria-label='Name'
+          defaultValue='Original'
+          onChange={() => {
+            dirtyRef.current = true;
+          }}
+        />
+        <AlertDialog open={answer !== null}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Discard changes?</AlertDialogTitle>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => reply(false)}>
+                Keep editing
+              </AlertDialogCancel>
+              <AlertDialogAction onClick={() => reply(true)}>
+                Discard
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </RouteDialog>
+    );
+  }
+
+  it('asks once over the dialog, keeps the draft, then returns to the drawer and the list one layer at a time', async () => {
+    const user = userEvent.setup();
+    const location: { path?: string } = {};
+    function Probe() {
+      const { pathname, search } = useLocation();
+      useEffect(() => {
+        location.path = `${pathname}${search}`;
+      });
+      return null;
+    }
+    render(
+      <MemoryRouter
+        initialEntries={['/orders?status=open', '/orders/42?status=open']}
+        initialIndex={1}
+      >
+        <NavigationGuardProvider>
+          <Probe />
+          <Routes>
+            <Route
+              path='/orders'
+              element={
+                <>
+                  <span>Orders</span>
+                  <Outlet />
+                </>
+              }
+            >
+              <Route
+                path=':id'
+                element={
+                  <RouteDrawer title='Order 42' footer={<Actions />}>
+                    <p>Order details</p>
+                    {/* Overlay links keep the view's query (I9). */}
+                    <Link to='edit?status=open'>Edit</Link>
+                    <Outlet />
+                  </RouteDrawer>
+                }
+              >
+                <Route path='edit' element={<EditOrder />} />
+              </Route>
+            </Route>
+          </Routes>
+        </NavigationGuardProvider>
+      </MemoryRouter>,
+      { wrapper: I18n },
+    );
+
+    await user.click(await screen.findByRole('link', { name: 'Edit' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Edit order' });
+    expect(location.path).toBe('/orders/42/edit?status=open');
+    await user.type(
+      within(dialog).getByRole('textbox', { name: 'Name' }),
+      ' draft',
+    );
+
+    await user.click(within(dialog).getByRole('button', { name: 'Cancel' }));
+    const prompt = await screen.findByRole('alertdialog', {
+      name: 'Discard changes?',
+    });
+    // The confirmation is the only layer that takes input: the dialog and the drawer below are out of reach.
+    expect(
+      screen.queryByRole('dialog', { name: 'Order 42' }),
+    ).not.toBeInTheDocument();
+    expect(screen.getAllByRole('alertdialog')).toHaveLength(1);
+    await user.click(
+      within(prompt).getByRole('button', { name: 'Keep editing' }),
+    );
+    await waitFor(() =>
+      expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument(),
+    );
+    expect(screen.getByRole('textbox', { name: 'Name' })).toHaveValue(
+      'Original draft',
+    );
+    await waitFor(() =>
+      expect(location.path).toBe('/orders/42/edit?status=open'),
+    );
+
+    await user.click(
+      within(screen.getByRole('dialog', { name: 'Edit order' })).getByRole(
+        'button',
+        { name: 'Cancel' },
+      ),
+    );
+    await user.click(
+      within(await screen.findByRole('alertdialog')).getByRole('button', {
+        name: 'Discard',
+      }),
+    );
+    await waitFor(() =>
+      expect(
+        screen.queryByRole('dialog', { name: 'Edit order' }),
+      ).not.toBeInTheDocument(),
+    );
+    expect(location.path).toBe('/orders/42?status=open');
+    expect(screen.getByRole('dialog', { name: 'Order 42' })).toBeVisible();
+
+    await user.click(
+      within(screen.getByRole('dialog', { name: 'Order 42' })).getByRole(
+        'button',
+        { name: 'Cancel' },
+      ),
+    );
+    await waitFor(() => expect(location.path).toBe('/orders?status=open'));
+    expect(screen.getByText('Orders')).toBeVisible();
   });
 });

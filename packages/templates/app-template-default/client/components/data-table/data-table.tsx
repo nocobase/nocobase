@@ -1,4 +1,5 @@
 import type { ListState } from '@nocobase/app-client';
+import { useTranslation } from '@nocobase/i18n/client';
 import { ListFeedback, ListFeedbackActions } from '#components/list-feedback';
 import { RefreshIndicator } from '#components/loading';
 import {
@@ -94,6 +95,13 @@ export interface DataTableProps<TData, TValue = unknown> {
    * table rows only.
    */
   readonly renderCard?: (row: Row<TData>) => ReactNode;
+  /**
+   * The id of the row selection column, `'select'` by default. Cards have no
+   * header row, so on phones its header (the "select all on this page"
+   * checkbox the page defines, with its own permission, disabled and
+   * indeterminate states) renders above the cards with a visible label.
+   */
+  readonly selectionColumnId?: string;
 }
 
 /** Below the `md` breakpoint, the width `useIsMobile` and the sidebar also use. */
@@ -160,7 +168,9 @@ export function DataTable<TData, TValue = unknown>({
   onClearFilters,
   emptyAction,
   renderCard,
+  selectionColumnId = 'select',
 }: DataTableProps<TData, TValue>): ReactElement {
+  const { t } = useTranslation();
   const cards = useIsPhone(renderCard !== undefined) && renderCard;
   const tableData = useMemo(() => [...data], [data]);
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -203,6 +213,16 @@ export function DataTable<TData, TValue = unknown>({
   });
 
   const rows = table.getRowModel().rows;
+  const selectionHeader = cards
+    ? table
+        .getHeaderGroups()
+        .at(-1)
+        ?.headers.find(
+          (header) =>
+            header.column.id === selectionColumnId &&
+            header.column.getIsVisible(),
+        )
+    : undefined;
   const requestedState =
     (listState === 'ready' && rows.length === 0
       ? columnFilters.length > 0
@@ -311,6 +331,21 @@ export function DataTable<TData, TValue = unknown>({
                 />
               ) : null}
             </div>
+          ) : null}
+          {showRows && selectionHeader ? (
+            // Select all on this page stays available without the table header (mobile.md M3.2).
+            <label
+              data-slot='data-table-card-select-all'
+              className='mb-2 flex items-center gap-3 rounded-lg border px-4 py-2 text-sm'
+            >
+              {flexRender(
+                selectionHeader.column.columnDef.header,
+                selectionHeader.getContext(),
+              )}
+              {t('dataTable.selectPage', {
+                defaultValue: 'Select all on this page',
+              })}
+            </label>
           ) : null}
           {showRows ? (
             <ul
