@@ -28,6 +28,7 @@ import {
   useNavigate,
 } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { FeedbackForm } from '../../client/components/feedback-form';
 import { RouteDialog } from '../../client/components/route-dialog';
 import { RouteDrawer } from '../../client/components/route-drawer';
 import { useRouteOverlay } from '../../client/components/use-route-overlay';
@@ -920,6 +921,105 @@ describe('the dirty prop of a route overlay', () => {
 
   it('lets the save navigate without asking', async () => {
     const history = setupDirty();
+    await userEvent.type(
+      await screen.findByRole('textbox', { name: 'Name' }),
+      ' saved',
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+    await waitFor(() => expect(history.path).toBe('/orders?page=2'));
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+  });
+});
+
+describe('the unsaved-changes question cannot be switched off by a draft', () => {
+  // A page that keeps a draft and passes a `dirty` that says "nothing to lose" once the draft is stored, then saves
+  // through a FeedbackForm whose onSubmit navigates back.
+  function DraftEdit() {
+    const navigate = useNavigate();
+    const { search } = useLocation();
+    return (
+      <RouteDialog
+        title='Edit'
+        dirty={() => false}
+        footer={
+          <>
+            <Actions />
+            <button type='submit' form='draft-form'>
+              Save
+            </button>
+          </>
+        }
+      >
+        <FeedbackForm
+          id='draft-form'
+          onSubmit={async () => {
+            await Promise.resolve();
+            await navigate({ pathname: '..', search });
+          }}
+        >
+          <input aria-label='Name' defaultValue='Original' />
+        </FeedbackForm>
+      </RouteDialog>
+    );
+  }
+  function setupDraft() {
+    const history: { path?: string } = {};
+    function Probe() {
+      const { pathname, search } = useLocation();
+      useEffect(() => {
+        history.path = `${pathname}${search}`;
+      });
+      return null;
+    }
+    render(
+      <MemoryRouter
+        initialEntries={['/orders?page=2', '/orders/edit?page=2']}
+        initialIndex={1}
+      >
+        <NavigationGuardProvider>
+          <Probe />
+          <Routes>
+            <Route path='/orders' element={<Outlet />}>
+              <Route path='edit' element={<DraftEdit />} />
+            </Route>
+          </Routes>
+        </NavigationGuardProvider>
+      </MemoryRouter>,
+      { wrapper: I18n },
+    );
+    return history;
+  }
+
+  it('asks once the user has typed, whatever dirty says', async () => {
+    const history = setupDraft();
+    await userEvent.type(
+      await screen.findByRole('textbox', { name: 'Name' }),
+      ' draft',
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    const prompt = await screen.findByRole('alertdialog', {
+      name: 'Discard changes?',
+    });
+    await userEvent.click(
+      within(prompt).getByRole('button', { name: 'Keep editing' }),
+    );
+    expect(screen.getByRole('textbox', { name: 'Name' })).toHaveValue(
+      'Original draft',
+    );
+    await waitFor(() => expect(history.path).toBe('/orders/edit?page=2'));
+  });
+
+  it('closes without asking when nothing was typed', async () => {
+    const history = setupDraft();
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Cancel' }),
+    );
+    await waitFor(() => expect(history.path).toBe('/orders?page=2'));
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+  });
+
+  it('lets the save of a FeedbackForm leave without asking', async () => {
+    const history = setupDraft();
     await userEvent.type(
       await screen.findByRole('textbox', { name: 'Name' }),
       ' saved',

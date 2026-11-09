@@ -91,6 +91,8 @@ An ordinary business list shows one card per record below the `md` breakpoint (g
     </>
   }
   filterCount={appliedFilters}
+  // A result count joins the toolbar row on desktop and sits above the pagination on a phone (M1.1).
+  summary={t('projects.count', { count: total })}
   filtered={hasFilters}
   onClearFilters={clearFilters}
   getColumnLabel={(column) => t(`projects.fields.${column.id}`)}

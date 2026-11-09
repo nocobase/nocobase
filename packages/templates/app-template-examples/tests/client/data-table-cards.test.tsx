@@ -610,3 +610,55 @@ describe('DataTable card actions', () => {
     ).not.toBeInTheDocument();
   });
 });
+
+describe('DataTable filters and summary on wider screens and phones', () => {
+  function List({ summary }: { readonly summary?: string }) {
+    return (
+      <DataTable
+        columns={columns}
+        data={rows}
+        getRowId={(row) => row.id}
+        search={<input aria-label='Search' />}
+        filters={
+          <DataTableFilter label='Status'>
+            {/* A control written full width for a form or the sheet. */}
+            <select aria-label='Status' className='w-full' />
+          </DataTableFilter>
+        }
+        summary={summary}
+        renderCard={(row) => <article aria-label={row.original.id} />}
+      />
+    );
+  }
+
+  it('gives an inline filter its own compact slot, so a full-width control does not take a row', async () => {
+    stubViewport(false);
+    await renderWithApp(<List />, { namespace, namespaces });
+    const slot = screen.getByRole('combobox', {
+      name: 'Status',
+    }).parentElement!;
+    expect(slot).toHaveAttribute('data-slot', 'data-table-filter');
+    expect(slot).toHaveClass('min-w-44', 'max-w-xs', 'shrink-0');
+  });
+
+  it('ends the toolbar row with the summary on desktop and moves it below the cards on a phone', async () => {
+    stubViewport(true);
+    const { container } = await renderWithApp(<List summary='12 rows' />, {
+      namespace,
+      namespaces,
+    });
+    const toolbar = container.querySelector(
+      '[data-slot="data-table-toolbar"]',
+    )!;
+    const inRow = toolbar.querySelector('[data-slot="data-table-summary"]');
+    expect(inRow).toHaveClass('hidden', 'md:inline');
+    const below = screen
+      .getAllByText('12 rows')
+      .find((element) => element !== inRow)!;
+    expect(below).toHaveClass('md:hidden');
+    expect(
+      screen.getByRole('list').compareDocumentPosition(below) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+});

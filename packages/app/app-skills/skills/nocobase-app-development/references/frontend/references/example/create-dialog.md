@@ -9,7 +9,7 @@ Rules: [section 2 of `overlay.md`](../overlay.md#2-overlays-as-child-routes), an
 ```tsx
 // client/pages/projects/new.tsx
 import { useTranslation } from '@nocobase/i18n/client';
-import { type ReactElement, type RefObject, useRef, useState } from 'react';
+import { type ReactElement, useRef, useState } from 'react';
 import { useOutletContext } from 'react-router';
 
 import { RouteDialog } from '#components/route-dialog';
@@ -31,10 +31,9 @@ export default function NewProjectPage(): ReactElement {
     submittingRef.current = value;
     setSubmitting(value);
   };
-  // Unsaved changes, as the form reports them; the dialog asks "Discard changes?" before every way out while they
-  // exist (T3.9, M7.4). savedRef lets the save's own close through without asking.
+  // Changes the form reports beyond typing (a Select, a picker); the dialog also sees typing in the form itself, and
+  // asks "Discard changes?" before every way out once anything changed (T3.9, M7.4).
   const [dirty, setDirty] = useState(false);
-  const savedRef = useRef(false);
 
   return (
     <RouteDialog
@@ -43,13 +42,12 @@ export default function NewProjectPage(): ReactElement {
       className='sm:max-w-lg'
       // No closing while submitting: the × button, Esc, clicking the backdrop and close() all go through beforeClose first (guideline T3.5).
       beforeClose={() => !submittingRef.current}
-      dirty={() => dirty && !savedRef.current}
+      dirty={dirty}
       footer={<NewProjectFooter submitting={submitting} />}
     >
       <NewProjectBody
         onSubmittingChange={handleSubmittingChange}
         onDirtyChange={setDirty}
-        savedRef={savedRef}
       />
     </RouteDialog>
   );
@@ -59,11 +57,9 @@ export default function NewProjectPage(): ReactElement {
 function NewProjectBody({
   onSubmittingChange,
   onDirtyChange,
-  savedRef,
 }: {
   readonly onSubmittingChange: (submitting: boolean) => void;
   readonly onDirtyChange: (dirty: boolean) => void;
-  readonly savedRef: RefObject<boolean>;
 }): ReactElement {
   const { close } = useRouteOverlay();
   const { reload } = useOutletContext<ProjectsOutletContext>();
@@ -73,7 +69,6 @@ function NewProjectBody({
       onSubmittingChange={onSubmittingChange}
       onDirtyChange={onDirtyChange}
       onSubmitted={() => {
-        savedRef.current = true;
         reload();
         void close();
       }}

@@ -53,3 +53,26 @@ describe('PageHeader on a phone', () => {
     expect(header.children).toHaveLength(1);
   });
 });
+
+describe('PageHeader keeps the phone first screen short', () => {
+  it('shows at most two lines of description on a phone and all of it from 640px up', () => {
+    render(
+      <PageHeader
+        title='Repairs'
+        description='Report broken equipment, follow each repair and confirm it is done. Drafts are kept on this device.'
+      />,
+    );
+    const description = screen.getByText(/Report broken equipment/);
+    expect(description).toHaveClass('line-clamp-2', 'sm:line-clamp-none');
+  });
+
+  it('shows an eyebrow above the title only from 640px up', () => {
+    render(<PageHeader title='Repairs' eyebrow='Maintenance workspace' />);
+    const eyebrow = screen.getByText('Maintenance workspace');
+    expect(eyebrow).toHaveClass('hidden', 'sm:flex');
+    expect(
+      eyebrow.compareDocumentPosition(screen.getByRole('heading')) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+});

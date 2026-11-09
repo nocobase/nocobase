@@ -56,15 +56,21 @@ export interface RouteOverlayProps {
   /** Runs before every close; resolving `false` keeps the overlay open, for example to guard unsaved changes. */
   readonly beforeClose?: () => boolean | Promise<boolean>;
   /**
-   * Whether the form inside has unsaved changes (guideline T3.9, mobile.md M7.4). While it is true, every way out —
-   * ×, Esc, the backdrop, Cancel through `close()`, browser back and forward, the phone's back gesture and links —
-   * first asks "Discard changes?", and reloading or closing the tab gets the browser's warning. A function is read at
-   * the moment of leaving, so the save's own navigation goes through: pass
-   * `dirty={() => isDirty && !savedRef.current}` and set `savedRef.current = true` before navigating after a save.
+   * Turns on the unsaved-changes question for an overlay that holds a form (guideline T3.9, mobile.md M7.4). Once the
+   * user has typed or changed a value in a form inside the overlay, or while this is true (a function is read when
+   * leaving, such as `() => form.formState.isDirty` for changes no input event reports), every way out — ×, Esc, the
+   * backdrop, Cancel through `close()`, browser back and forward, the phone's back gesture and links — first asks
+   * "Discard changes?", and reloading or closing the tab gets the browser's warning. A saved draft does not count as
+   * saved, and `dirty` cannot switch off an edit the overlay saw. Leaving does not ask during the save itself (while a
+   * `FeedbackForm` in the overlay is still running its `onSubmit`: navigate or `close()` from it), and not when the
+   * overlay has no enabled submit button, because input that cannot be saved has nothing to discard.
    */
   readonly dirty?: boolean | (() => boolean);
   readonly className?: string;
 }
+
+/** Dispatched by `FeedbackForm` on its form, with `detail.phase` `'start'` or `'end'`, around its `onSubmit`. */
+const FORM_SUBMIT_EVENT = 'nocobase:form-submit';
 
 // Lets an overlay rendered through another overlay's outlet return focus into
 // the enclosing panel. Two overlays reached by one URL mount in the same
@@ -121,10 +127,50 @@ function DiscardGuard({
   useLayoutEffect(() => {
     dirtyRef.current = dirty;
   });
+  // What the overlay saw itself: an edit in one of its forms, and how many of its FeedbackForm submissions are running.
+  const editedRef = useRef(false);
+  const savingRef = useRef(0);
+  const popupRef = useContext(ParentPopupContext);
+  useEffect(() => {
+    const popup = popupRef?.current;
+    if (!popup) return;
+    const edit = (event: Event): void => {
+      if (event.target instanceof Element && event.target.closest('form'))
+        editedRef.current = true;
+    };
+    const submit = (event: Event): void => {
+      const { phase } = (event as CustomEvent<{ phase?: string }>).detail ?? {};
+      if (phase === 'start') savingRef.current += 1;
+      else if (phase === 'end')
+        savingRef.current = Math.max(0, savingRef.current - 1);
+    };
+    popup.addEventListener('input', edit, true);
+    popup.addEventListener('change', edit, true);
+    popup.addEventListener(FORM_SUBMIT_EVENT, submit);
+    return () => {
+      popup.removeEventListener('input', edit, true);
+      popup.removeEventListener('change', edit, true);
+      popup.removeEventListener(FORM_SUBMIT_EVENT, submit);
+    };
+  }, [popupRef]);
   const isDirty = useCallback((): boolean => {
+    // The save's own navigation.
+    if (savingRef.current > 0) return false;
+    // Input that can no longer be saved, such as a record deleted elsewhere, leaves nothing to discard: ask only while
+    // the overlay offers an enabled submit button.
+    const popup = popupRef?.current;
+    if (
+      popup &&
+      !popup.querySelector(
+        'button:enabled:not([type="button"]):not([type="reset"])',
+      )
+    )
+      return false;
     const current = dirtyRef.current;
-    return typeof current === 'function' ? current() : current;
-  }, []);
+    return (
+      editedRef.current || (typeof current === 'function' ? current() : current)
+    );
+  }, [popupRef]);
   // The pending question, so a second attempt to leave while it is open waits for the same answer.
   const promptRef = useRef<{
     readonly promise: Promise<boolean>;

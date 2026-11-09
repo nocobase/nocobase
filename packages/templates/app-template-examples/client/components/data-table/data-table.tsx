@@ -93,6 +93,11 @@ export interface DataTableProps<TData, TValue = unknown> {
   /** How many of `filters` are applied, for the phone's "Filters · 2" name and badge. */
   readonly filterCount?: number;
   /**
+   * A short note about the results, such as "37 repairs". It ends the toolbar row from the `md` breakpoint up and sits
+   * above the pagination on a phone, so it never takes a row of its own above the first card (mobile.md M1.1).
+   */
+  readonly summary?: ReactNode;
+  /**
    * The translated label of a sortable column, as its header shows it. With it, phone cards get the icon "Sort"
    * menu on the search row by themselves (`DataTableSortMenu`), offering the columns `sortableColumns` allows; do
    * not render another one in `toolbar`.
@@ -258,6 +263,7 @@ export function DataTable<TData, TValue = unknown>({
   search,
   filters,
   filterCount = 0,
+  summary,
   getColumnLabel,
   renderCard,
   actionsColumnId = 'actions',
@@ -400,6 +406,18 @@ export function DataTable<TData, TValue = unknown>({
     return () => observer.disconnect();
   }, [showRows, showPagination, cards]);
   const reserving = state === 'loading' && reserved !== undefined;
+  // During development, say so when the page above pushes the first phone card past M1.1's limit (mobile.md): 300px
+  // from the top of a 667px-high screen, before any scrolling.
+  useEffect(() => {
+    if (!import.meta.env?.DEV || !cards || !showRows) return;
+    const first = cardListRef.current?.firstElementChild;
+    if (!first || window.scrollY !== 0 || window.innerHeight < 600) return;
+    const top = first.getBoundingClientRect().top;
+    if (top > 300)
+      console.warn(
+        `DataTable: the first card starts ${Math.round(top)}px from the top of the screen, past the 300px of mobile.md M1.1. Fold what sits above the list into PageHeader (description, eyebrow), the toolbar row (search, filters, summary) or below the list.`,
+      );
+  }, [cards, showRows]);
 
   return (
     <div className={cn('flex flex-col gap-4', className)}>
@@ -407,6 +425,7 @@ export function DataTable<TData, TValue = unknown>({
       hasStateActions ||
       search !== undefined ||
       filters !== undefined ||
+      summary != null ||
       phoneSort ? (
         // One row on every width (mobile.md M4.1): the search box takes the remaining width, then the filters (or the
         // phone's Filters button) and the phone's Sort button. Only transient actions such as Clear wrap below.
@@ -434,6 +453,14 @@ export function DataTable<TData, TValue = unknown>({
             />
           ) : null}
           {toolbar?.(table)}
+          {summary != null ? (
+            <span
+              data-slot='data-table-summary'
+              className='ml-auto hidden text-sm text-muted-foreground md:inline'
+            >
+              {summary}
+            </span>
+          ) : null}
           <ListFeedbackActions
             state={state}
             onClear={
@@ -592,6 +619,9 @@ export function DataTable<TData, TValue = unknown>({
           </Table>
         </div>
       )}
+      {summary != null && showRows ? (
+        <p className='text-sm text-muted-foreground md:hidden'>{summary}</p>
+      ) : null}
       {showPagination || (pagination && reserving) ? (
         <div ref={footerRef} data-slot='data-table-footer'>
           <DataTablePagination

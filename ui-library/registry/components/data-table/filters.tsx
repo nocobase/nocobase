@@ -28,7 +28,8 @@ export interface DataTableFilterProps {
 }
 
 /**
- * One filter in `DataTable`'s `filters`. On the toolbar row from the `md` breakpoint up it renders only its control;
+ * One filter in `DataTable`'s `filters`. On the toolbar row from the `md` breakpoint up its control sits in a slot of 11rem
+ * to 20rem (`w-full` controls fill it; a control with its own width, such as a `w-48` picker, keeps it);
  * on a phone the control sits in the bottom filter sheet at full width under its visible label. Only one of the two
  * is ever mounted, so a control may use fixed IDs.
  */
@@ -37,7 +38,17 @@ export function DataTableFilter({
   children,
 }: DataTableFilterProps): ReactElement {
   const placement = useContext(FilterPlacementContext);
-  if (placement === 'inline') return <>{children}</>;
+  // Inline, a filter takes a compact width of its own, so a control written `w-full` for a form or the sheet does not
+  // take a whole row of the desktop toolbar.
+  if (placement === 'inline')
+    return (
+      <div
+        data-slot='data-table-filter'
+        className='max-w-xs min-w-44 shrink-0 *:max-w-full'
+      >
+        {children}
+      </div>
+    );
   return (
     <div
       data-slot='data-table-filter'

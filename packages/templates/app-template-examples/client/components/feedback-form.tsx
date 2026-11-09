@@ -364,8 +364,25 @@ export function FeedbackForm({
           );
           return;
         }
+        // Tells an enclosing route overlay that the save is running, so the navigation it ends with does not ask to
+        // discard the input (`RouteOverlay`'s `dirty`). The end waits one task, for a close the save started.
+        const form = event.currentTarget;
+        const announce = (phase: 'start' | 'end'): void => {
+          form.dispatchEvent(
+            new CustomEvent('nocobase:form-submit', {
+              bubbles: true,
+              detail: { phase },
+            }),
+          );
+        };
+        announce('start');
+        const settle = (): void => {
+          setTimeout(() => announce('end'), 0);
+        };
         try {
           const result = onSubmit?.(event);
+          if (result) void result.then(settle, settle);
+          else settle();
           if (result)
             void result.catch((next: unknown) => {
               if (feedback.getAttemptSequence() !== current.sequence) return;
@@ -373,6 +390,7 @@ export function FeedbackForm({
               feedback.failure(next, current);
             });
         } catch (next) {
+          settle();
           if (feedback.getAttemptSequence() !== current.sequence) return;
           focusPendingRef.current = true;
           feedback.failure(next, current);

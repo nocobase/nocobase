@@ -133,7 +133,7 @@ function ProjectEditor({
   const [confirmedMissing, setConfirmedMissing] = useState<
     'committed' | 'not-committed'
   >();
-  // Set once saved, so the save's own navigation leaves without "Discard changes?" (the dialog's `dirty`).
+  // Set once saved or once the record is gone, so the guard below lets the dialog close.
   const savedRef = useRef(false);
   const { isDirty } = form.formState;
   // No way out while a save is in flight or its outcome is unknown; unsaved input is the dialog's `dirty`.
@@ -216,8 +216,10 @@ function ProjectEditor({
     <RouteDialog
       title={t(project ? 'skillProjects.edit' : 'skillProjects.create')}
       className='sm:max-w-md'
-      // Every way out of a dirty form asks "Discard changes?" first: ×, Esc, the backdrop, Cancel, browser back.
-      dirty={() => isDirty && !savedRef.current}
+      // Every way out asks "Discard changes?" once the user has edited the form: ×, Esc, the backdrop, Cancel and
+      // browser back. The dialog sees typing itself; isDirty adds changes without an input event. The save's own
+      // navigation, from the FeedbackForm's onSubmit, leaves without asking.
+      dirty={isDirty}
       beforeClose={() =>
         !busyRef.current && !submission.submitting && !submission.pending
       }
