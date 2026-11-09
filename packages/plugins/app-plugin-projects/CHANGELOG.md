@@ -1,5 +1,32 @@
 # @nocobase/app-plugin-projects
 
+## 0.1.0-beta.27
+
+### Minor Changes
+
+- a2a6385: Add Russian (ru-RU) and Korean (ko-KR) to the plugins Studio uses, and correct terminology in their existing translations: an issue is a task (it was translated as a magazine issue or a problem in several languages), a runtime is an execution environment, Agent and My Agent stay consistent, and an issue's executor and the backlog status read correctly. The remaining English strings in the agents plugin's translations are translated. Calendars follow Russian and Korean, and a browser asking for Traditional Chinese (zh-HK, zh-Hant-TW) now lands on zh-TW instead of zh-CN.
+
+### Patch Changes
+
+- 126f7ae: Record a `relatedTo` link on both issues' activity when it is added, removed or converted, naming the other issue, and add the `activity.actions.relationAdded` and `activity.actions.relationRemoved` wording in every locale. A `blockedBy` dependency is still recorded only on the issue that waits.
+- 1309649: Name the person who created a project on its `project.created` event (`creatorUserId`, or null when a service account created it), so listeners can set up the new project for its creator.
+- Updated dependencies [7508a76]
+- Updated dependencies [fb4659d]
+- Updated dependencies [6fbf389]
+- Updated dependencies [1cda4c3]
+- Updated dependencies [7d970d6]
+- Updated dependencies [bb1dff2]
+- Updated dependencies [a2a6385]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.20
+  - @nocobase/app-server@5.0.0-beta.2
+  - @nocobase/app-plugin-authorization@1.0.0-beta.37
+  - @nocobase/db@1.0.0-beta.26
+  - @nocobase/app-plugin-notification@2.0.0-beta.6
+  - @nocobase/app-plugin-file@1.0.0-beta.30
+  - @nocobase/app-plugin-users@2.0.0-beta.17
+  - @nocobase/i18n@2.0.0-beta.2
+  - @nocobase/app-client@4.0.0-beta.9
+
 ## 0.1.0-beta.26
 
 ### Patch Changes
