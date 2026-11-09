@@ -16,6 +16,8 @@ import {
 } from '#lib/navigation-transform';
 
 export interface RouteNavigationItem {
+  /** Begin a separate sidebar group before this entry. */
+  readonly startGroup?: boolean;
   /** Route keys represented by a single sidebar entry whose content uses tabs. */
   readonly activeRouteKeys?: readonly string[];
   readonly section?: boolean;

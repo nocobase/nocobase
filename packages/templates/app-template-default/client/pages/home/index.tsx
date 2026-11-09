@@ -1,4 +1,6 @@
 import { useTranslation } from '@nocobase/i18n/client';
+import { useCan } from '@nocobase/app-plugin-authorization/client';
+import { CAPABILITY_GUIDE_ACCESS } from '@nocobase/app-plugin-foundation/client';
 import {
   ArrowRightIcon,
   CheckIcon,
@@ -57,6 +59,7 @@ const STEPS = ['describe', 'build', 'review'] as const;
 export default function HomePage(): ReactElement {
   const { i18n } = useTranslation();
   const content = guideContent(i18n.language);
+  const { can: canBrowseCapabilities } = useCan(CAPABILITY_GUIDE_ACCESS);
 
   return (
     <PageContainer className='mx-auto max-w-6xl'>
@@ -70,22 +73,30 @@ export default function HomePage(): ReactElement {
             <h2 id='home-capabilities' className='text-base font-medium'>
               {content.home.title}
             </h2>
-            <p className='text-sm text-muted-foreground'>
-              {content.home.description}
-            </p>
+            {canBrowseCapabilities ? (
+              <p className='text-sm text-muted-foreground'>
+                {content.home.description}
+              </p>
+            ) : null}
           </div>
-          <Link
-            to={CAPABILITY_GUIDE_PATH}
-            className='inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline'
-          >
-            {format(content.home.viewAll, { count: catalog.entries.length })}
-            <ArrowRightIcon className='size-4' aria-hidden />
-          </Link>
+          {canBrowseCapabilities ? (
+            <Link
+              to={CAPABILITY_GUIDE_PATH}
+              className='inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline'
+            >
+              {format(content.home.viewAll, { count: catalog.entries.length })}
+              <ArrowRightIcon className='size-4' aria-hidden />
+            </Link>
+          ) : null}
         </div>
         <ul className='grid gap-4 sm:grid-cols-2 xl:grid-cols-3'>
           {catalog.featured.map((entry) => (
             <li key={entry.id} className='flex'>
-              <CapabilityCard entry={entry} content={content} />
+              <CapabilityCard
+                entry={entry}
+                content={content}
+                canBrowse={canBrowseCapabilities}
+              />
             </li>
           ))}
         </ul>
@@ -165,33 +176,32 @@ function AgentIntro(): ReactElement {
 function CapabilityCard({
   entry,
   content,
+  canBrowse,
 }: {
   readonly entry: CatalogEntry;
   readonly content: GuideContent;
+  readonly canBrowse: boolean;
 }): ReactElement {
   const text = entryContent(content, entry);
   const Icon = HOME_ICONS[entry.id] ?? SparklesIcon;
 
-  return (
-    <Link
-      to={capabilityPath(entry.id)}
-      className='group flex w-full cursor-pointer rounded-xl text-left outline-none focus-visible:ring-3 focus-visible:ring-ring/50'
-    >
-      <Card className='w-full transition-[translate,box-shadow,background-color] duration-200 ease-out group-hover:-translate-y-0.5 group-hover:bg-hover group-hover:shadow-md motion-reduce:transition-none motion-reduce:group-hover:translate-y-0'>
-        <CardHeader className='gap-3'>
-          <span className='flex size-9 items-center justify-center rounded-lg bg-primary/5 text-primary ring-1 ring-transparent transition-[background-color,box-shadow] duration-200 ease-out group-hover:bg-primary/10 group-hover:ring-border motion-reduce:transition-none'>
-            <Icon
-              className='size-4 transition-transform duration-200 ease-out group-hover:scale-110 motion-reduce:transition-none'
-              aria-hidden
-            />
-          </span>
-          <div className='flex flex-col gap-1'>
-            <CardTitle>{text.title}</CardTitle>
-            <CardDescription className='leading-6'>
-              {text.summary}
-            </CardDescription>
-          </div>
-        </CardHeader>
+  const card = (
+    <Card className='w-full transition-[translate,box-shadow,background-color] duration-200 ease-out group-hover:-translate-y-0.5 group-hover:bg-hover group-hover:shadow-md motion-reduce:transition-none motion-reduce:group-hover:translate-y-0'>
+      <CardHeader className='gap-3'>
+        <span className='flex size-9 items-center justify-center rounded-lg bg-primary/5 text-primary ring-1 ring-transparent transition-[background-color,box-shadow] duration-200 ease-out group-hover:bg-primary/10 group-hover:ring-border motion-reduce:transition-none'>
+          <Icon
+            className='size-4 transition-transform duration-200 ease-out group-hover:scale-110 motion-reduce:transition-none'
+            aria-hidden
+          />
+        </span>
+        <div className='flex flex-col gap-1'>
+          <CardTitle>{text.title}</CardTitle>
+          <CardDescription className='leading-6'>
+            {text.summary}
+          </CardDescription>
+        </div>
+      </CardHeader>
+      {canBrowse ? (
         <CardFooter className='mt-auto justify-between text-sm text-muted-foreground transition-colors duration-200 ease-out group-hover:text-foreground'>
           {content.home.open}
           <ArrowRightIcon
@@ -199,7 +209,18 @@ function CapabilityCard({
             aria-hidden
           />
         </CardFooter>
-      </Card>
+      ) : null}
+    </Card>
+  );
+
+  return canBrowse ? (
+    <Link
+      to={capabilityPath(entry.id)}
+      className='group flex w-full cursor-pointer rounded-xl text-left outline-none focus-visible:ring-3 focus-visible:ring-ring/50'
+    >
+      {card}
     </Link>
+  ) : (
+    card
   );
 }

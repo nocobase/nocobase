@@ -379,8 +379,7 @@ const zhCN: GuideContent = {
       scenarios: [
         '了解当前应用能做什么，选择可复用的能力，再向 Agent 描述搭建需求。',
       ],
-      prerequisite:
-        '当前应用已提供“功能与扩展”页面，登录后可从侧边栏底部打开。',
+      prerequisite: '拥有访问权限的用户登录后，可从系统设置打开“功能与扩展”。',
       prompts: {
         main: {
           label: '让 Agent 实现',
