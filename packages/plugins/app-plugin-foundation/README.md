@@ -19,13 +19,24 @@ import foundation from '@nocobase/app-plugin-foundation/client';
 
 The plugin needs the authentication and authorization plugins, which every application built from the default template registers. Its page reads the query cache the application's routes provide.
 
+The `foundation` configuration section has one setting. Register its factory in the application's `server/config/index.ts` beside the other sections, as both templates do:
+
+```ts
+// server/config/foundation.ts
+import { defineFoundationConfig } from '@nocobase/app-plugin-foundation/config';
+
+export default defineFoundationConfig();
+```
+
+`scanOnStart` (`FOUNDATION_SCAN_ON_START`) is `true` by default: an application that starts without a snapshot of the running kernel version submits a background scan. Set it to `false` to leave that scan to the first explicit request; an administrator opening the page, Refresh and Count records still submit one, and a scan already claimed before a restart is still delivered. Test applications created with `@nocobase/app-testing` start with `scanOnStart: false`; a test that needs the start-up scan passes `config: { foundation: { scanOnStart: true } }`. The plugin reads the section even when the factory is not registered, but only a registered factory maps the environment variable, validates the value and lists it in `pnpm nocobase config variables`.
+
 ## Who can see it
 
 Only an identity with unrestricted access, such as a holder of the root Permission Set (`authorization.permissionSets.rootSet`, `root` by default), opens the page or reads `GET /api/foundation/overview`. It is not a grant: no Permission Set can give it to anyone else. Everyone else gets `403 FOUNDATION_FORBIDDEN`.
 
 ## How it collects
 
-The page reads a private durable snapshot, including its actual completion time and the version of the running NocoBase server kernel that produced it. Opening or revisiting the page never waits for a full scan. The plugin starts a background scan on first use, on a changed kernel version, or through the top Refresh action. Application structure, configuration, business data changes and cache expiry do not trigger scans. A same-kernel restart keeps the saved result.
+The page reads a private durable snapshot, including its actual completion time and the version of the running NocoBase server kernel that produced it. Opening or revisiting the page never waits for a full scan. The plugin starts a background scan on first use, on a changed kernel version, or through the top Refresh action; `scanOnStart: false` defers the first-use and kernel-change scan from application start to the first page visit. Application structure, configuration, business data changes and cache expiry do not trigger scans. A same-kernel restart keeps the saved result.
 
 The rules every capability follows:
 

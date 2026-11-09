@@ -38,6 +38,10 @@
       "types": "./cli/index.ts",
       "import": "./cli/index.ts"
     },
+    "./config": {
+      "types": "./config.ts",
+      "import": "./config.ts"
+    },
     "./package.json": "./package.json"
   },
   "imports": {
@@ -94,6 +98,10 @@
       "./cli": {
         "types": "./dist/cli/index.d.ts",
         "import": "./dist/cli/index.js"
+      },
+      "./config": {
+        "types": "./dist/config.d.ts",
+        "import": "./dist/config.js"
       },
       "./package.json": "./package.json"
     },
