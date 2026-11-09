@@ -10,6 +10,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   DataTable,
   DataTableColumnHeader,
+  DataTableFilter,
   DataTableSortMenu,
 } from '../../client/components/data-table/index.js';
 import { Checkbox } from '../../client/components/ui/checkbox.js';
@@ -464,5 +465,148 @@ describe('DataTable cards on phones', () => {
 
     expect(screen.queryByRole('table')).not.toBeInTheDocument();
     expect(screen.getByText('No data yet')).toBeVisible();
+  });
+});
+
+describe('DataTable search, filters and sort on one row', () => {
+  function Toolbar({ count = 2 }: { readonly count?: number }) {
+    return (
+      <DataTable
+        columns={columns}
+        data={rows}
+        getRowId={(row) => row.id}
+        search={<input aria-label='Search' />}
+        filters={
+          <>
+            <DataTableFilter label='Status'>
+              <select aria-label='Status' />
+            </DataTableFilter>
+            <DataTableFilter label='Priority'>
+              <select aria-label='Priority' />
+            </DataTableFilter>
+          </>
+        }
+        filterCount={count}
+        getColumnLabel={(column) =>
+          column.id === 'amount' ? 'Amount' : column.id
+        }
+        renderCard={(row) => <article aria-label={row.original.id} />}
+      />
+    );
+  }
+
+  it('puts search, an applied-count Filters button and Sort on the phone row, with the filters in a sheet', async () => {
+    stubViewport(true);
+    const user = userEvent.setup();
+    const { container } = await renderWithApp(<Toolbar />, {
+      namespace,
+      namespaces,
+    });
+    const row = container.querySelector('[data-slot="data-table-toolbar"]');
+    expect(row).not.toBeNull();
+    const toolbar = within(row as HTMLElement);
+    expect(toolbar.getByRole('textbox', { name: 'Search' })).toBeVisible();
+    expect(toolbar.getByRole('button', { name: 'Sort' })).toBeVisible();
+    const filters = toolbar.getByRole('button', { name: 'Filters · 2' });
+    // The filters are not on the row: they open in the bottom sheet, under visible labels.
+    expect(
+      screen.queryByRole('combobox', { name: 'Status' }),
+    ).not.toBeInTheDocument();
+
+    await user.click(filters);
+    const sheet = await screen.findByRole('dialog', { name: 'Filters' });
+    expect(within(sheet).getByText('Status')).toBeVisible();
+    expect(
+      within(sheet).getByRole('combobox', { name: 'Priority' }),
+    ).toBeVisible();
+  });
+
+  it('names the phone Filters button without a count when nothing is applied', async () => {
+    stubViewport(true);
+    await renderWithApp(<Toolbar count={0} />, { namespace, namespaces });
+    expect(
+      screen.getByRole('button', { name: 'Filters', exact: true }),
+    ).toBeVisible();
+  });
+
+  it('keeps the filters inline and sorts from headers on wider screens', async () => {
+    stubViewport(false);
+    await renderWithApp(<Toolbar />, { namespace, namespaces });
+    expect(screen.getByRole('combobox', { name: 'Status' })).toBeVisible();
+    expect(screen.getByRole('combobox', { name: 'Priority' })).toBeVisible();
+    expect(
+      screen.queryByRole('button', { name: /^Filters/ }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Sort' }),
+    ).not.toBeInTheDocument();
+  });
+});
+
+describe('DataTable card actions', () => {
+  const withActions: ColumnDef<Item>[] = [
+    ...columns,
+    {
+      id: 'actions',
+      cell: ({ row }) => (
+        <button aria-label={`Actions for ${row.original.id}`} />
+      ),
+    },
+  ];
+
+  it('adds the row menu to a card that does not place it', async () => {
+    stubViewport(true);
+    await renderWithApp(
+      <DataTable
+        columns={withActions}
+        data={rows.slice(0, 2)}
+        getRowId={(row) => row.id}
+        renderCard={(row) => <article aria-label={row.original.id} />}
+      />,
+      { namespace, namespaces },
+    );
+    const [first] = screen.getAllByRole('listitem');
+    expect(
+      within(first!).getByRole('button', { name: 'Actions for row-0' }),
+    ).toBeVisible();
+  });
+
+  it('shows the menu once where the card places it', async () => {
+    stubViewport(true);
+    await renderWithApp(
+      <DataTable
+        columns={withActions}
+        data={rows.slice(0, 2)}
+        getRowId={(row) => row.id}
+        renderCard={(row, card) => (
+          <article aria-label={row.original.id}>{card.actions}</article>
+        )}
+      />,
+      { namespace, namespaces },
+    );
+    const card = screen.getByRole('article', { name: 'row-0' });
+    expect(
+      within(card).getByRole('button', { name: 'Actions for row-0' }),
+    ).toBeVisible();
+    expect(
+      screen.getAllByRole('button', { name: 'Actions for row-0' }),
+    ).toHaveLength(1);
+  });
+
+  it('leaves the cards without actions when the list opts out', async () => {
+    stubViewport(true);
+    await renderWithApp(
+      <DataTable
+        columns={withActions}
+        data={rows.slice(0, 2)}
+        getRowId={(row) => row.id}
+        actionsColumnId={null}
+        renderCard={(row) => <article aria-label={row.original.id} />}
+      />,
+      { namespace, namespaces },
+    );
+    expect(
+      screen.queryByRole('button', { name: /^Actions for/ }),
+    ).not.toBeInTheDocument();
   });
 });

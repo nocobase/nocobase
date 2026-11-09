@@ -311,7 +311,7 @@ export default function CustomerDetailPage() {
                 onRetry={contacts.reload}
                 // Related records follow the list's phone pattern (mobile.md M5.3): email and phone open the
                 // phone's mail and dialer.
-                renderCard={(row) => (
+                renderCard={(row, card) => (
                   <div className='flex items-start gap-2 rounded-lg border p-4'>
                     <div className='flex min-w-0 flex-1 flex-col gap-1 text-sm'>
                       <span className='font-medium break-words'>
@@ -350,9 +350,8 @@ export default function CustomerDetailPage() {
                         </a>
                       ) : null}
                     </div>
-                    {maintain.can && writable
-                      ? contactMenu(row.original, 'icon')
-                      : null}
+                    {/* The row's menu, at a phone tap size (M3.1, M8.1). */}
+                    {card.actions}
                   </div>
                 )}
               />

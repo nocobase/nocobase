@@ -20,16 +20,6 @@ import { FeedbackForm } from '#components/feedback-form';
 import { RouteDialog } from '#components/route-dialog';
 import { useRouteOverlay } from '#components/use-route-overlay';
 import { Alert, AlertDescription } from '#components/ui/alert';
-import {
-  AlertDialog,
-  AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogCancel,
-  AlertDialogAction,
-} from '#components/ui/alert-dialog';
 import { Button } from '#components/ui/button';
 import { Skeleton } from '#components/ui/skeleton';
 import { Input } from '#components/ui/input';
@@ -143,45 +133,22 @@ function ProjectEditor({
   const [confirmedMissing, setConfirmedMissing] = useState<
     'committed' | 'not-committed'
   >();
+  // Set once saved, so the save's own navigation leaves without "Discard changes?" (the dialog's `dirty`).
   const savedRef = useRef(false);
-  const [confirmDiscard, setConfirmDiscard] = useState(false);
-  const discardRef = useRef<{
-    promise: Promise<boolean>;
-    resolve: (value: boolean) => void;
-  } | null>(null);
-  const decideDiscard = (discard: boolean) => {
-    discardRef.current?.resolve(discard);
-    discardRef.current = null;
-    setConfirmDiscard(false);
-  };
-  useEffect(
-    () => () => {
-      discardRef.current?.resolve(false);
-    },
-    [],
+  const { isDirty } = form.formState;
+  // No way out while a save is in flight or its outcome is unknown; unsaved input is the dialog's `dirty`.
+  useNavigationGuard(
+    () =>
+      savedRef.current ||
+      !(busyRef.current || submission.submitting || submission.pending),
   );
-  useNavigationGuard(() => {
-    if (savedRef.current) return true;
-    if (busyRef.current || submission.submitting || submission.pending)
-      return false;
-    if (!form.formState.isDirty) return true;
-    if (discardRef.current) return discardRef.current.promise;
-    let resolve!: (value: boolean) => void;
-    const promise = new Promise<boolean>((done) => {
-      resolve = done;
-    });
-    discardRef.current = { promise, resolve };
-    setConfirmDiscard(true);
-    return promise;
-  });
   useEffect(() => {
     const warn = (event: BeforeUnloadEvent) => {
-      if (busyRef.current || submission.pending || form.formState.isDirty)
-        event.preventDefault();
+      if (busyRef.current || submission.pending) event.preventDefault();
     };
     window.addEventListener('beforeunload', warn);
     return () => window.removeEventListener('beforeunload', warn);
-  }, [submission.pending, form.formState.isDirty]);
+  }, [submission.pending]);
   const submit = async () => {
     if (!session || busyRef.current) return;
     busyRef.current = true;
@@ -249,6 +216,8 @@ function ProjectEditor({
     <RouteDialog
       title={t(project ? 'skillProjects.edit' : 'skillProjects.create')}
       className='sm:max-w-md'
+      // Every way out of a dirty form asks "Discard changes?" first: ×, Esc, the backdrop, Cancel, browser back.
+      dirty={() => isDirty && !savedRef.current}
       beforeClose={() =>
         !busyRef.current && !submission.submitting && !submission.pending
       }
@@ -273,29 +242,6 @@ function ProjectEditor({
         </>
       }
     >
-      <AlertDialog
-        open={confirmDiscard}
-        onOpenChange={(open) => {
-          if (!open) decideDiscard(false);
-        }}
-      >
-        <AlertDialogContent className='sm:max-w-md'>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t('skillProjects.discard')}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {t('skillProjects.discardHint')}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>
-              {t('skillProjects.keepEditing')}
-            </AlertDialogCancel>
-            <AlertDialogAction onClick={() => decideDiscard(true)}>
-              {t('skillProjects.discardAction')}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
       {restoringInput && !error ? (
         <Alert>
           <AlertDescription>{t('skillProjects.restoreInput')}</AlertDescription>

@@ -787,3 +787,145 @@ describe('detail drawer, edit dialog and a confirmation', () => {
     expect(save).not.toHaveBeenCalled();
   });
 });
+
+describe('the dirty prop of a route overlay', () => {
+  // The default path of M7.4: a page passes whether its form is dirty, and the overlay asks before every way out.
+  function DirtyEdit() {
+    const [dirty, setDirty] = useState(false);
+    const savedRef = useRef(false);
+    const navigate = useNavigate();
+    const { search } = useLocation();
+    return (
+      <RouteDialog
+        title='Edit'
+        dirty={() => dirty && !savedRef.current}
+        footer={
+          <>
+            <Actions />
+            <button
+              onClick={() => {
+                savedRef.current = true;
+                void navigate({ pathname: '..', search });
+              }}
+            >
+              Save
+            </button>
+          </>
+        }
+      >
+        <input
+          aria-label='Name'
+          defaultValue='Original'
+          onChange={() => setDirty(true)}
+        />
+      </RouteDialog>
+    );
+  }
+  function setupDirty() {
+    const history: { back?: () => void; path?: string } = {};
+    function Probe() {
+      const navigate = useNavigate();
+      const { pathname, search } = useLocation();
+      useEffect(() => {
+        history.back = () => void navigate(-1);
+        history.path = `${pathname}${search}`;
+      });
+      return null;
+    }
+    render(
+      <MemoryRouter
+        initialEntries={['/orders?page=2', '/orders/edit?page=2']}
+        initialIndex={1}
+      >
+        <NavigationGuardProvider>
+          <Probe />
+          <Routes>
+            <Route path='/orders' element={<Outlet />}>
+              <Route path='edit' element={<DirtyEdit />} />
+            </Route>
+          </Routes>
+        </NavigationGuardProvider>
+      </MemoryRouter>,
+      { wrapper: I18n },
+    );
+    return history;
+  }
+  async function keepEditing() {
+    const prompt = await screen.findByRole('alertdialog', {
+      name: 'Discard changes?',
+    });
+    await userEvent.click(
+      within(prompt).getByRole('button', { name: 'Keep editing' }),
+    );
+    await waitFor(() =>
+      expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument(),
+    );
+  }
+
+  it('asks on Cancel, the close button, Escape and browser back, and keeps the input on Keep editing', async () => {
+    const history = setupDirty();
+    await userEvent.type(
+      await screen.findByRole('textbox', { name: 'Name' }),
+      ' draft',
+    );
+    const dialog = screen.getByRole('dialog', { name: 'Edit' });
+
+    await userEvent.click(
+      within(dialog).getByRole('button', { name: 'Cancel' }),
+    );
+    await keepEditing();
+    await userEvent.click(
+      within(dialog).getByRole('button', { name: 'Close' }),
+    );
+    await keepEditing();
+    await userEvent.keyboard('{Escape}');
+    await keepEditing();
+    act(() => history.back!());
+    await keepEditing();
+
+    expect(screen.getByRole('dialog', { name: 'Edit' })).toBeVisible();
+    expect(screen.getByRole('textbox', { name: 'Name' })).toHaveValue(
+      'Original draft',
+    );
+    await waitFor(() => expect(history.path).toBe('/orders/edit?page=2'));
+  });
+
+  it('closes to the list query once the user discards', async () => {
+    const history = setupDirty();
+    await userEvent.type(
+      await screen.findByRole('textbox', { name: 'Name' }),
+      ' draft',
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    const prompt = await screen.findByRole('alertdialog', {
+      name: 'Discard changes?',
+    });
+    await userEvent.click(
+      within(prompt).getByRole('button', { name: 'Discard' }),
+    );
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+    );
+    expect(history.path).toBe('/orders?page=2');
+  });
+
+  it('closes without asking when nothing changed', async () => {
+    const history = setupDirty();
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Cancel' }),
+    );
+    await waitFor(() => expect(history.path).toBe('/orders?page=2'));
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+  });
+
+  it('lets the save navigate without asking', async () => {
+    const history = setupDirty();
+    await userEvent.type(
+      await screen.findByRole('textbox', { name: 'Name' }),
+      ' saved',
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+    await waitFor(() => expect(history.path).toBe('/orders?page=2'));
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+  });
+});

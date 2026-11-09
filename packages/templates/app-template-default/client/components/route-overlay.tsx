@@ -1,10 +1,12 @@
 import { Dialog as DialogPrimitive } from '@base-ui/react/dialog';
+import { useNavigationGuard } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { XIcon } from 'lucide-react';
 import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useLayoutEffect,
   useMemo,
   useRef,
@@ -15,6 +17,16 @@ import {
 } from 'react';
 import { useLocation, useNavigate, type To } from 'react-router';
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '#components/ui/alert-dialog';
 import { Button } from '#components/ui/button';
 import {
   Dialog,
@@ -43,6 +55,14 @@ export interface RouteOverlayProps {
   readonly closeTo?: To;
   /** Runs before every close; resolving `false` keeps the overlay open, for example to guard unsaved changes. */
   readonly beforeClose?: () => boolean | Promise<boolean>;
+  /**
+   * Whether the form inside has unsaved changes (guideline T3.9, mobile.md M7.4). While it is true, every way out —
+   * ×, Esc, the backdrop, Cancel through `close()`, browser back and forward, the phone's back gesture and links —
+   * first asks "Discard changes?", and reloading or closing the tab gets the browser's warning. A function is read at
+   * the moment of leaving, so the save's own navigation goes through: pass
+   * `dirty={() => isDirty && !savedRef.current}` and set `savedRef.current = true` before navigating after a save.
+   */
+  readonly dirty?: boolean | (() => boolean);
   readonly className?: string;
 }
 
@@ -62,14 +82,114 @@ const ParentPopupContext =
  * `beforeClose` move to the host and its children render in the host's body. On any other route it opens its own.
  * The host context comes from `@nocobase/app-client`, so a plugin's own copy of this component joins the same panel.
  */
-export function RouteOverlay(
-  props: RouteOverlayProps & { readonly drawer?: boolean },
-): ReactElement {
+export function RouteOverlay({
+  dirty,
+  children,
+  ...props
+}: RouteOverlayProps & { readonly drawer?: boolean }): ReactElement {
   const host = useContext(RouteOverlayHostContext);
+  const content =
+    dirty === undefined ? (
+      children
+    ) : (
+      <>
+        {children}
+        <DiscardGuard dirty={dirty} />
+      </>
+    );
   return host ? (
-    <HostedRouteOverlay host={host} {...props} />
+    <HostedRouteOverlay host={host} {...props}>
+      {content}
+    </HostedRouteOverlay>
   ) : (
-    <RouteOverlayFrame {...props} />
+    <RouteOverlayFrame {...props}>{content}</RouteOverlayFrame>
+  );
+}
+
+/**
+ * Asks "Discard changes?" before leaving a dirty overlay. Closing an overlay is navigation, so one navigation guard
+ * covers every way out; while it waits the application keeps the overlay and its input mounted, and restores the URL
+ * when the answer is "Keep editing". The confirmation is the one layer allowed above the overlay (mobile.md M7.2).
+ */
+function DiscardGuard({
+  dirty,
+}: {
+  readonly dirty: boolean | (() => boolean);
+}): ReactElement {
+  const { t } = useTranslation();
+  const dirtyRef = useRef(dirty);
+  useLayoutEffect(() => {
+    dirtyRef.current = dirty;
+  });
+  const isDirty = useCallback((): boolean => {
+    const current = dirtyRef.current;
+    return typeof current === 'function' ? current() : current;
+  }, []);
+  // The pending question, so a second attempt to leave while it is open waits for the same answer.
+  const promptRef = useRef<{
+    readonly promise: Promise<boolean>;
+    readonly resolve: (discard: boolean) => void;
+  } | null>(null);
+  const [asking, setAsking] = useState(false);
+  useNavigationGuard(() => {
+    if (!isDirty()) return true;
+    if (promptRef.current) return promptRef.current.promise;
+    let resolve!: (discard: boolean) => void;
+    const promise = new Promise<boolean>((done) => {
+      resolve = done;
+    });
+    promptRef.current = { promise, resolve };
+    setAsking(true);
+    return promise;
+  });
+  useEffect(() => {
+    const warn = (event: BeforeUnloadEvent): void => {
+      if (isDirty()) event.preventDefault();
+    };
+    window.addEventListener('beforeunload', warn);
+    return () => {
+      window.removeEventListener('beforeunload', warn);
+      // Unmounted while asking: the navigation it held does not go ahead.
+      promptRef.current?.resolve(false);
+      promptRef.current = null;
+    };
+  }, [isDirty]);
+  const answer = (discard: boolean): void => {
+    promptRef.current?.resolve(discard);
+    promptRef.current = null;
+    setAsking(false);
+  };
+  return (
+    <AlertDialog
+      open={asking}
+      onOpenChange={(open) => {
+        if (!open) answer(false);
+      }}
+    >
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>
+            {t('routeOverlay.discardTitle', {
+              defaultValue: 'Discard changes?',
+            })}
+          </AlertDialogTitle>
+          <AlertDialogDescription>
+            {t('routeOverlay.discardDescription', {
+              defaultValue:
+                'Your changes have not been saved and will be lost.',
+            })}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>
+            {t('routeOverlay.keepEditing', { defaultValue: 'Keep editing' })}
+          </AlertDialogCancel>
+          <AlertDialogAction variant='destructive' onClick={() => answer(true)}>
+            {t('routeOverlay.discard', { defaultValue: 'Discard' })}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }
 

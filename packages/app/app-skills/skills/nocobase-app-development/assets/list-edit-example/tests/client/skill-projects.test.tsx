@@ -449,9 +449,18 @@ it('returns a direct edit link to a stable page focus target', async () => {
   );
 });
 
+/** The route dialog's own "Discard changes?" copy, which the edit dialog asks through its `dirty`. */
+function dirtyCopy(locale: typeof enUS) {
+  return {
+    discard: locale['routeOverlay.discardTitle'],
+    keepEditing: locale['routeOverlay.keepEditing'],
+    discardAction: locale['routeOverlay.discard'],
+  };
+}
+
 it.each([
-  ['en-US', enUS.skillProjects],
-  ['zh-CN', zhCN.skillProjects],
+  ['en-US', { ...enUS.skillProjects, ...dirtyCopy(enUS) }],
+  ['zh-CN', { ...zhCN.skillProjects, ...dirtyCopy(zhCN) }],
 ] as const)(
   'confirms dirty cancellation and Escape in %s without losing the draft on rejection',
   async (locale, copy) => {
@@ -958,11 +967,11 @@ it('asks before browser back leaves a dirty edit dialog, as Cancel and Escape do
   act(() => back());
   expect(
     await screen.findByRole('alertdialog', {
-      name: enUS.skillProjects.discard,
+      name: enUS['routeOverlay.discardTitle'],
     }),
   ).toBeVisible();
   await userEvent.click(
-    screen.getByRole('button', { name: enUS.skillProjects.keepEditing }),
+    screen.getByRole('button', { name: enUS['routeOverlay.keepEditing'] }),
   );
   await waitFor(() =>
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument(),
@@ -973,7 +982,7 @@ it('asks before browser back leaves a dirty edit dialog, as Cancel and Escape do
   act(() => back());
   await userEvent.click(
     await screen.findByRole('button', {
-      name: enUS.skillProjects.discardAction,
+      name: enUS['routeOverlay.discard'],
     }),
   );
   await waitFor(() =>

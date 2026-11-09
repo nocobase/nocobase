@@ -37,8 +37,9 @@ export interface DataTableSortMenuProps<TData> {
  * It drives the table's own sorting state, so a controlled `onSortingChange`
  * (and the URL it writes) behaves exactly as a header click does. A column is
  * sortable when the table allows it: `DataTable`'s `sortableColumns` (spread
- * from `useTableUrlState`) leaves only the columns the URL accepts. Render it
- * from the `toolbar`, usually with `className='md:hidden'`.
+ * from `useTableUrlState`) leaves only the columns the URL accepts. `DataTable`
+ * renders it for its phone cards by itself when given `getColumnLabel`;
+ * render it directly only for a list outside `DataTable`.
  */
 export function DataTableSortMenu<TData>({
   table,

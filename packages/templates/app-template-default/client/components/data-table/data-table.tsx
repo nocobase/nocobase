@@ -3,6 +3,7 @@ import { useTranslation } from '@nocobase/i18n/client';
 import { ListFeedback, ListFeedbackActions } from '#components/list-feedback';
 import { RefreshIndicator } from '#components/loading';
 import {
+  type Column,
   type ColumnDef,
   type PaginationState,
   type OnChangeFn,
@@ -30,7 +31,9 @@ import {
   useSyncExternalStore,
 } from 'react';
 
+import { DataTableFilterSheet, DataTableInlineFilters } from './filters.js';
 import { DataTablePagination } from './pagination.js';
+import { DataTableSortMenu } from './sort-menu.js';
 import {
   Table,
   TableBody,
@@ -77,8 +80,27 @@ export interface DataTableProps<TData, TValue = unknown> {
   readonly emptyAction?: ReactNode;
   readonly className?: string;
   /**
-   * Rendered above the table and handed the table instance, so filters and
-   * `DataTableViewOptions` can read and drive its state.
+   * The list's search box. It leads the toolbar row and takes its remaining width, on phones as on desktop
+   * (mobile.md M4.1).
+   */
+  readonly search?: ReactNode;
+  /**
+   * The list's filters, each a `DataTableFilter` with its label. From the `md` breakpoint up they sit inline after
+   * the search box; on a phone they collapse into one icon "Filters" button on the search row that opens a bottom
+   * sheet, named and badged with `filterCount` (mobile.md M4.2). Do not also render filters in `toolbar`.
+   */
+  readonly filters?: ReactNode;
+  /** How many of `filters` are applied, for the phone's "Filters · 2" name and badge. */
+  readonly filterCount?: number;
+  /**
+   * The translated label of a sortable column, as its header shows it. With it, phone cards get the icon "Sort"
+   * menu on the search row by themselves (`DataTableSortMenu`), offering the columns `sortableColumns` allows; do
+   * not render another one in `toolbar`.
+   */
+  readonly getColumnLabel?: (column: Column<TData, unknown>) => ReactNode;
+  /**
+   * Rendered on the toolbar row after the search, filters and phone sort, and handed the table instance, for other
+   * list controls such as `DataTableViewOptions`, an export, or bulk actions while rows are selected.
    */
   readonly toolbar?: (table: TableInstance<TData>) => ReactNode;
   /** Shown in the table body when no row survives filtering. */
@@ -97,11 +119,27 @@ export interface DataTableProps<TData, TValue = unknown> {
    * Renders one row as a compact card. When given, screens narrower than the
    * `md` breakpoint (768px) show the rows as a list of these cards instead of
    * table rows, keeping the same states, selection and pagination. Sorting has
-   * no column headers there: render `DataTableSortMenu` in the toolbar. A card
-   * opens its record through its own link or button; `onRowClick` applies to
-   * table rows only.
+   * no column headers there: pass `getColumnLabel` for the phone "Sort" menu. A
+   * card opens its record through its own link or button; `onRowClick` applies
+   * to table rows only.
+   *
+   * The second argument holds the row's actions: the cell of the
+   * `actionsColumnId` column, the same "…" menu the desktop row shows
+   * (mobile.md M3.1). Place `card.actions` where the card's layout wants it;
+   * a card that does not read it gets it in its top-right corner, so a card
+   * never silently drops the row's actions.
    */
-  readonly renderCard?: (row: Row<TData>) => ReactNode;
+  readonly renderCard?: (
+    row: Row<TData>,
+    card: DataTableCardParts,
+  ) => ReactNode;
+  /**
+   * The id of the row actions column, `'actions'` by default, whose cell each
+   * phone card shows as well (see `renderCard`). `null` leaves the cards
+   * without it, for a list whose cards deliberately carry none (case (a), (b)
+   * or (c) of mobile.md M3.1).
+   */
+  readonly actionsColumnId?: string | null;
   /**
    * The id of the row selection column, `'select'` by default. Cards have no
    * header row, so on phones its header (the "select all on this page"
@@ -117,6 +155,11 @@ export interface DataTableProps<TData, TValue = unknown> {
    * list would ignore. Omit it to keep each column's own `enableSorting`.
    */
   readonly sortableColumns?: readonly string[];
+}
+
+export interface DataTableCardParts {
+  /** The row's actions cell, or `null` when the table has no visible actions column. */
+  readonly actions: ReactNode;
 }
 
 /** The id TanStack Table gives a column definition. */
@@ -212,12 +255,18 @@ export function DataTable<TData, TValue = unknown>({
   onClearFilters,
   filtered = false,
   emptyAction,
+  search,
+  filters,
+  filterCount = 0,
+  getColumnLabel,
   renderCard,
+  actionsColumnId = 'actions',
   selectionColumnId = 'select',
   sortableColumns,
 }: DataTableProps<TData, TValue>): ReactElement {
   const { t } = useTranslation();
-  const cards = useIsPhone(renderCard !== undefined) && renderCard;
+  const phone = useIsPhone(renderCard !== undefined || filters !== undefined);
+  const cards = phone && renderCard;
   const tableData = useMemo(() => [...data], [data]);
   // Compare by content: hosts usually pass a new array literal on every render.
   const sortableKey = sortableColumns?.join('\u0000');
@@ -268,6 +317,8 @@ export function DataTable<TData, TValue = unknown>({
   });
 
   const rows = table.getRowModel().rows;
+  const phoneSort =
+    cards && getColumnLabel !== undefined ? getColumnLabel : undefined;
   const selectionHeader = cards
     ? table
         .getHeaderGroups()
@@ -352,8 +403,36 @@ export function DataTable<TData, TValue = unknown>({
 
   return (
     <div className={cn('flex flex-col gap-4', className)}>
-      {toolbar || hasStateActions ? (
-        <div className='flex flex-wrap items-center gap-2'>
+      {toolbar ||
+      hasStateActions ||
+      search !== undefined ||
+      filters !== undefined ||
+      phoneSort ? (
+        // One row on every width (mobile.md M4.1): the search box takes the remaining width, then the filters (or the
+        // phone's Filters button) and the phone's Sort button. Only transient actions such as Clear wrap below.
+        <div
+          data-slot='data-table-toolbar'
+          className='flex flex-wrap items-center gap-2'
+        >
+          {search !== undefined ? (
+            <div className='flex min-w-0 flex-1 basis-40 md:max-w-sm'>
+              {search}
+            </div>
+          ) : null}
+          {filters === undefined ? null : phone ? (
+            <DataTableFilterSheet count={filterCount}>
+              {filters}
+            </DataTableFilterSheet>
+          ) : (
+            <DataTableInlineFilters>{filters}</DataTableInlineFilters>
+          )}
+          {phoneSort ? (
+            <DataTableSortMenu
+              table={table}
+              compact
+              getColumnLabel={phoneSort}
+            />
+          ) : null}
           {toolbar?.(table)}
           <ListFeedbackActions
             state={state}
@@ -419,13 +498,12 @@ export function DataTable<TData, TValue = unknown>({
               className={cn('flex flex-col gap-2', showFeedback && 'mt-2')}
             >
               {rows.map((row) => (
-                <li
+                <DataTableCard
                   key={row.id}
-                  data-slot='data-table-card'
-                  data-state={row.getIsSelected() ? 'selected' : undefined}
-                >
-                  {cards(row)}
-                </li>
+                  row={row}
+                  render={cards}
+                  actionsColumnId={actionsColumnId}
+                />
               ))}
             </ul>
           ) : null}
@@ -526,5 +604,52 @@ export function DataTable<TData, TValue = unknown>({
         </div>
       ) : null}
     </div>
+  );
+}
+
+/**
+ * One phone card: the host's `renderCard` and the row's actions cell (mobile.md M3.1). Actions the card does not
+ * place itself go to its top-right corner, with room kept for them so they never cover its text.
+ */
+function DataTableCard<TData>({
+  row,
+  render,
+  actionsColumnId,
+}: {
+  readonly row: Row<TData>;
+  readonly render: NonNullable<DataTableProps<TData>['renderCard']>;
+  readonly actionsColumnId: string | null;
+}): ReactElement {
+  const cell =
+    actionsColumnId === null
+      ? undefined
+      : row
+          .getVisibleCells()
+          .find((candidate) => candidate.column.id === actionsColumnId);
+  // Phone tap targets are at least 32px (M8.1), even when the row's cell uses a smaller icon button.
+  const actions = cell ? (
+    <div
+      data-slot='data-table-card-actions'
+      className='flex shrink-0 items-center gap-1 [&_[data-slot=button]]:min-h-8 [&_[data-slot=button]]:min-w-8'
+    >
+      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+    </div>
+  ) : null;
+  let placed = actions === null;
+  const content = render(row, {
+    get actions() {
+      placed = true;
+      return actions;
+    },
+  });
+  return (
+    <li
+      data-slot='data-table-card'
+      data-state={row.getIsSelected() ? 'selected' : undefined}
+      className={placed ? undefined : 'relative [&>*:first-child]:pr-14'}
+    >
+      {content}
+      {placed ? null : <div className='absolute top-2 right-2'>{actions}</div>}
+    </li>
   );
 }

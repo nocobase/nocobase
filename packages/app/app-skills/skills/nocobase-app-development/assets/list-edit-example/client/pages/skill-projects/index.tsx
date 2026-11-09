@@ -236,8 +236,9 @@ export default function SkillProjectsPage(): ReactElement {
             getRowId={(row) => row.id}
             showSelectedCount={false}
             emptyMessage={t('skillProjects.empty')}
-            // Phones show one card per project (mobile.md M3): the name opens its detail, Edit its dialog.
-            renderCard={(row) => (
+            // Phones show one card per project (mobile.md M3): the name opens its detail, and the row's own actions
+            // cell (Edit) follows it, so the card offers what the row does.
+            renderCard={(row, card) => (
               <div className='flex items-center gap-2 rounded-lg border p-4'>
                 <RecordLink
                   to={{
@@ -248,20 +249,7 @@ export default function SkillProjectsPage(): ReactElement {
                 >
                   {row.original.name}
                 </RecordLink>
-                <Button
-                  variant='outline'
-                  render={
-                    <Link
-                      to={{
-                        pathname: `${row.original.id}/edit`,
-                        search: location.search,
-                      }}
-                    />
-                  }
-                  nativeButton={false}
-                >
-                  {t('skillProjects.editAction')}
-                </Button>
+                {card.actions}
               </div>
             )}
           />

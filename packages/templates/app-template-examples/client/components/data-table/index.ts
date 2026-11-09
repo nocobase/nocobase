@@ -1,4 +1,9 @@
-export { DataTable, type DataTableProps } from './data-table.js';
+export {
+  DataTable,
+  type DataTableCardParts,
+  type DataTableProps,
+} from './data-table.js';
+export { DataTableFilter, type DataTableFilterProps } from './filters.js';
 export {
   DataTablePagination,
   type DataTablePaginationProps,

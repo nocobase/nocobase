@@ -10,11 +10,10 @@ import {
   useAuthorizationRevision,
 } from '@nocobase/app-plugin-authorization/client';
 import { useTranslation } from '@nocobase/i18n/client';
-import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { FilterIcon } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, Outlet, useLocation } from 'react-router';
 import type { ColumnDef } from '@tanstack/react-table';
-import { DataTable } from '#components/data-table';
+import { DataTable, DataTableFilter } from '#components/data-table';
 import { PageContainer } from '#components/page-container';
 import { PageHeader } from '#components/page-header';
 import { RecordLink } from '#components/record-link';
@@ -22,13 +21,6 @@ import { StatusBadge } from '#components/status-badge';
 import { Button } from '#components/ui/button';
 import { Checkbox } from '#components/ui/checkbox';
 import { Input } from '#components/ui/input';
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from '#components/ui/sheet';
 import {
   AlertDialog,
   AlertDialogContent,
@@ -106,7 +98,6 @@ function CustomerContactsContent() {
   });
   const selected = selection.key === selectionKey ? selection.ids : [];
   const [confirmReset, setConfirmReset] = useState(false);
-  const [filtersOpen, setFiltersOpen] = useState(false);
   const appliedFilters = (status !== 'all' ? 1 : 0) + (owner ? 1 : 0);
   const [resetError, setResetError] = useState<unknown>();
   const lock = useWriteLock();
@@ -267,116 +258,6 @@ function CustomerContactsContent() {
         />
       </div>
       {!confirmReset && <WriteFeedback error={resetError} />}
-      {/* One row on every width (mobile.md M4.1). Desktop: search, both filters and Clear. Phone: the search box and
-          an icon Filters button named with how many filters apply, opening the same controls in a bottom sheet;
-          Clear joins while something is applied. */}
-      <div className='flex flex-wrap items-center gap-2'>
-        <CustomerSearch
-          value={search}
-          onSearch={(value) => updateQuery('search', value)}
-        />
-        <div className='hidden md:contents'>
-          {filterControls(
-            <StatusChoice
-              all
-              value={status}
-              onChange={(value) => updateQuery('status', value)}
-            />,
-            <RelationPicker
-              kind='salesReps'
-              value={owner}
-              label={t('customerContacts.owner')}
-              onChange={(value) => updateQuery('ownerId', value)}
-            />,
-          )}
-        </div>
-        <Sheet open={filtersOpen} onOpenChange={setFiltersOpen}>
-          <SheetTrigger
-            render={
-              <Button
-                variant='outline'
-                size='icon'
-                className='relative shrink-0 md:hidden'
-                aria-label={
-                  appliedFilters > 0
-                    ? t('customerContacts.filtersApplied', {
-                        count: appliedFilters,
-                      })
-                    : t('customerContacts.filters')
-                }
-              />
-            }
-          >
-            <FilterIcon />
-            {appliedFilters > 0 ? (
-              <span
-                aria-hidden='true'
-                className='absolute -top-1.5 -right-1.5 flex size-4 items-center justify-center rounded-full bg-primary text-xs font-medium text-primary-foreground tabular-nums'
-              >
-                {appliedFilters}
-              </span>
-            ) : null}
-          </SheetTrigger>
-          <SheetContent
-            side='bottom'
-            className='max-h-[calc(100dvh-2rem)] gap-0'
-          >
-            <SheetHeader>
-              <SheetTitle>{t('customerContacts.filters')}</SheetTitle>
-            </SheetHeader>
-            {/* Each control writes the URL as it changes, as on desktop; the sheet is a temporary panel outside it. */}
-            <div className='flex min-h-0 flex-col gap-4 overflow-y-auto px-4 pb-[max(1rem,env(safe-area-inset-bottom))]'>
-              <FilterField label={t('customerContacts.status')}>
-                <StatusChoice
-                  all
-                  value={status}
-                  onChange={(value) => updateQuery('status', value)}
-                />
-              </FilterField>
-              <FilterField label={t('customerContacts.owner')}>
-                <RelationPicker
-                  kind='salesReps'
-                  value={owner}
-                  label={t('customerContacts.owner')}
-                  onChange={(value) => updateQuery('ownerId', value)}
-                />
-              </FilterField>
-            </div>
-          </SheetContent>
-        </Sheet>
-        {(search || status !== 'all' || owner) && (
-          <Button
-            variant='ghost'
-            onClick={() => {
-              const next = new URLSearchParams(params);
-              for (const key of ['search', 'status', 'ownerId', 'page'])
-                next.delete(key);
-              setSelection({ key: '', ids: [] });
-              setParams(next, { replace: true });
-            }}
-          >
-            {t('customerContacts.clear')}
-          </Button>
-        )}
-      </div>
-      {selected.length > 0 && (
-        <div className='flex flex-wrap items-center gap-2'>
-          <span className='text-sm'>
-            {t('customerContacts.selected', { count: selected.length })}
-          </span>
-          {(edit.can || assign.can) && (
-            <Button
-              variant='outline'
-              render={
-                <Link to={{ pathname: 'batch', search: location.search }} />
-              }
-              nativeButton={false}
-            >
-              {t('customerContacts.batchTitle')}
-            </Button>
-          )}
-        </div>
-      )}
       <DataTable
         columns={columns}
         data={rows}
@@ -394,6 +275,66 @@ function CustomerContactsContent() {
         loading={active && request.loading}
         loadingIdentity={path}
         onRetry={reload}
+        // One row on every width (mobile.md M4.1): DataTable puts the search box first, then the filters inline from
+        // md up or, on a phone, an icon Filters button named and badged with the applied count that opens them in a
+        // bottom sheet; Clear filters joins while something is applied (M4.2).
+        search={
+          <CustomerSearch
+            value={search}
+            onSearch={(value) => updateQuery('search', value)}
+          />
+        }
+        filters={
+          <>
+            <DataTableFilter label={t('customerContacts.status')}>
+              <StatusChoice
+                all
+                value={status}
+                onChange={(value) => updateQuery('status', value)}
+              />
+            </DataTableFilter>
+            <DataTableFilter label={t('customerContacts.owner')}>
+              <div className='w-48'>
+                <RelationPicker
+                  kind='salesReps'
+                  value={owner}
+                  label={t('customerContacts.owner')}
+                  onChange={(value) => updateQuery('ownerId', value)}
+                />
+              </div>
+            </DataTableFilter>
+          </>
+        }
+        filterCount={appliedFilters}
+        filtered={Boolean(search || status !== 'all' || owner)}
+        onClearFilters={() => {
+          const next = new URLSearchParams(params);
+          for (const key of ['search', 'status', 'ownerId', 'page'])
+            next.delete(key);
+          setSelection({ key: '', ids: [] });
+          setParams(next, { replace: true });
+        }}
+        // Transient: the selection count and its batch action join the controls' row while rows are selected.
+        toolbar={() =>
+          selected.length > 0 ? (
+            <div className='flex flex-wrap items-center gap-2'>
+              <span className='text-sm'>
+                {t('customerContacts.selected', { count: selected.length })}
+              </span>
+              {(edit.can || assign.can) && (
+                <Button
+                  variant='outline'
+                  render={
+                    <Link to={{ pathname: 'batch', search: location.search }} />
+                  }
+                  nativeButton={false}
+                >
+                  {t('customerContacts.batchTitle')}
+                </Button>
+              )}
+            </div>
+          ) : null
+        }
         renderCard={(row) => (
           <CustomerCard
             customer={row.original}
@@ -466,30 +407,6 @@ function CustomerContactsContent() {
       </AlertDialog>
       <Outlet context={context} />
     </PageContainer>
-  );
-}
-/** The desktop row of filters: the status choice at its own width, then the owner picker. */
-function filterControls(statusChoice: ReactNode, ownerPicker: ReactNode) {
-  return (
-    <>
-      {statusChoice}
-      <div className='w-48'>{ownerPicker}</div>
-    </>
-  );
-}
-/** A filter in the phone sheet, with a visible label above its full-width control. */
-function FilterField({
-  label,
-  children,
-}: {
-  label: string;
-  children: ReactNode;
-}) {
-  return (
-    <div className='flex flex-col gap-2'>
-      <span className='text-sm font-medium'>{label}</span>
-      {children}
-    </div>
   );
 }
 /**
