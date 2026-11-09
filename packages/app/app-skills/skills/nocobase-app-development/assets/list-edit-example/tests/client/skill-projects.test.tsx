@@ -821,3 +821,35 @@ it.each([403, 404, 500])(
     view.unmount();
   },
 );
+
+it('shows each project as a card with its detail link and edit action on a phone', async () => {
+  vi.stubGlobal('matchMedia', (query: string) => ({
+    matches: true,
+    media: query,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+  }));
+  try {
+    await mount(
+      answerApi(({ path }) => {
+        if (path === 'skillProjects') return list();
+        if (path === 'skillProjects/abc') return { data: original };
+        throw new Error(`Unexpected request: ${path}`);
+      }),
+      '/skill-projects?page=1',
+    );
+    const card = (await screen.findAllByRole('listitem'))[0];
+    expect(screen.queryByRole('table')).not.toBeInTheDocument();
+    expect(card).toHaveTextContent('Alpha');
+    expect(screen.getByRole('link', { name: 'Alpha' })).toHaveAttribute(
+      'href',
+      expect.stringContaining('/skill-projects/abc/details'),
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Edit' }));
+    expect(await screen.findByRole('textbox', { name: 'Name' })).toHaveValue(
+      'Alpha',
+    );
+  } finally {
+    vi.unstubAllGlobals();
+  }
+});

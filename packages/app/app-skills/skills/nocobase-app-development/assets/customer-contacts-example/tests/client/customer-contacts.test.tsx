@@ -678,3 +678,47 @@ it('restarts the picker wait for each search and announces a slow next page outs
     vi.useRealTimers();
   }
 });
+
+it('shows cards and a filter sheet with the applied count on a phone', async () => {
+  vi.stubGlobal('matchMedia', (query: string) => ({
+    matches: true,
+    media: query,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+  }));
+  const calls: ApiCall[] = [];
+  await mount((call) => {
+    if (call.path === 'customerContacts/customers') {
+      calls.push(call);
+      return list([customer]);
+    }
+    throw new Error(`Unexpected ${call.path}`);
+  }, '/customer-contacts?ownerId=crm-rep');
+
+  const card = within(await screen.findByRole('list'))
+    .getAllByRole('listitem')
+    .at(0)!;
+  expect(within(card).getByRole('link', { name: 'Acorn 01' })).toBeVisible();
+  expect(within(card).getByText('Active')).toBeVisible();
+  expect(await within(card).findByText('Alex Rivera')).toBeVisible();
+  expect(screen.queryByRole('table')).not.toBeInTheDocument();
+
+  await userEvent.click(screen.getByRole('button', { name: 'Filters · 1' }));
+  const sheet = await screen.findByRole('dialog', { name: 'Filters' });
+  await userEvent.click(
+    within(sheet).getByRole('combobox', { name: 'Status' }),
+  );
+  await userEvent.click(await screen.findByRole('option', { name: 'Paused' }));
+  await waitFor(() =>
+    expect(calls.at(-1)?.query).toMatchObject({
+      status: 'paused',
+      ownerId: 'crm-rep',
+      page: '1',
+    }),
+  );
+  // The sheet is a temporary panel: closing it keeps the filters, which live in the URL.
+  await userEvent.keyboard('{Escape}');
+  expect(
+    await screen.findByRole('button', { name: 'Filters · 2' }),
+  ).toBeVisible();
+});

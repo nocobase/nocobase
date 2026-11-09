@@ -3,6 +3,7 @@ import type { ColumnDef, SortingState } from '@tanstack/react-table';
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
+import { act } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   DataTable,
@@ -71,6 +72,44 @@ function List(): React.ReactElement {
   );
 }
 
+/** A viewport whose width the test switches across the phone breakpoint. */
+function switchableViewport(): (phone: boolean) => void {
+  let phone = false;
+  const listeners = new Set<() => void>();
+  vi.stubGlobal('matchMedia', (query: string) => ({
+    get matches() {
+      return phone;
+    },
+    media: query,
+    addEventListener: (_: string, listener: () => void) =>
+      listeners.add(listener),
+    removeEventListener: (_: string, listener: () => void) =>
+      listeners.delete(listener),
+  }));
+  return (next) => {
+    phone = next;
+    act(() => {
+      for (const listener of listeners) listener();
+    });
+  };
+}
+
+const selectableColumns: ColumnDef<Item>[] = [
+  {
+    id: 'select',
+    header: 'Select',
+    cell: ({ row }) => (
+      <input
+        type='checkbox'
+        aria-label={`Select ${row.original.id}`}
+        checked={row.getIsSelected()}
+        onChange={(event) => row.toggleSelected(event.target.checked)}
+      />
+    ),
+  },
+  ...columns,
+];
+
 afterEach(() => {
   vi.unstubAllGlobals();
 });
@@ -96,6 +135,55 @@ describe('DataTable cards on phones', () => {
     expect(
       within(screen.getByRole('list')).getAllByRole('article')[0],
     ).toHaveAccessibleName('row-11');
+  });
+
+  it('keeps selection, page and sort when the width crosses the phone breakpoint', async () => {
+    const setPhone = switchableViewport();
+    const user = userEvent.setup();
+    function Selectable(): React.ReactElement {
+      const [sorting, setSorting] = useState<SortingState>([]);
+      return (
+        <DataTable
+          columns={selectableColumns}
+          data={rows}
+          getRowId={(row) => row.id}
+          showSelectedCount={false}
+          sortingState={sorting}
+          onSortingChange={setSorting}
+          renderCard={(row) => (
+            <article aria-label={row.original.id}>
+              {row.getIsSelected() ? 'selected' : 'not selected'}
+            </article>
+          )}
+        />
+      );
+    }
+    await renderWithApp(<Selectable />, { namespace, namespaces });
+
+    // Desktop: sort descending from the header, go to page 2, select a row there.
+    await user.click(
+      screen.getByRole('button', { name: 'Amount', exact: true }),
+    );
+    await user.click(await screen.findByRole('menuitem', { name: 'Desc' }));
+    await user.click(screen.getByRole('button', { name: 'Go to next page' }));
+    await user.click(screen.getByRole('checkbox', { name: 'Select row-0' }));
+
+    setPhone(true);
+    expect(screen.queryByRole('table')).not.toBeInTheDocument();
+    expect(screen.getByText('Page 2 of 2')).toBeVisible();
+    const cards = within(screen.getByRole('list')).getAllByRole('article');
+    expect(cards.map((card) => card.getAttribute('aria-label'))).toEqual([
+      'row-1',
+      'row-0',
+    ]);
+    expect(cards[1]).toHaveTextContent(/^selected$/);
+
+    setPhone(false);
+    expect(screen.getByRole('table')).toBeVisible();
+    expect(screen.getByText('Page 2 of 2')).toBeVisible();
+    expect(
+      screen.getByRole('checkbox', { name: 'Select row-0' }),
+    ).toBeChecked();
   });
 
   it('keeps the table on wider screens', async () => {

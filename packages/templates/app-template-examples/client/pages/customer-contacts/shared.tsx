@@ -114,7 +114,7 @@ export function Choice({
       items={options}
       disabled={disabled}
     >
-      <SelectTrigger aria-label={label} className='w-full sm:w-40'>
+      <SelectTrigger aria-label={label} className='w-full md:w-40'>
         <SelectValue />
       </SelectTrigger>
       <SelectContent className='w-auto max-w-[min(var(--container-sm),var(--available-width))] min-w-(--anchor-width) [&_[data-slot=select-item]>:first-child]:whitespace-normal'>
