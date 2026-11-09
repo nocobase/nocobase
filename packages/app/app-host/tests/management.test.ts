@@ -965,7 +965,8 @@ describe('managed host reconciliation', () => {
       deploymentSet(3, artifact, { desiredState: 'stopped' }),
     );
     expect(stopped.status.deployments[0]?.observedState).toBe('stopped');
-    expect(host.registry.has('customer')).toBe(true);
+    expect(host.registry.has('customer')).toBe(false);
+    await expect(host.registry.ensureActive('customer')).rejects.toThrow();
     expect(host.registry.isActive('customer')).toBe(false);
 
     const started = await host.management.startDeployment({
@@ -974,6 +975,9 @@ describe('managed host reconciliation', () => {
     });
     expect(started.deployments[0]?.observedState).toBe('running');
     expect(host.registry.isActive('customer')).toBe(true);
+    await host.management.stopDeployment('customer');
+    expect(host.registry.has('customer')).toBe(false);
+    await expect(host.registry.ensureActive('customer')).rejects.toThrow();
   });
 
   it('applies and removes one managed deployment without a complete set', async () => {

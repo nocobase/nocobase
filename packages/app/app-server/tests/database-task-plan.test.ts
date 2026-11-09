@@ -292,3 +292,90 @@ describe('a dry run of the database tasks', () => {
     ).rejects.toThrow('An unlock has no dry run');
   });
 });
+
+it('coordinates startup and manual plans without recording deferred module tasks', async () => {
+  const { paths, config, contributions, both, migration, seed, inspect } =
+    await fixture();
+  migration('001_base', 'base_rows');
+  migration('002_module', 'module_rows');
+  seed('003_base', 'base_rows');
+  seed('004_module', 'module_rows');
+  const { ServiceContainer } = await import('@nocobase/service-provider');
+  const { databaseTaskCoordinatorToken } =
+    await import('../src/database/index.js');
+  const container = new ServiceContainer();
+  let includeModule = false;
+  let calls = 0;
+  container.singleton(databaseTaskCoordinatorToken, () => async (context) => {
+    calls += 1;
+    return context.execute({
+      taskFilter: (task) => includeModule || task.name.includes('base'),
+    });
+  });
+  const options = { paths, contributions, kind: both, container };
+  const first = await runAppDatabaseTasks(config, options);
+  expect(first.results.flatMap((result) => result.executed ?? [])).toEqual([
+    '001_base',
+    '003_base',
+  ]);
+  await inspect(async (client) => {
+    expect(await client.schema.hasTable('module_rows')).toBe(false);
+    expect(await client('base_rows').select()).toHaveLength(1);
+  });
+  includeModule = true;
+  const second = await runAppDatabaseTasks(config, options);
+  expect(second.results.flatMap((result) => result.executed ?? [])).toEqual([
+    '002_module',
+    '004_module',
+  ]);
+  expect(calls).toBe(2);
+  await inspect(async (client) => {
+    expect(await client('module_rows').select()).toHaveLength(1);
+    expect(await client('base_rows').select()).toHaveLength(1);
+  });
+  // Excluding a task never removes its source from immutable-history validation.
+  includeModule = false;
+  migration('002_module', 'changed_module_rows');
+  const drift = await runAppDatabaseTasks(config, options);
+  expect(
+    drift.results
+      .flatMap((result) => result.warnings ?? [])
+      .some((warning) => warning.name === '002_module'),
+  ).toBe(true);
+});
+
+it('holds a database task lease across coordinator work and releases it after failure', async () => {
+  const { config } = await fixture();
+  const database = createAppDatabaseManager(config)!;
+  const { withDatabaseTaskLock } = await import('@nocobase/db');
+  const connection = database.connection('main');
+  const options = {
+    tableName: '__coordinator_lock',
+    label: 'Coordinator',
+    acquireTimeoutMs: 0,
+  };
+  const entered = Promise.withResolvers<void>();
+  const release = Promise.withResolvers<void>();
+  const first = withDatabaseTaskLock(connection, options, async () => {
+    entered.resolve();
+    await release.promise;
+    throw new Error('activation failed');
+  });
+  const failure = first.catch((error: unknown) => error);
+  try {
+    await entered.promise;
+    await expect(
+      withDatabaseTaskLock(connection, options, async () => 'unexpected'),
+    ).rejects.toThrow();
+  } finally {
+    release.resolve();
+    expect(await failure).toMatchObject({ message: 'activation failed' });
+  }
+  try {
+    await expect(
+      withDatabaseTaskLock(connection, options, async () => 'retry'),
+    ).resolves.toBe('retry');
+  } finally {
+    await database.destroy();
+  }
+});

@@ -32,7 +32,9 @@ export function normalizePluginPackageNames(
     }
     if (
       name.startsWith(PACKAGE_SCOPE) ||
-      /^@[a-z0-9][a-z0-9-]*\/app-plugin-[a-z0-9]+(?:-[a-z0-9]+)*$/u.test(name)
+      /^@[a-z0-9][a-z0-9-]*\/app-(?:plugin|module)-[a-z0-9]+(?:-[a-z0-9]+)*$/u.test(
+        name,
+      )
     ) {
       return name;
     }

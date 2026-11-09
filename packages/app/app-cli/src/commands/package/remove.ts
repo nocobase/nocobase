@@ -159,7 +159,10 @@ export default class PackageRemove extends PluginUnregistrationCommand {
       packageName,
     );
 
-    if (packageName.startsWith(PLUGIN_PACKAGE_PREFIX)) {
+    if (
+      packageName.startsWith(PLUGIN_PACKAGE_PREFIX) ||
+      packageName.startsWith('@nocobase/app-module-')
+    ) {
       return this.unregisterPlugin(packageName, {
         app: flags.app,
         dependencySections,

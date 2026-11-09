@@ -749,3 +749,10 @@ describe('removePluginSkills', () => {
     ).toEqual([]);
   });
 });
+
+it('preserves a module package identity when normalizing registration', () => {
+  expect(pluginPackageName('@nocobase/app-module-assets')).toBe(
+    '@nocobase/app-module-assets',
+  );
+  expect(pluginShortName('@nocobase/app-module-assets')).toBe('assets');
+});

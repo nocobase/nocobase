@@ -547,7 +547,7 @@ export class ManagedReconciler {
     return this.enqueue(async () => {
       const status = this.requireStatus(appId);
       const revision = this.nextRevision();
-      await this.registry.evict(appId, {
+      await this.registry.unregister(appId, {
         reason: `deployment ${status.id} stopped`,
       });
       this.statuses.set(status.id, {
@@ -804,7 +804,7 @@ export class ManagedReconciler {
       return;
     }
     if (spec.desiredState === 'stopped') {
-      await this.registry.evict(spec.appId, {
+      await this.registry.unregister(spec.appId, {
         reason: `deployment ${spec.id} stopped`,
       });
       this.statuses.set(spec.id, {
