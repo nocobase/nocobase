@@ -870,6 +870,8 @@ export const RunCliCredentialSchema: z.ZodType<RunCliCredential> = z.object({
 /** `GET /api/agents/runs/current`: the run a run token belongs to. */
 export interface RunSelf {
   readonly runId: string;
+  /** Whether this run was dispatched to start an independent tool session. */
+  readonly freshSession: boolean;
   readonly attempt: number;
   readonly status: RunStatus;
   readonly agent: { readonly id: string; readonly name: string };
@@ -882,6 +884,10 @@ export interface RunSelf {
 
 export const RunSelfSchema: z.ZodType<RunSelf> = z.object({
   runId: z.string(),
+  freshSession: z.boolean().meta({
+    description:
+      'Whether this run was dispatched to start an independent tool session.',
+  }),
   attempt: z.number().int().positive(),
   status: RunStatusSchema,
   agent: z.object({ id: z.string(), name: z.string() }),

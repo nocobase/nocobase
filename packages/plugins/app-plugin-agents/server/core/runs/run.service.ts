@@ -2199,6 +2199,7 @@ export function createRunService(deps: RunServiceDeps): RunService {
       const agent = await findAgent(conn, run.agentId);
       return {
         runId: run.id,
+        freshSession: run.freshSession === true,
         attempt: Number(run.attempt),
         status: run.status,
         agent: { id: run.agentId, name: agent?.name ?? run.agentId },

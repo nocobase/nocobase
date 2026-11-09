@@ -800,45 +800,68 @@ describe('run lifecycle', () => {
     expect(orphan.body.error.reason).toBe('LEASE_LOST');
   });
 
-  it('serves the run to its token while the run is held, and the context again', async () => {
-    h = await createHarness();
-    const { runner, runId, token, inputIds } = await claimed();
-    const self = await h.request('GET', '/agents/runs/current', {
-      runToken: token,
-    });
-    expect(self.body.data).toMatchObject({
-      runId,
-      status: 'dispatched',
-      subjectRef: { kind: 'sample', id: '1' },
-      actorUserId: 'owner',
-      cancelRequested: false,
-    });
-    expect(
-      self.body.data.inputs.map((input: { id: string }) => input.id),
-    ).toEqual(inputIds);
-    expect(
-      (
-        await h.request('GET', '/agents/runs/current/context', {
-          runToken: token,
-        })
-      ).body.data,
-    ).toEqual({ sampleId: '1' });
-    expect(
-      (await h.request('GET', '/agents/runs/current', { runToken: 'fgr_bad' }))
-        .status,
-    ).toBe(401);
+  it.each([true, false, undefined])(
+    'serves the held run and its context with freshSession=%s',
+    async (freshSession) => {
+      h = await createHarness();
+      const agentId = await h.createAgent();
+      await h.services.runs.enqueue({
+        agentId,
+        subject: { kind: 'sample', id: '1' },
+        actorUserId: 'owner',
+        freshSession,
+        input: {
+          type: 'comment',
+          actor: { kind: 'user', id: 'owner', name: 'Owner' },
+          text: 'Please review.',
+        },
+      });
+      const runner = await h.registerRunner();
+      const [payload] = await claim(h, runner);
+      const runId = payload.run.id;
+      const token = payload.cli.credential.content.token;
+      const inputIds = payload.inputs.map((input: { id: string }) => input.id);
+      const self = await h.request('GET', '/agents/runs/current', {
+        runToken: token,
+      });
+      expect(self.body.data).toMatchObject({
+        runId,
+        freshSession: freshSession === true,
+        status: 'dispatched',
+        subjectRef: { kind: 'sample', id: '1' },
+        actorUserId: 'owner',
+        cancelRequested: false,
+      });
+      expect(
+        self.body.data.inputs.map((input: { id: string }) => input.id),
+      ).toEqual(inputIds);
+      expect(
+        (
+          await h.request('GET', '/agents/runs/current/context', {
+            runToken: token,
+          })
+        ).body.data,
+      ).toEqual({ sampleId: '1' });
+      expect(
+        (
+          await h.request('GET', '/agents/runs/current', {
+            runToken: 'fgr_bad',
+          })
+        ).status,
+      ).toBe(401);
 
-    await post(runner, runId, 'start', start);
-    await post(runner, runId, 'complete', {
-      summary: '',
-      handledInputIds: inputIds,
-    });
-    const after = await h.request('GET', '/agents/runs/current', {
-      runToken: token,
-    });
-    expect(after.status).toBe(401);
-    expect(after.body.error.reason).toBe('RUN_TOKEN_INVALID');
-  });
+      await post(runner, runId, 'start', start);
+      await post(runner, runId, 'complete', {
+        summary: '',
+        handledInputIds: inputIds,
+      });
+      const after = await h.request('GET', '/agents/runs/current', {
+        runToken: token,
+      });
+      expect(after.status).toBe(401);
+      expect(after.body.error.reason).toBe('RUN_TOKEN_INVALID');
+    },
+  );
 
   it('refuses a runner that never held the run', async () => {
     h = await createHarness();
