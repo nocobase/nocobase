@@ -36,6 +36,7 @@ async function fixture({
   failReset = '',
   failMigration = false,
   emptyMigrations = false,
+  missingMigrations = false,
   failShutdown = false,
 } = {}) {
   const databases = await provisionTestDatabases({
@@ -118,7 +119,7 @@ async function fixture({
   });
   for (const name of ['main', 'reports']) {
     const migrationDirectory = fixture.paths.database(`${name}/migrations`);
-    mkdirSync(migrationDirectory, { recursive: true });
+    if (!missingMigrations) mkdirSync(migrationDirectory, { recursive: true });
     const check = hooks
       ? `
 const coordinator = createAppDatabaseManager(config.get('database'));
@@ -128,7 +129,7 @@ try {
 } finally { await coordinator.destroy(); }
 `
       : '';
-    if (!emptyMigrations)
+    if (!emptyMigrations && !missingMigrations)
       writeFileSync(
         path.join(migrationDirectory, '001_create.ts'),
         `
@@ -213,7 +214,10 @@ describe('database hooks during real CLI tasks', () => {
         '--no-collections',
         '--json',
       ]);
-      expect(run.json()).toMatchObject({ ok: true });
+      expect(run.json()).toMatchObject({
+        ok: true,
+        result: { resetConnections: targets },
+      });
       expect(f.resets).toEqual([targets]);
       expect(f.events).toEqual([
         ...targets.map((name) => `reset:${name}`),
@@ -239,36 +243,41 @@ describe('database hooks during real CLI tasks', () => {
     },
   );
 
-  it('resets and seeds even with an empty migrations directory', async () => {
-    const f = await fixture({ emptyMigrations: true });
-    const run = await runAppCommand(f.bind(Reset), [
-      '--force',
-      '--no-collections',
-      '--json',
-    ]);
-    expect(run.json()).toMatchObject({
-      ok: true,
-      result: {
-        results: [
-          {
-            kind: 'migrations',
-            status: 'completed',
-            fresh: true,
-            executed: [],
-          },
-          { kind: 'seeds', status: 'completed', freshInstall: true },
-        ],
-      },
-    });
-    expect(f.events).toEqual([
-      'reset:main',
-      'beforeTasks',
-      'generate',
-      'cleanup',
-      'destroy',
-    ]);
-    expect(await f.tables('main')).not.toContain('sentinel');
-  });
+  it.each([false, true])(
+    'resets and seeds with empty migrations, missing directory=%s',
+    async (missingMigrations) => {
+      const f = await fixture({ emptyMigrations: true, missingMigrations });
+      const run = await runAppCommand(f.bind(Reset), [
+        '--force',
+        '--no-collections',
+        '--json',
+      ]);
+      expect(run.json()).toMatchObject({
+        ok: true,
+        result: {
+          resetConnections: ['main'],
+          results: [
+            {
+              ...(missingMigrations ? { reason: 'missing-directory' } : {}),
+              kind: 'migrations',
+              status: 'completed',
+              fresh: true,
+              executed: [],
+            },
+            { kind: 'seeds', status: 'completed', freshInstall: true },
+          ],
+        },
+      });
+      expect(f.events).toEqual([
+        'reset:main',
+        'beforeTasks',
+        'generate',
+        'cleanup',
+        'destroy',
+      ]);
+      expect(await f.tables('main')).not.toContain('sentinel');
+    },
+  );
 
   it('previews all connections without reset, hooks or database mutations', async () => {
     const f = await fixture();
@@ -317,9 +326,12 @@ describe('database hooks during real CLI tasks', () => {
       '--no-collections',
       '--json',
     ]);
+    expect(run.exitCode).toBe(1);
     expect(run.json()).toMatchObject({
       ok: false,
+      status: 'failure',
       error: {
+        code: 'DATABASE_TASK_FAILED',
         message: expect.stringContaining('fixture hook failed'),
         details: {
           failure: {
@@ -352,6 +364,7 @@ describe('database hooks during real CLI tasks', () => {
     expect(run.json()).toMatchObject({
       ok: false,
       error: {
+        code: 'DATABASE_TASK_FAILED',
         message: expect.stringContaining('fixture reset failed'),
         details: {
           failure: {
