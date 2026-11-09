@@ -1472,9 +1472,13 @@ export function createChatRoutes(
       operationId: 'agentsUpdateChatPreferences',
       ...cliRoute({
         command: 'conversation preferences update',
-        flags: { defaultAgentId: { name: 'default-agent' } },
+        flags: {
+          defaultAgentId: { name: 'default-agent' },
+          runnerPreference: { name: 'runner-preference' },
+        },
       }),
-      description: "Sets the caller's own default chat agent.",
+      description:
+        "Sets the caller's own default chat agent and which kind of runner their runs go to first. The runner preference applies to runs queued after the change.",
       responses: {
         200: dataResponse(ChatDefaultAgentSchema),
         ...apiErrorResponses,

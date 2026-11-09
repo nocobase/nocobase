@@ -275,3 +275,100 @@ describe('claims paced by how busy each runner is with the tool', () => {
     expect(next.map((payload) => payload.run.id)).toEqual([run]);
   });
 });
+
+describe('claims paced by the kind of runner the actor prefers', () => {
+  let h: Harness | undefined;
+  afterEach(async () => {
+    await h?.close();
+    h = undefined;
+  });
+
+  async function paced(preference: 'auto' | 'personal' | 'team') {
+    const time = virtualTime();
+    h = await createHarness({ claimPause: (ms) => time.pause(ms) });
+    time.attach(h);
+    await h.services.chat.updatePreferences('owner', {
+      runnerPreference: preference,
+    });
+    const agent = await h.createAgent({ maxConcurrentRuns: 8 });
+    const team = await h.registerRunner({ name: 'team', slots: 2 });
+    const personal = await h.registerRunner({
+      name: 'personal',
+      trust: 'ownerOnly',
+      ownerUserId: 'owner',
+      slots: 2,
+    });
+    return { harness: h, time, agent, team, personal };
+  }
+
+  it.each([
+    ['personal', 'personal'],
+    ['team', 'team'],
+  ] as const)(
+    'gives a run preferring %s runners to an idle one of that kind',
+    async (preference, winner) => {
+      const { harness, time, agent, team, personal } = await paced(preference);
+      const run = await harness.enqueue(agent);
+      const [fromTeam, fromPersonal] = await Promise.all([
+        time.drive(team, 1),
+        time.drive(personal, 1),
+      ]);
+      const taken = winner === 'team' ? fromTeam : fromPersonal;
+      expect(taken.map((payload) => payload.run.id)).toEqual([run]);
+      expect([...fromTeam, ...fromPersonal]).toHaveLength(1);
+    },
+  );
+
+  it.each([
+    ['personal', 'team'],
+    ['team', 'personal'],
+  ] as const)(
+    'lets the other kind take a run preferring %s runners one second after its queueing when none of them can',
+    async (preference, other) => {
+      const { harness, time, agent, ...runners } = await paced(preference);
+      const run = await harness.enqueue(agent);
+      const queuedAt = harness.clock.now().getTime();
+      // The preferred runner is offline: it never asks.
+      const taken = await time.drive(runners[other], 1);
+      expect(taken.map((payload) => payload.run.id)).toEqual([run]);
+      expect(time.waits).toEqual([1000]);
+      expect(harness.clock.now().getTime() - queuedAt).toBe(1000);
+    },
+  );
+
+  it('lets a shared runner take a run preferring personal runners once the personal one is full', async () => {
+    const { harness, time, agent, team, personal } = await paced('personal');
+    await harness.enqueue(agent, 'first');
+    await harness.enqueue(agent, 'second');
+    expect(await time.drive(personal, 2)).toHaveLength(2);
+
+    const run = await harness.enqueue(agent, 'third');
+    const queuedAt = harness.clock.now().getTime();
+    const [fromTeam, fromPersonal] = await Promise.all([
+      time.drive(team, 1),
+      time.drive(personal, 1),
+    ]);
+    expect(fromPersonal).toEqual([]);
+    expect(fromTeam.map((payload) => payload.run.id)).toEqual([run]);
+    expect(harness.clock.now().getTime() - queuedAt).toBe(1000);
+  });
+
+  it('adds no wait when the actor has no preference', async () => {
+    const { harness, time, agent, team } = await paced('auto');
+    const run = await harness.enqueue(agent);
+    const taken = await time.drive(team, 1);
+    expect(taken.map((payload) => payload.run.id)).toEqual([run]);
+    expect(time.waits).toEqual([]);
+  });
+
+  it('keeps the preference a run was queued with', async () => {
+    const { harness, time, agent, team } = await paced('auto');
+    const run = await harness.enqueue(agent);
+    await harness.services.chat.updatePreferences('owner', {
+      runnerPreference: 'personal',
+    });
+    const taken = await time.drive(team, 1);
+    expect(taken.map((payload) => payload.run.id)).toEqual([run]);
+    expect(time.waits).toEqual([]);
+  });
+});
