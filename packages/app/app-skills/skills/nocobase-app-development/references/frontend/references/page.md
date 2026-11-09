@@ -305,8 +305,8 @@ The shell header shows the current page's breadcrumb after the sidebar toggle, o
 
 - It is a muted text link with an arrow and "Back" (`navigation.back`), turning to the foreground on hover.
 - By default the back link leads to the parent route with its recorded query. The parent is resolved by route, not by path segment, so a two-segment detail route returns to its real list too.
-- Without a recorded parent visit, including a directly opened detail or reload, the back link uses the default parent with an empty query. For a deliberate deep-link contract that forwards known list parameters, supply an explicit `to` with an allowlisted query; never borrow arbitrary detail parameters.
-- `to` selects another registered, authorized application page, for a page that belongs to exactly one parent, such as a record page declared beside its list: `<BackButton to={{ pathname: '/customers', search: searches.get('/customers') ?? '' }} />`. For a module reused under several parents — a record's page opened from another page as well (["The same detail page over another page" in `child-routes.md`](child-routes.md#the-same-detail-page-over-another-page)) — omit it, or keep `..` as its `pathname` when only the query string changes, as the previous point does, so the back button follows the parent route it was opened from; a hard-coded path sends a user who came from elsewhere to a page they were not on. `children` replaces the label; keep "Back" unless the destination needs naming.
+- Without a recorded parent visit, including a directly opened detail or reload, the back link uses the default parent with an empty query. A record page under a list passes an explicit `to={{ pathname: '..', search: useAncestorSearch(owner, LIST_KEYS) }}` instead, which takes only the list's declared keys from the current URL after a reload ([navigation](navigation.md)); never borrow arbitrary detail parameters.
+- `to` selects another registered, authorized application page, for a page that belongs to exactly one parent, such as a record page declared beside its list: `<BackButton to={{ pathname: '/customers', search: useAncestorSearch('/customers', CUSTOMER_LIST_KEYS) }} />`. For a module reused under several parents — a record's page opened from another page as well (["The same detail page over another page" in `child-routes.md`](child-routes.md#the-same-detail-page-over-another-page)) — omit it, or keep `..` as its `pathname` when only the query string changes, as the previous point does, so the back button follows the parent route it was opened from; a hard-coded path sends a user who came from elsewhere to a page they were not on. `children` replaces the label; keep "Back" unless the destination needs naming.
 - It navigates rather than going back in the browser history, which a page opened from a link or a refresh does not have, and it replaces the history entry, as closing an overlay does: the browser's Back then does not reopen the page just left, such as a form that would come back empty.
 
 ### The breadcrumb in the header
@@ -317,20 +317,23 @@ By default the trail is generated from the matched route levels:
 
 - A route with `breadcrumb` is a level, titled by it; a menu page (`navigation` with a component) without one is a level titled by its `navigation.title`. Tab, dialog and drawer routes declare neither and add no level, so an overlay leaves the page beneath as the current level.
 - A level the viewer may not open is left out, so a denied page's title never shows.
-- Earlier page levels link to their actual URLs with the query recorded when that ancestor was last visited in the current route ancestry. This restores its search, filters and page without copying detail-only parameters. An ancestor never visited in this mounted shell (for example, a direct detail URL or a reload) links without a query; use an explicit `usePageBreadcrumb` destination when a deep link must carry a known parent query. A group without a component is plain text. The last level is the current page and is not a link.
+- Earlier page levels link to their actual URLs with the query recorded when that ancestor was last visited in the current route ancestry. This restores its search, filters and page without copying detail-only parameters. An ancestor never visited in this mounted shell (for example, a direct detail URL or a reload) links without a query, so a record page or child page under a list declares its parent with `usePageBreadcrumb` and `useAncestorSearch(owner, LIST_KEYS)`, which then takes the list's declared keys from the current URL ([navigation](navigation.md)). A group without a component is plain text. The last level is the current page and is not a link.
 - `breadcrumb.title` is a static translation key and names the kind of page ("Project details"), so it can sit on a path with parameters and is known before anything loads.
 
 Every independent detail page declares its complete trail with `usePageBreadcrumb`, including before loading succeeds. Use the [standard detail → edit pattern](navigation.md) when generating a page: it covers dynamic names, logical parents outside the URL hierarchy, source lists/tabs, direct entry and failure states. Ordinary static nested pages can use `breadcrumb.title`; home and first-level lists do not invent parents.
 
 ```tsx
 import { usePageBreadcrumb } from '@nocobase/app-client';
-import { useRouteSearches } from '../routing/route-context.js'; // adjust from the page's directory
+import { useAncestorSearch } from '../routing/route-context.js'; // adjust from the page's directory
+import { CUSTOMER_LIST_KEYS } from './customers/types.js'; // the list's search, filter and TABLE_URL_KEYS
 
-const searches = useRouteSearches();
 usePageBreadcrumb([
   {
     label: t('navigation.customers'),
-    to: { pathname: '/customers', search: searches.get('/customers') ?? '' },
+    to: {
+      pathname: '/customers',
+      search: useAncestorSearch('/customers', CUSTOMER_LIST_KEYS),
+    },
   },
   { label: customer.data?.name ?? t('customers.detail.title') },
 ]);

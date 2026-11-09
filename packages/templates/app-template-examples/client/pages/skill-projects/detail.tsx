@@ -4,6 +4,7 @@ import { useMemo } from 'react';
 import {
   Link,
   Outlet,
+  useLocation,
   useParams,
   useResolvedPath,
   useOutletContext,
@@ -15,15 +16,18 @@ import { Alert, AlertDescription } from '#components/ui/alert';
 import { Button } from '#components/ui/button';
 import { Skeleton } from '#components/ui/skeleton';
 import { useListData } from '#hooks/use-list-data';
-import { useRouteSearches } from '../../routing/route-context.js';
+import { TABLE_URL_KEYS } from '#hooks/use-table-url-state';
+import { useAncestorSearch } from '../../routing/route-context.js';
 import type { SkillProject } from './index.js';
 
 /** A record always names its list, including on a direct open or an unsuccessful load. */
 export default function SkillProjectDetailPage() {
   const { t } = useTranslation();
   const { projectId } = useParams();
+  const location = useLocation();
   const owner = useResolvedPath('..').pathname;
-  const searches = useRouteSearches();
+  // The list's own keys: after a reload of this page or its edit dialog, they come from the URL the list linked to.
+  const ownerSearch = useAncestorSearch(owner, TABLE_URL_KEYS);
   const ownerContext = useOutletContext<{
     reload: () => void;
     onSaved: (project: SkillProject) => void;
@@ -51,7 +55,7 @@ export default function SkillProjectDetailPage() {
   usePageBreadcrumb([
     {
       label: t('skillProjects.title'),
-      to: { pathname: owner, search: searches.get(owner) ?? '' },
+      to: { pathname: owner, search: ownerSearch },
     },
     { label: project?.name ?? t('skillProjects.detail') },
   ]);
@@ -62,7 +66,11 @@ export default function SkillProjectDetailPage() {
           title={project?.name ?? t('skillProjects.detail')}
           actions={
             project ? (
-              <Button render={<Link to='edit' />}>
+              <Button
+                render={
+                  <Link to={{ pathname: 'edit', search: location.search }} />
+                }
+              >
                 {t('skillProjects.editAction')}
               </Button>
             ) : undefined

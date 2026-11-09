@@ -60,7 +60,7 @@ export interface CustomerPageOutletContext extends CustomerEditOutletContext {
 }
 ```
 
-Each owner passes `source` through outlet context: its translated title and its application-absolute pathname with `useRouteSearches().get(ownerPath) ?? ''`. A list-tab owner uses its translated tab label and `useListTabs().source`. The source remains available when a record is opened directly because the owner route still mounts; the query defaults to empty.
+Each owner passes `source` through outlet context: its translated title and its application-absolute pathname with `useAncestorSearch(ownerPath, CUSTOMER_LIST_KEYS)` (the owner list's declared search, filter and `TABLE_URL_KEYS`). A list-tab owner uses its translated tab label and `useListTabs().source`, which falls back to the tab's `parameterKeys` the same way. The source remains available when a record is opened directly because the owner route still mounts; after a direct entry or reload its query comes from those keys in the current URL, which the list's record links carried ([navigation](../navigation.md)).
 
 ## The page
 

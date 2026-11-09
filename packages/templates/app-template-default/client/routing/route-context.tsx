@@ -36,6 +36,30 @@ export function useRouteSearches(): ReadonlyMap<string, string> {
   return useContext(RouteSearchContext);
 }
 
+/**
+ * The query to link back to an ancestor page with, such as a detail's list.
+ *
+ * It is the query recorded when the ancestor was last visited. After a direct entry or a reload nothing is recorded,
+ * so it takes the ancestor's public keys from the current URL instead, where the links that led here carried them
+ * (a list links to its records with its own query). Only the listed keys are taken: a detail's own parameters never
+ * reach its list.
+ */
+export function useAncestorSearch(
+  pathname: string,
+  publicKeys: readonly string[],
+): string {
+  const searches = useRouteSearches();
+  const { search } = useLocation();
+  const recorded = searches.get(pathname.replace(/\/+$/u, '') || '/');
+  if (recorded !== undefined) return recorded;
+  const kept = new URLSearchParams();
+  for (const [key, value] of new URLSearchParams(search)) {
+    if (publicKeys.includes(key)) kept.append(key, value);
+  }
+  const query = kept.toString();
+  return query ? `?${query}` : '';
+}
+
 const RouteTreeContext = createContext<readonly AppClientRegisteredRoute[]>([]);
 
 /** The shell's page permission check (`useRouteNavigation`), shared so pages reuse it instead of checking again. */

@@ -7,7 +7,7 @@ import SkillProjectDetailPage from '../../client/pages/skill-projects/detail.js'
 import { answerApi } from '@nocobase/app-testing/client';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { Route, Routes, useNavigate } from 'react-router';
+import { Route, Routes, useLocation, useNavigate } from 'react-router';
 import { afterEach, expect, it, vi } from 'vitest';
 import { renderSettingsClient } from '../helpers/settings-client.js';
 import SkillProjectsPage from '../../client/pages/skill-projects/index.js';
@@ -787,6 +787,77 @@ it('keeps a default list parent while a directly opened record loads, then names
   await screen.findByRole('heading', { name: 'Alpha' });
   expect(trail).toHaveTextContent('Alpha');
   view.unmount();
+});
+
+it('returns to the same list page after a reloaded edit is saved, without detail parameters (mobile.md M2.3)', async () => {
+  function LocationProbe() {
+    const location = useLocation();
+    return (
+      <output data-testid='location'>
+        {location.pathname + location.search}
+      </output>
+    );
+  }
+  const user = userEvent.setup();
+  const writes: unknown[] = [];
+  let current = original;
+  // A fresh shell at the edit URL is what a reload leaves: no recorded visit to the list.
+  await renderSettingsClient(
+    <Routes>
+      <Route
+        path='/skill-projects'
+        element={
+          <RouteTreeProvider routes={detailRoutes}>
+            <PageBreadcrumbProvider>
+              <Breadcrumbs />
+              <LocationProbe />
+              <SkillProjectsPage />
+            </PageBreadcrumbProvider>
+          </RouteTreeProvider>
+        }
+      >
+        <Route path=':projectId/details' element={<SkillProjectDetailPage />}>
+          <Route path='edit' element={<SkillProjectEditPage />} />
+        </Route>
+      </Route>
+    </Routes>,
+    {
+      route:
+        '/skill-projects/abc/details/edit?page=2&pageSize=20&detailTab=activity',
+      namespace,
+      namespaces,
+      fetch: answerApi(({ path, method, json }) => {
+        if (path === 'skillProjects') return list(current.name);
+        if (method === 'PATCH') {
+          writes.push(json);
+          current = { ...original, name: (json as { name: string }).name };
+        }
+        return { data: current };
+      }),
+    },
+  );
+  const name = await screen.findByRole('textbox', { name: 'Name' });
+  await user.clear(name);
+  await user.type(name, 'Saved Alpha');
+  await user.click(screen.getByRole('button', { name: 'Save', exact: true }));
+  await waitFor(() =>
+    expect(screen.getByTestId('location')).toHaveTextContent(
+      '/skill-projects/abc/details?page=2&pageSize=20&detailTab=activity',
+    ),
+  );
+  expect(writes).toEqual([{ name: 'Saved Alpha' }]);
+  const back = screen.getByRole('link', { name: 'Back to Projects' });
+  expect(back).toHaveAttribute('href', '/skill-projects?page=2&pageSize=20');
+  expect(screen.getByRole('link', { name: 'Projects' })).toHaveAttribute(
+    'href',
+    '/skill-projects?page=2&pageSize=20',
+  );
+  await user.click(back);
+  await waitFor(() =>
+    expect(screen.getByTestId('location')).toHaveTextContent(
+      /^\/skill-projects\?page=2&pageSize=20$/u,
+    ),
+  );
 });
 
 it.each([403, 404, 500])(

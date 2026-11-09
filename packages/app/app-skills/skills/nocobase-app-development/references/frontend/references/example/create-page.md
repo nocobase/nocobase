@@ -12,7 +12,7 @@ import { useTranslation } from '@nocobase/i18n/client';
 import { type ReactElement, useEffect, useState } from 'react';
 import { useResolvedPath, useNavigate, useOutletContext } from 'react-router';
 
-import { useRouteSearches } from '../../routing/route-context.js';
+import { useAncestorSearch } from '../../routing/route-context.js';
 import { PageContainer } from '#components/page-container';
 import { PageHeader } from '#components/page-header';
 import { RouteChildPage } from '#components/route-child-page';
@@ -20,7 +20,7 @@ import { Button } from '#components/ui/button';
 import { Spinner } from '#components/ui/spinner';
 
 import { ProjectForm } from './project-form.js';
-import type { ProjectsOutletContext } from './types.js';
+import { PROJECT_LIST_KEYS, type ProjectsOutletContext } from './types.js';
 
 const FORM_ID = 'project-create-form';
 
@@ -29,8 +29,8 @@ export default function CreateProjectPage(): ReactElement {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const owner = useResolvedPath('..').pathname;
-  const searches = useRouteSearches();
-  const parentSearch = searches.get(owner) ?? '';
+  // The list's query, also after a reload of this page: the list links here with its own query.
+  const parentSearch = useAncestorSearch(owner, PROJECT_LIST_KEYS);
   // The list stays mounted underneath with its old rows, so it is refreshed through the outlet context (R2, T3.7).
   const { reload } = useOutletContext<ProjectsOutletContext>();
   const [submitting, setSubmitting] = useState(false);

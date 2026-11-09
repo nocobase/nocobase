@@ -96,7 +96,10 @@ export default function SkillProjectsPage(): ReactElement {
         header: t('skillProjects.name'),
         cell: ({ row }) => (
           <RecordLink
-            to={`${row.original.id}/details`}
+            to={{
+              pathname: `${row.original.id}/details`,
+              search: location.search,
+            }}
             className='block max-w-64 truncate'
             title={row.original.name}
           >
@@ -237,7 +240,10 @@ export default function SkillProjectsPage(): ReactElement {
             renderCard={(row) => (
               <div className='flex items-center gap-2 rounded-lg border p-4'>
                 <RecordLink
-                  to={`${row.original.id}/details`}
+                  to={{
+                    pathname: `${row.original.id}/details`,
+                    search: location.search,
+                  }}
                   className='min-w-0 flex-1 break-words'
                 >
                   {row.original.name}

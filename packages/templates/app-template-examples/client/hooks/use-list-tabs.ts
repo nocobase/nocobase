@@ -1,5 +1,5 @@
 import { useLocation, useResolvedPath } from 'react-router';
-import { useRouteSearches } from '../routing/route-context.js';
+import { useAncestorSearch } from '../routing/route-context.js';
 
 export interface ListTab {
   readonly path: string;
@@ -20,7 +20,6 @@ export function useListTabs({
 }) {
   const location = useLocation();
   const parent = useResolvedPath('.').pathname.replace(/\/+$/u, '');
-  const searches = useRouteSearches();
   const segment = location.pathname.slice(parent.length + 1).split('/')[0];
   const active = tabs.find((tab) => tab.path === segment);
   const destination = (tab: ListTab) => {
@@ -31,10 +30,12 @@ export function useListTabs({
     return { pathname: `${parent}/${tab.path}`, search: params.toString() };
   };
   const activePath = active ? `${parent}/${active.path}` : undefined;
+  // After a reload of a record under the tab, its list keys come from the URL the tab linked to the record with.
+  const activeSearch = useAncestorSearch(activePath ?? parent, parameterKeys);
   return {
     active,
     source: activePath
-      ? { pathname: activePath, search: searches.get(activePath) ?? '' }
+      ? { pathname: activePath, search: activeSearch }
       : undefined,
     destination,
     fallback: !pending && !active && tabs[0] ? destination(tabs[0]) : undefined,
