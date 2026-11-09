@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   DEFAULT_PRIVATE_REGISTRY,
   declaration,
+  expandEnv,
   maskPrivate,
   notFoundPackage,
   privateLines,
@@ -44,6 +45,46 @@ describe('the private npm registry rules', () => {
     expect(
       maskPrivate('registry=https://pkg-v3.nocobase.com/', PRIVATE),
     ).toEqual({ text: '', masked: 1 });
+  });
+
+  it('resolves environment references as npm and pnpm do', () => {
+    const env = { HOST: 'pkg-v3.nocobase.com', EMPTY: '' };
+    expect(expandEnv('//${HOST}/:_authToken=${TOKEN}', env)).toBe(
+      '//pkg-v3.nocobase.com/:_authToken=${TOKEN}',
+    );
+    expect(expandEnv('a${UNSET?}b', env)).toBe('ab');
+    expect(expandEnv('${EMPTY:-fallback} ${UNSET:-x}', env)).toBe('fallback x');
+    expect(expandEnv('\\${HOST} \\\\${HOST}', env)).toBe(
+      '${HOST} \\pkg-v3.nocobase.com',
+    );
+  });
+
+  it('masks private registry lines however they are written', () => {
+    const env = {
+      PRIVATE_REGISTRY: 'https://pkg-v3.nocobase.com',
+      PRIVATE_HOST: 'PKG-V3.NocoBase.com',
+      MIRROR: 'https://registry.npmmirror.com/',
+    };
+    const machine = [
+      'registry=${MIRROR}',
+      '@nocobase:registry=${PRIVATE_REGISTRY}',
+      '@acme:registry=https://${PRIVATE_HOST}//',
+      '@NocoBase:registry=HTTP://PKG-V3.NOCOBASE.COM',
+      '//${PRIVATE_HOST}/:_authToken=stale-token',
+      '@other:registry=${UNSET_REGISTRY}',
+    ].join('\n');
+    const { text, masked } = maskPrivate(machine, PRIVATE, env);
+    expect(masked).toBe(4);
+    expect(text.split('\n')).toEqual([
+      'registry=${MIRROR}',
+      '@other:registry=${UNSET_REGISTRY}',
+    ]);
+    expect(
+      declaration(['@nocobase:registry=${PRIVATE_REGISTRY}'], PRIVATE, env),
+    ).toEqual({ private: true, nocobaseElsewhere: false });
+    expect(declaration(['@nocobase:registry=${MIRROR}'], PRIVATE, env)).toEqual(
+      { private: false, nocobaseElsewhere: true },
+    );
   });
 
   it('reads a declaration from committed npmrc files', () => {

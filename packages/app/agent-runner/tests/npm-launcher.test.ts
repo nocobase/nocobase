@@ -8,6 +8,7 @@ import {
   mkdirSync,
   readdirSync,
   readFileSync,
+  rmSync,
   statSync,
   writeFileSync,
 } from 'node:fs';
@@ -118,7 +119,11 @@ interface Result {
 }
 
 /** `pnpm install` through the launcher, as the run's wrapper starts it. */
-function install(target: Project, server: CredentialServer): Promise<Result> {
+function install(
+  target: Project,
+  server: CredentialServer,
+  env: Record<string, string> = {},
+): Promise<Result> {
   const pnpm = bundledPnpmEntry();
   if (pnpm === undefined) throw new Error('The runner has no bundled pnpm.');
   return new Promise((resolve) => {
@@ -130,12 +135,15 @@ function install(target: Project, server: CredentialServer): Promise<Result> {
         env: {
           PATH: process.env.PATH,
           HOME: target.home,
+          // pnpm's global configuration directory under HOME on every platform (macOS's default is elsewhere).
+          XDG_CONFIG_HOME: path.join(target.home, '.config'),
           ...PINNED_PNPM_ENV,
           pnpm_config_store_dir: path.join(scratch, 'store'),
           [NPM_DIR_ENV]: target.npmDir,
           [PRIVATE_REGISTRY_ENV]: privateRegistry.url,
           NOCOBASE_RUNNER_GIT_CREDENTIAL_SOCKET: server.socket,
           NOCOBASE_RUNNER_GIT_CREDENTIAL_NONCE: server.nonce,
+          ...env,
         },
       },
     );
@@ -212,6 +220,86 @@ describe('the npm launcher', () => {
     }
   });
 
+  it('keeps out private registry settings written with environment variables, in ~/.npmrc and pnpm’s auth.ini', async () => {
+    const port = new URL(privateRegistry.url).port;
+    const target = project(
+      { '@nocobase/fx-public': '1.0.0', 'left-pad-fx': '1.0.0' },
+      {
+        userNpmrc: `registry=\${MIRROR}\n@nocobase:registry=\${PRIVATE_REGISTRY}\n`,
+        authIni: `@nocobase:registry=\${PRIVATE_HOST}/\n//\${PRIVATE_HOST_ONLY}/:_authToken=stale\n`,
+      },
+    );
+    const { server, asked } = await worker(TOKEN);
+    try {
+      const result = await install(target, server, {
+        MIRROR: mirror.url,
+        PRIVATE_REGISTRY: privateRegistry.url.replace(/\/$/u, ''),
+        PRIVATE_HOST: `HTTP://127.0.0.1:${port}`,
+        PRIVATE_HOST_ONLY: `127.0.0.1:${port}`,
+      });
+      expect({ code: result.code, output: result.output }).toMatchObject({
+        code: 0,
+      });
+      expect(asked).toEqual([]);
+      expect(privateRequests()).toEqual([]);
+      expect(mirrorRequests().map((seen) => seen.url)).toContain(
+        '/@nocobase/fx-public',
+      );
+      expect(leftovers(target)).toEqual([]);
+    } finally {
+      await server.close();
+    }
+  });
+
+  it('uses the private registry after a 404 only for the repository that needed it', async () => {
+    const needing = project({ '@nocobase/fx-private': '1.0.0' });
+    const other = {
+      ...project({ '@nocobase/fx-public': '1.0.0', 'left-pad-fx': '1.0.0' }),
+      npmDir: needing.npmDir,
+    };
+    const { server, asked } = await worker(TOKEN);
+    try {
+      const first = await install(needing, server);
+      expect({ code: first.code, output: first.output }).toMatchObject({
+        code: 0,
+      });
+      expect(asked).toEqual([
+        { reason: 'notFound', pkg: '@nocobase/fx-private' },
+      ]);
+      privateRequests();
+      mirrorRequests();
+
+      // Another repository of the same run starts from the default registry again.
+      const second = await install(other, server);
+      expect({ code: second.code, output: second.output }).toMatchObject({
+        code: 0,
+      });
+      expect(asked).toHaveLength(1);
+      expect(privateRequests()).toEqual([]);
+      expect(mirrorRequests().map((seen) => seen.url)).toContain(
+        '/@nocobase/fx-public',
+      );
+
+      // The repository that needed it goes to the private registry at once.
+      rmSync(path.join(needing.dir, 'node_modules'), {
+        recursive: true,
+        force: true,
+      });
+      const again = await install(needing, server);
+      expect({ code: again.code, output: again.output }).toMatchObject({
+        code: 0,
+      });
+      expect(again.output).not.toContain('retrying');
+      expect(asked).toEqual([
+        { reason: 'notFound', pkg: '@nocobase/fx-private' },
+        { reason: 'notFound', pkg: undefined },
+      ]);
+      expect(leftovers(needing)).toHaveLength(1);
+    } finally {
+      await server.close();
+    }
+  });
+
   it('asks for the token once after an @nocobase package is not found, and retries once with the private registry', async () => {
     const target = project({
       '@nocobase/fx-private': '1.0.0',
@@ -249,7 +337,9 @@ describe('the npm launcher', () => {
       expect(
         readFileSync(path.join(target.dir, 'pnpm-lock.yaml'), 'utf8'),
       ).not.toContain(TOKEN);
-      expect(leftovers(target)).toEqual(['nocobase-scope']);
+      expect(leftovers(target)).toEqual([
+        expect.stringMatching(/^nocobase-scope-[0-9a-f]{16}$/u),
+      ]);
       expect(statSync(target.npmDir).mode & 0o777).toBe(0o700);
     } finally {
       await server.close();

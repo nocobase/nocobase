@@ -2,6 +2,9 @@
 // text of npmrc files and of an install's output. It imports nothing but Node's own modules, because the launcher loads
 // it on every install the agent runs.
 //
+// Keys and values are read as npm and pnpm read them: with their `${VAR}` references resolved (`expandEnv`), and a
+// registry URL compared without its scheme, quotes, trailing slashes or the case of its host.
+//
 // - `maskPrivate` removes from a machine's own npm and pnpm configuration every line that would send `@nocobase/*` (or
 //   any scope, or every package) to the private registry, and its credentials: the machine's mirror, `cafile`, proxy
 //   and other settings stay. So a project that does not need the private registry is never sent there by the machine.
@@ -23,6 +26,35 @@ export const NPM_DIR_ENV = 'NOCOBASE_RUNNER_NPM_DIR';
 /** The scope whose packages the private registry serves and the launcher retries with. */
 export const NOCOBASE_SCOPE = '@nocobase';
 
+type Env = Readonly<Record<string, string | undefined>>;
+
+/**
+ * `text` with its environment references replaced as npm and pnpm replace them in an npmrc's keys and values before
+ * reading them: `${NAME}`, npm's `${NAME?}` (empty when unset) and pnpm's `${NAME:-default}`; an odd number of
+ * backslashes before `$` keeps the reference as text. A reference to an unset variable stays as it is, as npm keeps it.
+ */
+export function expandEnv(text: string, env: Env): string {
+  return text.replace(
+    /(\\*)\$\{([^${}?:]+)(\?|:-([^}]*))?\}/gu,
+    (
+      whole,
+      escapes: string,
+      name: string,
+      modifier?: string,
+      fallback?: string,
+    ) => {
+      if (escapes.length % 2 === 1)
+        return whole.slice((escapes.length + 1) / 2);
+      const value = env[name];
+      let replaced: string;
+      if (fallback !== undefined) replaced = value ? value : fallback;
+      else if (value !== undefined) replaced = value;
+      else replaced = modifier === '?' ? '' : `\${${name}}`;
+      return escapes.slice(escapes.length / 2) + replaced;
+    },
+  );
+}
+
 /** A registry URL as compared: no quotes, no trailing slashes, lower-case scheme and host. */
 export function normalizeRegistry(value: string): string {
   const trimmed = value.trim().replace(/^["']|["']$/gu, '');
@@ -34,11 +66,9 @@ export function normalizeRegistry(value: string): string {
   }
 }
 
-/** Whether `value`, a registry URL, is the private registry or a path under it. */
+/** Whether `value`, a registry URL, is the private registry or a path under it, over HTTP or HTTPS. */
 export function isPrivate(value: string, registry: string): boolean {
-  const wanted = normalizeRegistry(registry);
-  const given = normalizeRegistry(value);
-  return given === wanted || given.startsWith(`${wanted}/`);
+  return credentialPrefix(value).startsWith(credentialPrefix(registry));
 }
 
 /** `//host/path/`, the prefix npm keys the private registry's credentials with. */
@@ -51,20 +81,21 @@ export interface NpmrcEntry {
   readonly value: string;
 }
 
-/** One `key=value` line, or null for a comment, a section or a blank line. */
-export function entryOf(line: string): NpmrcEntry | null {
+/** One `key=value` line, its key and value with the environment references `env` resolves, or null for a comment, a
+ * section or a blank line. */
+export function entryOf(line: string, env: Env = {}): NpmrcEntry | null {
   const text = line.trim();
   if (text === '' || text.startsWith('#') || text.startsWith(';')) return null;
   const equals = text.indexOf('=');
   if (equals <= 0) return null;
   return {
-    key: text.slice(0, equals).trim(),
-    value: text.slice(equals + 1).trim(),
+    key: expandEnv(text.slice(0, equals).trim(), env),
+    value: expandEnv(text.slice(equals + 1).trim(), env),
   };
 }
 
 const isRegistryKey = (key: string): boolean =>
-  key === 'registry' || /^@[^:\s]+:registry$/u.test(key);
+  /^(?:@[^:\s]+:)?registry$/iu.test(key);
 
 /** Whether a line sends packages to the private registry or carries its credentials. */
 function pointsAtPrivate(entry: NpmrcEntry, registry: string): boolean {
@@ -78,10 +109,11 @@ function pointsAtPrivate(entry: NpmrcEntry, registry: string): boolean {
 export function maskPrivate(
   text: string,
   registry: string,
+  env: Env = {},
 ): { readonly text: string; readonly masked: number } {
   let masked = 0;
   const kept = text.split(/\r?\n/u).filter((line) => {
-    const entry = entryOf(line);
+    const entry = entryOf(line, env);
     if (entry === null || !pointsAtPrivate(entry, registry)) return true;
     masked += 1;
     return false;
@@ -100,15 +132,17 @@ export interface Declaration {
 export function declaration(
   texts: readonly string[],
   registry: string,
+  env: Env = {},
 ): Declaration {
   let declared = false;
   let elsewhere = false;
   for (const text of texts)
     for (const line of text.split(/\r?\n/u)) {
-      const entry = entryOf(line);
+      const entry = entryOf(line, env);
       if (entry === null || !isRegistryKey(entry.key)) continue;
       if (isPrivate(entry.value, registry)) declared = true;
-      else if (entry.key === `${NOCOBASE_SCOPE}:registry`) elsewhere = true;
+      else if (entry.key.toLowerCase() === `${NOCOBASE_SCOPE}:registry`)
+        elsewhere = true;
     }
   return { private: declared, nocobaseElsewhere: elsewhere };
 }

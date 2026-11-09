@@ -17,14 +17,15 @@
 // 3. Otherwise the command runs as it is. When it fails because an `@nocobase/*` package is not on the registry it used
 //    (`notFoundPackage`), and the project does not point `@nocobase` elsewhere, the launcher asks for the token, adds
 //    `@nocobase:registry=<private>` with the credential and runs the command once more, with that exit code. Later
-//    installs of the run use the private registry for `@nocobase` at once.
+//    installs of the same repository in the run use the private registry for `@nocobase` at once; another repository
+//    of the run starts from step 3 again.
 //
 // When the application has no token it says so on stderr, naming where an administrator sets it. The token reaches
 // only the run's files, which the launcher removes after the command and the worker removes with the run's npm
 // directory; it is never on a command line or in the environment. The repository's own `.npmrc` and lockfile are
 // never written.
 import { execFileSync, spawn } from 'node:child_process';
-import { randomBytes } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
 import {
   existsSync,
   mkdirSync,
@@ -54,8 +55,17 @@ import {
 
 const SOCKET_ENV = 'NOCOBASE_RUNNER_GIT_CREDENTIAL_SOCKET';
 const NONCE_ENV = 'NOCOBASE_RUNNER_GIT_CREDENTIAL_NONCE';
-/** Marks that this run's installs use the private registry for `@nocobase` (step 3 happened). */
+/** Marks that a repository's installs use the private registry for `@nocobase` (step 3 happened for it). */
 const FALLBACK_MARKER = 'nocobase-scope';
+
+/** The marker of the repository at `root` (or of the directory, outside a repository) in the run's npm directory. */
+export function fallbackMarker(dir: string, root: string): string {
+  const id = createHash('sha256')
+    .update(path.resolve(root))
+    .digest('hex')
+    .slice(0, 16);
+  return path.join(dir, `${FALLBACK_MARKER}-${id}`);
+}
 /** How much of a command's output is kept to read its failure from. */
 const TAIL_BYTES = 256 * 1024;
 
@@ -91,8 +101,15 @@ function readText(file: string): string | undefined {
   }
 }
 
-/** The `.npmrc` files committed at the repository's root and in its packages' directories, read from disk. */
-export function committedNpmrcs(cwd: string): string[] {
+export interface Repository {
+  /** The repository's top directory, or `cwd` outside a repository. */
+  readonly root: string;
+  /** The `.npmrc` files committed at its root and in its packages' directories, read from disk. */
+  readonly npmrcs: readonly string[];
+}
+
+/** The repository `cwd` is in, and its committed `.npmrc` files. */
+export function repositoryOf(cwd: string): Repository {
   let top: string;
   let listed: string;
   try {
@@ -101,6 +118,10 @@ export function committedNpmrcs(cwd: string): string[] {
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'ignore'],
     }).trim();
+  } catch {
+    return { root: cwd, npmrcs: [] };
+  }
+  try {
     listed = execFileSync(
       'git',
       ['ls-files', '-z', '--', ':(glob)**/.npmrc', ':(glob)**/package.json'],
@@ -112,7 +133,7 @@ export function committedNpmrcs(cwd: string): string[] {
       },
     );
   } catch {
-    return [];
+    return { root: top, npmrcs: [] };
   }
   const files = listed.split('\0').filter((file) => file !== '');
   const packages = new Set(
@@ -120,7 +141,7 @@ export function committedNpmrcs(cwd: string): string[] {
       .filter((file) => path.posix.basename(file) === 'package.json')
       .map((file) => path.posix.dirname(file)),
   );
-  return files
+  const npmrcs = files
     .filter((file) => path.posix.basename(file) === '.npmrc')
     .filter((file) => {
       const dir = path.posix.dirname(file);
@@ -130,6 +151,7 @@ export function committedNpmrcs(cwd: string): string[] {
       const text = readText(path.join(top, file));
       return text === undefined ? [] : [text];
     });
+  return { root: top, npmrcs };
 }
 
 /** pnpm's configuration directory, as pnpm finds it. */
@@ -176,7 +198,7 @@ export function writeRunConfig(options: ConfigOptions): RunConfig {
 
   const userSource =
     variable(env, 'npm_config_userconfig') ?? path.join(os.homedir(), '.npmrc');
-  const user = maskPrivate(readText(userSource) ?? '', registry).text;
+  const user = maskPrivate(readText(userSource) ?? '', registry, env).text;
   const lines = privateLines(registry, options.token, options.scope);
   const userFile = path.join(dir, `npmrc-${id}`);
   writeFileSync(userFile, [user, ...lines, ''].join('\n'), { mode: 0o600 });
@@ -189,7 +211,7 @@ export function writeRunConfig(options: ConfigOptions): RunConfig {
 
   if (tool === 'npm') {
     const globalSource = npmGlobalConfig(env);
-    const global = maskPrivate(readText(globalSource) ?? '', registry);
+    const global = maskPrivate(readText(globalSource) ?? '', registry, env);
     if (global.masked > 0) {
       const globalFile = path.join(dir, `globalnpmrc-${id}`);
       writeFileSync(globalFile, `${global.text}\n`, { mode: 0o600 });
@@ -201,7 +223,7 @@ export function writeRunConfig(options: ConfigOptions): RunConfig {
     const source = pnpmConfigDir(env);
     const masked = ['auth.ini', 'rc'].map((name) => ({
       name,
-      ...maskPrivate(readText(path.join(source, name)) ?? '', registry),
+      ...maskPrivate(readText(path.join(source, name)) ?? '', registry, env),
     }));
     if (masked.some((file) => file.masked > 0)) {
       const home = path.join(dir, `xdg-${id}`);
@@ -380,11 +402,10 @@ export async function launch(options: LaunchOptions): Promise<number> {
   const dir = env[NPM_DIR_ENV];
   if (!dir) return (await runCommand(command, env)).code;
   const registry = env[PRIVATE_REGISTRY_ENV] || DEFAULT_PRIVATE_REGISTRY;
-  const project: Declaration = declaration(
-    committedNpmrcs(options.cwd),
-    registry,
-  );
-  const scoped = existsSync(path.join(dir, FALLBACK_MARKER));
+  const repository = repositoryOf(options.cwd);
+  const project: Declaration = declaration(repository.npmrcs, registry, env);
+  const marker = fallbackMarker(dir, repository.root);
+  const scoped = existsSync(marker);
 
   const attempt = async (
     token: string | null,
@@ -434,7 +455,7 @@ export async function launch(options: LaunchOptions): Promise<number> {
     );
     return first.code;
   }
-  writeFileSync(path.join(dir, FALLBACK_MARKER), '', { mode: 0o600 });
+  writeFileSync(marker, '', { mode: 0o600 });
   say(
     `${described(missing)} was not found on the default registry; retrying once with the NocoBase private registry (${registry}).`,
   );
