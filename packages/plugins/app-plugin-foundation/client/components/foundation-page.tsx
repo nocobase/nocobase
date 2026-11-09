@@ -180,6 +180,14 @@ export function FoundationOverviewView({
     [overview],
   );
   const lit = active.length;
+  const pendingExtensions = overview.capabilities.filter(
+    (entry) =>
+      entry.key.startsWith('extension:') &&
+      entry.reason === 'unrecognizedExtension',
+  );
+  const primaryCapabilities = overview.capabilities.filter(
+    (entry) => !pendingExtensions.includes(entry),
+  );
   const [selected, setSelected] = useState<FoundationCapabilityKey>(
     () => active[0]?.key ?? overview.capabilities[0]?.key ?? 'dataModeling',
   );
@@ -195,7 +203,10 @@ export function FoundationOverviewView({
     [registeredRoutes, overview],
   );
   const [focusedModule, setFocusedModule] = useState<string | null>(null);
-  const focused = modules.find((module) => module.id === focusedModule);
+  const [selectedModule, setSelectedModule] = useState<string | null>(null);
+  const focused = modules.find(
+    (module) => module.id === (focusedModule ?? selectedModule),
+  );
   const focusKeys = focused
     ? new Set(focused.links.map((link) => link.capability))
     : undefined;
@@ -204,12 +215,21 @@ export function FoundationOverviewView({
     overview.capabilities[0];
   if (selectedCapability && selected !== selectedCapability.key)
     setSelected(selectedCapability.key);
-  const select = useCallback((key: FoundationCapabilityKey) => {
-    setSelected(key);
-    document
-      .getElementById('foundation-capability-detail')
-      ?.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' });
-  }, []);
+  const select = useCallback(
+    (key: FoundationCapabilityKey) => {
+      setSelected(key);
+      document
+        .getElementById('foundation-capability-detail')
+        ?.scrollIntoView?.({
+          block: 'nearest',
+          behavior: window.matchMedia?.('(prefers-reduced-motion: reduce)')
+            .matches
+            ? 'instant'
+            : 'smooth',
+        });
+    },
+    [setSelected],
+  );
 
   return (
     <>
@@ -293,11 +313,38 @@ export function FoundationOverviewView({
           ) : null}
         </ul>
         <CapabilityBand
-          capabilities={overview.capabilities}
+          capabilities={primaryCapabilities}
           selected={selected}
           onSelect={select}
           focusKeys={focusKeys}
         />
+        {pendingExtensions.length ? (
+          <Collapsible
+            defaultOpen={pendingExtensions.some(
+              (entry) => entry.key === selected,
+            )}
+            className='border-t'
+          >
+            <CollapsibleTrigger className='group flex min-h-11 w-full items-center gap-2 px-4 py-3 text-left text-sm text-muted-foreground hover:bg-hover focus-visible:outline-2 focus-visible:outline-ring md:px-5'>
+              <ChevronRight
+                className='size-4 shrink-0 transition-transform group-data-[panel-open]:rotate-90 motion-reduce:transition-none'
+                aria-hidden
+              />
+              <span>{t('inventory.extensionsTitle')}</span>
+              <span className='rounded-full bg-muted px-2 text-xs tabular-nums'>
+                {pendingExtensions.length}
+              </span>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <CapabilityBand
+                capabilities={pendingExtensions}
+                selected={selected}
+                onSelect={select}
+                focusKeys={focusKeys}
+              />
+            </CollapsibleContent>
+          </Collapsible>
+        ) : null}
         {modules.length ? (
           <div
             aria-label={t('matrix.modules')}
@@ -310,17 +357,22 @@ export function FoundationOverviewView({
                   key={module.id}
                   variant='outline'
                   size='xs'
-                  aria-pressed={module.id === focusedModule}
+                  aria-pressed={module.id === selectedModule}
                   className={cn(
-                    'h-7! gap-1.5 rounded-full! border-border bg-card pr-1.5 pl-3 text-sm font-normal shadow-none',
-                    module.id === focusedModule &&
+                    'h-auto! min-h-11 sm:min-h-7 gap-1.5 rounded-full! border-border bg-card pr-1.5 pl-3 text-sm font-normal shadow-none',
+                    module.id === selectedModule &&
                       'border-primary/40 bg-primary/10 text-primary',
                   )}
                   onMouseEnter={() => setFocusedModule(module.id)}
                   onMouseLeave={() => setFocusedModule(null)}
                   onFocus={() => setFocusedModule(module.id)}
                   onBlur={() => setFocusedModule(null)}
-                  onClick={() => setFocusedModule(module.id)}
+                  onClick={() => {
+                    setSelectedModule((current) =>
+                      current === module.id ? null : module.id,
+                    );
+                    setFocusedModule(null);
+                  }}
                 >
                   {text(module.title)}{' '}
                   <span className='min-w-5 rounded-full bg-muted px-1.5 text-center text-xs leading-5 tabular-nums text-muted-foreground'>

@@ -223,7 +223,11 @@ export function ModuleMatrix({
                         key={edge.capability}
                         variant='outline'
                         size='xs'
-                        className='max-w-full rounded-full! border-primary/15 bg-primary/5 whitespace-normal text-primary shadow-none'
+                        aria-pressed={
+                          selection?.module === item.id &&
+                          selection.capability === capability.key
+                        }
+                        className='h-auto! min-h-11 max-w-full rounded-full! border-primary/15 bg-primary/5 whitespace-normal text-primary shadow-none aria-pressed:bg-primary aria-pressed:text-primary-foreground'
                         aria-label={t('matrix.inspect', {
                           module: text(item.title),
                           capability: name(capability),
