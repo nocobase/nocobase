@@ -2,7 +2,7 @@
   "name": "@nocobase/app-plugin-foundation",
   "displayName": "App Foundation",
   "description": "Shows which NocoBase Core capabilities an application uses, with live evidence, for its unrestricted administrators.",
-  "version": "0.1.0-beta.17",
+  "version": "0.1.0-beta.19",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {
@@ -37,6 +37,10 @@
     "./cli": {
       "types": "./cli/index.ts",
       "import": "./cli/index.ts"
+    },
+    "./config": {
+      "types": "./config.ts",
+      "import": "./config.ts"
     },
     "./package.json": "./package.json"
   },
@@ -94,6 +98,10 @@
       "./cli": {
         "types": "./dist/cli/index.d.ts",
         "import": "./dist/cli/index.js"
+      },
+      "./config": {
+        "types": "./dist/config.d.ts",
+        "import": "./dist/config.js"
       },
       "./package.json": "./package.json"
     },

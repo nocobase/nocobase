@@ -220,7 +220,10 @@ describe('System settings navigation', () => {
     expect(catalog(routes)).toEqual([
       [
         'settingsSystem',
-        [['notificationManagement', '/settings/notifications/templates']],
+        [
+          ['notificationManagement', '/settings/notifications/templates'],
+          ['databaseExplorer', '/settings/database-explorer'],
+        ],
       ],
     ]);
     expect(
@@ -229,7 +232,7 @@ describe('System settings navigation', () => {
   });
 });
 
-it('keeps database browsing accessible by route without adding a System settings card', () => {
+it('places database browsing in System and hides its card when access is denied', () => {
   const routes = resolveAppClientContributions([
     {
       packageName: app,
@@ -244,7 +247,8 @@ it('keeps database browsing accessible by route without adding a System settings
     resource: { type: 'page', id: 'database-explorer' },
     action: 'access',
   });
-  expect(page.navigation).toBeUndefined();
-  expect(catalog(routes)).toEqual([]);
+  expect(catalog(routes)).toEqual([
+    ['settingsSystem', [['databaseExplorer', '/settings/database-explorer']]],
+  ]);
   expect(catalog(routes, new Set([routeKey(page)]))).toEqual([]);
 });

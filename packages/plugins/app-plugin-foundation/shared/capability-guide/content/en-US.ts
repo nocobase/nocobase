@@ -416,7 +416,7 @@ const enUS: GuideContent = {
         'Understand what the application offers, choose reusable capabilities and describe the business requirements to an agent.',
       ],
       prerequisite:
-        'After signing in, open Features and extensions at the bottom of the sidebar.',
+        'After signing in with Features and extensions access, open it from System settings.',
       prompts: {
         main: {
           label: 'Ask the agent',

@@ -21,8 +21,8 @@
 
 | 项目               | 代码现状                                                                                                                                                                  | 来源                                                                                                                                                                                                   |
 | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 目录页             | `/capabilities`，路由名 `capabilityGuide`，`auth: 'required'`、`authz: 'skip'`：登录即可打开                                                                              | [client/routes.ts](../../client/routes.ts)、[catalog.ts](../../shared/capability-guide/catalog.ts) 的 `CAPABILITY_GUIDE_PATH`                                                                          |
-| 详情页             | `/capabilities/:entryId`，路由名 `capabilityGuideEntry`，权限同上                                                                                                         | [client/routes.ts](../../client/routes.ts)                                                                                                                                                             |
+| 目录页             | `/settings/capabilities`，路由名 `capabilityGuide`，`auth: 'required'`、`page:capability-guide/access`：登录且拥有访问权限才能打开                                        | [client/routes.ts](../../client/routes.ts)、[catalog.ts](../../shared/capability-guide/catalog.ts) 的 `CAPABILITY_GUIDE_PATH`                                                                          |
+| 详情页             | `/settings/capabilities/:entryId`，路由名 `capabilityGuideEntry`，权限同上                                                                                                | [client/routes.ts](../../client/routes.ts)                                                                                                                                                             |
 | 菜单位置           | 两个模板都把目录页放入「系统设置 → 系统 → 功能与扩展」，并在系统设置首页高亮                                                                                              | [Default 导航整理](../../../../templates/app-template-default/client/lib/navigation-transform.ts)、[Examples 导航整理](../../../../templates/app-template-examples/client/lib/navigation-transform.ts) |
 | 模板接入参数       | Default：`settingsGroup: true`、`manifest`、`guideSettingsPath: '/settings'`、`navigation: false`；Examples 同样传入 `manifest`、`guideSettingsPath`、`navigation: false` | [Default client/plugins.ts](../../../../templates/app-template-default/client/plugins.ts)、[Examples client/plugins.ts](../../../../templates/app-template-examples/client/plugins.ts)                 |
 | 原「应用使用情况」 | `/foundation`，路由名 `foundation`，`authz: 'unrestricted'`；`navigation: false` 时没有菜单入口，root 等无限制身份直接打开地址进入                                        | [client/routes.ts](../../client/routes.ts) 的 `foundationDefinition`                                                                                                                                   |
@@ -43,7 +43,7 @@
 2. 名称匹配 `app-plugin-*` 的包全部列为插件条目，包括示例插件和仅发布 Skill 的插件；[entries.ts](../../shared/capability-guide/entries.ts) 没有文案的插件也列出（`known: false`）。
 3. 内核只列 `entries.ts` 中 `source: 'kernel'` 的模块：`db`、`jobs`、`lifecycle`、`queue`、`realtime`，以及仅在应用没有声明 `@nocobase/app-plugin-i18n` 时才单独列出的 `i18n`。
 4. 不单独列出：`app-client`、`app-server`、`service-provider`（应用框架）；`authorization` 并入 `app-plugin-authorization`，`concurrency` 并入 `app-plugin-concurrency`，`drive` 并入 `app-plugin-file`（`KERNEL_NOT_LISTED`）。并入的内核记在条目的 `covers` 中。
-5. 多语言：应用声明了 `app-plugin-i18n` 时，`@nocobase/i18n` 不再单独列出，只保留一个可见条目；访问 `/capabilities/i18n` 时 `find('i18n')` 回退到 `app-plugin-i18n`，两者共用 [i18n 详情](../../client/capability-guide/details/i18n-overview.tsx)。
+5. 多语言：应用声明了 `app-plugin-i18n` 时，`@nocobase/i18n` 不再单独列出，只保留一个可见条目；访问 `/settings/capabilities/i18n` 时 `find('i18n')` 回退到 `app-plugin-i18n`，两者共用 [i18n 详情](../../client/capability-guide/details/i18n-overview.tsx)。
 6. 授权：`app-plugin-authz-default-access`、`app-plugin-authz-sharing-rules`、`app-plugin-authz-restriction-rules` 仍是三个独立目录条目，与 `app-plugin-authorization` 共用同一篇[授权详情](../../client/capability-guide/details/authorization-overview.tsx)（`builtInDetailLoaders`）。共用内容不减少目录条目数。
 
 ### 2.3 Default / Examples 目录条目数
@@ -197,7 +197,7 @@
 | 行               | 展示对象           | 读取来源                                                   | 范围   | 状态                              | 入口                                                                                                           | 接口     |
 | ---------------- | ------------------ | ---------------------------------------------------------- | ------ | --------------------------------- | -------------------------------------------------------------------------------------------------------------- | -------- |
 | 数据库浏览器界面 | 浏览页面           | 客户端路由表中路由名 `databaseExplorer`（`InterfaceItem`） | 应用级 | 已配置 / 未配置 / 无权限 / 加载中 | Default 写作 `settings` 下的 `/database-explorer`，Examples 直接写 `/settings/database-explorer`，最终地址相同 | 已有接口 |
-| 数据库连接配置   | 链接到数据库详情页 | —                                                          | —      | 不单独判定                        | `/capabilities/db`                                                                                             | —        |
+| 数据库连接配置   | 链接到数据库详情页 | —                                                          | —      | 不单独判定                        | `/settings/capabilities/db`                                                                                    | —        |
 
 两个模板都由模板自己注册这个页面（[Default](../../../../templates/app-template-default/client/pages/settings/database-explorer/routes.ts)、[Examples](../../../../templates/app-template-examples/client/pages/settings/database-explorer/routes.ts)），插件客户端不注册路由。
 
@@ -721,10 +721,10 @@
 
 **当前应用**
 
-| 行             | 展示对象     | 读取来源                                  | 范围   | 状态                   | 入口            | 接口     |
-| -------------- | ------------ | ----------------------------------------- | ------ | ---------------------- | --------------- | -------- |
-| 功能与扩展界面 | 目录页       | 路径 `/capabilities`（`capabilityPages`） | 应用级 | 已配置 / 未配置        | `/capabilities` | 已有接口 |
-| 目录覆盖范围   | 条目来源说明 | 应用传入的 `manifest`（2.2）              | 应用级 | 只显示说明，不判定状态 | —               | —        |
+| 行             | 展示对象     | 读取来源                                           | 范围   | 状态                   | 入口                     | 接口     |
+| -------------- | ------------ | -------------------------------------------------- | ------ | ---------------------- | ------------------------ | -------- |
+| 功能与扩展界面 | 目录页       | 路径 `/settings/capabilities`（`capabilityPages`） | 应用级 | 已配置 / 未配置        | `/settings/capabilities` | 已有接口 |
+| 目录覆盖范围   | 条目来源说明 | 应用传入的 `manifest`（2.2）                       | 应用级 | 只显示说明，不判定状态 | —                        | —        |
 
 **通过 Agent 添加或完善**（页面文案）：「在系统设置添加入口」「补充自定义功能说明」。
 

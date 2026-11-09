@@ -2,6 +2,27 @@
 
 本文件记录 NocoBase 3 的所有重要变更，每次发布一节：`nocobase-v3-beta/<日期>.<序号>` 是预览版，`release/<日期>.<序号>` 是正式版。每次发布的包版本见对应的 GitHub Release，各个包自己的变更见包内的 CHANGELOG.md。
 
+## [nocobase-v3-beta/2026-11-09.3](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-09.3)
+
+### 🎉 新特性
+
+- **[Skills]** 新增指导 Agent 配置和验证多实例应用及 Redis 共享后端的 Skills。 ([#11397](https://github.com/nocobase/nocobase/pull/11397)) by @chenos
+- **[应用基础]** 新增 `foundation.scanOnStart` 配置，可关闭应用启动时的 App Foundation 扫描；测试应用默认关闭，测试启动和关闭更快。 ([#11403](https://github.com/nocobase/nocobase/pull/11403)) by @Molunerfinn
+
+### 🚀 优化
+
+- **[应用模板]** 改进数据库浏览器布局和移动端页面间距，将功能与扩展移至系统设置路径并支持配置访问权限。 ([#11386](https://github.com/nocobase/nocobase/pull/11386)) by @chenos
+
+## [nocobase-v3-beta/2026-11-09.2](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-09.2)
+
+### 🚀 优化
+
+- **[应用基础]** 桌面端进入功能与扩展时默认打开第一个匹配功能，并保留筛选条件。 ([#11396](https://github.com/nocobase/nocobase/pull/11396)) by @chenos
+
+### 🐛 修复
+
+- **[应用模板]** 修复生成应用安装扩展插件后，功能目录测试因使用通用介绍而误报失败的问题。 ([#11399](https://github.com/nocobase/nocobase/pull/11399)) by @chenos
+
 ## [nocobase-v3-beta/2026-11-09.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-09.1)
 
 ### 🎉 新特性

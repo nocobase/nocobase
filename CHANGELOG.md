@@ -2,6 +2,27 @@
 
 All notable changes to NocoBase 3 are documented in this file, one section per release: `nocobase-v3-beta/<date>.<n>` for a beta and `release/<date>.<n>` for a stable release. The versions each release published are on its GitHub Release, and every package's own changes are in its CHANGELOG.md.
 
+## [nocobase-v3-beta/2026-11-09.3](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-09.3)
+
+### 🎉 New Features
+
+- **[Skills]** Add Agent Skills for configuring and verifying multi-instance applications and shared Redis backends. ([#11397](https://github.com/nocobase/nocobase/pull/11397)) by @chenos
+- **[App foundation]** Add a `foundation.scanOnStart` setting that stops App Foundation from scanning at application start, and turn it off for test applications so tests start and close faster. ([#11403](https://github.com/nocobase/nocobase/pull/11403)) by @Molunerfinn
+
+### 🚀 Improvements
+
+- **[App templates]** Improve Database explorer browsing and mobile page spacing, and move Features and extensions into System settings with configurable access permissions. ([#11386](https://github.com/nocobase/nocobase/pull/11386)) by @chenos
+
+## [nocobase-v3-beta/2026-11-09.2](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-09.2)
+
+### 🚀 Improvements
+
+- **[App foundation]** Features and extensions now opens the first matching feature by default on desktop while preserving search filters. ([#11396](https://github.com/nocobase/nocobase/pull/11396)) by @chenos
+
+### 🐛 Bug Fixes
+
+- **[App templates]** Keep generated application catalog checks compatible with additional plugins that use generic introductions. ([#11399](https://github.com/nocobase/nocobase/pull/11399)) by @chenos
+
 ## [nocobase-v3-beta/2026-11-09.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-09.1)
 
 ### 🎉 New Features

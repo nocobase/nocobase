@@ -1,3 +1,4 @@
+import { CAPABILITY_GUIDE_PATH } from '../../../shared/capability-guide/index.js';
 import type { ReactElement } from 'react';
 import { useDetailCopy } from './use-detail-copy.js';
 import { Database, ArrowRight } from 'lucide-react';
@@ -19,7 +20,7 @@ export default function DatabaseExplorerOverview(): ReactElement | null {
           <>
             <p>{t('databaseExplorerOverview.current.boundary')}</p>
             <Link
-              to='/capabilities/db'
+              to={`${CAPABILITY_GUIDE_PATH}/db`}
               className={buttonVariants({
                 variant: 'link',
                 size: 'sm',

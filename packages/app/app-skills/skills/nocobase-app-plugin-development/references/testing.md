@@ -89,7 +89,7 @@ Run migrations against a real test database, verifying both physical schema and 
 
 ## UI and locale verification
 
-Call actual component loaders and render public components through their supported imports. For routed Tabs, cover a direct child URL, reload, back/forward navigation, the parent redirect, denied children, and preserved queries. A page calling a Server endpoint needs a real page-to-API workflow in the target App.
+Call actual component loaders and render public components through their supported imports. Before clicking a menu, popover, select or dialog trigger in a jsdom test, find it by its ready state, such as `findByRole('button', { name, expanded: false })`, and click what that returned: its label renders while the overlay is still mounting, so clicking the first element with that name passes locally and fails under CI load. For routed Tabs, cover a direct child URL, reload, back/forward navigation, the parent redirect, denied children, and preserved queries. A page calling a Server endpoint needs a real page-to-API workflow in the target App.
 
 For UI work, use [shared UI design and host acceptance](ui-design.md): compare original references under their recorded modes and authorized exceptions, verify actual overlay/footer geometry with long content and narrow viewports, and check affected business journeys in the host. Verify shadcn interaction and keyboard behavior, the shared theme in light/dark modes, host density and style isolation, and loading, empty, error, and success states. Record missing browser or host evidence as Not verified. An App alias resolving in one development environment does not prove compiled plugin imports resolve for an installed consumer.
 
