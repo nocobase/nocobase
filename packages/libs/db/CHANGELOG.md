@@ -1,5 +1,11 @@
 # @nocobase/db
 
+## 1.0.0-beta.26
+
+### Patch Changes
+
+- 1cda4c3: Avoid redundant NULL ordering expressions for non-nullable table fields so ordered queries can use ordinary indexes.
+
 ## 1.0.0-beta.25
 
 ### Minor Changes
