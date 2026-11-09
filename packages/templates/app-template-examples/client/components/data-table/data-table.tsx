@@ -89,7 +89,9 @@ export interface DataTableProps<TData, TValue = unknown> {
    * Renders one row as a compact card. When given, screens narrower than the
    * `md` breakpoint (768px) show the rows as a list of these cards instead of
    * table rows, keeping the same states, selection and pagination. Sorting has
-   * no column headers there: render `DataTableSortMenu` in the toolbar.
+   * no column headers there: render `DataTableSortMenu` in the toolbar. A card
+   * opens its record through its own link or button; `onRowClick` applies to
+   * table rows only.
    */
   readonly renderCard?: (row: Row<TData>) => ReactNode;
 }
@@ -321,8 +323,6 @@ export function DataTable<TData, TValue = unknown>({
                   key={row.id}
                   data-slot='data-table-card'
                   data-state={row.getIsSelected() ? 'selected' : undefined}
-                  className={onRowClick ? 'cursor-pointer' : undefined}
-                  onClick={onRowClick ? () => onRowClick(row) : undefined}
                 >
                   {cards(row)}
                 </li>

@@ -71,7 +71,7 @@ The following holds for the standard `client/components/data-table/` implementat
 
 ### Phone cards
 
-An ordinary business list shows one card per record below the `md` breakpoint (guideline T1.13, [M3 of the phone experience](../mobile.md#m3-lists-cards-and-tables)). Pass `renderCard` to `DataTable`; it renders a semantic list of the cards in place of the table on phones and keeps everything else: the list states with their icons, the refresh indicator, kept geometry while a new query loads, selection state, `onRowClick` and pagination. It reads the viewport on the first render, so a phone never flashes the table, and changing width sends no request. An application whose `DataTable` predates `renderCard` copies the template's `data-table/` directory, including `sort-menu.tsx`, before using it.
+An ordinary business list shows one card per record below the `md` breakpoint (guideline T1.13, [M3 of the phone experience](../mobile.md#m3-lists-cards-and-tables)). Pass `renderCard` to `DataTable`; it renders a semantic list of the cards in place of the table on phones and keeps everything else: the list states with their icons, the refresh indicator, kept geometry while a new query loads, selection state and pagination. A card opens its record through its own link (its name, T1.3); `onRowClick` applies only to table rows. It reads the viewport on the first render, so a phone never flashes the table, and changing width sends no request. An application whose `DataTable` predates `renderCard` copies the template's `data-table/` directory, including `sort-menu.tsx`, before using it.
 
 ```tsx
 <DataTable
