@@ -329,6 +329,8 @@ export function FeedbackForm({
   return (
     <form
       {...props}
+      // Lets an enclosing route overlay count typing here as unsaved input (`RouteOverlay`'s discard question).
+      data-slot='feedback-form'
       noValidate
       ref={(element) => {
         formRef.current = element;

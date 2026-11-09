@@ -1064,3 +1064,175 @@ describe('the unsaved-changes question cannot be switched off by a draft', () =>
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
   });
 });
+
+describe('the unsaved-changes question without a dirty prop', () => {
+  // The shape a generated edit dialog took: a FeedbackForm whose input is saved as a draft on every change, a save
+  // button that validation can disable, and no `dirty` on the dialog.
+  const draftKey = 'test:draft';
+  function DraftOnlyEdit() {
+    const navigate = useNavigate();
+    const { search } = useLocation();
+    const [name, setName] = useState(
+      () => sessionStorage.getItem(draftKey) ?? 'Original',
+    );
+    return (
+      <RouteDialog
+        title='Edit'
+        footer={
+          <>
+            <Actions />
+            <button type='submit' form='draft-only' disabled={!name.trim()}>
+              Save
+            </button>
+          </>
+        }
+      >
+        <FeedbackForm
+          id='draft-only'
+          onSubmit={async () => {
+            await Promise.resolve();
+            sessionStorage.removeItem(draftKey);
+            await navigate({ pathname: '..', search });
+          }}
+        >
+          <input
+            aria-label='Name'
+            value={name}
+            onChange={(event) => {
+              setName(event.target.value);
+              sessionStorage.setItem(draftKey, event.target.value);
+            }}
+          />
+        </FeedbackForm>
+      </RouteDialog>
+    );
+  }
+  function ReadOnlyDrawer() {
+    return (
+      <RouteDrawer title='Details' footer={<Actions />}>
+        {/* A search box inside a read-only view is not unsaved input. */}
+        <form role='search'>
+          <input aria-label='Find' />
+        </form>
+      </RouteDrawer>
+    );
+  }
+  function setup(path: string) {
+    const history: { back?: () => void; path?: string } = {};
+    function Probe() {
+      const navigate = useNavigate();
+      const { pathname, search } = useLocation();
+      useEffect(() => {
+        history.back = () => void navigate(-1);
+        history.path = `${pathname}${search}`;
+      });
+      return null;
+    }
+    render(
+      <MemoryRouter initialEntries={['/orders?page=2', path]} initialIndex={1}>
+        <NavigationGuardProvider>
+          <Probe />
+          <Routes>
+            <Route path='/orders' element={<Outlet />}>
+              <Route path='edit' element={<DraftOnlyEdit />} />
+              <Route path='view' element={<ReadOnlyDrawer />} />
+            </Route>
+          </Routes>
+        </NavigationGuardProvider>
+      </MemoryRouter>,
+      { wrapper: I18n },
+    );
+    return history;
+  }
+  beforeEach(() => sessionStorage.clear());
+
+  async function answer(choice: 'Keep editing' | 'Discard') {
+    const prompt = await screen.findByRole('alertdialog', {
+      name: 'Discard changes?',
+    });
+    await userEvent.click(within(prompt).getByRole('button', { name: choice }));
+    await waitFor(() =>
+      expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument(),
+    );
+  }
+
+  it('asks on Cancel, ×, Esc, the backdrop and browser back although the input is kept as a draft', async () => {
+    const history = setup('/orders/edit?page=2');
+    await userEvent.type(
+      await screen.findByRole('textbox', { name: 'Name' }),
+      ' draft',
+    );
+    expect(sessionStorage.getItem(draftKey)).toBe('Original draft');
+    const dialog = screen.getByRole('dialog', { name: 'Edit' });
+    await userEvent.click(
+      within(dialog).getByRole('button', { name: 'Cancel' }),
+    );
+    await answer('Keep editing');
+    await userEvent.click(
+      within(dialog).getByRole('button', { name: 'Close' }),
+    );
+    await answer('Keep editing');
+    await userEvent.keyboard('{Escape}');
+    await answer('Keep editing');
+    const backdrop = dialog
+      .closest('[data-base-ui-portal]')
+      ?.querySelector(':scope > [data-slot="dialog-overlay"]');
+    expect(backdrop).toBeInTheDocument();
+    await userEvent.click(backdrop!);
+    await answer('Keep editing');
+    act(() => history.back!());
+    await answer('Keep editing');
+    expect(screen.getByRole('textbox', { name: 'Name' })).toHaveValue(
+      'Original draft',
+    );
+    await waitFor(() => expect(history.path).toBe('/orders/edit?page=2'));
+
+    // Discard leaves to the list; the draft stays where the page keeps it.
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    await answer('Discard');
+    await waitFor(() => expect(history.path).toBe('/orders?page=2'));
+    expect(sessionStorage.getItem(draftKey)).toBe('Original draft');
+  });
+
+  it('still asks while validation disables the save button', async () => {
+    setup('/orders/edit?page=2');
+    await userEvent.clear(await screen.findByRole('textbox', { name: 'Name' }));
+    expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    await answer('Keep editing');
+    expect(screen.getByRole('textbox', { name: 'Name' })).toHaveValue('');
+  });
+
+  it('closes an untouched form and a saved one without asking', async () => {
+    const history = setup('/orders/edit?page=2');
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Cancel' }),
+    );
+    await waitFor(() => expect(history.path).toBe('/orders?page=2'));
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+  });
+
+  it('lets the save leave without asking', async () => {
+    const history = setup('/orders/edit?page=2');
+    await userEvent.type(
+      await screen.findByRole('textbox', { name: 'Name' }),
+      ' saved',
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+    await waitFor(() => expect(history.path).toBe('/orders?page=2'));
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+  });
+
+  it('does not ask when closing a read-only drawer after typing in its search box', async () => {
+    const history = setup('/orders/view?page=2');
+    await userEvent.type(
+      await screen
+        .findByRole('searchbox', { name: 'Find' })
+        .catch(() => screen.findByRole('textbox', { name: 'Find' })),
+      'acme',
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    await waitFor(() => expect(history.path).toBe('/orders?page=2'));
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+  });
+});

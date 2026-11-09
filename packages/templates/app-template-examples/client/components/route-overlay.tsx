@@ -1,5 +1,8 @@
 import { Dialog as DialogPrimitive } from '@base-ui/react/dialog';
-import { useNavigationGuard } from '@nocobase/app-client';
+import {
+  NavigationGuardContext,
+  useNavigationGuard,
+} from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { XIcon } from 'lucide-react';
 import {
@@ -56,14 +59,15 @@ export interface RouteOverlayProps {
   /** Runs before every close; resolving `false` keeps the overlay open, for example to guard unsaved changes. */
   readonly beforeClose?: () => boolean | Promise<boolean>;
   /**
-   * Turns on the unsaved-changes question for an overlay that holds a form (guideline T3.9, mobile.md M7.4). Once the
-   * user has typed or changed a value in a form inside the overlay, or while this is true (a function is read when
-   * leaving, such as `() => form.formState.isDirty` for changes no input event reports), every way out — ×, Esc, the
-   * backdrop, Cancel through `close()`, browser back and forward, the phone's back gesture and links — first asks
-   * "Discard changes?", and reloading or closing the tab gets the browser's warning. A saved draft does not count as
-   * saved, and `dirty` cannot switch off an edit the overlay saw. Leaving does not ask during the save itself (while a
-   * `FeedbackForm` in the overlay is still running its `onSubmit`: navigate or `close()` from it). It still asks
-   * while the save button is disabled, such as while validation fails, because the input is still there to lose.
+   * Unsaved changes the overlay cannot see by itself (guideline T3.9, mobile.md M7.4). Every route overlay asks
+   * "Discard changes?" before every way out — ×, Esc, the backdrop, Cancel through `close()`, browser back and
+   * forward, the phone's back gesture and links — once the user has typed or changed a value in a `FeedbackForm`
+   * inside it, without any prop, and reloading or closing the tab then gets the browser's warning. Pass `dirty` for
+   * changes no input event reports, such as a Select or a restored draft: `dirty={form.formState.isDirty}` (a function
+   * is read when leaving). It only adds: `false` or `undefined` never switches off an edit the overlay saw, and a saved
+   * draft does not count as saved. Passing it also counts typing in any other `<form>` inside the overlay. Leaving does
+   * not ask during the save itself (while the `FeedbackForm` is still running its `onSubmit`: navigate or `close()`
+   * from it), and still asks while the save button is disabled, because the input is still there to lose.
    */
   readonly dirty?: boolean | (() => boolean);
   readonly className?: string;
@@ -94,15 +98,30 @@ export function RouteOverlay({
   ...props
 }: RouteOverlayProps & { readonly drawer?: boolean }): ReactElement {
   const host = useContext(RouteOverlayHostContext);
-  const content =
-    dirty === undefined ? (
-      children
-    ) : (
-      <>
-        {children}
-        <DiscardGuard dirty={dirty} />
-      </>
-    );
+  // Always on inside an application, whether or not the page passes `dirty`: a page cannot leave out the question by
+  // leaving out the prop. Only a test or preview without the application's navigation boundary renders without it.
+  const guarded = useContext(NavigationGuardContext) !== null;
+  // How many forms inside ask their own unsaved-changes question (`OwnDiscardQuestion`).
+  const ownersRef = useRef(0);
+  const owners = useMemo(
+    () => ({
+      claim: (): (() => void) => {
+        ownersRef.current += 1;
+        return () => {
+          ownersRef.current -= 1;
+        };
+      },
+    }),
+    [],
+  );
+  const content = guarded ? (
+    <DiscardOwnerContext.Provider value={owners}>
+      {children}
+      <DiscardGuard dirty={dirty} ownersRef={ownersRef} />
+    </DiscardOwnerContext.Provider>
+  ) : (
+    children
+  );
   return host ? (
     <HostedRouteOverlay host={host} {...props}>
       {content}
@@ -117,10 +136,27 @@ export function RouteOverlay({
  * covers every way out; while it waits the application keeps the overlay and its input mounted, and restores the URL
  * when the answer is "Keep editing". The confirmation is the one layer allowed above the overlay (mobile.md M7.2).
  */
+const DiscardOwnerContext = createContext<{
+  readonly claim: () => () => void;
+} | null>(null);
+
+/**
+ * Rendered inside a route overlay by the template's own forms that already ask an unsaved-changes question of their
+ * own (the settings forms' `usePageLeave`): the overlay leaves the question to them instead of asking twice.
+ * Application forms do not render it; they rely on the overlay's question.
+ */
+export function OwnDiscardQuestion(): null {
+  const owners = useContext(DiscardOwnerContext);
+  useLayoutEffect(() => owners?.claim(), [owners]);
+  return null;
+}
+
 function DiscardGuard({
   dirty,
+  ownersRef,
 }: {
-  readonly dirty: boolean | (() => boolean);
+  readonly dirty: boolean | (() => boolean) | undefined;
+  readonly ownersRef: RefObject<number>;
 }): ReactElement {
   const { t } = useTranslation();
   const dirtyRef = useRef(dirty);
@@ -134,8 +170,16 @@ function DiscardGuard({
   useEffect(() => {
     const popup = popupRef?.current;
     if (!popup) return;
+    // A FeedbackForm (the standard create or edit form) always counts; any other form counts once the page passes
+    // `dirty`, so a search box in a read-only drawer does not make closing it ask.
     const edit = (event: Event): void => {
-      if (event.target instanceof Element && event.target.closest('form'))
+      if (!(event.target instanceof Element)) return;
+      const form = event.target.closest('form');
+      if (
+        form &&
+        (form.dataset.slot === 'feedback-form' ||
+          dirtyRef.current !== undefined)
+      )
         editedRef.current = true;
     };
     const submit = (event: Event): void => {
@@ -154,14 +198,15 @@ function DiscardGuard({
     };
   }, [popupRef]);
   const isDirty = useCallback((): boolean => {
-    // The save's own navigation.
-    if (savingRef.current > 0) return false;
+    // The save's own navigation, or a form inside that asks its own question.
+    if (savingRef.current > 0 || ownersRef.current > 0) return false;
     // A disabled save button, such as while validation fails, never means there is nothing to lose.
     const current = dirtyRef.current;
     return (
-      editedRef.current || (typeof current === 'function' ? current() : current)
+      editedRef.current ||
+      (typeof current === 'function' ? current() : current === true)
     );
-  }, []);
+  }, [ownersRef]);
   // The pending question, so a second attempt to leave while it is open waits for the same answer.
   const promptRef = useRef<{
     readonly promise: Promise<boolean>;
