@@ -1,5 +1,11 @@
-import { renderWithApp } from '@nocobase/app-testing/client';
-import { screen } from '@testing-library/react';
+import { answerApi, renderWithApp } from '@nocobase/app-testing/client';
+import { apiClientToken } from '@nocobase/app-client';
+import {
+  AuthorizationClient,
+  authorizationClientToken,
+  type AuthorizationSnapshot,
+} from '@nocobase/app-plugin-authorization/client';
+import { act, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -19,10 +25,31 @@ const catalog = createCapabilityCatalog(packageMetadata);
 const escape = (text: string): string =>
   text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-function renderHome() {
+const granted: AuthorizationSnapshot = {
+  unrestricted: false,
+  permissions: [
+    { resource: { type: 'page', id: 'capability-guide' }, actions: ['access'] },
+  ],
+};
+
+function renderHome(
+  permissions: () =>
+    AuthorizationSnapshot | Promise<AuthorizationSnapshot> = () => granted,
+) {
   return renderWithApp(<HomePage />, {
     namespace: packageMetadata.name,
     namespaces: { [packageMetadata.name]: enUS },
+    fetch: answerApi(async ({ path }) =>
+      path === 'authorization/permissions'
+        ? { data: await permissions() }
+        : new Response(null, { status: 404 }),
+    ),
+    services: (app) => {
+      app.container.singleton(
+        authorizationClientToken,
+        (resolver) => new AuthorizationClient(resolver.resolve(apiClientToken)),
+      );
+    },
   });
 }
 
@@ -66,7 +93,7 @@ describe('home page', () => {
     for (const entry of catalog.featured) {
       const title = entryContent(content, entry).title;
       expect(
-        screen.getByRole('link', { name: new RegExp(escape(title)) }),
+        await screen.findByRole('link', { name: new RegExp(escape(title)) }),
       ).toHaveAttribute('href', capabilityPath(entry.id));
     }
   });
@@ -76,10 +103,72 @@ describe('home page', () => {
     const content = guideContent('en-US');
 
     expect(
-      screen.getByRole('link', {
+      await screen.findByRole('link', {
         name: format(content.home.viewAll, { count: catalog.entries.length }),
       }),
     ).toHaveAttribute('href', CAPABILITY_GUIDE_PATH);
+  });
+
+  it.each<AuthorizationSnapshot>([
+    { unrestricted: true, permissions: [] },
+    {
+      unrestricted: false,
+      permissions: [
+        { resource: { type: 'page', id: '*' }, actions: ['access'] },
+      ],
+    },
+  ])(
+    'keeps catalog links for unrestricted and wildcard grants: %j',
+    async (snapshot) => {
+      await renderHome(() => snapshot);
+      expect(
+        await screen.findByRole('link', {
+          name: format(guideContent('en-US').home.viewAll, {
+            count: catalog.entries.length,
+          }),
+        }),
+      ).toHaveAttribute('href', CAPABILITY_GUIDE_PATH);
+    },
+  );
+
+  it('keeps descriptions without links while permissions load, after denial and after revocation', async () => {
+    const pending = Promise.withResolvers<AuthorizationSnapshot>();
+    let permissions: AuthorizationSnapshot | Promise<AuthorizationSnapshot> =
+      pending.promise;
+    const { app } = await renderHome(() => permissions);
+    const authorization = app.container.resolve(authorizationClientToken);
+    const content = guideContent('en-US');
+    const expectDescriptionsOnly = () => {
+      expect(screen.queryAllByRole('link')).toHaveLength(0);
+      expect(screen.queryByText(content.home.open)).not.toBeInTheDocument();
+      for (const entry of catalog.featured) {
+        const text = entryContent(content, entry);
+        expect(screen.getByText(text.title)).toBeVisible();
+        expect(screen.getByText(text.summary)).toBeVisible();
+      }
+    };
+    expectDescriptionsOnly();
+    await act(async () => {
+      pending.resolve({ unrestricted: false, permissions: [] });
+      await authorization.snapshot();
+    });
+    expectDescriptionsOnly();
+    await act(async () => {
+      permissions = granted;
+      authorization.invalidate();
+      await authorization.snapshot();
+    });
+    expect(
+      await screen.findByRole('link', {
+        name: format(content.home.viewAll, { count: catalog.entries.length }),
+      }),
+    ).toHaveAttribute('href', CAPABILITY_GUIDE_PATH);
+    await act(async () => {
+      permissions = { unrestricted: false, permissions: [] };
+      authorization.invalidate();
+      await authorization.snapshot();
+    });
+    expectDescriptionsOnly();
   });
 
   it('reports a copy the browser refuses', async () => {

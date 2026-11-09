@@ -13,7 +13,7 @@ import packageMetadata from '../../../package.json' with { type: 'json' };
 
 function mount(api: (call: ApiCall) => unknown) {
   return renderWithApp(<DatabaseOverview />, {
-    route: '/capabilities/db',
+    route: '/settings/capabilities/db',
     namespace: '@nocobase/app-plugin-foundation',
     namespaces: { [packageMetadata.name]: enUS },
     fetch: answerApi(api),

@@ -23,6 +23,8 @@ The plugin needs the authentication and authorization plugins, which every appli
 
 Only an identity with unrestricted access, such as a holder of the root Permission Set (`authorization.permissionSets.rootSet`, `root` by default), opens the page or reads `GET /api/foundation/overview`. It is not a grant: no Permission Set can give it to anyone else. Everyone else gets `403 FOUNDATION_FORBIDDEN`.
 
+The separate Features and extensions catalog (`/settings/capabilities`) and its detail pages require login and `page:capability-guide/access`, exported as `CAPABILITY_GUIDE_ACCESS` from the client entry. The initial administrator retains access through root, and `page:*/access` grants also cover the catalog; other users need this explicit grant in a permission set. Default and Examples list the permission under system configuration. This grant opens the catalog only: management links and APIs retain their own checks, and Foundation runtime information still requires unrestricted access.
+
 ## How it collects
 
 The page reads a private durable snapshot, including its actual completion time and the version of the running NocoBase server kernel that produced it. Opening or revisiting the page never waits for a full scan. The plugin starts a background scan on first use, on a changed kernel version, or through the top Refresh action. Application structure, configuration, business data changes and cache expiry do not trigger scans. A same-kernel restart keeps the saved result.

@@ -180,6 +180,7 @@ export function collapseSettingsNavigation(
     return [
       {
         route: { ...home, navigation: item.route.navigation },
+        startGroup: true,
         children: [],
         activeRouteKeys: [home, ...descendantPages(item.route)].map(
           (route) => `${route.packageName}:${route.path}:${route.id}`,

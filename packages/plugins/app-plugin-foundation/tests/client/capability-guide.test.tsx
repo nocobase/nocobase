@@ -84,7 +84,7 @@ async function renderGuide(
       <BreadcrumbHeader />
       <Routes>
         <Route
-          path='/capabilities'
+          path='/settings/capabilities'
           element={
             <CapabilityGuidePage
               catalog={options.catalog ?? catalog}
@@ -94,7 +94,7 @@ async function renderGuide(
           }
         />
         <Route
-          path='/capabilities/:entryId'
+          path='/settings/capabilities/:entryId'
           element={
             <CapabilityGuidePage
               catalog={options.catalog ?? catalog}
@@ -124,7 +124,7 @@ function rows(): HTMLElement[] {
 
 describe('capability guide page', () => {
   it('lists the full catalog mixed and numbered, then narrows by source and keyword together', async () => {
-    await renderGuide('/capabilities');
+    await renderGuide('/settings/capabilities');
     expect(rows()).toHaveLength(catalog.entries.length);
     expect(rows()[0]).toHaveTextContent(/^1/);
     const list = screen.getByRole('list', { name: en.page.title });
@@ -139,7 +139,7 @@ describe('capability guide page', () => {
     );
     await waitFor(() => expect(rows()).toHaveLength(3));
     expect(screen.getByTestId('location')).toHaveTextContent(
-      '/capabilities?source=kernel',
+      '/settings/capabilities?source=kernel',
     );
 
     fireEvent.change(screen.getByRole('searchbox'), {
@@ -159,7 +159,7 @@ describe('capability guide page', () => {
     );
     await waitFor(() =>
       expect(screen.getByTestId('location')).toHaveTextContent(
-        '/capabilities?source=plugin&q=background',
+        '/settings/capabilities?source=plugin&q=background',
       ),
     );
     expect(
@@ -168,14 +168,14 @@ describe('capability guide page', () => {
   });
 
   it('opens an entry with the filter kept, so going back restores the same list', async () => {
-    await renderGuide('/capabilities?source=plugin&q=attach');
+    await renderGuide('/settings/capabilities?source=plugin&q=attach');
     const link = screen.getByRole('link', {
       name: new RegExp(en.entries['app-plugin-file'].title),
     });
     fireEvent.click(link);
     await waitFor(() =>
       expect(screen.getByTestId('location')).toHaveTextContent(
-        '/capabilities/app-plugin-file?source=plugin&q=attach',
+        '/settings/capabilities/app-plugin-file?source=plugin&q=attach',
       ),
     );
     expect(
@@ -199,7 +199,7 @@ describe('capability guide page', () => {
     );
     await waitFor(() =>
       expect(screen.getByTestId('location')).toHaveTextContent(
-        /^\/capabilities\?source=plugin&q=attach$/,
+        /^\/settings\/capabilities\?source=plugin&q=attach$/,
       ),
     );
     expect(screen.getByRole('searchbox')).toHaveValue('attach');
@@ -213,7 +213,7 @@ describe('capability guide page', () => {
       configurable: true,
       value: { writeText },
     });
-    await renderGuide('/capabilities/db');
+    await renderGuide('/settings/capabilities/db');
     const prompt = en.entries.db.prompts.records;
     const box = screen.getByRole('textbox', { name: prompt.label });
     expect(box).toHaveValue(prompt.template);
@@ -232,7 +232,7 @@ describe('capability guide page', () => {
   });
 
   it('shows an example plugin with how to adapt it and its own demo', async () => {
-    await renderGuide('/capabilities/app-plugin-lifecycle-example', {
+    await renderGuide('/settings/capabilities/app-plugin-lifecycle-example', {
       demo: true,
     });
     expect(
@@ -245,14 +245,14 @@ describe('capability guide page', () => {
   });
 
   it('offers no demo on an entry without one', async () => {
-    await renderGuide('/capabilities/db');
+    await renderGuide('/settings/capabilities/db');
     expect(
       screen.queryByRole('link', { name: en.detail.demo }),
     ).not.toBeInTheDocument();
   });
 
   it('keeps the guidance but shows no demo when the example page is not registered', async () => {
-    await renderGuide('/capabilities/app-plugin-lifecycle-example');
+    await renderGuide('/settings/capabilities/app-plugin-lifecycle-example');
     expect(
       screen.getByRole('heading', { name: en.detail.adapt.title }),
     ).toBeInTheDocument();
@@ -262,7 +262,7 @@ describe('capability guide page', () => {
   });
 
   it('restores the tab, keywords and list the URL carries after the browser goes back', async () => {
-    await renderGuide('/capabilities/jobs?source=kernel&q=background');
+    await renderGuide('/settings/capabilities/jobs?source=kernel&q=background');
     expect(screen.getByRole('searchbox')).toHaveValue('background');
 
     fireEvent.click(
@@ -272,7 +272,7 @@ describe('capability guide page', () => {
     );
     await waitFor(() =>
       expect(screen.getByTestId('location')).toHaveTextContent(
-        /^\/capabilities\/lifecycle\?/,
+        /^\/settings\/capabilities\/lifecycle\?/,
       ),
     );
     fireEvent.change(screen.getByRole('searchbox'), { target: { value: '' } });
@@ -281,7 +281,7 @@ describe('capability guide page', () => {
     );
     await waitFor(() =>
       expect(screen.getByTestId('location')).toHaveTextContent(
-        /^\/capabilities\/lifecycle$/,
+        /^\/settings\/capabilities\/lifecycle$/,
       ),
     );
     expect(rows()).toHaveLength(catalog.entries.length);
@@ -289,7 +289,7 @@ describe('capability guide page', () => {
     fireEvent.click(screen.getByRole('button', { name: 'history back' }));
     await waitFor(() =>
       expect(screen.getByTestId('location')).toHaveTextContent(
-        '/capabilities/jobs?source=kernel&q=background',
+        '/settings/capabilities/jobs?source=kernel&q=background',
       ),
     );
     expect(screen.getByRole('searchbox')).toHaveValue('background');
@@ -303,7 +303,7 @@ describe('capability guide page', () => {
 });
 
 it('uses an app-owned database detail body while retaining catalog navigation', async () => {
-  await renderGuide('/capabilities/db?source=kernel&q=db', {
+  await renderGuide('/settings/capabilities/db?source=kernel&q=db', {
     entryComponents: { db: () => <p>Live database overview</p> },
   });
   expect(await screen.findByText('Live database overview')).toBeInTheDocument();
@@ -323,7 +323,7 @@ it.each(
 )(
   'keeps documentation and application context available for %s',
   async (id, packageName, docs) => {
-    await renderGuide(`/capabilities/${id}`);
+    await renderGuide(`/settings/capabilities/${id}`);
     const article = screen.getByRole('article');
     expect(
       within(article).getByRole('link', { name: en.detail.docs }),
@@ -349,7 +349,7 @@ it('redirects the old i18n detail to the merged entry and keeps filters', async 
       '@nocobase/app-plugin-i18n': '*',
     },
   });
-  await renderGuide('/capabilities/i18n?source=plugin&q=i18n', {
+  await renderGuide('/settings/capabilities/i18n?source=plugin&q=i18n', {
     catalog: merged,
     entryComponents: {
       'app-plugin-i18n': () => <p>Combined language configuration</p>,
@@ -357,7 +357,7 @@ it('redirects the old i18n detail to the merged entry and keeps filters', async 
   });
   await waitFor(() =>
     expect(screen.getByTestId('location')).toHaveTextContent(
-      '/capabilities/app-plugin-i18n?source=plugin&q=i18n',
+      '/settings/capabilities/app-plugin-i18n?source=plugin&q=i18n',
     ),
   );
   expect(
@@ -366,7 +366,7 @@ it('redirects the old i18n detail to the merged entry and keeps filters', async 
   expect(rows()).toHaveLength(1);
   expect(rows()[0]).toHaveAttribute(
     'href',
-    '/capabilities/app-plugin-i18n?source=plugin&q=i18n',
+    '/settings/capabilities/app-plugin-i18n?source=plugin&q=i18n',
   );
 });
 
@@ -377,10 +377,10 @@ it('opens the first filtered entry on desktop and preserves the search parameter
     removeEventListener: vi.fn(),
   }));
   try {
-    await renderGuide('/capabilities?source=kernel&q=db');
+    await renderGuide('/settings/capabilities?source=kernel&q=db');
     await waitFor(() =>
       expect(screen.getByTestId('location')).toHaveTextContent(
-        '/capabilities/db?source=kernel&q=db',
+        '/settings/capabilities/db?source=kernel&q=db',
       ),
     );
   } finally {

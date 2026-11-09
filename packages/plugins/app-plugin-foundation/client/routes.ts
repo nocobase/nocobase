@@ -5,6 +5,7 @@ import {
 } from '@nocobase/app-client/plugins';
 import { Layers, Settings } from 'lucide-react';
 import { builtInDetailLoaders } from './capability-guide/details/feature-overview-loaders.js';
+import { CAPABILITY_GUIDE_ACCESS } from './access.js';
 import { createElement, lazy, type ComponentType } from 'react';
 
 import {
@@ -67,7 +68,7 @@ export function foundationDefinition(
 
 /**
  * The capability guide: a static page listing every core module and plugin the application depends on, with business
- * descriptions. Every signed-in user may open the catalog. Plugin-owned detail bodies enforce their data access
+ * descriptions. The catalog and every detail require the same page-access grant. Plugin-owned detail bodies enforce their data access
  * through the APIs they use; the catalog itself does not grant access to configuration.
  * Both paths render the same page: the list alone on a narrow screen, the list beside the entry on a wide one.
  */
@@ -109,7 +110,7 @@ export function capabilityGuideDefinitions(
       name: 'capabilityGuide',
       path: CAPABILITY_GUIDE_PATH,
       auth: 'required',
-      authz: 'skip',
+      authz: CAPABILITY_GUIDE_ACCESS,
       ...(options.navigation === false
         ? {}
         : {
@@ -126,7 +127,7 @@ export function capabilityGuideDefinitions(
       name: 'capabilityGuideEntry',
       path: `${CAPABILITY_GUIDE_PATH}/:entryId`,
       auth: 'required',
-      authz: 'skip',
+      authz: CAPABILITY_GUIDE_ACCESS,
       componentLoader,
     },
   ];
