@@ -2,7 +2,7 @@
   "name": "@nocobase/app-plugin-distributed",
   "displayName": "Distributed App Plugin",
   "description": "Agent Skills for configuring and verifying distributed NocoBase applications.",
-  "version": "0.0.1",
+  "version": "0.1.0-beta.0",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "sideEffects": false,

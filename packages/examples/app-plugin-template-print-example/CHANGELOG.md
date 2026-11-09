@@ -1,5 +1,15 @@
 # @nocobase/app-plugin-template-print-example
 
+## 1.0.0-beta.11
+
+### Patch Changes
+
+- 8be5180: Reduce mobile page padding consistently across application templates and plugin pages while preserving tablet and desktop spacing.
+- Updated dependencies [8be5180]
+  - @nocobase/app-plugin-authorization-example@1.0.0-beta.24
+  - @nocobase/app-plugin-authentication@2.0.0-beta.20
+  - @nocobase/app-plugin-authorization@1.0.0-beta.37
+
 ## 1.0.0-beta.10
 
 ### Patch Changes
