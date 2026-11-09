@@ -1,5 +1,11 @@
 # @nocobase/app-skills
 
+## 0.1.0-beta.62
+
+### Patch Changes
+
+- 8be5180: Describe the Database Explorer card that a new Default application's System settings now shows beside App Foundation.
+
 ## 0.1.0-beta.61
 
 ### Patch Changes
