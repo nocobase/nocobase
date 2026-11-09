@@ -8,6 +8,7 @@ type CollectionEntry = CollectionListResult['items'][number];
 import { useTranslation } from '@nocobase/i18n/client';
 import {
   ArrowLeft,
+  ArrowRight,
   ChevronRight,
   Database,
   KeyRound,
@@ -30,21 +31,22 @@ import {
   InputGroupButton,
   InputGroupInput,
 } from '#components/ui/input-group';
+import { Skeleton } from '#components/ui/skeleton';
 import {
-  Table,
   TableBody,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
 } from '#components/ui/table';
-import { LoadingLine, Recovery, StatusLine } from './feedback.js';
+import { Recovery, StatusLine } from './feedback.js';
 import {
   fieldMatches,
   fieldRows,
   warningMessages,
   type FieldRow,
 } from './model.js';
+import { Name } from './name.js';
 import { describeFailure, useMediaQuery, useRead } from './read.js';
 
 /** From this width the fields show as a table; below it, as stacked blocks. */
@@ -99,19 +101,30 @@ export function FieldsPanel({
   return (
     <section
       aria-labelledby='database-explorer-fields-heading'
-      className='flex min-w-0 flex-col overflow-hidden rounded-lg border bg-card'
+      // Clipping only where the panel scrolls inside itself: on a narrow page the
+      // back bar and column headings stick to the page, which clipping would stop.
+      className='flex min-w-0 flex-col rounded-lg border bg-card lg:min-h-0 lg:overflow-hidden'
     >
-      <div className='flex flex-col gap-2 border-b p-4'>
+      {/* On a narrow screen the way back to the tables stays in view while the fields scroll. */}
+      <div className='sticky top-0 z-20 flex h-11 items-center gap-2 rounded-t-lg border-b bg-card px-2 lg:hidden'>
         <Link
           to={backLink}
           className={cn(
             buttonVariants({ variant: 'ghost', size: 'sm' }),
-            '-ml-2 self-start lg:hidden',
+            'shrink-0',
           )}
         >
           <ArrowLeft aria-hidden='true' />
           {t('databaseExplorer.backToTables')}
         </Link>
+        <span
+          aria-hidden='true'
+          className='min-w-0 truncate text-sm text-muted-foreground'
+        >
+          {title ?? table}
+        </span>
+      </div>
+      <div className='flex flex-col gap-2 border-b p-4'>
         <p className='flex min-w-0 items-center gap-1 text-xs text-muted-foreground'>
           <Database aria-hidden='true' className='size-3.5 shrink-0' />
           <span className='truncate'>{connection}</span>
@@ -121,7 +134,7 @@ export function FieldsPanel({
           tabIndex={-1}
           className='font-heading text-base font-semibold wrap-anywhere outline-none focus-visible:ring-3 focus-visible:ring-ring/50'
         >
-          {title ?? table}
+          <Name value={title ?? table} />
         </h2>
         <dl className='flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground'>
           {title ? (
@@ -151,7 +164,7 @@ export function FieldsPanel({
       </div>
 
       {detail.status === 'loading' ? (
-        <LoadingLine identity={`${connection}\n${table}`} />
+        <FieldsPlaceholder />
       ) : failure ? (
         <div className='flex flex-col items-center gap-2 pb-4'>
           <StatusLine notice={failure} />
@@ -217,25 +230,28 @@ export function FieldsPanel({
               </CollapsibleContent>
             </Collapsible>
           ) : null}
-          {matched.length ? (
-            wide ? (
-              <FieldTable
-                table={table}
-                rows={matched}
-                knownTables={knownTables}
-                tableLink={tableLink}
-              />
+          {/* Only the fields scroll on a wide screen; the table, search and column headings stay in view. */}
+          <div className='lg:min-h-0 lg:flex-1 lg:overflow-y-auto'>
+            {matched.length ? (
+              wide ? (
+                <FieldTable
+                  table={table}
+                  rows={matched}
+                  knownTables={knownTables}
+                  tableLink={tableLink}
+                />
+              ) : (
+                <FieldList
+                  table={table}
+                  rows={matched}
+                  knownTables={knownTables}
+                  tableLink={tableLink}
+                />
+              )
             ) : (
-              <FieldList
-                table={table}
-                rows={matched}
-                knownTables={knownTables}
-                tableLink={tableLink}
-              />
-            )
-          ) : (
-            <StatusLine notice='noResults' />
-          )}
+              <StatusLine notice='noResults' />
+            )}
+          </div>
         </>
       )}
     </section>
@@ -256,9 +272,9 @@ function Meta({
     <div className='flex min-w-0 gap-1'>
       <dt>{label}</dt>
       <dd
-        className={cn('text-foreground wrap-anywhere', !plain && 'font-mono')}
+        className={cn('text-foreground wrap-break-word', !plain && 'font-mono')}
       >
-        {value}
+        {plain ? value : <Name value={value} />}
       </dd>
     </div>
   );
@@ -275,7 +291,9 @@ function FieldName({ row }: FieldCellProps): ReactElement {
   return (
     <>
       <div className='flex flex-wrap items-center gap-x-2 gap-y-1'>
-        <span className='font-medium wrap-anywhere'>{row.name}</span>
+        <span className='min-w-0 font-medium wrap-break-word'>
+          <Name value={row.name} />
+        </span>
         {row.primaryKey ? (
           <Badge variant='secondary'>
             <KeyRound aria-hidden='true' />
@@ -292,7 +310,13 @@ function FieldName({ row }: FieldCellProps): ReactElement {
   );
 }
 
-function FieldType({ row }: FieldCellProps): ReactElement {
+function FieldType({
+  row,
+  inline = false,
+}: FieldCellProps & {
+  /** The column type beside the field type rather than under it. */
+  inline?: boolean;
+}): ReactElement {
   const showNative =
     row.nativeType !== undefined &&
     row.nativeType.toLocaleLowerCase() !== row.type.toLocaleLowerCase();
@@ -300,7 +324,12 @@ function FieldType({ row }: FieldCellProps): ReactElement {
     <>
       <code className='font-mono text-xs'>{row.type}</code>
       {showNative ? (
-        <span className='block font-mono text-xs text-muted-foreground wrap-anywhere'>
+        <span
+          className={cn(
+            'font-mono text-xs text-muted-foreground wrap-anywhere',
+            inline ? 'ml-1.5' : 'block',
+          )}
+        >
           {row.nativeType}
         </span>
       ) : null}
@@ -311,6 +340,15 @@ function FieldType({ row }: FieldCellProps): ReactElement {
 /** Yes or No only when the definition says so; otherwise that it was not reported, never a guess. */
 function FieldNullable({ row }: FieldCellProps): ReactElement {
   const { t } = useTranslation();
+  if (row.relation)
+    return (
+      <span
+        className='text-muted-foreground'
+        title={t('databaseExplorer.relationNullable')}
+      >
+        {t('databaseExplorer.notApplicable')}
+      </span>
+    );
   return row.nullable === undefined ? (
     <span className='text-muted-foreground'>
       {t('databaseExplorer.notReported')}
@@ -338,17 +376,19 @@ function FieldReferences({
       {row.references.map((reference) => (
         <li
           key={`${reference.relation ?? ''}:${reference.collection}:${reference.fields?.join(',') ?? ''}`}
-          className='wrap-anywhere'
+          className='wrap-break-word'
         >
           {knownTables?.has(reference.collection) ? (
             <Link
               to={tableLink(reference.collection)}
               className='font-medium text-foreground underline-offset-4 hover:underline focus-visible:rounded-sm focus-visible:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring'
             >
-              {reference.collection}
+              <Name value={reference.collection} />
             </Link>
           ) : (
-            <span className='font-medium'>{reference.collection}</span>
+            <span className='font-medium'>
+              <Name value={reference.collection} />
+            </span>
           )}
           {reference.fields?.length ? (
             <span className='text-muted-foreground'>
@@ -366,6 +406,24 @@ function FieldReferences({
   );
 }
 
+/** Rows shaped like the fields that are loading, so switching tables keeps the panel's size instead of collapsing it. */
+function FieldsPlaceholder(): ReactElement {
+  const { t } = useTranslation();
+  return (
+    <div
+      role='status'
+      aria-busy='true'
+      className='flex min-h-64 flex-col gap-3 p-4'
+    >
+      <span className='sr-only'>{t('databaseExplorer.loading')}</span>
+      <Skeleton aria-hidden='true' className='h-8 w-full sm:max-w-xs' />
+      {['w-2/3', 'w-1/2', 'w-3/5', 'w-2/5', 'w-4/5'].map((width) => (
+        <Skeleton key={width} aria-hidden='true' className={cn('h-5', width)} />
+      ))}
+    </div>
+  );
+}
+
 function FieldTable({
   table,
   rows,
@@ -375,10 +433,16 @@ function FieldTable({
   rows: readonly FieldRow[];
 }): ReactElement {
   const { t } = useTranslation();
+  // A plain table rather than the Table primitive, whose own horizontal scroll
+  // container would keep the column headings from sticking to the scrolling panel.
   return (
-    <Table aria-label={t('databaseExplorer.fieldsOf', { table })}>
-      <TableHeader>
-        <TableRow>
+    <table
+      aria-label={t('databaseExplorer.fieldsOf', { table })}
+      className='w-full caption-bottom text-sm'
+    >
+      {/* On a narrow page the headings stick below the back bar (h-11); in the panel, to its top. */}
+      <TableHeader className='sticky top-11 z-10 bg-card shadow-[inset_0_-1px_0_var(--border)] lg:top-0'>
+        <TableRow className='hover:bg-transparent'>
           <TableHead className='pl-4'>
             {t('databaseExplorer.column.field')}
           </TableHead>
@@ -407,11 +471,27 @@ function FieldTable({
           </TableRow>
         ))}
       </TableBody>
-    </Table>
+    </table>
   );
 }
 
-/** The narrow-screen form of the table: one block per field, each value under its label, so nothing scrolls sideways. */
+/** A narrow-screen field's nullability as one short tag; relation fields have none to show. */
+function NullableTag({ row }: { row: FieldRow }): ReactElement | null {
+  const { t } = useTranslation();
+  if (row.relation) return null;
+  const state =
+    row.nullable === undefined ? 'unknown' : row.nullable ? 'yes' : 'no';
+  return (
+    <span className={cn(state === 'no' && 'text-foreground')}>
+      {t(`databaseExplorer.nullableTag.${state}`)}
+    </span>
+  );
+}
+
+/**
+ * The narrow-screen form of the table: two lines per field — its name and type,
+ * then only what applies to it — so a long table stays scannable without sideways scrolling.
+ */
 function FieldList({
   table,
   rows,
@@ -429,31 +509,34 @@ function FieldList({
       {rows.map((row) => (
         <li
           key={row.name}
-          className='flex flex-col gap-2 border-b px-4 py-3 last:border-b-0'
+          className='flex flex-col gap-1 border-b px-4 py-2.5 last:border-b-0'
         >
-          <div>
-            <FieldName row={row} {...cell} />
+          <div className='flex items-start justify-between gap-3'>
+            <div className='min-w-0'>
+              <FieldName row={row} {...cell} />
+            </div>
+            <div className='max-w-[45%] shrink-0 text-right'>
+              <span className='sr-only'>
+                {t('databaseExplorer.column.type')}
+              </span>
+              <FieldType row={row} inline {...cell} />
+            </div>
           </div>
-          <dl className='grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-1 text-sm'>
-            <dt className='text-muted-foreground'>
-              {t('databaseExplorer.column.type')}
-            </dt>
-            <dd>
-              <FieldType row={row} {...cell} />
-            </dd>
-            <dt className='text-muted-foreground'>
-              {t('databaseExplorer.column.nullable')}
-            </dt>
-            <dd>
-              <FieldNullable row={row} {...cell} />
-            </dd>
-            <dt className='text-muted-foreground'>
-              {t('databaseExplorer.column.references')}
-            </dt>
-            <dd>
-              <FieldReferences row={row} {...cell} />
-            </dd>
-          </dl>
+          <div className='flex flex-wrap items-baseline gap-x-3 gap-y-1 text-xs text-muted-foreground'>
+            <NullableTag row={row} />
+            {row.references.length ? (
+              <div className='flex min-w-0 items-baseline gap-1'>
+                <ArrowRight
+                  aria-hidden='true'
+                  className='size-3 shrink-0 self-center'
+                />
+                <span className='sr-only'>
+                  {t('databaseExplorer.column.references')}
+                </span>
+                <FieldReferences row={row} {...cell} />
+              </div>
+            ) : null}
+          </div>
         </li>
       ))}
     </ul>

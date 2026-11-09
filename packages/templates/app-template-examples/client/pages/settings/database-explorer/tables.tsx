@@ -25,6 +25,7 @@ import {
 } from '#components/ui/select';
 import { LoadingLine, Recovery, StatusLine } from './feedback.js';
 import { tableMatches, type TableListing } from './model.js';
+import { Name } from './name.js';
 import { describeFailure, type ReadState } from './read.js';
 
 export interface TablesPanelProps {
@@ -109,7 +110,7 @@ export function TablesPanel({
     <section
       aria-label={t('databaseExplorer.tables')}
       className={cn(
-        'min-w-0 flex-col overflow-hidden rounded-lg border bg-card',
+        'min-w-0 flex-col overflow-hidden rounded-lg border bg-card lg:min-h-0',
         className,
       )}
     >
@@ -278,7 +279,7 @@ export function TablesPanel({
             <ul
               ref={listRef}
               aria-label={t('databaseExplorer.tablesIn', { connection })}
-              className='relative flex flex-col gap-0.5 border-t p-2 lg:max-h-[max(16rem,calc(100dvh-30rem))] lg:overflow-y-auto'
+              className='relative flex flex-col gap-0.5 border-t p-2 lg:min-h-0 lg:flex-1 lg:overflow-y-auto'
               onKeyDown={(event: KeyboardEvent<HTMLUListElement>) => {
                 if (
                   moveFocus(listRef.current, event.key, document.activeElement!)
@@ -286,8 +287,13 @@ export function TablesPanel({
                   event.preventDefault();
               }}
             >
-              {matched.map((item) => {
+              {matched.map((item, index) => {
                 const current = item.name === selected;
+                // The list is one Tab stop: the open table, or the first when it is not listed; arrows move within.
+                const tabStop =
+                  selected && matched.some((entry) => entry.name === selected)
+                    ? current
+                    : index === 0;
                 const primary = item.title ?? item.name;
                 const secondary = [
                   item.title ? item.name : undefined,
@@ -301,6 +307,7 @@ export function TablesPanel({
                       to={tableLink(item.name)}
                       data-table={item.name}
                       aria-current={current ? 'true' : undefined}
+                      tabIndex={tabStop ? 0 : -1}
                       title={[primary, secondary].filter(Boolean).join('\n')}
                       className={cn(
                         'flex min-w-0 flex-col gap-0.5 rounded-md px-3 py-2 text-sm outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50',
@@ -311,11 +318,13 @@ export function TablesPanel({
                       <span className='flex min-w-0 items-center gap-2'>
                         <span
                           className={cn(
-                            'truncate',
-                            current ? 'font-semibold' : 'font-medium',
+                            current
+                              ? 'min-w-0 font-semibold wrap-break-word'
+                              : 'truncate font-medium',
                           )}
                         >
-                          {primary}
+                          {/* The open table shows its whole name; the others stay one line each. */}
+                          {current ? <Name value={primary} /> : primary}
                         </span>
                         {item.kind !== 'table' ? (
                           <Badge variant='outline' className='shrink-0'>
@@ -326,8 +335,13 @@ export function TablesPanel({
                         ) : null}
                       </span>
                       {secondary ? (
-                        <span className='truncate text-xs text-muted-foreground'>
-                          {secondary}
+                        <span
+                          className={cn(
+                            'text-xs text-muted-foreground',
+                            current ? 'min-w-0 wrap-break-word' : 'truncate',
+                          )}
+                        >
+                          {current ? <Name value={secondary} /> : secondary}
                         </span>
                       ) : null}
                     </Link>

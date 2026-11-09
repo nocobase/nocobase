@@ -51,6 +51,13 @@ export default {
   yes: '是',
   no: '否',
   notReported: '未提供',
+  notApplicable: '不适用',
+  relationNullable: '关系字段，不对应数据列',
+  nullableTag: {
+    yes: '允许为空',
+    no: '不允许为空',
+    unknown: '未提供是否允许为空',
+  },
   none: '无',
   warnings_one: '{{count}} 条检查说明：部分信息可能不完整',
   warnings_other: '{{count}} 条检查说明：部分信息可能不完整',

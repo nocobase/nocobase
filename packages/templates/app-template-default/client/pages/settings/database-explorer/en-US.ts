@@ -54,6 +54,13 @@ export default {
   yes: 'Yes',
   no: 'No',
   notReported: 'Not reported',
+  notApplicable: 'Not applicable',
+  relationNullable: 'Relation, not a column',
+  nullableTag: {
+    yes: 'Nullable',
+    no: 'Not null',
+    unknown: 'Nullability not reported',
+  },
   none: 'None',
   warnings_one: '{{count}} inspection note: some details may be incomplete',
   warnings_other: '{{count}} inspection notes: some details may be incomplete',
