@@ -1,5 +1,11 @@
 # @nocobase/app-plugin-foundation
 
+## 0.1.0-beta.18
+
+### Patch Changes
+
+- 368299b: Open the first matching feature detail by default in the desktop Features and extensions catalog.
+
 ## 0.1.0-beta.17
 
 ### Patch Changes

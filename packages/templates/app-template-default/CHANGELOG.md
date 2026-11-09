@@ -1,5 +1,13 @@
 # @nocobase/app-template-default
 
+## 1.0.0-beta.91
+
+### Patch Changes
+
+- ae35635: Allow generated application catalog checks to pass with additional plugins that use generic introductions.
+- Updated dependencies [368299b]
+  - @nocobase/app-plugin-foundation@0.1.0-beta.18
+
 ## 1.0.0-beta.90
 
 ### Patch Changes

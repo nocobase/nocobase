@@ -2,6 +2,16 @@
 
 本文件记录 NocoBase 3 的所有重要变更，每次发布一节：`nocobase-v3-beta/<日期>.<序号>` 是预览版，`release/<日期>.<序号>` 是正式版。每次发布的包版本见对应的 GitHub Release，各个包自己的变更见包内的 CHANGELOG.md。
 
+## [nocobase-v3-beta/2026-11-09.2](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-09.2)
+
+### 🚀 优化
+
+- **[应用基础]** 桌面端进入功能与扩展时默认打开第一个匹配功能，并保留筛选条件。 ([#11396](https://github.com/nocobase/nocobase/pull/11396)) by @chenos
+
+### 🐛 修复
+
+- **[应用模板]** 修复生成应用安装扩展插件后，功能目录测试因使用通用介绍而误报失败的问题。 ([#11399](https://github.com/nocobase/nocobase/pull/11399)) by @chenos
+
 ## [nocobase-v3-beta/2026-11-09.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-09.1)
 
 ### 🎉 新特性
