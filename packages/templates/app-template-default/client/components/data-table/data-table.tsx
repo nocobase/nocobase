@@ -22,9 +22,11 @@ import {
   type ReactElement,
   type ReactNode,
   useEffect,
+  useCallback,
   useMemo,
   useRef,
   useState,
+  useSyncExternalStore,
 } from 'react';
 
 import { DataTablePagination } from './pagination.js';
@@ -83,6 +85,41 @@ export interface DataTableProps<TData, TValue = unknown> {
     parent?: Row<TData>,
   ) => string;
   readonly onRowClick?: (row: Row<TData>) => void;
+  /**
+   * Renders one row as a compact card. When given, screens narrower than the
+   * `md` breakpoint (768px) show the rows as a list of these cards instead of
+   * table rows, keeping the same states, selection and pagination. Sorting has
+   * no column headers there: render `DataTableSortMenu` in the toolbar.
+   */
+  readonly renderCard?: (row: Row<TData>) => ReactNode;
+}
+
+/** Below the `md` breakpoint, the width `useIsMobile` and the sidebar also use. */
+const PHONE_QUERY = '(max-width: 767px)';
+
+function phoneMedia(): MediaQueryList | undefined {
+  return typeof window !== 'undefined' &&
+    typeof window.matchMedia === 'function'
+    ? window.matchMedia(PHONE_QUERY)
+    : undefined;
+}
+
+/** Whether the viewport is phone-sized, read on the first render so a phone never flashes the table. */
+function useIsPhone(enabled: boolean): boolean {
+  const subscribe = useCallback(
+    (onChange: () => void) => {
+      const media = enabled ? phoneMedia() : undefined;
+      if (typeof media?.addEventListener !== 'function') return () => {};
+      media.addEventListener('change', onChange);
+      return () => media.removeEventListener('change', onChange);
+    },
+    [enabled],
+  );
+  return useSyncExternalStore(
+    subscribe,
+    () => enabled && phoneMedia()?.matches === true,
+    () => false,
+  );
 }
 
 /**
@@ -120,7 +157,9 @@ export function DataTable<TData, TValue = unknown>({
   onRetry,
   onClearFilters,
   emptyAction,
+  renderCard,
 }: DataTableProps<TData, TValue>): ReactElement {
+  const cards = useIsPhone(renderCard !== undefined) && renderCard;
   const tableData = useMemo(() => [...data], [data]);
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -202,6 +241,7 @@ export function DataTable<TData, TValue = unknown>({
   // A new query hides the previous rows at once; keep their body and footer
   // geometry while it loads so the page below does not jump.
   const bodyRef = useRef<HTMLTableSectionElement>(null);
+  const cardListRef = useRef<HTMLUListElement>(null);
   const footerRef = useRef<HTMLDivElement>(null);
   const [reserved, setReserved] = useState<{
     readonly body: number;
@@ -210,7 +250,7 @@ export function DataTable<TData, TValue = unknown>({
   if (!showRows && state !== 'loading' && reserved !== undefined)
     setReserved(undefined);
   useEffect(() => {
-    const body = bodyRef.current;
+    const body = bodyRef.current ?? cardListRef.current;
     if (!showRows || !body || typeof ResizeObserver === 'undefined') return;
     const footer = footerRef.current;
     const observer = new ResizeObserver(() => {
@@ -225,7 +265,7 @@ export function DataTable<TData, TValue = unknown>({
     observer.observe(body);
     if (footer) observer.observe(footer);
     return () => observer.disconnect();
-  }, [showRows, showPagination]);
+  }, [showRows, showPagination, cards]);
   const reserving = state === 'loading' && reserved !== undefined;
 
   return (
@@ -245,88 +285,135 @@ export function DataTable<TData, TValue = unknown>({
           />
         </div>
       ) : null}
-      <div className='relative overflow-hidden rounded-lg border'>
-        {/* A retry after a refresh failure is announced by its own toolbar button. */}
-        <RefreshIndicator
-          pending={Boolean(loading && showRows && state !== 'refresh-failed')}
-          identity={loadingIdentity}
-        />
-        {/* Only retained rows are busy; a loading body owns its own busy region and status. */}
-        <Table aria-busy={loading && showRows}>
-          <TableHeader>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <TableHead
-                    key={header.id}
-                    colSpan={header.colSpan}
-                    aria-sort={
-                      header.column.getCanSort()
-                        ? header.column.getIsSorted() === 'asc'
-                          ? 'ascending'
-                          : header.column.getIsSorted() === 'desc'
-                            ? 'descending'
-                            : 'none'
+      {cards ? (
+        <div className='relative'>
+          <RefreshIndicator
+            pending={Boolean(loading && showRows && state !== 'refresh-failed')}
+            identity={loadingIdentity}
+          />
+          {showFeedback ? (
+            <div
+              className='rounded-lg border'
+              style={
+                reserving && reserved.body > 0
+                  ? { height: reserved.body }
+                  : undefined
+              }
+            >
+              {state !== 'loading' || loading !== false ? (
+                <ListFeedback
+                  state={state}
+                  identity={loadingIdentity}
+                  empty={emptyMessage}
+                  emptyAction={emptyAction}
+                />
+              ) : null}
+            </div>
+          ) : null}
+          {showRows ? (
+            <ul
+              ref={cardListRef}
+              aria-busy={loading}
+              className={cn('flex flex-col gap-2', showFeedback && 'mt-2')}
+            >
+              {rows.map((row) => (
+                <li
+                  key={row.id}
+                  data-slot='data-table-card'
+                  data-state={row.getIsSelected() ? 'selected' : undefined}
+                  className={onRowClick ? 'cursor-pointer' : undefined}
+                  onClick={onRowClick ? () => onRowClick(row) : undefined}
+                >
+                  {cards(row)}
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </div>
+      ) : (
+        <div className='relative overflow-hidden rounded-lg border'>
+          {/* A retry after a refresh failure is announced by its own toolbar button. */}
+          <RefreshIndicator
+            pending={Boolean(loading && showRows && state !== 'refresh-failed')}
+            identity={loadingIdentity}
+          />
+          {/* Only retained rows are busy; a loading body owns its own busy region and status. */}
+          <Table aria-busy={loading && showRows}>
+            <TableHeader>
+              {table.getHeaderGroups().map((headerGroup) => (
+                <TableRow key={headerGroup.id}>
+                  {headerGroup.headers.map((header) => (
+                    <TableHead
+                      key={header.id}
+                      colSpan={header.colSpan}
+                      aria-sort={
+                        header.column.getCanSort()
+                          ? header.column.getIsSorted() === 'asc'
+                            ? 'ascending'
+                            : header.column.getIsSorted() === 'desc'
+                              ? 'descending'
+                              : 'none'
+                          : undefined
+                      }
+                    >
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(
+                            header.column.columnDef.header,
+                            header.getContext(),
+                          )}
+                    </TableHead>
+                  ))}
+                </TableRow>
+              ))}
+            </TableHeader>
+            <TableBody ref={bodyRef}>
+              {showFeedback ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={feedbackColumnCount}
+                    className='p-0'
+                    style={
+                      reserving && reserved.body > 0
+                        ? { height: reserved.body }
                         : undefined
                     }
                   >
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext(),
-                        )}
-                  </TableHead>
-                ))}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody ref={bodyRef}>
-            {showFeedback ? (
-              <TableRow>
-                <TableCell
-                  colSpan={feedbackColumnCount}
-                  className='p-0'
-                  style={
-                    reserving && reserved.body > 0
-                      ? { height: reserved.body }
-                      : undefined
-                  }
-                >
-                  {/* Readiness may stay unresolved while the parent query is paused. */}
-                  {state !== 'loading' || loading !== false ? (
-                    <ListFeedback
-                      state={state}
-                      identity={loadingIdentity}
-                      empty={emptyMessage}
-                      emptyAction={emptyAction}
-                    />
-                  ) : null}
-                </TableCell>
-              </TableRow>
-            ) : null}
-            {showRows
-              ? rows.map((row) => (
-                  <TableRow
-                    key={row.id}
-                    data-state={row.getIsSelected() ? 'selected' : undefined}
-                    className={onRowClick ? 'cursor-pointer' : undefined}
-                    onClick={onRowClick ? () => onRowClick(row) : undefined}
-                  >
-                    {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id}>
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext(),
-                        )}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))
-              : null}
-          </TableBody>
-        </Table>
-      </div>
+                    {/* Readiness may stay unresolved while the parent query is paused. */}
+                    {state !== 'loading' || loading !== false ? (
+                      <ListFeedback
+                        state={state}
+                        identity={loadingIdentity}
+                        empty={emptyMessage}
+                        emptyAction={emptyAction}
+                      />
+                    ) : null}
+                  </TableCell>
+                </TableRow>
+              ) : null}
+              {showRows
+                ? rows.map((row) => (
+                    <TableRow
+                      key={row.id}
+                      data-state={row.getIsSelected() ? 'selected' : undefined}
+                      className={onRowClick ? 'cursor-pointer' : undefined}
+                      onClick={onRowClick ? () => onRowClick(row) : undefined}
+                    >
+                      {row.getVisibleCells().map((cell) => (
+                        <TableCell key={cell.id}>
+                          {flexRender(
+                            cell.column.columnDef.cell,
+                            cell.getContext(),
+                          )}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))
+                : null}
+            </TableBody>
+          </Table>
+        </div>
+      )}
       {showPagination || (pagination && reserving) ? (
         <div ref={footerRef} data-slot='data-table-footer'>
           <DataTablePagination

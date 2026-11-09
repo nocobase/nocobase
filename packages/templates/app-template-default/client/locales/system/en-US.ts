@@ -439,6 +439,8 @@ const systemEnUS = {
     noResults: 'No results',
     sortAscending: 'Asc',
     sortDescending: 'Desc',
+    sort: 'Sort',
+    sortBy: 'Sort by',
     hideColumn: 'Hide',
     view: 'View',
     toggleColumns: 'Toggle columns',

@@ -11,3 +11,4 @@ export {
   DataTableViewOptions,
   type DataTableViewOptionsProps,
 } from './view-options.js';
+export { DataTableSortMenu, type DataTableSortMenuProps } from './sort-menu.js';

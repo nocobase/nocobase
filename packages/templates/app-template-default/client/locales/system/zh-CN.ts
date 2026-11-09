@@ -414,6 +414,8 @@ const systemZhCN: SystemResource = {
     noResults: '无结果',
     sortAscending: '升序',
     sortDescending: '降序',
+    sort: '排序',
+    sortBy: '排序方式',
     hideColumn: '隐藏',
     view: '视图',
     toggleColumns: '显示列',
