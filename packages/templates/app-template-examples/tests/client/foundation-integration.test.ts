@@ -9,6 +9,8 @@ import {
 import packageMetadata from '../../package.json' with { type: 'json' };
 import {
   createCapabilityCatalog,
+  entryContent,
+  guideContent,
   type DependencyManifest,
 } from '@nocobase/app-plugin-foundation/capability-guide';
 
@@ -55,7 +57,7 @@ describe('Examples Foundation integration', () => {
     expect(demos.filter(([, demo]) => !paths.has(demo!))).toEqual([]);
   });
 
-  it('lists every plugin this application declares in the capability guide, with the six core modules introduced on their own', () => {
+  it('lists every plugin this application declares in the capability guide, with the standalone core modules', () => {
     const manifest = packageMetadata as DependencyManifest;
     const { entries } = createCapabilityCatalog(manifest);
     const declared = Object.keys({
@@ -75,10 +77,38 @@ describe('Examples Foundation integration', () => {
         .filter((entry) => entry.source === 'kernel')
         .map((entry) => entry.name),
     ).toEqual(['db', 'jobs', 'lifecycle', 'queue', 'realtime']);
-    // Every entry has its own wording; none falls back to the generic text.
-    expect(entries.filter((entry) => !entry.known)).toEqual([]);
+    // Installed extensions may use the guide's generic introduction.
+    for (const entry of entries) {
+      for (const locale of ['en-US', 'zh-CN']) {
+        const text = entryContent(guideContent(locale), entry);
+        expect(text.title.trim()).not.toBe('');
+        expect(text.summary.trim()).not.toBe('');
+      }
+    }
     expect(
       entries.filter((entry) => entry.role === 'example').length,
     ).toBeGreaterThan(0);
+  });
+
+  it('keeps an additional plugin discoverable without built-in wording', () => {
+    const packageName = '@example/app-plugin-business-extension';
+    const catalog = createCapabilityCatalog({
+      ...packageMetadata,
+      dependencies: {
+        ...packageMetadata.dependencies,
+        [packageName]: '1.0.0',
+      },
+    });
+    const entry = catalog.entries.find(
+      (item) => item.packageName === packageName,
+    )!;
+    expect(entry).toMatchObject({ source: 'plugin', known: false });
+    expect(catalog.find(entry.id)).toBe(entry);
+    for (const locale of ['en-US', 'zh-CN']) {
+      const text = entryContent(guideContent(locale), entry);
+      expect(text.title).toContain(packageName);
+      expect(text.summary.trim()).not.toBe('');
+      expect(text.prompts.main?.template).toContain(packageName);
+    }
   });
 });
