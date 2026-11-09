@@ -5,7 +5,13 @@ import { RouteTreeProvider } from '../../client/routing/route-context.js';
 import applicationRoutes from '../../client/routes.js';
 import SkillProjectDetailPage from '../../client/pages/skill-projects/detail.js';
 import { answerApi } from '@nocobase/app-testing/client';
-import { act, fireEvent, screen, waitFor } from '@testing-library/react';
+import {
+  act,
+  fireEvent,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes, useLocation, useNavigate } from 'react-router';
 import { afterEach, expect, it, vi } from 'vitest';
@@ -715,7 +721,14 @@ it.each([
         key.startsWith('nocobase:submission:'),
       ),
     ).toEqual([]);
+    // The typed input is still there to lose although it can no longer be saved, so leaving asks first.
     await userEvent.keyboard('{Escape}');
+    const prompt = await screen.findByRole('alertdialog', {
+      name: 'Discard changes?',
+    });
+    await userEvent.click(
+      within(prompt).getByRole('button', { name: 'Discard' }),
+    );
     await waitFor(() =>
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
     );

@@ -62,8 +62,8 @@ export interface RouteOverlayProps {
    * backdrop, Cancel through `close()`, browser back and forward, the phone's back gesture and links — first asks
    * "Discard changes?", and reloading or closing the tab gets the browser's warning. A saved draft does not count as
    * saved, and `dirty` cannot switch off an edit the overlay saw. Leaving does not ask during the save itself (while a
-   * `FeedbackForm` in the overlay is still running its `onSubmit`: navigate or `close()` from it), and not when the
-   * overlay has no enabled submit button, because input that cannot be saved has nothing to discard.
+   * `FeedbackForm` in the overlay is still running its `onSubmit`: navigate or `close()` from it). It still asks
+   * while the save button is disabled, such as while validation fails, because the input is still there to lose.
    */
   readonly dirty?: boolean | (() => boolean);
   readonly className?: string;
@@ -156,21 +156,12 @@ function DiscardGuard({
   const isDirty = useCallback((): boolean => {
     // The save's own navigation.
     if (savingRef.current > 0) return false;
-    // Input that can no longer be saved, such as a record deleted elsewhere, leaves nothing to discard: ask only while
-    // the overlay offers an enabled submit button.
-    const popup = popupRef?.current;
-    if (
-      popup &&
-      !popup.querySelector(
-        'button:enabled:not([type="button"]):not([type="reset"])',
-      )
-    )
-      return false;
+    // A disabled save button, such as while validation fails, never means there is nothing to lose.
     const current = dirtyRef.current;
     return (
       editedRef.current || (typeof current === 'function' ? current() : current)
     );
-  }, [popupRef]);
+  }, []);
   // The pending question, so a second attempt to leave while it is open waits for the same answer.
   const promptRef = useRef<{
     readonly promise: Promise<boolean>;

@@ -934,7 +934,7 @@ describe('the dirty prop of a route overlay', () => {
 describe('the unsaved-changes question cannot be switched off by a draft', () => {
   // A page that keeps a draft and passes a `dirty` that says "nothing to lose" once the draft is stored, then saves
   // through a FeedbackForm whose onSubmit navigates back.
-  function DraftEdit() {
+  function DraftEdit({ saveDisabled = false }: { saveDisabled?: boolean }) {
     const navigate = useNavigate();
     const { search } = useLocation();
     return (
@@ -944,7 +944,7 @@ describe('the unsaved-changes question cannot be switched off by a draft', () =>
         footer={
           <>
             <Actions />
-            <button type='submit' form='draft-form'>
+            <button type='submit' form='draft-form' disabled={saveDisabled}>
               Save
             </button>
           </>
@@ -962,12 +962,14 @@ describe('the unsaved-changes question cannot be switched off by a draft', () =>
       </RouteDialog>
     );
   }
-  function setupDraft() {
-    const history: { path?: string } = {};
+  function setupDraft(saveDisabled = false) {
+    const history: { path?: string; back?: () => void } = {};
     function Probe() {
       const { pathname, search } = useLocation();
+      const navigate = useNavigate();
       useEffect(() => {
         history.path = `${pathname}${search}`;
+        history.back = () => void navigate(-1);
       });
       return null;
     }
@@ -980,7 +982,10 @@ describe('the unsaved-changes question cannot be switched off by a draft', () =>
           <Probe />
           <Routes>
             <Route path='/orders' element={<Outlet />}>
-              <Route path='edit' element={<DraftEdit />} />
+              <Route
+                path='edit'
+                element={<DraftEdit saveDisabled={saveDisabled} />}
+              />
             </Route>
           </Routes>
         </NavigationGuardProvider>
@@ -1007,6 +1012,36 @@ describe('the unsaved-changes question cannot be switched off by a draft', () =>
       'Original draft',
     );
     await waitFor(() => expect(history.path).toBe('/orders/edit?page=2'));
+  });
+
+  it('still asks on Cancel and browser back while the save button is disabled', async () => {
+    const history = setupDraft(true);
+    await userEvent.type(
+      await screen.findByRole('textbox', { name: 'Name' }),
+      ' invalid',
+    );
+    expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
+    for (const leave of [
+      () => userEvent.click(screen.getByRole('button', { name: 'Cancel' })),
+      async () => {
+        await act(async () => history.back?.());
+      },
+    ]) {
+      await leave();
+      const prompt = await screen.findByRole('alertdialog', {
+        name: 'Discard changes?',
+      });
+      await userEvent.click(
+        within(prompt).getByRole('button', { name: 'Keep editing' }),
+      );
+      await waitFor(() =>
+        expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument(),
+      );
+      expect(screen.getByRole('textbox', { name: 'Name' })).toHaveValue(
+        'Original invalid',
+      );
+      await waitFor(() => expect(history.path).toBe('/orders/edit?page=2'));
+    }
   });
 
   it('closes without asking when nothing was typed', async () => {
