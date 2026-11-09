@@ -8,13 +8,7 @@ import {
 import { useAuthentication } from '@nocobase/app-plugin-authentication/client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { useEffect, useId, useRef, useState, type ReactElement } from 'react';
-import {
-  Link,
-  useNavigate,
-  useOutletContext,
-  useParams,
-  useLocation,
-} from 'react-router';
+import { Link, useNavigate, useParams, useLocation } from 'react-router';
 import { useForm } from 'react-hook-form';
 import { FeedbackForm } from '#components/feedback-form';
 import { RouteDialog } from '#components/route-dialog';
@@ -34,13 +28,14 @@ import { Button } from '#components/ui/button';
 import { Skeleton } from '#components/ui/skeleton';
 import { Input } from '#components/ui/input';
 import { Label } from '#components/ui/label';
+import { announceDataChange } from '#hooks/use-data-changes';
 import { useListData } from '#hooks/use-list-data';
 import type { SkillProject } from './index.js';
+import { projectScope, projectsScope } from './scopes.js';
 
 export default function SkillProjectEditPage(): ReactElement {
   const { projectId } = useParams();
   const { t } = useTranslation();
-  const { reload } = useOutletContext<{ reload: () => void }>();
   const request = useListData<{ data: SkillProject }>(
     `skillProjects/${encodeURIComponent(projectId ?? '')}`,
     { active: Boolean(projectId) },
@@ -48,8 +43,10 @@ export default function SkillProjectEditPage(): ReactElement {
   const status =
     request.error instanceof ApiClientError ? request.error.status : undefined;
   useEffect(() => {
-    if (status === 404) reload();
-  }, [status, reload]);
+    // Views still showing the missing record read again.
+    if (status === 404 && projectId)
+      announceDataChange({ scopes: [projectScope(projectId)] });
+  }, [status, projectId]);
   if (!projectId) return <ProjectEditor key='new' />;
   if (request.error || !request.data)
     return (
@@ -130,10 +127,6 @@ function ProjectEditor({
   });
   const navigate = useNavigate();
   const location = useLocation();
-  const { reload, onSaved } = useOutletContext<{
-    reload: () => void;
-    onSaved: (project: SkillProject) => void;
-  }>();
   const toaster = useToaster();
   const [error, setError] = useState<unknown>();
   const [gone, setGone] = useState(false);
@@ -188,6 +181,7 @@ function ProjectEditor({
     const recovering = submission.pending;
     const snapshot = { name: form.getValues('name'), id: project?.id };
     let saved: { data: SkillProject } | undefined;
+    const changedScope = project ? projectScope(project.id) : projectsScope;
     try {
       saved = await submission.run(snapshot, async (key, signal, input) => {
         setError(undefined);
@@ -227,7 +221,15 @@ function ProjectEditor({
           savedRef.current = true;
           form.reset(form.getValues());
         }
-        reload();
+        announceDataChange({ scopes: [changedScope] });
+      } else if (
+        recovering ||
+        !(failure instanceof ApiClientError) ||
+        failure.status >= 500
+      ) {
+        // The outcome is unknown: affected views read the server to show what
+        // actually happened, while this form keeps the original operation.
+        announceDataChange({ scopes: [changedScope] });
       }
     } finally {
       busyRef.current = false;
@@ -235,7 +237,8 @@ function ProjectEditor({
     if (saved) {
       busyRef.current = false;
       savedRef.current = true;
-      onSaved(saved.data);
+      const scope = projectScope(saved.data.id);
+      announceDataChange({ scopes: [scope], results: { [scope]: saved } });
       toaster.show({
         type: 'success',
         title: t(project ? 'skillProjects.saved' : 'skillProjects.created', {
