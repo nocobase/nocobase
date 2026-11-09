@@ -224,6 +224,10 @@ function Editor({
         aria-required={name === 'name'}
         aria-invalid={Boolean(form.formState.errors[name])}
         aria-describedby={`${formId}-${name}-error`}
+        // The phone's email or number keyboard (mobile.md M6.2); validation stays the form's own.
+        inputMode={
+          name === 'email' ? 'email' : name === 'phone' ? 'tel' : undefined
+        }
         {...form.register(name, {
           ...(name === 'name'
             ? {

@@ -6,7 +6,7 @@ Start here for the tested core list/detail/create/edit interaction. The source r
 
 ## Source
 
-- [List page](../../../assets/list-edit-example/client/pages/skill-projects/index.tsx): the real DataTable, preserved parent list, active request guard, cancellable 300 ms feedback and a permanently reserved feedback slot.
+- [List page](../../../assets/list-edit-example/client/pages/skill-projects/index.tsx): the real DataTable, preserved parent list, active request guard, cancellable 300 ms feedback, a permanently reserved feedback slot, and phone cards through `renderCard` with the name linking to the detail and Edit beside it ([M3 of the phone experience](../mobile.md#m3-lists-cards-and-tables)).
 - [Independent detail page](../../../assets/list-edit-example/client/pages/skill-projects/detail.tsx): the record name, a stable list parent before loading succeeds and after failed/missing record reads, and an edit dialog whose Cancel returns to this detail. The shell supplies desktop breadcrumbs and the mobile parent arrow; no duplicate page back link.
 - [Create/edit dialog](../../../assets/list-edit-example/client/pages/skill-projects/edit.tsx): fresh record read, FeedbackForm, validation inside the submission lock, corrected-field revalidation, retry, original-input recovery after reload, and successful return to its owning list or detail.
 - [English and Chinese copy](../../../assets/list-edit-example/client/pages/skill-projects/locales.ts).
