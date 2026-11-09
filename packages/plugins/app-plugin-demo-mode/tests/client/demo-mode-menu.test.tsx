@@ -93,7 +93,11 @@ it('prevents repeated switches while pending and lets a failed switch be retried
     }),
   });
   fireEvent.click(
-    await screen.findByRole('button', { name: /Switch account/u }),
+    // Wait for the menu trigger's interaction state, as the label is also present during mounting.
+    await screen.findByRole('button', {
+      name: /Switch account/u,
+      expanded: false,
+    }),
   );
   const bobItem = await screen.findByRole('menuitemradio', { name: /Bob/u });
   fireEvent.click(bobItem);
@@ -133,9 +137,13 @@ it('shows an existing administrator with its localized role label', async () => 
       ],
     }),
   });
-  fireEvent.click(
-    await screen.findByRole('button', { name: '演示模式 · 切换账户' }),
-  );
+  // The label is also present during mounting; wait for the menu trigger's interaction state.
+  const trigger = await screen.findByRole('button', {
+    name: '演示模式 · 切换账户',
+    expanded: false,
+  });
+  fireEvent.click(trigger);
+  expect(trigger).toHaveAttribute('aria-expanded', 'true');
   const administrator = await screen.findByRole('menuitemradio', {
     name: /Super Admin/u,
   });
@@ -209,7 +217,11 @@ it('offers the same header entry to signed-out visitors', async () => {
     fetch: api({ accounts: [{ ...ann, current: false }, bob] }),
   });
   fireEvent.click(
-    await screen.findByRole('button', { name: /Switch account/u }),
+    // Wait for the menu trigger's interaction state, as the label is also present during mounting.
+    await screen.findByRole('button', {
+      name: /Switch account/u,
+      expanded: false,
+    }),
   );
   expect(
     await screen.findByRole('menuitemradio', { name: /Ann/u }),

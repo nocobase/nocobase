@@ -471,7 +471,7 @@ describe('unsaved changes in a route overlay', () => {
     return history;
   }
 
-  it('asks on Cancel, the close button, Escape and browser back, keeping the input when declined', async () => {
+  it('asks on Cancel, the close button, the backdrop, Escape and browser back, keeping the input when declined', async () => {
     const guard = vi.fn((dirty: boolean) => !dirty);
     const history = setupGuarded(guard);
     const name = await screen.findByRole('textbox', { name: 'Name' });
@@ -484,9 +484,15 @@ describe('unsaved changes in a route overlay', () => {
     await userEvent.click(
       within(dialog).getByRole('button', { name: 'Close' }),
     );
+    // A tap outside the dialog, as on a phone, is one more way out and reaches the same guard.
+    const backdrop = dialog
+      .closest('[data-base-ui-portal]')
+      ?.querySelector(':scope > [data-slot="dialog-overlay"]');
+    expect(backdrop).toBeInTheDocument();
+    await userEvent.click(backdrop!);
     await userEvent.keyboard('{Escape}');
     act(() => history.back!());
-    await waitFor(() => expect(guard).toHaveBeenCalledTimes(4));
+    await waitFor(() => expect(guard).toHaveBeenCalledTimes(5));
     expect(guard.mock.calls.every(([dirty]) => dirty)).toBe(true);
     expect(screen.getByRole('dialog', { name: 'Edit' })).toBeVisible();
     expect(screen.getByRole('textbox', { name: 'Name' })).toHaveValue(
