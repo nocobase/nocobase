@@ -27,7 +27,7 @@ import {
   useLocation,
   useNavigate,
 } from 'react-router';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { RouteDialog } from '../../client/components/route-dialog';
 import { RouteDrawer } from '../../client/components/route-drawer';
 import { useRouteOverlay } from '../../client/components/use-route-overlay';
@@ -539,6 +539,7 @@ describe('unsaved changes in a route overlay', () => {
 
 describe('detail drawer, edit dialog and a confirmation', () => {
   const save = vi.fn();
+  beforeEach(() => save.mockClear());
   // The one three-layer path the phone experience allows (mobile.md M7.2, guideline I1): a detail drawer opens an edit
   // dialog, whose unsaved-changes question is the single confirmation. Only the top layer takes input, and leaving
   // returns one layer at a time to the URL below it.
@@ -594,8 +595,8 @@ describe('detail drawer, edit dialog and a confirmation', () => {
     );
   }
 
-  it('asks once over the dialog, keeps the draft, then returns to the drawer and the list one layer at a time', async () => {
-    const user = userEvent.setup();
+  /** The orders list with a detail drawer at /orders/42 and its edit dialog; returns the current URL as it changes. */
+  function renderOrders(): { path?: string } {
     const location: { path?: string } = {};
     function Probe() {
       const { pathname, search } = useLocation();
@@ -640,6 +641,12 @@ describe('detail drawer, edit dialog and a confirmation', () => {
       </MemoryRouter>,
       { wrapper: I18n },
     );
+    return location;
+  }
+
+  it('asks once over the dialog, keeps the draft, then returns to the drawer and the list one layer at a time', async () => {
+    const user = userEvent.setup();
+    const location = renderOrders();
 
     await user.click(await screen.findByRole('link', { name: 'Edit' }));
     const dialog = await screen.findByRole('dialog', { name: 'Edit order' });
@@ -726,5 +733,57 @@ describe('detail drawer, edit dialog and a confirmation', () => {
     );
     await waitFor(() => expect(location.path).toBe('/orders?status=open'));
     expect(screen.getByText('Orders')).toBeVisible();
+  });
+  it('answers Enter and Space only on the confirmation, never on the Save below', async () => {
+    const user = userEvent.setup();
+    const location = renderOrders();
+    await user.click(await screen.findByRole('link', { name: 'Edit' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Edit order' });
+    await user.type(
+      within(dialog).getByRole('textbox', { name: 'Name' }),
+      ' draft',
+    );
+    const askToLeave = async () => {
+      await user.click(
+        within(screen.getByRole('dialog', { name: 'Edit order' })).getByRole(
+          'button',
+          { name: 'Cancel' },
+        ),
+      );
+      return screen.findByRole('alertdialog', { name: 'Discard changes?' });
+    };
+
+    // Whatever the confirmation focuses when it opens, it is not the Save below.
+    let prompt = await askToLeave();
+    await waitFor(() =>
+      expect(prompt.contains(document.activeElement)).toBe(true),
+    );
+
+    // Enter and Space on "Keep editing" close only the confirmation and keep the draft.
+    for (const key of ['{Enter}', ' ']) {
+      within(prompt).getByRole('button', { name: 'Keep editing' }).focus();
+      await user.keyboard(key);
+      await waitFor(() =>
+        expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument(),
+      );
+      expect(save).not.toHaveBeenCalled();
+      expect(screen.getByRole('textbox', { name: 'Name' })).toHaveValue(
+        'Original draft',
+      );
+      expect(location.path).toBe('/orders/42/edit?status=open');
+      prompt = await askToLeave();
+    }
+
+    // Enter on "Discard" leaves the dialog for the drawer below, still without saving.
+    within(prompt).getByRole('button', { name: 'Discard' }).focus();
+    await user.keyboard('{Enter}');
+    await waitFor(() =>
+      expect(
+        screen.queryByRole('dialog', { name: 'Edit order' }),
+      ).not.toBeInTheDocument(),
+    );
+    expect(location.path).toBe('/orders/42?status=open');
+    expect(screen.getByRole('dialog', { name: 'Order 42' })).toBeVisible();
+    expect(save).not.toHaveBeenCalled();
   });
 });
