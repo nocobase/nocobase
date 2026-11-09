@@ -137,8 +137,8 @@ import { createAppDatabaseManager } from '@nocobase/app-server/database';
 import { idGeneratorToken } from '@nocobase/app-server/id-generator';
 export default defineMigration({ name: '001_create', irreversible: true, async up({ builder, container, config, query }) {
 ${check}
-const id = container.resolve(idGeneratorToken).generate();
-${failMigration ? "throw new Error('fixture migration failed');" : "await builder.createCollection('business', c => c.integer('id').primary()); await query.insertInto('business').values({ id }).execute();"}
+const id = String(container.resolve(idGeneratorToken).generate());
+${failMigration ? "throw new Error('fixture migration failed');" : "await builder.createCollection('business', c => c.string('id').primary()); await query.insertInto('business').values({ id }).execute();"}
 } });`,
       );
     const seedDirectory = fixture.paths.database(`${name}/seeds`);
@@ -151,7 +151,7 @@ import { createAppDatabaseManager } from '@nocobase/app-server/database';
 import { idGeneratorToken } from '@nocobase/app-server/id-generator';
 export default defineSeed({ name: '001_seed', async run({ container, config, query }) {
 ${check}
-const id = container.resolve(idGeneratorToken).generate();
+const id = String(container.resolve(idGeneratorToken).generate());
 ${emptyMigrations ? '' : "await query.insertInto('business').values({ id }).execute();"}
 } });`,
     );
