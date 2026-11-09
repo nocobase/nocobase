@@ -1,6 +1,6 @@
 import { renderWithApp } from '@nocobase/app-testing/client';
 import type { ColumnDef, SortingState } from '@tanstack/react-table';
-import { screen, within } from '@testing-library/react';
+import { fireEvent, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { act } from 'react';
@@ -11,6 +11,7 @@ import {
   DataTable,
   DataTableColumnHeader,
   DataTableFilter,
+  DataTableSearch,
   DataTableSortMenu,
 } from '../../client/components/data-table/index.js';
 import { Checkbox } from '../../client/components/ui/checkbox.js';
@@ -660,5 +661,68 @@ describe('DataTable filters and summary on wider screens and phones', () => {
       screen.getByRole('list').compareDocumentPosition(below) &
         Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
+  });
+});
+
+describe('DataTableSearch', () => {
+  function Search({
+    onSearch,
+  }: {
+    readonly onSearch: (value: string) => void;
+  }) {
+    const [value, setValue] = useState('');
+    return (
+      <DataTableSearch
+        value={value}
+        label='Search repairs'
+        onSearch={(next) => {
+          onSearch(next);
+          setValue(next);
+        }}
+      />
+    );
+  }
+
+  it('is one search field with no separate button, applied on Enter and after typing pauses', async () => {
+    const onSearch = vi.fn();
+    const user = userEvent.setup();
+    await renderWithApp(<Search onSearch={onSearch} />, {
+      namespace,
+      namespaces,
+    });
+    const box = screen.getByRole('searchbox', { name: 'Search repairs' });
+    expect(screen.queryByRole('button')).not.toBeInTheDocument();
+    await user.type(box, 'pump{Enter}');
+    expect(onSearch).toHaveBeenCalledWith('pump');
+    onSearch.mockClear();
+    await user.type(box, ' valve ');
+    await vi.waitFor(() => expect(onSearch).toHaveBeenCalledWith('pump valve'));
+    expect(box).toHaveValue('pump valve ');
+  });
+
+  it('waits for an IME composition to end', async () => {
+    vi.useFakeTimers();
+    try {
+      const onSearch = vi.fn();
+      await renderWithApp(<Search onSearch={onSearch} />, {
+        namespace,
+        namespaces,
+      });
+      const box = screen.getByRole('searchbox', { name: 'Search repairs' });
+      fireEvent.compositionStart(box);
+      fireEvent.change(box, { target: { value: 'weixiu' } });
+      await act(async () => {
+        vi.advanceTimersByTime(1000);
+      });
+      expect(onSearch).not.toHaveBeenCalled();
+      fireEvent.change(box, { target: { value: '维修' } });
+      fireEvent.compositionEnd(box);
+      await act(async () => {
+        vi.advanceTimersByTime(300);
+      });
+      expect(onSearch).toHaveBeenCalledExactlyOnceWith('维修');
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

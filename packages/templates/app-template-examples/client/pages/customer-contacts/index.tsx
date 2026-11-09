@@ -13,14 +13,17 @@ import { useTranslation } from '@nocobase/i18n/client';
 import { useEffect, useRef, useState } from 'react';
 import { Link, Outlet, useLocation } from 'react-router';
 import type { ColumnDef } from '@tanstack/react-table';
-import { DataTable, DataTableFilter } from '#components/data-table';
+import {
+  DataTable,
+  DataTableFilter,
+  DataTableSearch,
+} from '#components/data-table';
 import { PageContainer } from '#components/page-container';
 import { PageHeader } from '#components/page-header';
 import { RecordLink } from '#components/record-link';
 import { StatusBadge } from '#components/status-badge';
 import { Button } from '#components/ui/button';
 import { Checkbox } from '#components/ui/checkbox';
-import { Input } from '#components/ui/input';
 import {
   AlertDialog,
   AlertDialogContent,
@@ -279,8 +282,9 @@ function CustomerContactsContent() {
         // md up or, on a phone, an icon Filters button named and badged with the applied count that opens them in a
         // bottom sheet; Clear filters joins while something is applied (M4.2).
         search={
-          <CustomerSearch
+          <DataTableSearch
             value={search}
+            label={t('customerContacts.search')}
             onSearch={(value) => updateQuery('search', value)}
           />
         }
@@ -496,44 +500,5 @@ export function OwnerName({ id }: { id: string }) {
         ? t('customerContacts.unavailable')
         : (request.data?.data.name ?? t('customerContacts.loading'))}
     </span>
-  );
-}
-function CustomerSearch({
-  value,
-  onSearch,
-}: {
-  value: string;
-  onSearch: (value: string) => void;
-}) {
-  const { t } = useTranslation();
-  const [text, setText] = useState(value);
-  const [seen, setSeen] = useState(value);
-  const [sent, setSent] = useState(value);
-  const [composing, setComposing] = useState(false);
-  if (value !== seen) {
-    setSeen(value);
-    if (value !== sent) setText(value);
-  }
-  useEffect(() => {
-    if (composing || text.trim() === value) return;
-    const timer = setTimeout(() => {
-      setSent(text.trim());
-      onSearch(text.trim());
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [text, composing, value, onSearch]);
-  return (
-    <Input
-      aria-label={t('customerContacts.search')}
-      placeholder={t('customerContacts.search')}
-      value={text}
-      onChange={(e) => setText(e.target.value)}
-      onCompositionStart={() => setComposing(true)}
-      onCompositionEnd={(e) => {
-        setComposing(false);
-        setText(e.currentTarget.value);
-      }}
-      className='min-w-0 flex-1 md:max-w-xs md:flex-none'
-    />
   );
 }

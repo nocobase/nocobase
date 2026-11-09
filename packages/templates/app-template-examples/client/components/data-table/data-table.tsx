@@ -406,18 +406,6 @@ export function DataTable<TData, TValue = unknown>({
     return () => observer.disconnect();
   }, [showRows, showPagination, cards]);
   const reserving = state === 'loading' && reserved !== undefined;
-  // During development, say so when the page above pushes the first phone card past M1.1's limit (mobile.md): 300px
-  // from the top of a 667px-high screen, before any scrolling.
-  useEffect(() => {
-    if (!import.meta.env?.DEV || !cards || !showRows) return;
-    const first = cardListRef.current?.firstElementChild;
-    if (!first || window.scrollY !== 0 || window.innerHeight < 600) return;
-    const top = first.getBoundingClientRect().top;
-    if (top > 300)
-      console.warn(
-        `DataTable: the first card starts ${Math.round(top)}px from the top of the screen, past the 300px of mobile.md M1.1. Fold what sits above the list into PageHeader (description, eyebrow), the toolbar row (search, filters, summary) or below the list.`,
-      );
-  }, [cards, showRows]);
 
   return (
     <div className={cn('flex flex-col gap-4', className)}>
