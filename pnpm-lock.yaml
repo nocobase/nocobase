@@ -4176,6 +4176,15 @@ importers:
         specifier: 'catalog:'
         version: 2.9.0
 
+  packages/plugins/app-plugin-distributed:
+    devDependencies:
+      '@nocobase/dev-config':
+        specifier: workspace:*
+        version: link:../../tools/dev-config
+      prettier:
+        specifier: 'catalog:'
+        version: 3.9.6
+
   packages/plugins/app-plugin-file:
     dependencies:
       '@nocobase/i18n':
