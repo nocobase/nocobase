@@ -1,4 +1,5 @@
 import { databaseManagerToken, TaskLockBusyError } from '@nocobase/db';
+import { AppDatabaseTaskError } from '@nocobase/app-server/database';
 import {
   provisionTestDatabases,
   type ProvisionedTestDatabases,
@@ -195,6 +196,56 @@ it('reports an invalid selection with the connection it named', async () => {
     details: { connection: 'unknown' },
   });
 });
+
+it.each(['prepare-storage', 'reset-schema', 'before-tasks'] as const)(
+  'retains structured %s failure details in text and JSON modes',
+  async (phase) => {
+    const f = await fixture({ configured: false });
+    const result = {
+      ok: false,
+      status: 'failed' as const,
+      results: [
+        {
+          connection: 'analytics',
+          kind: 'migrations' as const,
+          status: 'not-run' as const,
+        },
+      ],
+      failure: {
+        phase,
+        connection: 'analytics',
+        kind: 'migrations' as const,
+        ...(phase === 'before-tasks' ? { hook: 'fixture' } : {}),
+        error: 'prerequisite failed',
+      },
+    };
+    f.runtime.createApp = () => {
+      throw new AppDatabaseTaskError(result, new Error('prerequisite failed'));
+    };
+    const text = await runAppCommand(f.bind(AppDbApply), ['--no-collections']);
+    const json = await runAppCommand(f.bind(AppDbApply), [
+      '--no-collections',
+      '--json',
+    ]);
+    expect(text.error).toBeInstanceOf(CommandError);
+    const error = text.error as CommandError;
+    expect(error.details).toEqual({
+      connection: 'analytics',
+      kind: 'migrations',
+      failure: result.failure,
+      results: result.results,
+    });
+    expect(json.exitCode).toBe(1);
+    expect(json.json()).toMatchObject({
+      ok: false,
+      error: {
+        code: error.errorCode,
+        message: error.message,
+        details: error.details,
+      },
+    });
+  },
+);
 
 it('requires force for a reset in CI, as invalid usage', async () => {
   const { runtime, command } = await fixture();

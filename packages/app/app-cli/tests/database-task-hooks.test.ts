@@ -350,6 +350,10 @@ describe('database hooks during real CLI tasks', () => {
       'cleanup',
       'destroy',
     ]);
+    const document = run.json();
+    if (document.ok) throw new Error('Expected a hook failure');
+    expect(document.error.details).not.toHaveProperty('connection');
+    expect(document.error.details).not.toHaveProperty('kind');
     expect(await f.tables('main')).not.toContain('business');
   });
 
@@ -367,6 +371,7 @@ describe('database hooks during real CLI tasks', () => {
         code: 'DATABASE_TASK_FAILED',
         message: expect.stringContaining('fixture reset failed'),
         details: {
+          connection: 'reports',
           failure: {
             phase: 'reset-schema',
             connection: 'reports',

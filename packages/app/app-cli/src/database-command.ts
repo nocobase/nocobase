@@ -714,6 +714,8 @@ function settle(result: DatabaseRun): DatabaseCommandResult {
     : {};
   if (!result.ok) {
     const failed = result.results.find((entry) => entry.status === 'failed');
+    const connection = failed?.connection ?? result.failure?.connection;
+    const kind = failed?.kind ?? result.failure?.kind;
     if (result.lockBusy) {
       throw databaseLocked(result.lockBusy, {
         ...(failed ? { failed } : {}),
@@ -734,9 +736,8 @@ function settle(result: DatabaseRun): DatabaseCommandResult {
         code: 'DATABASE_TASK_FAILED',
         cause: result.executionError,
         details: {
-          ...(failed
-            ? { connection: failed.connection, kind: failed.kind }
-            : {}),
+          ...(connection === undefined ? {} : { connection }),
+          ...(kind === undefined ? {} : { kind }),
           ...(result.failure ? { failure: result.failure } : {}),
           ...(result.resetConnections
             ? { resetConnections: result.resetConnections }
