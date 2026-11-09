@@ -22,6 +22,15 @@ For an overlay or footer change, use the actual installed components in a browse
 - Check the intended close behavior, keyboard focus, nested overlays and return destination. Keep Cancel separate from Submit; prevent duplicate submissions and preserve input after failure.
 - Keep a focused browser regression test when fixing a reproducible layout bug or changing a shared overlay. Cover the relevant long-content, narrow and pending cases rather than taking a static class-name snapshot. A copy-only change needs a visual check, not a new test suite.
 
+## Phone experience
+
+Check [the phone checklist](mobile.md#checklist) for every page the change creates or alters, at 375×667, a 390–412px width and a desktop width, with phone emulation (`isMobile`, `hasTouch`).
+
+- Look at the first screen without scrolling: main content is visible (M1.1). Measure page overflow with `document.documentElement.scrollWidth <= innerWidth` in every checked state, including long Chinese and English content and the largest action set (M1.2).
+- Walk the page's main task on the phone width: find, filter and sort, open a record, edit with a validation error, save, cancel, confirm a destructive action, and return to the same filtered list and scroll position (M2–M7). Check the desktop width afterwards for regressions.
+- For overlays and forms near the bottom of the screen, check the short height and landscape, focus a field near the footer and submit with an error; the focused field, its error and the footer stay visible. Soft keyboard, dynamic toolbar and safe areas need a real device or simulator; without one they are Not verified.
+- A wrapping desktop toolbar or a sideways-scrolling ordinary list is a G issue against A4 and M3/M4, not a pass. An exception needs its recorded reason (M3.4, M5.4).
+
 ## Loading transitions
 
 For affected data views, distinguish the first load, an active refresh with retained data, and a paused or covered parent. Follow [I4](ui-guidelines.md) and the [list loading pattern](references/table.md#6-loading-the-list).

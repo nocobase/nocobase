@@ -454,6 +454,6 @@ After implementing, confirm each item by actually trying it:
 - [ ] Record not found: the situation is explained, no "Retry" is offered, and the list refreshes (guideline R3); other load failures can be retried (guideline S4).
 - [ ] Delete: failures are explained in the confirmation dialog, a 404 is treated as success, and focus lands on the search box after the delete (guideline A6).
 - [ ] Esc closes only the topmost layer; after closing, focus returns to the element that opened it, or lands in a stable place when that element is gone.
-- [ ] At a width of 375px, overlays stay within the screen, the content area scrolls, and the bottom buttons are reachable (guideline A4).
+- [ ] At 375×667, a 390–412px width and in landscape, overlays stay within the screen, the content area scrolls, the bottom buttons are reachable, and a focused field near the footer stays visible; a task that would need a third layer is a covering page instead ([M7 of the phone experience](../mobile.md#m7-overlays-and-action-areas), guideline A4).
 - [ ] Without permission for the parent route, the child route's URL does not open either.
 - [ ] The new route names are in the route test's page grant list (see [section 12 of `page.md`](page.md#12-update-the-route-test)).
