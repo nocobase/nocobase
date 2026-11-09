@@ -5,6 +5,7 @@ import { Search, X } from 'lucide-react';
 import {
   Suspense,
   useState,
+  useSyncExternalStore,
   type ComponentType,
   type ReactElement,
 } from 'react';
@@ -26,6 +27,21 @@ import {
 import { EntryDetail } from './entry-detail.js';
 import { EntryBadges, EntryIcon } from './shared.js';
 import { useGuideContent } from './use-guide-content.js';
+
+const DESKTOP_QUERY = '(min-width: 1024px)';
+
+function subscribeDesktop(onChange: () => void): () => void {
+  const media = window.matchMedia?.(DESKTOP_QUERY);
+  media?.addEventListener('change', onChange);
+  return () => media?.removeEventListener('change', onChange);
+}
+
+function isDesktop(): boolean {
+  return (
+    typeof window !== 'undefined' &&
+    !!window.matchMedia?.(DESKTOP_QUERY).matches
+  );
+}
 
 type GuideFilter = ReturnType<typeof readGuideFilter>;
 
@@ -109,6 +125,11 @@ export function CapabilityGuidePage({
 }): ReactElement {
   const { t } = useTranslation('@nocobase/app-plugin-foundation');
   const { entryId } = useParams();
+  const desktop = useSyncExternalStore(
+    subscribeDesktop,
+    isDesktop,
+    () => false,
+  );
   const [params, setParams] = useSearchParams();
   const { content } = useGuideContent();
   const filter = useUrlFilter(params);
@@ -151,6 +172,16 @@ export function CapabilityGuidePage({
     const merged = { ...filter.current, ...next };
     filter.request(merged);
     setParams(new URLSearchParams(guideSearch(merged)), { replace: true });
+  }
+
+  if (!entryId && desktop && visible[0]) {
+    const queryString = params.toString();
+    return (
+      <Navigate
+        replace
+        to={capabilityPath(visible[0].id, queryString ? `?${queryString}` : '')}
+      />
+    );
   }
 
   if (entryId && selected && entryId !== selected.id) {
@@ -263,7 +294,9 @@ export function CapabilityGuidePage({
               ) : undefined}
             </EntryDetail>
           ) : (
-            <HowToAsk content={content} />
+            <p className='text-sm text-muted-foreground'>
+              {content.page.noResults}
+            </p>
           )}
         </div>
       </div>
@@ -321,32 +354,6 @@ function CatalogList({
         );
       })}
     </ol>
-  );
-}
-
-function HowToAsk({
-  content,
-}: {
-  readonly content: GuideContent;
-}): ReactElement {
-  const { empty } = content.page;
-  return (
-    <section className='flex flex-col gap-3 rounded-xl border bg-card p-6'>
-      <h2 className='text-base font-semibold'>{empty.title}</h2>
-      <p className='text-sm leading-6 text-muted-foreground'>
-        {empty.description}
-      </p>
-      <ol className='flex flex-col gap-2 text-sm leading-6'>
-        {empty.parts.map((part, index) => (
-          <li key={part} className='flex gap-3'>
-            <span className='flex size-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-medium text-primary'>
-              {index + 1}
-            </span>
-            {part}
-          </li>
-        ))}
-      </ol>
-    </section>
   );
 }
 
