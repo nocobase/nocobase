@@ -465,3 +465,80 @@ it('shows one level at a time on a narrow screen and returns to the table it cam
     within(tableList()).getByRole('link', { name: 'orders' }),
   ).toHaveFocus();
 });
+
+it.each([
+  ['sqlite', 'main', false],
+  ['mysql', 'app', false],
+  ['postgres', 'public', true],
+  ['mssql', 'dbo', true],
+  ['postgres', '', false],
+])(
+  'shows only applicable schema metadata for %s (%s)',
+  async (dialect, schema, visible) => {
+    await mount(({ path }) => {
+      if (path.endsWith('/connections'))
+        return { data: [{ ...main, dialect }] };
+      if (path.endsWith('/collections'))
+        return {
+          data: [
+            table('orders', {
+              title: 'Orders',
+              tableName: 'sales_orders',
+              schema,
+            }),
+          ],
+        };
+      if (path.endsWith('/orders')) return detail('orders');
+      throw new Error(`Unexpected request: ${path}`);
+    }, '/settings/database-explorer?table=orders');
+
+    await screen.findByRole('table', { name: 'Fields of orders' });
+    const panel = screen.getByRole('region', { name: 'Orders' });
+    expect(Boolean(within(panel).queryByText('Schema'))).toBe(visible);
+    if (visible) expect(within(panel).getByText(schema)).toBeInTheDocument();
+    expect(within(panel).getByText('sales_orders')).toBeInTheDocument();
+    const link = within(tableList()).getByRole('link', { name: 'Orders' });
+    expect(link).toHaveAttribute('title', 'Orders\norders · sales_orders');
+    expect(link).toHaveTextContent(/^Orders$/);
+  },
+);
+
+it('keeps inspection notes collapsed until requested without hiding the fields', async () => {
+  const user = userEvent.setup();
+  await mount(({ path }) => {
+    if (path.endsWith('/connections')) return { data: [main] };
+    if (path.endsWith('/collections')) return { data: [table('orders')] };
+    if (path.endsWith('/orders')) {
+      const result = detail('orders');
+      return {
+        data: {
+          ...result.data,
+          collection: {
+            ...result.data.collection,
+            warnings: [
+              {
+                code: 'PARTIAL',
+                message: 'Native defaults could not be inspected.',
+              },
+            ],
+          },
+        },
+      };
+    }
+    throw new Error(`Unexpected request: ${path}`);
+  }, '/settings/database-explorer?table=orders');
+
+  const trigger = await screen.findByRole('button', {
+    name: '1 inspection note',
+  });
+  expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  expect(
+    screen.queryByText('Native defaults could not be inspected.'),
+  ).not.toBeInTheDocument();
+  await user.click(trigger);
+  expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  expect(
+    screen.getByText('Native defaults could not be inspected.'),
+  ).toBeVisible();
+  expect(screen.getByRole('table', { name: 'Fields of orders' })).toBeVisible();
+});

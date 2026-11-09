@@ -6,14 +6,7 @@ import type {
 
 type CollectionEntry = CollectionListResult['items'][number];
 import { useTranslation } from '@nocobase/i18n/client';
-import {
-  ArrowLeft,
-  ChevronRight,
-  Database,
-  KeyRound,
-  Search,
-  X,
-} from 'lucide-react';
+import { ArrowLeft, ChevronRight, KeyRound, Search, X } from 'lucide-react';
 import { cn } from 'cn';
 import type { ReactElement } from 'react';
 import { Link } from 'react-router';
@@ -53,6 +46,7 @@ const WIDE_QUERY = '(min-width: 40rem)';
 export interface FieldsPanelProps {
   readonly client: DatabaseExplorerClient;
   readonly connection: string;
+  readonly dialect: string;
   readonly table: string;
   /** The table's listing entry, once the list has loaded. */
   readonly entry: CollectionEntry | undefined;
@@ -67,6 +61,7 @@ export interface FieldsPanelProps {
 export function FieldsPanel({
   client,
   connection,
+  dialect,
   table,
   entry,
   knownTables,
@@ -90,7 +85,16 @@ export function FieldsPanel({
   const title = definition?.title ?? entry?.title;
   const kind = definition?.kind ?? entry?.kind;
   const tableName = entry?.tableName;
-  const schema = entry?.schema;
+  // SQLite attachment names and MySQL database names are not a separate schema level.
+  const schema = ['sqlite', 'mysql', 'mariadb'].includes(dialect)
+    ? undefined
+    : entry?.schema;
+  const hasMetadata = Boolean(
+    title ||
+    (tableName && tableName !== table) ||
+    schema ||
+    (kind && kind !== 'table'),
+  );
   const warnings =
     detail.status === 'ready'
       ? warningMessages(detail.data.collection.warnings)
@@ -99,9 +103,9 @@ export function FieldsPanel({
   return (
     <section
       aria-labelledby='database-explorer-fields-heading'
-      className='flex min-w-0 flex-col overflow-hidden rounded-lg border bg-card'
+      className='flex min-h-0 min-w-0 flex-col overflow-hidden'
     >
-      <div className='flex flex-col gap-2 border-b p-4'>
+      <div className='flex shrink-0 flex-col gap-2 border-b p-4'>
         <Link
           to={backLink}
           className={cn(
@@ -112,10 +116,6 @@ export function FieldsPanel({
           <ArrowLeft aria-hidden='true' />
           {t('databaseExplorer.backToTables')}
         </Link>
-        <p className='flex min-w-0 items-center gap-1 text-xs text-muted-foreground'>
-          <Database aria-hidden='true' className='size-3.5 shrink-0' />
-          <span className='truncate'>{connection}</span>
-        </p>
         <h2
           id='database-explorer-fields-heading'
           tabIndex={-1}
@@ -123,26 +123,31 @@ export function FieldsPanel({
         >
           {title ?? table}
         </h2>
-        <dl className='flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground'>
-          {title ? (
-            <Meta label={t('databaseExplorer.collectionName')} value={table} />
-          ) : null}
-          {tableName && tableName !== table ? (
-            <Meta label={t('databaseExplorer.tableName')} value={tableName} />
-          ) : null}
-          {schema ? (
-            <Meta label={t('databaseExplorer.schema')} value={schema} />
-          ) : null}
-          {kind && kind !== 'table' ? (
-            <Meta
-              label={t('databaseExplorer.kindLabel')}
-              value={t(`databaseExplorer.kind.${kind}`, {
-                defaultValue: kind,
-              })}
-              plain
-            />
-          ) : null}
-        </dl>
+        {hasMetadata ? (
+          <dl className='flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground'>
+            {title ? (
+              <Meta
+                label={t('databaseExplorer.collectionName')}
+                value={table}
+              />
+            ) : null}
+            {tableName && tableName !== table ? (
+              <Meta label={t('databaseExplorer.tableName')} value={tableName} />
+            ) : null}
+            {schema ? (
+              <Meta label={t('databaseExplorer.schema')} value={schema} />
+            ) : null}
+            {kind && kind !== 'table' ? (
+              <Meta
+                label={t('databaseExplorer.kindLabel')}
+                value={t(`databaseExplorer.kind.${kind}`, {
+                  defaultValue: kind,
+                })}
+                plain
+              />
+            ) : null}
+          </dl>
+        ) : null}
         {definition?.description ? (
           <p className='text-sm text-muted-foreground wrap-anywhere'>
             {definition.description}
@@ -161,81 +166,90 @@ export function FieldsPanel({
         <StatusLine notice='noFields' />
       ) : (
         <>
-          <div className='flex flex-col gap-2 p-4 pb-2 sm:flex-row sm:items-center sm:justify-between'>
-            <InputGroup className='sm:max-w-xs'>
-              <InputGroupAddon>
-                <Search aria-hidden='true' />
-              </InputGroupAddon>
-              <InputGroupInput
-                type='search'
-                aria-label={t('databaseExplorer.searchFields')}
-                placeholder={t('databaseExplorer.searchFields')}
-                value={query}
-                onChange={(event) => onQuery(event.target.value)}
-              />
-              {query ? (
-                <InputGroupAddon align='inline-end'>
-                  <InputGroupButton
-                    size='icon-xs'
-                    aria-label={t('databaseExplorer.clearSearch')}
-                    title={t('databaseExplorer.clearSearch')}
-                    onClick={() => onQuery('')}
-                  >
-                    <X />
-                  </InputGroupButton>
+          <Collapsible className='shrink-0 border-b'>
+            <div className='flex flex-wrap items-center gap-3 px-4 py-3'>
+              <InputGroup className='w-full sm:max-w-xs'>
+                <InputGroupAddon>
+                  <Search aria-hidden='true' />
                 </InputGroupAddon>
-              ) : null}
-            </InputGroup>
-            <p
-              role='status'
-              aria-live='polite'
-              className='text-xs text-muted-foreground'
-            >
-              {query.trim()
-                ? t('databaseExplorer.fieldsMatched', {
-                    count: matched.length,
-                    total: rows.length,
-                  })
-                : t('databaseExplorer.fieldCount', { count: rows.length })}
-            </p>
-          </div>
-          {warnings.length ? (
-            <Collapsible className='mx-4 mb-2 rounded-md border border-dashed text-xs text-muted-foreground'>
-              <CollapsibleTrigger className='flex w-full items-center gap-1 rounded-md px-3 py-2 text-left outline-none focus-visible:ring-3 focus-visible:ring-ring/50 [&[data-panel-open]>svg]:rotate-90'>
-                <ChevronRight
-                  aria-hidden='true'
-                  className='size-3.5 shrink-0 transition-transform'
+                <InputGroupInput
+                  type='search'
+                  aria-label={t('databaseExplorer.searchFields')}
+                  placeholder={t('databaseExplorer.searchFields')}
+                  value={query}
+                  onChange={(event) => onQuery(event.target.value)}
                 />
-                {t('databaseExplorer.warnings', { count: warnings.length })}
-              </CollapsibleTrigger>
+                {query ? (
+                  <InputGroupAddon align='inline-end'>
+                    <InputGroupButton
+                      size='icon-xs'
+                      aria-label={t('databaseExplorer.clearSearch')}
+                      title={t('databaseExplorer.clearSearch')}
+                      onClick={() => onQuery('')}
+                    >
+                      <X />
+                    </InputGroupButton>
+                  </InputGroupAddon>
+                ) : null}
+              </InputGroup>
+              <p
+                role='status'
+                aria-live='polite'
+                className='text-xs text-muted-foreground sm:ml-auto'
+              >
+                {query.trim()
+                  ? t('databaseExplorer.fieldsMatched', {
+                      count: matched.length,
+                      total: rows.length,
+                    })
+                  : t('databaseExplorer.fieldCount', { count: rows.length })}
+              </p>
+              {warnings.length ? (
+                <CollapsibleTrigger className='flex items-center gap-1 rounded-md text-xs text-muted-foreground outline-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 [&[data-panel-open]>svg]:rotate-90'>
+                  <ChevronRight
+                    aria-hidden='true'
+                    className='size-3.5 shrink-0 transition-transform'
+                  />
+                  {t('databaseExplorer.warnings', { count: warnings.length })}
+                </CollapsibleTrigger>
+              ) : null}
+            </div>
+            {warnings.length ? (
               <CollapsibleContent>
-                <ul className='list-disc px-3 pb-2 pl-8 wrap-anywhere'>
-                  {warnings.map((message) => (
-                    <li key={message}>{message}</li>
-                  ))}
-                </ul>
+                <div className='max-h-40 overflow-y-auto border-t bg-muted/30 px-4 py-3 text-xs text-muted-foreground'>
+                  <p className='mb-2'>
+                    {t('databaseExplorer.warningDescription')}
+                  </p>
+                  <ul className='list-disc pl-4 wrap-anywhere'>
+                    {warnings.map((message) => (
+                      <li key={message}>{message}</li>
+                    ))}
+                  </ul>
+                </div>
               </CollapsibleContent>
-            </Collapsible>
-          ) : null}
-          {matched.length ? (
-            wide ? (
-              <FieldTable
-                table={table}
-                rows={matched}
-                knownTables={knownTables}
-                tableLink={tableLink}
-              />
+            ) : null}
+          </Collapsible>
+          <div className='min-h-0 flex-1 lg:flex lg:flex-col lg:overflow-auto [&>[data-slot=table-container]]:min-h-0 [&>[data-slot=table-container]]:flex-1 [&>[data-slot=table-container]]:overflow-auto'>
+            {matched.length ? (
+              wide ? (
+                <FieldTable
+                  table={table}
+                  rows={matched}
+                  knownTables={knownTables}
+                  tableLink={tableLink}
+                />
+              ) : (
+                <FieldList
+                  table={table}
+                  rows={matched}
+                  knownTables={knownTables}
+                  tableLink={tableLink}
+                />
+              )
             ) : (
-              <FieldList
-                table={table}
-                rows={matched}
-                knownTables={knownTables}
-                tableLink={tableLink}
-              />
-            )
-          ) : (
-            <StatusLine notice='noResults' />
-          )}
+              <StatusLine notice='noResults' />
+            )}
+          </div>
         </>
       )}
     </section>
@@ -277,7 +291,7 @@ function FieldName({ row }: FieldCellProps): ReactElement {
       <div className='flex flex-wrap items-center gap-x-2 gap-y-1'>
         <span className='font-medium wrap-anywhere'>{row.name}</span>
         {row.primaryKey ? (
-          <Badge variant='secondary'>
+          <Badge variant='secondary' data-size='sm'>
             <KeyRound aria-hidden='true' />
             {t('databaseExplorer.primaryKey')}
           </Badge>
@@ -297,14 +311,14 @@ function FieldType({ row }: FieldCellProps): ReactElement {
     row.nativeType !== undefined &&
     row.nativeType.toLocaleLowerCase() !== row.type.toLocaleLowerCase();
   return (
-    <>
-      <code className='font-mono text-xs'>{row.type}</code>
+    <span className='flex flex-wrap items-baseline gap-x-2 gap-y-1'>
+      <code className='font-mono text-xs wrap-anywhere'>{row.type}</code>
       {showNative ? (
-        <span className='block font-mono text-xs text-muted-foreground wrap-anywhere'>
+        <span className='font-mono text-xs text-muted-foreground wrap-anywhere'>
           {row.nativeType}
         </span>
       ) : null}
-    </>
+    </span>
   );
 }
 
@@ -376,14 +390,21 @@ function FieldTable({
 }): ReactElement {
   const { t } = useTranslation();
   return (
-    <Table aria-label={t('databaseExplorer.fieldsOf', { table })}>
-      <TableHeader>
+    <Table
+      className='table-fixed'
+      aria-label={t('databaseExplorer.fieldsOf', { table })}
+    >
+      <TableHeader className='sticky top-0 z-10 bg-muted'>
         <TableRow>
-          <TableHead className='pl-4'>
+          <TableHead className='w-[32%] pl-4'>
             {t('databaseExplorer.column.field')}
           </TableHead>
-          <TableHead>{t('databaseExplorer.column.type')}</TableHead>
-          <TableHead>{t('databaseExplorer.column.nullable')}</TableHead>
+          <TableHead className='w-[30%]'>
+            {t('databaseExplorer.column.type')}
+          </TableHead>
+          <TableHead className='w-[14%]'>
+            {t('databaseExplorer.column.nullable')}
+          </TableHead>
           <TableHead className='pr-4'>
             {t('databaseExplorer.column.references')}
           </TableHead>
@@ -398,7 +419,7 @@ function FieldTable({
             <TableCell className='align-top whitespace-normal'>
               <FieldType row={row} {...cell} />
             </TableCell>
-            <TableCell className='align-top'>
+            <TableCell className='align-top whitespace-normal'>
               <FieldNullable row={row} {...cell} />
             </TableCell>
             <TableCell className='pr-4 align-top whitespace-normal'>

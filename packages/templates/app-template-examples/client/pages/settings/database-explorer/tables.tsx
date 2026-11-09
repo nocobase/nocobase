@@ -1,7 +1,7 @@
 import type { ConnectionSummary } from '@nocobase/app-plugin-database-explorer/client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { cn } from 'cn';
-import { Search, X } from 'lucide-react';
+import { Search, Table2, X } from 'lucide-react';
 import {
   useEffect,
   useRef,
@@ -109,11 +109,11 @@ export function TablesPanel({
     <section
       aria-label={t('databaseExplorer.tables')}
       className={cn(
-        'min-w-0 flex-col overflow-hidden rounded-lg border bg-card',
+        'min-h-0 min-w-0 flex-col overflow-hidden lg:border-r',
         className,
       )}
     >
-      <div className='flex flex-col gap-2 border-b p-4'>
+      <div className='flex shrink-0 flex-col gap-2 border-b p-4'>
         <label htmlFor='database-connection' className='text-sm font-medium'>
           {t('databaseExplorer.connection')}
         </label>
@@ -177,7 +177,7 @@ export function TablesPanel({
         <StatusLine notice='connectionNotFound' />
       ) : (
         <>
-          <div className='flex flex-col gap-2 px-4 pt-4 pb-2'>
+          <div className='flex shrink-0 flex-col gap-2 p-3'>
             <InputGroup>
               <InputGroupAddon>
                 <Search aria-hidden='true' />
@@ -278,7 +278,7 @@ export function TablesPanel({
             <ul
               ref={listRef}
               aria-label={t('databaseExplorer.tablesIn', { connection })}
-              className='relative flex flex-col gap-0.5 border-t p-2 lg:max-h-[max(16rem,calc(100dvh-30rem))] lg:overflow-y-auto'
+              className='relative flex min-h-0 flex-1 flex-col gap-0.5 p-2 pt-0 lg:overflow-y-auto'
               onKeyDown={(event: KeyboardEvent<HTMLUListElement>) => {
                 if (
                   moveFocus(listRef.current, event.key, document.activeElement!)
@@ -303,16 +303,20 @@ export function TablesPanel({
                       aria-current={current ? 'true' : undefined}
                       title={[primary, secondary].filter(Boolean).join('\n')}
                       className={cn(
-                        'flex min-w-0 flex-col gap-0.5 rounded-md px-3 py-2 text-sm outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50',
+                        'flex min-w-0 items-center gap-2 rounded-md px-2 py-2 text-sm outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50',
                         current &&
                           'bg-accent text-accent-foreground hover:bg-accent',
                       )}
                     >
-                      <span className='flex min-w-0 items-center gap-2'>
+                      <Table2
+                        aria-hidden='true'
+                        className='size-4 shrink-0 opacity-60'
+                      />
+                      <span className='flex min-w-0 flex-1 items-center gap-2'>
                         <span
                           className={cn(
                             'truncate',
-                            current ? 'font-semibold' : 'font-medium',
+                            current ? 'font-medium' : 'font-normal',
                           )}
                         >
                           {primary}
@@ -325,11 +329,6 @@ export function TablesPanel({
                           </Badge>
                         ) : null}
                       </span>
-                      {secondary ? (
-                        <span className='truncate text-xs text-muted-foreground'>
-                          {secondary}
-                        </span>
-                      ) : null}
                     </Link>
                   </li>
                 );

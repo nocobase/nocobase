@@ -34,7 +34,7 @@ export default function DatabaseExplorerPage(): ReactElement {
       ? describeFailure(connections.error)
       : undefined;
   return (
-    <PageContainer className='flex flex-col gap-6'>
+    <PageContainer className='flex flex-col gap-4 space-y-0 lg:h-full lg:min-h-0 [&>header]:shrink-0'>
       <PageHeader
         title={t('databaseExplorer.title')}
         description={t('databaseExplorer.description')}
@@ -116,7 +116,7 @@ function Explorer({
   }, [table]);
 
   return (
-    <div className='grid min-w-0 gap-4 lg:grid-cols-[minmax(16rem,22rem)_minmax(0,1fr)] lg:items-start'>
+    <div className='grid min-w-0 overflow-hidden rounded-lg border bg-card lg:min-h-0 lg:flex-1 lg:grid-cols-[minmax(15rem,19rem)_minmax(0,1fr)]'>
       <TablesPanel
         className={showsFields ? 'hidden lg:flex' : 'flex'}
         connections={connections.items}
@@ -136,11 +136,12 @@ function Explorer({
           link({ [PARAM.table]: name, [PARAM.fieldSearch]: null })
         }
       />
-      {table && showsFields ? (
+      {table && summary ? (
         <FieldsPanel
           key={`${connection}\n${table}`}
           client={client}
           connection={connection}
+          dialect={summary.dialect}
           table={table}
           entry={
             tables.status === 'ready'
@@ -164,7 +165,7 @@ function Explorer({
       ) : (
         <section
           aria-label={t('databaseExplorer.fields')}
-          className='hidden min-h-48 items-center justify-center gap-2 rounded-lg border border-dashed p-6 text-sm text-muted-foreground lg:flex'
+          className='hidden min-h-48 items-center justify-center gap-2 p-6 text-sm text-muted-foreground lg:flex'
         >
           <TableProperties aria-hidden='true' className='size-4 shrink-0' />
           <p>{t('databaseExplorer.selectTable')}</p>
