@@ -67,6 +67,13 @@ export interface DataTableProps<TData, TValue = unknown> {
   readonly listState?: ListState;
   readonly onRetry?: () => void;
   readonly onClearFilters?: () => void;
+  /**
+   * The host's own search or filters are applied, such as `hasFilters` for a
+   * list that filters through the URL. With `onClearFilters`, the toolbar then
+   * shows "Clear filters" beside the page's controls while results are shown,
+   * not only when nothing matched (mobile.md M4.2).
+   */
+  readonly filtered?: boolean;
   readonly emptyAction?: ReactNode;
   readonly className?: string;
   /**
@@ -203,6 +210,7 @@ export function DataTable<TData, TValue = unknown>({
   listState,
   onRetry,
   onClearFilters,
+  filtered = false,
   emptyAction,
   renderCard,
   selectionColumnId = 'select',
@@ -294,9 +302,14 @@ export function DataTable<TData, TValue = unknown>({
     table.setPageIndex(0);
     onClearFilters?.();
   };
+  // The host's applied search or filters keep "Clear filters" beside its controls while rows show.
+  const clearsWithResults = filtered && onClearFilters !== undefined;
   const hasStateActions =
     (state === 'no-results' &&
       (columnFilters.length > 0 || onClearFilters !== undefined)) ||
+    (clearsWithResults &&
+      state !== 'forbidden' &&
+      state !== 'unauthenticated') ||
     ((state === 'failed' || state === 'refresh-failed') &&
       onRetry !== undefined) ||
     state === 'unauthenticated';
@@ -349,6 +362,7 @@ export function DataTable<TData, TValue = unknown>({
                 ? clearFilters
                 : undefined
             }
+            filtered={clearsWithResults}
             onRetry={onRetry}
             busy={loading}
           />
@@ -389,9 +403,13 @@ export function DataTable<TData, TValue = unknown>({
                 selectionHeader.column.columnDef.header,
                 selectionHeader.getContext(),
               )}
-              {t('dataTable.selectPage', {
-                defaultValue: 'Select all on this page',
-              })}
+              {/* Visible and clickable, but not read out: the header checkbox carries its own name, and a label's text
+                  would be added to it (Base UI names a checkbox by its enclosing label), reading it twice. */}
+              <span aria-hidden='true'>
+                {t('dataTable.selectPage', {
+                  defaultValue: 'Select all on this page',
+                })}
+              </span>
             </label>
           ) : null}
           {showRows ? (

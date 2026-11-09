@@ -314,6 +314,9 @@ export default function ProjectsPage(): ReactElement {
         loading={active && loading}
         onRetry={reload}
         onClearFilters={clearFilters}
+        // "Clear filters" joins the toolbar row while the search or the filter is applied, with results too, not only
+        // when nothing matched (M4.2 in mobile.md); the page renders no Clear button of its own.
+        filtered={hasFilters}
         // No row selection on this page, so no "0 of N row(s) selected" summary.
         showSelectedCount={false}
         // The page's controls live in the table's toolbar, so on a phone the search box, the status filter and an
@@ -360,11 +363,6 @@ export default function ProjectsPage(): ReactElement {
               className='md:hidden'
               getColumnLabel={(column) => t(`projects.fields.${column.id}`)}
             />
-            {hasFilters && listState !== 'no-results' ? (
-              <Button variant='ghost' onClick={clearFilters}>
-                {t('projects.filters.clear')}
-              </Button>
-            ) : null}
             {/* Reserve space even when a fast refresh finishes before feedback appears. On a phone the card list shows
                 DataTable's own refresh indicator, so this slot does not take a place in the row. */}
             <div className='ml-auto hidden h-8 w-8 shrink-0 items-center justify-center md:flex'>
@@ -603,8 +601,9 @@ const appliedFilters = [status, owner].filter(Boolean).length;
     className='md:hidden'
     getColumnLabel={(column) => t(`projects.fields.${column.id}`)}
   />
-  {hasFilters ? clearButton : null}
 </>;
+// On DataTable, as above: onClearFilters={clearFilters} and filtered={hasFilters}, so "Clear filters" shows on the
+// list's row while any filter is applied, without reopening the sheet (M4.2).
 ```
 
 The same filter component renders in two places, so it must not carry a fixed identity:

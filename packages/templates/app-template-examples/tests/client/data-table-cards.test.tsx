@@ -12,6 +12,7 @@ import {
   DataTableColumnHeader,
   DataTableSortMenu,
 } from '../../client/components/data-table/index.js';
+import { Checkbox } from '../../client/components/ui/checkbox.js';
 import { useTableUrlState } from '../../client/hooks/use-table-url-state.js';
 import enUS from '../../client/locales/en-US.js';
 import zhCN from '../../client/locales/zh-CN.js';
@@ -349,6 +350,96 @@ describe('DataTable cards on phones', () => {
       screen.queryByRole('button', { name: /^Amount/u }),
     ).not.toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: 'Amount' })).toBeVisible();
+  });
+
+  it('names the phone select-all checkbox once, also when partly selected', async () => {
+    stubViewport(true);
+    const user = userEvent.setup();
+    const baseColumns: ColumnDef<Item>[] = [
+      {
+        id: 'select',
+        header: ({ table }) => (
+          <Checkbox
+            aria-label='Select all on this page'
+            checked={table.getIsAllPageRowsSelected()}
+            indeterminate={table.getIsSomePageRowsSelected()}
+            onCheckedChange={(value) => table.toggleAllPageRowsSelected(value)}
+          />
+        ),
+        cell: ({ row }) => (
+          <Checkbox
+            aria-label={`Select ${row.original.id}`}
+            checked={row.getIsSelected()}
+            onCheckedChange={(value) => row.toggleSelected(value)}
+          />
+        ),
+      },
+      ...columns,
+    ];
+    await renderWithApp(
+      <DataTable
+        columns={baseColumns}
+        data={rows}
+        getRowId={(row) => row.id}
+        renderCard={(row) => (
+          <article aria-label={row.original.id}>
+            <Checkbox
+              aria-label={`Select card ${row.original.id}`}
+              checked={row.getIsSelected()}
+              onCheckedChange={(value) => row.toggleSelected(value)}
+            />
+          </article>
+        )}
+      />,
+      { namespace, namespaces },
+    );
+    const all = screen.getByRole('checkbox', {
+      name: 'Select all on this page',
+    });
+    expect(all).toHaveAccessibleName('Select all on this page');
+    await user.click(
+      screen.getByRole('checkbox', { name: 'Select card row-0' }),
+    );
+    expect(all).toHaveAttribute('aria-checked', 'mixed');
+    expect(all).toHaveAccessibleName('Select all on this page');
+    // The visible text stays a tap target.
+    await user.click(screen.getByText('Select all on this page'));
+    expect(all).toHaveAttribute('aria-checked', 'true');
+  });
+
+  it('keeps Clear filters beside the controls while filtered results show', async () => {
+    stubViewport(true);
+    const user = userEvent.setup();
+    const clear = vi.fn();
+    const view = await renderWithApp(
+      <DataTable
+        columns={columns}
+        data={rows.slice(0, 3)}
+        listState='ready'
+        filtered
+        onClearFilters={clear}
+        toolbar={() => <input aria-label='Search' />}
+        renderCard={(row) => <article aria-label={row.original.id} />}
+      />,
+      { namespace, namespaces },
+    );
+    expect(screen.getAllByRole('article')).toHaveLength(3);
+    await user.click(screen.getByRole('button', { name: 'Clear filters' }));
+    expect(clear).toHaveBeenCalledOnce();
+    view.rerender(
+      <DataTable
+        columns={columns}
+        data={rows.slice(0, 3)}
+        listState='ready'
+        filtered={false}
+        onClearFilters={clear}
+        toolbar={() => <input aria-label='Search' />}
+        renderCard={(row) => <article aria-label={row.original.id} />}
+      />,
+    );
+    expect(
+      screen.queryByRole('button', { name: 'Clear filters' }),
+    ).not.toBeInTheDocument();
   });
 
   it('keeps the table on wider screens', async () => {
