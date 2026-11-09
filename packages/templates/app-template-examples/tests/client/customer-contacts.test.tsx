@@ -753,10 +753,14 @@ it('selects and clears the whole page from the phone cards and keeps the batch t
     }
     throw new Error(`Unexpected ${path}`);
   });
-  // On a phone the visible label names the page's select-all checkbox; the page re-renders it, so query it each time.
+  // The page re-renders its select-all checkbox, so query it each time.
+  // Its accessible name is the page's own label ("Select all customers on this page") or, where the checkbox takes
+  // its name from the wrapping label, the visible text; find it inside that label so both resolve the same control.
   const selectAll = () =>
-    screen.getByRole('checkbox', { name: /Select all on this page/u });
-  await screen.findByRole('checkbox', { name: /Select all on this page/u });
+    within(
+      screen.getByText('Select all on this page').closest('label')!,
+    ).getByRole('checkbox');
+  await screen.findByText('Select all on this page');
   expect(screen.queryByRole('table')).not.toBeInTheDocument();
 
   // One card selected: the page is partly selected.

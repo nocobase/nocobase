@@ -535,6 +535,7 @@ describe('unsaved changes in a route overlay', () => {
 });
 
 describe('detail drawer, edit dialog and a confirmation', () => {
+  const save = vi.fn();
   // The one three-layer path the phone experience allows (mobile.md M7.2, guideline I1): a detail drawer opens an edit
   // dialog, whose unsaved-changes question is the single confirmation. Only the top layer takes input, and leaving
   // returns one layer at a time to the URL below it.
@@ -553,7 +554,17 @@ describe('detail drawer, edit dialog and a confirmation', () => {
       setAnswer(null);
     };
     return (
-      <RouteDialog title='Edit order' footer={<Actions />}>
+      <RouteDialog
+        title='Edit order'
+        footer={
+          <>
+            <Actions />
+            <button type='button' onClick={save}>
+              Save
+            </button>
+          </>
+        }
+      >
         <input
           aria-label='Name'
           defaultValue='Original'
@@ -650,6 +661,28 @@ describe('detail drawer, edit dialog and a confirmation', () => {
       screen.queryByRole('textbox', { name: 'Name' }),
     ).not.toBeInTheDocument();
     expect(screen.getAllByRole('alertdialog')).toHaveLength(1);
+    // The confirmation opened inside the dialog has a backdrop of its own, stacked after the dialog's, so a tap on
+    // the dialog's Save below lands on it (Base UI leaves a nested backdrop out unless it is forced; mobile.md M7.2).
+    // jsdom has no hit testing: the browser check in the delivery measures the taps themselves.
+    const promptPortal = prompt.closest('[data-base-ui-portal]')!;
+    const overlay = promptPortal.querySelector(
+      '[data-slot="alert-dialog-overlay"]',
+    );
+    expect(overlay).toBeInTheDocument();
+    const dialogPortal = document
+      .querySelector('[data-slot="route-overlay-content"]')!
+      .closest('[data-base-ui-portal]')!;
+    expect(
+      dialogPortal.compareDocumentPosition(promptPortal) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    // The keyboard cannot reach Save either: Tab cycles through the confirmation and its focus guards, never into the
+    // edit dialog below.
+    for (let step = 0; step < 6; step += 1) {
+      await user.tab();
+      expect(dialog.contains(document.activeElement)).toBe(false);
+    }
+    expect(save).not.toHaveBeenCalled();
     await user.click(
       within(prompt).getByRole('button', { name: 'Keep editing' }),
     );
