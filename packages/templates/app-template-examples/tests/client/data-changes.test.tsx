@@ -1,3 +1,4 @@
+import { ApiClientError } from '@nocobase/app-client';
 import { answerApi, renderWithApp } from '@nocobase/app-testing/client';
 import { act, screen, waitFor } from '@testing-library/react';
 import { useState, type ReactElement } from 'react';
@@ -24,6 +25,11 @@ function deferred<T>() {
   return { promise, resolve };
 }
 
+const label = (data: Rows | Item) =>
+  Array.isArray(data.data)
+    ? data.data.map((row) => row.name).join(',')
+    : data.data.name;
+
 function View({
   path,
   scopes,
@@ -44,13 +50,13 @@ function View({
     merge: merge as never,
   });
   const data = request.data;
+  const status =
+    request.error instanceof ApiClientError ? request.error.status : 0;
   const text = request.error
-    ? 'error'
-    : !data
-      ? ''
-      : Array.isArray(data.data)
-        ? data.data.map((row) => row.name).join(',')
-        : data.data.name;
+    ? `${status === 404 ? 'missing' : 'error'} ${status}${data ? ` ${label(data)}` : ''}`
+    : data
+      ? label(data)
+      : '';
   return <output data-testid={id}>{text}</output>;
 }
 
@@ -247,41 +253,171 @@ it('merges confirmed results before the verification read finishes', async () =>
   expect(screen.getByTestId('list')).toHaveTextContent('Alpha,Gamma');
 });
 
-it('reads a deleted record again so it shows the missing state instead of old content', async () => {
-  let deleted = false;
+const removed = (id = '1'): DataChange => ({
+  scopes: [`projects/${id}`],
+  results: { [`projects/${id}`]: null },
+});
+const failure = (status: number) =>
+  Response.json(
+    { error: { status: 'TEST', reason: 'TEST', message: 'Failed' } },
+    { status },
+  );
+
+it('drops a deleted record at once without reading it again', async () => {
+  let reads = 0;
+  await renderWithApp(
+    <View id='detail' path='projects/1' scopes={['projects/1']} />,
+    {
+      fetch: answerApi(() => {
+        reads += 1;
+        return { data: { id: '1', name: 'Alpha' } };
+      }),
+    },
+  );
+  await waitFor(() =>
+    expect(screen.getByTestId('detail')).toHaveTextContent('Alpha'),
+  );
+  await act(async () => {
+    announceDataChange(removed());
+  });
+  expect(screen.getByTestId('detail')).toHaveTextContent('missing 404');
+  expect(reads).toBe(1);
+});
+
+it('keeps a deleted record removed when a slower earlier read answers later', async () => {
+  const slow = deferred<Item>();
+  let reads = 0;
   await renderWithApp(
     <View id='detail' path='projects/1' scopes={['projects/1']} />,
     {
       fetch: answerApi(() =>
-        deleted
-          ? Response.json(
-              {
-                error: {
-                  status: 'NOT_FOUND',
-                  reason: 'PROJECT_NOT_FOUND',
-                  message: 'Missing',
-                },
-              },
-              { status: 404 },
-            )
-          : { data: { id: '1', name: 'Alpha' } },
+        ++reads === 1 ? { data: { id: '1', name: 'Alpha' } } : slow.promise,
       ),
     },
   );
   await waitFor(() =>
     expect(screen.getByTestId('detail')).toHaveTextContent('Alpha'),
   );
+  // An unrelated broad change starts a read that is still running.
+  await act(async () => {
+    announceDataChange({ scopes: ['projects'] });
+  });
+  expect(reads).toBe(2);
+  await act(async () => {
+    announceDataChange(removed());
+  });
+  await act(async () => {
+    slow.resolve({ data: { id: '1', name: 'Alpha before delete' } });
+  });
+  expect(screen.getByTestId('detail')).toHaveTextContent('missing 404');
+  expect(screen.getByTestId('detail')).not.toHaveTextContent('Alpha');
+});
+
+it('replaces a failed refresh that kept old data with the removed state', async () => {
+  let reads = 0;
+  await renderWithApp(
+    <View id='detail' path='projects/1' scopes={['projects/1']} />,
+    {
+      fetch: answerApi(() =>
+        ++reads === 1 ? { data: { id: '1', name: 'Alpha' } } : failure(500),
+      ),
+    },
+  );
+  await waitFor(() =>
+    expect(screen.getByTestId('detail')).toHaveTextContent('Alpha'),
+  );
+  await act(async () => {
+    announceDataChange({ scopes: ['projects'] });
+  });
+  // A failed refresh keeps the previous data with its error.
+  await waitFor(() =>
+    expect(screen.getByTestId('detail')).toHaveTextContent('error 500'),
+  );
+  await act(async () => {
+    announceDataChange(removed());
+  });
+  expect(screen.getByTestId('detail')).toHaveTextContent('missing 404');
+  expect(screen.getByTestId('detail')).not.toHaveTextContent('Alpha');
+  expect(reads).toBe(2);
+});
+
+it('drops a deleted record from a covered detail and confirms it once when shown', async () => {
+  let deleted = false;
+  let reads = 0;
+  await renderWithApp(
+    <Covered>
+      {(active) => (
+        <View
+          id='detail'
+          path='projects/1'
+          scopes={['projects/1']}
+          active={!active}
+        />
+      )}
+    </Covered>,
+    {
+      fetch: answerApi(() => {
+        reads += 1;
+        return deleted ? failure(404) : { data: { id: '1', name: 'Alpha' } };
+      }),
+    },
+  );
+  await waitFor(() =>
+    expect(screen.getByTestId('detail')).toHaveTextContent('Alpha'),
+  );
+  // Cover the detail, then delete its record.
+  await act(async () => {
+    screen.getByRole('button', { name: 'Toggle' }).click();
+  });
   deleted = true;
   await act(async () => {
-    announceDataChange({
-      scopes: ['projects/1'],
-      results: { 'projects/1': null },
-    });
+    announceDataChange(removed());
   });
-  await waitFor(() =>
-    expect(screen.getByTestId('detail')).toHaveTextContent('error'),
+  expect(screen.getByTestId('detail')).toHaveTextContent('missing 404');
+  expect(reads).toBe(1);
+  await act(async () => {
+    screen.getByRole('button', { name: 'Toggle' }).click();
+  });
+  await waitFor(() => expect(reads).toBe(2));
+  expect(screen.getByTestId('detail')).toHaveTextContent('missing 404');
+});
+
+it('accumulates merges announced together', async () => {
+  const verification = deferred<Rows>();
+  let reads = 0;
+  await renderWithApp(
+    <View
+      id='list'
+      path='projects'
+      scopes={['projects']}
+      merge={(current, change) => {
+        const gone = Object.entries(change.results ?? {})
+          .filter(([, value]) => value === null)
+          .map(([scope]) => scope.split('/')[1]);
+        return gone.length
+          ? { data: current.data.filter((row) => !gone.includes(row.id)) }
+          : undefined;
+      }}
+    />,
+    {
+      fetch: answerApi(() =>
+        ++reads === 1 ? rows('Alpha', 'Beta', 'Gamma') : verification.promise,
+      ),
+    },
   );
-  expect(screen.getByTestId('detail')).not.toHaveTextContent('Alpha');
+  await waitFor(() =>
+    expect(screen.getByTestId('list')).toHaveTextContent('Alpha,Beta,Gamma'),
+  );
+  await act(async () => {
+    announceDataChange(removed('1'));
+    announceDataChange(removed('2'));
+  });
+  expect(screen.getByTestId('list')).toHaveTextContent(/^Gamma$/u);
+  expect(reads).toBe(2);
+  await act(async () => {
+    verification.resolve(rows('Gamma'));
+  });
+  expect(screen.getByTestId('list')).toHaveTextContent(/^Gamma$/u);
 });
 
 it('stops listening after unmounting', async () => {

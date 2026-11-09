@@ -25,6 +25,16 @@ export interface ListDataOptions<T> {
   merge?: (current: T, change: DataChange) => T | undefined;
 }
 
+/** What a view reading a record shows once a confirmed write removed it. */
+function removedError(path: string): ApiClientError {
+  return new ApiClientError('The record no longer exists.', {
+    status: 404,
+    reason: 'RECORD_REMOVED',
+    method: 'GET',
+    url: path,
+  });
+}
+
 /** A successful result belongs to one query and refresh generation only. */
 export function useListData<T>(
   path: string,
@@ -97,16 +107,27 @@ export function useListData<T>(
   useDataChange(scopes, (change) => {
     const exact =
       scopes?.length === 1 ? change.results?.[scopes[0]] : undefined;
-    if (exact !== undefined && exact !== null) {
-      // The confirmed server response is newer than any read in flight.
-      replaceData(exact as T);
+    if (exact !== undefined) {
+      // The confirmed server outcome is newer than any read in flight.
+      if (exact !== null) replaceData(exact as T);
+      else {
+        // The record is gone: drop its data now rather than waiting for a
+        // read, so neither a slow read nor a failed one can show it again.
+        invalidate();
+        setResult({ path, key, error: removedError(path) });
+      }
       return;
     }
-    const current =
-      result.path === path && !result.error ? result.data : undefined;
-    const merged =
-      current !== undefined && merge ? merge(current, change) : undefined;
-    if (merged !== undefined) replaceData(merged);
+    if (merge) {
+      invalidate();
+      // Merge into the latest state so changes announced together accumulate.
+      setResult((old) => {
+        const current = old.path === path && !old.error ? old.data : undefined;
+        const merged =
+          current === undefined ? undefined : merge(current, change);
+        return merged === undefined ? old : { ...old, data: merged };
+      });
+    }
     reload();
   });
   return {

@@ -44,7 +44,8 @@ export default function SkillProjectDetailPage() {
   const owner = useResolvedPath('..').pathname;
   const searches = useRouteSearches();
   const scope = projectScope(projectId);
-  const [deleted, setDeleted] = useState(false);
+  // The project this page deleted stays on screen while it returns to the list.
+  const [deleted, setDeleted] = useState<SkillProject>();
   // Its edit dialog announces the saved project, which replaces this read.
   const request = useListData<{ data: SkillProject }>(
     `skillProjects/${encodeURIComponent(projectId)}`,
@@ -52,7 +53,7 @@ export default function SkillProjectDetailPage() {
   );
   const status =
     request.error instanceof ApiClientError ? request.error.status : undefined;
-  const project = request.error ? undefined : request.data?.data;
+  const project = deleted ?? (request.error ? undefined : request.data?.data);
   const source = { pathname: owner, search: searches.get(owner) ?? '' };
   usePageBreadcrumb([
     { label: t('skillProjects.title'), to: source },
@@ -69,7 +70,7 @@ export default function SkillProjectDetailPage() {
                 <DeleteProject
                   project={project}
                   onDeleted={() => {
-                    setDeleted(true);
+                    setDeleted(project);
                     return source;
                   }}
                 />
@@ -80,7 +81,7 @@ export default function SkillProjectDetailPage() {
             ) : undefined
           }
         />
-        {request.error ? (
+        {request.error && !deleted ? (
           <Alert variant='destructive'>
             <AlertDescription>
               {t(
