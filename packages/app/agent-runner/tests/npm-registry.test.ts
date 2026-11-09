@@ -87,6 +87,34 @@ describe('the private npm registry rules', () => {
     );
   });
 
+  it('reads keys and values as ini does, quoted or commented', () => {
+    const machine = [
+      '"@nocobase:registry"=https://pkg-v3.nocobase.com/',
+      '"//pkg-v3.nocobase.com/:_authToken"=stale-token',
+      '\'@acme:registry\' = "https://pkg-v3.nocobase.com"',
+      'registry = https://pkg-v3.nocobase.com/ ; the private one',
+      '"registry"="https://registry.npmmirror.com/"',
+      '[section]',
+      '; registry=https://pkg-v3.nocobase.com/',
+    ].join('\n');
+    const { text, masked } = maskPrivate(machine, PRIVATE);
+    expect(masked).toBe(4);
+    expect(text.split('\n')).toEqual([
+      '"registry"="https://registry.npmmirror.com/"',
+      '[section]',
+      '; registry=https://pkg-v3.nocobase.com/',
+    ]);
+    expect(
+      declaration(
+        ['"@nocobase:registry"="https://pkg-v3.nocobase.com/"'],
+        PRIVATE,
+      ),
+    ).toEqual({ private: true, nocobaseElsewhere: false });
+    expect(
+      declaration(["'@nocobase:registry'=https://npm.acme.test/"], PRIVATE),
+    ).toEqual({ private: false, nocobaseElsewhere: true });
+  });
+
   it('reads a declaration from committed npmrc files', () => {
     expect(declaration([], PRIVATE)).toEqual({
       private: false,

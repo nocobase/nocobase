@@ -1,9 +1,11 @@
 // What the npm launcher (npm-launcher.ts) decides about NocoBase's private npm registry, as pure functions over the
-// text of npmrc files and of an install's output. It imports nothing but Node's own modules, because the launcher loads
-// it on every install the agent runs.
+// text of npmrc files and of an install's output. It imports only Node's own modules and `ini`, because the launcher
+// loads it on every install the agent runs.
 //
-// Keys and values are read as npm and pnpm read them: with their `${VAR}` references resolved (`expandEnv`), and a
-// registry URL compared without its scheme, quotes, trailing slashes or the case of its host.
+// Keys and values are read as npm and pnpm read them: each line parsed by `ini`, the parser both use (so quoted keys and
+// values, `;` and `#` comments and sections mean what they mean to them), with its `${VAR}` references resolved
+// (`expandEnv`), and a registry URL compared without its scheme, quotes, trailing slashes or the case of its host.
+import { parse } from 'ini';
 //
 // - `maskPrivate` removes from a machine's own npm and pnpm configuration every line that would send `@nocobase/*` (or
 //   any scope, or every package) to the private registry, and its credentials: the machine's mirror, `cafile`, proxy
@@ -81,17 +83,22 @@ export interface NpmrcEntry {
   readonly value: string;
 }
 
-/** One `key=value` line, its key and value with the environment references `env` resolves, or null for a comment, a
- * section or a blank line. */
+/**
+ * One `key=value` line as `ini` reads it, its key and value with the environment references `env` resolves, or null for
+ * a comment, a section or a blank line. Each line is read on its own, so a setting under a section is read too.
+ */
 export function entryOf(line: string, env: Env = {}): NpmrcEntry | null {
-  const text = line.trim();
-  if (text === '' || text.startsWith('#') || text.startsWith(';')) return null;
-  const equals = text.indexOf('=');
-  if (equals <= 0) return null;
-  return {
-    key: expandEnv(text.slice(0, equals).trim(), env),
-    value: expandEnv(text.slice(equals + 1).trim(), env),
-  };
+  const [entry] = Object.entries(parse(line));
+  if (entry === undefined) return null;
+  const [key, raw] = entry;
+  // A string, `true` for a key without `=`, an array for `key[]`, an object for a section.
+  const first: unknown = Array.isArray(raw) ? (raw as unknown[])[0] : raw;
+  const value =
+    typeof first === 'string' || typeof first === 'boolean'
+      ? String(first)
+      : null;
+  if (value === null) return null;
+  return { key: expandEnv(key, env), value: expandEnv(value, env) };
 }
 
 const isRegistryKey = (key: string): boolean =>
