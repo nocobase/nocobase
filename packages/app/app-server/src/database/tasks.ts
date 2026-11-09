@@ -132,7 +132,6 @@ export async function executeAppDatabasePlan(
   }: AppDatabasePlanExecutionOptions = {},
 ): Promise<AppDatabaseTasksResult> {
   if (fresh) {
-    assertFreshAllowed(runtimeConfig);
     if (operation !== 'run')
       throw new Error(`A fresh run cannot be combined with ${operation}.`);
     assertFreshPlanOrder(plan);
@@ -155,18 +154,75 @@ export async function executeAppDatabasePlan(
   if (operation === 'unlock' && dryRun) {
     throw new Error('An unlock has no dry run; it reports the lock it finds.');
   }
+  const lifecycle = container?.resolveIfCreated(idGeneratorLifecycleToken);
+  const resetBeforeInitialization =
+    fresh && !dryRun && lifecycle?.mode === 'auto';
+  if (resetBeforeInitialization) {
+    // A reset must never erase the allocation established for this run. Reset
+    // every selected connection before preparing and initializing the runtime.
+    const previouslyInitialized = lifecycle.initializationStarted;
+    let shutdownError: unknown;
+    if (previouslyInitialized) {
+      try {
+        await lifecycle.shutdown();
+      } catch (error) {
+        // Cleanup failure does not prevent the requested destructive reset.
+        shutdownError = error;
+      }
+    }
+    const resetConnections = new Set<string>();
+    for (const [index, task] of plan.entries()) {
+      if (
+        task.skipReason ||
+        task.kind !== 'migrations' ||
+        resetConnections.has(task.connection)
+      )
+        continue;
+      try {
+        await prepareAppDatabaseStorage(
+          config,
+          paths,
+          [task.connection],
+          drivers,
+        );
+        await database.connection(task.connection).resetManagedSchema();
+        resetConnections.add(task.connection);
+      } catch (error) {
+        throw beforeTasksError(plan, index, error);
+      }
+    }
+    if (previouslyInitialized) {
+      throw beforeTasksError(
+        plan,
+        plan.findIndex((task) => !task.skipReason),
+        new Error(
+          'Database reset completed; automatic ID initialization requires a new application lifecycle after an earlier initialization attempt.',
+          shutdownError === undefined ? undefined : { cause: shutdownError },
+        ),
+      );
+    }
+  }
   if (
     !dryRun &&
     (operation === 'run' || operation === 'rollback' || operation === 'sample')
   ) {
-    const lifecycle = container?.resolveIfCreated(idGeneratorLifecycleToken);
-    if (lifecycle?.mode === 'auto') {
-      // Only the automatic factory needs default storage before the task's own preparation.
-      const primary = defaultConnectionName(config);
-      if (primary && primary !== 'none')
-        await prepareAppDatabaseStorage(config, paths, [primary], drivers);
+    try {
+      if (lifecycle?.mode === 'auto') {
+        // Only the automatic factory needs default storage before the task's own preparation.
+        const primary = defaultConnectionName(config);
+        if (primary && primary !== 'none')
+          await prepareAppDatabaseStorage(config, paths, [primary], drivers);
+      }
+      await lifecycle?.initialize();
+    } catch (error) {
+      if (resetBeforeInitialization)
+        throw beforeTasksError(
+          plan,
+          plan.findIndex((task) => !task.skipReason),
+          error,
+        );
+      throw error;
     }
-    await lifecycle?.initialize();
   }
   const taskContainer = createTaskServiceResolver(container);
   const taskConfig = snapshotDatabaseTaskConfig(runtimeConfig);
@@ -247,7 +303,7 @@ export async function executeAppDatabasePlan(
                       ? await createAppMigrator(options).pending({ fresh })
                       : await createAppSeeder(options).pending({ fresh })
                     : task.kind === 'migrations'
-                      ? await (fresh
+                      ? await (fresh && !resetBeforeInitialization
                           ? createAppMigrator(options).fresh()
                           : createAppMigrator(options).latest())
                       : await createAppSeeder({
@@ -256,9 +312,22 @@ export async function executeAppDatabasePlan(
                             enabled: freshInstall === true && sampleData,
                           },
                         }).run();
+      const outcome =
+        resetBeforeInitialization &&
+        task.kind === 'migrations' &&
+        completed.status === 'skipped' &&
+        'reason' in completed &&
+        completed.reason === 'missing-directory'
+          ? {
+              status: 'completed' as const,
+              batch: 0,
+              executed: [],
+              skipped: [],
+            }
+          : completed;
       result.results.push({
         ...identity,
-        ...completed,
+        ...outcome,
         ...(task.kind === 'seeds' &&
         freshInstall !== undefined &&
         completed.status === 'completed'
@@ -286,6 +355,33 @@ export async function executeAppDatabasePlan(
     }
   }
   return result;
+}
+
+/** Reset/initialization failed before any business task ran, even if some schemas were reset. */
+function beforeTasksError(
+  plan: readonly AppDatabaseTask[],
+  failedIndex: number,
+  error: unknown,
+): AppDatabaseTaskError {
+  return new AppDatabaseTaskError(
+    {
+      ok: false,
+      status: 'failed',
+      results: plan.map((task, index): AppDatabaseTaskResult => ({
+        connection: task.connection,
+        kind: task.kind,
+        ...(task.skipReason
+          ? { status: 'skipped', reason: task.skipReason }
+          : index === failedIndex
+            ? {
+                status: 'failed',
+                error: error instanceof Error ? error.message : String(error),
+              }
+            : { status: 'not-run', reason: 'before-task-execution-failed' }),
+      })),
+    },
+    error,
+  );
 }
 
 /**
@@ -476,7 +572,6 @@ export async function runAppDatabaseTasks(
   config: AppDatabaseConfig,
   options: AppDatabaseTaskRunOptions,
 ): Promise<AppDatabaseTasksResult> {
-  if (options.fresh) assertFreshAllowed(options.runtimeConfig);
   const { paths, drivers } = options;
   const kinds = Array.isArray(options.kind)
     ? (options.kind as readonly AppDatabaseTaskKind[])
@@ -544,14 +639,6 @@ export async function runAppDatabaseTasks(
         await database.destroy();
       }
     }
-  }
-}
-
-function assertFreshAllowed(config?: DatabaseTaskConfig): void {
-  if (config?.get('snowflake.mode') === 'auto') {
-    throw new Error(
-      'Database fresh is forbidden in automatic Snowflake mode because it can destroy worker allocations and release audit.',
-    );
   }
 }
 

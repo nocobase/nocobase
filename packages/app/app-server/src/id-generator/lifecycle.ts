@@ -15,6 +15,8 @@ export interface ManagedIdGenerator extends IdGeneratorService {
 
 export interface IdGeneratorLifecycle {
   readonly mode: 'manual' | 'auto';
+  /** Whether initialize() has ever been called, including pending and failed attempts. */
+  readonly initializationStarted: boolean;
   /** Register exactly one auto factory during Provider.register(), without replacing the business Token. */
   registerFactory(factory: IdGeneratorFactory): void;
   initialize(): Promise<void>;
@@ -38,6 +40,10 @@ export class AppIdGenerator
 
   public get mode(): 'manual' | 'auto' {
     return this.isAuto() ? 'auto' : 'manual';
+  }
+
+  public get initializationStarted(): boolean {
+    return this.initialized !== undefined;
   }
 
   public registerFactory(factory: IdGeneratorFactory): void {

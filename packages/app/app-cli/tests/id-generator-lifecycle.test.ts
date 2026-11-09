@@ -126,18 +126,13 @@ describe('ID lifecycle through application CLI commands', () => {
   });
 
   it.each(['--force', '--dry-run'])(
-    'refuses auto reset %j before allocating or dropping data',
+    'allows auto reset %j and keeps previews allocation-free',
     async (flag) => {
-      const { bind, factory, tables, migration } = await fixture();
+      const { bind, factory, migration } = await fixture();
       migration('main');
-      const before = await tables('main');
       const run = await runAppCommand(bind(Reset), [flag, '--json']);
-      expect(run.json()).toMatchObject({
-        ok: false,
-        error: { message: expect.stringContaining('fresh is forbidden') },
-      });
-      expect(factory).not.toHaveBeenCalled();
-      expect(await tables('main')).toEqual(before);
+      expect(run.json().ok).toBe(true);
+      expect(factory).toHaveBeenCalledTimes(flag === '--force' ? 1 : 0);
     },
   );
 });

@@ -152,7 +152,12 @@ describe('ID initialization around real database tasks', () => {
       await config.loadAll();
       config.mergeDefaults({
         database,
-        snowflake: mode === 'manual' ? { mode } : {},
+        snowflake:
+          mode === 'manual'
+            ? { mode }
+            : mode === 'no-provider'
+              ? { mode: 'auto' }
+              : {},
       });
       const app = new Application({ config });
       applications.push(app);
@@ -181,6 +186,18 @@ describe('ID initialization around real database tasks', () => {
           },
         ],
         options,
+      );
+      await executeAppDatabasePlan(
+        manager,
+        database,
+        [
+          {
+            connection: 'reports',
+            kind: 'migrations',
+            config: { sources: [] },
+          },
+        ],
+        { ...options, fresh: true },
       );
       expect(prepare).toHaveBeenCalled();
       expect(
@@ -303,11 +320,162 @@ describe('ID initialization around real database tasks', () => {
     },
   );
 
-  it('refuses auto fresh even as a dry run, without allocating or resetting data', async () => {
-    const { run, factory } = await fixture();
-    await expect(run('run', true, true)).rejects.toThrow('fresh is forbidden');
-    await expect(run('run', false, true)).rejects.toThrow('fresh is forbidden');
+  it('allows auto fresh previews without initialization and initializes only after reset', async () => {
+    const { app, run, factory } = await fixture();
+    await run('run', true, true);
     expect(factory).not.toHaveBeenCalled();
+    const manager = app.container.resolve(databaseManagerToken);
+    const reset = vi.spyOn(manager.connection(), 'resetManagedSchema');
+    await run('run', false, true);
+    expect(reset).toHaveBeenCalledOnce();
+    expect(reset.mock.invocationCallOrder[0]).toBeLessThan(
+      factory.mock.invocationCallOrder[0]!,
+    );
+    expect(
+      await manager.query().selectFrom('generated').selectAll().execute(),
+    ).toHaveLength(2);
+  });
+
+  it.each(['pending', 'ready', 'failed'] as const)(
+    'closes a previously %s lifecycle but still resets before reporting the need for a new app',
+    async (state) => {
+      const { app, managed } = await fixture({
+        failInitialize: state === 'failed',
+      });
+      app.registerProviders();
+      const lifecycle = app.container.resolve(idGeneratorLifecycleToken);
+      expect(lifecycle.initializationStarted).toBe(false);
+      if (state === 'pending')
+        managed.initialize.mockImplementation(() => new Promise(() => {}));
+      const initialization = lifecycle.initialize();
+      if (state !== 'pending') await initialization.catch(() => {});
+      else await Promise.resolve();
+      expect(lifecycle.initializationStarted).toBe(true);
+      const manager = app.container.resolve(databaseManagerToken);
+      const reset = vi.spyOn(manager.connection(), 'resetManagedSchema');
+      await expect(
+        executeAppDatabasePlan(
+          manager,
+          app.config.get<AppDatabaseConfig>('database')!,
+          [{ connection: 'main', kind: 'migrations', config: { sources: [] } }],
+          { fresh: true, container: app.container },
+        ),
+      ).rejects.toThrow('new application lifecycle');
+      expect(managed.shutdown).toHaveBeenCalledOnce();
+      expect(reset).toHaveBeenCalledOnce();
+      expect(managed.shutdown.mock.invocationCallOrder[0]).toBeLessThan(
+        reset.mock.invocationCallOrder[0]!,
+      );
+      expect(() => app.container.resolve(idGeneratorToken).generate()).toThrow(
+        'permanently closed',
+      );
+    },
+  );
+
+  it('resets even when closing an already initialized lifecycle fails', async () => {
+    const { app, managed } = await fixture();
+    app.registerProviders();
+    await app.container.resolve(idGeneratorLifecycleToken).initialize();
+    managed.shutdown.mockRejectedValue(new Error('return failed'));
+    const manager = app.container.resolve(databaseManagerToken);
+    const reset = vi.spyOn(manager.connection(), 'resetManagedSchema');
+    await expect(
+      executeAppDatabasePlan(
+        manager,
+        app.config.get<AppDatabaseConfig>('database')!,
+        [{ connection: 'main', kind: 'migrations', config: { sources: [] } }],
+        { fresh: true, container: app.container },
+      ),
+    ).rejects.toThrow('new application lifecycle');
+    expect(reset).toHaveBeenCalledOnce();
+    expect(() => app.container.resolve(idGeneratorToken).generate()).toThrow(
+      'permanently closed',
+    );
+  });
+
+  it('keeps empty fresh plans and unconfigured command runs allocation-free', async () => {
+    const { app, factory } = await fixture();
+    app.registerProviders();
+    await expect(
+      executeAppDatabasePlan(
+        app.container.resolve(databaseManagerToken),
+        app.config.get<AppDatabaseConfig>('database')!,
+        [],
+        { fresh: true, container: app.container },
+      ),
+    ).rejects.toThrow('must include migrations');
+    expect(
+      await runAppDatabaseTasks(
+        { default: 'none', connections: {} },
+        {
+          kind: 'migrations',
+          fresh: true,
+          container: app.container,
+          contributions: app.databaseTaskContributions,
+        },
+      ),
+    ).toEqual({ ok: true, status: 'not-configured', results: [] });
+    expect(factory).not.toHaveBeenCalled();
+  });
+
+  it('resets all connections before initialization even in a direct plan with the default connection last', async () => {
+    const databases = await provision(['main', 'reports']);
+    const database: AppDatabaseConfig = {
+      default: 'main',
+      connections: {
+        main: databases.connectionConfig('main'),
+        reports: databases.connectionConfig('reports'),
+      },
+    };
+    const config = new AppConfig();
+    await config.loadAll();
+    config.mergeDefaults({ database, snowflake: { mode: 'auto' } });
+    const app = new Application({ config });
+    applications.push(app);
+    app.addServiceProviders([DatabaseProvider, IdGeneratorProvider]);
+    app.registerProviders();
+    const events: string[] = [];
+    const manager = app.container.resolve(databaseManagerToken);
+    for (const name of ['main', 'reports']) {
+      const connection = manager.connection(name);
+      const reset = connection.resetManagedSchema.bind(connection);
+      vi.spyOn(connection, 'resetManagedSchema').mockImplementation(
+        async () => {
+          events.push(`reset:${name}`);
+          await reset();
+        },
+      );
+    }
+    app.container.resolve(idGeneratorLifecycleToken).registerFactory(() => ({
+      initialize: async () => {
+        events.push('initialize');
+      },
+      shutdown: async () => {},
+      generate: () => 1,
+      generateString: () => '1',
+    }));
+    const result = await executeAppDatabasePlan(
+      manager,
+      database,
+      ['reports', 'main'].map((connection) => ({
+        connection,
+        kind: 'migrations' as const,
+        config: { sources: [] },
+      })),
+      { fresh: true, container: app.container },
+    );
+    expect(events).toEqual(['reset:reports', 'reset:main', 'initialize']);
+    expect(result.results).toEqual(
+      ['reports', 'main'].map((connection) => ({
+        connection,
+        kind: 'migrations',
+        status: 'completed',
+        fresh: true,
+        batch: 0,
+        executed: [],
+        skipped: [],
+      })),
+    );
   });
 
   it.each([{ failInitialize: true }, { failBoot: true }])(

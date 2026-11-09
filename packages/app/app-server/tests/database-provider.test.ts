@@ -82,6 +82,7 @@ describe('DatabaseProvider', () => {
     });
     container.instance(idGeneratorLifecycleToken, {
       mode: 'manual',
+      initializationStarted: false,
       registerFactory: vi.fn(),
       initialize,
       shutdown: vi.fn(async () => {}),
@@ -98,6 +99,7 @@ describe('DatabaseProvider', () => {
     const calls: string[] = [];
     container.instance(idGeneratorLifecycleToken, {
       mode: 'manual',
+      initializationStarted: false,
       registerFactory: vi.fn(),
       initialize: vi.fn(async () => {}),
       shutdown: async () => {
