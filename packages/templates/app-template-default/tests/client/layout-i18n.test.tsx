@@ -125,69 +125,69 @@ describe('shell translations', () => {
   });
 });
 
-it('keeps the features link outside the scrolling business menu and translates it', async () => {
-  const guide: AppClientRegisteredRoute = {
+it('translates the settings navigation without a separate resources footer', async () => {
+  const settings: AppClientRegisteredRoute = {
     ...overview,
-    id: 'capabilityGuide',
-    name: 'capabilityGuide',
-    path: '/capabilities',
-    packageName: '@nocobase/app-plugin-foundation',
-    source: 'plugin',
+    id: 'settings',
+    name: 'settings',
+    path: '/settings',
+    packageName: 'test',
+    source: 'application',
     auth: 'required',
     authz: 'skip',
-    navigation: { title: 'nav.capabilityGuide' },
+    navigation: { title: 'settings.title' },
   };
-  const runtime = await setup(<AppLayout routes={[overview, guide]} />);
-  const resources = screen.getByRole('navigation', { name: 'Resources' });
-  const link = within(resources).getByRole('link', {
-    name: 'Features and extensions',
+  const runtime = await setup(<AppLayout routes={[overview, settings]} />);
+  const navigation = screen.getByRole('navigation', {
+    name: 'Application navigation',
   });
-  expect(link).toHaveAttribute('href', '/capabilities');
-  expect(link.closest('[data-slot="sidebar-content"]')).toBeNull();
+  const link = within(navigation).getByRole('link', {
+    name: 'System settings',
+  });
+  expect(link).toHaveAttribute('href', '/settings');
+  expect(link.closest('[data-slot="sidebar-content"]')).not.toBeNull();
   expect(
-    within(
-      screen.getByRole('navigation', { name: 'Application navigation' }),
-    ).queryByRole('link', { name: 'Features and extensions' }),
+    screen.queryByRole('navigation', { name: 'Resources' }),
   ).not.toBeInTheDocument();
   fireEvent.click(link);
   await waitFor(() =>
     expect(
-      within(resources).getByRole('link', { name: 'Features and extensions' }),
+      within(navigation).getByRole('link', { name: 'System settings' }),
     ).toHaveAttribute('aria-current', 'page'),
   );
   await act(() => runtime.changeLanguage('zh-CN'));
   expect(
-    within(screen.getByRole('navigation', { name: '参考资料' })).getByRole(
+    within(screen.getByRole('navigation', { name: '应用导航' })).getByRole(
       'link',
-      { name: '功能与扩展' },
+      { name: '系统设置' },
     ),
-  ).toHaveAttribute('href', '/capabilities');
+  ).toHaveAttribute('href', '/settings');
 });
 
-it('closes the mobile sidebar after opening Features and extensions', async () => {
+it('closes the mobile sidebar after opening System settings', async () => {
   vi.stubGlobal('innerWidth', 375);
-  const guide: AppClientRegisteredRoute = {
+  const settings: AppClientRegisteredRoute = {
     ...overview,
-    id: 'capabilityGuide',
-    name: 'capabilityGuide',
-    path: '/capabilities',
-    packageName: '@nocobase/app-plugin-foundation',
-    source: 'plugin',
+    id: 'settings',
+    name: 'settings',
+    path: '/settings',
+    packageName: 'test',
+    source: 'application',
     auth: 'required',
     authz: 'skip',
-    navigation: { title: 'nav.capabilityGuide' },
+    navigation: { title: 'settings.title' },
   };
-  await setup(<AppLayout routes={[overview, guide]} />);
+  await setup(<AppLayout routes={[overview, settings]} />);
   fireEvent.click(screen.getByRole('button', { name: 'Open navigation' }));
-  const resources = await screen.findByRole('navigation', {
-    name: 'Resources',
+  const navigation = await screen.findByRole('navigation', {
+    name: 'Application navigation',
   });
   fireEvent.click(
-    within(resources).getByRole('link', { name: 'Features and extensions' }),
+    within(navigation).getByRole('link', { name: 'System settings' }),
   );
   await waitFor(() =>
     expect(
-      screen.queryByRole('navigation', { name: 'Resources' }),
+      screen.queryByRole('navigation', { name: 'Application navigation' }),
     ).not.toBeInTheDocument(),
   );
 });

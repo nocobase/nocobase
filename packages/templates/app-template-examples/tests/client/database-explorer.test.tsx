@@ -1,4 +1,8 @@
 import {
+  PageBreadcrumbProvider,
+  usePageBreadcrumbLevels,
+} from '@nocobase/app-client';
+import {
   answerApi,
   renderWithApp,
   type ApiCall,
@@ -74,15 +78,24 @@ function RouterProbe() {
   );
 }
 
+/** Shows the trail the page declares, as the shell header would render it. */
+function TrailProbe() {
+  const levels = usePageBreadcrumbLevels();
+  return (
+    <output data-testid='trail'>{levels ? JSON.stringify(levels) : ''}</output>
+  );
+}
+
 function mount(
   api: (call: ApiCall) => unknown,
   route = '/settings/database-explorer',
 ) {
   return renderWithApp(
-    <>
+    <PageBreadcrumbProvider>
       <DatabaseExplorerPage />
       <RouterProbe />
-    </>,
+      <TrailProbe />
+    </PageBreadcrumbProvider>,
     {
       route,
       namespace: packageMetadata.name,
@@ -95,6 +108,15 @@ function mount(
 const search = () =>
   new URLSearchParams(screen.getByTestId('location').textContent ?? '');
 const tableList = () => screen.getByRole('list', { name: /^Tables in / });
+const trail = () =>
+  JSON.parse(screen.getByTestId('trail').textContent || 'null') as
+    { label: string; to?: unknown }[] | null;
+/** The table links Tab stops on. */
+const tabStops = () =>
+  within(tableList())
+    .getAllByRole('link')
+    .filter((link) => link.tabIndex === 0)
+    .map((link) => link.textContent);
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -239,6 +261,11 @@ it('never shows a late response for a table that is no longer selected', async (
       await screen.findByRole('list', { name: /^Tables in / }),
     ).findByRole('link', { name: 'orders' }),
   );
+  // While the fields load, the panel already names the table and holds its place.
+  expect(screen.getByRole('heading', { name: 'orders' })).toBeInTheDocument();
+  expect(
+    screen.getByText('Loading').closest('[aria-busy="true"]'),
+  ).not.toBeNull();
   await user.click(
     within(tableList()).getByRole('link', { name: 'customers' }),
   );
@@ -412,6 +439,8 @@ it('moves through the table list with the keyboard', async () => {
     throw new Error(`Unexpected request: ${path}`);
   });
   await screen.findByText('3 tables');
+  // The list is one Tab stop, so Tab moves past it instead of through every table.
+  expect(tabStops()).toEqual(['alpha']);
   await user.click(screen.getByRole('searchbox', { name: /Search by table/ }));
   await user.keyboard('{ArrowDown}');
   expect(
@@ -427,6 +456,81 @@ it('moves through the table list with the keyboard', async () => {
   expect(
     await screen.findByRole('table', { name: 'Fields of beta' }),
   ).toBeInTheDocument();
+  expect(tabStops()).toEqual(['beta']);
+  await user.click(screen.getByRole('searchbox', { name: /Search by table/ }));
+  await user.tab();
+  expect(within(tableList()).getByRole('link', { name: 'beta' })).toHaveFocus();
+  // The next Tab leaves the list rather than visiting the other tables.
+  await user.tab();
+  expect(tableList()).not.toContainElement(
+    document.activeElement as HTMLElement,
+  );
+});
+
+it('marks relations, keeps only notes about what is shown and names the open table in the trail', async () => {
+  const user = userEvent.setup();
+  await mount(({ path }) => {
+    if (path.endsWith('/connections')) return { data: [main] };
+    if (path.endsWith('/collections'))
+      return { data: [table('orders'), table('customers')] };
+    if (path.endsWith('/orders')) {
+      const response = detail('orders', [
+        { name: 'id', type: 'integer', nullable: false },
+        { name: 'customer', type: 'belongsTo', target: 'customers' },
+      ]);
+      response.data.collection.warnings = [
+        {
+          code: 'PARTIAL',
+          aspect: 'checkConstraints',
+          message: 'Checks are partial.',
+        },
+        {
+          code: 'UNSUPPORTED',
+          aspect: 'comments',
+          message: 'Comments are unsupported.',
+        },
+        {
+          code: 'PARTIAL',
+          aspect: 'foreignKeys',
+          message: 'Foreign keys are partial.',
+        },
+      ] as never;
+      return response;
+    }
+    throw new Error(`Unexpected request: ${path}`);
+  });
+  expect(trail()).toBeNull();
+  await user.click(
+    await within(
+      await screen.findByRole('list', { name: /^Tables in / }),
+    ).findByRole('link', { name: 'orders' }),
+  );
+  const fields = await screen.findByRole('table', { name: 'Fields of orders' });
+  expect(
+    within(within(fields).getByRole('row', { name: /^customer/ })).getByText(
+      'Not applicable',
+    ),
+  ).toBeInTheDocument();
+  expect(screen.getByText(/^1 inspection note/)).toBeInTheDocument();
+  await user.click(screen.getByText(/^1 inspection note/));
+  expect(screen.getByText('Foreign keys are partial.')).toBeInTheDocument();
+  expect(screen.queryByText('Checks are partial.')).not.toBeInTheDocument();
+  expect(
+    screen.queryByText('Comments are unsupported.'),
+  ).not.toBeInTheDocument();
+
+  // The header's way back leads to this connection's tables, not out of the page.
+  expect(trail()).toEqual([
+    { label: 'System settings', to: '/settings' },
+    {
+      label: 'Database Explorer',
+      to: {
+        pathname: '/settings/database-explorer',
+        search: '?connection=main',
+      },
+    },
+    { label: 'orders' },
+  ]);
 });
 
 it('shows one level at a time on a narrow screen and returns to the table it came from', async () => {
@@ -453,9 +557,17 @@ it('shows one level at a time on a narrow screen and returns to the table it cam
       await screen.findByRole('list', { name: /^Tables in / }),
     ).findByRole('link', { name: 'orders' }),
   );
-  // Fields stack as labelled blocks instead of a wide table.
+  // Fields stack as compact blocks instead of a wide table, naming only what applies.
   const fields = await screen.findByRole('list', { name: 'Fields of orders' });
   expect(within(fields).getByText('orders_name')).toBeInTheDocument();
+  expect(within(fields).getByText('Nullable')).toBeInTheDocument();
+  expect(within(fields).queryByText('References')).toBeNull();
+  // The introduction gives way to the fields.
+  expect(
+    screen.queryByText(
+      'Browse the application’s database connections, tables and fields.',
+    ),
+  ).not.toBeInTheDocument();
   expect(screen.queryByRole('table')).not.toBeInTheDocument();
   expect(screen.getByRole('heading', { name: 'orders' })).toHaveFocus();
 

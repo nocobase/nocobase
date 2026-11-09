@@ -1,18 +1,19 @@
-import { useApiClient } from '@nocobase/app-client';
+import { useApiClient, usePageBreadcrumb } from '@nocobase/app-client';
 import {
   DatabaseExplorerClient,
   type ConnectionListResult,
 } from '@nocobase/app-plugin-database-explorer/client';
 import { useTranslation } from '@nocobase/i18n/client';
+import { cn } from 'cn';
 import { TableProperties } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
-import { useSearchParams } from 'react-router';
+import { useLocation, useSearchParams } from 'react-router';
 import { PageContainer } from '#components/page-container';
 import { PageHeader } from '#components/page-header';
 import { LoadingLine, Recovery, StatusLine } from './feedback.js';
 import { FieldsPanel } from './fields.js';
 import { PARAM, readTables, type TableListing } from './model.js';
-import { describeFailure, useRead } from './read.js';
+import { describeFailure, useMediaQuery, useRead } from './read.js';
 import { TablesPanel } from './tables.js';
 
 /** Below this width the page shows one level at a time: tables, then a table's fields. */
@@ -33,18 +34,31 @@ export default function DatabaseExplorerPage(): ReactElement {
     connections.status === 'error'
       ? describeFailure(connections.error)
       : undefined;
+  const [params] = useSearchParams();
+  const desktop = useMediaQuery(DESKTOP_QUERY);
+  // A narrow screen showing one table's fields gives the room to them rather than to the page's introduction.
+  const brief = !desktop && params.has(PARAM.table);
+  const explorer =
+    connections.status === 'ready' && connections.data.items.length > 0;
   return (
-    <PageContainer className='flex flex-col gap-4 space-y-0 lg:h-full lg:min-h-0 [&>header]:shrink-0'>
+    <PageContainer
+      className={cn(
+        'flex flex-col gap-4 space-y-0 [&>header]:shrink-0',
+        // On a wide screen the browser fills the view and its panels scroll on their own,
+        // falling back to page scrolling when the view is too short for that.
+        explorer && 'lg:h-full lg:min-h-[36rem]',
+      )}
+    >
       <PageHeader
         title={t('databaseExplorer.title')}
-        description={t('databaseExplorer.description')}
+        description={brief ? undefined : t('databaseExplorer.description')}
         actions={
           failure ? (
             <Recovery failure={failure} onRetry={connections.reload} />
           ) : undefined
         }
       />
-      {connections.status === 'ready' && connections.data.items.length ? (
+      {explorer && connections.status === 'ready' ? (
         <Explorer client={client} connections={connections.data} />
       ) : (
         <section className='rounded-lg border bg-card'>
@@ -75,6 +89,7 @@ function Explorer({
   const summary = connections.items.find((item) => item.name === connection);
   const table = params.get(PARAM.table);
   const showsFields = Boolean(table && summary);
+  const { pathname } = useLocation();
 
   const [progress, setProgress] = useState<{ key: string; count: number }>();
   const tables = useRead<TableListing>(summary ? connection : null, () =>
@@ -93,6 +108,31 @@ function Explorer({
     }
     return `?${next.toString()}`;
   };
+
+  // With a table open the trail names it, so the header's way back (the phone's
+  // back arrow) returns to this connection's tables rather than leaving the page.
+  const entry =
+    tables.status === 'ready' && table
+      ? tables.data.items.find((item) => item.name === table)
+      : undefined;
+  usePageBreadcrumb(
+    table && showsFields
+      ? [
+          {
+            label: t('settings.title', { defaultValue: 'System settings' }),
+            to: pathname.replace(/\/[^/]+\/?$/u, '') || '/',
+          },
+          {
+            label: t('databaseExplorer.title'),
+            to: {
+              pathname,
+              search: link({ [PARAM.table]: null, [PARAM.fieldSearch]: null }),
+            },
+          },
+          { label: entry?.title ?? table },
+        ]
+      : null,
+  );
 
   // On a narrow screen the list and the fields replace each other, so focus
   // follows the level that is now shown instead of falling to the page.
@@ -116,7 +156,7 @@ function Explorer({
   }, [table]);
 
   return (
-    <div className='grid min-w-0 overflow-hidden rounded-lg border bg-card lg:min-h-0 lg:flex-1 lg:grid-cols-[minmax(15rem,19rem)_minmax(0,1fr)]'>
+    <div className='grid min-w-0 rounded-lg border bg-card lg:overflow-hidden lg:min-h-0 lg:flex-1 lg:grid-rows-[minmax(0,1fr)] lg:grid-cols-[minmax(15rem,19rem)_minmax(0,1fr)]'>
       <TablesPanel
         className={showsFields ? 'hidden lg:flex' : 'flex'}
         connections={connections.items}
@@ -143,11 +183,7 @@ function Explorer({
           connection={connection}
           dialect={summary.dialect}
           table={table}
-          entry={
-            tables.status === 'ready'
-              ? tables.data.items.find((item) => item.name === table)
-              : undefined
-          }
+          entry={entry}
           knownTables={
             tables.status === 'ready'
               ? new Set(tables.data.items.map((item) => item.name))

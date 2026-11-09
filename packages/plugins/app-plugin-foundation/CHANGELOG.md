@@ -1,5 +1,41 @@
 # @nocobase/app-plugin-foundation
 
+## 0.1.0-beta.18
+
+### Patch Changes
+
+- 368299b: Open the first matching feature detail by default in the desktop Features and extensions catalog.
+
+## 0.1.0-beta.17
+
+### Patch Changes
+
+- c522d01: Present Features and extensions in System settings with consistent capability details showing their purpose, current configuration and management entries, and expandable Agent requests for adding or improving features. Combine language capabilities into one entry and distinguish personal and application API key management interfaces.
+- c522d01: Add a capability guide at `/capabilities` listing the application's core modules and dependent plugins, including examples. Browse a numbered catalog with type and keyword filters, then open consistent details explaining each capability's purpose, current configuration, and how to add or improve it with an Agent. The home page links to the same catalog, while the protected runtime foundation page retains its URL and access.
+- c522d01: Add a concurrency configuration overview with explicit unavailable runtime values and focused Agent guidance for shared coordination, independent services and default service selection. Clarify that concurrency control does not replace idempotency.
+- c522d01: Clarify the Database Explorer interface and its application-wide access permission. Provide focused Agent guidance for adding the read-only browser and configuring access without implying per-connection or field-level restrictions.
+- c522d01: Show complete package names in the core and plugin catalog, allow long identifiers to wrap on narrow screens, simplify Chinese module names, and describe Foundation as a catalog of capabilities and usage guidance.
+- c522d01: Present concurrency as one plugin capability, include its core module in developer references, and support searching by covered core package names.
+- c522d01: Give expandable configuration actions a stable accessible name matching their visible title.
+- c522d01: Organize remaining feature and example details around application configuration, interface availability, and specific Agent actions, keeping unavailable configuration evidence explicit.
+- c522d01: Provide the feature configuration detail pages directly from the Foundation plugin so applications can reuse them without template-owned pages or locale resources. Discover application routes and permissions through public runtime APIs and remove duplicate template implementations.
+- c522d01: Present the capability catalog as Features and extensions in System settings, replacing the App usage entry while preserving the protected runtime page. Use the header breadcrumb to return from an entry without losing catalog filters.
+- c522d01: Resolve internal component aliases from source in workspace consumers so application typechecks do not require a prior plugin build; keep published aliases targeting compiled output.
+- Updated dependencies [7508a76]
+- Updated dependencies [fb4659d]
+- Updated dependencies [6fbf389]
+- Updated dependencies [1cda4c3]
+- Updated dependencies [7d970d6]
+- Updated dependencies [bb1dff2]
+- Updated dependencies [a2a6385]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.20
+  - @nocobase/app-server@5.0.0-beta.2
+  - @nocobase/app-plugin-authorization@1.0.0-beta.37
+  - @nocobase/db@1.0.0-beta.26
+  - @nocobase/jobs@1.0.0-beta.6
+  - @nocobase/i18n@2.0.0-beta.2
+  - @nocobase/app-client@4.0.0-beta.9
+
 ## 0.1.0-beta.16
 
 ### Patch Changes

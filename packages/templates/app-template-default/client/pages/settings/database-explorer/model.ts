@@ -95,6 +95,8 @@ export interface FieldRow {
   /** `undefined` when the definition does not say. */
   readonly nullable?: boolean;
   readonly primaryKey: boolean;
+  /** A relation to another table rather than a column of this one, so nullability does not apply. */
+  readonly relation: boolean;
   readonly references: readonly FieldReference[];
 }
 
@@ -114,7 +116,8 @@ export function fieldRows(definition: Definition): FieldRow[] {
   );
   return (definition.fields ?? []).map((field: FieldDefinition) => {
     const references: FieldReference[] = [];
-    if ('target' in field && typeof field.target === 'string')
+    const relation = 'target' in field && typeof field.target === 'string';
+    if (relation)
       references.push({ collection: field.target, relation: field.type });
     for (const constraint of constraints) {
       if (constraint.type !== 'foreignKey') continue;
@@ -137,6 +140,7 @@ export function fieldRows(definition: Definition): FieldRow[] {
         ? { nullable: field.nullable }
         : {}),
       primaryKey: field.primaryKey === true || primary.has(field.name),
+      relation,
       references,
     };
   });
@@ -152,11 +156,51 @@ export function fieldMatches(query: string, field: FieldRow): boolean {
   ]);
 }
 
-/** The warnings the server attached to a definition, as distinct readable lines. */
+/**
+ * Inspection aspects the page does not show. A note that one of them is partial
+ * or unsupported says nothing about the fields, keys and references on screen,
+ * so it is left out rather than marking every table as possibly incomplete.
+ */
+const UNSHOWN_ASPECTS: ReadonlySet<string> = new Set([
+  'uniqueConstraints',
+  'indexes',
+  'checkConstraints',
+  'comments',
+  'viewDefinition',
+]);
+
+/** The warnings the server attached to a definition that concern what the page shows, as distinct readable lines. */
 export function warningMessages(
   warnings: CollectionDetail['collection']['warnings'],
 ): string[] {
   return [
-    ...new Set(warnings.map((warning) => warning.message || warning.code)),
+    ...new Set(
+      warnings
+        .filter(
+          (warning) =>
+            warning.aspect === undefined ||
+            !UNSHOWN_ASPECTS.has(warning.aspect),
+        )
+        .map((warning) => warning.message || warning.code),
+    ),
   ];
+}
+
+/**
+ * Splits an identifier where a line may break: after `_`, `-`, `.` or `/`, and
+ * before an upper-case letter that follows a lower-case letter or digit, so a
+ * long camelCase or snake_case name wraps between words instead of mid-word.
+ */
+export function wordBreaks(
+  name: string,
+): { readonly text: string; readonly start: number }[] {
+  const parts: { text: string; start: number }[] = [];
+  let start = 0;
+  for (const text of name.split(
+    /(?<=[_\-./])|(?<=[\p{Ll}\p{Nd}])(?=\p{Lu})/u,
+  )) {
+    parts.push({ text, start });
+    start += text.length;
+  }
+  return parts;
 }

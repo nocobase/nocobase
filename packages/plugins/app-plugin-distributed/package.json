@@ -1,0 +1,38 @@
+{
+  "name": "@nocobase/app-plugin-distributed",
+  "displayName": "Distributed App Plugin",
+  "description": "Agent Skills for configuring and verifying distributed NocoBase applications.",
+  "version": "0.0.1",
+  "type": "module",
+  "prettier": "@nocobase/dev-config/prettier",
+  "sideEffects": false,
+  "exports": {
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "skills",
+    "README.md",
+    "CHANGELOG.md"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "exports": {
+      "./package.json": "./package.json"
+    }
+  },
+  "scripts": {
+    "format": "prettier . --write",
+    "format:check": "prettier . --check",
+    "check": "pnpm format:check"
+  },
+  "devDependencies": {
+    "@nocobase/dev-config": "workspace:*",
+    "prettier": "catalog:"
+  },
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nocobase/nocobase.git",
+    "directory": "packages/plugins/app-plugin-distributed"
+  }
+}

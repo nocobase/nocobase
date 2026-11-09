@@ -286,8 +286,13 @@ export function TablesPanel({
                   event.preventDefault();
               }}
             >
-              {matched.map((item) => {
+              {matched.map((item, index) => {
                 const current = item.name === selected;
+                // The list is one Tab stop: the open table, or the first when it is not listed; arrows move within.
+                const tabStop =
+                  selected && matched.some((entry) => entry.name === selected)
+                    ? current
+                    : index === 0;
                 const primary = item.title ?? item.name;
                 const secondary = [
                   item.title ? item.name : undefined,
@@ -301,6 +306,7 @@ export function TablesPanel({
                       to={tableLink(item.name)}
                       data-table={item.name}
                       aria-current={current ? 'true' : undefined}
+                      tabIndex={tabStop ? 0 : -1}
                       title={[primary, secondary].filter(Boolean).join('\n')}
                       className={cn(
                         'flex min-w-0 items-center gap-2 rounded-md px-2 py-2 text-sm outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50',
