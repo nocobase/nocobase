@@ -1,5 +1,14 @@
 # @nocobase/app-skills
 
+## 0.1.0-beta.61
+
+### Patch Changes
+
+- f24a673: The UI component checker now reports native and shadcn `Input` date and date-time inputs with date picker advice, and the application development Skill documents how to compose and reuse an application-owned `DatePicker`. The Examples work calendar picks holiday dates from that `DatePicker` instead of the browser's native calendar, and both templates ship its Clear label.
+- f2512ff: Remove the development annotation toolbar from Examples applications and clean up its development configuration and screenshot defaults.
+- 7d970d6: Group application realtime broker selection and implementation options under realtime.broker, preserving the local default and service-level settings. Reject legacy adapter/redis paths with migration guidance, and validate explicitly configured brokers without filling missing adapters from template defaults. Redis deployments must upgrade the host and matching commercial plugin together and migrate code defaults, YAML, environment mappings and configuration scripts; rollback must restore matching configuration.
+- bb1dff2: **Breaking configuration migration:** Concurrency, Jobs and Queue now declare named configurations under `backends`, with `default` selecting a name in that map. Move all direct entries into `backends` in both YAML and application-owned configuration factories. Legacy, unknown and mixed top-level fields are rejected even when unused; Queue no longer ignores `connections`, `worker`, `jobs` or invalid defaults with a Memory fallback. Preserve existing adapter names, connections, namespaces, persistence paths and business resource names; no Redis data migration is required.
+
 ## 0.1.0-beta.60
 
 ### Patch Changes

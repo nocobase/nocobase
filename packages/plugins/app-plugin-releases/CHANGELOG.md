@@ -1,5 +1,39 @@
 # @nocobase/app-plugin-releases
 
+## 0.1.0-beta.20
+
+### Minor Changes
+
+- f8bbdf9: Apps are listed and created on their environment's page; there is no separate apps list or menu entry, and the apps path alone (`/releases` by default) leads to the environments. An environment's apps show each app's runtime state (why on hover or a tap), filter by it and page through 100 at a time, kept in the address (`?runtimeState=`, `?page=`). The environments pages open to either the `rel.environments` `read` setting or the apps page grant (`page:rel-apps`), so environment readers and app readers both keep an entry: the route declares no grant (`authz: 'skip'`, its menu entry shown to every signed-in user) and the page turns away anyone with neither. An environment's apps and Create App need the apps grants; the Variables tab, the connection check, managing environments and the capacity card still need the setting. Create App opens there (`<environments>/:environmentId/apps/new`, for those with `rel.apps/create`) with the environment fixed; the old `<apps>/new` address leads to the environment its `?environmentId=` names, or to the environments (`ReleasesNewAppRedirect`), and Create App no longer fails when the page under it hands no outlet context. A shared host's capacity card splits its running apps by environment (`environments[].running` in `GET /api/releases/hosts`), each linking to that environment filtered to its running and starting apps. `ReleasesAppsPage` is removed.
+- 437f24f: Show each shared app host once on the environments page as a capacity card — apps running against its limit, heap and process memory, restart state — linking to its running apps in the apps list (`GET /api/releases/hosts`, which needs the `rel.environments` `read` setting). The apps list shows each app's runtime state, with why on hover or a tap, and filters by environment and runtime state (`environmentId` and `runtimeState`, repeatable, applied before paging). An app's page says in one line why the host affects it — waiting for a slot or memory, not restored after the host restarted (`runtime.unrestored`), or the host restarting — instead of repeating the whole host. The App Host reports its `maxActiveApps` limit in its status counters.
+- a2a6385: Add Russian (ru-RU) and Korean (ko-KR) to the plugins Studio uses, and correct terminology in their existing translations: an issue is a task (it was translated as a magazine issue or a problem in several languages), a runtime is an execution environment, Agent and My Agent stay consistent, and an issue's executor and the backlog status read correctly. The remaining English strings in the agents plugin's translations are translated. Calendars follow Russian and Korean, and a browser asking for Traditional Chinese (zh-HK, zh-Hant-TW) now lands on zh-TW instead of zh-CN.
+
+### Patch Changes
+
+- 8b82537: Admit preview applications by fixed capacity slots without rejecting transient heap usage, and force Host rotation through a single maximum-wait timer.
+- fb4659d: Use live memory headroom and serialized bounded cold starts instead of static application slots, and recycle shared Hosts under memory pressure with whole-Host busy protection, atomic ingress handoff, bounded request drain after the maximum wait, background recovery that keeps management available, one retry for capacity-rejected deployments, status-aware idle activity and retryable proxy responses during Host restart/recovery.
+- b2fd67a: Let page descriptions use the available header width while preserving space for actions.
+- fb4659d: Show who shares an App's app host: a section on the App page lists the Apps of every environment running, starting, waiting or failed on it, why each holds a slot or waits (requests, connections, always running, recent use; not enough memory, the active App limit, a pending host restart), the shared process's memory as one total, a pending or running host restart, and environments whose Apps could not be restored. App badges show a refused start as waiting for a free slot, memory or the host restart.
+- Updated dependencies [fb4659d]
+- Updated dependencies [7508a76]
+- Updated dependencies [8b82537]
+- Updated dependencies [fb4659d]
+- Updated dependencies [fb4659d]
+- Updated dependencies [6fbf389]
+- Updated dependencies [1cda4c3]
+- Updated dependencies [7d970d6]
+- Updated dependencies [fb4659d]
+- Updated dependencies [437f24f]
+- Updated dependencies [bb1dff2]
+- Updated dependencies [a2a6385]
+  - @nocobase/app-host@0.1.0-beta.21
+  - @nocobase/app-plugin-authentication@2.0.0-beta.20
+  - @nocobase/app-server@5.0.0-beta.2
+  - @nocobase/app-plugin-authorization@1.0.0-beta.37
+  - @nocobase/db@1.0.0-beta.26
+  - @nocobase/i18n@2.0.0-beta.2
+  - @nocobase/app-client@4.0.0-beta.9
+
 ## 0.1.0-beta.19
 
 ### Minor Changes

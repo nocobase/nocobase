@@ -1,5 +1,25 @@
 # @nocobase/app-plugin-mail
 
+## 1.0.0-beta.22
+
+### Patch Changes
+
+- bb1dff2: **Breaking configuration migration:** Concurrency, Jobs and Queue now declare named configurations under `backends`, with `default` selecting a name in that map. Move all direct entries into `backends` in both YAML and application-owned configuration factories. Legacy, unknown and mixed top-level fields are rejected even when unused; Queue no longer ignores `connections`, `worker`, `jobs` or invalid defaults with a Memory fallback. Preserve existing adapter names, connections, namespaces, persistence paths and business resource names; no Redis data migration is required.
+- Updated dependencies [7508a76]
+- Updated dependencies [fb4659d]
+- Updated dependencies [6fbf389]
+- Updated dependencies [1cda4c3]
+- Updated dependencies [7d970d6]
+- Updated dependencies [bb1dff2]
+- Updated dependencies [a2a6385]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.20
+  - @nocobase/app-server@5.0.0-beta.2
+  - @nocobase/app-plugin-authorization@1.0.0-beta.37
+  - @nocobase/db@1.0.0-beta.26
+  - @nocobase/jobs@1.0.0-beta.6
+  - @nocobase/i18n@2.0.0-beta.2
+  - @nocobase/app-client@4.0.0-beta.9
+
 ## 1.0.0-beta.21
 
 ### Minor Changes
