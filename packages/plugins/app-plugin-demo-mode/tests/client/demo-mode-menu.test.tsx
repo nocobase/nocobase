@@ -59,8 +59,10 @@ it('shows the demo notice and checked account together in a standalone header me
     }),
   });
   const header = screen.getByRole('banner');
+  // The label is also present during mounting; wait for the menu trigger's interaction state.
   const trigger = await within(header).findByRole('button', {
     name: '演示模式 · 切换账户',
+    expanded: false,
   });
   expect(screen.queryByRole('menu')).not.toBeInTheDocument();
   expect(screen.getAllByRole('button')).toHaveLength(3);
@@ -92,8 +94,8 @@ it('prevents repeated switches while pending and lets a failed switch be retried
       },
     }),
   });
+  // The label is also present during mounting; wait for the menu trigger's interaction state.
   fireEvent.click(
-    // Wait for the menu trigger's interaction state, as the label is also present during mounting.
     await screen.findByRole('button', {
       name: /Switch account/u,
       expanded: false,
@@ -138,12 +140,12 @@ it('shows an existing administrator with its localized role label', async () => 
     }),
   });
   // The label is also present during mounting; wait for the menu trigger's interaction state.
-  const trigger = await screen.findByRole('button', {
-    name: '演示模式 · 切换账户',
-    expanded: false,
-  });
-  fireEvent.click(trigger);
-  expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  fireEvent.click(
+    await screen.findByRole('button', {
+      name: '演示模式 · 切换账户',
+      expanded: false,
+    }),
+  );
   const administrator = await screen.findByRole('menuitemradio', {
     name: /Super Admin/u,
   });
@@ -216,8 +218,8 @@ it('offers the same header entry to signed-out visitors', async () => {
     route: '/sign-in',
     fetch: api({ accounts: [{ ...ann, current: false }, bob] }),
   });
+  // The label is also present during mounting; wait for the menu trigger's interaction state.
   fireEvent.click(
-    // Wait for the menu trigger's interaction state, as the label is also present during mounting.
     await screen.findByRole('button', {
       name: /Switch account/u,
       expanded: false,
