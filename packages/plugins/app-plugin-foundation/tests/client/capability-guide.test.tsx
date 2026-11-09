@@ -369,3 +369,21 @@ it('redirects the old i18n detail to the merged entry and keeps filters', async 
     '/capabilities/app-plugin-i18n?source=plugin&q=i18n',
   );
 });
+
+it('opens the first filtered entry on desktop and preserves the search parameters', async () => {
+  vi.stubGlobal('matchMedia', () => ({
+    matches: true,
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+  }));
+  try {
+    await renderGuide('/capabilities?source=kernel&q=db');
+    await waitFor(() =>
+      expect(screen.getByTestId('location')).toHaveTextContent(
+        '/capabilities/db?source=kernel&q=db',
+      ),
+    );
+  } finally {
+    vi.unstubAllGlobals();
+  }
+});
