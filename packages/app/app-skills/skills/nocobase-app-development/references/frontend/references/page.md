@@ -140,7 +140,7 @@ export default function ProjectsPage(): ReactElement {
   - An inline child page (including tab content) renders inside the parent page's `PageContainer`; do not add another one.
   - A covering child page uses its own `PageContainer` inside `RouteChildPage` (see [`child-routes.md`](child-routes.md)). A child route that returns a bare `PageContainer` is neither: it renders at the parent's `Outlet`, below the parent's content.
   - Dialog and drawer content uses the overlay's own container; do not add `PageContainer`.
-- **`PageHeader`** (`#components/page-header`) props: `title` (required), `description`, `actions` (on the right of the title on every width, for page-level actions; one primary action on phones, M1.1 of [the phone experience](../mobile.md)). The title matches the menu name (guidelines L1, L3 and L5).
+- **`PageHeader`** (`#components/page-header`) props: `title` (required), `description`, `actions` (page-level actions: on the right of the title from 640px up; on a phone one primary action stays beside the title and several kept buttons wrap onto one row under it, M1.1 of [the phone experience](../mobile.md)). The title matches the menu name (guidelines L1, L3 and L5).
 - A page with child routes must place `<Outlet />` itself, or the child route content does not render; put it at the end of `PageContainer`. For how to write child routes, see [`child-routes.md`](child-routes.md) and [`overlay.md`](overlay.md).
 - Navigate to a child route with a relative path (`new`, `id`, `` `edit/${id}` ``) and keep the query string, as [section 2.2 of `overlay.md`](overlay.md#22-place-the-outlet-in-the-parent-page) explains.
 

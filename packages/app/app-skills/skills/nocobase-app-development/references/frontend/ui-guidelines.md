@@ -30,7 +30,7 @@ These are the shared UI guidelines for NocoBase 3 applications and embedded plug
 
 ## L Page structure
 
-**L1 [Must]** A business page is wrapped in PageContainer, with a PageHeader at the top: a title (required), a one-sentence description (recommended) and page-level actions, right-aligned in the same row as the title block and never wrapped below the description; this holds inside a settings dialog too. `PageHeader` keeps one primary action on the title's row on phones too, with the rest in a "More" menu; when a page keeps several buttons, they wrap together onto one row under the title, which keeps at least 12rem (M1.1). An auxiliary note is one muted line under the description, or an `Alert`, never a second description.
+**L1 [Must]** A business page is wrapped in PageContainer, with a PageHeader at the top: a title (required), a one-sentence description (recommended) and page-level actions. From 640px (`sm`) up, the actions are right-aligned in the same row as the title block and never wrapped below the description; this holds inside a settings dialog too. On a phone, `PageHeader` keeps one primary action on the title's row, with the rest in a "More" menu; only a page that has to keep several buttons visible gets them on one row under the title, which keeps at least 12rem, and that row counts toward the control limits of M1.1. An auxiliary note is one muted line under the description, or an `Alert`, never a second description.
 
 **L2 [Must]** A view (page, dialog, drawer) has at most one primary button (the default style); other buttons use outline, ghost or destructive, or go into a menu. Each Card of a settings page saves on its own (T4.2) and counts as its own view, so each Card's Save may be primary.
 
