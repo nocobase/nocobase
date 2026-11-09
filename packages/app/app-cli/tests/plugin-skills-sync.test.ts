@@ -6,14 +6,19 @@ import { applySkillsSync, planSkillsSync } from '../src/lib/skills-sync.ts';
 
 // A plugin laid out the way a workspace plugin ships its Skill — `skills/<name>/SKILL.md` with references beside it —
 // written into a temporary directory, so the test reads no other package's directory.
-it.each(['plugin', 'module'])(
-  'synchronizes an app-%s skill shipped by the workspace',
-  async (kind) => {
+it.each([
+  ['nocobase', 'plugin'],
+  ['nocobase', 'module'],
+  ['acme', 'plugin'],
+  ['acme', 'module'],
+])(
+  'synchronizes an @%s/app-%s skill shipped by the workspace',
+  async (scope, kind) => {
     const root = await mkdtemp(path.join(os.tmpdir(), 'nb3-plugin-skills-'));
     const appRoot = path.join(root, 'app');
     const pluginDirectory = path.join(root, 'plugins', `app-${kind}-reports`);
-    const packageName = `@nocobase/app-${kind}-reports`;
-    const skillName = `nocobase-app-${kind}-reports`;
+    const packageName = `@${scope}/app-${kind}-reports`;
+    const skillName = `${scope}-app-${kind}-reports`;
     const sourceRoot = path.join(pluginDirectory, 'skills', skillName);
 
     try {

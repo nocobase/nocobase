@@ -7,6 +7,7 @@
 //
 // The plan/apply split exists so `--dry-run` reports exactly what a real run would write, and so a caller that has to
 // roll back knows which files to snapshot before writing.
+import { isPluginPackageName } from './plugin-package-name.ts';
 import { readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
@@ -119,12 +120,7 @@ export function pluginPackageName(name: string): string {
   if (trimmed === '') {
     throw new Error('A plugin name is required.');
   }
-  if (
-    /^@[a-z0-9][a-z0-9-]*\/app-(?:plugin|module)-[a-z0-9]+(?:-[a-z0-9]+)*$/u.test(
-      trimmed,
-    )
-  )
-    return trimmed;
+  if (isPluginPackageName(trimmed)) return trimmed;
   if (trimmed.startsWith(PLUGIN_PREFIX)) {
     const shortName = trimmed.slice(PLUGIN_PREFIX.length);
     if (!SHORT_NAME_PATTERN.test(shortName)) {
@@ -136,7 +132,7 @@ export function pluginPackageName(name: string): string {
   }
   if (trimmed.includes('/') || trimmed.startsWith('@')) {
     throw new Error(
-      `Plugin "${trimmed}" must be a short name such as audit-log, or a full ${PLUGIN_PREFIX}* package name.`,
+      `Plugin "${trimmed}" must be a short name such as audit-log, or a full scoped app-plugin-* or app-module-* package name.`,
     );
   }
   if (!SHORT_NAME_PATTERN.test(trimmed)) {

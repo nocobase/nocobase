@@ -100,7 +100,8 @@ export default class PluginInspect extends AppCommand {
     name: Interfaces.Arg<string>;
   } = {
     name: Args.string({
-      description: 'Plugin short name or full @nocobase/app-plugin-* name.',
+      description:
+        'Plugin short name or full scoped app-plugin-* or app-module-* name.',
       required: true,
     }),
   };
