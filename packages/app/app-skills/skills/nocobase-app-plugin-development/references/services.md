@@ -10,8 +10,6 @@ Service contract → owner-created Token → implementation → ServiceProvider 
 
 ## Define the public capability
 
-For automatic Snowflake IDs, keep the host's `idGeneratorToken` binding. In Provider `register()`, resolve `idGeneratorLifecycleToken` from `@nocobase/app-server/id-generator` and call `registerFactory(() => managedRuntime)` once. The synchronous, resource-free factory returns `ManagedIdGenerator` with synchronous generation and asynchronous `initialize()` / `shutdown()`. The host initializes after storage preparation and before business migrations/seeds/rollback, sharing one Promise without implicit retry. Shutdown closes generation synchronously, handles partial initialization and finishes bounded cleanup before database destruction; the host's final 15-second wait bound is not request cancellation. Management CLI uses `withApp()` and `registerProviders()` without initialization or `app.start()`. Auto mode requires the plugin and its prepared storage, forbids workerId/epoch overrides and follows the ordinary destructive `db reset`/fresh rules. For auto fresh, the host resets all selected databases before initialization and business migrations/seeds. The adapter must idempotently prepare its coordination storage inside `initialize()` before allocation. Direct fresh callers need a new application lifecycle: `initializationStarted` also covers pending and failed attempts; an old lifecycle is closed, the reset still runs, then initialization reports that a new lifecycle is required. Dry runs do not initialize or allocate. Generation must remain memory-only; allocation and diagnostics stay inside the plugin.
-
 The plugin that owns a capability defines and exports its contract and original Token object:
 
 ```ts
@@ -188,3 +186,7 @@ Use a fresh `ServiceContainer` and a minimal typed App fixture. Cover these obse
 - The public `./server` export resolves from a real consumer.
 
 For maintained code, see ServiceContainer (`packages/libs/service-provider/src/container.ts`), Provider lifecycle registry (`packages/libs/service-provider/src/registry.ts`), and the runnable ServiceProvider example (`packages/examples/app-plugin-service-provider-example`).
+
+## Preparation before database tasks
+
+For asynchronous setup required before startup or CLI migration/seed callbacks, register a named `beforeTasks` hook through `databaseTaskHooksToken` from `@nocobase/app-server/database` during Provider registration, after DatabaseProvider. See [migrations and seeds](../../nocobase-app-development/references/migrations.md) for invocation, dry-run, reset and failure boundaries. CLI does not boot Providers. Keep initialization, repeated invocation, partial failure and bounded cleanup in the owning Provider; reverse shutdown runs it before DatabaseProvider if registered after it. Replacing a service requires replacing its default Provider in `server/app.ts`, since duplicate Token bindings are rejected. Configuration factories must be installed separately. The default ID Provider directly uses SnowflakeIdGenerator and exposes no specialized lifecycle.

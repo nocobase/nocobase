@@ -1,13 +1,12 @@
+import { databaseTaskHooksToken } from './task-hooks.js';
 import { createTaskServiceResolver } from './task-container.js';
 import { loggingToken } from '../logging/token.js';
-import { idGeneratorLifecycleToken } from '../id-generator/token.js';
 import type { ServiceResolver } from '@nocobase/service-provider';
 import { snapshotDatabaseTaskConfig } from './task-config.js';
 import type { DatabaseTaskConfig } from '@nocobase/db';
 import { resolveDatabaseConfig } from './resolve-config.js';
 import {
   planAppDatabaseTasks,
-  defaultConnectionName,
   type AppDatabaseTaskPlanOptions,
   type AppDatabaseTask,
   type AppDatabaseTaskKind,
@@ -154,74 +153,50 @@ export async function executeAppDatabasePlan(
   if (operation === 'unlock' && dryRun) {
     throw new Error('An unlock has no dry run; it reports the lock it finds.');
   }
-  const lifecycle = container?.resolveIfCreated(idGeneratorLifecycleToken);
-  const resetBeforeInitialization =
-    fresh && !dryRun && lifecycle?.mode === 'auto';
-  if (resetBeforeInitialization) {
-    // A reset must never erase the allocation established for this run. Reset
-    // every selected connection before preparing and initializing the runtime.
-    const previouslyInitialized = lifecycle.initializationStarted;
-    let shutdownError: unknown;
-    if (previouslyInitialized) {
-      try {
-        await lifecycle.shutdown();
-      } catch (error) {
-        // Cleanup failure does not prevent the requested destructive reset.
-        shutdownError = error;
-      }
-    }
-    const resetConnections = new Set<string>();
+  // Snapshot once: registrations added during execution apply to the next plan.
+  const hooks =
+    !dryRun &&
+    (operation === 'run' || operation === 'rollback' || operation === 'sample')
+      ? (container?.resolveIfCreated(databaseTaskHooksToken)?.registrations() ??
+        [])
+      : [];
+  const firstExecutable = plan.findIndex((task) => !task.skipReason);
+  const useHooks = hooks.length > 0 && firstExecutable >= 0;
+  const resetBeforeTasks = useHooks && fresh;
+  const prepared = new Set<string>();
+  if (useHooks) {
+    const resetConnections: string[] = [];
     for (const [index, task] of plan.entries()) {
-      if (
-        task.skipReason ||
-        task.kind !== 'migrations' ||
-        resetConnections.has(task.connection)
-      )
-        continue;
+      if (task.skipReason) continue;
       try {
-        await prepareAppDatabaseStorage(
-          config,
-          paths,
-          [task.connection],
-          drivers,
-        );
-        await database.connection(task.connection).resetManagedSchema();
-        resetConnections.add(task.connection);
+        if (!prepared.has(task.connection)) {
+          await prepareAppDatabaseStorage(
+            config,
+            paths,
+            [task.connection],
+            drivers,
+          );
+          prepared.add(task.connection);
+        }
+        if (
+          resetBeforeTasks &&
+          task.kind === 'migrations' &&
+          !resetConnections.includes(task.connection)
+        ) {
+          await database.connection(task.connection).resetManagedSchema();
+          resetConnections.push(task.connection);
+        }
       } catch (error) {
         throw beforeTasksError(plan, index, error);
       }
     }
-    if (previouslyInitialized) {
-      throw beforeTasksError(
-        plan,
-        plan.findIndex((task) => !task.skipReason),
-        new Error(
-          'Database reset completed; automatic ID initialization requires a new application lifecycle after an earlier initialization attempt.',
-          shutdownError === undefined ? undefined : { cause: shutdownError },
-        ),
-      );
-    }
-  }
-  if (
-    !dryRun &&
-    (operation === 'run' || operation === 'rollback' || operation === 'sample')
-  ) {
+    const context = Object.freeze({
+      resetConnections: Object.freeze(resetConnections),
+    });
     try {
-      if (lifecycle?.mode === 'auto') {
-        // Only the automatic factory needs default storage before the task's own preparation.
-        const primary = defaultConnectionName(config);
-        if (primary && primary !== 'none')
-          await prepareAppDatabaseStorage(config, paths, [primary], drivers);
-      }
-      await lifecycle?.initialize();
+      for (const hook of hooks) await hook.beforeTasks(context);
     } catch (error) {
-      if (resetBeforeInitialization)
-        throw beforeTasksError(
-          plan,
-          plan.findIndex((task) => !task.skipReason),
-          error,
-        );
-      throw error;
+      throw beforeTasksError(plan, firstExecutable, error);
     }
   }
   const taskContainer = createTaskServiceResolver(container);
@@ -266,7 +241,7 @@ export async function executeAppDatabasePlan(
           task.connection,
           drivers,
         ));
-      if (!storageMissing) {
+      if (!storageMissing && !prepared.has(task.connection)) {
         await prepareAppDatabaseStorage(
           config,
           paths,
@@ -303,7 +278,7 @@ export async function executeAppDatabasePlan(
                       ? await createAppMigrator(options).pending({ fresh })
                       : await createAppSeeder(options).pending({ fresh })
                     : task.kind === 'migrations'
-                      ? await (fresh && !resetBeforeInitialization
+                      ? await (fresh && !resetBeforeTasks
                           ? createAppMigrator(options).fresh()
                           : createAppMigrator(options).latest())
                       : await createAppSeeder({
@@ -312,8 +287,9 @@ export async function executeAppDatabasePlan(
                             enabled: freshInstall === true && sampleData,
                           },
                         }).run();
+      // fresh() reports an empty rebuild as completed even without a migration directory.
       const outcome =
-        resetBeforeInitialization &&
+        resetBeforeTasks &&
         task.kind === 'migrations' &&
         completed.status === 'skipped' &&
         'reason' in completed &&
@@ -357,7 +333,7 @@ export async function executeAppDatabasePlan(
   return result;
 }
 
-/** Reset/initialization failed before any business task ran, even if some schemas were reset. */
+/** A preparation/hook failure ran no business task, even if a schema was already reset. */
 function beforeTasksError(
   plan: readonly AppDatabaseTask[],
   failedIndex: number,
@@ -630,15 +606,7 @@ export async function runAppDatabaseTasks(
       container: options.container,
     });
   } finally {
-    if (!options.database) {
-      try {
-        await options.container
-          ?.resolveIfCreated(idGeneratorLifecycleToken)
-          ?.shutdown();
-      } finally {
-        await database.destroy();
-      }
-    }
+    if (!options.database) await database.destroy();
   }
 }
 

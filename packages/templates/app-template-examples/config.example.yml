@@ -186,11 +186,9 @@ database:
     #   # metadataStore: database/shared-crm/metadata
 
 snowflake:
-  # Assign a unique worker ID (0..31) to each concurrently running manual instance.
+  # Assign a unique worker ID (0..31) to each concurrently running instance.
   workerId: 0
   epoch: 1605024000
-  # Auto mode requires a separately installed allocation plugin. Set mode: auto and remove workerId and epoch.
-  # Unset SNOWFLAKE_WORKER_ID in auto mode. Prepare the allocation storage before starting the application.
 
 # Scheduled jobs, such as the Scheduler plugin's. Without jobs.default they run on the built-in memory adapter:
 # state kept in the process, read from storage/jobs at startup and written back when the application stops, so a

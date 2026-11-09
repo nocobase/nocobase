@@ -8,11 +8,12 @@ import {
 import { databaseManagerToken } from '@nocobase/db';
 import { ServiceProvider } from '@nocobase/service-provider';
 import type { Application } from '@nocobase/app-server';
-import { createAppDatabaseManager } from '@nocobase/app-server/database';
 import {
-  idGeneratorLifecycleToken,
-  idGeneratorToken,
-} from '@nocobase/app-server/id-generator';
+  createAppDatabaseManager,
+  databaseTaskHooksToken,
+} from '@nocobase/app-server/database';
+import { idGeneratorToken } from '@nocobase/app-server/id-generator';
+import Apply from '../src/commands/db/apply.ts';
 import Reset from '../src/commands/db/reset.ts';
 import {
   databaseCommandFixture,
@@ -28,15 +29,14 @@ afterEach(async () => {
   removeFixtureRoots();
 });
 
-// This is a host adapter fixture, not the commercial allocation implementation.
+// Host hook fixture using isolated databases and the default Snowflake generator.
 async function fixture({
-  mode = 'auto',
-  missingFactory = false,
-  failInitialize = false,
+  hooks = true,
+  failHook = false,
   failReset = '',
   failMigration = false,
   emptyMigrations = false,
-  stuckShutdown = false,
+  failShutdown = false,
 } = {}) {
   const databases = await provisionTestDatabases({
     connections: ['main', 'reports', 'external'],
@@ -54,10 +54,11 @@ async function fixture({
     },
   };
   const events: string[] = [];
-  let sequence = 0;
+  const resets: (readonly string[])[] = [];
+  let hookRan = false;
   let app: Application;
-  class AllocationProvider extends ServiceProvider<Application> {
-    public readonly name = 'fixture-allocation';
+  class HookProvider extends ServiceProvider<Application> {
+    public readonly name = 'fixture-hooks';
     public override register(): void {
       app = this.app;
       const manager = app.container.resolve(databaseManagerToken);
@@ -77,64 +78,56 @@ async function fixture({
         events.push('destroy');
         await destroy();
       });
-      if (missingFactory) return;
-      app.container.resolve(idGeneratorLifecycleToken).registerFactory(() => ({
-        initialize: async () => {
-          events.push('initialize');
-          if (failInitialize) throw new Error('fixture allocation failed');
-          // The plugin must prepare its own coordination storage after reset.
+      const ids = app.container.resolve(idGeneratorToken);
+      const generate = ids.generate.bind(ids);
+      vi.spyOn(ids, 'generate').mockImplementation(() => {
+        events.push('generate');
+        return generate();
+      });
+      if (!hooks) return;
+      app.container.resolve(databaseTaskHooksToken).add({
+        name: 'fixture',
+        beforeTasks: async ({ resetConnections }) => {
+          events.push('beforeTasks');
+          hookRan = true;
+          resets.push(resetConnections);
+          if (failHook) throw new Error('fixture hook failed');
           await manager
             .connection()
-            .builder.createCollection('fixture_allocation', (c) =>
+            .builder.createCollection('fixture_ready', (c) =>
               c.integer('id').primary(),
             );
           await manager
             .query()
-            .insertInto('fixture_allocation')
+            .insertInto('fixture_ready')
             .values({ id: 1 })
             .execute();
         },
-        generate: () => {
-          events.push('generate');
-          return ++sequence;
-        },
-        generateString: () => String(++sequence),
-        shutdown: async () => {
-          expect(() =>
-            app.container.resolve(idGeneratorToken).generate(),
-          ).toThrow('permanently closed');
-          events.push('close');
-          if (stuckShutdown) {
-            // Advance only the host cleanup budget; no database work uses fake timers.
-            vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
-            queueMicrotask(() => {
-              void vi.advanceTimersByTimeAsync(15_000);
-            });
-            await new Promise(() => {});
-          }
-          events.push('return');
-        },
-      }));
+      });
+    }
+    public override async shutdown(): Promise<void> {
+      if (hookRan) {
+        events.push('cleanup');
+        if (failShutdown) throw new Error('fixture cleanup failed');
+      }
     }
   }
   const fixture = databaseCommandFixture({
     database: () => database,
-    snowflake: mode === 'auto' ? { mode } : { workerId: 0 },
-    serviceProviders: [AllocationProvider],
+    serviceProviders: [HookProvider],
   });
   for (const name of ['main', 'reports']) {
     const migrationDirectory = fixture.paths.database(`${name}/migrations`);
     mkdirSync(migrationDirectory, { recursive: true });
-    const check =
-      mode === 'auto' && !missingFactory
-        ? `
+    const check = hooks
+      ? `
 const coordinator = createAppDatabaseManager(config.get('database'));
 try {
-  const allocations = await coordinator.query().selectFrom('fixture_allocation').selectAll().execute();
-  if (allocations.length !== 1) throw new Error('allocation missing during business task');
+  const rows = await coordinator.query().selectFrom('fixture_ready').selectAll().execute();
+  if (rows.length !== 1) throw new Error('hook state missing during business task');
 } finally { await coordinator.destroy(); }
 `
-        : '';
+      : '';
     if (!emptyMigrations)
       writeFileSync(
         path.join(migrationDirectory, '001_create.ts'),
@@ -202,16 +195,16 @@ ${emptyMigrations ? '' : "await query.insertInto('business').values({ id }).exec
   } finally {
     await setup.destroy();
   }
-  return { ...fixture, events, withDatabase };
+  return { ...fixture, events, resets, withDatabase };
 }
 
-describe('automatic IDs during real CLI reset', () => {
+describe('database hooks during real CLI tasks', () => {
   it.each([
     { flags: [], targets: ['main'] },
     { flags: ['--connection', 'reports'], targets: ['reports'] },
     { flags: ['--all'], targets: ['main', 'reports'] },
   ])(
-    'resets $targets before allocation, and retains the allocation through migrations and seeds',
+    'resets $targets before hooks, and retains the hook state through migrations and seeds',
     async ({ flags, targets }) => {
       const f = await fixture();
       const run = await runAppCommand(f.bind(Reset), [
@@ -221,12 +214,12 @@ describe('automatic IDs during real CLI reset', () => {
         '--json',
       ]);
       expect(run.json()).toMatchObject({ ok: true });
+      expect(f.resets).toEqual([targets]);
       expect(f.events).toEqual([
         ...targets.map((name) => `reset:${name}`),
-        'initialize',
+        'beforeTasks',
         ...targets.flatMap(() => ['generate', 'generate']),
-        'close',
-        'return',
+        'cleanup',
         'destroy',
       ]);
       for (const name of ['main', 'reports', 'external']) {
@@ -269,16 +262,15 @@ describe('automatic IDs during real CLI reset', () => {
     });
     expect(f.events).toEqual([
       'reset:main',
-      'initialize',
+      'beforeTasks',
       'generate',
-      'close',
-      'return',
+      'cleanup',
       'destroy',
     ]);
     expect(await f.tables('main')).not.toContain('sentinel');
   });
 
-  it('previews all connections without reset, allocation or database mutations', async () => {
+  it('previews all connections without reset, hooks or database mutations', async () => {
     const f = await fixture();
     const before = await Promise.all(
       ['main', 'reports', 'external'].map((name) => f.tables(name)),
@@ -318,35 +310,28 @@ describe('automatic IDs during real CLI reset', () => {
     expect(await f.tables('main')).toContain('sentinel');
   });
 
-  it.each([{ missingFactory: true }, { failInitialize: true }])(
-    'resets before reporting initialization failure: %j',
-    async (options) => {
-      const f = await fixture(options);
-      const run = await runAppCommand(f.bind(Reset), [
-        '--force',
-        '--no-collections',
-        '--json',
-      ]);
-      expect(run.json()).toMatchObject({
-        ok: false,
-        error: { message: expect.stringMatching(/factory|allocation failed/) },
-      });
-      expect(f.events[0]).toBe('reset:main');
-      expect(f.events).not.toContain('generate');
-      expect(f.events.at(-1)).toBe('destroy');
-      if (options.failInitialize)
-        expect(f.events).toEqual([
-          'reset:main',
-          'initialize',
-          'close',
-          'return',
-          'destroy',
-        ]);
-      expect(await f.tables('main')).not.toContain('sentinel');
-      expect(await f.tables('main')).not.toContain('business');
-      expect(await f.tables('reports')).toContain('sentinel');
-    },
-  );
+  it('reports a hook failure after resetting, without business execution', async () => {
+    const f = await fixture({ failHook: true });
+    const run = await runAppCommand(f.bind(Reset), [
+      '--force',
+      '--no-collections',
+      '--json',
+    ]);
+    expect(run.json()).toMatchObject({
+      ok: false,
+      error: {
+        message: expect.stringContaining('fixture hook failed'),
+        details: { results: [{ status: 'failed' }, { status: 'not-run' }] },
+      },
+    });
+    expect(f.events).toEqual([
+      'reset:main',
+      'beforeTasks',
+      'cleanup',
+      'destroy',
+    ]);
+    expect(await f.tables('main')).not.toContain('business');
+  });
 
   it('stops after the second reset fails, without initializing or running any migration', async () => {
     const f = await fixture({ failReset: 'reports' });
@@ -377,7 +362,7 @@ describe('automatic IDs during real CLI reset', () => {
     expect(await f.tables('reports')).toContain('sentinel');
   });
 
-  it('closes and returns before destroying connections after migration failure', async () => {
+  it('cleans Providers before destroying connections after migration failure', async () => {
     const f = await fixture({ failMigration: true });
     const run = await runAppCommand(f.bind(Reset), [
       '--force',
@@ -390,16 +375,15 @@ describe('automatic IDs during real CLI reset', () => {
     });
     expect(f.events).toEqual([
       'reset:main',
-      'initialize',
+      'beforeTasks',
       'generate',
-      'close',
-      'return',
+      'cleanup',
       'destroy',
     ]);
   });
 
-  it('destroys connections after bounded cleanup times out', async () => {
-    const f = await fixture({ stuckShutdown: true });
+  it('destroys connections even when a Provider cleanup fails', async () => {
+    const f = await fixture({ failShutdown: true });
     const run = await runAppCommand(f.bind(Reset), [
       '--force',
       '--no-collections',
@@ -409,18 +393,12 @@ describe('automatic IDs during real CLI reset', () => {
     expect(run.json().warnings).toEqual(
       expect.arrayContaining([expect.stringContaining('cleanup failed')]),
     );
-    expect(f.events).toEqual([
-      'reset:main',
-      'initialize',
-      'generate',
-      'generate',
-      'close',
-      'destroy',
-    ]);
+    expect(f.events.at(-2)).toBe('cleanup');
+    expect(f.events.at(-1)).toBe('destroy');
   });
 
-  it('retains manual reset behavior and leaves unselected default storage alone', async () => {
-    const f = await fixture({ mode: 'manual' });
+  it('retains reset behavior without hooks and leaves unselected default storage alone', async () => {
+    const f = await fixture({ hooks: false });
     const run = await runAppCommand(f.bind(Reset), [
       '--connection',
       'reports',
@@ -429,8 +407,67 @@ describe('automatic IDs during real CLI reset', () => {
       '--json',
     ]);
     expect(run.json()).toMatchObject({ ok: true });
-    expect(f.events).toEqual(['reset:reports', 'destroy']);
+    expect(f.events).toEqual([
+      'reset:reports',
+      'generate',
+      'generate',
+      'destroy',
+    ]);
     expect(await f.tables('main')).toContain('sentinel');
-    expect(await f.tables('main')).not.toContain('fixture_allocation');
+    expect(await f.tables('main')).not.toContain('fixture_ready');
+  });
+  it('runs once before normal migrations and seeds, using registered Providers without boot', async () => {
+    const f = await fixture();
+    const run = await runAppCommand(f.bind(Apply), [
+      '--no-collections',
+      '--json',
+    ]);
+    expect(run.json()).toMatchObject({ ok: true });
+    expect(f.events).toEqual([
+      'beforeTasks',
+      'generate',
+      'generate',
+      'cleanup',
+      'destroy',
+    ]);
+    expect(f.resets).toEqual([[]]);
+  });
+
+  it('runs once before seeds when there are no migrations', async () => {
+    const f = await fixture({ emptyMigrations: true });
+    const run = await runAppCommand(f.bind(Apply), [
+      '--no-collections',
+      '--json',
+    ]);
+    expect(run.json()).toMatchObject({ ok: true });
+    expect(f.events).toEqual(['beforeTasks', 'generate', 'cleanup', 'destroy']);
+    expect(f.resets).toEqual([[]]);
+  });
+
+  it('does not invoke hooks for a read-only plan preview', async () => {
+    const f = await fixture();
+    const run = await runAppCommand(f.bind(Apply), ['--dry-run', '--json']);
+    expect(run.json()).toMatchObject({ ok: true });
+    expect(f.events).toEqual(['destroy']);
+    expect(await f.tables('main')).not.toContain('fixture_ready');
+  });
+  it('preserves per-connection reset/migrate/seed order without hooks', async () => {
+    const f = await fixture({ hooks: false });
+    const run = await runAppCommand(f.bind(Reset), [
+      '--all',
+      '--force',
+      '--no-collections',
+      '--json',
+    ]);
+    expect(run.json()).toMatchObject({ ok: true });
+    expect(f.events).toEqual([
+      'reset:main',
+      'generate',
+      'generate',
+      'reset:reports',
+      'generate',
+      'generate',
+      'destroy',
+    ]);
   });
 });

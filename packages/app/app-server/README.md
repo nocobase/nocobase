@@ -1,9 +1,5 @@
 # `@nocobase/app-server`
 
-## ID generation
-
-Business services keep using `idGeneratorToken`. Manual generation remains synchronous and lazy; automatic allocation plugins register a host-owned factory and initialize before business database tasks. See the [ID generator lifecycle contract](docs/id-generator.md) for registration, shutdown, CLI exclusions and deployment dependencies.
-
 ## Ordinary and recurring jobs
 
 `JobExecutorServiceProvider` and `jobExecutorServiceToken` from `@nocobase/app-server/jobs` compose both `JobExecutor` and `ScheduleExecutor` from `@nocobase/jobs`. The provider lazily creates one service from the application's `jobs` configuration, application name, storage paths and logger. Owners set up their executors; the provider starts no worker by itself and shuts down all ordinary and schedule executors when the application stops. Repeated shutdown is safe, including executors their owners already stopped.
@@ -305,3 +301,5 @@ Trusted middleware can call `addRepositoryRequestConstraint(context, { repositor
 ## Inspecting registered plugins
 
 `app.registeredServerPlugins` is an immutable snapshot of explicit Server registrations, including provider-only and locales-only plugins. Each entry contains the resolved package identity, version, locations and static contribution counts. Reading it never imports plugins again, constructs providers or executes route factories. It establishes registration rather than configuration or actual use. `AppPluginApplication` makes the snapshot optional for compatibility with older and hand-composed hosts. Plugins exposing this information over HTTP must enforce their own access boundary and avoid returning filesystem locations or private plugin options.
+
+See [database task hooks](docs/database-task-hooks.md) for asynchronous preparation before startup and CLI migrations and seeds, and [application identifiers](docs/id-generator.md) for the default generator and replacement Providers.

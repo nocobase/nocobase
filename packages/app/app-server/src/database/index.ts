@@ -102,3 +102,9 @@ export type {
   AppDatabaseSeedConfig,
   AppDatabaseTaskContributions,
 } from './types.js';
+export {
+  databaseTaskHooksToken,
+  type DatabaseTaskHookContext,
+  type DatabaseTaskHook,
+  type DatabaseTaskHooks,
+} from './task-hooks.js';

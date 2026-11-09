@@ -16,6 +16,10 @@ import {
   planAppDatabaseTasks,
   type AppDatabaseTask,
 } from './plan.js';
+import {
+  createDatabaseTaskHooks,
+  databaseTaskHooksToken,
+} from './task-hooks.js';
 import { prepareAppDatabaseStorage } from './storage.js';
 import { createAppSeeder } from './seeder.js';
 import { createTaskServiceResolver } from './task-container.js';
@@ -23,7 +27,6 @@ import { snapshotDatabaseTaskConfig } from './task-config.js';
 import { createSampleDataService } from '../sample-data/registry.js';
 import { sampleDataToken } from '../sample-data/token.js';
 import { loggingToken } from '../logging/token.js';
-import { idGeneratorLifecycleToken } from '../id-generator/token.js';
 import type { Logger } from '@nocobase/logging';
 import type { AppConfigAccessor, AppPaths } from '../config/index.js';
 import type {
@@ -55,6 +58,12 @@ export class DatabaseProvider extends ServiceProvider<DatabaseProviderApplicatio
     if (!this.app.container.has(sampleDataToken)) {
       this.app.container.singleton(sampleDataToken, () =>
         createSampleDataService(),
+      );
+    }
+    if (!this.app.container.has(databaseTaskHooksToken)) {
+      this.app.container.singleton(
+        databaseTaskHooksToken,
+        createDatabaseTaskHooks,
       );
     }
     const config = this.getDatabaseConfig();
@@ -205,15 +214,7 @@ export class DatabaseProvider extends ServiceProvider<DatabaseProviderApplicatio
   }
 
   public override async shutdown(): Promise<void> {
-    try {
-      await this.app.container
-        .resolveIfCreated(idGeneratorLifecycleToken)
-        ?.shutdown();
-    } finally {
-      await this.app.container
-        .resolveIfCreated(databaseManagerToken)
-        ?.destroy();
-    }
+    await this.app.container.resolveIfCreated(databaseManagerToken)?.destroy();
   }
 
   private getDatabaseConfig(): AppDatabaseConfig {

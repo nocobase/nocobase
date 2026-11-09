@@ -30,8 +30,6 @@ Neither Repository nor Query applies the application's permissions. The route de
 
 `IdGeneratorProvider` supplies Snowflake IDs when a table needs a sortable identifier not tied to auto-increment. `increments('id')` is fine for ordinary tables.
 
-Manual mode keeps a unique workerId in 0..31 per concurrent instance. Automatic mode requires a separately installed allocation plugin: set `snowflake.mode: auto`, remove manual workerId/epoch fields, unset `SNOWFLAKE_WORKER_ID`, and prepare the plugin's allocation storage before startup. The host initializes before business migrations/seeds and manual rollback, including starts without automatic tasks; management CLI and dry runs do not allocate. Auto follows ordinary `db reset`/fresh confirmation and external-connection rules. All selected databases are reset before the adapter initializes and business migrations/seeds run; the adapter prepares coordination storage inside initialization before allocation. Business code keeps using `idGeneratorToken`; never replace its binding. Stop and restart the application when changing the generation mode.
-
 ## Verify
 
 - Queries return what you expect against a real database, not only in a mocked test.
