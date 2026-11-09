@@ -59,15 +59,18 @@ async function mount(
         loading: options.checkingAccess ?? false,
       }}
     >
-      <Link to='/capabilities/jobs'>Jobs guide</Link>
-      <Link to='/capabilities/queue'>Queue guide</Link>
+      <Link to='/settings/capabilities/jobs'>Jobs guide</Link>
+      <Link to='/settings/capabilities/queue'>Queue guide</Link>
       <Routes>
-        <Route path='/capabilities/:entryId' element={<FeatureOverview />} />
+        <Route
+          path='/settings/capabilities/:entryId'
+          element={<FeatureOverview />}
+        />
         <Route path='/account/api-keys' element={<h1>My API keys page</h1>} />
       </Routes>
     </RouteTreeProvider>,
     {
-      route: `/capabilities/${id}`,
+      route: `/settings/capabilities/${id}`,
       ...(options.locale ? { locale: options.locale } : {}),
       plugins:
         id === 'app-plugin-api-keys'

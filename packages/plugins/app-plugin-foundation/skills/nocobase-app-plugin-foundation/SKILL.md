@@ -10,7 +10,7 @@ description: Use when an application should show its administrators which NocoBa
 - The application should get the App Foundation page, or it should move or leave the menu.
 - Someone asks why a capability on that page is in use, needs setup, is not used yet or is undetermined, or where a number comes from.
 
-Do not use it to grant the page to a role: it admits only unrestricted access by design.
+The App Foundation runtime page admits only unrestricted access by design. The separate Features and extensions catalog and its detail pages require `page:capability-guide/access` (`CAPABILITY_GUIDE_ACCESS` from the client entry). That grant may be assigned through permission sets; it does not grant access to Foundation runtime information or to the management APIs linked by the catalog.
 
 ## Public surfaces
 

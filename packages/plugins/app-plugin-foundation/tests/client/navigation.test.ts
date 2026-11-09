@@ -2,6 +2,7 @@ import type { AppClientRegisteredRoute } from '@nocobase/app-client/plugins';
 import { describe, expect, it } from 'vitest';
 
 import { groupFoundationNavigation } from '../../client/navigation.js';
+import { CAPABILITY_GUIDE_ACCESS } from '../../client/access.js';
 import { foundationDefinition } from '../../client/routes.js';
 
 interface Item {
@@ -94,14 +95,18 @@ it('groups the capability catalog into settings without changing its URL or acce
   const guide = page('capabilityGuide', '@nocobase/app-plugin-foundation');
   const item = {
     ...guide,
-    route: { ...guide.route, path: '/capabilities', authz: 'skip' as const },
+    route: {
+      ...guide.route,
+      path: '/settings/capabilities',
+      authz: CAPABILITY_GUIDE_ACCESS,
+    },
   };
   const grouped = groupFoundationNavigation([settings, item]);
   expect(grouped).toHaveLength(1);
   expect(grouped[0]?.children).toEqual([permissions, item]);
   expect(grouped[0]?.children?.[1]?.route).toMatchObject({
-    path: '/capabilities',
-    authz: 'skip',
+    path: '/settings/capabilities',
+    authz: CAPABILITY_GUIDE_ACCESS,
   });
   expect(groupFoundationNavigation(grouped)).toEqual(grouped);
 });

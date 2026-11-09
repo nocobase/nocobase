@@ -523,7 +523,7 @@ it('marks relations, keeps only notes about what is shown and names the open tab
   expect(trail()).toEqual([
     { label: 'System settings', to: '/settings' },
     {
-      label: 'Database Explorer',
+      label: 'Database explorer',
       to: {
         pathname: '/settings/database-explorer',
         search: '?connection=main',

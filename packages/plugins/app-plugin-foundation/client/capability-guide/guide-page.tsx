@@ -111,7 +111,7 @@ const SOURCE_FILTERS: readonly GuideSourceFilter[] = [
 
 /**
  * The full catalog on the left and one entry on the right. On a narrow screen only one of them shows: the list at
- * `/capabilities`, the entry at `/capabilities/:entryId`. The filter lives in the URL, so returning from an entry
+ * `/settings/capabilities`, the entry at `/settings/capabilities/:entryId`. The filter lives in the URL, so returning from an entry
  * restores the same tab and keywords.
  */
 export function CapabilityGuidePage({

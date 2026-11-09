@@ -1,3 +1,9 @@
+import { CAPABILITY_GUIDE_ACCESS } from '@nocobase/app-plugin-foundation/client';
+import {
+  pagePermissionResources,
+  permissionNavigationSections,
+} from '../../client/pages/settings/page-permissions.js';
+import { permissionRowId } from '../../client/pages/settings/permissions-model.js';
 import { describe, expect, it } from 'vitest';
 import {
   createCapabilityCatalog,
@@ -34,8 +40,9 @@ describe('default Foundation integration', () => {
     const guide = category?.modules.find(
       ({ route }) => route.name === 'capabilityGuide',
     );
-    expect(guide?.target.path).toBe('/capabilities');
+    expect(guide?.target.path).toBe('/settings/capabilities');
     expect(guide?.route.auth).toBe('required');
+    expect(guide?.route.authz).toEqual(CAPABILITY_GUIDE_ACCESS);
     expect(
       buildSettingsCatalog(runtime.routes, new Set([routeKey(guide!.route)]))
         .flatMap((item) => item.modules)
@@ -71,7 +78,7 @@ describe('default Foundation integration', () => {
         'settingsSystem',
         [
           ['databaseExplorer', '/settings/database-explorer'],
-          ['capabilityGuide', '/capabilities'],
+          ['capabilityGuide', '/settings/capabilities'],
         ],
       ],
     ]);
@@ -128,4 +135,38 @@ describe('default Foundation integration', () => {
       expect(text.prompts.main?.template).toContain(packageName);
     }
   });
+});
+
+it('offers one Features and extensions access control under system configuration', async () => {
+  const { routes } = await resolveAppRuntime(appRuntime);
+  const pages = pagePermissionResources(routes, {}, (path) => path);
+  const controls = pages.filter(
+    ({ id }) => id === CAPABILITY_GUIDE_ACCESS.resource.id,
+  );
+  expect(controls).toHaveLength(1);
+  expect(controls[0]).toMatchObject({
+    title: {
+      key: 'nav.capabilityGuide',
+      ns: '@nocobase/app-plugin-foundation',
+    },
+    actions: [{ name: 'access' }],
+  });
+  const row = {
+    id: permissionRowId(CAPABILITY_GUIDE_ACCESS.resource, 'access'),
+    label: 'Access',
+    enabled: false,
+  };
+  const sections = permissionNavigationSections(
+    [{ id: 'pages', title: 'Pages', groups: [{ id: 'guide', rows: [row] }] }],
+    routes,
+    {},
+    (path) => path,
+    (value) => (typeof value === 'string' ? value : value.key),
+  );
+  expect(sections).toHaveLength(1);
+  expect(sections[0]?.id).toBe('configuration');
+  expect(sections[0]?.groups.flatMap(({ rows }) => rows)).toEqual([row]);
+  expect(
+    routes.find(({ name }) => name === 'capabilityGuideEntry')?.authz,
+  ).toEqual(CAPABILITY_GUIDE_ACCESS);
 });

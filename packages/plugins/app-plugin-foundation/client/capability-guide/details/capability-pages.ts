@@ -1,3 +1,4 @@
+import { CAPABILITY_GUIDE_PATH } from '../../../shared/capability-guide/index.js';
 /** Known application entry points, not evidence of business records or configuration. */
 export const capabilityPages: Record<
   string,
@@ -5,7 +6,7 @@ export const capabilityPages: Record<
 > = {
   'app-plugin-authentication': { names: ['login'], paths: ['/login'] },
   'app-plugin-database-explorer': { names: ['databaseExplorer'] },
-  'app-plugin-foundation': { names: [], paths: ['/capabilities'] },
+  'app-plugin-foundation': { names: [], paths: [CAPABILITY_GUIDE_PATH] },
   'app-plugin-knowledge': { names: ['knowledge'] },
   'app-plugin-notification-in-app': { names: ['inbox'], paths: ['/inbox'] },
   'app-plugin-users': { names: ['settingsUsers'] },

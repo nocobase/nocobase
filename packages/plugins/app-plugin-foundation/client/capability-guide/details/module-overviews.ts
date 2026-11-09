@@ -1,3 +1,4 @@
+import { CAPABILITY_GUIDE_PATH } from '../../../shared/capability-guide/index.js';
 import type { ModuleOverview } from './module-overview-types.js';
 
 export const moduleOverviews: Readonly<Record<string, ModuleOverview>> = {
@@ -1043,7 +1044,7 @@ export const moduleOverviews: Readonly<Record<string, ModuleOverview>> = {
         title: ['Features and extensions interface', '功能与扩展界面'],
         names: ['capabilityGuide'],
         knownRoute: true,
-        paths: ['/capabilities'],
+        paths: [CAPABILITY_GUIDE_PATH],
       },
     ],
     note: [

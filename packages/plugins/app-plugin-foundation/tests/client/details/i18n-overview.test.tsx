@@ -17,7 +17,7 @@ const server = {
 };
 function mount(answer: (call: ApiCall) => unknown) {
   return renderWithApp(<I18nOverview />, {
-    route: '/capabilities/app-plugin-i18n',
+    route: '/settings/capabilities/app-plugin-i18n',
     namespace: '@nocobase/app-plugin-foundation',
     namespaces: { [packageMetadata.name]: locales },
     fetch: answerApi(answer),

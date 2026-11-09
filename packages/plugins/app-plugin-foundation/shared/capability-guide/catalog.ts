@@ -171,7 +171,7 @@ export function readGuideFilter(params: URLSearchParams): {
 }
 
 /** App-relative path of the guide, and of one entry in it. */
-export const CAPABILITY_GUIDE_PATH = '/capabilities';
+export const CAPABILITY_GUIDE_PATH = '/settings/capabilities';
 export function capabilityPath(id: string, search = ''): string {
   return `${CAPABILITY_GUIDE_PATH}/${encodeURIComponent(id)}${search}`;
 }
