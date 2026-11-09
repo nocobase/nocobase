@@ -131,7 +131,10 @@ describe('the private npm registry token on demand', () => {
       body: start,
     });
     h.clock.advance(46_000);
-    const expired = await ask(runner, runId, { attempt: 1, reason: 'declared' });
+    const expired = await ask(runner, runId, {
+      attempt: 1,
+      reason: 'declared',
+    });
     expect(expired.status).toBe(409);
     expect(expired.body.error.reason).toBe('LEASE_LOST');
   });
