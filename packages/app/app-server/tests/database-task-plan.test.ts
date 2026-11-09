@@ -6,6 +6,7 @@ import { createAppPaths } from '../src/config/index.js';
 import {
   createAppDatabaseManager,
   runAppDatabaseTasks,
+  planAppDatabaseTasks,
   type AppDatabaseConfig,
   type AppDatabaseTaskContributions,
 } from '../src/database/index.js';
@@ -378,4 +379,82 @@ it('holds a database task lease across coordinator work and releases it after fa
   } finally {
     await database.destroy();
   }
+});
+
+it('runs module tasks on both named connections and retains independent history on retry', async () => {
+  const { paths, config, both, contributions } = await fixture();
+  config.connections.erp.schemaManagement = 'managed';
+  const connections: Record<
+    string,
+    {
+      migrations: { packageName: string; directory: string }[];
+      seeds: { packageName: string; directory: string }[];
+    }
+  > = {};
+  const packageName = '@acme/app-module-lab';
+  for (const connection of ['main', 'erp']) {
+    const directory = paths.root(`module/database/${connection}/migrations`);
+    mkdirSync(directory, { recursive: true });
+    writeFileSync(
+      path.join(directory, '001_module.ts'),
+      `import { defineMigration } from '@nocobase/db'; export default defineMigration({ name: '001_module', async up({ builder }) { await builder.createCollection('moduleRows', c => { c.increments('id'); }); }, async down({ builder }) { await builder.dropCollection('moduleRows'); } });`,
+    );
+    connections[connection] = {
+      migrations: [{ packageName, directory }],
+      seeds: [],
+    };
+  }
+  const inventory = { ...contributions, connections };
+  const selected = planAppDatabaseTasks(config, both, {
+    contributions: inventory,
+    paths,
+    connection: 'erp',
+  });
+  expect(selected).toHaveLength(2);
+  expect(selected[0].config.sources).toContainEqual(
+    connections.erp.migrations[0],
+  );
+  expect(selected[0].config.sources).not.toContainEqual(
+    connections.main.migrations[0],
+  );
+  const result = await runAppDatabaseTasks(config, {
+    kind: both,
+    contributions: inventory,
+    paths,
+    all: true,
+  });
+  expect(result.ok).toBe(true);
+  expect(
+    result.results
+      .filter((entry) => entry.kind === 'migrations')
+      .map((entry) => entry.executed),
+  ).toEqual([['001_module'], ['001_module']]);
+  const retry = await runAppDatabaseTasks(config, {
+    kind: both,
+    contributions: inventory,
+    paths,
+    all: true,
+  });
+  expect(
+    retry.results
+      .filter((entry) => entry.kind === 'migrations')
+      .map((entry) => entry.executed),
+  ).toEqual([[], []]);
+  expect(() =>
+    planAppDatabaseTasks(config, both, {
+      contributions: {
+        ...inventory,
+        connections: { missing: connections.main },
+      },
+      paths,
+    }),
+  ).toThrow('Unknown contributed');
+  config.connections.erp.schemaManagement = 'external';
+  expect(() =>
+    planAppDatabaseTasks(config, both, {
+      contributions: inventory,
+      paths,
+      all: true,
+    }),
+  ).toThrow('external');
 });

@@ -32,7 +32,10 @@ import {
   appDatabaseStorageExists,
   prepareAppDatabaseStorage,
 } from './storage.js';
-import type { AppDatabaseConfig } from './types.js';
+import type {
+  AppDatabaseConfig,
+  AppDatabaseTaskContributions,
+} from './types.js';
 
 /**
  * `repair` realigns recorded checksums; it executes no migration or seed.
@@ -100,6 +103,8 @@ export class AppDatabaseTaskError extends Error {
 }
 
 export interface AppDatabasePlanExecutionOptions {
+  /** Complete source inventory, including connections omitted by a CLI selection. */
+  readonly contributions?: AppDatabaseTaskContributions;
   readonly taskFilter?: (task: {
     readonly name: string;
     readonly packageName: string;
@@ -559,6 +564,7 @@ export async function runAppDatabaseTasks(
   if (!database) return { ok: true, status: 'not-configured', results: [] };
   try {
     return await executeAppDatabasePlan(database, config, plan, {
+      contributions: options.contributions,
       paths,
       drivers,
       fresh: options.fresh,
