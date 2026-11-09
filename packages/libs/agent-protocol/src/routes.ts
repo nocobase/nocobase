@@ -56,6 +56,13 @@ export const RUNNER_ROUTES = {
    * `RUN_NOT_OWNED` once the run is not this runner's.
    */
   gitCredential: '/api/agents/runners/runs/:runId/gitCredentials',
+  /**
+   * `POST` `NpmCredentialRequest` → `NpmCredential`: the token for NocoBase's private npm registry
+   * (`NOCOBASE_NPM_REGISTRY`), or null when the application has none, while the runner holds that attempt of the run
+   * (`npmCredentials` feature). Fails `LEASE_LOST`, `RUN_NOT_ACTIVE` or `RUN_NOT_OWNED` once the run is not this
+   * runner's.
+   */
+  npmCredential: '/api/agents/runners/runs/:runId/npmCredentials',
   /** `POST` `{}` → `JobLeaseResponse`: renews a job's lease. Jobs (`jobs.ts`) are claimed through `claim`. */
   jobLease: '/api/agents/runners/jobs/:jobId/lease',
   /** `POST` `JobStartRequest` → `JobLeaseResponse`. */

@@ -451,6 +451,54 @@ export const GitCredentialSchema: z.ZodType<GitCredential> = z.object({
 });
 
 /**
+ * NocoBase's private npm registry, the only one a runner asks the application a token for (`npmCredentials` feature,
+ * `RUNNER_ROUTES.npmCredential`). It also serves the public `@nocobase/*` packages, so a project that needs one of its
+ * private packages installs every `@nocobase/*` package from it.
+ */
+export const NOCOBASE_NPM_REGISTRY = 'https://pkg-v3.nocobase.com/';
+
+/**
+ * Why a runner asks for the private registry's token:
+ *
+ * - `declared`: a `.npmrc` committed in the repository points a scope or the whole registry at it;
+ * - `notFound`: an install failed because `package`, an `@nocobase/*` package, is not on the registry it used.
+ */
+export const NPM_CREDENTIAL_REASONS = ['declared', 'notFound'] as const;
+export type NpmCredentialReason = (typeof NPM_CREDENTIAL_REASONS)[number];
+
+/**
+ * A runner asks for the private registry's token (`RUNNER_ROUTES.npmCredential`). The server answers only while this
+ * runner holds `attempt` of the run under a live lease, like `GitCredentialRequest`. `reason` and `package` are only
+ * recorded, so a person can tell why a run needed the private registry.
+ */
+export interface NpmCredentialRequest {
+  readonly attempt: number;
+  readonly reason: NpmCredentialReason;
+  /** The package (`@nocobase/<name>`, with the wanted version or range when known) that was not found. */
+  readonly package?: string;
+}
+
+export const NpmCredentialRequestSchema: z.ZodType<NpmCredentialRequest> =
+  z.strictObject({
+    attempt: z.number().int().positive(),
+    reason: z.enum(NPM_CREDENTIAL_REASONS),
+    // Printable ASCII on one line: it is recorded as it is.
+    package: z
+      .string()
+      .regex(/^[\x21-\x7e][\x20-\x7e]{0,213}$/u)
+      .optional(),
+  });
+
+/** The answer: the token for `NOCOBASE_NPM_REGISTRY`, or null when the application has none configured. */
+export interface NpmCredential {
+  readonly token: string | null;
+}
+
+export const NpmCredentialSchema: z.ZodType<NpmCredential> = z.object({
+  token: z.string().min(1).nullable(),
+});
+
+/**
  * Where the agent works. `dirs` is ordered: the first is the primary working directory, where the agent starts. With
  * none, the agent starts in an empty directory the runner keeps for the subject.
  */
