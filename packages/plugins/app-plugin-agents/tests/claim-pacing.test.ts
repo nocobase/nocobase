@@ -353,6 +353,46 @@ describe('claims paced by the kind of runner the actor prefers', () => {
     expect(harness.clock.now().getTime() - queuedAt).toBe(1000);
   });
 
+  it('lets a personal runner take a run preferring shared runners once the shared one is full', async () => {
+    const { harness, time, agent, team, personal } = await paced('team');
+    await harness.enqueue(agent, 'first');
+    await harness.enqueue(agent, 'second');
+    expect(await time.drive(team, 2)).toHaveLength(2);
+
+    const run = await harness.enqueue(agent, 'third');
+    const queuedAt = harness.clock.now().getTime();
+    const [fromTeam, fromPersonal] = await Promise.all([
+      time.drive(team, 1),
+      time.drive(personal, 1),
+    ]);
+    expect(fromTeam).toEqual([]);
+    expect(fromPersonal.map((payload) => payload.run.id)).toEqual([run]);
+    expect(harness.clock.now().getTime() - queuedAt).toBeLessThanOrEqual(1000);
+  });
+
+  it('gives a run preferring personal runners but holding a variable for shared runners only to a shared runner alone', async () => {
+    const { harness, time, agent, team, personal } = await paced('personal');
+    await harness.services.variables.set(
+      { scope: 'agent', scopeId: agent },
+      'TOKEN',
+      'synthetic-test-value',
+      'owner',
+      { teamRunnersOnly: true },
+    );
+    const run = await harness.enqueue(agent);
+    const queuedAt = harness.clock.now().getTime();
+    const [fromTeam, fromPersonal] = await Promise.all([
+      time.drive(team, 1),
+      time.drive(personal, 1),
+    ]);
+    expect(fromPersonal).toEqual([]);
+    expect(fromTeam.map((payload) => payload.run.id)).toEqual([run]);
+    expect(fromTeam[0].workspace.env).toEqual([
+      { name: 'TOKEN', value: 'synthetic-test-value' },
+    ]);
+    expect(harness.clock.now().getTime() - queuedAt).toBeLessThanOrEqual(1000);
+  });
+
   it('adds no wait when the actor has no preference', async () => {
     const { harness, time, agent, team } = await paced('auto');
     const run = await harness.enqueue(agent);
