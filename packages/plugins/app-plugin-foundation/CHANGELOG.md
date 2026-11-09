@@ -1,5 +1,18 @@
 # @nocobase/app-plugin-foundation
 
+## 0.1.0-beta.19
+
+### Minor Changes
+
+- 3e87619: App Foundation's `foundation.scanOnStart` setting (`FOUNDATION_SCAN_ON_START`, factory `defineFoundationConfig()` from `@nocobase/app-plugin-foundation/config`) turns off the background scan an application submits at start; it defaults to `true`. With it off, opening the page, Refresh and Count records still start a scan. `createTestAppConfig()` in `@nocobase/app-testing` sets `foundation: { scanOnStart: false }` for every test application, so tests no longer spend seconds of CPU on the scan or wait for it when the application closes; pass `config: { foundation: { scanOnStart: true } }` to keep it. Both templates register the `foundation` section.
+
+### Patch Changes
+
+- 8be5180: Move Features and extensions to `/settings/capabilities`. Require a grantable page permission for Features and extensions, protect direct detail links, and expose its access control under system configuration permissions.
+- 8be5180: Let Features and extensions fill the available page width while retaining responsive outer spacing consistent with other settings pages.
+- @nocobase/app-plugin-authentication@2.0.0-beta.20
+  - @nocobase/app-plugin-authorization@1.0.0-beta.37
+
 ## 0.1.0-beta.18
 
 ### Patch Changes

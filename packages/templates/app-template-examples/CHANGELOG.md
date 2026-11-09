@@ -1,5 +1,35 @@
 # @nocobase/app-template-examples
 
+## 1.0.0-beta.76
+
+### Patch Changes
+
+- 8be5180: Move Features and extensions to `/settings/capabilities`. Require a grantable page permission for Features and extensions, protect direct detail links, and expose its access control under system configuration permissions.
+- 8be5180: Use compact default-connection badges and vertically aligned labels in the database explorer connection selector.
+- 8be5180: Show the Database Explorer in System settings again, and make browsing it easier: the table list and fields scroll on their own with the table name and column headings kept in view, the table list is a single Tab stop navigated with the arrow keys, narrow screens show compact fields with a pinned way back to the tables, switching tables keeps a placeholder instead of an empty panel, relation fields no longer show an unknown nullability, unrelated inspection notes are hidden, and long names wrap at word boundaries.
+- f5b066d: Use sentence case for the Database explorer page title and navigation labels.
+- 3e87619: App Foundation's `foundation.scanOnStart` setting (`FOUNDATION_SCAN_ON_START`, factory `defineFoundationConfig()` from `@nocobase/app-plugin-foundation/config`) turns off the background scan an application submits at start; it defaults to `true`. With it off, opening the page, Refresh and Count records still start a scan. `createTestAppConfig()` in `@nocobase/app-testing` sets `foundation: { scanOnStart: false }` for every test application, so tests no longer spend seconds of CPU on the scan or wait for it when the application closes; pass `config: { foundation: { scanOnStart: true } }` to keep it. Both templates register the `foundation` section.
+- 8be5180: Reduce mobile page padding consistently across application templates and plugin pages while preserving tablet and desktop spacing.
+- 8be5180: Separate System settings from business navigation with consistent sidebar group spacing on desktop and mobile.
+- Updated dependencies [8be5180]
+- Updated dependencies [8be5180]
+- Updated dependencies [3e87619]
+- Updated dependencies [8be5180]
+  - @nocobase/app-plugin-foundation@0.1.0-beta.19
+  - @nocobase/app-plugin-agents@2.0.0-beta.8
+  - @nocobase/app-plugin-authorization-example@1.0.0-beta.24
+  - @nocobase/app-plugin-file-example@1.0.0-beta.27
+  - @nocobase/app-plugin-jobs-example@1.0.0-beta.13
+  - @nocobase/app-plugin-lifecycle-example@0.1.0-beta.17
+  - @nocobase/app-plugin-mail@1.0.0-beta.23
+  - @nocobase/app-plugin-mail-example@1.0.0-beta.13
+  - @nocobase/app-plugin-notification-example@1.0.0-beta.16
+  - @nocobase/app-plugin-office-flows-example@0.1.0-beta.12
+  - @nocobase/app-plugin-realtime-example@0.1.0-beta.16
+  - @nocobase/app-plugin-repository-example@2.0.0-beta.9
+  - @nocobase/app-plugin-routes-example@1.0.0-beta.25
+  - @nocobase/app-plugin-template-print-example@1.0.0-beta.11
+
 ## 1.0.0-beta.75
 
 ### Patch Changes
