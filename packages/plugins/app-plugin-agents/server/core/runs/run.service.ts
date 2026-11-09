@@ -77,6 +77,7 @@ import {
   openRunsOnEach,
   pendingInputs,
   reposRepo,
+  runnerPreferenceOf,
   runsOfKey,
   runsRepo,
   toInput,
@@ -597,6 +598,11 @@ export function createRunService(deps: RunServiceDeps): RunService {
         requestedByUserId: values.requestedByUserId,
         confirmedByUserId: values.confirmedByUserId,
         ownerUserId: values.ownerUserId,
+        // The actor's choice now: a later change applies to runs queued after it.
+        runnerPreference: await runnerPreferenceOf(
+          unit.conn,
+          values.actorUserId,
+        ),
         requires: cleanList([...values.requires]),
         acceptsInput: false,
         availableAt: values.availableAt ?? null,

@@ -69,6 +69,7 @@ import {
   CONVERSATION_SOURCE_PATTERN,
   MESSAGE_ROLES,
   OFFLINE_REASONS,
+  RUNNER_PREFERENCES,
   TITLE_SOURCES,
   type ChatAgent,
   type ChatPreferences,
@@ -1967,6 +1968,10 @@ export const ChatAgentSchema: z.ZodType<ChatAgent> = z.object({
 
 export const ChatDefaultAgentSchema: z.ZodType<ChatPreferences> = z.object({
   defaultAgentId: z.string().nullable(),
+  runnerPreference: z.enum(RUNNER_PREFERENCES).meta({
+    description:
+      'Which kind of runner runs queued from now on go to first: auto (whichever fits and asks first), personal (their own runners) or team (shared runners). The other kind takes a run about a second later when the preferred kind cannot.',
+  }),
 });
 
 export const ChatSettingsSchema: z.ZodType<ChatSettings> = z.object({

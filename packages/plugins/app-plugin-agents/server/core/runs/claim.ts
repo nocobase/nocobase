@@ -25,6 +25,11 @@ import { ACTIVE_JOB, jobsRepo } from '../../jobs/job.store.js';
  * runners woken for the same runs, the least busy with each tool takes the next one. A request that ends while it
  * waits takes nothing.
  *
+ * A run whose actor prefers one kind of runner (`runnerPreference`, `personal` or `team`, noted when it was queued)
+ * makes the other kind wait one second more (`preferenceDelay`), so an idle runner of the preferred kind takes it
+ * first, and one of the other kind takes it about a second later when none can. Work that only one runner may take
+ * (pinned, reserved, continuing where its session is, or for shared runners only) adds no wait. Nothing else is read.
+ *
  * Variables are checked and opened in the claim's own transaction, on its connection: which ones the assembled payload
  * gets, whether any is for shared runners only, and their values, so what the runner receives is what was checked. The
  * names taken from the runner go in `workspace.passthrough`, without values.
@@ -162,7 +167,10 @@ import { consumeReset, saveBrief } from './workspace.store.js';
 const CANDIDATES = 50;
 /** The initial page plus at most two further pages per claim request, shared by all free slots. */
 const CANDIDATE_PAGES = 3;
-/** The longest a claim waits its turn: what a runner waits for a run when it already runs its tool at the limit. */
+/**
+ * What a runner waits for a run when it already runs its tool at the limit, and what one of the kind of runner the
+ * run's actor does not prefer waits on top (`preferenceDelay`).
+ */
 const PACE_MS = 1000;
 
 /** Request-local read budget, also shared by a long poll's post-wait check. */
@@ -311,13 +319,41 @@ export function claimPace(
   byTool: Readonly<Partial<Record<AgentTool, number>>>,
   run: Pick<Run, 'queueEnteredAt' | 'createdAt' | 'availableAt'>,
   now: number,
+  /** Added to the share and counted from the same moment (`preferenceDelay`). */
+  extraMs = 0,
 ): number {
   const limit = toolLimit(runner, tool);
   if (limit <= 0) return 0;
   const load = runner.toolLoad?.[tool];
   const used = Math.max(byTool[tool] ?? 0, load ? load.slots - load.free : 0);
-  const share = (Math.min(used, limit) / limit) * PACE_MS;
+  const share = (Math.min(used, limit) / limit) * PACE_MS + extraMs;
   return Math.min(share, Math.max(0, queueStart(run) + share - now));
+}
+
+/**
+ * What `runner` waits on top of its share (`claimPace`) for `run`, from the kind of runner its actor prefers: one
+ * second when the run prefers the other kind, nothing otherwise. Nothing either when only this runner may take it
+ * (`bound`: pinned, reserved or continuing where its session is), or when it prefers personal runners but has
+ * variables for shared runners only, which no personal runner may receive.
+ */
+export function preferenceDelay(
+  runner: Pick<Runner, 'trust'>,
+  run: Pick<
+    RunRecord,
+    'runnerPreference' | 'runnerPinId' | 'teamOnlyVariables'
+  >,
+  bound: boolean,
+): number {
+  const preferred = run.runnerPreference;
+  if (preferred !== 'personal' && preferred !== 'team') return 0;
+  if (bound || run.runnerPinId) return 0;
+  if (preferred === (runner.trust === 'team' ? 'team' : 'personal')) return 0;
+  if (
+    preferred === 'personal' &&
+    variableRefs(run.teamOnlyVariables).length > 0
+  )
+    return 0;
+  return PACE_MS;
 }
 
 /**
@@ -1782,6 +1818,8 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
     candidate: RunRecord,
     reported: ToolRoom,
     pass: ClaimPass,
+    /** Only this runner may take it: no preference wait (`preferenceDelay`). */
+    bound: boolean,
   ): Promise<Attempt> {
     if (candidate.runnerPinId && candidate.runnerPinId !== runner.id)
       return { kind: 'skipped' };
@@ -1833,6 +1871,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       pass.byTool,
       candidate,
       clock.now().getTime(),
+      preferenceDelay(runner, candidate, bound),
     );
     if (wait > 0) await (deps.pause ?? pause)(wait, pass.signal);
     if (pass.signal?.aborted) return { kind: 'aborted' };
@@ -2624,7 +2663,16 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       )
         continue;
       try {
-        const result = await attempt(runner, agent, candidate, reported, pass);
+        const result = await attempt(
+          runner,
+          agent,
+          candidate,
+          reported,
+          pass,
+          reserved === runner.id ||
+            pinned !== null ||
+            preferred?.id === runner.id,
+        );
         if (result.kind === 'claimed') return result.payload;
         if (result.kind === 'aborted') return false;
         if (result.kind === 'full') {
