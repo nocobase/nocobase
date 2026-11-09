@@ -195,7 +195,7 @@ export function CapabilityGuidePage({
   }
 
   return (
-    <div className='mx-auto flex w-full max-w-7xl flex-col gap-5 p-4 md:p-6'>
+    <div className='flex w-full min-w-0 flex-col gap-5 p-4 sm:p-6 md:p-8'>
       <header
         className={cn('flex flex-col gap-1', entryId && 'hidden lg:flex')}
       >

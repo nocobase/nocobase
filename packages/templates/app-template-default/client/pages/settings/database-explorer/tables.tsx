@@ -139,13 +139,17 @@ export function TablesPanel({
           <SelectContent>
             {connections.map((item) => (
               <SelectItem key={item.name} value={item.name}>
-                <span className='truncate'>{item.name}</span>
-                <span className='text-muted-foreground'>{item.dialect}</span>
-                {item.isDefault ? (
-                  <Badge variant='secondary'>
-                    {t('databaseExplorer.defaultConnection')}
-                  </Badge>
-                ) : null}
+                <span className='flex min-w-0 items-center gap-2'>
+                  <span className='truncate'>{item.name}</span>
+                  <span className='shrink-0 text-xs text-muted-foreground'>
+                    {item.dialect}
+                  </span>
+                  {item.isDefault ? (
+                    <Badge variant='secondary' data-size='sm'>
+                      {t('databaseExplorer.defaultConnection')}
+                    </Badge>
+                  ) : null}
+                </span>
               </SelectItem>
             ))}
           </SelectContent>
@@ -165,7 +169,7 @@ export function TablesPanel({
                 .join(' · ')}
             </span>
             {summary.isDefault ? (
-              <Badge variant='secondary'>
+              <Badge variant='secondary' data-size='sm'>
                 {t('databaseExplorer.defaultConnection')}
               </Badge>
             ) : null}
