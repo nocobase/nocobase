@@ -7,7 +7,7 @@ import SkillProjectDetailPage from '../../client/pages/skill-projects/detail.js'
 import { answerApi } from '@nocobase/app-testing/client';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { Route, Routes } from 'react-router';
+import { Route, Routes, useNavigate } from 'react-router';
 import { afterEach, expect, it, vi } from 'vitest';
 import { renderSettingsClient } from '../helpers/settings-client.js';
 import SkillProjectsPage from '../../client/pages/skill-projects/index.js';
@@ -852,4 +852,61 @@ it('shows each project as a card with its detail link and edit action on a phone
   } finally {
     vi.unstubAllGlobals();
   }
+});
+
+it('asks before browser back leaves a dirty edit dialog, as Cancel and Escape do', async () => {
+  // Browser back (the phone's back gesture) never calls the dialog's beforeClose; the page's navigation guard asks.
+  let back!: () => void;
+  function HistoryBack() {
+    const navigate = useNavigate();
+    back = () => void navigate(-1);
+    return null;
+  }
+  await renderSettingsClient(
+    <>
+      <Routes>
+        <Route path='/skill-projects' element={<SkillProjectsPage />}>
+          <Route path=':projectId/edit' element={<SkillProjectEditPage />} />
+        </Route>
+      </Routes>
+      <HistoryBack />
+    </>,
+    {
+      route: '/skill-projects?page=1',
+      namespace,
+      namespaces,
+      fetch: answerApi(({ path }) =>
+        path === 'skillProjects' ? list() : { data: original },
+      ),
+    },
+  );
+  await screen.findByText('Alpha');
+  await userEvent.click(screen.getByRole('button', { name: 'Edit' }));
+  const name = await screen.findByRole('textbox', { name: 'Name' });
+  await userEvent.type(name, ' draft');
+  act(() => back());
+  expect(
+    await screen.findByRole('alertdialog', {
+      name: enUS.skillProjects.discard,
+    }),
+  ).toBeVisible();
+  await userEvent.click(
+    screen.getByRole('button', { name: enUS.skillProjects.keepEditing }),
+  );
+  await waitFor(() =>
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument(),
+  );
+  expect(screen.getByRole('textbox', { name: 'Name' })).toHaveValue(
+    'Alpha draft',
+  );
+  act(() => back());
+  await userEvent.click(
+    await screen.findByRole('button', {
+      name: enUS.skillProjects.discardAction,
+    }),
+  );
+  await waitFor(() =>
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+  );
+  expect(screen.getByText('Alpha')).toBeVisible();
 });

@@ -33,7 +33,7 @@ Work in this order:
 2. Place `<Outlet />` in the parent page and pass the refresh function down through `context`.
 3. In the child route's page, wrap the content in `RouteDialog` or `RouteDrawer`.
 4. Close the overlay by calling `useRouteOverlay()` in a component inside it.
-5. When closing needs a check first (a submission in progress, unsaved changes), add `beforeClose`.
+5. When closing needs a check first, add `beforeClose` for a submission in progress, and register unsaved changes with `useNavigationGuard` so browser back asks too ([section 2.5](#25-beforeclose-checks-before-closing)).
 
 ### 2.1 Declare the child routes
 
@@ -187,7 +187,7 @@ export default function NewProjectPage(): ReactElement {
 
 ### 2.5 beforeClose: checks before closing
 
-- `beforeClose` applies to the top-right button, Esc, clicking the backdrop and `close()`; **browser back and forward do not go through it**.
+- `beforeClose` applies to the top-right button, Esc, clicking the backdrop and `close()`; **browser back and forward do not go through it**. Use it for checks that belong to closing only (a submission in progress); guard unsaved changes with `useNavigationGuard`, below, which also covers history navigation.
 - Returning `false` (or a Promise that resolves to `false`) keeps the overlay open.
 
 **No closing while submitting** (guideline T3.5): write `beforeClose={() => !submittingRef.current}`, using both a state and a ref:
@@ -196,9 +196,10 @@ export default function NewProjectPage(): ReactElement {
 - Using only the state, as `() => !submitting`, is unreliable: state updates only on the next render, so a `close()` called right after a successful save may run the `beforeClose` from the "submitting" render, read `submitting === true`, and have the close blocked.
 - On success, `ProjectForm` guarantees that it passes `onSubmittingChange(false)` before calling `onSubmitted`, so calling `close()` directly in `onSubmitted` closes the overlay.
 
-**Confirm when there are unsaved changes** (guideline T3.9; recommended for forms with many fields): have `beforeClose` return a Promise, and resolve it after the user chooses in a confirmation dialog. Put the confirmation dialog inside the overlay:
+**Confirm when there are unsaved changes** (guideline T3.9, M7.4 in [the phone experience](../mobile.md); recommended for forms with many fields): register the check with `useNavigationGuard` from `@nocobase/app-client`, not with `beforeClose`. Closing an overlay is navigation, so one navigation guard covers every way out: the × button, Esc, the backdrop and `close()` (Cancel) reach it through the close navigation, and browser back and forward, the phone's back gesture and any link reach it directly. A guard that returns a Promise holds the navigation until the user chooses; the application keeps the overlay and its input mounted while it waits and restores the URL when the answer is "Keep editing". Keep `beforeClose` for what only closing should check, such as a submission in progress:
 
 ```tsx
+import { useNavigationGuard } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { type ReactElement, useCallback, useRef, useState } from 'react';
 import { useOutletContext } from 'react-router';
@@ -229,34 +230,45 @@ export default function EditProjectPage(): ReactElement {
   const handleDirtyChange = useCallback((dirty: boolean): void => {
     dirtyRef.current = dirty;
   }, []);
-  // While asking "Discard changes?", holds the function that answers beforeClose.
-  const [discardPrompt, setDiscardPrompt] = useState<{
-    readonly answer: (discard: boolean) => void;
-  }>();
+  // While asking "Discard changes?", holds the question's answer, so a second attempt to leave reuses it.
+  const promptRef = useRef<{
+    readonly promise: Promise<boolean>;
+    readonly resolve: (discard: boolean) => void;
+  } | null>(null);
+  const [asking, setAsking] = useState(false);
+
+  // Every way out of the dialog asks here: ×, Esc, the backdrop, Cancel, browser back and forward, and links.
+  useNavigationGuard(() => {
+    if (submittingRef.current) return false;
+    if (!dirtyRef.current) return true;
+    if (promptRef.current) return promptRef.current.promise;
+    let resolve!: (discard: boolean) => void;
+    const promise = new Promise<boolean>((done) => {
+      resolve = done;
+    });
+    promptRef.current = { promise, resolve };
+    setAsking(true);
+    return promise;
+  });
 
   function answerDiscard(discard: boolean): void {
-    discardPrompt?.answer(discard);
-    setDiscardPrompt(undefined);
+    promptRef.current?.resolve(discard);
+    promptRef.current = null;
+    setAsking(false);
   }
 
   return (
     <RouteDialog
       title={t('projects.edit.title')}
-      beforeClose={() => {
-        if (submittingRef.current) return false;
-        if (!dirtyRef.current) return true;
-        // Return a Promise: whether to close is decided only after the user chooses in the confirmation dialog.
-        return new Promise<boolean>((resolve) => {
-          setDiscardPrompt({ answer: resolve });
-        });
-      }}
+      // Closing only: no closing while submitting (T3.5). Unsaved changes are the navigation guard's job.
+      beforeClose={() => !submittingRef.current}
     >
       {/* The form's body (`EditProjectBody` below) extends `detail/edit.tsx` in example/edit-dialog.md with the
           dirty reporting this pattern needs. */}
       <EditProjectBody onDirtyChange={handleDirtyChange} />
       {/* The confirmation dialog sits inside the dialog, so Esc closes only the confirmation dialog. */}
       <AlertDialog
-        open={discardPrompt !== undefined}
+        open={asking}
         onOpenChange={(open) => {
           // Esc or "Keep editing": the dialog stays open. An AlertDialog ignores backdrop clicks.
           if (!open) answerDiscard(false);
@@ -300,7 +312,7 @@ function EditProjectBody({
       // … project, onSubmittingChange and onNotFound as in example/edit-dialog.md
       onDirtyChange={onDirtyChange}
       onSubmitted={(saved) => {
-        // The save succeeded, so no unsaved changes remain: clear the flag before closing, or beforeClose would ask
+        // The save succeeded, so no unsaved changes remain: clear the flag before closing, or the guard would ask
         // to discard the changes that were just saved.
         onDirtyChange(false);
         onSaved(saved);
@@ -312,8 +324,9 @@ function EditProjectBody({
 ```
 
 - **After a successful save, set `dirtyRef.current` back to `false` before calling `close()`**; otherwise the close after saving also brings up the "Discard changes?" prompt.
-- `isClosing` is `true` while waiting for the user's choice.
-- Browser back does not go through `beforeClose`, so in that case the changes are lost.
+- Do not ask in `beforeClose` as well: the close navigation reaches the guard, so a second question would ask twice.
+- **Reload and closing the tab** cannot show an in-page question. While the form is dirty, add a `beforeunload` listener that calls `event.preventDefault()`, as [`example/create-page.md`](example/create-page.md) does: the browser shows its own warning, and continuing discards the input. Restoring the input after a reload needs a saved draft; it is not part of the guard.
+- The runnable version is the edit dialog of the [executable list and edit example](executable-list-edit.md) (`client/pages/skill-projects/edit.tsx`): `tests/client/skill-projects.test.tsx` checks that Cancel, Esc and browser back each ask, that "Keep editing" keeps the input and the URL, and that discarding closes. `tests/client/route-overlay.test.tsx` checks the same paths and the × button on the bare overlay.
 
 ## 3. Complete example
 

@@ -11,8 +11,22 @@ import {
   TestI18nProvider,
   createTestI18nRuntime,
 } from '@nocobase/i18n/testing';
-import { useEffect, type ReactNode } from 'react';
-import { createMemoryRouter, Link, Outlet, RouterProvider } from 'react-router';
+import {
+  NavigationGuardProvider,
+  useNavigationGuard,
+} from '@nocobase/app-client';
+import { useEffect, useRef, type ReactNode } from 'react';
+import {
+  createMemoryRouter,
+  Link,
+  MemoryRouter,
+  Outlet,
+  Route,
+  RouterProvider,
+  Routes,
+  useLocation,
+  useNavigate,
+} from 'react-router';
 import { describe, expect, it, vi } from 'vitest';
 import { RouteDialog } from '../../client/components/route-dialog';
 import { RouteDrawer } from '../../client/components/route-drawer';
@@ -391,5 +405,116 @@ describe('route overlay interactions', () => {
     } finally {
       log.mockRestore();
     }
+  });
+});
+
+describe('unsaved changes in a route overlay', () => {
+  // The pattern of section 2.5 in overlay.md: the dirty check is a navigation guard, so every way out reaches it,
+  // including browser back, which never calls `beforeClose`.
+  function GuardedEdit({
+    guard,
+  }: {
+    readonly guard: (dirty: boolean) => boolean | Promise<boolean>;
+  }) {
+    const dirtyRef = useRef(false);
+    useNavigationGuard(() => guard(dirtyRef.current));
+    return (
+      <RouteDialog title='Edit' footer={<Actions />}>
+        <input
+          aria-label='Name'
+          defaultValue='Original'
+          onChange={() => {
+            dirtyRef.current = true;
+          }}
+        />
+      </RouteDialog>
+    );
+  }
+  function setupGuarded(guard: (dirty: boolean) => boolean | Promise<boolean>) {
+    const history: { back?: () => void; path?: string } = {};
+    function Probe() {
+      const navigate = useNavigate();
+      const { pathname, search } = useLocation();
+      useEffect(() => {
+        history.back = () => void navigate(-1);
+        history.path = `${pathname}${search}`;
+      });
+      return null;
+    }
+    render(
+      <MemoryRouter
+        initialEntries={['/orders?page=2', '/orders/edit?page=2']}
+        initialIndex={1}
+      >
+        <NavigationGuardProvider>
+          <Probe />
+          <Routes>
+            <Route
+              path='/orders'
+              element={
+                <>
+                  <span>Orders</span>
+                  <Outlet />
+                </>
+              }
+            >
+              <Route path='edit' element={<GuardedEdit guard={guard} />} />
+            </Route>
+          </Routes>
+        </NavigationGuardProvider>
+      </MemoryRouter>,
+      { wrapper: I18n },
+    );
+    return history;
+  }
+
+  it('asks on Cancel, the close button, Escape and browser back, keeping the input when declined', async () => {
+    const guard = vi.fn((dirty: boolean) => !dirty);
+    const history = setupGuarded(guard);
+    const name = await screen.findByRole('textbox', { name: 'Name' });
+    await userEvent.type(name, ' draft');
+    const dialog = screen.getByRole('dialog', { name: 'Edit' });
+
+    await userEvent.click(
+      within(dialog).getByRole('button', { name: 'Cancel' }),
+    );
+    await userEvent.click(
+      within(dialog).getByRole('button', { name: 'Close' }),
+    );
+    await userEvent.keyboard('{Escape}');
+    act(() => history.back!());
+    await waitFor(() => expect(guard).toHaveBeenCalledTimes(4));
+    expect(guard.mock.calls.every(([dirty]) => dirty)).toBe(true);
+    expect(screen.getByRole('dialog', { name: 'Edit' })).toBeVisible();
+    expect(screen.getByRole('textbox', { name: 'Name' })).toHaveValue(
+      'Original draft',
+    );
+    await waitFor(() => expect(history.path).toBe('/orders/edit?page=2'));
+  });
+
+  it('leaves through browser back once the user agrees, returning to the list query', async () => {
+    let answer!: (discard: boolean) => void;
+    const history = setupGuarded((dirty) =>
+      dirty
+        ? new Promise<boolean>((resolve) => {
+            answer = resolve;
+          })
+        : true,
+    );
+    await userEvent.type(
+      await screen.findByRole('textbox', { name: 'Name' }),
+      ' draft',
+    );
+    act(() => history.back!());
+    // While the question is open, the overlay and its input stay mounted.
+    await waitFor(() => expect(answer).toBeTypeOf('function'));
+    expect(screen.getByRole('textbox', { name: 'Name' })).toHaveValue(
+      'Original draft',
+    );
+    await act(async () => answer(true));
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+    );
+    expect(history.path).toBe('/orders?page=2');
   });
 });

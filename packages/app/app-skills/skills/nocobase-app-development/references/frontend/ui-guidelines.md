@@ -86,7 +86,7 @@ Structure, top to bottom: PageHeader (primary action "New X") → toolbar (searc
 - **T3.6 [Must]** Field errors returned by the server appear below the corresponding fields; other failures appear in an Alert at the top of the form. On failure, do not close the form or clear the input.
 - **T3.7 [Must]** On success, close the dialog, update the related data (see R2) and state the result in a toast (`Created customer "Zhang San"`).
 - **T3.8 [Must]** When an edit form opens, it loads the record's latest data before prefilling the fields; it does not use data from the list or detail view directly, since that data may be stale. Show a skeleton while loading; handle a load failure or a missing record as S4 and R3 describe.
-- **T3.9 [Should]** A form with many fields asks for confirmation when it is closed with unsaved changes.
+- **T3.9 [Should]** A form with many fields asks for confirmation when it is left with unsaved changes, by any way out: Cancel, ×, Esc, the backdrop, browser back and links ([section 2.5 of `overlay.md`](references/overlay.md#25-beforeclose-checks-before-closing)).
 
 ### T4 Settings page
 

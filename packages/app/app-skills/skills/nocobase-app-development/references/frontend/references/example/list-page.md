@@ -539,3 +539,48 @@ function ProjectCard({
   );
 }
 ```
+
+## Two or more filters on a phone
+
+This page has one filter, so it stays inline (M4.1). As soon as a list has a second filter, put the filters behind a "Filters" button on phones and keep them inline from `md` up (M4.2). The runnable reference is the customer list of the [executable relation and batch example](../executable-relation-batch.md) (`client/pages/customer-contacts/index.tsx`, tested at phone width in `tests/client/customer-contacts.test.tsx`). Its shape, with this page's names:
+
+```tsx
+const appliedFilters = [status, owner].filter(Boolean).length;
+
+<div className='flex flex-wrap items-center gap-2'>
+  {search /* the search box: full width on a phone, as above */}
+  {/* Desktop: the filters inline. `hidden` removes them from the accessibility tree on a phone. */}
+  <div className='hidden md:contents'>
+    <StatusFilter value={status} onChange={changeStatus} />
+    <OwnerFilter value={owner} onChange={changeOwner} />
+  </div>
+  <Sheet open={filtersOpen} onOpenChange={setFiltersOpen}>
+    <SheetTrigger render={<Button variant='outline' className='md:hidden' />}>
+      <FilterIcon data-icon='inline-start' />
+      {appliedFilters > 0
+        ? t('projects.filters.applied', { count: appliedFilters })
+        : t('projects.filters.title')}
+    </SheetTrigger>
+    <SheetContent side='bottom' className='max-h-[calc(100dvh-2rem)] gap-0'>
+      <SheetHeader>
+        <SheetTitle>{t('projects.filters.title')}</SheetTitle>
+      </SheetHeader>
+      {/* No Apply button: each control writes the URL as it changes, exactly as the inline ones do. */}
+      <div className='flex min-h-0 flex-col gap-4 overflow-y-auto px-4 pb-[max(1rem,env(safe-area-inset-bottom))]'>
+        <StatusFilter value={status} onChange={changeStatus} />
+        <OwnerFilter value={owner} onChange={changeOwner} />
+      </div>
+    </SheetContent>
+  </Sheet>
+  {hasFilters ? clearButton : null}
+</div>;
+```
+
+The same filter component renders in two places, so it must not carry a fixed identity:
+
+- **Each instance owns its IDs.** A control that pairs a `<Label htmlFor>` with an input, or points `aria-describedby` at a hint, takes its ID from `useId()` inside the component, never from a constant or a prop shared by both places. Two elements with one `id` leave the second label pointing at the first control, which is how the sheet's pickers lose their names.
+- **Each instance has its accessible name.** Give the trigger `aria-label` (or a visible label wired with its own ID) in both places: the sheet's visible group heading is not a name for the control.
+- **Only one instance is reachable at a time.** Hide the inline copy with `hidden md:contents` (display none, so it is out of the accessibility tree), and let the sheet mount its copy only while open (the default). Never hide one copy with `opacity-0`, `sr-only` or off-screen positioning.
+- When a filter is too heavy to render twice (it loads options, or keeps local state), render it once and move it: choose the container with the template's `useIsMobile()` from `#hooks/use-mobile` (the same `md` breakpoint) instead of rendering both.
+
+Test it the way a phone user meets it: at phone width open "Filters", find each control by role and name (`getByRole('combobox', { name: 'Owner' })`), change it, and check the URL and the count on the button; at desktop width find the same controls inline by the same names.

@@ -106,7 +106,7 @@ export function ProjectForm({
     },
   });
 
-  // Report unsaved changes to the container, which asks before closing ("beforeClose" in overlay.md).
+  // Report unsaved changes to the container, whose navigation guard asks before any way out (section 2.5 of overlay.md).
   const { isDirty } = form.formState;
   useEffect(() => {
     onDirtyChange?.(isDirty);

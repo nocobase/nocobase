@@ -28,6 +28,9 @@ Check [the phone checklist](mobile.md#checklist) for every page the change creat
 
 - Look at the first screen without scrolling: main content is visible (M1.1). Measure page overflow with `document.documentElement.scrollWidth <= innerWidth` in every checked state, including long Chinese and English content and the largest action set (M1.2).
 - Walk the page's main task on the phone width: find, filter and sort, open a record, edit with a validation error, save, cancel, confirm a destructive action, and return to the same filtered list and scroll position (M2–M7). Check the desktop width afterwards for regressions.
+- Reach the list context the other ways too (M10): a direct URL with `page=2` and a filter, a reload of it, and saving an edit opened by its URL from page 2 each leave the list on page 2.
+- With a dirty form, Cancel, ×, Esc and browser back each ask before discarding (M7.4); with the write request held, the primary button shows its pending label and is disabled, and Cancel cannot close.
+- Find every control by role and accessible name at each width, the sheet's filters included; a check that falls back to positions or CSS selectors has found a naming defect (M4.2, M8.5).
 - For overlays and forms near the bottom of the screen, check the short height and landscape, focus a field near the footer and submit with an error; the focused field, its error and the footer stay visible. Soft keyboard, dynamic toolbar and safe areas need a real device or simulator; without one they are Not verified.
 - A wrapping desktop toolbar or a sideways-scrolling ordinary list is a G issue against A4 and M3/M4, not a pass. An exception needs its recorded reason (M3.4, M5.4).
 
