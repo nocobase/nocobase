@@ -5,12 +5,7 @@ import { Link, Outlet, useLocation } from 'react-router';
 import { FolderIcon } from 'lucide-react';
 import type { ColumnDef } from '@tanstack/react-table';
 import { DataTable, DataTableColumnHeader } from '#components/data-table';
-import {
-  Card,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '#components/ui/card';
+import { Card, CardDescription, CardHeader } from '#components/ui/card';
 import { Input } from '#components/ui/input';
 import { type DataChange } from '#hooks/use-data-changes';
 import { useUrlSearch } from '#hooks/use-url-search';
@@ -335,8 +330,9 @@ function ProjectsMetric({
     <Card size='sm' className='w-full sm:max-w-56'>
       <CardHeader>
         <CardDescription>{t('skillProjects.totalMetric')}</CardDescription>
-        <CardTitle
-          className='text-2xl tabular-nums'
+        {/* The card's own title size is fixed for small cards; a metric needs a larger figure. */}
+        <p
+          className='font-heading text-2xl font-semibold tabular-nums'
           data-testid='projects-total'
         >
           {failed ? (
@@ -349,7 +345,7 @@ function ProjectsMetric({
           ) : (
             total
           )}
-        </CardTitle>
+        </p>
       </CardHeader>
     </Card>
   );
