@@ -321,7 +321,15 @@ describe('database hooks during real CLI tasks', () => {
       ok: false,
       error: {
         message: expect.stringContaining('fixture hook failed'),
-        details: { results: [{ status: 'failed' }, { status: 'not-run' }] },
+        details: {
+          failure: {
+            phase: 'before-tasks',
+            hook: 'fixture',
+            error: 'fixture hook failed',
+          },
+          resetConnections: ['main'],
+          results: [{ status: 'not-run' }, { status: 'not-run' }],
+        },
       },
     });
     expect(f.events).toEqual([
@@ -346,12 +354,18 @@ describe('database hooks during real CLI tasks', () => {
       error: {
         message: expect.stringContaining('fixture reset failed'),
         details: {
+          failure: {
+            phase: 'reset-schema',
+            connection: 'reports',
+            error: 'fixture reset failed',
+          },
+          resetConnections: ['main'],
           results: [
             { status: 'not-run' },
             { status: 'not-run' },
             { status: 'skipped' },
             { status: 'skipped' },
-            { status: 'failed' },
+            { status: 'not-run' },
             { status: 'not-run' },
           ],
         },

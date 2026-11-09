@@ -100,6 +100,8 @@ export interface DatabaseCommandResult {
   readonly plan?: readonly DatabasePlanEntry[];
   /** One entry per connection and task kind, in the order the plan ran them. */
   readonly results: readonly AppDatabaseTaskResult[];
+  /** Managed schemas successfully reset by this execution, in reset order. */
+  readonly resetConnections?: readonly string[];
   /** The Collection cache refreshes the run made; absent when none ran. */
   readonly collections?: readonly DatabaseCollectionsRefresh[];
   /** `db sample` only: the sample data services registered, as the run left them. */
@@ -119,6 +121,7 @@ type DatabaseRun = AppDatabaseTasksResult & {
   collections?: DatabaseCollectionsRefresh[];
   /** The lock a task could not take, which the command reports as `DATABASE_LOCKED` rather than a task failure. */
   lockBusy?: TaskLockBusyError;
+  executionError?: AppDatabaseTaskError;
 };
 
 /**
@@ -643,9 +646,10 @@ async function executeWithApplication(
     );
   } catch (error) {
     if (error instanceof AppDatabaseTaskError) {
-      return isTaskLockBusyError(error.cause)
+      return isTaskLockBusyError(error.cause) &&
+        (!error.result.failure || error.result.failure.phase === 'run-task')
         ? { ...error.result, lockBusy: error.cause }
-        : error.result;
+        : { ...error.result, executionError: error };
     }
     throw toDatabaseCommandError(error, flags.connection);
   }
@@ -714,18 +718,28 @@ function settle(result: DatabaseRun): DatabaseCommandResult {
       throw databaseLocked(result.lockBusy, {
         ...(failed ? { failed } : {}),
         results: result.results,
+        ...(result.failure ? { failure: result.failure } : {}),
+        ...(result.resetConnections
+          ? { resetConnections: result.resetConnections }
+          : {}),
         ...collections,
       });
     }
     throw new CommandError(
-      failed
-        ? `Database ${failed.kind} failed for connection "${failed.connection}": ${failed.error ?? 'unknown error'}`
-        : 'A database task failed.',
+      result.executionError?.message ??
+        (failed
+          ? `Database ${failed.kind} failed for connection "${failed.connection}": ${failed.error ?? 'unknown error'}`
+          : 'A database task failed.'),
       {
         code: 'DATABASE_TASK_FAILED',
+        cause: result.executionError,
         details: {
           ...(failed
             ? { connection: failed.connection, kind: failed.kind }
+            : {}),
+          ...(result.failure ? { failure: result.failure } : {}),
+          ...(result.resetConnections
+            ? { resetConnections: result.resetConnections }
             : {}),
           results: result.results,
           ...collections,
@@ -738,6 +752,9 @@ function settle(result: DatabaseRun): DatabaseCommandResult {
       ? { state: 'not-configured' as const }
       : {}),
     results: result.results,
+    ...(result.resetConnections
+      ? { resetConnections: result.resetConnections }
+      : {}),
     ...collections,
   };
 }
@@ -894,6 +911,8 @@ function databaseLocked(
     readonly failed?: AppDatabaseTaskResult;
     readonly results?: readonly AppDatabaseTaskResult[];
     readonly collections?: readonly DatabaseCollectionsRefresh[];
+    readonly failure?: AppDatabaseTasksResult['failure'];
+    readonly resetConnections?: readonly string[];
   } = {},
 ): CommandError {
   const { failed } = run;
@@ -935,6 +954,10 @@ function databaseLocked(
         expired: lock.expired,
         waitedMs: lock.waitedMs,
         inProcess: lock.inProcess,
+        ...(run.failure ? { failure: run.failure } : {}),
+        ...(run.resetConnections
+          ? { resetConnections: run.resetConnections }
+          : {}),
         ...(run.results ? { results: run.results } : {}),
         ...(run.collections ? { collections: run.collections } : {}),
       },

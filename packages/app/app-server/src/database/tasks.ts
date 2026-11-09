@@ -1,4 +1,5 @@
 import { databaseTaskHooksToken } from './task-hooks.js';
+import { planDatabaseExecution } from './execution-plan.js';
 import { createTaskServiceResolver } from './task-container.js';
 import { loggingToken } from '../logging/token.js';
 import type { ServiceResolver } from '@nocobase/service-provider';
@@ -76,10 +77,28 @@ export interface AppDatabaseTaskResult {
   dryRun?: boolean;
 }
 
+/** A failed execution step, independently of whether any business task ran. */
+export interface AppDatabaseExecutionFailure {
+  phase:
+    | 'prepare-storage'
+    | 'reset-schema'
+    | 'before-tasks'
+    | 'inspect-installs'
+    | 'run-task';
+  connection?: string;
+  kind?: AppDatabaseTaskKind;
+  hook?: string;
+  error: string;
+}
+
 export interface AppDatabaseTasksResult {
   ok: boolean;
   status: 'completed' | 'failed' | 'not-configured';
   results: AppDatabaseTaskResult[];
+  /** Present on execution failure; the original exception is the Error's cause. */
+  failure?: AppDatabaseExecutionFailure;
+  /** Successfully reset schemas, in execution order, including on failure. */
+  resetConnections?: string[];
 }
 
 export class AppDatabaseTaskError extends Error {
@@ -88,8 +107,11 @@ export class AppDatabaseTaskError extends Error {
     cause: unknown,
   ) {
     const failed = result.results.find((entry) => entry.status === 'failed');
+    const failure = result.failure;
     super(
-      `Database ${failed?.kind} failed for connection "${failed?.connection}": ${cause instanceof Error ? cause.message : String(cause)}`,
+      failure && failure.phase !== 'run-task'
+        ? `Database ${failure.phase}${failure.hook ? ` hook "${failure.hook}"` : ''}${failure.connection ? ` for connection "${failure.connection}"` : ''} failed: ${failure.error}${result.resetConnections?.length ? `. Managed schemas already reset: ${result.resetConnections.join(', ')}; business rebuild is incomplete.` : ''}`
+        : `Database ${failed?.kind} failed for connection "${failed?.connection}": ${cause instanceof Error ? cause.message : String(cause)}`,
       { cause },
     );
     this.name = 'AppDatabaseTaskError';
@@ -160,204 +182,227 @@ export async function executeAppDatabasePlan(
       ? (container?.resolveIfCreated(databaseTaskHooksToken)?.registrations() ??
         [])
       : [];
-  const firstExecutable = plan.findIndex((task) => !task.skipReason);
-  const useHooks = hooks.length > 0 && firstExecutable >= 0;
-  const resetBeforeTasks = useHooks && fresh;
-  const prepared = new Set<string>();
-  if (useHooks) {
-    const resetConnections: string[] = [];
-    for (const [index, task] of plan.entries()) {
-      if (task.skipReason) continue;
-      try {
-        if (!prepared.has(task.connection)) {
+  const steps = planDatabaseExecution(plan, {
+    hooks,
+    fresh,
+    operation,
+    dryRun,
+  });
+  const taskContainer = createTaskServiceResolver(container);
+  const taskConfig = snapshotDatabaseTaskConfig(runtimeConfig);
+  const sampleData = taskConfig.get<unknown>('app.sampleData') === true;
+  let freshInstalls = new Map<string, boolean>();
+  const outcomes = new Map<number, AppDatabaseTaskResult>();
+  const resetConnections: string[] = [];
+  let failure: AppDatabaseExecutionFailure | undefined;
+  let cause: unknown;
+
+  for (const step of steps) {
+    try {
+      switch (step.type) {
+        case 'prepare-storage':
           await prepareAppDatabaseStorage(
             config,
             paths,
-            [task.connection],
+            [step.connection],
             drivers,
           );
-          prepared.add(task.connection);
+          break;
+        case 'reset-schema':
+          await database.connection(step.connection).resetManagedSchema();
+          resetConnections.push(step.connection);
+          break;
+        case 'before-tasks':
+          await step.hook.beforeTasks(
+            Object.freeze({
+              resetConnections: Object.freeze([...resetConnections]),
+            }),
+          );
+          break;
+        case 'inspect-installs':
+          // Read history before any business task can make a database look installed.
+          freshInstalls = await detectFreshInstalls(database, config, plan, {
+            paths,
+            drivers,
+            fresh,
+            runtimeConfig: taskConfig,
+            container: taskContainer,
+          });
+          break;
+        case 'run-task': {
+          const task = plan[step.index];
+          const completed = await runDatabaseTask(task, {
+            database,
+            config,
+            paths,
+            drivers,
+            operation,
+            dryRun,
+            fresh,
+            force,
+            runtimeConfig: taskConfig,
+            container: taskContainer,
+            onStaleLock: (takeover) =>
+              reportStaleLock(container, task, takeover),
+            freshInstall: freshInstalls.get(task.connection),
+            sampleData,
+          });
+          outcomes.set(step.index, {
+            connection: task.connection,
+            kind: task.kind,
+            ...completed,
+            ...(fresh ? { fresh: true } : {}),
+          });
+          break;
         }
-        if (
-          resetBeforeTasks &&
-          task.kind === 'migrations' &&
-          !resetConnections.includes(task.connection)
-        ) {
-          await database.connection(task.connection).resetManagedSchema();
-          resetConnections.push(task.connection);
-        }
-      } catch (error) {
-        throw beforeTasksError(plan, index, error);
       }
-    }
-    const context = Object.freeze({
-      resetConnections: Object.freeze(resetConnections),
-    });
-    try {
-      for (const hook of hooks) await hook.beforeTasks(context);
     } catch (error) {
-      throw beforeTasksError(plan, firstExecutable, error);
-    }
-  }
-  const taskContainer = createTaskServiceResolver(container);
-  const taskConfig = snapshotDatabaseTaskConfig(runtimeConfig);
-  // Decided before any task runs: the migrations a run applies would make
-  // every database look installed by the time its seeds run.
-  const freshInstalls =
-    operation === 'run' && !dryRun
-      ? await detectFreshInstalls(database, config, plan, {
-          paths,
-          drivers,
-          fresh,
-          runtimeConfig: taskConfig,
-          container: taskContainer,
-        })
-      : new Map<string, boolean>();
-  const sampleData = taskConfig.get<unknown>('app.sampleData') === true;
-  const result: AppDatabaseTasksResult = {
-    ok: true,
-    status: 'completed',
-    results: [],
-  };
-  for (const [index, task] of plan.entries()) {
-    const identity = { connection: task.connection, kind: task.kind };
-    if (task.skipReason) {
-      result.results.push({
-        ...identity,
-        status: 'skipped',
-        reason: task.skipReason,
-      });
-      continue;
-    }
-    try {
-      // A dry run changes nothing, and opening a connection to storage that
-      // does not exist yet would create it: it answers for an empty database
-      // instead, without preparing storage or connecting.
-      const storageMissing =
-        dryRun &&
-        !(await appDatabaseStorageExists(
-          config,
-          paths,
-          task.connection,
-          drivers,
-        ));
-      if (!storageMissing && !prepared.has(task.connection)) {
-        await prepareAppDatabaseStorage(
-          config,
-          paths,
-          [task.connection],
-          drivers,
-        );
-      }
-      const options = {
-        runtimeConfig: taskConfig,
-        container: taskContainer,
-        database,
-        connection: task.connection,
-        config: task.config,
-        sources: task.config.sources,
-        onStaleLock: (takeover: StaleTaskLockTakeover): void =>
-          reportStaleLock(container, task, takeover),
-      };
-      const freshInstall = freshInstalls.get(task.connection);
-      const completed =
-        operation === 'unlock'
-          ? await unlockTask(task, options, force)
-          : operation === 'sample'
-            ? await createAppSeeder(options).runSamples()
-            : storageMissing
-              ? await emptyDatabasePreview(operation, task, options, fresh)
-              : operation === 'repair'
-                ? task.kind === 'migrations'
-                  ? await createAppMigrator(options).repair({ dryRun })
-                  : await createAppSeeder(options).repair({ dryRun })
-                : operation === 'rollback'
-                  ? await createAppMigrator(options).rollback({ dryRun })
-                  : dryRun
-                    ? task.kind === 'migrations'
-                      ? await createAppMigrator(options).pending({ fresh })
-                      : await createAppSeeder(options).pending({ fresh })
-                    : task.kind === 'migrations'
-                      ? await (fresh && !resetBeforeTasks
-                          ? createAppMigrator(options).fresh()
-                          : createAppMigrator(options).latest())
-                      : await createAppSeeder({
-                          ...options,
-                          sample: {
-                            enabled: freshInstall === true && sampleData,
-                          },
-                        }).run();
-      // fresh() reports an empty rebuild as completed even without a migration directory.
-      const outcome =
-        resetBeforeTasks &&
-        task.kind === 'migrations' &&
-        completed.status === 'skipped' &&
-        'reason' in completed &&
-        completed.reason === 'missing-directory'
-          ? {
-              status: 'completed' as const,
-              batch: 0,
-              executed: [],
-              skipped: [],
-            }
-          : completed;
-      result.results.push({
-        ...identity,
-        ...outcome,
-        ...(task.kind === 'seeds' &&
-        freshInstall !== undefined &&
-        completed.status === 'completed'
-          ? { freshInstall }
-          : {}),
-        ...(fresh ? { fresh: true } : {}),
-      });
-    } catch (error) {
-      result.ok = false;
-      result.status = 'failed';
-      result.results.push({
-        ...identity,
-        status: 'failed',
+      cause = error;
+      const task = 'index' in step ? plan[step.index] : undefined;
+      failure = {
+        phase: step.type,
+        ...('connection' in step ? { connection: step.connection } : {}),
+        ...(task ? { connection: task.connection, kind: task.kind } : {}),
+        ...(step.type === 'before-tasks' ? { hook: step.hook.name } : {}),
         error: error instanceof Error ? error.message : String(error),
-      });
-      result.results.push(
-        ...plan.slice(index + 1).map((pending): AppDatabaseTaskResult => ({
-          connection: pending.connection,
-          kind: pending.kind,
-          status: 'not-run',
-          reason: 'previous-task-failed',
-        })),
-      );
-      throw new AppDatabaseTaskError(result, error);
+      };
+      if (step.type === 'run-task') {
+        outcomes.set(step.index, {
+          connection: plan[step.index].connection,
+          kind: plan[step.index].kind,
+          status: 'failed',
+          error: failure.error,
+        });
+      }
+      break;
     }
   }
+  const result = summarizeDatabaseExecution(
+    plan,
+    outcomes,
+    resetConnections,
+    failure,
+  );
+  if (failure) throw new AppDatabaseTaskError(result, cause);
   return result;
 }
 
-/** A preparation/hook failure ran no business task, even if a schema was already reset. */
-function beforeTasksError(
+/** Project step outcomes once; a reset can succeed even when business rebuilding never starts. */
+function summarizeDatabaseExecution(
   plan: readonly AppDatabaseTask[],
-  failedIndex: number,
-  error: unknown,
-): AppDatabaseTaskError {
-  return new AppDatabaseTaskError(
-    {
-      ok: false,
-      status: 'failed',
-      results: plan.map((task, index): AppDatabaseTaskResult => ({
-        connection: task.connection,
-        kind: task.kind,
-        ...(task.skipReason
-          ? { status: 'skipped', reason: task.skipReason }
-          : index === failedIndex
-            ? {
-                status: 'failed',
-                error: error instanceof Error ? error.message : String(error),
-              }
-            : { status: 'not-run', reason: 'before-task-execution-failed' }),
-      })),
-    },
-    error,
-  );
+  outcomes: ReadonlyMap<number, AppDatabaseTaskResult>,
+  resetConnections: string[],
+  failure: AppDatabaseExecutionFailure | undefined,
+): AppDatabaseTasksResult {
+  return {
+    ok: !failure,
+    status: failure ? 'failed' : 'completed',
+    ...(failure ? { failure } : {}),
+    ...(resetConnections.length ? { resetConnections } : {}),
+    results: plan.map((task, index): AppDatabaseTaskResult => {
+      const identity = { connection: task.connection, kind: task.kind };
+      if (task.skipReason)
+        return { ...identity, status: 'skipped', reason: task.skipReason };
+      const outcome = outcomes.get(index);
+      if (!outcome)
+        return {
+          ...identity,
+          status: 'not-run',
+          reason:
+            failure?.phase === 'run-task'
+              ? 'previous-task-failed'
+              : 'before-task-execution-failed',
+        };
+      // A successful reset with no migration source is still a completed empty rebuild.
+      // Keep the source reason, so consumers can distinguish it from migrations running.
+      if (
+        task.kind === 'migrations' &&
+        resetConnections.includes(task.connection) &&
+        outcome.status === 'skipped' &&
+        outcome.reason === 'missing-directory'
+      ) {
+        return {
+          ...outcome,
+          status: 'completed',
+          batch: 0,
+          executed: [],
+          skipped: [],
+        };
+      }
+      return outcome;
+    }),
+  };
+}
+
+/** Run business work only: storage preparation and schema reset belong to execution steps. */
+async function runDatabaseTask(
+  task: AppDatabaseTask,
+  options: {
+    database: DatabaseManager;
+    config: AppDatabaseConfig;
+    paths?: AppPaths;
+    drivers?: Record<string, DatabaseDriverRegistration>;
+    runtimeConfig: DatabaseTaskConfig;
+    container: ServiceResolver;
+    operation: AppDatabaseTaskOperation;
+    dryRun: boolean;
+    fresh: boolean;
+    force: boolean;
+    freshInstall?: boolean;
+    sampleData: boolean;
+    onStaleLock: (takeover: StaleTaskLockTakeover) => void;
+  },
+): Promise<Omit<AppDatabaseTaskResult, 'connection' | 'kind'>> {
+  const { operation, dryRun, fresh, force, freshInstall, sampleData } = options;
+  const common = {
+    database: options.database,
+    runtimeConfig: options.runtimeConfig,
+    container: options.container,
+    connection: task.connection,
+    config: task.config,
+    sources: task.config.sources,
+    onStaleLock: options.onStaleLock,
+  };
+  // Opening missing storage could create it. Preview against empty history instead.
+  const storageMissing =
+    dryRun &&
+    !(await appDatabaseStorageExists(
+      options.config,
+      options.paths,
+      task.connection,
+      options.drivers,
+    ));
+  const completed =
+    operation === 'unlock'
+      ? await unlockTask(task, common, force)
+      : operation === 'sample'
+        ? await createAppSeeder(common).runSamples()
+        : storageMissing
+          ? await emptyDatabasePreview(operation, task, common, fresh)
+          : operation === 'repair'
+            ? task.kind === 'migrations'
+              ? await createAppMigrator(common).repair({ dryRun })
+              : await createAppSeeder(common).repair({ dryRun })
+            : operation === 'rollback'
+              ? await createAppMigrator(common).rollback({ dryRun })
+              : dryRun
+                ? task.kind === 'migrations'
+                  ? await createAppMigrator(common).pending({ fresh })
+                  : await createAppSeeder(common).pending({ fresh })
+                : task.kind === 'migrations'
+                  ? await createAppMigrator(common).latest()
+                  : await createAppSeeder({
+                      ...common,
+                      sample: { enabled: freshInstall === true && sampleData },
+                    }).run();
+  return {
+    ...completed,
+    ...(task.kind === 'seeds' &&
+    freshInstall !== undefined &&
+    completed.status === 'completed'
+      ? { freshInstall }
+      : {}),
+  };
 }
 
 /**
@@ -497,7 +542,7 @@ function reportStaleLock(
 }
 
 /**
- * A fresh run drops a connection's managed schema inside its migrations task,
+ * A fresh run resets a connection immediately before its migrations (or before hooks),
  * so every other task on that connection has to come after it. The planner
  * already orders tasks this way; the check guards hand-built plans, which
  * would otherwise seed a database that is about to be emptied.

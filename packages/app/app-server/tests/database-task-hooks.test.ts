@@ -34,6 +34,7 @@ afterEach(async () => {
 
 async function fixture({
   tasks = true,
+  hooks = true,
   failHook = false,
   failBoot = false,
   failCleanup = false,
@@ -87,8 +88,9 @@ async function fixture({
           },
         );
       }
-      const hooks = this.app.container.resolve(databaseTaskHooksToken);
-      hooks.add({
+      if (!hooks) return;
+      const registrations = this.app.container.resolve(databaseTaskHooksToken);
+      registrations.add({
         name: 'first',
         beforeTasks: async ({ resetConnections }) => {
           events.push('first');
@@ -96,7 +98,7 @@ async function fixture({
           if (failHook) throw new Error('hook failed');
         },
       });
-      hooks.add({
+      registrations.add({
         name: 'second',
         beforeTasks: async () => {
           events.push('second');
@@ -222,6 +224,14 @@ describe('database task hooks', () => {
       plan.map((task) => ({ ...task, skipReason: 'auto-run-disabled' })),
       { container: f.app.container },
     );
+    await expect(
+      executeAppDatabasePlan(
+        manager,
+        f.database,
+        plan.map((task) => ({ ...task, skipReason: 'auto-run-disabled' })),
+        { container: f.app.container, fresh: true },
+      ),
+    ).rejects.toThrow('A fresh run must include migrations.');
     expect(prepare).not.toHaveBeenCalled();
     expect(f.events).toEqual([]);
   });
@@ -266,10 +276,14 @@ describe('database task hooks', () => {
     },
   );
 
-  it('reports a hook failure as failed/not-run and does not run later hooks or business tasks', async () => {
+  it('reports a hook failure independently of not-run tasks and does not run later hooks or business tasks', async () => {
     const f = await fixture({ failHook: true });
     await expect(f.run()).rejects.toMatchObject({
-      result: { results: [{ status: 'failed' }, { status: 'not-run' }] },
+      result: {
+        ok: false,
+        failure: { phase: 'before-tasks', hook: 'first', error: 'hook failed' },
+        results: [{ status: 'not-run' }, { status: 'not-run' }],
+      },
     });
     expect(f.events).toEqual(['first']);
   });
@@ -315,5 +329,313 @@ describe('database task hooks', () => {
     expect(f.events).toEqual(['first', 'second', 'generate']);
     await f.app.shutdown();
     expect(f.events.slice(-2)).toEqual(['cleanup', 'destroy']);
+  });
+  it('defers hooks added during execution until the next plan', async () => {
+    const f = await fixture({ tasks: false });
+    f.app.registerProviders();
+    const hooks = f.app.container.resolve(databaseTaskHooksToken);
+    let added = false;
+    hooks.add({
+      name: 'register-later',
+      beforeTasks: async () => {
+        if (!added) {
+          added = true;
+          hooks.add({
+            name: 'later',
+            beforeTasks: async () => {
+              f.events.push('later');
+            },
+          });
+        }
+      },
+    });
+    await f.run();
+    expect(f.events).toEqual(['first', 'second']);
+    f.events.length = 0;
+    await f.run();
+    expect(f.events).toEqual(['first', 'second', 'later']);
+  });
+
+  it('preserves the original cause and completed resets when a hook fails', async () => {
+    const f = await fixture();
+    f.app.registerProviders();
+    const cause = new Error('prerequisite unavailable');
+    f.app.container.resolve(databaseTaskHooksToken).add({
+      name: 'unavailable',
+      beforeTasks: async () => {
+        throw cause;
+      },
+    });
+    const plan = planAppDatabaseTasks(f.database, ['migrations', 'seeds'], {
+      paths: f.paths,
+      contributions: f.app.databaseTaskContributions,
+      all: true,
+    });
+    await expect(
+      executeAppDatabasePlan(
+        f.app.container.resolve(databaseManagerToken),
+        f.database,
+        plan,
+        {
+          paths: f.paths,
+          container: f.app.container,
+          fresh: true,
+        },
+      ),
+    ).rejects.toMatchObject({
+      cause,
+      message: expect.stringContaining('business rebuild is incomplete'),
+      result: {
+        ok: false,
+        status: 'failed',
+        resetConnections: ['main', 'reports'],
+        failure: {
+          phase: 'before-tasks',
+          hook: 'unavailable',
+          error: cause.message,
+        },
+        results: Array.from({ length: 4 }, () => ({ status: 'not-run' })),
+      },
+    });
+    expect(f.events).toEqual([
+      'reset:main',
+      'reset:reports',
+      'first',
+      'second',
+    ]);
+  });
+
+  it.each([true, false])(
+    'attributes a partial prepare failure with hooks=%s',
+    async (hooks) => {
+      const f = await fixture({ hooks });
+      f.app.registerProviders();
+      const prepare = storage.prepareAppDatabaseStorage;
+      vi.spyOn(storage, 'prepareAppDatabaseStorage').mockImplementation(
+        async (...args) => {
+          f.events.push(`prepare:${args[2]?.[0]}`);
+          if (args[2]?.[0] === 'reports')
+            throw new Error('storage unavailable');
+          await prepare(...args);
+        },
+      );
+      const plan = planAppDatabaseTasks(f.database, ['migrations', 'seeds'], {
+        paths: f.paths,
+        contributions: f.app.databaseTaskContributions,
+        all: true,
+      });
+      await expect(
+        executeAppDatabasePlan(
+          f.app.container.resolve(databaseManagerToken),
+          f.database,
+          plan,
+          {
+            paths: f.paths,
+            container: f.app.container,
+            fresh: true,
+          },
+        ),
+      ).rejects.toMatchObject({
+        result: {
+          ok: false,
+          resetConnections: ['main'],
+          failure: {
+            phase: 'prepare-storage',
+            connection: 'reports',
+            error: 'storage unavailable',
+          },
+          results: [
+            { status: hooks ? 'not-run' : 'completed' },
+            { status: hooks ? 'not-run' : 'completed' },
+            { status: 'not-run' },
+            { status: 'not-run' },
+          ],
+        },
+      });
+      expect(f.events).toEqual(
+        hooks
+          ? ['prepare:main', 'reset:main', 'prepare:reports']
+          : [
+              'prepare:main',
+              'reset:main',
+              'generate',
+              'prepare:main',
+              'prepare:reports',
+            ],
+      );
+    },
+  );
+
+  it.each([true, false])(
+    'records partial reset failure without repeating side effects, hooks=%s',
+    async (hooks) => {
+      const f = await fixture({ hooks });
+      f.app.registerProviders();
+      vi.spyOn(
+        f.app.container.resolve(databaseManagerToken).connection('reports'),
+        'resetManagedSchema',
+      ).mockRejectedValue(new Error('reset unavailable'));
+      const plan = planAppDatabaseTasks(f.database, ['migrations', 'seeds'], {
+        paths: f.paths,
+        contributions: f.app.databaseTaskContributions,
+        all: true,
+      });
+      await expect(
+        executeAppDatabasePlan(
+          f.app.container.resolve(databaseManagerToken),
+          f.database,
+          plan,
+          {
+            paths: f.paths,
+            container: f.app.container,
+            fresh: true,
+          },
+        ),
+      ).rejects.toMatchObject({
+        result: {
+          ok: false,
+          resetConnections: ['main'],
+          failure: { phase: 'reset-schema', connection: 'reports' },
+          results: [
+            { status: hooks ? 'not-run' : 'completed' },
+            { status: hooks ? 'not-run' : 'completed' },
+            { status: 'not-run' },
+            { status: 'not-run' },
+          ],
+        },
+      });
+      expect(f.events).toEqual(
+        hooks ? ['reset:main'] : ['reset:main', 'generate'],
+      );
+    },
+  );
+
+  it.each([true, false])(
+    'completes an empty rebuild while recording that migrations did not run, hooks=%s',
+    async (hooks) => {
+      const f = await fixture({ tasks: false, hooks });
+      f.app.registerProviders();
+      const plan = planAppDatabaseTasks(f.database, ['migrations'], {
+        paths: f.paths,
+        contributions: f.app.databaseTaskContributions,
+      });
+      const result = await executeAppDatabasePlan(
+        f.app.container.resolve(databaseManagerToken),
+        f.database,
+        plan,
+        {
+          paths: f.paths,
+          container: f.app.container,
+          fresh: true,
+        },
+      );
+      expect(result).toMatchObject({
+        ok: true,
+        resetConnections: ['main'],
+        results: [
+          {
+            status: 'completed',
+            reason: 'missing-directory',
+            executed: [],
+            fresh: true,
+          },
+        ],
+      });
+      expect(f.events).toEqual(
+        hooks ? ['reset:main', 'first', 'second'] : ['reset:main'],
+      );
+    },
+  );
+
+  it('does not reset a later connection after an unhooked business failure', async () => {
+    const f = await fixture({ hooks: false });
+    f.app.registerProviders();
+    vi.spyOn(
+      f.app.container.resolve(idGeneratorToken),
+      'generate',
+    ).mockImplementation(() => {
+      throw new Error('business failed');
+    });
+    const plan = planAppDatabaseTasks(f.database, ['migrations', 'seeds'], {
+      paths: f.paths,
+      contributions: f.app.databaseTaskContributions,
+      all: true,
+    });
+    await expect(
+      executeAppDatabasePlan(
+        f.app.container.resolve(databaseManagerToken),
+        f.database,
+        plan,
+        {
+          paths: f.paths,
+          container: f.app.container,
+          fresh: true,
+        },
+      ),
+    ).rejects.toMatchObject({
+      result: {
+        ok: false,
+        resetConnections: ['main'],
+        failure: { phase: 'run-task', connection: 'main', kind: 'migrations' },
+        results: [
+          { status: 'failed' },
+          { status: 'not-run' },
+          { status: 'not-run' },
+          { status: 'not-run' },
+        ],
+      },
+    });
+    expect(f.events).toEqual(['reset:main']);
+  });
+  it.each([true, false])(
+    'executes each planned preparation once on a successful fresh plan, hooks=%s',
+    async (hooks) => {
+      const f = await fixture({ hooks });
+      f.app.registerProviders();
+      const prepare = vi.spyOn(storage, 'prepareAppDatabaseStorage');
+      const plan = planAppDatabaseTasks(f.database, ['migrations', 'seeds'], {
+        paths: f.paths,
+        contributions: f.app.databaseTaskContributions,
+        all: true,
+      });
+      await executeAppDatabasePlan(
+        f.app.container.resolve(databaseManagerToken),
+        f.database,
+        plan,
+        {
+          paths: f.paths,
+          container: f.app.container,
+          fresh: true,
+        },
+      );
+      expect(prepare.mock.calls.map((args) => args[2])).toEqual(
+        hooks
+          ? [['main'], ['reports']]
+          : [['main'], ['main'], ['reports'], ['reports']],
+      );
+      expect(f.events).toEqual(
+        hooks
+          ? [
+              'reset:main',
+              'reset:reports',
+              'first',
+              'second',
+              'generate',
+              'generate',
+            ]
+          : ['reset:main', 'generate', 'reset:reports', 'generate'],
+      );
+    },
+  );
+
+  it('never prepares storage for dry-run previews of existing storage', async () => {
+    const f = await fixture();
+    f.app.registerProviders();
+    const prepare = vi.spyOn(storage, 'prepareAppDatabaseStorage');
+    await f.run('run', true);
+    await f.run('rollback', true);
+    await f.run('repair', true);
+    expect(prepare).not.toHaveBeenCalled();
+    expect(f.events).toEqual([]);
   });
 });

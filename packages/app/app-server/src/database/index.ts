@@ -80,6 +80,7 @@ export {
   runAppSeeds,
   runAppDatabaseTasks,
   AppDatabaseTaskError,
+  type AppDatabaseExecutionFailure,
   type AppDatabaseTaskOperation,
   type AppDatabaseTaskResult,
   type AppDatabaseTaskRunOptions,
