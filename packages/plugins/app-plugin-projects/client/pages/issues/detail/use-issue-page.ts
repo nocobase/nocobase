@@ -1,9 +1,9 @@
-import { useFileUploadLimit } from '@nocobase/app-plugin-file/client';
 /**
  * The headless parts of an issue's page beyond its activity, for the application that presents it (for example, with the UI
  * Library's `issue-detail` block): the issue itself, and every change the page makes, each refreshing what it changed
  * and reporting what failed (the returned promise then rejects, so a presenter can keep its draft open).
  */
+import { useFileUploadLimit } from '@nocobase/app-plugin-file/client';
 import {
   useQuery,
   useQueryClient,

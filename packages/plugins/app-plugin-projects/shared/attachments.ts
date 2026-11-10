@@ -44,7 +44,6 @@
  * (`isInlinePreviewable`) are served inline; everything else, SVG and HTML included, is a download.
  */
 
-/** Per file, in bytes. */
 /** Files sent with one comment, or attached in one request. */
 export const ATTACHMENTS_PER_REQUEST_MAX = 10;
 /** How long an upload attached to nothing is kept. */

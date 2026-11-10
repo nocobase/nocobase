@@ -1,9 +1,9 @@
-import { fileTooLarge } from '@nocobase/app-plugin-file/server';
 /**
  * The chat API, mounted at `/api/agents` (`CHAT_ROUTES` in `shared/conversations`). Every route is behind the guard (a
  * signed-in person and their authorization context). Only its owner writes a conversation. Named recipients read
  * bounded snapshots; everyone else receives 404. Changing the team's default chat agent needs `agents.agents` manage.
  */
+import { fileTooLarge } from '@nocobase/app-plugin-file/server';
 import {
   apiErrorResponse,
   apiErrorResponses,

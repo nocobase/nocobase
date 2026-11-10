@@ -1,3 +1,4 @@
+import type { DriveUploadLimit } from '@nocobase/app-plugin-file/server';
 import {
   apiErrorResponse,
   apiErrorResponses,
@@ -53,7 +54,7 @@ const notFound = apiErrorResponse(404);
  */
 export function createIssueCommentRoutes(deps: {
   readonly comments: CommentService;
-  readonly uploadLimit: import('@nocobase/app-plugin-file/server').DriveUploadLimit;
+  readonly uploadLimit: DriveUploadLimit;
   readonly queries: CommentQueries;
   /** A connection to read with, for answering a comment a delegated write made. */
   readonly read: () => DatabaseConnection;

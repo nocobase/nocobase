@@ -1,3 +1,4 @@
+import { DEFAULT_FILE_UPLOAD_LIMIT } from '@nocobase/app-plugin-file/server';
 import { afterEach, expect, it, vi } from 'vitest';
 import { convertToModelMessages, generateText } from 'ai';
 import { resolveModelCapabilities } from '../server/online/search/capabilities.js';
@@ -126,6 +127,12 @@ it('uses shared capabilities for a renamed service and serializes PNG with the r
   });
   vi.stubGlobal('fetch', fetch);
   const inputs = new NativeFileInputs({
+    files: {
+      uploadLimit: DEFAULT_FILE_UPLOAD_LIMIT,
+      content: async () => {
+        throw new Error('No stored files in this fixture.');
+      },
+    },
     connectionFor: async () => ({
       ...connection,
       apiKey: 'offline-fixture-key',

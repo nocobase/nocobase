@@ -1,4 +1,3 @@
-import { DEFAULT_FILE_UPLOAD_LIMIT } from '@nocobase/app-plugin-file/client';
 /**
  * The message box for talking to an agent: the page context as removable chips inside it, Enter to send and
  * Shift+Enter for a new line, and a toolbar slot beside the send button for pickers such as the model or the mode.
@@ -15,6 +14,7 @@ import { DEFAULT_FILE_UPLOAD_LIMIT } from '@nocobase/app-plugin-file/client';
  * With `context.inspect`, clicking a chip opens a small dialog with what it carries (`ContextPreviewDialog`, which a
  * page can also open for the context a sent message carried).
  */
+import { DEFAULT_FILE_UPLOAD_LIMIT } from '@nocobase/app-plugin-file/client';
 import {
   filterText,
   selectionPreview,

@@ -1,11 +1,11 @@
-import {
-  fileTooLarge,
-  type DriveUploadLimit,
-} from '@nocobase/app-plugin-file/server';
 /**
  * `/api/projects/attachments` and `/api/projects/issues/{issueId}/attachments` (`shared/attachments.ts`). Every path
  * acts as the signed-in person; the service decides what they may read and change.
  */
+import {
+  fileTooLarge,
+  type DriveUploadLimit,
+} from '@nocobase/app-plugin-file/server';
 import {
   apiErrorResponse,
   apiErrorResponses,

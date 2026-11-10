@@ -1,4 +1,3 @@
-import { DEFAULT_FILE_UPLOAD_LIMIT } from '@nocobase/app-plugin-file/server';
 /**
  * The one place the plugin's services are assembled from their dependencies. The provider binds the result to
  * `projectsToken`; tests call it directly against a real database.
@@ -7,6 +6,10 @@ import { DEFAULT_FILE_UPLOAD_LIMIT } from '@nocobase/app-plugin-file/server';
  * work handlers of the registered kinds (`kernel/work.ts`). Notices are planned in each transaction (`domains/notices`).
  * The kinds of principal (`kernel/kinds.ts`) come from `projectsKindsToken`, where other plugins register theirs.
  */
+import {
+  DEFAULT_FILE_UPLOAD_LIMIT,
+  type DriveUploadLimit,
+} from '@nocobase/app-plugin-file/server';
 import type { DatabaseManager } from '@nocobase/db';
 
 import type { ProjectsAccess } from './tokens.js';
@@ -109,9 +112,7 @@ import {
 } from './domains/attachments/index.js';
 
 export interface ProjectsDeps {
-  readonly limitForDisk?: (
-    disk?: string,
-  ) => import('@nocobase/app-plugin-file/server').DriveUploadLimit;
+  readonly limitForDisk?: (disk?: string) => DriveUploadLimit;
   readonly database: Pick<DatabaseManager, 'transaction' | 'connection'>;
   readonly idGenerator: { generateString(): string };
   /** The roles, kept by the application (`projectsAccessToken`). */

@@ -1,7 +1,3 @@
-import {
-  assertFileUploadSize,
-  type DriveUploadLimit,
-} from '@nocobase/app-plugin-file/server';
 /**
  * Files people send with chat messages (`agChatAttachments`; the contract is "Attachments" in `shared/conversations`).
  * The bytes go through the file plugin's repository onto a Drive disk, as the projects plugin stores issue files; Drive
@@ -13,6 +9,10 @@ import {
  * conversation. Anyone else gets 404, as if it did not exist. Uploads never sent are purged after
  * `CHAT_ATTACHMENT_ORPHAN_HOURS`.
  */
+import {
+  assertFileUploadSize,
+  type DriveUploadLimit,
+} from '@nocobase/app-plugin-file/server';
 import { conversationAccess } from './shares.js';
 import { messagesRepo } from './conversation.store.js';
 

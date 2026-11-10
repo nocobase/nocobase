@@ -1,9 +1,7 @@
-import { DEFAULT_FILE_UPLOAD_LIMIT } from '@nocobase/app-plugin-file/server';
 import type {
   ExtractOptions,
   ExtractRequest,
   ExtractResponse,
-  TextExtractor,
 } from '@nocobase/document-extractor';
 
 import {
@@ -73,7 +71,7 @@ class KimiExtractor {
 
   async extract(
     request: ExtractRequest,
-    options: ExtractOptions = {},
+    options: ExtractOptions & { readonly maxInputBytes: number },
   ): Promise<ExtractResponse> {
     const deadline = AbortSignal.timeout(this.timeoutMs);
     const signal = options.signal
@@ -85,11 +83,7 @@ class KimiExtractor {
     let result: ExtractResponse;
     try {
       signal.throwIfAborted();
-      if (
-        request.bytes.byteLength >
-        (options.maxInputBytes ??
-          DEFAULT_FILE_UPLOAD_LIMIT.maxFileSizeMb * 1024 * 1024)
-      )
+      if (request.bytes.byteLength > options.maxInputBytes)
         throw new ByteLimitError();
       if (
         !Number.isSafeInteger(maxChars) ||
@@ -260,7 +254,10 @@ export function kimiExtractor(
   connection: ModelConnection,
   sessionId: string,
   options: KimiOptions = {},
-): TextExtractor {
+): (
+  request: ExtractRequest,
+  options: ExtractOptions & { readonly maxInputBytes: number },
+) => Promise<ExtractResponse> {
   const extractor = new KimiExtractor(connection, sessionId, options);
   return (request, extractOptions) =>
     extractor.extract(request, extractOptions);

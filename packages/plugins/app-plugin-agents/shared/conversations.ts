@@ -31,7 +31,6 @@ export const CONVERSATION_TITLE_AGENT_MAX = 40;
 export const CONVERSATION_TITLE_MAX = 200;
 /** The longest message a person may send, in characters. */
 export const MESSAGE_CONTENT_MAX = 50_000;
-/** Per file sent with a message, in bytes. */
 /** Files sent with one message. */
 export const CHAT_ATTACHMENTS_PER_MESSAGE_MAX = 10;
 /** How long an upload not sent with a message is kept. */

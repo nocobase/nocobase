@@ -64,9 +64,7 @@ export interface AgentsConfig {
    * Archived conversations are deleted `archivedRetentionDays` days after they were archived, with their messages,
    * files and links: 30 by default, 0 keeps them. Checked once a day.
    */
-  readonly conversations?: {
-    readonly archivedRetentionDays?: number;
-  };
+  readonly conversations?: { readonly archivedRetentionDays?: number };
   /** How often the runners sweep runs (`sweepIntervalMs`): every 30 seconds by default. */
   readonly runners?: { readonly sweepIntervalMs?: number };
   /**

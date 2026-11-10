@@ -1,4 +1,3 @@
-import { useFileUploadLimit } from '@nocobase/app-plugin-file/client';
 /**
  * The chat's message box: `agent-composer` wired to the panel. The page context shows as removable chips inside it (a
  * pinned item is cleared once a message carrying it is taken), a draft from "Ask agent" fills it once, and the panel
@@ -7,6 +6,7 @@ import { useFileUploadLimit } from '@nocobase/app-plugin-file/client';
  * (the attach button, a paste, a drop on it or on the view, through `registerAddFiles`) upload through the agents
  * plugin and go with the message. Clicking a chip shows what it carries (`chipContent`).
  */
+import { useFileUploadLimit } from '@nocobase/app-plugin-file/client';
 import {
   buildPageContext,
   contextChips,

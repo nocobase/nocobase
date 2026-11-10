@@ -1,3 +1,4 @@
+import { DEFAULT_FILE_UPLOAD_LIMIT } from '@nocobase/app-plugin-file/server';
 import { expect, it, vi } from 'vitest';
 import { MockLanguageModelV4 } from 'ai/test';
 import type { TextExtractor } from '@nocobase/document-extractor';
@@ -39,6 +40,12 @@ function snapshot(
 }
 function fixture(extract: TextExtractor) {
   const inputs = new NativeFileInputs({
+    files: {
+      uploadLimit: DEFAULT_FILE_UPLOAD_LIMIT,
+      content: async () => {
+        throw new Error('No stored files in this fixture.');
+      },
+    },
     connectionFor: async () => documentConnection,
     extract,
     createModel: () => new MockLanguageModelV4(),

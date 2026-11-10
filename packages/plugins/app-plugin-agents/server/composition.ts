@@ -1,13 +1,3 @@
-import { DEFAULT_FILE_UPLOAD_LIMIT } from '@nocobase/app-plugin-file/server';
-import { OnlineAgentUIStreams } from './online/agent/transport/streams.js';
-import type { OnlineAgentRecoveryConfig } from './online/agent/types.js';
-import { OnlineAgentConfigurator } from './online/agent/configuration.js';
-import { RunnerOnlineAgentAdapter } from './online/agent/runner/backend.js';
-import type { ServiceResolver } from '@nocobase/service-provider';
-import { OnlineAgentService } from './online/agent/service.js';
-import { createSessionManager } from './online/agent/persistence/manager.js';
-import { NativeFileInputs } from './online/files/service.js';
-import type { FileInputsConfig } from './online/files/types.js';
 /**
  * The one place the plugin's services are assembled from their dependencies. The provider binds the result to
  * `agentsToken`; tests call it directly against a real database.
@@ -23,6 +13,19 @@ import type { FileInputsConfig } from './online/files/types.js';
  * brings the
  * `conversation` subject.
  */
+import {
+  DEFAULT_FILE_UPLOAD_LIMIT,
+  type DriveUploadLimit,
+} from '@nocobase/app-plugin-file/server';
+import { OnlineAgentUIStreams } from './online/agent/transport/streams.js';
+import type { OnlineAgentRecoveryConfig } from './online/agent/types.js';
+import { OnlineAgentConfigurator } from './online/agent/configuration.js';
+import { RunnerOnlineAgentAdapter } from './online/agent/runner/backend.js';
+import type { ServiceResolver } from '@nocobase/service-provider';
+import { OnlineAgentService } from './online/agent/service.js';
+import { createSessionManager } from './online/agent/persistence/manager.js';
+import { NativeFileInputs } from './online/files/service.js';
+import type { FileInputsConfig } from './online/files/types.js';
 import type { RunApp } from '@nocobase/agent-protocol';
 import { createRunDataPurge } from './core/runs/run-data-purge.js';
 import {
@@ -190,9 +193,7 @@ export interface AgentsDeps {
    * it an upload answers 503 `NOT_IMPLEMENTED`.
    */
   readonly chatFiles?: ChatFileStorage;
-  readonly limitForDisk?: (
-    disk?: string,
-  ) => import('@nocobase/app-plugin-file/server').DriveUploadLimit;
+  readonly limitForDisk?: (disk?: string) => DriveUploadLimit;
   /** The application's public base path (`/app`, or empty), for the URLs of files sent in chat. */
   readonly basePath?: () => string;
   readonly onError?: (message: string, error: unknown) => void;

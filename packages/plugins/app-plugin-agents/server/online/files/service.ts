@@ -1,4 +1,3 @@
-import { DEFAULT_FILE_UPLOAD_LIMIT } from '@nocobase/app-plugin-file/server';
 import { FileInputError } from './errors.js';
 import { createHash } from 'node:crypto';
 import {
@@ -31,7 +30,7 @@ export class NativeFileInputs {
     object,
     ReturnType<FileInputProfiles['resolve']> & {
       readonly provider: ModelConnection['provider'];
-      readonly extract: TextExtractor;
+      readonly extract: ReturnType<typeof kimiExtractor>;
     }
   >();
   private readonly profiles: FileInputProfiles;
@@ -42,7 +41,7 @@ export class NativeFileInputs {
   constructor(
     private readonly deps: {
       connectionFor(ref: ModelRef): Promise<ModelConnection>;
-      files?: Pick<ChatAttachmentService, 'content' | 'uploadLimit'>;
+      files: Pick<ChatAttachmentService, 'content' | 'uploadLimit'>;
       config?: FileInputsConfig;
       createModel?: typeof languageModel;
       extract?: TextExtractor;
@@ -50,15 +49,15 @@ export class NativeFileInputs {
     },
   ) {
     this.profiles = new FileInputProfiles(deps.config);
-    this.uploadLimit = deps.files?.uploadLimit ?? DEFAULT_FILE_UPLOAD_LIMIT;
+    this.uploadLimit = deps.files.uploadLimit;
     this.extract = deps.extract ?? workerExtractor();
   }
 
   async model(ref: ModelRef, sessionId: string): Promise<LanguageModel> {
     const connection = { ...(await this.deps.connectionFor(ref)) };
     const capabilities = this.profiles.resolve(ref, connection);
-    let remote: TextExtractor | undefined;
-    const extract: TextExtractor =
+    let remote: ReturnType<typeof kimiExtractor> | undefined;
+    const extract: ReturnType<typeof kimiExtractor> =
       capabilities.extraction === 'kimi-file-extract'
         ? (request, options) => {
             // Native images and text-only turns never initialize the Files API adapter.
@@ -132,8 +131,6 @@ export class NativeFileInputs {
         let bytes: Uint8Array;
         let maxInputBytes = this.uploadLimit.maxFileSizeMb * 1024 * 1024;
         if (file.attachment) {
-          if (!this.deps.files)
-            throw invalid('Attachment content is unavailable.');
           const authorized = input.conn
             ? await this.deps.files.content(
                 { userId: input.userId },
@@ -222,7 +219,7 @@ export class NativeFileInputs {
   }
 
   private async documentText(
-    extract: TextExtractor,
+    extract: ReturnType<typeof kimiExtractor>,
     request: ExtractRequest,
     signal: AbortSignal,
     maxInputBytes: number,

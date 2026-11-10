@@ -33,7 +33,7 @@ it('A16: uses the bound proxy root, multipart purpose, service authorization and
   expect(
     await kimiExtractor(connection(`${server.baseUrl}/`), 'session-fixture', {
       onWarning: warning,
-    })(input),
+    })(input, { maxInputBytes: input.bytes.length }),
   ).toEqual({
     status: 'ready',
     markdown: 'Remote quokka document marker',
@@ -79,6 +79,7 @@ it.each(['text/plain; charset=utf-8', 'application/json'])(
     });
     expect(
       await kimiExtractor(connection(server.baseUrl), 'session')(input, {
+        maxInputBytes: input.bytes.length,
         maxOutputChars: 3,
       }),
     ).toMatchObject({ status: 'ready', markdown: '😀😀😀' });
@@ -108,10 +109,10 @@ it.each([
             : '{}',
       );
     });
-    const result = await kimiExtractor(
-      connection(server.baseUrl),
-      'session',
-    )(input);
+    const result = await kimiExtractor(connection(server.baseUrl), 'session')(
+      input,
+      { maxInputBytes: input.bytes.length },
+    );
     expect(result).toMatchObject({
       status: 'failed',
       code: 'invalid-document',
@@ -141,7 +142,7 @@ it.each(['POST', 'GET'])(
     const warnings: string[] = [];
     const result = await kimiExtractor(connection(server.baseUrl), 'session', {
       onWarning: (text) => warnings.push(text),
-    })(input);
+    })(input, { maxInputBytes: input.bytes.length });
     expect(result).toMatchObject({ status: 'failed' });
     expect(server.requests.map((r) => r.method)).toEqual(
       method === 'POST' ? ['POST'] : ['POST', 'GET', 'DELETE'],
@@ -167,7 +168,7 @@ it.each(['{}', '{"id":"../escape"}', '{"id":3}', 'invalid'])(
     expect(
       await kimiExtractor(connection(server.baseUrl), 'session', {
         onWarning: warning,
-      })(input),
+      })(input, { maxInputBytes: input.bytes.length }),
     ).toMatchObject({ status: 'failed' });
     expect(server.requests).toHaveLength(1);
     expect(warning).toHaveBeenCalledOnce();
@@ -191,7 +192,7 @@ it.each(['metadata', 'content-bytes', 'content-characters'])(
     });
     const result = await kimiExtractor(connection(server.baseUrl), 'session', {
       onWarning: () => {},
-    })(input, { maxOutputChars: 3 });
+    })(input, { maxInputBytes: input.bytes.length, maxOutputChars: 3 });
     expect(result).toMatchObject({ status: 'failed', code: 'too-large' });
     expect(server.requests.map((r) => r.method)).toEqual(
       stage === 'metadata' ? ['POST'] : ['POST', 'GET', 'DELETE'],
@@ -214,9 +215,13 @@ it('A17: rejects undocumented content types and invalid UTF-8, retaining cleanup
     } else res.end();
   });
   const extract = kimiExtractor(connection(server.baseUrl), 'session');
-  expect(await extract(input)).toMatchObject({ status: 'failed' });
+  expect(
+    await extract(input, { maxInputBytes: input.bytes.length }),
+  ).toMatchObject({ status: 'failed' });
   invalidUtf8 = true;
-  expect(await extract(input)).toMatchObject({ status: 'failed' });
+  expect(
+    await extract(input, { maxInputBytes: input.bytes.length }),
+  ).toMatchObject({ status: 'failed' });
   expect(server.requests.filter((r) => r.method === 'DELETE')).toHaveLength(2);
 });
 
@@ -239,7 +244,7 @@ it('A17: a cleanup failure warns without replacing successful extraction or leak
   expect(
     await kimiExtractor(connection(server.baseUrl), 'session', {
       onWarning: warning,
-    })(input),
+    })(input, { maxInputBytes: input.bytes.length }),
   ).toMatchObject({ status: 'ready', markdown: 'safe content' });
   expect(warning).toHaveBeenCalledOnce();
   for (const secret of [
@@ -273,6 +278,7 @@ it('A08/A17: aborts a real content stream and waits for independently authorized
   const controller = new AbortController();
   let settled = false;
   const result = kimiExtractor(connection(server.baseUrl), 'session')(input, {
+    maxInputBytes: input.bytes.length,
     signal: controller.signal,
   }).finally(() => {
     settled = true;
@@ -305,7 +311,7 @@ it('A17: abort during upload cannot invent an ID or promise remote removal', asy
   const controller = new AbortController();
   const result = kimiExtractor(connection(server.baseUrl), 'session', {
     onWarning: warning,
-  })(input, { signal: controller.signal });
+  })(input, { maxInputBytes: input.bytes.length, signal: controller.signal });
   try {
     await entered.promise;
     controller.abort();
@@ -330,7 +336,7 @@ it('A08/A17: the overall extraction deadline aborts content and still deletes it
   expect(
     await kimiExtractor(connection(server.baseUrl), 'session', {
       timeoutMs: 1000,
-    })(input),
+    })(input, { maxInputBytes: input.bytes.length }),
   ).toMatchObject({ code: 'timeout' });
   expect(server.requests.map((r) => r.method)).toEqual([
     'POST',
@@ -357,7 +363,7 @@ it('A17: cleanup has its own finite deadline, and Stop during cleanup still retu
   const result = kimiExtractor(connection(server.baseUrl), 'session', {
     cleanupTimeoutMs: 1000,
     onWarning: warning,
-  })(input, { signal: controller.signal });
+  })(input, { maxInputBytes: input.bytes.length, signal: controller.signal });
   await deleting.promise;
   controller.abort();
   expect(await result).toMatchObject({ code: 'aborted' });
@@ -371,15 +377,23 @@ it('A16/A17: does not forward uploads through redirects, or issue requests for p
   const extract = kimiExtractor(connection(server.baseUrl), 'session', {
     onWarning: () => {},
   });
-  expect(await extract(input)).toMatchObject({ status: 'failed' });
+  expect(
+    await extract(input, { maxInputBytes: input.bytes.length }),
+  ).toMatchObject({ status: 'failed' });
   expect(server.requests).toHaveLength(1);
   const controller = new AbortController();
   controller.abort();
-  expect(await extract(input, { signal: controller.signal })).toMatchObject({
+  expect(
+    await extract(input, {
+      maxInputBytes: input.bytes.length,
+      signal: controller.signal,
+    }),
+  ).toMatchObject({
     code: 'aborted',
   });
   expect(
     await extract(input, {
+      maxInputBytes: input.bytes.length,
       maxOutputChars: FileInputBudget.maxOutputChars + 1,
     }),
   ).toMatchObject({ code: 'too-large' });
@@ -449,7 +463,7 @@ it.each(['POST', 'GET'])(
     const warning = vi.fn();
     const result = await kimiExtractor(connection(server.baseUrl), 'session', {
       onWarning: warning,
-    })(input);
+    })(input, { maxInputBytes: input.bytes.length });
     expect(result).toMatchObject({
       status: 'failed',
       code: 'invalid-document',
@@ -477,7 +491,7 @@ it('A17: cleanup deadline failure cannot replace a completed successful extracti
   const result = await kimiExtractor(connection(server.baseUrl), 'session', {
     cleanupTimeoutMs: 100,
     onWarning: warning,
-  })(input);
+  })(input, { maxInputBytes: input.bytes.length });
   expect(result).toMatchObject({ status: 'ready', markdown: 'completed text' });
   expect(warning).toHaveBeenCalledOnce();
   expect(server.requests.map((r) => r.method)).toEqual([
