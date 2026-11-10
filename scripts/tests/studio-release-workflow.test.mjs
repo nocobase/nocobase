@@ -18,7 +18,7 @@ test('source overrides require a dry run and an immutable commit', () => {
   const source = step('Validate source override')
     .split('        run: |\n')[1]
     .split('\n')
-    .map((line) => line.replace(/^          /, ''))
+    .map((line) => line.replace(/^ {10}/, ''))
     .join('\n');
   for (const [ref, dry, expected] of [
     ['', 'false', 0],
