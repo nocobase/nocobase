@@ -34,7 +34,7 @@ Conventions every page follows, each explained in its home:
 - Toasts with `useToaster()` from `@nocobase/app-client`, never a second `Toaster` (["Toasts" in `references/api.md`](references/api.md#toasts)).
 - Every user-visible string through a translation key ([`references/i18n.md`](references/i18n.md)).
 
-Ordinary pages do not add a persistent Refresh action. Preserve write invalidation, contextual read retries and automatic progress updates; see [page data freshness](references/page-freshness.md) for the rule and the boundary between new templates and existing application copies.
+Ordinary pages do not add a persistent Refresh action. Preserve write invalidation, contextual read retries and automatic progress updates; see [page data freshness](references/page-freshness.md) for the rule and the boundary between new templates and existing application copies, and [keeping views current after a write](references/data-changes.md) for how a write reaches every view that reads it.
 
 ## Browser API compatibility
 

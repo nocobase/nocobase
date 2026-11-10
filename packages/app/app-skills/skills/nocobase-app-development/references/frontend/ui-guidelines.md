@@ -164,7 +164,7 @@ Do not show raw backend error messages (untranslated exception messages, stack t
 
 **R1 [Must] Never write from stale data**: edit, delete and similar actions work from the record's latest data (see T3.8). Take particular care when the backend replaces fields wholesale; otherwise the write overwrites changes that someone else, or the same user, just made.
 
-**R2 [Must] Update immediately after a successful write**: update the current view (detail view, drawer) at once with the data the endpoint returns, then refresh the list; the UI must never end up in a state where "the toast says it was saved, but the UI still shows the old value". While refreshing, keep the old data and show that it is loading, as I4 requires.
+**R2 [Must] Update immediately after a successful write**: update the current view (detail view, drawer) at once with the data the endpoint returns, then refresh the related lists, cards and counts ([how](references/data-changes.md)); the UI must never end up in a state where "the toast says it was saved, but the UI still shows the old value". While refreshing, keep the old data and show that it is loading, as I4 requires.
 
 **R3 [Must] The record no longer exists**: when editing, deleting or opening the details reveals that the record has been deleted (404), say "This record does not exist or has been deleted" and give a next step (close the overlay, go back to the list); the list refreshes as well. Do not let the user repeat an action that is bound to fail, and do not offer "Retry".
 
