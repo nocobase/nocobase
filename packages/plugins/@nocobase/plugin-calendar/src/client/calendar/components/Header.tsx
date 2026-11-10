@@ -38,7 +38,7 @@ const Header = ({ date, label, drilldownView, onDrillDown, showLunar = false, ty
         </>
       );
     }
-  }, [type]);
+  }, [type, date, label, localizer, locale, lunarElement]);
 
   const Wrapper = drilldownView ? 'a' : React.Fragment;
 
