@@ -580,14 +580,14 @@ test('rejects OwnDiscardQuestion in a file that asks no question of its own', ()
   );
   assert.deepEqual(
     inspect(`import { useNavigationGuard } from '@nocobase/app-client';
-      export const Page = () => { useNavigationGuard(ask); return <OwnDiscardQuestion/>; }`)
+      export const Page = () => { useNavigationGuard(() => !dirty || ask()); return <OwnDiscardQuestion/>; }`)
       .findings,
     [],
   );
   // A namespace import of the application client counts as well.
   assert.deepEqual(
     inspect(`import * as App from '@nocobase/app-client';
-      export const Page = () => { App.useNavigationGuard(ask); return <OwnDiscardQuestion/>; }`)
+      export const Page = () => { App.useNavigationGuard(() => !dirty || ask()); return <OwnDiscardQuestion/>; }`)
       .findings,
     [],
   );
@@ -606,6 +606,97 @@ test('rejects OwnDiscardQuestion in a file that asks no question of its own', ()
       (item) => item.tag,
     ),
     ['OwnDiscardQuestion'],
+  );
+});
+
+test('rejects a draft-keeping full page that yields the question to a guard which only blocks during a save', () => {
+  // The first-generation counterexample: a useState form on a RouteChildPage that keeps a local draft, renders
+  // OwnDiscardQuestion and guards only the running save. Both the declaration and the uncompared FeedbackForm fail.
+  const result =
+    inspect(`import { OwnDiscardQuestion } from '#components/discard-guard';
+    import { FeedbackForm } from '#components/feedback-form';
+    import { useNavigationGuard } from '@nocobase/app-client';
+    import { RouteChildPage } from '#components/route-child-page';
+    import { PageContainer } from '#components/page-container';
+    export const Edit = () => {
+      const [values, setValues] = useState(() => readDraft() ?? saved);
+      useNavigationGuard(() => !submission.submitting || savedRef.current);
+      return <RouteChildPage><PageContainer>
+        {!storageFailed ? <OwnDiscardQuestion /> : null}
+        <FeedbackForm onSubmit={save}><Input value={values.name} onChange={change}/></FeedbackForm>
+      </PageContainer></RouteChildPage>;
+    }`);
+  assert.deepEqual(
+    result.findings.map((item) => [item.tag, item.line]),
+    [
+      ['OwnDiscardQuestion', 10],
+      ['FeedbackForm', 11],
+    ],
+  );
+  assert.match(result.findings[0].replacement, /kept draft, never replaces/);
+  assert.match(result.findings[1].replacement, /values=\{\(\) => values\}/);
+  // A guard declared under a name is read through its declaration.
+  assert.deepEqual(
+    inspect(`import { useNavigationGuard } from '@nocobase/app-client';
+      const guard = () => !submitting;
+      export const Page = () => { useNavigationGuard(guard); return <OwnDiscardQuestion/>; }`).findings.map(
+      (item) => item.tag,
+    ),
+    ['OwnDiscardQuestion'],
+  );
+  assert.deepEqual(
+    inspect(`import { useNavigationGuard } from '@nocobase/app-client';
+      function guard() { return !controller.dirty || controller.ask(); }
+      export const Page = () => { useNavigationGuard(guard); return <OwnDiscardQuestion/>; }`)
+      .findings,
+    [],
+  );
+});
+
+test('compares every FeedbackForm in a route overlay, unless the file asks its own question', () => {
+  // useState forms count as much as React Hook Form ones.
+  assert.deepEqual(
+    inspect(`import { RouteDrawer } from '#components/route-drawer';
+      export const Edit = () => <RouteDrawer><FeedbackForm onSubmit={save}/></RouteDrawer>`).findings.map(
+      (item) => item.tag,
+    ),
+    ['FeedbackForm'],
+  );
+  assert.deepEqual(
+    inspect(`import { RouteDrawer } from '#components/route-drawer';
+      export const Edit = () => <RouteDrawer><FeedbackForm values={() => values} savedValues={saved} onSubmit={save}/></RouteDrawer>`)
+      .findings,
+    [],
+  );
+  // Asking its own question: a guard reading the unsaved state, the application's page-leave hook, or a
+  // beforeClose reading it. A beforeClose that only waits for a save does not count.
+  for (const own of [
+    `import { useNavigationGuard } from '@nocobase/app-client';
+      export const Edit = () => { useNavigationGuard(() => !dirty || ask()); return <RouteDrawer><FeedbackForm onSubmit={save}/></RouteDrawer>; }`,
+    `import { useSettingsLeave } from './hooks.js';
+      export const Edit = () => { const leave = useSettingsLeave(dirty, busy); return <RouteDrawer>{leave.dialog}<FeedbackForm onSubmit={save}/></RouteDrawer>; }`,
+    `export const Edit = () => <RouteDrawer beforeClose={() => !dirty}><FeedbackForm onSubmit={save}/></RouteDrawer>`,
+  ])
+    assert.deepEqual(
+      inspect(`import { RouteDrawer } from '#components/route-drawer';\n${own}`)
+        .findings,
+      [],
+    );
+  assert.deepEqual(
+    inspect(`import { RouteDrawer } from '#components/route-drawer';
+      export const Edit = () => <RouteDrawer beforeClose={() => !locked()}><FeedbackForm onSubmit={save}/></RouteDrawer>`).findings.map(
+      (item) => item.tag,
+    ),
+    ['FeedbackForm'],
+  );
+  // A leave hook imported but never called, or one from a package, does not count.
+  assert.deepEqual(
+    inspect(`import { RouteDrawer } from '#components/route-drawer';
+      import { usePageLeave } from 'some-package';
+      export const Edit = () => { usePageLeave(); return <RouteDrawer><FeedbackForm onSubmit={save}/></RouteDrawer>; }`).findings.map(
+      (item) => item.tag,
+    ),
+    ['FeedbackForm'],
   );
 });
 

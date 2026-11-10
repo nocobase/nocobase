@@ -114,6 +114,9 @@ export default function CustomerBatchPage() {
       ) : (
         <FeedbackForm
           id={formId}
+          // The new value is unsaved input; choosing which field to change is not.
+          values={() => ({ status, ownerId })}
+          savedValues={{ status: 'active', ownerId: '' }}
           onSubmit={async (e) => {
             e.preventDefault();
             await submit();

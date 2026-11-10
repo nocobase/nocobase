@@ -81,7 +81,9 @@ const DiscardOwnerContext = createContext<{
 /**
  * Rendered inside a route overlay by the template's own forms that already ask an unsaved-changes question of their
  * own (the settings forms' `usePageLeave`): the overlay leaves the question to them instead of asking twice.
- * Application forms do not render it; they rely on the overlay's question.
+ * Application forms do not render it; they rely on the overlay's question. A kept draft or working storage is never a
+ * reason to: the draft restores input after a reload, while leaving on purpose still asks, and a guard that only blocks
+ * while a save runs asks nothing (mobile.md M7.4).
  */
 export function OwnDiscardQuestion(): null {
   const owners = useContext(DiscardOwnerContext);

@@ -51,14 +51,16 @@ const widgetRoles = new Set([
 const formReplacement =
   "FeedbackForm (#components/feedback-form) with values={form.getValues} and savedValues={the stored or blank values}, so its route overlay asks before discarding the input, a restored draft included (mobile.md M7.4); a search form takes role='search'";
 const feedbackFormValues =
-  'values={form.getValues} and savedValues={the stored or blank values} on this FeedbackForm, so its route overlay asks before discarding the input, a restored draft or a changed Select included (mobile.md M7.4)';
+  'values={form.getValues} (or values={() => values} for a form kept in useState) and savedValues={the stored or blank values, never the restored draft} on this FeedbackForm, so its route overlay asks before discarding the input, a restored draft or a changed Select included (mobile.md M7.4)';
 const feedbackFormSpread =
   'values={form.getValues} and savedValues={the stored or blank values} written on this FeedbackForm itself: a spread whose contents this file does not show cannot confirm them, so its route overlay may not ask before discarding the input (mobile.md M7.4)';
 const draftDirty =
   'a dirty that only adds what the form cannot show; never derive it from a draft, storage or saved flag: a stored draft never replaces the discard question (mobile.md M7.4)';
 const overlays = new Set(['RouteDialog', 'RouteDrawer']);
 const ownQuestion =
-  "the layer's own discard question: OwnDiscardQuestion only declares that this file asks one itself through useNavigationGuard from @nocobase/app-client, and it calls none (mobile.md M7.4)";
+  "the layer's own discard question: OwnDiscardQuestion only declares that this file asks about unsaved input itself through useNavigationGuard from @nocobase/app-client, and no guard here reads an unsaved state (dirty, unsaved, changed); a guard that only blocks during a save, or a kept draft, never replaces the question (mobile.md M7.4)";
+// What a guard of a form's own reads when it asks about unsaved input.
+const unsavedState = /dirty|unsaved|changed|modified/i;
 const passiveTags = new Set([
   'div',
   'span',
@@ -128,6 +130,10 @@ export function inspectSource(ts, text, file, root) {
   // Namespace imports of @nocobase/app-client, for `App.useNavigationGuard(...)`.
   const guardNamespaces = new Set();
   let callsGuard = false;
+  const leaveHooks = new Set();
+  let callsLeaveHook = false;
+  // An overlay of this file whose beforeClose reads the form's unsaved state asks its own question on close.
+  let asksOnClose = false;
   // A plain <form> is a create or edit form when it holds React Hook Form fields or renders in a route overlay; a chat
   // composer or a filter bar elsewhere is left alone.
   let usesOverlay = false;
@@ -159,6 +165,15 @@ export function inspectSource(ts, text, file, root) {
       for (const item of statement.importClause.namedBindings.elements)
         if ((item.propertyName ?? item.name).text === 'useNavigationGuard')
           guardHooks.add(item.name.text);
+    // The application's own page-leave hook (the settings forms' `usePageLeave`, re-exported as `useSettingsLeave`).
+    if (
+      /^[.#]/.test(specifier) &&
+      statement.importClause?.namedBindings &&
+      ts.isNamedImports(statement.importClause.namedBindings)
+    )
+      for (const item of statement.importClause.namedBindings.elements)
+        if (/^use\w*Leave$/.test((item.propertyName ?? item.name).text))
+          leaveHooks.add(item.name.text);
     if (/(^|\/)route-(dialog|drawer|child-page)(\.js)?$/.test(specifier))
       usesOverlay = true;
     if (/(^|\/)page-container(\.js)?$/.test(specifier)) rendersPage = true;
@@ -348,8 +363,16 @@ export function inspectSource(ts, text, file, root) {
           report(node, tag, formReplacement, undefined, false);
       } else if (
         tag === 'FeedbackForm' &&
-        usesHookForm &&
-        (usesOverlay || !rendersPage)
+        !definesFeedbackForm &&
+        literal(ts, attribute(ts, node, 'role')?.initializer) !== 'search' &&
+        // A form in a route overlay, React Hook Form or `useState` alike: without values and savedValues nothing saved
+        // is compared, so a restored draft left untouched leaves without asking. Elsewhere a React Hook Form form
+        // outside a page of its own (a form component an overlay renders). A form whose file asks its own question
+        // (a guard reading its unsaved state, or the application's page-leave hook) compares by itself.
+        (usesOverlay || (usesHookForm && !rendersPage)) &&
+        !callsGuard &&
+        !callsLeaveHook &&
+        !asksOnClose
       ) {
         // Explicit props, or a spread whose object this file shows (`{...{ values, savedValues }}` or a const object
         // declared here); any other spread cannot confirm them and is reported as unconfirmed, never passed silently.
@@ -405,6 +428,31 @@ export function inspectSource(ts, text, file, root) {
     }
     ts.forEachChild(node, visit);
   }
+  // The text a guard's argument stands for: the argument itself, plus the initializer or body of a function or
+  // variable this file declares under the name it passes (`useNavigationGuard(guard)`, `controller.guard`).
+  function guardText(argument) {
+    const parts = [argument.getText(source)];
+    const name = ts.isIdentifier(argument)
+      ? argument.text
+      : ts.isPropertyAccessExpression(argument)
+        ? argument.name.text
+        : undefined;
+    if (name)
+      (function find(node) {
+        if (
+          (ts.isVariableDeclaration(node) ||
+            ts.isFunctionDeclaration(node) ||
+            ts.isPropertyDeclaration(node) ||
+            ts.isMethodDeclaration(node)) &&
+          node.name &&
+          ts.isIdentifier(node.name) &&
+          node.name.text === name
+        )
+          parts.push(node.getText(source));
+        ts.forEachChild(node, find);
+      })(source);
+    return parts.join('\n');
+  }
   (function findGuardCall(node) {
     if (
       ts.isCallExpression(node) &&
@@ -413,9 +461,26 @@ export function inspectSource(ts, text, file, root) {
         (ts.isPropertyAccessExpression(node.expression) &&
           ts.isIdentifier(node.expression.expression) &&
           guardNamespaces.has(node.expression.expression.text) &&
-          node.expression.name.text === 'useNavigationGuard'))
+          node.expression.name.text === 'useNavigationGuard')) &&
+      node.arguments[0] &&
+      // A guard that asks about unsaved input reads it; one that only blocks while a save runs (`submitting`,
+      // `pending`, a saved flag) does not ask anything, so it cannot stand in for the layer's question.
+      unsavedState.test(guardText(node.arguments[0]))
     )
       callsGuard = true;
+    if (
+      ts.isCallExpression(node) &&
+      ts.isIdentifier(node.expression) &&
+      leaveHooks.has(node.expression.text)
+    )
+      callsLeaveHook = true;
+    if (
+      ts.isJsxAttribute(node) &&
+      node.name.getText(source) === 'beforeClose' &&
+      node.initializer &&
+      unsavedState.test(node.initializer.getText(source))
+    )
+      asksOnClose = true;
     ts.forEachChild(node, findGuardCall);
   })(source);
   visit(source);
