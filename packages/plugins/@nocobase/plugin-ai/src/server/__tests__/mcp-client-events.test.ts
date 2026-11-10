@@ -69,6 +69,18 @@ describe('MCP client database events', () => {
     expect(clearUserContextCache).toHaveBeenCalledTimes(1);
   });
 
+  it('does not clear user-bound cache for rolled-back writes', async () => {
+    const transaction = await app.db.sequelize.transaction();
+    await app.db.getRepository('aiMcpClients').create({
+      values: { name: 'rolled-back', transport: 'http', url: 'http://127.0.0.1/mcp', useUserContext: true },
+      transaction,
+    });
+    expect(clearUserContextCache).not.toHaveBeenCalled();
+    await transaction.rollback();
+    expect(clearUserContextCache).not.toHaveBeenCalled();
+    expect(await app.db.getRepository('aiMcpClients').findOne({ filterByTk: 'rolled-back' })).toBeNull();
+  });
+
   it('clears user-bound cache after commit when a user-bound record is disabled', async () => {
     const repository = app.db.getRepository('aiMcpClients');
     await repository.create({
