@@ -36,7 +36,7 @@ export const transformVariableValue = (value: any, deps: Deps) => {
     return normalizeTimeValue(value);
   }
 
-  // 行政区划
+  // Convert values for the China administrative region field.
   if (targetCollectionField.interface === 'chinaRegion') {
     if (Array.isArray(value)) {
       return value.map((item) => {
