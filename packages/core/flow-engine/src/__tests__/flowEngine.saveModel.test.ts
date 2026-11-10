@@ -75,6 +75,18 @@ describe('FlowEngine.saveModel concurrent save prevention', () => {
     mockRepository.resetSaveCount();
   });
 
+  it('persists a deferred ancestor before the first editor write and retries a failed ancestor save', async () => {
+    const saved = vi.spyOn(mockRepository, 'save').mockImplementation(async (node) => node.uid);
+    const grid = await engine.loadOrCreateModel({ uid: 'grid', use: 'FlowModel' }, { skipSave: true });
+    const child = grid.addSubModel('items', { uid: 'child', use: 'FlowModel' });
+    expect(saved).not.toHaveBeenCalled();
+    saved.mockRejectedValueOnce(new Error('offline'));
+    await expect(child.save()).rejects.toThrow('offline');
+    await child.save();
+    await child.save();
+    expect(saved.mock.calls.map(([node]) => node.uid)).toEqual(['grid', 'grid', 'child', 'child']);
+  });
+
   it('should prevent concurrent saves of the same model', async () => {
     // Set a longer delay to ensure concurrency
     mockRepository.setSaveDelay(200);

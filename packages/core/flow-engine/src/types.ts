@@ -453,7 +453,7 @@ export interface EnsureBatchResult {
 
 export interface IFlowModelRepository<T extends FlowModel = FlowModel> {
   findOne(query: Record<string, any>): Promise<Record<string, any> | null>;
-  save(model: T, options?: { onlyStepParams?: boolean }): Promise<Record<string, any>>;
+  save(model: T, options?: { onlyStepParams?: boolean; ensureObjectSlot?: boolean }): Promise<Record<string, any>>;
   destroy(uid: string): Promise<boolean>;
   move(sourceId: string, targetId: string, position: 'before' | 'after'): Promise<void>;
   duplicate(uid: string): Promise<Record<string, any> | null>;
