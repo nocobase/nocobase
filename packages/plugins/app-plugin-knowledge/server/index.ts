@@ -1,5 +1,8 @@
 export { default } from './plugin.js';
-export { createKnowledgePlugin } from './plugin.js';
+export {
+  createKnowledgePlugin,
+  type KnowledgePluginOptions,
+} from './plugin.js';
 export * from './indexing/index.js';
 export * from './tokens.js';
 export {

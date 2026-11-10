@@ -22,6 +22,7 @@ import { defineKnowledgeConfig } from '../../../../config.js';
 export function createIndexingAppRuntime(
   indexingExtensions: readonly KnowledgeIndexingExtension[] = [],
   withAgents = true,
+  indexing = true,
 ): AppRuntimeDefinition {
   return defineAppRuntime({
     createAppConfig(context) {
@@ -75,7 +76,9 @@ export function createIndexingAppRuntime(
       authentication,
       authorization,
       ...(withAgents ? [agents] : []),
-      createKnowledgePlugin({ indexingExtensions }),
+      createKnowledgePlugin(
+        indexing ? { indexingExtensions } : { indexing: false },
+      ),
     ]),
     serviceProviders: [],
     routes: [],

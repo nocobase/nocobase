@@ -12,22 +12,37 @@ import { sqliteVecIndexingExtension } from './extension/sqlite-vec/index.js';
 import { pgvectorIndexingExtension } from './extension/pgvector/index.js';
 import type { KnowledgeIndexingExtension } from './indexing/types.js';
 
+export interface KnowledgePluginOptions {
+  /**
+   * `false` leaves semantic indexing out: no index provider or backends, no `/knowledge` indexing routes and no
+   * `kb.indexing` settings item, so search ranks with the built-in text match only. Defaults to `true`.
+   */
+  readonly indexing?: boolean;
+  /** Index backends beside the built-in sqlite-vec and pgvector ones; only with indexing on. */
+  readonly indexingExtensions?: readonly KnowledgeIndexingExtension[];
+}
+
 export function createKnowledgePlugin(
-  options: {
-    readonly indexingExtensions?: readonly KnowledgeIndexingExtension[];
-  } = {},
+  options: KnowledgePluginOptions = {},
 ): AppServerPlugin {
+  const indexing = options.indexing !== false;
+  if (!indexing && options.indexingExtensions?.length)
+    throw new TypeError(
+      'Knowledge indexing extensions require indexing; remove them or leave `indexing` on.',
+    );
   return defineServerPlugin({
     baseDir: path.resolve(import.meta.dirname, '..'),
     packageName: '@nocobase/app-plugin-knowledge',
-    serviceProviders: [
-      ...serviceProviders,
-      indexingProvider([
-        sqliteVecIndexingExtension,
-        pgvectorIndexingExtension,
-        ...(options.indexingExtensions ?? []),
-      ]),
-    ],
+    serviceProviders: indexing
+      ? [
+          ...serviceProviders,
+          indexingProvider([
+            sqliteVecIndexingExtension,
+            pgvectorIndexingExtension,
+            ...(options.indexingExtensions ?? []),
+          ]),
+        ]
+      : serviceProviders,
     routes,
     database: {
       migrations: './database/migrations',

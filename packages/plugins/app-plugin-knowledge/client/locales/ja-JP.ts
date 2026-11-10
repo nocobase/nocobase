@@ -153,6 +153,15 @@ const jaJP: LocaleResource<typeof enUS> = {
   },
   access: {
     businessSection: '知識',
+    settingsSection: '知識',
+    settings: {
+      indexing: {
+        title: 'ナレッジのインデックス',
+        read: '閲覧',
+        configure: '設定',
+        rebuild: '再構築',
+      },
+    },
     businesses: {
       knowledge: {
         title: '知識',

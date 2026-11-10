@@ -154,6 +154,15 @@ const viVN: LocaleResource<typeof enUS> = {
   },
   access: {
     businessSection: 'Kiến thức',
+    settingsSection: 'Kiến thức',
+    settings: {
+      indexing: {
+        title: 'Lập chỉ mục kiến thức',
+        read: 'Xem',
+        configure: 'Cấu hình',
+        rebuild: 'Xây dựng lại',
+      },
+    },
     businesses: {
       knowledge: {
         title: 'Kiến thức',
