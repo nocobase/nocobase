@@ -28,3 +28,17 @@ export function languageName(code: string, displayLocale: string): string {
     return code;
   }
 }
+
+/** Language names joined the way the interface language lists things, such as "A, B and C" or "A、B和C". */
+export function listLanguages(
+  names: readonly string[],
+  displayLocale: string,
+): string {
+  try {
+    return new Intl.ListFormat([displayLocale || 'en-US'], {
+      type: 'conjunction',
+    }).format(names);
+  } catch {
+    return names.join(', ');
+  }
+}

@@ -25,7 +25,11 @@ import type {
   NotificationTemplateText,
   NotificationTemplateView,
 } from '../../shared/templates.js';
-import { languageName, pickPreviewLocale } from '../template-language.js';
+import {
+  languageName,
+  listLanguages,
+  pickPreviewLocale,
+} from '../template-language.js';
 
 const namespace = '@nocobase/app-plugin-notification';
 
@@ -482,7 +486,7 @@ function TemplateDetail({
                 <p className='text-sm'>
                   {detail.localeMode === 'combined'
                     ? t('templates.combined', {
-                        languages: names?.join(', '),
+                        languages: names ? listLanguages(names, language) : '',
                       })
                     : t('templates.singleLocale', { language: names?.[0] })}
                 </p>

@@ -196,7 +196,7 @@ describe('notification template directory', () => {
         /Every recipient receives the same content/u,
       ),
     ).toHaveTextContent(
-      `${languageName('en-US', 'en-US')}, ${languageName('zh-CN', 'en-US')}`,
+      `${languageName('en-US', 'en-US')} and ${languageName('zh-CN', 'en-US')}`,
     );
     await within(drawer).findByRole('group', { name: 'Preview' });
     expect(within(drawer).queryByRole('combobox')).toBeNull();
