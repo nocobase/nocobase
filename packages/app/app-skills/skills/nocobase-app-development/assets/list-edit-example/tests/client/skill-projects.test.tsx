@@ -371,6 +371,8 @@ it.each(['cancel', 'save', 'removed', 'lastPageRemoved'])(
           if (++reads > 1) await refreshed;
           return { data: [...rows], meta: { total: rows.length } };
         }
+        if (path === 'skillProjects/summary')
+          return { data: { total: rows.length } };
         const id = path.split('/')[1];
         if (method === 'PATCH') {
           rows = rows.map((row) =>

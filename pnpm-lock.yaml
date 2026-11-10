@@ -538,6 +538,9 @@ importers:
       '@oclif/core':
         specifier: 'catalog:'
         version: 4.14.0
+      ini:
+        specifier: 6.0.0
+        version: 6.0.0
       pnpm:
         specifier: 11.7.0
         version: 11.7.0

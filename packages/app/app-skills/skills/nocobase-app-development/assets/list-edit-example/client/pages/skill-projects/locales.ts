@@ -1,4 +1,18 @@
 export const enUS = {
+  search: 'Search projects',
+  noResults: 'No projects match this search.',
+  clearSearch: 'Clear search',
+  totalMetric: 'Total projects',
+  metricUnavailable: 'Unavailable',
+  deleteAction: 'Delete',
+  deleting: 'Deleting…',
+  deleteTitle: 'Delete “{{name}}”?',
+  deleteHint: 'This project will be removed for everyone.',
+  deleted: 'Deleted “{{name}}”.',
+  alreadyDeleted: '“{{name}}” was already deleted.',
+  deleteFailed: 'Unable to delete this project. Try again.',
+  deleteUncertain:
+    'The delete result is unknown. The page is checking the project again; retry to confirm with the same request.',
   emptyTitle: 'No projects',
   saved: 'Saved “{{name}}”.',
   created: 'Created “{{name}}”.',
@@ -40,6 +54,20 @@ export const enUS = {
 };
 
 export const zhCN = {
+  search: '搜索项目',
+  noResults: '没有符合搜索条件的项目。',
+  clearSearch: '清除搜索',
+  totalMetric: '项目总数',
+  metricUnavailable: '暂不可用',
+  deleteAction: '删除',
+  deleting: '正在删除…',
+  deleteTitle: '删除“{{name}}”？',
+  deleteHint: '删除后所有人都将看不到此项目。',
+  deleted: '已删除“{{name}}”。',
+  alreadyDeleted: '“{{name}}”已被删除。',
+  deleteFailed: '无法删除此项目，请重试。',
+  deleteUncertain:
+    '删除结果尚未确定，页面正在重新读取此项目；重试将使用同一请求确认结果。',
   emptyTitle: '暂无项目',
   saved: '已保存“{{name}}”。',
   created: '已创建“{{name}}”。',

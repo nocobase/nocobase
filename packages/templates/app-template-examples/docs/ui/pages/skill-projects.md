@@ -4,7 +4,7 @@ This example is the first runnable contract for the application-development Skil
 
 ## Scope and routes
 
-`/skill-projects` lists up to 100 persisted projects with client pagination and a clear cap notice. It has a page header, Create action, a permanently reserved refresh-feedback row, and name/action columns. `/skill-projects/new` opens a create dialog and `/:projectId/edit` opens an edit dialog over the preserved list. The single required name field is limited to 100 characters. All visible text is localized in English and Chinese. Narrow layouts reuse the table overflow and dialog sizing already provided by the template. No detail drawer, deletion, filters, workflows or additional business modules are part of this first contract.
+`/skill-projects` lists up to 100 persisted projects with client pagination and a clear cap notice. It has a page header, Create action, a permanently reserved refresh-feedback row, and name/action columns. `/skill-projects/new` opens a create dialog and `/:projectId/edit` opens an edit dialog over the preserved list. The single required name field is limited to 100 characters. All visible text is localized in English and Chinese. Narrow layouts reuse the table overflow and dialog sizing already provided by the template. No detail drawer, workflows or additional business modules are part of this contract; search, name sorting, the total card and detail deletion are described under [Cross-view updates](#cross-view-updates).
 
 The database collection is `skillProjects`. Native authentication and an explicit `skill-projects` page access permission gate every endpoint. That permission grants management of this shared learning dataset; it is never automatically assigned. Writes require the standard transaction receipt adapter and server input validation. The page and its overlays appear in the normal permission directory. Demonstration data is created by the user or tests, not seeded into unrelated applications.
 
@@ -33,12 +33,14 @@ The name has an accessible required mark. Names are trimmed on both client and s
 
 An uncertain save disables name changes and close/navigation actions while its in-memory snapshot is available, explains that retrying submits the original payload, and retains the original operation key. After a reload, the controller restores only the key and digest: the form explicitly permits re-entering the exact original name (including whitespace), and a mismatched name sends no request. Form values are not persisted by the example. A matching retry uses the original key. Submit/Cancel are disabled while a request runs; the close icon, Escape, outside click and router navigation use the same busy/pending policy. Browser unload prompts before leaving a pending or dirty form. An idle dirty form asks through AlertDialog before discarding changes, with Keep editing and Discard actions. A definitive rejection releases the operation for correction. Saving a corrected draft starts a new operation. The schema has no deletion feature; tests can remove a record to exercise missing-record recovery.
 
-| API                        | Contract                                                                     |
-| -------------------------- | ---------------------------------------------------------------------------- |
-| GET `/skillProjects`       | `{ data: [{ id, name }], meta: { total } }`, ascending ID, first 100 records |
-| GET `/skillProjects/:id`   | `{ data: { id, name } }`, UUID identifier, 404 if absent                     |
-| POST `/skillProjects`      | `{ name }`, required Idempotency-Key, returns saved `{ data: { id, name } }` |
-| PATCH `/skillProjects/:id` | Same body/header and response as create; 404 if absent                       |
+| API                          | Contract                                                                     |
+| ---------------------------- | ---------------------------------------------------------------------------- |
+| GET `/skillProjects`         | `{ data: [{ id, name }], meta: { total } }`, ascending ID, first 100 records |
+| GET `/skillProjects/:id`     | `{ data: { id, name } }`, UUID identifier, 404 if absent                     |
+| POST `/skillProjects`        | `{ name }`, required Idempotency-Key, returns saved `{ data: { id, name } }` |
+| PATCH `/skillProjects/:id`   | Same body/header and response as create; 404 if absent                       |
+| GET `/skillProjects/summary` | `{ data: { total } }`, every project regardless of search                    |
+| DELETE `/skillProjects/:id`  | Required Idempotency-Key, returns `{ data: { id } }`; 404 if absent          |
 
 All endpoints require native authentication and the explicit `skill-projects` page grant. Invalid inputs return 400 with standard field violations; missing login returns 401, missing grant 403, missing record 404, and mismatched receipt input 409. Unknown server/transport outcomes retain the retry key. The service has no external side effects, and the mutation receipt and record commit in the same transaction.
 
@@ -55,3 +57,12 @@ Pagination uses the existing URL-controlled table state and clamps only after a 
 ## Uncertain-operation recovery
 
 For an update whose record is missing, the server first resolves the original idempotency receipt. A stored successful receipt plus an absent current record returns `404 PROJECT_UPDATE_COMMITTED_RECORD_MISSING`. If the update has no committed receipt and cannot find its record after claiming the same key, it commits a terminal `notApplied` receipt and returns `404 PROJECT_UPDATE_NOT_APPLIED`. The unique receipt claim prevents a delayed attempt with that key from executing even if the record ID is later reintroduced. Both paths check current page access. Only these explicit outcomes permit acknowledgement and closing an uncertain editor; a generic 404 leaves the original operation retryable and does not claim it failed. This contract relies on this example’s single database mutation and must not be copied over external side effects without their own reconciliation.
+
+## Cross-view updates
+
+The list accepts `q` (name contains, Enter-submitted), and the Name column sorts on the server with `sort=name&order=asc|desc`; the default remains ascending ID. A Total projects card above the list reads `GET /skillProjects/summary`. The detail page has Delete, confirmed in an AlertDialog and sent with an operation key. The list, card and detail declare data scopes from `scopes.ts` and the editor and delete confirmation announce confirmed writes through `#hooks/use-data-changes`; no reload or save callbacks pass through `Outlet` context. The rules are the development Skill's [keeping views current after a write](../../../.agents/skills/nocobase-app-development/references/frontend/references/data-changes.md).
+
+- X1: A created project appears in the list and the total at once after the dialog closes; one verification read of each follows.
+- X2: Saving from a detail shows the response in the detail without a request. Returning by breadcrumb restores the searched, sorted, second-page list with the new name and reads the list and card once each; neither read while covered.
+- X3: Deleting from a detail returns to the source list with its query, drops the row and count, corrects an emptied last page, and never reads the deleted record again. A directly opened detail returns to the default list.
+- X4: A denied or rejected delete keeps the dialog, the record and its URL, with no success toast. A 404 counts as already deleted. An unknown result re-reads the record, sends no second delete on its own, and a retry reuses the operation key.
