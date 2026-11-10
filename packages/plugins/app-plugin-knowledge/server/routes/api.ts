@@ -416,6 +416,11 @@ const docActions = {
 /** The knowledge API on a router of its own; `viewerOf` names the caller. */
 export interface KnowledgeRouteOptions {
   readonly acceptOnlineAgent?: boolean;
+  /**
+   * `false` leaves out what only semantic indexing uses: the chunking settings, the list of documents not yet indexed
+   * and indexing a document again. A document's sections (`GET /docs/:docId/index`) stay. Defaults to `true`.
+   */
+  readonly indexing?: boolean;
 }
 export function createKnowledgeRoutes(
   knowledge: Knowledge,
@@ -552,6 +557,7 @@ export function createKnowledgeRoutes(
     },
   );
 
+  if (options.indexing !== false) {
   routes.get(
     '/chunking',
     describeRoute({
@@ -654,6 +660,7 @@ export function createKnowledgeRoutes(
       });
     },
   );
+  }
 
   routes.get(
     '/subjects',
@@ -1097,6 +1104,7 @@ export function createKnowledgeRoutes(
         ),
       }),
   );
+  if (options.indexing !== false)
   routes.post(
     '/docs/:docId/reindex',
     describeRoute({

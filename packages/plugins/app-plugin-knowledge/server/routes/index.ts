@@ -101,7 +101,10 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
           container.has(knowledgeAccessToken)
             ? container.resolve(knowledgeAccessToken).space(space)
             : null,
-        { acceptOnlineAgent: integration !== null },
+        {
+          acceptOnlineAgent: integration !== null,
+          indexing: container.has(knowledgeIndexingToken),
+        },
       ),
     );
     router.route('/knowledge', routes);
