@@ -2,6 +2,7 @@ import { Dialog as DialogPrimitive } from '@base-ui/react/dialog';
 import {
   NavigationGuardContext,
   useNavigationGuard,
+  type NavigationAttempt,
 } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { XIcon } from 'lucide-react';
@@ -70,7 +71,8 @@ export interface RouteOverlayProps {
    * switches off unsaved input the overlay found, and a saved draft does not count as saved. Passing it also counts
    * typing in any other `<form>` inside the overlay. Leaving does not ask during the save itself (while the
    * `FeedbackForm` is still running its `onSubmit`: navigate or `close()` from it), and still asks while the save
-   * button is disabled, because the input is still there to lose.
+   * button is disabled, because the input is still there to lose. After a save that failed or was rejected, browser back
+   * and a reload still ask.
    */
   readonly dirty?: boolean | (() => boolean);
   readonly className?: string;
@@ -218,9 +220,11 @@ function DiscardGuard({
   // such moment, and how many of its FeedbackForm submissions are running.
   const baselinesRef = useRef(new Map<HTMLFormElement, string>());
   const editedRef = useRef(new Set<HTMLFormElement>());
-  // A form inside was just submitted and the user has not pressed a key or a pointer in the overlay since: the
-  // navigation that follows is the save's own, also for a plain `<form>`, which reports no save of its own.
-  const submittedRef = useRef(false);
+  // A plain `<form>` inside was just submitted and the user has not pressed a key or a pointer in the overlay since. A
+  // plain form reports no save of its own, so this lets only its save's own navigation through: one the page's code
+  // starts (push or replace) while the form shows no rejected field. Browser back and forward and a reload still ask,
+  // so a submission that failed or was rejected keeps the input protected. A FeedbackForm reports its save instead.
+  const submittedRef = useRef<HTMLFormElement | null>(null);
   const savingRef = useRef(0);
   const popupRef = useContext(ParentPopupContext);
   useEffect(() => {
@@ -240,7 +244,7 @@ function DiscardGuard({
     };
     // The fields as they are before the user's first touch, so a value changed back again is not unsaved.
     const touch = (event: Event): void => {
-      submittedRef.current = false;
+      submittedRef.current = null;
       const form = tracked(event.target);
       if (form && !baselinesRef.current.has(form))
         baselinesRef.current.set(form, formSnapshot(form));
@@ -259,8 +263,10 @@ function DiscardGuard({
     // its label, and that is not the user's input.
     popup.addEventListener('keydown', touch, true);
     popup.addEventListener('pointerdown', touch, true);
-    const submitted = (): void => {
-      submittedRef.current = true;
+    const submitted = (event: Event): void => {
+      const form = tracked(event.target);
+      submittedRef.current =
+        form && form.dataset.slot !== 'feedback-form' ? form : null;
     };
     popup.addEventListener('submit', submitted, true);
     popup.addEventListener('input', edit, true);
@@ -275,29 +281,38 @@ function DiscardGuard({
       popup.removeEventListener(FORM_SUBMIT_EVENT, submit);
     };
   }, [popupRef]);
-  const isDirty = useCallback((): boolean => {
-    // The save's own navigation, or a form inside that asks its own question.
-    if (savingRef.current > 0 || submittedRef.current || ownersRef.current > 0)
-      return false;
-    // A disabled save button, such as while validation fails, never means there is nothing to lose.
-    const current = dirtyRef.current;
-    return (
-      [...baselinesRef.current].some(
-        ([form, before]) => form.isConnected && formSnapshot(form) !== before,
-      ) ||
-      [...editedRef.current].some((form) => form.isConnected) ||
-      [...formsRef.current].some((unsaved) => unsaved()) ||
-      (typeof current === 'function' ? current() : current === true)
-    );
-  }, [ownersRef, formsRef]);
+  const isDirty = useCallback(
+    (attempt?: NavigationAttempt): boolean => {
+      // The save's own navigation, or a form inside that asks its own question.
+      if (savingRef.current > 0 || ownersRef.current > 0) return false;
+      const submitted = submittedRef.current;
+      if (
+        submitted?.isConnected &&
+        (attempt?.action === 'push' || attempt?.action === 'replace') &&
+        !submitted.querySelector('[aria-invalid="true"]')
+      )
+        return false;
+      // A disabled save button, such as while validation fails, never means there is nothing to lose.
+      const current = dirtyRef.current;
+      return (
+        [...baselinesRef.current].some(
+          ([form, before]) => form.isConnected && formSnapshot(form) !== before,
+        ) ||
+        [...editedRef.current].some((form) => form.isConnected) ||
+        [...formsRef.current].some((unsaved) => unsaved()) ||
+        (typeof current === 'function' ? current() : current === true)
+      );
+    },
+    [ownersRef, formsRef],
+  );
   // The pending question, so a second attempt to leave while it is open waits for the same answer.
   const promptRef = useRef<{
     readonly promise: Promise<boolean>;
     readonly resolve: (discard: boolean) => void;
   } | null>(null);
   const [asking, setAsking] = useState(false);
-  useNavigationGuard(() => {
-    if (!isDirty()) return true;
+  useNavigationGuard((attempt) => {
+    if (!isDirty(attempt)) return true;
     if (promptRef.current) return promptRef.current.promise;
     let resolve!: (discard: boolean) => void;
     const promise = new Promise<boolean>((done) => {

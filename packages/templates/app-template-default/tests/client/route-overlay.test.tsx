@@ -933,7 +933,13 @@ describe('the dirty prop of a route overlay', () => {
 describe('the unsaved-changes question cannot be switched off by a draft', () => {
   // A page that keeps a draft and passes a `dirty` that says "nothing to lose" once the draft is stored, then saves
   // through a FeedbackForm whose onSubmit navigates back.
-  function DraftEdit({ saveDisabled = false }: { saveDisabled?: boolean }) {
+  function DraftEdit({
+    saveDisabled = false,
+    fail = false,
+  }: {
+    saveDisabled?: boolean;
+    fail?: boolean;
+  }) {
     const navigate = useNavigate();
     const { search } = useLocation();
     return (
@@ -953,6 +959,7 @@ describe('the unsaved-changes question cannot be switched off by a draft', () =>
           id='draft-form'
           onSubmit={async () => {
             await Promise.resolve();
+            if (fail) throw new Error('The server is unavailable');
             await navigate({ pathname: '..', search });
           }}
         >
@@ -961,7 +968,7 @@ describe('the unsaved-changes question cannot be switched off by a draft', () =>
       </RouteDialog>
     );
   }
-  function setupDraft(saveDisabled = false) {
+  function setupDraft(saveDisabled = false, fail = false) {
     const history: { path?: string; back?: () => void } = {};
     function Probe() {
       const { pathname, search } = useLocation();
@@ -983,7 +990,7 @@ describe('the unsaved-changes question cannot be switched off by a draft', () =>
             <Route path='/orders' element={<Outlet />}>
               <Route
                 path='edit'
-                element={<DraftEdit saveDisabled={saveDisabled} />}
+                element={<DraftEdit saveDisabled={saveDisabled} fail={fail} />}
               />
             </Route>
           </Routes>
@@ -1041,6 +1048,40 @@ describe('the unsaved-changes question cannot be switched off by a draft', () =>
       );
       await waitFor(() => expect(history.path).toBe('/orders/edit?page=2'));
     }
+  });
+
+  it('asks on browser back after a failed save, without Cancel first', async () => {
+    const history = setupDraft(false, true);
+    await userEvent.type(
+      await screen.findByRole('textbox', { name: 'Name' }),
+      ' draft',
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+    await screen.findAllByText(/Unable to save/);
+    await act(async () => history.back?.());
+    const prompt = await screen.findByRole('alertdialog', {
+      name: 'Discard changes?',
+    });
+    await userEvent.click(
+      within(prompt).getByRole('button', { name: 'Keep editing' }),
+    );
+    await waitFor(() => expect(history.path).toBe('/orders/edit?page=2'));
+    expect(screen.getByRole('textbox', { name: 'Name' })).toHaveValue(
+      'Original draft',
+    );
+  });
+
+  it('warns before a reload after a failed save', async () => {
+    setupDraft(false, true);
+    await userEvent.type(
+      await screen.findByRole('textbox', { name: 'Name' }),
+      ' draft',
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+    await screen.findAllByText(/Unable to save/);
+    const reload = new Event('beforeunload', { cancelable: true });
+    window.dispatchEvent(reload);
+    expect(reload.defaultPrevented).toBe(true);
   });
 
   it('closes without asking when nothing was typed', async () => {
@@ -1647,6 +1688,29 @@ describe('the unsaved-changes question for a plain form', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Save' }));
     await waitFor(() => expect(history.path).toBe('/orders?page=2'));
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+  });
+
+  it('asks on browser back after a failed save, without Cancel first', async () => {
+    const history = setup();
+    await userEvent.clear(
+      await screen.findByRole('textbox', { name: 'Equipment' }),
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+    act(() => history.back!());
+    await keep();
+    await waitFor(() => expect(history.path).toBe('/orders/edit?page=2'));
+    expect(screen.getByRole('textbox', { name: 'Equipment' })).toHaveValue('');
+  });
+
+  it('warns before a reload after a failed save', async () => {
+    setup();
+    await userEvent.clear(
+      await screen.findByRole('textbox', { name: 'Equipment' }),
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+    const reload = new Event('beforeunload', { cancelable: true });
+    window.dispatchEvent(reload);
+    expect(reload.defaultPrevented).toBe(true);
   });
 
   it('closes without asking when the value is changed back, or nothing was touched', async () => {

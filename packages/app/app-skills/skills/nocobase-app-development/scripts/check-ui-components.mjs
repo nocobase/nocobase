@@ -52,6 +52,8 @@ const formReplacement =
   "FeedbackForm (#components/feedback-form) with values={form.getValues} and savedValues={the stored or blank values}, so its route overlay asks before discarding the input, a restored draft included (mobile.md M7.4); a search form takes role='search'";
 const feedbackFormValues =
   'values={form.getValues} and savedValues={the stored or blank values} on this FeedbackForm, so its route overlay asks before discarding the input, a restored draft or a changed Select included (mobile.md M7.4)';
+const feedbackFormSpread =
+  'values={form.getValues} and savedValues={the stored or blank values} written on this FeedbackForm itself: a spread whose contents this file does not show cannot confirm them, so its route overlay may not ask before discarding the input (mobile.md M7.4)';
 const draftDirty =
   'a dirty that only adds what the form cannot show; never derive it from a draft, storage or saved flag: a stored draft never replaces the discard question (mobile.md M7.4)';
 const overlays = new Set(['RouteDialog', 'RouteDrawer']);
@@ -259,6 +261,54 @@ export function inspectSource(ts, text, file, root) {
       accepted.push({ ...finding, reason: exception.reason });
     } else findings.push(finding);
   }
+  // The property names of an object this file shows in full: an object literal, or an identifier declared here as a
+  // `const` initialized with one. `null` when it cannot tell, such as for a call, a parameter or a computed key.
+  function objectKeys(expression, seen = new Set()) {
+    while (
+      ts.isParenthesizedExpression(expression) ||
+      ts.isAsExpression(expression) ||
+      ts.isSatisfiesExpression?.(expression)
+    )
+      expression = expression.expression;
+    if (ts.isObjectLiteralExpression(expression)) {
+      const keys = [];
+      for (const property of expression.properties) {
+        if (
+          (ts.isPropertyAssignment(property) ||
+            ts.isShorthandPropertyAssignment(property) ||
+            ts.isMethodDeclaration(property)) &&
+          (ts.isIdentifier(property.name) || ts.isStringLiteral(property.name))
+        )
+          keys.push(property.name.text);
+        else if (ts.isSpreadAssignment(property)) {
+          const nested = objectKeys(property.expression, seen);
+          if (!nested) return null;
+          keys.push(...nested);
+        } else return null;
+      }
+      return keys;
+    }
+    if (!ts.isIdentifier(expression) || seen.has(expression.text)) return null;
+    seen.add(expression.text);
+    const declarations = [];
+    (function find(node) {
+      if (
+        ts.isVariableDeclaration(node) &&
+        ts.isIdentifier(node.name) &&
+        node.name.text === expression.text
+      )
+        declarations.push(node);
+      ts.forEachChild(node, find);
+    })(source);
+    const [declaration] = declarations;
+    if (
+      declarations.length !== 1 ||
+      !declaration.initializer ||
+      !(ts.getCombinedNodeFlags(declaration.parent) & ts.NodeFlags.Const)
+    )
+      return null;
+    return objectKeys(declaration.initializer, seen);
+  }
   function visit(node) {
     if (ts.isJsxOpeningElement(node) || ts.isJsxSelfClosingElement(node)) {
       const tag = node.tagName.getText(source);
@@ -268,9 +318,6 @@ export function inspectSource(ts, text, file, root) {
         attribute(ts, node, 'type')?.initializer,
       )?.toLowerCase();
       const dateReplacement = dateTypes.get(type);
-      const spread = node.attributes.properties.some((item) =>
-        ts.isJsxSpreadAttribute(item),
-      );
       if (tag === 'form') {
         if (
           !definesFeedbackForm &&
@@ -281,11 +328,30 @@ export function inspectSource(ts, text, file, root) {
       } else if (
         tag === 'FeedbackForm' &&
         usesHookForm &&
-        (usesOverlay || !rendersPage) &&
-        !spread &&
-        !(attribute(ts, node, 'values') && attribute(ts, node, 'savedValues'))
+        (usesOverlay || !rendersPage)
       ) {
-        report(node, tag, feedbackFormValues, undefined, false);
+        // Explicit props, or a spread whose object this file shows (`{...{ values, savedValues }}` or a const object
+        // declared here); any other spread cannot confirm them and is reported as unconfirmed, never passed silently.
+        const names = new Set(
+          node.attributes.properties
+            .filter((item) => ts.isJsxAttribute(item))
+            .map((item) => item.name.getText(source)),
+        );
+        let unknown = false;
+        for (const item of node.attributes.properties) {
+          if (!ts.isJsxSpreadAttribute(item)) continue;
+          const keys = objectKeys(item.expression);
+          if (keys) for (const key of keys) names.add(key);
+          else unknown = true;
+        }
+        if (!(names.has('values') && names.has('savedValues')))
+          report(
+            node,
+            tag,
+            unknown ? feedbackFormSpread : feedbackFormValues,
+            undefined,
+            false,
+          );
       } else if (overlays.has(tag) && attribute(ts, node, 'dirty')) {
         const value = attribute(ts, node, 'dirty').initializer;
         if (value && /storage|draft|persist|saved/i.test(value.getText(source)))

@@ -592,3 +592,31 @@ test('leaves forms that are not create or edit forms alone', () => {
     [],
   );
 });
+
+test('reads the spread props of a FeedbackForm, and reports values it cannot confirm instead of passing them', () => {
+  const result = inspect(`import { useForm } from 'react-hook-form';
+    import { RouteDialog } from '#components/route-dialog';
+    import { FeedbackForm } from '#components/feedback-form';
+    const compared = { values: form.getValues, savedValues: saved };
+    const partial = { values: form.getValues };
+    export const Edit = ({ formProps }) => <RouteDialog title='Edit'>
+      <FeedbackForm id='a' {...compared} onSubmit={save}/>
+      <FeedbackForm id='b' {...{ values: form.getValues, ...{ savedValues: saved } }} onSubmit={save}/>
+      <FeedbackForm id='c' {...partial} savedValues={saved} onSubmit={save}/>
+      <FeedbackForm id='d' {...partial} onSubmit={save}/>
+      <FeedbackForm id='e' {...formProps} onSubmit={save}/>
+      <FeedbackForm id='f' {...useFormProps()} values={form.getValues} onSubmit={save}/>
+    </RouteDialog>`);
+  assert.deepEqual(
+    result.findings.map((item) => [item.tag, item.line]),
+    [
+      ['FeedbackForm', 10],
+      ['FeedbackForm', 11],
+      ['FeedbackForm', 12],
+    ],
+  );
+  assert.match(result.findings[0].replacement, /values=\{form\.getValues\}/);
+  assert.doesNotMatch(result.findings[0].replacement, /spread/);
+  assert.match(result.findings[1].replacement, /spread.*cannot confirm/);
+  assert.match(result.findings[2].replacement, /spread.*cannot confirm/);
+});

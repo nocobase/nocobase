@@ -5,6 +5,7 @@ export { resolveListState } from '../../../../packages/app/app-client/src/list-s
 export {
   NavigationGuardContext,
   useNavigationGuard,
+  type NavigationAttempt,
 } from '../../../../packages/app/app-client/src/navigation-guard.js';
 import type * as AppClient from '@nocobase/app-client';
 import { removeDemoLink } from '../agents/agents-chat-client.js';

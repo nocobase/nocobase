@@ -153,6 +153,7 @@ export { NavigationGuardProvider } from './navigation-guard-provider.js';
 export {
   NavigationGuardContext,
   useNavigationGuard,
+  type NavigationAttempt,
   type NavigationGuard,
 } from './navigation-guard.js';
 
