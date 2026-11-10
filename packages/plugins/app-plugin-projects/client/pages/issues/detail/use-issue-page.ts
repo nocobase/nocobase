@@ -1,3 +1,4 @@
+import { useProjectsAttachmentMaxFileSizeMb } from '../../../attachment-config.js';
 /**
  * The headless parts of an issue's page beyond its activity, for the application that presents it (for example, with the UI
  * Library's `issue-detail` block): the issue itself, and every change the page makes, each refreshing what it changed
@@ -10,17 +11,13 @@ import {
 } from '@tanstack/react-query';
 import { useCallback, useMemo } from 'react';
 
-import {
-  ATTACHMENTS_PER_REQUEST_MAX,
-  ATTACHMENT_SIZE_MAX,
-} from '../../../../shared/attachments.js';
+import { ATTACHMENTS_PER_REQUEST_MAX } from '../../../../shared/attachments.js';
 import { COLORS, type Color } from '../../../../shared/common.js';
 import type { IssueDetail, IssueListItem } from '../../../../shared/issues.js';
 import type { Label } from '../../../../shared/labels.js';
 import { ACCESS_NAMESPACE } from '../../../../shared/access.js';
 import { useTranslation } from '@nocobase/i18n/client';
 import { pmKeys } from '../../../api/keys.js';
-import { ATTACHMENT_SIZE_MB } from '../../../hooks/use-attachment-uploads.js';
 import { useNotify } from '../../../hooks/use-notify.js';
 import { usePmApi } from '../../../hooks/use-pm-api.js';
 import { refreshIssue } from './comment-cache.js';
@@ -61,6 +58,7 @@ export interface IssuePageActions {
 /** Every change the issue's page makes, other than its properties (`useIssueUpdate`) and comments. */
 export function useIssuePageActions(detail: IssueDetail): IssuePageActions {
   const { t } = useTranslation(ACCESS_NAMESPACE);
+  const maxFileSizeMb = useProjectsAttachmentMaxFileSizeMb();
   const api = usePmApi();
   const notify = useNotify();
   const queryClient = useQueryClient();
@@ -104,12 +102,12 @@ export function useIssuePageActions(detail: IssueDetail): IssuePageActions {
             t('attachments.tooMany', { count: ATTACHMENTS_PER_REQUEST_MAX }),
           );
         for (const file of files.slice(0, ATTACHMENTS_PER_REQUEST_MAX)) {
-          if (file.size > ATTACHMENT_SIZE_MAX) {
+          if (file.size > maxFileSizeMb * 1024 * 1024) {
             notify.error(
               null,
               t('attachments.tooLarge', {
                 name: file.name,
-                size: ATTACHMENT_SIZE_MB,
+                size: maxFileSizeMb,
               }),
             );
             continue;
@@ -165,6 +163,6 @@ export function useIssuePageActions(detail: IssueDetail): IssuePageActions {
           t('issue.deleted', { identifier: detail.identifier }),
         ),
     }),
-    [api, detail, notify, queryClient, run, t],
+    [api, maxFileSizeMb, detail, notify, queryClient, run, t],
   );
 }

@@ -132,3 +132,5 @@ export {
 export { canChangeIssueOwner, canCloseIssue } from './lib/permissions.js';
 export { isClosing } from './lib/status.js';
 export { STAGE_MAX } from '../shared/subtasks.js';
+
+export { useProjectsAttachmentMaxFileSizeMb } from './attachment-config.js';

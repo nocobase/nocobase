@@ -86,7 +86,7 @@ grants from before roles moved to the App; the App converts them (for example, `
   same issue (400 `INVALID_PARENT`); resolving a reply is 400 `NOT_THREAD_ROOT`; mentioning what a kind refuses is 403 `MENTION_FORBIDDEN`.
   Reactions (`POST …/react` and `…/unreact` with `{ emoji }`) take one of the fixed emoji (400 `INVALID_INPUT`).
 - Files (`shared/attachments.ts`): stored through `@nocobase/app-plugin-file` on the App's default Drive disk (400
-  `FILES_UNAVAILABLE` without it), any type, at most 20 MiB each (413 `FILE_TOO_LARGE`). Uploading needs
+  `FILES_UNAVAILABLE` without it), any type, at most the configured limit (20 MiB by default) each (413 `FILE_TOO_LARGE`). Uploading needs
   `pm.attachments` `upload`: onto an issue (`POST /api/projects/issues/{issueId}/attachments`, with `edit`) or attached to nothing
   (`POST /api/projects/attachments`) and then sent with a comment by `attachmentIds` (at most 10 of the caller's own; 400
   `INVALID_ATTACHMENT` otherwise). Whoever sees the issue reads its files (`GET /api/projects/attachments/{attachmentId}/content`: safe
@@ -114,3 +114,7 @@ Invitation emails use `notificationService.sendTransient()` so credentials never
 Applications can fill `ExecutorPresentationContext` from the client kit with `{ kind, Component }`. The component receives `{ id, name, place: 'trigger' | 'menu' }` in new-task and subtask executor selects; candidates and permissions still come from the server. This lets a runtime integration show scoped quota without Projects depending on that integration.
 
 Card-only consumers use `GET /api/projects/issues/summaries?refs=...` (1–100 IDs or identifiers), or `PmApi.issueSummaries`, rather than issue detail. Each visible live issue contributes only `id`, `identifier`, `title` and `statusKey`; missing or invisible references are omitted. `pm.changed.issueIds` also covers list membership changes: `listsChanged: true` tells a consumer to refresh lists/project counts while keeping detail invalidation scoped. Unknown-scope events and subscription acknowledgements retain whole-cache recovery.
+
+## Attachment size configuration
+
+Register `defineProjectsConfig()` from `@nocobase/app-plugin-projects/config` under `projects` in the application's `defaultAppConfigs`. Registration of the Server plugin remains separate. The factory validates and publishes only the upload-size leaf (plus any public fields explicitly supplied by the application). Set `projects.attachments.maxFileSizeMb` in `config.yml` to a positive integer in MiB, default 20, and restart the application. Invalid values fail startup. Increase reverse proxy request-body limits as well, allowing room for the multipart envelope. Browser upload checks read the published limit through `useProjectsAttachmentMaxFileSizeMb` from `/client`. The shared size constant describes the default only.

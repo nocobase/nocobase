@@ -11,6 +11,10 @@ import {
   PM_REALTIME_TOPIC,
   type PmChangeEvent,
 } from '../../shared/realtime.js';
+import {
+  attachmentMaxFileSizeMb,
+  type ProjectsConfig,
+} from '../../config/index.js';
 import { createProjects } from '../composition.js';
 import { createChangeAnnouncer } from './change-announcer.js';
 import { createAttachmentStorage } from '../domains/attachments/index.js';
@@ -43,6 +47,10 @@ export class ProjectsProvider extends ServiceProvider<AppPluginApplication> {
   private readonly releases: (() => void)[] = [];
 
   public override register(): void {
+    const maxFileSizeMb = attachmentMaxFileSizeMb(
+      this.app.config.get<ProjectsConfig>('projects')?.attachments
+        ?.maxFileSizeMb,
+    );
     this.app.container.singleton(projectsKindsToken, () =>
       createKindRegistry(createUserDirectory()),
     );
@@ -51,6 +59,7 @@ export class ProjectsProvider extends ServiceProvider<AppPluginApplication> {
     );
     this.app.container.singleton(projectsToken, (resolver) =>
       createProjects({
+        attachmentMaxFileSizeMb: maxFileSizeMb,
         database: resolver.resolve(databaseManagerToken),
         idGenerator: resolver.resolve(idGeneratorToken),
         access: resolver.resolve(projectsAccessToken),

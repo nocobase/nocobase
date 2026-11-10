@@ -45,6 +45,7 @@
  */
 
 /** Per file, in bytes. */
+/** Default only; deployments configure the effective upload limit. */
 export const ATTACHMENT_SIZE_MAX: number = 20 * 1024 * 1024;
 /** Files sent with one comment, or attached in one request. */
 export const ATTACHMENTS_PER_REQUEST_MAX = 10;

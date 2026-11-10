@@ -129,6 +129,7 @@ export interface ProjectsDeps {
   readonly intakeOrganizer?: () => IntakeOrganizer | undefined;
   /** Where files' bytes go (the file plugin and Drive); without it nothing can be uploaded. */
   readonly storage?: AttachmentStorage;
+  readonly attachmentMaxFileSizeMb?: number;
   /** The application's public base path, for the files' content URLs; empty when left out. */
   readonly basePath?: () => string;
   readonly onListenerError?: (error: unknown) => void;
@@ -205,6 +206,7 @@ export function createProjects(deps: ProjectsDeps): Projects {
       disk: () => 'local',
     });
   const attachments = createAttachmentService({
+    maxFileSizeMb: deps.attachmentMaxFileSizeMb,
     tx,
     activity,
     kinds,

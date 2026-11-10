@@ -110,7 +110,11 @@
       "types": "./client/plan-model.ts",
       "import": "./client/plan-model.ts"
     },
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./config": {
+      "types": "./config/index.ts",
+      "import": "./config/index.ts"
+    }
   },
   "files": [
     "dist",
@@ -221,7 +225,11 @@
         "types": "./dist/client/plan-model.d.ts",
         "import": "./dist/client/plan-model.js"
       },
-      "./package.json": "./package.json"
+      "./package.json": "./package.json",
+      "./config": {
+        "types": "./dist/config/index.d.ts",
+        "import": "./dist/config/index.js"
+      }
     }
   },
   "scripts": {
