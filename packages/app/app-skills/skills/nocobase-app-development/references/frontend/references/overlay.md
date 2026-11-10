@@ -2,6 +2,8 @@
 
 This document shows how to write overlays. For the rules on choosing and stacking overlays, see I1 in [`../ui-guidelines.md`](../ui-guidelines.md); for the form itself, see [`form.md`](form.md); for how to load data, see [`api.md`](api.md).
 
+**Before writing any create or edit overlay (M7.4, Must):** the form is a `FeedbackForm` with `values={form.getValues}` and `savedValues` (the stored or blank values, never the restored draft), its save button is `type='submit'` with `form={formId}`, and the page writes no discard question, `beforeunload` handler or `dirty` condition of its own based on a draft or storage. The overlay asks "Discard changes?" on every way out and warns before a reload whenever the form differs from what is saved; a kept draft restores input after a reload and never replaces the question. `scripts/check-ui-components.mjs` rejects a plain create or edit `<form>`, a `FeedbackForm` without `values` and `savedValues`, and a draft-based `dirty`, without exceptions. The details are in [section 2.5](#25-beforeclose-checks-before-closing).
+
 ## 1. Choosing an overlay
 
 | Use case                                                                             | Component                      | Width (`className`)                                          | Where the open state lives |

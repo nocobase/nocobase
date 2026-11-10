@@ -46,6 +46,15 @@ const widgetRoles = new Set([
   'tab',
   'tree',
 ]);
+// Unsaved input in a create or edit form (mobile.md M7.4): the route overlay asks "Discard changes?" before every way
+// out. A FeedbackForm with values and savedValues lets it compare with what is saved, a restored draft included.
+const formReplacement =
+  "FeedbackForm (#components/feedback-form) with values={form.getValues} and savedValues={the stored or blank values}, so its route overlay asks before discarding the input, a restored draft included (mobile.md M7.4); a search form takes role='search'";
+const feedbackFormValues =
+  'values={form.getValues} and savedValues={the stored or blank values} on this FeedbackForm, so its route overlay asks before discarding the input, a restored draft or a changed Select included (mobile.md M7.4)';
+const draftDirty =
+  'a dirty that only adds what the form cannot show; never derive it from a draft, storage or saved flag: a stored draft never replaces the discard question (mobile.md M7.4)';
+const overlays = new Set(['RouteDialog', 'RouteDrawer']);
 const passiveTags = new Set([
   'div',
   'span',
@@ -109,6 +118,14 @@ export function inspectSource(ts, text, file, root) {
   }
   const primitives = new Set();
   const namespaces = new Set();
+  let usesHookForm = false;
+  // A plain <form> is a create or edit form when it holds React Hook Form fields or renders in a route overlay; a chat
+  // composer or a filter bar elsewhere is left alone.
+  let usesOverlay = false;
+  // A tool form on a page of its own (an extraction prompt, a calculator) has nothing saved to compare with.
+  let rendersPage = false;
+  // FeedbackForm's own implementation renders the one plain <form> the rule points everyone else to.
+  const definesFeedbackForm = /\bfunction FeedbackForm\b/.test(text);
   // Local names bound to an input primitive, including aliases.
   const inputs = new Set();
   for (const statement of source.statements) {
@@ -118,6 +135,10 @@ export function inspectSource(ts, text, file, root) {
     )
       continue;
     const specifier = statement.moduleSpecifier.text;
+    if (specifier === 'react-hook-form') usesHookForm = true;
+    if (/(^|\/)route-(dialog|drawer)(\.js)?$/.test(specifier))
+      usesOverlay = true;
+    if (/(^|\/)page-container(\.js)?$/.test(specifier)) rendersPage = true;
     const isPrimitive =
       specifier === '#components/ui' ||
       specifier.startsWith('#components/ui/') ||
@@ -211,16 +232,20 @@ export function inspectSource(ts, text, file, root) {
 
   const findings = [];
   const accepted = [];
-  function report(node, tag, replacement, type) {
+  // `exemptable` is false for the unsaved-input rules (mobile.md M7.4): no marker waives a create or edit form's
+  // discard question.
+  function report(node, tag, replacement, type, exemptable = true) {
     const position = source.getLineAndCharacterOfPosition(
       node.getStart(source),
     );
-    const exception = [...exceptions.values()].find(
-      (item) =>
-        item.nextLine === position.line &&
-        !item.used &&
-        /^\s*$/.test(text.slice(item.end, node.getStart(source))),
-    );
+    const exception = !exemptable
+      ? undefined
+      : [...exceptions.values()].find(
+          (item) =>
+            item.nextLine === position.line &&
+            !item.used &&
+            /^\s*$/.test(text.slice(item.end, node.getStart(source))),
+        );
     const finding = {
       file,
       line: position.line + 1,
@@ -243,6 +268,29 @@ export function inspectSource(ts, text, file, root) {
         attribute(ts, node, 'type')?.initializer,
       )?.toLowerCase();
       const dateReplacement = dateTypes.get(type);
+      const spread = node.attributes.properties.some((item) =>
+        ts.isJsxSpreadAttribute(item),
+      );
+      if (tag === 'form') {
+        if (
+          !definesFeedbackForm &&
+          (usesHookForm || usesOverlay) &&
+          literal(ts, attribute(ts, node, 'role')?.initializer) !== 'search'
+        )
+          report(node, tag, formReplacement, undefined, false);
+      } else if (
+        tag === 'FeedbackForm' &&
+        usesHookForm &&
+        (usesOverlay || !rendersPage) &&
+        !spread &&
+        !(attribute(ts, node, 'values') && attribute(ts, node, 'savedValues'))
+      ) {
+        report(node, tag, feedbackFormValues, undefined, false);
+      } else if (overlays.has(tag) && attribute(ts, node, 'dirty')) {
+        const value = attribute(ts, node, 'dirty').initializer;
+        if (value && /storage|draft|persist|saved/i.test(value.getText(source)))
+          report(node, tag, draftDirty, 'dirty', false);
+      }
       if (
         dateReplacement &&
         (tag === 'input' || inputPrimitive(node.tagName))
@@ -312,6 +360,7 @@ function collectFiles(root, requested) {
 }
 
 function label(item) {
+  if (item.type === 'dirty') return `<${item.tag} dirty>`;
   return item.type ? `<${item.tag} type="${item.type}">` : `<${item.tag}>`;
 }
 

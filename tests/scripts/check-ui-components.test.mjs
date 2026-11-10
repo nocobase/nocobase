@@ -528,3 +528,67 @@ test('CLI executes through the mirrored Claude skill symlink and reports native 
     /Scanned 1 source files;.*1 exceptions requiring review/,
   );
 });
+
+test('rejects a plain form that bypasses the route overlay discard question, a FeedbackForm without saved values and a draft-based dirty', () => {
+  const result = inspect(`import { useForm } from 'react-hook-form';
+    import { RouteDialog } from '#components/route-dialog';
+    import { FeedbackForm } from '#components/feedback-form';
+    export const Edit = () => <RouteDialog title='Edit' dirty={storageFailed ? isDirty : undefined}>
+      <form id='repair' onSubmit={save}><Input {...form.register('name')}/></form>
+      <FeedbackForm id='other' onSubmit={save}/>
+      <FeedbackForm id='ok' values={form.getValues} savedValues={saved} onSubmit={save}/>
+      <form role='search'><Input aria-label='Find'/></form>
+    </RouteDialog>`);
+  assert.deepEqual(
+    result.findings.map((item) => [item.tag, item.line]),
+    [
+      ['RouteDialog', 4],
+      ['form', 5],
+      ['FeedbackForm', 6],
+    ],
+  );
+  assert.match(
+    result.findings[1].replacement,
+    /FeedbackForm.*savedValues.*M7\.4/,
+  );
+  assert.match(
+    result.findings[2].replacement,
+    /values=\{form\.getValues\}.*savedValues/,
+  );
+  assert.match(result.findings[0].replacement, /never derive it from a draft/);
+});
+
+test('lets no exception marker waive the discard question of a create or edit form', () => {
+  const result = inspect(`import { useForm } from 'react-hook-form';
+    export const Edit = () => <>
+      {/* ui-component-exception: the draft is kept, so no discard prompt is needed */}
+      <form onSubmit={save}/>
+    </>`);
+  assert.deepEqual(
+    result.findings.map((item) => item.tag),
+    ['form', 'exception'],
+  );
+  assert.deepEqual(result.accepted, []);
+});
+
+test('leaves forms that are not create or edit forms alone', () => {
+  // A chat composer without React Hook Form or an overlay, a tool form on a page, and FeedbackForm's own <form>.
+  assert.deepEqual(
+    inspect(
+      `export const Chat = () => <form onSubmit={send}><Textarea/></form>`,
+    ).findings,
+    [],
+  );
+  assert.deepEqual(
+    inspect(`import { useForm } from 'react-hook-form';
+      import { PageContainer } from '#components/page-container';
+      export const Tool = () => <PageContainer><FeedbackForm onSubmit={run}/></PageContainer>`)
+      .findings,
+    [],
+  );
+  assert.deepEqual(
+    inspect(`import { useForm } from 'react-hook-form';
+      export function FeedbackForm() { return <form noValidate/>; }`).findings,
+    [],
+  );
+});

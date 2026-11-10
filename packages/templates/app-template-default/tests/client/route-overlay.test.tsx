@@ -1511,3 +1511,114 @@ describe('unsaved values of a FeedbackForm, compared with the saved ones', () =>
     expect(history.path).toBe('/orders/edit?page=2');
   });
 });
+
+describe('the unsaved-changes question for a plain form', () => {
+  // The bypass a generated dialog took: React Hook Form-style fields in a plain `<form>` (no FeedbackForm, no
+  // `values`), a Select-like widget with no field of its own, a draft saved on every change and no `dirty`.
+  function PlainEdit() {
+    const [priority, setPriority] = useState('Normal');
+    return (
+      <RouteDialog title='Edit' footer={<Actions />}>
+        <form
+          onChange={(event) => {
+            const target = event.target as HTMLInputElement;
+            sessionStorage.setItem('plain:draft', target.value);
+          }}
+        >
+          <input aria-label='Equipment' name='equipment' defaultValue='Pump' />
+          <button
+            type='button'
+            role='combobox'
+            aria-label='Priority'
+            onClick={() =>
+              setPriority((old) => (old === 'Normal' ? 'High' : 'Normal'))
+            }
+          >
+            {priority}
+          </button>
+        </form>
+      </RouteDialog>
+    );
+  }
+  function setup() {
+    const history: { back?: () => void; path?: string } = {};
+    function Probe() {
+      const navigate = useNavigate();
+      const { pathname, search } = useLocation();
+      useEffect(() => {
+        history.back = () => void navigate(-1);
+        history.path = `${pathname}${search}`;
+      });
+      return null;
+    }
+    render(
+      <MemoryRouter
+        initialEntries={['/orders?page=2', '/orders/edit?page=2']}
+        initialIndex={1}
+      >
+        <NavigationGuardProvider>
+          <Probe />
+          <Routes>
+            <Route path='/orders' element={<Outlet />}>
+              <Route path='edit' element={<PlainEdit />} />
+            </Route>
+          </Routes>
+        </NavigationGuardProvider>
+      </MemoryRouter>,
+      { wrapper: I18n },
+    );
+    return history;
+  }
+  async function keep() {
+    const prompt = await screen.findByRole('alertdialog', {
+      name: 'Discard changes?',
+    });
+    await userEvent.click(
+      within(prompt).getByRole('button', { name: 'Keep editing' }),
+    );
+    await waitFor(() =>
+      expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument(),
+    );
+  }
+  beforeEach(() => sessionStorage.clear());
+
+  it('asks after typing in a plain form, on Cancel and browser back', async () => {
+    const history = setup();
+    await userEvent.type(
+      await screen.findByRole('textbox', { name: 'Equipment' }),
+      ' 2',
+    );
+    expect(sessionStorage.getItem('plain:draft')).toBe('Pump 2');
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    await keep();
+    act(() => history.back!());
+    await keep();
+    expect(screen.getByRole('textbox', { name: 'Equipment' })).toHaveValue(
+      'Pump 2',
+    );
+    await waitFor(() => expect(history.path).toBe('/orders/edit?page=2'));
+  });
+
+  it('asks after changing only a Select-like widget', async () => {
+    setup();
+    await userEvent.click(
+      await screen.findByRole('combobox', { name: 'Priority' }),
+    );
+    expect(
+      screen.getByRole('combobox', { name: 'Priority' }),
+    ).toHaveTextContent('High');
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    await keep();
+  });
+
+  it('closes without asking when the value is changed back, or nothing was touched', async () => {
+    const history = setup();
+    const field = await screen.findByRole('textbox', { name: 'Equipment' });
+    await userEvent.type(field, ' 2');
+    await userEvent.type(field, '{Backspace}{Backspace}');
+    expect(field).toHaveValue('Pump');
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    await waitFor(() => expect(history.path).toBe('/orders?page=2'));
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+  });
+});

@@ -76,6 +76,37 @@ export interface RouteOverlayProps {
   readonly className?: string;
 }
 
+/**
+ * What a user can see of a form's values: every field, named or not (React Hook Form's `register`, controlled inputs,
+ * hidden inputs of pickers), plus the state of widgets that keep theirs outside a field, such as a Select's trigger text and a checkbox's or
+ * switch's checked state.
+ */
+function formSnapshot(form: HTMLFormElement): string {
+  const fields = [...form.elements].map((field) =>
+    field instanceof HTMLInputElement
+      ? field.type === 'checkbox' || field.type === 'radio'
+        ? String(field.checked)
+        : field.type === 'file'
+          ? [...(field.files ?? [])].map((file) => `${file.name}:${file.size}`)
+          : field.value
+      : field instanceof HTMLTextAreaElement ||
+          field instanceof HTMLSelectElement
+        ? field.value
+        : '',
+  );
+  const widgets = [
+    ...form.querySelectorAll(
+      '[role="combobox"], [role="checkbox"], [role="switch"], [role="radio"], [aria-pressed]',
+    ),
+  ].map((widget) => [
+    widget.getAttribute('aria-checked') ??
+      widget.getAttribute('aria-pressed') ??
+      '',
+    widget instanceof HTMLInputElement ? '' : (widget.textContent ?? ''),
+  ]);
+  return JSON.stringify([fields, widgets]);
+}
+
 /** Dispatched by `FeedbackForm` on its form, with `detail.phase` `'start'` or `'end'`, around its `onSubmit`. */
 const FORM_SUBMIT_EVENT = 'nocobase:form-submit';
 
@@ -183,25 +214,36 @@ function DiscardGuard({
   useLayoutEffect(() => {
     dirtyRef.current = dirty;
   });
-  // What the overlay saw itself: an edit in one of its forms, and how many of its FeedbackForm submissions are running.
-  const editedRef = useRef(false);
+  // What the overlay saw itself: each form's fields just before the user first touched it, forms edited before any
+  // such moment, and how many of its FeedbackForm submissions are running.
+  const baselinesRef = useRef(new Map<HTMLFormElement, string>());
+  const editedRef = useRef(new Set<HTMLFormElement>());
   const savingRef = useRef(0);
   const popupRef = useContext(ParentPopupContext);
   useEffect(() => {
     const popup = popupRef?.current;
     if (!popup) return;
-    // A FeedbackForm (the standard create or edit form) always counts; any other form counts once the page passes
-    // `dirty`, so a search box in a read-only drawer does not make closing it ask.
+    // Every form inside counts, a plain `<form>` as much as a FeedbackForm, so a page cannot leave the question out by
+    // its choice of form. Not counted: a search form (`role='search'`), and a FeedbackForm that reports its values,
+    // which is compared with its saved values instead.
+    const tracked = (target: EventTarget | null): HTMLFormElement | null => {
+      if (!(target instanceof Element)) return null;
+      const form = target.closest('form');
+      return form &&
+        form.getAttribute('role') !== 'search' &&
+        form.dataset.tracksValues === undefined
+        ? form
+        : null;
+    };
+    // The fields as they are before the user's first touch, so a value changed back again is not unsaved.
+    const touch = (event: Event): void => {
+      const form = tracked(event.target);
+      if (form && !baselinesRef.current.has(form))
+        baselinesRef.current.set(form, formSnapshot(form));
+    };
     const edit = (event: Event): void => {
-      if (!(event.target instanceof Element)) return;
-      const form = event.target.closest('form');
-      // A form that reports its values is compared by value when leaving instead.
-      if (!form || form.dataset.tracksValues !== undefined) return;
-      if (
-        form.dataset.slot === 'feedback-form' ||
-        dirtyRef.current !== undefined
-      )
-        editedRef.current = true;
+      const form = tracked(event.target);
+      if (form && !baselinesRef.current.has(form)) editedRef.current.add(form);
     };
     const submit = (event: Event): void => {
       const { phase } = (event as CustomEvent<{ phase?: string }>).detail ?? {};
@@ -209,10 +251,16 @@ function DiscardGuard({
       else if (phase === 'end')
         savingRef.current = Math.max(0, savingRef.current - 1);
     };
+    // A key or a pointer, not focus: an overlay focuses its first field by itself while a picker may still be loading
+    // its label, and that is not the user's input.
+    popup.addEventListener('keydown', touch, true);
+    popup.addEventListener('pointerdown', touch, true);
     popup.addEventListener('input', edit, true);
     popup.addEventListener('change', edit, true);
     popup.addEventListener(FORM_SUBMIT_EVENT, submit);
     return () => {
+      popup.removeEventListener('keydown', touch, true);
+      popup.removeEventListener('pointerdown', touch, true);
       popup.removeEventListener('input', edit, true);
       popup.removeEventListener('change', edit, true);
       popup.removeEventListener(FORM_SUBMIT_EVENT, submit);
@@ -224,7 +272,10 @@ function DiscardGuard({
     // A disabled save button, such as while validation fails, never means there is nothing to lose.
     const current = dirtyRef.current;
     return (
-      editedRef.current ||
+      [...baselinesRef.current].some(
+        ([form, before]) => form.isConnected && formSnapshot(form) !== before,
+      ) ||
+      [...editedRef.current].some((form) => form.isConnected) ||
       [...formsRef.current].some((unsaved) => unsaved()) ||
       (typeof current === 'function' ? current() : current === true)
     );
