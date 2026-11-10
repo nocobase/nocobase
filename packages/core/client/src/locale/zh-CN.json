@@ -1239,6 +1239,7 @@
   "Select level": "选择层级",
   "Select mode": "选择模式",
   "Select record": "选择数据",
+  "Select a record with a valid association key.": "请选择具备有效关联键的记录。",
   "Select target action": "选择目标操作",
   "Select target block": "选择目标区块",
   "Select target form block": "选择目标表单区块",

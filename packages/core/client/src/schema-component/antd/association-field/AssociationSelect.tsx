@@ -33,7 +33,8 @@ import useServiceOptions, { useAssociationFieldContext } from './hooks';
 
 const removeIfKeyEmpty = (obj, filterTargetKey) => {
   if (!obj || typeof obj !== 'object' || !filterTargetKey || Array.isArray(obj)) return obj;
-  return !obj[filterTargetKey] ? undefined : obj;
+  const keys = Array.isArray(filterTargetKey) ? filterTargetKey : [filterTargetKey];
+  return keys.every((key) => obj[key] != null && obj[key] !== '') ? obj : undefined;
 };
 
 export const AssociationFieldAddNewer = (props) => {
@@ -87,7 +88,7 @@ const InternalAssociationSelect = observer(
     const service = useServiceOptions(fieldSchema?.['x-component-props'] || props);
     const { options: collectionField } = useAssociationFieldContext();
     const initValue = isVariable(props.value) ? undefined : props.value;
-    const value = Array.isArray(initValue) ? initValue.filter(Boolean) : initValue;
+    const value = Array.isArray(initValue) ? initValue.filter((item) => item != null) : initValue;
     // 因为通过 Schema 的形式书写的组件，在值变更的时候 `value` 的值没有改变，所以需要维护一个 `innerValue` 来变更值
     const [innerValue, setInnerValue] = useState(value);
     const addMode = fieldSchema['x-component-props']?.addMode;
@@ -98,19 +99,37 @@ const InternalAssociationSelect = observer(
     const resource = api.resource(collectionField.target);
     const recordData = useCollectionRecordData();
     const schemaComponentCtxValue = useContext(SchemaComponentContext);
-    const { getCollection } = useCollectionManager_deprecated();
+    const { getCollection, getCollectionJoinField } = useCollectionManager_deprecated();
     const associationCollection = getCollection(collectionField.target);
-    const { filterTargetKey } = associationCollection || {};
+    const targetKey = collectionField.targetKey || associationCollection?.filterTargetKey;
+
+    const keyFieldType =
+      typeof targetKey === 'string' && getCollectionJoinField(`${collectionField.target}.${targetKey}`)?.type;
+    const isIntegerKey = ['integer', 'bigInt', 'snowflakeId'].includes(keyFieldType);
+    const invalidSelection = [field.value].flat().some((item) => {
+      if (item == null || item === '' || isVariable(item)) return false;
+      if (typeof item === 'object')
+        return Object.keys(item).length > 0 && removeIfKeyEmpty(item, targetKey) === undefined;
+      return isIntegerKey && typeof item === 'string' && !/^[+-]?\d+$/.test(item);
+    });
+    useEffect(() => {
+      field.setFeedback({
+        type: 'error',
+        code: 'InvalidAssociationKey',
+        messages: invalidSelection ? [t('Select a record with a valid association key.')] : [],
+      });
+      return () => field.setFeedback({ type: 'error', code: 'InvalidAssociationKey', messages: [] });
+    }, [field, invalidSelection, t]);
 
     useEffect(() => {
       const initValue = isVariable(field.value) ? undefined : field.value;
-      const value = Array.isArray(initValue) ? initValue.filter(Boolean) : initValue;
-      const result = removeIfKeyEmpty(value, filterTargetKey);
+      const value = Array.isArray(initValue) ? initValue.filter((item) => item != null) : initValue;
+      const result = removeIfKeyEmpty(value, targetKey);
       setInnerValue(result);
-      if (!isEqual(field.value, result)) {
+      if (!invalidSelection && !isEqual(field.value, result)) {
         field.value = result;
       }
-    }, [field.value, filterTargetKey]);
+    }, [field, field.value, targetKey, invalidSelection]);
 
     useEffect(() => {
       const id = uid();
@@ -136,7 +155,7 @@ const InternalAssociationSelect = observer(
       return () => {
         form.removeEffects(id);
       };
-    }, []);
+    }, [field, form]);
 
     const handleCreateAction = async (props) => {
       const { search: value, callBack } = props;
@@ -180,7 +199,7 @@ const InternalAssociationSelect = observer(
             {...rest}
             size={'middle'}
             objectValue={objectValue}
-            value={removeIfKeyEmpty(value || innerValue, filterTargetKey)}
+            value={removeIfKeyEmpty(value ?? innerValue, targetKey)}
             service={service}
             onChange={(value) => {
               const val = Array.isArray(value) && value.length === 0 ? null : value;
