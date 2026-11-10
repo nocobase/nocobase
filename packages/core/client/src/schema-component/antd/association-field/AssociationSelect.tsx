@@ -89,7 +89,7 @@ const InternalAssociationSelect = observer(
     const { options: collectionField } = useAssociationFieldContext();
     const initValue = isVariable(props.value) ? undefined : props.value;
     const value = Array.isArray(initValue) ? initValue.filter((item) => item != null) : initValue;
-    // 因为通过 Schema 的形式书写的组件，在值变更的时候 `value` 的值没有改变，所以需要维护一个 `innerValue` 来变更值
+    // Schema components can keep the same value prop after an edit, so track the selection locally.
     const [innerValue, setInnerValue] = useState(value);
     const addMode = fieldSchema['x-component-props']?.addMode;
     const { t } = useTranslation();
