@@ -318,3 +318,53 @@ it('keeps list and statistics visibility reads constant as the dataset grows', a
   // Usage reads its records, run facts, prices, subscriptions and agent names in seven fixed reads.
   expect(before[1]).toBe(7);
 });
+
+it('keeps private sessions participant-only even for unrestricted readers and pages past them', async () => {
+  h = await createHarness();
+  const sample = h.services.subjects.get('sample')!;
+  const hook = vi.fn(async () => null);
+  h.services.subjects.register({
+    ...sample,
+    kind: 'private',
+    private: true,
+    visibleSubjects: hook,
+  });
+  const agent = await h.createAgent();
+  const publicRun = await h.enqueue(agent, 'public', { actorUserId: 'bob' });
+  let privateRun = '';
+  for (let i = 0; i < 3; i++) {
+    privateRun = await h.enqueue(agent, `private-${i}`, { actorUserId: 'bob' });
+    await h.database
+      .connection()
+      .query.updateTable('agRuns')
+      .set({ subjectKind: 'private' })
+      .where('id', '=', privateRun)
+      .execute();
+  }
+  const reader = {
+    user: 'reader',
+    can: ['agents.agents/read', 'agents.agents/manage'],
+  };
+  const page = await h.request('GET', '/agents/runs?pageSize=1', reader);
+  expect(page.body.data.map((run: { id: string }) => run.id)).toEqual([
+    publicRun,
+  ]);
+  expect(page.body.meta.nextPageToken).toBeUndefined();
+  expect(
+    (await h.request('GET', `/agents/runs/${privateRun}`, reader)).status,
+  ).toBe(404);
+  expect(
+    (await h.request('GET', `/agents/runs/${privateRun}`, { user: 'bob' }))
+      .status,
+  ).toBe(200);
+  expect(
+    (
+      await h.request(
+        'GET',
+        '/agents/runAgents?subjectKind=private&subjectId=private-2',
+        reader,
+      )
+    ).body.data,
+  ).toEqual([]);
+  expect(hook).not.toHaveBeenCalled();
+});
