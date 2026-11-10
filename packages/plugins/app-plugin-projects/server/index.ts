@@ -9,3 +9,8 @@ export {
   registerSettings,
 } from './providers/authorization.js';
 export { IssueListItemSchema } from './routes/schemas.js';
+
+export {
+  visibleIssues,
+  visibleIssueSubjects,
+} from './domains/issues/issue.access.js';

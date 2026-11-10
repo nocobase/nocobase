@@ -20,6 +20,9 @@ import type {
   DatabaseConnection,
   FilterBuilder,
   FilterNode,
+  Expression,
+  ExpressionBuilder,
+  SqlBool,
 } from '@nocobase/db';
 
 import { reaches } from '../../../shared/access.js';
@@ -189,4 +192,52 @@ export async function requireOwnerChanger(
     throw forbidden(
       'Only the owner, the project lead or an administrator may change the owner.',
     );
+}
+
+/** Subject-id predicate for cross-domain queries; null is the unrestricted-reader fast path. */
+export function visibleIssueSubjects(
+  viewer: Viewer,
+): ((eb: ExpressionBuilder, subjectId: string) => Expression<SqlBool>) | null {
+  const scope = scopeOf(viewer, 'pm.issues', 'view');
+  if (scope === 'all' && !viewer.projectIds) return null;
+  return (eb, subjectId) => {
+    if (scope === 'none') return eb.or([]);
+    let issues = eb
+      .selectFrom('pmIssues as visibleIssue')
+      .select('visibleIssue.id')
+      .whereRef('visibleIssue.id', '=', subjectId)
+      .where('visibleIssue.deletedAt', 'is', null);
+    if (viewer.projectIds)
+      issues = issues.where('visibleIssue.projectId', 'in', viewer.projectIds);
+    if (scope !== 'all')
+      issues = issues.where(
+        eb.or([
+          eb('visibleIssue.projectId', 'is', null),
+          eb.exists(
+            eb
+              .selectFrom('pmProjects as visibleProject')
+              .select('visibleProject.id')
+              .whereRef('visibleProject.id', '=', 'visibleIssue.projectId')
+              .where(
+                eb.or([
+                  eb('visibleProject.visibility', '!=', 'members'),
+                  eb('visibleProject.leadUserId', 'in', scope.users),
+                  eb.exists(
+                    eb
+                      .selectFrom('pmProjectMembers as visibleMember')
+                      .select('visibleMember.id')
+                      .whereRef(
+                        'visibleMember.projectId',
+                        '=',
+                        'visibleProject.id',
+                      )
+                      .where('visibleMember.userId', 'in', scope.users),
+                  ),
+                ]),
+              ),
+          ),
+        ]),
+      );
+    return eb.exists(issues);
+  };
 }

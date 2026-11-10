@@ -9,7 +9,18 @@ import type {
   WorkspaceCommitEvidence,
   FailureReason,
 } from '@nocobase/agent-protocol';
-import type { DatabaseConnection } from '@nocobase/db';
+import type {
+  DatabaseConnection,
+  Expression,
+  ExpressionBuilder,
+  SqlBool,
+} from '@nocobase/db';
+
+/** A database predicate on the supplied subject-id column; never an enumerated id set. */
+export type SubjectVisibility = (
+  eb: ExpressionBuilder,
+  subjectId: string,
+) => Expression<SqlBool>;
 
 import type { Agent } from '../../../shared/agents.js';
 import type { I18nText } from '../../../shared/i18n.js';
@@ -249,6 +260,11 @@ export interface SubjectReports {
 }
 
 export interface SubjectBinding {
+  /** Current subject visibility for a reader. Null means all subjects, with no extra query. */
+  readonly visibleSubjects?: (
+    conn: DatabaseConnection,
+    userId: string,
+  ) => Promise<SubjectVisibility | null>;
   /** Preserve quota-limited work on its original runner and session. */
   readonly quotaWait?: boolean;
   readonly kind: string;

@@ -116,6 +116,7 @@ export type {
   SubjectAssembly,
   SubjectSample,
   SubjectBinding,
+  SubjectVisibility,
   SubjectDir,
   SubjectFacts,
   SubjectRegistry,

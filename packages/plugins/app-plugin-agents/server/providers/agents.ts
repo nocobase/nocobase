@@ -1,5 +1,5 @@
 import type { OnlineAgentRecoveryConfig } from '../online/agent/types.js';
-import { mayAccessRun } from '../core/runs/access.js';
+import { mayAccessRun, subjectVisibleForRun } from '../core/runs/access.js';
 /**
  * Binds the plugin's services, and at boot connects them to the platform: realtime announcements of runs and
  * conversations. The runners' side (their announcements, the sweeper and the wake-ups of
@@ -379,6 +379,13 @@ export class AgentsProvider extends ServiceProvider<AppPluginApplication> {
                 action: 'read',
               });
             },
+            () =>
+              subjectVisibleForRun(
+                services.tx.read(),
+                services.subjects,
+                run,
+                principal.userId,
+              ),
           );
         },
       },
