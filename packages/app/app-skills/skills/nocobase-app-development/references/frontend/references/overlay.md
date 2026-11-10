@@ -33,7 +33,7 @@ Work in this order:
 2. Place `<Outlet />` in the parent page and pass the refresh function down through `context`.
 3. In the child route's page, wrap the content in `RouteDialog` or `RouteDrawer`.
 4. Close the overlay by calling `useRouteOverlay()` in a component inside it.
-5. Put the form in a `FeedbackForm` inside the overlay: the overlay then asks before discarding typed input on every way out, browser back included (pass `dirty` for changes no typing reports). Add `beforeClose` for a submission in progress ([section 2.5](#25-beforeclose-checks-before-closing)).
+5. Put the form in a `FeedbackForm` inside the overlay with `values={form.getValues}` and `savedValues` (the stored record or the blank values, never a restored draft): the overlay then asks before discarding any unsaved difference on every way out, browser back included, whatever field changed. Add `beforeClose` for a submission in progress ([section 2.5](#25-beforeclose-checks-before-closing)).
 
 ### 2.1 Declare the child routes
 
@@ -196,41 +196,33 @@ export default function NewProjectPage(): ReactElement {
 - Using only the state, as `() => !submitting`, is unreliable: state updates only on the next render, so a `close()` called right after a successful save may run the `beforeClose` from the "submitting" render, read `submitting === true`, and have the close blocked.
 - On success, `ProjectForm` guarantees that it passes `onSubmittingChange(false)` before calling `onSubmitted`, so calling `close()` directly in `onSubmitted` closes the overlay.
 
-**Confirm when there are unsaved changes** (guideline T3.9, M7.4 in [the phone experience](../mobile.md)): every `RouteDialog` and `RouteDrawer` asks by itself, without a prop: once the user has typed or changed a value in a `FeedbackForm` inside it, or while its `dirty` is true, the overlay asks "Discard changes?" (with "Keep editing" and "Discard") before every way out: the × button, Esc, the backdrop and `close()` (Cancel) reach it through the close navigation, and browser back and forward, the phone's back gesture and any link reach it directly. It holds the navigation while it asks, keeps the overlay and its input mounted, restores the URL when the answer is "Keep editing", and warns before a reload or closing the tab. Keep `beforeClose` for what only closing should check, such as a submission in progress:
+**Confirm when there are unsaved changes** (guideline T3.9, M7.4 in [the phone experience](../mobile.md)): every `RouteDialog` and `RouteDrawer` asks by itself, without a prop on the overlay: while a `FeedbackForm` inside has values that differ from its `savedValues` (or, without them, once the user typed in it), or while the overlay's `dirty` is true, the overlay asks "Discard changes?" (with "Keep editing" and "Discard") before every way out: the × button, Esc, the backdrop and `close()` (Cancel) reach it through the close navigation, and browser back and forward, the phone's back gesture and any link reach it directly. It holds the navigation while it asks, keeps the overlay and its input mounted, restores the URL when the answer is "Keep editing", and warns before a reload or closing the tab. Keep `beforeClose` for what only closing should check, such as a submission in progress:
 
 ```tsx
 export default function EditProjectPage(): ReactElement {
   const { t } = useTranslation();
   const submittingRef = useRef(false);
-  // Changes the form reports beyond typing, such as a Select; typing the overlay sees by itself.
-  const [dirty, setDirty] = useState(false);
 
   return (
     <RouteDialog
       title={t('projects.edit.title')}
-      // Every way out asks first once the form changed: ×, Esc, the backdrop, Cancel, browser back, links.
-      dirty={dirty}
+      // No dirty prop: ProjectForm's FeedbackForm reports its values and the saved record, and every way out asks
+      // first while they differ: ×, Esc, the backdrop, Cancel, browser back, links.
       // Closing only: no closing while submitting (T3.5).
       beforeClose={() => !submittingRef.current}
     >
-      {/* `EditProjectBody` extends `detail/edit.tsx` in example/edit-dialog.md with the dirty reporting. */}
-      <EditProjectBody onDirtyChange={setDirty} />
+      <EditProjectBody />
     </RouteDialog>
   );
 }
 
-function EditProjectBody({
-  onDirtyChange,
-}: {
-  readonly onDirtyChange: (dirty: boolean) => void;
-}): ReactElement {
+function EditProjectBody(): ReactElement {
   const { close } = useRouteOverlay();
   const { onSaved } = useOutletContext<ProjectEditOutletContext>();
   return (
     <ProjectForm
       formId='project-edit-form'
       // … project, onSubmittingChange and onNotFound as in example/edit-dialog.md
-      onDirtyChange={onDirtyChange}
       onSubmitted={(saved) => {
         // Still inside the FeedbackForm's onSubmit, so this close is the save's own and does not ask.
         onSaved(saved);
@@ -241,12 +233,12 @@ function EditProjectBody({
 }
 ```
 
-- **What counts as a change**: any typing or change event in a `FeedbackForm` inside the overlay (once `dirty` is passed, in any `<form>` inside it), plus `dirty` (pass react-hook-form's `form.formState.isDirty`, read while rendering, for controls such as a Select that fire no input event, and for a restored draft). `dirty` adds to what the overlay saw; leaving it out or passing `false` never switches the question off. Do not make it depend on a saved draft, a storage flag or anything else: a draft restores input after a reload, while leaving on purpose still asks.
+- **What counts as a change**: a `FeedbackForm` given `values={form.getValues}` and `savedValues` is unsaved whenever its current values differ from the saved ones, compared when the user tries to leave, so every field counts the same way: typing, a Select, a date or relation picker, an upload, and a restored draft. Empty text, `null` and `undefined` count as equal, dates compare by time and files by identity, so a value changed and changed back does not ask. `savedValues` is what is stored, as the form shows it (the record when editing, the blank values when creating), never the draft: a page that restores a draft starts the form from it (`defaultValues: draft ?? saved`) and keeps `savedValues={saved}`, so leaving with the restored draft asks. React Hook Form's `formState.isDirty` cannot say this, because the restored draft is its default. A `FeedbackForm` without `values` counts typing or change events in it; the overlay's `dirty` adds anything else (once passed, typing in any `<form>` inside counts too). Leaving `dirty` out or passing `false` never switches the question off. Do not make anything depend on a saved draft or a storage flag: a draft restores input after a reload, while leaving on purpose still asks.
 - **What does not ask**: an overlay nobody typed in, a read-only drawer (a search box in a plain `<form>` there is not unsaved input), and the save, below.
 - **What leaves without asking**: the save itself, that is a navigation or `close()` made while a `FeedbackForm` in the overlay is still running its `onSubmit` (await the request and navigate inside it, as the examples do). A disabled save button, such as while validation fails, does not count as unchanged: leaving still asks. The save button is therefore a real submit button (`type='submit'` with `form={formId}`), not a plain button with an `onClick`.
 - Do not ask in `beforeClose` or in a navigation guard of your own as well: the overlay already asks once per way out. A guard of your own may still return `false` to block leaving while a save is in flight.
 - The confirmation is the one layer allowed above the overlay (M7.2); its backdrop covers the overlay, so only its buttons take a tap.
-- The runnable version is the edit dialog of the [executable list and edit example](executable-list-edit.md) (`client/pages/skill-projects/edit.tsx`): `tests/client/skill-projects.test.tsx` checks that Cancel, Esc and browser back each ask, that "Keep editing" keeps the input and the URL, and that discarding closes. `tests/client/route-overlay.test.tsx` checks the same paths, the × button, a `dirty` that says "nothing to lose" after typing, a draft-keeping form with no `dirty` at all, the backdrop, a save button disabled by validation, a read-only drawer, and a save that leaves without asking.
+- The runnable version is the edit dialog of the [executable list and edit example](executable-list-edit.md) (`client/pages/skill-projects/edit.tsx`): `tests/client/skill-projects.test.tsx` checks that Cancel, Esc and browser back each ask, that "Keep editing" keeps the input and the URL, and that discarding closes. `tests/client/route-overlay.test.tsx` checks the same paths, the × button, a `dirty` that says "nothing to lose" after typing, a draft-keeping form with no `dirty` at all, a restored draft closed without typing and a value changed only by a picker (both ask), a value changed back (does not ask), the backdrop, a save button disabled by validation, a read-only drawer, and a save that leaves without asking.
 - A page that is not an overlay (a covering `RouteChildPage` or a full create page) has no `dirty`: guard it with `useNavigationGuard` from `@nocobase/app-client`, whose guard may return a Promise that resolves with the user's answer, and add the `beforeunload` warning as [`example/create-page.md`](example/create-page.md) does.
 
 ## 3. Complete example

@@ -1,5 +1,6 @@
 import {
   act,
+  cleanup,
   fireEvent,
   render,
   screen,
@@ -27,6 +28,7 @@ import {
   useLocation,
   useNavigate,
 } from 'react-router';
+import { Controller, useForm } from 'react-hook-form';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { FeedbackForm } from '../../client/components/feedback-form';
 import { RouteDialog } from '../../client/components/route-dialog';
@@ -1232,6 +1234,168 @@ describe('the unsaved-changes question without a dirty prop', () => {
       'acme',
     );
     await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    await waitFor(() => expect(history.path).toBe('/orders?page=2'));
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+  });
+});
+
+describe('unsaved values of a FeedbackForm, compared with the saved ones', () => {
+  // The shape a generated edit dialog takes: React Hook Form whose defaults are a restored draft when there is one, a
+  // priority picker that changes the value without any input event (as a Select, date, relation or upload does), and
+  // no `dirty` on the dialog.
+  const draftKey = 'test:values-draft';
+  const saved = { name: 'Original', priority: 'normal' };
+  function ValuesEdit() {
+    const navigate = useNavigate();
+    const { search } = useLocation();
+    const [restored] = useState(() => {
+      const draft = sessionStorage.getItem(draftKey);
+      return draft ? (JSON.parse(draft) as typeof saved) : undefined;
+    });
+    const form = useForm({ defaultValues: restored ?? saved });
+    return (
+      <RouteDialog
+        title='Edit'
+        footer={
+          <>
+            <Actions />
+            <button type='submit' form='values-edit'>
+              Save
+            </button>
+          </>
+        }
+      >
+        <FeedbackForm
+          id='values-edit'
+          values={form.getValues}
+          savedValues={saved}
+          onSubmit={form.handleSubmit(async () => {
+            await Promise.resolve();
+            sessionStorage.removeItem(draftKey);
+            await navigate({ pathname: '..', search });
+          })}
+        >
+          <input aria-label='Name' {...form.register('name')} />
+          <Controller
+            control={form.control}
+            name='priority'
+            render={({ field }) => (
+              <div role='group' aria-label='Priority'>
+                <output aria-label='Current priority'>{field.value}</output>
+                {['low', 'normal', 'high'].map((value) => (
+                  <button
+                    key={value}
+                    type='button'
+                    onClick={() => field.onChange(value)}
+                  >
+                    {value}
+                  </button>
+                ))}
+              </div>
+            )}
+          />
+        </FeedbackForm>
+      </RouteDialog>
+    );
+  }
+  function setup() {
+    const history: { back?: () => void; path?: string } = {};
+    function Probe() {
+      const navigate = useNavigate();
+      const { pathname, search } = useLocation();
+      useEffect(() => {
+        history.back = () => void navigate(-1);
+        history.path = `${pathname}${search}`;
+      });
+      return null;
+    }
+    render(
+      <MemoryRouter
+        initialEntries={['/orders?page=2', '/orders/edit?page=2']}
+        initialIndex={1}
+      >
+        <NavigationGuardProvider>
+          <Probe />
+          <Routes>
+            <Route path='/orders' element={<Outlet />}>
+              <Route path='edit' element={<ValuesEdit />} />
+            </Route>
+          </Routes>
+        </NavigationGuardProvider>
+      </MemoryRouter>,
+      { wrapper: I18n },
+    );
+    return history;
+  }
+  beforeEach(() => sessionStorage.clear());
+  async function answer(choice: 'Keep editing' | 'Discard') {
+    const prompt = await screen.findByRole('alertdialog', {
+      name: 'Discard changes?',
+    });
+    await userEvent.click(within(prompt).getByRole('button', { name: choice }));
+    await waitFor(() =>
+      expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument(),
+    );
+  }
+
+  it('asks before leaving a restored draft that differs from the saved record, without any input', async () => {
+    sessionStorage.setItem(
+      draftKey,
+      JSON.stringify({ name: 'Original draft', priority: 'normal' }),
+    );
+    const history = setup();
+    expect(await screen.findByRole('textbox', { name: 'Name' })).toHaveValue(
+      'Original draft',
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    await answer('Keep editing');
+    await userEvent.keyboard('{Escape}');
+    await answer('Keep editing');
+    act(() => history.back!());
+    await answer('Keep editing');
+    await waitFor(() => expect(history.path).toBe('/orders/edit?page=2'));
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    await answer('Discard');
+    await waitFor(() => expect(history.path).toBe('/orders?page=2'));
+  });
+
+  it('asks on Cancel and browser back after only a picker changed a value', async () => {
+    const history = setup();
+    await userEvent.click(await screen.findByRole('button', { name: 'high' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    await answer('Keep editing');
+    expect(
+      screen.getByRole('status', { name: 'Current priority' }),
+    ).toHaveTextContent('high');
+    act(() => history.back!());
+    await answer('Keep editing');
+    await waitFor(() => expect(history.path).toBe('/orders/edit?page=2'));
+  });
+
+  it('closes without asking when the values are back to the saved ones', async () => {
+    const history = setup();
+    await userEvent.click(await screen.findByRole('button', { name: 'high' }));
+    await userEvent.type(screen.getByRole('textbox', { name: 'Name' }), 'x');
+    await userEvent.click(screen.getByRole('button', { name: 'normal' }));
+    await userEvent.type(
+      screen.getByRole('textbox', { name: 'Name' }),
+      '{Backspace}',
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    await waitFor(() => expect(history.path).toBe('/orders?page=2'));
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+  });
+
+  it('closes an untouched form and lets the save leave without asking', async () => {
+    let history = setup();
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Cancel' }),
+    );
+    await waitFor(() => expect(history.path).toBe('/orders?page=2'));
+    cleanup();
+    history = setup();
+    await userEvent.click(await screen.findByRole('button', { name: 'low' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
     await waitFor(() => expect(history.path).toBe('/orders?page=2'));
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
   });

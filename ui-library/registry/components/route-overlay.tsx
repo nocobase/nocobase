@@ -30,6 +30,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '#components/ui/alert-dialog';
+import { UnsavedValuesContext } from '#components/feedback-form';
 import { Button } from '#components/ui/button';
 import {
   Dialog,
@@ -61,13 +62,15 @@ export interface RouteOverlayProps {
   /**
    * Unsaved changes the overlay cannot see by itself (guideline T3.9, mobile.md M7.4). Every route overlay asks
    * "Discard changes?" before every way out — ×, Esc, the backdrop, Cancel through `close()`, browser back and
-   * forward, the phone's back gesture and links — once the user has typed or changed a value in a `FeedbackForm`
-   * inside it, without any prop, and reloading or closing the tab then gets the browser's warning. Pass `dirty` for
-   * changes no input event reports, such as a Select or a restored draft: `dirty={form.formState.isDirty}` (a function
-   * is read when leaving). It only adds: `false` or `undefined` never switches off an edit the overlay saw, and a saved
-   * draft does not count as saved. Passing it also counts typing in any other `<form>` inside the overlay. Leaving does
-   * not ask during the save itself (while the `FeedbackForm` is still running its `onSubmit`: navigate or `close()`
-   * from it), and still asks while the save button is disabled, because the input is still there to lose.
+   * forward, the phone's back gesture and links — while a `FeedbackForm` inside has unsaved input, and reloading or
+   * closing the tab then gets the browser's warning. A `FeedbackForm` given `values={form.getValues}` and
+   * `savedValues` is unsaved whenever its values differ from the saved ones, whatever changed them (a Select, a date,
+   * a relation, an upload, a restored draft); one without them is unsaved once the user typed or changed a native
+   * field in it. `dirty` adds what neither shows (a function is read when leaving): `false` or `undefined` never
+   * switches off unsaved input the overlay found, and a saved draft does not count as saved. Passing it also counts
+   * typing in any other `<form>` inside the overlay. Leaving does not ask during the save itself (while the
+   * `FeedbackForm` is still running its `onSubmit`: navigate or `close()` from it), and still asks while the save
+   * button is disabled, because the input is still there to lose.
    */
   readonly dirty?: boolean | (() => boolean);
   readonly className?: string;
@@ -114,10 +117,25 @@ export function RouteOverlay({
     }),
     [],
   );
+  // The FeedbackForms inside that compare their values with the saved ones.
+  const formsRef = useRef(new Set<() => boolean>());
+  const forms = useMemo(
+    () => ({
+      register: (unsaved: () => boolean): (() => void) => {
+        formsRef.current.add(unsaved);
+        return () => {
+          formsRef.current.delete(unsaved);
+        };
+      },
+    }),
+    [],
+  );
   const content = guarded ? (
     <DiscardOwnerContext.Provider value={owners}>
-      {children}
-      <DiscardGuard dirty={dirty} ownersRef={ownersRef} />
+      <UnsavedValuesContext.Provider value={forms}>
+        {children}
+        <DiscardGuard dirty={dirty} ownersRef={ownersRef} formsRef={formsRef} />
+      </UnsavedValuesContext.Provider>
     </DiscardOwnerContext.Provider>
   ) : (
     children
@@ -154,9 +172,11 @@ export function OwnDiscardQuestion(): null {
 function DiscardGuard({
   dirty,
   ownersRef,
+  formsRef,
 }: {
   readonly dirty: boolean | (() => boolean) | undefined;
   readonly ownersRef: RefObject<number>;
+  readonly formsRef: RefObject<Set<() => boolean>>;
 }): ReactElement {
   const { t } = useTranslation();
   const dirtyRef = useRef(dirty);
@@ -175,10 +195,11 @@ function DiscardGuard({
     const edit = (event: Event): void => {
       if (!(event.target instanceof Element)) return;
       const form = event.target.closest('form');
+      // A form that reports its values is compared by value when leaving instead.
+      if (!form || form.dataset.tracksValues !== undefined) return;
       if (
-        form &&
-        (form.dataset.slot === 'feedback-form' ||
-          dirtyRef.current !== undefined)
+        form.dataset.slot === 'feedback-form' ||
+        dirtyRef.current !== undefined
       )
         editedRef.current = true;
     };
@@ -204,9 +225,10 @@ function DiscardGuard({
     const current = dirtyRef.current;
     return (
       editedRef.current ||
+      [...formsRef.current].some((unsaved) => unsaved()) ||
       (typeof current === 'function' ? current() : current === true)
     );
-  }, [ownersRef]);
+  }, [ownersRef, formsRef]);
   // The pending question, so a second attempt to leave while it is open waits for the same answer.
   const promptRef = useRef<{
     readonly promise: Promise<boolean>;

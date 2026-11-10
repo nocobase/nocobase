@@ -55,9 +55,6 @@ function EditProject({
     submittingRef.current = value;
     setSubmitting(value);
   };
-  // Changes the form reports beyond typing (a Select, a picker); the dialog also sees typing in the form itself, and
-  // asks "Discard changes?" before every way out once anything changed (T3.9, M7.4).
-  const [dirty, setDirty] = useState(false);
 
   // On open, load the latest data by id before rendering the form, instead of the drawer's or the list's possibly stale data (guidelines T3.8 and R1).
   const [reloadCount, setReloadCount] = useState(0);
@@ -156,7 +153,6 @@ function EditProject({
       <EditProjectBody
         project={project}
         onSubmittingChange={handleSubmittingChange}
-        onDirtyChange={setDirty}
         onNotFound={() => {
           setGoneOnSave(true);
           onNotFound();
@@ -173,7 +169,8 @@ function EditProject({
       className='sm:max-w-lg'
       // No closing while submitting: the × button, Esc, clicking the backdrop and close() all go through beforeClose first (guideline T3.5).
       beforeClose={() => !submittingRef.current}
-      dirty={dirty}
+      // No dirty prop: ProjectForm's FeedbackForm reports its values and the record's, and the dialog asks before
+      // every way out while they differ (T3.9, M7.4).
       footer={footer}
     >
       {body}
@@ -185,12 +182,10 @@ function EditProject({
 function EditProjectBody({
   project,
   onSubmittingChange,
-  onDirtyChange,
   onNotFound,
 }: {
   readonly project: Project;
   readonly onSubmittingChange: (submitting: boolean) => void;
-  readonly onDirtyChange: (dirty: boolean) => void;
   readonly onNotFound: () => void;
 }): ReactElement {
   const { close } = useRouteOverlay();
@@ -200,7 +195,6 @@ function EditProjectBody({
       formId={FORM_ID}
       project={project}
       onSubmittingChange={onSubmittingChange}
-      onDirtyChange={onDirtyChange}
       onNotFound={onNotFound}
       onSubmitted={(saved) => {
         // First let the view behind show the saved record (the drawer at once, the list by refreshing), then close the dialog (guideline R2).

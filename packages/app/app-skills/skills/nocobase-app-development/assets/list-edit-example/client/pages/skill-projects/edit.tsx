@@ -114,8 +114,12 @@ function ProjectEditor({
   const submission = useSubmission({
     scope: `${session?.user.id}:skillProjects:${project?.id ?? 'new'}`,
   });
+  // What is saved, as the form shows it: the record, or the blank values of a new project. A form that restores a
+  // draft starts from it (`defaultValues: draft ?? saved`) and keeps this as `savedValues`, so leaving with the draft
+  // still asks (mobile.md M7.4).
+  const [saved] = useState(() => ({ name: project?.name ?? '' }));
   const form = useForm({
-    defaultValues: { name: project?.name ?? '' },
+    defaultValues: saved,
     shouldFocusError: false,
   });
   const navigate = useNavigate();
@@ -135,8 +139,7 @@ function ProjectEditor({
   >();
   // Set once saved or once the record is gone, so the guard below lets the dialog close.
   const savedRef = useRef(false);
-  const { isDirty } = form.formState;
-  // No way out while a save is in flight or its outcome is unknown; unsaved input is the dialog's `dirty`.
+  // No way out while a save is in flight or its outcome is unknown; unsaved input is the FeedbackForm's `values`.
   useNavigationGuard(
     () =>
       savedRef.current ||
@@ -216,10 +219,9 @@ function ProjectEditor({
     <RouteDialog
       title={t(project ? 'skillProjects.edit' : 'skillProjects.create')}
       className='sm:max-w-md'
-      // Every way out asks "Discard changes?" once the user has edited the form: ×, Esc, the backdrop, Cancel and
-      // browser back. The dialog sees typing itself; isDirty adds changes without an input event. The save's own
-      // navigation, from the FeedbackForm's onSubmit, leaves without asking.
-      dirty={isDirty}
+      // Every way out asks "Discard changes?" while the form's values differ from the saved ones (the FeedbackForm's
+      // `values` and `savedValues` below): ×, Esc, the backdrop, Cancel and browser back. The save's own navigation,
+      // from the FeedbackForm's onSubmit, leaves without asking.
       beforeClose={() =>
         !busyRef.current && !submission.submitting && !submission.pending
       }
@@ -251,6 +253,8 @@ function ProjectEditor({
       ) : null}
       <FeedbackForm
         id={formId}
+        values={form.getValues}
+        savedValues={saved}
         error={error}
         errorContent={
           confirmedMissing
