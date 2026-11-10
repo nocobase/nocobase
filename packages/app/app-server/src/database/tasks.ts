@@ -1,6 +1,10 @@
 import { createTaskServiceResolver } from './task-container.js';
 import { loggingToken } from '../logging/token.js';
-import type { ServiceResolver } from '@nocobase/service-provider';
+import {
+  createServiceToken,
+  type ServiceToken,
+  type ServiceResolver,
+} from '@nocobase/service-provider';
 import { snapshotDatabaseTaskConfig } from './task-config.js';
 import type { DatabaseTaskConfig } from '@nocobase/db';
 import { resolveDatabaseConfig } from './resolve-config.js';
@@ -28,7 +32,10 @@ import {
   appDatabaseStorageExists,
   prepareAppDatabaseStorage,
 } from './storage.js';
-import type { AppDatabaseConfig } from './types.js';
+import type {
+  AppDatabaseConfig,
+  AppDatabaseTaskContributions,
+} from './types.js';
 
 /**
  * `repair` realigns recorded checksums; it executes no migration or seed.
@@ -96,6 +103,14 @@ export class AppDatabaseTaskError extends Error {
 }
 
 export interface AppDatabasePlanExecutionOptions {
+  /** Complete source inventory, including connections omitted by a CLI selection. */
+  readonly contributions?: AppDatabaseTaskContributions;
+  readonly taskFilter?: (task: {
+    readonly name: string;
+    readonly packageName: string;
+  }) => boolean;
+  /** Coordinators may enable sample seeds on a module's first installation. */
+  readonly sample?: { readonly enabled: boolean };
   readonly runtimeConfig?: DatabaseTaskConfig;
   readonly container?: ServiceResolver;
   readonly paths?: AppPaths;
@@ -113,12 +128,50 @@ export interface AppDatabasePlanExecutionOptions {
   readonly dryRun?: boolean;
 }
 
+export interface AppDatabaseTaskCoordinatorContext {
+  readonly database: DatabaseManager;
+  readonly config: AppDatabaseConfig;
+  readonly plan: readonly AppDatabaseTask[];
+  readonly options: AppDatabasePlanExecutionOptions;
+  /** Executes the plan directly, without entering the coordinator again. */
+  readonly execute: (
+    overrides?: AppDatabasePlanExecutionOptions,
+  ) => Promise<AppDatabaseTasksResult>;
+}
+export type AppDatabaseTaskCoordinator = (
+  context: AppDatabaseTaskCoordinatorContext,
+) => Promise<AppDatabaseTasksResult>;
+export const databaseTaskCoordinatorToken: ServiceToken<AppDatabaseTaskCoordinator> =
+  createServiceToken<AppDatabaseTaskCoordinator>(
+    '@nocobase/app-server/database/task-coordinator',
+  );
+
 /** Manual commands and startup share the same resolved, connection-bound plan. */
 export async function executeAppDatabasePlan(
   database: DatabaseManager,
   config: AppDatabaseConfig,
   plan: readonly AppDatabaseTask[],
+  options: AppDatabasePlanExecutionOptions = {},
+): Promise<AppDatabaseTasksResult> {
+  const execute = (
+    overrides: AppDatabasePlanExecutionOptions = {},
+  ): Promise<AppDatabaseTasksResult> =>
+    executeDatabasePlan(database, config, plan, { ...options, ...overrides });
+  const coordinator = options.container?.has(databaseTaskCoordinatorToken)
+    ? options.container.resolve(databaseTaskCoordinatorToken)
+    : undefined;
+  return coordinator
+    ? coordinator({ database, config, plan, options, execute })
+    : execute();
+}
+
+async function executeDatabasePlan(
+  database: DatabaseManager,
+  config: AppDatabaseConfig,
+  plan: readonly AppDatabaseTask[],
   {
+    taskFilter,
+    sample,
     paths,
     drivers,
     fresh = false,
@@ -209,6 +262,7 @@ export async function executeAppDatabasePlan(
         connection: task.connection,
         config: task.config,
         sources: task.config.sources,
+        taskFilter,
         onStaleLock: (takeover: StaleTaskLockTakeover): void =>
           reportStaleLock(container, task, takeover),
       };
@@ -237,7 +291,9 @@ export async function executeAppDatabasePlan(
                       : await createAppSeeder({
                           ...options,
                           sample: {
-                            enabled: freshInstall === true && sampleData,
+                            enabled:
+                              sample?.enabled ??
+                              (freshInstall === true && sampleData),
                           },
                         }).run();
       result.results.push({
@@ -508,6 +564,7 @@ export async function runAppDatabaseTasks(
   if (!database) return { ok: true, status: 'not-configured', results: [] };
   try {
     return await executeAppDatabasePlan(database, config, plan, {
+      contributions: options.contributions,
       paths,
       drivers,
       fresh: options.fresh,

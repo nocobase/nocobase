@@ -26,9 +26,9 @@ import {
   removePackageSkills,
 } from '../../lib/skills-sync.ts';
 import { resolveAppRoot } from '../../lib/workspace-app.ts';
+import { isPluginPackageName } from '../../lib/plugin-package-name.ts';
 
 const NOCOBASE_PACKAGE_PATTERN = /^@nocobase\/[a-z0-9]+(?:-[a-z0-9]+)*$/u;
-const PLUGIN_PACKAGE_PREFIX = '@nocobase/app-plugin-';
 const DEPENDENCY_SECTIONS = [
   'dependencies',
   'devDependencies',
@@ -89,7 +89,7 @@ export default class PackageRemove extends PluginUnregistrationCommand {
   static override summary =
     'Remove a direct NocoBase package dependency and its synchronized Skills.';
   static override description =
-    'Removes a directly declared @nocobase/* dependency with the App package manager, then deletes only the skills recorded as belonging to that package. A package already absent from package.json still has stale recorded skills cleaned. Plugin packages also unregister their Client, Server, and CLI contributions.';
+    'Removes a directly declared @nocobase/* dependency or scoped app-plugin/app-module package with the App package manager, then deletes only the skills recorded as belonging to that package. A package already absent from package.json still has stale recorded skills cleaned. Plugin packages also unregister their Client, Server, and CLI contributions.';
 
   static override examples: Command.Example[] = [
     '<%= config.bin %> <%= command.id %> @nocobase/app-skills',
@@ -102,7 +102,8 @@ export default class PackageRemove extends PluginUnregistrationCommand {
     name: Interfaces.Arg<string>;
   } = {
     name: Args.string({
-      description: 'Full @nocobase/* package name to remove.',
+      description:
+        'Full @nocobase/* or scoped app-plugin/app-module package name to remove.',
       required: true,
     }),
   };
@@ -159,7 +160,7 @@ export default class PackageRemove extends PluginUnregistrationCommand {
       packageName,
     );
 
-    if (packageName.startsWith(PLUGIN_PACKAGE_PREFIX)) {
+    if (isPluginPackageName(packageName)) {
       return this.unregisterPlugin(packageName, {
         app: flags.app,
         dependencySections,
@@ -284,9 +285,12 @@ export default class PackageRemove extends PluginUnregistrationCommand {
 
 function normalizePackageName(packageName: string): string {
   const normalized = packageName.trim();
-  if (!NOCOBASE_PACKAGE_PATTERN.test(normalized)) {
+  if (
+    !NOCOBASE_PACKAGE_PATTERN.test(normalized) &&
+    !isPluginPackageName(normalized)
+  ) {
     throw new Error(
-      `Package name must be a full @nocobase/* package name, found ${packageName}.`,
+      `Package name must be a full @nocobase/* package name or a scoped app-plugin/app-module name, found ${packageName}.`,
     );
   }
   return normalized;

@@ -31,6 +31,7 @@ vi.mock('@nocobase/db', async (importOriginal) => {
 
 import {
   DatabaseProvider,
+  databaseTaskCoordinatorToken,
   type AppDatabaseConfig,
   type AppDatabaseTaskContributions,
   runAppMigrations,
@@ -135,6 +136,56 @@ describe('DatabaseProvider', () => {
     expect(container.resolveIfCreated(databaseManagerToken)).toBe(database);
   });
 
+  it('passes all named source contributions to the startup coordinator even when their tasks are skipped', async () => {
+    const root = createTempDirectory();
+    createDatabaseManagerMock.mockReturnValue(createMockDatabase());
+    const inventory: AppDatabaseTaskContributions = {
+      ...contributions,
+      connections: {
+        audit: {
+          migrations: [
+            { packageName: '@acme/app-module-audit', directory: root },
+          ],
+          seeds: [],
+        },
+      },
+    };
+    const config = createConfig(root, true);
+    const { provider, container } = await createProvider(
+      {
+        ...config,
+        connections: {
+          ...config.connections,
+          audit: {
+            dialect: 'local-file',
+            filename: path.join(root, 'audit.db'),
+            migrations: { autoRun: false },
+            seeds: { autoRun: false },
+          },
+        },
+      },
+      inventory,
+    );
+    const coordinate = vi.fn(
+      async (
+        context: import('../src/database/index.js').AppDatabaseTaskCoordinatorContext,
+      ) => {
+        expect(context.options.contributions).toBe(inventory);
+        expect(
+          context.plan
+            .filter((task) => task.connection === 'audit')
+            .every((task) => task.skipReason),
+        ).toBe(true);
+        return { ok: true, status: 'completed' as const, results: [] };
+      },
+    );
+    container.singleton(databaseTaskCoordinatorToken, () => coordinate);
+    provider.register();
+    await provider.boot();
+    expect(coordinate).toHaveBeenCalledOnce();
+    await provider.shutdown();
+  });
+
   it('does not run automatic tasks when autoRun is disabled', async () => {
     const database = createMockDatabase();
     createDatabaseManagerMock.mockReturnValue(database);
@@ -231,7 +282,10 @@ describe('standalone database tasks', () => {
   });
 });
 
-async function createProvider(database: AppDatabaseConfig): Promise<{
+async function createProvider(
+  database: AppDatabaseConfig,
+  taskContributions = contributions,
+): Promise<{
   readonly provider: DatabaseProvider<DatabaseProviderApplication>;
   readonly container: ServiceContainer;
 }> {
@@ -242,7 +296,7 @@ async function createProvider(database: AppDatabaseConfig): Promise<{
   const app: DatabaseProviderApplication = {
     config: appConfig,
     container,
-    databaseTaskContributions: contributions,
+    databaseTaskContributions: taskContributions,
   };
   return {
     provider: new DatabaseProvider(app),

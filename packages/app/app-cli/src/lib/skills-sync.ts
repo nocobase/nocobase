@@ -1,8 +1,8 @@
 // Copies skills from an application's direct NocoBase dependencies and registered plugins.
 //
 // Upstream is the single source of truth: every synchronized directory that differs from upstream is replaced
-// wholesale (one that matches is left untouched), and a directory whose name does not start with `nocobase-` is never
-// touched, so an application can keep local skills alongside the synchronized ones. On the application side,
+// wholesale (one that matches is left untouched). Only recorded ownership or a registered plugin/module prefix
+// identifies synchronized Skills; unrelated application-local guidance is left untouched. On the application side,
 // `.agents/skills/` and the `.agents/.skills-sync.json` ownership file are ignored generated state, not a
 // version-controlled source of truth. The rest of `.agents/`, notably `.agents/rules/`, is application-owned guidance
 // that the application commits and this sync never reads, writes or removes.
@@ -33,10 +33,10 @@ import {
   writeFile,
 } from 'node:fs/promises';
 import path from 'node:path';
+import { isPluginPackageName } from './plugin-package-name.ts';
 
 const PACKAGE_SCOPE = '@nocobase/';
 const KEBAB_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/u;
-const PLUGIN_PACKAGE_PREFIX = '@nocobase/app-plugin-';
 const PLUGIN_DEVELOPMENT_SKILL = 'nocobase-app-plugin-development';
 const APP_SKILLS_PACKAGE = '@nocobase/app-skills';
 const OWNERSHIP_FILE = path.join('.agents', '.skills-sync.json');
@@ -111,19 +111,19 @@ export interface SkillsSyncPlan {
 }
 
 /**
- * The skill directory prefix a plugin package owns. The prefix is the package
- * name without its scope, so `@nocobase/app-plugin-scheduler` owns
+ * The skill directory prefix a plugin package owns. The prefix includes the package
+ * scope, so `@nocobase/app-plugin-scheduler` owns
  * `nocobase-app-plugin-scheduler` and `nocobase-app-plugin-scheduler-<suffix>`.
  */
 export function pluginSkillPrefix(packageName: string): string {
   const custom =
-    /^@([a-z0-9][a-z0-9-]*)\/(app-plugin-[a-z0-9]+(?:-[a-z0-9]+)*)$/u.exec(
+    /^@([a-z0-9][a-z0-9-]*)\/(app-(?:plugin|module)-[a-z0-9]+(?:-[a-z0-9]+)*)$/u.exec(
       packageName,
     );
   if (custom) return `${custom[1]}-${custom[2]}`;
   if (!packageName.startsWith(PACKAGE_SCOPE)) {
     throw new Error(
-      `Plugin package name must start with ${PACKAGE_SCOPE} or be a scoped app-plugin package, found ${packageName}.`,
+      `Plugin package name must start with ${PACKAGE_SCOPE} or be a scoped app-plugin or app-module package, found ${packageName}.`,
     );
   }
   const unscopedName = packageName.slice(PACKAGE_SCOPE.length);
@@ -172,14 +172,15 @@ export async function collectPluginSkills({
       !KEBAB_PATTERN.test(entry.name) ||
       (entry.name === PLUGIN_DEVELOPMENT_SKILL
         ? packageName !== APP_SKILLS_PACKAGE
-        : packageName.startsWith(PLUGIN_PACKAGE_PREFIX) ||
+        : isPluginPackageName(packageName) ||
             !packageName.startsWith(PACKAGE_SCOPE)
           ? !isOwnedSkillName(prefix, entry.name)
           : !entry.name.startsWith(SKILL_NAME_PREFIX) ||
-            entry.name.startsWith('nocobase-app-plugin-'))
+            entry.name.startsWith('nocobase-app-plugin-') ||
+            entry.name.startsWith('nocobase-app-module-'))
     ) {
       throw new Error(
-        `Invalid skill directory ${entry.name} in ${skillsDirectory}: use a package-owned kebab-case name; plugin skills must use their package prefix ${prefix}, and nocobase-app-plugin-* names are reserved for their owning plugins except nocobase-app-plugin-development, owned only by @nocobase/app-skills.`,
+        `Invalid skill directory ${entry.name} in ${skillsDirectory}: use a package-owned kebab-case name; plugin/module skills must use their package prefix ${prefix}, and nocobase-app-plugin-* and nocobase-app-module-* names are reserved for their owning plugins except nocobase-app-plugin-development, owned only by @nocobase/app-skills.`,
       );
     }
     skills.push({
@@ -249,11 +250,7 @@ export async function planSkillsSync({
 
   const removals: SkillRemoval[] = [];
   for (const entry of await readDirectoryEntries(skillsRoot)) {
-    if (
-      !entry.isDirectory() ||
-      (!entry.name.startsWith(SKILL_NAME_PREFIX) &&
-        previousOwnership[entry.name] === undefined)
-    ) {
+    if (!entry.isDirectory()) {
       continue;
     }
     if (owners.has(entry.name)) {
@@ -376,7 +373,7 @@ export async function planPackageSkillRemovals(
 
   // Older CLI versions recorded plugin ownership through the package prefix.
   // A recorded owner takes precedence, including when its prefix is longer.
-  if (packageName.startsWith(PLUGIN_PACKAGE_PREFIX)) {
+  if (isPluginPackageName(packageName)) {
     for (const entry of await readDirectoryEntries(
       path.join(appRoot, APP_SKILLS_DIRECTORY),
     )) {
@@ -580,9 +577,9 @@ function findOwningPlugin(
   if (skillName === PLUGIN_DEVELOPMENT_SKILL) return undefined;
   let owner: PluginSkills | undefined;
   for (const source of sources) {
-    // Only the legacy plugin contract grants ownership by prefix. Other packages
+    // The plugin/module naming contract grants ownership by prefix. Other packages
     // own exactly the names recorded when they were synchronized.
-    if (!source.packageName.startsWith(PLUGIN_PACKAGE_PREFIX)) {
+    if (!isPluginPackageName(source.packageName)) {
       continue;
     }
     if (!isOwnedSkillName(source.prefix, skillName)) {
@@ -600,9 +597,7 @@ function readDependencyNames(value: unknown): string[] {
     return [];
   }
   return Object.keys(value).filter(
-    (name) =>
-      name.startsWith(PACKAGE_SCOPE) ||
-      /^@[a-z0-9][a-z0-9-]*\/app-plugin-[a-z0-9]+(?:-[a-z0-9]+)*$/u.test(name),
+    (name) => name.startsWith(PACKAGE_SCOPE) || isPluginPackageName(name),
   );
 }
 

@@ -172,6 +172,8 @@ class DefaultSeeder implements Seeder {
         const samplesEnabled = this.options.sample?.enabled === true;
 
         for (const seed of pending) {
+          if (this.options.taskFilter && !this.options.taskFilter(seed))
+            continue;
           if (seed.seed.sample === true && !samplesEnabled) {
             await recordSeedCompleted(seedConnection, {
               tableName: this.options.tableName,
@@ -222,6 +224,8 @@ class DefaultSeeder implements Seeder {
         );
         const executed: string[] = [];
         for (const seed of seeds) {
+          if (this.options.taskFilter && !this.options.taskFilter(seed))
+            continue;
           if (seed.seed.sample !== true || !skippedNames.has(seed.name))
             continue;
           await this.runSeed(connection, seed, 'update');

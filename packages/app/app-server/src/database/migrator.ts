@@ -101,6 +101,11 @@ export interface AppMigrationRepairResult {
 }
 
 export interface CreateAppMigratorOptions {
+  /** Select pending tasks while retaining every source for history validation. */
+  readonly taskFilter?: (task: {
+    readonly name: string;
+    readonly packageName: string;
+  }) => boolean;
   runtimeConfig?: DatabaseTaskConfig;
   container?: ServiceResolver;
   database: DatabaseManager;
@@ -151,7 +156,7 @@ export function createAppMigrator(
         createDatabaseMigratorOptions(options),
       );
       return pendingTasksResult(
-        migrations,
+        options.taskFilter ? migrations.filter(options.taskFilter) : migrations,
         pendingOptions.fresh || pendingOptions.withoutHistory
           ? []
           : await createDatabaseMigrator(options).history(),
@@ -216,6 +221,7 @@ function createDatabaseMigratorOptions(
     extensions: options.config.extensions,
     onChecksumMismatch: options.config.onChecksumMismatch,
     onStaleLock: options.onStaleLock,
+    taskFilter: options.taskFilter,
   };
 
   if (options.sources) {
