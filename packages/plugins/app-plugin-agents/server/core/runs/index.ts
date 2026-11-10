@@ -69,6 +69,7 @@ export {
   type SubjectWorkspaces,
   type SubjectScope,
   type WorkSink,
+  type CancelRequest,
 } from './ports.js';
 export {
   DEFAULT_TOOL_POLICY,

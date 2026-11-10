@@ -475,7 +475,11 @@ export async function createHarness(
       can: () => Promise.resolve(false),
       opens: () => Promise.resolve(false),
       scope: () => Promise.resolve('none' as Scope),
-      run: { subjectKind: run.subjectKind, subjectId: run.subjectId },
+      run: {
+        id: run.id,
+        subjectKind: run.subjectKind,
+        subjectId: run.subjectId,
+      },
     });
     await next();
   };

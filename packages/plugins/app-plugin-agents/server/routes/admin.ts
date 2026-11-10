@@ -194,6 +194,7 @@ export interface AdminCaller {
   scope(key: BusinessKey): Promise<Scope>;
   /** Set when a run's token authenticated the request: the subject the run works on. */
   readonly run?: {
+    readonly id: string;
     readonly subjectKind: string;
     readonly subjectId: string;
   } | null;
@@ -1676,6 +1677,11 @@ export function createAdminRoutes(
           await services.runs.cancel(
             context.req.valid('param').runId,
             caller(context).userId,
+            undefined,
+            // A run's own token stops work as that agent, not as the person it acts for.
+            caller(context).run
+              ? { byRunId: caller(context).run!.id }
+              : undefined,
           ),
           await machineViewer(context),
         ),
