@@ -87,7 +87,7 @@ import {
   usageRepo,
   type RunRecord,
 } from './run.store.js';
-import type { SubjectRegistry } from './ports.js';
+import type { CancelRequest, SubjectRegistry } from './ports.js';
 import {
   readQueueWait,
   readWorkload,
@@ -258,8 +258,16 @@ export interface RunService {
   readonly requests: RunRequestService;
   /** Adds input to a run that has not ended. */
   addInput(runId: string, input: NewInput, outer?: Tx): Promise<string>;
-  /** A queued run ends at once; a held one is asked to stop. In `outer`, joins the caller's transaction. */
-  cancel(runId: string, byUserId: string | null, outer?: Tx): Promise<Run>;
+  /**
+   * A queued run ends at once; a held one is asked to stop. In `outer`, joins the caller's transaction. `request`
+   * reaches the subject's `onCancelRequested` unchanged.
+   */
+  cancel(
+    runId: string,
+    byUserId: string | null,
+    outer?: Tx,
+    request?: CancelRequest,
+  ): Promise<Run>;
   /**
    * Ends the queued runs on a subject, of one agent or of any, or of one agent on every subject; optionally only those
    * `actorUserId` woke. Held runs are left alone. Answers the runs it ended. In `outer`, joins the caller's transaction.
@@ -1587,7 +1595,7 @@ export function createRunService(deps: RunServiceDeps): RunService {
         return insertInput(unit, run.id, input);
       }, outer),
 
-    cancel: (runId, byUserId, outer) =>
+    cancel: (runId, byUserId, outer, request) =>
       tx.run(async (unit) => {
         const run = await require(unit.conn, runId);
         if (isTerminal(run.status))
@@ -1612,6 +1620,7 @@ export function createRunService(deps: RunServiceDeps): RunService {
                 ?.sink?.onCancelRequested?.(
                   unit,
                   toRun({ ...run, cancelledById: byUserId }),
+                  request,
                 );
             },
           );
@@ -1637,6 +1646,7 @@ export function createRunService(deps: RunServiceDeps): RunService {
               cancelRequestedAt: now,
               cancelledById: byUserId,
             }),
+            request,
           );
           unit.emit({ type: 'run.changed', runId: run.id, status: run.status });
         }

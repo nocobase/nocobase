@@ -77,7 +77,11 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
           ? { keyScope: authz.identity.keyScope }
           : {}),
         run: run
-          ? { subjectKind: run.subjectKind, subjectId: run.subjectId }
+          ? {
+              id: run.id,
+              subjectKind: run.subjectKind,
+              subjectId: run.subjectId,
+            }
           : null,
         can: (item, action) =>
           authz.can({ resource: { type: 'settings', id: item }, action }),

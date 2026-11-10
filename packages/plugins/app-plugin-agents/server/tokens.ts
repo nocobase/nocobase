@@ -123,6 +123,7 @@ export type {
   SubjectWorkspaces,
   SubjectScope,
   WorkSink,
+  CancelRequest,
 } from './core/runs/index.js';
 export type { AgentAvailability, Availability } from './core/runs/index.js';
 export type { Tx } from './kernel/tx.js';

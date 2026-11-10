@@ -189,12 +189,21 @@ export interface SubjectSample {
   ): readonly RunInput[];
 }
 
+/** Who asked for a stop beyond the user it is attributed to. */
+export interface CancelRequest {
+  /** Set when a run's token made the request: the run that asked. */
+  readonly byRunId?: string;
+}
+
 export interface WorkSink {
   /** In the quota suspension/resumption transaction, only for opted-in subjects. */
   onQuotaWait?(tx: Tx, run: Run): Promise<void>;
   onQuotaResumed?(tx: Tx, run: Run): Promise<void>;
-  /** In the stop request's transaction, once, before any terminal callback. A null actor is a system stop. */
-  onCancelRequested?(tx: Tx, run: Run): Promise<void>;
+  /**
+   * In the stop request's transaction, once, before any terminal callback. A null actor is a system stop; `byRunId`
+   * names the run whose token asked for the stop, so a subject can tell an agent's own stop from a person's.
+   */
+  onCancelRequested?(tx: Tx, run: Run, request?: CancelRequest): Promise<void>;
   /**
    * In the transaction that ended the run: completed, cancelled, or failed with no attempt left. A failed run's
    * `failureReason` says why; this is where the subject's domain asks people what next (retry, reassign, cancel).
