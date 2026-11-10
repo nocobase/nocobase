@@ -1979,3 +1979,132 @@ describe('a save started without returning its promise', () => {
     ).toBeVisible();
   });
 });
+
+describe('nested covering child pages', () => {
+  // An outer create page whose tab-like outlet renders a child page inside it. The inner save navigates back to the
+  // outer page and unmounts the inner form; the outer page must keep asking for its own input afterwards.
+  function Fields({
+    id,
+    label,
+    onSaved,
+  }: {
+    readonly id: string;
+    readonly label: string;
+    readonly onSaved: () => Promise<void>;
+  }) {
+    const saved = { name: '' };
+    const [values, setValues] = useState(saved);
+    return (
+      <FeedbackForm
+        id={id}
+        values={() => values}
+        savedValues={saved}
+        onSubmit={async (event) => {
+          event.preventDefault();
+          await Promise.resolve();
+          await onSaved();
+        }}
+      >
+        <input
+          aria-label={label}
+          value={values.name}
+          onChange={(event) => setValues({ name: event.target.value })}
+        />
+        <button type='submit'>{`Save ${label}`}</button>
+      </FeedbackForm>
+    );
+  }
+  function Outer() {
+    const navigate = useNavigate();
+    return (
+      <RouteChildPage>
+        <Fields id='outer' label='Order' onSaved={async () => {}} />
+        <button type='button' onClick={() => void navigate('/orders')}>
+          Cancel order
+        </button>
+        <Outlet />
+      </RouteChildPage>
+    );
+  }
+  function Inner() {
+    const navigate = useNavigate();
+    return (
+      <RouteChildPage>
+        <Fields
+          id='inner'
+          label='Item'
+          onSaved={async () => {
+            await navigate('/orders/new');
+            // Work after leaving, such as a toast or a refresh: the save ends once this page is gone.
+            await new Promise((resolve) => setTimeout(resolve, 10));
+          }}
+        />
+      </RouteChildPage>
+    );
+  }
+  function setup() {
+    const history: { back?: () => void; path?: string } = {};
+    function Probe() {
+      const navigate = useNavigate();
+      const { pathname } = useLocation();
+      useEffect(() => {
+        history.back = () => void navigate(-1);
+        history.path = pathname;
+      });
+      return null;
+    }
+    render(
+      <MemoryRouter
+        initialEntries={['/orders', '/orders/new', '/orders/new/item']}
+        initialIndex={2}
+      >
+        <NavigationGuardProvider>
+          <Probe />
+          <Routes>
+            <Route path='/orders' element={<Outlet />}>
+              <Route path='new' element={<Outer />}>
+                <Route path='item' element={<Inner />} />
+              </Route>
+            </Route>
+          </Routes>
+        </NavigationGuardProvider>
+      </MemoryRouter>,
+      { wrapper: I18n },
+    );
+    return history;
+  }
+  async function keep() {
+    const prompt = await screen.findByRole('alertdialog', {
+      name: 'Discard changes?',
+    });
+    await userEvent.click(
+      within(prompt).getByRole('button', { name: 'Keep editing' }),
+    );
+    await waitFor(() =>
+      expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument(),
+    );
+  }
+
+  it('keeps asking for the outer page after the inner page saved and closed', async () => {
+    const history = setup();
+    await userEvent.type(
+      await screen.findByRole('textbox', { name: 'Item' }),
+      'Bolt',
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Save Item' }));
+    await waitFor(() => expect(history.path).toBe('/orders/new'));
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+    // Wait past the inner save's delayed end, which never reaches a page that left.
+    await new Promise((resolve) => setTimeout(resolve, 20));
+
+    await userEvent.type(screen.getByRole('textbox', { name: 'Order' }), 'A');
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel order' }));
+    await keep();
+    act(() => history.back!());
+    await keep();
+    const reload = new Event('beforeunload', { cancelable: true });
+    window.dispatchEvent(reload);
+    expect(reload.defaultPrevented).toBe(true);
+    await waitFor(() => expect(history.path).toBe('/orders/new'));
+  });
+});

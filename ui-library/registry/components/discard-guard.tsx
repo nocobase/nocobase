@@ -114,7 +114,9 @@ function DiscardGuard({
   // such moment, and how many of its FeedbackForm submissions are running.
   const baselinesRef = useRef(new Map<HTMLFormElement, string>());
   const editedRef = useRef(new Set<HTMLFormElement>());
-  const savingRef = useRef(0);
+  // The forms of this layer whose save is running, by element: one that has left the page (the save navigated away and
+  // unmounted it) no longer counts, whether or not its end ever arrives.
+  const savingRef = useRef(new Set<Element>());
   useEffect(() => {
     const popup = containerRef?.current;
     if (!popup) return;
@@ -144,10 +146,12 @@ function DiscardGuard({
       if (form && !baselinesRef.current.has(form)) editedRef.current.add(form);
     };
     const submit = (event: Event): void => {
+      // Only this layer's own forms: a nested layer's save is that layer's business.
+      const form = event.target;
+      if (!(form instanceof Element) || nearestScope(form) !== popup) return;
       const { phase } = (event as CustomEvent<{ phase?: string }>).detail ?? {};
-      if (phase === 'start') savingRef.current += 1;
-      else if (phase === 'end')
-        savingRef.current = Math.max(0, savingRef.current - 1);
+      if (phase === 'start') savingRef.current.add(form);
+      else if (phase === 'end') savingRef.current.delete(form);
     };
     // A key or a pointer, not focus: an overlay focuses its first field by itself while a picker may still be loading
     // its label, and that is not the user's input.
@@ -168,7 +172,11 @@ function DiscardGuard({
     // The save's own navigation — only a FeedbackForm reports one: leaving while its onSubmit runs. A plain `<form>`
     // tells nobody whether its save succeeded, and no way of leaving tells it either, so after a plain form's save it
     // still asks: one question too many rather than input lost after a failed save. Or a form inside asks its own.
-    if (savingRef.current > 0 || ownersRef.current > 0) return false;
+    if (
+      [...savingRef.current].some((form) => form.isConnected) ||
+      ownersRef.current > 0
+    )
+      return false;
     // A disabled save button, such as while validation fails, never means there is nothing to lose.
     const current = dirtyRef.current;
     return (

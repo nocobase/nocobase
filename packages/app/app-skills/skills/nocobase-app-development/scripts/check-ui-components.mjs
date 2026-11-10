@@ -58,7 +58,7 @@ const draftDirty =
   'a dirty that only adds what the form cannot show; never derive it from a draft, storage or saved flag: a stored draft never replaces the discard question (mobile.md M7.4)';
 const overlays = new Set(['RouteDialog', 'RouteDrawer']);
 const ownQuestion =
-  "the layer's own discard question: OwnDiscardQuestion only declares that this file asks one itself through useNavigationGuard, and it does not (mobile.md M7.4)";
+  "the layer's own discard question: OwnDiscardQuestion only declares that this file asks one itself through useNavigationGuard from @nocobase/app-client, and it calls none (mobile.md M7.4)";
 const passiveTags = new Set([
   'div',
   'span',
@@ -123,6 +123,9 @@ export function inspectSource(ts, text, file, root) {
   const primitives = new Set();
   const namespaces = new Set();
   let usesHookForm = false;
+  // Local names of `useNavigationGuard` imported from @nocobase/app-client, and whether the file calls one.
+  const guardHooks = new Set();
+  let callsGuard = false;
   // A plain <form> is a create or edit form when it holds React Hook Form fields or renders in a route overlay; a chat
   // composer or a filter bar elsewhere is left alone.
   let usesOverlay = false;
@@ -140,6 +143,14 @@ export function inspectSource(ts, text, file, root) {
       continue;
     const specifier = statement.moduleSpecifier.text;
     if (specifier === 'react-hook-form') usesHookForm = true;
+    if (
+      specifier === '@nocobase/app-client' &&
+      statement.importClause?.namedBindings &&
+      ts.isNamedImports(statement.importClause.namedBindings)
+    )
+      for (const item of statement.importClause.namedBindings.elements)
+        if ((item.propertyName ?? item.name).text === 'useNavigationGuard')
+          guardHooks.add(item.name.text);
     if (/(^|\/)route-(dialog|drawer|child-page)(\.js)?$/.test(specifier))
       usesOverlay = true;
     if (/(^|\/)page-container(\.js)?$/.test(specifier)) rendersPage = true;
@@ -354,10 +365,7 @@ export function inspectSource(ts, text, file, root) {
             undefined,
             false,
           );
-      } else if (
-        tag === 'OwnDiscardQuestion' &&
-        !/\buseNavigationGuard\s*\(/.test(text)
-      ) {
+      } else if (tag === 'OwnDiscardQuestion' && !callsGuard) {
         report(node, tag, ownQuestion, undefined, false);
       } else if (overlays.has(tag) && attribute(ts, node, 'dirty')) {
         const value = attribute(ts, node, 'dirty').initializer;
@@ -389,6 +397,15 @@ export function inspectSource(ts, text, file, root) {
     }
     ts.forEachChild(node, visit);
   }
+  (function findGuardCall(node) {
+    if (
+      ts.isCallExpression(node) &&
+      ts.isIdentifier(node.expression) &&
+      guardHooks.has(node.expression.text)
+    )
+      callsGuard = true;
+    ts.forEachChild(node, findGuardCall);
+  })(source);
   visit(source);
   for (const exception of exceptions.values()) {
     if (!exception.used)

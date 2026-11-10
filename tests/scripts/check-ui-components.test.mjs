@@ -579,10 +579,19 @@ test('rejects OwnDiscardQuestion in a file that asks no question of its own', ()
     ['OwnDiscardQuestion'],
   );
   assert.deepEqual(
-    inspect(
-      `export const Page = () => { useNavigationGuard(ask); return <OwnDiscardQuestion/>; }`,
-    ).findings,
+    inspect(`import { useNavigationGuard } from '@nocobase/app-client';
+      export const Page = () => { useNavigationGuard(ask); return <OwnDiscardQuestion/>; }`)
+      .findings,
     [],
+  );
+  // A comment, or a hook of the same name from elsewhere, does not count.
+  assert.deepEqual(
+    inspect(`import { useNavigationGuard } from './local-guard';
+      // useNavigationGuard(ask)
+      export const Page = () => { useNavigationGuard(ask); return <OwnDiscardQuestion/>; }`).findings.map(
+      (item) => item.tag,
+    ),
+    ['OwnDiscardQuestion'],
   );
 });
 
