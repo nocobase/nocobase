@@ -745,6 +745,30 @@ export function SqlFieldsConfigureItem(props: CollectionTemplateConfigureItemPro
       },
     },
     {
+      title: t('Source options'),
+      key: 'syncSourceOptions',
+      render: (_, record, index) => {
+        const inferred = preview.fields?.[record.name];
+        const source = Array.isArray(record.source) ? record.source.join('.') : record.source;
+        const options = inferred?.uiSchema?.enum;
+        if (
+          !source ||
+          inferred?.source !== source ||
+          inferred.interface !== record.interface ||
+          !Array.isArray(options)
+        )
+          return null;
+        return (
+          <Button
+            type="link"
+            onClick={() => updateField(index, { ...record, uiSchema: { ...record.uiSchema, enum: options } })}
+          >
+            {t('Copy source options')}
+          </Button>
+        );
+      },
+    },
+    {
       title: t('Field display name'),
       dataIndex: ['uiSchema', 'title'],
       width: 180,

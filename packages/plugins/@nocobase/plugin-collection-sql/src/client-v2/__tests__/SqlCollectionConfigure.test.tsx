@@ -800,6 +800,37 @@ describe('SqlFieldsConfigureItem', () => {
     expect(form.getFieldValue(['fields', 0, 'interface'])).toBe('checkbox');
   });
 
+  it('copies the latest enum to the selected derived field and preserves its title and the other field', async () => {
+    const previewName = getSqlPreviewInternalName();
+    const source = 'orders.status';
+    const enumOptions = [
+      { value: 'b', label: 'Renamed' },
+      { value: 'c', label: 'New' },
+    ];
+    const inferred = { type: 'string', interface: 'select', source, uiSchema: { enum: enumOptions } };
+    const custom = {
+      type: 'string',
+      interface: 'select',
+      source,
+      uiSchema: { title: 'Local', enum: [{ value: 'a', label: 'Old' }] },
+    };
+    const { form } = renderConfigureItem(SqlFieldsConfigureItem, {
+      initialValues: {
+        sources: ['orders'],
+        fields: [
+          { ...custom, name: 'derived' },
+          { ...custom, name: 'manual' },
+        ],
+        [previewName]: { fields: { derived: inferred, manual: inferred }, data: [] },
+      },
+      registerNames: [previewName, 'fields', 'sources'],
+    });
+    const buttons = await screen.findAllByRole('button', { name: 't:Copy source options' });
+    fireEvent.click(buttons[0]);
+    expect(form.getFieldValue(['fields', 0, 'uiSchema'])).toEqual({ title: 'Local', enum: enumOptions });
+    expect(form.getFieldValue(['fields', 1, 'uiSchema'])).toEqual(custom.uiSchema);
+  });
+
   it('inherits field configuration from the selected source field', async () => {
     const { form } = renderConfigureItem(SqlFieldsConfigureItem, {
       initialValues: {

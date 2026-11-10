@@ -16,22 +16,20 @@ export default class extends Migration {
   async up() {
     const roles = await this.db.getRepository('roles').find();
     for (const role of roles) {
-      const snippets = await role.get('snippets');
-      let roleNeedsUpdate = false;
-      for (let i = 0; i < snippets.length; i++) {
-        if (snippets[i].includes('pm.backup.restore')) {
-          snippets[i] = snippets[i].replace('pm.backup.restore', 'pm.backup-restore');
-          roleNeedsUpdate = true;
-        }
+      const snippets: unknown = role.get('snippets');
+      if (snippets == null) continue;
+      if (!Array.isArray(snippets) || !snippets.every((snippet) => typeof snippet === 'string')) {
+        this.db.logger.warn('Skipping invalid role snippets during migration', { role: role.get('name') });
+        continue;
       }
-
-      if (roleNeedsUpdate) {
+      const renamed = snippets.map((snippet) => snippet.replace('pm.backup.restore', 'pm.backup-restore'));
+      if (renamed.some((snippet, index) => snippet !== snippets[index])) {
         await this.db.getRepository('roles').update({
           filter: {
             name: role.get('name'),
           },
           values: {
-            snippets: JSON.parse(JSON.stringify(snippets)),
+            snippets: renamed,
           },
         });
       }

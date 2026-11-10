@@ -7,6 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { calendarCronOptions } from '../../../shared/calendar';
+import { calendarLocales, resolveCalendarCulture } from '../../../shared/calendarLocale';
 import { useApp } from '@nocobase/client-v2';
 import type { Dayjs } from 'dayjs';
 import dayjs from 'dayjs';
@@ -15,9 +17,6 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { View } from 'react-big-calendar';
 import { dateFnsLocalizer } from 'react-big-calendar';
 import { format, getDay, parse, startOfWeek } from 'date-fns';
-import enUS from 'date-fns/locale/en-US';
-import ru from 'date-fns/locale/ru';
-import zhCN from 'date-fns/locale/zh-CN';
 import { observer, useFlowContext } from '@nocobase/flow-engine';
 import { useT } from '../../locale';
 import GlobalStyle from './global.style';
@@ -34,8 +33,6 @@ import {
 import { CalendarHeader } from './CalendarHeader';
 import { CalendarViewProvider, type CalendarNavigationAction } from './CalendarViewContext';
 import useStyle from './style';
-
-type CalendarCulture = keyof typeof LOCALES;
 
 type LocalizerFormatContext = {
   format: (value: Date, formatStr: string, culture?: string) => string;
@@ -69,11 +66,6 @@ export const getCalendarEventDisplayRange = (eventStart: Dayjs, intervalTime: nu
 };
 
 const WEEKS = ['month', 'week', 'day'] as View[];
-const LOCALES = {
-  'zh-CN': zhCN,
-  'en-US': enUS,
-  'ru-RU': ru,
-};
 
 const useCalendarEvents = (
   dataSource: any,
@@ -117,10 +109,11 @@ const useCalendarEvents = (
 
   return useMemo(() => {
     if (!Array.isArray(dataSource)) {
-      return { events: [] as Event[] };
+      return { events: [] as Event[], invalidRecurrence: false };
     }
 
     const events: Event[] = [];
+    let invalidRecurrence = false;
     const startDate = dayjs(rangeStart);
     const endDate = dayjs(rangeEnd);
 
@@ -201,13 +194,10 @@ const useCalendarEvents = (
           return;
         }
         try {
-          const interval = parseExpression(cron, {
-            startDate: startDate.toDate(),
-            endDate: endDate.toDate(),
-            iterator: true,
-            currentDate: start.toDate(),
-            utc: true,
-          });
+          const interval = parseExpression(
+            cron,
+            calendarCronOptions(start.toDate(), startDate.toDate(), endDate.toDate(), item.cronTimezone),
+          );
           while (interval.hasNext()) {
             const { value } = interval.next();
             if (push(dayjs(value.toDate()))) {
@@ -215,12 +205,13 @@ const useCalendarEvents = (
             }
           }
         } catch (error) {
+          invalidRecurrence = true;
           console.error(error);
         }
       }
     });
 
-    return { events };
+    return { events, invalidRecurrence };
   }, [
     dataSource,
     fieldNames.colorFieldName,
@@ -282,7 +273,7 @@ export const CalendarBlock = observer((props: CalendarBlockProps) => {
   const [date, setDate] = useState<Date>(new Date());
   const [view, setView] = useState<View>(props.defaultView || 'month');
   const rangeRefreshKeyRef = useRef<string>();
-  const { events } = useCalendarEvents(
+  const { events, invalidRecurrence } = useCalendarEvents(
     props.dataSource,
     props.fieldNames,
     date,
@@ -293,9 +284,7 @@ export const CalendarBlock = observer((props: CalendarBlockProps) => {
   const { styles, cx } = useStyle();
   const ctx = useFlowContext();
   const t = useT();
-  const locale = (
-    LOCALES[ctx.api.auth.locale as CalendarCulture] ? (ctx.api.auth.locale as CalendarCulture) : 'en-US'
-  ) as CalendarCulture;
+  const locale = resolveCalendarCulture(ctx.api.auth.locale);
   const defaultHeight = ctx.themeToken.controlHeightLG * 18;
 
   const formats = useMemo(() => {
@@ -354,11 +343,11 @@ export const CalendarBlock = observer((props: CalendarBlockProps) => {
       parse,
       startOfWeek: (value: Date) =>
         startOfWeek(value, {
-          locale: LOCALES[locale],
+          locale: calendarLocales[locale],
           weekStartsOn: (props.weekStart ?? 1) as 0 | 1 | 2 | 3 | 4 | 5 | 6,
         }),
       getDay,
-      locales: LOCALES,
+      locales: calendarLocales,
     });
   }, [locale, props.weekStart]);
 
@@ -420,7 +409,11 @@ export const CalendarBlock = observer((props: CalendarBlockProps) => {
       return;
     }
 
-    const rangeFilter = createCalendarRangeFilter(props.fieldNames, visibleRange);
+    const rangeFilter = createCalendarRangeFilter(
+      props.fieldNames,
+      visibleRange,
+      !!props.collection?.getField?.('cron'),
+    );
     const nextKey = JSON.stringify({
       fieldNames: props.fieldNames,
       view,
@@ -443,7 +436,7 @@ export const CalendarBlock = observer((props: CalendarBlockProps) => {
 
     props.resource.setPage?.(1);
     void props.resource.refresh();
-  }, [props.fieldNames, props.rangeLoadEnabled, props.resource, view, visibleRange]);
+  }, [props.collection, props.fieldNames, props.rangeLoadEnabled, props.resource, view, visibleRange]);
 
   useEffect(() => {
     return () => {
@@ -528,6 +521,9 @@ export const CalendarBlock = observer((props: CalendarBlockProps) => {
         <GlobalStyle />
         {props.actionBar ? <div ref={actionBarRef}>{props.actionBar}</div> : null}
         <div className="nb-calendar-body">
+          {invalidRecurrence && (
+            <div role="alert">{t('One or more calendar events have an invalid recurrence rule or time zone.')}</div>
+          )}
           <BigCalendar
             className={`view-${view}`}
             popup

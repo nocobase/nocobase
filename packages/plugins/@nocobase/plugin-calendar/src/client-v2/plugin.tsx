@@ -225,6 +225,16 @@ export class PluginCalendarClient extends Plugin<any, Application> {
             interface: 'select',
           },
           {
+            name: 'cronTimezone',
+            type: 'string',
+            interface: 'input',
+            uiSchema: {
+              title: tExpr('Recurrence time zone'),
+              'x-component': 'Input',
+              'x-component-props': { placeholder: 'America/Los_Angeles' },
+            },
+          },
+          {
             name: 'exclude',
             type: 'json',
           },

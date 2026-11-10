@@ -412,6 +412,7 @@ export class CalendarBlockModel extends CollectionBlockModel {
     const rangeFilter = createCalendarRangeFilter(
       this.getFieldNames(),
       getCalendarVisibleRange(new Date(), this.getDefaultView(), this.getWeekStart()),
+      !!this.collection?.getField?.('cron'),
     );
 
     if (rangeFilter) {

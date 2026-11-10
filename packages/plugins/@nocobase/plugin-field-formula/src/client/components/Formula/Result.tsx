@@ -33,6 +33,7 @@ const TypedComponents = {
   double: InputNumber.ReadPretty,
   decimal: InputNumber.ReadPretty,
   date: DatePicker.ReadPretty,
+  dateOnly: InputString.ReadPretty,
   string: InputString.ReadPretty,
 };
 
@@ -140,7 +141,7 @@ export function Result(props) {
         field.value = editingValue;
       });
     }
-  }, [editingValue]);
+  }, [editingValue, field]);
   const Component = TypedComponents[dataType] ?? InputString;
   return (
     <Component {...others} value={dataType === 'double' ? toFixedByStep(editingValue, props.step) : editingValue} />

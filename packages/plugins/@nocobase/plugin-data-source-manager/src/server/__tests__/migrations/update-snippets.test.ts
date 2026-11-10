@@ -42,10 +42,20 @@ describe('migration snippet name test', () => {
         value: '0.8.0-alpha.10',
       },
     });
+    const roles = db.getRepository('roles');
+    await roles.create({ values: { name: 'nullSnippets', snippets: null } });
+    await roles.create({ values: { name: 'emptySnippets', snippets: [] } });
     const migration = new updateSnippetName({ db } as MigrationContext);
     migration.context.app = app;
     await migration.up();
 
+    await migration.up();
+    for (const [name, snippets] of [
+      ['nullSnippets', null],
+      ['emptySnippets', []],
+    ]) {
+      expect((await roles.findOne({ filter: { name } })).get('snippets')).toEqual(snippets);
+    }
     const role = await db.getRepository('roles').findOne({
       filter: {
         name: 'test',

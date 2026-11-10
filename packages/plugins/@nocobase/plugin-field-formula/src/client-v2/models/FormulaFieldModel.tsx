@@ -507,7 +507,7 @@ DisplayItemModel.bindModelToInterface('DisplayTextFieldModel', ['formula'], {
   isDefault: true,
   when(ctx, fieldInstance) {
     if (fieldInstance.type === 'formula') {
-      return fieldInstance.dataType === 'string';
+      return ['string', 'dateOnly'].includes(fieldInstance.dataType);
     }
     return true;
   },
@@ -537,7 +537,7 @@ FilterableItemModel.bindModelToInterface('InputFieldModel', ['formula'], {
     const { isFilterContext } = resolveFormulaUsageFlags(ctx?.form, ctx);
     if (!isFilterContext) return false;
     const dataType = fieldInstance?.dataType;
-    return !['date', 'boolean', 'integer', 'bigInt', 'double', 'decimal', 'number'].includes(dataType);
+    return !['date', 'dateOnly', 'boolean', 'integer', 'bigInt', 'double', 'decimal', 'number'].includes(dataType);
   },
 });
 
@@ -546,6 +546,14 @@ FilterableItemModel.bindModelToInterface('DateTimeFilterFieldModel', ['formula']
   when(ctx, fieldInstance) {
     const { isFilterContext } = resolveFormulaUsageFlags(ctx?.form, ctx);
     return isFilterContext && fieldInstance?.dataType === 'date';
+  },
+});
+
+FilterableItemModel.bindModelToInterface('DateOnlyFilterFieldModel', ['formula'], {
+  isDefault: false,
+  when(ctx, fieldInstance) {
+    const { isFilterContext } = resolveFormulaUsageFlags(ctx?.form, ctx);
+    return isFilterContext && fieldInstance?.dataType === 'dateOnly';
   },
 });
 

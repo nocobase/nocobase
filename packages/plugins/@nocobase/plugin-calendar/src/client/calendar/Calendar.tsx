@@ -7,6 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { calendarCronOptions } from '../../shared/calendar';
+import { calendarLocales, resolveCalendarCulture } from '../../shared/calendarLocale';
 import { LeftOutlined, RightOutlined } from '@ant-design/icons';
 import { Schema, useField, useFieldSchema } from '@formily/react';
 import {
@@ -51,9 +53,6 @@ import { formatDate } from './utils';
 import updateLocale from 'dayjs/plugin/updateLocale';
 import { dateFnsLocalizer } from 'react-big-calendar';
 import { format, parse, startOfWeek, getDay } from 'date-fns';
-import enUS from 'date-fns/locale/en-US';
-import zhCN from 'date-fns/locale/zh-CN';
-import ru from 'date-fns/locale/ru';
 
 interface Event {
   id: string;
@@ -80,7 +79,7 @@ function Toolbar(props: ToolbarProps) {
         }
         return buf;
       }, null),
-    [],
+    [fieldSchema],
   );
 
   return (
@@ -114,9 +113,10 @@ const useEvents = (
   const labelUiSchema = fields.find((v) => v.name === fieldNames?.title)?.uiSchema;
   const enumUiSchema = fields.find((v) => v.name === fieldNames?.colorFieldName);
   return useMemo(() => {
-    if (!Array.isArray(dataSource)) return { events: [], enumList: [] };
+    if (!Array.isArray(dataSource)) return { events: [], enumList: [], invalidRecurrence: false };
     const enumList = enumUiSchema?.uiSchema?.enum || [];
     const events: Event[] = [];
+    let invalidRecurrence = false;
 
     dataSource.forEach((item) => {
       const { cron, exclude = [] } = item;
@@ -201,25 +201,25 @@ const useEvents = (
         push();
         if (!cron) return;
         try {
-          const interval = parseExpression(cron, {
-            startDate: startDate.toDate(),
-            endDate: endDate.toDate(),
-            iterator: true,
-            currentDate: start.toDate(),
-            utc: true,
-          });
+          const interval = parseExpression(
+            cron,
+            calendarCronOptions(start.toDate(), startDate.toDate(), endDate.toDate(), item.cronTimezone),
+          );
           while (interval.hasNext()) {
             const { value } = interval.next();
             if (push(dayjs(value.toDate()))) break;
           }
         } catch (err) {
+          invalidRecurrence = true;
           console.error(err);
         }
       }
     });
-    return { events, enumList };
+    return { events, invalidRecurrence, enumList };
   }, [
     labelUiSchema,
+    fields,
+    plugin,
     dataSource,
     fieldNames.colorFieldName,
     fieldNames.start,
@@ -269,7 +269,7 @@ export const Calendar: any = withDynamicSchemaProps(
       const height = useCalenderHeight();
       const [date, setDate] = useState<Date>(new Date());
       const [view, setView] = useState<View>(props.defaultView || 'month');
-      const { events, enumList } = useEvents(dataSource, fieldNames, date, view);
+      const { events, invalidRecurrence, enumList } = useEvents(dataSource, fieldNames, date, view);
       const [record, setRecord] = useState<any>({});
       const { wrapSSR, hashId, componentCls: containerClassName } = useStyle();
       const parentRecordData = useCollectionParentRecordData();
@@ -287,12 +287,7 @@ export const Calendar: any = withDynamicSchemaProps(
       const [visibleAddNewer, setVisibleAddNewer] = useState(false);
       const [currentSelectDate, setCurrentSelectDate] = useState(undefined);
       const apiClient = useAPIClient();
-      const locales = {
-        'zh-CN': zhCN,
-        'en-US': enUS,
-        'ru-RU': ru,
-      };
-      const locale = apiClient.auth.locale || 'en-US';
+      const locale = resolveCalendarCulture(apiClient.auth.locale);
       const formats = useMemo(() => {
         return {
           monthHeaderFormat: (date, culture, local) =>
@@ -345,14 +340,15 @@ export const Calendar: any = withDynamicSchemaProps(
             return local.format(date, 'EEE', culture);
           },
         };
-      }, [locale, view]);
+      }, []);
       const localizer = useMemo(() => {
         return dateFnsLocalizer({
           format,
           parse,
-          startOfWeek: (date) => startOfWeek(date, { locale: locales[locale], weekStartsOn: props.weekStart ?? 1 }),
+          startOfWeek: (date) =>
+            startOfWeek(date, { locale: calendarLocales[locale], weekStartsOn: props.weekStart ?? 1 }),
           getDay,
-          locales,
+          locales: calendarLocales,
         });
       }, [locale, props.weekStart]);
       useEffect(() => {
@@ -371,7 +367,7 @@ export const Calendar: any = withDynamicSchemaProps(
             dateHeader: (props) => <Header {...props} showLunar={showLunar}></Header>,
           },
         };
-      }, [showLunar]);
+      }, [locale, localizer, showLunar]);
 
       const messages: any = {
         allDay: '',
@@ -476,6 +472,11 @@ export const Calendar: any = withDynamicSchemaProps(
             <RecordProvider record={record} parent={parentRecordData}>
               <CalendarRecordViewer />
             </RecordProvider>
+            {invalidRecurrence && (
+              <div role="alert">
+                {String(i18nt('One or more calendar events have an invalid recurrence rule or time zone.'))}
+              </div>
+            )}
             <BigCalendar
               popup
               selectable

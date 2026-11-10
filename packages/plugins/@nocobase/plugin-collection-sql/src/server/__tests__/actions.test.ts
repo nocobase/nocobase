@@ -341,6 +341,43 @@ describe('sql collection', () => {
     expect(loadedFields2.size).toBe(1);
   });
 
+  it('persists refreshed enum options for one SQL field while preserving the other override', async () => {
+    const oldOptions = [
+      { value: 'a', label: 'Old' },
+      { value: 'b', label: 'Before' },
+    ];
+    const newOptions = [
+      { value: 'b', label: 'After' },
+      { value: 'c', label: 'New' },
+    ];
+    const status = { name: 'status', type: 'string', interface: 'select', uiSchema: { enum: oldOptions } };
+    await agent.resource('collections').create({ values: { name: 'enum_source', fields: [status] } });
+    const sql = 'select status as copied, status as manual from enum_source';
+    const fields = ['copied', 'manual'].map((name) => ({ ...status, name, source: 'enum_source.status' }));
+    await agent.resource('collections').create({ values: { name: 'enum_report', template: 'sql', sql, fields } });
+    await agent.resource('collections.fields', 'enum_source').update({
+      filterByTk: 'status',
+      values: { uiSchema: { enum: newOptions } },
+    });
+    const preview = await agent.resource('sqlCollection').execute({ values: { sql } });
+    expect(preview.status).toBe(200);
+    expect(preview.body.data.fields.copied.uiSchema.enum).toEqual(newOptions);
+    const response = await agent.resource('sqlCollection').setFields({
+      filterByTk: 'enum_report',
+      values: {
+        fields: [
+          { ...fields[0], uiSchema: { ...fields[0].uiSchema, enum: preview.body.data.fields.copied.uiSchema.enum } },
+          fields[1],
+        ],
+      },
+    });
+    expect(response.status).toBe(200);
+    const configured = await db
+      .getRepository('fields')
+      .find({ filter: { collectionName: 'enum_report' }, sort: ['name'] });
+    expect(configured.map((field) => field.get('uiSchema').enum)).toEqual([newOptions, oldOptions]);
+  });
+
   it('should check sql when creating', async () => {
     const res = await agent.resource('collections').create({
       values: {
