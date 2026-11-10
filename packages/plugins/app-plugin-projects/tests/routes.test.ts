@@ -1759,7 +1759,7 @@ describe('attachments over HTTP', () => {
             error: {
               reason: 'FILE_TOO_LARGE',
               message: 'A file may have at most 1 MB.',
-              metadata: { maxBytes: 1 * 1024 * 1024 },
+              metadata: { maxFileSizeMb: 1 },
             },
           });
       }

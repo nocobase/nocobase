@@ -105,15 +105,15 @@ export function Composer({
   const sources = useChatSources();
   const labels = useComposerLabels();
   const files = useChatAttachments();
-  const { maxBytes } = useFileUploadLimit();
+  const { maxFileSizeMb } = useFileUploadLimit();
   const attachments = useMemo(
     (): AgentComposerAttachments => ({
-      maxSize: maxBytes,
+      maxSize: maxFileSizeMb * 1024 * 1024,
       upload: (file, signal) => files.upload(file, signal),
       discard: (attachment) => files.discard(attachment),
       ...(registerAddFiles ? { registerAdd: registerAddFiles } : {}),
     }),
-    [files, maxBytes, registerAddFiles],
+    [files, maxFileSizeMb, registerAddFiles],
   );
 
   const input: ChatContextInput = {

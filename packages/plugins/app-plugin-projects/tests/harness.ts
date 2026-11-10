@@ -78,7 +78,6 @@ export async function createHarness(
   },
 ): Promise<Harness> {
   const drive = createDriveManager(driveConfig);
-  const uploadLimit = drive.getUploadLimit();
   const testDatabase = await createTestDatabase(options);
   const database = testDatabase.database;
   for (const [directory, packageName] of [
@@ -188,7 +187,7 @@ export async function createHarness(
     }),
   });
   const services = createProjects({
-    uploadLimit,
+    limitForDisk: (disk) => drive.getUploadLimit(disk),
     storage,
     basePath: () => '/app',
     database,

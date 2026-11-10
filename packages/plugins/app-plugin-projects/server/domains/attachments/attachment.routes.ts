@@ -1,6 +1,6 @@
 import {
   fileTooLarge,
-  type FileUploadLimit,
+  type DriveUploadLimit,
 } from '@nocobase/app-plugin-file/server';
 /**
  * `/api/projects/attachments` and `/api/projects/issues/{issueId}/attachments` (`shared/attachments.ts`). Every path
@@ -44,9 +44,9 @@ import type { AttachmentService } from './attachment.service.js';
 /** Room for the multipart envelope around one file. */
 const ENVELOPE = 64 * 1024;
 
-const sizeLimit = (limit: FileUploadLimit) =>
+const sizeLimit = (limit: DriveUploadLimit) =>
   bodyLimit({
-    maxSize: limit.maxBytes + ENVELOPE,
+    maxSize: limit.maxFileSizeMb * 1024 * 1024 + ENVELOPE,
     onError: () => {
       throw fileTooLarge(limit);
     },

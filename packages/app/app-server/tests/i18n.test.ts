@@ -1,3 +1,6 @@
+import { ServiceContainer } from '@nocobase/service-provider';
+import { createDriveManager, type AppDriveConfig } from '@nocobase/drive';
+import { driveManagerToken } from '../src/drive/token.js';
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -180,11 +183,9 @@ describe('disk upload limits published with the page', () => {
     expect(payload.public.drive.uploadLimits).toEqual({
       default: 'remote',
       disks: {
-        local: { disk: 'local', maxFileSizeMb: 20, maxBytes: 20 * 1024 * 1024 },
+        local: { maxFileSizeMb: 20 },
         remote: {
-          disk: 'remote',
           maxFileSizeMb: 50,
-          maxBytes: 50 * 1024 * 1024,
         },
       },
     });
@@ -213,11 +214,15 @@ async function fetchSpaIndex(
     );
   }
 
+  const container = new ServiceContainer();
+  const drive = config.get<AppDriveConfig>('drive');
+  if (drive) container.instance(driveManagerToken, createDriveManager(drive));
   const router = new Hono();
   router.route(
     '/',
     spaRootRoutes.createRouter({
       config,
+      container,
       mode: 'standalone',
       publicBasePath: '/main',
       paths: { rootDir: root },

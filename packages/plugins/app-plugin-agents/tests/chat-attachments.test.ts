@@ -72,16 +72,13 @@ describe('chat attachments', () => {
       ALICE,
       new File(['old disk'], 'old.txt'),
     );
-    const limitForDisk = vi.fn((disk: string) => ({
-      disk,
+    const limitForDisk = vi.fn(() => ({
       maxFileSizeMb: 50,
-      maxBytes: 50 * 1024 * 1024,
     }));
     const { service } = createChatAttachments({
       tx: h.services.tx,
       basePath: () => '/main',
       limitForDisk,
-      uploadLimit: { disk: 'new', maxFileSizeMb: 1, maxBytes: 1024 * 1024 },
       storage: {
         store: async () => {
           throw new Error('Not uploading');
@@ -92,8 +89,8 @@ describe('chat attachments', () => {
       },
     });
     const content = await service.content({ userId: ALICE }, attachment.id);
-    expect(content.maxBytes).toBe(50 * 1024 * 1024);
-    expect(limitForDisk).toHaveBeenCalledExactlyOnceWith('memory');
+    expect(content.uploadLimit).toEqual({ maxFileSizeMb: 50 });
+    expect(limitForDisk).toHaveBeenLastCalledWith('memory');
     expect(await new Response(content.body).text()).toBe('old disk');
   });
 
@@ -122,7 +119,7 @@ describe('chat attachments', () => {
         expect(result.body.error).toMatchObject({
           reason: 'FILE_TOO_LARGE',
           message: 'A file may have at most 1 MB.',
-          metadata: { maxBytes: 1 * 1024 * 1024 },
+          metadata: { maxFileSizeMb: 1 },
         });
     }
   });

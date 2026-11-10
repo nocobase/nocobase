@@ -42,9 +42,7 @@ describe.each([false, true])('attachment preflight (issue: %s)', (issue) => {
                     default: 'large',
                     disks: {
                       large: {
-                        disk: 'large',
                         maxFileSizeMb: mb,
-                        maxBytes: mb * 1024 * 1024,
                       },
                     },
                   },

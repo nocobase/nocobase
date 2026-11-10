@@ -183,9 +183,6 @@ export class AgentsProvider extends ServiceProvider<AppPluginApplication> {
         limitForDisk: resolver.has(driveManagerToken)
           ? (disk) => resolver.resolve(driveManagerToken).getUploadLimit(disk)
           : undefined,
-        uploadLimit: resolver.has(driveManagerToken)
-          ? resolver.resolve(driveManagerToken).getUploadLimit()
-          : undefined,
         resolver,
         sandbox: {
           bin: () => {

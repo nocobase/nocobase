@@ -32,9 +32,6 @@ export function parseDriveDiskConfig(value: unknown): AppDriveDiskConfig {
   if (value.driver === 'fs') {
     const disk: FsDriveDiskConfig = {
       driver: 'fs',
-      ...(value.maxFileSizeMb === undefined
-        ? {}
-        : { maxFileSizeMb: value.maxFileSizeMb as number }),
       location: requiredString(value, 'location'),
       visibility,
     };
@@ -49,9 +46,6 @@ export function parseDriveDiskConfig(value: unknown): AppDriveDiskConfig {
       throw invalid('credentials', 'must be an object');
     const disk: S3DriveDiskConfig = {
       driver: 's3',
-      ...(value.maxFileSizeMb === undefined
-        ? {}
-        : { maxFileSizeMb: value.maxFileSizeMb as number }),
       bucket: requiredString(value, 'bucket'),
       region: requiredString(value, 'region'),
       credentials: {},

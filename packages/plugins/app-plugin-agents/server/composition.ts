@@ -1,3 +1,4 @@
+import { DEFAULT_FILE_UPLOAD_LIMIT } from '@nocobase/app-plugin-file/server';
 import { OnlineAgentUIStreams } from './online/agent/transport/streams.js';
 import type { OnlineAgentRecoveryConfig } from './online/agent/types.js';
 import { OnlineAgentConfigurator } from './online/agent/configuration.js';
@@ -190,9 +191,8 @@ export interface AgentsDeps {
    */
   readonly chatFiles?: ChatFileStorage;
   readonly limitForDisk?: (
-    disk: string,
-  ) => import('@nocobase/app-plugin-file/server').FileUploadLimit;
-  readonly uploadLimit?: import('@nocobase/app-plugin-file/server').FileUploadLimit;
+    disk?: string,
+  ) => import('@nocobase/app-plugin-file/server').DriveUploadLimit;
   /** The application's public base path (`/app`, or empty), for the URLs of files sent in chat. */
   readonly basePath?: () => string;
   readonly onError?: (message: string, error: unknown) => void;
@@ -535,8 +535,7 @@ export function createAgents(deps: AgentsDeps): Agents {
   });
   const basePath = deps.basePath ?? (() => '');
   const chatAttachments = createChatAttachments({
-    uploadLimit: deps.uploadLimit,
-    limitForDisk: deps.limitForDisk,
+    limitForDisk: deps.limitForDisk ?? (() => DEFAULT_FILE_UPLOAD_LIMIT),
     tx,
     basePath,
     now: () => clock.now(),

@@ -66,7 +66,6 @@
     "@nocobase/db": "workspace:*",
     "@nocobase/app-testing": "workspace:*",
     "@nocobase/dev-config": "workspace:*",
-    "@nocobase/drive": "workspace:*",
     "@nocobase/service-provider": "workspace:*",
     "@silurus/ooxml": "0.85.1",
     "@testing-library/jest-dom": "catalog:",
@@ -86,7 +85,8 @@
     "vitest": "catalog:"
   },
   "dependencies": {
-    "hono": "catalog:"
+    "hono": "catalog:",
+    "@nocobase/drive": "workspace:^"
   },
   "peerDependencies": {
     "@nocobase/app-client": "workspace:^",

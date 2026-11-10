@@ -1,3 +1,4 @@
+import { DEFAULT_FILE_UPLOAD_LIMIT } from '@nocobase/app-plugin-file/server';
 /**
  * The one place the plugin's services are assembled from their dependencies. The provider binds the result to
  * `projectsToken`; tests call it directly against a real database.
@@ -108,6 +109,9 @@ import {
 } from './domains/attachments/index.js';
 
 export interface ProjectsDeps {
+  readonly limitForDisk?: (
+    disk?: string,
+  ) => import('@nocobase/app-plugin-file/server').DriveUploadLimit;
   readonly database: Pick<DatabaseManager, 'transaction' | 'connection'>;
   readonly idGenerator: { generateString(): string };
   /** The roles, kept by the application (`projectsAccessToken`). */
@@ -129,7 +133,6 @@ export interface ProjectsDeps {
   readonly intakeOrganizer?: () => IntakeOrganizer | undefined;
   /** Where files' bytes go (the file plugin and Drive); without it nothing can be uploaded. */
   readonly storage?: AttachmentStorage;
-  readonly uploadLimit?: import('@nocobase/app-plugin-file/server').FileUploadLimit;
   /** The application's public base path, for the files' content URLs; empty when left out. */
   readonly basePath?: () => string;
   readonly onListenerError?: (error: unknown) => void;
@@ -206,7 +209,7 @@ export function createProjects(deps: ProjectsDeps): Projects {
       disk: () => 'local',
     });
   const attachments = createAttachmentService({
-    uploadLimit: deps.uploadLimit,
+    limitForDisk: deps.limitForDisk ?? (() => DEFAULT_FILE_UPLOAD_LIMIT),
     tx,
     activity,
     kinds,

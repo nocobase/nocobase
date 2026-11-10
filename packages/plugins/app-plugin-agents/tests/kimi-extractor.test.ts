@@ -394,13 +394,13 @@ it('forwards an authorized attachment above 20 MiB without imposing a second byt
   const bytes = new Uint8Array(20 * 1024 * 1024 + 1);
   bytes[0] = 42;
   bytes[bytes.length - 1] = 99;
-  const result = await kimiExtractor(
-    connection(server.baseUrl),
-    'session',
-  )({
-    ...input,
-    bytes,
-  });
+  const result = await kimiExtractor(connection(server.baseUrl), 'session')(
+    {
+      ...input,
+      bytes,
+    },
+    { maxInputBytes: 50 * 1024 * 1024 },
+  );
   expect(result).toEqual({
     status: 'ready',
     markdown: 'Remote quokka document marker',
@@ -419,6 +419,16 @@ it('forwards an authorized attachment above 20 MiB without imposing a second byt
     true,
   );
   expect(server.errors).toEqual([]);
+});
+
+it('rejects input above its supplied disk limit before any remote request', async () => {
+  const server = await upstream();
+  expect(
+    await kimiExtractor(connection(server.baseUrl), 'session')(input, {
+      maxInputBytes: input.bytes.length - 1,
+    }),
+  ).toMatchObject({ status: 'failed', code: 'too-large' });
+  expect(server.requests).toEqual([]);
 });
 
 it.each(['POST', 'GET'])(

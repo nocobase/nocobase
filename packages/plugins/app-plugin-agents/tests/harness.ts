@@ -216,6 +216,7 @@ export interface RequestOptions {
 function memoryChatFiles(
   database: DatabaseManager,
   clock: FakeClock,
+  disk: string,
 ): ChatFileStorage & {
   readonly stored: Map<string, Uint8Array>;
   readonly removed: string[];
@@ -242,7 +243,7 @@ function memoryChatFiles(
         .createOne({
           values: {
             id,
-            disk: 'memory',
+            disk,
             key,
             filename: file.name,
             ext: dot > 0 ? file.name.slice(dot + 1).toLowerCase() : '',
@@ -337,11 +338,13 @@ export async function createHarness(
       },
     },
   );
-  const uploadLimit = drive.getUploadLimit();
-  const chatFiles = memoryChatFiles(database, clock);
+  const chatFiles = memoryChatFiles(
+    database,
+    clock,
+    options.drive?.default ?? 'memory',
+  );
   const services = createAgents({
-    uploadLimit,
-    limitForDisk: () => uploadLimit,
+    limitForDisk: (disk) => drive.getUploadLimit(disk),
     measureOnlineAgent: options.measureOnlineAgent,
     uiRecovery: options.uiRecovery,
     database,

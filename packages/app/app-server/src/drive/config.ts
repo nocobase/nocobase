@@ -1,10 +1,5 @@
 import { readMaxFileSizeMb, type AppDriveConfig } from '@nocobase/drive';
-import {
-  defineAppConfig,
-  type AppConfigDefinition,
-  type AppConfigFactory,
-  type ConfigValidator,
-} from '../config/index.js';
+import { type ConfigValidator } from '../config/index.js';
 export type { AppDriveConfig, DriveUploadLimit } from '@nocobase/drive';
 
 export const validateDriveConfig: ConfigValidator<AppDriveConfig> = (
@@ -15,22 +10,7 @@ export const validateDriveConfig: ConfigValidator<AppDriveConfig> = (
     if (readMaxFileSizeMb(entry) === undefined)
       context.error(
         `disks.${disk}.maxFileSizeMb`,
-        'Must be a positive integer in MiB within the safe byte range.',
+        'Must be a positive integer in MiB.',
       );
   }
 };
-
-export function defineDriveConfig(
-  definition: AppConfigDefinition<AppDriveConfig>,
-): AppConfigFactory<AppDriveConfig> {
-  const extra =
-    definition.validate === undefined
-      ? []
-      : Array.isArray(definition.validate)
-        ? (definition.validate as readonly ConfigValidator<AppDriveConfig>[])
-        : [definition.validate as ConfigValidator<AppDriveConfig>];
-  return defineAppConfig({
-    ...definition,
-    validate: [validateDriveConfig, ...extra],
-  });
-}

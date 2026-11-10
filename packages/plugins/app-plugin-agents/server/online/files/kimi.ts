@@ -1,3 +1,4 @@
+import { DEFAULT_FILE_UPLOAD_LIMIT } from '@nocobase/app-plugin-file/server';
 import type {
   ExtractOptions,
   ExtractRequest,
@@ -84,6 +85,12 @@ class KimiExtractor {
     let result: ExtractResponse;
     try {
       signal.throwIfAborted();
+      if (
+        request.bytes.byteLength >
+        (options.maxInputBytes ??
+          DEFAULT_FILE_UPLOAD_LIMIT.maxFileSizeMb * 1024 * 1024)
+      )
+        throw new ByteLimitError();
       if (
         !Number.isSafeInteger(maxChars) ||
         maxChars < 0 ||

@@ -7,8 +7,8 @@ export type * from '../shared/types.js';
 export { useFileUploadLimit } from './upload-limits.js';
 export { fileUploadLimitsToken } from './token.js';
 export type {
-  FileUploadLimit,
+  DriveUploadLimit,
   FileUploadLimits,
 } from '../shared/upload-limits.js';
 
-export { defaultFileUploadLimit } from '../shared/upload-limits.js';
+export { DEFAULT_FILE_UPLOAD_LIMIT } from '../shared/upload-limits.js';

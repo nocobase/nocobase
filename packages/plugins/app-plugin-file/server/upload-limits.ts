@@ -1,7 +1,7 @@
 import { ApiError } from '@nocobase/app-server/router';
-import type { FileUploadLimit } from '../shared/upload-limits.js';
+import type { DriveUploadLimit } from '../shared/upload-limits.js';
 
-export function fileTooLarge(limit: FileUploadLimit): ApiError {
+export function fileTooLarge(limit: DriveUploadLimit): ApiError {
   return new ApiError({
     status: 'INVALID_ARGUMENT',
     reason: 'FILE_TOO_LARGE',
@@ -12,6 +12,9 @@ export function fileTooLarge(limit: FileUploadLimit): ApiError {
   });
 }
 /** Attachment entry points check the destination disk's limit before writing bytes. */
-export function assertFileUploadSize(file: File, limit: FileUploadLimit): void {
-  if (file.size > limit.maxBytes) throw fileTooLarge(limit);
+export function assertFileUploadSize(
+  file: File,
+  limit: DriveUploadLimit,
+): void {
+  if (file.size > limit.maxFileSizeMb * 1024 * 1024) throw fileTooLarge(limit);
 }

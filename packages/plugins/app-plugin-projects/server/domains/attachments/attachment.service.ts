@@ -15,8 +15,7 @@
  */
 import {
   assertFileUploadSize,
-  defaultFileUploadLimit,
-  type FileUploadLimit,
+  type DriveUploadLimit,
 } from '@nocobase/app-plugin-file/server';
 import type { DatabaseConnection } from '@nocobase/db';
 
@@ -70,7 +69,7 @@ export interface AttachmentContent {
 }
 
 export interface AttachmentService {
-  readonly uploadLimit: FileUploadLimit;
+  readonly uploadLimit: DriveUploadLimit;
   /** Bounded own and live comment files, oldest first; at most 100 returned. */
   listLimited(
     viewer: Viewer,
@@ -131,7 +130,7 @@ export interface AttachmentLinks {
 }
 
 export interface AttachmentDeps {
-  readonly uploadLimit?: FileUploadLimit;
+  readonly limitForDisk: (disk?: string) => DriveUploadLimit;
   readonly tx: TxRunner;
   readonly activity: ActivityRecorder;
   readonly kinds: KindRegistry;
@@ -183,6 +182,7 @@ export function createAttachmentService(deps: AttachmentDeps): {
   readonly service: AttachmentService;
   readonly links: AttachmentLinks;
 } {
+  const uploadLimit = deps.limitForDisk();
   const now = deps.now ?? (() => new Date());
 
   function contentPath(id: string): string {
@@ -274,7 +274,7 @@ export function createAttachmentService(deps: AttachmentDeps): {
 
   async function store(viewer: Viewer, file: File): Promise<string> {
     requireUploader(viewer);
-    assertFileUploadSize(file, deps.uploadLimit ?? defaultFileUploadLimit());
+    assertFileUploadSize(file, uploadLimit);
     return deps.storage.store(file, uploaderOf(viewer.actor, viewer.userId));
   }
 
@@ -319,7 +319,7 @@ export function createAttachmentService(deps: AttachmentDeps): {
   };
 
   const service: AttachmentService = {
-    uploadLimit: deps.uploadLimit ?? defaultFileUploadLimit(),
+    uploadLimit: uploadLimit,
     async listLimited(viewer, issueIdOrKey, limit = 100) {
       if (!Number.isInteger(limit) || limit < 1 || limit > 100)
         throw invalid(

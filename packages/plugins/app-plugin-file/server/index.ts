@@ -21,7 +21,7 @@ export type * from '../shared/types.js';
 
 export { assertFileUploadSize, fileTooLarge } from './upload-limits.js';
 export {
-  defaultFileUploadLimit,
-  type FileUploadLimit,
+  DEFAULT_FILE_UPLOAD_LIMIT,
+  type DriveUploadLimit,
   type FileUploadLimits,
 } from '../shared/upload-limits.js';

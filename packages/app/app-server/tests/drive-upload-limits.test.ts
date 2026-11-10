@@ -1,5 +1,9 @@
-import { AppConfig, defaultAppConfigs } from '../src/config/index.js';
-import { defineDriveConfig, DriveProvider } from '../src/drive/index.js';
+import {
+  AppConfig,
+  defaultAppConfigs,
+  defineAppConfig,
+} from '../src/config/index.js';
+import { DriveProvider } from '../src/drive/index.js';
 import { defineServerPlugins } from '../src/plugins/index.js';
 import {
   createAppFromRuntime,
@@ -22,7 +26,7 @@ it.each([0, -1, 1.5, '50', null])(
             }),
           }),
         defaultConfigs: defaultAppConfigs({
-          drive: defineDriveConfig({
+          drive: defineAppConfig({
             defaults: {
               default: 'local',
               disks: {

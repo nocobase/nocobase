@@ -51,8 +51,8 @@ export class ProjectsProvider extends ServiceProvider<AppPluginApplication> {
     );
     this.app.container.singleton(projectsToken, (resolver) =>
       createProjects({
-        uploadLimit: resolver.has(driveManagerToken)
-          ? resolver.resolve(driveManagerToken).getUploadLimit()
+        limitForDisk: resolver.has(driveManagerToken)
+          ? (disk) => resolver.resolve(driveManagerToken).getUploadLimit(disk)
           : undefined,
         database: resolver.resolve(databaseManagerToken),
         idGenerator: resolver.resolve(idGeneratorToken),

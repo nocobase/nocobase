@@ -2,7 +2,9 @@ import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 
 import { Hono } from 'hono';
-import { driveUploadLimits, type AppDriveConfig } from '@nocobase/drive';
+import type { AppDriveConfig, DriveUploadLimit } from '@nocobase/drive';
+import type { ServiceContainer } from '@nocobase/service-provider';
+import { driveManagerToken } from '../drive/token.js';
 import {
   defineRootRoutes,
   type AppRootRouteContribution,
@@ -19,6 +21,7 @@ import { joinBasePath } from '../support/index.js';
 import type { SpaClientConfigMap } from './types.js';
 
 export interface SpaRoutesApplication {
+  readonly container: Pick<ServiceContainer, 'resolve'>;
   readonly config: AppConfigAccessor;
   readonly mode: 'standalone' | 'embedded';
   readonly publicBasePath: string;
@@ -33,6 +36,14 @@ export const spaRootRoutes: AppRootRouteContribution<SpaRoutesApplication> =
     const spa = app.config.get<SpaConfig>('spa')!;
     const apiUrl = joinBasePath(app.publicBasePath, '/api');
     const appPackage = readAppPackage(app.paths.rootDir);
+    const drive = app.config.get<AppDriveConfig>('drive');
+    const manager = drive
+      ? app.container.resolve(driveManagerToken)
+      : undefined;
+    const uploadLimits =
+      drive && manager
+        ? { default: drive.default, disks: manager.limits }
+        : undefined;
     registerSpaRoutes(router, {
       basePath: identity.internalBasePath,
       publicBasePath: app.publicBasePath,
@@ -56,7 +67,7 @@ export const spaRootRoutes: AppRootRouteContribution<SpaRoutesApplication> =
           // without the i18n config registered. The browser falls back to its own default when nothing is published.
           app.config.get<string>('i18n.defaultLocale'),
           appPackage,
-          app.config.get<AppDriveConfig>('drive'),
+          uploadLimits,
         ),
     });
     return router;
@@ -88,23 +99,20 @@ function createPublicConfig(
   published: SpaClientConfigMap,
   defaultLocale: string | undefined,
   appPackage: AppPackageIdentity,
-  drive: AppDriveConfig | undefined,
+  uploadLimits:
+    | {
+        default: string;
+        disks: Readonly<Record<string, DriveUploadLimit>>;
+      }
+    | undefined,
 ): SpaClientConfigMap {
   // Project named disks to numeric limits only; never serialize storage configuration.
-  const withDrive: SpaClientConfigMap = drive
+  const withDrive: SpaClientConfigMap = uploadLimits
     ? {
         ...published,
         drive: {
           ...readConfigSection(published.drive),
-          uploadLimits: {
-            default: drive.default,
-            disks: Object.fromEntries(
-              Object.entries(driveUploadLimits(drive)).map(([disk, limit]) => [
-                disk,
-                { ...limit },
-              ]),
-            ),
-          },
+          uploadLimits,
         },
       }
     : published;

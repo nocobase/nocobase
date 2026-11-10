@@ -1,7 +1,6 @@
 import {
   assertFileUploadSize,
-  defaultFileUploadLimit,
-  type FileUploadLimit,
+  type DriveUploadLimit,
 } from '@nocobase/app-plugin-file/server';
 /**
  * Files people send with chat messages (`agChatAttachments`; the contract is "Attachments" in `shared/conversations`).
@@ -186,13 +185,13 @@ export interface AttachmentReader {
 }
 
 export interface ChatAttachmentContent {
-  readonly maxBytes: number;
+  readonly uploadLimit: DriveUploadLimit;
   readonly attachment: MessageAttachment;
   readonly body: ReadableStream<Uint8Array>;
 }
 
 export interface ChatAttachmentService {
-  readonly uploadLimit: FileUploadLimit;
+  readonly uploadLimit: DriveUploadLimit;
   /** An upload of the person's, attached to nothing yet. */
   upload(userId: string, file: File): Promise<MessageAttachment>;
   /** Deletes the person's own upload not sent yet; 404 for anything else. */
@@ -238,8 +237,7 @@ export interface ChatAttachmentLinks {
 }
 
 export interface ChatAttachmentDeps {
-  readonly limitForDisk?: (disk: string) => FileUploadLimit;
-  readonly uploadLimit?: FileUploadLimit;
+  readonly limitForDisk: (disk?: string) => DriveUploadLimit;
   readonly tx: TxRunner;
   readonly storage: ChatFileStorage;
   /** The application's public base path (`/app`, or empty), for the content URLs. */
@@ -363,6 +361,7 @@ export function createChatAttachments(deps: ChatAttachmentDeps): {
   readonly service: ChatAttachmentService;
   readonly links: ChatAttachmentLinks;
 } {
+  const uploadLimit = deps.limitForDisk();
   const now = deps.now ?? (() => new Date());
   const view = (row: ChatAttachmentRecord): MessageAttachment =>
     attachmentView(deps.basePath(), stored(row));
@@ -510,9 +509,9 @@ export function createChatAttachments(deps: ChatAttachmentDeps): {
   };
 
   const service: ChatAttachmentService = {
-    uploadLimit: deps.uploadLimit ?? defaultFileUploadLimit(),
+    uploadLimit: uploadLimit,
     async upload(userId, file) {
-      assertFileUploadSize(file, deps.uploadLimit ?? defaultFileUploadLimit());
+      assertFileUploadSize(file, uploadLimit);
       const id = await deps.storage.store(file, userId);
       const row = await findFile(deps.tx.read(), id);
       if (!row) throw notFound('Attachment');
@@ -533,11 +532,7 @@ export function createChatAttachments(deps: ChatAttachmentDeps): {
       return {
         attachment: view(row),
         body: await deps.storage.stream(row),
-        maxBytes: (
-          deps.limitForDisk?.(row.disk) ??
-          deps.uploadLimit ??
-          defaultFileUploadLimit(row.disk)
-        ).maxBytes,
+        uploadLimit: deps.limitForDisk(row.disk),
       };
     },
 

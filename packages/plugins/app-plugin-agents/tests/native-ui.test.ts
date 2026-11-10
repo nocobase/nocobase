@@ -111,6 +111,7 @@ async function fixture(
     },
   });
   const attachments = createChatAttachments({
+    limitForDisk: () => ({ maxFileSizeMb: 20 }),
     tx: h.services.tx,
     basePath: () => '',
     storage: {

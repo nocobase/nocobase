@@ -723,7 +723,8 @@ export function createChatRoutes(
             upload: 'agentsUploadChatAttachment',
             field: 'attachmentIds',
             multiple: true,
-            maxBytes: services.chatAttachments.uploadLimit.maxBytes,
+            maxBytes:
+              services.chatAttachments.uploadLimit.maxFileSizeMb * 1024 * 1024,
             description: 'A file to send with the message (repeatable).',
           },
         },
@@ -823,7 +824,8 @@ export function createChatRoutes(
             upload: 'agentsUploadChatAttachment',
             field: 'attachmentIds',
             multiple: true,
-            maxBytes: services.chatAttachments.uploadLimit.maxBytes,
+            maxBytes:
+              services.chatAttachments.uploadLimit.maxFileSizeMb * 1024 * 1024,
             description: 'A file to send with the message (repeatable).',
           },
         },
@@ -1563,7 +1565,9 @@ export function createChatRoutes(
       },
     }),
     bodyLimit({
-      maxSize: services.chatAttachments.uploadLimit.maxBytes + ENVELOPE,
+      maxSize:
+        services.chatAttachments.uploadLimit.maxFileSizeMb * 1024 * 1024 +
+        ENVELOPE,
       onError: () => {
         throw fileTooLarge(services.chatAttachments.uploadLimit);
       },

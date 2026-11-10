@@ -4,15 +4,11 @@ import type { DriverContract, SignedURLOptions } from 'flydrive/types';
 export type DriveVisibility = 'public' | 'private';
 
 export interface DriveUploadOptions {
-  /** Single-file upload limit in MiB; defaults to 20. */
+  /** Single-file upload limit in MiB; omitted values use DEFAULT_FILE_UPLOAD_LIMIT. */
   maxFileSizeMb?: number;
 }
 
-export interface DriveUploadLimit {
-  readonly disk: string;
-  readonly maxFileSizeMb: number;
-  readonly maxBytes: number;
-}
+export type DriveUploadLimit = { readonly maxFileSizeMb: number };
 
 export interface FsDriveDiskConfig extends DriveUploadOptions {
   driver: 'fs';
@@ -83,11 +79,8 @@ export type NocoBaseDriveDisk = Disk;
 export type NocoBaseDriveManager = DriveManager<
   Record<string, () => DriverContract>
 > & {
+  readonly limits: Readonly<Record<string, DriveUploadLimit>>;
   getUploadLimit(disk?: string): DriveUploadLimit;
-  uploadLimits(): {
-    readonly default: string;
-    readonly disks: Readonly<Record<string, DriveUploadLimit>>;
-  };
 };
 
 export interface FlydriveFakesConfig {

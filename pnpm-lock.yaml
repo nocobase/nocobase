@@ -4193,6 +4193,9 @@ importers:
 
   packages/plugins/app-plugin-file:
     dependencies:
+      '@nocobase/drive':
+        specifier: workspace:^
+        version: link:../../libs/drive
       '@nocobase/i18n':
         specifier: workspace:^
         version: link:../../libs/i18n
@@ -4221,9 +4224,6 @@ importers:
       '@nocobase/dev-config':
         specifier: workspace:*
         version: link:../../tools/dev-config
-      '@nocobase/drive':
-        specifier: workspace:*
-        version: link:../../libs/drive
       '@nocobase/service-provider':
         specifier: workspace:*
         version: link:../../libs/service-provider

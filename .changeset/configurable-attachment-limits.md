@@ -1,5 +1,6 @@
 ---
 "@nocobase/drive": minor
+"@nocobase/document-extractor": patch
 "@nocobase/app-server": minor
 "@nocobase/app-plugin-file": minor
 "@nocobase/app-plugin-projects": minor

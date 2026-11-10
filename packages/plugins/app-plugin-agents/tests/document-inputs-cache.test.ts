@@ -304,7 +304,7 @@ it('reads stored files above 20 MiB using their own disk limit and rejects beyon
       downloadUrl: '/file?download=true',
       previewable: false,
     },
-    maxBytes,
+    uploadLimit: { maxFileSizeMb: maxBytes / 1024 / 1024 },
     body: new Blob([bytes]).stream(),
   }));
   const extract = vi.fn<TextExtractor>(async () => ({
@@ -316,7 +316,7 @@ it('reads stored files above 20 MiB using their own disk limit and rejects beyon
     connectionFor: async () => documentConnection,
     createModel: () => new MockLanguageModelV4(),
     files: {
-      uploadLimit: { disk: 'default', maxFileSizeMb: 1, maxBytes: 1024 * 1024 },
+      uploadLimit: { maxFileSizeMb: 1 },
       content,
     },
     extract,
@@ -334,6 +334,7 @@ it('reads stored files above 20 MiB using their own disk limit and rejects beyon
     });
   expect(JSON.stringify(await prepare())).toContain('Large document text');
   expect(extract.mock.calls[0]?.[0].bytes.byteLength).toBe(bytes.length);
+  expect(extract.mock.calls[0]?.[1]).toMatchObject({ maxInputBytes: maxBytes });
   content.mockImplementationOnce(async () => ({
     attachment: {
       ...attachment,
@@ -341,7 +342,7 @@ it('reads stored files above 20 MiB using their own disk limit and rejects beyon
       downloadUrl: '/file?download=true',
       previewable: false,
     },
-    maxBytes: 1024 * 1024,
+    uploadLimit: { maxFileSizeMb: 1 },
     body: new Blob([bytes]).stream(),
   }));
   await expect(prepare()).rejects.toThrow('byte budget');

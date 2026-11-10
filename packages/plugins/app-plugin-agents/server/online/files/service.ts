@@ -1,4 +1,4 @@
-import { defaultFileUploadLimit } from '@nocobase/app-plugin-file/server';
+import { DEFAULT_FILE_UPLOAD_LIMIT } from '@nocobase/app-plugin-file/server';
 import { FileInputError } from './errors.js';
 import { createHash } from 'node:crypto';
 import {
@@ -36,6 +36,7 @@ export class NativeFileInputs {
   >();
   private readonly profiles: FileInputProfiles;
   private readonly extract: TextExtractor;
+  private readonly uploadLimit: ChatAttachmentService['uploadLimit'];
   private readonly cache = new ExtractedDocumentCache();
 
   constructor(
@@ -49,9 +50,8 @@ export class NativeFileInputs {
     },
   ) {
     this.profiles = new FileInputProfiles(deps.config);
-    this.extract =
-      deps.extract ??
-      workerExtractor({ maxInputBytes: Number.MAX_SAFE_INTEGER });
+    this.uploadLimit = deps.files?.uploadLimit ?? DEFAULT_FILE_UPLOAD_LIMIT;
+    this.extract = deps.extract ?? workerExtractor();
   }
 
   async model(ref: ModelRef, sessionId: string): Promise<LanguageModel> {
@@ -130,6 +130,7 @@ export class NativeFileInputs {
           !mediaType.startsWith('image/');
         if (native) budget.native();
         let bytes: Uint8Array;
+        let maxInputBytes = this.uploadLimit.maxFileSizeMb * 1024 * 1024;
         if (file.attachment) {
           if (!this.deps.files)
             throw invalid('Attachment content is unavailable.');
@@ -143,7 +144,8 @@ export class NativeFileInputs {
                 { userId: input.userId },
                 file.attachment.id,
               );
-          bytes = await readBytes(authorized.body, signal, authorized.maxBytes);
+          maxInputBytes = authorized.uploadLimit.maxFileSizeMb * 1024 * 1024;
+          bytes = await readBytes(authorized.body, signal, maxInputBytes);
         } else {
           // Provider references remain provider inputs; they are never fetched by this service.
           if (!part.url.startsWith('data:')) {
@@ -151,12 +153,7 @@ export class NativeFileInputs {
               throw new FileInputError('unsupportedFormat');
             continue;
           }
-          bytes = inlineBytes(
-            part.url,
-            mediaType,
-            this.deps.files?.uploadLimit.maxBytes ??
-              defaultFileUploadLimit().maxBytes,
-          );
+          bytes = inlineBytes(part.url, mediaType, maxInputBytes);
         }
         const digest = createHash('sha256').update(bytes).digest('hex');
         budget.source(
@@ -194,6 +191,7 @@ export class NativeFileInputs {
                 binding.extract,
                 { bytes, ext, filename, mediaType },
                 signal,
+                maxInputBytes,
               )
             : '';
           signal.throwIfAborted();
@@ -227,9 +225,11 @@ export class NativeFileInputs {
     extract: TextExtractor,
     request: ExtractRequest,
     signal: AbortSignal,
+    maxInputBytes: number,
   ): Promise<string> {
     const result = await extract(request, {
       signal,
+      maxInputBytes,
       maxOutputChars: FileInputBudget.maxOutputChars,
       omitEmbeddedImages: true,
     });
