@@ -28,6 +28,39 @@ This Skill gets a new project created, configured and running locally: source co
   Do not install either yourself unless the user asks. Check both versions again before continuing.
 - Create the application in the directory the user names, or in the current directory when it is empty. The directory must be new or empty, and its name becomes the application name: it starts with a lowercase letter or digit and contains only lowercase letters, digits, dots, dashes and underscores. If the directory is not empty or its name is invalid, ask the user for another one. Never overwrite files, and never create a nested project and move its files afterwards.
 
+## Choose the template
+
+Use Default for an ordinary application, Examples for exploring bundled examples, and `multi-portal` when the user asks for one application with multiple business entry points. Multi-portal is a commercial Pro template, not a tenant or process isolation mechanism. Keep the user's explicit template choice.
+
+For Default and Examples, continue with Create below. For multi-portal, first follow the commercial registry steps in this section, then use its creation command instead of the public-registry command below.
+
+### Commercial multi-portal template
+
+The template, portal management plugin and portal generator are commercial packages downloaded from `https://pkg-v3.nocobase.com/`. Before creating files, check the existing login and access to the requested version or channel:
+
+```bash
+npm whoami --registry=https://pkg-v3.nocobase.com/
+npm view @nocobase/app-template-multi-portal@beta version --registry=https://pkg-v3.nocobase.com/
+```
+
+Reuse valid credentials. If authentication is missing or expired, have the user log in through their terminal before continuing:
+
+```bash
+pnpm login --registry=https://pkg-v3.nocobase.com/ --scope=@nocobase
+```
+
+This intentionally configures the `@nocobase` scope for the commercial registry. The password prompt takes the registry read token. Do not ask for the token in chat, print credentials, put them in command arguments, or copy them into project files. After login, check package access again. A successful `whoami` alone does not establish download permission. On 401/403, resolve authentication or package access; on 404 or a missing channel, confirm the package/version is published and accessible. Stop creation if unavailable; do not silently select Default or claim an unreleased package is available. For an explicitly requested local preview registry, use that registry and its test credentials instead.
+
+After access succeeds, create from the parent directory:
+
+```bash
+(cd <parent-directory> && PNPM_CONFIG_MINIMUM_RELEASE_AGE=0 NOCOBASE_REGISTRY=https://pkg-v3.nocobase.com/ npm_config_registry=https://pkg-v3.nocobase.com/ pnpm create @nocobase/app@beta <name> --template=multi-portal --template-tag=beta --json)
+```
+
+`multi-portal` resolves to `@nocobase/app-template-multi-portal` and honors `--template-tag`. With a create-app version that predates the alias, use `--template=@nocobase/app-template-multi-portal@beta` instead; a full package specifier ignores `--template-tag`, so include the channel or explicit version in the specifier. Reuse the user's chosen registry/version rather than replacing it with these defaults. Registry selection is explicit even after login because create-app otherwise defaults to public npm. The generated `.npmrc` contains the registry URL, not credentials.
+
+Read the JSON result as described below, then continue with Configure and Start. Once created, use the application's own `AGENTS.md`, `.agents/rules/multi-portal.md` and installed Skills for portal development. The portal command is `pnpm create @nocobase/portal`; generated portals start uninstalled and an authorized administrator installs them through System settings → Portals. Do not use `pnpm create:module` or replace business authorization with a grant to all users.
+
 ## Create
 
 `pnpm create @nocobase/app@beta` does not accept `.` as the name. Run it from the parent directory with the target directory's name, which generates the files directly into it:
@@ -36,7 +69,7 @@ This Skill gets a new project created, configured and running locally: source co
 (cd <parent-directory> && PNPM_CONFIG_MINIMUM_RELEASE_AGE=0 npm_config_registry="${NOCOBASE_REGISTRY:-https://registry.npmjs.org}" pnpm create @nocobase/app@beta <name> --template-tag=beta --json)
 ```
 
-- NocoBase 3 packages, `@nocobase/create-app` included, are published to the public npm registry. The command sets that registry only for this process while allowing `NOCOBASE_REGISTRY` to select a private registry or an unreleased local snapshot; `create-app` uses the same registry for the template and dependency installation, and records only a non-public override in the project's `.npmrc`. Leave the user's pnpm configuration unchanged.
+- Open-source NocoBase 3 packages, `@nocobase/create-app` included, are published to the public npm registry; commercial packages require the private registry described above. The command sets that registry only for this process while allowing `NOCOBASE_REGISTRY` to select a private registry or an unreleased local snapshot; `create-app` uses the same registry for the template and dependency installation, and records only a non-public override in the project's `.npmrc`. For the public creation flow, leave the user's pnpm configuration unchanged.
 - Use the `beta` channel for both the creation tool (`@nocobase/app@beta`) and the template (`--template-tag=beta`); selecting only the tool does not select the template channel. Do not fall back to `latest` if `beta` cannot be resolved. An explicit version or local snapshot requested by the user takes precedence.
 - `NOCOBASE_REGISTRY` is set only when the shell is pointed at another registry, such as an unreleased snapshot; `create-app` reads it too.
 - `PNPM_CONFIG_MINIMUM_RELEASE_AGE=0` lets pnpm install versions published minutes ago.
