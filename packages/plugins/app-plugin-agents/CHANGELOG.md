@@ -1,5 +1,11 @@
 # @nocobase/app-plugin-agents
 
+## 2.0.0-beta.10
+
+### Minor Changes
+
+- 411a9f3: Tell a subject's `onCancelRequested` which run asked for a stop (`CancelRequest.byRunId`), so an application can tell an agent cancelling its own work from a person stopping it.
+
 ## 2.0.0-beta.9
 
 ### Minor Changes
