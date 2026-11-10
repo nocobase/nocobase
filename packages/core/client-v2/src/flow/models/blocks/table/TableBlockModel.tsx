@@ -45,7 +45,7 @@ import {
   getRowKey,
   useBlockHeight,
 } from './utils';
-import { resolveTableSorterField } from './sortUtils';
+import { getTableSorterOrder } from './sortUtils';
 import { commonConditionHandler, ConditionBuilder } from '../../../components/ConditionBuilder';
 import { BulkDeleteActionModel } from '../../actions/BulkDeleteActionModel';
 import {
@@ -1038,15 +1038,9 @@ const HighPerformanceTable = React.memo(
     const mergedColumns = leftAuxiliaryColumn ? [leftAuxiliaryColumn, ...columns] : columns;
 
     const handleChange = useCallback(
-      async (pagination, filters, sorter) => {
-        const globalSort = model.props.globalSort;
-        const resourceSort = model.resource.getSort();
-        const currentSort = resourceSort?.length ? resourceSort : globalSort;
-        const sorterField = resolveTableSorterField(sorter);
-        const sort =
-          sorter.order && sorterField ? (sorter.order === `ascend` ? [sorterField] : [`-${sorterField}`]) : currentSort;
-        if (sorter) {
-          model.resource.setSort(sort);
+      async (pagination, filters, sorter, extra) => {
+        if (extra?.action === 'sort') {
+          model.resource.setSort(getTableSorterOrder(sorter, model.getDragSortFieldName(), model.props.globalSort));
         }
         if (model.resource.getPageSize() !== pagination.pageSize) {
           model.resource.setPage(1);
