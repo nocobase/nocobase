@@ -1,3 +1,5 @@
+import { createDriveManager, type AppDriveConfig } from '@nocobase/drive';
+import { assertFileUploadSize } from '@nocobase/app-plugin-file/server';
 /**
  * A real database for the service tests: a test database, with the authentication and authorization plugins'
  * migrations (the `user` collection and the permission-set tables) and then this plugin's migrations and seeds.
@@ -69,8 +71,15 @@ export interface Harness {
 
 export async function createHarness(
   options: Parameters<typeof createTestDatabase>[0] = {},
-  attachmentMaxFileSizeMb?: number,
+  driveConfig: AppDriveConfig = {
+    default: 'local',
+    disks: {
+      local: { driver: 'fs', location: '/unused', visibility: 'private' },
+    },
+  },
 ): Promise<Harness> {
+  const drive = createDriveManager(driveConfig);
+  const uploadLimit = drive.getUploadLimit();
   const testDatabase = await createTestDatabase(options);
   const database = testDatabase.database;
   for (const [directory, packageName] of [
@@ -131,11 +140,12 @@ export async function createHarness(
   const invitations = createFakeInvitations(database);
   const stored = new Map<string, Uint8Array>();
   const storage = createAttachmentStorage({
-    disk: () => 'local',
+    disk: () => driveConfig.default,
     // The file plugin's upload, as far as the plugin uses it: the metadata row, and the bytes in memory.
     uploader: () => ({
       repository: (collection, options) => ({
         async uploadOne({ file }) {
+          assertFileUploadSize(file, drive.getUploadLimit(options.disk));
           const id = crypto.randomUUID();
           const dot = file.name.lastIndexOf('.');
           const ext = dot > 0 ? file.name.slice(dot + 1).toLowerCase() : '';
@@ -180,7 +190,7 @@ export async function createHarness(
     }),
   });
   const services = createProjects({
-    attachmentMaxFileSizeMb,
+    uploadLimit,
     storage,
     basePath: () => '/app',
     database,

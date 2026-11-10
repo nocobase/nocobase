@@ -53,7 +53,7 @@ const notFound = apiErrorResponse(404);
  */
 export function createIssueCommentRoutes(deps: {
   readonly comments: CommentService;
-  readonly maxFileSizeMb?: number;
+  readonly uploadLimit?: import('@nocobase/app-plugin-file/server').FileUploadLimit;
   readonly queries: CommentQueries;
   /** A connection to read with, for answering a comment a delegated write made. */
   readonly read: () => DatabaseConnection;
@@ -125,7 +125,7 @@ export function createIssueCommentRoutes(deps: {
             upload: 'projectsUploadAttachment',
             field: 'attachmentIds',
             multiple: true,
-            maxBytes: (deps.maxFileSizeMb ?? 20) * 1024 * 1024,
+            maxBytes: deps.uploadLimit?.maxBytes,
             description: `A file to attach (repeatable); attaching needs \`upload\` on \`pm.attachments\`.`,
           },
         },

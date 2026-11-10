@@ -3,7 +3,7 @@
  * starts out as an upload of its uploader's, attached to nothing; attaching it to an issue (the issue's own files) or
  * to a comment (sent with the comment) makes it readable by whoever sees the issue. An upload attached to nothing for
  * `ORPHAN_HOURS` is purged, and so are the files of a deleted comment. Any type of file is accepted, up to
- * the deployment limit (`projects.attachments.maxFileSizeMb`, 20 MiB by default) each.
+ * the deployment limit (`drive.disks.<name>.maxFileSizeMb`, 20 MiB by default) each.
  *
  * ## Who may do what
  *
@@ -45,8 +45,6 @@
  */
 
 /** Per file, in bytes. */
-/** Default only; deployments configure the effective upload limit. */
-export const ATTACHMENT_SIZE_MAX: number = 20 * 1024 * 1024;
 /** Files sent with one comment, or attached in one request. */
 export const ATTACHMENTS_PER_REQUEST_MAX = 10;
 /** How long an upload attached to nothing is kept. */

@@ -636,3 +636,16 @@ it('keeps a block in one Markdown part across live updates and a history reload'
   );
   await waitFor(() => expect(reloaded.container.innerHTML).toBe(html));
 });
+
+vi.mock('@nocobase/app-plugin-file/client', () => ({
+  useFileUploadLimit: () => ({
+    disk: 'local',
+    maxFileSizeMb: 20,
+    maxBytes: 20 * 1024 * 1024,
+  }),
+  defaultFileUploadLimit: () => ({
+    disk: 'local',
+    maxFileSizeMb: 20,
+    maxBytes: 20 * 1024 * 1024,
+  }),
+}));

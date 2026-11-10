@@ -130,10 +130,6 @@
     "./server/online-agent": {
       "types": "./server/online/agent/index.ts",
       "import": "./server/online/agent/index.ts"
-    },
-    "./config": {
-      "types": "./config/index.ts",
-      "import": "./config/index.ts"
     }
   },
   "files": [
@@ -266,10 +262,6 @@
       "./server/online-agent": {
         "types": "./dist/server/online/agent/index.d.ts",
         "import": "./dist/server/online/agent/index.js"
-      },
-      "./config": {
-        "types": "./dist/config/index.d.ts",
-        "import": "./dist/config/index.js"
       }
     }
   },
@@ -357,6 +349,7 @@
     "typescript": "catalog:",
     "vitest": "catalog:",
     "knex": "catalog:",
-    "pg": "^8.23.0"
+    "pg": "^8.23.0",
+    "@nocobase/drive": "workspace:^"
   }
 }

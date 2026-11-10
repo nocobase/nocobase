@@ -18,3 +18,10 @@ export type {
   FileRepositoryApiActions,
 } from './routes.js';
 export type * from '../shared/types.js';
+
+export { assertFileUploadSize, fileTooLarge } from './upload-limits.js';
+export {
+  defaultFileUploadLimit,
+  type FileUploadLimit,
+  type FileUploadLimits,
+} from '../shared/upload-limits.js';

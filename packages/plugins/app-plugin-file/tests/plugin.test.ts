@@ -3,9 +3,9 @@ import { expect, it } from 'vitest';
 import client from '../client/index.js';
 import server, { FILE_COLUMNS } from '../server/index.js';
 
-it('provides services without owning collections, resource routes, or pages', () => {
+it('provides services and public disk limits without owning collections or pages', () => {
   expect(server.serviceProviders).toHaveLength(1);
-  expect(server.routes).toEqual([]);
+  expect(server.routes).toHaveLength(1);
   expect(server.database).toBeUndefined();
   const registration = client();
   expect(registration.serviceProviders).toHaveLength(1);

@@ -1,4 +1,4 @@
-import { useProjectsAttachmentMaxFileSizeMb } from '../../../attachment-config.js';
+import { useFileUploadLimit } from '@nocobase/app-plugin-file/client';
 /**
  * The headless parts of an issue's page beyond its activity, for the application that presents it (for example, with the UI
  * Library's `issue-detail` block): the issue itself, and every change the page makes, each refreshing what it changed
@@ -58,7 +58,7 @@ export interface IssuePageActions {
 /** Every change the issue's page makes, other than its properties (`useIssueUpdate`) and comments. */
 export function useIssuePageActions(detail: IssueDetail): IssuePageActions {
   const { t } = useTranslation(ACCESS_NAMESPACE);
-  const maxFileSizeMb = useProjectsAttachmentMaxFileSizeMb();
+  const { maxFileSizeMb } = useFileUploadLimit();
   const api = usePmApi();
   const notify = useNotify();
   const queryClient = useQueryClient();

@@ -189,7 +189,7 @@ export interface AgentsDeps {
    * it an upload answers 503 `NOT_IMPLEMENTED`.
    */
   readonly chatFiles?: ChatFileStorage;
-  readonly attachmentMaxFileSizeMb?: number;
+  readonly uploadLimit?: import('@nocobase/app-plugin-file/server').FileUploadLimit;
   /** The application's public base path (`/app`, or empty), for the URLs of files sent in chat. */
   readonly basePath?: () => string;
   readonly onError?: (message: string, error: unknown) => void;
@@ -532,7 +532,7 @@ export function createAgents(deps: AgentsDeps): Agents {
   });
   const basePath = deps.basePath ?? (() => '');
   const chatAttachments = createChatAttachments({
-    maxFileSizeMb: deps.attachmentMaxFileSizeMb,
+    uploadLimit: deps.uploadLimit,
     tx,
     basePath,
     now: () => clock.now(),

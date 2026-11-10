@@ -1,3 +1,4 @@
+import { fileTooLarge } from '@nocobase/app-plugin-file/server';
 /**
  * The chat API, mounted at `/api/agents` (`CHAT_ROUTES` in `shared/conversations`). Every route is behind the guard (a
  * signed-in person and their authorization context). Only its owner writes a conversation. Named recipients read
@@ -43,7 +44,6 @@ import {
   PageContextSchema,
 } from '../core/conversations/index.js';
 import { RUN_SELF_ACTION } from '../core/callers/index.js';
-import { fileTooLarge } from '../core/conversations/attachments.js';
 import { forbidden, invalid } from '../kernel/errors.js';
 import {
   decodePageToken,
@@ -723,7 +723,7 @@ export function createChatRoutes(
             upload: 'agentsUploadChatAttachment',
             field: 'attachmentIds',
             multiple: true,
-            maxBytes: services.chatAttachments.maxFileSizeMb * 1024 * 1024,
+            maxBytes: services.chatAttachments.uploadLimit.maxBytes,
             description: 'A file to send with the message (repeatable).',
           },
         },
@@ -823,7 +823,7 @@ export function createChatRoutes(
             upload: 'agentsUploadChatAttachment',
             field: 'attachmentIds',
             multiple: true,
-            maxBytes: services.chatAttachments.maxFileSizeMb * 1024 * 1024,
+            maxBytes: services.chatAttachments.uploadLimit.maxBytes,
             description: 'A file to send with the message (repeatable).',
           },
         },
@@ -1547,13 +1547,13 @@ export function createChatRoutes(
       summary: 'Upload a file to send in chat',
       operationId: 'agentsUploadChatAttachment',
       ...cliRoute({ command: 'conversation attachment upload' }),
-      description: `One file as the \`file\` field of a multipart body, at most ${services.chatAttachments.maxFileSizeMb} MB. It is the caller's alone until it is sent with a message (\`attachmentIds\`); one never sent is purged after a day.`,
+      description: `One file as the \`file\` field of a multipart body, at most ${services.chatAttachments.uploadLimit.maxFileSizeMb} MB. It is the caller's alone until it is sent with a message (\`attachmentIds\`); one never sent is purged after a day.`,
       requestBody: singleFileBody,
       responses: {
         201: dataResponse(MessageAttachmentSchema, 'Stored.'),
         413: apiErrorResponse(
           413,
-          `The file is over ${services.chatAttachments.maxFileSizeMb} MB (\`UPLOAD_TOO_LARGE\`).`,
+          `The file is over ${services.chatAttachments.uploadLimit.maxFileSizeMb} MB (\`FILE_TOO_LARGE\`).`,
         ),
         503: apiErrorResponse(
           503,
@@ -1563,9 +1563,9 @@ export function createChatRoutes(
       },
     }),
     bodyLimit({
-      maxSize: services.chatAttachments.maxFileSizeMb * 1024 * 1024 + ENVELOPE,
+      maxSize: services.chatAttachments.uploadLimit.maxBytes + ENVELOPE,
       onError: () => {
-        throw fileTooLarge(services.chatAttachments.maxFileSizeMb);
+        throw fileTooLarge(services.chatAttachments.uploadLimit);
       },
     }),
     async (context) => {

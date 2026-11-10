@@ -57,8 +57,6 @@ export const api = {
   ),
 };
 
-export const publicConfig: Record<string, number> = {};
-
 export const toasts: { type?: string; title: unknown }[] = [];
 
 function interpolate(key: string, options?: Record<string, unknown>): string {
@@ -92,14 +90,7 @@ export const clientMocks = {
       usePageBreadcrumb: actual.usePageBreadcrumb,
       ApiClientError: FakeApiError,
       useApiClient: () => api,
-      useClientApplication: () => ({
-        config: {
-          public: {
-            get: (path: string, fallback: number) =>
-              publicConfig[path] ?? fallback,
-          },
-        },
-      }),
+      useClientApplication: () => ({ services: { has: () => false } }),
       useToaster: () => ({
         show: (options: { type?: string; title: unknown }) => {
           toasts.push(options);

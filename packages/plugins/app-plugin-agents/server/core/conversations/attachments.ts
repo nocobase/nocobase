@@ -1,4 +1,7 @@
-import { attachmentMaxFileSizeMb } from '../../../config/index.js';
+import {
+  defaultFileUploadLimit,
+  type FileUploadLimit,
+} from '@nocobase/app-plugin-file/server';
 /**
  * Files people send with chat messages (`agChatAttachments`; the contract is "Attachments" in `shared/conversations`).
  * The bytes go through the file plugin's repository onto a Drive disk, as the projects plugin stores issue files; Drive
@@ -187,7 +190,7 @@ export interface ChatAttachmentContent {
 }
 
 export interface ChatAttachmentService {
-  readonly maxFileSizeMb: number;
+  readonly uploadLimit: FileUploadLimit;
   /** An upload of the person's, attached to nothing yet. */
   upload(userId: string, file: File): Promise<MessageAttachment>;
   /** Deletes the person's own upload not sent yet; 404 for anything else. */
@@ -233,7 +236,7 @@ export interface ChatAttachmentLinks {
 }
 
 export interface ChatAttachmentDeps {
-  readonly maxFileSizeMb?: number;
+  readonly uploadLimit?: FileUploadLimit;
   readonly tx: TxRunner;
   readonly storage: ChatFileStorage;
   /** The application's public base path (`/app`, or empty), for the content URLs. */
@@ -353,20 +356,10 @@ export function readAttachmentIds(value: unknown): string[] {
   return ids;
 }
 
-/** 413 `UPLOAD_TOO_LARGE`: a file over `CHAT_ATTACHMENT_SIZE_MAX`. */
-export function fileTooLarge(maxFileSizeMb: number): ProtocolError {
-  return new ProtocolError(
-    'UPLOAD_TOO_LARGE',
-    `A file may have at most ${maxFileSizeMb} MB.`,
-    { maxBytes: maxFileSizeMb * 1024 * 1024 },
-  );
-}
-
 export function createChatAttachments(deps: ChatAttachmentDeps): {
   readonly service: ChatAttachmentService;
   readonly links: ChatAttachmentLinks;
 } {
-  const maxFileSizeMb = attachmentMaxFileSizeMb(deps.maxFileSizeMb);
   const now = deps.now ?? (() => new Date());
   const view = (row: ChatAttachmentRecord): MessageAttachment =>
     attachmentView(deps.basePath(), stored(row));
@@ -514,10 +507,8 @@ export function createChatAttachments(deps: ChatAttachmentDeps): {
   };
 
   const service: ChatAttachmentService = {
-    maxFileSizeMb,
+    uploadLimit: deps.uploadLimit ?? defaultFileUploadLimit(),
     async upload(userId, file) {
-      if (file.size > maxFileSizeMb * 1024 * 1024)
-        throw fileTooLarge(maxFileSizeMb);
       const id = await deps.storage.store(file, userId);
       const row = await findFile(deps.tx.read(), id);
       if (!row) throw notFound('Attachment');

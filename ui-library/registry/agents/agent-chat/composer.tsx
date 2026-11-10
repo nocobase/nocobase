@@ -1,3 +1,4 @@
+import { useFileUploadLimit } from '@nocobase/app-plugin-file/client';
 /**
  * The chat's message box: `agent-composer` wired to the panel. The page context shows as removable chips inside it (a
  * pinned item is cleared once a message carrying it is taken), a draft from "Ask agent" fills it once, and the panel
@@ -112,13 +113,15 @@ export function Composer({
   const sources = useChatSources();
   const labels = useComposerLabels();
   const files = useChatAttachments();
+  const { maxBytes } = useFileUploadLimit();
   const attachments = useMemo(
     (): AgentComposerAttachments => ({
+      maxSize: maxBytes,
       upload: (file, signal) => files.upload(file, signal),
       discard: (attachment) => files.discard(attachment),
       ...(registerAddFiles ? { registerAdd: registerAddFiles } : {}),
     }),
-    [files, registerAddFiles],
+    [files, maxBytes, registerAddFiles],
   );
 
   const input: ChatContextInput = {

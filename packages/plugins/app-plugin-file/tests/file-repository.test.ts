@@ -73,7 +73,9 @@ async function fixture(
     databaseSize,
     databaseJsonField,
     createCustomDriver,
+    diskLimits = {},
   }: {
+    diskLimits?: Record<string, number>;
     publicBasePath?: string;
     storageUrl?: string;
     databaseSize?: (value: unknown) => unknown;
@@ -122,12 +124,18 @@ async function fixture(
   const drive = createDriveManager({
     default: 'local',
     disks: {
-      local: { driver: 'fs', location: root, visibility: 'private' },
+      local: {
+        driver: 'fs',
+        location: root,
+        visibility: 'private',
+        maxFileSizeMb: diskLimits.local,
+      },
       public: {
         driver: 'fs',
         location: path.join(root, 'public'),
         visibility: 'public',
         url: storageUrl,
+        maxFileSizeMb: diskLimits.public,
       },
       ...(createCustomDriver ? { custom: () => createCustomDriver(root) } : {}),
     },
@@ -200,6 +208,47 @@ async function fixture(
 }
 const file = (name = 'hello.txt', text = 'hello'): File =>
   new File([text], name, { type: 'text/plain' });
+
+describe('per-disk file limits', () => {
+  it('uses each destination disk, validates before storage, and reports the same 413 for HTTP', async () => {
+    const f = await fixture({}, { diskLimits: { local: 1, public: 50 } });
+    const small = f.manager.repository('attachments', {
+      disk: 'local',
+      accessPath: '/uploads/small',
+      policy: openPolicy,
+    });
+    const large = f.manager.repository('attachments', {
+      disk: 'public',
+      accessPath: '/uploads/large',
+      policy: openPolicy,
+    });
+    const rejected = new File(
+      [new Uint8Array(1024 * 1024 + 1)],
+      'too-large.bin',
+    );
+    await expect(small.uploadOne({ file: rejected })).rejects.toMatchObject({
+      code: 413,
+      reason: 'FILE_TOO_LARGE',
+      metadata: { disk: 'local', maxFileSizeMb: 1, maxBytes: 1024 * 1024 },
+    });
+    await expect(
+      small.uploadMany({ files: [new File(['ok'], 'ok.txt'), rejected] }),
+    ).rejects.toMatchObject({ reason: 'FILE_TOO_LARGE' });
+    await expect(f.client.uploadOne({ file: rejected })).rejects.toMatchObject({
+      status: 413,
+      reason: 'FILE_TOO_LARGE',
+      domain: 'file',
+    });
+    expect(await f.db.repository('attachments').count()).toBe(0);
+    const accepted = await large.uploadOne({
+      file: new File([new Uint8Array(50 * 1024 * 1024)], 'limit.bin'),
+    });
+    expect(accepted.record).toMatchObject({
+      disk: 'public',
+      size: 50 * 1024 * 1024,
+    });
+  });
+});
 
 describe('server repository and Client API', () => {
   it('uploads, queries metadata, and downloads content through a custom disk factory', async () => {

@@ -13,7 +13,10 @@
  * is deleted they are no longer listed or served, and the purge deletes them with the uploads attached to nothing for
  * `ORPHAN_HOURS`.
  */
-import { attachmentMaxFileSizeMb } from '../../../config/index.js';
+import {
+  defaultFileUploadLimit,
+  type FileUploadLimit,
+} from '@nocobase/app-plugin-file/server';
 import type { DatabaseConnection } from '@nocobase/db';
 
 import {
@@ -66,7 +69,7 @@ export interface AttachmentContent {
 }
 
 export interface AttachmentService {
-  readonly maxFileSizeMb: number;
+  readonly uploadLimit: FileUploadLimit;
   /** Bounded own and live comment files, oldest first; at most 100 returned. */
   listLimited(
     viewer: Viewer,
@@ -127,7 +130,7 @@ export interface AttachmentLinks {
 }
 
 export interface AttachmentDeps {
-  readonly maxFileSizeMb?: number;
+  readonly uploadLimit?: FileUploadLimit;
   readonly tx: TxRunner;
   readonly activity: ActivityRecorder;
   readonly kinds: KindRegistry;
@@ -179,16 +182,6 @@ export function createAttachmentService(deps: AttachmentDeps): {
   readonly service: AttachmentService;
   readonly links: AttachmentLinks;
 } {
-  const maxFileSizeMb = attachmentMaxFileSizeMb(deps.maxFileSizeMb);
-  const maxBytes = maxFileSizeMb * 1024 * 1024;
-  function checkSize(file: File): void {
-    if (file.size > maxBytes)
-      throw invalid(
-        'FILE_TOO_LARGE',
-        `A file may have at most ${maxFileSizeMb} MB.`,
-        { maxBytes },
-      );
-  }
   const now = deps.now ?? (() => new Date());
 
   function contentPath(id: string): string {
@@ -280,7 +273,6 @@ export function createAttachmentService(deps: AttachmentDeps): {
 
   async function store(viewer: Viewer, file: File): Promise<string> {
     requireUploader(viewer);
-    checkSize(file);
     return deps.storage.store(file, uploaderOf(viewer.actor, viewer.userId));
   }
 
@@ -325,7 +317,7 @@ export function createAttachmentService(deps: AttachmentDeps): {
   };
 
   const service: AttachmentService = {
-    maxFileSizeMb,
+    uploadLimit: deps.uploadLimit ?? defaultFileUploadLimit(),
     async listLimited(viewer, issueIdOrKey, limit = 100) {
       if (!Number.isInteger(limit) || limit < 1 || limit > 100)
         throw invalid(

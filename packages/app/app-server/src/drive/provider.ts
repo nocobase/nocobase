@@ -1,5 +1,6 @@
 import {
   createDriveManager,
+  driveUploadLimits,
   prepareDriveStorage,
   type AppDriveConfig,
 } from '@nocobase/drive';
@@ -24,6 +25,7 @@ export class DriveProvider extends ServiceProvider<AppPluginApplication> {
 
   private getDriveConfig(): AppDriveConfig {
     const config = this.app.config.get<AppDriveConfig>('drive')!;
+    driveUploadLimits(config);
     const s3 = config.disks.s3;
     if (typeof s3 === 'function' || s3?.driver !== 's3' || s3.bucket)
       return config;

@@ -14,6 +14,7 @@ import type {
   NocoBaseDriveManager,
   S3DriveDiskConfig,
 } from './types.js';
+import { driveUploadLimits } from './upload-limits.js';
 import { joinDriveUrl } from './url.js';
 
 export function createDriveManager(
@@ -22,7 +23,8 @@ export function createDriveManager(
 ): NocoBaseDriveManager {
   assertDefaultDisk(config);
 
-  return new DriveManager({
+  const limits = driveUploadLimits(config);
+  const manager = new DriveManager({
     default: config.default,
     fakes: options.fakes,
     services: Object.fromEntries(
@@ -31,6 +33,14 @@ export function createDriveManager(
         () => createDriver(disk),
       ]),
     ),
+  });
+  return Object.assign(manager, {
+    getUploadLimit: (disk = config.default) => {
+      if (!Object.hasOwn(limits, disk))
+        throw new Error(`Drive disk "${disk}" is not configured.`);
+      return limits[disk];
+    },
+    uploadLimits: () => ({ default: config.default, disks: { ...limits } }),
   });
 }
 

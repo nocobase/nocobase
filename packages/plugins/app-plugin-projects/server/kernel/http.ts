@@ -91,7 +91,6 @@ export function toProjectsApiError(error: DomainError): ApiError {
     domain: error.domain ?? PROJECTS_DOMAIN,
     message: error.message,
     ...(error.details ? { metadata: error.details } : {}),
-    ...(error.code === 'FILE_TOO_LARGE' ? { httpStatus: 413 } : {}),
     cause: error,
   });
 }

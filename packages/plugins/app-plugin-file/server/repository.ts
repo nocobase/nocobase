@@ -1,3 +1,4 @@
+import { assertFileUploadSize } from './upload-limits.js';
 import { randomUUID } from 'node:crypto';
 import { Readable } from 'node:stream';
 import type { ReadableStream as NodeReadableStream } from 'node:stream/web';
@@ -330,6 +331,7 @@ export class ServerFileRepositoryManager {
             'INVALID_FILE',
             'Exactly one File is required.',
           );
+        assertFileUploadSize(file, this.drive.getUploadLimit(options.disk));
         const owned: string[] = [];
         options.transaction?.afterRollback(async () => {
           await cleanAfterRollback(owned);
@@ -362,6 +364,8 @@ export class ServerFileRepositoryManager {
             'INVALID_FILES',
             'At least one File is required.',
           );
+        for (const file of files)
+          assertFileUploadSize(file, this.drive.getUploadLimit(options.disk));
         const owned: string[] = [];
         options.transaction?.afterRollback(async () => {
           await cleanAfterRollback(owned);

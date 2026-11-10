@@ -1,3 +1,8 @@
+import { createDriveManager, type AppDriveConfig } from '@nocobase/drive';
+import {
+  assertFileUploadSize,
+  type FileUploadLimit,
+} from '@nocobase/app-plugin-file/server';
 /**
  * A real database for the service and route tests, this plugin's migrations applied, and the services assembled
  * with a clock the test moves. The database is on the dialect `NOCOBASE_TEST_DB_DIALECT` selects, SQLite when it is
@@ -214,6 +219,7 @@ export interface RequestOptions {
 function memoryChatFiles(
   database: DatabaseManager,
   clock: FakeClock,
+  limit: FileUploadLimit,
 ): ChatFileStorage & {
   readonly stored: Map<string, Uint8Array>;
   readonly removed: string[];
@@ -229,6 +235,7 @@ function memoryChatFiles(
     stored,
     removed,
     async store(file, uploaderId) {
+      assertFileUploadSize(file, limit);
       const id = randomUUID();
       const key = `chat/${id}`;
       stored.set(key, new Uint8Array(await file.arrayBuffer()));
@@ -300,7 +307,7 @@ export async function createHarness(
   options: {
     /** `null` for an application without secrets keys. */
     readonly uiRecovery?: OnlineAgentRecoveryConfig;
-    readonly attachmentMaxFileSizeMb?: number;
+    readonly drive?: AppDriveConfig;
     readonly measureOnlineAgent?: (phase: string, durationMs: number) => void;
     readonly secrets?: SecretsService | null;
     readonly dist?: DistConfig;
@@ -327,9 +334,18 @@ export async function createHarness(
     generateString: () => String((next += 1)).padStart(8, '0'),
   };
   const disk = memoryDisk();
-  const chatFiles = memoryChatFiles(database, clock);
+  const drive = createDriveManager(
+    options.drive ?? {
+      default: 'memory',
+      disks: {
+        memory: { driver: 'fs', location: '/unused', visibility: 'private' },
+      },
+    },
+  );
+  const uploadLimit = drive.getUploadLimit();
+  const chatFiles = memoryChatFiles(database, clock, uploadLimit);
   const services = createAgents({
-    attachmentMaxFileSizeMb: options.attachmentMaxFileSizeMb,
+    uploadLimit,
     measureOnlineAgent: options.measureOnlineAgent,
     uiRecovery: options.uiRecovery,
     database,

@@ -1,3 +1,4 @@
+import { defaultFileUploadLimit } from '@nocobase/app-plugin-file/client';
 /**
  * The message box for talking to an agent: the page context as removable chips inside it, Enter to send and
  * Shift+Enter for a new line, and a toolbar slot beside the send button for pickers such as the model or the mode.
@@ -20,7 +21,6 @@ import {
   type ChatContextChip,
 } from '@nocobase/app-plugin-agents/client/chat';
 import {
-  CHAT_ATTACHMENT_SIZE_MAX,
   CHAT_ATTACHMENTS_PER_MESSAGE_MAX,
   MESSAGE_CONTENT_MAX,
   type MessageAttachment,
@@ -156,7 +156,7 @@ export interface AgentComposerAttachments {
   discard?(attachment: MessageAttachment): void;
   /** Files per message; `CHAT_ATTACHMENTS_PER_MESSAGE_MAX` by default. */
   readonly maxCount?: number;
-  /** Bytes per file; `CHAT_ATTACHMENT_SIZE_MAX` by default. */
+  /** Bytes per file; 20 MiB by default. */
   readonly maxSize?: number;
   /** Receives the function that adds files (dropped on the view around the box); returns what undoes it. */
   readonly registerAdd?: (add: (files: readonly File[]) => void) => () => void;
@@ -615,7 +615,7 @@ export function AgentComposer({
   const [tooMany, setTooMany] = useState(false);
   const [waiting, setWaiting] = useState(false);
   const maxCount = attachments?.maxCount ?? CHAT_ATTACHMENTS_PER_MESSAGE_MAX;
-  const maxSize = attachments?.maxSize ?? CHAT_ATTACHMENT_SIZE_MAX;
+  const maxSize = attachments?.maxSize ?? defaultFileUploadLimit().maxBytes;
   const attachmentsRef = useRef(attachments);
   // Handlers and the uploads read the box as last rendered.
   useLayoutEffect(() => {

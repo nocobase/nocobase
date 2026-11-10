@@ -1,4 +1,4 @@
-import { createAppClientConfig } from '@nocobase/app-client';
+import files from '@nocobase/app-plugin-file/client';
 import { answerApi, renderWithApp } from '@nocobase/app-testing/client';
 import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
@@ -29,20 +29,25 @@ describe.each([false, true])('attachment preflight (issue: %s)', (issue) => {
     'allows the exact %s MiB boundary and blocks one byte more',
     async (mb) => {
       const calls: string[] = [];
+      let metadataReads = 0;
       const view = await renderWithApp(<Upload issue={issue} />, {
-        plugins: [projects({ routes: false, realtime: false })],
-        services: (app) => {
-          Object.defineProperty(app.config, 'public', {
-            value: createAppClientConfig({
-              rawConfig: {},
-              rawPublicConfig:
-                mb === 50
-                  ? { projects: { attachments: { maxFileSizeMb: mb } } }
-                  : {},
-            }).public,
-          });
-        },
+        plugins: [files(), projects({ routes: false, realtime: false })],
         fetch: answerApi((call) => {
+          if (call.path === 'file/uploadLimits') {
+            metadataReads++;
+            return {
+              data: {
+                default: 'large',
+                disks: {
+                  large: {
+                    disk: 'large',
+                    maxFileSizeMb: mb,
+                    maxBytes: mb * 1024 * 1024,
+                  },
+                },
+              },
+            };
+          }
           if (call.method === 'POST' && /attachments$/u.test(call.path)) {
             calls.push(call.path);
             return { data: { id: 'a1' } };
@@ -72,6 +77,7 @@ describe.each([false, true])('attachment preflight (issue: %s)', (issue) => {
         ),
       );
       expect(calls).toHaveLength(1);
+      expect(metadataReads).toBe(1);
     },
   );
 });

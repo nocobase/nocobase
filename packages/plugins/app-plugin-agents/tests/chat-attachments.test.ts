@@ -4,7 +4,6 @@
  */
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { CHAT_ATTACHMENT_SIZE_MAX } from '../shared/conversations.js';
 import { claim, createHarness, type Harness } from './harness.js';
 
 const ALICE = 'alice';
@@ -67,7 +66,19 @@ describe('chat attachments', () => {
     );
 
   it('accepts exactly 50 MiB and returns the configured 413 for both size guards', async () => {
-    h = await createHarness({ attachmentMaxFileSizeMb: 50 });
+    h = await createHarness({
+      drive: {
+        default: 'large',
+        disks: {
+          large: {
+            driver: 'fs',
+            location: '/unused',
+            visibility: 'private',
+            maxFileSizeMb: 50,
+          },
+        },
+      },
+    });
     for (const bytes of [
       50 * 1024 * 1024,
       50 * 1024 * 1024 + 1,
@@ -77,7 +88,7 @@ describe('chat attachments', () => {
       expect(result.status).toBe(bytes === 50 * 1024 * 1024 ? 201 : 413);
       if (result.status === 413)
         expect(result.body.error).toMatchObject({
-          reason: 'UPLOAD_TOO_LARGE',
+          reason: 'FILE_TOO_LARGE',
           message: 'A file may have at most 50 MB.',
           metadata: { maxBytes: 50 * 1024 * 1024 },
         });
@@ -149,11 +160,11 @@ describe('chat attachments', () => {
     const large = await upload(
       ALICE,
       'large.bin',
-      new Uint8Array(CHAT_ATTACHMENT_SIZE_MAX + 1),
+      new Uint8Array(20 * 1024 * 1024 + 1),
       'application/octet-stream',
     );
     expect(large.status).toBe(413);
-    expect(large.body.error.reason).toBe('UPLOAD_TOO_LARGE');
+    expect(large.body.error.reason).toBe('FILE_TOO_LARGE');
     expect((await upload(ALICE, '')).status).toBe(400);
   });
 

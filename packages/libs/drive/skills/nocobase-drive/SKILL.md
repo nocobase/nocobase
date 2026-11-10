@@ -43,3 +43,7 @@ Release artifact storage needs serializable configuration. Custom factories are 
 For standalone use, call `prepareDriveStorage(config)` before `createDriveManager(config)` when filesystem directory preparation is needed. The application Provider already performs preparation. Tests can supply `createDriveManager(config, { fakes: { location } })` and use Flydrive's `fake()`/`restore()`; fakes verify application behavior without proving remote credentials, ACLs, or network access.
 
 Verify a configuration change with a write, read or streamed download, and deletion under a disposable key. Check public or signed links from the intended client's network when the feature uses them. Report whether verification used local storage, fakes, or the real remote service. For custom drivers, also verify lazy creation and repeated use through the shared manager.
+
+## Per-disk file upload limits
+
+Set `drive.disks.<name>.maxFileSizeMb` to a positive integer in MiB, default 20. Invalid values on any disk, including unused disks, fail application startup. `createDriveManager` validates these limits without creating drivers; `getUploadLimit(name?)` returns the selected disk, `maxFileSizeMb` and `maxBytes`, while `uploadLimits()` returns only this safe metadata. Custom factory functions may declare the same optional property. Limits govern File Repository uploads; direct Drive operations remain storage primitives. Restart after changing deployment configuration, and increase the reverse proxy body limit to allow the multipart envelope.

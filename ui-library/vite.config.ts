@@ -8,6 +8,13 @@ export default defineConfig({
   plugins: [react(), tailwindcss() as unknown as PluginOption],
   resolve: {
     alias: [
+      {
+        find: /^@nocobase\/app-plugin-file\/client$/u,
+        replacement: path.resolve(
+          __dirname,
+          './website/demo/agents/file-client.ts',
+        ),
+      },
       // The device-approval block calls the authentication plugin's client, which needs a server; the demo answers in
       // its place.
       {

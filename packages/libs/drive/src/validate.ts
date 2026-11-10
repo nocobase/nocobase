@@ -1,3 +1,4 @@
+import { driveUploadLimits } from './upload-limits.js';
 import type {
   AppDriveDiskConfig,
   FsDriveDiskConfig,
@@ -25,6 +26,18 @@ export class DriveDiskConfigError extends Error {
 export function parseDriveDiskConfig(value: unknown): AppDriveDiskConfig {
   if (!isRecord(value))
     throw new DriveDiskConfigError('', 'Disk configuration must be an object.');
+  let maxFileSizeMb: number;
+  try {
+    maxFileSizeMb = driveUploadLimits({
+      default: 'disk',
+      disks: { disk: value as unknown as AppDriveDiskConfig },
+    }).disk.maxFileSizeMb;
+  } catch {
+    throw invalid(
+      'maxFileSizeMb',
+      'must be a positive integer in MiB within the safe byte range',
+    );
+  }
   const visibility = value.visibility;
   if (visibility !== 'private' && visibility !== 'public')
     throw invalid('visibility', 'must be "private" or "public"');
@@ -32,6 +45,7 @@ export function parseDriveDiskConfig(value: unknown): AppDriveDiskConfig {
   if (value.driver === 'fs') {
     const disk: FsDriveDiskConfig = {
       driver: 'fs',
+      ...(value.maxFileSizeMb === undefined ? {} : { maxFileSizeMb }),
       location: requiredString(value, 'location'),
       visibility,
     };
@@ -46,6 +60,7 @@ export function parseDriveDiskConfig(value: unknown): AppDriveDiskConfig {
       throw invalid('credentials', 'must be an object');
     const disk: S3DriveDiskConfig = {
       driver: 's3',
+      ...(value.maxFileSizeMb === undefined ? {} : { maxFileSizeMb }),
       bucket: requiredString(value, 'bucket'),
       region: requiredString(value, 'region'),
       credentials: {},

@@ -1,4 +1,3 @@
-import { attachmentMaxFileSizeMb } from '../../config/index.js';
 import type { OnlineAgentRecoveryConfig } from '../online/agent/types.js';
 import { mayAccessRun } from '../core/runs/access.js';
 /**
@@ -67,7 +66,6 @@ export interface AgentsConfig {
    */
   readonly conversations?: {
     readonly archivedRetentionDays?: number;
-    readonly attachmentMaxFileSizeMb?: number;
   };
   /** How often the runners sweep runs (`sweepIntervalMs`): every 30 seconds by default. */
   readonly runners?: { readonly sweepIntervalMs?: number };
@@ -152,10 +150,6 @@ export class AgentsProvider extends ServiceProvider<AppPluginApplication> {
   }
 
   public override register(): void {
-    attachmentMaxFileSizeMb(
-      this.app.config.get<AgentsConfig>('agents')?.conversations
-        ?.attachmentMaxFileSizeMb,
-    );
     // Read untyped configuration too: YAML and JavaScript callers can still carry an active legacy store.
     const vectors: unknown =
       this.app.config.get<AgentsConfig>('agents')?.vectors;
@@ -186,7 +180,9 @@ export class AgentsProvider extends ServiceProvider<AppPluginApplication> {
     this.app.container.singleton(agentsToken, (resolver) => {
       const config = this.app.config.get<AgentsConfig>('agents');
       return createAgents({
-        attachmentMaxFileSizeMb: config?.conversations?.attachmentMaxFileSizeMb,
+        uploadLimit: resolver.has(driveManagerToken)
+          ? resolver.resolve(driveManagerToken).getUploadLimit()
+          : undefined,
         resolver,
         sandbox: {
           bin: () => {

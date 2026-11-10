@@ -1,3 +1,5 @@
+import { driveManagerToken } from '@nocobase/app-server/drive';
+import { fileTooLarge } from './upload-limits.js';
 import { Readable } from 'node:stream';
 import {
   ApiError,
@@ -14,7 +16,6 @@ import {
   type AppRouteContribution,
   type RepositoryApiActions,
 } from '@nocobase/app-server/router';
-import { driveManagerToken } from '@nocobase/app-server/drive';
 import {
   addBasePathToLocation,
   joinBasePath,
@@ -223,8 +224,10 @@ export function defineFileRepositoryApiRoutes<P = unknown>(
           // input and nothing is ever written to storage on its behalf. The Repository that step binds reaches the
           // handler through the request's own Context, which every handler in the chain shares.
           const authorized = new WeakMap<Context, ServerFileRepository>();
-          const maxSize =
-            config.maxSize ?? (action === 'uploadOne' ? 5 : 20) * 1024 * 1024;
+          const limit = app.container
+            .resolve(driveManagerToken)
+            .getUploadLimit(entry.disk);
+          const maxSize = config.maxSize ?? limit.maxBytes + 64 * 1024;
           router.post(
             `/${entry.name}/${action}`,
             async (c, next) => {
@@ -258,8 +261,10 @@ export function defineFileRepositoryApiRoutes<P = unknown>(
             describeUpload(entry.name, action, maxSize),
             bodyLimit({
               maxSize,
-              onError: (c) =>
-                apiErrorHandler(
+              onError: (c) => {
+                if (action === 'uploadOne' && config.maxSize === undefined)
+                  throw fileTooLarge(limit);
+                return apiErrorHandler(
                   uploadError(
                     'INVALID_ARGUMENT',
                     'BODY_TOO_LARGE',
@@ -267,7 +272,8 @@ export function defineFileRepositoryApiRoutes<P = unknown>(
                     413,
                   ),
                   c,
-                ),
+                );
+              },
             }),
             async (c) => {
               const writable = authorized.get(c);
@@ -449,7 +455,7 @@ function describeUpload(
       ),
       413: apiErrorResponse(
         413,
-        `The body exceeds ${maxSize} bytes (\`BODY_TOO_LARGE\`).`,
+        `The file exceeds its disk limit (\`FILE_TOO_LARGE\`), or the body exceeds ${maxSize} bytes (\`BODY_TOO_LARGE\`).`,
       ),
       415: apiErrorResponse(
         415,

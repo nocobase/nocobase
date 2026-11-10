@@ -1,10 +1,12 @@
+import {
+  fileTooLarge,
+  type FileUploadLimit,
+} from '@nocobase/app-plugin-file/server';
 /**
  * `/api/projects/attachments` and `/api/projects/issues/{issueId}/attachments` (`shared/attachments.ts`). Every path
  * acts as the signed-in person; the service decides what they may read and change.
  */
 import {
-  ApiError,
-  apiErrorHandler,
   apiErrorResponse,
   apiErrorResponses,
   apiValidator,
@@ -23,7 +25,6 @@ import { invalid } from '../../kernel/errors.js';
 import {
   boundedList,
   domainRouter,
-  PROJECTS_DOMAIN,
   tags,
   personOrRunSecurity,
 } from '../../kernel/http.js';
@@ -43,21 +44,12 @@ import type { AttachmentService } from './attachment.service.js';
 /** Room for the multipart envelope around one file. */
 const ENVELOPE = 64 * 1024;
 
-const sizeLimit = (maxFileSizeMb: number) =>
+const sizeLimit = (limit: FileUploadLimit) =>
   bodyLimit({
-    maxSize: maxFileSizeMb * 1024 * 1024 + ENVELOPE,
-    onError: (context) =>
-      apiErrorHandler(
-        new ApiError({
-          status: 'INVALID_ARGUMENT',
-          reason: 'FILE_TOO_LARGE',
-          domain: PROJECTS_DOMAIN,
-          message: `A file may have at most ${maxFileSizeMb} MB.`,
-          metadata: { maxBytes: maxFileSizeMb * 1024 * 1024 },
-          httpStatus: 413,
-        }),
-        context,
-      ),
+    maxSize: limit.maxBytes + ENVELOPE,
+    onError: () => {
+      throw fileTooLarge(limit);
+    },
   });
 
 const uploadErrors = {
@@ -136,7 +128,7 @@ export function createAttachmentRoutes(
         command: 'attachment upload',
         action: 'pm.attachments/upload',
       }),
-      description: `Needs \`upload\` on \`pm.attachments\`. One file as the \`file\` field of a multipart body, at most ${attachments.maxFileSizeMb} MB. The upload is attached to nothing until it is sent with a comment (\`attachmentIds\`); one left so for 24 hours is purged.`,
+      description: `Needs \`upload\` on \`pm.attachments\`. One file as the \`file\` field of a multipart body, at most ${attachments.uploadLimit.maxFileSizeMb} MB. The upload is attached to nothing until it is sent with a comment (\`attachmentIds\`); one left so for 24 hours is purged.`,
       requestBody: singleFileBody,
       responses: {
         201: dataResponse(AttachmentSchema),
@@ -144,7 +136,7 @@ export function createAttachmentRoutes(
         ...uploadErrors,
       },
     }),
-    sizeLimit(attachments.maxFileSizeMb),
+    sizeLimit(attachments.uploadLimit),
     async (context) =>
       context.json(
         {
@@ -349,7 +341,7 @@ export function createIssueAttachmentRoutes(
         action: 'pm.attachments/upload',
         examples: ['issue attachment add PM-12 --file design.png'],
       }),
-      description: `Needs \`upload\` on \`pm.attachments\` and \`edit\` on the issue. One file as the \`file\` field of a multipart body, at most ${attachments.maxFileSizeMb} MB.`,
+      description: `Needs \`upload\` on \`pm.attachments\` and \`edit\` on the issue. One file as the \`file\` field of a multipart body, at most ${attachments.uploadLimit.maxFileSizeMb} MB.`,
       requestBody: singleFileBody,
       responses: {
         201: dataResponse(AttachmentSchema),
@@ -359,7 +351,7 @@ export function createIssueAttachmentRoutes(
       },
     }),
     apiValidator('param', IssueParams),
-    sizeLimit(attachments.maxFileSizeMb),
+    sizeLimit(attachments.uploadLimit),
     async (context) =>
       context.json(
         {

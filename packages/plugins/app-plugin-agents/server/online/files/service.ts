@@ -1,3 +1,4 @@
+import { FILE_INPUT_MAX_BYTES } from './input.js';
 import { FileInputError } from './errors.js';
 import { createHash } from 'node:crypto';
 import {
@@ -9,7 +10,7 @@ import type { DatabaseConnection } from '@nocobase/db';
 import type { LanguageModel } from 'ai';
 import type { NativeMessage } from '../agent/types.js';
 import type { ModelRef } from '../../../shared/models.js';
-import { CHAT_ATTACHMENT_SIZE_MAX } from '../../../shared/conversations.js';
+
 import type { ChatAttachmentService } from '../../core/conversations/attachments.js';
 import { invalid } from '../../kernel/errors.js';
 import { languageModel, type ModelConnection } from '../providers.js';
@@ -49,8 +50,7 @@ export class NativeFileInputs {
   ) {
     this.profiles = new FileInputProfiles(deps.config);
     this.extract =
-      deps.extract ??
-      workerExtractor({ maxInputBytes: CHAT_ATTACHMENT_SIZE_MAX });
+      deps.extract ?? workerExtractor({ maxInputBytes: FILE_INPUT_MAX_BYTES });
   }
 
   async model(ref: ModelRef, sessionId: string): Promise<LanguageModel> {

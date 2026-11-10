@@ -1702,7 +1702,20 @@ describe('attachments over HTTP', () => {
 
   it('uses 50 MiB for both issue and comment uploads, including both 413 guards', async () => {
     await h.close();
-    h = await createHarness({}, 50);
+    h = await createHarness(
+      {},
+      {
+        default: 'large',
+        disks: {
+          large: {
+            driver: 'fs',
+            location: '/unused',
+            visibility: 'private',
+            maxFileSizeMb: 50,
+          },
+        },
+      },
+    );
     await h.addUser('alice', 'Alice');
     const customContainer = new ServiceContainer();
     customContainer.instance(projectsToken, h.services);
@@ -1854,7 +1867,7 @@ describe('attachments over HTTP', () => {
       error: {
         status: 'INVALID_ARGUMENT',
         reason: 'FILE_TOO_LARGE',
-        domain: 'projects',
+        domain: 'file',
       },
     });
   });

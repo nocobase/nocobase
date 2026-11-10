@@ -32,8 +32,6 @@ export const CONVERSATION_TITLE_MAX = 200;
 /** The longest message a person may send, in characters. */
 export const MESSAGE_CONTENT_MAX = 50_000;
 /** Per file sent with a message, in bytes. */
-/** Default only; deployments configure the effective upload limit. */
-export const CHAT_ATTACHMENT_SIZE_MAX: number = 20 * 1024 * 1024;
 /** Files sent with one message. */
 export const CHAT_ATTACHMENTS_PER_MESSAGE_MAX = 10;
 /** How long an upload not sent with a message is kept. */

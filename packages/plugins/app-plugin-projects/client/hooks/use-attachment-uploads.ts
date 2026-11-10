@@ -1,4 +1,4 @@
-import { useProjectsAttachmentMaxFileSizeMb } from '../attachment-config.js';
+import { useFileUploadLimit } from '@nocobase/app-plugin-file/client';
 import { useTranslation } from '@nocobase/i18n/client';
 
 import { ACCESS_NAMESPACE } from '../../shared/access.js';
@@ -62,7 +62,7 @@ function named(file: File, index: number): File {
  */
 export function useAttachmentUploads(): AttachmentUploads {
   const { t } = useTranslation(ACCESS_NAMESPACE);
-  const maxFileSizeMb = useProjectsAttachmentMaxFileSizeMb();
+  const { maxFileSizeMb } = useFileUploadLimit();
   const api = usePmApi();
   const notify = useNotify();
   const [uploads, setUploads] = useState<readonly PendingUpload[]>([]);
@@ -182,6 +182,3 @@ export function useAttachmentUploads(): AttachmentUploads {
     },
   };
 }
-
-/** @deprecated Read the effective deployment limit with useProjectsAttachmentMaxFileSizeMb. */
-export const ATTACHMENT_SIZE_MB = 20;

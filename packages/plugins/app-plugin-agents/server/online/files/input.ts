@@ -1,6 +1,8 @@
 import { FileInputError } from './errors.js';
 import { isParsed } from '@nocobase/document-extractor';
-import { CHAT_ATTACHMENT_SIZE_MAX } from '../../../shared/conversations.js';
+
+/** Provider ingestion has its own byte budget, independent of storage upload policy. */
+export const FILE_INPUT_MAX_BYTES: number = 20 * 1024 * 1024;
 
 const mimeExtensions: Readonly<Record<string, string>> = {
   'application/pdf': 'pdf',
@@ -54,12 +56,12 @@ export function inlineBytes(url: string, mediaType: string): Uint8Array {
   if (
     !match ||
     match[1] !== mediaType ||
-    match[2].length > Math.ceil(CHAT_ATTACHMENT_SIZE_MAX / 3) * 4
+    match[2].length > Math.ceil(FILE_INPUT_MAX_BYTES / 3) * 4
   )
     throw new FileInputError('invalidInline');
   const bytes = Buffer.from(match[2], 'base64');
   if (
-    bytes.byteLength > CHAT_ATTACHMENT_SIZE_MAX ||
+    bytes.byteLength > FILE_INPUT_MAX_BYTES ||
     bytes.toString('base64').replace(/=+$/u, '') !==
       match[2].replace(/=+$/u, '')
   )
@@ -74,7 +76,7 @@ export async function readBytes(
   signal: AbortSignal,
 ): Promise<Uint8Array> {
   try {
-    return await readBoundedBytes(body, signal, CHAT_ATTACHMENT_SIZE_MAX);
+    return await readBoundedBytes(body, signal, FILE_INPUT_MAX_BYTES);
   } catch (error) {
     if (error instanceof ByteLimitError)
       throw new FileInputError('fileTooLarge');

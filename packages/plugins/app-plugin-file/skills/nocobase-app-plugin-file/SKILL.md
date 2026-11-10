@@ -258,3 +258,9 @@ For preview integration or changes, verify each of PDF/DOCX/XLSX/PPTX with real 
 - FILE_COMMIT_UNCERTAIN / FILE_CLEANUP_FAILED: reconcile database records and stored objects before retrying; uploads have no idempotency key.
 
 There is no built-in route authentication, row ACL, Range/206, ETag, conditional download, resumable upload, physical cleanup, content sniffing or malware scan. Metadata deletion retains objects; cancelled forms may leave unlinked files. Implement the policies required by the business, including referenced-file deletion and orphan cleanup.
+
+## Per-disk upload limits
+
+File Repository checks every upload against the destination disk's `drive.disks.<name>.maxFileSizeMb` (positive integer MiB, default 20) before writing bytes. Oversized files return 413 `FILE_TOO_LARGE` in domain `file`, with `disk`, `maxFileSizeMb` and `maxBytes` metadata. A multi-file upload validates every file before storing any of them. The single-file route's default body limit includes the disk's limit plus the multipart envelope; explicit action `maxSize` remains an additional request-body restriction.
+
+The Server plugin contributes public `GET /api/file/uploadLimits`, exposing only disk names and numeric limits, never storage paths, driver options or credentials. The Client plugin reads it once during startup before UI mounts. `useFileUploadLimit(disk?)` from `/client` reads this snapshot, using the default disk when omitted; it sends no additional requests. Register both File plugins in the host. Restart and reload the client after changing limits; reverse proxy request-body limits must also be raised.
