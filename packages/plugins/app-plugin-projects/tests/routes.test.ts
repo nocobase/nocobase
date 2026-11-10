@@ -1686,6 +1686,73 @@ describe('attachments over HTTP', () => {
     });
   };
 
+  it('defaults to 20 MiB and returns 413 just above the single-file limit', async () => {
+    const response = await upload(
+      '/attachments',
+      new File([new Uint8Array(20 * 1024 * 1024 + 1)], 'large.bin'),
+    );
+    expect(response.status).toBe(413);
+    expect(await response.json()).toMatchObject({
+      error: {
+        reason: 'FILE_TOO_LARGE',
+        message: 'A file may have at most 20 MB.',
+      },
+    });
+  });
+
+  it('uses 50 MiB for both issue and comment uploads, including both 413 guards', async () => {
+    await h.close();
+    h = await createHarness({}, 50);
+    await h.addUser('alice', 'Alice');
+    const customContainer = new ServiceContainer();
+    customContainer.instance(projectsToken, h.services);
+    customContainer.instance(
+      authenticationToken,
+      container.resolve(authenticationToken),
+    );
+    customContainer.instance(
+      authorizationToken,
+      container.resolve(authorizationToken),
+    );
+    customContainer.instance(
+      projectsAccessToken,
+      container.resolve(projectsAccessToken),
+    );
+    const customApi = await apiRoutes.createRouter({
+      appName: 'main',
+      publicBasePath: '',
+      config: { app: { name: 'main', publicBasePath: '' } },
+      paths: createAppPaths({ rootDir: '/tmp/projects-routes' }),
+      router: new Hono(),
+      container: customContainer,
+    } as AppPluginApplication);
+    router = new Hono().route('/api', customApi);
+    const issue = await h.services.issues.create(h.viewer('alice'), {
+      title: 'Custom limit',
+    });
+    for (const path of ['/attachments', `/issues/${issue.id}/attachments`]) {
+      for (const bytes of [
+        50 * 1024 * 1024,
+        50 * 1024 * 1024 + 1,
+        51 * 1024 * 1024,
+      ]) {
+        const response = await upload(
+          path,
+          new File([new Uint8Array(bytes)], 'limit.bin'),
+        );
+        expect(response.status).toBe(bytes === 50 * 1024 * 1024 ? 201 : 413);
+        if (response.status === 413)
+          expect(await response.json()).toMatchObject({
+            error: {
+              reason: 'FILE_TOO_LARGE',
+              message: 'A file may have at most 50 MB.',
+              metadata: { maxBytes: 50 * 1024 * 1024 },
+            },
+          });
+      }
+    }
+  });
+
   it('uploads, sends with a comment, serves and removes files', async () => {
     await call('/issues', {
       role: 'member',

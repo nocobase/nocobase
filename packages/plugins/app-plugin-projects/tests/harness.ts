@@ -69,6 +69,7 @@ export interface Harness {
 
 export async function createHarness(
   options: Parameters<typeof createTestDatabase>[0] = {},
+  attachmentMaxFileSizeMb?: number,
 ): Promise<Harness> {
   const testDatabase = await createTestDatabase(options);
   const database = testDatabase.database;
@@ -179,6 +180,7 @@ export async function createHarness(
     }),
   });
   const services = createProjects({
+    attachmentMaxFileSizeMb,
     storage,
     basePath: () => '/app',
     database,

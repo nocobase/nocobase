@@ -66,6 +66,24 @@ describe('chat attachments', () => {
       },
     );
 
+  it('accepts exactly 50 MiB and returns the configured 413 for both size guards', async () => {
+    h = await createHarness({ attachmentMaxFileSizeMb: 50 });
+    for (const bytes of [
+      50 * 1024 * 1024,
+      50 * 1024 * 1024 + 1,
+      51 * 1024 * 1024,
+    ]) {
+      const result = await upload(ALICE, 'limit.bin', new Uint8Array(bytes));
+      expect(result.status).toBe(bytes === 50 * 1024 * 1024 ? 201 : 413);
+      if (result.status === 413)
+        expect(result.body.error).toMatchObject({
+          reason: 'UPLOAD_TOO_LARGE',
+          message: 'A file may have at most 50 MB.',
+          metadata: { maxBytes: 50 * 1024 * 1024 },
+        });
+    }
+  });
+
   it('sends application-started conversation attachments with the first message', async () => {
     h = await createHarness();
     const agentId = await h.createAgent();

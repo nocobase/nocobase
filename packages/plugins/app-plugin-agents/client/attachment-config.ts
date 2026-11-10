@@ -2,7 +2,10 @@ import { useClientApplication } from '@nocobase/app-client';
 
 declare module '@nocobase/app-client' {
   interface PublicAppConfig {
-    agents: { conversations?: { attachmentMaxFileSizeMb?: number } };
+    agents: {
+      runs?: { retentionDays?: number };
+      conversations?: { attachmentMaxFileSizeMb?: number };
+    };
   }
 }
 

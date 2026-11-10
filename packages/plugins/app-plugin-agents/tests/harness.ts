@@ -300,6 +300,7 @@ export async function createHarness(
   options: {
     /** `null` for an application without secrets keys. */
     readonly uiRecovery?: OnlineAgentRecoveryConfig;
+    readonly attachmentMaxFileSizeMb?: number;
     readonly measureOnlineAgent?: (phase: string, durationMs: number) => void;
     readonly secrets?: SecretsService | null;
     readonly dist?: DistConfig;
@@ -328,6 +329,7 @@ export async function createHarness(
   const disk = memoryDisk();
   const chatFiles = memoryChatFiles(database, clock);
   const services = createAgents({
+    attachmentMaxFileSizeMb: options.attachmentMaxFileSizeMb,
     measureOnlineAgent: options.measureOnlineAgent,
     uiRecovery: options.uiRecovery,
     database,
