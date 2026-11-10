@@ -1883,3 +1883,102 @@ describe('the unsaved-changes question on a covering child page', () => {
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
   });
 });
+
+describe('a save started without returning its promise', () => {
+  // `onSubmit={(event) => { event.preventDefault(); void submit(); }}` with `submitting` from the page: the save is
+  // known from `submitting`, so its own navigation leaves, and a failed one keeps the question.
+  function VoidSubmitPage({ fail }: { readonly fail: boolean }) {
+    const navigate = useNavigate();
+    const { search } = useLocation();
+    const saved = { name: 'Pump' };
+    const [values, setValues] = useState(saved);
+    const [submitting, setSubmitting] = useState(false);
+    const submit = async () => {
+      setSubmitting(true);
+      await new Promise((resolve) => setTimeout(resolve, 10));
+      setSubmitting(false);
+      if (!fail) await navigate({ pathname: '..', search });
+    };
+    return (
+      <RouteChildPage>
+        <FeedbackForm
+          id='void-form'
+          values={() => values}
+          savedValues={saved}
+          submitting={submitting}
+          onSubmit={(event) => {
+            event.preventDefault();
+            void submit();
+          }}
+        >
+          <input
+            aria-label='Name'
+            value={values.name}
+            onChange={(event) => setValues({ name: event.target.value })}
+          />
+        </FeedbackForm>
+        <button
+          type='button'
+          onClick={() => void navigate({ pathname: '..', search })}
+        >
+          Cancel
+        </button>
+        <button type='submit' form='void-form'>
+          Save
+        </button>
+      </RouteChildPage>
+    );
+  }
+  function setup(fail: boolean) {
+    const history: { path?: string } = {};
+    function Probe() {
+      const { pathname, search } = useLocation();
+      useEffect(() => {
+        history.path = `${pathname}${search}`;
+      });
+      return null;
+    }
+    render(
+      <MemoryRouter
+        initialEntries={['/orders?page=2', '/orders/new?page=2']}
+        initialIndex={1}
+      >
+        <NavigationGuardProvider>
+          <Probe />
+          <Routes>
+            <Route path='/orders' element={<Outlet />}>
+              <Route path='new' element={<VoidSubmitPage fail={fail} />} />
+            </Route>
+          </Routes>
+        </NavigationGuardProvider>
+      </MemoryRouter>,
+      { wrapper: I18n },
+    );
+    return history;
+  }
+
+  it('leaves without asking after the save succeeds', async () => {
+    const history = setup(false);
+    await userEvent.type(
+      await screen.findByRole('textbox', { name: 'Name' }),
+      ' 2',
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+    await waitFor(() => expect(history.path).toBe('/orders?page=2'));
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+  });
+
+  it('asks on Cancel after the save failed', async () => {
+    setup(true);
+    await userEvent.type(
+      await screen.findByRole('textbox', { name: 'Name' }),
+      ' 2',
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(
+      await screen.findByRole('alertdialog', { name: 'Discard changes?' }),
+    ).toBeVisible();
+  });
+});

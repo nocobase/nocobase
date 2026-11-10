@@ -131,6 +131,24 @@ export function FeedbackForm({
     savedValuesRef.current = savedValues;
   });
   const tracksValues = values !== undefined;
+  // The save the enclosing layer is told about (`RouteOverlay`, `RouteChildPage`): it runs from the submit until the
+  // `onSubmit` promise settles, or, for an `onSubmit` that starts the request without returning it (`void submit()`),
+  // until `submitting` has come and gone. Its navigation away then does not ask to discard the input.
+  const submittingRef = useRef(submitting);
+  const saveEndRef = useRef<(() => void) | null>(null);
+  useLayoutEffect(() => {
+    const was = submittingRef.current;
+    submittingRef.current = submitting;
+    if (!was || submitting || !saveEndRef.current) return;
+    const end = saveEndRef.current;
+    saveEndRef.current = null;
+    // One task later, for a navigation the save started right after the request; at once if the form goes first.
+    const timer = setTimeout(end, 0);
+    return () => {
+      clearTimeout(timer);
+      end();
+    };
+  }, [submitting]);
   useLayoutEffect(() => {
     if (!unsavedValues || !tracksValues) return;
     return unsavedValues.register(() => {
@@ -462,13 +480,26 @@ export function FeedbackForm({
           );
         };
         announce('start');
+        let ended = false;
+        const end = (): void => {
+          if (ended) return;
+          ended = true;
+          if (saveEndRef.current === end) saveEndRef.current = null;
+          announce('end');
+        };
         const settle = (): void => {
-          setTimeout(() => announce('end'), 0);
+          setTimeout(end, 0);
         };
         try {
           const result = onSubmit?.(event);
           if (result) void result.then(settle, settle);
-          else settle();
+          else {
+            // The request runs on its own: wait for `submitting` to end, or end now if it never started.
+            saveEndRef.current = end;
+            setTimeout(() => {
+              if (!submittingRef.current && saveEndRef.current === end) end();
+            }, 0);
+          }
           if (result)
             void result.catch((next: unknown) => {
               if (feedback.getAttemptSequence() !== current.sequence) return;
