@@ -125,6 +125,8 @@ export function inspectSource(ts, text, file, root) {
   let usesHookForm = false;
   // Local names of `useNavigationGuard` imported from @nocobase/app-client, and whether the file calls one.
   const guardHooks = new Set();
+  // Namespace imports of @nocobase/app-client, for `App.useNavigationGuard(...)`.
+  const guardNamespaces = new Set();
   let callsGuard = false;
   // A plain <form> is a create or edit form when it holds React Hook Form fields or renders in a route overlay; a chat
   // composer or a filter bar elsewhere is left alone.
@@ -143,6 +145,12 @@ export function inspectSource(ts, text, file, root) {
       continue;
     const specifier = statement.moduleSpecifier.text;
     if (specifier === 'react-hook-form') usesHookForm = true;
+    if (
+      specifier === '@nocobase/app-client' &&
+      statement.importClause?.namedBindings &&
+      ts.isNamespaceImport(statement.importClause.namedBindings)
+    )
+      guardNamespaces.add(statement.importClause.namedBindings.name.text);
     if (
       specifier === '@nocobase/app-client' &&
       statement.importClause?.namedBindings &&
@@ -400,8 +408,12 @@ export function inspectSource(ts, text, file, root) {
   (function findGuardCall(node) {
     if (
       ts.isCallExpression(node) &&
-      ts.isIdentifier(node.expression) &&
-      guardHooks.has(node.expression.text)
+      ((ts.isIdentifier(node.expression) &&
+        guardHooks.has(node.expression.text)) ||
+        (ts.isPropertyAccessExpression(node.expression) &&
+          ts.isIdentifier(node.expression.expression) &&
+          guardNamespaces.has(node.expression.expression.text) &&
+          node.expression.name.text === 'useNavigationGuard'))
     )
       callsGuard = true;
     ts.forEachChild(node, findGuardCall);

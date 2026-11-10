@@ -1984,6 +1984,10 @@ describe('a save started without returning its promise', () => {
 });
 
 describe('nested covering child pages', () => {
+  let afterLeaving: PromiseWithResolvers<void>;
+  beforeEach(() => {
+    afterLeaving = Promise.withResolvers<void>();
+  });
   // An outer create page whose tab-like outlet renders a child page inside it. The inner save navigates back to the
   // outer page and unmounts the inner form; the outer page must keep asking for its own input afterwards.
   function Fields({
@@ -2038,8 +2042,8 @@ describe('nested covering child pages', () => {
           label='Item'
           onSaved={async () => {
             await navigate('/orders/new');
-            // Work after leaving, such as a toast or a refresh: the save ends once this page is gone.
-            await new Promise((resolve) => setTimeout(resolve, 10));
+            // Work after leaving, such as a toast or a refresh: the test ends it once this page is gone.
+            await afterLeaving.promise;
           }}
         />
       </RouteChildPage>
@@ -2096,9 +2100,12 @@ describe('nested covering child pages', () => {
     );
     await userEvent.click(screen.getByRole('button', { name: 'Save Item' }));
     await waitFor(() => expect(history.path).toBe('/orders/new'));
+    expect(
+      screen.queryByRole('textbox', { name: 'Item' }),
+    ).not.toBeInTheDocument();
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
-    // Wait past the inner save's delayed end, which never reaches a page that left.
-    await new Promise((resolve) => setTimeout(resolve, 20));
+    // The inner save ends only now, after its page left: its end never reaches the page around it.
+    await act(async () => afterLeaving.resolve());
 
     await userEvent.type(screen.getByRole('textbox', { name: 'Order' }), 'A');
     await userEvent.click(screen.getByRole('button', { name: 'Cancel order' }));

@@ -584,6 +584,20 @@ test('rejects OwnDiscardQuestion in a file that asks no question of its own', ()
       .findings,
     [],
   );
+  // A namespace import of the application client counts as well.
+  assert.deepEqual(
+    inspect(`import * as App from '@nocobase/app-client';
+      export const Page = () => { App.useNavigationGuard(ask); return <OwnDiscardQuestion/>; }`)
+      .findings,
+    [],
+  );
+  assert.deepEqual(
+    inspect(`import * as Local from './local-guard';
+      export const Page = () => { Local.useNavigationGuard(ask); return <OwnDiscardQuestion/>; }`).findings.map(
+      (item) => item.tag,
+    ),
+    ['OwnDiscardQuestion'],
+  );
   // A comment, or a hook of the same name from elsewhere, does not count.
   assert.deepEqual(
     inspect(`import { useNavigationGuard } from './local-guard';
