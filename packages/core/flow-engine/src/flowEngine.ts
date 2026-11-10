@@ -1285,7 +1285,7 @@ export class FlowEngine {
     if (uid && !this._modelInstances.has(uid)) {
       const existing = this.findModelInPreviousEngines<T>(uid);
       if (existing && (existing.context.flowSettingsEnabled || existing.flowEngine._deferredModels.has(existing))) {
-        // 如果模型实例启用 flowSettingsEnabled，直接返回 null, 避免旧数据
+        // Reload instead of reusing an editable or unsaved model from a previous engine.
         return null;
       }
       if (existing) {
