@@ -423,6 +423,59 @@ describe('AppHostSupervisor', () => {
     }
   });
 
+  it('keeps an explicitly stopped deployment unavailable in a fresh Host process until explicit start', async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), 'app-host-stopped-'));
+    const fixture = await createManagedFixture(root);
+    const supervisor = SourceAppHostSupervisor.initialize({
+      mode: 'managed',
+      driver: 'auto',
+      appRevisionsDir: fixture.appRevisionsDir,
+      appVolumesDir: fixture.appVolumesDir,
+      configPath: fixture.configPath,
+      startTimeoutMs: 10_000,
+    });
+    const deployment = {
+      id: 'demo',
+      appId: 'demo',
+      artifact: fixture.artifact,
+      desiredState: 'running' as const,
+      backend: 'in-process' as const,
+      activation: 'eager' as const,
+    };
+    try {
+      await supervisor.applyDeployment(deployment);
+      const previousPid = supervisor.getInfo().pid;
+      await supervisor.stopDeployment('demo');
+      await supervisor.restart('test stopped deployment recovery');
+      expect(supervisor.getInfo().pid).not.toBe(previousPid);
+      const restored = await supervisor.restoreDeploymentSet({
+        revision: 3,
+        deployments: [{ ...deployment, desiredState: 'stopped' }],
+      });
+      expect(restored.status.deployments[0]).toMatchObject({
+        desiredState: 'stopped',
+        observedState: 'stopped',
+        app: null,
+      });
+      const target = supervisor.getInfo().targetUrl!;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const response = await fetch(new URL('/demo/api/info', target));
+        await response.arrayBuffer();
+        expect(response.status).toBe(404);
+      }
+      const status = await (await supervisor.getManagementClient()).getStatus();
+      expect(status.counters?.activations).toBe(0);
+      expect(status.deployments[0]?.observedState).toBe('stopped');
+      await supervisor.startDeployment(deployment);
+      const response = await fetch(new URL('/demo/api/info', target));
+      await response.arrayBuffer();
+      expect(response.status).toBe(200);
+    } finally {
+      await supervisor.shutdown();
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+
   it('notifies the controller after a crash so it can restore its deployment set', async () => {
     const volumesDir = await mkdtemp(path.join(os.tmpdir(), 'app-host-data-'));
     const fixture = await createManagedFixture(volumesDir);

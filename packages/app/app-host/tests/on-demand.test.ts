@@ -10,6 +10,8 @@
 import { createHash } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import http from 'node:http';
+import { once } from 'node:events';
+import { NodeServerProxy } from '@nocobase/app-server/node';
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -18,6 +20,9 @@ import { createRealtimeClient } from '@nocobase/realtime/client';
 import { c as createTar } from 'tar';
 import {
   createAppHost,
+  InProcessAppHandle,
+  applyFetchResponse,
+  toFetchRequest,
   type AppHost,
   type AppHostOptions,
   type ArtifactReference,
@@ -37,6 +42,141 @@ afterEach(async () => {
 });
 
 describe('on-demand Apps on a managed Host', () => {
+  it.each(['stop', 'stopped-spec'] as const)(
+    'keeps explicit %s unavailable through direct and unified HTTP/WebSocket ingress across restoration',
+    async (mode) => {
+      const fixture = await createFixture();
+      let host = await startHost(fixture);
+      const deployment = spec(fixture.artifact, {
+        activation: 'eager',
+        idleStopMs: 1000,
+        config: {
+          provider: 'file',
+          content: 'enabled: true\n',
+          revision: 'one',
+        },
+      });
+      await host.management.applyDeployment(deployment);
+      const definition = host.registry.definition('customer')!;
+      const recordPath = path.join(definition.dataDir!, 'record.json');
+      await writeFile(recordPath, '{"name":"retained customer"}');
+      const archivePath = path.join(fixture.artifactDir, fixture.artifact.key);
+      const archive = await readFile(archivePath);
+      const ingress = await startIngress(() => host);
+      try {
+        // Exercise an established connection separately from refused new handshakes.
+        const socket = new WebSocket(`${ingress.url}/customer/ws`);
+        const closed = new Promise<CloseEvent>((resolve) =>
+          socket.addEventListener('close', resolve, { once: true }),
+        );
+        await new Promise<void>((resolve, reject) => {
+          socket.addEventListener('open', () => resolve(), { once: true });
+          socket.addEventListener('error', reject, { once: true });
+        });
+        expect(
+          host.registry.requireSnapshot('customer').activeConnections,
+        ).toBe(1);
+        const starts = host.registry.getMetrics().activations;
+        if (mode === 'stop') await host.management.stopDeployment('customer');
+        else
+          await host.management.applyDeploymentSet({
+            revision: 2,
+            deployments: [{ ...deployment, desiredState: 'stopped' }],
+          });
+        expect((await closed).code).toBe(1001);
+        await assertUnavailable(host, ingress.url, starts);
+
+        // Repeated reconciliation must not re-register a wakeable definition.
+        const stoppedSet = {
+          revision: 3,
+          deployments: [{ ...deployment, desiredState: 'stopped' as const }],
+        };
+        await host.management.applyDeploymentSet(stoppedSet);
+        await assertUnavailable(host, ingress.url, starts);
+        await host.close('restart with the controller’s stopped desired set');
+        hosts.splice(hosts.indexOf(host), 1);
+        host = await startHost(fixture);
+        await host.management.restoreDeploymentSet(stoppedSet);
+        await assertUnavailable(host, ingress.url, 0);
+
+        expect(await readFile(recordPath, 'utf8')).toBe(
+          '{"name":"retained customer"}',
+        );
+        expect(await readFile(definition.configPath!, 'utf8')).toBe(
+          'enabled: true\n',
+        );
+        expect(await readFile(archivePath)).toEqual(archive);
+        expect(existsSync(fixture.revisionDir())).toBe(true);
+        await host.management.startDeployment(deployment);
+        for (const url of [baseUrl(host), ingress.url]) {
+          const response = await fetch(`${url}/customer/api/record`);
+          expect(response.status).toBe(200);
+          expect(await response.json()).toEqual({ name: 'retained customer' });
+          expect(await upgradeStatus(`${url}/customer/ws`)).toBe(101);
+        }
+        expect(host.registry.definition('customer')?.dataDir).toBe(
+          definition.dataDir,
+        );
+        expect(host.registry.definition('customer')?.configPath).toBe(
+          definition.configPath,
+        );
+
+        // Ordinary idle stop retains its route and can still wake through either transport.
+        await vi.waitFor(() =>
+          expect(
+            host.registry.requireSnapshot('customer').activeConnections,
+          ).toBe(0),
+        );
+        await host.registry.sweep(Date.now() + 2000);
+        expect(host.registry.has('customer')).toBe(true);
+        expect(host.registry.isActive('customer')).toBe(false);
+        expect((await fetch(`${ingress.url}/customer/api/info`)).status).toBe(
+          200,
+        );
+        await host.registry.sweep(Date.now() + 2000);
+        expect(host.registry.isActive('customer')).toBe(false);
+        expect(await upgradeStatus(`${ingress.url}/customer/ws`)).toBe(101);
+        expect(host.registry.getMetrics().activations).toBe(3);
+      } finally {
+        await ingress.close();
+      }
+    },
+  );
+
+  it.each(['stop', 'stopped-spec'] as const)(
+    'rejects %s when runtime destruction fails without reporting a successful stop',
+    async (mode) => {
+      const fixture = await createFixture();
+      const host = await startHost(fixture);
+      const deployment = spec(fixture.artifact, { activation: 'eager' });
+      await host.management.applyDeployment(deployment);
+      // Inject failure at the runtime boundary; keep the real management and registry paths.
+      vi.spyOn(InProcessAppHandle.prototype, 'destroy').mockRejectedValueOnce(
+        new Error('runtime stop failed'),
+      );
+      const stopping =
+        mode === 'stop'
+          ? host.management.stopDeployment('customer')
+          : host.management.applyDeploymentSet({
+              revision: 2,
+              deployments: [{ ...deployment, desiredState: 'stopped' }],
+            });
+      await expect(stopping).rejects.toThrow('runtime stop failed');
+      const status = await host.management.getStatus();
+      expect(status.reconciledRevision).toBe(1);
+      expect(status.deployments[0]).toMatchObject({
+        desiredState: 'running',
+        observedState: 'running',
+      });
+      expect(host.registry.isActive('customer')).toBe(true);
+      expect((await fetch(`${baseUrl(host)}/customer/api/info`)).status).toBe(
+        200,
+      );
+      await host.management.stopDeployment('customer');
+      expect(host.registry.has('customer')).toBe(false);
+    },
+  );
+
   it.each([401, 403])(
     'lets status %i traffic expire and refuses its repeated background wakes',
     async (status) => {
@@ -392,6 +532,89 @@ describe('on-demand Apps on a managed Host', () => {
   });
 });
 
+async function assertUnavailable(
+  host: AppHost,
+  ingressUrl: string,
+  activations: number,
+) {
+  for (let attempt = 0; attempt < 3; attempt++) {
+    for (const url of [baseUrl(host), ingressUrl]) {
+      for (const route of ['/', '/api/info', '/assets/app.js']) {
+        const response = await fetch(`${url}/customer${route}`);
+        await response.arrayBuffer();
+        expect(response.status).toBe(404);
+      }
+      expect(await upgradeStatus(`${url}/customer/ws`)).toBe(404);
+    }
+  }
+  expect(host.registry.has('customer')).toBe(false);
+  expect(host.registry.isActive('customer')).toBe(false);
+  expect(host.registry.getMetrics().activations).toBe(activations);
+  expect((await host.management.getStatus()).deployments[0]).toMatchObject({
+    desiredState: 'stopped',
+    observedState: 'stopped',
+    app: null,
+  });
+}
+
+/** A real upgrade handshake, including its HTTP rejection status. */
+function upgradeStatus(url: string): Promise<number> {
+  return new Promise((resolve, reject) => {
+    const request = http.get(url, {
+      headers: {
+        connection: 'Upgrade',
+        upgrade: 'websocket',
+        'sec-websocket-version': '13',
+        'sec-websocket-key': 'dGhlIHNhbXBsZSBub25jZQ==',
+      },
+    });
+    request.on('error', reject);
+    request.on('response', (response) => {
+      response.resume();
+      response.on('end', () => resolve(response.statusCode ?? 0));
+    });
+    request.on('upgrade', (response, socket) => {
+      socket.destroy();
+      resolve(response.statusCode ?? 0);
+    });
+  });
+}
+
+/** Use the same HTTP/WebSocket proxy as the unified standalone application listener. */
+async function startIngress(currentHost: () => AppHost) {
+  const proxy = new NodeServerProxy({
+    match: () => true,
+    target: () => new URL(baseUrl(currentHost())),
+  });
+  const server = http.createServer((req, res) => {
+    const request = toFetchRequest(req, {
+      basePath: '',
+      signal: new AbortController().signal,
+    });
+    void proxy
+      .fetch(request)
+      .then((response) => applyFetchResponse(res, response));
+  });
+  server.on('upgrade', (req, socket, head) => {
+    void proxy.upgrade(req, socket, head);
+  });
+  server.listen(0, '127.0.0.1');
+  await once(server, 'listening');
+  const address = server.address();
+  if (!address || typeof address !== 'object')
+    throw new Error('The ingress has no TCP address');
+  return {
+    url: `http://127.0.0.1:${address.port}`,
+    async close() {
+      proxy.close();
+      const closed = once(server, 'close');
+      server.close();
+      server.closeAllConnections();
+      await closed;
+    },
+  };
+}
+
 /** A browser navigation: `fetch` cannot send `sec-fetch-mode: navigate`. */
 function navigate(
   url: string,
@@ -511,7 +734,9 @@ async function createFixture(
   );
   await writeFile(
     path.join(appRoot, 'dist', 'server', 'embedded.js'),
-    `export async function createServer() {
+    `import { readFile } from 'node:fs/promises';
+    import path from 'node:path';
+    export async function createServer(scope) {
       await new Promise((resolve) => setTimeout(resolve, ${options.startDelayMs ?? 0}));
       return {
         websocket() {
@@ -520,8 +745,9 @@ async function createFixture(
             if (message.type === 'subscribe') ws.send(JSON.stringify({ type: 'subscribed', id: message.id, topic: message.topic, subscriptionId: message.id }));
           } };
         },
-        fetch(request) {
+        async fetch(request) {
           const url = new URL(request.url);
+          if (url.pathname === '/api/record') return new Response(await readFile(path.join(scope.dataDir, 'record.json')), { headers: { 'content-type': 'application/json' } });
           if (url.pathname === '/api/pulse' && request.headers.get('authorization') !== 'Bearer valid')
             return new Response('denied', { status: ${options.deniedStatus ?? 401} });
           if (url.pathname === '/') return new Response('<!doctype html><title>Customer</title>', { headers: { 'content-type': 'text/html' } });
