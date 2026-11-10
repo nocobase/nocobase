@@ -158,8 +158,16 @@ it('prints every planned task of a partial failure, then fails with them in its 
           kind: 'seeds',
           status: 'not-run',
         }),
-        expect.objectContaining({ connection: 'erp', status: 'not-run' }),
-        expect.objectContaining({ connection: 'erp', status: 'not-run' }),
+        expect.objectContaining({
+          connection: 'erp',
+          status: 'skipped',
+          reason: 'external',
+        }),
+        expect.objectContaining({
+          connection: 'erp',
+          status: 'skipped',
+          reason: 'external',
+        }),
       ],
     },
   });

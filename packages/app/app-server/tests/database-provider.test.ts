@@ -30,6 +30,7 @@ vi.mock('@nocobase/db', async (importOriginal) => {
 });
 
 import {
+  databaseTaskHooksToken,
   DatabaseProvider,
   databaseTaskCoordinatorToken,
   type AppDatabaseConfig,
@@ -225,6 +226,79 @@ describe('DatabaseProvider', () => {
 
     expect(seed).not.toHaveBeenCalled();
     expect(database.destroy).toHaveBeenCalledOnce();
+  });
+  it('registers hooks without creating a manager and prepares runtime-only storage exactly once', async () => {
+    const config = createConfig(createTempDirectory(), true);
+    const prepare = vi.fn(localFileDriver.prepareStorage);
+    config.drivers = {
+      'local-file': { ...localFileDriver, prepareStorage: prepare },
+    };
+    config.connections.other = {
+      dialect: 'local-file',
+      filename: path.join(createTempDirectory(), 'other', 'data.db'),
+      migrations: { autoRun: false },
+      seeds: { autoRun: false },
+    };
+    createDatabaseManagerMock.mockReturnValue(createMockDatabase());
+    createDatabaseMigratorMock.mockReturnValue({
+      latest: async () => ({ batch: 1, executed: [], skipped: [] }),
+      history: async () => [],
+    });
+    createDatabaseSeederMock.mockReturnValue({
+      run: async () => ({ executed: [], skipped: [], skippedSamples: [] }),
+      history: async () => [],
+      record: async () => {},
+    });
+    const { provider, container } = await createProvider(config);
+    provider.register();
+    expect(container.has(databaseTaskHooksToken)).toBe(true);
+    expect(createDatabaseManagerMock).not.toHaveBeenCalled();
+    const beforeTasks = vi.fn(async () => {});
+    container
+      .resolve(databaseTaskHooksToken)
+      .register({ name: 'runtime', beforeTasks });
+    expect(beforeTasks).not.toHaveBeenCalled();
+    try {
+      await provider.boot();
+      expect(prepare).toHaveBeenCalledTimes(2);
+      expect(beforeTasks).toHaveBeenCalledOnce();
+    } finally {
+      await provider.shutdown();
+    }
+  });
+
+  it('shuts registered dependents down before the database after a hook fails during boot', async () => {
+    const events: string[] = [];
+    createDatabaseManagerMock.mockReturnValue(
+      createMockDatabase(() => events.push('database')),
+    );
+    const { provider, container } = await createProvider(
+      createConfig(createTempDirectory(), true),
+    );
+    const registry = new ServiceProviderRegistry();
+    registry.add(provider);
+    registry.add({
+      name: 'dependent',
+      register() {
+        container.resolve(databaseTaskHooksToken).register({
+          name: 'fail',
+          async beforeTasks() {
+            throw new Error('hook failed');
+          },
+        });
+      },
+      async boot() {},
+      async start() {},
+      async ready() {},
+      async shutdown() {
+        events.push('dependent');
+      },
+    });
+    registry.registerAll();
+    await expect(registry.bootAll()).rejects.toMatchObject({
+      preparation: { phase: 'beforeTasks', hook: 'fail' },
+    });
+    expect(events).toEqual(['dependent', 'database']);
   });
 });
 
