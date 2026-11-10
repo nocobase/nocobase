@@ -1,0 +1,24 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import { Plugin } from '@nocobase/client-v2';
+import { filePreviewTypes, wrapWithModalPreviewer } from '@nocobase/plugin-file-manager/client-v2';
+import { shouldPreviewFile, getCachedConfig, type OfficePreviewFile } from './utils';
+import { OfficeInlinePreviewer } from './OfficeInlinePreviewer';
+
+export class PluginFilePreviewerOfficeClientV2 extends Plugin {
+  async load() {
+    filePreviewTypes.add({
+      match: (file: OfficePreviewFile) => shouldPreviewFile(file, getCachedConfig()),
+      Previewer: wrapWithModalPreviewer(OfficeInlinePreviewer),
+    });
+  }
+}
+
+export default PluginFilePreviewerOfficeClientV2;
