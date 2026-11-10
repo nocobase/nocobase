@@ -1,4 +1,5 @@
 {
+  "The filter query parameter must be valid JSON.": "The filter query parameter must be valid JSON.",
   "Validation error": "{{field}} validation error",
   "notNull Violation": "{{field}} cannot be null",
   "notNull violation": "{{field}} cannot be null",

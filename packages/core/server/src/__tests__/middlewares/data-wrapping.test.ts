@@ -121,6 +121,14 @@ describe('application', () => {
     return app.destroy();
   });
 
+  it('rejects malformed filter JSON without wrapping an empty result or running the action', async () => {
+    const update = vi.fn();
+    app.resourcer.define({ name: 'items', actions: { update } });
+
+    await agent.post('/api/items:update').query({ filter: 'xxx' }).expect(400);
+    expect(update).not.toHaveBeenCalled();
+  });
+
   it('resourcer.define', async () => {
     app.resourcer.define({
       name: 'test',
