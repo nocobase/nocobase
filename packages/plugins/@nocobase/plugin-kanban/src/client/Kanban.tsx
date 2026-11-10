@@ -50,7 +50,7 @@ export const Kanban: any = withDynamicSchemaProps(
     observer((props: any) => {
       const { styles } = useStyles();
 
-      // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
+      // Keep useProps for older UI schemas that still depend on it.
       const { groupField, onCardDragEnd, dataSource, setDataSource, ...restProps } = useProps(props);
 
       const parentRecordData = useCollectionParentRecordData();
