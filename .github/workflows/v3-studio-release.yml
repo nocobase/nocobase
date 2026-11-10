@@ -16,6 +16,10 @@ on:
         description: 'Dry run: resolve, validate and build without pushing, tagging or merging anything'
         type: boolean
         default: false
+      source_ref:
+        description: 'Full Studio commit SHA to validate; allowed only with dry_run'
+        type: string
+        default: ''
 
 permissions:
   contents: read
