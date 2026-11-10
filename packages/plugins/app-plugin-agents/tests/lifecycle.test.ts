@@ -812,6 +812,7 @@ describe('run lifecycle', () => {
       subjectRef: { kind: 'sample', id: '1' },
       actorUserId: 'owner',
       cancelRequested: false,
+      freshSession: false,
     });
     expect(
       self.body.data.inputs.map((input: { id: string }) => input.id),
@@ -838,6 +839,29 @@ describe('run lifecycle', () => {
     });
     expect(after.status).toBe(401);
     expect(after.body.error.reason).toBe('RUN_TOKEN_INVALID');
+  });
+
+  it('reports an independent session to the held run token', async () => {
+    h = await createHarness();
+    const agentId = await h.createAgent();
+    await h.services.runs.enqueue({
+      agentId,
+      subject: { kind: 'sample', id: '1' },
+      actorUserId: 'owner',
+      freshSession: true,
+      input: {
+        type: 'comment',
+        actor: { kind: 'user', id: 'owner', name: 'Owner' },
+        text: 'Please review.',
+      },
+    });
+    const runner = await h.registerRunner();
+    const [payload] = await claim(h, runner);
+    const self = await h.request('GET', '/agents/runs/current', {
+      runToken: payload.cli.credential.content.token,
+    });
+    expect(self.status).toBe(200);
+    expect(self.body.data.freshSession).toBe(true);
   });
 
   it('refuses a runner that never held the run', async () => {

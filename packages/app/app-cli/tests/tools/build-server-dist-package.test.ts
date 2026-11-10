@@ -337,3 +337,26 @@ describe('server package generation', () => {
     );
   });
 });
+
+it('carries dependency patches from the enclosing workspace into a standalone deployment', () => {
+  const { root } = createWorkspace();
+  const workspace = path.resolve(root, '../../..');
+  mkdirSync(path.join(workspace, 'patches'));
+  writeFileSync(path.join(workspace, 'patches/fix.patch'), 'patch fixture');
+  writeFileSync(
+    path.join(workspace, 'pnpm-workspace.yaml'),
+    'packages:\n  - packages/*/*\npatchedDependencies:\n  pg@8.0.0: patches/fix.patch\n',
+  );
+  expect(generate(root).status).toBe(0);
+  expect(
+    readFileSync(path.join(root, 'dist/patches/0-fix.patch'), 'utf8'),
+  ).toBe('patch fixture');
+  expect(
+    readFileSync(path.join(root, 'dist/pnpm-workspace.yaml'), 'utf8'),
+  ).toContain('pg@8.0.0: patches/0-fix.patch');
+  writeFileSync(
+    path.join(workspace, 'pnpm-workspace.yaml'),
+    'packages:\n  - packages/*/*\npatchedDependencies:\n  pg@8.0.0: ../outside.patch\n',
+  );
+  expect(generate(root).status).not.toBe(0);
+});

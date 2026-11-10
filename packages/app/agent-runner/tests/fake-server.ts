@@ -185,6 +185,15 @@ export class FakeServer {
     url: string;
     refresh: boolean;
   }[] = [];
+  /** The token `RUNNER_ROUTES.npmCredential` answers; null for none configured. */
+  npmToken: string | null = null;
+  /** Every npm token request, in order. */
+  readonly npmCredentialRequests: {
+    runId: string;
+    attempt: number;
+    reason: string;
+    package?: string;
+  }[] = [];
   /** Mount bundles by name, served at `RUNNER_ROUTES.mount`. */
   readonly mountBundles = new Map<string, MountBundle>();
   /** How many times each mount was fetched. */
@@ -962,6 +971,26 @@ export class FakeServer {
       if ('reason' in answer)
         return error(c, answer.status, answer.reason, answer.message);
       return ok(c, answer);
+    });
+
+    app.post('/api/agents/runners/runs/:runId/npmCredentials', async (c) => {
+      const run = owned(c);
+      if (run instanceof Response) return run;
+      const body = (await c.req.json()) as {
+        attempt: number;
+        reason: string;
+        package?: string;
+      };
+      if (!active(run)) return error(c, 400, 'RUN_NOT_ACTIVE');
+      if (body.attempt !== run.payload.run.attempt)
+        return error(c, 409, 'LEASE_LOST');
+      this.npmCredentialRequests.push({
+        runId: run.payload.run.id,
+        attempt: body.attempt,
+        reason: body.reason,
+        ...(body.package === undefined ? {} : { package: body.package }),
+      });
+      return ok(c, { token: this.npmToken });
     });
 
     app.get('/api/agents/runners/runs/:runId/mounts/:name', (c) => {

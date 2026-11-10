@@ -69,7 +69,7 @@ export function createRunRoutes(services: Agents): Hono<RunEnv> {
       summary: 'Get the run the token belongs to',
       operationId: 'agentsGetCurrentRun',
       description:
-        "What the agent's CLI asks about its own run: the run, its agent, subject and the person who woke it.",
+        "What the agent's CLI asks about its own run: the run, its agent, subject and the person who woke it. Includes freshSession, a boolean that is true only when dispatched to start an independent tool session. With --json, read result.data.freshSession before reviewing.",
       security: runTokenSecurity,
       responses: { 200: dataResponse(RunSelfSchema), ...runTokenErrors },
       ...cliRoute({ command: 'run self', action: RUN_SELF_ACTION }),

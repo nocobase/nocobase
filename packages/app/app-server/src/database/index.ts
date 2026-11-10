@@ -102,3 +102,12 @@ export type {
   AppDatabaseSeedConfig,
   AppDatabaseTaskContributions,
 } from './types.js';
+
+export { appDatabaseStorageExists } from './storage.js';
+export {
+  executeAppDatabasePlan,
+  databaseTaskCoordinatorToken,
+  type AppDatabasePlanExecutionOptions,
+  type AppDatabaseTaskCoordinatorContext,
+  type AppDatabaseTaskCoordinator,
+} from './tasks.js';

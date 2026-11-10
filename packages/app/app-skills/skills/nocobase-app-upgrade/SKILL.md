@@ -130,6 +130,8 @@ When the template changes list-return behavior, read [list navigation upgrades](
 
 When the template changes loading, empty, filtered or failed list feedback, follow [list feedback source upgrades](references/list-feedback-upgrade.md). Reconcile copied components, request owners, translations and business empty content together, and verify both new and upgraded applications with retained permissions and records.
 
+When the template adds or changes cross-view updates after writes (`client/hooks/use-data-changes.ts` and the `scopes`/`merge` options of `useListData`), follow [data change upgrades](references/data-change-upgrade.md). Merge both hooks together, keep application changes to `useListData`, and migrate business pages one at a time; existing `Outlet` reload callbacks keep working until a page moves.
+
 Then ask the project which of those files it has also touched:
 
 ```bash

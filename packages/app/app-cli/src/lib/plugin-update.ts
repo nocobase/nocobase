@@ -5,6 +5,7 @@
 // until something re-runs the sync. Tying the two together means the upgrade
 // path has no second step to forget.
 
+import { isPluginPackageName } from './plugin-package-name.ts';
 import { detectPackageManager } from './package-manager.ts';
 import { readAppPackage, resolveRegisteredPluginNames } from './skills-sync.ts';
 
@@ -30,15 +31,12 @@ export function normalizePluginPackageNames(
     if (name === '') {
       throw new Error('A plugin name cannot be empty.');
     }
-    if (
-      name.startsWith(PACKAGE_SCOPE) ||
-      /^@[a-z0-9][a-z0-9-]*\/app-plugin-[a-z0-9]+(?:-[a-z0-9]+)*$/u.test(name)
-    ) {
+    if (name.startsWith(PACKAGE_SCOPE) || isPluginPackageName(name)) {
       return name;
     }
     if (name.includes('/')) {
       throw new Error(
-        `Plugin "${name}" must be a short name such as audit-log, or a full ${PLUGIN_PREFIX}* package name.`,
+        `Plugin "${name}" must be a short name such as audit-log, or a full scoped app-plugin-* or app-module-* package name.`,
       );
     }
     return `${PLUGIN_PREFIX}${name}`;
