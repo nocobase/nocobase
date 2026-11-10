@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { Application } from '@nocobase/client-v2';
+import { type Application, FLOW_ENGINE_LOADED_EVENT } from '@nocobase/client-v2';
 import { Plugin } from '@nocobase/client-v2';
 import { registerReferenceBlockDynamicFlowSourceProvider } from './dynamicFlowSources';
 import { NAMESPACE } from './locale';
@@ -16,7 +16,6 @@ import { registerOpenViewPopupTemplateAction } from './openViewActionExtensions'
 
 const SETTINGS_MENU_KEY = 'ui-templates';
 const SETTINGS_ACL_SNIPPET = 'pm.ui-templates.templates';
-
 export class PluginUiTemplatesClientV2 extends Plugin<Record<string, never>, Application> {
   async load() {
     const t = (key: string) => this.app.i18n.t(key, { ns: NAMESPACE, nsMode: 'fallback' });
@@ -32,7 +31,13 @@ export class PluginUiTemplatesClientV2 extends Plugin<Record<string, never>, App
         loader: () => import('./models/SubModelTemplateImporterModel'),
       },
     });
-    registerOpenViewPopupTemplateAction(this.flowEngine);
+    const registerPopupTemplateAction = () => {
+      if (registerOpenViewPopupTemplateAction(this.flowEngine)) {
+        this.app.eventBus.removeEventListener(FLOW_ENGINE_LOADED_EVENT, registerPopupTemplateAction);
+      }
+    };
+    this.app.eventBus.addEventListener(FLOW_ENGINE_LOADED_EVENT, registerPopupTemplateAction);
+    registerPopupTemplateAction();
     registerMenuExtensions();
     registerReferenceBlockDynamicFlowSourceProvider(this.flowEngine);
 
