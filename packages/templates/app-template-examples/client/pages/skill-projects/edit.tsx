@@ -132,11 +132,11 @@ function ProjectEditor({
   >();
   // Set once saved or once the record is gone, so the guard below lets the dialog close.
   const savedRef = useRef(false);
-  // No way out while a save is in flight or its outcome is unknown; unsaved input is the FeedbackForm's `values`.
+  // No way out only while a save is in flight. An unknown outcome (`submission.pending`, after a lost response or a
+  // 5xx) is not a lock: the FeedbackForm's `values` still make every way out ask, and discarding leaves. The operation
+  // key stays in session storage, so reopening the form offers the same retry (`restoringInput`).
   useNavigationGuard(
-    () =>
-      savedRef.current ||
-      !(busyRef.current || submission.submitting || submission.pending),
+    () => savedRef.current || !(busyRef.current || submission.submitting),
   );
   useEffect(() => {
     const warn = (event: BeforeUnloadEvent) => {
@@ -225,14 +225,10 @@ function ProjectEditor({
       // Every way out asks "Discard changes?" while the form's values differ from the saved ones (the FeedbackForm's
       // `values` and `savedValues` below): ×, Esc, the backdrop, Cancel and browser back. The save's own navigation,
       // from the FeedbackForm's onSubmit, leaves without asking.
-      beforeClose={() =>
-        !busyRef.current && !submission.submitting && !submission.pending
-      }
+      beforeClose={() => !busyRef.current && !submission.submitting}
       footer={
         <>
-          <CancelButton
-            disabled={submission.submitting || submission.pending}
-          />
+          <CancelButton disabled={submission.submitting} />
           <Button
             type='submit'
             form={formId}

@@ -254,7 +254,7 @@ it.each([401, 403, 404])(
   },
 );
 
-it('keeps the original payload/key after an unknown result, blocks close and applies the saved row before revalidation', async () => {
+it('keeps the original payload/key after an unknown result, asks before closing and applies the saved row before revalidation', async () => {
   const keys: (string | null)[] = [];
   let reads = 0;
   let writes = 0;
@@ -300,7 +300,14 @@ it('keeps the original payload/key after an unknown result, blocks close and app
   );
   await screen.findByText(enUS.skillProjects.uncertain);
   expect(name).toBeDisabled();
-  expect(screen.getByRole('button', { name: 'Cancel' })).toBeDisabled();
+  // An unknown outcome never locks the dialog: Cancel asks, and "Keep editing" keeps the input for the retry.
+  await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+  await screen.findByRole('alertdialog', { name: 'Discard changes?' });
+  await userEvent.click(screen.getByRole('button', { name: 'Keep editing' }));
+  await waitFor(() =>
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument(),
+  );
+  expect(name).toHaveValue('Confirmed Alpha');
   const form = name.closest('form')!;
   await act(async () => {
     fireEvent.submit(form);
@@ -771,7 +778,7 @@ it('keeps a retryable pending operation after an ordinary recovery 404 without c
   );
   await waitFor(() => expect(writes).toBe(2));
   expect(screen.queryByText(enUS.skillProjects.gone)).not.toBeInTheDocument();
-  expect(screen.getByRole('button', { name: 'Cancel' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: 'Cancel' })).toBeEnabled();
   await waitFor(() =>
     expect(
       screen.getByRole('button', { name: 'Save', exact: true }),
@@ -790,6 +797,96 @@ it('keeps a retryable pending operation after an ordinary recovery 404 without c
   );
   expect(writes).toBe(3);
 });
+
+it.each(['Cancel', 'Close', 'Escape', 'backdrop', 'back'] as const)(
+  'asks before leaving through %s after a failed save with an unknown outcome, and discarding leaves',
+  async (way) => {
+    let writes = 0;
+    let back!: () => void;
+    function HistoryBack() {
+      const navigate = useNavigate();
+      back = () => void navigate(-1);
+      return null;
+    }
+    await renderSettingsClient(
+      <>
+        <Routes>
+          <Route path='/skill-projects' element={<SkillProjectsPage />}>
+            <Route path=':projectId/edit' element={<SkillProjectEditPage />} />
+          </Route>
+        </Routes>
+        <HistoryBack />
+      </>,
+      {
+        route: '/skill-projects',
+        namespace,
+        namespaces,
+        fetch: answerApi(({ path, method }) => {
+          if (method === 'PATCH') {
+            writes += 1;
+            return Response.json(
+              {
+                error: {
+                  status: 'INTERNAL',
+                  reason: 'LOST_RESPONSE',
+                  message: 'Unavailable',
+                },
+              },
+              { status: 500 },
+            );
+          }
+          return path === 'skillProjects' ? list() : { data: original };
+        }),
+      },
+    );
+    await screen.findByText('Alpha');
+    await userEvent.click(screen.getByRole('button', { name: 'Edit' }));
+    const name = await screen.findByRole('textbox', { name: 'Name' });
+    await userEvent.clear(name);
+    await userEvent.type(name, 'Renamed Alpha');
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Save', exact: true }),
+    );
+    await screen.findByText(enUS.skillProjects.uncertain);
+    expect(writes).toBe(1);
+    const leave = async () => {
+      if (way === 'Escape') await userEvent.keyboard('{Escape}');
+      else if (way === 'back') act(() => back());
+      else if (way === 'backdrop')
+        await userEvent.click(
+          screen
+            .getByRole('dialog', { name: 'Edit project' })
+            .closest('[data-base-ui-portal]')!
+            .querySelector(':scope > [data-slot="dialog-overlay"]')!,
+        );
+      else await userEvent.click(screen.getByRole('button', { name: way }));
+    };
+    await leave();
+    await screen.findByRole('alertdialog', {
+      name: enUS['routeOverlay.discardTitle'],
+    });
+    await userEvent.click(
+      screen.getByRole('button', { name: enUS['routeOverlay.keepEditing'] }),
+    );
+    await waitFor(() =>
+      expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument(),
+    );
+    expect(screen.getByRole('dialog', { name: 'Edit project' })).toBeVisible();
+    expect(name).toHaveValue('Renamed Alpha');
+    await leave();
+    await userEvent.click(
+      await screen.findByRole('button', {
+        name: enUS['routeOverlay.discard'],
+      }),
+    );
+    await waitFor(() =>
+      expect(
+        screen.queryByRole('dialog', { name: 'Edit project' }),
+      ).not.toBeInTheDocument(),
+    );
+    expect(writes).toBe(1);
+  },
+);
 
 it('keeps a default list parent while a directly opened record loads, then names the record', async () => {
   let finish!: (value: { data: typeof original }) => void;

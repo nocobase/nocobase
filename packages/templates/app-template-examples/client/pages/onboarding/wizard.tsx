@@ -288,8 +288,9 @@ function Editor({
   );
   useNavigationGuard(() => {
     if (navigatingAfterSaveRef.current) return true;
-    if (lockedRef.current || refreshing || submission.pending) return false;
-    if (!dirty) return true;
+    if (lockedRef.current || refreshing) return false;
+    // An unknown outcome is unsaved too: leaving asks, and discarding leaves; it never locks the page.
+    if (!dirty && !submission.pending) return true;
     if (discardRef.current) return discardRef.current.promise;
     let resolve!: (value: boolean) => void;
     const promise = new Promise<boolean>((done) => {
