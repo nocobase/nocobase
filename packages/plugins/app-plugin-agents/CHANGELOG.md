@@ -1,5 +1,28 @@
 # @nocobase/app-plugin-agents
 
+## 2.0.0-beta.9
+
+### Minor Changes
+
+- ac6c1eb: A runner asks the application for the token of NocoBase's private npm registry (`https://pkg-v3.nocobase.com/`) only when an install of a run needs it: when the repository's committed `.npmrc` points a scope or the registry at it, or after an `@nocobase/*` package was not found on the default registry, which it then retries once with the private registry. The token goes into a run-private npm configuration for that one command and is redacted from what the run reports. The machine's own npm and pnpm settings stay in effect except those pointing at the private registry, so a project that needs no private package never reaches it. Protocol version 16 adds the `npmCredentials` feature and `RUNNER_ROUTES.npmCredential`; applications register where the token comes from with `npmCredentialProviders`. Update the application before the runners.
+- d4d7b07: A person can choose which kind of runner their runs go to first: their own personal runners or the runners shared with the team (`runnerPreference` in the chat preferences, `auto` by default). A run keeps the choice its actor had when it was queued; runners of the other kind wait one more second before taking it, so they still take it when none of the preferred kind can. Claims read nothing more.
+
+### Patch Changes
+
+- a2dc459: Expose whether the current run starts an independent tool session so reviewers can verify their session before reviewing.
+- Updated dependencies [a2dc459]
+- Updated dependencies [2d18eb2]
+- Updated dependencies [6a51d28]
+- Updated dependencies [ac6c1eb]
+- Updated dependencies [3642d82]
+  - @nocobase/agent-protocol@0.1.0-beta.18
+  - @nocobase/db@1.0.0-beta.27
+  - @nocobase/app-server@5.0.0-beta.3
+  - @nocobase/app-cli@1.0.0-beta.33
+  - @nocobase/app-cli-client@0.1.0-beta.20
+  - @nocobase/app-plugin-authentication@2.0.0-beta.20
+  - @nocobase/app-plugin-file@1.0.0-beta.30
+
 ## 2.0.0-beta.8
 
 ### Patch Changes

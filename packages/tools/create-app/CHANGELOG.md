@@ -1,5 +1,11 @@
 # @nocobase/create-app
 
+## 0.1.0-beta.35
+
+### Patch Changes
+
+- b3a9540: Support the multi-portal template alias and document authenticated creation from the commercial registry.
+
 ## 0.1.0-beta.34
 
 ### Patch Changes
