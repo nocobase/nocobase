@@ -92,7 +92,8 @@ export class KnowledgeAuthorizationProvider extends ServiceProvider<AppPluginApp
       const authorization = container.resolve(authorizationToken);
       registerBusinesses(authorization);
       // The indexing provider registers its service only when indexing is on; every provider registers before any boots.
-      if (container.has(knowledgeIndexingToken)) registerSettings(authorization);
+      if (container.has(knowledgeIndexingToken))
+        registerSettings(authorization);
     }
     return Promise.resolve();
   }

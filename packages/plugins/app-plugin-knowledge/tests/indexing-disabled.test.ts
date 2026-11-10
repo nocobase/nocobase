@@ -99,7 +99,9 @@ describe('with indexing off', () => {
       'Unknown settings item: kb.indexing',
     );
     expect(authz.ui.sections.has(SETTINGS_SECTION)).toBe(false);
-    expect(authz.resourceTypes.get('kb').items?.get('kb.knowledge')).toBeTruthy();
+    expect(
+      authz.resourceTypes.get('kb').items?.get('kb.knowledge'),
+    ).toBeTruthy();
     const ids = await operationIds(app, apiRoutes);
     for (const id of INDEXING_OPERATIONS) expect(ids).not.toContain(id);
     expect(ids).toContain('knowledgeSearchDocs');
