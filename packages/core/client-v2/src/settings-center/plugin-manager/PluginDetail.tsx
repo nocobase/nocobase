@@ -43,6 +43,8 @@ interface DepCompatible {
 }
 
 interface IPluginDetailData {
+  installedVersion?: string | null;
+  loadedVersion?: string | null;
   packageJson: PackageJSON;
   homepage?: string;
   depsCompatible: DepCompatible[] | false;
@@ -135,7 +137,9 @@ export const PluginDetail: FC<IPluginDetailProps> = ({ plugin, onCancel }) => {
           {plugin.description && infoRow(t('Description'), plugin.description)}
           {data?.packageJson?.license && infoRow(t('License'), data.packageJson.license)}
           {author && infoRow(t('Author'), author)}
-          {infoRow(t('Version'), plugin.version)}
+          {infoRow(t('Package version'), data?.packageJson?.version ?? plugin.version)}
+          {data && infoRow(t('Installed version'), data.installedVersion ?? '—')}
+          {data && infoRow(t('Loaded version'), data.loadedVersion ?? '—')}
         </Row>
       ),
     },
@@ -181,7 +185,7 @@ export const PluginDetail: FC<IPluginDetailProps> = ({ plugin, onCancel }) => {
         <>
           <Typography.Title level={3}>{plugin.packageName}</Typography.Title>
           <Space split={<span>&nbsp;•&nbsp;</span>}>
-            <span>{plugin.version}</span>
+            <span>{data?.packageJson?.version ?? plugin.version}</span>
           </Space>
           <Tabs
             style={{ minHeight: '50vh' }}

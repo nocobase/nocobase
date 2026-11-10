@@ -58,8 +58,8 @@ export class PresetNocoBase extends Plugin {
     const repository = this.app.db.getRepository<any>('applicationPlugins');
     // const packageJson = await this.getPackageJson(name);
     const { packageName } = await PluginManager.parseName(name);
-    const packageJson = require(`${packageName}/package.json`);
-    const deps = await PluginManager.checkAndGetCompatible(packageJson.name);
+    const packageJson = await PluginManager.getPackageJson(packageName);
+    const deps = await PluginManager.checkAndGetCompatible(packageJson.name, packageJson.version);
     const instance = await repository.findOne({
       filter: {
         packageName: packageJson.name,
@@ -83,6 +83,8 @@ export class PresetNocoBase extends Plugin {
       packageName: packageJson.name,
       name: name,
       version: packageJson.version,
+      installedVersion: instance?.version ?? null,
+      loadedVersion: this.app.pm.get(packageJson.name)?.options.version ?? null,
       enabled: !!instance?.enabled,
       installed: !!instance?.installed,
       builtIn: !!instance?.builtIn,
