@@ -8,6 +8,8 @@ import { act, fireEvent, render, screen } from '@testing-library/react';
 import { expect, it, vi } from 'vitest';
 import enUS from '../../registry/notification/notification-logs-ui/locales/en-US.js';
 import zhCN from '../../registry/notification/notification-logs-ui/locales/zh-CN.js';
+import koKR from '../../registry/notification/notification-logs-ui/locales/ko-KR.js';
+import ruRU from '../../registry/notification/notification-logs-ui/locales/ru-RU.js';
 import {
   NotificationLogsPage,
   NotificationLogsView,
@@ -53,14 +55,21 @@ it('translates installed notification log source using application-owned resourc
   expect(screen.queryByText('No deliveries yet')).not.toBeInTheDocument();
 });
 
-it.each(['en-US', 'zh-CN'] as const)(
+const shippedLocales = {
+  'en-US': enUS,
+  'zh-CN': zhCN,
+  'ko-KR': koKR,
+  'ru-RU': ruRU,
+} as const;
+
+it.each(Object.keys(shippedLocales) as (keyof typeof shippedLocales)[])(
   'ships all rendered keys in %s',
   async (locale) => {
     const runtime = await createTestI18nRuntime({
       locale,
       application: {
         namespace: 'app',
-        resources: locale === 'en-US' ? enUS : zhCN,
+        resources: shippedLocales[locale],
       },
     });
     render(
@@ -69,7 +78,7 @@ it.each(['en-US', 'zh-CN'] as const)(
       </TestI18nProvider>,
     );
     await screen.findByText(
-      (locale === 'en-US' ? enUS : zhCN).notificationLogs.logs.emptyTitle,
+      shippedLocales[locale].notificationLogs.logs.emptyTitle,
     );
   },
 );

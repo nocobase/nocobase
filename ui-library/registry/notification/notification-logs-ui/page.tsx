@@ -33,16 +33,26 @@ type Translate = (
   options?: Readonly<Record<string, unknown>>,
 ) => string;
 
-export function NotificationLogsPage(): React.ReactElement {
+export interface NotificationLogsPageProps {
+  /**
+   * Renders the block's own heading. Pass `false` when the page already titles the view, such as a tab of a
+   * settings module.
+   */
+  readonly showHeading?: boolean;
+}
+
+export function NotificationLogsPage({
+  showHeading,
+}: NotificationLogsPageProps = {}): React.ReactElement {
   const api = useApiClient();
   const loadLogs = useCallback(
     (signal: AbortSignal) => fetchNotificationLogs(api, signal),
     [api],
   );
-  return <NotificationLogsView loadLogs={loadLogs} />;
+  return <NotificationLogsView loadLogs={loadLogs} showHeading={showHeading} />;
 }
 
-export interface NotificationLogsViewProps {
+export interface NotificationLogsViewProps extends NotificationLogsPageProps {
   readonly loadLogs: (
     signal: AbortSignal,
   ) => Promise<readonly NotificationLogDetails[]>;
@@ -50,6 +60,7 @@ export interface NotificationLogsViewProps {
 
 export function NotificationLogsView({
   loadLogs,
+  showHeading = true,
 }: NotificationLogsViewProps): React.ReactElement {
   const { t } = useTranslation();
 
@@ -85,38 +96,41 @@ export function NotificationLogsView({
     [logs],
   );
 
+  const retry = error ? (
+    <Button variant='outline' disabled={loading} onClick={refresh}>
+      <RefreshCw className={loading ? 'animate-spin' : undefined} />
+      {t('notificationLogs.logs.retryRead', { defaultValue: 'Retry' })}
+    </Button>
+  ) : null;
+
   return (
     <div className='mx-auto flex w-full max-w-6xl flex-col gap-5'>
-      <header className='flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between'>
-        <div>
-          <div className='mb-2 flex items-center gap-2 text-sm font-medium text-primary'>
-            <FileClock className='size-4' />{' '}
-            {t('notificationLogs.logs.deliveryOperations', {
-              defaultValue: 'Delivery operations',
-            })}
+      {showHeading ? (
+        <header className='flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between'>
+          <div>
+            <div className='mb-2 flex items-center gap-2 text-sm font-medium text-primary'>
+              <FileClock className='size-4' />{' '}
+              {t('notificationLogs.logs.deliveryOperations', {
+                defaultValue: 'Delivery operations',
+              })}
+            </div>
+            <h1 className='text-2xl font-semibold tracking-tight'>
+              {t('notificationLogs.logs.title', {
+                defaultValue: 'Notification logs',
+              })}
+            </h1>
+            <p className='mt-1 text-sm text-muted-foreground'>
+              {t('notificationLogs.logs.recipeDescription', {
+                defaultValue:
+                  'Trace each channel handoff and every provider attempt.',
+              })}
+            </p>
           </div>
-          <h1 className='text-2xl font-semibold tracking-tight'>
-            {t('notificationLogs.logs.title', {
-              defaultValue: 'Notification logs',
-            })}
-          </h1>
-          <p className='mt-1 text-sm text-muted-foreground'>
-            {t('notificationLogs.logs.recipeDescription', {
-              defaultValue:
-                'Trace each channel handoff and every provider attempt.',
-            })}
-          </p>
-        </div>
-        <div>
-          {error && (
-            <Button variant='outline' disabled={loading} onClick={refresh}>
-              <RefreshCw className={loading ? 'animate-spin' : undefined} />
-
-              {t('notificationLogs.logs.retryRead', { defaultValue: 'Retry' })}
-            </Button>
-          )}
-        </div>
-      </header>
+          <div>{retry}</div>
+        </header>
+      ) : retry ? (
+        <div className='flex justify-end'>{retry}</div>
+      ) : null}
 
       <div className='grid grid-cols-2 gap-3 sm:max-w-md'>
         <Metric
@@ -220,7 +234,7 @@ function NotificationLogsTable(props: {
   const { logs } = props;
 
   return (
-    <Table className='min-w-[860px]'>
+    <Table className='min-w-[720px] table-fixed'>
       <TableHeader className='bg-muted/35'>
         <TableRow className='hover:bg-muted/35'>
           <TableHead
@@ -234,22 +248,22 @@ function NotificationLogsTable(props: {
               defaultValue: 'Source',
             })}
           </TableHead>
-          <TableHead>
+          <TableHead className='w-28'>
             {t('notificationLogs.logs.columns.notificationId', {
               defaultValue: 'Notification ID',
             })}
           </TableHead>
-          <TableHead>
+          <TableHead className='w-32'>
             {t('notificationLogs.logs.columns.status', {
               defaultValue: 'Status',
             })}
           </TableHead>
-          <TableHead className='text-right'>
+          <TableHead className='w-24 text-right'>
             {t('notificationLogs.logs.columns.deliveries', {
               defaultValue: 'Deliveries',
             })}
           </TableHead>
-          <TableHead>
+          <TableHead className='w-44'>
             {t('notificationLogs.logs.columns.created', {
               defaultValue: 'Created',
             })}
@@ -268,7 +282,7 @@ function NotificationLogsTable(props: {
 function NotificationTableRow(props: {
   readonly details: NotificationLogDetails;
 }): React.ReactElement {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { details } = props;
 
   const [open, setOpen] = useState(false);
@@ -297,19 +311,24 @@ function NotificationTableRow(props: {
           </Button>
         </TableCell>
         <TableCell>
-          <div className='font-medium'>{details.log.sourceType}</div>
+          <div className='truncate font-medium' title={details.log.sourceType}>
+            {details.log.sourceType}
+          </div>
           {details.log.sourceReferenceId ? (
-            <div className='mt-0.5 max-w-48 truncate text-xs text-muted-foreground'>
+            <div
+              className='mt-0.5 truncate text-xs text-muted-foreground'
+              title={details.log.sourceReferenceId}
+            >
               {details.log.sourceReferenceId}
             </div>
           ) : null}
         </TableCell>
         <TableCell>
           <code
-            className='text-xs text-muted-foreground'
+            className='block truncate text-xs text-muted-foreground'
             title={details.log.id}
           >
-            {details.log.id}
+            {shortId(details.log.id)}
           </code>
         </TableCell>
         <TableCell>
@@ -320,7 +339,7 @@ function NotificationTableRow(props: {
         </TableCell>
         <TableCell className='whitespace-nowrap text-muted-foreground'>
           <time dateTime={details.log.createdAt}>
-            {formatTime(details.log.createdAt)}
+            {formatTime(details.log.createdAt, i18n.language)}
           </time>
         </TableCell>
       </TableRow>
@@ -338,7 +357,7 @@ function NotificationTableRow(props: {
 function DeliveryTable(props: {
   readonly deliveries: readonly NotificationDeliveryDetails[];
 }): React.ReactElement {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { deliveries } = props;
 
   if (deliveries.length === 0) {
@@ -404,7 +423,7 @@ function DeliveryTable(props: {
                   {details.attempts.length}
                 </TableCell>
                 <TableCell className='whitespace-nowrap text-muted-foreground'>
-                  {formatTime(details.delivery.updatedAt)}
+                  {formatTime(details.delivery.updatedAt, i18n.language)}
                 </TableCell>
               </TableRow>
               <TableRow className='bg-muted/10 hover:bg-muted/10'>
@@ -486,7 +505,7 @@ function statusTone(status: NotificationStatus): {
   if (status === 'completed' || status === 'accepted')
     return {
       badge:
-        'border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400',
+        'border-(--status-success)/20 bg-(--status-success-background) text-(--status-success)',
     };
   if (status === 'failed' || status === 'unknown' || status === 'partial')
     return {
@@ -494,15 +513,20 @@ function statusTone(status: NotificationStatus): {
     };
   return {
     badge:
-      'border-amber-500/20 bg-amber-500/10 text-amber-700 dark:text-amber-400',
+      'border-(--status-warning)/20 bg-(--status-warning-background) text-(--status-warning)',
   };
 }
 
-function formatTime(value: string): string {
-  return new Intl.DateTimeFormat(undefined, {
+function formatTime(value: string, locale: string): string {
+  return new Intl.DateTimeFormat(locale, {
     dateStyle: 'medium',
     timeStyle: 'short',
   }).format(new Date(value));
+}
+
+/** The first group of a UUID is enough to tell notifications apart; the full ID stays in the cell's title. */
+function shortId(id: string): string {
+  return id.split('-')[0] || id;
 }
 
 function providerErrorMessage(

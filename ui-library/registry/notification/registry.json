@@ -6,12 +6,12 @@
       "title": "NocoBase Notification Logs UI",
       "description": "Application-owned delivery and provider attempt log components backed by the NocoBase notification API.",
       "dependencies": [
-        "@nocobase/app-client@^1.0.0-beta.5",
+        "@nocobase/app-client@^4.0.0-beta.9",
         "lucide-react@^0.487.0",
-        "@nocobase/i18n@^1.0.0-beta.4"
+        "@nocobase/i18n@^2.0.0-beta.1"
       ],
       "registryDependencies": ["alert", "badge", "button", "card", "table"],
-      "docs": "Requires the Notification server plugin and authorized access to GET /api/notifications/logs. Mount NotificationLogsPage in an application-owned route and merge locales/ into application locales. Shows the newest 100 logs; adds no route or permissions.",
+      "docs": "Requires the Notification server plugin and authorized access to GET /api/notifications/logs. Mount NotificationLogsPage in an application-owned route (pass showHeading={false} when the page already titles it, such as a settings tab) and merge locales/ into application locales. Shows the newest 100 logs; adds no route or permissions.",
       "meta": {
         "group": "Notification",
         "iframeHeight": 740
@@ -59,9 +59,19 @@
           "target": "client/extensions/nocobase-notification-logs-ui/locales/ja-JP.ts"
         },
         {
+          "path": "notification-logs-ui/locales/ko-KR.ts",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-notification-logs-ui/locales/ko-KR.ts"
+        },
+        {
           "path": "notification-logs-ui/locales/pt-BR.ts",
           "type": "registry:component",
           "target": "client/extensions/nocobase-notification-logs-ui/locales/pt-BR.ts"
+        },
+        {
+          "path": "notification-logs-ui/locales/ru-RU.ts",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-notification-logs-ui/locales/ru-RU.ts"
         },
         {
           "path": "notification-logs-ui/locales/vi-VN.ts",
