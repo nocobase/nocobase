@@ -89,7 +89,7 @@ export default class PackageRemove extends PluginUnregistrationCommand {
   static override summary =
     'Remove a direct NocoBase package dependency and its synchronized Skills.';
   static override description =
-    'Removes a directly declared @nocobase/* dependency or scoped app-plugin/app-module/app-portal package with the App package manager, then deletes only the skills recorded as belonging to that package. A package already absent from package.json still has stale recorded skills cleaned. Plugin packages also unregister their Client, Server, and CLI contributions.';
+    'Removes a directly declared @nocobase/* dependency or scoped app-plugin/app-portal package with the App package manager, then deletes only the skills recorded as belonging to that package. A package already absent from package.json still has stale recorded skills cleaned. Plugin packages also unregister their Client, Server, and CLI contributions.';
 
   static override examples: Command.Example[] = [
     '<%= config.bin %> <%= command.id %> @nocobase/app-skills',
@@ -103,7 +103,7 @@ export default class PackageRemove extends PluginUnregistrationCommand {
   } = {
     name: Args.string({
       description:
-        'Full @nocobase/* or scoped app-plugin/app-module/app-portal package name to remove.',
+        'Full @nocobase/* or scoped app-plugin/app-portal package name to remove.',
       required: true,
     }),
   };
@@ -290,7 +290,7 @@ function normalizePackageName(packageName: string): string {
     !isPluginPackageName(normalized)
   ) {
     throw new Error(
-      `Package name must be a full @nocobase/* package name or a scoped app-plugin/app-module/app-portal name, found ${packageName}.`,
+      `Package name must be a full @nocobase/* package name or a scoped app-plugin/app-portal name, found ${packageName}.`,
     );
   }
   return normalized;

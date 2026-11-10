@@ -103,7 +103,7 @@ export default class PluginRegister extends AppCommand {
   } = {
     name: Args.string({
       description:
-        'Plugin to register: a short name such as audit-log, or a full scoped app-plugin-*, app-module-* or app-portal-* package name.',
+        'Plugin to register: a short name such as audit-log, or a full scoped app-plugin-* or app-portal-* package name.',
       required: true,
     }),
   };
