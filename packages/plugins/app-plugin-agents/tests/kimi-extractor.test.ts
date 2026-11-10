@@ -1,5 +1,6 @@
 import { afterEach, expect, it, vi } from 'vitest';
 import { kimiExtractor } from '../server/online/files/kimi.js';
+import { FileInputBudget } from '../server/online/files/input.js';
 import { MODEL_USER_AGENT } from '../server/online/providers.js';
 import { createKimiFixture } from './helpers/kimi.js';
 
@@ -363,7 +364,7 @@ it('A17: cleanup has its own finite deadline, and Stop during cleanup still retu
   expect(warning).toHaveBeenCalledOnce();
 });
 
-it('A16/A17: does not forward uploads through redirects, or issue requests for pre-aborted or oversized inputs', async () => {
+it('A16/A17: does not forward uploads through redirects, or issue requests for pre-aborted inputs or invalid output budgets', async () => {
   const server = await upstream((_req, res) => {
     res.writeHead(307, { location: '/unexpected' }).end();
   });
@@ -378,12 +379,46 @@ it('A16/A17: does not forward uploads through redirects, or issue requests for p
     code: 'aborted',
   });
   expect(
-    await extract({ ...input, bytes: new Uint8Array(20 * 1024 * 1024 + 1) }),
+    await extract(input, {
+      maxOutputChars: FileInputBudget.maxOutputChars + 1,
+    }),
   ).toMatchObject({ code: 'too-large' });
   expect(server.requests).toHaveLength(1);
   expect(() =>
     kimiExtractor({ ...connection(server.baseUrl), apiKey: null }, 'session'),
   ).toThrow('API key');
+});
+
+it('forwards an authorized attachment above 20 MiB without imposing a second byte limit', async () => {
+  const server = await upstream();
+  const bytes = new Uint8Array(20 * 1024 * 1024 + 1);
+  bytes[0] = 42;
+  bytes[bytes.length - 1] = 99;
+  const result = await kimiExtractor(
+    connection(server.baseUrl),
+    'session',
+  )({
+    ...input,
+    bytes,
+  });
+  expect(result).toEqual({
+    status: 'ready',
+    markdown: 'Remote quokka document marker',
+    hasText: true,
+  });
+  expect(server.requests.map((request) => request.method)).toEqual([
+    'POST',
+    'GET',
+    'DELETE',
+  ]);
+  const form = await server.multipart();
+  const file = form.get('file');
+  if (!(file instanceof File)) throw new Error('Missing multipart file.');
+  expect(file.size).toBe(bytes.byteLength);
+  expect(Buffer.from(await file.arrayBuffer()).equals(Buffer.from(bytes))).toBe(
+    true,
+  );
+  expect(server.errors).toEqual([]);
 });
 
 it.each(['POST', 'GET'])(
