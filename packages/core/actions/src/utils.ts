@@ -26,16 +26,28 @@ export function pageArgsToLimitArgs(
 export function getRepositoryFromParams(ctx: Context) {
   const { resourceName, sourceId, actionName } = ctx.action;
 
+  let repository: Repository | MultipleRelationRepository | undefined;
+
   if (sourceId === '_' && ['get', 'list'].includes(actionName)) {
     const collection = ctx.db.getCollection(resourceName);
-    return ctx.db.getRepository<Repository>(collection.name);
+    repository = collection ? ctx.db.getRepository<Repository>(collection.name) : undefined;
+  } else if (sourceId) {
+    repository = ctx.db.getRepository<MultipleRelationRepository>(resourceName, sourceId);
+  } else {
+    repository = ctx.db.getRepository<Repository>(resourceName);
   }
 
-  if (sourceId) {
-    return ctx.db.getRepository<MultipleRelationRepository>(resourceName, sourceId);
+  // A collection that was destroyed moments ago leaves its resourcer route
+  // behind: the request still reaches the action, and getRepository returns
+  // undefined. Answer 404 here — the same answer this API gives for a
+  // collection that never existed — instead of letting the action crash
+  // with a TypeError ("Cannot read properties of undefined (reading
+  // 'collection')") and surface as a 500 (#10397).
+  if (!repository) {
+    ctx.throw(404, `collection ${resourceName} does not exist`);
   }
 
-  return ctx.db.getRepository<Repository>(resourceName);
+  return repository;
 }
 
 export function RelationRepositoryActionBuilder(method: 'remove' | 'set') {
