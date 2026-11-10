@@ -50,3 +50,13 @@ export function resolveTableSorterField(sorter: {
 }) {
   return sorter?.column?.sortField || sorter?.field;
 }
+
+export function getTableSorterOrder(
+  sorter: Parameters<typeof resolveTableSorterField>[0] & { order?: string },
+  dragSortField?: string,
+  defaultSort: string[] = [],
+) {
+  const field = resolveTableSorterField(sorter);
+  if (sorter?.order && field) return [sorter.order === 'ascend' ? field : `-${field}`];
+  return dragSortField ? [dragSortField] : defaultSort;
+}
