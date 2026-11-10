@@ -441,20 +441,31 @@ export function inspectSource(ts, text, file, root) {
   // by what it does. A plain name resolves lexically, from the call outward (its function, then each enclosing scope),
   // so a same-named `guard` of another component never lends its reads; a parameter or a destructured name stays a
   // name. A property name (`controller.guard`, either branch of `boundary ? allow : controller.guard`) has no lexical
-  // scope and stands for every method or property of that name this file declares.
-  function guardReads(argument) {
+  // scope: it resolves through its object when this file shows that object (`memberOf`), and otherwise stands for every
+  // method or property of that name this file declares. What a declaration reads is read the same way, so a hook
+  // returning `{ guard: controller.guard }` is followed to the controller's guard; inside such a body a name also counts
+  // as itself, since `this.dirty` there reads the unsaved state rather than naming the guard.
+  function guardReads(argument, skip, seen = new Set()) {
+    const nested = Boolean(skip);
     const parts = [];
     (function walk(node) {
+      if (node === skip) return;
       if (ts.isIdentifier(node)) {
         const property =
           ts.isPropertyAccessExpression(node.parent) &&
           node.parent.name === node;
         const declared = property
-          ? memberDeclarations(node.text)
+          ? (memberOf(node.parent.expression, node.text) ??
+            memberDeclarations(node.text))
           : [lexicalDeclaration(node)].filter(Boolean);
+        if (nested && declared.length) parts.push(node.text);
         parts.push(
           ...(declared.length
-            ? declared.map((child) => identifiers(child, child.name))
+            ? declared.map((child) => {
+                if (seen.has(child)) return '';
+                seen.add(child);
+                return guardReads(child, child.name, seen);
+              })
             : [node.text]),
         );
         return;
@@ -509,7 +520,101 @@ export function inspectSource(ts, text, file, root) {
     }
     return undefined;
   }
-  // The methods and properties of a name anywhere in this file, for a property access.
+  // The declarations a property access reaches when this file shows its object: a local object literal, an instance of
+  // a class declared here, or the result of a function declared here (each object literal it returns), resolved from
+  // the access outward like a plain name. `null` when it cannot tell, such as for a parameter, a destructured name or
+  // an imported hook; the caller then falls back to every member of that name in the file.
+  function memberOf(expression, name, seen = new Set()) {
+    while (
+      ts.isParenthesizedExpression(expression) ||
+      ts.isAsExpression(expression) ||
+      ts.isNonNullExpression(expression) ||
+      ts.isSatisfiesExpression?.(expression)
+    )
+      expression = expression.expression;
+    if (seen.has(expression)) return null;
+    seen.add(expression);
+    if (ts.isIdentifier(expression)) {
+      const declaration = lexicalDeclaration(expression);
+      if (!declaration) return null;
+      return ts.isVariableDeclaration(declaration) && declaration.initializer
+        ? memberOf(declaration.initializer, name, seen)
+        : null;
+    }
+    if (ts.isObjectLiteralExpression(expression)) {
+      const found = [];
+      for (const property of expression.properties) {
+        if (ts.isSpreadAssignment(property)) {
+          const nested = memberOf(property.expression, name, seen);
+          if (!nested) return null;
+          found.push(...nested);
+        } else if (
+          property.name &&
+          (ts.isIdentifier(property.name) ||
+            ts.isStringLiteral(property.name)) &&
+          property.name.text === name
+        ) {
+          if (ts.isShorthandPropertyAssignment(property)) {
+            const declaration = lexicalDeclaration(property.name);
+            if (!declaration) return null;
+            found.push(declaration);
+          } else found.push(property);
+        } else if (!property.name || ts.isComputedPropertyName(property.name))
+          return null;
+      }
+      return found;
+    }
+    if (
+      ts.isNewExpression(expression) &&
+      ts.isIdentifier(expression.expression)
+    ) {
+      const declaration = lexicalDeclaration(expression.expression);
+      if (!declaration || !ts.isClassDeclaration(declaration)) return null;
+      return declaration.members.filter(
+        (member) =>
+          member.name &&
+          ts.isIdentifier(member.name) &&
+          member.name.text === name,
+      );
+    }
+    if (
+      ts.isCallExpression(expression) &&
+      ts.isIdentifier(expression.expression)
+    ) {
+      let declaration = lexicalDeclaration(expression.expression);
+      if (declaration && ts.isVariableDeclaration(declaration))
+        declaration = declaration.initializer;
+      if (
+        !declaration ||
+        !(
+          ts.isFunctionDeclaration(declaration) ||
+          ts.isArrowFunction(declaration) ||
+          ts.isFunctionExpression(declaration)
+        ) ||
+        !declaration.body
+      )
+        return null;
+      if (!ts.isBlock(declaration.body))
+        return memberOf(declaration.body, name, seen);
+      const returned = [];
+      (function find(child) {
+        if (ts.isFunctionLike(child)) return;
+        if (ts.isReturnStatement(child) && child.expression)
+          returned.push(child.expression);
+        ts.forEachChild(child, find);
+      })(declaration.body);
+      if (!returned.length) return null;
+      const found = [];
+      for (const expression of returned) {
+        const nested = memberOf(expression, name, seen);
+        if (!nested) return null;
+        found.push(...nested);
+      }
+      return found;
+    }
+    return null;
+  }
+  // The methods and properties of a name anywhere in this file, for a property access whose object it cannot resolve.
   function memberDeclarations(name) {
     const declared = [];
     (function find(child) {

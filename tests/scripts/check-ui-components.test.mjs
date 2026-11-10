@@ -873,3 +873,34 @@ test('reads what a guard does from its identifiers, never from comments or strin
     [],
   );
 });
+
+test("resolves a guard's object in its own scope, so another component's same-named member lends nothing", () => {
+  const tags = (source) =>
+    inspect(`import { RouteDrawer } from '#components/route-drawer';
+      import { useNavigationGuard } from '@nocobase/app-client';
+      ${source}`).findings.map((item) => [item.tag, item.line]);
+  // Object literals, class instances and the results of hooks declared here: only the save-only one is reported.
+  assert.deepEqual(
+    tags(`class Leave { dirty = false; guard = () => !this.dirty || this.ask(); }
+      class Saving { guard = () => !this.submitting; }
+      function useDirtyLeave() { const controller = new Leave(); return { guard: controller.guard }; }
+      const useSaveOnly = () => ({ guard: () => !submitting });
+      export function Asking() { const controller = new Leave(); useNavigationGuard(controller.guard); return <RouteDrawer><OwnDiscardQuestion/></RouteDrawer>; }
+      export function Blocking() { const controller = new Saving(); useNavigationGuard(controller.guard); return <RouteDrawer><OwnDiscardQuestion/></RouteDrawer>; }
+      export function Literal() { const controller = { guard: () => !submitting }; useNavigationGuard(controller.guard); return <RouteDrawer><OwnDiscardQuestion/></RouteDrawer>; }
+      export function Hooked() { const controller = useDirtyLeave(); useNavigationGuard(controller.guard); return <RouteDrawer><OwnDiscardQuestion/></RouteDrawer>; }
+      export function SaveHook() { const controller = useSaveOnly(); useNavigationGuard(controller.guard); return <RouteDrawer><OwnDiscardQuestion/></RouteDrawer>; }`),
+    [
+      ['OwnDiscardQuestion', 8],
+      ['OwnDiscardQuestion', 9],
+      ['OwnDiscardQuestion', 11],
+    ],
+  );
+  // An object this file cannot resolve, such as an imported hook's result, falls back to every member of that name.
+  assert.deepEqual(
+    tags(`import { useLeave } from './leave';
+      class Leave { dirty = false; guard = () => !this.dirty || this.ask(); }
+      export function Page() { const controller = useLeave(); useNavigationGuard(controller.guard); return <RouteDrawer><OwnDiscardQuestion/></RouteDrawer>; }`),
+    [],
+  );
+});
