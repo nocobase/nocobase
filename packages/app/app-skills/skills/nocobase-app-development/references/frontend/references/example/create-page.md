@@ -9,7 +9,7 @@ Rules: guidelines T3.1 and T3.9, ["Where forms go" in `form.md`](../form.md#wher
 ```tsx
 // client/pages/projects/create.tsx
 import { useTranslation } from '@nocobase/i18n/client';
-import { type ReactElement, useEffect, useState } from 'react';
+import { type ReactElement, useState } from 'react';
 import { useResolvedPath, useNavigate, useOutletContext } from 'react-router';
 
 import { useAncestorSearch } from '../../routing/route-context.js';
@@ -34,18 +34,9 @@ export default function CreateProjectPage(): ReactElement {
   // The list stays mounted underneath with its old rows, so it is refreshed through the outlet context (R2, T3.7).
   const { reload } = useOutletContext<ProjectsOutletContext>();
   const [submitting, setSubmitting] = useState(false);
-  const [dirty, setDirty] = useState(false);
-
-  // A page has no beforeClose: while there are unsaved changes, ask before a reload or closing the tab (T3.9).
-  // In-app navigation is not guarded; record that under "Guideline trade-offs" in the design.
-  useEffect(() => {
-    if (!dirty) return;
-    const warn = (event: BeforeUnloadEvent): void => {
-      event.preventDefault();
-    };
-    window.addEventListener('beforeunload', warn);
-    return () => window.removeEventListener('beforeunload', warn);
-  }, [dirty]);
+  // No guard of the page's own (T3.9, M7.4): RouteChildPage asks "Discard changes?" before Cancel, the back button, a
+  // breadcrumb, a link or browser back while ProjectForm differs from its saved values, and warns before a reload. The
+  // save leaves without asking because it navigates from ProjectForm's onSubmit.
 
   return (
     <RouteChildPage>
@@ -59,7 +50,6 @@ export default function CreateProjectPage(): ReactElement {
           <ProjectForm
             formId={FORM_ID}
             onSubmittingChange={setSubmitting}
-            onDirtyChange={setDirty}
             onSubmitted={(project) => {
               // ProjectForm has shown the success toast. Refresh the list, then open the new record over it.
               // Replace the history entry, as closing an overlay does, so Back does not reopen an empty form.

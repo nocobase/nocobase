@@ -571,6 +571,21 @@ test('lets no exception marker waive the discard question of a create or edit fo
   assert.deepEqual(result.accepted, []);
 });
 
+test('rejects OwnDiscardQuestion in a file that asks no question of its own', () => {
+  assert.deepEqual(
+    inspect(
+      `export const Page = () => <RouteChildPage><OwnDiscardQuestion/></RouteChildPage>`,
+    ).findings.map((item) => item.tag),
+    ['OwnDiscardQuestion'],
+  );
+  assert.deepEqual(
+    inspect(
+      `export const Page = () => { useNavigationGuard(ask); return <OwnDiscardQuestion/>; }`,
+    ).findings,
+    [],
+  );
+});
+
 test('leaves forms that are not create or edit forms alone', () => {
   // A chat composer without React Hook Form or an overlay, a tool form on a page, and FeedbackForm's own <form>.
   assert.deepEqual(

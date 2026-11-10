@@ -15,6 +15,7 @@ import {
   type RefObject,
 } from 'react';
 
+import { DiscardScope } from '#components/discard-guard';
 import { cn } from 'cn';
 
 export interface RouteChildPageProps {
@@ -36,6 +37,7 @@ const EnclosingLayerContext =
  * Unlike the other two it is deliberately **not** modal. It does not portal out of the content area or trap focus,
  * because the user is still on a page of the application and must be able to reach the sidebar. What closes it is
  * the header's breadcrumb or the `BackButton` above its heading, or the browser's back button — not an X or Escape.
+ * Every one of those first asks "Discard changes?" while a form in it has unsaved input, as `RouteDialog` does.
  *
  * It is two elements, the way the layout's content area is: the outer one positions and never scrolls, the inner one
  * scrolls. A deeper layer rendered beside this component anchors to the content area, as this one does, which is
@@ -171,7 +173,10 @@ function RouteChildPageLayer({
         ref={scrollerRef}
       >
         <EnclosingLayerContext.Provider value={scrollerRef}>
-          {children}
+          {/* A create or edit page asks before discarding its form's input, as a route dialog does (mobile.md M7.4):
+              leaving by the back button, a breadcrumb, a link or browser back asks "Discard changes?", and a reload
+              gets the browser's warning. */}
+          <DiscardScope containerRef={layerRef}>{children}</DiscardScope>
         </EnclosingLayerContext.Provider>
       </div>
     </div>

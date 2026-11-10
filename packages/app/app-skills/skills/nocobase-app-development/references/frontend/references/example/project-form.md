@@ -317,4 +317,4 @@ export function ProjectForm({
 | `onSubmitted(project)`           | The save succeeded; the argument is the record the endpoint returned. The form has already shown the success message; the caller must not show another |
 | `onSubmittingChange(submitting)` | `true` when submission starts, `false` when it ends; on success, `false` comes before `onSubmitted` is called                                          |
 | `onNotFound()`                   | When editing, the endpoint returned 404                                                                                                                |
-| `onDirtyChange(dirty)`           | Whether any field differs from its default value, for a page container that guards leaving itself; an overlay needs nothing (it reads `values`)        |
+| `onDirtyChange(dirty)`           | Whether any field differs from its default value, for a container on an ordinary page; `RouteDialog`, `RouteDrawer` and `RouteChildPage` need nothing  |

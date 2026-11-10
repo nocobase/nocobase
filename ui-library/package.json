@@ -149,6 +149,7 @@
     "#components/settings-dialog": "./registry/components/settings-dialog.tsx",
     "#components/route-dialog": "./registry/components/route-dialog.tsx",
     "#components/route-overlay": "./registry/components/route-overlay.tsx",
+    "#components/discard-guard": "./registry/components/discard-guard.tsx",
     "#components/use-route-overlay": "./registry/components/use-route-overlay.ts",
     "#components/route-drawer": "./registry/components/route-drawer.tsx",
     "#components/route-child-page": "./registry/components/route-child-page.tsx",

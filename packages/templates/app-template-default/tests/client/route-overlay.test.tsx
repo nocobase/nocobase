@@ -32,6 +32,7 @@ import { Controller, useForm } from 'react-hook-form';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { FeedbackForm } from '../../client/components/feedback-form';
 import { RouteDialog } from '../../client/components/route-dialog';
+import { RouteChildPage } from '../../client/components/route-child-page';
 import { RouteDrawer } from '../../client/components/route-drawer';
 import { useRouteOverlay } from '../../client/components/use-route-overlay';
 import {
@@ -1750,6 +1751,131 @@ describe('the unsaved-changes question for a plain form', () => {
     await userEvent.type(field, '{Backspace}{Backspace}');
     expect(field).toHaveValue('Pump');
     await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    await waitFor(() => expect(history.path).toBe('/orders?page=2'));
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+  });
+});
+
+describe('the unsaved-changes question on a covering child page', () => {
+  // The shape a generated create/edit page took: a RouteChildPage whose FeedbackForm reports `values` and
+  // `savedValues`, a Cancel button and a back link that navigate to the list, and no guard of the page's own.
+  function EditPage() {
+    const navigate = useNavigate();
+    const { search } = useLocation();
+    const saved = { name: 'Pump' };
+    const [values, setValues] = useState(saved);
+    return (
+      <RouteChildPage>
+        <Link to={{ pathname: '..', search }}>Back to orders</Link>
+        <FeedbackForm
+          id='page-form'
+          values={() => values}
+          savedValues={saved}
+          onSubmit={async (event) => {
+            event.preventDefault();
+            await Promise.resolve();
+            await navigate({ pathname: '..', search });
+          }}
+        >
+          <input
+            aria-label='Name'
+            value={values.name}
+            onChange={(event) => setValues({ name: event.target.value })}
+          />
+        </FeedbackForm>
+        <button
+          type='button'
+          onClick={() => void navigate({ pathname: '..', search })}
+        >
+          Cancel
+        </button>
+        <button type='submit' form='page-form'>
+          Save
+        </button>
+      </RouteChildPage>
+    );
+  }
+  function setup() {
+    const history: { back?: () => void; path?: string } = {};
+    function Probe() {
+      const navigate = useNavigate();
+      const { pathname, search } = useLocation();
+      useEffect(() => {
+        history.back = () => void navigate(-1);
+        history.path = `${pathname}${search}`;
+      });
+      return null;
+    }
+    render(
+      <MemoryRouter
+        initialEntries={['/orders?page=2', '/orders/new?page=2']}
+        initialIndex={1}
+      >
+        <NavigationGuardProvider>
+          <Probe />
+          <Routes>
+            <Route path='/orders' element={<Outlet />}>
+              <Route path='new' element={<EditPage />} />
+            </Route>
+          </Routes>
+        </NavigationGuardProvider>
+      </MemoryRouter>,
+      { wrapper: I18n },
+    );
+    return history;
+  }
+  async function keep() {
+    const prompt = await screen.findByRole('alertdialog', {
+      name: 'Discard changes?',
+    });
+    await userEvent.click(
+      within(prompt).getByRole('button', { name: 'Keep editing' }),
+    );
+    await waitFor(() =>
+      expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument(),
+    );
+  }
+
+  it('asks on Cancel, the back link and browser back, and warns before a reload', async () => {
+    const history = setup();
+    await userEvent.type(
+      await screen.findByRole('textbox', { name: 'Name' }),
+      ' 2',
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    await keep();
+    await userEvent.click(screen.getByRole('link', { name: 'Back to orders' }));
+    await keep();
+    act(() => history.back!());
+    await keep();
+    const reload = new Event('beforeunload', { cancelable: true });
+    window.dispatchEvent(reload);
+    expect(reload.defaultPrevented).toBe(true);
+    expect(screen.getByRole('textbox', { name: 'Name' })).toHaveValue('Pump 2');
+    await waitFor(() => expect(history.path).toBe('/orders/new?page=2'));
+  });
+
+  it('leaves without asking when untouched, changed back or saved', async () => {
+    let history = setup();
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Cancel' }),
+    );
+    await waitFor(() => expect(history.path).toBe('/orders?page=2'));
+    cleanup();
+
+    history = setup();
+    const field = await screen.findByRole('textbox', { name: 'Name' });
+    await userEvent.type(field, 'x{Backspace}');
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    await waitFor(() => expect(history.path).toBe('/orders?page=2'));
+    cleanup();
+
+    history = setup();
+    await userEvent.type(
+      await screen.findByRole('textbox', { name: 'Name' }),
+      ' 2',
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
     await waitFor(() => expect(history.path).toBe('/orders?page=2'));
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
   });

@@ -57,6 +57,8 @@ const feedbackFormSpread =
 const draftDirty =
   'a dirty that only adds what the form cannot show; never derive it from a draft, storage or saved flag: a stored draft never replaces the discard question (mobile.md M7.4)';
 const overlays = new Set(['RouteDialog', 'RouteDrawer']);
+const ownQuestion =
+  "the layer's own discard question: OwnDiscardQuestion only declares that this file asks one itself through useNavigationGuard, and it does not (mobile.md M7.4)";
 const passiveTags = new Set([
   'div',
   'span',
@@ -138,7 +140,7 @@ export function inspectSource(ts, text, file, root) {
       continue;
     const specifier = statement.moduleSpecifier.text;
     if (specifier === 'react-hook-form') usesHookForm = true;
-    if (/(^|\/)route-(dialog|drawer)(\.js)?$/.test(specifier))
+    if (/(^|\/)route-(dialog|drawer|child-page)(\.js)?$/.test(specifier))
       usesOverlay = true;
     if (/(^|\/)page-container(\.js)?$/.test(specifier)) rendersPage = true;
     const isPrimitive =
@@ -352,6 +354,11 @@ export function inspectSource(ts, text, file, root) {
             undefined,
             false,
           );
+      } else if (
+        tag === 'OwnDiscardQuestion' &&
+        !/\buseNavigationGuard\s*\(/.test(text)
+      ) {
+        report(node, tag, ownQuestion, undefined, false);
       } else if (overlays.has(tag) && attribute(ts, node, 'dirty')) {
         const value = attribute(ts, node, 'dirty').initializer;
         if (value && /storage|draft|persist|saved/i.test(value.getText(source)))

@@ -58,6 +58,7 @@ import {
 } from '#components/ui/table';
 import { Separator } from '#components/ui/separator';
 import { ToggleGroup, ToggleGroupItem } from '#components/ui/toggle-group';
+import { OwnDiscardQuestion } from '#components/discard-guard';
 import { FeedbackForm } from '#components/feedback-form';
 import { useListData } from '#hooks/use-list-data';
 import {
@@ -552,6 +553,9 @@ function Editor({
       status={detail?.record.status}
       description={description}
     >
+      {/* The wizard asks its own question: its input spans steps whose fields are not all on screen, so the page's
+          layer cannot compare them, and leaving during a held submission is blocked rather than asked. */}
+      <OwnDiscardQuestion />
       <AlertDialog
         open={confirmDiscard}
         onOpenChange={(open) => {

@@ -1,15 +1,10 @@
 import { Dialog as DialogPrimitive } from '@base-ui/react/dialog';
-import {
-  NavigationGuardContext,
-  useNavigationGuard,
-} from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { XIcon } from 'lucide-react';
 import {
   createContext,
   useCallback,
   useContext,
-  useEffect,
   useLayoutEffect,
   useMemo,
   useRef,
@@ -20,17 +15,7 @@ import {
 } from 'react';
 import { useLocation, useNavigate, type To } from 'react-router';
 
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '#components/ui/alert-dialog';
-import { UnsavedValuesContext } from '#components/feedback-form';
+import { DiscardScope } from '#components/discard-guard';
 import { Button } from '#components/ui/button';
 import {
   Dialog,
@@ -49,6 +34,9 @@ import {
   type RouteOverlayHostValue,
 } from '@nocobase/app-client/route-containers';
 import { cn } from 'cn';
+
+// The template's own forms that ask their own question render it inside the overlay; see `discard-guard.tsx`.
+export { OwnDiscardQuestion } from '#components/discard-guard';
 
 export interface RouteOverlayProps {
   readonly title: ReactNode;
@@ -77,40 +65,6 @@ export interface RouteOverlayProps {
   readonly className?: string;
 }
 
-/**
- * What a user can see of a form's values: every field, named or not (React Hook Form's `register`, controlled inputs,
- * hidden inputs of pickers), plus the state of widgets that keep theirs outside a field, such as a Select's trigger text and a checkbox's or
- * switch's checked state.
- */
-function formSnapshot(form: HTMLFormElement): string {
-  const fields = [...form.elements].map((field) =>
-    field instanceof HTMLInputElement
-      ? field.type === 'checkbox' || field.type === 'radio'
-        ? String(field.checked)
-        : field.type === 'file'
-          ? [...(field.files ?? [])].map((file) => `${file.name}:${file.size}`)
-          : field.value
-      : field instanceof HTMLTextAreaElement ||
-          field instanceof HTMLSelectElement
-        ? field.value
-        : '',
-  );
-  const widgets = [
-    ...form.querySelectorAll(
-      '[role="combobox"], [role="checkbox"], [role="switch"], [role="radio"], [aria-pressed]',
-    ),
-  ].map((widget) => [
-    widget.getAttribute('aria-checked') ??
-      widget.getAttribute('aria-pressed') ??
-      '',
-    widget instanceof HTMLInputElement ? '' : (widget.textContent ?? ''),
-  ]);
-  return JSON.stringify([fields, widgets]);
-}
-
-/** Dispatched by `FeedbackForm` on its form, with `detail.phase` `'start'` or `'end'`, around its `onSubmit`. */
-const FORM_SUBMIT_EVENT = 'nocobase:form-submit';
-
 // Lets an overlay rendered through another overlay's outlet return focus into
 // the enclosing panel. Two overlays reached by one URL mount in the same
 // commit, so the nested one never observes the parent panel taking focus and
@@ -134,43 +88,9 @@ export function RouteOverlay({
 }: RouteOverlayProps & { readonly drawer?: boolean }): ReactElement {
   const host = useContext(RouteOverlayHostContext);
   // Always on inside an application, whether or not the page passes `dirty`: a page cannot leave out the question by
-  // leaving out the prop. Only a test or preview without the application's navigation boundary renders without it.
-  const guarded = useContext(NavigationGuardContext) !== null;
-  // How many forms inside ask their own unsaved-changes question (`OwnDiscardQuestion`).
-  const ownersRef = useRef(0);
-  const owners = useMemo(
-    () => ({
-      claim: (): (() => void) => {
-        ownersRef.current += 1;
-        return () => {
-          ownersRef.current -= 1;
-        };
-      },
-    }),
-    [],
-  );
-  // The FeedbackForms inside that compare their values with the saved ones.
-  const formsRef = useRef(new Set<() => boolean>());
-  const forms = useMemo(
-    () => ({
-      register: (unsaved: () => boolean): (() => void) => {
-        formsRef.current.add(unsaved);
-        return () => {
-          formsRef.current.delete(unsaved);
-        };
-      },
-    }),
-    [],
-  );
-  const content = guarded ? (
-    <DiscardOwnerContext.Provider value={owners}>
-      <UnsavedValuesContext.Provider value={forms}>
-        {children}
-        <DiscardGuard dirty={dirty} ownersRef={ownersRef} formsRef={formsRef} />
-      </UnsavedValuesContext.Provider>
-    </DiscardOwnerContext.Provider>
-  ) : (
-    children
+  // leaving out the prop.
+  const content = (
+    <OverlayDiscardScope dirty={dirty}>{children}</OverlayDiscardScope>
   );
   return host ? (
     <HostedRouteOverlay host={host} {...props}>
@@ -181,173 +101,19 @@ export function RouteOverlay({
   );
 }
 
-/**
- * Asks "Discard changes?" before leaving a dirty overlay. Closing an overlay is navigation, so one navigation guard
- * covers every way out; while it waits the application keeps the overlay and its input mounted, and restores the URL
- * when the answer is "Keep editing". The confirmation is the one layer allowed above the overlay (mobile.md M7.2).
- */
-const DiscardOwnerContext = createContext<{
-  readonly claim: () => () => void;
-} | null>(null);
-
-/**
- * Rendered inside a route overlay by the template's own forms that already ask an unsaved-changes question of their
- * own (the settings forms' `usePageLeave`): the overlay leaves the question to them instead of asking twice.
- * Application forms do not render it; they rely on the overlay's question.
- */
-export function OwnDiscardQuestion(): null {
-  const owners = useContext(DiscardOwnerContext);
-  useLayoutEffect(() => owners?.claim(), [owners]);
-  return null;
-}
-
-function DiscardGuard({
+/** The overlay's discard question, over the forms in the panel it renders inside. */
+function OverlayDiscardScope({
   dirty,
-  ownersRef,
-  formsRef,
+  children,
 }: {
-  readonly dirty: boolean | (() => boolean) | undefined;
-  readonly ownersRef: RefObject<number>;
-  readonly formsRef: RefObject<Set<() => boolean>>;
-}): ReactElement {
-  const { t } = useTranslation();
-  const dirtyRef = useRef(dirty);
-  useLayoutEffect(() => {
-    dirtyRef.current = dirty;
-  });
-  // What the overlay saw itself: each form's fields just before the user first touched it, forms edited before any
-  // such moment, and how many of its FeedbackForm submissions are running.
-  const baselinesRef = useRef(new Map<HTMLFormElement, string>());
-  const editedRef = useRef(new Set<HTMLFormElement>());
-  const savingRef = useRef(0);
+  readonly dirty?: boolean | (() => boolean);
+  readonly children?: ReactNode;
+}): ReactNode {
   const popupRef = useContext(ParentPopupContext);
-  useEffect(() => {
-    const popup = popupRef?.current;
-    if (!popup) return;
-    // Every form inside counts, a plain `<form>` as much as a FeedbackForm, so a page cannot leave the question out by
-    // its choice of form. Not counted: a search form (`role='search'`), and a FeedbackForm that reports its values,
-    // which is compared with its saved values instead.
-    const tracked = (target: EventTarget | null): HTMLFormElement | null => {
-      if (!(target instanceof Element)) return null;
-      const form = target.closest('form');
-      return form &&
-        form.getAttribute('role') !== 'search' &&
-        form.dataset.tracksValues === undefined
-        ? form
-        : null;
-    };
-    // The fields as they are before the user's first touch, so a value changed back again is not unsaved.
-    const touch = (event: Event): void => {
-      const form = tracked(event.target);
-      if (form && !baselinesRef.current.has(form))
-        baselinesRef.current.set(form, formSnapshot(form));
-    };
-    const edit = (event: Event): void => {
-      const form = tracked(event.target);
-      if (form && !baselinesRef.current.has(form)) editedRef.current.add(form);
-    };
-    const submit = (event: Event): void => {
-      const { phase } = (event as CustomEvent<{ phase?: string }>).detail ?? {};
-      if (phase === 'start') savingRef.current += 1;
-      else if (phase === 'end')
-        savingRef.current = Math.max(0, savingRef.current - 1);
-    };
-    // A key or a pointer, not focus: an overlay focuses its first field by itself while a picker may still be loading
-    // its label, and that is not the user's input.
-    popup.addEventListener('keydown', touch, true);
-    popup.addEventListener('pointerdown', touch, true);
-    popup.addEventListener('input', edit, true);
-    popup.addEventListener('change', edit, true);
-    popup.addEventListener(FORM_SUBMIT_EVENT, submit);
-    return () => {
-      popup.removeEventListener('keydown', touch, true);
-      popup.removeEventListener('pointerdown', touch, true);
-      popup.removeEventListener('input', edit, true);
-      popup.removeEventListener('change', edit, true);
-      popup.removeEventListener(FORM_SUBMIT_EVENT, submit);
-    };
-  }, [popupRef]);
-  const isDirty = useCallback((): boolean => {
-    // The save's own navigation — only a FeedbackForm reports one: leaving while its onSubmit runs. A plain `<form>`
-    // tells nobody whether its save succeeded, and no way of leaving tells it either, so after a plain form's save it
-    // still asks: one question too many rather than input lost after a failed save. Or a form inside asks its own.
-    if (savingRef.current > 0 || ownersRef.current > 0) return false;
-    // A disabled save button, such as while validation fails, never means there is nothing to lose.
-    const current = dirtyRef.current;
-    return (
-      [...baselinesRef.current].some(
-        ([form, before]) => form.isConnected && formSnapshot(form) !== before,
-      ) ||
-      [...editedRef.current].some((form) => form.isConnected) ||
-      [...formsRef.current].some((unsaved) => unsaved()) ||
-      (typeof current === 'function' ? current() : current === true)
-    );
-  }, [ownersRef, formsRef]);
-  // The pending question, so a second attempt to leave while it is open waits for the same answer.
-  const promptRef = useRef<{
-    readonly promise: Promise<boolean>;
-    readonly resolve: (discard: boolean) => void;
-  } | null>(null);
-  const [asking, setAsking] = useState(false);
-  useNavigationGuard(() => {
-    if (!isDirty()) return true;
-    if (promptRef.current) return promptRef.current.promise;
-    let resolve!: (discard: boolean) => void;
-    const promise = new Promise<boolean>((done) => {
-      resolve = done;
-    });
-    promptRef.current = { promise, resolve };
-    setAsking(true);
-    return promise;
-  });
-  useEffect(() => {
-    const warn = (event: BeforeUnloadEvent): void => {
-      if (isDirty()) event.preventDefault();
-    };
-    window.addEventListener('beforeunload', warn);
-    return () => {
-      window.removeEventListener('beforeunload', warn);
-      // Unmounted while asking: the navigation it held does not go ahead.
-      promptRef.current?.resolve(false);
-      promptRef.current = null;
-    };
-  }, [isDirty]);
-  const answer = (discard: boolean): void => {
-    promptRef.current?.resolve(discard);
-    promptRef.current = null;
-    setAsking(false);
-  };
   return (
-    <AlertDialog
-      open={asking}
-      onOpenChange={(open) => {
-        if (!open) answer(false);
-      }}
-    >
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>
-            {t('routeOverlay.discardTitle', {
-              defaultValue: 'Discard changes?',
-            })}
-          </AlertDialogTitle>
-          <AlertDialogDescription>
-            {t('routeOverlay.discardDescription', {
-              defaultValue:
-                'Your changes have not been saved and will be lost.',
-            })}
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel>
-            {t('routeOverlay.keepEditing', { defaultValue: 'Keep editing' })}
-          </AlertDialogCancel>
-          <AlertDialogAction variant='destructive' onClick={() => answer(true)}>
-            {t('routeOverlay.discard', { defaultValue: 'Discard' })}
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+    <DiscardScope containerRef={popupRef} dirty={dirty}>
+      {children}
+    </DiscardScope>
   );
 }
 

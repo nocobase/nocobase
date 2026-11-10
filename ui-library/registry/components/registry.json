@@ -117,6 +117,11 @@
           "target": "client/components/route-overlay.tsx"
         },
         {
+          "path": "discard-guard.tsx",
+          "type": "registry:component",
+          "target": "client/components/discard-guard.tsx"
+        },
+        {
           "path": "use-route-overlay.ts",
           "type": "registry:component",
           "target": "client/components/use-route-overlay.ts"
@@ -160,6 +165,11 @@
           "target": "client/components/route-overlay.tsx"
         },
         {
+          "path": "discard-guard.tsx",
+          "type": "registry:component",
+          "target": "client/components/discard-guard.tsx"
+        },
+        {
           "path": "use-route-overlay.ts",
           "type": "registry:component",
           "target": "client/components/use-route-overlay.ts"
@@ -176,15 +186,25 @@
         "group": "Route overlays",
         "iframeHeight": 560
       },
-      "dependencies": ["@nocobase/app-client@^4.0.0-beta.9", "cn@^0.4.0"],
-      "docs": "Return RouteChildPage from the component of a child route. It covers the nearest positioned ancestor, so render a page's own outlet beside its container rather than inside it. A child page that can only render inside another one, such as the child page of a tab, covers that one whole. On a route declaring a child-page presentation the application opens the layer first; this component then adds its content and className to that layer.",
+      "dependencies": [
+        "@nocobase/app-client@^4.0.0-beta.9",
+        "cn@^0.4.0",
+        "@nocobase/i18n@^1.0.0-beta.4"
+      ],
+      "docs": "Return RouteChildPage from the component of a child route. It covers the nearest positioned ancestor, so render a page's own outlet beside its container rather than inside it. A child page that can only render inside another one, such as the child page of a tab, covers that one whole. On a route declaring a child-page presentation the application opens the layer first; this component then adds its content and className to that layer. Like RouteDialog, it asks \"Discard changes?\" before the back button, a breadcrumb, a link or browser back while a FeedbackForm inside (values and savedValues) or any other form differs from what is saved, and warns before a reload, inside an application's NavigationGuardProvider; write no guard of the page's own. Forms that ask their own question render OwnDiscardQuestion. The question's copy is under routeOverlay.discardTitle, routeOverlay.discardDescription, routeOverlay.keepEditing and routeOverlay.discard.",
       "files": [
         {
           "path": "route-child-page.tsx",
           "type": "registry:component",
           "target": "client/components/route-child-page.tsx"
+        },
+        {
+          "path": "discard-guard.tsx",
+          "type": "registry:component",
+          "target": "client/components/discard-guard.tsx"
         }
-      ]
+      ],
+      "registryDependencies": ["alert-dialog", "@nocobase/feedback-form"]
     },
     {
       "name": "kanban",

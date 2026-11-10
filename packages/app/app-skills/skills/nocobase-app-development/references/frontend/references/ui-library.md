@@ -543,7 +543,7 @@ A child route presented as a centered modal dialog, opened and closed by its URL
 
 - Kind: component
 - Install: `yes n | pnpm exec shadcn add @nocobase/route-dialog`
-- Installs to: `client/components/route-dialog.tsx`, `client/components/route-overlay.tsx`, `client/components/use-route-overlay.ts`
+- Installs to: `client/components/route-dialog.tsx`, `client/components/route-overlay.tsx`, `client/components/discard-guard.tsx`, `client/components/use-route-overlay.ts`
 - Plugin dependencies: none
 - Also installs: `@nocobase/feedback-form`
 - Example: `@nocobase/route-dialog-demo` (`pnpm exec shadcn view @nocobase/route-dialog-demo`)
@@ -555,7 +555,7 @@ A child route presented as a modal panel at the right edge, opened and closed by
 
 - Kind: component
 - Install: `yes n | pnpm exec shadcn add @nocobase/route-drawer`
-- Installs to: `client/components/route-drawer.tsx`, `client/components/route-overlay.tsx`, `client/components/use-route-overlay.ts`
+- Installs to: `client/components/route-drawer.tsx`, `client/components/route-overlay.tsx`, `client/components/discard-guard.tsx`, `client/components/use-route-overlay.ts`
 - Plugin dependencies: none
 - Also installs: `@nocobase/feedback-form`
 - Example: `@nocobase/route-drawer-demo` (`pnpm exec shadcn view @nocobase/route-drawer-demo`)
@@ -567,10 +567,11 @@ A child route presented as a non-modal page covering the content area, keeping t
 
 - Kind: component
 - Install: `yes n | pnpm exec shadcn add @nocobase/route-child-page`
-- Installs to: `client/components/route-child-page.tsx`
+- Installs to: `client/components/route-child-page.tsx`, `client/components/discard-guard.tsx`
 - Plugin dependencies: none
+- Also installs: `@nocobase/feedback-form`
 - Example: `@nocobase/route-child-page-demo` (`pnpm exec shadcn view @nocobase/route-child-page-demo`)
-- After installing: Return RouteChildPage from the component of a child route. It covers the nearest positioned ancestor, so render a page's own outlet beside its container rather than inside it. A child page that can only render inside another one, such as the child page of a tab, covers that one whole. On a route declaring a child-page presentation the application opens the layer first; this component then adds its content and className to that layer.
+- After installing: Return RouteChildPage from the component of a child route. It covers the nearest positioned ancestor, so render a page's own outlet beside its container rather than inside it. A child page that can only render inside another one, such as the child page of a tab, covers that one whole. On a route declaring a child-page presentation the application opens the layer first; this component then adds its content and className to that layer. Like RouteDialog, it asks "Discard changes?" before the back button, a breadcrumb, a link or browser back while a FeedbackForm inside (values and savedValues) or any other form differs from what is saved, and warns before a reload, inside an application's NavigationGuardProvider; write no guard of the page's own. Forms that ask their own question render OwnDiscardQuestion. The question's copy is under routeOverlay.discardTitle, routeOverlay.discardDescription, routeOverlay.keepEditing and routeOverlay.discard.
 
 ## Task Center
 
