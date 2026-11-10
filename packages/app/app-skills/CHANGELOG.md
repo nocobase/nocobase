@@ -1,5 +1,17 @@
 # @nocobase/app-skills
 
+## 0.1.0-beta.63
+
+### Minor Changes
+
+- 79b40cd: Add `announceDataChange` and `scopes` for `useListData` so a confirmed create, edit or delete updates every list, detail, card and count that reads the same data the next time it is visible. The Examples Projects page adds search, name sorting, a total card and detail deletion as the runnable reference, and the development and upgrade Skills document the contract.
+
+### Patch Changes
+
+- 55071f3: The application and plugin development Skills tell an agent to find a menu, popover, select or dialog trigger by its ready state, such as `findByRole('button', { name, expanded: false })`, before clicking it in a jsdom test, so a test does not click a trigger that is still mounting and fail only under CI load.
+- 77ed1dd: Document rendering the notification logs block without its own heading (`showHeading={false}`) when it is a tab of the notification settings module, and refresh the UI Library catalog entry for the block.
+- 03fac04: Make the notification template page readable for administrators. Template details open in a drawer with an address of their own (`/settings/notifications/templates/:templateId`; older `?template=` links redirect), the filters form a compact toolbar showing display names, cards are grouped by category and open on click, and the copy avoids technical wording. Template registrations accept translation keys (`{ ns, key, defaultValue }`) for every administrator-facing field, translatable channel, channel type and source names, and a `localeMode` field; `combined` marks a message that carries every language, so the preview offers no language choice. Otherwise the preview starts in the interface language and lists language names. `NotificationTemplateView` text fields are now `string | { ns, key, defaultValue }`. The Users invitation and the notification example registrations are translated and the invitation declares `localeMode: 'combined'`.
+
 ## 0.1.0-beta.62
 
 ### Patch Changes

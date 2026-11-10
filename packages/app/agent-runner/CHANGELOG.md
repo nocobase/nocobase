@@ -1,5 +1,18 @@
 # @nocobase/agent-runner
 
+## 0.1.0-beta.25
+
+### Minor Changes
+
+- ac6c1eb: A runner asks the application for the token of NocoBase's private npm registry (`https://pkg-v3.nocobase.com/`) only when an install of a run needs it: when the repository's committed `.npmrc` points a scope or the registry at it, or after an `@nocobase/*` package was not found on the default registry, which it then retries once with the private registry. The token goes into a run-private npm configuration for that one command and is redacted from what the run reports. The machine's own npm and pnpm settings stay in effect except those pointing at the private registry, so a project that needs no private package never reaches it. Protocol version 16 adds the `npmCredentials` feature and `RUNNER_ROUTES.npmCredential`; applications register where the token comes from with `npmCredentialProviders`. Update the application before the runners.
+
+### Patch Changes
+
+- Updated dependencies [a2dc459]
+- Updated dependencies [ac6c1eb]
+  - @nocobase/agent-protocol@0.1.0-beta.18
+  - @nocobase/app-cli-client@0.1.0-beta.20
+
 ## 0.1.0-beta.24
 
 ### Minor Changes

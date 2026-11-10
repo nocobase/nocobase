@@ -2,6 +2,31 @@
 
 All notable changes to NocoBase 3 are documented in this file, one section per release: `nocobase-v3-beta/<date>.<n>` for a beta and `release/<date>.<n>` for a stable release. The versions each release published are on its GitHub Release, and every package's own changes are in its CHANGELOG.md.
 
+## [nocobase-v3-beta/2026-11-10.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-10.1)
+
+### 🎉 New Features
+
+- **[Agents]** People can choose whether their runs go to their personal runners or to shared runners first; the other kind still takes a run about a second later when the preferred kind cannot. ([#11408](https://github.com/nocobase/nocobase/pull/11408)) by @2013xile
+- **[Agent runner]** Runners install `@nocobase/*` packages from the default registry and use NocoBase's private registry, with the token the application keeps, only when a project declares it or a package is missing elsewhere. ([#11415](https://github.com/nocobase/nocobase/pull/11415)) by @2013xile
+- **[App templates]** After a create, edit or delete, related lists, details, cards and counts in template applications show the new data the next time they are visible. ([#11417](https://github.com/nocobase/nocobase/pull/11417)) by @katherinehhh
+- **[Server]**
+  - Support coordinated database tasks across multiple named connections, scoped module CLI registration and reliable cleanup of stopped deployments. ([#11418](https://github.com/nocobase/nocobase/pull/11418)) by @chenos
+  - Support required database preparation hooks and report preparation failures, with fresh runs resetting every selected database before any migration or Seed begins. ([#11456](https://github.com/nocobase/nocobase/pull/11456)) by @cgyrock
+
+### 🚀 Improvements
+
+- **[Notifications]** Notification templates open in a drawer with a shareable address, are grouped by category with a compact filter bar, show translated names instead of technical identifiers, and preview in the interface language. ([#11462](https://github.com/nocobase/nocobase/pull/11462)) by @katherinehhh
+- **[CLI]** Support scoped portal packages in App CLI registration and package management. ([#11464](https://github.com/nocobase/nocobase/pull/11464)) by @chenos
+- **[Create app]** Create multi-portal applications with a template alias and guidance for authenticated commercial registry access. ([#11466](https://github.com/nocobase/nocobase/pull/11466)) by @chenos
+
+### 🐛 Bug Fixes
+
+- **[Interface]**
+  - Keep the agent chat panel's input above the soft keyboard on phones. ([#11409](https://github.com/nocobase/nocobase/pull/11409)) by @zhouyanliang
+  - The notification logs block installs with `shadcn add` again, gives the source column the space, formats dates in the application language, follows the theme's status colors, can hide its own heading when used as a tab, and adds Korean and Russian. ([#11459](https://github.com/nocobase/nocobase/pull/11459)) by @katherinehhh
+- **[Agents]** Let agents confirm whether their current run starts an independent tool session before reviewing a change. ([#11416](https://github.com/nocobase/nocobase/pull/11416)) by @2013xile
+- **[App templates]** Keep the application's tab icon visible when the browser or system uses a dark theme. ([#11463](https://github.com/nocobase/nocobase/pull/11463)) by @katherinehhh
+
 ## [nocobase-v3-beta/2026-11-09.3](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-09.3)
 
 ### 🎉 New Features

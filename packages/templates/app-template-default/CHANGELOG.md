@@ -1,5 +1,29 @@
 # @nocobase/app-template-default
 
+## 1.0.0-beta.93
+
+### Minor Changes
+
+- 79b40cd: Add `announceDataChange` and `scopes` for `useListData` so a confirmed create, edit or delete updates every list, detail, card and count that reads the same data the next time it is visible. The Examples Projects page adds search, name sorting, a total card and detail deletion as the runnable reference, and the development and upgrade Skills document the contract.
+- 03fac04: Make the notification template page readable for administrators. Template details open in a drawer with an address of their own (`/settings/notifications/templates/:templateId`; older `?template=` links redirect), the filters form a compact toolbar showing display names, cards are grouped by category and open on click, and the copy avoids technical wording. Template registrations accept translation keys (`{ ns, key, defaultValue }`) for every administrator-facing field, translatable channel, channel type and source names, and a `localeMode` field; `combined` marks a message that carries every language, so the preview offers no language choice. Otherwise the preview starts in the interface language and lists language names. `NotificationTemplateView` text fields are now `string | { ns, key, defaultValue }`. The Users invitation and the notification example registrations are translated and the invitation declares `localeMode: 'combined'`.
+
+### Patch Changes
+
+- dd90924: Add an SVG favicon that turns white when the browser or system uses a dark theme, so the tab icon stays visible on dark tab bars. Browsers without SVG favicon support keep using `favicon.ico`.
+- Updated dependencies [a2dc459]
+- Updated dependencies [2d18eb2]
+- Updated dependencies [03fac04]
+- Updated dependencies [6a51d28]
+- Updated dependencies [ac6c1eb]
+- Updated dependencies [3642d82]
+- Updated dependencies [d4d7b07]
+  - @nocobase/app-plugin-agents@2.0.0-beta.9
+  - @nocobase/db@1.0.0-beta.27
+  - @nocobase/app-server@5.0.0-beta.3
+  - @nocobase/app-cli@1.0.0-beta.33
+  - @nocobase/app-plugin-notification@2.0.0-beta.7
+  - @nocobase/app-plugin-users@2.0.0-beta.18
+
 ## 1.0.0-beta.92
 
 ### Patch Changes

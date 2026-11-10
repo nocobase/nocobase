@@ -2,6 +2,31 @@
 
 本文件记录 NocoBase 3 的所有重要变更，每次发布一节：`nocobase-v3-beta/<日期>.<序号>` 是预览版，`release/<日期>.<序号>` 是正式版。每次发布的包版本见对应的 GitHub Release，各个包自己的变更见包内的 CHANGELOG.md。
 
+## [nocobase-v3-beta/2026-11-10.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-10.1)
+
+### 🎉 新特性
+
+- **[Agent]** 用户可以选择自己的任务优先交给个人执行机还是共享执行机；优先的那一类接不了时，另一类约 1 秒后照常接手。 ([#11408](https://github.com/nocobase/nocobase/pull/11408)) by @2013xile
+- **[Agent 运行器]** 执行机默认从默认源安装 `@nocobase/*` 包，只在项目声明或包在其他源找不到时，才用应用保存的 Token 访问 NocoBase 私有源。 ([#11415](https://github.com/nocobase/nocobase/pull/11415)) by @2013xile
+- **[应用模板]** 应用模板中新建、编辑、删除成功后，相关的列表、详情、卡片和计数在下次显示时即为最新数据。 ([#11417](https://github.com/nocobase/nocobase/pull/11417)) by @katherinehhh
+- **[服务端]**
+  - 支持多个命名连接的数据库任务协调、自定义作用域模块 CLI 注册，以及已停止部署的可靠清理。 ([#11418](https://github.com/nocobase/nocobase/pull/11418)) by @chenos
+  - 支持数据库任务必需的前置准备钩子及其失败诊断，并在 fresh 执行任何迁移或 Seed 前先重置全部选中数据库。 ([#11456](https://github.com/nocobase/nocobase/pull/11456)) by @cgyrock
+
+### 🚀 优化
+
+- **[通知]** 通知模板改为在抽屉中查看并有独立地址，按分类分组并使用紧凑筛选栏，显示可翻译的名称而不是技术标识，预览默认使用界面语言。 ([#11462](https://github.com/nocobase/nocobase/pull/11462)) by @katherinehhh
+- **[命令行]** 应用 CLI 支持门户包的注册与包管理，替换尚未发布的旧模块包命名。 ([#11464](https://github.com/nocobase/nocobase/pull/11464)) by @chenos
+- **[创建应用]** 支持通过模板简称创建多门户应用，并提供商业私有源登录和访问检查指引。 ([#11466](https://github.com/nocobase/nocobase/pull/11466)) by @chenos
+
+### 🐛 修复
+
+- **[界面]**
+  - 手机上 Agent 对话面板的输入框不再被软键盘遮挡。 ([#11409](https://github.com/nocobase/nocobase/pull/11409)) by @zhouyanliang
+  - 通知日志区块可以重新通过 `shadcn add` 安装，来源列获得更多宽度，日期按应用语言显示，状态颜色跟随主题，作为页签使用时可隐藏自带标题，并新增韩语和俄语。 ([#11459](https://github.com/nocobase/nocobase/pull/11459)) by @katherinehhh
+- **[Agent]** Agent 可在评审前确认当前执行是否使用独立工具会话。 ([#11416](https://github.com/nocobase/nocobase/pull/11416)) by @2013xile
+- **[应用模板]** 浏览器或系统使用深色主题时，应用的标签页图标也能清楚显示。 ([#11463](https://github.com/nocobase/nocobase/pull/11463)) by @katherinehhh
+
 ## [nocobase-v3-beta/2026-11-09.3](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-09.3)
 
 ### 🎉 新特性

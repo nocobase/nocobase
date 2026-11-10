@@ -1,5 +1,22 @@
 # @nocobase/app-server
 
+## 5.0.0-beta.3
+
+### Minor Changes
+
+- 2d18eb2: Support named connection contributions with database/<connection> migration and seed directories, keeping legacy flat plugin tasks on the default connection. Support application-owned database task coordination and pending-task selection while retaining complete history validation. Expose the database task lease for module lifecycle operations, recognize scoped app-plugin and app-module packages in CLI registration, removal and Skills, preserve third-party dependency patches in standalone builds, and prevent explicitly stopped deployments from restarting on incoming traffic while retaining their backend resource cleanup. Pass the complete connection inventory through both startup and CLI coordination.
+- 3642d82: Add application-local database preparation hooks and use the same storage preparation, reset, hook and migration/Seed phases with or without hooks. Fresh runs now reset all selected migration targets before any business task, with no cross-connection rollback. Report preparation failures and confirmed resets without expanding successful CLI JSON output.
+
+### Patch Changes
+
+- Updated dependencies [2d18eb2]
+  - @nocobase/db@1.0.0-beta.27
+  - @nocobase/db-mssql@0.1.0-beta.5
+  - @nocobase/db-mysql@0.1.0-beta.5
+  - @nocobase/db-oracle@0.1.0-beta.5
+  - @nocobase/db-postgres@0.1.0-beta.5
+  - @nocobase/db-sqlite@0.1.0-beta.6
+
 ## 5.0.0-beta.2
 
 ### Minor Changes
