@@ -23,6 +23,8 @@ import { isEqual } from 'lodash';
 import React from 'react';
 import { BlockSceneEnum } from '../../base/BlockModel';
 import { FormBlockContent, FormBlockModel } from './FormBlockModel';
+import { registerPageEditGuard } from './pageEditGuard';
+import { confirmDiscardChanges } from '../../base/PageModel/closeGuard';
 import { dispatchEventDeep } from '../../../utils';
 
 export class EditFormModel extends FormBlockModel {
@@ -71,9 +73,48 @@ export class EditFormModel extends FormBlockModel {
   getAclActionName() {
     return 'update';
   }
+  private disposePageGuard?: () => void;
+
+  private hasUnsavedChanges = () => {
+    const record = this.getCurrentRecord();
+    return Array.from(this.getUserModifiedFields()).some(
+      (field) => !isEqual(this.form.getFieldValue(field), record?.[field]),
+    );
+  };
+
+  protected onMount() {
+    super.onMount();
+    const { view, router } = this.context;
+    if (
+      !this.disposePageGuard &&
+      view?.type === 'embed' &&
+      view.inputArgs?.activationControlledByLayout &&
+      router?.getBlocker
+    ) {
+      this.disposePageGuard = registerPageEditGuard(router, {
+        dirty: () => this.context.pageActive?.value !== false && this.hasUnsavedChanges(),
+        confirm: async () => confirmDiscardChanges(this.context),
+        discard: () => {
+          const record = this.getCurrentRecord();
+          for (const name of this.getUserModifiedFields()) this.form.setFieldValue(name, record?.[name]);
+          this.resetUserModifiedFields();
+          this.resetRuntimeUserEditedState();
+        },
+      });
+    }
+  }
+
+  onUnmount() {
+    this.disposePageGuard?.();
+    this.disposePageGuard = undefined;
+    super.onUnmount();
+  }
+
   handlePageChange = async (page: number) => {
     if (this.resource instanceof MultiRecordResource) {
       const multiResource = this.resource as MultiRecordResource;
+      if (page === multiResource.getPage()) return;
+      if (this.hasUnsavedChanges() && !(await confirmDiscardChanges(this.context))) return;
       multiResource.setPage(page);
       multiResource.loading = true;
       await multiResource.refresh();
