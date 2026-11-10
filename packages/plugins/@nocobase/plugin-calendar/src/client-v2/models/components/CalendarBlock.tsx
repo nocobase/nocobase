@@ -15,9 +15,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { View } from 'react-big-calendar';
 import { dateFnsLocalizer } from 'react-big-calendar';
 import { format, getDay, parse, startOfWeek } from 'date-fns';
-import enUS from 'date-fns/locale/en-US';
-import ru from 'date-fns/locale/ru';
-import zhCN from 'date-fns/locale/zh-CN';
+import { calendarLocales, resolveCalendarCulture } from '../../../shared/calendarLocale';
 import { observer, useFlowContext } from '@nocobase/flow-engine';
 import { useT } from '../../locale';
 import GlobalStyle from './global.style';
@@ -34,8 +32,6 @@ import {
 import { CalendarHeader } from './CalendarHeader';
 import { CalendarViewProvider, type CalendarNavigationAction } from './CalendarViewContext';
 import useStyle from './style';
-
-type CalendarCulture = keyof typeof LOCALES;
 
 type LocalizerFormatContext = {
   format: (value: Date, formatStr: string, culture?: string) => string;
@@ -69,11 +65,6 @@ export const getCalendarEventDisplayRange = (eventStart: Dayjs, intervalTime: nu
 };
 
 const WEEKS = ['month', 'week', 'day'] as View[];
-const LOCALES = {
-  'zh-CN': zhCN,
-  'en-US': enUS,
-  'ru-RU': ru,
-};
 
 const useCalendarEvents = (
   dataSource: any,
@@ -293,9 +284,7 @@ export const CalendarBlock = observer((props: CalendarBlockProps) => {
   const { styles, cx } = useStyle();
   const ctx = useFlowContext();
   const t = useT();
-  const locale = (
-    LOCALES[ctx.api.auth.locale as CalendarCulture] ? (ctx.api.auth.locale as CalendarCulture) : 'en-US'
-  ) as CalendarCulture;
+  const locale = resolveCalendarCulture(ctx.api.auth.locale);
   const defaultHeight = ctx.themeToken.controlHeightLG * 18;
 
   const formats = useMemo(() => {
@@ -354,11 +343,11 @@ export const CalendarBlock = observer((props: CalendarBlockProps) => {
       parse,
       startOfWeek: (value: Date) =>
         startOfWeek(value, {
-          locale: LOCALES[locale],
+          locale: calendarLocales[locale],
           weekStartsOn: (props.weekStart ?? 1) as 0 | 1 | 2 | 3 | 4 | 5 | 6,
         }),
       getDay,
-      locales: LOCALES,
+      locales: calendarLocales,
     });
   }, [locale, props.weekStart]);
 
