@@ -10,7 +10,7 @@
 import { useTranslation } from 'react-i18next';
 import { useAsyncData } from '../../../../async-data-provider';
 import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Cascader, Input, Select, Spin, Table, Tag } from 'antd';
+import { Alert, Button, Cascader, Input, Select, Spin, Table, Tag } from 'antd';
 import { observer, useField, useForm } from '@formily/react';
 import { ArrayField } from '@formily/core';
 import { useFieldInterfaceOptions } from '../../../Configuration/interfaces';
@@ -108,7 +108,7 @@ export const FieldsConfigure = observer(
               label: compile(option.label),
             })),
           })),
-      [compile],
+      [compile, options],
     );
     const sourceFieldsOptions = useSourceFieldsOptions();
     const refGetInterface = useRef(getInterface);
@@ -268,6 +268,30 @@ export const FieldsConfigure = observer(
               allowClear={true}
               options={interfaceOptions}
             />
+          );
+        },
+      },
+      {
+        title: t('Source options'),
+        key: 'syncSourceOptions',
+        render: (_, record, index) => {
+          const inferred = sourceFields?.[record.name];
+          const source = Array.isArray(record.source) ? record.source.join('.') : record.source;
+          const options = inferred?.uiSchema?.enum;
+          if (
+            !source ||
+            inferred?.source !== source ||
+            inferred.interface !== record.interface ||
+            !Array.isArray(options)
+          )
+            return null;
+          return (
+            <Button
+              type="link"
+              onClick={() => handleFieldChange({ ...record, uiSchema: { ...record.uiSchema, enum: options } }, index)}
+            >
+              {t('Copy source options')}
+            </Button>
           );
         },
       },
