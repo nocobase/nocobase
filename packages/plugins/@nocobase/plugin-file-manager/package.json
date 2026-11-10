@@ -43,7 +43,8 @@
   },
   "dependencies": {
     "file-type": "^21.0.0",
-    "jsonwebtoken": "^9.0.2"
+    "jsonwebtoken": "^9.0.2",
+    "range-parser": "^1.2.1"
   },
   "peerDependencies": {
     "@nocobase/actions": "2.x",
