@@ -12,7 +12,7 @@ Beendet die Ausführung des aktuellen Ereignisflusses; nachfolgende Schritte wer
 | **Verknüpfungsregeln** | In Feldverknüpfungen, Filterverknüpfungen usw. wird der aktuelle Ereignisfluss beendet, wenn die Validierung fehlschlägt oder die Ausführung übersprungen werden muss. |
 | **Aktionsereignisse** | In benutzerdefinierten Aktionen (z. B. Löschbestätigung, Validierung vor dem Speichern) wird die Ausführung beendet, wenn der Benutzer abbricht oder die Validierung fehlschlägt. |
 
-> Unterschied zu `ctx.exitAll()`: `ctx.exit()` beendet nur den aktuellen Ereignisfluss; andere Ereignisflüsse unter demselben Ereignis sind nicht betroffen. `ctx.exitAll()` beendet sowohl den aktuellen Ereignisfluss als auch alle noch nicht ausgeführten nachfolgenden Ereignisflüsse unter demselben Ereignis.
+> `ctx.exit()` / `ctx.exitAll()` — Beide Aufrufe beenden den aktuellen Schritt und überspringen alle noch ausstehenden sequenziellen Flows desselben Ereignisses. Bereits parallel laufende Flows werden fortgesetzt.
 
 ## Typdefinition
 
@@ -20,14 +20,7 @@ Beendet die Ausführung des aktuellen Ereignisflusses; nachfolgende Schritte wer
 exit(): never;
 ```
 
-Der Aufruf von `ctx.exit()` löst eine interne `FlowExitException` aus, die von der FlowEngine abgefangen wird, um die Ausführung des aktuellen Ereignisflusses zu stoppen. Sobald die Funktion aufgerufen wurde, werden die verbleibenden Anweisungen im aktuellen JS-Code nicht mehr ausgeführt.
-
-## Vergleich mit ctx.exitAll()
-
-| Methode | Wirkungsbereich |
-|------|----------|
-| `ctx.exit()` | Beendet nur den aktuellen Ereignisfluss; nachfolgende Ereignisflüsse bleiben unberührt. |
-| `ctx.exitAll()` | Beendet den aktuellen Ereignisfluss und bricht nachfolgende Ereignisflüsse unter demselben Ereignis ab, die auf **sequenzielle Ausführung** eingestellt sind. |
+Der Aufruf von `ctx.exit()` löst eine interne `FlowExitAllException` aus, die von der FlowEngine abgefangen wird, um die Ausführung des aktuellen Ereignisflusses zu stoppen. Sobald die Funktion aufgerufen wurde, werden die verbleibenden Anweisungen im aktuellen JS-Code nicht mehr ausgeführt.
 
 ## Beispiele
 
@@ -62,22 +55,6 @@ if (!record || record.status !== 'draft') {
 }
 ```
 
-### Wahl zwischen ctx.exit() und ctx.exitAll()
-
-```ts
-// Nur der aktuelle Ereignisfluss soll beendet werden → ctx.exit() verwenden
-if (!params.valid) {
-  ctx.message.error('Ungültige Parameter');
-  ctx.exit();  // Andere Ereignisflüsse bleiben unberührt
-}
-
-// Alle nachfolgenden Ereignisflüsse unter dem aktuellen Ereignis müssen beendet werden → ctx.exitAll() verwenden
-if (!ctx.model?.context?.getPermission?.()) {
-  ctx.notification.warning({ message: 'Unzureichende Berechtigungen' });
-  ctx.exitAll();  // Sowohl der aktuelle Ereignisfluss als auch nachfolgende Ereignisflüsse unter demselben Ereignis werden beendet
-}
-```
-
 ### Beenden basierend auf der Benutzerauswahl nach Modal-Bestätigung
 
 ```ts
@@ -94,11 +71,10 @@ if (!ok) {
 ## Hinweise
 
 - Nach dem Aufruf von `ctx.exit()` wird der nachfolgende Code im aktuellen JS nicht ausgeführt. Es wird empfohlen, dem Benutzer den Grund vor dem Aufruf über `ctx.message`, `ctx.notification` oder ein Modal zu erklären.
-- In der Regel ist es nicht erforderlich, die `FlowExitException` im Geschäftscode abzufangen; überlassen Sie dies der FlowEngine.
-- Wenn Sie alle nachfolgenden Ereignisflüsse unter dem aktuellen Ereignis beenden müssen, verwenden Sie `ctx.exitAll()`.
+- In der Regel ist es nicht erforderlich, die `FlowExitAllException` im Geschäftscode abzufangen; überlassen Sie dies der FlowEngine.
 
 ## Verwandte Themen
 
-- [ctx.exitAll()](./exit-all.md): Beendet den aktuellen Ereignisfluss und nachfolgende Ereignisflüsse unter demselben Ereignis.
+- [ctx.exitAll()](./exit-all.md)
 - [ctx.message](./message.md): Nachrichtenhinweise.
 - [ctx.modal](./modal.md): Bestätigungs-Modals.

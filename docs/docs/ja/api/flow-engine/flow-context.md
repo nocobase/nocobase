@@ -66,8 +66,7 @@ FlowRuntimeContext（現在の flow のランタイムコンテキスト）
 
 | メソッド | 説明 |
 |------|------|
-| `ctx.exit()` | 現在の flow の実行を中断します |
-| `ctx.exitAll()` | すべての flow の実行を中断します |
+| `ctx.exit()`, `ctx.exitAll()` | どちらも現在のステップを終了し、同じイベントでまだ開始されていない逐次フローをスキップします。すでに並列で実行中のフローは続行します。 |
 | `ctx.getStepParams(stepKey)` | 指定した step の保存済みパラメータを取得します |
 | `ctx.setStepParams(stepKey, params)` | 指定した step のパラメータを設定します |
 | `ctx.getStepResults(stepKey)` | 以前の特定の step の実行結果を取得します |

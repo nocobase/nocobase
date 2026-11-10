@@ -66,8 +66,7 @@ Properti `ctx` yang paling sering digunakan dalam pengembangan plugin:
 
 | Method | Penjelasan |
 |------|------|
-| `ctx.exit()` | Menghentikan eksekusi flow saat ini |
-| `ctx.exitAll()` | Menghentikan eksekusi semua flow |
+| `ctx.exit()`, `ctx.exitAll()` | Kedua pemanggilan mengakhiri langkah saat ini dan melewati flow sekuensial yang tersisa pada event yang sama. Flow yang sudah berjalan secara paralel tetap berlanjut. |
 | `ctx.getStepParams(stepKey)` | Mendapatkan parameter yang disimpan oleh step tertentu |
 | `ctx.setStepParams(stepKey, params)` | Mengatur parameter step tertentu |
 | `ctx.getStepResults(stepKey)` | Mendapatkan hasil eksekusi step tertentu sebelumnya |

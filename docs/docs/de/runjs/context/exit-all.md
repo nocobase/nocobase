@@ -12,7 +12,7 @@ Beendet den aktuellen Workflow und alle nachfolgenden Workflows, die in derselbe
 | **Verknüpfungsregeln** | Wenn die Validierung einer Verknüpfung fehlschlägt, müssen die aktuelle Verknüpfung und die durch dasselbe Ereignis ausgelösten nachfolgenden Verknüpfungen beendet werden. |
 | **Aktionsereignisse** | Die Vorab-Validierung einer Aktion schlägt fehl (z. B. Berechtigungsprüfung vor dem Löschen), wodurch die Hauptaktion und die folgenden Schritte verhindert werden müssen. |
 
-> Unterschied zu `ctx.exit()`: `ctx.exit()` beendet nur den aktuellen Workflow; `ctx.exitAll()` beendet den aktuellen Workflow und alle **noch nicht ausgeführten** nachfolgenden Workflows in derselben Ereignis-Verteilung.
+> `ctx.exit()` / `ctx.exitAll()` — Beide Aufrufe beenden den aktuellen Schritt und überspringen alle noch ausstehenden sequenziellen Flows desselben Ereignisses. Bereits parallel laufende Flows werden fortgesetzt.
 
 ## Typdefinition
 
@@ -21,13 +21,6 @@ exitAll(): never;
 ```
 
 Der Aufruf von `ctx.exitAll()` wirft eine interne `FlowExitAllException` aus, die von der Workflow-Engine abgefangen wird, um die aktuelle Workflow-Instanz und nachfolgende Workflows unter demselben Ereignis zu stoppen. Sobald die Funktion aufgerufen wird, werden die verbleibenden Anweisungen im aktuellen JS-Code nicht mehr ausgeführt.
-
-## Vergleich mit ctx.exit()
-
-| Methode | Wirkungsbereich |
-|------|----------|
-| `ctx.exit()` | Beendet nur den aktuellen Workflow; nachfolgende Workflows bleiben unberührt. |
-| `ctx.exitAll()` | Beendet den aktuellen Workflow und bricht nachfolgende Workflows ab, die **sequenziell** unter demselben Ereignis ausgeführt werden. |
 
 ## Erläuterung der Ausführungsmodi
 
@@ -58,22 +51,6 @@ if (!canDelete) {
 }
 ```
 
-### Wahl zwischen ctx.exit() und ctx.exitAll()
-
-```ts
-// Nur der aktuelle Workflow soll beendet werden -> ctx.exit() verwenden
-if (!params.valid) {
-  ctx.message.error('Ungültige Parameter');
-  ctx.exit();  // Nachfolgende Workflows sind nicht betroffen
-}
-
-// Alle nachfolgenden Workflows unter dem aktuellen Ereignis beenden -> ctx.exitAll() verwenden
-if (!ctx.model?.context?.getPermission?.()) {
-  ctx.notification.warning({ message: 'Unzureichende Berechtigungen' });
-  ctx.exitAll();  // Sowohl der Haupt-Workflow als auch nachfolgende Workflows desselben Ereignisses werden beendet
-}
-```
-
 ### Erst Hinweis ausgeben, dann beenden
 
 ```ts
@@ -87,11 +64,10 @@ if (!isValidInput(ctx.form?.getValues?.())) {
 
 - Nach dem Aufruf von `ctx.exitAll()` wird der nachfolgende Code im aktuellen JS nicht mehr ausgeführt. Es wird empfohlen, dem Benutzer den Grund vor dem Aufruf über `ctx.message`, `ctx.notification` oder ein Modal zu erklären.
 - Im Business-Code ist es normalerweise nicht erforderlich, die `FlowExitAllException` abzufangen; überlassen Sie dies der Workflow-Engine.
-- Wenn Sie nur den aktuellen Workflow stoppen möchten, ohne die nachfolgenden zu beeinflussen, verwenden Sie `ctx.exit()`.
 - Im parallelen Modus beendet `ctx.exitAll()` nur den aktuellen Workflow und unterbricht keine anderen bereits laufenden Workflows.
 
 ## Verwandte Themen
 
-- [ctx.exit()](./exit.md): Beendet nur den aktuellen Workflow
+- [ctx.exit()](./exit.md)
 - [ctx.message](./message.md): Nachrichten-Hinweise
 - [ctx.modal](./modal.md): Bestätigungs-Modal

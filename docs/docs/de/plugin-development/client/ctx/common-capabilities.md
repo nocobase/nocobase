@@ -471,7 +471,7 @@ Die folgenden Fähigkeiten kommen in fortgeschrittenen Szenarien zum Einsatz, hi
 | ----------------------- | ----------------------------------------------- |
 | `ctx.model`             | Aktuelle FlowModel-Instanz (verfügbar im Flow-Ausführungskontext) |
 | `ctx.ref`               | Component-Referenz, in Verbindung mit `ctx.onRefReady` verwendbar |
-| `ctx.exit()`            | Ausführung des aktuellen Flow beenden                            |
+| `ctx.exit()`, `ctx.exitAll()` | Beide Aufrufe beenden den aktuellen Schritt und überspringen alle noch ausstehenden sequenziellen Flows desselben Ereignisses. Bereits parallel laufende Flows werden fortgesetzt. |
 | `ctx.defineProperty()`  | Dem Kontext dynamisch eine benutzerdefinierte Eigenschaft hinzufügen                      |
 | `ctx.defineMethod()`    | Dem Kontext dynamisch eine benutzerdefinierte Methode hinzufügen                      |
 | `ctx.useResource()`     | Datenressourcen-Operationsschnittstelle abrufen                            |

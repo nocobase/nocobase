@@ -471,7 +471,7 @@ Kapabilitas berikut mungkin digunakan dalam skenario yang lebih lanjut, di sini 
 | ----------------------- | ----------------------------------------------- |
 | `ctx.model`             | Instance FlowModel saat ini (tersedia dalam Context eksekusi Flow) |
 | `ctx.ref`               | Referensi Component, digunakan dengan `ctx.onRefReady`            |
-| `ctx.exit()`            | Keluar dari eksekusi Flow saat ini                            |
+| `ctx.exit()`, `ctx.exitAll()` | Kedua pemanggilan mengakhiri langkah saat ini dan melewati flow sekuensial yang tersisa pada event yang sama. Flow yang sudah berjalan secara paralel tetap berlanjut. |
 | `ctx.defineProperty()`  | Menambahkan properti kustom secara dinamis ke Context                      |
 | `ctx.defineMethod()`    | Menambahkan method kustom secara dinamis ke Context                      |
 | `ctx.useResource()`     | Mendapatkan interface operasi resource data                            |

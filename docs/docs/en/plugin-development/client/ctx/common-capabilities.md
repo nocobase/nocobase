@@ -471,7 +471,7 @@ The following capabilities may be useful in more advanced scenarios. Here is a b
 | ----------------------- | ---------------------------------------------------------------- |
 | `ctx.model`             | Current FlowModel instance (available in Flow execution context) |
 | `ctx.ref`               | Component reference, used with `ctx.onRefReady`                  |
-| `ctx.exit()`            | Exit the current Flow execution                                  |
+| `ctx.exit()`, `ctx.exitAll()` | Both calls stop the current step and skip the remaining flows in the same sequential event dispatch. Flows already running in parallel continue. |
 | `ctx.defineProperty()`  | Dynamically add custom properties to the context                 |
 | `ctx.defineMethod()`    | Dynamically add custom methods to the context                    |
 | `ctx.useResource()`     | Get data resource operation interface                            |

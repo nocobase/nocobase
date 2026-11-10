@@ -471,7 +471,7 @@ FlowModel 是 NocoBase 可视化配置体系的核心——如果你的组件需
 | ----------------------- | ----------------------------------------------- |
 | `ctx.model`             | 当前 FlowModel 实例（在 Flow 执行上下文中可用） |
 | `ctx.ref`               | 组件引用，搭配 `ctx.onRefReady` 使用            |
-| `ctx.exit()`            | 退出当前 Flow 的执行                            |
+| `ctx.exit()`, `ctx.exitAll()` | 两种调用都会结束当前步骤，并跳过同一事件中尚未开始的串行流程。已经开始并行执行的流程会继续运行。 |
 | `ctx.defineProperty()`  | 向上下文动态添加自定义属性                      |
 | `ctx.defineMethod()`    | 向上下文动态添加自定义方法                      |
 | `ctx.useResource()`     | 获取数据资源操作接口                            |
