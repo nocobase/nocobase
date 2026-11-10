@@ -1,3 +1,4 @@
+export { apiClientToken } from '../../../../packages/app/app-client/src/application.js';
 export { ClientApplicationContext } from '../../../../packages/app/app-client/src/application-context.js';
 export { useSubmission } from '../../../../packages/app/app-client/src/submission.js';
 export { usePendingFeedback } from '../../../../packages/app/app-client/src/pending-feedback.js';
