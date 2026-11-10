@@ -10,10 +10,12 @@ it('does not degrade a selected unregistered indexing backend into unavailable i
     config: {
       jobs: {
         default: 'memory',
-        memory: { adapter: 'memory' },
-        commercial: {
-          adapter: 'redis',
-          connection: { host: '127.0.0.1', port: 1 },
+        backends: {
+          memory: { adapter: 'memory' },
+          commercial: {
+            adapter: 'redis',
+            connection: { host: '127.0.0.1', port: 1 },
+          },
         },
       },
       knowledge: { jobs: 'commercial' },

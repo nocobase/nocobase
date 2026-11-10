@@ -2,6 +2,69 @@
 
 All notable changes to NocoBase 3 are documented in this file, one section per release: `nocobase-v3-beta/<date>.<n>` for a beta and `release/<date>.<n>` for a stable release. The versions each release published are on its GitHub Release, and every package's own changes are in its CHANGELOG.md.
 
+## [nocobase-v3-beta/2026-11-09.3](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-09.3)
+
+### 🎉 New Features
+
+- **[Skills]** Add Agent Skills for configuring and verifying multi-instance applications and shared Redis backends. ([#11397](https://github.com/nocobase/nocobase/pull/11397)) by @chenos
+- **[App foundation]** Add a `foundation.scanOnStart` setting that stops App Foundation from scanning at application start, and turn it off for test applications so tests start and close faster. ([#11403](https://github.com/nocobase/nocobase/pull/11403)) by @Molunerfinn
+
+### 🚀 Improvements
+
+- **[App templates]** Improve Database explorer browsing and mobile page spacing, and move Features and extensions into System settings with configurable access permissions. ([#11386](https://github.com/nocobase/nocobase/pull/11386)) by @chenos
+
+## [nocobase-v3-beta/2026-11-09.2](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-09.2)
+
+### 🚀 Improvements
+
+- **[App foundation]** Features and extensions now opens the first matching feature by default on desktop while preserving search filters. ([#11396](https://github.com/nocobase/nocobase/pull/11396)) by @chenos
+
+### 🐛 Bug Fixes
+
+- **[App templates]** Keep generated application catalog checks compatible with additional plugins that use generic introductions. ([#11399](https://github.com/nocobase/nocobase/pull/11399)) by @chenos
+
+## [nocobase-v3-beta/2026-11-09.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-09.1)
+
+### 🎉 New Features
+
+- **[Agents]** Preserve quota-limited work on its original Runner and resume the original session when quota recovers. ([#11372](https://github.com/nocobase/nocobase/pull/11372)) by @2013xile
+- **[Languages]** Add Russian and Korean to the agents, projects, releases, knowledge and other core plugins, and correct mistranslated terms such as "issue" and "executor" in their other languages. ([#11379](https://github.com/nocobase/nocobase/pull/11379)) by @2013xile
+- **[App foundation]** Discover application features and extensions in System settings, inspect their configuration, and use Agent setup guidance alongside database browsing. ([#11383](https://github.com/nocobase/nocobase/pull/11383)) by @chenos
+
+### 🚀 Improvements
+
+- **[Authentication]** Configure password recovery through auth.passwordReset.mailer; move existing auth.email.mailer references directly to the new field. ([#11346](https://github.com/nocobase/nocobase/pull/11346)) by @cgyrock
+- **[Permissions]** Reduce redundant database reads during permission checks and automatic ticket closure. ([#11357](https://github.com/nocobase/nocobase/pull/11357)) by @chenos
+- **[Agents]**
+  - A run history's agent filter can list only the agents that ran on that subject, including removed ones. ([#11367](https://github.com/nocobase/nocobase/pull/11367)) by @app/nocobase-studio
+  - Runtime owners and administrators can clear a quota mark before its known reset time, and a mark lifts by itself when the same quota window reports quota left again. ([#11369](https://github.com/nocobase/nocobase/pull/11369)) by @2013xile
+  - Allow applications to keep fixed instructions first in independent agent sessions for better prompt cache reuse. ([#11371](https://github.com/nocobase/nocobase/pull/11371)) by @2013xile
+  - Share queued agent runs between runners in proportion to each runner's limit for the run's coding tool, so idler runners take the next run first. ([#11388](https://github.com/nocobase/nocobase/pull/11388)) by @2013xile
+- **[Release management]**
+  - Show each shared app host once on the environments page as a capacity card linking to its running apps; the apps list shows each app's runtime state with why and filters by it, and an app's page mentions the host only when it affects that app. ([#11380](https://github.com/nocobase/nocobase/pull/11380)) by @2013xile
+  - Apps are listed and created on their environment's page, with each app's runtime state and a state filter; a shared host's card links to each environment's running apps. ([#11385](https://github.com/nocobase/nocobase/pull/11385)) by @2013xile
+- **[Projects]** Issue activity says "added a relation to" or "removed the relation to" for related issues, on both issues, instead of calling them dependencies. ([#11389](https://github.com/nocobase/nocobase/pull/11389)) by @2013xile
+- **[Realtime updates]** Configure application realtime brokers under `realtime.broker`, preserving the in-memory default and reporting legacy configuration paths with migration guidance. ([#11392](https://github.com/nocobase/nocobase/pull/11392)) by @cgyrock
+- **[Server]** Standardize Concurrency, Jobs and Queue settings under `backends` and reject legacy or mixed configuration with migration guidance instead of silently falling back to local execution. ([#11393](https://github.com/nocobase/nocobase/pull/11393)) by @cgyrock
+
+### 🐛 Bug Fixes
+
+- **[Database]** Improve indexed sorting of non-nullable fields while preserving null ordering and pagination. ([#11356](https://github.com/nocobase/nocobase/pull/11356)) by @chenos
+- **[App host]**
+  - Keep preview admission stable when transient heap usage rises while preserving bounded Host rotation. ([#11359](https://github.com/nocobase/nocobase/pull/11359)) by @2013xile
+  - Keep shared application Hosts responsive with bounded archive work, live memory admission and recycling that protects active requests and deployments. ([#11373](https://github.com/nocobase/nocobase/pull/11373)) by @2013xile
+- **[Agents]**
+  - Preserve refused chat messages for recovery and present a consistent next step for conversation problems. ([#11361](https://github.com/nocobase/nocobase/pull/11361)) by @2013xile
+  - Retry temporary repository access problems before starting an Agent and show the actual failure when preparation cannot recover. ([#11374](https://github.com/nocobase/nocobase/pull/11374)) by @2013xile
+  - Start a fresh agent session when switching between read-only and writable work, while keeping existing writable sessions reusable. ([#11377](https://github.com/nocobase/nocobase/pull/11377)) by @2013xile
+  - A conversation interrupted by a dropped connection recovers once it is idle and refreshed. ([#11381](https://github.com/nocobase/nocobase/pull/11381)) by @2013xile
+- **[App templates]**
+  - Remove the floating annotation toolbar from newly generated Examples applications. ([#11366](https://github.com/nocobase/nocobase/pull/11366)) by @gchust
+  - Applications in a language other than English no longer show "Loading application…" in English while they start. ([#11376](https://github.com/nocobase/nocobase/pull/11376)) by @chenos
+- **[Release management]** Let release page descriptions use the available width while keeping page actions visible. ([#11368](https://github.com/nocobase/nocobase/pull/11368)) by @gchust
+- **[Skills]** The UI component checker now flags native and shadcn Input date fields, and the Examples work calendar picks holiday dates from a calendar instead of the browser's native date picker. ([#11378](https://github.com/nocobase/nocobase/pull/11378)) by @chenos
+- **[Agent runner]** Automatically recover runner services after unexpected termination while keeping explicit stops stopped and reporting failed update restarts. ([#11384](https://github.com/nocobase/nocobase/pull/11384)) by @2013xile
+
 ## [nocobase-v3-beta/2026-11-06.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-06.1)
 
 ### 🎉 New Features

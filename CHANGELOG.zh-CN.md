@@ -2,6 +2,69 @@
 
 本文件记录 NocoBase 3 的所有重要变更，每次发布一节：`nocobase-v3-beta/<日期>.<序号>` 是预览版，`release/<日期>.<序号>` 是正式版。每次发布的包版本见对应的 GitHub Release，各个包自己的变更见包内的 CHANGELOG.md。
 
+## [nocobase-v3-beta/2026-11-09.3](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-09.3)
+
+### 🎉 新特性
+
+- **[Skills]** 新增指导 Agent 配置和验证多实例应用及 Redis 共享后端的 Skills。 ([#11397](https://github.com/nocobase/nocobase/pull/11397)) by @chenos
+- **[应用基础]** 新增 `foundation.scanOnStart` 配置，可关闭应用启动时的 App Foundation 扫描；测试应用默认关闭，测试启动和关闭更快。 ([#11403](https://github.com/nocobase/nocobase/pull/11403)) by @Molunerfinn
+
+### 🚀 优化
+
+- **[应用模板]** 改进数据库浏览器布局和移动端页面间距，将功能与扩展移至系统设置路径并支持配置访问权限。 ([#11386](https://github.com/nocobase/nocobase/pull/11386)) by @chenos
+
+## [nocobase-v3-beta/2026-11-09.2](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-09.2)
+
+### 🚀 优化
+
+- **[应用基础]** 桌面端进入功能与扩展时默认打开第一个匹配功能，并保留筛选条件。 ([#11396](https://github.com/nocobase/nocobase/pull/11396)) by @chenos
+
+### 🐛 修复
+
+- **[应用模板]** 修复生成应用安装扩展插件后，功能目录测试因使用通用介绍而误报失败的问题。 ([#11399](https://github.com/nocobase/nocobase/pull/11399)) by @chenos
+
+## [nocobase-v3-beta/2026-11-09.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-09.1)
+
+### 🎉 新特性
+
+- **[Agent]** Agent 额度用完后保留原 Runner 上的工作，并在额度恢复后继续原会话。 ([#11372](https://github.com/nocobase/nocobase/pull/11372)) by @2013xile
+- **[多语言]** Agent、项目、发布、知识库等核心插件新增俄语和韩语，并修正其他语言中“任务”“执行者”等术语的错译。 ([#11379](https://github.com/nocobase/nocobase/pull/11379)) by @2013xile
+- **[应用基础]** 在系统设置中查看功能与扩展及其配置情况，通过 Agent 指引添加或完善功能，并浏览数据库连接、数据表和字段。 ([#11383](https://github.com/nocobase/nocobase/pull/11383)) by @chenos
+
+### 🚀 优化
+
+- **[认证]** 找回密码改用 auth.passwordReset.mailer 配置发件服务，原 auth.email.mailer 引用需直接改到新字段。 ([#11346](https://github.com/nocobase/nocobase/pull/11346)) by @cgyrock
+- **[权限]** 减少权限检查和工单自动关闭过程中的重复数据库读取。 ([#11357](https://github.com/nocobase/nocobase/pull/11357)) by @chenos
+- **[Agent]**
+  - 运行记录的 Agent 筛选可以只列出在该对象上运行过的 Agent，包括已删除的 Agent。 ([#11367](https://github.com/nocobase/nocobase/pull/11367)) by @app/nocobase-studio
+  - 执行机所有者和管理员可以在已知重置时间之前清除额度标记；同一额度窗口再次上报未用完时，标记会自动解除。 ([#11369](https://github.com/nocobase/nocobase/pull/11369)) by @2013xile
+  - 支持应用将独立 Agent 会话的固定指令前置，提高提示缓存复用机会。 ([#11371](https://github.com/nocobase/nocobase/pull/11371)) by @2013xile
+  - 执行机按各自对该编码工具的并发上限等比例领取排队的 Agent 任务，越空闲的执行机越先领到。 ([#11388](https://github.com/nocobase/nocobase/pull/11388)) by @2013xile
+- **[发布管理]**
+  - 托管环境列表页为每个共享宿主显示一张容量卡片，并可跳到其运行中的应用；应用列表显示运行状态和原因并可按状态筛选；应用页只在受宿主影响时提示。 ([#11380](https://github.com/nocobase/nocobase/pull/11380)) by @2013xile
+  - 应用改在环境详情页查看和创建，显示每个应用的运行状态并可按状态筛选；共享宿主卡片按环境链到运行中的应用。 ([#11385](https://github.com/nocobase/nocobase/pull/11385)) by @2013xile
+- **[项目]** 任务动态中添加或移除关联时，双方任务都显示「添加了关联」「移除了关联」，不再显示为依赖。 ([#11389](https://github.com/nocobase/nocobase/pull/11389)) by @2013xile
+- **[实时更新]** 将应用实时消息的 Broker 配置统一放在 `realtime.broker` 下，保留默认内存模式，并在使用旧配置路径时提供迁移提示。 ([#11392](https://github.com/nocobase/nocobase/pull/11392)) by @cgyrock
+- **[服务端]** 统一将 Concurrency、Jobs 和 Queue 的后端配置放在 `backends` 下，旧配置或混合配置会明确提示迁移，不再静默回退到本地执行。 ([#11393](https://github.com/nocobase/nocobase/pull/11393)) by @cgyrock
+
+### 🐛 修复
+
+- **[数据库]** 优化非空字段的索引排序，同时保持空值排序和分页语义。 ([#11356](https://github.com/nocobase/nocobase/pull/11356)) by @chenos
+- **[应用托管]**
+  - 堆用量短暂升高时保持预览名额准入稳定，并保留宿主轮换的最长等待期限。 ([#11359](https://github.com/nocobase/nocobase/pull/11359)) by @2013xile
+  - 通过有界归档处理、实时内存准入及保护在途请求和部署的回收机制，保持共享应用托管服务可用。 ([#11373](https://github.com/nocobase/nocobase/pull/11373)) by @2013xile
+- **[Agent]**
+  - 保留被拒的对话消息以便恢复，并为对话问题显示统一的下一步。 ([#11361](https://github.com/nocobase/nocobase/pull/11361)) by @2013xile
+  - Agent 启动前遇到仓库临时故障时自动退避重试，无法恢复时保留准确的失败原因。 ([#11374](https://github.com/nocobase/nocobase/pull/11374)) by @2013xile
+  - Agent 在只读与可写工作之间切换时开启新会话，同时保留已有可写会话的复用。 ([#11377](https://github.com/nocobase/nocobase/pull/11377)) by @2013xile
+  - 连接中断过的对话在空闲并刷新后恢复正常。 ([#11381](https://github.com/nocobase/nocobase/pull/11381)) by @2013xile
+- **[应用模板]**
+  - 移除新建 Examples 应用默认加载的底部悬浮标注工具栏。 ([#11366](https://github.com/nocobase/nocobase/pull/11366)) by @gchust
+  - 非英文界面的应用启动时不再先显示英文的 “Loading application…”。 ([#11376](https://github.com/nocobase/nocobase/pull/11376)) by @chenos
+- **[发布管理]** 发布页面说明充分利用可用宽度，同时保持页面操作按钮可见。 ([#11368](https://github.com/nocobase/nocobase/pull/11368)) by @gchust
+- **[Skills]** UI 组件检查现在会报告原生和 shadcn Input 日期字段；Examples 工作日历的节假日日期改为从日历中选择，不再弹出浏览器原生日期选择器。 ([#11378](https://github.com/nocobase/nocobase/pull/11378)) by @chenos
+- **[Agent 运行器]** Runner 服务意外终止后自动恢复，主动停止后保持停止，并报告更新重启失败。 ([#11384](https://github.com/nocobase/nocobase/pull/11384)) by @2013xile
+
 ## [nocobase-v3-beta/2026-11-06.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-06.1)
 
 ### 🎉 新特性

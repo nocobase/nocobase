@@ -1,5 +1,12 @@
 # @nocobase/app-plugin-office-flows-example
 
+## 0.1.0-beta.12
+
+### Patch Changes
+
+- 8be5180: Reduce mobile page padding consistently across application templates and plugin pages while preserving tablet and desktop spacing.
+- @nocobase/app-plugin-authentication@2.0.0-beta.20
+
 ## 0.1.0-beta.11
 
 ### Patch Changes

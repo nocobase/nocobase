@@ -1,5 +1,106 @@
 # @nocobase/app-template-default
 
+## 1.0.0-beta.92
+
+### Patch Changes
+
+- 8be5180: Move Features and extensions to `/settings/capabilities`. Require a grantable page permission for Features and extensions, protect direct detail links, and expose its access control under system configuration permissions.
+- 8be5180: Use compact default-connection badges and vertically aligned labels in the database explorer connection selector.
+- 8be5180: Show the Database Explorer in System settings again, and make browsing it easier: the table list and fields scroll on their own with the table name and column headings kept in view, the table list is a single Tab stop navigated with the arrow keys, narrow screens show compact fields with a pinned way back to the tables, switching tables keeps a placeholder instead of an empty panel, relation fields no longer show an unknown nullability, unrelated inspection notes are hidden, and long names wrap at word boundaries.
+- f5b066d: Use sentence case for the Database explorer page title and navigation labels.
+- 3e87619: App Foundation's `foundation.scanOnStart` setting (`FOUNDATION_SCAN_ON_START`, factory `defineFoundationConfig()` from `@nocobase/app-plugin-foundation/config`) turns off the background scan an application submits at start; it defaults to `true`. With it off, opening the page, Refresh and Count records still start a scan. `createTestAppConfig()` in `@nocobase/app-testing` sets `foundation: { scanOnStart: false }` for every test application, so tests no longer spend seconds of CPU on the scan or wait for it when the application closes; pass `config: { foundation: { scanOnStart: true } }` to keep it. Both templates register the `foundation` section.
+- 8be5180: Keep homepage capability descriptions visible while hiding catalog links from users without access to Features and extensions.
+- 8be5180: Reduce mobile page padding consistently across application templates and plugin pages while preserving tablet and desktop spacing.
+- 8be5180: Separate System settings from business navigation with consistent sidebar group spacing on desktop and mobile.
+- Updated dependencies [8be5180]
+- Updated dependencies [8be5180]
+- Updated dependencies [3e87619]
+- Updated dependencies [8be5180]
+  - @nocobase/app-plugin-foundation@0.1.0-beta.19
+  - @nocobase/app-plugin-agents@2.0.0-beta.8
+  - @nocobase/app-plugin-mail@1.0.0-beta.23
+
+## 1.0.0-beta.91
+
+### Patch Changes
+
+- ae35635: Allow generated application catalog checks to pass with additional plugins that use generic introductions.
+- Updated dependencies [368299b]
+  - @nocobase/app-plugin-foundation@0.1.0-beta.18
+
+## 1.0.0-beta.90
+
+### Patch Changes
+
+- c522d01: Describe authentication through separate password sign-in, registration, recovery and device approval entries, using application configuration and recovery availability instead of treating a login page as proof of every capability. Provide focused Agent guidance for each authentication setup task.
+- c522d01: Clarify authorization management interface availability separately from assigned permissions and existing rules. Provide dedicated Agent guidance for business permission support, role configuration, user assignments, default access, sharing and restriction rules.
+- 5cf3515: Show only the brand loading mark before the client starts, so a non-English application no longer flashes "Loading application…" in English. Screen readers perceive it as a progress bar named after the brand, announced in their own language, until the localized loading appears. Existing applications can apply the same change to their own `index.html`.
+- c522d01: Present Features and extensions in System settings with consistent capability details showing their purpose, current configuration and management entries, and expandable Agent requests for adding or improving features. Combine language capabilities into one entry and distinguish personal and application API key management interfaces.
+- c522d01: Add a capability guide at `/capabilities` listing the application's core modules and dependent plugins, including examples. Browse a numbered catalog with type and keyword filters, then open consistent details explaining each capability's purpose, current configuration, and how to add or improve it with an Agent. The home page links to the same catalog, while the protected runtime foundation page retains its URL and access.
+- c522d01: Add a concurrency configuration overview with explicit unavailable runtime values and focused Agent guidance for shared coordination, independent services and default service selection. Clarify that concurrency control does not replace idempotency.
+- c522d01: Restore database connection summaries and expandable effective configuration in Features and extensions, with a structured Agent request form and separate guidance for adding connections and adjusting their default, schema management, connection settings and naming rules.
+- c522d01: Clarify the Database Explorer interface and its application-wide access permission. Provide focused Agent guidance for adding the read-only browser and configuring access without implying per-connection or field-level restrictions.
+- f24a673: The UI component checker now reports native and shadcn `Input` date and date-time inputs with date picker advice, and the application development Skill documents how to compose and reuse an application-owned `DatePicker`. The Examples work calendar picks holiday dates from that `DatePicker` instead of the browser's native calendar, and both templates ship its Clear label.
+- 7508a76: Move the password-reset mailer reference from auth.email.mailer to auth.passwordReset.mailer. Update existing references directly; the old field is no longer accepted. Keep private inline SMTP/Resend settings, existing environment mappings, callbacks and default sender selection.
+- c522d01: Introduce a file configuration guide separating Drive storage from file collections, with explicit unavailable inventory values and Agent guidance for configuring disks and File Repository collections.
+- c522d01: Provide the feature configuration detail pages directly from the Foundation plugin so applications can reuse them without template-owned pages or locale resources. Discover application routes and permissions through public runtime APIs and remove duplicate template implementations.
+- c522d01: Present the capability catalog as Features and extensions in System settings, replacing the App usage entry while preserving the protected runtime page. Use the header breadcrumb to return from an entry without losing catalog filters.
+- 7d970d6: Group application realtime broker selection and implementation options under realtime.broker, preserving the local default and service-level settings. Reject legacy adapter/redis paths with migration guidance, and validate explicitly configured brokers without filling missing adapters from template defaults. Redis deployments must upgrade the host and matching commercial plugin together and migrate code defaults, YAML, environment mappings and configuration scripts; rollback must restore matching configuration.
+- efdc78b: Remove the Database Explorer card from System settings while preserving its protected route and feature-detail links.
+- bb1dff2: **Breaking configuration migration:** Concurrency, Jobs and Queue now declare named configurations under `backends`, with `default` selecting a name in that map. Move all direct entries into `backends` in both YAML and application-owned configuration factories. Legacy, unknown and mixed top-level fields are rejected even when unused; Queue no longer ignores `connections`, `worker`, `jobs` or invalid defaults with a Memory fallback. Preserve existing adapter names, connections, namespaces, persistence paths and business resource names; no Redis data migration is required.
+- c522d01: Add a permission-aware Database Explorer to System settings for browsing database connections, tables, and fields.
+- Updated dependencies [c522d01]
+- Updated dependencies [c522d01]
+- Updated dependencies [f37a169]
+- Updated dependencies [bf9857b]
+- Updated dependencies [8c9cdae]
+- Updated dependencies [c522d01]
+- Updated dependencies [c522d01]
+- Updated dependencies [7508a76]
+- Updated dependencies [c522d01]
+- Updated dependencies [c522d01]
+- Updated dependencies [c522d01]
+- Updated dependencies [c522d01]
+- Updated dependencies [c522d01]
+- Updated dependencies [c522d01]
+- Updated dependencies [c522d01]
+- Updated dependencies [fb4659d]
+- Updated dependencies [c635b6c]
+- Updated dependencies [6fbf389]
+- Updated dependencies [1cda4c3]
+- Updated dependencies [7d970d6]
+- Updated dependencies [f37a169]
+- Updated dependencies [3eff32d]
+- Updated dependencies [764fc1b]
+- Updated dependencies [10aabd6]
+- Updated dependencies [faa534f]
+- Updated dependencies [4649c90]
+- Updated dependencies [bb1dff2]
+- Updated dependencies [a2a6385]
+  - @nocobase/app-plugin-foundation@0.1.0-beta.17
+  - @nocobase/app-plugin-agents@2.0.0-beta.7
+  - @nocobase/app-plugin-authentication@2.0.0-beta.20
+  - @nocobase/app-server@5.0.0-beta.2
+  - @nocobase/app-plugin-authorization@1.0.0-beta.37
+  - @nocobase/db@1.0.0-beta.26
+  - @nocobase/realtime@1.0.0-beta.2
+  - @nocobase/jobs@1.0.0-beta.6
+  - @nocobase/queue@1.0.0-beta.11
+  - @nocobase/app-plugin-concurrency@0.1.0-beta.3
+  - @nocobase/app-plugin-knowledge@0.1.0-beta.18
+  - @nocobase/app-plugin-mail@1.0.0-beta.22
+  - @nocobase/app-plugin-notification@2.0.0-beta.6
+  - @nocobase/app-plugin-scheduler@1.0.0-beta.24
+  - @nocobase/app-plugin-authz-default-access@1.0.0-beta.20
+  - @nocobase/app-plugin-authz-restriction-rules@1.0.0-beta.18
+  - @nocobase/app-plugin-authz-sharing-rules@1.0.0-beta.19
+  - @nocobase/app-plugin-file@1.0.0-beta.30
+  - @nocobase/app-plugin-i18n@1.0.0-beta.22
+  - @nocobase/app-plugin-notification-in-app@2.0.0-beta.3
+  - @nocobase/app-plugin-notification-providers@1.0.0-beta.19
+  - @nocobase/app-plugin-users@2.0.0-beta.17
+  - @nocobase/i18n@2.0.0-beta.2
+
 ## 1.0.0-beta.89
 
 ### Patch Changes

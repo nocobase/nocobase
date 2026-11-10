@@ -32,6 +32,8 @@ There is no cross-connection rollback. If the second reset fails, the first conn
 
 ## Execution structure
 
+The database task coordinator wraps execution through `context.execute(overrides)`. Each such execution snapshots its hooks and uses this planning and failure contract; coordinator-supplied task filters and sample enablement reach the business runners without moving preparation or resets out of the executor.
+
 An internal planner builds a linear list without I/O: storage preparation, schema reset, hooks and business tasks. A read-only install-history inspection step retains sample-data first-install detection before business tasks alter history. One executor awaits these steps, then one projection combines successful resets, business results and any failed phase. The planner alone expresses the hooked versus unhooked order; business execution neither prepares storage nor resets schemas. Unhooked non-preview execution preserves the existing storage preparation call per task, including repeated connections. Dry runs plan only read-only previews and never call storage preparation.
 
 ## Failure and ownership

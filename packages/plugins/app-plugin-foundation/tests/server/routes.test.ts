@@ -23,6 +23,58 @@ const OVERVIEW: FoundationOverview = {
 };
 
 describe('@nocobase/app-plugin-foundation API routes', () => {
+  it('reads registration names without scanning or leaking plugin internals', async () => {
+    const overview = vi.fn();
+    const app = application({ identity: 'unrestricted', overview });
+    const router = await apiRoutes.createRouter({
+      ...app,
+      registeredServerPlugins: [
+        {
+          packageName: '@nocobase/app-plugin-agents',
+          rootDir: '/private/app',
+          version: 'private',
+        },
+        { packageName: '@nocobase/app-plugin-agents' },
+      ],
+    } as AppPluginApplication);
+    const response = await router.request('/foundation/registrations');
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({
+      data: { serverPlugins: ['@nocobase/app-plugin-agents'] },
+    });
+    expect(overview).not.toHaveBeenCalled();
+  });
+
+  it.each([undefined, []])(
+    'distinguishes unavailable facts from no registrations (%s)',
+    async (serverPlugins) => {
+      const overview = vi.fn();
+      const router = await apiRoutes.createRouter({
+        ...application({ identity: 'unrestricted', overview }),
+        registeredServerPlugins: serverPlugins,
+      });
+      const response = await router.request('/foundation/registrations');
+      expect(await response.json()).toEqual({
+        data: { serverPlugins: serverPlugins ?? null },
+      });
+      expect(overview).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each(['anonymous', 'restricted'] as const)(
+    'protects registration facts for %s identities',
+    async (identity) => {
+      const overview = vi.fn();
+      const router = await apiRoutes.createRouter(
+        application({ identity, overview }),
+      );
+      expect((await router.request('/foundation/registrations')).status).toBe(
+        identity === 'anonymous' ? 401 : 403,
+      );
+      expect(overview).not.toHaveBeenCalled();
+    },
+  );
+
   it('contributes the protected Foundation routes', () => {
     expect(routes).toEqual([apiRoutes]);
   });

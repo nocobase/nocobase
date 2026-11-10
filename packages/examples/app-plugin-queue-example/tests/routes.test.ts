@@ -58,11 +58,13 @@ async function start(
   const queue = createQueueService(
     {
       default: 'memory',
-      memory: { adapter: 'inMemory', persistence: { path: directory } },
-      background: {
-        adapter: 'inMemory',
-        namespace: 'background',
-        persistence: { path: directory },
+      backends: {
+        memory: { adapter: 'inMemory', persistence: { path: directory } },
+        background: {
+          adapter: 'inMemory',
+          namespace: 'background',
+          persistence: { path: directory },
+        },
       },
     },
     { appName: 'main', storagePath: directory },

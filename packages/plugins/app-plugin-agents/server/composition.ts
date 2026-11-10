@@ -121,6 +121,8 @@ import {
   createClaimEligibility,
   createClaimService,
   createGitCredentialService,
+  createNpmCredentialRegistry,
+  createNpmCredentialService,
   createRepoAccessRegistry,
   createRunMountRegistry,
   createRunnerReports,
@@ -138,6 +140,8 @@ import {
   type ClaimEligibility,
   type ClaimService,
   type GitCredentialService,
+  type NpmCredentialRegistry,
+  type NpmCredentialService,
   type RunnerReports,
   type RepoAccessRegistry,
   type RunMountRegistry,
@@ -252,6 +256,8 @@ export interface Agents {
   readonly reports: RunnerReports;
   /** Repository credentials a runner asks for while it holds a run (`RepoAccessProvider.issue`). */
   readonly gitCredentials: GitCredentialService;
+  /** The private npm registry's token a runner asks for while it holds a run (`NpmCredentialProvider.issue`). */
+  readonly npmCredentials: NpmCredentialService;
   /** Marks silent runners offline, then takes back and ends the runs and jobs nobody will finish. */
   readonly sweeper: RunnerSweeper;
   readonly purgeRunData: () => Promise<number>;
@@ -271,6 +277,8 @@ export interface Agents {
   readonly mounts: RunMountRegistry;
   /** Who a run's commits name and the short-lived credentials its checkouts push with, as the application gives them. */
   readonly repoAccess: RepoAccessRegistry;
+  /** Where the token of NocoBase's private npm registry comes from, as the application gives it. */
+  readonly npmCredentialProviders: NpmCredentialRegistry;
   /** Names of people, from the directory the application plugs in. */
   readonly people: People;
   /**
@@ -440,6 +448,7 @@ export function createAgents(deps: AgentsDeps): Agents {
   const sections = createBriefSectionRegistry();
   const mounts = createRunMountRegistry();
   const repoAccess = createRepoAccessRegistry();
+  const npmCredentialProviders = createNpmCredentialRegistry();
   // The secrets claims hand out, so what runners report is redacted of them before it is stored.
   const secrets = createSecretMemory();
   const selectionPolicies = createModelSelectionPolicies();
@@ -484,6 +493,14 @@ export function createAgents(deps: AgentsDeps): Agents {
     reports,
     repoAccess,
     subjects,
+    secrets,
+    onError,
+  });
+  const npmCredentials = createNpmCredentialService({
+    tx,
+    clock,
+    reports,
+    providers: npmCredentialProviders,
     secrets,
     onError,
   });
@@ -695,6 +712,7 @@ export function createAgents(deps: AgentsDeps): Agents {
     selectionPolicies,
     reports,
     gitCredentials,
+    npmCredentials,
     sweeper,
     variables,
     skills,
@@ -709,6 +727,7 @@ export function createAgents(deps: AgentsDeps): Agents {
     }),
     mounts,
     repoAccess,
+    npmCredentialProviders,
     people,
     scopes,
     subjects,

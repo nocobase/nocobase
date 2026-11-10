@@ -1,5 +1,18 @@
 # @nocobase/agent-runner
 
+## 0.1.0-beta.24
+
+### Minor Changes
+
+- c635b6c: Preserve quota-limited work on its original Runner and resume its original tool session after quota resets. Support strict session restoration without automatic fallback to a new session, and let an explicit replacement run take over preserved work exactly once (`replacesRunId`).
+
+### Patch Changes
+
+- d124bd6: Recover runner services after every unexpected exit and delegate explicit stops and updates to the service manager, migrating installed restart policies automatically.
+- Updated dependencies [c635b6c]
+  - @nocobase/agent-protocol@0.1.0-beta.17
+  - @nocobase/app-cli-client@0.1.0-beta.19
+
 ## 0.1.0-beta.23
 
 ### Minor Changes

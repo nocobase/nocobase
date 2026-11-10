@@ -77,6 +77,11 @@ export interface RunRecord {
   readonly directoryKey: string | null;
   readonly claimFailures: number;
   readonly payloadFingerprint: string | null;
+  /**
+   * The kind of runner its actor wanted it to go to first when it was queued (`personal` or `team`; null: either),
+   * read by `claimPace`.
+   */
+  readonly runnerPreference?: string | null;
   /** While queued: the variables for shared runners only that kept a personal runner off it (`VariableRef[]`). */
   readonly teamOnlyVariables?: JsonColumn;
   /** While held: the repository URLs its runner may ask credentials for on demand (`RunGit.onDemand`); null otherwise. */
@@ -170,6 +175,23 @@ export interface SessionRecord {
 
 export function runsRepo(conn: DatabaseConnection): Repository<RunRecord> {
   return conn.repository<RunRecord>('agRuns');
+}
+
+/**
+ * The kind of runner `userId` wants their runs to go to first (`ChatPreferences.runnerPreference`, kept in
+ * `agChatPreferences`), as a run stores it: null for `auto`.
+ */
+export async function runnerPreferenceOf(
+  conn: DatabaseConnection,
+  userId: string,
+): Promise<'personal' | 'team' | null> {
+  const row = await conn
+    .repository<{ userId: string; runnerPreference: string | null }>(
+      'agChatPreferences',
+    )
+    .findOne({ filter: { userId } });
+  const preference = row?.runnerPreference;
+  return preference === 'personal' || preference === 'team' ? preference : null;
 }
 
 export function inputsRepo(conn: DatabaseConnection): Repository<InputRecord> {

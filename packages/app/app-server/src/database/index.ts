@@ -109,3 +109,12 @@ export {
   type DatabaseTaskHook,
   type DatabaseTaskHooks,
 } from './task-hooks.js';
+
+export { appDatabaseStorageExists } from './storage.js';
+export {
+  executeAppDatabasePlan,
+  databaseTaskCoordinatorToken,
+  type AppDatabasePlanExecutionOptions,
+  type AppDatabaseTaskCoordinatorContext,
+  type AppDatabaseTaskCoordinator,
+} from './tasks.js';

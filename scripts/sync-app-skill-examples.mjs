@@ -13,10 +13,12 @@ const files = [
   'client/pages/skill-projects/detail.tsx',
   'client/pages/skill-projects/edit.tsx',
   'client/pages/skill-projects/locales.ts',
+  'client/pages/skill-projects/scopes.ts',
   'server/routes/skill-projects.ts',
   'server/providers/skill-projects.ts',
   'database/main/migrations/202611030001_create_skill_projects.ts',
   'tests/client/skill-projects.test.tsx',
+  'tests/client/skill-projects-changes.test.tsx',
   'tests/server/skill-projects.test.ts',
   'tests/database/skill-projects-migration.test.ts',
 ];

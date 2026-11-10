@@ -4,7 +4,10 @@ import type {
   AppPluginProviderConstructor,
 } from '@nocobase/app-server/plugins';
 import { idGeneratorToken } from '@nocobase/app-server/id-generator';
-import { jobExecutorServiceToken } from '@nocobase/app-server/jobs';
+import {
+  jobExecutorServiceToken,
+  type AppJobsConfig,
+} from '@nocobase/app-server/jobs';
 import { loggingToken } from '@nocobase/app-server/logging';
 import { databaseManagerToken } from '@nocobase/db';
 import {
@@ -62,8 +65,13 @@ export function indexingProvider(
               .get<KnowledgeConfig>('knowledge')
               ?.jobs?.trim();
             if (name !== undefined) {
-              const jobs = this.app.config.get<Record<string, unknown>>('jobs');
-              const selected = jobs?.[name];
+              const jobs = this.app.config.get<AppJobsConfig>('jobs');
+              const selected =
+                name !== 'default' &&
+                jobs?.backends &&
+                Object.hasOwn(jobs.backends, name)
+                  ? jobs.backends[name]
+                  : undefined;
               if (
                 !/^[^\s]{1,100}$/.test(name) ||
                 !selected ||

@@ -69,7 +69,7 @@ export default class PluginUpdate extends AppCommand {
   } = {
     name: Args.string({
       description:
-        'Plugin to upgrade: a full @nocobase/app-plugin-* package name or a short name such as scheduler. Omit to upgrade every registered plugin.',
+        'Plugin to upgrade: a full scoped app-plugin-* or app-module-* package name or a short name such as scheduler. Omit to upgrade every registered plugin.',
       required: false,
     }),
   };

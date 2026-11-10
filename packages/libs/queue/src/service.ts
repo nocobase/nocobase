@@ -3,7 +3,6 @@ import { performance } from 'node:perf_hooks';
 import {
   BUILT_IN_MEMORY_KEY,
   IN_MEMORY_ADAPTER,
-  normalizeQueueConfig,
   queueConfigKeys,
   resolveQueueConfig,
   selectQueueConfig,
@@ -118,7 +117,7 @@ class DefaultQueueService implements QueueService, QueueHost {
     private readonly defaults: QueueServiceDefaults,
   ) {
     this.logger = defaults.logger ?? consoleLogger;
-    this.config = normalizeQueueConfig(config, this.logger);
+    this.config = config;
   }
 
   public registerImplementation(
@@ -228,7 +227,7 @@ class DefaultQueueService implements QueueService, QueueHost {
       ),
     );
     for (const key of queueConfigKeys(this.config)) {
-      const entry = this.config?.[key];
+      const entry = this.config?.backends?.[key];
       if (typeof entry !== 'object') {
         throw new TypeError(`queue.${key} must be a configuration object.`);
       }

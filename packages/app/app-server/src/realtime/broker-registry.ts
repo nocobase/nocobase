@@ -10,6 +10,7 @@ import {
 
 export interface RealtimeBrokerFactoryContext {
   readonly namespace: string;
+  /** Complete service configuration; implementation options live under config.broker. */
   readonly config: Readonly<Record<string, unknown>>;
   readonly logger?: RealtimeServiceOptions['logger'];
 }
@@ -57,7 +58,7 @@ export function createRealtimeBrokerRegistry(): RealtimeBrokerRegistry {
       const factory = factories.get(adapter);
       if (!factory)
         throw new Error(
-          `Realtime broker "${adapter}" is not registered. Install its implementation and register its Server plugin before resolving realtimeServiceToken.`,
+          'realtime.broker.adapter is not registered. Install its implementation and register its Server plugin before resolving realtimeServiceToken.',
         );
       return factory(context);
     },

@@ -5,6 +5,9 @@ const zhTW: FoundationResource = {
     settings: '系統設定',
     foundation: '應用底座',
     foundationDescription: '這個應用用到了哪些 NocoBase 基礎能力。',
+    capabilityGuide: '功能與擴充',
+    capabilityGuideDescription:
+      '了解目前應用程式已有的功能，以及如何運用它們建立業務功能。',
   },
   page: {
     otherCapabilities: '其他能力',

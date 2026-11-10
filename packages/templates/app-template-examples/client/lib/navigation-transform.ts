@@ -103,7 +103,35 @@ export function transformNavigation(
   items: RouteNavigationItem[],
   routes: readonly AppClientRegisteredRoute[],
 ): RouteNavigationItem[] {
-  return collapseSettingsNavigation(organizeNavigation(items, routes));
+  const organized = organizeNavigation(items, routes);
+  const hasGuide = organized.some(
+    (item) =>
+      item.route.name === SETTINGS_GROUP &&
+      item.children.some(
+        (child) =>
+          child.route.packageName === '@nocobase/app-plugin-foundation' &&
+          child.route.name === 'capabilityGuide',
+      ),
+  );
+  return collapseSettingsNavigation(organized).map((item) =>
+    hasGuide && item.route.name === SETTINGS_HOME
+      ? {
+          ...item,
+          activeRouteKeys: [
+            ...(item.activeRouteKeys ?? []),
+            ...routes
+              .filter(
+                (route) =>
+                  route.packageName === '@nocobase/app-plugin-foundation' &&
+                  ['capabilityGuide', 'capabilityGuideEntry'].includes(
+                    route.name,
+                  ),
+              )
+              .map((route) => `${route.packageName}:${route.path}:${route.id}`),
+          ],
+        }
+      : item,
+  );
 }
 
 /**
@@ -152,6 +180,7 @@ export function collapseSettingsNavigation(
     return [
       {
         route: { ...home, navigation: item.route.navigation },
+        startGroup: true,
         children: [],
         activeRouteKeys: [home, ...descendantPages(item.route)].map(
           (route) => `${route.packageName}:${route.path}:${route.id}`,

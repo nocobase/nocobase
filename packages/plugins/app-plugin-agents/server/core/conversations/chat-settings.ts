@@ -1,6 +1,6 @@
 /**
  * Who new conversations go to: the team's system default chat agent (`agSettings`, key `chat`) and each person's own
- * default (`agChatPreferences`).
+ * default (`agChatPreferences`), which also keeps the kind of runner their runs go to first (`runnerPreference`).
  */
 import type { DatabaseConnection } from '@nocobase/db';
 import { z } from 'zod';
@@ -10,6 +10,10 @@ import type {
   ChatPreferencesPatch,
   ChatSettings,
   ChatSettingsPatch,
+} from '../../../shared/conversations.js';
+import {
+  RUNNER_PREFERENCES,
+  toRunnerPreference,
 } from '../../../shared/conversations.js';
 import type { Clock } from '../../kernel/clock.js';
 import { forbidden, invalid } from '../../kernel/errors.js';
@@ -29,6 +33,11 @@ export const ChatPreferencesPatchSchema: z.ZodType<ChatPreferencesPatch> = z
       .max(64)
       .nullable()
       .describe('The default agent identifier.'),
+    runnerPreference: z
+      .enum(RUNNER_PREFERENCES)
+      .describe(
+        'Which kind of runner runs queued from now on go to first: auto, personal or team.',
+      ),
   })
   .partial();
 
@@ -87,6 +96,7 @@ export function createChatSettingsService(deps: {
     const row = await preferencesRepo(conn).findOne({ filter: { userId } });
     return {
       defaultAgentId: row?.defaultAgentId ?? null,
+      runnerPreference: toRunnerPreference(row?.runnerPreference),
     };
   }
 
@@ -162,6 +172,8 @@ export function createChatSettingsService(deps: {
         }
         const values = {
           defaultAgentId: next.defaultAgentId,
+          runnerPreference:
+            next.runnerPreference === 'auto' ? null : next.runnerPreference,
           updatedAt: clock.now().toISOString(),
         };
         const existing = await preferencesRepo(conn).findOne({

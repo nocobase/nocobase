@@ -1,5 +1,20 @@
 # @nocobase/app-host
 
+## 0.1.0-beta.21
+
+### Patch Changes
+
+- fb4659d: Bound archive workers with execution deadlines and deployment cancellation, terminate stalled processes before cleaning candidate files, and allow queued deployments to continue after failures.
+- 8b82537: Admit preview applications by fixed capacity slots without rejecting transient heap usage, and force Host rotation through a single maximum-wait timer.
+- fb4659d: Use live memory headroom and serialized bounded cold starts instead of static application slots, and recycle shared Hosts under memory pressure with whole-Host busy protection, atomic ingress handoff, bounded request drain after the maximum wait, background recovery that keeps management available, one retry for capacity-rejected deployments, status-aware idle activity and retryable proxy responses during Host restart/recovery.
+- fb4659d: Default the extra system memory reserve to zero while retaining cold-start headroom and heap admission checks. Operators can still configure an explicit reserve for other processes.
+- fb4659d: Show who shares an App's app host: a section on the App page lists the Apps of every environment running, starting, waiting or failed on it, why each holds a slot or waits (requests, connections, always running, recent use; not enough memory, the active App limit, a pending host restart), the shared process's memory as one total, a pending or running host restart, and environments whose Apps could not be restored. App badges show a refused start as waiting for a free slot, memory or the host restart.
+- 437f24f: Show each shared app host once on the environments page as a capacity card — apps running against its limit, heap and process memory, restart state — linking to its running apps in the apps list (`GET /api/releases/hosts`, which needs the `rel.environments` `read` setting). The apps list shows each app's runtime state, with why on hover or a tap, and filters by environment and runtime state (`environmentId` and `runtimeState`, repeatable, applied before paging). An app's page says in one line why the host affects it — waiting for a slot or memory, not restored after the host restarted (`runtime.unrestored`), or the host restarting — instead of repeating the whole host. The App Host reports its `maxActiveApps` limit in its status counters.
+- Updated dependencies [fb4659d]
+- Updated dependencies [7d970d6]
+- Updated dependencies [bb1dff2]
+  - @nocobase/app-server@5.0.0-beta.2
+
 ## 0.1.0-beta.20
 
 ### Minor Changes

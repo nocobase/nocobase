@@ -151,6 +151,8 @@ class DefaultMigrator implements Migrator {
         const executed: string[] = [];
 
         for (const migration of pending) {
+          if (this.options.taskFilter && !this.options.taskFilter(migration))
+            continue;
           if (migration.migration.shouldRun) {
             const shouldRun = await migration.migration.shouldRun({
               ...createMigrationContext(

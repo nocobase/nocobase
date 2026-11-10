@@ -114,7 +114,7 @@ describe('host-owned Knowledge job attempts', () => {
     const service = createJobExecutorService(
       {
         default: 'local',
-        local: { adapter: 'memory', attempts: 1, concurrency: 1 },
+        backends: { local: { adapter: 'memory', attempts: 1, concurrency: 1 } },
       },
       { appName: 'kb-fixture', storagePath: f.h.storage },
     );

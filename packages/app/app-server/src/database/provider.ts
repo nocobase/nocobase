@@ -101,6 +101,7 @@ export class DatabaseProvider extends ServiceProvider<DatabaseProviderApplicatio
     );
     const database = container.resolve(databaseManagerToken);
     const result = await executeAppDatabasePlan(database, config, plan, {
+      contributions: this.app.databaseTaskContributions,
       runtimeConfig: this.app.config,
       container: this.app.container,
       paths: this.app.paths,

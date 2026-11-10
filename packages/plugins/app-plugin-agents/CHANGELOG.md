@@ -1,5 +1,50 @@
 # @nocobase/app-plugin-agents
 
+## 2.0.0-beta.8
+
+### Patch Changes
+
+- 8be5180: Reduce mobile page padding consistently across application templates and plugin pages while preserving tablet and desktop spacing.
+- @nocobase/app-plugin-authentication@2.0.0-beta.20
+  - @nocobase/app-plugin-authorization@1.0.0-beta.37
+  - @nocobase/app-plugin-file@1.0.0-beta.30
+
+## 2.0.0-beta.7
+
+### Minor Changes
+
+- c635b6c: Preserve quota-limited work on its original Runner and resume its original tool session after quota resets. Support strict session restoration without automatic fallback to a new session, and let an explicit replacement run take over preserved work exactly once (`replacesRunId`).
+- 764fc1b: Share queued runs between runners in proportion to each runner's limit for the run's coding tool. A runner's claim now takes at most one run per request, and none when it takes jobs, so jobs are handed out at once. A run is handed out up to one second after it entered the queue, later the more of that tool the runner already runs against its limit, so idler runners take the next run first and a runner busy with one tool still takes another tool's runs at once. A claim that ends while it waits takes nothing. Runners need no update.
+- a2a6385: Add Russian (ru-RU) and Korean (ko-KR) to the plugins Studio uses, and correct terminology in their existing translations: an issue is a task (it was translated as a magazine issue or a problem in several languages), a runtime is an execution environment, Agent and My Agent stay consistent, and an issue's executor and the backlog status read correctly. The remaining English strings in the agents plugin's translations are translated. Calendars follow Russian and Korean, and a browser asking for Traditional Chinese (zh-HK, zh-Hant-TW) now lands on zh-TW instead of zh-CN.
+
+### Patch Changes
+
+- f37a169: Expose a single composer notice priority and clarify how to continue after an incompatible runtime refuses a message.
+- bf9857b: Clear a conversation's interrupted-stream state once it is idle and its history has caught up, including when a newer conversation read supersedes an explicit refresh.
+- 8c9cdae: Let runtime owners and administrators clear quota marks that have a known reset time, and lift a mark (and its notice) when the same window later reports quota left.
+- f37a169: Add `ChatSubmissions.restore()` so an application can put back a message an existing conversation refused before writing it, for example after a page reload, without sending it again.
+- 3eff32d: Add `GET /api/agents/runAgents`, which lists the agents with a run on one subject (removed and archived ones included, within the caller's run visibility), so a run history's agent filter offers only those agents.
+- 10aabd6: Start a fresh session when a runner agent switches between read-only and writable work, while preserving existing writable sessions.
+- faa534f: Allow applications to place fixed instructions before changing run details in independent-session prompts while retaining ordinary session reuse.
+- 4649c90: Keep temporary repository access failures queued with bounded backoff and structured diagnostics, independently of ordinary preparation failures, and retain actionable authorization refusals from running jobs.
+- Updated dependencies [7508a76]
+- Updated dependencies [fb4659d]
+- Updated dependencies [c635b6c]
+- Updated dependencies [6fbf389]
+- Updated dependencies [1cda4c3]
+- Updated dependencies [7d970d6]
+- Updated dependencies [bb1dff2]
+- Updated dependencies [a2a6385]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.20
+  - @nocobase/app-server@5.0.0-beta.2
+  - @nocobase/agent-protocol@0.1.0-beta.17
+  - @nocobase/app-plugin-authorization@1.0.0-beta.37
+  - @nocobase/db@1.0.0-beta.26
+  - @nocobase/app-plugin-file@1.0.0-beta.30
+  - @nocobase/i18n@2.0.0-beta.2
+  - @nocobase/app-cli-client@0.1.0-beta.19
+  - @nocobase/app-client@4.0.0-beta.9
+
 ## 2.0.0-beta.6
 
 ### Minor Changes

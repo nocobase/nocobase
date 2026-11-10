@@ -8,6 +8,7 @@ import type {
 } from '#components/permission-editor';
 import {
   buildRouteNavigation,
+  buildSettingsCatalog,
   type RouteNavigationItem,
 } from '../../routing/route-navigation.js';
 
@@ -44,11 +45,16 @@ export function pagePermissionResources(
         const id = route.authz.resource.id;
         // Resolved child routes may inherit the parent's authorization resource.
         // They share one grant, so showing independent checkboxes is misleading.
-        if (!resources.has(id))
+        const title = pagePermissionTitle(route, titles);
+        // Route ordering may put an untitled detail before its named entry page.
+        if (
+          !resources.has(id) ||
+          (title && typeof resources.get(id)?.title === 'string')
+        )
           resources.set(id, {
             type: 'page',
             id,
-            title: pagePermissionTitle(route, titles) ?? unnamed(route.path),
+            title: title ?? unnamed(route.path),
             actions: [{ name: 'access', title: { key: 'settings.access' } }],
           });
       }
@@ -86,6 +92,10 @@ function configurationResources(
     }
   };
   visit(routes);
+  // Include plugin pages moved into settings by the application's navigation transform.
+  for (const category of buildSettingsCatalog(routes, new Set())) {
+    for (const module of category.modules) visit([module.route], true);
+  }
   return resources;
 }
 

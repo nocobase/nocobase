@@ -9,6 +9,7 @@ import { AppConfig, createAppPaths } from '../src/config/index.js';
 import {
   DatabaseProvider,
   databaseTaskHooksToken,
+  databaseTaskCoordinatorToken,
   runAppDatabaseTasks,
   planAppDatabaseTasks,
   type AppDatabaseTaskOperation,
@@ -638,4 +639,54 @@ describe('database task hooks', () => {
     expect(prepare).not.toHaveBeenCalled();
     expect(f.events).toEqual([]);
   });
+  it('keeps hooks and deferred-task history intact through coordinator filtering', async () => {
+    const f = await fixture();
+    f.app.registerProviders();
+    let include = false;
+    f.app.container.singleton(
+      databaseTaskCoordinatorToken,
+      () =>
+        async ({ execute }) =>
+          execute({
+            taskFilter: () => include,
+            sample: { enabled: true },
+          }),
+    );
+    const deferred = await f.run();
+    expect(deferred.results.flatMap((entry) => entry.executed ?? [])).toEqual(
+      [],
+    );
+    expect(f.events).toEqual(['first', 'second']);
+    f.events.length = 0;
+    include = true;
+    const applied = await f.run();
+    expect(applied.results.flatMap((entry) => entry.executed ?? [])).toEqual([
+      '001_ids',
+      '001_seed',
+    ]);
+    expect(f.events).toEqual(['first', 'second', 'generate', 'generate']);
+  });
+
+  it.each([true, false])(
+    'preserves coordinator sample override %s alongside hooks',
+    async (enabled) => {
+      const f = await fixture();
+      f.config.mergeDefaults({ app: { sampleData: !enabled } });
+      f.app.registerProviders();
+      f.app.container.singleton(
+        databaseTaskCoordinatorToken,
+        () =>
+          async ({ execute }) =>
+            execute({ sample: { enabled } }),
+      );
+      const result = await f.run();
+      expect(result.ok).toBe(true);
+      expect(f.events).toEqual([
+        'first',
+        'second',
+        'generate',
+        ...(enabled ? ['generate'] : []),
+      ]);
+    },
+  );
 });

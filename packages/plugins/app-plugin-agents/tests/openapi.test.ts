@@ -190,6 +190,26 @@ describe('agents API document', () => {
     );
   });
 
+  it('documents the independent session flag on run self', () => {
+    const response = operation('GET', '/api/agents/runs/current').responses?.[
+      '200'
+    ];
+    expect(response).toMatchObject({
+      content: {
+        'application/json': {
+          schema: {
+            properties: {
+              data: {
+                required: expect.arrayContaining(['freshSession']),
+                properties: { freshSession: { type: 'boolean' } },
+              },
+            },
+          },
+        },
+      },
+    });
+  });
+
   it('has sound schemas', () => {
     expect(findApiDocumentSchemaProblems(document)).toEqual([]);
   });

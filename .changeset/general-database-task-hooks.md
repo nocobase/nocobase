@@ -11,3 +11,5 @@ Add registration-ready database task preparation hooks, reset selected databases
 Execute database task plans through explicit preparation, reset, hook and business steps. Report prerequisite failures independently of unstarted tasks with additive `failure` and `resetConnections` fields; CLI retains its envelope and failure codes and includes the same details. Preserve per-connection fresh ordering without hooks and report completed resets when a later prerequisite fails.
 
 Preserve top-level CLI error connection and task kind details from structured prerequisite failures when no business task has failed.
+
+Preserve coordinated execution, task filtering and sample overrides when running database preparation hooks.
