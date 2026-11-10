@@ -2,8 +2,9 @@
  * Files people send with chat messages: uploading, sending them with a message, who may read them (the owner, a run
  * on the conversation by its token, nobody else), what the agent is told, and the purge of uploads never sent.
  */
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { createChatAttachments } from '../server/core/conversations/attachments.js';
 import { claim, createHarness, type Harness } from './harness.js';
 
 const ALICE = 'alice';
@@ -64,6 +65,37 @@ describe('chat attachments', () => {
         ...(options.runToken ? { runToken: options.runToken } : {}),
       },
     );
+
+  it('reads an existing attachment using its stored disk, not the current upload disk', async () => {
+    h = await createHarness();
+    const attachment = await h.services.chatAttachments.upload(
+      ALICE,
+      new File(['old disk'], 'old.txt'),
+    );
+    const limitForDisk = vi.fn((disk: string) => ({
+      disk,
+      maxFileSizeMb: 50,
+      maxBytes: 50 * 1024 * 1024,
+    }));
+    const { service } = createChatAttachments({
+      tx: h.services.tx,
+      basePath: () => '/main',
+      limitForDisk,
+      uploadLimit: { disk: 'new', maxFileSizeMb: 1, maxBytes: 1024 * 1024 },
+      storage: {
+        store: async () => {
+          throw new Error('Not uploading');
+        },
+        stream: async () => new Blob(['old disk']).stream(),
+        bytes: async () => new Uint8Array(),
+        remove: async () => {},
+      },
+    });
+    const content = await service.content({ userId: ALICE }, attachment.id);
+    expect(content.maxBytes).toBe(50 * 1024 * 1024);
+    expect(limitForDisk).toHaveBeenCalledExactlyOnceWith('memory');
+    expect(await new Response(content.body).text()).toBe('old disk');
+  });
 
   it('accepts exactly 1 MiB and returns the configured 413 for both size guards', async () => {
     h = await createHarness({
