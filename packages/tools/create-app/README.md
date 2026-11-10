@@ -8,7 +8,7 @@ pnpm create @nocobase/app crm
 
 `pnpm create @nocobase/app` resolves to the `@nocobase/create-app` package and runs it, forwarding every argument after the package name verbatim.
 
-NocoBase packages and templates are published to the public npm registry. `--registry` changes where create-app downloads the template and installs dependencies; `NOCOBASE_REGISTRY` supplies the same override for a private registry or an unreleased local snapshot. A generated project's `.npmrc` records a non-public registry for the `@nocobase` scope and omits the override when public npm is used.
+NocoBase packages and templates are published to the public npm registry. `--registry` changes where create-app downloads the template and resolves `@nocobase` dependencies; `NOCOBASE_REGISTRY` supplies the same override for a private registry or an unreleased local snapshot. Third-party dependencies keep the package manager's configured default registry; do not set `npm_config_registry` to a NocoBase-only private registry. A generated project's `.npmrc` records a non-public registry for the `@nocobase` scope and omits the override when public npm is used.
 
 ## About dist-tags
 

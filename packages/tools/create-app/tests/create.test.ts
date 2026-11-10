@@ -115,8 +115,11 @@ describe('JSON creation flow', () => {
         registry,
         source: '@nocobase/app-template-multi-portal@beta',
       });
+      expect(
+        vi.mocked(installDependencies).mock.calls[0][0],
+      ).not.toHaveProperty('registry');
       expect(installDependencies).toHaveBeenCalledWith(
-        expect.objectContaining({ registry }),
+        expect.objectContaining({ directory: path.join(root, 'crm') }),
       );
       expect(await readFile(path.join(root, 'crm/.npmrc'), 'utf8')).toContain(
         `@nocobase:registry=${registry}`,
