@@ -6,7 +6,7 @@ import {
 } from '@nocobase/app-plugin-authorization/client';
 import { renderWithApp } from '@nocobase/app-testing/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { screen, waitFor } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 import { expect, it } from 'vitest';
 import knowledge from '../client/plugin.js';
 import { knowledgeIndexingFormsToken } from '../client/indexing/index.js';
@@ -16,7 +16,9 @@ async function render(indexing: boolean) {
   const requested: string[] = [];
   const view = await renderWithApp(
     <QueryClientProvider
-      client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
+      client={
+        new QueryClient({ defaultOptions: { queries: { retry: false } } })
+      }
     >
       <p>Knowledge</p>
       <KnowledgeIndexingEntry />
@@ -38,9 +40,12 @@ async function render(indexing: boolean) {
               ],
             },
           });
-        return Response.json({ error: { message: 'unexpected' } }, {
-          status: 404,
-        });
+        return Response.json(
+          { error: { message: 'unexpected' } },
+          {
+            status: 404,
+          },
+        );
       },
       services: (app) => {
         app.container.instance(

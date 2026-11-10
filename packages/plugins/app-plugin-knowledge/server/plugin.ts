@@ -6,7 +6,7 @@ import {
 } from '@nocobase/app-server/plugins';
 
 import serviceProviders from './providers/index.js';
-import routes from './routes/index.js';
+import routes, { createApiRoutes } from './routes/index.js';
 import { indexingProvider } from './providers/indexing.js';
 import { sqliteVecIndexingExtension } from './extension/sqlite-vec/index.js';
 import { pgvectorIndexingExtension } from './extension/pgvector/index.js';
@@ -43,7 +43,7 @@ export function createKnowledgePlugin(
           ]),
         ]
       : serviceProviders,
-    routes,
+    routes: indexing ? routes : [createApiRoutes({ indexing: false })],
     database: {
       migrations: './database/migrations',
     },

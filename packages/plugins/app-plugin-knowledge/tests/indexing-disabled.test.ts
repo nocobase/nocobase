@@ -17,7 +17,7 @@ import {
 } from '@nocobase/app-server/runtime';
 import { describe, expect, it } from 'vitest';
 import { createKnowledgePlugin } from '../server/index.js';
-import { apiRoutes } from '../server/routes/index.js';
+import { apiRoutes, createApiRoutes } from '../server/routes/index.js';
 import { SETTINGS_SECTION } from '../server/providers/authorization.js';
 import {
   knowledgeAccessToken,
@@ -37,6 +37,11 @@ const INDEXING_OPERATIONS = [
   'knowledgeRetryIndexing',
   'knowledgeListIndexingInstances',
   'knowledgeListEmbeddingModels',
+  // Indexing-only operations among the knowledge routes.
+  'knowledgeGetChunking',
+  'knowledgeUpdateChunking',
+  'knowledgeListUnindexedDocs',
+  'knowledgeReindexDoc',
 ];
 
 async function session(
@@ -102,14 +107,34 @@ describe('with indexing off', () => {
     expect(
       authz.resourceTypes.get('kb').items?.get('kb.knowledge'),
     ).toBeTruthy();
-    const ids = await operationIds(app, apiRoutes);
+    const ids = await operationIds(app, createApiRoutes({ indexing: false }));
     for (const id of INDEXING_OPERATIONS) expect(ids).not.toContain(id);
-    expect(ids).toContain('knowledgeSearchDocs');
+    expect(ids).toEqual(
+      expect.arrayContaining(['knowledgeSearchDocs', 'knowledgeGetDocIndex']),
+    );
     const user = await session(testApp);
-    expect((await user.fetch('/knowledge/indexingSettings')).status).toBe(404);
+    for (const [method, path] of [
+      ['GET', '/knowledge/indexingSettings'],
+      ['GET', '/knowledge/chunking?scope=project&scopeId=p1'],
+      ['PUT', '/knowledge/chunking'],
+      ['GET', '/knowledge/indexing?scope=project&scopeId=p1'],
+      ['POST', '/knowledge/docs/1/reindex'],
+    ] as const)
+      expect(
+        (
+          await user.fetch(path, {
+            method,
+            headers: { origin: 'http://localhost' },
+          })
+        ).status,
+        `${method} ${path}`,
+      ).toBe(404);
   });
 
-  test('searches by text and reports semantic search off', async ({ app }) => {
+  test('searches by text, reads sections and reports semantic search off', async ({
+    app,
+    testApp,
+  }) => {
     app.container.singleton(knowledgeAccessToken, () => ({
       space: (space) => space,
       inherits: () => [],
@@ -140,6 +165,15 @@ describe('with indexing off', () => {
     });
     const hits = await knowledge.docs.searchMany(admin, [space], 'changelog');
     expect(hits.map((hit) => hit.docId)).toEqual([doc.id]);
+    const user = await session(testApp);
+    const sections = await user.fetch(`/knowledge/docs/${doc.id}/index`);
+    expect(sections.status).toBe(200);
+    const { data } = (await sections.json()) as {
+      data: { enabled: boolean; chunks: { state: unknown }[] };
+    };
+    expect(data.enabled).toBe(false);
+    expect(data.chunks.length).toBeGreaterThan(0);
+    expect(data.chunks.every((chunk) => chunk.state === null)).toBe(true);
   });
 });
 

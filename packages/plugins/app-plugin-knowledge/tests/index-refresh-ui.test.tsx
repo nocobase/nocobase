@@ -98,7 +98,14 @@ async function setup(
         vi.spyOn(
           app.container.resolve(apiClientToken),
           'request',
-        ).mockImplementation(request);
+        ).mockImplementation((input: { readonly path?: string }) =>
+          // The space home lists unindexed documents only with semantic search on.
+          input.path?.endsWith('/capabilities')
+            ? Promise.resolve({
+                data: { semanticSearch: true, proposals: false },
+              })
+            : request(input),
+        );
         vi.spyOn(
           app.container.resolve(realtimeClientToken),
           'watch',
