@@ -64,6 +64,7 @@ export type MCPRecord = {
   title?: string;
   description?: string;
   enabled?: boolean;
+  fromFile?: boolean;
   transport: MCPTransport;
   command?: string | null;
   url?: string | null;
@@ -220,6 +221,8 @@ const mapEntriesToObject = (value: KeyValueEntry[] | Record<string, string> | nu
   }, {});
 };
 
+export const isProtectedMCP = (record?: MCPRecord): boolean =>
+  record?.transport === 'stdio' || record?.fromFile === true;
 export const sanitizeMCPValues = (values: MCPFormValues): MCPRecord => {
   const transport = values.transport;
   const nextValues = {
@@ -239,6 +242,7 @@ export const sanitizeMCPValues = (values: MCPFormValues): MCPRecord => {
     restart: isRecord(values.restart) ? values.restart : {},
   };
 
+  delete nextValues.fromFile;
   if (transport === 'stdio') {
     return {
       ...nextValues,
@@ -280,10 +284,13 @@ export async function listMCPClients(apiClient: APIClientLike): Promise<MCPListR
   };
 }
 
-export async function testMCPConnection(apiClient: APIClientLike, values: MCPFormValues) {
-  const response = await callResourceAction(apiClient, 'aiMcpClients', 'testConnection', {
-    values: sanitizeMCPValues(values),
-  });
+export async function testMCPConnection(apiClient: APIClientLike, values: MCPFormValues, record?: MCPRecord) {
+  const response = await callResourceAction(
+    apiClient,
+    'aiMcpClients',
+    'testConnection',
+    record?.transport === 'stdio' ? { filterByTk: record.name } : { values: sanitizeMCPValues(values) },
+  );
   const data = readResponseData(response);
   return isMCPTestResult(data) ? data : null;
 }
@@ -347,7 +354,7 @@ const createInitialValues = (): MCPFormValues => ({
   name: '',
   title: '',
   enabled: true,
-  transport: 'stdio',
+  transport: 'http',
   useUserContext: false,
   command: '',
   url: '',
@@ -437,7 +444,14 @@ const MCPVariableInput: React.FC<MCPVariableInputProps> = ({ variableScope = 'en
   const useUserContext = Form.useWatch('useUserContext', form);
   const extraNodes = useMCPCurrentUserNodes(variableScope === 'user' && useUserContext === true);
 
-  return <VariableInput {...props} namespaces={['$env']} extraNodes={extraNodes} />;
+  return (
+    <VariableInput
+      {...props}
+      readOnly={props.readOnly || props.disabled}
+      namespaces={['$env']}
+      extraNodes={extraNodes}
+    />
+  );
 };
 
 const UserContextCheckbox: React.FC<CheckboxProps & { tooltip?: React.ReactNode }> = ({ tooltip, ...props }) => {
@@ -446,10 +460,10 @@ const UserContextCheckbox: React.FC<CheckboxProps & { tooltip?: React.ReactNode 
   const disabled = transport === 'stdio';
 
   useEffect(() => {
-    if (disabled && form.getFieldValue('useUserContext')) {
+    if (disabled && !props.disabled && form.getFieldValue('useUserContext')) {
       form.setFieldValue('useUserContext', false);
     }
-  }, [disabled, form]);
+  }, [disabled, form, props.disabled]);
 
   const checkbox = <Checkbox {...props} disabled={disabled || props.disabled} />;
   return tooltip ? <Tooltip title={tooltip}>{checkbox}</Tooltip> : checkbox;
@@ -458,9 +472,10 @@ const UserContextCheckbox: React.FC<CheckboxProps & { tooltip?: React.ReactNode 
 const KeyValueList: React.FC<{
   value?: KeyValueEntry[] | Record<string, string>;
   onChange?: (value: KeyValueEntry[]) => void;
+  disabled?: boolean;
   addLabel: string;
   variableScope?: 'env' | 'user';
-}> = ({ value, onChange, addLabel, variableScope = 'env' }) => {
+}> = ({ value, onChange, addLabel, variableScope = 'env', disabled = false }) => {
   const t = useT();
   const entries = Array.isArray(value) ? value : mapObjectToEntries(value);
   const updateEntry = (index: number, key: keyof KeyValueEntry, nextValue: string) => {
@@ -473,16 +488,20 @@ const KeyValueList: React.FC<{
       {entries.map((entry, index) => (
         <Flex key={index} gap="small" align="baseline">
           <Input
+            disabled={disabled}
+            aria-label={t('Name')}
             placeholder={t('Name')}
             value={entry.name}
             onChange={(event) => updateEntry(index, 'name', event.target.value)}
           />
           <MCPVariableInput
+            disabled={disabled}
             variableScope={variableScope}
             value={entry.value}
             onChange={(nextValue) => updateEntry(index, 'value', nextValue)}
           />
           <Button
+            disabled={disabled}
             aria-label={t('Delete')}
             type="text"
             icon={<DeleteOutlined />}
@@ -490,18 +509,24 @@ const KeyValueList: React.FC<{
           />
         </Flex>
       ))}
-      <Button type="dashed" icon={<PlusOutlined />} onClick={() => onChange?.([...entries, { name: '', value: '' }])}>
+      <Button
+        disabled={disabled}
+        type="dashed"
+        icon={<PlusOutlined />}
+        onClick={() => onChange?.([...entries, { name: '', value: '' }])}
+      >
         {addLabel}
       </Button>
     </Flex>
   );
 };
 
-const MCPForm: React.FC<{ editing: boolean; testResult: MCPTestResultData | null; testing: boolean }> = ({
-  editing,
-  testResult,
-  testing,
-}) => {
+const MCPForm: React.FC<{
+  editing: boolean;
+  readOnly: boolean;
+  testResult: MCPTestResultData | null;
+  testing: boolean;
+}> = ({ editing, readOnly, testResult, testing }) => {
   const t = useT();
   const form = Form.useFormInstance<MCPFormValues>();
   const transport = Form.useWatch('transport', form);
@@ -510,20 +535,35 @@ const MCPForm: React.FC<{ editing: boolean; testResult: MCPTestResultData | null
 
   return (
     <>
+      <Alert
+        type="info"
+        showIcon
+        message={t(
+          readOnly
+            ? 'This MCP server is managed by deployment configuration. Only its enabled state can be changed.'
+            : 'Stdio MCP servers can only be configured in storage/ai/mcp/servers.json.',
+        )}
+        style={{ marginBottom: 16 }}
+      />
       <Form.Item name="name" label={t('Name')} rules={[{ required: true }]}>
         <Input disabled={editing} />
       </Form.Item>
-      <Form.Item name="title" label={t('Title')} rules={[{ required: true }]}>
+      <Form.Item name="title" label={t('Title')} rules={readOnly ? [] : [{ required: true }]}>
         <Input />
       </Form.Item>
       <Form.Item name="description" label={t('Description')}>
         <Input.TextArea autoSize={{ minRows: 2, maxRows: 4 }} />
       </Form.Item>
       <Form.Item name="transport" label={t('Transport')} rules={[{ required: true }]}>
-        <Select options={transportOptions.map((item) => ({ ...item, label: t(item.label) }))} />
+        <Select
+          options={transportOptions
+            .filter((item) => item.value !== 'stdio' || isStdio)
+            .map((item) => ({ ...item, label: t(item.label) }))}
+        />
       </Form.Item>
       <Form.Item name="useUserContext" label={t('Depends on current user')} valuePropName="checked">
         <UserContextCheckbox
+          disabled={readOnly}
           tooltip={t(
             'When enabled, URL and headers can use current user variables and NocoBase request variables. Stdio transport is not supported.',
           )}
@@ -532,23 +572,27 @@ const MCPForm: React.FC<{ editing: boolean; testResult: MCPTestResultData | null
       {isStdio ? (
         <>
           <Form.Item name="command" label={t('Command')} rules={[{ required: true }]}>
-            <MCPVariableInput placeholder={t('For example: npx, uvx, node')} />
+            <MCPVariableInput disabled={readOnly} placeholder={t('For example: npx, uvx, node')} />
           </Form.Item>
           <Form.Item name="args" label={t('Arguments')}>
-            <MCPVariableInput placeholder={t('Space-separated args, e.g.: -u --flag value')} />
+            <MCPVariableInput disabled={readOnly} placeholder={t('Space-separated args, e.g.: -u --flag value')} />
           </Form.Item>
           <Form.Item name="env" label={t('Environment variables')}>
-            <KeyValueList addLabel={t('Add variable')} />
+            <KeyValueList disabled={readOnly} addLabel={t('Add variable')} />
           </Form.Item>
         </>
       ) : null}
       {isRemote ? (
         <>
           <Form.Item name="url" label={t('URL')} rules={[{ required: true }]}>
-            <MCPVariableInput variableScope="user" placeholder={t('For example: https://example.com/mcp')} />
+            <MCPVariableInput
+              disabled={readOnly}
+              variableScope="user"
+              placeholder={t('For example: https://example.com/mcp')}
+            />
           </Form.Item>
           <Form.Item name="headers" label={t('Headers')}>
-            <KeyValueList variableScope="user" addLabel={t('Add request header')} />
+            <KeyValueList disabled={readOnly} variableScope="user" addLabel={t('Add request header')} />
           </Form.Item>
         </>
       ) : null}
@@ -564,8 +608,9 @@ const TestConnectionResult: React.FC<{ result: MCPTestResultData | null; loading
   const t = useT();
   if (loading) {
     return (
-      <Flex justify="center">
-        <Spin tip={t('Testing connection...')} />
+      <Flex justify="center" gap="small" role="status">
+        <Spin />
+        <span>{t('Testing connection...')}</span>
       </Flex>
     );
   }
@@ -796,6 +841,9 @@ export const MCPSettingsPage: React.FC = () => {
     try {
       const result = await listMCPClients(app.apiClient);
       setClients(result.data);
+      setSelectedRowKeys((keys) =>
+        keys.filter((key) => result.data.some((record) => record.name === key && !isProtectedMCP(record))),
+      );
     } finally {
       setLoading(false);
     }
@@ -838,6 +886,13 @@ export const MCPSettingsPage: React.FC = () => {
     if (!names.length) {
       return;
     }
+    if (names.some((name) => !clients.some((record) => record.name === name && !isProtectedMCP(record)))) {
+      message.warning(
+        t('This MCP server is managed by deployment configuration. Only its enabled state can be changed.'),
+      );
+      setSelectedRowKeys([]);
+      return;
+    }
     await deleteMCPClients(app.apiClient, names);
     await rebuildClient();
     setSelectedRowKeys([]);
@@ -872,7 +927,8 @@ export const MCPSettingsPage: React.FC = () => {
       key: 'actions',
       render: (_, record) => (
         <Space size={token.marginXS}>
-          <a
+          <Button
+            type="link"
             style={actionLinkStyle}
             onClick={() => {
               ctx.viewer.open({
@@ -884,21 +940,38 @@ export const MCPSettingsPage: React.FC = () => {
             }}
           >
             {t('View')}
-          </a>
-          <a style={actionLinkStyle} onClick={() => openEditDrawer(record)}>
+          </Button>
+          <Button type="link" style={actionLinkStyle} onClick={() => openEditDrawer(record)}>
             {t('Edit')}
-          </a>
+          </Button>
           <Popconfirm
+            disabled={isProtectedMCP(record)}
             title={t('Delete record')}
             description={t('Are you sure you want to delete it?')}
             onConfirm={async () => {
+              if (isProtectedMCP(record)) return;
               await deleteMCPClient(app.apiClient, record.name);
               await rebuildClient();
               message.success(t('Saved successfully'));
               await refresh();
             }}
           >
-            <a style={actionLinkStyle}>{t('Delete')}</a>
+            <Tooltip
+              title={
+                isProtectedMCP(record)
+                  ? t('This MCP server is managed by deployment configuration. Only its enabled state can be changed.')
+                  : undefined
+              }
+            >
+              <Button
+                type="link"
+                style={actionLinkStyle}
+                disabled={isProtectedMCP(record)}
+                aria-label={`${t('Delete')}: ${record.name}`}
+              >
+                {t('Delete')}
+              </Button>
+            </Tooltip>
           </Popconfirm>
         </Space>
       ),
@@ -948,6 +1021,7 @@ export const MCPSettingsPage: React.FC = () => {
             rowSelection={{
               selectedRowKeys,
               onChange: setSelectedRowKeys,
+              getCheckboxProps: (record) => ({ disabled: isProtectedMCP(record) }),
             }}
             pagination={{
               defaultPageSize: 20,
@@ -990,6 +1064,7 @@ const MCPSettingsDrawerContentInner: React.FC<
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<MCPTestResultData | null>(null);
   const [formDirty, setFormDirty] = useState(false);
+  const readOnly = isProtectedMCP(record);
   const initialValues = useMemo(() => (record ? toMCPFormValues(record) : createInitialValues()), [record]);
   const { Header, Footer } = ctx.view;
 
@@ -1011,7 +1086,7 @@ const MCPSettingsDrawerContentInner: React.FC<
     setTesting(true);
     setTestResult(null);
     try {
-      const result = await testMCPConnection(app.apiClient, values);
+      const result = await testMCPConnection(app.apiClient, values, record);
       setTestResult(result);
       return !!result?.success;
     } catch (error) {
@@ -1026,6 +1101,7 @@ const MCPSettingsDrawerContentInner: React.FC<
   };
 
   const handleFinish = async (values: MCPFormValues) => {
+    if (readOnly) return;
     setSaving(true);
     try {
       const passed = await runTestConnection();
@@ -1065,11 +1141,12 @@ const MCPSettingsDrawerContentInner: React.FC<
       <Spin spinning={saving}>
         <Form<MCPFormValues>
           form={form}
+          disabled={readOnly}
           layout="vertical"
           onFinish={handleFinish}
           onValuesChange={() => setFormDirty(true)}
         >
-          <MCPForm editing={!!record} testResult={testResult} testing={testing} />
+          <MCPForm editing={!!record} readOnly={readOnly} testResult={testResult} testing={testing} />
         </Form>
       </Spin>
       <Footer>
@@ -1079,7 +1156,12 @@ const MCPSettingsDrawerContentInner: React.FC<
               {t('Test flight')}
             </Button>
             <Button onClick={requestClose}>{t('Cancel')}</Button>
-            <Button type="primary" loading={saving || testing || rebuilding} onClick={() => form.submit()}>
+            <Button
+              type="primary"
+              disabled={readOnly}
+              loading={saving || testing || rebuilding}
+              onClick={() => form.submit()}
+            >
               {t('Submit')}
             </Button>
           </Space>

@@ -150,6 +150,7 @@ export interface VariableInputProps {
   value?: string;
   onChange?: (value: string) => void;
   disabled?: boolean;
+  readOnly?: boolean;
   placeholder?: string;
   addonBefore?: React.ReactNode;
   /**

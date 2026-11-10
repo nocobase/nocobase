@@ -1,4 +1,10 @@
 {
+  "Stdio MCP servers can only be configured in storage/ai/mcp/servers.json.": "Stdio MCP servers can only be configured in storage/ai/mcp/servers.json.",
+  "This MCP server is managed by deployment configuration. Only its enabled state can be changed.": "This MCP server is managed by deployment configuration. Only its enabled state can be changed.",
+  "Invalid MCP configuration": "Invalid MCP configuration",
+  "MCP server not found": "MCP server not found",
+  "Command is required for stdio transport": "Command is required for stdio transport",
+  "No configuration provided": "No configuration provided",
   "API Key": "API Key",
   "X-Title": "X-Title",
   "Sent as the \"X-Title\" request header.": "Sent as the \"X-Title\" request header.",
