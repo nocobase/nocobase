@@ -201,7 +201,7 @@ export function visibleIssueSubjects(
   const scope = scopeOf(viewer, 'pm.issues', 'view');
   if (scope === 'all' && !viewer.projectIds) return null;
   return (eb, subjectId) => {
-    if (scope === 'none') return eb.or([]);
+    if (scope === 'none') return eb(subjectId, 'is', null);
     let issues = eb
       .selectFrom('pmIssues as visibleIssue')
       .select('visibleIssue.id')

@@ -330,6 +330,7 @@
     "remark-gfm": "catalog:"
   },
   "devDependencies": {
+    "@nocobase/realtime": "workspace:^",
     "@nocobase/agent-runner": "workspace:*",
     "@nocobase/app-testing": "workspace:*",
     "@nocobase/db-postgres": "workspace:*",

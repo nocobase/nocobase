@@ -1,5 +1,6 @@
 import {
   mayAccessRun,
+  involvesRun,
   runVisibility as visibilityFilter,
   subjectVisibleForRun,
 } from '../core/runs/access.js';
@@ -269,11 +270,11 @@ export function createAdminRoutes(
     const who = caller(context);
     const run = await services.runs.get(context.req.param('runId') ?? '');
     if (
-      await mayAccessRun(
+      !(await mayAccessRun(
         run,
         who.userId,
         isPrivate(run),
-        () => who.can('agents.agents', action),
+        () => who.can('agents.agents', 'read'),
         () =>
           subjectVisibleForRun(
             services.tx.read(),
@@ -281,23 +282,16 @@ export function createAdminRoutes(
             run,
             who.userId,
           ),
-      )
-    )
-      return run;
-    // A private subject's runs (a conversation) belong to the people they involve, whatever the caller manages.
-    if (isPrivate(run)) throw notFound('Run');
-    if (
-      action === 'manage' &&
-      (await who.can('agents.agents', 'read')) &&
-      (await subjectVisibleForRun(
-        services.tx.read(),
-        services.subjects,
-        run,
-        who.userId,
       ))
     )
+      throw notFound('Run');
+    if (
+      action === 'manage' &&
+      !involvesRun(run, who.userId) &&
+      !(await who.can('agents.agents', 'manage'))
+    )
       throw forbidden('This needs agents.agents manage permission.');
-    throw notFound('Run');
+    return run;
   };
 
   const isPrivate = (run: Run): boolean =>
@@ -1447,7 +1441,7 @@ export function createAdminRoutes(
   const runParam = apiValidator('param', RunParams);
   const noRun = notFoundAs('The run');
   const runVisibility =
-    "The caller sees the runs they started or own, and every run but a private subject's (a conversation) with `agents.agents` read.";
+    'The caller sees the runs they started or own, and runs on visible, non-private subjects with `agents.agents` read.';
   const machineViewer = async (
     context: Context<AdminEnv>,
   ): Promise<RunMachineViewer> => {

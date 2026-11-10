@@ -59,7 +59,9 @@ export async function runVisibility(
         ]),
       ];
     });
-    return eb.or([involved, eb.and(restrictions)]);
+    return restrictions.length === 0
+      ? eb(`${table}.id`, 'is not', null)
+      : eb.or([involved, eb.and(restrictions)]);
   };
 }
 
