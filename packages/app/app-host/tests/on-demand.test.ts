@@ -593,7 +593,17 @@ async function startIngress(currentHost: () => AppHost) {
     });
     void proxy
       .fetch(request)
-      .then((response) => applyFetchResponse(res, response));
+      .then((response) => applyFetchResponse(res, response))
+      .catch((error: unknown) => {
+        const failure =
+          error instanceof Error ? error : new Error(String(error));
+        if (res.headersSent) {
+          res.destroy(failure);
+          return;
+        }
+        res.writeHead(500, { 'content-type': 'text/plain' });
+        res.end(failure.message);
+      });
   });
   server.on('upgrade', (req, socket, head) => {
     void proxy.upgrade(req, socket, head);

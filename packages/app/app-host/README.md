@@ -230,8 +230,6 @@ The in-process runtime drains active request handlers for up to ten seconds befo
 
 A managed Host restores the controller's desired deployment set after restarting. The controller must persist and replay `desiredState: 'stopped'`; stopping a runtime does not rewrite the controller's previously supplied set. Replaying the stopped set leaves the App unregistered, and explicit startup restores registration from the original spec.
 
-The stop fix is included in source commit `2d18eb2c48955f4a8fc453e5e7d37aac8b7ea73c` (including external-service resource cleanup). Consumers may remove a temporary `evict` → `unregister` patch and its packaging hook only after adopting a published release containing that commit and verifying that their final production bundle contains the corrected management implementation. The version in a source checkout alone does not establish that a release contains the fix. In-process lifecycle regressions cover direct Host and unified proxy HTTP/WebSocket ingress, existing socket closure, restoration, explicit startup, volume-backed records and idle wakeup. External-service tests use backend doubles; Worker and Process runners are not implemented.
-
 ## On-demand Apps: idle stop and dormancy
 
 Open WebSockets keep an in-process App alive independently of upgrade handshakes. Idle stop, dormancy and capacity eviction exclude Apps with requests or connections, Apps being started, dedicated Apps and Apps with an explicit `idleTtlMs: 0`. Closing the last socket refreshes the idle clock. Manual stop, replacement and Host rotation can still close connections.

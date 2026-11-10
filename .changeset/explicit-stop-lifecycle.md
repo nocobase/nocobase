@@ -2,4 +2,4 @@
 '@nocobase/app-host': patch
 ---
 
-Clarify explicit deployment stop and recovery semantics, with lifecycle regression coverage for HTTP and WebSocket ingress, retained data and ordinary idle wakeup.
+Keep explicitly stopped deployments unavailable to HTTP and WebSocket requests while retaining data for explicit startup and preserving ordinary idle wakeup.
