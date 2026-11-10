@@ -63,7 +63,7 @@ const shippedLocales = {
 } as const;
 
 it.each(Object.keys(shippedLocales) as (keyof typeof shippedLocales)[])(
-  'ships all rendered keys in %s',
+  'renders the empty logs state in %s',
   async (locale) => {
     const runtime = await createTestI18nRuntime({
       locale,
