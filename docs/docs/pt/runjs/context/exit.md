@@ -12,7 +12,7 @@ O `ctx.exit()` é geralmente usado nos seguintes contextos onde o JS pode ser ex
 | **Regras de vinculação** | Em vinculações de campos, vinculações de filtros, etc., encerra o fluxo de eventos atual quando a validação falha ou quando a execução precisa ser pulada. |
 | **Eventos de ação** | Em ações personalizadas (ex: confirmação de exclusão, validação pré-salvamento), sai quando o usuário cancela ou a validação não passa. |
 
-> Diferença em relação ao `ctx.exitAll()`: o `ctx.exit()` encerra apenas o fluxo de eventos atual; outros fluxos de eventos sob o mesmo evento não são afetados. O `ctx.exitAll()` encerra o fluxo de eventos atual, bem como quaisquer fluxos de eventos subsequentes sob o mesmo evento que ainda não foram executados.
+> `ctx.exit()` / `ctx.exitAll()` — As duas chamadas encerram a etapa atual e pulam os fluxos sequenciais restantes do mesmo evento. Os fluxos que já estão em execução paralela continuam.
 
 ## Definição de tipo
 
@@ -20,14 +20,7 @@ O `ctx.exit()` é geralmente usado nos seguintes contextos onde o JS pode ser ex
 exit(): never;
 ```
 
-Chamar `ctx.exit()` lança uma exceção interna `FlowExitException`, que é capturada pelo mecanismo de fluxo (FlowEngine) para interromper a execução do fluxo de eventos atual. Uma vez chamado, as instruções restantes no código JS atual não serão executadas.
-
-## Comparação com ctx.exitAll()
-
-| Método | Escopo de efeito |
-|------|----------|
-| `ctx.exit()` | Encerra apenas o fluxo de eventos atual; os fluxos de eventos subsequentes não são afetados. |
-| `ctx.exitAll()` | Encerra o fluxo de eventos atual e interrompe os fluxos de eventos subsequentes sob o mesmo evento que estão configurados para **execução sequencial**. |
+Chamar `ctx.exit()` lança uma exceção interna `FlowExitAllException`, que é capturada pelo mecanismo de fluxo (FlowEngine) para interromper a execução do fluxo de eventos atual. Uma vez chamado, as instruções restantes no código JS atual não serão executadas.
 
 ## Exemplos
 
@@ -62,22 +55,6 @@ if (!record || record.status !== 'draft') {
 }
 ```
 
-### Escolhendo entre ctx.exit() e ctx.exitAll()
-
-```ts
-// Apenas o fluxo de eventos atual precisa sair → Use ctx.exit()
-if (!params.valid) {
-  ctx.message.error('Parâmetros inválidos');
-  ctx.exit();  // Outros fluxos de eventos não são afetados
-}
-
-// Necessário encerrar todos os fluxos de eventos subsequentes sob o evento atual → Use ctx.exitAll()
-if (!ctx.model?.context?.getPermission?.()) {
-  ctx.notification.warning({ message: 'Permissões insuficientes' });
-  ctx.exitAll();  // Tanto o fluxo de eventos atual quanto os subsequentes sob o mesmo evento são encerrados
-}
-```
-
 ### Sair com base na escolha do usuário após confirmação em modal
 
 ```ts
@@ -94,11 +71,10 @@ if (!ok) {
 ## Observações
 
 - Após chamar `ctx.exit()`, o código subsequente no JS atual não será executado; recomenda-se explicar o motivo ao usuário via `ctx.message`, `ctx.notification` ou um modal antes de chamá-lo.
-- Geralmente não há necessidade de capturar `FlowExitException` no código de negócio; deixe que o mecanismo de fluxo o manipule.
-- Se você precisar encerrar todos os fluxos de eventos subsequentes sob o evento atual, use `ctx.exitAll()`.
+- Geralmente não há necessidade de capturar `FlowExitAllException` no código de negócio; deixe que o mecanismo de fluxo o manipule.
 
 ## Relacionado
 
-- [ctx.exitAll()](./exit-all.md): Encerra o fluxo de eventos atual e os fluxos de eventos subsequentes sob o mesmo evento.
+- [ctx.exitAll()](./exit-all.md)
 - [ctx.message](./message.md): Mensagens de alerta.
 - [ctx.modal](./modal.md): Modais de confirmação.

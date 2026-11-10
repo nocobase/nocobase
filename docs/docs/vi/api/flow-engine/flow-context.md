@@ -66,8 +66,7 @@ Các thuộc tính `ctx` được dùng nhiều nhất trong phát triển Plugi
 
 | Phương thức | Mô tả |
 |------|------|
-| `ctx.exit()` | Ngắt thực thi flow hiện tại |
-| `ctx.exitAll()` | Ngắt thực thi tất cả flow |
+| `ctx.exit()`, `ctx.exitAll()` | Cả hai lệnh đều kết thúc bước hiện tại và bỏ qua các luồng tuần tự còn lại trong cùng sự kiện. Các luồng đang chạy song song vẫn tiếp tục. |
 | `ctx.getStepParams(stepKey)` | Lấy tham số đã lưu của step chỉ định |
 | `ctx.setStepParams(stepKey, params)` | Đặt tham số cho step chỉ định |
 | `ctx.getStepResults(stepKey)` | Lấy kết quả thực thi của step trước đó |

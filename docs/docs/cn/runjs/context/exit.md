@@ -1,6 +1,6 @@
 ---
 title: "ctx.exit()"
-description: "ctx.exit() 退出当前 Flow 或事件流，可带返回值，用于条件分支、提前结束。"
+description: "两种调用都会结束当前步骤，并跳过同一事件中尚未开始的串行流程。已经开始并行执行的流程会继续运行。"
 keywords: "ctx.exit,退出 Flow,事件流,条件分支,RunJS,NocoBase"
 ---
 
@@ -18,7 +18,7 @@ keywords: "ctx.exit,退出 Flow,事件流,条件分支,RunJS,NocoBase"
 | **联动规则** | 字段联动、筛选联动等，校验失败或需跳过执行时终止当前事件流 |
 | **操作事件** | 自定义操作（如删除确认、保存前置校验）中，用户取消或校验不通过时退出 |
 
-> 与 `ctx.exitAll()` 的区别：`ctx.exit()` 仅终止当前事件流，同事件下的其他事件流不受影响；`ctx.exitAll()` 会终止当前事件流及同事件下尚未执行的后续事件流。
+> `ctx.exit()` / `ctx.exitAll()` — 两种调用都会结束当前步骤，并跳过同一事件中尚未开始的串行流程。已经开始并行执行的流程会继续运行。
 
 ## 类型定义
 
@@ -26,14 +26,7 @@ keywords: "ctx.exit,退出 Flow,事件流,条件分支,RunJS,NocoBase"
 exit(): never;
 ```
 
-调用 `ctx.exit()` 会抛出内部的 `FlowExitException`，由事件流引擎捕获并停止当前事件流执行。一旦调用，当前 JS 代码中剩余的语句不会执行。
-
-## 与 ctx.exitAll() 的对比
-
-| 方法 | 作用范围 |
-|------|----------|
-| `ctx.exit()` | 仅终止当前事件流，后续事件流不受影响 |
-| `ctx.exitAll()` | 终止当前事件流，且中止同事件下**顺序执行**的后续事件流 |
+调用 `ctx.exit()` 会抛出内部的 `FlowExitAllException`，由事件流引擎捕获并停止当前事件流执行。一旦调用，当前 JS 代码中剩余的语句不会执行。
 
 ## 示例
 
@@ -68,22 +61,6 @@ if (!record || record.status !== 'draft') {
 }
 ```
 
-### 与 ctx.exitAll() 的选用
-
-```ts
-// 仅当前事件流需退出 → 使用 ctx.exit()
-if (!params.valid) {
-  ctx.message.error('参数无效');
-  ctx.exit();  // 其他事件流不受影响
-}
-
-// 需终止当前事件下的全部后续事件流 → 使用 ctx.exitAll()
-if (!ctx.model?.context?.getPermission?.()) {
-  ctx.notification.warning({ message: '权限不足' });
-  ctx.exitAll();  // 主事件流及同事件下后续事件流一并终止
-}
-```
-
 ### 弹窗确认后根据用户选择退出
 
 ```ts
@@ -100,11 +77,10 @@ if (!ok) {
 ## 注意事项
 
 - 调用 `ctx.exit()` 后，当前 JS 中后续代码不会执行；建议在调用前通过 `ctx.message`、`ctx.notification` 或弹窗向用户说明原因
-- 业务代码中通常无需捕获 `FlowExitException`，交给事件流引擎处理即可
-- 若需终止当前事件下的所有后续事件流，使用 `ctx.exitAll()`
+- 业务代码中通常无需捕获 `FlowExitAllException`，交给事件流引擎处理即可
 
 ## 相关
 
-- [ctx.exitAll()](./exit-all.md)：终止当前事件流及同事件下后续事件流
+- [ctx.exitAll()](./exit-all.md)
 - [ctx.message](./message.md)：提示消息
 - [ctx.modal](./modal.md)：确认弹窗

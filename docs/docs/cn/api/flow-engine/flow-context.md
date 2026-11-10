@@ -66,8 +66,7 @@ FlowRuntimeContext（当前 flow 的运行时上下文）
 
 | 方法 | 说明 |
 |------|------|
-| `ctx.exit()` | 中断当前 flow 的执行 |
-| `ctx.exitAll()` | 中断所有 flow 的执行 |
+| `ctx.exit()`, `ctx.exitAll()` | 两种调用都会结束当前步骤，并跳过同一事件中尚未开始的串行流程。已经开始并行执行的流程会继续运行。 |
 | `ctx.getStepParams(stepKey)` | 获取指定 step 保存的参数 |
 | `ctx.setStepParams(stepKey, params)` | 设置指定 step 的参数 |
 | `ctx.getStepResults(stepKey)` | 获取之前某个 step 的执行结果 |

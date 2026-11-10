@@ -12,7 +12,7 @@ Terminates the execution of the current event flow; subsequent steps will not ru
 | **Linkage Rules** | In field linkages, filter linkages, etc., terminates the current event flow when validation fails or execution needs to be skipped. |
 | **Action Events** | In custom actions (e.g., delete confirmation, pre-save validation), exits when the user cancels or validation fails. |
 
-> Difference from `ctx.exitAll()`: `ctx.exit()` only terminates the current event flow; other event flows under the same event are not affected. `ctx.exitAll()` terminates the current event flow as well as any subsequent event flows under the same event that have not yet been executed.
+> `ctx.exit()` / `ctx.exitAll()` — Both calls stop the current step and skip the remaining flows in the same sequential event dispatch. Flows already running in parallel continue.
 
 ## Type Definition
 
@@ -20,14 +20,7 @@ Terminates the execution of the current event flow; subsequent steps will not ru
 exit(): never;
 ```
 
-Calling `ctx.exit()` throws an internal `FlowExitException`, which is caught by the FlowEngine to stop the current event flow execution. Once called, the remaining statements in the current JS code will not execute.
-
-## Comparison with ctx.exitAll()
-
-| Method | Scope of Effect |
-|------|----------|
-| `ctx.exit()` | Terminates only the current event flow; subsequent event flows are unaffected. |
-| `ctx.exitAll()` | Terminates the current event flow and aborts subsequent event flows under the same event that are set to **execute sequentially**. |
+Calling `ctx.exit()` throws an internal `FlowExitAllException`, which is caught by the FlowEngine to stop the current event flow execution. Once called, the remaining statements in the current JS code will not execute.
 
 ## Examples
 
@@ -62,22 +55,6 @@ if (!record || record.status !== 'draft') {
 }
 ```
 
-### Choosing Between ctx.exit() and ctx.exitAll()
-
-```ts
-// Only the current event flow needs to exit → Use ctx.exit()
-if (!params.valid) {
-  ctx.message.error('Invalid parameters');
-  ctx.exit();  // Other event flows are unaffected
-}
-
-// Need to terminate all subsequent event flows under the current event → Use ctx.exitAll()
-if (!ctx.model?.context?.getPermission?.()) {
-  ctx.notification.warning({ message: 'Insufficient permissions' });
-  ctx.exitAll();  // Both the current event flow and subsequent event flows under the same event are terminated
-}
-```
-
 ### Exit Based on User Choice After Modal Confirmation
 
 ```ts
@@ -94,11 +71,10 @@ if (!ok) {
 ## Notes
 
 - After calling `ctx.exit()`, subsequent code in the current JS will not execute; it is recommended to explain the reason to the user via `ctx.message`, `ctx.notification`, or a modal before calling it.
-- There is usually no need to catch `FlowExitException` in business code; let the FlowEngine handle it.
-- If you need to terminate all subsequent event flows under the current event, use `ctx.exitAll()`.
+- There is usually no need to catch `FlowExitAllException` in business code; let the FlowEngine handle it.
 
 ## Related
 
-- [ctx.exitAll()](./exit-all.md): Terminates the current event flow and subsequent event flows under the same event.
+- [ctx.exitAll()](./exit-all.md)
 - [ctx.message](./message.md): Message prompts.
 - [ctx.modal](./modal.md): Confirmation modals.

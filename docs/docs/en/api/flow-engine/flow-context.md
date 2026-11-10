@@ -66,8 +66,7 @@ The most commonly used `ctx` properties in plugin development:
 
 | Method | Description |
 |--------|-------------|
-| `ctx.exit()` | Abort execution of the current flow |
-| `ctx.exitAll()` | Abort execution of all flows |
+| `ctx.exit()`, `ctx.exitAll()` | Both calls stop the current step and skip the remaining flows in the same sequential event dispatch. Flows already running in parallel continue. |
 | `ctx.getStepParams(stepKey)` | Get the saved parameters for a specific step |
 | `ctx.setStepParams(stepKey, params)` | Set parameters for a specific step |
 | `ctx.getStepResults(stepKey)` | Get the execution result of a previous step |

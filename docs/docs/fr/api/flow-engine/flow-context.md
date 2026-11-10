@@ -66,8 +66,7 @@ Les propriétés `ctx` les plus utilisées dans le développement de plugins :
 
 | Méthode | Description |
 |---------|-------------|
-| `ctx.exit()` | Interrompt l'exécution du flow courant |
-| `ctx.exitAll()` | Interrompt l'exécution de tous les flows |
+| `ctx.exit()`, `ctx.exitAll()` | Les deux appels terminent l’étape en cours et ignorent les flux séquentiels restants du même événement. Les flux déjà lancés en parallèle continuent. |
 | `ctx.getStepParams(stepKey)` | Récupère les paramètres enregistrés d'un step donné |
 | `ctx.setStepParams(stepKey, params)` | Définit les paramètres d'un step donné |
 | `ctx.getStepResults(stepKey)` | Récupère le résultat d'exécution d'un step antérieur |

@@ -1,6 +1,6 @@
 ---
 title: "ctx.exit()"
-description: "ctx.exit() keluar dari Flow atau event flow saat ini, dapat membawa nilai return, untuk percabangan kondisional, mengakhiri lebih awal."
+description: "Kedua pemanggilan mengakhiri langkah saat ini dan melewati flow sekuensial yang tersisa pada event yang sama. Flow yang sudah berjalan secara paralel tetap berlanjut."
 keywords: "ctx.exit,keluar Flow,event flow,percabangan kondisional,RunJS,NocoBase"
 ---
 
@@ -18,7 +18,7 @@ Menghentikan eksekusi event flow saat ini, langkah-langkah berikutnya tidak akan
 | **Aturan Linkage** | Linkage field, linkage filter, dll., menghentikan event flow saat ini saat validasi gagal atau perlu melewati eksekusi |
 | **Action Event** | Pada action kustom (seperti konfirmasi delete, validasi pre-save), keluar saat pengguna membatalkan atau validasi tidak lulus |
 
-> Perbedaan dengan `ctx.exitAll()`: `ctx.exit()` hanya menghentikan event flow saat ini, event flow lain pada event yang sama tidak terpengaruh; `ctx.exitAll()` akan menghentikan event flow saat ini dan event flow berikutnya pada event yang sama yang belum dieksekusi.
+> `ctx.exit()` / `ctx.exitAll()` — Kedua pemanggilan mengakhiri langkah saat ini dan melewati flow sekuensial yang tersisa pada event yang sama. Flow yang sudah berjalan secara paralel tetap berlanjut.
 
 ## Definisi Tipe
 
@@ -26,14 +26,7 @@ Menghentikan eksekusi event flow saat ini, langkah-langkah berikutnya tidak akan
 exit(): never;
 ```
 
-Memanggil `ctx.exit()` akan melempar `FlowExitException` internal, yang ditangkap oleh engine event flow untuk menghentikan eksekusi event flow saat ini. Setelah dipanggil, statement tersisa pada kode JS saat ini tidak akan dieksekusi.
-
-## Perbandingan dengan ctx.exitAll()
-
-| Method | Lingkup |
-|------|----------|
-| `ctx.exit()` | Hanya menghentikan event flow saat ini, event flow berikutnya tidak terpengaruh |
-| `ctx.exitAll()` | Menghentikan event flow saat ini, dan menghentikan **eksekusi sekuensial** event flow berikutnya pada event yang sama |
+Memanggil `ctx.exit()` akan melempar `FlowExitAllException` internal, yang ditangkap oleh engine event flow untuk menghentikan eksekusi event flow saat ini. Setelah dipanggil, statement tersisa pada kode JS saat ini tidak akan dieksekusi.
 
 ## Contoh
 
@@ -68,22 +61,6 @@ if (!record || record.status !== 'draft') {
 }
 ```
 
-### Pemilihan dengan ctx.exitAll()
-
-```ts
-// Hanya event flow saat ini perlu keluar → gunakan ctx.exit()
-if (!params.valid) {
-  ctx.message.error('Parameter tidak valid');
-  ctx.exit();  // Event flow lain tidak terpengaruh
-}
-
-// Perlu menghentikan semua event flow berikutnya pada event saat ini → gunakan ctx.exitAll()
-if (!ctx.model?.context?.getPermission?.()) {
-  ctx.notification.warning({ message: 'Tidak memiliki izin' });
-  ctx.exitAll();  // Event flow utama dan event flow berikutnya pada event yang sama berhenti bersama
-}
-```
-
 ### Keluar Berdasarkan Pilihan Pengguna Setelah Konfirmasi Popup
 
 ```ts
@@ -100,11 +77,10 @@ if (!ok) {
 ## Hal yang Perlu Diperhatikan
 
 - Setelah memanggil `ctx.exit()`, kode berikutnya pada JS saat ini tidak akan dieksekusi; disarankan menjelaskan alasannya kepada pengguna melalui `ctx.message`, `ctx.notification`, atau popup sebelum memanggil
-- Dalam kode bisnis biasanya tidak perlu menangkap `FlowExitException`, biarkan engine event flow yang menanganinya
-- Jika perlu menghentikan semua event flow berikutnya pada event saat ini, gunakan `ctx.exitAll()`
+- Dalam kode bisnis biasanya tidak perlu menangkap `FlowExitAllException`, biarkan engine event flow yang menanganinya
 
 ## Terkait
 
-- [ctx.exitAll()](./exit-all.md): Menghentikan event flow saat ini dan event flow berikutnya pada event yang sama
+- [ctx.exitAll()](./exit-all.md)
 - [ctx.message](./message.md): Pesan tip
 - [ctx.modal](./modal.md): Popup konfirmasi
