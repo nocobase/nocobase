@@ -1,4 +1,10 @@
 {
+  "Stdio MCP servers can only be configured in storage/ai/mcp/servers.json.": "Stdio MCP 服务只能通过 storage/ai/mcp/servers.json 配置。",
+  "This MCP server is managed by deployment configuration. Only its enabled state can be changed.": "此 MCP 服务由部署配置管理，仅可切换启用状态。",
+  "Invalid MCP configuration": "MCP 配置无效",
+  "MCP server not found": "MCP 服务不存在",
+  "Command is required for stdio transport": "Stdio 传输必须配置命令",
+  "No configuration provided": "未提供连接配置",
   "API Key": "API Key",
   "X-Title": "X-Title",
   "Sent as the \"X-Title\" request header.": "作为 \"X-Title\" 请求头发送。",

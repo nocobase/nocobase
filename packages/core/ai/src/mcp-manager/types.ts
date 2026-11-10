@@ -37,10 +37,13 @@ export type MCPOptions = {
   headers?: Record<string, string>;
   restart?: Record<string, any>;
   useUserContext?: boolean;
+  fromFile?: boolean;
 };
 
 export type MCPEntry = MCPOptions & {
   name: string;
+  title?: string;
+  description?: string;
   enabled: boolean;
 };
 
