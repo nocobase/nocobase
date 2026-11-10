@@ -7,7 +7,6 @@ const VERIFY_TIMEOUT_MS = 60 * 1000;
 
 export interface InstallOptions {
   directory: string;
-  registry?: string;
   onOutput?: (chunk: string) => void;
 }
 
@@ -15,14 +14,9 @@ export interface InstallOptions {
 export async function installDependencies(
   options: InstallOptions,
 ): Promise<void> {
-  const args = ['install'];
-
-  if (options.registry) {
-    args.push(`--registry=${options.registry}`);
-  }
-
   try {
-    await runCommand('pnpm', args, {
+    // The generated .npmrc selects the NocoBase scope; preserve the user's default registry for other packages.
+    await runCommand('pnpm', ['install'], {
       cwd: options.directory,
       timeoutMs: INSTALL_TIMEOUT_MS,
       onOutput: options.onOutput,

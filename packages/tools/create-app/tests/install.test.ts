@@ -1,9 +1,12 @@
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { createServer } from 'node:http';
+import type { AddressInfo } from 'node:net';
 import os from 'node:os';
 import path from 'node:path';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   DEFAULT_NATIVE_DRIVER,
+  installDependencies,
   syncSkills,
   verifyDriver,
 } from '../src/lib/install.ts';
@@ -11,6 +14,7 @@ import {
 const created: string[] = [];
 
 afterEach(async () => {
+  vi.unstubAllEnvs();
   await Promise.all(
     created
       .splice(0)
@@ -123,4 +127,85 @@ describe('verifyDriver', () => {
   it('defaults to the driver every template pulls in through @nocobase/db-sqlite', () => {
     expect(DEFAULT_NATIVE_DRIVER).toBe('better-sqlite3');
   });
+});
+
+describe('installDependencies registry routing', () => {
+  it.each(['@nocobase/registry-probe', 'third-party-registry-probe'])(
+    'resolves %s through its configured registry',
+    { timeout: 60_000 },
+    async (name) => {
+      const directory = await createProject('true');
+      const requests: {
+        registry: string;
+        name: string;
+        authorization?: string;
+      }[] = [];
+      const servers = ['public', 'private'].map((registry) =>
+        createServer((request, response) => {
+          requests.push({
+            registry,
+            name: decodeURIComponent(request.url ?? ''),
+            authorization: request.headers.authorization,
+          });
+          // A terminal 404 probes real pnpm routing without downloading packages or reaching the internet.
+          response.writeHead(404, { 'content-type': 'application/json' });
+          response.end(JSON.stringify({ error: 'Fixture package not found' }));
+        }),
+      );
+      try {
+        for (const server of servers) {
+          await new Promise<void>((resolve) =>
+            server.listen(0, '127.0.0.1', resolve),
+          );
+        }
+        const [publicUrl, privateUrl] = servers.map(
+          (server) =>
+            `http://127.0.0.1:${(server.address() as AddressInfo).port}/`,
+        );
+        for (const config of ['userconfig', 'globalconfig']) {
+          const filename = path.join(directory, `${config}.npmrc`);
+          await writeFile(filename, '');
+          vi.stubEnv(`npm_config_${config}`, filename);
+          vi.stubEnv(`NPM_CONFIG_${config.toUpperCase()}`, filename);
+        }
+        vi.stubEnv('npm_config_registry', publicUrl);
+        vi.stubEnv('NPM_CONFIG_REGISTRY', publicUrl);
+        vi.stubEnv('PNPM_CONFIG_REGISTRY', publicUrl);
+        vi.stubEnv('NOCOBASE_REGISTRY', privateUrl);
+        await writeFile(
+          path.join(directory, '.npmrc'),
+          `@nocobase:registry=${privateUrl}\n${privateUrl.replace('http:', '')}:_authToken=fixture-token\nstore-dir=${path.join(directory, 'store')}\n`,
+        );
+        await writeFile(
+          path.join(directory, 'package.json'),
+          JSON.stringify({
+            name: 'registry-test',
+            version: '1.0.0',
+            dependencies: { [name]: '1.0.0' },
+          }),
+        );
+        await expect(installDependencies({ directory })).rejects.toThrow(
+          'Installing dependencies failed',
+        );
+        const scoped = name.startsWith('@nocobase/');
+        expect(requests).toContainEqual({
+          registry: scoped ? 'private' : 'public',
+          name: `/${name}`,
+          authorization: scoped ? 'Bearer fixture-token' : undefined,
+        });
+        expect(
+          requests.every(
+            (request) => request.registry === (scoped ? 'private' : 'public'),
+          ),
+        ).toBe(true);
+      } finally {
+        await Promise.all(
+          servers.map(
+            (server) =>
+              new Promise<void>((resolve) => server.close(() => resolve())),
+          ),
+        );
+      }
+    },
+  );
 });
