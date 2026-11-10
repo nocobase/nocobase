@@ -263,7 +263,7 @@ function NotificationLogsTable(props: {
               defaultValue: 'Deliveries',
             })}
           </TableHead>
-          <TableHead className='w-44'>
+          <TableHead className='w-48'>
             {t('notificationLogs.logs.columns.created', {
               defaultValue: 'Created',
             })}
