@@ -1,5 +1,11 @@
 # @nocobase/create-app
 
+## 0.1.0-beta.36
+
+### Patch Changes
+
+- 1e53e8d: Preserve the package manager default registry for third-party dependencies when creating an app from a private NocoBase registry.
+
 ## 0.1.0-beta.35
 
 ### Patch Changes
