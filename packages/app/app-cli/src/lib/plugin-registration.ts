@@ -145,9 +145,10 @@ export function pluginPackageName(name: string): string {
 
 /** The short name a package name carries, for messages and directory lookups. */
 export function pluginShortName(packageName: string): string {
-  const match = /^@[a-z0-9][a-z0-9-]*\/app-(?:plugin|module|portal)-(.+)$/u.exec(
-    packageName,
-  );
+  const match =
+    /^@[a-z0-9][a-z0-9-]*\/app-(?:plugin|module|portal)-(.+)$/u.exec(
+      packageName,
+    );
   return match?.[1] ?? packageName;
 }
 
