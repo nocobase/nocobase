@@ -119,6 +119,20 @@ export const DataTypeTransformers = {
       return value.toISOString();
     },
   },
+  dateOnly(value: unknown) {
+    if (value instanceof Date && !Number.isNaN(value.valueOf())) {
+      return [
+        String(value.getFullYear()).padStart(4, '0'),
+        String(value.getMonth() + 1).padStart(2, '0'),
+        String(value.getDate()).padStart(2, '0'),
+      ].join('-');
+    }
+    if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+      const iso = new Date(value + 'T00:00:00Z');
+      if (!Number.isNaN(iso.getTime()) && iso.toISOString().slice(0, 10) === value) return value;
+    }
+    return null;
+  },
   date: {
     boolean(value: boolean) {
       return null;

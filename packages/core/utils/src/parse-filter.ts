@@ -107,6 +107,7 @@ function isDate(input) {
 function isDateFieldWithoutTimezone(field) {
   return (
     field?.type === 'dateOnly' ||
+    (field?.type === 'formula' && field.options?.dataType === 'dateOnly') ||
     field?.type === 'datetimeNoTz' ||
     field?.constructor.name === 'DateOnlyField' ||
     field?.constructor.name === 'DatetimeNoTzField'

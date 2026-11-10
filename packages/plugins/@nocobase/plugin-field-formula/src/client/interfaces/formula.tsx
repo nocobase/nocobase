@@ -71,7 +71,7 @@ const resolveFormulaDataType = (meta?: any) => {
 const formulaOperatorGroups = [
   { types: ['boolean'], operators: operators.boolean },
   { types: ['string'], operators: operators.string },
-  { types: ['date'], operators: operators.datetime },
+  { types: ['date', 'dateOnly'], operators: operators.datetime },
   { types: ['integer', 'double', 'bigInt', 'number'], operators: operators.number },
 ];
 
@@ -126,6 +126,7 @@ export class FormulaFieldInterface extends CollectionFieldInterface {
         // { value: 'decimal', label: 'Decimal' }, // not supported
         { value: 'string', label: 'String' },
         { value: 'date', label: 'Datetime' },
+        { value: 'dateOnly', label: '{{t("DateOnly")}}' },
       ],
       required: true,
       default: 'double',

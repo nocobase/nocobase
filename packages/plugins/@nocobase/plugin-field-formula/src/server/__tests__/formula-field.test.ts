@@ -8,7 +8,7 @@
  */
 
 import { createMockDatabase, Database } from '@nocobase/database';
-import { FormulaField } from '../formula-field';
+import { FormulaField, FormulaFieldOptions } from '../formula-field';
 
 describe('formula field', () => {
   let db: Database;
@@ -1030,6 +1030,31 @@ describe('formula field', () => {
           expect(test.get('result')).toBe(now.toISOString());
         });
       });
+    });
+
+    it('stores date-only formula results as calendar days across year boundaries', async () => {
+      const formulaField: FormulaFieldOptions = {
+        type: 'formula',
+        name: 'result',
+        engine: 'formula.js',
+        dataType: 'dateOnly',
+        expression: 'DATE(YEAR({{source}}), MONTH({{source}}), DAY({{source}}) + {{days}})',
+      };
+      const collection = db.collection({
+        name: 'calendarDates',
+        fields: [{ type: 'dateOnly', name: 'source' }, { type: 'bigInt', name: 'days' }, formulaField],
+      });
+      await db.sync();
+      for (const [source, days, expected] of [
+        ['2025-04-15', 0, '2025-04-15'],
+        ['2025-04-15', 1, '2025-04-16'],
+        ['2025-04-15', null, '2025-04-15'],
+        ['2025-12-31', 1, '2026-01-01'],
+      ]) {
+        const row = await collection.repository.create({ values: { source, days } });
+        await row.reload();
+        expect(row.get('result')).toBe(expected);
+      }
     });
 
     describe('date', () => {

@@ -20,7 +20,11 @@ function isDatetimeNoTzField(field) {
 }
 
 function isDateOnlyField(field) {
-  return field?.type === 'dateOnly' || field?.constructor.name === 'DateOnlyField';
+  return (
+    (field?.type === 'formula' && field?.options?.dataType === 'dateOnly') ||
+    field?.type === 'dateOnly' ||
+    field?.constructor.name === 'DateOnlyField'
+  );
 }
 
 const toDate = (date, options: any = {}) => {
