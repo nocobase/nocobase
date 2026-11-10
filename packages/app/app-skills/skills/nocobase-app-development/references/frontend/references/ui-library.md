@@ -400,7 +400,7 @@ Application-owned delivery and provider attempt log components backed by the Noc
 - Installs to: `client/extensions/nocobase-notification-logs-ui/`
 - Plugin dependencies: none
 - Example: `@nocobase/notification-logs-ui-demo` (`pnpm exec shadcn view @nocobase/notification-logs-ui-demo`)
-- After installing: Requires the Notification server plugin and authorized access to GET /api/notifications/logs. Mount NotificationLogsPage in an application-owned route and merge locales/ into application locales. Shows the newest 100 logs; adds no route or permissions.
+- After installing: Requires the Notification server plugin and authorized access to GET /api/notifications/logs. Mount NotificationLogsPage in an application-owned route (pass showHeading={false} when the page already titles it, such as a settings tab) and merge locales/ into application locales. Shows the newest 100 logs; adds no route or permissions.
 
 ## Other
 
