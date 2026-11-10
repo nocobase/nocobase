@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { afterEach, expect, it } from 'vitest';
-import { visibleIssues, visibleIssueSubjects } from '../../server/index.js';
+import { visibleIssueSubjects } from '../../server/index.js';
+import { visibleIssues } from '../../server/domains/issues/issue.access.js';
 import { createHarness, type Harness } from '../harness.js';
 
 let h: Harness;

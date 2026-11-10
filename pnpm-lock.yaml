@@ -3492,7 +3492,7 @@ importers:
         specifier: workspace:*
         version: link:../../libs/jobs
       '@nocobase/realtime':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../libs/realtime
       '@testing-library/react':
         specifier: 'catalog:'

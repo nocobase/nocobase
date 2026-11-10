@@ -330,13 +330,13 @@
     "remark-gfm": "catalog:"
   },
   "devDependencies": {
-    "@nocobase/realtime": "workspace:^",
     "@nocobase/agent-runner": "workspace:*",
     "@nocobase/app-testing": "workspace:*",
     "@nocobase/db-postgres": "workspace:*",
     "@nocobase/db-sqlite": "workspace:*",
     "@nocobase/dev-config": "workspace:*",
     "@nocobase/jobs": "workspace:*",
+    "@nocobase/realtime": "workspace:*",
     "@testing-library/react": "catalog:",
     "@testing-library/user-event": "catalog:",
     "@types/node": "catalog:",

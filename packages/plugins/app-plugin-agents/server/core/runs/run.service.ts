@@ -20,7 +20,12 @@ import {
   type RunStatus,
 } from '@nocobase/agent-protocol';
 import type { Runner } from '../../../shared/runners.js';
-import type { DatabaseConnection, ExpressionBuilder } from '@nocobase/db';
+import type {
+  DatabaseConnection,
+  Expression,
+  ExpressionBuilder,
+  SqlBool,
+} from '@nocobase/db';
 
 import type { Agent } from '../../../shared/agents.js';
 import type { RunBrief } from '../../../shared/briefs.js';
@@ -218,9 +223,7 @@ export function queuedRun(result: EnqueueResult): RunEnqueued {
 }
 
 export interface RunFilter {
-  readonly visibility?: (
-    eb: import('@nocobase/db').ExpressionBuilder,
-  ) => import('@nocobase/db').Expression<import('@nocobase/db').SqlBool>;
+  readonly visibility?: (eb: ExpressionBuilder) => Expression<SqlBool>;
   readonly subjectKind?: string;
   readonly subjectId?: string;
   readonly agentId?: string;

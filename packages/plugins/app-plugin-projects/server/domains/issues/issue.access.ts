@@ -38,7 +38,7 @@ import { forbidden, notFound } from '../../kernel/errors.js';
 import { projectRelation, visibleProjects } from '../projects/index.js';
 import { findIssue, findIssueIds } from './issue.store.js';
 
-/** The live issues the viewer may see, as a filter on `pmIssues`. */
+/** The live issues the viewer may see, as a filter on `pmIssues`. Keep scope rules in sync with `visibleIssueSubjects`. */
 export function visibleIssues(f: FilterBuilder, viewer: Viewer): FilterNode {
   const visible = byScope(f, viewer);
   if (!viewer.projectIds) return visible;
@@ -194,7 +194,10 @@ export async function requireOwnerChanger(
     );
 }
 
-/** Subject-id predicate for cross-domain queries; null is the unrestricted-reader fast path. */
+/**
+ * Subject-id predicate for cross-domain queries; null is the unrestricted-reader fast path.
+ * Keep scope rules in sync with `visibleIssues` and its project visibility rules; `subject-visibility.test.ts` checks parity.
+ */
 export function visibleIssueSubjects(
   viewer: Viewer,
 ): ((eb: ExpressionBuilder, subjectId: string) => Expression<SqlBool>) | null {
