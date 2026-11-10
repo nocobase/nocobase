@@ -270,6 +270,8 @@ export interface JSONTextAreaReadPrettyProps {
   space?: number;
   prefixCls?: string;
   ellipsis?: boolean;
+  addonBefore?: React.ReactNode;
+  addonAfter?: React.ReactNode;
 }
 
 const JSONClassName = css`
@@ -282,6 +284,8 @@ ReadPretty.JSON = (props: JSONTextAreaReadPrettyProps) => {
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const prefixCls = usePrefixCls('json', props);
   // eslint-disable-next-line react-hooks/rules-of-hooks
+  const compile = useCompile();
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   const content = useMemo(
     () => (props.value != null ? JSON.stringify(props.value, null, props.space ?? 2) : ''),
     [props.space, props.value],
@@ -292,15 +296,28 @@ ReadPretty.JSON = (props: JSONTextAreaReadPrettyProps) => {
     </pre>
   );
 
-  if (props.ellipsis) {
-    return (
-      <EllipsisWithTooltip ellipsis={props.ellipsis} popoverContent={JSONContent}>
-        {content}
-      </EllipsisWithTooltip>
-    );
-  }
-
-  return JSONContent;
+  return (
+    <div
+      className={cls(prefixCls, props.className)}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        overflowWrap: 'break-word',
+        whiteSpace: 'normal',
+        ...props.style,
+      }}
+    >
+      {compile(props.addonBefore)}
+      {props.ellipsis ? (
+        <EllipsisWithTooltip ellipsis={props.ellipsis} popoverContent={JSONContent}>
+          {content}
+        </EllipsisWithTooltip>
+      ) : (
+        JSONContent
+      )}
+      {compile(props.addonAfter)}
+    </div>
+  );
 };
 
 ReadPretty.Input = withPopupWrapper(ReadPretty.Input);
