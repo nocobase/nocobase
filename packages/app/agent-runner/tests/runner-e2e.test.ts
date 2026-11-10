@@ -303,7 +303,19 @@ describe('runner end to end', () => {
     expect(envOutput).toContain('DEPLOY_TOKEN=[REDACTED]');
     expect(JSON.stringify(events)).not.toContain('secret-value');
     expect(envOutput).not.toContain('should-not-leak');
-    expect(envOutput).not.toMatch(/^NOCOBASE_RUNNER_/m);
+    // Of the runner's own variables only where the npm launcher finds the run's socket and npm directory, never its
+    // configuration or key.
+    expect(
+      envOutput!
+        .split('\n')
+        .filter((line) => line.startsWith('NOCOBASE_RUNNER_'))
+        .map((line) => line.slice(0, line.indexOf('=')))
+        .sort(),
+    ).toEqual([
+      'NOCOBASE_RUNNER_GIT_CREDENTIAL_NONCE',
+      'NOCOBASE_RUNNER_GIT_CREDENTIAL_SOCKET',
+      'NOCOBASE_RUNNER_NPM_DIR',
+    ]);
     // The real home of the user the runner runs as, not one inside the work directory.
     expect(envOutput).toMatch(/^HOME=/m);
     expect(envOutput).not.toContain(`HOME=${workDir}`);
