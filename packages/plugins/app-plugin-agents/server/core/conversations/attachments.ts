@@ -1,4 +1,5 @@
 import {
+  assertFileUploadSize,
   defaultFileUploadLimit,
   type FileUploadLimit,
 } from '@nocobase/app-plugin-file/server';
@@ -185,6 +186,7 @@ export interface AttachmentReader {
 }
 
 export interface ChatAttachmentContent {
+  readonly maxBytes: number;
   readonly attachment: MessageAttachment;
   readonly body: ReadableStream<Uint8Array>;
 }
@@ -236,6 +238,7 @@ export interface ChatAttachmentLinks {
 }
 
 export interface ChatAttachmentDeps {
+  readonly limitForDisk?: (disk: string) => FileUploadLimit;
   readonly uploadLimit?: FileUploadLimit;
   readonly tx: TxRunner;
   readonly storage: ChatFileStorage;
@@ -509,6 +512,7 @@ export function createChatAttachments(deps: ChatAttachmentDeps): {
   const service: ChatAttachmentService = {
     uploadLimit: deps.uploadLimit ?? defaultFileUploadLimit(),
     async upload(userId, file) {
+      assertFileUploadSize(file, deps.uploadLimit ?? defaultFileUploadLimit());
       const id = await deps.storage.store(file, userId);
       const row = await findFile(deps.tx.read(), id);
       if (!row) throw notFound('Attachment');
@@ -526,7 +530,15 @@ export function createChatAttachments(deps: ChatAttachmentDeps): {
 
     async content(reader, id, conn) {
       const row = await readable(conn ?? deps.tx.read(), reader, id);
-      return { attachment: view(row), body: await deps.storage.stream(row) };
+      return {
+        attachment: view(row),
+        body: await deps.storage.stream(row),
+        maxBytes: (
+          deps.limitForDisk?.(row.disk) ??
+          deps.uploadLimit ??
+          defaultFileUploadLimit(row.disk)
+        ).maxBytes,
+      };
     },
 
     async images(conversationId, ids, maxBytes) {

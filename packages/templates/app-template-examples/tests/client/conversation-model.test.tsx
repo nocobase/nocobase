@@ -350,16 +350,3 @@ it('blocks model and search configuration while resend admission is pending', as
   expect(picker).toBeEnabled();
   expect(search).toBeEnabled();
 });
-
-vi.mock('@nocobase/app-plugin-file/client', () => ({
-  useFileUploadLimit: () => ({
-    disk: 'local',
-    maxFileSizeMb: 20,
-    maxBytes: 20 * 1024 * 1024,
-  }),
-  defaultFileUploadLimit: () => ({
-    disk: 'local',
-    maxFileSizeMb: 20,
-    maxBytes: 20 * 1024 * 1024,
-  }),
-}));

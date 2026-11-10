@@ -209,43 +209,33 @@ async function fixture(
 const file = (name = 'hello.txt', text = 'hello'): File =>
   new File([text], name, { type: 'text/plain' });
 
-describe('per-disk file limits', () => {
-  it('uses each destination disk, validates before storage, and reports the same 413 for HTTP', async () => {
-    const f = await fixture({}, { diskLimits: { local: 1, public: 50 } });
-    const small = f.manager.repository('attachments', {
+describe('upload policy boundaries', () => {
+  it('leaves direct repository uploads unrestricted and preserves public HTTP body limits', async () => {
+    const f = await fixture({}, { diskLimits: { local: 1 } });
+    const bytes = new Uint8Array(2 * 1024 * 1024);
+    const uploaded = new File([bytes], 'limit.bin');
+    const repository = f.manager.repository('attachments', {
       disk: 'local',
-      accessPath: '/uploads/small',
+      accessPath: '/uploads/attachments',
       policy: openPolicy,
     });
-    const large = f.manager.repository('attachments', {
-      disk: 'public',
-      accessPath: '/uploads/large',
-      policy: openPolicy,
-    });
-    const rejected = new File(
-      [new Uint8Array(1024 * 1024 + 1)],
-      'too-large.bin',
+    expect((await repository.uploadOne({ file: uploaded })).record.size).toBe(
+      bytes.length,
     );
-    await expect(small.uploadOne({ file: rejected })).rejects.toMatchObject({
-      code: 413,
-      reason: 'FILE_TOO_LARGE',
-      metadata: { disk: 'local', maxFileSizeMb: 1, maxBytes: 1024 * 1024 },
-    });
+    expect(
+      (await repository.uploadMany({ files: [uploaded] })).createdCount,
+    ).toBe(1);
+    expect((await f.client.uploadOne({ file: uploaded })).record.size).toBe(
+      bytes.length,
+    );
     await expect(
-      small.uploadMany({ files: [new File(['ok'], 'ok.txt'), rejected] }),
-    ).rejects.toMatchObject({ reason: 'FILE_TOO_LARGE' });
-    await expect(f.client.uploadOne({ file: rejected })).rejects.toMatchObject({
+      f.client.uploadOne({
+        file: new File([new Uint8Array(5 * 1024 * 1024)], 'body.bin'),
+      }),
+    ).rejects.toMatchObject({
       status: 413,
-      reason: 'FILE_TOO_LARGE',
+      reason: 'BODY_TOO_LARGE',
       domain: 'file',
-    });
-    expect(await f.db.repository('attachments').count()).toBe(0);
-    const accepted = await large.uploadOne({
-      file: new File([new Uint8Array(50 * 1024 * 1024)], 'limit.bin'),
-    });
-    expect(accepted.record).toMatchObject({
-      disk: 'public',
-      size: 50 * 1024 * 1024,
     });
   });
 });

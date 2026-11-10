@@ -11,7 +11,7 @@ export function fileTooLarge(limit: FileUploadLimit): ApiError {
     metadata: { ...limit },
   });
 }
-/** Every File Repository upload uses the destination disk's limit before writing bytes. */
+/** Attachment entry points check the destination disk's limit before writing bytes. */
 export function assertFileUploadSize(file: File, limit: FileUploadLimit): void {
   if (file.size > limit.maxBytes) throw fileTooLarge(limit);
 }

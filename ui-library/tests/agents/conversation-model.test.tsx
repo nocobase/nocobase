@@ -383,8 +383,3 @@ it('blocks model and search configuration while resend admission is pending', as
   expect(picker).toBeEnabled();
   expect(search).toBeEnabled();
 });
-
-vi.mock(
-  '@nocobase/app-plugin-file/client',
-  () => import('../../website/demo/agents/file-client'),
-);

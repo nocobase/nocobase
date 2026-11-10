@@ -1,6 +1,6 @@
 import { createAppClientConfig } from '@nocobase/app-client';
 import { renderWithApp } from '@nocobase/app-testing/client';
-import { screen } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { expect, it, vi } from 'vitest';
 import file from '../client/index.js';
 import { useFileUploadLimit } from '../client/upload-limits.js';
@@ -57,4 +57,9 @@ it('starts without published limits and uses 20 MiB without a request', async ()
   await renderWithApp(<Limit />, { plugins: [file()], fetch });
   expect(screen.getByText('local: 20 MB')).toBeTruthy();
   expect(fetch).not.toHaveBeenCalled();
+});
+
+it('renders outside an application with the default disk limit', () => {
+  render(<Limit />);
+  expect(screen.getByText('local: 20 MB')).toBeTruthy();
 });

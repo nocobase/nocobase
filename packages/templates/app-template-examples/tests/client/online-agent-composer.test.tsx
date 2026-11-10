@@ -98,16 +98,3 @@ it('accepts a current ready editor callback', async () => {
   expect(host.send!('Ready', undefined, [])).toBe(true);
   expect(host.accepted).toHaveBeenCalledOnce();
 });
-
-vi.mock('@nocobase/app-plugin-file/client', () => ({
-  useFileUploadLimit: () => ({
-    disk: 'local',
-    maxFileSizeMb: 20,
-    maxBytes: 20 * 1024 * 1024,
-  }),
-  defaultFileUploadLimit: () => ({
-    disk: 'local',
-    maxFileSizeMb: 20,
-    maxBytes: 20 * 1024 * 1024,
-  }),
-}));

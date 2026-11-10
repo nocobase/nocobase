@@ -235,8 +235,3 @@ it('lets a composer slot use its page or panel New action', async () => {
   );
   expect(onNew).toHaveBeenCalledOnce();
 });
-
-vi.mock(
-  '@nocobase/app-plugin-file/client',
-  () => import('../../website/demo/agents/file-client'),
-);

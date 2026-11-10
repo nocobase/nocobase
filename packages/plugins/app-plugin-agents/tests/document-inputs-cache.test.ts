@@ -239,10 +239,10 @@ it('A10/A11: rejects unknown binary names and conflicting formats rather than fa
     'different document formats',
   );
   expect(() =>
-    inlineBytes('data:text/plain;base64,?invalid', 'text/plain'),
+    inlineBytes('data:text/plain;base64,?invalid', 'text/plain', 1024 * 1024),
   ).toThrow();
   expect(() =>
-    inlineBytes('data:application/pdf;base64,eA==', 'text/plain'),
+    inlineBytes('data:application/pdf;base64,eA==', 'text/plain', 1024 * 1024),
   ).toThrow();
   expect(() => inlineBytes('data:text/plain;base64,A', 'text/plain')).toThrow();
 });
@@ -258,10 +258,10 @@ it('A08/A12: actual stream limits cancel the source and Stop waits for stream ca
     },
     cancel: cancelled,
   });
-  await expect(readBytes(body, new AbortController().signal)).rejects.toThrow(
-    'byte budget',
-  );
-  expect(chunks).toBeLessThanOrEqual(22);
+  await expect(
+    readBytes(body, new AbortController().signal, 1024 * 1024),
+  ).rejects.toThrow('byte budget');
+  expect(chunks).toBeLessThanOrEqual(3);
   expect(cancelled).toHaveBeenCalledOnce();
   expect(body.locked).toBe(false);
   const released = Promise.withResolvers<void>();
@@ -274,7 +274,7 @@ it('A08/A12: actual stream limits cancel the source and Stop waits for stream ca
     },
   });
   let settled = false;
-  const reading = readBytes(blocked, abort.signal).finally(() => {
+  const reading = readBytes(blocked, abort.signal, 1024 * 1024).finally(() => {
     settled = true;
   });
   const rejected = reading.catch((error: unknown) => error);
@@ -285,4 +285,65 @@ it('A08/A12: actual stream limits cancel the source and Stop waits for stream ca
   released.resolve();
   expect(await rejected).toBeInstanceOf(Error);
   expect(blocked.locked).toBe(false);
+});
+
+it('reads stored files above 20 MiB using their own disk limit and rejects beyond that limit', async () => {
+  const maxBytes = 21 * 1024 * 1024;
+  const bytes = new Uint8Array(20 * 1024 * 1024 + 1);
+  const attachment = {
+    id: 'stored',
+    filename: 'large.txt',
+    ext: 'txt',
+    mimeType: 'text/plain',
+    size: bytes.length,
+  };
+  const content = vi.fn(async () => ({
+    attachment: {
+      ...attachment,
+      contentUrl: '/file',
+      downloadUrl: '/file?download=true',
+      previewable: false,
+    },
+    maxBytes,
+    body: new Blob([bytes]).stream(),
+  }));
+  const extract = vi.fn<TextExtractor>(async () => ({
+    status: 'ready',
+    markdown: 'Large document text',
+    hasText: true,
+  }));
+  const inputs = new NativeFileInputs({
+    connectionFor: async () => documentConnection,
+    createModel: () => new MockLanguageModelV4(),
+    files: {
+      uploadLimit: { disk: 'default', maxFileSizeMb: 1, maxBytes: 1024 * 1024 },
+      content,
+    },
+    extract,
+  });
+  const model = await inputs.model(documentRef, 'session');
+  const source = snapshot();
+  const stored = { ...source, files: [{ ...source.files[0], attachment }] };
+  const prepare = () =>
+    inputs.prepare({
+      model,
+      snapshot: stored,
+      userId: 'alice',
+      sessionId: 'session',
+      signal: new AbortController().signal,
+    });
+  expect(JSON.stringify(await prepare())).toContain('Large document text');
+  expect(extract.mock.calls[0]?.[0].bytes.byteLength).toBe(bytes.length);
+  content.mockImplementationOnce(async () => ({
+    attachment: {
+      ...attachment,
+      contentUrl: '/file',
+      downloadUrl: '/file?download=true',
+      previewable: false,
+    },
+    maxBytes: 1024 * 1024,
+    body: new Blob([bytes]).stream(),
+  }));
+  await expect(prepare()).rejects.toThrow('byte budget');
+  expect(extract).toHaveBeenCalledOnce();
 });

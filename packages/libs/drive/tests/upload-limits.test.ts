@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
   createDriveManager,
-  driveUploadLimits,
+  readMaxFileSizeMb,
   parseDriveDiskConfig,
 } from '../src/index.js';
 
@@ -28,7 +28,7 @@ describe('per-disk upload limits', () => {
     });
     expect(() => manager.getUploadLimit('unknown')).toThrow('not configured');
   });
-  it('does not create custom drivers while validating or publishing limits', () => {
+  it('does not create custom drivers while reading or publishing limits', () => {
     const factory = vi.fn(() => {
       throw new Error('Must stay lazy');
     });
@@ -42,24 +42,16 @@ describe('per-disk upload limits', () => {
   it.each([0, -1, 1.5, '50', null, false, Number.MAX_SAFE_INTEGER])(
     'rejects invalid limits on unused disks (%s)',
     (value) => {
-      const config = {
-        default: 'local',
-        disks: {
-          local: disk,
-          unused: { ...disk, maxFileSizeMb: value as number },
-        },
-      };
-      expect(() => createDriveManager(config)).toThrow(
-        'drive.disks.unused.maxFileSizeMb',
-      );
-      expect(() => driveUploadLimits(config)).toThrow(
-        'drive.disks.unused.maxFileSizeMb',
-      );
-      expect(() =>
-        parseDriveDiskConfig({ ...disk, maxFileSizeMb: value }),
-      ).toThrow('maxFileSizeMb');
+      expect(
+        readMaxFileSizeMb({ ...disk, maxFileSizeMb: value }),
+      ).toBeUndefined();
     },
   );
+  it('reads default and custom limits without throwing', () => {
+    expect(readMaxFileSizeMb(disk)).toBe(20);
+    expect(readMaxFileSizeMb({ maxFileSizeMb: 50 })).toBe(50);
+    expect(readMaxFileSizeMb(null)).toBeUndefined();
+  });
   it('preserves explicit limits when parsing serializable disks', () => {
     expect(parseDriveDiskConfig({ ...disk, maxFileSizeMb: 50 })).toMatchObject({
       maxFileSizeMb: 50,

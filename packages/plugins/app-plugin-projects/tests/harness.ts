@@ -1,5 +1,4 @@
 import { createDriveManager, type AppDriveConfig } from '@nocobase/drive';
-import { assertFileUploadSize } from '@nocobase/app-plugin-file/server';
 /**
  * A real database for the service tests: a test database, with the authentication and authorization plugins'
  * migrations (the `user` collection and the permission-set tables) and then this plugin's migrations and seeds.
@@ -145,7 +144,6 @@ export async function createHarness(
     uploader: () => ({
       repository: (collection, options) => ({
         async uploadOne({ file }) {
-          assertFileUploadSize(file, drive.getUploadLimit(options.disk));
           const id = crypto.randomUUID();
           const dot = file.name.lastIndexOf('.');
           const ext = dot > 0 ? file.name.slice(dot + 1).toLowerCase() : '';

@@ -1,4 +1,4 @@
-import { FILE_INPUT_MAX_BYTES } from './input.js';
+import { defaultFileUploadLimit } from '@nocobase/app-plugin-file/server';
 import { FileInputError } from './errors.js';
 import { createHash } from 'node:crypto';
 import {
@@ -41,7 +41,7 @@ export class NativeFileInputs {
   constructor(
     private readonly deps: {
       connectionFor(ref: ModelRef): Promise<ModelConnection>;
-      files?: Pick<ChatAttachmentService, 'content'>;
+      files?: Pick<ChatAttachmentService, 'content' | 'uploadLimit'>;
       config?: FileInputsConfig;
       createModel?: typeof languageModel;
       extract?: TextExtractor;
@@ -50,7 +50,8 @@ export class NativeFileInputs {
   ) {
     this.profiles = new FileInputProfiles(deps.config);
     this.extract =
-      deps.extract ?? workerExtractor({ maxInputBytes: FILE_INPUT_MAX_BYTES });
+      deps.extract ??
+      workerExtractor({ maxInputBytes: Number.MAX_SAFE_INTEGER });
   }
 
   async model(ref: ModelRef, sessionId: string): Promise<LanguageModel> {
@@ -142,7 +143,7 @@ export class NativeFileInputs {
                 { userId: input.userId },
                 file.attachment.id,
               );
-          bytes = await readBytes(authorized.body, signal);
+          bytes = await readBytes(authorized.body, signal, authorized.maxBytes);
         } else {
           // Provider references remain provider inputs; they are never fetched by this service.
           if (!part.url.startsWith('data:')) {
@@ -150,7 +151,12 @@ export class NativeFileInputs {
               throw new FileInputError('unsupportedFormat');
             continue;
           }
-          bytes = inlineBytes(part.url, mediaType);
+          bytes = inlineBytes(
+            part.url,
+            mediaType,
+            this.deps.files?.uploadLimit.maxBytes ??
+              defaultFileUploadLimit().maxBytes,
+          );
         }
         const digest = createHash('sha256').update(bytes).digest('hex');
         budget.source(

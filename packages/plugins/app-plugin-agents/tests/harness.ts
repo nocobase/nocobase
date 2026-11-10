@@ -1,8 +1,5 @@
 import { createDriveManager, type AppDriveConfig } from '@nocobase/drive';
-import {
-  assertFileUploadSize,
-  type FileUploadLimit,
-} from '@nocobase/app-plugin-file/server';
+import {} from '@nocobase/app-plugin-file/server';
 /**
  * A real database for the service and route tests, this plugin's migrations applied, and the services assembled
  * with a clock the test moves. The database is on the dialect `NOCOBASE_TEST_DB_DIALECT` selects, SQLite when it is
@@ -219,7 +216,6 @@ export interface RequestOptions {
 function memoryChatFiles(
   database: DatabaseManager,
   clock: FakeClock,
-  limit: FileUploadLimit,
 ): ChatFileStorage & {
   readonly stored: Map<string, Uint8Array>;
   readonly removed: string[];
@@ -235,7 +231,6 @@ function memoryChatFiles(
     stored,
     removed,
     async store(file, uploaderId) {
-      assertFileUploadSize(file, limit);
       const id = randomUUID();
       const key = `chat/${id}`;
       stored.set(key, new Uint8Array(await file.arrayBuffer()));
@@ -343,9 +338,10 @@ export async function createHarness(
     },
   );
   const uploadLimit = drive.getUploadLimit();
-  const chatFiles = memoryChatFiles(database, clock, uploadLimit);
+  const chatFiles = memoryChatFiles(database, clock);
   const services = createAgents({
     uploadLimit,
+    limitForDisk: () => uploadLimit,
     measureOnlineAgent: options.measureOnlineAgent,
     uiRecovery: options.uiRecovery,
     database,

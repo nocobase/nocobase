@@ -1,4 +1,5 @@
-import { useClientApplication } from '@nocobase/app-client';
+import { ClientApplicationContext } from '@nocobase/app-client';
+import { useContext } from 'react';
 import { fileUploadLimitsToken } from './token.js';
 import {
   defaultFileUploadLimit,
@@ -6,8 +7,8 @@ import {
 } from '../shared/upload-limits.js';
 
 export function useFileUploadLimit(disk?: string): FileUploadLimit {
-  const app = useClientApplication();
-  if (!app.services.has(fileUploadLimitsToken))
+  const app = useContext(ClientApplicationContext);
+  if (!app?.services.has(fileUploadLimitsToken))
     return defaultFileUploadLimit(disk);
   const limits = app.services.resolve(fileUploadLimitsToken);
   const selected = disk ?? limits.default;

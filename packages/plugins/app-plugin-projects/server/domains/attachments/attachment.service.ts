@@ -14,6 +14,7 @@
  * `ORPHAN_HOURS`.
  */
 import {
+  assertFileUploadSize,
   defaultFileUploadLimit,
   type FileUploadLimit,
 } from '@nocobase/app-plugin-file/server';
@@ -273,6 +274,7 @@ export function createAttachmentService(deps: AttachmentDeps): {
 
   async function store(viewer: Viewer, file: File): Promise<string> {
     requireUploader(viewer);
+    assertFileUploadSize(file, deps.uploadLimit ?? defaultFileUploadLimit());
     return deps.storage.store(file, uploaderOf(viewer.actor, viewer.userId));
   }
 

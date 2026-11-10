@@ -110,16 +110,3 @@ it('an upload completion uses the current model/executor callback rather than th
   expect(first).not.toHaveBeenCalled();
   expect(second).toHaveBeenCalledWith('Current choice', undefined, []);
 });
-
-vi.mock('@nocobase/app-plugin-file/client', () => ({
-  useFileUploadLimit: () => ({
-    disk: 'local',
-    maxFileSizeMb: 20,
-    maxBytes: 20 * 1024 * 1024,
-  }),
-  defaultFileUploadLimit: () => ({
-    disk: 'local',
-    maxFileSizeMb: 20,
-    maxBytes: 20 * 1024 * 1024,
-  }),
-}));

@@ -1,4 +1,3 @@
-import { FILE_INPUT_MAX_BYTES } from './input.js';
 import type {
   ExtractOptions,
   ExtractRequest,
@@ -85,8 +84,6 @@ class KimiExtractor {
     let result: ExtractResponse;
     try {
       signal.throwIfAborted();
-      if (request.bytes.byteLength > FILE_INPUT_MAX_BYTES)
-        throw new ByteLimitError();
       if (
         !Number.isSafeInteger(maxChars) ||
         maxChars < 0 ||
