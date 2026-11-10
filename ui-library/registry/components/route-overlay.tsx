@@ -218,6 +218,9 @@ function DiscardGuard({
   // such moment, and how many of its FeedbackForm submissions are running.
   const baselinesRef = useRef(new Map<HTMLFormElement, string>());
   const editedRef = useRef(new Set<HTMLFormElement>());
+  // A form inside was just submitted and the user has not pressed a key or a pointer in the overlay since: the
+  // navigation that follows is the save's own, also for a plain `<form>`, which reports no save of its own.
+  const submittedRef = useRef(false);
   const savingRef = useRef(0);
   const popupRef = useContext(ParentPopupContext);
   useEffect(() => {
@@ -237,6 +240,7 @@ function DiscardGuard({
     };
     // The fields as they are before the user's first touch, so a value changed back again is not unsaved.
     const touch = (event: Event): void => {
+      submittedRef.current = false;
       const form = tracked(event.target);
       if (form && !baselinesRef.current.has(form))
         baselinesRef.current.set(form, formSnapshot(form));
@@ -255,12 +259,17 @@ function DiscardGuard({
     // its label, and that is not the user's input.
     popup.addEventListener('keydown', touch, true);
     popup.addEventListener('pointerdown', touch, true);
+    const submitted = (): void => {
+      submittedRef.current = true;
+    };
+    popup.addEventListener('submit', submitted, true);
     popup.addEventListener('input', edit, true);
     popup.addEventListener('change', edit, true);
     popup.addEventListener(FORM_SUBMIT_EVENT, submit);
     return () => {
       popup.removeEventListener('keydown', touch, true);
       popup.removeEventListener('pointerdown', touch, true);
+      popup.removeEventListener('submit', submitted, true);
       popup.removeEventListener('input', edit, true);
       popup.removeEventListener('change', edit, true);
       popup.removeEventListener(FORM_SUBMIT_EVENT, submit);
@@ -268,7 +277,8 @@ function DiscardGuard({
   }, [popupRef]);
   const isDirty = useCallback((): boolean => {
     // The save's own navigation, or a form inside that asks its own question.
-    if (savingRef.current > 0 || ownersRef.current > 0) return false;
+    if (savingRef.current > 0 || submittedRef.current || ownersRef.current > 0)
+      return false;
     // A disabled save button, such as while validation fails, never means there is nothing to lose.
     const current = dirtyRef.current;
     return (

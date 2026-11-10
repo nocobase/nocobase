@@ -1517,9 +1517,33 @@ describe('the unsaved-changes question for a plain form', () => {
   // `values`), a Select-like widget with no field of its own, a draft saved on every change and no `dirty`.
   function PlainEdit() {
     const [priority, setPriority] = useState('Normal');
+    const navigate = useNavigate();
+    const { search } = useLocation();
     return (
-      <RouteDialog title='Edit' footer={<Actions />}>
+      <RouteDialog
+        title='Edit'
+        footer={
+          <>
+            <Actions />
+            <button type='submit' form='plain'>
+              Save
+            </button>
+          </>
+        }
+      >
         <form
+          id='plain'
+          onSubmit={(event) => {
+            event.preventDefault();
+            const field = event.currentTarget.elements.namedItem(
+              'equipment',
+            ) as HTMLInputElement;
+            // An empty name fails; anything else saves and leaves.
+            if (field.value.trim())
+              void Promise.resolve().then(() =>
+                navigate({ pathname: '..', search }),
+              );
+          }}
           onChange={(event) => {
             const target = event.target as HTMLInputElement;
             sessionStorage.setItem('plain:draft', target.value);
@@ -1609,6 +1633,20 @@ describe('the unsaved-changes question for a plain form', () => {
     ).toHaveTextContent('High');
     await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
     await keep();
+  });
+
+  it('lets the save of a plain form leave, and asks again after a failed one', async () => {
+    const history = setup();
+    const field = await screen.findByRole('textbox', { name: 'Equipment' });
+    await userEvent.clear(field);
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+    // The save failed and the dialog stayed; leaving now asks.
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    await keep();
+    await userEvent.type(field, 'Valve');
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+    await waitFor(() => expect(history.path).toBe('/orders?page=2'));
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
   });
 
   it('closes without asking when the value is changed back, or nothing was touched', async () => {
