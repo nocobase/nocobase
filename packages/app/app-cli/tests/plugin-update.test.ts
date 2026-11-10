@@ -53,8 +53,10 @@ describe('normalizePluginPackageNames', () => {
   it.each([
     '@nocobase/app-plugin-audit-log',
     '@nocobase/app-module-audit-log',
+    '@nocobase/app-portal-audit-log',
     '@acme/app-plugin-audit-log',
     '@acme/app-module-audit-log',
+    '@acme/app-portal-audit-log',
   ])('keeps the scoped identity %s when updating', (packageName) => {
     expect(normalizePluginPackageNames([packageName])).toEqual([packageName]);
   });

@@ -20,6 +20,8 @@ const COMMAND_NAME_PATTERN = /^[a-z0-9][a-z0-9-]*(?::[a-z0-9][a-z0-9-]*)*$/;
  */
 export function pluginTopicFor(packageName: string): string {
   const unscoped = packageName.slice(packageName.indexOf('/') + 1);
+  if (unscoped.startsWith('app-portal-'))
+    return unscoped.slice('app-portal-'.length);
   if (unscoped.startsWith('app-module-'))
     return unscoped.slice('app-module-'.length);
   if (unscoped.startsWith('app-plugin-')) {

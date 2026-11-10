@@ -132,7 +132,7 @@ export function pluginPackageName(name: string): string {
   }
   if (trimmed.includes('/') || trimmed.startsWith('@')) {
     throw new Error(
-      `Plugin "${trimmed}" must be a short name such as audit-log, or a full scoped app-plugin-* or app-module-* package name.`,
+      `Plugin "${trimmed}" must be a short name such as audit-log, or a full scoped app-plugin-*, app-module-* or app-portal-* package name.`,
     );
   }
   if (!SHORT_NAME_PATTERN.test(trimmed)) {
@@ -145,7 +145,7 @@ export function pluginPackageName(name: string): string {
 
 /** The short name a package name carries, for messages and directory lookups. */
 export function pluginShortName(packageName: string): string {
-  const match = /^@[a-z0-9][a-z0-9-]*\/app-(?:plugin|module)-(.+)$/u.exec(
+  const match = /^@[a-z0-9][a-z0-9-]*\/app-(?:plugin|module|portal)-(.+)$/u.exec(
     packageName,
   );
   return match?.[1] ?? packageName;

@@ -269,8 +269,10 @@ describe('planPluginRegistration', () => {
   it.each([
     '@nocobase/app-plugin-custom',
     '@nocobase/app-module-custom',
+    '@nocobase/app-portal-custom',
     '@my-app/app-plugin-custom',
     '@my-app/app-module-custom',
+    '@my-app/app-portal-custom',
   ])('registers and unregisters all entries of %s', async (packageName) => {
     const appRoot = await createApp();
     const pluginDirectory = await createPlugin(appRoot, packageName);
@@ -757,6 +759,7 @@ describe('removePluginSkills', () => {
 it('preserves a module package identity when normalizing registration', () => {
   expect(pluginPackageName('@nocobase/app-module-assets')).toBe(
     '@nocobase/app-module-assets',
+    '@nocobase/app-portal-assets',
   );
   expect(pluginShortName('@nocobase/app-module-assets')).toBe('assets');
 });
