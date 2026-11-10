@@ -1,4 +1,6 @@
 {
+  "One or more calendar events have an invalid recurrence rule or time zone.": "部分日历事件的重复规则或时区无效。",
+  "Recurrence time zone": "重复规则时区",
   "Add new": "添加",
   "Agenda": "列表",
   "All events": "所有日程",

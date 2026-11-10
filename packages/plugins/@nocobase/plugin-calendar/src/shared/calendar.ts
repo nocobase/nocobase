@@ -31,3 +31,14 @@ export const getLunarDay = (date: dayjs.Dayjs | string) => {
 export const formatDate = (date: dayjs.Dayjs) => {
   return date.format('YYYY-MM-DDTHH:mm:ss.SSSZ');
 };
+
+// Keep existing unzoned cron strings in UTC. Event authors can opt into named-zone/DST rules.
+export function calendarCronOptions(eventStart: Date, rangeStart: Date, rangeEnd: Date, timezone?: string) {
+  return {
+    startDate: rangeStart,
+    endDate: rangeEnd,
+    currentDate: new Date(Math.max(eventStart.getTime(), rangeStart.getTime() - 1)),
+    iterator: true as const,
+    tz: timezone || 'UTC',
+  };
+}

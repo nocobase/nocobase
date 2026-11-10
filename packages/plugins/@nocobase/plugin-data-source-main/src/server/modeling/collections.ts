@@ -172,6 +172,12 @@ export function buildTemplateBaseline(input: PlainObject) {
             },
           }),
           normalizeFieldInput({
+            name: 'cronTimezone',
+            interface: 'input',
+            type: 'string',
+            title: 'Recurrence time zone',
+          }),
+          normalizeFieldInput({
             name: 'exclude',
             interface: 'json',
             type: 'json',

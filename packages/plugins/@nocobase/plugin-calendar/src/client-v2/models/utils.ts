@@ -82,6 +82,7 @@ export const createCalendarRangeFilter = (
     end?: string | string[];
   },
   range: CalendarVisibleRange,
+  hasRecurrenceField = false,
 ) => {
   const startField = normalizeCalendarFieldPath(fieldNames?.start);
   const endField = normalizeCalendarFieldPath(fieldNames?.end);
@@ -99,13 +100,15 @@ export const createCalendarRangeFilter = (
     },
   };
 
+  const recurring = hasRecurrenceField ? [{ cron: { $notEmpty: true }, [startField]: { $lte: endValue } }] : [];
   if (!endField || endField === startField) {
-    return startBetween;
+    return recurring.length ? { $or: [startBetween, ...recurring] } : startBetween;
   }
 
   return {
     $or: [
       startBetween,
+      ...recurring,
       {
         [endField]: {
           $gte: startValue,

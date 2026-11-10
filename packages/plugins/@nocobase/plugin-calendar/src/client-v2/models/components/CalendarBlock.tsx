@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { calendarCronOptions } from '../../../shared/calendar';
 import { useApp } from '@nocobase/client-v2';
 import type { Dayjs } from 'dayjs';
 import dayjs from 'dayjs';
@@ -117,10 +118,11 @@ const useCalendarEvents = (
 
   return useMemo(() => {
     if (!Array.isArray(dataSource)) {
-      return { events: [] as Event[] };
+      return { events: [] as Event[], invalidRecurrence: false };
     }
 
     const events: Event[] = [];
+    let invalidRecurrence = false;
     const startDate = dayjs(rangeStart);
     const endDate = dayjs(rangeEnd);
 
@@ -201,13 +203,10 @@ const useCalendarEvents = (
           return;
         }
         try {
-          const interval = parseExpression(cron, {
-            startDate: startDate.toDate(),
-            endDate: endDate.toDate(),
-            iterator: true,
-            currentDate: start.toDate(),
-            utc: true,
-          });
+          const interval = parseExpression(
+            cron,
+            calendarCronOptions(start.toDate(), startDate.toDate(), endDate.toDate(), item.cronTimezone),
+          );
           while (interval.hasNext()) {
             const { value } = interval.next();
             if (push(dayjs(value.toDate()))) {
@@ -215,12 +214,13 @@ const useCalendarEvents = (
             }
           }
         } catch (error) {
+          invalidRecurrence = true;
           console.error(error);
         }
       }
     });
 
-    return { events };
+    return { events, invalidRecurrence };
   }, [
     dataSource,
     fieldNames.colorFieldName,
@@ -282,7 +282,7 @@ export const CalendarBlock = observer((props: CalendarBlockProps) => {
   const [date, setDate] = useState<Date>(new Date());
   const [view, setView] = useState<View>(props.defaultView || 'month');
   const rangeRefreshKeyRef = useRef<string>();
-  const { events } = useCalendarEvents(
+  const { events, invalidRecurrence } = useCalendarEvents(
     props.dataSource,
     props.fieldNames,
     date,
@@ -420,7 +420,11 @@ export const CalendarBlock = observer((props: CalendarBlockProps) => {
       return;
     }
 
-    const rangeFilter = createCalendarRangeFilter(props.fieldNames, visibleRange);
+    const rangeFilter = createCalendarRangeFilter(
+      props.fieldNames,
+      visibleRange,
+      !!props.collection?.getField?.('cron'),
+    );
     const nextKey = JSON.stringify({
       fieldNames: props.fieldNames,
       view,
@@ -443,7 +447,7 @@ export const CalendarBlock = observer((props: CalendarBlockProps) => {
 
     props.resource.setPage?.(1);
     void props.resource.refresh();
-  }, [props.fieldNames, props.rangeLoadEnabled, props.resource, view, visibleRange]);
+  }, [props.collection, props.fieldNames, props.rangeLoadEnabled, props.resource, view, visibleRange]);
 
   useEffect(() => {
     return () => {
@@ -528,6 +532,9 @@ export const CalendarBlock = observer((props: CalendarBlockProps) => {
         <GlobalStyle />
         {props.actionBar ? <div ref={actionBarRef}>{props.actionBar}</div> : null}
         <div className="nb-calendar-body">
+          {invalidRecurrence && (
+            <div role="alert">{t('One or more calendar events have an invalid recurrence rule or time zone.')}</div>
+          )}
           <BigCalendar
             className={`view-${view}`}
             popup

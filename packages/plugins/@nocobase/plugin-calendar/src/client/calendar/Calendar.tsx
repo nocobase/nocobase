@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { calendarCronOptions } from '../../shared/calendar';
 import { LeftOutlined, RightOutlined } from '@ant-design/icons';
 import { Schema, useField, useFieldSchema } from '@formily/react';
 import {
@@ -114,9 +115,10 @@ const useEvents = (
   const labelUiSchema = fields.find((v) => v.name === fieldNames?.title)?.uiSchema;
   const enumUiSchema = fields.find((v) => v.name === fieldNames?.colorFieldName);
   return useMemo(() => {
-    if (!Array.isArray(dataSource)) return { events: [], enumList: [] };
+    if (!Array.isArray(dataSource)) return { events: [], enumList: [], invalidRecurrence: false };
     const enumList = enumUiSchema?.uiSchema?.enum || [];
     const events: Event[] = [];
+    let invalidRecurrence = false;
 
     dataSource.forEach((item) => {
       const { cron, exclude = [] } = item;
@@ -201,25 +203,25 @@ const useEvents = (
         push();
         if (!cron) return;
         try {
-          const interval = parseExpression(cron, {
-            startDate: startDate.toDate(),
-            endDate: endDate.toDate(),
-            iterator: true,
-            currentDate: start.toDate(),
-            utc: true,
-          });
+          const interval = parseExpression(
+            cron,
+            calendarCronOptions(start.toDate(), startDate.toDate(), endDate.toDate(), item.cronTimezone),
+          );
           while (interval.hasNext()) {
             const { value } = interval.next();
             if (push(dayjs(value.toDate()))) break;
           }
         } catch (err) {
+          invalidRecurrence = true;
           console.error(err);
         }
       }
     });
-    return { events, enumList };
+    return { events, invalidRecurrence, enumList };
   }, [
     labelUiSchema,
+    fields,
+    plugin,
     dataSource,
     fieldNames.colorFieldName,
     fieldNames.start,
@@ -269,7 +271,7 @@ export const Calendar: any = withDynamicSchemaProps(
       const height = useCalenderHeight();
       const [date, setDate] = useState<Date>(new Date());
       const [view, setView] = useState<View>(props.defaultView || 'month');
-      const { events, enumList } = useEvents(dataSource, fieldNames, date, view);
+      const { events, invalidRecurrence, enumList } = useEvents(dataSource, fieldNames, date, view);
       const [record, setRecord] = useState<any>({});
       const { wrapSSR, hashId, componentCls: containerClassName } = useStyle();
       const parentRecordData = useCollectionParentRecordData();
@@ -476,6 +478,11 @@ export const Calendar: any = withDynamicSchemaProps(
             <RecordProvider record={record} parent={parentRecordData}>
               <CalendarRecordViewer />
             </RecordProvider>
+            {invalidRecurrence && (
+              <div role="alert">
+                {String(i18nt('One or more calendar events have an invalid recurrence rule or time zone.'))}
+              </div>
+            )}
             <BigCalendar
               popup
               selectable

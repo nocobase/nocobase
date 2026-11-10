@@ -1,4 +1,6 @@
 {
+  "One or more calendar events have an invalid recurrence rule or time zone.": "One or more calendar events have an invalid recurrence rule or time zone.",
+  "Recurrence time zone": "Recurrence time zone",
   "Add new": "Add new",
   "Agenda": "Agenda",
   "All events": "All events",
