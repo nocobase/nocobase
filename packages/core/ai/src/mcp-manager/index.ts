@@ -19,7 +19,7 @@ import { normalizeMCPOptions, renderMCPOptions } from './options-renderer';
 import { UserContextMCPClientManager } from './user-context-client-manager';
 
 export class DefaultMCPManager implements MCPManager {
-  private readonly mcpRegistry = new Registry<MCPEntry>();
+  private readonly mcpRegistry = new Registry<MCPEntry>({ override: true });
   private readonly provideCollectionManager: () => { collectionManager: SequelizeCollectionManager };
   private mode = 'memory';
   private client: MultiServerMCPClient | null = null;
@@ -51,7 +51,9 @@ export class DefaultMCPManager implements MCPManager {
   async registerMCP(registration: { [key: string | symbol]: MCPOptions }): Promise<void> {
     if (this.mode === 'memory') {
       for (const [name, options] of Object.entries(registration)) {
-        this.mcpRegistry.register(name, this.normalizeEntry(name, options));
+        const entry = this.normalizeEntry(name, options);
+        entry.fromFile = entry.fromFile === true || this.mcpRegistry.get(name)?.fromFile === true;
+        this.mcpRegistry.register(name, entry);
       }
     } else {
       for (const [name, options] of Object.entries(registration)) {
@@ -372,6 +374,7 @@ export class DefaultMCPManager implements MCPManager {
             headers: normalizedEntry.headers,
             restart: normalizedEntry.restart,
             useUserContext: normalizedEntry.useUserContext,
+            fromFile: normalizedEntry.fromFile === true || existed.get('fromFile') === true,
           },
           { transaction },
         );
