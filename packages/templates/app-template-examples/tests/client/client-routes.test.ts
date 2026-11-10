@@ -349,6 +349,7 @@ describe('app client routes', () => {
       },
       { name: 'knowledgeIndexing', authorizedAs: 'settings:kb.indexing' },
       { name: 'notificationTemplates', authorizedAs: 'notification.templates' },
+      { name: 'notificationTemplate', authorizedAs: 'notification.templates' },
       { name: 'databaseExplorer', authorizedAs: 'database-explorer' },
     ]);
   });

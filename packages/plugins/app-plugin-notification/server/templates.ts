@@ -6,16 +6,20 @@ import {
 import type {
   NotificationTemplateContent,
   NotificationTemplatePreview,
+  NotificationTemplateText,
   NotificationTemplateView,
 } from '../shared/templates.js';
 import type { NotificationConfigInput } from './types.js';
 
 export type * from '../shared/templates.js';
+export { notificationTemplateDefaultText } from '../shared/templates.js';
 
 export interface NotificationTemplateDefinition extends Omit<
   NotificationTemplateView,
-  'channels'
+  'channels' | 'localeMode'
 > {
+  /** Defaults to `separate`. Declare `combined` when one message carries every declared locale. */
+  readonly localeMode?: NotificationTemplateView['localeMode'];
   /** Safe projection of current configuration only. No transport creation or probes. */
   readonly channels: () => NotificationTemplateView['channels'];
   /** Both callbacks must use the real sender's pure renderer, without I/O or business record lookup. */
@@ -39,6 +43,14 @@ export class NotificationTemplateRegistry {
     )
       throw new Error(
         'Notification templates require a stable id and at least one locale.',
+      );
+    if (
+      definition.localeMode !== undefined &&
+      definition.localeMode !== 'separate' &&
+      definition.localeMode !== 'combined'
+    )
+      throw new Error(
+        `Notification template "${definition.id}" has an unknown locale mode.`,
       );
     if (this.definitions.has(definition.id))
       throw new Error(
@@ -98,22 +110,26 @@ export class NotificationTemplateRegistry {
     return {
       id: definition.id,
       contributor: definition.contributor,
-      category: definition.category,
-      name: definition.name,
-      trigger: definition.trigger,
-      recipients: definition.recipients,
-      businessRule: definition.businessRule,
+      ...optionalText('contributorLabel', definition.contributorLabel),
+      category: text(definition.category),
+      name: text(definition.name),
+      trigger: text(definition.trigger),
+      recipients: text(definition.recipients),
+      businessRule: text(definition.businessRule),
       locales: [...definition.locales],
-      languagePolicy: definition.languagePolicy,
+      localeMode: definition.localeMode ?? 'separate',
+      languagePolicy: text(definition.languagePolicy),
       variables: definition.variables.map(({ name, description }) => ({
         name,
-        description,
+        description: text(description),
       })),
       channels: definition
         .channels()
-        .map(({ name, type, configured, enabled }) => ({
+        .map(({ name, type, label, typeLabel, configured, enabled }) => ({
           name,
           type,
+          ...optionalText('label', label),
+          ...optionalText('typeLabel', typeLabel),
           configured,
           enabled,
         })),
@@ -121,18 +137,41 @@ export class NotificationTemplateRegistry {
   }
 }
 
+/** Explicit allowlist: a translation reference keeps only its namespace, key and default text. */
+function text(value: NotificationTemplateText): NotificationTemplateText {
+  return typeof value === 'string'
+    ? value
+    : { ns: value.ns, key: value.key, defaultValue: value.defaultValue };
+}
+
+function optionalText<TKey extends string>(
+  key: TKey,
+  value: NotificationTemplateText | undefined,
+): Partial<Record<TKey, NotificationTemplateText>> {
+  return value === undefined
+    ? {}
+    : ({ [key]: text(value) } as Record<TKey, NotificationTemplateText>);
+}
+
 export const notificationTemplateRegistryToken: ServiceToken<NotificationTemplateRegistry> =
   createServiceToken<NotificationTemplateRegistry>(
     '@nocobase/app-plugin-notification/templates',
   );
 
+/** `display` carries the registrant's translatable channel and channel type names. */
 export function describeNotificationTemplateChannel(
   config: NotificationConfigInput | undefined,
   name: string,
+  display: {
+    readonly label?: NotificationTemplateText;
+    readonly typeLabel?: NotificationTemplateText;
+  } = {},
 ): NotificationTemplateView['channels'][number] {
   const channel = config?.channels?.[name];
   return {
     name,
+    ...optionalText('label', display.label),
+    ...optionalText('typeLabel', display.typeLabel),
     type: channel
       ? 'type' in channel
         ? channel.type

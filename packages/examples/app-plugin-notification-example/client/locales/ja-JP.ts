@@ -3,6 +3,30 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const jaJP: LocaleResource<typeof enUS> = {
+  notificationTemplates: {
+    contributor: '通知の例',
+    category: 'タスク',
+    assigned: {
+      name: 'タスクが割り当てられました',
+      trigger: 'タスクが作成されたとき。',
+      recipients: '担当者。自分自身に割り当てた場合も受け取ります。',
+    },
+    updated: {
+      name: 'タスクが更新されました',
+      trigger: 'タスクが変更されたとき（担当者の変更を含む）。',
+      recipients:
+        '作成者、元の担当者、新しい担当者に 1 回ずつ送信されます。変更した本人には送信されません。',
+    },
+    businessRule:
+      '対応するタスク操作が行われるたびに送信されます。個別にオフにする設定はありません。',
+    languagePolicy: '受信者の言語に関係なく、常に英語で送信されます。',
+    channel: 'タスクの受信箱',
+    variables: {
+      title: 'タスクのタイトル',
+      description: 'タスクの説明',
+      status: 'タスクのステータス',
+    },
+  },
   navigation: {
     tasks: '通知例',
     taskManagement: 'タスク',

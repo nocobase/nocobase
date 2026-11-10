@@ -4,6 +4,29 @@ const enUS = {
   page: {
     loading: 'Loading',
   },
+  notificationTemplates: {
+    invitation: {
+      contributor: 'Users',
+      category: 'Accounts',
+      name: 'User invitation',
+      trigger:
+        'An administrator invites someone, or resends an invitation, with email selected.',
+      recipients:
+        'The person being invited, at the email address entered for them.',
+      businessRule:
+        'Sent every time an invitation is created or resent with email selected. There is no separate switch to turn it off.',
+      languagePolicy:
+        'The email body lists every language one after another. The subject is in English.',
+      channel: 'Invitation email sender',
+      variables: {
+        app: 'Application name',
+        inviter: 'Name of the person who sent the invitation',
+        items: 'Roles or access the invitation grants',
+        date: 'When the invitation expires',
+        url: 'Link for accepting the invitation; the preview uses a fake link',
+      },
+    },
+  },
   accept: {
     title: 'Accept the invitation',
     description: '{{inviter}} invited you.',

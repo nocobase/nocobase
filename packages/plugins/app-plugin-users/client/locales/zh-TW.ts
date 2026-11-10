@@ -6,6 +6,26 @@ const zhTW: LocaleResource<typeof enUS> = {
   page: {
     loading: '載入中',
   },
+  notificationTemplates: {
+    invitation: {
+      contributor: '使用者',
+      category: '帳號',
+      name: '使用者邀請',
+      trigger: '管理員邀請成員或重新傳送邀請，並選擇以電子郵件傳送時。',
+      recipients: '被邀請的人，傳送到為其填寫的電子郵件地址。',
+      businessRule:
+        '每次建立或重新傳送邀請並選擇電子郵件時都會傳送，沒有單獨的開關可以關閉。',
+      languagePolicy: '郵件內文依序包含所有語言，郵件主旨為英文。',
+      channel: '邀請郵件寄件設定',
+      variables: {
+        app: '應用名稱',
+        inviter: '發出邀請的人的名字',
+        items: '邀請授予的角色或權限',
+        date: '邀請的到期時間',
+        url: '接受邀請的連結；預覽中使用虛構連結',
+      },
+    },
+  },
   accept: {
     title: '接受邀請',
     description: '{{inviter}} 邀請你。',

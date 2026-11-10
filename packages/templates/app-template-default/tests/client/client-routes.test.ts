@@ -59,6 +59,7 @@ describe('app client routes', () => {
     expect(pagePaths(built.routes)).toEqual([
       '/settings/notifications/logs',
       '/settings/notifications/templates',
+      '/settings/notifications/templates/:templateId',
     ]);
     expect(built.routes[0].children[0].children).toHaveLength(1);
     const created = includeNotificationTemplateRoutes([shell], true);
@@ -131,10 +132,13 @@ describe('app client routes', () => {
     expect(pagePaths(built.routes)).toEqual([
       '/settings/notification-logs',
       '/settings/notifications/templates',
+      '/settings/notifications/templates/:templateId',
     ]);
     expect(pageAuthorizations(built.routes)).toEqual([
       { name: 'notificationLogs', authorizedAs: 'existing.notification.logs' },
       { name: 'notificationTemplates', authorizedAs: 'notification.templates' },
+      // A template's own address keeps the list page's grant.
+      { name: 'notificationTemplate', authorizedAs: 'notification.templates' },
     ]);
     expect(built.routes[0].children).toHaveLength(1);
   });
