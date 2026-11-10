@@ -1,21 +1,13 @@
+import { createAppClientConfig } from '@nocobase/app-client';
+import { answerApi, renderWithApp } from '@nocobase/app-testing/client';
 import { fireEvent, screen, waitFor } from '@testing-library/react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
-import { cleanup } from '@testing-library/react';
-import {
-  api,
-  clientMocks,
-  publicConfig,
-  resetApi,
-  toasts,
-} from './fake-client.js';
-import { renderAt } from './render.js';
+import { describe, expect, it } from 'vitest';
+
+import projects from '../../client/plugin.js';
+import { useAttachmentUploads } from '../../client/hooks/use-attachment-uploads.js';
+import { useIssuePageActions } from '../../client/pages/issues/detail/use-issue-page.js';
 import type { IssueDetail } from '../../shared/issues.js';
-vi.mock('@nocobase/app-client', () => clientMocks.appClient());
-vi.mock('@nocobase/i18n/client', () => clientMocks.i18n());
-const { useAttachmentUploads } =
-  await import('../../client/hooks/use-attachment-uploads.js');
-const { useIssuePageActions } =
-  await import('../../client/pages/issues/detail/use-issue-page.js');
+
 function Upload({ issue }: { issue: boolean }) {
   const uploads = useAttachmentUploads();
   const actions = useIssuePageActions({ id: 'i1' } as IssueDetail);
@@ -31,20 +23,33 @@ function Upload({ issue }: { issue: boolean }) {
     />
   );
 }
-afterEach(() => {
-  cleanup();
-  delete publicConfig['projects.attachments.maxFileSizeMb'];
-});
+
 describe.each([false, true])('attachment preflight (issue: %s)', (issue) => {
   it.each([20, 50])(
     'allows the exact %s MiB boundary and blocks one byte more',
     async (mb) => {
-      resetApi({
-        'POST projects/attachments': () => ({ data: { id: 'a1' } }),
-        'POST projects/issues/i1/attachments': () => ({ data: { id: 'a1' } }),
+      const calls: string[] = [];
+      const view = await renderWithApp(<Upload issue={issue} />, {
+        plugins: [projects({ routes: false, realtime: false })],
+        services: (app) => {
+          Object.defineProperty(app.config, 'public', {
+            value: createAppClientConfig({
+              rawConfig: {},
+              rawPublicConfig:
+                mb === 50
+                  ? { projects: { attachments: { maxFileSizeMb: mb } } }
+                  : {},
+            }).public,
+          });
+        },
+        fetch: answerApi((call) => {
+          if (call.method === 'POST' && /attachments$/u.test(call.path)) {
+            calls.push(call.path);
+            return { data: { id: 'a1' } };
+          }
+          throw new Error(`Unexpected request: ${call.method} ${call.path}`);
+        }),
       });
-      if (mb === 50) publicConfig['projects.attachments.maxFileSizeMb'] = mb;
-      renderAt('/', [{ path: '/', element: <Upload issue={issue} /> }]);
       const file = (bytes: number) => {
         const value = new File(['a'], 'limit.bin');
         Object.defineProperty(value, 'size', { value: bytes });
@@ -54,17 +59,19 @@ describe.each([false, true])('attachment preflight (issue: %s)', (issue) => {
         target: { files: [file(mb * 1024 * 1024)] },
       });
       await waitFor(() =>
-        expect(api.calls.filter((call) => call.method === 'POST')).toHaveLength(
-          1,
-        ),
+        expect(calls).toEqual([
+          issue ? 'projects/issues/i1/attachments' : 'projects/attachments',
+        ]),
       );
       fireEvent.change(screen.getByLabelText('Upload'), {
         target: { files: [file(mb * 1024 * 1024 + 1)] },
       });
-      await waitFor(() => expect(toasts.at(-1)?.title).toContain(`size=${mb}`));
-      expect(api.calls.filter((call) => call.method === 'POST')).toHaveLength(
-        1,
+      await waitFor(() =>
+        expect(view.toasts().at(-1)?.title).toBe(
+          `limit.bin is larger than ${mb} MB.`,
+        ),
       );
+      expect(calls).toHaveLength(1);
     },
   );
 });
