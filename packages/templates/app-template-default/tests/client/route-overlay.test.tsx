@@ -1579,8 +1579,9 @@ describe('the unsaved-changes question for a plain form', () => {
             const field = event.currentTarget.elements.namedItem(
               'equipment',
             ) as HTMLInputElement;
-            // An empty name fails; anything else saves and leaves.
-            if (field.value.trim())
+            // An empty name fails validation; "fail" fails on the server without marking a field; anything else
+            // saves and leaves.
+            if (field.value.trim() && field.value !== 'fail')
               void Promise.resolve().then(() =>
                 navigate({ pathname: '..', search }),
               );
@@ -1676,18 +1677,47 @@ describe('the unsaved-changes question for a plain form', () => {
     await keep();
   });
 
-  it('lets the save of a plain form leave, and asks again after a failed one', async () => {
+  it('asks after a failed save of a plain form, also on the backdrop, Esc and ×', async () => {
     const history = setup();
     const field = await screen.findByRole('textbox', { name: 'Equipment' });
     await userEvent.clear(field);
+    await userEvent.type(field, 'fail');
+    // The server refused it without marking any field, and the dialog stayed.
     await userEvent.click(screen.getByRole('button', { name: 'Save' }));
-    // The save failed and the dialog stayed; leaving now asks.
-    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(field).not.toHaveAttribute('aria-invalid');
+    const dialog = screen.getByRole('dialog', { name: 'Edit' });
+    const backdrop = dialog
+      .closest('[data-base-ui-portal]')
+      ?.querySelector(':scope > [data-slot="dialog-overlay"]');
+    expect(backdrop).toBeInTheDocument();
+    await userEvent.click(backdrop!);
     await keep();
-    await userEvent.type(field, 'Valve');
     await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+    await userEvent.keyboard('{Escape}');
+    await keep();
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+    await userEvent.click(
+      within(dialog).getByRole('button', { name: 'Close' }),
+    );
+    await keep();
+    expect(field).toHaveValue('fail');
+    await waitFor(() => expect(history.path).toBe('/orders/edit?page=2'));
+  });
+
+  it('still asks after a plain form saves, because it cannot report success', async () => {
+    const history = setup();
+    await userEvent.type(
+      await screen.findByRole('textbox', { name: 'Equipment' }),
+      ' 2',
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+    const prompt = await screen.findByRole('alertdialog', {
+      name: 'Discard changes?',
+    });
+    await userEvent.click(
+      within(prompt).getByRole('button', { name: 'Discard' }),
+    );
     await waitFor(() => expect(history.path).toBe('/orders?page=2'));
-    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
   });
 
   it('asks on browser back after a failed save, without Cancel first', async () => {
