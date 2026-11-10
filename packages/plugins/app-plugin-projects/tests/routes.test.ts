@@ -1700,7 +1700,7 @@ describe('attachments over HTTP', () => {
     });
   });
 
-  it('uses 50 MiB for both issue and comment uploads, including both 413 guards', async () => {
+  it('uses 1 MiB for both issue and comment uploads, including both 413 guards', async () => {
     await h.close();
     h = await createHarness(
       {},
@@ -1711,7 +1711,7 @@ describe('attachments over HTTP', () => {
             driver: 'fs',
             location: '/unused',
             visibility: 'private',
-            maxFileSizeMb: 50,
+            maxFileSizeMb: 1,
           },
         },
       },
@@ -1745,21 +1745,21 @@ describe('attachments over HTTP', () => {
     });
     for (const path of ['/attachments', `/issues/${issue.id}/attachments`]) {
       for (const bytes of [
-        50 * 1024 * 1024,
-        50 * 1024 * 1024 + 1,
-        51 * 1024 * 1024,
+        1 * 1024 * 1024,
+        1 * 1024 * 1024 + 1,
+        2 * 1024 * 1024,
       ]) {
         const response = await upload(
           path,
           new File([new Uint8Array(bytes)], 'limit.bin'),
         );
-        expect(response.status).toBe(bytes === 50 * 1024 * 1024 ? 201 : 413);
+        expect(response.status).toBe(bytes === 1 * 1024 * 1024 ? 201 : 413);
         if (response.status === 413)
           expect(await response.json()).toMatchObject({
             error: {
               reason: 'FILE_TOO_LARGE',
-              message: 'A file may have at most 50 MB.',
-              metadata: { maxBytes: 50 * 1024 * 1024 },
+              message: 'A file may have at most 1 MB.',
+              metadata: { maxBytes: 1 * 1024 * 1024 },
             },
           });
       }

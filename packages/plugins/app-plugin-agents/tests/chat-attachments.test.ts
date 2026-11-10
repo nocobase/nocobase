@@ -65,7 +65,7 @@ describe('chat attachments', () => {
       },
     );
 
-  it('accepts exactly 50 MiB and returns the configured 413 for both size guards', async () => {
+  it('accepts exactly 1 MiB and returns the configured 413 for both size guards', async () => {
     h = await createHarness({
       drive: {
         default: 'large',
@@ -74,23 +74,23 @@ describe('chat attachments', () => {
             driver: 'fs',
             location: '/unused',
             visibility: 'private',
-            maxFileSizeMb: 50,
+            maxFileSizeMb: 1,
           },
         },
       },
     });
     for (const bytes of [
-      50 * 1024 * 1024,
-      50 * 1024 * 1024 + 1,
-      51 * 1024 * 1024,
+      1 * 1024 * 1024,
+      1 * 1024 * 1024 + 1,
+      2 * 1024 * 1024,
     ]) {
       const result = await upload(ALICE, 'limit.bin', new Uint8Array(bytes));
-      expect(result.status).toBe(bytes === 50 * 1024 * 1024 ? 201 : 413);
+      expect(result.status).toBe(bytes === 1 * 1024 * 1024 ? 201 : 413);
       if (result.status === 413)
         expect(result.body.error).toMatchObject({
           reason: 'FILE_TOO_LARGE',
-          message: 'A file may have at most 50 MB.',
-          metadata: { maxBytes: 50 * 1024 * 1024 },
+          message: 'A file may have at most 1 MB.',
+          metadata: { maxBytes: 1 * 1024 * 1024 },
         });
     }
   });

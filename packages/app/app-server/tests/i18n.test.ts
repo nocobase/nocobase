@@ -151,6 +151,53 @@ describe('the application identity published to the browser', () => {
   });
 });
 
+describe('disk upload limits published with the page', () => {
+  it('publishes defaults and custom limits without storage configuration', async () => {
+    const config = await createSpaAppConfig();
+    config.mergeDefaults({
+      drive: {
+        default: 'remote',
+        disks: {
+          local: { driver: 'fs', location: '/private/location' },
+          remote: {
+            driver: 's3',
+            bucket: 'private-bucket',
+            credentials: {
+              accessKeyId: 'synthetic-id',
+              secretAccessKey: 'synthetic-secret',
+            },
+            maxFileSizeMb: 50,
+          },
+        },
+      },
+    });
+    const html = await fetchSpaIndex(config);
+    const payload = JSON.parse(
+      /<script id="nocobase-runtime-config" type="application\/json">(.*?)<\/script>/u.exec(
+        html,
+      )![1]!,
+    );
+    expect(payload.public.drive.uploadLimits).toEqual({
+      default: 'remote',
+      disks: {
+        local: { disk: 'local', maxFileSizeMb: 20, maxBytes: 20 * 1024 * 1024 },
+        remote: {
+          disk: 'remote',
+          maxFileSizeMb: 50,
+          maxBytes: 50 * 1024 * 1024,
+        },
+      },
+    });
+    for (const secret of [
+      '/private/location',
+      'private-bucket',
+      'synthetic-id',
+      'synthetic-secret',
+    ])
+      expect(html).not.toContain(secret);
+  });
+});
+
 async function fetchSpaIndex(
   config: AppConfig,
   appPackage?: Record<string, unknown>,

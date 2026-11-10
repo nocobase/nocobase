@@ -16,14 +16,12 @@ export class ClientFileRepositoryServiceProvider extends ServiceProvider<ClientA
         new ClientFileRepositoryManager(container.resolve(apiClientToken)),
     );
   }
-  public override async boot(): Promise<void> {
-    const { data } = await this.app.container
-      .resolve(apiClientToken)
-      .request<{ data: FileUploadLimits }>({
-        path: 'file/uploadLimits',
-        method: 'GET',
-      });
-    this.app.container.instance(fileUploadLimitsToken, data);
+  public override boot(): Promise<void> {
+    const drive = this.app.config.public.raw().drive as
+      { uploadLimits?: FileUploadLimits } | undefined;
+    if (drive?.uploadLimits)
+      this.app.container.instance(fileUploadLimitsToken, drive.uploadLimits);
+    return Promise.resolve();
   }
 }
 const serviceProviders: readonly ClientServiceProviderConstructor[] = [

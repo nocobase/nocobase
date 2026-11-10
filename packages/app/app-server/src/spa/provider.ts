@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 
 import { Hono } from 'hono';
+import { driveUploadLimits, type AppDriveConfig } from '@nocobase/drive';
 import {
   defineRootRoutes,
   type AppRootRouteContribution,
@@ -55,6 +56,7 @@ export const spaRootRoutes: AppRootRouteContribution<SpaRoutesApplication> =
           // without the i18n config registered. The browser falls back to its own default when nothing is published.
           app.config.get<string>('i18n.defaultLocale'),
           appPackage,
+          app.config.get<AppDriveConfig>('drive'),
         ),
     });
     return router;
@@ -86,12 +88,31 @@ function createPublicConfig(
   published: SpaClientConfigMap,
   defaultLocale: string | undefined,
   appPackage: AppPackageIdentity,
+  drive: AppDriveConfig | undefined,
 ): SpaClientConfigMap {
+  // Project named disks to numeric limits only; never serialize storage configuration.
+  const withDrive: SpaClientConfigMap = drive
+    ? {
+        ...published,
+        drive: {
+          ...readConfigSection(published.drive),
+          uploadLimits: {
+            default: drive.default,
+            disks: Object.fromEntries(
+              Object.entries(driveUploadLimits(drive)).map(([disk, limit]) => [
+                disk,
+                { ...limit },
+              ]),
+            ),
+          },
+        },
+      }
+    : published;
   const withLocale: SpaClientConfigMap =
     defaultLocale === undefined
-      ? published
+      ? withDrive
       : {
-          ...published,
+          ...withDrive,
           i18n: { ...readConfigSection(published.i18n), defaultLocale },
         };
   if (!appPackage.displayName && !appPackage.version) return withLocale;
