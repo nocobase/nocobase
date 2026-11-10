@@ -513,6 +513,14 @@ export class FlowModelRepository extends Repository {
   async remove(uid: string, options?: Transactionable & removeParentOptions) {
     const { transaction } = options;
 
+    // Serialize removal with a save anywhere beneath this subtree.
+    await this.database.getRepository('flowModelTreePath').model.findAll({
+      attributes: ['descendant'],
+      where: { ancestor: uid },
+      order: [['descendant', 'ASC']],
+      transaction,
+      lock: true,
+    });
     await this.clearXUidPathCache(uid, transaction);
     if (options?.removeParentsIfNoChildren) {
       await this.removeEmptyParents({ transaction, uid, breakRemoveOn: options.breakRemoveOn });
@@ -1763,6 +1771,19 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
   async upsertModel(model: any, options?: Transactionable) {
     let childOptions: ChildOptions = null;
     if (model.parentId) {
+      const parentPaths = await this.database.getRepository('flowModelTreePath').model.findAll({
+        attributes: ['ancestor', 'depth'],
+        where: { descendant: model.parentId },
+        order: [['ancestor', 'ASC']],
+        transaction: options?.transaction,
+        lock: true,
+      });
+      if (
+        !parentPaths.some((p) => p.get('ancestor') === model.parentId && p.get('depth') === 0) ||
+        parentPaths.some((p) => p.get('ancestor') === model.uid)
+      ) {
+        throw Object.assign(new Error(`Invalid flow model parent '${model.parentId}'`), { status: 400 });
+      }
       childOptions = {
         parentUid: model.parentId,
         type: model.subKey,
