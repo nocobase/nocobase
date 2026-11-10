@@ -1298,7 +1298,29 @@ describe('unsaved values of a FeedbackForm, compared with the saved ones', () =>
       </RouteDialog>
     );
   }
-  function setup() {
+  function ComparedValuesEdit({
+    initialValues,
+    savedValues,
+    updatedValues,
+  }: {
+    readonly initialValues: Record<string, unknown>;
+    readonly savedValues: Record<string, unknown>;
+    readonly updatedValues?: Record<string, unknown>;
+  }) {
+    const [values, setValues] = useState(initialValues);
+    return (
+      <RouteDialog title='Edit' footer={<Actions />}>
+        <FeedbackForm values={() => values} savedValues={savedValues}>
+          {updatedValues && (
+            <button type='button' onClick={() => setValues(updatedValues)}>
+              Update values
+            </button>
+          )}
+        </FeedbackForm>
+      </RouteDialog>
+    );
+  }
+  function setup(content: ReactNode = <ValuesEdit />) {
     const history: { back?: () => void; path?: string } = {};
     function Probe() {
       const navigate = useNavigate();
@@ -1318,7 +1340,7 @@ describe('unsaved values of a FeedbackForm, compared with the saved ones', () =>
           <Probe />
           <Routes>
             <Route path='/orders' element={<Outlet />}>
-              <Route path='edit' element={<ValuesEdit />} />
+              <Route path='edit' element={content} />
             </Route>
           </Routes>
         </NavigationGuardProvider>
@@ -1398,5 +1420,97 @@ describe('unsaved values of a FeedbackForm, compared with the saved ones', () =>
     await userEvent.click(screen.getByRole('button', { name: 'Save' }));
     await waitFor(() => expect(history.path).toBe('/orders?page=2'));
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+  });
+
+  it.each([
+    { name: 'null and undefined', savedValue: null, currentValue: undefined },
+    { name: 'null and an empty string', savedValue: null, currentValue: '' },
+    {
+      name: 'undefined and an empty string',
+      savedValue: undefined,
+      currentValue: '',
+    },
+  ])(
+    'treats $name as the same saved value',
+    async ({ savedValue, currentValue }) => {
+      const history = setup(
+        <ComparedValuesEdit
+          initialValues={{ value: currentValue }}
+          savedValues={{ value: savedValue }}
+        />,
+      );
+      await userEvent.click(
+        await screen.findByRole('button', { name: 'Cancel' }),
+      );
+      await waitFor(() => expect(history.path).toBe('/orders?page=2'));
+      expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+    },
+  );
+
+  it('compares dates by timestamp, asking only when the time changes', async () => {
+    const saved = new Date('2026-01-10T12:00:00.000Z');
+    let history = setup(
+      <ComparedValuesEdit
+        initialValues={{ value: saved }}
+        savedValues={{ value: saved }}
+        updatedValues={{ value: new Date(saved.getTime()) }}
+      />,
+    );
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Update values' }),
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    await waitFor(() => expect(history.path).toBe('/orders?page=2'));
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+
+    cleanup();
+    const changed = new Date(saved.getTime() + 60_000);
+    history = setup(
+      <ComparedValuesEdit
+        initialValues={{ value: saved }}
+        savedValues={{ value: saved }}
+        updatedValues={{ value: changed }}
+      />,
+    );
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Update values' }),
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    await answer('Keep editing');
+    expect(history.path).toBe('/orders/edit?page=2');
+  });
+
+  it('compares files by reference and asks when a different file is selected', async () => {
+    const saved = new File(['contents'], 'report.txt', { type: 'text/plain' });
+    let history = setup(
+      <ComparedValuesEdit
+        initialValues={{ value: saved }}
+        savedValues={{ value: saved }}
+        updatedValues={{ value: saved }}
+      />,
+    );
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Update values' }),
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    await waitFor(() => expect(history.path).toBe('/orders?page=2'));
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+
+    cleanup();
+    history = setup(
+      <ComparedValuesEdit
+        initialValues={{ value: saved }}
+        savedValues={{ value: saved }}
+        updatedValues={{
+          value: new File(['contents'], 'report.txt', { type: 'text/plain' }),
+        }}
+      />,
+    );
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Update values' }),
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    await answer('Keep editing');
+    expect(history.path).toBe('/orders/edit?page=2');
   });
 });
