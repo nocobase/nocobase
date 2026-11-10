@@ -117,13 +117,13 @@ export interface SkillsSyncPlan {
  */
 export function pluginSkillPrefix(packageName: string): string {
   const custom =
-    /^@([a-z0-9][a-z0-9-]*)\/(app-(?:plugin|module)-[a-z0-9]+(?:-[a-z0-9]+)*)$/u.exec(
+    /^@([a-z0-9][a-z0-9-]*)\/(app-(?:plugin|portal)-[a-z0-9]+(?:-[a-z0-9]+)*)$/u.exec(
       packageName,
     );
   if (custom) return `${custom[1]}-${custom[2]}`;
   if (!packageName.startsWith(PACKAGE_SCOPE)) {
     throw new Error(
-      `Plugin package name must start with ${PACKAGE_SCOPE} or be a scoped app-plugin or app-module package, found ${packageName}.`,
+      `Plugin package name must start with ${PACKAGE_SCOPE} or be a scoped app-plugin or app-portal package, found ${packageName}.`,
     );
   }
   const unscopedName = packageName.slice(PACKAGE_SCOPE.length);
@@ -177,10 +177,10 @@ export async function collectPluginSkills({
           ? !isOwnedSkillName(prefix, entry.name)
           : !entry.name.startsWith(SKILL_NAME_PREFIX) ||
             entry.name.startsWith('nocobase-app-plugin-') ||
-            entry.name.startsWith('nocobase-app-module-'))
+            entry.name.startsWith('nocobase-app-portal-'))
     ) {
       throw new Error(
-        `Invalid skill directory ${entry.name} in ${skillsDirectory}: use a package-owned kebab-case name; plugin/module skills must use their package prefix ${prefix}, and nocobase-app-plugin-* and nocobase-app-module-* names are reserved for their owning plugins except nocobase-app-plugin-development, owned only by @nocobase/app-skills.`,
+        `Invalid skill directory ${entry.name} in ${skillsDirectory}: use a package-owned kebab-case name; plugin/portal skills must use their package prefix ${prefix}, and nocobase-app-plugin-* and nocobase-app-portal-* names are reserved for their owning plugins except nocobase-app-plugin-development, owned only by @nocobase/app-skills.`,
       );
     }
     skills.push({

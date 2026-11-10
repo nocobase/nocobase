@@ -101,7 +101,7 @@ export default class PluginInspect extends AppCommand {
   } = {
     name: Args.string({
       description:
-        'Plugin short name or full scoped app-plugin-* or app-module-* name.',
+        'Plugin short name or full scoped app-plugin-* or app-portal-* name.',
       required: true,
     }),
   };

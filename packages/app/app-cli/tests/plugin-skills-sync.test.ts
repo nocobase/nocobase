@@ -8,9 +8,9 @@ import { applySkillsSync, planSkillsSync } from '../src/lib/skills-sync.ts';
 // written into a temporary directory, so the test reads no other package's directory.
 it.each([
   ['nocobase', 'plugin'],
-  ['nocobase', 'module'],
+  ['nocobase', 'portal'],
   ['acme', 'plugin'],
-  ['acme', 'module'],
+  ['acme', 'portal'],
 ])(
   'synchronizes an @%s/app-%s skill shipped by the workspace',
   async (scope, kind) => {

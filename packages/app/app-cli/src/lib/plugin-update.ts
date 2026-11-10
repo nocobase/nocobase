@@ -36,7 +36,7 @@ export function normalizePluginPackageNames(
     }
     if (name.includes('/')) {
       throw new Error(
-        `Plugin "${name}" must be a short name such as audit-log, or a full scoped app-plugin-* or app-module-* package name.`,
+        `Plugin "${name}" must be a short name such as audit-log, or a full scoped app-plugin-* or app-portal-* package name.`,
       );
     }
     return `${PLUGIN_PREFIX}${name}`;

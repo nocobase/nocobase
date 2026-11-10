@@ -319,9 +319,9 @@ describe('package remove command', () => {
 
   it.each([
     '@nocobase/app-plugin-audit-log',
-    '@nocobase/app-module-audit-log',
+    '@nocobase/app-portal-audit-log',
     '@acme/app-plugin-audit-log',
-    '@acme/app-module-audit-log',
+    '@acme/app-portal-audit-log',
   ])(
     'unregisters contributions and Skills when removing %s',
     async (packageName) => {
@@ -425,7 +425,7 @@ describe('package remove command', () => {
 
   it.each([
     '@acme/core',
-    '@acme/app-module-',
+    '@acme/app-portal-',
     '@acme/app-plugin-demo/../other',
   ])(
     'rejects an unsupported package identity %s before changing the app',

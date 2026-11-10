@@ -1157,9 +1157,9 @@ it('synchronizes and removes recorded custom-scope skills without touching local
 
 it.each([
   '@nocobase/app-plugin-demo',
-  '@nocobase/app-module-demo',
+  '@nocobase/app-portal-demo',
   '@acme/app-plugin-demo',
-  '@acme/app-module-demo',
+  '@acme/app-portal-demo',
 ])(
   'cleans stale Skills for %s while preserving other owners and local guidance',
   async (packageName) => {
