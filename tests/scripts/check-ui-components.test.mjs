@@ -749,3 +749,74 @@ test('reads the spread props of a FeedbackForm, and reports values it cannot con
   assert.match(result.findings[1].replacement, /spread.*cannot confirm/);
   assert.match(result.findings[2].replacement, /spread.*cannot confirm/);
 });
+
+test('credits a form only with the question of its own component, a component rendering it or a hook it calls', () => {
+  const tags = (source) =>
+    inspect(`import { RouteDrawer } from '#components/route-drawer';
+      import { useNavigationGuard } from '@nocobase/app-client';
+      ${source}`).findings.map((item) => [item.tag, item.line]);
+  // Another form's guard or beforeClose in the same file does not lend its question.
+  assert.deepEqual(
+    tags(`function Asking() { useNavigationGuard(() => !dirty || ask()); return <FeedbackForm onSubmit={save}/>; }
+      function Closing() { return <RouteDrawer beforeClose={() => !dirty}><FeedbackForm onSubmit={save}/></RouteDrawer>; }
+      export const Other = () => <RouteDrawer><FeedbackForm onSubmit={save}/></RouteDrawer>;`),
+    [['FeedbackForm', 5]],
+  );
+  // A component that renders the form, a hook of this file the form calls, or one the renderer calls, does.
+  assert.deepEqual(
+    tags(`function Form() { return <FeedbackForm onSubmit={save}/>; }
+      export function Page() { useNavigationGuard(() => !dirty || ask()); return <RouteDrawer><Form/></RouteDrawer>; }
+      function useEditLeave(dirty) { useNavigationGuard(() => !dirty || ask()); }
+      function Hooked() { useEditLeave(dirty); return <FeedbackForm onSubmit={save}/>; }
+      function useOuterLeave() { useEditLeave(dirty); }
+      function Inner() { return <FeedbackForm onSubmit={save}/>; }
+      export function Outer() { useOuterLeave(); return <RouteDrawer><Inner/></RouteDrawer>; }`),
+    [],
+  );
+  // OwnDiscardQuestion counts the guard of its component, a component rendering it or a form component it renders,
+  // never an unrelated component's.
+  assert.deepEqual(
+    tags(`function Form() { useNavigationGuard(() => !dirty || ask()); return <FeedbackForm onSubmit={save}/>; }
+      export const Shell = () => <RouteDrawer><OwnDiscardQuestion/><Form/></RouteDrawer>;
+      export const Stray = () => <RouteDrawer><OwnDiscardQuestion/></RouteDrawer>;`),
+    [['OwnDiscardQuestion', 5]],
+  );
+});
+
+test('reads what a guard does from its identifiers, never from comments or strings', () => {
+  const tags = (source) =>
+    inspect(`import { RouteDrawer } from '#components/route-drawer';
+      import { useNavigationGuard } from '@nocobase/app-client';
+      ${source}`).findings.map((item) => item.tag);
+  for (const guard of [
+    `useNavigationGuard(() => /* dirty */ !submitting)`,
+    `useNavigationGuard(() => !submitting || log('unsaved changes'))`,
+    `useNavigationGuard(() => !submitting || log(\`changed \${count}\`))`,
+  ])
+    assert.deepEqual(
+      tags(
+        `export const Edit = () => { ${guard}; return <RouteDrawer><OwnDiscardQuestion/><FeedbackForm onSubmit={save}/></RouteDrawer>; }`,
+      ),
+      ['OwnDiscardQuestion', 'FeedbackForm'],
+    );
+  assert.deepEqual(
+    tags(`export const Edit = () => <RouteDrawer beforeClose={() => {
+        // ask when dirty
+        return !locked();
+      }}><FeedbackForm onSubmit={save}/></RouteDrawer>`),
+    ['FeedbackForm'],
+  );
+  // A guard passed by name is read through its declaration, not its name; so is either branch of a conditional.
+  assert.deepEqual(
+    tags(`const dirtyGuard = () => !submitting;
+      export const Edit = () => { useNavigationGuard(dirtyGuard); return <RouteDrawer><OwnDiscardQuestion/></RouteDrawer>; }`),
+    ['OwnDiscardQuestion'],
+  );
+  assert.deepEqual(
+    tags(`class Leave { dirty = false; guard = () => !this.dirty || this.ask(); }
+      export function useLeave() { const [controller] = useState(() => new Leave());
+        useNavigationGuard(boundary ? () => true : controller.guard);
+        return <OwnDiscardQuestion/>; }`),
+    [],
+  );
+});

@@ -59,7 +59,7 @@ const draftDirty =
 const overlays = new Set(['RouteDialog', 'RouteDrawer']);
 const ownQuestion =
   "the layer's own discard question: OwnDiscardQuestion only declares that this file asks about unsaved input itself through useNavigationGuard from @nocobase/app-client, and no guard here reads an unsaved state (dirty, unsaved, changed); a guard that only blocks during a save, or a kept draft, never replaces the question (mobile.md M7.4)";
-// What a guard of a form's own reads when it asks about unsaved input.
+// What a guard of a form's own reads when it asks about unsaved input, matched against identifiers, never comments or strings.
 const unsavedState = /dirty|unsaved|changed|modified/i;
 const passiveTags = new Set([
   'div',
@@ -129,11 +129,7 @@ export function inspectSource(ts, text, file, root) {
   const guardHooks = new Set();
   // Namespace imports of @nocobase/app-client, for `App.useNavigationGuard(...)`.
   const guardNamespaces = new Set();
-  let callsGuard = false;
   const leaveHooks = new Set();
-  let callsLeaveHook = false;
-  // An overlay of this file whose beforeClose reads the form's unsaved state asks its own question on close.
-  let asksOnClose = false;
   // A plain <form> is a create or edit form when it holds React Hook Form fields or renders in a route overlay; a chat
   // composer or a filter bar elsewhere is left alone.
   let usesOverlay = false;
@@ -370,9 +366,7 @@ export function inspectSource(ts, text, file, root) {
         // outside a page of its own (a form component an overlay renders). A form whose file asks its own question
         // (a guard reading its unsaved state, or the application's page-leave hook) compares by itself.
         (usesOverlay || (usesHookForm && !rendersPage)) &&
-        !callsGuard &&
-        !callsLeaveHook &&
-        !asksOnClose
+        !covered(node, asking)
       ) {
         // Explicit props, or a spread whose object this file shows (`{...{ values, savedValues }}` or a const object
         // declared here); any other spread cannot confirm them and is reported as unconfirmed, never passed silently.
@@ -396,7 +390,10 @@ export function inspectSource(ts, text, file, root) {
             undefined,
             false,
           );
-      } else if (tag === 'OwnDiscardQuestion' && !callsGuard) {
+      } else if (
+        tag === 'OwnDiscardQuestion' &&
+        !covered(node, guarding, true)
+      ) {
         report(node, tag, ownQuestion, undefined, false);
       } else if (overlays.has(tag) && attribute(ts, node, 'dirty')) {
         const value = attribute(ts, node, 'dirty').initializer;
@@ -428,32 +425,85 @@ export function inspectSource(ts, text, file, root) {
     }
     ts.forEachChild(node, visit);
   }
-  // The text a guard's argument stands for: the argument itself, plus the initializer or body of a function or
-  // variable this file declares under the name it passes (`useNavigationGuard(guard)`, `controller.guard`).
-  function guardText(argument) {
-    const parts = [argument.getText(source)];
-    const name = ts.isIdentifier(argument)
-      ? argument.text
-      : ts.isPropertyAccessExpression(argument)
-        ? argument.name.text
-        : undefined;
-    if (name)
-      (function find(node) {
-        if (
-          (ts.isVariableDeclaration(node) ||
-            ts.isFunctionDeclaration(node) ||
-            ts.isPropertyDeclaration(node) ||
-            ts.isMethodDeclaration(node)) &&
-          node.name &&
-          ts.isIdentifier(node.name) &&
-          node.name.text === name
-        )
-          parts.push(node.getText(source));
-        ts.forEachChild(node, find);
-      })(source);
-    return parts.join('\n');
+  // The identifiers of a piece of code, without its comments or strings: what a guard reads, not what it says.
+  function identifiers(node, skip) {
+    const names = [];
+    (function walk(child) {
+      if (child === skip) return;
+      if (ts.isIdentifier(child) || ts.isPrivateIdentifier(child))
+        names.push(child.text);
+      ts.forEachChild(child, walk);
+    })(node);
+    return names.join(' ');
   }
+  // What a guard's argument reads: its own identifiers, except that a name this file declares (`guard`, the
+  // `controller.guard` method, either branch of `boundary ? allow : controller.guard`) stands for that declaration's
+  // initializer or body rather than for the name itself, so `useNavigationGuard(dirtyGuard)` is read by what it does.
+  function guardReads(argument) {
+    const parts = [];
+    (function walk(node) {
+      if (ts.isIdentifier(node)) {
+        const declared = [];
+        (function find(child) {
+          if (
+            (ts.isVariableDeclaration(child) ||
+              ts.isFunctionDeclaration(child) ||
+              ts.isPropertyDeclaration(child) ||
+              ts.isMethodDeclaration(child)) &&
+            child.name &&
+            ts.isIdentifier(child.name) &&
+            child.name.text === node.text
+          )
+            declared.push(identifiers(child, child.name));
+          ts.forEachChild(child, find);
+        })(source);
+        parts.push(...(declared.length ? declared : [node.text]));
+        return;
+      }
+      ts.forEachChild(node, walk);
+    })(argument);
+    return parts.join(' ');
+  }
+  // Each top-level statement is a unit: a component, a hook or a constant declared in this file. A form's question
+  // belongs to its own component, to a component of this file that renders it, or to a hook of this file that one of
+  // them calls; another form's component elsewhere in the file does not lend its question.
+  function unitOf(node) {
+    while (node.parent && node.parent !== source) node = node.parent;
+    return node;
+  }
+  const units = new Map();
+  for (const statement of source.statements) {
+    if (
+      (ts.isFunctionDeclaration(statement) ||
+        ts.isClassDeclaration(statement)) &&
+      statement.name
+    )
+      units.set(statement.name.text, statement);
+    else if (ts.isVariableStatement(statement))
+      for (const declaration of statement.declarationList.declarations)
+        if (ts.isIdentifier(declaration.name))
+          units.set(declaration.name.text, statement);
+  }
+  // Units a unit renders as JSX, and units it calls (its hooks).
+  const renders = new Map();
+  const calls = new Map();
+  const link = (edges, from, name) => {
+    const target = units.get(name);
+    if (!target || target === from) return;
+    if (!edges.has(from)) edges.set(from, new Set());
+    edges.get(from).add(target);
+  };
+  // Units asking their own question about unsaved input, and the subset doing it through useNavigationGuard.
+  const asking = new Set();
+  const guarding = new Set();
   (function findGuardCall(node) {
+    if (
+      (ts.isJsxOpeningElement(node) || ts.isJsxSelfClosingElement(node)) &&
+      ts.isIdentifier(node.tagName)
+    )
+      link(renders, unitOf(node), node.tagName.text);
+    if (ts.isCallExpression(node) && ts.isIdentifier(node.expression))
+      link(calls, unitOf(node), node.expression.text);
     if (
       ts.isCallExpression(node) &&
       ((ts.isIdentifier(node.expression) &&
@@ -465,24 +515,64 @@ export function inspectSource(ts, text, file, root) {
       node.arguments[0] &&
       // A guard that asks about unsaved input reads it; one that only blocks while a save runs (`submitting`,
       // `pending`, a saved flag) does not ask anything, so it cannot stand in for the layer's question.
-      unsavedState.test(guardText(node.arguments[0]))
-    )
-      callsGuard = true;
+      unsavedState.test(guardReads(node.arguments[0]))
+    ) {
+      asking.add(unitOf(node));
+      guarding.add(unitOf(node));
+    }
     if (
       ts.isCallExpression(node) &&
       ts.isIdentifier(node.expression) &&
       leaveHooks.has(node.expression.text)
     )
-      callsLeaveHook = true;
+      asking.add(unitOf(node));
+    // An overlay whose beforeClose reads the form's unsaved state asks its own question on close.
     if (
       ts.isJsxAttribute(node) &&
       node.name.getText(source) === 'beforeClose' &&
       node.initializer &&
-      unsavedState.test(node.initializer.getText(source))
+      unsavedState.test(identifiers(node.initializer))
     )
-      asksOnClose = true;
+      asking.add(unitOf(node));
     ts.forEachChild(node, findGuardCall);
   })(source);
+  // A unit calling a hook of this file that asks asks as well.
+  for (const set of [asking, guarding])
+    for (let grew = true; grew;) {
+      grew = false;
+      for (const [from, targets] of calls)
+        if (!set.has(from) && [...targets].some((target) => set.has(target))) {
+          set.add(from);
+          grew = true;
+        }
+    }
+  // Whether the unit of `node`, or a unit of this file rendering or calling it, is in `set`. With `downward`, the
+  // units it renders count too: OwnDiscardQuestion may sit in the overlay while the form component it renders asks.
+  function covered(node, set, downward = false) {
+    const unit = unitOf(node);
+    if (set.has(unit)) return true;
+    const reach = (start, next) => {
+      const seen = new Set([start]);
+      const queue = [start];
+      while (queue.length) {
+        for (const item of next(queue.shift()))
+          if (!seen.has(item)) {
+            if (set.has(item)) return true;
+            seen.add(item);
+            queue.push(item);
+          }
+      }
+      return false;
+    };
+    const callers = (target) =>
+      [...renders, ...calls]
+        .filter(([, targets]) => targets.has(target))
+        .map(([from]) => from);
+    return (
+      reach(unit, callers) ||
+      (downward && reach(unit, (from) => renders.get(from) ?? []))
+    );
+  }
   visit(source);
   for (const exception of exceptions.values()) {
     if (!exception.used)
