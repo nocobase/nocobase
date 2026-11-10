@@ -67,7 +67,7 @@ const MobileDateTimePicker = connect(
         disposeRef.current();
       }
       const limitDate = async () => {
-        // dayjs() 如果传入 undefined 可能会被解析成当前时间
+        // Day.js treats undefined as the current time, so leave missing bounds unset.
         let minDateTimePromise = props._minDate ? Promise.resolve(dayjs(props._minDate)) : Promise.resolve(null);
         let maxDateTimePromise = props._maxDate ? Promise.resolve(dayjs(props._maxDate)) : Promise.resolve(null);
 
@@ -103,7 +103,7 @@ const MobileDateTimePicker = connect(
       [onChange],
     );
 
-    // 清空选择的日期和时间
+    // Clear both the date and the time.
     const handleClear = useCallback(() => {
       setVisible(false);
       onChange(null);
