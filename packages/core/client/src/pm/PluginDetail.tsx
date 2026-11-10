@@ -46,6 +46,8 @@ interface DepCompatible {
 }
 
 interface IPluginDetailData {
+  installedVersion?: string | null;
+  loadedVersion?: string | null;
   packageJson: PackageJSON;
   homepage?: string;
   depsCompatible: DepCompatible[] | false;
@@ -186,10 +188,22 @@ export const PluginDetail: FC<IPluginDetail> = ({ plugin, onCancel }) => {
           )}
           <Col span={24}>
             <div className={styles.PluginDetailBaseInfo}>
-              <Typography.Text type="secondary">{t('Version')}</Typography.Text>
-              <Typography.Text strong>{plugin?.version}</Typography.Text>
+              <Typography.Text type="secondary">{t('Package version')}</Typography.Text>
+              <Typography.Text strong>{data?.data?.packageJson?.version ?? plugin.version}</Typography.Text>
             </div>
           </Col>
+          {data?.data &&
+            [
+              [t('Installed version'), data.data.installedVersion],
+              [t('Loaded version'), data.data.loadedVersion],
+            ].map(([label, version]) => (
+              <Col span={24} key={label}>
+                <div className={styles.PluginDetailBaseInfo}>
+                  <Typography.Text type="secondary">{label}</Typography.Text>
+                  <Typography.Text strong>{version ?? '—'}</Typography.Text>
+                </div>
+              </Col>
+            ))}
         </Row>
       ),
     },
@@ -241,7 +255,7 @@ export const PluginDetail: FC<IPluginDetail> = ({ plugin, onCancel }) => {
           <>
             <Typography.Title level={3}>{plugin.packageName}</Typography.Title>
             <Space split={<span>&nbsp;•&nbsp;</span>}>
-              <span>{plugin.version}</span>
+              <span>{data?.data?.packageJson?.version ?? plugin.version}</span>
             </Space>
             <Tabs
               style={{ minHeight: '50vh' }}

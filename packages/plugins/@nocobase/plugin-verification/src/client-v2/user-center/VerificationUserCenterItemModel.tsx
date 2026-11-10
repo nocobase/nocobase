@@ -32,6 +32,11 @@ export class VerificationUserCenterItemModel extends UserCenterActionItemModel {
   sort = 150;
   label = 'Verification';
 
+  async prepare() {
+    const response = await this.context.api.resource('verifiers').listByUser();
+    this.ready = response.data.data.length > 0;
+  }
+
   getLabelNode() {
     return this.context.t('Verification', { ns: VERIFICATION_LABEL_NS, nsMode: 'fallback' });
   }

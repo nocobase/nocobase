@@ -14,7 +14,7 @@ import { Readable } from 'stream';
 import { getConfigByEnv } from '@nocobase/database';
 import { SequelizeCollectionManager, SequelizeDataSource } from '@nocobase/data-source-manager';
 import { MockServer, sleep } from '@nocobase/test';
-import { getAuthCookieName, uid } from '@nocobase/utils';
+import { getAuthCookieName, storagePathJoin, uid } from '@nocobase/utils';
 import jwt from 'jsonwebtoken';
 import { getApp } from '.';
 import PluginFileManagerServer from '../server';
@@ -24,6 +24,7 @@ import {
   type TemporaryFileAccessPayload,
 } from '../temporary-access';
 
+import { getDocumentRoot } from '../storages/local';
 import { FILE_FIELD_NAME, STORAGE_TYPE_LOCAL, STORAGE_TYPE_S3 } from '../../constants';
 
 const { LOCAL_STORAGE_BASE_URL, LOCAL_STORAGE_DEST = 'storage/uploads', APP_PORT = '13000' } = process.env;
@@ -304,7 +305,7 @@ describe('file manager > server', () => {
         expect(cachedStorage.path).toBe('base');
 
         const file = await fs.readFile(
-          path.resolve(process.cwd(), LOCAL_STORAGE_DEST, 'base/orders/123', model.get('filename')),
+          path.resolve(getDocumentRoot(cachedStorage), 'base/orders/123', model.get('filename')),
         );
         expect(file.toString().includes('Hello world!')).toBe(true);
       });
@@ -345,9 +346,7 @@ describe('file manager > server', () => {
           storageId: defaultStorage.id,
         });
 
-        const file = await fs.readFile(
-          path.resolve(process.cwd(), 'storage/backups/test', 'exports/2026', data.filename),
-        );
+        const file = await fs.readFile(storagePathJoin('backups/test', 'exports/2026', data.filename));
         expect(file.toString().includes('Hello world!')).toBe(true);
       });
 
@@ -661,15 +660,21 @@ describe('file manager > server', () => {
         expect(createResponse.body.data.url.length).toBeLessThan(2048);
 
         const response = await app.agent().get(createResponse.body.data.url);
-        expect(response.status).toBe(302);
-        expect(response.headers.location).toBe(await plugin.getFileURL(body.data));
+        expect(response.status).toBe(200);
+        expect(response.text).toBe(await fs.readFile(path.resolve(__dirname, './files/text.txt'), 'utf8'));
         expect(response.headers['cache-control']).toBe('private, no-store');
         expect(response.headers['referrer-policy']).toBe('no-referrer');
 
         const headResponse = await app.agent().head(createResponse.body.data.url);
-        expect(headResponse.status).toBe(302);
-        expect(headResponse.headers.location).toBe(await plugin.getFileURL(body.data));
+        expect(headResponse.status).toBe(200);
+        expect(headResponse.headers['content-length']).toBe(response.headers['content-length']);
         expect(headResponse.text || '').toBe('');
+
+        const partial = await app.agent().get(createResponse.body.data.url).set('Range', 'bytes=0-4');
+        expect(partial.status).toBe(206);
+        expect(partial.text).toBe('Hello');
+        expect(partial.headers['content-range']).toBe(`bytes 0-4/${response.headers['content-length']}`);
+        expect((await app.agent().get(createResponse.body.data.url).set('Range', 'bytes=999-')).status).toBe(416);
 
         const postResponse = await app.agent().post(createResponse.body.data.url);
         expect(postResponse.status).toBe(405);
@@ -697,8 +702,8 @@ describe('file manager > server', () => {
           `/files/main/another/files/${file.id}${file.extname}?temporaryAccessToken=`,
         );
         const response = await app.agent().get(createResponse.body.data.url);
-        expect(response.status).toBe(302);
-        expect(response.headers.location).toBe(await plugin.getFileURL(file));
+        expect(response.status).toBe(200);
+        expect(response.text ?? response.body.toString('utf8')).toContain('Hello world!');
       });
 
       it('delegates file URL resolution to the selected data source', async () => {
@@ -834,8 +839,8 @@ describe('file manager > server', () => {
             `${getAuthCookieName('authenticator', app.name)}=basic`,
           ]);
 
-        expect(response.status).toBe(302);
-        expect(response.headers.location).toBe(await plugin.getFileURL(body.data));
+        expect(response.status).toBe(200);
+        expect(response.text ?? response.body.toString('utf8')).toContain('Hello world!');
       });
 
       it('does not create temporary URLs for non-file collections or external URL records', async () => {

@@ -151,7 +151,10 @@ export class PluginUISchemaStorageServer extends Plugin {
         save: async (ctx, next) => {
           const { values } = ctx.action.params;
           const repository = ctx.db.getRepository('flowModels') as FlowModelRepository;
-          const uid = await repository.upsertModel(values);
+          const ensureObjectSlot = ctx.action.params.ensureObjectSlot;
+          const uid = await repository.upsertModel(values, {
+            ensureObjectSlot: ensureObjectSlot === true || ensureObjectSlot === 'true',
+          });
           ctx.body = uid;
           // ctx.body = await repository.findModelById(uid);
           await next();

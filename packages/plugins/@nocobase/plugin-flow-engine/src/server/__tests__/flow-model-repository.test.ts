@@ -34,6 +34,31 @@ describe('ui_schema repository', () => {
     treePathCollection = db.getCollection('flowModelTreePath');
   });
 
+  it('rejects a missing parent for new and previously attached models without changing their paths', async () => {
+    await repository.upsertModel({
+      uid: 'root',
+      use: 'PageModel',
+      subModels: { grid: { uid: 'child', use: 'GridModel' } },
+    });
+    for (const uid of ['orphan', 'child']) {
+      const response = await app
+        .agent()
+        .resource('flowModels')
+        .save({
+          values: { uid, parentId: 'missing', subKey: 'grid', subType: 'object' },
+        });
+      expect(response.status).toBe(400);
+    }
+    expect(await repository.findModelById('orphan')).toBeNull();
+    expect((await repository.findModelByParentId('root', { subKey: 'grid' })).uid).toBe('child');
+    await expect(
+      repository.upsertModel(
+        { uid: 'other', parentId: 'root', subKey: 'grid', subType: 'object' },
+        { ensureObjectSlot: true },
+      ),
+    ).rejects.toMatchObject({ status: 409 });
+  });
+
   it('should insert a flat model', async () => {
     const model1 = {
       uid: 'uid1',

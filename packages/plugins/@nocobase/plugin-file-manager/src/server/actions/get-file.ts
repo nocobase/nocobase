@@ -7,6 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { getStorageUploadSecurityHeaders } from '@nocobase/server';
+import { open, realpath } from 'node:fs/promises';
+import path from 'node:path';
+import parseRange from 'range-parser';
+import { STORAGE_TYPE_LOCAL } from '../../constants';
+import { getDocumentRoot, resolveSafePath } from '../storages/local';
 import type { Context, Next } from '@nocobase/actions';
 import type { DataSource } from '@nocobase/data-source-manager';
 import type { Collection } from '@nocobase/database';
@@ -34,6 +40,40 @@ function preserveSubAppInLocalURL(url: string, appName?: string) {
   const [urlWithoutHash, hash] = url.split('#', 2);
   const separator = urlWithoutHash.includes('?') ? '&' : '?';
   return `${urlWithoutHash}${separator}__appName=${encodeURIComponent(appName)}${hash ? `#${hash}` : ''}`;
+}
+
+async function serveTemporaryLocalFile(ctx: Context, documentRoot: string, file: AttachmentModel) {
+  const root = await realpath(documentRoot);
+  const filePath = await realpath(resolveSafePath(root, file.path, file.filename));
+  // Resolve links before enforcing the document root as well as checking the stored path.
+  resolveSafePath(root, path.relative(root, filePath));
+  const handle = await open(filePath, 'r');
+  let streaming = false;
+  try {
+    const stat = await handle.stat();
+    if (!stat.isFile()) return ctx.throw(404);
+    const range = ctx.get('range');
+    const ranges = range && range.startsWith('bytes=') ? parseRange(stat.size, range) : undefined;
+    ctx.set('Accept-Ranges', 'bytes');
+    ctx.withoutDataWrapping = true;
+    ctx.set(getStorageUploadSecurityHeaders(file.filename));
+    if (ranges === -1) {
+      ctx.status = 416;
+      ctx.set('Content-Range', `bytes */${stat.size}`);
+      return;
+    }
+    const part = Array.isArray(ranges) && ranges.length === 1 ? ranges[0] : undefined;
+    ctx.type = file.mimetype || 'application/octet-stream';
+    ctx.status = part ? 206 : 200;
+    if (part) ctx.set('Content-Range', `bytes ${part.start}-${part.end}/${stat.size}`);
+    if (ctx.method !== 'HEAD') {
+      ctx.body = handle.createReadStream(part);
+      streaming = true;
+    }
+    ctx.length = part ? part.end - part.start + 1 : stat.size;
+  } finally {
+    if (!streaming) await handle.close();
+  }
 }
 
 export async function getFile(ctx: Context, next: Next) {
@@ -134,13 +174,29 @@ export async function getFile(ctx: Context, next: Next) {
   const download = !temporaryAccess && ctx.method === 'GET' && ctx.query.download === '1';
   const preview = download ? false : temporaryAccess ? false : Boolean(ctx.state.fileAccess?.preview);
   const dataSource = ctx.dataSource as DataSource & StorageFileURLResolver;
-  const storageUrl =
-    (await dataSource.resolveStorageFileURL?.({
-      collectionName: collection.name,
-      file: getFilePlainObject(file as AttachmentModel) as Record<string, unknown>,
-      preview,
-      download,
-    })) || (await plugin.getFileURL(file, preview, { download }));
+  const resolvedUrl = await dataSource.resolveStorageFileURL?.({
+    collectionName: collection.name,
+    file: getFilePlainObject(file as AttachmentModel) as Record<string, unknown>,
+    preview,
+    download,
+  });
+  const storageUrl = resolvedUrl || (await plugin.getFileURL(file, preview, { download }));
+  const storage = plugin.storagesCache.get(storageId);
+  if (
+    temporaryAccess &&
+    !resolvedUrl &&
+    storage?.type === STORAGE_TYPE_LOCAL &&
+    storageUrl.startsWith('/') &&
+    !storageUrl.startsWith('//')
+  ) {
+    try {
+      await serveTemporaryLocalFile(ctx, getDocumentRoot(storage), getFilePlainObject(file as AttachmentModel));
+    } catch (error) {
+      if (error.code === 'ENOENT' || error.code === 'PATH_TRAVERSAL') return ctx.throw(404);
+      throw error;
+    }
+    return;
+  }
   const finalUrl = preserveSubAppInLocalURL(storageUrl, ctx.state.fileAccess?.appName);
   ctx.set('Cache-Control', 'private, no-store');
   ctx.status = 302;
