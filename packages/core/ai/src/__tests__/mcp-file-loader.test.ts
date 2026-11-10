@@ -20,9 +20,11 @@ describe('deployment MCP file validation', () => {
 
   beforeEach(async () => {
     storage = await mkdtemp(join(tmpdir(), 'mcp-file-'));
-    vi.stubEnv('STORAGE_PATH', storage);
-    filePath = join(storage, 'ai', 'mcp', 'servers.json');
-    await mkdir(join(storage, 'ai', 'mcp'), { recursive: true });
+    // Include backslashes on POSIX too, so JSON-escaped path assertions fail outside Windows CI.
+    const configStorage = join(storage, 'deployment\\config');
+    vi.stubEnv('STORAGE_PATH', configStorage);
+    filePath = join(configStorage, 'ai', 'mcp', 'servers.json');
+    await mkdir(join(configStorage, 'ai', 'mcp'), { recursive: true });
     registerMCP.mockReset();
     log.error.mockReset();
   });
@@ -95,7 +97,7 @@ describe('deployment MCP file validation', () => {
     expect(registerMCP).not.toHaveBeenCalled();
     expect(log.error).toHaveBeenCalledTimes(1);
     expect(JSON.stringify(log.error.mock.calls)).not.toContain('do-not-log');
-    expect(JSON.stringify(log.error.mock.calls)).toContain(filePath);
+    expect(log.error).toHaveBeenCalledWith(expect.stringContaining(filePath));
   });
 
   it('does not log arbitrary registration errors that may contain credentials', async () => {
