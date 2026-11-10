@@ -21,12 +21,14 @@ export interface TimePickerReadPrettyProps {
   prefixCls?: string;
 }
 
+import { normalizeTimeValue } from './normalizeTimeValue';
+
 export const ReadPretty: React.FC<TimePickerReadPrettyProps> = (props) => {
   const { value, format = 'HH:mm:ss' } = props;
   const prefixCls = usePrefixCls('description-text', props);
   const values = toArr(value);
   const getLabels = () => {
-    const labels = values.map((v) => dayjs(v, 'HH:mm:ss').format(format));
+    const labels = values.map((v) => dayjs(normalizeTimeValue(v), 'HH:mm:ss').format(format));
     return labels.join('~');
   };
   return (

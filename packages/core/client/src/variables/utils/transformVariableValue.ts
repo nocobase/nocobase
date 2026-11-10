@@ -8,6 +8,7 @@
  */
 
 import _ from 'lodash';
+import { normalizeTimeValue } from '../../schema-component/antd/time-picker/normalizeTimeValue';
 import { CollectionFieldOptions_deprecated } from '../../collection-manager';
 
 interface Deps {
@@ -29,6 +30,10 @@ export const transformVariableValue = (value: any, deps: Deps) => {
 
   if (!targetCollectionField) {
     return value;
+  }
+
+  if (targetCollectionField.type === 'time' && typeof value === 'string') {
+    return normalizeTimeValue(value);
   }
 
   // 行政区划

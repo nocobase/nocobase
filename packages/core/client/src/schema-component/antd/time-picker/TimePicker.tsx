@@ -13,6 +13,7 @@ import dayjs from 'dayjs';
 import { TimePicker as AntdTimePicker } from 'antd';
 import { TimePickerProps as AntdTimePickerProps, TimeRangePickerProps } from 'antd/es/time-picker';
 import { ReadPretty } from './ReadPretty';
+import { normalizeTimeValue } from './normalizeTimeValue';
 
 type ComposedTimePicker = React.ForwardRefExoticComponent<
   React.PropsWithoutRef<Partial<AntdTimePickerProps>> & React.RefAttributes<unknown>
@@ -29,7 +30,10 @@ export const mapTimeFormat = function () {
       ...props,
       format,
       inputReadOnly: true,
-      value: dayjsable(props.value, 'HH:mm:ss'),
+      value: dayjsable(
+        Array.isArray(props.value) ? props.value.map(normalizeTimeValue) : normalizeTimeValue(props.value),
+        'HH:mm:ss',
+      ),
       onChange: (value: dayjs.Dayjs | dayjs.Dayjs[]) => {
         if (onChange) {
           onChange(formatDayjsValue(value, 'HH:mm:ss') || null);
