@@ -37,4 +37,4 @@ The generator reuses `@nocobase/create-plugin` rendering, dependency resolution 
 pnpm --filter @nocobase/create-module check
 ```
 
-Tests generate both templates in isolated OSS App fixtures, compile and lint the output, seal database manifests, exercise CLI registration/removal and Skills ownership, and verify the generated records API against real authentication, authorization and SQLite storage.
+The test command first builds create-plugin and app-cli because the generator exercises their compiled entry points. It does not assume a workspace build ran before the tests. Tests generate both templates in isolated OSS App fixtures, compile and lint the output, seal database manifests, exercise CLI registration/removal and Skills ownership, and verify the generated records API against real authentication, authorization and SQLite storage.

@@ -23,7 +23,7 @@
     "@nocobase/dev-config": "workspace:^"
   },
   "scripts": {
-    "test": "node --test tests/*.test.mjs && vitest run",
+    "test": "pnpm --filter @nocobase/create-plugin --filter @nocobase/app-cli build && node --test tests/*.test.mjs && vitest run",
     "lint": "eslint . --max-warnings 0",
     "lint:fix": "eslint . --fix --max-warnings 0",
     "format": "prettier . --write",
