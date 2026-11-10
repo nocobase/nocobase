@@ -1,6 +1,6 @@
 ---
 title: "ctx.exit()"
-description: "ctx.exit() thoát Flow hoặc luồng sự kiện hiện tại, có thể kèm giá trị trả về, dùng cho rẽ nhánh điều kiện, kết thúc sớm."
+description: "Cả hai lệnh đều kết thúc bước hiện tại và bỏ qua các luồng tuần tự còn lại trong cùng sự kiện. Các luồng đang chạy song song vẫn tiếp tục."
 keywords: "ctx.exit,thoát Flow,luồng sự kiện,rẽ nhánh điều kiện,RunJS,NocoBase"
 ---
 
@@ -18,7 +18,7 @@ Kết thúc thực thi luồng sự kiện hiện tại, các bước tiếp the
 | **Quy tắc liên kết** | Liên kết field, liên kết filter, v.v., kết thúc luồng sự kiện hiện tại khi validate thất bại hoặc cần bỏ qua thực thi |
 | **Sự kiện action** | Trong action tùy chỉnh (như xác nhận xóa, validate trước khi lưu), thoát khi người dùng hủy hoặc validate không qua |
 
-> Khác biệt với `ctx.exitAll()`: `ctx.exit()` chỉ kết thúc luồng sự kiện hiện tại, các luồng sự kiện khác cùng sự kiện không bị ảnh hưởng; `ctx.exitAll()` sẽ kết thúc luồng sự kiện hiện tại và các luồng sự kiện tiếp theo chưa thực thi cùng sự kiện.
+> `ctx.exit()` / `ctx.exitAll()` — Cả hai lệnh đều kết thúc bước hiện tại và bỏ qua các luồng tuần tự còn lại trong cùng sự kiện. Các luồng đang chạy song song vẫn tiếp tục.
 
 ## Định nghĩa kiểu
 
@@ -26,14 +26,7 @@ Kết thúc thực thi luồng sự kiện hiện tại, các bước tiếp the
 exit(): never;
 ```
 
-Gọi `ctx.exit()` sẽ ném `FlowExitException` nội bộ, được engine luồng sự kiện bắt và dừng thực thi luồng sự kiện hiện tại. Một khi đã gọi, các câu lệnh còn lại trong code JS hiện tại sẽ không được thực thi.
-
-## So sánh với ctx.exitAll()
-
-| Phương thức | Phạm vi tác dụng |
-|------|----------|
-| `ctx.exit()` | Chỉ kết thúc luồng sự kiện hiện tại, các luồng sự kiện tiếp theo không bị ảnh hưởng |
-| `ctx.exitAll()` | Kết thúc luồng sự kiện hiện tại, và dừng các luồng sự kiện **thực thi tuần tự** tiếp theo cùng sự kiện |
+Gọi `ctx.exit()` sẽ ném `FlowExitAllException` nội bộ, được engine luồng sự kiện bắt và dừng thực thi luồng sự kiện hiện tại. Một khi đã gọi, các câu lệnh còn lại trong code JS hiện tại sẽ không được thực thi.
 
 ## Ví dụ
 
@@ -68,22 +61,6 @@ if (!record || record.status !== 'draft') {
 }
 ```
 
-### Lựa chọn giữa ctx.exitAll()
-
-```ts
-// 仅当前事件流需退出 → 使用 ctx.exit()
-if (!params.valid) {
-  ctx.message.error('参数无效');
-  ctx.exit();  // 其他事件流不受影响
-}
-
-// 需终止当前事件下的全部后续事件流 → 使用 ctx.exitAll()
-if (!ctx.model?.context?.getPermission?.()) {
-  ctx.notification.warning({ message: '权限不足' });
-  ctx.exitAll();  // 主事件流及同事件下后续事件流一并终止
-}
-```
-
 ### Thoát theo lựa chọn người dùng sau khi xác nhận popup
 
 ```ts
@@ -100,11 +77,10 @@ if (!ok) {
 ## Lưu ý
 
 - Sau khi gọi `ctx.exit()`, code tiếp theo trong JS hiện tại sẽ không được thực thi; khuyến nghị thông báo lý do cho người dùng qua `ctx.message`, `ctx.notification` hoặc popup trước khi gọi
-- Trong code nghiệp vụ thường không cần bắt `FlowExitException`, để engine luồng sự kiện xử lý
-- Nếu cần kết thúc tất cả luồng sự kiện tiếp theo cùng sự kiện hiện tại, sử dụng `ctx.exitAll()`
+- Trong code nghiệp vụ thường không cần bắt `FlowExitAllException`, để engine luồng sự kiện xử lý
 
 ## Liên quan
 
-- [ctx.exitAll()](./exit-all.md): Kết thúc luồng sự kiện hiện tại và luồng sự kiện tiếp theo cùng sự kiện
+- [ctx.exitAll()](./exit-all.md)
 - [ctx.message](./message.md): Tin nhắn thông báo
 - [ctx.modal](./modal.md): Popup xác nhận

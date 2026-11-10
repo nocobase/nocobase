@@ -471,7 +471,7 @@ As capacidades a seguir podem ser usadas em cenários mais avançados; aqui est�
 | ----------------------- | ----------------------------------------------- |
 | `ctx.model`             | Instância atual do FlowModel (disponível no contexto de execução do Flow) |
 | `ctx.ref`               | Referência ao componente, usada com `ctx.onRefReady` |
-| `ctx.exit()`            | Sai da execução do Flow atual                   |
+| `ctx.exit()`, `ctx.exitAll()` | As duas chamadas encerram a etapa atual e pulam os fluxos sequenciais restantes do mesmo evento. Os fluxos que já estão em execução paralela continuam. |
 | `ctx.defineProperty()`  | Adiciona dinamicamente uma propriedade personalizada ao contexto |
 | `ctx.defineMethod()`    | Adiciona dinamicamente um método personalizado ao contexto |
 | `ctx.useResource()`     | Obtém a interface de operação de recursos de dados |

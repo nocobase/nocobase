@@ -471,7 +471,7 @@ Các khả năng dưới đây có thể dùng đến trong các kịch bản n�
 | ---------- | ----- |
 | `ctx.model` | Instance FlowModel hiện tại (dùng được trong context thực thi Flow) |
 | `ctx.ref` | Reference của component, dùng kèm `ctx.onRefReady` |
-| `ctx.exit()` | Thoát khỏi việc thực thi Flow hiện tại |
+| `ctx.exit()`, `ctx.exitAll()` | Cả hai lệnh đều kết thúc bước hiện tại và bỏ qua các luồng tuần tự còn lại trong cùng sự kiện. Các luồng đang chạy song song vẫn tiếp tục. |
 | `ctx.defineProperty()` | Thêm thuộc tính tùy chỉnh động vào context |
 | `ctx.defineMethod()` | Thêm method tùy chỉnh động vào context |
 | `ctx.useResource()` | Lấy interface thao tác resource dữ liệu |
