@@ -504,7 +504,10 @@ export class AIEmployee {
     if (this.from === 'sub-agent') {
       delete config.configurable;
     }
-    return agent.stream(input, this.withRunMetadata(config));
+    // The agent wrapper can spread a Command from another LangGraph installation into ordinary input. Resume the graph
+    // directly so it keeps the command and continues the interrupted tool call.
+    const runner = input instanceof Command ? agent.graph : agent;
+    return runner.stream(input, this.withRunMetadata(config));
   }
 
   async agentInvoke(provider: LLMProvider, context: AIChatContext, config?: any, state?: any): Promise<any> {
@@ -514,7 +517,8 @@ export class AIEmployee {
     if (this.from === 'sub-agent') {
       delete config.configurable;
     }
-    return agent.invoke(input, this.withRunMetadata(config));
+    const runner = input instanceof Command ? agent.graph : agent;
+    return runner.invoke(input, this.withRunMetadata(config));
   }
 
   async prepareChatStream({
