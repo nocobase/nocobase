@@ -30,6 +30,8 @@ export abstract class DataSource extends EventEmitter {
   public acl: ACL;
   public dataSourceManager: DataSourceManager;
 
+  private readonly collectionResources = new WeakSet<object>();
+
   logger: Logger;
 
   constructor(public options: DataSourceOptions) {
@@ -148,23 +150,23 @@ export abstract class DataSource extends EventEmitter {
         return next();
       }
       const resourceName = getNameByParams(params);
-      // 如果资源名称未被定义
+      const [collectionName] = resourceName.split('.');
       if (self.resourceManager.isDefined(resourceName)) {
-        return next();
+        const resource = self.resourceManager.getResource(resourceName);
+        if (!self.collectionResources.has(resource)) return next();
+        if (!self.collectionManager.hasCollection(collectionName)) {
+          self.resourceManager.removeResource(resourceName);
+          return next();
+        }
+      } else {
+        if (!self.collectionManager.hasCollection(collectionName)) return next();
+        self.collectionResources.add(self.resourceManager.define({ name: resourceName }));
       }
 
-      const splitResult = resourceName.split('.');
-
-      const collectionName = splitResult[0];
-
-      if (!self.collectionManager.hasCollection(collectionName)) {
-        return next();
-      }
-
-      self.resourceManager.define({
-        name: resourceName,
-      });
-
+      // This request selected a collection-backed resource. The collection can disappear while
+      // authentication and other middleware are running, even if a later request redefines the route.
+      const getRepository = ctx.getCurrentRepository;
+      ctx.getCurrentRepository = () => getRepository() || ctx.throw(404);
       return next();
     };
   }
