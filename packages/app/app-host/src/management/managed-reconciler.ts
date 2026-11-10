@@ -579,7 +579,7 @@ export class ManagedReconciler {
       const status = [...this.statuses.values()].find(
         (candidate) => candidate.appId === appId,
       );
-      const definition = this.registry.definition(appId);
+      const definition = this.definitionForDisposal(appId);
       await this.registry.unregister(appId, {
         reason: status
           ? `deployment ${status.id} removed`
@@ -623,7 +623,7 @@ export class ManagedReconciler {
         const status = [...this.statuses.values()].find(
           (candidate) => candidate.appId === appId,
         );
-        const definition = this.registry.definition(appId);
+        const definition = this.definitionForDisposal(appId);
         await this.registry.unregister(appId, {
           reason: `app ${appId} removed from its scope`,
         });
@@ -775,7 +775,7 @@ export class ManagedReconciler {
       );
       for (const [id, status] of this.statuses) {
         if (!desiredIds.has(id)) {
-          const definition = this.registry.definition(status.appId);
+          const definition = this.definitionForDisposal(status.appId);
           await this.registry.unregister(status.appId, {
             reason: `deployment ${id} removed from deployment set`,
           });
@@ -807,6 +807,8 @@ export class ManagedReconciler {
       await this.registry.unregister(spec.appId, {
         reason: `deployment ${spec.id} stopped`,
       });
+      // Keep the deployed resource identity; a restored stopped service has only its supplied spec.
+      if (!this.specs.has(spec.appId)) this.specs.set(spec.appId, spec);
       this.statuses.set(spec.id, {
         id: spec.id,
         appId: spec.appId,
@@ -1012,6 +1014,53 @@ export class ManagedReconciler {
     return found;
   }
 
+  private serviceDefinition(
+    spec: HostDeploymentSpec,
+    configPath?: string,
+  ): AppDefinition {
+    return {
+      id: spec.appId,
+      appName: spec.appId,
+      deploymentId: spec.operationId,
+      ...(spec.logging ? { logging: spec.logging } : {}),
+      basePath: spec.basePath ?? `/${spec.appId}`,
+      enabled: true,
+      backend: spec.backend,
+      isolation: spec.backend,
+      configVersion: 'v1',
+      tier: 'warm',
+      desiredVersion: spec.artifact.version,
+      ...(configPath ? { configPath } : {}),
+      backendOptions: serviceOptions(spec),
+      ...(spec.hostname ? { hostname: spec.hostname } : {}),
+      ...(spec.env ? { env: { ...spec.env } } : {}),
+      resourcePolicy: this.lifecyclePolicy(
+        { resourcePolicy: undefined } as AppDefinition,
+        spec,
+      ),
+    };
+  }
+
+  /** Stopped services have no routable registry entry; their spec still identifies resources to remove. */
+  private definitionForDisposal(appId: string): AppDefinition | undefined {
+    const registered = this.registry.definition(appId);
+    if (registered) return registered;
+    const spec = this.specs.get(appId);
+    if (!spec || spec.backend === 'in-process') return undefined;
+    const configPath =
+      spec.config?.content !== undefined
+        ? path.join(
+            this.volumes.volumesDir,
+            appId,
+            'configs',
+            `config.${spec.config.revision ?? spec.id}.yml`,
+          )
+        : spec.config
+          ? (spec.config.path ?? this.volumes.configPath(appId))
+          : undefined;
+    return this.serviceDefinition(spec, configPath);
+  }
+
   /** Removes what an external-service backend ran a removed App on; in-process Apps have nothing there. */
   private async disposeService(
     definition: AppDefinition,
@@ -1058,27 +1107,7 @@ export class ManagedReconciler {
       deploymentLog('preparing', 'Preparing application configuration');
       const configPath = await this.prepareConfig(spec);
       candidateConfigPath = configPath;
-      const definition: AppDefinition = {
-        id: spec.appId,
-        appName: spec.appId,
-        deploymentId: spec.operationId,
-        ...(spec.logging ? { logging: spec.logging } : {}),
-        basePath: spec.basePath ?? `/${spec.appId}`,
-        enabled: true,
-        backend: spec.backend,
-        isolation: spec.backend,
-        configVersion: 'v1',
-        tier: 'warm',
-        desiredVersion: spec.artifact.version,
-        ...(configPath ? { configPath } : {}),
-        backendOptions: serviceOptions(spec),
-        ...(spec.hostname ? { hostname: spec.hostname } : {}),
-        ...(spec.env ? { env: { ...spec.env } } : {}),
-        resourcePolicy: this.lifecyclePolicy(
-          { resourcePolicy: undefined } as AppDefinition,
-          spec,
-        ),
-      };
+      const definition = this.serviceDefinition(spec, configPath);
       const found = restoring ? await backend.inspect(definition) : null;
       if (deploying && backend.beforeDeploy) {
         deploymentLog('preparing', 'Running pre-deployment tasks');
