@@ -14,16 +14,6 @@ import { FeedbackForm } from '#components/feedback-form';
 import { RouteDialog } from '#components/route-dialog';
 import { useRouteOverlay } from '#components/use-route-overlay';
 import { Alert, AlertDescription } from '#components/ui/alert';
-import {
-  AlertDialog,
-  AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogCancel,
-  AlertDialogAction,
-} from '#components/ui/alert-dialog';
 import { Button } from '#components/ui/button';
 import { Skeleton } from '#components/ui/skeleton';
 import { Input } from '#components/ui/input';
@@ -121,8 +111,12 @@ function ProjectEditor({
   const submission = useSubmission({
     scope: `${session?.user.id}:skillProjects:${project?.id ?? 'new'}`,
   });
+  // What is saved, as the form shows it: the record, or the blank values of a new project. A form that restores a
+  // draft starts from it (`defaultValues: draft ?? saved`) and keeps this as `savedValues`, so leaving with the draft
+  // still asks (mobile.md M7.4).
+  const [saved] = useState(() => ({ name: project?.name ?? '' }));
   const form = useForm({
-    defaultValues: { name: project?.name ?? '' },
+    defaultValues: saved,
     shouldFocusError: false,
   });
   const navigate = useNavigate();
@@ -136,45 +130,21 @@ function ProjectEditor({
   const [confirmedMissing, setConfirmedMissing] = useState<
     'committed' | 'not-committed'
   >();
+  // Set once saved or once the record is gone, so the guard below lets the dialog close.
   const savedRef = useRef(false);
-  const [confirmDiscard, setConfirmDiscard] = useState(false);
-  const discardRef = useRef<{
-    promise: Promise<boolean>;
-    resolve: (value: boolean) => void;
-  } | null>(null);
-  const decideDiscard = (discard: boolean) => {
-    discardRef.current?.resolve(discard);
-    discardRef.current = null;
-    setConfirmDiscard(false);
-  };
-  useEffect(
-    () => () => {
-      discardRef.current?.resolve(false);
-    },
-    [],
+  // No way out only while a save is in flight. An unknown outcome (`submission.pending`, after a lost response or a
+  // 5xx) is not a lock: the FeedbackForm's `values` still make every way out ask, and discarding leaves. The operation
+  // key stays in session storage, so reopening the form offers the same retry (`restoringInput`).
+  useNavigationGuard(
+    () => savedRef.current || !(busyRef.current || submission.submitting),
   );
-  useNavigationGuard(() => {
-    if (savedRef.current) return true;
-    if (busyRef.current || submission.submitting || submission.pending)
-      return false;
-    if (!form.formState.isDirty) return true;
-    if (discardRef.current) return discardRef.current.promise;
-    let resolve!: (value: boolean) => void;
-    const promise = new Promise<boolean>((done) => {
-      resolve = done;
-    });
-    discardRef.current = { promise, resolve };
-    setConfirmDiscard(true);
-    return promise;
-  });
   useEffect(() => {
     const warn = (event: BeforeUnloadEvent) => {
-      if (busyRef.current || submission.pending || form.formState.isDirty)
-        event.preventDefault();
+      if (busyRef.current || submission.pending) event.preventDefault();
     };
     window.addEventListener('beforeunload', warn);
     return () => window.removeEventListener('beforeunload', warn);
-  }, [submission.pending, form.formState.isDirty]);
+  }, [submission.pending]);
   const submit = async () => {
     if (!session || busyRef.current) return;
     busyRef.current = true;
@@ -252,14 +222,13 @@ function ProjectEditor({
     <RouteDialog
       title={t(project ? 'skillProjects.edit' : 'skillProjects.create')}
       className='sm:max-w-md'
-      beforeClose={() =>
-        !busyRef.current && !submission.submitting && !submission.pending
-      }
+      // Every way out asks "Discard changes?" while the form's values differ from the saved ones (the FeedbackForm's
+      // `values` and `savedValues` below): ×, Esc, the backdrop, Cancel and browser back. The save's own navigation,
+      // from the FeedbackForm's onSubmit, leaves without asking.
+      beforeClose={() => !busyRef.current && !submission.submitting}
       footer={
         <>
-          <CancelButton
-            disabled={submission.submitting || submission.pending}
-          />
+          <CancelButton disabled={submission.submitting} />
           <Button
             type='submit'
             form={formId}
@@ -276,29 +245,6 @@ function ProjectEditor({
         </>
       }
     >
-      <AlertDialog
-        open={confirmDiscard}
-        onOpenChange={(open) => {
-          if (!open) decideDiscard(false);
-        }}
-      >
-        <AlertDialogContent className='sm:max-w-md'>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t('skillProjects.discard')}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {t('skillProjects.discardHint')}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>
-              {t('skillProjects.keepEditing')}
-            </AlertDialogCancel>
-            <AlertDialogAction onClick={() => decideDiscard(true)}>
-              {t('skillProjects.discardAction')}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
       {restoringInput && !error ? (
         <Alert>
           <AlertDescription>{t('skillProjects.restoreInput')}</AlertDescription>
@@ -306,6 +252,8 @@ function ProjectEditor({
       ) : null}
       <FeedbackForm
         id={formId}
+        values={form.getValues}
+        savedValues={saved}
         error={error}
         errorContent={
           confirmedMissing

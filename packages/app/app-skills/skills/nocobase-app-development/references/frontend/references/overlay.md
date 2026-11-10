@@ -2,6 +2,8 @@
 
 This document shows how to write overlays. For the rules on choosing and stacking overlays, see I1 in [`../ui-guidelines.md`](../ui-guidelines.md); for the form itself, see [`form.md`](form.md); for how to load data, see [`api.md`](api.md).
 
+**Before writing any create or edit overlay (M7.4, Must):** the form is a `FeedbackForm` with `values={form.getValues}` (`values={() => values}` for a form kept in `useState`) and `savedValues` (the stored or blank values, never the restored draft), its save button is `type='submit'` with `form={formId}`, and the page writes no discard question, `beforeunload` handler or `dirty` condition of its own based on a draft or storage. The overlay asks "Discard changes?" on every way out and warns before a reload whenever the form differs from what is saved; a kept draft restores input after a reload and never replaces the question, so it is never a reason to render `OwnDiscardQuestion`, which only declares that the file's own guard asks about its unsaved input. `scripts/check-ui-components.mjs` rejects a plain create or edit `<form>`, a `FeedbackForm` without `values` and `savedValues` (React Hook Form or `useState`), a draft-based `dirty`, and an `OwnDiscardQuestion` without a guard of the file's own that reads an unsaved state, without exceptions. A save in flight is the only lock: after a failed save whose outcome is unknown (`submission.pending`), Cancel stays enabled and `beforeClose` reads only the save in flight, so leaving asks about the changed values and "Discard" leaves. The details are in [section 2.5](#25-beforeclose-checks-before-closing).
+
 ## 1. Choosing an overlay
 
 | Use case                                                                             | Component                      | Width (`className`)                                          | Where the open state lives |
@@ -20,7 +22,7 @@ This document shows how to write overlays. For the rules on choosing and stackin
 - **An overlay opens over the view the user is on** (guideline I9): the page, or on a page with tabs, the tab being shown. A record shown on a dashboard, a board or another record's tab opens the same drawer as in its list, declared under that page ([section 2.1](#21-declare-the-child-routes)). Never link to the list's overlay URL from another page, and never open a page's header overlay beside its tabs (["Overlays opened from the header of a page with tabs" in `child-routes.md`](child-routes.md#overlays-opened-from-the-header-of-a-page-with-tabs)).
 - Only a confirmation of a single action (`AlertDialog`), a small form or large read-only content that represents no record (`Dialog`, [section 6](#6-plain-dialogs-sizes-and-scrolling)) and a temporary panel (`Sheet`) use component state. Every confirmation is an `AlertDialog`, never a `Dialog` with two buttons.
 - `RouteChildPage` covers the content area and is not modal, so the sidebar and header stay usable; see [`child-routes.md`](child-routes.md).
-- Stacking: a drawer can open dialogs and confirmation dialogs on top of it; a dialog can open only a confirmation dialog on top of it. Esc and clicking the backdrop close only the topmost layer (guideline I1).
+- Stacking: a drawer can open dialogs and confirmation dialogs on top of it; a dialog can open only a confirmation dialog on top of it. Esc and clicking the backdrop close only the topmost layer (guideline I1). On a phone, the detail drawer → edit dialog → confirmation path keeps the same routes and is the deepest allowed stack (M7.2 in [the phone experience](../mobile.md)); the templates' `tests/client/route-overlay.test.tsx` walks it with a discard question, one layer at a time. A dialog, confirmation or sheet opened inside another overlay must cover the one below with its own backdrop: Base UI leaves a nested backdrop out unless it is forced, and without it a tap on the Save below the confirmation still saves. The templates' `Dialog`, `AlertDialog` and `Sheet` therefore render their overlay with `forceRender`, as `RouteDialog` does; keep it when updating or re-adding those primitives, and check in a browser that no point outside the top layer reaches the layer below.
 - This table replaces the overlay table of the shadcn skill, which gives record details to `Sheet` ([section 3 of `shadcn.md`](shadcn.md#3-where-this-application-departs-from-the-skill)).
 
 Component locations: `#components/route-dialog`, `#components/route-drawer`, `#components/use-route-overlay`, `#components/ui/alert-dialog`, `#components/ui/sheet`. The last two are not in the template; add them with `yes n | pnpm exec shadcn add alert-dialog sheet` ([section 1 of `shadcn.md`](shadcn.md#1-what-the-template-ships-and-how-to-add-the-rest)).
@@ -33,7 +35,7 @@ Work in this order:
 2. Place `<Outlet />` in the parent page and pass the refresh function down through `context`.
 3. In the child route's page, wrap the content in `RouteDialog` or `RouteDrawer`.
 4. Close the overlay by calling `useRouteOverlay()` in a component inside it.
-5. When closing needs a check first (a submission in progress, unsaved changes), add `beforeClose`.
+5. Put the form in a `FeedbackForm` inside the overlay with `values={form.getValues}` and `savedValues` (the stored record or the blank values, never a restored draft): the overlay then asks before discarding any unsaved difference on every way out, browser back included, whatever field changed. Add `beforeClose` for a submission in progress ([section 2.5](#25-beforeclose-checks-before-closing)).
 
 ### 2.1 Declare the child routes
 
@@ -187,7 +189,7 @@ export default function NewProjectPage(): ReactElement {
 
 ### 2.5 beforeClose: checks before closing
 
-- `beforeClose` applies to the top-right button, Esc, clicking the backdrop and `close()`; **browser back and forward do not go through it**.
+- `beforeClose` applies to the top-right button, Esc, clicking the backdrop and `close()`; **browser back and forward do not go through it**. Use it for checks that belong to closing only (a submission in progress); guard unsaved changes with the overlay's `dirty`, below, which also covers history navigation.
 - Returning `false` (or a Promise that resolves to `false`) keeps the overlay open.
 
 **No closing while submitting** (guideline T3.5): write `beforeClose={() => !submittingRef.current}`, using both a state and a ref:
@@ -195,114 +197,37 @@ export default function NewProjectPage(): ReactElement {
 - The state (`submitting`) renders the buttons' disabled and loading states; the ref (`submittingRef`) is what `beforeClose` reads. Both are updated together in the same `handleSubmittingChange` (see `new.tsx`, [`example/create-dialog.md`](example/create-dialog.md)).
 - Using only the state, as `() => !submitting`, is unreliable: state updates only on the next render, so a `close()` called right after a successful save may run the `beforeClose` from the "submitting" render, read `submitting === true`, and have the close blocked.
 - On success, `ProjectForm` guarantees that it passes `onSubmittingChange(false)` before calling `onSubmitted`, so calling `close()` directly in `onSubmitted` closes the overlay.
+- **An unknown outcome is not a lock.** With [`useSubmission`](../../submission.md), `submission.pending` stays true after a lost response, a 5xx or a timeout so the same key can be retried; the request is over. `beforeClose`, a navigation guard of your own and Cancel's `disabled` read only the save in flight (`submitting`), never `pending`. The `FeedbackForm`'s `values` and `savedValues` keep asking as before the save: Cancel, ×, Esc, the backdrop and browser back ask "Discard changes?" while the values differ from the saved ones, "Keep editing" keeps the input for the retry, and "Discard" closes; an edit saved unchanged loses nothing and leaves without asking. The same holds on a covering `RouteChildPage`. The key stays in session storage, so reopening the form offers the same retry. A form that blocks leaving on `pending` locks the person in after every server failure. The runnable version is `client/pages/skill-projects/edit.tsx`.
 
-**Confirm when there are unsaved changes** (guideline T3.9; recommended for forms with many fields): have `beforeClose` return a Promise, and resolve it after the user chooses in a confirmation dialog. Put the confirmation dialog inside the overlay:
+**Confirm when there are unsaved changes** (guideline T3.9, M7.4 in [the phone experience](../mobile.md)): every `RouteDialog` and `RouteDrawer` asks by itself, without a prop on the overlay: while a `FeedbackForm` inside has values that differ from its `savedValues` (or, without them, once the user typed in it), or while the overlay's `dirty` is true, the overlay asks "Discard changes?" (with "Keep editing" and "Discard") before every way out: the × button, Esc, the backdrop and `close()` (Cancel) reach it through the close navigation, and browser back and forward, the phone's back gesture and any link reach it directly. It holds the navigation while it asks, keeps the overlay and its input mounted, restores the URL when the answer is "Keep editing", and warns before a reload or closing the tab. Keep `beforeClose` for what only closing should check, such as a submission in progress:
 
 ```tsx
-import { useTranslation } from '@nocobase/i18n/client';
-import { type ReactElement, useCallback, useRef, useState } from 'react';
-import { useOutletContext } from 'react-router';
-
-import { RouteDialog } from '#components/route-dialog';
-import { useRouteOverlay } from '#components/use-route-overlay';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '#components/ui/alert-dialog';
-
-import { ProjectForm } from '../project-form.js';
-import type { ProjectEditOutletContext } from '../types.js';
-
 export default function EditProjectPage(): ReactElement {
   const { t } = useTranslation();
   const submittingRef = useRef(false);
-  // Whether there are unsaved changes: the form reports it through onDirtyChange. The callback is stable, so the
-  // form's report effect does not run again when this page re-renders (a save updates the view behind it), which
-  // would write the just-saved form's still-dirty state back into the ref.
-  const dirtyRef = useRef(false);
-  const handleDirtyChange = useCallback((dirty: boolean): void => {
-    dirtyRef.current = dirty;
-  }, []);
-  // While asking "Discard changes?", holds the function that answers beforeClose.
-  const [discardPrompt, setDiscardPrompt] = useState<{
-    readonly answer: (discard: boolean) => void;
-  }>();
-
-  function answerDiscard(discard: boolean): void {
-    discardPrompt?.answer(discard);
-    setDiscardPrompt(undefined);
-  }
 
   return (
     <RouteDialog
       title={t('projects.edit.title')}
-      beforeClose={() => {
-        if (submittingRef.current) return false;
-        if (!dirtyRef.current) return true;
-        // Return a Promise: whether to close is decided only after the user chooses in the confirmation dialog.
-        return new Promise<boolean>((resolve) => {
-          setDiscardPrompt({ answer: resolve });
-        });
-      }}
+      // No dirty prop: ProjectForm's FeedbackForm reports its values and the saved record, and every way out asks
+      // first while they differ: ×, Esc, the backdrop, Cancel, browser back, links.
+      // Closing only: no closing while submitting (T3.5).
+      beforeClose={() => !submittingRef.current}
     >
-      {/* The form's body (`EditProjectBody` below) extends `detail/edit.tsx` in example/edit-dialog.md with the
-          dirty reporting this pattern needs. */}
-      <EditProjectBody onDirtyChange={handleDirtyChange} />
-      {/* The confirmation dialog sits inside the dialog, so Esc closes only the confirmation dialog. */}
-      <AlertDialog
-        open={discardPrompt !== undefined}
-        onOpenChange={(open) => {
-          // Esc or "Keep editing": the dialog stays open. An AlertDialog ignores backdrop clicks.
-          if (!open) answerDiscard(false);
-        }}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t('projects.discard.title')}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {t('projects.discard.description')}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>
-              {t('projects.discard.cancel')}
-            </AlertDialogCancel>
-            <AlertDialogAction
-              variant='destructive'
-              onClick={() => answerDiscard(true)}
-            >
-              {t('projects.discard.confirm')}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <EditProjectBody />
     </RouteDialog>
   );
 }
 
-/** The form's body: it reports unsaved changes, and the success path clears the flag before closing. */
-function EditProjectBody({
-  onDirtyChange,
-}: {
-  readonly onDirtyChange: (dirty: boolean) => void;
-}): ReactElement {
+function EditProjectBody(): ReactElement {
   const { close } = useRouteOverlay();
   const { onSaved } = useOutletContext<ProjectEditOutletContext>();
   return (
     <ProjectForm
       formId='project-edit-form'
       // … project, onSubmittingChange and onNotFound as in example/edit-dialog.md
-      onDirtyChange={onDirtyChange}
       onSubmitted={(saved) => {
-        // The save succeeded, so no unsaved changes remain: clear the flag before closing, or beforeClose would ask
-        // to discard the changes that were just saved.
-        onDirtyChange(false);
+        // Still inside the FeedbackForm's onSubmit, so this close is the save's own and does not ask.
         onSaved(saved);
         void close();
       }}
@@ -311,9 +236,13 @@ function EditProjectBody({
 }
 ```
 
-- **After a successful save, set `dirtyRef.current` back to `false` before calling `close()`**; otherwise the close after saving also brings up the "Discard changes?" prompt.
-- `isClosing` is `true` while waiting for the user's choice.
-- Browser back does not go through `beforeClose`, so in that case the changes are lost.
+- **What counts as a change**: a `FeedbackForm` given `values={form.getValues}` and `savedValues` is unsaved whenever its current values differ from the saved ones, compared when the user tries to leave, so every field counts the same way: typing, a Select, a date or relation picker, an upload, and a restored draft. Empty text, `null` and `undefined` count as equal, dates compare by time and files by identity, so a value changed and changed back does not ask. `savedValues` is what is stored, as the form shows it (the record when editing, the blank values when creating), never the draft: a page that restores a draft starts the form from it (`defaultValues: draft ?? saved`) and keeps `savedValues={saved}`, so leaving with the restored draft asks. React Hook Form's `formState.isDirty` cannot say this, because the restored draft is its default. A `FeedbackForm` without `values` counts typing or change events in it; the overlay's `dirty` adds anything else (once passed, typing in any `<form>` inside counts too). Leaving `dirty` out or passing `false` never switches the question off. Do not make anything depend on a saved draft or a storage flag: a draft restores input after a reload, while leaving on purpose still asks.
+- **What does not ask**: an overlay nobody typed in, a read-only drawer (a search box in a plain `<form>` there is not unsaved input), and the save, below.
+- **What leaves without asking**: the save itself, that is a navigation or `close()` made while a `FeedbackForm` in the overlay is still running its `onSubmit` (await the request and navigate inside it, as the examples do). A failed or rejected save keeps the question: after it, Cancel, ×, Esc, the backdrop, browser back and a reload all still ask. A plain `<form>` reports no save of its own, and the way the page leaves after it says nothing about whether the save worked, so the overlay still asks after a plain form's successful save too: one question too many rather than input lost after a failed save. Use `FeedbackForm`. A disabled save button, such as while validation fails, does not count as unchanged: leaving still asks. The save button is therefore a real submit button (`type='submit'` with `form={formId}`), not a plain button with an `onClick`.
+- Do not ask in `beforeClose` or in a navigation guard of your own as well: the overlay already asks once per way out. A guard of your own may still return `false` to block leaving while a save is in flight; such a guard asks nothing, so it never comes with `OwnDiscardQuestion`. `OwnDiscardQuestion` is for a form whose own guard asks about its unsaved input (the settings forms' `usePageLeave`, the onboarding wizard); a kept draft or working storage is not such a question.
+- The confirmation is the one layer allowed above the overlay (M7.2); its backdrop covers the overlay, so only its buttons take a tap.
+- The runnable version is the edit dialog of the [executable list and edit example](executable-list-edit.md) (`client/pages/skill-projects/edit.tsx`): `tests/client/skill-projects.test.tsx` checks that Cancel, Esc and browser back each ask, that "Keep editing" keeps the input and the URL, and that discarding closes. `tests/client/route-overlay.test.tsx` checks the same paths, the × button, a `dirty` that says "nothing to lose" after typing, a draft-keeping form with no `dirty` at all, a restored draft closed without typing and a value changed only by a picker (both ask), a value changed back (does not ask), the backdrop, a save button disabled by validation, a read-only drawer, and a save that leaves without asking.
+- A create or edit page that covers the list (`RouteChildPage`, [`example/create-page.md`](example/create-page.md)) asks the same way by itself: its `FeedbackForm` with `values` and `savedValues` is compared before Cancel, the back button, a breadcrumb, a link and browser back, and a reload gets the browser's warning. Write no guard or `beforeunload` handler of your own there either. Only a form on an ordinary page outside these layers needs `useNavigationGuard` from `@nocobase/app-client`.
 
 ## 3. Complete example
 
@@ -448,12 +377,13 @@ After implementing, confirm each item by actually trying it:
 - [ ] Every confirmation is an `AlertDialog`; a plain `Dialog` has I1's width, and one that can outgrow the screen caps its height at `calc(100dvh-2rem)` with a scrolling body and its footer in view.
 - [ ] `useRouteOverlay()` is called in components inside the overlay, not in the page component that renders the overlay; when `beforeClose` can throw, the rejection from `close()` is handled.
 - [ ] While submitting or deleting, ×, Esc, clicking the backdrop (dialogs and drawers; an AlertDialog never closes on it) and "Cancel" all fail to close it; where needed, there is a confirmation for unsaved changes.
+- [ ] After a save fails with HTTP 500 or a lost response, the input stays, the error shows, Save retries, and Cancel, ×, Esc, the backdrop and browser back each ask before discarding; "Discard" closes the overlay.
 - [ ] Opening a child route's URL directly (with the deployment base path, for example `/main/projects/12/edit`, `/main/projects/edit/12` and `/main/customers/12/orders/edit`), refreshing, browser back and forward, and nested overlays all show the correct layers.
 - [ ] Opening and closing overlays keeps the query parameters, so the search and filters of the list behind stay the same: after closing, the URL is exactly the one the overlay was opened from, with nothing the overlay wrote left in it. The parent page stays mounted and does not reload.
 - [ ] After saving, the drawer shows the new values immediately, and the list refreshes afterwards (guideline R2).
 - [ ] Record not found: the situation is explained, no "Retry" is offered, and the list refreshes (guideline R3); other load failures can be retried (guideline S4).
 - [ ] Delete: failures are explained in the confirmation dialog, a 404 is treated as success, and focus lands on the search box after the delete (guideline A6).
 - [ ] Esc closes only the topmost layer; after closing, focus returns to the element that opened it, or lands in a stable place when that element is gone.
-- [ ] At a width of 375px, overlays stay within the screen, the content area scrolls, and the bottom buttons are reachable (guideline A4).
+- [ ] At 375×667, a 390–412px width and in landscape, overlays stay within the screen, the content area scrolls, the bottom buttons are reachable, and a focused field near the footer stays visible; a task that would need a third layer is a covering page instead ([M7 of the phone experience](../mobile.md#m7-overlays-and-action-areas), guideline A4).
 - [ ] Without permission for the parent route, the child route's URL does not open either.
 - [ ] The new route names are in the route test's page grant list (see [section 12 of `page.md`](page.md#12-update-the-route-test)).

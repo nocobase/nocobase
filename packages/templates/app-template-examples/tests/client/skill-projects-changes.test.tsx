@@ -183,9 +183,12 @@ it('updates the open detail from the save response, then the searched, sorted se
   await screen.findByRole('heading', { name: 'Project 02' });
   const detailReads = api.count('GET', 'skillProjects/p02');
   await userEvent.click(
-    screen
-      .getAllByRole('button', { name: 'Edit' })
-      .find((link) => link.getAttribute('href')?.endsWith('/details/edit'))!,
+    screen.getAllByRole('button', { name: 'Edit' }).find((link) =>
+      // The link keeps the list's query, so a reload of the edit dialog still knows the list.
+      new URL(link.getAttribute('href') ?? '', 'http://app').pathname.endsWith(
+        '/details/edit',
+      ),
+    )!,
   );
   const name = await screen.findByRole('textbox', { name: 'Name' });
   await userEvent.clear(name);

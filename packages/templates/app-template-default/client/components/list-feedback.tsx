@@ -48,6 +48,12 @@ export interface ListFeedbackProps {
 export interface ListFeedbackActionsProps {
   readonly state: ListState;
   readonly onClear?: () => void;
+  /**
+   * The host's search or filters are applied. "Clear filters" then shows with
+   * the rows too, not only when nothing matched, so a phone user can clear
+   * them without reopening the filter sheet (mobile.md M4.2).
+   */
+  readonly filtered?: boolean;
   readonly onRetry?: () => void;
   readonly busy?: boolean;
 }
@@ -56,33 +62,38 @@ export interface ListFeedbackActionsProps {
 export function ListFeedbackActions({
   state,
   onClear,
+  filtered = false,
   onRetry,
   busy = false,
 }: ListFeedbackActionsProps): ReactElement | null {
   const { t } = useTranslation();
 
-  if (state === 'no-results' && onClear) {
-    return (
+  const clear =
+    onClear &&
+    (state === 'no-results' ||
+      (filtered && state !== 'forbidden' && state !== 'unauthenticated')) ? (
       <Button variant='outline' onClick={onClear}>
         <X aria-hidden='true' />
         {t('listFeedback.clear', { defaultValue: 'Clear filters' })}
       </Button>
-    );
-  }
+    ) : null;
 
   if ((state === 'failed' || state === 'refresh-failed') && onRetry) {
     return (
-      <PendingButton
-        variant='outline'
-        busy={busy}
-        pendingLabel={t('listFeedback.retrying', {
-          defaultValue: 'Retrying…',
-        })}
-        onClick={onRetry}
-      >
-        <RefreshCw aria-hidden='true' />
-        {t('listFeedback.retry', { defaultValue: 'Retry' })}
-      </PendingButton>
+      <>
+        {clear}
+        <PendingButton
+          variant='outline'
+          busy={busy}
+          pendingLabel={t('listFeedback.retrying', {
+            defaultValue: 'Retrying…',
+          })}
+          onClick={onRetry}
+        >
+          <RefreshCw aria-hidden='true' />
+          {t('listFeedback.retry', { defaultValue: 'Retry' })}
+        </PendingButton>
+      </>
     );
   }
 
@@ -99,7 +110,7 @@ export function ListFeedbackActions({
     );
   }
 
-  return null;
+  return clear;
 }
 
 /** Shared by tables and card lists. Authorization is decided by the host. */

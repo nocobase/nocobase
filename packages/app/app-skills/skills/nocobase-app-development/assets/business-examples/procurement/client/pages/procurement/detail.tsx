@@ -210,8 +210,9 @@ function Editor({
       title={t(detail ? 'procurement.open' : 'procurement.new')}
       className='sm:w-3xl'
       beforeClose={() => {
-        if (busy || submission.pending) return false;
-        if (dirty) {
+        if (busy) return false;
+        // An unknown outcome is unsaved too: ask, never lock the drawer open.
+        if (dirty || submission.pending) {
           setDiscard(true);
           return false;
         }

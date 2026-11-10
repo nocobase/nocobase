@@ -51,10 +51,6 @@ export const enUS = {
   saving: 'Saving…',
   required: 'Enter a project name.',
   tooLong: 'Use at most 100 characters.',
-  discard: 'Discard your unsaved changes?',
-  discardHint: 'Your changes will be lost.',
-  keepEditing: 'Keep editing',
-  discardAction: 'Discard',
 };
 
 export const zhCN = {
@@ -105,8 +101,4 @@ export const zhCN = {
   saving: '正在保存…',
   required: '请输入项目名称。',
   tooLong: '最多输入 100 个字符。',
-  discard: '放弃尚未保存的修改？',
-  discardHint: '尚未保存的修改将丢失。',
-  keepEditing: '继续编辑',
-  discardAction: '放弃修改',
 };

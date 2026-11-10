@@ -11,6 +11,7 @@ import { useState } from 'react';
 import {
   Link,
   Outlet,
+  useLocation,
   useNavigate,
   useParams,
   useResolvedPath,
@@ -33,7 +34,8 @@ import { Button } from '#components/ui/button';
 import { Skeleton } from '#components/ui/skeleton';
 import { announceDataChange } from '#hooks/use-data-changes';
 import { useListData } from '#hooks/use-list-data';
-import { useRouteSearches } from '../../routing/route-context.js';
+import { TABLE_URL_KEYS } from '#hooks/use-table-url-state';
+import { useAncestorSearch } from '../../routing/route-context.js';
 import type { SkillProject } from './index.js';
 import { projectScope } from './scopes.js';
 
@@ -41,8 +43,10 @@ import { projectScope } from './scopes.js';
 export default function SkillProjectDetailPage() {
   const { t } = useTranslation();
   const { projectId = '' } = useParams();
+  const location = useLocation();
   const owner = useResolvedPath('..').pathname;
-  const searches = useRouteSearches();
+  // The list's own keys: after a reload of this page or its edit dialog, they come from the URL the list linked to.
+  const ownerSearch = useAncestorSearch(owner, TABLE_URL_KEYS);
   const scope = projectScope(projectId);
   // The project this page deleted stays on screen while it returns to the list.
   const [deleted, setDeleted] = useState<SkillProject>();
@@ -54,7 +58,7 @@ export default function SkillProjectDetailPage() {
   const status =
     request.error instanceof ApiClientError ? request.error.status : undefined;
   const project = deleted ?? (request.error ? undefined : request.data?.data);
-  const source = { pathname: owner, search: searches.get(owner) ?? '' };
+  const source = { pathname: owner, search: ownerSearch };
   usePageBreadcrumb([
     { label: t('skillProjects.title'), to: source },
     { label: project?.name ?? t('skillProjects.detail') },
@@ -74,7 +78,12 @@ export default function SkillProjectDetailPage() {
                     return source;
                   }}
                 />
-                <Button render={<Link to='edit' />} nativeButton={false}>
+                <Button
+                  render={
+                    <Link to={{ pathname: 'edit', search: location.search }} />
+                  }
+                  nativeButton={false}
+                >
                   {t('skillProjects.editAction')}
                 </Button>
               </>

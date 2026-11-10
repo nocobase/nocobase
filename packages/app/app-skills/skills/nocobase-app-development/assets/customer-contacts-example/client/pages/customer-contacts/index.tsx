@@ -13,14 +13,17 @@ import { useTranslation } from '@nocobase/i18n/client';
 import { useEffect, useRef, useState } from 'react';
 import { Link, Outlet, useLocation } from 'react-router';
 import type { ColumnDef } from '@tanstack/react-table';
-import { DataTable } from '#components/data-table';
+import {
+  DataTable,
+  DataTableFilter,
+  DataTableSearch,
+} from '#components/data-table';
 import { PageContainer } from '#components/page-container';
 import { PageHeader } from '#components/page-header';
 import { RecordLink } from '#components/record-link';
 import { StatusBadge } from '#components/status-badge';
 import { Button } from '#components/ui/button';
 import { Checkbox } from '#components/ui/checkbox';
-import { Input } from '#components/ui/input';
 import {
   AlertDialog,
   AlertDialogContent,
@@ -98,6 +101,7 @@ function CustomerContactsContent() {
   });
   const selected = selection.key === selectionKey ? selection.ids : [];
   const [confirmReset, setConfirmReset] = useState(false);
+  const appliedFilters = (status !== 'all' ? 1 : 0) + (owner ? 1 : 0);
   const [resetError, setResetError] = useState<unknown>();
   const lock = useWriteLock();
   const headerRef = useRef<HTMLDivElement>(null);
@@ -133,15 +137,18 @@ function CustomerContactsContent() {
     ...(edit.can || assign.can
       ? [
           {
-            id: 'selection',
+            // DataTable shows this header above the phone cards too, as "Select all on this page".
+            id: 'select',
             header: () => (
               <Checkbox
-                aria-label={t('customerContacts.selected', {
-                  count: rows.length,
-                })}
+                aria-label={t('customerContacts.selectAll')}
                 checked={
                   rows.length > 0 &&
                   rows.every((row) => selected.includes(row.id))
+                }
+                indeterminate={
+                  selected.length > 0 &&
+                  !rows.every((row) => selected.includes(row.id))
                 }
                 disabled={request.loading || !active}
                 onCheckedChange={(checked) =>
@@ -254,57 +261,6 @@ function CustomerContactsContent() {
         />
       </div>
       {!confirmReset && <WriteFeedback error={resetError} />}
-      <div className='flex flex-wrap items-center gap-2'>
-        <CustomerSearch
-          value={search}
-          onSearch={(value) => updateQuery('search', value)}
-        />
-        <StatusChoice
-          all
-          value={status}
-          onChange={(value) => updateQuery('status', value)}
-        />
-        <div className='w-full sm:w-48'>
-          <RelationPicker
-            kind='salesReps'
-            value={owner}
-            label={t('customerContacts.owner')}
-            onChange={(value) => updateQuery('ownerId', value)}
-          />
-        </div>
-        {(search || status !== 'all' || owner) && (
-          <Button
-            variant='ghost'
-            onClick={() => {
-              const next = new URLSearchParams(params);
-              for (const key of ['search', 'status', 'ownerId', 'page'])
-                next.delete(key);
-              setSelection({ key: '', ids: [] });
-              setParams(next, { replace: true });
-            }}
-          >
-            {t('customerContacts.clear')}
-          </Button>
-        )}
-      </div>
-      {selected.length > 0 && (
-        <div className='flex flex-wrap items-center gap-2'>
-          <span className='text-sm'>
-            {t('customerContacts.selected', { count: selected.length })}
-          </span>
-          {(edit.can || assign.can) && (
-            <Button
-              variant='outline'
-              render={
-                <Link to={{ pathname: 'batch', search: location.search }} />
-              }
-              nativeButton={false}
-            >
-              {t('customerContacts.batchTitle')}
-            </Button>
-          )}
-        </div>
-      )}
       <DataTable
         columns={columns}
         data={rows}
@@ -322,6 +278,82 @@ function CustomerContactsContent() {
         loading={active && request.loading}
         loadingIdentity={path}
         onRetry={reload}
+        // One row on every width (mobile.md M4.1): DataTable puts the search box first, then the filters inline from
+        // md up or, on a phone, an icon Filters button named and badged with the applied count that opens them in a
+        // bottom sheet; Clear filters joins while something is applied (M4.2).
+        search={
+          <DataTableSearch
+            value={search}
+            label={t('customerContacts.search')}
+            onSearch={(value) => updateQuery('search', value)}
+          />
+        }
+        filters={
+          <>
+            <DataTableFilter label={t('customerContacts.status')}>
+              <StatusChoice
+                all
+                value={status}
+                onChange={(value) => updateQuery('status', value)}
+              />
+            </DataTableFilter>
+            <DataTableFilter label={t('customerContacts.owner')}>
+              <div className='w-48'>
+                <RelationPicker
+                  kind='salesReps'
+                  value={owner}
+                  label={t('customerContacts.owner')}
+                  onChange={(value) => updateQuery('ownerId', value)}
+                />
+              </div>
+            </DataTableFilter>
+          </>
+        }
+        filterCount={appliedFilters}
+        filtered={Boolean(search || status !== 'all' || owner)}
+        onClearFilters={() => {
+          const next = new URLSearchParams(params);
+          for (const key of ['search', 'status', 'ownerId', 'page'])
+            next.delete(key);
+          setSelection({ key: '', ids: [] });
+          setParams(next, { replace: true });
+        }}
+        // Transient: the selection count and its batch action join the controls' row while rows are selected.
+        toolbar={() =>
+          selected.length > 0 ? (
+            <div className='flex flex-wrap items-center gap-2'>
+              <span className='text-sm'>
+                {t('customerContacts.selected', { count: selected.length })}
+              </span>
+              {(edit.can || assign.can) && (
+                <Button
+                  variant='outline'
+                  render={
+                    <Link to={{ pathname: 'batch', search: location.search }} />
+                  }
+                  nativeButton={false}
+                >
+                  {t('customerContacts.batchTitle')}
+                </Button>
+              )}
+            </div>
+          ) : null
+        }
+        renderCard={(row) => (
+          <CustomerCard
+            customer={row.original}
+            search={location.search}
+            selection={
+              edit.can || assign.can
+                ? {
+                    checked: selected.includes(row.original.id),
+                    disabled: request.loading || !active,
+                    onChange: (checked) => toggle(row.original.id, checked),
+                  }
+                : undefined
+            }
+          />
+        )}
       />
       <AlertDialog
         open={confirmReset}
@@ -381,6 +413,63 @@ function CustomerContactsContent() {
     </PageContainer>
   );
 }
+/**
+ * One customer on a phone (mobile.md M3): the selection checkbox when batch actions exist, the name link and status
+ * first, then the owner. The table's columns stay for wider screens. Like the rows, the card has no action menu: this
+ * list changes customers through selection and the batch action, and a customer's own edit belongs with its contacts
+ * on the customer's page (case (c) of M3.1).
+ */
+function CustomerCard({
+  customer,
+  search,
+  selection,
+}: {
+  customer: Customer;
+  search: string;
+  selection?: {
+    checked: boolean;
+    disabled: boolean;
+    onChange: (checked: boolean) => void;
+  };
+}) {
+  const { t } = useTranslation();
+  return (
+    <div className='flex items-start gap-3 rounded-lg border p-4'>
+      {selection ? (
+        <Checkbox
+          className='mt-0.5'
+          aria-label={t('customerContacts.selectRow', { name: customer.name })}
+          checked={selection.checked}
+          disabled={selection.disabled}
+          onCheckedChange={selection.onChange}
+        />
+      ) : null}
+      <div className='flex min-w-0 flex-1 flex-col gap-2'>
+        <div className='flex flex-wrap items-center gap-2'>
+          <RecordLink
+            to={{ pathname: customer.id, search }}
+            className='min-w-0 break-words'
+          >
+            {customer.name}
+          </RecordLink>
+          <StatusBadge
+            tone={customer.status === 'active' ? 'success' : 'neutral'}
+          >
+            {t(`customerContacts.${customer.status}`)}
+          </StatusBadge>
+        </div>
+        <dl className='grid grid-cols-[auto_minmax(0,1fr)] gap-x-2 text-sm'>
+          <dt className='text-muted-foreground'>
+            {t('customerContacts.owner')}
+          </dt>
+          <dd className='min-w-0'>
+            <OwnerName id={customer.ownerId} />
+          </dd>
+        </dl>
+      </div>
+    </div>
+  );
+}
 export function OwnerName({ id }: { id: string }) {
   const { t } = useTranslation();
   const api = useApiClient();
@@ -411,44 +500,5 @@ export function OwnerName({ id }: { id: string }) {
         ? t('customerContacts.unavailable')
         : (request.data?.data.name ?? t('customerContacts.loading'))}
     </span>
-  );
-}
-function CustomerSearch({
-  value,
-  onSearch,
-}: {
-  value: string;
-  onSearch: (value: string) => void;
-}) {
-  const { t } = useTranslation();
-  const [text, setText] = useState(value);
-  const [seen, setSeen] = useState(value);
-  const [sent, setSent] = useState(value);
-  const [composing, setComposing] = useState(false);
-  if (value !== seen) {
-    setSeen(value);
-    if (value !== sent) setText(value);
-  }
-  useEffect(() => {
-    if (composing || text.trim() === value) return;
-    const timer = setTimeout(() => {
-      setSent(text.trim());
-      onSearch(text.trim());
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [text, composing, value, onSearch]);
-  return (
-    <Input
-      aria-label={t('customerContacts.search')}
-      placeholder={t('customerContacts.search')}
-      value={text}
-      onChange={(e) => setText(e.target.value)}
-      onCompositionStart={() => setComposing(true)}
-      onCompositionEnd={(e) => {
-        setComposing(false);
-        setText(e.currentTarget.value);
-      }}
-      className='w-full sm:max-w-xs'
-    />
   );
 }

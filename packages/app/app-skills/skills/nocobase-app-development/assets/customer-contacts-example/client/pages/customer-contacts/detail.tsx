@@ -111,6 +111,59 @@ export default function CustomerDetailPage() {
       parent.reload();
     },
   };
+  // A contact's actions: the table row's menu, and the card's on a phone where it is a full-size tap target (M8.1).
+  const contactMenu = (contact: Contact, size: 'icon-sm' | 'icon') => (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        render={
+          <Button
+            variant='ghost'
+            size={size}
+            aria-label={t('customerContacts.actionsFor', {
+              name: contact.name,
+            })}
+          />
+        }
+      >
+        <MoreHorizontal />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align='end' className='w-auto min-w-40'>
+        <DropdownMenuItem
+          render={
+            <Link
+              to={{
+                pathname: `contacts/${contact.id}/edit`,
+                search: location.search,
+              }}
+            />
+          }
+        >
+          {t('customerContacts.edit')}
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          variant='destructive'
+          onClick={() => {
+            void (async () => {
+              if (!lock.acquire()) return;
+              try {
+                const fresh = await api.request<{ data: Contact }>({
+                  path: `${base}/contacts/${encodeURIComponent(contact.id)}`,
+                });
+                setDeleting(fresh.data);
+              } catch (failure) {
+                setError(failure);
+              } finally {
+                lock.release();
+              }
+            })();
+          }}
+        >
+          {t('customerContacts.delete')}
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
   const columns: ColumnDef<Contact>[] = [
     {
       accessorKey: 'name',
@@ -141,58 +194,8 @@ export default function CustomerDetailPage() {
           {
             id: 'actions',
             header: t('customerContacts.actions'),
-            cell: ({ row }: { row: { original: Contact } }) => (
-              <DropdownMenu>
-                <DropdownMenuTrigger
-                  render={
-                    <Button
-                      variant='ghost'
-                      size='icon-sm'
-                      aria-label={t('customerContacts.actionsFor', {
-                        name: row.original.name,
-                      })}
-                    />
-                  }
-                >
-                  <MoreHorizontal />
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align='end' className='w-auto min-w-40'>
-                  <DropdownMenuItem
-                    render={
-                      <Link
-                        to={{
-                          pathname: `contacts/${row.original.id}/edit`,
-                          search: location.search,
-                        }}
-                      />
-                    }
-                  >
-                    {t('customerContacts.edit')}
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    variant='destructive'
-                    onClick={() => {
-                      void (async () => {
-                        if (!lock.acquire()) return;
-                        try {
-                          const fresh = await api.request<{ data: Contact }>({
-                            path: `${base}/contacts/${encodeURIComponent(row.original.id)}`,
-                          });
-                          setDeleting(fresh.data);
-                        } catch (failure) {
-                          setError(failure);
-                        } finally {
-                          lock.release();
-                        }
-                      })();
-                    }}
-                  >
-                    {t('customerContacts.delete')}
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            ),
+            cell: ({ row }: { row: { original: Contact } }) =>
+              contactMenu(row.original, 'icon-sm'),
           },
         ]
       : []),
@@ -233,7 +236,8 @@ export default function CustomerDetailPage() {
               <div className='relative'>
                 <RefreshIndicator pending={active && request.loading} />
                 <dl
-                  className='grid grid-cols-[8rem_1fr] gap-4 text-sm'
+                  // Label above value on a phone, side by side from sm up (mobile.md M5.1).
+                  className='grid gap-1 text-sm sm:grid-cols-[8rem_1fr] sm:gap-x-4 sm:gap-y-3'
                   aria-busy={active && request.loading}
                 >
                   <dt className='text-muted-foreground'>
@@ -305,6 +309,51 @@ export default function CustomerDetailPage() {
                 loadingIdentity={contacts.path}
                 listState={contactState}
                 onRetry={contacts.reload}
+                // Related records follow the list's phone pattern (mobile.md M5.3): email and phone open the
+                // phone's mail and dialer.
+                renderCard={(row, card) => (
+                  <div className='flex items-start gap-2 rounded-lg border p-4'>
+                    <div className='flex min-w-0 flex-1 flex-col gap-1 text-sm'>
+                      <span className='font-medium break-words'>
+                        {maintain.can && writable ? (
+                          <RecordLink
+                            to={{
+                              pathname: `contacts/${row.original.id}/edit`,
+                              search: location.search,
+                            }}
+                          >
+                            {row.original.name}
+                          </RecordLink>
+                        ) : (
+                          row.original.name
+                        )}
+                      </span>
+                      {row.original.title ? (
+                        <span className='text-muted-foreground'>
+                          {row.original.title}
+                        </span>
+                      ) : null}
+                      {row.original.email ? (
+                        <a
+                          className='break-all underline-offset-4 hover:underline'
+                          href={`mailto:${row.original.email}`}
+                        >
+                          {row.original.email}
+                        </a>
+                      ) : null}
+                      {row.original.phone ? (
+                        <a
+                          className='underline-offset-4 hover:underline'
+                          href={`tel:${row.original.phone}`}
+                        >
+                          {row.original.phone}
+                        </a>
+                      ) : null}
+                    </div>
+                    {/* The row's menu, at a phone tap size (M3.1, M8.1). */}
+                    {card.actions}
+                  </div>
+                )}
               />
             </>
           )

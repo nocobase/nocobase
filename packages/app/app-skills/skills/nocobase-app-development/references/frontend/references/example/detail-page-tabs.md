@@ -60,7 +60,7 @@ export interface CustomerPageOutletContext extends CustomerEditOutletContext {
 }
 ```
 
-Each owner passes `source` through outlet context: its translated title and its application-absolute pathname with `useRouteSearches().get(ownerPath) ?? ''`. A list-tab owner uses its translated tab label and `useListTabs().source`. The source remains available when a record is opened directly because the owner route still mounts; the query defaults to empty.
+Each owner passes `source` through outlet context: its translated title and its application-absolute pathname with `useAncestorSearch(ownerPath, CUSTOMER_LIST_KEYS)` (the owner list's declared search, filter and `TABLE_URL_KEYS`). A list-tab owner uses its translated tab label and `useListTabs().source`, which falls back to the tab's `parameterKeys` the same way. The source remains available when a record is opened directly because the owner route still mounts; after a direct entry or reload its query comes from those keys in the current URL, which the list's record links carried ([navigation](../navigation.md)).
 
 ## The page
 
@@ -151,6 +151,23 @@ function CustomerPageContent({
       { path: `${pagePath.pathname}/${currentTab.path}`, end: true },
       location.pathname,
     ) !== null;
+
+  // Phones scroll the tab row sideways (M2.2 in mobile.md): keep the current tab in view by scrolling only the row,
+  // never the page, when the row appears and whenever the tab changes.
+  const currentPath = currentTab?.path;
+  const tabsRef = useCallback(
+    (nav: HTMLElement | null) => {
+      const current = currentPath
+        ? nav?.querySelector<HTMLElement>('[aria-current="page"]')
+        : null;
+      if (!nav || !current) return;
+      nav.scrollLeft +=
+        current.getBoundingClientRect().left -
+        nav.getBoundingClientRect().left -
+        (nav.clientWidth - current.offsetWidth) / 2;
+    },
+    [currentPath],
+  );
 
   const [reloadCount, setReloadCount] = useState(0);
   const requestKey = `${customerId}:${reloadCount}`;
@@ -280,15 +297,16 @@ function CustomerPageContent({
   } else {
     body = (
       <nav
+        ref={tabsRef}
         aria-label={t('customers.tabs.label')}
-        className='flex flex-wrap gap-1 border-b pb-2'
+        className='flex gap-1 overflow-x-auto border-b pb-2'
       >
         {tabs.map((tab) => (
           // Tabs are page navigation, so they are links; NavLink marks the current one with aria-current='page'.
           <NavLink
             className={cn(
               buttonVariants({ variant: 'ghost', size: 'sm' }),
-              'text-muted-foreground aria-[current=page]:bg-muted aria-[current=page]:text-foreground',
+              'shrink-0 text-muted-foreground aria-[current=page]:bg-muted aria-[current=page]:text-foreground',
             )}
             key={tab.path}
             to={{ pathname: tab.path, search: location.search }}

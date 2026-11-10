@@ -171,6 +171,11 @@ const systemEnUS = {
   'navigation.brandHome': 'NocoBase home',
   'navigation.brandApps': 'NocoBase applications',
   'routeOverlay.close': 'Close',
+  'routeOverlay.discardTitle': 'Discard changes?',
+  'routeOverlay.discardDescription':
+    'Your changes have not been saved and will be lost.',
+  'routeOverlay.keepEditing': 'Keep editing',
+  'routeOverlay.discard': 'Discard',
   'status.deniedDescription': 'You do not have permission to access {{label}}.',
   'status.routeFailedDescription':
     'Route {{label}} from {{packageName}} could not be loaded.',
@@ -439,6 +444,11 @@ const systemEnUS = {
     noResults: 'No results',
     sortAscending: 'Asc',
     sortDescending: 'Desc',
+    sort: 'Sort',
+    sortBy: 'Sort by',
+    filters: 'Filters',
+    filtersApplied: 'Filters · {{count}}',
+    selectPage: 'Select all on this page',
     hideColumn: 'Hide',
     view: 'View',
     toggleColumns: 'Toggle columns',

@@ -254,12 +254,12 @@ function DashboardBody({
 
   return (
     <>
-      <div className='grid gap-4 sm:grid-cols-2 xl:grid-cols-4'>
+      <div className='grid grid-cols-2 gap-4 xl:grid-cols-4'>
         {metrics.map((metric) => (
           <Card key={metric.key}>
             <CardHeader>
               <CardDescription>{metric.label}</CardDescription>
-              <CardTitle className='text-3xl tabular-nums'>
+              <CardTitle className='text-2xl tabular-nums sm:text-3xl'>
                 {numberFormat.format(metric.value)}
               </CardTitle>
             </CardHeader>
@@ -445,7 +445,7 @@ function DashboardSkeleton({
   // Shaped like the page: the metric cards, the chart and the recent list (guideline S1).
   return (
     <div role='status' aria-label={label} className='flex flex-col gap-6'>
-      <div className='grid gap-4 sm:grid-cols-2 xl:grid-cols-4'>
+      <div className='grid grid-cols-2 gap-4 xl:grid-cols-4'>
         {Array.from({ length: 4 }, (_, index) => (
           <Card key={index}>
             <CardHeader>

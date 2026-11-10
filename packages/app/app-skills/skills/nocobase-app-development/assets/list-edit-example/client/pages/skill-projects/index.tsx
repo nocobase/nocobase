@@ -113,7 +113,10 @@ export default function SkillProjectsPage(): ReactElement {
         ),
         cell: ({ row }) => (
           <RecordLink
-            to={`${row.original.id}/details`}
+            to={{
+              pathname: `${row.original.id}/details`,
+              search: location.search,
+            }}
             className='block max-w-64 truncate'
             title={row.original.name}
           >
@@ -277,6 +280,22 @@ export default function SkillProjectsPage(): ReactElement {
             getRowId={(row) => row.id}
             showSelectedCount={false}
             emptyMessage={t('skillProjects.empty')}
+            // Phones show one card per project (mobile.md M3): the name opens its detail, and the row's own actions
+            // cell (Edit) follows it, so the card offers what the row does.
+            renderCard={(row, card) => (
+              <div className='flex items-center gap-2 rounded-lg border p-4'>
+                <RecordLink
+                  to={{
+                    pathname: `${row.original.id}/details`,
+                    search: location.search,
+                  }}
+                  className='min-w-0 flex-1 break-words'
+                >
+                  {row.original.name}
+                </RecordLink>
+                {card.actions}
+              </div>
+            )}
           />
         </>
       ) : null}

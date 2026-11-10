@@ -4,7 +4,7 @@ Plugin UI and application UI follow one design contract. This Skill and `nocobas
 
 ## Find the shared documents
 
-In an installed App, read `.agents/skills/nocobase-app-development/references/frontend/design-contract.md`, then the relevant sections of `ui-guidelines.md`, `ui-workflow.md` and `ui-acceptance.md` in that same directory. In a NocoBase source checkout, read them at `packages/app/app-skills/skills/nocobase-app-development/references/frontend/` from the repository root; that App-only Skill is not linked into the repository's Agent directories. These are documentation paths, never runtime imports.
+In an installed App, read `.agents/skills/nocobase-app-development/references/frontend/design-contract.md`, then the relevant sections of `ui-guidelines.md`, `mobile.md`, `ui-workflow.md` and `ui-acceptance.md` in that same directory. Plugin pages and overlays meet the same phone experience (`mobile.md`) inside the host's shell, decided while designing and verified at phone widths in the host. In a NocoBase source checkout, read them at `packages/app/app-skills/skills/nocobase-app-development/references/frontend/` from the repository root; that App-only Skill is not linked into the repository's Agent directories. These are documentation paths, never runtime imports.
 
 For an installed App whose synchronized copy is missing, inspect the installed `@nocobase/app-skills` package and synchronize through the App's existing `pnpm nocobase skills sync` command. If that package predates these documents, keep its compatible guidance and report the missing shared contract instead of downloading latest guidance with potentially different APIs. An App does not need a source checkout. In a source checkout, use its package source directly.
 

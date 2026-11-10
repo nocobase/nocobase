@@ -17,7 +17,11 @@ export function PageContainer({
 }: PageContainerProps): ReactElement {
   return (
     <section
-      className={cn('w-full space-y-6 p-4 sm:p-6 md:p-8', className)}
+      // Tighter on phones, so the first screen reaches the page's content (mobile.md M1.1).
+      className={cn(
+        'w-full space-y-4 p-4 sm:space-y-6 sm:p-6 md:p-8',
+        className,
+      )}
       {...props}
     />
   );

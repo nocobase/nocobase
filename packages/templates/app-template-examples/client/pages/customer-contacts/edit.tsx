@@ -8,6 +8,7 @@ import {
   useParams,
 } from 'react-router';
 import { useForm, useWatch } from 'react-hook-form';
+import { FeedbackForm } from '#components/feedback-form';
 import { RouteDialog } from '#components/route-dialog';
 import { useRouteOverlay } from '#components/use-route-overlay';
 import { Button } from '#components/ui/button';
@@ -86,17 +87,20 @@ function Editor({
   const initialCustomer = kind === 'customer' ? (row as Customer) : undefined;
   const initialContact =
     kind === 'contact' ? (row as Contact | undefined) : undefined;
+  // What is saved: the record as the form shows it, or the blank values of a new one. The dialog compares the form
+  // with it before every way out and asks "Discard changes?" when they differ (mobile.md M7.4).
+  const savedValues = {
+    name: row?.name ?? '',
+    notes: initialCustomer?.notes ?? '',
+    status: initialCustomer?.status ?? 'active',
+    ownerId: initialCustomer?.ownerId ?? '',
+    customerId: initialContact?.customerId ?? customerId,
+    email: initialContact?.email ?? '',
+    phone: initialContact?.phone ?? '',
+    title: initialContact?.title ?? '',
+  };
   const form = useForm({
-    values: {
-      name: row?.name ?? '',
-      notes: initialCustomer?.notes ?? '',
-      status: initialCustomer?.status ?? 'active',
-      ownerId: initialCustomer?.ownerId ?? '',
-      customerId: initialContact?.customerId ?? customerId,
-      email: initialContact?.email ?? '',
-      phone: initialContact?.phone ?? '',
-      title: initialContact?.title ?? '',
-    },
+    values: savedValues,
     mode: 'onSubmit',
     reValidateMode: 'onChange',
     shouldFocusError: false,
@@ -224,6 +228,10 @@ function Editor({
         aria-required={name === 'name'}
         aria-invalid={Boolean(form.formState.errors[name])}
         aria-describedby={`${formId}-${name}-error`}
+        // The phone's email or number keyboard (mobile.md M6.2); validation stays the form's own.
+        inputMode={
+          name === 'email' ? 'email' : name === 'phone' ? 'tel' : undefined
+        }
         {...form.register(name, {
           ...(name === 'name'
             ? {
@@ -293,12 +301,13 @@ function Editor({
       {!ready ? (
         <ReadFeedback error={read.error} retry={read.reload} />
       ) : (
-        <form
+        <FeedbackForm
           id={formId}
-          noValidate
-          onSubmit={(e) => {
+          values={form.getValues}
+          savedValues={savedValues}
+          onSubmit={async (e) => {
             e.preventDefault();
-            void submit();
+            await submit();
           }}
           className='flex flex-col gap-4'
         >
@@ -398,7 +407,7 @@ function Editor({
               </FieldError>
             </div>
           ) : null}
-        </form>
+        </FeedbackForm>
       )}
     </RouteDialog>
   );

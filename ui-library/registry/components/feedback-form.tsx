@@ -8,6 +8,8 @@ import {
 } from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import {
+  createContext,
+  useContext,
   useEffect,
   useId,
   useLayoutEffect,
@@ -39,6 +41,69 @@ export interface FeedbackFormProps extends Omit<
   readonly fieldMessage?: FormFeedbackOptions['fieldMessage'];
   /** React Hook Form errors. Set shouldFocusError: false so layout order owns focus. */
   readonly validationErrors?: unknown;
+  /**
+   * The form's current values, read when the user tries to leave: React Hook Form's `form.getValues`. With
+   * `savedValues`, an enclosing route overlay asks "Discard changes?" whenever they differ, whatever changed them:
+   * typing, a Select, a date or relation picker, an upload, or a restored draft (mobile.md M7.4).
+   */
+  readonly values?: () => unknown;
+  /**
+   * What is saved: the record's stored values as the form shows them, or the blank values of a create form. Never the
+   * restored draft, which is unsaved input: give the draft to `defaultValues` and the stored record here, so a draft
+   * that differs from the record makes leaving ask. After a save that keeps the form open, pass the saved record.
+   */
+  readonly savedValues?: unknown;
+}
+
+/**
+ * Provided by a route overlay so a `FeedbackForm` inside can report unsaved values (`values` and `savedValues`). The
+ * overlay reads every registered form when the user tries to leave.
+ */
+// eslint-disable-next-line react-refresh/only-export-components -- the overlay provides what this form reads
+export const UnsavedValuesContext = createContext<{
+  readonly register: (unsaved: () => boolean) => () => void;
+} | null>(null);
+
+/**
+ * Whether two form values are the same as far as a user can tell: empty strings, `null` and `undefined` are equal,
+ * dates compare by time, files by identity, arrays and plain objects by their entries.
+ */
+function sameFormValues(left: unknown, right: unknown): boolean {
+  const empty = (value: unknown): boolean =>
+    value === undefined || value === null || value === '';
+  if (empty(left) || empty(right)) return empty(left) && empty(right);
+  if (Object.is(left, right)) return true;
+  if (left instanceof Date || right instanceof Date)
+    return (
+      left instanceof Date &&
+      right instanceof Date &&
+      left.getTime() === right.getTime()
+    );
+  if (
+    typeof left !== 'object' ||
+    typeof right !== 'object' ||
+    left === null ||
+    right === null
+  )
+    return false;
+  if (Array.isArray(left) || Array.isArray(right))
+    return (
+      Array.isArray(left) &&
+      Array.isArray(right) &&
+      left.length === right.length &&
+      left.every((item, index) => sameFormValues(item, right[index]))
+    );
+  const plain = (value: object): boolean => {
+    const prototype = Object.getPrototypeOf(value) as unknown;
+    return prototype === Object.prototype || prototype === null;
+  };
+  // Files, blobs and other instances are the same only when they are the same object.
+  if (!plain(left) || !plain(right)) return false;
+  const a = left as Record<string, unknown>;
+  const b = right as Record<string, unknown>;
+  return [...new Set([...Object.keys(a), ...Object.keys(b)])].every((key) =>
+    sameFormValues(a[key], b[key]),
+  );
 }
 
 /** Native fields use name (or data-field-path). Custom controls use a FormFeedback descriptor. */
@@ -52,10 +117,45 @@ export function FeedbackForm({
   validationErrors,
   noValidate,
   submitting = false,
+  values,
+  savedValues,
   ref,
   ...props
 }: FeedbackFormProps): ReactElement {
   const { t } = useTranslation();
+  const unsavedValues = useContext(UnsavedValuesContext);
+  const valuesRef = useRef(values);
+  const savedValuesRef = useRef(savedValues);
+  useLayoutEffect(() => {
+    valuesRef.current = values;
+    savedValuesRef.current = savedValues;
+  });
+  const tracksValues = values !== undefined;
+  // The save the enclosing layer is told about (`RouteOverlay`, `RouteChildPage`): it runs from the submit until the
+  // `onSubmit` promise settles, or, for an `onSubmit` that starts the request without returning it (`void submit()`),
+  // until `submitting` has come and gone. Its navigation away then does not ask to discard the input.
+  const submittingRef = useRef(submitting);
+  const saveEndRef = useRef<(() => void) | null>(null);
+  useLayoutEffect(() => {
+    const was = submittingRef.current;
+    submittingRef.current = submitting;
+    if (!was || submitting || !saveEndRef.current) return;
+    const end = saveEndRef.current;
+    saveEndRef.current = null;
+    // One task later, for a navigation the save started right after the request; at once if the form goes first.
+    const timer = setTimeout(end, 0);
+    return () => {
+      clearTimeout(timer);
+      end();
+    };
+  }, [submitting]);
+  useLayoutEffect(() => {
+    if (!unsavedValues || !tracksValues) return;
+    return unsavedValues.register(() => {
+      const read = valuesRef.current;
+      return read ? !sameFormValues(read(), savedValuesRef.current) : false;
+    });
+  }, [unsavedValues, tracksValues]);
   const options = useMemo<FormFeedbackOptions>(
     () => ({
       messages: {
@@ -329,6 +429,10 @@ export function FeedbackForm({
   return (
     <form
       {...props}
+      // Lets an enclosing route overlay count typing here as unsaved input (`RouteOverlay`'s discard question).
+      data-slot='feedback-form'
+      // Compared by value instead (`values`), so an edit that is undone again does not count.
+      data-tracks-values={tracksValues ? '' : undefined}
       noValidate
       ref={(element) => {
         formRef.current = element;
@@ -364,8 +468,38 @@ export function FeedbackForm({
           );
           return;
         }
+        // Tells an enclosing route overlay that the save is running, so the navigation it ends with does not ask to
+        // discard the input (`RouteOverlay`'s `dirty`). The end waits one task, for a close the save started.
+        const form = event.currentTarget;
+        const announce = (phase: 'start' | 'end'): void => {
+          form.dispatchEvent(
+            new CustomEvent('nocobase:form-submit', {
+              bubbles: true,
+              detail: { phase },
+            }),
+          );
+        };
+        announce('start');
+        let ended = false;
+        const end = (): void => {
+          if (ended) return;
+          ended = true;
+          if (saveEndRef.current === end) saveEndRef.current = null;
+          announce('end');
+        };
+        const settle = (): void => {
+          setTimeout(end, 0);
+        };
         try {
           const result = onSubmit?.(event);
+          if (result) void result.then(settle, settle);
+          else {
+            // The request runs on its own: wait for `submitting` to end, or end now if it never started.
+            saveEndRef.current = end;
+            setTimeout(() => {
+              if (!submittingRef.current && saveEndRef.current === end) end();
+            }, 0);
+          }
           if (result)
             void result.catch((next: unknown) => {
               if (feedback.getAttemptSequence() !== current.sequence) return;
@@ -373,6 +507,7 @@ export function FeedbackForm({
               feedback.failure(next, current);
             });
         } catch (next) {
+          settle();
           if (feedback.getAttemptSequence() !== current.sequence) return;
           focusPendingRef.current = true;
           feedback.failure(next, current);
