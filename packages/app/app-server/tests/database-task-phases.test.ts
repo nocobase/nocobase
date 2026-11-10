@@ -11,6 +11,7 @@ import { AppConfig, createAppPaths } from '../src/config/index.js';
 import {
   DatabaseTaskHooks,
   databaseTaskHooksToken,
+  databaseTaskCoordinatorToken,
   AppDatabaseTaskError,
   createAppDatabaseManager,
   planAppDatabaseTasks,
@@ -434,6 +435,46 @@ describe('direct application database phases', () => {
 });
 
 describe('necessary beforeTasks preparation', () => {
+  it('keeps the unified direct phases when an application coordinator delegates execution', async () => {
+    const f = await fixture();
+    try {
+      f.container.instance(
+        databaseTaskCoordinatorToken,
+        async ({ execute }) => {
+          f.events.push('coordinator');
+          return execute();
+        },
+      );
+      const hooks = new DatabaseTaskHooks();
+      hooks.register({
+        name: 'coordinated',
+        async beforeTasks() {
+          f.events.push('hook');
+        },
+      });
+      f.container.instance(databaseTaskHooksToken, hooks);
+      const result = await f.execute({ fresh: true });
+      expect(result.ok).toBe(true);
+      expect(f.events).toEqual([
+        'coordinator',
+        'prepare:secondary',
+        'prepare:primary',
+        'reset:secondary',
+        'reset:primary',
+        'hook',
+        'business',
+        'business',
+        'business',
+        'business',
+      ]);
+      f.events.length = 0;
+      await f.execute({ fresh: true, dryRun: true });
+      expect(f.events).toEqual(['coordinator']);
+    } finally {
+      await f.database.destroy();
+    }
+  });
+
   it('awaits registered hooks after every reset and exposes their rows to real migrations and seeds', async () => {
     const f = await fixture();
     const hooks = new DatabaseTaskHooks();
