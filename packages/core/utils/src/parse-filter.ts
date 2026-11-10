@@ -107,6 +107,7 @@ function isDate(input) {
 function isDateFieldWithoutTimezone(field) {
   return (
     field?.type === 'dateOnly' ||
+    (field?.type === 'formula' && field.options?.dataType === 'dateOnly') ||
     field?.type === 'datetimeNoTz' ||
     field?.constructor.name === 'DateOnlyField' ||
     field?.constructor.name === 'DatetimeNoTzField'
@@ -130,7 +131,7 @@ const dateValueWrapper = (value: any, timezone?: string) => {
   }
 
   if (typeof value === 'string') {
-    if (!timezone || /(\+|-)\d\d:\d\d$/.test(value)) {
+    if (!timezone || /(?:Z|[+-]\d\d:\d\d)$/.test(value)) {
       return value;
     }
     return value + timezone;
@@ -146,6 +147,7 @@ export type ParseFilterOptions = {
   now?: any;
   timezone?: string;
   getField?: any;
+  validateVariable?: (key: string) => void;
 };
 
 export const parseFilter = async (filter: any, opts: ParseFilterOptions = {}) => {
@@ -188,6 +190,7 @@ export const parseFilter = async (filter: any, opts: ParseFilterOptions = {}) =>
         const match = re.exec(value);
         if (match) {
           const key = match[1].trim();
+          opts.validateVariable?.(key);
           const val = getValuesByPath(vars, key, null);
           const field = getField?.(path);
           value = typeof val === 'function' ? val?.({ field, operator, timezone, now }) : val;
@@ -197,7 +200,7 @@ export const parseFilter = async (filter: any, opts: ParseFilterOptions = {}) =>
         const field = getField?.(path);
 
         if (isDateFieldWithoutTimezone(field)) {
-          if (value.type) {
+          if (value?.type) {
             return getDayRangeByParams({ ...value, timezone: field?.timezone || timezone });
           }
           return value;

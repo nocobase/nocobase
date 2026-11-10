@@ -106,5 +106,13 @@ describe('toggle action', () => {
       });
 
     expect(await p1.countTags()).toEqual(1);
+    const tags = app.agent().resource('posts.tags', p1.id);
+    const togglePath = '/api/posts/' + p1.id + '/tags:toggle';
+    expect((await app.agent().post(togglePath).query({ filterByTk: t1.id })).status).toBe(200);
+    expect(await p1.countTags()).toBe(0);
+    expect((await tags.toggle({ values: { tk: t1.id } })).status).toBe(200);
+    expect((await app.agent().post(togglePath).query({ filterByTk: t1.id }).send({ tk: t2.id })).status).toBe(400);
+    expect((await tags.toggle()).status).toBe(400);
+    expect(await p1.countTags()).toBe(1);
   });
 });

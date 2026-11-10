@@ -50,3 +50,20 @@ export function RelationRepositoryActionBuilder(method: 'remove' | 'set') {
     await next();
   };
 }
+
+export function getToggleTarget(ctx: Context) {
+  const { filterByTk, values } = ctx.action.params;
+  const wrapped = values && typeof values === 'object' && !Array.isArray(values);
+  const bodyKey = wrapped ? values.tk : values;
+  const valid = (value: unknown) => typeof value === 'number' || (typeof value === 'string' && value.length > 0);
+  const validBody = Array.isArray(bodyKey) ? bodyKey.length > 0 && bodyKey.every(valid) : valid(bodyKey);
+  if (
+    (filterByTk !== undefined && !valid(filterByTk)) ||
+    (bodyKey !== undefined && !validBody) ||
+    (filterByTk === undefined && !validBody) ||
+    (filterByTk !== undefined && validBody && (Array.isArray(bodyKey) || String(bodyKey) !== String(filterByTk)))
+  ) {
+    ctx.throw(400, 'Expected a target key for toggle');
+  }
+  return wrapped && validBody ? { tk: bodyKey } : bodyKey ?? filterByTk;
+}

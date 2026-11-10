@@ -131,7 +131,16 @@ export default {
         tags: ['roles'],
         summary: 'Check current role context',
         description:
-          'Return the current effective role context, including role mode and resolved ACL action map for the current user.',
+          'Return the effective role context and ACL action map. In default mode, an interactive session requesting __union__ uses its first assigned role. In allowUseUnion mode it uses the union. In onlyUseUnion mode interactive sessions always use the union. API keys keep their bound role.',
+        parameters: [
+          {
+            name: 'X-Role',
+            in: 'header',
+            schema: { type: 'string' },
+            description:
+              'Interactive role selection. Without the header the server checks the role cookie. A role name not assigned to the user returns 401 in default mode.',
+          },
+        ],
         responses: {
           200: {
             description: 'OK',

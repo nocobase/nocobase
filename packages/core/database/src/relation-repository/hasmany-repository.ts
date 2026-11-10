@@ -7,8 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { omit } from 'lodash';
-import { HasMany, Op } from 'sequelize';
+import { castArray, isPlainObject, omit, pick } from 'lodash';
+import { HasMany, Op, WhereOptions } from 'sequelize';
 import { AggregateOptions, DestroyOptions, FindOptions, TargetKey, TK } from '../repository';
 import { MultipleRelationRepository } from './multiple-relation-repository';
 import { transaction } from './relation-repository';
@@ -51,47 +51,85 @@ export class HasManyRepository extends MultipleRelationRepository {
     return await targetRepository.aggregate(aggOptions);
   }
 
-  @transaction((args, transaction) => {
-    return {
-      filterByTk: args[0],
-      transaction,
-    };
-  })
   async destroy(options?: TK | DestroyOptions): Promise<boolean> {
-    const transaction = await this.getTransaction(options);
+    if (!isPlainObject(options)) return this.destroyMatching({ filterByTk: options as TK });
+    const params = options as DestroyOptions;
+    if ('filterByTk' in params || 'filter' in params) return this.destroyMatching(params);
+    // A bare object is a key, possibly accompanied by a transaction. Never turn an unknown key into
+    // an unfiltered delete. destroy() without arguments still clears the source's association.
+    const key = omit(params, ['transaction', 'context', 'hooks', 'individualHooks', 'force', 'truncate']);
+    if (Object.keys(key).length || !Object.keys(params).length) {
+      return this.destroyMatching({
+        transaction: params.transaction,
+        filterByTk: key as Record<string, string | number>,
+      });
+    }
+    return this.destroyMatching(params);
+  }
 
-    const sourceModel = await this.getSourceModel(transaction);
-
-    const where = [
-      {
-        [this.association.foreignKey]: sourceModel.get((this.association as any).sourceKey),
-      },
-    ];
-
-    if (options && options['filter']) {
-      const filterResult = this.parseFilter(options['filter'], options);
-
-      if (filterResult.include && filterResult.include.length > 0) {
-        return await this.destroyByFilter(
-          {
-            filter: options['filter'],
-            filterByTk: options['filterByTk'],
-          },
-          transaction,
-        );
+  private matchTargetKeys(names: string[], value: unknown): Record<string, string | number>[] {
+    const isScalar = (v: unknown): v is string | number => typeof v === 'string' || typeof v === 'number';
+    return (Array.isArray(value) ? value : [value]).map((key: unknown) => {
+      if (names.length === 1 && names[0] && isScalar(key)) return { [names[0]]: key };
+      if (
+        isPlainObject(key) &&
+        names.length &&
+        Object.keys(key as object).length === names.length &&
+        names.every((name) => name && Object.prototype.hasOwnProperty.call(key, name) && isScalar(key[name]))
+      ) {
+        return Object.fromEntries(names.map((name) => [name, key[name]]));
       }
+      throw Object.assign(new Error('Invalid filterByTk for ' + this.targetCollection.name), { status: 400 });
+    });
+  }
 
-      where.push(filterResult.where);
+  @transaction()
+  private async destroyMatching(options: DestroyOptions): Promise<boolean> {
+    const transaction = await this.getTransaction(options);
+    const sourceModel = await this.getSourceModel(transaction);
+    const association = this.association as HasMany & { sourceKey: string };
+    const sourceWhere = {
+      [association.foreignKey]: sourceModel.get(association.sourceKey),
+    };
+    const where: WhereOptions[] = [sourceWhere];
+    const { filter, filterByTk } = options;
+    const targetKeys: string[] = castArray(
+      this.associationField.options.targetKey || this.targetCollection.filterTargetKey,
+    );
+    const keyConditions = filterByTk === undefined ? [] : this.matchTargetKeys(targetKeys, filterByTk);
+    const singleKey = targetKeys.length === 1 ? targetKeys[0] : undefined;
+    const keyValues = singleKey && keyConditions.map((row) => row[singleKey]);
+    if (filterByTk !== undefined) {
+      if (!keyConditions.length) return true;
+      where.push(singleKey ? { [singleKey]: keyValues } : { [Op.or]: keyConditions });
     }
 
-    if (options && options['filterByTk']) {
-      if (typeof options === 'object' && options['filterByTk']) {
-        options = options['filterByTk'];
+    if (filter) {
+      const parsed = this.parseFilter(filter, options);
+      if (parsed.include?.length) {
+        const keys = this.targetModel.primaryKeyAttributes.length
+          ? [...this.targetModel.primaryKeyAttributes]
+          : targetKeys;
+        if (!keys.length || !keys.every(Boolean))
+          throw new Error('Missing target key for ' + this.targetCollection.name);
+        const rows = await this.targetCollection.repository.find({
+          fields: keys,
+          filter: {
+            $and: [
+              sourceWhere,
+              filter,
+              ...(keyConditions.length
+                ? [singleKey ? { [singleKey]: { $in: keyValues } } : { $or: keyConditions }]
+                : []),
+            ],
+          },
+          transaction,
+        });
+        if (!rows.length) return true;
+        where.push({ [Op.or]: rows.map((row) => pick(row.get(), keys)) });
+      } else {
+        where.push(parsed.where);
       }
-
-      where.push({
-        [this.targetKey()]: options,
-      });
     }
 
     await this.targetModel.destroy({

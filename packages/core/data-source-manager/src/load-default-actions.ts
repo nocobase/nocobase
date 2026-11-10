@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import coreActions from '@nocobase/actions';
+import coreActions, { utils } from '@nocobase/actions';
 import { list } from './default-actions/list';
 import { proxyToRepository } from './default-actions/proxy-to-repository';
 
@@ -59,7 +59,7 @@ const actions: Actions = {
   },
   toggle: {
     params(ctx) {
-      return ctx.action.params.values;
+      return utils.getToggleTarget(ctx);
     },
     method: 'toggle',
   },

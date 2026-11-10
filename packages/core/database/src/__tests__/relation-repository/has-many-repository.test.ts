@@ -12,6 +12,7 @@ import Database, {
   Collection,
   createMockDatabase,
   HasManyRepository,
+  TargetKey,
 } from '@nocobase/database';
 
 describe('has many with target key', function () {
@@ -52,6 +53,30 @@ describe('has many with target key', function () {
         },
       ],
     });
+  });
+
+  it('requires all parts of a composite target key', async () => {
+    const parents = db.collection({
+      name: 'parents',
+      fields: [{ name: 'children', type: 'hasMany', target: 'children', foreignKey: 'parentId' }],
+    });
+    const children = db.collection({
+      name: 'children',
+      autoGenId: false,
+      filterTargetKey: ['region', 'code'],
+      fields: [
+        { name: 'region', type: 'string', primaryKey: true },
+        { name: 'code', type: 'string', primaryKey: true },
+      ],
+    });
+    await db.sync();
+    const parent = await parents.repository.create({ values: {} });
+    const repo = new HasManyRepository(parents, 'children', parent.id);
+    for (const region of ['east', 'west'])
+      await children.repository.create({ values: { region, code: '1', parentId: parent.id } });
+    await expect(repo.destroy({ filterByTk: { code: '1' } })).rejects.toMatchObject({ status: 400 });
+    await repo.destroy({ region: 'east', code: '1' });
+    expect((await children.repository.find()).map((row) => row.get('region'))).toEqual(['west']);
   });
 
   test('destroy by target key and filter', async () => {
@@ -524,6 +549,25 @@ describe('has many repository', () => {
         filterByTk: p2.id,
       }),
     ).not.toBeNull();
+  });
+
+  it('validates object keys before deleting, and limits deletion to the source record', async () => {
+    const left = await User.repository.create({ values: { name: 'left' } });
+    const right = await User.repository.create({ values: { name: 'right' } });
+    const repo = new HasManyRepository(User, 'posts', left.id);
+    const own = await repo.create({ values: { title: 'own' } });
+    const other = await new HasManyRepository(User, 'posts', right.id).create({ values: { title: 'other' } });
+    for (const key of [{}, { title: 'own' }, { id: own.id, title: 'own' }, { id: { $ne: null } }]) {
+      await expect(repo.destroy({ filterByTk: key as unknown as TargetKey })).rejects.toMatchObject({
+        status: 400,
+      });
+    }
+    await expect(repo.destroy({ unknown: 'a' })).rejects.toMatchObject({ status: 400 });
+    await repo.destroy({ filterByTk: [] });
+    expect(await Post.repository.count()).toBe(2);
+    await repo.destroy({ filterByTk: [{ id: own.id }, { id: other.id }] });
+    expect(await Post.repository.findOne({ filterByTk: own.id })).toBeNull();
+    expect(await Post.repository.findOne({ filterByTk: other.id })).toBeTruthy();
   });
 
   test('destroy by pk', async () => {
