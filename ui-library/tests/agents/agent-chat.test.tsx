@@ -879,3 +879,8 @@ it.each([
     expect(document.body).not.toHaveTextContent(/Unbound|尚未绑定/u);
   },
 );
+
+vi.mock(
+  '@nocobase/app-plugin-file/client',
+  () => import('../../website/demo/agents/file-client'),
+);

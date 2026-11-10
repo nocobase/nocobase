@@ -382,3 +382,8 @@ it('does not apply an old unmounted admission result to a replacement editor', a
   expect(screen.queryByText(enUS.chat.resend.needsSync)).toBeNull();
   expect(control.resend).toHaveBeenCalledTimes(1);
 });
+
+vi.mock(
+  '@nocobase/app-plugin-file/client',
+  () => import('../../website/demo/agents/file-client'),
+);
