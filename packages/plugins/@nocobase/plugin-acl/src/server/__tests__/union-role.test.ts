@@ -530,7 +530,9 @@ describe('union role: full permissions', async () => {
     agent = await app.agent().login(user, UNION_ROLE_KEY);
     const createRoleResponse = await agent.resource('roles').check();
     expect(createRoleResponse.statusCode).toBe(200);
-    expect(createRoleResponse.body.data.role).not.toBe(UNION_ROLE_KEY);
+    expect([role1.name, role2.name]).toContain(createRoleResponse.body.data.role);
+    const unassigned = await (await app.agent().login(user, 'unassigned-role')).resource('roles').check();
+    expect(unassigned.status).toBe(401);
   });
 
   it('should general action permissions override specific resource permissions when using union role #1924', async () => {
