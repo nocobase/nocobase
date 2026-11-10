@@ -4,13 +4,14 @@ Read this before adding a package, deciding which directory a package belongs in
 
 ## Repository Layout
 
-Every published package lives under `packages/`, grouped into seven directories by what the package is. The grouping is a convention for readers: pnpm resolves packages by name, so which directory a package sits in changes nothing about how it is depended on or filtered.
+Every published package lives under `packages/`, grouped into eight directories by what the package is. The grouping is a convention for readers: pnpm resolves packages by name, so which directory a package sits in changes nothing about how it is depended on or filtered.
 
 | Directory             | What belongs here                                                                                                             |
 | --------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
 | `packages/libs/`      | Runtime libraries that solve one problem and know nothing about NocoBase applications, such as `caching`, `drive`, and `i18n` |
 | `packages/app/`       | The application runtime itself — what an application is built out of, such as `app-server`, `app-client`, and `app-cli`       |
 | `packages/plugins/`   | Application plugins that ship as product features, such as `app-plugin-authentication`                                        |
+| `packages/skills/`    | Public plugin integration Skill packages (`@nocobase/app-skill-*`), installable without their runtime plugins                 |
 | `packages/examples/`  | Application plugins that exist to demonstrate a capability, such as `app-plugin-routes-example`                               |
 | `packages/templates/` | Complete applications that `create-app` scaffolds from: `app-template-default` and `app-template-examples`                    |
 | `packages/apps/`      | Complete product applications this repository builds and deploys itself; none at present                                      |
@@ -30,6 +31,6 @@ Keep relative links within a Skill. Refer to optional repository files by paths 
 
 Root `skills/` changes reach the distribution repository when merged, independently of npm releases. A global entry must not assume an unpublished package feature is available. The plugin migration bridge probes for the project replacement and keeps older installations intact until a compatible release exists. Full project guidance ships in npm packages with changesets; synchronize it from the App's compatible installed dependencies, never by editing generated copies.
 
-`nocobase-app-development`, `nocobase-app-upgrade` and `nocobase-deployment` are App-only Skills and are not linked into the source repository. Plugin development guidance is the explicit shared exception. Generated Apps copy installed package Skills into `.agents/skills/` and mirror them through relative links in `.claude/skills/`. The exact `nocobase-app-plugin-development` name belongs only to `@nocobase/app-skills`; other `nocobase-app-plugin-*` names retain their plugin ownership rules.
+`nocobase-app-development`, `nocobase-app-upgrade` and `nocobase-deployment` are App-only Skills and are not linked into the source repository. Plugin development guidance is the explicit shared exception. Generated Apps copy installed package Skills into `.agents/skills/` and mirror them through relative links in `.claude/skills/`. The exact `nocobase-app-plugin-development` name belongs only to `@nocobase/app-skills`; other `nocobase-app-plugin-*` names belong to their runtime plugin or the matching `@nocobase/app-skill-*` package. When both ship Skills, the runtime package takes precedence during a full App sync. Public Skill packages have no runtime dependency on commercial plugins; see `packages/skills/README.md`.
 
 The repository sync preserves real local directories and removes stale symbolic links without following their targets. It never edits user-global installations. Run `node scripts/sync-skills.mjs` after changing Skill sources or links. When a target App release includes the project plugin Skill, its upgrade guidance verifies synchronization before retiring the old global copy, preserving custom content and recording recovery outside the App's Git rollback.

@@ -37,6 +37,7 @@ import path from 'node:path';
 const PACKAGE_SCOPE = '@nocobase/';
 const KEBAB_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/u;
 const PLUGIN_PACKAGE_PREFIX = '@nocobase/app-plugin-';
+const SKILL_PACKAGE_PREFIX = '@nocobase/app-skill-';
 const PLUGIN_DEVELOPMENT_SKILL = 'nocobase-app-plugin-development';
 const APP_SKILLS_PACKAGE = '@nocobase/app-skills';
 const OWNERSHIP_FILE = path.join('.agents', '.skills-sync.json');
@@ -114,6 +115,7 @@ export interface SkillsSyncPlan {
  * The skill directory prefix a plugin package owns. The prefix is the package
  * name without its scope, so `@nocobase/app-plugin-scheduler` owns
  * `nocobase-app-plugin-scheduler` and `nocobase-app-plugin-scheduler-<suffix>`.
+ * A standalone `@nocobase/app-skill-scheduler` owns the same integration prefix.
  */
 export function pluginSkillPrefix(packageName: string): string {
   const custom =
@@ -132,7 +134,9 @@ export function pluginSkillPrefix(packageName: string): string {
       `Plugin package name cannot be turned into a skill prefix: ${packageName}.`,
     );
   }
-  return `${SKILL_NAME_PREFIX}${unscopedName}`;
+  return packageName.startsWith(SKILL_PACKAGE_PREFIX)
+    ? `${SKILL_NAME_PREFIX}app-plugin-${packageName.slice(SKILL_PACKAGE_PREFIX.length)}`
+    : `${SKILL_NAME_PREFIX}${unscopedName}`;
 }
 
 /** Whether a skill directory name belongs to the plugin owning `prefix`. */
@@ -173,13 +177,14 @@ export async function collectPluginSkills({
       (entry.name === PLUGIN_DEVELOPMENT_SKILL
         ? packageName !== APP_SKILLS_PACKAGE
         : packageName.startsWith(PLUGIN_PACKAGE_PREFIX) ||
+            packageName.startsWith(SKILL_PACKAGE_PREFIX) ||
             !packageName.startsWith(PACKAGE_SCOPE)
           ? !isOwnedSkillName(prefix, entry.name)
           : !entry.name.startsWith(SKILL_NAME_PREFIX) ||
             entry.name.startsWith('nocobase-app-plugin-'))
     ) {
       throw new Error(
-        `Invalid skill directory ${entry.name} in ${skillsDirectory}: use a package-owned kebab-case name; plugin skills must use their package prefix ${prefix}, and nocobase-app-plugin-* names are reserved for their owning plugins except nocobase-app-plugin-development, owned only by @nocobase/app-skills.`,
+        `Invalid skill directory ${entry.name} in ${skillsDirectory}: use a package-owned kebab-case name; plugins and their matching app-skill packages must use the prefix ${prefix}, and nocobase-app-plugin-development is owned only by @nocobase/app-skills.`,
       );
     }
     skills.push({
@@ -214,10 +219,35 @@ export async function planSkillsSync({
     sources.push(await collectPluginSkills(plugin));
   }
   const selectedPackages = new Set(sources.map((source) => source.packageName));
+  const runtimeSkills = new Set(
+    sources
+      .filter(
+        (source) =>
+          source.packageName.startsWith(PLUGIN_PACKAGE_PREFIX) &&
+          source.skills.length > 0,
+      )
+      .map((source) => source.packageName),
+  );
+  // Runtime registration supersedes the whole standalone set, including obsolete task-specific guides.
+  for (const packageName of runtimeSkills) {
+    selectedPackages.add(
+      SKILL_PACKAGE_PREFIX + packageName.slice(PLUGIN_PACKAGE_PREFIX.length),
+    );
+  }
 
   const owners = new Map<string, string>();
   const copies: SkillCopy[] = [];
   for (const source of sources) {
+    // Keep one version's guidance: a runtime's bundled Skills take precedence over its standalone guide.
+    if (
+      source.packageName.startsWith(SKILL_PACKAGE_PREFIX) &&
+      runtimeSkills.has(
+        PLUGIN_PACKAGE_PREFIX +
+          source.packageName.slice(SKILL_PACKAGE_PREFIX.length),
+      )
+    ) {
+      continue;
+    }
     for (const skill of source.skills) {
       const previousOwner = owners.get(skill.name);
       if (previousOwner !== undefined) {

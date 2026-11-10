@@ -7,6 +7,7 @@ Every package published from this repository lives here, grouped by what it is r
 | `libs/`      | Runtime libraries that solve one problem and know nothing about NocoBase applications |
 | `app/`       | The application runtime itself — what an application is built out of                  |
 | `plugins/`   | Application plugins that ship as product features                                     |
+| `skills/`    | Public, independently installable plugin integration Skills                           |
 | `examples/`  | Application plugins that exist to demonstrate a capability                            |
 | `templates/` | Complete applications that `create-app` scaffolds from                                |
 | `apps/`      | Complete product applications this repository builds and deploys itself               |
@@ -29,6 +30,10 @@ These packages know what a NocoBase application is, which is what separates them
 Plugins that contribute real product functionality: a feature is enabled by installing one. `app-plugin-file` provides file Repository services, route factories, and editable Registry UI; `app-plugin-authentication` adds sign-in.
 
 Create one with `pnpm plugin:create`, which scaffolds it here.
+
+## `skills/`
+
+Standalone `@nocobase/app-skill-<name>` packages distribute public installation and integration guidance for the matching `@nocobase/app-plugin-<name>`. Each contains `skills/nocobase-app-plugin-<name>/SKILL.md` and its local references, without a runtime dependency on the plugin. See [the Skill package contract](skills/README.md).
 
 ## `examples/`
 

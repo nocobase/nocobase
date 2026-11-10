@@ -10,9 +10,17 @@ Read this reference when a plugin exposes capabilities that an App Agent must di
 <app>/.agents/skills/<skill>/  generated local copy read by the App Agent
 ```
 
-The plugin's top-level `skills/` directory is authoritative. The entire App-side `.agents/` tree is ignored generated state and must not be committed or edited as source. Synchronization replaces each managed Skill directory wholesale, records package ownership in `.agents/.skills-sync.json`, and removes tracked copies that disappeared upstream during a full sync. App-owned Skills whose directory names do not start with `nocobase-` are preserved.
+The owning package's top-level `skills/` directory is authoritative. It can be the runtime plugin or a standalone public `@nocobase/app-skill-<name>` package; the latter owns the matching `nocobase-app-plugin-<name>` Skill prefix and needs no runtime dependency on that plugin. The entire App-side `.agents/` tree is ignored generated state and must not be committed or edited as source. Synchronization replaces each managed Skill directory wholesale, records package ownership in `.agents/.skills-sync.json`, and removes tracked copies that disappeared upstream during a full sync. App-owned Skills whose directory names do not start with `nocobase-` are preserved.
 
 Plugin Skills do not register Client, Server, or CLI contributions and do not enable runtime behavior. A plugin needs them only when an App Agent benefits from knowledge of public components, hooks, Tokens, APIs, UI Library items, data-model prerequisites, permissions, workflows, or operational constraints.
+
+## Standalone public Skill packages
+
+Use `@nocobase/app-skill-<name>` when an Agent must read installation and usage guidance before the matching runtime plugin is installed. Keep `skills/nocobase-app-plugin-<name>/SKILL.md` and every linked local reference in that package. Publish only documentation; do not declare the commercial runtime as a dependency or peer. Record the inspected runtime version and source revision as provenance, and verify the actual available compatible version before installation. Public guidance does not grant runtime entitlement.
+
+Install the Skill package as a direct App development dependency and run a full `pnpm nocobase skills sync`. No Client, Server or CLI registration is needed for a documentation package. If the runtime plugin also ships Skills, a full sync uses its entire Skill set rather than mixing versions. Installing/registering the runtime can take ownership from its standalone guide. A targeted standalone sync cannot overwrite a previously synchronized runtime guide; use a full sync to reconcile removals. When the runtime no longer ships Skills, the standalone package supplies them. General `@nocobase/app-skills` still cannot claim a plugin namespace.
+
+Older CLIs can reject these names. Use a compatible CLI or read the installed package's Skill directly; do not bypass namespace checks. Automatic installation of a companion Skill package is not provided by this naming convention.
 
 ## Scaffold and replace the draft
 

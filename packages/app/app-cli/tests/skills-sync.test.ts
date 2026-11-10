@@ -1154,3 +1154,148 @@ it('synchronizes and removes recorded custom-scope skills without touching local
     'my-local-guide',
   ]);
 });
+
+describe('standalone plugin Skill packages', () => {
+  const companion = '@nocobase/app-skill-approval';
+  const runtime = '@nocobase/app-plugin-approval';
+  const name = 'nocobase-app-plugin-approval';
+
+  it('discovers a documentation-only dependency before the runtime is installed', async () => {
+    const appRoot = await createApp();
+    await declareDependencies(appRoot, {
+      devDependencies: { [companion]: '1' },
+    });
+    await installPlugin(appRoot, companion, { [name]: '# installation guide' });
+    await syncApp(appRoot);
+    expect(
+      await readFile(
+        path.join(appRoot, '.agents/skills', name, 'SKILL.md'),
+        'utf8',
+      ),
+    ).toBe('# installation guide');
+    expect(
+      JSON.parse(
+        await readFile(path.join(appRoot, '.agents/.skills-sync.json'), 'utf8'),
+      ),
+    ).toHaveProperty(name, companion);
+    await expect(
+      stat(path.join(appRoot, 'node_modules', runtime)),
+    ).rejects.toMatchObject({ code: 'ENOENT' });
+  });
+
+  it.each([false, true])(
+    'uses one runtime Skill set regardless of source order (reverse=%s), then restores the standalone guide after removal',
+    async (reverse) => {
+      const appRoot = await createApp();
+      await declareDependencies(appRoot, {
+        devDependencies: { [companion]: '1' },
+        dependencies: { [runtime]: '1' },
+      });
+      await installPlugin(appRoot, companion, {
+        [name]: '# public guide',
+        [`${name}-new-feature`]: '# future guide',
+      });
+      await installPlugin(appRoot, runtime, {
+        [name]: '# version-matched runtime guide',
+      });
+      const resolved = await resolveInstalledPlugins({ appRoot });
+      const plan = await planSkillsSync({
+        ...resolved,
+        plugins: reverse ? [...resolved.plugins].reverse() : resolved.plugins,
+        pruneMissingPackages: true,
+      });
+      expect(
+        plan.copies.map((copy) => [copy.skillName, copy.packageName]),
+      ).toEqual([[name, runtime]]);
+      await applySkillsSync(plan);
+      expect(
+        await readFile(
+          path.join(appRoot, '.agents/skills', name, 'SKILL.md'),
+          'utf8',
+        ),
+      ).toBe('# version-matched runtime guide');
+      const selectedCompanion = await resolveInstalledPlugins({
+        appRoot,
+        packageName: companion,
+      });
+      await expect(planSkillsSync(selectedCompanion)).rejects.toThrow(
+        'Run a full nocobase skills sync',
+      );
+      await declareDependencies(appRoot, {
+        devDependencies: { [companion]: '1' },
+      });
+      await rm(path.join(appRoot, 'node_modules', runtime), {
+        recursive: true,
+      });
+      await syncApp(appRoot);
+      expect(
+        await readFile(
+          path.join(appRoot, '.agents/skills', name, 'SKILL.md'),
+          'utf8',
+        ),
+      ).toBe('# public guide');
+      await declareDependencies(appRoot, {});
+      await syncApp(appRoot);
+      await expect(
+        stat(path.join(appRoot, '.agents/skills', name)),
+      ).rejects.toMatchObject({ code: 'ENOENT' });
+    },
+  );
+
+  it('lets runtime registration replace its standalone owner, but keeps a standalone guide when the runtime has no Skills', async () => {
+    const appRoot = await createApp();
+    await declareDependencies(appRoot, {
+      devDependencies: { [companion]: '1' },
+    });
+    await installPlugin(appRoot, companion, {
+      [name]: '# public guide',
+      [`${name}-old-feature`]: '# obsolete',
+    });
+    await syncApp(appRoot);
+    await installPlugin(appRoot, runtime, { [name]: '# runtime guide' });
+    await applySkillsSync(
+      await planSkillsSync(
+        await resolveInstalledPlugins({ appRoot, packageName: runtime }),
+      ),
+    );
+    expect(
+      await readFile(
+        path.join(appRoot, '.agents/skills', name, 'SKILL.md'),
+        'utf8',
+      ),
+    ).toBe('# runtime guide');
+    await expect(
+      stat(path.join(appRoot, '.agents/skills', `${name}-old-feature`)),
+    ).rejects.toMatchObject({ code: 'ENOENT' });
+    await declareDependencies(appRoot, {
+      devDependencies: { [companion]: '1' },
+      dependencies: { [runtime]: '1' },
+    });
+    await rm(path.join(appRoot, 'node_modules', runtime, 'skills'), {
+      recursive: true,
+    });
+    await syncApp(appRoot);
+    expect(
+      await readFile(
+        path.join(appRoot, '.agents/skills', name, 'SKILL.md'),
+        'utf8',
+      ),
+    ).toBe('# public guide');
+  });
+
+  it.each([
+    ['@nocobase/app-skill-approval', 'nocobase-app-plugin-users'],
+    ['@nocobase/app-skill-development', 'nocobase-app-plugin-development'],
+    ['@nocobase/other', 'nocobase-app-plugin-approval'],
+  ])(
+    'rejects %s claiming the unrelated or reserved Skill %s',
+    async (packageName, skillName) => {
+      const appRoot = await createApp();
+      await declareDependencies(appRoot, {
+        devDependencies: { [packageName]: '1' },
+      });
+      await installPlugin(appRoot, packageName, { [skillName]: '# invalid' });
+      await expect(syncApp(appRoot)).rejects.toThrow('Invalid skill directory');
+    },
+  );
+});
