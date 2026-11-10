@@ -6,6 +6,28 @@ const frFR: LocaleResource<typeof enUS> = {
   page: {
     loading: 'Chargement',
   },
+  notificationTemplates: {
+    invitation: {
+      contributor: 'Utilisateurs',
+      category: 'Comptes',
+      name: "Invitation d'utilisateur",
+      trigger:
+        "Un administrateur invite une personne, ou renvoie une invitation, avec l'option e-mail sélectionnée.",
+      recipients: "La personne invitée, à l'adresse e-mail saisie pour elle.",
+      businessRule:
+        "Envoyé à chaque création ou renvoi d'une invitation avec l'option e-mail sélectionnée. Aucun interrupteur séparé ne permet de le désactiver.",
+      languagePolicy:
+        "Le corps de l'e-mail présente toutes les langues l'une après l'autre. L'objet est en anglais.",
+      channel: "Expéditeur de l'e-mail d'invitation",
+      variables: {
+        app: "Nom de l'application",
+        inviter: "Nom de la personne qui a envoyé l'invitation",
+        items: "Rôles ou accès accordés par l'invitation",
+        date: "Date d'expiration de l'invitation",
+        url: "Lien pour accepter l'invitation ; l'aperçu utilise un lien fictif",
+      },
+    },
+  },
   accept: {
     title: "Accepter l'invitation",
     description: '{{inviter}} vous a invité.',

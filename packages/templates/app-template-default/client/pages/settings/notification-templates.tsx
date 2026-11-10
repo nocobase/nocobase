@@ -1,25 +1,33 @@
 import type { ReactElement } from 'react';
-import { useSearchParams } from 'react-router';
+import {
+  Navigate,
+  useNavigate,
+  useParams,
+  useSearchParams,
+} from 'react-router';
 import { useTranslation } from '@nocobase/i18n/client';
 import { NotificationTemplates } from '@nocobase/app-plugin-notification/client/templates';
 import { SettingsModulePage } from './settings-module-page.js';
 
 export default function NotificationTemplatesPage(): ReactElement {
   const { t } = useTranslation('@nocobase/app-plugin-notification');
-  const [query, setQuery] = useSearchParams();
+  // The child route `:templateId` gives each template its own address; its details open in the block's drawer.
+  const { templateId } = useParams();
+  const [query] = useSearchParams();
+  const navigate = useNavigate();
+  const legacy = query.get('template');
+  // Earlier links kept the selected template in the query string.
+  if (legacy && !templateId)
+    return <Navigate replace to={encodeURIComponent(legacy)} />;
   return (
     // A view of the Notifications settings module: it gains tabs once the module has another view, such as logs.
     <SettingsModulePage title={t('templates.title')}>
       <NotificationTemplates
-        selectedId={query.get('template')}
-        onSelect={(id) =>
-          setQuery((previous) => {
-            const next = new URLSearchParams(previous);
-            if (id) next.set('template', id);
-            else next.delete('template');
-            return next;
-          })
-        }
+        selectedId={templateId ?? null}
+        onSelect={(id) => {
+          // Paths resolve against this page's route, also while a template is open.
+          void navigate(id ? encodeURIComponent(id) : '.');
+        }}
       />
     </SettingsModulePage>
   );

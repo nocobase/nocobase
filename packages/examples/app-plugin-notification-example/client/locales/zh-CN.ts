@@ -1,4 +1,27 @@
 const messages = {
+  notificationTemplates: {
+    contributor: '通知示例',
+    category: '任务',
+    assigned: {
+      name: '任务已分配',
+      trigger: '创建任务时。',
+      recipients: '任务负责人，自己分配给自己时也会收到。',
+    },
+    updated: {
+      name: '任务已更新',
+      trigger: '任务被修改时，包括重新分配负责人。',
+      recipients:
+        '创建人、原负责人和新负责人，每人只收到一次。做出修改的人不会收到。',
+    },
+    businessRule: '每次执行对应的任务操作都会发送，没有单独的开关可以关闭。',
+    languagePolicy: '始终以英文发送，与收件人的语言无关。',
+    channel: '任务收件箱',
+    variables: {
+      title: '任务标题',
+      description: '任务描述',
+      status: '任务状态',
+    },
+  },
   navigation: {
     tasks: '通知示例',
     taskManagement: '任务',

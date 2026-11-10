@@ -18,7 +18,10 @@ import {
 } from '@nocobase/app-server/router';
 import type { ServiceContainer } from '@nocobase/service-provider';
 import { Hono, type MiddlewareHandler } from 'hono';
-import { notificationTemplateRegistryToken } from '../templates.js';
+import {
+  notificationTemplateDefaultText,
+  notificationTemplateRegistryToken,
+} from '../templates.js';
 import {
   templateParams,
   templateQuery,
@@ -88,7 +91,9 @@ export function createTemplateRoutes(container: ServiceContainer): Hono {
         .list()
         .filter(
           (item) =>
-            (!query.category || item.category === query.category) &&
+            (!query.category ||
+              notificationTemplateDefaultText(item.category) ===
+                query.category) &&
             (!query.channel ||
               item.channels.some(
                 (channel) =>
@@ -98,11 +103,14 @@ export function createTemplateRoutes(container: ServiceContainer): Hono {
             (!query.search ||
               [
                 item.id,
-                item.name,
-                item.category,
-                item.trigger,
-                item.recipients,
                 item.contributor,
+                ...[
+                  item.name,
+                  item.category,
+                  item.trigger,
+                  item.recipients,
+                  item.contributorLabel ?? '',
+                ].map(notificationTemplateDefaultText),
               ]
                 .join(' ')
                 .toLowerCase()
@@ -138,7 +146,7 @@ export function createTemplateRoutes(container: ServiceContainer): Hono {
       tags,
       operationId: 'notificationsPreviewTemplate',
       summary: 'Preview a notification with synthetic data',
-      description: `${description} Renders registered synthetic data only. Unsupported locales use the first declared locale; languagePolicy describes multilingual or fixed-language send behavior. Never sends a message or changes configuration.`,
+      description: `${description} Renders registered synthetic data only. Unsupported locales use the first declared locale; localeMode "combined" means every locale is in one message, and languagePolicy describes the send behavior. Never sends a message or changes configuration.`,
       responses: {
         200: dataResponse(previewSchema),
         404: apiErrorResponse(404),

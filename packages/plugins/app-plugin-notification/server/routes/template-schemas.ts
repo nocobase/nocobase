@@ -2,6 +2,7 @@ import { z } from 'zod';
 import type {
   NotificationTemplateContent,
   NotificationTemplatePreview,
+  NotificationTemplateText,
   NotificationTemplateView,
 } from '../../shared/templates.js';
 
@@ -26,22 +27,38 @@ export const templateContentSchema: z.ZodType<NotificationTemplateContent> =
     body: z.string(),
     html: z.string().optional(),
   });
+export const templateTextSchema: z.ZodType<NotificationTemplateText> = z
+  .union([
+    z.string(),
+    z.object({ ns: z.string(), key: z.string(), defaultValue: z.string() }),
+  ])
+  .meta({
+    ref: 'NotificationTemplateText',
+    description:
+      'Plain text, or a translation key in a client namespace that the browser resolves in the interface language, with its default text.',
+  });
 export const templateSchema: z.ZodType<NotificationTemplateView> = z
   .object({
     id: z.string(),
     contributor: z.string(),
-    category: z.string(),
-    name: z.string(),
-    trigger: z.string(),
-    recipients: z.string(),
-    businessRule: z.string(),
+    contributorLabel: templateTextSchema.optional(),
+    category: templateTextSchema,
+    name: templateTextSchema,
+    trigger: templateTextSchema,
+    recipients: templateTextSchema,
+    businessRule: templateTextSchema,
     locales: z.array(z.string()),
-    languagePolicy: z.string(),
-    variables: z.array(z.object({ name: z.string(), description: z.string() })),
+    localeMode: z.enum(['separate', 'combined']),
+    languagePolicy: templateTextSchema,
+    variables: z.array(
+      z.object({ name: z.string(), description: templateTextSchema }),
+    ),
     channels: z.array(
       z.object({
         name: z.string(),
         type: z.string(),
+        label: templateTextSchema.optional(),
+        typeLabel: templateTextSchema.optional(),
         configured: z.boolean(),
         enabled: z.boolean().nullable(),
       }),

@@ -6,6 +6,29 @@ const deDE: LocaleResource<typeof enUS> = {
   page: {
     loading: 'Wird geladen',
   },
+  notificationTemplates: {
+    invitation: {
+      contributor: 'Benutzer',
+      category: 'Konten',
+      name: 'Benutzereinladung',
+      trigger:
+        'Ein Administrator lädt jemanden ein oder sendet eine Einladung erneut, wobei E-Mail ausgewählt ist.',
+      recipients:
+        'Die eingeladene Person, an die für sie eingegebene E-Mail-Adresse.',
+      businessRule:
+        'Wird jedes Mal gesendet, wenn eine Einladung mit ausgewählter E-Mail erstellt oder erneut gesendet wird. Es gibt keinen eigenen Schalter zum Ausschalten.',
+      languagePolicy:
+        'Der E-Mail-Text enthält alle Sprachen nacheinander. Der Betreff ist auf Englisch.',
+      channel: 'Absender der Einladungs-E-Mail',
+      variables: {
+        app: 'Name der Anwendung',
+        inviter: 'Name der Person, die die Einladung gesendet hat',
+        items: 'Rollen oder Zugriffe, die die Einladung gewährt',
+        date: 'Wann die Einladung abläuft',
+        url: 'Link zum Annehmen der Einladung; die Vorschau verwendet einen erfundenen Link',
+      },
+    },
+  },
   accept: {
     title: 'Nimm die Einladung an',
     description: '{{inviter}} hat Sie eingeladen.',

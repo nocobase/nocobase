@@ -6,6 +6,29 @@ const idID: LocaleResource<typeof enUS> = {
   page: {
     loading: 'Memuat',
   },
+  notificationTemplates: {
+    invitation: {
+      contributor: 'Pengguna',
+      category: 'Akun',
+      name: 'Undangan pengguna',
+      trigger:
+        'Administrator mengundang seseorang, atau mengirim ulang undangan, dengan opsi email dipilih.',
+      recipients:
+        'Orang yang diundang, di alamat email yang dimasukkan untuknya.',
+      businessRule:
+        'Dikirim setiap kali undangan dibuat atau dikirim ulang dengan opsi email dipilih. Tidak ada tombol terpisah untuk mematikannya.',
+      languagePolicy:
+        'Isi email memuat semua bahasa secara berurutan. Subjeknya dalam bahasa Inggris.',
+      channel: 'Pengirim email undangan',
+      variables: {
+        app: 'Nama aplikasi',
+        inviter: 'Nama orang yang mengirim undangan',
+        items: 'Peran atau akses yang diberikan undangan',
+        date: 'Kapan undangan kedaluwarsa',
+        url: 'Tautan untuk menerima undangan; pratinjau menggunakan tautan fiktif',
+      },
+    },
+  },
   accept: {
     title: 'Terima undangannya',
     description: '{{inviter}} mengundang Anda.',

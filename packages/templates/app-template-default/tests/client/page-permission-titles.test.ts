@@ -4,7 +4,7 @@ import {
   defineAppRoutes,
   type AppClientRegisteredRoute,
 } from '@nocobase/app-client/plugins';
-import applicationRoutes from '../../client/routes.js';
+import { createApplicationRoutes } from '../../client/routes.js';
 import enUS from '../../client/locales/en-US.js';
 import zhCN from '../../client/locales/zh-CN.js';
 import {
@@ -31,7 +31,10 @@ const application = resolveAppClientContributions([
   {
     packageName: 'title-check-app',
     source: 'application',
-    routes: applicationRoutes,
+    // Include the routes the application adds once the built-in invitation is configured.
+    routes: createApplicationRoutes({
+      notificationTemplates: { invitationConfigured: true },
+    }),
   },
 ]);
 const pages = flatten(application.routes).filter(

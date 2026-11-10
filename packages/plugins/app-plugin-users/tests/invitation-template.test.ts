@@ -13,6 +13,40 @@ import { createNotificationMailer } from '../server/invitations/notification-mai
 import { registerInvitationTemplate } from '../server/invitations/template.js';
 import { buildInvitationEmail } from '../server/invitations/mail.js';
 
+it('registers administrator text as keys that exist in the client locales', async () => {
+  const { default: enUS } = await import('../client/locales/en-US.js');
+  const registry = new NotificationTemplateRegistry();
+  const container = new ServiceContainer();
+  container.instance(notificationTemplateRegistryToken, registry);
+  await registerInvitationTemplate({
+    container,
+    config: { get: () => undefined },
+  } as never);
+  const view = registry.get('users.invitation')!;
+  const texts = [
+    view.contributorLabel,
+    view.category,
+    view.name,
+    view.trigger,
+    view.recipients,
+    view.businessRule,
+    view.languagePolicy,
+    view.channels[0]?.label,
+    ...view.variables.map((variable) => variable.description),
+  ];
+  for (const text of texts) {
+    if (typeof text !== 'object' || text.ns !== '@nocobase/app-plugin-users')
+      throw new Error('Expected a Users translation key.');
+    const translated = text.key
+      .split('.')
+      .reduce<unknown>(
+        (node, part) => (node as Record<string, unknown> | undefined)?.[part],
+        enUS,
+      );
+    expect(translated).toBe(text.defaultValue);
+  }
+});
+
 it('previews exactly the real invitation builder in all languages without selecting a recipient or sender', async () => {
   const container = new ServiceContainer();
   const registry = new NotificationTemplateRegistry();
@@ -39,9 +73,24 @@ it('previews exactly the real invitation builder in all languages without select
     expect(result?.definition.body).toContain('{{date}}');
     expect(JSON.stringify(result)).not.toContain('unused@example.invalid');
   }
-  expect(registry.get('users.invitation')?.channels).toEqual([
-    { name: 'system-email', type: 'email', configured: false, enabled: null },
-  ]);
+  expect(registry.get('users.invitation')).toMatchObject({
+    // One message carries every language, so the preview offers no language choice.
+    localeMode: 'combined',
+    name: {
+      ns: '@nocobase/app-plugin-users',
+      key: 'notificationTemplates.invitation.name',
+      defaultValue: 'User invitation',
+    },
+    channels: [
+      {
+        name: 'system-email',
+        type: 'email',
+        typeLabel: { key: 'templates.channelTypes.email' },
+        configured: false,
+        enabled: null,
+      },
+    ],
+  });
   release?.();
   expect(registry.list()).toEqual([]);
 });
@@ -115,7 +164,7 @@ it.each([
     } as never;
     const release = await registerInvitationTemplate(app);
     const channels = registry.get('users.invitation')?.channels;
-    expect(channels).toEqual([
+    expect(channels).toMatchObject([
       { name: selected, type: 'email', configured: true, enabled },
     ]);
     expect(JSON.stringify(registry.list())).not.toContain('synthetic-secret');

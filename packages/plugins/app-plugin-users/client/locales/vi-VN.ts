@@ -6,6 +6,28 @@ const viVN: LocaleResource<typeof enUS> = {
   page: {
     loading: 'Đang tải',
   },
+  notificationTemplates: {
+    invitation: {
+      contributor: 'Người dùng',
+      category: 'Tài khoản',
+      name: 'Lời mời người dùng',
+      trigger:
+        'Quản trị viên mời ai đó, hoặc gửi lại lời mời, với tùy chọn email được chọn.',
+      recipients: 'Người được mời, tại địa chỉ email đã nhập cho họ.',
+      businessRule:
+        'Được gửi mỗi khi tạo hoặc gửi lại lời mời với tùy chọn email được chọn. Không có công tắc riêng để tắt.',
+      languagePolicy:
+        'Nội dung email lần lượt liệt kê tất cả ngôn ngữ. Tiêu đề bằng tiếng Anh.',
+      channel: 'Người gửi email mời',
+      variables: {
+        app: 'Tên ứng dụng',
+        inviter: 'Tên người đã gửi lời mời',
+        items: 'Vai trò hoặc quyền truy cập mà lời mời cấp',
+        date: 'Thời điểm lời mời hết hạn',
+        url: 'Liên kết để chấp nhận lời mời; bản xem trước dùng liên kết giả',
+      },
+    },
+  },
   accept: {
     title: 'Chấp nhận lời mời',
     description: '{{inviter}} đã mời bạn.',
