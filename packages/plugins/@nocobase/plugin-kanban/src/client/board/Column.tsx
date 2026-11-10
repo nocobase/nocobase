@@ -11,6 +11,7 @@ import React, { forwardRef, useState } from 'react';
 import { Draggable } from 'react-beautiful-dnd';
 import { useKanbanBlockContext } from '../KanbanBlockProvider';
 import Card from './Card';
+import { getCardDragId } from './kanbanRecord';
 import CardAdder from './CardAdder';
 import { pickPropOut } from './utils';
 import withDroppable from './withDroppable';
@@ -83,7 +84,7 @@ function Column({
                 >
                   {children.cards.map((card, index) => (
                     <Card
-                      key={card.id}
+                      key={getCardDragId(card)}
                       index={index}
                       renderCard={(dragging) => renderCard(children, card, dragging)}
                       disableCardDrag={disableCardDrag}

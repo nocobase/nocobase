@@ -10,6 +10,15 @@
 import { transformVariableValue } from '../../utils/transformVariableValue';
 
 describe('transformVariableValue', () => {
+  it('uses the local wall clock of a Now default only for a time field', () => {
+    const now = '2026-11-10 00:05:09';
+    const time = { targetCollectionField: { type: 'time' } };
+    expect(transformVariableValue(now, time)).toBe('00:05:09');
+    expect(transformVariableValue('12:34:56', time)).toBe('12:34:56');
+    expect(transformVariableValue(null, time)).toBeNull();
+    expect(transformVariableValue(now, { targetCollectionField: { type: 'date' } })).toBe(now);
+  });
+
   test('should return value as it is when targetCollectionFiled.type is "belongsTo" and value is not an array', () => {
     const value = {
       name: 'test',

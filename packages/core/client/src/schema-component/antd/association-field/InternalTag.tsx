@@ -17,7 +17,7 @@ import { useCompile } from '../../hooks';
 import { useActionContext } from '../action';
 import { usePopupUtils } from '../page/pagePopupUtils';
 import { transformNestedData } from './InternalCascadeSelect';
-import { ButtonListProps, ReadPrettyInternalViewer, isObject } from './InternalViewer';
+import { ButtonListProps, ReadPrettyInternalViewer, hasAddedViewer, isObject } from './InternalViewer';
 import { useAssociationFieldContext, useFieldNames, useInsertSchema } from './hooks';
 import schema from './schema';
 import { getTabFormatValue, useLabelUiSchema } from './util';
@@ -84,7 +84,7 @@ const ButtonTabList: React.FC<ButtonListProps> = observer(
                     props.setBtnHover(true);
                     e.stopPropagation();
                     e.preventDefault();
-                    if (designable && !fieldSchema.properties) {
+                    if (designable && !hasAddedViewer(fieldSchema.properties)) {
                       insertViewer(schema.Viewer);
                       needWaitForFieldSchemaUpdatedRef.current = true;
                     }
@@ -93,6 +93,7 @@ const ButtonTabList: React.FC<ButtonListProps> = observer(
                       // When first inserting, the fieldSchema instance will be updated to a new instance.
                       // We need to wait for the instance update before opening the popup to prevent configuration loss.
                       setTimeout(() => {
+                        props.onClick?.({ recordData: record });
                         openPopup({
                           recordData: record,
                           parentRecordData: recordData,
@@ -100,7 +101,8 @@ const ButtonTabList: React.FC<ButtonListProps> = observer(
                         });
                         needWaitForFieldSchemaUpdatedRef.current = false;
                       });
-                    } else {
+                    } else if (fieldSchema.properties) {
+                      props.onClick?.({ recordData: record });
                       openPopup({
                         recordData: record,
                         parentRecordData: recordData,

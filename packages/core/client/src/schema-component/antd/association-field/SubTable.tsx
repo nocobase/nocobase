@@ -131,21 +131,32 @@ export const SubTable: any = observer(
     };
     field.move = move;
 
+    const invalidValue =
+      field.value != null &&
+      (!Array.isArray(field.value) || field.value.some((row) => !row || typeof row !== 'object' || Array.isArray(row)));
+    const invalidValueMessage = t('Sub-table values must be a list of records. Check the configured default value.');
+    useEffect(() => {
+      field.setFeedback({
+        type: 'error',
+        code: 'InvalidSubTableValue',
+        messages: invalidValue ? [invalidValueMessage] : [],
+      });
+      return () => field.setFeedback({ type: 'error', code: 'InvalidSubTableValue', messages: [] });
+    }, [field, invalidValue, invalidValueMessage]);
+
     const options = useMemo(() => {
-      if (field.value && Object.keys(field.value).length > 0) {
-        const opts = (Array.isArray(field.value) ? field.value : field.value ? [field.value] : [])
-          .filter(Boolean)
-          .map((option) => {
-            const label = option?.[fieldNames.label];
-            return {
-              ...option,
-              [fieldNames.label]: getLabelFormatValue(compile(labelUiSchema), compile(label)),
-            };
-          });
+      if (Array.isArray(field.value)) {
+        const opts = field.value.filter(Boolean).map((option) => {
+          const label = option?.[fieldNames.label];
+          return {
+            ...option,
+            [fieldNames.label]: getLabelFormatValue(compile(labelUiSchema), compile(label)),
+          };
+        });
         return opts;
       }
       return [];
-    }, [field.value, fieldNames?.label]);
+    }, [field.value, fieldNames?.label, compile, labelUiSchema]);
 
     const pickerProps = {
       size: 'small',
@@ -182,7 +193,9 @@ export const SubTable: any = observer(
     };
     const getFilter = () => {
       const targetKey = collectionField?.targetKey || 'id';
-      const list = (field.value || []).map((option) => option?.[targetKey]).filter(Boolean);
+      const list = (Array.isArray(field.value) ? field.value : [])
+        .map((option) => option?.[targetKey])
+        .filter((key) => key != null);
       const filter = list.length ? { $and: [{ [`${targetKey}.$ne`]: list }] } : {};
       return filter;
     };
@@ -194,12 +207,13 @@ export const SubTable: any = observer(
       setPageSize(field.componentProps?.pageSize);
     }, [field.componentProps?.pageSize]);
 
+    const rowCount = Array.isArray(field.value) ? field.value.length : 0;
     const paginationConfig = useMemo(() => {
-      const page = Math.ceil(field.value?.length / 10);
+      const page = Math.max(1, Math.ceil(rowCount / (pageSize || 10)));
       return {
         current: currentPage > page ? page : currentPage,
         pageSize: pageSize || 10,
-        total: field?.value,
+        total: rowCount,
         onChange: (page, pageSize) => {
           setCurrentPage(page);
           setPageSize(pageSize);
@@ -211,7 +225,7 @@ export const SubTable: any = observer(
         pageSizeOptions: ['10', '20', '50', '100'],
         hideOnSinglePage: false,
       };
-    }, [field.value?.length, pageSize, currentPage]);
+    }, [field, rowCount, pageSize, currentPage, setFormValueChanged]);
 
     const useSubTableAddNewProps = () => {
       const { field } = useAssociationFieldContext<ArrayField>();
@@ -234,6 +248,8 @@ export const SubTable: any = observer(
         },
       };
     };
+    if (invalidValue) return <div role="alert">{invalidValueMessage}</div>;
+
     return (
       <div className={subTableContainer}>
         <FlagProvider isInSubTable>

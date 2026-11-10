@@ -92,6 +92,16 @@ describe('unix timestamp field', () => {
   });
 
   describe('timezone', () => {
+    it('rejects invalid timestamps and preserves epoch zero', async () => {
+      const collection = db.collection({ name: 'unixTimes', fields: [{ name: 'time', type: 'unixTimestamp' }] });
+      await db.sync();
+      await expect(collection.repository.create({ values: { time: 'invalid' } })).rejects.toThrow(
+        'Invalid Unix timestamp',
+      );
+      expect(await collection.repository.count()).toBe(0);
+      const record = await collection.repository.create({ values: { time: 0 } });
+      expect(record.get('time').getTime()).toBe(0);
+    });
     test('custom', async () => {
       db.collection({
         name: 'tests',

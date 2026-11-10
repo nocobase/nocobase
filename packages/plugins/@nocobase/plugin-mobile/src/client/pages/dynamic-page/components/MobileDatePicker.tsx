@@ -53,8 +53,6 @@ const MobileDateTimePicker = connect(
       showTime = false,
       picker,
       disabled,
-      dateOnly,
-      utc,
       ...rest
     } = props;
     const [visible, setVisible] = useState(false);
@@ -68,6 +66,27 @@ const MobileDateTimePicker = connect(
       if (disposeRef.current) {
         disposeRef.current();
       }
+      const limitDate = async () => {
+        // dayjs() 如果传入 undefined 可能会被解析成当前时间
+        let minDateTimePromise = props._minDate ? Promise.resolve(dayjs(props._minDate)) : Promise.resolve(null);
+        let maxDateTimePromise = props._maxDate ? Promise.resolve(dayjs(props._maxDate)) : Promise.resolve(null);
+
+        if (isVariable(props._maxDate)) {
+          maxDateTimePromise = parseVariable(props._maxDate, localVariables).then((result) =>
+            dayjs(result.value?.[0] || result.value),
+          );
+        }
+        if (isVariable(props._minDate)) {
+          minDateTimePromise = parseVariable(props._minDate, localVariables).then((result) => {
+            return dayjs(result.value?.[0] || result.value);
+          });
+        }
+
+        const [minDateTime, maxDateTime] = await Promise.all([minDateTimePromise, maxDateTimePromise]);
+        setMinDate(minDateTime ? minDateTime.toDate() : null);
+        setMaxDate(maxDateTime ? maxDateTime.toDate() : null);
+      };
+
       disposeRef.current = autorun(() => {
         limitDate();
       });
@@ -76,44 +95,12 @@ const MobileDateTimePicker = connect(
       };
     }, [props._maxDate, props._minDate, localVariables, parseVariable]);
 
-    const limitDate = async () => {
-      // dayjs() 如果传入 undefined 可能会被解析成当前时间
-      let minDateTimePromise = props._minDate ? Promise.resolve(dayjs(props._minDate)) : Promise.resolve(null);
-      let maxDateTimePromise = props._maxDate ? Promise.resolve(dayjs(props._maxDate)) : Promise.resolve(null);
-
-      if (isVariable(props._maxDate)) {
-        maxDateTimePromise = parseVariable(props._maxDate, localVariables).then((result) =>
-          dayjs(result.value?.[0] || result.value),
-        );
-      }
-      if (isVariable(props._minDate)) {
-        minDateTimePromise = parseVariable(props._minDate, localVariables).then((result) => {
-          return dayjs(result.value?.[0] || result.value);
-        });
-      }
-
-      const [minDateTime, maxDateTime] = await Promise.all([minDateTimePromise, maxDateTimePromise]);
-      setMinDate(minDateTime ? minDateTime.toDate() : null);
-      setMaxDate(maxDateTime ? maxDateTime.toDate() : null);
-    };
-
     const handleConfirm = useCallback(
       (value) => {
         setVisible(false);
-        if (dateOnly) {
-          onChange(dayjs(value).format('YYYY-MM-DD'));
-        } else if (!utc) {
-          if (showTime) {
-            onChange(dayjs(value).format('YYYY-MM-DD HH:mm:ss'));
-          } else {
-            onChange(dayjs(value).startOf(picker).format('YYYY-MM-DD'));
-          }
-        } else {
-          const selectedDateTime = new Date(value);
-          onChange(selectedDateTime);
-        }
+        onChange(dayjs(value));
       },
-      [showTime, onChange],
+      [onChange],
     );
 
     // 清空选择的日期和时间
@@ -168,6 +155,16 @@ const MobileDateTimePicker = connect(
   mapProps(mapDatePicker()),
   mapReadPretty(NBDatePicker.ReadPretty),
 );
+
+// Unix timestamps represent an instant. Supply the same UTC default as the desktop DatePicker before mapDatePicker runs.
+export const MobileUnixTimestamp = (props) => {
+  const { utc = true } = useDatePickerContext();
+  const value =
+    typeof props.value === 'number'
+      ? new Date(props.value * (props.accuracy === 'millisecond' ? 1 : 1000)).toISOString()
+      : props.value;
+  return <MobileDateTimePicker utc={utc} {...props} value={value} />;
+};
 
 const MobileRangePicker = (props) => {
   const [startDate, setStartDate] = useState(props.value?.[0]);

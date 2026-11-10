@@ -35,7 +35,7 @@ import { transformNestedData } from './InternalCascadeSelect';
 import schema from './schema';
 import { getLabelFormatValue, useLabelUiSchemaV2 } from './util';
 
-const hasAddedViewer = (schemaProperties: Record<string, any>) => {
+export const hasAddedViewer = (schemaProperties: Record<string, any>) => {
   if (!schemaProperties) {
     return false;
   }
@@ -199,6 +199,7 @@ const RenderRecord = React.memo(
       fieldNames?.label,
       fieldSchema,
       getLabelUiSchema,
+      onClick,
       insertViewer,
       isTreeCollection,
       openPopup,
@@ -337,7 +338,16 @@ export const ReadPrettyInternalViewer: React.FC<ReadPrettyInternalViewerProps> =
       fieldSchema: fieldSchema,
       openSize,
     }),
-    [collectionField?.interface, defaultOpenMode, fieldSchema, setVisibleWithURL, visible, visibleWithURL],
+    [
+      collectionField?.interface,
+      defaultOpenMode,
+      openMode,
+      openSize,
+      fieldSchema,
+      setVisibleWithURL,
+      visible,
+      visibleWithURL,
+    ],
   );
 
   if (enableLink === false) {
