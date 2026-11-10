@@ -9,7 +9,7 @@
 
 import { BelongsToManyRepository } from '@nocobase/database';
 import { Context } from '..';
-import { getRepositoryFromParams } from '../utils';
+import { getRepositoryFromParams, getToggleTarget } from '../utils';
 
 export async function toggle(ctx: Context, next) {
   const repository = getRepositoryFromParams(ctx);
@@ -18,7 +18,7 @@ export async function toggle(ctx: Context, next) {
     return await next();
   }
 
-  await (<BelongsToManyRepository>repository).toggle(ctx.action.params.values);
+  await repository.toggle(getToggleTarget(ctx));
   ctx.body = 'ok';
   await next();
 }

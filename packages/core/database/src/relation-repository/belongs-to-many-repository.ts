@@ -180,22 +180,18 @@ export class BelongsToManyRepository extends MultipleRelationRepository {
     const transaction = await this.getTransaction(options);
     const sourceModel = await this.getSourceModel(transaction);
 
-    const has = await sourceModel[this.accessors().hasSingle](options['tk'], {
-      transaction,
-    });
+    const association = this.association as BelongsToMany;
+    const keys = this.convertTks(options);
+    const where = { [association.targetKey]: keys };
+    const targets = await this.targetModel.findAll({ where, transaction });
+    if (!targets.length) return;
 
-    if (has) {
-      await this.remove({
-        ...(<any>options),
-        transaction,
-      });
-    } else {
-      await this.add({
-        ...(<any>options),
-        transaction,
-      });
-    }
-
+    // Query strings and database keys can have different JS types. Resolve them in the database so
+    // numeric keys, large integers and string identifiers use the column's comparison semantics.
+    const linked = await sourceModel[this.accessors().count]({ where, transaction });
+    const allLinked = targets.length === new Set(keys.map(String)).size && linked === targets.length;
+    const accessor = allLinked ? this.accessors().removeMultiple : this.accessors().addMultiple;
+    await sourceModel[accessor](targets, { transaction });
     return;
   }
 
