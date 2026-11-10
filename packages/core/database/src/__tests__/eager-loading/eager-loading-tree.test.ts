@@ -26,6 +26,35 @@ describe('Eager loading tree', () => {
     await db.close();
   });
 
+  it('loads ordered attachments on every occurrence of a shared many-to-many target', async () => {
+    const relation = (name: string, target: string, through: string) => ({
+      type: 'belongsToMany',
+      name,
+      target,
+      through,
+      foreignKey: 'sourceId',
+      otherKey: 'targetId',
+    });
+    const files = db.collection({ name: 'files' }).repository;
+    const items = db.collection({ name: 'items', fields: [relation('files', 'files', 'itemFiles')] }).repository;
+    const groups = db.collection({ name: 'groups', fields: [relation('items', 'items', 'groupItems')] }).repository;
+    const pages = db.collection({ name: 'pages', fields: [relation('groups', 'groups', 'pageGroups')] }).repository;
+    await db.sync();
+    const first = await files.create({ values: {} });
+    const second = await files.create({ values: {} });
+    const shared = await items.create({ values: { files: [second.id, first.id] } });
+    const empty = await items.create({ values: {} });
+    const a = await groups.create({ values: { items: [shared.id, empty.id] } });
+    const b = await groups.create({ values: { items: [shared.id] } });
+    const page = await pages.create({ values: { groups: [a.id, b.id] } });
+    const result = await pages.findOne({ filterByTk: page.id, appends: ['groups.items.files'] });
+    expect(result.groups.map((group) => group.items.map((item) => item.files.map((file) => file.id)))).toEqual([
+      [[first.id, second.id], []],
+      [[first.id, second.id]],
+    ]);
+    expect(result.groups.map((group) => group.items[0].groupItems.sourceId)).toEqual([a.id, b.id]);
+  });
+
   it('should sort has many default by primary key', async () => {
     const Source = db.collection({
       name: 'source',

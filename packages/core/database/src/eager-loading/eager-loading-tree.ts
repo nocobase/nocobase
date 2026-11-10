@@ -521,16 +521,15 @@ export class EagerLoadingTree {
           }
         };
 
+        const parentsBySourceKey = ['HasMany', 'HasOne', 'BelongsToMany'].includes(associationType)
+          ? lodash.groupBy(node.parent.instances, (parent) => parent.get(association.sourceKey))
+          : {};
+
         if (associationType == 'HasMany' || associationType == 'HasOne') {
           const foreignKey = association.foreignKey;
-          const sourceKey = association.sourceKey;
 
           for (const instance of node.instances) {
-            const parentInstance = node.parent.instances.find(
-              (parentInstance) => parentInstance.get(sourceKey) == instance.get(foreignKey),
-            );
-
-            if (parentInstance) {
+            for (const parentInstance of parentsBySourceKey[instance.get(foreignKey)] || []) {
               if (associationType == 'HasMany') {
                 const children = parentInstance.getDataValue(association.as);
                 if (!children) {
@@ -581,7 +580,6 @@ export class EagerLoadingTree {
         }
 
         if (associationType == 'BelongsToMany') {
-          const sourceKey = association.sourceKey;
           const foreignKey = association.foreignKey;
 
           const as = association.oneFromTarget.as;
@@ -592,11 +590,7 @@ export class EagerLoadingTree {
             delete instance.dataValues['_pivot_'];
             delete instance['_pivot_'];
 
-            const parentInstance = node.parent.instances.find(
-              (parentInstance) => parentInstance.get(sourceKey) == instance.dataValues[as].get(foreignKey),
-            );
-
-            if (parentInstance) {
+            for (const parentInstance of parentsBySourceKey[instance.dataValues[as].get(foreignKey)] || []) {
               const children = parentInstance.getDataValue(association.as);
 
               if (!children) {
