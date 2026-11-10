@@ -609,6 +609,59 @@ test('rejects OwnDiscardQuestion in a file that asks no question of its own', ()
   );
 });
 
+test('resolves a guard passed by name in its own scope, so a same-named guard of another component lends nothing', () => {
+  // Two components each declare `guard`: the one that only blocks during a save cannot borrow the other's reads.
+  const result =
+    inspect(`import { useNavigationGuard } from '@nocobase/app-client';
+    import { RouteDrawer } from '#components/route-drawer';
+    export function Asking() {
+      const guard = () => !dirty || ask();
+      useNavigationGuard(guard);
+      return <RouteDrawer><OwnDiscardQuestion/><FeedbackForm onSubmit={save}/></RouteDrawer>;
+    }
+    export function Saving() {
+      const guard = () => !submitting;
+      useNavigationGuard(guard);
+      return <RouteDrawer><OwnDiscardQuestion/><FeedbackForm onSubmit={save}/></RouteDrawer>;
+    }`);
+  assert.deepEqual(
+    result.findings.map((item) => [item.tag, item.line]),
+    [
+      ['OwnDiscardQuestion', 11],
+      ['FeedbackForm', 11],
+    ],
+  );
+  // The nearest declaration wins: an inner `guard` shadows an outer one, in either direction.
+  assert.deepEqual(
+    inspect(`import { useNavigationGuard } from '@nocobase/app-client';
+      const guard = () => !dirty;
+      export function Page() {
+        const guard = () => !submitting;
+        useNavigationGuard(guard);
+        return <OwnDiscardQuestion/>;
+      }`).findings.map((item) => item.tag),
+    ['OwnDiscardQuestion'],
+  );
+  assert.deepEqual(
+    inspect(`import { useNavigationGuard } from '@nocobase/app-client';
+      const guard = () => !submitting;
+      export function Page() {
+        const guard = () => !dirty || ask();
+        useNavigationGuard(guard);
+        return <OwnDiscardQuestion/>;
+      }`).findings,
+    [],
+  );
+  // A guard declared in an enclosing scope of the file still counts.
+  assert.deepEqual(
+    inspect(`import { useNavigationGuard } from '@nocobase/app-client';
+      function guard() { return !dirty || ask(); }
+      export function Page() { useNavigationGuard(guard); return <OwnDiscardQuestion/>; }`)
+      .findings,
+    [],
+  );
+});
+
 test('rejects a draft-keeping full page that yields the question to a guard which only blocks during a save', () => {
   // The first-generation counterexample: a useState form on a RouteChildPage that keeps a local draft, renders
   // OwnDiscardQuestion and guards only the running save. Both the declaration and the uncompared FeedbackForm fail.

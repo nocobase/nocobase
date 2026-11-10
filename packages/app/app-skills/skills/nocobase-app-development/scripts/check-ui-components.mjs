@@ -436,33 +436,95 @@ export function inspectSource(ts, text, file, root) {
     })(node);
     return names.join(' ');
   }
-  // What a guard's argument reads: its own identifiers, except that a name this file declares (`guard`, the
-  // `controller.guard` method, either branch of `boundary ? allow : controller.guard`) stands for that declaration's
-  // initializer or body rather than for the name itself, so `useNavigationGuard(dirtyGuard)` is read by what it does.
+  // What a guard's argument reads: its own identifiers, except that a name it passes stands for that name's
+  // declaration (its initializer or body) rather than for the name itself, so `useNavigationGuard(dirtyGuard)` is read
+  // by what it does. A plain name resolves lexically, from the call outward (its function, then each enclosing scope),
+  // so a same-named `guard` of another component never lends its reads; a parameter or a destructured name stays a
+  // name. A property name (`controller.guard`, either branch of `boundary ? allow : controller.guard`) has no lexical
+  // scope and stands for every method or property of that name this file declares.
   function guardReads(argument) {
     const parts = [];
     (function walk(node) {
       if (ts.isIdentifier(node)) {
-        const declared = [];
-        (function find(child) {
-          if (
-            (ts.isVariableDeclaration(child) ||
-              ts.isFunctionDeclaration(child) ||
-              ts.isPropertyDeclaration(child) ||
-              ts.isMethodDeclaration(child)) &&
-            child.name &&
-            ts.isIdentifier(child.name) &&
-            child.name.text === node.text
-          )
-            declared.push(identifiers(child, child.name));
-          ts.forEachChild(child, find);
-        })(source);
-        parts.push(...(declared.length ? declared : [node.text]));
+        const property =
+          ts.isPropertyAccessExpression(node.parent) &&
+          node.parent.name === node;
+        const declared = property
+          ? memberDeclarations(node.text)
+          : [lexicalDeclaration(node)].filter(Boolean);
+        parts.push(
+          ...(declared.length
+            ? declared.map((child) => identifiers(child, child.name))
+            : [node.text]),
+        );
         return;
       }
       ts.forEachChild(node, walk);
     })(argument);
     return parts.join(' ');
+  }
+  // Whether a binding name (an identifier or a destructuring pattern) binds `name`.
+  function binds(binding, name) {
+    if (ts.isIdentifier(binding)) return binding.text === name;
+    if (ts.isObjectBindingPattern(binding) || ts.isArrayBindingPattern(binding))
+      return binding.elements.some(
+        (element) =>
+          !ts.isOmittedExpression(element) && binds(element.name, name),
+      );
+    return false;
+  }
+  // The declaration a plain name refers to at its position: the nearest enclosing scope declaring it. A parameter or a
+  // destructured binding has no body of its own to read, so it resolves to nothing and the name itself counts.
+  function lexicalDeclaration(identifier) {
+    const name = identifier.text;
+    for (let scope = identifier.parent; scope; scope = scope.parent) {
+      if (
+        ts.isFunctionLike(scope) &&
+        scope.parameters?.some((parameter) => binds(parameter.name, name))
+      )
+        return undefined;
+      const statements =
+        ts.isSourceFile(scope) ||
+        ts.isBlock(scope) ||
+        ts.isModuleBlock(scope) ||
+        ts.isCaseClause(scope) ||
+        ts.isDefaultClause(scope)
+          ? scope.statements
+          : undefined;
+      if (!statements) continue;
+      for (const statement of statements) {
+        if (
+          (ts.isFunctionDeclaration(statement) ||
+            ts.isClassDeclaration(statement)) &&
+          statement.name?.text === name
+        )
+          return statement;
+        if (ts.isVariableStatement(statement))
+          for (const declaration of statement.declarationList.declarations) {
+            if (ts.isIdentifier(declaration.name)) {
+              if (declaration.name.text === name) return declaration;
+            } else if (binds(declaration.name, name)) return undefined;
+          }
+      }
+    }
+    return undefined;
+  }
+  // The methods and properties of a name anywhere in this file, for a property access.
+  function memberDeclarations(name) {
+    const declared = [];
+    (function find(child) {
+      if (
+        (ts.isPropertyDeclaration(child) ||
+          ts.isMethodDeclaration(child) ||
+          ts.isPropertyAssignment(child)) &&
+        child.name &&
+        ts.isIdentifier(child.name) &&
+        child.name.text === name
+      )
+        declared.push(child);
+      ts.forEachChild(child, find);
+    })(source);
+    return declared;
   }
   // Each top-level statement is a unit: a component, a hook or a constant declared in this file. A form's question
   // belongs to its own component, to a component of this file that renders it, or to a hook of this file that one of
