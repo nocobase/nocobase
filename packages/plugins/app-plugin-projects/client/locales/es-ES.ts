@@ -438,6 +438,7 @@ const esES: LocaleResource<typeof enUS> = {
     projectLabel: 'Proyecto',
     titleLabel: 'Título',
     titleRequired: 'Ingrese un título.',
+    uploadsPending: 'Espera a que los archivos terminen de subirse.',
   },
   issues: {
     allStatuses: 'Todos los estados',

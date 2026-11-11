@@ -437,6 +437,7 @@ const jaJP: LocaleResource<typeof enUS> = {
     projectLabel: 'プロジェクト',
     titleLabel: 'タイトル',
     titleRequired: 'タイトルを入力します。',
+    uploadsPending: 'ファイルのアップロードが完了するまでお待ちください。',
   },
   issues: {
     allStatuses: '全ステータス',

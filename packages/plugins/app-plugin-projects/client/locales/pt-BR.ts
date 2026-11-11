@@ -430,6 +430,7 @@ const ptBR: LocaleResource<typeof enUS> = {
     projectLabel: 'Projeto',
     titleLabel: 'Título',
     titleRequired: 'Insira um título.',
+    uploadsPending: 'Aguarde até que o upload dos arquivos seja concluído.',
   },
   issues: {
     allStatuses: 'Todos os status',

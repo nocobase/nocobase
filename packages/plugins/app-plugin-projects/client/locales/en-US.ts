@@ -422,6 +422,7 @@ const pages = {
     projectLabel: 'Project',
     titleLabel: 'Title',
     titleRequired: 'Enter a title.',
+    uploadsPending: 'Wait until the files finish uploading.',
   },
   issues: {
     allStatuses: 'All statuses',
