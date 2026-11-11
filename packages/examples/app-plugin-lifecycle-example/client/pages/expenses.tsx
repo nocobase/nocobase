@@ -87,7 +87,9 @@ export default function ExpensesPage(): ReactElement {
   const list = useLoader(
     (signal) =>
       client.list('expenses', actor, view, signal, status || undefined),
-    `expenses:${actor}:${status}`,
+    // The filter is not part of the key: the list keeps its rows, and its
+    // states, while the subscription below reloads it for a new filter.
+    `expenses:${actor}`,
     '',
     false,
   );
@@ -121,7 +123,7 @@ export default function ExpensesPage(): ReactElement {
 
   const updates = useLifecycleChanges(
     'expenses',
-    `expenses:${actor}:${selected ?? ''}`,
+    `expenses:${actor}:${selected ?? ''}:${status}`,
     async (signal) => {
       await refreshLifecycleViews([
         list.refresh(signal),
