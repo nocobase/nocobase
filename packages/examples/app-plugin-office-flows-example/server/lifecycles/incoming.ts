@@ -138,6 +138,9 @@ export const forwardManagement: EffectDefinition<IncomingTypes> =
 export const incomingLifecycle: Lifecycle<IncomingTypes> =
   defineLifecycle<IncomingTypes>({
     name: 'incoming',
+    key: 'incoming',
+    version: 1,
+    definitionField: 'lifecycleDefinition',
     collection: COLLECTIONS.incoming,
     initial: 'draft',
     states: [

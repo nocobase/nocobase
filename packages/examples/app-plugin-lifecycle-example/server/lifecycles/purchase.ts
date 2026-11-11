@@ -68,6 +68,9 @@ function purchaseProblems(
 export const purchaseLifecycle: Lifecycle<PurchaseTypes> =
   defineLifecycle<PurchaseTypes>({
     name: 'purchases',
+    key: 'purchases',
+    version: 1,
+    definitionField: 'lifecycleDefinition',
     collection: LIFECYCLE_EXAMPLE_COLLECTIONS.purchases,
     initial: 'draft',
     create: { validate: purchaseProblems },

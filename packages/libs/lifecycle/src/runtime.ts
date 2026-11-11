@@ -977,8 +977,7 @@ export class LifecycleRuntime {
     keyOrName: string,
     id: RecordId,
   ): Promise<string> {
-    const versions = this.versionsOf(this.keyOf(keyOrName));
-    const [first] = versions;
+    const [first] = this.versionsOf(this.keyOf(keyOrName));
     if (first.definitionField === undefined) return first.name;
     const record = await this.store.findRecord(first.collection, id);
     if (!record)
@@ -986,7 +985,19 @@ export class LifecycleRuntime {
         'RECORD_NOT_FOUND',
         `No ${first.collection} record "${String(id)}".`,
       );
-    const bound = boundDefinitionOf(first, record) ?? null;
+    return this.recordLifecycle(keyOrName, record);
+  }
+
+  /**
+   * As `boundLifecycle()`, for a record the caller has already read, such
+   * as inside its own transaction: answers from the record's definition
+   * field without reading anything.
+   */
+  public recordLifecycle(keyOrName: string, record: LifecycleRecord): string {
+    const versions = this.versionsOf(this.keyOf(keyOrName));
+    const [first] = versions;
+    const bound = boundDefinitionOf(first, record);
+    if (bound === undefined) return first.name;
     if (
       bound !== null &&
       versions.some((lifecycle) => lifecycle.name === bound)
@@ -995,8 +1006,8 @@ export class LifecycleRuntime {
     throw new LifecycleError(
       'DEFINITION_MISMATCH',
       bound === null
-        ? `${first.collection} record "${String(id)}" has not been started by any definition of "${first.key}".`
-        : `${first.collection} record "${String(id)}" belongs to "${bound}", which is not a registered version of "${first.key}".`,
+        ? `${first.collection} record "${String(record.id)}" has not been started by any definition of "${first.key}".`
+        : `${first.collection} record "${String(record.id)}" belongs to "${bound}", which is not a registered version of "${first.key}".`,
       { bound },
     );
   }

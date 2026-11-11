@@ -155,6 +155,9 @@ export const createOneTimeExtraction: EffectDefinition<DataRequestTypes> =
 export const dataRequestLifecycle: Lifecycle<DataRequestTypes> =
   defineLifecycle<DataRequestTypes>({
     name: 'dataRequests',
+    key: 'dataRequests',
+    version: 1,
+    definitionField: 'lifecycleDefinition',
     collection: COLLECTIONS.dataRequests,
     initial: 'draft',
     states: [

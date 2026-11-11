@@ -246,7 +246,9 @@ export class OfficeFlowsService {
     actor: string,
     manual: boolean = true,
   ): Promise<void> {
-    await this.runtime.fire(name, id, transition, {
+    // The version the record is bound to, whichever one the caller knows.
+    const definition = await this.runtime.boundLifecycle(name, id);
+    await this.runtime.fire(definition, id, transition, {
       actor: { id: actor },
       input,
       manual,
@@ -261,11 +263,13 @@ export class OfficeFlowsService {
     actor: string,
   ): Promise<RecordView> {
     const record = await this.require(collection, id);
+    // Drawn and answered by the definition the record is bound to.
+    const definition = await this.runtime.boundLifecycle(name, id);
     return {
       record,
-      description: this.runtime.describe(name),
-      available: await this.runtime.available(name, id, { id: actor }),
-      history: await this.runtime.history(name, id),
+      description: this.runtime.describe(definition),
+      available: await this.runtime.available(definition, id, { id: actor }),
+      history: await this.runtime.history(definition, id),
       traces: await this.store.list(COLLECTIONS.traces, {
         docKind,
         docId: idOf(id),

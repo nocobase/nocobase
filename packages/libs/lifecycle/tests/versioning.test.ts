@@ -410,6 +410,9 @@ describe('records of several versions', () => {
         runtime.boundLifecycle(asked, current.record.id),
       ).resolves.toBe('requests-v2');
     }
+    expect(runtime.recordLifecycle('requests', current.record)).toBe(
+      'requests-v2',
+    );
     const missing = await refusal(runtime.boundLifecycle('requests', 'nope'));
     expect(missing.code).toBe('RECORD_NOT_FOUND');
     const unknown = await refusal(runtime.boundLifecycle('nothing', 1));

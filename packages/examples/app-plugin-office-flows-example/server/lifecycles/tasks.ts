@@ -218,6 +218,9 @@ export const SIGN_DECISIONS: Readonly<Record<string, string>> = {
 export const clerkTaskLifecycle: Lifecycle<ClerkTypes> =
   defineLifecycle<ClerkTypes>({
     name: 'clerkTasks',
+    key: 'clerkTasks',
+    version: 1,
+    definitionField: 'lifecycleDefinition',
     collection: COLLECTIONS.clerkTasks,
     initial: 'signing',
     states: [
@@ -292,6 +295,9 @@ export const clerkTaskLifecycle: Lifecycle<ClerkTypes> =
 export const teamTaskLifecycle: Lifecycle<TeamTypes> =
   defineLifecycle<TeamTypes>({
     name: 'teamTasks',
+    key: 'teamTasks',
+    version: 1,
+    definitionField: 'lifecycleDefinition',
     collection: COLLECTIONS.teamTasks,
     initial: 'processing',
     states: ['processing', { name: 'done', final: true }],
@@ -319,6 +325,9 @@ export const teamTaskLifecycle: Lifecycle<TeamTypes> =
 export const executorTaskLifecycle: Lifecycle<ExecutorTypes> =
   defineLifecycle<ExecutorTypes>({
     name: 'executorTasks',
+    key: 'executorTasks',
+    version: 1,
+    definitionField: 'lifecycleDefinition',
     collection: COLLECTIONS.executorTasks,
     initial: 'processing',
     states: ['processing', { name: 'done', final: true }],

@@ -17,14 +17,19 @@ export const PARAMETER_COLLECTIONS: Readonly<
   snapshots: 'lifecycleExampleParameterSnapshots',
   usages: 'lifecycleExampleParameterUsages',
 };
+/**
+ * `key` is the process's key: every version of a process reads the one
+ * configuration stored under it, while snapshots and usage stay under each
+ * record's definition name.
+ */
 export function exampleParameterRegistration<T extends LifecycleTypes>(
   store: LifecycleParameterStore,
-  lifecycle: string,
+  key: string,
 ): ParameterConfigurationRegistration<T> {
   return {
-    store: workflowParameterStore(store, lifecycle),
+    store: workflowParameterStore(store, key),
     scope: () => 'demo',
-    ...(lifecycle === 'expenses'
+    ...(key === 'expenses'
       ? {
           legacyRecord: (record: T['record']) => record.parameterContract !== 1,
           snapshotRequired: (record: T['record']) => record.status !== 'draft',
@@ -33,24 +38,27 @@ export function exampleParameterRegistration<T extends LifecycleTypes>(
   };
 }
 
-/** Configuration belongs to a workflow; historical facts already include its name. */
-export function workflowParameterKey(lifecycle: string, group: string): string {
-  return `lifecycle.${lifecycle}.${group}`;
+/**
+ * Configuration belongs to a process, by its key, and every version of it
+ * shares it; historical facts already include the definition's name.
+ */
+export function workflowParameterKey(key: string, group: string): string {
+  return `lifecycle.${key}.${group}`;
 }
 export function workflowParameterStore(
   store: LifecycleParameterStore,
-  lifecycle: string,
+  key: string,
 ): LifecycleParameterStore {
   return {
     read: (scope, group, transaction) =>
-      store.read(scope, workflowParameterKey(lifecycle, group), transaction),
+      store.read(scope, workflowParameterKey(key, group), transaction),
     save: (input, transaction) =>
       store.save(
         {
           ...input,
           group: {
             ...input.group,
-            key: workflowParameterKey(lifecycle, input.group.key),
+            key: workflowParameterKey(key, input.group.key),
           },
         },
         transaction,

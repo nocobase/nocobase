@@ -130,7 +130,7 @@ export class ParameterConfigurationService {
     const owner = owners[0];
     const version =
       configuration ??
-      (await workflowParameterStore(this.store, owner.name).read('demo', key));
+      (await workflowParameterStore(this.store, owner.key).read('demo', key));
     if (version && version.schemaVersion !== group.schemaVersion)
       throw new ParameterConfigurationError(
         'CONFIGURATION_INCOMPATIBLE',

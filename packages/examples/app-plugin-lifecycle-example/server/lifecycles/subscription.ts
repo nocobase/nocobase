@@ -89,6 +89,9 @@ const chargeSubscription: EffectDefinition<SubscriptionTypes> =
 export const subscriptionLifecycle: Lifecycle<SubscriptionTypes> =
   defineLifecycle<SubscriptionTypes>({
     name: 'subscriptions',
+    key: 'subscriptions',
+    version: 1,
+    definitionField: 'lifecycleDefinition',
     collection: LIFECYCLE_EXAMPLE_COLLECTIONS.subscriptions,
     // The first period is charged as soon as the subscription exists.
     initial: 'renewing',

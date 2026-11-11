@@ -194,14 +194,14 @@ export class LifecycleExampleProvider extends ServiceProvider<AppPluginApplicati
       services,
       parameterConfiguration: exampleParameterRegistration(
         parameterStore,
-        'tickets',
+        ticketLifecycle.key,
       ),
     });
     runtime.register(expenseLifecycle, {
       services,
       parameterConfiguration: exampleParameterRegistration(
         parameterStore,
-        'expenses',
+        expenseLifecycle.key,
       ),
     });
     // The durable flows call the sandbox standing in for the outside
@@ -222,21 +222,21 @@ export class LifecycleExampleProvider extends ServiceProvider<AppPluginApplicati
       services: flowServices,
       parameterConfiguration: exampleParameterRegistration(
         parameterStore,
-        'orders',
+        orderLifecycle.key,
       ),
     });
     runtime.register(invoiceLifecycle, {
       services: flowServices,
       parameterConfiguration: exampleParameterRegistration(
         parameterStore,
-        'invoices',
+        invoiceLifecycle.key,
       ),
     });
     runtime.register(exportLifecycle, {
       services: flowServices,
       parameterConfiguration: exampleParameterRegistration(
         parameterStore,
-        'exports',
+        exportLifecycle.key,
       ),
     });
     runtime.register(purchaseLifecycle, { services: flowServices });
@@ -245,7 +245,7 @@ export class LifecycleExampleProvider extends ServiceProvider<AppPluginApplicati
       services: flowServices,
       parameterConfiguration: exampleParameterRegistration(
         parameterStore,
-        'subscriptions',
+        subscriptionLifecycle.key,
       ),
     });
     // Another plugin would subscribe the same way, to refresh a page, keep a

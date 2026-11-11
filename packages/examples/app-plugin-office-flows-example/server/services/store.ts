@@ -29,6 +29,8 @@ export const LEVELS: Readonly<
       readonly collection: string;
       readonly prefix: string;
       readonly initial: string;
+      /** The lifecycle definition the task is created for and bound to. */
+      readonly definition: string;
     }
   >
 > = {
@@ -37,18 +39,21 @@ export const LEVELS: Readonly<
     collection: COLLECTIONS.clerkTasks,
     prefix: 'SWSQ_BSRY',
     initial: 'signing',
+    definition: 'clerkTasks',
   },
   2: {
     kind: 'team',
     collection: COLLECTIONS.teamTasks,
     prefix: 'SWSQ_ZXTDCL',
     initial: 'processing',
+    definition: 'teamTasks',
   },
   3: {
     kind: 'executor',
     collection: COLLECTIONS.executorTasks,
     prefix: 'SWSQ_BSRY_ZB',
     initial: 'processing',
+    definition: 'executorTasks',
   },
 };
 
@@ -310,6 +315,9 @@ export class OfficeStore {
             status: 'pending',
             statusChangedAt: now,
             lifecycleVersion: 0,
+            // Written outside runtime.create(), so bound here: a sweep and
+            // every record operation go by it.
+            lifecycleDefinition: 'extractions',
             createdAt: now,
           },
         });
@@ -450,6 +458,7 @@ export class OfficeStore {
               status: target.initial,
               statusChangedAt: now,
               lifecycleVersion: 0,
+              lifecycleDefinition: target.definition,
               createdAt: now,
             },
           });

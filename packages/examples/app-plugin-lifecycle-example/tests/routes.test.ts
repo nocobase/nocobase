@@ -10,6 +10,7 @@ import {
 import { createAppPaths } from '@nocobase/app-server/config';
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
 import {
+  defineLifecycle,
   LifecycleError,
   LifecycleRuntime,
   MemoryLifecycleStore,
@@ -78,6 +79,7 @@ function application(authentication: Auth) {
     ),
   });
   store.insertRecord('lifecycleExampleInvoices', {
+    lifecycleDefinition: 'invoices',
     id: 9,
     status: 'issued',
     title: 'Example company',
@@ -93,6 +95,7 @@ function application(authentication: Auth) {
     lifecycleVersion: 3,
   });
   store.insertRecord('lifecycleExampleOrders', {
+    lifecycleDefinition: 'orders',
     id: 3,
     title: '降噪耳机',
     customerId: 'customer-li',
@@ -106,6 +109,7 @@ function application(authentication: Auth) {
     lifecycleVersion: 1,
   });
   store.insertRecord('lifecycleExampleExpenses', {
+    lifecycleDefinition: 'expenses',
     id: 1,
     title: '上海出差',
     items: [],
@@ -120,6 +124,7 @@ function application(authentication: Auth) {
   });
   // Closed long before the reopen window of seven days.
   store.insertRecord('lifecycleExampleTickets', {
+    lifecycleDefinition: 'tickets',
     id: 5,
     subject: '无法登录后台',
     description: '提示会话过期',
@@ -176,7 +181,7 @@ function application(authentication: Auth) {
     router: new Hono(),
     container,
   };
-  return { app, service, store };
+  return { app, service, store, runtime };
 }
 
 function post(path: string, body: unknown, method = 'POST'): Request {
@@ -408,6 +413,107 @@ describe('lifecycle example routes', () => {
     expect(service.updateExpense).toHaveBeenCalledTimes(1);
   });
 
+  it('answers and acts through the version a record is bound to, whichever the page names', async () => {
+    const { app, store, runtime } = application(allow);
+    // A second version of orders on the same table: one step, straight to paid.
+    runtime.register(
+      defineLifecycle({
+        name: 'orders-v2',
+        key: 'orders',
+        version: 2,
+        collection: 'lifecycleExampleOrders',
+        definitionField: 'lifecycleDefinition',
+        initial: 'draft',
+        states: ['draft', { name: 'paid', final: true }],
+        transitions: { settle: { from: 'draft', to: 'paid' } },
+      }),
+    );
+    const order = (id: number, lifecycleDefinition: string | null) =>
+      store.insertRecord('lifecycleExampleOrders', {
+        id,
+        lifecycleDefinition,
+        title: 'Desk',
+        customerId: 'customer-li',
+        amountCents: 100,
+        paymentAttempt: 0,
+        paymentSessionId: null,
+        failCheckouts: 0,
+        failRefunds: 0,
+        status: 'draft',
+        statusChangedAt: '2026-10-01T09:00:00.000Z',
+        lifecycleVersion: 1,
+      });
+    order(20, 'orders-v2');
+    order(21, null);
+    const router = await apiRoutes.createRouter(app);
+
+    const v2 = await router.request('/lifecycleExample/orders/20?actAs=lin');
+    expect(v2.status).toBe(200);
+    await expect(v2.json()).resolves.toMatchObject({
+      data: {
+        lifecycle: 'orders-v2',
+        definitionVersion: 2,
+        available: [{ name: 'settle' }],
+      },
+    });
+    const v1 = await router.request('/lifecycleExample/orders/3?actAs=lin');
+    await expect(v1.json()).resolves.toMatchObject({
+      data: { lifecycle: 'orders', definitionVersion: 1 },
+    });
+
+    const fired = await router.request(
+      post('/lifecycleExample/orders/20/fire?actAs=lin', {
+        transition: 'settle',
+        requestId: 'settle-20',
+      }),
+    );
+    const body: unknown = await fired.json();
+    expect(fired.status, JSON.stringify(body)).toBe(200);
+    expect(body).toMatchObject({
+      data: { lifecycle: 'orders-v2', state: 'paid' },
+    });
+    // v1's transitions are not v2's.
+    const wrong = await router.request(
+      post('/lifecycleExample/orders/3/fire?actAs=lin', {
+        transition: 'settle',
+        requestId: 'settle-3',
+      }),
+    );
+    expect(wrong.status).toBe(400);
+    await expect(wrong.json()).resolves.toMatchObject({
+      error: { reason: 'UNKNOWN_TRANSITION' },
+    });
+
+    const unbound = await router.request(
+      '/lifecycleExample/orders/21?actAs=lin',
+    );
+    expect(unbound.status).toBe(400);
+    await expect(unbound.json()).resolves.toMatchObject({
+      error: {
+        status: 'FAILED_PRECONDITION',
+        reason: 'DEFINITION_MISMATCH',
+        metadata: { bound: null },
+      },
+    });
+
+    const latest = await router.request(
+      '/lifecycleExample/orders/lifecycle?actAs=lin',
+    );
+    await expect(latest.json()).resolves.toMatchObject({
+      data: { description: { name: 'orders-v2', key: 'orders', version: 2 } },
+    });
+    const first = await router.request(
+      '/lifecycleExample/orders/lifecycle?actAs=lin&definition=orders',
+    );
+    await expect(first.json()).resolves.toMatchObject({
+      data: { description: { name: 'orders', version: 1 } },
+    });
+    const missing = await router.request(
+      '/lifecycleExample/orders/lifecycle?actAs=lin&definition=tickets',
+    );
+    expect(missing.status).toBe(404);
+  });
+
   it('describes a lifecycle, and refuses an effect run of another record', async () => {
     const router = await apiRoutes.createRouter(application(allow).app);
     const described = await router.request(
@@ -434,6 +540,7 @@ describe('lifecycle example routes', () => {
     // An approved report whose payment succeeded, but whose `paid` could not
     // be fired yet: the continuation waits on the run.
     store.insertRecord('lifecycleExampleExpenses', {
+      lifecycleDefinition: 'expenses',
       id: 3,
       title: '客户拜访',
       items: [],

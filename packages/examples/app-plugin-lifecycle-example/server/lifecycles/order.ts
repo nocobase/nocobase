@@ -74,6 +74,9 @@ function orderProblems(
 export const orderLifecycle: Lifecycle<OrderTypes> =
   defineLifecycle<OrderTypes>({
     name: 'orders',
+    key: 'orders',
+    version: 1,
+    definitionField: 'lifecycleDefinition',
     collection: LIFECYCLE_EXAMPLE_COLLECTIONS.orders,
     initial: 'draft',
     create: { validate: orderProblems },

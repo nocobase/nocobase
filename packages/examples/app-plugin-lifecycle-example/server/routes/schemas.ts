@@ -357,6 +357,13 @@ const Run: z.ZodType<EffectRun> = z
   .meta({ ref: 'LifecycleExampleEffectRun' });
 
 const recordView = {
+  lifecycle: z.string().meta({
+    description:
+      "The definition the record belongs to, whichever version the URL named: draw this definition's diagram.",
+  }),
+  definitionVersion: z.number().meta({
+    description: 'Which version of the process that definition is.',
+  }),
   record: ExampleRecord,
   state: z.string(),
   version: z.number().nullable().meta({
@@ -424,6 +431,16 @@ export const DescriptionViewSchema: z.ZodType<LifecycleDescriptionView> = z
         })
         .optional(),
       name: z.string(),
+      key: z.string().meta({
+        description: 'The process this definition is a version of.',
+      }),
+      version: z.number().meta({
+        description: 'The version of the process; the largest is the latest.',
+      }),
+      definitionField: z.string().optional().meta({
+        description:
+          'The record field naming the definition a record belongs to.',
+      }),
       initial: z.string(),
       initialStates: z.array(z.string()),
       states: z.array(z.string()),

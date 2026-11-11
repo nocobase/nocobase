@@ -116,6 +116,9 @@ function reasonRequired(input: Record<string, unknown>): InputProblem[] {
 export const expenseLifecycle: Lifecycle<ExpenseTypes> =
   defineLifecycle<ExpenseTypes>({
     name: 'expenses',
+    key: 'expenses',
+    version: 1,
+    definitionField: 'lifecycleDefinition',
     collection: LIFECYCLE_EXAMPLE_COLLECTIONS.expenses,
     initial: 'draft',
     // Anyone may not file a report: an employee files their own.

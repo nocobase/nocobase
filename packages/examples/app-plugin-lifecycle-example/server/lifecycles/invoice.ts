@@ -44,6 +44,9 @@ export interface InvoiceTypes {
 export const invoiceLifecycle: Lifecycle<InvoiceTypes> =
   defineLifecycle<InvoiceTypes>({
     name: 'invoices',
+    key: 'invoices',
+    version: 1,
+    definitionField: 'lifecycleDefinition',
     collection: LIFECYCLE_EXAMPLE_COLLECTIONS.invoices,
     initial: 'draft',
     create: {

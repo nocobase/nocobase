@@ -23,6 +23,9 @@ const reviewer = ({
 // Capability checks and transaction-bound reference/amount checks belong to the service.
 export const procurementLifecycle = defineLifecycle<Types>({
   name: 'procurement',
+  key: 'procurement',
+  version: 1,
+  definitionField: 'lifecycleDefinition',
   collection: 'procurementRequests',
   initial: 'draft',
   states: ['draft', 'submitted', 'rejected', { name: 'approved', final: true }],

@@ -92,6 +92,9 @@ function newRound({ record }: { readonly record: DataExport }) {
 export const exportLifecycle: Lifecycle<ExportTypes> =
   defineLifecycle<ExportTypes>({
     name: 'exports',
+    key: 'exports',
+    version: 1,
+    definitionField: 'lifecycleDefinition',
     collection: LIFECYCLE_EXAMPLE_COLLECTIONS.exports,
     initial: 'draft',
     create: { validate: exportProblems },
