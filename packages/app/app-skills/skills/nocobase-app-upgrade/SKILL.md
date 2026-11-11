@@ -213,4 +213,6 @@ When the target adds or changes the standard process UI sources, also follow [st
 
 When the target introduces standard submission protection, follow [submission source upgrades](references/submission-upgrade.md) during planning and reconciliation. Dependency or version-marker changes alone do not update copied forms, custom actions or the application's receipt migrations. Verify both a fresh application and retained customized data.
 
+When the application defines lifecycles (`defineLifecycle()`) and the target adds definition versions, follow [lifecycle definition versions upgrade](references/lifecycle-versioning-upgrade.md) in the same upgrade: give every definition `key` and `version`, add and backfill each process's definition field from its creation log with a conflict list, move category assignments to the key, and plan the write window and deployment order. Missing values only warn in this release and are required in the next minor release.
+
 For a target that adds notification template administration, follow [notification template source reconciliation](references/notification-template-upgrade.md) in the same version-selected upgrade, preserving business renderers, workflows, permissions and channel configuration.

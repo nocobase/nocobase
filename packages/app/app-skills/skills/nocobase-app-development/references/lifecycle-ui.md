@@ -48,6 +48,14 @@ Prefer a visible parameter form beside the diagram. Group fields by business sta
 
 Provide contextual controls for declared, authorized bindings by default, sharing the same editor and save contract. Keep node configuration controls as compact icon-only buttons with translated accessible names and hover hints; reserve the main node area for its title. Keep full configuration labels in the parameter panel or chooser, never inline beside the node title. Make settings discoverable through the visible parameter panel or a clearly labelled configuration entry outside the graph when using contextual-only editors. Inspection and editing clicks never execute transitions.
 
+## Versions
+
+A process with several [versions](lifecycle-versions.md) is one catalog row: group definitions by `key`, describe the row by the latest version, the largest number, and show that number beside the title only when the process has more than one version. Execution counts and the latest execution time cover every version; state and transition counts are the latest version's. Never present the latest as the version in use: entry points in code choose which version new records start, and the page has no enabled state.
+
+The definition detail offers a version switch in the header, kept in a `version` query parameter so a reload or a shared link shows the same version; the diagram, description and per-version execution count follow the selection, and the execution link filters by that version. Parameters are shared by every version, so the parameter panel is the process's, not the selected version's. Keep links that name an old definition by its own name working: resolve them to the process and that version, and replace the URL with the process address.
+
+The execution list shows each record's version and, for a selected process with several versions, filters by version. Count and page a shared table by each record's definition field, so no record appears under two versions or two processes. An execution detail always describes the record's own version, never the latest, and links to that version's definition. Search matches the key and every version's name.
+
 ## Keep process graphs readable
 
 Aim for a readable business process with its necessary branches, not a diagram of every implementation operation. Start with the main forward path, then include required approval, rejection, withdrawal, resubmission, timeout and recovery paths. Do not invent extra transitions for symmetry or connect each state to every other state. A technically automatic transition can still be an essential business step; do not hide it merely because it is automatic.

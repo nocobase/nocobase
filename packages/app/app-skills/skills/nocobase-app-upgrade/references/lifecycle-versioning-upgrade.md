@@ -1,0 +1,36 @@
+# Lifecycle definition versions upgrade
+
+The target release identifies each lifecycle definition by `key` and `version` and binds every record to the definition that created it through a record field named by `definitionField`; see [versions of a process](../../nocobase-app-development/references/lifecycle-versions.md). Installing the new packages rewrites no application source. A definition without `key` or `version` still registers as its name and 1, and one without `definitionField` still registers while its key has one version, each with a warning; the next minor release requires all three. Do this migration in the upgrade that brings the target, not later.
+
+Adding `key` and `version` is metadata: it creates no second version and moves no entry point. Do not create a v2, rename a definition, change a `collection` or switch an entry point as part of this upgrade.
+
+## Steps
+
+1. **Inventory.** List every `defineLifecycle()` in the application and its local plugins, where each is registered, and every entry point that creates its records: pages, event subscribers, scheduled jobs, outside APIs and webhooks, imports, batches, commands and processes that create child processes. List the routes and services that read or move its records.
+2. **Identity.** For each definition without them, add `key` equal to its current `name` and `version: 1`. Keep existing values; running the upgrade again changes nothing. Keep `name`, `collection`, the state field and every transition and effect name as they are, and write `collection` explicitly where it relied on the name default. Definitions the application already treats as versions of one process, such as `orders` and `orders2`, get one key only after you have confirmed from the code and its history that they are the same process and in which order they were introduced; never group by name similarity alone.
+3. **Binding field.** For each process pick its definition field: reuse an existing column that already holds the definition name with that meaning, otherwise add a nullable `string` column, `lifecycleDefinition` by default. A table carrying two lifecycles gets one field per lifecycle (`approvalDefinition`, `paymentDefinition`). Every version of a key uses the same field. Declare it in the definition (`definitionField`), the Collection declaration and the record types. Index it only where list queries need it.
+4. **Backfill migration.** Write one new, self-contained migration per table, after the newest existing migration of that source (names sort across every source, so check the application's and each plugin's latest name before choosing one). It adds the column and fills it for records a definition started, and never imports a live definition:
+   - A table that only ever had one definition: set the field to that definition's name on every record the lifecycle started. When a table also holds records no process started, select the started ones by their `$create` entry in `lifecycleTransitions` (`lifecycle`, `recordId`, `transition = '$create'`), or by another reliable fact of the model; leave the rest empty.
+   - A table that has had several definitions: take each record's definition from its `$create` entry in `lifecycleTransitions`. A record whose entries name more than one definition, a started record with no `$create` entry, and an entry naming an unknown definition are conflicts.
+   - Keep a field that already holds a valid definition name. Never derive the binding from the current state, the record's age or the latest definition, and never default the column to an old name: that hides an entry point the upgrade missed.
+   - On any conflict, make the migration fail with the list of table, record id and the definitions found, so the upgrade stops before completion. Resolve each record with the user, record the decision and backfill it in a further migration; never pick one automatically.
+   - `down` drops the column.
+5. **Categories and other groupings.** Where the application classifies definitions (a workflow catalog, category assignments, dashboards), the grouping now belongs to the process key. Move each definition's assignment to its key. Two definitions of one key with different categories are a conflict: list them and ask; do not overwrite one with the other.
+6. **Code paths.**
+   - Every `runtime.create()` names its definition explicitly.
+   - Routes and services that act on one record resolve its definition with `runtime.boundLifecycle(key, id)`, or `recordLifecycle(key, record)` for a record already read, then call `view()`, `fire()`, retries and continuations with that name. A page keeps calling the process's path; it never names a version.
+   - Code that inserts records of a lifecycle without `runtime.create()`, such as seeds, imports or batches, writes the binding itself.
+   - No form, generic update endpoint, `set` or `accept` writes the definition field.
+   - Lists that filter by state use the union of the versions' states, and management pages count and page by the binding.
+7. **Parameters.** A process with configurable parameters keeps one stored configuration per group across versions, keyed by the process key. When the key equals the old name the stored rows need no change. A store that keyed rows by definition name keeps working for the first version; key it by `ParameterReadContext.key` before a second version is added. Groups that records have used are frozen from now on.
+8. **Write window and deployment.** Old code may create records between the migration and the new code starting. Deploy so that no record is created unbound: stop writers during the migration, or run a follow-up backfill after the new code is serving, or deploy the code that writes the binding first while the field is nullable. New definitions are available in every process and worker before an entry point starts them.
+
+## Verify
+
+- Every definition registers without the missing `key`, `version` or `definitionField` warning, and the key and version of each are what step 2 recorded.
+- Running the upgrade steps again leaves every key, version and binding unchanged.
+- Every started record is bound to its original definition; records no process started remain empty; the migration failed with a list for every conflict, and each conflict has a recorded decision.
+- An existing record still opens, shows its history and accepts its transitions; a new record from each entry point is bound to the expected definition; a record of one lifecycle never receives another's binding on a table that carries two.
+- Triggers, effect retries and continuations of existing records still run.
+- Parameter values resolved for an existing record are unchanged.
+- Report each definition's key and version, its binding field, the backfill rule used per table, every conflict and its decision, and any entry point or customized path you could not verify.
