@@ -1,4 +1,4 @@
-import { AgentAvatar } from '@nocobase/app-plugin-agents/client/kit';
+import { AgentAvatar } from '@nocobase/app-plugin-agents/client/chat';
 import {
   ArrowDownIcon,
   ArrowUpDownIcon,
