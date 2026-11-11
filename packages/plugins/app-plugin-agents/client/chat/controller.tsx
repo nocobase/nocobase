@@ -930,7 +930,12 @@ export class ChatController {
       pending.lastSeq = Math.max(pending.lastSeq, lastSeq);
       return pending.task;
     }
-    const active = this.historyLifetime(id);
+    // The catch-up owes every caller the announced cursor, so only disposal or a newer command ends it. A replay
+    // reconnection (`invalidateReplayReads`) discards the page being read; the catch-up then reads it again instead
+    // of ending, or the history would stop short of a message already saved, such as a failure notice.
+    const lifetime = this.lifetime(),
+      command = this.commandVersions.get(id),
+      active = () => lifetime() && this.commandVersions.get(id) === command;
     const owner = { lastSeq, task: Promise.resolve() };
     const run = async () => {
       const reading = this.loads.get(id);
@@ -940,10 +945,15 @@ export class ChatController {
         (!this.history(id).state.loaded ||
           this.history(id).loadedThrough < owner.lastSeq)
       ) {
-        const before = this.history(id).loadedThrough;
+        const before = this.history(id).loadedThrough,
+          epoch = this.historyEpochs.get(id) ?? 0;
         await this.loadHistory(id);
         if (this.history(id).error) throw this.history(id).error;
-        if (this.history(id).loadedThrough <= before) break;
+        if (
+          this.history(id).loadedThrough <= before &&
+          (this.historyEpochs.get(id) ?? 0) === epoch
+        )
+          break;
       }
     };
     owner.task = run().finally(() => {
