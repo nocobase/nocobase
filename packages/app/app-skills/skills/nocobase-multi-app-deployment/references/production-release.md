@@ -2,7 +2,7 @@
 
 ## Separate code from persistent state
 
-Main and each child are complete independent application artifacts. In the current template the root is Main and builds Main's deployment; `apps/sub/` builds the child separately. Source nesting does not combine their artifacts or state. Managed instances own runtime configuration and data; external applications keep their original deployment/backup owner.
+Main and each child are complete independent application artifacts. The commercial template initially contains Main only. After adding a child, build its deployment from its own directory (for example `apps/sub/`) or repository. Source nesting does not combine their artifacts or state. Managed instances own runtime configuration and data; external applications keep their original deployment/backup owner.
 
 Use the target App's installed `nocobase-deployment` Skill for standalone Node/Docker details. Record source revision, lockfile, compatible licensed package versions and the actual destination OS/CPU/libc/Node. Inspect that App's `build --help` for supported target options; do not invent flags or build a foreign-platform archive and execute it locally.
 

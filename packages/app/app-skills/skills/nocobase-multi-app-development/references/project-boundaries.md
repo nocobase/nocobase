@@ -4,7 +4,7 @@
 
 Read the project README, `package.json` and `pnpm-workspace.yaml` when present; inspect each App's manifest, configuration declarations and client/server/CLI plugin registrations. Record source revisions, dirty files and installed versions. Use NocoBase 3 project guidance, not global NocoBase 2 Portal/CLI workflows.
 
-In the current multi-app template the project root is the complete Main application and `apps/sub/` is one complete business child. They share installation and a lockfile, not business source or runtime data. For other projects inspect the declared App roots; a source folder does not create a deployed instance and receiving these Skills does not convert a single App into a platform.
+The commercial multi-app template creates the complete Main application at the project root, without a default child. Children may be added on demand in `apps/<name>` or independent repositories. Same-repository Apps may share installation and a lockfile, not business source or runtime data. For other projects inspect the declared App roots; a source folder does not create a deployed instance and receiving these Skills does not convert a single App into a platform.
 
 For a new project, the public command is available only after compatible CLI and template releases include the alias:
 

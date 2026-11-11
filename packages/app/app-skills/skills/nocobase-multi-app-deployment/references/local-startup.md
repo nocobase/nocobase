@@ -4,7 +4,7 @@
 
 Read the project README, root and target App `AGENTS.md`, the actual scripts and installed CLI/deployment guidance. Use the declared Node/pnpm versions. Inspect listeners, owned processes, current configuration, archives and desired instance states without printing credentials.
 
-For a shared workspace install dependencies once at the root, not independently in every App. In the current template the root is Main: its configuration, Skills and runtime commands run there; child commands run in `apps/sub`. Other projects keep their actual declared App roots. Existing healthy configuration/artifacts should be reused, not regenerated merely to restart. Never start two processes on the same database/storage.
+For a shared workspace install dependencies once at the root, not independently in every App. The commercial template creates Main only. Its configuration, Skills and runtime commands run at the root. The child commands below assume you have separately added a child at `apps/sub`; this is an example path, not generated content. Other projects keep their actual declared App roots. Existing healthy configuration/artifacts should be reused, not regenerated merely to restart. Never start two processes on the same database/storage.
 
 ## Local accounts versus SSO
 

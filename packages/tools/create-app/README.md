@@ -52,7 +52,7 @@ pnpm create @nocobase/app
 | `-h, --help`     | Show help                                                                                |
 | `--version`      | Show the version                                                                         |
 
-`--template` supports `default` (the default application), `examples` (the example application), `multi-portal` (one application with multiple business entry points), and `multi-app` (Main at the project root and independent children under apps/), each pointing at the corresponding `@nocobase/app-template-*` package. The multi-portal template is a commercial Pro package; it is not bundled with this open-source creation tool. Multi-app template source is open, but its required multi-app, identity-provider and platform-SSO plugins require a commercial license and authorized registry access.
+`--template` supports `default` (the default application), `examples` (the example application), `multi-portal` (one application with multiple business entry points), and `multi-app` (Main only, with optional independent children), each pointing at the corresponding `@nocobase/app-template-*` package. The multi-portal and multi-app templates are commercial Pro packages, not bundled with this open-source creation tool. They require authorized registry access.
 
 ```bash
 pnpm create @nocobase/app crm --template=default   # the default, can be omitted
@@ -85,7 +85,9 @@ NOCOBASE_REGISTRY=https://pkg-v3.nocobase.com/ pnpm create @nocobase/app@beta cr
 
 The alias follows `--template-tag` like Default and Examples. Registry selection remains explicit: use `--registry` or `NOCOBASE_REGISTRY`; the alias does not change global npm configuration. The generated project records the selected registry for `@nocobase` packages without copying credentials. A successful login does not prove access to the template or that the selected channel has been released: verify the package with `npm view` before creating the project. If the installed create-app predates this alias, use `--template=@nocobase/app-template-multi-portal@beta` with the same registry instead. Do not substitute Default when the commercial package is unavailable.
 
-### Multi-app workspaces
+### Multi-app applications
+
+The commercial template lives in `nocobase/nocobase3-pro` and creates Main only, without a default `apps/sub`. Children may be added later in `apps/<name>` or independent repositories.
 
 The `multi-app` alias resolves `@nocobase/app-template-multi-app` with the selected template tag. Do not assume the template or its required commercial versions are published: verify availability and compatibility first. For an unpublished candidate, use the packed template archive rather than substituting another template:
 
@@ -95,15 +97,13 @@ cd platform
 pnpm install
 pnpm nocobase config init
 pnpm nocobase config check
-pnpm --dir=apps/sub nocobase config init
-pnpm --dir=apps/sub nocobase config check
 ```
 
 Select the authorized registry explicitly when commercial dependencies require it, for example with `--registry=https://pkg-v3.nocobase.com/`. Existing secure login credentials are reused, never copied into the project. The workspace root installs dependencies once; driver verification and Skills synchronization then run separately in each declared application, including the root when it is Main. With `--no-install`, neither runs until you install and execute the corresponding per-application commands yourself.
 
-An application template can declare `nocobase.templateKind: "app"` and `appDirectories: [".", "apps/sub"]`: `.` must be first, the root becomes `<project>`, and children become `<project>-<directory-basename>`. Existing orchestration-only `templateKind: "workspace"` templates remain supported but cannot declare `.`. Child roots cannot overlap or share a basename, escape the template or traverse symlinks. Existing workspace globs, catalogs and native-build decisions are preserved. An inert `pnpm-workspace.template.yaml` is restored as `pnpm-workspace.yaml` when no active workspace file exists.
+For compatibility with existing workspace templates, an application template can declare `nocobase.templateKind: "app"` and `appDirectories: [".", "apps/sub"]`: `.` must be first, the root becomes `<project>`, and children become `<project>-<directory-basename>`. Existing orchestration-only `templateKind: "workspace"` templates remain supported but cannot declare `.`. Child roots cannot overlap or share a basename, escape the template or traverse symlinks. Existing workspace globs, catalogs and native-build decisions are preserved. An inert `pnpm-workspace.template.yaml` is restored as `pnpm-workspace.yaml` when no active workspace file exists.
 
-The generated workspace README is authoritative for distinct server/Vite ports, separate storage and database ownership, explicit initialization plans, building standalone Sub artifacts, installing instances and trusted HTTPS SSO. Creating files alone does not verify those commercial/runtime paths. Root Main uses ordinary root configuration, development and build commands; an orchestration-only root does not. Never reuse one App's secrets for another or reset existing instances as part of startup.
+The generated application README is authoritative for distinct server/Vite ports, separate storage and database ownership, explicit initialization plans, building standalone Sub artifacts, installing instances and trusted HTTPS SSO. Creating files alone does not verify those commercial/runtime paths. Root Main uses ordinary root configuration, development and build commands; an orchestration-only root does not. Never reuse one App's secrets for another or reset existing instances as part of startup.
 
 Dependencies are installed automatically; `--no-install` skips that. Generated `pnpm-workspace.yaml` defaults to `verifyDepsBeforeRun: false`, so `pnpm dev`, `pnpm build`, and `pnpm start` do not implicitly install dependencies. Run `pnpm install` explicitly after changing dependencies, or before starting an app created with `--no-install`. An explicit template setting is preserved. Existing applications can add `verifyDepsBeforeRun: false` to their own `pnpm-workspace.yaml`.
 
