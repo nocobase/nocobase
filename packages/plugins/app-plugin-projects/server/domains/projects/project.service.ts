@@ -286,6 +286,8 @@ export function createProjectService(deps: ProjectDeps): ProjectService {
         await updateProject(tx.conn, id, values);
         if (values.leadUserId)
           await addMember(tx.conn, deps.ids.next(), id, values.leadUserId);
+        if (values.visibility !== undefined || values.leadUserId !== undefined)
+          tx.emit({ type: 'project.changed', projectId: id });
       });
       return detail(deps, deps.tx.read(), id);
     },

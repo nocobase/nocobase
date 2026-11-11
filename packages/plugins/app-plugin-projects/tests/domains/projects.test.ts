@@ -127,6 +127,35 @@ describe('projects', () => {
     expect(created).toEqual([{ projectId: led.id, creatorUserId: 'alice' }]);
   });
 
+  it('announces a change of who may see a project', async () => {
+    const changed: string[] = [];
+    const release = h.services.events.on('project.changed', (event) => {
+      changed.push(event.projectId);
+    });
+    const project = await h.services.projects.create(h.viewer('lead'), {
+      name: 'Watched',
+    });
+    await h.services.projects.update(h.viewer('lead'), project.id, {
+      name: 'Renamed',
+    });
+    expect(changed).toEqual([]);
+    await h.services.projects.update(h.viewer('lead'), project.id, {
+      visibility: 'members',
+    });
+    await h.services.projects.addMember(h.viewer('lead'), project.id, {
+      userId: 'alice',
+    });
+    await h.services.projects.addMember(h.viewer('lead'), project.id, {
+      userId: 'alice',
+    });
+    await h.services.projects.update(h.viewer('lead'), project.id, {
+      leadUserId: 'alice',
+    });
+    await h.services.projects.removeMember(h.viewer('alice'), project.id, 'lead');
+    release();
+    expect(changed).toEqual([project.id, project.id, project.id, project.id]);
+  });
+
   it('hides a private project from those who did not join it', async () => {
     const secret = await h.services.projects.create(h.viewer('lead'), {
       name: 'Secret',
