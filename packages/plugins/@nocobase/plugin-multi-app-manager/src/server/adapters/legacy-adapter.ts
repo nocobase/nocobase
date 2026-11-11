@@ -182,23 +182,18 @@ export class LegacyAdapter implements AppDiscoveryAdapter, AppProcessAdapter {
     return status ?? null;
   }
 
-  async getAppModel(appName: string) {
+  private async findAppModel(filter: { name: string } | { cname: string }) {
     const mainApp = await this.getApp('main');
-    if (!mainApp) {
-      return null;
-    }
-    const repo = mainApp.db.getRepository('applications');
-    if (!repo) {
-      return null;
-    }
-    const applicationModel = await repo.findOne({
-      filter: {
-        name: appName,
-      },
-    });
-    if (!applicationModel) {
-      return null;
-    }
-    return applicationModel;
+    const repo = mainApp?.db.getRepository('applications');
+    return (await repo?.findOne({ filter })) ?? null;
+  }
+
+  getAppModel(appName: string) {
+    return this.findAppModel({ name: appName });
+  }
+
+  async getAppNameByCName(cname: string): Promise<string | null> {
+    const application = await this.findAppModel({ cname });
+    return application?.name ?? null;
   }
 }

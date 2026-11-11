@@ -12,6 +12,7 @@ import { PasswordField } from '@nocobase/database';
 import _ from 'lodash';
 import { namespace } from '../preset';
 import { parsedValue } from '@nocobase/utils';
+import { getPasswordResetOrigin, getPasswordResetPage, resetOriginRequired } from './utils/passwordResetUrl';
 
 export class BasicAuth extends BaseAuth {
   static readonly optionsKeysNotAllowedInEnv = ['emailContentText', 'emailContentHTML', 'emailSubject'];
@@ -157,7 +158,7 @@ export class BasicAuth extends BaseAuth {
     const {
       values: { email, baseURL },
     } = ctx.action.params;
-    const authenticatorName = ctx.headers['x-authenticator'];
+    const authenticatorName = ctx.get('X-Authenticator');
 
     if (!authenticatorName) {
       ctx.throw(400, ctx.t('Missing X-Authenticator in request header', { ns: namespace }));
@@ -196,6 +197,13 @@ export class BasicAuth extends BaseAuth {
       ctx.throw(403, ctx.t('Not allowed to reset password', { ns: namespace }));
     }
 
+    const origin = getPasswordResetOrigin();
+    if (!origin) {
+      ctx.logger.warn(resetOriginRequired);
+      ctx.throw(503, ctx.t('Email password recovery is temporarily unavailable.', { ns: namespace }));
+    }
+    const resetPage = await getPasswordResetPage(origin, ctx.app.name, baseURL);
+
     // 生成重置密码的 token
     const resetToken = await ctx.app.authManager.jwt.sign(
       {
@@ -207,7 +215,9 @@ export class BasicAuth extends BaseAuth {
     );
 
     // 构建重置密码链接
-    const resetLink = `${baseURL}/reset-password?resetToken=${resetToken}&name=${authenticatorName}`;
+    resetPage.searchParams.set('resetToken', resetToken);
+    resetPage.searchParams.set('name', authenticatorName);
+    const resetLink = resetPage.href;
 
     const systemSettings = (await ctx.db.getRepository('systemSettings')?.findOne()) || {};
 

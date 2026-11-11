@@ -48,7 +48,7 @@ function getRequestHostname(req: IncomingMessage): string {
  * the root, while one reached through the supervisor domain uses
  * `/apps/<name>`.
  */
-export async function resolveSubAppSegment(req: IncomingMessage, appName?: string | null): Promise<string> {
+export async function resolveSubAppSegment(source: IncomingMessage | URL, appName?: string | null): Promise<string> {
   if (!appName || appName === 'main') {
     return '';
   }
@@ -58,7 +58,7 @@ export async function resolveSubAppSegment(req: IncomingMessage, appName?: strin
     return '';
   }
 
-  const hostname = getRequestHostname(req);
+  const hostname = source instanceof URL ? source.hostname : getRequestHostname(source);
   if (hostname) {
     const cnameAppName = await appSupervisor.getAppNameByCName?.(hostname);
     if (cnameAppName === appName) {

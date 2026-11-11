@@ -4,6 +4,7 @@
 
 - Be sure to back up the database first
 - Stop the running NocoBase instance
+- If email password recovery is enabled, configure [APP_PUBLIC_ORIGIN](../installation/env.md#app_public_origin) before upgrading
 
 :::
 

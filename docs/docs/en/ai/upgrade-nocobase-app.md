@@ -11,6 +11,8 @@ This guide applies to apps installed with `nb init`. If your app was installed w
 
 :::
 
+If email password recovery is enabled, configure [APP_PUBLIC_ORIGIN](../get-started/installation/env.md#app_public_origin) before upgrading.
+
 ## Step 1: Confirm the Current Env
 
 ```bash

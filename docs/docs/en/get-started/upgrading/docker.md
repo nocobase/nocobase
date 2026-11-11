@@ -3,6 +3,7 @@
 :::warning Before you upgrade
 
 - Be sure to back up your database
+- If email password recovery is enabled, configure [APP_PUBLIC_ORIGIN](../installation/env.md#app_public_origin) before upgrading
 
 :::
 

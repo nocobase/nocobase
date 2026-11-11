@@ -10,6 +10,7 @@
 import { AppSupervisor } from '@nocobase/server';
 import type { IncomingMessage } from 'http';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { getPasswordResetPage } from '../passwordResetUrl';
 import { resolveSubAppSegment } from '../resolveSubAppSegment';
 
 function createRequest(headers: IncomingMessage['headers'] = {}): IncomingMessage {
@@ -97,5 +98,40 @@ describe('resolveSubAppSegment', () => {
     } as unknown as AppSupervisor);
 
     expect(await resolveSubAppSegment(createRequest({ host: 'main.example.com' }), 'sub')).toBe('/apps/sub');
+  });
+});
+
+describe('password reset routes for sub-applications', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllEnvs();
+  });
+
+  it.each([
+    ['multiple', null, '/console/apps/sales/reset-password'],
+    ['multiple', 'sales', '/console/reset-password'],
+    ['single', null, '/console/reset-password'],
+  ] as const)('routes mail on the configured origin in %s mode with CNAME %s', async (runningMode, cname, path) => {
+    vi.stubEnv('APP_PUBLIC_PATH', '/console/');
+    vi.stubEnv('APP_MODERN_CLIENT_PREFIX', 'modern');
+    const supervisor = AppSupervisor.getInstance();
+    vi.spyOn(supervisor, 'getAppNameByCName').mockResolvedValue(cname);
+    const originalMode = supervisor.runningMode;
+    try {
+      supervisor.runningMode = runningMode;
+      const origin = new URL('https://accounts.example.com');
+      expect((await getPasswordResetPage(origin, 'sales', undefined)).href).toBe(origin.origin + path);
+      const modern = await getPasswordResetPage(
+        origin,
+        'sales',
+        'https://client.example.org/console/modern/apps/sales',
+      );
+      expect(modern.href).toBe(origin.origin + path.replace('/console/', '/console/modern/'));
+      if (runningMode === 'multiple') {
+        expect(supervisor.getAppNameByCName).toHaveBeenCalledWith(origin.hostname);
+      }
+    } finally {
+      supervisor.runningMode = originalMode;
+    }
   });
 });

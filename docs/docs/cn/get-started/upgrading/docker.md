@@ -9,6 +9,7 @@ keywords: "Docker 升级,镜像版本,docker compose up,阿里云镜像,nocobase
 :::warning 升级前的准备
 
 - 请务必先备份数据库
+- 已开启邮件找回密码的应用，请在升级前配置 [APP_PUBLIC_ORIGIN](../installation/env.md#app_public_origin)
 
 :::
 

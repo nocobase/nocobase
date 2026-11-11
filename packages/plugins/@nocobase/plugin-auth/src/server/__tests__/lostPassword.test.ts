@@ -19,6 +19,8 @@ describe('auth:lostPassword', () => {
   let notificationManagerMock;
 
   beforeEach(async () => {
+    vi.stubEnv('APP_PUBLIC_ORIGIN', 'https://accounts.example.com:8443/');
+    vi.stubEnv('APP_PUBLIC_PATH', '/');
     // Create mock server
     app = await createMockServer({
       plugins: ['field-sort', 'auth', 'users'],
@@ -94,6 +96,7 @@ describe('auth:lostPassword', () => {
   });
 
   afterEach(async () => {
+    vi.unstubAllEnvs();
     await app.destroy();
   });
 
@@ -242,76 +245,94 @@ describe('auth:lostPassword', () => {
     );
   });
 
-  it('should successfully send a password reset email with baseURL parameter', async () => {
-    const baseURL = 'https://example.com';
+  it('uses the configured origin and v2 mount path in the delivered HTML email', async () => {
+    vi.stubEnv('APP_PUBLIC_PATH', '/console/');
+    vi.stubEnv('APP_MODERN_CLIENT_PREFIX', 'modern');
 
-    const res = await agent.post('/auth:lostPassword').set({ 'X-Authenticator': 'basic' }).send({
-      email: 'test@example.com',
-      baseURL: baseURL,
-    });
+    const res = await agent
+      .post('/auth:lostPassword')
+      .set({ 'X-Authenticator': 'basic', 'X-Forwarded-Host': 'proxy.example.org' })
+      .send({ email: 'test@example.com', baseURL: 'https://other.example.org/console/modern' });
 
     expect(res.statusCode).toBe(204);
-
-    // Verify JWT sign was called
-    expect(app.authManager.jwt.sign).toHaveBeenCalled();
-
-    // Verify notification manager send method was called with the correct reset link
-    expect(notificationManagerMock.send).toHaveBeenCalledTimes(1);
-    expect(notificationManagerMock.send).toHaveBeenCalledWith(
-      expect.objectContaining({
-        channelName: 'email',
-        message: expect.objectContaining({
-          to: ['test@example.com'],
-          html: expect.stringContaining(`${baseURL}/reset-password?resetToken=mock-reset-token`),
-        }),
-      }),
+    expect(notificationManagerMock.send.mock.calls[0][0].message.html).toBe(
+      'Click the link to reset your password: https://accounts.example.com:8443/console/modern/reset-password?resetToken=mock-reset-token&name=basic',
     );
   });
 
-  it('should handle baseURL with subdirectory correctly', async () => {
-    const baseURL = 'https://example.com/app';
-
-    const res = await agent.post('/auth:lostPassword').set({ 'X-Authenticator': 'basic' }).send({
-      email: 'test@example.com',
-      baseURL: baseURL,
+  it('uses the configured subpath and default client route in plain-text mail', async () => {
+    vi.stubEnv('APP_PUBLIC_PATH', '/console');
+    const repo = db.getRepository('authenticators');
+    const basic = await repo.findOne({ filter: { name: 'basic' } });
+    await repo.update({
+      filterByTk: basic.id,
+      values: {
+        options: {
+          ...basic.options,
+          emailContentType: 'text',
+          emailContentText: 'Reset: {{$resetLink}}',
+        },
+      },
     });
 
+    const res = await agent
+      .post('/auth:lostPassword')
+      .set({ 'X-Authenticator': 'basic' })
+      .send({ email: 'test@example.com', baseURL: 'https://other.example.org/arbitrary-path' });
+
     expect(res.statusCode).toBe(204);
-    expect(notificationManagerMock.send).toHaveBeenCalledWith(
-      expect.objectContaining({
-        message: expect.objectContaining({
-          html: expect.stringContaining(`${baseURL}/reset-password?resetToken=mock-reset-token`),
-        }),
-      }),
+    expect(notificationManagerMock.send.mock.calls[0][0].message.text).toBe(
+      'Reset: https://accounts.example.com:8443/console/reset-password?resetToken=mock-reset-token&name=basic',
     );
   });
 
-  it('should include authenticatorName in the reset password link', async () => {
-    const baseURL = 'https://example.com';
-    const authenticatorName = 'basic';
+  it.each([
+    '',
+    'not a URL',
+    'ftp://example.com',
+    'https://example.com/subpath',
+    'https://user@example.com',
+    'https://example.com?setting=1',
+    'https://example.com/#section',
+  ])('does not sign a token or send mail with invalid APP_PUBLIC_ORIGIN %j', async (origin) => {
+    vi.stubEnv('APP_PUBLIC_ORIGIN', origin);
+    const res = await agent
+      .post('/auth:lostPassword')
+      .set({ 'X-Authenticator': 'basic' })
+      .send({ email: 'test@example.com', baseURL: 'https://example.com' });
+    expect(res.statusCode).toBe(503);
+    expect(app.authManager.jwt.sign).not.toHaveBeenCalled();
+    expect(notificationManagerMock.send).not.toHaveBeenCalled();
+  });
 
-    const res = await agent.post('/auth:lostPassword').set({ 'X-Authenticator': authenticatorName }).send({
-      email: 'test@example.com',
-      baseURL: baseURL,
-    });
+  it('warns during upgrade when existing email password recovery settings need a public origin', async () => {
+    vi.stubEnv('APP_PUBLIC_ORIGIN', '');
+    const warn = vi.spyOn(app.logger, 'warn');
+    try {
+      await app.emitAsync('afterUpgrade', app, {});
+      expect(warn).toHaveBeenCalledWith(expect.stringContaining('APP_PUBLIC_ORIGIN'));
+    } finally {
+      warn.mockRestore();
+    }
+  });
 
-    expect(res.statusCode).toBe(204);
-
-    // Verify JWT sign was called
-    expect(app.authManager.jwt.sign).toHaveBeenCalled();
-
-    // Verify notification manager send method was called with the correct reset link including authenticator name
-    expect(notificationManagerMock.send).toHaveBeenCalledTimes(1);
-    expect(notificationManagerMock.send).toHaveBeenCalledWith(
-      expect.objectContaining({
-        channelName: 'email',
-        message: expect.objectContaining({
-          to: ['test@example.com'],
-          html: expect.stringContaining(
-            `${baseURL}/reset-password?resetToken=mock-reset-token&name=${authenticatorName}`,
-          ),
-        }),
-      }),
-    );
+  it('requires a public origin when an administrator enables email password recovery', async () => {
+    vi.stubEnv('APP_PUBLIC_ORIGIN', '');
+    const basic = await db.getRepository('authenticators').findOne({ filter: { name: 'basic' } });
+    const resource = agent.resource('authenticators');
+    const update = (enabled: boolean) =>
+      resource.update({
+        filterByTk: basic.id,
+        values: {
+          enabled: true,
+          options: { ...basic.options, public: { enableResetPassword: enabled } },
+        },
+      });
+    expect((await update(false)).statusCode).toBe(200);
+    const rejected = await update(true);
+    expect(rejected.statusCode).toBe(400);
+    expect(rejected.text).toContain('APP_PUBLIC_ORIGIN');
+    vi.stubEnv('APP_PUBLIC_ORIGIN', 'https://accounts.example.com');
+    expect((await update(true)).statusCode).toBe(200);
   });
 });

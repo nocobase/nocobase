@@ -1,4 +1,6 @@
 {
+  "Configure APP_PUBLIC_ORIGIN with the public HTTP or HTTPS origin to enable email password recovery.": "Configure APP_PUBLIC_ORIGIN with the public HTTP or HTTPS origin to enable email password recovery.",
+  "Email password recovery is temporarily unavailable.": "Email password recovery is temporarily unavailable.",
   "1. Select notification channel": "1. Select notification channel",
   "2. Configure reset email": "2. Configure reset email",
   "Allow to sign in with": "Allow to sign in with",

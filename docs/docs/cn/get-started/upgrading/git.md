@@ -10,6 +10,7 @@ keywords: "Git 源码,升级,git pull,yarn nocobase upgrade,yarn install,NocoBas
 
 - 请务必先备份数据库
 - 停止运行中的 NocoBase（`Ctrl + C`）
+- 已开启邮件找回密码的应用，请在升级前配置 [APP_PUBLIC_ORIGIN](../installation/env.md#app_public_origin)
 
 :::
 

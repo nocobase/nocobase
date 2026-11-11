@@ -1,4 +1,6 @@
 {
+  "Configure APP_PUBLIC_ORIGIN with the public HTTP or HTTPS origin to enable email password recovery.": "请配置 APP_PUBLIC_ORIGIN 为应用的 HTTP 或 HTTPS 公开地址，以启用邮件找回密码。",
+  "Email password recovery is temporarily unavailable.": "邮件找回密码暂时不可用。",
   "1. Select notification channel": "1. 选择通知渠道",
   "2. Configure reset email": "2. 配置重置邮件",
   "Allow to sign in with": "允许使用以下方式登录",

@@ -82,6 +82,12 @@ APP_KEY=app-key-test
 APP_PORT=13000
 ```
 
+### APP_PUBLIC_ORIGIN
+
+升级前，如果已在密码认证器中启用邮件找回密码，请设置用户访问应用时使用的公开地址，比如 `APP_PUBLIC_ORIGIN=https://accounts.example.com`。该值只包含协议、域名和可选端口。应用部署在子路径时，继续用 `APP_PUBLIC_PATH` 指定路径。通过主站访问多个子应用时，填写主站地址，系统会在邮件链接中加入对应的子应用路径。
+
+Docker 安装请把变量加到 Compose 的 `app.environment` 并重新创建容器。源码或 `create-nocobase-app` 安装请更新应用的 `.env` 并重启应用。缺少有效地址时，已有用户仍可登录，但系统会暂停发送重置邮件。升级后，用测试账号发起一次找回密码，确认邮件打开正确的应用和重置页面。
+
 ### API_BASE_PATH
 
 NocoBase API 地址前缀，默认值 `/api/`

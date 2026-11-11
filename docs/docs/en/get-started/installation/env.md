@@ -76,6 +76,12 @@ Application port, default is `13000`.
 APP_PORT=13000
 ```
 
+### APP_PUBLIC_ORIGIN
+
+Before upgrading an application that uses email password recovery, set the public address users visit, for example `APP_PUBLIC_ORIGIN=https://accounts.example.com`. Include the scheme, hostname and optional port. Set the deployment path separately with `APP_PUBLIC_PATH`. If several sub-applications share the main site's domain, use the main site's origin. Each email link includes the path for the appropriate sub-application.
+
+For Docker installations, add the variable to the Compose app service's `environment` and recreate the container. For source or `create-nocobase-app` installations, update the application's `.env` and restart the application. Without a valid origin, users can still sign in, but the application cannot send password reset emails. After upgrading, request a reset for a test account and check that the link opens the correct application and reset page.
+
 ### API_BASE_PATH
 
 NocoBase API address prefix, default is `/api/`.
