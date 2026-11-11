@@ -9,6 +9,9 @@ Stop and investigate before you make any of these changes:
 - Editing a file under `node_modules/`, adding `pnpm patch`, `patchedDependencies` or a `pnpm.overrides` entry that replaces an official package.
 - Importing an official package's internal path (`@nocobase/<package>/src/...`, `.../dist/...`, or any path its `exports` do not list).
 - Calling an undocumented function, reading a private field, replacing a prototype method, or writing directly to a plugin's own tables.
+- Writing application code that compensates for an official package's behavior, such as correcting a value one of its public APIs returns.
+
+Also start one when you suspect a defect in an official package, and follow this whole page when the user asks for a report about one or asks you to submit it.
 
 Wanting one of these is a signal, not a diagnosis. Do not make the change while you investigate.
 
@@ -23,7 +26,7 @@ Work through these in order and stop at the first one that fully meets the requi
 
 When one works, finish the feature with it and tell the user in a few sentences what you ran into and which supported approach you used instead. That is the whole outcome: no report.
 
-Application code that compensates for a public API returning a wrong result, such as correcting a value the package computed, is a workaround, not a supported solution: the defect is still reported, and the workaround follows the rules under [write the draft](#write-the-draft).
+Application code that compensates for a public API returning a wrong result, such as correcting a value the package computed, is a workaround, not a supported solution: the defect is still reported, and the workaround follows the rules under [write the draft](#write-the-draft). Do not add it to the application until the user agrees to it.
 
 ## Decide whether it is an official package problem
 
@@ -104,7 +107,7 @@ Without an authorized `gh`, give the user the search link `https://github.com/no
 
 ## Get the user's confirmation
 
-Show the user, in one message, the final title, the full body, the target repository and how it will be submitted (the GitHub account, or by hand). Submit only after the user explicitly confirms that content. Any change after the confirmation, including your own edits, needs a new confirmation. Do not upload attachments, screenshots or logs beyond what the user saw in the body.
+Show the user, in one message, the final title, the full body, the target repository and how it will be submitted (the GitHub account, or by hand), then end your turn and wait. Submit only after the user, replying to that message, explicitly confirms that content. A request to submit, or a general instruction such as "do whatever is needed before submitting", given before the user has seen the final content is not a confirmation: answer it with the confirmation message, not with a submission. Any change after the confirmation, including your own edits, needs a new confirmation. Do not upload attachments, screenshots or logs beyond what the user saw in the body.
 
 The target repository is `nocobase/nocobase`. Use another repository only when the user names it in the conversation.
 

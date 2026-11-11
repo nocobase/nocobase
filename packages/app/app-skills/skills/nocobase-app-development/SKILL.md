@@ -21,6 +21,10 @@ Do not use it to upgrade the template this application was generated from, which
 
 Check [browser API compatibility](references/frontend/frontend-dev.md#browser-api-compatibility) for direct calls and third-party integrations. HTTPS-only APIs require capability detection and a clear user-facing explanation when unavailable. UUID generation and copying text must support HTTP; use `createUuid()` and `copyText()` from `@nocobase/app-client`.
 
+## Suspected official package problems
+
+Read [suspected problems in official packages](references/official-package-issues.md) before going further whenever the work seems to need editing `node_modules`, patching or overriding an official package, importing its internal paths or calling undocumented interfaces; when you are about to write application code that compensates for an official package's behavior; when you suspect a defect in an official package; or when the user asks for a report about one or to submit it. Look for a supported application-level solution first and build with it when one exists. Add a compensation or workaround only after the user agrees to it. Only a problem that reproduces in a clean application becomes a sanitized GitHub issue draft. Run `gh issue create` only after showing the user the final title, body, target repository and GitHub account and the user explicitly confirms that content; a general instruction such as "do whatever is needed before submitting" is not a confirmation.
+
 ## Before you start
 
 Read the application's `AGENTS.md` first for the rules that apply everywhere, and the `.agents/rules/` files its index points to for your task. This Skill's references are the detail behind it. Before running any `pnpm nocobase` command, read [the command line](references/cli.md): it maps tasks to commands and states the flags an agent must not add on its own.
@@ -228,10 +232,6 @@ Config        config.yml — written by pnpm nocobase config init, gitignored, h
 ```
 
 Reach a plugin's capability only through its documented package exports. Never import a plugin's internal source path or write to its tables directly.
-
-## Suspected official package problems
-
-When the work seems to need editing `node_modules`, patching or overriding an official package, importing its internal paths or calling undocumented interfaces, stop and follow [suspected problems in official packages](references/official-package-issues.md). Look for a supported application-level solution first and build with it when one exists. Only a problem that reproduces in a clean application becomes a sanitized GitHub issue draft, and nothing is submitted without the user's explicit confirmation of its final content.
 
 ## Reversible customization
 
