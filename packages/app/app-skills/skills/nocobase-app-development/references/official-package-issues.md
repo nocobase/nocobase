@@ -1,6 +1,6 @@
 # Suspected problems in official packages
 
-Read this when building the application seems to need a change to an official NocoBase package (`@nocobase/*`) rather than to the application. Most of these turn out to have an application-level solution; build with it. Only a problem confirmed in a clean application becomes a report, and the report is a draft the user reviews: nothing is published without the user's explicit confirmation.
+Read this when building the application seems to need a change to an official NocoBase package (`@nocobase/*`) rather than to the application. Most of these turn out to have an application-level solution; build with it. Only a problem confirmed in a clean environment becomes a report, and the report is a draft the user reviews: nothing is published without the user's explicit confirmation.
 
 ## When to start an investigation
 
@@ -36,9 +36,9 @@ Only these three kinds of problems are reported:
 - An official package lacks an extension point that a reasonable requirement needs, and no application-level code can provide it.
 - A supported combination of official package versions is incompatible.
 
-Reproduce it in a clean application before you decide. Create one with `pnpm create @nocobase/app` in the operating system's temporary directory, never inside the user's project, using the same official package versions as the user's application. Add only the code the problem needs, with neutral names (`items`, `title`, `status`) and no customer collections, fields, data or configuration. If the problem does not reproduce there, it belongs to the application: return to the previous section.
+Reproduce it in a clean environment before you decide, in the operating system's temporary directory, never inside the user's project, using the same official package versions as the user's application. When the problem is in a library that runs on its own, a directory with only the official package installed and a minimal script is enough. When it needs the application runtime (the server, the client, plugins or the database), create a clean application with `pnpm create @nocobase/app`. Add only the code the problem needs, with neutral names (`items`, `title`, `status`) and no customer collections, fields, data or configuration. If the problem does not reproduce there, it belongs to the application: return to the previous section.
 
-Record what the report needs from the clean application: `pnpm list --depth 0` for the `@nocobase/*` versions, `node -v`, the database type and version, and the operating system.
+Record what the report needs from the clean environment: `pnpm list --depth 0` for the `@nocobase/*` versions, `node -v`, the database type and version, and the operating system.
 
 ## Write the draft
 
@@ -60,7 +60,7 @@ Write the draft in English, in a file in the operating system's temporary direct
 
 ## * How To Reproduce
 
-<steps in a clean application created by `pnpm create @nocobase/app`, with the minimal code inline>
+<steps in the clean environment (the official package alone, or a clean application created by `pnpm create @nocobase/app`), with the minimal code inline>
 
 ## Expected behavior
 
