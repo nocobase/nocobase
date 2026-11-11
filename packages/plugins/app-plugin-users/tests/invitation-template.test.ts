@@ -47,7 +47,7 @@ it('registers administrator text as keys that exist in the client locales', asyn
   }
 });
 
-it('previews exactly the real invitation builder in all languages without selecting a recipient or sender', async () => {
+it('previews the real invitation builder in the selected language without selecting a recipient or sender', async () => {
   const container = new ServiceContainer();
   const registry = new NotificationTemplateRegistry();
   container.instance(notificationTemplateRegistryToken, registry);
@@ -55,15 +55,17 @@ it('previews exactly the real invitation builder in all languages without select
     container,
     config: { get: () => undefined },
   } as never);
-  const expected = await buildInvitationEmail({
-    to: 'unused@example.invalid',
-    appTitle: 'Sample workspace',
-    inviterName: 'Sample administrator',
-    summary: ['Sample member role'],
-    expiresAt: new Date('2030-01-02T12:00:00.000Z'),
-    url: 'https://example.invalid/invitation/synthetic',
-  });
+  const titles = new Set<string>();
   for (const locale of registry.get('users.invitation')!.locales) {
+    const expected = await buildInvitationEmail({
+      to: 'unused@example.invalid',
+      appTitle: 'Sample workspace',
+      inviterName: 'Sample administrator',
+      summary: ['Sample member role'],
+      expiresAt: new Date('2030-01-02T12:00:00.000Z'),
+      url: 'https://example.invalid/invitation/synthetic',
+      locale,
+    });
     const result = await registry.preview('users.invitation', locale);
     expect(result?.content).toEqual({
       title: expected.subject,
@@ -71,11 +73,14 @@ it('previews exactly the real invitation builder in all languages without select
       html: expected.html,
     });
     expect(result?.definition.body).toContain('{{date}}');
+    expect(result?.content.html).not.toContain('<hr>');
     expect(JSON.stringify(result)).not.toContain('unused@example.invalid');
+    titles.add(expected.subject);
   }
+  // Switching the preview language changes the content.
+  expect(titles.size).toBe(12);
   expect(registry.get('users.invitation')).toMatchObject({
-    // One message carries every language, so the preview offers no language choice.
-    localeMode: 'combined',
+    localeMode: 'separate',
     name: {
       ns: '@nocobase/app-plugin-users',
       key: 'notificationTemplates.invitation.name',

@@ -378,6 +378,8 @@ const jaJP: LocaleResource<typeof enUS> = {
       'あなたが率いるプロジェクトを少なくとも 1 つ選択してください。',
     projects: 'プロジェクト',
     projectsHint: '招待者はこれらのプロジェクトにメンバーとして参加します。',
+    language: 'メールの言語',
+    languageHint: '招待メールと登録ページはこの言語で表示されます。',
     projectsPlaceholder: 'プロジェクトを選択する',
     resend: '再送信',
     generateLink: '新しいリンクを生成する',

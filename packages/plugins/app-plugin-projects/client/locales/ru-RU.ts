@@ -371,6 +371,9 @@ const ruRU: LocaleResource<typeof enUS> = {
     projectRequired: 'Выберите хотя бы один проект, которым вы руководите.',
     projects: 'Проекты',
     projectsHint: 'Приглашённые присоединятся к этим проектам как участники.',
+    language: 'Язык письма',
+    languageHint:
+      'Письмо с приглашением и страница регистрации будут на этом языке.',
     projectsPlaceholder: 'Выберите проекты',
     resend: 'Отправить снова',
     generateLink: 'Создать новую ссылку',

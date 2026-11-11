@@ -18,19 +18,20 @@ const deDE: LocaleResource<typeof enUS> = {
       businessRule:
         'Wird jedes Mal gesendet, wenn eine Einladung mit ausgewählter E-Mail erstellt oder erneut gesendet wird. Es gibt keinen eigenen Schalter zum Ausschalten.',
       languagePolicy:
-        'Der E-Mail-Text enthält alle Sprachen nacheinander. Der Betreff ist auf Englisch.',
+        'In einer einzigen Sprache verfasst, die beim Einladen festgelegt wird: die Oberflächensprache der einladenden Person, sofern keine andere gewählt wird. Beim erneuten Senden bleibt sie gleich. Gibt es für diese Sprache keinen E-Mail-Text, verwendet die E-Mail die Standardsprache der Anwendung und Englisch.',
       channel: 'Absender der Einladungs-E-Mail',
       variables: {
         app: 'Name der Anwendung',
         inviter: 'Name der Person, die die Einladung gesendet hat',
         items: 'Rollen oder Zugriffe, die die Einladung gewährt',
-        date: 'Wann die Einladung abläuft',
+        date: 'Wann die Einladung abläuft, in der Sprache der E-Mail und in UTC',
         url: 'Link zum Annehmen der Einladung; die Vorschau verwendet einen erfundenen Link',
       },
     },
   },
   accept: {
     title: 'Nimm die Einladung an',
+    language: 'Sprache',
     description: '{{inviter}} hat Sie eingeladen.',
     summary: 'Sie werden auch beitreten: {{items}}',
     loading: 'Die Einladung wird geladen…',

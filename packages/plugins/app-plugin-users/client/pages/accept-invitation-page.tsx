@@ -1,15 +1,23 @@
-import { ApiClientError, useApiClient, useToaster } from '@nocobase/app-client';
+import {
+  ApiClientError,
+  AppLocalePreferenceContext,
+  useApiClient,
+  useToaster,
+} from '@nocobase/app-client';
 import { Spinner } from '../components/ui/spinner.js';
 import { useAuthentication } from '@nocobase/app-plugin-authentication/client';
 import { usePasswordLogin } from '@nocobase/app-plugin-authentication/client/actions';
-import { useTranslation } from '@nocobase/i18n/client';
+import { useLocale, useTranslation } from '@nocobase/i18n/client';
 import {
   type FormEvent,
   type ReactElement,
   type ReactNode,
+  useCallback,
+  useContext,
   useEffect,
   useEffectEvent,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
@@ -58,6 +66,56 @@ function rememberJoined(token: string | null): void {
   }
 }
 
+/**
+ * The page's language: a visitor's choice goes through the application's locale preference when there is one, so it is
+ * stored like any other switch, and directly through the runtime otherwise.
+ */
+function usePageLocale(): {
+  readonly locale: string;
+  readonly locales: readonly {
+    readonly locale: string;
+    readonly label: string;
+  }[];
+  readonly change: (locale: string) => Promise<void>;
+} {
+  const { locale, locales, setLocale } = useLocale();
+  const preference = useContext(AppLocalePreferenceContext);
+  const change = useCallback(
+    async (next: string): Promise<void> => {
+      if (preference) await preference.set(next);
+      else await setLocale(next);
+    },
+    [preference, setLocale],
+  );
+  return { locale, locales, change };
+}
+
+function LanguageSelect(): ReactElement | null {
+  const { t } = useTranslation(NS);
+  const toaster = useToaster();
+  const { locale, locales, change } = usePageLocale();
+  // With one language there is nothing to choose.
+  if (locales.length < 2) return null;
+  return (
+    <select
+      aria-label={t('accept.language')}
+      className='h-8 shrink-0 rounded-md border border-input bg-transparent px-2 text-sm text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring'
+      value={locale}
+      onChange={(event) => {
+        change(event.target.value).catch(() => {
+          toaster.show({ type: 'error', title: t('accept.errors.failed') });
+        });
+      }}
+    >
+      {locales.map((definition) => (
+        <option key={definition.locale} value={definition.locale}>
+          {definition.label}
+        </option>
+      ))}
+    </select>
+  );
+}
+
 type Lookup =
   | { readonly state: 'loading' }
   | { readonly state: 'failed'; readonly error: string }
@@ -78,6 +136,23 @@ export default function AcceptInvitationPage(): ReactElement {
   const { session } = useAuthentication();
   const [lookup, setLookup] = useState<Lookup>({ state: 'loading' });
   const [joined, setJoined] = useState(() => joinedToken() === token);
+  const { locales, change } = usePageLocale();
+  // The invitation's language once per link, for a visitor not signed in: a signed-in person keeps their own, and a
+  // later choice on the page is not overridden.
+  const switchedRef = useRef<string | undefined>(undefined);
+  const invitationLocale =
+    lookup.state === 'open' ? lookup.invitation.locale : null;
+  useEffect(() => {
+    if (
+      !invitationLocale ||
+      session ||
+      switchedRef.current === token ||
+      !locales.some((definition) => definition.locale === invitationLocale)
+    )
+      return;
+    switchedRef.current = token;
+    change(invitationLocale).catch(() => undefined);
+  }, [invitationLocale, session, token, locales, change]);
   // Signing in replaces the API client; the invitation is looked up once per link all the same, and not at all once
   // accepted, since a lookup would then report that instead of letting the new member in.
   const lookUp = useEffectEvent((value: string) =>
@@ -149,7 +224,10 @@ export default function AcceptInvitationPage(): ReactElement {
     <main className='flex min-h-svh items-center justify-center p-4'>
       <div className='w-full max-w-sm space-y-6 rounded-xl border bg-card p-6 text-card-foreground shadow-sm'>
         <header className='space-y-2'>
-          <h1 className='text-xl font-semibold'>{t('accept.title')}</h1>
+          <div className='flex items-start justify-between gap-3'>
+            <h1 className='text-xl font-semibold'>{t('accept.title')}</h1>
+            <LanguageSelect />
+          </div>
           {lookup.state === 'open' ? (
             <>
               <p className='text-sm text-muted-foreground'>
@@ -224,7 +302,7 @@ function AcceptForm({
   /** The account was created and is signing in. */
   readonly onJoined: () => void;
 }): ReactElement {
-  const { t } = useTranslation(NS);
+  const { t, i18n } = useTranslation(NS);
   const toaster = useToaster();
   const { session, client, refresh } = useAuthentication();
   const login = usePasswordLogin();
@@ -297,6 +375,8 @@ function AcceptForm({
         ...(!invitedSession && username.trim()
           ? { username: username.trim() }
           : {}),
+        // The language on screen becomes the new account's.
+        ...(!invitedSession && i18n.language ? { locale: i18n.language } : {}),
       });
       setDone('signedUp');
       onJoined();

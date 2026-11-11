@@ -371,6 +371,8 @@ const viVN: LocaleResource<typeof enUS> = {
     projects: 'Dự án',
     projectsHint:
       'Những người được mời tham gia các dự án này với tư cách là thành viên.',
+    language: 'Ngôn ngữ email',
+    languageHint: 'Email mời và trang đăng ký dùng ngôn ngữ này.',
     projectsPlaceholder: 'Chọn dự án',
     resend: 'Gửi lại',
     generateLink: 'Tạo liên kết mới',

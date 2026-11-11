@@ -351,6 +351,8 @@ const zhTW: LocaleResource<typeof enUS> = {
     projectRequired: '至少選擇一個您領導的專案。',
     projects: '專案',
     projectsHint: '受邀者以會員身分加入這些專案。',
+    language: '郵件語言',
+    languageHint: '邀請郵件和註冊頁面使用這種語言。',
     projectsPlaceholder: '選擇專案',
     resend: '再次傳送',
     generateLink: '產生新連結',
