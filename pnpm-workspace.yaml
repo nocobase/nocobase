@@ -134,6 +134,8 @@ catalog:
 # part of the stack onto it: the `openai` client and LangChain then load different copies, types stop agreeing, and
 # LangGraph's interrupt handling changes behavior. Pinning keeps one copy throughout the stack.
 overrides:
+  # GHSA-xcx6-jx8p-x3h5; remove when tedious / unstorage requires @azure/identity >= 4.14.1, which supports patched MSAL 7 without forcing its old MSAL 5 contract.
+  '@azure/identity@>=4.0.0 <4.14.1': ^4.14.1
   # GHSA-hq66-cqwq-w95j; remove when officeparser requires pdfjs-dist >= 6.2.108. Its PDF and worker APIs are covered by extraction tests.
   'pdfjs-dist@>=5.0.0 <6.2.108': ^6.2.108
   # GHSA-rfgv-xxqx-mfg5, GHSA-w293-vg96-wgc3, GHSA-xjj6-f33q-929c, GHSA-4w7w-5xrc-9h26, GHSA-2m5v-pch6-74hx, GHSA-qrxm-fqhp-jwvm; remove when the AI SDK requires undici >= 7.30.1.
