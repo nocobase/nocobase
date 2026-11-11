@@ -45,3 +45,7 @@ The package README is the full reference: read it at `node_modules/@nocobase/app
 | Build the CLI and runner tarballs, serve them, CI artifacts, install script, download tokens, updates, the npm runner | [Distribution](references/distribution.md)                                                                                         |
 | Variables and secrets, the skill library, chat attachments, usage, prices and reports                                 | [Variables, skills, attachments and usage](references/variables-skills-usage.md)                                                   |
 | Check that everything works, and diagnose failures                                                                    | [Verification and troubleshooting](references/verification-and-troubleshooting.md)                                                 |
+
+## Attachment upload limits
+
+The destination Drive disk controls the single-file limit: `drive.disks.<name>.maxFileSizeMb`, default 20 MiB. The File Repository validates it and rejects oversized files with 413 `FILE_TOO_LARGE`, including the disk and limit in metadata. Configure and restart the host application, and increase reverse proxy request-body limits to allow the multipart envelope. The Client File plugin loads sanitized disk limits before the application renders; `useFileUploadLimit` from `@nocobase/app-plugin-file/client` reads the selected/default disk without further requests. There are no feature-level attachment size settings.

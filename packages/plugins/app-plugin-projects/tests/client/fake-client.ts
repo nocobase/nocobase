@@ -90,6 +90,7 @@ export const clientMocks = {
       usePageBreadcrumb: actual.usePageBreadcrumb,
       ApiClientError: FakeApiError,
       useApiClient: () => api,
+      ClientApplicationContext: actual.ClientApplicationContext,
       useToaster: () => ({
         show: (options: { type?: string; title: unknown }) => {
           toasts.push(options);

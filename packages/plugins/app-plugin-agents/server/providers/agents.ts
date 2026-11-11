@@ -178,6 +178,9 @@ export class AgentsProvider extends ServiceProvider<AppPluginApplication> {
     this.app.container.singleton(agentsToken, (resolver) => {
       const config = this.app.config.get<AgentsConfig>('agents');
       return createAgents({
+        limitForDisk: resolver.has(driveManagerToken)
+          ? (disk) => resolver.resolve(driveManagerToken).getUploadLimit(disk)
+          : undefined,
         resolver,
         sandbox: {
           bin: () => {

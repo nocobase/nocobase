@@ -3,6 +3,7 @@ import type { AppDatabaseConfig } from '../database/types.js';
 import type { AppConfigFactory } from '../config/index.js';
 import type { ConfigMap } from '@nocobase/config';
 import { AppConfig } from '../config/index.js';
+import { registerDriveConfig } from '../drive/config.js';
 
 import type {
   Application,
@@ -94,6 +95,7 @@ export async function resolveAppRuntime(
   const context = createAppRuntimeConfigContext(definition, scope, base);
   const appConfig = definition.createAppConfig(context);
   await appConfig.loadAll();
+  registerDriveConfig(appConfig);
 
   const runtime: AppRuntimeContext = {
     ...base,

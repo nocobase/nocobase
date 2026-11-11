@@ -933,6 +933,11 @@ describe('development HTML revalidation with Vite', () => {
     );
     const router = await spaRootRoutes.createRouter({
       config,
+      container: {
+        resolve: () => {
+          throw new Error('This fixture has no Drive service.');
+        },
+      },
       mode: 'standalone',
       publicBasePath: '/main',
       paths: { rootDir: root },

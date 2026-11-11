@@ -122,6 +122,7 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
     projects.route(
       '/issues',
       createIssueCommentRoutes({
+        uploadLimit: services.attachments.uploadLimit,
         comments: services.comments,
         queries: services.commentQueries,
         read: () => services.tx.read(),

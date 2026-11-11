@@ -34,6 +34,7 @@ async function fixture(extract: TextExtractor = local) {
   let seq = 0;
   const ids = { next: () => `document-${++seq}` };
   const attachments = createChatAttachments({
+    limitForDisk: () => ({ maxFileSizeMb: 20 }),
     tx: h.services.tx,
     basePath: () => '/main',
     storage: {

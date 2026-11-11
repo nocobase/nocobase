@@ -35,7 +35,7 @@ The message box for talking to an agent: page-context chips inside it (each can 
 - Kind: component
 - Install: `yes n | pnpm exec shadcn add @nocobase/agent-composer`
 - Installs to: `client/components/agent-composer.tsx`
-- Plugin dependencies: `@nocobase/app-plugin-agents`
+- Plugin dependencies: `@nocobase/app-plugin-agents`, `@nocobase/app-plugin-file`
 - Example: `@nocobase/agent-composer-demo` (`pnpm exec shadcn view @nocobase/agent-composer-demo`)
 - After installing: Pass onSend (return true, or a promise of true, once the message is taken), and optionally running, onStop, toolbar and notice; pass attachments (upload, and optionally discard and registerAdd; useChatAttachments of @nocobase/app-plugin-agents/client/chat uploads to the plugin) to send files; wire context (chips from contextChips and buildPageContext of @nocobase/app-plugin-agents/client/chat, and optionally inspect, which makes each chip open a preview of what it carries), draft and registerFocus from the chat panel when it sits in one. Every word comes from the labels prop, English by default.
 
@@ -57,7 +57,7 @@ A simple agent conversation panel with shared page/panel headers, history, compo
 - Kind: block
 - Install: `yes n | pnpm exec shadcn add @nocobase/agent-chat`
 - Installs to: `client/extensions/nocobase-agent-chat/`
-- Plugin dependencies: `@nocobase/app-plugin-agents`
+- Plugin dependencies: `@nocobase/app-plugin-agents`, `@nocobase/app-plugin-file`
 - Also installs: `@nocobase/markdown-view`, `@nocobase/agent-run-history`, `@nocobase/agent-composer`, `@nocobase/agent-picker`, `@nocobase/attachment-list`
 - Example: `@nocobase/agent-chat-demo` (`pnpm exec shadcn view @nocobase/agent-chat-demo`)
 - After installing: Requires the agents plugin (and the file plugin on the server for files sent in chat): wrap the routes in ChatProvider from @nocobase/app-plugin-agents/client/chat (pass memoryScope, the signed-in person's id, so a new conversation starts with the agent they used last; pass conversationPath when ChatConversationPage has a route such as /chat/:conversationId), optionally with ChatExtensionsContext for cards among the messages. Render ChatPanel as a sibling of <main> inside a `relative flex` row, ChatHeaderButton in the header and ChatFloatingButton anywhere; add the plugin's chatLinkRoutes(base) for links that open the panel; spread locales/ into client/locales/.

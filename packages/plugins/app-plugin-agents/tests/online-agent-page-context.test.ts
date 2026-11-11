@@ -92,6 +92,7 @@ async function fixture() {
   const sessions = createSessionManager({
     tx: h.services.tx,
     attachments: createChatAttachments({
+      limitForDisk: () => ({ maxFileSizeMb: 20 }),
       tx: h.services.tx,
       basePath: () => '',
       now: () => new Date().toISOString(),
