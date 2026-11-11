@@ -1,4 +1,8 @@
 import {
+  limitBytes,
+  type DriveUploadLimit,
+} from '@nocobase/app-plugin-file/server';
+import {
   apiErrorResponse,
   apiErrorResponses,
   apiValidator,
@@ -11,7 +15,6 @@ import {
 import type { DatabaseConnection } from '@nocobase/db';
 import type { Hono } from 'hono';
 
-import { ATTACHMENT_SIZE_MAX } from '../../../shared/attachments.js';
 import { collectRunAttempts, RECORDED_SKIPS } from '../../kernel/work.js';
 import type { CreateCommentResult } from '../../../shared/comments.js';
 import {
@@ -54,6 +57,7 @@ const notFound = apiErrorResponse(404);
  */
 export function createIssueCommentRoutes(deps: {
   readonly comments: CommentService;
+  readonly uploadLimit: DriveUploadLimit;
   readonly queries: CommentQueries;
   /** A connection to read with, for answering a comment a delegated write made. */
   readonly read: () => DatabaseConnection;
@@ -125,7 +129,7 @@ export function createIssueCommentRoutes(deps: {
             upload: 'projectsUploadAttachment',
             field: 'attachmentIds',
             multiple: true,
-            maxBytes: ATTACHMENT_SIZE_MAX,
+            maxBytes: limitBytes(deps.uploadLimit),
             description: `A file to attach (repeatable); attaching needs \`upload\` on \`pm.attachments\`.`,
           },
         },

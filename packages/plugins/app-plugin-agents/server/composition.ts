@@ -22,6 +22,10 @@ import type { FileInputsConfig } from './online/files/types.js';
  * brings the
  * `conversation` subject.
  */
+import {
+  DEFAULT_FILE_UPLOAD_LIMIT,
+  type DriveUploadLimit,
+} from '@nocobase/app-plugin-file/server';
 import type { RunApp } from '@nocobase/agent-protocol';
 import { createRunDataPurge } from './core/runs/run-data-purge.js';
 import {
@@ -189,6 +193,7 @@ export interface AgentsDeps {
    * it an upload answers 503 `NOT_IMPLEMENTED`.
    */
   readonly chatFiles?: ChatFileStorage;
+  readonly limitForDisk?: (disk?: string) => DriveUploadLimit;
   /** The application's public base path (`/app`, or empty), for the URLs of files sent in chat. */
   readonly basePath?: () => string;
   readonly onError?: (message: string, error: unknown) => void;
@@ -531,6 +536,7 @@ export function createAgents(deps: AgentsDeps): Agents {
   });
   const basePath = deps.basePath ?? (() => '');
   const chatAttachments = createChatAttachments({
+    limitForDisk: deps.limitForDisk ?? (() => DEFAULT_FILE_UPLOAD_LIMIT),
     tx,
     basePath,
     now: () => clock.now(),

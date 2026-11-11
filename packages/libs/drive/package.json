@@ -13,6 +13,10 @@
     ".": {
       "types": "./src/index.ts",
       "import": "./src/index.ts"
+    },
+    "./upload-limits": {
+      "types": "./src/upload-limits.ts",
+      "import": "./src/upload-limits.ts"
     }
   },
   "files": [
@@ -24,6 +28,10 @@
       ".": {
         "types": "./dist/index.d.ts",
         "import": "./dist/index.js"
+      },
+      "./upload-limits": {
+        "types": "./dist/upload-limits.d.ts",
+        "import": "./dist/upload-limits.js"
       }
     },
     "access": "public"
