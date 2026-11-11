@@ -332,6 +332,7 @@ it.each(['completed', 'failed', 'cancelled'] as const)(
     await f.controller.loadHistory('c1', false, true);
     f.state.detail = {
       ...f.state.detail,
+      lastSeq: 2,
       execution: { status: 'idle', outcome },
     };
     await f.controller.refresh('c1');

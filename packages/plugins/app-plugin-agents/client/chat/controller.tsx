@@ -64,6 +64,12 @@ export type StreamState = {
   readonly status: Chat<AppUIMessage>['status'];
   readonly error?: Error;
   readonly recovery?: 'recovering' | 'history' | 'interrupted';
+  /**
+   * The response whose stream this tab saw end with the server's `finish`, until another stream on the conversation
+   * ends. A stream that was stopped here, cut off, failed or had nothing to resume (`204`) never sets it, so it is a
+   * hint that the execution writing it is over, not a business status.
+   */
+  readonly finished?: string;
 };
 type Recovery = {
   key: string;
@@ -189,6 +195,10 @@ export class ChatController {
   private reconciles = new Map<string, Promise<void>>();
   readonly submissions: ChatSubmissions;
   private chats = new Map<string, Chat<AppUIMessage>>();
+  private finishes = new Map<
+    string,
+    { chat: Chat<AppUIMessage>; messageId: string }
+  >();
   private histories = new Map<string, History>();
   private loads = new Map<string, Promise<void>>();
   private messageReads = new Map<string, Promise<UIMessagePage>>();
@@ -280,9 +290,20 @@ export class ChatController {
             };
           },
         ),
-        onFinish: () => {
-          if (!this.disposed && this.chats.get(id) === chat)
-            this.scheduleRefresh(id);
+        onFinish: ({
+          message,
+          isAbort,
+          isDisconnect,
+          isError,
+          finishReason,
+        }) => {
+          const owner = this.chats.get(id);
+          if (this.disposed || !owner || owner !== chat) return;
+          // Only the server's own `finish` chunk ends a response; the SDK finishes a stopped or cut-off stream too.
+          if (!isAbort && !isDisconnect && !isError && finishReason)
+            this.finishes.set(id, { chat: owner, messageId: message.id });
+          else this.finishes.delete(id);
+          this.scheduleRefresh(id);
         },
         onError: () => {
           if (this.disposed || this.chats.get(id) !== chat) return;
@@ -1147,10 +1168,12 @@ export class ChatController {
     const recovery = this.recoveries.get(id);
     const recovering = recovery?.phase === 'recovering';
     const error = recovering ? undefined : (chat?.error ?? recovery?.error);
+    const finished = this.finishes.get(id);
     return chat
       ? {
           status: chat.status,
           error,
+          ...(finished?.chat === chat ? { finished: finished.messageId } : {}),
           recovery: recovering
             ? 'recovering'
             : error
@@ -1556,6 +1579,16 @@ export class ChatController {
     const lastUser = [...owner.messages]
       .reverse()
       .find((message) => message.role === 'user');
+    // An idle read proves that a response ended only when it was taken after that response was saved. A read from
+    // before the current input, such as an idle detail still cached or in flight when it was sent, is idle too.
+    const observed = (
+      message: AppUIMessage,
+    ): message is AppUIMessage & {
+      metadata: NonNullable<AppUIMessage['metadata']>;
+    } =>
+      message.metadata?.seq !== undefined &&
+      detail.lastSeq !== undefined &&
+      detail.lastSeq >= message.metadata.seq;
     const executionId =
       submittedInput?.metadata?.executionId ?? this.recoveries.get(id)?.key;
     const submittedTerminal =
@@ -1569,6 +1602,7 @@ export class ChatController {
           message.role !== 'user' &&
           message.metadata?.seq !== undefined &&
           message.metadata.seq > submittedInput.metadata!.seq! &&
+          observed(message) &&
           ((executionId && message.metadata.executionId === executionId) ||
             message.id === detail.execution?.messageId),
       );
@@ -1581,7 +1615,7 @@ export class ChatController {
         saved.some(
           (message) =>
             message.id === receiving.id &&
-            message.metadata?.seq !== undefined &&
+            observed(message) &&
             message.metadata?.executionId === receiving.metadata?.executionId &&
             message.metadata.revision >= (detail.execution?.revision ?? 0),
         ))
@@ -1866,6 +1900,7 @@ export class ChatController {
     this.invalidate();
     this.submissions.dispose();
     this.chats.clear();
+    this.finishes.clear();
     this.histories.clear();
     this.listeners.clear();
   }

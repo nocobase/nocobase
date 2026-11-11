@@ -388,6 +388,7 @@ it('releases a stalled subscriber only after matching persisted terminal history
   ];
   f.state.detail = {
     ...f.state.detail,
+    lastSeq: 2,
     execution: {
       status: 'idle',
       messageId: 'answer',
