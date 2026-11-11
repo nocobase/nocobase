@@ -1,3 +1,6 @@
+import { ServiceContainer } from '@nocobase/service-provider';
+import { createDriveManager, type AppDriveConfig } from '@nocobase/drive';
+import { driveManagerToken } from '../src/drive/token.js';
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -151,6 +154,51 @@ describe('the application identity published to the browser', () => {
   });
 });
 
+describe('disk upload limits published with the page', () => {
+  it('publishes defaults and custom limits without storage configuration', async () => {
+    const config = await createSpaAppConfig();
+    config.mergeDefaults({
+      drive: {
+        default: 'remote',
+        disks: {
+          local: { driver: 'fs', location: '/private/location' },
+          remote: {
+            driver: 's3',
+            bucket: 'private-bucket',
+            credentials: {
+              accessKeyId: 'synthetic-id',
+              secretAccessKey: 'synthetic-secret',
+            },
+            maxFileSizeMb: 50,
+          },
+        },
+      },
+    });
+    const html = await fetchSpaIndex(config);
+    const payload = JSON.parse(
+      /<script id="nocobase-runtime-config" type="application\/json">(.*?)<\/script>/u.exec(
+        html,
+      )![1]!,
+    );
+    expect(payload.public.drive.uploadLimits).toEqual({
+      default: 'remote',
+      disks: {
+        local: { maxFileSizeMb: 20 },
+        remote: {
+          maxFileSizeMb: 50,
+        },
+      },
+    });
+    for (const secret of [
+      '/private/location',
+      'private-bucket',
+      'synthetic-id',
+      'synthetic-secret',
+    ])
+      expect(html).not.toContain(secret);
+  });
+});
+
 async function fetchSpaIndex(
   config: AppConfig,
   appPackage?: Record<string, unknown>,
@@ -166,11 +214,15 @@ async function fetchSpaIndex(
     );
   }
 
+  const container = new ServiceContainer();
+  const drive = config.get<AppDriveConfig>('drive');
+  if (drive) container.instance(driveManagerToken, createDriveManager(drive));
   const router = new Hono();
   router.route(
     '/',
     spaRootRoutes.createRouter({
       config,
+      container,
       mode: 'standalone',
       publicBasePath: '/main',
       paths: { rootDir: root },

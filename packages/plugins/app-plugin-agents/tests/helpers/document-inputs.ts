@@ -86,6 +86,7 @@ export async function createDocumentFixture(
   let seq = 0;
   const ids = { next: () => `document-s2-${++seq}` };
   const attachments = createChatAttachments({
+    limitForDisk: () => ({ maxFileSizeMb: 20 }),
     tx: h.services.tx,
     basePath: () => '/main',
     storage: {

@@ -1,29 +1,60 @@
 import { expect, it } from 'vitest';
 
-import { buildInvitationEmail } from '../server/invitations/mail.js';
+import {
+  buildInvitationEmail,
+  formatInvitationDate,
+  invitationEmailLocales,
+} from '../server/invitations/mail.js';
 import locales from '../server/locales/index.js';
 
-it('includes every server language for an invitee without a saved language', async () => {
-  const email = await buildInvitationEmail({
-    to: 'invitee@example.com',
-    appTitle: 'Example',
-    inviterName: '<Inviter>',
-    summary: ['Team'],
-    url: 'https://example.com/invite?token=test&view=accept',
-    expiresAt: new Date('2030-01-01T00:00:00Z'),
-  });
-  expect(Object.keys(locales)).toHaveLength(10);
-  for (const load of Object.values(locales)) {
-    const { default: resource } = (await load()) as {
-      default: { invitationEmail: { action: string } };
-    };
-    expect(email.html).toContain(
-      resource.invitationEmail.action.replaceAll("'", '&#39;'),
-    );
-  }
+const input = {
+  to: 'invitee@example.com',
+  appTitle: 'Example',
+  inviterName: '<Inviter>',
+  summary: ['Team', 'Docs'],
+  url: 'https://example.com/invite?token=test&view=accept',
+  expiresAt: new Date('2030-01-02T12:00:00Z'),
+};
+
+it('writes the subject, body and one button in the chosen language only', async () => {
+  expect(Object.keys(locales)).toHaveLength(12);
+  const email = await buildInvitationEmail({ ...input, locale: 'zh-TW' });
+  expect(email.subject).toBe('<Inviter> 邀請您加入 Example');
+  expect(email.html.match(/<a href=/gu)).toHaveLength(1);
+  expect(email.html).not.toContain('<hr>');
+  expect(email.text).toContain('Team、Docs');
+  expect(email.text).not.toContain('Accept the invitation');
+  expect(email.text).not.toContain('2030-01-02T12:00:00.000Z');
+  expect(email.text).toContain(formatInvitationDate(input.expiresAt, 'zh-TW'));
   expect(email.html).toContain('&lt;Inviter&gt;');
   expect(email.html).toContain('token=test&amp;view=accept');
   expect(email.text).not.toContain('{{');
+});
+
+it('formats the expiry in the language and says it is UTC', () => {
+  const date = new Date('2030-01-02T12:00:00Z');
+  expect(formatInvitationDate(date, 'en-US')).toBe(
+    'January 2, 2030 at 12:00 PM UTC',
+  );
+  expect(formatInvitationDate(date, 'ja-JP')).toContain('2030年1月2日');
+  expect(formatInvitationDate(date, 'ja-JP')).toContain('UTC');
+});
+
+it('falls back to at most the default language and English for a language without email text', async () => {
+  expect(invitationEmailLocales('it-IT', 'ja-JP')).toEqual(['ja-JP', 'en-US']);
+  expect(invitationEmailLocales('it-IT', 'it-IT')).toEqual(['en-US']);
+  expect(invitationEmailLocales(undefined, 'en-US')).toEqual(['en-US']);
+  expect(invitationEmailLocales('de-DE', 'ja-JP')).toEqual(['de-DE']);
+  const email = await buildInvitationEmail({
+    ...input,
+    locale: 'it-IT',
+    defaultLocale: 'ja-JP',
+  });
+  // The subject follows the first block.
+  expect(email.subject).toBe('<Inviter> が Example に招待しました');
+  expect(email.html.match(/<a href=/gu)).toHaveLength(2);
+  expect(email.html.match(/<hr>/gu)).toHaveLength(1);
+  expect(email.text).toContain('<Inviter> invited you to Example.');
 });
 
 it('retains invitation capacity for original sends after cancellation and closes its own sender only after they end', async () => {

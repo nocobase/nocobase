@@ -12,6 +12,8 @@ import type { AppPluginApplication } from '@nocobase/app-server/plugins';
 import { ResourceItems } from '@nocobase/authorization/core';
 import { ServiceProvider } from '@nocobase/service-provider';
 
+import { knowledgeIndexingToken } from '../tokens.js';
+
 import {
   ACCESS_NAMESPACE,
   BUSINESS_ACTIONS,
@@ -55,26 +57,43 @@ export function registerBusinesses(authz: AppAuthorization): void {
     );
 }
 
-/** Global indexing settings are independent of the application's knowledge-space business grants. */
+/** The permission workspace subsection (under administration) that lists the indexing settings item. */
+export const SETTINGS_SECTION = 'kb-settings';
+
+/**
+ * Global indexing settings are independent of the application's knowledge-space business grants. Registered only when
+ * the application composes the plugin with indexing on (`createKnowledgePlugin()`).
+ */
 export function registerSettings(authz: AppAuthorization): void {
+  authz.ui.sections.add({
+    name: SETTINGS_SECTION,
+    title: accessText('settingsSection'),
+    parent: 'administration',
+  });
   authz.settings.add({
     id: 'kb.indexing',
-    title: 'Knowledge indexing',
-    actions: [
-      { name: 'read', title: 'Read' },
-      { name: 'configure', title: 'Configure' },
-      { name: 'rebuild', title: 'Rebuild' },
-    ],
+    title: accessText('settings.indexing.title'),
+    actions: (['read', 'configure', 'rebuild'] as const).map((name) => ({
+      name,
+      title: accessText(`settings.indexing.${name}`),
+    })),
   });
+  authz.ui.place(
+    { type: 'settings', id: 'kb.indexing' },
+    { section: SETTINGS_SECTION },
+  );
 }
 export class KnowledgeAuthorizationProvider extends ServiceProvider<AppPluginApplication> {
   public readonly name: string = `${ACCESS_NAMESPACE}/authorization`;
 
   public override boot(): Promise<void> {
-    if (this.app.container.has(authorizationToken)) {
-      const authorization = this.app.container.resolve(authorizationToken);
+    const { container } = this.app;
+    if (container.has(authorizationToken)) {
+      const authorization = container.resolve(authorizationToken);
       registerBusinesses(authorization);
-      registerSettings(authorization);
+      // The indexing provider registers its service only when indexing is on; every provider registers before any boots.
+      if (container.has(knowledgeIndexingToken))
+        registerSettings(authorization);
     }
     return Promise.resolve();
   }

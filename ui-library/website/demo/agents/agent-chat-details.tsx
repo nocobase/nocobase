@@ -10,7 +10,13 @@ import {
   CircleIcon,
 } from 'lucide-react';
 import { useEffect, type ReactElement } from 'react';
-import { BrowserRouter } from 'react-router';
+import {
+  BrowserRouter,
+  Route,
+  Routes,
+  useMatch,
+  useNavigate,
+} from 'react-router';
 import { cn } from 'cn';
 import {
   LinkedChatPanel,
@@ -20,7 +26,11 @@ import {
   LinkedChatFloatingButton,
   LinkedChatHeaderButton,
 } from '#extensions/nocobase-agent-chat/linked-launchers';
-import type { AssociationSectionProps } from '#extensions/nocobase-agent-chat/conversation-associations';
+import {
+  ConversationAssociationsProvider,
+  type AssociationSectionProps,
+} from '#extensions/nocobase-agent-chat/conversation-associations';
+import { ChatWorkspace } from '#extensions/nocobase-agent-chat/workspace';
 
 const zh =
   typeof window !== 'undefined' &&
@@ -97,33 +107,79 @@ function OpenOnArrival(): null {
   );
   return null;
 }
+/** The workspace as a page: the selection is in the address (`/c/<id>`, `/new`), so it is shareable. */
+function WorkspacePage(): ReactElement {
+  const navigate = useNavigate();
+  const match = useMatch('/page/c/:conversationId');
+  const fresh = useMatch('/page/new');
+  const conversationId = match?.params.conversationId ?? null;
+  return (
+    <ConversationAssociationsProvider slots={slots}>
+      <ChatWorkspace
+        conversationId={conversationId ?? (fresh ? null : 'release-follow-up')}
+        view={match || fresh ? 'conversation' : 'list'}
+        onOpen={(id) => void navigate(`/page/c/${id}${window.location.search}`)}
+        onNew={() => void navigate(`/page/new${window.location.search}`)}
+        onBack={() => void navigate(`/page${window.location.search}`)}
+        storageKey='details-demo:workspace'
+      />
+    </ConversationAssociationsProvider>
+  );
+}
+
 /**
- * The linked panel: list-first opening, the shared header, the summary row and the conversation details (linked
- * work, runtime, usage). Linked work uses the agents plugin's generic link views; `slots.issue` shows how an
- * application renders one kind its own way, while the `document` link keeps the default rows.
+ * The details recipe as an application uses it twice: the side panel (`LinkedChatPanel`, the selection in the panel
+ * store, with Close and Expand) and a full page (`ChatWorkspace` under `/page`, the selection in the address). Both
+ * are the same workspace and lay themselves out by their own width: narrow (list or conversation), medium (list and
+ * conversation, details as a sheet) and wide (list, conversation and details). Linked work uses the agents plugin's
+ * generic link views; `slots.issue` renders one kind the application's way, the `document` link the default rows.
  */
 export function AgentChatDetailsDemo(): ReactElement {
   return (
     <BrowserRouter basename='/demo/agents/agent-chat-details'>
       <ChatProvider memoryScope='details-demo'>
-        <OpenOnArrival />
-        <div className='flex h-svh flex-col bg-background'>
-          <header className='flex h-14 shrink-0 items-center justify-between border-b px-4'>
-            <p className='text-sm font-medium'>{L('Workspace', '工作区')}</p>
-            <LinkedChatHeaderButton />
-          </header>
-          <div className='relative flex min-h-0 flex-1'>
-            <main className='min-w-0 flex-1 p-6 text-sm text-muted-foreground'>
-              {L(
-                'The panel opens on “Release follow-up”: its summary row opens the details with the linked tasks, usage and runner. The header button opens the conversation list first; every Runner conversation there has linked tasks.',
-                '面板打开的是「发布跟进」：点任务摘要行打开会话详情，里面有关联任务、用量和执行机。顶部按钮先打开会话列表，列表里每个 Runner 对话都有关联任务。',
-              )}
-            </main>
-            <LinkedChatPanel slots={slots} />
-          </div>
-        </div>
-        <LinkedChatFloatingButton />
+        <Routes>
+          <Route path='/page/*' element={<PageShell />} />
+          <Route path='*' element={<PanelShell />} />
+        </Routes>
       </ChatProvider>
     </BrowserRouter>
+  );
+}
+
+function PageShell(): ReactElement {
+  return (
+    <div className='flex h-svh flex-col bg-background'>
+      <header className='flex h-14 shrink-0 items-center border-b px-4'>
+        <p className='text-sm font-medium'>{L('My sessions', '我的会话')}</p>
+      </header>
+      <main className='min-h-0 flex-1'>
+        <WorkspacePage />
+      </main>
+    </div>
+  );
+}
+
+function PanelShell(): ReactElement {
+  return (
+    <>
+      <OpenOnArrival />
+      <div className='flex h-svh flex-col bg-background'>
+        <header className='flex h-14 shrink-0 items-center justify-between border-b px-4'>
+          <p className='text-sm font-medium'>{L('Workspace', '工作区')}</p>
+          <LinkedChatHeaderButton />
+        </header>
+        <div className='relative flex min-h-0 flex-1'>
+          <main className='min-w-0 flex-1 p-6 text-sm text-muted-foreground'>
+            {L(
+              'The panel opens on “Release follow-up”: its summary row opens the details with the linked tasks, usage and runner. The header button opens the conversation list first. The same workspace as a page is at /demo/agents/agent-chat-details/page.',
+              '面板打开的是「发布跟进」：点任务摘要行打开会话详情，里面有关联任务、用量和执行机。顶部按钮先打开会话列表。同一个工作区作为页面的样子在 /demo/agents/agent-chat-details/page。',
+            )}
+          </main>
+          <LinkedChatPanel slots={slots} />
+        </div>
+      </div>
+      <LinkedChatFloatingButton />
+    </>
   );
 }

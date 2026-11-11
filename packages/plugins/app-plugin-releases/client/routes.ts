@@ -3,7 +3,7 @@ import {
   type AppClientAppRoutesContribution,
   type AppClientRoutePageDefinition,
 } from '@nocobase/app-client/plugins';
-import { Boxes, Server } from 'lucide-react';
+import { Server } from 'lucide-react';
 import type { ComponentType } from 'react';
 
 import type { Page } from '../shared/access.js';
@@ -51,19 +51,28 @@ export function appsDefinition(
     path: normalizePath(path),
     auth: 'required',
     authz: page('rel-apps'),
-    navigation: { title: 'ui.nav.apps', icon: Boxes },
-    componentLoader: loader(() => import('./pages/apps-page.js'), paths),
+    // No list and no menu entry of its own: Apps are listed and created on their environment's page, and the address
+    // alone leads there (`apps-outlet.tsx`).
+    componentLoader: loader(() => import('./pages/apps-outlet.js'), paths),
     children: [
-      // Before `:appId`: an App may not be called `new` or `requests`. `requests/:requestId` over the list is kept
-      // for older links; the App's page opens its requests over itself.
+      // Before `:appId`: an App may not be called `new` or `requests`. Create App's old address leads to the
+      // environments; `requests/:requestId` is kept for older links; the App's page opens its requests over itself.
       {
         name: 'rel-app-new',
         path: 'new',
-        componentLoader: loader(() => import('./pages/new-app-page.js'), paths),
+        componentLoader: loader(
+          () => import('./pages/new-app-redirect.js'),
+          paths,
+        ),
       },
       {
         name: 'rel-request',
         path: 'requests/:requestId',
+        presentation: {
+          kind: 'dialog',
+          title: 'ui.requests.title',
+          namespace: '@nocobase/app-plugin-releases',
+        },
         componentLoader: loader(() => import('./pages/request-page.js'), paths),
       },
       {
@@ -74,6 +83,11 @@ export function appsDefinition(
           {
             name: 'rel-app-request',
             path: 'requests/:requestId',
+            presentation: {
+              kind: 'dialog',
+              title: 'ui.requests.title',
+              namespace: '@nocobase/app-plugin-releases',
+            },
             componentLoader: loader(
               () => import('./pages/request-page.js'),
               paths,
@@ -93,10 +107,13 @@ export function environmentsDefinition(
     name: 'rel-environments',
     path: normalizePath(path),
     auth: 'required',
-    authz: {
-      resource: { type: 'settings', id: 'rel.environments' },
-      action: 'read',
-    },
+    // The plugin's entry opens to environment readers (the `rel.environments` `read` setting) and to App readers (the
+    // Apps page), who list and create an environment's Apps there, as the server reads environments for either
+    // (`EnvironmentService.requireReader`). A route names a single grant, so this one names none and the page decides
+    // (`canEnterEnvironments`, `environments-page.tsx`); its menu entry shows to every signed-in user. Each part of the
+    // pages keeps its own check: the Apps and Create App the Apps grants, the variables, the connection check and the
+    // shared hosts' capacity the setting, on the server and in the page.
+    authz: 'skip',
     navigation: { title: 'ui.nav.environments', icon: Server },
     componentLoader: loader(
       () => import('./pages/environments-page.js'),
@@ -110,6 +127,22 @@ export function environmentsDefinition(
           () => import('./pages/environment-page.js'),
           paths,
         ),
+        children: [
+          // Create App over the environment, the App going to it.
+          {
+            name: 'rel-environment-app-new',
+            path: 'apps/new',
+            presentation: {
+              kind: 'dialog',
+              title: 'ui.apps.create',
+              namespace: '@nocobase/app-plugin-releases',
+            },
+            componentLoader: loader(
+              () => import('./pages/new-app-page.js'),
+              paths,
+            ),
+          },
+        ],
       },
     ],
   };

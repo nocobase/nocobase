@@ -4,8 +4,13 @@ const jaJP: FoundationResource = {
   nav: {
     settings: 'システム設定',
     foundation: 'アプリ基盤',
+    foundationDescription: 'このアプリが利用している NocoBase の基盤機能。',
+    capabilityGuide: '機能と拡張',
+    capabilityGuideDescription:
+      'このアプリで利用できる機能と、業務に活用する方法を確認します。',
   },
   page: {
+    otherCapabilities: 'その他の機能',
     notCounted: '未集計',
     updatingHistory: '更新中です。前回の結果を表示しています。',
     previousKernel:
@@ -121,6 +126,7 @@ const jaJP: FoundationResource = {
     legendUnused: '未使用 {{count}}',
   },
   detail: {
+    selectedCapability: '選択中の機能',
     retainedAt: '前回確認 {{time}}',
     readNotes: '読み取りの詳細',
     collectionCount: 'データテーブル {{count}} 件',
@@ -391,6 +397,7 @@ const jaJP: FoundationResource = {
     seeds: '実行済みシード',
   },
   dynamic: {
+    extension: '拡張機能',
     pending: '識別待ち',
     pendingDescription:
       'このプラグインは登録済みです。設定と実際の使用状況は未確認です。',

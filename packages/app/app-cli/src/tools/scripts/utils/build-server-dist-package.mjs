@@ -16,7 +16,11 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-import { listWorkspacePackages } from './workspace-packages.mjs';
+import { parse, stringify } from 'yaml';
+import {
+  findWorkspaceRoot,
+  listWorkspacePackages,
+} from './workspace-packages.mjs';
 
 const rootDir = path.resolve(process.env.NOCOBASE_TOOL_ROOT || process.cwd());
 const distDir = path.join(rootDir, 'dist');
@@ -192,6 +196,33 @@ const writeDistWorkspace = () => {
       '',
     ].join('\n'),
   );
+  // Runtime patches are part of the deployable dependency contract, not just the development install.
+  const patchRoot = findWorkspaceRoot(rootDir) ?? rootDir;
+  const workspacePath = path.join(patchRoot, 'pnpm-workspace.yaml');
+  const patches = fs.existsSync(workspacePath)
+    ? (parse(fs.readFileSync(workspacePath, 'utf8'))?.patchedDependencies ?? {})
+    : {};
+  const copied = {};
+  for (const [specifier, file] of Object.entries(patches)) {
+    if (typeof file !== 'string')
+      throw new Error(`Invalid patch path for ${specifier}`);
+    const source = path.resolve(patchRoot, file);
+    const relative = path.relative(patchRoot, source);
+    if (relative.startsWith('..') || path.isAbsolute(relative))
+      throw new Error(`Patch must be inside the application: ${file}`);
+    const target = path.join(
+      'patches',
+      `${Object.keys(copied).length}-${path.basename(file)}`,
+    );
+    fs.mkdirSync(path.join(distDir, 'patches'), { recursive: true });
+    fs.copyFileSync(source, path.join(distDir, target));
+    copied[specifier] = toPosix(target);
+  }
+  if (Object.keys(copied).length)
+    fs.appendFileSync(
+      distWorkspacePath,
+      stringify({ patchedDependencies: copied, allowUnusedPatches: true }),
+    );
 };
 
 /**

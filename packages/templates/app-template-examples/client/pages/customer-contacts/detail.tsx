@@ -1,4 +1,8 @@
-import { useApiClient, useToaster } from '@nocobase/app-client';
+import {
+  resolveListState,
+  useApiClient,
+  useToaster,
+} from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { useEffect, useRef, useState } from 'react';
 import {
@@ -9,23 +13,17 @@ import {
   useParams,
 } from 'react-router';
 import type { ColumnDef } from '@tanstack/react-table';
-import { MoreHorizontal, RefreshCw } from 'lucide-react';
 import { RouteChildPage } from '#components/route-child-page';
 import { BackButton } from '#components/back-button';
 import { PageContainer } from '#components/page-container';
 import { PageHeader } from '#components/page-header';
 import { LongText } from '#components/long-text';
 import { DataTable } from '#components/data-table';
+import { RefreshIndicator } from '#components/loading';
 import { RecordLink } from '#components/record-link';
+import { RowActions } from '#components/row-actions';
 import { StatusBadge } from '#components/status-badge';
 import { Button } from '#components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-} from '#components/ui/dropdown-menu';
 import {
   AlertDialog,
   AlertDialogContent,
@@ -83,6 +81,14 @@ export default function CustomerDetailPage() {
       headingRef.current?.focus();
   }, [active, request.loading]);
   const customer = request.data?.data;
+  const contactState = resolveListState(
+    {
+      data: contacts.data,
+      error: contacts.error,
+      isPending: contacts.loading && !contacts.data,
+    },
+    contacts.data?.data.length ?? 0,
+  );
   const writable = customer && customer.status !== 'closed';
   const reload = () => {
     request.reload();
@@ -98,6 +104,46 @@ export default function CustomerDetailPage() {
       parent.reload();
     },
   };
+  // A contact's actions: the table row's "⋮" menu, which DataTable also hands to the contact's phone card.
+  const contactMenu = (contact: Contact) => (
+    <RowActions
+      label={t('customerContacts.actionsFor', { name: contact.name })}
+      actions={[
+        {
+          key: 'edit',
+          label: t('customerContacts.edit'),
+          render: (
+            <Link
+              to={{
+                pathname: `contacts/${contact.id}/edit`,
+                search: location.search,
+              }}
+            />
+          ),
+        },
+        {
+          key: 'delete',
+          label: t('customerContacts.delete'),
+          destructive: true,
+          onClick: () => {
+            void (async () => {
+              if (!lock.acquire()) return;
+              try {
+                const fresh = await api.request<{ data: Contact }>({
+                  path: `${base}/contacts/${encodeURIComponent(contact.id)}`,
+                });
+                setDeleting(fresh.data);
+              } catch (failure) {
+                setError(failure);
+              } finally {
+                lock.release();
+              }
+            })();
+          },
+        },
+      ]}
+    />
+  );
   const columns: ColumnDef<Contact>[] = [
     {
       accessorKey: 'name',
@@ -127,59 +173,11 @@ export default function CustomerDetailPage() {
       ? [
           {
             id: 'actions',
-            header: t('customerContacts.actions'),
-            cell: ({ row }: { row: { original: Contact } }) => (
-              <DropdownMenu>
-                <DropdownMenuTrigger
-                  render={
-                    <Button
-                      variant='ghost'
-                      size='icon-sm'
-                      aria-label={t('customerContacts.actionsFor', {
-                        name: row.original.name,
-                      })}
-                    />
-                  }
-                >
-                  <MoreHorizontal />
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align='end' className='w-auto min-w-40'>
-                  <DropdownMenuItem
-                    render={
-                      <Link
-                        to={{
-                          pathname: `contacts/${row.original.id}/edit`,
-                          search: location.search,
-                        }}
-                      />
-                    }
-                  >
-                    {t('customerContacts.edit')}
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    variant='destructive'
-                    onClick={() => {
-                      void (async () => {
-                        if (!lock.acquire()) return;
-                        try {
-                          const fresh = await api.request<{ data: Contact }>({
-                            path: `${base}/contacts/${encodeURIComponent(row.original.id)}`,
-                          });
-                          setDeleting(fresh.data);
-                        } catch (failure) {
-                          setError(failure);
-                        } finally {
-                          lock.release();
-                        }
-                      })();
-                    }}
-                  >
-                    {t('customerContacts.delete')}
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+            header: () => (
+              <span className='sr-only'>{t('customerContacts.actions')}</span>
             ),
+            cell: ({ row }: { row: { original: Contact } }) =>
+              contactMenu(row.original),
           },
         ]
       : []),
@@ -206,14 +204,6 @@ export default function CustomerDetailPage() {
                       {t('customerContacts.edit')}
                     </Button>
                   )}
-                  <Button
-                    variant='outline'
-                    disabled={request.loading}
-                    onClick={reload}
-                  >
-                    <RefreshCw />
-                    {t('customerContacts.refresh')}
-                  </Button>
                 </>
               )
             }
@@ -224,28 +214,36 @@ export default function CustomerDetailPage() {
         ) : (
           customer && (
             <>
-              <dl className='grid grid-cols-[8rem_1fr] gap-4 text-sm'>
-                <dt className='text-muted-foreground'>
-                  {t('customerContacts.status')}
-                </dt>
-                <dd>
-                  <StatusBadge>
-                    {t(`customerContacts.${customer.status}`)}
-                  </StatusBadge>
-                </dd>
-                <dt className='text-muted-foreground'>
-                  {t('customerContacts.owner')}
-                </dt>
-                <dd>
-                  <OwnerName id={customer.ownerId} />
-                </dd>
-                <dt className='text-muted-foreground'>
-                  {t('customerContacts.notes')}
-                </dt>
-                <dd className='min-w-0 whitespace-pre-wrap break-words'>
-                  <LongText>{customer.notes || '—'}</LongText>
-                </dd>
-              </dl>
+              {/* The summary and the contacts table refresh independently; each owns its feedback. */}
+              <div className='relative'>
+                <RefreshIndicator pending={active && request.loading} />
+                <dl
+                  // Label above value on a phone, side by side from sm up (mobile.md M5.1).
+                  className='grid gap-1 text-sm sm:grid-cols-[8rem_1fr] sm:gap-x-4 sm:gap-y-3'
+                  aria-busy={active && request.loading}
+                >
+                  <dt className='text-muted-foreground'>
+                    {t('customerContacts.status')}
+                  </dt>
+                  <dd>
+                    <StatusBadge>
+                      {t(`customerContacts.${customer.status}`)}
+                    </StatusBadge>
+                  </dd>
+                  <dt className='text-muted-foreground'>
+                    {t('customerContacts.owner')}
+                  </dt>
+                  <dd>
+                    <OwnerName id={customer.ownerId} />
+                  </dd>
+                  <dt className='text-muted-foreground'>
+                    {t('customerContacts.notes')}
+                  </dt>
+                  <dd className='min-w-0 whitespace-pre-wrap break-words'>
+                    <LongText>{customer.notes || '—'}</LongText>
+                  </dd>
+                </dl>
+              </div>
               {!writable && (
                 <p className='text-sm text-muted-foreground'>
                   {t('customerContacts.readOnly')}
@@ -272,29 +270,73 @@ export default function CustomerDetailPage() {
                   </Button>
                 )}
               </div>
-              {contacts.error ? (
-                <ReadFeedback error={contacts.error} retry={contacts.reload} />
-              ) : (
-                <DataTable
-                  columns={columns}
-                  data={contacts.data?.data ?? []}
-                  manualPagination
-                  rowCount={contacts.data?.meta.total ?? 0}
-                  paginationState={{ pageIndex: page, pageSize: 10 }}
-                  onPaginationChange={(update) =>
-                    setPage(
-                      (old) =>
-                        (typeof update === 'function'
-                          ? update({ pageIndex: old, pageSize: 10 })
-                          : update
-                        ).pageIndex,
-                    )
-                  }
-                  pageSizeOptions={[10]}
-                  showSelectedCount={false}
-                  loading={contacts.loading}
-                />
-              )}
+              <DataTable
+                columns={columns}
+                data={contacts.data?.data ?? []}
+                manualPagination
+                rowCount={contacts.data?.meta.total ?? 0}
+                paginationState={{ pageIndex: page, pageSize: 10 }}
+                onPaginationChange={(update) =>
+                  setPage(
+                    (old) =>
+                      (typeof update === 'function'
+                        ? update({ pageIndex: old, pageSize: 10 })
+                        : update
+                      ).pageIndex,
+                  )
+                }
+                pageSizeOptions={[10]}
+                showSelectedCount={false}
+                loading={active && contacts.loading}
+                loadingIdentity={contacts.path}
+                listState={contactState}
+                onRetry={contacts.reload}
+                // Related records follow the list's phone pattern (mobile.md M5.3): email and phone open the
+                // phone's mail and dialer.
+                renderCard={(row, card) => (
+                  <div className='flex items-start gap-2 rounded-lg border p-4'>
+                    <div className='flex min-w-0 flex-1 flex-col gap-1 text-sm'>
+                      <span className='font-medium break-words'>
+                        {maintain.can && writable ? (
+                          <RecordLink
+                            to={{
+                              pathname: `contacts/${row.original.id}/edit`,
+                              search: location.search,
+                            }}
+                          >
+                            {row.original.name}
+                          </RecordLink>
+                        ) : (
+                          row.original.name
+                        )}
+                      </span>
+                      {row.original.title ? (
+                        <span className='text-muted-foreground'>
+                          {row.original.title}
+                        </span>
+                      ) : null}
+                      {row.original.email ? (
+                        <a
+                          className='break-all underline-offset-4 hover:underline'
+                          href={`mailto:${row.original.email}`}
+                        >
+                          {row.original.email}
+                        </a>
+                      ) : null}
+                      {row.original.phone ? (
+                        <a
+                          className='underline-offset-4 hover:underline'
+                          href={`tel:${row.original.phone}`}
+                        >
+                          {row.original.phone}
+                        </a>
+                      ) : null}
+                    </div>
+                    {/* The row's menu, at a phone tap size (M3.1, M8.1). */}
+                    {card.actions}
+                  </div>
+                )}
+              />
             </>
           )
         )}

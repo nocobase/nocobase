@@ -482,7 +482,7 @@ describe('runtimes page', () => {
     expect(sheet).not.toHaveTextContent('Invalid Date');
   });
 
-  it('confirms a quota clear inside the page and keeps it available to a runtime administrator', async () => {
+  it('asks in a dialog before clearing a tool quota mark, keeps the row intact and lets a runtime administrator cancel or confirm', async () => {
     const confirm = vi.spyOn(window, 'confirm');
     runners[0] = {
       ...runners[0]!,
@@ -508,19 +508,47 @@ describe('runtimes page', () => {
     };
     renderPage(<RuntimesPage />);
     const sheet = await openSheet();
+    const row = within(sheet).getByTestId('runner-tool-claude');
+    const cells = row.querySelectorAll('td').length;
+    expect(cells).toBe(6);
     fireEvent.click(
-      within(sheet).getByRole('button', { name: 'runtimes.quota.clear' }),
+      within(row).getByRole('button', { name: 'runtimes.quota.clear' }),
     );
-    expect(callsTo('POST', 'agents/runners/r1/quota/clear')).toHaveLength(0);
+    const dialog = await screen.findByRole('alertdialog');
+    // Opened from the runtime sheet, the dialog still brings its own backdrop over the sheet.
     expect(
-      within(sheet).getByText('runtimes.quota.confirm(target=tools.claude)'),
+      document.querySelectorAll('[data-slot=alert-dialog-overlay]'),
+    ).toHaveLength(1);
+    expect(
+      within(dialog).getByText(
+        'runtimes.quota.confirmTitle(target=tools.claude)',
+      ),
     ).toBeInTheDocument();
+    expect(
+      within(dialog).getByText('runtimes.quota.confirm(target=tools.claude)'),
+    ).toBeInTheDocument();
+    // The row keeps every column while the dialog is open.
+    expect(row.querySelectorAll('td')).toHaveLength(cells);
+    expect(row).not.toHaveTextContent('runtimes.quota.confirm');
     fireEvent.click(
-      within(sheet).getByRole('button', { name: 'runtimes.quota.clearMark' }),
+      within(dialog).getByRole('button', { name: 'actions.cancel' }),
     );
     await waitFor(() =>
-      expect(callsTo('POST', 'agents/runners/r1/quota/clear')).toHaveLength(1),
+      expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument(),
     );
+    expect(callsTo('POST', 'agents/runners/r1/quota/clear')).toHaveLength(0);
+    fireEvent.click(
+      within(row).getByRole('button', { name: 'runtimes.quota.clear' }),
+    );
+    fireEvent.click(
+      within(await screen.findByRole('alertdialog')).getByRole('button', {
+        name: 'runtimes.quota.clearMark',
+      }),
+    );
+    await waitFor(() =>
+      expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument(),
+    );
+    expect(callsTo('POST', 'agents/runners/r1/quota/clear')).toHaveLength(1);
     expect(confirm).not.toHaveBeenCalled();
     expect(callsTo('POST', 'agents/runners/r1/quota/clear')[0]?.json).toEqual({
       tool: 'claude',
@@ -528,7 +556,96 @@ describe('runtimes page', () => {
       target: '',
       window: 'account',
     });
+    await waitFor(() =>
+      expect(
+        within(sheet).queryByRole('button', { name: 'runtimes.quota.clear' }),
+      ).not.toBeInTheDocument(),
+    );
     confirm.mockRestore();
+  });
+
+  it('clears a known-reset model quota mark through the same dialog', async () => {
+    runners[0] = {
+      ...runners[0]!,
+      canManage: false,
+      canClearQuota: true,
+      unavailableModels: [
+        {
+          tool: 'claude',
+          model: 'claude-opus-5-5',
+          scope: 'model',
+          reason: 'toolQuota',
+          window: 'seven_day_opus',
+          resetsAt: new Date(Date.now() + 3_600_000).toISOString(),
+          at: new Date().toISOString(),
+          reported: [],
+        },
+      ],
+    };
+    api.routes['POST agents/runners/r1/quota/clear'] = () => {
+      runners[0] = { ...runners[0]!, unavailableModels: [] };
+      return undefined;
+    };
+    renderPage(<RuntimesPage />);
+    const sheet = await openSheet();
+    expect(
+      within(sheet).getByText('runtimes.quota.automatic'),
+    ).toBeInTheDocument();
+    fireEvent.click(
+      within(sheet).getByRole('button', { name: 'runtimes.quota.clear' }),
+    );
+    const dialog = await screen.findByRole('alertdialog');
+    // Opened from the runtime sheet, the dialog still brings its own backdrop over the sheet.
+    expect(
+      document.querySelectorAll('[data-slot=alert-dialog-overlay]'),
+    ).toHaveLength(1);
+    expect(
+      within(dialog).getByText(
+        /^runtimes\.quota\.confirmTitle\(target=.*opus/iu,
+      ),
+    ).toBeInTheDocument();
+    fireEvent.click(
+      within(dialog).getByRole('button', { name: 'runtimes.quota.clearMark' }),
+    );
+    await waitFor(() =>
+      expect(callsTo('POST', 'agents/runners/r1/quota/clear')).toHaveLength(1),
+    );
+    expect(callsTo('POST', 'agents/runners/r1/quota/clear')[0]?.json).toEqual({
+      tool: 'claude',
+      scope: 'model',
+      target: 'claude-opus-5-5',
+      window: 'seven_day_opus',
+    });
+  });
+
+  it('hides clearing a known-reset quota mark from readers', async () => {
+    runners[0] = {
+      ...runners[0]!,
+      canManage: false,
+      canClearQuota: false,
+      unavailableModels: [
+        {
+          tool: 'claude',
+          model: '',
+          scope: 'tool',
+          reason: 'toolQuota',
+          window: '5h',
+          resetsAt: new Date(Date.now() + 3_600_000).toISOString(),
+          at: new Date().toISOString(),
+          reported: [],
+        },
+      ],
+    };
+    renderPage(<RuntimesPage />);
+    const readerSheet = await openSheet();
+    expect(
+      within(readerSheet).getByText('runtimes.quota.automatic'),
+    ).toBeInTheDocument();
+    expect(
+      within(readerSheet).queryByRole('button', {
+        name: 'runtimes.quota.clear',
+      }),
+    ).not.toBeInTheDocument();
   });
 
   it('shows near-limit usage without disabling a signed-in tool, and hides clearing from readers', async () => {
@@ -765,24 +882,24 @@ describe('runtimes page', () => {
     await userEvent.click(next);
     await within(table).findByRole('alert');
     expect(
-      within(table).getByText('first-0', { selector: 'td.max-w-44' }),
+      within(table).getByText('first-0', { selector: 'td:first-child' }),
     ).toBeInTheDocument();
     fail = false;
     await userEvent.click(next);
-    await within(table).findByText('second-0', { selector: 'td.max-w-44' });
+    await within(table).findByText('second-0', { selector: 'td:first-child' });
     expect(within(table).queryByText('first-0')).toBeNull();
     expect(within(table).getAllByRole('row')).toHaveLength(21);
     expect(
       within(table).getByText('runtimes.detail.runsPage(page=2,pageCount=3)'),
     ).toBeInTheDocument();
     await userEvent.click(previous);
-    await within(table).findByText('first-0', { selector: 'td.max-w-44' });
+    await within(table).findByText('first-0', { selector: 'td:first-child' });
     const before = callsTo('GET', 'agents/runners/r1/runs').length;
     await userEvent.click(next);
-    await within(table).findByText('second-0', { selector: 'td.max-w-44' });
+    await within(table).findByText('second-0', { selector: 'td:first-child' });
     expect(callsTo('GET', 'agents/runners/r1/runs')).toHaveLength(before);
     await userEvent.click(next);
-    await within(table).findByText('last-run', { selector: 'td.max-w-44' });
+    await within(table).findByText('last-run', { selector: 'td:first-child' });
     expect(within(table).getAllByRole('row')).toHaveLength(2);
     expect(next).toBeDisabled();
     expect(

@@ -240,7 +240,7 @@ it('refuses cleanup after a deployment key is relocated and succeeds only when i
   const clock = new Date(Date.now() + 2 * day);
   async function boot(file: string) {
     const host = createJobExecutorService(
-      { default: 'local', local: { adapter: 'memory' } },
+      { default: 'local', backends: { local: { adapter: 'memory' } } },
       { appName: 'cleanup-' + randomUUID(), storagePath: f.h.storage },
     );
     const executor = host.getJobExecutor('@nocobase/app-plugin-knowledge');

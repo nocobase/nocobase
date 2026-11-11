@@ -16,6 +16,7 @@ import { beforeEach, expect, it, vi } from 'vitest';
 
 import { JOB_TASKS_TOPIC, type JobTask } from '../../client/lib/api.js';
 import locales from '../../client/locales/index.js';
+import enUS from '../../client/locales/en-US.js';
 
 // The page reads both clients through hooks, so the mocks hand back the same
 // objects on every render.
@@ -107,6 +108,13 @@ it('subscribes while open, adds a block per created job and follows its progress
     path: 'jobsExample/tasks',
   });
   expect(screen.getByText('Queued')).toBeTruthy();
+  // A queued job has reported nothing yet: indeterminate, without a fake 0%.
+  expect(screen.getByRole('progressbar').hasAttribute('aria-valuenow')).toBe(
+    false,
+  );
+  expect(
+    screen.getByText(/keeps running if you leave this page/u),
+  ).toBeTruthy();
 
   push({
     ...created,
@@ -131,4 +139,21 @@ it('subscribes while open, adds a block per created job and follows its progress
 
   view.unmount();
   expect(unsubscribe).toHaveBeenCalledOnce();
+});
+
+it('announces a slow first read outside the busy list and explains a long wait', async () => {
+  request.mockImplementation(() => new Promise(() => undefined));
+  vi.useFakeTimers();
+  try {
+    await show();
+    const status = screen.getByRole('status');
+    expect(status.textContent).toBe('');
+    await act(() => vi.advanceTimersByTimeAsync(300));
+    expect(status.textContent).toBe(enUS.jobs.loading);
+    expect(status.closest('[aria-busy="true"]')).toBeNull();
+    await act(() => vi.advanceTimersByTimeAsync(9700));
+    expect(status.textContent).toBe(enUS.jobs.longWait);
+  } finally {
+    vi.useRealTimers();
+  }
 });

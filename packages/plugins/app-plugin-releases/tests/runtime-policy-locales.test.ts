@@ -10,6 +10,15 @@ describe('runtime policy translations', () => {
       const resource = await load();
       expect(resource.default).toMatchObject({
         ui: {
+          deployments: {
+            cancel: expect.any(String),
+            queueAhead: expect.stringContaining('{{ahead}}'),
+            restartHint: expect.any(String),
+            statuses: {
+              cancelling: expect.any(String),
+              cancelled: expect.any(String),
+            },
+          },
           policy: {
             idleModeLabel: expect.any(String),
             dormantModeLabel: expect.any(String),

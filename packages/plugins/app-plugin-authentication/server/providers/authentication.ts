@@ -50,7 +50,11 @@ import { createAuthStorage } from '../auth-storage.js';
 import { authenticationToken } from '../tokens.js';
 import { userAdministrationServiceToken } from '../tokens.js';
 import { createUserAdministrationService } from '../user-administration.js';
-import { type AuthConfig, resolveAuthSecrets } from '../config.js';
+import {
+  type AuthConfig,
+  resolveAuthSecrets,
+  registrationFeedbackWarning,
+} from '../config.js';
 
 interface RequestInitWithDuplex extends RequestInit {
   duplex?: 'half';
@@ -92,18 +96,16 @@ export class AuthenticationProvider<
       passwordReset: auth.passwordReset && { ...auth.passwordReset },
     };
     // Select now so an invalid reference fails startup; no transport is allocated until the first send.
-    this.resetSender = createPasswordResetSender(
-      resolveMailSenderFactory(
-        this.app.container,
-        this.app.config.get<MailersConfig>('mailers') ?? {},
-      ),
-      {
-        ...this.emailSnapshot,
-        legacyChannels: this.app.config.get<{
-          channels?: Readonly<Record<string, unknown>>;
-        }>('notification')?.channels,
-      },
+    const mailerFactory = resolveMailSenderFactory(
+      this.app.container,
+      this.app.config.get<MailersConfig>('mailers') ?? {},
     );
+    this.resetSender = createPasswordResetSender(mailerFactory, {
+      ...this.emailSnapshot,
+      legacyChannels: this.app.config.get<{
+        channels?: Readonly<Record<string, unknown>>;
+      }>('notification')?.channels,
+    });
     this.app.container.singleton(authenticationToken, (container) =>
       this.createAuthentication(container),
     );
@@ -155,6 +157,18 @@ export class AuthenticationProvider<
    * does not build Better Auth's schema.
    */
   public override async boot(): Promise<void> {
+    const warning = registrationFeedbackWarning(
+      this.app.config.get<AuthConfig>('auth') ?? {},
+    );
+    if (warning && this.app.container.has(loggingToken)) {
+      this.app.container
+        .resolve(loggingToken)
+        .getLogger('auth')
+        .warn(
+          { configKey: 'auth.emailAndPassword.autoSignIn', fix: warning.fix },
+          warning.message,
+        );
+    }
     // Better Auth's endpoints are the browser's sign-in and session flow: a command line signs in its own way.
     if (this.app.container.has(cliToken))
       this.app.container.resolve(cliToken).exclude({ paths: ['/api/auth/'] });

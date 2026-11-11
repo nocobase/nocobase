@@ -4,4 +4,4 @@
 '@nocobase/app-cli-client': patch
 ---
 
-Expose invitation email failures in client types, project create and resend responses, localized invitation dialogs across all ten supported languages, and default CLI output. Preserve complete manual invitation links in nested batch results and keep copy controls within narrow dialogs. API emailError messages now use English, while the invitation page translates them into the selected language.
+Expose invitation email failures in client types, project create and resend responses, localized invitation dialogs across all twelve supported languages, and default CLI output. Preserve complete manual invitation links in nested batch results and keep copy controls within narrow dialogs. API emailError messages now use English, while the invitation page translates them into the selected language.

@@ -1,3 +1,4 @@
+import { limitBytes } from '@nocobase/app-plugin-file/server';
 import { FileInputError } from './errors.js';
 import { createHash } from 'node:crypto';
 import {
@@ -9,7 +10,7 @@ import type { DatabaseConnection } from '@nocobase/db';
 import type { LanguageModel } from 'ai';
 import type { NativeMessage } from '../agent/types.js';
 import type { ModelRef } from '../../../shared/models.js';
-import { CHAT_ATTACHMENT_SIZE_MAX } from '../../../shared/conversations.js';
+
 import type { ChatAttachmentService } from '../../core/conversations/attachments.js';
 import { invalid } from '../../kernel/errors.js';
 import { languageModel, type ModelConnection } from '../providers.js';
@@ -35,12 +36,13 @@ export class NativeFileInputs {
   >();
   private readonly profiles: FileInputProfiles;
   private readonly extract: TextExtractor;
+  private readonly uploadLimit: ChatAttachmentService['uploadLimit'];
   private readonly cache = new ExtractedDocumentCache();
 
   constructor(
     private readonly deps: {
       connectionFor(ref: ModelRef): Promise<ModelConnection>;
-      files?: Pick<ChatAttachmentService, 'content'>;
+      files: Pick<ChatAttachmentService, 'content' | 'uploadLimit'>;
       config?: FileInputsConfig;
       createModel?: typeof languageModel;
       extract?: TextExtractor;
@@ -48,9 +50,8 @@ export class NativeFileInputs {
     },
   ) {
     this.profiles = new FileInputProfiles(deps.config);
-    this.extract =
-      deps.extract ??
-      workerExtractor({ maxInputBytes: CHAT_ATTACHMENT_SIZE_MAX });
+    this.uploadLimit = deps.files.uploadLimit;
+    this.extract = deps.extract ?? workerExtractor();
   }
 
   async model(ref: ModelRef, sessionId: string): Promise<LanguageModel> {
@@ -129,9 +130,8 @@ export class NativeFileInputs {
           !mediaType.startsWith('image/');
         if (native) budget.native();
         let bytes: Uint8Array;
+        let maxInputBytes = limitBytes(this.uploadLimit);
         if (file.attachment) {
-          if (!this.deps.files)
-            throw invalid('Attachment content is unavailable.');
           const authorized = input.conn
             ? await this.deps.files.content(
                 { userId: input.userId },
@@ -142,7 +142,8 @@ export class NativeFileInputs {
                 { userId: input.userId },
                 file.attachment.id,
               );
-          bytes = await readBytes(authorized.body, signal);
+          maxInputBytes = limitBytes(authorized.uploadLimit);
+          bytes = await readBytes(authorized.body, signal, maxInputBytes);
         } else {
           // Provider references remain provider inputs; they are never fetched by this service.
           if (!part.url.startsWith('data:')) {
@@ -150,7 +151,7 @@ export class NativeFileInputs {
               throw new FileInputError('unsupportedFormat');
             continue;
           }
-          bytes = inlineBytes(part.url, mediaType);
+          bytes = inlineBytes(part.url, mediaType, maxInputBytes);
         }
         const digest = createHash('sha256').update(bytes).digest('hex');
         budget.source(
@@ -188,6 +189,7 @@ export class NativeFileInputs {
                 binding.extract,
                 { bytes, ext, filename, mediaType },
                 signal,
+                maxInputBytes,
               )
             : '';
           signal.throwIfAborted();
@@ -221,9 +223,11 @@ export class NativeFileInputs {
     extract: TextExtractor,
     request: ExtractRequest,
     signal: AbortSignal,
+    maxInputBytes: number,
   ): Promise<string> {
     const result = await extract(request, {
       signal,
+      maxInputBytes,
       maxOutputChars: FileInputBudget.maxOutputChars,
       omitEmbeddedImages: true,
     });

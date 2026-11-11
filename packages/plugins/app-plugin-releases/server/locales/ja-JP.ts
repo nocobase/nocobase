@@ -12,7 +12,7 @@ const jaJP: LocaleResource<typeof enUS> = {
     businesses: {
       apps: {
         title: 'アプリ',
-        description: 'アプリ、そのリリース、デプロイメント、およびランタイム。',
+        description: 'アプリ、そのリリース、デプロイメント、および実行環境。',
         actions: {
           view: {
             title: 'アプリを見る',

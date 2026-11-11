@@ -1,7 +1,19 @@
+import { PageBreadcrumbProvider } from '@nocobase/app-client';
+import { resolveAppClientContributions } from '@nocobase/app-client/plugins';
+import { Breadcrumbs } from '../../client/components/breadcrumbs.js';
+import { RouteTreeProvider } from '../../client/routing/route-context.js';
+import applicationRoutes from '../../client/routes.js';
+import SkillProjectDetailPage from '../../client/pages/skill-projects/detail.js';
 import { answerApi } from '@nocobase/app-testing/client';
-import { act, fireEvent, screen, waitFor } from '@testing-library/react';
+import {
+  act,
+  fireEvent,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { Route, Routes } from 'react-router';
+import { Route, Routes, useLocation, useNavigate } from 'react-router';
 import { afterEach, expect, it, vi } from 'vitest';
 import { renderSettingsClient } from '../helpers/settings-client.js';
 import SkillProjectsPage from '../../client/pages/skill-projects/index.js';
@@ -35,6 +47,47 @@ const mount = (
     </Routes>,
     { route, namespace, namespaces, locale, fetch },
   );
+const detailRoutes = resolveAppClientContributions([
+  { packageName: namespace, source: 'application', routes: applicationRoutes },
+]).routes;
+// A row's Edit sits in its "⋮" actions menu (T1.5).
+async function openRowEdit(
+  user: Pick<typeof userEvent, 'click'>,
+  index = 0,
+): Promise<void> {
+  // A trigger is ready once it reports its menu closed (.agents/rules/testing.md).
+  const triggers = await screen.findAllByRole('button', {
+    name: /^Actions for /,
+    expanded: false,
+  });
+  await user.click(triggers[index]!);
+  await user.click(await screen.findByRole('menuitem', { name: 'Edit' }));
+}
+
+const mountDetail = (fetch: typeof globalThis.fetch) =>
+  renderSettingsClient(
+    <Routes>
+      <Route
+        path='/skill-projects'
+        element={
+          <RouteTreeProvider routes={detailRoutes}>
+            <PageBreadcrumbProvider>
+              <Breadcrumbs />
+              <SkillProjectsPage />
+            </PageBreadcrumbProvider>
+          </RouteTreeProvider>
+        }
+      >
+        <Route path=':projectId/details' element={<SkillProjectDetailPage />} />
+      </Route>
+    </Routes>,
+    {
+      route: '/skill-projects/abc/details?detailTab=activity',
+      namespace,
+      namespaces,
+      fetch,
+    },
+  );
 afterEach(() => {
   vi.useRealTimers();
   vi.restoreAllMocks();
@@ -57,9 +110,7 @@ it.each(['fast', 'slow'])(
     );
     await screen.findByText('Alpha');
     const slot = screen.getByTestId('refresh-slot');
-    await userEvent.click(
-      screen.getByRole('button', { name: 'Edit', exact: true }),
-    );
+    await openRowEdit(userEvent);
     await screen.findByRole('textbox', { name: 'Name' });
     vi.useFakeTimers();
     await act(() => vi.advanceTimersByTimeAsync(1000));
@@ -115,9 +166,7 @@ it('revalidates a corrected name, keeps a rejected draft, and refreshes the list
       return { data: current };
     }),
   );
-  await user.click(
-    await screen.findByRole('button', { name: 'Edit', exact: true }),
-  );
+  await openRowEdit(user);
   const name = await screen.findByRole('textbox', { name: 'Name' });
   await user.clear(name);
   await user.click(screen.getByRole('button', { name: 'Save', exact: true }));
@@ -215,7 +264,7 @@ it.each([401, 403, 404])(
   },
 );
 
-it('keeps the original payload/key after an unknown result, blocks close and applies the saved row before revalidation', async () => {
+it('keeps the original payload/key after an unknown result, asks before closing and applies the saved row before revalidation', async () => {
   const keys: (string | null)[] = [];
   let reads = 0;
   let writes = 0;
@@ -250,9 +299,7 @@ it('keeps the original payload/key after an unknown result, blocks close and app
       keys.push(request.headers.get('Idempotency-Key'));
     return transport(request);
   }) as typeof fetch);
-  await userEvent.click(
-    await screen.findByRole('button', { name: 'Edit', exact: true }),
-  );
+  await openRowEdit(userEvent);
   const name = await screen.findByRole('textbox', { name: 'Name' });
   await userEvent.clear(name);
   await userEvent.type(name, 'Confirmed Alpha');
@@ -261,7 +308,14 @@ it('keeps the original payload/key after an unknown result, blocks close and app
   );
   await screen.findByText(enUS.skillProjects.uncertain);
   expect(name).toBeDisabled();
-  expect(screen.getByRole('button', { name: 'Cancel' })).toBeDisabled();
+  // An unknown outcome never locks the dialog: Cancel asks, and "Keep editing" keeps the input for the retry.
+  await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+  await screen.findByRole('alertdialog', { name: 'Discard changes?' });
+  await userEvent.click(screen.getByRole('button', { name: 'Keep editing' }));
+  await waitFor(() =>
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument(),
+  );
+  expect(name).toHaveValue('Confirmed Alpha');
   const form = name.closest('form')!;
   await act(async () => {
     fireEvent.submit(form);
@@ -332,6 +386,8 @@ it.each(['cancel', 'save', 'removed', 'lastPageRemoved'])(
           if (++reads > 1) await refreshed;
           return { data: [...rows], meta: { total: rows.length } };
         }
+        if (path === 'skillProjects/summary')
+          return { data: { total: rows.length } };
         const id = path.split('/')[1];
         if (method === 'PATCH') {
           rows = rows.map((row) =>
@@ -348,11 +404,16 @@ it.each(['cancel', 'save', 'removed', 'lastPageRemoved'])(
       screen.getByRole('button', { name: 'Go to next page' }),
     );
     expect(screen.getByText('Page 2 of 2')).toBeVisible();
-    const opener = screen.getAllByRole('button', {
-      name: 'Edit',
-      exact: true,
-    })[0];
+    const opener = (
+      await screen.findAllByRole('button', {
+        name: /^Actions for /,
+        expanded: false,
+      })
+    )[0]!;
     await userEvent.click(opener);
+    await userEvent.click(
+      await screen.findByRole('menuitem', { name: 'Edit' }),
+    );
     const name = await screen.findByRole('textbox', { name: 'Name' });
     if (action === 'save') {
       await userEvent.clear(name);
@@ -416,9 +477,18 @@ it('returns a direct edit link to a stable page focus target', async () => {
   );
 });
 
+/** The route dialog's own "Discard changes?" copy, which the edit dialog asks through its `dirty`. */
+function dirtyCopy(locale: typeof enUS) {
+  return {
+    discard: locale['routeOverlay.discardTitle'],
+    keepEditing: locale['routeOverlay.keepEditing'],
+    discardAction: locale['routeOverlay.discard'],
+  };
+}
+
 it.each([
-  ['en-US', enUS.skillProjects],
-  ['zh-CN', zhCN.skillProjects],
+  ['en-US', { ...enUS.skillProjects, ...dirtyCopy(enUS) }],
+  ['zh-CN', { ...zhCN.skillProjects, ...dirtyCopy(zhCN) }],
 ] as const)(
   'confirms dirty cancellation and Escape in %s without losing the draft on rejection',
   async (locale, copy) => {
@@ -673,7 +743,14 @@ it.each([
         key.startsWith('nocobase:submission:'),
       ),
     ).toEqual([]);
+    // The typed input is still there to lose although it can no longer be saved, so leaving asks first.
     await userEvent.keyboard('{Escape}');
+    const prompt = await screen.findByRole('alertdialog', {
+      name: 'Discard changes?',
+    });
+    await userEvent.click(
+      within(prompt).getByRole('button', { name: 'Discard' }),
+    );
     await waitFor(() =>
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
     );
@@ -714,7 +791,7 @@ it('keeps a retryable pending operation after an ordinary recovery 404 without c
   );
   await waitFor(() => expect(writes).toBe(2));
   expect(screen.queryByText(enUS.skillProjects.gone)).not.toBeInTheDocument();
-  expect(screen.getByRole('button', { name: 'Cancel' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: 'Cancel' })).toBeEnabled();
   await waitFor(() =>
     expect(
       screen.getByRole('button', { name: 'Save', exact: true }),
@@ -732,4 +809,309 @@ it('keeps a retryable pending operation after an ordinary recovery 404 without c
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
   );
   expect(writes).toBe(3);
+});
+
+it.each(['Cancel', 'Close', 'Escape', 'backdrop', 'back'] as const)(
+  'asks before leaving through %s after a failed save with an unknown outcome, and discarding leaves',
+  async (way) => {
+    let writes = 0;
+    let back!: () => void;
+    function HistoryBack() {
+      const navigate = useNavigate();
+      back = () => void navigate(-1);
+      return null;
+    }
+    await renderSettingsClient(
+      <>
+        <Routes>
+          <Route path='/skill-projects' element={<SkillProjectsPage />}>
+            <Route path=':projectId/edit' element={<SkillProjectEditPage />} />
+          </Route>
+        </Routes>
+        <HistoryBack />
+      </>,
+      {
+        route: '/skill-projects',
+        namespace,
+        namespaces,
+        fetch: answerApi(({ path, method }) => {
+          if (method === 'PATCH') {
+            writes += 1;
+            return Response.json(
+              {
+                error: {
+                  status: 'INTERNAL',
+                  reason: 'LOST_RESPONSE',
+                  message: 'Unavailable',
+                },
+              },
+              { status: 500 },
+            );
+          }
+          return path === 'skillProjects' ? list() : { data: original };
+        }),
+      },
+    );
+    await screen.findByText('Alpha');
+    await openRowEdit(userEvent);
+    const name = await screen.findByRole('textbox', { name: 'Name' });
+    await userEvent.clear(name);
+    await userEvent.type(name, 'Renamed Alpha');
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Save', exact: true }),
+    );
+    await screen.findByText(enUS.skillProjects.uncertain);
+    expect(writes).toBe(1);
+    const leave = async () => {
+      if (way === 'Escape') await userEvent.keyboard('{Escape}');
+      else if (way === 'back') act(() => back());
+      else if (way === 'backdrop')
+        await userEvent.click(
+          screen
+            .getByRole('dialog', { name: 'Edit project' })
+            .closest('[data-base-ui-portal]')!
+            .querySelector(':scope > [data-slot="dialog-overlay"]')!,
+        );
+      else await userEvent.click(screen.getByRole('button', { name: way }));
+    };
+    await leave();
+    await screen.findByRole('alertdialog', {
+      name: enUS['routeOverlay.discardTitle'],
+    });
+    await userEvent.click(
+      screen.getByRole('button', { name: enUS['routeOverlay.keepEditing'] }),
+    );
+    await waitFor(() =>
+      expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument(),
+    );
+    expect(screen.getByRole('dialog', { name: 'Edit project' })).toBeVisible();
+    expect(name).toHaveValue('Renamed Alpha');
+    await leave();
+    await userEvent.click(
+      await screen.findByRole('button', {
+        name: enUS['routeOverlay.discard'],
+      }),
+    );
+    await waitFor(() =>
+      expect(
+        screen.queryByRole('dialog', { name: 'Edit project' }),
+      ).not.toBeInTheDocument(),
+    );
+    expect(writes).toBe(1);
+  },
+);
+
+it('keeps a default list parent while a directly opened record loads, then names the record', async () => {
+  let finish!: (value: { data: typeof original }) => void;
+  const pending = new Promise<{ data: typeof original }>((resolve) => {
+    finish = resolve;
+  });
+  const view = await mountDetail(
+    answerApi(({ path }) => (path === 'skillProjects/abc' ? pending : list())),
+  );
+  const trail = screen.getByRole('navigation', { name: 'Breadcrumb' });
+  expect(trail).toHaveTextContent('Projects');
+  expect(trail).toHaveTextContent('Project details');
+  expect(
+    screen.getByRole('link', { name: 'Back to Projects' }),
+  ).toHaveAttribute('href', '/skill-projects');
+  await act(async () => {
+    finish({ data: original });
+  });
+  await screen.findByRole('heading', { name: 'Alpha' });
+  expect(trail).toHaveTextContent('Alpha');
+  view.unmount();
+});
+
+it('returns to the same list page after a reloaded edit is saved, without detail parameters (mobile.md M2.3)', async () => {
+  function LocationProbe() {
+    const location = useLocation();
+    return (
+      <output data-testid='location'>
+        {location.pathname + location.search}
+      </output>
+    );
+  }
+  const user = userEvent.setup();
+  const writes: unknown[] = [];
+  let current = original;
+  // A fresh shell at the edit URL is what a reload leaves: no recorded visit to the list.
+  await renderSettingsClient(
+    <Routes>
+      <Route
+        path='/skill-projects'
+        element={
+          <RouteTreeProvider routes={detailRoutes}>
+            <PageBreadcrumbProvider>
+              <Breadcrumbs />
+              <LocationProbe />
+              <SkillProjectsPage />
+            </PageBreadcrumbProvider>
+          </RouteTreeProvider>
+        }
+      >
+        <Route path=':projectId/details' element={<SkillProjectDetailPage />}>
+          <Route path='edit' element={<SkillProjectEditPage />} />
+        </Route>
+      </Route>
+    </Routes>,
+    {
+      route:
+        '/skill-projects/abc/details/edit?page=2&pageSize=20&detailTab=activity',
+      namespace,
+      namespaces,
+      fetch: answerApi(({ path, method, json }) => {
+        if (path === 'skillProjects') return list(current.name);
+        if (method === 'PATCH') {
+          writes.push(json);
+          current = { ...original, name: (json as { name: string }).name };
+        }
+        return { data: current };
+      }),
+    },
+  );
+  const name = await screen.findByRole('textbox', { name: 'Name' });
+  await user.clear(name);
+  await user.type(name, 'Saved Alpha');
+  await user.click(screen.getByRole('button', { name: 'Save', exact: true }));
+  await waitFor(() =>
+    expect(screen.getByTestId('location')).toHaveTextContent(
+      '/skill-projects/abc/details?page=2&pageSize=20&detailTab=activity',
+    ),
+  );
+  expect(writes).toEqual([{ name: 'Saved Alpha' }]);
+  const back = screen.getByRole('link', { name: 'Back to Projects' });
+  expect(back).toHaveAttribute('href', '/skill-projects?page=2&pageSize=20');
+  expect(screen.getByRole('link', { name: 'Projects' })).toHaveAttribute(
+    'href',
+    '/skill-projects?page=2&pageSize=20',
+  );
+  await user.click(back);
+  await waitFor(() =>
+    expect(screen.getByTestId('location')).toHaveTextContent(
+      /^\/skill-projects\?page=2&pageSize=20$/u,
+    ),
+  );
+});
+
+it.each([403, 404, 500])(
+  'keeps its parent and fallback title after record error %s',
+  async (status) => {
+    const view = await mountDetail(
+      answerApi(({ path }) =>
+        path === 'skillProjects/abc'
+          ? Response.json(
+              {
+                error: {
+                  status: 'NOT_FOUND',
+                  reason: 'TEST_RECORD_ERROR',
+                  message: 'Test record error',
+                },
+              },
+              { status },
+            )
+          : list(),
+      ),
+    );
+    await screen.findByRole('alert');
+    expect(
+      screen.getByRole('navigation', { name: 'Breadcrumb' }),
+    ).toHaveTextContent('Project details');
+    expect(
+      screen.getByRole('link', { name: 'Back to Projects' }),
+    ).toHaveAttribute('href', '/skill-projects');
+    expect(
+      screen.queryByRole('heading', { name: 'Alpha' }),
+    ).not.toBeInTheDocument();
+    view.unmount();
+  },
+);
+
+it('shows each project as a card with its detail link and edit action on a phone', async () => {
+  vi.stubGlobal('matchMedia', (query: string) => ({
+    matches: true,
+    media: query,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+  }));
+  try {
+    await mount(
+      answerApi(({ path }) => {
+        if (path === 'skillProjects') return list();
+        if (path === 'skillProjects/abc') return { data: original };
+        throw new Error(`Unexpected request: ${path}`);
+      }),
+      '/skill-projects?page=1',
+    );
+    const card = (await screen.findAllByRole('listitem'))[0];
+    expect(screen.queryByRole('table')).not.toBeInTheDocument();
+    expect(card).toHaveTextContent('Alpha');
+    expect(screen.getByRole('link', { name: 'Alpha' })).toHaveAttribute(
+      'href',
+      expect.stringContaining('/skill-projects/abc/details'),
+    );
+    await openRowEdit(userEvent);
+    expect(await screen.findByRole('textbox', { name: 'Name' })).toHaveValue(
+      'Alpha',
+    );
+  } finally {
+    vi.unstubAllGlobals();
+  }
+});
+
+it('asks before browser back leaves a dirty edit dialog, as Cancel and Escape do', async () => {
+  // Browser back (the phone's back gesture) never calls the dialog's beforeClose; the page's navigation guard asks.
+  let back!: () => void;
+  function HistoryBack() {
+    const navigate = useNavigate();
+    back = () => void navigate(-1);
+    return null;
+  }
+  await renderSettingsClient(
+    <>
+      <Routes>
+        <Route path='/skill-projects' element={<SkillProjectsPage />}>
+          <Route path=':projectId/edit' element={<SkillProjectEditPage />} />
+        </Route>
+      </Routes>
+      <HistoryBack />
+    </>,
+    {
+      route: '/skill-projects?page=1',
+      namespace,
+      namespaces,
+      fetch: answerApi(({ path }) =>
+        path === 'skillProjects' ? list() : { data: original },
+      ),
+    },
+  );
+  await screen.findByText('Alpha');
+  await openRowEdit(userEvent);
+  const name = await screen.findByRole('textbox', { name: 'Name' });
+  await userEvent.type(name, ' draft');
+  act(() => back());
+  expect(
+    await screen.findByRole('alertdialog', {
+      name: enUS['routeOverlay.discardTitle'],
+    }),
+  ).toBeVisible();
+  await userEvent.click(
+    screen.getByRole('button', { name: enUS['routeOverlay.keepEditing'] }),
+  );
+  await waitFor(() =>
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument(),
+  );
+  expect(screen.getByRole('textbox', { name: 'Name' })).toHaveValue(
+    'Alpha draft',
+  );
+  act(() => back());
+  await userEvent.click(
+    await screen.findByRole('button', {
+      name: enUS['routeOverlay.discard'],
+    }),
+  );
+  await waitFor(() =>
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+  );
+  expect(screen.getByText('Alpha')).toBeVisible();
 });

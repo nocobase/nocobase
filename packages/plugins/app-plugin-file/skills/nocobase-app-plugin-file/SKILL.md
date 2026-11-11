@@ -258,3 +258,9 @@ For preview integration or changes, verify each of PDF/DOCX/XLSX/PPTX with real 
 - FILE_COMMIT_UNCERTAIN / FILE_CLEANUP_FAILED: reconcile database records and stored objects before retrying; uploads have no idempotency key.
 
 There is no built-in route authentication, row ACL, Range/206, ETag, conditional download, resumable upload, physical cleanup, content sniffing or malware scan. Metadata deletion retains objects; cancelled forms may leave unlinked files. Implement the policies required by the business, including referenced-file deletion and orphan cleanup.
+
+## Per-disk upload limits
+
+Issue, comment and Agent conversation attachments check `drive.disks.<name>.maxFileSizeMb` (positive integer MiB, default 20) using the shared `assertFileUploadSize` helper before writing bytes. Oversized attachments return 413 `FILE_TOO_LARGE` in domain `file`, with `maxFileSizeMb` metadata. Other File Repository callers retain their own size policies, and public routes retain the 5 MiB single / 20 MiB batch request-body defaults.
+
+The runtime embeds sanitized `drive.uploadLimits` in the page's public configuration, exposing only disk names and numeric limits. The Client provider reads it synchronously, with no startup request. `useFileUploadLimit(disk?)` reads that snapshot, or returns the default 20 MiB when there is no application context or published snapshot. Restart and reload after changing limits; raise reverse proxy request-body limits to allow the multipart envelope.

@@ -8,39 +8,24 @@ import {
 import { useAuthentication } from '@nocobase/app-plugin-authentication/client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { useEffect, useId, useRef, useState, type ReactElement } from 'react';
-import {
-  Link,
-  useNavigate,
-  useOutletContext,
-  useParams,
-  useLocation,
-} from 'react-router';
+import { Link, useNavigate, useParams, useLocation } from 'react-router';
 import { useForm } from 'react-hook-form';
 import { FeedbackForm } from '#components/feedback-form';
 import { RouteDialog } from '#components/route-dialog';
 import { useRouteOverlay } from '#components/use-route-overlay';
 import { Alert, AlertDescription } from '#components/ui/alert';
-import {
-  AlertDialog,
-  AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogCancel,
-  AlertDialogAction,
-} from '#components/ui/alert-dialog';
 import { Button } from '#components/ui/button';
 import { Skeleton } from '#components/ui/skeleton';
 import { Input } from '#components/ui/input';
 import { Label } from '#components/ui/label';
+import { announceDataChange } from '#hooks/use-data-changes';
 import { useListData } from '#hooks/use-list-data';
 import type { SkillProject } from './index.js';
+import { projectScope, projectsScope } from './scopes.js';
 
 export default function SkillProjectEditPage(): ReactElement {
   const { projectId } = useParams();
   const { t } = useTranslation();
-  const { reload } = useOutletContext<{ reload: () => void }>();
   const request = useListData<{ data: SkillProject }>(
     `skillProjects/${encodeURIComponent(projectId ?? '')}`,
     { active: Boolean(projectId) },
@@ -48,8 +33,10 @@ export default function SkillProjectEditPage(): ReactElement {
   const status =
     request.error instanceof ApiClientError ? request.error.status : undefined;
   useEffect(() => {
-    if (status === 404) reload();
-  }, [status, reload]);
+    // Views still showing the missing record read again.
+    if (status === 404 && projectId)
+      announceDataChange({ scopes: [projectScope(projectId)] });
+  }, [status, projectId]);
   if (!projectId) return <ProjectEditor key='new' />;
   if (request.error || !request.data)
     return (
@@ -124,16 +111,16 @@ function ProjectEditor({
   const submission = useSubmission({
     scope: `${session?.user.id}:skillProjects:${project?.id ?? 'new'}`,
   });
+  // What is saved, as the form shows it: the record, or the blank values of a new project. A form that restores a
+  // draft starts from it (`defaultValues: draft ?? saved`) and keeps this as `savedValues`, so leaving with the draft
+  // still asks (mobile.md M7.4).
+  const [saved] = useState(() => ({ name: project?.name ?? '' }));
   const form = useForm({
-    defaultValues: { name: project?.name ?? '' },
+    defaultValues: saved,
     shouldFocusError: false,
   });
   const navigate = useNavigate();
   const location = useLocation();
-  const { reload, onSaved } = useOutletContext<{
-    reload: () => void;
-    onSaved: (project: SkillProject) => void;
-  }>();
   const toaster = useToaster();
   const [error, setError] = useState<unknown>();
   const [gone, setGone] = useState(false);
@@ -143,51 +130,28 @@ function ProjectEditor({
   const [confirmedMissing, setConfirmedMissing] = useState<
     'committed' | 'not-committed'
   >();
+  // Set once saved or once the record is gone, so the guard below lets the dialog close.
   const savedRef = useRef(false);
-  const [confirmDiscard, setConfirmDiscard] = useState(false);
-  const discardRef = useRef<{
-    promise: Promise<boolean>;
-    resolve: (value: boolean) => void;
-  } | null>(null);
-  const decideDiscard = (discard: boolean) => {
-    discardRef.current?.resolve(discard);
-    discardRef.current = null;
-    setConfirmDiscard(false);
-  };
-  useEffect(
-    () => () => {
-      discardRef.current?.resolve(false);
-    },
-    [],
+  // No way out only while a save is in flight. An unknown outcome (`submission.pending`, after a lost response or a
+  // 5xx) is not a lock: the FeedbackForm's `values` still make every way out ask, and discarding leaves. The operation
+  // key stays in session storage, so reopening the form offers the same retry (`restoringInput`).
+  useNavigationGuard(
+    () => savedRef.current || !(busyRef.current || submission.submitting),
   );
-  useNavigationGuard(() => {
-    if (savedRef.current) return true;
-    if (busyRef.current || submission.submitting || submission.pending)
-      return false;
-    if (!form.formState.isDirty) return true;
-    if (discardRef.current) return discardRef.current.promise;
-    let resolve!: (value: boolean) => void;
-    const promise = new Promise<boolean>((done) => {
-      resolve = done;
-    });
-    discardRef.current = { promise, resolve };
-    setConfirmDiscard(true);
-    return promise;
-  });
   useEffect(() => {
     const warn = (event: BeforeUnloadEvent) => {
-      if (busyRef.current || submission.pending || form.formState.isDirty)
-        event.preventDefault();
+      if (busyRef.current || submission.pending) event.preventDefault();
     };
     window.addEventListener('beforeunload', warn);
     return () => window.removeEventListener('beforeunload', warn);
-  }, [submission.pending, form.formState.isDirty]);
+  }, [submission.pending]);
   const submit = async () => {
     if (!session || busyRef.current) return;
     busyRef.current = true;
     const recovering = submission.pending;
     const snapshot = { name: form.getValues('name'), id: project?.id };
     let saved: { data: SkillProject } | undefined;
+    const changedScope = project ? projectScope(project.id) : projectsScope;
     try {
       saved = await submission.run(snapshot, async (key, signal, input) => {
         setError(undefined);
@@ -227,7 +191,15 @@ function ProjectEditor({
           savedRef.current = true;
           form.reset(form.getValues());
         }
-        reload();
+        announceDataChange({ scopes: [changedScope] });
+      } else if (
+        recovering ||
+        !(failure instanceof ApiClientError) ||
+        failure.status >= 500
+      ) {
+        // The outcome is unknown: affected views read the server to show what
+        // actually happened, while this form keeps the original operation.
+        announceDataChange({ scopes: [changedScope] });
       }
     } finally {
       busyRef.current = false;
@@ -235,7 +207,8 @@ function ProjectEditor({
     if (saved) {
       busyRef.current = false;
       savedRef.current = true;
-      onSaved(saved.data);
+      const scope = projectScope(saved.data.id);
+      announceDataChange({ scopes: [scope], results: { [scope]: saved } });
       toaster.show({
         type: 'success',
         title: t(project ? 'skillProjects.saved' : 'skillProjects.created', {
@@ -249,14 +222,13 @@ function ProjectEditor({
     <RouteDialog
       title={t(project ? 'skillProjects.edit' : 'skillProjects.create')}
       className='sm:max-w-md'
-      beforeClose={() =>
-        !busyRef.current && !submission.submitting && !submission.pending
-      }
+      // Every way out asks "Discard changes?" while the form's values differ from the saved ones (the FeedbackForm's
+      // `values` and `savedValues` below): ×, Esc, the backdrop, Cancel and browser back. The save's own navigation,
+      // from the FeedbackForm's onSubmit, leaves without asking.
+      beforeClose={() => !busyRef.current && !submission.submitting}
       footer={
         <>
-          <CancelButton
-            disabled={submission.submitting || submission.pending}
-          />
+          <CancelButton disabled={submission.submitting} />
           <Button
             type='submit'
             form={formId}
@@ -273,29 +245,6 @@ function ProjectEditor({
         </>
       }
     >
-      <AlertDialog
-        open={confirmDiscard}
-        onOpenChange={(open) => {
-          if (!open) decideDiscard(false);
-        }}
-      >
-        <AlertDialogContent className='sm:max-w-md'>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t('skillProjects.discard')}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {t('skillProjects.discardHint')}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>
-              {t('skillProjects.keepEditing')}
-            </AlertDialogCancel>
-            <AlertDialogAction onClick={() => decideDiscard(true)}>
-              {t('skillProjects.discardAction')}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
       {restoringInput && !error ? (
         <Alert>
           <AlertDescription>{t('skillProjects.restoreInput')}</AlertDescription>
@@ -303,6 +252,8 @@ function ProjectEditor({
       ) : null}
       <FeedbackForm
         id={formId}
+        values={form.getValues}
+        savedValues={saved}
         error={error}
         errorContent={
           confirmedMissing

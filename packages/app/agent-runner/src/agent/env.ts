@@ -20,7 +20,8 @@
 // credential helper scoped to its URL, which asks the worker for it (git-credentials.ts), after an empty helper that
 // clears every helper configured elsewhere for that URL. The credential itself is never in the environment or on disk:
 // only where the helper finds the worker (a socket path and the run's nonce). `GIT_TERMINAL_PROMPT=0` makes git fail
-// rather than ask a person when there is none.
+// rather than ask a person when there is none. The npm launcher (npm-launcher.ts) finds the run's npm directory
+// (`NOCOBASE_RUNNER_NPM_DIR`) and the same socket and nonce, through which it asks for the private npm registry's token.
 import { chmod, mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
@@ -38,6 +39,7 @@ import {
   CREDENTIAL_SOCKET_ENV,
   helperCommand,
 } from './git-credentials.ts';
+import { NPM_DIR_ENV, PRIVATE_REGISTRY_ENV } from './npm-registry.ts';
 
 /** Where the agent's git asks for the run's repository credentials. */
 export interface CredentialHelperOptions {
@@ -104,6 +106,14 @@ export interface BuildEnvOptions {
   credentialHelper?: CredentialHelperOptions;
   /** The run's process tag (core/process-tree.ts), which marks what the tool starts as the run's. */
   processTag?: string;
+  /** Where the npm launcher (npm-launcher.ts) writes the run's configuration and asks for the private registry's token. */
+  npm?: {
+    readonly dir: string;
+    readonly socket: string;
+    readonly nonce: string;
+    /** Another private registry than NocoBase's, for tests (`PRIVATE_REGISTRY_ENV`). */
+    readonly registry?: string;
+  };
   /** The runner's own pnpm is on PATH (runner-tools.ts): keep a repository's `packageManager` from replacing it. */
   pinPnpm?: boolean;
 }
@@ -199,6 +209,13 @@ export function buildAgentEnv(
   if (options.pinPnpm === true) Object.assign(env, PINNED_PNPM_ENV);
   if (options.processTag !== undefined)
     env[PROCESS_TAG_ENV] = options.processTag;
+  if (options.npm !== undefined) {
+    env[NPM_DIR_ENV] = options.npm.dir;
+    env[CREDENTIAL_SOCKET_ENV] = options.npm.socket;
+    env[CREDENTIAL_NONCE_ENV] = options.npm.nonce;
+    if (options.npm.registry !== undefined)
+      env[PRIVATE_REGISTRY_ENV] = options.npm.registry;
+  }
   const config: [string, string][] = [];
   if (options.hooksDir !== undefined)
     config.push(['core.hooksPath', options.hooksDir]);

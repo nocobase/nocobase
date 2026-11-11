@@ -16,7 +16,7 @@ import { pathToFileURL } from 'node:url';
 import type ts from 'typescript';
 
 const PLUGIN_PACKAGE_PATTERN =
-  /^@[a-z0-9][a-z0-9-]*\/app-plugin-([a-z0-9][a-z0-9-]*)$/;
+  /^@[a-z0-9][a-z0-9-]*\/app-(?:plugin|portal)-([a-z0-9][a-z0-9-]*)$/;
 const CLIENT_SOURCE_DEFINITION: PluginSourceDefinition = {
   entryKind: 'call',
   entrySpecifierSuffix: '/client',

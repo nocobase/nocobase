@@ -1,5 +1,109 @@
 # @nocobase/app-plugin-demo-mode
 
+## 0.2.0-beta.11
+
+### Patch Changes
+
+- efa464a: Keep a demo visitor's language choice in their own browser session instead of the shared demo account. Demo Mode now isolates the `i18n.locale` preference that the language switcher saves, replacing the unused `locale` key, and Users shares that key between its client and server.
+- Updated dependencies [ff549a1]
+- Updated dependencies [ff549a1]
+- Updated dependencies [7d9c0a4]
+- Updated dependencies [d88875e]
+- Updated dependencies [efa464a]
+- Updated dependencies [57912f1]
+- Updated dependencies [57912f1]
+- Updated dependencies [7e97024]
+- Updated dependencies [57912f1]
+- Updated dependencies [e1f584e]
+  - @nocobase/app-plugin-agents@2.0.0-beta.11
+  - @nocobase/app-server@5.0.0-beta.4
+  - @nocobase/app-plugin-users@2.0.0-beta.19
+  - @nocobase/app-client@4.0.0-beta.10
+  - @nocobase/db@1.0.0-beta.28
+  - @nocobase/app-plugin-authentication@2.0.0-beta.20
+  - @nocobase/app-cli@1.0.0-beta.33
+
+## 0.2.0-beta.10
+
+### Minor Changes
+
+- a2a6385: Add Russian (ru-RU) and Korean (ko-KR) to the plugins Studio uses, and correct terminology in their existing translations: an issue is a task (it was translated as a magazine issue or a problem in several languages), a runtime is an execution environment, Agent and My Agent stay consistent, and an issue's executor and the backlog status read correctly. The remaining English strings in the agents plugin's translations are translated. Calendars follow Russian and Korean, and a browser asking for Traditional Chinese (zh-HK, zh-Hant-TW) now lands on zh-TW instead of zh-CN.
+
+### Patch Changes
+
+- Updated dependencies [f37a169]
+- Updated dependencies [bf9857b]
+- Updated dependencies [8c9cdae]
+- Updated dependencies [7508a76]
+- Updated dependencies [fb4659d]
+- Updated dependencies [c635b6c]
+- Updated dependencies [6fbf389]
+- Updated dependencies [1cda4c3]
+- Updated dependencies [7d970d6]
+- Updated dependencies [f37a169]
+- Updated dependencies [3eff32d]
+- Updated dependencies [764fc1b]
+- Updated dependencies [10aabd6]
+- Updated dependencies [faa534f]
+- Updated dependencies [4649c90]
+- Updated dependencies [bb1dff2]
+- Updated dependencies [a2a6385]
+  - @nocobase/app-plugin-agents@2.0.0-beta.7
+  - @nocobase/app-plugin-authentication@2.0.0-beta.20
+  - @nocobase/app-server@5.0.0-beta.2
+  - @nocobase/app-plugin-authorization@1.0.0-beta.37
+  - @nocobase/db@1.0.0-beta.26
+  - @nocobase/jobs@1.0.0-beta.6
+  - @nocobase/app-plugin-users@2.0.0-beta.17
+  - @nocobase/i18n@2.0.0-beta.2
+  - @nocobase/app-client@4.0.0-beta.9
+
+## 0.2.0-beta.9
+
+### Patch Changes
+
+- b3b3252: Automatically sign anonymous demo visitors in when opening protected deep links, retaining existing accounts and the complete destination URL.
+- Updated dependencies [bfddb40]
+- Updated dependencies [c627337]
+- Updated dependencies [49daa11]
+- Updated dependencies [78bdca8]
+- Updated dependencies [3681eb0]
+- Updated dependencies [7fe7292]
+- Updated dependencies [9998ac4]
+- Updated dependencies [87f1ea5]
+- Updated dependencies [6507d01]
+  - @nocobase/app-plugin-agents@2.0.0-beta.4
+  - @nocobase/app-plugin-authentication@2.0.0-beta.19
+  - @nocobase/app-plugin-authorization@1.0.0-beta.36
+  - @nocobase/app-plugin-users@2.0.0-beta.15
+  - @nocobase/app-client@4.0.0-beta.8
+  - @nocobase/app-server@5.0.0-beta.1
+  - @nocobase/app-cli@1.0.0-beta.32
+
+## 0.2.0-beta.8
+
+### Patch Changes
+
+- cf23bfe: **Breaking:** Remove the deprecated `@nocobase/app-server/mailer` entry and its `Mailer`, `mailerToken`, `createMailer`, `MailerProvider`, and notification configuration exports. Replace `MailExecutions.close(waitMs)` and `drain()` with `stop()` and `wait()`; transport `close()` now cancels supported network work and waits for its original completion without a nested timeout. Application owners must apply the outer shutdown budget. Create exclusive senders with `@nocobase/app-server/mailers` and declare notification config with `@nocobase/app-plugin-notification-providers/config`. Existing inline SMTP/Resend YAML, environment mappings, and provider/channel APIs remain supported.
+
+  Default and Examples now show `mailers.default: system` and explicitly map `MAILERS_SYSTEM_*`; the example configuration remains empty at runtime. The previous `MAILERS_TRANSACTIONAL_*` sample prefix was not published. Applications may still choose any valid mailer name and custom environment prefix.
+
+- Updated dependencies [6cc8acf]
+- Updated dependencies [1f0b3ba]
+- Updated dependencies [4411984]
+- Updated dependencies [9933a9a]
+- Updated dependencies [1e018f1]
+- Updated dependencies [cf23bfe]
+- Updated dependencies [4411984]
+  - @nocobase/app-client@4.0.0-beta.7
+  - @nocobase/app-plugin-agents@2.0.0-beta.3
+  - @nocobase/app-plugin-users@2.0.0-beta.14
+  - @nocobase/app-plugin-authentication@2.0.0-beta.18
+  - @nocobase/db@1.0.0-beta.25
+  - @nocobase/app-server@5.0.0-beta.0
+  - @nocobase/app-cli@1.0.0-beta.32
+  - @nocobase/app-plugin-authorization@1.0.0-beta.35
+
 ## 0.2.0-beta.7
 
 ### Patch Changes

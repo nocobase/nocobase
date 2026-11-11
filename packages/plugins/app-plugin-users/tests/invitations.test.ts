@@ -17,6 +17,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { InvitationEmail } from '../server/invitations/mail.js';
 import { hashToken } from '../server/invitations/rules.js';
+import { createUserPreferencesService } from '../server/preferences/service.js';
 import * as invitationStore from '../server/invitations/store.js';
 import {
   createUserManagementService,
@@ -573,6 +574,163 @@ describe('user invitations', () => {
       }),
     ).rejects.toMatchObject({ code: 'ROLE_SCOPE_NOT_FOUND' });
     expect(mail).toEqual([]);
+  });
+
+  describe('languages', () => {
+    let localized: UserManagementService;
+    let preferences: ReturnType<typeof createUserPreferencesService>;
+
+    beforeEach(() => {
+      preferences = createUserPreferencesService({ database });
+      localized = createUserManagementService({
+        database,
+        users: userAdministration(database.connection()),
+        roleScopes: createUserRoleScopeRegistry(),
+        mailer: {
+          send: (email) => {
+            mail.push(email);
+            if (failMail) return Promise.reject(new Error('SMTP refused'));
+            return Promise.resolve();
+          },
+        },
+        site: {
+          publicOrigin: ORIGIN,
+          publicBasePath: '/main',
+          appTitle: 'Acme',
+        },
+        i18n: {
+          getLocales: () => ['en-US', 'zh-CN', 'ja-JP', 'it-IT'],
+          getDefaultLocale: () => 'zh-CN',
+        },
+        preferences,
+      });
+    });
+
+    const localeOf = async (id: string) =>
+      (await localized.getInvitation(id))?.locale;
+    const invite = async (input: {
+      locale?: string;
+      inviterLocale?: string;
+    }) => {
+      const [result] = await localized.invite({
+        emails: [`lang-${mail.length}@example.test`],
+        invitedBy: 'ann',
+        ...input,
+      });
+      if (result?.outcome !== 'invited') throw new Error('Expected invitation');
+      return result;
+    };
+
+    it("keeps the chosen language, else the inviter's, else the default", async () => {
+      const chosen = await invite({ locale: 'ja-JP', inviterLocale: 'en-US' });
+      expect(await localeOf(chosen.invitationId)).toBe('ja-JP');
+      expect(mail.at(-1)?.subject).toBe('Ann が Acme に招待しました');
+      const inviters = await invite({ inviterLocale: 'en-US' });
+      expect(await localeOf(inviters.invitationId)).toBe('en-US');
+      expect(mail.at(-1)?.subject).toBe('Ann invited you to Acme');
+      // An inviter's language the application does not offer is ignored rather than refused.
+      const fallback = await invite({ inviterLocale: 'ko-KR' });
+      expect(await localeOf(fallback.invitationId)).toBe('zh-CN');
+      expect(mail.at(-1)?.subject).toBe('Ann 邀请你加入 Acme');
+      await expect(invite({ locale: 'ko-KR' })).rejects.toMatchObject({
+        code: 'INVALID_INVITATION',
+        status: 400,
+      });
+      expect(await localized.listInvitations()).toHaveLength(3);
+    });
+
+    it('keeps the chosen language and manual link after delivery fails, then resends successfully', async () => {
+      failMail = true;
+      const result = await invite({ locale: 'ja-JP' });
+      expect(result).toMatchObject({
+        emailSent: false,
+        emailError: 'Email not sent: email delivery failed',
+        inviteUrl: `${ORIGIN}/main/invite/${tokenOf(mail.at(-1)!)}`,
+      });
+      expect(await localeOf(result.invitationId)).toBe('ja-JP');
+      expect(mail.at(-1)?.subject).toBe('Ann が Acme に招待しました');
+
+      failMail = false;
+      const resent = await localized.resendInvitation(result.invitationId, {
+        inviterLocale: 'en-US',
+      });
+      expect(resent).toMatchObject({
+        emailSent: true,
+        inviteUrl: `${ORIGIN}/main/invite/${tokenOf(mail.at(-1)!)}`,
+      });
+      expect(resent.inviteUrl).not.toBe(result.inviteUrl);
+      expect(resent.emailError).toBeUndefined();
+      expect(mail.at(-1)?.subject).toBe('Ann が Acme に招待しました');
+    });
+
+    it('writes an offered language without email text in the default language and English', async () => {
+      await invite({ locale: 'it-IT' });
+      expect(mail.at(-1)?.subject).toBe('Ann 邀请你加入 Acme');
+      expect(mail.at(-1)?.text).toContain('Ann invited you to Acme.');
+    });
+
+    it("resends in the invitation's language, and an older one in the resending person's", async () => {
+      const result = await invite({ locale: 'ja-JP' });
+      await localized.resendInvitation(result.invitationId, {
+        inviterLocale: 'en-US',
+      });
+      expect(mail.at(-1)?.subject).toBe('Ann が Acme に招待しました');
+      await database
+        .connection()
+        .query.updateTable('userInvitations')
+        .set({ locale: null })
+        .where('id', '=', result.invitationId)
+        .execute();
+      await localized.resendInvitation(result.invitationId, {
+        inviterLocale: 'en-US',
+      });
+      expect(mail.at(-1)?.subject).toBe('Ann invited you to Acme');
+      // Not backfilled.
+      expect(await localeOf(result.invitationId)).toBeNull();
+    });
+
+    it("shows the language to the link and keeps the page's as the new account's", async () => {
+      await invite({ locale: 'ja-JP' });
+      const token = tokenOf(mail.at(-1)!);
+      await expect(localized.lookupInvitation(token)).resolves.toMatchObject({
+        locale: 'ja-JP',
+      });
+      const joined = await localized.acceptInvitation({
+        token,
+        name: 'Lang',
+        password: 'secret-password',
+        locale: 'en-US',
+      });
+      expect(await preferences.get(joined.userId, 'i18n.locale')).toBe('en-US');
+    });
+
+    it("falls back to the invitation's language and leaves an existing account's alone", async () => {
+      await invite({ locale: 'ja-JP' });
+      const joined = await localized.acceptInvitation({
+        token: tokenOf(mail.at(-1)!),
+        name: 'Lang',
+        password: 'secret-password',
+        locale: 'ko-KR',
+      });
+      expect(await preferences.get(joined.userId, 'i18n.locale')).toBe('ja-JP');
+      await localized.invite({
+        emails: ['kim@example.com'],
+        invitedBy: 'ann',
+        locale: 'ja-JP',
+      });
+      // The address gets an account before the invitation is accepted.
+      await insertUser('kim', 'Kim');
+      await localized.acceptInvitation(
+        {
+          token: tokenOf(mail.at(-1)!),
+          name: 'Kim',
+          password: '',
+          locale: 'en-US',
+        },
+        'kim',
+      );
+      expect(await preferences.get('kim', 'i18n.locale')).toBeUndefined();
+    });
   });
 
   async function insertUser(id: string, name: string): Promise<void> {

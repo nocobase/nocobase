@@ -1,6 +1,11 @@
+import { databaseTaskHooksToken } from './task-hooks.js';
 import { createTaskServiceResolver } from './task-container.js';
 import { loggingToken } from '../logging/token.js';
-import type { ServiceResolver } from '@nocobase/service-provider';
+import {
+  createServiceToken,
+  type ServiceToken,
+  type ServiceResolver,
+} from '@nocobase/service-provider';
 import { snapshotDatabaseTaskConfig } from './task-config.js';
 import type { DatabaseTaskConfig } from '@nocobase/db';
 import { resolveDatabaseConfig } from './resolve-config.js';
@@ -28,7 +33,10 @@ import {
   appDatabaseStorageExists,
   prepareAppDatabaseStorage,
 } from './storage.js';
-import type { AppDatabaseConfig } from './types.js';
+import type {
+  AppDatabaseConfig,
+  AppDatabaseTaskContributions,
+} from './types.js';
 
 /**
  * `repair` realigns recorded checksums; it executes no migration or seed.
@@ -81,14 +89,36 @@ export interface AppDatabaseTasksResult {
   results: AppDatabaseTaskResult[];
 }
 
+/** The necessary preparation that stopped a plan before any business task ran. */
+export interface AppDatabaseTaskPreparationFailure {
+  readonly phase: 'storage' | 'reset' | 'beforeTasks' | 'installation';
+  readonly connection?: string;
+  readonly hook?: string;
+}
+
 export class AppDatabaseTaskError extends Error {
+  /** Secondary owned-manager cleanup failure; preparation remains the primary error. */
+  public cleanupError?: unknown;
   constructor(
     public readonly result: AppDatabaseTasksResult,
     cause: unknown,
+    public readonly preparation:
+      AppDatabaseTaskPreparationFailure | undefined = undefined,
+    public readonly resetConnections: readonly string[] = [],
   ) {
     const failed = result.results.find((entry) => entry.status === 'failed');
+    const location = preparation
+      ? `Database preparation (${preparation.phase}) failed${preparation.hook ? ` in hook "${preparation.hook}"` : ''}${preparation.connection ? ` for connection "${preparation.connection}"` : ''}`
+      : `Database ${failed?.kind} failed for connection "${failed?.connection}"`;
+    const resets = resetConnections.length
+      ? ` Connections already reset: ${resetConnections.map((name) => `"${name}"`).join(', ')}. These resets are not rolled back.`
+      : '';
+    const uncertain =
+      preparation?.phase === 'reset'
+        ? ` Connection "${preparation.connection}" may also have been partially modified.`
+        : '';
     super(
-      `Database ${failed?.kind} failed for connection "${failed?.connection}": ${cause instanceof Error ? cause.message : String(cause)}`,
+      `${location}: ${cause instanceof Error ? cause.message : String(cause)}${resets}${uncertain}`,
       { cause },
     );
     this.name = 'AppDatabaseTaskError';
@@ -96,6 +126,14 @@ export class AppDatabaseTaskError extends Error {
 }
 
 export interface AppDatabasePlanExecutionOptions {
+  /** Complete source inventory, including connections omitted by a CLI selection. */
+  readonly contributions?: AppDatabaseTaskContributions;
+  readonly taskFilter?: (task: {
+    readonly name: string;
+    readonly packageName: string;
+  }) => boolean;
+  /** Coordinators may enable sample seeds on a module's first installation. */
+  readonly sample?: { readonly enabled: boolean };
   readonly runtimeConfig?: DatabaseTaskConfig;
   readonly container?: ServiceResolver;
   readonly paths?: AppPaths;
@@ -113,12 +151,50 @@ export interface AppDatabasePlanExecutionOptions {
   readonly dryRun?: boolean;
 }
 
+export interface AppDatabaseTaskCoordinatorContext {
+  readonly database: DatabaseManager;
+  readonly config: AppDatabaseConfig;
+  readonly plan: readonly AppDatabaseTask[];
+  readonly options: AppDatabasePlanExecutionOptions;
+  /** Executes the plan directly, without entering the coordinator again. */
+  readonly execute: (
+    overrides?: AppDatabasePlanExecutionOptions,
+  ) => Promise<AppDatabaseTasksResult>;
+}
+export type AppDatabaseTaskCoordinator = (
+  context: AppDatabaseTaskCoordinatorContext,
+) => Promise<AppDatabaseTasksResult>;
+export const databaseTaskCoordinatorToken: ServiceToken<AppDatabaseTaskCoordinator> =
+  createServiceToken<AppDatabaseTaskCoordinator>(
+    '@nocobase/app-server/database/task-coordinator',
+  );
+
 /** Manual commands and startup share the same resolved, connection-bound plan. */
 export async function executeAppDatabasePlan(
   database: DatabaseManager,
   config: AppDatabaseConfig,
   plan: readonly AppDatabaseTask[],
+  options: AppDatabasePlanExecutionOptions = {},
+): Promise<AppDatabaseTasksResult> {
+  const execute = (
+    overrides: AppDatabasePlanExecutionOptions = {},
+  ): Promise<AppDatabaseTasksResult> =>
+    executeDatabasePlan(database, config, plan, { ...options, ...overrides });
+  const coordinator = options.container?.has(databaseTaskCoordinatorToken)
+    ? options.container.resolve(databaseTaskCoordinatorToken)
+    : undefined;
+  return coordinator
+    ? coordinator({ database, config, plan, options, execute })
+    : execute();
+}
+
+async function executeDatabasePlan(
+  database: DatabaseManager,
+  config: AppDatabaseConfig,
+  plan: readonly AppDatabaseTask[],
   {
+    taskFilter,
+    sample,
     paths,
     drivers,
     fresh = false,
@@ -152,26 +228,83 @@ export async function executeAppDatabasePlan(
   if (operation === 'unlock' && dryRun) {
     throw new Error('An unlock has no dry run; it reports the lock it finds.');
   }
+  const targets = collectTaskTargets(config, plan, fresh, drivers);
   const taskContainer = createTaskServiceResolver(container);
   const taskConfig = snapshotDatabaseTaskConfig(runtimeConfig);
-  // Decided before any task runs: the migrations a run applies would make
-  // every database look installed by the time its seeds run.
-  const freshInstalls =
-    operation === 'run' && !dryRun
-      ? await detectFreshInstalls(database, config, plan, {
-          paths,
-          drivers,
-          fresh,
-          runtimeConfig: taskConfig,
-          container: taskContainer,
-        })
-      : new Map<string, boolean>();
-  const sampleData = taskConfig.get<unknown>('app.sampleData') === true;
+  const resetConnections: string[] = [];
+  const hooks =
+    !dryRun &&
+    targets.length > 0 &&
+    operation !== 'repair' &&
+    operation !== 'unlock' &&
+    container?.has(databaseTaskHooksToken)
+      ? container.resolve(databaseTaskHooksToken).snapshot()
+      : [];
   const result: AppDatabaseTasksResult = {
     ok: true,
     status: 'completed',
     results: [],
   };
+  function preparationFailed(
+    preparation: AppDatabaseTaskPreparationFailure,
+    cause: unknown,
+  ): never {
+    result.ok = false;
+    result.status = 'failed';
+    result.results = plan.map((task) => unrunTask(task, 'preparation-failed'));
+    throw new AppDatabaseTaskError(result, cause, preparation, [
+      ...resetConnections,
+    ]);
+  }
+
+  // Previewing never prepares storage, even when it already exists.
+  if (!dryRun) {
+    for (const connection of targets) {
+      try {
+        await prepareAppDatabaseStorage(config, paths, [connection], drivers);
+      } catch (cause) {
+        preparationFailed({ phase: 'storage', connection }, cause);
+      }
+    }
+    if (fresh) {
+      for (const connection of targets) {
+        try {
+          await database.connection(connection).resetManagedSchema();
+          resetConnections.push(connection);
+        } catch (cause) {
+          preparationFailed({ phase: 'reset', connection }, cause);
+        }
+      }
+    }
+  }
+
+  const hookContext = Object.freeze({
+    resetConnections: Object.freeze([...resetConnections]),
+  });
+  for (const hook of hooks) {
+    try {
+      await hook.beforeTasks(hookContext);
+    } catch (cause) {
+      preparationFailed({ phase: 'beforeTasks', hook: hook.name }, cause);
+    }
+  }
+
+  // Read installation history before any business migration or seed changes it.
+  let freshInstalls = new Map<string, boolean>();
+  if (operation === 'run' && !dryRun) {
+    try {
+      freshInstalls = await detectFreshInstalls(database, config, plan, {
+        paths,
+        drivers,
+        fresh,
+        runtimeConfig: taskConfig,
+        container: taskContainer,
+      });
+    } catch (cause) {
+      preparationFailed({ phase: 'installation' }, cause);
+    }
+  }
+  const sampleData = taskConfig.get<unknown>('app.sampleData') === true;
   for (const [index, task] of plan.entries()) {
     const identity = { connection: task.connection, kind: task.kind };
     if (task.skipReason) {
@@ -194,14 +327,6 @@ export async function executeAppDatabasePlan(
           task.connection,
           drivers,
         ));
-      if (!storageMissing) {
-        await prepareAppDatabaseStorage(
-          config,
-          paths,
-          [task.connection],
-          drivers,
-        );
-      }
       const options = {
         runtimeConfig: taskConfig,
         container: taskContainer,
@@ -209,6 +334,7 @@ export async function executeAppDatabasePlan(
         connection: task.connection,
         config: task.config,
         sources: task.config.sources,
+        taskFilter,
         onStaleLock: (takeover: StaleTaskLockTakeover): void =>
           reportStaleLock(container, task, takeover),
       };
@@ -231,13 +357,13 @@ export async function executeAppDatabasePlan(
                       ? await createAppMigrator(options).pending({ fresh })
                       : await createAppSeeder(options).pending({ fresh })
                     : task.kind === 'migrations'
-                      ? await (fresh
-                          ? createAppMigrator(options).fresh()
-                          : createAppMigrator(options).latest())
+                      ? await runMigrations(options, fresh)
                       : await createAppSeeder({
                           ...options,
                           sample: {
-                            enabled: freshInstall === true && sampleData,
+                            enabled:
+                              sample?.enabled ??
+                              (freshInstall === true && sampleData),
                           },
                         }).run();
       result.results.push({
@@ -259,17 +385,87 @@ export async function executeAppDatabasePlan(
         error: error instanceof Error ? error.message : String(error),
       });
       result.results.push(
-        ...plan.slice(index + 1).map((pending): AppDatabaseTaskResult => ({
-          connection: pending.connection,
-          kind: pending.kind,
-          status: 'not-run',
-          reason: 'previous-task-failed',
-        })),
+        ...plan
+          .slice(index + 1)
+          .map((pending) => unrunTask(pending, 'previous-task-failed')),
       );
-      throw new AppDatabaseTaskError(result, error);
+      throw new AppDatabaseTaskError(result, error, undefined, [
+        ...resetConnections,
+      ]);
     }
   }
   return result;
+}
+
+/** Only target data is collected here; execution stays in the phase functions. */
+function collectTaskTargets(
+  config: AppDatabaseConfig,
+  plan: readonly AppDatabaseTask[],
+  fresh: boolean,
+  drivers?: Record<string, DatabaseDriverRegistration>,
+): string[] {
+  const targets = new Set<string>();
+  const tasks = new Set<string>();
+  for (const task of plan) {
+    if (task.skipReason) continue;
+    const connection = config.connections[task.connection];
+    if (!connection)
+      throw new Error(`Unknown database connection "${task.connection}".`);
+    if (connection.schemaManagement === 'external') {
+      throw new Error(
+        `Database connection "${task.connection}" is external; migrations and seeds are not supported.`,
+      );
+    }
+    const identity = `${task.connection}:${task.kind}`;
+    if (tasks.has(identity))
+      throw new Error(`Duplicate database task "${identity}".`);
+    tasks.add(identity);
+    targets.add(task.connection);
+    if (fresh && task.kind === 'migrations') {
+      const driver = resolveDatabaseDriver(
+        {
+          dialect: connection.dialect,
+          databaseDriver: connection.databaseDriver,
+        },
+        { ...config.drivers, ...drivers },
+        task.connection,
+      );
+      if (!driver?.resetManagedSchema) {
+        throw new Error(
+          `Database driver for connection "${task.connection}" does not support managed schema reset.`,
+        );
+      }
+    }
+  }
+  return [...targets];
+}
+
+function unrunTask(
+  task: AppDatabaseTask,
+  reason: string,
+): AppDatabaseTaskResult {
+  return {
+    connection: task.connection,
+    kind: task.kind,
+    status: task.skipReason ? 'skipped' : 'not-run',
+    reason: task.skipReason ?? reason,
+  };
+}
+
+async function runMigrations(
+  options: Parameters<typeof createAppMigrator>[0],
+  fresh: boolean,
+): Promise<AppMigrationRunResult> {
+  const applied = await createAppMigrator(options).latest();
+  if (!fresh) return applied;
+  // Rebuilding an empty schema is completed work even without migration sources.
+  return {
+    status: 'completed',
+    batch: applied.batch ?? 0,
+    executed: applied.executed ?? [],
+    skipped: applied.skipped ?? [],
+    ...(applied.warnings ? { warnings: applied.warnings } : {}),
+  };
 }
 
 /**
@@ -409,10 +605,8 @@ function reportStaleLock(
 }
 
 /**
- * A fresh run drops a connection's managed schema inside its migrations task,
- * so every other task on that connection has to come after it. The planner
- * already orders tasks this way; the check guards hand-built plans, which
- * would otherwise seed a database that is about to be emptied.
+ * A fresh plan must include migrations for every executable connection, with
+ * migrations before seeds. Validate hand-built plans before any storage write.
  */
 function assertFreshPlanOrder(plan: readonly AppDatabaseTask[]): void {
   const rebuilt = new Set<string>();
@@ -474,23 +668,7 @@ export async function runAppDatabaseTasks(
   const plan = planAppDatabaseTasks(config, kinds, options);
   if (!plan.length) return { ok: true, status: 'not-configured', results: [] };
   if (options.fresh) {
-    for (const task of plan) {
-      if (task.skipReason) continue;
-      const connection = config.connections[task.connection];
-      const driver = resolveDatabaseDriver(
-        {
-          dialect: connection.dialect,
-          databaseDriver: connection.databaseDriver,
-        },
-        { ...config.drivers, ...drivers },
-        task.connection,
-      );
-      if (!driver?.resetManagedSchema) {
-        throw new Error(
-          `Database driver for connection "${task.connection}" does not support managed schema reset.`,
-        );
-      }
-    }
+    collectTaskTargets(config, plan, true, drivers);
     if (
       !options.dryRun &&
       options.confirmFresh &&
@@ -506,8 +684,10 @@ export async function runAppDatabaseTasks(
         ...drivers,
       });
   if (!database) return { ok: true, status: 'not-configured', results: [] };
+  let executionFailure: unknown;
   try {
     return await executeAppDatabasePlan(database, config, plan, {
+      contributions: options.contributions,
       paths,
       drivers,
       fresh: options.fresh,
@@ -517,8 +697,30 @@ export async function runAppDatabaseTasks(
       runtimeConfig: options.runtimeConfig,
       container: options.container,
     });
+  } catch (error) {
+    executionFailure = error;
+    throw error;
   } finally {
-    if (!options.database) await database.destroy();
+    if (!options.database)
+      await destroyTaskDatabase(database, executionFailure);
+  }
+}
+
+async function destroyTaskDatabase(
+  database: DatabaseManager,
+  executionFailure: unknown,
+): Promise<void> {
+  try {
+    await database.destroy();
+  } catch (cleanupError) {
+    if (
+      executionFailure instanceof AppDatabaseTaskError &&
+      executionFailure.preparation
+    ) {
+      executionFailure.cleanupError = cleanupError;
+    } else {
+      throw cleanupError;
+    }
   }
 }
 

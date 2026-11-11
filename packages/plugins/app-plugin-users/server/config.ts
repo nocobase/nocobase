@@ -14,6 +14,10 @@ import {
 import type { UsersConfig } from './tokens.js';
 
 export type { InitialAdminConfig, UsersConfig } from './tokens.js';
+export {
+  describeInvitationEmailChannel,
+  type InvitationEmailChannelState,
+} from './invitations/channel.js';
 
 /**
  * The environment variables that set `users` fields. All three are read once, while the user table is still empty,

@@ -101,6 +101,9 @@ export type {
   MountContext,
   MountOffer,
   NewInput,
+  NpmCredentialProvider,
+  NpmCredentialRegistry,
+  NpmCredentialRequest,
   RepoAccessContext,
   RepoAccessProvider,
   RepoAccessRegistry,
@@ -113,6 +116,7 @@ export type {
   SubjectAssembly,
   SubjectSample,
   SubjectBinding,
+  SubjectVisibility,
   SubjectDir,
   SubjectFacts,
   SubjectRegistry,
@@ -120,6 +124,7 @@ export type {
   SubjectWorkspaces,
   SubjectScope,
   WorkSink,
+  CancelRequest,
 } from './core/runs/index.js';
 export type { AgentAvailability, Availability } from './core/runs/index.js';
 export type { Tx } from './kernel/tx.js';

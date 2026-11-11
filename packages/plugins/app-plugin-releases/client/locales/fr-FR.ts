@@ -152,13 +152,10 @@ const frFR: LocaleResource<typeof enUS> = {
   },
   ui: {
     nav: {
-      apps: 'Applications',
       environments: 'Déployer des environnements',
     },
     apps: {
       title: 'Applications',
-      description: 'Applications, leurs versions et où elles sont déployées.',
-      search: 'Recherche par ID ou nom',
       create: 'Créer une application',
       id: "Identifiant de l'application",
       name: 'Nom',
@@ -169,18 +166,28 @@ const frFR: LocaleResource<typeof enUS> = {
       labels: 'Etiquettes',
       loadFailed: 'Impossible de charger les applications.',
       loadOneFailed: "Impossible de charger l'application.",
-      emptyTitle: "Aucune application pour l'instant",
-      emptyNoAccess: 'Demandez à un administrateur de créer une application.',
-      emptyDescription:
-        'Créez une application, puis téléchargez une version et déployez-la dans un environnement.',
-      noResults: 'Aucune application ne correspond à la recherche.',
       created: '{{name}} créé.',
       createDescription:
         'Une application est déployée dans un environnement ; ses sorties sont téléchargées par la suite.',
       idHint:
         "Lettres, chiffres, traits de soulignement et traits d'union ; une partie de son adresse. Cela ne peut pas changer plus tard.",
-      noEnvironment: "Pas encore d'environnement",
       lastAccess: 'Dernière visite',
+      stateFilter: 'État',
+      anyState: 'Tous les états',
+      clearFilters: 'Effacer les filtres',
+      noMatches: 'Aucune application ne correspond aux filtres.',
+      runStates: {
+        running: 'En cours d’exécution',
+        starting: 'En démarrage',
+        pending: 'Pas encore démarrée',
+        waiting: 'En attente',
+        stopped: 'Arrêtée ou en veille',
+        failed: 'En échec',
+        unknown: 'Inconnu',
+      },
+      page: 'Page {{page}} sur {{pages}}',
+      previousPage: 'Page précédente',
+      nextPage: 'Page suivante',
     },
     advanced: 'Avancé (facultatif)',
     labels: {
@@ -253,6 +260,9 @@ const frFR: LocaleResource<typeof enUS> = {
       stopped: 'Arrêté',
       stoppedOnDemand: 'Arrêté (démarrage sur visite)',
       dormant: 'Hibernation (préparé en visite)',
+      waitingCapacity: 'En attente d’une place libre',
+      waitingMemory: 'En attente de mémoire',
+      waitingRecycle: 'En attente du redémarrage de l’hôte',
       failed: 'Échec',
       unknown: 'Inconnu',
       deploying: 'Déploiement',
@@ -301,6 +311,11 @@ const frFR: LocaleResource<typeof enUS> = {
         'Cet environnement est protégé. Tapez {{appId}} pour déployer.',
     },
     deployments: {
+      cancel: 'Annuler le déploiement',
+      replaced: 'Remplacé par un déploiement plus récent.',
+      cancelAccepted: 'Annulation acceptée.',
+      queueAhead: 'En attente · {{ahead}} avant',
+      restartHint: 'Déploiement interrompu. Déployez à nouveau la version.',
       title: 'Déploiements',
       kind: 'Genre',
       status: 'Statut',
@@ -317,6 +332,8 @@ const frFR: LocaleResource<typeof enUS> = {
       hideLogs: 'Masquer les journaux',
       noLogs: 'Aucune ligne de journal.',
       statuses: {
+        cancelling: 'Annulation en cours',
+        cancelled: 'Annulé',
         queued: "En file d'attente",
         deploying: 'Déploiement',
         succeeded: 'Réussi',
@@ -537,6 +554,56 @@ const frFR: LocaleResource<typeof enUS> = {
       variables: 'Variables',
       settings: 'Paramètres',
     },
+    sharedHost: {
+      title: 'Hôte d’applications partagé',
+      description:
+        'Les applications de tous les environnements de cet hôte partagent un processus et sa mémoire.',
+      environments: 'Environnements sur cet hôte : {{names}}',
+      recycling: {
+        pending:
+          'L’ancien code est libéré en redémarrant cet hôte dès qu’aucune application n’est utilisée. Les nouvelles versions attendent jusque-là ; les applications en cours continuent de répondre.',
+        restarting:
+          'Cet hôte redémarre. Ses applications répondent « réessayez dans un instant » jusqu’à leur retour.',
+      },
+      restoreFailed:
+        '{{name}} : ses applications n’ont pas pu être restaurées ; nouvel essai en arrière-plan.',
+      failed:
+        'L’application n’a pas pu être restaurée après le redémarrage de son hôte partagé ; nouvel essai en arrière-plan.',
+      view: 'Voir l’occupation de l’hôte',
+      deployed: 'Déployées : {{count}}',
+      appsLabel: 'En cours ou en démarrage',
+      heapLabel: 'Tas',
+      processLabel: 'Mémoire du processus',
+      ratio: '{{used}} / {{limit}}',
+      runningUnlimited: '{{running}} · sans limite',
+      available: '{{available}} encore libres sur le serveur',
+      wholeHost:
+        'Totaux de tout l’hôte, tous ses environnements compris ; la mémoire ne se répartit pas entre ses applications.',
+      viewAppsNote:
+        'Seules les applications que vous pouvez voir sont listées.',
+      byEnvironment:
+        "En cours d'exécution ou de démarrage, par environnement :",
+    },
+    runtime: {
+      holds: {
+        requests: 'Traite des requêtes',
+        connections: 'Connexions ouvertes',
+        starting: 'Démarrage',
+        operation: 'Déploiement ou arrêt en cours',
+        resident: 'Toujours en marche',
+        busy: 'Occupée',
+        recent: 'Utilisée dans la dernière minute',
+      },
+      waiting: {
+        capacity:
+          'Démarrage refusé : limite d’applications actives ou file de démarrage pleine',
+        memory: 'Démarrage refusé : mémoire insuffisante',
+        recycle:
+          'Démarrage refusé : le nouveau code attend le redémarrage de l’hôte',
+      },
+      idle: 'Inactive ; arrêtée en premier quand de la place est nécessaire',
+      lastVisit: 'Dernière visite : {{time}}',
+    },
     overview: {
       currentRelease: 'Version actuelle',
       recent: 'Déploiements récents',
@@ -643,6 +710,10 @@ const frFR: LocaleResource<typeof enUS> = {
         CONFIG_TOO_LARGE: 'La configuration est trop grande.',
         CONFIRMATION_REQUIRED:
           "Saisissez l'ID de l'application pour confirmer.",
+        DEPLOYMENT_NOT_CANCELLABLE:
+          'Le déploiement a commencé la bascule ou est terminé.',
+        CANCELLATION_UNSUPPORTED:
+          'Ce pilote de déploiement ne prend pas en charge l’annulation.',
         DEPLOYMENT_IN_PROGRESS:
           'Un déploiement de cette application est déjà en cours.',
         DEPLOYMENT_NOT_FOUND: "Le déploiement n'existe pas.",

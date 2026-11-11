@@ -1,7 +1,13 @@
 import { PROTOCOL_VERSION, RUNNER_ROUTES } from '@nocobase/agent-protocol';
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { api, claim, createHarness, type Harness } from './harness.js';
+import {
+  api,
+  claim,
+  claimRepeatedly,
+  createHarness,
+  type Harness,
+} from './harness.js';
 
 const BOTH = [
   { kind: 'claude', authenticated: true },
@@ -40,7 +46,7 @@ describe('limits per coding tool', () => {
       toolSlots: { claude: 2, codex: 1 },
     });
 
-    const taken = await claim(h, runner, 3);
+    const taken = await claimRepeatedly(h, runner, 3);
     expect(taken.map((payload) => payload.run.id)).toEqual([first, second]);
     expect((await waits()).get(third)).toMatchObject({
       reason: 'toolSlotsFull',
@@ -108,7 +114,7 @@ describe('limits per coding tool', () => {
       slots: 2,
       toolSlots: { claude: 1 },
     });
-    const taken = await claim(h, runner, 2);
+    const taken = await claimRepeatedly(h, runner, 2);
     expect(taken.map((payload) => payload.tool.kind)).toEqual([
       'claude',
       'codex',

@@ -2,7 +2,7 @@
   "name": "@nocobase/app-plugin-file",
   "displayName": "File App Plugin",
   "description": "File repositories, uploads, stable content URLs for NocoBase applications.",
-  "version": "1.0.0-beta.28",
+  "version": "1.0.0-beta.31",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "sideEffects": false,
@@ -66,7 +66,6 @@
     "@nocobase/db": "workspace:*",
     "@nocobase/app-testing": "workspace:*",
     "@nocobase/dev-config": "workspace:*",
-    "@nocobase/drive": "workspace:*",
     "@nocobase/service-provider": "workspace:*",
     "@silurus/ooxml": "0.85.1",
     "@testing-library/jest-dom": "catalog:",
@@ -79,7 +78,6 @@
     "jsdom": "catalog:",
     "lucide-react": "catalog:",
     "prettier": "catalog:",
-    "react": "catalog:",
     "react-dom": "catalog:",
     "react-markdown": "catalog:",
     "remark-gfm": "catalog:",
@@ -87,13 +85,15 @@
     "vitest": "catalog:"
   },
   "dependencies": {
-    "hono": "catalog:"
+    "hono": "catalog:",
+    "@nocobase/drive": "workspace:^"
   },
   "peerDependencies": {
     "@nocobase/app-client": "workspace:^",
     "@nocobase/app-server": "workspace:^",
     "@nocobase/db": "workspace:^",
+    "@nocobase/i18n": "workspace:^",
     "@nocobase/service-provider": "workspace:^",
-    "@nocobase/i18n": "workspace:^"
+    "react": "catalog:"
   }
 }

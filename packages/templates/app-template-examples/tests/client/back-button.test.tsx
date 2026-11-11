@@ -8,15 +8,14 @@ import type { ReactElement, ReactNode } from 'react';
 import { createMemoryRouter, Outlet, RouterProvider } from 'react-router';
 import { describe, expect, it } from 'vitest';
 
+import type { AppClientRegisteredRoute } from '@nocobase/app-client/plugins';
+import { RouteTreeProvider } from '../../client/routing/route-context.js';
 import { BackButton } from '#components/back-button';
 
 import enUS from '../../client/locales/en-US.js';
 
 const runtime = await createTestI18nRuntime({
-  application: {
-    namespace: '@nocobase/app-template-examples',
-    resources: enUS,
-  },
+  application: { namespace: '@nocobase/app-template-default', resources: enUS },
 });
 
 function I18n({ children }: { readonly children: ReactNode }): ReactElement {
@@ -44,6 +43,25 @@ function renderAt(url: string, child: ReactElement) {
     ],
     { initialEntries: [url] },
   );
+  const registered = ['/projects', '/overview'].map(
+    (path) =>
+      ({
+        path,
+        id: path,
+        name: path,
+        packageName: 'test',
+        auth: 'required',
+        authz: 'skip',
+        componentLoader: async () => ({ default: () => null }),
+      }) as AppClientRegisteredRoute,
+  );
+  // The provider needs to be within the router, so wrap each route's page.
+  const routes = router.routes;
+  for (const entry of routes) {
+    entry.element = (
+      <RouteTreeProvider routes={registered}>{entry.element}</RouteTreeProvider>
+    );
+  }
   render(<RouterProvider router={router} />, { wrapper: I18n });
   return router;
 }
@@ -80,4 +98,17 @@ describe('BackButton', () => {
       screen.getByRole('link', { name: 'Back to the overview' }),
     ).toHaveAttribute('href', '/overview');
   });
+  it.each(['https://example.com/overview', '//example.com', '/missing'])(
+    'falls back safely for %s without naming the invalid destination',
+    (to) => {
+      renderAt(
+        '/projects/12',
+        <BackButton to={to}>Private destination</BackButton>,
+      );
+      expect(
+        screen.getByRole('link', { name: enUS.navigation.back }),
+      ).toHaveAttribute('href', '/projects');
+      expect(screen.queryByText('Private destination')).not.toBeInTheDocument();
+    },
+  );
 });

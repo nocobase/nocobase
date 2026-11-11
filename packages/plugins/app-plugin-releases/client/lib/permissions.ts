@@ -16,3 +16,14 @@ export function canOnApp(
   // The application may relate more Apps than the ones created; the server decides those.
   return scope.users.length > 0;
 }
+
+/**
+ * Who may open the environments and an environment's page: those who may read environments (the setting), and App
+ * readers, who list and create an environment's Apps there. Each part of the pages keeps its own check.
+ */
+export function canEnterEnvironments(me: Me): boolean {
+  return (
+    me.permissions.settings['rel.environments/read'] ||
+    me.permissions.pages['rel-apps']
+  );
+}

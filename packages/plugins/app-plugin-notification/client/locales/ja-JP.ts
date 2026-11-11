@@ -3,6 +3,57 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const jaJP: LocaleResource<typeof enUS> = {
+  templates: {
+    title: '通知テンプレート',
+    coverage:
+      'システムが自動的に送信する通知と、その内容です。ワークフローやカスタムコードから送信される通知は表示されない場合があります。このページは閲覧専用です。',
+    filters: 'テンプレートを絞り込む',
+    search: 'テンプレートを検索',
+    category: 'カテゴリ',
+    channel: 'チャネル',
+    all: 'すべて',
+    details: 'テンプレートの詳細',
+    close: '閉じる',
+    providedBy: '提供元: {{name}}',
+    trigger: '送信のタイミング',
+    recipients: '送信先',
+    businessRule: '送信条件',
+    languagePolicy: '言語',
+    combined:
+      '1 通の通知にすべての言語（{{languages}}）が含まれます。受信者全員が同じ内容を受け取ります。',
+    singleLocale: '{{language}}のみで送信されます。',
+    status: '送信チャネル',
+    statusHelp:
+      '各チャネルが設定済みかどうかを表示します。接続のテストや、通知が届くことの確認は行いません。',
+    configured: '設定済み',
+    unconfigured: '未設定',
+    enabled: 'オン',
+    disabled: 'オフ',
+    variables: '変数',
+    variablesHelp:
+      '通知の送信時に実際の値に置き換えられるプレースホルダーです。',
+    language: '言語',
+    synthetic:
+      '架空のサンプルデータを使用します。プレビューで通知が送信されることはありません。',
+    definition: '変数を含むテンプレート',
+    preview: 'プレビュー',
+    html: 'HTML 版（コードとして表示）',
+    technical: '技術情報',
+    templateId: 'テンプレート ID',
+    package: 'パッケージ',
+    channelNames: 'チャネル名',
+    channelTypes: {
+      inApp: 'アプリ内メッセージ',
+      email: 'メール',
+    },
+    loading: '読み込み中…',
+    failed: 'テンプレートを読み込めませんでした。',
+    forbidden: '通知テンプレートを表示する権限がありません。',
+    notFound: 'このテンプレートはもう存在しません。',
+    retry: '再試行',
+    empty: '通知テンプレートはまだありません。',
+    noResults: '条件に一致するテンプレートはありません。',
+  },
   logs: {
     deliveryOperations: '配送業務',
     recipeDescription:

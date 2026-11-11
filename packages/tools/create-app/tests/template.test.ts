@@ -65,6 +65,20 @@ describe('TEMPLATE_ALIASES', () => {
     );
   });
 
+  it('resolves multi-portal at the selected channel without rewriting explicit versions', () => {
+    expect(resolveTemplateSource('multi-portal')).toBe(
+      '@nocobase/app-template-multi-portal@latest',
+    );
+    expect(resolveTemplateSource('multi-portal', { tag: 'beta' })).toBe(
+      '@nocobase/app-template-multi-portal@beta',
+    );
+    expect(
+      resolveTemplateSource('@nocobase/app-template-multi-portal@0.1.0', {
+        tag: 'beta',
+      }),
+    ).toBe('@nocobase/app-template-multi-portal@0.1.0');
+  });
+
   it('maps the default name to the app template', () => {
     expect(TEMPLATE_ALIASES.default).toEqual({
       packageName: '@nocobase/app-template-default',
@@ -152,6 +166,7 @@ describe('isTemplateAlias', () => {
   it('recognizes only the names in the table', () => {
     expect(isTemplateAlias('default')).toBe(true);
     expect(isTemplateAlias('examples')).toBe(true);
+    expect(isTemplateAlias('multi-portal')).toBe(true);
     expect(isTemplateAlias('hub')).toBe(false);
     expect(isTemplateAlias('@nocobase/app-template-default')).toBe(false);
     expect(isTemplateAlias('./local')).toBe(false);

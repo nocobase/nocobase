@@ -266,9 +266,13 @@ describe('hasServerPluginEntry', () => {
 });
 
 describe('planPluginRegistration', () => {
-  it('registers and unregisters all entries of an application-scoped plugin', async () => {
+  it.each([
+    '@nocobase/app-plugin-custom',
+    '@nocobase/app-portal-custom',
+    '@my-app/app-plugin-custom',
+    '@my-app/app-portal-custom',
+  ])('registers and unregisters all entries of %s', async (packageName) => {
     const appRoot = await createApp();
-    const packageName = '@my-app/app-plugin-custom';
     const pluginDirectory = await createPlugin(appRoot, packageName);
     const manifestPath = path.join(pluginDirectory, 'package.json');
     const manifest = JSON.parse(await readFile(manifestPath, 'utf8'));
@@ -748,4 +752,16 @@ describe('removePluginSkills', () => {
       await removePluginSkills(appRoot, '@nocobase/app-plugin-demo'),
     ).toEqual([]);
   });
+});
+
+it('preserves a portal package identity when normalizing registration', () => {
+  expect(pluginPackageName('@nocobase/app-portal-assets')).toBe(
+    '@nocobase/app-portal-assets',
+  );
+  expect(pluginShortName('@nocobase/app-portal-assets')).toBe('assets');
+});
+
+it('rejects the unpublished module package spelling', () => {
+  expect(() => pluginPackageName('@acme/app-module-assets')).toThrow();
+  expect(() => pluginPackageName('@nocobase/app-module-assets')).toThrow();
 });

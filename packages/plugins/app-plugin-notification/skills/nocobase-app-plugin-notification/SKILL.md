@@ -23,6 +23,8 @@ Inspect the application's registered plugins and effective notification configur
 5. For custom transports, read [Channel type extensions](references/channel-and-provider-extensions.md). Register classes implementing `ChannelInstance` with `registerChannelType` through `notificationExtensionRegistryToken` and retain the queue/lease/retry lifecycle. Use deprecated `registerChannel()` / `registerProvider()` only when maintaining legacy compatibility code or its tests; official implementations and examples use the class API.
 6. Verify changed packages and consumers with lint, typecheck, tests, and build. Cover atomic validation, independent delivery, recipient rules, and retries bound to original identities.
 
+When adding or changing notification business, also deliver the read-only [template directory](references/template-directory.md): register the real shared renderer, synthetic examples and truthful state, and mount its view in the existing Notification management settings module. Never imply that a channel or delivery log enumerates business templates.
+
 For delivery diagnostics, exercise the normal business notification flow or use a server-side script resolving `notificationServiceToken` with complete message input. Use an authorized recipient and inspect the returned notification ID in the logs. Credentials stay on the server.
 
 ## High-impact actions and rollback

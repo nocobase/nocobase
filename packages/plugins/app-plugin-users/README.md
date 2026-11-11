@@ -154,3 +154,39 @@ A user editor can submit profile fields and `roleScopes` together through `PATCH
 ## Explicit Member assignments
 
 New accounts default to a saved, editable Member role. Omitted creation scopes use the default; an explicit empty role list stays empty. See [Member roles and the upgrade checklist](MEMBER-ROLES.md) for existing-user preservation, account basics, and the required package and application-page updates.
+
+## Durable language preferences
+
+When users and i18n are registered, the users Client plugin integrates language selection automatically. An explicit selection stores a JSON string under `i18n.locale` in the existing `userPreferences` table through `UserPreferencesService` and the authenticated preferences API. No migration or user column is required. The generic i18n library has no dependency on users.
+
+For a signed-in account, a supported saved string takes precedence over browser storage. A missing, malformed or unsupported preference falls back to `i18n.defaultLocale`, then `en-US`. Initial loading uses the application default until the server answers; it never adopts another account's cached language. Defaults and legacy `nocobase.locale:<mount path>` values are not automatically written to an account. The first explicit language selection creates its durable preference. This deliberately avoids guessing who owned a browser's historical choice.
+
+Identity-bound preference reads include `expectedUserId` in the query, and single-value writes include it in the JSON body. The server returns `409 USER_PREFERENCE_IDENTITY_CHANGED` if the authenticated owner differs, preventing old requests from using newly switched credentials. This precondition is optional for existing API clients.
+
+The shared runtime, application-scoped browser locale and session `locale` are synchronized after restoration and selection. Anonymous choices use a separate `nocobase.guest-locale:<mount path>` key when users is registered, so signing out restores the guest choice or application default. Applications without users retain the existing `nocobase.locale:<mount path>` behavior. The old unscoped preferences cache is ignored; caches now include the mount path, and in-memory stores are separated by API client, user and authentication session. Identity changes hide the previous identity's interface until its language is replaced. Writes and locale changes are ordered; expired identity work cannot issue queued preference writes or overwrite the current browser state.
+
+Request language and durable recipient language are different. HTTP translation continues to resolve a valid session `locale` before `Accept-Language`, then the application default and framework fallback. The users Client integration refreshes that session value on identity changes and language selection, so an old session value does not override a restored choice. A header changes request negotiation only; it never creates a durable preference. The one exception is an accepted invitation: the new account starts with the language its accept page showed, which opens in the invitation's language. Before Client synchronization, API-only callers retain the request negotiation rules. Server-supported languages and client-supported languages can differ: the locale endpoint retains its English fallback for a client-only locale.
+
+Background jobs should resolve the recipient's language explicitly; they must not use the worker's runtime current language or the triggering request's session. `resolveUserLocale` validates the stored type and exact membership in the Server runtime's supported locales, falling back to a supported application default and finally `en-US`. It does not change the shared runtime or swallow database failures.
+
+`UserPreferencesService.get(userId, key, connection?)` accepts a caller-owned transaction connection. Pass it when resolving preferences inside a transaction to read its current data and avoid acquiring a second pooled connection.
+
+```ts
+import { i18nToken } from '@nocobase/app-server/i18n';
+import {
+  resolveUserLocale,
+  userPreferencesServiceToken,
+} from '@nocobase/app-plugin-users/server';
+
+const runtime = app.container.resolve(i18nToken);
+const locale = await resolveUserLocale(
+  app.container.resolve(userPreferencesServiceToken),
+  runtime,
+  userId,
+);
+await runtime.ensureLocaleLoaded(locale);
+const t = runtime.getFixedT('@your/plugin', locale);
+const subject = t('notifications.subject');
+```
+
+Direct callers of `UserPreferenceStore.set()` now receive a rejected promise when persistence fails or its identity guard expires; handle that rejection. The `useUserPreference` setter retains its existing fire-and-forget behavior and reports failures through the store's error callback. A failed older write cannot reload over a newer queued choice.

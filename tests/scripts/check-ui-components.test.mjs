@@ -208,6 +208,104 @@ test('does not transfer a JavaScript exception across intervening code', () => {
   );
 });
 
+test('reports native and shadcn Input date pickers with a date picker recommendation', () => {
+  const result = inspect(`import { Input } from '#components/ui/input';
+    import { Input as TextInput, InputGroupInput as GroupInput } from '../components/ui/input-group.js';
+    import * as UI from '#components/ui/input';
+    export const Page = () => <>
+      <input type='date'/><input type={'date'}/><input type={\`DATE\`}/>
+      <Input type='date'/><TextInput type={'date'}/><GroupInput type='date'/><UI.Input type='date'/>
+    </>`);
+  assert.deepEqual(
+    result.findings.map((item) => [item.tag, item.type, item.line]),
+    [
+      ['input', 'date', 5],
+      ['input', 'date', 5],
+      ['input', 'date', 5],
+      ['Input', 'date', 6],
+      ['TextInput', 'date', 6],
+      ['GroupInput', 'date', 6],
+      ['UI.Input', 'date', 6],
+    ],
+  );
+  for (const finding of result.findings) {
+    assert.match(
+      finding.replacement,
+      /DatePicker \(#components\/date-picker\)/,
+    );
+    assert.match(finding.replacement, /calendar, popover and button/);
+    assert.match(
+      finding.replacement,
+      /ui\.shadcn\.com\/docs\/components\/base\/date-picker/,
+    );
+    assert.doesNotMatch(finding.replacement, /Checkbox|Switch/);
+  }
+  assert.equal(result.findings[3].column, 7);
+});
+
+test('keeps the time of a native or shadcn datetime-local input in its recommendation', () => {
+  const result = inspect(`import { Input } from '#components/ui/input';
+    export const Page = () => <><input type='datetime-local'/><Input type={'datetime-local'}/></>`);
+  assert.deepEqual(
+    result.findings.map((item) => item.type),
+    ['datetime-local', 'datetime-local'],
+  );
+  for (const finding of result.findings) {
+    assert.match(finding.replacement, /Input type='time'/);
+    assert.match(finding.replacement, /keep the time/);
+  }
+});
+
+test('does not let a primitive render prop hide a native date input', () => {
+  const result = inspect(`import { Input } from '#components/ui/input';
+    import { Button } from '#components/ui/button';
+    export const Page = () => <>
+      <Input render={<input type='date'/>}/><Button render={<input type='datetime-local'/>}/>
+      <Input render={<input/>}/>
+    </>`);
+  assert.deepEqual(
+    result.findings.map((item) => [item.tag, item.type]),
+    [
+      ['input', 'date'],
+      ['input', 'datetime-local'],
+    ],
+  );
+});
+
+test('accepts date picker compositions, ordinary inputs, time inputs and undeclared wrappers', () => {
+  const result = inspect(`import { Input } from '#components/ui/input';
+    import { Calendar } from '#components/ui/calendar';
+    import { Popover, PopoverContent, PopoverTrigger } from '#components/ui/popover';
+    import { InputGroup, InputGroupInput } from '#components/ui/input-group';
+    import { DatePicker } from '#components/date-picker';
+    import { Input as Other } from '#components/fields/input';
+    export const Page = ({ kind }) => <>
+      <DatePicker value={date} onChange={setDate}/>
+      <Popover><PopoverTrigger render={<Input value={text}/>}/><PopoverContent><Calendar mode='single'/></PopoverContent></Popover>
+      <InputGroup><InputGroupInput value={text}/></InputGroup>
+      <Input/><Input type='text'/><Input type='time'/><Input type='month'/><Input type={kind}/>
+      <input type='hidden'/><Other type='date'/><Unknown type='date'/>
+    </>`);
+  assert.deepEqual(result.findings, []);
+});
+
+test('reviews a justified exception for a date input and rejects a stale one', () => {
+  const accepted = inspect(`import { Input } from '#components/ui/input';
+    export const Page = () => <>
+      {/* ui-component-exception: Native date for a kiosk browser; docs/ui/pages/kiosk.md */}
+      <Input type='date'/>
+      <input type='date'/>
+    </>`);
+  assert.deepEqual(
+    accepted.accepted.map((item) => [item.tag, item.type]),
+    [['Input', 'date']],
+  );
+  assert.deepEqual(
+    accepted.findings.map((item) => [item.tag, item.type]),
+    [['input', 'date']],
+  );
+});
+
 function fixture(t) {
   const directory = mkdtempSync(resolve(tmpdir(), 'nb-ui-components-'));
   t.after(() => rmSync(directory, { recursive: true, force: true }));
@@ -257,6 +355,59 @@ test('CLI passes displayed markers but fails controls behind stale exceptions', 
   assert.match(stale.stdout, /<button>:/);
   assert.match(stale.stdout, /<exception>:/);
   assert.match(stale.stdout, /2 findings; 0 exceptions/);
+});
+
+test('CLI fails a native or shadcn date input with its location and date picker advice', (t) => {
+  const app = fixture(t);
+  app.write(
+    'client/pages/native.tsx',
+    `export const Page = () => <input type='date'/>`,
+  );
+  app.write(
+    'client/pages/shadcn.tsx',
+    `import { Input } from '#components/ui/input';
+export const Page = () => <>
+  <Input type='date'/>
+  <Input type='datetime-local'/>
+</>`,
+  );
+  const result = app.run();
+  assert.equal(result.status, 1, result.stderr);
+  assert.match(
+    result.stdout,
+    /client\/pages\/native\.tsx:1:27 <input type="date">: use the application's DatePicker/,
+  );
+  assert.match(
+    result.stdout,
+    /client\/pages\/shadcn\.tsx:3:3 <Input type="date">: use the application's DatePicker/,
+  );
+  assert.match(
+    result.stdout,
+    /client\/pages\/shadcn\.tsx:4:3 <Input type="datetime-local">: .*Input type='time'/,
+  );
+  assert.match(result.stdout, /3 findings; 0 exceptions/);
+
+  app.write(
+    'client/pages/native.tsx',
+    `import { DatePicker } from '#components/date-picker';
+export const Page = () => <DatePicker value={undefined} onChange={() => {}}/>`,
+  );
+  app.write(
+    'client/pages/shadcn.tsx',
+    `import { Input } from '#components/ui/input';
+export const Page = () => <Input type='time'/>`,
+  );
+  const fixed = app.run();
+  assert.equal(fixed.status, 0, fixed.stdout);
+  assert.match(fixed.stdout, /Scanned 2 source files;.*0 findings/);
+
+  app.write(
+    'client/pages/broken.tsx',
+    `export const Page = () => <Input type='date'`,
+  );
+  const broken = app.run();
+  assert.equal(broken.status, 2, broken.stdout);
+  assert.match(broken.stderr, /check incomplete/);
 });
 
 test('CLI scans application and plugin business components while excluding primitives, tests and generated directories', (t) => {
@@ -376,4 +527,464 @@ test('CLI executes through the mirrored Claude skill symlink and reports native 
     result.stdout,
     /Scanned 1 source files;.*1 exceptions requiring review/,
   );
+});
+
+test('rejects a plain form that bypasses the route overlay discard question, a FeedbackForm without saved values and a draft-based dirty', () => {
+  const result = inspect(`import { useForm } from 'react-hook-form';
+    import { RouteDialog } from '#components/route-dialog';
+    import { FeedbackForm } from '#components/feedback-form';
+    export const Edit = () => <RouteDialog title='Edit' dirty={storageFailed ? isDirty : undefined}>
+      <form id='repair' onSubmit={save}><Input {...form.register('name')}/></form>
+      <FeedbackForm id='other' onSubmit={save}/>
+      <FeedbackForm id='ok' values={form.getValues} savedValues={saved} onSubmit={save}/>
+      <form role='search'><Input aria-label='Find'/></form>
+    </RouteDialog>`);
+  assert.deepEqual(
+    result.findings.map((item) => [item.tag, item.line]),
+    [
+      ['RouteDialog', 4],
+      ['form', 5],
+      ['FeedbackForm', 6],
+    ],
+  );
+  assert.match(
+    result.findings[1].replacement,
+    /FeedbackForm.*savedValues.*M7\.4/,
+  );
+  assert.match(
+    result.findings[2].replacement,
+    /values=\{form\.getValues\}.*savedValues/,
+  );
+  assert.match(result.findings[0].replacement, /never derive it from a draft/);
+});
+
+test('lets no exception marker waive the discard question of a create or edit form', () => {
+  const result = inspect(`import { useForm } from 'react-hook-form';
+    export const Edit = () => <>
+      {/* ui-component-exception: the draft is kept, so no discard prompt is needed */}
+      <form onSubmit={save}/>
+    </>`);
+  assert.deepEqual(
+    result.findings.map((item) => item.tag),
+    ['form', 'exception'],
+  );
+  assert.deepEqual(result.accepted, []);
+});
+
+test('rejects OwnDiscardQuestion in a file that asks no question of its own', () => {
+  assert.deepEqual(
+    inspect(
+      `export const Page = () => <RouteChildPage><OwnDiscardQuestion/></RouteChildPage>`,
+    ).findings.map((item) => item.tag),
+    ['OwnDiscardQuestion'],
+  );
+  assert.deepEqual(
+    inspect(`import { useNavigationGuard } from '@nocobase/app-client';
+      export const Page = () => { useNavigationGuard(() => !dirty || ask()); return <OwnDiscardQuestion/>; }`)
+      .findings,
+    [],
+  );
+  // A namespace import of the application client counts as well.
+  assert.deepEqual(
+    inspect(`import * as App from '@nocobase/app-client';
+      export const Page = () => { App.useNavigationGuard(() => !dirty || ask()); return <OwnDiscardQuestion/>; }`)
+      .findings,
+    [],
+  );
+  assert.deepEqual(
+    inspect(`import * as Local from './local-guard';
+      export const Page = () => { Local.useNavigationGuard(ask); return <OwnDiscardQuestion/>; }`).findings.map(
+      (item) => item.tag,
+    ),
+    ['OwnDiscardQuestion'],
+  );
+  // A comment, or a hook of the same name from elsewhere, does not count.
+  assert.deepEqual(
+    inspect(`import { useNavigationGuard } from './local-guard';
+      // useNavigationGuard(ask)
+      export const Page = () => { useNavigationGuard(ask); return <OwnDiscardQuestion/>; }`).findings.map(
+      (item) => item.tag,
+    ),
+    ['OwnDiscardQuestion'],
+  );
+});
+
+test('resolves a guard passed by name in its own scope, so a same-named guard of another component lends nothing', () => {
+  // Two components each declare `guard`: the one that only blocks during a save cannot borrow the other's reads.
+  const result =
+    inspect(`import { useNavigationGuard } from '@nocobase/app-client';
+    import { RouteDrawer } from '#components/route-drawer';
+    export function Asking() {
+      const guard = () => !dirty || ask();
+      useNavigationGuard(guard);
+      return <RouteDrawer><OwnDiscardQuestion/><FeedbackForm onSubmit={save}/></RouteDrawer>;
+    }
+    export function Saving() {
+      const guard = () => !submitting;
+      useNavigationGuard(guard);
+      return <RouteDrawer><OwnDiscardQuestion/><FeedbackForm onSubmit={save}/></RouteDrawer>;
+    }`);
+  assert.deepEqual(
+    result.findings.map((item) => [item.tag, item.line]),
+    [
+      ['OwnDiscardQuestion', 11],
+      ['FeedbackForm', 11],
+    ],
+  );
+  // The nearest declaration wins: an inner `guard` shadows an outer one, in either direction.
+  assert.deepEqual(
+    inspect(`import { useNavigationGuard } from '@nocobase/app-client';
+      const guard = () => !dirty;
+      export function Page() {
+        const guard = () => !submitting;
+        useNavigationGuard(guard);
+        return <OwnDiscardQuestion/>;
+      }`).findings.map((item) => item.tag),
+    ['OwnDiscardQuestion'],
+  );
+  assert.deepEqual(
+    inspect(`import { useNavigationGuard } from '@nocobase/app-client';
+      const guard = () => !submitting;
+      export function Page() {
+        const guard = () => !dirty || ask();
+        useNavigationGuard(guard);
+        return <OwnDiscardQuestion/>;
+      }`).findings,
+    [],
+  );
+  // A guard declared in an enclosing scope of the file still counts.
+  assert.deepEqual(
+    inspect(`import { useNavigationGuard } from '@nocobase/app-client';
+      function guard() { return !dirty || ask(); }
+      export function Page() { useNavigationGuard(guard); return <OwnDiscardQuestion/>; }`)
+      .findings,
+    [],
+  );
+});
+
+test('rejects a draft-keeping full page that yields the question to a guard which only blocks during a save', () => {
+  // The first-generation counterexample: a useState form on a RouteChildPage that keeps a local draft, renders
+  // OwnDiscardQuestion and guards only the running save. Both the declaration and the uncompared FeedbackForm fail.
+  const result =
+    inspect(`import { OwnDiscardQuestion } from '#components/discard-guard';
+    import { FeedbackForm } from '#components/feedback-form';
+    import { useNavigationGuard } from '@nocobase/app-client';
+    import { RouteChildPage } from '#components/route-child-page';
+    import { PageContainer } from '#components/page-container';
+    export const Edit = () => {
+      const [values, setValues] = useState(() => readDraft() ?? saved);
+      useNavigationGuard(() => !submission.submitting || savedRef.current);
+      return <RouteChildPage><PageContainer>
+        {!storageFailed ? <OwnDiscardQuestion /> : null}
+        <FeedbackForm onSubmit={save}><Input value={values.name} onChange={change}/></FeedbackForm>
+      </PageContainer></RouteChildPage>;
+    }`);
+  assert.deepEqual(
+    result.findings.map((item) => [item.tag, item.line]),
+    [
+      ['OwnDiscardQuestion', 10],
+      ['FeedbackForm', 11],
+    ],
+  );
+  assert.match(result.findings[0].replacement, /kept draft, never replaces/);
+  assert.match(result.findings[1].replacement, /values=\{\(\) => values\}/);
+  // A guard declared under a name is read through its declaration.
+  assert.deepEqual(
+    inspect(`import { useNavigationGuard } from '@nocobase/app-client';
+      const guard = () => !submitting;
+      export const Page = () => { useNavigationGuard(guard); return <OwnDiscardQuestion/>; }`).findings.map(
+      (item) => item.tag,
+    ),
+    ['OwnDiscardQuestion'],
+  );
+  assert.deepEqual(
+    inspect(`import { useNavigationGuard } from '@nocobase/app-client';
+      function guard() { return !controller.dirty || controller.ask(); }
+      export const Page = () => { useNavigationGuard(guard); return <OwnDiscardQuestion/>; }`)
+      .findings,
+    [],
+  );
+});
+
+test('compares every FeedbackForm in a route overlay, unless the file asks its own question', () => {
+  // useState forms count as much as React Hook Form ones.
+  assert.deepEqual(
+    inspect(`import { RouteDrawer } from '#components/route-drawer';
+      export const Edit = () => <RouteDrawer><FeedbackForm onSubmit={save}/></RouteDrawer>`).findings.map(
+      (item) => item.tag,
+    ),
+    ['FeedbackForm'],
+  );
+  assert.deepEqual(
+    inspect(`import { RouteDrawer } from '#components/route-drawer';
+      export const Edit = () => <RouteDrawer><FeedbackForm values={() => values} savedValues={saved} onSubmit={save}/></RouteDrawer>`)
+      .findings,
+    [],
+  );
+  // Asking its own question: a guard reading the unsaved state, the application's page-leave hook, or a
+  // beforeClose reading it. A beforeClose that only waits for a save does not count.
+  for (const own of [
+    `import { useNavigationGuard } from '@nocobase/app-client';
+      export const Edit = () => { useNavigationGuard(() => !dirty || ask()); return <RouteDrawer><FeedbackForm onSubmit={save}/></RouteDrawer>; }`,
+    `import { useSettingsLeave } from './hooks.js';
+      export const Edit = () => { const leave = useSettingsLeave(dirty, busy); return <RouteDrawer>{leave.dialog}<FeedbackForm onSubmit={save}/></RouteDrawer>; }`,
+    `export const Edit = () => <RouteDrawer beforeClose={() => !dirty}><FeedbackForm onSubmit={save}/></RouteDrawer>`,
+  ])
+    assert.deepEqual(
+      inspect(`import { RouteDrawer } from '#components/route-drawer';\n${own}`)
+        .findings,
+      [],
+    );
+  assert.deepEqual(
+    inspect(`import { RouteDrawer } from '#components/route-drawer';
+      export const Edit = () => <RouteDrawer beforeClose={() => !locked()}><FeedbackForm onSubmit={save}/></RouteDrawer>`).findings.map(
+      (item) => item.tag,
+    ),
+    ['FeedbackForm'],
+  );
+  // A leave hook imported but never called, or one from a package, does not count.
+  assert.deepEqual(
+    inspect(`import { RouteDrawer } from '#components/route-drawer';
+      import { usePageLeave } from 'some-package';
+      export const Edit = () => { usePageLeave(); return <RouteDrawer><FeedbackForm onSubmit={save}/></RouteDrawer>; }`).findings.map(
+      (item) => item.tag,
+    ),
+    ['FeedbackForm'],
+  );
+});
+
+test('leaves forms that are not create or edit forms alone', () => {
+  // A chat composer without React Hook Form or an overlay, a tool form on a page, and FeedbackForm's own <form>.
+  assert.deepEqual(
+    inspect(
+      `export const Chat = () => <form onSubmit={send}><Textarea/></form>`,
+    ).findings,
+    [],
+  );
+  assert.deepEqual(
+    inspect(`import { useForm } from 'react-hook-form';
+      import { PageContainer } from '#components/page-container';
+      export const Tool = () => <PageContainer><FeedbackForm onSubmit={run}/></PageContainer>`)
+      .findings,
+    [],
+  );
+  assert.deepEqual(
+    inspect(`import { useForm } from 'react-hook-form';
+      export function FeedbackForm() { return <form noValidate/>; }`).findings,
+    [],
+  );
+});
+
+test('reads the spread props of a FeedbackForm, and reports values it cannot confirm instead of passing them', () => {
+  const result = inspect(`import { useForm } from 'react-hook-form';
+    import { RouteDialog } from '#components/route-dialog';
+    import { FeedbackForm } from '#components/feedback-form';
+    const compared = { values: form.getValues, savedValues: saved };
+    const partial = { values: form.getValues };
+    export const Edit = ({ formProps }) => <RouteDialog title='Edit'>
+      <FeedbackForm id='a' {...compared} onSubmit={save}/>
+      <FeedbackForm id='b' {...{ values: form.getValues, ...{ savedValues: saved } }} onSubmit={save}/>
+      <FeedbackForm id='c' {...partial} savedValues={saved} onSubmit={save}/>
+      <FeedbackForm id='d' {...partial} onSubmit={save}/>
+      <FeedbackForm id='e' {...formProps} onSubmit={save}/>
+      <FeedbackForm id='f' {...useFormProps()} values={form.getValues} onSubmit={save}/>
+    </RouteDialog>`);
+  assert.deepEqual(
+    result.findings.map((item) => [item.tag, item.line]),
+    [
+      ['FeedbackForm', 10],
+      ['FeedbackForm', 11],
+      ['FeedbackForm', 12],
+    ],
+  );
+  assert.match(result.findings[0].replacement, /values=\{form\.getValues\}/);
+  assert.doesNotMatch(result.findings[0].replacement, /spread/);
+  assert.match(result.findings[1].replacement, /spread.*cannot confirm/);
+  assert.match(result.findings[2].replacement, /spread.*cannot confirm/);
+});
+
+test('credits a form only with the question of its own component, a component rendering it or a hook it calls', () => {
+  const tags = (source) =>
+    inspect(`import { RouteDrawer } from '#components/route-drawer';
+      import { useNavigationGuard } from '@nocobase/app-client';
+      ${source}`).findings.map((item) => [item.tag, item.line]);
+  // Another form's guard or beforeClose in the same file does not lend its question.
+  assert.deepEqual(
+    tags(`function Asking() { useNavigationGuard(() => !dirty || ask()); return <FeedbackForm onSubmit={save}/>; }
+      function Closing() { return <RouteDrawer beforeClose={() => !dirty}><FeedbackForm onSubmit={save}/></RouteDrawer>; }
+      export const Other = () => <RouteDrawer><FeedbackForm onSubmit={save}/></RouteDrawer>;`),
+    [['FeedbackForm', 5]],
+  );
+  // A component that renders the form, a hook of this file the form calls, or one the renderer calls, does.
+  assert.deepEqual(
+    tags(`function Form() { return <FeedbackForm onSubmit={save}/>; }
+      export function Page() { useNavigationGuard(() => !dirty || ask()); return <RouteDrawer><Form/></RouteDrawer>; }
+      function useEditLeave(dirty) { useNavigationGuard(() => !dirty || ask()); }
+      function Hooked() { useEditLeave(dirty); return <FeedbackForm onSubmit={save}/>; }
+      function useOuterLeave() { useEditLeave(dirty); }
+      function Inner() { return <FeedbackForm onSubmit={save}/>; }
+      export function Outer() { useOuterLeave(); return <RouteDrawer><Inner/></RouteDrawer>; }`),
+    [],
+  );
+  // OwnDiscardQuestion counts the guard of its component, a component rendering it or a form component it renders,
+  // never an unrelated component's.
+  assert.deepEqual(
+    tags(`function Form() { useNavigationGuard(() => !dirty || ask()); return <FeedbackForm onSubmit={save}/>; }
+      export const Shell = () => <RouteDrawer><OwnDiscardQuestion/><Form/></RouteDrawer>;
+      export const Stray = () => <RouteDrawer><OwnDiscardQuestion/></RouteDrawer>;`),
+    [['OwnDiscardQuestion', 5]],
+  );
+});
+
+test('reads what a guard does from its identifiers, never from comments or strings', () => {
+  const tags = (source) =>
+    inspect(`import { RouteDrawer } from '#components/route-drawer';
+      import { useNavigationGuard } from '@nocobase/app-client';
+      ${source}`).findings.map((item) => item.tag);
+  for (const guard of [
+    `useNavigationGuard(() => /* dirty */ !submitting)`,
+    `useNavigationGuard(() => !submitting || log('unsaved changes'))`,
+    `useNavigationGuard(() => !submitting || log(\`changed \${count}\`))`,
+  ])
+    assert.deepEqual(
+      tags(
+        `export const Edit = () => { ${guard}; return <RouteDrawer><OwnDiscardQuestion/><FeedbackForm onSubmit={save}/></RouteDrawer>; }`,
+      ),
+      ['OwnDiscardQuestion', 'FeedbackForm'],
+    );
+  assert.deepEqual(
+    tags(`export const Edit = () => <RouteDrawer beforeClose={() => {
+        // ask when dirty
+        return !locked();
+      }}><FeedbackForm onSubmit={save}/></RouteDrawer>`),
+    ['FeedbackForm'],
+  );
+  // A guard passed by name is read through its declaration, not its name; so is either branch of a conditional.
+  assert.deepEqual(
+    tags(`const dirtyGuard = () => !submitting;
+      export const Edit = () => { useNavigationGuard(dirtyGuard); return <RouteDrawer><OwnDiscardQuestion/></RouteDrawer>; }`),
+    ['OwnDiscardQuestion'],
+  );
+  assert.deepEqual(
+    tags(`class Leave { dirty = false; guard = () => !this.dirty || this.ask(); }
+      export function useLeave() { const [controller] = useState(() => new Leave());
+        useNavigationGuard(boundary ? () => true : controller.guard);
+        return <OwnDiscardQuestion/>; }`),
+    [],
+  );
+});
+
+test("resolves a guard's object in its own scope, so another component's same-named member lends nothing", () => {
+  const tags = (source) =>
+    inspect(`import { RouteDrawer } from '#components/route-drawer';
+      import { useNavigationGuard } from '@nocobase/app-client';
+      ${source}`).findings.map((item) => [item.tag, item.line]);
+  // Object literals, class instances and the results of hooks declared here: only the save-only one is reported.
+  assert.deepEqual(
+    tags(`class Leave { dirty = false; guard = () => !this.dirty || this.ask(); }
+      class Saving { guard = () => !this.submitting; }
+      function useDirtyLeave() { const controller = new Leave(); return { guard: controller.guard }; }
+      const useSaveOnly = () => ({ guard: () => !submitting });
+      export function Asking() { const controller = new Leave(); useNavigationGuard(controller.guard); return <RouteDrawer><OwnDiscardQuestion/></RouteDrawer>; }
+      export function Blocking() { const controller = new Saving(); useNavigationGuard(controller.guard); return <RouteDrawer><OwnDiscardQuestion/></RouteDrawer>; }
+      export function Literal() { const controller = { guard: () => !submitting }; useNavigationGuard(controller.guard); return <RouteDrawer><OwnDiscardQuestion/></RouteDrawer>; }
+      export function Hooked() { const controller = useDirtyLeave(); useNavigationGuard(controller.guard); return <RouteDrawer><OwnDiscardQuestion/></RouteDrawer>; }
+      export function SaveHook() { const controller = useSaveOnly(); useNavigationGuard(controller.guard); return <RouteDrawer><OwnDiscardQuestion/></RouteDrawer>; }`),
+    [
+      ['OwnDiscardQuestion', 8],
+      ['OwnDiscardQuestion', 9],
+      ['OwnDiscardQuestion', 11],
+    ],
+  );
+  // An object this file cannot resolve, such as an imported hook's result, falls back to every member of that name.
+  assert.deepEqual(
+    tags(`import { useLeave } from './leave';
+      class Leave { dirty = false; guard = () => !this.dirty || this.ask(); }
+      export function Page() { const controller = useLeave(); useNavigationGuard(controller.guard); return <RouteDrawer><OwnDiscardQuestion/></RouteDrawer>; }`),
+    [],
+  );
+});
+
+test('reports row actions outside one RowActions menu, a visible actions header and a pinned actions column', () => {
+  const result = inspect(`
+    function UserButtons({ user }) {
+      return <Button variant='outline' size='xs'>Disable</Button>;
+    }
+    export const columns = [
+      { id: 'actions', header: t('users.actions'), cell: ({ row }) => <UserButtons user={row.original} /> },
+      { id: 'actions', header: () => <span className='sr-only'>{t('a')}</span>, meta: { className: 'sticky right-0' },
+        cell: ({ row }) => <RowActions label='x' actions={[]} /> },
+    ];`);
+  assert.deepEqual(
+    result.findings.map((item) => [item.tag, item.line]),
+    [
+      ['actions column', 6],
+      ['actions column', 3],
+      ['actions column', 7],
+    ],
+  );
+  assert.match(result.findings[0].replacement, /sr-only/);
+  assert.match(result.findings[1].replacement, /RowActions/);
+  assert.match(result.findings[2].replacement, /scrolls with the table/);
+});
+
+test('accepts RowActions reached through a component of the same file, and a cell built elsewhere', () => {
+  const result = inspect(`
+    function UserActions({ user }) {
+      return <RowActions label={user.name} actions={[{ key: 'disable', label: 'Disable' }]} />;
+    }
+    export const columns = [
+      { id: 'actions', header: () => <span className='sr-only'>Actions</span>, cell: ({ row }) => <UserActions user={row.original} /> },
+      { id: 'actions', cell: ({ row }) => <ImportedActions row={row} /> },
+    ];`);
+  assert.deepEqual(result.findings, []);
+});
+
+test('reports a control beside RowActions in the cell or in a component of the same file', () => {
+  const result = inspect(`
+    const columns = [{
+      id: 'actions',
+      header: () => <span className='sr-only'>Actions</span>,
+      cell: () => <><Button>Open</Button><RowActions label='Actions' actions={[]} /></>,
+    }];
+    function ModuleActions({ module }) {
+      return (
+        <div>
+          <Button variant='outline'>Install</Button>
+          <RowActions label={module.name} actions={[{ key: 'remove', label: 'Remove', destructive: true }]} />
+        </div>
+      );
+    }
+    const moduleColumns = [
+      { id: 'actions', header: () => <span className='sr-only'>Actions</span>, cell: ({ row }) => <ModuleActions module={row.original} /> },
+    ];`);
+  assert.deepEqual(
+    result.findings.map((item) => [item.tag, item.line]),
+    [
+      ['actions column', 5],
+      ['actions column', 10],
+    ],
+  );
+  assert.match(result.findings[0].replacement, /exposed/);
+});
+
+test('accepts links passed as a RowAction render, built inline or in a function of the same file, and confirmation dialogs', () => {
+  const result = inspect(`
+    function actionsFor(project) {
+      return [{ key: 'edit', label: 'Edit', render: <Link to={project.id} /> }];
+    }
+    function ProjectActions({ project }) {
+      return (
+        <>
+          <RowActions label={project.name} actions={actionsFor(project)} />
+          <AlertDialog><AlertDialogFooter><Button>Delete</Button></AlertDialogFooter></AlertDialog>
+        </>
+      );
+    }
+    const columns = [
+      { id: 'actions', header: () => <span className='sr-only'>Actions</span>, cell: ({ row }) => <ProjectActions project={row.original} /> },
+      { id: 'actions', header: () => <span className='sr-only'>Actions</span>,
+        cell: ({ row }) => <RowActions label='x' exposed={['open']} actions={[{ key: 'open', label: 'Open', render: (<a href={row.original.url} />) }]} /> },
+    ];`);
+  assert.deepEqual(result.findings, []);
 });

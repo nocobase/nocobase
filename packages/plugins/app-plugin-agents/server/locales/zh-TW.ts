@@ -12,13 +12,13 @@ const zhTW: LocaleResource<typeof enUS> = {
         description: '團隊的代理人及其所使用的技能。',
         actions: {
           edit: {
-            title: '改變代理人和技能',
+            title: '改變Agents和技能',
             description:
-              '更改代理的設定、技能和變數、存檔、恢復和刪除以及編輯技能。代理人沒有被賦予編輯者自己以外的任何能力',
-            related: '改變代理人和技能（他們擁有的代理人和他們建立的技能）',
+              '更改Agent的設定、技能和變數、存檔、恢復和刪除以及編輯技能。Agent沒有被賦予編輯者自己以外的任何能力',
+            related: '改變Agents和技能（他們擁有的Agents和他們建立的技能）',
             relatedLabel: '我擁有的代理和我建立的技能',
             relatedHint: '我擁有的代理以及我建立的技能',
-            all: '變更代理人與技能（全部）',
+            all: '變更Agents與技能（全部）',
           },
         },
       },
@@ -38,11 +38,12 @@ const zhTW: LocaleResource<typeof enUS> = {
     keyScopes: {
       agents: {
         title: '代理',
-        description: '檢視代理、技能和跑動；更改代理和技能，取消並重試執行。',
+        description:
+          '檢視Agents、技能和跑動；更改Agents和技能，取消並重試執行。',
       },
       runners: {
         title: '執行環境',
-        description: '檢視執行器和註冊令牌；管理執行器。',
+        description: '檢視執行環境和註冊令牌；管理執行環境。',
       },
       prices: {
         title: '型號價格',

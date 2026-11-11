@@ -3,6 +3,32 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const deDE: LocaleResource<typeof enUS> = {
+  notificationTemplates: {
+    contributor: 'Benachrichtigungsbeispiele',
+    category: 'Aufgaben',
+    assigned: {
+      name: 'Aufgabe zugewiesen',
+      trigger: 'Eine Aufgabe wird erstellt.',
+      recipients:
+        'Die zuständige Person, auch wenn sie sich die Aufgabe selbst zugewiesen hat.',
+    },
+    updated: {
+      name: 'Aufgabe aktualisiert',
+      trigger: 'Eine Aufgabe wird geändert, auch wenn sie neu zugewiesen wird.',
+      recipients:
+        'Die erstellende Person, die bisher und die neu zuständige Person, jeweils einmal. Wer die Änderung vorgenommen hat, wird nicht benachrichtigt.',
+    },
+    businessRule:
+      'Wird jedes Mal gesendet, wenn die Aufgabenaktion stattfindet. Es gibt keinen eigenen Schalter zum Ausschalten.',
+    languagePolicy:
+      'Immer auf Englisch, unabhängig von der Sprache des Empfängers.',
+    channel: 'Aufgaben-Posteingang',
+    variables: {
+      title: 'Aufgabentitel',
+      description: 'Aufgabenbeschreibung',
+      status: 'Aufgabenstatus',
+    },
+  },
   navigation: {
     tasks: 'Benachrichtigungsbeispiele',
     taskManagement: 'Aufgaben',
@@ -46,7 +72,7 @@ const deDE: LocaleResource<typeof enUS> = {
       actions: 'Aktionen',
     },
     view: 'Details anzeigen',
-    refresh: 'Aktualisieren',
+    retryRead: 'Erneut versuchen',
     previous: 'Zurück',
     next: 'Weiter',
     page: 'Seite {{page}}',
@@ -65,7 +91,7 @@ const deDE: LocaleResource<typeof enUS> = {
     notificationHint:
       'Nachdem eine Aufgabe gespeichert wurde, werden die zugehörigen Personen außer dem aktuellen Bearbeiter benachrichtigt: der Ersteller und der aktuelle Beauftragte. Wenn sich der Beauftragte ändert, werden sowohl der bisherige als auch der neue Beauftragte benachrichtigt.',
     edit: 'Aufgabe bearbeiten',
-    refresh: 'Aktualisieren',
+    retryRead: 'Erneut versuchen',
     save: 'Änderungen speichern',
     cancel: 'Abbrechen',
     back: 'Zurück zu den Aufgaben',

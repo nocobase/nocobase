@@ -219,6 +219,16 @@ export type ScopedCredentialCheck = (
   request: Request,
 ) => boolean | Promise<boolean>;
 
+/**
+ * An application's issued-credential admission policy. Undefined keeps the route's declared security and scoped-key
+ * opt-in; false refuses it; true accepts this issued credential and delegates scope enforcement to the application.
+ * This never applies to ordinary sessions or API keys. Authentication and authorization still run normally.
+ */
+export type CredentialRoutePolicy = (
+  context: Context,
+  credential: IssuedCredential,
+) => boolean | undefined | Promise<boolean | undefined>;
+
 const serviceAccountRefusal = () =>
   APIError.from('FORBIDDEN', {
     code: 'SERVICE_ACCOUNT_NO_LOGIN',
@@ -235,6 +245,7 @@ export class Auth {
   private readonly ownedSender?: MailSender;
   private scopedCredentialChecks = new Set<ScopedCredentialCheck>();
   private credentialResolvers = new Set<CredentialResolver>();
+  private credentialRoutePolicies = new Set<CredentialRoutePolicy>();
   private userInitializers = new Set<
     (
       user: Record<string, unknown>,
@@ -269,7 +280,7 @@ export class Auth {
     }
     let resetServices: PasswordResetServices = passwordResetServices ?? {};
     if (!Object.hasOwn(resetServices, 'sender')) {
-      // Standalone construction: this instance selects and owns its sender.
+      // Preserve standalone inline/legacy/default selection; named mailers are injected by the caller.
       const selection = createPasswordResetSender(resolveMailSenderFactory(), {
         email,
         passwordReset,
@@ -752,6 +763,7 @@ export class Auth {
     });
     bound.scopedCredentialChecks = this.scopedCredentialChecks;
     bound.credentialResolvers = this.credentialResolvers;
+    bound.credentialRoutePolicies = this.credentialRoutePolicies;
     bound.userInitializers = this.userInitializers;
     return bound;
   }
@@ -777,6 +789,28 @@ export class Auth {
     return () => {
       this.credentialResolvers.delete(resolver);
     };
+  }
+
+  /** Register trusted application admission for issued credentials; an explicit refusal always wins. */
+  addCredentialRoutePolicy(policy: CredentialRoutePolicy): () => void {
+    this.credentialRoutePolicies.add(policy);
+    return () => {
+      this.credentialRoutePolicies.delete(policy);
+    };
+  }
+
+  /** Reuse application admission in an additional plugin guard; undefined preserves its native credential rules. */
+  async credentialRouteDecision(
+    context: Context,
+    credential: IssuedCredential,
+  ): Promise<boolean | undefined> {
+    let decision: boolean | undefined;
+    for (const policy of this.credentialRoutePolicies) {
+      const value = await policy(context, credential);
+      if (value === false) return false;
+      if (value === true) decision = true;
+    }
+    return decision;
   }
 
   /**
@@ -810,9 +844,12 @@ export class Auth {
           return rejectedCredential(context, error);
         throw error;
       }
+      const admission = auth?.credential
+        ? await this.credentialRouteDecision(context, auth.credential)
+        : undefined;
       if (
         auth?.credential &&
-        !routeAcceptsScheme(context, auth.credential.scheme)
+        !(admission ?? routeAcceptsScheme(context, auth.credential.scheme))
       )
         return credentialNotAccepted(context);
       context.set('auth', auth);
@@ -850,13 +887,17 @@ export class Auth {
           context,
         );
       }
+      const admission = auth.credential
+        ? await this.credentialRouteDecision(context, auth.credential)
+        : undefined;
       if (
         auth.credential &&
-        !routeAcceptsScheme(context, auth.credential.scheme)
+        !(admission ?? routeAcceptsScheme(context, auth.credential.scheme))
       )
         return credentialNotAccepted(context);
       if (
         !options.scopedKeys &&
+        admission !== true &&
         (await this.isScopedSession(auth, context.req.raw))
       ) {
         return apiErrorHandler(

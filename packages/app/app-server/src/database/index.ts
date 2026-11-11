@@ -1,4 +1,10 @@
 export {
+  DatabaseTaskHooks,
+  databaseTaskHooksToken,
+  type DatabaseTaskHook,
+  type DatabaseTaskHookContext,
+} from './task-hooks.js';
+export {
   MissingDatabaseDriversError,
   OFFICIAL_DIALECTS,
   resolveDatabaseConfig,
@@ -80,6 +86,7 @@ export {
   runAppSeeds,
   runAppDatabaseTasks,
   AppDatabaseTaskError,
+  type AppDatabaseTaskPreparationFailure,
   type AppDatabaseTaskOperation,
   type AppDatabaseTaskResult,
   type AppDatabaseTaskRunOptions,
@@ -102,3 +109,12 @@ export type {
   AppDatabaseSeedConfig,
   AppDatabaseTaskContributions,
 } from './types.js';
+
+export { appDatabaseStorageExists } from './storage.js';
+export {
+  executeAppDatabasePlan,
+  databaseTaskCoordinatorToken,
+  type AppDatabasePlanExecutionOptions,
+  type AppDatabaseTaskCoordinatorContext,
+  type AppDatabaseTaskCoordinator,
+} from './tasks.js';

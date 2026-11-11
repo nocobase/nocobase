@@ -3,6 +3,32 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const esES: LocaleResource<typeof enUS> = {
+  notificationTemplates: {
+    contributor: 'Ejemplos de notificaciones',
+    category: 'Tareas',
+    assigned: {
+      name: 'Tarea asignada',
+      trigger: 'Se crea una tarea.',
+      recipients:
+        'La persona asignada, incluso si se asignó la tarea a sí misma.',
+    },
+    updated: {
+      name: 'Tarea actualizada',
+      trigger: 'Se modifica una tarea, también cuando se reasigna.',
+      recipients:
+        'El creador, la persona asignada anterior y la nueva, una vez cada uno. Quien hizo el cambio no recibe aviso.',
+    },
+    businessRule:
+      'Se envía cada vez que ocurre la acción de la tarea. No hay un interruptor aparte para desactivarlo.',
+    languagePolicy:
+      'Siempre en inglés, sea cual sea el idioma del destinatario.',
+    channel: 'Bandeja de tareas',
+    variables: {
+      title: 'Título de la tarea',
+      description: 'Descripción de la tarea',
+      status: 'Estado de la tarea',
+    },
+  },
   navigation: {
     tasks: 'Ejemplos de notificación',
     taskManagement: 'Tareas',
@@ -46,7 +72,7 @@ const esES: LocaleResource<typeof enUS> = {
       actions: 'Acciones',
     },
     view: 'Ver detalles',
-    refresh: 'Actualizar',
+    retryRead: 'Reintentar',
     previous: 'Anterior',
     next: 'Siguiente',
     page: 'Página {{page}}',
@@ -65,7 +91,7 @@ const esES: LocaleResource<typeof enUS> = {
     notificationHint:
       'Después de guardar una tarea, se notifica a las personas relacionadas además del editor actual: el creador y el asignado actual. Si el cesionario cambia, se notifica tanto al cesionario anterior como al nuevo.',
     edit: 'Editar tarea',
-    refresh: 'Actualizar',
+    retryRead: 'Reintentar',
     save: 'Guardar cambios',
     cancel: 'Cancelar',
     back: 'Volver a tareas',

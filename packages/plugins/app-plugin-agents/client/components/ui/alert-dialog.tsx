@@ -45,13 +45,16 @@ function AlertDialogOverlay({
 function AlertDialogContent({
   className,
   size = 'default',
+  nested = false,
   ...props
 }: AlertDialogPrimitive.Popup.Props & {
   size?: 'default' | 'sm';
+  /** Opened from inside another dialog or sheet: Base UI renders a nested dialog's backdrop only when forced. */
+  nested?: boolean;
 }): React.JSX.Element {
   return (
     <AlertDialogPortal>
-      <AlertDialogOverlay />
+      <AlertDialogOverlay forceRender={nested} />
       <AlertDialogPrimitive.Popup
         data-slot='alert-dialog-content'
         data-size={size}

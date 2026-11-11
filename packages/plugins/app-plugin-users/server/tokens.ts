@@ -156,6 +156,8 @@ export interface UserInvitation {
   readonly expiresAt: string;
   /** The last successful send; null when sending failed. */
   readonly sentAt: string | null;
+  /** The language its email and accept page use; null for invitations created before it was kept. */
+  readonly locale: string | null;
   readonly createdAt: string;
 }
 
@@ -171,6 +173,16 @@ export interface InviteUsersInput {
   readonly summary?: readonly string[];
   /** The origin links start with when the application config has no `app.publicOrigin`. */
   readonly origin?: string;
+  /**
+   * The language the email and the accept page use, one of the application's languages; another value is refused.
+   * Without it, `inviterLocale`, then the application's default language is used. Resends keep it.
+   */
+  readonly locale?: string;
+  /**
+   * The inviter's current interface language, used when `locale` is absent and the application offers it. Unlike
+   * `locale`, an unsupported value is ignored rather than refused.
+   */
+  readonly inviterLocale?: string;
 }
 
 /**
@@ -201,6 +213,8 @@ export interface PublicUserInvitation {
   readonly inviterName: string;
   readonly summary: readonly string[];
   readonly expiresAt: string;
+  /** The invitation's language, which the page opens in; null for invitations created before it was kept. */
+  readonly locale: string | null;
 }
 
 export interface AcceptUserInvitationInput {
@@ -209,6 +223,11 @@ export interface AcceptUserInvitationInput {
   /** Optional sign-in name for a new account; ignored for an existing account. */
   readonly username?: string;
   readonly password: string;
+  /**
+   * The language the page was showing, kept as a new account's language. An unsupported or missing value falls back
+   * to the invitation's language. Ignored for an existing account.
+   */
+  readonly locale?: string;
 }
 
 export interface AcceptedUserInvitation {
@@ -282,6 +301,8 @@ export interface UserManagementService {
     input?: {
       readonly origin?: string;
       readonly sendEmail?: boolean;
+      /** The email's language for an invitation created before languages were kept; otherwise its own is used. */
+      readonly inviterLocale?: string;
     },
   ): Promise<UserInvitationResult>;
   revokeInvitation(id: string): Promise<void>;

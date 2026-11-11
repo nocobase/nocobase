@@ -1,0 +1,134 @@
+import path from 'node:path';
+import { Config } from '@oclif/core';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { configureAppCli } from '../src/config.ts';
+import { updateCommand } from '../src/update.ts';
+import { acpCommands } from '../src/acp.ts';
+import { removeDir, tempDir, TEST_CLI } from './helpers.ts';
+
+const mocks = vi.hoisted(() => ({
+  apply: vi.fn(),
+  latest: vi.fn(),
+  restart: vi.fn(),
+}));
+vi.mock('../src/dynamic/session.ts', () => ({
+  currentSession: async () => ({
+    kind: 'user',
+    server: 'https://example.test',
+    headers: {},
+  }),
+}));
+vi.mock('../src/acp-service.ts', async (original) => ({
+  ...(await original<typeof import('../src/acp-service.ts')>()),
+  restartAcpServices: mocks.restart,
+}));
+vi.mock('../src/install.ts', async (original) => ({
+  ...(await original<typeof import('../src/install.ts')>()),
+  detectInstallation: (root: string) => ({ mode: 'cli', prefix: root }),
+  applyUpdate: mocks.apply,
+  latestResolution: mocks.latest,
+}));
+
+describe('update command service restart', () => {
+  let home: string;
+  let config: Config;
+  beforeEach(async () => {
+    home = tempDir();
+    configureAppCli(TEST_CLI);
+    config = await Config.load(path.resolve(import.meta.dirname, '..'));
+    mocks.latest.mockResolvedValue({
+      product: 'acme',
+      version: '1.1.0',
+      target: 'linux-x64',
+      url: '/cli.tar.gz',
+      sha256: 'hash',
+      size: 1,
+    });
+    mocks.apply.mockResolvedValue({ previous: '1.0.0' });
+    mocks.restart.mockResolvedValue({
+      restarted: ['acme-acp.service'],
+      warnings: [],
+    });
+  });
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.clearAllMocks();
+    removeDir(home);
+  });
+  const command = () =>
+    updateCommand({
+      ...TEST_CLI,
+      version: '1.0.0',
+      selfUpdate: { packageRoot: home },
+    });
+
+  it('restarts after activation and announces the activated version', async () => {
+    const Command = command();
+    const log = vi.spyOn(Command.prototype, 'log').mockImplementation(() => {});
+    const result = await Command.run([], config);
+    expect(result).toMatchObject({ updated: true, latest: '1.1.0' });
+    expect(mocks.restart).toHaveBeenCalledWith('acme');
+    expect(mocks.apply.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.restart.mock.invocationCallOrder[0]!,
+    );
+    expect(log).toHaveBeenCalledWith('Restarted acme-acp.service on 1.1.0.');
+  });
+
+  it('keeps update JSON data unchanged and includes restart failure in envelope warnings', async () => {
+    mocks.restart.mockResolvedValue({
+      restarted: [],
+      warnings: ['Run acme acp service restart to retry.'],
+    });
+    const Command = command();
+    const output = vi
+      .spyOn(
+        Command.prototype as unknown as { logJson(value: unknown): void },
+        'logJson',
+      )
+      .mockImplementation(() => {});
+    vi.spyOn(Command.prototype, 'warn').mockImplementation(
+      (message) => message,
+    );
+    const result = await Command.run(['--json'], config);
+    expect(result).toEqual({
+      current: '1.0.0',
+      latest: '1.1.0',
+      updated: true,
+      previous: '1.0.0',
+    });
+    const envelope = output.mock.calls[0]![0] as {
+      ok: boolean;
+      result: unknown;
+      warnings: string[];
+    };
+    expect(envelope.ok).toBe(true);
+    expect(envelope.result).toEqual(result);
+    expect(envelope.warnings).toEqual([
+      'Run acme acp service restart to retry.',
+    ]);
+  });
+
+  it('exposes the same restart helper through the manual service command', async () => {
+    const Restart = acpCommands(TEST_CLI)['acp:service:restart']!;
+    const log = vi.spyOn(Restart.prototype, 'log').mockImplementation(() => {});
+    expect(await Restart.run([], config)).toEqual({
+      restarted: ['acme-acp.service'],
+    });
+    expect(mocks.restart).toHaveBeenCalledWith('acme');
+    expect(log).toHaveBeenCalledWith('Restarted acme-acp.service.');
+  });
+
+  it('does not restart on --check, when already current or after a failed update', async () => {
+    await command().run(['--check'], config);
+    mocks.latest.mockResolvedValue({ product: 'acme', version: '1.0.0' });
+    await command().run([], config);
+    mocks.latest.mockResolvedValue({
+      product: 'acme',
+      version: '1.1.0',
+      url: '/cli.tar.gz',
+    });
+    mocks.apply.mockRejectedValue(new Error('download failed'));
+    await expect(command().run([], config)).rejects.toThrow('download failed');
+    expect(mocks.restart).not.toHaveBeenCalled();
+  });
+});

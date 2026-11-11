@@ -2,7 +2,7 @@
   "name": "@nocobase/app-plugin-notification",
   "displayName": "Notification App Plugin",
   "description": "Provides the application notification runtime, storage, delivery, and logs.",
-  "version": "2.0.0-beta.3",
+  "version": "2.0.0-beta.8",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {
@@ -28,7 +28,11 @@
       "types": "./client/plugin.ts",
       "import": "./client/plugin.ts"
     },
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./client/templates": {
+      "types": "./client/components/templates.tsx",
+      "import": "./client/components/templates.tsx"
+    }
   },
   "publishConfig": {
     "access": "public",
@@ -49,7 +53,16 @@
         "types": "./dist/client/plugin.d.ts",
         "import": "./dist/client/plugin.js"
       },
-      "./package.json": "./package.json"
+      "./package.json": "./package.json",
+      "./client/templates": {
+        "types": "./dist/client/components/templates.d.ts",
+        "import": "./dist/client/components/templates.js"
+      }
+    },
+    "imports": {
+      "#components/*": "./dist/client/components/*.js",
+      "#lib/*": "./dist/client/lib/*.js",
+      "#hooks/*": "./dist/client/hooks/*.js"
     }
   },
   "files": [
@@ -88,7 +101,10 @@
     "@nocobase/service-provider": "workspace:^",
     "lucide-react": "catalog:",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "@base-ui/react": "catalog:",
+    "class-variance-authority": "catalog:",
+    "cn": "catalog:"
   },
   "devDependencies": {
     "@nocobase/app-testing": "workspace:*",
@@ -101,6 +117,23 @@
     "eslint": "catalog:",
     "prettier": "catalog:",
     "typescript": "catalog:",
-    "vitest": "catalog:"
+    "vitest": "catalog:",
+    "shadcn": "catalog:",
+    "tailwindcss": "catalog:",
+    "tw-animate-css": "catalog:"
+  },
+  "imports": {
+    "#components/*": {
+      "development": "./client/components/*.js",
+      "default": "./dist/client/components/*.js"
+    },
+    "#lib/*": {
+      "development": "./client/lib/*.js",
+      "default": "./dist/client/lib/*.js"
+    },
+    "#hooks/*": {
+      "development": "./client/hooks/*.js",
+      "default": "./dist/client/hooks/*.js"
+    }
   }
 }

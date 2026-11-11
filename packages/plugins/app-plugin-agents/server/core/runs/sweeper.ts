@@ -283,6 +283,7 @@ export function createSweeper(deps: SweeperDeps): Sweeper {
                 if (
                   !current ||
                   current.status !== 'queued' ||
+                  Boolean(current.runnerPinId) ||
                   current.runnerId !== null ||
                   Number(current.attempt) !== Number(candidate.attempt) ||
                   time(current.queueEnteredAt ?? null) !==
@@ -313,6 +314,7 @@ export function createSweeper(deps: SweeperDeps): Sweeper {
             f.and([
               f.string('status').eq('queued'),
               f.string('subjectKind').eq(binding.kind),
+              f.string('runnerPinId').eq(null),
               f.date('updatedAt').before(cutoff),
               f.or([
                 f.date('availableAt').empty(),

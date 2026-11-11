@@ -13,12 +13,12 @@ const ptBR: LocaleResource<typeof enUS> = {
       apps: {
         title: 'Aplicativos',
         description:
-          'Aplicativos, seus lançamentos, implantações e tempo de execução.',
+          'Aplicativos, seus lançamentos, implantações e ambiente de execução.',
         actions: {
           view: {
             title: 'Ver aplicativos',
             description:
-              'Veja Apps, seus lançamentos, implantações e status de tempo de execução',
+              'Veja Apps, seus lançamentos, implantações e status de ambiente de execução',
             related: 'Ver aplicativos (aqueles relacionados a eles)',
             relatedLabel: 'Aqueles que eu criei',
             relatedHint:
@@ -151,13 +151,10 @@ const ptBR: LocaleResource<typeof enUS> = {
   },
   ui: {
     nav: {
-      apps: 'Aplicativos',
       environments: 'Implantar ambientes',
     },
     apps: {
       title: 'Aplicativos',
-      description: 'Aplicativos, suas versões e onde são implantados.',
-      search: 'Pesquise por ID ou nome',
       create: 'Criar aplicativo',
       id: 'ID do aplicativo',
       name: 'Nome',
@@ -168,18 +165,28 @@ const ptBR: LocaleResource<typeof enUS> = {
       labels: 'Etiquetas',
       loadFailed: 'Não foi possível carregar os aplicativos.',
       loadOneFailed: 'Não foi possível carregar o aplicativo.',
-      emptyTitle: 'Nenhum aplicativo ainda',
-      emptyNoAccess: 'Peça a um administrador para criar um aplicativo.',
-      emptyDescription:
-        'Crie um aplicativo, carregue uma versão e implante-o em um ambiente.',
-      noResults: 'Nenhum aplicativo corresponde à pesquisa.',
       created: '{{name}} criado.',
       createDescription:
         'Um aplicativo é implantado em um ambiente; seus lançamentos são carregados posteriormente.',
       idHint:
         'Letras, dígitos, sublinhados e hífens; parte do seu endereço. Não pode mudar mais tarde.',
-      noEnvironment: 'Nenhum ambiente ainda',
       lastAccess: 'Última visita',
+      stateFilter: 'Estado',
+      anyState: 'Qualquer estado',
+      clearFilters: 'Limpar filtros',
+      noMatches: 'Nenhum app corresponde aos filtros.',
+      runStates: {
+        running: 'Em execução',
+        starting: 'Iniciando',
+        pending: 'Ainda não iniciado',
+        waiting: 'Aguardando',
+        stopped: 'Parado ou hibernando',
+        failed: 'Com falha',
+        unknown: 'Desconhecido',
+      },
+      page: 'Página {{page}} de {{pages}}',
+      previousPage: 'Página anterior',
+      nextPage: 'Próxima página',
     },
     advanced: 'Avançado (opcional)',
     labels: {
@@ -213,9 +220,9 @@ const ptBR: LocaleResource<typeof enUS> = {
       },
       activationHint: {
         eager:
-          'Iniciado quando implantado e sempre que o tempo de execução for reiniciado.',
+          'Iniciado quando implantado e sempre que o ambiente de execução for reiniciado.',
         onDemand:
-          'Iniciado pela primeira visita após uma implantação ou reinicialização do tempo de execução.',
+          'Iniciado pela primeira visita após uma implantação ou reinicialização do ambiente de execução.',
       },
       idleLabel: 'Parar quando não for visitado por',
       dormantLabel: 'Hibernar quando não for visitado por',
@@ -252,6 +259,9 @@ const ptBR: LocaleResource<typeof enUS> = {
       stopped: 'Parado',
       stoppedOnDemand: 'Parado (inicia na visita)',
       dormant: 'Hibernação (preparado na visita)',
+      waitingCapacity: 'Aguardando vaga livre',
+      waitingMemory: 'Aguardando memória',
+      waitingRecycle: 'Aguardando reinício do host',
       failed: 'Falha',
       unknown: 'Desconhecido',
       deploying: 'Implantação',
@@ -300,6 +310,11 @@ const ptBR: LocaleResource<typeof enUS> = {
         'Este ambiente está protegido. Digite {{appId}} para implantar.',
     },
     deployments: {
+      cancel: 'Cancelar implantação',
+      replaced: 'Substituída por uma implantação mais recente.',
+      cancelAccepted: 'Cancelamento aceito.',
+      queueAhead: 'Na fila · {{ahead}} à frente',
+      restartHint: 'Implantação interrompida. Implante a versão novamente.',
       title: 'Implantações',
       kind: 'Gentil',
       status: 'Status',
@@ -316,6 +331,8 @@ const ptBR: LocaleResource<typeof enUS> = {
       hideLogs: 'Ocultar registros',
       noLogs: 'Sem linhas de registro.',
       statuses: {
+        cancelling: 'Cancelando',
+        cancelled: 'Cancelada',
         queued: 'Na fila',
         deploying: 'Implantação',
         succeeded: 'Sucesso',
@@ -324,7 +341,7 @@ const ptBR: LocaleResource<typeof enUS> = {
     },
     actors: {
       human: 'pessoa',
-      agent: 'agente',
+      agent: 'Agent',
       key: 'tecla',
       rule: 'regra',
       system: 'sistema',
@@ -517,7 +534,7 @@ const ptBR: LocaleResource<typeof enUS> = {
           syntax: 'Linha {{line}}: escreva como KEY=valor.',
           name: 'Linha {{line}}: {{name}} não é um nome válido. Use letras maiúsculas, dígitos e sublinhados, começando com uma letra.',
           reserved:
-            'Linha {{line}}: {{name}} é definido pelo tempo de execução e não pode ser uma variável.',
+            'Linha {{line}}: {{name}} é definido pelo ambiente de execução e não pode ser uma variável.',
           duplicate:
             'Linha {{line}}: {{name}} já está configurado em uma linha anterior.',
           unterminated:
@@ -536,6 +553,53 @@ const ptBR: LocaleResource<typeof enUS> = {
       deployments: 'Implantações',
       variables: 'Variáveis',
       settings: 'Configurações',
+    },
+    sharedHost: {
+      title: 'Host de apps compartilhado',
+      description:
+        'Os apps de todos os ambientes deste host compartilham um processo e sua memória.',
+      environments: 'Ambientes nele: {{names}}',
+      recycling: {
+        pending:
+          'O código antigo é liberado reiniciando este host quando nenhum app estiver em uso. Novas versões aguardam até lá; os apps em execução continuam atendendo.',
+        restarting:
+          'Este host está reiniciando. Seus apps respondem “tente novamente em instantes” até voltarem.',
+      },
+      restoreFailed:
+        '{{name}}: não foi possível restaurar seus apps; tentando novamente em segundo plano.',
+      failed:
+        'O app não pôde ser restaurado após o reinício do host compartilhado; tentando novamente em segundo plano.',
+      view: 'Ver uso do host',
+      deployed: 'Implantados: {{count}}',
+      appsLabel: 'Em execução ou iniciando',
+      heapLabel: 'Heap',
+      processLabel: 'Memória do processo',
+      ratio: '{{used}} / {{limit}}',
+      runningUnlimited: '{{running}} · sem limite',
+      available: '{{available}} ainda livres no servidor',
+      wholeHost:
+        'Totais do host inteiro, com todos os ambientes nele; a memória não pode ser dividida entre os apps.',
+      viewAppsNote: 'Mostra apenas os apps que você pode ver.',
+      byEnvironment: 'Em execução ou iniciando, por ambiente:',
+    },
+    runtime: {
+      holds: {
+        requests: 'Atendendo requisições',
+        connections: 'Conexões abertas',
+        starting: 'Iniciando',
+        operation: 'Implantando ou parando',
+        resident: 'Sempre em execução',
+        busy: 'Ocupado',
+        recent: 'Usado no último minuto',
+      },
+      waiting: {
+        capacity:
+          'Início recusado: limite de apps ativos ou fila de início cheia',
+        memory: 'Início recusado: memória insuficiente',
+        recycle: 'Início recusado: o código novo aguarda o reinício do host',
+      },
+      idle: 'Ocioso; parado primeiro quando é preciso espaço',
+      lastVisit: 'Última visita: {{time}}',
     },
     overview: {
       currentRelease: 'Versão atual',
@@ -641,6 +705,10 @@ const ptBR: LocaleResource<typeof enUS> = {
           'A configuração foi salva, mas o aplicativo não conseguiu recarregá-la.',
         CONFIG_TOO_LARGE: 'A configuração é muito grande.',
         CONFIRMATION_REQUIRED: 'Digite o ID do aplicativo para confirmar.',
+        DEPLOYMENT_NOT_CANCELLABLE:
+          'A implantação iniciou a troca de versão ou já terminou.',
+        CANCELLATION_UNSUPPORTED:
+          'Este driver de implantação não oferece suporte ao cancelamento.',
         DEPLOYMENT_IN_PROGRESS:
           'A implantação deste aplicativo já está em andamento.',
         DEPLOYMENT_NOT_FOUND: 'A implantação não existe.',
@@ -707,7 +775,7 @@ const ptBR: LocaleResource<typeof enUS> = {
         VARIABLES_MISSING:
           'Variáveis obrigatórias não estão definidas: {{names}}. Defina-os nas variáveis ​​do aplicativo ou de seu ambiente e, em seguida, implante novamente.',
         VARIABLE_RESERVED:
-          'Este nome é definido pelo tempo de execução e não pode ser uma variável.',
+          'Este nome é definido pelo ambiente de execução e não pode ser uma variável.',
         INVALID_VARIABLE_NAME:
           'O nome de uma variável consiste em letras maiúsculas, dígitos e sublinhados, começando com uma letra.',
         INVALID_VARIABLE_VALUE: 'O valor é muito longo.',
@@ -729,13 +797,14 @@ const ptBR: LocaleResource<typeof enUS> = {
           'O host não pode implementar o aplicativo em que é executado.',
         noStatus: 'O host não informou como foi a implantação.',
         interrupted: 'A implantação foi interrompida por uma reinicialização.',
-        notReported: 'O tempo de execução não relatou o aplicativo.',
+        notReported: 'O ambiente de execução não relatou o aplicativo.',
         notRunning: 'O aplicativo não está em execução após a reinicialização.',
-        deploymentNotReported: 'O tempo de execução não relatou a implantação.',
+        deploymentNotReported:
+          'O ambiente de execução não relatou a implantação.',
         notReady: 'Ainda não está pronto; tente novamente em um momento.',
         checkTimeout: 'O teste não foi concluído em 20 segundos.',
         hostNoSettings:
-          'O tempo de execução local não requer configurações de conexão.',
+          'O ambiente de execução local não requer configurações de conexão.',
       },
       prefixed: {
         startFailed: 'Falha na inicialização: {{detail}}',
@@ -828,7 +897,7 @@ const ptBR: LocaleResource<typeof enUS> = {
       policyDescription: 'Quem pode implantar aqui.',
       appDefaults: 'Aplicativos',
       appDefaultsDescription:
-        'No máximo este número de aplicativos, e quando um aplicativo criado sem sua própria política de tempo de execução para e fica inativo. Vazio: sem limite, nunca.',
+        'No máximo este número de aplicativos, e quando um aplicativo criado sem sua própria política de ambiente de execução para e fica inativo. Vazio: sem limite, nunca.',
       maxApps: 'A maioria dos aplicativos',
       defaultIdle: 'Parar após (minutos sem visita)',
       defaultDormant: 'Inativo após (horas sem visita)',

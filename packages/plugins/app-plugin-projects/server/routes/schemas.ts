@@ -230,6 +230,15 @@ export const CreateInvitationsBody: z.ZodType<CreateInvitationsRequest> =
       .array(id)
       .optional()
       .describe('Projects the invited members may join.'),
+    locale: z
+      .string()
+      .trim()
+      .min(1)
+      .max(35)
+      .optional()
+      .describe(
+        "The language of the invitation email and accept page, one of the application's languages. Defaults to the caller's interface language, then the application's default language.",
+      ),
   });
 
 export const UpdateSettingsBody: z.ZodType<UpdateSettingsRequest> =

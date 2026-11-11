@@ -131,6 +131,7 @@ export const FAILURE_REASONS = [
   'cliUnavailable',
   'toolAuth',
   'toolQuota',
+  'sessionUnavailable',
   'toolRateLimit',
   'toolNetwork',
   'toolProcess',
@@ -206,6 +207,7 @@ export function isRetryable(reason: FailureReason): boolean {
 export const ANNOUNCED_FAILURES: Readonly<
   Partial<Record<FailureReason, FailureReason>>
 > = {
+  sessionUnavailable: 'toolProcess',
   prepareNetwork: 'checkoutFailed',
   workspaceBusy: 'checkoutFailed',
 };

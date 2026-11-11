@@ -1,7 +1,7 @@
 // `acp start` refused for its bridge protocol: it updates the CLI as `update` does, then exits non-zero so the service
 // manager starts it again on the new version; when no update helps it still exits non-zero, never 0.
 import path from 'node:path';
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, symlink, writeFile } from 'node:fs/promises';
 
 import { Config } from '@oclif/core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -13,6 +13,7 @@ import {
 import { BRIDGE_PROTOCOL_VERSION } from '@nocobase/acp-bridge/protocol';
 
 import type { CliUpdateResult } from '../src/update.ts';
+import { extractGlobalFlags, setGlobalFlags } from '../src/lib/globals.ts';
 import { removeDir, tempDir, TEST_CLI } from './helpers.ts';
 
 const bridge = vi.hoisted(() => ({
@@ -146,6 +147,43 @@ describe('acp start refused for its protocol', () => {
       process.exitCode = undefined;
     }
   };
+
+  it('saves the installed entry through current so service restarts use the activated version', async () => {
+    const prefix = path.join(home, 'installation');
+    const root = path.join(prefix, 'versions/1.0.0');
+    const entry = path.join(root, 'bin/acme');
+    await mkdir(path.dirname(entry), { recursive: true });
+    await symlink('versions/1.0.0', path.join(prefix, 'current'));
+    await writeFile(
+      path.join(prefix, 'install.json'),
+      JSON.stringify({
+        mode: 'cli',
+        prefix,
+        binLink: path.join(home, 'bin/acme'),
+      }),
+    );
+    const previousArgv = process.argv;
+    const previousRoot = config.root;
+    const Install = acpCommands(TEST_CLI)['acp:service:install']!;
+    const log = vi.spyOn(Install.prototype, 'log').mockImplementation(() => {});
+    try {
+      process.argv = [process.execPath, entry];
+      config.root = root;
+      setGlobalFlags(extractGlobalFlags(['--dry-run']).flags);
+      await new Install([], config)._run();
+      expect(log.mock.calls.map(([line]) => line).join('\n')).toContain(
+        path.join(prefix, 'current/bin/acme'),
+      );
+      expect(log.mock.calls.map(([line]) => line).join('\n')).not.toContain(
+        entry,
+      );
+    } finally {
+      process.argv = previousArgv;
+      config.root = previousRoot;
+      setGlobalFlags(extractGlobalFlags([]).flags);
+      log.mockRestore();
+    }
+  });
 
   it('updates, then exits non-zero for the service to start the new version', async () => {
     updates.updateCli.mockResolvedValue(result('1.1.0'));

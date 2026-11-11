@@ -1,6 +1,6 @@
 /**
  * A deployment request as a route dialog, opened from its App's page at `:appId/requests/:requestId` (the pending row
- * of its deployments and the notice under the header) and, for older links, over the Apps list at
+ * of its deployments and the notice under the header) and, for older links, below the Apps path at
  * `requests/:requestId`. It says what would run where (the App, the environment, the release with its commit and its CI
  * log), who asked and why, and how it stands; an approver adds an optional comment and approves or rejects it here.
  */

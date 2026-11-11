@@ -70,6 +70,7 @@ import {
 } from '../components/release-badges.js';
 import { RowActions } from '../components/row-actions.js';
 import { Section } from '../components/section.js';
+import { SharedHostNotice } from '../components/shared-host.js';
 import { EmptyState, ListSkeleton, LoadError } from '../components/states.js';
 import { Tag } from '../components/tag.js';
 import { Alert, AlertAction, AlertTitle } from '../components/ui/alert.js';
@@ -159,6 +160,7 @@ function AppPageContent({ appId }: { readonly appId: string }): ReactElement {
       releases.reload();
       requests.reload();
     },
+    () => deployments.reload(),
   );
   const summary = app.data;
   const origin = useContext(ReleasesAppOriginContext);
@@ -437,6 +439,13 @@ function AppPageContent({ appId }: { readonly appId: string }): ReactElement {
         canReadLogs={canOnApp(me, 'read-logs', summary)}
         busy={busy}
         onRollback={(id) => void rollback(id)}
+        onCancel={(id) =>
+          void run(
+            `cancel:${id}`,
+            () => api.send('POST', `apps/${appId}/deployments/${id}/cancel`),
+            t('ui.deployments.cancelAccepted'),
+          )
+        }
       />
     ) : deployments.error !== undefined ? (
       <LoadError
@@ -507,6 +516,10 @@ function AppPageContent({ appId }: { readonly appId: string }): ReactElement {
         </Overview>
       </dl>
       {origin ? <origin.Origin appId={appId} /> : null}
+      <SharedHostNotice
+        summary={summary}
+        canReadEnvironments={canReadEnvironments}
+      />
       <Section
         title={t('ui.overview.recent')}
         actions={
@@ -533,7 +546,7 @@ function AppPageContent({ appId }: { readonly appId: string }): ReactElement {
         actions={
           canOnApp(me, 'upload', summary) && !summary.environment.runsImages ? (
             <>
-              {/* The native file input stays hidden: its button and "No file chosen" follow the browser's language. */}
+              {/* ui-component-exception: Hidden native file chooser; the existing translated upload button owns its visible label. */}
               <input
                 ref={fileInputRef}
                 type='file'
@@ -882,6 +895,7 @@ function DeploymentTable({
   canReadLogs,
   busy,
   onRollback,
+  onCancel,
 }: {
   readonly appId: string;
   /** The App's pending request, first. */
@@ -893,6 +907,7 @@ function DeploymentTable({
   readonly canReadLogs: boolean;
   readonly busy: string | null;
   readonly onRollback: (deploymentId: string) => void;
+  readonly onCancel: (deploymentId: string) => void;
 }): ReactElement {
   const { t, i18n } = useTranslation(ACCESS_NAMESPACE);
   const api = useReleasesApi();
@@ -993,8 +1008,18 @@ function DeploymentTable({
               status={item.deployment.status}
               wording='ui.deployments.statuses'
             />
+            {item.deployment.status === 'queued' &&
+            item.deployment.queueAhead != null ? (
+              <p className='mt-1 text-xs text-muted-foreground'>
+                {t('ui.deployments.queueAhead', {
+                  ahead: item.deployment.queueAhead,
+                })}
+              </p>
+            ) : null}
             {item.deployment.error ? (
-              <p className='mt-1 text-xs text-destructive wrap-anywhere'>
+              <p
+                className={`mt-1 text-xs wrap-anywhere ${item.deployment.status === 'failed' ? 'text-destructive' : 'text-muted-foreground'}`}
+              >
                 {messageText(t, item.deployment.error)}
               </p>
             ) : null}
@@ -1062,13 +1087,15 @@ function DeploymentTable({
           canRollback &&
           deployment.status === 'succeeded' &&
           deployment.id !== currentId;
-        if (!canReadLogs && !rollbackable) return null;
+        const cancellable = canRollback && deployment.cancellable;
+        if (!canReadLogs && !rollbackable && !cancellable) return null;
         return (
           <RowActions
             name={deployment.release?.version ?? deployment.id}
             busy={
               logs[deployment.id] === 'loading' ||
-              busy === `rollback:${deployment.id}`
+              busy === `rollback:${deployment.id}` ||
+              busy === `cancel:${deployment.id}`
             }
           >
             {canReadLogs ? (
@@ -1077,6 +1104,15 @@ function DeploymentTable({
                 {logs[deployment.id]
                   ? t('ui.deployments.hideLogs')
                   : t('ui.deployments.logs')}
+              </DropdownMenuItem>
+            ) : null}
+            {cancellable ? (
+              <DropdownMenuItem
+                disabled={busy !== null}
+                onClick={() => onCancel(deployment.id)}
+              >
+                <BanIcon />
+                {t('ui.deployments.cancel')}
               </DropdownMenuItem>
             ) : null}
             {rollbackable ? (

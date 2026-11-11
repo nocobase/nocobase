@@ -12,7 +12,7 @@ import { bearer, deviceAuthorization, username } from 'better-auth/plugins';
  */
 const CLI_CLIENT_IDS: readonly string[] = ['nocobase-cli'];
 
-// Use mailers for shared sending; defineAuthConfig retains AUTH_EMAIL_* for legacy inline senders.
+// Select a named sender with passwordReset.mailer; defineAuthConfig retains AUTH_EMAIL_* for legacy inline senders.
 // Automatic recovery requires passwordReset.enabled: true; leave the switch absent for custom callback compatibility.
 const auth: AppConfigFactory<AuthConfig> = defineAuthConfig({
   defaults: {
@@ -29,7 +29,7 @@ const auth: AppConfigFactory<AuthConfig> = defineAuthConfig({
       }),
       bearer(),
     ],
-    emailAndPassword: { enabled: true, autoSignIn: false },
+    emailAndPassword: { enabled: true, autoSignIn: true },
     session: { storeSessionInDatabase: true },
     account: { encryptOAuthTokens: true },
   },

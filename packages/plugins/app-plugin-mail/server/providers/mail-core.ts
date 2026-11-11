@@ -6,7 +6,10 @@ import { userAdministrationServiceToken } from '@nocobase/app-plugin-authenticat
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
 import { databaseManagerToken } from '@nocobase/db';
 import { loggingToken } from '@nocobase/app-server/logging';
-import { jobExecutorServiceToken } from '@nocobase/app-server/jobs';
+import {
+  jobExecutorServiceToken,
+  type AppJobsConfig,
+} from '@nocobase/app-server/jobs';
 import type { JobExecutor } from '@nocobase/jobs';
 import {
   driveManagerToken,
@@ -169,9 +172,12 @@ export class MailCoreProvider extends ServiceProvider<MailCoreProviderApplicatio
   private jobsConfiguration(): string | undefined {
     const name = this.getMailConfig().jobs;
     if (name === undefined) return undefined;
-    const jobs = this.app.config.get<Record<string, unknown>>('jobs');
+    const jobs = this.app.config.get<AppJobsConfig>('jobs');
     // `jobs.default` holds a key, not a configuration, so it is rejected too.
-    const selected = jobs?.[name];
+    const selected =
+      name !== 'default' && jobs?.backends && Object.hasOwn(jobs.backends, name)
+        ? jobs.backends[name]
+        : undefined;
     if (!selected || typeof selected !== 'object') {
       throw new Error(
         `mail.jobs names "${name}", which is not a jobs configuration.`,

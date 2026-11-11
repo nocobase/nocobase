@@ -30,34 +30,35 @@ const idID: LocaleResource<typeof enUS> = {
       stageActionApplied: 'menerapkan aksi panggung',
       stageActionSkipped: 'melewatkan aksi panggung',
       stageActionSuppressed: 'menekan aksi panggung (terlalu banyak lari)',
-      stageActionBlocked: 'melewatkan aksi panggung: masalah sedang menunggu',
-      workBlocked: 'tidak mulai bekerja: masalah sedang menunggu',
-      workDormant: 'tidak mulai bekerja saat masalah sedang terjadi',
+      stageActionBlocked: 'melewati aksi tahap: tugas sedang menunggu',
+      workBlocked: 'tidak mulai bekerja: tugas sedang menunggu',
+      workDormant: 'tidak mulai bekerja selama tugas berada di',
       workLimited:
-        'tidak mulai berfungsi: komentar agen mencapai batas masalah',
-      workWithdrawn:
-        'menarik pekerjaannya yang antri: masalah ini kini menunggu',
+        'tidak mulai bekerja: komentar Agent mencapai batas eksekusi tugas',
+      workWithdrawn: 'menarik pekerjaan dalam antrean: tugas kini menunggu',
       stageActionFailed: 'tidak dapat menjalankan aturan status',
-      created: 'menciptakan masalah',
+      created: 'membuat tugas',
       datesChanged: 'mengubah tanggal',
-      deleted: 'menghapus masalah tersebut',
+      deleted: 'menghapus tugas',
       descriptionChanged: 'mengedit deskripsinya',
       executorChanged: 'mengubah eksekutor',
       executorRemoved: 'pelaksana {{name}} telah dihapus',
       labelsChanged: 'mengubah labelnya',
       ownerChanged: 'mengubah pemiliknya',
-      parentChanged: 'mengubah masalah induk',
+      parentChanged: 'mengubah tugas induk',
       priorityChanged: 'mengubah prioritas',
-      projectChanged: 'memindahkan masalah ini ke proyek lain',
-      restored: 'memulihkan masalah tersebut',
+      projectChanged: 'memindahkan tugas ke proyek lain',
+      restored: 'memulihkan tugas',
       statusChanged: 'mengubah statusnya',
-      titleChanged: 'mengganti nama masalah tersebut',
-      updated: 'memperbarui masalahnya',
-      subtaskAdded: 'menambahkan sub-masalah',
+      titleChanged: 'mengganti nama tugas',
+      updated: 'memperbarui tugas',
+      subtaskAdded: 'menambahkan subtugas',
       dependencyAdded: 'menambahkan ketergantungan pada',
       dependencyRemoved: 'menghilangkan ketergantungan pada',
+      relationAdded: 'menambahkan relasi dengan',
+      relationRemoved: 'menghapus relasi dengan',
       stageChanged: 'mengubah panggung',
-      autoMoveSkipped: 'tidak dapat memindahkan masalah secara otomatis ke',
+      autoMoveSkipped: 'tidak dapat memindahkan tugas secara otomatis ke',
     },
     afterEvent: '(secara otomatis, pada “{{event}}”)',
     empty: 'Belum ada aktivitas.',
@@ -79,16 +80,16 @@ const idID: LocaleResource<typeof enUS> = {
       cancel: 'Pemindahan dibatalkan.',
       end: 'Dijatuhkan pada {{status}}.',
       instructions:
-        'Tekan spasi atau enter untuk melanjutkan masalah, gunakan tombol panah untuk memindahkannya ke status lain, lalu tekan spasi atau enter lagi untuk membatalkannya, atau escape untuk membatalkan.',
+        'Tekan spasi atau Enter untuk mengambil tugas, gunakan tombol panah untuk memindahkannya ke status lain, lalu tekan spasi atau Enter lagi untuk meletakkannya, atau Escape untuk membatalkan.',
       over: 'Di atas {{status}}.',
       start: 'Mengambil {{identifier}}.',
     },
     boardView: 'Papan',
-    cardRole: 'Masalah yang dapat diseret',
+    cardRole: 'Tugas yang dapat diseret',
     closeDenied:
       'Hanya pemilik, pimpinan proyek, atau administrator yang boleh menutup {{identifier}}.',
-    emptyColumn: 'Tidak ada masalah',
-    label: 'Papan terbitan',
+    emptyColumn: 'Tidak ada tugas',
+    label: 'Papan tugas',
     listView: 'Daftar',
     moveRejected: '{{identifier}} tidak dapat berpindah ke status itu.',
     viewLabel: 'Lihat',
@@ -187,11 +188,11 @@ const idID: LocaleResource<typeof enUS> = {
       created: 'Label "{{name}}" dibuat',
       delete: 'Hapus label',
       deleteDescription:
-        'Itu dihapus dari setiap terbitan yang memilikinya. Hal ini tidak dapat dibatalkan.',
+        'Label ini dihapus dari semua tugas yang memilikinya. Tindakan ini tidak dapat dibatalkan.',
       deleteTitle: 'Hapus label "{{name}}"?',
       deleted: 'Label "{{name}}" dihapus',
-      description: 'Memberi label pada masalah kelompok di seluruh proyek.',
-      emptyDescription: 'Buat label untuk mengelompokkan masalah.',
+      description: 'Label mengelompokkan tugas lintas proyek.',
+      emptyDescription: 'Buat label untuk mengelompokkan tugas.',
       emptyNoAccess: 'Minta administrator untuk membuat label.',
       emptyTitle: 'Belum ada label',
       loadFailed: 'Tidak dapat memuat label',
@@ -206,7 +207,7 @@ const idID: LocaleResource<typeof enUS> = {
     },
   },
   configPage: {
-    description: 'Anggota, peran, label, dan awalan masalah proyek.',
+    description: 'Anggota, peran, label, dan prefiks tugas proyek.',
     noAccess: 'Tidak ada yang perlu diatur di sini',
     noAccessDescription:
       'Peran Anda tidak mencakup pengaturan proyek apa pun. Tanyakan kepada pemilik atau admin apakah Anda memerlukannya.',
@@ -256,7 +257,7 @@ const idID: LocaleResource<typeof enUS> = {
     INVALID_LABEL: 'Label sudah tidak ada lagi.',
     INVALID_LEAD: 'Pemimpinnya haruslah anggota yang aktif.',
     INVALID_OWNER: 'Pemilik harus menjadi anggota aktif.',
-    INVALID_PARENT: 'Masalah induk tidak dapat digunakan.',
+    INVALID_PARENT: 'Tugas induk tidak dapat digunakan.',
     INVALID_PREFIX:
       'Gunakan 1 hingga 10 huruf besar dan angka, dimulai dengan huruf.',
     INVALID_PROJECT: 'Proyek ini tidak ada.',
@@ -268,7 +269,7 @@ const idID: LocaleResource<typeof enUS> = {
     LABEL_EXISTS: 'Label dengan nama ini sudah ada.',
     LAST_OWNER: 'Pemilik terakhir tidak bisa kehilangan peran pemilik.',
     LEAD_MEMBER: 'Pilih pimpinan proyek lain sebelum mengeluarkan anggota ini.',
-    OWNER_REQUIRED: 'Suatu terbitan memerlukan seorang pemilik.',
+    OWNER_REQUIRED: 'Tugas memerlukan penanggung jawab.',
     REVISION_CONFLICT:
       'Sementara itu, ada yang mengubahnya. Versi terbaru ditampilkan; terapkan kembali perubahan Anda.',
     REVISION_REQUIRED: 'Halaman ini kedaluwarsa. Muat ulang dan coba lagi.',
@@ -277,22 +278,20 @@ const idID: LocaleResource<typeof enUS> = {
       'Seseorang masih memegang peran ini; mengubah peran mereka terlebih dahulu.',
     ROLE_NOT_EDITABLE:
       'Peran pemilik memegang segalanya; itu tidak dapat diedit.',
-    TRANSITION_NOT_ALLOWED:
-      'Anda tidak boleh memindahkan masalah ke status ini.',
+    TRANSITION_NOT_ALLOWED: 'Anda tidak boleh memindahkan tugas ke status ini.',
     UNKNOWN_ROLE: 'Peran itu sudah tidak ada lagi.',
     USER_DISABLED: 'Akun yang dinonaktifkan tidak dapat diberikan peran.',
     DEPENDENCY_CYCLE: 'Ketergantungan itu akan menciptakan sebuah siklus.',
     DEPENDENCY_CHANGED: 'Hubungannya berubah. Muat ulang dan coba lagi.',
     DEPENDENCY_GRAPH_CHANGED:
-      'Masalah ketergantungan berubah. Muat ulang dan coba lagi.',
+      'Dependensi tugas berubah. Muat ulang lalu coba lagi.',
     DEPENDENCY_EXISTS: 'Ketergantungan itu sudah ada.',
     DEPENDENCY_TOO_DEEP: 'Rantai ketergantungannya terlalu panjang.',
-    INVALID_DEPENDENCY:
-      'Masalah itu tidak bisa menjadi ketergantungan di sini.',
+    INVALID_DEPENDENCY: 'Tugas itu tidak dapat menjadi dependensi di sini.',
     INVALID_STAGE:
       'Masukkan bilangan bulat dari 0 hingga 1000, atau biarkan kosong.',
-    ISSUE_BLOCKED: 'Isu masih menunggu isu yang menghalanginya.',
-    SUBTASKS_OPEN: 'Selesaikan atau batalkan sub-masalahnya terlebih dahulu.',
+    ISSUE_BLOCKED: 'Tugas masih menunggu tugas yang memblokirnya.',
+    SUBTASKS_OPEN: 'Selesaikan atau batalkan subtugasnya terlebih dahulu.',
     PLAN_INVALID: 'Beberapa perubahan rencana tidak berhasil.',
     PLAN_NOT_OPEN: 'Rencananya tidak lagi menunggu keputusan.',
     PLAN_EXPIRED: 'Rencananya telah berakhir.',
@@ -307,15 +306,13 @@ const idID: LocaleResource<typeof enUS> = {
     FILES_UNAVAILABLE: 'Aplikasi ini tidak menyimpan file.',
   },
   dependencies: {
-    add: 'Tambahkan masalah pemblokiran',
+    add: 'Tambahkan tugas pemblokir',
     added: 'Ketergantungan ditambahkan.',
-    addPlaceholder: 'Masalah pencarian untuk ditambahkan sebagai pemblokir',
+    addPlaceholder: 'Cari tugas untuk ditambahkan sebagai pemblokir',
     blockedBy: 'Diblokir oleh',
     blocks: 'Blok',
-    hidden_one:
-      '{{count}} masalah pemblokiran lainnya yang tidak dapat Anda lihat.',
-    hidden_other:
-      '{{count}} masalah pemblokiran lainnya yang tidak dapat Anda lihat.',
+    hidden_one: '{{count}} tugas pemblokir lagi yang tidak dapat Anda lihat.',
+    hidden_other: '{{count}} tugas pemblokir lagi yang tidak dapat Anda lihat.',
     related: 'Terkait',
     remove: 'Hapus {{identifier}}',
     removed: 'Ketergantungan dihilangkan.',
@@ -376,6 +373,9 @@ const idID: LocaleResource<typeof enUS> = {
     projectRequired: 'Pilih setidaknya satu proyek yang Anda pimpin.',
     projects: 'Proyek',
     projectsHint: 'Para undangan bergabung dalam proyek ini sebagai anggota.',
+    language: 'Bahasa email',
+    languageHint:
+      'Email undangan dan halaman pendaftarannya memakai bahasa ini.',
     projectsPlaceholder: 'Pilih proyek',
     resend: 'Kirim lagi',
     generateLink: 'Buat tautan baru',
@@ -398,18 +398,18 @@ const idID: LocaleResource<typeof enUS> = {
     title: 'Undangan yang menunggu keputusan',
   },
   issue: {
-    backToList: 'Kembali ke persoalan',
-    delete: 'Hapus masalah',
+    backToList: 'Kembali ke tugas',
+    delete: 'Hapus tugas',
     deleteDescription:
       'Hilang dari daftar dan pencarian. Administrator dapat memulihkannya.',
     deleteTitle: 'Hapus {{identifier}}?',
     deleted: '{{identifier}} dihapus.',
     editDescription: 'Edit deskripsi',
     editTitle: 'Sunting judul',
-    conflict: 'Masalah ini berubah, memuat ulang.',
-    loadFailed: 'Tidak dapat memuat masalah ini',
+    conflict: 'Tugas ini berubah, memuat ulang.',
+    loadFailed: 'Tidak dapat memuat tugas ini',
     noDescription: 'Tidak ada penjelasan.',
-    parent: 'Sub-edisi dari',
+    parent: 'Subtugas dari',
   },
   issueAdd: {
     dependency: 'Pemblokir',
@@ -417,7 +417,7 @@ const idID: LocaleResource<typeof enUS> = {
     none: 'tidak ada',
   },
   issuePicker: {
-    empty: 'Tidak ada masalah yang cocok',
+    empty: 'Tidak ada tugas yang cocok',
     placeholder: 'Cari berdasarkan judul atau pengenal',
   },
   issueForm: {
@@ -425,13 +425,12 @@ const idID: LocaleResource<typeof enUS> = {
     descriptionLabel: 'Deskripsi',
     descriptionPlaceholder: 'Markdown didukung.',
     noProject: 'Tidak ada proyek',
-    ownerHint:
-      'Orang yang bertanggung jawab atas masalah ini. Default untuk Anda.',
+    ownerHint: 'Orang yang bertanggung jawab atas tugas. Defaultnya Anda.',
     startLabel: 'Kapan memulainya',
     startNow: 'Mulai sekarang',
     startNowHint: 'Manajer proyek segera mulai mengaturnya.',
     startLater: 'Nanti',
-    startLaterHint: 'Ia menunggu di Backlog; memulainya dari halaman terbitan.',
+    startLaterHint: 'Tugas menunggu di Backlog; mulai dari halaman tugas.',
     createAndStart: 'Buat dan mulai',
     projectLabel: 'Proyek',
     titleLabel: 'Judul',
@@ -449,22 +448,22 @@ const idID: LocaleResource<typeof enUS> = {
       updated: 'Diperbarui',
     },
     agentsDescription:
-      'Bekerja untuk manusia dan agen pengkodean. Tetapkan agen sebagai eksekutor untuk memulai proses.',
+      'Bekerja untuk manusia dan Agent pengkodean. Tetapkan Agent sebagai eksekutor untuk memulai proses.',
     agentsEmptyDescription:
-      'Buat masalah dan pilih agen sebagai pelaksana untuk menyerahkan pekerjaan kepadanya.',
+      'Buat tugas dan pilih Agent sebagai pelaksana untuk menyerahkan pekerjaan kepadanya.',
     description:
       'Segala sesuatu yang dikerjakan tim, sebagai papan atau daftar.',
-    emptyDescription: 'Buat isu dan pilih siapa yang mengeksekusinya.',
-    emptyTitle: 'Belum ada masalah',
-    loadFailed: 'Tidak dapat memuat masalah',
-    new: 'Edisi baru',
-    noResults: 'Tidak ada masalah yang cocok.',
+    emptyDescription: 'Buat tugas dan pilih siapa yang melaksanakannya.',
+    emptyTitle: 'Belum ada tugas',
+    loadFailed: 'Tidak dapat memuat tugas',
+    new: 'Tugas baru',
+    noResults: 'Tidak ada tugas yang cocok.',
     restore: 'Pulihkan',
     restored: '{{identifier}} dipulihkan.',
-    searchLabel: 'Masalah pencarian',
+    searchLabel: 'Cari tugas',
     searchPlaceholder: 'Cari berdasarkan judul atau pengenal',
     statusFilterLabel: 'Filter berdasarkan status',
-    title: 'Isu',
+    title: 'Tugas',
   },
   labelColors: {
     for: 'Warna {{name}}',
@@ -489,26 +488,26 @@ const idID: LocaleResource<typeof enUS> = {
   },
   myIssues: {
     description:
-      'Masalah-masalah yang menjadi tanggung jawab Anda, dan masalah-masalah yang sedang Anda tangani sendiri.',
+      'Tugas yang menjadi tanggung jawab Anda dan tugas yang Anda kerjakan sendiri.',
     empty: {
-      executing: 'Anda tidak melakukan masalah apa pun',
-      owned: 'Anda tidak memiliki masalah apa pun',
+      executing: 'Anda tidak sedang melaksanakan tugas apa pun',
+      owned: 'Anda tidak bertanggung jawab atas tugas apa pun',
     },
     emptyDescription:
-      'Masalah yang diberikan kepada Anda muncul di sini. Buat satu atau ambil satu dari daftar masalah.',
+      'Tugas yang ditugaskan kepada Anda muncul di sini. Buat tugas atau ambil satu dari daftar tugas.',
     tabs: {
       executing: 'aku mengeksekusi',
       owned: 'milikku',
     },
-    tabsLabel: 'Pandangan masalah saya',
-    title: 'Masalah saya',
+    tabsLabel: 'Tampilan Tugas saya',
+    title: 'Tugas saya',
   },
   nav: {
     general: 'Jenderal',
-    issues: 'Isu',
+    issues: 'Tugas',
     labels: 'Label',
     members: 'Anggota',
-    myIssues: 'Masalah saya',
+    myIssues: 'Tugas saya',
     projects: 'Proyek',
     roles: 'Peran',
     settings: 'Pengaturan',
@@ -519,7 +518,7 @@ const idID: LocaleResource<typeof enUS> = {
       manual: 'Manual',
     },
     tabsLabel: 'Cara mencipta',
-    title: 'Edisi baru',
+    title: 'Tugas baru',
   },
   pagination: {
     countMore: '{{count}}+',
@@ -535,8 +534,7 @@ const idID: LocaleResource<typeof enUS> = {
   },
   projectForm: {
     created: 'Proyek {{name}} dibuat',
-    description:
-      'Masalah kelompok proyek dan repositori yang menjadi perhatiannya.',
+    description: 'Proyek mengelompokkan tugas dan repositori yang terkait.',
     descriptionHint:
       'Apa yang harus diketahui semua orang yang mengerjakan proyek ini.',
     descriptionPlaceholder: 'Tentang apa proyek ini.',
@@ -563,24 +561,24 @@ const idID: LocaleResource<typeof enUS> = {
   projectMore: {
     delete: 'Hapus proyek',
     deleteDescription:
-      'Proyek, anggota dan repositorinya dihapus. Permasalahannya tetap ada dan tidak lagi menjadi bagian dari suatu proyek.',
+      'Proyek, anggota, dan repositorinya dihapus. Tugasnya tetap ada dan tidak lagi menjadi bagian dari proyek.',
     deleteTitle: 'Hapus {{name}}?',
     deleted: 'Proyek {{name}} dihapus',
     label: 'Lebih banyak tindakan proyek',
   },
   projectPage: {
     distribution: 'Berdasarkan status',
-    noIssues: 'Belum ada masalah.',
+    noIssues: 'Belum ada tugas.',
     numbers: 'Nomor-nomor kunci',
-    openInList: 'Buka di daftar terbitan',
+    openInList: 'Buka di daftar tugas',
     stats: {
       done: 'Selesai',
       review: 'Sedang ditinjau',
       started: 'Sedang berlangsung',
-      total: 'Isu',
+      total: 'Tugas',
     },
     tabs: {
-      issues: 'Isu',
+      issues: 'Tugas',
       label: 'Bagian proyek',
       overview: 'Ikhtisar',
     },
@@ -604,12 +602,12 @@ const idID: LocaleResource<typeof enUS> = {
       status: 'Status',
     },
     description:
-      'Masalah kelompok, tautkan repositorinya dan ikuti kemajuannya.',
+      'Kelompokkan tugas, tautkan repositorinya, dan pantau kemajuan.',
     descriptionLabel: 'Deskripsi',
     detailLoadFailed: 'Tidak dapat memuat proyek ini',
     editDescription: 'Edit deskripsi',
     emptyDescription:
-      'Buat proyek untuk mengelompokkan isu-isu dan menghubungkan repositori yang bersangkutan.',
+      'Buat proyek untuk mengelompokkan tugas dan menautkan repositori yang terkait.',
     emptyNoAccess: 'Minta administrator untuk membuat proyek.',
     emptyTitle: 'Belum ada proyek',
     loadFailed: 'Tidak dapat memuat proyek',
@@ -618,7 +616,7 @@ const idID: LocaleResource<typeof enUS> = {
     noLead: 'Tidak ada petunjuk',
     noResults: 'Tidak ada proyek yang cocok.',
     notFound: 'Proyek ini tidak ada atau Anda tidak dapat melihatnya.',
-    progressLabel: 'Masalah {{done}} dari {{total}} selesai',
+    progressLabel: '{{done}} dari {{total}} tugas selesai',
     search: 'Cari proyek',
     sidePanel: 'Detail proyek',
     title: 'Proyek',
@@ -629,7 +627,7 @@ const idID: LocaleResource<typeof enUS> = {
     visibilityHint: {
       everyone: 'Setiap anggota ruang kerja dapat melihat proyek ini.',
       members:
-        'Hanya anggota proyek dan admin ruang kerja yang dapat melihat proyek ini dan masalahnya.',
+        'Hanya anggota proyek dan admin ruang kerja yang dapat melihat proyek ini dan tugasnya.',
     },
     visibilityLabel: 'Visibilitas',
   },
@@ -673,7 +671,7 @@ const idID: LocaleResource<typeof enUS> = {
     empty: 'Tidak ada repositori atau direktori yang terlampir.',
     initPrompt: 'Perintah inisialisasi',
     initPromptHint:
-      'Opsional. Instruksi sederhana yang diikuti agen saat pertama kali bekerja di sini untuk suatu tugas, sebelum dimulai. Bukan skrip: ia tidak menjalankan apa pun dengan sendirinya.',
+      'Opsional. Instruksi sederhana yang diikuti Agent saat pertama kali bekerja di sini untuk suatu tugas, sebelum dimulai. Bukan skrip: ia tidak menjalankan apa pun dengan sendirinya.',
     initPromptPlaceholder:
       'Jalankan pnpm install, lalu salin .env.example ke .env.',
     initPromptTooLong: 'Perintah inisialisasi terlalu panjang.',
@@ -681,7 +679,7 @@ const idID: LocaleResource<typeof enUS> = {
     newDescription:
       'Di mana pekerjaan proyek ini berlangsung. Yang pertama adalah direktori kerja utama.',
     newTitle: 'Tambahkan direktori kerja',
-    noRunners: 'Belum ada waktu proses',
+    noRunners: 'Belum ada lingkungan runtime',
     path: 'Jalur direktori',
     pathHint:
       'Jalur absolut direktori pada runtime tersebut. Agen bekerja di sana, satu tugas pada satu waktu.',
@@ -692,9 +690,9 @@ const idID: LocaleResource<typeof enUS> = {
     removed: 'Dihapus.',
     runner: 'Lingkungan runtime',
     runnerHint: 'Hanya runtime ini yang berfungsi di direktori.',
-    runnerIdPlaceholder: 'ID waktu proses',
-    runnerPlaceholder: 'Pilih waktu proses',
-    runnerRequired: 'Pilih waktu proses direktori aktif.',
+    runnerIdPlaceholder: 'ID lingkungan runtime',
+    runnerPlaceholder: 'Pilih lingkungan runtime',
+    runnerRequired: 'Pilih lingkungan runtime direktori aktif.',
     title: 'Repositori dan direktori',
     type: 'Jenis',
     types: {
@@ -736,28 +734,28 @@ const idID: LocaleResource<typeof enUS> = {
     abilities: {
       issues: {
         changeOwner: {
-          hint: 'Serahkan suatu permasalahan kepada orang lain untuk mempertanggungjawabkannya',
+          hint: 'Serahkan tugas kepada orang lain agar ia bertanggung jawab atasnya',
           title: 'Ganti pemiliknya',
         },
         close: {
-          hint: 'Menandai suatu masalah selesai atau dibatalkan',
-          title: 'Tutup masalah',
+          hint: 'Tandai tugas selesai atau dibatalkan',
+          title: 'Tutup tugas',
         },
         create: {
-          hint: 'Membuat isu, dalam sebuah proyek atau sendiri',
-          title: 'Ciptakan masalah',
+          hint: 'Buat tugas, di dalam proyek atau berdiri sendiri',
+          title: 'Buat tugas',
         },
         delete: {
-          hint: 'Hapus masalah dan pulihkan masalah yang terhapus',
-          title: 'Hapus dan pulihkan masalah',
+          hint: 'Hapus tugas dan pulihkan yang terhapus',
+          title: 'Hapus dan pulihkan tugas',
         },
         edit: {
           hint: 'Judul, deskripsi, prioritas, tanggal, label, pelaksana dan status terbuka',
-          title: 'Edit terbitan',
+          title: 'Edit tugas',
         },
         view: {
-          hint: 'Lihat masalah dalam daftar, papan dan detailnya',
-          title: 'Lihat masalah',
+          hint: 'Lihat tugas di daftar, papan, dan detailnya',
+          title: 'Lihat tugas',
         },
       },
       projects: {
@@ -782,7 +780,7 @@ const idID: LocaleResource<typeof enUS> = {
     capabilities: {
       general: {
         read: 'Lihat pengaturan umum',
-        update: 'Ubah awalan terbitan',
+        update: 'Ubah prefiks tugas',
       },
       labels: {
         read: 'Lihat labelnya',
@@ -826,7 +824,7 @@ const idID: LocaleResource<typeof enUS> = {
     holders: 'Diselenggarakan oleh {{count}}',
     legend: {
       issues:
-        'Yang terlihat: masalah tanpa proyek, dan masalah dalam proyek yang dapat mereka lihat. Masalah yang mereka pimpin atau miliki: masalah yang mereka miliki, dan masalah dalam proyek yang mereka pimpin. Semua: setiap masalah.',
+        'Yang terlihat: tugas tanpa proyek dan tugas di proyek yang dapat mereka lihat. Yang mereka pimpin atau pegang: tugas mereka dan tugas di proyek yang mereka pimpin. Semua: setiap tugas.',
       projects:
         'Yang terlihat: proyek publik, dan proyek swasta yang mereka ikuti. Yang mereka pimpin atau miliki: proyek yang mereka pimpin. Semua: setiap proyek.',
     },
@@ -838,7 +836,7 @@ const idID: LocaleResource<typeof enUS> = {
     },
     loadFailed: 'Tidak dapat memuat peran',
     modules: {
-      issues: 'Isu',
+      issues: 'Tugas',
       projects: 'Proyek',
       settings: 'Pengaturan',
     },
@@ -861,21 +859,21 @@ const idID: LocaleResource<typeof enUS> = {
     member: 'Anggota',
   },
   search: {
-    description: 'Cari masalah berdasarkan judul atau pengenal.',
-    hint: 'Ketik untuk mencari masalah.',
-    issues: 'Isu',
-    noResults: 'Tidak ada masalah yang cocok.',
+    description: 'Cari tugas berdasarkan judul atau pengenal.',
+    hint: 'Ketik untuk mencari tugas.',
+    issues: 'Tugas',
+    noResults: 'Tidak ada tugas yang cocok.',
     placeholder: 'Cari berdasarkan judul atau pengenal…',
-    title: 'Masalah pencarian',
+    title: 'Cari tugas',
     trigger: 'Cari',
   },
   settingsPage: {
     general: {
-      prefix: 'Awalan pengidentifikasi masalah',
+      prefix: 'Prefiks pengenal tugas',
       prefixHint:
-        'Terbitan baru diberi nomor seperti {{example}}. Masalah yang ada tetap mempertahankan pengidentifikasinya.',
+        'Tugas baru diberi nomor seperti {{example}}. Tugas yang sudah ada tetap memakai pengenalnya.',
       saved: 'Pengaturan disimpan.',
-      title: 'Pengidentifikasi masalah',
+      title: 'Pengenal tugas',
     },
     readOnly:
       'Hanya-baca: Anda dapat melihatnya, tetapi tidak dapat mengubahnya.',
@@ -883,18 +881,18 @@ const idID: LocaleResource<typeof enUS> = {
   },
   subtasks: {
     aiIntro:
-      'AI membaca terbitan ini dan menyusun sub-masalahnya. Anda meninjau dan mengedit draf; tidak ada yang dibuat sampai Anda mengonfirmasi.',
+      'AI membaca tugas ini dan menyusun draf subtugasnya. Anda meninjau dan mengedit draf; tidak ada yang dibuat sampai Anda mengonfirmasi.',
     blockedByHint:
       'Ini tidak akan dimulai sampai hal ini selesai atau dibatalkan.',
     blockedByLabel: 'Menunggu',
-    blockedByPlaceholder: 'Pilih sub-masalah saudara',
-    count_one: 'Sub-masalah {{count}}',
-    count_other: 'Sub-masalah {{count}}',
-    new: 'Sub-edisi baru',
+    blockedByPlaceholder: 'Pilih subtugas sejajar',
+    count_one: '{{count}} subtugas',
+    count_other: '{{count}} subtugas',
+    new: 'Subtugas baru',
     newDescription:
-      'Sub-masalah pada tahap selanjutnya dimulai hanya setelah setiap tahap sebelumnya selesai.',
-    newTitle: 'Sub-edisi baru',
-    noSiblings: 'Belum ada sub-masalah lainnya.',
+      'Subtugas pada tahap berikutnya baru dimulai setelah semua tahap sebelumnya selesai.',
+    newTitle: 'Subtugas baru',
+    noSiblings: 'Belum ada subtugas lain.',
     noStage: 'Tanpa panggung',
     stage: 'Panggung {{stage}}',
     stageHint:
@@ -906,7 +904,7 @@ const idID: LocaleResource<typeof enUS> = {
       ai: 'kerusakan AI',
       manual: 'Manual',
     },
-    title: 'Sub-masalah',
+    title: 'Subtugas',
     waiting_one: 'Menunggu {{count}}',
     waiting_other: 'Menunggu {{count}}',
   },
@@ -921,7 +919,7 @@ const idID: LocaleResource<typeof enUS> = {
   },
   status: {
     analysis: 'Analisis',
-    backlog: 'Tunggakan',
+    backlog: 'Backlog',
     blocked: 'Terhambat',
     cancelled: 'Dibatalkan',
     done: 'Selesai',
@@ -943,10 +941,10 @@ const idID: LocaleResource<typeof enUS> = {
       owner: 'pemilik',
     },
     subscribe: 'Berlangganan',
-    subscribed: 'Anda akan diberitahu tentang masalah ini.',
+    subscribed: 'Anda akan mendapat notifikasi tentang tugas ini.',
     title: 'Peserta & pengikut',
     unsubscribe: 'Berhenti berlangganan',
-    unsubscribed: 'Anda tidak akan lagi diberitahu tentang masalah ini.',
+    unsubscribed: 'Anda tidak akan lagi mendapat notifikasi tentang tugas ini.',
   },
   threads: {
     collapse: 'Tutup threadnya',
@@ -964,7 +962,7 @@ const idID: LocaleResource<typeof enUS> = {
     loadFailed: 'Tidak dapat memuat rencana',
     notFound: 'Rencananya tidak ada, atau Anda tidak dapat melihatnya.',
     open: 'Buka rencana',
-    backToList: 'Kembali ke persoalan',
+    backToList: 'Kembali ke tugas',
     source: {
       intake: 'Dari asupan',
       conversation: 'Dari sebuah percakapan',
@@ -995,14 +993,14 @@ const idID: LocaleResource<typeof enUS> = {
     edit: 'Edit',
     doneEditing: 'Selesai',
     execute: 'Jalankan',
-    createIssues_one: 'Buat terbitan {{count}}',
-    createIssues_other: 'Buat masalah {{count}}',
+    createIssues_one: 'Buat {{count}} tugas',
+    createIssues_other: 'Buat {{count}} tugas',
     retry: 'Periksa lagi',
     void: 'Batal',
     undo: 'Batalkan',
     executed: 'Rencana itu dilaksanakan.',
-    executedIssues_one: 'Masalah {{count}} dibuat.',
-    executedIssues_other: 'Masalah {{count}} dibuat.',
+    executedIssues_one: '{{count}} tugas dibuat.',
+    executedIssues_other: '{{count}} tugas dibuat.',
     executeFailed: 'Rencana itu tidak dilaksanakan; tidak ada yang berubah.',
     staleNotice:
       'Sesuatu yang diubah oleh rencana ini diubah oleh orang lain setelah diperiksa. Tidak ada yang diterapkan; periksa lagi untuk menjalankannya dengan nilai saat ini.',
@@ -1029,7 +1027,7 @@ const idID: LocaleResource<typeof enUS> = {
       failed: 'Tidak dapat memeriksa apa akibat dari pembatalan.',
       confirm: 'Batalkan',
       ops: {
-        'issue.retract': 'Hapus terbitan {{target}}',
+        'issue.retract': 'Hapus tugas {{target}}',
         'comment.retract': 'Hapus komentar di {{target}}',
         'project.retract': 'Hapus proyek {{target}}',
         dependency: 'Membalikkan perubahan ketergantungan pada {{target}}',
@@ -1061,8 +1059,8 @@ const idID: LocaleResource<typeof enUS> = {
     wakeSkip: {
       deferred: 'belum',
       denied: 'mereka mungkin tidak mengerjakannya',
-      blocked: 'masalah ini diblokir',
-      dormant: 'masalahnya ada di backlog',
+      blocked: 'tugas diblokir',
+      dormant: 'tugas ada di Backlog',
       duplicate: 'sudah dikerjakan',
       archived: 'itu diarsipkan',
       noRunner: 'tidak ada runner yang online',
@@ -1070,19 +1068,19 @@ const idID: LocaleResource<typeof enUS> = {
     },
     flags: {
       label: 'Apa pengaruhnya',
-      startsRun: 'Memulai menjalankan agen',
-      finalStatus: 'Menutup masalah',
+      startsRun: 'Memulai menjalankan Agent',
+      finalStatus: 'Menutup tugas',
       ownerChange: 'Mengubah pemilik',
       createsProject: 'Membuat proyek',
-      agentExecutor: 'Menjadikan agen sebagai eksekutor',
+      agentExecutor: 'Menjadikan Agent sebagai eksekutor',
     },
     ops: {
-      'issue.create': 'Edisi baru',
-      'issue.update': 'Ubah masalah',
+      'issue.create': 'Tugas baru',
+      'issue.update': 'Ubah tugas',
       'comment.create': 'Komentar',
       dependency: 'Dependensi',
       'project.create': 'Proyek baru',
-      'issue.retract': 'Hapus masalah',
+      'issue.retract': 'Hapus tugas',
       'comment.retract': 'Hapus komentar',
       'project.retract': 'Hapus proyek',
     },
@@ -1096,11 +1094,11 @@ const idID: LocaleResource<typeof enUS> = {
     restoreRow: 'Pertahankan {{title}}',
     removed: 'Dihapus dari rencana',
     referenced: 'Perubahan lain bergantung padanya',
-    indent: 'Jadikan {{title}} sebagai sub-masalah dari baris di atas',
+    indent: 'Jadikan {{title}} subtugas dari baris di atas',
     outdent: 'Naikkan {{title}} satu tingkat',
     editDescription: 'Deskripsi {{title}}',
     untitled: 'Tanpa Judul',
-    unknownIssue: 'Sebuah masalah',
+    unknownIssue: 'Sebuah tugas',
     noParent: 'Tingkat atas',
     visibility: {
       public: 'Semuanya',
@@ -1120,7 +1118,7 @@ const idID: LocaleResource<typeof enUS> = {
       title: 'Judul',
       description: 'Deskripsi',
       projectId: 'Proyek',
-      parentIssueId: 'Masalah orang tua',
+      parentIssueId: 'Tugas induk',
       stage: 'Tahap',
       statusKey: 'Status',
       priority: 'Prioritas',
@@ -1148,13 +1146,13 @@ const idID: LocaleResource<typeof enUS> = {
     textPlaceholder:
       '# Masuk\n- Rancang formulir [high] #frontend\n  - Validasi email\n- Batasi percobaan @stage2',
     textHint:
-      'Judul menjadi isu induk, item daftar menjadi isu, dan item menjorok menjadi subisu. ! atau [high] menetapkan prioritas, #label menambahkan label, dan @stage2 menetapkan tahap. CSV harus memiliki kolom title.',
+      'Judul menjadi tugas induk, butir daftar menjadi tugas, butir yang menjorok menjadi subtugas; ! atau [high] menetapkan prioritas, #label sebuah label, @stage2 sebuah tahap. CSV memerlukan kolom title.',
     textTooLong:
       'Paling banyak karakter {{max}}; membagi sisanya dalam kelompok lain.',
     count: '{{count}} / {{max}}',
     files: 'File',
     filesHint:
-      'Hingga file {{count}}, masing-masing {{size}} MB. Teks, Markdown, CSV, Word, Excel, PowerPoint dan PDF dibaca; Biarkan agen yang mengatur dapat membaca gambar PNG/JPEG dengan alat gambarnya; jika pembacaan gagal, kembali mengedit dan coba lagi. Pemisahan aturan hanya menggunakan nama file gambar.',
+      'Hingga file {{count}}, masing-masing {{size}} MB. Teks, Markdown, CSV, Word, Excel, PowerPoint dan PDF dibaca; Biarkan Agent yang mengatur dapat membaca gambar PNG/JPEG dengan alat gambarnya; jika pembacaan gagal, kembali mengedit dan coba lagi. Pemisahan aturan hanya menggunakan nama file gambar.',
     addFiles: 'Tambahkan file',
     dropFiles: 'Letakkan file di sini',
     removeFile: 'Hapus {{name}}',
@@ -1164,8 +1162,8 @@ const idID: LocaleResource<typeof enUS> = {
     fileTooLarge: '{{name}} lebih besar dari {{size}} MB.',
     project: 'Proyek bawaan',
     projectHint:
-      'Setiap persoalan mengarah ke sana; Anda dapat mengubahnya satu per satu di bawah.',
-    splitAction: 'Draf terbitan',
+      'Semua tugas masuk ke proyek ini; Anda dapat mengubah masing-masing di bawah.',
+    splitAction: 'Buat draf tugas',
     splitDone_one: 'Bagi menjadi draf {{count}}',
     splitDone_other: 'Bagi menjadi draf {{count}}',
     splitting: 'Memisahkan…',
@@ -1177,16 +1175,16 @@ const idID: LocaleResource<typeof enUS> = {
     draftTitle: 'Draf ({{count}})',
     draftHint:
       'Tidak ada yang dibuat sampai Anda mengklik Buat. Tautan ini menyimpan draf selama 24 jam.',
-    draftCreated: 'Masalah ini sudah terjadi.',
+    draftCreated: 'Tugas-tugas ini sudah dibuat.',
     draftClosed:
-      'Draf ini diganti atau habis masa berlakunya; menyusun kembali permasalahannya.',
+      'Draf ini telah diganti atau kedaluwarsa; buat draf tugas lagi.',
     invalidDraft:
-      'Beberapa persoalan masih belum terselesaikan. Perbaiki di teks dan pisahkan lagi.',
+      'Beberapa tugas belum valid. Perbaiki di teks lalu pecah lagi.',
     unknownLabels: 'Label ini tidak ada dan ditinggalkan: {{labels}}',
     dropped_one:
-      'Hanya 50 isu pertama yang masuk dalam draf; {{count}} lebih banyak yang tertinggal.',
+      'Hanya 50 tugas pertama yang masuk draf; {{count}} lagi tidak disertakan.',
     dropped_other:
-      'Hanya 50 isu pertama yang masuk dalam draf; {{count}} lebih banyak lagi yang tertinggal.',
+      'Hanya 50 tugas pertama yang masuk draf; {{count}} lagi tidak disertakan.',
     fileStates: {
       read: 'baca',
       truncated: 'baca sebagian',
@@ -1200,19 +1198,19 @@ const idID: LocaleResource<typeof enUS> = {
   },
   intakeAi: {
     splitByRules: 'Dibagi berdasarkan aturan',
-    breakdown: 'Bagi menjadi sub-masalah',
+    breakdown: 'Pecah menjadi subtugas',
     breakdownHint:
-      'Draf sub-masalah untuk {{issue}}: tinjau dan edit, lalu buat. Tidak ada yang tercipta sampai Anda melakukannya.',
-    drafted: 'AI menyusun isu-isu tersebut',
+      'Draf subtugas untuk {{issue}}: tinjau dan edit, lalu buat. Tidak ada yang dibuat sampai Anda melakukannya.',
+    drafted: 'AI telah menyusun draf tugas',
     revised: 'Draf direvisi',
     startFailed: 'Tidak bisa bertanya pada AI.',
-    failed: 'AI tidak dapat menyusun isu tersebut. Coba lagi.',
-    failedWhy: 'AI tidak dapat menyusun isu: {{message}}',
+    failed: 'AI tidak dapat menyusun draf tugas. Coba lagi.',
+    failedWhy: 'AI tidak dapat menyusun draf tugas: {{message}}',
     cancel: 'Batal',
     progress: {
-      split: 'AI sedang menyusun isu…',
+      split: 'AI sedang menyusun draf tugas…',
       revise: 'AI sedang merevisi draf…',
-      breakdown: 'AI menghancurkan {{issue}}…',
+      breakdown: 'AI sedang memecah {{issue}}…',
     },
     working: '{{name}} ada di sana',
     workingAnonymous: 'Sedang mengerjakannya',
@@ -1225,7 +1223,7 @@ const idID: LocaleResource<typeof enUS> = {
       'Saat ini tidak ada runtime yang online: permintaan menunggu hingga ada yang terhubung.',
     unavailable: {
       noAgent:
-        'AI tidak tersedia: pilih agen obrolan default di profil Anda, atau minta administrator untuk mengaturnya.',
+        'AI tidak tersedia: pilih Agent obrolan default di profil Anda, atau minta administrator untuk mengaturnya.',
     },
     removed_one: 'Draf {{count}} dihapus: {{titles}}',
     removed_other: 'Draf {{count}} dihapus: {{titles}}',
@@ -1249,7 +1247,7 @@ const idID: LocaleResource<typeof enUS> = {
   access: {
     sections: {
       projects: 'Proyek',
-      issues: 'Isu',
+      issues: 'Tugas',
       settings: 'Pengaturan proyek',
       members: 'Anggota dan peran',
     },
@@ -1288,101 +1286,99 @@ const idID: LocaleResource<typeof enUS> = {
         },
       },
       issues: {
-        title: 'Isu',
+        title: 'Tugas',
         description:
-          'Masalah dan komentarnya, dalam suatu proyek atau sendiri-sendiri.',
+          'Tugas dan komentarnya, di dalam proyek atau berdiri sendiri.',
         actions: {
           view: {
-            title: 'Lihat masalah',
-            description: 'Lihat masalah dalam daftar, papan dan detailnya',
-            related: 'Lihat masalah (yang dapat mereka lihat)',
+            title: 'Lihat tugas',
+            description: 'Lihat tugas di daftar, papan, dan detailnya',
+            related: 'Lihat tugas (yang dapat mereka lihat)',
             relatedLabel: 'Dalam proyek saya bisa melihat',
             relatedHint:
-              'Masalah tanpa proyek, dan masalah dalam proyek yang dapat saya lihat',
-            all: 'Lihat masalah (semua)',
+              'Tugas tanpa proyek dan tugas di proyek yang dapat saya lihat',
+            all: 'Lihat tugas (semua)',
           },
           create: {
-            title: 'Ciptakan masalah',
-            description: 'Membuat isu, dalam sebuah proyek atau sendiri',
-            related: 'Membuat masalah (dalam proyek yang dapat mereka lihat)',
+            title: 'Buat tugas',
+            description: 'Buat tugas, di dalam proyek atau berdiri sendiri',
+            related: 'Buat tugas (di proyek yang dapat mereka lihat)',
             relatedLabel: 'Dalam proyek saya bisa melihat',
             relatedHint:
-              'Masalah tanpa proyek, atau dalam proyek yang dapat saya lihat',
-            all: 'Buat masalah (semua)',
+              'Tugas tanpa proyek atau di proyek yang dapat saya lihat',
+            all: 'Buat tugas (semua)',
           },
           edit: {
-            title: 'Edit terbitan',
+            title: 'Edit tugas',
             description:
               'Judul, deskripsi, prioritas, tanggal, label, pelaksana dan status terbuka',
-            related: 'Edit masalah (yang dapat mereka lihat)',
+            related: 'Edit tugas (yang dapat mereka lihat)',
             relatedLabel: 'Dalam proyek saya bisa melihat',
             relatedHint:
-              'Masalah tanpa proyek, dan masalah dalam proyek yang dapat saya lihat',
-            all: 'Edit terbitan (semua)',
+              'Tugas tanpa proyek dan tugas di proyek yang dapat saya lihat',
+            all: 'Edit tugas (semua)',
           },
           comment: {
-            title: 'Mengomentari masalah',
+            title: 'Komentari tugas',
             description:
               'Mengomentari, membalas, dan menyelesaikan topik; mengedit dan menghapus komentar mereka sendiri',
-            related: 'Mengomentari masalah (yang dapat mereka lihat)',
+            related: 'Komentari tugas (yang dapat mereka lihat)',
             relatedLabel: 'Dalam proyek saya bisa melihat',
             relatedHint:
-              'Masalah tanpa proyek, dan masalah dalam proyek yang dapat saya lihat',
-            all: 'Mengomentari masalah (semua)',
+              'Tugas tanpa proyek dan tugas di proyek yang dapat saya lihat',
+            all: 'Komentari tugas (semua)',
           },
           moderateComments: {
             title: 'Komentar moderat',
             description: 'Hapus komentar orang lain',
             related:
-              'Komentar moderat (tentang isu yang mereka miliki atau proyek siapa yang mereka pimpin)',
+              'Moderasi komentar (pada tugas yang mereka pegang atau proyek yang mereka pimpin)',
             relatedLabel:
-              'Mengenai isu-isu yang saya miliki atau proyek-proyek yang saya pimpin',
+              'Pada tugas yang saya pegang atau proyek yang saya pimpin',
             relatedHint:
-              'Mengomentari isu-isu yang saya miliki, dan isu-isu dalam proyek yang saya pimpin',
+              'Komentar pada tugas yang saya pegang dan pada tugas di proyek yang saya pimpin',
             all: 'Komentar moderat (semua)',
           },
           close: {
-            title: 'Tutup masalah',
-            description: 'Menandai suatu masalah selesai atau dibatalkan',
+            title: 'Tutup tugas',
+            description: 'Tandai tugas selesai atau dibatalkan',
             related:
-              'Masalah-masalah yang sudah dekat (masalah yang mereka miliki atau proyek yang mereka pimpin)',
+              'Tutup tugas (yang mereka pegang atau di proyek yang mereka pimpin)',
             relatedLabel: 'Yang saya miliki atau proyek yang saya pimpin',
             relatedHint:
-              'Terbitan yang saya miliki, dan terbitan dalam proyek yang saya pimpin',
-            all: 'Tutup masalah (semua)',
+              'Tugas yang saya pegang dan tugas di proyek yang saya pimpin',
+            all: 'Tutup tugas (semua)',
           },
           changeOwner: {
             title: 'Ganti pemiliknya',
             description:
-              'Serahkan suatu permasalahan kepada orang lain untuk mempertanggungjawabkannya',
+              'Serahkan tugas kepada orang lain agar ia bertanggung jawab atasnya',
             related:
               'Ganti pemilik (yang mereka miliki atau proyek yang mereka pimpin)',
             relatedLabel: 'Yang saya miliki atau proyek yang saya pimpin',
             relatedHint:
-              'Terbitan yang saya miliki, dan terbitan dalam proyek yang saya pimpin',
+              'Tugas yang saya pegang dan tugas di proyek yang saya pimpin',
             all: 'Ganti pemilik (semua)',
           },
           delete: {
-            title: 'Hapus dan pulihkan masalah',
-            description: 'Hapus masalah dan pulihkan masalah yang terhapus',
-            all: 'Hapus dan pulihkan masalah',
+            title: 'Hapus dan pulihkan tugas',
+            description: 'Hapus tugas dan pulihkan yang terhapus',
+            all: 'Hapus dan pulihkan tugas',
           },
         },
       },
       attachments: {
         title: 'Lampiran',
-        description: 'File terlampir pada terbitan dan komentar.',
+        description: 'File yang dilampirkan pada tugas dan komentar.',
         actions: {
           upload: {
             title: 'Unggah lampiran',
             description:
-              'Lampirkan file ke terbitan yang dapat mereka edit dan ke komentar mereka',
-            related:
-              'Unggah lampiran (tentang masalah yang dapat mereka lihat)',
-            relatedLabel:
-              'Tentang permasalahan dalam proyek yang dapat saya lihat',
+              'Lampirkan file ke tugas yang dapat mereka edit dan ke komentar mereka',
+            related: 'Unggah lampiran (pada tugas yang dapat mereka lihat)',
+            relatedLabel: 'Pada tugas di proyek yang dapat saya lihat',
             relatedHint:
-              'File tentang masalah tanpa proyek, dan masalah dalam proyek yang dapat saya lihat',
+              'File pada tugas tanpa proyek dan pada tugas di proyek yang dapat saya lihat',
             all: 'Unggah lampiran (semua)',
           },
         },
@@ -1390,11 +1386,11 @@ const idID: LocaleResource<typeof enUS> = {
     },
     collections: {
       pmProjects: 'Proyek',
-      pmIssues: 'Isu',
+      pmIssues: 'Tugas',
     },
     recordAccess: {
-      visible: 'Proyek dan masalah yang dapat mereka lihat',
-      managed: 'Proyek yang mereka pimpin dan isu yang mereka miliki',
+      visible: 'Proyek dan tugas yang dapat mereka lihat',
+      managed: 'Proyek yang mereka pimpin dan tugas yang mereka pegang',
     },
     settings: {
       pm: {
@@ -1410,9 +1406,9 @@ const idID: LocaleResource<typeof enUS> = {
         objects: 'Proyek',
       },
       issues: {
-        title: 'Isu',
+        title: 'Tugas',
         description:
-          'Lihat masalah; membuat, mengedit, mengomentari, menutup, dan menetapkan ulang; memoderasi komentar dan menghapus masalah.',
+          'Lihat tugas; buat, edit, komentari, tutup, dan tetapkan ulang; moderasi komentar dan hapus tugas.',
       },
       settings: {
         title: 'Pengaturan proyek',

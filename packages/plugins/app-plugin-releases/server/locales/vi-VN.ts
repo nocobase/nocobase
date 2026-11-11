@@ -13,12 +13,12 @@ const viVN: LocaleResource<typeof enUS> = {
       apps: {
         title: 'Ứng dụng',
         description:
-          'Ứng dụng, bản phát hành, quá trình triển khai và thời gian chạy của chúng.',
+          'Ứng dụng, bản phát hành, quá trình triển khai và môi trường chạy của chúng.',
         actions: {
           view: {
             title: 'Xem ứng dụng',
             description:
-              'Xem Ứng dụng, bản phát hành, hoạt động triển khai và trạng thái thời gian chạy của chúng',
+              'Xem Ứng dụng, bản phát hành, hoạt động triển khai và trạng thái môi trường chạy của chúng',
             related: 'Xem ứng dụng (những ứng dụng liên quan đến chúng)',
             relatedLabel: 'Những cái tôi đã tạo ra',
             relatedHint:

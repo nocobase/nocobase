@@ -142,6 +142,8 @@ export interface ModelSelectionWait {
 }
 
 export interface Run {
+  readonly sessionId?: string | null;
+  readonly runnerPinId?: string | null;
   readonly id: string;
   readonly agentId: string;
   /** The agent's type (`AgentType`): an `online` run is held by the application itself, a `runner` run by a runner. */
@@ -212,6 +214,8 @@ export interface Run {
   readonly cancelledById: string | null;
   readonly failureReason: FailureReason | null;
   readonly failureDetail: string | null;
+  /** Safe structured repository preparation diagnostics; absent on older servers. */
+  readonly failureParams?: Readonly<Record<string, unknown>> | null;
   readonly summary: string | null;
   readonly createdAt: string;
   readonly updatedAt: string;

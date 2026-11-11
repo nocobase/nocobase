@@ -25,6 +25,7 @@ The endpoint contract this assumes: `GET /api/customers/:id` returns `{ data: Cu
 
 ```ts
 // client/pages/customers/types.ts
+import type { PageBreadcrumbLevel } from '@nocobase/app-client';
 export interface Customer {
   readonly id: string;
   readonly name: string;
@@ -43,6 +44,7 @@ export const CUSTOMER_PAGE_PARAMS: readonly string[] = [
 
 /** What a page that opens a customer passes to the customer's page: the list, the orders page, a dashboard. */
 export interface CustomersOutletContext {
+  readonly source: PageBreadcrumbLevel;
   readonly reload: () => void;
 }
 
@@ -57,6 +59,8 @@ export interface CustomerPageOutletContext extends CustomerEditOutletContext {
   readonly customer: Customer;
 }
 ```
+
+Each owner passes `source` through outlet context: its translated title and its application-absolute pathname with `useAncestorSearch(ownerPath, CUSTOMER_LIST_KEYS)` (the owner list's declared search, filter and `TABLE_URL_KEYS`). A list-tab owner uses its translated tab label and `useListTabs().source`, which falls back to the tab's `parameterKeys` the same way. The source remains available when a record is opened directly because the owner route still mounts; after a direct entry or reload its query comes from those keys in the current URL, which the list's record links carried ([navigation](../navigation.md)).
 
 ## The page
 
@@ -85,7 +89,7 @@ import {
   useResolvedPath,
 } from 'react-router';
 
-import { BackButton } from '#components/back-button';
+import { usePageBreadcrumb } from '@nocobase/app-client';
 import { PageContainer } from '#components/page-container';
 import { PageHeader } from '#components/page-header';
 import { RouteChildPage } from '#components/route-child-page';
@@ -120,7 +124,8 @@ function CustomerPageContent({
   const location = useLocation();
   const pagePath = useResolvedPath('.');
   // The page this one covers — the customers list, the orders page, a dashboard — refreshes through its context.
-  const { reload: reloadOwner } = useOutletContext<CustomersOutletContext>();
+  const { reload: reloadOwner, source } =
+    useOutletContext<CustomersOutletContext>();
 
   // The order is the display order; both tabs use the page's access, so the first one is the default tab.
   const tabs = [
@@ -146,6 +151,23 @@ function CustomerPageContent({
       { path: `${pagePath.pathname}/${currentTab.path}`, end: true },
       location.pathname,
     ) !== null;
+
+  // Phones scroll the tab row sideways (M2.2 in mobile.md): keep the current tab in view by scrolling only the row,
+  // never the page, when the row appears and whenever the tab changes.
+  const currentPath = currentTab?.path;
+  const tabsRef = useCallback(
+    (nav: HTMLElement | null) => {
+      const current = currentPath
+        ? nav?.querySelector<HTMLElement>('[aria-current="page"]')
+        : null;
+      if (!nav || !current) return;
+      nav.scrollLeft +=
+        current.getBoundingClientRect().left -
+        nav.getBoundingClientRect().left -
+        (nav.clientWidth - current.offsetWidth) / 2;
+    },
+    [currentPath],
+  );
 
   const [reloadCount, setReloadCount] = useState(0);
   const requestKey = `${customerId}:${reloadCount}`;
@@ -275,15 +297,16 @@ function CustomerPageContent({
   } else {
     body = (
       <nav
+        ref={tabsRef}
         aria-label={t('customers.tabs.label')}
-        className='flex flex-wrap gap-1 border-b pb-2'
+        className='flex gap-1 overflow-x-auto border-b pb-2'
       >
         {tabs.map((tab) => (
           // Tabs are page navigation, so they are links; NavLink marks the current one with aria-current='page'.
           <NavLink
             className={cn(
               buttonVariants({ variant: 'ghost', size: 'sm' }),
-              'text-muted-foreground aria-[current=page]:bg-muted aria-[current=page]:text-foreground',
+              'shrink-0 text-muted-foreground aria-[current=page]:bg-muted aria-[current=page]:text-foreground',
             )}
             key={tab.path}
             to={{ pathname: tab.path, search: location.search }}
@@ -296,17 +319,14 @@ function CustomerPageContent({
   }
 
   const shown = notFound ? undefined : customer;
+  // The owner supplies its translated list title; a list-tab owner supplies its source path/query too.
+  usePageBreadcrumb([
+    source,
+    { label: shown?.name ?? t('customers.detail.title') },
+  ]);
   return (
     <RouteChildPage>
       <PageContainer>
-        {/* Back to whichever page this one covers — `..`, not that page's path (section 5 of child-routes.md) —
-            with its search and filters as they were, and without the parameters this page and its tabs wrote. */}
-        <BackButton
-          to={{
-            pathname: '..',
-            search: withoutParams(location.search, CUSTOMER_PAGE_PARAMS),
-          }}
-        />
         <PageHeader
           title={shown?.name ?? t('customers.detail.title')}
           actions={
@@ -355,7 +375,7 @@ function CustomerHeaderActions({
 - **The header links through the tab on screen.** The header is rendered by the page's route, where a bare `edit` resolves to `/customers/12/edit`, beside the tabs ([section 2 of `page.md`](../page.md#2-the-page-component)). `currentTab` is found the way the redirect finds the page's own URL, and `CustomerHeaderActions` links to `` `${tab}/edit` ``, the route `customerDetailRoutes` declares under every tab: the dialog opens at `/customers/12/orders/edit`, over Orders, and closing returns to `/customers/12/orders`.
 - **One context for the tabs and the overlays over them.** The tabs read the customer from it, and the edit dialog reads `onSaved` and `onNotFound` through whichever tab it opens over, which passes the context on. `onSaved` shows the returned customer at once, then refreshes the page behind (guideline R2).
 - **Not found**: a 404 on load shows the explanation without tabs; the edit dialog finding the customer gone switches the page to "not found" while the dialog stays open to say so, because the tab's `Outlet` sits outside the state branches and only its container is hidden. When the dialog closes, the "Edit" that opened it has gone with the header's actions, so focus moves to the explanation (guidelines R3 and A6).
-- **`BackButton` goes to `..`, without this page's parameters.** The page is declared under every page that opens a customer, so it returns to the parent route rather than naming one ([section 5 of `child-routes.md`](../child-routes.md#the-same-detail-page-over-another-page)). The current query string holds the covered page's search and filters, which came down with every link, and whatever this page's tabs wrote; `withoutParams` removes the latter, listed in `CUSTOMER_PAGE_PARAMS`, so the list gets exactly its own back ([section 7 of `page.md`](../page.md#7-back-button-and-breadcrumbs)). A "Delete" beside "Edit" leaves the same way: after the confirmation, the page navigates from its own route with `navigate({ pathname: '..', search: withoutParams(location.search, CUSTOMER_PAGE_PARAMS) }, { relative: 'route', replace: true })`, not from inside an overlay, where the number of levels changes with the tab.
+- **The shell breadcrumb and mobile parent arrow return to the actual owner.** The page is declared under every page that opens a customer, so it returns to the parent route rather than naming one ([section 5 of `child-routes.md`](../child-routes.md#the-same-detail-page-over-another-page)). The current query string holds the covered page's search and filters, which came down with every link, and whatever this page's tabs wrote; `withoutParams` removes the latter, listed in `CUSTOMER_PAGE_PARAMS`, so the list gets exactly its own back ([section 7 of `page.md`](../page.md#7-back-button-and-breadcrumbs)). A "Delete" beside "Edit" leaves the same way: after the confirmation, the page navigates from its own route with `navigate({ pathname: '..', search: withoutParams(location.search, CUSTOMER_PAGE_PARAMS) }, { relative: 'route', replace: true })`, not from inside an overlay, where the number of levels changes with the tab.
 - **States**: a skeleton while loading, 401 through `SessionExpiredAlert`, 403 and 404 without "Retry", other failures with it (guidelines S1 and S4).
 
 ## A tab

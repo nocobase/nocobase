@@ -124,7 +124,7 @@ export class DemoAccountSignIn {
     return migratePartitionedCookies(response.headers.getSetCookie());
   }
 
-  /** Signs an anonymous home-page visitor in as an existing Super Admin, leaving an existing session intact. */
+  /** Signs an anonymous visitor in as an existing Super Admin, leaving an existing session intact. */
   public async signInDefault(
     request: Request,
     clientAddress?: string,

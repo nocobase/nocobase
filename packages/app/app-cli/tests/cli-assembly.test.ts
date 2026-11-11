@@ -318,6 +318,11 @@ describe('definition validation', () => {
   it('derives the topic from the package name', () => {
     expect(pluginTopicFor('@nocobase/app-plugin-scheduler')).toBe('scheduler');
     expect(pluginTopicFor('@acme/app-plugin-audit-log')).toBe('audit-log');
+    expect(pluginTopicFor('@acme/app-portal-inventory')).toBe('inventory');
+    expect(pluginTopicFor('@nocobase/app-portal-sales')).toBe('sales');
+    expect(pluginTopicFor('@acme/app-module-inventory')).toBe(
+      'app-module-inventory',
+    );
     expect(pluginTopicFor('@acme/reports')).toBe('reports');
   });
 

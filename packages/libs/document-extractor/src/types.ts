@@ -6,6 +6,8 @@ export interface ExtractRequest {
   readonly mediaType?: string;
 }
 export interface ExtractOptions {
+  /** Per-request byte ceiling supplied by an authorized storage caller. */
+  readonly maxInputBytes?: number;
   readonly signal?: AbortSignal;
   readonly maxOutputChars?: number;
   /** Omit embedded DOCX images without reading/encoding their bytes; defaults to false. */

@@ -9,6 +9,7 @@ import {
   emptyResponse,
   listResponse,
 } from '@nocobase/app-server/router';
+import { getRequestLocale } from '@nocobase/i18n/server';
 import type { Context, Hono } from 'hono';
 
 import { forbidden } from '../../kernel/errors.js';
@@ -85,6 +86,7 @@ export function createInvitationRoutes(
         viewerOf(context),
         context.req.valid('json'),
         origin(context.req.url),
+        getRequestLocale(context),
       );
       return context.json(
         {
@@ -127,6 +129,7 @@ export function createInvitationRoutes(
         context.req.valid('param').invitationId,
         origin(context.req.url),
         sendEmail,
+        getRequestLocale(context),
       );
       return context.json({
         data: canReturnLink ? result : { ...result, inviteUrl: undefined },

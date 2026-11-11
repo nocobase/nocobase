@@ -764,6 +764,17 @@ it('uses the linked panel independently with default generic details and a retur
   // Off a phone the details cover only the conversation pane: rendered inside the panel, not portaled over the page.
   expect(details).toHaveAttribute('data-placement', 'pane');
   expect(panel.contains(details)).toBe(true);
+  // Its overlay covers only the pane and a press on it closes the details.
+  const overlay = panel.querySelector('[data-slot="sheet-overlay"]');
+  expect(overlay).not.toBeNull();
+  await userEvent.click(overlay!);
+  await waitFor(() =>
+    expect(screen.queryByTestId('chat-conversation-details')).toBeNull(),
+  );
+  fireEvent.click(
+    await within(panel).findByRole('button', { name: 'Show details' }),
+  );
+  await screen.findByTestId('chat-conversation-details');
   fireEvent.click(
     within(screen.getByTestId('chat-conversation-details')).getByRole(
       'button',
@@ -771,14 +782,16 @@ it('uses the linked panel independently with default generic details and a retur
     ),
   );
   fireEvent.click(within(panel).getByRole('button', { name: 'Back to list' }));
-  expect(await within(panel).findByTestId('chat-history')).toBeVisible();
+  const list = await within(panel).findByTestId('session-list');
+  expect(list).toBeVisible();
   fireEvent.click(
-    within(panel).getAllByRole('button', { name: 'New conversation' })[0]!,
+    within(list).getByRole('button', { name: 'New conversation' }),
   );
+  const header = await within(panel).findByTestId('conversation-header');
   expect(
-    within(panel).queryByRole('button', { name: 'New conversation' }),
+    within(header).queryByRole('button', { name: 'New conversation' }),
   ).toBeNull();
-  expect(within(panel).getByRole('button', { name: 'Close' })).toBeVisible();
+  expect(within(header).getByRole('button', { name: 'Close' })).toBeVisible();
 });
 
 it('creates an empty conversation in an independent linked panel and deletes an existing one once', async () => {
@@ -791,30 +804,27 @@ it('creates an empty conversation in an independent linked panel and deletes an 
 
   fireEvent.click(screen.getByTestId('chat-header-button'));
   const panel = await screen.findByTestId('chat-panel');
-  expect(await within(panel).findByTestId('chat-history')).toBeVisible();
+  const list = await within(panel).findByTestId('session-list');
+  expect(list).toBeVisible();
   fireEvent.click(
-    within(panel).getByRole('button', { name: 'New conversation' }),
+    within(list).getByRole('button', { name: 'New conversation' }),
   );
 
   expect(
     await within(panel).findByRole('heading', { name: 'New conversation' }),
   ).toBeVisible();
+  const header = within(panel).getByTestId('conversation-header');
+  // A new conversation's header in the panel: ← list · New conversation · expand · ×.
   expect(
-    within(panel).getByRole('button', { name: 'Back to list' }),
-  ).toBeVisible();
-  expect(within(panel).getByTestId('chat-expand')).toBeVisible();
-  expect(within(panel).getByRole('button', { name: 'Close' })).toBeVisible();
-  expect(
-    within(panel).queryByRole('button', { name: 'New conversation' }),
-  ).toBeNull();
-  expect(
-    within(panel).queryByRole('button', { name: 'Show details' }),
-  ).toBeNull();
-  expect(within(panel).queryByRole('button', { name: 'More' })).toBeNull();
+    within(header)
+      .getAllByRole('button')
+      .map((button) => button.getAttribute('aria-label'))
+      .filter(Boolean),
+  ).toEqual(['Back to list', 'Full width', 'Close']);
 
-  fireEvent.click(within(panel).getByRole('button', { name: 'Back to list' }));
-  const existingConversation = panel.querySelector<HTMLButtonElement>(
-    '[data-conversation="welcome-tour"] > button',
+  fireEvent.click(within(header).getByRole('button', { name: 'Back to list' }));
+  const existingConversation = panel.querySelector<HTMLElement>(
+    '[data-conversation="welcome-tour"]',
   );
   expect(existingConversation).not.toBeNull();
   fireEvent.click(existingConversation!);

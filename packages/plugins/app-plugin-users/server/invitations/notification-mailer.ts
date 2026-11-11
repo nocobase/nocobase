@@ -9,8 +9,7 @@ import type { AppPluginApplication } from '@nocobase/app-server/plugins';
 
 import type { UsersConfig } from '../tokens.js';
 import { unconfiguredMailer, type InvitationMailer } from './mail.js';
-
-const DEFAULT_CHANNEL = 'system-email';
+import { selectInvitationEmailChannel } from './channel.js';
 
 function startShutdownOperation(
   operation: () => void | Promise<void>,
@@ -39,9 +38,8 @@ export function createNotificationMailer(
     app.config.get<MailersConfig>('mailers') ?? {},
   );
   const explicit = config?.mailer;
-  const direct =
-    explicit !== undefined ||
-    (config?.emailChannel === undefined && factory.defaultMailer !== undefined);
+  const selected = selectInvitationEmailChannel(config, factory.defaultMailer);
+  const direct = selected.kind === 'mailer';
   // The invitation adapter owns this sender; it allocates no transport until the first invitation.
   const sender = direct
     ? factory.create(
@@ -49,7 +47,7 @@ export function createNotificationMailer(
         explicit === undefined ? 'mailers.default' : 'users.invitations.mailer',
       )
     : undefined;
-  const name = config?.emailChannel ?? DEFAULT_CHANNEL;
+  const name = selected.name;
   const channel = app.config.get<{
     channels?: Readonly<Record<string, { enabled?: boolean }>>;
   }>('notification')?.channels?.[name];

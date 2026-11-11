@@ -107,3 +107,31 @@ it('returns REVISION_CONFLICT for heartbeat cleanup, retaining the mark until re
     (await h.services.runners.get(runner.runnerId)).unavailableModels,
   ).toEqual([]);
 });
+
+it('rejects a racing ceiling update without overwriting a newer quota revision', async () => {
+  h = await createHarness();
+  const runner = await h.registerRunner({ ownerUserId: 'alice' });
+  const injected = loseRevisionOnce();
+  const url = `/agents/runners/${runner.runnerId}`;
+  const losing = await h.request('PATCH', url, {
+    user: 'alice',
+    body: { quotaLimits: { claude: 80 } },
+  });
+  expect(losing.status).toBe(409);
+  expect(losing.body.error).toMatchObject({ reason: 'REVISION_CONFLICT' });
+  injected();
+  expect(
+    (await h.services.runners.get(runner.runnerId)).quotaLimits,
+  ).toBeNull();
+  expect(
+    (
+      await h.request('PATCH', url, {
+        user: 'alice',
+        body: { quotaLimits: { claude: 80 } },
+      })
+    ).status,
+  ).toBe(200);
+  expect((await h.services.runners.get(runner.runnerId)).quotaLimits).toEqual({
+    claude: 80,
+  });
+});

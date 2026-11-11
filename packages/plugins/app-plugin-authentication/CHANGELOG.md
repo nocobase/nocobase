@@ -1,5 +1,64 @@
 # @nocobase/app-plugin-authentication
 
+## 2.0.0-beta.20
+
+### Minor Changes
+
+- 7508a76: Move the password-reset mailer reference from auth.email.mailer to auth.passwordReset.mailer. Update existing references directly; the old field is no longer accepted. Keep private inline SMTP/Resend settings, existing environment mappings, callbacks and default sender selection.
+- a2a6385: Add Russian (ru-RU) and Korean (ko-KR) to the plugins Studio uses, and correct terminology in their existing translations: an issue is a task (it was translated as a magazine issue or a problem in several languages), a runtime is an execution environment, Agent and My Agent stay consistent, and an issue's executor and the backlog status read correctly. The remaining English strings in the agents plugin's translations are translated. Calendars follow Russian and Korean, and a browser asking for Traditional Chinese (zh-HK, zh-Hant-TW) now lands on zh-TW instead of zh-CN.
+
+### Patch Changes
+
+- Updated dependencies [fb4659d]
+- Updated dependencies [1cda4c3]
+- Updated dependencies [7d970d6]
+- Updated dependencies [bb1dff2]
+- Updated dependencies [a2a6385]
+  - @nocobase/app-server@5.0.0-beta.2
+  - @nocobase/db@1.0.0-beta.26
+  - @nocobase/i18n@2.0.0-beta.2
+  - @nocobase/app-client@4.0.0-beta.9
+
+## 2.0.0-beta.19
+
+### Patch Changes
+
+- 78bdca8: Sign in new accounts by default in application templates, warn about ambiguous registration configurations, and expose request acceptance for neutral unsigned-in feedback.
+- Updated dependencies [9998ac4]
+- Updated dependencies [87f1ea5]
+- Updated dependencies [6507d01]
+  - @nocobase/app-client@4.0.0-beta.8
+  - @nocobase/app-server@5.0.0-beta.1
+
+## 2.0.0-beta.18
+
+### Minor Changes
+
+- 4411984: Configure named application mailers once for password reset, user invitations and email notifications. App-server validates `mailers`, adds explicit environment mappings and a private startup snapshot, and registers a `MailSenderFactory` from which Authentication, Users and each email notification channel create their own exclusive sender and close it after stopping their own work, so closing one never affects another. Legacy inline senders, channel selection and standalone Auth, Provider factories and hand-composed hosts keep working without new arguments. New applications can send reset and invitation emails without installing Notification. Restart after changing email configuration; configuration reload does not hot-switch active senders.
+
+### Patch Changes
+
+- 9933a9a: Allow applications to define issued-credential admission consistently with their command policies. Support run-authenticated project creation, activity and label reads, issue uploads and project resources. Restrict comment edits and deletions to the authenticated originating run, and accept run credentials when reading a release.
+
+  Apply the same trusted application admission to knowledge and owner-checked conversation routes without bypassing their business permissions or ownership checks.
+
+  Check issue visibility before collecting plan rehearsal baselines so a refused row cannot disclose hidden issue fields or dependency identifiers.
+
+- cf23bfe: **Breaking:** Remove the deprecated `@nocobase/app-server/mailer` entry and its `Mailer`, `mailerToken`, `createMailer`, `MailerProvider`, and notification configuration exports. Replace `MailExecutions.close(waitMs)` and `drain()` with `stop()` and `wait()`; transport `close()` now cancels supported network work and waits for its original completion without a nested timeout. Application owners must apply the outer shutdown budget. Create exclusive senders with `@nocobase/app-server/mailers` and declare notification config with `@nocobase/app-plugin-notification-providers/config`. Existing inline SMTP/Resend YAML, environment mappings, and provider/channel APIs remain supported.
+
+  Default and Examples now show `mailers.default: system` and explicitly map `MAILERS_SYSTEM_*`; the example configuration remains empty at runtime. The previous `MAILERS_TRANSACTIONAL_*` sample prefix was not published. Applications may still choose any valid mailer name and custom environment prefix.
+
+- Updated dependencies [6cc8acf]
+- Updated dependencies [5934070]
+- Updated dependencies [1e018f1]
+- Updated dependencies [cf23bfe]
+- Updated dependencies [4411984]
+  - @nocobase/app-client@4.0.0-beta.7
+  - @nocobase/caching@1.0.0-beta.4
+  - @nocobase/db@1.0.0-beta.25
+  - @nocobase/app-server@5.0.0-beta.0
+  - @nocobase/mailer@1.0.0-beta.2
+
 ## 2.0.0-beta.17
 
 ### Patch Changes

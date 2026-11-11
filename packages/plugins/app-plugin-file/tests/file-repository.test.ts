@@ -73,7 +73,9 @@ async function fixture(
     databaseSize,
     databaseJsonField,
     createCustomDriver,
+    diskLimits = {},
   }: {
+    diskLimits?: Record<string, number>;
     publicBasePath?: string;
     storageUrl?: string;
     databaseSize?: (value: unknown) => unknown;
@@ -122,12 +124,18 @@ async function fixture(
   const drive = createDriveManager({
     default: 'local',
     disks: {
-      local: { driver: 'fs', location: root, visibility: 'private' },
+      local: {
+        driver: 'fs',
+        location: root,
+        visibility: 'private',
+        maxFileSizeMb: diskLimits.local,
+      },
       public: {
         driver: 'fs',
         location: path.join(root, 'public'),
         visibility: 'public',
         url: storageUrl,
+        maxFileSizeMb: diskLimits.public,
       },
       ...(createCustomDriver ? { custom: () => createCustomDriver(root) } : {}),
     },
@@ -200,6 +208,37 @@ async function fixture(
 }
 const file = (name = 'hello.txt', text = 'hello'): File =>
   new File([text], name, { type: 'text/plain' });
+
+describe('upload policy boundaries', () => {
+  it('leaves direct repository uploads unrestricted and preserves public HTTP body limits', async () => {
+    const f = await fixture({}, { diskLimits: { local: 1 } });
+    const bytes = new Uint8Array(2 * 1024 * 1024);
+    const uploaded = new File([bytes], 'limit.bin');
+    const repository = f.manager.repository('attachments', {
+      disk: 'local',
+      accessPath: '/uploads/attachments',
+      policy: openPolicy,
+    });
+    expect((await repository.uploadOne({ file: uploaded })).record.size).toBe(
+      bytes.length,
+    );
+    expect(
+      (await repository.uploadMany({ files: [uploaded] })).createdCount,
+    ).toBe(1);
+    expect((await f.client.uploadOne({ file: uploaded })).record.size).toBe(
+      bytes.length,
+    );
+    await expect(
+      f.client.uploadOne({
+        file: new File([new Uint8Array(5 * 1024 * 1024)], 'body.bin'),
+      }),
+    ).rejects.toMatchObject({
+      status: 413,
+      reason: 'BODY_TOO_LARGE',
+      domain: 'file',
+    });
+  });
+});
 
 describe('server repository and Client API', () => {
   it('uploads, queries metadata, and downloads content through a custom disk factory', async () => {

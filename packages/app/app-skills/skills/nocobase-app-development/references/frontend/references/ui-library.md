@@ -35,7 +35,7 @@ The message box for talking to an agent: page-context chips inside it (each can 
 - Kind: component
 - Install: `yes n | pnpm exec shadcn add @nocobase/agent-composer`
 - Installs to: `client/components/agent-composer.tsx`
-- Plugin dependencies: `@nocobase/app-plugin-agents`
+- Plugin dependencies: `@nocobase/app-plugin-agents`, `@nocobase/app-plugin-file`
 - Example: `@nocobase/agent-composer-demo` (`pnpm exec shadcn view @nocobase/agent-composer-demo`)
 - After installing: Pass onSend (return true, or a promise of true, once the message is taken), and optionally running, onStop, toolbar and notice; pass attachments (upload, and optionally discard and registerAdd; useChatAttachments of @nocobase/app-plugin-agents/client/chat uploads to the plugin) to send files; wire context (chips from contextChips and buildPageContext of @nocobase/app-plugin-agents/client/chat, and optionally inspect, which makes each chip open a preview of what it carries), draft and registerFocus from the chat panel when it sits in one. Every word comes from the labels prop, English by default.
 
@@ -57,14 +57,14 @@ A simple agent conversation panel with shared page/panel headers, history, compo
 - Kind: block
 - Install: `yes n | pnpm exec shadcn add @nocobase/agent-chat`
 - Installs to: `client/extensions/nocobase-agent-chat/`
-- Plugin dependencies: `@nocobase/app-plugin-agents`
+- Plugin dependencies: `@nocobase/app-plugin-agents`, `@nocobase/app-plugin-file`
 - Also installs: `@nocobase/markdown-view`, `@nocobase/agent-run-history`, `@nocobase/agent-composer`, `@nocobase/agent-picker`, `@nocobase/attachment-list`
 - Example: `@nocobase/agent-chat-demo` (`pnpm exec shadcn view @nocobase/agent-chat-demo`)
 - After installing: Requires the agents plugin (and the file plugin on the server for files sent in chat): wrap the routes in ChatProvider from @nocobase/app-plugin-agents/client/chat (pass memoryScope, the signed-in person's id, so a new conversation starts with the agent they used last; pass conversationPath when ChatConversationPage has a route such as /chat/:conversationId), optionally with ChatExtensionsContext for cards among the messages. Render ChatPanel as a sibling of <main> inside a `relative flex` row, ChatHeaderButton in the header and ChatFloatingButton anywhere; add the plugin's chatLinkRoutes(base) for links that open the panel; spread locales/ into client/locales/.
 
 ### agent-chat-details
 
-The agent chat panel with conversation details: linked work such as tasks, context usage, the runner and the agent, beside or over the conversation, with list-first entry and shared headers. Linked work uses generic ConversationLink sections. Supply per-kind render slots for application-specific work. No task or project dependency.
+The agent chat workspace: the conversation list, one conversation and its details (linked work such as tasks, context usage, runtime and agent), laid out by its own width as one column, list beside conversation, or list, conversation and details. Mount it as a full page with the selection in the address, or in the side panel with LinkedChatPanel; both are the same component. Linked work uses generic ConversationLink sections; applications add their own through narrow slots. No task or project dependency.
 
 - Kind: block
 - Install: `yes n | pnpm exec shadcn add @nocobase/agent-chat-details`
@@ -72,7 +72,7 @@ The agent chat panel with conversation details: linked work such as tasks, conte
 - Plugin dependencies: none
 - Also installs: `@nocobase/agent-chat`
 - Example: `@nocobase/agent-chat-details-demo` (`pnpm exec shadcn view @nocobase/agent-chat-details-demo`)
-- After installing: Render LinkedChatPanel under the same ChatProvider as the simple ChatPanel. Use linked launchers for list-first opening; explicit conversation/new entry keeps its intent. slots[kind] renders a related-work section and renderSummary provides application-owned status/progress. renderConversation and renderList preserve application controllers. Passive details reuse cached conversation and usage snapshots; no polling is added.
+- After installing: Mount ChatWorkspace on a page (selection in the address) and LinkedChatPanel under the same ChatProvider as the simple ChatPanel (selection in the panel store); both are the same workspace. Add application-specific parts through narrow slots: list.heading, list.row (extra, facts, status), list.filters/filter, renderBody, metadata, detailsMetadata and scope; slots[kind] renders a related-work section and renderSummary the summary row. Passive details reuse cached conversation and usage snapshots; no polling is added.
 
 ## Approval
 
@@ -170,7 +170,7 @@ A role administration table built with the standard DataTable: localized column 
 - Plugin dependencies: none
 - Also installs: `@nocobase/data-table`, `@nocobase/record-link`
 - Example: `@nocobase/role-list-demo` (`pnpm exec shadcn view @nocobase/role-list-demo`)
-- After installing: Render inside a React Router and the application i18n provider. Supply roles with key, localized title, edit destination (to) and protected state. Pass localized labels for name, key, type, protected and custom, plus an optional ariaLabel. Uses the shared DataTable for table semantics, sorting and pagination. Optional tableState accepts controlled pagination/sorting and page-size choices from the host URL adapter. The host owns loading, empty/error states, filtering and authorization. Existing apps must update the installed role-list component, its data-table dependency and caller labels together.
+- After installing: Render inside a React Router and the application i18n provider. Supply roles with key, localized title, edit destination (to) and protected state. Pass localized labels for name, key, type, protected and custom, plus an optional ariaLabel. Uses the shared DataTable for table semantics, sorting and pagination. Optional tableState accepts controlled pagination/sorting and page-size choices from the host URL adapter. The host owns loading, empty/error states, filtering and authorization; pass loading={active && request.loading && listState === 'ready'} so a same-query refresh shows the table's standard refresh indicator while a refresh-failure retry is announced only by its retry button. Existing apps must update the installed role-list component, its data-table dependency and caller labels together.
 
 ### default-access-editor
 
@@ -285,10 +285,10 @@ Read-only React Flow canvas with ELK orthogonal routing for directed graphs, inc
 
 - Kind: component
 - Install: `yes n | pnpm exec shadcn add @nocobase/flow-diagram`
-- Installs to: `client/components/flow-diagram.tsx`, `client/components/flow-layout.ts`, `client/components/flow-diagram-css.d.ts`
+- Installs to: `client/components/flow-diagram.tsx`, `client/components/flow-layout.ts`, `client/components/flow-diagram-css.d.ts`, `client/components/body-portal.tsx`
 - Plugin dependencies: none
 - Example: `@nocobase/flow-diagram-demo` (`pnpm exec shadcn view @nocobase/flow-diagram-demo`)
-- After installing: Pass nodes and edges with unique ids, an ariaLabel and either a bounded canvas height or autoHeight. Use direction DOWN with autoHeight for detailed page diagrams; height follows the full layout including outer routes and labels. The default node is 232×104 canvas units; set width/height for richer renderNode content. direction is RIGHT or DOWN. nodeDescription and nodeActions add supporting summaries and configuration controls. For bounded canvases, initialMinZoom=0.8 preserves initial readability and showMiniMap provides overview navigation; Fit still shows the whole graph. Translate flowDiagram.overview when using the minimap. onNodeClick/onEdgeClick open your details; onLayoutError reports invalid graph or layout failures. Translate flowDiagram.empty, loading, failed, nodeHelp and edgeHelp; see the components README. Includes React Flow CSS. Uses application primary/card/foreground/border tokens in light and dark themes. Ordinary edges are subdued, solid and labeled directly on the route. Set visited on nodes/edges for actual history and highlighted for the current node or available edges; current nodes have a stronger fill and ring. ELK optimizes port order to reduce crossings. Decorative nodes/edges are not focusable or selectable.
+- After installing: Pass nodes and edges with unique ids, an ariaLabel and either a bounded canvas height or autoHeight. Use direction DOWN with autoHeight for detailed page diagrams; height follows the full layout including outer routes and labels. The default node is 232×104 canvas units; set width/height for richer renderNode content. direction is RIGHT or DOWN. nodeDescription and nodeActions add supporting summaries and configuration controls. For bounded canvases, initialMinZoom=0.8 preserves initial readability and showMiniMap provides overview navigation; Fit still shows the whole graph. Translate flowDiagram.overview when using the minimap. onNodeClick/onEdgeClick open your details; onLayoutError reports invalid graph or layout failures. Translate flowDiagram.empty, loading, failed, nodeHelp and edgeHelp; see the components README. Includes React Flow CSS. Uses application primary/card/foreground/border tokens in light and dark themes. Ordinary edges are subdued, solid and labeled directly on the route. Set visited on nodes/edges for actual history and highlighted for the current node or available edges; current nodes have a stronger fill and ring. ELK optimizes port order to reduce crossings. Decorative nodes/edges are not focusable or selectable. Body portals detach when React Activity hides the diagram, retaining component state without leaving fullscreen content visible during permission rechecks.
 
 ### lifecycle-diagram
 
@@ -302,6 +302,41 @@ Theme-aware, read-only lifecycle diagram using React Flow and ELK. Shows the cur
 - Example: `@nocobase/lifecycle-diagram-demo` (`pnpm exec shadcn view @nocobase/lifecycle-diagram-demo`)
 - After installing: Pass description.description from useLifecycle/createLifecycleHook, currentState from view.record, availableTransitions filtered from view.available, and history from view.history.transitions. History matches the exact transition/source/destination; current state alone never implies a visited path. Pass a translated endLabel for separate decorative markers on explicit final states. Defaults to direction DOWN, autoHeight and initialMinZoom 0.7 for readable vertical page reading. The Fit control still shows the entire graph; an explicit initialMinZoom overrides the default. Override direction and autoHeight explicitly for compact canvases. stateActions supplies explicit configuration buttons; nodeDescription displays real policy summaries. Translate ariaLabel, stateLabel and transitionLabel; append a gear to automatic transition labels if needed. Edges are solid with inline labels and subdued neutral strokes; current/visited/available highlights use the application primary theme token. Current nodes have a stronger border and ring; icons, top accents and status footers distinguish current, visited and configurable nodes using theme tokens. onStateClick/onTransitionClick open details and never fire transitions. Keep toMermaid for documentation/export. Pass configuration={label, canConfigure, onConfigure} for automatic Configure buttons on authorized bound states and configuration selection on bound transitions. onConfigure receives the exact target and permitted bound fields grouped by native parameter key; connect the existing real editor and API. canConfigure is required and is only a UI affordance. Explicit direction/style overrides are reserved for user-requested customization; Mermaid is documentation/export only.
 
+## Feedback
+
+### loading
+
+Region-owned loading feedback with delayed display and long-wait guidance.
+
+- Kind: component
+- Install: `yes n | pnpm exec shadcn add @nocobase/loading`
+- Installs to: `client/components/loading.tsx`, `client/components/brand-loading-mark.tsx`, `client/components/brand-mark-geometry.ts`
+- Plugin dependencies: none
+- Example: `@nocobase/loading-demo` (`pnpm exec shadcn view @nocobase/loading-demo`)
+- After installing: Use real pending/submitting state. Feedback appears after 300ms, long-wait guidance after 10s, and clears immediately. Add pendingFeedback.working, pendingFeedback.longWait and status.loading to application translations. Preserve useSubmission protection; pending is recoverable state, not busy. Publish the runtime exporting usePendingFeedback before Registry publication. RefreshIndicator marks a background refresh of content that still belongs to the current query and permission scope; render it inside the positioned element owning that content and add status.refreshing to translations.
+
+### pending-button
+
+A stable-size native action button with immediate busy semantics and delayed feedback.
+
+- Kind: component
+- Install: `yes n | pnpm exec shadcn add @nocobase/pending-button`
+- Installs to: `client/components/pending-button.tsx`, `client/components/brand-loading-mark.tsx`, `client/components/brand-mark-geometry.ts`
+- Plugin dependencies: none
+- Example: `@nocobase/pending-button-demo` (`pnpm exec shadcn view @nocobase/pending-button-demo`)
+- After installing: Use real pending/submitting state. Feedback appears after 300ms, long-wait guidance after 10s, and clears immediately. Add pendingFeedback.working, pendingFeedback.longWait and status.loading to application translations. Preserve useSubmission protection; pending is recoverable state, not busy. Publish the runtime exporting usePendingFeedback before Registry publication.
+
+### task-progress
+
+One long-running task record: real determinate progress, honest indeterminate waiting, failure, result and background continuation.
+
+- Kind: component
+- Install: `yes n | pnpm exec shadcn add @nocobase/task-progress`
+- Installs to: `client/components/task-progress.tsx`
+- Plugin dependencies: none
+- Example: `@nocobase/task-progress-demo` (`pnpm exec shadcn view @nocobase/task-progress-demo`)
+- After installing: Render one task record from the server's own job or task state; do not create a client-side task. Pass processed and total, or percent, only when the task really reports them; otherwise the bar is indeterminate and shows no percentage. Status changes are announced once, percentage updates are not. Set continuesInBackground when the task survives leaving the page. Put the result location (a download action or link) and failure recovery in message and actions, and offer cancel only when the server can really cancel. Add the taskProgress translations listed in the components README.
+
 ## File
 
 ### file-component-ui
@@ -312,9 +347,9 @@ Application-owned upload, list, thumbnail, and preview components for business f
 - Install: `yes n | pnpm exec shadcn add @nocobase/file-component-ui`
 - Installs to: `client/extensions/nocobase-file-component-ui/`
 - Plugin dependencies: `@nocobase/app-plugin-file`
-- Also installs: `@nocobase/attachment-list`
+- Also installs: `@nocobase/attachment-list`, `@nocobase/loading`
 - Example: `@nocobase/file-component-ui-demo` (`pnpm exec shadcn view @nocobase/file-component-ui-demo`)
-- After installing: Requires the File plugin services and your own authorized file repository. Pass a ClientFileRepository to FileUploadField. Merge locales/ into application locales. The default template preinstalls this block; reconcile existing copies instead of overwriting them.
+- After installing: Requires the File plugin services and your own authorized file repository. Pass a ClientFileRepository to FileUploadField. Merge locales/ into application locales. The default template preinstalls this block; reconcile existing copies instead of overwriting them. Uploads report no byte progress: each uploading item shows an indeterminate wait whose mark appears after 300ms and a long-wait note after 10 seconds, with a real cancel that aborts the request; failures keep the file for Retry, and unmounting aborts every upload. Never invent a percentage.
 
 ## Forms
 
@@ -327,7 +362,7 @@ Preserves form input, maps safe field errors and focuses the first editable erro
 - Installs to: `client/components/feedback-form.tsx`
 - Plugin dependencies: none
 - Example: `@nocobase/feedback-form-demo` (`pnpm exec shadcn view @nocobase/feedback-form-demo`)
-- After installing: Show mapped reasons only beside fields/groups, with automatic reveal/focus and no top summary or navigation list. Unmapped failures or unavailable focus targets keep a safe accessible form message. Use submitted names or data-field-path; return promises or pass caught errors via error. RHF consumers pass submitting and validationErrors. Register persistent FormFeedback descriptors for unmounted regions and stable rows. Add formFeedback.field, invalid, failed, network and denied to application translations; device-approval includes them in its locales. Reconcile copied source as well as the runtime when upgrading. Publication is gated by check-form-feedback-release.mjs: the declared app-client version floor must be obtainable and export the form APIs in JavaScript and declarations. Release the runtime and raise this item's floor before publishing the registry. Existing controlled fields expose trusted errors through aria-errormessage or explicitly associated data-slot=field-error / data-feedback-field-error nodes.
+- After installing: Show mapped reasons only beside fields/groups, with automatic reveal/focus and no top summary or navigation list. Unmapped failures or unavailable focus targets keep a safe accessible form message. Use submitted names or data-field-path; return promises or pass caught errors via error. RHF consumers pass submitting and validationErrors. Register persistent FormFeedback descriptors for unmounted regions and stable rows. Add formFeedback.field, invalid, failed, network and denied to application translations; device-approval includes them in its locales. Reconcile copied source as well as the runtime when upgrading. Publication is gated by check-form-feedback-release.mjs: the declared app-client version floor must be obtainable and export the form APIs in JavaScript and declarations. Release the runtime and raise this item's floor before publishing the registry. Existing controlled fields expose trusted errors through aria-errormessage or explicitly associated data-slot=field-error / data-feedback-field-error nodes. Inside a route overlay, pass values={form.getValues} and savedValues so the overlay asks before discarding unsaved values, including a restored draft and fields without input events.
 
 ## Inbox
 
@@ -365,7 +400,7 @@ Application-owned delivery and provider attempt log components backed by the Noc
 - Installs to: `client/extensions/nocobase-notification-logs-ui/`
 - Plugin dependencies: none
 - Example: `@nocobase/notification-logs-ui-demo` (`pnpm exec shadcn view @nocobase/notification-logs-ui-demo`)
-- After installing: Requires the Notification server plugin and authorized access to GET /api/notifications/logs. Mount NotificationLogsPage in an application-owned route and merge locales/ into application locales. Shows the newest 100 logs; adds no route or permissions.
+- After installing: Requires the Notification server plugin and authorized access to GET /api/notifications/logs. Mount NotificationLogsPage in an application-owned route (pass showHeading={false} when the page already titles it, such as a settings tab) and merge locales/ into application locales. Shows the newest 100 logs; adds no route or permissions.
 
 ## Other
 
@@ -375,11 +410,11 @@ Standard TanStack Table v8 table with controlled server pagination and sorting, 
 
 - Kind: component
 - Install: `yes n | pnpm exec shadcn add @nocobase/data-table`
-- Installs to: `client/components/data-table/column-header.tsx`, `client/components/data-table/data-table.tsx`, `client/components/data-table/index.ts`, `client/components/data-table/pagination.tsx`, `client/components/data-table/view-options.tsx`
+- Installs to: `client/components/data-table/column-header.tsx`, `client/components/data-table/data-table.tsx`, `client/components/data-table/filters.tsx`, `client/components/data-table/index.ts`, `client/components/data-table/pagination.tsx`, `client/components/data-table/search.tsx`, `client/components/data-table/sort-menu.tsx`, `client/components/data-table/view-options.tsx`
 - Plugin dependencies: none
-- Also installs: `@nocobase/list-feedback`
+- Also installs: `@nocobase/list-feedback`, `@nocobase/loading`
 - Example: `@nocobase/data-table-demo` (`pnpm exec shadcn view @nocobase/data-table-demo`)
-- After installing: Use DataTable with typed columns and getRowId. Server data must use manualPagination and manualSorting with controlled state; never sort or paginate only a fetched page locally. pagination=false renders every supplied row and leaves pagination to the caller.
+- After installing: Use DataTable with typed columns and getRowId. Server data must use manualPagination and manualSorting with controlled state; never sort or paginate only a fetched page locally. pagination=false renders every supplied row and leaves pagination to the caller. Pass loading={active && request.loading} for an app-owned list: explicit false suppresses unresolved loading feedback while the query is paused, while omitting loading keeps listState-driven feedback. Pass loading for the current request: with rows of the current query it is a background refresh that keeps rows and shows a delayed RefreshIndicator; a new query hides previous rows, keeps their body and pagination height, and never shows the previous page count. Pass listState from resolveListState so loading, empty, failure and permission states stay distinct. Pass loadingIdentity, the current query's stable identity such as its request path, so a new query restarts the 300ms and 10-second display thresholds without remounting the table or losing its kept geometry; the table itself is busy only while it shows retained rows. Pass renderCard for an ordinary business list so phones narrower than 768px show compact cards with the same states, selection and pagination. Pass DataTableSearch (value, onSearch, label) as search, with no separate search button: it applies 300ms after typing pauses and at once on Enter, never mid-IME composition. Pass each filter as a DataTableFilter with its label in filters, with filterCount: they share one toolbar row, and on a phone the filters collapse into an icon Filters button named and badged with the count that opens a bottom sheet; on desktop each filter sits in a compact slot of its own. Pass a result count as summary instead of a row above the table: it ends the toolbar row on desktop and sits above the pagination on a phone. Pass a translated getColumnLabel so phone cards get the icon Sort menu on that row by themselves; do not render another DataTableSortMenu in the toolbar. Each card shows the cell of the actions column (actionsColumnId, 'actions' by default): place renderCard's card.actions in the card's layout, or the table puts it in the card's top-right corner; pass actionsColumnId={null} only for a list whose rows and cards deliberately offer no actions. Spread useTableUrlState into DataTable so its sortableColumns limit header and menu sorting to the URL's sortColumns. Pass filtered with onClearFilters so Clear filters stays on the toolbar row while filtered results show, and give the select column's header checkbox its own aria-label: the visible "Select all on this page" text above the cards is a tap target hidden from assistive technology. Keep the selection column's id as select (or pass selectionColumnId) so its select-all header stays above the cards with a visible label.
 
 ### list-feedback
 
@@ -389,8 +424,9 @@ Accessible list loading, empty, filtered, permission and request feedback for ta
 - Install: `yes n | pnpm exec shadcn add @nocobase/list-feedback`
 - Installs to: `client/components/list-feedback.tsx`
 - Plugin dependencies: none
+- Also installs: `@nocobase/loading`, `@nocobase/pending-button`
 - Example: `@nocobase/list-feedback-demo` (`pnpm exec shadcn view @nocobase/list-feedback-demo`)
-- After installing: Pass resolveListState from @nocobase/app-client. ListFeedback renders each built-in state as one matching icon and one short line; render ListFeedbackActions with the existing retry, clear and sign-in controls in the host toolbar. Merge listFeedback translations listed in the components README. Keep the standard create action in the permission-gated page header, including for empty collections; reserve empty and emptyAction for intentional business-specific empty content.
+- After installing: Pass resolveListState from @nocobase/app-client. ListFeedback renders loading through @nocobase/loading, keeping the body's footprint at once and showing the indicator and one status after 300ms, and every other built-in state as one matching icon and one short line; render ListFeedbackActions with the existing retry, clear and sign-in controls in the host toolbar; pass filtered while the host's search or filters are applied so Clear filters also shows with results. Merge listFeedback translations listed in the components README. Keep the standard create action in the permission-gated page header, including for empty collections; reserve empty and emptyAction for intentional business-specific empty content. Retry uses PendingButton, so the host passes the real retry request as busy. Pass identity, the current query's stable identity, so consecutive queries each get their own display delay.
 
 ## Page layout
 
@@ -414,7 +450,7 @@ The heading of a page: its title, an optional description, and page-level action
 - Installs to: `client/components/page-header.tsx`
 - Plugin dependencies: none
 - Example: `@nocobase/page-header-demo` (`pnpm exec shadcn view @nocobase/page-header-demo`)
-- After installing: Render PageHeader once per page, as the first child of its PageContainer.
+- After installing: Render PageHeader once per page, as the first child of its PageContainer. On a phone the description shows at most two lines and the eyebrow (a small label above the title) is left out, so the first screen reaches the page's content; put a section label in eyebrow rather than a row of its own above the header.
 
 ### settings-dialog
 
@@ -442,14 +478,14 @@ Contextual prerequisite checks for a feature, with missing, ready and unavailabl
 
 ### issue-table
 
-The issues list: identifier, title with labels, status, priority, owner, executor and last update, with sorting and selection through callbacks. Use it for a list of issues. Presentational: map IssueListItem from @nocobase/app-plugin-projects/client/issues to IssueTableRow.
+The issues list: identifier, title with labels, status drawn as its shape, priority, owner (a person or an agent's avatar), project and last update, with sorting, selection, extra columns, group rows and a compact phone layout through props and callbacks. Use it for a list of issues. Presentational: map IssueListItem from @nocobase/app-plugin-projects/client/issues to IssueTableRow.
 
 - Kind: component
 - Install: `yes n | pnpm exec shadcn add @nocobase/issue-table`
-- Installs to: `client/components/issue-table.tsx`
-- Plugin dependencies: none
+- Installs to: `client/components/issue-table.tsx`, `client/components/status-icon.tsx`, `client/components/status-shapes.ts`
+- Plugin dependencies: `@nocobase/app-plugin-agents`, `@nocobase/app-plugin-projects`
 - Example: `@nocobase/issue-table-demo` (`pnpm exec shadcn view @nocobase/issue-table-demo`)
-- After installing: Map your issues (such as @nocobase/app-plugin-projects' IssueListItem) to IssueTableRow. Every word comes from the labels prop, English by default.
+- After installing: Map your issues (such as @nocobase/app-plugin-projects' IssueListItem) to IssueTableRow; give a status its key to draw it as its shape (status-icon). Every word comes from the labels prop, English by default.
 
 ### issue-card
 
@@ -507,10 +543,11 @@ A child route presented as a centered modal dialog, opened and closed by its URL
 
 - Kind: component
 - Install: `yes n | pnpm exec shadcn add @nocobase/route-dialog`
-- Installs to: `client/components/route-dialog.tsx`, `client/components/route-overlay.tsx`, `client/components/use-route-overlay.ts`
+- Installs to: `client/components/route-dialog.tsx`, `client/components/route-overlay.tsx`, `client/components/discard-guard.tsx`, `client/components/use-route-overlay.ts`
 - Plugin dependencies: none
+- Also installs: `@nocobase/feedback-form`
 - Example: `@nocobase/route-dialog-demo` (`pnpm exec shadcn view @nocobase/route-dialog-demo`)
-- After installing: Return RouteDialog from the component of a child route, and call useRouteOverlay() only from inside it. The close button is translated under routeOverlay.close; add it to your locale resources (Close, 关闭), or it reads Close in every language.
+- After installing: Return RouteDialog from the component of a child route, and call useRouteOverlay() only from inside it. The close button is translated under routeOverlay.close; add it to your locale resources (Close, 关闭), or it reads Close in every language. Inside an application (its NavigationGuardProvider), the overlay asks "Discard changes?" before every way out (close button, Esc, backdrop, Cancel, browser back, links) while a FeedbackForm inside has unsaved input. Give the FeedbackForm values={form.getValues} and savedValues (the stored record as the form shows it, or a create form's blank values, never the restored draft): leaving then asks whenever the values differ, whatever changed them (typing, a Select, a date or relation picker, an upload, or a restored draft passed as defaultValues), and not once they are back to the saved ones. Any other form inside, a plain <form> included, asks once a field or a Select-like widget differs from how it was just before the user first touched it, but cannot tell a restored draft from saved input, nor its own successful save from a failed one (it still asks after either), so create and edit forms always use FeedbackForm with both values; a search form (role='search') never counts. Settings forms that ask their own question render OwnDiscardQuestion so it is asked once; a kept draft is never a reason to render it. dirty adds anything else and never switches the question off, so do not derive it from a saved draft. The save leaves without asking when it navigates or closes from the FeedbackForm's onSubmit with a type='submit' save button; it still asks while the save button is disabled and after a failed or rejected save, browser back and reload included, and an untouched form or read-only drawer closes at once. Its copy is under routeOverlay.discardTitle, routeOverlay.discardDescription, routeOverlay.keepEditing and routeOverlay.discard.
 
 ### route-drawer
 
@@ -518,10 +555,11 @@ A child route presented as a modal panel at the right edge, opened and closed by
 
 - Kind: component
 - Install: `yes n | pnpm exec shadcn add @nocobase/route-drawer`
-- Installs to: `client/components/route-drawer.tsx`, `client/components/route-overlay.tsx`, `client/components/use-route-overlay.ts`
+- Installs to: `client/components/route-drawer.tsx`, `client/components/route-overlay.tsx`, `client/components/discard-guard.tsx`, `client/components/use-route-overlay.ts`
 - Plugin dependencies: none
+- Also installs: `@nocobase/feedback-form`
 - Example: `@nocobase/route-drawer-demo` (`pnpm exec shadcn view @nocobase/route-drawer-demo`)
-- After installing: Return RouteDrawer from the component of a child route, and call useRouteOverlay() only from inside it. The close button is translated under routeOverlay.close; add it to your locale resources (Close, 关闭), or it reads Close in every language.
+- After installing: Return RouteDrawer from the component of a child route, and call useRouteOverlay() only from inside it. The close button is translated under routeOverlay.close; add it to your locale resources (Close, 关闭), or it reads Close in every language. Inside an application (its NavigationGuardProvider), the overlay asks "Discard changes?" before every way out (close button, Esc, backdrop, Cancel, browser back, links) while a FeedbackForm inside has unsaved input. Give the FeedbackForm values={form.getValues} and savedValues (the stored record as the form shows it, or a create form's blank values, never the restored draft): leaving then asks whenever the values differ, whatever changed them (typing, a Select, a date or relation picker, an upload, or a restored draft passed as defaultValues), and not once they are back to the saved ones. Any other form inside, a plain <form> included, asks once a field or a Select-like widget differs from how it was just before the user first touched it, but cannot tell a restored draft from saved input, nor its own successful save from a failed one (it still asks after either), so create and edit forms always use FeedbackForm with both values; a search form (role='search') never counts. Settings forms that ask their own question render OwnDiscardQuestion so it is asked once; a kept draft is never a reason to render it. dirty adds anything else and never switches the question off, so do not derive it from a saved draft. The save leaves without asking when it navigates or closes from the FeedbackForm's onSubmit with a type='submit' save button; it still asks while the save button is disabled and after a failed or rejected save, browser back and reload included, and an untouched form or read-only drawer closes at once. Its copy is under routeOverlay.discardTitle, routeOverlay.discardDescription, routeOverlay.keepEditing and routeOverlay.discard.
 
 ### route-child-page
 
@@ -529,10 +567,11 @@ A child route presented as a non-modal page covering the content area, keeping t
 
 - Kind: component
 - Install: `yes n | pnpm exec shadcn add @nocobase/route-child-page`
-- Installs to: `client/components/route-child-page.tsx`
+- Installs to: `client/components/route-child-page.tsx`, `client/components/discard-guard.tsx`
 - Plugin dependencies: none
+- Also installs: `@nocobase/feedback-form`
 - Example: `@nocobase/route-child-page-demo` (`pnpm exec shadcn view @nocobase/route-child-page-demo`)
-- After installing: Return RouteChildPage from the component of a child route. It covers the nearest positioned ancestor, so render a page's own outlet beside its container rather than inside it. A child page that can only render inside another one, such as the child page of a tab, covers that one whole.
+- After installing: Return RouteChildPage from the component of a child route. It covers the nearest positioned ancestor, so render a page's own outlet beside its container rather than inside it. A child page that can only render inside another one, such as the child page of a tab, covers that one whole. On a route declaring a child-page presentation the application opens the layer first; this component then adds its content and className to that layer. Like RouteDialog, it asks "Discard changes?" before the back button, a breadcrumb, a link or browser back while a FeedbackForm inside (values and savedValues) or any other form differs from what is saved, and warns before a reload, inside an application's NavigationGuardProvider; write no guard of the page's own. Forms that ask their own question render OwnDiscardQuestion. The question's copy is under routeOverlay.discardTitle, routeOverlay.discardDescription, routeOverlay.keepEditing and routeOverlay.discard.
 
 ## Task Center
 

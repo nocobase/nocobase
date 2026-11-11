@@ -59,6 +59,7 @@ async function fixture() {
   const agentId = await harness.createAgent({ source: 'runner' });
   const ids = { next: () => randomUUID() };
   const attachments = createChatAttachments({
+    limitForDisk: () => ({ maxFileSizeMb: 20 }),
     tx: harness.services.tx,
     basePath: () => '',
     storage: {

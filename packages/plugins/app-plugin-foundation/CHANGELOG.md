@@ -1,5 +1,113 @@
 # @nocobase/app-plugin-foundation
 
+## 0.1.0-beta.19
+
+### Minor Changes
+
+- 3e87619: App Foundation's `foundation.scanOnStart` setting (`FOUNDATION_SCAN_ON_START`, factory `defineFoundationConfig()` from `@nocobase/app-plugin-foundation/config`) turns off the background scan an application submits at start; it defaults to `true`. With it off, opening the page, Refresh and Count records still start a scan. `createTestAppConfig()` in `@nocobase/app-testing` sets `foundation: { scanOnStart: false }` for every test application, so tests no longer spend seconds of CPU on the scan or wait for it when the application closes; pass `config: { foundation: { scanOnStart: true } }` to keep it. Both templates register the `foundation` section.
+
+### Patch Changes
+
+- 8be5180: Move Features and extensions to `/settings/capabilities`. Require a grantable page permission for Features and extensions, protect direct detail links, and expose its access control under system configuration permissions.
+- 8be5180: Let Features and extensions fill the available page width while retaining responsive outer spacing consistent with other settings pages.
+- @nocobase/app-plugin-authentication@2.0.0-beta.20
+  - @nocobase/app-plugin-authorization@1.0.0-beta.37
+
+## 0.1.0-beta.18
+
+### Patch Changes
+
+- 368299b: Open the first matching feature detail by default in the desktop Features and extensions catalog.
+
+## 0.1.0-beta.17
+
+### Patch Changes
+
+- c522d01: Present Features and extensions in System settings with consistent capability details showing their purpose, current configuration and management entries, and expandable Agent requests for adding or improving features. Combine language capabilities into one entry and distinguish personal and application API key management interfaces.
+- c522d01: Add a capability guide at `/capabilities` listing the application's core modules and dependent plugins, including examples. Browse a numbered catalog with type and keyword filters, then open consistent details explaining each capability's purpose, current configuration, and how to add or improve it with an Agent. The home page links to the same catalog, while the protected runtime foundation page retains its URL and access.
+- c522d01: Add a concurrency configuration overview with explicit unavailable runtime values and focused Agent guidance for shared coordination, independent services and default service selection. Clarify that concurrency control does not replace idempotency.
+- c522d01: Clarify the Database Explorer interface and its application-wide access permission. Provide focused Agent guidance for adding the read-only browser and configuring access without implying per-connection or field-level restrictions.
+- c522d01: Show complete package names in the core and plugin catalog, allow long identifiers to wrap on narrow screens, simplify Chinese module names, and describe Foundation as a catalog of capabilities and usage guidance.
+- c522d01: Present concurrency as one plugin capability, include its core module in developer references, and support searching by covered core package names.
+- c522d01: Give expandable configuration actions a stable accessible name matching their visible title.
+- c522d01: Organize remaining feature and example details around application configuration, interface availability, and specific Agent actions, keeping unavailable configuration evidence explicit.
+- c522d01: Provide the feature configuration detail pages directly from the Foundation plugin so applications can reuse them without template-owned pages or locale resources. Discover application routes and permissions through public runtime APIs and remove duplicate template implementations.
+- c522d01: Present the capability catalog as Features and extensions in System settings, replacing the App usage entry while preserving the protected runtime page. Use the header breadcrumb to return from an entry without losing catalog filters.
+- c522d01: Resolve internal component aliases from source in workspace consumers so application typechecks do not require a prior plugin build; keep published aliases targeting compiled output.
+- Updated dependencies [7508a76]
+- Updated dependencies [fb4659d]
+- Updated dependencies [6fbf389]
+- Updated dependencies [1cda4c3]
+- Updated dependencies [7d970d6]
+- Updated dependencies [bb1dff2]
+- Updated dependencies [a2a6385]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.20
+  - @nocobase/app-server@5.0.0-beta.2
+  - @nocobase/app-plugin-authorization@1.0.0-beta.37
+  - @nocobase/db@1.0.0-beta.26
+  - @nocobase/jobs@1.0.0-beta.6
+  - @nocobase/i18n@2.0.0-beta.2
+  - @nocobase/app-client@4.0.0-beta.9
+
+## 0.1.0-beta.16
+
+### Patch Changes
+
+- 1d28bde: Lay out the App foundation page for scanning: capabilities wrap in a responsive grid (a single list on phones) with a status badge on every tile, selection shown by its own border and marker, readable extension names with the full package identifier kept, and key numbers grouped by capability.
+- Updated dependencies [7c25f88]
+- Updated dependencies [7c25f88]
+- Updated dependencies [7c25f88]
+- Updated dependencies [215795d]
+  - @nocobase/app-client@4.0.0-beta.9
+  - @nocobase/app-cli@1.0.0-beta.32
+  - @nocobase/app-plugin-authentication@2.0.0-beta.19
+
+## 0.1.0-beta.15
+
+### Patch Changes
+
+- 03d8ce5: Show App foundation statistics as a plain name followed by its value, without Chinese measure words, and use sentence-case metric labels in the other languages.
+
+## 0.1.0-beta.14
+
+### Patch Changes
+
+- 9998ac4: Organize application administration as one System settings sidebar entry that opens a home page of cards grouped by category, with URL-backed tabs inside a module. Route navigation accepts an optional `description` that the settings home shows on each card, and App Foundation declares one. Existing settings URLs, route ids and authorization stay unchanged; updating dependencies alone keeps an existing application's navigation, so reconcile the application-owned navigation transform, routing, settings pages and locales with the `nocobase-app-upgrade` Skill's System settings navigation guide.
+- Updated dependencies [78bdca8]
+- Updated dependencies [9998ac4]
+- Updated dependencies [87f1ea5]
+- Updated dependencies [6507d01]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.19
+  - @nocobase/app-plugin-authorization@1.0.0-beta.36
+  - @nocobase/app-client@4.0.0-beta.8
+  - @nocobase/app-server@5.0.0-beta.1
+  - @nocobase/app-cli@1.0.0-beta.32
+
+## 0.1.0-beta.13
+
+### Minor Changes
+
+- 99de914: Persist App Foundation snapshots and refresh them through background Jobs on first use, manual refresh or a changed running kernel version. Retain historical results and independent record-count timestamps across restarts, and show compact statistics with explicit pending and partial states. Replace GET refresh/count flags with protected POST actions and active-scan status polling.
+
+### Patch Changes
+
+- be17408: Preserve database model associations through proven local callbacks and query accessors, and reject malformed request header names.
+- cf23bfe: **Breaking:** Remove the deprecated `@nocobase/app-server/mailer` entry and its `Mailer`, `mailerToken`, `createMailer`, `MailerProvider`, and notification configuration exports. Replace `MailExecutions.close(waitMs)` and `drain()` with `stop()` and `wait()`; transport `close()` now cancels supported network work and waits for its original completion without a nested timeout. Application owners must apply the outer shutdown budget. Create exclusive senders with `@nocobase/app-server/mailers` and declare notification config with `@nocobase/app-plugin-notification-providers/config`. Existing inline SMTP/Resend YAML, environment mappings, and provider/channel APIs remain supported.
+
+  Default and Examples now show `mailers.default: system` and explicitly map `MAILERS_SYSTEM_*`; the example configuration remains empty at runtime. The previous `MAILERS_TRANSACTIONAL_*` sample prefix was not published. Applications may still choose any valid mailer name and custom environment prefix.
+
+- Updated dependencies [6cc8acf]
+- Updated dependencies [9933a9a]
+- Updated dependencies [1e018f1]
+- Updated dependencies [cf23bfe]
+- Updated dependencies [4411984]
+  - @nocobase/app-client@4.0.0-beta.7
+  - @nocobase/app-plugin-authentication@2.0.0-beta.18
+  - @nocobase/db@1.0.0-beta.25
+  - @nocobase/app-server@5.0.0-beta.0
+  - @nocobase/app-cli@1.0.0-beta.32
+  - @nocobase/app-plugin-authorization@1.0.0-beta.35
+
 ## 0.1.0-beta.12
 
 ### Patch Changes

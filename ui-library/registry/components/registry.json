@@ -30,7 +30,7 @@
         "group": "Page layout",
         "iframeHeight": 420
       },
-      "docs": "Render PageHeader once per page, as the first child of its PageContainer.",
+      "docs": "Render PageHeader once per page, as the first child of its PageContainer. On a phone the description shows at most two lines and the eyebrow (a small label above the title) is left out, so the first screen reaches the page's content; put a section label in eyebrow rather than a row of its own above the header.",
       "files": [
         {
           "path": "page-header.tsx",
@@ -92,13 +92,19 @@
       },
       "dependencies": [
         "@base-ui/react@^1.6.0",
+        "@nocobase/app-client@^4.0.0-beta.9",
         "@nocobase/i18n@^1.0.0-beta.4",
         "cn@^0.4.0",
         "lucide-react@^0.487.0",
         "react-router@^7.0.2"
       ],
-      "registryDependencies": ["button", "dialog"],
-      "docs": "Return RouteDialog from the component of a child route, and call useRouteOverlay() only from inside it. The close button is translated under routeOverlay.close; add it to your locale resources (Close, 关闭), or it reads Close in every language.",
+      "registryDependencies": [
+        "button",
+        "dialog",
+        "alert-dialog",
+        "@nocobase/feedback-form"
+      ],
+      "docs": "Return RouteDialog from the component of a child route, and call useRouteOverlay() only from inside it. The close button is translated under routeOverlay.close; add it to your locale resources (Close, 关闭), or it reads Close in every language. Inside an application (its NavigationGuardProvider), the overlay asks \"Discard changes?\" before every way out (close button, Esc, backdrop, Cancel, browser back, links) while a FeedbackForm inside has unsaved input. Give the FeedbackForm values={form.getValues} and savedValues (the stored record as the form shows it, or a create form's blank values, never the restored draft): leaving then asks whenever the values differ, whatever changed them (typing, a Select, a date or relation picker, an upload, or a restored draft passed as defaultValues), and not once they are back to the saved ones. Any other form inside, a plain <form> included, asks once a field or a Select-like widget differs from how it was just before the user first touched it, but cannot tell a restored draft from saved input, nor its own successful save from a failed one (it still asks after either), so create and edit forms always use FeedbackForm with both values; a search form (role='search') never counts. Settings forms that ask their own question render OwnDiscardQuestion so it is asked once; a kept draft is never a reason to render it. dirty adds anything else and never switches the question off, so do not derive it from a saved draft. The save leaves without asking when it navigates or closes from the FeedbackForm's onSubmit with a type='submit' save button; it still asks while the save button is disabled and after a failed or rejected save, browser back and reload included, and an untouched form or read-only drawer closes at once. Its copy is under routeOverlay.discardTitle, routeOverlay.discardDescription, routeOverlay.keepEditing and routeOverlay.discard.",
       "files": [
         {
           "path": "route-dialog.tsx",
@@ -109,6 +115,11 @@
           "path": "route-overlay.tsx",
           "type": "registry:component",
           "target": "client/components/route-overlay.tsx"
+        },
+        {
+          "path": "discard-guard.tsx",
+          "type": "registry:component",
+          "target": "client/components/discard-guard.tsx"
         },
         {
           "path": "use-route-overlay.ts",
@@ -129,13 +140,19 @@
       },
       "dependencies": [
         "@base-ui/react@^1.6.0",
+        "@nocobase/app-client@^4.0.0-beta.9",
         "@nocobase/i18n@^1.0.0-beta.4",
         "cn@^0.4.0",
         "lucide-react@^0.487.0",
         "react-router@^7.0.2"
       ],
-      "registryDependencies": ["button", "dialog"],
-      "docs": "Return RouteDrawer from the component of a child route, and call useRouteOverlay() only from inside it. The close button is translated under routeOverlay.close; add it to your locale resources (Close, 关闭), or it reads Close in every language.",
+      "registryDependencies": [
+        "button",
+        "dialog",
+        "alert-dialog",
+        "@nocobase/feedback-form"
+      ],
+      "docs": "Return RouteDrawer from the component of a child route, and call useRouteOverlay() only from inside it. The close button is translated under routeOverlay.close; add it to your locale resources (Close, 关闭), or it reads Close in every language. Inside an application (its NavigationGuardProvider), the overlay asks \"Discard changes?\" before every way out (close button, Esc, backdrop, Cancel, browser back, links) while a FeedbackForm inside has unsaved input. Give the FeedbackForm values={form.getValues} and savedValues (the stored record as the form shows it, or a create form's blank values, never the restored draft): leaving then asks whenever the values differ, whatever changed them (typing, a Select, a date or relation picker, an upload, or a restored draft passed as defaultValues), and not once they are back to the saved ones. Any other form inside, a plain <form> included, asks once a field or a Select-like widget differs from how it was just before the user first touched it, but cannot tell a restored draft from saved input, nor its own successful save from a failed one (it still asks after either), so create and edit forms always use FeedbackForm with both values; a search form (role='search') never counts. Settings forms that ask their own question render OwnDiscardQuestion so it is asked once; a kept draft is never a reason to render it. dirty adds anything else and never switches the question off, so do not derive it from a saved draft. The save leaves without asking when it navigates or closes from the FeedbackForm's onSubmit with a type='submit' save button; it still asks while the save button is disabled and after a failed or rejected save, browser back and reload included, and an untouched form or read-only drawer closes at once. Its copy is under routeOverlay.discardTitle, routeOverlay.discardDescription, routeOverlay.keepEditing and routeOverlay.discard.",
       "files": [
         {
           "path": "route-drawer.tsx",
@@ -146,6 +163,11 @@
           "path": "route-overlay.tsx",
           "type": "registry:component",
           "target": "client/components/route-overlay.tsx"
+        },
+        {
+          "path": "discard-guard.tsx",
+          "type": "registry:component",
+          "target": "client/components/discard-guard.tsx"
         },
         {
           "path": "use-route-overlay.ts",
@@ -164,15 +186,25 @@
         "group": "Route overlays",
         "iframeHeight": 560
       },
-      "dependencies": ["cn@^0.4.0"],
-      "docs": "Return RouteChildPage from the component of a child route. It covers the nearest positioned ancestor, so render a page's own outlet beside its container rather than inside it. A child page that can only render inside another one, such as the child page of a tab, covers that one whole.",
+      "dependencies": [
+        "@nocobase/app-client@^4.0.0-beta.9",
+        "cn@^0.4.0",
+        "@nocobase/i18n@^1.0.0-beta.4"
+      ],
+      "docs": "Return RouteChildPage from the component of a child route. It covers the nearest positioned ancestor, so render a page's own outlet beside its container rather than inside it. A child page that can only render inside another one, such as the child page of a tab, covers that one whole. On a route declaring a child-page presentation the application opens the layer first; this component then adds its content and className to that layer. Like RouteDialog, it asks \"Discard changes?\" before the back button, a breadcrumb, a link or browser back while a FeedbackForm inside (values and savedValues) or any other form differs from what is saved, and warns before a reload, inside an application's NavigationGuardProvider; write no guard of the page's own. Forms that ask their own question render OwnDiscardQuestion. The question's copy is under routeOverlay.discardTitle, routeOverlay.discardDescription, routeOverlay.keepEditing and routeOverlay.discard.",
       "files": [
         {
           "path": "route-child-page.tsx",
           "type": "registry:component",
           "target": "client/components/route-child-page.tsx"
+        },
+        {
+          "path": "discard-guard.tsx",
+          "type": "registry:component",
+          "target": "client/components/discard-guard.tsx"
         }
-      ]
+      ],
+      "registryDependencies": ["alert-dialog", "@nocobase/feedback-form"]
     },
     {
       "name": "kanban",
@@ -403,7 +435,7 @@
         "cn@^0.4.0",
         "lucide-react@^0.487.0"
       ],
-      "docs": "Pass nodes and edges with unique ids, an ariaLabel and either a bounded canvas height or autoHeight. Use direction DOWN with autoHeight for detailed page diagrams; height follows the full layout including outer routes and labels. The default node is 232×104 canvas units; set width/height for richer renderNode content. direction is RIGHT or DOWN. nodeDescription and nodeActions add supporting summaries and configuration controls. For bounded canvases, initialMinZoom=0.8 preserves initial readability and showMiniMap provides overview navigation; Fit still shows the whole graph. Translate flowDiagram.overview when using the minimap. onNodeClick/onEdgeClick open your details; onLayoutError reports invalid graph or layout failures. Translate flowDiagram.empty, loading, failed, nodeHelp and edgeHelp; see the components README. Includes React Flow CSS. Uses application primary/card/foreground/border tokens in light and dark themes. Ordinary edges are subdued, solid and labeled directly on the route. Set visited on nodes/edges for actual history and highlighted for the current node or available edges; current nodes have a stronger fill and ring. ELK optimizes port order to reduce crossings. Decorative nodes/edges are not focusable or selectable.",
+      "docs": "Pass nodes and edges with unique ids, an ariaLabel and either a bounded canvas height or autoHeight. Use direction DOWN with autoHeight for detailed page diagrams; height follows the full layout including outer routes and labels. The default node is 232×104 canvas units; set width/height for richer renderNode content. direction is RIGHT or DOWN. nodeDescription and nodeActions add supporting summaries and configuration controls. For bounded canvases, initialMinZoom=0.8 preserves initial readability and showMiniMap provides overview navigation; Fit still shows the whole graph. Translate flowDiagram.overview when using the minimap. onNodeClick/onEdgeClick open your details; onLayoutError reports invalid graph or layout failures. Translate flowDiagram.empty, loading, failed, nodeHelp and edgeHelp; see the components README. Includes React Flow CSS. Uses application primary/card/foreground/border tokens in light and dark themes. Ordinary edges are subdued, solid and labeled directly on the route. Set visited on nodes/edges for actual history and highlighted for the current node or available edges; current nodes have a stronger fill and ring. ELK optimizes port order to reduce crossings. Decorative nodes/edges are not focusable or selectable. Body portals detach when React Activity hides the diagram, retaining component state without leaving fullscreen content visible during permission rechecks.",
       "files": [
         {
           "path": "flow-diagram.tsx",
@@ -419,6 +451,11 @@
           "path": "flow-diagram-css.d.ts",
           "type": "registry:component",
           "target": "client/components/flow-diagram-css.d.ts"
+        },
+        {
+          "path": "body-portal.tsx",
+          "type": "registry:component",
+          "target": "client/components/body-portal.tsx"
         }
       ],
       "registryDependencies": ["button", "tooltip"]
@@ -440,9 +477,12 @@
         "button",
         "select",
         "dropdown-menu",
-        "@nocobase/list-feedback"
+        "sheet",
+        "input-group",
+        "@nocobase/list-feedback",
+        "@nocobase/loading"
       ],
-      "docs": "Use DataTable with typed columns and getRowId. Server data must use manualPagination and manualSorting with controlled state; never sort or paginate only a fetched page locally. pagination=false renders every supplied row and leaves pagination to the caller.",
+      "docs": "Use DataTable with typed columns and getRowId. Server data must use manualPagination and manualSorting with controlled state; never sort or paginate only a fetched page locally. pagination=false renders every supplied row and leaves pagination to the caller. Pass loading={active && request.loading} for an app-owned list: explicit false suppresses unresolved loading feedback while the query is paused, while omitting loading keeps listState-driven feedback. Pass loading for the current request: with rows of the current query it is a background refresh that keeps rows and shows a delayed RefreshIndicator; a new query hides previous rows, keeps their body and pagination height, and never shows the previous page count. Pass listState from resolveListState so loading, empty, failure and permission states stay distinct. Pass loadingIdentity, the current query's stable identity such as its request path, so a new query restarts the 300ms and 10-second display thresholds without remounting the table or losing its kept geometry; the table itself is busy only while it shows retained rows. Pass renderCard for an ordinary business list so phones narrower than 768px show compact cards with the same states, selection and pagination. Pass DataTableSearch (value, onSearch, label) as search, with no separate search button: it applies 300ms after typing pauses and at once on Enter, never mid-IME composition. Pass each filter as a DataTableFilter with its label in filters, with filterCount: they share one toolbar row, and on a phone the filters collapse into an icon Filters button named and badged with the count that opens a bottom sheet; on desktop each filter sits in a compact slot of its own. Pass a result count as summary instead of a row above the table: it ends the toolbar row on desktop and sits above the pagination on a phone. Pass a translated getColumnLabel so phone cards get the icon Sort menu on that row by themselves; do not render another DataTableSortMenu in the toolbar. Each card shows the cell of the actions column (actionsColumnId, 'actions' by default): place renderCard's card.actions in the card's layout, or the table puts it in the card's top-right corner; pass actionsColumnId={null} only for a list whose rows and cards deliberately offer no actions. Spread useTableUrlState into DataTable so its sortableColumns limit header and menu sorting to the URL's sortColumns. Pass filtered with onClearFilters so Clear filters stays on the toolbar row while filtered results show, and give the select column's header checkbox its own aria-label: the visible \"Select all on this page\" text above the cards is a tap target hidden from assistive technology. Keep the selection column's id as select (or pass selectionColumnId) so its select-all header stays above the cards with a visible label.",
       "files": [
         {
           "path": "data-table/column-header.tsx",
@@ -455,6 +495,11 @@
           "target": "client/components/data-table/data-table.tsx"
         },
         {
+          "path": "data-table/filters.tsx",
+          "type": "registry:component",
+          "target": "client/components/data-table/filters.tsx"
+        },
+        {
           "path": "data-table/index.ts",
           "type": "registry:component",
           "target": "client/components/data-table/index.ts"
@@ -463,6 +508,16 @@
           "path": "data-table/pagination.tsx",
           "type": "registry:component",
           "target": "client/components/data-table/pagination.tsx"
+        },
+        {
+          "path": "data-table/search.tsx",
+          "type": "registry:component",
+          "target": "client/components/data-table/search.tsx"
+        },
+        {
+          "path": "data-table/sort-menu.tsx",
+          "type": "registry:component",
+          "target": "client/components/data-table/sort-menu.tsx"
         },
         {
           "path": "data-table/view-options.tsx",
@@ -517,7 +572,7 @@
         "group": "Forms",
         "iframeHeight": 560
       },
-      "docs": "Show mapped reasons only beside fields/groups, with automatic reveal/focus and no top summary or navigation list. Unmapped failures or unavailable focus targets keep a safe accessible form message. Use submitted names or data-field-path; return promises or pass caught errors via error. RHF consumers pass submitting and validationErrors. Register persistent FormFeedback descriptors for unmounted regions and stable rows. Add formFeedback.field, invalid, failed, network and denied to application translations; device-approval includes them in its locales. Reconcile copied source as well as the runtime when upgrading. Publication is gated by check-form-feedback-release.mjs: the declared app-client version floor must be obtainable and export the form APIs in JavaScript and declarations. Release the runtime and raise this item's floor before publishing the registry. Existing controlled fields expose trusted errors through aria-errormessage or explicitly associated data-slot=field-error / data-feedback-field-error nodes."
+      "docs": "Show mapped reasons only beside fields/groups, with automatic reveal/focus and no top summary or navigation list. Unmapped failures or unavailable focus targets keep a safe accessible form message. Use submitted names or data-field-path; return promises or pass caught errors via error. RHF consumers pass submitting and validationErrors. Register persistent FormFeedback descriptors for unmounted regions and stable rows. Add formFeedback.field, invalid, failed, network and denied to application translations; device-approval includes them in its locales. Reconcile copied source as well as the runtime when upgrading. Publication is gated by check-form-feedback-release.mjs: the declared app-client version floor must be obtainable and export the form APIs in JavaScript and declarations. Release the runtime and raise this item's floor before publishing the registry. Existing controlled fields expose trusted errors through aria-errormessage or explicitly associated data-slot=field-error / data-feedback-field-error nodes. Inside a route overlay, pass values={form.getValues} and savedValues so the overlay asks before discarding unsaved values, including a restored draft and fields without input events."
     },
     {
       "name": "list-feedback",
@@ -525,18 +580,117 @@
       "title": "List feedback",
       "description": "Accessible list loading, empty, filtered, permission and request feedback for tables and cards.",
       "dependencies": [
-        "@nocobase/app-client@^4.0.0-beta.4",
+        "@nocobase/app-client@^4.0.0-beta.9",
         "lucide-react@^0.487.0",
         "@nocobase/i18n@^1.0.0-beta.4",
         "react-router@^7.0.2"
       ],
-      "registryDependencies": ["button", "alert", "empty"],
-      "docs": "Pass resolveListState from @nocobase/app-client. ListFeedback renders each built-in state as one matching icon and one short line; render ListFeedbackActions with the existing retry, clear and sign-in controls in the host toolbar. Merge listFeedback translations listed in the components README. Keep the standard create action in the permission-gated page header, including for empty collections; reserve empty and emptyAction for intentional business-specific empty content.",
+      "registryDependencies": [
+        "button",
+        "alert",
+        "empty",
+        "@nocobase/loading",
+        "@nocobase/pending-button"
+      ],
+      "docs": "Pass resolveListState from @nocobase/app-client. ListFeedback renders loading through @nocobase/loading, keeping the body's footprint at once and showing the indicator and one status after 300ms, and every other built-in state as one matching icon and one short line; render ListFeedbackActions with the existing retry, clear and sign-in controls in the host toolbar; pass filtered while the host's search or filters are applied so Clear filters also shows with results. Merge listFeedback translations listed in the components README. Keep the standard create action in the permission-gated page header, including for empty collections; reserve empty and emptyAction for intentional business-specific empty content. Retry uses PendingButton, so the host passes the real retry request as busy. Pass identity, the current query's stable identity, so consecutive queries each get their own display delay.",
       "files": [
         {
           "path": "list-feedback.tsx",
           "type": "registry:component",
           "target": "client/components/list-feedback.tsx"
+        }
+      ]
+    },
+    {
+      "name": "loading",
+      "type": "registry:component",
+      "title": "Loading",
+      "description": "Region-owned loading feedback with delayed display and long-wait guidance.",
+      "categories": ["feedback"],
+      "meta": {
+        "group": "Feedback"
+      },
+      "dependencies": [
+        "@nocobase/app-client@^4.0.0-beta.9",
+        "@nocobase/i18n@^2.0.0-beta.1",
+        "cn@^0.4.0"
+      ],
+      "registryDependencies": [],
+      "docs": "Use real pending/submitting state. Feedback appears after 300ms, long-wait guidance after 10s, and clears immediately. Add pendingFeedback.working, pendingFeedback.longWait and status.loading to application translations. Preserve useSubmission protection; pending is recoverable state, not busy. Publish the runtime exporting usePendingFeedback before Registry publication. RefreshIndicator marks a background refresh of content that still belongs to the current query and permission scope; render it inside the positioned element owning that content and add status.refreshing to translations.",
+      "files": [
+        {
+          "path": "loading.tsx",
+          "type": "registry:component",
+          "target": "client/components/loading.tsx"
+        },
+        {
+          "path": "brand-loading-mark.tsx",
+          "type": "registry:component",
+          "target": "client/components/brand-loading-mark.tsx"
+        },
+        {
+          "path": "brand-mark-geometry.ts",
+          "type": "registry:component",
+          "target": "client/components/brand-mark-geometry.ts"
+        }
+      ]
+    },
+    {
+      "name": "pending-button",
+      "type": "registry:component",
+      "title": "Pending Button",
+      "description": "A stable-size native action button with immediate busy semantics and delayed feedback.",
+      "categories": ["feedback"],
+      "meta": {
+        "group": "Feedback"
+      },
+      "dependencies": [
+        "@nocobase/app-client@^4.0.0-beta.9",
+        "@nocobase/i18n@^2.0.0-beta.1",
+        "cn@^0.4.0",
+        "@base-ui/react@^1.6.0"
+      ],
+      "registryDependencies": ["button"],
+      "docs": "Use real pending/submitting state. Feedback appears after 300ms, long-wait guidance after 10s, and clears immediately. Add pendingFeedback.working, pendingFeedback.longWait and status.loading to application translations. Preserve useSubmission protection; pending is recoverable state, not busy. Publish the runtime exporting usePendingFeedback before Registry publication.",
+      "files": [
+        {
+          "path": "pending-button.tsx",
+          "type": "registry:component",
+          "target": "client/components/pending-button.tsx"
+        },
+        {
+          "path": "brand-loading-mark.tsx",
+          "type": "registry:component",
+          "target": "client/components/brand-loading-mark.tsx"
+        },
+        {
+          "path": "brand-mark-geometry.ts",
+          "type": "registry:component",
+          "target": "client/components/brand-mark-geometry.ts"
+        }
+      ]
+    },
+    {
+      "name": "task-progress",
+      "type": "registry:component",
+      "title": "Task Progress",
+      "description": "One long-running task record: real determinate progress, honest indeterminate waiting, failure, result and background continuation.",
+      "categories": ["feedback"],
+      "meta": {
+        "group": "Feedback"
+      },
+      "dependencies": [
+        "@nocobase/i18n@^2.0.0-beta.1",
+        "cn@^0.4.0",
+        "@base-ui/react@^1.6.0"
+      ],
+      "registryDependencies": [],
+      "docs": "Render one task record from the server's own job or task state; do not create a client-side task. Pass processed and total, or percent, only when the task really reports them; otherwise the bar is indeterminate and shows no percentage. Status changes are announced once, percentage updates are not. Set continuesInBackground when the task survives leaving the page. Put the result location (a download action or link) and failure recovery in message and actions, and offer cancel only when the server can really cancel. Add the taskProgress translations listed in the components README.",
+      "files": [
+        {
+          "path": "task-progress.tsx",
+          "type": "registry:component",
+          "target": "client/components/task-progress.tsx"
         }
       ]
     }

@@ -113,17 +113,24 @@ describe('standalone proxy', () => {
     expect(redirect.headers.get('location')).toBe('/crm/login');
   });
 
-  it('resolves a new target per request and distinguishes unavailable and failed upstreams', async () => {
+  it('returns retryable responses across unavailable targets and connection failures, then recovers', async () => {
     let target: URL | null = null;
     const { url } = await startProxy(() => target);
-    expect((await fetch(`${url}/crm/`)).status).toBe(503);
+    const unavailable = await fetch(`${url}/crm/`);
+    expect(unavailable.status).toBe(503);
+    expect(unavailable.headers.get('retry-after')).toBe('2');
+    expect(unavailable.headers.get('cache-control')).toBe('no-store');
     target = await listen(createServer((_req, res) => res.end('first')));
     expect(await (await fetch(`${url}/crm/`)).text()).toBe('first');
     const second = createServer((_req, res) => res.end('second'));
     target = await listen(second);
     expect(await (await fetch(`${url}/crm/`)).text()).toBe('second');
     await new Promise<void>((resolve) => second.close(() => resolve()));
-    expect((await fetch(`${url}/crm/`)).status).toBe(502);
+    const failed = await fetch(`${url}/crm/`);
+    expect(failed.status).toBe(503);
+    expect(failed.headers.get('retry-after')).toBe('2');
+    target = await listen(createServer((_req, res) => res.end('recovered')));
+    expect(await (await fetch(`${url}/crm/`)).text()).toBe('recovered');
     expect(await (await fetch(`${url}/hub/status`)).text()).toBe('hub');
   });
 
@@ -263,14 +270,18 @@ describe('standalone proxy', () => {
     expect(server.listening).toBe(false);
   });
 
-  it('returns 503 and 502 for WebSocket targets without falling through to the local handler', async () => {
+  it('returns retryable 503 for unavailable WebSocket targets without falling through to the local handler', async () => {
     let target: URL | null = null;
     const { url } = await startProxy(() => target);
-    expect((await upgrade(url, '/crm/ws', url)).status).toBe(503);
+    const unavailable = await upgrade(url, '/crm/ws', url);
+    expect(unavailable.status).toBe(503);
+    expect(unavailable.headers['retry-after']).toBe('2');
     const upstream = createServer();
     target = await listen(upstream);
     await new Promise<void>((resolve) => upstream.close(() => resolve()));
-    expect((await upgrade(url, '/crm/ws', url)).status).toBe(502);
+    const failed = await upgrade(url, '/crm/ws', url);
+    expect(failed.status).toBe(503);
+    expect(failed.headers['retry-after']).toBe('2');
   });
 });
 
@@ -345,6 +356,7 @@ function upgrade(
   browserOrigin: string,
 ): Promise<{
   status: number;
+  headers: IncomingMessage['headers'];
   socket?: import('node:stream').Duplex;
   protocol?: string;
 }> {
@@ -364,11 +376,12 @@ function upgrade(
     req.once('error', reject);
     req.once('response', (res) => {
       res.resume();
-      resolve({ status: res.statusCode! });
+      resolve({ status: res.statusCode!, headers: res.headers });
     });
     req.once('upgrade', (res, socket) =>
       resolve({
         status: res.statusCode!,
+        headers: res.headers,
         socket,
         protocol: res.headers['sec-websocket-protocol'] as string,
       }),

@@ -1,4 +1,5 @@
 import {
+  USER_LOCALE_PREFERENCE_KEY,
   userManagementServiceToken,
   userPreferencesServiceToken,
 } from '@nocobase/app-plugin-users/server';
@@ -10,7 +11,7 @@ import { Visitor } from '../helpers/preference-visitor.js';
 import { createStandaloneServer } from '../helpers/minimal-app.js';
 
 const defaults = {
-  locale: 'en-US',
+  'i18n.locale': 'en-US',
   'theme.mode': 'system',
   'theme.preset': 'compact',
 };
@@ -37,13 +38,13 @@ describe('demo visitor presentation preferences', () => {
       userPreferencesServiceToken,
     );
     await service.setMany(id, {
-      locale: 'zh-CN',
+      'i18n.locale': 'zh-CN',
       'theme.mode': 'dark',
       'theme.preset': 'old',
     });
     expect(await first.preferences()).toMatchObject(defaults);
     const changed = {
-      locale: 'zh-CN',
+      'i18n.locale': 'zh-CN',
       'theme.mode': 'dark',
       'theme.preset': 'blue',
     };
@@ -62,7 +63,7 @@ describe('demo visitor presentation preferences', () => {
     expect(await first.preferences()).toMatchObject(changed);
     expect(await second.preferences()).toMatchObject(defaults);
     expect(await service.list(id)).toMatchObject({
-      locale: 'zh-CN',
+      'i18n.locale': 'zh-CN',
       'theme.mode': 'dark',
       'theme.preset': 'old',
     });
@@ -75,7 +76,7 @@ describe('demo visitor presentation preferences', () => {
     const visitor = new Visitor(app);
     await visitor.signIn();
     const changed = {
-      locale: 'zh-CN',
+      'i18n.locale': 'zh-CN',
       'theme.mode': 'dark',
       'theme.preset': 'blue',
     };
@@ -100,11 +101,12 @@ describe('demo visitor presentation preferences', () => {
     ).toBe(200);
     expect(await visitor.preferences()).toMatchObject(changed);
     expect(
-      (await visitor.request('/users/me/preferences/locale', 'DELETE')).status,
+      (await visitor.request('/users/me/preferences/i18n.locale', 'DELETE'))
+        .status,
     ).toBe(204);
     expect(await visitor.preferences()).toMatchObject({
       ...changed,
-      locale: defaults.locale,
+      'i18n.locale': defaults['i18n.locale'],
     });
     expect(
       await app.application.container
@@ -117,12 +119,12 @@ describe('demo visitor presentation preferences', () => {
     const visitor = new Visitor(app);
     const id = await visitor.signIn();
     const response = await visitor.request('/users/me/preferences', 'PATCH', {
-      locale: 'zh-CN',
+      'i18n.locale': 'zh-CN',
       'inbox.sound': false,
     });
     expect(response.status).toBe(200);
     expect((await response.json()).data).toMatchObject({
-      locale: 'zh-CN',
+      'i18n.locale': 'zh-CN',
       'inbox.sound': false,
     });
     expect(
@@ -131,17 +133,17 @@ describe('demo visitor presentation preferences', () => {
         .get(id, 'inbox.sound'),
     ).toBe(false);
     const invalid = await visitor.request('/users/me/preferences', 'PATCH', {
-      locale: 'en-US',
+      'i18n.locale': 'en-US',
       'INVALID KEY': true,
     });
     expect(invalid.status).toBe(400);
     expect(invalid.headers.getSetCookie()).toEqual([]);
-    expect((await visitor.preferences()).locale).toBe('zh-CN');
+    expect((await visitor.preferences())['i18n.locale']).toBe('zh-CN');
     const invalidChoice = await visitor.request(
       '/users/me/preferences',
       'PATCH',
       {
-        locale: false,
+        'i18n.locale': false,
         'inbox.sound': true,
       },
     );
@@ -174,14 +176,14 @@ describe('demo visitor presentation preferences', () => {
     expect((await visitor.request('/users/me/preferences')).status).toBe(401);
     expect(
       (
-        await visitor.request('/users/me/preferences/locale', 'PUT', {
+        await visitor.request('/users/me/preferences/i18n.locale', 'PUT', {
           value: 'zh-CN',
         })
       ).status,
     ).toBe(401);
     await visitor.signIn();
     const crossSite = await visitor.request(
-      '/users/me/preferences/locale',
+      '/users/me/preferences/i18n.locale',
       'PUT',
       { value: 'zh-CN' },
       'https://untrusted.example',
@@ -191,7 +193,7 @@ describe('demo visitor presentation preferences', () => {
     for (const value of [null, {}, '', 'x'.repeat(101), '<script>']) {
       expect(
         (
-          await visitor.request('/users/me/preferences/locale', 'PUT', {
+          await visitor.request('/users/me/preferences/i18n.locale', 'PUT', {
             value,
           })
         ).status,
@@ -223,7 +225,7 @@ it.each([false, undefined])(
         .user.id;
       expect(await visitor.preferences()).toEqual({});
       const choices = {
-        locale: 'zh-CN',
+        'i18n.locale': 'zh-CN',
         'theme.mode': 'dark',
         'theme.preset': { custom: true },
       };
@@ -247,7 +249,7 @@ it.each([false, undefined])(
       ).toBe(200);
       expect(await other.preferences()).toEqual(choices);
 
-      const url = `http://localhost${app.publicBasePath}/api/users/me/preferences/locale`;
+      const url = `http://localhost${app.publicBasePath}/api/users/me/preferences/i18n.locale`;
       for (const origin of [undefined, 'https://untrusted.example']) {
         const denied = await app.request(url, {
           method: 'PUT',
@@ -309,7 +311,7 @@ it.each(['en-US', 'zh-CN'])(
       expect(response.status).toBe(200);
       expect(response.headers.get('cache-control')).toBe('private, no-store');
       expect((await response.json()).data).toEqual({
-        locale,
+        'i18n.locale': locale,
         'theme.mode': 'light',
         'theme.preset': 'comfortable',
       });
@@ -324,15 +326,27 @@ it.each(['en-US', 'zh-CN'])(
       expect(issued).toContain('; Secure');
       expect(issued).toContain('; Partitioned');
       expect(issued).not.toMatch(/Max-Age|Expires/);
+      // Use the key the Users language switcher saves, not a literal: if Users renames it, this keeps testing the key
+      // its switcher actually writes. Outside a cookie it would reach the guarded account storage and be refused.
+      const language = await call(
+        `/users/me/preferences/${USER_LOCALE_PREFERENCE_KEY}`,
+        'PUT',
+        { value: 'zh-CN' },
+      );
+      expect(language.status).toBe(200);
+      expect(language.headers.getSetCookie()).toHaveLength(1);
+      expect(language.headers.getSetCookie()[0]).toMatch(
+        /^nocobase_demo_.+=zh-CN;/,
+      );
       const denied = await call('/users/me/preferences', 'PATCH', {
-        locale: 'zh-CN',
+        'i18n.locale': 'zh-CN',
         'inbox.sound': true,
       });
       expect(denied.status).toBe(400);
       expect((await denied.json()).error.reason).toBe('DEMO_READ_ONLY');
       expect(denied.headers.getSetCookie()).toEqual([]);
       const oversize = await call('/users/me/preferences', 'PATCH', {
-        locale: 'x'.repeat(2048),
+        'i18n.locale': 'x'.repeat(2048),
       });
       expect(oversize.status).toBe(413);
       expect(oversize.headers.getSetCookie()).toEqual([]);

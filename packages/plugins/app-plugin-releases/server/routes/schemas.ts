@@ -32,6 +32,7 @@ import {
   type RegistryCheckResult,
   type RegistryRecord,
   type ReleaseView,
+  type SharedHostView,
   type UploadTicketView,
   type CreateAppInput,
   type CreateDeploymentRequestInput,
@@ -45,7 +46,11 @@ import {
   type UpdateAppInput,
   type UpdateConfigInput,
 } from '../../shared/releases.js';
-import { ENVIRONMENT_PURPOSES } from '../../shared/releases.js';
+import {
+  ENVIRONMENT_PURPOSES,
+  RUN_STATES,
+  type RunState,
+} from '../../shared/releases.js';
 import type { Caller } from '../access/caller.js';
 
 const id = z.string().min(1);
@@ -91,13 +96,32 @@ const labelFilter = z
     value === undefined ? [] : Array.isArray(value) ? value : [value],
   );
 
+/** A repeatable query value: one arrives as a string, several as an array. */
+const repeated = <T extends z.ZodType<string>>(item: T) =>
+  z
+    .union([item, z.array(item)])
+    .optional()
+    .transform((value): z.output<T>[] =>
+      value === undefined ? [] : Array.isArray(value) ? value : [value],
+    );
+
 export const ListAppsQuery: z.ZodType<
-  Paging & { q?: string; environmentId?: string; label: string[] }
+  Paging & {
+    q?: string;
+    environmentId: string[];
+    runtimeState: RunState[];
+    label: string[];
+  }
 > = z.object({
   page: page.describe('The page number, starting at 1.'),
   pageSize: pageSize.describe('The maximum number of records to return.'),
   q: z.string().trim().max(100).optional().describe('Text to search for.'),
-  environmentId: z.string().optional().describe('The environment identifier.'),
+  environmentId: repeated(z.string().min(1)).describe(
+    'An environment identifier; repeat for Apps of any of them.',
+  ),
+  runtimeState: repeated(z.enum(RUN_STATES)).describe(
+    'A runtime state (`running`, `starting`, `pending`, `waiting`, `stopped`, `failed`, `unknown`); repeat for Apps in any of them. Applied before the page is cut.',
+  ),
   label: labelFilter.describe('A label for this resource.'),
 });
 
@@ -543,6 +567,16 @@ export const UploadHeaders: z.ZodType<{
 
 const dateTime = z.string().meta({ format: 'date-time' });
 const nullableDateTime = dateTime.nullable();
+const hostHoldReason = z.enum([
+  'requests',
+  'connections',
+  'starting',
+  'operation',
+  'resident',
+  'busy',
+  'recent',
+]);
+const hostWaitReason = z.enum(['capacity', 'memory', 'recycle']);
 const outputLabels = z
   .record(z.string(), z.string())
   .meta({ ref: 'ReleasesLabels', description: 'Opaque key/value labels.' });
@@ -740,6 +774,41 @@ const appView = z
   })
   .meta({ ref: 'ReleasesAppView' });
 
+const appHostFields = {
+  id: z.string().meta({
+    description: 'The runtime, the same for every environment and App on it.',
+  }),
+  memory: z
+    .object({
+      heapUsed: z.number(),
+      heapLimit: z.number(),
+      rss: z.number(),
+      available: z.number(),
+    })
+    .nullable()
+    .meta({
+      description:
+        'The shared process’s memory in bytes, never divided among its Apps.',
+    }),
+  recycling: z.enum(['pending', 'restarting']).nullable(),
+  deployed: z.number().int().nonnegative(),
+  running: z.number().int().nonnegative().meta({
+    description:
+      'Apps running or starting on it; a failed App holds nothing and is not counted.',
+  }),
+  maxActive: z.number().int().positive().nullable().meta({
+    description:
+      'How many Apps may run or start on it at once; null when nothing limits it.',
+  }),
+  failedEnvironments: z.array(
+    z.object({
+      id: z.string(),
+      name: z.string().nullable(),
+      error: z.string().nullable(),
+    }),
+  ),
+};
+
 export const ReleasesAppSchema: z.ZodType<AppSummary> = z
   .object({
     app: appView,
@@ -764,11 +833,30 @@ export const ReleasesAppSchema: z.ZodType<AppSummary> = z
       startedAt: nullableDateTime,
       error: z.string().nullable(),
       lastAccessedAt: nullableDateTime,
+      holds: z.array(hostHoldReason).optional().meta({
+        description:
+          'Why a running or starting App holds a slot on its shared runtime.',
+      }),
+      waiting: hostWaitReason.optional().meta({
+        description:
+          'Why its last start was refused, for a minute or until it starts.',
+      }),
+      unrestored: z.boolean().optional().meta({
+        description:
+          'Its shared runtime restarted and could not put this App back; retried in the background.',
+      }),
     }),
     url: z.string().nullable(),
     currentVersion: z.string().nullable(),
     hasReleases: z.boolean(),
     hasPendingDeployment: z.boolean(),
+    pendingDeployment: z
+      .object({
+        status: z.enum(['queued', 'deploying', 'cancelling']),
+        queueAhead: z.number().int().nonnegative().nullable(),
+      })
+      .nullable()
+      .optional(),
     allowed: z.array(z.enum(BUSINESS_ACTIONS['rel.apps'])).optional().meta({
       description:
         'What the caller may do on this App; only the single-App read answers it.',
@@ -783,6 +871,10 @@ export const ReleasesAppSchema: z.ZodType<AppSummary> = z
         description:
           'The current release’s required variables nothing supplies, and whether a value changed since the running deployment; only the single-App read answers it.',
       }),
+    host: z.object(appHostFields).nullable().optional().meta({
+      description:
+        'The runtime the App shares with other Apps, every environment on it included; only the single-App read answers it.',
+    }),
   })
   .meta({ ref: 'ReleasesApp' });
 
@@ -805,6 +897,26 @@ export const ReleasesConfigTemplateSchema: z.ZodType<{
     .nullable()
     .meta({ description: 'The release’s configuration template, if any.' }),
 });
+
+export const ReleasesSharedHostSchema: z.ZodType<SharedHostView> = z
+  .object({
+    ...appHostFields,
+    environments: z
+      .array(
+        z.object({
+          id: z.string(),
+          name: z.string(),
+          running: z.number().int().meta({
+            description:
+              'How many of the environment’s Apps run or start on this runtime (part of `running`).',
+          }),
+        }),
+      )
+      .meta({
+        description: 'The environments with Apps on this runtime.',
+      }),
+  })
+  .meta({ ref: 'ReleasesSharedHost' });
 
 const releaseArtifact = z.discriminatedUnion('kind', [
   z.object({
@@ -877,6 +989,8 @@ export const ReleasesUploadTicketSchema: z.ZodType<UploadTicketView> = z.object(
 
 const deploymentPhase = z.enum([
   'queued',
+  'cancelling',
+  'cancelled',
   'resolving',
   'verifying',
   'extracting',
@@ -896,7 +1010,16 @@ export const ReleasesDeploymentSchema: z.ZodType<DeploymentView> = z
     kind: z.enum(['deploy', 'rollback']),
     rollbackTargetDeploymentId: z.string().nullable(),
     previousDeploymentId: z.string().nullable(),
-    status: z.enum(['queued', 'deploying', 'succeeded', 'failed']),
+    status: z.enum([
+      'queued',
+      'deploying',
+      'cancelling',
+      'cancelled',
+      'succeeded',
+      'failed',
+    ]),
+    queueAhead: z.number().int().nonnegative().nullable().optional(),
+    cancellable: z.boolean().optional(),
     phase: deploymentPhase,
     configMode: z.enum(['file', 'external']),
     error: z.string().nullable(),

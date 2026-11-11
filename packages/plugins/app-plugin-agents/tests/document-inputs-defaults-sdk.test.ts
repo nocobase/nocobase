@@ -1,3 +1,4 @@
+import { DEFAULT_FILE_UPLOAD_LIMIT } from '@nocobase/app-plugin-file/server';
 import { readFileSync } from 'node:fs';
 import type { FileInputsConfig } from '../server/online/files/types.js';
 import { afterEach, expect, it, vi } from 'vitest';
@@ -27,6 +28,12 @@ async function prepare(
     hasText: true,
   }));
   const inputs = new NativeFileInputs({
+    files: {
+      uploadLimit: DEFAULT_FILE_UPLOAD_LIMIT,
+      content: async () => {
+        throw new Error('No stored files in this fixture.');
+      },
+    },
     connectionFor: async () => ({
       provider,
       baseUrl: 'https://fixture.invalid/v1',

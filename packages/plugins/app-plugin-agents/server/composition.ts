@@ -22,6 +22,10 @@ import type { FileInputsConfig } from './online/files/types.js';
  * brings the
  * `conversation` subject.
  */
+import {
+  DEFAULT_FILE_UPLOAD_LIMIT,
+  type DriveUploadLimit,
+} from '@nocobase/app-plugin-file/server';
 import type { RunApp } from '@nocobase/agent-protocol';
 import { createRunDataPurge } from './core/runs/run-data-purge.js';
 import {
@@ -121,6 +125,8 @@ import {
   createClaimEligibility,
   createClaimService,
   createGitCredentialService,
+  createNpmCredentialRegistry,
+  createNpmCredentialService,
   createRepoAccessRegistry,
   createRunMountRegistry,
   createRunnerReports,
@@ -138,6 +144,8 @@ import {
   type ClaimEligibility,
   type ClaimService,
   type GitCredentialService,
+  type NpmCredentialRegistry,
+  type NpmCredentialService,
   type RunnerReports,
   type RepoAccessRegistry,
   type RunMountRegistry,
@@ -173,6 +181,8 @@ export interface AgentsDeps {
   /** The application CLI a run exposes to its agent (`agents.cli`); named after `app` when left out (`resolveAgentCli`). */
   readonly cli?: Partial<AgentCli>;
   readonly clock?: Clock;
+  /** How a runner's claim waits its turn for a run (`claimPace`); real timers when left out. */
+  readonly claimPause?: (ms: number, signal?: AbortSignal) => Promise<void>;
   /**
    * Where the contents of skills' files are stored: the application's drive, asked on each use. Memory when absent,
    * which only tests and a throwaway application should rely on.
@@ -183,6 +193,7 @@ export interface AgentsDeps {
    * it an upload answers 503 `NOT_IMPLEMENTED`.
    */
   readonly chatFiles?: ChatFileStorage;
+  readonly limitForDisk?: (disk?: string) => DriveUploadLimit;
   /** The application's public base path (`/app`, or empty), for the URLs of files sent in chat. */
   readonly basePath?: () => string;
   readonly onError?: (message: string, error: unknown) => void;
@@ -250,6 +261,8 @@ export interface Agents {
   readonly reports: RunnerReports;
   /** Repository credentials a runner asks for while it holds a run (`RepoAccessProvider.issue`). */
   readonly gitCredentials: GitCredentialService;
+  /** The private npm registry's token a runner asks for while it holds a run (`NpmCredentialProvider.issue`). */
+  readonly npmCredentials: NpmCredentialService;
   /** Marks silent runners offline, then takes back and ends the runs and jobs nobody will finish. */
   readonly sweeper: RunnerSweeper;
   readonly purgeRunData: () => Promise<number>;
@@ -269,6 +282,8 @@ export interface Agents {
   readonly mounts: RunMountRegistry;
   /** Who a run's commits name and the short-lived credentials its checkouts push with, as the application gives them. */
   readonly repoAccess: RepoAccessRegistry;
+  /** Where the token of NocoBase's private npm registry comes from, as the application gives it. */
+  readonly npmCredentialProviders: NpmCredentialRegistry;
   /** Names of people, from the directory the application plugs in. */
   readonly people: People;
   /**
@@ -438,6 +453,7 @@ export function createAgents(deps: AgentsDeps): Agents {
   const sections = createBriefSectionRegistry();
   const mounts = createRunMountRegistry();
   const repoAccess = createRepoAccessRegistry();
+  const npmCredentialProviders = createNpmCredentialRegistry();
   // The secrets claims hand out, so what runners report is redacted of them before it is stored.
   const secrets = createSecretMemory();
   const selectionPolicies = createModelSelectionPolicies();
@@ -449,8 +465,8 @@ export function createAgents(deps: AgentsDeps): Agents {
     mounts,
     repoAccess,
     dist,
-    slotsUsed: (conn, runnerId) => slots.used(conn, runnerId),
     slotsHeld: (conn, runnerId) => slots.held(conn, runnerId),
+    ...(deps.claimPause ? { pause: deps.claimPause } : {}),
     ...transitions,
     tx,
     ids,
@@ -485,6 +501,14 @@ export function createAgents(deps: AgentsDeps): Agents {
     secrets,
     onError,
   });
+  const npmCredentials = createNpmCredentialService({
+    tx,
+    clock,
+    reports,
+    providers: npmCredentialProviders,
+    secrets,
+    onError,
+  });
   const sweeper = createRunnerSweeper({
     clock,
     runners,
@@ -512,6 +536,7 @@ export function createAgents(deps: AgentsDeps): Agents {
   });
   const basePath = deps.basePath ?? (() => '');
   const chatAttachments = createChatAttachments({
+    limitForDisk: deps.limitForDisk ?? (() => DEFAULT_FILE_UPLOAD_LIMIT),
     tx,
     basePath,
     now: () => clock.now(),
@@ -535,6 +560,10 @@ export function createAgents(deps: AgentsDeps): Agents {
     people,
     settings: chat,
     nativeAvailable,
+    nativeHistory: async (values) =>
+      sessions.native.messages.public(
+        await sessions.native.messages.validate(values),
+      ),
     nativeNotice: (unit, row, id, parts) =>
       sessions.native.deliver(row.userId, row.id, id, parts, { unit, row }),
     runnerBusy: (id) => runnerOnlineAgent.busy(id),
@@ -689,6 +718,7 @@ export function createAgents(deps: AgentsDeps): Agents {
     selectionPolicies,
     reports,
     gitCredentials,
+    npmCredentials,
     sweeper,
     variables,
     skills,
@@ -703,6 +733,7 @@ export function createAgents(deps: AgentsDeps): Agents {
     }),
     mounts,
     repoAccess,
+    npmCredentialProviders,
     people,
     scopes,
     subjects,

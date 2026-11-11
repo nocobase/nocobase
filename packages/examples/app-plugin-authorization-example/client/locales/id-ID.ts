@@ -161,7 +161,7 @@ const idID: LocaleResource<typeof enUS> = {
     record: 'Rekaman',
     notes: 'Catatan',
     save: 'Simpan',
-    refresh: 'Segarkan',
+    retryRead: 'Coba lagi',
     loading: 'Memuat…',
     empty: 'Tidak ada catatan yang dapat diakses',
     readOnly: 'Hanya baca',

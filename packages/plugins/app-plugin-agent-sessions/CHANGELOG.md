@@ -1,5 +1,85 @@
 # @nocobase/app-plugin-agent-sessions
 
+## 1.0.0-beta.20
+
+### Minor Changes
+
+- a2a6385: Add Russian (ru-RU) and Korean (ko-KR) to the plugins Studio uses, and correct terminology in their existing translations: an issue is a task (it was translated as a magazine issue or a problem in several languages), a runtime is an execution environment, Agent and My Agent stay consistent, and an issue's executor and the backlog status read correctly. The remaining English strings in the agents plugin's translations are translated. Calendars follow Russian and Korean, and a browser asking for Traditional Chinese (zh-HK, zh-Hant-TW) now lands on zh-TW instead of zh-CN.
+
+### Patch Changes
+
+- Updated dependencies [7508a76]
+- Updated dependencies [fb4659d]
+- Updated dependencies [c635b6c]
+- Updated dependencies [1cda4c3]
+- Updated dependencies [7d970d6]
+- Updated dependencies [bb1dff2]
+- Updated dependencies [a2a6385]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.20
+  - @nocobase/app-server@5.0.0-beta.2
+  - @nocobase/agent-protocol@0.1.0-beta.17
+  - @nocobase/db@1.0.0-beta.26
+  - @nocobase/app-plugin-file@1.0.0-beta.30
+  - @nocobase/i18n@2.0.0-beta.2
+  - @nocobase/app-client@4.0.0-beta.9
+
+## 1.0.0-beta.19
+
+### Patch Changes
+
+- 4f0370e: Keep agent settings available when agents return long display text or invalid choice identifiers, and show concrete discovery failures with field details.
+- Updated dependencies [4f0370e]
+- Updated dependencies [7c25f88]
+- Updated dependencies [7c25f88]
+- Updated dependencies [7c25f88]
+- Updated dependencies [215795d]
+  - @nocobase/acp-bridge@1.0.0-beta.6
+  - @nocobase/app-client@4.0.0-beta.9
+  - @nocobase/app-plugin-authentication@2.0.0-beta.19
+  - @nocobase/app-plugin-file@1.0.0-beta.29
+
+## 1.0.0-beta.18
+
+### Patch Changes
+
+- f27c1d9: Give a linked task's title the whole first line in a session's details, with its key and status on the line below.
+- 2bef509: Show a session's usage in its details the same way as a runner conversation: a thin context bar, then one row each for input, cached and output tokens and the cost.
+- 49daa11: Explain how to recover agent settings discovery by updating the CLI and restarting the background connection.
+- e800687: Remove the project name from session list rows while keeping project filtering available.
+- Updated dependencies [bfddb40]
+- Updated dependencies [78bdca8]
+- Updated dependencies [9998ac4]
+- Updated dependencies [87f1ea5]
+- Updated dependencies [6507d01]
+  - @nocobase/acp-bridge@1.0.0-beta.5
+  - @nocobase/app-plugin-authentication@2.0.0-beta.19
+  - @nocobase/app-client@4.0.0-beta.8
+  - @nocobase/app-server@5.0.0-beta.1
+  - @nocobase/app-plugin-file@1.0.0-beta.29
+
+## 1.0.0-beta.17
+
+### Patch Changes
+
+- cf23bfe: **Breaking:** Remove the deprecated `@nocobase/app-server/mailer` entry and its `Mailer`, `mailerToken`, `createMailer`, `MailerProvider`, and notification configuration exports. Replace `MailExecutions.close(waitMs)` and `drain()` with `stop()` and `wait()`; transport `close()` now cancels supported network work and waits for its original completion without a nested timeout. Application owners must apply the outer shutdown budget. Create exclusive senders with `@nocobase/app-server/mailers` and declare notification config with `@nocobase/app-plugin-notification-providers/config`. Existing inline SMTP/Resend YAML, environment mappings, and provider/channel APIs remain supported.
+
+  Default and Examples now show `mailers.default: system` and explicitly map `MAILERS_SYSTEM_*`; the example configuration remains empty at runtime. The previous `MAILERS_TRANSACTIONAL_*` sample prefix was not published. Applications may still choose any valid mailer name and custom environment prefix.
+
+- de91b90: Allow applications to render a shared conversation header for saved and empty sessions, including panel navigation and native actions. Preserve an explicit list entry when the panel also supports a wide history column.
+
+  Dismiss page detail overlays when opening a linked record, while retaining desktop detail columns.
+
+- Updated dependencies [6cc8acf]
+- Updated dependencies [9933a9a]
+- Updated dependencies [1e018f1]
+- Updated dependencies [cf23bfe]
+- Updated dependencies [4411984]
+  - @nocobase/app-client@4.0.0-beta.7
+  - @nocobase/app-plugin-authentication@2.0.0-beta.18
+  - @nocobase/db@1.0.0-beta.25
+  - @nocobase/app-server@5.0.0-beta.0
+  - @nocobase/app-plugin-file@1.0.0-beta.29
+
 ## 1.0.0-beta.16
 
 ### Patch Changes

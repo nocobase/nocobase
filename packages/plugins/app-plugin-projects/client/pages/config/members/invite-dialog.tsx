@@ -5,7 +5,7 @@ import {
   useUnsavedChanges,
   useUnsavedChangesGuard,
 } from '@nocobase/app-client';
-import { useTranslation } from '@nocobase/i18n/client';
+import { useLocale, useTranslation } from '@nocobase/i18n/client';
 import { useQueryClient } from '@tanstack/react-query';
 import { CheckIcon, CopyIcon } from 'lucide-react';
 import { type FormEvent, type ReactElement, useEffect, useState } from 'react';
@@ -29,6 +29,13 @@ import {
   FieldLabel,
 } from '../../../components/ui/field.js';
 import { Input } from '../../../components/ui/input.js';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../../../components/ui/select.js';
 import { Spinner } from '../../../components/ui/spinner.js';
 import { Textarea } from '../../../components/ui/textarea.js';
 import { UnsavedChangesBoundary } from '../../../components/unsaved-changes.js';
@@ -110,6 +117,9 @@ function InviteForm({
   const queryClient = useQueryClient();
   const [text, setText] = useState('');
   const [projectIds, setProjectIds] = useState<string[]>([]);
+  // The email's language starts as the inviter's own and is sent only when they pick another.
+  const { locale: interfaceLocale, locales } = useLocale();
+  const [locale, setLocale] = useState(interfaceLocale);
   const [emailError, setEmailError] = useState<string>();
   const [projectError, setProjectError] = useState<string>();
   const [saving, setSaving] = useState(false);
@@ -147,7 +157,11 @@ function InviteForm({
       return;
     setSaving(true);
     try {
-      const sent = await api.invite({ emails, projectIds });
+      const sent = await api.invite({
+        emails,
+        projectIds,
+        ...(locale ? { locale } : {}),
+      });
       setResults(sent);
       notify.success(t('invitations.sent', { number: sent.length }));
       // Invitations sit under `members`; an address added to projects changes the member list too.
@@ -219,6 +233,35 @@ function InviteForm({
             <FieldDescription>{t('invitations.projectsHint')}</FieldDescription>
           )}
         </Field>
+        {locales.length > 1 ? (
+          <Field>
+            <FieldLabel htmlFor='pm-invite-language'>
+              {t('invitations.language')}
+            </FieldLabel>
+            <Select
+              items={locales.map((definition) => ({
+                value: definition.locale,
+                label: definition.label,
+              }))}
+              value={locale}
+              onValueChange={(value) => {
+                if (value) setLocale(value);
+              }}
+            >
+              <SelectTrigger id='pm-invite-language' className='w-full'>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {locales.map((definition) => (
+                  <SelectItem key={definition.locale} value={definition.locale}>
+                    {definition.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <FieldDescription>{t('invitations.languageHint')}</FieldDescription>
+          </Field>
+        ) : null}
       </FieldGroup>
       <DialogFooter className='mt-6'>
         <Button type='button' variant='outline' onClick={onCancel}>

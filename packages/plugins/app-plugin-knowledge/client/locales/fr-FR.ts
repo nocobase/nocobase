@@ -156,6 +156,15 @@ const frFR: LocaleResource<typeof enUS> = {
   },
   access: {
     businessSection: 'Connaissance',
+    settingsSection: 'Connaissance',
+    settings: {
+      indexing: {
+        title: 'Indexation des connaissances',
+        read: 'Lire',
+        configure: 'Configurer',
+        rebuild: 'Reconstruire',
+      },
+    },
     businesses: {
       knowledge: {
         title: 'Connaissance',
@@ -174,7 +183,7 @@ const frFR: LocaleResource<typeof enUS> = {
           propose: {
             title: 'Proposer des connaissances',
             description:
-              "Proposer un changement pour que quelqu'un qui puisse éditer décide ; quels agents peuvent être administrés",
+              "Proposer un changement pour que quelqu'un qui puisse éditer décide ; quels Agents peuvent être administrés",
             related: 'Proposer des connaissances (espaces qui leur sont liés)',
             relatedLabel: 'Espaces qui me concernent',
             relatedHint:
@@ -334,7 +343,7 @@ const frFR: LocaleResource<typeof enUS> = {
         parsing:
           "Le texte est en cours d'extraction ; La recherche trouve le fichier une fois qu'il est prêt.",
         ready:
-          'Son texte est extrait, donc la recherche et les agents le lisent.',
+          'Son texte est extrait, donc la recherche et les Agents le lisent.',
         failed: "Le texte n'a pas pu être extrait.",
         unsupported:
           "Le texte n'est pas extrait des fichiers de ce type ; il est stocké tel quel.",
@@ -422,7 +431,7 @@ const frFR: LocaleResource<typeof enUS> = {
       archive: 'Archiver',
       archiveTitle: 'Archives « {{title}} » ?',
       archiveDescription:
-        "Il disparaît de l'arbre et des agents. Vous pourrez le restaurer plus tard ; ses versions sont conservées.",
+        "Il disparaît de l'arbre et des Agents. Vous pourrez le restaurer plus tard ; ses versions sont conservées.",
       archivedToast: 'Archivé.',
       restore: 'Restaurer',
       restoredToast: 'Restauré.',
@@ -443,7 +452,7 @@ const frFR: LocaleResource<typeof enUS> = {
       proposing: 'Proposer des changements',
       properties: 'Propriétés',
       propertiesHint:
-        'Ce que les agents et les liens lisent à propos de ce document.',
+        'Ce que les Agents et les liens lisent à propos de ce document.',
       nothingToPreview: "Rien à prévisualiser pour l'instant.",
       reasonPlaceholder: 'Pourquoi cela devrait changer, car celui qui décide',
       submitProposal: 'Soumettre une proposition',
@@ -451,9 +460,9 @@ const frFR: LocaleResource<typeof enUS> = {
       title: 'Titre',
       slug: 'Limace',
       slugHint:
-        "Lettres minuscules, chiffres et traits d'union ; comment les agents et les liens le nomment. Laissé vide, il est constitué à partir du titre.",
+        "Lettres minuscules, chiffres et traits d'union ; comment les Agents et les liens le nomment. Laissé vide, il est constitué à partir du titre.",
       summary: 'Résumé',
-      summaryHint: "Les agents d'une seule ligne lisent dans l'index.",
+      summaryHint: "Les Agents d'une seule ligne lisent dans l'index.",
       content: 'Contenu',
       contentPlaceholder: 'Markdown',
       write: 'Écrire',

@@ -50,10 +50,13 @@ describe('normalizePluginPackageNames', () => {
     ]);
   });
 
-  it('keeps a full package name as given', () => {
-    expect(
-      normalizePluginPackageNames(['@nocobase/app-plugin-audit-log']),
-    ).toEqual(['@nocobase/app-plugin-audit-log']);
+  it.each([
+    '@nocobase/app-plugin-audit-log',
+    '@nocobase/app-portal-audit-log',
+    '@acme/app-plugin-audit-log',
+    '@acme/app-portal-audit-log',
+  ])('keeps the scoped identity %s when updating', (packageName) => {
+    expect(normalizePluginPackageNames([packageName])).toEqual([packageName]);
   });
 
   it('rejects a scoped name from another namespace', () => {

@@ -2,7 +2,7 @@
   "name": "@nocobase/app-plugin-foundation",
   "displayName": "App Foundation",
   "description": "Shows which NocoBase Core capabilities an application uses, with live evidence, for its unrestricted administrators.",
-  "version": "0.1.0-beta.12",
+  "version": "0.1.0-beta.19",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {
@@ -30,28 +30,36 @@
       "types": "./client/components/foundation-page.tsx",
       "import": "./client/components/foundation-page.tsx"
     },
+    "./capability-guide": {
+      "types": "./shared/capability-guide/index.ts",
+      "import": "./shared/capability-guide/index.ts"
+    },
     "./cli": {
       "types": "./cli/index.ts",
       "import": "./cli/index.ts"
+    },
+    "./config": {
+      "types": "./config.ts",
+      "import": "./config.ts"
     },
     "./package.json": "./package.json"
   },
   "imports": {
     "#components/*": {
       "development": "./client/components/*.js",
-      "default": "./dist/client/components/*.js"
+      "default": "./client/components/*.js"
     },
     "#hooks/*": {
       "development": "./client/hooks/*.js",
-      "default": "./dist/client/hooks/*.js"
+      "default": "./client/hooks/*.js"
     },
     "#lib/*": {
       "development": "./client/lib/*.js",
-      "default": "./dist/client/lib/*.js"
+      "default": "./client/lib/*.js"
     },
     "#extensions/*": {
       "development": "./client/extensions/*.js",
-      "default": "./dist/client/extensions/*.js"
+      "default": "./client/extensions/*.js"
     }
   },
   "files": [
@@ -83,9 +91,17 @@
         "types": "./dist/client/components/foundation-page.d.ts",
         "import": "./dist/client/components/foundation-page.js"
       },
+      "./capability-guide": {
+        "types": "./dist/shared/capability-guide/index.d.ts",
+        "import": "./dist/shared/capability-guide/index.js"
+      },
       "./cli": {
         "types": "./dist/cli/index.d.ts",
         "import": "./dist/cli/index.js"
+      },
+      "./config": {
+        "types": "./dist/config.d.ts",
+        "import": "./dist/config.js"
       },
       "./package.json": "./package.json"
     },
@@ -127,10 +143,14 @@
     "class-variance-authority": "catalog:",
     "cn": "catalog:",
     "lucide-react": "catalog:",
-    "react": "^19.0.0"
+    "react": "^19.0.0",
+    "react-router": "catalog:"
   },
   "devDependencies": {
     "@nocobase/app-plugin-api-keys": "workspace:*",
+    "@nocobase/app-plugin-database-explorer": "workspace:*",
+    "@nocobase/app-plugin-file": "workspace:*",
+    "@nocobase/app-plugin-i18n": "workspace:*",
     "@nocobase/app-plugin-mail": "workspace:*",
     "@nocobase/app-plugin-notification": "workspace:*",
     "@nocobase/app-plugin-notification-in-app": "workspace:*",
@@ -139,6 +159,7 @@
     "@nocobase/dev-config": "workspace:*",
     "@testing-library/jest-dom": "catalog:",
     "@testing-library/react": "catalog:",
+    "@testing-library/user-event": "catalog:",
     "@types/node": "catalog:",
     "@types/react": "catalog:",
     "@vitejs/plugin-react": "catalog:",
@@ -146,7 +167,6 @@
     "jsdom": "catalog:",
     "prettier": "catalog:",
     "react-dom": "catalog:",
-    "react-router": "catalog:",
     "shadcn": "catalog:",
     "tailwindcss": "catalog:",
     "tw-animate-css": "catalog:",

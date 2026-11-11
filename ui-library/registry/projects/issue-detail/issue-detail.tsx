@@ -668,7 +668,7 @@ export function IssueHeader({
       </div>
       <div className='flex flex-wrap items-center gap-x-3 gap-y-2 text-sm text-muted-foreground'>
         <span className='font-mono text-xs'>{identifier}</span>
-        <IssueStatusBadge status={status} size='sm' />
+        <IssueStatusBadge status={status} />
         {project ? (
           <Link
             href={project.href}

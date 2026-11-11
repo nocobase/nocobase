@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/app-host",
-  "version": "0.1.0-beta.18",
+  "version": "0.1.0-beta.22",
   "description": "Standalone runtime host for NocoBase apps.",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
@@ -76,6 +76,7 @@
     "pack:check": "pnpm pack --out \"$PACK_DIR/nocobase-app-host.tgz\" && pnpm exec publint . && pnpm exec attw \"$PACK_DIR/nocobase-app-host.tgz\" --profile esm-only"
   },
   "devDependencies": {
+    "@nocobase/realtime": "workspace:^",
     "@nocobase/dev-config": "workspace:*",
     "@types/node": "catalog:",
     "eslint": "catalog:",

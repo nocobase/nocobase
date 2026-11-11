@@ -1,18 +1,55 @@
-import { renderWithApp } from '@nocobase/app-testing/client';
-import { screen, waitFor, within } from '@testing-library/react';
+import { answerApi, renderWithApp } from '@nocobase/app-testing/client';
+import { apiClientToken } from '@nocobase/app-client';
+import {
+  AuthorizationClient,
+  authorizationClientToken,
+  type AuthorizationSnapshot,
+} from '@nocobase/app-plugin-authorization/client';
+import { act, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import packageMetadata from '../../package.json' with { type: 'json' };
 import enUS from '../../client/locales/en-US.js';
-import zhCN from '../../client/locales/zh-CN.js';
 import HomePage from '../../client/pages/home/index.js';
-import { CAPABILITIES } from '../../client/pages/home/capabilities.js';
+import {
+  CAPABILITY_GUIDE_PATH,
+  capabilityPath,
+  createCapabilityCatalog,
+  entryContent,
+  format,
+  guideContent,
+} from '@nocobase/app-plugin-foundation/capability-guide';
 
-function renderHome() {
+const catalog = createCapabilityCatalog(packageMetadata);
+const escape = (text: string): string =>
+  text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+const granted: AuthorizationSnapshot = {
+  unrestricted: false,
+  permissions: [
+    { resource: { type: 'page', id: 'capability-guide' }, actions: ['access'] },
+  ],
+};
+
+function renderHome(
+  permissions: () =>
+    AuthorizationSnapshot | Promise<AuthorizationSnapshot> = () => granted,
+) {
   return renderWithApp(<HomePage />, {
     namespace: packageMetadata.name,
     namespaces: { [packageMetadata.name]: enUS },
+    fetch: answerApi(async ({ path }) =>
+      path === 'authorization/permissions'
+        ? { data: await permissions() }
+        : new Response(null, { status: 404 }),
+    ),
+    services: (app) => {
+      app.container.singleton(
+        authorizationClientToken,
+        (resolver) => new AuthorizationClient(resolver.resolve(apiClientToken)),
+      );
+    },
   });
 }
 
@@ -48,79 +85,90 @@ describe('home page', () => {
     expect(screen.getByText(enUS.home.steps.describe.title)).toBeVisible();
   });
 
-  it('shows one card per built-in capability', async () => {
+  it('features capabilities from the shared guide catalog, each linking to its entry', async () => {
     await renderHome();
+    const content = guideContent('en-US');
 
-    for (const { id } of CAPABILITIES) {
-      const title =
-        enUS.home.capabilities[id as keyof typeof enUS.home.capabilities].title;
+    expect(catalog.featured.length).toBeGreaterThan(0);
+    for (const entry of catalog.featured) {
+      const title = entryContent(content, entry).title;
       expect(
-        screen.getByRole('button', { name: new RegExp(title) }),
-      ).toBeInTheDocument();
+        await screen.findByRole('link', { name: new RegExp(escape(title)) }),
+      ).toHaveAttribute('href', capabilityPath(entry.id));
     }
   });
 
-  it('opens a capability, switches prompts, and copies the edited text', async () => {
-    const user = setup();
-    const view = await renderHome();
-    const scheduler = enUS.home.capabilities.scheduler;
+  it('leads to the full catalog, counted from the dependencies this application declares', async () => {
+    await renderHome();
+    const content = guideContent('en-US');
 
-    await user.click(
-      screen.getByRole('button', { name: new RegExp(scheduler.title) }),
-    );
-    const dialog = await screen.findByRole('dialog');
-    const prompt = within(dialog).getByRole('textbox', {
-      name: enUS.home.prompt.label,
-    });
-    expect(prompt).toHaveValue(scheduler.prompts.reminder.text);
-
-    await user.click(
-      within(dialog).getByRole('tab', {
-        name: scheduler.prompts.weeklyReport.label,
+    expect(
+      await screen.findByRole('link', {
+        name: format(content.home.viewAll, { count: catalog.entries.length }),
       }),
-    );
-    expect(prompt).toHaveValue(scheduler.prompts.weeklyReport.text);
-
-    await user.clear(prompt);
-    await user.type(prompt, 'Every Friday');
-    await user.click(
-      within(dialog).getByRole('button', { name: enUS.home.prompt.copy }),
-    );
-
-    expect(writeText).toHaveBeenCalledWith('Every Friday');
-    expect(view.toasts()).toEqual([
-      expect.objectContaining({
-        type: 'success',
-        title: enUS.home.prompt.copied,
-      }),
-    ]);
-
-    await user.click(
-      within(dialog).getByRole('button', { name: enUS.home.prompt.reset }),
-    );
-    expect(prompt).toHaveValue(scheduler.prompts.weeklyReport.text);
+    ).toHaveAttribute('href', CAPABILITY_GUIDE_PATH);
   });
 
-  it('starts from the default prompt each time the dialog opens', async () => {
-    const user = setup();
-    await renderHome();
-    const theme = enUS.home.capabilities.theme;
-    const card = screen.getByRole('button', { name: new RegExp(theme.title) });
+  it.each<AuthorizationSnapshot>([
+    { unrestricted: true, permissions: [] },
+    {
+      unrestricted: false,
+      permissions: [
+        { resource: { type: 'page', id: '*' }, actions: ['access'] },
+      ],
+    },
+  ])(
+    'keeps catalog links for unrestricted and wildcard grants: %j',
+    async (snapshot) => {
+      await renderHome(() => snapshot);
+      expect(
+        await screen.findByRole('link', {
+          name: format(guideContent('en-US').home.viewAll, {
+            count: catalog.entries.length,
+          }),
+        }),
+      ).toHaveAttribute('href', CAPABILITY_GUIDE_PATH);
+    },
+  );
 
-    await user.click(card);
-    const prompt = within(await screen.findByRole('dialog')).getByRole(
-      'textbox',
-    );
-    await user.type(prompt, ' Edited.');
-    await user.keyboard('{Escape}');
-    await waitFor(() =>
-      expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
-    );
-
-    await user.click(card);
+  it('keeps descriptions without links while permissions load, after denial and after revocation', async () => {
+    const pending = Promise.withResolvers<AuthorizationSnapshot>();
+    let permissions: AuthorizationSnapshot | Promise<AuthorizationSnapshot> =
+      pending.promise;
+    const { app } = await renderHome(() => permissions);
+    const authorization = app.container.resolve(authorizationClientToken);
+    const content = guideContent('en-US');
+    const expectDescriptionsOnly = () => {
+      expect(screen.queryAllByRole('link')).toHaveLength(0);
+      expect(screen.queryByText(content.home.open)).not.toBeInTheDocument();
+      for (const entry of catalog.featured) {
+        const text = entryContent(content, entry);
+        expect(screen.getByText(text.title)).toBeVisible();
+        expect(screen.getByText(text.summary)).toBeVisible();
+      }
+    };
+    expectDescriptionsOnly();
+    await act(async () => {
+      pending.resolve({ unrestricted: false, permissions: [] });
+      await authorization.snapshot();
+    });
+    expectDescriptionsOnly();
+    await act(async () => {
+      permissions = granted;
+      authorization.invalidate();
+      await authorization.snapshot();
+    });
     expect(
-      within(await screen.findByRole('dialog')).getByRole('textbox'),
-    ).toHaveValue(theme.prompts.changeTheme.text);
+      await screen.findByRole('link', {
+        name: format(content.home.viewAll, { count: catalog.entries.length }),
+      }),
+    ).toHaveAttribute('href', CAPABILITY_GUIDE_PATH);
+    await act(async () => {
+      permissions = { unrestricted: false, permissions: [] };
+      authorization.invalidate();
+      await authorization.snapshot();
+    });
+    expectDescriptionsOnly();
   });
 
   it('reports a copy the browser refuses', async () => {
@@ -138,23 +186,5 @@ describe('home page', () => {
         title: enUS.home.prompt.copyFailed,
       }),
     ]);
-  });
-});
-
-describe('home page copy', () => {
-  it('translates every capability prompt into Chinese', () => {
-    for (const { id, prompts } of CAPABILITIES) {
-      const key = id as keyof typeof zhCN.home.capabilities;
-      for (const prompt of prompts) {
-        const zh = (
-          zhCN.home.capabilities[key].prompts as Record<
-            string,
-            { label: string; text: string }
-          >
-        )[prompt];
-        expect(zh?.text, `${id}.${prompt}`).toBeTruthy();
-        expect(zh?.label, `${id}.${prompt}`).toBeTruthy();
-      }
-    }
   });
 });

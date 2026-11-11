@@ -16,6 +16,9 @@ inputs:
   template-kind:
     description: Template to verify (default, examples, or all).
     default: all
+  test-project:
+    description: Complete Vitest project to verify (all, node, or client). All other lifecycle checks always run.
+    default: all
   package-artifacts:
     description: Directory containing the complete set of tarballs produced by pack:check. Empty uses changeset publish.
     default: ''
@@ -34,12 +37,21 @@ runs:
         LOCAL_PACKAGES_ONLY: ${{ inputs.local-packages-only }}
         PORT: ${{ inputs.port }}
         TEMPLATE_KIND: ${{ inputs.template-kind }}
+        TEST_PROJECT: ${{ inputs.test-project }}
       run: |
         set -euo pipefail
         case "$TEMPLATE_KIND" in
           all|default|examples) ;;
           *)
             echo "::error::template-kind must be all, default, or examples; received '$TEMPLATE_KIND'"
+            exit 2
+            ;;
+        esac
+
+        case "$TEST_PROJECT" in
+          all|node|client) ;;
+          *)
+            echo "::error::test-project must be all, node, or client; received '$TEST_PROJECT'"
             exit 2
             ;;
         esac
@@ -225,6 +237,7 @@ runs:
       env:
         PORT: ${{ inputs.port }}
         TEMPLATE_KIND: ${{ inputs.template-kind }}
+        TEST_PROJECT: ${{ inputs.test-project }}
         TIMEOUT: ${{ inputs.timeout }}
       run: |
         set -euo pipefail
@@ -248,6 +261,7 @@ runs:
             --create-app-version "$CREATE_APP_VERSION" \
             --template "@nocobase/app-template-$CURRENT_TEMPLATE_KIND@$TEMPLATE_VERSION" \
             --timeout "$TIMEOUT" \
+            --test-project "$TEST_PROJECT" \
             --workdir "$RUNNER_TEMP/create-app-smoke/$CURRENT_TEMPLATE_KIND"
         done
 
@@ -255,7 +269,7 @@ runs:
       if: failure()
       uses: actions/upload-artifact@v4
       with:
-        name: ${{ inputs.template-kind == 'all' && 'create-app-smoke-logs' || format('create-app-smoke-{0}-logs', inputs.template-kind) }}
+        name: ${{ format('create-app-smoke-{0}-{1}-logs', inputs.template-kind, inputs.test-project) }}
         path: ${{ runner.temp }}/create-app-smoke/**/*.log
         if-no-files-found: ignore
 

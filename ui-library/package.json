@@ -149,6 +149,7 @@
     "#components/settings-dialog": "./registry/components/settings-dialog.tsx",
     "#components/route-dialog": "./registry/components/route-dialog.tsx",
     "#components/route-overlay": "./registry/components/route-overlay.tsx",
+    "#components/discard-guard": "./registry/components/discard-guard.tsx",
     "#components/use-route-overlay": "./registry/components/use-route-overlay.ts",
     "#components/route-drawer": "./registry/components/route-drawer.tsx",
     "#components/route-child-page": "./registry/components/route-child-page.tsx",
@@ -177,6 +178,8 @@
     "#components/inbox-button": "./registry/inbox/inbox-button.tsx",
     "#components/inbox-badge": "./registry/inbox/inbox-badge.ts",
     "#components/issue-table": "./registry/projects/issue-table.tsx",
+    "#components/status-icon": "./registry/projects/status-icon.tsx",
+    "#components/status-shapes": "./registry/projects/status-shapes.ts",
     "#components/issue-card": "./registry/projects/issue-card.tsx",
     "#extensions/nocobase-issue-detail/issue-detail": "./registry/projects/issue-detail/issue-detail.tsx",
     "#extensions/nocobase-issue-detail/issue-properties": "./registry/projects/issue-detail/issue-properties.tsx",
@@ -273,11 +276,18 @@
     "#extensions/nocobase-agent-chat/delete-conversation": "./registry/agents/agent-chat/delete-conversation.tsx",
     "#extensions/nocobase-agent-chat/use-keyboard-fit": "./registry/agents/agent-chat/use-keyboard-fit.ts",
     "#extensions/nocobase-agent-chat/linked-chat-panel": "./registry/agents/agent-chat/linked-chat-panel.tsx",
+    "#extensions/nocobase-agent-chat/workspace": "./registry/agents/agent-chat/workspace.tsx",
+    "#extensions/nocobase-agent-chat/workspace-layout": "./registry/agents/agent-chat/workspace-layout.ts",
+    "#extensions/nocobase-agent-chat/conversation-list": "./registry/agents/agent-chat/conversation-list.tsx",
     "#extensions/nocobase-agent-chat/conversation-associations": "./registry/agents/agent-chat/conversation-associations.tsx",
     "#extensions/nocobase-agent-chat/conversation-details": "./registry/agents/agent-chat/conversation-details.tsx",
     "#extensions/nocobase-agent-chat/conversation-links": "./registry/agents/agent-chat/conversation-links.ts",
     "#extensions/nocobase-agent-chat/usage": "./registry/agents/agent-chat/usage.tsx",
     "#extensions/nocobase-agent-chat/use-conversation-usage": "./registry/agents/agent-chat/use-conversation-usage.ts",
-    "#extensions/nocobase-agent-chat/linked-launchers": "./registry/agents/agent-chat/linked-launchers.tsx"
+    "#extensions/nocobase-agent-chat/linked-launchers": "./registry/agents/agent-chat/linked-launchers.tsx",
+    "#components/loading": "./registry/components/loading.tsx",
+    "#components/pending-button": "./registry/components/pending-button.tsx",
+    "#components/task-progress": "./registry/components/task-progress.tsx",
+    "#components/brand-loading-mark": "./registry/components/brand-loading-mark.tsx"
   }
 }

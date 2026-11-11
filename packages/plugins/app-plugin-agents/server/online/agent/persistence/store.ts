@@ -1,3 +1,4 @@
+import { sharesRepo } from '../../../core/conversations/shares.js';
 import type { OnlineAgentResendOptions } from '../../../../shared/resend.js';
 import { resendMessage } from '../messages/resend.js';
 import type { ExecutionSnapshot, ExecutionFile } from '../../files/types.js';
@@ -538,6 +539,10 @@ export class NativeSessionStore {
       'native.resend',
       async (conn, row, _changed, emit) => {
         this.accepting(row, expected);
+        if (await sharesRepo(conn).findOne({ filter: { conversationId: id } }))
+          throw conflict(
+            'Revoke conversation snapshots before editing saved history.',
+          );
         const record = await messagesRepo(conn).findOne({
           filter: {
             conversationId: id,

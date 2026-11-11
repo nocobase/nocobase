@@ -70,8 +70,36 @@ describe('Issued credentials', () => {
         ? context.json({ reason: error.reason }, 401)
         : context.json({ error: String(error) }, 500),
     );
-    return { router, userId: user.id, remove };
+    return { router, userId: user.id, remove, auth: fixture.auth };
   }
+
+  it('uses application admission only for issued credentials and restores declarations when removed', async () => {
+    const { router, auth } = await setup();
+    const release = auth.addCredentialRoutePolicy((context, credential) =>
+      credential.type === 'run'
+        ? context.req.path !== '/runs-welcome'
+        : undefined,
+    );
+    const headers = { [RUN_HEADER]: 'good' };
+    expect((await router.request('/no-scheme', { headers })).status).toBe(200);
+    expect((await router.request('/person-only', { headers })).status).toBe(
+      200,
+    );
+    expect((await router.request('/runs-welcome', { headers })).status).toBe(
+      403,
+    );
+    const allow = auth.addCredentialRoutePolicy(() => true);
+    expect((await router.request('/runs-welcome', { headers })).status).toBe(
+      403,
+    );
+    allow();
+    expect((await router.request('/no-scheme')).status).toBe(401);
+    release();
+    expect((await router.request('/no-scheme', { headers })).status).toBe(403);
+    expect((await router.request('/runs-welcome', { headers })).status).toBe(
+      200,
+    );
+  });
 
   it('acts for its user where the route lists its scheme and accepts scoped credentials', async () => {
     const { router, userId } = await setup();

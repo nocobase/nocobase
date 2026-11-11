@@ -85,6 +85,14 @@ export function checkFormFeedbackPackage(directory) {
   return checkRuntimePackage(directory, values, types);
 }
 
+export function checkPendingFeedbackPackage(directory) {
+  return checkRuntimePackage(
+    directory,
+    ['usePendingFeedback'],
+    ['PendingFeedback'],
+  );
+}
+
 export function checkAvatarInitialsPackage(directory) {
   return checkRuntimePackage(
     directory,
@@ -150,6 +158,8 @@ export function checkRelease(
     for (const [itemName, checkPackage] of [
       ['feedback-form', checkFormFeedbackPackage],
       ['property-fields', checkAvatarInitialsPackage],
+      ['loading', checkPendingFeedbackPackage],
+      ['pending-button', checkPendingFeedbackPackage],
     ]) {
       const floor = runtimeFloor(registry, itemName);
       const itemWork = path.join(work, itemName);

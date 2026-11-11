@@ -154,6 +154,15 @@ const enUS = {
   // What the plugin registers with the authorization plugin (`server/providers/authorization.ts`).
   access: {
     businessSection: 'Knowledge',
+    settingsSection: 'Knowledge',
+    settings: {
+      indexing: {
+        title: 'Knowledge indexing',
+        read: 'Read',
+        configure: 'Configure',
+        rebuild: 'Rebuild',
+      },
+    },
     businesses: {
       knowledge: {
         title: 'Knowledge',

@@ -56,6 +56,18 @@ describe('extracting a file’s text', () => {
     });
     expect(result.status).toBe('failed');
   });
+  it('enforces the authorized per-request byte limit in the worker', async () => {
+    const parse = workerExtractor({ maxInputBytes: 1 });
+    const request = { bytes: new TextEncoder().encode('text'), ext: 'txt' };
+    expect(await parse(request, { maxInputBytes: 4 })).toMatchObject({
+      status: 'ready',
+      markdown: 'text',
+    });
+    expect(await parse(request, { maxInputBytes: 3 })).toMatchObject({
+      status: 'failed',
+      code: 'too-large',
+    });
+  });
   it('preserves caller bytes, normalizes extensions and rejects excess output', async () => {
     const bytes = fixture('sample.docx');
     const original = bytes.slice();

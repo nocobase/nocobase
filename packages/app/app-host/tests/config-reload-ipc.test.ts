@@ -121,3 +121,34 @@ it('delivers ordered log events before completion and detaches on host exit', as
   expect(entries[1]).toMatchObject({ err: { stack: 'original stack' } });
   expect(child.listenerCount('message')).toBe(0);
 });
+
+it('allows the complete request drain before the preparation RPC can time out', async () => {
+  vi.useFakeTimers();
+  const child = new EventEmitter() as ChildProcess;
+  Object.defineProperty(child, 'connected', { value: true });
+  let complete!: () => void;
+  child.send = ((
+    message: Record<string, unknown>,
+    callback: (error: Error | null) => void,
+  ) => {
+    callback(null);
+    complete = () =>
+      child.emit('message', { ...message, kind: 'response', result: true });
+    return true;
+  }) as ChildProcess['send'];
+  const client = new IpcHostManagementClient(child, {
+    session: 'test',
+    timeoutMs: 10,
+  });
+  try {
+    const pending = client
+      .prepareRotation({ ignoreConnections: true, drainTimeoutMs: 20 })
+      .catch((error: unknown) => error);
+    await vi.advanceTimersByTimeAsync(20);
+    complete();
+    expect(await pending).toBe(true);
+    expect(child.listenerCount('message')).toBe(0);
+  } finally {
+    vi.useRealTimers();
+  }
+});

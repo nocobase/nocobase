@@ -1,5 +1,34 @@
 # @nocobase/app-cli
 
+## 1.0.0-beta.33
+
+### Minor Changes
+
+- 2d18eb2: Support named connection contributions with database/<connection> migration and seed directories, keeping legacy flat plugin tasks on the default connection. Support application-owned database task coordination and pending-task selection while retaining complete history validation. Expose the database task lease for module lifecycle operations, recognize scoped app-plugin and app-module packages in CLI registration, removal and Skills, preserve third-party dependency patches in standalone builds, and prevent explicitly stopped deployments from restarting on incoming traffic while retaining their backend resource cleanup. Pass the complete connection inventory through both startup and CLI coordination.
+- 3642d82: Add application-local database preparation hooks and use the same storage preparation, reset, hook and migration/Seed phases with or without hooks. Fresh runs now reset all selected migration targets before any business task, with no cross-connection rollback. Report preparation failures and confirmed resets without expanding successful CLI JSON output.
+
+### Patch Changes
+
+- 6a51d28: Recognize scoped app-portal packages in registration, updates, removal, CLI topics and skill synchronization and replace the unpublished app-module package spelling.
+- Updated dependencies [2d18eb2]
+- Updated dependencies [3642d82]
+  - @nocobase/db@1.0.0-beta.27
+  - @nocobase/app-server@5.0.0-beta.3
+
+## 1.0.0-beta.32
+
+### Patch Changes
+
+- cf23bfe: **Breaking:** Remove the deprecated `@nocobase/app-server/mailer` entry and its `Mailer`, `mailerToken`, `createMailer`, `MailerProvider`, and notification configuration exports. Replace `MailExecutions.close(waitMs)` and `drain()` with `stop()` and `wait()`; transport `close()` now cancels supported network work and waits for its original completion without a nested timeout. Application owners must apply the outer shutdown budget. Create exclusive senders with `@nocobase/app-server/mailers` and declare notification config with `@nocobase/app-plugin-notification-providers/config`. Existing inline SMTP/Resend YAML, environment mappings, and provider/channel APIs remain supported.
+
+  Default and Examples now show `mailers.default: system` and explicitly map `MAILERS_SYSTEM_*`; the example configuration remains empty at runtime. The previous `MAILERS_TRANSACTIONAL_*` sample prefix was not published. Applications may still choose any valid mailer name and custom environment prefix.
+
+- Updated dependencies [1e018f1]
+- Updated dependencies [cf23bfe]
+- Updated dependencies [4411984]
+  - @nocobase/db@1.0.0-beta.25
+  - @nocobase/app-server@5.0.0-beta.0
+
 ## 1.0.0-beta.31
 
 ### Patch Changes

@@ -1154,3 +1154,42 @@ it('synchronizes and removes recorded custom-scope skills without touching local
     'my-local-guide',
   ]);
 });
+
+it.each([
+  '@nocobase/app-plugin-demo',
+  '@nocobase/app-portal-demo',
+  '@acme/app-plugin-demo',
+  '@acme/app-portal-demo',
+])(
+  'cleans stale Skills for %s while preserving other owners and local guidance',
+  async (packageName) => {
+    const appRoot = await createApp();
+    const prefix = pluginSkillPrefix(packageName);
+    const sibling = `${packageName}-provider`;
+    const siblingPrefix = pluginSkillPrefix(sibling);
+    await declareDependencies(appRoot, {
+      dependencies: { [packageName]: '1', [sibling]: '1' },
+    });
+    await installPlugin(appRoot, packageName, { [prefix]: '# main' });
+    await installPlugin(appRoot, sibling, { [siblingPrefix]: '# provider' });
+    await writeAppSkill(appRoot, `${prefix}-stale`, '# old integration');
+    await writeAppSkill(appRoot, 'my-local-guide', '# Keep');
+    await syncApp(appRoot);
+    expect(await readdir(path.join(appRoot, '.agents/skills'))).not.toContain(
+      `${prefix}-stale`,
+    );
+    await writeAppSkill(appRoot, `${prefix}-legacy`, '# legacy integration');
+    expect(await removePackageSkills(appRoot, packageName)).toEqual([
+      prefix,
+      `${prefix}-legacy`,
+    ]);
+    expect(
+      (await readdir(path.join(appRoot, '.agents/skills'))).sort(),
+    ).toEqual([siblingPrefix, 'my-local-guide'].sort());
+    expect(
+      JSON.parse(
+        await readFile(path.join(appRoot, '.agents/.skills-sync.json'), 'utf8'),
+      ),
+    ).toEqual({ [siblingPrefix]: sibling });
+  },
+);

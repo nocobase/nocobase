@@ -317,7 +317,7 @@ const jaJP: LocaleResource<typeof enUS> = {
   cancel: 'キャンセル',
   search: '名前/番号/IDで検索',
   apply: '検索',
-  refresh: '更新',
+  retryRead: '再試行',
   previous: '前へ',
   next: '次へ',
   page: 'ページ {{page}}',
@@ -325,6 +325,8 @@ const jaJP: LocaleResource<typeof enUS> = {
   empty: 'レコードはまだありません。最初のレコードを作成して始めましょう。',
   loading: '読み込み中…',
   listFeedback: {
+    refreshing: '更新中',
+    longWait: '通常より時間がかかっています。このままお待ちください。',
     loading: '読み込み中',
     empty: 'データはありません',
     noResults: '結果がありません',
@@ -356,7 +358,7 @@ const jaJP: LocaleResource<typeof enUS> = {
   traceHint:
     '最新のリクエストと結果には、この画面で使用されている API が表示されます。',
   error: '操作は失敗しました。',
-  loadError: 'レコードをロードできません。更新して再試行してください。',
+  loadError: 'レコードを読み込めません。再試行してください。',
   conflict:
     'この順序は、オープンしてから変更されました。編集する前に更新して再度開きます。',
   choicesHint: '最初に顧客と製品を作成し、次に注文とそのアイテムを作成します。',

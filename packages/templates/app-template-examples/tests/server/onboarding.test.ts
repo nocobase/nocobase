@@ -20,7 +20,6 @@ import {
 } from '../../shared/onboarding.js';
 import { resetOnboarding } from '../../server/providers/onboarding-reset.js';
 const test = createAppTest({
-  scope: 'test',
   createServer: createStandaloneServer,
   connections: ['main', 'analytics'],
   config: {
@@ -31,6 +30,19 @@ const test = createAppTest({
       emailAndPassword: { disableSignUp: false },
     },
   },
+}).extend<{ resetData: void }>({
+  resetData: [
+    async ({ testApp }, use) => {
+      // Identities are unique per case; reset records and reference data before each one.
+      await resetOnboarding(testApp.connection, false);
+      await testApp.connection.query
+        .deleteFrom('onboardingDepartments')
+        .allowAllRows()
+        .execute();
+      await use(undefined);
+    },
+    { auto: true },
+  ],
 });
 const write = (
   input: unknown,

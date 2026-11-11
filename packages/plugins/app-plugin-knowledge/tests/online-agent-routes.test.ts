@@ -214,3 +214,44 @@ test('a genuinely claimed fgr Run authenticates but cannot discover or read Know
     ),
   ).toEqual(expect.arrayContaining(['kb:search', 'kb:read']));
 });
+
+test('application-admitted runs retain the executing reader permissions and hidden-document boundary', async ({
+  app,
+  fetch,
+  request,
+}) => {
+  const f = await knowledgeAgentFixture(app, fetch);
+  const { payload } = await createClaimedRun(f.agents, f.user.id);
+  const token = payload.cli.credential.content.token;
+  if (typeof token !== 'string') throw new Error('Missing fixture Run token.');
+  const headers = { 'x-nocobase-run-token': token };
+  const stop = f.auth.addCredentialRoutePolicy((_context, credential) =>
+    credential.type === 'run' ? true : undefined,
+  );
+  try {
+    const visible = `/knowledge/docs/${f.documents[0]!.id}`;
+    expect((await request(visible, { headers })).status).toBe(200);
+    expect(
+      (await request(`/knowledge/docs/${f.hidden.id}`, { headers })).status,
+    ).toBe(404);
+    const denied = await request(visible, {
+      method: 'PATCH',
+      headers: { ...headers, 'content-type': 'application/json' },
+      body: JSON.stringify({
+        expectedVersion: 1,
+        content: 'Unauthorized change',
+      }),
+    });
+    expect(denied.status).toBe(403);
+    expect(
+      (await f.knowledge.docs.get({ userId: f.user.id }, f.documents[0]!.id))
+        .content,
+    ).toBe('Release procedure for one.');
+  } finally {
+    stop();
+  }
+  expect(
+    (await request(`/knowledge/docs/${f.documents[0]!.id}`, { headers }))
+      .status,
+  ).toBe(403);
+});

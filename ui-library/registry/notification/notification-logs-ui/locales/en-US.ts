@@ -12,7 +12,7 @@ const enUS = {
     description:
       'Trace notification delivery and every provider attempt. Message bodies, recipients, and lease tokens are redacted.',
     refreshing: 'Refreshing…',
-    refresh: 'Refresh',
+    retryRead: 'Retry',
     deliveriesShown: 'Deliveries shown',
     needAttention: 'Need attention',
     unavailable: 'Logs unavailable',
@@ -55,10 +55,15 @@ const enUS = {
   },
 };
 
-export type NotificationResource = LocaleResource<typeof enUS>;
+/** The shape of the whole resource this file exports, as merged into an application's or a plugin's locale. */
 export type NotificationLogsResource = LocaleResource<{
   notificationLogs: typeof enUS;
 }>;
+/**
+ * The shape of the block's own group. It carries no top-level `overrides`, so a resource built from it merges into
+ * a resource typed with `LocaleResource` without changing that resource's shape.
+ */
+export type NotificationResource = NotificationLogsResource['notificationLogs'];
 
 const resource: { notificationLogs: NotificationResource } = {
   notificationLogs: enUS,

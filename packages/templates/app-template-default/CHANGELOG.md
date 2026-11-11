@@ -1,5 +1,273 @@
 # @nocobase/app-template-default
 
+## 1.0.0-beta.94
+
+### Minor Changes
+
+- 57912f1: Make phone layouts part of every application page from the first delivery: the application development Skill adds a phone experience guide (first screen, list cards, compact filters, one-row tabs, forms, overlays, touch and phone verification), replaces the old "the toolbar wraps and the table scrolls" acceptance rule, and updates its workflow, templates, examples and screenshot tool to match. The templates' `DataTable` gains `renderCard` to show rows as cards below 768px and a `DataTableSortMenu` for sorting without column headers; on phones it keeps the selection column's "Select all on this page" above the cards. `PageHeader` keeps a single action on the title's row and wraps several actions onto one row under a title that keeps at least 12rem, and `PageContainer` uses tighter spacing on phones, and `DataTableSortMenu` gains a `compact` icon form, so a list's search, filter and sort share one row above the first card. The Examples list examples and their published Skill copies now show phone cards, and the customer list demonstrates a phone filter sheet with the applied count. Overlay forms guard unsaved changes with a navigation guard, so Cancel, the close button, Escape and browser back all ask before discarding, and the list example shows how to render one set of filters inline and in the phone sheet without duplicate IDs. A confirmation, dialog or sheet opened inside another overlay now renders its own backdrop, so taps no longer reach the form below it. A record page's parent arrow now returns to the same list view, search, sort and page after its detail or edit URL is reloaded: the templates add `useAncestorSearch`, which takes only the list's declared keys (such as `TABLE_URL_KEYS`) from the current URL when no list visit is recorded, and `useListTabs().source` falls back the same way. `DataTableSortMenu` now requires `getColumnLabel`, so the phone sort menu never shows raw column ids, and `DataTable` accepts `sortableColumns` (passed on by spreading `useTableUrlState`), so headers and the sort menu offer only the sorts the URL accepts. `DataTable` and `ListFeedbackActions` accept `filtered`, so "Clear filters" stays beside a list's controls while filtered results show, not only when nothing matched, and the phone "Select all on this page" checkbox is named once instead of twice. `DataTable` now lays out a list's controls itself: pass the search box as `search`, each filter as a `DataTableFilter` in `filters` with `filterCount`, and `getColumnLabel`, and they share one row, with the filters inline from 768px up and, on phones, behind an icon "Filters" button that shows the applied count and opens a bottom sheet, next to an icon "Sort" menu. Phone cards show the row's actions column, through `renderCard`'s new `card.actions` or in the card's corner when a card does not place it, so a card always offers the row's menu (`actionsColumnId={null}` opts out). `RouteDialog` and `RouteDrawer` accept `dirty`: while a form is dirty, or once the user has typed in the overlay's form, closing, Cancel, Escape, browser back and links ask "Discard changes?" first (a saved draft does not switch the question off) and a reload gets the browser's warning, while the save's own navigation leaves without asking. On desktop each `DataTableFilter` sits in a compact slot of its own, so filters share the search row instead of taking a full row each; the new `DataTableSearch` is a search box with the magnifier inside that applies as typing pauses and on Enter, without a separate search button. `PageHeader` accepts an `eyebrow` shown from 640px up and clamps its description to two lines on phones, and `DataTable` accepts a `summary`, such as a result count, that ends the toolbar row on desktop and sits above the pagination on phones. `RouteDialog` and `RouteDrawer` now ask before discarding typed input on their own: once the user has typed in a `FeedbackForm` inside one, every way out asks first, whether or not the page passes `dirty` and whether or not it keeps a draft; `dirty` only adds changes no typing reports, an untouched form or a read-only drawer closes at once, and the save leaves without asking. `FeedbackForm` accepts `values` and `savedValues` (React Hook Form's `getValues` and the stored record), so an enclosing route overlay asks before discarding whenever they differ, including a restored draft and a Select, date, relation or upload field that fires no input event, and not once the values are changed back. The overlays also protect a plain `<form>` inside them, comparing its fields and Select-like widgets with how they were before the user first touched them, and the application development Skill's component checker now rejects a plain create or edit form, a `FeedbackForm` without `values` and `savedValues`, and a `dirty` derived from a draft or storage, with no exception marker allowed. A navigation guard now receives how the navigation started (`push`, `replace`, or `pop` for browser back and forward), so a route overlay lets only a plain form's own save through and keeps asking on browser back and before a reload after a save that failed or was rejected. `RouteChildPage` now asks the same question as the route overlays before its back button, breadcrumbs, links and browser back while a form inside has unsaved input, and warns before a reload; the shared logic lives in the new `discard-guard` component. The component checker now also rejects a `FeedbackForm` without `values` and `savedValues` in a route overlay or `RouteChildPage` whose state is kept in `useState`, and an `OwnDiscardQuestion` in a file whose own navigation guard does not read an unsaved state, such as one that only blocks while a save runs, since a kept draft never replaces the discard question; the Examples batch-change dialog now compares its new value with the blank one. The checker credits a form only with the discard question of its own component, a component rendering it or a hook it calls, and judges a guard by its code, never by its comments or strings, reading a guard passed as `controller.guard` through the object its own component holds. After a save fails with a server error or a lost response, the Examples forms no longer lock the person in while the outcome is unknown: Cancel stays enabled, every way out asks before discarding the input, and discarding leaves, while the operation key stays for the same retry; the Skill states that only a save in flight blocks leaving.
+
+### Patch Changes
+
+- Updated dependencies [ff549a1]
+- Updated dependencies [ff549a1]
+- Updated dependencies [7d9c0a4]
+- Updated dependencies [d88875e]
+- Updated dependencies [efa464a]
+- Updated dependencies [ad2e33e]
+- Updated dependencies [7e97024]
+- Updated dependencies [57912f1]
+- Updated dependencies [e1f584e]
+  - @nocobase/app-plugin-agents@2.0.0-beta.11
+  - @nocobase/app-server@5.0.0-beta.4
+  - @nocobase/app-plugin-file@1.0.0-beta.31
+  - @nocobase/app-plugin-users@2.0.0-beta.19
+  - @nocobase/app-plugin-knowledge@0.1.0-beta.19
+  - @nocobase/db@1.0.0-beta.28
+  - @nocobase/app-plugin-notification@2.0.0-beta.8
+  - @nocobase/app-plugin-notification-in-app@2.0.0-beta.4
+
+## 1.0.0-beta.93
+
+### Minor Changes
+
+- 79b40cd: Add `announceDataChange` and `scopes` for `useListData` so a confirmed create, edit or delete updates every list, detail, card and count that reads the same data the next time it is visible. The Examples Projects page adds search, name sorting, a total card and detail deletion as the runnable reference, and the development and upgrade Skills document the contract.
+- 03fac04: Make the notification template page readable for administrators. Template details open in a drawer with an address of their own (`/settings/notifications/templates/:templateId`; older `?template=` links redirect), the filters form a compact toolbar showing display names, cards are grouped by category and open on click, and the copy avoids technical wording. Template registrations accept translation keys (`{ ns, key, defaultValue }`) for every administrator-facing field, translatable channel, channel type and source names, and a `localeMode` field; `combined` marks a message that carries every language, so the preview offers no language choice. Otherwise the preview starts in the interface language and lists language names. `NotificationTemplateView` text fields are now `string | { ns, key, defaultValue }`. The Users invitation and the notification example registrations are translated and the invitation declares `localeMode: 'combined'`.
+
+### Patch Changes
+
+- dd90924: Add an SVG favicon that turns white when the browser or system uses a dark theme, so the tab icon stays visible on dark tab bars. Browsers without SVG favicon support keep using `favicon.ico`.
+- Updated dependencies [a2dc459]
+- Updated dependencies [2d18eb2]
+- Updated dependencies [03fac04]
+- Updated dependencies [6a51d28]
+- Updated dependencies [ac6c1eb]
+- Updated dependencies [3642d82]
+- Updated dependencies [d4d7b07]
+  - @nocobase/app-plugin-agents@2.0.0-beta.9
+  - @nocobase/db@1.0.0-beta.27
+  - @nocobase/app-server@5.0.0-beta.3
+  - @nocobase/app-cli@1.0.0-beta.33
+  - @nocobase/app-plugin-notification@2.0.0-beta.7
+  - @nocobase/app-plugin-users@2.0.0-beta.18
+
+## 1.0.0-beta.92
+
+### Patch Changes
+
+- 8be5180: Move Features and extensions to `/settings/capabilities`. Require a grantable page permission for Features and extensions, protect direct detail links, and expose its access control under system configuration permissions.
+- 8be5180: Use compact default-connection badges and vertically aligned labels in the database explorer connection selector.
+- 8be5180: Show the Database Explorer in System settings again, and make browsing it easier: the table list and fields scroll on their own with the table name and column headings kept in view, the table list is a single Tab stop navigated with the arrow keys, narrow screens show compact fields with a pinned way back to the tables, switching tables keeps a placeholder instead of an empty panel, relation fields no longer show an unknown nullability, unrelated inspection notes are hidden, and long names wrap at word boundaries.
+- f5b066d: Use sentence case for the Database explorer page title and navigation labels.
+- 3e87619: App Foundation's `foundation.scanOnStart` setting (`FOUNDATION_SCAN_ON_START`, factory `defineFoundationConfig()` from `@nocobase/app-plugin-foundation/config`) turns off the background scan an application submits at start; it defaults to `true`. With it off, opening the page, Refresh and Count records still start a scan. `createTestAppConfig()` in `@nocobase/app-testing` sets `foundation: { scanOnStart: false }` for every test application, so tests no longer spend seconds of CPU on the scan or wait for it when the application closes; pass `config: { foundation: { scanOnStart: true } }` to keep it. Both templates register the `foundation` section.
+- 8be5180: Keep homepage capability descriptions visible while hiding catalog links from users without access to Features and extensions.
+- 8be5180: Reduce mobile page padding consistently across application templates and plugin pages while preserving tablet and desktop spacing.
+- 8be5180: Separate System settings from business navigation with consistent sidebar group spacing on desktop and mobile.
+- Updated dependencies [8be5180]
+- Updated dependencies [8be5180]
+- Updated dependencies [3e87619]
+- Updated dependencies [8be5180]
+  - @nocobase/app-plugin-foundation@0.1.0-beta.19
+  - @nocobase/app-plugin-agents@2.0.0-beta.8
+  - @nocobase/app-plugin-mail@1.0.0-beta.23
+
+## 1.0.0-beta.91
+
+### Patch Changes
+
+- ae35635: Allow generated application catalog checks to pass with additional plugins that use generic introductions.
+- Updated dependencies [368299b]
+  - @nocobase/app-plugin-foundation@0.1.0-beta.18
+
+## 1.0.0-beta.90
+
+### Patch Changes
+
+- c522d01: Describe authentication through separate password sign-in, registration, recovery and device approval entries, using application configuration and recovery availability instead of treating a login page as proof of every capability. Provide focused Agent guidance for each authentication setup task.
+- c522d01: Clarify authorization management interface availability separately from assigned permissions and existing rules. Provide dedicated Agent guidance for business permission support, role configuration, user assignments, default access, sharing and restriction rules.
+- 5cf3515: Show only the brand loading mark before the client starts, so a non-English application no longer flashes "Loading application…" in English. Screen readers perceive it as a progress bar named after the brand, announced in their own language, until the localized loading appears. Existing applications can apply the same change to their own `index.html`.
+- c522d01: Present Features and extensions in System settings with consistent capability details showing their purpose, current configuration and management entries, and expandable Agent requests for adding or improving features. Combine language capabilities into one entry and distinguish personal and application API key management interfaces.
+- c522d01: Add a capability guide at `/capabilities` listing the application's core modules and dependent plugins, including examples. Browse a numbered catalog with type and keyword filters, then open consistent details explaining each capability's purpose, current configuration, and how to add or improve it with an Agent. The home page links to the same catalog, while the protected runtime foundation page retains its URL and access.
+- c522d01: Add a concurrency configuration overview with explicit unavailable runtime values and focused Agent guidance for shared coordination, independent services and default service selection. Clarify that concurrency control does not replace idempotency.
+- c522d01: Restore database connection summaries and expandable effective configuration in Features and extensions, with a structured Agent request form and separate guidance for adding connections and adjusting their default, schema management, connection settings and naming rules.
+- c522d01: Clarify the Database Explorer interface and its application-wide access permission. Provide focused Agent guidance for adding the read-only browser and configuring access without implying per-connection or field-level restrictions.
+- f24a673: The UI component checker now reports native and shadcn `Input` date and date-time inputs with date picker advice, and the application development Skill documents how to compose and reuse an application-owned `DatePicker`. The Examples work calendar picks holiday dates from that `DatePicker` instead of the browser's native calendar, and both templates ship its Clear label.
+- 7508a76: Move the password-reset mailer reference from auth.email.mailer to auth.passwordReset.mailer. Update existing references directly; the old field is no longer accepted. Keep private inline SMTP/Resend settings, existing environment mappings, callbacks and default sender selection.
+- c522d01: Introduce a file configuration guide separating Drive storage from file collections, with explicit unavailable inventory values and Agent guidance for configuring disks and File Repository collections.
+- c522d01: Provide the feature configuration detail pages directly from the Foundation plugin so applications can reuse them without template-owned pages or locale resources. Discover application routes and permissions through public runtime APIs and remove duplicate template implementations.
+- c522d01: Present the capability catalog as Features and extensions in System settings, replacing the App usage entry while preserving the protected runtime page. Use the header breadcrumb to return from an entry without losing catalog filters.
+- 7d970d6: Group application realtime broker selection and implementation options under realtime.broker, preserving the local default and service-level settings. Reject legacy adapter/redis paths with migration guidance, and validate explicitly configured brokers without filling missing adapters from template defaults. Redis deployments must upgrade the host and matching commercial plugin together and migrate code defaults, YAML, environment mappings and configuration scripts; rollback must restore matching configuration.
+- efdc78b: Remove the Database Explorer card from System settings while preserving its protected route and feature-detail links.
+- bb1dff2: **Breaking configuration migration:** Concurrency, Jobs and Queue now declare named configurations under `backends`, with `default` selecting a name in that map. Move all direct entries into `backends` in both YAML and application-owned configuration factories. Legacy, unknown and mixed top-level fields are rejected even when unused; Queue no longer ignores `connections`, `worker`, `jobs` or invalid defaults with a Memory fallback. Preserve existing adapter names, connections, namespaces, persistence paths and business resource names; no Redis data migration is required.
+- c522d01: Add a permission-aware Database Explorer to System settings for browsing database connections, tables, and fields.
+- Updated dependencies [c522d01]
+- Updated dependencies [c522d01]
+- Updated dependencies [f37a169]
+- Updated dependencies [bf9857b]
+- Updated dependencies [8c9cdae]
+- Updated dependencies [c522d01]
+- Updated dependencies [c522d01]
+- Updated dependencies [7508a76]
+- Updated dependencies [c522d01]
+- Updated dependencies [c522d01]
+- Updated dependencies [c522d01]
+- Updated dependencies [c522d01]
+- Updated dependencies [c522d01]
+- Updated dependencies [c522d01]
+- Updated dependencies [c522d01]
+- Updated dependencies [fb4659d]
+- Updated dependencies [c635b6c]
+- Updated dependencies [6fbf389]
+- Updated dependencies [1cda4c3]
+- Updated dependencies [7d970d6]
+- Updated dependencies [f37a169]
+- Updated dependencies [3eff32d]
+- Updated dependencies [764fc1b]
+- Updated dependencies [10aabd6]
+- Updated dependencies [faa534f]
+- Updated dependencies [4649c90]
+- Updated dependencies [bb1dff2]
+- Updated dependencies [a2a6385]
+  - @nocobase/app-plugin-foundation@0.1.0-beta.17
+  - @nocobase/app-plugin-agents@2.0.0-beta.7
+  - @nocobase/app-plugin-authentication@2.0.0-beta.20
+  - @nocobase/app-server@5.0.0-beta.2
+  - @nocobase/app-plugin-authorization@1.0.0-beta.37
+  - @nocobase/db@1.0.0-beta.26
+  - @nocobase/realtime@1.0.0-beta.2
+  - @nocobase/jobs@1.0.0-beta.6
+  - @nocobase/queue@1.0.0-beta.11
+  - @nocobase/app-plugin-concurrency@0.1.0-beta.3
+  - @nocobase/app-plugin-knowledge@0.1.0-beta.18
+  - @nocobase/app-plugin-mail@1.0.0-beta.22
+  - @nocobase/app-plugin-notification@2.0.0-beta.6
+  - @nocobase/app-plugin-scheduler@1.0.0-beta.24
+  - @nocobase/app-plugin-authz-default-access@1.0.0-beta.20
+  - @nocobase/app-plugin-authz-restriction-rules@1.0.0-beta.18
+  - @nocobase/app-plugin-authz-sharing-rules@1.0.0-beta.19
+  - @nocobase/app-plugin-file@1.0.0-beta.30
+  - @nocobase/app-plugin-i18n@1.0.0-beta.22
+  - @nocobase/app-plugin-notification-in-app@2.0.0-beta.3
+  - @nocobase/app-plugin-notification-providers@1.0.0-beta.19
+  - @nocobase/app-plugin-users@2.0.0-beta.17
+  - @nocobase/i18n@2.0.0-beta.2
+
+## 1.0.0-beta.89
+
+### Patch Changes
+
+- ca21461: Provide authorized parent navigation on desktop and mobile, and standardize detail and edit page generation with source-list state and safe direct-entry fallbacks.
+- 7c25f88: Bind plugin peers to the shared client runtime version at release time and keep generated application session and draft-protection tests aligned with permission rechecks.
+- 7c25f88: Preinstall task progress in both application templates with its translations, show an unknown amount of progress as a faint full-width bar instead of a segment that reads as a fraction done, synchronize the published customer contacts Skill example with its source, and document the standard recipe for a new business list page.
+- 7c25f88: Show long operations honestly: uploads show a delayed indeterminate wait with a long-wait note, real cancel and retry, and abort when the page closes; background jobs and exports show real progress or an indeterminate bar instead of an invented 0%, keep failures recoverable, say they continue after leaving the page and show where the result is.
+- 7c25f88: Keep upload and task waits accessible: the File example upload button keeps an accessible name while uploading, loading statuses in the Jobs and Realtime examples are announced from outside their busy regions with a long-wait note, and each uploading file in the file upload field uses one display timer pair with its summary announced outside the busy drop zone.
+- 7c25f88: Preserve unsaved forms during permission rechecks by blocking departures and invalidating pending closes until authorization settles. Conceal disconnected confirmation portals and keep Projects rich-text editor effects safe when hidden content reconnects.
+- 3d28bff: Remove default page Refresh actions from shared application guidance and examples while preserving write updates, contextual read retries, and live progress updates.
+- 7c25f88: Keep inactive background lists silent on direct child-route visits and start loading feedback only when their query resumes.
+- 4d30aa6: Reduce template test setup and teardown by reusing application fixtures while keeping client identities and business test data isolated.
+
+  Synchronize the runnable procurement and onboarding Skill examples with the optimized template test fixtures.
+
+- 7c25f88: Let child page, dialog and drawer routes declare their presentation so the application opens that container before the page module, its authorization check and its data arrive, keeps waits, denials and a module-only retry inside it, and leaves undeclared routes and route component overrides on their own containers.
+- 4676817: Align dialog footer link and native button actions consistently, allow long labels to wrap, and document source reconciliation for existing applications.
+- 7c25f88: Share the route container contexts through `@nocobase/app-client/route-containers` so plugin dialogs, drawers and child pages open in the container the application shows while they load, keep a hosted child page's layout classes, and declare presentations for the remaining Examples and plugin overlays.
+- 7c25f88: Announce each list wait once and per query: a retry after a refresh failure on the Roles page is no longer announced twice, a search or page that replaces a pending one restarts its own loading delay instead of inheriting an earlier long-wait note, first-load and next-page statuses sit outside their busy regions, and the Repository example CRM list uses the shared loading, refresh and retry feedback.
+- 7c25f88: Keep loaded route component identities stable across permission rechecks so hosted plugin forms retain their drafts, while loader replacements and explicit retries still take effect.
+- 7c25f88: Give tables, lists, summary cards and pickers the shared pending timing: list loading and retry appear only after the display delay, same-query refreshes keep rows with one delayed refresh indicator, a new query keeps the table's geometry without showing previous rows or totals, a picker no longer shows a previous search's options as matches, and the long-wait hint on pending buttons no longer blocks the controls it covers.
+- 7c25f88: Add shared delayed loading feedback and stable pending buttons, preserve submission protection in user forms, and document source migration for applications and Registry consumers.
+- Updated dependencies [215795d]
+- Updated dependencies [7c25f88]
+- Updated dependencies [1d28bde]
+- Updated dependencies [d43fc18]
+- Updated dependencies [7c25f88]
+- Updated dependencies [9601146]
+- Updated dependencies [1f98579]
+- Updated dependencies [7c25f88]
+- Updated dependencies [215795d]
+  - @nocobase/app-plugin-users@2.0.0-beta.16
+  - @nocobase/app-plugin-agents@2.0.0-beta.6
+  - @nocobase/app-plugin-foundation@0.1.0-beta.16
+  - @nocobase/realtime@1.0.0-beta.1
+
+## 1.0.0-beta.88
+
+### Minor Changes
+
+- 9998ac4: Organize application administration as one System settings sidebar entry that opens a home page of cards grouped by category, with URL-backed tabs inside a module. Route navigation accepts an optional `description` that the settings home shows on each card, and App Foundation declares one. Existing settings URLs, route ids and authorization stay unchanged; updating dependencies alone keeps an existing application's navigation, so reconcile the application-owned navigation transform, routing, settings pages and locales with the `nocobase-app-upgrade` Skill's System settings navigation guide.
+
+### Patch Changes
+
+- 550dd55: Update the brand slogan to “AI + NocoBase” and “Build reliable business systems” in both languages, on the sidebar footer (including collapsed tooltips and accessible labels) and the sign-in brand panel.
+
+  Remove the template name from the Default sidebar footer, including its collapsed tooltip and accessible label, while retaining the version.
+
+- 78bdca8: Sign in new accounts by default in application templates, warn about ambiguous registration configurations, and expose request acceptance for neutral unsigned-in feedback.
+- 3681eb0: Provide a permission-protected, read-only notification template directory with synthetic previews that reuse business send renderers, plus application integration and source upgrade guidance.
+- 9998ac4: Preserve unsaved page state during permission rechecks, keep leave protection active and conceal page overlays while access is pending, and keep settings navigation tests working after an application is renamed.
+- Updated dependencies [bfddb40]
+- Updated dependencies [c627337]
+- Updated dependencies [49daa11]
+- Updated dependencies [78bdca8]
+- Updated dependencies [3681eb0]
+- Updated dependencies [7fe7292]
+- Updated dependencies [9998ac4]
+- Updated dependencies [87f1ea5]
+- Updated dependencies [6507d01]
+  - @nocobase/app-plugin-agents@2.0.0-beta.4
+  - @nocobase/app-plugin-authentication@2.0.0-beta.19
+  - @nocobase/app-plugin-authorization@1.0.0-beta.36
+  - @nocobase/app-plugin-notification@2.0.0-beta.5
+  - @nocobase/app-plugin-users@2.0.0-beta.15
+  - @nocobase/app-plugin-foundation@0.1.0-beta.14
+  - @nocobase/app-server@5.0.0-beta.1
+  - @nocobase/app-plugin-i18n@1.0.0-beta.21
+
+## 1.0.0-beta.87
+
+### Patch Changes
+
+- 6cc8acf: Show the last two non-whitespace characters of CJK names in default text avatars, with a shared avatar initials utility that preserves existing Latin and email fallback rules.
+- 242a683: Center images in the default template's file preview.
+- c36beac: Move theme settings into the account menu in both application templates, preserving color modes, theme presets, and saved preferences.
+- cf23bfe: **Breaking:** Remove the deprecated `@nocobase/app-server/mailer` entry and its `Mailer`, `mailerToken`, `createMailer`, `MailerProvider`, and notification configuration exports. Replace `MailExecutions.close(waitMs)` and `drain()` with `stop()` and `wait()`; transport `close()` now cancels supported network work and waits for its original completion without a nested timeout. Application owners must apply the outer shutdown budget. Create exclusive senders with `@nocobase/app-server/mailers` and declare notification config with `@nocobase/app-plugin-notification-providers/config`. Existing inline SMTP/Resend YAML, environment mappings, and provider/channel APIs remain supported.
+
+  Default and Examples now show `mailers.default: system` and explicitly map `MAILERS_SYSTEM_*`; the example configuration remains empty at runtime. The previous `MAILERS_TRANSACTIONAL_*` sample prefix was not published. Applications may still choose any valid mailer name and custom environment prefix.
+
+- 4411984: Configure named application mailers once for password reset, user invitations and email notifications. App-server validates `mailers`, adds explicit environment mappings and a private startup snapshot, and registers a `MailSenderFactory` from which Authentication, Users and each email notification channel create their own exclusive sender and close it after stopping their own work, so closing one never affects another. Legacy inline senders, channel selection and standalone Auth, Provider factories and hand-composed hosts keep working without new arguments. New applications can send reset and invitation emails without installing Notification. Restart after changing email configuration; configuration reload does not hot-switch active senders.
+- Updated dependencies [6cc8acf]
+- Updated dependencies [1f0b3ba]
+- Updated dependencies [5934070]
+- Updated dependencies [4411984]
+- Updated dependencies [9933a9a]
+- Updated dependencies [be17408]
+- Updated dependencies [1e018f1]
+- Updated dependencies [99de914]
+- Updated dependencies [cf23bfe]
+- Updated dependencies [139e754]
+- Updated dependencies [4411984]
+  - @nocobase/app-plugin-mail@1.0.0-beta.21
+  - @nocobase/app-plugin-agents@2.0.0-beta.3
+  - @nocobase/caching@1.0.0-beta.4
+  - @nocobase/app-plugin-users@2.0.0-beta.14
+  - @nocobase/app-plugin-authentication@2.0.0-beta.18
+  - @nocobase/app-plugin-knowledge@0.1.0-beta.17
+  - @nocobase/app-plugin-foundation@0.1.0-beta.13
+  - @nocobase/db@1.0.0-beta.25
+  - @nocobase/app-server@5.0.0-beta.0
+  - @nocobase/app-cli@1.0.0-beta.32
+  - @nocobase/app-plugin-api-keys@1.0.0-beta.21
+  - @nocobase/app-plugin-authorization@1.0.0-beta.35
+  - @nocobase/app-plugin-authz-default-access@1.0.0-beta.19
+  - @nocobase/app-plugin-authz-restriction-rules@1.0.0-beta.17
+  - @nocobase/app-plugin-authz-sharing-rules@1.0.0-beta.18
+  - @nocobase/app-plugin-concurrency@0.1.0-beta.2
+  - @nocobase/app-plugin-database-explorer@1.0.0-beta.19
+  - @nocobase/app-plugin-file@1.0.0-beta.29
+  - @nocobase/app-plugin-i18n@1.0.0-beta.20
+  - @nocobase/app-plugin-notification@2.0.0-beta.4
+  - @nocobase/app-plugin-notification-in-app@2.0.0-beta.2
+  - @nocobase/app-plugin-notification-providers@1.0.0-beta.18
+  - @nocobase/app-plugin-scheduler@1.0.0-beta.23
+
 ## 1.0.0-beta.86
 
 ### Patch Changes

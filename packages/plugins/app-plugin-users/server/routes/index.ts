@@ -29,7 +29,8 @@ import {
 import { databaseManagerToken } from '@nocobase/db';
 import { AuthorizationDeniedError } from '@nocobase/authorization/core';
 import { PermissionSetLastAssignmentError } from '@nocobase/authorization/permission-sets';
-import { Hono, type MiddlewareHandler } from 'hono';
+import { Hono, type Context, type MiddlewareHandler } from 'hono';
+import { getRequestLocale } from '@nocobase/i18n/server';
 import { createMiddleware } from 'hono/factory';
 import { z } from 'zod';
 import { UserPreferenceError } from '../preferences/service.js';
@@ -70,6 +71,12 @@ import {
 } from './schemas.js';
 
 const tags = ['Users'];
+
+/** The caller's interface language as the i18n middleware resolved it, when the application mounts one. */
+function inviterLocale(context: Context): { inviterLocale?: string } {
+  const locale = getRequestLocale(context);
+  return locale ? { inviterLocale: locale } : {};
+}
 
 export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
   defineApiRoutes(({ container }) => {
@@ -246,13 +253,15 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
       }),
       apiValidator('json', InviteUsersInput),
       async (context) => {
-        const { emails, roleScopes } = context.req.valid('json');
+        const { emails, roleScopes, locale } = context.req.valid('json');
         if (roleScopes) await requireUserAction(context, '*', 'assign-role');
         const invitedBy = context.get('authz').identity.principal.id;
         const results = await users.invite({
           emails,
           invitedBy,
           ...(roleScopes ? { roleScopes } : {}),
+          ...(locale ? { locale } : {}),
+          ...inviterLocale(context),
           origin: new URL(context.req.url).origin,
         });
         logSecurityEvent(securityLogger, context, 'user.invite', invitedBy, {
@@ -312,6 +321,7 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
           await requireUserAction(context, '*', 'assign-role');
         const result = await users.resendInvitation(invitationId, {
           sendEmail,
+          ...inviterLocale(context),
           origin: new URL(context.req.url).origin,
         });
         return context.json({
@@ -910,8 +920,21 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
     preferences.use('*', authentication.required());
     const preferenceService = () =>
       container.resolve(userPreferencesServiceToken);
-    const ownerOf = (context: { get(key: 'auth'): { user: { id: string } } }) =>
-      context.get('auth').user.id;
+    const ownerOf = (
+      context: { get(key: 'auth'): { user: { id: string } } },
+      expectedUserId?: string,
+    ) => {
+      const id = context.get('auth').user.id;
+      if (expectedUserId !== undefined && expectedUserId !== id) {
+        throw new ApiError({
+          status: 'ABORTED',
+          domain: 'users',
+          reason: 'USER_PREFERENCE_IDENTITY_CHANGED',
+          message: 'The signed-in account changed.',
+        });
+      }
+      return id;
+    };
     const preferenceErrors = {
       400: apiErrorResponse(
         400,
@@ -931,13 +954,32 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
           "The signed-in person's own preferences; a scoped or service-account API key is refused.",
         responses: {
           200: dataResponse(UserPreferencesSchema),
+          400: apiErrorResponse(400),
+          409: apiErrorResponse(
+            409,
+            'The authenticated user differs from expectedUserId (`USER_PREFERENCE_IDENTITY_CHANGED`).',
+          ),
           401: apiErrorResponse(401),
           500: apiErrorResponse(500),
         },
       }),
+      apiValidator(
+        'query',
+        z.object({
+          expectedUserId: z
+            .string()
+            .min(1)
+            .optional()
+            .describe(
+              'Refuse the read if the authenticated user changed before it reached the server.',
+            ),
+        }),
+      ),
       async (context) =>
         context.json({
-          data: await preferenceService().list(ownerOf(context)),
+          data: await preferenceService().list(
+            ownerOf(context, context.req.valid('query').expectedUserId),
+          ),
         }),
     );
     preferences.patch(
@@ -972,17 +1014,27 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
         summary: 'Set one of my preferences',
         operationId: 'usersSetMyPreference',
         ...cliRoute({ command: 'user preference set' }),
+        description:
+          'Set a preference for the signed-in person. expectedUserId optionally prevents writes queued under a previous account.',
         responses: {
           200: dataResponse(UserPreferenceSchema),
           ...preferenceErrors,
+          409: apiErrorResponse(
+            409,
+            'The authenticated user differs from expectedUserId (`USER_PREFERENCE_IDENTITY_CHANGED`).',
+          ),
         },
       }),
       apiValidator('param', PreferenceParams),
       apiValidator('json', PreferenceInput),
       async (context) => {
         const { key } = context.req.valid('param');
-        const { value } = context.req.valid('json');
-        await preferenceService().set(ownerOf(context), key, value);
+        const { value, expectedUserId } = context.req.valid('json');
+        await preferenceService().set(
+          ownerOf(context, expectedUserId),
+          key,
+          value,
+        );
         return context.json({ data: { value } });
       },
     );

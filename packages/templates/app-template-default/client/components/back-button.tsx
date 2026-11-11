@@ -1,16 +1,21 @@
 import { useTranslation } from '@nocobase/i18n/client';
 import { ArrowLeftIcon } from 'lucide-react';
 import type { ReactElement, ReactNode } from 'react';
-import { Link, type To, useResolvedPath } from 'react-router';
+import { Link, type To, parsePath, useResolvedPath } from 'react-router';
 
-import { useRouteSearches } from '../routing/route-context.js';
+import { navigationDestination } from '../routing/navigation-destination.js';
+import {
+  useRouteTree,
+  useRouteAccess,
+  useRouteSearches,
+} from '../routing/route-context.js';
 
 import { cn } from 'cn';
 
 export interface BackButtonProps {
   /**
    * Where it leads. Defaults to the parent route with its last visited query; a directly opened detail falls back
-   * to the default parent list. An explicit destination is kept unchanged.
+   * to the default parent list. An explicit destination must match an authorized application page.
    */
   readonly to?: To;
   /** The label, "Back" by default. */
@@ -31,10 +36,35 @@ export function BackButton({
   children,
   className,
   to,
-}: BackButtonProps = {}): ReactElement {
+}: BackButtonProps = {}): ReactElement | null {
   const { t } = useTranslation();
   const parent = useResolvedPath('..');
+  const resolved = useResolvedPath(to ?? '..');
+  const routes = useRouteTree();
+  const access = useRouteAccess();
   const searches = useRouteSearches();
+
+  const fallback = {
+    ...parent,
+    search: searches.get(parent.pathname.replace(/\/+$/u, '') || '/') ?? '',
+  };
+  const rawPath =
+    typeof to === 'string' ? parsePath(to).pathname : to?.pathname;
+  const unsafe =
+    rawPath &&
+    (/^(?:[a-z][a-z\d+.-]*:|\/\/)/iu.test(rawPath) ||
+      rawPath.includes('\\') ||
+      [...rawPath].some((character) => character.charCodeAt(0) <= 32));
+  const primary = unsafe
+    ? undefined
+    : navigationDestination(
+        to && rawPath?.startsWith('/') ? to : to ? resolved : fallback,
+        routes,
+        access,
+      );
+  const destination =
+    primary ?? navigationDestination(fallback, routes, access);
+  if (!destination) return null;
 
   return (
     <Link
@@ -43,16 +73,11 @@ export function BackButton({
         'inline-flex w-fit items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground',
         className,
       )}
-      to={
-        to ?? {
-          pathname: '..',
-          search:
-            searches.get(parent.pathname.replace(/\/+$/u, '') || '/') ?? '',
-        }
-      }
+      to={destination}
     >
       <ArrowLeftIcon className='size-4' />
-      {children ?? t('navigation.back', { defaultValue: 'Back' })}
+      {(primary ? children : undefined) ??
+        t('navigation.back', { defaultValue: 'Back' })}
     </Link>
   );
 }

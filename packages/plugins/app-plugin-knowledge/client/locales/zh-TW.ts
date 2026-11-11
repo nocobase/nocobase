@@ -137,6 +137,15 @@ const zhTW: LocaleResource<typeof enUS> = {
   },
   access: {
     businessSection: '知識',
+    settingsSection: '知識',
+    settings: {
+      indexing: {
+        title: '知識索引',
+        read: '檢視',
+        configure: '設定',
+        rebuild: '重建',
+      },
+    },
     businesses: {
       knowledge: {
         title: '知識',
@@ -152,7 +161,7 @@ const zhTW: LocaleResource<typeof enUS> = {
           },
           propose: {
             title: '提出知識',
-            description: '提出更改，讓可能編輯的人做決定；可以給予什麼代理',
+            description: '提出更改，讓可能編輯的人做決定；可以給予什麼Agents',
             related: '提出知識（與之相關的空間）',
             relatedLabel: '與我相關的空間',
             relatedHint: '應用程式決定哪些空間與誰相關',
@@ -291,7 +300,7 @@ const zhTW: LocaleResource<typeof enUS> = {
       version: '版本 {{version}}',
       statusHint: {
         parsing: '正在提取文字；一旦檔案準備好，搜尋就會找到該檔案。',
-        ready: '它的文字被提取，因此搜尋和代理可以讀取它。',
+        ready: '它的文字被提取，因此搜尋和Agents可以讀取它。',
         failed: '無法提取文本。',
         unsupported: '不會從此類檔案中提取文字；它按原樣儲存。',
       },
@@ -370,7 +379,7 @@ const zhTW: LocaleResource<typeof enUS> = {
       archive: '封存',
       archiveTitle: '存檔「{{title}}」？',
       archiveDescription:
-        '它從樹和代理中消失。您可以稍後恢復；它的版本被保留。',
+        '它從樹和Agents中消失。您可以稍後恢復；它的版本被保留。',
       archivedToast: '已存檔。',
       restore: '恢復',
       restoredToast: '已恢復。',
@@ -389,7 +398,7 @@ const zhTW: LocaleResource<typeof enUS> = {
       editing: '編輯',
       proposing: '提出變更建議',
       properties: '屬性',
-      propertiesHint: '哪些代理和連結閱讀了本檔案。',
+      propertiesHint: '哪些Agents和連結閱讀了本檔案。',
       nothingToPreview: '尚無可預覽的內容。',
       reasonPlaceholder: '為什麼這應該改變，無論誰決定',
       submitProposal: '提交提案',
@@ -397,9 +406,9 @@ const zhTW: LocaleResource<typeof enUS> = {
       title: '標題',
       slug: '蛞蝓',
       slugHint:
-        '小寫字母、數字和連字元；代理和連結如何命名它。留空，它是由標題組成的。',
+        '小寫字母、數字和連字元；Agents和連結如何命名它。留空，它是由標題組成的。',
       summary: '摘要',
-      summaryHint: '一行代理讀入索引。',
+      summaryHint: '一行Agents讀入索引。',
       content: '內容',
       contentPlaceholder: 'Markdown',
       write: '寫',

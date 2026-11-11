@@ -1,0 +1,411 @@
+import {
+  chmodSync,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs';
+import path from 'node:path';
+import os from 'node:os';
+import { spawn } from 'node:child_process';
+import {
+  afterAll,
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest';
+
+import {
+  migrateService,
+  restartService,
+  servicePlan,
+  stopService,
+} from '../src/core/service.ts';
+import { readSettings, writeSettings } from '../src/lib/config.ts';
+import { runnerPaths } from '../src/lib/home.ts';
+import { readDaemonPid } from '../src/core/loop.ts';
+import { readLauncherPid } from '../src/core/launcher.ts';
+import { FakeServer, waitFor } from './fake-server.ts';
+import {
+  BIN,
+  cli,
+  cliEnv,
+  registerRunner,
+  removeDir,
+  tempDir,
+} from './helpers.ts';
+
+const root = tempDir('service-manager-');
+afterAll(() => removeDir(root));
+let home: string;
+let calls: string;
+let bin: string;
+const recorded = (): string[][] =>
+  existsSync(calls)
+    ? readFileSync(calls, 'utf8')
+        .trim()
+        .split('\n')
+        .map((line) => JSON.parse(line) as string[])
+    : [];
+
+beforeEach(() => {
+  home = tempDir('service-manager-case-');
+  bin = path.join(home, 'bin');
+  calls = path.join(home, 'calls.jsonl');
+  mkdirSync(bin);
+  for (const name of ['systemctl', 'launchctl']) {
+    const file = path.join(bin, name);
+    writeFileSync(
+      file,
+      `#!${process.execPath}\nconst fs = require('node:fs'); fs.appendFileSync(${JSON.stringify(calls)}, JSON.stringify(process.argv.slice(2)) + '\\n'); process.exit(Number((process.argv[2] === 'bootout' ? process.env.TEST_BOOTOUT_EXIT : undefined) || process.env.TEST_MANAGER_EXIT || 0));\n`,
+    );
+    chmodSync(file, 0o755);
+  }
+  vi.stubEnv('PATH', `${bin}${path.delimiter}${process.env.PATH}`);
+});
+afterEach(() => {
+  vi.unstubAllEnvs();
+  removeDir(home);
+});
+
+describe('installed service migration', () => {
+  it.each(['linux', 'darwin'] as const)(
+    'migrates an old %s definition once without changing its environment or command',
+    async (platform) => {
+      const label = 'com.example.migrate';
+      const plan = servicePlan({
+        paths: runnerPaths(home, `${home}-work`),
+        command: ['/old/current/bin/nocobase-runner'],
+        label,
+        platform,
+        home,
+        env: { PATH: '/saved/bin', HTTPS_PROXY: 'http://example.invalid:3128' },
+      });
+      const old =
+        platform === 'linux'
+          ? plan.content
+              .replace(
+                'Restart=always',
+                'Restart=on-failure\nRestartPreventExitStatus=3',
+              )
+              .replace(
+                'StartLimitIntervalSec=0',
+                'StartLimitIntervalSec=300\nStartLimitBurst=5',
+              )
+          : plan.content.replace(
+              '<key>KeepAlive</key>\n  <true/>',
+              '<key>KeepAlive</key>\n  <dict>\n    <key>SuccessfulExit</key>\n    <false/>\n  </dict>',
+            );
+      mkdirSync(path.dirname(plan.file), { recursive: true });
+      writeFileSync(plan.file, old);
+      const options = {
+        platform,
+        home,
+        relaunch: ['/old/current/bin/nocobase-runner'],
+      };
+      expect(await migrateService(label, options)).toBe(true);
+      expect(readFileSync(plan.file, 'utf8')).toBe(plan.content);
+      expect(statSync(plan.file).mode & 0o777).toBe(0o600);
+      expect(await migrateService(label, options)).toBe(false);
+      expect(recorded()).toEqual(
+        platform === 'linux'
+          ? [['--user', 'daemon-reload']]
+          : [
+              [
+                'submit',
+                '-l',
+                `_nocobase-runner.reload.${label}`,
+                '--',
+                '/old/current/bin/nocobase-runner',
+                'service',
+                'restart',
+                '--label',
+                label,
+              ],
+            ],
+      );
+    },
+  );
+
+  it.each(['linux', 'darwin'] as const)(
+    'keeps migration retryable if the %s manager rejects its reload',
+    async (platform) => {
+      const plan = servicePlan({
+        paths: runnerPaths(home),
+        command: ['/runner'],
+        platform,
+        home,
+        env: {},
+      });
+      const old =
+        platform === 'linux'
+          ? plan.content.replace('Restart=always', 'Restart=on-failure')
+          : plan.content.replace(
+              '<key>KeepAlive</key>\n  <true/>',
+              '<key>KeepAlive</key><false/>',
+            );
+      mkdirSync(path.dirname(plan.file), { recursive: true });
+      writeFileSync(plan.file, old);
+      vi.stubEnv('TEST_MANAGER_EXIT', '1');
+      await expect(
+        migrateService(plan.label, { platform, home, relaunch: ['/runner'] }),
+      ).rejects.toThrow();
+      expect(readFileSync(plan.file, 'utf8')).toBe(old);
+      vi.stubEnv('TEST_MANAGER_EXIT', '0');
+      expect(
+        await migrateService(plan.label, {
+          platform,
+          home,
+          relaunch: ['/runner'],
+        }),
+      ).toBe(true);
+    },
+  );
+
+  it('does not install a service when there is no existing definition', async () => {
+    expect(
+      await migrateService('com.example.absent', { home, platform: 'linux' }),
+    ).toBe(false);
+    expect(recorded()).toEqual([]);
+  });
+
+  it.runIf(process.platform === 'linux')(
+    'runs despite a migration failure and retries migration on the next service start',
+    async () => {
+      const server = new FakeServer();
+      await server.listen();
+      const env = cliEnv(home, { HOME: home, NOCOBASE_RUNNER_SERVICE: '1' });
+      const paths = runnerPaths(home);
+      const plan = servicePlan({
+        paths,
+        command: [process.execPath, BIN],
+        label: 'com.example.retry-migration',
+        platform: 'linux',
+        home,
+        env: {},
+      });
+      const old = plan.content.replace('Restart=always', 'Restart=on-failure');
+      mkdirSync(path.dirname(plan.file), { recursive: true });
+      writeFileSync(plan.file, old);
+      try {
+        await registerRunner(server.url, env);
+        await writeSettings(
+          { ...(await readSettings(paths)), serviceLabel: plan.label },
+          paths,
+        );
+        for (const managerExit of ['1', '0']) {
+          const previousHeartbeats = server.lastHeartbeat();
+          const child = spawn(process.execPath, [BIN, 'service', 'run'], {
+            env: { ...env, TEST_MANAGER_EXIT: managerExit },
+            stdio: 'ignore',
+          });
+          const exited = new Promise((resolve) => child.once('exit', resolve));
+          try {
+            await waitFor(() => {
+              const heartbeat = server.lastHeartbeat();
+              return (
+                heartbeat !== undefined && heartbeat !== previousHeartbeats
+              );
+            });
+            expect(await readDaemonPid(paths)).toBeDefined();
+            expect(readFileSync(plan.file, 'utf8')).toBe(
+              managerExit === '1' ? old : plan.content,
+            );
+            expect(readFileSync(paths.daemonLog, 'utf8')).toContain(
+              'Service migration failed; continuing with the installed policy and retrying on the next start:',
+            );
+          } finally {
+            child.kill('SIGTERM');
+            await exited;
+          }
+        }
+        expect(recorded()).toEqual([
+          ['--user', 'daemon-reload'],
+          ['--user', 'daemon-reload'],
+        ]);
+      } finally {
+        await server.close();
+        removeDir(`${home}-work`);
+      }
+    },
+  );
+});
+
+describe('service stop command', () => {
+  it('stops a manual daemon even when its home retains a service label', async () => {
+    const server = new FakeServer();
+    await server.listen();
+    const env = cliEnv(home, { HOME: home });
+    const paths = runnerPaths(home);
+    try {
+      await registerRunner(server.url, env);
+      expect((await cli(['start'], env)).code).toBe(0);
+      await writeSettings(
+        {
+          ...(await readSettings(paths)),
+          serviceLabel: 'com.example.manual-daemon',
+        },
+        paths,
+      );
+      expect(await readDaemonPid(paths)).toBeDefined();
+      expect((await cli(['stop'], env)).code).toBe(0);
+      expect(await readLauncherPid(paths)).toBeUndefined();
+      expect(await readDaemonPid(paths)).toBeUndefined();
+    } finally {
+      await cli(['stop', '--timeout', '0'], env);
+      await server.close();
+      removeDir(`${home}-work`);
+    }
+  });
+
+  it.runIf(process.platform === 'linux')(
+    'tolerates an uninstalled systemd unit remembered in settings',
+    async () => {
+      const paths = runnerPaths(home);
+      await writeSettings(
+        { ...(await readSettings(paths)), serviceLabel: 'com.example.removed' },
+        paths,
+      );
+      const result = await cli(
+        ['stop', '--json'],
+        cliEnv(home, { TEST_MANAGER_EXIT: '5' }),
+      );
+      expect(result.code).toBe(0);
+      expect(JSON.parse(result.stdout).result.stopped).toBe(false);
+    },
+  );
+
+  it('keeps an old launchd registration available to an older updater until the new launcher migrates it', async () => {
+    const label = 'com.example.legacy-update';
+    const plan = servicePlan({
+      paths: runnerPaths(home),
+      command: ['/runner'],
+      label,
+      platform: 'darwin',
+      home,
+      env: {},
+    });
+    mkdirSync(path.dirname(plan.file), { recursive: true });
+    writeFileSync(
+      plan.file,
+      plan.content.replace(
+        '<key>KeepAlive</key>\n  <true/>',
+        '<key>KeepAlive</key><dict><key>SuccessfulExit</key><false/></dict>',
+      ),
+    );
+    await stopService(label, 'darwin', home);
+    expect(recorded()).toEqual([
+      [
+        'bootout',
+        `gui/${process.getuid?.() ?? 501}/_nocobase-runner.reload.${label}`,
+      ],
+      ['kill', 'SIGTERM', `gui/${process.getuid?.() ?? 501}/${label}`],
+    ]);
+    expect(
+      await migrateService(label, {
+        platform: 'darwin',
+        home,
+        relaunch: ['/runner'],
+      }),
+    ).toBe(true);
+    await stopService(label, 'darwin', home);
+    expect(recorded().slice(-2)).toEqual([
+      [
+        'bootout',
+        `gui/${process.getuid?.() ?? 501}/_nocobase-runner.reload.${label}`,
+      ],
+      ['bootout', `gui/${process.getuid?.() ?? 501}/${label}`],
+    ]);
+  });
+
+  it.each([3, 113])(
+    'can stop and restart a launchd job already unloaded (exit %s)',
+    async (code) => {
+      vi.stubEnv('TEST_BOOTOUT_EXIT', String(code));
+      await stopService('com.example.unloaded', 'darwin');
+      await restartService('com.example.unloaded', 'darwin');
+      expect(recorded()).toEqual([
+        [
+          'bootout',
+          `gui/${process.getuid?.() ?? 501}/_nocobase-runner.reload.com.example.unloaded`,
+        ],
+        ['bootout', `gui/${process.getuid?.() ?? 501}/com.example.unloaded`],
+        [
+          'bootout',
+          `gui/${process.getuid?.() ?? 501}/_nocobase-runner.reload.com.example.unloaded`,
+        ],
+        ['bootout', `gui/${process.getuid?.() ?? 501}/com.example.unloaded`],
+        [
+          'bootstrap',
+          `gui/${process.getuid?.() ?? 501}`,
+          path.join(
+            os.homedir(),
+            'Library/LaunchAgents/com.example.unloaded.plist',
+          ),
+        ],
+      ]);
+    },
+  );
+
+  it('surfaces launchd permission failures without attempting a replacement', async () => {
+    vi.stubEnv('TEST_MANAGER_EXIT', '1');
+    await expect(
+      restartService('com.example.denied', 'darwin'),
+    ).rejects.toThrow();
+    expect(recorded()).toEqual([
+      [
+        'bootout',
+        `gui/${process.getuid?.() ?? 501}/_nocobase-runner.reload.com.example.denied`,
+      ],
+    ]);
+  });
+
+  it('removes the independent migration job only after replacing the runner job', async () => {
+    await restartService('com.example.migration', 'darwin', true);
+    expect(recorded()).toEqual([
+      ['bootout', `gui/${process.getuid?.() ?? 501}/com.example.migration`],
+      [
+        'bootstrap',
+        `gui/${process.getuid?.() ?? 501}`,
+        path.join(
+          os.homedir(),
+          'Library/LaunchAgents/com.example.migration.plist',
+        ),
+      ],
+      ['remove', '_nocobase-runner.reload.com.example.migration'],
+    ]);
+  });
+
+  it.each([0, 1])(
+    'uses the manager even without a daemon and reports manager exit %s',
+    async (managerExit) => {
+      const paths = runnerPaths(home);
+      await writeSettings(
+        { ...(await readSettings(paths)), serviceLabel: 'com.example.stop' },
+        paths,
+      );
+      const result = await cli(
+        ['stop', '--json'],
+        cliEnv(home, { TEST_MANAGER_EXIT: String(managerExit) }),
+      );
+      if (process.platform === 'linux') {
+        expect(result.code).toBe(managerExit);
+        expect(recorded()).toEqual([
+          ['--user', 'stop', 'com.example.stop.service'],
+        ]);
+      } else {
+        expect(result.code).toBe(managerExit);
+        expect(recorded()[0]).toEqual([
+          'bootout',
+          `gui/${process.getuid?.() ?? 501}/_nocobase-runner.reload.com.example.stop`,
+        ]);
+      }
+      if (result.code === 0)
+        expect(JSON.parse(result.stdout).result.stopped).toBe(true);
+    },
+  );
+});

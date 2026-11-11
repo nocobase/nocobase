@@ -52,16 +52,20 @@ describe('API document of the examples application', () => {
         auth: { secret: 'test-auth-secret-at-least-32-characters' },
         jobs: {
           default: 'memory',
-          memory: {
-            adapter: 'memory',
-            persistence: { path: path.join(directory, 'jobs') },
+          backends: {
+            memory: {
+              adapter: 'memory',
+              persistence: { path: path.join(directory, 'jobs') },
+            },
           },
         },
         queue: {
           default: 'memory',
-          memory: {
-            adapter: 'inMemory',
-            persistence: { path: path.join(directory, 'queue') },
+          backends: {
+            memory: {
+              adapter: 'inMemory',
+              persistence: { path: path.join(directory, 'queue') },
+            },
           },
         },
         database: {

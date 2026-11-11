@@ -259,7 +259,7 @@ export default class PluginUnregister extends PluginUnregistrationCommand {
   } = {
     name: Args.string({
       description:
-        'Plugin to remove: a short name such as audit-log, or a full @nocobase/app-plugin-* package name.',
+        'Plugin to remove: a short name such as audit-log, or a full scoped app-plugin-* or app-portal-* package name.',
       required: true,
     }),
   };

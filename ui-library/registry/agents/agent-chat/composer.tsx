@@ -7,6 +7,10 @@
  * plugin and go with the message. Clicking a chip shows what it carries (`chipContent`).
  */
 import {
+  limitBytes,
+  useFileUploadLimit,
+} from '@nocobase/app-plugin-file/client';
+import {
   buildPageContext,
   contextChips,
   uiItemKey,
@@ -112,13 +116,15 @@ export function Composer({
   const sources = useChatSources();
   const labels = useComposerLabels();
   const files = useChatAttachments();
+  const limit = useFileUploadLimit();
   const attachments = useMemo(
     (): AgentComposerAttachments => ({
+      maxSize: limitBytes(limit),
       upload: (file, signal) => files.upload(file, signal),
       discard: (attachment) => files.discard(attachment),
       ...(registerAddFiles ? { registerAdd: registerAddFiles } : {}),
     }),
-    [files, registerAddFiles],
+    [files, limit, registerAddFiles],
   );
 
   const input: ChatContextInput = {

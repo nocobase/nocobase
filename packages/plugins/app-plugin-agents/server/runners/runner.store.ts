@@ -56,6 +56,7 @@ export interface RunnerRecord {
   readonly workspaceUsage?: unknown;
   readonly unavailableModels?: unknown;
   readonly quotaUsage?: unknown;
+  readonly quotaLimits?: unknown;
   readonly quotaRevision?: number;
   readonly lastSeenAt: string | null;
   readonly createdAt: string;
@@ -364,6 +365,7 @@ export function toRunner(
       workspaceDetails,
     ),
     unavailableModels: storedUnavailableModels(record.unavailableModels),
+    quotaLimits: record.quotaLimits ?? null,
     quotaRevision: Number(record.quotaRevision ?? 0),
     quotaUsage: (Array.isArray(record.quotaUsage)
       ? record.quotaUsage

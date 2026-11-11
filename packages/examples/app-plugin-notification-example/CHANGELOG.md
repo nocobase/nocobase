@@ -1,5 +1,75 @@
 # @nocobase/app-plugin-notification-example
 
+## 1.0.0-beta.17
+
+### Minor Changes
+
+- 03fac04: Make the notification template page readable for administrators. Template details open in a drawer with an address of their own (`/settings/notifications/templates/:templateId`; older `?template=` links redirect), the filters form a compact toolbar showing display names, cards are grouped by category and open on click, and the copy avoids technical wording. Template registrations accept translation keys (`{ ns, key, defaultValue }`) for every administrator-facing field, translatable channel, channel type and source names, and a `localeMode` field; `combined` marks a message that carries every language, so the preview offers no language choice. Otherwise the preview starts in the interface language and lists language names. `NotificationTemplateView` text fields are now `string | { ns, key, defaultValue }`. The Users invitation and the notification example registrations are translated and the invitation declares `localeMode: 'combined'`.
+
+### Patch Changes
+
+- Updated dependencies [2d18eb2]
+- Updated dependencies [03fac04]
+- Updated dependencies [3642d82]
+  - @nocobase/db@1.0.0-beta.27
+  - @nocobase/app-server@5.0.0-beta.3
+  - @nocobase/app-plugin-notification@2.0.0-beta.7
+  - @nocobase/app-plugin-authentication@2.0.0-beta.20
+
+## 1.0.0-beta.16
+
+### Patch Changes
+
+- 8be5180: Reduce mobile page padding consistently across application templates and plugin pages while preserving tablet and desktop spacing.
+- @nocobase/app-plugin-authentication@2.0.0-beta.20
+  - @nocobase/app-plugin-notification@2.0.0-beta.6
+
+## 1.0.0-beta.15
+
+### Patch Changes
+
+- 3d28bff: Remove default page Refresh actions from shared application guidance and examples while preserving write updates, contextual read retries, and live progress updates.
+- Updated dependencies [7c25f88]
+- Updated dependencies [7c25f88]
+- Updated dependencies [7c25f88]
+- Updated dependencies [215795d]
+  - @nocobase/app-client@4.0.0-beta.9
+  - @nocobase/app-plugin-authentication@2.0.0-beta.19
+
+## 1.0.0-beta.14
+
+### Patch Changes
+
+- 3681eb0: Provide a permission-protected, read-only notification template directory with synthetic previews that reuse business send renderers, plus application integration and source upgrade guidance.
+- Updated dependencies [78bdca8]
+- Updated dependencies [3681eb0]
+- Updated dependencies [9998ac4]
+- Updated dependencies [87f1ea5]
+- Updated dependencies [6507d01]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.19
+  - @nocobase/app-plugin-notification@2.0.0-beta.5
+  - @nocobase/app-client@4.0.0-beta.8
+  - @nocobase/app-server@5.0.0-beta.1
+
+## 1.0.0-beta.13
+
+### Patch Changes
+
+- cf23bfe: **Breaking:** Remove the deprecated `@nocobase/app-server/mailer` entry and its `Mailer`, `mailerToken`, `createMailer`, `MailerProvider`, and notification configuration exports. Replace `MailExecutions.close(waitMs)` and `drain()` with `stop()` and `wait()`; transport `close()` now cancels supported network work and waits for its original completion without a nested timeout. Application owners must apply the outer shutdown budget. Create exclusive senders with `@nocobase/app-server/mailers` and declare notification config with `@nocobase/app-plugin-notification-providers/config`. Existing inline SMTP/Resend YAML, environment mappings, and provider/channel APIs remain supported.
+
+  Default and Examples now show `mailers.default: system` and explicitly map `MAILERS_SYSTEM_*`; the example configuration remains empty at runtime. The previous `MAILERS_TRANSACTIONAL_*` sample prefix was not published. Applications may still choose any valid mailer name and custom environment prefix.
+
+- Updated dependencies [6cc8acf]
+- Updated dependencies [9933a9a]
+- Updated dependencies [1e018f1]
+- Updated dependencies [cf23bfe]
+- Updated dependencies [4411984]
+  - @nocobase/app-client@4.0.0-beta.7
+  - @nocobase/app-plugin-authentication@2.0.0-beta.18
+  - @nocobase/db@1.0.0-beta.25
+  - @nocobase/app-server@5.0.0-beta.0
+  - @nocobase/app-plugin-notification@2.0.0-beta.4
+
 ## 1.0.0-beta.12
 
 ### Patch Changes

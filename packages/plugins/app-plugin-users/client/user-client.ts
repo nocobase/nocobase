@@ -84,12 +84,16 @@ export interface UserInvitation {
   readonly summary: readonly string[];
   readonly expiresAt: string;
   readonly sentAt: string | null;
+  /** The email's language; null for invitations created before it was kept. */
+  readonly locale: string | null;
   readonly createdAt: string;
 }
 
 export interface InviteUsersInput {
   readonly emails: readonly string[];
   readonly roleScopes?: Readonly<Record<string, UserRoleValue>>;
+  /** The email's language; the caller's interface language when omitted. */
+  readonly locale?: string;
 }
 
 export type UserInvitationResult =
@@ -112,6 +116,8 @@ export interface PublicUserInvitation {
   readonly inviterName: string;
   readonly summary: readonly string[];
   readonly expiresAt: string;
+  /** The invitation's language, which the page opens in; null for older invitations. */
+  readonly locale: string | null;
 }
 
 export interface AcceptUserInvitationInput {
@@ -119,6 +125,8 @@ export interface AcceptUserInvitationInput {
   readonly name: string;
   readonly username?: string;
   readonly password: string;
+  /** The language the page shows, kept as a new account's language. */
+  readonly locale?: string;
 }
 
 export interface AcceptedUserInvitation {

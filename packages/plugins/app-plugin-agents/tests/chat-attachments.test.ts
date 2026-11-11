@@ -2,9 +2,9 @@
  * Files people send with chat messages: uploading, sending them with a message, who may read them (the owner, a run
  * on the conversation by its token, nobody else), what the agent is told, and the purge of uploads never sent.
  */
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { CHAT_ATTACHMENT_SIZE_MAX } from '../shared/conversations.js';
+import { createChatAttachments } from '../server/core/conversations/attachments.js';
 import { claim, createHarness, type Harness } from './harness.js';
 
 const ALICE = 'alice';
@@ -65,6 +65,64 @@ describe('chat attachments', () => {
         ...(options.runToken ? { runToken: options.runToken } : {}),
       },
     );
+
+  it('reads an existing attachment using its stored disk, not the current upload disk', async () => {
+    h = await createHarness();
+    const attachment = await h.services.chatAttachments.upload(
+      ALICE,
+      new File(['old disk'], 'old.txt'),
+    );
+    const limitForDisk = vi.fn(() => ({
+      maxFileSizeMb: 50,
+    }));
+    const { service } = createChatAttachments({
+      tx: h.services.tx,
+      basePath: () => '/main',
+      limitForDisk,
+      storage: {
+        store: async () => {
+          throw new Error('Not uploading');
+        },
+        stream: async () => new Blob(['old disk']).stream(),
+        bytes: async () => new Uint8Array(),
+        remove: async () => {},
+      },
+    });
+    const content = await service.content({ userId: ALICE }, attachment.id);
+    expect(content.uploadLimit).toEqual({ maxFileSizeMb: 50 });
+    expect(limitForDisk).toHaveBeenLastCalledWith('memory');
+    expect(await new Response(content.body).text()).toBe('old disk');
+  });
+
+  it('accepts exactly 1 MiB and returns the configured 413 for both size guards', async () => {
+    h = await createHarness({
+      drive: {
+        default: 'large',
+        disks: {
+          large: {
+            driver: 'fs',
+            location: '/unused',
+            visibility: 'private',
+            maxFileSizeMb: 1,
+          },
+        },
+      },
+    });
+    for (const bytes of [
+      1 * 1024 * 1024,
+      1 * 1024 * 1024 + 1,
+      2 * 1024 * 1024,
+    ]) {
+      const result = await upload(ALICE, 'limit.bin', new Uint8Array(bytes));
+      expect(result.status).toBe(bytes === 1 * 1024 * 1024 ? 201 : 413);
+      if (result.status === 413)
+        expect(result.body.error).toMatchObject({
+          reason: 'FILE_TOO_LARGE',
+          message: 'A file may have at most 1 MB.',
+          metadata: { maxFileSizeMb: 1 },
+        });
+    }
+  });
 
   it('sends application-started conversation attachments with the first message', async () => {
     h = await createHarness();
@@ -131,11 +189,11 @@ describe('chat attachments', () => {
     const large = await upload(
       ALICE,
       'large.bin',
-      new Uint8Array(CHAT_ATTACHMENT_SIZE_MAX + 1),
+      new Uint8Array(20 * 1024 * 1024 + 1),
       'application/octet-stream',
     );
     expect(large.status).toBe(413);
-    expect(large.body.error.reason).toBe('UPLOAD_TOO_LARGE');
+    expect(large.body.error.reason).toBe('FILE_TOO_LARGE');
     expect((await upload(ALICE, '')).status).toBe(400);
   });
 

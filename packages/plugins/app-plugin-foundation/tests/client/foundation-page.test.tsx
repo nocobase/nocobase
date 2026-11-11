@@ -254,7 +254,7 @@ describe('App Foundation page', () => {
     expect(
       within(detail).queryByText('Information pending update'),
     ).not.toBeInTheDocument();
-    expect(within(detail).queryByText('records')).not.toBeInTheDocument();
+    expect(within(detail).queryByText('Records')).not.toBeInTheDocument();
     expect(
       screen.queryByText(/≥|withheld|extensionCollectionOwnership/),
     ).not.toBeInTheDocument();
@@ -335,16 +335,16 @@ describe('App Foundation page', () => {
       screen
         .getByRole('button', { name: 'Data modeling: In use' })
         .closest('li'),
-    ).toHaveClass('opacity-25');
+    ).toHaveClass('opacity-40');
     expect(
       screen.getByRole('button', { name: 'Permissions: In use' }).closest('li'),
-    ).not.toHaveClass('opacity-25');
+    ).not.toHaveClass('opacity-40');
     fireEvent.blur(chip);
     expect(
       screen
         .getByRole('button', { name: 'Data modeling: In use' })
         .closest('li'),
-    ).not.toHaveClass('opacity-25');
+    ).not.toHaveClass('opacity-40');
     fireEvent.click(
       within(matrix).getAllByRole('button', {
         name: 'Inspect Orders × Permissions',
@@ -1169,6 +1169,62 @@ describe('App Foundation page', () => {
         name: 'Pro approval: Pending recognition',
       }),
     ).not.toBeInTheDocument();
+  });
+
+  it('titles an extension without a display name by its unscoped package and keeps the full identifier', async () => {
+    await render(() => ({
+      data: {
+        ...OVERVIEW,
+        capabilities: OVERVIEW.capabilities.filter(
+          (entry) => entry.key === 'dataModeling',
+        ),
+        inventory: {
+          entries: [
+            {
+              name: '@vendor/app-plugin-concurrency',
+              version: '1.2.3',
+              installed: true,
+              kind: 'plugin',
+              origin: 'unverified',
+              registration: 'observed',
+              categories: [],
+              evidence: ['serverRegistration'],
+            },
+          ],
+          complete: true,
+          unreadable: [],
+          serverRegistrationsComplete: true,
+        },
+      },
+    }));
+    const tile = await screen.findByRole('button', {
+      name: '@vendor/app-plugin-concurrency: Pending recognition',
+    });
+    expect(tile).toHaveTextContent('app-plugin-concurrency');
+    expect(tile).not.toHaveTextContent('@vendor');
+    expect(tile).toHaveTextContent('Extension');
+    expect(tile).toHaveTextContent('Pending recognition');
+    expect(tile.getAttribute('title')).toContain(
+      '@vendor/app-plugin-concurrency',
+    );
+    expect(tile).toHaveAttribute('aria-pressed', 'false');
+    fireEvent.click(tile);
+    expect(tile).toHaveAttribute('aria-pressed', 'true');
+    const detail = screen.getByRole('region', {
+      name: /@vendor\/app-plugin-concurrency/,
+    });
+    expect(within(detail).getByText('Selected capability')).toBeVisible();
+  });
+
+  it('shows each status as visible words on the tile, not only in its name', async () => {
+    await render();
+    const tile = await screen.findByRole('button', {
+      name: 'Mail: Ready, needs setup',
+    });
+    expect(tile).toHaveTextContent('Ready, needs setup');
+    expect(
+      screen.getByRole('button', { name: 'Data modeling: In use' }),
+    ).toHaveTextContent('In use');
   });
 
   it('shows related packages once without recognition diagnostics', async () => {

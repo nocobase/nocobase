@@ -209,3 +209,76 @@ test('reconciles deleted projects through positive and negative receipts without
       .status,
   ).toBe(409);
 });
+
+test('searches, sorts, counts and deletes projects with replayable receipts', async ({
+  testApp,
+  request,
+}) => {
+  const admin = await signIn(testApp, DEFAULT_ADMIN_CREDENTIALS);
+  // Earlier tests may leave projects behind; these names are unique to this test.
+  const tag = randomUUID().slice(0, 8);
+  const before = await testApp.connection.repository('skillProjects').count();
+  const ids: Record<string, string> = {};
+  for (const name of ['Gamma', 'Alpha', 'Beta', 'Other']) {
+    const response = await admin.fetch(
+      '/skillProjects',
+      write(`${tag} ${name}`),
+    );
+    ids[name] = ((await response.json()) as { data: { id: string } }).data.id;
+  }
+  const names = async (query: string) =>
+    (
+      (await (await admin.fetch(`/skillProjects?${query}`)).json()) as {
+        data: { name: string }[];
+        meta: { total: number };
+      }
+    ).data.map((row) => row.name.slice(tag.length + 1));
+  expect(await names(`sort=name&order=asc&q=${tag}`)).toEqual([
+    'Alpha',
+    'Beta',
+    'Gamma',
+    'Other',
+  ]);
+  expect(await names(`sort=name&order=desc&q=${tag}`)).toEqual([
+    'Other',
+    'Gamma',
+    'Beta',
+    'Alpha',
+  ]);
+  expect(
+    await (await admin.fetch(`/skillProjects?q=${tag}%20Gam`)).json(),
+  ).toMatchObject({ meta: { total: 1 } });
+  expect((await admin.fetch('/skillProjects?sort=id')).status).toBe(400);
+  expect(await (await admin.fetch('/skillProjects/summary')).json()).toEqual({
+    data: { total: before + 4 },
+  });
+  expect((await request('/skillProjects/summary')).status).toBe(401);
+
+  const remove = (id: string, operationKey = key()): RequestInit => ({
+    method: 'DELETE',
+    headers: { origin: 'http://localhost', 'Idempotency-Key': operationKey },
+  });
+  const path = `/skillProjects/${ids.Beta}`;
+  expect(
+    (
+      await admin.fetch(path, {
+        method: 'DELETE',
+        headers: { origin: 'http://localhost' },
+      })
+    ).status,
+  ).toBe(400);
+  const operation = key();
+  const deleted = await admin.fetch(path, remove(ids.Beta!, operation));
+  expect(deleted.status).toBe(200);
+  expect(await deleted.json()).toEqual({ data: { id: ids.Beta } });
+  // A retry after a lost response replays the original result.
+  const replay = await admin.fetch(path, remove(ids.Beta!, operation));
+  expect(replay.status).toBe(200);
+  expect(replay.headers.get('Idempotency-Replayed')).toBe('true');
+  // A new delete of the missing project is a plain 404.
+  expect((await admin.fetch(path, remove(ids.Beta!))).status).toBe(404);
+  expect((await admin.fetch(path)).status).toBe(404);
+  expect(await (await admin.fetch('/skillProjects/summary')).json()).toEqual({
+    data: { total: before + 3 },
+  });
+});

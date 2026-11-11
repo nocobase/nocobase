@@ -6,8 +6,32 @@ const ptBR: LocaleResource<typeof enUS> = {
   page: {
     loading: 'Carregando',
   },
+  notificationTemplates: {
+    invitation: {
+      contributor: 'Usuários',
+      category: 'Contas',
+      name: 'Convite de usuário',
+      trigger:
+        'Um administrador convida alguém, ou reenvia um convite, com e-mail selecionado.',
+      recipients:
+        'A pessoa convidada, no endereço de e-mail informado para ela.',
+      businessRule:
+        'Enviado sempre que um convite é criado ou reenviado com e-mail selecionado. Não há uma opção separada para desativá-lo.',
+      languagePolicy:
+        'Escrito em um único idioma, escolhido ao convidar: o idioma da interface de quem convida, a menos que outro seja escolhido. O reenvio mantém o mesmo idioma. Se esse idioma não tiver texto de e-mail, o e-mail usa o idioma padrão do aplicativo e o inglês.',
+      channel: 'Remetente do e-mail de convite',
+      variables: {
+        app: 'Nome do aplicativo',
+        inviter: 'Nome de quem enviou o convite',
+        items: 'Funções ou acessos concedidos pelo convite',
+        date: 'Quando o convite expira, no idioma do e-mail e em UTC',
+        url: 'Link para aceitar o convite; a pré-visualização usa um link fictício',
+      },
+    },
+  },
   accept: {
     title: 'Aceite o convite',
+    language: 'Idioma',
     description: '{{inviter}} convidou você.',
     summary: 'Você também participará: {{items}}',
     loading: 'Carregando o convite…',

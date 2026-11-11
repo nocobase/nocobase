@@ -15,9 +15,9 @@ const frFR: LocaleResource<typeof enUS> = {
           edit: {
             title: 'Agents de changement et compétences',
             description:
-              "Modifier les paramètres, les compétences et les variables d'un agent, l'archiver, le restaurer et le supprimer, et modifier les compétences. Un agent ne dispose d'aucune capacité autre que celle de l'éditeur.",
+              "Modifier les paramètres, les compétences et les variables d'un Agent, l'archiver, le restaurer et le supprimer, et modifier les compétences. Un Agent ne dispose d'aucune capacité autre que celle de l'éditeur.",
             related:
-              "Agents de changement et compétences (agents qu'ils possèdent et compétences qu'ils ont créées)",
+              "Agents de changement et compétences (Agents qu'ils possèdent et compétences qu'ils ont créées)",
             relatedLabel:
               "Agents que je possède et compétences que j'ai créées",
             relatedHint:
@@ -43,12 +43,12 @@ const frFR: LocaleResource<typeof enUS> = {
       agents: {
         title: 'Agents',
         description:
-          "Voir agents, compétences et courses ; changer d'agent et de compétence, annuler et réessayer les exécutions.",
+          "Voir Agents, compétences et courses ; changer d'Agent et de compétence, annuler et réessayer les exécutions.",
       },
       runners: {
         title: 'Environnements d’exécution',
         description:
-          "Voir exécuteurs et jetons d'inscription ; gérer les exécuteurs.",
+          "Voir environnements d’exécution et jetons d'inscription ; gérer les environnements d’exécution.",
       },
       prices: {
         title: 'Tarifs des modèles',

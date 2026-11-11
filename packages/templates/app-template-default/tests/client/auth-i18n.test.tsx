@@ -149,6 +149,6 @@ describe('authentication translations', () => {
     await act(() => value.changeLanguage('zh-CN'));
     expect(screen.getByText('此密码重置链接无效或已过期。')).toBeVisible();
     expect(screen.getByText('如果账户存在，重置链接已发送。')).toBeVisible();
-    expect(screen.getByRole('status', { name: '加载中' })).toBeVisible();
+    expect(await screen.findByRole('status', { name: '加载中' })).toBeVisible();
   });
 });

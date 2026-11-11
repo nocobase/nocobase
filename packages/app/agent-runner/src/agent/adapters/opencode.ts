@@ -26,7 +26,12 @@ import { access } from 'node:fs/promises';
 import path from 'node:path';
 import type { ToolCapabilities } from '@nocobase/agent-protocol';
 import { boundedModels } from './models.ts';
-import { recoveryEvent, recoveryPrompt } from './session-recovery.ts';
+import {
+  requireRecoverableSession,
+  sessionUnavailable,
+  recoveryEvent,
+  recoveryPrompt,
+} from './session-recovery.ts';
 import { withDetectionEnvironment } from './detection.ts';
 
 import { detectExec } from './detect-exec.ts';
@@ -457,7 +462,7 @@ class OpencodeRun {
     }
     this.finished = true;
     await this.shutdown();
-    const result = this.outcome(ending, thrown);
+    const result = sessionUnavailable(thrown) ?? this.outcome(ending, thrown);
     if (this.session.outputBlocks) this.streaming.end();
     if (result.error)
       this.emit({
@@ -520,6 +525,7 @@ class OpencodeRun {
           this.stopping
         )
           throw error;
+        requireRecoverableSession(session);
         recovered = true;
         this.emit(recoveryEvent('opencode'));
       }

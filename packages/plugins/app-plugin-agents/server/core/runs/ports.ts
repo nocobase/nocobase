@@ -9,7 +9,18 @@ import type {
   WorkspaceCommitEvidence,
   FailureReason,
 } from '@nocobase/agent-protocol';
-import type { DatabaseConnection } from '@nocobase/db';
+import type {
+  DatabaseConnection,
+  Expression,
+  ExpressionBuilder,
+  SqlBool,
+} from '@nocobase/db';
+
+/** A database predicate on the supplied subject-id column; never an enumerated id set. */
+export type SubjectVisibility = (
+  eb: ExpressionBuilder,
+  subjectId: string,
+) => Expression<SqlBool>;
 
 import type { Agent } from '../../../shared/agents.js';
 import type { I18nText } from '../../../shared/i18n.js';
@@ -65,6 +76,8 @@ export interface SubjectScope {
 
 /** The subject's part of a run payload; the runs domain adds the rules, the workspace and the skills. */
 export interface SubjectAssembly {
+  /** Render fixed instructions before task and runner details; server-only, with no session-policy effect. */
+  readonly briefLayout?: 'stable-prefix';
   /** Subject-specific effort for this run only; null uses the tool default, absent uses the Agent entry. */
   readonly effort?: string | null;
   /**
@@ -187,9 +200,21 @@ export interface SubjectSample {
   ): readonly RunInput[];
 }
 
+/** Who asked for a stop beyond the user it is attributed to. */
+export interface CancelRequest {
+  /** Set when a run's token made the request: the run that asked. */
+  readonly byRunId?: string;
+}
+
 export interface WorkSink {
-  /** In the stop request's transaction, once, before any terminal callback. A null actor is a system stop. */
-  onCancelRequested?(tx: Tx, run: Run): Promise<void>;
+  /** In the quota suspension/resumption transaction, only for opted-in subjects. */
+  onQuotaWait?(tx: Tx, run: Run): Promise<void>;
+  onQuotaResumed?(tx: Tx, run: Run): Promise<void>;
+  /**
+   * In the stop request's transaction, once, before any terminal callback. A null actor is a system stop; `byRunId`
+   * names the run whose token asked for the stop, so a subject can tell an agent's own stop from a person's.
+   */
+  onCancelRequested?(tx: Tx, run: Run, request?: CancelRequest): Promise<void>;
   /**
    * In the transaction that ended the run: completed, cancelled, or failed with no attempt left. A failed run's
    * `failureReason` says why; this is where the subject's domain asks people what next (retry, reassign, cancel).
@@ -244,7 +269,16 @@ export interface SubjectReports {
 }
 
 export interface SubjectBinding {
+  /** Current subject visibility for a reader. Null means all subjects, with no extra query. */
+  readonly visibleSubjects?: (
+    conn: DatabaseConnection,
+    userId: string,
+  ) => Promise<SubjectVisibility | null>;
+  /** Preserve quota-limited work on its original runner and session. */
+  readonly quotaWait?: boolean;
   readonly kind: string;
+  /** Host policy for tool sessions. Absent preserves normal fingerprint-based reuse. No I/O is performed here. */
+  readonly sessionPolicy?: (claim: ClaimContext) => 'fresh' | 'reuse';
   /** Reads current issue visibility outside database transactions for comment-origin work. */
   readonly commentActorMayRead?: (
     subjectId: string,

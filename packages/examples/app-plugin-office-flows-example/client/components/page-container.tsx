@@ -9,7 +9,7 @@ export function PageContainer({
 }: PageContainerProps): ReactElement {
   return (
     <section
-      className={cn('w-full space-y-6 p-6 md:p-8', className)}
+      className={cn('w-full space-y-6 p-4 sm:p-6 md:p-8', className)}
       {...props}
     />
   );

@@ -2,7 +2,7 @@
   "name": "@nocobase/app-plugin-projects",
   "displayName": "Projects",
   "description": "Projects, issues and collaboration for a NocoBase application.",
-  "version": "0.1.0-beta.24",
+  "version": "0.1.0-beta.29",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {
@@ -282,6 +282,7 @@
     "remark-gfm": "catalog:"
   },
   "devDependencies": {
+    "@nocobase/app-template-examples": "workspace:*",
     "@nocobase/app-testing": "workspace:*",
     "@nocobase/db-sqlite": "workspace:*",
     "@nocobase/dev-config": "workspace:*",
@@ -298,6 +299,7 @@
     "tailwindcss": "catalog:",
     "tw-animate-css": "catalog:",
     "typescript": "catalog:",
-    "vitest": "catalog:"
+    "vitest": "catalog:",
+    "@nocobase/drive": "workspace:^"
   }
 }

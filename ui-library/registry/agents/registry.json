@@ -84,7 +84,8 @@
       "dependencies": [
         "@nocobase/app-plugin-agents@^0.1.0-beta.0",
         "cn@^0.4.0",
-        "lucide-react@^0.487.0"
+        "lucide-react@^0.487.0",
+        "@nocobase/app-plugin-file@^1.0.0-beta.30"
       ],
       "registryDependencies": [
         "badge",
@@ -141,12 +142,13 @@
         "@nocobase/app-client@^4.0.0-beta.2",
         "@ai-sdk/react@4.0.131",
         "ai@7.0.128",
-        "@nocobase/app-plugin-agents@^1.0.0-beta.21",
+        "@nocobase/app-plugin-agents@^2.0.0-beta.4",
         "@nocobase/i18n@^1.0.0-beta.4",
         "@nocobase/markdown-mermaid@^0.1.0-beta.2",
         "cn@^0.4.0",
         "lucide-react@^0.487.0",
-        "react-router@^7.0.2"
+        "react-router@^7.0.2",
+        "@nocobase/app-plugin-file@^1.0.0-beta.30"
       ],
       "registryDependencies": [
         "alert",
@@ -328,6 +330,16 @@
           "path": "agent-chat/use-keyboard-fit.ts",
           "type": "registry:lib",
           "target": "client/extensions/nocobase-agent-chat/use-keyboard-fit.ts"
+        },
+        {
+          "path": "agent-chat/snapshot-view.tsx",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-agent-chat/snapshot-view.tsx"
+        },
+        {
+          "path": "agent-chat/share-conversation.tsx",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-agent-chat/share-conversation.tsx"
         }
       ]
     },
@@ -335,20 +347,44 @@
       "name": "agent-chat-details",
       "type": "registry:block",
       "title": "Agent Chat with Details",
-      "description": "The agent chat panel with conversation details: linked work such as tasks, context usage, the runner and the agent, beside or over the conversation, with list-first entry and shared headers. Linked work uses generic ConversationLink sections. Supply per-kind render slots for application-specific work. No task or project dependency.",
+      "description": "The agent chat workspace: the conversation list, one conversation and its details (linked work such as tasks, context usage, runtime and agent), laid out by its own width as one column, list beside conversation, or list, conversation and details. Mount it as a full page with the selection in the address, or in the side panel with LinkedChatPanel; both are the same component. Linked work uses generic ConversationLink sections; applications add their own through narrow slots. No task or project dependency.",
       "categories": ["agents"],
       "meta": {
         "group": "Agents",
         "iframeHeight": 760
       },
-      "dependencies": ["@tanstack/react-query@^5.90.21"],
-      "registryDependencies": ["@nocobase/agent-chat", "button", "sheet"],
-      "docs": "Render LinkedChatPanel under the same ChatProvider as the simple ChatPanel. Use linked launchers for list-first opening; explicit conversation/new entry keeps its intent. slots[kind] renders a related-work section and renderSummary provides application-owned status/progress. renderConversation and renderList preserve application controllers. Passive details reuse cached conversation and usage snapshots; no polling is added.",
+      "dependencies": [
+        "@base-ui/react@^1.7.0",
+        "@tanstack/react-query@^5.90.21"
+      ],
+      "registryDependencies": [
+        "@nocobase/agent-chat",
+        "button",
+        "input",
+        "skeleton",
+        "tabs"
+      ],
+      "docs": "Mount ChatWorkspace on a page (selection in the address) and LinkedChatPanel under the same ChatProvider as the simple ChatPanel (selection in the panel store); both are the same workspace. Add application-specific parts through narrow slots: list.heading, list.row (extra, facts, status), list.filters/filter, renderBody, metadata, detailsMetadata and scope; slots[kind] renders a related-work section and renderSummary the summary row. Passive details reuse cached conversation and usage snapshots; no polling is added.",
       "files": [
         {
           "path": "agent-chat/linked-chat-panel.tsx",
           "type": "registry:component",
           "target": "client/extensions/nocobase-agent-chat/linked-chat-panel.tsx"
+        },
+        {
+          "path": "agent-chat/workspace.tsx",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-agent-chat/workspace.tsx"
+        },
+        {
+          "path": "agent-chat/workspace-layout.ts",
+          "type": "registry:lib",
+          "target": "client/extensions/nocobase-agent-chat/workspace-layout.ts"
+        },
+        {
+          "path": "agent-chat/conversation-list.tsx",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-agent-chat/conversation-list.tsx"
         },
         {
           "path": "agent-chat/conversation-associations.tsx",
@@ -359,6 +395,11 @@
           "path": "agent-chat/conversation-details.tsx",
           "type": "registry:component",
           "target": "client/extensions/nocobase-agent-chat/conversation-details.tsx"
+        },
+        {
+          "path": "agent-chat/pane-sheet.tsx",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-agent-chat/pane-sheet.tsx"
         },
         {
           "path": "agent-chat/conversation-links.ts",

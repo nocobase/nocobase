@@ -63,7 +63,10 @@ readline.createInterface({ input: process.stdin }).on('line', async (line) => {
         JSON.stringify({
           method: 'permissionEnv',
           params: {
-            value: process.env.ACP_FIXTURE_PERMISSION_DEFAULT ?? 'off',
+            value:
+              process.env.DSH_PERMISSION_MODE ??
+              process.env.ACP_FIXTURE_PERMISSION_DEFAULT ??
+              'off',
           },
         }) + '\n',
       );

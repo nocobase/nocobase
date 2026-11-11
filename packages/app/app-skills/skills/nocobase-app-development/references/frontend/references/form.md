@@ -207,12 +207,24 @@ Labels go above inputs (guideline T3.2): ordinary fields use the default `vertic
 ### Other controls
 
 - The registry also has `NativeSelect`, `Slider`, `InputOTP`, `ToggleGroup` and more (for `Combobox`, see "Choosing a related record"); the skill's forms rules say when each fits, for example `ToggleGroup` for two to seven options. Before wiring a component into `Controller`, confirm the controlled prop and the callback arguments with `pnpm exec shadcn docs <name>` and the source the CLI wrote: Base UI components often use different prop names from the Radix versions.
-- For dates, use the application's own `DatePicker` from `#components/date-picker`. If it does not exist yet, compose it there from the `calendar` and `popover` primitives as shadcn's Date Picker guide does (`pnpm exec shadcn docs date-picker`), with `date-fns` for formatting, rather than inline in a page. Give it `value: Date | undefined`, `onChange(date)`, `id` for the label and a `date-fns` `locale`; it accepts neither `ref` nor `aria-invalid`, so `FieldError` below it carries the error. It formats the trigger and the calendar in English unless it gets a `date-fns` locale, so map the interface language to one:
+- For dates, follow [Dates](#dates) below: the application's own `DatePicker` from `#components/date-picker`, never a native date input.
+
+- When a component you need is not in `client/components/ui/`, add it as [section 1 of `shadcn.md`](shadcn.md#1-what-the-template-ships-and-how-to-add-the-rest) describes; do not write it by hand.
+
+### Dates
+
+A date field is the application's own `DatePicker`. shadcn has no `DatePicker` component to install: its [Date Picker](https://ui.shadcn.com/docs/components/base/date-picker) is a `Popover` opened by a `Button` and holding a `Calendar`, and the application composes that once. A native `<input type='date'>` and the shadcn `<Input type='date'>` both open the browser's own calendar, so neither is a date picker; `check-ui-components.mjs` reports both. Every date field goes through these four steps:
+
+1. **Read the matching official example first.** Look for `client/components/date-picker.tsx` and read it if it exists. Then read the installed `calendar`, `popover` and `button` sources and run `pnpm exec shadcn docs calendar popover button`, which prints each component's documentation and API for the project's base (`style` in `components.json`: `base-*` is Base UI, otherwise Radix). Read the Date Picker page for the same base — [Base UI](https://ui.shadcn.com/docs/components/base/date-picker) or [Radix](https://ui.shadcn.com/docs/components/radix/date-picker); `pnpm exec shadcn docs date-picker` reports "not found" because it is a composition, not a registry component. Base UI opens the popover with `<PopoverTrigger render={<Button … />}>`; Radix uses `<PopoverTrigger asChild>`. Do not mix the two, and do not write from memory.
+2. **Reuse or compose it once.** If `client/components/date-picker.tsx` exists, review that it really composes `Calendar` in a `Popover` (a component named `DatePicker` is not evidence) and reuse it. Otherwise add only the missing primitives (`yes n | pnpm exec shadcn add calendar popover button`) and compose it there from the official example, adapting only import paths, the interface language, the controlled value and what the business needs, such as clearing. The [tested composition from the Examples application](../../../assets/date-picker-example/client/components/date-picker.tsx) is the reference: copy it into `client/components/date-picker.tsx` and check its imports against the installed primitives. Never hand-write a calendar grid or popover positioning, never import another package's private date picker (a plugin's `client/components/date-picker.tsx` is not public), and never fall back to a native date input.
+3. **Reuse it on every page.** A page renders `<DatePicker id value onChange />` and converts at its boundary; it never composes `Calendar` and `Popover` again. In the Examples application, the holiday dates of the office workflow parameters (`client/pages/workflows/office-parameters.tsx`) are the reference field.
+4. **Check and verify.** Run the [component checker](../component-selection.md#run-the-targeted-check) on the changed files and test the field's behavior as the [reference tests](../../../assets/date-picker-example/tests/client/date-picker.test.tsx) do: picking, showing a loaded value, clearing, disabled, both interface languages, keyboard and focus return, and the submitted value in a time zone west and east of UTC. In the delivery report, record the official page used, the date picker's source location and the pages that call it.
+
+The reference `DatePicker` takes `value: Date | undefined`, `onChange(date)`, `id` for the label, `disabled`, `clearable` (a Clear action under the calendar) and an optional `date-fns` `locale`, which defaults to the interface language for both the trigger text and the calendar; extend its language mapping when you add a language. It accepts neither `ref` nor `aria-invalid`, so `FieldError` below it carries the error. The registry's `CalendarDayButton` does not attach its focus ref, so the composition passes a day button that does; without it, the arrow keys move the highlighted day while focus stays behind. A wrapper that fixes a field's placeholder or locale stays thin:
 
 ```tsx
 // client/pages/projects/project-due-date-picker.tsx
-import { useLocale, useTranslation } from '@nocobase/i18n/client';
-import { enUS, zhCN } from 'date-fns/locale';
+import { useTranslation } from '@nocobase/i18n/client';
 import type { ReactElement } from 'react';
 
 import { DatePicker } from '#components/date-picker';
@@ -229,16 +241,11 @@ export function ProjectDueDatePicker({
   onChange,
 }: ProjectDueDatePickerProps): ReactElement {
   const { t } = useTranslation();
-  const { locale } = useLocale();
-  // One date-fns locale per language the application offers; add a line when you add a language.
-  const dateLocale = locale.startsWith('zh') ? zhCN : enUS;
   return (
     <DatePicker
       id={id}
-      className='w-full'
       value={value}
       onChange={onChange}
-      locale={dateLocale}
       placeholder={t('projects.form.dueDatePlaceholder')}
     />
   );
@@ -249,10 +256,10 @@ In the form, render it inside `Controller` with `value={field.value}` and `onCha
 
 How a date travels to and from the endpoint depends on what it is:
 
-- **A calendar date** (a due date, a birthday) travels as `'yyyy-MM-dd'`. Submit `format(date, 'yyyy-MM-dd')` and turn a loaded value into the default with `parseISO(value)`, both from `date-fns`: `parseISO` reads a date-only string as local midnight. `new Date('2026-01-02')` reads it as UTC midnight, which shows as January 1 west of UTC, and `toISOString()` turns local midnight into the previous day east of UTC.
+- **A calendar date** (a due date, a birthday) travels as `'yyyy-MM-dd'`. Submit `format(date, 'yyyy-MM-dd')` and turn a loaded value into the default with `parseISO(value)`, both from `date-fns` (the reference's [`client/lib/date-only.ts`](../../../assets/date-picker-example/client/lib/date-only.ts) wraps them as `formatDateOnly` and `parseDateOnly`, which also read an empty or invalid value as no date): `parseISO` reads a date-only string as local midnight. `new Date('2026-01-02')` reads it as UTC midnight, which shows as January 1 west of UTC, and `toISOString()` turns local midnight into the previous day east of UTC.
 - **A point in time** (`updatedAt`, a meeting start) travels as an ISO 8601 string with its offset: send `date.toISOString()`, parse with `new Date(value)`, and display with `Intl.DateTimeFormat` in the current locale ("Dates and numbers" in [`i18n.md`](i18n.md#dates-and-numbers)).
 
-- When a component you need is not in `client/components/ui/`, add it as [section 1 of `shadcn.md`](shadcn.md#1-what-the-template-ships-and-how-to-add-the-rest) describes; do not write it by hand.
+A date and time (a meeting start) keeps its time: put the `DatePicker` beside a shadcn `<Input type='time'>`, as the Date Picker page's Time Picker example does, and combine both into one value in the field's component. Do not replace it with a date-only picker, and keep a genuine time input (`<Input type='time'>`); a month or week has no single-day picker to replace it with.
 
 ## Validation timing, array fields, dependent fields and resetting
 
@@ -431,5 +438,5 @@ export function ProjectReminderForm({
   - `PageContainer` and `PageHeader`, the form in a `max-w-2xl` column (guideline L4), fields grouped with `FieldSet`;
   - the buttons right-aligned below the form, linked with `form={formId}` when the form component renders none;
   - on success, refresh the list underneath through the outlet context's `reload()` (guideline R2; a covering page keeps the list mounted with its old rows), then `navigate(…, { replace: true })` back to the list or on to the record; Cancel navigates back with `replace` too, as closing an overlay does;
-  - unsaved changes (T3.9): the application's router is a declarative `BrowserRouter`, so React Router's `useBlocker` is not available; register a synchronous leave decision with `useNavigationGuard` from `@nocobase/app-client` (provided by `AppClientProviders`), and keep a separate `beforeunload` listener only while dirty or submitting. The host preserves the mounted page during rejected history navigation. For a form in a `RouteDialog`, its `beforeClose` covers closing the overlay ([section 2.5 of `overlay.md`](overlay.md#25-beforeclose-checks-before-closing)).
+  - unsaved changes (T3.9): the application's router is a declarative `BrowserRouter`, so React Router's `useBlocker` is not available; register the leave decision with `useNavigationGuard` from `@nocobase/app-client` (provided by `AppClientProviders`); it may answer synchronously or with a Promise that resolves after an in-page confirmation. Keep a separate `beforeunload` listener only while dirty or submitting. The host preserves the mounted page during rejected history navigation. A form in a `RouteDialog` or `RouteDrawer` uses the same guard: closing the overlay is navigation, so ×, Esc, the backdrop, Cancel and browser back all reach it; `beforeClose` only blocks closing while submitting ([section 2.5 of `overlay.md`](overlay.md#25-beforeclose-checks-before-closing)).
 - **Settings page**: each Card is an independent form, with its buttons at the bottom right of the Card (guidelines T4.1 and T4.2); see the members card.

@@ -6,9 +6,8 @@ import type { AppClientRegisteredRoute } from '@nocobase/app-client/plugins';
 import { useMemo, type ReactElement } from 'react';
 import { Navigate, Outlet, Route, Routes } from 'react-router';
 
-import { EMPTY_ARRAY } from '#lib/constants';
-
 import { AppLayout } from '../layouts/app-layout.js';
+import { filterRouteTree } from './route-navigation.js';
 import { renderRouteTree } from './route-tree.js';
 import { StandalonePageLayout } from './standalone-page-layout.js';
 import { SessionPreparation } from './session-preparation.js';
@@ -65,16 +64,4 @@ export function AppRouter({ clientRoutes }: AppRouterProps): ReactElement {
       <Route path='*' element={<Navigate to='/' replace />} />
     </Routes>
   );
-}
-
-/** Pure groups can span shells; a page and its descendants always share their shell. */
-function filterRouteTree(
-  routes: readonly AppClientRegisteredRoute[],
-  predicate: (route: AppClientRegisteredRoute) => boolean,
-): AppClientRegisteredRoute[] {
-  return routes.flatMap((route) => {
-    if (route.componentLoader) return predicate(route) ? [route] : [];
-    const children = filterRouteTree(route.children ?? EMPTY_ARRAY, predicate);
-    return children.length ? [{ ...route, children }] : [];
-  });
 }

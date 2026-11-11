@@ -1,7 +1,10 @@
 import type { ComponentPropsWithoutRef, ReactElement } from 'react';
 import { cn } from 'cn';
 
-import { BRAND_MARK_PATH, BRAND_MARK_TRANSLATE } from './brand-mark-geometry';
+import {
+  BRAND_MARK_PATH,
+  BRAND_MARK_TRANSLATE,
+} from './brand-mark-geometry.js';
 
 /** Keep the brand recognizable; the orbit, rather than the bricks, conveys progress. */
 export function BrandLoadingMark({
@@ -25,7 +28,7 @@ export function BrandLoadingMark({
         strokeWidth='2'
         opacity='.12'
       />
-      <g className='nocobase-loading-orbit'>
+      <g className='origin-center motion-safe:animate-spin'>
         <path
           d='M32 4a28 28 0 0 1 28 28'
           stroke='currentColor'

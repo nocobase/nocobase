@@ -1,5 +1,94 @@
 # @nocobase/app-plugin-notification
 
+## 2.0.0-beta.8
+
+### Patch Changes
+
+- e1f584e: The notification Skill no longer tells an agent that in-app inbox writes need a CSRF token, matching the in-app plugin, whose writes are protected by the authentication plugin's origin check. The in-app Skill's description no longer promises a Client page the plugin does not contribute. The agents and in-app Skills name their package's `docs/` and `README.md` files instead of linking outside the Skill folder, so the links no longer break once the Skills are synchronized into an application's `.agents/skills/`, and the agents extension points table links to `online-agent.md` by its real name.
+- Updated dependencies [d88875e]
+- Updated dependencies [57912f1]
+- Updated dependencies [57912f1]
+- Updated dependencies [57912f1]
+  - @nocobase/app-server@5.0.0-beta.4
+  - @nocobase/app-client@4.0.0-beta.10
+  - @nocobase/db@1.0.0-beta.28
+  - @nocobase/app-plugin-authentication@2.0.0-beta.20
+
+## 2.0.0-beta.7
+
+### Minor Changes
+
+- 03fac04: Make the notification template page readable for administrators. Template details open in a drawer with an address of their own (`/settings/notifications/templates/:templateId`; older `?template=` links redirect), the filters form a compact toolbar showing display names, cards are grouped by category and open on click, and the copy avoids technical wording. Template registrations accept translation keys (`{ ns, key, defaultValue }`) for every administrator-facing field, translatable channel, channel type and source names, and a `localeMode` field; `combined` marks a message that carries every language, so the preview offers no language choice. Otherwise the preview starts in the interface language and lists language names. `NotificationTemplateView` text fields are now `string | { ns, key, defaultValue }`. The Users invitation and the notification example registrations are translated and the invitation declares `localeMode: 'combined'`.
+
+### Patch Changes
+
+- Updated dependencies [2d18eb2]
+- Updated dependencies [3642d82]
+  - @nocobase/db@1.0.0-beta.27
+  - @nocobase/app-server@5.0.0-beta.3
+  - @nocobase/app-plugin-authentication@2.0.0-beta.20
+
+## 2.0.0-beta.6
+
+### Minor Changes
+
+- a2a6385: Add Russian (ru-RU) and Korean (ko-KR) to the plugins Studio uses, and correct terminology in their existing translations: an issue is a task (it was translated as a magazine issue or a problem in several languages), a runtime is an execution environment, Agent and My Agent stay consistent, and an issue's executor and the backlog status read correctly. The remaining English strings in the agents plugin's translations are translated. Calendars follow Russian and Korean, and a browser asking for Traditional Chinese (zh-HK, zh-Hant-TW) now lands on zh-TW instead of zh-CN.
+
+### Patch Changes
+
+- bb1dff2: **Breaking configuration migration:** Concurrency, Jobs and Queue now declare named configurations under `backends`, with `default` selecting a name in that map. Move all direct entries into `backends` in both YAML and application-owned configuration factories. Legacy, unknown and mixed top-level fields are rejected even when unused; Queue no longer ignores `connections`, `worker`, `jobs` or invalid defaults with a Memory fallback. Preserve existing adapter names, connections, namespaces, persistence paths and business resource names; no Redis data migration is required.
+- Updated dependencies [7508a76]
+- Updated dependencies [fb4659d]
+- Updated dependencies [6fbf389]
+- Updated dependencies [1cda4c3]
+- Updated dependencies [7d970d6]
+- Updated dependencies [bb1dff2]
+- Updated dependencies [a2a6385]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.20
+  - @nocobase/app-server@5.0.0-beta.2
+  - @nocobase/app-plugin-authorization@1.0.0-beta.37
+  - @nocobase/db@1.0.0-beta.26
+  - @nocobase/jobs@1.0.0-beta.6
+  - @nocobase/i18n@2.0.0-beta.2
+  - @nocobase/app-client@4.0.0-beta.9
+
+## 2.0.0-beta.5
+
+### Minor Changes
+
+- 3681eb0: Provide a permission-protected, read-only notification template directory with synthetic previews that reuse business send renderers, plus application integration and source upgrade guidance.
+
+### Patch Changes
+
+- Updated dependencies [78bdca8]
+- Updated dependencies [9998ac4]
+- Updated dependencies [87f1ea5]
+- Updated dependencies [6507d01]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.19
+  - @nocobase/app-plugin-authorization@1.0.0-beta.36
+  - @nocobase/app-client@4.0.0-beta.8
+  - @nocobase/app-server@5.0.0-beta.1
+
+## 2.0.0-beta.4
+
+### Patch Changes
+
+- cf23bfe: **Breaking:** Remove the deprecated `@nocobase/app-server/mailer` entry and its `Mailer`, `mailerToken`, `createMailer`, `MailerProvider`, and notification configuration exports. Replace `MailExecutions.close(waitMs)` and `drain()` with `stop()` and `wait()`; transport `close()` now cancels supported network work and waits for its original completion without a nested timeout. Application owners must apply the outer shutdown budget. Create exclusive senders with `@nocobase/app-server/mailers` and declare notification config with `@nocobase/app-plugin-notification-providers/config`. Existing inline SMTP/Resend YAML, environment mappings, and provider/channel APIs remain supported.
+
+  Default and Examples now show `mailers.default: system` and explicitly map `MAILERS_SYSTEM_*`; the example configuration remains empty at runtime. The previous `MAILERS_TRANSACTIONAL_*` sample prefix was not published. Applications may still choose any valid mailer name and custom environment prefix.
+
+- 4411984: Configure named application mailers once for password reset, user invitations and email notifications. App-server validates `mailers`, adds explicit environment mappings and a private startup snapshot, and registers a `MailSenderFactory` from which Authentication, Users and each email notification channel create their own exclusive sender and close it after stopping their own work, so closing one never affects another. Legacy inline senders, channel selection and standalone Auth, Provider factories and hand-composed hosts keep working without new arguments. New applications can send reset and invitation emails without installing Notification. Restart after changing email configuration; configuration reload does not hot-switch active senders.
+- Updated dependencies [6cc8acf]
+- Updated dependencies [9933a9a]
+- Updated dependencies [1e018f1]
+- Updated dependencies [cf23bfe]
+- Updated dependencies [4411984]
+  - @nocobase/app-client@4.0.0-beta.7
+  - @nocobase/app-plugin-authentication@2.0.0-beta.18
+  - @nocobase/db@1.0.0-beta.25
+  - @nocobase/app-server@5.0.0-beta.0
+  - @nocobase/app-plugin-authorization@1.0.0-beta.35
+
 ## 2.0.0-beta.3
 
 ### Patch Changes

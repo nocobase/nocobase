@@ -309,7 +309,11 @@ export class SourceEvidence {
     const nodeKey = (node: ts.Node): number => {
       const known = nodeKeys.get(node);
       if (known !== undefined) return known;
-      const location = `${node.getSourceFile().fileName}:${node.getStart()}`;
+      // Materialized iteration values share source syntax but have distinct invocation identities.
+      const location =
+        node.pos < 0
+          ? `generated:${locations.size}`
+          : `${node.getSourceFile().fileName}:${node.getStart()}`;
       const key = locations.get(location) ?? locations.size;
       locations.set(location, key);
       nodeKeys.set(node, key);
@@ -1234,41 +1238,8 @@ export class SourceEvidence {
       }
       if (contextualCalls && ts.isCallExpression(node)) {
         const evaluator = new StaticValues(this, bindings, captures);
-        const database = (
-          value: ts.Node,
-          seen = new Set<ts.Node>(),
-        ): boolean => {
-          if (seen.has(value) || seen.size >= 32) return false;
-          const next = new Set(seen).add(value);
-          if (
-            ts.isCallExpression(value) &&
-            ts.isPropertyAccessExpression(value.expression)
-          ) {
-            if (
-              value.expression.name.text === 'resolve' &&
-              value.arguments.length === 1
-            )
-              return (
-                this.externalService(value.arguments[0]) === '@nocobase/db'
-              );
-            if (
-              ['connection', 'query', 'repository'].includes(
-                value.expression.name.text,
-              )
-            )
-              return database(value.expression.expression, next);
-          }
-          if (
-            ts.isPropertyAccessExpression(value) &&
-            value.name.text === 'query'
-          )
-            return database(value.expression, next);
-          return evaluator
-            .values(value)
-            .some(
-              (candidate) => candidate !== value && database(candidate, next),
-            );
-        };
+        const database = (value: ts.Node): boolean =>
+          evaluator.databaseIdentity(value);
         // A `connection()` or `query()` accessor without arguments on the proven database identity is part of the
         // operation it prefixes: its own completion is judged once, with the whole call, not again as a barrier.
         const receiver = ts.isPropertyAccessExpression(node.expression)

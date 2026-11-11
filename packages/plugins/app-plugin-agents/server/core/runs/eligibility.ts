@@ -188,6 +188,7 @@ export function createClaimEligibility(deps: {
       const registered = (request.runners ?? (await deps.runners.all(conn)))
         .map((runner) => ({
           ...runner,
+          quotaLimits: null,
           unavailableModels: (runner.unavailableModels ?? []).filter(
             (mark) => mark.reason !== 'toolQuota',
           ),

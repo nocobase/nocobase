@@ -1,4 +1,8 @@
 import {
+  limitBytes,
+  type DriveUploadLimit,
+} from '@nocobase/app-plugin-file/server';
+import {
   apiErrorResponse,
   apiErrorResponses,
   apiValidator,
@@ -11,7 +15,6 @@ import {
 import type { DatabaseConnection } from '@nocobase/db';
 import type { Hono } from 'hono';
 
-import { ATTACHMENT_SIZE_MAX } from '../../../shared/attachments.js';
 import { collectRunAttempts, RECORDED_SKIPS } from '../../kernel/work.js';
 import type { CreateCommentResult } from '../../../shared/comments.js';
 import {
@@ -54,6 +57,7 @@ const notFound = apiErrorResponse(404);
  */
 export function createIssueCommentRoutes(deps: {
   readonly comments: CommentService;
+  readonly uploadLimit: DriveUploadLimit;
   readonly queries: CommentQueries;
   /** A connection to read with, for answering a comment a delegated write made. */
   readonly read: () => DatabaseConnection;
@@ -125,7 +129,7 @@ export function createIssueCommentRoutes(deps: {
             upload: 'projectsUploadAttachment',
             field: 'attachmentIds',
             multiple: true,
-            maxBytes: ATTACHMENT_SIZE_MAX,
+            maxBytes: limitBytes(deps.uploadLimit),
             description: `A file to attach (repeatable); attaching needs \`upload\` on \`pm.attachments\`.`,
           },
         },
@@ -209,7 +213,9 @@ export function createCommentRoutes(comments: CommentService): Hono<ViewerEnv> {
       tags,
       summary: 'Edit a comment',
       operationId: 'projectsUpdateComment',
+      security: personOrRunSecurity,
       ...cliRoute({
+        action: 'pm.issues/comment',
         command: 'comment update',
         flags: {
           commentId: { name: 'comment' },
@@ -217,7 +223,8 @@ export function createCommentRoutes(comments: CommentService): Hono<ViewerEnv> {
         },
         examples: ['comment update <comment> --content-file note.md'],
       }),
-      description: 'By its author.',
+      description:
+        'By its author. An issued run credential may edit only a plain comment recorded by that same run; missing provenance is refused.',
       responses: {
         200: dataResponse(IssueCommentSchema),
         ...apiErrorResponses,
@@ -241,13 +248,15 @@ export function createCommentRoutes(comments: CommentService): Hono<ViewerEnv> {
       tags,
       summary: 'Delete a comment',
       operationId: 'projectsDeleteComment',
+      security: personOrRunSecurity,
       ...cliRoute({
+        action: 'pm.issues/comment',
         command: 'comment delete',
         flags: { commentId: { name: 'comment' } },
         confirm: 'Delete this comment and its files?',
       }),
       description:
-        'By its author, or by whoever may moderate comments on the issue. Its files go with it.',
+        'By its author, or by whoever may moderate comments on the issue. A run may delete only its own plain comments from the current run, without moderator fallback. Its files go with it.',
       responses: {
         204: emptyResponse(),
         ...apiErrorResponses,
