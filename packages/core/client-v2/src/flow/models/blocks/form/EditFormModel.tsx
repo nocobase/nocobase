@@ -16,6 +16,7 @@ import {
   FlowModelRenderer,
   MemoFlowModelRenderer,
   MultiRecordResource,
+  observable,
   SingleRecordResource,
 } from '@nocobase/flow-engine';
 import { Pagination, Space } from 'antd';
@@ -23,12 +24,14 @@ import { isEqual } from 'lodash';
 import React from 'react';
 import { BlockSceneEnum } from '../../base/BlockModel';
 import { FormBlockContent, FormBlockModel } from './FormBlockModel';
+import { confirmDiscardChanges } from '../../base/PageModel/closeGuard';
 import { dispatchEventDeep } from '../../../utils';
 
 export class EditFormModel extends FormBlockModel {
   static scene = BlockSceneEnum.oam;
   static blockCapabilityActionName = 'update';
 
+  private readonly confirmingPageChange = observable.ref(false);
   private actionFlowSettings = { showBackground: false, showBorder: false, toolbarPosition: 'above' as const };
   private actionExtraToolbarItems = [
     {
@@ -71,9 +74,26 @@ export class EditFormModel extends FormBlockModel {
   getAclActionName() {
     return 'update';
   }
+
+  private hasUnsavedChanges = () => {
+    const record = this.getCurrentRecord();
+    return Array.from(this.getUserModifiedFields()).some(
+      (field) => !isEqual(this.form.getFieldValue(field), record?.[field]),
+    );
+  };
+
   handlePageChange = async (page: number) => {
     if (this.resource instanceof MultiRecordResource) {
       const multiResource = this.resource as MultiRecordResource;
+      if (page === multiResource.getPage() || this.confirmingPageChange.value) return;
+      if (this.hasUnsavedChanges()) {
+        this.confirmingPageChange.value = true;
+        try {
+          if (!(await confirmDiscardChanges(this.context))) return;
+        } finally {
+          this.confirmingPageChange.value = false;
+        }
+      }
       multiResource.setPage(page);
       multiResource.loading = true;
       await multiResource.refresh();
@@ -116,10 +136,12 @@ export class EditFormModel extends FormBlockModel {
           }}
         >
           <Pagination
+            // Simple pagination keeps its own editable page number. Reset it while confirming the switch.
+            key={this.confirmingPageChange.value ? 'confirming' : 'editing'}
             simple
             pageSize={1}
             showSizeChanger={false}
-            defaultCurrent={(this.resource as MultiRecordResource).getPage()}
+            current={(this.resource as MultiRecordResource).getPage()}
             total={(this.resource as MultiRecordResource).getTotalPage()}
             onChange={this.handlePageChange}
             style={{ display: 'inline-block' }}
