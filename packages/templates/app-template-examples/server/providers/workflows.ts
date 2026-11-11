@@ -226,7 +226,8 @@ export class WorkflowsService {
   /**
    * `<source>.<key>` names a process. A link from before its process had
    * versions may name a version, `<source>.<name>`: it opens that version
-   * of the process.
+   * of the process. A version whose name is the key has the process's own
+   * id, so its old links open the process at its latest version.
    */
   private resolve(id: string): {
     group: WorkflowGroup;

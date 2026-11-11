@@ -242,7 +242,7 @@ export const workflowRoutes: AppApiRouteContribution<Application> =
         summary: 'Describe an example workflow',
         operationId: 'examplesGetWorkflowDefinition',
         description:
-          'Describes one version of a process: `version` selects it, the latest by default. An id naming a version, `<source>.<name>`, as links from before the process had versions do, describes that version. `definition.executionCount` counts the records bound to the described version; `workflow` counts every version.',
+          'Describes one version of a process: `version` selects it, the latest by default. An id naming a version, `<source>.<name>`, as links from before the process had versions do, describes that version, except when that name is also the key, as it usually is for the first version: such an id is the id of the process itself and describes the latest version unless `version` names another. `definition.executionCount` counts the records bound to the described version; `workflow` counts every version.',
         responses: { 200: dataResponse(WorkflowDefinitionSchema), ...failures },
       }),
       apiValidator('param', WorkflowParams),
