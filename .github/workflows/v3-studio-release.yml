@@ -23,9 +23,9 @@ run-name: studio-release:${{ inputs.channel }}${{ inputs.dry_run && ' (dry run)'
 #   latest release keeps its bump pull request to `main` version-only and merges them into `dev` through a second
 #   squashed pull request from `release/studio-<version>-changelog`. Notes, changelog and GitHub release are
 #   best-effort: the image and the tag are already published by then, so a failure there (or a released commit older
-#   than the script) warns and is reported in the summary and the notice, but never fails the run. The public notes
-#   (without pull request links and authors) are also uploaded to the registry for both images, where the public image
-#   pages show them per version; also best-effort.
+#   than the script) warns and is reported in the summary and the notice, but never fails the run. Each image's public
+#   notes (without pull request links and authors, and Studio's without Studio EE-only areas) are also uploaded to the
+#   registry, where the public image pages show them per version; also best-effort.
 # - dry_run resolves, validates and builds both editions on both platforms, but never signs in to the registry for a push, pushes,
 #   tags, pushes a branch, opens a pull request, creates a GitHub release or notifies. With DOCKER_PUBLISH_TOKEN
 #   configured it also runs the read-only registry checks, so the tag decision can be previewed. It writes no release
@@ -789,9 +789,10 @@ jobs:
 
       # The registry's public image pages (https://pkg-v3.nocobase.com/-/images/nocobase/studio and studio-ee) show each
       # version's release notes, read from PUT /-/release-notes/<repository>/<version>. Customers cannot open the private
-      # nocobase/studio, so they get the public notes the script writes without pull request links and authors. Both
-      # editions get the same notes; an upload replaces the version's notes, so a retried run is harmless. A released commit
-      # whose script writes no public notes uploads nothing. Failure is a warning only.
+      # nocobase/studio, so each image gets the public notes the script writes for it, release-notes.<image>.<language>.md,
+      # without pull request links and authors; Studio's leave out the scopes Studio's scripts/release/scopes.json marks
+      # Studio EE-only. An upload replaces the version's notes, so a retried run is harmless. A released commit whose script
+      # writes no notes for an image uploads nothing for it. Failure is a warning only.
       - name: Upload the release notes to the registry
         id: registry_notes
         continue-on-error: true
@@ -801,17 +802,19 @@ jobs:
           VERSION: ${{ needs.prepare.outputs.version }}
         run: |
           notes="${RUNNER_TEMP}/notes"
-          en="${notes}/release-notes.public.en.md"
-          zh="${notes}/release-notes.public.zh-CN.md"
-          if [ ! -s "$en" ] || [ ! -s "$zh" ]; then
-            echo "::warning::The released commit's release notes script writes no public notes; the registry gets no release notes for ${VERSION}."
-            echo "result=skipped" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          body="${RUNNER_TEMP}/registry-release-notes.json"
-          jq -nc --rawfile en "$en" --rawfile zh "$zh" '{ en: $en, "zh-CN": $zh }' > "$body"
           uploaded=0
+          missing=0
           for repository in "$IMAGE_REPOSITORY" "$EE_IMAGE_REPOSITORY"; do
+            edition="${repository#*/}"
+            en="${notes}/release-notes.${edition}.en.md"
+            zh="${notes}/release-notes.${edition}.zh-CN.md"
+            if [ ! -s "$en" ] || [ ! -s "$zh" ]; then
+              echo "::warning::The released commit's release notes script writes no notes for ${edition}; the registry gets no release notes for ${repository}:${VERSION}."
+              missing=$((missing + 1))
+              continue
+            fi
+            body="${RUNNER_TEMP}/registry-release-notes.${edition}.json"
+            jq -nc --rawfile en "$en" --rawfile zh "$zh" '{ en: $en, "zh-CN": $zh }' > "$body"
             url="https://${REGISTRY}/-/release-notes/${repository}/${VERSION}"
             if curl --fail-with-body --silent --show-error --retry 3 --retry-all-errors --max-time 30 \
               --request PUT \
@@ -826,11 +829,15 @@ jobs:
               echo "::warning::Uploading the release notes of ${repository}:${VERSION} to the registry failed; upload them by hand (PUT ${url})."
             fi
           done
-          case "$uploaded" in
-            2) echo "result=uploaded" >> "$GITHUB_OUTPUT" ;;
-            0) echo "result=failed" >> "$GITHUB_OUTPUT" ;;
-            *) echo "result=partial" >> "$GITHUB_OUTPUT" ;;
-          esac
+          if [ "$missing" = "2" ]; then
+            echo "result=skipped" >> "$GITHUB_OUTPUT"
+          elif [ "$uploaded" = "2" ]; then
+            echo "result=uploaded" >> "$GITHUB_OUTPUT"
+          elif [ "$uploaded" = "0" ]; then
+            echo "result=failed" >> "$GITHUB_OUTPUT"
+          else
+            echo "result=partial" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Summary
         if: ${{ always() }}

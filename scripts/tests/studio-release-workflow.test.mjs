@@ -86,11 +86,16 @@ test('public release notes go to the registry for both editions', async () => {
     mkdirSync(bin);
     mkdirSync(join(temp, 'notes'));
     if (withNotes) {
-      writeFileSync(join(temp, 'notes/release-notes.public.en.md'), '- A.\n');
-      writeFileSync(
-        join(temp, 'notes/release-notes.public.zh-CN.md'),
-        '- 甲。\n',
-      );
+      for (const edition of ['studio', 'studio-ee']) {
+        writeFileSync(
+          join(temp, `notes/release-notes.${edition}.en.md`),
+          `- A ${edition}.\n`,
+        );
+        writeFileSync(
+          join(temp, `notes/release-notes.${edition}.zh-CN.md`),
+          `- 甲 ${edition}。\n`,
+        );
+      }
     }
     // Records each call's URL and body, and fails for URLs containing $FAILING.
     writeFileSync(
@@ -145,7 +150,12 @@ echo '{"ok":true}'
       url,
       `https://pkg-v3.nocobase.com/-/release-notes/${repository}/1.0.0-beta.77`,
     );
-    assert.deepEqual(JSON.parse(body), { en: '- A.\n', 'zh-CN': '- 甲。\n' });
+    const edition = repository.split('/')[1];
+    assert.deepEqual(
+      JSON.parse(body),
+      { en: `- A ${edition}.\n`, 'zh-CN': `- 甲 ${edition}。\n` },
+      'each image gets its own notes',
+    );
     assert.match(args, /--request PUT/);
     assert.match(args, /authorization: Bearer nbp_secret/);
   }
