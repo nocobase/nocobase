@@ -618,12 +618,9 @@ const deDE: LocaleResource<typeof enUS> = {
       ceilingReached: 'Quotenschwelle erreicht',
       ceilingLabel: 'Pausieren bei',
       ceilingInput: 'Neue {{tool}}-Aufträge ab Prozent Verbrauch pausieren',
-      ceilingOff: 'Aus',
       ceilingSave: 'Anwenden',
       ceilingInvalid:
         'Eine ganze Prozentzahl von 1 bis 100 eingeben oder leer lassen.',
-      ceilingHint:
-        'Verwendet den zuletzt gemeldeten Verbrauch. Leer bedeutet kein Limit; laufende Arbeit wird fortgesetzt.',
       ceilingPaused:
         'Ein Quotenfenster hat das Limit erreicht; betroffene neue Arbeit wartet auf die Rücksetzung oder eine Limitänderung.',
 
@@ -699,7 +696,7 @@ const deDE: LocaleResource<typeof enUS> = {
         'Löschen Sie sie erst, wenn das Kontingent wiederhergestellt ist. {{target}} bekommt sofort wieder Arbeit; ist das Kontingent noch erschöpft, markiert der nächste Lauf es erneut.',
       observed: 'Zuletzt gemeldet {{time}}',
       usedPercent: '{{percent}}% verwendet',
-      ok: 'OK',
+      noUsage: 'Noch keine Kontingentdaten',
       hint: 'Eine Markierung verschwindet zur bekannten Reset-Zeit oder sobald das Tool wieder verfügbares Kontingent meldet. Löschen Sie sie manuell erst, wenn das Kontingent wiederhergestellt ist. Nur der Laufzeitumgebungbesitzer und Administratoren können Markierungen löschen.',
     },
     workspaces: {

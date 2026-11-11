@@ -595,11 +595,8 @@ const viVN: LocaleResource<typeof enUS> = {
       ceilingReached: 'Đã đạt ngưỡng hạn mức',
       ceilingLabel: 'Tạm dừng tại',
       ceilingInput: 'Tạm dừng công việc {{tool}} mới khi đạt phần trăm đã dùng',
-      ceilingOff: 'Tắt',
       ceilingSave: 'Áp dụng',
       ceilingInvalid: 'Nhập phần trăm nguyên từ 1 đến 100 hoặc để trống.',
-      ceilingHint:
-        'Dựa trên mức dùng được báo cáo gần nhất. Để trống là không giới hạn; công việc đang chạy vẫn tiếp tục.',
       ceilingPaused:
         'Một cửa sổ hạn mức đã chạm ngưỡng; công việc mới liên quan chờ đặt lại hoặc thay đổi ngưỡng.',
 
@@ -675,7 +672,7 @@ const viVN: LocaleResource<typeof enUS> = {
         'Chỉ xóa sau khi xác nhận hạn ngạch đã được khôi phục. {{target}} nhận việc trở lại ngay; nếu hạn ngạch vẫn hết, lần chạy tiếp theo sẽ đánh dấu lại.',
       observed: '{{time}} được báo cáo lần cuối',
       usedPercent: '{{percent}}% đã sử dụng',
-      ok: 'Được rồi',
+      noUsage: 'Chưa có dữ liệu hạn mức',
       hint: 'Dấu tự xóa vào thời điểm đặt lại đã biết, hoặc khi công cụ báo lại còn hạn ngạch. Chỉ xóa thủ công sau khi xác nhận hạn ngạch đã được khôi phục. Chỉ chủ sở hữu môi trường chạy và quản trị viên mới có thể xóa dấu.',
     },
     workspaces: {
