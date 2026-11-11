@@ -16,7 +16,7 @@ import {
 import { useTranslation } from '@nocobase/i18n/client';
 import { useRef, useState, type ReactElement } from 'react';
 import { Link, Outlet, useLocation } from 'react-router';
-import { MoreHorizontalIcon, PlusIcon } from 'lucide-react';
+import { PlusIcon } from 'lucide-react';
 import type { ColumnDef } from '@tanstack/react-table';
 import { Alert, AlertDescription } from '#components/ui/alert';
 import { PermissionManagementPage } from './permission-management-page.js';
@@ -24,13 +24,7 @@ import { DataTable, DataTableColumnHeader } from '#components/data-table';
 import { Button } from '#components/ui/button';
 import { Spinner } from '#components/ui/spinner';
 import { Input } from '#components/ui/input';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '#components/ui/dropdown-menu';
+import { RowActions } from '#components/row-actions';
 import { ConfirmAction, SettingsError } from './shared.js';
 import { useSettingsData } from './hooks.js';
 import {
@@ -160,50 +154,34 @@ export default function DefaultAccessPage(): ReactElement {
     {
       id: 'actions',
       enableSorting: false,
+      header: () => <span className='sr-only'>{t('settings.actions')}</span>,
       cell: ({ row }) => (
-        <DropdownMenu>
-          <DropdownMenuTrigger
-            render={
-              <Button
-                variant='ghost'
-                size='icon-sm'
-                aria-label={t('settings.actionsFor', {
-                  name: name(row.original),
-                })}
-              >
-                <MoreHorizontalIcon />
-              </Button>
-            }
-          />
-          <DropdownMenuContent align='end' className='w-auto min-w-40'>
-            <DropdownMenuItem
-              render={
+        <RowActions
+          label={t('settings.actionsFor', { name: name(row.original) })}
+          actions={[
+            {
+              key: 'open',
+              label: t('settings.defaultAccess.open'),
+              render: (
                 <Link
                   to={{
                     pathname: `${encodeURIComponent(row.original.key)}/edit`,
                     search: location.search,
                   }}
                 />
-              }
-            >
-              {t('settings.defaultAccess.open')}
-            </DropdownMenuItem>
-            {canDelete && (
-              <>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  variant='destructive'
-                  onClick={() => {
-                    setError(undefined);
-                    setRemoving(row.original);
-                  }}
-                >
-                  {t('settings.defaultAccess.delete')}
-                </DropdownMenuItem>
-              </>
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
+              ),
+            },
+            canDelete && {
+              key: 'delete',
+              label: t('settings.defaultAccess.delete'),
+              destructive: true,
+              onClick: () => {
+                setError(undefined);
+                setRemoving(row.original);
+              },
+            },
+          ]}
+        />
       ),
     },
   ];

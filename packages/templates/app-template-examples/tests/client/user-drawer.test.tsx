@@ -182,18 +182,20 @@ it.each(['/users', '/settings/users'])(
       exact: true,
     });
     expect(edit).toHaveAttribute('href', `${base}/alice/edit${search}`);
+    // Account actions sit in the row's "⋮" menu, not as buttons on the row (T1.5).
     expect(
-      screen.getByRole('button', { name: 'Disable', exact: true }),
-    ).toBeVisible();
-    expect(
-      screen.getByRole('button', { name: 'Revoke sessions', exact: true }),
-    ).toBeVisible();
+      screen.queryByRole('button', { name: 'Disable', exact: true }),
+    ).not.toBeInTheDocument();
     expect(
       screen.queryByRole('button', { name: 'Edit Alice' }),
     ).not.toBeInTheDocument();
+    const menu = screen.getByRole('button', { name: 'Actions for Alice' });
+    await user.click(menu);
     expect(
-      screen.queryByRole('button', { name: 'Actions for Alice' }),
-    ).not.toBeInTheDocument();
+      (await screen.findAllByRole('menuitem')).map((item) => item.textContent),
+    ).toEqual(['Disable', 'Revoke sessions']);
+    await user.keyboard('{Escape}');
+    await waitFor(() => expect(menu).toHaveFocus());
     if (base === '/users') {
       edit.focus();
       await user.keyboard('{Enter}');
