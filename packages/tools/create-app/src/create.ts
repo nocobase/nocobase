@@ -49,6 +49,8 @@ interface CreateState {
   dependenciesInstalled: boolean;
   nextCommands?: string[];
   message?: string;
+  applications?: { directory: string; name: string }[];
+  applicationDirectory?: string;
   warnings: string[];
 }
 
@@ -86,6 +88,10 @@ function failureOf(state: CreateState, message: string): Envelope {
         ...(state.directory ? { directory: state.directory } : {}),
         projectCreated: state.projectCreated,
         dependenciesInstalled: state.dependenciesInstalled,
+        ...(state.applications ? { applications: state.applications } : {}),
+        ...(state.applicationDirectory
+          ? { applicationDirectory: state.applicationDirectory }
+          : {}),
       },
     },
     state.warnings,
@@ -140,6 +146,7 @@ export async function createApp(options: CreateAppOptions): Promise<number> {
             configured: false,
             nextCommands: state.nextCommands,
             message: state.message,
+            ...(state.applications ? { applications: state.applications } : {}),
           },
           state.warnings,
         ),
@@ -194,7 +201,7 @@ async function run(
     const extraFiles: Record<string, string> = {
       '.npmrc': buildNpmrcFile({ registry }),
     };
-    await scaffoldFromTemplate({
+    const layout = await scaffoldFromTemplate({
       name,
       targetDirectory,
       templateDirectory: template.directory,
@@ -202,6 +209,12 @@ async function run(
     });
     state.projectCreated = true;
     await ensureAllowBuilds(targetDirectory);
+    if (layout.workspace) {
+      state.applications = layout.applications.map((app) => ({
+        directory: path.join(targetDirectory, app.directory),
+        name: app.suffix === '' ? name : `${name}-${app.suffix}`,
+      }));
+    }
     // Creation stops at a project that can be configured, not at one that can run. Which database an application uses
     // is decided by the driver it depends on, and configuring it is `config init`'s job — so the next steps name it
     // rather than this command writing a configuration nobody asked for.
@@ -212,6 +225,14 @@ async function run(
     ];
     state.message =
       'Configure the application with pnpm nocobase config init before starting it. That uses SQLite; for another database, install its driver and name the dialect, for example: pnpm add @nocobase/db-postgres, then pnpm nocobase config init --dialect postgres';
+    if (layout.workspace) {
+      state.nextCommands = layout.applications.flatMap((app) => [
+        `pnpm${app.directory === '.' ? '' : ` --dir=${app.directory}`} nocobase config init`,
+        `pnpm${app.directory === '.' ? '' : ` --dir=${app.directory}`} nocobase config check`,
+      ]);
+      state.message =
+        'Configure every declared App separately, including the root when it is an App. Follow the project README for distinct ports, storage and startup. Install a different database driver inside each App that needs it; config init defaults to SQLite.';
+    }
     progress(`Created ${name}. ${state.message}`);
   } finally {
     await removeDirectory(template.directory);
@@ -230,17 +251,22 @@ async function run(
   });
   state.dependenciesInstalled = true;
   state.stage = 'verify';
-  const verification = await verifyDriver(targetDirectory);
-  if (!verification.ok)
-    throw new Error(
-      verification.reason ?? 'Database driver verification failed.',
-    );
-  progress('Synchronizing NocoBase package skills');
-  const synchronized = await syncSkills(targetDirectory);
-  if (!synchronized.ok) {
-    const warning =
-      synchronized.reason ?? 'Could not synchronize NocoBase package skills.';
-    state.warnings.push(warning);
-    progress(warning);
+  for (const app of state.applications ?? [
+    { directory: targetDirectory, name },
+  ]) {
+    state.applicationDirectory = app.directory;
+    const verification = await verifyDriver(app.directory);
+    if (!verification.ok)
+      throw new Error(
+        `In ${app.directory}: ${verification.reason ?? 'Database driver verification failed.'}`,
+      );
+    progress(`Synchronizing NocoBase package skills in ${app.directory}`);
+    const synchronized = await syncSkills(app.directory);
+    if (!synchronized.ok) {
+      const warning = `In ${app.directory}: ${synchronized.reason ?? 'Could not synchronize NocoBase package skills.'}`;
+      state.warnings.push(warning);
+      progress(warning);
+    }
   }
+  delete state.applicationDirectory;
 }

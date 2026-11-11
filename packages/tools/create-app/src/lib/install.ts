@@ -24,7 +24,7 @@ export async function installDependencies(
   } catch (error) {
     if (error instanceof CommandFailedError) {
       throw new Error(
-        `Installing dependencies failed.\n${error.stderr || error.message}`,
+        `Installing dependencies failed.\n${installationFailureDetail(error)}`,
         { cause: error },
       );
     }
@@ -33,6 +33,14 @@ export async function installDependencies(
   }
 }
 
+/** pnpm reports fetch failures on stdout. Keep stable diagnostics, not credential-bearing configuration dumps. */
+function installationFailureDetail(error: CommandFailedError): string {
+  const code = /^\[(ERR_PNPM_[A-Z0-9_]+)\]/mu.exec(error.stdout)?.[1];
+  if (code && /(?:401|403|AUTH)/u.test(code)) {
+    return `${code}: Registry access was denied. Check the selected registry, authorized login, commercial license and access to the required package versions. Log in securely, then retry pnpm install in the existing project. Never put registry tokens in source files or command arguments.`;
+  }
+  return code ?? (error.stderr || error.message);
+}
 export interface DriverVerification {
   ok: boolean;
   /** Set when the driver installed but cannot be loaded, with an explanation of the likely cause. */

@@ -1,0 +1,52 @@
+.auth-brand-panel {
+  background: var(--auth-brand-background);
+  background-image: radial-gradient(
+    ellipse at top right,
+    color-mix(in srgb, var(--auth-brand-highlight) 8%, transparent),
+    transparent 65%
+  );
+}
+
+/* Authentication surfaces have their own palette; application pages keep the selected theme. */
+.dark .auth-page {
+  --background: #141923;
+  --foreground: #eef1f7;
+  --card: #1b2230;
+  --muted-foreground: #a4adbd;
+  --primary: #526bc7;
+  --primary-foreground: #ffffff;
+  --border: #30394b;
+  --input: #3b475c;
+  --ring: #8198ed;
+  --auth-brand-background: #192130;
+  --auth-brand-highlight: #a2b3ec;
+  --auth-brand-muted: #aab5c9;
+}
+
+.dark .auth-page > aside {
+  border-color: transparent;
+}
+
+.dark .auth-page [data-slot='input'],
+.dark .auth-page [data-slot='input-group'] {
+  background-color: var(--card);
+}
+
+.dark .auth-page [data-slot='input-group'] input {
+  background-color: transparent;
+}
+
+/* Keep login controls comfortable while tightening the form's vertical rhythm. */
+.auth-login-page main header {
+  margin-bottom: calc(var(--spacing) * 6);
+}
+
+.auth-login-page form > [data-slot='field-group'] {
+  gap: calc(var(--spacing) * 4);
+}
+
+.auth-login-page form [data-slot='input'],
+.auth-login-page form [data-slot='input-group'],
+.auth-login-page form button[type='submit'] {
+  height: calc(var(--spacing) * 10);
+}

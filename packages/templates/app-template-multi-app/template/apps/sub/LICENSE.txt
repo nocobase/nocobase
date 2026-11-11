@@ -1,0 +1,129 @@
+Updated Date: November 7, 2026
+
+NocoBase License Agreement
+
+NOCOBASE PTE. LTD., a Singaporean Exempt Private Company Limited by Shares with its principal place of business located at 112 ROBINSON ROAD, #03-01, SINGAPORE ("The Company") https://www.nocobase.com/ issues this License Agreement ("Agreement") to you. You, as an individual or a company ("The User"), will be deemed to voluntarily accept all terms of this Agreement by using NocoBase (including but not limited to obtaining NocoBase source code, installation package, or image in any form, installing and using NocoBase, developing Applications with NocoBase, purchasing NocoBase commercial license and services). If the User does not agree to any term of this Agreement, or cannot accurately understand our interpretation of the relevant terms, please stop using it immediately.
+
+This Agreement applies to any use, quotation, contract, invoice, and all software delivered by the Company. The User and the Company or NocoBase's agents need not sign a separate license agreement for the sale and delivery of the software.
+
+This Agreement applies to NocoBase 3 and later versions. NocoBase 2 and earlier versions are independent products and remain subject to their original license agreement. Where a NocoBase 2 Commercial Edition user uses NocoBase 3 or later versions under a policy announced by the Company, that use is subject to this Agreement.
+
+The Company reserves the right to formulate and modify this Agreement from time to time as needed. If there are changes, the Company will announce them in the form of website announcements, without further individual notification. The changed Agreement will automatically take effect once it is announced, becoming part of this Agreement.
+
+==============
+1. Definitions
+==============
+
+1.1 "Software" refers to NocoBase, consisting of Core, Studio, and Commercial Plugins, including their source code, installation packages, images, and all their modifications, updates, and upgrades.
+
+1.2 "Core" refers to NocoBase Core, the open source application foundation released by the Company, including the runtime, plugins, application templates, development standards, and development skills placed in the same code repository.
+
+1.3 "Studio" refers to NocoBase Studio, the governance platform for people and agents building software together, provided in the Commercial Edition.
+
+1.4 "Commercial Plugins" refers to the plugins provided in the Commercial Edition that extend the capabilities of Core, such as advanced approvals and enterprise SSO.
+
+1.5 "Community Edition" refers to the free version of the Software provided to the User through public channels, namely Core.
+
+1.6 "Commercial Edition" refers to the paid version of the Software purchased by the User from the Company or its agents, downloaded through exclusive channels, and includes additional benefits. In addition to Core, it includes Studio and Commercial Plugins, and consists of two versions: Professional Edition and Enterprise Edition.
+
+1.7 "Application" refers to a specific business use case application serving internal or external customers of the User, developed based on the Software, such as ERP/CRM. Studio is a development tool and is not part of any Application.
+
+1.8 "Customer" refers to the clients who commission the User to develop Applications or purchase the User's Applications.
+
+1.9 "Agent" refers to an AI agent that works with the Software, including the coding agents the User uses to develop Applications and the business agents in Applications.
+
+1.10 "Third-Party Services" refers to the large models, coding agents, cloud services, and other third-party products and services that the User chooses to use with the Software.
+
+1.11 "Third-Party Open Source Software" refers to open source software provided with the Software. They are licensed through various published open source software licenses or copyright notices accompanying such software.
+
+===================================
+2. Intellectual Property Protection
+===================================
+
+Except for Third-Party Open Source Software, the Company owns all copyrights, trademark rights, patent rights, trade secrets, and other intellectual property rights of the Software, and has registered and protected them in relevant countries and regions according to the "Paris Convention" or "TRIPS Agreement", ensuring that the intellectual property rights of the Software are internationally recognized and protected.
+
+The Company claims no intellectual property rights in the business code written by the User or by Agents when developing Applications, or in the User's business data, skills, and knowledge bases. The parts of the Software contained in an Application remain the intellectual property of the Company and are subject to this Agreement.
+
+=============
+3. Disclaimer
+=============
+
+3.1 The User shall not use the Software to engage in activities that contravene applicable laws and regulations or offend against public order or religious prohibitions. All legal liabilities and consequences arising from the User's use shall be borne by the User.
+
+3.2 The Company shall not be liable for any direct, indirect, special, incidental, or consequential damages (including but not limited to loss of profits, business interruption, data loss, or business information disclosure) caused by the User's use of the Software, even if it has been previously informed of the possibility of such damages.
+
+3.3 Code written, content generated, and actions taken by Agents shall be reviewed and accepted by the User before being used in production. All consequences arising from the use of the work of Agents shall be borne by the User.
+
+3.4 Third-Party Services are chosen and paid for by the User and are subject to their own terms. The Company shall not be liable for the availability, output, or data handling of Third-Party Services.
+
+===============
+4. License Type
+===============
+
+4.1 This Agreement serves as the unified license agreement for NocoBase Software, applying to both the Community Edition and the Commercial Editions.
+
+4.2 Core is open source software. This Agreement incorporates and references the full text of the Apache License, Version 2.0 ("Apache-2.0", available at: https://www.apache.org/licenses/LICENSE-2.0 ). Users of Core must comply with the Apache-2.0 License as well as the supplementary terms set forth in this Agreement. In case of any inconsistency between Apache-2.0 and this Agreement, the supplementary terms of this Agreement shall prevail.
+
+4.3 Studio and Commercial Plugins are commercial software of the Company and are not licensed under Apache-2.0. They can only be used under the Commercial License and in accordance with this Agreement.
+
+================================================
+5. Rights and Obligations of Open Source License
+================================================
+
+5.1 The Community Edition can be used for commercial purposes, including developing Applications for Customers.
+
+5.2 It is not allowed to remove or change the NocoBase statement "AI + NocoBase" and "Build reliable business systems", or its link to https://www.nocobase.com/, at the bottom left of the interface of any Application, including Applications delivered to Customers, even though the code that displays the statement is part of the Application. If the default layout is replaced, the statement shall be kept at an equally visible position on the main interface of the Application. Pages that can be accessed without signing in and pages embedded in other systems are not subject to this requirement. When the sidebar is collapsed, showing the statement as an icon with a tooltip, as provided by default, meets this requirement. The main LOGO in the upper left corner of the page, the version number, and other information on the interface can be changed.
+
+5.3 It is not allowed to remove or change all intellectual property statements about NocoBase in the code.
+
+5.4 It is not allowed to provide to the public any form of AI application development platform or agent development platform SaaS/PaaS products using the original or modified Software.
+
+===============================
+6. Rights of Commercial License
+===============================
+
+6.1 Obtain a permanent commercial license of the Software.
+
+6.2 Can develop Applications for Customers, deploy the completed Applications, including the Commercial Plugins they use, on Customers' servers, or host them and provide them to Customers as a service. This does not include Studio.
+
+6.3 Customers can use the Commercial Plugins in the Applications delivered to them, within those Applications only, and can continue to develop those Applications on their own or through others.
+
+6.4 Get software upgrades and exclusive technical support during the upgrade validity period. Upgrades and technical support are provided to the User only, and the User can upgrade the Commercial Plugins in Applications delivered to Customers during this period.
+
+6.5 The licensed Software can be used for commercial purposes with no restrictions on the number of Applications, Customers, users, and Agents.
+
+6.6 Can remove or change the NocoBase statement described in 5.2, and the brand, name, link, and other information about NocoBase on the interface of Applications.
+
+6.7 If there are other agreements in the contract for the above rights, the contract agreement shall prevail.
+
+====================================
+7. Obligations of Commercial License
+====================================
+
+7.1 It is not allowed to remove or change all intellectual property statements about NocoBase in the code.
+
+7.2 It is not allowed to sell, transfer, lease, share, gift, or distribute the Commercial License. Deploying Applications for Customers under 6.2 is not considered sharing the Commercial License, but the license key, access token, or other credentials of the Commercial License shall not be provided to Customers for any purpose other than deploying and running the Applications delivered to them.
+
+7.3 It is not allowed to sell, transfer, lease, share, or distribute any form of AI application development platform, agent development platform, or developer tools developed based on Software.
+
+7.4 It is not allowed to provide any form of AI application development platform or agent development platform SaaS/PaaS products to the public using the original or modified Software.
+
+7.5 Studio can only be used by the User holding the Commercial License, on servers owned or rented by the User. It is not allowed to deploy Studio for Customers, or to provide Studio to Customers or any third party in any form, including as a hosted service. Customers that need Studio shall purchase their own Commercial License.
+
+7.6 Customer personnel can take part in requirement confirmation, acceptance, and release approval in the User's Studio for the Applications the User develops for them. This is not considered providing Studio to Customers, but it is not allowed to let Customers use Studio to develop their own projects.
+
+7.7 If there is a violation of the above obligations or the terms of this Agreement, the rights owned by the User will be immediately terminated, the paid fees will not be refunded, and the Company reserves the right to pursue the User's legal responsibility.
+
+7.8 If there are other agreements in the contract for the above obligations, the contract agreement shall prevail.
+
+=============================================================
+8. Legal Jurisdiction, Interpretation, and Dispute Resolution
+=============================================================
+
+8.1 Except for Mainland China, the interpretation, application, and all matters related to this agreement are subject to the jurisdiction of Singapore law.
+
+8.2 Any dispute related to this Agreement should first be resolved through friendly negotiation. If the negotiation fails to resolve the dispute, the dispute should be submitted to the International Chamber of Commerce (ICC) for arbitration. The arbitration venue should be Singapore, conducted in English.
+
+8.3 All terms and conditions of this Agreement shall be deemed enforceable to the maximum extent permitted by applicable law. If any term of this Agreement is deemed invalid by any applicable law, the invalidity of that term does not affect the validity of any other term of this Agreement, and it should be deemed that the invalid term has been modified as much as possible to make it valid and enforceable, or if the term cannot be modified, it should be deemed to have been deleted from this Agreement.
+
+8.4 The arbitration award is final, binding on both parties, and can be enforced in any court with jurisdiction.
