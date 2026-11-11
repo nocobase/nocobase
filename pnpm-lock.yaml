@@ -2999,8 +2999,8 @@ importers:
   packages/libs/mailer:
     dependencies:
       nodemailer:
-        specifier: ^9.0.5
-        version: 9.0.5
+        specifier: ^10.1.4
+        version: 10.5.0
       resend:
         specifier: ^6.22.1
         version: 6.24.0
@@ -3011,9 +3011,6 @@ importers:
       '@types/node':
         specifier: 'catalog:'
         version: 24.13.3
-      '@types/nodemailer':
-        specifier: ^8.0.1
-        version: 8.0.1
       eslint:
         specifier: 'catalog:'
         version: 10.8.1(jiti@2.7.0)
@@ -4676,8 +4673,8 @@ importers:
         specifier: ^3.9.24
         version: 3.9.36
       nodemailer:
-        specifier: ^9.0.5
-        version: 9.0.5
+        specifier: ^10.1.4
+        version: 10.5.0
       react-day-picker:
         specifier: ^10.0.1
         version: 10.0.1(@types/react@19.2.18)(react@19.2.8)
@@ -4712,9 +4709,6 @@ importers:
       '@types/node':
         specifier: 'catalog:'
         version: 24.13.3
-      '@types/nodemailer':
-        specifier: ^8.0.1
-        version: 8.0.1
       '@types/react':
         specifier: 'catalog:'
         version: 19.2.18
@@ -13449,6 +13443,10 @@ packages:
 
   nodemailer@10.0.14:
     resolution: {integrity: sha512-eJoLFKg55fesSlzUekmfOv/SBXh4KUYT8oiQc2RLP0tfG0rbNMJBK7wgHJwXTJwqyKlSJMz9UzDZ4v+aHEvo8g==}
+    engines: {node: '>=20.0.0'}
+
+  nodemailer@10.5.0:
+    resolution: {integrity: sha512-L/w/HH5MqpzMDuZD7fQdt/+KqymuvrpaApaIjAH2XA3ILePwlcvXCVVvP75xVrXCEt2ggK2marrrHHFB5Qu0kA==}
     engines: {node: '>=20.0.0'}
 
   nodemailer@9.0.5:
@@ -23231,6 +23229,8 @@ snapshots:
   node-releases@2.0.53: {}
 
   nodemailer@10.0.14: {}
+
+  nodemailer@10.5.0: {}
 
   nodemailer@9.0.5: {}
 

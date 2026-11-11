@@ -35,6 +35,9 @@ async function receiver(stall = false, rejectRecipient = false) {
           if (!stall) socket.write('250 queued\r\n');
         } else if (line.startsWith('EHLO'))
           socket.write('250-local.test\r\n250 PIPELINING\r\n');
+        // Nodemailer can pipeline DATA after RCPT; a rejected envelope must not accept message data.
+        else if (line === 'DATA' && rejectRecipient)
+          socket.write('503 no accepted recipients\r\n');
         else if (line === 'DATA') {
           data = true;
           message = '';
