@@ -260,9 +260,7 @@ export const useCreateActionProps = () => {
     async onClick() {
       if (isLegacyBulkEditSubmit(actionSchema)) {
         message.error(
-          t(
-            'This bulk edit form uses a legacy create action. Reinsert the form from its field template to update selected records.',
-          ),
+          t('This bulk edit form uses a legacy create action. Add a new bulk edit form and configure its fields.'),
         );
         return;
       }

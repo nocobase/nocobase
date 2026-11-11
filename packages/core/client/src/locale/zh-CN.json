@@ -217,7 +217,7 @@
   "Built-in flow": "指定流",
   "Built-in flow step": "指定流步骤",
   "Bulk edit": "批量编辑",
-  "This bulk edit form uses a legacy create action. Reinsert the form from its field template to update selected records.": "此批量编辑表单使用旧版新增操作。请从字段模板重新插入表单，以更新所选记录。",
+  "This bulk edit form uses a legacy create action. Add a new bulk edit form and configure its fields.": "此批量编辑表单使用旧版新增操作。请重新添加批量编辑表单并配置字段。",
   "Bulk enable": "批量激活",
   "Bulk update": "批量更新",
   "Button background color": "按钮颜色",

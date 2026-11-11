@@ -217,7 +217,7 @@
   "Bottom right": "Bottom right",
   "Built-in": "Built-in",
   "Bulk edit": "Bulk edit",
-  "This bulk edit form uses a legacy create action. Reinsert the form from its field template to update selected records.": "This bulk edit form uses a legacy create action. Reinsert the form from its field template to update selected records.",
+  "This bulk edit form uses a legacy create action. Add a new bulk edit form and configure its fields.": "This bulk edit form uses a legacy create action. Add a new bulk edit form and configure its fields.",
   "Bulk enable": "Bulk enable",
   "Bulk update": "Bulk update",
   "Button background color": "Button background color",

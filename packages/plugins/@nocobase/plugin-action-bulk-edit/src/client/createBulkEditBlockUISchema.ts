@@ -18,7 +18,6 @@ export function createBulkEditBlockUISchema(options: {
   collectionName: string;
   dataSource: string;
   association?: string;
-  templateSchema?: ISchema;
 }): ISchema {
   const { collectionName, association, dataSource } = options;
   const resourceName = association || collectionName;
@@ -48,7 +47,7 @@ export function createBulkEditBlockUISchema(options: {
         'x-component': 'FormV2',
         'x-use-component-props': 'useCreateFormBlockProps',
         properties: {
-          grid: options.templateSchema || {
+          grid: {
             type: 'void',
             'x-component': 'Grid',
             'x-initializer': 'bulkEditForm:configureFields',
