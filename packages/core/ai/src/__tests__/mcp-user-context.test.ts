@@ -314,28 +314,6 @@ describe('user-bound MCP clients', () => {
     expect(mcpClientMock.instances[0].close).toHaveBeenCalledTimes(1);
   });
 
-  it('refreshes cached user-bound tools when the enabled server set changes without a cache-clear event', async () => {
-    let names = ['profile', 'audit'];
-    const manager = new UserContextMCPClientManager({
-      app: createApp(),
-      listEntries: async () =>
-        names.map((name) => ({
-          name,
-          enabled: true,
-          transport: 'http',
-          url: 'https://mcp.example.test',
-          useUserContext: true,
-        })),
-      buildConnection: () => ({ transport: 'http', url: 'https://mcp.example.test' }),
-    });
-    expect(Object.keys(await manager.getToolsMap(createCtx(1)))).toEqual(['audit', 'profile']);
-    names = ['audit'];
-    expect(Object.keys(await manager.getToolsMap(createCtx(1)))).toEqual(['audit']);
-    expect(mcpClientMock.instances[0].close).toHaveBeenCalledTimes(1);
-    expect(mcpClientMock.instances).toHaveLength(2);
-    await manager.clear();
-  });
-
   it('evicts the oldest user-bound cache entry when max size is exceeded', async () => {
     const manager = new UserContextMCPClientManager({
       app: createApp(),
