@@ -390,6 +390,9 @@ const deDE: LocaleResource<typeof enUS> = {
     projects: 'Projekte',
     projectsHint:
       'Eingeladene Personen treten diesen Projekten als Mitglieder bei.',
+    language: 'E-Mail-Sprache',
+    languageHint:
+      'Die Einladungs-E-Mail und ihre Registrierungsseite verwenden diese Sprache.',
     projectsPlaceholder: 'Projekte auswählen',
     resend: 'Erneut senden',
     generateLink: 'Neuen Link generieren',

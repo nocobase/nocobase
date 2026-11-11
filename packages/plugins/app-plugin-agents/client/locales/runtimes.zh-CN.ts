@@ -6,11 +6,8 @@ const runtimesZhCN: RuntimesLocale = {
       ceilingReached: '已达额度阈值',
       ceilingLabel: '暂停接活阈值',
       ceilingInput: '{{tool}} 已用额度达到多少百分比时暂停接活',
-      ceilingOff: '不限制',
       ceilingSave: '应用',
       ceilingInvalid: '请输入 1 至 100 的整数百分比，或留空。',
-      ceilingHint:
-        '依据最近上报的额度判断。留空不限制，正在执行的任务继续运行。',
       ceilingPaused: '某额度窗口已达到阈值，受影响的新任务等待重置或调整上限。',
 
       workspaceStatus: {
@@ -85,7 +82,7 @@ const runtimesZhCN: RuntimesLocale = {
         '确认额度已恢复后再清除。清除后 {{target}} 立即可以继续领取工作；如果额度其实仍未恢复，下次运行会重新标记。',
       observed: '上次报告 {{time}}',
       usedPercent: '已用 {{percent}}%',
-      ok: '正常',
+      noUsage: '暂无额度数据',
       hint: '已知恢复时间到点或工具上报额度未用完时自动解除；手动清除前请确认额度已恢复。只有执行机主人和管理员可以清除。',
     },
     workspaces: {

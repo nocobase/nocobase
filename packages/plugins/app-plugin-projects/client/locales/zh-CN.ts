@@ -350,6 +350,8 @@ const pages = {
     projectRequired: '请至少选择一个你负责的项目。',
     projects: '加入的项目',
     projectsHint: '被邀请人以成员身份加入这些项目。',
+    language: '邮件语言',
+    languageHint: '邀请邮件和注册页面使用这种语言。',
     projectsPlaceholder: '选择项目',
     resend: '重新发送',
     generateLink: '生成新链接',

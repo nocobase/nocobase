@@ -107,6 +107,14 @@ export function compactDateTime(
 }
 
 export function quotaWindowLabel(window: string): string {
+  const minutes = /^([1-9]\d*)m$/.exec(window)?.[1];
+  if (minutes) {
+    const duration = Number(minutes);
+    if (Number.isSafeInteger(duration)) {
+      if (duration % 1440 === 0) return `${duration / 1440}d`;
+      if (duration % 60 === 0) return `${duration / 60}h`;
+    }
+  }
   return (
     (
       {
@@ -115,8 +123,6 @@ export function quotaWindowLabel(window: string): string {
         seven_day_opus: '7d · Opus',
         seven_day_sonnet: '7d · Sonnet',
         seven_day_overage_included: '7d · Fable',
-        '300m': '5h',
-        '10080m': '7d',
       } as Readonly<Record<string, string>>
     )[window] ?? window
   );

@@ -61,16 +61,19 @@ interface InvitationData {
 
 export interface InvitationService {
   list(viewer: Viewer): Promise<Invitation[]>;
+  /** `inviterLocale` is the caller's interface language, used when the request names no language. */
   create(
     viewer: Viewer,
     input: CreateInvitationsRequest,
     origin: string,
+    inviterLocale?: string,
   ): Promise<InvitationResult[]>;
   resend(
     viewer: Viewer,
     id: string,
     origin: string,
     sendEmail?: boolean,
+    inviterLocale?: string,
   ): Promise<InvitationResult>;
   revoke(viewer: Viewer, id: string): Promise<void>;
   /** An invitation was accepted: registered with the user management plugin's `onInvitationAccepted`. */
@@ -206,7 +209,7 @@ export function createInvitationService(
       }));
     },
 
-    async create(viewer, input, origin) {
+    async create(viewer, input, origin, inviterLocale) {
       if (!Array.isArray(input.emails))
         throw invalid('INVALID_EMAILS', 'emails must be a list of addresses.');
       const projectIds = validateProjectIds(input.projectIds);
@@ -221,6 +224,8 @@ export function createInvitationService(
           data: { [INVITATION_DATA_KEY]: data },
           summary: projectIds.flatMap((id) => names.get(id) ?? []),
           origin,
+          ...(input.locale ? { locale: input.locale } : {}),
+          ...(inviterLocale ? { inviterLocale } : {}),
         }),
       );
       const joined = new Set<string>();
@@ -249,7 +254,7 @@ export function createInvitationService(
       );
     },
 
-    async resend(viewer, id, origin, sendEmail = true) {
+    async resend(viewer, id, origin, sendEmail = true, inviterLocale) {
       const invitation = await managed(viewer, id);
       const own = invitation.invitedBy.id === viewer.userId;
       if (!own && !sendEmail)
@@ -275,6 +280,7 @@ export function createInvitationService(
           deps.invitations.resendInvitation(id, {
             origin,
             sendEmail,
+            ...(inviterLocale ? { inviterLocale } : {}),
           }),
         ),
       );

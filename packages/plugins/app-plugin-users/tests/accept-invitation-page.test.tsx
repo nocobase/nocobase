@@ -13,8 +13,23 @@ const mocks = vi.hoisted(() => {
   // The session as a tiny store, so signing in re-renders the page as the real provider does.
   let session: null | { user: { name: string; email: string } } = null;
   const listeners = new Set<() => void>();
+  // The interface language as a tiny store too, so a switch re-renders the page.
+  let locale = 'en-US';
+  const localeListeners = new Set<() => void>();
   return {
     request: vi.fn(),
+    locale: {
+      get: () => locale,
+      set: (value: string) => {
+        locale = value;
+        for (const listener of localeListeners) listener();
+      },
+      subscribe: (listener: () => void) => {
+        localeListeners.add(listener);
+        return () => localeListeners.delete(listener);
+      },
+    },
+    preferenceSet: vi.fn(),
     session: {
       get: () => session,
       set: (value: typeof session) => {
@@ -29,16 +44,42 @@ const mocks = vi.hoisted(() => {
   };
 });
 
-vi.mock('@nocobase/app-client', () => ({
-  ApiClientError: class ApiClientError extends Error {},
-  // A new client per render, as signing in replaces it.
-  useApiClient: () => ({ request: mocks.request }),
-  useToaster: () => ({ show: vi.fn(), close: vi.fn() }),
-}));
+vi.mock('@nocobase/app-client', async () => {
+  const { createContext } =
+    await vi.importActual<typeof import('react')>('react');
+  return {
+    ApiClientError: class ApiClientError extends Error {},
+    AppLocalePreferenceContext: createContext(undefined),
+    // A new client per render, as signing in replaces it.
+    useApiClient: () => ({ request: mocks.request }),
+    useToaster: () => ({ show: vi.fn(), close: vi.fn() }),
+  };
+});
 
-vi.mock('@nocobase/i18n/client', () => ({
-  useTranslation: () => ({ t: (key: string) => key }),
-}));
+vi.mock('@nocobase/i18n/client', async () => {
+  const { useSyncExternalStore } =
+    await vi.importActual<typeof import('react')>('react');
+  const useCurrent = () =>
+    useSyncExternalStore(mocks.locale.subscribe, mocks.locale.get);
+  return {
+    useTranslation: () => ({
+      t: (key: string) => key,
+      i18n: { language: useCurrent() },
+    }),
+    useLocale: () => ({
+      locale: useCurrent(),
+      locales: [
+        { locale: 'en-US', label: 'English' },
+        { locale: 'ja-JP', label: '日本語' },
+        { locale: 'zh-CN', label: '简体中文' },
+      ],
+      setLocale: (value: string) => {
+        mocks.locale.set(value);
+        return Promise.resolve();
+      },
+    }),
+  };
+});
 
 vi.mock('@nocobase/app-plugin-authentication/client', async () => {
   const { useSyncExternalStore } =
@@ -70,6 +111,96 @@ afterEach(() => {
   window.sessionStorage.clear();
   mocks.session.set(null);
   mocks.request.mockReset();
+  mocks.preferenceSet.mockReset();
+  act(() => mocks.locale.set('en-US'));
+});
+
+function lookupAndAccept(locale: string | null) {
+  mocks.request.mockImplementation(({ path }: { path: string }) =>
+    Promise.resolve({
+      data: path.endsWith('/lookup')
+        ? {
+            email: 'kei@example.com',
+            inviterName: 'Ann',
+            summary: [],
+            expiresAt: '2099-01-01T00:00:00Z',
+            locale,
+          }
+        : { email: 'kei@example.com', existingAccount: false },
+    }),
+  );
+}
+
+it("opens in the invitation's language and keeps the language on screen as the new account's", async () => {
+  const { AppLocalePreferenceContext } = await import('@nocobase/app-client');
+  mocks.preferenceSet.mockImplementation((value: string) => {
+    mocks.locale.set(value);
+    return Promise.resolve({
+      locale: value,
+      requestedLocale: value,
+      fallback: false,
+    });
+  });
+  lookupAndAccept('ja-JP');
+  render(
+    <AppLocalePreferenceContext.Provider
+      value={{
+        identity: null,
+        ready: true,
+        value: undefined,
+        set: mocks.preferenceSet,
+      }}
+    >
+      <MemoryRouter initialEntries={['/invite/token-ja']}>
+        <Routes>
+          <Route path='/invite/:token' element={<AcceptInvitationPage />} />
+          <Route path='/' element={<div>Joined</div>} />
+        </Routes>
+      </MemoryRouter>
+    </AppLocalePreferenceContext.Provider>,
+  );
+  const select = await screen.findByRole('combobox', {
+    name: 'accept.language',
+  });
+  await vi.waitFor(() =>
+    expect((select as HTMLSelectElement).value).toBe('ja-JP'),
+  );
+  expect(mocks.preferenceSet).toHaveBeenCalledExactlyOnceWith('ja-JP');
+  // A choice on the page is kept and not switched back.
+  fireEvent.change(select, { target: { value: 'zh-CN' } });
+  await vi.waitFor(() =>
+    expect((select as HTMLSelectElement).value).toBe('zh-CN'),
+  );
+  expect(mocks.preferenceSet).toHaveBeenCalledTimes(2);
+  fireEvent.change(screen.getByLabelText('accept.name'), {
+    target: { value: 'Kei' },
+  });
+  fireEvent.change(screen.getByLabelText('accept.password'), {
+    target: { value: 'kei-password' },
+  });
+  fireEvent.click(screen.getByRole('button', { name: 'accept.submit' }));
+  await screen.findByText('Joined');
+  expect(mocks.request).toHaveBeenCalledWith(
+    expect.objectContaining({
+      path: 'users/invitations/accept',
+      json: expect.objectContaining({ token: 'token-ja', locale: 'zh-CN' }),
+    }),
+  );
+  expect(mocks.preferenceSet).toHaveBeenCalledTimes(2);
+});
+
+it('keeps a signed-in person in their own language', async () => {
+  mocks.session.set({ user: { name: 'Kei', email: 'kei@example.com' } });
+  lookupAndAccept('ja-JP');
+  render(
+    <MemoryRouter initialEntries={['/invite/token-ja']}>
+      <Routes>
+        <Route path='/invite/:token' element={<AcceptInvitationPage />} />
+      </Routes>
+    </MemoryRouter>,
+  );
+  await screen.findByRole('button', { name: 'accept.join' });
+  expect(mocks.locale.get()).toBe('en-US');
 });
 
 it('requires the wrong signed-in account to sign out without consuming the invitation', async () => {
@@ -254,6 +385,7 @@ it.each(['', '  nia.admin  '])(
       name: 'Nia',
       password: 'secret-password',
       ...(username ? { username: 'nia.admin' } : {}),
+      locale: 'en-US',
     });
   },
 );

@@ -17,19 +17,20 @@ const viVN: LocaleResource<typeof enUS> = {
       businessRule:
         'Được gửi mỗi khi tạo hoặc gửi lại lời mời với tùy chọn email được chọn. Không có công tắc riêng để tắt.',
       languagePolicy:
-        'Nội dung email lần lượt liệt kê tất cả ngôn ngữ. Tiêu đề bằng tiếng Anh.',
+        'Được viết bằng một ngôn ngữ, chọn khi mời: mặc định là ngôn ngữ giao diện của người mời, trừ khi chọn ngôn ngữ khác. Gửi lại vẫn giữ ngôn ngữ đó. Nếu ngôn ngữ đó chưa có nội dung email, email dùng ngôn ngữ mặc định của ứng dụng và tiếng Anh.',
       channel: 'Người gửi email mời',
       variables: {
         app: 'Tên ứng dụng',
         inviter: 'Tên người đã gửi lời mời',
         items: 'Vai trò hoặc quyền truy cập mà lời mời cấp',
-        date: 'Thời điểm lời mời hết hạn',
+        date: 'Thời điểm lời mời hết hạn, theo ngôn ngữ của email và theo giờ UTC',
         url: 'Liên kết để chấp nhận lời mời; bản xem trước dùng liên kết giả',
       },
     },
   },
   accept: {
     title: 'Chấp nhận lời mời',
+    language: 'Ngôn ngữ',
     description: '{{inviter}} đã mời bạn.',
     summary: 'Bạn cũng sẽ tham gia: {{items}}',
     loading: 'Đang tải lời mời…',

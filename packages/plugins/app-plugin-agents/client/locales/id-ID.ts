@@ -597,11 +597,8 @@ const idID: LocaleResource<typeof enUS> = {
       ceilingReached: 'Ambang kuota tercapai',
       ceilingLabel: 'Jeda pada',
       ceilingInput: 'Jeda pekerjaan {{tool}} baru pada persentase terpakai',
-      ceilingOff: 'Nonaktif',
       ceilingSave: 'Terapkan',
       ceilingInvalid: 'Masukkan persentase bulat 1 hingga 100, atau kosongkan.',
-      ceilingHint:
-        'Menggunakan pemakaian terakhir yang dilaporkan. Kosong berarti tanpa batas; pekerjaan berjalan tetap berlanjut.',
       ceilingPaused:
         'Satu jendela kuota mencapai batas; pekerjaan baru terkait menunggu reset atau perubahan batas.',
 
@@ -677,7 +674,7 @@ const idID: LocaleResource<typeof enUS> = {
         'Hapus hanya setelah memastikan kuota sudah pulih. {{target}} langsung menerima pekerjaan lagi; jika kuota masih habis, eksekusi berikutnya menandainya lagi.',
       observed: 'Terakhir dilaporkan {{time}}',
       usedPercent: '{{percent}}% digunakan',
-      ok: 'Oke',
+      noUsage: 'Belum ada data kuota',
       hint: 'Tanda hilang dengan sendirinya pada waktu reset yang diketahui, atau saat alat melaporkan kuota tersedia lagi. Hapus secara manual hanya setelah memastikan kuota sudah pulih. Hanya pemilik runtime dan administrator yang dapat menghapus tanda.',
     },
     workspaces: {

@@ -51,8 +51,13 @@ export interface UserPreferencesService {
     key: string,
     connection?: DatabaseConnection,
   ): Promise<UserPreferenceValue | undefined>;
-  /** Stores one value, replacing what the key held. */
-  set(userId: string, key: string, value: unknown): Promise<void>;
+  /** Stores one value, replacing what the key held; inside a caller-owned transaction when a connection is supplied. */
+  set(
+    userId: string,
+    key: string,
+    value: unknown,
+    connection?: DatabaseConnection,
+  ): Promise<void>;
   /** Stores several values in one transaction. */
   setMany(
     userId: string,
@@ -189,11 +194,12 @@ export function createUserPreferencesService(
       return row ? decode(row.value) : undefined;
     },
 
-    async set(userId, key, value) {
+    async set(userId, key, value, connection) {
       const checked = checkPreferenceKey(key);
       const text = encodePreferenceValue(value);
-      await database.transaction((connection) =>
-        write(connection, userId, checked, text),
+      if (connection) return write(connection, userId, checked, text);
+      await database.transaction((transaction) =>
+        write(transaction, userId, checked, text),
       );
     },
 

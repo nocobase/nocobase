@@ -80,3 +80,70 @@ it('shows a reached ceiling and keeps settings read only without management perm
   );
   expect(screen.getByRole('spinbutton').hasAttribute('disabled')).toBe(true);
 });
+
+it('shows an empty disabled input when a viewer has no configured ceiling', () => {
+  renderPage(
+    <QuotaLimitSetting
+      runner={runner('r1', { canManage: false })}
+      tool='claude'
+      now={Date.now()}
+    />,
+  );
+  const input = screen.getByRole('spinbutton') as HTMLInputElement;
+  expect(input.disabled).toBe(true);
+  expect(input.value).toBe('');
+  expect(input.hasAttribute('placeholder')).toBe(false);
+  expect(screen.queryByRole('button')).toBeNull();
+  expect(screen.queryByRole('status')).toBeNull();
+});
+
+it('clears the reached label after the saved ceiling is raised above usage', () => {
+  const data = runner('r1', {
+    canManage: true,
+    quotaLimits: { claude: 70 },
+    quotaUsage: [
+      {
+        tool: 'claude',
+        window: 'seven_day',
+        scope: 'tool',
+        target: '',
+        usedPercent: 76,
+        resetsAt: null,
+        observedAt: new Date().toISOString(),
+      },
+    ],
+  });
+  const view = renderPage(
+    <QuotaLimitSetting runner={data} tool='claude' now={Date.now()} />,
+  );
+  expect(screen.getByRole('status')).toBeTruthy();
+  view.unmount();
+  renderPage(
+    <QuotaLimitSetting
+      runner={{ ...data, quotaLimits: { claude: 80 } }}
+      tool='claude'
+      now={Date.now()}
+    />,
+  );
+  expect(screen.queryByRole('status')).toBeNull();
+  expect((screen.getByRole('spinbutton') as HTMLInputElement).value).toBe('80');
+});
+
+it('places the missing quota message before the visible threshold without claiming quota is healthy', async () => {
+  const { QuotaCell } = await import('../../client/pages/runtimes/quota.js');
+  renderPage(
+    <QuotaCell
+      runner={runner('r1', { canManage: false })}
+      tool='claude'
+      now={Date.now()}
+      onClear={() => {}}
+    />,
+  );
+  const empty = screen.getByText('runtimes.quota.noUsage');
+  const input = screen.getByRole('spinbutton');
+  expect(
+    empty.compareDocumentPosition(input) & Node.DOCUMENT_POSITION_FOLLOWING,
+  ).toBeTruthy();
+  expect(screen.queryByText('runtimes.quota.ok')).toBeNull();
+  expect(screen.queryByText('runtimes.quota.ceilingHint')).toBeNull();
+});

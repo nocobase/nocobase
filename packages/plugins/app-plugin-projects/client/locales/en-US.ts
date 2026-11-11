@@ -363,6 +363,9 @@ const pages = {
     projectRequired: 'Choose at least one project you lead.',
     projects: 'Projects',
     projectsHint: 'Invitees join these projects as members.',
+    language: 'Email language',
+    languageHint:
+      'The invitation email and its sign-up page use this language.',
     projectsPlaceholder: 'Choose projects',
     resend: 'Send again',
     generateLink: 'Generate new link',

@@ -16,19 +16,20 @@ const enUS = {
       businessRule:
         'Sent every time an invitation is created or resent with email selected. There is no separate switch to turn it off.',
       languagePolicy:
-        'The email body lists every language one after another. The subject is in English.',
+        "Written in one language, chosen when inviting: the inviter's interface language unless another is picked. Resending keeps it. If that language has no email text, the email shows the application's default language and English.",
       channel: 'Invitation email sender',
       variables: {
         app: 'Application name',
         inviter: 'Name of the person who sent the invitation',
         items: 'Roles or access the invitation grants',
-        date: 'When the invitation expires',
+        date: "When the invitation expires, in the email's language and in UTC",
         url: 'Link for accepting the invitation; the preview uses a fake link',
       },
     },
   },
   accept: {
     title: 'Accept the invitation',
+    language: 'Language',
     description: '{{inviter}} invited you.',
     summary: 'You will also join: {{items}}',
     loading: 'Loading the invitation…',

@@ -620,12 +620,9 @@ const ptBR: LocaleResource<typeof enUS> = {
       ceilingReached: 'Limite de uso atingido',
       ceilingLabel: 'Pausar em',
       ceilingInput: 'Pausar novos trabalhos de {{tool}} na porcentagem usada',
-      ceilingOff: 'Desativado',
       ceilingSave: 'Aplicar',
       ceilingInvalid:
         'Insira uma porcentagem inteira de 1 a 100 ou deixe em branco.',
-      ceilingHint:
-        'Usa o último consumo informado. Em branco significa sem limite; trabalhos em execução continuam.',
       ceilingPaused:
         'Uma janela atingiu o limite; novos trabalhos afetados aguardam a redefinição ou alteração do limite.',
 
@@ -701,7 +698,7 @@ const ptBR: LocaleResource<typeof enUS> = {
         'Limpe somente depois de confirmar que a cota foi restaurada. {{target}} volta a receber trabalho imediatamente; se a cota ainda estiver esgotada, a próxima execução a marca de novo.',
       observed: 'Último {{time}} relatado',
       usedPercent: '{{percent}}% usado',
-      ok: 'OK',
+      noUsage: 'Ainda não há dados de cota',
       hint: 'Uma marca some sozinha no horário de reinicialização conhecido ou quando a ferramenta volta a informar cota disponível. Limpe-a manualmente somente depois de confirmar que a cota foi restaurada. Somente o proprietário e os administradores do ambiente de execução podem limpar as marcas.',
       marks_many: 'Marcas de cota {{count}}',
       providers_many: 'Provedores {{count}} na cota',

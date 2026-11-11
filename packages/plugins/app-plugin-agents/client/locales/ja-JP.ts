@@ -594,11 +594,8 @@ const jaJP: LocaleResource<typeof enUS> = {
       ceilingReached: '使用量のしきい値に到達',
       ceilingLabel: '受付停止の使用率',
       ceilingInput: '{{tool}} の新規作業を停止する使用率',
-      ceilingOff: '制限なし',
       ceilingSave: '適用',
       ceilingInvalid: '1～100 の整数を入力するか、空欄にしてください。',
-      ceilingHint:
-        '最後に報告された使用量で判定します。空欄は制限なし。実行中の作業は継続します。',
       ceilingPaused:
         'いずれかの枠が上限に達しました。対象の新規作業はリセットまたは上限変更まで待機します。',
 
@@ -674,7 +671,7 @@ const jaJP: LocaleResource<typeof enUS> = {
         'クォータが回復したことを確認してからクリアしてください。{{target}} はすぐに仕事を受け取ります。クォータがまだ尽きている場合は、次の実行で再びマークされます。',
       observed: '最後に報告されたのは {{time}}',
       usedPercent: '{{percent}}% 使用',
-      ok: 'わかりました',
+      noUsage: '利用枠のデータはまだありません',
       hint: 'マークは既知のリセット時刻、またはツールがクォータの残りを再び報告したときに自動的に解除されます。手動でクリアするのはクォータの回復を確認してからにしてください。マークをクリアできるのは、実行環境の所有者と管理者だけです。',
     },
     workspaces: {

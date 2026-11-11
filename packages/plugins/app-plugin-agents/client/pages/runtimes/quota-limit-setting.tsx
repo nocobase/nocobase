@@ -1,5 +1,5 @@
 import { AgTag } from '../../components/ag-tag.js';
-import { useState, type ReactElement } from 'react';
+import { useId, useState, type ReactElement } from 'react';
 import type { AgentTool } from '@nocobase/agent-protocol';
 import { useTranslation } from '@nocobase/i18n/client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -26,6 +26,7 @@ export function QuotaLimitSetting(props: QuotaLimitProps): ReactElement {
 }
 function QuotaLimitForm({ runner, tool, now }: QuotaLimitProps) {
   const { t } = useTranslation();
+  const inputId = useId();
   const api = useAgentsApi();
   const cache = useQueryClient();
   const notify = useNotify();
@@ -66,15 +67,12 @@ function QuotaLimitForm({ runner, tool, now }: QuotaLimitProps) {
         sample.usedPercent >= current &&
         (!sample.resetsAt || Date.parse(sample.resetsAt) > now),
     );
-  if (!editable && current === undefined) return null;
   return (
     <div className='space-y-1'>
       <div className='flex flex-wrap items-center gap-1.5'>
-        <label htmlFor={`quota-limit-${tool}`}>
-          {t('runtimes.quota.ceilingLabel')}
-        </label>
+        <label htmlFor={inputId}>{t('runtimes.quota.ceilingLabel')}</label>
         <Input
-          id={`quota-limit-${tool}`}
+          id={inputId}
           type='number'
           min={1}
           max={100}
@@ -82,7 +80,6 @@ function QuotaLimitForm({ runner, tool, now }: QuotaLimitProps) {
           className='h-7 w-20'
           value={draft}
           disabled={!editable || save.isPending}
-          placeholder={t('runtimes.quota.ceilingOff')}
           aria-label={t('runtimes.quota.ceilingInput', {
             tool: t(`tools.${tool}`),
           })}
@@ -113,7 +110,6 @@ function QuotaLimitForm({ runner, tool, now }: QuotaLimitProps) {
         ) : null}
       </div>
       {!valid ? <p role='alert'>{t('runtimes.quota.ceilingInvalid')}</p> : null}
-      <p className='text-muted-foreground'>{t('runtimes.quota.ceilingHint')}</p>
     </div>
   );
 }
