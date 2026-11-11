@@ -21,7 +21,7 @@ import {
   updateTargetOf,
 } from '../core/update.ts';
 
-import { restartService } from '../core/service.ts';
+import { migrateService, restartService } from '../core/service.ts';
 
 const run = promisify(execFile);
 
@@ -121,9 +121,8 @@ export default class Update extends RunnerCommand {
       log: (message) => this.log(message),
     });
     result.updated = true;
-    // Normal exit no longer asks the service manager to restart; request it explicitly.
     if (settings.serviceLabel !== undefined) {
-      await run(launcherOf(installation), ['stop']);
+      await migrateService(settings.serviceLabel);
       await restartService(settings.serviceLabel);
       this.log(`Restarted the runner service on ${latest.version}.`);
     } else if ((await readDaemonPid(this.paths)) !== undefined) {

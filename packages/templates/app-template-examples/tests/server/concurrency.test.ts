@@ -81,7 +81,7 @@ test('the real default composition supplies one memory lock domain to two busine
   const second = new BusinessConsumer(service);
   expect(app.config.get('concurrency')).toEqual({
     default: 'memory',
-    memory: { adapter: 'mutex' },
+    backends: { memory: { adapter: 'mutex' } },
   });
   const [left, right] = await Promise.all([first.manager(), second.manager()]);
   expect(left).toBe(right);

@@ -31,35 +31,37 @@ const deDE: LocaleResource<typeof enUS> = {
       stageActionSkipped: 'hat eine Bühnenaktion übersprungen',
       stageActionSuppressed: 'eine Bühnenaktion unterdrückt (zu viele Läufe)',
       stageActionBlocked:
-        'hat eine Bühnenaktion übersprungen: Das Problem wartet auf',
-      workBlocked: 'hat nicht mit der Arbeit begonnen: Das Problem wartet',
+        'hat eine Phasenaktion übersprungen: Die Aufgabe wartet auf',
+      workBlocked: 'hat die Arbeit nicht begonnen: Die Aufgabe wartet auf',
       workDormant:
-        'hat nicht mit der Arbeit begonnen, während das Problem besteht',
+        'hat die Arbeit nicht begonnen, solange die Aufgabe hier ist:',
       workLimited:
-        'hat nicht mit der Arbeit begonnen: Die Kommentare der Agenten haben das Ausführungslimit des Problems erreicht',
+        'hat die Arbeit nicht begonnen: Die Kommentare der Agents haben das Ausführungslimit der Aufgabe erreicht',
       workWithdrawn:
-        'hat seine in der Warteschlange befindliche Arbeit zurückgezogen: Das Problem wartet nun',
+        'hat die eingereihte Arbeit zurückgezogen: Die Aufgabe wartet jetzt auf',
       stageActionFailed: 'Eine Regel des Status konnte nicht ausgeführt werden',
-      created: 'hat das Problem verursacht',
+      created: 'hat die Aufgabe erstellt',
       datesChanged: 'hat die Daten geändert',
-      deleted: 'hat das Problem gelöscht',
+      deleted: 'hat die Aufgabe gelöscht',
       descriptionChanged: 'hat die Beschreibung bearbeitet',
-      executorChanged: 'hat den Testamentsvollstrecker gewechselt',
-      executorRemoved: 'Executor {{name}} wurde entfernt',
+      executorChanged: 'hat den Bearbeiter geändert',
+      executorRemoved: 'Bearbeiter {{name}} wurde entfernt',
       labelsChanged: 'hat die Beschriftungen geändert',
       ownerChanged: 'hat den Besitzer gewechselt',
-      parentChanged: 'hat das übergeordnete Problem geändert',
+      parentChanged: 'hat die übergeordnete Aufgabe geändert',
       priorityChanged: 'hat die Priorität geändert',
-      projectChanged: 'hat das Problem in ein anderes Projekt verschoben',
-      restored: 'hat das Problem behoben',
+      projectChanged: 'hat die Aufgabe in ein anderes Projekt verschoben',
+      restored: 'hat die Aufgabe wiederhergestellt',
       statusChanged: 'hat den Status geändert',
-      titleChanged: 'hat das Problem umbenannt',
-      updated: 'hat das Problem aktualisiert',
-      subtaskAdded: 'hat das Unterthema hinzugefügt',
+      titleChanged: 'hat die Aufgabe umbenannt',
+      updated: 'hat die Aufgabe aktualisiert',
+      subtaskAdded: 'hat die Unteraufgabe hinzugefügt',
       dependencyAdded: 'fügte die Abhängigkeit von hinzu',
       dependencyRemoved: 'entfernte die Abhängigkeit von',
+      relationAdded: 'verknüpfte die Aufgabe mit',
+      relationRemoved: 'entfernte die Verknüpfung mit',
       stageChanged: 'wechselte die Bühne',
-      autoMoveSkipped: 'konnte das Problem nicht automatisch verschieben',
+      autoMoveSkipped: 'konnte die Aufgabe nicht automatisch verschieben nach',
     },
     afterEvent: '(automatisch, auf „{{event}}“)',
     empty: 'Noch keine Aktivität.',
@@ -81,16 +83,16 @@ const deDE: LocaleResource<typeof enUS> = {
       cancel: 'Umzug abgebrochen.',
       end: 'Abgelegt auf {{status}}.',
       instructions:
-        'Drücken Sie die Leertaste oder die Eingabetaste, um ein Problem aufzunehmen, verwenden Sie die Pfeiltasten, um es in einen anderen Status zu verschieben, und drücken Sie dann erneut die Leertaste oder die Eingabetaste, um es zu löschen, oder die Escape-Taste, um abzubrechen.',
+        'Drücken Sie die Leertaste oder Enter, um eine Aufgabe aufzunehmen, verschieben Sie sie mit den Pfeiltasten in einen anderen Status und drücken Sie erneut die Leertaste oder Enter, um sie abzulegen, oder Escape zum Abbrechen.',
       over: 'Über {{status}}.',
       start: '{{identifier}} abgeholt.',
     },
     boardView: 'Vorstand',
-    cardRole: 'Ziehbares Problem',
+    cardRole: 'Verschiebbare Aufgabe',
     closeDenied:
       'Nur der Eigentümer, der Projektleiter oder ein Administrator darf {{identifier}} schließen.',
-    emptyColumn: 'Keine Probleme',
-    label: 'Ausgabetafel',
+    emptyColumn: 'Keine Aufgaben',
+    label: 'Aufgabenboard',
     listView: 'Liste',
     moveRejected: '{{identifier}} kann nicht in diesen Status wechseln.',
     viewLabel: 'Anzeigen',
@@ -192,12 +194,11 @@ const deDE: LocaleResource<typeof enUS> = {
       created: 'Label „{{name}}“ erstellt',
       delete: 'Label löschen',
       deleteDescription:
-        'Es wird aus jeder Ausgabe entfernt, die es enthält. Dies kann nicht rückgängig gemacht werden.',
+        'Es wird von allen Aufgaben entfernt, die es tragen. Das lässt sich nicht rückgängig machen.',
       deleteTitle: 'Label „{{name}}“ löschen?',
       deleted: 'Label „{{name}}“ gelöscht',
-      description: 'Labels gruppieren Probleme projektübergreifend.',
-      emptyDescription:
-        'Erstellen Sie eine Bezeichnung, um Probleme zu gruppieren.',
+      description: 'Etiketten gruppieren Aufgaben projektübergreifend.',
+      emptyDescription: 'Erstellen Sie ein Etikett, um Aufgaben zu gruppieren.',
       emptyNoAccess: 'Bitten Sie einen Administrator, Etiketten zu erstellen.',
       emptyTitle: 'Noch keine Etiketten',
       loadFailed: 'Etiketten können nicht geladen werden',
@@ -213,7 +214,7 @@ const deDE: LocaleResource<typeof enUS> = {
   },
   configPage: {
     description:
-      'Mitglieder, Rollen, Labels und das Issue-Präfix von Projekten.',
+      'Mitglieder, Rollen, Etiketten und das Aufgabenpräfix der Projekte.',
     noAccess: 'Hier gibt es nichts einzurichten',
     noAccessDescription:
       'Ihre Rollen beinhalten keine Projekteinstellungen. Fragen Sie einen Eigentümer oder Administrator, wenn Sie eines benötigen.',
@@ -258,13 +259,12 @@ const deDE: LocaleResource<typeof enUS> = {
     GRANT_NOT_ALLOWED:
       'Eine Rolle enthält nur die Seiten, Einstellungen und Aktionen dieses Plugins.',
     INVALID_DATE: 'Das Datum ist ungültig.',
-    INVALID_EXECUTOR:
-      'Dieser Testamentsvollstrecker kann nicht ausgewählt werden.',
+    INVALID_EXECUTOR: 'Dieser Bearbeiter kann nicht gewählt werden.',
     INVALID_INVITATION: 'Überprüfen Sie die E-Mail-Adressen.',
     INVALID_LABEL: 'Ein Label existiert nicht mehr.',
     INVALID_LEAD: 'Der Lead muss ein aktives Mitglied sein.',
     INVALID_OWNER: 'Der Eigentümer muss ein aktives Mitglied sein.',
-    INVALID_PARENT: 'Das übergeordnete Problem kann nicht verwendet werden.',
+    INVALID_PARENT: 'Die übergeordnete Aufgabe kann nicht verwendet werden.',
     INVALID_PREFIX:
       'Verwenden Sie 1 bis 10 Großbuchstaben und Ziffern, beginnend mit einem Buchstaben.',
     INVALID_PROJECT: 'Das Projekt existiert nicht.',
@@ -278,7 +278,7 @@ const deDE: LocaleResource<typeof enUS> = {
       'Der letzte Eigentümer kann die Eigentümerrolle nicht verlieren.',
     LEAD_MEMBER:
       'Wählen Sie einen anderen Projektleiter, bevor Sie dieses Mitglied entfernen.',
-    OWNER_REQUIRED: 'Ein Problem braucht einen Besitzer.',
+    OWNER_REQUIRED: 'Eine Aufgabe braucht einen Verantwortlichen.',
     REVISION_CONFLICT:
       'Jemand hat dies inzwischen geändert. Die neueste Version wird angezeigt; Wenden Sie Ihre Änderung erneut an.',
     REVISION_REQUIRED:
@@ -289,7 +289,7 @@ const deDE: LocaleResource<typeof enUS> = {
     ROLE_NOT_EDITABLE:
       'Die Besitzerrolle beinhaltet alles; es kann nicht bearbeitet werden.',
     TRANSITION_NOT_ALLOWED:
-      'Sie können das Problem nicht in diesen Status verschieben.',
+      'Sie dürfen die Aufgabe nicht in diesen Status verschieben.',
     UNKNOWN_ROLE: 'Die Rolle existiert nicht mehr.',
     USER_DISABLED:
       'Einem deaktivierten Konto kann keine Rolle zugewiesen werden.',
@@ -297,15 +297,15 @@ const deDE: LocaleResource<typeof enUS> = {
     DEPENDENCY_CHANGED:
       'Die Beziehung änderte sich. Neu laden und erneut versuchen.',
     DEPENDENCY_GRAPH_CHANGED:
-      'Problemabhängigkeiten geändert. Neu laden und erneut versuchen.',
+      'Die Abhängigkeiten der Aufgaben haben sich geändert. Neu laden und erneut versuchen.',
     DEPENDENCY_EXISTS: 'Diese Abhängigkeit besteht bereits.',
     DEPENDENCY_TOO_DEEP: 'Die Abhängigkeitskette ist zu lang.',
-    INVALID_DEPENDENCY: 'Dieses Problem kann hier keine Abhängigkeit sein.',
+    INVALID_DEPENDENCY: 'Diese Aufgabe kann hier keine Abhängigkeit sein.',
     INVALID_STAGE:
       'Geben Sie eine ganze Zahl von 0 bis 1000 ein oder lassen Sie das Feld leer.',
-    ISSUE_BLOCKED:
-      'Das Problem wartet immer noch auf Probleme, die es blockieren.',
-    SUBTASKS_OPEN: 'Beenden oder stornieren Sie zuerst die Teilausgaben.',
+    ISSUE_BLOCKED: 'Die Aufgabe wartet noch auf Aufgaben, die sie blockieren.',
+    SUBTASKS_OPEN:
+      'Schließen Sie zuerst ihre Unteraufgaben ab oder brechen Sie sie ab.',
     PLAN_INVALID: 'Einige Änderungen des Plans werden nicht angenommen.',
     PLAN_NOT_OPEN: 'Der Plan wartet nicht mehr auf eine Entscheidung.',
     PLAN_EXPIRED: 'Der Plan ist abgelaufen.',
@@ -321,15 +321,16 @@ const deDE: LocaleResource<typeof enUS> = {
     FILES_UNAVAILABLE: 'Diese Anwendung speichert keine Dateien.',
   },
   dependencies: {
-    add: 'Fügen Sie ein Blockierungsproblem hinzu',
+    add: 'Blockierende Aufgabe hinzufügen',
     added: 'Abhängigkeit hinzugefügt.',
-    addPlaceholder: 'Suchprobleme, die als Blocker hinzugefügt werden sollen',
+    addPlaceholder:
+      'Aufgaben suchen, die als Blocker hinzugefügt werden sollen',
     blockedBy: 'Blockiert von',
     blocks: 'Blöcke',
     hidden_one:
-      '{{count}} weitere Blockierungsprobleme, die Sie nicht sehen können.',
+      '{{count}} weitere blockierende Aufgabe, die Sie nicht sehen können.',
     hidden_other:
-      '{{count}} weitere Blockierungsprobleme, die Sie nicht sehen können.',
+      '{{count}} weitere blockierende Aufgaben, die Sie nicht sehen können.',
     related: 'Verwandte',
     remove: '{{identifier}} entfernen',
     removed: 'Abhängigkeit entfernt.',
@@ -344,9 +345,9 @@ const deDE: LocaleResource<typeof enUS> = {
   filters: {
     allLabels: 'Alle Etiketten',
     allProjects: 'Alle Projekte',
-    anyExecutor: 'Jeder Testamentsvollstrecker',
+    anyExecutor: 'Beliebiger Bearbeiter',
     anyOwner: 'Jeder Eigentümer',
-    executor: 'Nach Testamentsvollstrecker filtern',
+    executor: 'Nach Bearbeiter filtern',
     label: 'Nach Label filtern',
     owner: 'Nach Eigentümer filtern',
     project: 'Nach Projekt filtern',
@@ -411,18 +412,18 @@ const deDE: LocaleResource<typeof enUS> = {
     title: 'Ausstehende Einladungen',
   },
   issue: {
-    backToList: 'Zurück zu den Themen',
-    delete: 'Problem löschen',
+    backToList: 'Zurück zu den Aufgaben',
+    delete: 'Aufgabe löschen',
     deleteDescription:
       'Es verschwindet aus Listen und Suchen. Ein Administrator kann es wiederherstellen.',
     deleteTitle: '{{identifier}} löschen?',
     deleted: '{{identifier}} gelöscht.',
     editDescription: 'Beschreibung bearbeiten',
     editTitle: 'Titel bearbeiten',
-    conflict: 'Dieses Problem hat sich durch Neuladen geändert.',
-    loadFailed: 'Dieses Problem konnte nicht geladen werden',
+    conflict: 'Diese Aufgabe hat sich geändert, wird neu geladen.',
+    loadFailed: 'Diese Aufgabe kann nicht geladen werden',
     noDescription: 'Keine Beschreibung.',
-    parent: 'Unterausgabe von',
+    parent: 'Unteraufgabe von',
   },
   issueAdd: {
     dependency: 'Blocker',
@@ -430,7 +431,7 @@ const deDE: LocaleResource<typeof enUS> = {
     none: 'keine',
   },
   issuePicker: {
-    empty: 'Keine Matching-Probleme',
+    empty: 'Keine passenden Aufgaben',
     placeholder: 'Suche nach Titel oder Kennung',
   },
   issueForm: {
@@ -438,13 +439,14 @@ const deDE: LocaleResource<typeof enUS> = {
     descriptionLabel: 'Beschreibung',
     descriptionPlaceholder: 'Markdown wird unterstützt.',
     noProject: 'Kein Projekt',
-    ownerHint: 'Die für das Problem verantwortliche Person. Standardmäßig Sie.',
+    ownerHint:
+      'Die Person, die für die Aufgabe verantwortlich ist. Standardmäßig Sie.',
     startLabel: 'Wann soll begonnen werden?',
     startNow: 'Beginnen Sie jetzt',
     startNowHint: 'Der Projektmanager beginnt sofort mit der Organisation.',
     startLater: 'Später',
     startLaterHint:
-      'Es wartet im Backlog; Starten Sie es auf der Problemseite.',
+      'Sie wartet im Backlog; starten Sie sie auf der Aufgabenseite.',
     createAndStart: 'Erstellen und starten',
     projectLabel: 'Projekt',
     titleLabel: 'Titel',
@@ -453,7 +455,7 @@ const deDE: LocaleResource<typeof enUS> = {
   issues: {
     allStatuses: 'Alle Status',
     columns: {
-      executor: 'Testamentsvollstrecker',
+      executor: 'Bearbeiter',
       identifier: 'ID',
       owner: 'Verantwortlicher',
       priority: 'Priorität',
@@ -462,22 +464,22 @@ const deDE: LocaleResource<typeof enUS> = {
       updated: 'Aktualisiert',
     },
     agentsDescription:
-      'Arbeit für Menschen und Programmieragenten. Weisen Sie einen Agenten als Ausführenden zu, um einen Lauf zu starten.',
+      'Arbeit für Menschen und Coding-Agents. Weisen Sie einen Agent als Bearbeiter zu, um eine Ausführung zu starten.',
     agentsEmptyDescription:
-      'Erstellen Sie ein Problem und wählen Sie einen Agenten als Ausführenden aus, der ihm die Arbeit übergibt.',
+      'Erstellen Sie eine Aufgabe und wählen Sie einen Agent als Bearbeiter, um ihm die Arbeit zu übergeben.',
     description: 'Alles, woran das Team arbeitet, als Tafel oder Liste.',
     emptyDescription:
-      'Erstellen Sie ein Problem und wählen Sie aus, wer es ausführt.',
-    emptyTitle: 'Noch keine Probleme',
-    loadFailed: 'Probleme konnten nicht geladen werden',
-    new: 'Neue Ausgabe',
-    noResults: 'Keine Matching-Probleme.',
+      'Erstellen Sie eine Aufgabe und wählen Sie, wer sie bearbeitet.',
+    emptyTitle: 'Noch keine Aufgaben',
+    loadFailed: 'Aufgaben können nicht geladen werden',
+    new: 'Neue Aufgabe',
+    noResults: 'Keine passenden Aufgaben.',
     restore: 'Wiederherstellen',
     restored: '{{identifier}} wiederhergestellt.',
-    searchLabel: 'Suchprobleme',
+    searchLabel: 'Aufgaben suchen',
     searchPlaceholder: 'Suche nach Titel oder Kennung',
     statusFilterLabel: 'Nach Status filtern',
-    title: 'Vorgänge',
+    title: 'Aufgaben',
   },
   labelColors: {
     for: 'Farbe von {{name}}',
@@ -503,26 +505,26 @@ const deDE: LocaleResource<typeof enUS> = {
   },
   myIssues: {
     description:
-      'Probleme, für die Sie verantwortlich sind und an denen Sie selbst arbeiten.',
+      'Aufgaben, für die Sie verantwortlich sind, und Aufgaben, die Sie selbst bearbeiten.',
     empty: {
-      executing: 'Sie führen keine Probleme aus',
-      owned: 'Sie besitzen keine Probleme',
+      executing: 'Sie bearbeiten keine Aufgaben',
+      owned: 'Sie sind für keine Aufgaben verantwortlich',
     },
     emptyDescription:
-      'Ihnen zugewiesene Probleme werden hier angezeigt. Erstellen Sie eines oder wählen Sie eines aus der Problemliste aus.',
+      'Ihnen zugewiesene Aufgaben erscheinen hier. Erstellen Sie eine oder übernehmen Sie eine aus der Aufgabenliste.',
     tabs: {
       executing: 'Ich exekutiere',
       owned: 'Ich besitze',
     },
-    tabsLabel: 'Meine Ausgabenansichten',
-    title: 'Meine Probleme',
+    tabsLabel: 'Ansichten von Meine Aufgaben',
+    title: 'Meine Aufgaben',
   },
   nav: {
     general: 'Allgemein',
-    issues: 'Vorgänge',
+    issues: 'Aufgaben',
     labels: 'Etiketten',
     members: 'Mitglieder',
-    myIssues: 'Meine Probleme',
+    myIssues: 'Meine Aufgaben',
     projects: 'Projekte',
     roles: 'Rollen',
     settings: 'Einstellungen',
@@ -533,7 +535,7 @@ const deDE: LocaleResource<typeof enUS> = {
       manual: 'Manuell',
     },
     tabsLabel: 'Wege zum Schaffen',
-    title: 'Neue Ausgabe',
+    title: 'Neue Aufgabe',
   },
   pagination: {
     countMore: '{{count}}+',
@@ -550,7 +552,7 @@ const deDE: LocaleResource<typeof enUS> = {
   projectForm: {
     created: 'Projekt {{name}} erstellt',
     description:
-      'Projekte gruppieren Probleme und die Repositories, die sie betreffen.',
+      'Projekte gruppieren Aufgaben und die Repositorys, die sie betreffen.',
     descriptionHint:
       'Was jeder, der an diesem Projekt arbeitet, wissen sollte.',
     descriptionPlaceholder: 'Worum es in diesem Projekt geht.',
@@ -577,24 +579,24 @@ const deDE: LocaleResource<typeof enUS> = {
   projectMore: {
     delete: 'Projekt löschen',
     deleteDescription:
-      'Das Projekt, seine Mitglieder und Repositorys werden entfernt. Seine Themen bleiben bestehen und gehören nicht mehr zu einem Projekt.',
+      'Das Projekt, seine Mitglieder und Repositorys werden entfernt. Seine Aufgaben bleiben erhalten und gehören keinem Projekt mehr an.',
     deleteTitle: '{{name}} löschen?',
     deleted: 'Projekt {{name}} gelöscht',
     label: 'Weitere Projektaktionen',
   },
   projectPage: {
     distribution: 'Nach Status',
-    noIssues: 'Noch keine Probleme.',
+    noIssues: 'Noch keine Aufgaben.',
     numbers: 'Schlüsselzahlen',
-    openInList: 'In der Problemliste öffnen',
+    openInList: 'In der Aufgabenliste öffnen',
     stats: {
       done: 'Erledigt',
       review: 'In Prüfung',
       started: 'In Bearbeitung',
-      total: 'Vorgänge',
+      total: 'Aufgaben',
     },
     tabs: {
-      issues: 'Vorgänge',
+      issues: 'Aufgaben',
       label: 'Projektabschnitte',
       overview: 'Übersicht',
     },
@@ -618,12 +620,12 @@ const deDE: LocaleResource<typeof enUS> = {
       status: 'Status',
     },
     description:
-      'Gruppieren Sie Probleme, verknüpfen Sie ihre Repositories und verfolgen Sie den Fortschritt.',
+      'Aufgaben gruppieren, ihre Repositorys verknüpfen und den Fortschritt verfolgen.',
     descriptionLabel: 'Beschreibung',
     detailLoadFailed: 'Dieses Projekt konnte nicht geladen werden',
     editDescription: 'Beschreibung bearbeiten',
     emptyDescription:
-      'Erstellen Sie ein Projekt, um Probleme zu gruppieren und die betreffenden Repositories zu verknüpfen.',
+      'Erstellen Sie ein Projekt, um Aufgaben zu gruppieren und die betroffenen Repositorys zu verknüpfen.',
     emptyNoAccess: 'Bitten Sie einen Administrator, ein Projekt zu erstellen.',
     emptyTitle: 'Noch keine Projekte',
     loadFailed: 'Projekte können nicht geladen werden',
@@ -632,7 +634,7 @@ const deDE: LocaleResource<typeof enUS> = {
     noLead: 'Keine Spur',
     noResults: 'Keine Projektübereinstimmungen.',
     notFound: 'Dieses Projekt existiert nicht oder Sie können es nicht sehen.',
-    progressLabel: '{{done}}- oder {{total}}-Probleme behoben',
+    progressLabel: '{{done}} von {{total}} Aufgaben erledigt',
     search: 'Projekte suchen',
     sidePanel: 'Projektdetails',
     title: 'Projekte',
@@ -643,7 +645,7 @@ const deDE: LocaleResource<typeof enUS> = {
     visibilityHint: {
       everyone: 'Jedes Mitglied des Arbeitsbereichs kann dieses Projekt sehen.',
       members:
-        'Nur Projektmitglieder und Arbeitsbereichsadministratoren können dieses Projekt und seine Probleme sehen.',
+        'Nur Projektmitglieder und Workspace-Administratoren können dieses Projekt und seine Aufgaben sehen.',
     },
     visibilityLabel: 'Sichtbarkeit',
   },
@@ -651,7 +653,7 @@ const deDE: LocaleResource<typeof enUS> = {
     assignToMe: 'Beauftrage mich',
     created: 'Erstellt',
     details: 'Details',
-    executor: 'Testamentsvollstrecker',
+    executor: 'Bearbeiter',
     labels: 'Etiketten',
     owner: 'Verantwortlicher',
     priority: 'Priorität',
@@ -695,10 +697,10 @@ const deDE: LocaleResource<typeof enUS> = {
     newDescription:
       'Wo die Arbeit dieses Projekts stattfindet. Das erste ist das primäre Arbeitsverzeichnis.',
     newTitle: 'Fügen Sie ein Arbeitsverzeichnis hinzu',
-    noRunners: 'Noch keine Laufzeiten',
+    noRunners: 'Noch keine Laufzeitumgebungen',
     path: 'Verzeichnispfad',
     pathHint:
-      'Der absolute Pfad des Verzeichnisses in dieser Laufzeit. Agenten arbeiten dort vor Ort, eine Aufgabe nach der anderen.',
+      'Der absolute Pfad des Verzeichnisses in dieser Laufzeitumgebung. Agenten arbeiten dort vor Ort, eine Aufgabe nach der anderen.',
     pathInvalid:
       'Geben Sie einen absoluten Pfad ein, z. B. /Users/me/work/app.',
     pathRequired: 'Geben Sie den Verzeichnispfad ein.',
@@ -706,15 +708,15 @@ const deDE: LocaleResource<typeof enUS> = {
     remove: '{{name}} entfernen',
     removed: 'Entfernt.',
     runner: 'Laufzeitumgebung',
-    runnerHint: 'Nur diese Laufzeit funktioniert im Verzeichnis.',
-    runnerIdPlaceholder: 'Laufzeit-ID',
-    runnerPlaceholder: 'Wählen Sie eine Laufzeit',
+    runnerHint: 'Nur diese Laufzeitumgebung funktioniert im Verzeichnis.',
+    runnerIdPlaceholder: 'Laufzeitumgebung-ID',
+    runnerPlaceholder: 'Wählen Sie eine Laufzeitumgebung',
     runnerRequired:
-      'Wählen Sie die Laufzeit aus, in der sich das Verzeichnis befindet.',
+      'Wählen Sie die Laufzeitumgebung aus, in der sich das Verzeichnis befindet.',
     title: 'Repositories und Verzeichnisse',
     type: 'Typ',
     types: {
-      directory: 'Verzeichnis auf einer Laufzeit',
+      directory: 'Verzeichnis auf einer Laufzeitumgebung',
       gitRepo: 'Git-Repository',
     },
     url: 'Repository-URL',
@@ -754,28 +756,28 @@ const deDE: LocaleResource<typeof enUS> = {
     abilities: {
       issues: {
         changeOwner: {
-          hint: 'Übergeben Sie ein Problem an jemand anderen, der dafür verantwortlich ist',
+          hint: 'Eine Aufgabe an jemand anderen übergeben, der dafür verantwortlich ist',
           title: 'Besitzer wechseln',
         },
         close: {
-          hint: 'Markieren Sie ein Problem als erledigt oder abgebrochen',
-          title: 'Probleme schließen',
+          hint: 'Eine Aufgabe als erledigt oder abgebrochen markieren',
+          title: 'Aufgaben schließen',
         },
         create: {
-          hint: 'Erstellen Sie Probleme, in einem Projekt oder alleine',
-          title: 'Erstellen Sie Probleme',
+          hint: 'Aufgaben erstellen, in einem Projekt oder eigenständig',
+          title: 'Aufgaben erstellen',
         },
         delete: {
-          hint: 'Probleme löschen und gelöschte wiederherstellen',
-          title: 'Probleme beim Löschen und Wiederherstellen',
+          hint: 'Aufgaben löschen und gelöschte wiederherstellen',
+          title: 'Aufgaben löschen und wiederherstellen',
         },
         edit: {
-          hint: 'Titel, Beschreibung, Priorität, Daten, Labels, Ausführende und offene Status',
-          title: 'Probleme bearbeiten',
+          hint: 'Titel, Beschreibung, Priorität, Daten, Etiketten, Bearbeiter und offene Status',
+          title: 'Aufgaben bearbeiten',
         },
         view: {
-          hint: 'Sehen Sie sich Probleme in Listen, Foren und deren Details an',
-          title: 'Probleme anzeigen',
+          hint: 'Aufgaben in Listen, Boards und ihren Details sehen',
+          title: 'Aufgaben ansehen',
         },
       },
       projects: {
@@ -800,7 +802,7 @@ const deDE: LocaleResource<typeof enUS> = {
     capabilities: {
       general: {
         read: 'Siehe allgemeine Einstellungen',
-        update: 'Ändern Sie das Problempräfix',
+        update: 'Aufgabenpräfix ändern',
       },
       labels: {
         read: 'Siehe Etiketten',
@@ -845,7 +847,7 @@ const deDE: LocaleResource<typeof enUS> = {
     holders: 'Wird von {{count}} gehalten',
     legend: {
       issues:
-        'Sichtbare: Vorgänge ohne Projekt und Vorgänge in Projekten, die sie sehen können. Diejenigen, die sie leiten oder besitzen: Probleme, die ihnen gehören, und Probleme in Projekten, die sie leiten. Alle: jede Ausgabe.',
+        'Sichtbare: Aufgaben ohne Projekt und Aufgaben in Projekten, die sie sehen können. Geleitete oder eigene: ihre Aufgaben und Aufgaben in Projekten, die sie leiten. Alle: jede Aufgabe.',
       projects:
         'Sichtbare: öffentliche Projekte und private, denen sie beigetreten sind. Diejenigen, die sie leiten oder besitzen: Projekte, die sie leiten. Alle: jedes Projekt.',
     },
@@ -857,7 +859,7 @@ const deDE: LocaleResource<typeof enUS> = {
     },
     loadFailed: 'Rollen können nicht geladen werden',
     modules: {
-      issues: 'Vorgänge',
+      issues: 'Aufgaben',
       projects: 'Projekte',
       settings: 'Einstellungen',
     },
@@ -880,39 +882,39 @@ const deDE: LocaleResource<typeof enUS> = {
     member: 'Mitglied',
   },
   search: {
-    description: 'Suchen Sie nach Problemen nach Titel oder Kennung.',
-    hint: 'Geben Sie Folgendes ein, um nach Problemen zu suchen.',
-    issues: 'Vorgänge',
-    noResults: 'Keine Matching-Probleme.',
+    description: 'Aufgaben nach Titel oder Kennung suchen.',
+    hint: 'Tippen, um Aufgaben zu suchen.',
+    issues: 'Aufgaben',
+    noResults: 'Keine passenden Aufgaben.',
     placeholder: 'Suche nach Titel oder Kennung…',
-    title: 'Suchprobleme',
+    title: 'Aufgaben suchen',
     trigger: 'Suchen',
   },
   settingsPage: {
     general: {
-      prefix: 'Präfix der Problemkennung',
+      prefix: 'Präfix der Aufgabenkennung',
       prefixHint:
-        'Neue Ausgaben werden wie folgt nummeriert {{example}}. Bestehende Probleme behalten ihre Kennungen.',
+        'Neue Aufgaben werden wie {{example}} nummeriert. Bestehende Aufgaben behalten ihre Kennung.',
       saved: 'Einstellungen gespeichert.',
-      title: 'Problemkennungen',
+      title: 'Aufgabenkennungen',
     },
     readOnly: 'Schreibgeschützt: Sie können dies anzeigen, aber nicht ändern.',
     loadFailed: 'Die Einstellungen konnten nicht geladen werden',
   },
   subtasks: {
     aiIntro:
-      'AI liest diese Ausgabe und entwirft ihre Unterausgaben. Sie prüfen und bearbeiten die Entwürfe; Es wird nichts erstellt, bis Sie es bestätigen.',
+      'Die KI liest diese Aufgabe und entwirft ihre Unteraufgaben. Sie prüfen und bearbeiten die Entwürfe; erst nach Ihrer Bestätigung wird etwas erstellt.',
     blockedByHint:
       'Es wird erst gestartet, wenn diese erledigt oder abgebrochen sind.',
     blockedByLabel: 'Wartet auf',
-    blockedByPlaceholder: 'Wählen Sie Geschwister-Unterthemen',
-    count_one: 'Unterproblem {{count}}',
-    count_other: '{{count}}-Unterprobleme',
-    new: 'Neue Unterausgabe',
+    blockedByPlaceholder: 'Geschwister-Unteraufgaben wählen',
+    count_one: '{{count}} Unteraufgabe',
+    count_other: '{{count}} Unteraufgaben',
+    new: 'Neue Unteraufgabe',
     newDescription:
-      'Unterprobleme in einer späteren Phase beginnen erst, nachdem jede frühere Phase abgeschlossen ist.',
-    newTitle: 'Neue Unterausgabe',
-    noSiblings: 'Bisher keine weiteren Unterausgaben.',
+      'Unteraufgaben einer späteren Phase beginnen erst, wenn alle früheren Phasen erledigt sind.',
+    newTitle: 'Neue Unteraufgabe',
+    noSiblings: 'Noch keine weiteren Unteraufgaben.',
     noStage: 'Keine Bühne',
     stage: 'Stufe {{stage}}',
     stageHint: 'Optional. Die unteren Stufen laufen zuerst.',
@@ -923,7 +925,7 @@ const deDE: LocaleResource<typeof enUS> = {
       ai: 'KI-Zusammenbruch',
       manual: 'Manuell',
     },
-    title: 'Unterthemen',
+    title: 'Unteraufgaben',
     waiting_one: 'Warten auf {{count}}',
     waiting_other: 'Warten auf {{count}}',
   },
@@ -938,7 +940,7 @@ const deDE: LocaleResource<typeof enUS> = {
   },
   status: {
     analysis: 'Analyse',
-    backlog: 'Rückstand',
+    backlog: 'Backlog',
     blocked: 'Blockiert',
     cancelled: 'Abgebrochen',
     done: 'Erledigt',
@@ -954,16 +956,16 @@ const deDE: LocaleResource<typeof enUS> = {
     reason: {
       commenter: 'kommentierte',
       creator: 'hat es erstellt',
-      executor: 'Testamentsvollstrecker',
+      executor: 'Bearbeiter',
       manual: 'abonniert',
       mentioned: 'erwähnt',
       owner: 'Besitzer',
     },
     subscribe: 'Abonnieren',
-    subscribed: 'Sie werden über dieses Problem benachrichtigt.',
+    subscribed: 'Sie werden über diese Aufgabe benachrichtigt.',
     title: 'Teilnehmer & Follower',
     unsubscribe: 'Abmelden',
-    unsubscribed: 'Sie werden über dieses Problem nicht mehr benachrichtigt.',
+    unsubscribed: 'Sie werden nicht mehr über diese Aufgabe benachrichtigt.',
   },
   threads: {
     collapse: 'Reduziere den Thread',
@@ -981,7 +983,7 @@ const deDE: LocaleResource<typeof enUS> = {
     loadFailed: 'Der Plan konnte nicht geladen werden',
     notFound: 'Der Plan existiert nicht, oder Sie können ihn nicht sehen.',
     open: 'Plan öffnen',
-    backToList: 'Zurück zu den Themen',
+    backToList: 'Zurück zu den Aufgaben',
     source: {
       intake: 'Von der Einnahme',
       conversation: 'Aus einem Gespräch',
@@ -1012,14 +1014,14 @@ const deDE: LocaleResource<typeof enUS> = {
     edit: 'Bearbeiten',
     doneEditing: 'Erledigt',
     execute: 'Ausführen',
-    createIssues_one: '{{count}}-Problem erstellen',
-    createIssues_other: '{{count}}-Probleme erstellen',
+    createIssues_one: '{{count}} Aufgabe erstellen',
+    createIssues_other: '{{count}} Aufgaben erstellen',
     retry: 'Überprüfen Sie es erneut',
     void: 'Nichtig',
     undo: 'Rückgängig machen',
     executed: 'Der Plan wurde ausgeführt.',
-    executedIssues_one: '{{count}}-Problem erstellt.',
-    executedIssues_other: '{{count}}-Probleme wurden erstellt.',
+    executedIssues_one: '{{count}} Aufgabe erstellt.',
+    executedIssues_other: '{{count}} Aufgaben erstellt.',
     executeFailed: 'Der Plan wurde nicht ausgeführt; nichts hat sich geändert.',
     staleNotice:
       'Etwas, das dieser Plan ändert, wurde von jemand anderem geändert, nachdem es überprüft wurde. Es wurde nichts angewendet; Überprüfen Sie es erneut, um es mit den aktuellen Werten auszuführen.',
@@ -1048,7 +1050,7 @@ const deDE: LocaleResource<typeof enUS> = {
         'Es konnte nicht überprüft werden, was das Rückgängigmachen bewirken würde.',
       confirm: 'Rückgängig machen',
       ops: {
-        'issue.retract': 'Löschen Sie das Problem {{target}}',
+        'issue.retract': 'Aufgabe {{target}} löschen',
         'comment.retract': 'Löschen Sie den Kommentar zu {{target}}',
         'project.retract': 'Löschen Sie das Projekt {{target}}',
         dependency:
@@ -1080,8 +1082,8 @@ const deDE: LocaleResource<typeof enUS> = {
     wakeSkip: {
       deferred: 'noch nicht',
       denied: 'Sie dürfen daran nicht arbeiten',
-      blocked: 'Das Problem ist blockiert',
-      dormant: 'Das Problem ist im Rückstand',
+      blocked: 'die Aufgabe ist blockiert',
+      dormant: 'die Aufgabe ist im Backlog',
       duplicate: 'Es wird bereits daran gearbeitet',
       archived: 'es ist archiviert',
       noRunner: 'Kein Runner ist online',
@@ -1089,19 +1091,19 @@ const deDE: LocaleResource<typeof enUS> = {
     },
     flags: {
       label: 'Was es beeinflusst',
-      startsRun: 'Startet die Ausführung eines Agenten',
-      finalStatus: 'Schließt ein Problem',
+      startsRun: 'Startet die Ausführung eines Agent',
+      finalStatus: 'Schließt eine Aufgabe',
       ownerChange: 'Wechselt einen Besitzer',
       createsProject: 'Erstellt ein Projekt',
-      agentExecutor: 'Macht einen Agenten zum Testamentsvollstrecker',
+      agentExecutor: 'Macht einen Agent zum Bearbeiter',
     },
     ops: {
-      'issue.create': 'Neue Ausgabe',
-      'issue.update': 'Änderungsproblem',
+      'issue.create': 'Neue Aufgabe',
+      'issue.update': 'Aufgabe ändern',
       'comment.create': 'Kommentar',
       dependency: 'Abhängigkeit',
       'project.create': 'Neues Projekt',
-      'issue.retract': 'Issue entfernen',
+      'issue.retract': 'Aufgabe entfernen',
       'comment.retract': 'Kommentar löschen',
       'project.retract': 'Projekt entfernen',
     },
@@ -1115,11 +1117,11 @@ const deDE: LocaleResource<typeof enUS> = {
     restoreRow: 'Behalten Sie {{title}}',
     removed: 'Aus dem Plan entfernt',
     referenced: 'Weitere Veränderungen hängen davon ab',
-    indent: 'Machen Sie {{title}} zu einem Unterthema der Zeile oben',
+    indent: '{{title}} zur Unteraufgabe der Zeile darüber machen',
     outdent: 'Verschieben Sie {{title}} eine Ebene nach oben',
     editDescription: 'Beschreibung von {{title}}',
     untitled: 'Ohne Titel',
-    unknownIssue: 'Ein Problem',
+    unknownIssue: 'Eine Aufgabe',
     noParent: 'Höchste Ebene',
     visibility: {
       public: 'Alle',
@@ -1130,7 +1132,7 @@ const deDE: LocaleResource<typeof enUS> = {
       project: 'Projekt',
       priority: 'Priorität',
       labels: 'Etiketten',
-      executor: 'Testamentsvollstrecker',
+      executor: 'Bearbeiter',
       owner: 'Verantwortlicher',
       stage: 'Phase',
       actions: 'Aktionen',
@@ -1139,12 +1141,12 @@ const deDE: LocaleResource<typeof enUS> = {
       title: 'Titel',
       description: 'Beschreibung',
       projectId: 'Projekt',
-      parentIssueId: 'Übergeordnetes Problem',
+      parentIssueId: 'Übergeordnete Aufgabe',
       stage: 'Phase',
       statusKey: 'Status',
       priority: 'Priorität',
       ownerUserId: 'Verantwortlicher',
-      executor: 'Testamentsvollstrecker',
+      executor: 'Bearbeiter',
       labelIds: 'Etiketten',
       startDate: 'Starten',
       dueDate: 'Fällig',
@@ -1167,13 +1169,13 @@ const deDE: LocaleResource<typeof enUS> = {
     textPlaceholder:
       '# Anmeldung\n- Formular gestalten [high] #frontend\n  - E-Mail validieren\n- Versuche begrenzen @stage2',
     textHint:
-      'Überschriften werden zu übergeordneten Vorgängen, Listenelemente zu Vorgängen und eingerückte Elemente zu Untervorgängen. ! oder [high] legt die Priorität fest, #Label fügt ein Label hinzu und @stage2 legt die Phase fest. Die CSV-Datei benötigt eine Spalte title.',
+      'Überschriften werden zu übergeordneten Aufgaben, Listeneinträge zu Aufgaben und eingerückte Einträge zu Unteraufgaben; ! oder [high] setzt die Priorität, #label ein Etikett, @stage2 eine Phase. Eine CSV braucht eine Spalte title.',
     textTooLong:
       'Höchstens {{max}}-Zeichen; Teilen Sie den Rest in einer anderen Charge auf.',
     count: '{{count}} / {{max}}',
     files: 'Dateien',
     filesHint:
-      'Bis zu {{count}} Dateien, jeweils {{size}} MB. Text, Markdown, CSV, Word, Excel, PowerPoint und PDF werden gelesen; Lassen Sie einen Agenten organisieren, der mit seinen Bildtools PNG-/JPEG-Bilder lesen kann. Wenn das Lesen fehlschlägt, kehren Sie zum Bearbeiten zurück und versuchen Sie es erneut. Bei der Regelaufteilung werden nur Bilddateinamen verwendet.',
+      'Bis zu {{count}} Dateien, jeweils {{size}} MB. Text, Markdown, CSV, Word, Excel, PowerPoint und PDF werden gelesen; Lassen Sie einen Agent organisieren, der mit seinen Bildtools PNG-/JPEG-Bilder lesen kann. Wenn das Lesen fehlschlägt, kehren Sie zum Bearbeiten zurück und versuchen Sie es erneut. Bei der Regelaufteilung werden nur Bilddateinamen verwendet.',
     addFiles: 'Dateien hinzufügen',
     dropFiles: 'Dateien hier ablegen',
     removeFile: '{{name}} entfernen',
@@ -1183,8 +1185,8 @@ const deDE: LocaleResource<typeof enUS> = {
     fileTooLarge: '{{name}} ist größer als {{size}} MB.',
     project: 'Standardprojekt',
     projectHint:
-      'Jede Ausgabe geht darauf ein; Sie können jeden einzelnen unten ändern.',
-    splitAction: 'Entwurfsausgaben',
+      'Alle Aufgaben kommen in dieses Projekt; unten können Sie jede einzeln ändern.',
+    splitAction: 'Aufgaben entwerfen',
     splitDone_one: 'Aufteilung in {{count}}-Entwurf',
     splitDone_other: 'Aufteilung in {{count}}-Entwürfe',
     splitting: 'Spaltung…',
@@ -1196,17 +1198,17 @@ const deDE: LocaleResource<typeof enUS> = {
     draftTitle: 'Entwürfe ({{count}})',
     draftHint:
       'Es wird nichts erstellt, bis Sie auf „Erstellen“ klicken. Über diesen Link bleibt der Entwurf 24 Stunden lang erhalten.',
-    draftCreated: 'Diese Probleme wurden bereits erstellt.',
+    draftCreated: 'Diese Aufgaben wurden bereits erstellt.',
     draftClosed:
-      'Dieser Entwurf wurde ersetzt oder ist abgelaufen; die Themen noch einmal formulieren.',
+      'Dieser Entwurf wurde ersetzt oder ist abgelaufen; entwerfen Sie die Aufgaben erneut.',
     invalidDraft:
-      'Einige Probleme sind noch nicht gelöst. Korrigieren Sie sie im Text und teilen Sie sie erneut auf.',
+      'Einige Aufgaben sind noch nicht gültig. Korrigieren Sie sie im Text und teilen Sie erneut auf.',
     unknownLabels:
       'Diese Bezeichnungen existieren nicht und wurden weggelassen: {{labels}}',
     dropped_one:
-      'Nur die ersten 50 Ausgaben sind im Entwurf; {{count}} mehr wurde weggelassen.',
+      'Nur die ersten 50 Aufgaben sind im Entwurf; {{count}} weitere wurde ausgelassen.',
     dropped_other:
-      'Nur die ersten 50 Ausgaben sind im Entwurf; {{count}} weitere wurden weggelassen.',
+      'Nur die ersten 50 Aufgaben sind im Entwurf; {{count}} weitere wurden ausgelassen.',
     fileStates: {
       read: 'lesen',
       truncated: 'teilweise gelesen',
@@ -1220,19 +1222,20 @@ const deDE: LocaleResource<typeof enUS> = {
   },
   intakeAi: {
     splitByRules: 'Aufteilung nach Regeln',
-    breakdown: 'In Teilthemen aufteilen',
+    breakdown: 'In Unteraufgaben zerlegen',
     breakdownHint:
-      'Entwürfe von Unterausgaben für {{issue}}: Überprüfen und bearbeiten Sie sie und erstellen Sie sie dann. Nichts wird erstellt, bis Sie es tun.',
-    drafted: 'AI hat die Themen ausgearbeitet',
+      'Entwürfe von Unteraufgaben für {{issue}}: prüfen und bearbeiten Sie sie und erstellen Sie sie dann. Vorher wird nichts erstellt.',
+    drafted: 'Die KI hat die Aufgaben entworfen',
     revised: 'Entwürfe überarbeitet',
     startFailed: 'Konnte AI nicht fragen.',
-    failed: 'AI konnte die Themen nicht formulieren. Versuchen Sie es erneut.',
-    failedWhy: 'AI konnte die Probleme nicht formulieren: {{message}}',
+    failed:
+      'Die KI konnte die Aufgaben nicht entwerfen. Versuchen Sie es erneut.',
+    failedWhy: 'Die KI konnte die Aufgaben nicht entwerfen: {{message}}',
     cancel: 'Abbrechen',
     progress: {
-      split: 'KI entwirft die Themen …',
+      split: 'Die KI entwirft die Aufgaben…',
       revise: 'KI überarbeitet die Entwürfe…',
-      breakdown: 'KI bricht {{issue}} zusammen …',
+      breakdown: 'Die KI zerlegt {{issue}}…',
     },
     working: '{{name}} ist darauf',
     workingAnonymous: 'Ich arbeite daran',
@@ -1242,10 +1245,10 @@ const deDE: LocaleResource<typeof enUS> = {
       reason: 'Warten auf Start ({{reason}})…',
     },
     waitsHint:
-      'Im Moment ist keine Laufzeit online: Eine Anfrage wartet, bis eine Verbindung hergestellt wird.',
+      'Im Moment ist keine Laufzeitumgebung online: Eine Anfrage wartet, bis eine Verbindung hergestellt wird.',
     unavailable: {
       noAgent:
-        'KI ist nicht verfügbar: Wählen Sie einen Standard-Chat-Agenten in Ihrem Profil oder bitten Sie einen Administrator, einen festzulegen.',
+        'KI ist nicht verfügbar: Wählen Sie einen Standard-Chat-Agent in Ihrem Profil oder bitten Sie einen Administrator, einen festzulegen.',
     },
     removed_one: '{{count}}-Entwurf entfernt: {{titles}}',
     removed_other: '{{count}}-Entwürfe entfernt: {{titles}}',
@@ -1269,7 +1272,7 @@ const deDE: LocaleResource<typeof enUS> = {
   access: {
     sections: {
       projects: 'Projekte',
-      issues: 'Vorgänge',
+      issues: 'Aufgaben',
       settings: 'Projekteinstellungen',
       members: 'Mitglieder und Rollen',
     },
@@ -1310,103 +1313,101 @@ const deDE: LocaleResource<typeof enUS> = {
         },
       },
       issues: {
-        title: 'Vorgänge',
-        description: 'Issues und deren Kommentare, im Projekt oder alleine.',
+        title: 'Aufgaben',
+        description:
+          'Aufgaben und ihre Kommentare, in einem Projekt oder eigenständig.',
         actions: {
           view: {
-            title: 'Probleme anzeigen',
-            description:
-              'Sehen Sie sich Probleme in Listen, Foren und deren Details an',
-            related: 'Probleme anzeigen (die sie sehen können)',
+            title: 'Aufgaben ansehen',
+            description: 'Aufgaben in Listen, Boards und ihren Details sehen',
+            related: 'Aufgaben ansehen (sichtbare)',
             relatedLabel: 'In Projekten kann ich sehen',
             relatedHint:
-              'Probleme ohne Projekt und Probleme in Projekten, die ich sehen kann',
-            all: 'Probleme anzeigen (alle)',
+              'Aufgaben ohne Projekt und Aufgaben in Projekten, die ich sehen kann',
+            all: 'Aufgaben ansehen (alle)',
           },
           create: {
-            title: 'Erstellen Sie Probleme',
+            title: 'Aufgaben erstellen',
             description:
-              'Erstellen Sie Probleme, in einem Projekt oder alleine',
-            related: 'Probleme erstellen (in Projekten, die sie sehen können)',
+              'Aufgaben erstellen, in einem Projekt oder eigenständig',
+            related: 'Aufgaben erstellen (in sichtbaren Projekten)',
             relatedLabel: 'In Projekten kann ich sehen',
             relatedHint:
-              'Probleme ohne Projekt oder in Projekten, die ich sehen kann',
-            all: 'Probleme erstellen (alle)',
+              'Aufgaben ohne Projekt oder in Projekten, die ich sehen kann',
+            all: 'Aufgaben erstellen (alle)',
           },
           edit: {
-            title: 'Probleme bearbeiten',
+            title: 'Aufgaben bearbeiten',
             description:
-              'Titel, Beschreibung, Priorität, Daten, Labels, Ausführende und offene Status',
-            related: 'Probleme bearbeiten (die sie sehen können)',
+              'Titel, Beschreibung, Priorität, Daten, Etiketten, Bearbeiter und offene Status',
+            related: 'Aufgaben bearbeiten (sichtbare)',
             relatedLabel: 'In Projekten kann ich sehen',
             relatedHint:
-              'Probleme ohne Projekt und Probleme in Projekten, die ich sehen kann',
-            all: 'Probleme bearbeiten (alle)',
+              'Aufgaben ohne Projekt und Aufgaben in Projekten, die ich sehen kann',
+            all: 'Aufgaben bearbeiten (alle)',
           },
           comment: {
-            title: 'Kommentar zu Problemen',
+            title: 'Aufgaben kommentieren',
             description:
               'Threads kommentieren, antworten und auflösen; eigene Kommentare bearbeiten und löschen',
-            related: 'Kommentieren Sie Probleme (die sie sehen können)',
+            related: 'Aufgaben kommentieren (sichtbare)',
             relatedLabel: 'In Projekten kann ich sehen',
             relatedHint:
-              'Probleme ohne Projekt und Probleme in Projekten, die ich sehen kann',
-            all: 'Kommentar zu Problemen (alle)',
+              'Aufgaben ohne Projekt und Aufgaben in Projekten, die ich sehen kann',
+            all: 'Aufgaben kommentieren (alle)',
           },
           moderateComments: {
             title: 'Moderate Kommentare',
             description: 'Kommentare anderer Personen löschen',
             related:
-              'Moderieren Sie Kommentare (zu Themen, die ihnen gehören oder deren Projekt sie leiten)',
+              'Kommentare moderieren (bei eigenen Aufgaben oder in geleiteten Projekten)',
             relatedLabel:
-              'Zu Themen, die mir gehören, oder in Projekten, die ich leite',
+              'Bei meinen Aufgaben oder in Projekten, die ich leite',
             relatedHint:
-              'Kommentare zu Issues, die mir gehören, und zu Issues in Projekten, die ich leite',
+              'Kommentare zu meinen Aufgaben und zu Aufgaben in Projekten, die ich leite',
             all: 'Moderate Kommentare (alle)',
           },
           close: {
-            title: 'Probleme schließen',
-            description:
-              'Markieren Sie ein Problem als erledigt oder abgebrochen',
-            related:
-              'Probleme schließen (die sie besitzen oder deren Projekt sie leiten)',
+            title: 'Aufgaben schließen',
+            description: 'Eine Aufgabe als erledigt oder abgebrochen markieren',
+            related: 'Aufgaben schließen (eigene oder in geleiteten Projekten)',
             relatedLabel:
               'Diejenigen, die ich besitze oder in Projekten, die ich leite',
             relatedHint:
-              'Vorgänge, die mir gehören, und Vorgänge in Projekten, die ich leite',
-            all: 'Probleme schließen (alle)',
+              'Meine Aufgaben und Aufgaben in Projekten, die ich leite',
+            all: 'Aufgaben schließen (alle)',
           },
           changeOwner: {
             title: 'Besitzer wechseln',
             description:
-              'Übergeben Sie ein Problem an jemand anderen, der dafür verantwortlich ist',
+              'Eine Aufgabe an jemand anderen übergeben, der dafür verantwortlich ist',
             related:
               'Ändern Sie den Eigentümer (die Eigentümer oder deren Projekt sie leiten)',
             relatedLabel:
               'Diejenigen, die ich besitze oder in Projekten, die ich leite',
             relatedHint:
-              'Vorgänge, die mir gehören, und Vorgänge in Projekten, die ich leite',
+              'Meine Aufgaben und Aufgaben in Projekten, die ich leite',
             all: 'Besitzer wechseln (alle)',
           },
           delete: {
-            title: 'Probleme beim Löschen und Wiederherstellen',
-            description: 'Probleme löschen und gelöschte wiederherstellen',
-            all: 'Probleme beim Löschen und Wiederherstellen',
+            title: 'Aufgaben löschen und wiederherstellen',
+            description: 'Aufgaben löschen und gelöschte wiederherstellen',
+            all: 'Aufgaben löschen und wiederherstellen',
           },
         },
       },
       attachments: {
         title: 'Anhänge',
-        description: 'An Probleme und Kommentare angehängte Dateien.',
+        description: 'An Aufgaben und Kommentare angehängte Dateien.',
         actions: {
           upload: {
             title: 'Anhänge hochladen',
             description:
-              'Hängen Sie Dateien an Probleme an, die sie bearbeiten können, und an ihre Kommentare',
-            related: 'Anhänge hochladen (zu Problemen, die sie sehen können)',
-            relatedLabel: 'Zu Problemen in Projekten kann ich sehen',
+              'Dateien an Aufgaben, die sie bearbeiten dürfen, und an ihre Kommentare anhängen',
+            related: 'Anhänge hochladen (bei sichtbaren Aufgaben)',
+            relatedLabel: 'Bei Aufgaben in Projekten, die ich sehen kann',
             relatedHint:
-              'Dateien zu Problemen ohne Projekt und zu Problemen in Projekten, die ich sehen kann',
+              'Dateien bei Aufgaben ohne Projekt und bei Aufgaben in Projekten, die ich sehen kann',
             all: 'Anhänge hochladen (alle)',
           },
         },
@@ -1414,12 +1415,12 @@ const deDE: LocaleResource<typeof enUS> = {
     },
     collections: {
       pmProjects: 'Projekte',
-      pmIssues: 'Vorgänge',
+      pmIssues: 'Aufgaben',
     },
     recordAccess: {
-      visible: 'Projekte und Probleme, die sie sehen können',
+      visible: 'Projekte und Aufgaben, die sie sehen können',
       managed:
-        'Projekte, die sie leiten, und Issues, deren Eigentümer sie sind',
+        'Projekte, die sie leiten, und Aufgaben, für die sie verantwortlich sind',
     },
     settings: {
       pm: {
@@ -1435,9 +1436,9 @@ const deDE: LocaleResource<typeof enUS> = {
         objects: 'Projekte',
       },
       issues: {
-        title: 'Vorgänge',
+        title: 'Aufgaben',
         description:
-          'Siehe Probleme; erstellen, bearbeiten, kommentieren, schließen und neu zuordnen; Kommentare moderieren und Probleme löschen.',
+          'Aufgaben sehen; erstellen, bearbeiten, kommentieren, schließen und neu zuweisen; Kommentare moderieren und Aufgaben löschen.',
       },
       settings: {
         title: 'Projekteinstellungen',

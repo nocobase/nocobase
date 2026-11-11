@@ -107,6 +107,26 @@ describe('HTTP API', () => {
     expect(
       (await call('/apps?pageSize=101', { user: 'admin' })).body.error,
     ).toMatchObject({ reason: 'INVALID_INPUT', domain: 'app' });
+    // Environments and runtime states repeat; an unknown state is refused.
+    expect(
+      await call(
+        '/apps?environmentId=staging&environmentId=production&runtimeState=stopped&runtimeState=running',
+        { user: 'admin' },
+      ),
+    ).toMatchObject({
+      status: 200,
+      body: { data: [{ app: { id: 'shop' } }], meta: { total: 1 } },
+    });
+    expect(
+      (
+        await call('/apps?environmentId=production&runtimeState=stopped', {
+          user: 'admin',
+        })
+      ).body.meta,
+    ).toMatchObject({ total: 0 });
+    expect(
+      (await call('/apps?runtimeState=asleep', { user: 'admin' })).status,
+    ).toBe(400);
     expect((await call('/environments', { user: 'admin' })).body).toMatchObject(
       { meta: { total: 2 } },
     );
@@ -165,6 +185,17 @@ describe('HTTP API', () => {
       user: 'admin',
     });
     expect(removed).toEqual({ status: 204, body: undefined });
+  });
+
+  it('lists shared app hosts for those who read environments', async () => {
+    expect((await call('/hosts')).status).toBe(401);
+    harness.application.roles.set('guest', 'nobody');
+    expect((await call('/hosts', { user: 'guest' })).status).toBe(403);
+    // `hosts` is outside `/environments`, so no environment ID is taken from anyone.
+    expect(await call('/hosts', { user: 'carol' })).toEqual({
+      status: 200,
+      body: { data: [], meta: { total: 0 } },
+    });
   });
 
   it('uploads once with a ticket and deploys when the ticket says so', async () => {

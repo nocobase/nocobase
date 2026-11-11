@@ -13,3 +13,5 @@ export {
   useAgentSessionDraft,
   type AgentSessionDraft,
 } from './lib/panel-draft.js';
+
+export type { AgentSessionHeaderProps } from './config.js';

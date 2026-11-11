@@ -12,6 +12,15 @@ export class ListRecoveryError extends Error {}
 
 const sizes = [10, 20, 50, 100] as const;
 
+/** The query keys a table owns: its page, page size and sorting. A list's return target forwards these. */
+export const TABLE_URL_KEYS = [
+  'page',
+  'pageSize',
+  'sort',
+  'order',
+  'orderBy',
+] as const;
+
 interface TableUrlOptions {
   defaultPageSize?: number;
   pageSizeOptions?: readonly number[];
@@ -201,6 +210,8 @@ export function useTableUrlState({
     onPaginationChange,
     sortingState,
     onSortingChange,
+    // Spread into DataTable, this limits its headers and sort menu to the columns the URL accepts.
+    sortableColumns: sortColumns,
     pageSizeOptions,
   };
 }

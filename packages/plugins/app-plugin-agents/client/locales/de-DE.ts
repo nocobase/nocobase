@@ -1,6 +1,4 @@
-import runtimesEnUS from './runtimes.en-US.js';
 import type { LocaleResource } from '@nocobase/i18n';
-import chatEnUS from './chat.en-US.js';
 
 import type enUS from './en-US.js';
 
@@ -67,7 +65,7 @@ const deDE: LocaleResource<typeof enUS> = {
   },
   errors: {
     boundRunnerIncompatible:
-      'Dieser Runner kann den ausgewählten Agent nicht ausführen. Wechseln Sie den Runner oder starten Sie eine neue Unterhaltung.',
+      'Diese Laufzeitumgebung kann den ausgewählten Agent nicht ausführen. Wechseln Sie die Laufzeitumgebung, um fortzufahren.',
     CONFLICT:
       'Das hat sich inzwischen geändert. Laden Sie es neu und versuchen Sie es erneut.',
     REVISION_CONFLICT:
@@ -111,12 +109,13 @@ const deDE: LocaleResource<typeof enUS> = {
     cline: 'Cline',
     amp: 'Amp',
     vibe: 'Mistral Vibe',
+    dsh: 'DeepSeek Harness',
   },
   agents: {
     unavailableNow: 'Derzeit nicht verfügbar',
     title: 'Agenten',
     description:
-      'Fügen Sie Agenten aus den von Runnern gemeldeten Modellen hinzu. Der Lead Agent weist jeden Schritt einer Aufgabe dem Agenten zu, dessen Beschreibung dazu passt.',
+      'Fügen Sie Agents aus den Modellen hinzu, die Laufzeitumgebungen melden. Der Lead Agent übergibt jeden Schritt einer Aufgabe dem Agent, dessen Beschreibung passt.',
     fromRunners: 'Agenten von Runnern',
     display: {
       search: 'Suchmodelle oder Anbieter',
@@ -124,20 +123,20 @@ const deDE: LocaleResource<typeof enUS> = {
       showDisabled: 'Deaktivierte anzeigen',
       hideDisabled: 'Deaktivierte ausblenden',
     },
-    filterLabel: 'Agenten anzeigen',
+    filterLabel: 'Agents anzeigen',
     filters: {
       all: 'Alle {{count}}',
       enabled: 'Aktiviert {{count}}',
       unreported: 'Kein Runner {{count}}',
     },
-    loadFailed: 'Die Agenten konnten nicht geladen werden',
+    loadFailed: 'Die Agents konnten nicht geladen werden',
     loadMore: 'Mehr laden',
-    emptyTitle: 'Noch keine Agenten',
+    emptyTitle: 'Noch keine Agents',
     emptyDescription:
-      'Verbinden Sie einen Runner mit einem angemeldeten Codierungstool und fügen Sie dann unter „Verfügbare Modelle“ einen Agenten hinzu.',
+      'Verbinden Sie einen Runner mit einem angemeldeten Codierungstool und fügen Sie dann unter „Verfügbare Modelle“ einen Agent hinzu.',
     noneInFilter: 'Kein Agent hier.',
     howToAdd:
-      'Um einen Agenten hinzuzufügen, installieren Sie ein Codierungstool auf einem Runner und melden Sie sich für ein nutzbares Modell an. Sobald der Runner es meldet, fügen Sie unter „Verfügbare Modelle“ einen Agenten hinzu und beschreiben Sie seine Stärken. Er wird beim Hinzufügen sofort aktiviert. Ein Agent, der nur auf persönlichen Runnern verfügbar ist, kann nur Aufgaben bearbeiten, die deren Besitzer starten.',
+      'Um einen Agent hinzuzufügen, installieren Sie ein Coding-Tool in einer Laufzeitumgebung und melden Sie sich bei einem Modell an, das Sie nutzen dürfen: Sobald die Laufzeitumgebung es meldet, fügen Sie es unter Verfügbare Modelle hinzu und beschreiben, worin es gut ist. Ein Agent, den nur persönliche Laufzeitumgebungen haben, arbeitet nur an Aufgaben, die ihre Besitzer starten.',
     goodAtMissing: 'Noch nicht geschrieben',
     columns: {
       agent: 'Agent',
@@ -179,13 +178,13 @@ const deDE: LocaleResource<typeof enUS> = {
       reportedBy_other: 'Von {{count}}-Runnern online gemeldet: {{names}}.',
       noRunnerNow: 'Kein Runner, der es hat, ist jetzt online.',
       goodAtHint:
-        'Mit diesen Worten entscheidet der Lead Agent, was er diesem Agenten geben soll. Sagen Sie, was Ihnen passt und was nicht.',
+        'Mit diesen Worten entscheidet der Lead Agent, was er diesem Agent geben soll. Sagen Sie, was Ihnen passt und was nicht.',
       goodAtRequired:
         'Schreiben Sie, was es gut kann, bevor Sie es aktivieren.',
       effortHint:
         'Der Lead Agent kann es bei der Übergabe der Arbeit nicht ändern.',
       personalOnly:
-        'Nur persönliche Runner haben es: Der Lead Agent übergibt die Arbeit nur an Vorgänge, die ihre Besitzer starten.',
+        'Nur persönliche Laufzeitumgebungen haben ihn: Der Lead Agent übergibt ihm nur Aufgaben, die ihre Besitzer starten.',
     },
     edit: {
       button: 'Bearbeiten',
@@ -198,7 +197,7 @@ const deDE: LocaleResource<typeof enUS> = {
       open: 'Agent hinzufügen',
       title: 'Verfügbare Modelle',
       description:
-        'Nur die auf der Laufzeit ausgewählten Tools werden jemals erkannt und hier aufgeführt. Die von der Anwendung empfohlenen Kombinationen erstellen und aktivieren sich selbst, sobald ein Runner sie meldet; fügen Sie aus jeder anderen einen Agenten hinzu.',
+        'Nur die auf der Laufzeitumgebung ausgewählten Tools werden jemals erkannt und hier aufgeführt. Die von der Anwendung empfohlenen Kombinationen erstellen und aktivieren sich selbst, sobald ein Runner sie meldet; fügen Sie aus jeder anderen einen Agent hinzu.',
       recommended: 'Wird beim Melden automatisch aktiviert',
       added: 'Hinzugefügt',
       add: 'Hinzufügen',
@@ -209,11 +208,11 @@ const deDE: LocaleResource<typeof enUS> = {
         failed: 'Erkennung fehlgeschlagen',
       },
       details: 'Tool-Details',
-      setupCommand: 'Führen Sie {{command}} auf der Laufzeit aus.',
+      setupCommand: 'Führen Sie {{command}} auf der Laufzeitumgebung aus.',
       setupUnknown:
         'Dieses Tool muss eingerichtet werden, aber wir kennen den Befehl dafür nicht.',
       upgradeAdvice:
-        'Aktualisieren Sie das Tool und seinen ACP-Adapter auf der Laufzeit auf die neuesten Versionen und starten Sie die Erkennung erneut.',
+        'Aktualisieren Sie das Tool und seinen ACP-Adapter auf der Laufzeitumgebung auf die neuesten Versionen und starten Sie die Erkennung erneut.',
       minimumVersionUnknown:
         'Die unterstützte Mindestversion des Tools ist unbekannt. Lesen Sie die Kompatibilitätsdokumentation.',
       noDetail: 'Das Tool hat keine weiteren Details angegeben.',
@@ -229,12 +228,12 @@ const deDE: LocaleResource<typeof enUS> = {
       selectedCount_other: '{{count}} ausgewählt',
       addSelected: '{{count}} hinzufügen',
       confirmTitle_one: '{{count}} Agent hinzufügen',
-      confirmTitle_other: '{{count}} Agenten hinzufügen',
+      confirmTitle_other: '{{count}} Agents hinzufügen',
       confirmAction_one: '{{count}} hinzufügen',
       confirmAction_other: '{{count}} hinzufügen',
       goodAtNeeded: 'Worin ist er gut?',
       addedCount_one: '{{count}} Agent hinzugefügt.',
-      addedCount_other: '{{count}} Agenten hinzugefügt.',
+      addedCount_other: '{{count}} Agents hinzugefügt.',
       addedPartial:
         '{{succeeded}} hinzugefügt, {{failed}} konnten nicht hinzugefügt werden. Grund jeweils darunter.',
       addFailed:
@@ -247,11 +246,11 @@ const deDE: LocaleResource<typeof enUS> = {
     online: 'Online',
     runner: 'Runner',
     onlineHint:
-      'Antworten in Sekundenschnelle auf dem Server durch einen Modelldienst. Keine Laufzeit erforderlich; Es kann keinen Code berühren.',
+      'Antworten in Sekundenschnelle auf dem Server durch einen Modelldienst. Keine Laufzeitumgebung erforderlich; Es kann keinen Code berühren.',
     runnerHint:
-      'Treibt ein Codierungstool zur Laufzeit an und arbeitet in einem Arbeitsverzeichnis: Code, Dateien, Befehle.',
+      'Treibt ein Codierungstool zur Laufzeitumgebung an und arbeitet in einem Arbeitsverzeichnis: Code, Dateien, Befehle.',
     immutable:
-      'Ein Agent behält seinen Typ; Erstellen Sie einen anderen Agenten für die andere Art.',
+      'Ein Agent behält seinen Typ; Erstellen Sie einen anderen Agent für die andere Art.',
     onServer: 'Auf dem Server',
     filterAll: 'Alle Typen',
     noneOfType: 'Kein Agent dieser Art.',
@@ -267,7 +266,7 @@ const deDE: LocaleResource<typeof enUS> = {
     descriptionOnline:
       'Handbücher, die der Agent liest, wenn eine Aufgabe mit ihrer Beschreibung übereinstimmt, in einer schreibgeschützten Sandbox auf dem Server.',
     onlineScripts:
-      'Skripte werden für Online-Agenten nicht ausgeführt: Der Agent kann sie lesen, nicht ausführen.',
+      'Skripte werden für Online-Agents nicht ausgeführt: Der Agent kann sie lesen, nicht ausführen.',
     skippedScripts: ': {{paths}}',
     pathSeparator: ', ',
   },
@@ -275,7 +274,7 @@ const deDE: LocaleResource<typeof enUS> = {
     preview: 'Vorschau der vollständigen Eingabeaufforderung',
     previewTitle: 'Vorschau der vollständigen Eingabeaufforderung',
     previewDescription:
-      'Was für ein Lauf dieses Agenten würde jetzt zu einem erfundenen Thema geschickt werden. Es steht nichts in der Warteschlange.',
+      'Was für ein Lauf dieses Agent würde jetzt zu einem erfundenen Thema geschickt werden. Es steht nichts in der Warteschlange.',
     scenario: 'Szenario',
     sample:
       'Zu einem erfundenen Thema: {{subject}}. Mit [Beispiel] gekennzeichnete Werte sind erfunden.',
@@ -295,7 +294,7 @@ const deDE: LocaleResource<typeof enUS> = {
     firstMessage: 'Erste Nachricht',
     empty: 'Leer',
     previewPlaceholders:
-      'Die Anmerkungen in Klammern zur Laufzeit werden von der Laufzeit ausgefüllt, die sie ausführt: ihre Arbeitsverzeichnisse und die Initialisierungsaufforderungen der gerade vorbereiteten Verzeichnisse.',
+      'Die Anmerkungen in Klammern zur Laufzeitumgebung werden von der Laufzeitumgebung ausgefüllt, die sie ausführt: ihre Arbeitsverzeichnisse und die Initialisierungsaufforderungen der gerade vorbereiteten Verzeichnisse.',
     placeholders:
       'Die {{runner.…}}-Platzhalter werden von der Laufzeitumgebung ausgefüllt, die sie ausführt: ihre Arbeitsverzeichnisse und die Initialisierungsaufforderungen der gerade vorbereiteten Verzeichnisse.',
     layers: {
@@ -309,7 +308,7 @@ const deDE: LocaleResource<typeof enUS> = {
   envVars: {
     title: 'Umgebungsvariablen',
     description:
-      'Wird bei jedem Lauf an das Codierungstool übergeben und in Laufaufzeichnungen maskiert; Werte werden nach dem Speichern nicht mehr angezeigt. Jeder, der einen Shared Agent nutzt, kann diese Werte auf seinem eigenen Computer erhalten; Markieren Sie Geheimnisse mit hohem Risiko als „Nur Team-Laufzeiten“.',
+      'Wird bei jedem Lauf an das Codierungstool übergeben und in Laufaufzeichnungen maskiert; Werte werden nach dem Speichern nicht mehr angezeigt. Jeder, der einen Shared Agent nutzt, kann diese Werte auf seinem eigenen Computer erhalten; Markieren Sie Geheimnisse mit hohem Risiko als „Nur Team-Laufzeitumgebungen“.',
     add: 'Variable hinzufügen',
     addTitle: 'Umgebungsvariable hinzufügen',
     editTitle: '{{name}} ersetzen',
@@ -322,14 +321,14 @@ const deDE: LocaleResource<typeof enUS> = {
     keepValueHint: 'Lassen Sie es leer, um den aktuellen Wert beizubehalten.',
     teamRunnersOnly: 'Nur Teamlaufzeiten',
     teamRunnersOnlyHint:
-      'Ohne sie sendet ein Lauf den Wert an die Laufzeit, die ihn annimmt, einschließlich der persönlichen Laufzeit aller Personen, die den Agenten verwenden. Damit benötigt nur eine Teamlaufzeit Läufe, die diese Variable erhalten.',
+      'Ohne sie sendet ein Lauf den Wert an die Laufzeitumgebung, die ihn annimmt, einschließlich der persönlichen Laufzeitumgebung aller Personen, die den Agent verwenden. Damit benötigt nur eine Teamlaufzeit Läufe, die diese Variable erhalten.',
     teamRunnersOnlyBadge: 'Nur Teamlaufzeiten',
-    fromRunner: 'Aus der Laufzeit übernehmen',
+    fromRunner: 'Aus der Laufzeitumgebung übernehmen',
     fromRunnerHint:
-      'Hier wird kein Wert gespeichert: Die Laufzeit, die einen Lauf durchführt, stellt ihn von ihrer eigenen Maschine bereit, wird dort mit {{command}} gesetzt oder mit `--pass-env` übergeben. Eine Laufzeit, die dies nicht bereitstellt, schlägt die Ausführung fehl, bevor sie gestartet wird.',
-    fromRunnerBadge: 'Aus der Laufzeit',
+      'Hier wird kein Wert gespeichert: Die Laufzeitumgebung, die einen Lauf durchführt, stellt ihn von ihrer eigenen Maschine bereit, wird dort mit {{command}} gesetzt oder mit `--pass-env` übergeben. Eine Laufzeitumgebung, die dies nicht bereitstellt, schlägt die Ausführung fehl, bevor sie gestartet wird.',
+    fromRunnerBadge: 'Aus der Laufzeitumgebung',
     valueRequired:
-      'Geben Sie einen Wert ein oder übernehmen Sie ihn weiterhin aus der Laufzeit.',
+      'Geben Sie einen Wert ein oder übernehmen Sie ihn weiterhin aus der Laufzeitumgebung.',
     empty: 'Keine Umgebungsvariablen.',
     scope: 'Geltungsbereich',
     updated: 'Aktualisiert',
@@ -355,7 +354,7 @@ const deDE: LocaleResource<typeof enUS> = {
     revealedTitle: 'Variablenwerte',
     revealedNote:
       'Diese Offenbarung wurde aufgezeichnet. Schließen Sie es, wenn Sie fertig sind.',
-    runner: 'Laufzeit {{id}}',
+    runner: 'Laufzeitumgebung {{id}}',
     auditsEmpty: 'Noch nichts aufgezeichnet.',
     auditAction: {
       reveal: 'enthüllt',
@@ -375,7 +374,7 @@ const deDE: LocaleResource<typeof enUS> = {
   scopeVariables: {
     title: 'Variablen und Geheimnisse',
     description:
-      'Wird jedem hier tätigen Agenten gegeben. Spezifischere Variablen (die eines Arbeitsverzeichnisses, dann die des Agenten) überzeugen diese.',
+      'Wird jedem hier tätigen Agent gegeben. Spezifischere Variablen (die eines Arbeitsverzeichnisses, dann die des Agent) überzeugen diese.',
   },
   scopes: {
     workdir: 'Arbeitsverzeichnis',
@@ -402,7 +401,7 @@ const deDE: LocaleResource<typeof enUS> = {
     },
     title: 'Verwendung',
     description:
-      'Welche Agenten laufen gebraucht und was kosten sie bei den aktuellen Modellpreisen?',
+      'Welche Agent laufen gebraucht und was kosten sie bei den aktuellen Modellpreisen?',
     loadFailed: 'Die Nutzung konnte nicht geladen werden',
     groupBy: 'Gruppieren nach',
     groupByValue: 'Gruppierung nach {{group}}',
@@ -425,7 +424,7 @@ const deDE: LocaleResource<typeof enUS> = {
     filters: {
       allGroups: 'Alle: {{group}}',
       agent: 'Agent',
-      allAgents: 'Alle Agenten',
+      allAgents: 'Alle Agents',
       person: 'Geweckt von',
       allPeople: 'Alle',
       range: 'Datumsbereich',
@@ -478,7 +477,7 @@ const deDE: LocaleResource<typeof enUS> = {
     filters: {
       agent: 'Agent',
       status: 'Status',
-      allAgents: 'Alle Agenten',
+      allAgents: 'Alle Agents',
       allStatuses: 'Alle Status',
     },
     noMatch: 'Keine Läufe entsprechen diesen Filtern.',
@@ -493,7 +492,7 @@ const deDE: LocaleResource<typeof enUS> = {
     viewBrief: 'Vollständige Eingabeaufforderung anzeigen',
     briefTitle: 'Vollständige Eingabeaufforderung',
     briefDescription:
-      'Was dem Agenten mitgeteilt wurde, als dieser Lauf zuletzt beansprucht wurde.',
+      'Was dem Agent mitgeteilt wurde, als dieser Lauf zuletzt beansprucht wurde.',
     briefOf: 'Versuch {{attempt}}, beanspruchte {{time}}',
     briefUnavailable:
       'Für diesen Lauf ist keine vollständige Eingabeaufforderung verfügbar.',
@@ -505,7 +504,7 @@ const deDE: LocaleResource<typeof enUS> = {
       button: 'Arbeitsverzeichnis bereinigen',
       title: 'Arbeitsverzeichnis bereinigen?',
       description:
-        'Der nächste Lauf beginnt mit einem neuen Checkout und erhält erneut die Initialisierungsaufforderungen. Änderungen, die nicht gepusht wurden, gehen in dieser Laufzeit verloren. Ein vor Ort verwendetes Verzeichnis wird niemals gelöscht.',
+        'Der nächste Lauf beginnt mit einem neuen Checkout und erhält erneut die Initialisierungsaufforderungen. Änderungen, die nicht gepusht wurden, gehen in dieser Laufzeitumgebung verloren. Ein vor Ort verwendetes Verzeichnis wird niemals gelöscht.',
       confirm: 'Sauber',
       done: 'Der nächste Lauf beginnt mit einer neuen Kasse.',
     },
@@ -542,7 +541,7 @@ const deDE: LocaleResource<typeof enUS> = {
   transcript: {
     title: 'Protokoll der Ausführung',
     notFound: 'Dieser Lauf existiert nicht.',
-    waiting: 'Warten auf den Start des Agenten…',
+    waiting: 'Warten auf den Start des Agent…',
     empty: 'Bei diesem Lauf wurden keine Ereignisse aufgezeichnet.',
     fetchFailed:
       'Neue Ereignisse können nicht abgerufen werden. Erneuter Versuch…',
@@ -552,11 +551,10 @@ const deDE: LocaleResource<typeof enUS> = {
     summary_one: 'Erstelltes {{created}} · {{count}}-Ereignis',
     summary_other: 'Erstellte {{created}} · {{count}}-Ereignisse',
     took: 'nahm {{duration}}',
-    pendingInputs_one: '{{count}} Kommentar wartet auf den Agenten',
-    pendingInputs_other: '{{count}} Kommentare warten auf den Agenten',
-    inputDelivered_one: 'An den Agenten geliefert',
-    inputDelivered_other:
-      '{{count}}-Eingaben werden an den Agenten übermittelt',
+    pendingInputs_one: '{{count}} Kommentar wartet auf den Agent',
+    pendingInputs_other: '{{count}} Kommentare warten auf den Agent',
+    inputDelivered_one: 'An den Agent geliefert',
+    inputDelivered_other: '{{count}}-Eingaben werden an den Agent übermittelt',
     tokens: '{{input}}-Tokens rein, {{output}} raus',
     kinds: {
       text: 'Agent',
@@ -578,40 +576,44 @@ const deDE: LocaleResource<typeof enUS> = {
     runnerDiskFull:
       'Auf dem Ausführungscomputer war nicht mehr genügend Speicherplatz vorhanden.',
     runnerOfflineBeforeStart:
-      'Die Laufzeit ging offline, bevor der Lauf gestartet wurde.',
-    runnerOffline: 'Die Laufzeit ging offline.',
-    leaseExpired: 'Die Laufzeit hat die Meldung gestoppt.',
-    startTimeout: 'Die Laufzeit startete den Lauf nicht rechtzeitig.',
+      'Die Laufzeitumgebung ging offline, bevor der Lauf gestartet wurde.',
+    runnerOffline: 'Die Laufzeitumgebung ging offline.',
+    leaseExpired: 'Die Laufzeitumgebung hat die Meldung gestoppt.',
+    startTimeout: 'Die Laufzeitumgebung startete den Lauf nicht rechtzeitig.',
     cancelled: 'Abgesagt.',
     idleTimeout: 'Der Agent macht keine Fortschritte mehr.',
     setupFailed: 'Der Lauf konnte nicht vorbereitet werden.',
     cliUnavailable:
-      'Die Laufzeit konnte die Anwendungs-CLI nicht installieren.',
+      'Die Laufzeitumgebung konnte die Anwendungs-CLI nicht installieren.',
     workspaceBusy:
       'Das Arbeitsverzeichnis ist ausgelastet; warte auf einen weiteren Versuch.',
     checkoutFailed: 'Das Auschecken des Repositorys ist fehlgeschlagen.',
-    toolAuth: 'Das Codierungstool ist bei der Laufzeit nicht angemeldet.',
+    toolAuth:
+      'Das Codierungstool ist bei der Laufzeitumgebung nicht angemeldet.',
     toolQuota: 'Das Kontingent des Codierungstools ist erschöpft.',
+    sessionUnavailable:
+      'Die ursprüngliche Sitzung des Programmierwerkzeugs konnte nicht fortgesetzt werden.',
     toolRateLimit: 'Das Codierungstool war geschwindigkeitsbegrenzt.',
     toolNetwork: 'Das Codierungstool konnte seinen Dienst nicht erreichen.',
     toolProcess: 'Das Codierungstool wurde unerwartet beendet.',
     contextOverflow: 'Das Gespräch wurde für das Model zu lang.',
     delegatedQueueTimeout:
       'Zeitüberschreitung in der Delegationswarteschlange; zurückgezogen',
-    queuedExpired: 'Keine Laufzeit hat den Lauf rechtzeitig geschafft.',
-    modelUnavailable: 'Das Modell des Agenten ist nicht verfügbar.',
+    queuedExpired: 'Keine Laufzeitumgebung hat den Lauf rechtzeitig geschafft.',
+    modelUnavailable: 'Das Modell des Agent ist nicht verfügbar.',
     stepLimit: 'Der Agent rief Tools zu oft an, ohne zu antworten.',
-    policyRefused: 'Keine Laufzeitrichtlinie lässt diese Arbeit zu.',
+    policyRefused: 'Keine Laufzeitumgebungrichtlinie lässt diese Arbeit zu.',
     prepareNetwork:
-      'Die Laufzeit konnte den Repository-Host während der Vorbereitung der Ausführung nicht erreichen.',
+      'Die Laufzeitumgebung konnte den Repository-Host während der Vorbereitung der Ausführung nicht erreichen.',
     repoAccessUnavailable:
-      'Der Berechtigungsnachweis für ein Repository konnte derzeit nicht ausgestellt werden; Der Lauf wird erneut versucht.',
+      'Der Repository-Zugriff ist vorübergehend nicht verfügbar.',
     repoAccessDenied:
       'Die Anwendung stellt keine Anmeldeinformationen für eines der Repositorys des Laufs aus.',
     unknown: 'Der Lauf ist fehlgeschlagen.',
   },
   runtimes: {
-    pathHint: runtimesEnUS.runtimes.pathHint,
+    pathHint:
+      'Der Runner findet Coding-Tools über seinen eigenen PATH. Führen Sie in einem Terminal, in dem which codex / which claude funktioniert, nocobase-runner service install erneut aus und starten Sie den Dienst neu (oder führen Sie nocobase-runner start erneut aus), damit er den richtigen PATH erhält.',
     quota: {
       workspaceStatus: {
         active: 'Die Arbeiten gehen weiter',
@@ -644,7 +646,7 @@ const deDE: LocaleResource<typeof enUS> = {
       providers_one: '{{count}}-Anbieter mit Kontingent',
       providers_other: '{{count}}-Anbieter mit Kontingent',
       runColumns: {
-        issue: 'Problem / Gespräch',
+        issue: 'Aufgabe / Unterhaltung',
         agent: 'Agent',
         status: 'Status',
         started: 'Gestartet',
@@ -679,12 +681,14 @@ const deDE: LocaleResource<typeof enUS> = {
       resets: 'Setzt {{time}} zurück',
       near: 'Nahe an der Grenze',
       clear: 'Leeren',
-      clearMark: 'Klare Markierung',
-      confirm: 'Diese Markierung löschen? {{target}} bekommt wieder Arbeit.',
+      clearMark: 'Markierung löschen',
+      confirmTitle: 'Kontingentmarkierung für {{target}} löschen?',
+      confirm:
+        'Löschen Sie sie erst, wenn das Kontingent wiederhergestellt ist. {{target}} bekommt sofort wieder Arbeit; ist das Kontingent noch erschöpft, markiert der nächste Lauf es erneut.',
       observed: 'Zuletzt gemeldet {{time}}',
       usedPercent: '{{percent}}% verwendet',
       ok: 'OK',
-      hint: 'Bekannte Reset-Zeiten stellen die Berechtigung automatisch wieder her. Stellen Sie bei unbekannten Zurücksetzungen das Kontingent wieder her und löschen Sie die Markierung. Nur der Laufzeitbesitzer und Administratoren können Markierungen löschen.',
+      hint: 'Eine Markierung verschwindet zur bekannten Reset-Zeit oder sobald das Tool wieder verfügbares Kontingent meldet. Löschen Sie sie manuell erst, wenn das Kontingent wiederhergestellt ist. Nur der Laufzeitumgebungbesitzer und Administratoren können Markierungen löschen.',
     },
     workspaces: {
       paused:
@@ -744,15 +748,15 @@ const deDE: LocaleResource<typeof enUS> = {
     },
     title: 'Laufzeitumgebungen',
     description:
-      'Die Laufzeiten, die Agenten ausführen, und die jeweils gemeldeten Codierungstools.',
-    add: 'Laufzeit hinzufügen',
-    loadFailed: 'Die Laufzeiten konnten nicht geladen werden',
-    emptyTitle: 'Noch keine Laufzeiten verbunden',
+      'Die Laufzeitumgebungen, die Agents ausführen, und die jeweils gemeldeten Codierungstools.',
+    add: 'Laufzeitumgebung hinzufügen',
+    loadFailed: 'Die Laufzeitumgebungen konnten nicht geladen werden',
+    emptyTitle: 'Noch keine Laufzeitumgebungen verbunden',
     emptyDescription:
       'Sobald eine Laufzeitumgebung verbunden ist, übernehmen Runner-Agents dort mit ihren Codierungstools die Arbeit.',
-    noneConnected: 'Es ist keine Laufzeit angeschlossen.',
-    revokedList_one: '{{count}} hat die Laufzeit widerrufen',
-    revokedList_other: '{{count}} hat Laufzeiten widerrufen',
+    noneConnected: 'Es ist keine Laufzeitumgebung angeschlossen.',
+    revokedList_one: '{{count}} hat die Laufzeitumgebung widerrufen',
+    revokedList_other: '{{count}} hat Laufzeitumgebungen widerrufen',
     lastSeen: 'Zuletzt gesehen {{time}}',
     activity: {
       online: 'Online {{active}}/{{slots}}',
@@ -787,7 +791,7 @@ const deDE: LocaleResource<typeof enUS> = {
     policy: {
       title: 'Lokale Politik',
       description:
-        'Was der Besitzer der Laufzeit zulässt, wie berichtet. Es wird an der Maschine geändert, nicht hier.',
+        'Was der Besitzer der Laufzeitumgebung zulässt, wie berichtet. Es wird an der Maschine geändert, nicht hier.',
       none: 'Keine lokalen Richtlinien: Es werden alle Arbeiten angenommen, für die es registriert ist.',
       any: 'Irgendwelche',
       nothing: 'Keine',
@@ -798,16 +802,16 @@ const deDE: LocaleResource<typeof enUS> = {
     variables: {
       title: 'Variablen von dieser Maschine',
       description:
-        'Die Variablen, die es für Läufe bereitstellt, die sie aus der Laufzeit übernehmen, nach Namen; Die Werte bleiben auf der Maschine. Setzen Sie dort eins mit `nocobase-runner env set NAME`, oder übergeben Sie es mit `--pass-env NAME`.',
-      none: 'Keine: Ein Lauf, der eine Variable aus der Laufzeit übernimmt, schlägt hier fehl, bevor er gestartet wird.',
+        'Die Variablen, die es für Läufe bereitstellt, die sie aus der Laufzeitumgebung übernehmen, nach Namen; Die Werte bleiben auf der Maschine. Setzen Sie dort eins mit `nocobase-runner env set NAME`, oder übergeben Sie es mit `--pass-env NAME`.',
+      none: 'Keine: Ein Lauf, der eine Variable aus der Laufzeitumgebung übernimmt, schlägt hier fehl, bevor er gestartet wird.',
       unknown:
         'Nicht gemeldet: Sein Runner ist älter als diese Funktion. Aktualisieren Sie den Runner, um sie zu sehen.',
     },
     jobs: {
       allow: 'Build-Jobs zulassen',
-      hint: 'Builds und andere Schritte, die diese Anwendung konfiguriert, werden ohne Modell ausgeführt. Diese Laufzeit meldet: {{kinds}}.',
+      hint: 'Builds und andere Schritte, die diese Anwendung konfiguriert, werden ohne Modell ausgeführt. Diese Laufzeitumgebung meldet: {{kinds}}.',
       unsupported:
-        'Der Runner dieser Laufzeit nimmt keine Jobs an. Aktualisieren Sie den Runner, um dies zu aktivieren.',
+        'Der Runner dieser Laufzeitumgebung nimmt keine Jobs an. Aktualisieren Sie den Runner, um dies zu aktivieren.',
     },
     noTools: 'Kein Codierungstool gefunden',
     actionsFor: 'Aktionen für {{name}}',
@@ -846,7 +850,7 @@ const deDE: LocaleResource<typeof enUS> = {
       upgrade_required: 'Upgrade erforderlich',
     },
     upgradeRequired: {
-      title: 'Diese Laufzeit benötigt ein Upgrade',
+      title: 'Diese Laufzeitumgebung benötigt ein Upgrade',
       older:
         'Sein Runner {{version}} spricht das Agentenprotokoll {{protocol}}; Diese Anwendung benötigt das Protokoll {{required}}. Es bleibt verbunden, führt jedoch nichts aus, bis es aktualisiert wird.',
       newer:
@@ -856,7 +860,7 @@ const deDE: LocaleResource<typeof enUS> = {
       noLatest:
         'Installieren Sie einen Runner, der das Protokoll {{required}} spricht, oder führen Sie diesen auf seinem Host aus, um ihn zu aktualisieren:',
       reinstall:
-        'Sein Runner sagt nicht, wie er installiert wurde. Installieren Sie es erneut auf seinem Host mit dem Befehl „Laufzeit hinzufügen“.',
+        'Sein Runner sagt nicht, wie er installiert wurde. Installieren Sie es erneut auf seinem Host mit dem Befehl „Laufzeitumgebung hinzufügen“.',
     },
     tool: {
       checking: 'Warten auf Erkennung',
@@ -868,26 +872,27 @@ const deDE: LocaleResource<typeof enUS> = {
       notInstalled: 'Nicht installiert',
       off: 'Aus',
       offHint:
-        'Aus: Arbeit für dieses Tool wird nicht an diese Laufzeit gesendet.',
+        'Aus: Arbeit für dieses Tool wird nicht an diese Laufzeitumgebung gesendet.',
       enableLabel: 'Führen Sie {{tool}} auf {{name}} aus',
       version: 'Version {{version}}',
     },
     trust: {
-      isolationHint: runtimesEnUS.runtimes.trust.isolationHint,
+      isolationHint:
+        'Führen Sie den Runner sowohl für persönliche als auch für gemeinsame Laufzeitumgebungen in einer VM oder isolierten Umgebung aus: Agents haben vollen Zugriff, und der Runner ist keine Sandbox.',
       label: 'Für wen es funktioniert',
       team: 'Mannschaft',
       teamHint:
         'Jeder im Team startet Läufe mit seinen Variablen und Geheimnissen. Für gemeinsam genutzte Server und VMs.',
       ownerOnly: 'Persönlich',
       ownerOnlyHint:
-        'Führt nur die von Ihnen gestartete Arbeit aus. Der Standardwert für eine Laufzeit, die Sie hinzufügen.',
+        'Führt nur die von Ihnen gestartete Arbeit aus. Der Standardwert für eine Laufzeitumgebung, die Sie hinzufügen.',
       personalOnly:
-        'Diese Laufzeit ist persönlich: Sie führt nur die Arbeit aus, die Sie starten. Sie können es später mit dem Team teilen.',
+        'Diese Laufzeitumgebung ist persönlich: Sie führt nur die Arbeit aus, die Sie starten. Sie können es später mit dem Team teilen.',
     },
     share: {
       title: '{{name}} mit dem Team teilen?',
       description:
-        'Die Läufe anderer Leute laufen auf dieser Laufzeit mit ihren Variablen und Geheimnissen und können lesen, was sich darauf befindet. Teilen Sie es nur, wenn das in Ordnung ist.',
+        'Die Läufe anderer Leute laufen auf dieser Laufzeitumgebung mit ihren Variablen und Geheimnissen und können lesen, was sich darauf befindet. Teilen Sie es nur, wenn das in Ordnung ist.',
       confirm: 'Mit dem Team teilen',
     },
     edit: {
@@ -895,7 +900,7 @@ const deDE: LocaleResource<typeof enUS> = {
       title: '{{name}} bearbeiten',
       name: 'Name',
       nameRequired: 'Geben Sie einen Namen ein.',
-      slotsHint: 'Wie viele Läufe die Laufzeit gleichzeitig benötigt.',
+      slotsHint: 'Wie viele Läufe die Laufzeitumgebung gleichzeitig benötigt.',
       slotsInvalid: 'Geben Sie eine ganze Zahl von 1 bis 64 ein.',
       saved: '{{name}} gespeichert',
     },
@@ -911,21 +916,37 @@ const deDE: LocaleResource<typeof enUS> = {
     revoke: {
       title: 'Den Berechtigungsnachweis von {{name}} widerrufen?',
       description:
-        'Sein Runner stoppt bei seiner nächsten Anfrage und seine Läufe kehren in die Warteschlange zurück. Um es wieder zu verbinden, fügen Sie die Laufzeit erneut hinzu.',
+        'Sein Runner stoppt bei seiner nächsten Anfrage und seine Läufe kehren in die Warteschlange zurück. Um es wieder zu verbinden, fügen Sie die Laufzeitumgebung erneut hinzu.',
       confirm: 'Widerrufen',
       done: 'Die Berechtigung von {{name}} wurde widerrufen',
     },
     delete: {
       title: '{{name}} löschen?',
       description:
-        'Die widerrufene Laufzeit wird aus der Liste entfernt. Seine vergangenen Läufe bleiben bestehen.',
+        'Die widerrufene Laufzeitumgebung wird aus der Liste entfernt. Seine vergangenen Läufe bleiben bestehen.',
       confirm: 'Löschen',
       done: '{{name}} gelöscht',
     },
   },
   connect: {
-    ...runtimesEnUS.connect,
-    title: 'Laufzeit hinzufügen',
+    manual: 'Oder selbst installieren',
+    promptTitle: 'Von einem Agent einrichten lassen',
+    promptCopy: 'Anweisung für den Agent kopieren',
+    promptShow: 'Anweisung anzeigen',
+    promptHide: 'Anweisung ausblenden',
+    promptHint:
+      'Kopieren Sie diese Anweisung an einen Agent (Claude Code, Codex usw.) auf dem Zielrechner, und er erledigt die folgenden Schritte für Sie. Sie enthält einen einmaligen Zugangsschlüssel: Geben Sie sie nur diesem Agent.',
+    windowsPowerShell:
+      '1. WSL installieren: In PowerShell ausführen und Windows anschließend neu starten:',
+    windowsUbuntu:
+      '2. Ubuntu öffnen und den Linux-Befehl unten ausführen. Node.js und die Coding-Tools innerhalb von WSL Ubuntu installieren.',
+    windowsNetwork:
+      'Wenn WSL keinen Internetzugang hat, aktivieren Sie in WSL das gespiegelte Netzwerk.',
+    promptWindows:
+      'Stelle ZUERST fest, ob du innerhalb von WSL Ubuntu läufst. Wenn du NICHT in WSL Ubuntu bist, HALTE AN: Führe keine Installations- oder Registrierungsbefehle aus. Sage dem Benutzer, er soll wsl --install in PowerShell ausführen, Windows neu starten, dann den Agent in WSL Ubuntu öffnen und diese Anweisung erneut ausführen. Fahre mit den folgenden Schritten NUR innerhalb von WSL Ubuntu fort. Installiere sowohl Node.js als auch die Coding-Tools innerhalb von WSL. Wenn WSL keinen Internetzugang hat, aktiviere das gespiegelte Netzwerk.\n\n',
+    promptBody:
+      'Richte diesen Rechner als NocoBase-Laufzeitumgebung ein. Verwende eine VM oder eine isolierte Umgebung: Agents haben vollen Zugriff, und der Runner ist keine Sandbox.\n\nPrüfe, ob Node.js 24 oder neuer vorhanden ist und ob diese Coding-Tools installiert und angemeldet sind: {{tools}}. Verwende ihre offiziellen Installationswege, keine snap-Pakete.\n\nFühre diesen einmaligen Registrierungsbefehl aus, um den Runner und die Anwendungs-CLI zu installieren, ihn zu registrieren und seinen Hintergrunddienst zu installieren:\n{{command}}\n\nBehebe häufige Einrichtungsprobleme: Stelle sicher, dass der PATH des Dienstes die Coding-Tools enthält (prüfe which codex / which claude im Installationsterminal, führe dann nocobase-runner service install erneut aus und starte den Dienst neu); richte einen nötigen Proxy für Downloads und den Dienst ein; löse Berechtigungsprobleme bei globalen npm-Installationen mit einem benutzereigenen Präfix oder einem Node-Versionsmanager, ohne sudo npm install.\n\nSchließe mit nocobase-runner status ab und bestätige die Verbindung und die Coding-Tools. Melde mir verbleibende Anmelde- oder Netzwerkschritte, die ich erledigen muss. Behandle den Registrierungsschlüssel als Geheimnis und nimm ihn nicht in deinen Bericht auf.',
+    title: 'Laufzeitumgebung hinzufügen',
     description:
       'Führen Sie den folgenden Befehl auf einem Host aus, auf dem ein Codierungstool installiert ist: einem Server, einer VM oder Ihrem eigenen Gerät. Agenten werden dort mit vollem Zugriff ausgeführt, als der Benutzer, der den Runner ausführt, und können alles lesen und ändern, was der Benutzer tun kann, einschließlich SSH-Schlüsseln und anderen Anmeldeinformationen. Der Runner stellt keine Sicherheitsgrenze dar: Führen Sie ihn als dedizierten Benutzer, in einem Container oder in einer VM aus.',
     createCredential: 'Installationsbefehl generieren',
@@ -936,17 +957,17 @@ const deDE: LocaleResource<typeof enUS> = {
     installed:
       'Ist nocobase-runner bereits installiert? Registrieren Sie es stattdessen:',
     tokenOnce:
-      'Der Befehl enthält einen einmaligen Berechtigungsnachweis für eine „{{trust}}“-Laufzeit. Es funktioniert einmal, bis {{time}}.',
+      'Der Befehl enthält einen einmaligen Berechtigungsnachweis für eine „{{trust}}“-Laufzeitumgebung. Es funktioniert einmal, bis {{time}}.',
     after:
       'Innerhalb von Sekunden erscheint die Laufzeitumgebung mit jedem gefundenen Codierungstool in der Liste …',
     tokenTools: 'Codierungstools: {{tools}}.',
     tools: 'Codierungstools',
     toolsHint:
-      'Diese Laufzeit wird nur für die überprüften Werkzeuge angeboten. Sie können es jederzeit auf der Seite „Laufzeiten“ ändern.',
+      'Diese Laufzeitumgebung wird nur für die überprüften Werkzeuge angeboten. Sie können es jederzeit auf der Seite „Laufzeitumgebungen“ ändern.',
     toolsRequired: 'Wählen Sie mindestens ein Codierungstool.',
     slots: 'Max. gleichzeitige Ausführungen',
     slotsHint:
-      'Wie viele Läufe die Laufzeit gleichzeitig benötigt. Sie können es jederzeit auf der Seite „Laufzeiten“ ändern.',
+      'Wie viele Läufe die Laufzeitumgebung gleichzeitig benötigt. Sie können es jederzeit auf der Seite „Laufzeitumgebungen“ ändern.',
     tokenSlots: 'Max. gleichzeitige Ausführungen: {{slots}}.',
     tokenToolSlots: 'Pro Codierungstool: {{limits}}.',
     connected: '{{name}} ist verbunden.',
@@ -959,8 +980,38 @@ const deDE: LocaleResource<typeof enUS> = {
   },
   chat: {
     // Keep new guidance available in English until this locale is translated.
-    executionFailed: chatEnUS.chat.executionFailed,
-    fileInputFailures: chatEnUS.chat.fileInputFailures,
+    executionFailed:
+      'Die Ausführung ist fehlgeschlagen. Prüfen Sie die gespeicherte Unterhaltung, bevor Sie es erneut versuchen.',
+    fileInputFailures: {
+      imageCapability:
+        'Für dieses Modell ist keine Bildeingabe konfiguriert. Wechseln Sie zu einem Modell mit bestätigter Bildunterstützung.',
+      unsupportedFormat:
+        'Für das gewählte Modell ist die Eingabe dieses Anhangformats nicht konfiguriert, und kein lokaler Textextraktor unterstützt es. Verwenden Sie ein unterstütztes Dokumentformat oder ein Modell mit bestätigter Dateiunterstützung.',
+      formatMismatch:
+        'Dateiname und Medientyp des Anhangs beschreiben unterschiedliche Dokumentformate. Prüfen Sie das Dateiformat und laden Sie die Datei erneut hoch.',
+      invalidInline:
+        'Die Daten der angehängten Datei sind ungültig oder zu groß. Laden Sie die Datei erneut hoch oder verwenden Sie eine kleinere Datei.',
+      fileTooLarge:
+        'Ein Anhang überschreitet seine Größenbegrenzung. Verwenden Sie eine kleinere Datei.',
+      inputTooLarge:
+        'Die Anhänge der Unterhaltung überschreiten die Eingabegrenze. Verwenden Sie kleinere Dateien oder beginnen Sie eine neue Unterhaltung.',
+      documentTooLarge:
+        'Der Anhang überschreitet die Grenze für extrahierten Text. Verwenden Sie eine kleinere Datei.',
+      contextTooLarge:
+        'Die Anhänge der Unterhaltung überschreiten die Grenze für extrahierten Text. Verwenden Sie kleinere Dateien oder beginnen Sie eine neue Unterhaltung.',
+      fileCount:
+        'Die Unterhaltung überschreitet die Grenze von 100 Eingabedateien. Beginnen Sie eine neue Unterhaltung.',
+      nativeFileCount:
+        'Die Unterhaltung überschreitet die konfigurierte Grenze für native Dateien. Verwenden Sie weniger Anhänge oder wandeln Sie sie in ein unterstütztes Textdokument um.',
+      unreadable:
+        'Der Anhang enthält keinen lesbaren Text. Gescannte Dokumente benötigen OCR.',
+      extractionFailed:
+        'Der Text des Anhangs konnte nicht extrahiert werden. Prüfen Sie, ob das Dokument lesbar ist, und laden Sie es erneut hoch.',
+      extractionTimeout:
+        'Die Textextraktion des Anhangs hat das Zeitlimit überschritten. Verwenden Sie eine kleinere Datei oder versuchen Sie es erneut.',
+      preparationFailed:
+        'Der Anhang konnte nicht vorbereitet werden. Prüfen Sie Ihren Zugriff und das Dateiformat und versuchen Sie es erneut.',
+    },
     untitled: 'Gespräch ohne Titel',
     renamed: 'Umbenannt',
     archivedNamed: 'Archiviert „{{title}}“',
@@ -978,7 +1029,7 @@ const deDE: LocaleResource<typeof enUS> = {
       modelUnavailable: 'Modell nicht verfügbar',
     },
     offline: {
-      fallbackDone: 'Diese Konversation verwendet jetzt einen anderen Agenten',
+      fallbackDone: 'Diese Konversation verwendet jetzt einen anderen Agent',
       restoreDone: 'Zurückgeschaltet',
       newSession:
         'Der Agent startet eine neue Sitzung und liest dieses Gespräch.',
@@ -1009,12 +1060,12 @@ const deDE: LocaleResource<typeof enUS> = {
     },
     agents: {
       personalOnly: 'Nur für Privatläufer',
-      hint: 'Listet die aktivierten Agenten auf und sagt, warum man Ihnen jetzt nicht antworten kann. Antworten laufen auf einem Runner: Die erste Antwort wartet darauf, dass jemand sie annimmt, normalerweise ein paar Sekunden.',
-      chooseFor: 'Wählen Sie einen Agenten',
+      hint: 'Listet die aktivierten Agents auf und sagt, warum man Ihnen jetzt nicht antworten kann. Antworten laufen auf einem Runner: Die erste Antwort wartet darauf, dass jemand sie annimmt, normalerweise ein paar Sekunden.',
+      chooseFor: 'Wählen Sie einen Agent',
       empty: 'Kein Agent, den Sie wählen können',
       none: 'Kein Agent',
       unknown: 'Unbekannter Agent',
-      placeholder: 'Wählen Sie einen Agenten',
+      placeholder: 'Wählen Sie einen Agent',
       myDefault: 'Mein Standard',
       systemDefault: 'Systemstandard',
     },
@@ -1030,12 +1081,12 @@ const deDE: LocaleResource<typeof enUS> = {
   models: {
     title: 'Modelle',
     description:
-      'Die von Online-Agenten aufgerufenen Modelldienste und die jeweils angebotenen Modelle: Chat-Modelle für Agenten, Einbettung und Neubewertung von Modellen für die Suche.',
+      'Die von Online-Agents aufgerufenen Modelldienste und die jeweils angebotenen Modelle: Chat-Modelle für Agents, Einbettung und Neubewertung von Modellen für die Suche.',
   },
   defaultModel: {
     title: 'Standard-Chat-Modell',
     description:
-      'Online-Agenten ohne eigene Modelle antworten damit, z. B. ein neuer Agent oder einer, der mit der Anwendung geliefert wurde.',
+      'Online-Agents ohne eigene Modelle antworten damit, z. B. ein neuer Agent oder einer, der mit der Anwendung geliefert wurde.',
     none: 'Es ist noch kein Chat-Modell aktiviert. Fügen Sie einen Modelldienst hinzu und aktivieren Sie ein Chat-Modell: Das erste wird zum Standard.',
     saved: 'Das Standard-Chat-Modell ist jetzt {{model}}.',
   },
@@ -1050,7 +1101,7 @@ const deDE: LocaleResource<typeof enUS> = {
     empty: {
       title: 'Noch kein Modellservice',
       description:
-        'Sobald Sie einen Modelldienst hinzufügen, können Online-Agenten über diesen antworten.',
+        'Sobald Sie einen Modelldienst hinzufügen, können Online-Agents über diesen antworten.',
       readOnly:
         'Bitten Sie einen Administrator, einen Modelldienst hinzuzufügen.',
     },
@@ -1077,7 +1128,7 @@ const deDE: LocaleResource<typeof enUS> = {
       name: 'Name',
       enabled: 'Aktiviert',
       enabledHint:
-        'Online-Agenten dürfen ihre Modelle nur verwenden, solange sie aktiv sind.',
+        'Online-Agents dürfen ihre Modelle nur verwenden, solange sie aktiv sind.',
       saved: '{{title}} gespeichert.',
       delete: 'Löschen',
       deleteTitle: '{{title}} löschen?',
@@ -1104,7 +1155,7 @@ const deDE: LocaleResource<typeof enUS> = {
     models: {
       title: 'Modelle',
       description:
-        'Sehen Sie sich die Modelle an, die dieser Dienst anbietet, und geben Sie an, wofür sie jeweils gedacht sind: Chat-Modelle, Antworten auf Agenten, Einbetten von Modellindextexten für die Suche, Neuordnen von Modellen in der Reihenfolge der Suchergebnisse. Ein Einbettungsmodell kann nach Vektoren einer Größe fragen.',
+        'Sehen Sie sich die Modelle an, die dieser Dienst anbietet, und geben Sie an, wofür sie jeweils gedacht sind: Chat-Modelle, Antworten auf Agents, Einbetten von Modellindextexten für die Suche, Neuordnen von Modellen in der Reihenfolge der Suchergebnisse. Ein Einbettungsmodell kann nach Vektoren einer Größe fragen.',
       fetching: 'Die Modelle des Anbieters werden abgerufen…',
       fetchFailed:
         'Der Anbieter würde seine Modelle nicht auflisten: {{message}}',
@@ -1216,12 +1267,12 @@ const deDE: LocaleResource<typeof enUS> = {
     backToList: 'Zurück zu den Fähigkeiten',
     emptyTitle: 'Noch keine Fähigkeiten',
     emptyDescription:
-      'Sobald Sie eine Fertigkeit hinzugefügt haben, lesen Agenten deren SKILL.md, wann immer eine Aufgabe sie erfordert.',
+      'Sobald Sie eine Fertigkeit hinzugefügt haben, lesen Agents deren SKILL.md, wann immer eine Aufgabe sie erfordert.',
     emptyReadOnly:
       'Bitten Sie einen Administrator, eine Fertigkeit hinzuzufügen.',
     content: 'SKILL.md',
     contentHint:
-      'Der Name der Titelseite ist der Ordnername des Skills: Durch Ändern wird der Skill umbenannt. Die Beschreibung sagt den Agenten, wann sie sie lesen sollen.',
+      'Der Name der Titelseite ist der Ordnername des Skills: Durch Ändern wird der Skill umbenannt. Die Beschreibung sagt den Agents, wann sie sie lesen sollen.',
     contentTooLarge: 'SKILL.md ist größer als {{max}}.',
     emptyContent: 'Dieser Skill hat noch keinen Inhalt.',
     created: 'Fertigkeit „{{name}}“ erstellt',
@@ -1244,8 +1295,8 @@ const deDE: LocaleResource<typeof enUS> = {
     conflictDraft:
       'Jemand hat eine neue Version gespeichert, nachdem Sie mit der Bearbeitung begonnen haben, sodass Ihre Änderungen nicht gespeichert wurden. Kopieren Sie, was Sie behalten möchten, laden Sie dann die neueste Version und bearbeiten Sie sie erneut.',
     loadLatest: 'Neueste Version laden',
-    mountedAgents: 'Angeschlossene Agenten',
-    noAgents: 'Noch keinem Agenten zugeordnet.',
+    mountedAgents: 'Angeschlossene Agents',
+    noAgents: 'Noch keinem Agent zugeordnet.',
     defaults: 'Standardfähigkeit von: {{places}}.',
     defaultsSeparator: ', ',
     files: 'Dateien',
@@ -1260,7 +1311,7 @@ const deDE: LocaleResource<typeof enUS> = {
     executable: 'Ausführbar',
     scriptBadge: 'Skript',
     scriptsNote:
-      'Verfügt über Skripte: Online-Agenten können sie lesen, aber niemals ausführen',
+      'Verfügt über Skripte: Online-Agents können sie lesen, aber niemals ausführen',
     compatibility: 'Kompatibilität: {{value}}',
     fileContent: 'Inhalt von {{path}}',
     export: 'Exportieren',
@@ -1296,7 +1347,7 @@ const deDE: LocaleResource<typeof enUS> = {
       renameTitle: '„{{name}}“ umbenennen',
       conventional: {
         scripts:
-          'Code-Agenten können ausgeführt werden. Online-Agenten lesen es nur.',
+          'Code-Agents können ausgeführt werden. Online-Agents lesen es nur.',
         references: 'Dokumentationsagenten lesen, wenn sie es brauchen.',
         assets: 'Vorlagen, Bilder und andere Ressourcen.',
       },
@@ -1360,7 +1411,7 @@ const deDE: LocaleResource<typeof enUS> = {
     versions: {
       title: 'Versionen',
       description:
-        'Jeder Speichervorgang erstellt eine neue Version; Agenten erhalten immer die neueste Version.',
+        'Jeder Speichervorgang erstellt eine neue Version; Agents erhalten immer die neueste Version.',
       current: 'Strom',
       compare: 'Vergleiche',
       compareTitle: 'Version {{version}} → Version {{current}}',
@@ -1370,7 +1421,7 @@ const deDE: LocaleResource<typeof enUS> = {
       restore: 'Wiederherstellen',
       restoreTitle: 'Version {{version}} wiederherstellen?',
       restoreDescription:
-        'Es wird erneut als neueste Version gespeichert; Agenten bekommen es bei ihrem nächsten Lauf. Es geht nichts verloren: Die aktuelle Version bleibt im Verlauf.',
+        'Es wird erneut als neueste Version gespeichert; Agents bekommen es bei ihrem nächsten Lauf. Es geht nichts verloren: Die aktuelle Version bleibt im Verlauf.',
       restored:
         'Version {{version}} als Version {{current}} wiederhergestellt.',
     },
@@ -1390,13 +1441,13 @@ const deDE: LocaleResource<typeof enUS> = {
       unknown: 'Die Workload-Berechtigung ist nicht festgelegt',
       agentArchived: 'Der Agent ist archiviert',
       delayed: 'Geplant für {{until}}',
-      noRunnerOnline: 'Keine Laufzeit online',
-      runnersOffline: 'Seine Laufzeiten sind offline',
+      noRunnerOnline: 'Keine Laufzeitumgebung online',
+      runnersOffline: 'Seine Laufzeitumgebungen sind offline',
       toolQuota: 'Werkzeugkontingent aufgebraucht; Zurücksetzung: {{until}}',
       toolUnavailable:
         'Tool nicht angemeldet, deaktiviert oder angefordertes Modell nicht verfügbar ({{tool}})',
       noSharedRunner: 'Nur die persönlichen Runner anderer Leute sind online',
-      missingFeatures: 'Keine Laufzeit unterstützt {{features}}',
+      missingFeatures: 'Keine Laufzeitumgebung unterstützt {{features}}',
       secretsNotAllowed:
         'Benötigt eine Teamlaufzeit: {{variables}} ist nur für Teamlaufzeiten vorgesehen',
       sameWorkActive: 'Nach dem Lauf schon drauf',
@@ -1404,7 +1455,7 @@ const deDE: LocaleResource<typeof enUS> = {
       runnersBusy: 'Kompatible Runner sind voll',
       toolSlotsFull: '{{tool}}-Steckplätze voll ({{used}}/{{limit}})',
       setupRetrying: 'Die Vorbereitung schlug fehl; Wiederholung: {{detail}}',
-      next: 'Weiter für eine kostenlose Laufzeit',
+      next: 'Weiter für eine kostenlose Laufzeitumgebung',
     },
     unknown: 'In der Warteschlange ({{reason}})',
     quotaResetUnknown: 'unbekannt',
@@ -1422,9 +1473,9 @@ const deDE: LocaleResource<typeof enUS> = {
           edit: {
             title: 'Change Agents und Fähigkeiten',
             description:
-              'Ändern Sie die Einstellungen, Fähigkeiten und Variablen eines Agenten, archivieren, wiederherstellen und löschen Sie ihn und bearbeiten Sie Fähigkeiten. Einem Agenten werden keine Befugnisse eingeräumt, die über die des Herausgebers hinausgehen',
+              'Ändern Sie die Einstellungen, Fähigkeiten und Variablen eines Agent, archivieren, wiederherstellen und löschen Sie ihn und bearbeiten Sie Fähigkeiten. Einem Agent werden keine Befugnisse eingeräumt, die über die des Herausgebers hinausgehen',
             related:
-              'Agenten und Fähigkeiten ändern (Agenten, die sie besitzen, und Fähigkeiten, die sie erstellt haben)',
+              'Agents und Fähigkeiten ändern (Agents, die sie besitzen, und Fähigkeiten, die sie erstellt haben)',
             relatedLabel:
               'Agenten, die ich besitze, und Fähigkeiten, die ich erstellt habe',
             relatedHint:
@@ -1450,7 +1501,7 @@ const deDE: LocaleResource<typeof enUS> = {
       agents: {
         title: 'Agenten',
         description:
-          'Siehe Agenten, Fähigkeiten und Läufe; Agenten und Fähigkeiten ändern, Läufe abbrechen und wiederholen.',
+          'Siehe Agents, Fähigkeiten und Läufe; Agents und Fähigkeiten ändern, Läufe abbrechen und wiederholen.',
       },
       runners: {
         title: 'Laufzeitumgebungen',

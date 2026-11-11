@@ -115,6 +115,7 @@ export interface AdapterSession {
   effort?: string;
   /** Resume this tool session instead of starting a fresh one. */
   resumeSessionId?: string;
+  strictSession?: boolean;
   /** What a fresh session is told of what came before, when `resumeSessionId` cannot be resumed after all. */
   recoveryContext?: string;
   /**

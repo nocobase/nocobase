@@ -358,6 +358,8 @@ export interface UsersConfig {
   /** Disable when an application provides its own assignment scope. */
   readonly permissionSets?: boolean;
   readonly invitations?: {
+    /** Named application mailer; otherwise the application default is used. */
+    readonly mailer?: string;
     /** The notification Channel invitation emails go through; `system-email` by default. */
     readonly emailChannel?: string;
   };

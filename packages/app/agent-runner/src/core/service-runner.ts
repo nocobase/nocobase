@@ -20,6 +20,7 @@ import { ensureHome, type RunnerPaths } from '../lib/home.ts';
 import { claimLauncher } from './launcher.ts';
 import { EXIT_CODES } from '../protocol/index.ts';
 import { RESTART_EXIT_CODE } from './update.ts';
+import { SERVICE_ENV } from './service.ts';
 
 export class RotatingLog {
   private size: number;
@@ -73,19 +74,10 @@ export interface ServiceRunnerOptions {
   paths?: RunnerPaths;
   log: RotatingLog;
   env?: NodeJS.ProcessEnv;
-  platform?: NodeJS.Platform;
   /** Injectable time and retry waits for deterministic policy tests. */
   now?: () => number;
   wait?: (ms: number, signal: AbortSignal) => Promise<void>;
   signal?: AbortSignal;
-}
-
-/** Only macOS needs authentication translated to a successful service exit. */
-export function serviceExitCode(
-  code: number,
-  platform: NodeJS.Platform,
-): number {
-  return code === EXIT_CODES.auth && platform === 'darwin' ? 0 : code;
 }
 
 export async function runService(
@@ -144,8 +136,10 @@ export async function runService(
         });
       });
       if (stopping.signal.aborted) return 0;
+      // The manager retries every exit in service mode, including auth failures and clean SIGTERM exits.
+      if ((options.env ?? process.env)[SERVICE_ENV] === '1') return code;
       if (code === 0 || code === EXIT_CODES.auth || code === RESTART_EXIT_CODE)
-        return serviceExitCode(code, options.platform ?? process.platform);
+        return code;
       if (now() - started >= 60_000) failures = 0;
       else failures += 1;
       if (failures >= 5) {

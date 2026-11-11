@@ -69,20 +69,23 @@ export function RunnerRuns({
   return (
     <div className='min-w-0' data-testid='runner-runs'>
       <div className='rounded-lg border'>
-        <Table className='table-fixed min-w-[720px]'>
+        <Table className='table-fixed min-w-[600px]'>
+          <colgroup>
+            <col />
+            <col className='w-40' />
+            <col className='w-28' />
+            <col className='w-24' />
+            <col className='w-20' />
+          </colgroup>
           <TableHeader>
             <TableRow>
-              {[
-                ['issue', 'w-44'],
-                ['agent', 'w-40'],
-                ['status', 'w-44'],
-                ['started', 'w-32'],
-                ['duration', 'w-20'],
-              ].map(([key, width]) => (
-                <TableHead key={key} className={width}>
-                  {t(`runtimes.quota.runColumns.${key}`)}
-                </TableHead>
-              ))}
+              {['issue', 'agent', 'status', 'started', 'duration'].map(
+                (key) => (
+                  <TableHead key={key}>
+                    {t(`runtimes.quota.runColumns.${key}`)}
+                  </TableHead>
+                ),
+              )}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -99,7 +102,7 @@ export function RunnerRuns({
             {page.data.map((run) => (
               <TableRow key={run.id}>
                 <TableCell
-                  className='max-w-44 truncate'
+                  className='truncate'
                   title={run.subjectLabel ?? undefined}
                 >
                   {run.path ? (
@@ -120,7 +123,7 @@ export function RunnerRuns({
                     (run.subjectLabel ?? '—')
                   )}
                 </TableCell>
-                <TableCell className='max-w-40 truncate' title={run.title}>
+                <TableCell className='truncate' title={run.title}>
                   {run.title}
                 </TableCell>
                 <TableCell>

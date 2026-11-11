@@ -341,7 +341,7 @@ export class AppHostSupervisor {
     }
   }
 
-  async stop(reason = 'app-host stopped'): Promise<void> {
+  async stop(reason = 'app-host stopped', timeoutMs?: number): Promise<void> {
     this.clearAutomaticRestartTimer();
     if (this.externalUrl || !this.enabled || !this.managedChild) {
       return;
@@ -351,7 +351,7 @@ export class AppHostSupervisor {
       return await this.stopPromise;
     }
 
-    this.stopPromise = this.stopManagedChild(reason);
+    this.stopPromise = this.stopManagedChild(reason, timeoutMs);
     try {
       await this.stopPromise;
     } finally {
@@ -359,7 +359,10 @@ export class AppHostSupervisor {
     }
   }
 
-  async restart(reason = 'app-host restarted'): Promise<URL> {
+  async restart(
+    reason = 'app-host restarted',
+    options: { shutdownTimeoutMs?: number } = {},
+  ): Promise<URL> {
     if (this.externalUrl || this.driver === 'external') {
       throw new Error(
         'App host is external and cannot be restarted by the supervisor',
@@ -369,7 +372,7 @@ export class AppHostSupervisor {
       throw new Error('App host is disabled');
     }
 
-    await this.stop(reason);
+    await this.stop(reason, options.shutdownTimeoutMs);
     return await this.ensureStarted();
   }
 
@@ -541,7 +544,10 @@ export class AppHostSupervisor {
     }
   }
 
-  private async stopManagedChild(reason: string): Promise<void> {
+  private async stopManagedChild(
+    reason: string,
+    timeoutMs = this.shutdownTimeoutMs,
+  ): Promise<void> {
     const managed = this.managedChild;
     if (!managed) {
       this.status = this.enabled ? 'stopped' : 'disabled';
@@ -550,14 +556,16 @@ export class AppHostSupervisor {
 
     this.status = 'stopping';
     this.diagnostic.info(`Stopping app-host child process: ${reason}`);
-    const exitPromise = waitForChildExit(managed.child, this.shutdownTimeoutMs);
+    const exitPromise = waitForChildExit(managed.child, timeoutMs);
     managed.child.kill('SIGTERM');
 
     await exitPromise.catch((error: unknown) => {
       this.diagnostic.warn(
         error instanceof Error ? error.message : String(error),
       );
+      const killed = waitForChildExit(managed.child, 1_000);
       managed.child.kill('SIGKILL');
+      return killed;
     });
 
     this.managedChild = null;

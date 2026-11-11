@@ -3,6 +3,30 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const viVN: LocaleResource<typeof enUS> = {
+  notificationTemplates: {
+    contributor: 'Ví dụ thông báo',
+    category: 'Công việc',
+    assigned: {
+      name: 'Đã giao công việc',
+      trigger: 'Khi một công việc được tạo.',
+      recipients: 'Người được giao, kể cả khi họ tự giao công việc cho mình.',
+    },
+    updated: {
+      name: 'Đã cập nhật công việc',
+      trigger: 'Khi một công việc được thay đổi, kể cả khi được giao lại.',
+      recipients:
+        'Người tạo, người được giao trước đó và người được giao mới, mỗi người một lần. Người thực hiện thay đổi không nhận thông báo.',
+    },
+    businessRule:
+      'Được gửi mỗi khi thao tác công việc diễn ra. Không có công tắc riêng để tắt.',
+    languagePolicy: 'Luôn bằng tiếng Anh, bất kể ngôn ngữ của người nhận.',
+    channel: 'Hộp thư công việc',
+    variables: {
+      title: 'Tiêu đề công việc',
+      description: 'Mô tả công việc',
+      status: 'Trạng thái công việc',
+    },
+  },
   navigation: {
     tasks: 'Ví dụ về thông báo',
     taskManagement: 'Tác vụ',
@@ -45,7 +69,7 @@ const viVN: LocaleResource<typeof enUS> = {
       actions: 'Thao tác',
     },
     view: 'Xem chi tiết',
-    refresh: 'Làm mới',
+    retryRead: 'Thử lại',
     previous: 'Trước',
     next: 'Tiếp theo',
     page: 'Trang {{page}}',
@@ -64,7 +88,7 @@ const viVN: LocaleResource<typeof enUS> = {
     notificationHint:
       'Sau khi tác vụ được lưu, những người có liên quan ngoài người chỉnh sửa hiện tại sẽ được thông báo: người tạo và người được giao hiện tại. Nếu người được chuyển nhượng thay đổi, cả người được chuyển nhượng trước đó và mới đều được thông báo.',
     edit: 'Chỉnh sửa nhiệm vụ',
-    refresh: 'Làm mới',
+    retryRead: 'Thử lại',
     save: 'Lưu thay đổi',
     cancel: 'Hủy',
     back: 'Quay lại nhiệm vụ',

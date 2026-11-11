@@ -1,3 +1,8 @@
+import {
+  assertMailerReference,
+  type MailersConfig,
+} from '@nocobase/app-server/mailers/config';
+import { validateEmailChannelReference } from './reference-config.js';
 import { isMailChannelConfig } from '@nocobase/mailer/config';
 import {
   defineAppConfig,
@@ -26,6 +31,22 @@ export const validateMailChannels: ConfigValidator<MailChannelsConfig> = (
       continue;
     try {
       const normalized = normalizeChannel(channel);
+      if (Reflect.get(normalized, 'provider') === 'email') {
+        validateEmailChannelReference(
+          normalized as unknown as import('./reference-config.js').EmailChannelReferenceConfig,
+        );
+        if (Reflect.get(channel, 'enabled') !== false && context.get) {
+          const mailers = (context.get('mailers') ?? {}) as MailersConfig;
+          assertMailerReference(
+            mailers,
+            Reflect.get(channel, 'mailer') ?? mailers.default,
+            `notification.channels.${name}.mailer`,
+          );
+        }
+        continue;
+      }
+      if ('mailer' in channel)
+        throw new Error('Inline channels cannot include a mailer reference.');
       if (Reflect.get(channel, 'enabled') === false) continue;
       const provider: unknown = Reflect.get(normalized, 'provider');
       if (

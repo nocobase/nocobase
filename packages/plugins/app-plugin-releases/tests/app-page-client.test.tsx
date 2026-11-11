@@ -355,6 +355,46 @@ describe('App page tabs', () => {
     expect(screen.getByTestId('location')).toHaveTextContent(/^$/);
   });
 
+  it('shows queue position and cancels from the existing deployment row menu', async () => {
+    const sent = serve(summary());
+    const original = mocks.request.getMockImplementation()!;
+    let cancelled = false;
+    mocks.request.mockImplementation((options: Sent) => {
+      if (options.path === 'releases/apps/shop/deployments')
+        return Promise.resolve({
+          data: [
+            {
+              ...deployment('queued', '1.2.0'),
+              status: cancelled ? 'cancelled' : 'queued',
+              phase: cancelled ? 'cancelled' : 'queued',
+              queueAhead: cancelled ? null : 2,
+              cancellable: !cancelled,
+            },
+          ],
+          meta: { total: 1 },
+        });
+      if (options.path === 'releases/apps/shop/deployments/queued/cancel') {
+        sent.push(options);
+        cancelled = true;
+        return Promise.resolve({ data: {} });
+      }
+      return original(options);
+    });
+    renderPage('?tab=deployments');
+    expect(await screen.findByText('Queued · 2 ahead')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /1.2.0/ }));
+    fireEvent.click(
+      await screen.findByRole('menuitem', { name: 'Cancel deployment' }),
+    );
+    expect(await screen.findByText('Cancelled')).toBeInTheDocument();
+    expect(sent.filter((request) => request.path.endsWith('/cancel'))).toEqual([
+      expect.objectContaining({ method: 'POST' }),
+    ]);
+    expect(mocks.toasts).toContainEqual(
+      expect.objectContaining({ title: 'Cancellation accepted.' }),
+    );
+  });
+
   it('opens Settings from the URL, with the run mode, config.yml and deleting the App', async () => {
     serve(summary());
     renderPage('?tab=settings');

@@ -1,3 +1,8 @@
+import {
+  resolveMailSenderFactory,
+  type MailSender,
+} from '@nocobase/app-server/mailers';
+import { createPasswordResetSender } from './reset-sender.js';
 import type { AuthEmailConfig } from './email-config.js';
 import {
   PasswordResetPolicy,
@@ -69,6 +74,33 @@ const trustedSessionPlugin = {
     ),
   },
 } satisfies BetterAuthPlugin;
+
+function settleShutdown(
+  operations: readonly (() => void | Promise<void>)[],
+  message: string,
+): Promise<void> {
+  const started = operations.map((operation) => {
+    try {
+      return Promise.resolve(operation());
+    } catch (error) {
+      return Promise.reject(asError(error));
+    }
+  });
+  return Promise.allSettled(started).then((results) => {
+    const failures: unknown[] = [];
+    for (const result of results)
+      if (result.status === 'rejected') failures.push(result.reason);
+    if (failures.length) throw new AggregateError(failures, message);
+  });
+}
+
+function asError(value: unknown): Error {
+  return value instanceof Error
+    ? value
+    : new Error('Authentication shutdown operation failed.', {
+        cause: value,
+      });
+}
 
 export interface AuthOptions extends Omit<BetterAuthOptions, 'database'> {
   connection: DatabaseConnection;
@@ -187,6 +219,16 @@ export type ScopedCredentialCheck = (
   request: Request,
 ) => boolean | Promise<boolean>;
 
+/**
+ * An application's issued-credential admission policy. Undefined keeps the route's declared security and scoped-key
+ * opt-in; false refuses it; true accepts this issued credential and delegates scope enforcement to the application.
+ * This never applies to ordinary sessions or API keys. Authentication and authorization still run normally.
+ */
+export type CredentialRoutePolicy = (
+  context: Context,
+  credential: IssuedCredential,
+) => boolean | undefined | Promise<boolean | undefined>;
+
 const serviceAccountRefusal = () =>
   APIError.from('FORBIDDEN', {
     code: 'SERVICE_ACCOUNT_NO_LOGIN',
@@ -198,8 +240,12 @@ export class Auth {
   private readonly connection: DatabaseConnection;
   private readonly options: AuthOptions;
   private readonly resetPolicy: PasswordResetPolicy;
+  private closePromise?: Promise<void>;
+  /** Created by this instance when the caller supplied no sender; borrowed by connection bindings. */
+  private readonly ownedSender?: MailSender;
   private scopedCredentialChecks = new Set<ScopedCredentialCheck>();
   private credentialResolvers = new Set<CredentialResolver>();
+  private credentialRoutePolicies = new Set<CredentialRoutePolicy>();
   private userInitializers = new Set<
     (
       user: Record<string, unknown>,
@@ -229,15 +275,30 @@ export class Auth {
       ...config
     } = options;
     this.connection = connection;
-    this.options = options;
     if (!config.secret?.trim() && !config.secrets?.length) {
       throw new Error('Authentication secret is required.');
     }
+    let resetServices: PasswordResetServices = passwordResetServices ?? {};
+    if (!Object.hasOwn(resetServices, 'sender')) {
+      // Preserve standalone inline/legacy/default selection; named mailers are injected by the caller.
+      const selection = createPasswordResetSender(resolveMailSenderFactory(), {
+        email,
+        passwordReset,
+        legacyChannels: resetServices.legacyChannels,
+      });
+      this.ownedSender = selection.sender;
+      resetServices = {
+        ...resetServices,
+        sender: selection.sender,
+        legacySender: selection.legacy,
+      };
+    }
+    this.options = { ...options, passwordResetServices: resetServices };
     this.resetPolicy = new PasswordResetPolicy(
       passwordReset ?? {},
       config,
       connection,
-      passwordResetServices ?? {},
+      resetServices,
       email,
     );
     const plugins = (config.plugins ?? []).some(
@@ -480,8 +541,12 @@ export class Auth {
     return this.resetPolicy.available;
   }
 
-  async close(): Promise<void> {
-    await this.resetPolicy.close();
+  close(): Promise<void> {
+    this.closePromise ??= settleShutdown(
+      [() => this.resetPolicy.close(), () => this.ownedSender?.close()],
+      'Authentication shutdown failed.',
+    );
+    return this.closePromise;
   }
 
   async getSession(
@@ -698,6 +763,7 @@ export class Auth {
     });
     bound.scopedCredentialChecks = this.scopedCredentialChecks;
     bound.credentialResolvers = this.credentialResolvers;
+    bound.credentialRoutePolicies = this.credentialRoutePolicies;
     bound.userInitializers = this.userInitializers;
     return bound;
   }
@@ -723,6 +789,28 @@ export class Auth {
     return () => {
       this.credentialResolvers.delete(resolver);
     };
+  }
+
+  /** Register trusted application admission for issued credentials; an explicit refusal always wins. */
+  addCredentialRoutePolicy(policy: CredentialRoutePolicy): () => void {
+    this.credentialRoutePolicies.add(policy);
+    return () => {
+      this.credentialRoutePolicies.delete(policy);
+    };
+  }
+
+  /** Reuse application admission in an additional plugin guard; undefined preserves its native credential rules. */
+  async credentialRouteDecision(
+    context: Context,
+    credential: IssuedCredential,
+  ): Promise<boolean | undefined> {
+    let decision: boolean | undefined;
+    for (const policy of this.credentialRoutePolicies) {
+      const value = await policy(context, credential);
+      if (value === false) return false;
+      if (value === true) decision = true;
+    }
+    return decision;
   }
 
   /**
@@ -756,9 +844,12 @@ export class Auth {
           return rejectedCredential(context, error);
         throw error;
       }
+      const admission = auth?.credential
+        ? await this.credentialRouteDecision(context, auth.credential)
+        : undefined;
       if (
         auth?.credential &&
-        !routeAcceptsScheme(context, auth.credential.scheme)
+        !(admission ?? routeAcceptsScheme(context, auth.credential.scheme))
       )
         return credentialNotAccepted(context);
       context.set('auth', auth);
@@ -796,13 +887,17 @@ export class Auth {
           context,
         );
       }
+      const admission = auth.credential
+        ? await this.credentialRouteDecision(context, auth.credential)
+        : undefined;
       if (
         auth.credential &&
-        !routeAcceptsScheme(context, auth.credential.scheme)
+        !(admission ?? routeAcceptsScheme(context, auth.credential.scheme))
       )
         return credentialNotAccepted(context);
       if (
         !options.scopedKeys &&
+        admission !== true &&
         (await this.isScopedSession(auth, context.req.raw))
       ) {
         return apiErrorHandler(

@@ -1,7 +1,7 @@
 import type { ReactElement, ReactNode } from 'react';
 import { Link, NavLink, useLocation } from 'react-router';
 import { useTranslation } from '@nocobase/i18n/client';
-import { ApiClientError } from '@nocobase/app-client';
+import { ApiClientError, usePendingFeedback } from '@nocobase/app-client';
 import { ClipboardList, Inbox, Download } from 'lucide-react';
 import { businessErrorKey } from './use-business-task.js';
 import { PageContainer } from '../../components/page-container.js';
@@ -90,23 +90,34 @@ export function BusinessLoading({
   layout?: 'board' | 'feed' | 'detail';
 }): ReactElement {
   const { t } = useTranslation();
+  // Skeletons keep the layout at once and appear only after the shared delay;
+  // the polite status stays mounted outside the busy skeletons.
+  const feedback = usePendingFeedback(true);
+  const message = feedback.visible
+    ? t(feedback.longWaiting ? 'business.longWait' : 'loading')
+    : '';
   return (
-    <div
-      role='status'
-      aria-label={t('loading')}
-      className={
-        layout === 'board' ? 'grid gap-4 lg:grid-cols-3' : 'grid gap-4'
-      }
-    >
-      {[0, 1, 2].map((id) => (
-        <Skeleton
-          key={id}
-          className={
-            layout === 'detail' ? 'h-8' : layout === 'board' ? 'h-48' : 'h-24'
-          }
-        />
-      ))}
-    </div>
+    <>
+      <span role='status' aria-label={message || undefined} className='sr-only'>
+        {message}
+      </span>
+      <div
+        aria-busy='true'
+        className={[
+          layout === 'board' ? 'grid gap-4 lg:grid-cols-3' : 'grid gap-4',
+          feedback.visible ? '' : 'invisible',
+        ].join(' ')}
+      >
+        {[0, 1, 2].map((id) => (
+          <Skeleton
+            key={id}
+            className={
+              layout === 'detail' ? 'h-8' : layout === 'board' ? 'h-48' : 'h-24'
+            }
+          />
+        ))}
+      </div>
+    </>
   );
 }
 export function BusinessFailure({

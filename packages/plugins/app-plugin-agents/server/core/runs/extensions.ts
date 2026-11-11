@@ -26,6 +26,7 @@
 import {
   MOUNT_NAME_PATTERN,
   routePath,
+  type NpmCredentialReason,
   RUNNER_ROUTES,
   type MountBundle,
   type RepoDir,
@@ -234,6 +235,8 @@ export interface RepoAccessContext {
   readonly claim: ClaimContext;
   /** The run's checkouts, as the runner receives them. */
   readonly repos: readonly RepoDir[];
+  /** The subject assembled this run for reading only. */
+  readonly readOnly?: boolean;
   /**
    * Whether the runner asks for credentials on demand (the `gitCredentials` feature). Then a provider that implements
    * `issue` answers `onDemand` with the URLs it issues for, and no `credentials`.
@@ -292,7 +295,11 @@ export class RepoAccessError extends Error {
   override name = 'RepoAccessError';
   readonly kind: 'unavailable' | 'denied';
 
-  constructor(kind: 'unavailable' | 'denied', message: string) {
+  constructor(
+    kind: 'unavailable' | 'denied',
+    message: string,
+    public readonly params: Readonly<Record<string, unknown>> = {},
+  ) {
     super(message);
     this.kind = kind;
   }
@@ -482,4 +489,49 @@ export async function prepareExtensions(
       onError?.(error);
     }
   return prepared;
+}
+
+/**
+ * The token of NocoBase's private npm registry (`NOCOBASE_NPM_REGISTRY`), asked for by a runner while it holds a run
+ * (`npm-credentials.ts`, the `npmCredentials` feature) only when an install of the run needs that registry. The
+ * application decides where the token comes from; the agents plugin stores none.
+ */
+export interface NpmCredentialRequest {
+  readonly run: Run;
+  readonly runnerId: string;
+  readonly attempt: number;
+  readonly reason: NpmCredentialReason;
+  readonly package?: string;
+  readonly signal: AbortSignal;
+}
+
+export interface NpmCredentialProvider {
+  /** Unique among the providers. */
+  readonly key: string;
+  /** Outside any transaction: the token, or null when this provider has none for the run. */
+  issue(request: NpmCredentialRequest): Promise<string | null>;
+}
+
+export interface NpmCredentialRegistry {
+  /** Returns what removes the provider. */
+  register(provider: NpmCredentialProvider): () => void;
+  list(): readonly NpmCredentialProvider[];
+}
+
+export function createNpmCredentialRegistry(): NpmCredentialRegistry {
+  const providers = new Map<string, NpmCredentialProvider>();
+  return {
+    register(provider) {
+      if (providers.has(provider.key))
+        throw new Error(
+          `npm credential provider already registered: ${provider.key}`,
+        );
+      providers.set(provider.key, provider);
+      return () => {
+        if (providers.get(provider.key) === provider)
+          providers.delete(provider.key);
+      };
+    },
+    list: () => [...providers.values()],
+  };
 }

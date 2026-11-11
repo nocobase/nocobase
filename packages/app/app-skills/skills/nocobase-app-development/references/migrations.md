@@ -16,7 +16,7 @@ pnpm nocobase db apply
 
 This applies pending migrations and then pending seeds for `database.default`, including registered plugins, ordered by name across all sources. Both halves run only what is pending, so on an already-migrated database it applies seeds alone. The template defaults to `main`. Plugin migrations, seeds and runtime default reads/writes always use this same connection; changing `database.default` changes the application system database.
 
-Seeds are the second half of that run, so the structure a seed writes into must already exist from an earlier migration. Keep seed data fixed and reproducible — no current timestamps or random values in identifying fields — and never let a repeat run silently overwrite data a user has edited.
+Seeds are the second half of that run, so the structure a seed writes into must already exist from an earlier migration. Keep seed data fixed and reproducible — no current timestamps or random values in identifying fields — and never let a repeat run silently overwrite data a user has edited. To create a record only when it is missing, check `exists({ filter })` and then `createOne`; never write `upsertOne({ ..., update: {} })`, because an empty `update` is rejected and the failed seed stops startup.
 
 ## Sample data and demo systems
 
@@ -139,6 +139,7 @@ Set `onChecksumMismatch: 'error'` per connection when both halves of that trade 
 - `pnpm nocobase db apply` applies cleanly on an empty database and on an already-migrated one.
 - The physical schema matches what the migration declared, checked against a real test database rather than the builder's return value.
 - Running the same seed twice changes nothing.
+- With sample data enabled (`APP_SAMPLE_DATA=true`), the first start on an empty database runs every sample seed and `pnpm dev` reaches its `Local:` URL; a generated seed is not done until that start succeeds.
 - For the per-file checks — filename against exported `name`, immutability, `down` ordering — follow the `nocobase-db` Skill's own verification list.
 
 ## Compiled migration and seed manifests

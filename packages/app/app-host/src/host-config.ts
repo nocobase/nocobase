@@ -29,6 +29,7 @@ import type { AppDriveDiskConfig } from '@nocobase/drive';
 import type { LoggingConfig } from '@nocobase/logging';
 
 import type { AppHostMode } from './host-mode.ts';
+import type { AppMemoryBudget } from './app-registry.ts';
 
 export interface AppHostConfig {
   mode: AppHostMode;
@@ -46,6 +47,7 @@ export interface AppHostConfig {
    */
   controlDir?: string;
   maxActiveApps?: number;
+  memoryBudget?: AppMemoryBudget;
   idleTtlMs?: number;
   evictionIntervalMs?: number;
   /** How long a page request to a stopped App waits for it before answering with a starting page. */
@@ -221,6 +223,11 @@ function decodeAppHostConfig(config: Config, rootDir: string): AppHostConfig {
     appVolumesDir,
     controlDir,
     maxActiveApps: optionalPositiveInteger(hostConfig, 'maxActiveApps'),
+    ...(hostConfig.has('memoryBudget')
+      ? {
+          memoryBudget: hostConfig.cut('memoryBudget').raw(),
+        }
+      : {}),
     idleTtlMs: optionalNonNegativeInteger(hostConfig, 'idleTtlMs'),
     evictionIntervalMs: optionalNonNegativeInteger(
       hostConfig,

@@ -10,12 +10,15 @@ const skill = path.join(
 );
 const files = [
   'client/pages/skill-projects/index.tsx',
+  'client/pages/skill-projects/detail.tsx',
   'client/pages/skill-projects/edit.tsx',
   'client/pages/skill-projects/locales.ts',
+  'client/pages/skill-projects/scopes.ts',
   'server/routes/skill-projects.ts',
   'server/providers/skill-projects.ts',
   'database/main/migrations/202611030001_create_skill_projects.ts',
   'tests/client/skill-projects.test.tsx',
+  'tests/client/skill-projects-changes.test.tsx',
   'tests/server/skill-projects.test.ts',
   'tests/database/skill-projects-migration.test.ts',
 ];
@@ -80,7 +83,14 @@ const onboarding = [
   'tests/playwright/onboarding.test.ts',
   'docs/onboarding.md',
 ];
+// The application-owned single-date picker composition and its behavior tests.
+const datePicker = [
+  'client/components/date-picker.tsx',
+  'client/lib/date-only.ts',
+  'tests/client/date-picker.test.tsx',
+];
 const mappings = [
+  ...datePicker.map((file) => [file, `date-picker-example/${file}`]),
   ...onboarding.map((file) => [file, `business-examples/onboarding/${file}`]),
   ...files.map((file) => [file, `list-edit-example/${file}`]),
   ...customerContacts.map((file) => [
@@ -130,6 +140,7 @@ async function list(directory, prefix = '') {
   return result;
 }
 for (const directory of [
+  'date-picker-example',
   'list-edit-example',
   'customer-contacts-example',
   'business-examples',

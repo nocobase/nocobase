@@ -36,6 +36,21 @@ describe('parseInput', () => {
     expect(input.flags.template).toBe('examples');
   });
 
+  it('accepts multi-portal with an explicit registry and beta channel', async () => {
+    const input = await parseInput([
+      'crm',
+      '--template',
+      'multi-portal',
+      '--template-tag=beta',
+      '--registry=https://pkg-v3.nocobase.com/',
+    ]);
+    expect(input.flags).toMatchObject({
+      template: 'multi-portal',
+      'template-tag': 'beta',
+      registry: 'https://pkg-v3.nocobase.com/',
+    });
+  });
+
   it('leaves the directory unset when it is omitted, so it can be prompted for', async () => {
     const input = await parseInput([]);
 

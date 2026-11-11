@@ -1,3 +1,4 @@
+import { ShareConversation } from './share-conversation.js';
 import { useConversationActions } from './conversation-actions.js';
 import {
   useChatPanel,
@@ -14,6 +15,7 @@ import {
   Maximize2Icon,
   Minimize2Icon,
   PlusIcon,
+  Share2Icon,
   XIcon,
 } from 'lucide-react';
 import { useState, type ReactElement } from 'react';
@@ -21,6 +23,13 @@ import { useState, type ReactElement } from 'react';
 import { Button } from '#components/ui/button';
 import { Input } from '#components/ui/input';
 import { cn } from 'cn';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+  DropdownMenuItem,
+} from '#components/ui/dropdown-menu';
+import { MoreHorizontalIcon } from 'lucide-react';
 
 import { AgentLine } from './agent-status.js';
 import { useChatTranslation } from './chat-i18n.js';
@@ -115,6 +124,7 @@ export function PanelHeader({
   const history = !split && panel.view === 'history';
   const detail = useConversation(panel.conversationId);
   const conversation = detail.data ?? null;
+  const [sharing, setSharing] = useState(false);
   const shownTitle = history
     ? modeTitle(t, chat, t('chat.history.title'))
     : conversation
@@ -124,62 +134,92 @@ export function PanelHeader({
         : modeTitle(t, chat, t('chat.newConversation'));
 
   return (
-    <header className='flex min-h-12 shrink-0 flex-col justify-center gap-1 border-b px-3 py-1.5'>
-      <div className='flex min-w-0 items-center gap-0.5'>
-        <ConversationTitle
-          conversation={history ? null : conversation}
-          shown={shownTitle}
-        />
-        {split ? null : (
-          <>
-            <NewConversationButton />
+    <>
+      <header className='flex min-h-12 shrink-0 flex-col justify-center gap-1 border-b px-3 py-1.5'>
+        <div className='flex min-w-0 items-center gap-0.5'>
+          <ConversationTitle
+            conversation={history ? null : conversation}
+            shown={shownTitle}
+          />
+          {split ? null : (
+            <>
+              {!conversation?.snapshot && <NewConversationButton />}
+              <Button
+                variant='ghost'
+                size='icon-sm'
+                className={TOUCH}
+                aria-label={t('chat.history.title')}
+                title={t('chat.history.title')}
+                aria-pressed={history}
+                onClick={() => panel.setView(history ? 'chat' : 'history')}
+                data-testid='chat-history-button'
+              >
+                <HistoryIcon />
+              </Button>
+            </>
+          )}
+          {!conversation?.snapshot && <ModeSwitchButton />}
+          {conversation && !conversation.snapshot && (
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                render={
+                  <Button
+                    variant='ghost'
+                    size='icon-sm'
+                    aria-label={t('chat.more')}
+                  />
+                }
+              >
+                <MoreHorizontalIcon />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuItem onClick={() => setSharing(true)}>
+                  <Share2Icon />
+                  {t('chat.sharing.share')}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+          {compact ? null : (
             <Button
               variant='ghost'
               size='icon-sm'
               className={TOUCH}
-              aria-label={t('chat.history.title')}
-              title={t('chat.history.title')}
-              aria-pressed={history}
-              onClick={() => panel.setView(history ? 'chat' : 'history')}
-              data-testid='chat-history-button'
+              aria-label={expanded ? t('chat.restoreSize') : t('chat.expand')}
+              title={expanded ? t('chat.restoreSize') : t('chat.expand')}
+              onClick={() => {
+                panel.setView('chat');
+                panel.setMode(expanded ? 'docked' : 'expanded');
+                panel.focusComposer();
+              }}
+              data-testid='chat-expand'
             >
-              <HistoryIcon />
+              {expanded ? <Minimize2Icon /> : <Maximize2Icon />}
             </Button>
-          </>
-        )}
-        <ModeSwitchButton />
-        {compact ? null : (
+          )}
           <Button
             variant='ghost'
             size='icon-sm'
             className={TOUCH}
-            aria-label={expanded ? t('chat.restoreSize') : t('chat.expand')}
-            title={expanded ? t('chat.restoreSize') : t('chat.expand')}
-            onClick={() => {
-              panel.setView('chat');
-              panel.setMode(expanded ? 'docked' : 'expanded');
-              panel.focusComposer();
-            }}
-            data-testid='chat-expand'
+            aria-label={t('chat.close')}
+            title={t('chat.close')}
+            onClick={panel.closeChat}
           >
-            {expanded ? <Minimize2Icon /> : <Maximize2Icon />}
+            <XIcon />
           </Button>
-        )}
-        <Button
-          variant='ghost'
-          size='icon-sm'
-          className={TOUCH}
-          aria-label={t('chat.close')}
-          title={t('chat.close')}
-          onClick={panel.closeChat}
-        >
-          <XIcon />
-        </Button>
-      </div>
-      {!history && conversation ? (
-        <AgentLine conversation={conversation} />
-      ) : null}
-    </header>
+        </div>
+        {!history && conversation && !conversation.snapshot ? (
+          <AgentLine conversation={conversation} />
+        ) : null}
+      </header>
+      {conversation && !conversation.snapshot && (
+        <ShareConversation
+          conversationId={conversation.id}
+          open={sharing}
+          onOpenChange={setSharing}
+        />
+      )}
+    </>
   );
 }
 
@@ -237,7 +277,7 @@ export function ConversationTitle({
     );
   return (
     <Heading className='min-w-0 flex-1'>
-      {conversation ? (
+      {conversation && !conversation.snapshot ? (
         <button
           type='button'
           className={cn(

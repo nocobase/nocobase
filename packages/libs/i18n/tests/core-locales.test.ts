@@ -37,6 +37,17 @@ describe('resolveSupportedLocale', () => {
     expect(resolveSupportedLocale('zh-Hans-CN', supported)).toBe('zh-CN');
   });
 
+  it('keeps the Chinese script when both Simplified and Traditional are offered', () => {
+    const both = ['en-US', 'zh-CN', 'zh-TW'];
+    expect(resolveSupportedLocale('zh-HK', both)).toBe('zh-TW');
+    expect(resolveSupportedLocale('zh-Hant-TW', both)).toBe('zh-TW');
+    expect(resolveSupportedLocale('zh-Hant', both)).toBe('zh-TW');
+    expect(resolveSupportedLocale('zh-Hans-TW', both)).toBe('zh-CN');
+    expect(resolveSupportedLocale('zh-SG', both)).toBe('zh-CN');
+    expect(resolveSupportedLocale('zh', both)).toBe('zh-CN');
+    expect(resolveSupportedLocale('zh-HK', supported)).toBe('zh-CN');
+  });
+
   it('returns undefined when nothing matches', () => {
     expect(resolveSupportedLocale('fr-FR', supported)).toBeUndefined();
     expect(resolveSupportedLocale(undefined, supported)).toBeUndefined();

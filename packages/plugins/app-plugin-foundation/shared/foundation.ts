@@ -3,6 +3,12 @@
  * it. Values here are shared by both sides; everything else is a type, so nothing from `server/` reaches the browser.
  */
 
+/** Current registration facts without provider initialization or usage scans. */
+export interface FoundationRegistrations {
+  /** Null when the host does not expose registration facts. Never implies operational readiness. */
+  readonly serverPlugins: readonly string[] | null;
+}
+
 /** Built-in collector adapters, in their preferred display order; this is not the universe of available capabilities. */
 export const FOUNDATION_CAPABILITIES = [
   'dataModeling',
@@ -138,6 +144,20 @@ export interface FoundationCollectionPage {
   readonly total: number;
 }
 
+/** Durable scan state. Completion time belongs to the snapshot, never to an attempt. */
+export interface FoundationScanStatus {
+  readonly kernelVersion: string;
+  readonly snapshotKernelVersion?: string;
+  readonly generation?: string;
+  readonly status: 'idle' | 'queued' | 'running' | 'succeeded' | 'failed';
+  readonly needsScan: boolean;
+  readonly checkedAt?: string;
+}
+
+export interface FoundationSnapshot extends FoundationScanStatus {
+  readonly overview?: FoundationOverview;
+}
+
 export const FOUNDATION_API_CONDITIONS = [
   'databaseAvailable',
   'authenticated',
@@ -239,6 +259,11 @@ export const FOUNDATION_HIGHLIGHTS: readonly {
   readonly capability: FoundationCapabilityKey;
   readonly metric: string;
 }[] = [
+  { capability: 'dataModeling', metric: 'businessCollections' },
+  { capability: 'dataModeling', metric: 'fields' },
+  { capability: 'dataModeling', metric: 'views' },
+  { capability: 'dataModeling', metric: 'relations' },
+  { capability: 'dataModeling', metric: 'physicalForeignKeys' },
   { capability: 'dataModeling', metric: 'businessRecords' },
   { capability: 'usersAndOrganizations', metric: 'accounts' },
   { capability: 'permissions', metric: 'grants' },

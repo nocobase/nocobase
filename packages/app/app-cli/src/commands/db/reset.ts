@@ -13,7 +13,7 @@ export default class AppDbReset extends AppCommand {
   static override summary =
     'Delete every managed schema object, then apply all migrations and seeds.';
   static override description =
-    'Destructive. Each connection has its managed schema dropped and is then migrated and seeded from empty, so every row in a managed table is lost. Prompts before doing anything, and requires --force in CI or a non-interactive terminal; --dry-run shows which connections would be reset, and what would run again, without touching them. External connections are skipped. Use "db apply" to run only what is pending.';
+    'Destructive. All selected managed schemas are dropped before any migration or seed runs, so every row in a managed table is lost. There is no cross-connection rollback: if a later reset, preparation hook or migration fails, earlier resets remain applied. Prompts before doing anything, and requires --force in CI or a non-interactive terminal; --dry-run shows which connections would be reset, and what would run again, without touching them. External connections are skipped. Use "db apply" to run only what is pending.';
 
   static override examples: Command.Example[] = [
     '<%= config.bin %> <%= command.id %> --dry-run --json',

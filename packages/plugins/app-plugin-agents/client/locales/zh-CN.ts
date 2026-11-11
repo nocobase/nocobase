@@ -64,7 +64,7 @@ const zhCN: AgentsResource = {
   },
   errors: {
     boundRunnerIncompatible:
-      '此执行机无法运行所选 Agent。请更换执行机或新建对话。',
+      '当前运行环境无法运行所选 Agent。请更换运行环境后继续。',
     CONFLICT: '它已被修改，请刷新后重试。',
     REVISION_CONFLICT: '它已被修改，请刷新后重试。',
     FORBIDDEN: '你没有权限执行此操作。',
@@ -105,6 +105,7 @@ const zhCN: AgentsResource = {
     cline: 'Cline',
     amp: 'Amp',
     vibe: 'Mistral Vibe',
+    dsh: 'DeepSeek Harness',
   },
   agents: {
     unavailableNow: '当前不可用',
@@ -547,6 +548,7 @@ const zhCN: AgentsResource = {
     checkoutFailed: '仓库检出失败。',
     toolAuth: '运行环境中的编码工具未登录。',
     toolQuota: '编码工具的额度已用完。',
+    sessionUnavailable: '无法恢复原编码工具会话。',
     toolRateLimit: '编码工具被限流。',
     toolNetwork: '编码工具无法连接到它的服务。',
     toolProcess: '编码工具意外退出。',
@@ -557,7 +559,7 @@ const zhCN: AgentsResource = {
     stepLimit: 'Agent 调用工具次数过多，仍未作答。',
     policyRefused: '没有运行环境的策略允许接这项工作。',
     prepareNetwork: '准备运行时运行环境无法连接到仓库所在的服务器。',
-    repoAccessUnavailable: '暂时无法签发仓库凭据，运行会重试。',
+    repoAccessUnavailable: '暂时无法访问仓库。',
     repoAccessDenied: '应用拒绝为运行的某个仓库签发凭据。',
     unknown: '运行失败。',
   },

@@ -62,6 +62,14 @@ export function planAppDatabaseTasks(
   if (selection.connection !== undefined && selection.all) {
     throw new Error('--connection and --all are mutually exclusive.');
   }
+  for (const name of Object.keys(contributions.connections ?? {})) {
+    if (!Object.hasOwn(config.connections, name))
+      throw new Error(`Unknown contributed database connection "${name}".`);
+    if (config.connections[name].schemaManagement === 'external')
+      throw new Error(
+        `Contributed database connection "${name}" is external; migrations and seeds require a managed connection.`,
+      );
+  }
   const primary = defaultConnectionName(config);
   const migrationTargets = kinds.includes('migrations')
     ? (planOptions.migrationSources ?? [])
@@ -154,8 +162,8 @@ export function planAppDatabaseTasks(
           extensions: options.extensions,
         },
       ];
-      // Plugins contribute to the default connection only; they cannot know
-      // which additional connections an application happens to define.
+      // Legacy flat contributions follow the default connection; named contributions
+      // bind to the exact App connection declared by the plugin or module.
       const sources = [
         ...(kind === 'migrations'
           ? migrationTargets
@@ -164,6 +172,7 @@ export function planAppDatabaseTasks(
           : []),
         ...appSources,
         ...(name === primary ? contributions[kind] : []),
+        ...(contributions.connections?.[name]?.[kind] ?? []),
       ];
       const autoRun = options.autoRun ?? name === primary;
       if (!external && (!selection.autoRun || autoRun)) {

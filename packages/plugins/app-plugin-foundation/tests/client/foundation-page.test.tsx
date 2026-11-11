@@ -135,6 +135,19 @@ describe('App Foundation page', () => {
     locale = 'en-US',
   ) {
     const calls: ApiCall[] = [];
+    let saved: FoundationOverview | undefined;
+    let generation = 0;
+    let submitted = false;
+    const snapshot = (overview: FoundationOverview) => ({
+      data: {
+        overview,
+        kernelVersion: 'fixture-kernel',
+        snapshotKernelVersion: 'fixture-kernel',
+        generation: String(generation),
+        status: 'succeeded',
+        needsScan: false,
+      },
+    });
     // The application's routes provide the query cache; a test provides its own.
     await renderWithApp(
       <QueryClientProvider client={new QueryClient()}>
@@ -144,9 +157,35 @@ describe('App Foundation page', () => {
         plugins: [plugin()],
         namespace: FOUNDATION_I18N_NAMESPACE,
         locale,
-        fetch: answerApi((call) => {
+        fetch: answerApi(async (call) => {
           calls.push(call);
-          return answer(call);
+          if (call.path === 'foundation/overview' && submitted && saved)
+            return snapshot(saved);
+          const response = await answer(call);
+          if (
+            response instanceof Response ||
+            call.path === 'foundation/collections'
+          )
+            return response;
+          const body = response as { data: FoundationOverview };
+          if (body?.data?.capabilities) {
+            saved = body.data;
+            if (call.method === 'POST') {
+              generation += 1;
+              submitted = true;
+              return {
+                data: {
+                  kernelVersion: 'fixture-kernel',
+                  snapshotKernelVersion: 'fixture-kernel',
+                  generation: String(generation),
+                  status: 'succeeded',
+                  needsScan: false,
+                },
+              };
+            }
+            return snapshot(body.data);
+          }
+          return response;
         }),
       },
     );
@@ -209,13 +248,13 @@ describe('App Foundation page', () => {
     const detail = await screen.findByRole('region', {
       name: 'Data modeling In use',
     });
-    expect(within(detail).getByText('Identified 2')).toBeVisible();
-    expect(within(detail).getByText('Counted 3')).toBeVisible();
-    expect(within(detail).getByText('Counted 0')).toBeVisible();
+    expect(within(detail).getByText('2')).toBeVisible();
+    expect(within(detail).getByText('3')).toBeVisible();
+    expect(within(detail).getByText('0')).toBeVisible();
     expect(
       within(detail).queryByText('Information pending update'),
     ).not.toBeInTheDocument();
-    expect(within(detail).queryByText('records')).not.toBeInTheDocument();
+    expect(within(detail).queryByText('Records')).not.toBeInTheDocument();
     expect(
       screen.queryByText(/≥|withheld|extensionCollectionOwnership/),
     ).not.toBeInTheDocument();
@@ -256,7 +295,7 @@ describe('App Foundation page', () => {
     expect(within(detail).queryByText('Statistics')).not.toBeInTheDocument();
     expect(
       screen.queryByRole('region', { name: 'Key numbers' }),
-    ).not.toBeInTheDocument();
+    ).toBeInTheDocument();
     expect(within(detail).getByText('Nothing established yet.')).toBeVisible();
     expect(
       within(detail).getByText('Information pending update.'),
@@ -296,16 +335,16 @@ describe('App Foundation page', () => {
       screen
         .getByRole('button', { name: 'Data modeling: In use' })
         .closest('li'),
-    ).toHaveClass('opacity-25');
+    ).toHaveClass('opacity-40');
     expect(
       screen.getByRole('button', { name: 'Permissions: In use' }).closest('li'),
-    ).not.toHaveClass('opacity-25');
+    ).not.toHaveClass('opacity-40');
     fireEvent.blur(chip);
     expect(
       screen
         .getByRole('button', { name: 'Data modeling: In use' })
         .closest('li'),
-    ).not.toHaveClass('opacity-25');
+    ).not.toHaveClass('opacity-40');
     fireEvent.click(
       within(matrix).getAllByRole('button', {
         name: 'Inspect Orders × Permissions',
@@ -339,7 +378,7 @@ describe('App Foundation page', () => {
     });
     expect(within(preview).getByText('equipment')).toBeInTheDocument();
     expect(within(preview).getByText('borrowings')).toBeInTheDocument();
-    expect(within(detail).getByText('Counted 75,413')).toBeInTheDocument();
+    expect(within(detail).getByText('75,413')).toBeInTheDocument();
     expect(within(detail).getByText('@nocobase/db')).toBeInTheDocument();
     expect(within(detail).getByText('1.2.3')).toBeInTheDocument();
   });
@@ -355,7 +394,7 @@ describe('App Foundation page', () => {
     const detail = screen.getByRole('region', {
       name: /Users & organizations/,
     });
-    expect(within(detail).getByText('Counted 12')).toBeInTheDocument();
+    expect(within(detail).getByText('12')).toBeInTheDocument();
     expect(
       within(detail).getByText('Could not read: userInvitations'),
     ).not.toBeVisible();
@@ -419,7 +458,16 @@ describe('App Foundation page', () => {
       screen.queryByRole('button', { name: 'Refresh' }),
     ).not.toBeInTheDocument();
     await waitFor(() => expect(calls).toHaveLength(1));
-    await act(async () => resolve({ data: OVERVIEW }));
+    await act(async () =>
+      resolve({
+        data: {
+          overview: OVERVIEW,
+          kernelVersion: 'fixture-kernel',
+          status: 'succeeded',
+          needsScan: false,
+        },
+      }),
+    );
     expect(await screen.findByText('3 / 13')).toBeInTheDocument();
   });
 
@@ -431,14 +479,15 @@ describe('App Foundation page', () => {
     const calls = await render((call) => ({
       data: {
         ...OVERVIEW,
-        checkedAt: call.query?.refresh
-          ? '2026-10-21T08:00:00.000Z'
-          : OVERVIEW.checkedAt,
+        checkedAt:
+          call.path === 'foundation/refresh'
+            ? '2026-10-21T08:00:00.000Z'
+            : OVERVIEW.checkedAt,
       },
     }));
     expect(await screen.findByText('3 / 13')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Refresh' }));
-    await waitFor(() => expect(calls).toHaveLength(2));
+    await waitFor(() => expect(calls.length).toBeGreaterThanOrEqual(2));
     await waitFor(() =>
       expect(screen.getByRole('button', { name: 'Refresh' })).toBeEnabled(),
     );
@@ -452,7 +501,7 @@ describe('App Foundation page', () => {
       completeRefresh = resolve;
     });
     const calls = await render((call) =>
-      call.query?.refresh
+      call.path === 'foundation/refresh'
         ? pending.then(() => ({ data: OVERVIEW }))
         : { data: OVERVIEW },
     );
@@ -464,11 +513,10 @@ describe('App Foundation page', () => {
     expect(calls).toHaveLength(1);
 
     fireEvent.click(screen.getByRole('button', { name: 'Refresh' }));
-    await waitFor(() => expect(calls).toHaveLength(2));
+    await waitFor(() => expect(calls.length).toBeGreaterThanOrEqual(2));
     expect(calls[1]).toMatchObject({
-      method: 'GET',
-      path: 'foundation/overview',
-      query: { refresh: 'true' },
+      method: 'POST',
+      path: 'foundation/refresh',
     });
     expect(
       within(screen.getByRole('region', { name: 'NocoBase Core' })).getByRole(
@@ -529,10 +577,10 @@ describe('App Foundation page', () => {
     fireEvent.click(
       await screen.findByRole('button', { name: 'Count records' }),
     );
-    await waitFor(() => expect(calls).toHaveLength(2));
+    await waitFor(() => expect(calls.length).toBeGreaterThanOrEqual(2));
     expect(calls[1]).toMatchObject({
-      path: 'foundation/overview',
-      query: { countRecords: 'true' },
+      method: 'POST',
+      path: 'foundation/countRecords',
     });
   });
 
@@ -820,7 +868,10 @@ describe('App Foundation page', () => {
       let reads = 0;
       await render((call) => {
         if (reads++ > 0) {
-          expect(call.query).toEqual({ refresh: 'true' });
+          expect(call).toMatchObject({
+            method: 'POST',
+            path: 'foundation/refresh',
+          });
           return {
             data: {
               ...OVERVIEW,
@@ -880,7 +931,10 @@ describe('App Foundation page', () => {
           },
           { status: 500 },
         );
-      expect(call.query).toEqual({ refresh: 'true' });
+      expect(call).toMatchObject({
+        method: 'POST',
+        path: 'foundation/refresh',
+      });
       return { data: OVERVIEW };
     });
     expect(await screen.findByRole('alert')).toHaveTextContent(
@@ -943,13 +997,15 @@ describe('App Foundation page', () => {
     const detail = await screen.findByRole('region', {
       name: 'File management In use',
     });
-    expect(within(detail).getByText('Counted 3')).toBeVisible();
-    expect(within(detail).getByText('Counted 120 B')).toBeVisible();
+    expect(within(detail).getByText('3')).toBeVisible();
+    expect(within(detail).getByText('120 B')).toBeVisible();
     expect(
       within(detail).getByText('Counted 1 file collections: photos.'),
     ).toBeVisible();
     expect(
-      within(detail).getAllByText('Some data is pending update'),
+      within(detail).getAllByText(
+        'At least this many: part of it could not be read.',
+      ),
     ).toHaveLength(2);
     expect(
       within(detail).getAllByText(/Last confirmed Oct 19, 2026/),
@@ -1113,6 +1169,62 @@ describe('App Foundation page', () => {
         name: 'Pro approval: Pending recognition',
       }),
     ).not.toBeInTheDocument();
+  });
+
+  it('titles an extension without a display name by its unscoped package and keeps the full identifier', async () => {
+    await render(() => ({
+      data: {
+        ...OVERVIEW,
+        capabilities: OVERVIEW.capabilities.filter(
+          (entry) => entry.key === 'dataModeling',
+        ),
+        inventory: {
+          entries: [
+            {
+              name: '@vendor/app-plugin-concurrency',
+              version: '1.2.3',
+              installed: true,
+              kind: 'plugin',
+              origin: 'unverified',
+              registration: 'observed',
+              categories: [],
+              evidence: ['serverRegistration'],
+            },
+          ],
+          complete: true,
+          unreadable: [],
+          serverRegistrationsComplete: true,
+        },
+      },
+    }));
+    const tile = await screen.findByRole('button', {
+      name: '@vendor/app-plugin-concurrency: Pending recognition',
+    });
+    expect(tile).toHaveTextContent('app-plugin-concurrency');
+    expect(tile).not.toHaveTextContent('@vendor');
+    expect(tile).toHaveTextContent('Extension');
+    expect(tile).toHaveTextContent('Pending recognition');
+    expect(tile.getAttribute('title')).toContain(
+      '@vendor/app-plugin-concurrency',
+    );
+    expect(tile).toHaveAttribute('aria-pressed', 'false');
+    fireEvent.click(tile);
+    expect(tile).toHaveAttribute('aria-pressed', 'true');
+    const detail = screen.getByRole('region', {
+      name: /@vendor\/app-plugin-concurrency/,
+    });
+    expect(within(detail).getByText('Selected capability')).toBeVisible();
+  });
+
+  it('shows each status as visible words on the tile, not only in its name', async () => {
+    await render();
+    const tile = await screen.findByRole('button', {
+      name: 'Mail: Ready, needs setup',
+    });
+    expect(tile).toHaveTextContent('Ready, needs setup');
+    expect(
+      screen.getByRole('button', { name: 'Data modeling: In use' }),
+    ).toHaveTextContent('In use');
   });
 
   it('shows related packages once without recognition diagnostics', async () => {

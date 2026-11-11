@@ -12,7 +12,8 @@ const idID: LocaleResource<typeof enUS> = {
     businesses: {
       apps: {
         title: 'Aplikasi',
-        description: 'Aplikasi, rilisnya, penerapannya, dan waktu prosesnya.',
+        description:
+          'Aplikasi, rilisnya, penerapannya, dan lingkungan runtimenya.',
         actions: {
           view: {
             title: 'Lihat Aplikasi',
@@ -151,13 +152,10 @@ const idID: LocaleResource<typeof enUS> = {
   },
   ui: {
     nav: {
-      apps: 'Aplikasi',
       environments: 'Menyebarkan lingkungan',
     },
     apps: {
       title: 'Aplikasi',
-      description: 'Aplikasi, rilisnya, dan di mana penerapannya.',
-      search: 'Cari berdasarkan ID atau nama',
       create: 'Buat aplikasi',
       id: 'ID Aplikasi',
       name: 'Nama',
@@ -168,18 +166,28 @@ const idID: LocaleResource<typeof enUS> = {
       labels: 'Label',
       loadFailed: 'Tidak dapat memuat aplikasi.',
       loadOneFailed: 'Tidak dapat memuat aplikasi.',
-      emptyTitle: 'Belum ada aplikasi',
-      emptyNoAccess: 'Minta administrator untuk membuat aplikasi.',
-      emptyDescription:
-        'Buat aplikasi, lalu unggah rilis dan terapkan ke suatu lingkungan.',
-      noResults: 'Tidak ada aplikasi yang cocok dengan pencarian.',
       created: '{{name}} dibuat.',
       createDescription:
         'Sebuah aplikasi diterapkan ke satu lingkungan; rilisnya diunggah setelahnya.',
       idHint:
         'Huruf, angka, garis bawah dan tanda hubung; bagian dari alamatnya. Itu tidak bisa diubah nanti.',
-      noEnvironment: 'Belum ada lingkungan',
       lastAccess: 'Kunjungan terakhir',
+      stateFilter: 'Status',
+      anyState: 'Semua status',
+      clearFilters: 'Hapus filter',
+      noMatches: 'Tidak ada aplikasi yang cocok dengan filter.',
+      runStates: {
+        running: 'Berjalan',
+        starting: 'Sedang dimulai',
+        pending: 'Belum dimulai',
+        waiting: 'Menunggu',
+        stopped: 'Berhenti atau hibernasi',
+        failed: 'Gagal',
+        unknown: 'Tidak diketahui',
+      },
+      page: 'Halaman {{page}} dari {{pages}}',
+      previousPage: 'Halaman sebelumnya',
+      nextPage: 'Halaman berikutnya',
     },
     advanced: 'Tingkat Lanjut (opsional)',
     labels: {
@@ -250,6 +258,9 @@ const idID: LocaleResource<typeof enUS> = {
       stopped: 'Berhenti',
       stoppedOnDemand: 'Berhenti (mulai berkunjung)',
       dormant: 'Hibernasi (disiapkan saat berkunjung)',
+      waitingCapacity: 'Menunggu slot kosong',
+      waitingMemory: 'Menunggu memori',
+      waitingRecycle: 'Menunggu host dimulai ulang',
       failed: 'Gagal',
       unknown: 'Tidak diketahui',
       deploying: 'Penyebaran',
@@ -298,6 +309,11 @@ const idID: LocaleResource<typeof enUS> = {
         'Lingkungan ini dilindungi. Ketik {{appId}} untuk diterapkan.',
     },
     deployments: {
+      cancel: 'Batalkan penerapan',
+      replaced: 'Digantikan oleh penerapan yang lebih baru.',
+      cancelAccepted: 'Pembatalan diterima.',
+      queueAhead: 'Dalam antrean · {{ahead}} di depan',
+      restartHint: 'Penerapan terputus. Terapkan ulang rilis.',
       title: 'Penerapan',
       kind: 'Baik hati',
       status: 'Status',
@@ -314,6 +330,8 @@ const idID: LocaleResource<typeof enUS> = {
       hideLogs: 'Sembunyikan log',
       noLogs: 'Tidak ada garis log.',
       statuses: {
+        cancelling: 'Membatalkan',
+        cancelled: 'Dibatalkan',
         queued: 'Mengantri',
         deploying: 'Penyebaran',
         succeeded: 'Berhasil',
@@ -322,7 +340,7 @@ const idID: LocaleResource<typeof enUS> = {
     },
     actors: {
       human: 'orang',
-      agent: 'agen',
+      agent: 'Agent',
       key: 'kunci',
       rule: 'aturan',
       system: 'sistem',
@@ -528,6 +546,53 @@ const idID: LocaleResource<typeof enUS> = {
       variables: 'Variabel',
       settings: 'Pengaturan',
     },
+    sharedHost: {
+      title: 'Host aplikasi bersama',
+      description:
+        'Aplikasi dari semua lingkungan di host ini berbagi satu proses dan memorinya.',
+      environments: 'Lingkungan di host ini: {{names}}',
+      recycling: {
+        pending:
+          'Kode lama dibebaskan dengan memulai ulang host ini saat tidak ada aplikasi yang digunakan. Versi baru menunggu sampai saat itu; aplikasi yang berjalan tetap melayani.',
+        restarting:
+          'Host ini sedang dimulai ulang. Aplikasinya menjawab “coba lagi sebentar” sampai kembali.',
+      },
+      restoreFailed:
+        '{{name}}: aplikasinya tidak dapat dipulihkan; mencoba lagi di latar belakang.',
+      failed:
+        'Aplikasi tidak dapat dipulihkan setelah host bersamanya dimulai ulang; dicoba lagi di latar belakang.',
+      view: 'Lihat penggunaan host',
+      deployed: 'Di-deploy: {{count}}',
+      appsLabel: 'Berjalan atau dimulai',
+      heapLabel: 'Heap',
+      processLabel: 'Memori proses',
+      ratio: '{{used}} / {{limit}}',
+      runningUnlimited: '{{running}} · tanpa batas',
+      available: '{{available}} masih kosong di server',
+      wholeHost:
+        'Total seluruh host, termasuk semua lingkungan di dalamnya; memori tidak bisa dibagi per aplikasi.',
+      viewAppsNote: 'Hanya menampilkan aplikasi yang bisa Anda lihat.',
+      byEnvironment: 'Berjalan atau sedang dimulai, per lingkungan:',
+    },
+    runtime: {
+      holds: {
+        requests: 'Melayani permintaan',
+        connections: 'Koneksi terbuka',
+        starting: 'Sedang dimulai',
+        operation: 'Sedang di-deploy atau dihentikan',
+        resident: 'Selalu berjalan',
+        busy: 'Sibuk',
+        recent: 'Digunakan dalam satu menit terakhir',
+      },
+      waiting: {
+        capacity:
+          'Mulai ditolak: batas aplikasi aktif atau antrean mulai penuh',
+        memory: 'Mulai ditolak: memori tidak cukup',
+        recycle: 'Mulai ditolak: kode baru menunggu host dimulai ulang',
+      },
+      idle: 'Menganggur; dihentikan lebih dulu saat ruang dibutuhkan',
+      lastVisit: 'Kunjungan terakhir: {{time}}',
+    },
     overview: {
       currentRelease: 'Rilis saat ini',
       recent: 'Penerapan terkini',
@@ -628,6 +693,10 @@ const idID: LocaleResource<typeof enUS> = {
           'Konfigurasi telah disimpan, tetapi aplikasi tidak dapat memuat ulang.',
         CONFIG_TOO_LARGE: 'Konfigurasinya terlalu besar.',
         CONFIRMATION_REQUIRED: 'Ketikkan ID aplikasi untuk mengonfirmasi.',
+        DEPLOYMENT_NOT_CANCELLABLE:
+          'Penerapan telah mulai beralih versi atau telah selesai.',
+        CANCELLATION_UNSUPPORTED:
+          'Driver penerapan ini tidak mendukung pembatalan.',
         DEPLOYMENT_IN_PROGRESS: 'Penerapan aplikasi ini sedang berlangsung.',
         DEPLOYMENT_NOT_FOUND: 'Penerapannya tidak ada.',
         DRIVER_UNAVAILABLE: 'Driver lingkungan tidak tersedia.',

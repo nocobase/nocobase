@@ -8,7 +8,6 @@ afterEach(() => vi.restoreAllMocks());
 import { createTestApp } from '@nocobase/app-testing/server';
 import { createStandaloneServer } from '../fixtures/reset-app/server/standalone.js';
 import { authenticationToken } from '../../tokens.js';
-import { mailerToken } from '@nocobase/app-server/mailer';
 
 async function receiver(stall = false) {
   const sockets = new Set<Socket>();
@@ -67,6 +66,8 @@ it.each([
   ['http://localhost', false],
   ['https://public.example.test', false],
   ['https://public.example.test', true],
+  ['https://public.example.test', 'named'],
+  ['https://public.example.test', 'default'],
 ] as const)(
   'resets through real SMTP without notification or authorization using public origin %s (independent %s)',
   async (publicOrigin, independent) => {
@@ -76,6 +77,7 @@ it.each([
       body: JSON.stringify(body),
     });
     const smtp = await receiver();
+    const unselected = await receiver();
     const create = mailer.createMailTransport;
     const sends: Promise<mailer.MailResult>[] = [];
     vi.spyOn(mailer, 'createMailTransport').mockImplementation((...args) => {
@@ -92,33 +94,57 @@ it.each([
       createServer: createStandaloneServer,
       config: {
         app: { publicOrigin },
-        ...(independent
+        ...(typeof independent === 'string'
           ? {
-              auth: {
-                email: {
+              mailers: {
+                default: 'system',
+                system: {
                   provider: 'smtp',
                   host: '127.0.0.1',
-                  port: smtp.port,
+                  port: independent === 'named' ? unselected.port : smtp.port,
                   from: 'sender@example.test',
                 },
+                ...(independent === 'named'
+                  ? {
+                      marketing: {
+                        provider: 'smtp',
+                        host: '127.0.0.1',
+                        port: smtp.port,
+                        from: 'sender@example.test',
+                      },
+                    }
+                  : {}),
               },
+              ...(independent === 'named'
+                ? { auth: { passwordReset: { mailer: 'marketing' } } }
+                : {}),
             }
-          : {
-              notification: {
-                channels: {
-                  'system-email': {
+          : independent
+            ? {
+                auth: {
+                  email: {
                     provider: 'smtp',
                     host: '127.0.0.1',
                     port: smtp.port,
                     from: 'sender@example.test',
                   },
                 },
-              },
-            }),
+              }
+            : {
+                notification: {
+                  channels: {
+                    'system-email': {
+                      provider: 'smtp',
+                      host: '127.0.0.1',
+                      port: smtp.port,
+                      from: 'sender@example.test',
+                    },
+                  },
+                },
+              }),
       },
     });
     try {
-      expect(app.application.container.has(mailerToken)).toBe(false);
       const capabilities = await app.request('/authentication/capabilities');
       expect(await capabilities.json()).toEqual({
         data: { passwordResetAvailable: true },
@@ -155,6 +181,7 @@ it.each([
       await expect(sends[1]).resolves.toMatchObject({ status: 'accepted' });
       // Each submission opens its own connection and releases it when it ends.
       expect(smtp.connections()).toBe(2);
+      expect(unselected.connections()).toBe(0);
       await vi.waitFor(() => expect(smtp.sockets.size).toBe(0));
       const decoded = smtp.messages[1]!.replace(/=\r\n/gu, '').replace(
         /=([0-9A-F]{2})/gu,
@@ -212,6 +239,7 @@ it.each([
       await app.close();
       await vi.waitFor(() => expect(smtp.sockets.size).toBe(0));
       await smtp.close();
+      await unselected.close();
     }
   },
 );

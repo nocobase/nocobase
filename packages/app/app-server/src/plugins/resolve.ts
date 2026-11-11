@@ -40,7 +40,32 @@ export function createAppDatabaseTaskContributions(
   resolved: ResolvedAppServerPlugins,
 ): AppDatabaseTaskContributions {
   const plugins = resolved.plugins.map((plugin) => plugin.metadata);
+  const connections = new Map<
+    string,
+    { migrations: MigrationSource[]; seeds: SeedSource[] }
+  >();
+  for (const plugin of plugins) {
+    for (const [name, directories] of Object.entries(
+      plugin.connections ?? {},
+    )) {
+      const target = connections.get(name) ?? { migrations: [], seeds: [] };
+      connections.set(name, target);
+      if (directories.migrationsDirectory)
+        target.migrations.push({
+          packageName: plugin.packageName,
+          directory: directories.migrationsDirectory,
+        });
+      if (directories.seedsDirectory)
+        target.seeds.push({
+          packageName: plugin.packageName,
+          directory: directories.seedsDirectory,
+        });
+    }
+  }
   return {
+    ...(connections.size
+      ? { connections: Object.fromEntries(connections) }
+      : {}),
     appPackageName: resolved.appPackageName,
     migrations: createPluginMigrationSources(plugins),
     seeds: createPluginSeedSources(plugins),
@@ -99,12 +124,38 @@ function resolvePlugin(definition: AppServerPlugin): ResolvedAppPlugin {
   );
   const packageJson = readJson(packageJsonPath);
   const packageRoot = path.dirname(packageJsonPath);
+  const connections = definition.database?.connections;
+  for (const name of Object.keys(connections ?? {})) {
+    if (!/^[a-zA-Z0-9_-]+$/.test(name))
+      throw new Error(
+        `Invalid database connection name "${name}" in ${definition.packageName}.`,
+      );
+  }
 
   return {
     packageName: definition.packageName,
     version:
       typeof packageJson.version === 'string' ? packageJson.version : 'unknown',
     rootDir: packageRoot,
+    ...(connections
+      ? {
+          connections: Object.fromEntries(
+            Object.entries(connections).map(([name, config]) => [
+              name,
+              {
+                migrationsDirectory: resolveOptionalDirectoryPath(
+                  definition.baseDir,
+                  config.migrations ?? `./database/${name}/migrations`,
+                ),
+                seedsDirectory: resolveOptionalDirectoryPath(
+                  definition.baseDir,
+                  config.seeds ?? `./database/${name}/seeds`,
+                ),
+              },
+            ]),
+          ),
+        }
+      : {}),
     baseDir: definition.baseDir,
     migrationsDirectory: resolveOptionalDirectoryPath(
       definition.baseDir,

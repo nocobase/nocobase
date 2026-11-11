@@ -1,4 +1,27 @@
 const messages = {
+  notificationTemplates: {
+    contributor: '通知示例',
+    category: '任务',
+    assigned: {
+      name: '任务已分配',
+      trigger: '创建任务时。',
+      recipients: '任务负责人，自己分配给自己时也会收到。',
+    },
+    updated: {
+      name: '任务已更新',
+      trigger: '任务被修改时，包括重新分配负责人。',
+      recipients:
+        '创建人、原负责人和新负责人，每人只收到一次。做出修改的人不会收到。',
+    },
+    businessRule: '每次执行对应的任务操作都会发送，没有单独的开关可以关闭。',
+    languagePolicy: '始终以英文发送，与收件人的语言无关。',
+    channel: '任务收件箱',
+    variables: {
+      title: '任务标题',
+      description: '任务描述',
+      status: '任务状态',
+    },
+  },
   navigation: {
     tasks: '通知示例',
     taskManagement: '任务',
@@ -41,7 +64,7 @@ const messages = {
       actions: '操作',
     },
     view: '查看详情',
-    refresh: '刷新',
+    retryRead: '重试',
     previous: '上一页',
     next: '下一页',
     page: '第 {{page}} 页',
@@ -59,7 +82,7 @@ const messages = {
     notificationHint:
       '任务保存成功后，除当前操作者外，会通知相关人员：创建人和当前负责人。若负责人发生变更，原负责人和新负责人都会收到通知。',
     edit: '编辑任务',
-    refresh: '刷新',
+    retryRead: '重试',
     save: '保存修改',
     cancel: '取消',
     back: '返回任务列表',

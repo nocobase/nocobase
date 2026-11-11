@@ -8,7 +8,7 @@ pnpm create @nocobase/app crm
 
 `pnpm create @nocobase/app` resolves to the `@nocobase/create-app` package and runs it, forwarding every argument after the package name verbatim.
 
-NocoBase packages and templates are published to the public npm registry. `--registry` changes where create-app downloads the template and installs dependencies; `NOCOBASE_REGISTRY` supplies the same override for a private registry or an unreleased local snapshot. A generated project's `.npmrc` records a non-public registry for the `@nocobase` scope and omits the override when public npm is used.
+NocoBase packages and templates are published to the public npm registry. `--registry` changes where create-app downloads the template and resolves `@nocobase` dependencies; `NOCOBASE_REGISTRY` supplies the same override for a private registry or an unreleased local snapshot. Third-party dependencies keep the package manager's configured default registry; do not set `npm_config_registry` to a NocoBase-only private registry. A generated project's `.npmrc` records a non-public registry for the `@nocobase` scope and omits the override when public npm is used.
 
 ## About dist-tags
 
@@ -52,7 +52,7 @@ pnpm create @nocobase/app
 | `-h, --help`     | Show help                                                                                |
 | `--version`      | Show the version                                                                         |
 
-`--template` supports two names: `default` (the default application) and `examples` (the example application), each pointing at the corresponding `@nocobase/app-template-*` package.
+`--template` supports `default` (the default application), `examples` (the example application), and `multi-portal` (one application with multiple business entry points), each pointing at the corresponding `@nocobase/app-template-*` package. The multi-portal template is a commercial Pro package; it is not bundled with this open-source creation tool.
 
 ```bash
 pnpm create @nocobase/app crm --template=default   # the default, can be omitted
@@ -73,6 +73,17 @@ Any other value is used as given, so a specific version or a local directory wor
 pnpm create @nocobase/app crm --template=@nocobase/app-template-default@1.0.0-beta.24
 pnpm create @nocobase/app crm --template=./packages/templates/app-template-default
 ```
+
+For the commercial multi-portal template, first log in to the private registry with an account that can download it. Reuse an existing valid login; enter the registry token only at the login prompt, never in command arguments:
+
+```bash
+pnpm login --registry=https://pkg-v3.nocobase.com/ --scope=@nocobase
+npm whoami --registry=https://pkg-v3.nocobase.com/
+npm view @nocobase/app-template-multi-portal@beta version --registry=https://pkg-v3.nocobase.com/
+NOCOBASE_REGISTRY=https://pkg-v3.nocobase.com/ pnpm create @nocobase/app@beta crm --template=multi-portal --template-tag=beta
+```
+
+The alias follows `--template-tag` like Default and Examples. Registry selection remains explicit: use `--registry` or `NOCOBASE_REGISTRY`; the alias does not change global npm configuration. The generated project records the selected registry for `@nocobase` packages without copying credentials. A successful login does not prove access to the template or that the selected channel has been released: verify the package with `npm view` before creating the project. If the installed create-app predates this alias, use `--template=@nocobase/app-template-multi-portal@beta` with the same registry instead. Do not substitute Default when the commercial package is unavailable.
 
 Dependencies are installed automatically; `--no-install` skips that. Generated `pnpm-workspace.yaml` defaults to `verifyDepsBeforeRun: false`, so `pnpm dev`, `pnpm build`, and `pnpm start` do not implicitly install dependencies. Run `pnpm install` explicitly after changing dependencies, or before starting an app created with `--no-install`. An explicit template setting is preserved. Existing applications can add `verifyDepsBeforeRun: false` to their own `pnpm-workspace.yaml`.
 

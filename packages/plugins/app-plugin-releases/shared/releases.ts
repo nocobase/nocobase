@@ -72,10 +72,13 @@ export interface AppRuntimePolicy {
   readonly dormantAfterHours: number | null;
 }
 
-export type DeploymentStatus = 'queued' | 'deploying' | 'succeeded' | 'failed';
+export type DeploymentStatus =
+  'queued' | 'deploying' | 'cancelling' | 'cancelled' | 'succeeded' | 'failed';
 
 export type DeploymentPhase =
   | 'queued'
+  | 'cancelling'
+  | 'cancelled'
   | 'resolving'
   | 'verifying'
   | 'extracting'
@@ -330,6 +333,104 @@ export interface RuntimeStatus {
   readonly error: string | null;
   /** The last request the runtime saw (or its last start), when the driver reports it. */
   readonly lastAccessedAt: string | null;
+  /**
+   * Why a running or starting App holds a slot on its shared runtime: `requests` or `connections` in flight,
+   * `starting`, another `operation`, `resident` (never stopped when idle), `busy` or `recent` (requested in the last
+   * minute). Empty when nothing holds it or the driver does not say.
+   */
+  readonly holds?: readonly HostHoldReason[];
+  /**
+   * Why its last start was refused, for a minute or until it starts: `capacity` (the active App limit or the start
+   * queue), `memory` (the shared runtime's memory budget) or `recycle` (no new code loads until the shared runtime
+   * restarts to free old code). Absent otherwise.
+   */
+  readonly waiting?: HostWaitReason;
+  /**
+   * Its shared runtime restarted and could not put this App back; retried in the background. Reported by the driver
+   * for this App alone, so an App that is back on the runtime and fails on its own never carries it. Absent otherwise.
+   */
+  readonly unrestored?: boolean;
+}
+
+/**
+ * An App's runtime as the Apps list shows and filters it, a deployment in progress aside: `failed` first, then
+ * `running` and `starting` (what holds a slot on a shared runtime, exactly what its running count counts), `pending`
+ * (not on its runtime yet: a new environment's first start, or a restart restoring it; it holds no slot), `waiting` (a
+ * start refused for a slot, memory or a restart), `stopped` (stopped or hibernating) and `unknown` (its runtime did not
+ * answer).
+ */
+export const RUN_STATES = [
+  'running',
+  'starting',
+  'pending',
+  'waiting',
+  'stopped',
+  'failed',
+  'unknown',
+] as const;
+export type RunState = (typeof RUN_STATES)[number];
+
+export function runStateOf(runtime: RuntimeStatus): RunState {
+  const { state, waiting } = runtime;
+  if (state === 'failed') return 'failed';
+  if (state === 'running') return 'running';
+  if (state === 'starting') return 'starting';
+  if (state === 'pending') return 'pending';
+  if (waiting) return 'waiting';
+  if (state === 'unknown') return 'unknown';
+  return 'stopped';
+}
+
+export type HostHoldReason =
+  | 'requests'
+  | 'connections'
+  | 'starting'
+  | 'operation'
+  | 'resident'
+  | 'busy'
+  | 'recent';
+
+export type HostWaitReason = 'capacity' | 'memory' | 'recycle';
+
+/**
+ * The runtime an App shares with other Apps, every environment on it included. `memory` is the shared process's
+ * total, never divided among its Apps.
+ */
+export interface AppHostView {
+  /** The runtime, the same for every environment and App on it. */
+  readonly id: string;
+  readonly memory: {
+    readonly heapUsed: number;
+    readonly heapLimit: number;
+    readonly rss: number;
+    readonly available: number;
+  } | null;
+  /**
+   * `pending`: it is to restart to free old code once nothing holds it, and new code waits for that; `restarting`: it
+   * restarts or restores its Apps, which answer "retry" meanwhile; null otherwise.
+   */
+  readonly recycling: 'pending' | 'restarting' | null;
+  /** Apps deployed on it, and those of them running or starting (a failed App holds nothing and is not counted). */
+  readonly deployed: number;
+  readonly running: number;
+  /** How many Apps may run or start on it at once; null when nothing limits it. */
+  readonly maxActive: number | null;
+  /** Environments whose Apps could not be restored after it restarted; retried in the background. */
+  readonly failedEnvironments: readonly {
+    readonly id: string;
+    readonly name: string | null;
+    readonly error: string | null;
+  }[];
+}
+
+/** A shared runtime as the environments page lists it: the host and the environments whose Apps run on it. */
+export interface SharedHostView extends AppHostView {
+  /** The environments with Apps on it, each with how many of its Apps run or start there (part of `running`). */
+  readonly environments: readonly {
+    readonly id: string;
+    readonly name: string;
+    readonly running: number;
+  }[];
 }
 
 export interface AppView {
@@ -365,6 +466,10 @@ export interface AppSummary {
   readonly currentVersion: string | null;
   readonly hasReleases: boolean;
   readonly hasPendingDeployment: boolean;
+  readonly pendingDeployment?: {
+    readonly status: 'queued' | 'deploying' | 'cancelling';
+    readonly queueAhead: number | null;
+  } | null;
   /**
    * What the caller may do on this App, decided as the server decides each request (a `related` scope counts only on
    * the Apps the caller created or the application relates to them). Only the single-App read answers it.
@@ -379,6 +484,8 @@ export interface AppSummary {
     readonly missing: readonly string[];
     readonly changed: boolean;
   };
+  /** The runtime it shares with other Apps, from an environment whose driver shares one. Only the single-App read. */
+  readonly host?: AppHostView | null;
 }
 
 export interface AppPage {
@@ -457,6 +564,10 @@ export interface ReleaseView {
 }
 
 export interface DeploymentView {
+  /** Transient Host queue position; null until the Host accepts it or once execution starts. */
+  readonly queueAhead?: number | null;
+  readonly cancellable?: boolean;
+
   readonly id: string;
   readonly appId: string;
   readonly releaseId: string;

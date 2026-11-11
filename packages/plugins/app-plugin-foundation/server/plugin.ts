@@ -13,6 +13,7 @@ const foundationPlugin: AppServerPlugin = defineServerPlugin({
   packageName: '@nocobase/app-plugin-foundation',
   serviceProviders,
   routes,
+  database: { migrations: './database/migrations' },
 });
 
 export default foundationPlugin;

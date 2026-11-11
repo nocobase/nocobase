@@ -27,7 +27,7 @@ function implementation(): JobsImplementation<ResolvedJobsConfig> {
 
 const externalConfig = {
   default: 'x',
-  x: { adapter: 'external', custom: { value: 42 } },
+  backends: { x: { adapter: 'external', custom: { value: 42 } } },
 };
 
 describe('application-local Jobs implementation registration', () => {
@@ -37,7 +37,10 @@ describe('application-local Jobs implementation registration', () => {
     );
     const dependencies = { appName: 'test', storagePath };
     const service = createJobExecutorService(
-      { ...externalConfig, memory: { adapter: 'memory' } },
+      {
+        ...externalConfig,
+        backends: { ...externalConfig.backends, memory: { adapter: 'memory' } },
+      },
       dependencies,
     );
     try {
@@ -61,7 +64,7 @@ describe('application-local Jobs implementation registration', () => {
       expect(service.getScheduleExecutor('scope')).toBe(schedule);
       expect(service.getJobExecutor('scope', 'memory')).toBe(memory);
       expect(extension.resolve).toHaveBeenCalledWith(
-        externalConfig.x,
+        externalConfig.backends.x,
         expect.objectContaining({
           key: 'x',
           adapter: 'external',
@@ -190,11 +193,24 @@ describe('application-local Jobs implementation registration', () => {
     ).toThrow(/closed/u);
   });
 
-  it('does not scan unused invalid configuration or fall back for a selected missing implementation', async () => {
-    const config: JobsConfig = JSON.parse(
-      '{"default":"m","m":{"adapter":"memory"},"unused":null,"r":{"adapter":"redis","connection":{"password":"not-logged"}}}',
+  it('validates unused malformed entries and never falls back for a selected missing implementation', async () => {
+    const invalid: JobsConfig = JSON.parse('{"backends":{"unused":null}}');
+    const malformed = createJobExecutorService(invalid, dependencies);
+    expect(() => malformed.getJobExecutor('scope')).toThrow(/plain object/u);
+    expect(() => malformed.getScheduleExecutor('scope')).toThrow(
+      /plain object/u,
     );
-    const service = createJobExecutorService(config, dependencies);
+    await malformed.shutdown();
+    const service = createJobExecutorService(
+      {
+        default: 'm',
+        backends: {
+          m: { adapter: 'memory' },
+          r: { adapter: 'redis', connection: { password: 'not-logged' } },
+        },
+      },
+      dependencies,
+    );
     service.getJobExecutor('scope');
     service.getScheduleExecutor('scope');
     expect(() => service.getJobExecutor('scope', 'r')).toThrow(
@@ -202,9 +218,6 @@ describe('application-local Jobs implementation registration', () => {
     );
     expect(() => service.getScheduleExecutor('scope', 'r')).toThrow(
       JobsBackendNotRegisteredError,
-    );
-    expect(() => service.getJobExecutor('scope', 'unused')).toThrow(
-      /must declare a non-empty string adapter/u,
     );
     await service.shutdown();
   });
@@ -220,20 +233,18 @@ describe('application-local Jobs implementation registration', () => {
     'rejects selected %s without falling back to Memory',
     async (_label, entry) => {
       const config: JobsConfig = JSON.parse(
-        '{"default":"invalid","memory":{"adapter":"memory"},"invalid":' +
+        '{"default":"invalid","backends":{"memory":{"adapter":"memory"},"invalid":' +
           entry +
-          '}',
+          '}}',
       );
       const service = createJobExecutorService(config, dependencies);
       try {
-        service.getJobExecutor('scope', 'memory');
-        service.getScheduleExecutor('scope', 'memory');
         for (const name of [undefined, 'invalid']) {
           expect(() => service.getJobExecutor('scope', name)).toThrow(
-            /must declare a non-empty string adapter/u,
+            /plain object|adapter must be a non-empty string/u,
           );
           expect(() => service.getScheduleExecutor('scope', name)).toThrow(
-            /must declare a non-empty string adapter/u,
+            /plain object|adapter must be a non-empty string/u,
           );
         }
       } finally {

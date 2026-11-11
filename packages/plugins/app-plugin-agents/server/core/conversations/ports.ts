@@ -1,3 +1,8 @@
+import type { ConversationShares } from './shares.js';
+import type {
+  NativeHistoryQuery,
+  NativeHistoryPage,
+} from '../../online/agent/types.js';
 /**
  * The conversation API the rest of the application uses: the HTTP routes, the application's extensions, and later the
  * platform.
@@ -191,6 +196,14 @@ export interface MessageReadOptions {
 }
 
 export interface ConversationService {
+  readonly shares: ConversationShares;
+  /** Recipient history without creating an executable facade. Null for the owner. */
+  snapshotMessages(
+    userId: string,
+    id: string,
+    query: NativeHistoryQuery,
+  ): Promise<NativeHistoryPage | null>;
+
   /** The `conversation` subject kind of runs; registered once, by the composition. */
   readonly binding: SubjectBinding;
   /** Where plugins register how references of their kinds in a page context resolve. */
@@ -212,6 +225,7 @@ export interface ConversationService {
     request: CreateConversationRequest,
     runnerConfig?: OnlineAgentConfig,
   ): Promise<ConversationDetail>;
+  /** Read permission, not ownership: recipients receive `snapshot`. Never use this read alone to authorize a host write. */
   get(userId: string, id: string): Promise<ConversationDetail>;
   /** Rename (the title becomes the owner's) and archive or unarchive. */
   update(
@@ -246,7 +260,7 @@ export interface ConversationService {
   ): Promise<{ readonly seq: number; readonly run: SendMessageResult['run'] }>;
   /**
    * Takes back a message queued while the agent worked (`queue`), while its runner has not taken it: it stays in the
-   * history, marked withdrawn, and the agent never sees it.
+   * history, marked withdrawn, and the agent never sees it. An initial unclaimed turn ends through guarded queued withdrawal.
    */
   withdraw(userId: string, id: string, messageId: string): Promise<void>;
   /** A new conversation and its first message (`StartConversationRequest`): the application pages' buttons. */

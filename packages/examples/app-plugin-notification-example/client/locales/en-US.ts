@@ -1,4 +1,29 @@
 const messages = {
+  notificationTemplates: {
+    contributor: 'Notification examples',
+    category: 'Tasks',
+    assigned: {
+      name: 'Task assigned',
+      trigger: 'A task is created.',
+      recipients:
+        'The assignee, even when they assigned the task to themselves.',
+    },
+    updated: {
+      name: 'Task updated',
+      trigger: 'A task is changed, including when it is reassigned.',
+      recipients:
+        'The creator, the previous assignee and the new assignee, each once. The person who made the change is not notified.',
+    },
+    businessRule:
+      'Sent whenever the task action happens. There is no separate switch to turn it off.',
+    languagePolicy: "Always in English, whatever the recipient's language.",
+    channel: 'Task inbox',
+    variables: {
+      title: 'Task title',
+      description: 'Task description',
+      status: 'Task status',
+    },
+  },
   navigation: {
     tasks: 'Notification examples',
     taskManagement: 'Tasks',
@@ -41,7 +66,7 @@ const messages = {
       actions: 'Actions',
     },
     view: 'View details',
-    refresh: 'Refresh',
+    retryRead: 'Retry',
     previous: 'Previous',
     next: 'Next',
     page: 'Page {{page}}',
@@ -60,7 +85,7 @@ const messages = {
     notificationHint:
       'After a task is saved, the related people other than the current editor are notified: the creator and current assignee. If the assignee changes, both the previous and new assignees are notified.',
     edit: 'Edit task',
-    refresh: 'Refresh',
+    retryRead: 'Retry',
     save: 'Save changes',
     cancel: 'Cancel',
     back: 'Back to tasks',

@@ -1,3 +1,11 @@
+import { deploymentErrorCode } from '../errors.js';
+import {
+  beginDeploymentSwitch,
+  deploymentCheckpoint,
+  DeploymentCancelledError,
+  withDeploymentControl,
+  type DeploymentControl,
+} from '../deployment-control.js';
 import { createDiagnosticLogger, type Logger } from '@nocobase/logging';
 import {
   deploymentLog,
@@ -40,6 +48,8 @@ import type {
   HostDeploymentSpec,
   HostDeploymentStatus,
   HostStatus,
+  HostCancelResult,
+  HostDeploymentProgress,
 } from './types.ts';
 
 /**
@@ -77,17 +87,20 @@ export class ManagedReconciler {
   private desiredRevision = 0;
   private reconciledRevision = 0;
   private lastSetPayload: string | null = null;
-  private operationPromise: Promise<unknown> = Promise.resolve({
-    accepted: false,
-    status: {
-      mode: 'managed',
-      runtime: readHostRuntime(),
-      ready: false,
-      desiredRevision: 0,
-      reconciledRevision: 0,
-      deployments: [],
-    },
-  });
+  private readonly queue: { run(): Promise<void>; cancel?(): void }[] = [];
+  private busy = false;
+  private readonly controls = new Map<
+    string,
+    {
+      appId: string;
+      scopeId: string | undefined;
+      control: DeploymentControl;
+      abortController: AbortController;
+      started: boolean;
+      notify(queueAhead?: number): void;
+      cancel(): void;
+    }
+  >();
 
   constructor(options: ManagedReconcilerOptions) {
     this.diagnostic = createDiagnosticLogger(options.logger);
@@ -237,40 +250,171 @@ export class ManagedReconciler {
   applyDeploymentSet(
     deploymentSet: HostDeploymentSet,
   ): Promise<ApplyDeploymentSetResult> {
-    const current = this.operationPromise
-      .catch(() => undefined)
-      .then(() => this.applyDeploymentSetUnlocked(deploymentSet));
-    this.operationPromise = current;
-    return current;
+    return this.enqueue(() => this.applyDeploymentSetUnlocked(deploymentSet));
   }
 
   restoreDeploymentSet(
     deploymentSet: HostDeploymentSet,
   ): Promise<ApplyDeploymentSetResult> {
-    const current = this.operationPromise
-      .catch(() => undefined)
-      .then(() => this.applyDeploymentSetUnlocked(deploymentSet, true));
-    this.operationPromise = current;
-    return current;
+    return this.enqueue(() =>
+      this.applyDeploymentSetUnlocked(deploymentSet, true),
+    );
+  }
+
+  deploymentProgress(
+    operationId: string,
+    appId: string,
+    scopeId?: string,
+  ): HostDeploymentProgress | null {
+    const item = this.controls.get(`${scopeId ?? ''}\u0000${operationId}`);
+    if (!item || item.appId !== appId || item.scopeId !== scopeId) return null;
+    const queued = [...this.controls.values()].filter(
+      (value) => !value.started,
+    );
+    return {
+      state: item.control.cancelled
+        ? 'cancelling'
+        : item.started
+          ? 'running'
+          : 'queued',
+      queueAhead: item.started
+        ? null
+        : queued.indexOf(item) + (this.busy ? 1 : 0),
+      cancellable: !item.control.switching,
+    };
+  }
+
+  cancelDeployment(
+    operationId: string,
+    appId: string,
+    scopeId?: string,
+    queuedOnly = false,
+  ): HostCancelResult {
+    const item = this.controls.get(`${scopeId ?? ''}\u0000${operationId}`);
+    if (!item || item.appId !== appId || item.scopeId !== scopeId)
+      return 'notFound';
+    if (item.control.switching || (queuedOnly && item.started))
+      return 'tooLate';
+    if (item.control.cancelled)
+      return item.started ? 'cancelling' : 'cancelled';
+    item.control.cancelled = true;
+    item.abortController.abort(new DeploymentCancelledError());
+    if (!item.started) {
+      item.cancel();
+      this.controls.delete(`${scopeId ?? ''}\u0000${operationId}`);
+      this.notifyQueue();
+      return 'cancelled';
+    }
+    item.notify();
+    return 'cancelling';
+  }
+
+  private notifyQueue(): void {
+    let ahead = this.busy ? 1 : 0;
+    for (const item of this.controls.values())
+      if (!item.started) item.notify(ahead++);
   }
 
   applyDeployment(
     deployment: HostDeploymentSpec,
     listener?: DeploymentLogListener,
   ): Promise<HostStatus> {
-    return this.enqueue(async () => {
-      validateDeploymentSet({ revision: 1, deployments: [deployment] });
-      this.assertDeploymentIdentity(deployment);
-      const revision = this.nextRevision();
-      await withDeploymentLog(
-        listener,
-        deployment.appId,
-        deployment.operationId ?? deployment.id,
-        () => this.reconcileDeployment(revision, deployment, false, true),
-      );
-      this.reconciledRevision = revision;
-      return this.getStatus();
-    });
+    validateDeploymentSet({ revision: 1, deployments: [deployment] });
+    const operationId = deployment.operationId ?? deployment.id;
+    const abortController = new AbortController();
+    const control: DeploymentControl = {
+      cancelled: false,
+      switching: false,
+      signal: abortController.signal,
+    };
+    let sequence = 0;
+    const queuedAt = Date.now();
+    const emit = (phase: string, msg: string, details = {}): void =>
+      listener?.({
+        time: new Date().toISOString(),
+        level: 'info',
+        sequence: ++sequence,
+        appId: deployment.appId,
+        deploymentId: operationId,
+        phase,
+        msg,
+        ...details,
+      });
+    const item = {
+      appId: deployment.appId,
+      scopeId: deployment.scope?.id,
+      control,
+      abortController,
+      started: false,
+      notify: (ahead?: number): void => {
+        if (item.started)
+          emit(
+            'cancelling',
+            'Cancellation requested; waiting for the current step to finish',
+          );
+        else {
+          const queueAhead =
+            ahead ??
+            this.deploymentProgress(
+              operationId,
+              deployment.appId,
+              deployment.scope?.id,
+            )?.queueAhead ??
+            0;
+          emit('queued', `Deployment queued; ${queueAhead} ahead`, {
+            queueAhead,
+          });
+        }
+      },
+      cancel: (): void => {},
+    };
+    const key = `${deployment.scope?.id ?? ''}\u0000${operationId}`;
+    this.controls.set(key, item);
+    const promise = this.enqueue(
+      async () => {
+        item.started = true;
+        this.notifyQueue();
+        const previousStatus = this.statuses.get(deployment.id);
+        try {
+          this.assertDeploymentIdentity(deployment);
+          const revision = this.nextRevision();
+          emit('resolving', 'Deployment started', {
+            waitDurationMs: Date.now() - queuedAt,
+          });
+          await withDeploymentControl(control, () =>
+            withDeploymentLog(
+              (entry) => listener?.({ ...entry, sequence: ++sequence }),
+              deployment.appId,
+              operationId,
+              () => this.reconcileDeployment(revision, deployment, false, true),
+            ),
+          );
+          this.reconciledRevision = revision;
+          return this.getStatus();
+        } catch (error) {
+          if (error instanceof DeploymentCancelledError) {
+            if (previousStatus)
+              this.statuses.set(deployment.id, previousStatus);
+            else this.statuses.delete(deployment.id);
+            emit(
+              'cancelled',
+              'Deployment cancelled after cleaning temporary files',
+            );
+          }
+          throw error;
+        } finally {
+          this.controls.delete(key);
+        }
+      },
+      (reject) => {
+        item.cancel = () => {
+          emit('cancelled', 'Queued deployment cancelled');
+          reject(new DeploymentCancelledError());
+        };
+      },
+    );
+    item.notify();
+    return promise;
   }
 
   startDeployment(deployment: HostDeploymentSpec): Promise<HostStatus> {
@@ -359,6 +503,7 @@ export class ManagedReconciler {
             ...status,
             observedState: 'failed',
             error: fullErrorMessage(error),
+            errorCode: deploymentErrorCode(error),
           });
           throw error;
         }
@@ -402,7 +547,7 @@ export class ManagedReconciler {
     return this.enqueue(async () => {
       const status = this.requireStatus(appId);
       const revision = this.nextRevision();
-      await this.registry.evict(appId, {
+      await this.registry.unregister(appId, {
         reason: `deployment ${status.id} stopped`,
       });
       this.statuses.set(status.id, {
@@ -434,7 +579,7 @@ export class ManagedReconciler {
       const status = [...this.statuses.values()].find(
         (candidate) => candidate.appId === appId,
       );
-      const definition = this.registry.definition(appId);
+      const definition = this.definitionForDisposal(appId);
       await this.registry.unregister(appId, {
         reason: status
           ? `deployment ${status.id} removed`
@@ -478,7 +623,7 @@ export class ManagedReconciler {
         const status = [...this.statuses.values()].find(
           (candidate) => candidate.appId === appId,
         );
-        const definition = this.registry.definition(appId);
+        const definition = this.definitionForDisposal(appId);
         await this.registry.unregister(appId, {
           reason: `app ${appId} removed from its scope`,
         });
@@ -531,6 +676,10 @@ export class ManagedReconciler {
     });
   }
 
+  isBusy(): boolean {
+    return this.busy || this.queue.length > 0;
+  }
+
   getStatus(): HostStatus {
     const deployments = [...this.statuses.values()]
       .map((status) => {
@@ -574,6 +723,12 @@ export class ManagedReconciler {
           idleStops: metrics.idleEvictions,
           dormancies: metrics.dormancies,
           materializations: metrics.materializations,
+          capacityStops: metrics.capacityEvictions,
+          startupTimeouts: metrics.startupTimeouts,
+          memory: this.registry.memoryUsage(),
+          rotationPending: this.registry.isRotationPending(),
+          maxActiveApps: this.registry.activeAppLimit(),
+          operationsInFlight: this.registry.pendingOperationCount(),
         };
       })(),
     };
@@ -620,7 +775,7 @@ export class ManagedReconciler {
       );
       for (const [id, status] of this.statuses) {
         if (!desiredIds.has(id)) {
-          const definition = this.registry.definition(status.appId);
+          const definition = this.definitionForDisposal(status.appId);
           await this.registry.unregister(status.appId, {
             reason: `deployment ${id} removed from deployment set`,
           });
@@ -649,9 +804,11 @@ export class ManagedReconciler {
       return;
     }
     if (spec.desiredState === 'stopped') {
-      await this.registry.evict(spec.appId, {
+      await this.registry.unregister(spec.appId, {
         reason: `deployment ${spec.id} stopped`,
       });
+      // Keep the deployed resource identity; a restored stopped service has only its supplied spec.
+      if (!this.specs.has(spec.appId)) this.specs.set(spec.appId, spec);
       this.statuses.set(spec.id, {
         id: spec.id,
         appId: spec.appId,
@@ -702,13 +859,13 @@ export class ManagedReconciler {
         artifact = await this.artifactResolver.resolve(spec.artifact);
         this.registry.markMaterialized(spec.appId);
       }
-      this.specs.set(spec.appId, spec);
       let result;
       const previousConfigPath = this.registry.definition(
         spec.appId,
       )?.configPath;
       let candidateConfigPath: string | undefined;
       try {
+        deploymentCheckpoint();
         deploymentLog(
           'preparing',
           'Preparing application configuration and persistent storage',
@@ -724,8 +881,10 @@ export class ManagedReconciler {
             : spec.config
               ? (spec.config.path ?? this.volumes.configPath(spec.appId))
               : undefined;
-        const dataDir = await this.volumes.prepareStorageDir(spec.appId);
         candidateConfigPath = configPath;
+        const dataDir = await this.volumes.prepareStorageDir(spec.appId);
+        beginDeploymentSwitch();
+        deploymentLog('switching', 'Switching application');
         deploymentLog('starting', 'Activating application');
         const wasRegistered = this.registry.has(spec.appId);
         result = await this.registry.replaceDefinition(
@@ -772,6 +931,7 @@ export class ManagedReconciler {
           activated: Boolean(result.app),
         });
         await artifact.commit();
+        this.specs.set(spec.appId, spec);
         if (previousConfigPath && previousConfigPath !== configPath) {
           await this.volumes
             .removeConfig(spec.appId, previousConfigPath)
@@ -812,6 +972,7 @@ export class ManagedReconciler {
         }
         throw error;
       }
+      this.specs.set(spec.appId, spec);
       this.statuses.set(spec.id, {
         id: spec.id,
         appId: spec.appId,
@@ -823,7 +984,9 @@ export class ManagedReconciler {
         error: null,
       });
     } catch (error) {
+      if (error instanceof DeploymentCancelledError) throw error;
       deploymentFailure(error);
+      if (error instanceof DeploymentCancelledError) throw error;
       this.statuses.set(spec.id, {
         id: spec.id,
         appId: spec.appId,
@@ -833,6 +996,7 @@ export class ManagedReconciler {
         cacheHit: null,
         app: this.registry.snapshot(spec.appId) ?? null,
         error: fullErrorMessage(error),
+        errorCode: deploymentErrorCode(error),
       });
     }
   }
@@ -848,6 +1012,53 @@ export class ManagedReconciler {
     if (!found || !isServiceBackend(found))
       throw new Error(`App backend "${backend}" is not available on this host`);
     return found;
+  }
+
+  private serviceDefinition(
+    spec: HostDeploymentSpec,
+    configPath?: string,
+  ): AppDefinition {
+    return {
+      id: spec.appId,
+      appName: spec.appId,
+      deploymentId: spec.operationId,
+      ...(spec.logging ? { logging: spec.logging } : {}),
+      basePath: spec.basePath ?? `/${spec.appId}`,
+      enabled: true,
+      backend: spec.backend,
+      isolation: spec.backend,
+      configVersion: 'v1',
+      tier: 'warm',
+      desiredVersion: spec.artifact.version,
+      ...(configPath ? { configPath } : {}),
+      backendOptions: serviceOptions(spec),
+      ...(spec.hostname ? { hostname: spec.hostname } : {}),
+      ...(spec.env ? { env: { ...spec.env } } : {}),
+      resourcePolicy: this.lifecyclePolicy(
+        { resourcePolicy: undefined } as AppDefinition,
+        spec,
+      ),
+    };
+  }
+
+  /** Stopped services have no routable registry entry; their spec still identifies resources to remove. */
+  private definitionForDisposal(appId: string): AppDefinition | undefined {
+    const registered = this.registry.definition(appId);
+    if (registered) return registered;
+    const spec = this.specs.get(appId);
+    if (!spec || spec.backend === 'in-process') return undefined;
+    const configPath =
+      spec.config?.content !== undefined
+        ? path.join(
+            this.volumes.volumesDir,
+            appId,
+            'configs',
+            `config.${spec.config.revision ?? spec.id}.yml`,
+          )
+        : spec.config
+          ? (spec.config.path ?? this.volumes.configPath(appId))
+          : undefined;
+    return this.serviceDefinition(spec, configPath);
   }
 
   /** Removes what an external-service backend ran a removed App on; in-process Apps have nothing there. */
@@ -892,36 +1103,18 @@ export class ManagedReconciler {
         throw new Error(
           `This Host offers no "${spec.scope.backend}" backend for deployment "${spec.id}"`,
         );
-      this.specs.set(spec.appId, spec);
+      deploymentCheckpoint();
       deploymentLog('preparing', 'Preparing application configuration');
       const configPath = await this.prepareConfig(spec);
       candidateConfigPath = configPath;
-      const definition: AppDefinition = {
-        id: spec.appId,
-        appName: spec.appId,
-        deploymentId: spec.operationId,
-        ...(spec.logging ? { logging: spec.logging } : {}),
-        basePath: spec.basePath ?? `/${spec.appId}`,
-        enabled: true,
-        backend: spec.backend,
-        isolation: spec.backend,
-        configVersion: 'v1',
-        tier: 'warm',
-        desiredVersion: spec.artifact.version,
-        ...(configPath ? { configPath } : {}),
-        backendOptions: serviceOptions(spec),
-        ...(spec.hostname ? { hostname: spec.hostname } : {}),
-        ...(spec.env ? { env: { ...spec.env } } : {}),
-        resourcePolicy: this.lifecyclePolicy(
-          { resourcePolicy: undefined } as AppDefinition,
-          spec,
-        ),
-      };
+      const definition = this.serviceDefinition(spec, configPath);
       const found = restoring ? await backend.inspect(definition) : null;
       if (deploying && backend.beforeDeploy) {
         deploymentLog('preparing', 'Running pre-deployment tasks');
         await backend.beforeDeploy(definition);
       }
+      beginDeploymentSwitch();
+      deploymentLog('switching', 'Switching application');
       deploymentLog('starting', 'Activating application');
       const result = await this.registry.replaceDefinition(definition, {
         activate:
@@ -941,6 +1134,7 @@ export class ManagedReconciler {
       deploymentLog('switching', 'Application definition accepted', {
         activated: Boolean(result.app),
       });
+      this.specs.set(spec.appId, spec);
       this.statuses.set(spec.id, {
         id: spec.id,
         appId: spec.appId,
@@ -961,6 +1155,7 @@ export class ManagedReconciler {
         await this.volumes
           .removeConfig(spec.appId, candidateConfigPath)
           .catch(() => undefined);
+      if (error instanceof DeploymentCancelledError) throw error;
       this.statuses.set(spec.id, {
         id: spec.id,
         appId: spec.appId,
@@ -970,6 +1165,7 @@ export class ManagedReconciler {
         cacheHit: null,
         app: this.registry.snapshot(spec.appId) ?? null,
         error: fullErrorMessage(error),
+        errorCode: deploymentErrorCode(error),
       });
     }
   }
@@ -987,12 +1183,44 @@ export class ManagedReconciler {
     });
   }
 
-  private enqueue<T>(operation: () => Promise<T>): Promise<T> {
-    const current = this.operationPromise
-      .catch(() => undefined)
-      .then(operation);
-    this.operationPromise = current;
-    return current;
+  private enqueue<T>(
+    operation: () => Promise<T>,
+    onCancel?: (reject: (error: Error) => void) => void,
+  ): Promise<T> {
+    const result = new Promise<T>((resolve, reject) => {
+      const job = {
+        run: async (): Promise<void> => {
+          try {
+            resolve(await operation());
+          } catch (error) {
+            reject(error instanceof Error ? error : new Error(String(error)));
+          }
+        },
+      };
+      onCancel?.((error) => {
+        const index = this.queue.indexOf(job);
+        if (index >= 0) this.queue.splice(index, 1);
+        reject(error);
+      });
+      this.queue.push(job);
+    });
+    queueMicrotask(() => {
+      void this.drainQueue();
+    });
+    return result;
+  }
+
+  private async drainQueue(): Promise<void> {
+    if (this.busy) return;
+    this.busy = true;
+    try {
+      for (let job; (job = this.queue.shift());) {
+        await job.run();
+        this.notifyQueue();
+      }
+    } finally {
+      this.busy = false;
+    }
   }
 
   private nextRevision(): number {

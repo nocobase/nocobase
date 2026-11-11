@@ -1,5 +1,75 @@
 # @nocobase/app-skills
 
+## 0.1.0-beta.63
+
+### Minor Changes
+
+- 79b40cd: Add `announceDataChange` and `scopes` for `useListData` so a confirmed create, edit or delete updates every list, detail, card and count that reads the same data the next time it is visible. The Examples Projects page adds search, name sorting, a total card and detail deletion as the runnable reference, and the development and upgrade Skills document the contract.
+
+### Patch Changes
+
+- 55071f3: The application and plugin development Skills tell an agent to find a menu, popover, select or dialog trigger by its ready state, such as `findByRole('button', { name, expanded: false })`, before clicking it in a jsdom test, so a test does not click a trigger that is still mounting and fail only under CI load.
+- 77ed1dd: Document rendering the notification logs block without its own heading (`showHeading={false}`) when it is a tab of the notification settings module, and refresh the UI Library catalog entry for the block.
+- 03fac04: Make the notification template page readable for administrators. Template details open in a drawer with an address of their own (`/settings/notifications/templates/:templateId`; older `?template=` links redirect), the filters form a compact toolbar showing display names, cards are grouped by category and open on click, and the copy avoids technical wording. Template registrations accept translation keys (`{ ns, key, defaultValue }`) for every administrator-facing field, translatable channel, channel type and source names, and a `localeMode` field; `combined` marks a message that carries every language, so the preview offers no language choice. Otherwise the preview starts in the interface language and lists language names. `NotificationTemplateView` text fields are now `string | { ns, key, defaultValue }`. The Users invitation and the notification example registrations are translated and the invitation declares `localeMode: 'combined'`.
+
+## 0.1.0-beta.62
+
+### Patch Changes
+
+- 8be5180: Describe the Database Explorer card that a new Default application's System settings now shows beside App Foundation.
+
+## 0.1.0-beta.61
+
+### Patch Changes
+
+- f24a673: The UI component checker now reports native and shadcn `Input` date and date-time inputs with date picker advice, and the application development Skill documents how to compose and reuse an application-owned `DatePicker`. The Examples work calendar picks holiday dates from that `DatePicker` instead of the browser's native calendar, and both templates ship its Clear label.
+- f2512ff: Remove the development annotation toolbar from Examples applications and clean up its development configuration and screenshot defaults.
+- 7d970d6: Group application realtime broker selection and implementation options under realtime.broker, preserving the local default and service-level settings. Reject legacy adapter/redis paths with migration guidance, and validate explicitly configured brokers without filling missing adapters from template defaults. Redis deployments must upgrade the host and matching commercial plugin together and migrate code defaults, YAML, environment mappings and configuration scripts; rollback must restore matching configuration.
+- bb1dff2: **Breaking configuration migration:** Concurrency, Jobs and Queue now declare named configurations under `backends`, with `default` selecting a name in that map. Move all direct entries into `backends` in both YAML and application-owned configuration factories. Legacy, unknown and mixed top-level fields are rejected even when unused; Queue no longer ignores `connections`, `worker`, `jobs` or invalid defaults with a Memory fallback. Preserve existing adapter names, connections, namespaces, persistence paths and business resource names; no Redis data migration is required.
+
+## 0.1.0-beta.60
+
+### Patch Changes
+
+- ca21461: Provide authorized parent navigation on desktop and mobile, and standardize detail and edit page generation with source-list state and safe direct-entry fallbacks.
+- 7c25f88: Clarify how application code connects real loading state to the standard feedback components and distinguish template, generated-app, and published-install validation.
+- 7c25f88: Bind plugin peers to the shared client runtime version at release time and keep generated application session and draft-protection tests aligned with permission rechecks.
+- 7c25f88: Preinstall task progress in both application templates with its translations, show an unknown amount of progress as a faint full-width bar instead of a segment that reads as a fraction done, synchronize the published customer contacts Skill example with its source, and document the standard recipe for a new business list page.
+- 7c25f88: Show long operations honestly: uploads show a delayed indeterminate wait with a long-wait note, real cancel and retry, and abort when the page closes; background jobs and exports show real progress or an indeterminate bar instead of an invented 0%, keep failures recoverable, say they continue after leaving the page and show where the result is.
+- 7c25f88: Keep issue, sub-issue and project dialog actions translated when the application hosts their route containers.
+- 7c25f88: Preserve unsaved forms during permission rechecks by blocking departures and invalidating pending closes until authorization settles. Conceal disconnected confirmation portals and keep Projects rich-text editor effects safe when hidden content reconnects.
+- 3d28bff: Remove default page Refresh actions from shared application guidance and examples while preserving write updates, contextual read retries, and live progress updates.
+- 7c25f88: Keep inactive background lists silent on direct child-route visits and start loading feedback only when their query resumes.
+- 4d30aa6: Reduce template test setup and teardown by reusing application fixtures while keeping client identities and business test data isolated.
+
+  Synchronize the runnable procurement and onboarding Skill examples with the optimized template test fixtures.
+
+- 7c25f88: Let child page, dialog and drawer routes declare their presentation so the application opens that container before the page module, its authorization check and its data arrive, keeps waits, denials and a module-only retry inside it, and leaves undeclared routes and route component overrides on their own containers.
+- 4676817: Align dialog footer link and native button actions consistently, allow long labels to wrap, and document source reconciliation for existing applications.
+- 7c25f88: Share the route container contexts through `@nocobase/app-client/route-containers` so plugin dialogs, drawers and child pages open in the container the application shows while they load, keep a hosted child page's layout classes, and declare presentations for the remaining Examples and plugin overlays.
+- 7c25f88: Announce each list wait once and per query: a retry after a refresh failure on the Roles page is no longer announced twice, a search or page that replaces a pending one restarts its own loading delay instead of inheriting an earlier long-wait note, first-load and next-page statuses sit outside their busy regions, and the Repository example CRM list uses the shared loading, refresh and retry feedback.
+- 7c25f88: Give tables, lists, summary cards and pickers the shared pending timing: list loading and retry appear only after the display delay, same-query refreshes keep rows with one delayed refresh indicator, a new query keeps the table's geometry without showing previous rows or totals, a picker no longer shows a previous search's options as matches, and the long-wait hint on pending buttons no longer blocks the controls it covers.
+- 7c25f88: Add shared delayed loading feedback and stable pending buttons, preserve submission protection in user forms, and document source migration for applications and Registry consumers.
+
+## 0.1.0-beta.59
+
+### Minor Changes
+
+- 9998ac4: Organize application administration as one System settings sidebar entry that opens a home page of cards grouped by category, with URL-backed tabs inside a module. Route navigation accepts an optional `description` that the settings home shows on each card, and App Foundation declares one. Existing settings URLs, route ids and authorization stay unchanged; updating dependencies alone keeps an existing application's navigation, so reconcile the application-owned navigation transform, routing, settings pages and locales with the `nocobase-app-upgrade` Skill's System settings navigation guide.
+
+### Patch Changes
+
+- 3681eb0: Provide a permission-protected, read-only notification template directory with synthetic previews that reuse business send renderers, plus application integration and source upgrade guidance.
+- 9998ac4: Preserve unsaved page state during permission rechecks, keep leave protection active and conceal page overlays while access is pending, and keep settings navigation tests working after an application is renamed.
+
+## 0.1.0-beta.58
+
+### Patch Changes
+
+- de91b90: Include the agent chat with details recipe (`agent-chat-details`) in the UI Library catalog, including its shared installation directory and integration slots.
+- c26c3c8: Describe the agent chat workspace (`agent-chat-details`): one component for a full page and the side panel, laid out by its own width, with narrow application slots.
+- c36beac: Move theme settings into the account menu in both application templates, preserving color modes, theme presets, and saved preferences.
+
 ## 0.1.0-beta.57
 
 ### Patch Changes

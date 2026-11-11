@@ -197,11 +197,17 @@ export async function agentNamesOf(
   return new Map(records.map((record) => [record.id, record.name]));
 }
 
-/** Every agent's name, removed ones included, by name. */
+/** Every agent's name (or, with `ids`, those agents'), removed ones included, by name. */
 export async function agentDirectory(
   conn: DatabaseConnection,
+  ids?: readonly string[],
 ): Promise<AgentName[]> {
+  const unique = ids ? [...new Set(ids)] : undefined;
+  if (unique?.length === 0) return [];
   const records = await agentsRepo(conn).findMany({
+    ...(unique
+      ? { filter: (f) => f.or(unique.map((id) => f.string('id').eq(id))) }
+      : {}),
     sort: (sort) => [sort.field('name').asc(), sort.field('id').asc()],
   });
   return records.map((record) => ({

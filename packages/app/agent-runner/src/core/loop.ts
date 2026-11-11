@@ -127,6 +127,7 @@ export function runnerVersion(): string {
 
 /** What every runner of this version can do, before adapter features. */
 export const BASE_FEATURES: readonly RunnerFeature[] = [
+  'strictSession',
   'outputBlocks',
   'workspaceKey',
   'input',
@@ -143,6 +144,8 @@ export const BASE_FEATURES: readonly RunnerFeature[] = [
   'gitCredentials',
   // Code host CLI wrappers with the run's credential (agent/host-tools.ts).
   'gitTools',
+  // The private npm registry's token, asked for only when an install needs it (agent/npm-launcher.ts).
+  'npmCredentials',
   // Updates from the npm registry (`npmUpgrade` in heartbeat answers; update.ts).
   NPM_UPGRADE_FEATURE,
 ];

@@ -20,6 +20,7 @@ export {
 } from './eligibility.js';
 export {
   createBriefSectionRegistry,
+  createNpmCredentialRegistry,
   createRepoAccessRegistry,
   createRunMountRegistry,
   sessionKeyOf,
@@ -28,6 +29,9 @@ export {
   type ExtensionPrepare,
   type MountContext,
   type MountOffer,
+  type NpmCredentialProvider,
+  type NpmCredentialRegistry,
+  type NpmCredentialRequest,
   RepoAccessError,
   type RepoAccessContext,
   type RepoAccessProvider,
@@ -43,6 +47,10 @@ export {
   ISSUE_TIMEOUT_MS,
   type GitCredentialService,
 } from './git-credentials.js';
+export {
+  createNpmCredentialService,
+  type NpmCredentialService,
+} from './npm-credentials.js';
 export { createBriefPreviewer, type BriefPreviewer } from './preview.js';
 export { findBrief, requestReset } from './workspace.store.js';
 export { createRunnerReports, type RunnerReports } from './lifecycle.js';
@@ -54,6 +62,7 @@ export {
   type SubjectAssembly,
   type SubjectSample,
   type SubjectBinding,
+  type SubjectVisibility,
   type SubjectDir,
   type SubjectFacts,
   type SubjectRegistry,
@@ -61,6 +70,7 @@ export {
   type SubjectWorkspaces,
   type SubjectScope,
   type WorkSink,
+  type CancelRequest,
 } from './ports.js';
 export {
   DEFAULT_TOOL_POLICY,

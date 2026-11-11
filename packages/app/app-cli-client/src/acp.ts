@@ -22,6 +22,7 @@ import {
   acpServicePlan,
   capture,
   installAcpService,
+  restartAcpServices,
   NETWORK_ENV,
   uninstallAcpService,
   type AcpServicePlan,
@@ -37,6 +38,7 @@ import {
   skillsEnvironment,
 } from './skills.ts';
 import { AppCommand, UsageError } from './lib/command.ts';
+import { successEnvelope } from './lib/envelope.ts';
 import { globalFlags } from './lib/globals.ts';
 import {
   updateCli,
@@ -283,6 +285,27 @@ export function acpCommands(app: AppCliConfig): Record<string, Command.Class> {
           `See how it runs with \`${app.bin} acp service status\`; stop it with \`${app.bin} acp service uninstall\`.`,
         );
         return { file: plan.file, installed: true };
+      }
+    },
+
+    'acp:service:restart': class AcpServiceRestart extends AppCommand {
+      private warnings: string[] = [];
+      protected override toSuccessJson(result: unknown): unknown {
+        return successEnvelope(this.commandName, result, this.warnings);
+      }
+
+      static override summary =
+        'Restart running background connections for all profiles.';
+      static override description =
+        'Restarts installed, running ACP services on macOS and Linux using their saved environment. Stopped services are left stopped.';
+
+      async run(): Promise<{ restarted: string[] }> {
+        await this.parse(AcpServiceRestart);
+        const result = await restartAcpServices(app.bin);
+        this.warnings = result.warnings;
+        for (const label of result.restarted) this.log(`Restarted ${label}.`);
+        for (const warning of result.warnings) this.warn(warning);
+        return { restarted: result.restarted };
       }
     },
 

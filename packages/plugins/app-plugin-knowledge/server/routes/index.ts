@@ -13,7 +13,7 @@ import {
   type AppApiRouteContribution,
   type AppRouteContribution,
 } from '@nocobase/app-server/router';
-import { Hono } from 'hono';
+import { Hono, type Context } from 'hono';
 
 import { authorizationToken } from '@nocobase/app-plugin-authorization';
 import { knowledgeIndexingToken } from '../tokens.js';
@@ -22,8 +22,11 @@ import { knowledgeAccessToken, knowledgeToken } from '../tokens.js';
 import { createKnowledgeRoutes, createKnowledgeTicketRoutes } from './api.js';
 import { knowledgeOnlineAgent } from '../online-agent/integration.js';
 
-export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
-  defineApiRoutes(async ({ container }) => {
+/** `indexing: false` leaves out the indexing-only knowledge routes (`createKnowledgePlugin({ indexing: false })`). */
+export function createApiRoutes(
+  options: { readonly indexing?: boolean } = {},
+): AppApiRouteContribution<AppPluginApplication> {
+  return defineApiRoutes(async ({ container }) => {
     const router = new Hono();
     // Registered first: a ticket's route answers before the session guard below, which would otherwise match it too.
     router.route(
@@ -45,6 +48,13 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
           !(
             auth.credential?.type === integration.credentialType &&
             auth.credential.scheme === 'runToken'
+          ) &&
+          !(
+            auth.credential &&
+            (await authentication.credentialRouteDecision(
+              context as Context,
+              auth.credential,
+            )) === true
           ) &&
           (await authentication.isScopedSession(auth, context.req.raw))
         ) {
@@ -94,12 +104,19 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
           container.has(knowledgeAccessToken)
             ? container.resolve(knowledgeAccessToken).space(space)
             : null,
-        { acceptOnlineAgent: integration !== null },
+        {
+          acceptOnlineAgent: integration !== null,
+          indexing: options.indexing !== false,
+        },
       ),
     );
     router.route('/knowledge', routes);
     return router;
   });
+}
+
+export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
+  createApiRoutes();
 
 const routes: readonly AppRouteContribution<AppPluginApplication>[] = [
   apiRoutes,

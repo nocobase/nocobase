@@ -1,3 +1,4 @@
+import { SnapshotView } from './snapshot-view.js';
 /**
  * One conversation, the panel's main view: the messages as a log (older pages on demand), what an application adds
  * among them (plan cards), the agent at work, notices about who answers, and the composer. Without a conversation
@@ -161,6 +162,13 @@ export function ConversationView({
       </div>
     );
   }
+  if (detail.data?.snapshot)
+    return (
+      <SnapshotView
+        key={`${conversationId}:${detail.data.updatedAt}`}
+        conversation={detail.data}
+      />
+    );
   return (
     <ConversationBody
       key={
@@ -607,7 +615,7 @@ function ConversationBody({
     <section
       className={cn(
         'relative flex h-full min-h-0 min-w-0 flex-col',
-        page ? 'gap-0' : 'gap-3',
+        page ? 'gap-0' : 'gap-3 px-4 py-3',
         className,
       )}
       aria-label={conversation?.title ?? t('chat.newConversation')}

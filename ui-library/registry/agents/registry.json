@@ -131,7 +131,7 @@
       "name": "agent-chat",
       "type": "registry:block",
       "title": "Agent Chat",
-      "description": "The agents' chat: a side panel beside the content area, switching between the online agent and runner agents when both are configured, with the conversation, live steps, a composer with page-context chips and files to send (attach, paste, drop), the agent picker, the history, a full-page conversation view, and header, floating and Ask agent launchers. Use it to let people talk to agents from any page. Wired to the headless hooks of @nocobase/app-plugin-agents/client/chat.",
+      "description": "A simple agent conversation panel with shared page/panel headers, history, composer and launchers. It has no association requirements. For related-work slots and conversation details, add agent-chat-details.",
       "categories": ["agents"],
       "meta": {
         "group": "Agents",
@@ -141,7 +141,7 @@
         "@nocobase/app-client@^4.0.0-beta.2",
         "@ai-sdk/react@4.0.131",
         "ai@7.0.128",
-        "@nocobase/app-plugin-agents@^1.0.0-beta.21",
+        "@nocobase/app-plugin-agents@^2.0.0-beta.4",
         "@nocobase/i18n@^1.0.0-beta.4",
         "@nocobase/markdown-mermaid@^0.1.0-beta.2",
         "cn@^0.4.0",
@@ -169,7 +169,8 @@
         "@nocobase/agent-run-history",
         "@nocobase/agent-composer",
         "@nocobase/agent-picker",
-        "@nocobase/attachment-list"
+        "@nocobase/attachment-list",
+        "alert-dialog"
       ],
       "docs": "Requires the agents plugin (and the file plugin on the server for files sent in chat): wrap the routes in ChatProvider from @nocobase/app-plugin-agents/client/chat (pass memoryScope, the signed-in person's id, so a new conversation starts with the agent they used last; pass conversationPath when ChatConversationPage has a route such as /chat/:conversationId), optionally with ChatExtensionsContext for cards among the messages. Render ChatPanel as a sibling of <main> inside a `relative flex` row, ChatHeaderButton in the header and ChatFloatingButton anywhere; add the plugin's chatLinkRoutes(base) for links that open the panel; spread locales/ into client/locales/.",
       "files": [
@@ -297,6 +298,126 @@
           "path": "agent-chat/locales/zh-CN.ts",
           "type": "registry:lib",
           "target": "client/extensions/nocobase-agent-chat/locales/zh-CN.ts"
+        },
+        {
+          "path": "agent-chat/conversation-header.tsx",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-agent-chat/conversation-header.tsx"
+        },
+        {
+          "path": "agent-chat/panel-frame.tsx",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-agent-chat/panel-frame.tsx"
+        },
+        {
+          "path": "agent-chat/panel-body.tsx",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-agent-chat/panel-body.tsx"
+        },
+        {
+          "path": "agent-chat/conversation-metadata.tsx",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-agent-chat/conversation-metadata.tsx"
+        },
+        {
+          "path": "agent-chat/delete-conversation.tsx",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-agent-chat/delete-conversation.tsx"
+        },
+        {
+          "path": "agent-chat/use-keyboard-fit.ts",
+          "type": "registry:lib",
+          "target": "client/extensions/nocobase-agent-chat/use-keyboard-fit.ts"
+        },
+        {
+          "path": "agent-chat/snapshot-view.tsx",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-agent-chat/snapshot-view.tsx"
+        },
+        {
+          "path": "agent-chat/share-conversation.tsx",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-agent-chat/share-conversation.tsx"
+        }
+      ]
+    },
+    {
+      "name": "agent-chat-details",
+      "type": "registry:block",
+      "title": "Agent Chat with Details",
+      "description": "The agent chat workspace: the conversation list, one conversation and its details (linked work such as tasks, context usage, runtime and agent), laid out by its own width as one column, list beside conversation, or list, conversation and details. Mount it as a full page with the selection in the address, or in the side panel with LinkedChatPanel; both are the same component. Linked work uses generic ConversationLink sections; applications add their own through narrow slots. No task or project dependency.",
+      "categories": ["agents"],
+      "meta": {
+        "group": "Agents",
+        "iframeHeight": 760
+      },
+      "dependencies": [
+        "@base-ui/react@^1.7.0",
+        "@tanstack/react-query@^5.90.21"
+      ],
+      "registryDependencies": [
+        "@nocobase/agent-chat",
+        "button",
+        "input",
+        "skeleton",
+        "tabs"
+      ],
+      "docs": "Mount ChatWorkspace on a page (selection in the address) and LinkedChatPanel under the same ChatProvider as the simple ChatPanel (selection in the panel store); both are the same workspace. Add application-specific parts through narrow slots: list.heading, list.row (extra, facts, status), list.filters/filter, renderBody, metadata, detailsMetadata and scope; slots[kind] renders a related-work section and renderSummary the summary row. Passive details reuse cached conversation and usage snapshots; no polling is added.",
+      "files": [
+        {
+          "path": "agent-chat/linked-chat-panel.tsx",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-agent-chat/linked-chat-panel.tsx"
+        },
+        {
+          "path": "agent-chat/workspace.tsx",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-agent-chat/workspace.tsx"
+        },
+        {
+          "path": "agent-chat/workspace-layout.ts",
+          "type": "registry:lib",
+          "target": "client/extensions/nocobase-agent-chat/workspace-layout.ts"
+        },
+        {
+          "path": "agent-chat/conversation-list.tsx",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-agent-chat/conversation-list.tsx"
+        },
+        {
+          "path": "agent-chat/conversation-associations.tsx",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-agent-chat/conversation-associations.tsx"
+        },
+        {
+          "path": "agent-chat/conversation-details.tsx",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-agent-chat/conversation-details.tsx"
+        },
+        {
+          "path": "agent-chat/pane-sheet.tsx",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-agent-chat/pane-sheet.tsx"
+        },
+        {
+          "path": "agent-chat/conversation-links.ts",
+          "type": "registry:lib",
+          "target": "client/extensions/nocobase-agent-chat/conversation-links.ts"
+        },
+        {
+          "path": "agent-chat/usage.tsx",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-agent-chat/usage.tsx"
+        },
+        {
+          "path": "agent-chat/use-conversation-usage.ts",
+          "type": "registry:lib",
+          "target": "client/extensions/nocobase-agent-chat/use-conversation-usage.ts"
+        },
+        {
+          "path": "agent-chat/linked-launchers.tsx",
+          "type": "registry:component",
+          "target": "client/extensions/nocobase-agent-chat/linked-launchers.tsx"
         }
       ]
     }

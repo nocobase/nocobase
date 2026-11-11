@@ -158,7 +158,7 @@ const zhTW: LocaleResource<typeof enUS> = {
     record: '紀錄',
     notes: '備註',
     save: '儲存',
-    refresh: '重新整理',
+    retryRead: '重試',
     loading: '載入中…',
     empty: '沒有可存取的記錄',
     readOnly: '只讀',

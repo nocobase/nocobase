@@ -1,5 +1,6 @@
 export {
   AGENT_LAYER_PREFIX,
+  STABLE_AGENT_LAYER_PREFIX,
   agentLayer,
   annotatePlaceholders,
   onlineSkillsSection,

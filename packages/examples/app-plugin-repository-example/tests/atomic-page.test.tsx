@@ -49,8 +49,11 @@ async function show(seed = true) {
     </I18nProvider>,
   );
   await waitFor(() =>
-    expect(screen.getByRole('button', { name: 'Refresh' })).toBeEnabled(),
+    expect(screen.queryByText('Loading…')).not.toBeInTheDocument(),
   );
+  expect(
+    screen.queryByRole('button', { name: 'Refresh' }),
+  ).not.toBeInTheDocument();
 }
 it('runs stock, points, and concurrent examples and shows rejected deductions', async () => {
   await show();

@@ -1,5 +1,21 @@
 # @nocobase/agent-protocol
 
+## 0.1.0-beta.18
+
+### Minor Changes
+
+- ac6c1eb: A runner asks the application for the token of NocoBase's private npm registry (`https://pkg-v3.nocobase.com/`) only when an install of a run needs it: when the repository's committed `.npmrc` points a scope or the registry at it, or after an `@nocobase/*` package was not found on the default registry, which it then retries once with the private registry. The token goes into a run-private npm configuration for that one command and is redacted from what the run reports. The machine's own npm and pnpm settings stay in effect except those pointing at the private registry, so a project that needs no private package never reaches it. Protocol version 16 adds the `npmCredentials` feature and `RUNNER_ROUTES.npmCredential`; applications register where the token comes from with `npmCredentialProviders`. Update the application before the runners.
+
+### Patch Changes
+
+- a2dc459: Expose whether the current run starts an independent tool session so reviewers can verify their session before reviewing.
+
+## 0.1.0-beta.17
+
+### Minor Changes
+
+- c635b6c: Preserve quota-limited work on its original Runner and resume its original tool session after quota resets. Support strict session restoration without automatic fallback to a new session, and let an explicit replacement run take over preserved work exactly once (`replacesRunId`).
+
 ## 0.1.0-beta.16
 
 ### Minor Changes

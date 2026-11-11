@@ -61,7 +61,7 @@ import { Skeleton } from '#components/ui/skeleton';
 import { cn } from 'cn';
 
 import { useChatTranslation } from './chat-i18n.js';
-import { ChatTag, LoadError, Pulse } from './chat-ui.js';
+import { LoadError, Pulse } from './chat-ui.js';
 
 const ALL = '__all__';
 
@@ -294,7 +294,6 @@ function HistoryRow({
   const { t } = useChatTranslation();
   const format = useFormatters();
   const actions = useConversationActions();
-  const sources = useConversationSources();
   const agentText = useAgentText();
   const shown = item.title?.trim() ? item.title : t('chat.untitled');
   const [renaming, setRenaming] = useState(false);
@@ -376,12 +375,6 @@ function HistoryRow({
             <span className='truncate'>
               {agentText.name(item.agent) ?? t('chat.agentGone')}
             </span>
-            {item.source === 'panel' ? null : (
-              <ChatTag tone='grey' className='ml-auto'>
-                {sources.find((candidate) => candidate.key === item.source)
-                  ?.label ?? item.source}
-              </ChatTag>
-            )}
           </span>
         </button>
       )}

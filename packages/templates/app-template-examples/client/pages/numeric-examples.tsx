@@ -15,7 +15,6 @@ import {
   ChevronDown,
   Database,
   Info,
-  RefreshCw,
   SlidersHorizontal,
 } from 'lucide-react';
 import { Button } from '#components/ui/button';
@@ -111,7 +110,6 @@ export default function NumericExamplesPage(): ReactElement {
     request.data ? 1 : 0,
   );
   const data = listStateShowsData(state) ? request.data : undefined;
-  const { isFetching, refetch } = request;
 
   return (
     <PageContainer>
@@ -184,20 +182,10 @@ export default function NumericExamplesPage(): ReactElement {
               </div>
             </fieldset>
           </div>
-
-          <Button
-            variant='outline'
-            size='sm'
-            className='h-8 gap-1.5'
-            disabled={isFetching}
-            onClick={() => void refetch()}
-          >
-            <RefreshCw
-              className={`size-3.5 ${isFetching ? 'animate-spin' : ''}`}
-            />
-            {t('numbers.refresh')}
-          </Button>
-          <ListFeedbackActions state={state} />
+          <ListFeedbackActions
+            state={state}
+            onRetry={() => void request.refetch()}
+          />
         </div>
 
         {/* Sort and secondary controls */}

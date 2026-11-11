@@ -1,14 +1,15 @@
-# NocoBase 3
-
-> このブランチは NocoBase 3 です。ノーコード開発プラットフォーム NocoBase 2 をお探しの場合は、[NocoBase 2](https://nocode.nocobase.com/)をご覧ください。
-
 [English](./README.md) | [Español](./README.es-ES.md) | [Français](./README.fr-FR.md) | [Deutsch](./README.de-DE.md) | [Português](./README.pt-BR.md) | [Русский](./README.ru-RU.md) | [Bahasa Indonesia](./README.id-ID.md) | [Tiếng Việt](./README.vi-VN.md) | [简体中文](./README.zh-CN.md) | [繁體中文](./README.zh-TW.md) | 日本語 | [한국어](./README.ko-KR.md)
 
-**信頼できる業務システムを構築**
+[▶ デモを見る](https://static-docs.nocobase.com/nocobase-3-ja.mp4)
+
+<p align="center">
+<a href="https://trendshift.io/repositories/4112" target="_blank"><img src="https://trendshift.io/api/badge/repositories/4112" alt="nocobase%2Fnocobase | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
+<a href="https://www.producthunt.com/posts/nocobase?embed=true&utm_source=badge-top-post-topic-badge&utm_medium=badge&utm_souce=badge-nocobase" target="_blank"><img src="https://api.producthunt.com/widgets/embed-image/v1/top-post-topic-badge.svg?post_id=456520&theme=light&period=weekly&topic_id=267" alt="NocoBase - Scalability&#0045;first&#0044;&#0032;open&#0045;source&#0032;no&#0045;code&#0032;platform | Product Hunt" style="width: 250px; height: 54px;" width="250" height="54" /></a>
+</p>
+
+## NocoBase とは
 
 NocoBase は、AI で業務システムを継続的に開発・運用するためのオープンソースプラットフォームです。エージェントがコードを書いて実行し、NocoBase が基盤とガバナンスを提供し、人が意思決定を行います。
-
-[▶ デモを見る](https://static-docs.nocobase.com/nocobase-3-ja.mp4)
 
 [公式サイト](https://www.nocobase.com/ja-JP/) · [ドキュメント](https://docs.nocobase.com/) · [クイックスタート](#quick-start) · [コミュニティ](https://forum.nocobase.com/)
 

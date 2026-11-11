@@ -156,7 +156,10 @@ async function listPackageDirectories(packagesDirectory) {
   return directories;
 }
 
-export async function discoverPackages(repoRoot) {
+// `skipPrivate` is for a repository that reuses these rules but keeps unpublished packages under packages/, such as
+// nocobase3-pro's examples. Its private packages are left out entirely instead of failing the private-package rule;
+// everything else is checked exactly as here.
+export async function discoverPackages(repoRoot, { skipPrivate = false } = {}) {
   const packagesDirectory = path.join(repoRoot, 'packages');
   const directories = await listPackageDirectories(packagesDirectory);
   const packages = [];
@@ -172,6 +175,7 @@ export async function discoverPackages(repoRoot) {
       throw error;
     }
 
+    if (skipPrivate && manifest.private === true) continue;
     validatePackageManifest(manifest, directory);
 
     try {
@@ -442,9 +446,10 @@ export async function mapWithConcurrency(items, concurrency, task) {
 export async function packCheck({
   env = process.env,
   repoRoot = path.resolve(import.meta.dirname, '..'),
+  skipPrivate = false,
 } = {}) {
   const packages = selectPackagesToPack(
-    await discoverPackages(repoRoot),
+    await discoverPackages(repoRoot, { skipPrivate }),
     env.PACK_CHECK_PACKAGES,
   );
   const configuredDirectory = env.PACK_DIR?.trim();

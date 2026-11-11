@@ -64,6 +64,16 @@ export type AppDatabaseConfigFromDrivers<
  */
 export interface AppDatabaseTaskContributions {
   readonly appPackageName: string;
+  /** Contributions bound to named App connections, independent of the default connection. */
+  readonly connections?: Readonly<
+    Record<
+      string,
+      {
+        readonly migrations: readonly MigrationSource[];
+        readonly seeds: readonly SeedSource[];
+      }
+    >
+  >;
   readonly migrations: readonly MigrationSource[];
   readonly seeds: readonly SeedSource[];
 }

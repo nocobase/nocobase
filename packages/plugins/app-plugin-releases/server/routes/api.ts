@@ -53,6 +53,7 @@ import {
   PromoteBody,
   RegisterImageReleaseBody,
   ReleasesAppSchema,
+  ReleasesSharedHostSchema,
   ReleasesCallerSchema,
   ReleasesConfigSchema,
   ReleasesConfigTemplateSchema,
@@ -115,6 +116,7 @@ export interface ReleasesApiOptions {
   readonly securityLog?: (
     event: string,
     details: Record<string, unknown>,
+    context?: Context,
   ) => void;
 }
 
@@ -234,6 +236,29 @@ export function createReleasesApi(
     }),
     (context) => {
       const data = services.environments.drivers(person(context));
+      return context.json({ data, meta: { total: data.length } });
+    },
+  );
+
+  // The runtimes environments share, for the environments page; outside `/environments`, where every segment names one.
+  api.get(
+    '/hosts',
+    settings('read'),
+    describeRoute({
+      tags,
+      summary: 'List shared app hosts',
+      operationId: 'releasesListHosts',
+      // The environments page's block; `app get` answers an App's own host.
+      ...cliRoute(false),
+      description:
+        'Requires the `rel.environments` `read` setting. Each runtime the environments with Apps share, once: its memory, how many Apps run or start on it against its limit, and its restart state — totals of the whole runtime, every environment on it included. An environment’s restore error only reaches those with the `manage` setting.',
+      responses: {
+        200: listResponse(ReleasesSharedHostSchema, ReleasesTotalMeta),
+        ...apiErrorResponses,
+      },
+    }),
+    async (context) => {
+      const data = await services.releases.listHosts(person(context));
       return context.json({ data, meta: { total: data.length } });
     },
   );
@@ -862,7 +887,15 @@ export function createReleasesApi(
         command: 'app list',
         flags: {
           pageSize: { name: 'limit' },
-          environmentId: { name: 'env' },
+          environmentId: {
+            name: 'env',
+            description: 'An environment; repeat for more.',
+          },
+          runtimeState: {
+            name: 'state',
+            description:
+              'A runtime state (running, starting, pending, waiting, stopped, failed, unknown); repeat for more.',
+          },
           q: { name: 'search' },
           label: { description: 'A label (key=value); repeat for more.' },
         },
@@ -877,7 +910,7 @@ export function createReleasesApi(
         action: 'rel.apps/view',
       }),
       description:
-        'Requires the `view` action; lists the Apps it reaches. `q` searches, `label=key=value` (repeatable) filters by label.',
+        'Requires the `view` action; lists the Apps it reaches. `q` searches, `environmentId` (repeatable) keeps the Apps of those environments, `runtimeState` (repeatable) those whose runtime is in those states, and `label=key=value` (repeatable) filters by label; every filter applies before the page is cut, so `total` counts the matches.',
       responses: {
         200: listResponse(ReleasesAppSchema, ReleasesPageMeta),
         ...apiErrorResponses,
@@ -890,9 +923,8 @@ export function createReleasesApi(
         page: query.page,
         pageSize: query.pageSize,
         ...(query.q === undefined ? {} : { search: query.q }),
-        ...(query.environmentId === undefined
-          ? {}
-          : { environmentId: query.environmentId }),
+        environmentIds: query.environmentId,
+        runStates: query.runtimeState,
         labels: parseLabelFilter(query.label),
       });
       return context.json({ data: result.items, meta: pageMeta(result) });
@@ -1446,7 +1478,7 @@ export function createReleasesApi(
         ...apiErrorResponses,
         400: apiErrorResponse(
           400,
-          'The archive is invalid or does not match its checksum, or its variables manifest is (`INVALID_VARIABLES_MANIFEST`), or deploying it is refused (`APPROVAL_REQUIRED` on a protected environment, `DEPLOYMENT_IN_PROGRESS`, `VARIABLES_MISSING`: the release is kept, and deploys by its ID once the variables are set).',
+          'The archive is invalid or does not match its checksum, or its variables manifest is (`INVALID_VARIABLES_MANIFEST`), or deploying it is refused (`APPROVAL_REQUIRED` on a protected environment, `VARIABLES_MISSING`: the release is kept, and deploys by its ID once the variables are set).',
         ),
         404: apiErrorResponse(404),
         409: apiErrorResponse(
@@ -1513,12 +1545,17 @@ export function createReleasesApi(
         });
         if (ticketId)
           await services.tickets.recordRelease(ticketId, release.id);
-        log('releases.release.upload', {
-          actorId: caller.userId,
-          via: caller.kind,
-          appId,
-          releaseId: release.id,
-        });
+        log(
+          'releases.release.upload',
+          {
+            actorId: caller.userId,
+            via: caller.kind,
+            appId,
+            releaseId: release.id,
+            ...(ticketId ? { ticketId } : {}),
+          },
+          context,
+        );
         // An upload that also deploys answers before the deployment finishes; its progress is the deployment's.
         return context.json(
           { data: release },
@@ -1536,6 +1573,7 @@ export function createReleasesApi(
       tags,
       summary: 'Get a release',
       operationId: 'releasesGetRelease',
+      security: personOrRunSecurity,
       ...cliRoute({
         command: 'release get',
         flags: { appId: { name: 'app' }, releaseId: { name: 'release' } },
@@ -1786,11 +1824,15 @@ export function createReleasesApi(
             labels === undefined ? {} : { labels },
           ),
       );
-      log('releases.release.promote', {
-        actorId: caller.userId,
-        appId: toAppId,
-        releaseId: release.id,
-      });
+      log(
+        'releases.release.promote',
+        {
+          actorId: caller.userId,
+          appId: toAppId,
+          releaseId: release.id,
+        },
+        context,
+      );
       return context.json({ data: release });
     },
   );
@@ -1845,12 +1887,16 @@ export function createReleasesApi(
         appId,
         input,
       );
-      log('releases.release.image', {
-        actorId: caller.userId,
-        via: caller.kind,
-        appId,
-        releaseId: release.id,
-      });
+      log(
+        'releases.release.image',
+        {
+          actorId: caller.userId,
+          via: caller.kind,
+          appId,
+          releaseId: release.id,
+        },
+        context,
+      );
       if (!deploy)
         return context.json({ data: release }, release.reused ? 200 : 201);
       const deployment = await services.releases.deploy(caller, appId, {
@@ -1903,11 +1949,15 @@ export function createReleasesApi(
         appId,
         context.req.valid('json'),
       );
-      log('releases.ticket.create', {
-        actorId: caller.userId,
-        appId,
-        ticketId: ticket.id,
-      });
+      log(
+        'releases.ticket.create',
+        {
+          actorId: caller.userId,
+          appId,
+          ticketId: ticket.id,
+        },
+        context,
+      );
       return context.json({ data: ticket }, 201);
     },
   );
@@ -1932,7 +1982,7 @@ export function createReleasesApi(
         action: 'rel.apps/deploy',
       }),
       description:
-        'Requires the `deploy` action on the App. A protected environment is deployed only through a deployment request an approver approves (`POST /apps/{appId}/deploymentRequests`), so deploying there directly is refused. The `Idempotency-Key` header, or `idempotencyKey`, answers a repeated request with its first deployment.',
+        'Requires the `deploy` action on the App. A protected environment is deployed only through a deployment request an approver approves (`POST /apps/{appId}/deploymentRequests`), so deploying there directly is refused. A new deployment replaces older queued deployments of the same App; running deployments continue. The `Idempotency-Key` header, or `idempotencyKey`, answers a repeated request with its first deployment.',
       responses: {
         200: dataResponse(
           ReleasesDeploymentSchema,
@@ -1945,7 +1995,7 @@ export function createReleasesApi(
         ...apiErrorResponses,
         400: apiErrorResponse(
           400,
-          'The release is not given, the environment is protected (`APPROVAL_REQUIRED`: request the deployment instead), a deployment is in progress (`DEPLOYMENT_IN_PROGRESS`) or a required variable is not set (`VARIABLES_MISSING`, naming them in `metadata.variables`).',
+          'The release is not given, the environment is protected (`APPROVAL_REQUIRED`: request the deployment instead), a required variable is not set (`VARIABLES_MISSING`, naming them in `metadata.variables`).',
         ),
         404: apiErrorResponse(404),
         409: apiErrorResponse(
@@ -1984,8 +2034,9 @@ export function createReleasesApi(
         deployment.id,
         100_000,
       );
-      const finished =
-        settled.status !== 'queued' && settled.status !== 'deploying';
+      const finished = !['queued', 'deploying', 'cancelling'].includes(
+        settled.status,
+      );
       return context.json({ data: settled }, finished ? 200 : 202);
     },
   );
@@ -2012,7 +2063,7 @@ export function createReleasesApi(
         ...apiErrorResponses,
         400: apiErrorResponse(
           400,
-          'The target is not a successful deployment of this App (`INVALID_ROLLBACK_TARGET`), the environment is protected (`APPROVAL_REQUIRED`) or a deployment is in progress.',
+          'The target is not a successful deployment of this App (`INVALID_ROLLBACK_TARGET`), the environment is protected (`APPROVAL_REQUIRED`).',
         ),
         404: apiErrorResponse(404),
       },
@@ -2080,6 +2131,47 @@ export function createReleasesApi(
     },
   );
   // Whoever may deploy the App reads a deployment too, so CI holding only a deploying key can wait for the result.
+  api.post(
+    '/apps/:appId/deployments/:deploymentId/cancel',
+    onApps('deploy'),
+    describeRoute({
+      tags,
+      summary: 'Cancel a deployment',
+      operationId: 'releasesCancelDeployment',
+      security: personOrRunSecurity,
+      ...cliRoute({
+        command: 'deploy cancel',
+        flags: { appId: { name: 'app' }, deploymentId: { name: 'deployment' } },
+        action: 'rel.apps/deploy',
+      }),
+      description:
+        'Requires the deploy action on the App. Cancels a queued deployment immediately; a running deployment stops after its current step and cleanup. Refused once switching starts. Repeating cancellation is safe.',
+      responses: {
+        200: dataResponse(ReleasesDeploymentSchema),
+        ...apiErrorResponses,
+        400: apiErrorResponse(
+          400,
+          'The deployment has started switching or finished (DEPLOYMENT_NOT_CANCELLABLE), or the driver does not support cancellation.',
+        ),
+        404: apiErrorResponse(404),
+      },
+    }),
+    apiValidator('param', DeploymentParams),
+    async (context) => {
+      const { appId, deploymentId } = context.req.valid('param');
+      const data = await services.releases.cancelDeployment(
+        person(context),
+        appId,
+        deploymentId,
+      );
+      log('releases.deployment.cancel', {
+        actorId: person(context).userId,
+        appId,
+        deploymentId,
+      });
+      return context.json({ data });
+    },
+  );
   api.get(
     '/apps/:appId/deployments/:deploymentId',
     onApps('view', 'deploy'),

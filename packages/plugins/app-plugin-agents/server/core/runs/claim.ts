@@ -19,6 +19,17 @@ import { ACTIVE_JOB, jobsRepo } from '../../jobs/job.store.js';
  * agent's entries whose tool the runner runs and has room for, so an agent listing two tools runs with the second while
  * the first is full; a run none of whose tools has room is passed over for the runs behind it.
  *
+ * Runners share a queue in proportion to each tool's limit, not by who asks first: before it locks anything, a claim
+ * waits until the run has been queued for the share of the tool's limit the runner already runs, times one second
+ * (`claimPace`). The runners' route hands out one run per request and the runner asks again at once, so of several
+ * runners woken for the same runs, the least busy with each tool takes the next one. A request that ends while it
+ * waits takes nothing.
+ *
+ * A run whose actor prefers one kind of runner (`runnerPreference`, `personal` or `team`, noted when it was queued)
+ * makes the other kind wait one second more (`preferenceDelay`), so an idle runner of the preferred kind takes it
+ * first, and one of the other kind takes it about a second later when none can. Work that only one runner may take
+ * (pinned, reserved, continuing where its session is, or for shared runners only) adds no wait. Nothing else is read.
+ *
  * Variables are checked and opened in the claim's own transaction, on its connection: which ones the assembled payload
  * gets, whether any is for shared runners only, and their values, so what the runner receives is what was checked. The
  * names taken from the runner go in `workspace.passthrough`, without values.
@@ -83,7 +94,7 @@ import type {
   ModelWaitReason,
   RunExecutionSnapshot,
 } from '../../../shared/runs.js';
-import { later, type Clock } from '../../kernel/clock.js';
+import { later, pause, type Clock } from '../../kernel/clock.js';
 import { notFound } from '../../kernel/errors.js';
 import type { People } from '../../kernel/people.js';
 import type { IdSource } from '../../kernel/ids.js';
@@ -107,6 +118,7 @@ import {
   mountsFor,
   prepareExtensions,
   repoAccessFor,
+  RepoAccessError,
   responsibleOf,
   type RepoAccessRegistry,
   sessionKeyOf,
@@ -155,6 +167,11 @@ import { consumeReset, saveBrief } from './workspace.store.js';
 const CANDIDATES = 50;
 /** The initial page plus at most two further pages per claim request, shared by all free slots. */
 const CANDIDATE_PAGES = 3;
+/**
+ * What a runner waits for a run when it already runs its tool at the limit, and what one of the kind of runner the
+ * run's actor does not prefer waits on top (`preferenceDelay`).
+ */
+const PACE_MS = 1000;
 
 /** Request-local read budget, also shared by a long poll's post-wait check. */
 export interface ClaimScan {
@@ -179,13 +196,15 @@ export interface ClaimService {
   /**
    * Up to `free` runs for `runner`, each with its payload; empty when nothing fits. `tools` is what the runner said it
    * can take of each coding tool it keeps a limit for (`ClaimRequest.tools`); a tool left out is bounded by `free`.
-   * A request-local `scan` shares the page cap with a long poll's post-wait check.
+   * A request-local `scan` shares the page cap with a long poll's post-wait check. Each run is taken no earlier than
+   * `claimPace` says, waited out before any lock; when `signal` aborts meanwhile, the claim ends with what it took.
    */
   claim(
     runner: Runner,
     free: number,
     tools?: Readonly<Partial<Record<AgentTool, number>>>,
     scan?: ClaimScan,
+    signal?: AbortSignal,
   ): Promise<RunPayload[]>;
   /** The skills a run gets, worked out the way its claim works them out. The caller checks who holds the run. */
   runSkills(runner: Runner, runId: string): Promise<RunSkill[]>;
@@ -213,10 +232,8 @@ export interface ClaimDeps extends TransitionDeps {
   readonly dist?: Pick<DistService, 'find'>;
   /** What a runner holds now (its slots); runs and jobs share them. */
   readonly slotsHeld: Slots['held'];
-  readonly slotsUsed: (
-    conn: DatabaseConnection,
-    runnerId: string,
-  ) => Promise<number>;
+  /** How a claim waits its turn (`claimPace`); real timers when left out. */
+  readonly pause?: (ms: number, signal?: AbortSignal) => Promise<void>;
   /** Sections the application adds to every brief's context layer. */
   readonly sections?: BriefSectionRegistry;
   /** Directories of files the application places beside the agent, for runners with the `mounts` feature. */
@@ -278,8 +295,66 @@ function toolRoom(
 type Attempt =
   | { readonly kind: 'claimed'; readonly payload: RunPayload }
   | { readonly kind: 'skipped' }
+  /** The request went away while the claim waited its turn: nothing more is taken. */
+  | { readonly kind: 'aborted' }
   /** Nothing else of this agent (`agent`) or for this runner (`runner`) can be claimed in this pass. */
   | { readonly kind: 'full'; readonly scope: 'agent' | 'runner' };
+
+/** What one claim pass knows before any lock: the runs `runner` holds by tool, and the request it answers. */
+interface ClaimPass {
+  readonly byTool: Readonly<Partial<Record<AgentTool, number>>>;
+  readonly signal?: AbortSignal;
+}
+
+/**
+ * How long `runner` waits before it takes `run` with `tool`, at `now`: the share of the tool's limit it already runs
+ * (`toolLimit`), of the busier of what this application counts (`byTool`) and what the runner last reported
+ * (`Runner.toolLoad`), times one second, counted from when the run entered the queue (`queueStart`). Several runners
+ * woken for one run take it in order of how busy each is with its tool, whichever asked first and however many runs
+ * each took before; an idle runner, and work queued longer than its share, wait nothing.
+ */
+export function claimPace(
+  runner: Pick<Runner, 'slots' | 'toolSlots' | 'toolLoad'>,
+  tool: AgentTool,
+  byTool: Readonly<Partial<Record<AgentTool, number>>>,
+  run: Pick<Run, 'queueEnteredAt' | 'createdAt' | 'availableAt'>,
+  now: number,
+  /** Added to the share and counted from the same moment (`preferenceDelay`). */
+  extraMs = 0,
+): number {
+  const limit = toolLimit(runner, tool);
+  if (limit <= 0) return 0;
+  const load = runner.toolLoad?.[tool];
+  const used = Math.max(byTool[tool] ?? 0, load ? load.slots - load.free : 0);
+  const share = (Math.min(used, limit) / limit) * PACE_MS + extraMs;
+  return Math.min(share, Math.max(0, queueStart(run) + share - now));
+}
+
+/**
+ * What `runner` waits on top of its share (`claimPace`) for `run`, from the kind of runner its actor prefers: one
+ * second when the run prefers the other kind, nothing otherwise. Nothing either when only this runner may take it
+ * (`bound`: pinned, reserved or continuing where its session is), or when it prefers personal runners but has
+ * variables for shared runners only, which no personal runner may receive.
+ */
+export function preferenceDelay(
+  runner: Pick<Runner, 'trust'>,
+  run: Pick<
+    RunRecord,
+    'runnerPreference' | 'runnerPinId' | 'teamOnlyVariables'
+  >,
+  bound: boolean,
+): number {
+  const preferred = run.runnerPreference;
+  if (preferred !== 'personal' && preferred !== 'team') return 0;
+  if (bound || run.runnerPinId) return 0;
+  if (preferred === (runner.trust === 'team' ? 'team' : 'personal')) return 0;
+  if (
+    preferred === 'personal' &&
+    variableRefs(run.teamOnlyVariables).length > 0
+  )
+    return 0;
+  return PACE_MS;
+}
 
 /**
  * The entry `runner` takes a run of `agent` with: the first whose tool it has enabled, installed and signed in, with
@@ -345,6 +420,22 @@ export function fitsActor(
   return runner.trust === 'team' || runner.ownerUserId === actorUserId;
 }
 
+/** A strict continuation keeps the tool/model that owns its original session. */
+function quotaAgent(run: RunRecord, agent: Agent): Agent {
+  if (!run.runnerPinId || run.freshSession) return agent;
+  const last = toExecutions(run.executionHistory).at(-1);
+  const tool = last?.tool ?? run.tool;
+  const model = last ? last.model : run.model;
+  return tool
+    ? {
+        ...agent,
+        modelEntries: agent.modelEntries.filter(
+          (entry) => entry.tool === tool && entry.model === model,
+        ),
+      }
+    : agent;
+}
+
 /** Whether `runner` may run `run` of `agent`, before any lock is taken and before its payload is known. */
 export function fits(
   runner: Runner,
@@ -352,7 +443,16 @@ export function fits(
   run: RunRecord,
   now: number,
 ): boolean {
-  return fitsActor(runner, agent, run.actorUserId, toRun(run).requires, now);
+  return (
+    (!run.runnerPinId || run.runnerPinId === runner.id) &&
+    fitsActor(
+      runner,
+      quotaAgent(run, agent),
+      run.actorUserId,
+      toRun(run).requires,
+      now,
+    )
+  );
 }
 
 /** The runner features a payload needs. */
@@ -416,6 +516,7 @@ function fingerprint(
   entry: RunnerModelEntry,
   layers: Pick<BriefLayers, 'system' | 'agent'>,
   skills: readonly { readonly slug: string; readonly hash: string }[],
+  readOnly: boolean,
 ): string {
   return createHash('sha256')
     .update(
@@ -426,6 +527,8 @@ function fingerprint(
         layers.system,
         layers.agent,
         skills.map((skill) => [skill.slug, skill.hash]),
+        // Keep existing writable fingerprints unchanged across upgrades.
+        ...(readOnly ? [{ readOnly: true }] : []),
       ]),
     )
     .digest('hex');
@@ -450,7 +553,10 @@ export function briefOf(
   cli: string,
   appName: string,
 ): RenderedBrief {
-  const rendered = renderBrief({
+  // Custom system prompts (such as conversations) keep their own layout.
+  const stablePrefix =
+    assembly.briefLayout === 'stable-prefix' && assembly.system === undefined;
+  const input = {
     agentName: agent.name,
     subject: { noun: assembly.subject.noun, key: assembly.subject.key },
     task: assembly.task,
@@ -461,7 +567,8 @@ export function briefOf(
     cli,
     appName,
     ...(assembly.guidance ? { guidance: assembly.guidance } : {}),
-  });
+  };
+  const rendered = renderBrief(input);
   const layers =
     assembly.system === undefined
       ? rendered
@@ -469,7 +576,12 @@ export function briefOf(
   const turn = assembly.turn.previousSummary
     ? `${assembly.turn.prompt}\n\nWhat earlier runs on this already did:\n\n${assembly.turn.previousSummary}`
     : assembly.turn.prompt;
-  return { layers, turn, prompt: joinBrief(layers) };
+  // Keep the logical layers (and their session fingerprint) unchanged. Only the outgoing text is reordered,
+  // so an ordinary follow-up can still resume the session created by an independent review.
+  const prompt = stablePrefix
+    ? joinBrief(renderBrief({ ...input, stablePrefix: true }), true)
+    : joinBrief(layers);
+  return { layers, turn, prompt };
 }
 
 /** What a claim produces: the payload, the run's requirements and directories, and the brief's fingerprint. */
@@ -1200,6 +1312,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       deps.repoAccess,
       {
         claim,
+        readOnly: assembly.readOnly === true,
         repos: dirs.filter(
           (dir): dir is Extract<WorkspaceDir, { kind: 'repo' }> =>
             dir.kind === 'repo',
@@ -1234,17 +1347,26 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
         deps.app.name,
       );
     let brief = await render();
-    const briefFingerprint = fingerprint(agent, entry, brief.layers, skills);
-    const resume =
-      !run.freshSession &&
-      !clean &&
-      session &&
-      !session.poisoned &&
-      session.fingerprint === briefFingerprint;
+    const briefFingerprint = fingerprint(
+      agent,
+      entry,
+      brief.layers,
+      skills,
+      assembly.readOnly === true,
+    );
+    const strict = Boolean(run.runnerPinId && !run.freshSession);
+    const resume = strict
+      ? Boolean(run.sessionId)
+      : !run.freshSession &&
+        binding.sessionPolicy?.(effectiveClaim) !== 'fresh' &&
+        !clean &&
+        session &&
+        !session.poisoned &&
+        session.fingerprint === briefFingerprint;
     // A kept session that cannot be resumed: the new one is told what came before, as a first one is. The history
     // is outside the fingerprint, so it does not change.
     let recoveryContext: string | undefined;
-    if (session) {
+    if (session && !strict) {
       const fresh = await binding.context.assemble(
         conn,
         { ...claim, freshSession: true },
@@ -1288,6 +1410,11 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
             'The previous attempt was interrupted by a runner upgrade. Continue from the current state.',
           ]
         : []),
+      ...(strict
+        ? [
+            'Quota recovery: continue the interrupted step from the existing session, progress and files.',
+          ]
+        : []),
       ...resumeNotes,
       ...(sessionNote ? [sessionNote] : []),
     ].join('\n\n');
@@ -1300,6 +1427,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       createdAt: nowText,
     });
     const payload: RunPayload = {
+      ...(strict ? { session: { strict: true } } : {}),
       ...(run.subjectKind === 'conversation' &&
       runner.features.includes('outputBlocks')
         ? { outputBlocks: true }
@@ -1330,8 +1458,14 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       prompt: {
         system: brief.prompt,
         turn,
-        session: resume ? 'resume' : 'fresh',
-        ...(resume ? { resumeSessionId: session.sessionId } : {}),
+        session: strict || resume ? 'resume' : 'fresh',
+        ...(strict
+          ? run.sessionId
+            ? { resumeSessionId: run.sessionId }
+            : {}
+          : resume && session
+            ? { resumeSessionId: session.sessionId }
+            : {}),
         ...(resume && recoveryContext ? { recoveryContext } : {}),
       },
       inputs,
@@ -1683,7 +1817,12 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
     agent: Agent,
     candidate: RunRecord,
     reported: ToolRoom,
+    pass: ClaimPass,
+    /** Only this runner may take it: no preference wait (`preferenceDelay`). */
+    bound: boolean,
   ): Promise<Attempt> {
+    if (candidate.runnerPinId && candidate.runnerPinId !== runner.id)
+      return { kind: 'skipped' };
     const conn = tx.read();
     // Rules that do not depend on who the run acts as come first, and settle the rest of the pass: an agent at its
     // limit is checked once per poll, not once per queued run.
@@ -1715,6 +1854,27 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       return { kind: 'skipped' };
     const consent = await commentConsentFor(conn, runner, candidate);
     if (!consent.allowed) return { kind: 'skipped' };
+    // Wait this runner's turn for the run, after every read-only rule and before any lock or write. The transaction
+    // checks again whether the run is still queued and which tool has room.
+    const paced = pickOpenEntry(
+      runner,
+      agent,
+      (tool) =>
+        (pass.byTool[tool] ?? 0) < toolLimit(runner, tool) &&
+        reported.has(tool),
+      clock.now().getTime(),
+    );
+    if (!paced) return { kind: 'skipped' };
+    const wait = claimPace(
+      runner,
+      paced.tool,
+      pass.byTool,
+      candidate,
+      clock.now().getTime(),
+      preferenceDelay(runner, candidate, bound),
+    );
+    if (wait > 0) await (deps.pause ?? pause)(wait, pass.signal);
+    if (pass.signal?.aborted) return { kind: 'aborted' };
     // Read once, before the transaction, and handed to every repository access hook of this claim. A failed read
     // leaves the run queued for the next poll rather than letting a provider pick an identity without it.
     let responsibleUserId: string | null = null;
@@ -1804,6 +1964,8 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
           status: 'dispatched',
           failureReason: null,
           failureDetail: null,
+          failureParams: null,
+          claimFailures: 0,
           runnerId: runner.id,
           // Brief providers observe this reservation inside the claim transaction.
           // Replace a previous attempt's tool before computing the roster.
@@ -1928,7 +2090,16 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
                 : null,
           },
         });
-        unit.emit({ type: 'run.changed', runId: run.id, status: 'dispatched' });
+        if (current.runnerPinId && !current.freshSession)
+          await deps.subjects
+            .get(run.subjectKind)
+            ?.sink?.onQuotaResumed?.(unit, toRun(run));
+        unit.emit({
+          type: 'run.changed',
+          ...(current.runnerPinId ? { quotaWait: false } : {}),
+          runId: run.id,
+          status: 'dispatched',
+        });
         if (variableRefs(candidate.teamOnlyVariables).length > 0)
           unit.emit({
             type: 'notice.cleared',
@@ -1977,27 +2148,120 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
     }
   }
 
-  /** Counts a failed assembly; the run fails once it has failed too often. */
-  async function recordFailure(runId: string, error: AssemblyError) {
-    deps.onClaimFailure?.(runId, error.cause);
+  /** Repository failures have their own budget; ordinary assembly failures keep the existing three-try limit. */
+  async function recordFailure(candidate: RunRecord, error: AssemblyError) {
+    deps.onClaimFailure?.(candidate.id, error.cause);
     await tx.run(async (unit) => {
-      const run = await findRunRecord(unit.conn, runId);
-      if (!run || run.status !== 'queued') return;
-      const failures = Number(run.claimFailures) + 1;
-      if (failures >= MAX_CLAIM_FAILURES) {
-        await finishRun(unit, deps, run, {
-          status: 'failed',
-          reason: 'setupFailed',
-          detail: error.message,
+      const run = await findRunRecord(unit.conn, candidate.id);
+      if (
+        !run ||
+        run.status !== 'queued' ||
+        run.revision !== candidate.revision ||
+        Number(run.attempt) !== Number(candidate.attempt) ||
+        run.actorUserId !== candidate.actorUserId ||
+        !(await queuedIdentityCurrent(unit.conn, deps, run))
+      )
+        return;
+      const previous = jsonObject(run.failureParams);
+      const cause = error.cause;
+      if (cause instanceof RepoAccessError) {
+        const now = clock.now().getTime();
+        const repoFailures = Number(previous.repoFailures ?? 0) + 1;
+        const first =
+          typeof previous.repoFirstFailureAt === 'string'
+            ? Date.parse(previous.repoFirstFailureAt)
+            : now;
+        const retryAt =
+          typeof cause.params.retryAt === 'string'
+            ? Date.parse(cause.params.retryAt)
+            : NaN;
+        const delays = [1, 2, 4, 8, 15];
+        const next = Math.max(
+          now + (delays[repoFailures - 1] ?? 15) * 60_000,
+          Number.isFinite(retryAt) ? retryAt : 0,
+        );
+        const params = {
+          ...cause.params,
+          repoFailures,
+          repoFirstFailureAt: new Date(first).toISOString(),
+        };
+        const reason =
+          cause.kind === 'denied'
+            ? 'repoAccessDenied'
+            : 'repoAccessUnavailable';
+        if (
+          cause.kind === 'denied' ||
+          repoFailures >= 6 ||
+          next > first + 60 * 60_000
+        ) {
+          await finishRun(
+            unit,
+            deps,
+            run,
+            {
+              status: 'failed',
+              reason,
+              detail: cause.message,
+              failureParams: params,
+            },
+            true,
+          );
+          return;
+        }
+        const availableAt = new Date(next).toISOString();
+        const changed = await runsRepo(unit.conn).updateMany({
+          filter: {
+            id: run.id,
+            status: 'queued',
+            revision: run.revision,
+            attempt: Number(run.attempt),
+            actorUserId: run.actorUserId,
+          },
+          values: {
+            availableAt,
+            failureReason: reason,
+            failureDetail: cause.message.slice(0, 10_000),
+            failureParams: params,
+            updatedAt: clock.now().toISOString(),
+          },
         });
+        if (changed.updatedCount > 0) {
+          unit.emit({ type: 'run.changed', runId: run.id, status: 'queued' });
+          unit.emit({ type: 'run.requeued', runId: run.id, availableAt });
+        }
+        return;
+      }
+      const failures = Number(run.claimFailures) + 1;
+      // Preserve only the independent repository retry budget across an unrelated preparation failure.
+      const budget = previous.repoFailures
+        ? {
+            repoFailures: previous.repoFailures,
+            repoFirstFailureAt: previous.repoFirstFailureAt,
+            repoAccess: previous.repoAccess ?? previous,
+          }
+        : null;
+      if (failures >= MAX_CLAIM_FAILURES) {
+        await finishRun(
+          unit,
+          deps,
+          run,
+          {
+            status: 'failed',
+            reason: 'setupFailed',
+            detail: error.message,
+            failureParams: null,
+          },
+          true,
+        );
         return;
       }
       await runsRepo(unit.conn).updateMany({
-        filter: { id: runId },
+        filter: { id: run.id, status: 'queued', revision: run.revision },
         values: {
           claimFailures: failures,
           failureReason: 'setupFailed',
           failureDetail: error.message.slice(0, 10_000),
+          failureParams: budget,
         },
       });
     });
@@ -2321,13 +2585,14 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
     return true;
   }
 
-  /** False stops the whole request when a transactional capacity check finds the runner full. */
+  /** False stops the whole request when a transactional capacity check finds the runner full, or the request ended. */
   async function claimPage(
     runner: Runner,
     seen: Set<string>,
     reported: ToolRoom,
     queued: readonly RunRecord[],
     full: Set<string>,
+    pass: ClaimPass,
   ): Promise<RunPayload | false | null> {
     const conn = tx.read();
     const affinity = await affinityBatch(queued, runner);
@@ -2344,9 +2609,15 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
         ? deps.runners.all(conn)
         : Promise.resolve([runner]));
     for (const candidate of queued) {
-      if (seen.has(candidate.id) || full.has(candidate.agentId)) continue;
+      if (
+        seen.has(candidate.id) ||
+        full.has(candidate.agentId) ||
+        (candidate.runnerPinId && candidate.runnerPinId !== runner.id)
+      )
+        continue;
       seen.add(candidate.id);
-      const agent = agents.get(candidate.agentId);
+      const configured = agents.get(candidate.agentId);
+      const agent = configured ? quotaAgent(candidate, configured) : undefined;
       if (
         !agent ||
         (!deps.subjects.get(candidate.subjectKind)?.actsAs &&
@@ -2361,7 +2632,9 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       if (reserved && reserved !== runner.id) continue;
       // Work bound to another runner waits for it; work bound here takes no other preference.
       const pin = deps.subjects.get(candidate.subjectKind)?.runnerPin;
-      const pinned = pin ? await pin.runnerOf(conn, toRun(candidate)) : null;
+      const pinned =
+        candidate.runnerPinId ??
+        (pin ? await pin.runnerOf(conn, toRun(candidate)) : null);
       if (pinned !== null && pinned !== runner.id) continue;
       const preferred = affinity.preferred.get(candidate.id);
       if (
@@ -2390,8 +2663,18 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       )
         continue;
       try {
-        const result = await attempt(runner, agent, candidate, reported);
+        const result = await attempt(
+          runner,
+          agent,
+          candidate,
+          reported,
+          pass,
+          reserved === runner.id ||
+            pinned !== null ||
+            preferred?.id === runner.id,
+        );
         if (result.kind === 'claimed') return result.payload;
+        if (result.kind === 'aborted') return false;
         if (result.kind === 'full') {
           if (result.scope === 'runner') return false;
           // Seen candidates are passed over for good in this claim; unvisited ones stay eligible for the next pass.
@@ -2402,7 +2685,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
         // Rolled back: the run stays queued for a runner it fits.
         if (error instanceof NotForThisRunner) continue;
         if (!(error instanceof AssemblyError)) throw error;
-        await recordFailure(candidate.id, error);
+        await recordFailure(candidate, error);
       }
     }
     return null;
@@ -2453,7 +2736,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       const agent = await findAgent(conn, run.agentId);
       return agent ? selectionFacts(conn, toRun(run), agent, false) : null;
     },
-    async claim(runner, free, tools, scan = createClaimScan()) {
+    async claim(runner, free, tools, scan = createClaimScan(), signal) {
       if (
         scan.remainingPages <= 0 ||
         runner.status !== 'online' ||
@@ -2468,7 +2751,9 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
       const pages = candidates(runner, scan);
       let queued: readonly RunRecord[] = [];
       while (payloads.length < limit) {
-        if ((await deps.slotsUsed(tx.read(), runner.id)) >= runner.slots) break;
+        const held = await deps.slotsHeld(tx.read(), runner.id);
+        if (held.runs + held.jobs >= runner.slots) break;
+        const pass: ClaimPass = { byTool: held.byTool ?? {}, signal };
         const full = new Set<string>();
         let payload: RunPayload | false | null;
         do {
@@ -2477,7 +2762,7 @@ export function createClaimService(deps: ClaimDeps): ClaimService {
             if (page.done) return payloads;
             queued = page.value;
           }
-          payload = await claimPage(runner, seen, reported, queued, full);
+          payload = await claimPage(runner, seen, reported, queued, full, pass);
           if (payload === false) return payloads;
           if (!payload) queued = [];
         } while (!payload);

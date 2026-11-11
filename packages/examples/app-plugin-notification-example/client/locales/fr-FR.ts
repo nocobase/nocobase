@@ -3,6 +3,32 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const frFR: LocaleResource<typeof enUS> = {
+  notificationTemplates: {
+    contributor: 'Exemples de notifications',
+    category: 'Tâches',
+    assigned: {
+      name: 'Tâche assignée',
+      trigger: 'Une tâche est créée.',
+      recipients:
+        "La personne assignée, même si elle s'est assigné la tâche elle-même.",
+    },
+    updated: {
+      name: 'Tâche mise à jour',
+      trigger: "Une tâche est modifiée, y compris lorsqu'elle est réassignée.",
+      recipients:
+        "Le créateur, l'ancienne personne assignée et la nouvelle, une fois chacun. La personne qui a fait la modification n'est pas notifiée.",
+    },
+    businessRule:
+      "Envoyé chaque fois que l'action sur la tâche a lieu. Aucun interrupteur séparé ne permet de le désactiver.",
+    languagePolicy:
+      'Toujours en anglais, quelle que soit la langue du destinataire.',
+    channel: 'Boîte de réception des tâches',
+    variables: {
+      title: 'Titre de la tâche',
+      description: 'Description de la tâche',
+      status: 'Statut de la tâche',
+    },
+  },
   navigation: {
     tasks: 'Exemples de notifications',
     taskManagement: 'Tâches',
@@ -46,7 +72,7 @@ const frFR: LocaleResource<typeof enUS> = {
       actions: 'Actions',
     },
     view: 'Afficher les détails',
-    refresh: 'Actualiser',
+    retryRead: 'Réessayer',
     previous: 'Précédent',
     next: 'Suivant',
     page: 'Page {{page}}',
@@ -65,7 +91,7 @@ const frFR: LocaleResource<typeof enUS> = {
     notificationHint:
       "Une fois qu'une tâche est enregistrée, les personnes concernées autres que l'éditeur actuel sont informées : le créateur et le destinataire actuel. Si le cessionnaire change, les cessionnaires précédents et les nouveaux en sont informés.",
     edit: 'Modifier la tâche',
-    refresh: 'Actualiser',
+    retryRead: 'Réessayer',
     save: 'Enregistrer les modifications',
     cancel: 'Annuler',
     back: 'Retour aux tâches',

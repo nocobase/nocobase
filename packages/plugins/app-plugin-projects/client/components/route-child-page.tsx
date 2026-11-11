@@ -1,4 +1,15 @@
-import { useEffect, useRef, type ReactElement, type ReactNode } from 'react';
+import {
+  RouteChildPageHostContext,
+  type RouteChildPageHostValue,
+} from '@nocobase/app-client/route-containers';
+import {
+  useContext,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  type ReactElement,
+  type ReactNode,
+} from 'react';
 
 import { cn } from 'cn';
 
@@ -24,7 +35,33 @@ export interface RouteChildPageProps {
  * as soon as the user had scrolled this page. Kept as siblings, both layers anchor to the content area, and the
  * DOM gains no level for each level of routing.
  */
-export function RouteChildPage({
+export function RouteChildPage(props: RouteChildPageProps): ReactElement {
+  const host = useContext(RouteChildPageHostContext);
+  if (host) return <HostedRouteChildPage host={host} {...props} />;
+  return <RouteChildPageLayer {...props} />;
+}
+
+// On a route that declares a `child-page` presentation the application has already opened the layer: the content
+// renders in it and `className` moves onto it, through the host context shared with the application's own copy.
+function HostedRouteChildPage({
+  host,
+  children,
+  className,
+}: RouteChildPageProps & {
+  readonly host: RouteChildPageHostValue;
+}): ReactElement {
+  useLayoutEffect(() => {
+    host.configure({ className });
+    return () => host.configure({});
+  }, [host, className]);
+  return (
+    <RouteChildPageHostContext.Provider value={null}>
+      {children}
+    </RouteChildPageHostContext.Provider>
+  );
+}
+
+function RouteChildPageLayer({
   children,
   className,
 }: RouteChildPageProps): ReactElement {

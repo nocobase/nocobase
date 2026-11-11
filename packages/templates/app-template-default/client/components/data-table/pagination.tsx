@@ -26,6 +26,8 @@ export interface DataTablePaginationProps<
   /** Hide the "n of m selected" summary for tables without row selection. */
   readonly showSelectedCount?: boolean;
   readonly disabled?: boolean;
+  /** The current query has no total yet: keep the controls' place but show no previous count. */
+  readonly countPending?: boolean;
 }
 
 const DEFAULT_PAGE_SIZE_OPTIONS: readonly number[] = [10, 20, 30, 40, 50];
@@ -40,6 +42,7 @@ export function DataTablePagination<TData>({
   pageSizeOptions = DEFAULT_PAGE_SIZE_OPTIONS,
   showSelectedCount = true,
   disabled = false,
+  countPending = false,
   className,
   ...props
 }: DataTablePaginationProps<TData>): ReactElement {
@@ -60,7 +63,13 @@ export function DataTablePagination<TData>({
       )}
       {...props}
     >
-      <div className='flex-1 text-sm text-muted-foreground'>
+      <div
+        className={cn(
+          'flex-1 text-sm text-muted-foreground',
+          countPending && 'invisible',
+        )}
+        aria-hidden={countPending || undefined}
+      >
         {showSelectedCount
           ? t('dataTable.selectedCount', {
               defaultValue: '{{selected}} of {{total}} row(s) selected.',
@@ -102,7 +111,13 @@ export function DataTablePagination<TData>({
             </SelectContent>
           </Select>
         </div>
-        <div className='shrink-0 text-sm font-medium whitespace-nowrap tabular-nums'>
+        <div
+          className={cn(
+            'shrink-0 text-sm font-medium whitespace-nowrap tabular-nums',
+            countPending && 'invisible',
+          )}
+          aria-hidden={countPending || undefined}
+        >
           {t('dataTable.pageOf', {
             defaultValue: 'Page {{page}} of {{pageCount}}',
             page: pageIndex + 1,

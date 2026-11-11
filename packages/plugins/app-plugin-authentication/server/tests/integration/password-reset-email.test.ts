@@ -4,10 +4,12 @@ import { afterEach, expect, it, vi } from 'vitest';
 import { createTestApp } from '@nocobase/app-testing/server';
 import { MailExecutions } from '@nocobase/mailer';
 import * as mailer from '@nocobase/mailer';
+import * as appMailers from '@nocobase/app-server/mailers';
+import { MailSenderFactory } from '@nocobase/app-server/mailers';
 import { Auth } from '../../auth.js';
+import { createPasswordResetSender } from '../../reset-sender.js';
 import { createStandaloneServer } from '../fixtures/reset-app/server/standalone.js';
 import { createAuthFixture } from './support.js';
-import { mailerToken } from '@nocobase/app-server/mailer';
 
 const email = {
   provider: 'resend',
@@ -15,11 +17,13 @@ const email = {
   from: 'sender@example.test',
 } as const;
 const fixtures: Awaited<ReturnType<typeof createAuthFixture>>[] = [];
+const callerOwnedSenders: Array<{ close(): Promise<void> }> = [];
 afterEach(async () => {
   for (const fixture of fixtures.splice(0)) {
     await fixture.auth.close();
     await fixture.dispose();
   }
+  for (const sender of callerOwnedSenders.splice(0)) await sender.close();
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
 });
@@ -41,11 +45,23 @@ it.each([undefined, false, true])(
     const warning = vi.fn();
     const fetch = vi.fn();
     vi.stubGlobal('fetch', fetch);
+    const selection = createPasswordResetSender(
+      new MailSenderFactory({ selected: email }),
+      {
+        email,
+        passwordReset: { enabled, mailer: 'selected', emailChannel: 'legacy' },
+        legacyChannels: { legacy: { ...email, apiKey: 'legacy-key' } },
+      },
+    );
+    if (!selection.sender) throw new Error('Expected a selected reset sender.');
+    callerOwnedSenders.push(selection.sender);
     const fixture = await setup({
       email,
-      passwordReset: { enabled, emailChannel: 'legacy' },
+      passwordReset: { enabled, mailer: 'selected', emailChannel: 'legacy' },
       emailAndPassword: { enabled: true, sendResetPassword: custom },
       passwordResetServices: {
+        sender: selection.sender,
+        legacySender: selection.legacy,
         warning,
         legacyChannels: { legacy: { ...email, apiKey: 'legacy-key' } },
       },
@@ -58,7 +74,7 @@ it.each([undefined, false, true])(
     expect(response.status).toBe(enabled === false ? 400 : 200);
     if (enabled !== false) {
       await vi.waitFor(() => expect(custom).toHaveBeenCalledOnce());
-      expect(warning).toHaveBeenCalledTimes(2);
+      expect(warning).toHaveBeenCalledTimes(3);
     } else expect(custom).not.toHaveBeenCalled();
     expect(fetch).not.toHaveBeenCalled();
     expect(JSON.stringify(warning.mock.calls)).not.toContain('synthetic-key');
@@ -89,7 +105,7 @@ it.each([undefined, false])(
 );
 
 it.each(
-  [false, true].flatMap((legacy) =>
+  [false, true, 'direct'].flatMap((legacy) =>
     (['accepted', 'failed', 'submission_unknown'] as const).map((result) => ({
       legacy,
       result,
@@ -117,11 +133,31 @@ it.each(
     const report = vi.fn();
     const warning = vi.fn();
     const executions = new MailExecutions();
+    const directFactory =
+      legacy === 'direct'
+        ? new MailSenderFactory({
+            default: 'fallback',
+            fallback: { ...email, apiKey: 'unselected-key' },
+            selected: email,
+          })
+        : undefined;
+    const resolveFactory = directFactory
+      ? vi.spyOn(appMailers, 'resolveMailSenderFactory')
+      : undefined;
+    const selection = directFactory
+      ? createPasswordResetSender(directFactory, {
+          passwordReset: { enabled: true, mailer: 'selected' },
+        })
+      : undefined;
+    if (selection && !selection.sender)
+      throw new Error('Expected a selected reset sender.');
+    if (selection?.sender) callerOwnedSenders.push(selection.sender);
     const fixture = await setup({
       ...(legacy ? {} : { email }),
       passwordReset: {
         enabled: true,
         emailChannel: 'legacy',
+        ...(legacy === 'direct' ? { mailer: 'selected' } : {}),
         template: (data) => ({
           to: data.user.email,
           subject: 'Application template',
@@ -130,12 +166,16 @@ it.each(
       },
       emailAndPassword: { enabled: true },
       passwordResetServices: {
+        ...(selection?.sender
+          ? { sender: selection.sender, legacySender: selection.legacy }
+          : {}),
         executions,
         report,
         warning,
         legacyChannels: { legacy: { ...email, apiKey: 'legacy-key' } },
       },
     });
+    if (resolveFactory) expect(resolveFactory).not.toHaveBeenCalled();
     await fixture.signUp();
     const response = await fixture.router.request(
       '/api/auth/request-password-reset',
@@ -150,15 +190,17 @@ it.each(
     await vi.waitFor(() => expect(fetch).toHaveBeenCalledOnce());
     await vi.waitFor(() => expect(executions.inFlight).toBe(0));
     expect(warning).toHaveBeenCalledWith(
-      legacy
-        ? expect.stringContaining('deprecated. Migrate to auth.email')
-        : 'auth.passwordReset.emailChannel is unused; auth.email takes precedence.',
+      legacy === 'direct'
+        ? 'auth.passwordReset.emailChannel is unused; auth.passwordReset.mailer takes precedence.'
+        : legacy
+          ? expect.stringContaining('deprecated. Migrate to mailers')
+          : 'auth.passwordReset.emailChannel is unused; auth.email takes precedence.',
     );
     expect(
       new Headers(fetch.mock.calls[0]![1].headers as HeadersInit).get(
         'authorization',
       ),
-    ).toBe(`Bearer ${legacy ? 'legacy-key' : 'synthetic-key'}`);
+    ).toBe(`Bearer ${legacy === true ? 'legacy-key' : 'synthetic-key'}`);
     expect(JSON.stringify(report.mock.calls)).not.toMatch(
       /synthetic-key|synthetic-private-provider-body/u,
     );
@@ -173,6 +215,42 @@ it.each(
           ? ['provider', 'request']
           : ['network', 'request'],
     );
+    if (legacy === 'direct' && result === 'accepted') {
+      const { text } = JSON.parse(fetch.mock.calls[0]![1].body as string) as {
+        text: string;
+      };
+      const token = text.match(/reset-password\/([A-Za-z0-9_-]+)/u)?.[1];
+      expect(token).toBeTruthy();
+      expect(
+        (
+          await fixture.router.request(
+            '/api/auth/reset-password',
+            json({ token, newPassword: 'replacement-password' }),
+          )
+        ).status,
+      ).toBe(200);
+      expect(
+        (
+          await fixture.router.request(
+            '/api/auth/reset-password',
+            json({ token, newPassword: 'another-password' }),
+          )
+        ).status,
+      ).toBe(400);
+      for (const [password, status] of [
+        ['replacement-password', 200],
+        ['correct horse battery staple', 401],
+      ] as const) {
+        expect(
+          (
+            await fixture.router.request(
+              '/api/auth/sign-in/email',
+              json({ email: 'alice@example.com', password }),
+            )
+          ).status,
+        ).toBe(status);
+      }
+    }
   },
 );
 
@@ -226,7 +304,7 @@ it('announces the legacy sender at startup without exposing channel names', asyn
   });
   expect(fixture.auth.passwordResetAvailable()).toBe(true);
   expect(warning).toHaveBeenCalledWith(
-    expect.stringContaining('deprecated. Migrate to auth.email'),
+    expect.stringContaining('deprecated. Migrate to mailers'),
   );
   expect(JSON.stringify(warning.mock.calls)).not.toContain(
     'synthetic-private-channel',
@@ -251,7 +329,6 @@ it.each([false, true])(
         : { auth: { email } },
     });
     try {
-      expect(app.application.container.has(mailerToken)).toBe(false);
       expect((await app.request('/authentication/capabilities')).status).toBe(
         200,
       );
@@ -500,7 +577,8 @@ it.each([false, true])(
       expect(send).toHaveBeenCalledOnce();
       expect(report).toHaveBeenCalledWith('capacity');
       const shutdown = fixture.auth.close();
-      expect(close).not.toHaveBeenCalled();
+      expect(fixture.auth.close()).toBe(shutdown);
+      expect(close).toHaveBeenCalledOnce();
       expect(executions.inFlight).toBe(1);
       completion.resolve({ status: 'accepted' });
       await shutdown;
@@ -554,3 +632,55 @@ it.each(['legacy', 'email', 'custom'] as const)(
     expect(create).not.toHaveBeenCalled();
   },
 );
+
+it('keeps the old standalone Auth call working: it owns its sender and connection bindings only borrow it', async () => {
+  const fetch = vi.fn(async () => Response.json({ id: 'synthetic-id' }));
+  vi.stubGlobal('fetch', fetch);
+  const create = vi.spyOn(mailer, 'createMailTransport');
+  // The fixture passes no mailer/source/container fields to Auth.
+  const fixture = await setup({ email, passwordReset: { enabled: true } });
+  await fixture.signUp();
+  expect(fixture.auth.passwordResetAvailable()).toBe(true);
+  await fixture.router.request(
+    '/api/auth/request-password-reset',
+    json({ email: 'alice@example.com' }),
+  );
+  await vi.waitFor(() => expect(fetch).toHaveBeenCalledOnce());
+  const close = vi.spyOn(create.mock.results[0]!.value, 'close');
+  const binding = fixture.auth.forConnection(fixture.connection);
+  await binding.close();
+  expect(close).not.toHaveBeenCalled();
+  await fixture.auth.close();
+  expect(close).toHaveBeenCalledOnce();
+});
+
+it('preserves the bounded shutdown wait for custom callbacks that ignore cancellation', async () => {
+  const completion = Promise.withResolvers<void>();
+  const executions = new MailExecutions(1);
+  const sender = vi.fn(() => completion.promise);
+  const report = vi.fn();
+  const fixture = await setup({
+    emailAndPassword: { enabled: true, sendResetPassword: sender },
+    passwordResetServices: { executions, report },
+  });
+  await fixture.signUp();
+  await fixture.router.request(
+    '/api/auth/request-password-reset',
+    json({ email: 'alice@example.com' }),
+  );
+  await vi.waitFor(() => expect(sender).toHaveBeenCalledOnce());
+  vi.useFakeTimers();
+  try {
+    const closed = fixture.auth.close();
+    expect(fixture.auth.close()).toBe(closed);
+    await vi.advanceTimersByTimeAsync(5001);
+    await closed;
+    expect(executions.inFlight).toBe(1);
+    expect(report).toHaveBeenCalledWith('shutdown_timeout');
+    completion.reject(new Error('Synthetic late callback failure.'));
+    await vi.waitFor(() => expect(report).toHaveBeenCalledWith('sender'));
+  } finally {
+    completion.resolve();
+    vi.useRealTimers();
+  }
+});

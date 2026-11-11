@@ -11,11 +11,11 @@ export interface BuildNpmrcOptions {
  * Two settings, for two different reasons.
  *
  * `@nocobase:registry` is written whenever the templates were fetched from somewhere other than the public npm,
- * because nothing else in a generated project records where NocoBase packages come from. This command passes its
- * registry to the one install it runs itself and that knowledge then evaporates: the next `pnpm add @nocobase/…` the
- * user runs — a database driver for another dialect, a plugin, an upgrade — resolves against the public npm and
+ * because nothing else in a generated project records where NocoBase packages come from. Without this scoped setting,
+ * both the initial install and later `pnpm add @nocobase/…` commands — a database driver, plugin or upgrade — resolve
+ * against the default registry and
  * fails with a 404 that says nothing about a registry. Scoped rather than global, so everything else still comes
- * from the public npm. It is omitted for the public registry so that an application generated after the packages are
+ * from the package manager’s configured default registry. It is omitted for the public registry so that an application generated after the packages are
  * published there does not carry a pin to a mirror it never needed.
  *
  * `strict-peer-dependencies=false` matches what this repository sets for itself. The templates carry the same line

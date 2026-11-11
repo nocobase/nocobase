@@ -1,5 +1,17 @@
 # @nocobase/acp-bridge
 
+## 1.0.0-beta.6
+
+### Patch Changes
+
+- 4f0370e: Keep agent settings available when agents return long display text or invalid choice identifiers, and show concrete discovery failures with field details.
+
+## 1.0.0-beta.5
+
+### Minor Changes
+
+- bfddb40: Add DeepSeek Harness as an ACP coding tool, with runner API-key detection, its CLI version, and full-access permissions.
+
 ## 1.0.0-beta.4
 
 ### Minor Changes

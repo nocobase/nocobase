@@ -352,7 +352,9 @@ export function PmRichTextEditor({
 
   // Accessible name and the listbox relation live on the contenteditable itself.
   useEffect(() => {
-    const dom = editor?.view.dom;
+    // Activity may reconnect this effect before useEditor replaces the editor destroyed while hidden.
+    if (!editor || editor.isDestroyed) return;
+    const dom = editor.view.dom;
     if (!dom) return;
     const set = (name: string, attribute: string | undefined): void => {
       if (attribute === undefined) dom.removeAttribute(name);

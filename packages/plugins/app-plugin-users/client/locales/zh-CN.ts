@@ -4,6 +4,26 @@ const zhCN: UsersResource = {
   page: {
     loading: '加载中',
   },
+  notificationTemplates: {
+    invitation: {
+      contributor: '用户',
+      category: '账号',
+      name: '用户邀请',
+      trigger: '管理员邀请成员或重新发送邀请，并选择通过邮件发送时。',
+      recipients: '被邀请的人，发送到为其填写的邮箱地址。',
+      businessRule:
+        '每次创建或重新发送邀请并选择邮件时都会发送，没有单独的开关可以关闭。',
+      languagePolicy: '邮件正文依次包含所有语言，邮件主题为英文。',
+      channel: '邀请邮件发件设置',
+      variables: {
+        app: '应用名称',
+        inviter: '发出邀请的人的名字',
+        items: '邀请授予的角色或权限',
+        date: '邀请的过期时间',
+        url: '接受邀请的链接；预览中使用虚构链接',
+      },
+    },
+  },
   accept: {
     title: '接受邀请',
     description: '{{inviter}} 邀请了你。',

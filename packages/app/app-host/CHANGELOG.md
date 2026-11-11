@@ -1,5 +1,51 @@
 # @nocobase/app-host
 
+## 0.1.0-beta.22
+
+### Patch Changes
+
+- 2d18eb2: Support named connection contributions with database/<connection> migration and seed directories, keeping legacy flat plugin tasks on the default connection. Support application-owned database task coordination and pending-task selection while retaining complete history validation. Expose the database task lease for module lifecycle operations, recognize scoped app-plugin and app-module packages in CLI registration, removal and Skills, preserve third-party dependency patches in standalone builds, and prevent explicitly stopped deployments from restarting on incoming traffic while retaining their backend resource cleanup. Pass the complete connection inventory through both startup and CLI coordination.
+- Updated dependencies [2d18eb2]
+- Updated dependencies [3642d82]
+  - @nocobase/app-server@5.0.0-beta.3
+
+## 0.1.0-beta.21
+
+### Patch Changes
+
+- fb4659d: Bound archive workers with execution deadlines and deployment cancellation, terminate stalled processes before cleaning candidate files, and allow queued deployments to continue after failures.
+- 8b82537: Admit preview applications by fixed capacity slots without rejecting transient heap usage, and force Host rotation through a single maximum-wait timer.
+- fb4659d: Use live memory headroom and serialized bounded cold starts instead of static application slots, and recycle shared Hosts under memory pressure with whole-Host busy protection, atomic ingress handoff, bounded request drain after the maximum wait, background recovery that keeps management available, one retry for capacity-rejected deployments, status-aware idle activity and retryable proxy responses during Host restart/recovery.
+- fb4659d: Default the extra system memory reserve to zero while retaining cold-start headroom and heap admission checks. Operators can still configure an explicit reserve for other processes.
+- fb4659d: Show who shares an App's app host: a section on the App page lists the Apps of every environment running, starting, waiting or failed on it, why each holds a slot or waits (requests, connections, always running, recent use; not enough memory, the active App limit, a pending host restart), the shared process's memory as one total, a pending or running host restart, and environments whose Apps could not be restored. App badges show a refused start as waiting for a free slot, memory or the host restart.
+- 437f24f: Show each shared app host once on the environments page as a capacity card — apps running against its limit, heap and process memory, restart state — linking to its running apps in the apps list (`GET /api/releases/hosts`, which needs the `rel.environments` `read` setting). The apps list shows each app's runtime state, with why on hover or a tap, and filters by environment and runtime state (`environmentId` and `runtimeState`, repeatable, applied before paging). An app's page says in one line why the host affects it — waiting for a slot or memory, not restored after the host restarted (`runtime.unrestored`), or the host restarting — instead of repeating the whole host. The App Host reports its `maxActiveApps` limit in its status counters.
+- Updated dependencies [fb4659d]
+- Updated dependencies [7d970d6]
+- Updated dependencies [bb1dff2]
+  - @nocobase/app-server@5.0.0-beta.2
+
+## 0.1.0-beta.20
+
+### Minor Changes
+
+- 9417357: Cancel deployments before switching, replace older queued deployments of the same application, show live queue positions, and isolate archive verification and extraction from the application Host process.
+
+### Patch Changes
+
+- 215795d: Keep active preview connections alive, suspend hidden tabs after ten minutes, limit shared applications by heap budget without reclaiming applications used in the last minute, and rotate busy hosts within a bounded wait.
+
+## 0.1.0-beta.19
+
+### Patch Changes
+
+- cf23bfe: **Breaking:** Remove the deprecated `@nocobase/app-server/mailer` entry and its `Mailer`, `mailerToken`, `createMailer`, `MailerProvider`, and notification configuration exports. Replace `MailExecutions.close(waitMs)` and `drain()` with `stop()` and `wait()`; transport `close()` now cancels supported network work and waits for its original completion without a nested timeout. Application owners must apply the outer shutdown budget. Create exclusive senders with `@nocobase/app-server/mailers` and declare notification config with `@nocobase/app-plugin-notification-providers/config`. Existing inline SMTP/Resend YAML, environment mappings, and provider/channel APIs remain supported.
+
+  Default and Examples now show `mailers.default: system` and explicitly map `MAILERS_SYSTEM_*`; the example configuration remains empty at runtime. The previous `MAILERS_TRANSACTIONAL_*` sample prefix was not published. Applications may still choose any valid mailer name and custom environment prefix.
+
+- Updated dependencies [cf23bfe]
+- Updated dependencies [4411984]
+  - @nocobase/app-server@5.0.0-beta.0
+
 ## 0.1.0-beta.18
 
 ### Patch Changes

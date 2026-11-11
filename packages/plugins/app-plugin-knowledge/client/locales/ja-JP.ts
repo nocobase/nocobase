@@ -153,6 +153,15 @@ const jaJP: LocaleResource<typeof enUS> = {
   },
   access: {
     businessSection: '知識',
+    settingsSection: '知識',
+    settings: {
+      indexing: {
+        title: 'ナレッジのインデックス',
+        read: '閲覧',
+        configure: '設定',
+        rebuild: '再構築',
+      },
+    },
     businesses: {
       knowledge: {
         title: '知識',
@@ -170,7 +179,7 @@ const jaJP: LocaleResource<typeof enUS> = {
           propose: {
             title: '知識の提案',
             description:
-              '編集者が決定できるように変更を提案します。どのようなエージェントが与えられるか',
+              '編集者が決定できるように変更を提案します。どのようなAgentsが与えられるか',
             related: '知識の提案（それに関わる空間）',
             relatedLabel: '私に関係のあるスペース',
             relatedHint:
@@ -322,7 +331,7 @@ const jaJP: LocaleResource<typeof enUS> = {
       statusHint: {
         parsing: 'テキストは抽出中です。準備ができたら、ファイルを検索します。',
         ready:
-          'そのテキストが抽出されるため、検索とエージェントはそれを読み取ります。',
+          'そのテキストが抽出されるため、検索とAgentsはそれを読み取ります。',
         failed: 'テキストを抽出できませんでした。',
         unsupported:
           'このタイプのファイルからはテキストが抽出されません。そのまま保管されています。',
@@ -406,7 +415,7 @@ const jaJP: LocaleResource<typeof enUS> = {
       archive: 'アーカイブ',
       archiveTitle: 'アーカイブ「{{title}}」？',
       archiveDescription:
-        'ツリーからもエージェントからも消える。後で復元できます。そのバージョンは保持されます。',
+        'ツリーからもAgentsからも消える。後で復元できます。そのバージョンは保持されます。',
       archivedToast: 'アーカイブされました。',
       restore: '復元',
       restoredToast: '復元されました。',
@@ -425,7 +434,7 @@ const jaJP: LocaleResource<typeof enUS> = {
       editing: '編集',
       proposing: '変更の提案',
       properties: 'プロパティ',
-      propertiesHint: 'エージェントとリンクがこの文書について読んだ内容。',
+      propertiesHint: 'Agentsとリンクがこの文書について読んだ内容。',
       nothingToPreview: 'プレビューするものはまだありません。',
       reasonPlaceholder: '誰が決めるのか、なぜこれを変更する必要があるのか',
       submitProposal: '提案を提出する',
@@ -433,9 +442,9 @@ const jaJP: LocaleResource<typeof enUS> = {
       title: 'タイトル',
       slug: 'ナメクジ',
       slugHint:
-        '小文字、数字、ハイフン。エージェントとリンクがどのように名前を付けるか。空白のままにすると、タイトルから作成されます。',
+        '小文字、数字、ハイフン。Agentsとリンクがどのように名前を付けるか。空白のままにすると、タイトルから作成されます。',
       summary: '概要',
-      summaryHint: 'エージェントは 1 行でインデックスを読み取ります。',
+      summaryHint: 'Agentsは 1 行でインデックスを読み取ります。',
       content: 'コンテンツ',
       contentPlaceholder: 'Markdown',
       write: '書き込み',

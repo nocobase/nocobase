@@ -1,7 +1,15 @@
 // `acp service install`: the service each system runs `acp start --service` from, at login and again after it fails.
-import { describe, expect, it } from 'vitest';
+import { afterAll, describe, expect, it, vi } from 'vitest';
 
-import { acpServicePlan, capture } from '../src/acp-service.ts';
+import { mkdirSync, writeFileSync } from 'node:fs';
+import path from 'node:path';
+import { tempDir, removeDir } from './helpers.ts';
+
+import {
+  acpServicePlan,
+  capture,
+  restartAcpServices,
+} from '../src/acp-service.ts';
 
 const base = {
   bin: 'demo',
@@ -132,5 +140,117 @@ describe('capture', () => {
       capture({ A: '1', B: '', C: undefined }, ['A', 'B', 'C', 'D']),
     ).toEqual({ A: '1' });
     expect(() => capture({ A: 'x\0y' }, ['A'])).toThrow(/NUL/u);
+  });
+});
+
+const scratch = tempDir('acp-restart-');
+afterAll(() => removeDir(scratch));
+
+describe('restartAcpServices', () => {
+  it.each(['darwin', 'linux'] as const)(
+    'restarts running profiles on %s and leaves stopped and unrelated services alone',
+    async (platform) => {
+      const home = path.join(scratch, platform);
+      const directory =
+        platform === 'darwin'
+          ? path.join(home, 'Library/LaunchAgents')
+          : path.join(home, '.config/systemd/user');
+      mkdirSync(directory, { recursive: true });
+      const prefix =
+        platform === 'darwin' ? 'com.nocobase.demo-acp' : 'demo-acp';
+      const extension = platform === 'darwin' ? '.plist' : '.service';
+      for (const suffix of ['', '-work', '-stopped', '-unloaded'])
+        writeFileSync(
+          path.join(directory, `${prefix}${suffix}${extension}`),
+          'saved definition',
+        );
+      writeFileSync(path.join(directory, `other-acp${extension}`), 'other CLI');
+      writeFileSync(
+        path.join(directory, `${prefix}extra${extension}`),
+        'different name',
+      );
+      const run = vi.fn(async (_command: string, args: string[]) => {
+        const label = args.at(-1)!;
+        if (args.includes('print')) {
+          if (label.endsWith('-unloaded'))
+            throw Object.assign(new Error('not loaded'), { code: 113 });
+          return {
+            stdout: label.endsWith('-stopped')
+              ? 'state = waiting\n'
+              : 'state = running\n',
+          };
+        }
+        if (args.includes('show'))
+          return {
+            stdout:
+              label.includes('-stopped') || label.includes('-unloaded')
+                ? 'inactive\n'
+                : 'active\n',
+          };
+        return { stdout: '' };
+      });
+      const result = await restartAcpServices('demo', {
+        platform,
+        home,
+        uid: 501,
+        run,
+      });
+      const labels = [`${prefix}-work`, prefix].map((label) =>
+        platform === 'linux' ? `${label}.service` : label,
+      );
+      expect(result).toEqual({ restarted: labels, warnings: [] });
+      const restarts = run.mock.calls.filter(
+        ([, args]) =>
+          args.includes('kickstart') || args.includes('try-restart'),
+      );
+      expect(restarts).toEqual(
+        labels.map((label) =>
+          platform === 'darwin'
+            ? ['launchctl', ['kickstart', '-k', `gui/501/${label}`]]
+            : ['systemctl', ['--user', 'try-restart', label]],
+        ),
+      );
+      expect(
+        run.mock.calls.every(([, args]) => args.at(-1)!.includes(prefix)),
+      ).toBe(true);
+    },
+  );
+
+  it('reports restart and inspection failures, then continues with the remaining profiles', async () => {
+    const home = path.join(scratch, 'failures');
+    const directory = path.join(home, 'Library/LaunchAgents');
+    mkdirSync(directory, { recursive: true });
+    for (const suffix of ['', '-work', '-stopped', '-unloaded'])
+      writeFileSync(
+        path.join(directory, `com.nocobase.demo-acp${suffix}.plist`),
+        'saved definition',
+      );
+    const run = vi.fn(async (_command: string, args: string[]) => {
+      if (args.includes('kickstart') || args.at(-1)!.endsWith('-stopped'))
+        throw new Error('service manager failed');
+      return { stdout: 'state = running\n' };
+    });
+    const result = await restartAcpServices('demo', {
+      platform: 'darwin',
+      home,
+      uid: 501,
+      run,
+    });
+    expect(result.restarted).toEqual([]);
+    expect(result.warnings).toHaveLength(4);
+    expect(result.warnings[0]).toContain('demo acp service restart');
+  });
+
+  it('does nothing without service files or on Windows', async () => {
+    const run = vi.fn();
+    for (const platform of ['darwin', 'linux', 'win32'] as const)
+      expect(
+        await restartAcpServices('demo', {
+          platform,
+          home: path.join(scratch, 'absent'),
+          run,
+        }),
+      ).toEqual({ restarted: [], warnings: [] });
+    expect(run).not.toHaveBeenCalled();
   });
 });

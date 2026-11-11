@@ -80,6 +80,8 @@ import {
 } from '../client/driver-forms/index.js';
 import EnvironmentPage from '../client/pages/environment-page.js';
 import EnvironmentsPage from '../client/pages/environments-page.js';
+import NewAppPage from '../client/pages/new-app-page.js';
+import { ReleasesPathsContext } from '../client/lib/paths.js';
 
 /** A driver form with a setting, a default, a virtual field and a credential, as a driver package would write it. */
 const remoteForm: DriverFormDescription = {
@@ -212,6 +214,11 @@ function serve(
       return Promise.resolve({ data: environments });
     if (options.path === 'releases/apps')
       return Promise.resolve({ data: apps, meta: { total: apps.length } });
+    if (options.path === 'releases/deploymentRequests')
+      return Promise.resolve({ data: [], meta: { total: 0 } });
+    // No environment here shares an app host (`shared-host-client.test.tsx` covers the block).
+    if (options.path === 'releases/hosts')
+      return Promise.resolve({ data: [], meta: { total: 0 } });
     if (options.path.endsWith('/declaredVariables'))
       return Promise.resolve({
         data: declared,
@@ -241,15 +248,21 @@ function serve(
   return sent;
 }
 
-/** The environments page, or with `path` one environment's page below it. */
+/** The environments page, or with `path` one environment's page below it, with Create App over it. */
 function renderPage(path = '/environments'): void {
   render(
     <MemoryRouter initialEntries={[path]}>
-      <Routes>
-        <Route path='/environments' element={<EnvironmentsPage />}>
-          <Route path=':environmentId' element={<EnvironmentPage />} />
-        </Route>
-      </Routes>
+      <ReleasesPathsContext.Provider
+        value={{ apps: '/releases', environments: '/environments' }}
+      >
+        <Routes>
+          <Route path='/environments' element={<EnvironmentsPage />}>
+            <Route path=':environmentId' element={<EnvironmentPage />}>
+              <Route path='apps/new' element={<NewAppPage />} />
+            </Route>
+          </Route>
+        </Routes>
+      </ReleasesPathsContext.Provider>
     </MemoryRouter>,
   );
 }
@@ -875,6 +888,209 @@ describe('environment page', () => {
         ),
       ).toBe(true),
     );
+  });
+
+  it('offers Create App over its apps, creating in this environment only', async () => {
+    serve([environment()], undefined, [], [], { apps: [app] });
+    renderPage('/environments/remote-1');
+    const create = await screen.findByRole('link', { name: 'Create app' });
+    expect(create).toHaveAttribute('href', '/environments/remote-1/apps/new');
+    fireEvent.click(create);
+    const dialog = await screen.findByRole('dialog');
+    // The page stays behind the dialog; the App goes to this environment, which cannot be changed.
+    expect(
+      screen.getByRole('heading', {
+        level: 1,
+        name: 'Remote one',
+        hidden: true,
+      }),
+    ).toBeInTheDocument();
+    const field = within(dialog).getByLabelText('Environment');
+    await waitFor(() => expect(field).toHaveValue('Remote one'));
+    expect(field).toBeDisabled();
+  });
+
+  it('pages through more apps than fit one page, from the first page again when the states change', async () => {
+    const sent = serve([environment()]);
+    const named = (id: string) =>
+      ({
+        ...app,
+        app: { ...app.app, id, name: id },
+      }) as AppSummary;
+    const base = mocks.request.getMockImplementation()!;
+    mocks.request.mockImplementation((options: Sent) => {
+      if (options.path !== 'releases/apps') return base(options);
+      sent.push(options);
+      // 101 Apps: the server cuts them into pages of 100.
+      return Promise.resolve({
+        data:
+          options.query?.page === 2 ? [named('app-101')] : [named('app-001')],
+        meta: { total: 101 },
+      });
+    });
+    renderPage('/environments/remote-1');
+    expect(await screen.findByText('Page 1 of 2')).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'Previous page' }),
+    ).toBeDisabled();
+    fireEvent.click(screen.getByRole('button', { name: 'Next page' }));
+    expect(
+      await screen.findByRole('link', { name: 'app-101' }),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Page 2 of 2')).toBeInTheDocument();
+    const appsQueries = () =>
+      sent
+        .filter((item) => item.path === 'releases/apps')
+        .map((item) => item.query);
+    expect(appsQueries().at(-1)).toMatchObject({
+      environmentId: 'remote-1',
+      page: 2,
+      pageSize: 100,
+    });
+    // Choosing states starts again at the first page.
+    await userEvent.click(screen.getByRole('button', { name: 'Any state' }));
+    await userEvent.click(
+      await screen.findByRole('menuitemcheckbox', { name: 'Running' }),
+    );
+    await waitFor(() =>
+      expect(appsQueries().at(-1)).toMatchObject({
+        page: 1,
+        runtimeState: ['running'],
+      }),
+    );
+  });
+
+  it('opens to app readers without the environments setting, for its apps only', async () => {
+    const permissions = allPermissions();
+    serve([environment()], undefined, [], [], {
+      apps: [app],
+      permissions: {
+        ...permissions,
+        settings: {
+          ...permissions.settings,
+          'rel.environments/read': false,
+          'rel.environments/manage': false,
+        },
+      },
+    });
+    renderPage('/environments/remote-1?tab=variables');
+    // They list and create its Apps; its variables and the connection check stay with the setting.
+    expect(
+      await screen.findByRole('link', { name: 'Shop' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('link', { name: 'Create app' }),
+    ).toBeInTheDocument();
+    expect(screen.getAllByRole('tab').map((tab) => tab.textContent)).toEqual([
+      'Overview',
+      'Settings',
+    ]);
+    expect(screen.queryByRole('button', { name: 'Check' })).toBeNull();
+  });
+
+  it('opens to environment readers without the Apps page, with no Apps section', async () => {
+    const permissions = allPermissions();
+    const sent = serve([environment()], undefined, [], [], {
+      apps: [app],
+      permissions: {
+        ...permissions,
+        pages: { ...permissions.pages, 'rel-apps': false },
+        settings: { ...permissions.settings, 'rel.environments/manage': false },
+      },
+    });
+    renderPage('/environments');
+    expect(
+      await screen.findByRole('link', { name: 'Remote one' }),
+    ).toBeInTheDocument();
+    cleanup();
+    renderPage('/environments/remote-1');
+    expect(
+      await screen.findByRole('button', { name: 'Check' }),
+    ).toBeInTheDocument();
+    expect(screen.getAllByRole('tab').map((tab) => tab.textContent)).toEqual([
+      'Overview',
+      'Variables',
+      'Settings',
+    ]);
+    // Its Apps are read from `/apps`, which needs the Apps page: neither the section nor Create App, nor the read.
+    expect(screen.queryByRole('link', { name: 'Shop' })).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Create app' })).toBeNull();
+    expect(sent.some((item) => item.path === 'releases/apps')).toBe(false);
+  });
+
+  it('offers Create App without the list to those who may create apps but view none', async () => {
+    const permissions = allPermissions();
+    const sent = serve([environment()], undefined, [], [], {
+      apps: [app],
+      permissions: {
+        ...permissions,
+        scopes: { ...permissions.scopes, 'rel.apps/view': 'none' },
+      },
+    });
+    renderPage('/environments/remote-1');
+    expect(
+      await screen.findByRole('link', { name: 'Create app' }),
+    ).toHaveAttribute('href', '/environments/remote-1/apps/new');
+    expect(screen.getByText('Apps')).toBeInTheDocument();
+    // No list: neither its rows, its filter nor the read of `/apps`.
+    expect(screen.queryByRole('link', { name: 'Shop' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Any state' })).toBeNull();
+    expect(sent.some((item) => item.path === 'releases/apps')).toBe(false);
+  });
+
+  it('opens the environments to app readers without the environments setting', async () => {
+    const permissions = allPermissions();
+    serve([environment()], undefined, [], [], {
+      apps: [app],
+      permissions: {
+        ...permissions,
+        settings: {
+          ...permissions.settings,
+          'rel.environments/read': false,
+          'rel.environments/manage': false,
+        },
+      },
+    });
+    renderPage('/environments');
+    expect(
+      await screen.findByRole('link', { name: 'Remote one' }),
+    ).toBeInTheDocument();
+  });
+
+  it('turns away those with neither the environments setting nor the Apps page, before reading anything', async () => {
+    const permissions = allPermissions();
+    const sent = serve([environment()], undefined, [], [], {
+      permissions: {
+        ...permissions,
+        pages: { ...permissions.pages, 'rel-apps': false },
+        settings: {
+          ...permissions.settings,
+          'rel.environments/read': false,
+          'rel.environments/manage': false,
+        },
+      },
+    });
+    renderPage('/environments/remote-1');
+    expect(
+      await screen.findByText('You do not have permission to do this.'),
+    ).toBeInTheDocument();
+    expect(sent.map((item) => item.path)).toEqual(['releases/me']);
+  });
+
+  it('offers no Create App to those who may not create apps', async () => {
+    const permissions = allPermissions();
+    serve([environment()], undefined, [], [], {
+      apps: [app],
+      permissions: {
+        ...permissions,
+        scopes: { ...permissions.scopes, 'rel.apps/create': 'none' },
+      },
+    });
+    renderPage('/environments/remote-1');
+    expect(
+      await screen.findByRole('link', { name: 'Shop' }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Create app' })).toBeNull();
   });
 
   it('is read-only for those who may not manage environments', async () => {

@@ -12,14 +12,15 @@ export type ActorType = string;
 /**
  * How a user reached the API when it was not the browser by hand: `cli` for the CLI's user mode, `api_key` for any
  * other API-key client, `agent` when an agent acted for the person (a conversation's direct write) or proposed the plan
- * they executed (`trace`). Recorded for traceability and shown on the timeline; never used to decide permissions.
+ * they executed (`trace`). Recorded for traceability and shown on the timeline; never grants a business action.
  */
 export type ActorVia = 'cli' | 'api_key' | 'agent';
 
 /**
  * What a change made through an agent or a plan records beside the person (`ActivityVia` in `shared/plans.ts`). The
- * ids are opaque to this plugin: it only looks the agent's display name up through the kinds registry (kind `agent`).
- * A plan nobody's agent proposed carries only `planId`.
+ * ids are opaque to this plugin. It looks the agent's display name up through the kinds registry (kind `agent`), and
+ * compares stored comment provenance to the authenticated run id to establish ownership. A plan nobody's agent
+ * proposed carries only `planId`.
  */
 export interface ActorTrace {
   readonly agentId?: string;

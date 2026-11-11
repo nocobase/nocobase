@@ -909,8 +909,21 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
     preferences.use('*', authentication.required());
     const preferenceService = () =>
       container.resolve(userPreferencesServiceToken);
-    const ownerOf = (context: { get(key: 'auth'): { user: { id: string } } }) =>
-      context.get('auth').user.id;
+    const ownerOf = (
+      context: { get(key: 'auth'): { user: { id: string } } },
+      expectedUserId?: string,
+    ) => {
+      const id = context.get('auth').user.id;
+      if (expectedUserId !== undefined && expectedUserId !== id) {
+        throw new ApiError({
+          status: 'ABORTED',
+          domain: 'users',
+          reason: 'USER_PREFERENCE_IDENTITY_CHANGED',
+          message: 'The signed-in account changed.',
+        });
+      }
+      return id;
+    };
     const preferenceErrors = {
       400: apiErrorResponse(
         400,
@@ -930,13 +943,32 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
           "The signed-in person's own preferences; a scoped or service-account API key is refused.",
         responses: {
           200: dataResponse(UserPreferencesSchema),
+          400: apiErrorResponse(400),
+          409: apiErrorResponse(
+            409,
+            'The authenticated user differs from expectedUserId (`USER_PREFERENCE_IDENTITY_CHANGED`).',
+          ),
           401: apiErrorResponse(401),
           500: apiErrorResponse(500),
         },
       }),
+      apiValidator(
+        'query',
+        z.object({
+          expectedUserId: z
+            .string()
+            .min(1)
+            .optional()
+            .describe(
+              'Refuse the read if the authenticated user changed before it reached the server.',
+            ),
+        }),
+      ),
       async (context) =>
         context.json({
-          data: await preferenceService().list(ownerOf(context)),
+          data: await preferenceService().list(
+            ownerOf(context, context.req.valid('query').expectedUserId),
+          ),
         }),
     );
     preferences.patch(
@@ -971,17 +1003,27 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
         summary: 'Set one of my preferences',
         operationId: 'usersSetMyPreference',
         ...cliRoute({ command: 'user preference set' }),
+        description:
+          'Set a preference for the signed-in person. expectedUserId optionally prevents writes queued under a previous account.',
         responses: {
           200: dataResponse(UserPreferenceSchema),
           ...preferenceErrors,
+          409: apiErrorResponse(
+            409,
+            'The authenticated user differs from expectedUserId (`USER_PREFERENCE_IDENTITY_CHANGED`).',
+          ),
         },
       }),
       apiValidator('param', PreferenceParams),
       apiValidator('json', PreferenceInput),
       async (context) => {
         const { key } = context.req.valid('param');
-        const { value } = context.req.valid('json');
-        await preferenceService().set(ownerOf(context), key, value);
+        const { value, expectedUserId } = context.req.valid('json');
+        await preferenceService().set(
+          ownerOf(context, expectedUserId),
+          key,
+          value,
+        );
         return context.json({ data: { value } });
       },
     );

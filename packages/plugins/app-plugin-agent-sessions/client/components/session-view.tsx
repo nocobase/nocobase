@@ -25,6 +25,7 @@ import {
   XIcon,
 } from 'lucide-react';
 import {
+  useContext,
   useEffect,
   useLayoutEffect,
   useMemo,
@@ -63,7 +64,11 @@ import {
   useTranscript,
   useUpdateSession,
 } from '../api.js';
-import { LinkOpenContext, useSessionSurface } from '../config.js';
+import {
+  AgentSessionsConfigContext,
+  LinkOpenContext,
+  useSessionSurface,
+} from '../config.js';
 import { NARROW_PX } from '../lib/size.js';
 import { valueName } from '../lib/choices.js';
 import { errorText, suggestionAction } from '../lib/errors.js';
@@ -159,7 +164,14 @@ export function SessionView({
   // An open record's panel takes the details' place beside the conversation.
   const showDetails = details && !panel.opened;
   return (
-    <LinkOpenContext.Provider value={panel.open}>
+    <LinkOpenContext.Provider
+      value={(link) => {
+        const opened = panel.open(link);
+        // A page overlay yields to the record view; desktop detail columns remain available on return.
+        if (opened && !surface.panel && !detailsBeside) setDetails(false);
+        return opened;
+      }}
+    >
       <div
         ref={viewportRef}
         className={cn(
@@ -537,6 +549,8 @@ function Header({
 }): ReactElement {
   const { t } = useTranslation();
   const surface = useSessionSurface();
+  const renderHeader = useContext(AgentSessionsConfigContext)?.renderHeader;
+  const navigate = useNavigate();
   const update = useUpdateSession(session.id);
   const [renaming, setRenaming] = useState(false);
   const [title, setTitle] = useState(session.title);
@@ -578,6 +592,27 @@ function Header({
       </DropdownMenuItem>
     </>
   );
+
+  if (renderHeader)
+    return (
+      <>
+        {renderHeader({
+          panel: surface.panel,
+          title: session.title,
+          session,
+          agentName: agentName(session, computer),
+          computerName: computer?.name ?? t('session.removedComputer'),
+          computerOnline: computer?.online ?? false,
+          onRename: (title) => update.mutate({ title: title.trim() || null }),
+          onBack: surface.onBack ?? (() => navigate('/agent-sessions')),
+          onNew: surface.onNew ?? (() => navigate('/agent-sessions?new')),
+          onToggleDetails,
+          details,
+          onArchive: () =>
+            update.mutate({ archived: session.archivedAt === null }),
+        })}
+      </>
+    );
 
   return (
     <header
@@ -976,7 +1011,7 @@ function Details({
               <LinkBar links={session.links} className='h-2.5 w-full' />
               <Legend session={session} nowrap />
             </div>
-            {/* One list, a row per record as the task lists draw them: the title with its status, the key below. */}
+            {/* One list, a row per record as the task lists draw them: the title on its own line, the key with its status below. */}
             <ul className='bg-card divide-y overflow-hidden rounded-lg border'>
               {session.links.map((link) => (
                 <li
@@ -989,22 +1024,24 @@ function Details({
                   }
                   className='flex flex-col gap-1 px-3 py-2 aria-[current=true]:bg-accent'
                 >
-                  <div className='flex min-w-0 items-center gap-2'>
-                    <LinkName
-                      link={link}
-                      title
-                      className='min-w-0 flex-1 truncate font-medium'
-                    />
-                    {link.status && (
-                      <span className='shrink-0'>
-                        <StatusPill status={link.status} compact />
-                      </span>
-                    )}
-                  </div>
-                  {link.key && (
-                    <span className='text-muted-foreground font-mono text-xs'>
-                      {link.key}
-                    </span>
+                  <LinkName
+                    link={link}
+                    title
+                    className='min-w-0 truncate font-medium'
+                  />
+                  {(link.key || link.status) && (
+                    <div className='flex min-w-0 items-center gap-2'>
+                      {link.key && (
+                        <span className='text-muted-foreground min-w-0 truncate font-mono text-xs'>
+                          {link.key}
+                        </span>
+                      )}
+                      {link.status && (
+                        <span className='ml-auto shrink-0'>
+                          <StatusPill status={link.status} compact />
+                        </span>
+                      )}
+                    </div>
                   )}
                   {link.startable && session.archivedAt === null && (
                     <div className='text-muted-foreground flex items-center gap-2 text-[11px]'>
@@ -1099,9 +1136,10 @@ function Details({
       </DetailSection>
       {(context || used) && (
         <DetailSection title={t('session.usage')}>
+          {/* The same usage as a Runner conversation's details: the window with a thin bar, then a row per count. */}
           {context && context.size > 0 && (
-            <>
-              <div className='flex justify-between text-xs'>
+            <div className='flex flex-col gap-1'>
+              <div className='flex items-baseline justify-between gap-2 text-xs'>
                 <span className='text-muted-foreground'>
                   {t('session.contextLabel')}
                 </span>
@@ -1111,48 +1149,56 @@ function Details({
                   {percent(context.used, context.size)}%
                 </span>
               </div>
-              <div className='bg-muted h-2 overflow-hidden rounded-full border'>
-                <div
-                  className='bg-primary h-full'
+              <span
+                className='bg-muted h-1.5 overflow-hidden rounded-full'
+                role='progressbar'
+                aria-label={t('session.contextLabel')}
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={Number(percent(context.used, context.size))}
+              >
+                <span
+                  className='bg-primary block h-full'
                   style={{
                     width: `${Math.min(100, (context.used / context.size) * 100)}%`,
                   }}
                 />
-              </div>
-            </>
-          )}
-          {used && (
-            <div className='grid grid-cols-3 gap-2'>
-              {(
-                [
-                  ['input', used.input],
-                  ['cached', used.cached],
-                  ['output', used.output],
-                ] as const
-              ).map(([name, count]) => (
-                <div
-                  key={name}
-                  className='bg-card rounded-md border px-2.5 py-2'
-                >
-                  <div className='text-muted-foreground text-[11px]'>
-                    {t(`session.tokens.${name}`)}
-                  </div>
-                  <div className='text-xs font-semibold tabular-nums'>
-                    {tokens(count, i18n.language)}
-                  </div>
-                </div>
-              ))}
+              </span>
             </div>
           )}
-          {context?.cost && (
-            <p className='text-muted-foreground text-xs'>
-              {t('session.cost', {
-                cost: new Intl.NumberFormat(i18n.language, {
-                  style: 'currency',
-                  currency: context.cost.currency,
-                }).format(context.cost.amount),
-              })}
-            </p>
+          {(used || context?.cost) && (
+            <dl className='grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-xs'>
+              {used &&
+                (
+                  [
+                    ['input', used.input],
+                    ['cached', used.cached],
+                    ['output', used.output],
+                  ] as const
+                ).map(([name, count]) => (
+                  <div key={name} className='contents'>
+                    <dt className='text-muted-foreground'>
+                      {t(`session.tokens.${name}`)}
+                    </dt>
+                    <dd className='text-right tabular-nums'>
+                      {new Intl.NumberFormat(i18n.language).format(count)}
+                    </dd>
+                  </div>
+                ))}
+              {context?.cost && (
+                <div className='contents'>
+                  <dt className='text-muted-foreground'>
+                    {t('session.costLabel')}
+                  </dt>
+                  <dd className='text-right tabular-nums'>
+                    {new Intl.NumberFormat(i18n.language, {
+                      style: 'currency',
+                      currency: context.cost.currency,
+                    }).format(context.cost.amount)}
+                  </dd>
+                </div>
+              )}
+            </dl>
           )}
         </DetailSection>
       )}

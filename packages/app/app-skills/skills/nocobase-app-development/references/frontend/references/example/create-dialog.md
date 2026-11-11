@@ -41,6 +41,8 @@ export default function NewProjectPage(): ReactElement {
       beforeClose={() => !submittingRef.current}
       footer={<NewProjectFooter submitting={submitting} />}
     >
+      {/* No dirty prop: ProjectForm's FeedbackForm reports its values and the saved ones, and the dialog asks
+          "Discard changes?" before every way out while they differ (T3.9, M7.4). */}
       <NewProjectBody onSubmittingChange={handleSubmittingChange} />
     </RouteDialog>
   );

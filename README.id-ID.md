@@ -1,14 +1,15 @@
-# NocoBase 3
-
-> Branch ini berisi NocoBase 3. Jika Anda mencari platform no-code NocoBase 2, kunjungi [NocoBase 2](https://nocode.nocobase.com/).
-
 [English](./README.md) | [Español](./README.es-ES.md) | [Français](./README.fr-FR.md) | [Deutsch](./README.de-DE.md) | [Português](./README.pt-BR.md) | [Русский](./README.ru-RU.md) | Bahasa Indonesia | [Tiếng Việt](./README.vi-VN.md) | [简体中文](./README.zh-CN.md) | [繁體中文](./README.zh-TW.md) | [日本語](./README.ja-JP.md) | [한국어](./README.ko-KR.md)
 
-**Bangun sistem bisnis yang andal**
+[▶ Tonton demo](https://static-docs.nocobase.com/nocobase-3-id.mp4)
+
+<p align="center">
+<a href="https://trendshift.io/repositories/4112" target="_blank"><img src="https://trendshift.io/api/badge/repositories/4112" alt="nocobase%2Fnocobase | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
+<a href="https://www.producthunt.com/posts/nocobase?embed=true&utm_source=badge-top-post-topic-badge&utm_medium=badge&utm_souce=badge-nocobase" target="_blank"><img src="https://api.producthunt.com/widgets/embed-image/v1/top-post-topic-badge.svg?post_id=456520&theme=light&period=weekly&topic_id=267" alt="NocoBase - Scalability&#0045;first&#0044;&#0032;open&#0045;source&#0032;no&#0045;code&#0032;platform | Product Hunt" style="width: 250px; height: 54px;" width="250" height="54" /></a>
+</p>
+
+## Apa itu NocoBase
 
 NocoBase adalah platform open source untuk membangun, menjalankan, dan terus mengembangkan sistem bisnis dengan AI. Agen menulis kode dan mengerjakan tugas, NocoBase menyediakan fondasi dan tata kelola, dan manusia yang mengambil keputusan.
-
-[▶ Tonton demo](https://static-docs.nocobase.com/nocobase-3-id.mp4)
 
 [Situs web](https://www.nocobase.com/id-ID/) · [Dokumentasi](https://docs.nocobase.com/) · [Mulai cepat](#quick-start) · [Komunitas](https://forum.nocobase.com/)
 

@@ -90,7 +90,10 @@ describe('@nocobase/app-plugin-notification provider', () => {
     const provider = new NotificationProvider({
       config: configSections({
         notification: { channels: {}, jobs: 'deliveries' },
-        jobs: { default: 'memory', deliveries: { adapter: 'memory' } },
+        jobs: {
+          default: 'memory',
+          backends: { deliveries: { adapter: 'memory' } },
+        },
       }),
       container,
     });
@@ -110,7 +113,10 @@ describe('@nocobase/app-plugin-notification provider', () => {
       const provider = new NotificationProvider({
         config: configSections({
           notification: { channels: {}, jobs: name },
-          jobs: { default: 'memory', memory: { adapter: 'memory' } },
+          jobs: {
+            default: 'memory',
+            backends: { memory: { adapter: 'memory' } },
+          },
         }),
         container,
       });

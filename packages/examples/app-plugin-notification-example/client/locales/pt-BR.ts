@@ -3,6 +3,31 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const ptBR: LocaleResource<typeof enUS> = {
+  notificationTemplates: {
+    contributor: 'Exemplos de notificação',
+    category: 'Tarefas',
+    assigned: {
+      name: 'Tarefa atribuída',
+      trigger: 'Uma tarefa é criada.',
+      recipients: 'O responsável, mesmo quando atribuiu a tarefa a si mesmo.',
+    },
+    updated: {
+      name: 'Tarefa atualizada',
+      trigger: 'Uma tarefa é alterada, inclusive quando é reatribuída.',
+      recipients:
+        'O criador, o responsável anterior e o novo responsável, uma vez cada. Quem fez a alteração não é notificado.',
+    },
+    businessRule:
+      'Enviado sempre que a ação da tarefa acontece. Não há uma opção separada para desativá-lo.',
+    languagePolicy:
+      'Sempre em inglês, qualquer que seja o idioma do destinatário.',
+    channel: 'Caixa de tarefas',
+    variables: {
+      title: 'Título da tarefa',
+      description: 'Descrição da tarefa',
+      status: 'Status da tarefa',
+    },
+  },
   navigation: {
     tasks: 'Exemplos de notificação',
     taskManagement: 'Tarefas',
@@ -46,7 +71,7 @@ const ptBR: LocaleResource<typeof enUS> = {
       actions: 'Ações',
     },
     view: 'Ver detalhes',
-    refresh: 'Atualizar',
+    retryRead: 'Tentar novamente',
     previous: 'Anterior',
     next: 'Próximo',
     page: 'Página {{page}}',
@@ -65,7 +90,7 @@ const ptBR: LocaleResource<typeof enUS> = {
     notificationHint:
       'Depois que uma tarefa é salva, as pessoas relacionadas que não sejam o editor atual são notificadas: o criador e o responsável atual. Se o destinatário mudar, tanto o destinatário anterior quanto o novo serão notificados.',
     edit: 'Editar tarefa',
-    refresh: 'Atualizar',
+    retryRead: 'Tentar novamente',
     save: 'Salvar alterações',
     cancel: 'Cancelar',
     back: 'Voltar às tarefas',

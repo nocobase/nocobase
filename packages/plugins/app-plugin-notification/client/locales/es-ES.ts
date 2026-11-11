@@ -3,6 +3,57 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const esES: LocaleResource<typeof enUS> = {
+  templates: {
+    title: 'Plantillas de notificación',
+    coverage:
+      'Notificaciones que el sistema envía automáticamente y su aspecto. Es posible que no aparezcan las notificaciones enviadas por flujos de trabajo o código personalizado. Esta página es de solo lectura.',
+    filters: 'Filtrar plantillas',
+    search: 'Buscar plantillas',
+    category: 'Categoría',
+    channel: 'Canal',
+    all: 'Todas',
+    details: 'Detalles de la plantilla',
+    close: 'Cerrar',
+    providedBy: 'Proporcionada por {{name}}',
+    trigger: 'Cuándo se envía',
+    recipients: 'Quién la recibe',
+    businessRule: 'Condiciones de envío',
+    languagePolicy: 'Idioma',
+    combined:
+      'Un mismo mensaje incluye todos los idiomas ({{languages}}). Todos los destinatarios reciben el mismo contenido.',
+    singleLocale: 'Se envía solo en {{language}}.',
+    status: 'Canales de envío',
+    statusHelp:
+      'Indica si cada canal está configurado. No prueba la conexión ni confirma que los mensajes se entreguen.',
+    configured: 'Configurado',
+    unconfigured: 'Sin configurar',
+    enabled: 'Activado',
+    disabled: 'Desactivado',
+    variables: 'Variables',
+    variablesHelp:
+      'Marcadores que se sustituyen por valores reales al enviar la notificación.',
+    language: 'Idioma',
+    synthetic:
+      'Usa datos de ejemplo ficticios. La vista previa nunca envía notificaciones.',
+    definition: 'Plantilla con variables',
+    preview: 'Vista previa',
+    html: 'Versión HTML (mostrada como código)',
+    technical: 'Detalles técnicos',
+    templateId: 'ID de plantilla',
+    package: 'Paquete',
+    channelNames: 'Nombres de canal',
+    channelTypes: {
+      inApp: 'Mensaje en la aplicación',
+      email: 'Correo electrónico',
+    },
+    loading: 'Cargando…',
+    failed: 'No se pudieron cargar las plantillas.',
+    forbidden: 'No tienes permiso para ver las plantillas de notificación.',
+    notFound: 'Esta plantilla ya no existe.',
+    retry: 'Reintentar',
+    empty: 'Todavía no hay plantillas de notificación.',
+    noResults: 'Ninguna plantilla coincide con estos filtros.',
+  },
   logs: {
     deliveryOperations: 'Operaciones de entrega',
     recipeDescription:

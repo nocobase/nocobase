@@ -15,8 +15,11 @@ export const pagePermissionTitles: PagePermissionTitles = {
   'customer-contacts-new-contact': 'customerContacts.newContact',
   'customer-contacts-edit-contact': 'customerContacts.editContact',
   'skill-projects-new': 'skillProjects.create',
+  'skill-projects-detail-edit': 'skillProjects.edit',
   'skill-projects-edit': 'skillProjects.edit',
   'runtimes-connect': 'onlineAgent.connectRuntime',
   'skills-new': 'onlineAgent.newSkill',
   'skills-detail': 'onlineAgent.skillDetail',
+  // The template detail drawer shares the list page grant.
+  notificationTemplate: 'settings.notificationTemplates',
 };

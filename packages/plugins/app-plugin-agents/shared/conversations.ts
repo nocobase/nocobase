@@ -8,6 +8,7 @@
  * Internal SDK envelopes, tool payloads and provider metadata never enter this public DTO.
  */
 import type { QuotaLocation } from './quota.js';
+import type { RunWait } from './runs.js';
 
 import type {
   OutputBlock,
@@ -367,8 +368,29 @@ export interface ConversationLink {
 export const CONVERSATION_LINK_KIND_PATTERN: RegExp =
   /^[a-z][a-zA-Z0-9_-]{0,63}$/u;
 
+/** One recipient's bounded view, updated only when the owner shares again. */
+export interface ConversationShare {
+  readonly userId: string;
+  readonly name: string | null;
+  readonly cutoffSeq: number;
+  readonly snapshotAt: string;
+  readonly updatedAt: string;
+}
+export interface ConversationShareCandidate {
+  readonly id: string;
+  readonly name: string;
+}
+
 /** One conversation as the panel opens it. */
 export interface ConversationDetail extends ConversationSummary {
+  /** Present only for a recipient: never mount execution, input or live subscriptions. */
+  readonly snapshot?: {
+    readonly cutoffSeq: number;
+    readonly snapshotAt: string;
+  };
+
+  /** Diagnosed only for the latest queued, unclaimed Runner turn, on the existing detail read. */
+  readonly wait?: RunWait | null;
   /** Saved per-conversation preference; null uses the current Agent default. */
   readonly effort?: string | null;
   readonly availability: ChatAvailability;
@@ -806,10 +828,27 @@ export interface ChatAgent {
   readonly personalOnly: boolean;
 }
 
-/** The person's own chat settings ("Profile › Agent"). */
+/**
+ * Which kind of runner a person's runs go to first: `auto`, whichever fits and asks first; `personal`, their own
+ * runners; `team`, the runners shared with the team. Only a preference: the other kind takes the run about a second
+ * later when the preferred kind has no room, is offline or cannot run it.
+ */
+export const RUNNER_PREFERENCES = ['auto', 'personal', 'team'] as const;
+export type RunnerPreference = (typeof RUNNER_PREFERENCES)[number];
+
+/** A stored preference's reading: anything but `personal` or `team` (null when none is chosen) is `auto`. */
+export function toRunnerPreference(
+  value: string | null | undefined,
+): RunnerPreference {
+  return value === 'personal' || value === 'team' ? value : 'auto';
+}
+
+/** The person's own chat and agent settings ("Profile › Agent"). */
 export interface ChatPreferences {
   /** New conversations go to this agent while the person may wake it; null: the system default. */
   readonly defaultAgentId: string | null;
+  /** Which kind of runner their runs queued from now on go to first. */
+  readonly runnerPreference: RunnerPreference;
 }
 
 export type ChatPreferencesPatch = Partial<ChatPreferences>;

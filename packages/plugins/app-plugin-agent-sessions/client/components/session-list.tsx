@@ -235,7 +235,7 @@ function FullSessionList({
               <ArrowLeftIcon />
             </Button>
           )}
-          {ListHeading && !surface.panel && !archived ? (
+          {ListHeading && !archived ? (
             <div className='min-w-0 flex-1'>
               <ListHeading />
             </div>
@@ -483,15 +483,6 @@ function SessionRow({
         </span>
       )}
       <div className='text-muted-foreground flex min-w-0 items-center gap-1.5 text-xs'>
-        {facts.group && (
-          <span
-            className='text-foreground max-w-[30%] truncate font-medium'
-            title={facts.group}
-          >
-            {facts.group}
-          </span>
-        )}
-        {facts.group && <span aria-hidden>·</span>}
         <span className='truncate'>
           {session.links.length > 0
             ? t('links.count', { count: session.links.length })

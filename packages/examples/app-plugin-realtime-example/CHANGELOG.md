@@ -1,5 +1,51 @@
 # @nocobase/app-plugin-realtime-example
 
+## 0.1.0-beta.16
+
+### Patch Changes
+
+- 8be5180: Reduce mobile page padding consistently across application templates and plugin pages while preserving tablet and desktop spacing.
+- Updated dependencies [8be5180]
+  - @nocobase/app-plugin-notification-example@1.0.0-beta.16
+  - @nocobase/app-plugin-authentication@2.0.0-beta.20
+  - @nocobase/app-plugin-notification-in-app@2.0.0-beta.3
+
+## 0.1.0-beta.15
+
+### Patch Changes
+
+- 7c25f88: Preinstall task progress in both application templates with its translations, show an unknown amount of progress as a faint full-width bar instead of a segment that reads as a fraction done, synchronize the published customer contacts Skill example with its source, and document the standard recipe for a new business list page.
+- 7c25f88: Show long operations honestly: uploads show a delayed indeterminate wait with a long-wait note, real cancel and retry, and abort when the page closes; background jobs and exports show real progress or an indeterminate bar instead of an invented 0%, keep failures recoverable, say they continue after leaving the page and show where the result is.
+- 7c25f88: Keep upload and task waits accessible: the File example upload button keeps an accessible name while uploading, loading statuses in the Jobs and Realtime examples are announced from outside their busy regions with a long-wait note, and each uploading file in the file upload field uses one display timer pair with its summary announced outside the busy drop zone.
+- Updated dependencies [3d28bff]
+- Updated dependencies [7c25f88]
+- Updated dependencies [7c25f88]
+- Updated dependencies [7c25f88]
+- Updated dependencies [215795d]
+  - @nocobase/app-plugin-notification-example@1.0.0-beta.15
+  - @nocobase/app-client@4.0.0-beta.9
+  - @nocobase/app-plugin-authentication@2.0.0-beta.19
+
+## 0.1.0-beta.14
+
+### Patch Changes
+
+- cf23bfe: **Breaking:** Remove the deprecated `@nocobase/app-server/mailer` entry and its `Mailer`, `mailerToken`, `createMailer`, `MailerProvider`, and notification configuration exports. Replace `MailExecutions.close(waitMs)` and `drain()` with `stop()` and `wait()`; transport `close()` now cancels supported network work and waits for its original completion without a nested timeout. Application owners must apply the outer shutdown budget. Create exclusive senders with `@nocobase/app-server/mailers` and declare notification config with `@nocobase/app-plugin-notification-providers/config`. Existing inline SMTP/Resend YAML, environment mappings, and provider/channel APIs remain supported.
+
+  Default and Examples now show `mailers.default: system` and explicitly map `MAILERS_SYSTEM_*`; the example configuration remains empty at runtime. The previous `MAILERS_TRANSACTIONAL_*` sample prefix was not published. Applications may still choose any valid mailer name and custom environment prefix.
+
+- Updated dependencies [6cc8acf]
+- Updated dependencies [9933a9a]
+- Updated dependencies [1e018f1]
+- Updated dependencies [cf23bfe]
+- Updated dependencies [4411984]
+  - @nocobase/app-client@4.0.0-beta.7
+  - @nocobase/app-plugin-authentication@2.0.0-beta.18
+  - @nocobase/db@1.0.0-beta.25
+  - @nocobase/app-server@5.0.0-beta.0
+  - @nocobase/app-plugin-notification-example@1.0.0-beta.13
+  - @nocobase/app-plugin-notification-in-app@2.0.0-beta.2
+
 ## 0.1.0-beta.13
 
 ### Patch Changes

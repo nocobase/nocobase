@@ -142,13 +142,20 @@ export type {
   AppClientServiceProviders,
   AppClientRouteIcon,
   AppClientRouteNavigation,
+  AppClientRoutePresentation,
+  AppClientRoutePresentationKind,
   ClientServiceProviderConstructor,
   ClientServiceProviderContext,
   ResolvedAppClientContributions,
 } from './plugins.js';
 
 export { NavigationGuardProvider } from './navigation-guard-provider.js';
-export { useNavigationGuard } from './navigation-guard.js';
+export {
+  NavigationGuardContext,
+  useNavigationGuard,
+  type NavigationAttempt,
+  type NavigationGuard,
+} from './navigation-guard.js';
 
 export {
   useRealtimeTopic,
@@ -193,3 +200,21 @@ export {
   type FormFeedbackViolation,
   type FormFeedbackOptions,
 } from './form-feedback.js';
+export {
+  AppLocalePreferenceContext,
+  type AppLocalePreference,
+} from './locale-preference.js';
+export {
+  usePendingFeedback,
+  type PendingFeedback,
+} from './pending-feedback.js';
+export {
+  RouteChildPageHostContext,
+  RouteOverlayContext,
+  RouteOverlayHostContext,
+  type RouteChildPageHostConfig,
+  type RouteChildPageHostValue,
+  type RouteOverlayContextValue,
+  type RouteOverlayHostConfig,
+  type RouteOverlayHostValue,
+} from './route-containers.js';

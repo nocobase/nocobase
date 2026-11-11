@@ -77,7 +77,11 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
           ? { keyScope: authz.identity.keyScope }
           : {}),
         run: run
-          ? { subjectKind: run.subjectKind, subjectId: run.subjectId }
+          ? {
+              id: run.id,
+              subjectKind: run.subjectKind,
+              subjectId: run.subjectId,
+            }
           : null,
         can: (item, action) =>
           authz.can({ resource: { type: 'settings', id: item }, action }),
@@ -121,7 +125,7 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
       caller,
     );
 
-    // Only owner-checked conversation list/get/update accept OnlineAgent; not Run or other scoped identities.
+    // Owner checks remain required when the application admits another issued credential.
     const personOrOnlineAgent: MiddlewareHandler<AdminEnv> = every(
       authentication.required({ scopedKeys: true }),
       (async (context, next) => {
@@ -129,6 +133,13 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
         if (
           auth &&
           auth.credential?.type !== ONLINE_AGENT_CREDENTIAL &&
+          !(
+            auth.credential &&
+            (await authentication.credentialRouteDecision(
+              context,
+              auth.credential,
+            )) === true
+          ) &&
           (await authentication.isScopedSession(auth, context.req.raw))
         )
           throw new ApiError({

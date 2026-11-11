@@ -30,37 +30,36 @@ const frFR: LocaleResource<typeof enUS> = {
       stageActionSkipped: 'a sauté une action sur scène',
       stageActionSuppressed:
         "suppression d'une action de scène (trop de courses)",
-      stageActionBlocked:
-        "j'ai sauté une action d'étape : le problème est en attente",
-      workBlocked:
-        "n'a pas commencé à fonctionner : le problème est en attente",
-      workDormant:
-        "n'a pas commencé à fonctionner alors que le problème est en cours",
+      stageActionBlocked: 'a ignoré une action d’étape : la tâche attend',
+      workBlocked: 'n’a pas commencé le travail : la tâche attend',
+      workDormant: 'n’a pas commencé le travail tant que la tâche est dans',
       workLimited:
-        "n'a pas démarré : les commentaires des agents ont atteint la limite d'exécution du problème",
+        'n’a pas commencé le travail : les commentaires des Agents ont atteint la limite d’exécutions de la tâche',
       workWithdrawn:
-        "a retiré son travail en file d'attente : le problème est maintenant en attente",
+        'a retiré son travail en file d’attente : la tâche attend désormais',
       stageActionFailed: "n'a pas pu exécuter une règle de statut",
-      created: 'a créé le problème',
+      created: 'a créé la tâche',
       datesChanged: 'a changé les dates',
-      deleted: 'a supprimé le problème',
+      deleted: 'a supprimé la tâche',
       descriptionChanged: 'a modifié la description',
-      executorChanged: "a changé l'exécuteur testamentaire",
-      executorRemoved: "L'exécuteur {{name}} a été supprimé.",
+      executorChanged: 'a changé l’exécutant',
+      executorRemoved: 'l’exécutant {{name}} a été retiré',
       labelsChanged: 'a changé les étiquettes',
       ownerChanged: 'a changé de propriétaire',
-      parentChanged: 'a modifié le problème parent',
+      parentChanged: 'a changé la tâche parente',
       priorityChanged: 'a changé la priorité',
-      projectChanged: 'a déplacé le problème vers un autre projet',
-      restored: 'a restauré le problème',
+      projectChanged: 'a déplacé la tâche vers un autre projet',
+      restored: 'a restauré la tâche',
       statusChanged: 'a changé le statut',
-      titleChanged: 'a renommé le problème',
-      updated: 'a mis à jour le problème',
-      subtaskAdded: 'a ajouté le sous-problème',
+      titleChanged: 'a renommé la tâche',
+      updated: 'a mis à jour la tâche',
+      subtaskAdded: 'a ajouté la sous-tâche',
       dependencyAdded: 'a ajouté la dépendance sur',
       dependencyRemoved: 'a supprimé la dépendance sur',
+      relationAdded: 'a ajouté une relation avec',
+      relationRemoved: 'a supprimé la relation avec',
       stageChanged: 'a changé la scène',
-      autoMoveSkipped: "n'a pas pu déplacer le problème automatiquement vers",
+      autoMoveSkipped: 'n’a pas pu déplacer automatiquement la tâche vers',
     },
     afterEvent: '(automatiquement, sur « {{event}} »)',
     empty: "Aucune activité pour l'instant.",
@@ -82,16 +81,16 @@ const frFR: LocaleResource<typeof enUS> = {
       cancel: 'Déplacement annulé.',
       end: 'Supprimé sur {{status}}.',
       instructions:
-        'Appuyez sur Espace ou Entrée pour récupérer un problème, utilisez les touches fléchées pour le déplacer vers un autre état, puis appuyez à nouveau sur Espace ou Entrée pour le supprimer, ou sur Échap pour annuler.',
+        'Appuyez sur Espace ou Entrée pour saisir une tâche, utilisez les flèches pour la déplacer vers un autre statut, puis appuyez de nouveau sur Espace ou Entrée pour la déposer, ou sur Échap pour annuler.',
       over: 'Sur {{status}}.',
       start: 'Récupéré {{identifier}}.',
     },
     boardView: 'Conseil',
-    cardRole: 'Problème de déplacement',
+    cardRole: 'Tâche déplaçable',
     closeDenied:
       'Seul le propriétaire, le chef de projet ou un administrateur peut fermer {{identifier}}.',
-    emptyColumn: 'Aucun problème',
-    label: "Comité d'émission",
+    emptyColumn: 'Aucune tâche',
+    label: 'Tableau des tâches',
     listView: 'Liste',
     moveRejected: '{{identifier}} ne peut pas passer à cet état.',
     viewLabel: 'Afficher',
@@ -189,11 +188,11 @@ const frFR: LocaleResource<typeof enUS> = {
       created: 'Libellé "{{name}}" créé',
       delete: "Supprimer l'étiquette",
       deleteDescription:
-        'Il est supprimé de chaque numéro qui en contient. Cela ne peut pas être annulé.',
+        'Elle est retirée de toutes les tâches qui la portent. Cette action est irréversible.',
       deleteTitle: 'Supprimer l\'étiquette "{{name}}" ?',
       deleted: 'Libellé "{{name}}" supprimé',
-      description: 'Libellé les problèmes de groupe dans tous les projets.',
-      emptyDescription: 'Créez une étiquette pour regrouper les problèmes.',
+      description: 'Les étiquettes regroupent les tâches de plusieurs projets.',
+      emptyDescription: 'Créez une étiquette pour regrouper des tâches.',
       emptyNoAccess: 'Demandez à un administrateur de créer des étiquettes.',
       emptyTitle: "Pas encore d'étiquette",
       loadFailed: 'Impossible de charger les étiquettes',
@@ -208,7 +207,8 @@ const frFR: LocaleResource<typeof enUS> = {
     },
   },
   configPage: {
-    description: "Membres, rôles, labels et préfixe d'émission des projets.",
+    description:
+      'Membres, rôles, étiquettes et préfixe des tâches des projets.',
     noAccess: 'Rien à configurer ici',
     noAccessDescription:
       "Vos rôles n'incluent aucun paramètre de projet. Demandez à un propriétaire ou à un administrateur si vous en avez besoin.",
@@ -253,12 +253,12 @@ const frFR: LocaleResource<typeof enUS> = {
     GRANT_NOT_ALLOWED:
       'Un rôle contient uniquement les pages, paramètres et actions de ce plugin.',
     INVALID_DATE: "La date n'est pas valide.",
-    INVALID_EXECUTOR: 'Cet exécuteur ne peut pas être choisi.',
+    INVALID_EXECUTOR: 'Cet exécutant ne peut pas être choisi.',
     INVALID_INVITATION: 'Vérifiez les adresses e-mail.',
     INVALID_LABEL: 'Une étiquette n’existe plus.',
     INVALID_LEAD: 'Le lead doit être un membre actif.',
     INVALID_OWNER: 'Le propriétaire doit être un membre actif.',
-    INVALID_PARENT: 'Le problème parent ne peut pas être utilisé.',
+    INVALID_PARENT: 'La tâche parente ne peut pas être utilisée.',
     INVALID_PREFIX:
       'Utilisez 1 à 10 lettres majuscules et chiffres, en commençant par une lettre.',
     INVALID_PROJECT: "Le projet n'existe pas.",
@@ -272,7 +272,7 @@ const frFR: LocaleResource<typeof enUS> = {
       'Le dernier propriétaire ne peut pas perdre son rôle de propriétaire.',
     LEAD_MEMBER:
       'Choisir un autre chef de projet avant de supprimer ce membre.',
-    OWNER_REQUIRED: 'Un problème a besoin d’un propriétaire.',
+    OWNER_REQUIRED: 'Une tâche doit avoir un responsable.',
     REVISION_CONFLICT:
       "Quelqu'un a changé cela entre-temps. La dernière version est affichée ; appliquez à nouveau votre modification.",
     REVISION_REQUIRED: 'La page est obsolète. Rechargez et réessayez.',
@@ -282,20 +282,20 @@ const frFR: LocaleResource<typeof enUS> = {
     ROLE_NOT_EDITABLE:
       'Le rôle de propriétaire détient tout ; il ne peut pas être modifié.',
     TRANSITION_NOT_ALLOWED:
-      'Vous ne pouvez pas déplacer le problème vers ce statut.',
+      'Vous ne pouvez pas déplacer la tâche vers ce statut.',
     UNKNOWN_ROLE: "Le rôle n'existe plus.",
     USER_DISABLED: 'Un compte désactivé ne peut pas se voir attribuer un rôle.',
     DEPENDENCY_CYCLE: 'Cette dépendance créerait un cycle.',
     DEPENDENCY_CHANGED: 'La relation a changé. Rechargez et réessayez.',
     DEPENDENCY_GRAPH_CHANGED:
-      'Les dépendances des problèmes ont été modifiées. Rechargez et réessayez.',
+      'Les dépendances des tâches ont changé. Rechargez et réessayez.',
     DEPENDENCY_EXISTS: 'Cette dépendance existe déjà.',
     DEPENDENCY_TOO_DEEP: 'La chaîne de dépendances est trop longue.',
-    INVALID_DEPENDENCY: 'Cette question ne peut pas être une dépendance ici.',
+    INVALID_DEPENDENCY: 'Cette tâche ne peut pas être une dépendance ici.',
     INVALID_STAGE:
       'Entrez un nombre entier compris entre 0 et 1 000 ou laissez-le vide.',
-    ISSUE_BLOCKED: 'Le problème attend toujours les problèmes qui le bloquent.',
-    SUBTASKS_OPEN: "Terminez ou annulez d'abord ses sous-numéros.",
+    ISSUE_BLOCKED: 'La tâche attend encore les tâches qui la bloquent.',
+    SUBTASKS_OPEN: 'Terminez ou annulez d’abord ses sous-tâches.',
     PLAN_INVALID: 'Certains changements du plan ne sont pas adoptés.',
     PLAN_NOT_OPEN: "Le plan n'attend plus de décision.",
     PLAN_EXPIRED: 'Le plan a expiré.',
@@ -310,21 +310,20 @@ const frFR: LocaleResource<typeof enUS> = {
     FILES_UNAVAILABLE: 'Cette application ne stocke aucun fichier.',
   },
   dependencies: {
-    add: 'Ajouter un problème bloquant',
+    add: 'Ajouter une tâche bloquante',
     added: 'Dépendance ajoutée.',
-    addPlaceholder: 'Rechercher des problèmes à ajouter en tant que bloqueur',
+    addPlaceholder: 'Rechercher des tâches à ajouter comme bloquantes',
     blockedBy: 'Bloqué par',
     blocks: 'Blocs',
-    hidden_one:
-      '{{count}} présente un autre problème de blocage que vous ne pouvez pas voir.',
+    hidden_one: '{{count}} autre tâche bloquante que vous ne pouvez pas voir.',
     hidden_other:
-      '{{count}} présente davantage de problèmes de blocage que vous ne pouvez pas voir.',
+      '{{count}} autres tâches bloquantes que vous ne pouvez pas voir.',
     related: 'Connexes',
     remove: 'Supprimer {{identifier}}',
     removed: 'Dépendance supprimée.',
     title: 'Dépendances',
     hidden_many:
-      '{{count}} présente davantage de problèmes de blocage que vous ne pouvez pas voir.',
+      '{{count}} autres tâches bloquantes que vous ne pouvez pas voir.',
   },
   executor: {
     busy_one: '{{count}} en cours',
@@ -336,9 +335,9 @@ const frFR: LocaleResource<typeof enUS> = {
   filters: {
     allLabels: 'Toutes les étiquettes',
     allProjects: 'Tous les projets',
-    anyExecutor: 'Tout exécuteur testamentaire',
+    anyExecutor: 'Tout exécutant',
     anyOwner: 'Tout propriétaire',
-    executor: 'Filtrer par exécuteur',
+    executor: 'Filtrer par exécutant',
     label: 'Filtrer par étiquette',
     owner: 'Filtrer par propriétaire',
     project: 'Filtrer par projet',
@@ -401,18 +400,18 @@ const frFR: LocaleResource<typeof enUS> = {
     title: 'Invitations en attente',
   },
   issue: {
-    backToList: 'Retour aux numéros',
-    delete: 'Supprimer le problème',
+    backToList: 'Retour aux tâches',
+    delete: 'Supprimer la tâche',
     deleteDescription:
       'Il disparaît des listes et des recherches. Un administrateur peut le restaurer.',
     deleteTitle: 'Supprimer {{identifier}} ?',
     deleted: '{{identifier}} supprimé.',
     editDescription: 'Modifier la description',
     editTitle: 'Modifier le titre',
-    conflict: 'Ce problème a changé lors du rechargement.',
-    loadFailed: 'Impossible de charger ce problème',
+    conflict: 'Cette tâche a changé, rechargement.',
+    loadFailed: 'Impossible de charger cette tâche',
     noDescription: 'Aucune description.',
-    parent: 'Sous-numéro de',
+    parent: 'Sous-tâche de',
   },
   issueAdd: {
     dependency: 'Bloqueur',
@@ -420,7 +419,7 @@ const frFR: LocaleResource<typeof enUS> = {
     none: 'aucun',
   },
   issuePicker: {
-    empty: 'Aucun problème de correspondance',
+    empty: 'Aucune tâche correspondante',
     placeholder: 'Recherche par titre ou identifiant',
   },
   issueForm: {
@@ -428,14 +427,14 @@ const frFR: LocaleResource<typeof enUS> = {
     descriptionLabel: 'Description',
     descriptionPlaceholder: 'Markdown est pris en charge.',
     noProject: 'Aucun projet',
-    ownerHint: "La personne responsable du dossier. Par défaut, c'est vous.",
+    ownerHint: 'La personne responsable de la tâche. Par défaut, vous.',
     startLabel: 'Quand commencer',
     startNow: 'Commencez maintenant',
     startNowHint:
       'Le chef de projet commence tout de suite à organiser le tout.',
     startLater: 'Plus tard',
     startLaterHint:
-      'Il attend dans le Backlog ; démarrez-le à partir de la page du problème.',
+      'Elle attend dans le Backlog ; démarrez-la depuis la page de la tâche.',
     createAndStart: 'Créer et démarrer',
     projectLabel: 'Projet',
     titleLabel: 'Titre',
@@ -444,7 +443,7 @@ const frFR: LocaleResource<typeof enUS> = {
   issues: {
     allStatuses: 'Tous les statuts',
     columns: {
-      executor: 'Exécuteur testamentaire',
+      executor: 'Exécutant',
       identifier: "pièce d'identité",
       owner: 'Responsable',
       priority: 'Priorité',
@@ -453,22 +452,22 @@ const frFR: LocaleResource<typeof enUS> = {
       updated: 'Mis à jour',
     },
     agentsDescription:
-      'Travail pour les personnes et les agents de codage. Attribuez un agent comme exécuteur pour démarrer une exécution.',
+      'Du travail pour les personnes et les Agents de développement. Désignez un Agent comme exécutant pour lancer une exécution.',
     agentsEmptyDescription:
-      'Créez un dossier et choisissez un agent comme exécuteur testamentaire pour lui confier le travail.',
+      'Créez une tâche et choisissez un Agent comme exécutant pour lui confier le travail.',
     description:
       "Tout ce sur quoi travaille l'équipe, sous forme de tableau ou de liste.",
-    emptyDescription: "Créez un problème et choisissez qui l'exécute.",
-    emptyTitle: "Aucun problème pour l'instant",
-    loadFailed: 'Impossible de charger les problèmes',
-    new: 'Nouveau numéro',
-    noResults: 'Aucun problème de correspondance.',
+    emptyDescription: 'Créez une tâche et choisissez qui l’exécute.',
+    emptyTitle: 'Aucune tâche pour l’instant',
+    loadFailed: 'Impossible de charger les tâches',
+    new: 'Nouvelle tâche',
+    noResults: 'Aucune tâche correspondante.',
     restore: 'Restaurer',
     restored: '{{identifier}} restauré.',
-    searchLabel: 'Problèmes de recherche',
+    searchLabel: 'Rechercher des tâches',
     searchPlaceholder: 'Recherche par titre ou identifiant',
     statusFilterLabel: 'Filtrer par statut',
-    title: 'Tickets',
+    title: 'Tâches',
   },
   labelColors: {
     for: 'Couleur de {{name}}',
@@ -493,26 +492,26 @@ const frFR: LocaleResource<typeof enUS> = {
   },
   myIssues: {
     description:
-      'Les questions dont vous êtes responsable et les questions sur lesquelles vous travaillez vous-même.',
+      'Les tâches dont vous êtes responsable et celles que vous exécutez vous-même.',
     empty: {
-      executing: "Vous n'exécutez aucun problème",
-      owned: "Vous n'êtes propriétaire d'aucun problème",
+      executing: 'Vous n’exécutez aucune tâche',
+      owned: 'Vous n’êtes responsable d’aucune tâche',
     },
     emptyDescription:
-      'Les problèmes qui vous sont assignés apparaissent ici. Créez-en un ou choisissez-en un dans la liste des problèmes.',
+      'Les tâches qui vous sont attribuées apparaissent ici. Créez-en une ou prenez-en une dans la liste des tâches.',
     tabs: {
       executing: "J'exécute",
       owned: 'Je possède',
     },
-    tabsLabel: 'Mes problèmes vues',
-    title: 'Mes problèmes',
+    tabsLabel: 'Vues de Mes tâches',
+    title: 'Mes tâches',
   },
   nav: {
     general: 'Général',
-    issues: 'Tickets',
+    issues: 'Tâches',
     labels: 'Etiquettes',
     members: 'Membres',
-    myIssues: 'Mes problèmes',
+    myIssues: 'Mes tâches',
     projects: 'Projets',
     roles: 'Rôles',
     settings: 'Paramètres',
@@ -523,7 +522,7 @@ const frFR: LocaleResource<typeof enUS> = {
       manual: 'Manuel',
     },
     tabsLabel: 'Façons de créer',
-    title: 'Nouveau numéro',
+    title: 'Nouvelle tâche',
   },
   pagination: {
     countMore: '{{count}}+',
@@ -540,7 +539,7 @@ const frFR: LocaleResource<typeof enUS> = {
   projectForm: {
     created: 'Projet {{name}} créé',
     description:
-      "Les problématiques des groupes Projects et les référentiels qu'elles concernent.",
+      'Les projets regroupent les tâches et les dépôts qui les concernent.',
     descriptionHint:
       'Ce que tous ceux qui travaillent sur ce projet devraient savoir.',
     descriptionPlaceholder: 'De quoi parle ce projet.',
@@ -567,24 +566,24 @@ const frFR: LocaleResource<typeof enUS> = {
   projectMore: {
     delete: 'Supprimer le projet',
     deleteDescription:
-      "Le projet, ses membres et ses référentiels sont supprimés. Ses enjeux restent et n'appartiennent plus à un projet.",
+      'Le projet, ses membres et ses dépôts sont supprimés. Ses tâches sont conservées et n’appartiennent plus à aucun projet.',
     deleteTitle: 'Supprimer {{name}} ?',
     deleted: 'Projet {{name}} supprimé',
     label: "Plus d'actions du projet",
   },
   projectPage: {
     distribution: 'Par statut',
-    noIssues: "Aucun problème pour l'instant.",
+    noIssues: 'Aucune tâche pour l’instant.',
     numbers: 'Chiffres clés',
-    openInList: 'Ouvrir dans la liste des problèmes',
+    openInList: 'Ouvrir dans la liste des tâches',
     stats: {
       done: 'Terminé',
       review: 'En révision',
       started: 'En cours',
-      total: 'Tickets',
+      total: 'Tâches',
     },
     tabs: {
-      issues: 'Tickets',
+      issues: 'Tâches',
       label: 'Sections du projet',
       overview: 'Aperçu',
     },
@@ -608,12 +607,12 @@ const frFR: LocaleResource<typeof enUS> = {
       status: 'Statut',
     },
     description:
-      'Regroupez les problèmes, liez leurs référentiels et suivez les progrès.',
+      'Regroupez les tâches, liez leurs dépôts et suivez l’avancement.',
     descriptionLabel: 'Description',
     detailLoadFailed: 'Impossible de charger ce projet',
     editDescription: 'Modifier la description',
     emptyDescription:
-      "Créer un projet pour regrouper les problématiques et relier les référentiels qu'ils concernent.",
+      'Créez un projet pour regrouper des tâches et lier les dépôts qui les concernent.',
     emptyNoAccess: 'Demandez à un administrateur de créer un projet.',
     emptyTitle: "Aucun projet pour l'instant",
     loadFailed: 'Impossible de charger les projets',
@@ -622,7 +621,7 @@ const frFR: LocaleResource<typeof enUS> = {
     noLead: 'Pas de piste',
     noResults: 'Aucun projet ne correspond.',
     notFound: "Ce projet n'existe pas ou vous ne pouvez pas le voir.",
-    progressLabel: 'Problèmes {{done}} ou {{total}} résolus',
+    progressLabel: '{{done}} tâches terminées sur {{total}}',
     search: 'Rechercher des projets',
     sidePanel: 'Détails du projet',
     title: 'Projets',
@@ -633,7 +632,7 @@ const frFR: LocaleResource<typeof enUS> = {
     visibilityHint: {
       everyone: "Chaque membre de l'espace de travail peut voir ce projet.",
       members:
-        "Seuls les membres du projet et les administrateurs de l'espace de travail peuvent voir ce projet et ses problèmes.",
+        'Seuls les membres du projet et les administrateurs de l’espace de travail peuvent voir ce projet et ses tâches.',
     },
     visibilityLabel: 'Visibilité',
   },
@@ -641,7 +640,7 @@ const frFR: LocaleResource<typeof enUS> = {
     assignToMe: 'Attribuez-moi',
     created: 'Créé',
     details: 'Détails',
-    executor: 'Exécuteur testamentaire',
+    executor: 'Exécutant',
     labels: 'Etiquettes',
     owner: 'Responsable',
     priority: 'Priorité',
@@ -677,7 +676,7 @@ const frFR: LocaleResource<typeof enUS> = {
     empty: 'Aucun référentiel ou répertoire attaché.',
     initPrompt: "Invite d'initialisation",
     initPromptHint:
-      "Facultatif. Des instructions simples qu'un agent suit la première fois qu'il travaille ici pour une tâche, avant qu'elle ne démarre. Ce n'est pas un script : il n'exécute rien tout seul.",
+      "Facultatif. Des instructions simples qu'un Agent suit la première fois qu'il travaille ici pour une tâche, avant qu'elle ne démarre. Ce n'est pas un script : il n'exécute rien tout seul.",
     initPromptPlaceholder:
       'Exécutez pnpm install, puis copiez .env.example dans .env.',
     initPromptTooLong: "L'invite d'initialisation est trop longue.",
@@ -742,28 +741,28 @@ const frFR: LocaleResource<typeof enUS> = {
     abilities: {
       issues: {
         changeOwner: {
-          hint: "Confier un problème à quelqu'un d'autre pour qu'il en soit responsable",
+          hint: 'Confier une tâche à une autre personne qui en devient responsable',
           title: 'Changer le propriétaire',
         },
         close: {
-          hint: 'Marquer un problème comme terminé ou annulé',
-          title: 'Fermer les problèmes',
+          hint: 'Marquer une tâche comme terminée ou annulée',
+          title: 'Clore des tâches',
         },
         create: {
-          hint: 'Créer des tickets, dans un projet ou seul',
-          title: 'Créer des problèmes',
+          hint: 'Créer des tâches, dans un projet ou indépendantes',
+          title: 'Créer des tâches',
         },
         delete: {
-          hint: 'Supprimer les problèmes et restaurer ceux supprimés',
-          title: 'Supprimer et restaurer les problèmes',
+          hint: 'Supprimer des tâches et restaurer celles supprimées',
+          title: 'Supprimer et restaurer des tâches',
         },
         edit: {
-          hint: 'Titre, description, priorité, dates, étiquettes, exécuteurs testamentaires et statuts ouverts',
-          title: 'Modifier les problèmes',
+          hint: 'Titre, description, priorité, dates, étiquettes, exécutants et statuts ouverts',
+          title: 'Modifier des tâches',
         },
         view: {
-          hint: 'Voir les problèmes dans les listes, les tableaux et leurs détails',
-          title: 'Afficher les problèmes',
+          hint: 'Voir les tâches dans les listes, les tableaux et leurs détails',
+          title: 'Voir les tâches',
         },
       },
       projects: {
@@ -788,7 +787,7 @@ const frFR: LocaleResource<typeof enUS> = {
     capabilities: {
       general: {
         read: 'Voir les paramètres généraux',
-        update: 'Modifier le préfixe du problème',
+        update: 'Modifier le préfixe des tâches',
       },
       labels: {
         read: 'Voir les étiquettes',
@@ -833,7 +832,7 @@ const frFR: LocaleResource<typeof enUS> = {
     holders: 'Détenu par {{count}}',
     legend: {
       issues:
-        "Les visibles : les problèmes sans projet et les problèmes dans les projets qu'ils peuvent voir. Ceux qu’ils dirigent ou possèdent : les problèmes qu’ils possèdent et les problèmes liés aux projets qu’ils dirigent. Tout : chaque problème.",
+        'Visibles : tâches sans projet et tâches des projets qu’ils peuvent voir. Qu’ils dirigent ou dont ils sont responsables : leurs tâches et les tâches des projets qu’ils dirigent. Toutes : chaque tâche.',
       projects:
         'Les visibles : les projets publics et privés auxquels ils ont adhéré. Ceux qu’ils dirigent ou possèdent : les projets qu’ils mènent. Tout : chaque projet.',
     },
@@ -845,7 +844,7 @@ const frFR: LocaleResource<typeof enUS> = {
     },
     loadFailed: 'Impossible de charger les rôles',
     modules: {
-      issues: 'Tickets',
+      issues: 'Tâches',
       projects: 'Projets',
       settings: 'Paramètres',
     },
@@ -868,21 +867,21 @@ const frFR: LocaleResource<typeof enUS> = {
     member: 'Membre',
   },
   search: {
-    description: 'Rechercher des numéros par titre ou identifiant.',
-    hint: 'Tapez pour rechercher des problèmes.',
-    issues: 'Tickets',
-    noResults: 'Aucun problème de correspondance.',
+    description: 'Rechercher des tâches par titre ou identifiant.',
+    hint: 'Saisissez du texte pour rechercher des tâches.',
+    issues: 'Tâches',
+    noResults: 'Aucune tâche correspondante.',
     placeholder: 'Recherche par titre ou identifiant…',
-    title: 'Problèmes de recherche',
+    title: 'Rechercher des tâches',
     trigger: 'Rechercher',
   },
   settingsPage: {
     general: {
-      prefix: "Préfixe de l'identifiant du problème",
+      prefix: 'Préfixe des identifiants de tâches',
       prefixHint:
-        'Les nouveaux numéros sont numérotés comme {{example}}. Les problèmes existants conservent leurs identifiants.',
+        'Les nouvelles tâches sont numérotées comme {{example}}. Les tâches existantes conservent leur identifiant.',
       saved: 'Paramètres enregistrés.',
-      title: 'Identificateurs de problèmes',
+      title: 'Identifiants des tâches',
     },
     readOnly:
       'Lecture seule : vous pouvez visualiser ceci, mais pas le modifier.',
@@ -890,18 +889,18 @@ const frFR: LocaleResource<typeof enUS> = {
   },
   subtasks: {
     aiIntro:
-      "AI lit ce numéro et rédige ses sous-numéros. Vous révisez et modifiez les brouillons ; rien n'est créé jusqu'à ce que vous confirmiez.",
+      'L’IA lit cette tâche et rédige ses sous-tâches. Vous relisez et modifiez les brouillons ; rien n’est créé avant votre confirmation.',
     blockedByHint:
       'Il ne démarrera pas tant que ces opérations ne seront pas terminées ou annulées.',
     blockedByLabel: 'Attend',
-    blockedByPlaceholder: 'Choisir les sous-problèmes frères et sœurs',
-    count_one: 'Sous-problème {{count}}',
-    count_other: 'Sous-problèmes {{count}}',
-    new: 'Nouveau sous-numéro',
+    blockedByPlaceholder: 'Choisir des sous-tâches sœurs',
+    count_one: '{{count}} sous-tâche',
+    count_other: '{{count}} sous-tâches',
+    new: 'Nouvelle sous-tâche',
     newDescription:
-      "Les sous-problèmes d'une étape ultérieure ne démarrent qu'une fois chaque étape antérieure terminée.",
-    newTitle: 'Nouveau sous-numéro',
-    noSiblings: "Aucun autre sous-problème pour l'instant.",
+      'Les sous-tâches d’une étape ultérieure ne commencent qu’une fois toutes les étapes précédentes terminées.',
+    newTitle: 'Nouvelle sous-tâche',
+    noSiblings: 'Aucune autre sous-tâche pour l’instant.',
     noStage: "Pas d'étape",
     stage: 'Étape {{stage}}',
     stageHint: 'Facultatif. Les étages inférieurs fonctionnent en premier.',
@@ -912,10 +911,10 @@ const frFR: LocaleResource<typeof enUS> = {
       ai: "Panne de l'IA",
       manual: 'Manuel',
     },
-    title: 'Sous-questions',
+    title: 'Sous-tâches',
     waiting_one: 'En attente de {{count}}',
     waiting_other: 'En attente de {{count}}',
-    count_many: 'Sous-problèmes {{count}}',
+    count_many: '{{count}} sous-tâches',
     waiting_many: 'En attente de {{count}}',
   },
   states: {
@@ -929,7 +928,7 @@ const frFR: LocaleResource<typeof enUS> = {
   },
   status: {
     analysis: 'Analyse',
-    backlog: 'Arriéré',
+    backlog: 'Backlog',
     blocked: 'Bloqué',
     cancelled: 'Annulé',
     done: 'Terminé',
@@ -945,16 +944,16 @@ const frFR: LocaleResource<typeof enUS> = {
     reason: {
       commenter: 'a commenté',
       creator: "l'a créé",
-      executor: 'exécuteur testamentaire',
+      executor: 'exécutant',
       manual: 'abonné',
       mentioned: 'mentionné',
       owner: 'propriétaire',
     },
     subscribe: 'Abonnez-vous',
-    subscribed: 'Vous serez informé de ce problème.',
+    subscribed: 'Vous serez notifié au sujet de cette tâche.',
     title: 'Participants et abonnés',
     unsubscribe: 'Se désabonner',
-    unsubscribed: 'Vous ne serez plus informé de ce problème.',
+    unsubscribed: 'Vous ne serez plus notifié au sujet de cette tâche.',
     label_many: 'Abonnés à {{count}}',
   },
   threads: {
@@ -974,7 +973,7 @@ const frFR: LocaleResource<typeof enUS> = {
     loadFailed: 'Impossible de charger le plan',
     notFound: "Le plan n'existe pas, ou il ne vous appartient pas de le voir.",
     open: 'Ouvrir le plan',
-    backToList: 'Retour aux numéros',
+    backToList: 'Retour aux tâches',
     source: {
       intake: "De l'admission",
       conversation: "Extrait d'une conversation",
@@ -1005,14 +1004,14 @@ const frFR: LocaleResource<typeof enUS> = {
     edit: 'Modifier',
     doneEditing: 'Terminé',
     execute: 'Exécuter',
-    createIssues_one: 'Créer un problème {{count}}',
-    createIssues_other: 'Créer des problèmes {{count}}',
+    createIssues_one: 'Créer {{count}} tâche',
+    createIssues_other: 'Créer {{count}} tâches',
     retry: 'Vérifiez à nouveau',
     void: 'Vide',
     undo: 'Annuler',
     executed: 'Le plan a été exécuté.',
-    executedIssues_one: 'Problème {{count}} créé.',
-    executedIssues_other: 'Problèmes {{count}} créés.',
+    executedIssues_one: '{{count}} tâche créée.',
+    executedIssues_other: '{{count}} tâches créées.',
     executeFailed: "Le plan n'a pas été exécuté ; rien n'a changé.",
     staleNotice:
       "Quelque chose que ce plan change a été modifié par quelqu'un d'autre après avoir été vérifié. Rien n'a été appliqué ; vérifiez-le à nouveau pour l'exécuter avec les valeurs actuelles.",
@@ -1041,7 +1040,7 @@ const frFR: LocaleResource<typeof enUS> = {
       failed: "Impossible de vérifier ce que ferait l'annulation.",
       confirm: 'Annuler',
       ops: {
-        'issue.retract': 'Supprimer le problème {{target}}',
+        'issue.retract': 'Supprimer la tâche {{target}}',
         'comment.retract': 'Supprimer le commentaire sur {{target}}',
         'project.retract': 'Supprimer le projet {{target}}',
         dependency: 'Annuler le changement de dépendance sur {{target}}',
@@ -1076,33 +1075,33 @@ const frFR: LocaleResource<typeof enUS> = {
     wakeSkip: {
       deferred: 'pas encore',
       denied: 'ils ne peuvent pas y travailler',
-      blocked: 'le problème est bloqué',
-      dormant: 'le problème est en retard',
+      blocked: 'la tâche est bloquée',
+      dormant: 'la tâche est dans le Backlog',
       duplicate: 'il y travaille déjà',
       archived: 'il est archivé',
-      noRunner: "aucun exécuteur n'est en ligne",
+      noRunner: "aucun environnement d’exécution n'est en ligne",
       unavailable: "il n'est pas disponible",
     },
     flags: {
       label: 'Ce que cela affecte',
-      startsRun: "Démarre l'exécution d'un agent",
-      finalStatus: 'Ferme un problème',
+      startsRun: "Démarre l'exécution d'un Agent",
+      finalStatus: 'Clôt une tâche',
       ownerChange: 'Change un propriétaire',
       createsProject: 'Crée un projet',
-      agentExecutor: "Fait d'un agent l'exécuteur testamentaire",
+      agentExecutor: 'Désigne un Agent comme exécutant',
     },
     ops: {
-      'issue.create': 'Nouveau numéro',
-      'issue.update': 'Problème de changement',
+      'issue.create': 'Nouvelle tâche',
+      'issue.update': 'Modifier la tâche',
       'comment.create': 'Commentaire',
       dependency: 'Dépendance',
       'project.create': 'Nouveau projet',
-      'issue.retract': 'Supprimer le problème',
+      'issue.retract': 'Retirer la tâche',
       'comment.retract': 'Supprimer le commentaire',
       'project.retract': 'Supprimer le projet',
     },
     dependsOn: '{{issue}} attend {{dependsOn}}',
-    dependencyRemove: "{{issue}} n'attend plus {{dependsOn}}",
+    dependencyRemove: '{{issue}} n’attend plus {{dependsOn}}',
     becomes: 'devient',
     openResult: 'Ouvrir',
     rowDone: 'Terminé',
@@ -1111,11 +1110,11 @@ const frFR: LocaleResource<typeof enUS> = {
     restoreRow: 'Conserver {{title}}',
     removed: 'Retiré du plan',
     referenced: "D'autres changements en dépendent",
-    indent: 'Faire de {{title}} un sous-problème de la ligne ci-dessus',
+    indent: 'Faire de {{title}} une sous-tâche de la ligne au-dessus',
     outdent: "Déplacer {{title}} vers le haut d'un niveau",
     editDescription: 'Description de {{title}}',
     untitled: 'Sans titre',
-    unknownIssue: 'Un problème',
+    unknownIssue: 'Une tâche',
     noParent: 'Niveau supérieur',
     visibility: {
       public: 'Tout le monde',
@@ -1126,7 +1125,7 @@ const frFR: LocaleResource<typeof enUS> = {
       project: 'Projet',
       priority: 'Priorité',
       labels: 'Etiquettes',
-      executor: 'Exécuteur testamentaire',
+      executor: 'Exécutant',
       owner: 'Responsable',
       stage: 'Étape',
       actions: 'Actions',
@@ -1135,12 +1134,12 @@ const frFR: LocaleResource<typeof enUS> = {
       title: 'Titre',
       description: 'Description',
       projectId: 'Projet',
-      parentIssueId: 'Problème parental',
+      parentIssueId: 'Tâche parente',
       stage: 'Étape',
       statusKey: 'Statut',
       priority: 'Priorité',
       ownerUserId: 'Responsable',
-      executor: 'Exécuteur testamentaire',
+      executor: 'Exécutant',
       labelIds: 'Etiquettes',
       startDate: 'Démarrer',
       dueDate: 'À payer',
@@ -1157,8 +1156,8 @@ const frFR: LocaleResource<typeof enUS> = {
       changed: 'Modifié',
     },
     rowCount_many: 'Modifications du {{count}}',
-    createIssues_many: 'Créer des problèmes {{count}}',
-    executedIssues_many: 'Problèmes {{count}} créés.',
+    createIssues_many: 'Créer {{count}} tâches',
+    executedIssues_many: '{{count}} tâches créées.',
   },
   intake: {
     open: "Projet d'IA",
@@ -1166,13 +1165,13 @@ const frFR: LocaleResource<typeof enUS> = {
     textPlaceholder:
       '# Connexion\n- Concevoir le formulaire [high] #frontend\n  - Valider l’adresse e-mail\n- Limiter les tentatives @stage2',
     textHint:
-      'Les titres deviennent des tickets parents, les éléments de liste des tickets et les éléments en retrait des sous-tickets. ! ou [high] définit la priorité, #étiquette ajoute une étiquette et @stage2 définit une étape. Le CSV doit contenir une colonne title.',
+      'Les titres deviennent des tâches parentes, les éléments de liste des tâches et les éléments en retrait des sous-tâches ; ! ou [high] définit la priorité, #étiquette une étiquette et @stage2 une étape. Un CSV nécessite une colonne title.',
     textTooLong:
       'Au plus des caractères {{max}} ; divisez le reste dans un autre lot.',
     count: '{{count}} / {{max}}',
     files: 'Fichiers',
     filesHint:
-      "Jusqu'à des fichiers {{count}}, {{size}} Mo chacun. Le texte, Markdown, CSV, Word, Excel, PowerPoint et PDF sont lus ; Laissez un agent organiser lire les images PNG/JPEG avec ses outils d'image ; si la lecture échoue, revenez à l'édition et réessayez. La répartition des règles utilise uniquement les noms de fichiers d'images.",
+      "Jusqu'à des fichiers {{count}}, {{size}} Mo chacun. Le texte, Markdown, CSV, Word, Excel, PowerPoint et PDF sont lus ; Laissez un Agent organiser lire les images PNG/JPEG avec ses outils d'image ; si la lecture échoue, revenez à l'édition et réessayez. La répartition des règles utilise uniquement les noms de fichiers d'images.",
     addFiles: 'Ajouter des fichiers',
     dropFiles: 'Déposez les fichiers ici',
     removeFile: 'Supprimer {{name}}',
@@ -1182,8 +1181,8 @@ const frFR: LocaleResource<typeof enUS> = {
     fileTooLarge: '{{name}} est plus grand que {{size}} Mo.',
     project: 'Projet par défaut',
     projectHint:
-      'Tous les enjeux y sont liés; vous pouvez modifier chacun d’entre eux ci-dessous.',
-    splitAction: 'Problèmes de brouillon',
+      'Toutes les tâches y sont placées ; vous pouvez modifier chacune ci-dessous.',
+    splitAction: 'Rédiger les tâches',
     splitDone_one: 'Divisé en brouillon {{count}}',
     splitDone_other: 'Divisé en brouillons {{count}}',
     splitting: 'Diviser…',
@@ -1195,17 +1194,17 @@ const frFR: LocaleResource<typeof enUS> = {
     draftTitle: 'Brouillons ({{count}})',
     draftHint:
       "Rien n'est créé jusqu'à ce que vous cliquiez sur Créer. Ce lien conserve le brouillon pendant 24 heures.",
-    draftCreated: 'Ces problèmes ont déjà été créés.',
+    draftCreated: 'Ces tâches ont déjà été créées.',
     draftClosed:
-      'Ce projet a été remplacé ou a expiré ; rédigez à nouveau les questions.',
+      'Ce brouillon a été remplacé ou a expiré ; rédigez à nouveau les tâches.',
     invalidDraft:
-      'Certains problèmes ne sont pas encore résolus. Corrigez-les dans le texte et divisez-les à nouveau.',
+      'Certaines tâches ne sont pas encore valides. Corrigez-les dans le texte et redécoupez.',
     unknownLabels:
       "Ces étiquettes n'existent pas et ont été omises : {{labels}}",
     dropped_one:
-      'Seules les 50 premières questions sont dans le projet; {{count}} davantage a été laissé de côté.',
+      'Le brouillon ne contient que les 50 premières tâches ; {{count}} autre a été ignorée.',
     dropped_other:
-      "Seules les 50 premières questions sont dans le projet; D'autres {{count}} ont été laissés de côté.",
+      'Le brouillon ne contient que les 50 premières tâches ; {{count}} autres ont été ignorées.',
     fileStates: {
       read: 'lire',
       truncated: 'lu en partie',
@@ -1218,23 +1217,23 @@ const frFR: LocaleResource<typeof enUS> = {
     },
     splitDone_many: 'Divisé en brouillons {{count}}',
     dropped_many:
-      "Seules les 50 premières questions sont dans le projet; D'autres {{count}} ont été laissés de côté.",
+      'Le brouillon ne contient que les 50 premières tâches ; {{count}} autres ont été ignorées.',
   },
   intakeAi: {
     splitByRules: 'Divisé par règles',
-    breakdown: 'Diviser en sous-questions',
+    breakdown: 'Découper en sous-tâches',
     breakdownHint:
-      "Brouillons de sous-numéros pour {{issue}} : révisez-les et modifiez-les, puis créez-les. Rien n'est créé jusqu'à ce que vous le fassiez.",
-    drafted: 'AI a rédigé les questions',
+      'Brouillons de sous-tâches pour {{issue}} : relisez-les et modifiez-les, puis créez-les. Rien n’est créé avant cela.',
+    drafted: 'L’IA a rédigé les tâches',
     revised: 'Projets révisés',
     startFailed: 'Impossible de demander à AI.',
-    failed: 'AI n’a pas pu rédiger les questions. Essayer à nouveau.',
-    failedWhy: 'AI n’a pas pu rédiger les numéros : {{message}}',
+    failed: 'L’IA n’a pas pu rédiger les tâches. Réessayez.',
+    failedWhy: 'L’IA n’a pas pu rédiger les tâches : {{message}}',
     cancel: 'Annuler',
     progress: {
-      split: 'AI rédige les numéros…',
+      split: 'L’IA rédige les tâches…',
       revise: 'AI révise les ébauches…',
-      breakdown: 'L’IA détruit {{issue}}…',
+      breakdown: 'L’IA découpe {{issue}}…',
     },
     working: '{{name}} est dessus',
     workingAnonymous: "J'y travaille",
@@ -1247,7 +1246,7 @@ const frFR: LocaleResource<typeof enUS> = {
       "Aucun runtime n'est en ligne pour le moment : une requête attend qu'on se connecte.",
     unavailable: {
       noAgent:
-        "L'IA n'est pas disponible : choisissez un agent de chat par défaut dans votre profil ou demandez à un administrateur d'en définir un.",
+        "L'IA n'est pas disponible : choisissez un Agent de chat par défaut dans votre profil ou demandez à un administrateur d'en définir un.",
     },
     removed_one: 'Suppression du brouillon {{count}} : {{titles}}',
     removed_other: 'Brouillons {{count}} supprimés : {{titles}}',
@@ -1272,7 +1271,7 @@ const frFR: LocaleResource<typeof enUS> = {
   access: {
     sections: {
       projects: 'Projets',
-      issues: 'Tickets',
+      issues: 'Tâches',
       settings: 'Paramètres du projet',
       members: 'Membres et rôles',
     },
@@ -1312,103 +1311,100 @@ const frFR: LocaleResource<typeof enUS> = {
         },
       },
       issues: {
-        title: 'Tickets',
-        description: 'Les enjeux et leurs commentaires, en projet ou seuls.',
+        title: 'Tâches',
+        description:
+          'Les tâches et leurs commentaires, dans un projet ou indépendantes.',
         actions: {
           view: {
-            title: 'Afficher les problèmes',
+            title: 'Voir les tâches',
             description:
-              'Voir les problèmes dans les listes, les tableaux et leurs détails',
-            related: "Afficher les problèmes (ceux qu'ils peuvent voir)",
+              'Voir les tâches dans les listes, les tableaux et leurs détails',
+            related: 'Voir les tâches (celles qu’ils peuvent voir)',
             relatedLabel: 'Dans les projets, je peux voir',
             relatedHint:
-              'Problèmes sans projet et problèmes dans les projets que je peux voir',
-            all: 'Afficher les problèmes (tous)',
+              'Tâches sans projet et tâches des projets que je peux voir',
+            all: 'Voir les tâches (toutes)',
           },
           create: {
-            title: 'Créer des problèmes',
-            description: 'Créer des tickets, dans un projet ou seul',
-            related:
-              "Créer des problèmes (dans les projets qu'ils peuvent voir)",
+            title: 'Créer des tâches',
+            description: 'Créer des tâches, dans un projet ou indépendantes',
+            related: 'Créer des tâches (dans les projets qu’ils peuvent voir)',
             relatedLabel: 'Dans les projets, je peux voir',
             relatedHint:
-              'Problèmes sans projet ou dans des projets que je peux voir',
-            all: 'Créer des problèmes (tous)',
+              'Tâches sans projet ou dans les projets que je peux voir',
+            all: 'Créer des tâches (toutes)',
           },
           edit: {
-            title: 'Modifier les problèmes',
+            title: 'Modifier des tâches',
             description:
-              'Titre, description, priorité, dates, étiquettes, exécuteurs testamentaires et statuts ouverts',
-            related: "Modifier les problèmes (ceux qu'ils peuvent voir)",
+              'Titre, description, priorité, dates, étiquettes, exécutants et statuts ouverts',
+            related: 'Modifier des tâches (celles qu’ils peuvent voir)',
             relatedLabel: 'Dans les projets, je peux voir',
             relatedHint:
-              'Problèmes sans projet et problèmes dans les projets que je peux voir',
-            all: 'Modifier les problèmes (tous)',
+              'Tâches sans projet et tâches des projets que je peux voir',
+            all: 'Modifier des tâches (toutes)',
           },
           comment: {
-            title: 'Commentaire sur les questions',
+            title: 'Commenter des tâches',
             description:
               'Commenter, répondre et résoudre les fils de discussion ; modifier et supprimer leurs propres commentaires',
-            related: "Commentez les problèmes (ceux qu'ils peuvent voir)",
+            related: 'Commenter des tâches (celles qu’ils peuvent voir)',
             relatedLabel: 'Dans les projets, je peux voir',
             relatedHint:
-              'Problèmes sans projet et problèmes dans les projets que je peux voir',
-            all: 'Commentaires sur les problèmes (tous)',
+              'Tâches sans projet et tâches des projets que je peux voir',
+            all: 'Commenter des tâches (toutes)',
           },
           moderateComments: {
             title: 'Commentaires modérés',
             description: 'Supprimer les commentaires des autres',
             related:
-              'Commentaires modérés (sur les problèmes dont ils sont propriétaires ou dont ils dirigent le projet)',
-            relatedLabel:
-              'Sur les questions qui me appartiennent ou dans les projets que je mène',
+              'Modérer les commentaires (sur leurs tâches ou les projets qu’ils dirigent)',
+            relatedLabel: 'Sur mes tâches ou dans les projets que je dirige',
             relatedHint:
-              'Commentaires sur les problèmes qui me appartiennent et sur les problèmes des projets que je dirige',
+              'Commentaires sur mes tâches et sur les tâches des projets que je dirige',
             all: 'Commentaires modérés (tous)',
           },
           close: {
-            title: 'Fermer les problèmes',
-            description: 'Marquer un problème comme terminé ou annulé',
+            title: 'Clore des tâches',
+            description: 'Marquer une tâche comme terminée ou annulée',
             related:
-              'Problèmes clôturés (ceux qui leur appartiennent ou dont ils dirigent le projet)',
+              'Clore des tâches (les leurs ou celles des projets qu’ils dirigent)',
             relatedLabel:
               'Ceux que je possède ou dans les projets que je dirige',
-            relatedHint:
-              'Problèmes que je possède et problèmes liés aux projets que je dirige',
-            all: 'Problèmes clôturés (tous)',
+            relatedHint: 'Mes tâches et les tâches des projets que je dirige',
+            all: 'Clore des tâches (toutes)',
           },
           changeOwner: {
             title: 'Changer le propriétaire',
             description:
-              "Confier un problème à quelqu'un d'autre pour qu'il en soit responsable",
+              'Confier une tâche à une autre personne qui en devient responsable',
             related:
               "Changer le propriétaire (ceux qu'ils possèdent ou dont ils dirigent le projet)",
             relatedLabel:
               'Ceux que je possède ou dans les projets que je dirige',
-            relatedHint:
-              'Problèmes que je possède et problèmes liés aux projets que je dirige',
+            relatedHint: 'Mes tâches et les tâches des projets que je dirige',
             all: 'Changer le propriétaire (tous)',
           },
           delete: {
-            title: 'Supprimer et restaurer les problèmes',
-            description: 'Supprimer les problèmes et restaurer ceux supprimés',
-            all: 'Supprimer et restaurer les problèmes',
+            title: 'Supprimer et restaurer des tâches',
+            description: 'Supprimer des tâches et restaurer celles supprimées',
+            all: 'Supprimer et restaurer des tâches',
           },
         },
       },
       attachments: {
         title: 'Pièces jointes',
-        description: 'Fichiers joints aux problèmes et aux commentaires.',
+        description: 'Fichiers joints aux tâches et aux commentaires.',
         actions: {
           upload: {
             title: 'Télécharger des pièces jointes',
             description:
-              "Joindre des fichiers aux numéros qu'ils peuvent modifier et à leurs commentaires",
+              'Joindre des fichiers aux tâches qu’ils peuvent modifier et à leurs commentaires',
             related:
-              "Télécharger des pièces jointes (sur les problèmes qu'ils peuvent voir)",
-            relatedLabel: 'Sur les problèmes dans les projets que je peux voir',
+              'Téléverser des pièces jointes (sur les tâches qu’ils peuvent voir)',
+            relatedLabel: 'Sur les tâches des projets que je peux voir',
             relatedHint:
-              'Fichiers sur les problèmes sans projet et sur les problèmes dans les projets que je peux voir',
+              'Fichiers sur les tâches sans projet et sur les tâches des projets que je peux voir',
             all: 'Télécharger des pièces jointes (toutes)',
           },
         },
@@ -1416,11 +1412,11 @@ const frFR: LocaleResource<typeof enUS> = {
     },
     collections: {
       pmProjects: 'Projets',
-      pmIssues: 'Tickets',
+      pmIssues: 'Tâches',
     },
     recordAccess: {
-      visible: "Projets et problèmes qu'ils peuvent voir",
-      managed: "Projets qu'ils mènent et enjeux dont ils sont propriétaires",
+      visible: 'Projets et tâches qu’ils peuvent voir',
+      managed: 'Projets qu’ils dirigent et tâches dont ils sont responsables',
     },
     settings: {
       pm: {
@@ -1436,9 +1432,9 @@ const frFR: LocaleResource<typeof enUS> = {
         objects: 'Projets',
       },
       issues: {
-        title: 'Tickets',
+        title: 'Tâches',
         description:
-          'Voir les problèmes ; les créer, les éditer, les commenter, les fermer et les réaffecter ; modérer les commentaires et supprimer les problèmes.',
+          'Voir les tâches ; les créer, modifier, commenter, clore et réattribuer ; modérer les commentaires et supprimer des tâches.',
       },
       settings: {
         title: 'Paramètres du projet',

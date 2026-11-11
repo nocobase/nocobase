@@ -24,6 +24,7 @@ const messages = {
   'files.retry': 'Coba lagi',
   'files.done': 'Selesai',
   'files.uploading': 'Mengunggah',
+  'files.longWait': 'Masih mengunggah. Tunggu atau batalkan.',
   'files.failed': 'Gagal',
   'files.pending': 'Tertunda',
   'files.previous': 'Berkas sebelumnya',

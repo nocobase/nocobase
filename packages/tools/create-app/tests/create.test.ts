@@ -34,6 +34,7 @@ beforeEach(async () => {
   vi.mocked(syncSkills).mockResolvedValue({ ok: true });
 });
 afterEach(async () => {
+  vi.unstubAllEnvs();
   vi.restoreAllMocks();
   vi.clearAllMocks();
   await rm(root, { recursive: true, force: true });
@@ -96,6 +97,59 @@ describe('JSON creation flow', () => {
       '@nocobase:registry=',
     );
   });
+  it.each(['flag', 'environment'])(
+    'uses the selected commercial registry through %s for multi-portal',
+    async (selection) => {
+      await template();
+      const registry = 'https://pkg-v3.nocobase.com/';
+      const argv = [
+        'crm',
+        '--json',
+        '--template=multi-portal',
+        '--template-tag=beta',
+      ];
+      if (selection === 'flag') argv.push(`--registry=${registry}`);
+      else vi.stubEnv('NOCOBASE_REGISTRY', registry);
+      expect(await run(argv)).toBe(0);
+      expect(downloadTemplate).toHaveBeenCalledWith({
+        registry,
+        source: '@nocobase/app-template-multi-portal@beta',
+      });
+      expect(
+        vi.mocked(installDependencies).mock.calls[0][0],
+      ).not.toHaveProperty('registry');
+      expect(installDependencies).toHaveBeenCalledWith(
+        expect.objectContaining({ directory: path.join(root, 'crm') }),
+      );
+      expect(await readFile(path.join(root, 'crm/.npmrc'), 'utf8')).toContain(
+        `@nocobase:registry=${registry}`,
+      );
+    },
+  );
+
+  it('reports unavailable commercial templates without falling back or creating an app', async () => {
+    vi.mocked(downloadTemplate).mockRejectedValueOnce(
+      new Error('Template access denied'),
+    );
+    expect(
+      await run([
+        'crm',
+        '--json',
+        '--template=multi-portal',
+        '--registry=https://pkg-v3.nocobase.com/',
+      ]),
+    ).toBe(1);
+    expect(JSON.parse(stdout)).toMatchObject({
+      ok: false,
+      error: { code: 'TEMPLATE_DOWNLOAD_FAILED' },
+    });
+    expect(downloadTemplate).toHaveBeenCalledOnce();
+    expect(installDependencies).not.toHaveBeenCalled();
+    await expect(
+      readFile(path.join(root, 'crm/package.json')),
+    ).rejects.toThrow();
+  });
+
   it('returns a nonzero install failure and retains the generated project', async () => {
     await template();
     vi.mocked(installDependencies).mockRejectedValue(

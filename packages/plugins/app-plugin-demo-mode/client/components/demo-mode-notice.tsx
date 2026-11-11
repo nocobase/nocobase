@@ -3,17 +3,19 @@ import {
   useClientApplication,
   useToaster,
 } from '@nocobase/app-client';
+import type { AppClientRegisteredRoute } from '@nocobase/app-client/plugins';
 import { useTranslation } from '@nocobase/i18n/client';
 import {
   useEffect,
+  useMemo,
   useRef,
   useState,
   type PropsWithChildren,
   type ReactElement,
 } from 'react';
-import { useLocation } from 'react-router';
+import { matchRoutes, useLocation, type RouteObject } from 'react-router';
 
-import { DemoHomeEntry } from './demo-home-entry.js';
+import { DemoEntry } from './demo-entry.js';
 import { demoAccountCache } from '../account-cache.js';
 import { DemoModeContext } from '../demo-mode-context.js';
 import {
@@ -22,6 +24,16 @@ import {
 } from '../namespace.js';
 
 const REFUSED_TOAST_ID = 'demo-mode-refused';
+
+function entryRoutes(
+  routes: readonly AppClientRegisteredRoute[],
+): RouteObject[] {
+  return routes.map((route) => ({
+    path: route.path,
+    handle: route.auth,
+    children: entryRoutes(route.children ?? []),
+  }));
+}
 
 /** Whether a finished request's response says the server refused one of its writes. */
 function isRefusedEntry(entry: PerformanceEntry): boolean {
@@ -49,7 +61,10 @@ export function DemoModeNotice({ children }: PropsWithChildren): ReactElement {
       app.config.public.get('demoMode.enabled') === true,
   );
   const { pathname } = useLocation();
-  const home = pathname === '/';
+  const routes = useMemo(() => entryRoutes(app.runtime.routes), [app]);
+  const required =
+    pathname === '/' ||
+    matchRoutes(routes, pathname)?.at(-1)?.route.handle === 'required';
   const previousPathRef = useRef(pathname);
 
   useEffect(() => {
@@ -77,7 +92,11 @@ export function DemoModeNotice({ children }: PropsWithChildren): ReactElement {
 
   return (
     <DemoModeContext value={enabled}>
-      {home && enabled ? <DemoHomeEntry>{children}</DemoHomeEntry> : children}
+      {enabled ? (
+        <DemoEntry required={required}>{children}</DemoEntry>
+      ) : (
+        children
+      )}
     </DemoModeContext>
   );
 }

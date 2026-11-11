@@ -19,6 +19,7 @@ import {
   renderBrief,
   renderTurnPrompt,
 } from '../server/core/brief/index.js';
+import { splitPrompt } from '../server/core/runs/preview.js';
 import { payloadDirs, type SubjectDir } from '../server/core/runs/index.js';
 
 const TASK = [
@@ -267,5 +268,109 @@ describe('brief', () => {
     expect(renderTurnPrompt([], { subject, cli: 'acme' })).toBe(
       'Continue the work on document DOC-12. Read the context first (`acme run context`).',
     );
+  });
+});
+
+describe('stable brief prefixes', () => {
+  const input = {
+    cli: 'acme',
+    appName: 'Acme',
+    agentName: 'Lead',
+    subject: { noun: 'document', key: 'DOC-12' },
+    task: TASK,
+    context: CONTEXT,
+    instructions: 'Prefer short sentences.\nLink every ticket.',
+    dirs: payloadDirs(DIRS),
+    guidance: GUIDANCE,
+    skills: [
+      { slug: 'review', name: 'Review', description: 'Review changes.' },
+    ],
+  };
+
+  it('keeps the fixed prefix byte-identical after filling different run paths and initialization notes', () => {
+    const render = (run: string) =>
+      joinBrief(
+        renderBrief({
+          ...input,
+          stablePrefix: true,
+          task: `Status ${run}`,
+          context: `Comments ${run}`,
+        }),
+        true,
+      )
+        .replace(
+          WORKSPACE_NOTES_PLACEHOLDER,
+          `TMPDIR: /tmp/${run}\nSkills: /runs/${run}/skills\nKnowledge: /runs/${run}/knowledge`,
+        )
+        .replace(WORKSPACE_INIT_PLACEHOLDER, `Initialize ${run}`);
+    const a = render('one');
+    const b = render('two');
+    const prefix = a.slice(0, a.indexOf('TMPDIR:'));
+    expect(Buffer.from(prefix)).toEqual(
+      Buffer.from(b.slice(0, b.indexOf('TMPDIR:'))),
+    );
+    for (const text of [
+      input.instructions,
+      '<available_skills>',
+      'Rules:',
+      'Workspace:',
+      'Before you start:',
+    ]) {
+      expect(prefix).toContain(text);
+    }
+    expect(a).toContain('Status one');
+    expect(b).toContain('Comments two');
+    expect(a).not.toBe(b);
+  });
+
+  it('retains every original line except the split identity and directional preference lead-in', () => {
+    const original = joinBrief(renderBrief(input));
+    const stable = joinBrief(
+      renderBrief({ ...input, stablePrefix: true }),
+      true,
+    );
+    for (const line of original
+      .split('\n')
+      .filter(
+        (line) =>
+          line &&
+          !line.startsWith('You are ') &&
+          !line.startsWith(AGENT_LAYER_PREFIX),
+      )) {
+      expect(
+        stable.split('\n').filter((candidate) => candidate === line),
+      ).toHaveLength(
+        original.split('\n').filter((candidate) => candidate === line).length,
+      );
+    }
+    expect(stable).toContain('This run works on document DOC-12.');
+    expect(stable).not.toContain('the context above');
+    expect(splitPrompt(stable, input.instructions).agentPrompt).toBe(
+      input.instructions,
+    );
+    expect(splitPrompt(stable, input.instructions).platform).not.toContain(
+      input.instructions,
+    );
+    expect(splitPrompt(stable, input.instructions).platform).toContain(CONTEXT);
+  });
+
+  it('keeps all agent-wide text before the first subject-specific value', () => {
+    const render = (key: string) =>
+      joinBrief(
+        renderBrief({
+          ...input,
+          stablePrefix: true,
+          subject: { noun: 'document', key },
+        }),
+        true,
+      );
+    const a = render('DOC-12');
+    const b = render('DOC-99');
+    const prefix = a.slice(0, a.indexOf('This run works on'));
+    expect(Buffer.from(prefix)).toEqual(
+      Buffer.from(b.slice(0, b.indexOf('This run works on'))),
+    );
+    expect(prefix).toContain('<available_skills>');
+    expect(prefix).toContain(input.instructions);
   });
 });

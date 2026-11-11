@@ -3,6 +3,31 @@ import type { LocaleResource } from '@nocobase/i18n';
 import type enUS from './en-US.js';
 
 const idID: LocaleResource<typeof enUS> = {
+  notificationTemplates: {
+    contributor: 'Contoh notifikasi',
+    category: 'Tugas',
+    assigned: {
+      name: 'Tugas ditetapkan',
+      trigger: 'Sebuah tugas dibuat.',
+      recipients:
+        'Penerima tugas, bahkan jika mereka menetapkan tugas untuk diri sendiri.',
+    },
+    updated: {
+      name: 'Tugas diperbarui',
+      trigger: 'Sebuah tugas diubah, termasuk saat ditetapkan ulang.',
+      recipients:
+        'Pembuat, penerima tugas sebelumnya, dan penerima tugas baru, masing-masing sekali. Orang yang membuat perubahan tidak diberi tahu.',
+    },
+    businessRule:
+      'Dikirim setiap kali aksi tugas terjadi. Tidak ada tombol terpisah untuk mematikannya.',
+    languagePolicy: 'Selalu dalam bahasa Inggris, apa pun bahasa penerimanya.',
+    channel: 'Kotak masuk tugas',
+    variables: {
+      title: 'Judul tugas',
+      description: 'Deskripsi tugas',
+      status: 'Status tugas',
+    },
+  },
   navigation: {
     tasks: 'Contoh pemberitahuan',
     taskManagement: 'Tugas',
@@ -45,7 +70,7 @@ const idID: LocaleResource<typeof enUS> = {
       actions: 'Tindakan',
     },
     view: 'Lihat detailnya',
-    refresh: 'Segarkan',
+    retryRead: 'Coba lagi',
     previous: 'Sebelumnya',
     next: 'Berikutnya',
     page: 'Halaman {{page}}',
@@ -64,7 +89,7 @@ const idID: LocaleResource<typeof enUS> = {
     notificationHint:
       'Setelah tugas disimpan, orang terkait selain editor saat ini akan diberitahu: pembuat dan penerima tugas saat ini. Jika penerima tugas berubah, penerima tugas sebelumnya dan baru akan diberitahu.',
     edit: 'Edit tugas',
-    refresh: 'Segarkan',
+    retryRead: 'Coba lagi',
     save: 'Simpan perubahan',
     cancel: 'Batal',
     back: 'Kembali ke tugas',

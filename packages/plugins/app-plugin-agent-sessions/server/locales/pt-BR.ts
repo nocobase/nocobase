@@ -13,19 +13,19 @@ const ptBR: LocaleResource<typeof enUS> = {
       'Outra ponte registrou este computador. Reinicie esta conexão.',
     submissionConflict:
       'Este ID de envio já está sendo usado para outra solicitação.',
-    authenticationRequired: 'Faça login para usar sessões de agente.',
+    authenticationRequired: 'Faça login para usar sessões de Agent.',
     computerNotFound:
       'Nenhum computador com este ID está conectado à sua conta.',
     sessionNotFound: 'Nenhuma sessão com este id é sua.',
     computerOffline:
       'O computador está off-line. Inicie a ponte nele e tente novamente.',
-    agentUnavailable: 'O computador não pode executar este agente.',
+    agentUnavailable: 'O computador não pode executar este Agent.',
     directoryNotAllowed:
       'As sessões neste computador funcionam apenas nos diretórios permitidos pela sua ponte.',
     sessionArchived: 'A sessão é arquivada. Restaure-o primeiro.',
     permissionRequestNotFound:
       'Esta solicitação de permissão já foi respondida ou não está mais aguardando.',
-    choiceNotFound: 'O agente não oferece esta escolha ou valor.',
+    choiceNotFound: 'O Agent não oferece esta escolha ou valor.',
     linkNotFound:
       'Nada deste tipo com este id está vinculado à sessão, ou seu trabalho não pode começar a partir daqui.',
     invalidPageToken: 'O token da página não foi emitido por esta lista.',
@@ -35,7 +35,7 @@ const ptBR: LocaleResource<typeof enUS> = {
       'O computador não respondeu a tempo. Verifique se a conexão está funcionando e tente novamente.',
     folderUnavailable: 'A pasta não pode ser aberta no computador.',
     discoveryFailed:
-      'Não foi possível carregar as configurações do agente. Verifique o agente neste computador e tente novamente.',
+      'Não foi possível carregar as configurações do Agent. Atualize a linha de comando neste computador e reinicie a conexão em segundo plano. Depois, tente novamente.',
     projectNotFound: 'Esse projeto não existe ou você não consegue vê-lo.',
     referenceNotFound: 'Algo mencionado não existe ou você não pode ver.',
     imageNotFound: 'Nenhuma imagem com este nome foi enviada na sessão.',

@@ -24,6 +24,7 @@ import {
   BRIDGE_ROUTES,
   coalesce,
   DISCOVERY_TIMEOUT_MS,
+  DiscoveredChoicesSchema,
   MAX_EVENTS_PER_REPORT,
   POLL_WAIT_MS,
   WARM_AGENT_MS,
@@ -471,7 +472,7 @@ export async function runBridge(options: BridgeOptions): Promise<void> {
         computerId,
         requestId: command.requestId,
         listing: null,
-        discovery: await session.discover(),
+        discovery: DiscoveredChoicesSchema.parse(await session.discover()),
         error: null,
       };
     } catch (error) {
@@ -508,9 +509,23 @@ export async function runBridge(options: BridgeOptions): Promise<void> {
     });
     try {
       if (!signal.aborted)
-        await post(BRIDGE_ROUTES.reply, reply).catch((error: unknown) =>
-          log(`Could not answer the application: ${message(error)}`),
-        );
+        await post(BRIDGE_ROUTES.reply, reply).catch(async (error: unknown) => {
+          log(`Could not answer the application: ${message(error)}`);
+          if (
+            reply.discovery &&
+            error instanceof BridgeHttpError &&
+            error.status === 400
+          )
+            await post(BRIDGE_ROUTES.reply, {
+              computerId,
+              requestId: command.requestId,
+              listing: null,
+              discovery: null,
+              error: message(error).slice(0, 2000),
+            }).catch((failure: unknown) =>
+              log(`Could not answer the application: ${message(failure)}`),
+            );
+        });
       timing('discoveryReplied');
     } finally {
       await closing;
@@ -944,6 +959,11 @@ function createPost(
         reason?: string;
         message?: string;
         metadata?: Record<string, unknown>;
+        fieldViolations?: {
+          field?: string;
+          description?: string;
+          reason?: string;
+        }[];
       };
     } = {};
     try {
@@ -955,7 +975,13 @@ function createPost(
       throw new BridgeHttpError(
         response.status,
         parsed.error?.reason,
-        parsed.error?.message ?? `${response.status} ${response.statusText}`,
+        [
+          parsed.error?.message ?? `${response.status} ${response.statusText}`,
+          ...(parsed.error?.fieldViolations ?? []).map(
+            (violation) =>
+              `${violation.field ?? 'request'}: ${violation.description ?? violation.reason ?? 'Invalid field'}`,
+          ),
+        ].join(' '),
         parsed.error?.metadata,
       );
     }

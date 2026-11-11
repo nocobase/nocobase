@@ -317,107 +317,103 @@ describe('package remove command', () => {
     expect(existsSync(path.join(appRoot, '.agents'))).toBe(false);
   });
 
-  it('delegates plugin packages to unregister all three composition roots while retaining the package operation', async () => {
-    const packageName = '@nocobase/app-plugin-audit-log';
-    const appRoot = await createApp({});
-    await mkdir(path.join(appRoot, 'node_modules'), { recursive: true });
-    for (const dependency of ['typescript', 'prettier']) {
-      await symlink(
-        path.dirname(require.resolve(`${dependency}/package.json`)),
-        path.join(appRoot, 'node_modules', dependency),
-        'junction',
-      );
-    }
-    const pluginRoot = path.join(appRoot, 'node_modules', packageName);
-    await mkdir(
-      path.join(pluginRoot, 'skills', 'nocobase-app-plugin-audit-log'),
-      {
+  it.each([
+    '@nocobase/app-plugin-audit-log',
+    '@nocobase/app-portal-audit-log',
+    '@acme/app-plugin-audit-log',
+    '@acme/app-portal-audit-log',
+  ])(
+    'unregisters contributions and Skills when removing %s',
+    async (packageName) => {
+      const skillName = packageName.slice(1).replace('/', '-');
+      const appRoot = await createApp({});
+      await mkdir(path.join(appRoot, 'node_modules'), { recursive: true });
+      for (const dependency of ['typescript', 'prettier']) {
+        await symlink(
+          path.dirname(require.resolve(`${dependency}/package.json`)),
+          path.join(appRoot, 'node_modules', dependency),
+          'junction',
+        );
+      }
+      const pluginRoot = path.join(appRoot, 'node_modules', packageName);
+      await mkdir(path.join(pluginRoot, 'skills', skillName), {
         recursive: true,
-      },
-    );
-    await writeFile(
-      path.join(pluginRoot, 'package.json'),
-      `${JSON.stringify(
-        {
-          name: packageName,
-          version: '1.0.0',
-          exports: {
-            './client': './client/index.js',
-            './server': './server/index.js',
-            './cli': './cli/index.js',
+      });
+      await writeFile(
+        path.join(pluginRoot, 'package.json'),
+        `${JSON.stringify(
+          {
+            name: packageName,
+            version: '1.0.0',
+            exports: {
+              './client': './client/index.js',
+              './server': './server/index.js',
+              './cli': './cli/index.js',
+            },
           },
-        },
-        null,
-        2,
-      )}\n`,
-    );
-    await writeFile(
-      path.join(
-        pluginRoot,
-        'skills',
-        'nocobase-app-plugin-audit-log',
-        'SKILL.md',
-      ),
-      '# Audit log\n',
-    );
-    await runCommand(config, 'plugin:register', [
-      packageName,
-      '--dir',
-      appRoot,
-      '--no-install',
-    ]);
-    const dryRun = await runCommand(config, 'package:remove', [
-      packageName,
-      '--dir',
-      appRoot,
-      '--dry-run',
-    ]);
-    expect(dryRun.stdout).toContain(`pnpm remove ${packageName}`);
-    expect(dryRun.stdout).toContain(
-      'would remove skill nocobase-app-plugin-audit-log',
-    );
-    const manifestPath = path.join(appRoot, 'package.json');
-    const manifest = JSON.parse(await readFile(manifestPath, 'utf8')) as {
-      dependencies?: Record<string, string>;
-    };
-    delete manifest.dependencies?.[packageName];
-    await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
+          null,
+          2,
+        )}\n`,
+      );
+      await writeFile(
+        path.join(pluginRoot, 'skills', skillName, 'SKILL.md'),
+        '# Audit log\n',
+      );
+      await runCommand(config, 'plugin:register', [
+        packageName,
+        '--dir',
+        appRoot,
+        '--no-install',
+      ]);
+      const dryRun = await runCommand(config, 'package:remove', [
+        packageName,
+        '--dir',
+        appRoot,
+        '--dry-run',
+      ]);
+      expect(dryRun.stdout).toContain(`pnpm remove ${packageName}`);
+      expect(dryRun.stdout).toContain(`would remove skill ${skillName}`);
+      const manifestPath = path.join(appRoot, 'package.json');
+      const manifest = JSON.parse(await readFile(manifestPath, 'utf8')) as {
+        dependencies?: Record<string, string>;
+      };
+      delete manifest.dependencies?.[packageName];
+      await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
 
-    const result = await runCommand(config, 'package:remove', [
-      packageName,
-      '--dir',
-      appRoot,
-      '--json',
-    ]);
+      const result = await runCommand(config, 'package:remove', [
+        packageName,
+        '--dir',
+        appRoot,
+        '--json',
+      ]);
 
-    const response = JSON.parse(result.stdout) as {
-      command: string;
-      result: { removedFrom: string[]; removedSkills: string[] };
-    };
-    expect(response.command).toBe('package remove');
-    expect(response.result.removedFrom).toEqual(
-      expect.arrayContaining([
+      const response = JSON.parse(result.stdout) as {
+        command: string;
+        result: { removedFrom: string[]; removedSkills: string[] };
+      };
+      expect(response.command).toBe('package remove');
+      expect(response.result.removedFrom).toEqual(
+        expect.arrayContaining([
+          'client/plugins.ts',
+          'server/plugins.ts',
+          'cli/plugins.ts',
+        ]),
+      );
+      expect(response.result.removedSkills).toEqual([skillName]);
+      for (const relativePath of [
         'client/plugins.ts',
         'server/plugins.ts',
         'cli/plugins.ts',
-      ]),
-    );
-    expect(response.result.removedSkills).toEqual([
-      'nocobase-app-plugin-audit-log',
-    ]);
-    for (const relativePath of [
-      'client/plugins.ts',
-      'server/plugins.ts',
-      'cli/plugins.ts',
-    ]) {
-      expect(
-        await readFile(path.join(appRoot, relativePath), 'utf8'),
-      ).not.toContain(packageName);
-    }
-    expect(existsSync(pluginRoot)).toBe(true);
-  });
+      ]) {
+        expect(
+          await readFile(path.join(appRoot, relativePath), 'utf8'),
+        ).not.toContain(packageName);
+      }
+      expect(existsSync(pluginRoot)).toBe(true);
+    },
+  );
 
-  it('requires a full @nocobase/* package name', async () => {
+  it('rejects short names and unrelated custom-scope packages', async () => {
     const appRoot = await createApp({});
     await expect(
       runCommand(config, 'package:remove', ['app-skills', '--dir', appRoot]),
@@ -426,6 +422,21 @@ describe('package remove command', () => {
       runCommand(config, 'package:remove', ['lodash', '--dir', appRoot]),
     ).rejects.toThrow('must be a full @nocobase/* package name');
   });
+
+  it.each([
+    '@acme/core',
+    '@acme/app-portal-',
+    '@acme/app-plugin-demo/../other',
+  ])(
+    'rejects an unsupported package identity %s before changing the app',
+    async (packageName) => {
+      const appRoot = await createApp({});
+      await expect(
+        runCommand(config, 'package:remove', [packageName, '--dir', appRoot]),
+      ).rejects.toThrow('must be a full @nocobase/* package name');
+      expect(existsSync(path.join(appRoot, '.agents'))).toBe(false);
+    },
+  );
 
   it('prints a --json failure on stdout, like a success, and exits non-zero', async () => {
     const appRoot = await createApp({});

@@ -115,7 +115,7 @@ describe('account permission changes without a browser reload', () => {
     await expectMenu(true);
     await changePermissions(view, false);
     invalidate(view);
-    expect(screen.queryByText('users content')).not.toBeInTheDocument();
+    expect(screen.getByText('users content')).not.toBeVisible();
     await expectMenu(false);
     await changePermissions(view, true);
     invalidate(view);

@@ -4,7 +4,7 @@ import type { Knex } from 'knex';
 
 import type { Row } from '../query/types.js';
 import type { DatabaseConnection } from './connection.js';
-import { isUniqueConstraintViolation } from './internal/unique-constraint.js';
+import { isUniqueConstraintViolation } from './unique-constraint.js';
 
 export interface UpsertPhysicalRowOptions {
   /** Exact physical table name; connection naming and Collection metadata are not applied. */

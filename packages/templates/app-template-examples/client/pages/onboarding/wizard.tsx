@@ -58,6 +58,7 @@ import {
 } from '#components/ui/table';
 import { Separator } from '#components/ui/separator';
 import { ToggleGroup, ToggleGroupItem } from '#components/ui/toggle-group';
+import { OwnDiscardQuestion } from '#components/discard-guard';
 import { FeedbackForm } from '#components/feedback-form';
 import { useListData } from '#hooks/use-list-data';
 import {
@@ -287,8 +288,9 @@ function Editor({
   );
   useNavigationGuard(() => {
     if (navigatingAfterSaveRef.current) return true;
-    if (lockedRef.current || refreshing || submission.pending) return false;
-    if (!dirty) return true;
+    if (lockedRef.current || refreshing) return false;
+    // An unknown outcome is unsaved too: leaving asks, and discarding leaves; it never locks the page.
+    if (!dirty && !submission.pending) return true;
     if (discardRef.current) return discardRef.current.promise;
     let resolve!: (value: boolean) => void;
     const promise = new Promise<boolean>((done) => {
@@ -552,6 +554,9 @@ function Editor({
       status={detail?.record.status}
       description={description}
     >
+      {/* The wizard asks its own question: its input spans steps whose fields are not all on screen, so the page's
+          layer cannot compare them, and leaving during a held submission is blocked rather than asked. */}
+      <OwnDiscardQuestion />
       <AlertDialog
         open={confirmDiscard}
         onOpenChange={(open) => {

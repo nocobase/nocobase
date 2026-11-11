@@ -21,7 +21,7 @@ const deDE: LocaleResource<typeof enUS> = {
     sessionNotFound: 'Keine Sitzung mit dieser ID gehört Ihnen.',
     computerOffline:
       'Der Computer ist offline. Starten Sie die Bridge darauf und versuchen Sie es dann erneut.',
-    agentUnavailable: 'Der Computer kann diesen Agenten nicht ausführen.',
+    agentUnavailable: 'Der Computer kann diesen Agent nicht ausführen.',
     directoryNotAllowed:
       'Sitzungen auf diesem Computer funktionieren nur unter den Verzeichnissen, die seine Bridge zulässt.',
     sessionArchived:
@@ -40,7 +40,7 @@ const deDE: LocaleResource<typeof enUS> = {
     folderUnavailable:
       'Der Ordner kann auf dem Computer nicht geöffnet werden.',
     discoveryFailed:
-      'Agent-Einstellungen konnten nicht geladen werden. Überprüfen Sie den Agenten auf diesem Computer und versuchen Sie es erneut.',
+      'Die Agenteneinstellungen konnten nicht geladen werden. Aktualisieren Sie die Befehlszeile auf diesem Computer und starten Sie die Hintergrundverbindung neu. Versuchen Sie es dann erneut.',
     projectNotFound:
       'Es gibt kein solches Projekt, oder Sie können es nicht sehen.',
     referenceNotFound:

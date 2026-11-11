@@ -69,6 +69,7 @@ import {
   CONVERSATION_SOURCE_PATTERN,
   MESSAGE_ROLES,
   OFFLINE_REASONS,
+  RUNNER_PREFERENCES,
   TITLE_SOURCES,
   type ChatAgent,
   type ChatPreferences,
@@ -295,6 +296,14 @@ export const AuditListQuery: z.ZodType<Paging> = z.object({
   pageToken: pageToken.describe(
     'The continuation token returned by the previous page.',
   ),
+});
+
+export const RunAgentsQuery: z.ZodType<{
+  readonly subjectKind: string;
+  readonly subjectId: string;
+}> = z.object({
+  subjectKind: id.describe('The kind of subject.'),
+  subjectId: id.describe('The subject identifier.'),
 });
 
 export const RunListQuery: z.ZodType<
@@ -1236,6 +1245,16 @@ const runObject = z.object({
   actualEffortSource: z.string().nullable().optional(),
   actualEffortAt: dateTime.nullable().optional(),
   machineHidden: z.boolean().optional(),
+  runnerPinId: z
+    .string()
+    .nullable()
+    .optional()
+    .describe('The original Runner holding preserved quota work.'),
+  sessionId: z
+    .string()
+    .nullable()
+    .optional()
+    .describe('The original tool session for strict continuation.'),
   runnerId: z.string().nullable().meta({
     description:
       'The runner holding it; `server:<instance>` for an online run held by an application instance.',
@@ -1299,6 +1318,7 @@ const runObject = z.object({
   cancelledById: z.string().nullable(),
   failureReason: FailureReasonSchema.nullable(),
   failureDetail: z.string().nullable(),
+  failureParams: z.record(z.string(), z.unknown()).nullable().optional(),
   summary: z.string().nullable(),
   createdAt: dateTime,
   updatedAt: dateTime,
@@ -1732,6 +1752,7 @@ const conversationSummaryObject = z.object({
       }),
     })
     .nullable()
+    .optional()
     .meta({
       description:
         'The runner the conversation is bound to: the first that took a run on it, which alone takes the next ones. Null until then, and after switchRunner.',
@@ -1740,8 +1761,9 @@ const conversationSummaryObject = z.object({
   seenSeq: z
     .number()
     .int()
+    .optional()
     .meta({ description: 'How far the owner has seen it (markSeen).' }),
-  needsYou: ConversationNeedsYouSchema.nullable().meta({
+  needsYou: ConversationNeedsYouSchema.nullable().optional().meta({
     description:
       'What waits for the owner: a reply or failure until they see it, a question until they write.',
   }),
@@ -1751,6 +1773,9 @@ export const ConversationSummarySchema: z.ZodType<ConversationSummary> =
   conversationSummaryObject.meta({ ref: 'AgentsConversationSummary' });
 
 const conversationDetailObject = conversationSummaryObject.extend({
+  snapshot: z
+    .object({ cutoffSeq: z.number().int(), snapshotAt: z.string() })
+    .optional(),
   effort: z.string().nullable().optional(),
   availability,
   canFallback: z.boolean(),
@@ -1943,6 +1968,10 @@ export const ChatAgentSchema: z.ZodType<ChatAgent> = z.object({
 
 export const ChatDefaultAgentSchema: z.ZodType<ChatPreferences> = z.object({
   defaultAgentId: z.string().nullable(),
+  runnerPreference: z.enum(RUNNER_PREFERENCES).meta({
+    description:
+      'Which kind of runner runs queued from now on go to first: auto (whichever fits and asks first), personal (their own runners) or team (shared runners). The other kind takes a run about a second later when the preferred kind cannot.',
+  }),
 });
 
 export const ChatSettingsSchema: z.ZodType<ChatSettings> = z.object({
@@ -2095,7 +2124,9 @@ const runnerObject = z.object({
         resetsAt: z
           .string()
           .nullable()
-          .describe('Known reset instant; null means manual recovery.'),
+          .describe(
+            'Known reset instant; null when the reset time is unknown.',
+          ),
         observedAt: z
           .string()
           .describe('When the usage snapshot was accepted.'),
@@ -2180,9 +2211,7 @@ const runnerSummaryObject = runnerObject
     canManageTools: z.boolean().optional(),
     canChangeTrust: z.boolean(),
     canRevoke: z.boolean(),
-    canClearQuota: z
-      .boolean()
-      .describe('The viewer may clear an unknown-reset quota mark.'),
+    canClearQuota: z.boolean().describe('The viewer may clear a quota mark.'),
     recentRunsCount: z
       .number()
       .int()

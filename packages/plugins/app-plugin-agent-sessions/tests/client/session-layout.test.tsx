@@ -13,6 +13,7 @@ import {
 } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { AgentSessionsConfigContext } from '../../client/config.js';
 import { SessionView } from '../../client/components/session-view.js';
 import plugin from '../../client/plugin.js';
 import {
@@ -100,6 +101,7 @@ afterEach(() => {
 async function setup(
   links: readonly SessionLink[] = [],
   layout: SessionsLayoutState | null = null,
+  openRecords = false,
 ) {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false } },
@@ -113,7 +115,19 @@ async function setup(
   await renderWithApp(
     <QueryClientProvider client={client}>
       <SessionsLayoutContext.Provider value={layout}>
-        <SessionView sessionId='session' />
+        {openRecords ? (
+          <AgentSessionsConfigContext.Provider
+            value={{
+              cli: 'test-cli',
+              connectPrompt: null,
+              linkPanels: { issue: () => <div data-testid='linked-record' /> },
+            }}
+          >
+            <SessionView sessionId='session' />
+          </AgentSessionsConfigContext.Provider>
+        ) : (
+          <SessionView sessionId='session' />
+        )}
       </SessionsLayoutContext.Provider>
     </QueryClientProvider>,
     {
@@ -217,6 +231,25 @@ describe('session details on the page', () => {
     expect(details()?.className).not.toContain('absolute');
     expect(document.querySelector('.bg-black\\/30')).toBeNull();
   });
+
+  it.each(['column', 'sheet'] as const)(
+    'opening related work dismisses only a detail sheet (%s)',
+    async (right) => {
+      const state = layout({ detailsOpen: true, right });
+      await setup(
+        [{ ...link('1', 'Not started', 'idle'), href: '/issues/TEST-1' }],
+        state,
+        true,
+      );
+      fireEvent.click(
+        within(details()!).getByRole('link', { name: 'Task 1', exact: true }),
+      );
+      expect(await screen.findByTestId('linked-record')).toBeInTheDocument();
+      if (right === 'sheet')
+        expect(state.setDetailsOpen).toHaveBeenCalledWith(false);
+      else expect(state.setDetailsOpen).not.toHaveBeenCalled();
+    },
+  );
 
   it('shows the details as a sheet that records closing from its backdrop', async () => {
     const sheet = layout({ detailsOpen: true, right: 'sheet' });

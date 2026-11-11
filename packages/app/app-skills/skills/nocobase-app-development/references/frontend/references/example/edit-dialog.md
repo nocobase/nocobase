@@ -169,6 +169,8 @@ function EditProject({
       className='sm:max-w-lg'
       // No closing while submitting: the × button, Esc, clicking the backdrop and close() all go through beforeClose first (guideline T3.5).
       beforeClose={() => !submittingRef.current}
+      // No dirty prop: ProjectForm's FeedbackForm reports its values and the record's, and the dialog asks before
+      // every way out while they differ (T3.9, M7.4).
       footer={footer}
     >
       {body}

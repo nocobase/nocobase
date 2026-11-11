@@ -44,6 +44,8 @@ export interface DriverEnvironment {
 
 /** What the plugin offers a session besides the environment. */
 export interface DriverContext {
+  /** Includes queued dispatch and durable outcome settlement. Capacity waiters hold no Host work and may be excluded. */
+  deploymentBatchBusy?(excluding: ReadonlySet<string>): boolean;
   /**
    * The complete desired set for this environment, read fresh from the plugin's tables. A driver whose backend
    * restarts (the Host child, a daemon) calls it and re-applies the result.
@@ -163,6 +165,8 @@ export interface DeploymentEvent {
   readonly msg?: string;
   /** Increasing per deployment; the plugin drops repeats. */
   readonly sequence?: number;
+  /** Preparation has re-entered a cancellable wait after a rejected attempt. */
+  readonly cancellable?: boolean;
   /**
    * What the target runs for this deployment, from a driver with `images`, once it knows: the image it pulled by
    * digest. The plugin records it on the deployment.
@@ -185,16 +189,101 @@ export interface AppObservedStatus {
     | 'stopped'
     | 'dormant'
     | 'failed'
-    | 'unknown';
+    | 'unknown'
+    | 'cancelled';
   readonly version: string | null;
   readonly deploymentId: string | null;
   readonly startedAt: string | null;
   readonly error: string | null;
+  readonly errorCode?: string;
   /** The App's last request (or start), when the driver knows it. */
   readonly lastAccessedAt?: string | null;
+  /** Why a running or starting App holds a slot on a shared runtime (see `HostOccupancy`). */
+  readonly holds?: readonly AppHoldReason[];
+  /** Why its last start was refused, while that is recent (see `HostOccupancy`). */
+  readonly waiting?: AppWaitReason;
+  /**
+   * The shared runtime restarted and could not put this App back (its environment's restore failed and the App is not
+   * on the runtime); retried in the background. Set by the driver per App, never inferred from the environment: an App
+   * of the same environment that is back on the runtime and fails on its own does not carry it.
+   */
+  readonly unrestored?: true;
+}
+
+/**
+ * Why an App holds a slot on a shared runtime: `requests` or `connections` in flight, `starting`, another `operation`,
+ * `resident` (it never stops when idle), `busy` or `recent` (requested within the last minute).
+ */
+export type AppHoldReason =
+  | 'requests'
+  | 'connections'
+  | 'starting'
+  | 'operation'
+  | 'resident'
+  | 'busy'
+  | 'recent';
+
+/**
+ * Why a start was refused: `capacity` (the active App limit or the start queue), `memory` (the memory budget) or
+ * `recycle` (no new code loads until the shared runtime restarts to free the old).
+ */
+export type AppWaitReason = 'capacity' | 'memory' | 'recycle';
+
+/**
+ * Who shares the runtime an environment's Apps run in, every environment on it included. Memory is the shared
+ * process's total: it cannot be divided among the Apps.
+ */
+export interface HostOccupancy {
+  /**
+   * The runtime itself, the same for every environment on it, so the environments page shows a runtime the
+   * environments share once.
+   */
+  readonly id: string;
+  readonly memory: {
+    readonly heapUsed: number;
+    readonly heapLimit: number;
+    readonly rss: number;
+    /** What the machine or container still has available. */
+    readonly available: number;
+  } | null;
+  /**
+   * `pending`: the runtime is to be restarted to free old code once nothing holds it, and new code may wait for that;
+   * `restarting`: it is restarting or restoring its Apps, which answer "retry" meanwhile.
+   */
+  readonly recycling: 'pending' | 'restarting' | null;
+  /** How many Apps may run or start on the runtime at once; null when nothing limits it. */
+  readonly maxActive: number | null;
+  /** Every App deployed on the runtime, running or not. */
+  readonly apps: readonly (AppObservedStatus & {
+    readonly appId: string;
+    /** The environment the App belongs to; null for one deployed outside release management. */
+    readonly environmentId: string | null;
+  })[];
+  /** Environments whose Apps could not be restored after the runtime restarted, retried in the background. */
+  readonly failedEnvironments: readonly {
+    readonly environmentId: string;
+    readonly error: string | null;
+  }[];
 }
 
 export interface DriverSession {
+  /** The control plane has persisted the deployment outcome and released its dispatch entry. */
+  deploymentSettled?(): void;
+  /** Outside the deployment queue. queuedOnly preserves a deployment that has started. */
+  cancel?(
+    deploymentId: string,
+    appId: string,
+    queuedOnly?: boolean,
+  ): Promise<'cancelled' | 'cancelling' | 'tooLate' | 'notFound'>;
+  progress?(
+    deploymentId: string,
+    appId: string,
+  ): Promise<{
+    state: 'queued' | 'running' | 'cancelling';
+    queueAhead: number | null;
+    cancellable: boolean;
+  } | null>;
+
   /** Whether the target is reachable and usable with these settings. */
   check(): Promise<{
     readonly ok: boolean;
@@ -238,6 +327,8 @@ export interface DriverSession {
     readonly deploymentId: string;
     readonly appId: string;
   }): Promise<AppObservedStatus | null>;
+  /** Who shares the runtime this environment's Apps run in, from a driver whose environments share one. */
+  occupancy?(): Promise<HostOccupancy | null>;
   /** Absolute public URL, or null when the environment has no reachable address yet. */
   url(appId: string): string | null;
   close(): Promise<void>;
@@ -282,3 +373,11 @@ export function capabilitiesFor(
 export function expandPublicUrl(pattern: string, appId: string): string {
   return pattern.replaceAll('{appId}', encodeURIComponent(appId));
 }
+
+/**
+ * What an App a failed restore left off its runtime reports as its own error. The environment's restore error may name
+ * any of its Apps or their paths, so it stays on the environment (`HostOccupancy.failedEnvironments`), for those who
+ * may diagnose it, and never rides on an App that someone who sees only that App reads.
+ */
+export const UNRESTORED_APP_ERROR =
+  'The app could not be restored after its host restarted; it is retried in the background.';

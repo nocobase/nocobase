@@ -1,4 +1,7 @@
-import { jobExecutorServiceToken } from '@nocobase/app-server/jobs';
+import {
+  jobExecutorServiceToken,
+  type AppJobsConfig,
+} from '@nocobase/app-server/jobs';
 import { loggingToken } from '@nocobase/app-server/logging';
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
 import { databaseManagerToken } from '@nocobase/db';
@@ -7,6 +10,10 @@ import { ServiceProvider } from '@nocobase/service-provider';
 import { createNotificationManager } from '../manager.js';
 import { createNotificationRegistry } from '../registry.js';
 import { notificationRuntimeToken } from '../runtime.js';
+import {
+  NotificationTemplateRegistry,
+  notificationTemplateRegistryToken,
+} from '../templates.js';
 import {
   notificationExtensionRegistryToken,
   notificationServiceToken,
@@ -44,7 +51,13 @@ export class NotificationProvider<
     if (!this.app.container.has(loggingToken))
       throw new Error('Notification core requires the logging dependency.');
     const jobsConfiguration = this.jobsConfiguration();
+    // Keep the startup snapshot; third-party channel configuration may contain functions.
+    const config = this.app.config.get<NotificationConfig>('notification')!;
     const registry = createNotificationRegistry();
+    this.app.container.instance(
+      notificationTemplateRegistryToken,
+      new NotificationTemplateRegistry(),
+    );
     this.app.container.instance(notificationExtensionRegistryToken, registry);
     this.app.container.singleton(notificationRuntimeToken, (container) =>
       createNotificationManager<NotificationChannelMap>({
@@ -58,7 +71,7 @@ export class NotificationProvider<
           .child({
             module: 'notification',
           }),
-        config: this.app.config.get<NotificationConfig>('notification')!,
+        config,
         registry,
         container: this.app.container,
       }),
@@ -89,9 +102,12 @@ export class NotificationProvider<
   private jobsConfiguration(): string | undefined {
     const name = this.app.config.get<NotificationConfig>('notification')?.jobs;
     if (name === undefined) return undefined;
-    const jobs = this.app.config.get<Record<string, unknown>>('jobs');
+    const jobs = this.app.config.get<AppJobsConfig>('jobs');
     // `jobs.default` holds a key, not a configuration, so it is rejected too.
-    const selected = jobs?.[name];
+    const selected =
+      name !== 'default' && jobs?.backends && Object.hasOwn(jobs.backends, name)
+        ? jobs.backends[name]
+        : undefined;
     if (!selected || typeof selected !== 'object') {
       throw new Error(
         `notification.jobs names "${name}", which is not a jobs configuration.`,

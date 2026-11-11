@@ -78,7 +78,7 @@ export function defineQueueContract(target: QueueContractTarget): void {
       const created = createQueueService(
         {
           default: 'main',
-          main: { ...target.entry(namespace), ...options },
+          backends: { main: { ...target.entry(namespace), ...options } },
         },
         {
           appName: 'contract',
@@ -395,8 +395,10 @@ export function defineQueueContract(target: QueueContractTarget): void {
       const queue = createQueueService(
         {
           default: 'main',
-          main: target.entry(`contract-${randomUUID()}`),
-          other: target.entry(`contract-${randomUUID()}`),
+          backends: {
+            main: target.entry(`contract-${randomUUID()}`),
+            other: target.entry(`contract-${randomUUID()}`),
+          },
         },
         {
           appName: 'contract',

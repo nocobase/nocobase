@@ -11,7 +11,7 @@ const frFR: LocaleResource<typeof enUS> = {
   access: {
     sections: {
       projects: 'Projets',
-      issues: 'Tickets',
+      issues: 'Tâches',
       settings: 'Paramètres du projet',
       members: 'Membres et rôles',
     },
@@ -51,103 +51,100 @@ const frFR: LocaleResource<typeof enUS> = {
         },
       },
       issues: {
-        title: 'Tickets',
-        description: 'Les enjeux et leurs commentaires, en projet ou seuls.',
+        title: 'Tâches',
+        description:
+          'Les tâches et leurs commentaires, dans un projet ou indépendantes.',
         actions: {
           view: {
-            title: 'Afficher les problèmes',
+            title: 'Voir les tâches',
             description:
-              'Voir les problèmes dans les listes, les tableaux et leurs détails',
-            related: "Afficher les problèmes (ceux qu'ils peuvent voir)",
+              'Voir les tâches dans les listes, les tableaux et leurs détails',
+            related: 'Voir les tâches (celles qu’ils peuvent voir)',
             relatedLabel: 'Dans les projets, je peux voir',
             relatedHint:
-              'Problèmes sans projet et problèmes dans les projets que je peux voir',
-            all: 'Afficher les problèmes (tous)',
+              'Tâches sans projet et tâches des projets que je peux voir',
+            all: 'Voir les tâches (toutes)',
           },
           create: {
-            title: 'Créer des problèmes',
-            description: 'Créer des tickets, dans un projet ou seul',
-            related:
-              "Créer des problèmes (dans les projets qu'ils peuvent voir)",
+            title: 'Créer des tâches',
+            description: 'Créer des tâches, dans un projet ou indépendantes',
+            related: 'Créer des tâches (dans les projets qu’ils peuvent voir)',
             relatedLabel: 'Dans les projets, je peux voir',
             relatedHint:
-              'Problèmes sans projet ou dans des projets que je peux voir',
-            all: 'Créer des problèmes (tous)',
+              'Tâches sans projet ou dans les projets que je peux voir',
+            all: 'Créer des tâches (toutes)',
           },
           edit: {
-            title: 'Modifier les problèmes',
+            title: 'Modifier des tâches',
             description:
-              'Titre, description, priorité, dates, étiquettes, exécuteurs testamentaires et statuts ouverts',
-            related: "Modifier les problèmes (ceux qu'ils peuvent voir)",
+              'Titre, description, priorité, dates, étiquettes, exécutants et statuts ouverts',
+            related: 'Modifier des tâches (celles qu’ils peuvent voir)',
             relatedLabel: 'Dans les projets, je peux voir',
             relatedHint:
-              'Problèmes sans projet et problèmes dans les projets que je peux voir',
-            all: 'Modifier les problèmes (tous)',
+              'Tâches sans projet et tâches des projets que je peux voir',
+            all: 'Modifier des tâches (toutes)',
           },
           comment: {
-            title: 'Commentaire sur les questions',
+            title: 'Commenter des tâches',
             description:
               'Commenter, répondre et résoudre les fils de discussion ; modifier et supprimer leurs propres commentaires',
-            related: "Commentez les problèmes (ceux qu'ils peuvent voir)",
+            related: 'Commenter des tâches (celles qu’ils peuvent voir)',
             relatedLabel: 'Dans les projets, je peux voir',
             relatedHint:
-              'Problèmes sans projet et problèmes dans les projets que je peux voir',
-            all: 'Commentaires sur les problèmes (tous)',
+              'Tâches sans projet et tâches des projets que je peux voir',
+            all: 'Commenter des tâches (toutes)',
           },
           moderateComments: {
             title: 'Commentaires modérés',
             description: 'Supprimer les commentaires des autres',
             related:
-              'Commentaires modérés (sur les problèmes dont ils sont propriétaires ou dont ils dirigent le projet)',
-            relatedLabel:
-              'Sur les questions qui me appartiennent ou dans les projets que je mène',
+              'Modérer les commentaires (sur leurs tâches ou les projets qu’ils dirigent)',
+            relatedLabel: 'Sur mes tâches ou dans les projets que je dirige',
             relatedHint:
-              'Commentaires sur les problèmes qui me appartiennent et sur les problèmes des projets que je dirige',
+              'Commentaires sur mes tâches et sur les tâches des projets que je dirige',
             all: 'Commentaires modérés (tous)',
           },
           close: {
-            title: 'Fermer les problèmes',
-            description: 'Marquer un problème comme terminé ou annulé',
+            title: 'Clore des tâches',
+            description: 'Marquer une tâche comme terminée ou annulée',
             related:
-              'Problèmes clôturés (ceux qui leur appartiennent ou dont ils dirigent le projet)',
+              'Clore des tâches (les leurs ou celles des projets qu’ils dirigent)',
             relatedLabel:
               'Ceux que je possède ou dans les projets que je dirige',
-            relatedHint:
-              'Problèmes que je possède et problèmes liés aux projets que je dirige',
-            all: 'Problèmes clôturés (tous)',
+            relatedHint: 'Mes tâches et les tâches des projets que je dirige',
+            all: 'Clore des tâches (toutes)',
           },
           changeOwner: {
             title: 'Changer le propriétaire',
             description:
-              "Confier un problème à quelqu'un d'autre pour qu'il en soit responsable",
+              'Confier une tâche à une autre personne qui en devient responsable',
             related:
               "Changer le propriétaire (ceux qu'ils possèdent ou dont ils dirigent le projet)",
             relatedLabel:
               'Ceux que je possède ou dans les projets que je dirige',
-            relatedHint:
-              'Problèmes que je possède et problèmes liés aux projets que je dirige',
+            relatedHint: 'Mes tâches et les tâches des projets que je dirige',
             all: 'Changer le propriétaire (tous)',
           },
           delete: {
-            title: 'Supprimer et restaurer les problèmes',
-            description: 'Supprimer les problèmes et restaurer ceux supprimés',
-            all: 'Supprimer et restaurer les problèmes',
+            title: 'Supprimer et restaurer des tâches',
+            description: 'Supprimer des tâches et restaurer celles supprimées',
+            all: 'Supprimer et restaurer des tâches',
           },
         },
       },
       attachments: {
         title: 'Pièces jointes',
-        description: 'Fichiers joints aux problèmes et aux commentaires.',
+        description: 'Fichiers joints aux tâches et aux commentaires.',
         actions: {
           upload: {
             title: 'Télécharger des pièces jointes',
             description:
-              "Joindre des fichiers aux numéros qu'ils peuvent modifier et à leurs commentaires",
+              'Joindre des fichiers aux tâches qu’ils peuvent modifier et à leurs commentaires',
             related:
-              "Télécharger des pièces jointes (sur les problèmes qu'ils peuvent voir)",
-            relatedLabel: 'Sur les problèmes dans les projets que je peux voir',
+              'Téléverser des pièces jointes (sur les tâches qu’ils peuvent voir)',
+            relatedLabel: 'Sur les tâches des projets que je peux voir',
             relatedHint:
-              'Fichiers sur les problèmes sans projet et sur les problèmes dans les projets que je peux voir',
+              'Fichiers sur les tâches sans projet et sur les tâches des projets que je peux voir',
             all: 'Télécharger des pièces jointes (toutes)',
           },
         },
@@ -155,11 +152,11 @@ const frFR: LocaleResource<typeof enUS> = {
     },
     collections: {
       pmProjects: 'Projets',
-      pmIssues: 'Tickets',
+      pmIssues: 'Tâches',
     },
     recordAccess: {
-      visible: "Projets et problèmes qu'ils peuvent voir",
-      managed: "Projets qu'ils mènent et enjeux dont ils sont propriétaires",
+      visible: 'Projets et tâches qu’ils peuvent voir',
+      managed: 'Projets qu’ils dirigent et tâches dont ils sont responsables',
     },
     settings: {
       pm: {
@@ -175,9 +172,9 @@ const frFR: LocaleResource<typeof enUS> = {
         objects: 'Projets',
       },
       issues: {
-        title: 'Tickets',
+        title: 'Tâches',
         description:
-          'Voir les problèmes ; les créer, les éditer, les commenter, les fermer et les réaffecter ; modérer les commentaires et supprimer les problèmes.',
+          'Voir les tâches ; les créer, modifier, commenter, clore et réattribuer ; modérer les commentaires et supprimer des tâches.',
       },
       settings: {
         title: 'Paramètres du projet',
@@ -203,9 +200,9 @@ const frFR: LocaleResource<typeof enUS> = {
     },
   },
   notifications: {
-    batchDone: 'Tous les sous-numéros de {{identifier}} sont terminés',
+    batchDone: 'Toutes les sous-tâches de {{identifier}} sont terminées',
     batchDoneStage:
-      "L'étape {{stage}} des sous-numéros de {{identifier}} est terminée",
+      'L’étape {{stage}} des sous-tâches de {{identifier}} est terminée',
     commented: '{{actor}} a commenté {{identifier}}',
     dependencyReleased:
       '{{releasedBy}} est terminé, donc {{identifier}} peut démarrer',
@@ -220,7 +217,7 @@ const frFR: LocaleResource<typeof enUS> = {
     ownerNotified: '{{identifier}} est maintenant {{status}}',
   },
   status: {
-    backlog: 'Arriéré',
+    backlog: 'Backlog',
     blocked: 'Bloqué',
     cancelled: 'Annulé',
     done: 'Terminé',

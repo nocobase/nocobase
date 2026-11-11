@@ -1,13 +1,21 @@
 import {
+  RouteChildPageHostContext,
+  type RouteChildPageHostValue,
+} from '@nocobase/app-client/route-containers';
+import {
   createContext,
   useContext,
   useEffect,
+  useLayoutEffect,
+  useMemo,
   useRef,
+  useState,
   type ReactElement,
   type ReactNode,
   type RefObject,
 } from 'react';
 
+import { DiscardScope } from '#components/discard-guard';
 import { cn } from 'cn';
 
 export interface RouteChildPageProps {
@@ -29,6 +37,7 @@ const EnclosingLayerContext =
  * Unlike the other two it is deliberately **not** modal. It does not portal out of the content area or trap focus,
  * because the user is still on a page of the application and must be able to reach the sidebar. What closes it is
  * the header's breadcrumb or the `BackButton` above its heading, or the browser's back button — not an X or Escape.
+ * Every one of those first asks "Discard changes?" while a form in it has unsaved input, as `RouteDialog` does.
  *
  * It is two elements, the way the layout's content area is: the outer one positions and never scrolls, the inner one
  * scrolls. A deeper layer rendered beside this component anchors to the content area, as this one does, which is
@@ -36,7 +45,58 @@ const EnclosingLayerContext =
  * the tab's outlet — anchors to the outer element: it covers this layer whole instead of scrolling out of sight with
  * the content once the user has scrolled this page.
  */
-export function RouteChildPage({
+export function RouteChildPage(props: RouteChildPageProps): ReactElement {
+  const host = useContext(RouteChildPageHostContext);
+  if (host) return <HostedRouteChildPage host={host} {...props} />;
+  return <RouteChildPageLayer {...props} />;
+}
+
+// Inside the layer the application opened, the page's `RouteChildPage` adds no second layer: its content renders in
+// that layer and its `className` moves onto it, so a migrated page keeps its layout.
+function HostedRouteChildPage({
+  host,
+  children,
+  className,
+}: RouteChildPageProps & {
+  readonly host: RouteChildPageHostValue;
+}): ReactElement {
+  useLayoutEffect(() => {
+    host.configure({ className });
+    return () => host.configure({});
+  }, [host, className]);
+  return (
+    <RouteChildPageHostContext.Provider value={null}>
+      {children}
+    </RouteChildPageHostContext.Provider>
+  );
+}
+
+/**
+ * The layer the application opens for a route that declares a `child-page` presentation, before the page module, its
+ * authorization check or its data are ready. Waiting, denial and failure render inside it; once the page renders, its
+ * own `RouteChildPage` contributes content to this layer. Everything the hosted page renders, including an outlet it
+ * places beside its `RouteChildPage`, is inside the layer, so a deeper child page covers this one whole.
+ */
+export function RouteChildPageHost({
+  children,
+}: {
+  readonly children?: ReactNode;
+}): ReactElement {
+  const [className, setClassName] = useState<string>();
+  const host = useMemo<RouteChildPageHostValue>(
+    () => ({ configure: (config) => setClassName(config.className) }),
+    [],
+  );
+  return (
+    <RouteChildPageLayer className={className}>
+      <RouteChildPageHostContext.Provider value={host}>
+        {children}
+      </RouteChildPageHostContext.Provider>
+    </RouteChildPageLayer>
+  );
+}
+
+function RouteChildPageLayer({
   children,
   className,
 }: RouteChildPageProps): ReactElement {
@@ -113,9 +173,25 @@ export function RouteChildPage({
         ref={scrollerRef}
       >
         <EnclosingLayerContext.Provider value={scrollerRef}>
-          {children}
+          {/* A create or edit page asks before discarding its form's input, as a route dialog does (mobile.md M7.4):
+              leaving by the back button, a breadcrumb, a link or browser back asks "Discard changes?", and a reload
+              gets the browser's warning. */}
+          <DiscardScope containerRef={layerRef}>{children}</DiscardScope>
         </EnclosingLayerContext.Provider>
       </div>
     </div>
+  );
+}
+
+/** Ends a `RouteChildPageHost`'s reach, so a route rendered inside one that is not hosted builds its own layer. */
+export function RouteChildPageHostBoundary({
+  children,
+}: {
+  readonly children?: ReactNode;
+}): ReactElement {
+  return (
+    <RouteChildPageHostContext.Provider value={null}>
+      {children}
+    </RouteChildPageHostContext.Provider>
   );
 }

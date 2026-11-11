@@ -106,6 +106,7 @@ export function formatHelp(binary: string): string {
     'NOTES',
     '  The template is downloaded from https://registry.npmjs.org by default.',
     '  Override it with --registry, or set the NOCOBASE_REGISTRY environment variable.',
+    '  multi-portal is commercial: log in to https://pkg-v3.nocobase.com/ first and select that registry.',
     '',
     '  The generated app is not configured yet. Configure it inside the app directory with:',
     '    pnpm nocobase config init',

@@ -224,7 +224,6 @@ async function run(
   progress('Installing dependencies with pnpm');
   await installDependencies({
     directory: targetDirectory,
-    registry,
     onOutput: (chunk) => {
       process.stderr.write(chunk);
     },
