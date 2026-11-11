@@ -13,7 +13,10 @@ import { visibleProjects } from '../projects/index.js';
 /** No records are materialized: consumers may aggregate or page these relations in the database. */
 export interface IssueHierarchySource {
   /** Visible seeds in the requested project; consumers may follow only authorized parents. All visible records without a project filter. */
-  readonly scoped: { readonly sql: string; readonly parameters: readonly unknown[] };
+  readonly scoped: {
+    readonly sql: string;
+    readonly parameters: readonly unknown[];
+  };
   readonly visible: {
     readonly sql: string;
     readonly parameters: readonly unknown[];
