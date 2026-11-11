@@ -76,6 +76,14 @@ Der Port der Anwendung. Der Standardwert ist `13000`.
 APP_PORT=13000
 ```
 
+### APP_PUBLIC_ORIGIN
+
+Bei einer Unteranwendung mit eigener Domain öffnet der Link die unter `cname` hinterlegte Domain über HTTPS. Geben Sie einen Hostnamen wie `billing.example.com` an. Der Link berücksichtigt `APP_PUBLIC_PATH`.
+
+Für die Hauptanwendung und Unteranwendungen ohne eigene Domain setzen Sie vor dem Upgrade etwa `APP_PUBLIC_ORIGIN=https://accounts.example.com`. Ein Port ist optional. Unteranwendungen verwenden auf der gemeinsamen Domain ihren Anwendungspfad. Erstellen Sie nach der Änderung den Compose-Container neu oder starten Sie die Anwendung nach dem Bearbeiten der `.env` neu. Ohne gültige Adresse wird keine E-Mail zur Wiederherstellung versendet. Prüfen Sie nach dem Upgrade den Link für jeden Zugang.
+
+Wenn NocoBase als OpenID-Connect-Anbieter dient, prüfen Sie beim Setzen von `APP_PUBLIC_ORIGIN`, ob die Issuer-URL weiterhin mit der bei den Clients registrierten URL übereinstimmt. Für die Passwortwiederherstellung auf einer eigenen Domain ist keine Änderung dieser Variable nötig.
+
 ### API_BASE_PATH
 
 Das Präfix der NocoBase API-Adresse. Der Standardwert ist `/api/`.

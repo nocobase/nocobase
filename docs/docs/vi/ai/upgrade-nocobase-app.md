@@ -11,6 +11,8 @@ Hướng dẫn này áp dụng cho ứng dụng được cài đặt bằng `nb 
 
 :::
 
+Nếu đã bật khôi phục mật khẩu qua email, hãy kiểm tra tên miền của từng ứng dụng con và đặt [APP_PUBLIC_ORIGIN](../get-started/installation/env.md#app_public_origin) cho ứng dụng chính và các ứng dụng con chưa có tên miền riêng.
+
 ## Bước 1: xác nhận env hiện tại
 
 Trước tiên xác nhận CLI env đang có hiệu lực:

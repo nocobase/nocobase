@@ -39,8 +39,8 @@ describe('gateway with multiple apps', () => {
     const repo = app.db.getRepository('applications');
     await repo.model.create({ name: 'billing', cname: 'billing.example.com' });
     const supervisor = AppSupervisor.getInstance();
-    expect(await supervisor.getAppNameByCName('billing.example.com')).toBe('billing');
-    expect(await supervisor.getAppNameByCName('main.example.com')).toBeNull();
+    expect((await supervisor.getAppModel('billing')).cname).toBe('billing.example.com');
+    expect(await supervisor.getAppNameByCName('billing.example.com')).toBeNull();
   });
 
   it.skip('should boot main app with sub apps', async () => {

@@ -11,6 +11,8 @@ description: CLI env として保存された NocoBase アプリを nb app upgra
 
 :::
 
+メールによるパスワード再設定を有効にしている場合は、各サブアプリの独自ドメインを確認し、メインアプリと独自ドメインのないサブアプリには [APP_PUBLIC_ORIGIN](../get-started/installation/env.md#app_public_origin) を設定してください。
+
 ## ステップ 1: 現在の env を確認する
 
 まず、現在有効な CLI env を確認します。

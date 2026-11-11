@@ -21,7 +21,7 @@ import { AuthModel } from './model/authenticator';
 import { Storer } from './storer';
 import { TokenBlacklistService } from './token-blacklist';
 import { TokenController } from './token-controller';
-import { getPasswordResetOrigin, resetOriginRequired } from './utils/passwordResetUrl';
+import { getPasswordResetDestination } from './utils/passwordResetUrl';
 
 export class PluginAuthServer extends Plugin {
   cache: Cache;
@@ -113,27 +113,30 @@ export class PluginAuthServer extends Plugin {
         };
       },
     });
-    this.db.on('authenticators.beforeSave', (model: AuthModel, { context }: { context?: Context }) => {
+    this.db.on('authenticators.beforeSave', async (model: AuthModel, { context }: { context?: Context }) => {
       if (!context || model.authType !== presetAuthType || !model.options?.public?.enableResetPassword) {
         return;
       }
       const enablingRecovery = model.isNewRecord || !model.previous('options')?.public?.enableResetPassword;
       const enablingAuthenticator = model.changed('enabled') && model.get('enabled');
-      if ((enablingRecovery || enablingAuthenticator) && !getPasswordResetOrigin()) {
-        context.throw(400, context.t(resetOriginRequired, { ns: namespace }));
+      if (enablingRecovery || enablingAuthenticator) {
+        const destination = await getPasswordResetDestination(this.app.name);
+        if ('error' in destination) {
+          context.throw(400, context.t(destination.error, { ns: namespace }));
+        }
       }
     });
 
     this.app.on('afterUpgrade', async () => {
-      if (getPasswordResetOrigin()) {
-        return;
-      }
       const authenticators = await this.db.getRepository('authenticators').find({
         filter: { authType: presetAuthType, enabled: true },
         fields: ['options'],
       });
       if (authenticators.some((auth) => auth.options?.public?.enableResetPassword)) {
-        this.app.logger.warn(resetOriginRequired);
+        const destination = await getPasswordResetDestination(this.app.name);
+        if ('error' in destination) {
+          this.app.logger.warn(destination.error);
+        }
       }
     });
 

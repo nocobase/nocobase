@@ -12,7 +12,7 @@ import { PasswordField } from '@nocobase/database';
 import _ from 'lodash';
 import { namespace } from '../preset';
 import { parsedValue } from '@nocobase/utils';
-import { getPasswordResetOrigin, getPasswordResetPage, resetOriginRequired } from './utils/passwordResetUrl';
+import { getPasswordResetDestination, getPasswordResetPage } from './utils/passwordResetUrl';
 
 export class BasicAuth extends BaseAuth {
   static readonly optionsKeysNotAllowedInEnv = ['emailContentText', 'emailContentHTML', 'emailSubject'];
@@ -197,12 +197,12 @@ export class BasicAuth extends BaseAuth {
       ctx.throw(403, ctx.t('Not allowed to reset password', { ns: namespace }));
     }
 
-    const origin = getPasswordResetOrigin();
-    if (!origin) {
-      ctx.logger.warn(resetOriginRequired);
-      ctx.throw(503, ctx.t('Email password recovery is temporarily unavailable.', { ns: namespace }));
+    const destination = await getPasswordResetDestination(ctx.app.name);
+    if ('error' in destination) {
+      ctx.logger.warn(destination.error);
+      return ctx.throw(503, ctx.t('Email password recovery is temporarily unavailable.', { ns: namespace }));
     }
-    const resetPage = await getPasswordResetPage(origin, ctx.app.name, baseURL);
+    const resetPage = getPasswordResetPage(destination, baseURL);
 
     // 生成重置密码的 token
     const resetToken = await ctx.app.authManager.jwt.sign(

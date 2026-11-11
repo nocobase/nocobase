@@ -4,6 +4,7 @@
 
 - Sichern Sie unbedingt zuerst Ihre Datenbank.
 - Stoppen Sie die laufende NocoBase-Instanz.
+- Wenn die Passwortwiederherstellung per E-Mail aktiviert ist, prüfen Sie die Domain jeder Unteranwendung und setzen Sie [APP_PUBLIC_ORIGIN](../installation/env.md#app_public_origin) für die Hauptanwendung und für Unteranwendungen ohne eigene Domain.
 
 :::
 

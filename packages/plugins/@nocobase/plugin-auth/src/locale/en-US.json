@@ -1,4 +1,6 @@
 {
+  "Check the custom domain registered for this sub-application to enable email password recovery.": "Check the custom domain registered for this sub-application to enable email password recovery.",
+  "Could not read the sub-application domain settings for email password recovery.": "Could not read the sub-application domain settings for email password recovery.",
   "Configure APP_PUBLIC_ORIGIN with the public HTTP or HTTPS origin to enable email password recovery.": "Configure APP_PUBLIC_ORIGIN with the public HTTP or HTTPS origin to enable email password recovery.",
   "Email password recovery is temporarily unavailable.": "Email password recovery is temporarily unavailable.",
   "1. Select notification channel": "1. Select notification channel",
