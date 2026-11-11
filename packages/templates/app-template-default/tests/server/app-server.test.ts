@@ -276,6 +276,52 @@ describe('app server', () => {
     }
   });
 
+  it('starts with Web Push installed but not configured, and keeps devices behind sign-in', async () => {
+    const app = trackCloseable(
+      await createInstalledStandaloneServer({ viteDevUrl: false }),
+    );
+    const baseUrl = `http://localhost${app.application.publicBasePath}`;
+    for (const path of ['/api/webPush/key', '/api/webPush/subscriptions'])
+      expect((await requestApp(app, `${baseUrl}${path}`)).status).toBe(401);
+    // The plugin's own worker, the only one: the template registers none and nothing registers it before a subscription.
+    const worker = await requestApp(app, `${baseUrl}/push-worker.js`);
+    expect(worker.status).toBe(200);
+    expect(worker.headers.get('content-type')).toContain(
+      'application/javascript',
+    );
+    expect(await worker.text()).not.toContain("addEventListener('fetch'");
+
+    const signIn = await requestApp(
+      app,
+      `${baseUrl}/api/auth/sign-in/username`,
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ username: 'nocobase', password: 'admin123' }),
+      },
+    );
+    expect(signIn.status).toBe(200);
+    const cookie = signIn.headers
+      .getSetCookie()
+      .map((header) => header.split(';')[0])
+      .join('; ');
+    // No WEB_PUSH_PRIVATE_KEY: the device settings say push is not configured.
+    await expect(
+      (
+        await requestApp(app, `${baseUrl}/api/webPush/key`, {
+          headers: { cookie },
+        })
+      ).json(),
+    ).resolves.toEqual({ data: { publicKey: null } });
+    await expect(
+      (
+        await requestApp(app, `${baseUrl}/api/webPush/subscriptions`, {
+          headers: { cookie },
+        })
+      ).json(),
+    ).resolves.toMatchObject({ data: [] });
+  });
+
   it('serves the installation manifest and icons anonymously through server/app.ts', async () => {
     const sourceRoot = path.resolve(import.meta.dirname, '../..');
     const clientDir = mkdtempSync(

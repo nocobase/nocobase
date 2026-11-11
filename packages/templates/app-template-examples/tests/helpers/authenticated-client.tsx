@@ -31,6 +31,10 @@ export async function renderAuthenticatedClient(
     locale?: string;
     prepare?: (server: TestApp, session: TestSession) => Promise<void>;
     namespaces?: NonNullable<Parameters<typeof renderWithApp>[1]>['namespaces'];
+    /** Client plugins besides authentication and authorization, such as the ones a component under test needs. */
+    plugins?: NonNullable<Parameters<typeof renderWithApp>[1]>['plugins'];
+    /** Configuration sections for this test's own server; not available with a shared server. */
+    serverConfig?: Readonly<Record<string, unknown>>;
     beforeRequest?: (request: Request) => void | Promise<void>;
     afterResponse?: (
       request: Request,
@@ -39,7 +43,8 @@ export async function renderAuthenticatedClient(
   } = {},
   sharedServer?: TestApp,
 ) {
-  const server = sharedServer ?? (await createClientTestServer());
+  const server =
+    sharedServer ?? (await createClientTestServer(options.serverConfig));
   if (!sharedServer) onTestFinished(() => server.close());
   const identity = sharedServer ? randomUUID() : '';
   const permissionSetKey = identity ? `test-access-${identity}` : 'test-access';
@@ -86,7 +91,9 @@ export async function renderAuthenticatedClient(
   return renderClient(server, session, permissionSetKey, ui, options);
 }
 
-function createClientTestServer() {
+function createClientTestServer(
+  serverConfig: Readonly<Record<string, unknown>> = {},
+) {
   return createTestApp({
     createServer: createStandaloneServer,
     // Local preview origins must not change test cookie security or trusted origins.
@@ -106,6 +113,7 @@ function createClientTestServer() {
         emailAndPassword: { disableSignUp: false },
         advanced: { disableOriginCheck: false, disableCSRFCheck: false },
       },
+      ...serverConfig,
     },
   });
 }
@@ -168,7 +176,7 @@ async function renderClient(
     return ui;
   }
   const view = await renderWithApp(<SessionObserver />, {
-    plugins: [authentication(), authorization()],
+    plugins: [authentication(), authorization(), ...(options.plugins ?? [])],
     namespace: packageMetadata.name,
     namespaces: {
       ...options.namespaces,
