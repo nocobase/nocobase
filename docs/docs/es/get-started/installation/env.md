@@ -76,6 +76,14 @@ Puerto de la aplicación. El valor predeterminado es `13000`.
 APP_PORT=13000
 ```
 
+### APP_PUBLIC_ORIGIN
+
+Si la subaplicación tiene un dominio propio registrado en `cname`, el enlace del correo abre ese dominio por HTTPS. Introduce un nombre de host como `billing.example.com`. El enlace conserva la ruta de `APP_PUBLIC_PATH`.
+
+Para la aplicación principal y las subaplicaciones sin dominio propio, define, por ejemplo, `APP_PUBLIC_ORIGIN=https://accounts.example.com` antes de actualizar. Puedes incluir el puerto. En un dominio compartido, el enlace incluye la ruta de la subaplicación. Vuelve a crear el contenedor de Compose o modifica `.env` y reinicia la aplicación. Sin una dirección válida se suspende el envío de correos de recuperación. Tras la actualización, comprueba el enlace de cada punto de acceso.
+
+Si NocoBase es tu proveedor de OpenID Connect, al configurar `APP_PUBLIC_ORIGIN` comprueba que la URL del emisor coincide con la registrada en los clientes. Una subaplicación con dominio propio no necesita cambiar esta variable para recuperar contraseñas.
+
 ### API_BASE_PATH
 
 Prefijo de la dirección de la API de NocoBase. El valor predeterminado es `/api/`.

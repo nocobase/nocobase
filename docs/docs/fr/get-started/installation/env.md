@@ -76,6 +76,14 @@ Port de l'application. La valeur par défaut est `13000`.
 APP_PORT=13000
 ```
 
+### APP_PUBLIC_ORIGIN
+
+Pour une sous-application avec un domaine dédié, le lien ouvre en HTTPS le domaine enregistré dans `cname`. Saisissez un nom d’hôte comme `billing.example.com`. Le lien conserve le chemin défini dans `APP_PUBLIC_PATH`.
+
+Pour l’application principale et les sous-applications sans domaine dédié, définissez par exemple `APP_PUBLIC_ORIGIN=https://accounts.example.com` avant la mise à niveau. Le port est facultatif. Sur le domaine partagé, le lien inclut le chemin de la sous-application. Recréez le conteneur Compose ou modifiez le fichier `.env` et redémarrez l’application. Sans adresse valide, l’envoi des e-mails de récupération est suspendu. Après la mise à niveau, testez le lien de chaque point d’accès.
+
+Si NocoBase est votre fournisseur OpenID Connect, vérifiez que la valeur de `APP_PUBLIC_ORIGIN` préserve l’URL de l’émetteur enregistrée auprès des clients. Une sous-application avec un domaine dédié peut envoyer les e-mails de récupération sans modifier cette variable.
+
 ### API_BASE_PATH
 
 Préfixe de l'adresse de l'API NocoBase. La valeur par défaut est `/api/`.

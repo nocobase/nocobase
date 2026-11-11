@@ -82,6 +82,14 @@ APP_KEY=app-key-test
 APP_PORT=13000
 ```
 
+### APP_PUBLIC_ORIGIN
+
+已绑定独立域名（`cname`）的子应用通过 HTTPS 打开邮件重置链接。域名填写主机名，比如 `billing.example.com`。链接会保留 `APP_PUBLIC_PATH` 指定的部署路径，直接打开对应子应用。
+
+如果主应用或未绑定独立域名的子应用启用了邮件找回密码，请在升级前设置 `APP_PUBLIC_ORIGIN=https://accounts.example.com`。填写公开协议、域名和可选端口。通过主站访问子应用时，链接会包含子应用路径。Docker 安装请更新 Compose 应用服务的环境变量并重新创建容器。源码或 `create-nocobase-app` 安装请更新 `.env` 并重启应用。无法确定有效地址时，系统会暂停发送重置邮件。升级后，请分别打开各入口的测试邮件，确认链接进入对应应用。
+
+如果 NocoBase 同时用作 OpenID Connect 身份提供方，补配 `APP_PUBLIC_ORIGIN` 时，请确认生成的 issuer 地址与接入方登记的地址一致。已绑定独立域名的子应用无需为找回密码修改这个变量。
+
 ### API_BASE_PATH
 
 NocoBase API 地址前缀，默认值 `/api/`
