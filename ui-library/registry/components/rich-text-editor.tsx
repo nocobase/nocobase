@@ -17,8 +17,8 @@ import {
   EditorContent,
   Tiptap,
   useEditor,
-  useTiptap,
-  useTiptapState,
+  useCurrentEditor,
+  useEditorState,
 } from '@tiptap/react';
 import type {
   SuggestionKeyDownProps,
@@ -592,7 +592,7 @@ export interface RichTextToolbarButtonProps {
 
 /**
  * One toolbar button: a shadcn `Toggle` bound to the editor of the surrounding `RichTextEditor` (Tiptap's
- * `useTiptap`), pressed while `isActive` holds. Focus stays in the editor when it is clicked.
+ * `useCurrentEditor`), pressed while `isActive` holds. Focus stays in the editor when it is clicked.
  */
 export function RichTextToolbarButton({
   label,
@@ -601,22 +601,23 @@ export function RichTextToolbarButton({
   isActive,
   isEnabled,
 }: RichTextToolbarButtonProps): ReactElement {
-  const { editor } = useTiptap();
-  const { pressed, enabled } = useTiptapState(
-    ({ editor: current }) => ({
-      pressed: isActive?.(current) ?? false,
-      enabled: current.isEditable && (isEnabled?.(current) ?? true),
+  const { editor } = useCurrentEditor();
+  const state = useEditorState({
+    editor,
+    selector: ({ editor: current }) => ({
+      pressed: current ? (isActive?.(current) ?? false) : false,
+      enabled: !!current?.isEditable && (isEnabled?.(current) ?? true),
     }),
-    (a, b) => a.pressed === b?.pressed && a.enabled === b?.enabled,
-  );
+    equalityFn: (a, b) => a.pressed === b?.pressed && a.enabled === b?.enabled,
+  });
   return (
     <Toggle
       aria-label={label}
       title={label}
-      pressed={pressed}
-      disabled={!enabled}
+      pressed={state?.pressed ?? false}
+      disabled={!state?.enabled}
       onMouseDown={(event) => event.preventDefault()}
-      onPressedChange={() => run(editor)}
+      onPressedChange={() => editor && run(editor)}
       className='size-6 min-w-6 rounded-md px-0 text-muted-foreground aria-pressed:text-foreground [&_svg:not([class*=size-])]:size-3.5'
     >
       <Icon aria-hidden='true' />
