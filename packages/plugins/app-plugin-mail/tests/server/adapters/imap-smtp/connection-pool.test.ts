@@ -151,7 +151,7 @@ describe('exclusive IMAP idle connections', () => {
   });
 
   it('reuses sequential attachment downloads and isolates overlapping downloads', async () => {
-    const { pool, create } = fixture();
+    const { pool, create, clients } = fixture();
     const context = {} as MailProviderContext;
     const account = {
       id: 'one',
@@ -198,6 +198,20 @@ describe('exclusive IMAP idle connections', () => {
     for (const result of results)
       expect(await new Response(result.stream).text()).toBe('test');
     await Promise.all(readers.map((reader) => reader.close()));
+
+    clients[0].fetchOne.mockRejectedValueOnce(new Error('FETCH failed'));
+    const failed = adapter();
+    expect(await failed.getAttachment('message', locator)).toMatchObject({
+      ok: false,
+    });
+    await failed.close();
+    expect(clients[0].close).toHaveBeenCalledOnce();
+    const fresh = adapter();
+    expect(await new Response((await download(fresh)).stream).text()).toBe(
+      'test',
+    );
+    expect(create).toHaveBeenCalledTimes(3);
+    await fresh.close();
     await pool.closeAll();
   });
 });

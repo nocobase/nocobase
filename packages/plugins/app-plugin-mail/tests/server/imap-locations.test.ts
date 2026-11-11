@@ -838,7 +838,7 @@ describe('IMAP verification and orphans', () => {
     ]);
   });
 
-  it.each(['batch', 'recheck', 'known'] as const)(
+  it.each(['batch', 'recheck', 'final snapshot'] as const)(
     'honors cancellation during the %s loop',
     async (phase) => {
       folder('INBOX');
@@ -848,7 +848,10 @@ describe('IMAP verification and orphans', () => {
       let lists = 0;
       server.onList = () => {
         lists += 1;
-        if (lists === (phase === 'recheck' ? 2 : phase === 'known' ? 3 : -1))
+        if (
+          lists ===
+          (phase === 'recheck' ? 2 : phase === 'final snapshot' ? 3 : -1)
+        )
           controller.abort(new Error('Verification stopped'));
       };
       if (phase === 'batch')
