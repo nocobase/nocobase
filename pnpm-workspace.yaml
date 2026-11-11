@@ -134,6 +134,8 @@ catalog:
 # part of the stack onto it: the `openai` client and LangChain then load different copies, types stop agreeing, and
 # LangGraph's interrupt handling changes behavior. Pinning keeps one copy throughout the stack.
 overrides:
+  # GHSA-hq66-cqwq-w95j; remove when officeparser requires pdfjs-dist >= 6.2.108. Its PDF and worker APIs are covered by extraction tests.
+  'pdfjs-dist@>=5.0.0 <6.2.108': ^6.2.108
   # GHSA-rfgv-xxqx-mfg5, GHSA-w293-vg96-wgc3, GHSA-xjj6-f33q-929c, GHSA-4w7w-5xrc-9h26, GHSA-2m5v-pch6-74hx, GHSA-qrxm-fqhp-jwvm; remove when the AI SDK requires undici >= 7.30.1.
   'undici@>=7.0.0 <7.30.1': ^7.30.1
   # GHSA-6qxp-vccf-f47h, GHSA-22jm-h49p-29qw, GHSA-46jr-4wx8-v453, GHSA-f897-62hf-6gxq; remove when the Claude agent SDK requires @modelcontextprotocol/sdk >= 1.32.0.
