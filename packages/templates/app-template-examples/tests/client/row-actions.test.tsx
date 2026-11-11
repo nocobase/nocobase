@@ -24,7 +24,10 @@ describe('RowActions', () => {
     expect(
       screen.queryByRole('button', { name: 'Open' }),
     ).not.toBeInTheDocument();
-    const trigger = screen.getByRole('button', { name: 'Actions for Alpha' });
+    const trigger = await screen.findByRole('button', {
+      name: 'Actions for Alpha',
+      expanded: false,
+    });
     await user.click(trigger);
     await user.click(await screen.findByRole('menuitem', { name: 'Open' }));
     expect(open).toHaveBeenCalledTimes(1);
@@ -44,7 +47,12 @@ describe('RowActions', () => {
         ]}
       />,
     );
-    await user.click(screen.getByRole('button', { name: 'Actions for Alpha' }));
+    await user.click(
+      await screen.findByRole('button', {
+        name: 'Actions for Alpha',
+        expanded: false,
+      }),
+    );
     const menu = await screen.findByRole('menu');
     const items = await screen.findAllByRole('menuitem');
     expect(items.map((item) => item.textContent)).toEqual([
@@ -69,7 +77,12 @@ describe('RowActions', () => {
       />,
     );
     expect(screen.getByRole('button', { name: 'Start' })).toBeVisible();
-    await user.click(screen.getByRole('button', { name: 'Actions for Alpha' }));
+    await user.click(
+      await screen.findByRole('button', {
+        name: 'Actions for Alpha',
+        expanded: false,
+      }),
+    );
     expect(
       (await screen.findAllByRole('menuitem')).map((item) => item.textContent),
     ).toEqual(['Manage']);
@@ -93,7 +106,12 @@ describe('RowActions', () => {
         </tbody>
       </table>,
     );
-    await user.click(screen.getByRole('button', { name: 'Actions for Alpha' }));
+    await user.click(
+      await screen.findByRole('button', {
+        name: 'Actions for Alpha',
+        expanded: false,
+      }),
+    );
     await user.click(await screen.findByRole('menuitem', { name: 'Edit' }));
     expect(edit).toHaveBeenCalledTimes(1);
     expect(rowClick).not.toHaveBeenCalled();

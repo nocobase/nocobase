@@ -189,7 +189,10 @@ it.each(['/users', '/settings/users'])(
     expect(
       screen.queryByRole('button', { name: 'Edit Alice' }),
     ).not.toBeInTheDocument();
-    const menu = screen.getByRole('button', { name: 'Actions for Alice' });
+    const menu = await screen.findByRole('button', {
+      name: 'Actions for Alice',
+      expanded: false,
+    });
     await user.click(menu);
     expect(
       (await screen.findAllByRole('menuitem')).map((item) => item.textContent),

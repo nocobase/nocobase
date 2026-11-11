@@ -919,7 +919,7 @@ test('reports row actions outside one RowActions menu, a visible actions header 
     result.findings.map((item) => [item.tag, item.line]),
     [
       ['actions column', 6],
-      ['actions column', 6],
+      ['actions column', 3],
       ['actions column', 7],
     ],
   );
@@ -936,6 +936,55 @@ test('accepts RowActions reached through a component of the same file, and a cel
     export const columns = [
       { id: 'actions', header: () => <span className='sr-only'>Actions</span>, cell: ({ row }) => <UserActions user={row.original} /> },
       { id: 'actions', cell: ({ row }) => <ImportedActions row={row} /> },
+    ];`);
+  assert.deepEqual(result.findings, []);
+});
+
+test('reports a control beside RowActions in the cell or in a component of the same file', () => {
+  const result = inspect(`
+    const columns = [{
+      id: 'actions',
+      header: () => <span className='sr-only'>Actions</span>,
+      cell: () => <><Button>Open</Button><RowActions label='Actions' actions={[]} /></>,
+    }];
+    function ModuleActions({ module }) {
+      return (
+        <div>
+          <Button variant='outline'>Install</Button>
+          <RowActions label={module.name} actions={[{ key: 'remove', label: 'Remove', destructive: true }]} />
+        </div>
+      );
+    }
+    const moduleColumns = [
+      { id: 'actions', header: () => <span className='sr-only'>Actions</span>, cell: ({ row }) => <ModuleActions module={row.original} /> },
+    ];`);
+  assert.deepEqual(
+    result.findings.map((item) => [item.tag, item.line]),
+    [
+      ['actions column', 5],
+      ['actions column', 10],
+    ],
+  );
+  assert.match(result.findings[0].replacement, /exposed/);
+});
+
+test('accepts links passed as a RowAction render, built inline or in a function of the same file, and confirmation dialogs', () => {
+  const result = inspect(`
+    function actionsFor(project) {
+      return [{ key: 'edit', label: 'Edit', render: <Link to={project.id} /> }];
+    }
+    function ProjectActions({ project }) {
+      return (
+        <>
+          <RowActions label={project.name} actions={actionsFor(project)} />
+          <AlertDialog><AlertDialogFooter><Button>Delete</Button></AlertDialogFooter></AlertDialog>
+        </>
+      );
+    }
+    const columns = [
+      { id: 'actions', header: () => <span className='sr-only'>Actions</span>, cell: ({ row }) => <ProjectActions project={row.original} /> },
+      { id: 'actions', header: () => <span className='sr-only'>Actions</span>,
+        cell: ({ row }) => <RowActions label='x' exposed={['open']} actions={[{ key: 'open', label: 'Open', render: (<a href={row.original.url} />) }]} /> },
     ];`);
   assert.deepEqual(result.findings, []);
 });

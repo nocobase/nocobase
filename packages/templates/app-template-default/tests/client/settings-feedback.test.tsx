@@ -234,7 +234,10 @@ it.each(['disable', 'enable', 'revokeSessions'] as const)(
     });
     // Account actions sit in the row's "⋮" menu (T1.5).
     await userEvent.click(
-      await screen.findByRole('button', { name: 'Actions for Alice' }),
+      await screen.findByRole('button', {
+        name: 'Actions for Alice',
+        expanded: false,
+      }),
     );
     await userEvent.click(
       await screen.findByRole('menuitem', {
@@ -312,7 +315,10 @@ it('keeps a failed account action in its dialog with no success toast', async ()
     }),
   });
   await userEvent.click(
-    await screen.findByRole('button', { name: 'Actions for Alice' }),
+    await screen.findByRole('button', {
+      name: 'Actions for Alice',
+      expanded: false,
+    }),
   );
   await userEvent.click(
     await screen.findByRole('menuitem', { name: 'Disable', exact: true }),

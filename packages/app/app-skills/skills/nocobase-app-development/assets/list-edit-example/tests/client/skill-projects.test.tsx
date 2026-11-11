@@ -55,8 +55,10 @@ async function openRowEdit(
   user: Pick<typeof userEvent, 'click'>,
   index = 0,
 ): Promise<void> {
+  // A trigger is ready once it reports its menu closed (.agents/rules/testing.md).
   const triggers = await screen.findAllByRole('button', {
     name: /^Actions for /,
+    expanded: false,
   });
   await user.click(triggers[index]!);
   await user.click(await screen.findByRole('menuitem', { name: 'Edit' }));
@@ -402,9 +404,12 @@ it.each(['cancel', 'save', 'removed', 'lastPageRemoved'])(
       screen.getByRole('button', { name: 'Go to next page' }),
     );
     expect(screen.getByText('Page 2 of 2')).toBeVisible();
-    const opener = screen.getAllByRole('button', {
-      name: /^Actions for /,
-    })[0];
+    const opener = (
+      await screen.findAllByRole('button', {
+        name: /^Actions for /,
+        expanded: false,
+      })
+    )[0]!;
     await userEvent.click(opener);
     await userEvent.click(
       await screen.findByRole('menuitem', { name: 'Edit' }),
