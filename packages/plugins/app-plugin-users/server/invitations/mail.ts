@@ -74,8 +74,12 @@ export function invitationEmailLocales(
 /** The expiry in the email's language, in UTC and saying so, since the recipient's time zone is unknown. */
 export function formatInvitationDate(date: Date, locale: string): string {
   return new Intl.DateTimeFormat(locale, {
-    dateStyle: 'long',
-    timeStyle: 'short',
+    // `dateStyle` cannot be combined with `timeZoneName`, so the long date is spelled out.
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
     timeZone: 'UTC',
     timeZoneName: 'short',
   }).format(date);
