@@ -64,7 +64,7 @@ test('both editions build at one source and dry runs cannot publish', () => {
 });
 
 test('public release notes go to the registry for both editions', async () => {
-  const { mkdtempSync, mkdirSync, writeFileSync, chmodSync } =
+  const { chmodSync, existsSync, mkdtempSync, mkdirSync, writeFileSync } =
     await import('node:fs');
   const { tmpdir } = await import('node:os');
   const { join } = await import('node:path');
@@ -127,10 +127,9 @@ echo '{"ok":true}'
       },
     });
     assert.equal(result.status, 0, result.stderr || result.stdout);
-    let calls = [];
-    try {
-      calls = readFileSync(join(temp, 'calls'), 'utf8').trim().split('\n');
-    } catch {}
+    const calls = existsSync(join(temp, 'calls'))
+      ? readFileSync(join(temp, 'calls'), 'utf8').trim().split('\n')
+      : [];
     return {
       calls,
       output: readFileSync(output, 'utf8'),
