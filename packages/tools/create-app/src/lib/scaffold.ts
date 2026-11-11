@@ -8,6 +8,11 @@ import {
   writeFile,
 } from 'node:fs/promises';
 import path from 'node:path';
+import {
+  ensureWorkspaceApplications,
+  readTemplateLayout,
+  type TemplateLayout,
+} from './layout.ts';
 
 /**
  * pnpm version a generated app pins.
@@ -278,67 +283,83 @@ export interface ScaffoldOptions {
  */
 export async function scaffoldFromTemplate(
   options: ScaffoldOptions,
-): Promise<void> {
+): Promise<TemplateLayout> {
   const { extraFiles, name, targetDirectory, templateDirectory } = options;
-
+  // Validate before copying: a malformed workspace must not leave a half-created project.
+  const layout = await readTemplateLayout(templateDirectory);
+  for (const app of layout.applications) {
+    assertValidAppName(app.suffix !== '' ? `${name}-${app.suffix}` : name);
+  }
   await mkdir(targetDirectory, { recursive: true });
   await cp(templateDirectory, targetDirectory, { recursive: true });
   await restoreGitignore(targetDirectory);
+  await rewriteManifest(
+    targetDirectory,
+    name,
+    layout.applications.some((app) => app.directory === '.'),
+    true,
+    layout.workspace,
+  );
+  if (layout.workspace) {
+    for (const app of layout.applications) {
+      if (app.directory === '.') continue;
+      const directory = path.join(targetDirectory, app.directory);
+      await restoreGitignore(directory);
+      // A template-provided ignore file must still protect runtime secrets and data in every nested App.
+      const ignore = path.join(directory, '.gitignore');
+      await writeFile(
+        ignore,
+        `${await readFile(ignore, 'utf8')}\n${FALLBACK_GITIGNORE}`,
+        'utf8',
+      );
+      await rewriteManifest(directory, `${name}-${app.suffix}`, true, false);
+    }
+    await ensureWorkspaceApplications(targetDirectory, layout);
+  }
+  for (const [relative, contents] of Object.entries(extraFiles ?? {})) {
+    const target = path.join(targetDirectory, relative);
+    await mkdir(path.dirname(target), { recursive: true });
+    await writeFile(target, contents, 'utf8');
+  }
+  return layout;
+}
 
-  const manifestPath = path.join(targetDirectory, 'package.json');
+/** Rewrites package identity, never persisted business, migration or permission identifiers. */
+async function rewriteManifest(
+  directory: string,
+  name: string,
+  runtime: boolean,
+  recordTemplate = true,
+  forcePrivate = false,
+): Promise<void> {
+  const manifestPath = path.join(directory, 'package.json');
   const manifest = JSON.parse(await readFile(manifestPath, 'utf8')) as Record<
     string,
     unknown
   >;
-
   const templateName = typeof manifest.name === 'string' ? manifest.name : '';
-
   manifest.name = name;
-
-  // Records which template this application was generated from, because nothing else left in the manifest can say.
-  // `name` has just become the application's own, and `nocobase.templateKind` is `app` for both Default and Examples,
-  // so an upgrade that has to diff two releases of the originating template would have nothing to resolve. Written
-  // under `nocobase` beside `defaultTemplateVersion`, which records how far that source has been merged.
-  if (templateName !== '') {
+  if (recordTemplate && templateName !== '') {
     const nocobase =
       typeof manifest.nocobase === 'object' && manifest.nocobase !== null
         ? (manifest.nocobase as Record<string, unknown>)
         : {};
-
     nocobase.templatePackage = templateName;
     manifest.nocobase = nocobase;
   }
-
-  // `displayName` is what the client shell renders in its sidebar footer: the server publishes it from the
-  // application's package.json as `app.displayName`. Deleting it left nothing to publish, so a generated app fell
-  // back to the literal "Default Template" in the shell — the template's label, on every app built from it.
   manifest.displayName = name;
-
-  // The remaining publish metadata describes the template rather than what is built from it, and would point a
-  // generated app at the template's own release.
   delete manifest.description;
   delete manifest.publishConfig;
   delete manifest.repository;
-
-  // `pnpm pack` strips `packageManager` from the tarball, so the template cannot carry it through to the app on its
-  // own — it has to be written here. Without it the project uses whatever pnpm the machine defaults to, and pnpm 10
-  // does not read `allowBuilds` at all: the native driver installs without compiling and only fails much later.
+  // Applications and orchestration workspaces are not independently published template packages.
+  if (!runtime || !recordTemplate || forcePrivate) manifest.private = true;
   manifest.packageManager ??= REQUIRED_PACKAGE_MANAGER;
-
   await writeFile(
     manifestPath,
     `${JSON.stringify(manifest, null, 2)}\n`,
     'utf8',
   );
-
-  await rewritePackageName(targetDirectory, templateName, name);
-
-  for (const [relative, contents] of Object.entries(extraFiles ?? {})) {
-    const target = path.join(targetDirectory, relative);
-
-    await mkdir(path.dirname(target), { recursive: true });
-    await writeFile(target, contents, 'utf8');
-  }
+  if (runtime) await rewritePackageName(directory, templateName, name);
 }
 
 export async function removeDirectory(directory: string): Promise<void> {

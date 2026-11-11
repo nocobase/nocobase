@@ -1,0 +1,24 @@
+# Build from the workspace root with APP_DIR=apps/sub, or from a prebuilt archive with DIST=prebuilt.
+**/node_modules
+**/.pnpm-store
+**/.npmrc
+**/config.yml
+**/config.toml
+**/.env
+**/.env.*
+**/storage
+**/database.sqlite*
+**/.git
+**/.agents/skills
+**/.claude/skills
+**/coverage
+**/playwright-report
+**/test-results
+**/*.log
+apps/*/dist
+!dist
+!dist/**
+!apps/sub/dist
+!apps/sub/dist/**
+dist/.env
+apps/sub/dist/.env
