@@ -33,7 +33,10 @@ it('builds root runtime and client packages in order without building dependency
     path.join(root, 'package.json'),
     JSON.stringify({
       name: '@fixture/app',
-      dependencies: { '@fixture/plugin': 'workspace:*' },
+      dependencies: {
+        '@fixture/plugin': 'workspace:*',
+        '@fixture/published': '^1.0.0',
+      },
       devDependencies: { '@fixture/client': 'workspace:*' },
       scripts: { build: 'node -e "process.exit(42)"' },
     }),
@@ -58,6 +61,7 @@ it('builds root runtime and client packages in order without building dependency
     ['optional'],
     ['examples'],
     ['unrelated'],
+    ['published'],
   ] as const) {
     const directory = path.join(root, 'packages', name);
     mkdirSync(directory, { recursive: true });
@@ -122,6 +126,23 @@ it('builds root runtime and client packages in order without building dependency
     .split('\n');
   expect(order.indexOf('shared')).toBeLessThan(order.indexOf('client'));
   expect(order.indexOf('shared')).toBeLessThan(order.indexOf('plugin'));
+});
+
+it('returns no workspace build targets for an application with only published dependencies', () => {
+  const root = mkdtempSync(path.join(os.tmpdir(), 'standalone-build-'));
+  directories.push(root);
+  writeFileSync(
+    path.join(root, 'package.json'),
+    JSON.stringify({
+      name: '@fixture/app',
+      dependencies: { react: '^19.0.0' },
+    }),
+  );
+  writeFileSync(
+    path.join(root, 'pnpm-workspace.yaml'),
+    'autoInstallPeers: false\n',
+  );
+  expect(resolveBuildWorkspacePackages(root)).toEqual([]);
 });
 
 it('sets a default compiler heap while preserving caller Node options and explicit limits', () => {

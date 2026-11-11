@@ -18,7 +18,8 @@ export function resolveBuildWorkspacePackages(rootDir) {
       ...manifest.dependencies,
       ...manifest.optionalDependencies,
     };
-    for (const name of Object.keys(dependencies)) {
+    for (const [name, version] of Object.entries(dependencies)) {
+      if (!version.startsWith('workspace:')) continue;
       const dependency = packages.get(name);
       if (!dependency || visited.has(dependency)) continue;
       visited.add(dependency);
