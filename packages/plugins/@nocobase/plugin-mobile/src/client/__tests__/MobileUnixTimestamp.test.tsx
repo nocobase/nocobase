@@ -24,7 +24,11 @@ vi.mock('@nocobase/client', async (importOriginal) => ({
   useLocalVariables: () => [],
 }));
 
-it('submits the selected local date and time as an instant with no utc schema override', async () => {
+it.each([
+  { name: 'default UTC', options: {}, expected: new Date(2026, 10, 9, 8, 25).toISOString() },
+  { name: 'explicit local time', options: { utc: false }, expected: '2026-11-09 08:25:00' },
+  { name: 'GMT', options: { gmt: true }, expected: '2026-11-09T08:25:00.000Z' },
+])('submits the selected time using $name', async ({ options, expected }) => {
   const form = createForm();
   const SchemaField = createSchemaField({ components: { MobileUnixTimestamp } });
   render(
@@ -36,7 +40,7 @@ it('submits the selected local date and time as an instant with no utc schema ov
             epoch: {
               type: 'string',
               'x-component': 'MobileUnixTimestamp',
-              'x-component-props': { picker: 'date', showTime: true },
+              'x-component-props': { picker: 'date', showTime: true, ...options },
             },
           },
         }}
@@ -44,5 +48,5 @@ it('submits the selected local date and time as an instant with no utc schema ov
     </FormProvider>,
   );
   fireEvent.click(screen.getByText('Choose date'));
-  await waitFor(() => expect(form.values.epoch).toBe(new Date(2026, 10, 9, 8, 25).toISOString()));
+  await waitFor(() => expect(form.values.epoch).toBe(expected));
 });

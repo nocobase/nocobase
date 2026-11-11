@@ -37,10 +37,7 @@ export class UnixTimestampField extends DateField {
       rationalNumber = 1;
     }
 
-    const timestamp = typeof val === 'number' ? val : new Date(val).getTime() / rationalNumber;
-    if (!Number.isFinite(timestamp))
-      throw Object.assign(new TypeError(`Invalid Unix timestamp for field "${this.options.name}"`), { status: 400 });
-    return Math.floor(timestamp);
+    return Math.floor(typeof val === 'number' ? val : new Date(val).getTime() / rationalNumber);
   }
 
   additionalSequelizeOptions() {
@@ -61,7 +58,6 @@ export class UnixTimestampField extends DateField {
       rationalNumber = 1;
     }
 
-    const toValue = (value) => this.dateToValue(value);
     return {
       get() {
         const value = this.getDataValue(name);
@@ -72,7 +68,15 @@ export class UnixTimestampField extends DateField {
         return new Date(value * rationalNumber);
       },
       set(value) {
-        this.setDataValue(name, toValue(value));
+        if (value == null) {
+          this.setDataValue(name, value);
+        } else {
+          // date to unix timestamp
+          this.setDataValue(
+            name,
+            Math.floor(typeof value === 'number' ? value : new Date(value).getTime() / rationalNumber),
+          );
+        }
       },
     };
   }

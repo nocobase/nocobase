@@ -12,7 +12,7 @@ import React, { useEffect, useMemo } from 'react';
 import { DatePicker } from '../date-picker';
 
 const toValue = (value: any, accuracy) => {
-  if (value != null) {
+  if (value) {
     return convertTimestampToDate(value, accuracy);
   }
   return null;
@@ -47,7 +47,7 @@ export const UnixTimestamp = connect(
         return v;
       }
       return value;
-    }, [value, accuracy]);
+    }, [value]);
 
     return (
       <DatePicker
