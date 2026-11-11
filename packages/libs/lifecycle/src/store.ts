@@ -255,6 +255,14 @@ export interface IdleRecordQuery {
   readonly changedBefore: string;
   readonly limit: number;
   readonly after?: IdleRecordCursor;
+  /**
+   * Only records whose `field` equals `value`: the records one version of a
+   * process created, when several share the collection.
+   */
+  readonly match?: {
+    readonly field: string;
+    readonly value: string;
+  };
 }
 
 /** Where the previous page of {@link IdleRecordQuery} ended. */

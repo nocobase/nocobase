@@ -347,8 +347,35 @@ export interface TriggerDefinition<T extends LifecycleTypes> {
 }
 
 export interface LifecycleDefinition<T extends LifecycleTypes> {
-  /** Unique within an application; also the default collection. */
+  /**
+   * Unique within an application; also the default collection. Records,
+   * log entries and effect runs refer to it, so it never changes once a
+   * record was created with it: a changed process is a new definition with
+   * a new name, the same `key` and the next `version`.
+   */
   readonly name: string;
+  /**
+   * The process this definition is one version of. Every version of a key
+   * runs on the same collection with the same state, changed-at, version and
+   * definition fields. Defaults to `name`, with a warning at registration;
+   * the next minor release requires it.
+   */
+  readonly key?: string;
+  /**
+   * A positive integer, unique within the key; the largest is the latest.
+   * Defaults to 1, with a warning at registration, as `key` does.
+   */
+  readonly version?: number;
+  /**
+   * The record field holding the name of the definition that created the
+   * record. `runtime.create()` writes it with the record, nothing else may
+   * change it, and every operation on a record refuses a definition other
+   * than the one it names with `DEFINITION_MISMATCH`. A record no process
+   * has started leaves it empty. Required as soon as a key has a second
+   * version; a definition without it is accepted, with a warning, while its
+   * key has only one.
+   */
+  readonly definitionField?: string;
   readonly collection?: string;
   /** Defaults to `status`. */
   readonly stateField?: string;
@@ -427,6 +454,11 @@ export interface LifecycleTrigger<T extends LifecycleTypes> {
 /** A checked, normalized definition. Build one with {@link defineLifecycle}. */
 export interface Lifecycle<T extends LifecycleTypes> {
   readonly name: string;
+  readonly key: string;
+  readonly version: number;
+  /** Which of `key` and `version` the definition left to their defaults, for the registration warning. */
+  readonly defaulted: readonly ('key' | 'version')[];
+  readonly definitionField?: string;
   readonly collection: string;
   readonly stateField: string;
   readonly changedAtField: string;
@@ -471,6 +503,11 @@ export interface LifecycleDescription {
     }[];
   };
   readonly name: string;
+  /** The process this definition is a version of. */
+  readonly key: string;
+  readonly version: number;
+  /** The record field naming a record's definition, when it has one. */
+  readonly definitionField?: string;
   readonly initial: string;
   readonly initialStates: readonly string[];
   readonly states: readonly string[];
@@ -548,6 +585,18 @@ export function defineLifecycle<T extends LifecycleTypes>(
 ): Lifecycle<T> {
   const name = definition.name;
   if (!NAME.test(name)) throw invalid(name, 'the name is not an identifier.');
+  const key = definition.key ?? name;
+  if (!NAME.test(key)) throw invalid(name, 'the key is not an identifier.');
+  const version = definition.version ?? 1;
+  if (!Number.isSafeInteger(version) || version < 1)
+    throw invalid(name, 'the version is not a positive integer.');
+  const defaulted = [
+    ...(definition.key === undefined ? (['key'] as const) : []),
+    ...(definition.version === undefined ? (['version'] as const) : []),
+  ];
+  const { definitionField } = definition;
+  if (definitionField !== undefined && !NAME.test(definitionField))
+    throw invalid(name, 'the definition field is not an identifier.');
 
   const states = new Set<T['state']>();
   const stateInfo = new Map<T['state'], LifecycleState<T['state']>>();
@@ -597,6 +646,14 @@ export function defineLifecycle<T extends LifecycleTypes>(
   const changedAtField = definition.changedAtField ?? 'statusChangedAt';
   const versionField = definition.versionField ?? 'lifecycleVersion';
   const owned = new Set(['id', stateField, changedAtField, versionField]);
+  if (definitionField !== undefined) {
+    if (owned.has(definitionField))
+      throw invalid(
+        name,
+        `the definition field "${definitionField}" is a field the lifecycle already owns.`,
+      );
+    owned.add(definitionField);
+  }
 
   const effects = new Map<string, EffectDefinition<T>>();
   const collect = (effect: EffectDefinition<T>, where: string): void => {
@@ -858,6 +915,10 @@ export function defineLifecycle<T extends LifecycleTypes>(
   }
   return Object.freeze({
     name,
+    key,
+    version,
+    defaulted: Object.freeze(defaulted),
+    ...(definitionField === undefined ? {} : { definitionField }),
     collection: definition.collection ?? name,
     stateField,
     changedAtField,
@@ -919,6 +980,11 @@ export function describeLifecycle<T extends LifecycleTypes>(
         }
       : {}),
     name: lifecycle.name,
+    key: lifecycle.key,
+    version: lifecycle.version,
+    ...(lifecycle.definitionField === undefined
+      ? {}
+      : { definitionField: lifecycle.definitionField }),
     initial: lifecycle.initial,
     initialStates: [...lifecycle.initialStates],
     states: [...lifecycle.states],

@@ -2,6 +2,7 @@ import {
   normalizeParameterValues,
   ParameterConfigurationError,
   type LifecycleParameterStore,
+  type ParameterGroup,
   type ParameterResolution,
   type ParameterSource,
 } from './parameter-configuration.js';
@@ -14,6 +15,7 @@ import {
   type EnterStateHookContext,
   type Lifecycle,
   type LifecycleDescription,
+  type LifecycleState,
   type StateHookContext,
   type TransitionContext,
 } from './definition.js';
@@ -25,9 +27,12 @@ import {
   type LifecycleErrorCode,
 } from './errors.js';
 import {
+  boundDefinitionOf,
+  checkBinding,
   checkCreation,
   guardBlockers,
   inputProblems,
+  ownedFields,
   planTransition,
   stateOf,
   transitionsFrom,
@@ -130,7 +135,14 @@ export type ServicesSource<T extends LifecycleTypes> =
 
 /** Server-owned context supplied to an asynchronous parameter reader. */
 export interface ParameterReadContext<T extends LifecycleTypes> {
+  /** The definition's name; snapshots and usage facts are kept under it. */
   readonly lifecycle: string;
+  /**
+   * The process the definition is a version of. Every version of a key
+   * shares one configuration per parameter group, so a store keys
+   * configuration by it rather than by the name.
+   */
+  readonly key: string;
   readonly record: T['record'] | null;
   /** Creation values before a record has an identity. */
   readonly values?: Readonly<Record<string, unknown>>;
@@ -384,6 +396,19 @@ interface Subscription {
   readonly listener: LifecycleListener<LifecycleEvent>;
 }
 
+/** One process and its registered versions; see `runtime.groups()`. */
+export interface LifecycleGroup {
+  readonly key: string;
+  /** Oldest first. */
+  readonly versions: readonly {
+    readonly name: string;
+    readonly version: number;
+  }[];
+  /** The name of the largest version: the latest, not necessarily the one in use. */
+  readonly latest: string;
+  readonly definitionField?: string;
+}
+
 /** The log entry `runtime.create()` writes, so a record's history starts at its creation. */
 export const CREATE_TRANSITION: string = '$create';
 
@@ -394,6 +419,10 @@ export const CREATE_TRANSITION: string = '$create';
 export interface RecordView {
   /** Effective values for this authoritative record preview, including its snapshot. */
   readonly parameterValues?: Readonly<object>;
+  /** The definition the record belongs to: draw its diagram, not the latest. */
+  readonly lifecycle: string;
+  /** Which version of its process that definition is. */
+  readonly definitionVersion: number;
   readonly record: LifecycleRecord;
   readonly state: string;
   /** Pass it back as `expect.version` so a stale screen is refused. */
@@ -736,6 +765,17 @@ export class LifecycleRuntime {
         'INVALID_DEFINITION',
         'The parameter storage adapter is missing a required capability.',
       );
+    this.checkVersion(lifecycle as unknown as Lifecycle<LifecycleTypes>);
+    if (lifecycle.defaulted.length)
+      this.logger.warn(
+        `Lifecycle "${lifecycle.name}" declares no ${lifecycle.defaulted.join(' or ')}; it is registered as key "${lifecycle.key}", version ${lifecycle.version}. Declare both: the next minor release requires them.`,
+        { lifecycle: lifecycle.name, defaulted: lifecycle.defaulted },
+      );
+    if (lifecycle.definitionField === undefined)
+      this.logger.warn(
+        `Lifecycle "${lifecycle.name}" declares no definitionField, so its records do not say which version created them; add one before registering a second version of "${lifecycle.key}".`,
+        { lifecycle: lifecycle.name },
+      );
     const source = options.services;
     this.lifecycles.set(lifecycle.name, {
       lifecycle: lifecycle as unknown as Lifecycle<LifecycleTypes>,
@@ -800,6 +840,172 @@ export class LifecycleRuntime {
     };
   }
 
+  /**
+   * Refuses a definition that cannot be one more version of its key: a
+   * version taken, a key that is another definition's name, or a different
+   * collection or record fields, which would split one process's records
+   * or let one version read another's. Every version of a key needs a
+   * definition field once there are two, and a parameter group several
+   * versions use must be the same group in each: they share one stored
+   * configuration, which must stay valid for the oldest of them.
+   */
+  private checkVersion(lifecycle: Lifecycle<LifecycleTypes>): void {
+    const refuse = (message: string): never => {
+      throw new LifecycleError(
+        'INVALID_DEFINITION',
+        `Lifecycle "${lifecycle.name}": ${message}`,
+      );
+    };
+    const named = this.lifecycles.get(lifecycle.key);
+    if (named && named.lifecycle.key !== lifecycle.key)
+      refuse(
+        `its key "${lifecycle.key}" is the name of a definition of "${named.lifecycle.key}".`,
+      );
+    for (const { lifecycle: other } of this.lifecycles.values())
+      if (other.key === lifecycle.name && lifecycle.key !== lifecycle.name)
+        refuse(`its name is the key of "${other.name}".`);
+    const versions = this.versionsOf(lifecycle.key);
+    if (!versions.length) return;
+    for (const other of versions) {
+      if (other.version === lifecycle.version)
+        refuse(
+          `version ${lifecycle.version} of "${lifecycle.key}" is already "${other.name}".`,
+        );
+      for (const field of [
+        'collection',
+        'stateField',
+        'changedAtField',
+        'versionField',
+        'definitionField',
+      ] as const)
+        if (other[field] !== lifecycle[field])
+          refuse(
+            `its ${field} "${String(lifecycle[field])}" differs from "${String(other[field])}" of "${other.name}", another version of "${lifecycle.key}".`,
+          );
+    }
+    if (lifecycle.definitionField === undefined)
+      refuse(
+        `"${lifecycle.key}" has several versions, so they need a definitionField naming each record's version.`,
+      );
+    for (const group of lifecycle.parameterConfiguration?.groups ?? [])
+      for (const other of versions) {
+        const shared = other.parameterConfiguration?.groups.find(
+          (candidate) => candidate.key === group.key,
+        );
+        if (shared && !sameGroup(shared, group))
+          refuse(
+            `parameter group "${group.key}" differs from the one "${other.name}" uses; versions share its configuration, so a changed group needs a new key.`,
+          );
+      }
+  }
+
+  /** The registered versions of a key, oldest first. */
+  private versionsOf(key: string): Lifecycle<LifecycleTypes>[] {
+    return [...this.lifecycles.values()]
+      .map((registered) => registered.lifecycle)
+      .filter((lifecycle) => lifecycle.key === key)
+      .sort((a, b) => a.version - b.version);
+  }
+
+  /**
+   * The registered processes, each with its versions, oldest first. The
+   * latest is the largest version: nothing says which one new records use;
+   * the code that creates them names a definition.
+   */
+  public groups(): LifecycleGroup[] {
+    const keys = new Set(
+      [...this.lifecycles.values()].map(({ lifecycle }) => lifecycle.key),
+    );
+    return [...keys].map((key) => this.group(key));
+  }
+
+  /**
+   * One process by its key or by the name of any of its versions. Throws
+   * `UNKNOWN_LIFECYCLE` when neither is registered.
+   */
+  public group(keyOrName: string): LifecycleGroup {
+    const key = this.keyOf(keyOrName);
+    const versions = this.versionsOf(key);
+    return {
+      key,
+      versions: versions.map((lifecycle) => ({
+        name: lifecycle.name,
+        version: lifecycle.version,
+      })),
+      latest: versions.at(-1)!.name,
+      ...(versions[0].definitionField === undefined
+        ? {}
+        : { definitionField: versions[0].definitionField }),
+    };
+  }
+
+  /**
+   * Every state any version of a process declares, for a list of its
+   * records: a filter or a status column over records of several versions.
+   * A state several versions declare takes its title from the latest.
+   */
+  public groupStates(keyOrName: string): LifecycleState<string>[] {
+    const states = new Map<string, LifecycleState<string>>();
+    for (const lifecycle of this.versionsOf(this.keyOf(keyOrName)).reverse())
+      for (const [state, info] of lifecycle.stateInfo)
+        if (!states.has(state)) states.set(state, info);
+    return [...states.values()];
+  }
+
+  private keyOf(keyOrName: string): string {
+    const named = this.lifecycles.get(keyOrName);
+    if (named) return named.lifecycle.key;
+    if (this.versionsOf(keyOrName).length) return keyOrName;
+    throw new LifecycleError(
+      'UNKNOWN_LIFECYCLE',
+      `No lifecycle "${keyOrName}" is registered.`,
+    );
+  }
+
+  /**
+   * The definition a record of a process belongs to, for a route that
+   * names the process, not the version: `keyOrName` is its key or the name
+   * of any of its versions, and the answer is the name the record's
+   * definition field holds. A record of another process, or one no
+   * definition has started, is refused with `DEFINITION_MISMATCH`, and a
+   * missing one with `RECORD_NOT_FOUND`. Pass the answer to `view()`,
+   * `fire()` and the other record operations, which refuse any other.
+   * Reads the record once; a process without a definition field has a
+   * single version, which it answers without reading.
+   */
+  public async boundLifecycle(
+    keyOrName: string,
+    id: RecordId,
+  ): Promise<string> {
+    const versions = this.versionsOf(this.keyOf(keyOrName));
+    const [first] = versions;
+    if (first.definitionField === undefined) return first.name;
+    const record = await this.store.findRecord(first.collection, id);
+    if (!record)
+      throw new LifecycleError(
+        'RECORD_NOT_FOUND',
+        `No ${first.collection} record "${String(id)}".`,
+      );
+    const bound = boundDefinitionOf(first, record) ?? null;
+    if (
+      bound !== null &&
+      versions.some((lifecycle) => lifecycle.name === bound)
+    )
+      return bound;
+    throw new LifecycleError(
+      'DEFINITION_MISMATCH',
+      bound === null
+        ? `${first.collection} record "${String(id)}" has not been started by any definition of "${first.key}".`
+        : `${first.collection} record "${String(id)}" belongs to "${bound}", which is not a registered version of "${first.key}".`,
+      { bound },
+    );
+  }
+
+  /** The definition `name` names; see `describe()` for a plain description. */
+  public definition(name: string): Lifecycle<LifecycleTypes> {
+    return this.get(name).lifecycle;
+  }
+
   public describe(name: string): LifecycleDescription {
     return describeLifecycle(this.get(name).lifecycle);
   }
@@ -813,7 +1019,7 @@ export class LifecycleRuntime {
   /** Resolves current overrides. This does not persist snapshots or usage facts. */
   public async resolveParameters(
     name: string,
-    context: Omit<ParameterReadContext<LifecycleTypes>, 'lifecycle'>,
+    context: Omit<ParameterReadContext<LifecycleTypes>, 'lifecycle' | 'key'>,
   ): Promise<Readonly<object>> {
     const registered = this.get(name);
     const execution = this.parameterExecution.getStore();
@@ -852,7 +1058,11 @@ export class LifecycleRuntime {
       }
       const overrides = registered.parameterProvider
         ? await registered.parameterProvider(
-            Object.freeze({ ...context, lifecycle: name }),
+            Object.freeze({
+              ...context,
+              lifecycle: name,
+              key: registered.lifecycle.key,
+            }),
           )
         : registered.parameters();
       const values = { ...registered.lifecycle.parameters, ...overrides };
@@ -904,6 +1114,7 @@ export class LifecycleRuntime {
                 'RECORD_NOT_FOUND',
                 `No ${registered.lifecycle.collection} record "${String(id)}".`,
               );
+            checkBinding(registered.lifecycle, record);
             const parameters = await this.resolveParameters(name, {
               record,
               transactionHandle: store.transactionHandle,
@@ -967,13 +1178,14 @@ export class LifecycleRuntime {
 
   private async readConfiguredParameters(
     registered: Registered,
-    context: Omit<ParameterReadContext<LifecycleTypes>, 'lifecycle'>,
+    context: Omit<ParameterReadContext<LifecycleTypes>, 'lifecycle' | 'key'>,
   ): Promise<ParameterResolution> {
     const config = registered.parameterConfiguration!;
     const definition = registered.lifecycle.parameterConfiguration!;
     const scope = config.scope({
       ...context,
       lifecycle: registered.lifecycle.name,
+      key: registered.lifecycle.key,
     });
     if (!scope)
       throw new ParameterConfigurationError(
@@ -1049,7 +1261,7 @@ export class LifecycleRuntime {
 
   private async bindParameterSnapshot(
     registered: Registered,
-    context: Omit<ParameterReadContext<LifecycleTypes>, 'lifecycle'>,
+    context: Omit<ParameterReadContext<LifecycleTypes>, 'lifecycle' | 'key'>,
     supplied?: ParameterResolution,
   ): Promise<void> {
     const config = registered.parameterConfiguration;
@@ -1189,8 +1401,12 @@ export class LifecycleRuntime {
     return Object.freeze({
       handle: store.transactionHandle,
       now,
-      read: (name: string, id: RecordId) =>
-        store.findRecord(this.get(name).lifecycle.collection, id),
+      read: async (name: string, id: RecordId) => {
+        const { lifecycle } = this.get(name);
+        const record = await store.findRecord(lifecycle.collection, id);
+        if (record) checkBinding(lifecycle, record);
+        return record;
+      },
       fire: (
         name: string,
         id: RecordId,
@@ -1460,11 +1676,7 @@ export class LifecycleRuntime {
         'INVALID_STATE',
         `"${state}" is not an initial state of "${name}".`,
       );
-    for (const field of [
-      lifecycle.stateField,
-      lifecycle.changedAtField,
-      lifecycle.versionField,
-    ])
+    for (const field of ownedFields(lifecycle).slice(1))
       if (field in values)
         throw new LifecycleError(
           'INVALID_SET',
@@ -1505,6 +1717,11 @@ export class LifecycleRuntime {
             [lifecycle.stateField]: state,
             [lifecycle.changedAtField]: at,
             [lifecycle.versionField]: 1,
+            // Bound in the same write: the record is this definition's from
+            // its first instant, and nothing else may change that.
+            ...(lifecycle.definitionField === undefined
+              ? {}
+              : { [lifecycle.definitionField]: lifecycle.name }),
           });
           this.parameterExecution
             .getStore()
@@ -1621,6 +1838,8 @@ export class LifecycleRuntime {
     const record = await this.require(registered, id);
     const context = await this.guardContext(registered, record, actor);
     return {
+      lifecycle: lifecycle.name,
+      definitionVersion: lifecycle.version,
       record,
       state: stateOf(lifecycle, record),
       version: versionOf(lifecycle, record),
@@ -1718,10 +1937,11 @@ export class LifecycleRuntime {
       );
       if (!entry || !record)
         throw new Error('Its transition or record no longer exists.');
+      checkBinding(lifecycle, record);
       await this.beforeEffect?.(effect.name, attempt);
       const parameterContext: Omit<
         ParameterReadContext<LifecycleTypes>,
-        'lifecycle'
+        'lifecycle' | 'key'
       > = {
         record,
         transactionHandle: undefined,
@@ -2237,10 +2457,24 @@ export class LifecycleRuntime {
               changedBefore,
               limit: trigger.batchSize,
               ...(after ? { after } : {}),
+              // Only this version's records: another version of the
+              // process may wait in a state of the same name.
+              ...(lifecycle.definitionField === undefined
+                ? {}
+                : {
+                    match: {
+                      field: lifecycle.definitionField,
+                      value: lifecycle.name,
+                    },
+                  }),
             },
           );
           for (const record of records) {
             if (firedHere >= trigger.batchSize) break;
+            // A store that ignores `match` still never hands one version
+            // another's record.
+            const bound = boundDefinitionOf(lifecycle, record);
+            if (bound !== undefined && bound !== lifecycle.name) continue;
             try {
               // The record must still be idle when the transition is
               // decided: another sweep may have moved it since this one read it.
@@ -2831,6 +3065,7 @@ export class LifecycleRuntime {
         'RECORD_NOT_FOUND',
         `No ${lifecycle.collection} record "${String(id)}".`,
       );
+    checkBinding(lifecycle, current);
     if (options.requestId !== undefined) {
       const earlier = await store.findTransitionByRequest(
         lifecycle.name,
@@ -3241,6 +3476,7 @@ export class LifecycleRuntime {
         'RECORD_NOT_FOUND',
         `No ${lifecycle.collection} record "${String(id)}".`,
       );
+    checkBinding(lifecycle, record);
     return record;
   }
 
@@ -3296,6 +3532,22 @@ export class LifecycleRuntime {
 }
 
 /** Detach provider-owned values before freezing callback input. */
+/**
+ * Whether two versions declare the same parameter group: the fields, their
+ * types and the schema version a stored configuration was validated
+ * against. Titles and bindings may differ; the stored values may not.
+ */
+function sameGroup(a: ParameterGroup, b: ParameterGroup): boolean {
+  if (a.schemaVersion !== b.schemaVersion) return false;
+  const fields = Object.keys(a.fields);
+  if (fields.length !== Object.keys(b.fields).length) return false;
+  return fields.every(
+    (field) =>
+      Object.hasOwn(b.fields, field) &&
+      a.fields[field].type === b.fields[field].type,
+  );
+}
+
 function freezeParameters(values: object): Readonly<object> {
   const copy: object = structuredClone(values);
   const freeze = (value: object): void => {

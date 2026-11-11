@@ -159,6 +159,55 @@ export function versionOf<T extends LifecycleTypes>(
   return Number.isSafeInteger(version) ? version : null;
 }
 
+/** The fields only the lifecycle writes: no `set`, `accept` or creation value may. */
+export function ownedFields<T extends LifecycleTypes>(
+  lifecycle: Lifecycle<T>,
+): readonly string[] {
+  return [
+    'id',
+    lifecycle.stateField,
+    lifecycle.changedAtField,
+    lifecycle.versionField,
+    ...(lifecycle.definitionField === undefined
+      ? []
+      : [lifecycle.definitionField]),
+  ];
+}
+
+/**
+ * The definition a record is bound to: the value of its definition field,
+ * or null when it names none. Undefined for a definition without a
+ * definition field, whose records are all its own.
+ */
+export function boundDefinitionOf<T extends LifecycleTypes>(
+  lifecycle: Lifecycle<T>,
+  record: T['record'],
+): string | null | undefined {
+  if (lifecycle.definitionField === undefined) return undefined;
+  const value = record[lifecycle.definitionField];
+  return typeof value === 'string' && value !== '' ? value : null;
+}
+
+/**
+ * Refuses a record another definition created, or none did, with
+ * `DEFINITION_MISMATCH`: one version of a process never reads or moves a
+ * record of another, and an unbound record never falls to the latest.
+ */
+export function checkBinding<T extends LifecycleTypes>(
+  lifecycle: Lifecycle<T>,
+  record: T['record'],
+): void {
+  const bound = boundDefinitionOf(lifecycle, record);
+  if (bound === undefined || bound === lifecycle.name) return;
+  throw new LifecycleError(
+    'DEFINITION_MISMATCH',
+    bound === null
+      ? `${lifecycle.collection} record "${String(record.id)}" has not been started by any definition of "${lifecycle.key}".`
+      : `${lifecycle.collection} record "${String(record.id)}" belongs to definition "${bound}", not "${lifecycle.name}".`,
+    { bound },
+  );
+}
+
 /** Transitions that may start from the record's current state, before any guard. */
 export function transitionsFrom<T extends LifecycleTypes>(
   lifecycle: Lifecycle<T>,
@@ -236,12 +285,7 @@ export async function planTransition<T extends LifecycleTypes>(
       ? await definition.set(Object.freeze({ ...base, from, to }))
       : {}),
   };
-  for (const field of [
-    'id',
-    lifecycle.stateField,
-    lifecycle.changedAtField,
-    lifecycle.versionField,
-  ])
+  for (const field of ownedFields(lifecycle))
     if (field in extra)
       throw new LifecycleError(
         'INVALID_SET',

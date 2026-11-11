@@ -37,9 +37,12 @@ export {
   type LifecycleErrorDetails,
 } from './errors.js';
 export {
+  boundDefinitionOf,
+  checkBinding,
   checkCreation,
   guardBlockers,
   inputProblems,
+  ownedFields,
   planTransition,
   stateOf,
   transitionsFrom,
@@ -63,6 +66,7 @@ export {
   type FireOptions,
   type FireResult,
   type LifecycleEvent,
+  type LifecycleGroup,
   type LifecycleRecordChange,
   type RecordChangeFilter,
   type LifecycleListener,

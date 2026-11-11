@@ -324,6 +324,9 @@ class RepositoryLifecycleStore implements LifecycleStore {
             ),
           ),
           filter.date(query.changedAtField).before(query.changedBefore),
+          ...(query.match === undefined
+            ? []
+            : [filter.string(query.match.field).eq(query.match.value)]),
           // The page after the cursor, in the order below. A non-numeric id
           // cannot be compared through the filter, so records sharing the
           // cursor's instant are left to the next sweep.

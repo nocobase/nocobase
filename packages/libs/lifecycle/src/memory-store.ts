@@ -354,6 +354,8 @@ export class MemoryLifecycleStore implements LifecycleStore, MemoryRows {
         .filter(
           (record) =>
             query.states.includes(String(record[query.stateField])) &&
+            (query.match === undefined ||
+              record[query.match.field] === query.match.value) &&
             typeof record[query.changedAtField] === 'string' &&
             (record[query.changedAtField] as string) < query.changedBefore &&
             (after === undefined ||
