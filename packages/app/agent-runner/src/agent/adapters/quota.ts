@@ -14,42 +14,55 @@ export function claudeQuota(
   model?: string,
 ): QuotaReport | undefined {
   const info = object(value);
-  const name = info.rateLimitType;
-  if (typeof name !== 'string') return undefined;
-  const family =
-    name === 'seven_day_opus'
-      ? 'opus'
-      : name === 'seven_day_sonnet'
-        ? 'sonnet'
+  const windows = new Map<string, QuotaWindow>();
+  const add = (
+    name: string,
+    sample: Record<string, unknown>,
+    rejected: boolean,
+  ) => {
+    const family =
+      name === 'seven_day_opus'
+        ? 'opus'
+        : name === 'seven_day_sonnet'
+          ? 'sonnet'
+          : name === 'seven_day_overage_included'
+            ? 'fable'
+            : undefined;
+    if (family && model && !model.toLowerCase().includes(family)) return;
+    if (!family && !['five_hour', 'seven_day', 'overage'].includes(name))
+      return;
+    const utilization = sample.utilization;
+    const resetsAt = reset(sample.resetsAt);
+    const usedPercent =
+      typeof utilization === 'number' && Number.isFinite(utilization)
+        ? Math.min(100, Math.max(0, utilization * 100))
         : undefined;
-  if (family && model && !model.includes(family)) return undefined;
-  if (
-    !family &&
-    ![
-      'five_hour',
-      'seven_day',
-      'seven_day_overage_included',
-      'overage',
-    ].includes(name)
-  )
-    return undefined;
-  return {
-    windows: [
-      {
-        window: name,
-        scope: family && model ? 'model' : 'tool',
-        target: family && model ? model : '',
-        resetsAt: reset(info.resetsAt),
-        exhausted:
-          info.status === 'rejected' &&
-          info.overageStatus !== 'allowed' &&
-          info.overageStatus !== 'allowed_warning',
-        ...(typeof info.utilization === 'number'
-          ? { usedPercent: Math.min(100, Math.max(0, info.utilization * 100)) }
-          : {}),
-      },
-    ],
+    // An optional field absent from the top-level event must not erase a window's snapshot.
+    const previous = windows.get(name);
+    windows.set(name, {
+      window: name,
+      scope: family && model ? 'model' : 'tool',
+      target: family && model ? model : '',
+      resetsAt: resetsAt ?? previous?.resetsAt ?? null,
+      exhausted: rejected,
+      ...(usedPercent === undefined
+        ? previous?.usedPercent === undefined
+          ? {}
+          : { usedPercent: previous.usedPercent }
+        : { usedPercent }),
+    });
   };
+  for (const [name, sample] of Object.entries(object(info.unifiedWindows)))
+    if (sample && typeof sample === 'object') add(name, object(sample), false);
+  if (typeof info.rateLimitType === 'string')
+    add(
+      info.rateLimitType,
+      info,
+      info.status === 'rejected' &&
+        info.overageStatus !== 'allowed' &&
+        info.overageStatus !== 'allowed_warning',
+    );
+  return windows.size ? { windows: [...windows.values()] } : undefined;
 }
 export function codexQuota(
   value: unknown,

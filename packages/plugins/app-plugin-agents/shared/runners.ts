@@ -130,10 +130,14 @@ export interface Runner {
   readonly unavailableModels?: readonly UnavailableModel[] | null;
   readonly quotaRevision: number;
   readonly quotaUsage?: readonly RunnerQuotaUsage[] | null;
+  /** Pause new work at this percentage used; omitted tools have no configured ceiling. */
+  readonly quotaLimits?: RunnerQuotaLimits | null;
   readonly lastSeenAt: string | null;
   readonly createdAt: string;
   readonly updatedAt: string;
 }
+
+export type RunnerQuotaLimits = Partial<Record<AgentTool, number>>;
 
 export interface RunnerQuotaUsage {
   readonly tool: AgentTool;
@@ -149,12 +153,34 @@ export interface RunnerQuotaUsage {
 
 /** Active quota blocks for a candidate; default models still obey tool blocks. */
 export function quotaBlocks(
-  runner: Pick<Runner, 'unavailableModels'>,
+  runner: Pick<Runner, 'unavailableModels' | 'quotaLimits' | 'quotaUsage'>,
   entry: Pick<RunnerModelEntry, 'tool' | 'model'>,
   now: number,
 ): UnavailableModel[] {
   const model = entry.model ? normalizeModel(entry.tool, entry.model) : '';
-  return (runner.unavailableModels ?? []).filter(
+  const limit = runner.quotaLimits?.[entry.tool];
+  const ceilings: UnavailableModel[] =
+    limit === undefined
+      ? []
+      : (runner.quotaUsage ?? [])
+          .filter(
+            (sample) =>
+              sample.tool === entry.tool &&
+              sample.usedPercent !== undefined &&
+              sample.usedPercent >= limit &&
+              (!sample.resetsAt || Date.parse(sample.resetsAt) > now),
+          )
+          .map((sample) => ({
+            reason: 'toolQuota',
+            tool: sample.tool,
+            scope: sample.scope,
+            model: sample.target,
+            window: sample.window,
+            resetsAt: sample.resetsAt,
+            at: sample.observedAt,
+            reported: [],
+          }));
+  return [...(runner.unavailableModels ?? []), ...ceilings].filter(
     (mark) =>
       mark.reason === 'toolQuota' &&
       mark.tool === entry.tool &&
@@ -425,6 +451,7 @@ export interface RunnerWorkspacePage {
 
 /** What people change about a runner after it registered. */
 export interface RunnerPatch {
+  readonly quotaLimits?: RunnerQuotaLimits | null;
   readonly name?: string;
   readonly trust?: RunnerTrust;
   readonly slots?: number;
@@ -534,7 +561,14 @@ export function reportedModels(
  * model among those the runner reports for the tool and not marked unavailable there (`unavailableModels`).
  */
 export function runsEntry(
-  runner: Pick<Runner, 'enabledTools' | 'tools' | 'unavailableModels'>,
+  runner: Pick<
+    Runner,
+    | 'enabledTools'
+    | 'tools'
+    | 'unavailableModels'
+    | 'quotaLimits'
+    | 'quotaUsage'
+  >,
   entry: Pick<RunnerModelEntry, 'tool' | 'model'>,
   now: number,
 ): boolean {
@@ -698,6 +732,8 @@ export function runnerTakesAgent(
     | 'tools'
     | 'policy'
     | 'unavailableModels'
+    | 'quotaLimits'
+    | 'quotaUsage'
     | 'workspaceUsage'
   >,
   agent: RunnerAgentFit,
@@ -719,14 +755,6 @@ export function quotaForAgent(
 ): QuotaLocation[] {
   return runners.flatMap((runner) => {
     if (
-      !(runner.unavailableModels ?? []).some(
-        (mark) =>
-          mark.reason === 'toolQuota' &&
-          (!mark.resetsAt || Date.parse(mark.resetsAt) > now),
-      )
-    )
-      return [];
-    if (
       runner.trust !== 'team' &&
       actorUserId !== undefined &&
       runner.ownerUserId !== actorUserId
@@ -734,6 +762,7 @@ export function quotaForAgent(
       return [];
     const compatible = {
       ...runner,
+      quotaLimits: null,
       unavailableModels: (runner.unavailableModels ?? []).filter(
         (mark) => mark.reason !== 'toolQuota',
       ),

@@ -1,3 +1,4 @@
+import { QuotaLimitSetting } from './quota-limit-setting.js';
 import { useTranslation } from '@nocobase/i18n/client';
 import type { ReactElement } from 'react';
 import { isNativeTool, type AgentTool } from '@nocobase/agent-protocol';
@@ -136,6 +137,9 @@ export function QuotaCell({
       ) : null}
       {marks.some((m) => m.resetsAt) ? (
         <p className='text-muted-foreground'>{t('runtimes.quota.automatic')}</p>
+      ) : null}
+      {!target ? (
+        <QuotaLimitSetting runner={runner} tool={tool} now={now} />
       ) : null}
       {!usage.length && !marks.length ? (
         providerTool && !target && blocked > 0 ? (

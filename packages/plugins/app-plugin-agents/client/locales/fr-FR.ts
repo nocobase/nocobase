@@ -620,6 +620,19 @@ const frFR: LocaleResource<typeof enUS> = {
     pathHint:
       'Le runner trouve les outils de développement avec son propre PATH. Dans un terminal où which codex / which claude fonctionne, relancez nocobase-runner service install et redémarrez le service (ou relancez nocobase-runner start) pour qu’il obtienne le bon PATH.',
     quota: {
+      ceilingReached: 'Seuil de quota atteint',
+      ceilingLabel: 'Suspendre à',
+      ceilingInput:
+        'Suspendre les nouveaux travaux {{tool}} au pourcentage utilisé',
+      ceilingOff: 'Désactivé',
+      ceilingSave: 'Appliquer',
+      ceilingInvalid:
+        'Saisissez un pourcentage entier de 1 à 100, ou laissez vide.',
+      ceilingHint:
+        'Utilise la dernière consommation signalée. Vide signifie sans plafond ; les travaux en cours continuent.',
+      ceilingPaused:
+        'Une fenêtre a atteint le plafond ; les nouveaux travaux concernés attendent la réinitialisation ou un changement du plafond.',
+
       workspaceStatus: {
         active: 'Les travaux continuent',
         ended: 'Terminé · nettoyage autorisé',

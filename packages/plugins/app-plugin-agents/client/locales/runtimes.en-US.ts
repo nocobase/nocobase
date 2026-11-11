@@ -2,6 +2,17 @@
 const runtimesEnUS = {
   runtimes: {
     quota: {
+      ceilingReached: 'Quota threshold reached',
+      ceilingLabel: 'Pause at',
+      ceilingInput: 'Pause new {{tool}} work at percent used',
+      ceilingOff: 'Off',
+      ceilingSave: 'Apply',
+      ceilingInvalid: 'Enter a whole percentage from 1 to 100, or leave blank.',
+      ceilingHint:
+        'Uses last reported usage. Blank means no ceiling; running work continues.',
+      ceilingPaused:
+        'Usage ceiling reached for a quota window; affected new work waits until reset or the ceiling changes.',
+
       workspaceStatus: {
         active: 'Work continues',
         ended: 'Ended · cleanup allowed',

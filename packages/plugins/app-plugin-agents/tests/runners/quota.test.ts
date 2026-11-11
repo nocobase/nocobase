@@ -498,7 +498,7 @@ it('adds no SQL, writes, transactions or locks to heartbeat or an excluded claim
   expect(costAfterC.transactions).toBe(0);
   expect(costAfterC.locks).toBe(0);
 });
-it('throttles small usage changes, saves boundary transitions and broadcasts only mark changes', async () => {
+it('saves small usage changes and broadcasts uncapped usage only on mark changes', async () => {
   h = await createHarness();
   const runner = await h.registerRunner();
   const broadcasts: unknown[] = [];
@@ -525,8 +525,12 @@ it('throttles small usage changes, saves boundary transitions and broadcasts onl
     .quotaRevision;
   for (const percent of [63, 64, 65, 66]) await report(percent);
   expect((await h.services.runners.get(runner.runnerId)).quotaRevision).toBe(
-    revision,
+    revision + 4,
   );
+  expect(
+    (await h.services.runners.get(runner.runnerId)).quotaUsage?.[0]
+      ?.usedPercent,
+  ).toBe(66);
   expect(broadcasts).toHaveLength(0);
   await report(67);
   expect(
@@ -829,4 +833,115 @@ it('projects affected discovered agents to the owner without requiring Agent rea
   expect(await h.services.agents.get(blocked)).toMatchObject({
     source: 'runner',
   });
+});
+
+it('pauses claims at a configured ceiling, keeps active work and resumes when raised, disabled or reset', async () => {
+  h = await createHarness();
+  const agent = await h.createAgent();
+  const runner = await h.registerRunner({ ownerUserId: 'alice', slots: 2 });
+  const active = await h.enqueue(agent, 'active');
+  expect((await claim(h, runner))[0].run.id).toBe(active);
+  const report = (usedPercent: number) =>
+    h.services.tx.run((unit) =>
+      h.services.runners.reportQuota(unit, runner.runnerId, 'claude', null, {
+        windows: [
+          {
+            window: 'five_hour',
+            scope: 'tool',
+            target: '',
+            usedPercent,
+            exhausted: false,
+            resetsAt: '2026-10-01T01:00:00.000Z',
+          },
+        ],
+      }),
+    );
+  await h.services.runners.update(runner.runnerId, {
+    quotaLimits: { claude: 80 },
+  });
+  await report(79);
+  expect(
+    (await h.services.runners.get(runner.runnerId)).unavailableModels,
+  ).toEqual([]);
+  await report(80);
+  const queued = await h.enqueue(agent, 'queued');
+  expect(await claim(h, runner)).toEqual([]);
+  expect((await h.services.runs.get(active)).status).toBe('dispatched');
+  const saved = await h.services.runners.get(runner.runnerId);
+  expect(
+    runsEntry(saved, { tool: 'claude', model: null }, h.clock.now().getTime()),
+  ).toBe(false);
+  expect(
+    quotaForAgent(
+      [saved],
+      await h.services.agents.get(agent),
+      undefined,
+      h.clock.now().getTime(),
+    ),
+  ).toHaveLength(1);
+  await h.services.runners.update(runner.runnerId, {
+    quotaLimits: { claude: 90 },
+  });
+  expect(
+    runsEntry(
+      await h.services.runners.get(runner.runnerId),
+      { tool: 'claude', model: null },
+      h.clock.now().getTime(),
+    ),
+  ).toBe(true);
+  await h.services.runners.update(runner.runnerId, { quotaLimits: null });
+  expect(
+    runsEntry(
+      await h.services.runners.get(runner.runnerId),
+      { tool: 'claude', model: null },
+      h.clock.now().getTime(),
+    ),
+  ).toBe(true);
+  await h.services.runners.update(runner.runnerId, {
+    quotaLimits: { claude: 80 },
+  });
+  h.clock.advance(3_600_000);
+  expect(
+    runsEntry(
+      await h.services.runners.get(runner.runnerId),
+      { tool: 'claude', model: null },
+      h.clock.now().getTime(),
+    ),
+  ).toBe(true);
+  expect((await h.services.runs.get(queued)).status).toBe('queued');
+});
+it('validates quota ceilings and protects settings from other users and anonymous callers', async () => {
+  h = await createHarness();
+  const runner = await h.registerRunner({ ownerUserId: 'alice' });
+  const url = `/agents/runners/${runner.runnerId}`;
+  for (const value of [0, 101, 80.5, '80']) {
+    expect(
+      (
+        await h.request('PATCH', url, {
+          user: 'alice',
+          body: { quotaLimits: { claude: value } },
+        })
+      ).status,
+    ).toBe(400);
+  }
+  expect(
+    (
+      await h.request('PATCH', url, {
+        user: 'bob',
+        body: { quotaLimits: { claude: 80 } },
+      })
+    ).status,
+  ).toBe(404);
+  expect(
+    (await h.request('PATCH', url, { body: { quotaLimits: { claude: 80 } } }))
+      .status,
+  ).toBe(401);
+  expect(
+    (
+      await h.request('PATCH', url, {
+        user: 'alice',
+        body: { quotaLimits: { claude: 80 } },
+      })
+    ).status,
+  ).toBe(200);
 });

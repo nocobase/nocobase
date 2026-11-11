@@ -591,6 +591,17 @@ const jaJP: LocaleResource<typeof enUS> = {
     pathHint:
       'runner は自身の PATH でコーディングツールを探します。which codex / which claude が動作するターミナルで nocobase-runner service install を再実行してサービスを再起動（または nocobase-runner start を再実行）し、正しい PATH を取得させてください。',
     quota: {
+      ceilingReached: '使用量のしきい値に到達',
+      ceilingLabel: '受付停止の使用率',
+      ceilingInput: '{{tool}} の新規作業を停止する使用率',
+      ceilingOff: '制限なし',
+      ceilingSave: '適用',
+      ceilingInvalid: '1～100 の整数を入力するか、空欄にしてください。',
+      ceilingHint:
+        '最後に報告された使用量で判定します。空欄は制限なし。実行中の作業は継続します。',
+      ceilingPaused:
+        'いずれかの枠が上限に達しました。対象の新規作業はリセットまたは上限変更まで待機します。',
+
       workspaceStatus: {
         active: '仕事は続く',
         ended: '終了しました · クリーンアップは許可されました',

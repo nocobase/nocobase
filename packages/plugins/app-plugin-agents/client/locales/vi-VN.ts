@@ -592,6 +592,17 @@ const viVN: LocaleResource<typeof enUS> = {
     pathHint:
       'Runner tìm công cụ lập trình bằng PATH của chính nó. Trong terminal mà which codex / which claude hoạt động, hãy chạy lại nocobase-runner service install và khởi động lại dịch vụ (hoặc chạy lại nocobase-runner start) để nó nhận đúng PATH.',
     quota: {
+      ceilingReached: 'Đã đạt ngưỡng hạn mức',
+      ceilingLabel: 'Tạm dừng tại',
+      ceilingInput: 'Tạm dừng công việc {{tool}} mới khi đạt phần trăm đã dùng',
+      ceilingOff: 'Tắt',
+      ceilingSave: 'Áp dụng',
+      ceilingInvalid: 'Nhập phần trăm nguyên từ 1 đến 100 hoặc để trống.',
+      ceilingHint:
+        'Dựa trên mức dùng được báo cáo gần nhất. Để trống là không giới hạn; công việc đang chạy vẫn tiếp tục.',
+      ceilingPaused:
+        'Một cửa sổ hạn mức đã chạm ngưỡng; công việc mới liên quan chờ đặt lại hoặc thay đổi ngưỡng.',
+
       workspaceStatus: {
         active: 'Công việc vẫn tiếp tục',
         ended: 'Đã kết thúc · cho phép dọn dẹp',

@@ -620,6 +620,18 @@ const esES: LocaleResource<typeof enUS> = {
     pathHint:
       'El runner busca las herramientas de programación con su propio PATH. En un terminal donde funcione which codex / which claude, vuelve a ejecutar nocobase-runner service install y reinicia el servicio (o vuelve a ejecutar nocobase-runner start) para que obtenga el PATH correcto.',
     quota: {
+      ceilingReached: 'Umbral de cuota alcanzado',
+      ceilingLabel: 'Pausar al',
+      ceilingInput: 'Pausar nuevos trabajos de {{tool}} al porcentaje usado',
+      ceilingOff: 'Sin límite',
+      ceilingSave: 'Aplicar',
+      ceilingInvalid:
+        'Introduce un porcentaje entero entre 1 y 100 o déjalo vacío.',
+      ceilingHint:
+        'Usa el último consumo informado. Vacío significa sin límite; el trabajo en curso continúa.',
+      ceilingPaused:
+        'Una ventana alcanzó el límite; el nuevo trabajo afectado espera al reinicio o a un cambio del límite.',
+
       workspaceStatus: {
         active: 'El trabajo continúa',
         ended: 'Finalizado · limpieza permitida',

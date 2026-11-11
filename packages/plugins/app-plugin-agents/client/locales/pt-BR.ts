@@ -617,6 +617,18 @@ const ptBR: LocaleResource<typeof enUS> = {
     pathHint:
       'O runner encontra as ferramentas de programação pelo próprio PATH. Em um terminal onde which codex / which claude funcione, execute nocobase-runner service install de novo e reinicie o serviço (ou execute nocobase-runner start de novo) para que ele receba o PATH correto.',
     quota: {
+      ceilingReached: 'Limite de uso atingido',
+      ceilingLabel: 'Pausar em',
+      ceilingInput: 'Pausar novos trabalhos de {{tool}} na porcentagem usada',
+      ceilingOff: 'Desativado',
+      ceilingSave: 'Aplicar',
+      ceilingInvalid:
+        'Insira uma porcentagem inteira de 1 a 100 ou deixe em branco.',
+      ceilingHint:
+        'Usa o último consumo informado. Em branco significa sem limite; trabalhos em execução continuam.',
+      ceilingPaused:
+        'Uma janela atingiu o limite; novos trabalhos afetados aguardam a redefinição ou alteração do limite.',
+
       workspaceStatus: {
         active: 'O trabalho continua',
         ended: 'Finalizado · limpeza permitida',
