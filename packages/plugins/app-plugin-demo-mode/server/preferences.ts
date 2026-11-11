@@ -2,6 +2,7 @@ import { AsyncLocalStorage } from 'node:async_hooks';
 
 import { authenticationToken } from '@nocobase/app-plugin-authentication/server';
 import {
+  USER_LOCALE_PREFERENCE_KEY,
   UserPreferenceError,
   userPreferencesServiceToken,
 } from '@nocobase/app-plugin-users/server';
@@ -14,7 +15,12 @@ import { z } from 'zod';
 
 import { describeDemoPreferences } from './preferences-document.js';
 
-const keys = ['locale', 'theme.mode', 'theme.preset'] as const;
+// Use the Users key so the language a visitor chooses is the one isolated here, not written to the shared account.
+const keys = [
+  USER_LOCALE_PREFERENCE_KEY,
+  'theme.mode',
+  'theme.preset',
+] as const;
 type PreferenceKey = (typeof keys)[number];
 const valueSchema = z
   .string()
@@ -75,7 +81,8 @@ export function registerDemoPreferences(
     return auth?.user.id === userId ? state : undefined;
   };
   const defaults: Record<PreferenceKey, string> = {
-    locale: app.config.get<string>('i18n.defaultLocale') ?? 'en-US',
+    [USER_LOCALE_PREFERENCE_KEY]:
+      app.config.get<string>('i18n.defaultLocale') ?? 'en-US',
     'theme.mode':
       app.config.get<string>('client.app.defaultColorScheme') ?? 'system',
     'theme.preset':
