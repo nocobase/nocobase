@@ -240,6 +240,9 @@ export class UserCenterItemModel extends FlowModel {
 
   async prepare() {}
 
+  /** Check availability on each opening without delaying the other menu items. */
+  checkAvailability?(): Promise<boolean>;
+
   render() {
     return <UserCenterTextItemView model={this as UserCenterTextItemModel} />;
   }
@@ -375,47 +378,15 @@ const UserCenterSelectItemView = observer(
 
 const UserCenterDropdownPanel = (props: {
   model: UserCenterTopbarActionModel;
-  open: boolean;
-  closeDropdown: () => void;
+  loading: boolean;
+  items: UserCenterItemModel[];
 }) => {
-  const { model, open, closeDropdown } = props;
+  const { model, loading, items } = props;
   const { token } = theme.useToken();
-  const [loading, setLoading] = useState(false);
-  const [items, setItems] = useState<UserCenterItemModel[]>([]);
-
-  useEffect(() => {
-    if (!open) {
-      return;
-    }
-
-    let cancelled = false;
-    setLoading(true);
-    setItems([]);
-
-    void model
-      .getPreparedItems(closeDropdown)
-      .then((preparedItems) => {
-        if (!cancelled) {
-          setItems(preparedItems);
-        }
-      })
-      .catch((error) => {
-        console.error('[NocoBase] User center prepare failed.', error);
-      })
-      .finally(() => {
-        if (!cancelled) {
-          setLoading(false);
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [closeDropdown, model, open]);
 
   return (
     <div className={userCenterDropdownClassName} style={getUserCenterDropdownVars(token)}>
-      {loading ? (
+      {loading && !items.length ? (
         <div className="nb-user-center-loading">
           <Spin size="small" />
         </div>
@@ -425,26 +396,24 @@ const UserCenterDropdownPanel = (props: {
           <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={model.context.t('No data')} />
         </div>
       ) : null}
-      {!loading
-        ? items.map((item, index) => {
-            const previous = items[index - 1];
-            const showDivider = previous && previous.section !== item.section;
+      {items.map((item, index) => {
+        const previous = items[index - 1];
+        const showDivider = previous && previous.section !== item.section;
 
-            return (
-              <React.Fragment key={item.uid}>
-                {showDivider ? <Divider /> : null}
-                <ErrorBoundary
-                  FallbackComponent={UserCenterItemErrorFallback}
-                  onError={(error) => {
-                    console.error('[NocoBase] User center item render failed.', error);
-                  }}
-                >
-                  <FlowModelRenderer model={item} />
-                </ErrorBoundary>
-              </React.Fragment>
-            );
-          })
-        : null}
+        return (
+          <React.Fragment key={item.uid}>
+            {showDivider ? <Divider /> : null}
+            <ErrorBoundary
+              FallbackComponent={UserCenterItemErrorFallback}
+              onError={(error) => {
+                console.error('[NocoBase] User center item render failed.', error);
+              }}
+            >
+              <FlowModelRenderer model={item} />
+            </ErrorBoundary>
+          </React.Fragment>
+        );
+      })}
     </div>
   );
 };
@@ -453,11 +422,41 @@ const UserCenterTopbarActionView = observer(
   (props: { model: UserCenterTopbarActionModel }) => {
     const { model } = props;
     const [open, setOpen] = useState(false);
+    const [loading, setLoading] = useState(true);
+    const [items, setItems] = useState<UserCenterItemModel[]>([]);
     const closeMobileTopbar = useContext(MobileTopbarActionsContext);
     const closeDropdown = useCallback(() => {
       setOpen(false);
       closeMobileTopbar?.();
     }, [closeMobileTopbar]);
+
+    // The dropdown caches its content while hidden. Track openings in the trigger so every open rechecks availability.
+    useEffect(() => {
+      if (!open) {
+        setItems([]);
+        setLoading(true);
+        return;
+      }
+
+      let cancelled = false;
+      const updateItems = (next: UserCenterItemModel[]) => {
+        if (!cancelled) setItems(next);
+      };
+      async function loadItems() {
+        try {
+          updateItems(await model.getPreparedItems(closeDropdown, updateItems));
+        } catch (error) {
+          console.error('[NocoBase] User center prepare failed.', error);
+        } finally {
+          if (!cancelled) setLoading(false);
+        }
+      }
+      loadItems();
+
+      return () => {
+        cancelled = true;
+      };
+    }, [open, model, closeDropdown]);
 
     return model.renderWrapper(
       <Dropdown
@@ -465,7 +464,7 @@ const UserCenterTopbarActionView = observer(
         placement="bottomRight"
         open={open}
         onOpenChange={setOpen}
-        dropdownRender={() => <UserCenterDropdownPanel model={model} open={open} closeDropdown={closeDropdown} />}
+        dropdownRender={() => <UserCenterDropdownPanel model={model} loading={loading} items={items} />}
       >
         <span className={userCenterTriggerClassName}>{model.renderButton()}</span>
       </Dropdown>,
@@ -513,7 +512,7 @@ export class UserCenterTopbarActionModel extends TopbarActionModel {
     return discovered;
   }
 
-  async getPreparedItems(closeDropdown: () => void) {
+  async getPreparedItems(closeDropdown: () => void, onItemsReady?: (items: UserCenterItemModel[]) => void) {
     const discoveredItems = await this.discoverItems();
     const nextItemIds = new Set(discoveredItems.map((item) => item.itemId));
 
@@ -561,7 +560,7 @@ export class UserCenterTopbarActionModel extends TopbarActionModel {
     const aclData = this.context.acl?.data || {};
     const allow = createAclSnippetAllow(aclData.snippets || [], !!aclData.allowAll);
 
-    return preparedEntries
+    const items = preparedEntries
       .filter(({ item }, index) => {
         const prepareResult = prepareResults[index];
 
@@ -588,6 +587,26 @@ export class UserCenterTopbarActionModel extends TopbarActionModel {
         return left.discoveryOrder - right.discoveryOrder;
       })
       .map(({ item }) => item);
+
+    const available = new Set(items.filter((item) => !item.checkAvailability));
+    if (available.size === items.length) return items;
+
+    const visibleItems = () => items.filter((item) => available.has(item));
+    onItemsReady?.(visibleItems());
+    await Promise.all(
+      items.map(async (item) => {
+        if (!item.checkAvailability) return;
+        try {
+          if (await item.checkAvailability()) {
+            available.add(item);
+            onItemsReady?.(visibleItems());
+          }
+        } catch (error) {
+          console.error(`[NocoBase] User center item '${item.getItemId()}' availability check failed.`, error);
+        }
+      }),
+    );
+    return visibleItems();
   }
 
   render() {

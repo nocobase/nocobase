@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { Drawer, Input } from 'antd';
 import React, { useState } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -155,6 +155,56 @@ describe('mobile user center popover', () => {
     await waitFor(() => expect(screen.queryByRole('button', { name: 'Edit profile' })).not.toBeInTheDocument());
     expect(onClick).toHaveBeenCalledOnce();
     expect(screen.queryByRole('img', { name: 'ellipsis' })).not.toBeInTheDocument();
+  });
+
+  it('shows profile while checking availability and ignores a result from an earlier opening', async () => {
+    let resolveFirst!: (visible: boolean) => void;
+    const firstCheck = new Promise<boolean>((resolve) => {
+      resolveFirst = resolve;
+    });
+    const check = vi.fn().mockReturnValueOnce(firstCheck).mockResolvedValueOnce(false).mockResolvedValueOnce(true);
+    class Profile extends UserCenterActionItemModel {
+      static itemId = 'profile';
+      label = 'Edit profile';
+    }
+    class Verification extends UserCenterActionItemModel {
+      static itemId = 'verification';
+      label = 'Verification';
+      checkAvailability = check;
+    }
+
+    const model = new UserCenterTopbarActionModel({ uid: 'menu', use: 'UserCenterTopbarActionModel' });
+    Object.defineProperty(model, 'flowEngine', {
+      value: {
+        getSubclassesOfAsync: () =>
+          new Map<string, typeof UserCenterActionItemModel>([
+            ['profile', Profile],
+            ['verification', Verification],
+          ]),
+        createModel: ({ use, uid }: { use: typeof UserCenterActionItemModel; uid: string }) =>
+          new use({ uid, use: use.name }),
+      },
+    });
+    render(<TopbarActionsBar actions={[model]} />);
+
+    const closeMenu = async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Edit profile' }));
+      await waitFor(() => expect(screen.queryByRole('button', { name: 'Edit profile' })).not.toBeInTheDocument());
+    };
+
+    await openUserMenu(false);
+    expect(check).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole('button', { name: 'Verification' })).not.toBeInTheDocument();
+    await closeMenu();
+
+    await openUserMenu(false);
+    expect(check).toHaveBeenCalledTimes(2);
+    await act(async () => resolveFirst(true));
+    expect(screen.queryByRole('button', { name: 'Verification' })).not.toBeInTheDocument();
+    await closeMenu();
+
+    await openUserMenu(false);
+    expect(await screen.findByRole('button', { name: 'Verification' })).toBeVisible();
   });
 
   it.each([true, false])('respects closeOnChange=%s for preference selectors', async (closeOnChange) => {

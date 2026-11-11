@@ -19,11 +19,8 @@ it('rechecks user-manageable verifiers on each opening, including after a failed
     .mockResolvedValueOnce({ data: { data: [{ name: 'available', boundInfo: { bound: false } }] } });
   const item = Object.create(VerificationUserCenterItemModel.prototype);
   Object.defineProperty(item, 'context', { value: { api: { resource: () => ({ listByUser: list }) } } });
-  await item.prepare();
-  expect(item.isReady()).toBe(false);
-  await expect(item.prepare()).rejects.toThrow('offline');
-  await item.prepare();
-  expect(item.isReady()).toBe(true);
-  await item.prepare();
-  expect(item.isReady()).toBe(true);
+  await expect(item.checkAvailability()).resolves.toBe(false);
+  await expect(item.checkAvailability()).rejects.toThrow('offline');
+  await expect(item.checkAvailability()).resolves.toBe(true);
+  await expect(item.checkAvailability()).resolves.toBe(true);
 });
