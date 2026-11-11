@@ -27,6 +27,8 @@ const description: LifecycleDescription = {
     ],
   },
   name: 'expenses',
+  key: 'expenses',
+  version: 1,
   initial: 'draft',
   initialStates: ['draft'],
   states: ['draft', 'review', 'approved', 'rejected'],
