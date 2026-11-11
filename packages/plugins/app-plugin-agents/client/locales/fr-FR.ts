@@ -665,6 +665,7 @@ const frFR: LocaleResource<typeof enUS> = {
       providers_other: 'Fournisseurs {{count}} au quota',
       models_one: '{{count}} modèle au quota',
       models_other: '{{count}} modèles au quota',
+      models_many: '{{count}} modèles au quota',
       percent: '{{percent}}%',
       runColumns: {
         issue: 'Tâche / conversation',

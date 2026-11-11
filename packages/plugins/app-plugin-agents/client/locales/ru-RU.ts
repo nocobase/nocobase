@@ -668,6 +668,8 @@ const ruRU: LocaleResource<typeof enUS> = {
       providers_other: 'У {{count}} провайдера исчерпана квота',
       models_one: 'У {{count}} модели исчерпана квота',
       models_other: 'У {{count}} моделей исчерпана квота',
+      models_few: 'У {{count}} моделей исчерпана квота',
+      models_many: 'У {{count}} моделей исчерпана квота',
       percent: '{{percent}}%',
       providers_few: 'У {{count}} провайдеров исчерпана квота',
       providers_many: 'У {{count}} провайдеров исчерпана квота',

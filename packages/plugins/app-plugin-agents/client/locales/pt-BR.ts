@@ -661,6 +661,7 @@ const ptBR: LocaleResource<typeof enUS> = {
       providers_other: 'Provedores {{count}} na cota',
       models_one: '{{count}} modelo na cota',
       models_other: '{{count}} modelos na cota',
+      models_many: '{{count}} modelos na cota',
       percent: '{{percent}}%',
       runColumns: {
         issue: 'Tarefa / conversa',

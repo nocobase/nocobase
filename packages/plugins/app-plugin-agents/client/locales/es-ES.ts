@@ -664,6 +664,7 @@ const esES: LocaleResource<typeof enUS> = {
       providers_other: 'Proveedores {{count}} en cuota',
       models_one: '{{count}} modelo sin cuota',
       models_other: '{{count}} modelos sin cuota',
+      models_many: '{{count}} modelos sin cuota',
       percent: '{{percent}}%',
       runColumns: {
         issue: 'Tarea / conversación',
