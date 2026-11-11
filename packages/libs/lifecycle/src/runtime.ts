@@ -970,14 +970,17 @@ export class LifecycleRuntime {
    * definition has started, is refused with `DEFINITION_MISMATCH`, and a
    * missing one with `RECORD_NOT_FOUND`. Pass the answer to `view()`,
    * `fire()` and the other record operations, which refuse any other.
-   * Reads the record once; a process without a definition field has a
-   * single version, which it answers without reading.
+   * Reads the record once, whatever the number of versions. Only a legacy
+   * process that declares no definition field at all (accepted, with a
+   * warning, until the next minor release) has no binding to read: it has a
+   * single version, which is answered as before.
    */
   public async boundLifecycle(
     keyOrName: string,
     id: RecordId,
   ): Promise<string> {
     const [first] = this.versionsOf(this.keyOf(keyOrName));
+    // Legacy only: registration refuses a second version without the field.
     if (first.definitionField === undefined) return first.name;
     const record = await this.store.findRecord(first.collection, id);
     if (!record)
@@ -997,6 +1000,7 @@ export class LifecycleRuntime {
     const versions = this.versionsOf(this.keyOf(keyOrName));
     const [first] = versions;
     const bound = boundDefinitionOf(first, record);
+    // Legacy only: a definition without a definition field.
     if (bound === undefined) return first.name;
     if (
       bound !== null &&

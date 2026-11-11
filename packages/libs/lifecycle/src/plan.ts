@@ -191,7 +191,9 @@ export function boundDefinitionOf<T extends LifecycleTypes>(
 /**
  * Refuses a record another definition created, or none did, with
  * `DEFINITION_MISMATCH`: one version of a process never reads or moves a
- * record of another, and an unbound record never falls to the latest.
+ * record of another, and an unbound record never falls to the latest. Every
+ * definition that declares a definition field is checked, a single version
+ * too; only a legacy definition without one is not.
  */
 export function checkBinding<T extends LifecycleTypes>(
   lifecycle: Lifecycle<T>,

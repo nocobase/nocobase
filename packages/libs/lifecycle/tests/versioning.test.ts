@@ -433,17 +433,58 @@ describe('records of several versions', () => {
     });
   });
 
-  it('answers a process without a definition field without reading the record', async () => {
+  it('warns about a legacy definition without a definition field and runs it as before', async () => {
     const store = new MemoryLifecycleStore();
-    const runtime = new LifecycleRuntime({ store });
+    const logger = { warn: vi.fn(), error: vi.fn() };
+    const runtime = new LifecycleRuntime({ store, logger });
     runtime.register(defineLifecycle(v1({ definitionField: undefined })), {
       services: { sent: [] },
     });
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.stringContaining('declares no definitionField'),
+      { lifecycle: 'requests' },
+    );
+    // A record written before any binding existed is still its own.
+    const record = store.insertRecord('requests', {
+      status: 'draft',
+      lifecycleVersion: 1,
+    });
     const findRecord = vi.spyOn(store, 'findRecord');
-    await expect(runtime.boundLifecycle('requests', 'any')).resolves.toBe(
+    await expect(runtime.boundLifecycle('requests', record.id)).resolves.toBe(
       'requests',
     );
     expect(findRecord).not.toHaveBeenCalled();
+    await expect(
+      runtime.view('requests', record.id, actor),
+    ).resolves.toMatchObject({ lifecycle: 'requests', state: 'draft' });
+    const created = await runtime.create('requests', {}, { actor });
+    expect(
+      store.record('requests', String(created.record.id)),
+    ).not.toHaveProperty('definition');
+  });
+
+  it('refuses an unbound record of a single version that declares a definition field', async () => {
+    const store = new MemoryLifecycleStore();
+    const runtime = new LifecycleRuntime({ store });
+    runtime.register(defineLifecycle(v1()), { services: { sent: [] } });
+    const record = store.insertRecord('requests', {
+      status: 'draft',
+      lifecycleVersion: 1,
+    });
+    for (const work of [
+      runtime.boundLifecycle('requests', record.id),
+      runtime.view('requests', record.id, actor),
+      runtime.fire('requests', record.id, 'send', { actor }),
+    ]) {
+      const error = await refusal(work);
+      expect(error).toMatchObject({ code: 'DEFINITION_MISMATCH', bound: null });
+    }
+    expect(() => runtime.recordLifecycle('requests', record)).toThrow(
+      /has not been started/,
+    );
+    // Nor does a sweep pick it up.
+    await expect(runtime.runTriggers()).resolves.toBe(0);
+    expect(store.record('requests', String(record.id))?.status).toBe('draft');
   });
 
   it('runs each version as it is defined, its effect and continuation included', async () => {
