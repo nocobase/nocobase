@@ -73,7 +73,7 @@ describe('configured Default', () => {
       expect.arrayContaining([
         expect.objectContaining({
           id: 'users.invitation',
-          localeMode: 'combined',
+          localeMode: 'separate',
           channels: [
             expect.objectContaining({
               name: 'system',
