@@ -13,16 +13,16 @@ export class IdGeneratorProvider extends ServiceProvider<AppPluginApplication> {
 
   public override register(): void {
     this.app.container.singleton(idGeneratorToken, (resolver) => {
-      let manual: IdGeneratorService | undefined;
+      let selected: IdGeneratorService | undefined;
       const implementation = (): IdGeneratorService => {
-        // Do not cache an absent extension: later providers may still register it.
-        if (resolver.has(idGeneratorImplementationToken)) {
-          return resolver.resolve(idGeneratorImplementationToken);
-        }
-        manual ??= new SnowflakeIdGenerator(
-          this.app.config.get<SnowflakeIdGeneratorConfig>('snowflake')!,
-        );
-        return manual;
+        if (selected) return selected;
+        // Select on first generation, not when an earlier provider resolves the service.
+        selected = resolver.has(idGeneratorImplementationToken)
+          ? resolver.resolve(idGeneratorImplementationToken)
+          : new SnowflakeIdGenerator(
+              this.app.config.get<SnowflakeIdGeneratorConfig>('snowflake')!,
+            );
+        return selected;
       };
       return {
         generate: () => implementation().generate(),

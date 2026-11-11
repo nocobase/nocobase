@@ -91,6 +91,64 @@ describe('optional ID implementation', () => {
     }
   });
 
+  describe.each(['manual', 'extension'] as const)('%s selection', (mode) => {
+    it.each(['generate', 'generateString'] as const)(
+      'selects once on the first %s call and skips container lookups afterwards',
+      async (firstMethod) => {
+        const app = await application(
+          mode === 'extension'
+            ? { workerId: 'ignored', epoch: 'ignored' }
+            : { workerId: 7 },
+        );
+        const fake = extension();
+        if (mode === 'extension') registerExtension(app, fake.implementation);
+        try {
+          await app.start();
+          const ids = app.container.resolve(idGeneratorToken);
+          const has = vi.spyOn(app.container, 'has');
+          const resolve = vi.spyOn(app.container, 'resolve');
+          try {
+            const first = ids[firstMethod]();
+            if (mode === 'extension') expect(String(first)).toBe('42');
+            else
+              expect(
+                new SnowflakeIdGenerator({ workerId: 0 }).parse(first).workerId,
+              ).toBe(7);
+            expect(typeof ids.generate()).toBe('number');
+            expect(typeof ids.generateString()).toBe('string');
+            ids[firstMethod]();
+            expect(has).toHaveBeenCalledExactlyOnceWith(
+              idGeneratorImplementationToken,
+            );
+            if (mode === 'extension')
+              expect(resolve).toHaveBeenCalledExactlyOnceWith(
+                idGeneratorImplementationToken,
+              );
+            else expect(resolve).not.toHaveBeenCalled();
+
+            has.mockClear();
+            resolve.mockClear();
+            if (mode === 'extension') {
+              fake.close();
+              expect(() => ids.generate()).toThrow('closed');
+              expect(() => ids.generateString()).toThrow('closed');
+            } else {
+              ids.generate();
+              ids.generateString();
+            }
+            expect(has).not.toHaveBeenCalled();
+            expect(resolve).not.toHaveBeenCalled();
+          } finally {
+            has.mockRestore();
+            resolve.mockRestore();
+          }
+        } finally {
+          await app.shutdown();
+        }
+      },
+    );
+  });
+
   it('validates used manual configuration lazily, not while resolving the public object', async () => {
     const app = await application({ workerId: 'invalid' });
     app.registerProviders();
