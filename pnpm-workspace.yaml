@@ -134,11 +134,16 @@ catalog:
 # part of the stack onto it: the `openai` client and LangChain then load different copies, types stop agreeing, and
 # LangGraph's interrupt handling changes behavior. Pinning keeps one copy throughout the stack.
 overrides:
-  dompurify: 3.4.17
-  fast-uri: 3.1.9
-  brace-expansion: 5.0.12
-  prosemirror-view: 1.42.3
-  systeminformation: 5.33.16
+  # GHSA-cg2g-xh64-v4q7, GHSA-mrv2-3pqr-j5jr, GHSA-c6gr-qvv4-5v3f; remove when Mermaid requires dompurify >= 3.4.17.
+  'dompurify@<3.4.17': ^3.4.17
+  # GHSA-5jgf-p345-68v8, GHSA-f65p-4m7j-42xc, GHSA-fph4-wmhf-6fwf, GHSA-jqff-g426-hqxp, GHSA-qw65-cvwx-89v3, GHSA-hrr3-gc8f-f4qj, GHSA-w74x-v6f9-j3xg, GHSA-xhq7-xmqj-769h, GHSA-wjr9-j795-jxcr, GHSA-333x-w4r6-6crp; remove when Ajv requires fast-uri >= 3.1.9.
+  'fast-uri@<3.1.9': ^3.1.9
+  # GHSA-q2hr-2g5m-vwhr, GHSA-qhr7-859c-m2p7, GHSA-6j4f-fj2g-mc7p; remove when minimatch requires brace-expansion >= 5.0.12.
+  'brace-expansion@<5.0.12': ^5.0.12
+  # GHSA-c8x8-7fp4-3x9w; remove when Tiptap / ProseMirror requires prosemirror-view >= 1.42.3.
+  'prosemirror-view@<1.42.3': ^1.42.3
+  # GHSA-4vjg-vx72-qq4g, GHSA-7648-jmwf-vw7j, GHSA-3f7j-7jwc-fxfj; remove when @dotenvx/dotenvx requires systeminformation >= 5.33.16.
+  'systeminformation@<5.33.16': ^5.33.16
   # Keep transitive Zod 4 consumers patched without moving the AI stack off Zod 3.
   'zod@^4.0.0': 'catalog:'
   # Ollama declares a provider-utils range; constrain workspace builds to the same release set.
