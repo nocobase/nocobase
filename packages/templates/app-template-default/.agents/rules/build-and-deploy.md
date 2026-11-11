@@ -16,7 +16,7 @@ For a Docker source build, pass `--build-arg CDN_BASE_URL=https://cdn.example.co
 
 ## Installation as an app
 
-`createPwaRoutes()` in `server/routes/index.ts` serves `<APP_BASE_PATH>/manifest.webmanifest` from the `pwa` section of the configuration, and `client/service-provider.ts` links it with `mountInstallLinks()`; the icons are `public/assets/pwa-192.png` and `public/assets/pwa-512.png`. Installation needs HTTPS (or `localhost`), works signed out and needs no push configuration; there is no installation service worker or offline cache. With `CDN_BASE_URL` the manifest and icons still come from the application server, so keep `dist/client/assets/` deployed there. Configuration, icon replacement and upgrades: [installing as an app](../skills/nocobase-app-development/references/pwa.md).
+`createPwaRoutes()` in `server/app.ts`, registered before `spaRootRoutes`, serves `<APP_BASE_PATH>/manifest.webmanifest` from the `pwa` section of the configuration, and `client/service-provider.ts` links it with `mountInstallLinks()`; the icons are `public/assets/pwa-192.png` and `public/assets/pwa-512.png`. Installation needs HTTPS (or `localhost`), works signed out and needs no push configuration; there is no installation service worker or offline cache. With `CDN_BASE_URL` the manifest and icons still come from the application server, so keep `dist/client/assets/` deployed there. Configuration, icon replacement and upgrades: [installing as an app](../skills/nocobase-app-development/references/pwa.md).
 
 ## Packing the build for a deployment
 

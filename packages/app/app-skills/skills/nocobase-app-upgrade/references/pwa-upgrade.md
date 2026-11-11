@@ -1,10 +1,10 @@
 # Installation (PWA) upgrades
 
-Read this when the target template adds the `pwa` configuration section, `server/config/pwa.ts`, `createPwaRoutes()` in `server/routes/index.ts`, `mountInstallLinks()` in `client/service-provider.ts` or `public/assets/pwa-{192,512}.png`. The behavior is described in [installing as an app](../../nocobase-app-development/references/pwa.md).
+Read this when the target template adds the `pwa` configuration section, `server/config/pwa.ts`, `createPwaRoutes()` in `server/app.ts`, `mountInstallLinks()` in `client/service-provider.ts` or `public/assets/pwa-{192,512}.png`. The behavior is described in [installing as an app](../../nocobase-app-development/references/pwa.md).
 
 ## Applications without their own installation
 
-Reconcile the four sources like any template change: add `pwa` to `server/config/index.ts`, put `createPwaRoutes()` first in `server/routes/index.ts` (before any root route with a catch-all), merge the mount and unmount into the application's own `client/service-provider.ts` without dropping its customizations, and copy the two icons. Replace the icons with the application's brand when it has one, under new file names. The name follows `client.app.title`; set `pwa.name` or `pwa.shortName` only when the installed name must differ.
+Reconcile the four sources like any template change: add `pwa` to `server/config/index.ts`, register `app.addRoutes(createPwaRoutes())` in `server/app.ts` immediately before `app.addRoutes(spaRootRoutes)`, not in `server/routes/index.ts`, whose contributions Foundation analyzes as business routes, merge the mount and unmount into the application's own `client/service-provider.ts` without dropping its customizations, and copy the two icons. Replace the icons with the application's brand when it has one, under new file names. The name follows `client.app.title`; set `pwa.name` or `pwa.shortName` only when the installed name must differ.
 
 ## Applications that already serve a manifest
 

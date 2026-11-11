@@ -1,6 +1,6 @@
 # Installing the application as an app
 
-Browsers can install a NocoBase application to the desktop or home screen, where it opens in its own window. The official templates do this by default: the `pwa` configuration section, `createPwaRoutes()` in `server/routes/index.ts`, `mountInstallLinks()` in `client/service-provider.ts`, and the icons `public/assets/pwa-192.png` and `public/assets/pwa-512.png`. Installation needs no Web Push plugin, push keys, notification permission or sign-in.
+Browsers can install a NocoBase application to the desktop or home screen, where it opens in its own window. The official templates do this by default: the `pwa` configuration section, `createPwaRoutes()` in `server/app.ts`, `mountInstallLinks()` in `client/service-provider.ts`, and the icons `public/assets/pwa-192.png` and `public/assets/pwa-512.png`. Installation needs no Web Push plugin, push keys, notification permission or sign-in.
 
 ## What it serves
 

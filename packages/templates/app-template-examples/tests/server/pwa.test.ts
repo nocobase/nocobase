@@ -8,12 +8,11 @@ import {
   type AppRuntimeContext,
 } from '@nocobase/app-server/config';
 import { createPublicBasePathAdapter } from '@nocobase/app-server/runtime';
-import { registerSpaRoutes } from '@nocobase/app-server/spa';
+import { createPwaRoutes, registerSpaRoutes } from '@nocobase/app-server/spa';
 import { Hono } from 'hono';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import pwa from '../../server/config/pwa.js';
-import routes from '../../server/routes/index.js';
 
 const appRoot = path.resolve(import.meta.dirname, '../..');
 const directories: string[] = [];
@@ -24,7 +23,7 @@ afterEach(async () => {
 });
 
 /**
- * The template's manifest route and its built client, mounted at the public base path the way the runtime strips it.
+ * The manifest route as server/app.ts registers it, with the template's configuration and icons and a built client, mounted at the public base path the way the runtime strips it.
  * No session, push key or database is configured: installation needs none of them.
  */
 async function createSite(
@@ -58,10 +57,10 @@ async function createSite(
     );
 
   const app = new Hono();
-  // The manifest is the template's first route, ahead of anything that could catch its path.
+  // Registered in server/app.ts ahead of the SPA, whose catch-all would otherwise answer with the page.
   app.route(
     '/',
-    await routes[0]!.createRouter({ config, publicBasePath } as never),
+    await createPwaRoutes().createRouter({ config, publicBasePath }),
   );
   const spa = new Hono();
   registerSpaRoutes(spa, {
