@@ -41,7 +41,10 @@ export interface LifecycleClientOptions {
   readonly transport: LifecycleTransport;
   /**
    * Where the plugin's lifecycle routes start: `<basePath>/<lifecycle>/…`
-   * as {@link createLifecycleClient} lists them.
+   * as {@link createLifecycleClient} lists them. `<lifecycle>` is the
+   * process's key; a server that resolves each record's version answers
+   * through the definition the record is bound to, and names it in
+   * `RecordView.lifecycle`.
    */
   readonly basePath: string;
   /** Sent with every request, such as who a demo page acts as. */

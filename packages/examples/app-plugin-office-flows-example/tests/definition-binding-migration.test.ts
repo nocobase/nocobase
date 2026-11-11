@@ -42,9 +42,7 @@ describeMigration('202611110003_office_flows_definition_binding', {
     const rows = await connection
       .repository('officeFlowsExtractions')
       .findMany({});
-    expect(rows.map((row) => row.lifecycleDefinition)).toEqual([
-      'extractions',
-    ]);
+    expect(rows.map((row) => row.lifecycleDefinition)).toEqual(['extractions']);
   },
   async down({ expectCollection }) {
     for (const name of TABLES)

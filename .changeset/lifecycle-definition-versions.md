@@ -1,0 +1,13 @@
+---
+"@nocobase/lifecycle": minor
+"@nocobase/app-plugin-lifecycle-example": minor
+"@nocobase/app-plugin-office-flows-example": minor
+"@nocobase/app-template-examples": minor
+"@nocobase/app-skills": patch
+---
+
+Lifecycle definitions can now have several versions. A definition declares `key` (the process it is a version of), `version` (a positive integer, unique within the key) and `definitionField` (the record field naming the definition that created the record). A definition without `key` or `version` is registered as its name and 1 with a warning; the next minor release requires them. Registration refuses a version already taken, a key that is another definition's name, versions of one key that differ in collection or record fields, two versions without a `definitionField`, and a parameter group that differs between versions sharing it.
+
+`runtime.create()` writes the definition field in the same statement as the record, and no `set`, `accept` or creation value may write it. Every record operation, effect and continuation refuses a record bound to another definition, or to none, with the new `DEFINITION_MISMATCH` code (`FAILED_PRECONDITION`, with `metadata.bound`). Trigger sweeps only take their own definition's records through the new `IdleRecordQuery.match`. `boundLifecycle()` and `recordLifecycle()` find a record's definition from the process key or any version name, and `groups()`, `group()` and `groupStates()` list the versions and the union of their states. `RecordView` gains `lifecycle` and `definitionVersion`, descriptions gain `key`, `version` and `definitionField`, and `ParameterReadContext` gains `key`, so every version of a process shares one stored configuration per parameter group. `LifecycleTestKit.create()` binds the record it inserts.
+
+The lifecycle and office flow examples and the procurement and onboarding examples declare `key`, `version` and `definitionField: 'lifecycleDefinition'` on every definition, and their record routes and services act through the definition the record is bound to. The lifecycle example's description route takes an optional `definition` to describe one version. Office flow extractions and tasks, which are inserted without `runtime.create()`, are bound when inserted. This adds the migrations `202611110002_lifecycle_example_definition_binding`, `202611110003_office_flows_definition_binding`, `202611110004_procurement_definition_binding` and `202611110005_onboarding_definition_binding`, which add a nullable `lifecycleDefinition` column to each lifecycle table and bind existing records to the only definition that table has had. The Skill's procurement and onboarding business examples carry the same changes.

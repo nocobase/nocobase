@@ -468,7 +468,7 @@ describe('lifecycle example routes', () => {
       }),
     );
     const body: unknown = await fired.json();
-    expect(fired.status, JSON.stringify(body)).toBe(200);
+    expect(fired.status).toBe(200);
     expect(body).toMatchObject({
       data: { lifecycle: 'orders-v2', state: 'paid' },
     });
