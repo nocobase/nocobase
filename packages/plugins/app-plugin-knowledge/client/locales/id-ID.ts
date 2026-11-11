@@ -155,6 +155,15 @@ const idID: LocaleResource<typeof enUS> = {
   },
   access: {
     businessSection: 'Pengetahuan',
+    settingsSection: 'Pengetahuan',
+    settings: {
+      indexing: {
+        title: 'Pengindeksan pengetahuan',
+        read: 'Baca',
+        configure: 'Konfigurasi',
+        rebuild: 'Bangun ulang',
+      },
+    },
     businesses: {
       knowledge: {
         title: 'Pengetahuan',

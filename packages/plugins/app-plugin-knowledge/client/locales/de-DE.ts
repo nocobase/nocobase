@@ -156,6 +156,15 @@ const deDE: LocaleResource<typeof enUS> = {
   },
   access: {
     businessSection: 'Wissen',
+    settingsSection: 'Wissen',
+    settings: {
+      indexing: {
+        title: 'Wissensindexierung',
+        read: 'Lesen',
+        configure: 'Konfigurieren',
+        rebuild: 'Neu aufbauen',
+      },
+    },
     businesses: {
       knowledge: {
         title: 'Wissen',

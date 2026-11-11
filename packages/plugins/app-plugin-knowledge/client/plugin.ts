@@ -14,6 +14,11 @@ export interface KnowledgeClientOptions extends KnowledgeRouteOptions {
    * `true`.
    */
   readonly routes?: boolean;
+  /**
+   * `false` matches a server composed with `createKnowledgePlugin({ indexing: false })`: the index form registry stays
+   * unregistered, so `KnowledgeIndexingEntry` renders nothing. Defaults to `true`.
+   */
+  readonly indexing?: boolean;
   readonly indexingForms?: readonly IndexingFormDefinition[];
 }
 
@@ -21,7 +26,8 @@ const knowledge: AppClientPluginFactory<KnowledgeClientOptions> =
   defineClientPlugin<KnowledgeClientOptions>({
     packageName: '@nocobase/app-plugin-knowledge',
     locales,
-    serviceProviders: [KnowledgeIndexingFormsProvider],
+    serviceProviders: (options) =>
+      options.indexing === false ? [] : [KnowledgeIndexingFormsProvider],
     routes: (options) =>
       options.routes === false ? [] : createKnowledgeRoutes(options),
   });

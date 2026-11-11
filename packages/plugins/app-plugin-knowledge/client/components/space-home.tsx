@@ -35,7 +35,7 @@ import type {
   KnowledgeProposal,
   SpaceRef,
 } from '../../shared/knowledge.js';
-import { useKnowledgeUnindexed } from '../api.js';
+import { useKnowledgeCapabilities, useKnowledgeUnindexed } from '../api.js';
 import type { EntryActions } from '../lib/entry-actions.js';
 import { relativeTime } from '../lib/format.js';
 import { EntryIcon } from './file-pane.js';
@@ -124,7 +124,10 @@ export function SpaceHome({
 }): ReactElement {
   const { t, i18n } = useTranslation(ACCESS_NAMESPACE);
   const [now] = useState(() => Date.now());
-  const index = useKnowledgeUnindexed(space);
+  // Only an application with semantic search serves the list of documents not yet indexed.
+  const semanticSearch =
+    useKnowledgeCapabilities().data?.semanticSearch === true;
+  const index = useKnowledgeUnindexed(semanticSearch ? (space ?? null) : null);
   const unindexed = index.data ?? [];
   const edit = !!actions?.access.edit;
   const propose = !edit && !!actions?.access.propose;

@@ -156,6 +156,15 @@ const frFR: LocaleResource<typeof enUS> = {
   },
   access: {
     businessSection: 'Connaissance',
+    settingsSection: 'Connaissance',
+    settings: {
+      indexing: {
+        title: 'Indexation des connaissances',
+        read: 'Lire',
+        configure: 'Configurer',
+        rebuild: 'Reconstruire',
+      },
+    },
     businesses: {
       knowledge: {
         title: 'Connaissance',

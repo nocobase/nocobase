@@ -155,6 +155,15 @@ const ptBR: LocaleResource<typeof enUS> = {
   },
   access: {
     businessSection: 'Conhecimento',
+    settingsSection: 'Conhecimento',
+    settings: {
+      indexing: {
+        title: 'Indexação do conhecimento',
+        read: 'Ler',
+        configure: 'Configurar',
+        rebuild: 'Reconstruir',
+      },
+    },
     businesses: {
       knowledge: {
         title: 'Conhecimento',
