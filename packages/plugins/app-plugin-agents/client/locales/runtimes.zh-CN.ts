@@ -3,6 +3,16 @@ import type { RuntimesLocale } from './runtimes.en-US.js';
 const runtimesZhCN: RuntimesLocale = {
   runtimes: {
     quota: {
+      ceilingReached: '已达额度阈值',
+      ceilingLabel: '暂停接活阈值',
+      ceilingInput: '{{tool}} 已用额度达到多少百分比时暂停接活',
+      ceilingOff: '不限制',
+      ceilingSave: '应用',
+      ceilingInvalid: '请输入 1 至 100 的整数百分比，或留空。',
+      ceilingHint:
+        '依据最近上报的额度判断。留空不限制，正在执行的任务继续运行。',
+      ceilingPaused: '某额度窗口已达到阈值，受影响的新任务等待重置或调整上限。',
+
       workspaceStatus: {
         active: '工作进行中',
         ended: '已结束 · 可清理',

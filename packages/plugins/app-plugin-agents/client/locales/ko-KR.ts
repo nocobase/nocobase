@@ -577,6 +577,17 @@ const koKR: LocaleResource<typeof enUS> = {
   },
   runtimes: {
     quota: {
+      ceilingReached: '할당량 임계값 도달',
+      ceilingLabel: '접수 중지 임계값',
+      ceilingInput: '{{tool}} 사용률이 지정한 비율에 도달하면 새 작업 중지',
+      ceilingOff: '제한 없음',
+      ceilingSave: '적용',
+      ceilingInvalid: '1~100 사이의 정수 백분율을 입력하거나 비워 두세요.',
+      ceilingHint:
+        '마지막으로 보고된 사용량을 기준으로 판단합니다. 비워 두면 제한하지 않으며 실행 중인 작업은 계속됩니다.',
+      ceilingPaused:
+        '할당량 구간이 임계값에 도달했습니다. 해당 새 작업은 초기화되거나 임계값이 변경될 때까지 대기합니다.',
+
       workspaceStatus: {
         active: '작업 계속 중',
         ended: '종료 · 정리 가능',

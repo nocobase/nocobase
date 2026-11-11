@@ -615,6 +615,18 @@ const deDE: LocaleResource<typeof enUS> = {
     pathHint:
       'Der Runner findet Coding-Tools über seinen eigenen PATH. Führen Sie in einem Terminal, in dem which codex / which claude funktioniert, nocobase-runner service install erneut aus und starten Sie den Dienst neu (oder führen Sie nocobase-runner start erneut aus), damit er den richtigen PATH erhält.',
     quota: {
+      ceilingReached: 'Quotenschwelle erreicht',
+      ceilingLabel: 'Pausieren bei',
+      ceilingInput: 'Neue {{tool}}-Aufträge ab Prozent Verbrauch pausieren',
+      ceilingOff: 'Aus',
+      ceilingSave: 'Anwenden',
+      ceilingInvalid:
+        'Eine ganze Prozentzahl von 1 bis 100 eingeben oder leer lassen.',
+      ceilingHint:
+        'Verwendet den zuletzt gemeldeten Verbrauch. Leer bedeutet kein Limit; laufende Arbeit wird fortgesetzt.',
+      ceilingPaused:
+        'Ein Quotenfenster hat das Limit erreicht; betroffene neue Arbeit wartet auf die Rücksetzung oder eine Limitänderung.',
+
       workspaceStatus: {
         active: 'Die Arbeiten gehen weiter',
         ended: 'Beendet · Bereinigung erlaubt',

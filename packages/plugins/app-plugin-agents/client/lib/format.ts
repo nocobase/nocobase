@@ -114,6 +114,7 @@ export function quotaWindowLabel(window: string): string {
         seven_day: '7d',
         seven_day_opus: '7d · Opus',
         seven_day_sonnet: '7d · Sonnet',
+        seven_day_overage_included: '7d · Fable',
         '300m': '5h',
         '10080m': '7d',
       } as Readonly<Record<string, string>>

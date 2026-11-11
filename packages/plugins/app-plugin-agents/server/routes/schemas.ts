@@ -550,8 +550,16 @@ export const SkillRestoreInput: z.ZodType<{ expectedRevision: number }> =
       .describe('The revision last read; reject if the record has changed.'),
   });
 
+const RunnerQuotaLimitsSchema = z.partialRecord(
+  AgentToolSchema,
+  z.number().int().min(1).max(100),
+);
+
 export const RunnerPatchInput: z.ZodType<RunnerPatch> = z
   .strictObject({
+    quotaLimits: RunnerQuotaLimitsSchema.nullable().describe(
+      'Pause new runs when a reported quota window reaches this percentage used. Omitted tools have no ceiling. Running work is unaffected.',
+    ),
     name: z.string().trim().min(1).max(200).describe('The name to display.'),
     trust: z
       .enum(RUNNER_TRUST)
@@ -2064,6 +2072,7 @@ const runnerObject = z.object({
     description:
       'The product it runs as and updates itself to (`nocobase-runner`, or a CLI that carries the runner); null when it reported none.',
   }),
+  quotaLimits: RunnerQuotaLimitsSchema.nullable().optional(),
   protocolVersion: z.number().int(),
   features: z.array(RunnerFeatureSchema),
   tools: z.array(ToolInfoSchema),

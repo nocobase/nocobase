@@ -570,6 +570,15 @@ const zhTW: LocaleResource<typeof enUS> = {
     pathHint:
       'runner 會依自己的 PATH 尋找程式設計工具。請在可執行 which codex / which claude 的終端機中重新執行 nocobase-runner service install 並重新啟動服務（或重新執行 nocobase-runner start），讓它取得正確的 PATH。',
     quota: {
+      ceilingReached: '已達額度門檻',
+      ceilingLabel: '暫停接單門檻',
+      ceilingInput: '{{tool}} 已用額度達到多少百分比時暫停接單',
+      ceilingOff: '不限制',
+      ceilingSave: '套用',
+      ceilingInvalid: '請輸入 1 至 100 的整數百分比，或留空。',
+      ceilingHint: '依最近回報的額度判斷。留空不限制，執行中的工作繼續。',
+      ceilingPaused: '某額度視窗已達門檻，受影響的新工作等待重設或調整上限。',
+
       workspaceStatus: {
         active: '工作仍在繼續',
         ended: '已結束 · 允許清理',

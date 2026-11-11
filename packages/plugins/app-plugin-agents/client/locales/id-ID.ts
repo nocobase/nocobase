@@ -594,6 +594,17 @@ const idID: LocaleResource<typeof enUS> = {
     pathHint:
       'Runner mencari alat pemrograman menggunakan PATH miliknya sendiri. Di terminal tempat which codex / which claude berfungsi, jalankan lagi nocobase-runner service install dan mulai ulang layanan (atau jalankan lagi nocobase-runner start) agar runner mendapat PATH yang benar.',
     quota: {
+      ceilingReached: 'Ambang kuota tercapai',
+      ceilingLabel: 'Jeda pada',
+      ceilingInput: 'Jeda pekerjaan {{tool}} baru pada persentase terpakai',
+      ceilingOff: 'Nonaktif',
+      ceilingSave: 'Terapkan',
+      ceilingInvalid: 'Masukkan persentase bulat 1 hingga 100, atau kosongkan.',
+      ceilingHint:
+        'Menggunakan pemakaian terakhir yang dilaporkan. Kosong berarti tanpa batas; pekerjaan berjalan tetap berlanjut.',
+      ceilingPaused:
+        'Satu jendela kuota mencapai batas; pekerjaan baru terkait menunggu reset atau perubahan batas.',
+
       workspaceStatus: {
         active: 'Pekerjaan berlanjut',
         ended: 'Berakhir · pembersihan diperbolehkan',
