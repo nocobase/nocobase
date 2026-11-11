@@ -13,6 +13,7 @@ import authorization from '@nocobase/app-plugin-authorization/client';
 import databaseExplorer from '@nocobase/app-plugin-database-explorer/client';
 import users from '@nocobase/app-plugin-users/client';
 import notificationInApp from '@nocobase/app-plugin-notification-in-app/client';
+import webPush from '@nocobase/app-plugin-notification-web-push/client';
 import i18n from '@nocobase/app-plugin-i18n/client';
 import notification from '@nocobase/app-plugin-notification/client';
 import scheduler from '@nocobase/app-plugin-scheduler/client';
@@ -32,6 +33,7 @@ const clientPlugins: AppClientPlugins = defineClientPlugins([
   apiKeys(),
   i18n(),
   notificationInApp(),
+  webPush(),
   notification(),
   file(),
   scheduler(),

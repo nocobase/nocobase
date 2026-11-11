@@ -12,6 +12,7 @@ import session from './session.js';
 import server from './server.js';
 import spa from './spa.js';
 import pwa from './pwa.js';
+import { pushConfig as push } from '@nocobase/app-plugin-notification-web-push/server';
 import logging from './logging.js';
 import drive from './drive.js';
 import concurrency from './concurrency.js';
@@ -40,6 +41,7 @@ const defaultConfigs: AppConfigFactory<{
   server: ReturnType<typeof server>;
   spa: ReturnType<typeof spa>;
   pwa: ReturnType<typeof pwa>;
+  push: ReturnType<typeof push>;
   logging: ReturnType<typeof logging>;
   drive: ReturnType<typeof drive>;
   concurrency: ReturnType<typeof concurrency>;
@@ -67,6 +69,7 @@ const defaultConfigs: AppConfigFactory<{
   server,
   spa,
   pwa,
+  push,
   logging,
   drive,
   concurrency,
