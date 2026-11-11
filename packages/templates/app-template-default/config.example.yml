@@ -62,6 +62,15 @@
 #     - { src: assets/pwa-512.png, sizes: 512x512, type: image/png }
 #   appleTouchIcon: assets/pwa-192.png
 
+# Browser push notifications from @nocobase/app-plugin-notification-web-push. Installed, but off until a private key is
+# set: the account menu's Push notifications says "not configured" and nothing asks for permission. Generate one key
+# per application with `openssl rand -hex 32`, keep it with the secrets keys and never change it casually: a new key
+# makes every device subscribe again. Needs HTTPS (or localhost). WEB_PUSH_PRIVATE_KEY and WEB_PUSH_CONTACT set the
+# same values from the environment. Nothing is sent until the application's own code sends to the webPush channel.
+# push:
+#   privateKey: <64 hex characters>
+#   contact: mailto:admin@example.com
+
 # Values under client are public and embedded in the SPA HTML.
 client:
   app:

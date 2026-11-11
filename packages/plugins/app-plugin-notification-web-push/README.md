@@ -4,7 +4,7 @@ A browser notification channel for NocoBase 3 applications. Owns VAPID validatio
 
 ## Install in an application
 
-Install this package and register its default server plugin after authentication, authorization and notification. Register the default client factory from `@nocobase/app-plugin-notification-web-push/client` so its localized messages are loaded. The application needs the usual database, secrets, logging and job executor providers; these already ship in the application templates.
+The official Default and Examples templates already install and register it, with `push` configuration, a `webPush` channel, a Push notifications item in the account menu that renders `PushPreferences`, and `unsubscribeDevice` on sign-out; push stays not configured until `push.privateKey` is set. For another application, install this package and register its default server plugin after authentication, authorization and notification. Register the default client factory from `@nocobase/app-plugin-notification-web-push/client` so its localized messages are loaded. The application needs the usual database, secrets, logging and job executor providers; these already ship in the application templates.
 
 Add the exported `pushConfig` factory to the application's `defaultAppConfigs({ push: pushConfig, ... })`. Preserve `push.privateKey` / `WEB_PUSH_PRIVATE_KEY` and `push.contact` / `WEB_PUSH_CONTACT`. The private key is a persistent P-256 32-byte hex or base64url value, never a per-start random key. Changing it requires browsers to subscribe again. Keep `SECRETS_KEYS` available: subscription encryption uses `web-push/subscription` with `[deviceId,userId]` binding and participates in the host secrets rotation store.
 

@@ -39,4 +39,11 @@ Files under `public/assets/` are served with a one-year immutable cache. To chan
 
 ## Web Push
 
-Push notifications are a separate, optional plugin, `@nocobase/app-plugin-notification-web-push`, with its own worker at `<APP_BASE_PATH>/push-worker.js`. It works with or without installation, except on iOS and iPadOS, where the app must be installed before it can subscribe. Its `pushManifest` export is a deprecated alias of `pwaManifest` from `@nocobase/app-server/spa`.
+Push notifications come from a separate plugin, `@nocobase/app-plugin-notification-web-push`, which the official templates install and register with its `push` configuration, a `webPush` notification channel and a Push notifications item in the account menu. It works with or without installation, except on iOS and iPadOS, where the app must be installed before it can subscribe.
+
+- Off until configured: without `push.privateKey` (`WEB_PUSH_PRIVATE_KEY`) the device settings say push is not configured, and the application, sign-in and installation work as usual. `pnpm nocobase config init` does not generate the key. Generate one per application with `openssl rand -hex 32` and keep it like the secrets keys: changing it makes every device subscribe again. Subscriptions are encrypted with the `secrets` keys, so those must be set too.
+- Permission only on request: the browser's notification permission is requested only when the person presses Subscribe in those settings, never on page load, sign-in or installation. The plugin registers its own worker, `<APP_BASE_PATH>/push-worker.js`, at that moment; do not register another one.
+- Each person manages only their own devices: subscribe, pause, remove and send a test notification. Signing out removes the current browser's device first and stops if that fails.
+- Installing the plugin sends nothing. What to send, when and to whom is the application's business code, through the `webPush` channel of `@nocobase/app-plugin-notification`; read the plugin's Skill before writing it.
+
+`pushManifest` from the plugin is a deprecated alias of `pwaManifest` from `@nocobase/app-server/spa`.
