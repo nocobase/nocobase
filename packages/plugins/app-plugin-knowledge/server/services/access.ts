@@ -38,6 +38,8 @@ import {
   findSpace,
   findSpaceById,
   type DocRecord,
+  type SpaceRecord,
+  type AccessEntryRecord,
 } from './store.js';
 import type { KnowledgeSubjects } from './subjects.js';
 
@@ -58,6 +60,13 @@ export interface KnowledgeReader {
 export interface KnowledgeReaderAccess {
   /** What the reader may do in `space`. */
   access(space: SpaceRef): Promise<KnowledgeAccess>;
+  /** Optional application catalogue, including readable spaces that have not been materialized yet. Cached for this reader/request. */
+  directory?(): Promise<
+    readonly (SpaceRef & {
+      readonly title: string | null;
+      readonly access: KnowledgeAccess;
+    })[]
+  >;
 }
 
 /** The application's spaces and their access, bound to `knowledgeAccessToken`. */
@@ -182,11 +191,21 @@ const refusal = (reader: KnowledgeReader, need: DocNeed) =>
           : 'You may not change the knowledge here.',
   );
 
+/** A directory read shares these bulk-loaded records with the ordinary ACL evaluator. */
+export interface AccessSnapshot {
+  readonly answers: KnowledgeReaderAccess;
+  readonly spaces: ReadonlyMap<string, SpaceRecord>;
+  readonly docs: ReadonlyMap<string, readonly DocRecord[]>;
+  readonly entries: ReadonlyMap<string, readonly AccessEntryRecord[]>;
+  readonly parties: ReadonlyMap<string, readonly ReadonlySet<string>[]>;
+}
+
 export function createAccessCheck(
   context: AccessContext,
   reader: KnowledgeReader,
+  snapshot?: AccessSnapshot,
 ): AccessCheck {
-  const answers = context.access.forReader(reader);
+  const answers = snapshot?.answers ?? context.access.forReader(reader);
   const actor = Boolean(reader.actor);
   const known = new Map<string, Promise<KnowledgeAccess>>();
   const acls = new Map<string, Promise<SpaceAcl>>();
@@ -209,7 +228,9 @@ export function createAccessCheck(
   async function load(space: SpaceRef): Promise<SpaceAcl> {
     const level = levelOf(await access(space));
     const conn = context.read();
-    const record = await findSpace(conn, space);
+    const record = snapshot
+      ? snapshot.spaces.get(keyOf(space))
+      : await findSpace(conn, space);
     const flat = (spaceId: string | null): SpaceAcl => ({
       ref: space,
       spaceId,
@@ -225,20 +246,28 @@ export function createAccessCheck(
       manages: level === 'manage',
     });
     if (!record) return flat(null);
-    const entries: AclEntry[] = await accessRepo(conn).findMany({
-      filter: { spaceId: record.id },
-    });
-    const custom = await docsRepo(conn).findMany({
-      filter: { spaceId: record.id, accessMode: 'custom' },
-      select: (select) => select.fields('id'),
-      limit: 1,
-    });
+    const entries: readonly AclEntry[] = snapshot
+      ? (snapshot.entries.get(record.id) ?? [])
+      : await accessRepo(conn).findMany({
+          filter: { spaceId: record.id },
+        });
+    const custom = snapshot
+      ? (snapshot.docs.get(record.id) ?? []).filter(
+          (doc) => doc.accessMode === 'custom',
+        )
+      : await docsRepo(conn).findMany({
+          filter: { spaceId: record.id, accessMode: 'custom' },
+          select: (select) => select.fields('id'),
+          limit: 1,
+        });
     if (entries.length === 0 && custom.length === 0) return flat(record.id);
-    const nodes = await docsRepo(conn).findMany({
-      filter: { spaceId: record.id },
-      select: (select) => select.fields('id', 'parentId', 'accessMode'),
-    });
-    const parties = [
+    const nodes = snapshot
+      ? (snapshot.docs.get(record.id) ?? [])
+      : await docsRepo(conn).findMany({
+          filter: { spaceId: record.id },
+          select: (select) => select.fields('id', 'parentId', 'accessMode'),
+        });
+    const parties = snapshot?.parties.get(keyOf(space)) ?? [
       await context.subjects.keysOf({ kind: 'user', id: reader.userId }, space),
       ...(reader.actor
         ? [

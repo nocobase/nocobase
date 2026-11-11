@@ -45,6 +45,11 @@ export interface KnowledgeSubjectProvider {
     principal: KnowledgePrincipal,
     context: KnowledgeSubjectContext,
   ): Promise<readonly string[]>;
+  /** Optional bulk membership lookup; keys are the same SpaceRef objects supplied in spaces. */
+  subjectsOfMany?(
+    principal: KnowledgePrincipal,
+    spaces: readonly SpaceRef[],
+  ): Promise<ReadonlyMap<SpaceRef, readonly string[]>>;
 }
 
 export interface KnowledgeSubjects {
@@ -58,6 +63,12 @@ export interface KnowledgeSubjects {
     principal: KnowledgePrincipal,
     space: SpaceRef,
   ): Promise<ReadonlySet<string>>;
+  /** Bulk keys for the provider types used by the requested ACL entries. */
+  keysOfMany(
+    principal: KnowledgePrincipal,
+    spaces: readonly SpaceRef[],
+    types: ReadonlySet<string>,
+  ): Promise<ReadonlyMap<SpaceRef, ReadonlySet<string>>>;
   /** Labels for stored subjects; one no provider knows is marked `known: false` and labelled by its id. */
   describe(
     refs: readonly { readonly type: string; readonly id: string }[],
@@ -117,6 +128,43 @@ export function createSubjects(
         }),
       );
       return keys;
+    },
+    async keysOfMany(principal, spaces, types) {
+      const result = new Map(spaces.map((space) => [space, new Set<string>()]));
+      for (const provider of providers.values()) {
+        if (!types.has(provider.type)) continue;
+        try {
+          const memberships = provider.subjectsOfMany
+            ? await provider.subjectsOfMany(principal, spaces)
+            : new Map(
+                await Promise.all(
+                  spaces.map(async (space) => {
+                    try {
+                      return [
+                        space,
+                        await provider.subjectsOf(principal, { space }),
+                      ] as const;
+                    } catch (error) {
+                      onError(
+                        `The knowledge subject provider ${provider.type} failed.`,
+                        error,
+                      );
+                      return [space, []] as const;
+                    }
+                  }),
+                ),
+              );
+          for (const space of spaces)
+            for (const id of memberships.get(space) ?? [])
+              result.get(space)!.add(subjectKey({ type: provider.type, id }));
+        } catch (error) {
+          onError(
+            `The knowledge subject provider ${provider.type} failed.`,
+            error,
+          );
+        }
+      }
+      return result;
     },
     async describe(refs, space) {
       const found = new Map<string, KnowledgeSubject>();

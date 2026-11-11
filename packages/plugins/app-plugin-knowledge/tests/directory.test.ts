@@ -79,6 +79,60 @@ describe('authorized knowledge aggregation', () => {
     expect(all[1]).toMatchObject({ space: { id: null }, documents: 0 });
   });
 
+  it('preserves node grants and archived restore counts for people and actors in batched summaries', async () => {
+    const admin = h.user('admin');
+    h.roles.set('member', ['editor']);
+    const folder = await h.knowledge.docs.create(admin, {
+      ...project,
+      kind: 'folder',
+      title: 'Private parent',
+    });
+    const child = await h.knowledge.docs.create(admin, {
+      ...project,
+      title: 'Shared child',
+      parentId: folder.id,
+    });
+    const archived = await h.knowledge.docs.create(admin, {
+      ...project,
+      title: 'Restorable',
+    });
+    await h.knowledge.permissions.replace(admin, folder.id, {
+      mode: 'custom',
+      entries: [],
+    });
+    await h.knowledge.permissions.replace(admin, child.id, {
+      mode: 'custom',
+      entries: [
+        { subject: { type: 'user', id: 'member' }, level: 'read' },
+        { subject: { type: 'agent', id: 'a1' }, level: 'read' },
+      ],
+    });
+    await h.knowledge.permissions.replace(admin, archived.id, {
+      mode: 'custom',
+      entries: [
+        { subject: { type: 'role', id: 'editor' }, level: 'edit' },
+        { subject: { type: 'agent', id: 'a1' }, level: 'edit' },
+      ],
+    });
+    await h.knowledge.docs.archive(admin, archived.id);
+    expect(
+      (
+        await h.knowledge.docs.summaries(h.user('member'), [project, SYSTEM])
+      )[0],
+    ).toMatchObject({ documents: 1, archivedDocuments: 1 });
+    expect(
+      (
+        await h.knowledge.docs.summaries(h.agent('member', 'a1'), [
+          project,
+          SYSTEM,
+        ])
+      )[0],
+    ).toMatchObject({ documents: 1, archivedDocuments: 0 });
+    expect(
+      (await h.knowledge.docs.summaries(h.agent('member', 'a2'), [project]))[0],
+    ).toMatchObject({ documents: 0, archivedDocuments: 0 });
+  });
+
   it('searches all explicit spaces once with readable paths and filters hidden nodes, spaces and archives', async () => {
     const admin = h.user('admin');
     const folder = await h.knowledge.docs.create(admin, {

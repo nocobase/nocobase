@@ -11,6 +11,85 @@ beforeEach(async () => {
 afterEach(() => h.close());
 
 describe('projects', () => {
+  it('projects authorized references in one query with the same visibility and key scope as the list', async () => {
+    const open = await h.services.projects.create(h.viewer('lead'), {
+      name: 'Open',
+    });
+    const secret = await h.services.projects.create(h.viewer('lead'), {
+      name: 'Secret',
+      visibility: 'members',
+    });
+    await h.services.projects.addMember(h.viewer('lead'), secret.id, {
+      userId: 'bob',
+    });
+    const base = h.viewer('alice');
+    const viewers = [
+      base,
+      h.viewer('lead'),
+      h.viewer('bob'),
+      h.viewer('admin', 'admin'),
+      { ...base, projectIds: [] },
+      { ...h.viewer('bob'), projectIds: [open.id] },
+      {
+        ...base,
+        permissions: {
+          ...base.permissions,
+          scopes: {
+            ...base.permissions.scopes,
+            'pm.projects/view': { users: ['lead'] },
+          },
+        },
+      },
+      {
+        ...base,
+        permissions: {
+          ...base.permissions,
+          scopes: {
+            ...base.permissions.scopes,
+            'pm.projects/view': { users: [] },
+          },
+        },
+      },
+      {
+        ...base,
+        permissions: {
+          ...base.permissions,
+          scopes: {
+            ...base.permissions.scopes,
+            'pm.projects/view': 'none' as const,
+          },
+        },
+      },
+    ];
+    const client = await h.database.connection().client();
+    for (const viewer of viewers) {
+      const statements: string[] = [];
+      const capture = (query: { sql: string }) => statements.push(query.sql);
+      client.on('query', capture);
+      let refs;
+      try {
+        refs = await h.services.projects.references(viewer);
+      } finally {
+        client.off('query', capture);
+      }
+      expect(statements).toHaveLength(1);
+      const listed = await h.services.projects.list(viewer);
+      expect(
+        refs.map(({ id, name, leadUserId }) => ({ id, name, leadUserId })),
+      ).toEqual(
+        listed.map(({ id, name, leadUserId }) => ({ id, name, leadUserId })),
+      );
+      expect(
+        refs.every(
+          (project) =>
+            project.member ===
+            (viewer.userId === 'lead' ||
+              (viewer.userId === 'bob' && project.id === secret.id)),
+        ),
+      ).toBe(true);
+    }
+  });
+
   it('makes the creator lead and member unless another lead is named', async () => {
     const own = await h.services.projects.create(h.viewer('alice'), {
       name: 'Own',
