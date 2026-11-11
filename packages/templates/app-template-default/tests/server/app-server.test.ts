@@ -7,6 +7,7 @@ import {
   type TestAppConfig,
 } from '@nocobase/app-testing/server';
 import {
+  copyFileSync,
   mkdirSync,
   mkdtempSync,
   rmSync,
@@ -272,6 +273,66 @@ describe('app server', () => {
       boot.mockRestore();
       start.mockRestore();
       ready.mockRestore();
+    }
+  });
+
+  it('serves the installation manifest and icons anonymously through server/app.ts', async () => {
+    const sourceRoot = path.resolve(import.meta.dirname, '../..');
+    const clientDir = mkdtempSync(
+      path.join(tmpdir(), 'nocobase-app-template-default-pwa-client-'),
+    );
+    tempDirs.push(clientDir);
+    mkdirSync(path.join(clientDir, 'assets'));
+    writeFileSync(path.join(clientDir, 'index.html'), '<main>Page</main>');
+    for (const icon of ['pwa-192.png', 'pwa-512.png'])
+      copyFileSync(
+        path.join(sourceRoot, 'public/assets', icon),
+        path.join(clientDir, 'assets', icon),
+      );
+    const basePath = '/tenants/acme/desk';
+    // The composed application: config/index.ts, the route in app.ts ahead of the SPA, and no session or push key.
+    const app = await createEmbeddedServer(
+      await createEmbeddedTestScope({
+        id: 'app-template-default-pwa',
+        basePath,
+        clientDir,
+      }),
+    );
+
+    const response = await requestApp(
+      app,
+      'http://localhost/manifest.webmanifest',
+      { headers: { accept: 'text/html' } },
+    );
+    expect(response.status).toBe(200);
+    expect(response.headers.get('content-type')).toContain(
+      'application/manifest+json',
+    );
+    const manifest = (await response.json()) as {
+      id: string;
+      start_url: string;
+      scope: string;
+      theme_color: string;
+      icons: { src: string; sizes: string }[];
+    };
+    expect(manifest).toMatchObject({
+      id: `${basePath}/`,
+      start_url: `${basePath}/`,
+      scope: `${basePath}/`,
+      theme_color: '#002ad1',
+    });
+    expect(manifest.icons.map((icon) => icon.sizes)).toEqual([
+      '192x192',
+      '512x512',
+    ]);
+    for (const icon of manifest.icons) {
+      // The host strips the public base path before the application sees a request.
+      const image = await requestApp(
+        app,
+        `http://localhost${icon.src.slice(basePath.length)}`,
+      );
+      expect(image.status).toBe(200);
+      expect(image.headers.get('content-type')).toBe('image/png');
     }
   });
 

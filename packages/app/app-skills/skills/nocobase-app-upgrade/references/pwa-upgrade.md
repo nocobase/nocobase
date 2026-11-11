@@ -13,7 +13,7 @@ Some applications, such as NocoBase Studio and Customer Portal, built their own 
 - Keep the same public base path and origin. `id`, `start_url` and `scope` stay `<publicBasePath>/`, exactly what `pushManifest` produced.
 - Keep the manifest at `<publicBasePath>/manifest.webmanifest`; if the old route used another path, keep that path linked or redirect it until installed clients have refreshed.
 - Move the branding into `pwa` (name, shortName, colors, icon paths), then remove the application's own manifest route, link-mounting code and duplicate icons in the same change. `mountInstallLinks()` skips a manifest the page already links, so a leftover link silently wins.
-- Leave the Web Push worker alone: `<publicBasePath>/push-worker.js`, its scope and the VAPID key do not change, so existing subscriptions keep working. Replace `pushManifest` imports with `pwaManifest` from `@nocobase/app-server/spa` when convenient; the alias keeps working meanwhile.
+- Leave the Web Push worker alone: `<publicBasePath>/push-worker.js`, its scope and the VAPID key do not change, so existing subscriptions keep working. Replace `pushManifest` imports with `pwaManifest` from `@nocobase/app-server/spa` when convenient; the alias keeps working meanwhile with the same `id`, `start_url`, `scope` and relative icon URLs. Only absolute `http(s)` icon URLs change: they are kept as they are instead of being prefixed with the base path, which never resolved.
 
 ## Verify
 
