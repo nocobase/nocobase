@@ -23,7 +23,9 @@ run-name: studio-release:${{ inputs.channel }}${{ inputs.dry_run && ' (dry run)'
 #   latest release keeps its bump pull request to `main` version-only and merges them into `dev` through a second
 #   squashed pull request from `release/studio-<version>-changelog`. Notes, changelog and GitHub release are
 #   best-effort: the image and the tag are already published by then, so a failure there (or a released commit older
-#   than the script) warns and is reported in the summary and the notice, but never fails the run.
+#   than the script) warns and is reported in the summary and the notice, but never fails the run. Each image's public
+#   notes (without pull request links and authors, and Studio's without Studio EE-only areas) are also uploaded to the
+#   registry, where the public image pages show them per version; also best-effort.
 # - dry_run resolves, validates and builds both editions on both platforms, but never signs in to the registry for a push, pushes,
 #   tags, pushes a branch, opens a pull request, creates a GitHub release or notifies. With DOCKER_PUBLISH_TOKEN
 #   configured it also runs the read-only registry checks, so the tag decision can be previewed. It writes no release
@@ -785,6 +787,58 @@ jobs:
             echo "result=failed" >> "$GITHUB_OUTPUT"
           fi
 
+      # The registry's public image pages (https://pkg-v3.nocobase.com/-/images/nocobase/studio and studio-ee) show each
+      # version's release notes, read from PUT /-/release-notes/<repository>/<version>. Customers cannot open the private
+      # nocobase/studio, so each image gets the public notes the script writes for it, release-notes.<image>.<language>.md,
+      # without pull request links and authors; Studio's leave out the scopes Studio's scripts/release/scopes.json marks
+      # Studio EE-only. An upload replaces the version's notes, so a retried run is harmless. A released commit whose script
+      # writes no notes for an image uploads nothing for it. Failure is a warning only.
+      - name: Upload the release notes to the registry
+        id: registry_notes
+        continue-on-error: true
+        if: ${{ !cancelled() && steps.tag.outputs.tagged == 'true' && steps.notes.outputs.available == 'true' }}
+        env:
+          DOCKER_PUBLISH_TOKEN: ${{ secrets.DOCKER_PUBLISH_TOKEN }}
+          VERSION: ${{ needs.prepare.outputs.version }}
+        run: |
+          notes="${RUNNER_TEMP}/notes"
+          uploaded=0
+          missing=0
+          for repository in "$IMAGE_REPOSITORY" "$EE_IMAGE_REPOSITORY"; do
+            edition="${repository#*/}"
+            en="${notes}/release-notes.${edition}.en.md"
+            zh="${notes}/release-notes.${edition}.zh-CN.md"
+            if [ ! -s "$en" ] || [ ! -s "$zh" ]; then
+              echo "::warning::The released commit's release notes script writes no notes for ${edition}; the registry gets no release notes for ${repository}:${VERSION}."
+              missing=$((missing + 1))
+              continue
+            fi
+            body="${RUNNER_TEMP}/registry-release-notes.${edition}.json"
+            jq -nc --rawfile en "$en" --rawfile zh "$zh" '{ en: $en, "zh-CN": $zh }' > "$body"
+            url="https://${REGISTRY}/-/release-notes/${repository}/${VERSION}"
+            if curl --fail-with-body --silent --show-error --retry 3 --retry-all-errors --max-time 30 \
+              --request PUT \
+              --header "authorization: Bearer ${DOCKER_PUBLISH_TOKEN}" \
+              --header 'content-type: application/json' \
+              --data-binary "@${body}" \
+              "$url"; then
+              echo
+              uploaded=$((uploaded + 1))
+            else
+              echo
+              echo "::warning::Uploading the release notes of ${repository}:${VERSION} to the registry failed; upload them by hand (PUT ${url})."
+            fi
+          done
+          if [ "$missing" = "2" ]; then
+            echo "result=skipped" >> "$GITHUB_OUTPUT"
+          elif [ "$uploaded" = "2" ]; then
+            echo "result=uploaded" >> "$GITHUB_OUTPUT"
+          elif [ "$uploaded" = "0" ]; then
+            echo "result=failed" >> "$GITHUB_OUTPUT"
+          else
+            echo "result=partial" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Summary
         if: ${{ always() }}
         env:
@@ -804,6 +858,7 @@ jobs:
           CHANGELOG_URL: ${{ steps.changelog.outputs.url }}
           RELEASE_RESULT: ${{ steps.github_release.outputs.result }}
           RELEASE_URL: ${{ steps.github_release.outputs.url }}
+          REGISTRY_NOTES_RESULT: ${{ steps.registry_notes.outputs.result }}
         run: |
           notes="${RUNNER_TEMP}/notes"
           if [ "$CHANNEL" = "beta" ]; then
@@ -835,6 +890,7 @@ jobs:
             echo "- Bump to \`${NEXT}\`: ${PR_URL:-no pull request} (merged: ${MERGED:-no})"
             echo "- GitHub release: ${RELEASE_URL:-not created} (${RELEASE_RESULT:-skipped})"
             echo "- Changelog: ${changelog}"
+            echo "- Release notes on ${REGISTRY}/-/images: ${REGISTRY_NOTES_RESULT:-skipped}"
             echo
             echo "\`docker pull ${REGISTRY}/${IMAGE_REPOSITORY}:${VERSION}\`"
             echo "\`docker pull ${REGISTRY}/${EE_IMAGE_REPOSITORY}:${VERSION}\`"

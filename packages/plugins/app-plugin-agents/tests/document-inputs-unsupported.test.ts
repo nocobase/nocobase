@@ -1,3 +1,4 @@
+import { DEFAULT_FILE_UPLOAD_LIMIT } from '@nocobase/app-plugin-file/server';
 import { NativeFileInputs } from '../server/online/files/service.js';
 import type { NativeMessage } from '../server/online/agent/types.js';
 import { afterEach, expect, it, vi } from 'vitest';
@@ -202,6 +203,12 @@ it.each([
   'keeps malformed input and context budgets fatal for unsupported attachments (%s)',
   async (filename, url, reason) => {
     const inputs = new NativeFileInputs({
+      files: {
+        uploadLimit: DEFAULT_FILE_UPLOAD_LIMIT,
+        content: async () => {
+          throw new Error('No stored files in this fixture.');
+        },
+      },
       connectionFor: async () => ({
         provider: 'deepseek',
         baseUrl: 'https://fixture.invalid/v1',

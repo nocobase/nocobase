@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import type { Viewer } from '../../server/access/viewer.js';
 import { DomainError } from '../../server/kernel/errors.js';
-import { ATTACHMENT_SIZE_MAX } from '../../shared/attachments.js';
+import { ApiError } from '@nocobase/app-server/router';
 import type { Issue } from '../../shared/issues.js';
 import { createHarness, type Harness } from '../harness.js';
 
@@ -40,6 +40,7 @@ async function codeOf(promise: Promise<unknown>): Promise<string> {
     await promise;
   } catch (error) {
     if (error instanceof DomainError) return error.code;
+    if (error instanceof ApiError) return error.reason;
     throw error;
   }
   return 'OK';
@@ -77,7 +78,7 @@ describe('uploads', () => {
         h.services.attachments.upload(withoutUpload(alice()), log()),
       ),
     ).toBe('FORBIDDEN');
-    const big = new File([new Uint8Array(ATTACHMENT_SIZE_MAX + 1)], 'big.bin');
+    const big = new File([new Uint8Array(20 * 1024 * 1024 + 1)], 'big.bin');
     expect(await codeOf(h.services.attachments.upload(alice(), big))).toBe(
       'FILE_TOO_LARGE',
     );

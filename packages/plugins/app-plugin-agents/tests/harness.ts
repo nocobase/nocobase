@@ -1,3 +1,5 @@
+import { createDriveManager, type AppDriveConfig } from '@nocobase/drive';
+import {} from '@nocobase/app-plugin-file/server';
 /**
  * A real database for the service and route tests, this plugin's migrations applied, and the services assembled
  * with a clock the test moves. The database is on the dialect `NOCOBASE_TEST_DB_DIALECT` selects, SQLite when it is
@@ -214,6 +216,7 @@ export interface RequestOptions {
 function memoryChatFiles(
   database: DatabaseManager,
   clock: FakeClock,
+  disk: string,
 ): ChatFileStorage & {
   readonly stored: Map<string, Uint8Array>;
   readonly removed: string[];
@@ -240,7 +243,7 @@ function memoryChatFiles(
         .createOne({
           values: {
             id,
-            disk: 'memory',
+            disk,
             key,
             filename: file.name,
             ext: dot > 0 ? file.name.slice(dot + 1).toLowerCase() : '',
@@ -300,6 +303,7 @@ export async function createHarness(
   options: {
     /** `null` for an application without secrets keys. */
     readonly uiRecovery?: OnlineAgentRecoveryConfig;
+    readonly drive?: AppDriveConfig;
     readonly measureOnlineAgent?: (phase: string, durationMs: number) => void;
     readonly secrets?: SecretsService | null;
     readonly dist?: DistConfig;
@@ -326,8 +330,21 @@ export async function createHarness(
     generateString: () => String((next += 1)).padStart(8, '0'),
   };
   const disk = memoryDisk();
-  const chatFiles = memoryChatFiles(database, clock);
+  const drive = createDriveManager(
+    options.drive ?? {
+      default: 'memory',
+      disks: {
+        memory: { driver: 'fs', location: '/unused', visibility: 'private' },
+      },
+    },
+  );
+  const chatFiles = memoryChatFiles(
+    database,
+    clock,
+    options.drive?.default ?? 'memory',
+  );
   const services = createAgents({
+    limitForDisk: (disk) => drive.getUploadLimit(disk),
     measureOnlineAgent: options.measureOnlineAgent,
     uiRecovery: options.uiRecovery,
     database,
