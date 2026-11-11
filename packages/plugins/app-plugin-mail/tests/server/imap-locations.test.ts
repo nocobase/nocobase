@@ -23,6 +23,13 @@ const server = vi.hoisted(() => {
     folders: new Map<string, FakeFolder>(),
     capabilities: new Set<string>(),
     sourceReads: [] as string[],
+    batchFetches: [] as {
+      path: string;
+      uids: number[];
+      query: Record<string, unknown>;
+    }[],
+    singleFlagReads: 0,
+    onFetchAll: undefined as (() => void) | undefined,
     failFlags: new Set<string>(),
     logouts: 0,
     locks: 0,
@@ -50,6 +57,9 @@ const server = vi.hoisted(() => {
       this.folders.clear();
       this.capabilities.clear();
       this.sourceReads.length = 0;
+      this.batchFetches.length = 0;
+      this.singleFlagReads = 0;
+      this.onFetchAll = undefined;
       this.failFlags.clear();
       this.logouts = 0;
       this.locks = 0;
@@ -195,14 +205,30 @@ vi.mock('imapflow', () => {
       const folder = this.selected();
       for (const uid of uidsOf(range, folder)) yield this.metadata(uid, folder);
     }
+    public async fetchAll(
+      range: unknown,
+      query: Record<string, unknown>,
+    ): Promise<unknown[]> {
+      const folder = this.selected();
+      const path = this.mailbox && this.mailbox.path;
+      server.batchFetches.push({
+        path: String(path),
+        uids: uidsOf(range, folder),
+        query,
+      });
+      server.onFetchAll?.();
+      return uidsOf(range, folder).map((uid) => this.metadata(uid, folder));
+    }
     public async fetchOne(
       range: number | string,
       query: {
+        flags?: boolean;
         source?: { start: number; maxLength: number };
         bodyParts?: { key: string; start?: number; maxLength?: number }[];
       },
     ): Promise<unknown> {
       const folder = this.selected();
+      if (query.flags) server.singleFlagReads += 1;
       const uid = Number(range);
       const message = folder.messages.get(uid);
       if (!message) return false;
@@ -746,6 +772,123 @@ describe('IMAP message identity', () => {
 });
 
 describe('IMAP verification and orphans', () => {
+  it.each([1, 47])(
+    'batches verification of %i copies per folder without per-copy flag reads',
+    async (count) => {
+      server.capabilities.add('OBJECTID');
+      for (let index = 0; index < 6; index += 1) {
+        const path = index === 0 ? 'INBOX' : `Folder${index}`;
+        folder(path);
+        for (let uid = 1; uid <= count; uid += 1)
+          deliver(path, {
+            raw: raw(`<${index}-${uid}@example.com>`),
+            emailId: `M${index}-${uid}`,
+          });
+      }
+      await sync();
+      server.batchFetches.length = 0;
+      server.singleFlagReads = 0;
+      server.selectionModes.length = 0;
+      for (const target of server.folders.values())
+        for (const message of target.messages.values())
+          message.flags.add('\\Seen');
+      await sync();
+      expect(server.batchFetches).toHaveLength(12);
+      expect(
+        server.batchFetches.every(
+          (batch) =>
+            batch.uids.length === count &&
+            batch.query.emailId === true &&
+            !batch.query.envelope,
+        ),
+      ).toBe(true);
+      expect(server.singleFlagReads).toBe(0);
+      expect(server.selectionModes).toHaveLength(24);
+      expect((await messages()).every((message) => message.read)).toBe(true);
+    },
+  );
+
+  it('reconciles a UID deleted between SEARCH and FETCH in the same run', async () => {
+    folder('INBOX');
+    deliver('INBOX', { raw: raw('<deleted@example.com>') });
+    deliver('INBOX', { raw: raw('<retained@example.com>') });
+    await sync();
+    server.onFetchAll = () => {
+      server.onFetchAll = undefined;
+      server.folders.get('INBOX')!.messages.delete(1);
+    };
+    const run = await service().startSync(owner, { accountId });
+    await step(); // Prepare the incremental run.
+    await step(); // The UID disappears during the first verification pass.
+    await step(); // The next SEARCH marks the missing copy before cleanup.
+    expect(
+      await database
+        .query()
+        .selectFrom('mailMessageImapLocations')
+        .select(['status', 'invalidationReason'])
+        .where('uid', '=', 1)
+        .execute(),
+    ).toMatchObject([{ status: 'invalid', invalidationReason: 'uid-missing' }]);
+    while (await step());
+    expect(await store.getSyncRun(run.id)).toMatchObject({
+      status: 'completed',
+    });
+    expect(await messages()).toMatchObject([
+      { providerMessageId: '<retained@example.com>' },
+    ]);
+  });
+
+  it.each(['batch', 'recheck', 'known'] as const)(
+    'honors cancellation during the %s loop',
+    async (phase) => {
+      folder('INBOX');
+      deliver('INBOX', { raw: raw('<abort@example.com>') });
+      await sync();
+      const controller = new AbortController();
+      let lists = 0;
+      server.onList = () => {
+        lists += 1;
+        if (lists === (phase === 'recheck' ? 2 : phase === 'known' ? 3 : -1))
+          controller.abort(new Error('Verification stopped'));
+      };
+      if (phase === 'batch')
+        server.onFetchAll = () =>
+          controller.abort(new Error('Verification stopped'));
+      const adapter = await adapters.resolve(
+        (await store.getAccount(accountId))!,
+      );
+      try {
+        expect(
+          await adapter.listChanges!({
+            cursor: await store.getSyncCursor(accountId),
+            limit: 100,
+            signal: controller.signal,
+          }),
+        ).toMatchObject({
+          ok: false,
+          error: { message: 'Verification stopped' },
+        });
+      } finally {
+        await adapter.close?.();
+      }
+    },
+  );
+
+  it('keeps mismatched identities partial instead of failing the whole run', async () => {
+    server.capabilities.add('OBJECTID');
+    folder('INBOX');
+    deliver('INBOX', {
+      raw: raw('<changed@example.com>'),
+      emailId: 'ORIGINAL',
+    });
+    await sync();
+    server.folders.get('INBOX')!.messages.get(1)!.emailId = 'DIFFERENT';
+    await sync({}, 'partial');
+    expect(await messages()).toMatchObject([
+      { providerMessageId: 'ORIGINAL', locations: [{ status: 'valid' }] },
+    ]);
+  });
+
   it('marks a missing copy, restores a moved one and deletes orphans only after two matching passes', async () => {
     server.capabilities.add('OBJECTID');
     folder('INBOX');

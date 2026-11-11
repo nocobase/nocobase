@@ -5,11 +5,18 @@ import { databaseManagerToken } from '@nocobase/db';
 import { gmailMailProviderDefinition } from '../adapters/gmail/definition.js';
 import { microsoftMailProviderDefinition } from '../adapters/microsoft/definition.js';
 import { createImapSmtpMailProviderDefinition } from '../adapters/imap-smtp/definition.js';
+import { ImapConnectionPool } from '../adapters/imap-smtp/connection-pool.js';
 import { createImapLocationPersistence } from '../store/sync.js';
 import { mailProviderRegistryToken } from '../tokens.js';
 
 export class MailBuiltinsProvider extends ServiceProvider<AppPluginApplication> {
   public readonly name: string = '@nocobase/app-plugin-mail/builtins';
+
+  private readonly imapPool = new ImapConnectionPool();
+
+  public override shutdown(): Promise<void> {
+    return this.imapPool.closeAll();
+  }
 
   public override boot(): Promise<void> {
     this.app.container
@@ -18,11 +25,13 @@ export class MailBuiltinsProvider extends ServiceProvider<AppPluginApplication> 
       .register(microsoftMailProviderDefinition)
       .register(
         // Each IMAP adapter gets location reads and commits bound to its own account.
-        createImapSmtpMailProviderDefinition((accountId) =>
-          createImapLocationPersistence(
-            this.app.container.resolve(databaseManagerToken),
-            accountId,
-          ),
+        createImapSmtpMailProviderDefinition(
+          (accountId) =>
+            createImapLocationPersistence(
+              this.app.container.resolve(databaseManagerToken),
+              accountId,
+            ),
+          this.imapPool,
         ),
       );
     return Promise.resolve();
