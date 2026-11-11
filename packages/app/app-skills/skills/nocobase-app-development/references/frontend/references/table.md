@@ -242,6 +242,7 @@ The shared component provides accessible English and Chinese text. A business-sp
   - Clicks on the trigger and the items do not reach the row, so a row with `onRowClick` neither navigates nor toggles selection when its menu is used.
   - The column has no visible header text, no fixed width and no `sticky`, `fixed` or right pinning: the trigger keeps it narrow, and it scrolls with the table. Pin it only for a wide table whose actions would otherwise be out of reach after scrolling sideways, and record why.
   - `exposed={['start']}` shows the named actions as ghost buttons before the "⋮", the same on every row, while the rest stay in the menu. Use it only when the user asked for that action outside the menu or a confirmed page design shows it; never because the action is frequent or "primary".
+
 - The delete confirmation dialog is `ProjectDeleteDialog`, driven by `deletion` state as [section 4 of `overlay.md`](overlay.md#4-delete-confirmation-alertdialog) describes; after a successful delete, refresh the list and move focus to the search box (`deletedFocusRef`).
 
 ### Selection and bulk actions

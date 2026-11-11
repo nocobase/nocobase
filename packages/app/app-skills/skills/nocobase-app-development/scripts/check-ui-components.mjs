@@ -638,6 +638,72 @@ export function inspectSource(ts, text, file, root) {
     while (node.parent && node.parent !== source) node = node.parent;
     return node;
   }
+  // A table's actions column (ui-guidelines.md T1.5): one RowActions "⋮" menu, no visible header text, not pinned.
+  // What its cell renders is read from the column and the units of this file it names; a cell built only from
+  // components of other files is left alone.
+  function inspectActionColumns() {
+    const unitText = new Map();
+    for (const [name, statement] of units)
+      unitText.set(name, statement.getText(source));
+    const reached = (node) => {
+      const texts = [node.getText(source)];
+      const seen = new Set();
+      for (let index = 0; index < texts.length; index += 1)
+        for (const [name, body] of unitText)
+          if (
+            !seen.has(name) &&
+            new RegExp(`\\b${name}\\b`).test(texts[index])
+          ) {
+            seen.add(name);
+            texts.push(body);
+          }
+      return texts.join('\n');
+    };
+    (function find(node) {
+      if (ts.isObjectLiteralExpression(node)) {
+        const property = (name) =>
+          node.properties.find(
+            (item) =>
+              ts.isPropertyAssignment(item) &&
+              (ts.isIdentifier(item.name) || ts.isStringLiteral(item.name)) &&
+              item.name.text === name,
+          );
+        const id = property('id');
+        const cell = property('cell');
+        if (
+          id &&
+          ts.isStringLiteralLike(id.initializer) &&
+          id.initializer.text === 'actions' &&
+          cell
+        ) {
+          const header = property('header');
+          if (header && !/\bsr-only\b/.test(header.initializer.getText(source)))
+            report(
+              header,
+              'actions column',
+              "no visible header text: header: () => <span className='sr-only'>{t('…actions')}</span> (T1.5)",
+            );
+          if (/\b(sticky|fixed|right-0|pinned)\b/.test(node.getText(source)))
+            report(
+              id,
+              'actions column',
+              'a column that scrolls with the table; pin it only for a wide table whose actions are otherwise out of reach, with the reason in a ui-component-exception marker (T1.5)',
+            );
+          const rendered = reached(cell.initializer);
+          if (
+            !/\bRowActions\b/.test(rendered) &&
+            /<(Button|DropdownMenu\w*|Link|a)\b/.test(rendered)
+          )
+            report(
+              cell,
+              'actions column',
+              "RowActions (#components/row-actions): the row's actions in one ⋮ menu, a single action included; show an action outside it only through exposed, for an action the user or a confirmed design names (T1.5)",
+            );
+        }
+      }
+      ts.forEachChild(node, find);
+    })(source);
+  }
   const units = new Map();
   for (const statement of source.statements) {
     if (
@@ -740,6 +806,7 @@ export function inspectSource(ts, text, file, root) {
       (downward && reach(unit, (from) => renders.get(from) ?? []))
     );
   }
+  inspectActionColumns();
   visit(source);
   for (const exception of exceptions.values()) {
     if (!exception.used)
