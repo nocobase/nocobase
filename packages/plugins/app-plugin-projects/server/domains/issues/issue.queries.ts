@@ -1,3 +1,4 @@
+import { ISSUE_HIERARCHY_DEPTH_MAX } from '../../../shared/issues.js';
 /**
  * Issue reads for the browser: a page of the list, the board, one issue in detail, and older activities. Everything is
  * limited to what the viewer may see (`issue.access.ts`).
@@ -444,6 +445,16 @@ export function createIssueQueries(deps: QueryDeps): IssueQueries {
       const issues = await hierarchyRecords(conn, (f) =>
         f.and([
           visibleIssues(f, viewer),
+          ...(options?.unfinishedOnly && query.projectId
+            ? [
+                f.or([
+                  f.string('projectId').eq(query.projectId),
+                  ...(options.includeIds?.length
+                    ? [oneOf(f, 'id', options.includeIds)]
+                    : []),
+                ]),
+              ]
+            : []),
           ...(options?.unfinishedOnly
             ? [
                 options.includeIds?.length
@@ -465,7 +476,11 @@ export function createIssueQueries(deps: QueryDeps): IssueQueries {
       if (options?.unfinishedOnly) {
         const known = new Set(issues.map((issue) => issue.id));
         let layer = issues;
-        while (layer.length) {
+        for (
+          let depth = 0;
+          layer.length && depth < ISSUE_HIERARCHY_DEPTH_MAX;
+          depth += 1
+        ) {
           const parents = [
             ...new Set(
               layer.flatMap((issue) =>
@@ -541,24 +556,32 @@ export function createIssueQueries(deps: QueryDeps): IssueQueries {
           .where('type', '=', 'blockedBy')
           .compile();
         const candidates = (await client
-          .with('visible', raw(readableIds))
+          .withNotMaterialized('visible', raw(readableIds))
           .select('id')
           .from('visible')
-          .where((w) => {
-            w.whereIn(
-              'parent',
-              rows.map((row) => row.id),
-            )
-              .orWhereIn(
+          .whereIn(
+            'parent',
+            rows.map((row) => row.id),
+          )
+          .union(
+            client
+              .select('id')
+              .from('visible')
+              .whereIn(
                 'parent',
                 rows.flatMap((row) =>
                   row.stage !== null && row.parentIssueId
                     ? [row.parentIssueId]
                     : [],
                 ),
-              )
-              .orWhereRaw('?? in (?)', ['id', raw(targets)]);
-          })) as { id: string }[];
+              ),
+          )
+          .union(
+            client
+              .select('id')
+              .from('visible')
+              .whereRaw('?? in (?)', ['id', raw(targets)]),
+          )) as { id: string }[];
         countIds = new Set(candidates.map((row) => row.id));
       } else countIds = readableIds;
       const readable =
