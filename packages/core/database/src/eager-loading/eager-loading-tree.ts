@@ -521,15 +521,29 @@ export class EagerLoadingTree {
           }
         };
 
-        const parentsBySourceKey = ['HasMany', 'HasOne', 'BelongsToMany'].includes(associationType)
-          ? lodash.groupBy(node.parent.instances, (parent) => parent.get(association.sourceKey))
-          : {};
+        const parentsBySourceKey = new Map<string, Model[]>();
+        if (['HasMany', 'HasOne', 'BelongsToMany'].includes(associationType)) {
+          for (const parent of node.parent.instances) {
+            const sourceKey = parent.get(association.sourceKey);
+            if (sourceKey == null) continue;
+            // BIGINT keys may arrive as numbers or decimal strings. Never coerce them to Number.
+            const key = String(sourceKey);
+            const parents = parentsBySourceKey.get(key);
+            if (parents) {
+              parents.push(parent);
+            } else {
+              parentsBySourceKey.set(key, [parent]);
+            }
+          }
+        }
+        const matchingParents = (foreignKey: unknown) =>
+          foreignKey == null ? [] : parentsBySourceKey.get(String(foreignKey)) ?? [];
 
         if (associationType == 'HasMany' || associationType == 'HasOne') {
           const foreignKey = association.foreignKey;
 
           for (const instance of node.instances) {
-            for (const parentInstance of parentsBySourceKey[instance.get(foreignKey)] || []) {
+            for (const parentInstance of matchingParents(instance.get(foreignKey))) {
               if (associationType == 'HasMany') {
                 const children = parentInstance.getDataValue(association.as);
                 if (!children) {
@@ -590,7 +604,7 @@ export class EagerLoadingTree {
             delete instance.dataValues['_pivot_'];
             delete instance['_pivot_'];
 
-            for (const parentInstance of parentsBySourceKey[instance.dataValues[as].get(foreignKey)] || []) {
+            for (const parentInstance of matchingParents(instance.dataValues[as].get(foreignKey))) {
               const children = parentInstance.getDataValue(association.as);
 
               if (!children) {

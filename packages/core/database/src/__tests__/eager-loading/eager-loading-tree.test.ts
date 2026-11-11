@@ -8,6 +8,7 @@
  */
 
 import Database, { createMockDatabase, DataTypes } from '@nocobase/database';
+import type { Model } from 'sequelize';
 import { EagerLoadingTree } from '../../eager-loading/eager-loading-tree';
 
 const skipSqlite = process.env.DB_DIALECT == 'sqlite' ? it.skip : it;
@@ -53,6 +54,78 @@ describe('Eager loading tree', () => {
       [[first.id, second.id]],
     ]);
     expect(result.groups.map((group) => group.items[0].groupItems.sourceId)).toEqual([a.id, b.id]);
+  });
+
+  it('keeps a null source key separate from the literal string "null"', async () => {
+    const children = db.collection({
+      name: 'children',
+      fields: [{ name: 'parentCode', type: 'string' }],
+    }).repository;
+    const parents = db.collection({
+      name: 'parents',
+      fields: [
+        { name: 'code', type: 'string', unique: true, allowNull: true },
+        { name: 'children', type: 'hasMany', target: 'children', sourceKey: 'code', foreignKey: 'parentCode' },
+        { name: 'child', type: 'hasOne', target: 'children', sourceKey: 'code', foreignKey: 'parentCode' },
+        {
+          name: 'links',
+          type: 'belongsToMany',
+          target: 'children',
+          through: 'parentLinks',
+          sourceKey: 'code',
+          foreignKey: 'parentCode',
+          otherKey: 'childId',
+        },
+      ],
+    }).repository;
+    await db.sync();
+    await parents.create({ values: { code: null } });
+    await parents.create({ values: { code: 'null' } });
+    await parents.create({ values: { code: 'other' } });
+    const child = await children.create({ values: { parentCode: 'null' } });
+    await db.getRepository('parentLinks').create({ values: { parentCode: 'null', childId: child.id } });
+
+    const rows = await parents.find({ appends: ['children', 'child', 'links'], sort: ['id'] });
+    expect(
+      rows.map((p) => [p.code, p.children.map((c) => c.id), p.child?.id ?? null, p.links.map((c) => c.id)]),
+    ).toEqual([
+      [null, [], null, []],
+      ['null', [child.id], child.id, [child.id]],
+      ['other', [], null, []],
+    ]);
+  });
+
+  skipSqlite('matches BIGINT keys across string and number representations without rounding large IDs', async () => {
+    const children = db.collection({
+      name: 'children',
+      fields: [{ name: 'parentCode', type: 'bigInt' }],
+    }).repository;
+    const parents = db.collection({
+      name: 'parents',
+      fields: [
+        {
+          name: 'code',
+          type: 'bigInt',
+          unique: true,
+          get(this: Model) {
+            return String(this.getDataValue('code'));
+          },
+        },
+        { name: 'children', type: 'hasMany', target: 'children', sourceKey: 'code', foreignKey: 'parentCode' },
+      ],
+    }).repository;
+    await db.sync();
+    const codes = ['42', '9007199254740992', '9007199254740993'];
+    for (const code of codes) {
+      await parents.create({ values: { code } });
+      await children.create({ values: { parentCode: code } });
+    }
+    const rows = await parents.find({ appends: ['children'], sort: ['id'] });
+    expect(rows.map((p) => [p.code, p.children.map((c) => c.parentCode)])).toEqual([
+      ['42', [42]],
+      [codes[1], [codes[1]]],
+      [codes[2], [codes[2]]],
+    ]);
   });
 
   it('should sort has many default by primary key', async () => {
