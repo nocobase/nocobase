@@ -13,7 +13,7 @@ import { createMockServer, type MockServer } from '@nocobase/test';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { DefaultMCPManager } from '../mcp-manager';
+import { DefaultMCPManager, MCPToolPermissionError } from '../mcp-manager';
 import { DefaultToolsManager } from '../tools-manager';
 import type { Permission } from '../tools-manager/types';
 
@@ -189,8 +189,9 @@ describe('global MCP tool permissions', () => {
   });
 
   it('fails closed on database reads and never changes effective permission after a failed save', async () => {
-    const save = vi.spyOn(permissionModel(), 'upsert').mockRejectedValue(new Error('write failed'));
-    await expect(manager.updateMCPToolPermission('mcp-test-server-get-data', 'ASK')).rejects.toThrow('write failed');
+    const writeError = new Error('write failed');
+    const save = vi.spyOn(permissionModel(), 'upsert').mockRejectedValue(writeError);
+    await expect(manager.updateMCPToolPermission('mcp-test-server-get-data', 'ASK')).rejects.toBe(writeError);
     expect(await permissions().count()).toBe(0);
     expect((await manager.listMCPTools())['test-server'][0].permission).toBe('ALLOW');
     save.mockRestore();
@@ -203,19 +204,51 @@ describe('global MCP tool permissions', () => {
     for (const permission of ['DENY', '', null, {}, ['ASK']]) {
       await expect(
         manager.updateMCPToolPermission('mcp-test-server-get-data', permission as Permission),
-      ).rejects.toThrow('Invalid MCP tool permission');
+      ).rejects.toMatchObject({ name: 'MCPToolPermissionError', code: 'INVALID_PERMISSION' });
     }
-    await expect(manager.updateMCPToolPermission('mcp-unknown-get-data', 'ASK')).rejects.toThrow(
-      'MCP tool not found or ambiguous',
-    );
+    await expect(manager.updateMCPToolPermission('mcp-unknown-get-data', 'ASK')).rejects.toMatchObject({
+      name: 'MCPToolPermissionError',
+      code: 'TOOL_NOT_FOUND_OR_AMBIGUOUS',
+    });
     await clients().create({ values: { name: 'test', transport: 'http' } });
     Reflect.set(manager, 'toolsMap', {
       'test-server': [{ name: 'get-data' }],
       test: [{ name: 'server-get-data' }],
     });
-    await expect(manager.updateMCPToolPermission('mcp-test-server-get-data', 'ASK')).rejects.toThrow(
-      'MCP tool not found or ambiguous',
-    );
+    await expect(manager.updateMCPToolPermission('mcp-test-server-get-data', 'ASK')).rejects.toMatchObject({
+      name: 'MCPToolPermissionError',
+      code: 'TOOL_NOT_FOUND_OR_AMBIGUOUS',
+    });
+    expect(await permissions().count()).toBe(0);
+  });
+
+  it('returns typed business errors without translating or assigning an HTTP status', async () => {
+    const context = ctx(1);
+    const requestTranslation = vi.spyOn(context, 't');
+    const appTranslation = vi.spyOn(app.i18n, 't');
+    for (const requestContext of [undefined, context]) {
+      const invalid = await manager.updateMCPToolPermission('', 'ASK', requestContext).catch((error: unknown) => error);
+      expect(invalid).toBeInstanceOf(MCPToolPermissionError);
+      expect(invalid).toHaveProperty('code', 'INVALID_PERMISSION');
+      expect(invalid).not.toHaveProperty('status');
+      const unknown = await manager
+        .updateMCPToolPermission('mcp-unknown-get-data', 'ASK', requestContext)
+        .catch((error: unknown) => error);
+      expect(unknown).toBeInstanceOf(MCPToolPermissionError);
+      expect(unknown).toHaveProperty('code', 'TOOL_NOT_FOUND_OR_AMBIGUOUS');
+      expect(unknown).not.toHaveProperty('status');
+    }
+    expect(requestTranslation).not.toHaveBeenCalled();
+    expect(appTranslation).not.toHaveBeenCalled();
+    expect(await permissions().count()).toBe(0);
+  });
+
+  it('returns a business error if the server disappears before the transactional lookup', async () => {
+    vi.spyOn(app.db.getModel('aiMcpClients'), 'findOne').mockResolvedValueOnce(null);
+    await expect(manager.updateMCPToolPermission('mcp-test-server-get-data', 'ASK')).rejects.toMatchObject({
+      name: 'MCPToolPermissionError',
+      code: 'TOOL_NOT_FOUND_OR_AMBIGUOUS',
+    });
     expect(await permissions().count()).toBe(0);
   });
 
@@ -260,9 +293,10 @@ describe('global MCP tool permissions', () => {
   it('does not save a permission when user-context tool discovery fails', async () => {
     await clients().update({ filterByTk: 'test-server', values: { useUserContext: true } });
     mocks.failInitialize = true;
-    await expect(manager.updateMCPToolPermission('mcp-test-server-get-data', 'ASK', ctx(1))).rejects.toThrow(
-      'MCP tool not found or ambiguous',
-    );
+    await expect(manager.updateMCPToolPermission('mcp-test-server-get-data', 'ASK', ctx(1))).rejects.toMatchObject({
+      name: 'MCPToolPermissionError',
+      code: 'TOOL_NOT_FOUND_OR_AMBIGUOUS',
+    });
     expect(await permissions().count()).toBe(0);
   });
 
@@ -336,13 +370,11 @@ describe('global MCP tool permissions', () => {
     ]) {
       expect((await agent.resource('aiMcpClients').updateToolPermission({ values })).status).toBe(400);
     }
-    expect(
-      (
-        await agent.resource('aiMcpClients').updateToolPermission({
-          values: { toolName: 'mcp-unknown-get-data', permission: 'ALLOW' },
-        })
-      ).status,
-    ).toBe(400);
+    const unknown = await agent.resource('aiMcpClients').updateToolPermission({
+      values: { toolName: 'mcp-unknown-get-data', permission: 'ALLOW' },
+    });
+    expect(unknown.status).toBe(400);
+    expect(unknown.body.errors[0].message).toBe('MCP tool not found or ambiguous');
     const prefix = (app.resourcer.options.prefix || '').replace(/\/$/, '');
     const response = await agent.post(`${prefix}/aiMcpClients:updateToolPermission`).set('X-Locale', 'zh-CN').send({});
     expect(response.status).toBe(400);
@@ -350,9 +382,26 @@ describe('global MCP tool permissions', () => {
     expect(await permissions().count()).toBe(0);
   });
 
+  it.each([
+    ['INVALID_PERMISSION', 'MCP 工具权限配置无效'],
+    ['TOOL_NOT_FOUND_OR_AMBIGUOUS', 'MCP 工具不存在或标识不唯一'],
+  ] as const)('translates the %s manager business error into an HTTP 400', async (code, message) => {
+    vi.spyOn(manager, 'updateMCPToolPermission').mockRejectedValue(new MCPToolPermissionError(code));
+    const agent = await app.agent().login(1);
+    const prefix = (app.resourcer.options.prefix || '').replace(/\/$/, '');
+    const response = await agent
+      .post(`${prefix}/aiMcpClients:updateToolPermission`)
+      .set('X-Locale', 'zh-CN')
+      .send({ toolName: 'mcp-test-server-get-data', permission: 'ASK' });
+    expect(response.status).toBe(400);
+    expect(response.body.errors[0].message).toBe(message);
+    expect(await permissions().count()).toBe(0);
+  });
+
   it('returns an API failure after a database write or commit failure instead of reporting success', async () => {
     const agent = await app.agent().login(1);
-    const save = vi.spyOn(permissionModel(), 'upsert').mockRejectedValue(new Error('write failed'));
+    const writeError = Object.assign(new Error('write failed'), { code: 'INVALID_PERMISSION' });
+    const save = vi.spyOn(permissionModel(), 'upsert').mockRejectedValue(writeError);
     const response = await agent.resource('aiMcpClients').updateToolPermission({
       values: { toolName: 'mcp-test-server-get-data', permission: 'ASK' },
     });
@@ -368,5 +417,10 @@ describe('global MCP tool permissions', () => {
     expect(commitFailure.status).toBe(500);
     expect(await permissions().count()).toBe(0);
     expect((await manager.listMCPTools())['test-server'][0].permission).toBe('ALLOW');
+    vi.spyOn(permissionModel(), 'findAll').mockRejectedValue(new Error('read failed'));
+    const readFailure = await agent.resource('aiMcpClients').updateToolPermission({
+      values: { toolName: 'mcp-test-server-get-data', permission: 'ASK' },
+    });
+    expect(readFailure.status).toBe(500);
   });
 });

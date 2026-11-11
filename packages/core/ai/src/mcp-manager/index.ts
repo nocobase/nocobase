@@ -17,6 +17,7 @@ import type { DynamicToolsProvider, Permission, ToolsRegistration } from '../too
 import type { Context } from '@nocobase/actions';
 import { normalizeMCPOptions, renderMCPOptions } from './options-renderer';
 import { UserContextMCPClientManager } from './user-context-client-manager';
+import { MCPToolPermissionError } from './errors';
 
 export class DefaultMCPManager implements MCPManager {
   private readonly mcpRegistry = new Registry<MCPEntry>({ override: true });
@@ -220,19 +221,15 @@ export class DefaultMCPManager implements MCPManager {
   }
 
   async updateMCPToolPermission(toolName: string, permission: Permission, ctx?: Context): Promise<void> {
-    const fail = (message: string): never => {
-      const t = ctx ? ctx.t.bind(ctx) : this.app.i18n.t.bind(this.app.i18n);
-      throw Object.assign(new Error(t(message, { ns: '@nocobase/plugin-ai' })), { status: 400 });
-    };
     if (typeof toolName !== 'string' || !toolName.trim() || !['ASK', 'ALLOW'].includes(permission)) {
-      fail('Invalid MCP tool permission');
+      throw new MCPToolPermissionError('INVALID_PERMISSION');
     }
     // Resolve from metadata, never by splitting the public name: both identifiers may contain hyphens.
     const matches = Object.values(await this.listMCPTools(ctx))
       .flat()
       .filter((tool) => tool.name === toolName);
     if (matches.length !== 1) {
-      fail('MCP tool not found or ambiguous');
+      throw new MCPToolPermissionError('TOOL_NOT_FOUND_OR_AMBIGUOUS');
     }
     const tool = matches[0];
     await this.sequelize.transaction({ type: Transaction.TYPES.IMMEDIATE }, async (transaction) => {
@@ -242,7 +239,7 @@ export class DefaultMCPManager implements MCPManager {
         lock: transaction.LOCK.UPDATE,
       });
       if (!server) {
-        fail('MCP tool not found or ambiguous');
+        throw new MCPToolPermissionError('TOOL_NOT_FOUND_OR_AMBIGUOUS');
       }
       await this.collectionManager
         .getCollection('aiMcpToolPermissions')
@@ -446,3 +443,4 @@ export function defineMCP(options: MCPOptions) {
 }
 
 export * from './types';
+export * from './errors';

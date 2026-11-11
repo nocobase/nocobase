@@ -10,9 +10,13 @@
 import { ResourceOptions } from '@nocobase/resourcer';
 import { Repository, type Model } from '@nocobase/database';
 import type { Context, Next } from '@nocobase/actions';
-import { MCPOptions, MCPTestResult } from '@nocobase/ai';
+import { MCPOptions, MCPTestResult, MCPToolPermissionError } from '@nocobase/ai';
 
 const namespace = '@nocobase/plugin-ai';
+const toolPermissionErrorMessages: Record<MCPToolPermissionError['code'], string> = {
+  INVALID_PERMISSION: 'Invalid MCP tool permission',
+  TOOL_NOT_FOUND_OR_AMBIGUOUS: 'MCP tool not found or ambiguous',
+};
 const stdioMessage = 'Stdio MCP servers can only be configured in storage/ai/mcp/servers.json.';
 const protectedMessage =
   'This MCP server is managed by deployment configuration. Only its enabled state can be changed.';
@@ -149,7 +153,14 @@ export const aiMcpClients: ResourceOptions = {
       }
       const { toolName, permission } = values;
       const plugin = ctx.app.pm.get('ai');
-      await plugin.ai.mcpManager.updateMCPToolPermission(toolName, permission, ctx);
+      try {
+        await plugin.ai.mcpManager.updateMCPToolPermission(toolName, permission, ctx);
+      } catch (error: unknown) {
+        if (error instanceof MCPToolPermissionError) {
+          return ctx.throw(400, ctx.t(toolPermissionErrorMessages[error.code], { ns: namespace }));
+        }
+        throw error;
+      }
       ctx.body = { success: true };
       await next();
     },
