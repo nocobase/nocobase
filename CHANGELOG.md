@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.2.45](https://github.com/nocobase/nocobase/compare/v2.2.44...v2.2.45) - 2026-11-11
+
+### 🚀 Improvements
+
+- **[App supervisor]** The Environment and Proxy environment dropdowns in App Supervisor now sort names in ascending order, with numbered names such as cluster-2 listed before cluster-10. by @hongboji
+
+### 🐛 Bug Fixes
+
+- **[ai]** Fixed global MCP tool permission settings being lost after application restarts and becoming inconsistent across application instances. ([#11476](https://github.com/nocobase/nocobase/pull/11476)) by @cgyrock
+
+- **[UI templates]** Fixed an issue where a duplicated popup could still show edits to the original page when its template was saved from an action that opened another popup. ([#11491](https://github.com/nocobase/nocobase/pull/11491)) by @hongboji
+
+- **[AI employees]** Prevented web/API callers from creating stdio MCP servers or editing/deleting deployment-managed connections, while preserving enabled switches and connection tests. MCP deployment definitions now load from `storage/ai/mcp/servers.json` instead of automatically imported TS/JS files. ([#11461](https://github.com/nocobase/nocobase/pull/11461)) by @cgyrock
+
+- **[Template print]** Fixed a missing dependency that could prevent Template print from loading after an upgrade. by @hongboji
+
 ## [v2.2.44](https://github.com/nocobase/nocobase/compare/v2.2.43...v2.2.44) - 2026-11-10
 
 ### 🚀 Improvements
