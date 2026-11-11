@@ -217,6 +217,6 @@
     "skills:sync": "nocobase skills sync && pnpm --dir=apps/sub nocobase skills sync",
     "check:structure": "node scripts/check-template.mjs --allow-runtime-data"
   },
-  "packageManager": "pnpm@11.7.0",
+  "packageManager": "pnpm@11.11.0",
   "private": true
 }

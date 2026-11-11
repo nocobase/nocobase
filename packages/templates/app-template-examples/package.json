@@ -7,7 +7,7 @@
   "engines": {
     "node": ">=24.0.0"
   },
-  "packageManager": "pnpm@11.7.0",
+  "packageManager": "pnpm@11.11.0",
   "nocobase": {
     "templateKind": "app",
     "defaultTemplateVersion": "1.0.0-beta.78",
