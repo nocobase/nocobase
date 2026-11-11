@@ -28,7 +28,8 @@ export function PushNotificationsDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className='max-h-[90svh] overflow-y-auto sm:max-w-lg'>
-        <DialogHeader>
+        {/* Named for assistive technology; the settings below show their own visible heading and description. */}
+        <DialogHeader className='sr-only'>
           <DialogTitle>
             {t('account.pushNotifications', {
               defaultValue: 'Push notifications',
