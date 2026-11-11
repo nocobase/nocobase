@@ -7,6 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import type { FlowModelContext } from '@nocobase/flow-engine';
+
 type CloseGuardContext = {
   inputArgs?: {
     dirty?: {
@@ -23,25 +25,24 @@ type CloseGuardContext = {
       content: string;
       okText: string;
       cancelText: string;
-    }) => boolean | Promise<boolean>;
+    }) => boolean | Promise<boolean> | ReturnType<FlowModelContext['modal']['confirm']>;
   };
   t: (value: string) => string;
   exitAll: () => void;
 };
 
-export async function confirmUnsavedChangesHandler(ctx: CloseGuardContext) {
-  if (!ctx.inputArgs?.dirty?.hasDirtyForms) {
-    return;
-  }
-
-  const confirmed = await ctx.modal.confirm({
+export function confirmDiscardChanges(ctx: Pick<CloseGuardContext, 'modal' | 't'>) {
+  return ctx.modal.confirm({
     title: ctx.t('Unsaved changes'),
     content: ctx.t("Are you sure you don't want to save?"),
     okText: ctx.t('Confirm'),
     cancelText: ctx.t('Cancel'),
   });
+}
 
-  if (!confirmed) {
+export async function confirmUnsavedChangesHandler(ctx: CloseGuardContext) {
+  if (!ctx.inputArgs?.dirty?.hasDirtyForms) return;
+  if (!(await confirmDiscardChanges(ctx))) {
     ctx.inputArgs?.controller?.prevent?.();
     ctx.exitAll();
   }
