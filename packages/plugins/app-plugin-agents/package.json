@@ -296,7 +296,7 @@
     "hono": "catalog:",
     "ioredis": "catalog:",
     "ollama-ai-provider-v2": "catalog:",
-    "re2js": "^2.8.6",
+    "re2js": "^2.8.7",
     "resumable-stream": "2.2.13",
     "yaml": "catalog:",
     "zod": "catalog:",
