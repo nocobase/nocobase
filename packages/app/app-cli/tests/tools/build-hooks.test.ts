@@ -158,7 +158,20 @@ describe('build pipeline hook stages', () => {
     mkdirSync(shimDir, { recursive: true });
     writeFileSync(
       path.join(root, 'package.json'),
-      JSON.stringify({ name: 'fixture-app' }),
+      JSON.stringify({
+        name: 'fixture-app',
+        dependencies: { 'fixture-dependency': 'workspace:*' },
+      }),
+    );
+    writeFileSync(
+      path.join(root, 'pnpm-workspace.yaml'),
+      "packages: ['packages/*']\n",
+    );
+    const dependencyDir = path.join(root, 'packages', 'fixture-dependency');
+    mkdirSync(dependencyDir, { recursive: true });
+    writeFileSync(
+      path.join(dependencyDir, 'package.json'),
+      JSON.stringify({ name: 'fixture-dependency' }),
     );
     mkdirSync(path.join(root, 'dist'), { recursive: true });
     const sentinel = path.join(root, 'dist', 'stale.txt');
@@ -234,7 +247,7 @@ describe('build pipeline hook stages', () => {
       expect(result.status).toBe(0);
       expect(commands).toEqual([
         'pnpm demo before',
-        'pnpm --filter fixture-app^... build',
+        'pnpm -r --workspace-concurrency=2 --filter fixture-dependency --if-present build',
         'pnpm exec tsc',
         'pnpm exec tsc -p tsconfig.node.json',
         'pnpm exec vite build',

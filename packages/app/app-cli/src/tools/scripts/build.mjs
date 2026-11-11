@@ -49,13 +49,14 @@ const { generateDatabaseManifests } =
   await import('@nocobase/dev-config/build/database-manifests');
 const { default: spawn } = await import('cross-spawn');
 const { readCliHooks, runHookStage } = await import('./utils/cli-hooks.mjs');
+const { resolveBuildWorkspacePackages, buildNodeOptions } =
+  await import('./utils/build-workspace.mjs');
+
+// Applies to compiler, bundler and hook subprocesses; callers can still choose their own heap limit.
+process.env.NODE_OPTIONS = buildNodeOptions(process.env.NODE_OPTIONS);
 
 const rootDir = path.resolve(process.env.NOCOBASE_TOOL_ROOT || process.cwd());
 const distDir = path.join(rootDir, 'dist');
-// Read rather than written as a literal: this script ships into generated applications, whose name is their own.
-const appPackageName = JSON.parse(
-  fs.readFileSync(path.join(rootDir, 'package.json'), 'utf8'),
-).name;
 // Taken once, before anything is built, so every file the build writes agrees on when it was made.
 const builtAt = new Date().toISOString();
 
@@ -279,22 +280,27 @@ fs.rmSync(distDir, { recursive: true, force: true });
 // hook writing to a directory about to be deleted would succeed, leave nothing behind, and report nothing wrong.
 runHookStage(buildHooks, 'beforeBuild', run);
 
-// `^...` selects every workspace package this one depends on, transitively, which is exactly the set whose `dist`
-// the steps below read. Spelling the set out by hand drifted instead: `@nocobase/config` was missing from the list
-// and a template built on its own failed at "Generate server package" with `Missing ../../libs/config/dist`.
-//
-// Only needed when a template is built alone. `pnpm -r build` already orders dependencies first, and it runs the two
-// templates concurrently — where each plugin's build clears its `dist` before tsc refills it, so one template can
-// observe the other's empty `dist` and fail with a misleading "Missing .../dist".
-//
-// A generated application can own packages too. Build them before typechecking or bundling either application half;
-// their declarations and client exports may point to dist, which does not exist on a clean checkout.
+// pnpm's transitive selector also follows each dependency's devDependencies, including entire example applications.
+// Select the application closure explicitly, then let pnpm order those packages. A workspace-wide build already
+// orders dependencies and sets the skip flag; nested application builds must not rebuild or clear shared output.
 if (process.env.NOCOBASE_SKIP_WORKSPACE_DEPENDENCY_BUILD !== '1') {
-  run('Build workspace dependencies', 'pnpm', [
-    '--filter',
-    `${appPackageName}^...`,
-    'build',
-  ]);
+  const dependencies = resolveBuildWorkspacePackages(rootDir);
+  if (dependencies.length) {
+    run(
+      'Build workspace dependencies',
+      'pnpm',
+      [
+        '-r',
+        '--workspace-concurrency=2',
+        ...dependencies.flatMap((name) => ['--filter', name]),
+        '--if-present',
+        'build',
+      ],
+      {
+        env: { ...process.env, NOCOBASE_SKIP_WORKSPACE_DEPENDENCY_BUILD: '1' },
+      },
+    );
+  }
 }
 
 run('Typecheck client', 'pnpm', ['exec', 'tsc']);

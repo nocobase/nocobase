@@ -151,6 +151,8 @@ The application's runtime and `createApp` load by convention from `server/runtim
 
 The scripts live under `src/tools/scripts/` and run in a child process with the application root in `NOCOBASE_TOOL_ROOT`. The scripts in `dist/package.json` are `start` and `nocobase`, the second because a deployment has no `.bin` to resolve the bin from.
 
+Application builds first build their direct workspace dependencies (including client and tooling dependencies), then their transitive runtime, peer and optional dependencies. They do not follow a dependency's development-only test applications. pnpm orders the selected packages with at most two concurrent builds. A workspace-wide build sets `NOCOBASE_SKIP_WORKSPACE_DEPENDENCY_BUILD=1` because it already builds those packages in order. Build subprocesses default to `--max-old-space-size=6144` in `NODE_OPTIONS`; an explicit caller heap setting takes precedence and other Node options are preserved.
+
 ### What the host application must provide
 
 These are optional peers: a deployment does not need them, and every template declares them in `devDependencies`. None of them may be imported at module top level by anything a runtime command loads.
