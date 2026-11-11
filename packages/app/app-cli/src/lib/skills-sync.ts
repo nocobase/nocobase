@@ -38,6 +38,8 @@ import { isPluginPackageName } from './plugin-package-name.ts';
 const PACKAGE_SCOPE = '@nocobase/';
 const KEBAB_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/u;
 const PLUGIN_DEVELOPMENT_SKILL = 'nocobase-app-plugin-development';
+const PORTAL_DEVELOPMENT_SKILL = 'nocobase-portal-development';
+const MULTI_PORTAL_PACKAGE = '@nocobase/app-plugin-multi-portal';
 const APP_SKILLS_PACKAGE = '@nocobase/app-skills';
 const OWNERSHIP_FILE = path.join('.agents', '.skills-sync.json');
 
@@ -172,15 +174,17 @@ export async function collectPluginSkills({
       !KEBAB_PATTERN.test(entry.name) ||
       (entry.name === PLUGIN_DEVELOPMENT_SKILL
         ? packageName !== APP_SKILLS_PACKAGE
-        : isPluginPackageName(packageName) ||
-            !packageName.startsWith(PACKAGE_SCOPE)
-          ? !isOwnedSkillName(prefix, entry.name)
-          : !entry.name.startsWith(SKILL_NAME_PREFIX) ||
-            entry.name.startsWith('nocobase-app-plugin-') ||
-            entry.name.startsWith('nocobase-app-portal-'))
+        : entry.name === PORTAL_DEVELOPMENT_SKILL
+          ? packageName !== MULTI_PORTAL_PACKAGE
+          : isPluginPackageName(packageName) ||
+              !packageName.startsWith(PACKAGE_SCOPE)
+            ? !isOwnedSkillName(prefix, entry.name)
+            : !entry.name.startsWith(SKILL_NAME_PREFIX) ||
+              entry.name.startsWith('nocobase-app-plugin-') ||
+              entry.name.startsWith('nocobase-app-portal-'))
     ) {
       throw new Error(
-        `Invalid skill directory ${entry.name} in ${skillsDirectory}: use a package-owned kebab-case name; plugin/portal skills must use their package prefix ${prefix}, and nocobase-app-plugin-* and nocobase-app-portal-* names are reserved for their owning plugins except nocobase-app-plugin-development, owned only by @nocobase/app-skills.`,
+        `Invalid skill directory ${entry.name} in ${skillsDirectory}: use a package-owned kebab-case name; plugin/portal skills must use their package prefix ${prefix}, and nocobase-app-plugin-* and nocobase-app-portal-* names are reserved for their owning plugins except nocobase-app-plugin-development, owned only by @nocobase/app-skills; nocobase-portal-development is owned only by @nocobase/app-plugin-multi-portal.`,
       );
     }
     skills.push({

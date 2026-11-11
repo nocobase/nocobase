@@ -122,6 +122,51 @@ describe('pluginSkillPrefix', () => {
 });
 
 describe('skills synchronization', () => {
+  it('synchronizes and removes the multi-portal development skill through recorded ownership', async () => {
+    const owner = '@nocobase/app-plugin-multi-portal';
+    const name = 'nocobase-portal-development';
+    const appRoot = await createApp({ [owner]: { enabled: true } });
+    await installPlugin(appRoot, owner, { [name]: '# Portal development' });
+    await syncApp(appRoot);
+    const target = path.join(appRoot, '.agents/skills', name, 'SKILL.md');
+    expect(await readFile(target, 'utf8')).toBe('# Portal development');
+    await installPlugin(appRoot, owner, {
+      [name]: '# Updated portal guidance',
+    });
+    await syncApp(appRoot, owner);
+    expect(await readFile(target, 'utf8')).toBe('# Updated portal guidance');
+    await writeFile(
+      path.join(appRoot, 'server/plugins.ts'),
+      'export default defineServerPlugins([]);',
+    );
+    await syncApp(appRoot);
+    await expect(stat(target)).rejects.toMatchObject({ code: 'ENOENT' });
+  });
+
+  it.each([
+    '@nocobase/app-skills',
+    '@nocobase/app-plugin-other',
+    '@acme/app-plugin-multi-portal',
+  ])('rejects portal development guidance from %s', async (owner) => {
+    const appRoot = await createApp();
+    await declareDependencies(appRoot, { dependencies: { [owner]: '1' } });
+    await installPlugin(appRoot, owner, {
+      'nocobase-portal-development': '# impostor',
+    });
+    await expect(syncApp(appRoot, owner)).rejects.toThrow(
+      'Invalid skill directory',
+    );
+  });
+
+  it('does not grant the multi-portal package an unrestricted skill namespace', async () => {
+    const owner = '@nocobase/app-plugin-multi-portal';
+    const appRoot = await createApp({ [owner]: { enabled: true } });
+    await installPlugin(appRoot, owner, {
+      'nocobase-portal-development-extra': '# unrelated',
+    });
+    await expect(syncApp(appRoot)).rejects.toThrow('Invalid skill directory');
+  });
+
   it('excludes installed example dependencies and removes copies left by an older sync', async () => {
     const name = 'nocobase-app-plugin-development';
     const appRoot = await createApp();
