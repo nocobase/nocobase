@@ -134,6 +134,10 @@ catalog:
 # part of the stack onto it: the `openai` client and LangChain then load different copies, types stop agreeing, and
 # LangGraph's interrupt handling changes behavior. Pinning keeps one copy throughout the stack.
 overrides:
+  # GHSA-35jh-r3h4-6jhm, GHSA-4xc9-xhrj-v574, GHSA-jf85-cpcp-j695; remove when Mammoth requires argparse >= 1.0.10, which removes its vulnerable Lodash 3 dependency.
+  'argparse@>=1.0.0 <1.0.10': ^1.0.10
+  # GHSA-93q8-gq69-wqmw; remove when all CLI / Docker dependencies require ansi-regex >= 5.0.1.
+  'ansi-regex@>=5.0.0 <5.0.1': ^5.0.1
   # GHSA-xcx6-jx8p-x3h5; remove when tedious / unstorage requires @azure/identity >= 4.14.1, which supports patched MSAL 7 without forcing its old MSAL 5 contract.
   '@azure/identity@>=4.0.0 <4.14.1': ^4.14.1
   # GHSA-hq66-cqwq-w95j; remove when officeparser requires pdfjs-dist >= 6.2.108. Its PDF and worker APIs are covered by extraction tests.
