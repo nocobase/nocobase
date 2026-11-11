@@ -84,20 +84,20 @@ A temporary workaround is written in the report. It goes into the user's project
 
 The draft must not contain business data, customer names, collection or field names from the user's application, secrets, license or package-access credentials, internal host names or addresses, email addresses, or local absolute paths. Commercial packages are reported the same way; leave out any license or registry access detail.
 
-Before showing the draft, scan it and fix every match, then tell the user that the scan ran and what it changed:
+Before showing the draft, scan it and fix every match, then tell the user that the scan ran and what it changed. The scan prints only the numbers of the matching lines, so the matched values never reach the tool output; open the draft at those lines to fix them:
 
 ```bash
-grep -nEi '(api[_-]?key|secret|token|passw|bearer|authorization|ghp_|gho_|ghu_|sk-)|[[:alnum:]._%+-]+@[[:alnum:].-]+\.[a-z]{2,}|([0-9]{1,3}\.){3}[0-9]{1,3}|(postgres|mysql|mariadb|mongodb|redis)://|/(home|Users)/' <draft>
+grep -nEi '(api[_-]?key|secret|token|passw|bearer|authorization|ghp_|gho_|ghu_|sk-)|[[:alnum:]._%+-]+@[[:alnum:].-]+\.[a-z]{2,}|([0-9]{1,3}\.){3}[0-9]{1,3}|(postgres|mysql|mariadb|mongodb|redis)://|/(home|Users)/' <draft> | cut -d: -f1
 ```
 
 The scan only catches patterns. Also read the draft for business terms, and compare it with the application's `.env`, `config.yml` and collection names without copying any of their values into the conversation.
 
 ## Search for an existing issue
 
-Search before submitting, using only words from the cleaned draft: the package name, the API name and the error text. The search itself is sent to GitHub, so never put business terms in it.
+Search before submitting, using only words from the cleaned draft: the package name, the API name and the error text. The search itself is sent to GitHub, so never put business terms in it. Leave out `--state`: without it the search covers open and closed issues.
 
 ```bash
-gh search issues --repo nocobase/nocobase --state all --limit 10 -- "<package> <api or error text>"
+gh search issues --repo nocobase/nocobase --limit 10 -- "<package> <api or error text>"
 ```
 
 Without an authorized `gh`, give the user the search link `https://github.com/nocobase/nocobase/issues?q=<url-encoded words>`. When a matching issue exists, recommend adding to it instead of opening a new one, and prepare a comment with only what it lacks (the versions, the reproduction, the ruled-out options).
