@@ -41,7 +41,7 @@
   "Please enter your email": "Si prega di inserire un'email",
   "Please enter your username or email": "Si prega di inserire il nome utente o l'email",
   "Please keep and enable at least one authenticator": "Si prega di mantenere e abilitare almeno un autenticatore",
-  "Reset email sent successfully": "Email di reset inviata con successo",
+  "If this email address is registered, you will receive a password reset email.": "Se questo indirizzo email è registrato, riceverai un messaggio per reimpostare la password.",
   "Reset link expiration (minutes)": "Scadenza del link di reset (minuti)",
   "Reset link has expired": "Il link di reset è scaduto",
   "Reset password": "Reimposta password",

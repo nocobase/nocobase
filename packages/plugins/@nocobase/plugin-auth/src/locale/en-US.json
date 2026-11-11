@@ -40,7 +40,7 @@
   "Please enter your email": "Please enter your email",
   "Please enter your username or email": "Please enter your username or email",
   "Please keep and enable at least one authenticator": "Please keep and enable at least one authenticator",
-  "Reset email sent successfully": "Reset email sent successfully",
+  "If this email address is registered, you will receive a password reset email.": "If this email address is registered, you will receive a password reset email.",
   "Reset link expiration (minutes)": "Reset link expiration (minutes)",
   "Reset link has expired": "Reset link has expired",
   "Reset password": "Reset password",
