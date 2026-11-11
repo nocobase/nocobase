@@ -1,5 +1,34 @@
 # @nocobase/app-plugin-agents
 
+## 2.0.0-beta.11
+
+### Minor Changes
+
+- d88875e: Configure per-disk upload limits through Drive, validate issue, comment and conversation attachments with shared File helpers, and use the same limits for issue, comment and conversation upload checks and messages.
+
+  Conversation attachment size errors now use `FILE_TOO_LARGE` in the `file` domain instead of `UPLOAD_TOO_LARGE` in `agents`. Online Agent attachment reading follows the stored disk limit.
+
+  Upload limits are embedded in the page’s public configuration, so client startup requires no separate upload-policy request.
+
+### Patch Changes
+
+- ff549a1: Keep reading a conversation's new messages when a stream reconnection discards the page being read, so a run failure notice saved meanwhile is shown without reloading.
+- ff549a1: Keep a running chat response subscribed when a conversation read from before the current input still reports the conversation as idle, and report in `StreamState.finished` the response whose stream ended with the server's `finish`, so a stopped, cut-off or failed stream is no longer mistaken for a completed turn.
+- 7d9c0a4: Preserve Claude rate-limit snapshots across independent quota windows and let runtime owners configure usage ceilings that pause new work without interrupting active runs.
+- 7e97024: Filter agent runs by their subject visibility before listing, reporting or granting access to transcripts and realtime updates.
+- e1f584e: The notification Skill no longer tells an agent that in-app inbox writes need a CSRF token, matching the in-app plugin, whose writes are protected by the authentication plugin's origin check. The in-app Skill's description no longer promises a Client page the plugin does not contribute. The agents and in-app Skills name their package's `docs/` and `README.md` files instead of linking outside the Skill folder, so the links no longer break once the Skills are synchronized into an application's `.agents/skills/`, and the agents extension points table links to `online-agent.md` by its real name.
+- Updated dependencies [d88875e]
+- Updated dependencies [57912f1]
+- Updated dependencies [57912f1]
+- Updated dependencies [57912f1]
+  - @nocobase/document-extractor@0.1.0-beta.1
+  - @nocobase/app-server@5.0.0-beta.4
+  - @nocobase/app-plugin-file@1.0.0-beta.31
+  - @nocobase/app-client@4.0.0-beta.10
+  - @nocobase/db@1.0.0-beta.28
+  - @nocobase/app-plugin-authentication@2.0.0-beta.20
+  - @nocobase/app-cli@1.0.0-beta.33
+
 ## 2.0.0-beta.10
 
 ### Minor Changes

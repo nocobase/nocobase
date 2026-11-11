@@ -1,5 +1,21 @@
 # @nocobase/app-plugin-users
 
+## 2.0.0-beta.19
+
+### Patch Changes
+
+- efa464a: Keep a demo visitor's language choice in their own browser session instead of the shared demo account. Demo Mode now isolates the `i18n.locale` preference that the language switcher saves, replacing the unused `locale` key, and Users shares that key between its client and server.
+- Updated dependencies [d88875e]
+- Updated dependencies [57912f1]
+- Updated dependencies [57912f1]
+- Updated dependencies [57912f1]
+- Updated dependencies [e1f584e]
+  - @nocobase/app-server@5.0.0-beta.4
+  - @nocobase/app-client@4.0.0-beta.10
+  - @nocobase/db@1.0.0-beta.28
+  - @nocobase/app-plugin-notification@2.0.0-beta.8
+  - @nocobase/app-plugin-authentication@2.0.0-beta.20
+
 ## 2.0.0-beta.18
 
 ### Minor Changes

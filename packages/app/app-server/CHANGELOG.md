@@ -1,5 +1,27 @@
 # @nocobase/app-server
 
+## 5.0.0-beta.4
+
+### Minor Changes
+
+- d88875e: Configure per-disk upload limits through Drive, validate issue, comment and conversation attachments with shared File helpers, and use the same limits for issue, comment and conversation upload checks and messages.
+
+  Conversation attachment size errors now use `FILE_TOO_LARGE` in the `file` domain instead of `UPLOAD_TOO_LARGE` in `agents`. Online Agent attachment reading follows the stored disk limit.
+
+  Upload limits are embedded in the page’s public configuration, so client startup requires no separate upload-policy request.
+
+### Patch Changes
+
+- Updated dependencies [d88875e]
+- Updated dependencies [57912f1]
+  - @nocobase/drive@0.1.0-beta.8
+  - @nocobase/db@1.0.0-beta.28
+  - @nocobase/db-mssql@0.1.0-beta.5
+  - @nocobase/db-mysql@0.1.0-beta.5
+  - @nocobase/db-oracle@0.1.0-beta.5
+  - @nocobase/db-postgres@0.1.0-beta.5
+  - @nocobase/db-sqlite@0.1.0-beta.6
+
 ## 5.0.0-beta.3
 
 ### Minor Changes

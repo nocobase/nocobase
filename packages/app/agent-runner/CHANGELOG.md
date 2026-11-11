@@ -1,5 +1,12 @@
 # @nocobase/agent-runner
 
+## 0.1.0-beta.26
+
+### Patch Changes
+
+- 7d9c0a4: Preserve Claude rate-limit snapshots across independent quota windows and let runtime owners configure usage ceilings that pause new work without interrupting active runs.
+- ef0a081: Load Claude user settings for model discovery and user, project and local settings for conversations, including native provider authentication and model mappings.
+
 ## 0.1.0-beta.25
 
 ### Minor Changes
