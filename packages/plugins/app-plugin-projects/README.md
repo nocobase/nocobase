@@ -295,5 +295,4 @@ Applications can provide `ExecutorPresentationContext` from the client kit to re
 
 `pm.changed` preserves known `issueIds` for creation, deletion and membership changes too. `listsChanged: true` means lists and project counts must refresh while issue details remain scoped to those IDs and their directly embedded references. Child deletion and restoration also name the already-known parent, including when the restored child is absent from the parent's current snapshot. Batches larger than 100 IDs are split; events with unknown scope still omit `issueIds`. Re-read after each subscription acknowledgement to recover missed events.
 
-
 `projects.references(viewer)` returns only authorized project IDs, names, lead IDs and the viewer's membership in one query. It uses the same visibility and API-key project bounds as `projects.list`, without reading issue totals, member totals, resources or lead display records.
