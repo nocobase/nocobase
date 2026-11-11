@@ -1,4 +1,9 @@
-import { involvesRun as involves, mayAccessRun } from '../core/runs/access.js';
+import {
+  mayAccessRun,
+  involvesRun,
+  runVisibility as visibilityFilter,
+  subjectVisibleForRun,
+} from '../core/runs/access.js';
 /**
  * The people-facing API, mounted at `/api/agents`: agents and their brief preview, variables, the skill library, runs,
  * usage and prices; runners and registration tokens are in `runners/admin.ts`. Every route is behind the guard the
@@ -266,16 +271,28 @@ export function createAdminRoutes(
     const who = caller(context);
     const run = await services.runs.get(context.req.param('runId') ?? '');
     if (
-      await mayAccessRun(run, who.userId, isPrivate(run), () =>
-        who.can('agents.agents', action),
-      )
+      !(await mayAccessRun(
+        run,
+        who.userId,
+        isPrivate(run),
+        () => who.can('agents.agents', 'read'),
+        () =>
+          subjectVisibleForRun(
+            services.tx.read(),
+            services.subjects,
+            run,
+            who.userId,
+          ),
+      ))
     )
-      return run;
-    // A private subject's runs (a conversation) belong to the people they involve, whatever the caller manages.
-    if (isPrivate(run)) throw notFound('Run');
-    if (action === 'manage' && (await who.can('agents.agents', 'read')))
+      throw notFound('Run');
+    if (
+      action === 'manage' &&
+      !involvesRun(run, who.userId) &&
+      !(await who.can('agents.agents', 'manage'))
+    )
       throw forbidden('This needs agents.agents manage permission.');
-    throw notFound('Run');
+    return run;
   };
 
   const isPrivate = (run: Run): boolean =>
@@ -1425,7 +1442,7 @@ export function createAdminRoutes(
   const runParam = apiValidator('param', RunParams);
   const noRun = notFoundAs('The run');
   const runVisibility =
-    "The caller sees the runs they started or own, and every run but a private subject's (a conversation) with `agents.agents` read.";
+    'The caller sees the runs they started or own, and runs on visible, non-private subjects with `agents.agents` read.';
   const machineViewer = async (
     context: Context<AdminEnv>,
   ): Promise<RunMachineViewer> => {
@@ -1492,15 +1509,18 @@ export function createAdminRoutes(
         ...(query.pageToken === undefined
           ? {}
           : { cursor: decodePageToken(query.pageToken, RunPosition) }),
-        ...(all ? {} : { involvingUserId: who.userId }),
+        visibility: await visibilityFilter(
+          services.tx.read(),
+          services.subjects,
+          who.userId,
+          all,
+        ),
       });
       const page = runs.slice(0, query.pageSize);
       const last = page.at(-1);
       const viewer = await machineViewer(context);
       return context.json({
-        data: page
-          .filter((run) => involves(run, who.userId) || !isPrivate(run))
-          .map((run) => runForViewer(run, viewer)),
+        data: page.map((run) => runForViewer(run, viewer)),
         meta:
           runs.length > query.pageSize && last
             ? {
@@ -1540,7 +1560,12 @@ export function createAdminRoutes(
       const ids = await services.runs.agentIds({
         subjectKind: query.subjectKind,
         subjectId: query.subjectId,
-        ...(all ? {} : { involvingUserId: who.userId }),
+        visibility: await visibilityFilter(
+          services.tx.read(),
+          services.subjects,
+          who.userId,
+          all,
+        ),
       });
       const data = await services.agents.directory(services.tx.read(), ids);
       return context.json({ data, meta: { total: data.length } });

@@ -62,6 +62,7 @@ export {
   type SubjectAssembly,
   type SubjectSample,
   type SubjectBinding,
+  type SubjectVisibility,
   type SubjectDir,
   type SubjectFacts,
   type SubjectRegistry,

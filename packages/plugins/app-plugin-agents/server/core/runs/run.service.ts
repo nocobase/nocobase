@@ -20,7 +20,12 @@ import {
   type RunStatus,
 } from '@nocobase/agent-protocol';
 import type { Runner } from '../../../shared/runners.js';
-import type { DatabaseConnection, ExpressionBuilder } from '@nocobase/db';
+import type {
+  DatabaseConnection,
+  Expression,
+  ExpressionBuilder,
+  SqlBool,
+} from '@nocobase/db';
 
 import type { Agent } from '../../../shared/agents.js';
 import type { RunBrief } from '../../../shared/briefs.js';
@@ -218,6 +223,7 @@ export function queuedRun(result: EnqueueResult): RunEnqueued {
 }
 
 export interface RunFilter {
+  readonly visibility?: (eb: ExpressionBuilder) => Expression<SqlBool>;
   readonly subjectKind?: string;
   readonly subjectId?: string;
   readonly agentId?: string;
@@ -302,6 +308,7 @@ export interface RunService {
   list(filter: RunFilter): Promise<Run[]>;
   /** The agents that have a run on the subject (only the runs `involvingUserId` started or owns, when given), each once. */
   agentIds(filter: {
+    readonly visibility?: RunFilter['visibility'];
     readonly subjectKind: string;
     readonly subjectId: string;
     readonly involvingUserId?: string;
@@ -2034,41 +2041,49 @@ export function createRunService(deps: RunServiceDeps): RunService {
       return result;
     },
     async list(filter) {
-      const records = await runsRepo(tx.read()).findMany({
-        filter: (f) =>
-          f.and([
-            ...(filter.subjectKind
-              ? [f.string('subjectKind').eq(filter.subjectKind)]
-              : []),
-            ...(filter.subjectId
-              ? [f.string('subjectId').eq(filter.subjectId)]
-              : []),
-            ...(filter.agentId ? [f.string('agentId').eq(filter.agentId)] : []),
-            ...(filter.status
-              ? [
-                  f.or(
-                    (typeof filter.status === 'string'
-                      ? [filter.status]
-                      : filter.status
-                    ).map((status) => f.string('status').eq(status)),
-                  ),
-                ]
-              : []),
-            ...(filter.involvingUserId
-              ? [
-                  f.or([
-                    f.string('actorUserId').eq(filter.involvingUserId),
-                    f.string('ownerUserId').eq(filter.involvingUserId),
-                  ]),
-                ]
-              : []),
+      let query = tx.read().query.selectFrom('agRuns').selectAll();
+      for (const key of ['subjectKind', 'subjectId', 'agentId'] as const)
+        if (filter[key]) query = query.where(key, '=', filter[key]);
+      if (filter.status)
+        query = query.where(
+          'status',
+          'in',
+          typeof filter.status === 'string' ? [filter.status] : filter.status,
+        );
+      if (filter.involvingUserId)
+        query = query.where((eb) =>
+          eb.or([
+            eb('actorUserId', '=', filter.involvingUserId),
+            eb('ownerUserId', '=', filter.involvingUserId),
           ]),
+        );
+      if (filter.visibility) query = query.where(filter.visibility);
+      if (filter.cursor) {
+        const cursor = filter.cursor;
+        query = query.where((eb) =>
+          eb.or([
+            eb('createdAt', '<', cursor.createdAt),
+            eb.and([
+              eb('createdAt', '=', cursor.createdAt),
+              eb('id', '<', cursor.id),
+            ]),
+          ]),
+        );
+      }
+      const ids = await query
+        .clearSelect()
+        .select('id')
+        .orderBy('createdAt', 'desc')
+        .orderBy('id', 'desc')
+        .limit(Math.min(Math.max(filter.limit ?? 50, 1), 200))
+        .execute<{ id: string }>();
+      if (ids.length === 0) return [];
+      const records = await runsRepo(tx.read()).findMany({
+        filter: (f) => f.or(ids.map(({ id }) => f.string('id').eq(id))),
         sort: (sort) => [
           sort.field('createdAt').desc(),
           sort.field('id').desc(),
         ],
-        limit: Math.min(Math.max(filter.limit ?? 50, 1), 200),
-        ...(filter.cursor ? { cursor: filter.cursor } : {}),
       });
       return readRuns(records);
     },
@@ -2081,6 +2096,7 @@ export function createRunService(deps: RunServiceDeps): RunService {
         .distinct()
         .where('subjectKind', '=', filter.subjectKind)
         .where('subjectId', '=', filter.subjectId);
+      if (filter.visibility) query = query.where(filter.visibility);
       const userId = filter.involvingUserId;
       if (userId !== undefined)
         query = query.where((eb) =>

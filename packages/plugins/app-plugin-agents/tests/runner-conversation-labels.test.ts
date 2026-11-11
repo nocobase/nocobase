@@ -7,7 +7,7 @@ describe('runner conversation descriptions', () => {
   let h: Harness;
   afterEach(async () => h?.close());
 
-  it('uses current ownership for names and links without changing report visibility', async () => {
+  it('uses current ownership for labels and recorded participants for private reports', async () => {
     h = await createHarness();
     const { runnerId } = await h.registerRunner();
     const agentId = await h.createAgent();
@@ -108,22 +108,23 @@ describe('runner conversation descriptions', () => {
         groupId: null,
       },
     );
-    expect(report.map((run) => run.subjectId).sort()).toEqual(
-      [own.id, other.id, untitled.id, gone].sort(),
-    );
-    const ownReport = await h.services.reporting.runRecords(
-      { userId: 'alice', allRuns: false },
-      {
-        subjects: {
-          kind: CONVERSATION_SUBJECT,
-          ids: [own.id, other.id, untitled.id, gone],
+    // Global report access does not grant another person's private runs.
+    expect(report).toEqual([]);
+    for (const allRuns of [false, true]) {
+      const ownReport = await h.services.reporting.runRecords(
+        { userId: 'alice', allRuns },
+        {
+          subjects: {
+            kind: CONVERSATION_SUBJECT,
+            ids: [own.id, other.id, untitled.id, gone],
+          },
+          groupId: null,
         },
-        groupId: null,
-      },
-    );
-    expect(ownReport.map((run) => run.subjectId).sort()).toEqual(
-      [own.id, other.id, untitled.id, gone].sort(),
-    );
+      );
+      expect(ownReport.map((run) => run.subjectId).sort()).toEqual(
+        [own.id, other.id, untitled.id, gone].sort(),
+      );
+    }
     // Historical actor and owner remain Alice; current ownership changes to Bob.
     await h.database
       .connection()
@@ -158,6 +159,17 @@ describe('runner conversation descriptions', () => {
     expect(afterTransfer.map((run) => run.subjectId).sort()).toEqual(
       [own.id, other.id, untitled.id, gone].sort(),
     );
+    const newOwnerReport = await h.services.reporting.runRecords(
+      { userId: 'bob', allRuns: true },
+      {
+        subjects: {
+          kind: CONVERSATION_SUBJECT,
+          ids: [own.id, other.id, untitled.id, gone],
+        },
+        groupId: null,
+      },
+    );
+    expect(newOwnerReport).toEqual([]);
 
     const knex = await h.database.connection().client<Knex>();
     const statements: string[] = [];
@@ -178,21 +190,23 @@ describe('runner conversation descriptions', () => {
       ),
     ).toBe(false);
 
-    // A deleted conversation may still have an open run. Its report visibility is not tied to title lookup.
+    // Deletion preserves participant access without granting unrelated administrators the private run.
     await h.services.conversations.delete('alice', untitled.id);
-    const afterDelete = await h.services.reporting.runRecords(
-      { userId: 'admin', allRuns: true },
-      {
-        subjects: {
-          kind: CONVERSATION_SUBJECT,
-          ids: [own.id, other.id, untitled.id, gone],
+    for (const userId of ['admin', 'alice']) {
+      const afterDelete = await h.services.reporting.runRecords(
+        { userId, allRuns: true },
+        {
+          subjects: {
+            kind: CONVERSATION_SUBJECT,
+            ids: [own.id, other.id, untitled.id, gone],
+          },
+          groupId: null,
         },
-        groupId: null,
-      },
-    );
-    expect(afterDelete.map((run) => run.subjectId).sort()).toEqual(
-      [own.id, other.id, untitled.id, gone].sort(),
-    );
+      );
+      expect(afterDelete.map((run) => run.subjectId).sort()).toEqual(
+        userId === 'alice' ? [own.id, other.id, untitled.id, gone].sort() : [],
+      );
+    }
   });
 
   it('localizes owned, untitled and inaccessible descriptions without a new response field', async () => {
