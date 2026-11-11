@@ -319,10 +319,12 @@ const zhTW: LocaleResource<typeof enUS> = {
       entertainment: '顧客娛樂',
       other: '其他',
     },
+    allStates: '全部狀態',
     steps: {
       submit: '已提交',
       manager: '經理',
       finance: '金融',
+      audit: '審計',
       payment: '已付費',
     },
     meta: {
@@ -954,6 +956,7 @@ const zhTW: LocaleResource<typeof enUS> = {
     draft: '草稿',
     awaitingManager: '等待經理',
     awaitingFinance: '等待融資',
+    awaitingAudit: '待審計',
     needsInfo: '已發回',
     approved: '已核准',
     rejected: '已拒絕',
@@ -1038,6 +1041,7 @@ const zhTW: LocaleResource<typeof enUS> = {
     reopen: '重新開放',
     submit: '提交',
     approve: '核准',
+    audit: '審計通過',
     reject: '拒絕',
     requestInfo: '發回',
     resubmit: '重新提交',

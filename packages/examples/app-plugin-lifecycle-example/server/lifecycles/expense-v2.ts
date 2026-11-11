@@ -164,7 +164,8 @@ export const expenseV2Lifecycle: Lifecycle<ExpenseV2Types> =
         guard: applicant,
         set: () => ({ approverId: null }),
       },
-      escalate: expenseLifecycle.transitions.get('escalate')!.definition as never,
+      escalate: expenseLifecycle.transitions.get('escalate')!
+        .definition as never,
       paid: expenseLifecycle.transitions.get('paid')!.definition as never,
     },
     onEnter: {

@@ -75,8 +75,8 @@ export class WorkflowParameterStore extends StoredLifecycleParameters {
         };
         if (!groupKey) return version;
         const group = workflow?.parameterConfiguration?.groups.find(
-            (item) => item.key === groupKey,
-          );
+          (item) => item.key === groupKey,
+        );
         if (!group)
           throw new ParameterConfigurationError(
             'CONFIGURATION_INVALID',

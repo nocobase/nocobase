@@ -178,9 +178,7 @@ function listRoutes(
           'expenses',
           page,
           pageSize,
-        )(
-          await service.listExpenses(actAs, view, { page, pageSize }, status),
-        ),
+        )(await service.listExpenses(actAs, view, { page, pageSize }, status)),
       );
     },
   );

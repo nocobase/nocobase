@@ -157,9 +157,7 @@ export class LifecycleExampleService {
                   filter.string('status').eq('awaitingAudit'),
                 ]),
               ]),
-          ...(status === undefined
-            ? []
-            : [filter.string('status').eq(status)]),
+          ...(status === undefined ? [] : [filter.string('status').eq(status)]),
         ]),
     };
     const rows = await repository.findMany({

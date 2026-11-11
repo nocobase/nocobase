@@ -338,10 +338,12 @@ const deDE: LocaleResource<typeof enUS> = {
       entertainment: 'Kundenunterhaltung',
       other: 'Sonstiges',
     },
+    allStates: 'Alle Status',
     steps: {
       submit: 'Eingereicht',
       manager: 'Manager',
       finance: 'Finanzen',
+      audit: 'Prüfung',
       payment: 'Bezahlt',
     },
     meta: {
@@ -1010,6 +1012,7 @@ const deDE: LocaleResource<typeof enUS> = {
     draft: 'Entwurf',
     awaitingManager: 'Warten auf den Manager',
     awaitingFinance: 'Warten auf Finanzierung',
+    awaitingAudit: 'Wartet auf Prüfung',
     needsInfo: 'Zurückgeschickt',
     approved: 'Genehmigt',
     rejected: 'Abgelehnt',
@@ -1094,6 +1097,7 @@ const deDE: LocaleResource<typeof enUS> = {
     reopen: 'Wieder öffnen',
     submit: 'Senden',
     approve: 'Genehmigen',
+    audit: 'Prüfung bestanden',
     reject: 'Ablehnen',
     requestInfo: 'Zurückschicken',
     resubmit: 'Erneut senden',

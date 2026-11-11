@@ -326,7 +326,13 @@ describe('parameter configuration against the real repository', () => {
         });
       // The audit limit is the second version's own group; saving it moves
       // the shared revision and leaves the first version's groups as saved.
-      await config.save('expenseAudit', { auditLimit: 25000 }, 1, 'audit', 'zhao');
+      await config.save(
+        'expenseAudit',
+        { auditLimit: 25000 },
+        1,
+        'audit',
+        'zhao',
+      );
       const firstView = await service.runtime.view('expenses', first, {
         id: 'chen',
       });
@@ -362,10 +368,14 @@ describe('parameter configuration against the real repository', () => {
           .state,
       ).toBe('awaitingAudit');
       // Each record's history reads through its own version.
-      expect((await config.history('expenses', first, 'lin')).snapshot).toMatchObject({
+      expect(
+        (await config.history('expenses', first, 'lin')).snapshot,
+      ).toMatchObject({
         lifecycle: 'expenses',
       });
-      expect((await config.history('expenses', second, 'lin')).snapshot).toMatchObject({
+      expect(
+        (await config.history('expenses', second, 'lin')).snapshot,
+      ).toMatchObject({
         lifecycle: 'expenses-v2',
         values: { auditLimit: 20000 },
       });
@@ -1026,9 +1036,11 @@ describe('sample data', () => {
       const reports = async (actor: string) =>
         (await examples.listExpenses(actor, 'mine', page)).records;
       const [hangzhou, training, tradeFair, materials] = await reports('lin');
-      expect([hangzhou?.status, training?.status, tradeFair?.status]).toEqual(
-        ['draft', 'awaitingAudit', 'awaitingFinance'],
-      );
+      expect([hangzhou?.status, training?.status, tradeFair?.status]).toEqual([
+        'draft',
+        'awaitingAudit',
+        'awaitingFinance',
+      ]);
       // New reports are drafted with the second version; the older samples
       // stand for reports drafted before it and keep running the first.
       expect(

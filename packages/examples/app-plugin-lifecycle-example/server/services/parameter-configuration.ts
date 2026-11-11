@@ -462,7 +462,7 @@ export class ParameterConfigurationService {
     const definition = this.runtime.recordLifecycle(name, {
       ...record,
       id,
-    } as import('@nocobase/lifecycle').LifecycleRecord);
+    });
     const lifecycle = lifecycles.find((item) => item.name === definition)!;
     for (const group of lifecycle.parameterConfiguration?.groups ?? [])
       this.authorize(actor, 'read', group.key);

@@ -338,10 +338,12 @@ const frFR: LocaleResource<typeof enUS> = {
       entertainment: 'Divertissement client',
       other: 'Autres',
     },
+    allStates: 'Tous les états',
     steps: {
       submit: 'Soumis',
       manager: 'Gestionnaire',
       finance: 'Finances',
+      audit: 'Audit',
       payment: 'Payé',
     },
     meta: {
@@ -1006,6 +1008,7 @@ const frFR: LocaleResource<typeof enUS> = {
     draft: 'Brouillon',
     awaitingManager: 'Gestionnaire en attente',
     awaitingFinance: 'En attente de financement',
+    awaitingAudit: 'En attente d’audit',
     needsInfo: 'Renvoyé',
     approved: 'Approuvé',
     rejected: 'Rejeté',
@@ -1091,6 +1094,7 @@ const frFR: LocaleResource<typeof enUS> = {
     reopen: 'Réouvrir',
     submit: 'Soumettre',
     approve: 'Approuver',
+    audit: 'Valider l’audit',
     reject: 'Rejeter',
     requestInfo: 'Renvoyer',
     resubmit: 'Soumettre à nouveau',

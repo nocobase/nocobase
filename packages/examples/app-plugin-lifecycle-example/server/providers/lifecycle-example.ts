@@ -138,7 +138,8 @@ export class LifecycleExampleProvider extends ServiceProvider<AppPluginApplicati
     const runtime = this.lifecycleRuntime();
     this.releaseChanges = runtime.onChange({}, (change) => {
       this.publishChange({
-        lifecycle: change.lifecycle,
+        // The process, as the pages subscribe: a record of any version.
+        lifecycle: runtime.group(change.lifecycle).key,
         recordId: String(change.recordId),
       });
     });

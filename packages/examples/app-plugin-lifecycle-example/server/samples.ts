@@ -38,10 +38,15 @@ export async function buildSampleRecords(
     // A sample may belong to either version of its process: fire through
     // the definition the record is bound to.
     const id = text(record.id);
-    await runtime.fire(await runtime.boundLifecycle(lifecycle, id), id, transition, {
-      actor: actor === SYSTEM_ACTOR.id ? SYSTEM_ACTOR : { id: actor },
-      input,
-    });
+    await runtime.fire(
+      await runtime.boundLifecycle(lifecycle, id),
+      id,
+      transition,
+      {
+        actor: actor === SYSTEM_ACTOR.id ? SYSTEM_ACTOR : { id: actor },
+        input,
+      },
+    );
   };
 
   // Help desk: one ticket in each state a ticket rests in.

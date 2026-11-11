@@ -317,10 +317,12 @@ const zhCN: LifecycleExampleResource = {
       entertainment: '业务招待',
       other: '其他',
     },
+    allStates: '全部状态',
     steps: {
       submit: '提交',
       manager: '部门审批',
       finance: '财务审批',
+      audit: '审计',
       payment: '付款',
     },
     meta: {
@@ -954,6 +956,7 @@ const zhCN: LifecycleExampleResource = {
     draft: '草稿',
     awaitingManager: '待部门审批',
     awaitingFinance: '待财务审批',
+    awaitingAudit: '待审计',
     needsInfo: '待补充',
     approved: '已通过',
     rejected: '已驳回',
@@ -1038,6 +1041,7 @@ const zhCN: LifecycleExampleResource = {
     reopen: '重新打开',
     submit: '提交',
     approve: '通过',
+    audit: '审计通过',
     reject: '驳回',
     requestInfo: '退回补充',
     resubmit: '重新提交',

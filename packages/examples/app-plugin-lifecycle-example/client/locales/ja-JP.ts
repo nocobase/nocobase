@@ -334,10 +334,12 @@ const jaJP: LocaleResource<typeof enUS> = {
       entertainment: 'クライアントのエンターテイメント',
       other: 'その他',
     },
+    allStates: 'すべての状態',
     steps: {
       submit: '送信済み',
       manager: 'マネージャー',
       finance: '金融',
+      audit: '監査',
       payment: '有料',
     },
     meta: {
@@ -989,6 +991,7 @@ const jaJP: LocaleResource<typeof enUS> = {
     draft: '下書き',
     awaitingManager: 'マネージャー待ち',
     awaitingFinance: '融資待ち',
+    awaitingAudit: '監査待ち',
     needsInfo: '返送されました',
     approved: '承認済み',
     rejected: '却下済み',
@@ -1073,6 +1076,7 @@ const jaJP: LocaleResource<typeof enUS> = {
     reopen: '再開',
     submit: '送信する',
     approve: '承認',
+    audit: '監査承認',
     reject: '却下',
     requestInfo: '差し戻し',
     resubmit: '再送信',

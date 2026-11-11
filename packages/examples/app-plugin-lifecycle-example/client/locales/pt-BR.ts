@@ -331,10 +331,12 @@ const ptBR: LocaleResource<typeof enUS> = {
       entertainment: 'Entretenimento para clientes',
       other: 'Outros',
     },
+    allStates: 'Todos os estados',
     steps: {
       submit: 'Enviado',
       manager: 'Gerente',
       finance: 'Finanças',
+      audit: 'Auditoria',
       payment: 'Pago',
     },
     meta: {
@@ -997,6 +999,7 @@ const ptBR: LocaleResource<typeof enUS> = {
     draft: 'Rascunho',
     awaitingManager: 'Aguardando gerente',
     awaitingFinance: 'Aguardando financiamento',
+    awaitingAudit: 'Aguardando auditoria',
     needsInfo: 'Enviado de volta',
     approved: 'Aprovado',
     rejected: 'Rejeitado',
@@ -1081,6 +1084,7 @@ const ptBR: LocaleResource<typeof enUS> = {
     reopen: 'Reabrir',
     submit: 'Enviar',
     approve: 'Aprovar',
+    audit: 'Aprovar auditoria',
     reject: 'Rejeitar',
     requestInfo: 'Enviar de volta',
     resubmit: 'Reenviar',

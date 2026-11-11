@@ -334,10 +334,12 @@ const idID: LocaleResource<typeof enUS> = {
       entertainment: 'Hiburan klien',
       other: 'Lainnya',
     },
+    allStates: 'Semua status',
     steps: {
       submit: 'Dikirim',
       manager: 'Manajer',
       finance: 'Keuangan',
+      audit: 'Audit',
       payment: 'Dibayar',
     },
     meta: {
@@ -1002,6 +1004,7 @@ const idID: LocaleResource<typeof enUS> = {
     draft: 'Draf',
     awaitingManager: 'Menunggu manajer',
     awaitingFinance: 'Menunggu keuangan',
+    awaitingAudit: 'Menunggu audit',
     needsInfo: 'Dikirim kembali',
     approved: 'Disetujui',
     rejected: 'Ditolak',
@@ -1086,6 +1089,7 @@ const idID: LocaleResource<typeof enUS> = {
     reopen: 'Buka kembali',
     submit: 'Kirim',
     approve: 'Setujui',
+    audit: 'Lulus audit',
     reject: 'Tolak',
     requestInfo: 'Kirim kembali',
     resubmit: 'Kirim ulang',

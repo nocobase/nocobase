@@ -336,10 +336,12 @@ const esES: LocaleResource<typeof enUS> = {
       entertainment: 'Entretenimiento para clientes',
       other: 'Otro',
     },
+    allStates: 'Todos los estados',
     steps: {
       submit: 'Enviado',
       manager: 'Gerente',
       finance: 'Finanzas',
+      audit: 'Auditoría',
       payment: 'Pagado',
     },
     meta: {
@@ -1001,6 +1003,7 @@ const esES: LocaleResource<typeof enUS> = {
     draft: 'Borrador',
     awaitingManager: 'Esperando gerente',
     awaitingFinance: 'En espera de financiación',
+    awaitingAudit: 'En espera de auditoría',
     needsInfo: 'Devuelto',
     approved: 'Aprobado',
     rejected: 'Rechazado',
@@ -1085,6 +1088,7 @@ const esES: LocaleResource<typeof enUS> = {
     reopen: 'Reabrir',
     submit: 'Enviar',
     approve: 'Aprobar',
+    audit: 'Aprobar auditoría',
     reject: 'Rechazar',
     requestInfo: 'Enviar de vuelta',
     resubmit: 'Volver a enviar',

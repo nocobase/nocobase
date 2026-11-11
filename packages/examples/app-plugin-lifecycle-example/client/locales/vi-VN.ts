@@ -334,10 +334,12 @@ const viVN: LocaleResource<typeof enUS> = {
       entertainment: 'Giải trí cho khách hàng',
       other: 'Khác',
     },
+    allStates: 'Tất cả trạng thái',
     steps: {
       submit: 'Đã gửi',
       manager: 'Người quản lý',
       finance: 'Tài chính',
+      audit: 'Kiểm toán',
       payment: 'Đã trả tiền',
     },
     meta: {
@@ -997,6 +999,7 @@ const viVN: LocaleResource<typeof enUS> = {
     draft: 'Bản nháp',
     awaitingManager: 'Đang chờ quản lý',
     awaitingFinance: 'Đang chờ tài chính',
+    awaitingAudit: 'Đang chờ kiểm toán',
     needsInfo: 'Đã gửi lại',
     approved: 'Đã phê duyệt',
     rejected: 'Đã từ chối',
@@ -1081,6 +1084,7 @@ const viVN: LocaleResource<typeof enUS> = {
     reopen: 'Mở lại',
     submit: 'Gửi',
     approve: 'Phê duyệt',
+    audit: 'Duyệt kiểm toán',
     reject: 'Từ chối',
     requestInfo: 'Gửi lại',
     resubmit: 'Gửi lại',

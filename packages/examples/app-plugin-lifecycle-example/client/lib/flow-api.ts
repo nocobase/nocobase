@@ -28,7 +28,7 @@ export function flowApi(client: ApiClient): {
         signal,
         query: { pageSize: String(PAGE_SIZE) },
       });
-      return { records: data, parameters: meta.parameters };
+      return { records: data, parameters: meta.parameters, states: [] };
     },
     create: async (flow, values) =>
       (

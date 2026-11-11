@@ -28,6 +28,13 @@ import { Textarea } from '../components/textarea.js';
 import { Button } from '../components/ui/button.js';
 import { Card, CardContent } from '../components/ui/card.js';
 import { Input } from '../components/ui/input.js';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../components/ui/select.js';
 import { useActorName } from '../lib/actor.js';
 import {
   CREATE_TRANSITION,
@@ -73,18 +80,29 @@ export default function ExpensesPage(): ReactElement {
   const [selected, setSelected] = useState<string | undefined>();
   const [creating, setCreating] = useState(false);
   const [flash, setFlash] = useState('');
+  const [status, setStatus] = useState('');
   const isApplicant = person(actor)?.role === 'applicant';
   const view = isApplicant ? 'mine' : 'approvals';
 
   const list = useLoader(
-    (signal) => client.list('expenses', actor, view, signal),
-    `expenses:${actor}`,
+    (signal) =>
+      client.list('expenses', actor, view, signal, status || undefined),
+    `expenses:${actor}:${status}`,
     '',
     false,
   );
   const current = useExampleRecord('expenses', selected, actor);
   const records = list.data?.records ?? [];
   const parameters = list.data?.parameters ?? {};
+  // Reports of both versions share the list: its states are all of theirs.
+  const states = list.data?.states ?? [];
+  const statusItems = [
+    { value: '', label: t('expenses.allStates') },
+    ...states.map((state) => ({
+      value: state.name,
+      label: t(`states.${state.name}`, { defaultValue: state.name }),
+    })),
+  ];
 
   // Switching to the report's applicant or its approver keeps it open, so
   // one person can walk a report through every hand it passes.
@@ -161,6 +179,29 @@ export default function ExpensesPage(): ReactElement {
                 </Button>
               ) : null}
             </div>
+            {states.length ? (
+              <Select
+                items={statusItems}
+                value={status}
+                onValueChange={(next) => {
+                  if (typeof next === 'string') setStatus(next);
+                }}
+              >
+                <SelectTrigger
+                  aria-label={t('expenses.allStates')}
+                  className='w-full'
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {statusItems.map((item) => (
+                    <SelectItem key={item.value} value={item.value}>
+                      {item.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : null}
             {list.error ? (
               <p className='text-sm text-destructive'>{list.error}</p>
             ) : null}
@@ -636,17 +677,29 @@ function ExpenseView({
   // rule the lifecycle routes by.
   const needsManager = amount > limit(parameters, 'autoApproveLimit') * 100;
   const needsFinance = amount > limit(parameters, 'financeLimit') * 100;
+  // Only the second version audits; a first-version report has no audit
+  // limit among its parameters, and is shown as that version runs it.
+  const needsAudit =
+    'auditLimit' in parameters &&
+    !needsFinance &&
+    amount > limit(parameters, 'auditLimit') * 100;
   const rejectedAt =
     state === 'rejected' ? last(transitions, 'reject') : undefined;
   const stepState = (step: string): StepState => {
-    const order = ['submit', 'manager', 'finance', 'payment'];
+    const order = ['submit', 'manager', 'finance', 'audit', 'payment'];
     const position: Readonly<Record<string, string>> = {
       draft: 'submit',
       needsInfo: 'submit',
       awaitingManager: 'manager',
       awaitingFinance: 'finance',
+      awaitingAudit: 'audit',
       approved: 'payment',
-      rejected: rejectedAt?.from === 'awaitingFinance' ? 'finance' : 'manager',
+      rejected:
+        rejectedAt?.from === 'awaitingFinance'
+          ? 'finance'
+          : rejectedAt?.from === 'awaitingAudit'
+            ? 'audit'
+            : 'manager',
     };
     if (state === 'paid') return 'done';
     const current = order.indexOf(position[state] ?? 'submit');
@@ -661,6 +714,7 @@ function ExpenseView({
     { key: 'submit', show: true },
     { key: 'manager', show: needsManager },
     { key: 'finance', show: needsFinance },
+    { key: 'audit', show: needsAudit },
     { key: 'payment', show: true },
   ]
     .filter((step) => step.show)
@@ -673,10 +727,14 @@ function ExpenseView({
     const changedAt = Date.parse(text(record.statusChangedAt));
     if (state === 'draft')
       return <Banner tone='neutral'>{t('expenses.banner.draft')}</Banner>;
-    if (state === 'awaitingManager' || state === 'awaitingFinance') {
+    if (
+      state === 'awaitingManager' ||
+      state === 'awaitingFinance' ||
+      state === 'awaitingAudit'
+    ) {
       const approver = personName(record.approverId);
       // Only a manager who has a manager of their own is passed over.
-      if (state === 'awaitingFinance' || !MANAGERS[text(record.approverId)])
+      if (state !== 'awaitingManager' || !MANAGERS[text(record.approverId)])
         return (
           <Banner tone='warning'>
             {t('expenses.banner.awaitingFinal', { approver })}
@@ -906,7 +964,7 @@ function ExpenseView({
           )}
         </div>
 
-        {allowed.has('approve') ? (
+        {allowed.has('approve') || allowed.has('audit') ? (
           <div className='space-y-2 rounded-lg border p-3'>
             <h3 className='text-sm font-medium'>
               {t('expenses.decision.title')}
@@ -935,7 +993,11 @@ function ExpenseView({
               <Button
                 disabled={busy}
                 onClick={() =>
-                  void fire('approve', comment.trim() ? { comment } : {})
+                  void fire(
+                    // The second version's audit is decided the same way.
+                    allowed.has('audit') ? 'audit' : 'approve',
+                    comment.trim() ? { comment } : {},
+                  )
                 }
               >
                 {t('expenses.decision.approve')}

@@ -324,10 +324,12 @@ const enUS = {
       entertainment: 'Client entertainment',
       other: 'Other',
     },
+    allStates: 'All states',
     steps: {
       submit: 'Submitted',
       manager: 'Manager',
       finance: 'Finance',
+      audit: 'Audit',
       payment: 'Paid',
     },
     meta: {
@@ -976,6 +978,7 @@ const enUS = {
     draft: 'Draft',
     awaitingManager: 'Awaiting manager',
     awaitingFinance: 'Awaiting finance',
+    awaitingAudit: 'Awaiting audit',
     needsInfo: 'Sent back',
     approved: 'Approved',
     rejected: 'Rejected',
@@ -1060,6 +1063,7 @@ const enUS = {
     reopen: 'Reopen',
     submit: 'Submit',
     approve: 'Approve',
+    audit: 'Pass audit',
     reject: 'Reject',
     requestInfo: 'Send back',
     resubmit: 'Resubmit',
