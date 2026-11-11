@@ -665,7 +665,7 @@ const MCPToolsList: React.FC<{ record: MCPRecord; rebuilding: boolean }> = ({ re
   const { message } = App.useApp();
   const [tools, setTools] = useState<MCPToolEntry[]>([]);
   const [loading, setLoading] = useState(false);
-  const [updatingToolName, setUpdatingToolName] = useState<string | null>(null);
+  const [updatingToolNames, setUpdatingToolNames] = useState<Set<string>>(new Set());
   const messageRef = useRef(message);
   const tRef = useRef(t);
 
@@ -701,18 +701,27 @@ const MCPToolsList: React.FC<{ record: MCPRecord; rebuilding: boolean }> = ({ re
   }, [app.apiClient, record.name]);
 
   const handlePermissionChange = async (toolName: string, permission: MCPToolPermission) => {
-    const previousTools = tools;
-    setUpdatingToolName(toolName);
+    if (updatingToolNames.has(toolName)) return;
+    const previousPermission = tools.find((tool) => tool.name === toolName)?.permission;
+    setUpdatingToolNames((current) => new Set(current).add(toolName));
     setTools((currentTools) => currentTools.map((tool) => (tool.name === toolName ? { ...tool, permission } : tool)));
     try {
       await updateMCPToolPermission(app.apiClient, toolName, permission);
     } catch (error) {
-      setTools(previousTools);
+      setTools((currentTools) =>
+        currentTools.map((tool) =>
+          tool.name === toolName && previousPermission ? { ...tool, permission: previousPermission } : tool,
+        ),
+      );
       messageRef.current.error(
         error instanceof Error ? error.message : tRef.current('Failed to update tool permission'),
       );
     } finally {
-      setUpdatingToolName(null);
+      setUpdatingToolNames((current) => {
+        const next = new Set(current);
+        next.delete(toolName);
+        return next;
+      });
     }
   };
 
@@ -744,12 +753,13 @@ const MCPToolsList: React.FC<{ record: MCPRecord; rebuilding: boolean }> = ({ re
               <Typography.Text type="secondary">{t('Permission')}</Typography.Text>
               <Segmented
                 size="small"
+                name={tool.name}
                 options={[
                   { label: t('Ask'), value: 'ASK' },
                   { label: t('Allow'), value: 'ALLOW' },
                 ]}
                 value={tool.permission}
-                disabled={rebuilding || updatingToolName === tool.name}
+                disabled={rebuilding || updatingToolNames.has(tool.name)}
                 onChange={(value) => handlePermissionChange(tool.name, value as MCPToolPermission)}
               />
             </Space>

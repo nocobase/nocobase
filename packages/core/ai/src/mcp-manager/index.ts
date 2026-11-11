@@ -8,12 +8,12 @@
  */
 
 import { SequelizeCollectionManager } from '@nocobase/data-source-manager';
-import { Op } from '@nocobase/database';
+import { Op, Transaction } from '@nocobase/database';
 import { Registry } from '@nocobase/utils';
 import { MultiServerMCPClient, StdioConnection, StreamableHTTPConnection } from '@langchain/mcp-adapters';
 import { StructuredToolInterface } from '@langchain/core/tools';
 import { MCPEntry, MCPFilter, MCPManager, MCPOptions, MCPTestResult, MCPToolEntry } from './types';
-import type { DynamicToolsProvider, Permission, ToolsRegistration, ToolsOptions } from '../tools-manager/types';
+import type { DynamicToolsProvider, Permission, ToolsRegistration } from '../tools-manager/types';
 import type { Context } from '@nocobase/actions';
 import { normalizeMCPOptions, renderMCPOptions } from './options-renderer';
 import { UserContextMCPClientManager } from './user-context-client-manager';
@@ -24,7 +24,6 @@ export class DefaultMCPManager implements MCPManager {
   private mode = 'memory';
   private client: MultiServerMCPClient | null = null;
   private toolsMap: Record<string, StructuredToolInterface[]> = {};
-  private toolsPermissionMap: Record<string, Permission> = {};
   private readonly userContextClientManager: UserContextMCPClientManager;
 
   constructor(private readonly app: any) {
@@ -102,8 +101,8 @@ export class DefaultMCPManager implements MCPManager {
         // Ignore close errors
       }
       this.client = null;
-      this.toolsMap = {};
     }
+    this.toolsMap = {};
 
     // Get all enabled MCP entries
     const entries = await this.listMCP({ enabled: true, useUserContext: false });
@@ -125,12 +124,6 @@ export class DefaultMCPManager implements MCPManager {
     // Cache tools for each server
     for (const [serverName, tools] of Object.entries(toolsMap)) {
       this.toolsMap[serverName] = tools as StructuredToolInterface[];
-      for (const tool of tools as StructuredToolInterface[]) {
-        const toolName = `mcp-${serverName}-${tool.name}`;
-        if (!(toolName in this.toolsPermissionMap)) {
-          this.toolsPermissionMap[toolName] = tool.name.startsWith('get') ? 'ALLOW' : 'ASK';
-        }
-      }
     }
   }
 
@@ -140,95 +133,124 @@ export class DefaultMCPManager implements MCPManager {
 
   getMCPToolsProvider(): DynamicToolsProvider {
     return async (register: ToolsRegistration, filter): Promise<void> => {
-      // Use cached tools from rebuildClient
-      for (const [serverName, tools] of Object.entries(this.toolsMap)) {
-        this.registerToolsFromMap(register, serverName, tools);
-      }
-
-      if (!filter?.ctx) {
-        return;
-      }
-
-      const userToolsMap = await this.userContextClientManager.getToolsMap(filter.ctx);
-      for (const [serverName, tools] of Object.entries(userToolsMap)) {
-        this.registerToolsFromMap(register, serverName, tools);
+      const toolsMap = await this.getActiveToolsMap(filter?.ctx);
+      const permissions = await this.readToolPermissions(Object.keys(toolsMap));
+      for (const [serverName, tools] of Object.entries(toolsMap)) {
+        for (const tool of tools) {
+          register.registerTools({
+            scope: 'GENERAL',
+            from: 'mcp',
+            defaultPermission: this.resolveToolPermission(permissions, serverName, tool.name),
+            introduction: { title: tool.name, about: tool.description },
+            definition: {
+              name: `mcp-${serverName}-${tool.name}`,
+              description: tool.description || `MCP tool: ${tool.name} from ${serverName}`,
+              schema: tool.schema,
+            },
+            invoke: async (ctx: Context, args: Parameters<typeof tool.invoke>[0]) => {
+              const entry = await this.getMCP(serverName);
+              if (!entry?.enabled) {
+                throw new Error(ctx.t('MCP server is disabled or deleted', { ns: '@nocobase/plugin-ai' }));
+              }
+              try {
+                return await tool.invoke(args);
+              } catch (error: unknown) {
+                return {
+                  status: 'error' as const,
+                  content: error instanceof Error ? error.message : 'Tool invocation failed',
+                };
+              }
+            },
+          });
+        }
       }
     };
   }
 
-  private registerToolsFromMap(
-    register: ToolsRegistration,
-    serverName: string,
-    tools: StructuredToolInterface[],
-  ): void {
-    for (const tool of tools) {
-      const toolName = `mcp-${serverName}-${tool.name}`;
-      this.ensureToolPermission(toolName, tool.name);
-      const toolOptions: ToolsOptions = {
-        scope: 'GENERAL',
-        from: 'mcp',
-        defaultPermission: this.toolsPermissionMap[toolName],
-        introduction: {
-          title: tool.name,
-          about: tool.description,
-        },
-        definition: {
-          name: toolName,
-          description: tool.description || `MCP tool: ${tool.name} from ${serverName}`,
-          schema: tool.schema,
-        },
-        invoke: async (_ctx: Context, args: any) => {
-          try {
-            const result = await tool.invoke(args);
-            return result;
-          } catch (error: any) {
-            return {
-              status: 'error' as const,
-              content: error?.message || 'Tool invocation failed',
-            };
-          }
-        },
-      };
-      register.registerTools(toolOptions);
-    }
-  }
-
-  private ensureToolPermission(toolName: string, rawToolName: string) {
-    if (!(toolName in this.toolsPermissionMap)) {
-      this.toolsPermissionMap[toolName] = rawToolName.startsWith('get') ? 'ALLOW' : 'ASK';
-    }
-  }
-
-  async listMCPTools(ctx?: Context): Promise<Record<string, MCPToolEntry[]>> {
-    const toolsMap = {
-      ...this.toolsMap,
-      ...(ctx ? await this.userContextClientManager.getToolsMap(ctx) : {}),
+  private async getActiveToolsMap(ctx?: Context): Promise<Record<string, StructuredToolInterface[]>> {
+    // Connection caches are not configuration authorities, including on other application instances.
+    const entries = await this.listMCP({ enabled: true });
+    const sharedServers = new Set(entries.filter((entry) => !entry.useUserContext).map((entry) => entry.name));
+    const userServers = new Set(entries.filter((entry) => entry.useUserContext).map((entry) => entry.name));
+    const userToolsMap = ctx ? await this.userContextClientManager.getToolsMap(ctx) : {};
+    return {
+      ...Object.fromEntries(Object.entries(this.toolsMap).filter(([name]) => sharedServers.has(name))),
+      ...Object.fromEntries(Object.entries(userToolsMap).filter(([name]) => userServers.has(name))),
     };
-
-    return this.formatMCPTools(toolsMap);
   }
 
-  private formatMCPTools(toolsMap: Record<string, StructuredToolInterface[]>): Record<string, MCPToolEntry[]> {
-    return Object.fromEntries(
-      Object.entries(toolsMap).map(([serverName, tools]) => [
-        serverName,
-        tools.map((tool) => {
-          const toolName = `mcp-${serverName}-${tool.name}`;
-          this.ensureToolPermission(toolName, tool.name);
-          return {
-            name: toolName,
-            title: tool.name,
-            description: tool.description,
-            serverName,
-            permission: this.toolsPermissionMap[toolName] ?? 'ASK',
-          };
-        }),
+  private async readToolPermissions(serverNames: string[]): Promise<Map<string, Permission>> {
+    if (!serverNames.length) {
+      return new Map();
+    }
+    const records = await this.collectionManager.getCollection('aiMcpToolPermissions').model.findAll({
+      where: { serverName: { [Op.in]: serverNames } },
+    });
+    return new Map(
+      records.map((record) => [
+        JSON.stringify([record.get('serverName'), record.get('toolName')]),
+        record.get('permission') === 'ALLOW' ? 'ALLOW' : 'ASK',
       ]),
     );
   }
 
-  async updateMCPToolPermission(toolName: string, permission: Permission): Promise<void> {
-    this.toolsPermissionMap[toolName] = permission;
+  private resolveToolPermission(
+    permissions: Map<string, Permission>,
+    serverName: string,
+    toolName: string,
+  ): Permission {
+    return permissions.get(JSON.stringify([serverName, toolName])) ?? (toolName.startsWith('get') ? 'ALLOW' : 'ASK');
+  }
+
+  async listMCPTools(ctx?: Context): Promise<Record<string, MCPToolEntry[]>> {
+    const toolsMap = await this.getActiveToolsMap(ctx);
+    const permissions = await this.readToolPermissions(Object.keys(toolsMap));
+    return Object.fromEntries(
+      Object.entries(toolsMap).map(([serverName, tools]) => [
+        serverName,
+        tools.map((tool) => ({
+          name: `mcp-${serverName}-${tool.name}`,
+          title: tool.name,
+          description: tool.description,
+          serverName,
+          permission: this.resolveToolPermission(permissions, serverName, tool.name),
+        })),
+      ]),
+    );
+  }
+
+  async updateMCPToolPermission(toolName: string, permission: Permission, ctx?: Context): Promise<void> {
+    const fail = (message: string): never => {
+      const t = ctx ? ctx.t.bind(ctx) : this.app.i18n.t.bind(this.app.i18n);
+      throw Object.assign(new Error(t(message, { ns: '@nocobase/plugin-ai' })), { status: 400 });
+    };
+    if (typeof toolName !== 'string' || !toolName.trim() || !['ASK', 'ALLOW'].includes(permission)) {
+      fail('Invalid MCP tool permission');
+    }
+    // Resolve from metadata, never by splitting the public name: both identifiers may contain hyphens.
+    const matches = Object.values(await this.listMCPTools(ctx))
+      .flat()
+      .filter((tool) => tool.name === toolName);
+    if (matches.length !== 1) {
+      fail('MCP tool not found or ambiguous');
+    }
+    const tool = matches[0];
+    await this.sequelize.transaction({ type: Transaction.TYPES.IMMEDIATE }, async (transaction) => {
+      const server = await this.aiMcpClientsModel.findOne({
+        where: { name: tool.serverName, enabled: true },
+        transaction,
+        lock: transaction.LOCK.UPDATE,
+      });
+      if (!server) {
+        fail('MCP tool not found or ambiguous');
+      }
+      await this.collectionManager
+        .getCollection('aiMcpToolPermissions')
+        .model.upsert(
+          { serverName: tool.serverName, toolName: tool.title, permission },
+          { transaction, conflictFields: ['serverName', 'toolName'] },
+        );
+    });
   }
 
   async clearUserContextCache(): Promise<void> {

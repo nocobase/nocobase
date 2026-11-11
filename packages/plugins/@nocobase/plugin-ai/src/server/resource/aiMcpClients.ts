@@ -11,7 +11,6 @@ import { ResourceOptions } from '@nocobase/resourcer';
 import { Repository, type Model } from '@nocobase/database';
 import type { Context, Next } from '@nocobase/actions';
 import { MCPOptions, MCPTestResult } from '@nocobase/ai';
-import type { Permission } from '@nocobase/ai';
 
 const namespace = '@nocobase/plugin-ai';
 const stdioMessage = 'Stdio MCP servers can only be configured in storage/ai/mcp/servers.json.';
@@ -139,12 +138,18 @@ export const aiMcpClients: ResourceOptions = {
       await next();
     },
     updateToolPermission: async (ctx, next) => {
-      const { toolName, permission } = ctx.action.params.values || {};
-      if (!toolName || !permission) {
-        ctx.throw(400, 'toolName and permission are required');
+      const values: unknown = ctx.action.params.values;
+      if (
+        !isRecord(values) ||
+        typeof values.toolName !== 'string' ||
+        !values.toolName.trim() ||
+        (values.permission !== 'ASK' && values.permission !== 'ALLOW')
+      ) {
+        return ctx.throw(400, ctx.t('Invalid MCP tool permission', { ns: namespace }));
       }
+      const { toolName, permission } = values;
       const plugin = ctx.app.pm.get('ai');
-      await plugin.ai.mcpManager.updateMCPToolPermission(toolName, permission as Permission);
+      await plugin.ai.mcpManager.updateMCPToolPermission(toolName, permission, ctx);
       ctx.body = { success: true };
       await next();
     },

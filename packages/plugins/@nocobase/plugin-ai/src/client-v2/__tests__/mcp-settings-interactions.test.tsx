@@ -173,7 +173,7 @@ describe('MCP settings real form interactions', () => {
       ).toBeDisabled();
       expect(dialog.getByRole('button', { name: 'Delete' })).toBeDisabled();
       dialog.getAllByRole('textbox', { name: 'Name' }).forEach((input) => expect(input).toBeDisabled());
-      dialog.getAllByRole('button', { name: 'x', exact: true }).forEach((button) => expect(button).toBeDisabled());
+      dialog.getAllByRole('button', { name: 'x' }).forEach((button) => expect(button).toBeDisabled());
       const root = screen.getByRole('dialog', { name: 'MCP settings' });
       const editors = root.querySelectorAll('[contenteditable]');
       expect(editors.length).toBeGreaterThan(0);
@@ -289,12 +289,12 @@ describe('MCP settings real form interactions', () => {
     });
     expect(dialog.getAllByRole('textbox', { name: 'Name' })).toHaveLength(2);
     await act(async () => {
-      fireEvent.click(dialog.getAllByRole('button', { name: 'x', exact: true })[0]);
+      fireEvent.click(dialog.getAllByRole('button', { name: 'x' })[0]);
     });
     await screen.findByText('NocoBase request');
     expect(screen.getByText('User', { selector: '.ant-cascader-menu-item-content' })).toBeInTheDocument();
     await act(async () => {
-      fireEvent.click(dialog.getAllByRole('button', { name: 'x', exact: true })[0]);
+      fireEvent.click(dialog.getAllByRole('button', { name: 'x' })[0]);
     });
     await act(async () => {
       fireEvent.click(dialog.getByRole('button', { name: 'Submit' }));
@@ -336,6 +336,61 @@ describe('MCP settings real form interactions', () => {
         values: { toolName: 'getWeather', permission: 'ALLOW' },
       }),
     );
+  });
+
+  it('rolls back only the failed tool while preserving another tool saved concurrently', async () => {
+    const { actions } = renderSettings();
+    actions.listTools.mockResolvedValue({
+      data: {
+        data: {
+          legacy: [
+            { name: 'mcp-legacy-first', title: 'First tool', serverName: 'legacy', permission: 'ASK' },
+            { name: 'mcp-legacy-second', title: 'Second tool', serverName: 'legacy', permission: 'ASK' },
+          ],
+        },
+      },
+    });
+    let rejectFirst: (error: Error) => void = () => {};
+    let resolveSecond: () => void = () => {};
+    actions.updateToolPermission
+      .mockImplementationOnce(
+        () =>
+          new Promise<void>((_resolve, reject) => {
+            rejectFirst = reject;
+          }),
+      )
+      .mockImplementationOnce(
+        () =>
+          new Promise<void>((resolve) => {
+            resolveSecond = resolve;
+          }),
+      );
+    await screen.findByText('legacy', { selector: 'td' });
+    await act(async () => {
+      fireEvent.click(rowFor('legacy').getByRole('button', { name: 'View' }));
+    });
+    await screen.findByText('First tool');
+    const allows = screen.getAllByRole('radio', { name: 'Allow' });
+    await act(async () => {
+      fireEvent.click(allows[0]);
+    });
+    await act(async () => {
+      fireEvent.click(allows[1]);
+    });
+    expect(allows[0]).toBeDisabled();
+    expect(allows[1]).toBeDisabled();
+    await act(async () => {
+      resolveSecond();
+    });
+    expect(allows[0]).toBeDisabled();
+    expect(allows[1]).toBeEnabled();
+    await act(async () => {
+      rejectFirst(new Error('Save failed'));
+    });
+    expect(screen.getAllByRole('radio', { name: 'Ask' })[0]).toBeChecked();
+    expect(allows[1]).toBeChecked();
+    expect(allows[0]).toBeEnabled();
+    expect(actions.updateToolPermission).toHaveBeenCalledTimes(2);
   });
 
   it('renders the protected-state explanation and disabled submission in Chinese', async () => {

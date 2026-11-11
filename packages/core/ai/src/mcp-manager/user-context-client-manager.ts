@@ -18,6 +18,7 @@ type MCPConnection = StdioConnection | StreamableHTTPConnection;
 type CacheEntry = {
   client: MultiServerMCPClient;
   toolsMap: Record<string, StructuredToolInterface[]>;
+  configuration: string;
   expiresAt: number;
   lastAccessedAt: number;
 };
@@ -60,7 +61,7 @@ export class UserContextMCPClientManager {
       const cacheKey = String(currentUser.id);
       const cached = this.cache.get(cacheKey);
       const now = Date.now();
-      if (cached && cached.expiresAt > now) {
+      if (cached && cached.expiresAt > now && cached.configuration === JSON.stringify(entries)) {
         cached.lastAccessedAt = now;
         return cached.toolsMap;
       }
@@ -87,6 +88,7 @@ export class UserContextMCPClientManager {
 
       this.cache.set(cacheKey, {
         client,
+        configuration: JSON.stringify(entries),
         toolsMap,
         expiresAt: now + this.ttlMs,
         lastAccessedAt: now,
@@ -100,6 +102,7 @@ export class UserContextMCPClientManager {
         await this.closeEntry({
           client,
           toolsMap: {},
+          configuration: '',
           expiresAt: 0,
           lastAccessedAt: 0,
         });

@@ -165,6 +165,7 @@ describe('MCP loader test cases', () => {
   });
 
   it('should expose cached mcp tools and allow updating permissions', async () => {
+    await app.db.getRepository('aiMcpClients').create({ values: { name: 'weather', transport: 'http' } });
     Reflect.set(mcpManager, 'toolsMap', {
       weather: [
         {
