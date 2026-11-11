@@ -11,8 +11,6 @@ This guide applies to apps installed with `nb init`. If your app was installed w
 
 :::
 
-If email password recovery is enabled, check the sub-application’s registered domain or set [APP_PUBLIC_ORIGIN](../get-started/installation/env.md#app_public_origin) for the main application and sub-applications without a domain.
-
 ## Step 1: Confirm the Current Env
 
 ```bash

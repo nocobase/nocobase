@@ -9,7 +9,6 @@ keywords: "Upgrade Docker,Versi Image,docker compose up,Image Aliyun,nocobase/no
 :::warning Persiapan Sebelum Upgrade
 
 - Pastikan untuk membackup database terlebih dahulu
-- Jika pemulihan kata sandi melalui email diaktifkan, periksa domain setiap subaplikasi dan atur [APP_PUBLIC_ORIGIN](../installation/env.md#app_public_origin) untuk aplikasi utama serta subaplikasi tanpa domain sendiri.
 
 :::
 

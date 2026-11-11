@@ -11,8 +11,6 @@ Panduan ini berlaku untuk aplikasi yang diinstal dengan `nb init`. Jika aplikasi
 
 :::
 
-Jika pemulihan kata sandi melalui email diaktifkan, periksa domain setiap subaplikasi dan atur [APP_PUBLIC_ORIGIN](../get-started/installation/env.md#app_public_origin) untuk aplikasi utama serta subaplikasi tanpa domain sendiri.
-
 ## Langkah 1: konfirmasi env saat ini
 
 Konfirmasi dulu CLI env yang sedang aktif:

@@ -10,7 +10,6 @@ keywords: "create-nocobase-app, nâng cấp, yarn nocobase upgrade, nâng cấp 
 
 - Bắt buộc phải backup database trước
 - Dừng NocoBase đang chạy
-- Nếu đã bật khôi phục mật khẩu qua email, hãy kiểm tra tên miền của từng ứng dụng con và đặt [APP_PUBLIC_ORIGIN](../installation/env.md#app_public_origin) cho ứng dụng chính và các ứng dụng con chưa có tên miền riêng.
 
 :::
 

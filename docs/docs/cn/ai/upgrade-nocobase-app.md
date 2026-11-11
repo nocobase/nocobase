@@ -11,8 +11,6 @@ description: 使用 NocoBase CLI 升级已保存为 env 的 NocoBase 应用，�
 
 :::
 
-如果已启用邮件找回密码，升级前请检查子应用绑定的独立域名，并为主应用和未绑定域名的子应用设置 [APP_PUBLIC_ORIGIN](../get-started/installation/env.md#app_public_origin)。
-
 ## 第一步：确认当前环境
 
 先确认当前生效的 CLI env：

@@ -11,8 +11,6 @@ Esta guía aplica a las aplicaciones instaladas con `nb init`. Si tu aplicación
 
 :::
 
-Si está habilitada la recuperación de contraseña por correo, comprueba el dominio de cada subaplicación y configura [APP_PUBLIC_ORIGIN](../get-started/installation/env.md#app_public_origin) para la aplicación principal y las subaplicaciones sin dominio propio.
-
 ## Paso 1: confirmar el env actual
 
 Primero confirma el CLI env activo:

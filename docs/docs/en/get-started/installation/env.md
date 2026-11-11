@@ -76,14 +76,6 @@ Application port, default is `13000`.
 APP_PORT=13000
 ```
 
-### APP_PUBLIC_ORIGIN
-
-Reset emails for a sub-application with a registered custom domain (`cname`) open that domain over HTTPS. Enter a hostname such as `billing.example.com`. The link includes the deployment path from `APP_PUBLIC_PATH` and opens the sub-application directly.
-
-If you use email password recovery on the main application or a sub-application without a custom domain, set `APP_PUBLIC_ORIGIN=https://accounts.example.com` before upgrading. Include the public scheme, host and optional port. A sub-application on the shared site uses its application path. For Docker, update the Compose app service and recreate its container. For a source or `create-nocobase-app` installation, update `.env` and restart. If the address cannot be determined, reset emails are paused. After upgrading, open a reset email for each public entry point.
-
-If NocoBase is your OpenID Connect provider, check that setting `APP_PUBLIC_ORIGIN` preserves the issuer URL registered with your clients. A sub-application with its own domain needs no change to this variable for password recovery.
-
 ### API_BASE_PATH
 
 NocoBase API address prefix, default is `/api/`.

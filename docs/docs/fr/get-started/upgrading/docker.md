@@ -3,7 +3,6 @@
 :::warning Avant la mise à niveau
 
 - Assurez-vous de sauvegarder votre base de données.
-- Si la récupération du mot de passe par e-mail est activée, vérifiez le domaine de chaque sous-application et configurez [APP_PUBLIC_ORIGIN](../installation/env.md#app_public_origin) pour l’application principale et les sous-applications sans domaine dédié.
 
 :::
 

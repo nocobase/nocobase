@@ -2,8 +2,6 @@
 
 :::warning Antes de actualizar
 - Asegúrese de hacer una copia de seguridad de su base de datos
-- Si está habilitada la recuperación de contraseña por correo, comprueba el dominio de cada subaplicación y configura [APP_PUBLIC_ORIGIN](../installation/env.md#app_public_origin) para la aplicación principal y las subaplicaciones sin dominio propio.
-
 :::
 
 ## 1. Navegue al directorio donde se encuentra docker-compose.yml

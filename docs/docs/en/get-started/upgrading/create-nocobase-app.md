@@ -4,7 +4,6 @@
 
 - Be sure to back up the database first
 - Stop the running NocoBase instance
-- If email password recovery is enabled, check the sub-application’s registered domain or set [APP_PUBLIC_ORIGIN](../installation/env.md#app_public_origin) for the main application and sub-applications without a domain.
 
 :::
 

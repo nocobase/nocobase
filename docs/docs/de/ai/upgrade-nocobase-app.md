@@ -11,8 +11,6 @@ Diese Anleitung gilt für Apps, die mit `nb init` installiert wurden. Wenn deine
 
 :::
 
-Wenn die Passwortwiederherstellung per E-Mail aktiviert ist, prüfen Sie die Domain jeder Unteranwendung und setzen Sie [APP_PUBLIC_ORIGIN](../get-started/installation/env.md#app_public_origin) für die Hauptanwendung und für Unteranwendungen ohne eigene Domain.
-
 ## Schritt 1: Aktuelle env prüfen
 
 Prüfe zuerst die aktuell aktive CLI env:

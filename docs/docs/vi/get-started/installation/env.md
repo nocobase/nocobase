@@ -82,14 +82,6 @@ Cổng ứng dụng, giá trị mặc định `13000`
 APP_PORT=13000
 ```
 
-### APP_PUBLIC_ORIGIN
-
-Với ứng dụng con có tên miền riêng, liên kết trong email sẽ mở tên miền đã đăng ký ở `cname` qua HTTPS. Nhập tên máy chủ như `billing.example.com`. Liên kết giữ đường dẫn trong `APP_PUBLIC_PATH`.
-
-Đối với ứng dụng chính và các ứng dụng con chưa có tên miền riêng, hãy đặt ví dụ `APP_PUBLIC_ORIGIN=https://accounts.example.com` trước khi nâng cấp. Có thể thêm cổng nếu cần. Trên tên miền dùng chung, liên kết chứa đường dẫn của ứng dụng con. Tạo lại container Compose hoặc cập nhật `.env` rồi khởi động lại ứng dụng. Nếu không xác định được địa chỉ hợp lệ, hệ thống sẽ tạm dừng gửi email khôi phục. Sau khi nâng cấp, hãy kiểm tra liên kết của từng ứng dụng.
-
-Nếu dùng NocoBase làm nhà cung cấp OpenID Connect, khi đặt `APP_PUBLIC_ORIGIN` hãy kiểm tra URL của issuer vẫn khớp với địa chỉ đã đăng ký ở các máy khách. Ứng dụng con có tên miền riêng không cần đổi biến này để khôi phục mật khẩu.
-
 ### API_BASE_PATH
 
 Tiền tố địa chỉ API NocoBase, giá trị mặc định `/api/`

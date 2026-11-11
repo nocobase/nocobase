@@ -10,7 +10,6 @@ keywords: "Source Code Git,Upgrade,git pull,yarn nocobase upgrade,yarn install,N
 
 - Pastikan untuk membackup database terlebih dahulu
 - Hentikan NocoBase yang sedang berjalan (`Ctrl + C`)
-- Jika pemulihan kata sandi melalui email diaktifkan, periksa domain setiap subaplikasi dan atur [APP_PUBLIC_ORIGIN](../installation/env.md#app_public_origin) untuk aplikasi utama serta subaplikasi tanpa domain sendiri.
 
 :::
 

@@ -3,7 +3,6 @@
 :::warning Antes de atualizar
 
 - Certifique-se de fazer backup do seu banco de dados.
-- Se a recuperação de senha por e-mail estiver ativada, confira o domínio de cada subaplicação e configure [APP_PUBLIC_ORIGIN](../installation/env.md#app_public_origin) para a aplicação principal e as subaplicações sem domínio próprio.
 
 :::
 

@@ -11,8 +11,6 @@ Ce guide s’applique aux applications installées avec `nb init`. Si ton applic
 
 :::
 
-Si la récupération du mot de passe par e-mail est activée, vérifiez le domaine de chaque sous-application et configurez [APP_PUBLIC_ORIGIN](../get-started/installation/env.md#app_public_origin) pour l’application principale et les sous-applications sans domaine dédié.
-
 ## Étape 1 : confirmer l’env actuel
 
 Commence par confirmer le CLI env actif :

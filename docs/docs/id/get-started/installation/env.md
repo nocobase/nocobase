@@ -82,14 +82,6 @@ Port aplikasi, nilai default `13000`
 APP_PORT=13000
 ```
 
-### APP_PUBLIC_ORIGIN
-
-Jika subaplikasi memiliki domain khusus, tautan email membuka domain yang terdaftar di `cname` melalui HTTPS. Masukkan nama host seperti `billing.example.com`. Tautan menggunakan jalur dari `APP_PUBLIC_PATH`.
-
-Untuk aplikasi utama dan subaplikasi tanpa domain sendiri, tetapkan misalnya `APP_PUBLIC_ORIGIN=https://accounts.example.com` sebelum memperbarui aplikasi. Port bersifat opsional. Pada domain bersama, tautan menyertakan jalur subaplikasi. Buat ulang kontainer Compose atau ubah `.env` dan mulai ulang aplikasi. Jika alamat yang valid tidak tersedia, email pemulihan tidak dikirim. Uji tautan untuk setiap titik akses setelah pembaruan.
-
-Jika NocoBase menjadi penyedia OpenID Connect, pastikan pengaturan `APP_PUBLIC_ORIGIN` menghasilkan URL issuer yang sama dengan yang terdaftar pada klien. Subaplikasi dengan domain sendiri tidak memerlukan perubahan variabel ini untuk pemulihan kata sandi.
-
 ### API_BASE_PATH
 
 Prefiks URL API NocoBase, nilai default `/api/`
