@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 
 import { describe, expect, it } from 'vitest';
+import * as XLSX from 'xlsx';
 
 import { SUPPORTED_DOCUMENT_EXTENSIONS as KNOWLEDGE_PARSED_EXTENSIONS } from '../src/formats.js';
 import { isParsed, workerExtractor } from '../src/index.js';
@@ -40,6 +41,37 @@ describe('extracting a file’s text', () => {
       '| a\\|b |\n| --- |\n| x |',
     );
   });
+
+  it.each(['xlsx', 'xls', 'xlsm'] as const)(
+    'preserves sheets, formatted values and literal text in .%s files',
+    async (ext) => {
+      const workbook = XLSX.utils.book_new();
+      const sheet = XLSX.utils.aoa_to_sheet([
+        ['Name', 'Value'],
+        ['__proto__', 42],
+        ['Text | line\nbreak', '=not a formula'],
+      ]);
+      sheet.B2.z = '0.00';
+      XLSX.utils.book_append_sheet(workbook, sheet, 'Values');
+      XLSX.utils.book_append_sheet(
+        workbook,
+        XLSX.utils.aoa_to_sheet([['Language'], ['中文']]),
+        'Notes',
+      );
+      const bytes = new Uint8Array(
+        XLSX.write(workbook, { type: 'buffer', bookType: ext }) as Buffer,
+      );
+      const result = await extract({ bytes, ext });
+      expect(result).toMatchObject({ status: 'ready', hasText: true });
+      if (result.status !== 'ready') return;
+      expect(result.markdown).toContain('| __proto__ | 42.00 |');
+      expect(result.markdown).toContain(
+        '| Text \\| line break | =not a formula |',
+      );
+      expect(result.markdown).toContain('## Notes\n\n| Language |');
+      expect(result.markdown).toContain('| 中文 |');
+    },
+  );
 
   it('stores images and other types only', async () => {
     expect(isParsed('png')).toBe(false);
