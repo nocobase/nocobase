@@ -633,6 +633,9 @@ const viVN: LocaleResource<typeof enUS> = {
       workspaceSize: 'Kích thước không gian làm việc: {{value}}',
       providers_one: 'Nhà cung cấp {{count}} đạt hạn ngạch',
       providers_other: 'Nhà cung cấp {{count}} theo hạn ngạch',
+      models_one: '{{count}} mô hình hết hạn ngạch',
+      models_other: '{{count}} mô hình hết hạn ngạch',
+      percent: '{{percent}}%',
       runColumns: {
         issue: 'Nhiệm vụ / cuộc trò chuyện',
         agent: 'Tác nhân',
@@ -891,6 +894,8 @@ const viVN: LocaleResource<typeof enUS> = {
       show: 'Phiên bản {{version}}: đã có phiên bản mới hơn',
       available: 'Đã có bản cập nhật',
       badge: 'Có thể nâng cấp',
+      latest: 'Mới nhất',
+      installed: 'Phiên bản {{version}}',
       title: 'Á hậu mới hơn cho {{name}}',
       description: 'Đã cài đặt {{version}}, ứng dụng này phục vụ {{latest}}.',
       hint: 'Nó tự cập nhật khi không có Agent nào đang chạy. Để cập nhật nó ngay bây giờ, hãy chạy cái này trên máy chủ của nó.',

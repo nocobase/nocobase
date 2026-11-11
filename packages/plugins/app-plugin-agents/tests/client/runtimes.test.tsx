@@ -685,7 +685,12 @@ describe('runtimes page', () => {
     expect(within(row).queryByText(/r1\.local/u)).toBeNull();
     within(row).getByText(/^runtimes\.activity\.online\(active=1,slots=2,/u);
     within(row).getByText('runtimes.trust.ownerOnly');
-    within(row).getByText('0.1.0');
+    // The version column says only whether it is the latest; the version itself is on hover.
+    expect(within(row).getByText('runtimes.upgrade.latest')).toHaveAttribute(
+      'title',
+      'runtimes.upgrade.installed(version=0.1.0)',
+    );
+    expect(within(row).queryByText('0.1.0')).toBeNull();
     expect(within(row).queryByRole('switch')).toBeNull();
     const claude = within(row)
       .getByText('tools.claude')
@@ -725,6 +730,168 @@ describe('runtimes page', () => {
     ).toBeInTheDocument();
     // The mark does not open the runtime.
     expect(screen.queryByTestId('runner-sheet')).toBeNull();
+  });
+
+  it('shows no version state for a runner that reported no version', async () => {
+    runners[0] = { ...runners[0]!, version: '' };
+    renderPage(<RuntimesPage />);
+    const row = await screen.findByTestId('runner-r1');
+    within(row).getByText('—');
+    expect(within(row).queryByText('runtimes.upgrade.latest')).toBeNull();
+    expect(within(row).queryByText('runtimes.upgrade.badge')).toBeNull();
+  });
+
+  describe('quota in the list', () => {
+    const soon = () => new Date(Date.now() + 3_600_000).toISOString();
+    const usage = (
+      tool: 'claude' | 'codex' | 'opencode',
+      window: string,
+      usedPercent: number,
+      extra: { target?: string; resetsAt?: string | null } = {},
+    ) => ({
+      tool,
+      scope: extra.target ? ('provider' as const) : ('tool' as const),
+      target: extra.target ?? '',
+      window,
+      usedPercent,
+      resetsAt: extra.resetsAt === undefined ? soon() : extra.resetsAt,
+      observedAt: new Date().toISOString(),
+    });
+    const mark = (
+      tool: 'claude' | 'opencode',
+      model: string,
+      resetsAt: string | null,
+    ) => ({
+      tool,
+      model,
+      scope: model ? ('provider' as const) : ('tool' as const),
+      reason: 'toolQuota' as const,
+      window: '5h',
+      resetsAt,
+      at: new Date().toISOString(),
+      reported: [],
+    });
+    const tools = [
+      { kind: 'claude' as const, authenticated: true },
+      { kind: 'codex' as const, authenticated: true },
+      { kind: 'opencode' as const, authenticated: true },
+      { kind: 'gemini' as const, authenticated: true },
+    ];
+
+    it('shows the highest share used beside each enabled tool, as the sheet shows it, and nothing without quota data', async () => {
+      runners[0] = {
+        ...runners[0]!,
+        tools,
+        enabledTools: ['claude', 'codex', 'opencode'],
+        quotaUsage: [
+          usage('claude', 'five_hour', 63),
+          usage('claude', 'seven_day', 41),
+          // A window whose reset has passed no longer counts.
+          usage('claude', 'seven_day_opus', 99, {
+            resetsAt: new Date(Date.now() - 60_000).toISOString(),
+          }),
+          usage('codex', '5h', 93),
+          usage('opencode', 'credits', 20, { target: 'openrouter' }),
+          // A tool turned off shows no quota.
+          usage('gemini' as 'codex', '5h', 50),
+        ],
+      };
+      renderPage(<RuntimesPage />);
+      const row = await screen.findByTestId('runner-r1');
+      const claude = within(row).getByTestId('tool-quota-claude');
+      expect(claude).toHaveTextContent('runtimes.quota.percent(percent=63)');
+      expect(claude.firstElementChild).not.toHaveAttribute('data-level');
+      const codex = within(row).getByTestId('tool-quota-codex');
+      expect(codex).toHaveTextContent('runtimes.quota.percent(percent=93)');
+      expect(codex.firstElementChild).toHaveAttribute('data-level', 'warn');
+      expect(within(row).getByTestId('tool-quota-opencode')).toHaveTextContent(
+        'runtimes.quota.percent(percent=20)',
+      );
+      expect(within(row).queryByTestId('tool-quota-gemini')).toBeNull();
+      // The sheet shows the same windows with the same values.
+      const sheet = await openSheet();
+      const sheetClaude = within(sheet).getByTestId('runner-tool-claude');
+      within(sheetClaude).getByText(/usedPercent\(percent=63\)/u);
+      within(sheetClaude).getByText(/usedPercent\(percent=41\)/u);
+      expect(
+        within(sheetClaude).queryByText(/usedPercent\(percent=99\)/u),
+      ).toBeNull();
+    });
+
+    it('lists each window on hover', async () => {
+      runners[0] = {
+        ...runners[0]!,
+        quotaUsage: [
+          usage('claude', 'five_hour', 63, { resetsAt: null }),
+          usage('claude', 'seven_day', 41, { resetsAt: null }),
+        ],
+      };
+      renderPage(<RuntimesPage />);
+      const row = await screen.findByTestId('runner-r1');
+      const claude = within(row).getByTestId('tool-quota-claude');
+      await userEvent.hover(claude);
+      const tooltip = await screen.findByText(
+        '5h · runtimes.quota.usedPercent(percent=63)',
+      );
+      expect(tooltip.parentElement).toHaveTextContent(
+        '7d · runtimes.quota.usedPercent(percent=41)',
+      );
+    });
+
+    it('marks usage at the pause threshold', async () => {
+      runners[0] = {
+        ...runners[0]!,
+        quotaLimits: { claude: 60 },
+        quotaUsage: [usage('claude', 'five_hour', 63)],
+      };
+      renderPage(<RuntimesPage />);
+      const claude = within(await screen.findByTestId('runner-r1')).getByTestId(
+        'tool-quota-claude',
+      );
+      expect(claude.firstElementChild).toHaveAttribute('data-level', 'warn');
+    });
+
+    it('says when a tool is out of quota and when it resets, and sums up providers, leaving clearing to the sheet', async () => {
+      const resetsAt = soon();
+      runners[0] = {
+        ...runners[0]!,
+        tools,
+        enabledTools: ['claude', 'opencode'],
+        canClearQuota: true,
+        unavailableModels: [
+          mark('claude', '', resetsAt),
+          mark('opencode', 'openrouter', null),
+          mark('opencode', 'anthropic', resetsAt),
+          // Another kind of mark is not quota.
+          {
+            tool: 'claude',
+            model: 'claude-x',
+            at: new Date().toISOString(),
+            reported: [],
+          },
+        ],
+        quotaUsage: [usage('claude', 'five_hour', 100)],
+      };
+      renderPage(<RuntimesPage />);
+      const row = await screen.findByTestId('runner-r1');
+      const claude = within(row).getByTestId('tool-quota-claude');
+      expect(claude).toHaveTextContent(
+        /^runtimes\.quota\.reached · runtimes\.quota\.shortReset\(time=/u,
+      );
+      expect(within(row).getByTestId('tool-quota-opencode')).toHaveTextContent(
+        'runtimes.quota.providers(count=2)',
+      );
+      expect(
+        within(row).queryByRole('button', { name: 'runtimes.quota.clear' }),
+      ).toBeNull();
+      const sheet = await openSheet();
+      expect(
+        within(within(sheet).getByTestId('runner-tool-claude')).getByRole(
+          'button',
+          { name: 'runtimes.quota.clear' },
+        ),
+      ).toBeInTheDocument();
+    });
   });
 
   it('opens a runtime’s settings from its row: tools with versions and paths, local policy and recent runs', async () => {

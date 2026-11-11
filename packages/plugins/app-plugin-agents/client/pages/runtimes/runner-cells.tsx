@@ -30,6 +30,9 @@ import {
 } from '../../components/ui/popover.js';
 import { useFormatters } from '../../lib/format.js';
 import { upgradeCommand } from '../../lib/install.js';
+import { useQuotaClock } from '../../hooks/use-quota-expiry.js';
+import type { QuotaSource } from './quota-view.js';
+import { ToolQuota } from './tool-quota.js';
 
 const ACTIVITY_TONE: Readonly<Record<RunnerActivity, Tone>> = {
   online: 'green',
@@ -157,14 +160,20 @@ export function ToolStateTag({
 
 /**
  * Each coding tool the runner lists, by whether it can take work: green when it is signed in, amber when it needs
- * installing or a login on its host, grey when it is turned off for this runtime.
+ * installing or a login on its host, grey when it is turned off for this runtime. An enabled tool with quota reported
+ * shows it beside its tag (`ToolQuota`).
  */
 export function RunnerToolsCell({
   runner,
 }: {
-  readonly runner: Pick<Runner, 'enabledTools' | 'tools'>;
+  readonly runner: Pick<Runner, 'enabledTools' | 'tools'> &
+    Partial<QuotaSource>;
 }): ReactElement {
   const { t } = useTranslation();
+  const now = useQuotaClock([
+    ...(runner.unavailableModels ?? []).map((m) => m.resetsAt),
+    ...(runner.quotaUsage ?? []).map((u) => u.resetsAt),
+  ]);
   const tools = listedTools(runner);
   if (tools.length === 0)
     return (
@@ -174,13 +183,13 @@ export function RunnerToolsCell({
     );
   return (
     <ul
-      className='flex flex-wrap gap-1'
+      className='flex flex-wrap gap-x-2 gap-y-1'
       aria-label={t('runtimes.columns.tools')}
     >
       {tools.map((tool) => {
         const state = toolState(runner, tool);
         return (
-          <li key={tool}>
+          <li key={tool} className='inline-flex items-center gap-1'>
             <AgTag
               tone={TOOL_STATE_TONE[state]}
               dot
@@ -190,6 +199,9 @@ export function RunnerToolsCell({
               {t(`tools.${tool}`)}
               <span className='sr-only'>{t(`runtimes.tool.${state}`)}</span>
             </AgTag>
+            {state === 'off' ? null : (
+              <ToolQuota runner={runner} tool={tool} now={now} />
+            )}
           </li>
         );
       })}
@@ -198,8 +210,10 @@ export function RunnerToolsCell({
 }
 
 /**
- * The runner's version, with an "Upgradable" mark when the application serves a newer one (the runner installs it on
- * its own between runs); clicking the mark shows the command that updates it now.
+ * The runner's version. In the list it reads only "Latest" or "Upgradable", with the full version on hover; `plain`
+ * words it among other details ("Runner 0.1.0"), as the runtime's sheet shows it. "Upgradable" marks a newer version
+ * the application serves (the runner installs it on its own between runs); clicking it shows the command that updates
+ * it now.
  */
 export function RunnerVersionCell({
   runner,
@@ -208,54 +222,68 @@ export function RunnerVersionCell({
   readonly runner: Pick<Runner, 'name' | 'version' | 'product'> & {
     readonly updateVersion?: string | null;
   };
-  /** Words it as text among other details ("Runner 0.1.0"), rather than as a column's monospaced value. */
   readonly plain?: boolean;
 }): ReactElement {
   const { t } = useTranslation();
   if (!runner.version) return <span className='text-muted-foreground'>—</span>;
   const command = upgradeCommand(runner.product);
+  const installed = t('runtimes.upgrade.installed', {
+    version: runner.version,
+  });
+  const upgrade = runner.updateVersion ? (
+    <Popover>
+      <PopoverTrigger
+        render={
+          <button
+            type='button'
+            className='cursor-pointer rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring'
+            aria-label={t('runtimes.upgrade.show', {
+              version: runner.version,
+            })}
+            title={
+              plain
+                ? t('runtimes.upgrade.available')
+                : t('runtimes.upgrade.description', {
+                    version: runner.version,
+                    latest: runner.updateVersion,
+                  })
+            }
+          />
+        }
+      >
+        <AgTag tone='amber'>{t('runtimes.upgrade.badge')}</AgTag>
+      </PopoverTrigger>
+      <PopoverContent className='w-96' align='start'>
+        <PopoverHeader>
+          <PopoverTitle>
+            {t('runtimes.upgrade.title', { name: runner.name })}
+          </PopoverTitle>
+          <PopoverDescription>
+            {t('runtimes.upgrade.description', {
+              version: runner.version,
+              latest: runner.updateVersion,
+            })}
+          </PopoverDescription>
+        </PopoverHeader>
+        <p className='text-xs text-muted-foreground'>
+          {t('runtimes.upgrade.hint')}
+        </p>
+        {command ? <CommandLine command={command} /> : null}
+      </PopoverContent>
+    </Popover>
+  ) : null;
+  if (!plain)
+    return (
+      upgrade ?? (
+        <AgTag tone='grey' title={installed} aria-label={installed}>
+          {t('runtimes.upgrade.latest')}
+        </AgTag>
+      )
+    );
   return (
     <span className='inline-flex items-center gap-1.5'>
-      {plain ? (
-        <span>{t('runtimes.detail.version', { version: runner.version })}</span>
-      ) : (
-        <span className='font-mono text-xs'>{runner.version}</span>
-      )}
-      {runner.updateVersion ? (
-        <Popover>
-          <PopoverTrigger
-            render={
-              <button
-                type='button'
-                className='cursor-pointer rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring'
-                aria-label={t('runtimes.upgrade.show', {
-                  version: runner.version,
-                })}
-                title={t('runtimes.upgrade.available')}
-              />
-            }
-          >
-            <AgTag tone='amber'>{t('runtimes.upgrade.badge')}</AgTag>
-          </PopoverTrigger>
-          <PopoverContent className='w-96' align='start'>
-            <PopoverHeader>
-              <PopoverTitle>
-                {t('runtimes.upgrade.title', { name: runner.name })}
-              </PopoverTitle>
-              <PopoverDescription>
-                {t('runtimes.upgrade.description', {
-                  version: runner.version,
-                  latest: runner.updateVersion,
-                })}
-              </PopoverDescription>
-            </PopoverHeader>
-            <p className='text-xs text-muted-foreground'>
-              {t('runtimes.upgrade.hint')}
-            </p>
-            {command ? <CommandLine command={command} /> : null}
-          </PopoverContent>
-        </Popover>
-      ) : null}
+      <span>{t('runtimes.detail.version', { version: runner.version })}</span>
+      {upgrade}
     </span>
   );
 }

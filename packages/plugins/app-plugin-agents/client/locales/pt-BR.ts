@@ -659,6 +659,9 @@ const ptBR: LocaleResource<typeof enUS> = {
       workspaceSize: 'Tamanho do espaço de trabalho: {{value}}',
       providers_one: 'Provedor {{count}} na cota',
       providers_other: 'Provedores {{count}} na cota',
+      models_one: '{{count}} modelo na cota',
+      models_other: '{{count}} modelos na cota',
+      percent: '{{percent}}%',
       runColumns: {
         issue: 'Tarefa / conversa',
         agent: 'Agente',
@@ -921,6 +924,8 @@ const ptBR: LocaleResource<typeof enUS> = {
       show: 'Versão {{version}}: um ambiente de execução mais recente está disponível',
       available: 'Atualização disponível',
       badge: 'Atualizável',
+      latest: 'Atual',
+      installed: 'Versão {{version}}',
       title: 'Um ambiente de execução mais recente para {{name}}',
       description: '{{version}} instalado, esta aplicação atende {{latest}}.',
       hint: 'Ele se atualiza quando nenhum Agent está em execução. Para atualizá-lo agora, execute-o em seu host.',

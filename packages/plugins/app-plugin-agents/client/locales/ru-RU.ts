@@ -666,6 +666,9 @@ const ruRU: LocaleResource<typeof enUS> = {
       workspaceSize: 'Размер рабочего пространства: {{value}}',
       providers_one: 'У {{count}} провайдера исчерпана квота',
       providers_other: 'У {{count}} провайдера исчерпана квота',
+      models_one: 'У {{count}} модели исчерпана квота',
+      models_other: 'У {{count}} моделей исчерпана квота',
+      percent: '{{percent}}%',
       providers_few: 'У {{count}} провайдеров исчерпана квота',
       providers_many: 'У {{count}} провайдеров исчерпана квота',
       runColumns: {
@@ -928,6 +931,8 @@ const ruRU: LocaleResource<typeof enUS> = {
       show: 'Версия {{version}}: доступен более новый runner',
       available: 'Доступно обновление',
       badge: 'Можно обновить',
+      latest: 'Актуальная',
+      installed: 'Версия {{version}}',
       title: 'Более новый runner для {{name}}',
       description: 'Установлен {{version}}, это приложение раздаёт {{latest}}.',
       hint: 'Обновится сам, когда не будет работающих Agent. Чтобы обновить сейчас, выполните это на её хосте.',

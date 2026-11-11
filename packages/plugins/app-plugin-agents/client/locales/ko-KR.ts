@@ -618,6 +618,9 @@ const koKR: LocaleResource<typeof enUS> = {
       workspaceSize: '작업 공간 크기: {{value}}',
       providers_one: '할당량이 소진된 제공자 {{count}}개',
       providers_other: '할당량이 소진된 제공자 {{count}}개',
+      models_one: '할당량이 소진된 모델 {{count}}개',
+      models_other: '할당량이 소진된 모델 {{count}}개',
+      percent: '{{percent}}%',
       runColumns: {
         issue: '작업 / 대화',
         agent: 'Agent',
@@ -869,6 +872,8 @@ const koKR: LocaleResource<typeof enUS> = {
       show: '버전 {{version}}: 새 runner를 사용할 수 있습니다',
       available: '업데이트 가능',
       badge: '업그레이드 가능',
+      latest: '최신',
+      installed: '버전 {{version}}',
       title: '{{name}}용 새 runner',
       description:
         '{{version}}이(가) 설치되어 있으며 이 애플리케이션은 {{latest}}을(를) 제공합니다.',

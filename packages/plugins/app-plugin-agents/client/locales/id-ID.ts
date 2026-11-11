@@ -635,6 +635,9 @@ const idID: LocaleResource<typeof enUS> = {
       workspaceSize: 'Ukuran ruang kerja: {{value}}',
       providers_one: 'Penyedia {{count}} dengan kuota',
       providers_other: 'Penyedia {{count}} dengan kuota',
+      models_one: '{{count}} model mencapai kuota',
+      models_other: '{{count}} model mencapai kuota',
+      percent: '{{percent}}%',
       runColumns: {
         issue: 'Tugas / percakapan',
         agent: 'Agen',
@@ -892,6 +895,8 @@ const idID: LocaleResource<typeof enUS> = {
       show: 'Versi {{version}}: runner yang lebih baru tersedia',
       available: 'Pembaruan tersedia',
       badge: 'Dapat diupgrade',
+      latest: 'Terbaru',
+      installed: 'Versi {{version}}',
       title: 'Runner baru untuk {{name}}',
       description:
         'Menginstal {{version}}, aplikasi ini menyajikan {{latest}}.',

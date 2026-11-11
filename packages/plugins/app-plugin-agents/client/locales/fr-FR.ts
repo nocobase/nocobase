@@ -663,6 +663,9 @@ const frFR: LocaleResource<typeof enUS> = {
       workspaceSize: "Taille de l'espace de travail : {{value}}",
       providers_one: 'Fournisseur {{count}} au quota',
       providers_other: 'Fournisseurs {{count}} au quota',
+      models_one: '{{count}} modèle au quota',
+      models_other: '{{count}} modèles au quota',
+      percent: '{{percent}}%',
       runColumns: {
         issue: 'Tâche / conversation',
         agent: 'Agent',
@@ -924,6 +927,8 @@ const frFR: LocaleResource<typeof enUS> = {
       show: 'Version {{version}} : un runner plus récent est disponible',
       available: 'Mise à jour disponible',
       badge: 'Évolutif',
+      latest: 'À jour',
+      installed: 'Version {{version}}',
       title: 'Un environnement d’exécution plus récent pour {{name}}',
       description: '{{version}} installée, cette application sert {{latest}}.',
       hint: "Il se met à jour lorsqu'aucun Agent n'est en cours d'exécution. Pour le mettre à jour maintenant, exécutez-le sur son hôte.",
