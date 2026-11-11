@@ -449,6 +449,12 @@ export class ParameterConfigurationService {
         'PARAMETER_LIFECYCLE_NOT_FOUND',
         'The lifecycle does not expose parameters.',
       );
+    // Authorize before reading the record, so an unauthorized caller cannot
+    // tell which records exist. Every version's groups: the record may run any.
+    for (const version of this.runtime.group(name).versions)
+      for (const group of lifecycles.find((item) => item.name === version.name)
+        ?.parameterConfiguration?.groups ?? [])
+        this.authorize(actor, 'read', group.key);
     const record = await this.database
       .repository(process.collection)
       .findOne({ filter: { id: Number(id) } });
@@ -463,9 +469,6 @@ export class ParameterConfigurationService {
       ...record,
       id,
     });
-    const lifecycle = lifecycles.find((item) => item.name === definition)!;
-    for (const group of lifecycle.parameterConfiguration?.groups ?? [])
-      this.authorize(actor, 'read', group.key);
     if (
       !['finance', 'director', 'manager', 'agent'].includes(
         person(actor)?.role ?? '',
