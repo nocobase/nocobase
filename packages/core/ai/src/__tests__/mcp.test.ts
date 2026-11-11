@@ -34,6 +34,8 @@ describe('MCP loader test cases', () => {
   beforeEach(async () => {
     storage = await mkdtemp(join(tmpdir(), 'mcp-persistence-'));
     vi.stubEnv('STORAGE_PATH', storage);
+    // SQLite fixtures must not inherit a PostgreSQL schema from the CI matrix.
+    vi.stubEnv('DB_SCHEMA', 'public');
     filePath = join(storage, 'ai', 'mcp', 'servers.json');
     await mkdir(join(storage, 'ai', 'mcp'), { recursive: true });
     app = await createMockServer({
@@ -165,6 +167,7 @@ describe('MCP loader test cases', () => {
   });
 
   it('should expose cached mcp tools and allow updating permissions', async () => {
+    await app.db.getRepository('aiMcpClients').create({ values: { name: 'weather', transport: 'http' } });
     Reflect.set(mcpManager, 'toolsMap', {
       weather: [
         {
