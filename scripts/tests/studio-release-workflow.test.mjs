@@ -62,3 +62,103 @@ test('both editions build at one source and dry runs cannot publish', () => {
     assert.match(block, /if: \$\{\{ !inputs\.dry_run \}\}/);
   }
 });
+
+test('public release notes go to the registry for both editions', async () => {
+  const { mkdtempSync, mkdirSync, writeFileSync, chmodSync } =
+    await import('node:fs');
+  const { tmpdir } = await import('node:os');
+  const { join } = await import('node:path');
+  const block = step('Upload the release notes to the registry');
+  assert.match(
+    block,
+    /steps\.tag\.outputs\.tagged == 'true' && steps\.notes\.outputs\.available == 'true'/,
+  );
+  assert.match(block, /continue-on-error: true/);
+  const source = block
+    .split('        run: |\n')[1]
+    .split('\n')
+    .map((line) => line.replace(/^ {10}/, ''))
+    .join('\n');
+
+  const run = (failing, withNotes = true) => {
+    const temp = mkdtempSync(join(tmpdir(), 'studio-notes-'));
+    const bin = join(temp, 'bin');
+    mkdirSync(bin);
+    mkdirSync(join(temp, 'notes'));
+    if (withNotes) {
+      writeFileSync(join(temp, 'notes/release-notes.public.en.md'), '- A.\n');
+      writeFileSync(
+        join(temp, 'notes/release-notes.public.zh-CN.md'),
+        '- 甲。\n',
+      );
+    }
+    // Records each call's URL and body, and fails for URLs containing $FAILING.
+    writeFileSync(
+      join(bin, 'curl'),
+      `#!/usr/bin/env bash
+url="\${@: -1}"
+for arg in "$@"; do case "$arg" in @*) body=$(cat "\${arg#@}") ;; esac; done
+printf '%s\\t%s\\t%s\\n' "$url" "$body" "$*" >> "${temp}/calls"
+if [ -n "$FAILING" ] && [[ "$url" == *"$FAILING"* ]]; then exit 22; fi
+echo '{"ok":true}'
+`,
+    );
+    chmodSync(join(bin, 'curl'), 0o755);
+    const output = join(temp, 'output');
+    writeFileSync(output, '');
+    const result = spawnSync('bash', ['-e', '-c', source], {
+      encoding: 'utf8',
+      env: {
+        ...process.env,
+        PATH: `${bin}:${process.env.PATH}`,
+        RUNNER_TEMP: temp,
+        GITHUB_OUTPUT: output,
+        DOCKER_PUBLISH_TOKEN: 'nbp_secret',
+        VERSION: '1.0.0-beta.77',
+        REGISTRY: 'pkg-v3.nocobase.com',
+        IMAGE_REPOSITORY: 'nocobase/studio',
+        EE_IMAGE_REPOSITORY: 'nocobase/studio-ee',
+        FAILING: failing,
+      },
+    });
+    assert.equal(result.status, 0, result.stderr || result.stdout);
+    let calls = [];
+    try {
+      calls = readFileSync(join(temp, 'calls'), 'utf8').trim().split('\n');
+    } catch {}
+    return {
+      calls,
+      output: readFileSync(output, 'utf8'),
+      stdout: result.stdout,
+    };
+  };
+
+  const ok = run('');
+  assert.equal(ok.output, 'result=uploaded\n');
+  assert.equal(ok.calls.length, 2);
+  for (const [index, repository] of [
+    'nocobase/studio',
+    'nocobase/studio-ee',
+  ].entries()) {
+    const [url, body, args] = ok.calls[index].split('\t');
+    assert.equal(
+      url,
+      `https://pkg-v3.nocobase.com/-/release-notes/${repository}/1.0.0-beta.77`,
+    );
+    assert.deepEqual(JSON.parse(body), { en: '- A.\n', 'zh-CN': '- 甲。\n' });
+    assert.match(args, /--request PUT/);
+    assert.match(args, /authorization: Bearer nbp_secret/);
+  }
+
+  const partial = run('studio-ee');
+  assert.equal(partial.output, 'result=partial\n');
+  assert.match(
+    partial.stdout,
+    /::warning::Uploading the release notes of nocobase\/studio-ee:1\.0\.0-beta\.77/,
+  );
+  assert.equal(run('release-notes').output, 'result=failed\n');
+
+  const old = run('', false);
+  assert.equal(old.output, 'result=skipped\n');
+  assert.deepEqual(old.calls, []);
+});
