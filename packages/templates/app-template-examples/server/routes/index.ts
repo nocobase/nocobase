@@ -13,6 +13,7 @@ import {
   type AppRouteContribution,
   type AppRootRouteContribution,
 } from '@nocobase/app-server/router';
+import { createPwaRoutes } from '@nocobase/app-server/spa';
 import { Hono } from 'hono';
 
 import { workflowRoutes } from './workflows.js';
@@ -88,6 +89,8 @@ export const rootRoutes: AppRootRouteContribution<Application> =
   });
 
 const routes: readonly AppRouteContribution<Application>[] = [
+  // The installation manifest, served anonymously at <publicBasePath>/manifest.webmanifest from the pwa section.
+  createPwaRoutes(),
   apiRoutes,
   procurementRoutes,
   onboardingRoutes,
