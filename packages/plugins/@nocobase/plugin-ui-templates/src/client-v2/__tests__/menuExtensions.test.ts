@@ -115,7 +115,7 @@ describe('registerMenuExtensions', () => {
     });
   });
 
-  it('keeps popup template context when converting popup template to copy mode', async () => {
+  it.each([false, true])('copies popup content and keeps context (forwarded template: %s)', async (forwarded) => {
     class PopupModel extends FlowModel {}
 
     PopupModel.registerFlow({
@@ -130,9 +130,15 @@ describe('registerMenuExtensions', () => {
     });
 
     const engine = new FlowEngine();
-    vi.spyOn(engine, 'duplicateModel').mockResolvedValue({ uid: 'popup-copy' } as any);
+    const templateTarget = new PopupModel({ uid: 'popup-template-target', use: 'PopupModel', flowEngine: engine });
+    const pageOwner = new PopupModel({ uid: 'page-owner', use: 'PopupModel', flowEngine: engine });
+    if (forwarded) templateTarget.setStepParams('popupSettings', 'openView', { uid: pageOwner.uid });
+    pageOwner.setStepParams('popupSettings', 'openView', { uid: pageOwner.uid });
+    const models = new Map([templateTarget, pageOwner].map((model) => [model.uid, model]));
+    vi.spyOn(engine, 'loadModel').mockImplementation(async ({ uid }) => models.get(uid) ?? null);
+    const duplicate = vi.spyOn(engine, 'duplicateModel').mockResolvedValue({ uid: 'popup-copy' });
     const popup = new PopupModel({ uid: 'popup-1', use: 'PopupModel', flowEngine: engine });
-    const saveStepParams = vi.spyOn(popup, 'saveStepParams').mockResolvedValue(undefined as any);
+    const saveStepParams = vi.spyOn(popup, 'saveStepParams').mockResolvedValue(undefined);
     const message = { error: vi.fn(), success: vi.fn() };
     const api = {
       resource: vi.fn(() => ({
@@ -177,6 +183,7 @@ describe('registerMenuExtensions', () => {
     }
 
     const openViewParams = popup.getStepParams('popupSettings', 'openView');
+    expect(duplicate).toHaveBeenCalledWith(forwarded ? pageOwner.uid : templateTarget.uid);
     expect(openViewParams).toMatchObject({
       uid: 'popup-copy',
       dataSourceKey: 'main',
@@ -191,7 +198,34 @@ describe('registerMenuExtensions', () => {
     expect(saveStepParams).toHaveBeenCalledTimes(1);
   });
 
-  it('does not persist popup template internal flags when saving popup as template with convert mode', async () => {
+  it.each(['missing', 'cycle'])('does not create a template for a %s popup target', async (target) => {
+    class PopupModel extends FlowModel {}
+    PopupModel.registerFlow({ key: 'popupSettings', steps: { openView: { use: 'openView' } } });
+    const engine = new FlowEngine();
+    const popup = new PopupModel({ uid: 'source', use: 'PopupModel', flowEngine: engine });
+    const other = new PopupModel({ uid: 'other', use: 'PopupModel', flowEngine: engine });
+    popup.setStepParams('popupSettings', 'openView', { uid: other.uid });
+    other.setStepParams('popupSettings', 'openView', { uid: popup.uid });
+    vi.spyOn(engine, 'loadModel').mockResolvedValue(target === 'cycle' ? other : null);
+    const duplicate = vi.spyOn(engine, 'duplicateModel');
+    const create = vi.fn();
+    const message = { error: vi.fn(), success: vi.fn() };
+    popup.context.defineProperty('api', { value: { resource: () => ({ create }) } });
+    popup.context.defineProperty('message', { value: message });
+    popup.context.defineProperty('t', { value: t });
+    const prompt = vi.spyOn(window, 'prompt').mockReturnValue('Test template');
+    try {
+      const items = await PopupModel.getExtraMenuItems(popup, t);
+      await findItem(items, 'block-reference:save-popup-as-template')?.onClick?.();
+      expect(message.error).toHaveBeenCalledWith('Failed to duplicate pop-up');
+      expect(duplicate).not.toHaveBeenCalled();
+      expect(create).not.toHaveBeenCalled();
+    } finally {
+      prompt.mockRestore();
+    }
+  });
+
+  it.each(['convert', 'duplicate'])('saves the page behind a forwarded popup in %s mode', async (saveMode) => {
     class PopupModel extends FlowModel {}
 
     PopupModel.registerFlow({
@@ -206,9 +240,14 @@ describe('registerMenuExtensions', () => {
     });
 
     const engine = new FlowEngine();
-    vi.spyOn(engine, 'duplicateModel').mockResolvedValue({ uid: 'popup-template-target' } as any);
+    const previousCopy = new PopupModel({ uid: 'old-popup', use: 'PopupModel', flowEngine: engine });
+    previousCopy.setStepParams('popupSettings', 'openView', { uid: 'page-owner' });
+    const pageOwner = new PopupModel({ uid: 'page-owner', use: 'PopupModel', flowEngine: engine });
+    const models = new Map([previousCopy, pageOwner].map((model) => [model.uid, model]));
+    vi.spyOn(engine, 'loadModel').mockImplementation(async ({ uid }) => models.get(uid) ?? null);
+    const duplicate = vi.spyOn(engine, 'duplicateModel').mockResolvedValue({ uid: 'popup-template-target' });
     const popup = new PopupModel({ uid: 'popup-2', use: 'PopupModel', flowEngine: engine });
-    const saveStepParams = vi.spyOn(popup, 'saveStepParams').mockResolvedValue(undefined as any);
+    const saveStepParams = vi.spyOn(popup, 'saveStepParams').mockResolvedValue(undefined);
     const message = { error: vi.fn(), success: vi.fn() };
     const create = vi.fn(async () => ({
       data: {
@@ -247,9 +286,19 @@ describe('registerMenuExtensions', () => {
       Footer: ({ children }: { children?: React.ReactNode }) => React.createElement('div', null, children),
     };
     render(React.createElement(React.Fragment, null, dialogOptions.content(currentDialog)));
+    if (saveMode === 'duplicate') fireEvent.click(screen.getByRole('radio', { name: /Duplicate current popup/ }));
     fireEvent.click(screen.getByRole('button', { name: 'Confirm' }));
 
-    await waitFor(() => expect(saveStepParams).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(currentDialog.close).toHaveBeenCalled());
+    expect(duplicate).toHaveBeenCalledWith(pageOwner.uid);
+    expect(create).toHaveBeenCalledWith({ values: expect.objectContaining({ targetUid: 'popup-template-target' }) });
+    dialogOptions.onClose?.();
+    if (saveMode === 'duplicate') {
+      expect(saveStepParams).not.toHaveBeenCalled();
+      expect(popup.getStepParams('popupSettings', 'openView').uid).toBe(previousCopy.uid);
+      return;
+    }
+    expect(saveStepParams).toHaveBeenCalledTimes(1);
 
     const openViewParams = popup.getStepParams('popupSettings', 'openView');
     expect(openViewParams).toMatchObject({
@@ -261,6 +310,5 @@ describe('registerMenuExtensions', () => {
     expect(openViewParams).not.toHaveProperty('popupTemplateContext');
     expect(openViewParams).not.toHaveProperty('popupTemplateHasFilterByTk');
     expect(openViewParams).not.toHaveProperty('popupTemplateHasSourceId');
-    dialogOptions.onClose?.();
   });
 });

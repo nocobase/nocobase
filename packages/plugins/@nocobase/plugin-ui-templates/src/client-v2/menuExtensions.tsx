@@ -478,6 +478,28 @@ async function handleConvertFieldsToCopy(model: FlowModel, _t: (k: string, opt?:
   });
 }
 
+function getPopupOpenViewStepKey(model: FlowModel) {
+  const steps = model.getFlow('popupSettings')?.steps;
+  if (!steps || steps.openView || model.getStepParams('popupSettings', 'openView') !== undefined) return 'openView';
+  return Object.keys(steps).find((key) => steps[key].use === 'openView') || 'openView';
+}
+
+async function duplicatePopupContent(model: FlowModel, sourceUid: string) {
+  const engine = model.flowEngine;
+  const visited = new Set<string>();
+  let uid = sourceUid;
+  // A previously copied popup can itself forward to another popup outside its model tree.
+  while (!visited.has(uid)) {
+    visited.add(uid);
+    const source = uid === model.uid ? model : await engine.loadModel({ uid });
+    if (!source) return null;
+    const targetUid = normalizeStr(source.getStepParams('popupSettings', getPopupOpenViewStepKey(source))?.uid);
+    if (!targetUid || targetUid === uid) return engine.duplicateModel(uid);
+    uid = targetUid;
+  }
+  return null;
+}
+
 async function handleSavePopupAsTemplate(model: FlowModel, _t: (k: string, opt?: any) => string) {
   const api = model.context.api;
   const viewer = model.context.viewer;
@@ -526,16 +548,7 @@ async function handleSavePopupAsTemplate(model: FlowModel, _t: (k: string, opt?:
     normalizeTitle((model as any)?.getTitle?.()) ||
     normalizeTitle((model as any)?.title) ||
     normalizeTitle(model.uid);
-  const resolveOpenViewStepKey = (flow: any): string | undefined => {
-    const steps = flow?.steps || {};
-    if (steps?.openView) return 'openView';
-    const found = Object.entries(steps).find(([, def]) => (def as any)?.use === 'openView');
-    return found?.[0];
-  };
-  const openViewStepKey =
-    (model.getStepParams('popupSettings', 'openView') !== undefined && 'openView') ||
-    resolveOpenViewStepKey(popupFlow) ||
-    'openView';
+  const openViewStepKey = getPopupOpenViewStepKey(model);
   const openViewParams = model.getStepParams('popupSettings', openViewStepKey) || {};
 
   const toNonEmptyString = (val: any): string | undefined => {
@@ -625,7 +638,7 @@ async function handleSavePopupAsTemplate(model: FlowModel, _t: (k: string, opt?:
   };
 
   const duplicatePopupTarget = async (): Promise<string> => {
-    const duplicated = await model.flowEngine?.duplicateModel?.(model.uid);
+    const duplicated = await duplicatePopupContent(model, model.uid);
     const newUid = getUidFromAny(duplicated);
     if (!newUid) {
       throw new Error(tNs('Failed to duplicate pop-up'));
@@ -847,16 +860,7 @@ async function handleConvertPopupTemplateToCopy(model: FlowModel, _t: (k: string
     release();
     return;
   }
-  const resolveOpenViewStepKey = (flow: any): string | undefined => {
-    const steps = flow?.steps || {};
-    if (steps?.openView) return 'openView';
-    const found = Object.entries(steps).find(([, def]) => (def as any)?.use === 'openView');
-    return found?.[0];
-  };
-  const openViewStepKey =
-    (model.getStepParams('popupSettings', 'openView') !== undefined && 'openView') ||
-    resolveOpenViewStepKey(popupFlow) ||
-    'openView';
+  const openViewStepKey = getPopupOpenViewStepKey(model);
   const openViewParams = model.getStepParams('popupSettings', openViewStepKey) || {};
   const templateUid =
     typeof openViewParams?.popupTemplateUid === 'string' ? openViewParams.popupTemplateUid.trim() : '';
@@ -887,7 +891,7 @@ async function handleConvertPopupTemplateToCopy(model: FlowModel, _t: (k: string
     if (!targetUid) {
       throw new Error(tNs('Popup template not found'));
     }
-    const duplicated = await model.flowEngine.duplicateModel(targetUid);
+    const duplicated = await duplicatePopupContent(model, targetUid);
     const newUid = duplicated?.uid || duplicated?.data?.uid || duplicated?.data?.data?.uid;
     if (!newUid) {
       throw new Error(tNs('Failed to copy popup from template'));
@@ -1058,17 +1062,7 @@ export function registerMenuExtensions() {
         return true;
       },
       items: async (model: FlowModel, t) => {
-        const popupFlow = model.getFlow?.('popupSettings');
-        const resolveOpenViewStepKey = (flow: any): string | undefined => {
-          const steps = flow?.steps || {};
-          if (steps?.openView) return 'openView';
-          const found = Object.entries(steps).find(([, def]) => (def as any)?.use === 'openView');
-          return found?.[0];
-        };
-        const openViewStepKey =
-          (model.getStepParams('popupSettings', 'openView') !== undefined && 'openView') ||
-          resolveOpenViewStepKey(popupFlow) ||
-          'openView';
+        const openViewStepKey = getPopupOpenViewStepKey(model);
         const openViewParams = model.getStepParams('popupSettings', openViewStepKey) || {};
         const templateUid =
           typeof (openViewParams as any)?.popupTemplateUid === 'string'
