@@ -229,6 +229,10 @@ Config        config.yml — written by pnpm nocobase config init, gitignored, h
 
 Reach a plugin's capability only through its documented package exports. Never import a plugin's internal source path or write to its tables directly.
 
+## Suspected official package problems
+
+When the work seems to need editing `node_modules`, patching or overriding an official package, importing its internal paths or calling undocumented interfaces, stop and follow [suspected problems in official packages](references/official-package-issues.md). Look for a supported application-level solution first and build with it when one exists. Only a problem that reproduces in a clean application becomes a sanitized GitHub issue draft, and nothing is submitted without the user's explicit confirmation of its final content.
+
 ## Reversible customization
 
 When customizing template or registry UI, prefer existing props and composition, then new application components outside `client/extensions/`. Keep the original extension implementation as the reusable baseline; edit it only when explicitly requested or when composition cannot reasonably meet the requirement, and explain that choice. See [styling](references/frontend/references/styling.md).
