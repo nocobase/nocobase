@@ -139,6 +139,8 @@ overrides:
   brace-expansion: 5.0.12
   prosemirror-view: 1.42.3
   systeminformation: 5.33.16
+  # Keep transitive Zod 4 consumers patched without moving the AI stack off Zod 3.
+  'zod@^4.0.0': 'catalog:'
   # Ollama declares a provider-utils range; constrain workspace builds to the same release set.
   # This root override does not constrain an application's independent installation of Agents.
   'ollama-ai-provider-v2>@ai-sdk/provider-utils': 'catalog:'

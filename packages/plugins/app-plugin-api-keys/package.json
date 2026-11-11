@@ -70,7 +70,7 @@
   },
   "dependencies": {
     "@better-auth/api-key": "catalog:",
-    "@better-auth/core": "1.7.5",
+    "@better-auth/core": "1.7.7",
     "@better-auth/utils": "0.4.2",
     "better-auth": "catalog:",
     "better-call": "1.4.0",
