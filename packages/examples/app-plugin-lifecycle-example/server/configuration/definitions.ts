@@ -36,6 +36,24 @@ export const expenseParameterGroup: ParameterGroup = {
       );
   },
 };
+/**
+ * A group of its own for what the second expense version adds: the groups
+ * the first version uses are shared by both and stay exactly as they are.
+ */
+export const expenseAuditGroup: ParameterGroup = {
+  key: 'expenseAudit',
+  title: 'Expense audit',
+  schemaVersion: 1,
+  fields: {
+    auditLimit: {
+      type: 'number',
+      title: 'Audit limit (yuan)',
+      minimum: 0,
+      parse: (value) => z.number().finite().min(0).parse(value),
+      bindings: [{ state: 'awaitingAudit' }],
+    },
+  },
+};
 export const ticketParameterGroup: ParameterGroup = {
   key: 'ticketPolicy',
   title: 'Ticket reopening',

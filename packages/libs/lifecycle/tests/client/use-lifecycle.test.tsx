@@ -44,6 +44,30 @@ describe('useLifecycle', () => {
     expect(result.current.description?.diagram).toContain('stateDiagram-v2');
   });
 
+  it('draws a record with the definition it is bound to, not the latest', async () => {
+    const describe = vi.fn(async (_lifecycle: string, definition?: string) => ({
+      description: { name: definition ?? 'orders-v2' },
+    }));
+    const client = {
+      describe,
+      view: vi.fn(async () => ({ lifecycle: 'orders', record: { id: '1' } })),
+    } as unknown as Parameters<typeof useLifecycle>[0];
+    const { result, rerender } = renderHook(
+      ({ selected }: { selected: string | undefined }) =>
+        useLifecycle(client, 'orders', selected, { refreshMs: 0 }),
+      { initialProps: { selected: undefined as string | undefined } },
+    );
+    await waitFor(() =>
+      expect(result.current.description?.description.name).toBe('orders-v2'),
+    );
+    expect(describe).toHaveBeenLastCalledWith('orders', undefined);
+    rerender({ selected: '1' });
+    await waitFor(() =>
+      expect(result.current.description?.description.name).toBe('orders'),
+    );
+    expect(describe).toHaveBeenLastCalledWith('orders', 'orders');
+  });
+
   it('fires with the version on screen and shows the record as it left it', async () => {
     const { client, id, sent } = setup('agent');
     const { result } = renderHook(() =>

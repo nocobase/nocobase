@@ -69,6 +69,7 @@ export const ListExpensesQuery: z.ZodObject<
     page: z.ZodDefault<z.ZodCoercedNumber<unknown>>;
     pageSize: z.ZodDefault<z.ZodCoercedNumber<unknown>>;
     view: z.ZodDefault<z.ZodEnum<{ mine: 'mine'; approvals: 'approvals' }>>;
+    status: z.ZodOptional<z.ZodString>;
   },
   z.core.$strip
 > = z.object({
@@ -78,6 +79,14 @@ export const ListExpensesQuery: z.ZodObject<
     description:
       'The applicant’s own reports, or those waiting for the persona’s decision.',
   }),
+  status: z
+    .string()
+    .regex(/^[A-Za-z][A-Za-z0-9]{0,63}$/)
+    .optional()
+    .meta({
+      description:
+        'Only reports in this state: any state of any version, as `meta.states` lists them.',
+    }),
 });
 
 const failures = z
@@ -239,6 +248,14 @@ export const ListMeta: z.ZodObject<
     pageSize: z.ZodNumber;
     total: z.ZodNumber;
     parameters: z.ZodRecord<z.ZodString, z.ZodUnknown>;
+    states: z.ZodOptional<
+      z.ZodArray<
+        z.ZodObject<
+          { name: z.ZodString; title: z.ZodString; final: z.ZodBoolean },
+          z.core.$strip
+        >
+      >
+    >;
   },
   z.core.$strip
 > = z.object({
@@ -249,6 +266,15 @@ export const ListMeta: z.ZodObject<
   parameters: z.record(z.string(), z.unknown()).meta({
     description: 'The lifecycle’s parameters, which the page quotes.',
   }),
+  states: z
+    .array(
+      z.object({ name: z.string(), title: z.string(), final: z.boolean() }),
+    )
+    .optional()
+    .meta({
+      description:
+        'Every state any version of the process declares, for the status filter and labels of a list holding records of several versions.',
+    }),
 });
 
 export const TriggersRun: z.ZodType<{

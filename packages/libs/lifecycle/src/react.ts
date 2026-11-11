@@ -71,13 +71,20 @@ export interface RetryRequest {
  * `basePath`, each answering `{ data }` and refusing with the standard error
  * body — the fields `lifecycleErrorFields()` gives:
  *
- * - `GET <lifecycle>/lifecycle` — `LifecycleDescriptionView`
+ * - `GET <lifecycle>/lifecycle?definition=<name>` — `LifecycleDescriptionView` of the latest version, or of the one `definition` names
  * - `GET <lifecycle>/{id}` — `RecordView`
  * - `POST <lifecycle>/{id}/fire` with `{ transition, input, requestId, expectVersion? }` — `FireView`
  * - `POST <lifecycle>/{id}/effectRuns/{runId}/retry` with `{ force?, reason? }`, `…/continue` and `…/cancel` — `RecordView`
  */
 export interface LifecycleClient {
-  describe(lifecycle: string): Promise<LifecycleDescriptionView>;
+  /**
+   * The latest version of the process, or the version `definition` names,
+   * such as the `RecordView.lifecycle` of the record a page shows.
+   */
+  describe(
+    lifecycle: string,
+    definition?: string,
+  ): Promise<LifecycleDescriptionView>;
   view(
     lifecycle: string,
     id: string,
@@ -183,7 +190,9 @@ export function createLifecycleClient(
     try {
       body = await options.transport.request<{ readonly data: T }>({
         ...request,
-        ...(options.query ? { query: options.query } : {}),
+        ...(options.query || request.query
+          ? { query: { ...options.query, ...request.query } }
+          : {}),
       });
     } catch (cause) {
       throw refusalOf(cause);
@@ -193,8 +202,11 @@ export function createLifecycleClient(
   const record = (lifecycle: string, id: string): string =>
     `${base}/${segment(lifecycle)}/${segment(id)}`;
   return {
-    describe: (lifecycle) =>
-      send({ path: `${base}/${segment(lifecycle)}/lifecycle` }),
+    describe: (lifecycle, definition) =>
+      send({
+        path: `${base}/${segment(lifecycle)}/lifecycle`,
+        ...(definition === undefined ? {} : { query: { definition } }),
+      }),
     view: (lifecycle, id, options) =>
       send({ path: record(lifecycle, id), signal: options?.signal }),
     fire: (lifecycle, id, transition, request = {}) =>
@@ -299,6 +311,7 @@ export function useLifecycle(
   const [described, setDescribed] = useState<{
     client: LifecycleClient;
     lifecycle: string;
+    definition: string | undefined;
     value: LifecycleDescriptionView;
   }>();
   const [loaded, setLoaded] = useState<{
@@ -397,18 +410,24 @@ export function useLifecycle(
     [refresh],
   );
 
+  const loadedView = loaded?.scope === scope ? loaded.view : undefined;
+  // A record is drawn with the definition it is bound to, which its view
+  // names; without a record, or from a server that names none, the latest.
+  const definition = id === undefined ? undefined : loadedView?.lifecycle;
+  const waiting = id !== undefined && loadedView === undefined;
   useEffect(() => {
+    if (waiting) return undefined;
     let active = true;
-    void client.describe(lifecycle).then(
+    void client.describe(lifecycle, definition).then(
       (value) => {
-        if (active) setDescribed({ client, lifecycle, value });
+        if (active) setDescribed({ client, lifecycle, definition, value });
       },
       () => undefined,
     );
     return () => {
       active = false;
     };
-  }, [client, lifecycle]);
+  }, [client, lifecycle, definition, waiting]);
 
   useEffect(() => {
     if (id === undefined) return undefined;
@@ -433,7 +452,9 @@ export function useLifecycle(
   const error = failure?.scope === scope ? failure.error : undefined;
   const busy = acting === scope;
   const description =
-    described?.client === client && described.lifecycle === lifecycle
+    described?.client === client &&
+    described.lifecycle === lifecycle &&
+    (waiting || described.definition === definition)
       ? described.value
       : undefined;
 

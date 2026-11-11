@@ -24,6 +24,7 @@ import {
   generateApiDocument,
 } from '@nocobase/app-server/router';
 
+import { expenseV2Lifecycle } from '../server/lifecycles/expense-v2.js';
 import { expenseLifecycle } from '../server/lifecycles/expense.js';
 import { invoiceLifecycle } from '../server/lifecycles/invoice.js';
 import { orderLifecycle } from '../server/lifecycles/order.js';
@@ -56,6 +57,13 @@ function application(authentication: Auth) {
   const services = createExampleServices({ info: () => undefined });
   const parameters = new WorkflowParameterStore(store);
   runtime.register(expenseLifecycle, {
+    services,
+    parameterConfiguration: exampleParameterRegistration(
+      parameters,
+      'expenses',
+    ),
+  });
+  runtime.register(expenseV2Lifecycle, {
     services,
     parameterConfiguration: exampleParameterRegistration(
       parameters,
@@ -146,6 +154,7 @@ function application(authentication: Auth) {
       ...values,
     })),
     listTickets: vi.fn(async () => ({ records: [], total: 0 })),
+    listExpenses: vi.fn(async () => ({ records: [], total: 0 })),
     parameters: vi.fn(() => ({ waitMinutes: 2, reopenDays: 7 })),
   };
   // The durable flows' routes: their webhook receiver on the same runtime;
@@ -214,6 +223,7 @@ describe('lifecycle example routes', () => {
         pageSize: 20,
         total: 0,
         parameters: { waitMinutes: 2, reopenDays: 7 },
+        states: expect.any(Array),
       },
     });
     expect(service.listTickets).toHaveBeenCalledWith('agent-zhou', {
@@ -224,6 +234,37 @@ describe('lifecycle example routes', () => {
       '/lifecycleExample/tickets?actAs=agent-zhou&pageSize=500',
     );
     expect(tooMany.status).toBe(400);
+  });
+
+  it('lists the reports of every version with the states of all of them', async () => {
+    const { app, service } = application(allow);
+    const router = await apiRoutes.createRouter(app);
+    const response = await router.request(
+      '/lifecycleExample/expenses?actAs=zhao&view=approvals&status=awaitingAudit',
+    );
+    expect(response.status).toBe(200);
+    const body = (await response.json()) as {
+      meta: { states: { name: string }[] };
+    };
+    // The second version's audit state joins the first version's states.
+    expect(body.meta.states.map((state) => state.name)).toEqual([
+      'draft',
+      'awaitingManager',
+      'awaitingFinance',
+      'awaitingAudit',
+      'needsInfo',
+      'approved',
+      'rejected',
+      'paid',
+    ]);
+    // The list quotes what new reports run with: the latest definition.
+    expect(service.parameters).toHaveBeenCalledWith('expenses-v2');
+    expect(service.listExpenses).toHaveBeenCalledWith(
+      'zhao',
+      'approvals',
+      { page: 1, pageSize: 20 },
+      'awaitingAudit',
+    );
   });
 
   it('fires a transition as one of the lifecycle personas through the record routes', async () => {
@@ -519,11 +560,18 @@ describe('lifecycle example routes', () => {
     const described = await router.request(
       '/lifecycleExample/expenses/lifecycle?actAs=lin',
     );
+    // The latest version by default, and the one `definition` names.
     await expect(described.json()).resolves.toMatchObject({
       data: {
-        description: { name: 'expenses' },
+        description: { name: 'expenses-v2', key: 'expenses', version: 2 },
         diagram: expect.stringContaining('stateDiagram-v2'),
       },
+    });
+    const first = await router.request(
+      '/lifecycleExample/expenses/lifecycle?actAs=lin&definition=expenses',
+    );
+    await expect(first.json()).resolves.toMatchObject({
+      data: { description: { name: 'expenses', version: 1 } },
     });
     const retried = await router.request(
       post('/lifecycleExample/expenses/1/effectRuns/7/retry?actAs=lin', {}),

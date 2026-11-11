@@ -23,6 +23,7 @@ import {
 import { ServiceProvider } from '@nocobase/service-provider';
 
 import { expenseLifecycle } from '../lifecycles/expense.js';
+import { expenseV2Lifecycle } from '../lifecycles/expense-v2.js';
 import { invoiceLifecycle } from '../lifecycles/invoice.js';
 import { exportLifecycle } from '../lifecycles/export.js';
 import {
@@ -202,6 +203,15 @@ export class LifecycleExampleProvider extends ServiceProvider<AppPluginApplicati
       parameterConfiguration: exampleParameterRegistration(
         parameterStore,
         expenseLifecycle.key,
+      ),
+    });
+    // The second version of the same process: same table, the same stored
+    // configuration under the shared key, and its own audit group.
+    runtime.register(expenseV2Lifecycle, {
+      services,
+      parameterConfiguration: exampleParameterRegistration(
+        parameterStore,
+        expenseV2Lifecycle.key,
       ),
     });
     // The durable flows call the sandbox standing in for the outside

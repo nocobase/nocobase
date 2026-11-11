@@ -60,11 +60,13 @@ describe('parameter configuration against the real repository', () => {
       );
       const saved = await config.readWorkflow('zhao', 'expenses');
       expect(saved.revision).toBe(1);
-      expect(saved.groups.map((group) => group.revision)).toEqual([1, 1]);
+      expect(saved.groups.map((group) => group.revision)).toEqual([1, 1, 1]);
+      // The audit group the second version added reads its default.
       expect(saved.values).toEqual({
         autoApproveLimit: 6000,
         financeLimit: 50000,
         escalateAfterMinutes: 9,
+        auditLimit: 20000,
       });
       await expect(
         config.saveWorkflow(
@@ -281,6 +283,100 @@ describe('parameter configuration against the real repository', () => {
     }
   });
 
+  test('shares one configuration between both expense versions without changing a first-version report', async ({
+    database,
+  }) => {
+    const running = await start(database);
+    try {
+      const config = running.container.resolve(
+        parameterConfigurationServiceToken,
+      );
+      const service = running.container.resolve(lifecycleExampleServiceToken);
+      const draft = {
+        title: 'Versions',
+        purpose: 'Travel',
+        items: [
+          {
+            date: '2026-09-28',
+            category: 'transport',
+            description: 'Flight',
+            amountCents: 3_000_000,
+          },
+        ],
+        failPayments: 0,
+      };
+      await config.save(
+        'expenseThresholds',
+        { autoApproveLimit: 1000, financeLimit: 40000 },
+        0,
+        'thresholds',
+        'zhao',
+      );
+      const first = String(
+        (await service.createExpense(draft, 'lin', 'expenses')).id,
+      );
+      const second = String((await service.createExpense(draft, 'lin')).id);
+      for (const [definition, id] of [
+        ['expenses', first],
+        ['expenses-v2', second],
+      ] as const)
+        await service.runtime.fire(definition, id, 'submit', {
+          actor: { id: 'lin' },
+          input: {},
+        });
+      // The audit limit is the second version's own group; saving it moves
+      // the shared revision and leaves the first version's groups as saved.
+      await config.save('expenseAudit', { auditLimit: 25000 }, 1, 'audit', 'zhao');
+      const firstView = await service.runtime.view('expenses', first, {
+        id: 'chen',
+      });
+      expect(firstView.parameterValues).toEqual({
+        autoApproveLimit: 1000,
+        financeLimit: 40000,
+        escalateAfterMinutes: 3,
+      });
+      const secondView = await service.runtime.view('expenses-v2', second, {
+        id: 'chen',
+      });
+      expect(secondView.parameterValues).toEqual({
+        autoApproveLimit: 1000,
+        financeLimit: 40000,
+        escalateAfterMinutes: 3,
+        auditLimit: 20000,
+      });
+      // 30,000 yuan is under the finance limit: the first version approves
+      // it at once, the second sends it to the finance director's audit.
+      for (const [definition, id] of [
+        ['expenses', first],
+        ['expenses-v2', second],
+      ] as const)
+        await service.runtime.fire(definition, id, 'approve', {
+          actor: { id: 'chen' },
+          input: {},
+        });
+      expect(
+        (await service.runtime.view('expenses', first, { id: 'lin' })).state,
+      ).toMatch(/^(approved|paid)$/);
+      expect(
+        (await service.runtime.view('expenses-v2', second, { id: 'lin' }))
+          .state,
+      ).toBe('awaitingAudit');
+      // Each record's history reads through its own version.
+      expect((await config.history('expenses', first, 'lin')).snapshot).toMatchObject({
+        lifecycle: 'expenses',
+      });
+      expect((await config.history('expenses', second, 'lin')).snapshot).toMatchObject({
+        lifecycle: 'expenses-v2',
+        values: { auditLimit: 20000 },
+      });
+      expect((await config.read('expenseAudit', 'zhao')).values).toEqual({
+        auditLimit: 25000,
+      });
+    } finally {
+      await running.stop();
+    }
+  });
+
   test('previews drafts and preserves a submitted snapshot after configuration changes and replay', async ({
     database,
   }) => {
@@ -315,13 +411,13 @@ describe('parameter configuration against the real repository', () => {
         'zhao',
       );
       expect(
-        (await service.runtime.view('expenses', id, { id: 'lin' }))
+        (await service.runtime.view('expenses-v2', id, { id: 'lin' }))
           .parameterValues,
       ).toMatchObject({ financeLimit: 3000 });
       expect(
-        await config.store.snapshot('demo', 'expenses', id),
+        await config.store.snapshot('demo', 'expenses-v2', id),
       ).toBeUndefined();
-      await service.runtime.fire('expenses', id, 'submit', {
+      await service.runtime.fire('expenses-v2', id, 'submit', {
         actor: { id: 'lin' },
         input: {},
         requestId: 'submit-once',
@@ -333,7 +429,7 @@ describe('parameter configuration against the real repository', () => {
         'after-submit',
         'zhao',
       );
-      await service.runtime.fire('expenses', id, 'submit', {
+      await service.runtime.fire('expenses-v2', id, 'submit', {
         actor: { id: 'lin' },
         input: {},
         requestId: 'submit-once',
@@ -342,6 +438,7 @@ describe('parameter configuration against the real repository', () => {
       expect(history.snapshot?.values).toEqual({
         autoApproveLimit: 100,
         financeLimit: 3000,
+        auditLimit: 20000,
       });
       expect(history.current).toMatchObject({ financeLimit: 3000 });
       expect(
@@ -353,16 +450,16 @@ describe('parameter configuration against the real repository', () => {
       expect(
         (await config.read('expenseThresholds', 'lin')).values.financeLimit,
       ).toBe(1000);
-      await service.runtime.fire('expenses', id, 'withdraw', {
+      await service.runtime.fire('expenses-v2', id, 'withdraw', {
         actor: { id: 'lin' },
         input: {},
       });
-      await service.runtime.fire('expenses', id, 'submit', {
+      await service.runtime.fire('expenses-v2', id, 'submit', {
         actor: { id: 'lin' },
         input: {},
       });
       expect(
-        (await service.runtime.view('expenses', id, { id: 'lin' }))
+        (await service.runtime.view('expenses-v2', id, { id: 'lin' }))
           .parameterValues,
       ).toMatchObject({ financeLimit: 3000 });
       await service.runtime.prune({ olderThan: '2099-01-01T00:00:00.000Z' });
@@ -466,7 +563,7 @@ describe('lifecycle example provider', () => {
         'lin',
       );
       const id = String(expense.id);
-      await service.runtime.fire('expenses', id, 'submit', {
+      await service.runtime.fire('expenses-v2', id, 'submit', {
         actor: { id: 'lin' },
         input: {},
       });
@@ -476,7 +573,7 @@ describe('lifecycle example provider', () => {
       });
       expect(waiting.records.map((record) => record.id)).toEqual([expense.id]);
       expect(waiting.total).toBe(1);
-      await service.runtime.fire('expenses', id, 'requestInfo', {
+      await service.runtime.fire('expenses-v2', id, 'requestInfo', {
         actor: { id: 'chen' },
         input: { reason: '请补充行程单' },
       });
@@ -487,16 +584,16 @@ describe('lifecycle example provider', () => {
           pageSize: 20,
         }),
       ).toEqual({ records: [], total: 0 });
-      await service.runtime.fire('expenses', id, 'resubmit', {
+      await service.runtime.fire('expenses-v2', id, 'resubmit', {
         actor: { id: 'lin' },
         input: {},
       });
-      await service.runtime.fire('expenses', id, 'approve', {
+      await service.runtime.fire('expenses-v2', id, 'approve', {
         actor: { id: 'chen' },
         input: { comment: '同意' },
       });
       const detail = await eventually(
-        () => service.runtime.view('expenses', id, { id: 'lin' }),
+        () => service.runtime.view('expenses-v2', id, { id: 'lin' }),
         // Reaching paid does not wait for independently dispatched notices.
         // Observe the whole workflow before asserting every effect settled.
         (value) =>
@@ -928,21 +1025,27 @@ describe('sample data', () => {
       ]);
       const reports = async (actor: string) =>
         (await examples.listExpenses(actor, 'mine', page)).records;
-      const [hangzhou, tradeFair, materials] = await reports('lin');
-      expect([hangzhou?.status, tradeFair?.status]).toEqual([
-        'draft',
-        'awaitingFinance',
-      ]);
+      const [hangzhou, training, tradeFair, materials] = await reports('lin');
+      expect([hangzhou?.status, training?.status, tradeFair?.status]).toEqual(
+        ['draft', 'awaitingAudit', 'awaitingFinance'],
+      );
+      // New reports are drafted with the second version; the older samples
+      // stand for reports drafted before it and keep running the first.
+      expect(
+        [hangzhou, training, tradeFair, materials].map(
+          (record) => record?.lifecycleDefinition,
+        ),
+      ).toEqual(['expenses-v2', 'expenses-v2', 'expenses', 'expenses']);
       expect((await reports('he')).map((record) => record.status)).toEqual([
         'needsInfo',
         'rejected',
       ]);
-      // The finance director finds the trade fair waiting for them.
+      // The finance director finds the training audit and the trade fair waiting.
       expect(
         (await examples.listExpenses('zhao', 'approvals', page)).records.map(
           (record) => record.id,
         ),
-      ).toEqual([tradeFair?.id]);
+      ).toEqual([training?.id, tradeFair?.id]);
       // The approved report is paid by its effect, as any other would be.
       const paid = await eventually(
         () =>

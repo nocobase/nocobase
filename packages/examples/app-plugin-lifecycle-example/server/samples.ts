@@ -35,7 +35,10 @@ export async function buildSampleRecords(
     actor: string,
     input: JsonObject = {},
   ): Promise<void> => {
-    await runtime.fire(lifecycle, text(record.id), transition, {
+    // A sample may belong to either version of its process: fire through
+    // the definition the record is bound to.
+    const id = text(record.id);
+    await runtime.fire(await runtime.boundLifecycle(lifecycle, id), id, transition, {
       actor: actor === SYSTEM_ACTOR.id ? SYSTEM_ACTOR : { id: actor },
       input,
     });
@@ -132,6 +135,8 @@ export async function buildSampleRecords(
       failPayments: 0,
     },
     'lin',
+    // Drafted before the second version: it keeps running the first.
+    'expenses',
   );
   await fire('expenses', materials, 'submit', 'lin');
   // Approved, it is paid by the payment effect and then marked paid.
@@ -147,6 +152,8 @@ export async function buildSampleRecords(
       failPayments: 0,
     },
     'he',
+    // Drafted before the second version: it keeps running the first.
+    'expenses',
   );
   await fire('expenses', teamDinner, 'submit', 'he');
   await fire('expenses', teamDinner, 'reject', 'sun', {
@@ -166,6 +173,8 @@ export async function buildSampleRecords(
       failPayments: 0,
     },
     'he',
+    // Drafted before the second version: it keeps running the first.
+    'expenses',
   );
   await fire('expenses', onSite, 'submit', 'he');
   await fire('expenses', onSite, 'requestInfo', 'sun', {
@@ -184,10 +193,32 @@ export async function buildSampleRecords(
       failPayments: 0,
     },
     'lin',
+    // Drafted before the second version: it keeps running the first.
+    'expenses',
   );
   await fire('expenses', tradeFair, 'submit', 'lin');
   await fire('expenses', tradeFair, 'approve', 'chen', {
     comment: '展会是今年的重点，同意。',
+  });
+
+  // Drafted with the second version, which new reports use: above the
+  // audit limit, the manager's approval leaves it with the finance
+  // director's audit.
+  const training = await examples.createExpense(
+    {
+      title: '年度销售培训',
+      purpose: '华东区销售团队两天集中培训的场地与讲师费用。',
+      items: [
+        line('2026-10-12', 'other', '培训场地 2 天', 9_600),
+        line('2026-10-12', 'other', '外部讲师课酬', 16_000),
+      ],
+      failPayments: 0,
+    },
+    'lin',
+  );
+  await fire('expenses', training, 'submit', 'lin');
+  await fire('expenses', training, 'approve', 'chen', {
+    comment: '培训计划已确认，同意。',
   });
 
   await examples.createExpense(

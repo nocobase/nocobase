@@ -11,6 +11,7 @@ import {
 } from '@nocobase/lifecycle';
 import { afterEach, describe, expect, vi } from 'vitest';
 
+import { expenseV2Lifecycle } from '../server/lifecycles/expense-v2.js';
 import { expenseLifecycle } from '../server/lifecycles/expense.js';
 import { createExampleServices } from '../server/lifecycles/services.js';
 import { LIFECYCLE_EXAMPLE_COLLECTIONS } from '../server/scope.js';
@@ -34,6 +35,13 @@ function serviceOn(database: DatabaseManager): LifecycleExampleService {
     dispatcher: { dispatch: () => Promise.resolve() },
   });
   runtime.register(expenseLifecycle, {
+    services: createExampleServices({ info: () => undefined }),
+    parameterConfiguration: exampleParameterRegistration(
+      new WorkflowParameterStore(store),
+      'expenses',
+    ),
+  });
+  runtime.register(expenseV2Lifecycle, {
     services: createExampleServices({ info: () => undefined }),
     parameterConfiguration: exampleParameterRegistration(
       new WorkflowParameterStore(store),
@@ -100,7 +108,7 @@ describe('an edit racing a transition', () => {
     );
     const id = String(expense.id);
     // The page shows a 120-yuan report, which would be approved at once.
-    const seen = await service.runtime.view('expenses', id, { id: 'lin' });
+    const seen = await service.runtime.view('expenses-v2', id, { id: 'lin' });
     // Meanwhile the applicant raises it above the manager's limit.
     await service.updateExpense(
       id,
@@ -110,23 +118,23 @@ describe('an edit racing a transition', () => {
     // A submit decided on what the page showed does not commit on the
     // report as it now is.
     await expect(
-      service.runtime.fire('expenses', id, 'submit', {
+      service.runtime.fire('expenses-v2', id, 'submit', {
         actor: { id: 'lin' },
         expect: { version: seen.version },
       }),
     ).rejects.toMatchObject({ code: 'CONFLICT' });
-    const after = await service.runtime.view('expenses', id, { id: 'lin' });
+    const after = await service.runtime.view('expenses-v2', id, { id: 'lin' });
     expect(after.state).toBe('draft');
     expect(after.history.transitions.map((entry) => entry.transition)).toEqual([
       '$create',
     ]);
     // Decided again on the report as it is, it goes to the manager.
-    await service.runtime.fire('expenses', id, 'submit', {
+    await service.runtime.fire('expenses-v2', id, 'submit', {
       actor: { id: 'lin' },
       expect: { version: after.version },
     });
     expect(
-      (await service.runtime.view('expenses', id, { id: 'lin' })).state,
+      (await service.runtime.view('expenses-v2', id, { id: 'lin' })).state,
     ).toBe('awaitingManager');
   });
 });
@@ -154,7 +162,7 @@ describe('two edits that interleave', () => {
     expect(edited).toMatchObject({ title: '打车往返', purpose: '年度回访' });
     // Each edit moved the version on once.
     expect(
-      (await service.runtime.view('expenses', id, { id: 'lin' })).version,
+      (await service.runtime.view('expenses-v2', id, { id: 'lin' })).version,
     ).toBe(3);
   });
 
