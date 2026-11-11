@@ -1,4 +1,7 @@
-import { useFileUploadLimit } from '@nocobase/app-plugin-file/client';
+import {
+  limitBytes,
+  useFileUploadLimit,
+} from '@nocobase/app-plugin-file/client';
 import {
   buildPageContext,
   contextChips,
@@ -108,7 +111,7 @@ export function Composer({
   const { maxFileSizeMb } = useFileUploadLimit();
   const attachments = useMemo(
     (): AgentComposerAttachments => ({
-      maxSize: maxFileSizeMb * 1024 * 1024,
+      maxSize: limitBytes({ maxFileSizeMb }),
       upload: (file, signal) => files.upload(file, signal),
       discard: (attachment) => files.discard(attachment),
       ...(registerAddFiles ? { registerAdd: registerAddFiles } : {}),

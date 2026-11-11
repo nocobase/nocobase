@@ -1,4 +1,7 @@
-import { useFileUploadLimit } from '@nocobase/app-plugin-file/client';
+import {
+  limitBytes,
+  useFileUploadLimit,
+} from '@nocobase/app-plugin-file/client';
 import { useTranslation } from '@nocobase/i18n/client';
 
 import { ACCESS_NAMESPACE } from '../../shared/access.js';
@@ -89,7 +92,7 @@ export function useAttachmentUploads(): AttachmentUploads {
       const results = await Promise.all(
         files.slice(0, Math.max(room, 0)).map(async (original, index) => {
           const file = named(original, index);
-          if (file.size > maxFileSizeMb * 1024 * 1024) {
+          if (file.size > limitBytes({ maxFileSizeMb })) {
             notify.error(
               null,
               t('attachments.tooLarge', {

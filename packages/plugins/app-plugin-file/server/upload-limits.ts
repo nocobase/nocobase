@@ -1,5 +1,5 @@
 import { ApiError } from '@nocobase/app-server/router';
-import type { DriveUploadLimit } from '../shared/upload-limits.js';
+import { limitBytes, type DriveUploadLimit } from '../shared/upload-limits.js';
 
 export function fileTooLarge(limit: DriveUploadLimit): ApiError {
   return new ApiError({
@@ -16,5 +16,5 @@ export function assertFileUploadSize(
   file: File,
   limit: DriveUploadLimit,
 ): void {
-  if (file.size > limit.maxFileSizeMb * 1024 * 1024) throw fileTooLarge(limit);
+  if (file.size > limitBytes(limit)) throw fileTooLarge(limit);
 }

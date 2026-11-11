@@ -1,4 +1,3 @@
-import { validateDriveConfig } from '../drive/config.js';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { isDeepStrictEqual } from 'node:util';
@@ -41,9 +40,7 @@ export class AppConfig {
   private current: Config | undefined;
   private defaults = new Config();
   private overrides = new Config();
-  private readonly sections = new Map<string, AppConfigRules>([
-    ['drive', { validators: [validateDriveConfig], public: [] }],
-  ]);
+  private readonly sections = new Map<string, AppConfigRules>();
   private reloadPromise: Promise<AppConfigReloadResult> | undefined;
   private logger?: Pick<Logger, 'debug'>;
   private loadDurationMs?: number;

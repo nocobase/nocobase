@@ -319,7 +319,7 @@ export function createAttachmentService(deps: AttachmentDeps): {
   };
 
   const service: AttachmentService = {
-    uploadLimit: uploadLimit,
+    uploadLimit,
     async listLimited(viewer, issueIdOrKey, limit = 100) {
       if (!Number.isInteger(limit) || limit < 1 || limit > 100)
         throw invalid(

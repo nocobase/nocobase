@@ -509,7 +509,7 @@ export function createChatAttachments(deps: ChatAttachmentDeps): {
   };
 
   const service: ChatAttachmentService = {
-    uploadLimit: uploadLimit,
+    uploadLimit,
     async upload(userId, file) {
       assertFileUploadSize(file, uploadLimit);
       const id = await deps.storage.store(file, userId);

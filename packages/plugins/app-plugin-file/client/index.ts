@@ -11,4 +11,7 @@ export type {
   FileUploadLimits,
 } from '../shared/upload-limits.js';
 
-export { DEFAULT_FILE_UPLOAD_LIMIT } from '../shared/upload-limits.js';
+export {
+  DEFAULT_FILE_UPLOAD_LIMIT,
+  limitBytes,
+} from '../shared/upload-limits.js';

@@ -3,7 +3,10 @@
  * Library's `issue-detail` block): the issue itself, and every change the page makes, each refreshing what it changed
  * and reporting what failed (the returned promise then rejects, so a presenter can keep its draft open).
  */
-import { useFileUploadLimit } from '@nocobase/app-plugin-file/client';
+import {
+  limitBytes,
+  useFileUploadLimit,
+} from '@nocobase/app-plugin-file/client';
 import {
   useQuery,
   useQueryClient,
@@ -102,7 +105,7 @@ export function useIssuePageActions(detail: IssueDetail): IssuePageActions {
             t('attachments.tooMany', { count: ATTACHMENTS_PER_REQUEST_MAX }),
           );
         for (const file of files.slice(0, ATTACHMENTS_PER_REQUEST_MAX)) {
-          if (file.size > maxFileSizeMb * 1024 * 1024) {
+          if (file.size > limitBytes({ maxFileSizeMb })) {
             notify.error(
               null,
               t('attachments.tooLarge', {

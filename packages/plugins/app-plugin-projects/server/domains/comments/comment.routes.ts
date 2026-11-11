@@ -1,4 +1,7 @@
-import type { DriveUploadLimit } from '@nocobase/app-plugin-file/server';
+import {
+  limitBytes,
+  type DriveUploadLimit,
+} from '@nocobase/app-plugin-file/server';
 import {
   apiErrorResponse,
   apiErrorResponses,
@@ -126,7 +129,7 @@ export function createIssueCommentRoutes(deps: {
             upload: 'projectsUploadAttachment',
             field: 'attachmentIds',
             multiple: true,
-            maxBytes: deps.uploadLimit.maxFileSizeMb * 1024 * 1024,
+            maxBytes: limitBytes(deps.uploadLimit),
             description: `A file to attach (repeatable); attaching needs \`upload\` on \`pm.attachments\`.`,
           },
         },

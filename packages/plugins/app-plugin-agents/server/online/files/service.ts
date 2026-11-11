@@ -1,3 +1,4 @@
+import { limitBytes } from '@nocobase/app-plugin-file/server';
 import { FileInputError } from './errors.js';
 import { createHash } from 'node:crypto';
 import {
@@ -30,7 +31,7 @@ export class NativeFileInputs {
     object,
     ReturnType<FileInputProfiles['resolve']> & {
       readonly provider: ModelConnection['provider'];
-      readonly extract: ReturnType<typeof kimiExtractor>;
+      readonly extract: TextExtractor;
     }
   >();
   private readonly profiles: FileInputProfiles;
@@ -56,8 +57,8 @@ export class NativeFileInputs {
   async model(ref: ModelRef, sessionId: string): Promise<LanguageModel> {
     const connection = { ...(await this.deps.connectionFor(ref)) };
     const capabilities = this.profiles.resolve(ref, connection);
-    let remote: ReturnType<typeof kimiExtractor> | undefined;
-    const extract: ReturnType<typeof kimiExtractor> =
+    let remote: TextExtractor | undefined;
+    const extract: TextExtractor =
       capabilities.extraction === 'kimi-file-extract'
         ? (request, options) => {
             // Native images and text-only turns never initialize the Files API adapter.
@@ -129,7 +130,7 @@ export class NativeFileInputs {
           !mediaType.startsWith('image/');
         if (native) budget.native();
         let bytes: Uint8Array;
-        let maxInputBytes = this.uploadLimit.maxFileSizeMb * 1024 * 1024;
+        let maxInputBytes = limitBytes(this.uploadLimit);
         if (file.attachment) {
           const authorized = input.conn
             ? await this.deps.files.content(
@@ -141,7 +142,7 @@ export class NativeFileInputs {
                 { userId: input.userId },
                 file.attachment.id,
               );
-          maxInputBytes = authorized.uploadLimit.maxFileSizeMb * 1024 * 1024;
+          maxInputBytes = limitBytes(authorized.uploadLimit);
           bytes = await readBytes(authorized.body, signal, maxInputBytes);
         } else {
           // Provider references remain provider inputs; they are never fetched by this service.
@@ -219,7 +220,7 @@ export class NativeFileInputs {
   }
 
   private async documentText(
-    extract: ReturnType<typeof kimiExtractor>,
+    extract: TextExtractor,
     request: ExtractRequest,
     signal: AbortSignal,
     maxInputBytes: number,

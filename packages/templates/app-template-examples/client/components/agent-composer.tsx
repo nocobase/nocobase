@@ -1,4 +1,7 @@
-import { DEFAULT_FILE_UPLOAD_LIMIT } from '@nocobase/app-plugin-file/client';
+import {
+  limitBytes,
+  DEFAULT_FILE_UPLOAD_LIMIT,
+} from '@nocobase/app-plugin-file/client';
 import {
   filterText,
   selectionPreview,
@@ -599,9 +602,7 @@ export function AgentComposer({
   const [tooMany, setTooMany] = useState(false);
   const [waiting, setWaiting] = useState(false);
   const maxCount = attachments?.maxCount ?? CHAT_ATTACHMENTS_PER_MESSAGE_MAX;
-  const maxSize =
-    attachments?.maxSize ??
-    DEFAULT_FILE_UPLOAD_LIMIT.maxFileSizeMb * 1024 * 1024;
+  const maxSize = attachments?.maxSize ?? limitBytes(DEFAULT_FILE_UPLOAD_LIMIT);
   const attachmentsRef = useRef(attachments);
   // Handlers and the uploads read the box as last rendered.
   useLayoutEffect(() => {

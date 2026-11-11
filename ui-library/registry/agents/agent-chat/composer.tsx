@@ -6,7 +6,10 @@
  * (the attach button, a paste, a drop on it or on the view, through `registerAddFiles`) upload through the agents
  * plugin and go with the message. Clicking a chip shows what it carries (`chipContent`).
  */
-import { useFileUploadLimit } from '@nocobase/app-plugin-file/client';
+import {
+  limitBytes,
+  useFileUploadLimit,
+} from '@nocobase/app-plugin-file/client';
 import {
   buildPageContext,
   contextChips,
@@ -116,7 +119,7 @@ export function Composer({
   const { maxFileSizeMb } = useFileUploadLimit();
   const attachments = useMemo(
     (): AgentComposerAttachments => ({
-      maxSize: maxFileSizeMb * 1024 * 1024,
+      maxSize: limitBytes({ maxFileSizeMb }),
       upload: (file, signal) => files.upload(file, signal),
       discard: (attachment) => files.discard(attachment),
       ...(registerAddFiles ? { registerAdd: registerAddFiles } : {}),

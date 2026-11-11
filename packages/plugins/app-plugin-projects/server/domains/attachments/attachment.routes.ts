@@ -3,6 +3,7 @@
  * acts as the signed-in person; the service decides what they may read and change.
  */
 import {
+  limitBytes,
   fileTooLarge,
   type DriveUploadLimit,
 } from '@nocobase/app-plugin-file/server';
@@ -46,7 +47,7 @@ const ENVELOPE = 64 * 1024;
 
 const sizeLimit = (limit: DriveUploadLimit) =>
   bodyLimit({
-    maxSize: limit.maxFileSizeMb * 1024 * 1024 + ENVELOPE,
+    maxSize: limitBytes(limit) + ENVELOPE,
     onError: () => {
       throw fileTooLarge(limit);
     },

@@ -1,5 +1,5 @@
 import { readMaxFileSizeMb, type AppDriveConfig } from '@nocobase/drive';
-import { type ConfigValidator } from '../config/index.js';
+import type { AppConfig, ConfigValidator } from '../config/index.js';
 export type { AppDriveConfig, DriveUploadLimit } from '@nocobase/drive';
 
 export const validateDriveConfig: ConfigValidator<AppDriveConfig> = (
@@ -14,3 +14,10 @@ export const validateDriveConfig: ConfigValidator<AppDriveConfig> = (
       );
   }
 };
+
+/** Register Drive's built-in rules before application configuration is validated. */
+export function registerDriveConfig(config: AppConfig): void {
+  config.defineSections(
+    new Map([['drive', { validators: [validateDriveConfig], public: [] }]]),
+  );
+}
