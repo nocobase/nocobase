@@ -90,6 +90,58 @@ it('keeps a running response subscribed when the cached idle read predates it', 
   ).toBe(false);
 });
 
+it.each([
+  ['answers before the refresh reads it', 'cached'],
+  ['is still in flight when the refresh starts', 'inFlight'],
+] as const)(
+  'keeps a running response subscribed when an idle conversation read started before it %s',
+  async (_label, timing) => {
+    const f = fixture(),
+      output = f.output();
+    f.state.detail = before;
+    f.state.messages = [previousTurn];
+    agentsQueryClient().setQueryData(chatKeys.conversation('c1'), before);
+    await f.controller.loadHistory('c1');
+    // The page's conversation query leaves while the conversation is idle and answers only after the run began.
+    const idleAnswer = Promise.withResolvers<ConversationDetail>();
+    const observer = new QueryObserver(agentsQueryClient(), {
+      queryKey: chatKeys.conversation('c1'),
+      queryFn: () => idleAnswer.promise,
+      staleTime: Infinity,
+    });
+    observers.push(observer.subscribe(() => {}));
+    const fetching = observer.refetch();
+    f.state.detail = {
+      ...before,
+      lastSeq: 3,
+      execution: { status: 'running', messageId: 'answer', revision: 1 },
+    } as ConversationDetail;
+    f.controller.receive('c1', f.state.detail);
+    await vi.waitFor(() => expect(output.attached).toBe(true));
+    output.emit({
+      type: 'start',
+      messageId: 'answer',
+      messageMetadata: metadata,
+    });
+    output.emit({ type: 'text-start', id: 'text' });
+    output.emit({ type: 'text-delta', id: 'text', delta: 'Still' });
+    await vi.waitFor(() =>
+      expect(f.controller.chat('c1').status).toBe('streaming'),
+    );
+    f.state.messages = [previousTurn, uiMessage(2), answer];
+    let refreshing: Promise<void> | undefined;
+    if (timing === 'inFlight') refreshing = f.controller.refresh('c1', false);
+    idleAnswer.resolve(before);
+    await fetching;
+    await (refreshing ?? f.controller.refresh('c1', false));
+    expect(f.controller.chat('c1').status).toBe('streaming');
+    expect(f.controller.state('c1')?.finished).toBeUndefined();
+    expect(
+      f.request.mock.calls.some(([request]) => request.path.endsWith('/stop')),
+    ).toBe(false);
+  },
+);
+
 it('releases the response once an idle read taken after its saved answer arrives', async () => {
   const { f } = await streamingWhileRunning();
   f.state.detail = {
