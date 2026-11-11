@@ -15,6 +15,9 @@ export default defineCollection({
   fields: [
     // The column-level cascade also covers bulk/model deletes that bypass individual relation hooks.
     { name: 'serverName', type: 'string', allowNull: false, onDelete: 'CASCADE' },
+    { name: 'toolName', type: 'string', allowNull: false },
+    { name: 'permission', type: 'string', allowNull: false, validate: { isIn: [['ASK', 'ALLOW']] } },
+    // Relation setup refreshes indexes, so declare the indexed columns before this association.
     {
       name: 'server',
       type: 'belongsTo',
@@ -24,8 +27,6 @@ export default defineCollection({
       constraints: true,
       onDelete: 'CASCADE',
     },
-    { name: 'toolName', type: 'string', allowNull: false },
-    { name: 'permission', type: 'string', allowNull: false, validate: { isIn: [['ASK', 'ALLOW']] } },
   ],
   indexes: [{ fields: ['serverName', 'toolName'], unique: true }],
 });

@@ -34,6 +34,8 @@ describe('MCP loader test cases', () => {
   beforeEach(async () => {
     storage = await mkdtemp(join(tmpdir(), 'mcp-persistence-'));
     vi.stubEnv('STORAGE_PATH', storage);
+    // SQLite fixtures must not inherit a PostgreSQL schema from the CI matrix.
+    vi.stubEnv('DB_SCHEMA', 'public');
     filePath = join(storage, 'ai', 'mcp', 'servers.json');
     await mkdir(join(storage, 'ai', 'mcp'), { recursive: true });
     app = await createMockServer({

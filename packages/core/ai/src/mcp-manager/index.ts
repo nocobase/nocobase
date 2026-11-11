@@ -241,12 +241,15 @@ export class DefaultMCPManager implements MCPManager {
       if (!server) {
         throw new MCPToolPermissionError('TOOL_NOT_FOUND_OR_AMBIGUOUS');
       }
-      await this.collectionManager
-        .getCollection('aiMcpToolPermissions')
-        .model.upsert(
-          { serverName: tool.serverName, toolName: tool.title, permission },
-          { transaction, conflictFields: ['serverName', 'toolName'] },
-        );
+      const permissionModel = this.collectionManager.getCollection('aiMcpToolPermissions').model;
+      await permissionModel.upsert(
+        { serverName: tool.serverName, toolName: tool.title, permission },
+        {
+          transaction,
+          // Sequelize expects physical column names here, including when underscored is enabled.
+          conflictFields: ['serverName', 'toolName'].map((name) => permissionModel.getAttributes()[name].field || name),
+        },
+      );
     });
   }
 

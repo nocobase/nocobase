@@ -39,7 +39,7 @@ vi.mock('@langchain/mcp-adapters', () => ({
   },
 }));
 
-describe('global MCP tool permissions', () => {
+describe.each([false, true])('global MCP tool permissions (underscored: %s)', (underscored) => {
   let app: MockServer;
   let storage: string;
   let manager: DefaultMCPManager;
@@ -56,10 +56,13 @@ describe('global MCP tool permissions', () => {
   beforeAll(async () => {
     storage = await mkdtemp(join(tmpdir(), 'mcp-permissions-'));
     vi.stubEnv('STORAGE_PATH', storage);
+    if ((process.env.DB_DIALECT || 'sqlite') === 'sqlite') {
+      vi.stubEnv('DB_SCHEMA', 'public');
+    }
     app = await createMockServer({
       plugins: ['nocobase'],
       acl: true,
-      database: { dialect: 'sqlite', storage: join(storage, 'test.sqlite') },
+      database: { storage: join(storage, 'test.sqlite'), underscored },
     });
     await app.pm.enable('ai');
   });
@@ -106,6 +109,16 @@ describe('global MCP tool permissions', () => {
     });
     const upgraded = app.aiManager.mcpManager;
     await upgraded.rebuildClient();
+    const attributes = permissionModel().getAttributes();
+    const indexFields = ['serverName', 'toolName'].map((name) => attributes[name].field || name);
+    expect(await app.db.sequelize.getQueryInterface().showIndex(permissionModel().getTableName())).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          unique: true,
+          fields: indexFields.map((attribute) => expect.objectContaining({ attribute })),
+        }),
+      ]),
+    );
     await upgraded.updateMCPToolPermission('mcp-test-server-get-data', 'ASK');
     expect(await permissions().count()).toBe(1);
   });
