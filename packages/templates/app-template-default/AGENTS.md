@@ -126,12 +126,12 @@ Standard Repository writes require an operation key through the registered submi
 
 ## Index
 
-| Read                                                                   | When                                                                                                         |
-| ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| [.agents/rules/workspace.md](.agents/rules/workspace.md)               | Adding internal packages or changing workspace development and validation                                    |
-| [.agents/rules/components.md](.agents/rules/components.md)             | Adding or changing a component, a shadcn primitive, a UI Library item, or the visual design                  |
-| [.agents/rules/shell.md](.agents/rules/shell.md)                       | Changing layouts, the header, sidebar, breadcrumbs, the account menu or loading indicators                   |
-| [.agents/rules/build-and-deploy.md](.agents/rules/build-and-deploy.md) | Changing the build, packing a deployment, the Docker image, `CDN_BASE_URL`, or building for another platform |
+| Read                                                                   | When                                                                                                                                       |
+| ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| [.agents/rules/workspace.md](.agents/rules/workspace.md)               | Adding internal packages or changing workspace development and validation                                                                  |
+| [.agents/rules/components.md](.agents/rules/components.md)             | Adding or changing a component, a shadcn primitive, a UI Library item, or the visual design                                                |
+| [.agents/rules/shell.md](.agents/rules/shell.md)                       | Changing layouts, the header, sidebar, breadcrumbs, the account menu or loading indicators                                                 |
+| [.agents/rules/build-and-deploy.md](.agents/rules/build-and-deploy.md) | Changing the build, packing a deployment, the Docker image, `CDN_BASE_URL`, installation as an app (PWA), or building for another platform |
 
 ## Visible and manageable role assignments
 

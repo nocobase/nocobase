@@ -1,6 +1,6 @@
 # Building and deploying this application
 
-Read this before changing the build, packing a deployment archive, building or editing the Docker image, setting `CDN_BASE_URL`, or building for another platform. The deployment process itself is in the [deployment Skill](../skills/nocobase-deployment/SKILL.md), and dependency placement and the build failure table are in [where to declare a dependency](../skills/nocobase-app-development/references/dependencies.md).
+Read this before changing the build, packing a deployment archive, building or editing the Docker image, setting `CDN_BASE_URL`, changing installation as an app, or building for another platform. The deployment process itself is in the [deployment Skill](../skills/nocobase-deployment/SKILL.md), and dependency placement and the build failure table are in [where to declare a dependency](../skills/nocobase-app-development/references/dependencies.md).
 
 ## Client typechecking
 
@@ -13,6 +13,10 @@ Keep `types: ["node"]` in the client `tsconfig.json`. Shared contracts from data
 Upload the static files from `dist/client/` to that CDN prefix with their directory structure preserved, and enable CORS for the application's origin. Keep `index.html` and the complete client tree on the application server so it can inject runtime configuration into HTML and serve files still addressed there. Use `resolveAssetUrl('/assets/logo.png')` from `@nocobase/app-client` for a file shipped as `dist/client/assets/logo.png`; template logos use this helper. It reads Vite's build-time `BASE_URL`, uses an absolute HTTP(S) CDN base when configured, and otherwise falls back to the runtime mount path. Keep API paths, page links and runtime-generated files on `resolveAppUrl`. Vite does not rewrite arbitrary URL strings. The README's CDN section describes deployment and Docker usage.
 
 For a Docker source build, pass `--build-arg CDN_BASE_URL=https://cdn.example.com/my-app/v1/`. With `DIST=prebuilt`, set `CDN_BASE_URL` when building `dist/` beforehand. Neither a prebuilt image's build argument nor `docker run -e CDN_BASE_URL=...` can change compiled asset URLs.
+
+## Installation as an app
+
+`createPwaRoutes()` in `server/routes/index.ts` serves `<APP_BASE_PATH>/manifest.webmanifest` from the `pwa` section of the configuration, and `client/service-provider.ts` links it with `mountInstallLinks()`; the icons are `public/assets/pwa-192.png` and `public/assets/pwa-512.png`. Installation needs HTTPS (or `localhost`), works signed out and needs no push configuration; there is no installation service worker or offline cache. With `CDN_BASE_URL` the manifest and icons still come from the application server, so keep `dist/client/assets/` deployed there. Configuration, icon replacement and upgrades: [installing as an app](../skills/nocobase-app-development/references/pwa.md).
 
 ## Packing the build for a deployment
 
