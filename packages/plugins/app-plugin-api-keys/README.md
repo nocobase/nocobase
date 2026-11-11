@@ -115,19 +115,21 @@ A service account's key is treated as scoped even without a scope: `required()` 
 
 ### Server API
 
-| Export                             | What it is                                                                                                                                                                             |
-| ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `apiKeyScopesToken`                | The registry: `groups.add`, `presets.add`, `mapAccess`, `validate`, `compile`                                                                                                          |
-| `scopedApiKeysToken`               | `ScopedApiKeys`: `scopeOptions`, `scopeObjects`, `list`, `get`, `check`, `create`, `issueChecked`, `setScope`, `update`, `rotate`, `revoke`, `revokeAll`, `resolve`, `setOwnKeyPolicy` |
-| `ApiKeyScopeError`                 | A refused scope, 400 with a stable code                                                                                                                                                |
-| `encodeKeyScope`, `decodeKeyScope` | The storage format                                                                                                                                                                     |
+| Export                             | What it is                                                                                                                                                                                                             |
+| ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `apiKeyScopesToken`                | The registry: `groups.add`, `presets.add`, `mapAccess`, `validate`, `compile`                                                                                                                                          |
+| `scopedApiKeysToken`               | `ScopedApiKeys`: `scopeOptions`, `scopeObjects`, `list`, `get`, `check`, `create`, `issueChecked`, `setScope`, `update`, `rotate`, `setEnabled`, `revoke`, `revokeAll`, `resolve`, `setOwnKeyPolicy`, `onOwnKeyChange` |
+| `ApiKeyScopeError`                 | A refused scope, 400 with a stable code                                                                                                                                                                                |
+| `encodeKeyScope`, `decodeKeyScope` | The storage format                                                                                                                                                                                                     |
 
 `ScopedApiKeys` acts on whichever user it is told; the caller decides who may manage whose keys. An application builds its own key pages and a service account's keys on it.
 
 - `check(input, identity)` validates what `create` would issue — name, description, scope, the records it picks (each must be one `identity` may see) and expiry — without issuing anything, so a caller can refuse before it creates whatever the key belongs to; `issueChecked(userId, checked)` then issues it.
 - `rotate(userId, keyId)` gives a key a new secret in place: the same id, name, description, scope and owner, with the expiry renewed for the lifetime the key had. The old secret stops at once. Better Auth generates and hashes the new value, so its key options apply.
+- `setEnabled(userId, keyId, enabled)` disables or enables a key in place, keeping its secret, scope and expiry. Better Auth reads the key's row on every request, so a disabled key stops at the next request and adds no lookup; enabling an expired key does not make it work again. `revoke(userId, keyId)` deletes a key for good.
+- `onOwnKeyChange(listener)` hears `{ userId, keyId, action }` after `setEnabled` changes a key or `revoke` deletes one (`disabled`, `enabled`, `deleted`), never the secret, so an application can keep a record of who did what. A failing listener is logged and undoes nothing.
 - `setScope(userId, keyId, scope, identity)` replaces a scoped key's scope; `update(userId, keyId, { name?, description? })` renames it.
-- `setOwnKeyPolicy(policy)` says who may create (and rotate) keys of their own: `(userId) => Promise<boolean>`. Without one everyone may. With one, `POST /api/apiKeys`, its rotation and Better Auth's own `/api-key/create` from a sign-in answer 403 `API_KEY_CREATION_FORBIDDEN` to anyone the policy refuses, while listing and revoking stay open. The plugin's provider connects the Better Auth hook at boot (`connectOwnKeyPolicy`).
+- `setOwnKeyPolicy(policy)` says who may create (and rotate) keys of their own: `(userId) => Promise<boolean>`. Without one everyone may. With one, `POST /api/apiKeys`, its rotation and Better Auth's own `/api-key/create` from a sign-in answer 403 `API_KEY_CREATION_FORBIDDEN` to anyone the policy refuses, and so does enabling a disabled key, while listing, disabling and revoking stay open. The plugin's provider connects the Better Auth hook at boot (`connectOwnKeyPolicy`).
 
 ### HTTP API
 
@@ -140,7 +142,9 @@ A service account's key is treated as scoped even without a scope: `required()` 
 | `GET /`                                                 | `{ data, meta: { total } }`: the caller's keys, with scope and last use, never a secret                  |
 | `POST /` `{ name, description?, expiresInDays, scope }` | 201 `{ data: { key, secret } }`, the secret shown once                                                   |
 | `POST /:keyId/rotate`                                   | `{ data: { key, secret } }`: same id, name, scope and lifetime; the old secret stops at once             |
-| `DELETE /:keyId`                                        | 204                                                                                                      |
+| `POST /:keyId/disable`                                  | `{ data }`: the key, disabled; it stops working from the next request on                                 |
+| `POST /:keyId/enable`                                   | `{ data }`: the key, enabled again with its scope; refused like creation when `mayCreate` is false       |
+| `DELETE /:keyId`                                        | 204: the key is deleted for good and cannot be enabled again                                             |
 
 `toApiKeysApiError(error)` turns `ApiKeyScopeError` and `ApiKeyRequestError` into that body's `ApiError`, for an application's own key routes: `router.onError((error, context) => apiErrorHandler(toApiKeysApiError(error), context))`.
 

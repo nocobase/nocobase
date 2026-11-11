@@ -239,6 +239,63 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
         });
       },
     );
+    routes.post(
+      '/:keyId/disable',
+      describeRoute({
+        tags,
+        summary: 'Disable an API key',
+        operationId: 'apiKeysDisableKey',
+        ...cliRoute({
+          command: 'api-key disable',
+          flags: { keyId: { name: 'key' } },
+        }),
+        description: `${signInOnly} The key stops working from the next request on, keeping its secret, scope and expiry, until it is enabled again.`,
+        responses: {
+          200: dataResponse(ApiKeyViewSchema),
+          ...apiErrorResponses,
+          404: keyNotFound,
+        },
+      }),
+      apiValidator('param', ApiKeyParams),
+      async (context) =>
+        context.json({
+          data: await keys.setEnabled(
+            userId(context),
+            context.req.valid('param').keyId,
+            false,
+          ),
+        }),
+    );
+    // Enabling gives a key back its use, so it takes what creating one does.
+    routes.post(
+      '/:keyId/enable',
+      mayCreate,
+      describeRoute({
+        tags,
+        summary: 'Enable an API key',
+        operationId: 'apiKeysEnableKey',
+        ...cliRoute({
+          command: 'api-key enable',
+          flags: { keyId: { name: 'key' } },
+        }),
+        description: `${signInOnly} A disabled key works again with the scope it had; an expired key stays expired.`,
+        responses: {
+          200: dataResponse(ApiKeyViewSchema),
+          ...apiErrorResponses,
+          403: creationForbidden,
+          404: keyNotFound,
+        },
+      }),
+      apiValidator('param', ApiKeyParams),
+      async (context) =>
+        context.json({
+          data: await keys.setEnabled(
+            userId(context),
+            context.req.valid('param').keyId,
+            true,
+          ),
+        }),
+    );
     routes.delete(
       '/:keyId',
       describeRoute({
@@ -248,9 +305,10 @@ export const apiRoutes: AppApiRouteContribution<AppPluginApplication> =
         ...cliRoute({
           command: 'api-key delete',
           flags: { keyId: { name: 'key' } },
-          confirm: 'Revoke this key? Whatever uses it stops working.',
+          confirm:
+            'Revoke this key for good? Whatever uses it stops working, and it cannot be enabled again.',
         }),
-        description: signInOnly,
+        description: `${signInOnly} Deletes the key for good: it stops working at once and cannot be enabled again.`,
         responses: {
           204: emptyResponse('The key was revoked.'),
           ...apiErrorResponses,

@@ -24,7 +24,7 @@ import {
 } from '@nocobase/app-testing/server';
 import { createMigrator, type DatabaseManager } from '@nocobase/db';
 import { Hono } from 'hono';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import { authenticationToken } from '@nocobase/app-plugin-authentication/server';
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
@@ -465,6 +465,82 @@ describe('scoped API keys', () => {
     });
   });
 
+  it('disables and enables a key in place, telling listeners without the secret', async () => {
+    const identity = await keys.identityOf(personId);
+    const created = await keys.create(
+      personId,
+      {
+        name: 'pausing',
+        expiresInDays: 30,
+        scope: { groups: { 'shop.billing': { level: 'read' } } },
+      },
+      identity,
+    );
+    const changes: unknown[] = [];
+    const stop = keys.onOwnKeyChange(async (change) => {
+      changes.push(change);
+    });
+    try {
+      const disabled = await keys.setEnabled(personId, created.key.id, false);
+      expect(disabled).toMatchObject({
+        id: created.key.id,
+        enabled: false,
+        scope: created.key.scope,
+        expiresAt: created.key.expiresAt,
+      });
+      expect((await app.request('/plain', as(created.secret))).status).toBe(
+        401,
+      );
+      // Disabling twice changes and records nothing more.
+      await keys.setEnabled(personId, created.key.id, false);
+      const enabled = await keys.setEnabled(personId, created.key.id, true);
+      expect(enabled).toMatchObject({
+        enabled: true,
+        scope: created.key.scope,
+      });
+      // Back with the scope it had, and no more.
+      expect(
+        (await app.request('/orders/read', as(created.secret))).status,
+      ).toBe(403);
+      await expect(
+        keys.setEnabled('someone-else', created.key.id, false),
+      ).rejects.toMatchObject({ code: 'KEY_NOT_FOUND' });
+      await keys.revoke(personId, created.key.id);
+      await expect(
+        keys.setEnabled(personId, created.key.id, true),
+      ).rejects.toMatchObject({ code: 'KEY_NOT_FOUND' });
+      expect(changes).toEqual([
+        { userId: personId, keyId: created.key.id, action: 'disabled' },
+        { userId: personId, keyId: created.key.id, action: 'enabled' },
+        { userId: personId, keyId: created.key.id, action: 'deleted' },
+      ]);
+    } finally {
+      stop();
+    }
+  });
+
+  it('keeps a change when a listener fails to record it', async () => {
+    const created = await keys.create(
+      personId,
+      { name: 'unrecorded', expiresInDays: 1, scope: null },
+      await keys.identityOf(personId),
+    );
+    const stop = keys.onOwnKeyChange(() =>
+      Promise.reject(new Error('audit store is down')),
+    );
+    const logged = vi.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      await expect(
+        keys.setEnabled(personId, created.key.id, false),
+      ).resolves.toMatchObject({ enabled: false });
+      expect(logged).toHaveBeenCalledOnce();
+    } finally {
+      logged.mockRestore();
+      stop();
+      await keys.revoke(personId, created.key.id);
+    }
+  });
+
   it('keeps a service account’s key working, under the same id, through a rotation', async () => {
     const service = await users.createServiceAccount({ name: 'Deployer' });
     const created = await keys.create(
@@ -820,6 +896,23 @@ describe('scoped API keys', () => {
     expect(listed.data.map((key) => key.id)).toContain(data.key.id);
 
     expect((await call(`/${data.key.id}/rotate`, 'POST')).status).toBe(200);
+    const disabled = await call(`/${data.key.id}/disable`, 'POST');
+    expect(disabled.status).toBe(200);
+    expect(await disabled.json()).toMatchObject({
+      data: { id: data.key.id, enabled: false },
+    });
+    const enabled = await call(`/${data.key.id}/enable`, 'POST');
+    expect(await enabled.json()).toMatchObject({
+      data: { id: data.key.id, enabled: true },
+    });
+    expect((await call('/unknown/disable', 'POST')).status).toBe(404);
+    // A key manages no key, its own included.
+    const byKey = await router.request(`/apiKeys/${data.key.id}/disable`, {
+      method: 'POST',
+      headers: { 'x-api-key': data.secret, origin: 'http://localhost' },
+    });
+    expect(byKey.status).toBeGreaterThanOrEqual(401);
+    expect(byKey.status).toBeLessThanOrEqual(403);
     expect((await call(`/${data.key.id}`, 'DELETE')).status).toBe(204);
     const gone = await call(`/${data.key.id}`, 'DELETE');
     expect(gone.status).toBe(404);

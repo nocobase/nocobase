@@ -58,6 +58,8 @@ export {
   ScopedApiKeys,
   type ApiKeysConfig,
   type CheckedApiKey,
+  type OwnKeyChange,
+  type OwnKeyChangeListener,
   type OwnKeyPolicy,
   type ScopedApiKeysOptions,
 } from './scoped-keys.js';

@@ -79,6 +79,19 @@ interface KeyRow {
  */
 export type OwnKeyPolicy = (userId: string) => Promise<boolean>;
 
+/**
+ * Something a person did to one of their own keys from `/api/apiKeys`: disabled, enabled or revoked it. It names the
+ * key and its owner, never the secret, so an application can keep a record of it (`ScopedApiKeys.onOwnKeyChange`).
+ */
+export interface OwnKeyChange {
+  readonly userId: string;
+  readonly keyId: string;
+  readonly action: 'disabled' | 'enabled' | 'deleted';
+}
+
+/** Hears an `OwnKeyChange` after it is done; its failure is logged and undoes nothing. */
+export type OwnKeyChangeListener = (change: OwnKeyChange) => Promise<void>;
+
 /** A key's fields as `create` would issue it, checked but not yet issued (`ScopedApiKeys.check`). */
 export interface CheckedApiKey {
   readonly name: string;
@@ -113,6 +126,7 @@ export async function connectOwnKeyPolicy(
 export class ScopedApiKeys {
   private readonly resolved = new WeakMap<Request, Promise<KeyScope | null>>();
   private ownKeyPolicy: OwnKeyPolicy | null = null;
+  private readonly ownKeyListeners = new Set<OwnKeyChangeListener>();
 
   constructor(private readonly options: ScopedApiKeysOptions) {}
 
@@ -125,6 +139,28 @@ export class ScopedApiKeys {
     return () => {
       if (this.ownKeyPolicy === policy) this.ownKeyPolicy = null;
     };
+  }
+
+  /**
+   * Tells `listener` whenever a person disables, enables or revokes one of their keys (`setEnabled`, `revoke`), after
+   * the change is stored. Returns what removes it again.
+   */
+  onOwnKeyChange(listener: OwnKeyChangeListener): () => void {
+    this.ownKeyListeners.add(listener);
+    return () => {
+      this.ownKeyListeners.delete(listener);
+    };
+  }
+
+  private async announce(change: OwnKeyChange): Promise<void> {
+    for (const listener of this.ownKeyListeners)
+      await listener(change).catch((error: unknown) => {
+        // The change is already stored: a listener that fails to record it must not undo or refuse it.
+        console.error(
+          `Could not record that API key ${change.keyId} was ${change.action}.`,
+          error,
+        );
+      });
   }
 
   /** Whether `userId` may create keys of their own; true unless the application set a policy that says otherwise. */
@@ -420,9 +456,36 @@ export class ScopedApiKeys {
     return viewOf(await this.requireRow(userId, keyId));
   }
 
+  /**
+   * Disables or enables one of `userId`'s keys, keeping its secret, scope and expiry. A disabled key authenticates
+   * nothing from the next request on: Better Auth reads the key's row on every request and refuses it while disabled.
+   * Enabling an expired key does not make it work again.
+   */
+  async setEnabled(
+    userId: string,
+    keyId: string,
+    enabled: boolean,
+  ): Promise<ApiKeyView> {
+    const row = await this.requireRow(userId, keyId);
+    if (viewOf(row).enabled !== enabled) {
+      // Through Better Auth, which stores the flag the way its own reads expect it on every dialect.
+      await this.options.auth.pluginApi<ApiKeysPlugin>('api-key').updateApiKey({
+        body: { keyId, userId, enabled, configId: 'default' },
+      });
+      await this.announce({
+        userId,
+        keyId,
+        action: enabled ? 'enabled' : 'disabled',
+      });
+    }
+    return viewOf(await this.requireRow(userId, keyId));
+  }
+
+  /** Deletes one of `userId`'s keys for good: it stops at once and cannot be enabled again. */
   async revoke(userId: string, keyId: string): Promise<void> {
     await this.requireRow(userId, keyId);
     await this.remove(keyId);
+    await this.announce({ userId, keyId, action: 'deleted' });
   }
 
   /** Every key of `userId`, as when the account is deleted. */
