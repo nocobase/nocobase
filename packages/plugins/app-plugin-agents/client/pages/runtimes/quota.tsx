@@ -138,9 +138,6 @@ export function QuotaCell({
       {marks.some((m) => m.resetsAt) ? (
         <p className='text-muted-foreground'>{t('runtimes.quota.automatic')}</p>
       ) : null}
-      {!target ? (
-        <QuotaLimitSetting runner={runner} tool={tool} now={now} />
-      ) : null}
       {!usage.length && !marks.length ? (
         providerTool && !target && blocked > 0 ? (
           <span className='text-muted-foreground'>
@@ -153,10 +150,13 @@ export function QuotaCell({
             {t(
               !isNativeTool(tool)
                 ? 'runtimes.tool.notProvided'
-                : 'runtimes.quota.ok',
+                : 'runtimes.quota.noUsage',
             )}
           </span>
         )
+      ) : null}
+      {!target ? (
+        <QuotaLimitSetting runner={runner} tool={tool} now={now} />
       ) : null}
     </div>
   );

@@ -573,10 +573,8 @@ const zhTW: LocaleResource<typeof enUS> = {
       ceilingReached: '已達額度門檻',
       ceilingLabel: '暫停接單門檻',
       ceilingInput: '{{tool}} 已用額度達到多少百分比時暫停接單',
-      ceilingOff: '不限制',
       ceilingSave: '套用',
       ceilingInvalid: '請輸入 1 至 100 的整數百分比，或留空。',
-      ceilingHint: '依最近回報的額度判斷。留空不限制，執行中的工作繼續。',
       ceilingPaused: '某額度視窗已達門檻，受影響的新工作等待重設或調整上限。',
 
       workspaceStatus: {
@@ -650,7 +648,7 @@ const zhTW: LocaleResource<typeof enUS> = {
         '確認額度已恢復後再清除。清除後 {{target}} 立即可以繼續領取工作；如果額度其實仍未恢復，下次執行會重新標記。',
       observed: '最後報告 {{time}}',
       usedPercent: '{{percent}}% 使用',
-      ok: '好的',
+      noUsage: '暫無額度資料',
       hint: '已知重置時間到點或工具回報額度未用完時自動解除；手動清除前請確認額度已恢復。只有執行環境擁有者和管理員才能清除標記。',
     },
     workspaces: {

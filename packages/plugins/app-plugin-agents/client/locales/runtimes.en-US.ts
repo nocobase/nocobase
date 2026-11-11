@@ -5,11 +5,8 @@ const runtimesEnUS = {
       ceilingReached: 'Quota threshold reached',
       ceilingLabel: 'Pause at',
       ceilingInput: 'Pause new {{tool}} work at percent used',
-      ceilingOff: 'Off',
       ceilingSave: 'Apply',
       ceilingInvalid: 'Enter a whole percentage from 1 to 100, or leave blank.',
-      ceilingHint:
-        'Uses last reported usage. Blank means no ceiling; running work continues.',
       ceilingPaused:
         'Usage ceiling reached for a quota window; affected new work waits until reset or the ceiling changes.',
 
@@ -86,7 +83,7 @@ const runtimesEnUS = {
         'Clear it only after confirming the quota is restored. {{target}} gets work again right away; if the quota is still used up, the next run marks it again.',
       observed: 'Last reported {{time}}',
       usedPercent: '{{percent}}% used',
-      ok: 'OK',
+      noUsage: 'No quota data yet',
       hint: 'A mark clears by itself at a known reset time, or when the tool reports quota left again. Clear it by hand only after confirming the quota is restored. Only the runtime owner and administrators can clear marks.',
     },
     workspaces: {

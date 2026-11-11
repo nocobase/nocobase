@@ -580,11 +580,8 @@ const koKR: LocaleResource<typeof enUS> = {
       ceilingReached: '할당량 임계값 도달',
       ceilingLabel: '접수 중지 임계값',
       ceilingInput: '{{tool}} 사용률이 지정한 비율에 도달하면 새 작업 중지',
-      ceilingOff: '제한 없음',
       ceilingSave: '적용',
       ceilingInvalid: '1~100 사이의 정수 백분율을 입력하거나 비워 두세요.',
-      ceilingHint:
-        '마지막으로 보고된 사용량을 기준으로 판단합니다. 비워 두면 제한하지 않으며 실행 중인 작업은 계속됩니다.',
       ceilingPaused:
         '할당량 구간이 임계값에 도달했습니다. 해당 새 작업은 초기화되거나 임계값이 변경될 때까지 대기합니다.',
 
@@ -660,7 +657,7 @@ const koKR: LocaleResource<typeof enUS> = {
         '할당량이 복구된 것을 확인한 뒤에만 해제하세요. {{target}}은(는) 즉시 다시 작업을 받으며, 할당량이 아직 소진되어 있으면 다음 실행에서 다시 표시됩니다.',
       observed: '마지막 보고 {{time}}',
       usedPercent: '{{percent}}% 사용',
-      ok: '정상',
+      noUsage: '아직 할당량 데이터가 없습니다',
       hint: '표시는 알려진 초기화 시각이나 도구가 다시 남은 할당량을 보고하면 자동으로 해제됩니다. 할당량이 복구된 것을 확인한 뒤에만 직접 해제하세요. 실행 환경 소유자와 관리자만 표시를 해제할 수 있습니다.',
     },
     workspaces: {

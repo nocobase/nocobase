@@ -624,12 +624,9 @@ const frFR: LocaleResource<typeof enUS> = {
       ceilingLabel: 'Suspendre à',
       ceilingInput:
         'Suspendre les nouveaux travaux {{tool}} au pourcentage utilisé',
-      ceilingOff: 'Désactivé',
       ceilingSave: 'Appliquer',
       ceilingInvalid:
         'Saisissez un pourcentage entier de 1 à 100, ou laissez vide.',
-      ceilingHint:
-        'Utilise la dernière consommation signalée. Vide signifie sans plafond ; les travaux en cours continuent.',
       ceilingPaused:
         'Une fenêtre a atteint le plafond ; les nouveaux travaux concernés attendent la réinitialisation ou un changement du plafond.',
 
@@ -705,7 +702,7 @@ const frFR: LocaleResource<typeof enUS> = {
         'Ne l’effacez qu’après avoir confirmé que le quota est rétabli. {{target}} retrouve du travail immédiatement ; si le quota est encore épuisé, la prochaine exécution le marque à nouveau.',
       observed: 'Dernier rapport {{time}}',
       usedPercent: '{{percent}}% utilisé',
-      ok: "D'accord",
+      noUsage: 'Aucune donnée de quota pour le moment',
       hint: 'Une marque s’efface d’elle-même à l’heure de réinitialisation connue, ou quand l’outil signale à nouveau du quota disponible. Ne l’effacez à la main qu’après avoir confirmé que le quota est rétabli. Seuls le propriétaire du runtime et les administrateurs peuvent effacer les marques.',
       marks_many: 'Quotas {{count}}',
       providers_many: 'Fournisseurs {{count}} au quota',

@@ -623,12 +623,9 @@ const esES: LocaleResource<typeof enUS> = {
       ceilingReached: 'Umbral de cuota alcanzado',
       ceilingLabel: 'Pausar al',
       ceilingInput: 'Pausar nuevos trabajos de {{tool}} al porcentaje usado',
-      ceilingOff: 'Sin límite',
       ceilingSave: 'Aplicar',
       ceilingInvalid:
         'Introduce un porcentaje entero entre 1 y 100 o déjalo vacío.',
-      ceilingHint:
-        'Usa el último consumo informado. Vacío significa sin límite; el trabajo en curso continúa.',
       ceilingPaused:
         'Una ventana alcanzó el límite; el nuevo trabajo afectado espera al reinicio o a un cambio del límite.',
 
@@ -704,7 +701,7 @@ const esES: LocaleResource<typeof enUS> = {
         'Bórrela solo después de confirmar que la cuota se ha restablecido. {{target}} vuelve a recibir trabajo de inmediato; si la cuota sigue agotada, la siguiente ejecución la marca de nuevo.',
       observed: 'Último reportado {{time}}',
       usedPercent: '{{percent}}% usado',
-      ok: 'Aceptar',
+      noUsage: 'Aún no hay datos de cuota',
       hint: 'Una marca se borra sola a la hora de reinicio conocida o cuando la herramienta vuelve a informar cuota disponible. Bórrela a mano solo después de confirmar que la cuota se ha restablecido. Sólo el propietario y los administradores del entorno de ejecución pueden borrar las marcas.',
       marks_many: 'Marcas de cuota {{count}}',
       providers_many: 'Proveedores {{count}} en cuota',
