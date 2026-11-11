@@ -1,5 +1,19 @@
 # @nocobase/app-plugin-notification
 
+## 2.0.0-beta.8
+
+### Patch Changes
+
+- e1f584e: The notification Skill no longer tells an agent that in-app inbox writes need a CSRF token, matching the in-app plugin, whose writes are protected by the authentication plugin's origin check. The in-app Skill's description no longer promises a Client page the plugin does not contribute. The agents and in-app Skills name their package's `docs/` and `README.md` files instead of linking outside the Skill folder, so the links no longer break once the Skills are synchronized into an application's `.agents/skills/`, and the agents extension points table links to `online-agent.md` by its real name.
+- Updated dependencies [d88875e]
+- Updated dependencies [57912f1]
+- Updated dependencies [57912f1]
+- Updated dependencies [57912f1]
+  - @nocobase/app-server@5.0.0-beta.4
+  - @nocobase/app-client@4.0.0-beta.10
+  - @nocobase/db@1.0.0-beta.28
+  - @nocobase/app-plugin-authentication@2.0.0-beta.20
+
 ## 2.0.0-beta.7
 
 ### Minor Changes

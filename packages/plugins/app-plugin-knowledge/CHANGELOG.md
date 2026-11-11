@@ -1,5 +1,30 @@
 # @nocobase/app-plugin-knowledge
 
+## 0.1.0-beta.19
+
+### Minor Changes
+
+- ad2e33e: Add `createKnowledgePlugin({ indexing: false })` and the client option `indexing: false` for applications without a vector index: no index backends, indexing routes, `kb.indexing` settings item or indexing entry are registered, and search keeps the built-in text match. The `kb.indexing` settings item now has translated titles and its own Knowledge group under administration.
+
+### Patch Changes
+
+- Updated dependencies [ff549a1]
+- Updated dependencies [ff549a1]
+- Updated dependencies [7d9c0a4]
+- Updated dependencies [d88875e]
+- Updated dependencies [57912f1]
+- Updated dependencies [57912f1]
+- Updated dependencies [7e97024]
+- Updated dependencies [57912f1]
+- Updated dependencies [e1f584e]
+  - @nocobase/app-plugin-agents@2.0.0-beta.11
+  - @nocobase/document-extractor@0.1.0-beta.1
+  - @nocobase/app-server@5.0.0-beta.4
+  - @nocobase/app-plugin-file@1.0.0-beta.31
+  - @nocobase/app-client@4.0.0-beta.10
+  - @nocobase/db@1.0.0-beta.28
+  - @nocobase/app-plugin-authentication@2.0.0-beta.20
+
 ## 0.1.0-beta.18
 
 ### Minor Changes

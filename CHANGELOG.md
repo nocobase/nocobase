@@ -2,6 +2,27 @@
 
 All notable changes to NocoBase 3 are documented in this file, one section per release: `nocobase-v3-beta/<date>.<n>` for a beta and `release/<date>.<n>` for a stable release. The versions each release published are on its GitHub Release, and every package's own changes are in its CHANGELOG.md.
 
+## [nocobase-v3-beta/2026-11-11.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-11.1)
+
+### 🎉 New Features
+
+- **[Agents]** Show Claude quota windows and let runtime owners pause new work at a chosen usage threshold ([#11483](https://github.com/nocobase/nocobase/pull/11483)) by @2013xile
+
+### 🚀 Improvements
+
+- **[Skills]** Applications built with the development Skill now get phone-ready pages on first delivery, and the templates' data table can show records as cards on phones. ([#11402](https://github.com/nocobase/nocobase/pull/11402)) by @chenos
+- **[Files]** Configure attachment upload limits per storage disk, with consistent size hints and validation for tasks, comments and Agent conversations. ([#11460](https://github.com/nocobase/nocobase/pull/11460)) by @2013xile
+- **[Knowledge base]** Applications can turn off knowledge semantic indexing, which removes its settings, routes and permission; the Knowledge indexing permission is now translated and grouped. ([#11471](https://github.com/nocobase/nocobase/pull/11471)) by @2013xile
+- **[Interface]** The UI Library's issue table shows statuses as shapes, an agent owner's avatar and the project, and can add columns, group rows and a compact phone layout. ([#11478](https://github.com/nocobase/nocobase/pull/11478)) by @2013xile
+
+### 🐛 Bug Fixes
+
+- **[Agents]**
+  - Hide agent runs and transcripts when their subjects are not visible to the reader. ([#11470](https://github.com/nocobase/nocobase/pull/11470)) by @2013xile
+  - A message sent while an agent is still answering joins its queue instead of being refused as busy, and a run that fails while being prepared shows why without reloading. ([#11481](https://github.com/nocobase/nocobase/pull/11481)) by @2013xile
+- **[Agent runner]** Read native Claude user settings during model discovery and user, project and local settings during conversations so configured providers and model aliases work in the runner. ([#11480](https://github.com/nocobase/nocobase/pull/11480)) by @2013xile
+- **[Demo mode]** Keep a demo visitor's language choice in their own browser instead of saving it to the shared demo account. ([#11486](https://github.com/nocobase/nocobase/pull/11486)) by @gchust
+
 ## [nocobase-v3-beta/2026-11-10.2](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-10.2)
 
 ### 🐛 Bug Fixes

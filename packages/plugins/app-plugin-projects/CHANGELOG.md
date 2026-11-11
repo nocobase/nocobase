@@ -1,5 +1,32 @@
 # @nocobase/app-plugin-projects
 
+## 0.1.0-beta.29
+
+### Minor Changes
+
+- d88875e: Configure per-disk upload limits through Drive, validate issue, comment and conversation attachments with shared File helpers, and use the same limits for issue, comment and conversation upload checks and messages.
+
+  Conversation attachment size errors now use `FILE_TOO_LARGE` in the `file` domain instead of `UPLOAD_TOO_LARGE` in `agents`. Online Agent attachment reading follows the stored disk limit.
+
+  Upload limits are embedded in the page’s public configuration, so client startup requires no separate upload-policy request.
+
+### Patch Changes
+
+- 7e97024: Filter agent runs by their subject visibility before listing, reporting or granting access to transcripts and realtime updates.
+- Updated dependencies [d88875e]
+- Updated dependencies [efa464a]
+- Updated dependencies [57912f1]
+- Updated dependencies [57912f1]
+- Updated dependencies [57912f1]
+- Updated dependencies [e1f584e]
+  - @nocobase/app-server@5.0.0-beta.4
+  - @nocobase/app-plugin-file@1.0.0-beta.31
+  - @nocobase/app-plugin-users@2.0.0-beta.19
+  - @nocobase/app-client@4.0.0-beta.10
+  - @nocobase/db@1.0.0-beta.28
+  - @nocobase/app-plugin-notification@2.0.0-beta.8
+  - @nocobase/app-plugin-authentication@2.0.0-beta.20
+
 ## 0.1.0-beta.28
 
 ### Patch Changes

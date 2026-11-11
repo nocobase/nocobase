@@ -2,6 +2,27 @@
 
 本文件记录 NocoBase 3 的所有重要变更，每次发布一节：`nocobase-v3-beta/<日期>.<序号>` 是预览版，`release/<日期>.<序号>` 是正式版。每次发布的包版本见对应的 GitHub Release，各个包自己的变更见包内的 CHANGELOG.md。
 
+## [nocobase-v3-beta/2026-11-11.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-11.1)
+
+### 🎉 新特性
+
+- **[Agent]** 展示 Claude 各额度窗口，并支持执行机所有者设置暂停领取新任务的额度阈值 ([#11483](https://github.com/nocobase/nocobase/pull/11483)) by @2013xile
+
+### 🚀 优化
+
+- **[Skills]** 使用开发 Skill 构建的应用首次交付即适配手机，模板数据表格可在手机上以卡片显示记录。 ([#11402](https://github.com/nocobase/nocobase/pull/11402)) by @chenos
+- **[文件]** 支持按存储盘配置附件上限，任务、评论和 Agent 对话使用统一的大小提示与校验。 ([#11460](https://github.com/nocobase/nocobase/pull/11460)) by @2013xile
+- **[知识库]** 应用可以关闭知识库语义索引，同时移除其设置、接口和权限项；“知识库索引”权限项现已翻译并归组。 ([#11471](https://github.com/nocobase/nocobase/pull/11471)) by @2013xile
+- **[界面]** UI 组件库的任务表格用形状显示状态，显示智能体负责人的头像和所属项目，并支持添加列、分组行和手机紧凑布局。 ([#11478](https://github.com/nocobase/nocobase/pull/11478)) by @2013xile
+
+### 🐛 修复
+
+- **[Agent]**
+  - 当运行所属主体不可见时，隐藏其 Agent 运行记录和对话。 ([#11470](https://github.com/nocobase/nocobase/pull/11470)) by @2013xile
+  - Agent 仍在回答时发送的消息会进入队列而不再被当作忙碌拒绝；运行在准备阶段失败时，无需刷新即可看到失败原因。 ([#11481](https://github.com/nocobase/nocobase/pull/11481)) by @2013xile
+- **[Agent 运行器]** Runner 在模型探测时读取 Claude 用户配置，在对话时读取用户、项目及本地配置，使原生配置的服务与模型映射正常生效。 ([#11480](https://github.com/nocobase/nocobase/pull/11480)) by @2013xile
+- **[演示模式]** 演示模式下切换语言只对当前浏览器生效，不再保存到共享的演示账号。 ([#11486](https://github.com/nocobase/nocobase/pull/11486)) by @gchust
+
 ## [nocobase-v3-beta/2026-11-10.2](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-10.2)
 
 ### 🐛 修复
