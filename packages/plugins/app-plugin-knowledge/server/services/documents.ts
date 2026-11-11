@@ -276,7 +276,11 @@ export function createDocumentService(
       const conn = context.read();
       const unique = [
         ...new Map(
-          (refs ?? directory ?? []).map((ref) => [spaceKey(ref), ref]),
+          (
+            refs ??
+            directory?.map(({ scope, scopeId }) => ({ scope, scopeId })) ??
+            []
+          ).map((ref) => [spaceKey(ref), ref]),
         ).values(),
       ];
       if (!unique.length) return [];
