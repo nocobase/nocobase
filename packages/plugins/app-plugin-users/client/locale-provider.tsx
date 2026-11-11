@@ -17,6 +17,7 @@ import {
   type PropsWithChildren,
   type ReactElement,
 } from 'react';
+import { USER_LOCALE_PREFERENCE_KEY } from '../shared/preference-keys.js';
 import { useUserPreferenceStore } from './preferences.js';
 
 function guestLocale(): string | undefined {
@@ -95,7 +96,9 @@ export function UserLocaleProvider({
     ? 'pending'
     : (auth.session?.session?.id ?? auth.session?.user.id ?? null);
   const ready = !auth.isPending && (!store || store.loaded);
-  const value = store?.loaded ? store.get('i18n.locale') : undefined;
+  const value = store?.loaded
+    ? store.get(USER_LOCALE_PREFERENCE_KEY)
+    : undefined;
   const [visibleIdentity, setVisibleIdentity] = useState<
     string | null | undefined
   >();
@@ -152,7 +155,12 @@ export function UserLocaleProvider({
           await runtime.changeLanguage(next);
           if (!scope.active) throw new Error('The signed-in account changed.');
           writeStoredLocale(runtime.getLocale());
-          if (store) await store.set('i18n.locale', next, () => scope.active);
+          if (store)
+            await store.set(
+              USER_LOCALE_PREFERENCE_KEY,
+              next,
+              () => scope.active,
+            );
           else {
             try {
               localStorage.setItem(
