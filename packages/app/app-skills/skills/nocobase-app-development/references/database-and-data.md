@@ -30,6 +30,8 @@ Neither Repository nor Query applies the application's permissions. The route de
 
 `IdGeneratorProvider` supplies Snowflake IDs when a table needs a sortable identifier not tied to auto-increment. `increments('id')` is fine for ordinary tables.
 
+Keep the application's `IdGeneratorProvider` when a plugin contributes an ID implementation. The public `idGeneratorToken` still provides synchronous `generate(): number` and `generateString(): string`. A plugin may bind one `IdGeneratorImplementation` to the original `idGeneratorImplementationToken` from `@nocobase/app-server/id-generator` during registration; its `initialize(): Promise<void>` is awaited by the host ID provider before later providers boot. Previously resolved public references also delegate to that implementation. Before initialization, after failure, or after closure, the implementation must reject generation rather than fall back to manual IDs. The plugin owns cleanup and shares sticky initialization with any earlier database preparation hook. Without an extension, the host lazily uses its original manual Snowflake generator. Mode changes require restart; this is not a driver registry or hot-swap protocol.
+
 ## Verify
 
 - Queries return what you expect against a real database, not only in a mocked test.
