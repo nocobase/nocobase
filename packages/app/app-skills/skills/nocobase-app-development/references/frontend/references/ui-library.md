@@ -478,14 +478,14 @@ Contextual prerequisite checks for a feature, with missing, ready and unavailabl
 
 ### issue-table
 
-The issues list: identifier, title with labels, status, priority, owner, executor and last update, with sorting and selection through callbacks. Use it for a list of issues. Presentational: map IssueListItem from @nocobase/app-plugin-projects/client/issues to IssueTableRow.
+The issues list: identifier, title with labels, status drawn as its shape, priority, owner (a person or an agent's avatar), project and last update, with sorting, selection, extra columns, group rows and a compact phone layout through props and callbacks. Use it for a list of issues. Presentational: map IssueListItem from @nocobase/app-plugin-projects/client/issues to IssueTableRow.
 
 - Kind: component
 - Install: `yes n | pnpm exec shadcn add @nocobase/issue-table`
-- Installs to: `client/components/issue-table.tsx`
-- Plugin dependencies: none
+- Installs to: `client/components/issue-table.tsx`, `client/components/status-icon.tsx`, `client/components/status-shapes.ts`
+- Plugin dependencies: `@nocobase/app-plugin-agents`, `@nocobase/app-plugin-projects`
 - Example: `@nocobase/issue-table-demo` (`pnpm exec shadcn view @nocobase/issue-table-demo`)
-- After installing: Map your issues (such as @nocobase/app-plugin-projects' IssueListItem) to IssueTableRow. Every word comes from the labels prop, English by default.
+- After installing: Map your issues (such as @nocobase/app-plugin-projects' IssueListItem) to IssueTableRow; give a status its key to draw it as its shape (status-icon). Every word comes from the labels prop, English by default.
 
 ### issue-card
 
