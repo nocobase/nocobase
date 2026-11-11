@@ -2,14 +2,16 @@
 
 A project's and an issue's pages, presented: the `project-detail` and `issue-detail` blocks, the `plan-card` block over the projects plugin's operation plans (each with its own README), and the `issue-table` and `issue-card` components. The blocks list them in `registryDependencies` and import them as `#components/issue-table` and `#components/issue-card`, where they are installed.
 
-| Item          | Installs                            | Exports                                                          |
-| ------------- | ----------------------------------- | ---------------------------------------------------------------- |
-| `issue-table` | `client/components/issue-table.tsx` | `IssueTable`, `IssueStatusBadge`, `IssuePriority`, `IssuePerson` |
-| `issue-card`  | `client/components/issue-card.tsx`  | `IssueCard`, `IssueCardSkeleton`                                 |
+| Item          | Installs                                                                             | Exports                                                                                                              |
+| ------------- | ------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------- |
+| `issue-table` | `client/components/issue-table.tsx`, `status-icon.tsx`, `status-shapes.ts` beside it | `IssueTable`, `IssueStatusBadge`, `IssuePriority`, `IssuePerson`, `IssueTableSortButton`; `StatusIcon`, `StatusName` |
+| `issue-card`  | `client/components/issue-card.tsx`                                                   | `IssueCard`, `IssueCardSkeleton`                                                                                     |
 
 ## Issue table
 
-`issue-table` installs into `client/components/` like the generic components. It lists issues with their identifier, title and labels, status, priority, owner, executor and last update, on the shadcn `Table`. It is presentational: map your issues (such as the projects plugin's `IssueListItem`) to `IssueTableRow`; `sort` with `onSortChange` makes the identifier, priority and updated headers sortable, `selectedIds` with `onSelectedIdsChange` adds checkboxes, `rowHref` makes the identifier a link, `onRowClick` hears a plain click, `rowAction` adds something at the end of a row and `rowMarks` small marks after its title. Every word comes from `labels` (English by default); the component ships no locale keys.
+`issue-table` installs into `client/components/` like the generic components, with `status-icon.tsx` and `status-shapes.ts`, which draw a status as its shape in the projects plugin's colours (a dashed ring for not started, half filled for in progress, a pause for blocked, three quarters for in review, a check for done and a cross for cancelled). It lists issues with their identifier, title and labels, status, priority, owner, project and last update, on the shadcn `Table`; an owner of `kind: 'agent'` shows the agents plugin's `AgentAvatar`. It is presentational: map your issues (such as the projects plugin's `IssueListItem`) to `IssueTableRow`, and give a status its `key` to draw it as its shape rather than a coloured badge. `sort` with `onSortChange` makes the identifier, priority and updated headers sortable, and `IssueTableSortButton` makes a header of your own sortable the same way; `selectedIds` with `onSelectedIdsChange` adds checkboxes, `rowHref` makes the identifier a link, `onRowClick` hears a plain click, `rowAction` adds something at the end of a row and `rowMarks` small marks after its title. `extraColumns` adds columns after the title, `hideProject` leaves the project column out, `entries` puts full-width rows such as group headings between the rows, `rowLeading`, `rowDescription` and `rowClassName` adjust a row, and `compactOnPhone` keeps only the title and status as columns below `md`, for a list that repeats the rest under the title with `rowDescription`. Every word comes from `labels` (English by default); the component ships no locale keys.
+
+This is the version NocoBase Studio uses; Studio keeps its copy in a shared package of its own, and a change made there is brought back here.
 
 ## Issue card
 

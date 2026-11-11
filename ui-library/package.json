@@ -178,6 +178,8 @@
     "#components/inbox-button": "./registry/inbox/inbox-button.tsx",
     "#components/inbox-badge": "./registry/inbox/inbox-badge.ts",
     "#components/issue-table": "./registry/projects/issue-table.tsx",
+    "#components/status-icon": "./registry/projects/status-icon.tsx",
+    "#components/status-shapes": "./registry/projects/status-shapes.ts",
     "#components/issue-card": "./registry/projects/issue-card.tsx",
     "#extensions/nocobase-issue-detail/issue-detail": "./registry/projects/issue-detail/issue-detail.tsx",
     "#extensions/nocobase-issue-detail/issue-properties": "./registry/projects/issue-detail/issue-properties.tsx",

@@ -1,9 +1,4 @@
-/**
- * The issues list as a table: identifier, title with labels, status, priority, owner, executor and when it was last
- * updated. Purely presentational: the consumer gives the rows (mapped from the projects plugin's issues, for
- * instance), the order and the selection, and hears about clicks, order changes and selection changes. Every word it
- * shows comes from `labels`, English by default.
- */
+import { AgentAvatar } from '@nocobase/app-plugin-agents/client/kit';
 import {
   ArrowDownIcon,
   ArrowUpDownIcon,
@@ -31,6 +26,8 @@ import {
 } from '#components/ui/table';
 import { cn } from 'cn';
 
+import { StatusName } from './status-icon.js';
+
 /** The colours statuses and labels take, as the projects plugin names them. */
 export type IssueTableColor =
   'gray' | 'red' | 'orange' | 'yellow' | 'green' | 'blue' | 'purple';
@@ -40,12 +37,14 @@ export type IssueTablePriority = 'urgent' | 'high' | 'medium' | 'low' | 'none';
 export interface IssueTablePerson {
   readonly name: string;
   readonly avatar?: string | null;
-  /** `agent` draws a bot; a person shows their picture, or the name alone without one. */
+  /** `agent` draws its generated avatar; a person shows their picture, or the name alone without one. */
   readonly kind?: string;
 }
 
 export interface IssueTableRow {
   readonly id: string;
+  /** Tells the row apart where one issue shows twice, such as in a tree and among the followed ones; `id` otherwise. */
+  readonly rowKey?: string;
   readonly identifier: string;
   readonly title: string;
   readonly labels: readonly {
@@ -56,10 +55,12 @@ export interface IssueTableRow {
   readonly status: {
     readonly name: string;
     readonly color: IssueTableColor;
+    /** The status's key: drawn as its shape (`StatusIcon`) rather than a dot. */
+    readonly key?: string;
   } | null;
   readonly priority: IssueTablePriority;
   readonly owner: IssueTablePerson | null;
-  readonly executor: IssueTablePerson | null;
+  readonly project: string | null;
   /** ISO time. */
   readonly updatedAt: string;
 }
@@ -77,7 +78,7 @@ export interface IssueTableLabels {
   readonly status: string;
   readonly priority: string;
   readonly owner: string;
-  readonly executor: string;
+  readonly project: string;
   readonly updated: string;
   readonly selectAll: string;
   readonly selectRow: string;
@@ -92,7 +93,7 @@ const defaultIssueTableLabels: IssueTableLabels = {
   status: 'Status',
   priority: 'Priority',
   owner: 'Owner',
-  executor: 'Executor',
+  project: 'Project',
   updated: 'Updated',
   selectAll: 'Select all',
   selectRow: 'Select {identifier}',
@@ -143,23 +144,25 @@ const PRIORITY_ICON: Readonly<
   none: (props) => <SignalZeroIcon {...props} />,
 };
 
-/**
- * An issue's status. In the table's column it is the default badge; `size='sm'` is the small one, beside a title or on
- * a card.
- */
 export function IssueStatusBadge({
   status,
-  size,
   className,
 }: {
   readonly status: NonNullable<IssueTableRow['status']>;
-  readonly size?: 'sm';
   readonly className?: string;
 }): ReactElement {
+  if (status.key)
+    return (
+      <StatusName
+        statusKey={status.key}
+        name={status.name}
+        {...(className ? { className } : {})}
+      />
+    );
   return (
     <Badge
+      data-size='sm'
       variant='secondary'
-      data-size={size}
       className={cn(issueColorClass[status.color], className)}
     >
       <span
@@ -217,6 +220,13 @@ export function IssuePerson({
   // Initials beside the name say nothing more, so a person without a picture shows the name alone.
   if (!agent && !person.avatar)
     return <span className='truncate text-sm'>{person.name}</span>;
+  if (agent)
+    return (
+      <span className='flex min-w-0 items-center gap-2 text-sm'>
+        <AgentAvatar name={person.name} size='sm' />
+        <span className='truncate'>{person.name}</span>
+      </span>
+    );
   return (
     <span className='flex min-w-0 items-center gap-2 text-sm'>
       <Avatar
@@ -240,16 +250,27 @@ export function IssuePerson({
   );
 }
 
-function SortButton({
+/**
+ * A sortable column header: the identifier, priority and updated headers use it, and a list's own column (`extraColumns`)
+ * can too, with a column name of its own. A click orders by the column, the latest or largest first, and a second click
+ * reverses it.
+ */
+export function IssueTableSortButton<C extends string>({
   column,
   title,
   sort,
   onSortChange,
 }: {
-  readonly column: IssueTableSortColumn;
+  readonly column: C;
   readonly title: string;
-  readonly sort: IssueTableSort | undefined;
-  readonly onSortChange: ((sort: IssueTableSort) => void) | undefined;
+  readonly sort:
+    { readonly column: string; readonly direction: 'asc' | 'desc' } | undefined;
+  readonly onSortChange:
+    | ((sort: {
+        readonly column: C;
+        readonly direction: 'asc' | 'desc';
+      }) => void)
+    | undefined;
 }): ReactElement {
   if (!onSortChange) return <>{title}</>;
   const active = sort?.column === column;
@@ -264,6 +285,7 @@ function SortButton({
       size='sm'
       className='-ml-2 h-7 border-transparent px-2 font-medium text-foreground shadow-none'
       data-active={active || undefined}
+      data-sort-column={column}
       onClick={() =>
         onSortChange({
           column,
@@ -277,10 +299,37 @@ function SortButton({
   );
 }
 
+/** A column a list adds after the title, such as a quality follow-up's source plans. */
+export interface IssueTableColumn {
+  readonly key: string;
+  readonly header: ReactNode;
+  /** The header's and cells' width and visibility, such as `w-48 max-md:hidden`. */
+  readonly className?: string;
+  readonly cell: (row: IssueTableRow) => ReactNode;
+}
+
 export interface IssueTableProps {
   readonly rows: readonly IssueTableRow[];
-  /** The order the rows are in, shown on the column headers. */
-  readonly sort?: IssueTableSort;
+  /** Flat ordered table entries; full-width entries supply group, pagination or child-load controls. */
+  readonly entries?: readonly (
+    | IssueTableRow
+    | {
+        readonly key: string;
+        readonly content: ReactNode;
+        /** The full-width cell's own look, such as a group heading's. */
+        readonly className?: string;
+      }
+  )[];
+  readonly rowLeading?: (row: IssueTableRow) => ReactNode;
+  readonly rowDescription?: (row: IssueTableRow) => ReactNode;
+  /**
+   * The order the rows are in, shown on the column headers; `column` may also name one of `extraColumns` whose header
+   * is an `IssueTableSortButton`.
+   */
+  readonly sort?: {
+    readonly column: string;
+    readonly direction: 'asc' | 'desc';
+  };
   /** Makes the identifier, priority and updated headers sortable; the consumer reorders (usually on the server). */
   readonly onSortChange?: (sort: IssueTableSort) => void;
   /** Checkboxes when given, with the ids that are checked. */
@@ -292,8 +341,20 @@ export interface IssueTableProps {
   readonly onRowClick?: (row: IssueTableRow, event: MouseEvent) => void;
   /** Something at the end of a row, such as a "Restore" button. */
   readonly rowAction?: (row: IssueTableRow) => ReactNode;
-  /** Small marks after a row's title and labels, such as where the issue is deployed. */
+  /** Small marks after a row's title and before its labels, such as where the issue is deployed. */
   readonly rowMarks?: (row: IssueTableRow) => ReactNode;
+  /** A row's own look, such as a context row's quieter text. */
+  readonly rowClassName?: (row: IssueTableRow) => string | undefined;
+  /** Columns after the title; none by default. */
+  readonly extraColumns?: readonly IssueTableColumn[];
+  /** Leaves the project column out, where every row is in the same project. */
+  readonly hideProject?: boolean;
+  /**
+   * Below the `md` breakpoint, only the title and status columns (and `extraColumns` the list keeps there) show: the
+   * identifier, priority and updated columns hide too and the title gives up its minimum width, so every row's title
+   * and status fit a phone. Put what the hidden columns said in `rowDescription`. Off by default.
+   */
+  readonly compactOnPhone?: boolean;
   /** What shows when there are no rows; `labels.empty` by default. */
   readonly empty?: ReactNode;
   /** The language dates are written in. */
@@ -314,6 +375,9 @@ function plainClick(event: MouseEvent): boolean {
 
 export function IssueTable({
   rows,
+  entries,
+  rowLeading,
+  rowDescription,
   sort,
   onSortChange,
   selectedIds,
@@ -322,6 +386,10 @@ export function IssueTable({
   onRowClick,
   rowAction,
   rowMarks,
+  rowClassName,
+  extraColumns = [],
+  hideProject = false,
+  compactOnPhone = false,
   empty,
   locale,
   labels = defaultIssueTableLabels,
@@ -334,11 +402,18 @@ export function IssueTable({
     rows.every((row) => selectedIds.has(row.id));
   const someChecked =
     selectable && !allChecked && rows.some((row) => selectedIds.has(row.id));
+  // The columns a phone leaves out in the compact layout.
+  const phoneHidden = compactOnPhone ? 'max-md:hidden' : undefined;
   const date = new Intl.DateTimeFormat(locale, {
     month: 'short',
     day: 'numeric',
   });
-  const columns = 7 + (selectable ? 1 : 0) + (rowAction ? 1 : 0);
+  const columns =
+    7 +
+    extraColumns.length -
+    (hideProject ? 1 : 0) +
+    (selectable ? 1 : 0) +
+    (rowAction ? 1 : 0);
 
   function toggle(id: string, checked: boolean): void {
     if (!selectable) return;
@@ -368,18 +443,30 @@ export function IssueTable({
               />
             </TableHead>
           ) : null}
-          <TableHead className='w-24'>
-            <SortButton
+          <TableHead className={cn('w-24', phoneHidden)}>
+            <IssueTableSortButton
               column='identifier'
               title={labels.identifier}
               sort={sort}
               onSortChange={onSortChange}
             />
           </TableHead>
-          <TableHead className='w-full min-w-48'>{labels.title}</TableHead>
+          <TableHead
+            className={cn(
+              'w-full min-w-48',
+              compactOnPhone && 'max-md:min-w-0',
+            )}
+          >
+            {labels.title}
+          </TableHead>
+          {extraColumns.map((column) => (
+            <TableHead key={column.key} className={column.className}>
+              {column.header}
+            </TableHead>
+          ))}
           <TableHead className='w-32'>{labels.status}</TableHead>
-          <TableHead className='w-28'>
-            <SortButton
+          <TableHead className={cn('w-28', phoneHidden)}>
+            <IssueTableSortButton
               column='priority'
               title={labels.priority}
               sort={sort}
@@ -387,11 +474,13 @@ export function IssueTable({
             />
           </TableHead>
           <TableHead className='w-40 max-md:hidden'>{labels.owner}</TableHead>
-          <TableHead className='w-44 max-md:hidden'>
-            {labels.executor}
-          </TableHead>
-          <TableHead className='w-24'>
-            <SortButton
+          {hideProject ? null : (
+            <TableHead className='w-44 max-md:hidden'>
+              {labels.project}
+            </TableHead>
+          )}
+          <TableHead className={cn('w-24', phoneHidden)}>
+            <IssueTableSortButton
               column='updated'
               title={labels.updated}
               sort={sort}
@@ -402,7 +491,7 @@ export function IssueTable({
         </TableRow>
       </TableHeader>
       <TableBody>
-        {rows.length === 0 ? (
+        {(entries ?? rows).length === 0 ? (
           <TableRow className='hover:bg-transparent'>
             <TableCell
               colSpan={columns}
@@ -412,14 +501,26 @@ export function IssueTable({
             </TableCell>
           </TableRow>
         ) : null}
-        {rows.map((row) => {
+        {(entries ?? rows).map((row) => {
+          if ('content' in row)
+            return (
+              <TableRow key={row.key} className='hover:bg-transparent'>
+                <TableCell colSpan={columns} className={row.className}>
+                  {row.content}
+                </TableCell>
+              </TableRow>
+            );
           const href = rowHref?.(row);
           const checked = selectedIds?.has(row.id) ?? false;
           return (
             <TableRow
-              key={row.id}
+              key={row.rowKey ?? row.id}
+              data-task-id={row.id}
               data-state={checked ? 'selected' : undefined}
-              className={cn(onRowClick && 'cursor-pointer')}
+              className={cn(
+                onRowClick && 'cursor-pointer',
+                rowClassName?.(row),
+              )}
               onClick={(event) => {
                 if (onRowClick && plainClick(event)) onRowClick(row, event);
               }}
@@ -436,58 +537,83 @@ export function IssueTable({
                   />
                 </TableCell>
               ) : null}
-              <TableCell>
-                {href ? (
-                  <a
-                    href={href}
-                    className='font-mono text-xs text-muted-foreground hover:text-foreground hover:underline'
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      if (onRowClick && plainClick(event)) {
-                        event.preventDefault();
-                        onRowClick(row, event);
-                      }
-                    }}
-                  >
-                    {row.identifier}
-                  </a>
-                ) : (
-                  <span className='font-mono text-xs text-muted-foreground'>
-                    {row.identifier}
-                  </span>
-                )}
-              </TableCell>
-              <TableCell className='max-w-0'>
-                <div className='flex min-w-0 items-center gap-2'>
-                  <span className='truncate font-medium' title={row.title}>
-                    {row.title}
-                  </span>
-                  {row.labels.length > 0 ? (
-                    <span className='flex shrink-0 gap-1 max-md:hidden'>
-                      {row.labels.slice(0, 3).map((label) => (
-                        <Badge
-                          data-size='sm'
-                          key={label.id}
-                          variant='secondary'
-                          className={issueColorClass[label.color]}
-                        >
-                          {label.name}
-                        </Badge>
-                      ))}
-                      {row.labels.length > 3 ? (
-                        <span className='text-xs text-muted-foreground'>
-                          +{row.labels.length - 3}
-                        </span>
-                      ) : null}
+              <TableCell className={phoneHidden}>
+                <div className='flex items-center gap-1'>
+                  {rowLeading?.(row)}
+                  {href ? (
+                    <a
+                      href={href}
+                      className='font-mono text-xs text-muted-foreground hover:text-foreground hover:underline'
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        if (onRowClick && plainClick(event)) {
+                          event.preventDefault();
+                          onRowClick(row, event);
+                        }
+                      }}
+                    >
+                      {row.identifier}
+                    </a>
+                  ) : (
+                    <span className='font-mono text-xs text-muted-foreground'>
+                      {row.identifier}
                     </span>
-                  ) : null}
-                  {rowMarks ? (
-                    <span className='flex shrink-0 items-center gap-1 empty:hidden'>
-                      {rowMarks(row)}
-                    </span>
-                  ) : null}
+                  )}
                 </div>
               </TableCell>
+              <TableCell className='max-w-0'>
+                {/*
+                  The title column's width, the same on every row, decides together for the whole table: below
+                  28rem the labels hide and marks shorten to icons (container queries named issue-title). Marks follow
+                  the title and labels come last, so labels that do not fit drop from the end. Labels and marks take
+                  at most 60% of the cell, so the title keeps the rest and nothing spills into the status column.
+                */}
+                <div className='@container/issue-title'>
+                  <div className='flex min-w-0 items-center gap-2'>
+                    <span
+                      className='min-w-0 truncate font-medium'
+                      title={row.title}
+                    >
+                      {row.title}
+                    </span>
+                    {row.labels.length > 0 || rowMarks ? (
+                      <span className='flex max-w-[60%] min-w-0 shrink-0 items-center gap-2 overflow-hidden'>
+                        {rowMarks ? (
+                          <span className='flex shrink-0 items-center gap-1 empty:hidden'>
+                            {rowMarks(row)}
+                          </span>
+                        ) : null}
+                        {row.labels.length > 0 ? (
+                          // Wraps rather than shrinks, so a label that does not fit leaves whole onto the hidden line.
+                          <span className='flex h-5 min-w-0 shrink flex-wrap gap-1 overflow-hidden @max-md/issue-title:hidden'>
+                            {row.labels.slice(0, 3).map((label) => (
+                              <Badge
+                                data-size='sm'
+                                key={label.id}
+                                variant='secondary'
+                                className={issueColorClass[label.color]}
+                              >
+                                {label.name}
+                              </Badge>
+                            ))}
+                            {row.labels.length > 3 ? (
+                              <span className='text-xs leading-5 text-muted-foreground'>
+                                +{row.labels.length - 3}
+                              </span>
+                            ) : null}
+                          </span>
+                        ) : null}
+                      </span>
+                    ) : null}
+                  </div>
+                  {rowDescription?.(row)}
+                </div>
+              </TableCell>
+              {extraColumns.map((column) => (
+                <TableCell key={column.key} className={column.className}>
+                  {column.cell(row)}
+                </TableCell>
+              ))}
               <TableCell>
                 {row.status ? (
                   <IssueStatusBadge status={row.status} />
@@ -497,7 +623,7 @@ export function IssueTable({
                   </span>
                 )}
               </TableCell>
-              <TableCell>
+              <TableCell className={phoneHidden}>
                 <IssuePriority
                   priority={row.priority}
                   label={labels.priorities[row.priority]}
@@ -506,14 +632,24 @@ export function IssueTable({
               <TableCell className='max-w-40 max-md:hidden'>
                 <IssuePerson person={row.owner} fallback={labels.unassigned} />
               </TableCell>
-              <TableCell className='max-w-44 max-md:hidden'>
-                <IssuePerson
-                  person={row.executor}
-                  fallback={labels.unassigned}
-                />
-              </TableCell>
+              {hideProject ? null : (
+                <TableCell className='max-w-44 max-md:hidden'>
+                  <span
+                    className={cn(
+                      'block max-w-44 truncate text-sm',
+                      !row.project && 'text-muted-foreground',
+                    )}
+                    title={row.project ?? undefined}
+                  >
+                    {row.project ?? labels.unassigned}
+                  </span>
+                </TableCell>
+              )}
               <TableCell
-                className='text-sm whitespace-nowrap text-muted-foreground tabular-nums'
+                className={cn(
+                  'text-sm whitespace-nowrap text-muted-foreground tabular-nums',
+                  phoneHidden,
+                )}
                 title={new Date(row.updatedAt).toLocaleString(locale)}
               >
                 {date.format(new Date(row.updatedAt))}
