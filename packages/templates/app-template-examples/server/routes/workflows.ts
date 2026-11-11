@@ -42,6 +42,8 @@ import {
   WorkflowParams,
   WorkflowPageQuery,
   WorkflowDefinitionQuery,
+  WorkflowVersionQuery,
+  WorkflowDefinitionVersionSchema,
   WorkflowSummarySchema,
   WorkflowDefinitionSchema,
   WorkflowExecutionSchema,
@@ -207,8 +209,9 @@ export const workflowRoutes: AppApiRouteContribution<Application> =
       apiValidator('param', WorkflowParams),
       apiValidator('json', WorkflowCategoryAssignment),
       async (c) => {
-        const { workflowId } = c.req.valid('param');
-        service.assertWorkflow(workflowId);
+        // A category belongs to the process, so a legacy version id
+        // assigns it to the process all its versions share.
+        const workflowId = service.workflowId(c.req.valid('param').workflowId);
         await catalog.assign(workflowId, c.req.valid('json').categoryId);
         return c.json({ data: null });
       },
@@ -220,7 +223,7 @@ export const workflowRoutes: AppApiRouteContribution<Application> =
         summary: 'List example workflow definitions',
         operationId: 'examplesListWorkflowDefinitions',
         description:
-          'Users granted workflow management read access may inspect runnable workflow examples. The q keyword matches workflow identifiers and English or Chinese display names, ignoring case. Category filtering is applied before execution statistics are loaded.',
+          'Users granted workflow management read access may inspect runnable workflow examples. One item is one process: its versions share a key, the item describes the latest version, the one with the largest number, and `executionCount` and `lastExecutedAt` cover the records of every version. The latest version is not necessarily the one new records start with. The q keyword matches workflow identifiers, the name of any version and English or Chinese display names, ignoring case. Category filtering is applied before execution statistics are loaded.',
         responses: {
           200: dataResponse(z.array(WorkflowSummarySchema)),
           ...failures,
@@ -238,12 +241,18 @@ export const workflowRoutes: AppApiRouteContribution<Application> =
         tags,
         summary: 'Describe an example workflow',
         operationId: 'examplesGetWorkflowDefinition',
+        description:
+          'Describes one version of a process: `version` selects it, the latest by default. An id naming a version, `<source>.<name>`, as links from before the process had versions do, describes that version. `definition.executionCount` counts the records bound to the described version; `workflow` counts every version.',
         responses: { 200: dataResponse(WorkflowDefinitionSchema), ...failures },
       }),
       apiValidator('param', WorkflowParams),
+      apiValidator('query', WorkflowVersionQuery),
       async (context) =>
         context.json({
-          data: await service.definition(context.req.valid('param').workflowId),
+          data: await service.definition(
+            context.req.valid('param').workflowId,
+            context.req.valid('query').version,
+          ),
         }),
     );
     const parameters = app.container.resolve(
@@ -364,7 +373,7 @@ export const workflowRoutes: AppApiRouteContribution<Application> =
         summary: 'List example workflow executions',
         operationId: 'examplesListWorkflowExecutions',
         description:
-          'An execution is one lifecycle-managed business record. Workflow managers may inspect demonstration records. Results default to newest first, with chronological sorting, workflow filtering and pagination. The q keyword matches workflow identifiers and English or Chinese display names, ignoring case, before pagination.',
+          "An execution is one lifecycle-managed business record, listed with the version it is bound to. Workflow managers may inspect demonstration records. Results default to newest first, with chronological sorting, workflow and version filtering and pagination; several versions sharing one table are told apart by each record's binding, so no record is listed twice. The q keyword matches workflow identifiers, the name of any version and English or Chinese display names, ignoring case, before pagination.",
         responses: {
           200: listResponse(WorkflowExecutionSchema, WorkflowPageMeta),
           ...failures,
@@ -372,10 +381,24 @@ export const workflowRoutes: AppApiRouteContribution<Application> =
       }),
       apiValidator('query', WorkflowPageQuery),
       async (context) => {
-        const { page, pageSize, workflowId, q, order } =
+        const { page, pageSize, workflowId, q, order, version } =
           context.req.valid('query');
+        if (version !== undefined && workflowId === undefined)
+          throw new ApiError({
+            status: 'INVALID_ARGUMENT',
+            domain: 'examples',
+            reason: 'INVALID_WORKFLOW_VERSION',
+            message: 'A version filter needs the workflowId it belongs to.',
+          });
         return context.json(
-          await service.executions(page, pageSize, workflowId, order, q),
+          await service.executions(
+            page,
+            pageSize,
+            workflowId,
+            order,
+            q,
+            version,
+          ),
         );
       },
     );
@@ -386,11 +409,14 @@ export const workflowRoutes: AppApiRouteContribution<Application> =
         summary: 'Inspect an example workflow execution',
         operationId: 'examplesGetWorkflowExecution',
         description:
-          'The complete persisted transition and effect history of a demonstration record, together with its current definition. Snapshot parameter values remain on the record view.',
+          'The complete persisted transition and effect history of a demonstration record, together with the version of the definition the record is bound to, never simply the latest. Snapshot parameter values remain on the record view.',
         responses: {
           200: dataResponse(
             z.intersection(
-              z.object({ workflow: WorkflowSummarySchema }),
+              z.object({
+                workflow: WorkflowSummarySchema,
+                definition: WorkflowDefinitionVersionSchema,
+              }),
               z.intersection(
                 DescriptionViewSchema,
                 z.object({ view: RecordViewSchema }),

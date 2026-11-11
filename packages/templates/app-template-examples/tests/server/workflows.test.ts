@@ -177,7 +177,12 @@ describe('workflow management through the registered application routes', () => 
       const definition = (
         (await response.json()) as { data: WorkflowDefinition }
       ).data;
-      expect(definition.description.name).toBe(workflow.name);
+      // The process is listed once, described by its latest version.
+      expect(workflow.versions.at(-1)).toEqual({
+        name: definition.definition.name,
+        version: workflow.version,
+      });
+      expect(definition.description.name).toBe(definition.definition.name);
       expect(definition.description.states).toHaveLength(workflow.states);
       expect(definition.description.transitions).toHaveLength(
         workflow.transitions,
@@ -594,5 +599,145 @@ describe('workflow management through the registered application routes', () => 
     expect(
       detail.description.parameterConfiguration?.groups.length,
     ).toBeGreaterThan(0);
+  });
+  test('lists two versions of one process once and tells their records apart by binding', async ({
+    testApp,
+  }) => {
+    const runtime = testApp.application.container.resolve(
+      lifecycleExampleServiceToken,
+    ).runtime;
+    const values = {
+      applicantId: 'lin',
+      title: 'Travel expense',
+      purpose: 'Customer visit',
+      parameterContract: 1,
+      amountCents: 1000000,
+      items: [
+        {
+          category: 'transport',
+          description: 'Travel',
+          amountCents: 1000000,
+          date: '2026-01-01',
+        },
+      ],
+      approverId: null,
+      failPayments: 0,
+    };
+    const session = await signIn(testApp, DEFAULT_ADMIN_CREDENTIALS);
+    const read = async <T>(path: string) => {
+      const response = await session.fetch(path);
+      return { status: response.status, body: (await response.json()) as T };
+    };
+    // Earlier tests in this file leave first-version records behind.
+    const before = (
+      await read<{ data: WorkflowDefinition }>(
+        '/workflows/definitions/lifecycle.expenses?version=1',
+      )
+    ).body.data.definition.executionCount;
+    const created: Record<string, string> = {};
+    for (const [index, name] of [
+      'expenses',
+      'expenses-v2',
+      'expenses-v2',
+    ].entries()) {
+      const { record } = await runtime.create(
+        name,
+        {
+          ...values,
+          createdAt: new Date(Date.UTC(2027, 0, 1, 0, index)).toISOString(),
+        },
+        { actor: { id: 'lin' } },
+      );
+      created[index] = String(record.id);
+    }
+    const catalog = await read<{ data: WorkflowSummary[] }>(
+      '/workflows/definitions?q=expenses-v2',
+    );
+    // A version's own name finds its process, listed once with every
+    // version's records.
+    expect(catalog.body.data).toHaveLength(1);
+    expect(catalog.body.data[0]).toMatchObject({
+      id: 'lifecycle.expenses',
+      name: 'expenses',
+      version: 2,
+      versions: [
+        { name: 'expenses', version: 1 },
+        { name: 'expenses-v2', version: 2 },
+      ],
+      executionCount: before + 3,
+    });
+    const latest = await read<{ data: WorkflowDefinition }>(
+      '/workflows/definitions/lifecycle.expenses',
+    );
+    expect(latest.body.data.definition).toEqual({
+      name: 'expenses-v2',
+      version: 2,
+      executionCount: 2,
+    });
+    expect(latest.body.data.description.states).toContain('awaitingAudit');
+    const first = await read<{ data: WorkflowDefinition }>(
+      '/workflows/definitions/lifecycle.expenses?version=1',
+    );
+    expect(first.body.data.definition).toEqual({
+      name: 'expenses',
+      version: 1,
+      executionCount: before + 1,
+    });
+    expect(first.body.data.description.states).not.toContain('awaitingAudit');
+    expect(first.body.data.workflow.executionCount).toBe(before + 3);
+    // A link from before the process had versions names one version.
+    const legacy = await read<{ data: WorkflowDefinition }>(
+      '/workflows/definitions/lifecycle.expenses-v2',
+    );
+    expect(legacy.body.data.workflow.id).toBe('lifecycle.expenses');
+    expect(legacy.body.data.definition.name).toBe('expenses-v2');
+    expect(
+      (await read('/workflows/definitions/lifecycle.expenses?version=3'))
+        .status,
+    ).toBe(404);
+    const page = (query: string) =>
+      read<WorkflowExecutionPage>(
+        `/workflows/executions?workflowId=lifecycle.expenses${query}`,
+      );
+    const all = await page('');
+    expect(all.body.meta.total).toBe(before + 3);
+    expect(
+      all.body.data
+        .slice(0, 3)
+        .map(({ recordId, definition, version }) => [
+          recordId,
+          definition,
+          version,
+        ]),
+    ).toEqual([
+      [created[2], 'expenses-v2', 2],
+      [created[1], 'expenses-v2', 2],
+      [created[0], 'expenses', 1],
+    ]);
+    const onlyFirst = await page('&version=1');
+    expect(onlyFirst.body.meta.total).toBe(before + 1);
+    expect(onlyFirst.body.data[0].recordId).toBe(created[0]);
+    expect(onlyFirst.body.data.every(({ version }) => version === 1)).toBe(
+      true,
+    );
+    const onlySecond = await page('&version=2');
+    expect(onlySecond.body.meta.total).toBe(2);
+    expect(onlySecond.body.data.map(({ recordId }) => recordId)).toEqual([
+      created[2],
+      created[1],
+    ]);
+    expect((await page('&version=3')).status).toBe(404);
+    expect((await read('/workflows/executions?version=1')).status).toBe(400);
+    // Each record opens with the version it is bound to, not the latest.
+    const v1 = await read<{ data: WorkflowExecutionDetail }>(
+      `/workflows/executions/lifecycle.expenses/${created[0]}`,
+    );
+    expect(v1.body.data.definition.name).toBe('expenses');
+    expect(v1.body.data.description.name).toBe('expenses');
+    const v2 = await read<{ data: WorkflowExecutionDetail }>(
+      `/workflows/executions/lifecycle.expenses/${created[1]}`,
+    );
+    expect(v2.body.data.definition.name).toBe('expenses-v2');
+    expect(v2.body.data.description.name).toBe('expenses-v2');
   });
 });

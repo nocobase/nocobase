@@ -6,6 +6,7 @@ import type { ReactElement } from 'react';
 import { Outlet } from 'react-router';
 import { useTranslation } from '@nocobase/i18n/client';
 import { Input } from '#components/ui/input';
+import { Badge } from '#components/ui/badge';
 import { useUrlSearch } from '#hooks/use-url-search';
 import { WorkflowDefinitionList } from '#extensions/nocobase-workflow-management/definition-list';
 import type { WorkflowSummary } from '../../../shared/workflows.js';
@@ -52,14 +53,26 @@ export default function DefinitionsPage(): ReactElement {
         name:
           workflow.name === labels.title(workflow) ? undefined : workflow.name,
         title: (
-          <RecordLink
-            to={{
-              pathname: `/workflows/definitions/${workflow.id}`,
-              search: location.search,
-            }}
-          >
-            {labels.title(workflow)}
-          </RecordLink>
+          <>
+            <RecordLink
+              to={{
+                pathname: `/workflows/definitions/${workflow.id}`,
+                search: location.search,
+              }}
+            >
+              {labels.title(workflow)}
+            </RecordLink>
+            {workflow.versions.length > 1 && (
+              <Badge
+                variant='secondary'
+                className='ml-2 align-middle'
+                title={t('workflows.latestHint')}
+                aria-label={`${t('workflows.latestVersion', { version: workflow.version })}, ${t('workflows.versionCount', { count: workflow.versions.length })}`}
+              >
+                {t('workflows.versionShort', { version: workflow.version })}
+              </Badge>
+            )}
+          </>
         ),
         activity:
           workflow.executionCount > 0 ? (

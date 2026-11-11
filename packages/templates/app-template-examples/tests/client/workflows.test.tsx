@@ -191,12 +191,15 @@ const detail: WorkflowExecutionDetail = {
   workflow: {
     id: 'lifecycle.expenses',
     name: 'expenses',
+    version: 1,
+    versions: [{ name: 'expenses', version: 1 }],
     source: 'lifecycle',
     states: 4,
     transitions: 4,
     executionCount: 1,
     lastExecutedAt: null,
   },
+  definition: { name: 'expenses', version: 1, executionCount: 1 },
   description: describeLifecycle(expenseLifecycle),
   parameters: {},
   diagram: '',
@@ -304,6 +307,8 @@ describe('workflow management pages', () => {
         {
           id: 'office.dataRequests',
           name: 'dataRequests',
+          version: 1,
+          versions: [{ name: 'dataRequests', version: 1 }],
           source: 'office',
           states: 4,
           transitions: 5,
@@ -931,6 +936,8 @@ it('retains loaded definitions while refreshing and exposes the busy state', asy
       {
         id: 'lifecycle.expenses',
         name: 'expenses',
+        version: 1,
+        versions: [{ name: 'expenses', version: 1 }],
         source: 'lifecycle',
         states: 4,
         transitions: 5,

@@ -344,6 +344,15 @@ const enUS = {
     signIn: 'Sign in to view workflows.',
     retry: 'Retry',
     executionCountLink: 'Executions: {{count}}',
+    version: 'Version',
+    versionLabel: 'Version {{version}}',
+    latestVersion: 'Version {{version}} (latest)',
+    versionShort: 'v{{version}}',
+    allVersions: 'All versions',
+    versionCount: '{{count}} versions',
+    latestHint:
+      'Latest means the largest version number; new records may still start with an earlier version.',
+    versionExecutionCountLink: 'Version {{version}} executions: {{count}}',
     viewExecutions: 'View executions',
     parameterHint:
       'Click a configured node or transition to adjust its runtime parameters. Other nodes show their definition details. Changes apply according to each workflow’s snapshot or live mode.',
