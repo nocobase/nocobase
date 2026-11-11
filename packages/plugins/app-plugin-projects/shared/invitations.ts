@@ -27,6 +27,8 @@ export interface Invitation {
 export interface CreateInvitationsRequest {
   readonly emails: readonly string[];
   readonly projectIds?: readonly string[];
+  /** The language of the email and accept page; the inviter's interface language when omitted. */
+  readonly locale?: string;
 }
 
 /**

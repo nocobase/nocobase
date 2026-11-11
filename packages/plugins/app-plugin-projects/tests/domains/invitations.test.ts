@@ -64,6 +64,34 @@ describe('inviting', () => {
     ).toEqual([{ email: 'alice@example.com', outcome: 'alreadyMember' }]);
   });
 
+  it("forwards the chosen language and the inviter's interface language", async () => {
+    const send = vi.spyOn(h.invitations, 'invite');
+    const resend = vi.spyOn(h.invitations, 'resendInvitation');
+    const admin = h.viewer('admin', 'admin');
+    await h.services.invitations.create(
+      admin,
+      { emails: ['ja@example.com'], projectIds: [apollo], locale: 'ja-JP' },
+      ORIGIN,
+      'zh-CN',
+    );
+    await h.services.invitations.create(
+      admin,
+      { emails: ['zh@example.com'], projectIds: [apollo] },
+      ORIGIN,
+      'zh-CN',
+    );
+    expect(send.mock.calls.map(([input]) => input)).toEqual([
+      expect.objectContaining({ locale: 'ja-JP', inviterLocale: 'zh-CN' }),
+      expect.not.objectContaining({ locale: expect.anything() }),
+    ]);
+    const [row] = await h.invitations.listInvitations();
+    await h.services.invitations.resend(admin, row!.id, ORIGIN, true, 'en-US');
+    expect(resend).toHaveBeenCalledWith(
+      row!.id,
+      expect.objectContaining({ inviterLocale: 'en-US' }),
+    );
+  });
+
   it('lets a lead invite only into projects they lead', async () => {
     await expect(
       invite(h.viewer('lead'), ['new@example.com'], [apollo]),

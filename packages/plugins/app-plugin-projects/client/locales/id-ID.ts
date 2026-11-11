@@ -371,6 +371,9 @@ const idID: LocaleResource<typeof enUS> = {
     projectRequired: 'Pilih setidaknya satu proyek yang Anda pimpin.',
     projects: 'Proyek',
     projectsHint: 'Para undangan bergabung dalam proyek ini sebagai anggota.',
+    language: 'Bahasa email',
+    languageHint:
+      'Email undangan dan halaman pendaftarannya memakai bahasa ini.',
     projectsPlaceholder: 'Pilih proyek',
     resend: 'Kirim lagi',
     generateLink: 'Buat tautan baru',

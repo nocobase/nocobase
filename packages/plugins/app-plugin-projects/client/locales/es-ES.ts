@@ -377,6 +377,9 @@ const esES: LocaleResource<typeof enUS> = {
     projectRequired: 'Elige al menos un proyecto que lideres.',
     projects: 'Proyectos',
     projectsHint: 'Los invitados se unen a estos proyectos como miembros.',
+    language: 'Idioma del correo',
+    languageHint:
+      'El correo de invitación y su página de registro usan este idioma.',
     projectsPlaceholder: 'Elegir proyectos',
     resend: 'Enviar de nuevo',
     generateLink: 'Generar nuevo enlace',

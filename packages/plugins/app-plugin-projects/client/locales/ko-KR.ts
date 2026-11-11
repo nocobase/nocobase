@@ -362,6 +362,8 @@ const koKR: LocaleResource<typeof enUS> = {
     projectRequired: '내가 이끄는 프로젝트를 하나 이상 선택하세요.',
     projects: '프로젝트',
     projectsHint: '초대받은 사람은 이 프로젝트에 구성원으로 참여합니다.',
+    language: '이메일 언어',
+    languageHint: '초대 이메일과 가입 페이지에 이 언어를 사용합니다.',
     projectsPlaceholder: '프로젝트 선택',
     resend: '다시 보내기',
     generateLink: '새 링크 만들기',

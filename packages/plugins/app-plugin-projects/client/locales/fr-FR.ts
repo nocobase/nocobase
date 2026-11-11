@@ -378,6 +378,9 @@ const frFR: LocaleResource<typeof enUS> = {
     projectRequired: 'Choisissez au moins un projet que vous dirigez.',
     projects: 'Projets',
     projectsHint: 'Les invités rejoignent ces projets en tant que membres.',
+    language: "Langue de l'e-mail",
+    languageHint:
+      "L'e-mail d'invitation et sa page d'inscription utilisent cette langue.",
     projectsPlaceholder: 'Choisir des projets',
     resend: 'Envoyer à nouveau',
     generateLink: 'Générer un nouveau lien',
