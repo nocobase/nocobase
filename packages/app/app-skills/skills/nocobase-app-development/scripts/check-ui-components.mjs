@@ -638,6 +638,127 @@ export function inspectSource(ts, text, file, root) {
     while (node.parent && node.parent !== source) node = node.parent;
     return node;
   }
+  // A table's actions column (ui-guidelines.md T1.5): one RowActions "⋮" menu, no visible header text, not pinned.
+  // What its cell renders is read from the column and the units of this file it names; a cell built only from
+  // components of other files is left alone.
+  function inspectActionColumns() {
+    // The cell and every unit of this file it reaches by name, such as a UserActions component or a menu function.
+    const reachedRoots = (cell) => {
+      const roots = [cell];
+      const seen = new Set();
+      for (let index = 0; index < roots.length; index += 1)
+        (function find(node) {
+          if (ts.isIdentifier(node) && units.has(node.text)) {
+            const unit = units.get(node.text);
+            if (!seen.has(unit) && !roots.includes(unit)) {
+              seen.add(unit);
+              roots.push(unit);
+            }
+          }
+          ts.forEachChild(node, find);
+        })(roots[index]);
+      return roots;
+    };
+    const tagName = (element) => {
+      const tag = ts.isJsxElement(element)
+        ? element.openingElement.tagName
+        : element.tagName;
+      return ts.isPropertyAccessExpression(tag)
+        ? tag.name.text
+        : tag.getText(source);
+    };
+    const actionControl = /^(Button|DropdownMenu\w*|Link|a)$/;
+    // Overlays a row action opens (its confirmation, a dialog) hold their own buttons.
+    const overlay = /(Dialog|Drawer|Sheet|Popover)/;
+    // A control is part of RowActions when it sits in one of its props, or is the `render` of a RowAction object
+    // (`{ key, label, render: <Link … /> }`), wherever that object is built.
+    const insideRowActions = (node, root) => {
+      for (let current = node.parent; current; current = current.parent) {
+        if (
+          ts.isPropertyAssignment(current) &&
+          ts.isIdentifier(current.name) &&
+          current.name.text === 'render' &&
+          current.initializer
+        ) {
+          let value = current.initializer;
+          while (ts.isParenthesizedExpression(value)) value = value.expression;
+          if (
+            value === node ||
+            value.getStart(source) === node.getStart(source)
+          )
+            return true;
+        }
+        if (
+          ts.isJsxAttribute(current) &&
+          tagName(current.parent.parent) === 'RowActions'
+        )
+          return true;
+        if (
+          (ts.isJsxElement(current) || ts.isJsxSelfClosingElement(current)) &&
+          overlay.test(tagName(current))
+        )
+          return true;
+        if (current === root) break;
+      }
+      return false;
+    };
+    const strayControls = (cell) => {
+      const found = [];
+      for (const root of reachedRoots(cell))
+        (function find(node) {
+          if (
+            (ts.isJsxSelfClosingElement(node) || ts.isJsxElement(node)) &&
+            actionControl.test(tagName(node)) &&
+            !insideRowActions(node, root)
+          )
+            found.push(node);
+          else ts.forEachChild(node, find);
+        })(root);
+      return found;
+    };
+    (function find(node) {
+      if (ts.isObjectLiteralExpression(node)) {
+        const property = (name) =>
+          node.properties.find(
+            (item) =>
+              ts.isPropertyAssignment(item) &&
+              (ts.isIdentifier(item.name) || ts.isStringLiteral(item.name)) &&
+              item.name.text === name,
+          );
+        const id = property('id');
+        const cell = property('cell');
+        if (
+          id &&
+          ts.isStringLiteralLike(id.initializer) &&
+          id.initializer.text === 'actions' &&
+          cell
+        ) {
+          const header = property('header');
+          if (header && !/\bsr-only\b/.test(header.initializer.getText(source)))
+            report(
+              header,
+              'actions column',
+              "no visible header text: header: () => <span className='sr-only'>{t('…actions')}</span> (T1.5)",
+            );
+          if (/\b(sticky|fixed|right-0|pinned)\b/.test(node.getText(source)))
+            report(
+              id,
+              'actions column',
+              'a column that scrolls with the table; pin it only for a wide table whose actions are otherwise out of reach, with the reason in a ui-component-exception marker (T1.5)',
+            );
+          // Every control the cell renders outside RowActions is reported, also beside a RowActions menu: an action
+          // shown outside the menu goes through its `exposed` prop.
+          for (const control of strayControls(cell.initializer))
+            report(
+              control,
+              'actions column',
+              "RowActions (#components/row-actions): the row's actions in one ⋮ menu, a single action included; show an action outside it only through exposed, for an action the user or a confirmed design names (T1.5)",
+            );
+        }
+      }
+      ts.forEachChild(node, find);
+    })(source);
+  }
   const units = new Map();
   for (const statement of source.statements) {
     if (
@@ -740,6 +861,7 @@ export function inspectSource(ts, text, file, root) {
       (downward && reach(unit, (from) => renders.get(from) ?? []))
     );
   }
+  inspectActionColumns();
   visit(source);
   for (const exception of exceptions.values()) {
     if (!exception.used)

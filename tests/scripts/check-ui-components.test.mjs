@@ -904,3 +904,87 @@ test("resolves a guard's object in its own scope, so another component's same-na
     [],
   );
 });
+
+test('reports row actions outside one RowActions menu, a visible actions header and a pinned actions column', () => {
+  const result = inspect(`
+    function UserButtons({ user }) {
+      return <Button variant='outline' size='xs'>Disable</Button>;
+    }
+    export const columns = [
+      { id: 'actions', header: t('users.actions'), cell: ({ row }) => <UserButtons user={row.original} /> },
+      { id: 'actions', header: () => <span className='sr-only'>{t('a')}</span>, meta: { className: 'sticky right-0' },
+        cell: ({ row }) => <RowActions label='x' actions={[]} /> },
+    ];`);
+  assert.deepEqual(
+    result.findings.map((item) => [item.tag, item.line]),
+    [
+      ['actions column', 6],
+      ['actions column', 3],
+      ['actions column', 7],
+    ],
+  );
+  assert.match(result.findings[0].replacement, /sr-only/);
+  assert.match(result.findings[1].replacement, /RowActions/);
+  assert.match(result.findings[2].replacement, /scrolls with the table/);
+});
+
+test('accepts RowActions reached through a component of the same file, and a cell built elsewhere', () => {
+  const result = inspect(`
+    function UserActions({ user }) {
+      return <RowActions label={user.name} actions={[{ key: 'disable', label: 'Disable' }]} />;
+    }
+    export const columns = [
+      { id: 'actions', header: () => <span className='sr-only'>Actions</span>, cell: ({ row }) => <UserActions user={row.original} /> },
+      { id: 'actions', cell: ({ row }) => <ImportedActions row={row} /> },
+    ];`);
+  assert.deepEqual(result.findings, []);
+});
+
+test('reports a control beside RowActions in the cell or in a component of the same file', () => {
+  const result = inspect(`
+    const columns = [{
+      id: 'actions',
+      header: () => <span className='sr-only'>Actions</span>,
+      cell: () => <><Button>Open</Button><RowActions label='Actions' actions={[]} /></>,
+    }];
+    function ModuleActions({ module }) {
+      return (
+        <div>
+          <Button variant='outline'>Install</Button>
+          <RowActions label={module.name} actions={[{ key: 'remove', label: 'Remove', destructive: true }]} />
+        </div>
+      );
+    }
+    const moduleColumns = [
+      { id: 'actions', header: () => <span className='sr-only'>Actions</span>, cell: ({ row }) => <ModuleActions module={row.original} /> },
+    ];`);
+  assert.deepEqual(
+    result.findings.map((item) => [item.tag, item.line]),
+    [
+      ['actions column', 5],
+      ['actions column', 10],
+    ],
+  );
+  assert.match(result.findings[0].replacement, /exposed/);
+});
+
+test('accepts links passed as a RowAction render, built inline or in a function of the same file, and confirmation dialogs', () => {
+  const result = inspect(`
+    function actionsFor(project) {
+      return [{ key: 'edit', label: 'Edit', render: <Link to={project.id} /> }];
+    }
+    function ProjectActions({ project }) {
+      return (
+        <>
+          <RowActions label={project.name} actions={actionsFor(project)} />
+          <AlertDialog><AlertDialogFooter><Button>Delete</Button></AlertDialogFooter></AlertDialog>
+        </>
+      );
+    }
+    const columns = [
+      { id: 'actions', header: () => <span className='sr-only'>Actions</span>, cell: ({ row }) => <ProjectActions project={row.original} /> },
+      { id: 'actions', header: () => <span className='sr-only'>Actions</span>,
+        cell: ({ row }) => <RowActions label='x' exposed={['open']} actions={[{ key: 'open', label: 'Open', render: (<a href={row.original.url} />) }]} /> },
+    ];`);
+  assert.deepEqual(result.findings, []);
+});
