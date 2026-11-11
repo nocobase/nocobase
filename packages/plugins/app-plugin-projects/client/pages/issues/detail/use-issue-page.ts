@@ -61,7 +61,7 @@ export interface IssuePageActions {
 /** Every change the issue's page makes, other than its properties (`useIssueUpdate`) and comments. */
 export function useIssuePageActions(detail: IssueDetail): IssuePageActions {
   const { t } = useTranslation(ACCESS_NAMESPACE);
-  const { maxFileSizeMb } = useFileUploadLimit();
+  const limit = useFileUploadLimit();
   const api = usePmApi();
   const notify = useNotify();
   const queryClient = useQueryClient();
@@ -105,12 +105,12 @@ export function useIssuePageActions(detail: IssueDetail): IssuePageActions {
             t('attachments.tooMany', { count: ATTACHMENTS_PER_REQUEST_MAX }),
           );
         for (const file of files.slice(0, ATTACHMENTS_PER_REQUEST_MAX)) {
-          if (file.size > limitBytes({ maxFileSizeMb })) {
+          if (file.size > limitBytes(limit)) {
             notify.error(
               null,
               t('attachments.tooLarge', {
                 name: file.name,
-                size: maxFileSizeMb,
+                size: limit.maxFileSizeMb,
               }),
             );
             continue;
@@ -166,6 +166,6 @@ export function useIssuePageActions(detail: IssueDetail): IssuePageActions {
           t('issue.deleted', { identifier: detail.identifier }),
         ),
     }),
-    [api, maxFileSizeMb, detail, notify, queryClient, run, t],
+    [api, limit, detail, notify, queryClient, run, t],
   );
 }

@@ -65,7 +65,7 @@ function named(file: File, index: number): File {
  */
 export function useAttachmentUploads(): AttachmentUploads {
   const { t } = useTranslation(ACCESS_NAMESPACE);
-  const { maxFileSizeMb } = useFileUploadLimit();
+  const limit = useFileUploadLimit();
   const api = usePmApi();
   const notify = useNotify();
   const [uploads, setUploads] = useState<readonly PendingUpload[]>([]);
@@ -92,12 +92,12 @@ export function useAttachmentUploads(): AttachmentUploads {
       const results = await Promise.all(
         files.slice(0, Math.max(room, 0)).map(async (original, index) => {
           const file = named(original, index);
-          if (file.size > limitBytes({ maxFileSizeMb })) {
+          if (file.size > limitBytes(limit)) {
             notify.error(
               null,
               t('attachments.tooLarge', {
                 name: file.name,
-                size: maxFileSizeMb,
+                size: limit.maxFileSizeMb,
               }),
             );
             return;
@@ -143,7 +143,7 @@ export function useAttachmentUploads(): AttachmentUploads {
         result && activeRef.current.has(result.key) ? [result.attachment] : [],
       );
     },
-    [api, maxFileSizeMb, notify, t, uploads.length],
+    [api, limit, notify, t, uploads.length],
   );
 
   return {
