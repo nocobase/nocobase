@@ -1,0 +1,13 @@
+{
+  "extends": "@nocobase/dev-config/tsconfig/node-tooling.json",
+  "compilerOptions": {
+    "customConditions": ["development"],
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.node.tsbuildinfo"
+  },
+  "include": [
+    "vite.config.ts",
+    "cli/**/*.ts",
+    "playwright.config.ts",
+    "tests/playwright/**/*.ts"
+  ]
+}

@@ -1,0 +1,43 @@
+{
+  "name": "@nocobase/app-template-multi-app",
+  "version": "0.0.1",
+  "description": "A root Main application with independently built child Apps for licensed multi-application platforms.",
+  "type": "module",
+  "prettier": "@nocobase/dev-config/prettier",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "node scripts/build-template.mjs",
+    "prepack": "pnpm build",
+    "test": "vitest run",
+    "lint": "eslint . --max-warnings 0",
+    "lint:fix": "eslint . --fix --max-warnings 0",
+    "typecheck": "tsc --noEmit",
+    "format": "prettier . --write",
+    "format:check": "prettier . --check",
+    "fix": "pnpm lint:fix && pnpm format"
+  },
+  "devDependencies": {
+    "@nocobase/dev-config": "workspace:*",
+    "@types/node": "catalog:",
+    "eslint": "catalog:",
+    "prettier": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:",
+    "@nocobase/app-skills": "workspace:*"
+  },
+  "publishConfig": {
+    "directory": "dist",
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nocobase/nocobase.git",
+    "directory": "packages/templates/app-template-multi-app"
+  },
+  "license": "Apache-2.0"
+}

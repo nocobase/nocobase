@@ -16,6 +16,12 @@ const FORMATTABLE =
  */
 const SELF_LINTING_DIRECTORIES = ['docs', 'ui-library'];
 
+// This payload is not installed in the source workspace: its licensed dependencies
+// belong to generated Apps. Lint the packaging tool here and installed Apps there.
+const INERT_APPLICATION_PAYLOADS = [
+  'packages/templates/app-template-multi-app/template/',
+];
+
 /**
  * ESLint runs once per package rather than once for every staged file.
  *
@@ -60,7 +66,18 @@ const quote = (values) =>
 
 export default {
   '*': (files) => {
-    const code = files.filter((file) => CODE.test(file));
+    const code = files.filter((file) => {
+      const relative = path
+        .relative(import.meta.dirname, file)
+        .split(path.sep)
+        .join('/');
+      return (
+        CODE.test(file) &&
+        !INERT_APPLICATION_PAYLOADS.some((prefix) =>
+          relative.startsWith(prefix),
+        )
+      );
+    });
     const formattable = files.filter((file) => FORMATTABLE.test(file));
 
     const commands = groupByPackage(code).map(([key, group]) => {

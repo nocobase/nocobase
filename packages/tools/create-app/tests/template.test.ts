@@ -1,4 +1,5 @@
-import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { execFileSync } from 'node:child_process';
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import os from 'node:os';
@@ -79,6 +80,20 @@ describe('TEMPLATE_ALIASES', () => {
     ).toBe('@nocobase/app-template-multi-portal@0.1.0');
   });
 
+  it('resolves multi-app with the selected channel without changing explicit versions', () => {
+    expect(isTemplateAlias('multi-app')).toBe(true);
+    expect(resolveTemplateSource('multi-app')).toBe(
+      '@nocobase/app-template-multi-app@latest',
+    );
+    expect(resolveTemplateSource('multi-app', { tag: 'beta' })).toBe(
+      '@nocobase/app-template-multi-app@beta',
+    );
+    expect(
+      resolveTemplateSource('@nocobase/app-template-multi-app@0.0.1', {
+        tag: 'beta',
+      }),
+    ).toBe('@nocobase/app-template-multi-app@0.0.1');
+  });
   it('maps the default name to the app template', () => {
     expect(TEMPLATE_ALIASES.default).toEqual({
       packageName: '@nocobase/app-template-default',
@@ -160,6 +175,33 @@ describe('resolveTemplateSource', () => {
       './packages/app-template-default',
     );
   });
+});
+
+describe('local template archives', () => {
+  it.each(['.tgz', '.tar.gz'])(
+    'uses a packed %s artifact directly without package-registry access',
+    async (extension) => {
+      const root = await mkdtemp(path.join(os.tmpdir(), 'create-app-archive-'));
+      created.push(root);
+      await mkdir(path.join(root, 'package'));
+      await writeFile(
+        path.join(root, 'package', 'package.json'),
+        JSON.stringify({ name: '@test/packed', version: '0.0.0' }),
+      );
+      await writeFile(path.join(root, 'package', 'marker'), 'archive-only');
+      const archive = path.join(root, 'candidate archive' + extension);
+      execFileSync('tar', ['-czf', archive, '-C', root, 'package']);
+      const result = await downloadTemplate({
+        source: archive,
+        registry: 'https://registry.invalid/',
+      });
+      created.push(result.directory);
+      expect(result).toMatchObject({ name: '@test/packed', version: '0.0.0' });
+      expect(
+        await readFile(path.join(result.directory, 'marker'), 'utf8'),
+      ).toBe('archive-only');
+    },
+  );
 });
 
 describe('isTemplateAlias', () => {

@@ -1,4 +1,4 @@
-import { mkdtemp, readdir, readFile, rm } from 'node:fs/promises';
+import { copyFile, mkdtemp, readdir, readFile, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { CommandFailedError, runCommand } from './run-command.ts';
@@ -25,6 +25,7 @@ export const TEMPLATE_ALIASES: Readonly<Record<string, TemplateAlias>> = {
   default: { packageName: '@nocobase/app-template-default' },
   examples: { packageName: '@nocobase/app-template-examples' },
   'multi-portal': { packageName: '@nocobase/app-template-multi-portal' },
+  'multi-app': { packageName: '@nocobase/app-template-multi-app' },
 };
 
 export const DEFAULT_TEMPLATE = 'default';
@@ -190,16 +191,23 @@ export async function downloadTemplate(
 
   try {
     const tarballPath = path.join(packDirectory, 'template.tgz');
-    const args = packer.args(tarballPath);
-
-    if (options.registry && !isLocalTemplateSource(source)) {
-      args.push(`--registry=${options.registry}`);
+    const local = isLocalTemplateSource(source);
+    const localArchive = local && /\.(?:tgz|tar\.gz)$/u.test(source);
+    if (localArchive) {
+      await copyFile(path.resolve(source), tarballPath);
+    } else {
+      const args = packer.args(tarballPath);
+      if (options.registry && !local) {
+        args.push(`--registry=${options.registry}`);
+        // npm prefers a user-level scope registry over --registry.
+        if (source.startsWith('@nocobase/'))
+          args.push(`--@nocobase:registry=${options.registry}`);
+      }
+      await runCommand(packer.command, args, {
+        cwd: local ? path.resolve(source) : packDirectory,
+        timeoutMs: PACK_TIMEOUT_MS,
+      });
     }
-
-    await runCommand(packer.command, args, {
-      cwd: isLocalTemplateSource(source) ? path.resolve(source) : packDirectory,
-      timeoutMs: PACK_TIMEOUT_MS,
-    });
 
     const tarball = isLocalTemplateSource(source)
       ? tarballPath
