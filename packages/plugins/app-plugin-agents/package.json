@@ -300,7 +300,8 @@
     "resumable-stream": "2.2.13",
     "yaml": "catalog:",
     "zod": "catalog:",
-    "@nocobase/acp-bridge": "workspace:^"
+    "@nocobase/acp-bridge": "workspace:^",
+    "@nocobase/app-cli-distribution": "workspace:^"
   },
   "peerDependencies": {
     "@ai-sdk/react": "catalog:",
