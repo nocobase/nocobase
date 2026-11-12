@@ -42,7 +42,7 @@ Resolve missing inputs before mutation. Ask at most three focused questions per 
 # Workflow
 
 1. Read the project README, root and target App `AGENTS.md`, and the target's installed `nocobase-app-development` Skill. Inspect manifests, registrations and the working tree before editing; do not infer capabilities from the installed Skills.
-2. Read project-boundaries. For a new platform, check release availability before using the public create-app alias. The commercial template creates Main only. Add independent children on demand in `apps/<name>` or separate repositories; no child is pre-generated. Install once at the root; configure and synchronize Skills for root Main and each child. Existing layouts follow their actual manifests, not an assumed directory move.
+2. Read project-boundaries. The commercial template creates Main only. Create each child independently and provide its `dist.tar.gz`; do not generate a shared application directory layout or process nested application metadata.
 3. Record Main-owned and child-owned concerns and choose hosted versus external delivery. Keep package names separate from persistent template, instance, permission and migration identities.
 4. Read child-development. Develop with isolated data and native local login first. Use public plugin factories and the child's own role policy, not a copied demonstration entitlement.
 5. After each source/configuration write, read back the diff or effective safe settings; run scoped tests and compare expected behavior. A framework-layer change shared by both Apps belongs in both applicable compositions.
@@ -76,7 +76,7 @@ On a tool/security refusal, stop the refused operation, report the blocker and c
 
 # Minimal Test Scenarios
 
-1. Create an approved empty workspace; verify both Apps and per-App configuration instructions.
+1. Create Main only; independently build a child archive and verify publication and instance creation.
 2. Develop a separate child; deliver its own artifact or external entry without importing Main source.
 3. A populated target routes to migration before source overwrite or database writes.
 4. An unavailable commercial dependency or missing plugin Skill stops integration with an actionable prerequisite report.

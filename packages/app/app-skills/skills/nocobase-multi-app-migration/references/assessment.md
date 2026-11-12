@@ -12,7 +12,7 @@ Record exact source/destination deployments, revisions, package versions and own
 - Schedules, workers, queues, callbacks, origin/base path and hard-coded URL assumptions.
 - Artifacts, persistent paths, backup/restore tooling, process ownership and change window.
 
-The generated Main/Sub workspace is a source starting point, not a migration tool. Do not copy either App over a populated installation or assume newer package versions are compatible. Use the installed application upgrade Skill when framework/template alignment is necessary.
+The Main-only template is a new application starting point, not a migration tool. Do not copy either App over a populated installation or assume newer package versions are compatible. Use the installed application upgrade Skill when framework/template alignment is necessary.
 
 ## Choose one primary route
 

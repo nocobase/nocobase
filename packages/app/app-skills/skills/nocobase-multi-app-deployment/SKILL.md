@@ -15,7 +15,7 @@ Deliver and operate the selected Main and child applications using compatible in
 
 # Scope
 
-Local account development, explicit plan-based initialization, independent builds, production deployment, template/version operations, selective upgrades, backups and recovery.
+Local account development, explicit archive publication and provisioning, independent builds, production deployment, template/version operations, selective upgrades, backups and recovery.
 
 These scenario Skills ship in `@nocobase/app-skills`. Their presence does not mean an application is Main, has child Apps or has licensed plugins enabled. Inspect the actual project and use this Skill only for its named multi-app task; ordinary business features remain under `nocobase-app-development`.
 
@@ -42,9 +42,9 @@ Resolve missing inputs before mutation. Ask at most three focused questions per 
 # Workflow
 
 1. Read the project README, the target App's build-and-deploy rules and installed nocobase-deployment Skill. Identify source revisions, installed versions, listeners, existing processes and intended instance states.
-2. Read local-startup for first configuration versus resuming existing state. For a shared workspace install once at the root; configure root Main and children individually. Other source layouts keep their actual App roots. Never start a second process on the same database or volume.
+2. Read local-startup. Configure Main and its managed Host explicitly. Build the child independently with `pnpm build --tar`, verify `storage/exports/dist.tar.gz`, then upload and publish it through Main before creating instances.
 3. Read production-release before building or publishing. Build each App independently; verify its separate dist production dependency installation succeeds, and run an extracted artifact outside the source workspace.
-4. When the application provides demo helpers, initialize examples only through an explicitly approved demo plan; do not assume every application ships those helpers. Validate all artifact paths and embedded versions before mutation; ordinary demo/dev/start must not publish, reset or upgrade instances.
+4. Upload the verified archive, publish its template version and explicitly create the intended instance. Ordinary startup must not publish, provision or upgrade instances.
 5. Use nocobase-app-plugin-multi-app for templates, instances, receipts/revisions and recovery. Use the installed identity-provider/platform-sso Skills for enrollment and SSO. Discover live endpoints from the authenticated API document, not guessed routes.
 6. Read recovery before retries, origin changes or restoration. Preserve uncertain operation identifiers and inspect completed runtime effects before creating another request.
 7. After each approved write, read back state and compare observed runtime behavior. Verify the actual public entry, assets, business writes, denied access, explicit stop/start, idle wake and retained data across Main/Host restart before declaring deployment accepted.

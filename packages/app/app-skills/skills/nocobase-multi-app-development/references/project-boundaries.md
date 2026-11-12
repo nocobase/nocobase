@@ -1,10 +1,10 @@
-# Workspace and product boundaries
+# Application and deployment boundaries
 
 ## Establish the real baseline
 
 Read the project README, `package.json` and `pnpm-workspace.yaml` when present; inspect each App's manifest, configuration declarations and client/server/CLI plugin registrations. Record source revisions, dirty files and installed versions. Use NocoBase 3 project guidance, not global NocoBase 2 Portal/CLI workflows.
 
-The commercial multi-app template creates the complete Main application at the project root, without a default child. Children may be added on demand in `apps/<name>` or independent repositories. Same-repository Apps may share installation and a lockfile, not business source or runtime data. For other projects inspect the declared App roots; a source folder does not create a deployed instance and receiving these Skills does not convert a single App into a platform.
+The commercial multi-app template creates Main only. A child is a separate complete application that provides `dist.tar.gz`; Main does not inspect or import its source directories. Each create-app invocation creates one application.
 
 For a new project, the public command is available only after compatible CLI and template releases include the alias:
 
@@ -15,7 +15,7 @@ cd platform
 
 For unreleased development, use explicitly identified real candidate CLI/template artifacts and record their identities; do not claim the public command is already available. Compatible commercial package versions and authorized download access are separate prerequisites. Do not use a template source checkout, fake plugin or external repository link as proof of independent installation.
 
-Install once at the workspace root. Creation does not configure runtime databases, keys or administrators. Follow the project README to configure root Main and each child and synchronize their installed package Skills. Root `pnpm dev` and `pnpm build` operate Main; `pnpm --dir=apps/sub build` operates the child. Both keep independent production artifacts.
+Configure Main and each independently developed child in their own projects. Creation does not initialize runtime databases, keys or administrators. Run `pnpm build --tar` in the child project and supply `storage/exports/dist.tar.gz` to Main.
 
 ## Decide ownership
 
@@ -29,12 +29,6 @@ Install once at the workspace root. Creation does not configure runtime database
 
 Membership is not a business permission set, a page grant is not an API grant, and an owner label is not authorization. Choose multiple instances for the same behavior with isolated data, multiple templates for distinct applications, or internal modules when independent data/release ownership is unnecessary.
 
-Source location and hosting mode are separate decisions. A child may live in this workspace or its own repository and still supply a compatible Host artifact. An adjacent App can remain independently hosted. External registration does not transfer deployment, backup or lifecycle ownership.
+Source location is not a deployment contract. For managed hosting, Main receives a verified deployment archive, publishes a template version and creates instances. For external hosting, register the independently operated application's public entry; registration does not transfer deployment, backup or lifecycle ownership.
 
-## Replace demonstration coupling deliberately
-
-Inventory business pages, role mapping, migrations and seeds before choosing what a new product retains. Do not remove generic management/identity routes or change persisted permission IDs merely to hide demonstrations. Never delete old migrations or volumes as source cleanup.
-
-When supplied by the multi-app template, `scripts/demo.mjs` starts built Main from the project root. It invokes preparation only with explicit `--initialize --plan`; the plan supplies actual artifacts/versions and instance IDs. No fixed second version or retired sample builder is required. Keep product initialization explicit, idempotent and separate from ordinary startup.
-
-Record responsibility boundaries, package identities versus persistent IDs, retained example behavior, hosted/external mode and the initial permission plan. Existing populated installations route to `nocobase-multi-app-migration`; publication and operations route to `nocobase-multi-app-deployment`.
+Record package and artifact identities, hosted/external mode and the permission plan. Application creation and Main startup must not implicitly publish versions or provision instances. Publication and operations route to `nocobase-multi-app-deployment`.
