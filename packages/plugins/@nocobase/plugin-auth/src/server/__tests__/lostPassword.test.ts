@@ -126,65 +126,87 @@ describe('auth:lostPassword', () => {
     expect(res.error.text).toContain('Incorrect email format');
   });
 
-  it('should return an error when email does not exist', async () => {
-    const res = await agent.post('/auth:lostPassword').set({ 'X-Authenticator': 'basic' }).send({
-      email: 'nonexistent@example.com',
-    });
+  function requestReset(email: string) {
+    return agent.post('/auth:lostPassword').set({ 'X-Authenticator': 'basic' }).send({ email });
+  }
 
-    expect(res.statusCode).toBe(401);
-    expect(res.error.text).toContain('The email is incorrect, please re-enter');
+  it('accepts both addresses with identical empty responses and sends mail only to the registered one', async () => {
+    const unknown = await requestReset('nonexistent@example.com');
+    expect(unknown.statusCode).toBe(204);
+    expect(unknown.text).toBe('');
+    expect(app.authManager.jwt.sign).not.toHaveBeenCalled();
+    expect(notificationManagerMock.send).not.toHaveBeenCalled();
+
+    const registered = await requestReset('test@example.com');
+    expect(registered.statusCode).toBe(unknown.statusCode);
+    expect(registered.text).toBe(unknown.text);
+    expect(app.authManager.jwt.sign).toHaveBeenCalledTimes(1);
+    expect(notificationManagerMock.send).toHaveBeenCalledTimes(1);
+    expect(notificationManagerMock.send.mock.calls[0][0].message.to).toEqual(['test@example.com']);
   });
 
-  it('should return an error when password reset is disabled', async () => {
-    // Update authenticator configuration to disable password reset
-    const authRepo = db.getRepository('authenticators');
-    await authRepo.update({
-      filter: {
-        name: 'basic',
-      },
-      values: {
-        options: {
-          public: {
-            enableResetPassword: false,
+  it('returns the same empty response when email dispatch fails', async () => {
+    notificationManagerMock.send.mockRejectedValue(new Error('Email delivery unavailable'));
+    const registered = await requestReset('test@example.com');
+    const unknown = await requestReset('nonexistent@example.com');
+    expect([registered.statusCode, registered.text]).toEqual([204, '']);
+    expect([unknown.statusCode, unknown.text]).toEqual([204, '']);
+    expect(notificationManagerMock.send).toHaveBeenCalledTimes(1);
+  });
+
+  it.each(['test@example.com', 'nonexistent@example.com'])(
+    'rejects %s when password reset is disabled',
+    async (email) => {
+      // Update authenticator configuration to disable password reset
+      const authRepo = db.getRepository('authenticators');
+      await authRepo.update({
+        filter: {
+          name: 'basic',
+        },
+        values: {
+          options: {
+            public: {
+              enableResetPassword: false,
+            },
           },
         },
-      },
-    });
+      });
 
-    const res = await agent.post('/auth:lostPassword').set({ 'X-Authenticator': 'basic' }).send({
-      email: 'test@example.com',
-    });
+      const res = await requestReset(email);
 
-    expect(res.statusCode).toBe(403);
-    expect(res.error.text).toContain('Not allowed to reset password');
-  });
+      expect(res.statusCode).toBe(403);
+      expect(res.error.text).toContain('Not allowed to reset password');
+    },
+  );
 
-  it('should return an error when email channel is not found', async () => {
-    // Clear channel types
-    notificationManagerMock.channelTypes = new Map();
+  it.each(['test@example.com', 'nonexistent@example.com'])(
+    'rejects %s when email channel is not found',
+    async (email) => {
+      // Clear channel types
+      notificationManagerMock.channelTypes = new Map();
 
-    const res = await agent.post('/auth:lostPassword').set({ 'X-Authenticator': 'basic' }).send({
-      email: 'test@example.com',
-    });
+      const res = await requestReset(email);
 
-    expect(res.statusCode).toBe(400);
-    expect(res.error.text).toContain('Email channel not found');
-  });
+      expect(res.statusCode).toBe(400);
+      expect(res.error.text).toContain('Email channel not found');
+    },
+  );
 
-  it('should return an error when notification manager plugin is not found', async () => {
-    // Replace app.getPlugin method to return null
-    app.getPlugin = vi.fn().mockReturnValue(null);
+  it.each(['test@example.com', 'nonexistent@example.com'])(
+    'rejects %s when notification manager plugin is not found',
+    async (email) => {
+      // Replace app.getPlugin method to return null
+      app.getPlugin = vi.fn().mockReturnValue(null);
 
-    const res = await agent.post('/auth:lostPassword').set({ 'X-Authenticator': 'basic' }).send({
-      email: 'test@example.com',
-    });
+      const res = await requestReset(email);
 
-    expect(res.statusCode).toBe(500);
+      expect(res.statusCode).toBe(500);
 
-    // TODO: 这里不知道为什么不显示自定义的错误信息
-    // expect(res.error.text).toContain('Notification manager plugin not found');
-    expect(res.error.text).toContain('Internal Server Error');
-  });
+      // TODO: 这里不知道为什么不显示自定义的错误信息
+      // expect(res.error.text).toContain('Notification manager plugin not found');
+      expect(res.error.text).toContain('Internal Server Error');
+    },
+  );
 
   it('should successfully send a password reset email', async () => {
     const res = await agent.post('/auth:lostPassword').set({ 'X-Authenticator': 'basic' }).send({
@@ -309,6 +331,8 @@ describe('auth:lostPassword', () => {
       .set({ 'X-Authenticator': 'basic' })
       .send({ email: 'test@example.com', baseURL: 'https://example.com' });
     expect(res.statusCode).toBe(503);
+    const unknown = await requestReset('nonexistent@example.com');
+    expect([unknown.statusCode, unknown.text]).toEqual([res.statusCode, res.text]);
     expect(app.authManager.jwt.sign).not.toHaveBeenCalled();
     expect(notificationManagerMock.send).not.toHaveBeenCalled();
   });
