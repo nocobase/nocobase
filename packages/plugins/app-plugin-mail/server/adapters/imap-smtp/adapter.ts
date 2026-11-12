@@ -77,6 +77,7 @@ import {
 } from './constants.js';
 import { createImapClient, createSmtpTransport } from './connection.js';
 import type { ImapConnectionPool } from './connection-pool.js';
+import { ImapCommandMetrics, observeImapCommands } from './command-metrics.js';
 import {
   compressUids,
   matchingUids,
@@ -121,6 +122,9 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
     NormalizedMailFolder['type']
   >();
   private imapClient?: ImapFlow;
+  private readonly commandMetrics = new ImapCommandMetrics();
+  private stopCommandObservation?: () => void;
+  private readonly yieldReasons = new Set<'push' | 'uidnext'>();
   private readonly smtpTransport: Transporter;
   // Evidence and byte budget of the current step only; never reused across steps.
   private copies: ImapCopyEvidence[] = [];
@@ -1475,6 +1479,8 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
   }
 
   public async close(): Promise<void> {
+    this.stopCommandObservation?.();
+    this.stopCommandObservation = undefined;
     this.smtpTransport.close();
     const client = this.imapClient;
     this.imapClient = undefined;
@@ -1510,6 +1516,8 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
   }
 
   private closeImap(): void {
+    this.stopCommandObservation?.();
+    this.stopCommandObservation = undefined;
     const client = this.imapClient;
     this.imapClient = undefined;
     if (client) {
@@ -1537,7 +1545,27 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
       }
     }
     this.imapClient = client;
+    if (this.syncRun) {
+      this.stopCommandObservation = observeImapCommands(
+        client,
+        this.commandMetrics.record,
+      );
+      this.commandMetrics.instrumented ||=
+        this.stopCommandObservation !== undefined;
+    }
     return client;
+  }
+
+  public syncDiagnostics(): {
+    imapCommands: ReturnType<ImapCommandMetrics['snapshot']>;
+    yielded: boolean;
+    yieldReasons: readonly string[];
+  } {
+    return {
+      imapCommands: this.commandMetrics.snapshot(),
+      yielded: this.yieldReasons.size > 0,
+      yieldReasons: [...this.yieldReasons],
+    };
   }
 
   private async listMailboxes(): Promise<ListResponse[]> {
@@ -1739,22 +1767,31 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
         if (
           requestedAt &&
           Date.parse(requestedAt) > Date.parse(this.syncRun.updatedAt)
-        )
+        ) {
+          this.yieldReasons.add('push');
           return true;
+        }
       }
       if (now - lastUidCheck < 4_000) return false;
       lastUidCheck = now;
       const client = await this.imap();
-      if (client.capabilities.has('LIST-STATUS'))
-        return this.selectableMailboxes(await this.listMailboxes()).some(
+      if (client.capabilities.has('LIST-STATUS')) {
+        const changed = this.selectableMailboxes(
+          await this.listMailboxes(),
+        ).some(
           (box) =>
             box.status?.uidNext !== undefined &&
             box.status.uidNext !== folders[box.path]?.uidNext,
         );
+        if (changed) this.yieldReasons.add('uidnext');
+        return changed;
+      }
       if (!folders.INBOX) return false;
       const status = await client.status('INBOX', { uidNext: true });
       if (!status) throw new Error('The IMAP UIDNEXT check was incomplete.');
-      return status.uidNext !== folders.INBOX.uidNext;
+      const changed = status.uidNext !== folders.INBOX.uidNext;
+      if (changed) this.yieldReasons.add('uidnext');
+      return changed;
     };
     return Object.assign(check, {
       uidChecked: () => {
@@ -2079,6 +2116,7 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
     let stable = true;
     const checkNewMail = this.newMailChecker(folders, signal);
     const interrupted = (): { done: boolean; verify: ImapVerifyState } => {
+      if (!this.yieldReasons.size) this.yieldReasons.add('uidnext');
       // Partial observations must never invalidate copies or publish flags.
       this.copies = [];
       this.changes = [];

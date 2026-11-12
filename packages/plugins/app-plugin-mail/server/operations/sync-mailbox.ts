@@ -236,6 +236,18 @@ export class SyncMailboxOperation {
       await this.failSyncRun(run, normalized, error);
     } finally {
       stopLeaseHeartbeat();
+      if (adapter instanceof ImapSmtpAdapter)
+        writeMailLog(
+          this.dependencies.logger,
+          'info',
+          {
+            event: 'mail.sync.imap_commands',
+            ...this.logFields(run),
+            stepDurationMs: Math.max(0, Date.now() - now),
+            ...adapter.syncDiagnostics(),
+          },
+          'IMAP synchronization step command counts.',
+        );
       await closeQuietly(adapter);
     }
   }

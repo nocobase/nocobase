@@ -118,6 +118,24 @@ vi.mock('imapflow', () => {
       body: raw.subarray(end + 4),
     };
   };
+  const projectHeaders = (
+    header: Buffer,
+    names: readonly unknown[],
+  ): Buffer => {
+    let selected = '';
+    let include = false;
+    for (const line of header.toString().split('\r\n')) {
+      if (!line) continue;
+      if (!/^[ \t]/.test(line))
+        include = names.some(
+          (name) =>
+            typeof name === 'string' &&
+            line.toLowerCase().startsWith(name.toLowerCase() + ':'),
+        );
+      if (include) selected += line + '\r\n';
+    }
+    return Buffer.from(selected + '\r\n');
+  };
   const messageIdOf = (raw: Buffer): string | undefined =>
     /^Message-ID: (.+)$/im.exec(split(raw).header.toString())?.[1]?.trim();
   const uidsOf = (range: unknown, folder: Folder): number[] => {
@@ -152,10 +170,12 @@ vi.mock('imapflow', () => {
     }
     public close(): void {}
     public async status(path: string): Promise<unknown> {
+      await this.exec('STATUS', []);
       server.statuses += 1;
       return { uidNext: server.folders.get(path)!.uidNext };
     }
     public async list(): Promise<unknown[]> {
+      await this.exec('LIST', []);
       server.lists += 1;
       server.onList?.();
       return [...server.folders].map(([path, folder]) => ({
@@ -175,6 +195,7 @@ vi.mock('imapflow', () => {
       path: string,
       options?: { readOnly?: boolean },
     ): Promise<unknown> {
+      await this.exec('SELECT', []);
       const folder = server.folders.get(path);
       if (!folder)
         throw Object.assign(new Error('Mailbox does not exist'), {
@@ -201,6 +222,7 @@ vi.mock('imapflow', () => {
       header?: Record<string, string | boolean>;
       or?: { emailId?: string; header?: Record<string, string | boolean> }[];
     }): Promise<number[]> {
+      await this.exec('UID SEARCH', []);
       const result = server.onSearch?.();
       if (result !== undefined) return result as number[];
       const folder = this.selected();
@@ -259,24 +281,7 @@ vi.mock('imapflow', () => {
         ...(query?.headers
           ? {
               headers: Array.isArray(query.headers)
-                ? Buffer.from(
-                    header
-                      .toString()
-                      .split('\r\n')
-                      .filter(
-                        (line) =>
-                          query.headers instanceof Array &&
-                          query.headers.some(
-                            (name: unknown) =>
-                              typeof name === 'string' &&
-                              line
-                                .toLowerCase()
-                                .startsWith(`${name.toLowerCase()}:`),
-                          ),
-                      )
-                      .map((line) => `${line}\r\n`)
-                      .join('') + '\r\n',
-                  )
+                ? projectHeaders(header, query.headers)
                 : header,
             }
           : query
@@ -286,6 +291,7 @@ vi.mock('imapflow', () => {
       };
     }
     public async *fetch(range: unknown): AsyncGenerator<unknown> {
+      await this.exec('UID FETCH', [{ type: 'ATOM', value: 'BODYSTRUCTURE' }]);
       const folder = this.selected();
       server.fullFetches.push({
         path: String(this.mailbox && this.mailbox.path),
@@ -297,6 +303,9 @@ vi.mock('imapflow', () => {
       range: unknown,
       query: Record<string, unknown>,
     ): Promise<unknown[]> {
+      await this.exec('UID FETCH', [
+        { type: 'ATOM', value: query.internalDate ? 'HEADER.FIELDS' : 'FLAGS' },
+      ]);
       const folder = this.selected();
       const path = this.mailbox && this.mailbox.path;
       server.batchFetches.push({
@@ -317,6 +326,12 @@ vi.mock('imapflow', () => {
         bodyParts?: { key: string; start?: number; maxLength?: number }[];
       },
     ): Promise<unknown> {
+      await this.exec('UID FETCH', [
+        {
+          type: 'ATOM',
+          value: query.bodyParts || query.source ? 'BODY.PEEK' : 'FLAGS',
+        },
+      ]);
       const folder = this.selected();
       if (query.flags) server.singleFlagReads += 1;
       const uid = Number(range);
@@ -379,9 +394,15 @@ vi.mock('imapflow', () => {
     public readonly enabled = new Set<string>();
     public async exec(
       command: string,
-      attributes: { value: string }[],
+      attributes: { value: string; type?: string }[],
       options?: { untagged: { OK(response: unknown): Promise<void> } },
     ) {
+      if (
+        ['LIST', 'SELECT', 'UID SEARCH', 'UID FETCH', 'STATUS'].includes(
+          command,
+        )
+      )
+        return { next() {} };
       if (command === 'UID MOVE' || command === 'UID COPY') {
         const source = this.selected();
         const uid = Number(attributes[0].value);
@@ -586,7 +607,10 @@ function service(): DefaultMailService {
   });
 }
 
-async function step(resolver: typeof adapters = adapters): Promise<boolean> {
+async function step(
+  resolver: typeof adapters = adapters,
+  logger?: import('../../server/logging.js').MailLogger,
+): Promise<boolean> {
   const tasks = await store.claimOutbox(
     new Date().toISOString(),
     'publisher',
@@ -602,7 +626,7 @@ async function step(resolver: typeof adapters = adapters): Promise<boolean> {
     task.leaseToken!,
     new Date().toISOString(),
   );
-  await new SyncMailboxOperation({ store, adapters: resolver }).execute(
+  await new SyncMailboxOperation({ store, adapters: resolver, logger }).execute(
     task.payload,
   );
   return true;
@@ -1129,7 +1153,12 @@ describe('IMAP verification and orphans', () => {
       };
       try {
         server.lists = 0;
-        await sync();
+        const logger = { info: vi.fn() };
+        const run = await service().startSync(owner, { accountId });
+        while (await step(adapters, logger));
+        expect(await store.getSyncRun(run.id)).toMatchObject({
+          status: 'completed',
+        });
         // Baseline: one folder-discovery LIST + three LISTs per verification pass.
         // Six 3.5s batches add two timed checks per pass: 7 + 4 = 11.
         console.info(
@@ -1137,6 +1166,34 @@ describe('IMAP verification and orphans', () => {
             server.lists,
         );
         expect(server.lists).toBe(batchDuration === 0 ? 7 : 11);
+        const counts = logger.info.mock.calls
+          .map(([data]: [Record<string, unknown>, string]) => data)
+          .filter((data) => data.event === 'mail.sync.imap_commands');
+        expect(counts).toHaveLength(3);
+        expect(
+          counts.every(
+            (data) =>
+              data.yielded === false && data.stepDurationMs !== undefined,
+          ),
+        ).toBe(true);
+        const metrics = counts.map(
+          (data) =>
+            data.imapCommands as {
+              instrumented: boolean;
+              total: number;
+              byCommand: Record<string, { count: number }>;
+            },
+        );
+        expect(metrics.every((metric) => metric.instrumented)).toBe(true);
+        expect(
+          metrics.reduce(
+            (total, metric) => total + (metric.byCommand.LIST?.count ?? 0),
+            0,
+          ),
+        ).toBe(server.lists);
+        expect(metrics.reduce((total, metric) => total + metric.total, 0)).toBe(
+          batchDuration === 0 ? 67 : 71,
+        );
       } finally {
         clock.mockRestore();
       }
@@ -4218,8 +4275,18 @@ describe('IMAP large mailbox checkpoints and cooperative imports', () => {
         .where('accountId', '=', accountId)
         .execute();
     };
+    const logger = { info: vi.fn() };
     try {
-      await step();
+      await step(adapters, logger);
+      expect(logger.info).toHaveBeenCalledWith(
+        expect.objectContaining({
+          event: 'mail.sync.imap_commands',
+          yielded: true,
+          yieldReasons: ['push'],
+          imapCommands: expect.objectContaining({ instrumented: true }),
+        }),
+        'IMAP synchronization step command counts.',
+      );
       expect(server.bodyReads).toEqual(['INBOX:2001', 'INBOX:2002']);
       expect(
         (await messages()).map((message) => message.providerMessageId),
