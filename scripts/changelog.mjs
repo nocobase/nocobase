@@ -57,7 +57,8 @@ export const TYPE_TITLES = {
   'Bug fix': { en: '🐛 Bug Fixes', zh: '🐛 修复', ja: '🐛 不具合修正' },
 };
 
-const EMPTY = {
+/** What a release's section says when it has no user-facing changes. */
+export const EMPTY = {
   en: 'No user-facing changes.',
   zh: '没有面向用户的变更。',
   ja: 'ユーザー向けの変更はありません。',

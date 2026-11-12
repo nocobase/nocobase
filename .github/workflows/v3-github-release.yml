@@ -110,3 +110,126 @@ jobs:
             echo
             echo "[$TAG](${{ github.server_url }}/${{ github.repository }}/releases/tag/$(node -e 'console.log(encodeURIComponent(process.argv[1]))' "$TAG"))"
           } >> "$GITHUB_STEP_SUMMARY"
+
+  # Commits this release's changelog to nocobase/website-v3 as homepage/content/changelog/<channel>-<version>.json, the
+  # entry the website's changelog page reads; a push to website-v3's main runs its site.yml, which builds and publishes
+  # www.nocobase.com, so the commit message must never suppress CI. scripts/website-changelog.mjs renders the entry
+  # from the tagged commit's CHANGELOG.md, CHANGELOG.zh-CN.md and CHANGELOG.ja-JP.md; a release without an English
+  # section has none. It runs once the GitHub Release exists, because the entry links to it. A manual dispatch of this
+  # workflow resends a tag, which is also how past releases are backfilled: an unchanged entry is not committed again,
+  # and a rewritten one keeps its publishedAt.
+  #
+  # Requires the NocoBase App (vars.NOCOBASE_APP_ID) to be installed on nocobase/website-v3 with contents write; it is.
+  # Best effort: every failure is a warning, and the release never fails because of the website.
+  website-changelog:
+    name: Publish the changelog to the website
+    needs: publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    continue-on-error: true
+    steps:
+      # The workflow's own ref carries the script; only the tag's changelogs are read from the tagged commit, so a
+      # backfill of a tag cut before the script existed works too.
+      - name: Check out the repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Render the website entry
+        id: entry
+        continue-on-error: true
+        env:
+          TAG: ${{ inputs.tag }}
+        run: |
+          git fetch --depth=1 --no-tags origin "+refs/tags/${TAG}:refs/tags/${TAG}"
+          node scripts/website-changelog.mjs "$TAG" > "$RUNNER_TEMP/website-entry.json"
+          if [ -s "$RUNNER_TEMP/website-entry.json" ]; then
+            echo "render=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::$TAG has no English changelog section, so the website gets no entry for it"
+          fi
+
+      - name: Create a website token
+        id: website_token
+        if: steps.entry.outputs.render == 'true'
+        continue-on-error: true
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.NOCOBASE_APP_ID }}
+          private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
+          owner: nocobase
+          repositories: website-v3
+          permission-contents: write
+
+      # The App token stays in this checkout's credentials so the next step can push; this job never pushes elsewhere.
+      - name: Check out the website
+        id: website
+        if: steps.website_token.outcome == 'success'
+        continue-on-error: true
+        uses: actions/checkout@v4
+        with:
+          repository: nocobase/website-v3
+          ref: main
+          path: website-v3
+          fetch-depth: 1
+          token: ${{ steps.website_token.outputs.token }}
+
+      # Releases of both channels may push at the same time. A rejected push starts again from the new main and renders
+      # the entry afresh rather than rebasing, because the commit only ever adds or replaces this one file.
+      - name: Commit the entry to the website
+        id: commit
+        if: steps.website.outcome == 'success'
+        continue-on-error: true
+        working-directory: website-v3
+        env:
+          TAG: ${{ inputs.tag }}
+        run: |
+          git config user.name "nocobase[bot]"
+          git config user.email "179432756+nocobase[bot]@users.noreply.github.com"
+          for attempt in 1 2 3 4 5; do
+            if [ "$attempt" -gt 1 ]; then
+              sleep $((attempt * 5))
+              git fetch --depth=1 origin main
+              git reset --hard --quiet FETCH_HEAD
+            fi
+            file=$(node "$GITHUB_WORKSPACE/scripts/website-changelog.mjs" "$TAG" \
+              --root "$GITHUB_WORKSPACE" \
+              --out-dir homepage/content/changelog)
+            if [ -z "$file" ]; then
+              echo "::notice::$TAG has no English changelog section, so the website gets no entry for it"
+              exit 0
+            fi
+            if git cat-file -e "HEAD:$file" 2> /dev/null; then verb=update; else verb=add; fi
+            git add -- "$file"
+            if git diff --cached --quiet; then
+              echo "The website already has the entry for $TAG."
+              exit 0
+            fi
+            git commit --quiet -m "chore(changelog): $verb $TAG"
+            if git push origin HEAD:main; then
+              echo "Committed $file to nocobase/website-v3 ($verb)."
+              {
+                echo "### Website changelog"
+                echo
+                echo "Committed \`$file\` to [nocobase/website-v3](${{ github.server_url }}/nocobase/website-v3/commit/$(git rev-parse HEAD))."
+              } >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+            echo "Push attempt $attempt was rejected; retrying from the new main."
+          done
+          echo "Could not push to nocobase/website-v3 main after 5 attempts"
+          exit 1
+
+      - name: Warn about a failed website update
+        if: >-
+          always() && (steps.entry.outcome == 'failure' || steps.website_token.outcome == 'failure'
+          || steps.website.outcome == 'failure' || steps.commit.outcome == 'failure')
+        env:
+          TAG: ${{ inputs.tag }}
+        run: |
+          echo "::warning::The website changelog for $TAG was not published. Rerun this workflow with tag $TAG to retry."
