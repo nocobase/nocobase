@@ -163,10 +163,6 @@ export abstract class DataSource extends EventEmitter {
         self.collectionResources.add(self.resourceManager.define({ name: resourceName }));
       }
 
-      // This request selected a collection-backed resource. The collection can disappear while
-      // authentication and other middleware are running, even if a later request redefines the route.
-      const getRepository = ctx.getCurrentRepository;
-      ctx.getCurrentRepository = () => getRepository() || ctx.throw(404);
       return next();
     };
   }
