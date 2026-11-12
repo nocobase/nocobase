@@ -1,4 +1,0 @@
-# Application payloads own their formatting; merged migrations retain exact source bytes.
-template/
-dist/
-.template-stage-*/

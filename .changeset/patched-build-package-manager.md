@@ -2,7 +2,6 @@
 '@nocobase/create-app': patch
 '@nocobase/app-template-default': patch
 '@nocobase/app-template-examples': patch
-'@nocobase/app-template-multi-app': patch
 '@nocobase/app-cli': patch
 ---
 

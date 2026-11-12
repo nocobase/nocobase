@@ -8,11 +8,6 @@ import {
   writeFile,
 } from 'node:fs/promises';
 import path from 'node:path';
-import {
-  ensureWorkspaceApplications,
-  readTemplateLayout,
-  type TemplateLayout,
-} from './layout.ts';
 
 /**
  * pnpm version a generated app pins.
@@ -284,55 +279,21 @@ export interface ScaffoldOptions {
  */
 export async function scaffoldFromTemplate(
   options: ScaffoldOptions,
-): Promise<TemplateLayout> {
+): Promise<void> {
   const { extraFiles, name, targetDirectory, templateDirectory } = options;
-  // Validate before copying: a malformed workspace must not leave a half-created project.
-  const layout = await readTemplateLayout(templateDirectory);
-  for (const app of layout.applications) {
-    assertValidAppName(app.suffix !== '' ? `${name}-${app.suffix}` : name);
-  }
   await mkdir(targetDirectory, { recursive: true });
   await cp(templateDirectory, targetDirectory, { recursive: true });
   await restoreGitignore(targetDirectory);
-  await rewriteManifest(
-    targetDirectory,
-    name,
-    layout.applications.some((app) => app.directory === '.'),
-    true,
-    layout.workspace,
-  );
-  if (layout.workspace) {
-    for (const app of layout.applications) {
-      if (app.directory === '.') continue;
-      const directory = path.join(targetDirectory, app.directory);
-      await restoreGitignore(directory);
-      // A template-provided ignore file must still protect runtime secrets and data in every nested App.
-      const ignore = path.join(directory, '.gitignore');
-      await writeFile(
-        ignore,
-        `${await readFile(ignore, 'utf8')}\n${FALLBACK_GITIGNORE}`,
-        'utf8',
-      );
-      await rewriteManifest(directory, `${name}-${app.suffix}`, true, false);
-    }
-    await ensureWorkspaceApplications(targetDirectory, layout);
-  }
+  await rewriteManifest(targetDirectory, name);
   for (const [relative, contents] of Object.entries(extraFiles ?? {})) {
     const target = path.join(targetDirectory, relative);
     await mkdir(path.dirname(target), { recursive: true });
     await writeFile(target, contents, 'utf8');
   }
-  return layout;
 }
 
 /** Rewrites package identity, never persisted business, migration or permission identifiers. */
-async function rewriteManifest(
-  directory: string,
-  name: string,
-  runtime: boolean,
-  recordTemplate = true,
-  forcePrivate = false,
-): Promise<void> {
+async function rewriteManifest(directory: string, name: string): Promise<void> {
   const manifestPath = path.join(directory, 'package.json');
   const manifest = JSON.parse(await readFile(manifestPath, 'utf8')) as Record<
     string,
@@ -340,7 +301,7 @@ async function rewriteManifest(
   >;
   const templateName = typeof manifest.name === 'string' ? manifest.name : '';
   manifest.name = name;
-  if (recordTemplate && templateName !== '') {
+  if (templateName !== '') {
     const nocobase =
       typeof manifest.nocobase === 'object' && manifest.nocobase !== null
         ? (manifest.nocobase as Record<string, unknown>)
@@ -352,15 +313,13 @@ async function rewriteManifest(
   delete manifest.description;
   delete manifest.publishConfig;
   delete manifest.repository;
-  // Applications and orchestration workspaces are not independently published template packages.
-  if (!runtime || !recordTemplate || forcePrivate) manifest.private = true;
   manifest.packageManager ??= REQUIRED_PACKAGE_MANAGER;
   await writeFile(
     manifestPath,
     `${JSON.stringify(manifest, null, 2)}\n`,
     'utf8',
   );
-  if (runtime) await rewritePackageName(directory, templateName, name);
+  await rewritePackageName(directory, templateName, name);
 }
 
 export async function removeDirectory(directory: string): Promise<void> {
