@@ -3,6 +3,13 @@ name: V3 Release Beta
 # Release prereleases from v3-develop: consume changesets, assign X.Y.0-beta.N versions, and publish them under the beta
 # and latest dist-tags. Versioning happens on an isolated release branch so v3-develop remains available while the release
 # is checked.
+#
+# The commercial plugins in nocobase/nocobase3-pro are released with it. pro-candidate builds, tests, and smoke-tests
+# Pro against this release candidate before anything is published, so a change here that breaks a commercial plugin
+# stops the open-source release too; fix Pro develop first, then run the release again. After npm, pro-release
+# republishes every Pro package whose published @nocobase/* ranges reject this release (on beta that is any new
+# major.minor.patch, not only a new major), together with Pro's own pending changesets. When Pro has nothing to publish,
+# it is still tested and its publishing is skipped. skip_pro releases the open-source packages alone.
 
 on:
   workflow_dispatch:
@@ -13,6 +20,10 @@ on:
         default: false
       skip_smoke_test:
         description: 'Skip the create-app smoke test (use only when the smoke test itself is broken)'
+        type: boolean
+        default: false
+      skip_pro:
+        description: 'Release without testing or publishing Pro (emergency use only: Pro may not install on this release)'
         type: boolean
         default: false
 
@@ -446,13 +457,141 @@ jobs:
           package-artifacts: ${{ runner.temp }}/release-smoke-packages
           local-packages-only: 'true'
 
+  # Pro checks out and builds commercial source on public Actions minutes. Nothing from it leaves this job: no artifact
+  # is uploaded and no cache is saved, and the only artifact it reads is the open-source release state. Its outputs
+  # are commit and tree hashes, which pro-release uses to publish exactly what was tested here.
+  pro-candidate:
+    name: Test Pro with this release
+    needs: prepare
+    if: '!inputs.skip_pro'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    outputs:
+      pro_sha: ${{ steps.pro.outputs.sha }}
+      release: ${{ steps.plan.outputs.release }}
+      tree: ${{ steps.tree.outputs.tree }}
+    steps:
+      - name: Create a read token for the Pro repository
+        id: checkout_token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.NOCOBASE_APP_ID }}
+          private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
+          owner: nocobase
+          repositories: nocobase3-pro
+          permission-contents: read
+
+      - name: Check out Pro develop
+        uses: actions/checkout@v4
+        with:
+          repository: nocobase/nocobase3-pro
+          ref: develop
+          fetch-depth: 0
+          submodules: recursive
+          token: ${{ steps.checkout_token.outputs.token }}
+          persist-credentials: false
+
+      - name: Record the Pro commit
+        id: pro
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.7.0
+          run_install: false
+
+      - name: Validate the Pro npm registry
+        env:
+          PRO_NPM_REGISTRY: ${{ secrets.PRO_NPM_REGISTRY }}
+        run: |
+          node -e '
+            const value = process.env.PRO_NPM_REGISTRY?.trim();
+            if (!value) { console.error("::error::PRO_NPM_REGISTRY is not configured"); process.exit(1); }
+            let registry;
+            try { registry = new URL(value); } catch { console.error("::error::PRO_NPM_REGISTRY is not a valid URL"); process.exit(1); }
+            if (registry.hostname === "registry.npmjs.org") { console.error("::error::Commercial packages must not use public npm"); process.exit(1); }
+          '
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: ${{ secrets.PRO_NPM_REGISTRY }}
+          scope: '@nocobase'
+
+      - name: Download release source state
+        uses: actions/download-artifact@v4
+        with:
+          name: release-source-state
+          path: ${{ runner.temp }}/release-state
+
+      # The release commit exists only on the runners until the release job pushes it, so it is restored from the
+      # release state inside the submodule rather than fetched.
+      - name: Restore the release candidate in the submodule
+        working-directory: vendor/nocobase3
+        env:
+          BASE_SHA: ${{ needs.prepare.outputs.base_sha }}
+          SOURCE_SHA: ${{ needs.prepare.outputs.source_sha }}
+          RELEASE_BRANCH: ${{ needs.prepare.outputs.release_branch }}
+        run: |
+          git fetch --quiet --no-tags origin "+refs/heads/v3-develop:refs/remotes/origin/v3-develop"
+          git checkout --quiet --detach "$BASE_SHA"
+          node scripts/release-state.mjs restore \
+            --directory "$RUNNER_TEMP/release-state" \
+            --base "$BASE_SHA" \
+            --expected "$SOURCE_SHA" \
+            --branch "$RELEASE_BRANCH"
+
+      - name: Pin Pro to the release candidate and install
+        env:
+          BASE_SHA: ${{ needs.prepare.outputs.base_sha }}
+          SOURCE_SHA: ${{ needs.prepare.outputs.source_sha }}
+          NODE_AUTH_TOKEN: ${{ secrets.PRO_NPM_TOKEN }}
+        run: node ./scripts/sync-release-oss.mjs --branch develop --candidate "$SOURCE_SHA" --base "$BASE_SHA"
+
+      - name: Snapshot Pro versions before versioning
+        run: node ./vendor/nocobase3/scripts/list-package-versions.mjs > "$RUNNER_TEMP/pro-versions-before.json"
+
+      - name: Plan the Pro release
+        id: plan
+        env:
+          BATCH: ${{ needs.prepare.outputs.batch }}
+          NODE_AUTH_TOKEN: ${{ secrets.PRO_NPM_TOKEN }}
+          PRO_NPM_REGISTRY: ${{ secrets.PRO_NPM_REGISTRY }}
+        run: node ./scripts/generate-oss-peer-changesets.mjs --batch "$BATCH" --registry "$PRO_NPM_REGISTRY"
+
+      - name: Version Pro packages
+        if: steps.plan.outputs.release == 'true'
+        run: |
+          pnpm changeset version
+          CHANGED=$(node ./vendor/nocobase3/scripts/list-package-versions.mjs --changed "$RUNNER_TEMP/pro-versions-before.json")
+          test -n "$CHANGED" || { echo '::error::Pro changesets changed no package versions'; exit 1; }
+          echo "$CHANGED"
+
+      # pro-release regenerates the same versioned tree from the same inputs and refuses to publish anything else.
+      - name: Record the tested Pro tree
+        id: tree
+        run: |
+          git add -A
+          echo "tree=$(git write-tree)" >> "$GITHUB_OUTPUT"
+
+      - name: Build and test Pro
+        run: |
+          pnpm build
+          pnpm test
+
+      - name: Verify Pro packages in OSS Default
+        uses: ./.github/actions/verify-create-app
+
   release:
     name: Publish beta
-    needs: [prepare, build, test, smoke]
+    needs: [prepare, build, test, smoke, pro-candidate]
     if: >-
       !cancelled() && needs.prepare.result == 'success'
       && needs.build.result == 'success' && needs.test.result == 'success'
       && (needs.smoke.result == 'success' || (inputs.skip_smoke_test && needs.smoke.result == 'skipped'))
+      && (needs.pro-candidate.result == 'success' || (inputs.skip_pro && needs.pro-candidate.result == 'skipped'))
     runs-on: ubuntu-latest
     timeout-minutes: 45
     defaults:
@@ -461,6 +600,8 @@ jobs:
     outputs:
       tag: ${{ needs.prepare.outputs.release_tag }}
       merged: ${{ steps.merge.outputs.merged }}
+      merge_sha: ${{ steps.merge.outputs.sha }}
+      published: ${{ steps.publish.outputs.published }}
     steps:
       - name: Check out workflow tooling
         uses: actions/checkout@v4
@@ -551,6 +692,13 @@ jobs:
         if: inputs.skip_smoke_test
         run: echo "::warning::The create-app smoke test was skipped for this release."
 
+      - name: Note the skipped Pro release
+        if: inputs.skip_pro
+        run: |
+          echo "::warning::Pro was neither tested with nor released for this release. Pro packages whose published ranges reject it cannot be installed with it until V3 Release Pro Beta runs."
+          echo '### Pro skipped' >> "$GITHUB_STEP_SUMMARY"
+          echo 'skip_pro was set: Pro was neither tested with nor released for this release.' >> "$GITHUB_STEP_SUMMARY"
+
       # Mint the write token after validation so long builds do not consume its one-hour lifetime.
       - name: Create a fresh NocoBase release token
         if: '!inputs.dry_run'
@@ -593,9 +741,13 @@ jobs:
           git push origin "refs/tags/${RELEASE_TAG}:refs/tags/${RELEASE_TAG}"
 
       # Publish the exact tarballs prepared and tested from the immutable release source state.
+      # pro-release starts once this step succeeds, even if a later step here fails.
       - name: Publish to npm
         if: '!inputs.dry_run'
-        run: pnpm changeset publish --from-pack-dir "$RUNNER_TEMP/release-publish"
+        id: publish
+        run: |
+          pnpm changeset publish --from-pack-dir "$RUNNER_TEMP/release-publish"
+          echo "published=true" >> "$GITHUB_OUTPUT"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
@@ -662,6 +814,8 @@ jobs:
             echo "merged=false" >> "$GITHUB_OUTPUT"
           else
             echo "merged=true" >> "$GITHUB_OUTPUT"
+            # pro-release returns Pro develop's submodule pointer to this commit on v3-develop.
+            echo "sha=$(gh pr view "$PR_URL" --json mergeCommit --jq .mergeCommit.oid)" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Notify merge failure
@@ -704,6 +858,7 @@ jobs:
           TABLE_JSON: ${{ needs.prepare.outputs.rows }}
           CONTENT: |
             版本 **${{ needs.prepare.outputs.batch }}** 已发布到 npm（dist-tag `beta`）。
+            ${{ inputs.skip_pro && '⚠️ 本次勾选了 skip_pro：Pro 没有跟这次发版一起测试和发布，peer 范围不再匹配的 Pro 包暂时装不上，需要尽快单独跑 Pro 发版。' || '' }}
 
             本次发布的 package：
         run: ../scripts/feishu-notify.sh
@@ -711,12 +866,12 @@ jobs:
   # This job also covers failures before the release job, which cannot reach notification steps in the release job.
   notify-failure:
     name: Notify beta release failure
-    needs: [prepare, build, test, smoke, release]
+    needs: [prepare, build, test, smoke, pro-candidate, release]
     if: >-
       always() && !cancelled() && !inputs.dry_run
       && needs.release.outputs.merged != 'false'
       && (needs.prepare.result == 'failure' || needs.build.result == 'failure' || needs.test.result == 'failure'
-        || needs.smoke.result == 'failure' || needs.release.result == 'failure')
+        || needs.smoke.result == 'failure' || needs.pro-candidate.result == 'failure' || needs.release.result == 'failure')
     runs-on: ubuntu-latest
     steps:
       - name: Check out workflow tooling
@@ -733,6 +888,7 @@ jobs:
           WORKFLOW_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           CONTENT: |
             预览版发版流程中断，请查看 Actions 日志确认失败阶段和仓库状态。
+            ${{ needs.pro-candidate.result == 'failure' && 'Pro 用这次的候选版本测试失败，OSS 也没有发布。先修好 Pro develop，再重新发版；紧急情况下可以勾选 skip_pro 单独发 OSS。' || '' }}
         run: ./scripts/feishu-notify.sh
 
   # npm is already published at this point. Rendering a GitHub Release is recoverable and stays in a separate job.
@@ -750,3 +906,298 @@ jobs:
       NOCOBASE_APP_PRIVATE_KEY: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
     permissions:
       contents: read
+
+  # Publish Pro with the open-source release npm now holds. The job regenerates the release from the inputs
+  # pro-candidate tested: the same Pro commit, the release commit fetched by its tag, and the same registry state. It
+  # refuses to publish when the versioned tree differs from the tested one. A rerun continues the Pro release this
+  # open-source release already started, found by the OSS-Release trailer of its release commit.
+  pro-release:
+    name: Publish Pro beta
+    needs: [prepare, pro-candidate, release]
+    if: >-
+      !cancelled() && !inputs.dry_run && !inputs.skip_pro
+      && needs.pro-candidate.result == 'success' && needs.pro-candidate.outputs.release == 'true'
+      && needs.release.outputs.published == 'true'
+    concurrency:
+      group: pro-release-write
+      cancel-in-progress: false
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Create a read token for the Pro repository
+        id: checkout_token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.NOCOBASE_APP_ID }}
+          private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
+          owner: nocobase
+          repositories: nocobase3-pro
+          permission-contents: read
+
+      - name: Check out the tested Pro commit
+        uses: actions/checkout@v4
+        with:
+          repository: nocobase/nocobase3-pro
+          ref: ${{ needs.pro-candidate.outputs.pro_sha }}
+          fetch-depth: 0
+          submodules: recursive
+          token: ${{ steps.checkout_token.outputs.token }}
+          persist-credentials: false
+
+      - name: Configure the Pro read remote
+        env:
+          PRO_TOKEN: ${{ steps.checkout_token.outputs.token }}
+        run: git remote set-url origin "https://x-access-token:${PRO_TOKEN}@github.com/nocobase/nocobase3-pro.git"
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.7.0
+          run_install: false
+
+      - name: Validate the Pro npm registry
+        env:
+          PRO_NPM_REGISTRY: ${{ secrets.PRO_NPM_REGISTRY }}
+        run: |
+          node -e '
+            const value = process.env.PRO_NPM_REGISTRY?.trim();
+            if (!value) { console.error("::error::PRO_NPM_REGISTRY is not configured"); process.exit(1); }
+            let registry;
+            try { registry = new URL(value); } catch { console.error("::error::PRO_NPM_REGISTRY is not a valid URL"); process.exit(1); }
+            if (registry.hostname === "registry.npmjs.org") { console.error("::error::Commercial packages must not use public npm"); process.exit(1); }
+          '
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: ${{ secrets.PRO_NPM_REGISTRY }}
+          scope: '@nocobase'
+
+      - name: Check out the published release commit in the submodule
+        working-directory: vendor/nocobase3
+        env:
+          RELEASE_TAG: ${{ needs.prepare.outputs.release_tag }}
+          SOURCE_SHA: ${{ needs.prepare.outputs.source_sha }}
+        run: |
+          git fetch --quiet --no-tags origin "+refs/tags/${RELEASE_TAG}:refs/tags/${RELEASE_TAG}"
+          TAG_SHA=$(git rev-parse "refs/tags/${RELEASE_TAG}^{commit}")
+          test "$TAG_SHA" = "$SOURCE_SHA" || { echo "::error::$RELEASE_TAG points to $TAG_SHA, not the tested release commit $SOURCE_SHA"; exit 1; }
+          git checkout --quiet --detach "$SOURCE_SHA"
+
+      - name: Pin Pro to the release commit and install
+        env:
+          BASE_SHA: ${{ needs.prepare.outputs.base_sha }}
+          SOURCE_SHA: ${{ needs.prepare.outputs.source_sha }}
+          NODE_AUTH_TOKEN: ${{ secrets.PRO_NPM_TOKEN }}
+        run: node ./scripts/sync-release-oss.mjs --branch develop --candidate "$SOURCE_SHA" --base "$BASE_SHA"
+
+      - name: Snapshot Pro versions before versioning
+        run: node ./vendor/nocobase3/scripts/list-package-versions.mjs > "$RUNNER_TEMP/pro-versions-before.json"
+
+      - name: Plan the Pro release
+        id: plan
+        env:
+          BATCH: ${{ needs.prepare.outputs.batch }}
+          NODE_AUTH_TOKEN: ${{ secrets.PRO_NPM_TOKEN }}
+          PRO_NPM_REGISTRY: ${{ secrets.PRO_NPM_REGISTRY }}
+        run: node ./scripts/generate-oss-peer-changesets.mjs --batch "$BATCH" --registry "$PRO_NPM_REGISTRY"
+
+      - name: Version Pro packages
+        id: changed
+        run: |
+          pnpm changeset version
+          echo "rows=$(node ./vendor/nocobase3/scripts/list-package-versions.mjs --released-rows "$RUNNER_TEMP/pro-versions-before.json")" >> "$GITHUB_OUTPUT"
+
+      - name: Confirm this is the tested Pro release
+        env:
+          TESTED_TREE: ${{ needs.pro-candidate.outputs.tree }}
+        run: |
+          git add -A
+          TREE=$(git write-tree)
+          if [ "$TREE" != "$TESTED_TREE" ]; then
+            echo "::error::The Pro release ($TREE) differs from the tree tested with this release ($TESTED_TREE), for example because pkg-v3 changed in between. Nothing Pro was published. Run V3 Release Pro Beta for the merged open-source release instead."
+            exit 1
+          fi
+
+      - name: Build Pro
+        run: pnpm build
+
+      # Installation tokens expire after one hour, so mint the write token only after the build.
+      - name: Create a fresh Pro write token
+        if: '!inputs.dry_run'
+        id: pro_write_token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.NOCOBASE_APP_ID }}
+          private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
+          owner: nocobase
+          repositories: nocobase3-pro
+          permission-contents: write
+          permission-pull-requests: write
+
+      # The commit records the index exactly as tested; build output is not added.
+      - name: Commit, tag, and push the tested candidate
+        if: '!inputs.dry_run'
+        id: branch
+        env:
+          PRO_TOKEN: ${{ steps.pro_write_token.outputs.token }}
+          RELEASE_TAG: ${{ needs.prepare.outputs.release_tag }}
+          SOURCE_SHA: ${{ needs.prepare.outputs.source_sha }}
+        run: |
+          git remote set-url origin "https://x-access-token:${PRO_TOKEN}@github.com/nocobase/nocobase3-pro.git"
+          git config user.name 'nocobase[bot]'
+          git config user.email '179432756+nocobase[bot]@users.noreply.github.com'
+          git fetch origin --tags --force
+          test "$(git ls-files --stage vendor/nocobase3 | awk '{print $2}')" = "$SOURCE_SHA"
+          TREE=$(git write-tree)
+          NAME=''
+          for TAG in $(git tag -l 'release-beta/*' --sort=-creatordate | head -n 50); do
+            if git log -1 --format=%B "$TAG" | grep -qxF "OSS-Release: $RELEASE_TAG"; then NAME="$TAG"; break; fi
+          done
+          if [ -n "$NAME" ]; then
+            test "$(git rev-parse "${NAME}^{tree}")" = "$TREE" || { echo "::error::$NAME was released for $RELEASE_TAG from a different tree"; exit 1; }
+            echo "Continuing $NAME, which this open-source release already created."
+            git checkout -B "$NAME" "$NAME"
+          else
+            DAY=$(date -u +%Y-%m-%d)
+            MAX=0
+            for TAG in $(git tag -l "release-beta/${DAY}.*"); do
+              NUMBER="${TAG##*.}"
+              case "$NUMBER" in ''|*[!0-9]*) continue ;; esac
+              [ "$NUMBER" -gt "$MAX" ] && MAX="$NUMBER"
+            done
+            NAME="release-beta/${DAY}.$((MAX + 1))"
+            git checkout -b "$NAME"
+            git commit -m "chore: release ${NAME#release-beta/} [skip ci]" -m "OSS-Release: $RELEASE_TAG"
+            git tag "$NAME"
+          fi
+          git push origin "refs/tags/${NAME}:refs/tags/${NAME}"
+          if ! git ls-remote --exit-code --heads origin "$NAME" > /dev/null; then
+            git push origin "refs/heads/${NAME}:refs/heads/${NAME}"
+          fi
+          echo "name=$NAME" >> "$GITHUB_OUTPUT"
+          echo "batch=${NAME#release-beta/}" >> "$GITHUB_OUTPUT"
+
+      # pnpm skips versions the registry already holds, so a rerun publishes only what is missing.
+      - name: Publish Pro packages
+        if: '!inputs.dry_run'
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.PRO_NPM_TOKEN }}
+          PRO_NPM_REGISTRY: ${{ secrets.PRO_NPM_REGISTRY }}
+        run: node ./scripts/publish-commercial-packages.mjs --registry "$PRO_NPM_REGISTRY" --tag beta
+
+      - name: Point beta and latest at this release and push package tags
+        if: '!inputs.dry_run'
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.PRO_NPM_TOKEN }}
+          PRO_NPM_REGISTRY: ${{ secrets.PRO_NPM_REGISTRY }}
+        run: |
+          node ./vendor/nocobase3/scripts/list-package-versions.mjs --released-specs "$RUNNER_TEMP/pro-versions-before.json" > "$RUNNER_TEMP/pro-released-specs.txt"
+          FAILED=0
+          while IFS= read -r SPEC; do
+            [ -n "$SPEC" ] || continue
+            for TAG in beta latest; do
+              npm dist-tag add "$SPEC" "$TAG" --registry "$PRO_NPM_REGISTRY" || FAILED=1
+            done
+          done < "$RUNNER_TEMP/pro-released-specs.txt"
+          test "$FAILED" = 0 || { echo '::error::One or more Pro beta or latest dist-tags could not be updated'; exit 1; }
+          git push origin --tags
+
+      # The release commit pins the open-source release commit, which v3-develop does not contain because the release
+      # is squash-merged there. Pro develop must track v3-develop, so the release branch moves the pointer to the merged
+      # release commit, or back to develop's previous pointer when the open-source merge failed, before merging back.
+      - name: Return the submodule pointer to v3-develop
+        if: '!inputs.dry_run'
+        id: pointer
+        env:
+          GH_TOKEN: ${{ steps.pro_write_token.outputs.token }}
+          NAME: ${{ steps.branch.outputs.name }}
+          MERGE_SHA: ${{ needs.release.outputs.merge_sha }}
+          PRO_SHA: ${{ needs.pro-candidate.outputs.pro_sha }}
+          NODE_AUTH_TOKEN: ${{ secrets.PRO_NPM_TOKEN }}
+        run: |
+          if [ -n "$(gh pr list --repo nocobase/nocobase3-pro --head "$NAME" --state merged --json url --jq '.[].url')" ]; then
+            echo "$NAME was already merged into Pro develop."
+            echo "merged=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "merged=false" >> "$GITHUB_OUTPUT"
+          git fetch --quiet origin "refs/heads/${NAME}"
+          if [ "$(git rev-parse FETCH_HEAD)" != "$(git rev-parse HEAD)" ]; then
+            echo "$NAME already carries its pointer commit."
+            exit 0
+          fi
+          TARGET="$MERGE_SHA"
+          if [ -z "$TARGET" ]; then
+            TARGET=$(git ls-tree "$PRO_SHA" vendor/nocobase3 | awk '{print $3}')
+            echo "::warning::The open-source release did not merge back into v3-develop; $NAME returns the pointer to Pro develop's previous commit $TARGET."
+          fi
+          node ./scripts/sync-release-oss.mjs --branch develop --sha "$TARGET"
+          git add pnpm-workspace.yaml pnpm-lock.yaml vendor/nocobase3
+          if ! git diff --cached --quiet; then
+            git commit -m "chore: bump oss to ${TARGET} [skip ci]"
+            git push origin "HEAD:refs/heads/${NAME}"
+          fi
+
+      - name: Merge release metadata back into Pro develop
+        if: "!inputs.dry_run && steps.pointer.outputs.merged == 'false'"
+        env:
+          GH_TOKEN: ${{ steps.pro_write_token.outputs.token }}
+          NAME: ${{ steps.branch.outputs.name }}
+          BATCH: ${{ steps.branch.outputs.batch }}
+          RELEASE_TAG: ${{ needs.prepare.outputs.release_tag }}
+        run: |
+          PR_URL=$(gh pr list --repo nocobase/nocobase3-pro --head "$NAME" --state open --json url --jq '.[0].url // empty')
+          if [ -z "$PR_URL" ]; then
+            PR_URL=$(gh pr create --repo nocobase/nocobase3-pro \
+              --title "chore: release $BATCH [skip ci]" \
+              --body "Prerelease \`$BATCH\` published under \`beta\` with the open-source release \`$RELEASE_TAG\`." \
+              --base develop --head "$NAME")
+          fi
+          gh pr merge --repo nocobase/nocobase3-pro "$PR_URL" --merge --delete-branch
+
+      - name: Create the Pro GitHub Release
+        if: '!inputs.dry_run'
+        env:
+          GH_TOKEN: ${{ steps.pro_write_token.outputs.token }}
+          TAG: ${{ steps.branch.outputs.name }}
+        run: |
+          node ./vendor/nocobase3/scripts/release-notes.mjs "$TAG" > "$RUNNER_TEMP/pro-release-notes.raw.md"
+          sed -e 's#https://github.com/nocobase/nocobase3/blob/#https://github.com/nocobase/nocobase3-pro/blob/#g' \
+              -e 's#https://github.com/nocobase/nocobase/blob/#https://github.com/nocobase/nocobase3-pro/blob/#g' "$RUNNER_TEMP/pro-release-notes.raw.md" > "$RUNNER_TEMP/pro-release-notes.md"
+          TITLE="${TAG##*/}"
+          if gh release view --repo nocobase/nocobase3-pro "$TAG" > /dev/null 2>&1; then
+            gh release edit --repo nocobase/nocobase3-pro "$TAG" --title "$TITLE" --notes-file "$RUNNER_TEMP/pro-release-notes.md" --prerelease --latest=false
+          else
+            gh release create --repo nocobase/nocobase3-pro "$TAG" --verify-tag --title "$TITLE" --notes-file "$RUNNER_TEMP/pro-release-notes.md" --prerelease --latest=false
+          fi
+
+      - name: Notify Pro success
+        if: '!inputs.dry_run && success()'
+        env:
+          WEBHOOK_URL: ${{ secrets.RELEASE_RESULT_FEISHU_WEBHOOK_URL }}
+          ACTOR: ${{ github.actor }}
+          REPOSITORY: nocobase/nocobase3-pro
+          REGISTRY_URL: ${{ secrets.PRO_NPM_REGISTRY }}
+          TITLE: NocoBase 3 Pro 预览版发布
+          STATUS: success
+          STATUS_TEXT_SUCCESS: 发布成功
+          WORKFLOW_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          RELEASE_URL: ${{ github.server_url }}/nocobase/nocobase3-pro/releases
+          TABLE_JSON: ${{ steps.changed.outputs.rows }}
+          CONTENT: 版本 **${{ steps.branch.outputs.batch }}** 已随 OSS **${{ needs.prepare.outputs.batch }}** 一起发布到私有 npm（dist-tag `beta` 和 `latest`）。
+        run: ./vendor/nocobase3/scripts/feishu-notify.sh
+
+      - name: Notify Pro failure
+        if: failure() && !inputs.dry_run
+        env:
+          WEBHOOK_URL: ${{ secrets.RELEASE_RESULT_FEISHU_WEBHOOK_URL }}
+          ACTOR: ${{ github.actor }}
+          REPOSITORY: nocobase/nocobase3-pro
+          TITLE: NocoBase 3 Pro 预览版发布失败
+          STATUS: failure
+          STATUS_TEXT_FAILURE: 发版中断
+          WORKFLOW_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          CONTENT: OSS **${{ needs.prepare.outputs.batch }}** 已经发布，Pro 发布中断。可以直接重跑这个 job，它会接着已经创建的发版分支和已经发布的包继续；也可以单独跑 V3 Release Pro Beta。
+        run: ./vendor/nocobase3/scripts/feishu-notify.sh
