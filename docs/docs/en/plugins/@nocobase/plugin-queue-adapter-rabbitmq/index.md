@@ -7,7 +7,7 @@ supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Used for hanlding message queue with RabbitMQ.
+  Used for handling message queue with RabbitMQ.
 isFree: false
 builtIn: false
 defaultEnabled: false

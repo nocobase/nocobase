@@ -162,7 +162,7 @@ Where the variables are respectively:
 
 {{$context.params.values.end_time}} represents [Trigger variables/Parameters/Values submitted/End Time]
 
-{{$context.params.values.start_time}} for [Trigger variable/Parameter/alues submitted/Start Time].
+{{$context.params.values.start_time}} for [Trigger variable/Parameter/Values submitted/Start Time].
 
 #### 12.5.2 Testing the SQL
 
