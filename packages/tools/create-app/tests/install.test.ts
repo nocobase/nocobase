@@ -193,10 +193,13 @@ describe('installDependencies registry routing', () => {
           name: `/${name}`,
           authorization: scoped ? 'Bearer fixture-token' : undefined,
         });
+        // pnpm may also check its own version against the default registry.
         expect(
-          requests.every(
-            (request) => request.registry === (scoped ? 'private' : 'public'),
-          ),
+          requests
+            .filter((request) => request.name === `/${name}`)
+            .every(
+              (request) => request.registry === (scoped ? 'private' : 'public'),
+            ),
         ).toBe(true);
       } finally {
         await Promise.all(

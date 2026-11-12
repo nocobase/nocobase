@@ -3,9 +3,6 @@ import os from 'node:os';
 import path from 'node:path';
 import { CommandFailedError, runCommand } from './run-command.ts';
 
-/** The public npm registry that carries NocoBase packages and templates. */
-export const DEFAULT_REGISTRY = 'https://registry.npmjs.org';
-
 export interface TemplateAlias {
   /** Published package the name resolves to. Carries no tag; the channel is applied separately. */
   packageName: string;
@@ -94,7 +91,9 @@ export interface ResolvedTemplate {
 export interface DownloadTemplateOptions {
   /** A published package (`pkg`, `pkg@1.2.3`) or a path to a local package directory. */
   source: string;
-  registry?: string;
+  nocobaseRegistry?: string;
+  /** Deprecated generic override, retained only for callers using --registry. */
+  legacyRegistry?: string;
 }
 
 /**
@@ -128,7 +127,13 @@ function packerFor(source: string): {
 
   return {
     command: 'npm',
-    args: () => ['pack', '--silent', source],
+    args: (destination) => [
+      'pack',
+      '--silent',
+      source,
+      '--pack-destination',
+      path.dirname(destination),
+    ],
   };
 }
 
@@ -197,14 +202,17 @@ export async function downloadTemplate(
       await copyFile(path.resolve(source), tarballPath);
     } else {
       const args = packer.args(tarballPath);
-      if (options.registry && !local) {
-        args.push(`--registry=${options.registry}`);
-        // npm prefers a user-level scope registry over --registry.
-        if (source.startsWith('@nocobase/'))
-          args.push(`--@nocobase:registry=${options.registry}`);
+      if (options.legacyRegistry && !local)
+        args.push(`--registry=${options.legacyRegistry}`);
+      if (
+        options.nocobaseRegistry &&
+        !local &&
+        source.startsWith('@nocobase/')
+      ) {
+        args.push(`--@nocobase:registry=${options.nocobaseRegistry}`);
       }
       await runCommand(packer.command, args, {
-        cwd: local ? path.resolve(source) : packDirectory,
+        cwd: local ? path.resolve(source) : process.cwd(),
         timeoutMs: PACK_TIMEOUT_MS,
       });
     }

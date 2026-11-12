@@ -21,11 +21,7 @@ import {
   removeDirectory,
   scaffoldFromTemplate,
 } from './lib/scaffold.ts';
-import {
-  DEFAULT_REGISTRY,
-  downloadTemplate,
-  resolveTemplateSource,
-} from './lib/template.ts';
+import { downloadTemplate, resolveTemplateSource } from './lib/template.ts';
 import { buildNpmrcFile } from './lib/npmrc.ts';
 import {
   FAILURE_CODES,
@@ -125,6 +121,12 @@ export async function createApp(options: CreateAppOptions): Promise<number> {
     if (input.flags.json) process.stderr.write(`${message}\n`);
     else log.info(message);
   };
+  if (input.flags.registry !== undefined) {
+    const warning =
+      '--registry is deprecated. Use --nocobase-registry or NOCOBASE_REGISTRY for @nocobase packages; configure npm/pnpm registry settings for third-party templates. If both flags are supplied, --nocobase-registry takes precedence and --registry is ignored.';
+    state.warnings.push(warning);
+    progress(warning);
+  }
   try {
     if (input.flags.json && !input.directory)
       throw new Error('DIRECTORY is required with --json.');
@@ -181,18 +183,27 @@ async function run(
   state.directory = targetDirectory;
   state.stage = 'scaffold';
   await assertTargetIsUsable(targetDirectory);
-  const registry =
-    input.flags.registry ?? process.env.NOCOBASE_REGISTRY ?? DEFAULT_REGISTRY;
+  const nocobaseRegistry =
+    input.flags['nocobase-registry'] ??
+    input.flags.registry ??
+    process.env.NOCOBASE_REGISTRY;
   const source = resolveTemplateSource(input.flags.template, {
     tag: input.flags['template-tag'],
   });
   state.stage = 'download';
   progress(`Downloading ${source}`);
-  const template = await downloadTemplate({ registry, source });
+  const template = await downloadTemplate({
+    nocobaseRegistry,
+    source,
+    ...(input.flags.registry !== undefined &&
+    input.flags['nocobase-registry'] === undefined
+      ? { legacyRegistry: input.flags.registry }
+      : {}),
+  });
   state.stage = 'scaffold';
   try {
     const extraFiles: Record<string, string> = {
-      '.npmrc': buildNpmrcFile({ registry }),
+      '.npmrc': buildNpmrcFile({ nocobaseRegistry }),
     };
     await scaffoldFromTemplate({
       name,
