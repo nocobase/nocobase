@@ -185,7 +185,14 @@ test('OSS writes use a fresh scoped App token after validation, including merge 
         assert.match(step, /persist-credentials: false/u, name);
       }
       if (step.includes('git push') && !step.includes('echo "  git')) {
-        assert.ok(source.indexOf(step) > tokenPosition, name);
+        // A Pro push uses its own Pro-scoped token, minted after Pro's own validation in the same job.
+        if (
+          !step.includes(
+            'PRO_TOKEN: ${{ steps.pro_write_token.outputs.token }}',
+          )
+        ) {
+          assert.ok(source.indexOf(step) > tokenPosition, name);
+        }
         assert.match(step, /if: .*?!inputs\.dry_run/u, name);
       }
     }
