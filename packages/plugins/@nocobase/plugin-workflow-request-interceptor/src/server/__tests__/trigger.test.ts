@@ -19,9 +19,10 @@
 import Database from '@nocobase/database';
 import { MockServer } from '@nocobase/test';
 import { getApp } from '@nocobase/plugin-workflow-test';
-import { EXECUTION_STATUS, JOB_STATUS } from '@nocobase/plugin-workflow';
+import WorkflowPlugin, { EXECUTION_STATUS, JOB_STATUS } from '@nocobase/plugin-workflow';
 
 import Plugin from '..';
+import RequestInterceptionTrigger from '../RequestInterceptionTrigger';
 
 describe('workflow > triggers > request-interception', () => {
   let app: MockServer;
@@ -60,6 +61,33 @@ describe('workflow > triggers > request-interception', () => {
   });
 
   afterEach(() => app.destroy());
+
+  it('warns for a missing configured collection and leaves virtual resources alone', async () => {
+    const workflow = app.pm.get(WorkflowPlugin);
+    const trigger = new RequestInterceptionTrigger(workflow);
+    const next = vi.fn();
+    const ctx = {
+      action: { resourceName: 'charts', actionName: 'queryData', params: {} },
+      app,
+      get: () => 'main',
+      logger: { warn: vi.fn() },
+    };
+    await trigger.middleware(ctx, next);
+    expect(next).toHaveBeenCalledTimes(1);
+    expect(ctx.logger.warn).not.toHaveBeenCalled();
+
+    const configured = await WorkflowModel.create({
+      type: RequestInterceptionTrigger.TYPE,
+      enabled: true,
+      config: { collection: 'posts', global: true, actions: ['create'] },
+    });
+    workflow.enabledCache.set(configured.id, configured);
+    db.removeCollection('posts');
+    ctx.action.resourceName = 'posts';
+    await trigger.middleware(ctx, next);
+    expect(ctx.logger.warn).toHaveBeenCalledWith(expect.stringContaining('collection "posts" not found in "main"'));
+    expect(next).toHaveBeenCalledTimes(2);
+  });
 
   describe('miss configured', () => {
     it('no collection', async () => {
