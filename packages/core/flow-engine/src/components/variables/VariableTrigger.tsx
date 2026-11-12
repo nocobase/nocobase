@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { useDirectionalPlacement } from '../../hooks/useDirectionalPlacement';
 import React, { useState } from 'react';
 import { Popover } from 'antd';
 import { RenderElementProps } from 'slate-react';
@@ -29,6 +30,7 @@ export const VariableTrigger: React.FC<VariableTriggerProps> = ({
   onVariableSelect,
   onTriggerClose,
 }) => {
+  const placement = useDirectionalPlacement('bottomLeft');
   const [open, setOpen] = useState(true);
 
   const handleVariableSelect = (value: string, item?: MetaTreeNode) => {
@@ -86,7 +88,7 @@ export const VariableTrigger: React.FC<VariableTriggerProps> = ({
       }
       open={open}
       trigger="click"
-      placement="bottomLeft"
+      placement={placement}
       onOpenChange={handleOpenChange}
       overlayClassName="variable-trigger-popover"
       destroyTooltipOnHide

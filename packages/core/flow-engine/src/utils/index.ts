@@ -123,3 +123,6 @@ export { resolveModuleUrl, isCssFile } from './resolveModuleUrl';
 
 // Random base36 identifier with optional semantic prefix
 export { randomId } from './randomId';
+
+// Mirror explicit popup placements in right-to-left layouts
+export { flipPlacement } from './placement';
