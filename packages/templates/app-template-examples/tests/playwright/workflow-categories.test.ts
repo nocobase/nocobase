@@ -56,6 +56,8 @@ test('workflow categories persist through reload and search filters restore', as
   const app = freshness.url.replace(/\/$/u, '');
   const title = `QA category ${randomUUID()}`;
   let categoryId: string | undefined;
+  let testFailed = false;
+  let testError: unknown;
 
   await page.goto(`${app}/login`);
   await page
@@ -122,12 +124,15 @@ test('workflow categories persist through reload and search filters restore', as
 
     const search = page.getByRole('searchbox', { name: 'Filter by name' });
     const table = page.getByRole('table');
+    const workflowTitleLinks = table.locator(
+      'a[href*="/workflows/definitions/"]',
+    );
     await search.fill('Expense');
     await search.press('Enter');
     await expect
       .poll(() => new URL(page.url()).searchParams.get('name'))
       .toBe('Expense');
-    await expect(table.getByRole('link')).toHaveCount(matches.length);
+    await expect(workflowTitleLinks).toHaveCount(matches.length);
     for (const workflow of matches) {
       await expect(
         table.getByRole('link', { name: workflowLabel(workflow), exact: true }),
@@ -140,14 +145,14 @@ test('workflow categories persist through reload and search filters restore', as
     await expect
       .poll(() => new URL(page.url()).searchParams.get('name'))
       .toBe(missingTerm);
-    await expect(table.getByRole('link')).toHaveCount(0);
+    await expect(workflowTitleLinks).toHaveCount(0);
 
     await search.fill('');
     await search.press('Enter');
     await expect
       .poll(() => new URL(page.url()).searchParams.has('name'))
       .toBe(false);
-    await expect(table.getByRole('link')).toHaveCount(baseline.length);
+    await expect(workflowTitleLinks).toHaveCount(baseline.length);
     for (const workflow of baseline) {
       await expect(
         table.getByRole('link', { name: workflowLabel(workflow), exact: true }),
@@ -178,7 +183,14 @@ test('workflow categories persist through reload and search filters restore', as
     expect(
       (await readCategories(page, app)).some((item) => item.id === categoryId),
     ).toBe(false);
-  } finally {
+  } catch (error) {
+    testFailed = true;
+    testError = error;
+  }
+
+  let cleanupError: unknown;
+  let cleanupFailed = false;
+  try {
     const categories = await readCategories(page, app);
     const leftovers = categories.filter(
       (category) => category.title === title || category.id === categoryId,
@@ -189,5 +201,19 @@ test('workflow categories persist through reload and search filters restore', as
       );
       expect(response.status()).toBe(200);
     }
+  } catch (error) {
+    cleanupFailed = true;
+    cleanupError = error;
   }
+
+  if (testFailed) {
+    if (cleanupFailed)
+      console.error(
+        'Failed to clean up workflow category test data.',
+        cleanupError,
+      );
+    throw testError;
+  }
+
+  if (cleanupFailed) throw cleanupError;
 });
