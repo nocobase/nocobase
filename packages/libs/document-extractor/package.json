@@ -50,7 +50,7 @@
     "officeparser": "^6.0.4",
     "pdf-parse": "^1.1.1",
     "word-extractor": "^1.0.4",
-    "@e965/xlsx": "^0.20.3"
+    "@e965/xlsx": "0.20.3"
   },
   "devDependencies": {
     "@nocobase/dev-config": "workspace:*",
