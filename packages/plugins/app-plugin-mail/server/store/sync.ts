@@ -668,10 +668,11 @@ export class MailSyncStore {
           .execute();
       }
       if (
-        (input.status === 'completed' || input.status === 'partial') &&
         input.changeCursor &&
-        (input.run.mode === 'incremental' ||
-          (input.historyComplete ?? input.run.historyComplete))
+        (input.status === 'completed' ||
+          (input.status === 'partial' &&
+            (input.run.mode === 'incremental' ||
+              (input.historyComplete ?? input.run.historyComplete))))
       ) {
         await upsertSyncState(
           connection.query,
