@@ -351,6 +351,7 @@ const getProviderSortIndex = (value: string) => {
     'kimi',
     'mistral',
     'orcarouter',
+    'atlascloud',
     'openai-completions',
     'ollama',
   ];
@@ -373,6 +374,7 @@ const getProviderDescription = (provider: string, t: ReturnType<typeof useT>) =>
     mimo: 'Xiaomi MIMO',
     mistral: 'Mistral models',
     orcarouter: 'OrcaRouter (model routing gateway)',
+    atlascloud: 'Atlas Cloud (OpenAI-compatible model gateway)',
     shengsuanyun: '300+ latest mainstream models across leading model families',
   };
   return descriptions[provider] ? t(descriptions[provider]) : '';
