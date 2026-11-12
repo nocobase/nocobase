@@ -1121,6 +1121,7 @@ jobs:
       tag: ${{ needs.release.outputs.tag }}
     secrets:
       NOCOBASE_APP_PRIVATE_KEY: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
+      RELEASE_RESULT_FEISHU_WEBHOOK_URL: ${{ secrets.RELEASE_RESULT_FEISHU_WEBHOOK_URL }}
     permissions:
       contents: read
 
