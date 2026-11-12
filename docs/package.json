@@ -39,6 +39,7 @@
     "yargs": "^18.0.0"
   },
   "resolutions": {
+    "@rspress/shared": "2.0.23",
     "@ant-design/icons": "^5.6.1",
     "@formily/antd-v5": "1.2.3",
     "@types/react": "18.3.18",
