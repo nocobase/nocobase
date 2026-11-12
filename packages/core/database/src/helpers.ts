@@ -114,6 +114,22 @@ export async function parseDatabaseOptionsFromEnv(): Promise<IDatabaseOptions> {
     pool: getPoolOptions(),
   };
 
+  if (databaseOptions.dialect === 'mariadb' && /^[+-]\d{1,2}:(?!00)\d{2}$/.test(databaseOptions.timezone)) {
+    databaseOptions.timezone = databaseOptions.timezone.replace(
+      /^([+-])(\d):/,
+      (_, sign, hour) => sign + '0' + hour + ':',
+    );
+    const formatter = new Intl.DateTimeFormat('en-US', { timeZone: process.env.TZ, timeZoneName: 'longOffset' });
+    const offset = formatter.formatToParts(new Date()).find((part) => part.type === 'timeZoneName')?.value;
+    const zone = formatter.resolvedOptions().timeZone;
+    if (offset !== 'GMT' + databaseOptions.timezone) {
+      throw new Error(
+        `Set TZ to the IANA time zone for MariaDB's DB_TIMEZONE ${databaseOptions.timezone} (current: ${zone})`,
+      );
+    }
+    // Sequelize sets the SQL session offset and handles DATETIME values. Its connector needs the app's actual IANA zone.
+    databaseOptions.dialectOptions = { timezone: zone, skipSetTimezone: true };
+  }
   const sslOptions = await extractSSLOptionsFromEnv();
 
   if (Object.keys(sslOptions).length) {
