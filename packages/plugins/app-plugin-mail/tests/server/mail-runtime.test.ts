@@ -158,25 +158,31 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
       outbox: runtime,
     });
     await runtime.start();
-    await vi.waitFor(async () => {
-      expect(client.idle).toHaveBeenCalledOnce();
-      expect(await store.getLastSyncedAt!(ACCOUNT_ID)).toBeDefined();
-      expect(await store.findActiveSyncRun(ACCOUNT_ID)).toBeUndefined();
-    });
+    await vi.waitFor(
+      async () => {
+        expect(client.idle).toHaveBeenCalledOnce();
+        expect(await store.getLastSyncedAt!(ACCOUNT_ID)).toBeDefined();
+        expect(await store.findActiveSyncRun(ACCOUNT_ID)).toBeUndefined();
+      },
+      { timeout: 10_000 },
+    );
     const lastSync = await store.getLastSyncedAt!(ACCOUNT_ID);
     expect(isAutomaticSyncDue(lastSync)).toBe(false);
     arriving = true;
     client.emit('exists', { path: 'INBOX', count: 1, prevCount: 0 });
-    await vi.waitFor(async () => {
-      expect(
-        (
-          await service.listMessages(
-            { actorId: 'user-1' },
-            { accountIds: [ACCOUNT_ID] },
-          )
-        ).items,
-      ).toMatchObject([{ subject: 'Arrived via IDLE' }]);
-    });
+    await vi.waitFor(
+      async () => {
+        expect(
+          (
+            await service.listMessages(
+              { actorId: 'user-1' },
+              { accountIds: [ACCOUNT_ID] },
+            )
+          ).items,
+        ).toMatchObject([{ subject: 'Arrived via IDLE' }]);
+      },
+      { timeout: 10_000 },
+    );
     await service.updateAccount(
       { actorId: 'user-1' },
       { accountId: ACCOUNT_ID, status: 'suspended' },

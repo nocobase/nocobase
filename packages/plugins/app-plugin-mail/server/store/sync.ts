@@ -551,22 +551,26 @@ export class MailSyncStore {
                 >
               >()
           : undefined;
+      let pushDeleted = false;
       if (pushRequest) {
-        await connection.query
+        const deleted = await connection.query
           .deleteFrom<PushPendingRow>('mailPushPending')
           .where('accountId', '=', input.run.accountId)
           .where('requestToken', '=', pushRequest.requestToken)
           .execute();
+        pushDeleted = deleted.deletedCount === 1;
       }
       // A completed IMAP verification has observed arrivals notified before
       // this step was claimed. Keep later (or same-millisecond) pushes so a
       // message arriving after the final LIST still gets a follow-up run.
       const pendingPush =
         pushRequest &&
-        !(
-          imap?.cleanup &&
-          Date.parse(pushRequest.requestedAt) < Date.parse(input.run.updatedAt)
-        );
+        (!pushDeleted ||
+          !(
+            imap?.cleanup &&
+            Date.parse(pushRequest.requestedAt) <
+              Date.parse(input.run.updatedAt)
+          ));
       // Only the step that finishes the run, after every batch and two
       // matching verification passes, may remove messages without copies.
       if (imap?.cleanup && input.status === 'completed' && !pendingPush) {

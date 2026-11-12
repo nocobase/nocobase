@@ -922,6 +922,84 @@ describe('IMAP verification and orphans', () => {
     },
   );
 
+  it('restarts when a pending push is replaced after being read in the commit transaction', async () => {
+    folder('INBOX');
+    deliver('INBOX', { raw: raw('<existing@example.com>') });
+    await sync();
+    await service().startSync(owner, { accountId });
+    await step();
+    await step();
+    await store.markPushSyncPending(accountId, 'observed-push');
+    await database
+      .query()
+      .updateTable('mailPushPending')
+      .set({ requestedAt: '2000-01-01T00:00:00.000Z' })
+      .where('accountId', '=', accountId)
+      .execute();
+    let replaced = false;
+    const executeTransaction = database.transaction.bind(database);
+    const transactions = vi
+      .spyOn(database, 'transaction')
+      .mockImplementation(async (work, name) =>
+        executeTransaction(async (connection) => {
+          const prototype = Object.getPrototypeOf(
+            connection.query.selectFrom('mailPushPending'),
+          );
+          const original = prototype.executeTakeFirst;
+          const read = vi
+            .spyOn(prototype, 'executeTakeFirst')
+            .mockImplementation(async function (...args) {
+              const row = await original.apply(this, args);
+              if (!replaced && row?.requestToken === 'observed-push') {
+                replaced = true;
+                // Reproduce a newer notification between the SELECT and token-fenced DELETE.
+                // Use this transaction so SQLite can exercise the interleaving deterministically.
+                deliver('INBOX', { raw: raw('<replacement@example.com>') });
+                await connection.query
+                  .updateTable('mailPushPending')
+                  .set({
+                    requestToken: 'replacement-push',
+                    requestedAt: new Date().toISOString(),
+                  })
+                  .where('accountId', '=', accountId)
+                  .execute();
+              }
+              return row;
+            });
+          try {
+            return await work(connection);
+          } finally {
+            read.mockRestore();
+          }
+        }, name),
+      );
+    try {
+      await step();
+      expect(replaced).toBe(true);
+      expect(await store.findActiveSyncRun(accountId)).toMatchObject({
+        status: 'running',
+        phase: 'preparing',
+      });
+      expect(
+        await database
+          .query()
+          .selectFrom('mailPushPending')
+          .selectAll()
+          .where('accountId', '=', accountId)
+          .execute(),
+      ).toMatchObject([{ requestToken: 'replacement-push' }]);
+    } finally {
+      transactions.mockRestore();
+    }
+    while (await step());
+    expect(
+      (
+        await service().listMessages(owner, { accountIds: [accountId] })
+      ).items.map((message) => message.providerMessageId),
+    ).toContain('<replacement@example.com>');
+    expect(await store.findActiveSyncRun(accountId)).toBeUndefined();
+  });
+
   it('requires another complete pass for a new copy expunged after import', async () => {
     folder('INBOX');
     deliver('INBOX', { raw: raw('<existing@example.com>') });
