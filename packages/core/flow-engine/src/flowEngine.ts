@@ -136,6 +136,9 @@ export class FlowEngine {
    */
   private _savingModels = new Map<string, Promise<any>>();
 
+  // Models constructed on a read-only visit may become ancestors of the first editor write.
+  private _deferredModels = new WeakSet<FlowModel>();
+
   private _loadedPageCache = createLoadedPageCache();
 
   /**
@@ -1281,8 +1284,8 @@ export class FlowEngine {
     // 1) Prefer exact uid match when provided.
     if (uid && !this._modelInstances.has(uid)) {
       const existing = this.findModelInPreviousEngines<T>(uid);
-      if (existing?.context.flowSettingsEnabled) {
-        // 如果模型实例启用 flowSettingsEnabled，直接返回 null, 避免旧数据
+      if (existing && (existing.context.flowSettingsEnabled || existing.flowEngine._deferredModels.has(existing))) {
+        // Reload instead of reusing an editable or unsaved model from a previous engine.
         return null;
       }
       if (existing) {
@@ -1294,7 +1297,8 @@ export class FlowEngine {
     // 2) Parent/subKey lookup (common for pages/popups).
     if (parentId && subKey) {
       const found = this.findSubModelInPreviousEngines<T>(parentId, subKey);
-      if (!found || found.parent.context.flowSettingsEnabled) return null;
+      if (!found || found.parent.context.flowSettingsEnabled || found.model.flowEngine._deferredModels.has(found.model))
+        return null;
 
       const { parent: parentFromPrev, model: modelFromPrev } = found;
       // Ensure the parent shell exists in current engine so findModelByParentId can work locally.
@@ -1445,7 +1449,18 @@ export class FlowEngine {
       model = await this.createModelAsync<T>(data as any, extra);
     } else {
       model = await this.createModelAsync<T>(options, extra);
-      if (!extra?.skipSave) {
+      this._deferredModels.add(model);
+      if (extra?.skipSave) {
+        const markDeferred = (node: FlowModel) => {
+          this._deferredModels.add(node);
+          for (const children of Object.values(node.subModels)) {
+            for (const child of Array.isArray(children) ? children : [children]) {
+              if (child instanceof FlowModel) markDeferred(child);
+            }
+          }
+        };
+        markDeferred(model);
+      } else {
         await model.save();
       }
     }
@@ -1509,7 +1524,19 @@ export class FlowEngine {
   ): Promise<any> {
     this.logger.debug(`Starting save operation for model ${model.uid}`);
     try {
-      const result = await this._modelRepository.save(model, options);
+      for (let parent = model.parent; parent; parent = parent.parent) {
+        if (parent.flowEngine._deferredModels.has(parent)) {
+          await parent.flowEngine.saveModel(parent, { onlyStepParams: true });
+          break;
+        }
+      }
+      const result = await this._modelRepository.save(
+        model,
+        this._deferredModels.has(model) && model.subType === 'object'
+          ? { ...options, ensureObjectSlot: true }
+          : options,
+      );
+      this._deferredModels.delete(model);
       this.logger.debug(`Successfully saved model ${model.uid}`);
       return result;
     } catch (error) {
