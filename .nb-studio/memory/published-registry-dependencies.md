@@ -2,7 +2,7 @@
 name: Published runtime dependencies must come from a registry
 description: The owner rejected SheetJS CDN dependencies in published packages because pnpm 11 blocks exotic subdependencies in generated applications by default.
 type: feedback
-modified: 2026-11-12
+modified: 2026-11-11
 ---
 
 Use npm registry packages for the runtime dependencies of published packages. Do not declare an HTTPS tarball or Git source there, or ask consuming applications to disable `blockExoticSubdeps`.
