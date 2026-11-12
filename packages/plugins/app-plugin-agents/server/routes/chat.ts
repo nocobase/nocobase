@@ -1546,11 +1546,11 @@ export function createChatRoutes(
       tags,
       summary: 'Upload a file to send in chat',
       operationId: 'agentsUploadChatAttachment',
-      security: personOrRunSecurity,
+      // Hosts admit run credentials together with their upload action; keep the default personal upload policy.
       ...cliRoute({
         command: 'conversation attachment upload',
       }),
-      description: `One file as the \`file\` field of a multipart body, at most ${services.chatAttachments.uploadLimit.maxFileSizeMb} MB. With a conversation run token, immediately sends the file in that run's reply and retains it with the conversation; no Markdown link is needed. Otherwise it is the caller's alone until sent with a message (\`attachmentIds\`); one never sent is purged after a day.`,
+      description: `One file as the \`file\` field of a multipart body, at most ${services.chatAttachments.uploadLimit.maxFileSizeMb} MB. With an application-admitted conversation run token, immediately sends the file in that run's reply and retains it with the conversation; no Markdown link is needed. Otherwise it is the caller's alone until sent with a message (\`attachmentIds\`); one never sent is purged after a day.`,
       requestBody: singleFileBody,
       responses: {
         201: dataResponse(MessageAttachmentSchema, 'Stored.'),
