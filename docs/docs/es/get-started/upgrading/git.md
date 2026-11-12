@@ -4,6 +4,7 @@
 
 - Es fundamental que primero haga una copia de seguridad de su base de datos.
 - Detenga la instancia de NocoBase que esté en ejecución (`Ctrl + C`).
+- Si está habilitada la recuperación de contraseña por correo, comprueba el dominio de cada subaplicación y configura [APP_PUBLIC_ORIGIN](../installation/env.md#app_public_origin) para la aplicación principal y las subaplicaciones sin dominio propio.
 
 :::
 

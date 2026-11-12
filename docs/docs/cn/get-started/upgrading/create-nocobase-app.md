@@ -10,6 +10,7 @@ keywords: "create-nocobase-app,升级,yarn nocobase upgrade,版本升级,NocoBas
 
 - 请务必先备份数据库
 - 停止运行中的 NocoBase
+- 如果已启用邮件找回密码，升级前请检查子应用绑定的独立域名，并为主应用和未绑定域名的子应用设置 [APP_PUBLIC_ORIGIN](../installation/env.md#app_public_origin)。
 
 :::
 
