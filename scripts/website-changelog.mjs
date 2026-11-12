@@ -1,26 +1,37 @@
-// Renders a v3 release's changelog entry for the website: the JSON file nocobase/website-v3 reads from
-// `homepage/content/changelog/<channel>-<version>.json` to list the release on www.nocobase.com's changelog page.
+// Renders a v3 release's changelog entry for the website: the Markdown files nocobase/website-v3 reads from
+// `homepage/content/changelog/` to list the release on www.nocobase.com's changelog page, `<channel>-<version>.md` in
+// English and `<channel>-<version>.zh-CN.md` / `.ja-JP.md` beside it, named like the root changelogs. Each file has the
+// entry's YAML front matter, every value a JSON-quoted string so any value is valid YAML and `date` stays a string,
+// followed by the release's section in that language.
 //
-// The notes are the release's sections of the root CHANGELOG.md, CHANGELOG.zh-CN.md and CHANGELOG.ja-JP.md, read out
-// of the tagged commit with `git show` exactly as release-notes.mjs reads the English one, so an entry for any past
-// release can be rendered at any later time. A language without a section is left out (the site falls back to English),
-// and a release with no English section, or one whose section only says it has no user-facing changes, has no entry.
-// The ` by @login` credits older sections still carry after each pull request link are dropped.
+// The sections come from the root CHANGELOG.md, CHANGELOG.zh-CN.md and CHANGELOG.ja-JP.md, read out of the tagged commit
+// with `git show` exactly as release-notes.mjs reads the English one, so an entry for any past release can be rendered
+// at any later time. A language without a section has no file (the site falls back to English), and a release with no
+// English section, or one whose section only says it has no user-facing changes, has no files at all. The ` by @login`
+// credits older sections still carry after each pull request link are dropped.
 //
-// `publishedAt` is when the entry was first written. Rewriting an existing file keeps its `publishedAt`, so resending a
-// release whose changelog did not change leaves the file byte for byte the same and there is nothing to commit.
+// `publishedAt` is when the entry was first written. Rewriting an entry keeps the `publishedAt` of its English file, so
+// resending a release whose changelog did not change leaves every file byte for byte the same and there is nothing to
+// commit.
 //
-// v3-github-release.yml runs it after the GitHub Release and commits the file to website-v3's main branch.
+// v3-github-release.yml runs it after the GitHub Release and commits the files to website-v3's main branch.
 //
 // Usage:
-//   node scripts/website-changelog.mjs <aggregate-tag> [--root <dir>]                  print the entry
-//   node scripts/website-changelog.mjs <aggregate-tag> [--root <dir>] --out-dir <dir>  write it, print its path
+//   node scripts/website-changelog.mjs <aggregate-tag> [--root <dir>]                  print the English file
+//   node scripts/website-changelog.mjs <aggregate-tag> [--root <dir>] --out-dir <dir>  write the files
 //
-// `--root` (default `.`) is the nocobase checkout the tag is read from. With `--out-dir`, the path of the written file
-// is the only line on stdout, and stdout is empty when the release has no entry. Exits 0 when there is no entry;
-// non-zero only on bad usage or when the tag cannot be read.
+// `--root` (default `.`) is the nocobase checkout the tag is read from. With `--out-dir`, it writes the entry's files,
+// removes a translation file whose language no longer has a section, and prints the path of every file it wrote,
+// left unchanged or removed, one per line, so the caller can stage exactly that set; stdout is empty when the release
+// has no entry. Exits 0 when there is no entry; non-zero only on bad usage or when the tag cannot be read.
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { parseArgs } from 'node:util';
@@ -28,15 +39,27 @@ import { parseArgs } from 'node:util';
 import { CHANGELOG_FILES, EMPTY, parseTag, releaseUrl } from './changelog.mjs';
 import { findReleaseSection } from './release-notes.mjs';
 
-/** The key of each changelog language in the entry's `notes`. */
+/** The locale of each changelog language, which names its entry file and keys the entry's `notes`. */
 export const NOTE_LOCALES = { en: 'en', zh: 'zh-CN', ja: 'ja-JP' };
+
+/** The front matter fields of a release entry, in the order they are written. */
+const FIELDS = [
+  'type',
+  'tag',
+  'channel',
+  'version',
+  'title',
+  'date',
+  'publishedAt',
+  'url',
+];
 
 const REPO = 'nocobase/nocobase';
 
 /**
  * The parts of an aggregate tag the entry is named and titled by.
  * @param {string} tag
- * @returns {{ channel: 'beta' | 'stable', version: string, date: string, title: string, fileName: string }}
+ * @returns {{ channel: 'beta' | 'stable', version: string, date: string, title: string, id: string }}
  */
 export function describeRelease(tag) {
   const parsed = parseTag(tag);
@@ -50,7 +73,7 @@ export function describeRelease(tag) {
       parsed.channel === 'beta'
         ? `NocoBase v3 Beta · ${version}`
         : `NocoBase v3 · ${version}`,
-    fileName: `${parsed.channel}-${version}.json`,
+    id: `${parsed.channel}-${version}`,
   };
 }
 
@@ -90,6 +113,20 @@ export function collectNotes(changelogs, tag) {
 }
 
 /**
+ * The entry file of each locale: `<id>.md` for English, `<id>.<locale>.md` for a translation.
+ * @param {string} id
+ * @returns {Record<string, string>}
+ */
+export function entryFileNames(id) {
+  return Object.fromEntries(
+    Object.values(NOTE_LOCALES).map((locale) => [
+      locale,
+      locale === 'en' ? `${id}.md` : `${id}.${locale}.md`,
+    ]),
+  );
+}
+
+/**
  * The website's entry for a release, or undefined when it has no English notes.
  * @param {{ tag: string, changelogs: Partial<Record<keyof typeof CHANGELOG_FILES, string | undefined>>, publishedAt: string }} release
  */
@@ -110,25 +147,52 @@ export function buildReleaseEntry({ tag, changelogs, publishedAt }) {
   };
 }
 
-/** The entry's file content: two-space JSON with a final newline. */
-export function serializeEntry(entry) {
-  return `${JSON.stringify(entry, null, 2)}\n`;
+/**
+ * The content of the entry's file in one locale: the front matter, then that locale's notes.
+ * @param {NonNullable<ReturnType<typeof buildReleaseEntry>>} entry
+ * @param {string} locale
+ */
+export function serializeEntryFile(entry, locale) {
+  // A JSON string is a valid YAML double-quoted scalar, so no value can break the front matter or change type.
+  const matter = FIELDS.map(
+    (field) => `${field}: ${JSON.stringify(entry[field])}`,
+  );
+  return `---\n${matter.join('\n')}\n---\n\n${entry.notes[locale].trimEnd()}\n`;
 }
 
 /**
- * The `publishedAt` of an existing entry file's content, or undefined when there is none to keep.
+ * The entry's files by name, one per locale that has notes, English first.
+ * @param {NonNullable<ReturnType<typeof buildReleaseEntry>>} entry
+ * @returns {Record<string, string>}
+ */
+export function renderEntryFiles(entry) {
+  const names = entryFileNames(describeRelease(entry.tag).id);
+  return Object.fromEntries(
+    Object.entries(names)
+      .filter(([locale]) => entry.notes[locale])
+      .map(([locale, name]) => [name, serializeEntryFile(entry, locale)]),
+  );
+}
+
+/**
+ * The `publishedAt` in an existing entry file's front matter, or undefined when there is none to keep.
  * @param {string | undefined} content
  */
 export function existingPublishedAt(content) {
-  if (!content) return undefined;
+  const matter =
+    content && /^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/u.exec(content);
+  if (!matter) return undefined;
+  const line = /^publishedAt:[ \t]*(.+?)[ \t]*$/mu.exec(matter[1]);
+  if (!line) return undefined;
+  let value = line[1];
   try {
-    const { publishedAt } = JSON.parse(content);
-    return typeof publishedAt === 'string' && publishedAt
-      ? publishedAt
-      : undefined;
+    if (value.startsWith('"')) value = JSON.parse(value);
+    else if (value.startsWith("'"))
+      value = value.slice(1, -1).replaceAll("''", "'");
   } catch {
     return undefined;
   }
+  return typeof value === 'string' && value ? value : undefined;
 }
 
 /** The current time in the contract's format, `2026-11-12T08:31:00Z`. */
@@ -182,17 +246,18 @@ function main(argv) {
     throw new Error(
       'Usage: website-changelog.mjs <aggregate-tag> [--root <dir>] [--out-dir <dir>]',
     );
-  const { fileName } = describeRelease(tag);
+  const names = entryFileNames(describeRelease(tag).id);
   const changelogs = readChangelogs(tag, path.resolve(values.root));
 
   const outDir = values['out-dir'];
-  const file = outDir ? path.join(outDir, fileName) : undefined;
-  const previous =
-    file && existsSync(file) ? readFileSync(file, 'utf8') : undefined;
+  const read = (name) => {
+    const file = outDir && path.join(outDir, name);
+    return file && existsSync(file) ? readFileSync(file, 'utf8') : undefined;
+  };
   const entry = buildReleaseEntry({
     tag,
     changelogs,
-    publishedAt: existingPublishedAt(previous) ?? now(),
+    publishedAt: existingPublishedAt(read(names.en)) ?? now(),
   });
   if (!entry) {
     console.error(
@@ -201,19 +266,30 @@ function main(argv) {
     return;
   }
 
-  const content = serializeEntry(entry);
-  if (!file) {
-    process.stdout.write(content);
+  const files = renderEntryFiles(entry);
+  if (!outDir) {
+    process.stdout.write(files[names.en]);
     return;
   }
-  if (content === previous) {
-    console.error(`${file} is already up to date.`);
-  } else {
-    mkdirSync(outDir, { recursive: true });
-    writeFileSync(file, content);
-    console.error(`Wrote ${file}.`);
+  mkdirSync(outDir, { recursive: true });
+  const touched = [];
+  for (const name of Object.values(names)) {
+    const file = path.join(outDir, name);
+    const content = files[name];
+    const previous = read(name);
+    if (content === undefined) {
+      if (previous === undefined) continue;
+      rmSync(file);
+      console.error(`Removed ${file}: its language has no section.`);
+    } else if (content === previous) {
+      console.error(`${file} is already up to date.`);
+    } else {
+      writeFileSync(file, content);
+      console.error(`Wrote ${file}.`);
+    }
+    touched.push(file);
   }
-  process.stdout.write(`${file}\n`);
+  process.stdout.write(`${touched.join('\n')}\n`);
 }
 
 const isMain = process.argv[1]?.endsWith('website-changelog.mjs');

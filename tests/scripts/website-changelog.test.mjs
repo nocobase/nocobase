@@ -1,6 +1,12 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
@@ -10,10 +16,11 @@ import {
   buildReleaseEntry,
   collectNotes,
   describeRelease,
+  entryFileNames,
   existingPublishedAt,
   now,
   readChangelogs,
-  serializeEntry,
+  renderEntryFiles,
   stripAuthorCredits,
 } from '../../scripts/website-changelog.mjs';
 
@@ -33,18 +40,23 @@ test('names and titles beta, legacy beta and stable entries', () => {
     version: '2026-11-12.1',
     date: '2026-11-12',
     title: 'NocoBase v3 Beta · 2026-11-12.1',
-    fileName: 'beta-2026-11-12.1.json',
+    id: 'beta-2026-11-12.1',
   });
   assert.equal(
-    describeRelease('release-beta/2026-10-28.2').fileName,
-    'beta-2026-10-28.2.json',
+    describeRelease('release-beta/2026-10-28.2').id,
+    'beta-2026-10-28.2',
   );
+  assert.deepEqual(entryFileNames('stable-2026-12-01.1'), {
+    en: 'stable-2026-12-01.1.md',
+    'zh-CN': 'stable-2026-12-01.1.zh-CN.md',
+    'ja-JP': 'stable-2026-12-01.1.ja-JP.md',
+  });
   assert.deepEqual(describeRelease('release/2026-12-01.1'), {
     channel: 'stable',
     version: '2026-12-01.1',
     date: '2026-12-01',
     title: 'NocoBase v3 · 2026-12-01.1',
-    fileName: 'stable-2026-12-01.1.json',
+    id: 'stable-2026-12-01.1',
   });
   assert.throws(() => describeRelease('@nocobase/app@1.0.0'), /aggregate/u);
 });
@@ -79,7 +91,40 @@ test('builds the entry from each language section without its heading', () => {
       'zh-CN': '### 🎉 新特性\n\n- **[服务端]** 新。',
     },
   });
-  assert.equal(serializeEntry(entry), `${JSON.stringify(entry, null, 2)}\n`);
+  const matter = [
+    '---',
+    'type: "release"',
+    `tag: "${tag}"`,
+    'channel: "beta"',
+    'version: "2026-11-12.1"',
+    'title: "NocoBase v3 Beta · 2026-11-12.1"',
+    'date: "2026-11-12"',
+    'publishedAt: "2026-11-12T08:31:00Z"',
+    'url: "https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-12.1"',
+    '---',
+    '',
+  ].join('\n');
+  assert.deepEqual(renderEntryFiles(entry), {
+    'beta-2026-11-12.1.md': `${matter}\n### 🎉 New Features\n\n- **[Server]** New.\n`,
+    'beta-2026-11-12.1.zh-CN.md': `${matter}\n### 🎉 新特性\n\n- **[服务端]** 新。\n`,
+  });
+});
+
+test('quotes every front matter value so any value stays a valid YAML string', () => {
+  const entry = buildReleaseEntry({
+    tag: 'release/2026-12-01.1',
+    publishedAt: 'a "quoted": value\nwith # and ---',
+    changelogs: {
+      en: changelog('Changelog', [['release/2026-12-01.1', '- Fix.']]),
+    },
+  });
+  const [content] = Object.values(renderEntryFiles(entry));
+  assert.match(
+    content,
+    /^publishedAt: "a \\"quoted\\": value\\nwith # and ---"$/mu,
+  );
+  assert.equal(content.split('\n').filter((line) => line === '---').length, 2);
+  assert.equal(existingPublishedAt(content), entry.publishedAt);
 });
 
 test('has no entry without an English section or with no user-facing changes', () => {
@@ -113,12 +158,19 @@ test('reads a renamed beta tag under its original release-beta heading', () => {
 });
 
 test('keeps the publishedAt of an existing entry', () => {
+  const at = '2026-11-12T08:31:00Z';
   assert.equal(
-    existingPublishedAt('{"publishedAt":"2026-11-12T08:31:00Z"}'),
-    '2026-11-12T08:31:00Z',
+    existingPublishedAt(`---\npublishedAt: "${at}"\n---\n\nBody\n`),
+    at,
   );
-  assert.equal(existingPublishedAt('{}'), undefined);
-  assert.equal(existingPublishedAt('not json'), undefined);
+  assert.equal(existingPublishedAt(`---\npublishedAt: ${at}\n---\n`), at);
+  assert.equal(existingPublishedAt(`---\npublishedAt: '${at}'\n---\n`), at);
+  assert.equal(existingPublishedAt('---\ntype: "release"\n---\n'), undefined);
+  assert.equal(existingPublishedAt(`publishedAt: "${at}"\n`), undefined);
+  assert.equal(
+    existingPublishedAt('---\npublishedAt: "broken\n---\n'),
+    undefined,
+  );
   assert.equal(existingPublishedAt(undefined), undefined);
   assert.match(now(), /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/u);
 });
@@ -145,6 +197,10 @@ test('writes the entry from the tagged commit and leaves an unchanged one alone'
     path.join(repository, 'CHANGELOG.md'),
     changelog('Changelog', [[tag, '- Tagged.']]),
   );
+  writeFileSync(
+    path.join(repository, 'CHANGELOG.zh-CN.md'),
+    changelog('更新日志', [[tag, '- 已打标签。']]),
+  );
   git('add', '.');
   git('commit', '--quiet', '-m', 'release');
   git('tag', tag);
@@ -158,7 +214,7 @@ test('writes the entry from the tagged commit and leaves an unchanged one alone'
 
   assert.deepEqual(readChangelogs(tag, repository), {
     en: changelog('Changelog', [[tag, '- Tagged.']]),
-    zh: undefined,
+    zh: changelog('更新日志', [[tag, '- 已打标签。']]),
     ja: undefined,
   });
 
@@ -168,15 +224,27 @@ test('writes the entry from the tagged commit and leaves an unchanged one alone'
       [script, tag, '--root', repository, '--out-dir', outDir],
       { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] },
     );
-  const file = path.join(outDir, 'beta-2026-11-12.1.json');
-  writeFileSync(file, '{"publishedAt":"2026-11-12T08:31:00Z"}\n');
-  assert.equal(run(), `${file}\n`);
-  const written = readFileSync(file, 'utf8');
-  const entry = JSON.parse(written);
-  assert.equal(entry.publishedAt, '2026-11-12T08:31:00Z');
-  assert.deepEqual(entry.notes, { en: '- Tagged.' });
-  assert.equal(run(), `${file}\n`);
-  assert.equal(readFileSync(file, 'utf8'), written);
+  const en = path.join(outDir, 'beta-2026-11-12.1.md');
+  const zh = path.join(outDir, 'beta-2026-11-12.1.zh-CN.md');
+  const ja = path.join(outDir, 'beta-2026-11-12.1.ja-JP.md');
+  // An earlier publish left an English file to keep the publishedAt of, and a Japanese file whose section is gone.
+  writeFileSync(
+    en,
+    '---\npublishedAt: "2026-11-12T08:31:00Z"\n---\n\n- Old.\n',
+  );
+  writeFileSync(ja, '---\n---\n\n- 古い。\n');
+  assert.equal(run(), `${en}\n${zh}\n${ja}\n`);
+  assert.equal(existsSync(ja), false);
+  const written = [readFileSync(en, 'utf8'), readFileSync(zh, 'utf8')];
+  assert.match(written[0], /^publishedAt: "2026-11-12T08:31:00Z"$/mu);
+  assert.match(written[0], /\n---\n\n- Tagged\.\n$/u);
+  assert.match(written[1], /^publishedAt: "2026-11-12T08:31:00Z"$/mu);
+  assert.match(written[1], /\n---\n\n- 已打标签。\n$/u);
+  assert.equal(run(), `${en}\n${zh}\n`);
+  assert.deepEqual(
+    [readFileSync(en, 'utf8'), readFileSync(zh, 'utf8')],
+    written,
+  );
 
   const missing = 'nocobase-v3-beta/2026-11-13.1';
   git('tag', missing);
@@ -207,6 +275,37 @@ test('the GitHub Release workflow publishes the entry to website-v3 as a best-ef
   // website-v3's site.yml has to run on the commit to publish it.
   assert.doesNotMatch(job, /skip ci/iu);
   assert.match(job, /::warning::/u);
+
+  // A failure is reported to Feishu, which itself never fails the job, and both release workflows pass the webhook.
+  const notify = job.split(
+    '- name: Notify Feishu about the failed website update',
+  )[1];
+  assert.ok(notify, 'the job notifies Feishu');
+  assert.match(notify, /continue-on-error: true/u);
+  assert.match(
+    notify,
+    /WEBHOOK_URL: \$\{\{ secrets\.RELEASE_RESULT_FEISHU_WEBHOOK_URL \}\}/u,
+  );
+  assert.match(notify, /\.\/scripts\/feishu-notify\.sh/u);
+  assert.match(
+    source,
+    /    secrets:\n      NOCOBASE_APP_PRIVATE_KEY:\n        required: true\n(?:      #.*\n)?      RELEASE_RESULT_FEISHU_WEBHOOK_URL:\n        required: false/u,
+  );
+  for (const name of ['v3-release-beta.yml', 'v3-release-stable.yml']) {
+    const caller = readFileSync(
+      fileURLToPath(
+        new URL(`../../.github/workflows/${name}`, import.meta.url),
+      ),
+      'utf8',
+    )
+      .split('\n  github-release:')[1]
+      .split(/\n  [a-z][\w-]*:/u)[0];
+    assert.match(
+      caller,
+      /RELEASE_RESULT_FEISHU_WEBHOOK_URL: \$\{\{ secrets\.RELEASE_RESULT_FEISHU_WEBHOOK_URL \}\}/u,
+      name,
+    );
+  }
 });
 
 test('drops the author credits older sections carry after each pull request link', () => {
