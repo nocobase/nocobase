@@ -1549,7 +1549,6 @@ export function createChatRoutes(
       security: personOrRunSecurity,
       ...cliRoute({
         command: 'conversation attachment upload',
-        action: RUN_SELF_ACTION,
       }),
       description: `One file as the \`file\` field of a multipart body, at most ${services.chatAttachments.uploadLimit.maxFileSizeMb} MB. With a conversation run token, immediately sends the file in that run's reply and retains it with the conversation; no Markdown link is needed. Otherwise it is the caller's alone until sent with a message (\`attachmentIds\`); one never sent is purged after a day.`,
       requestBody: singleFileBody,
