@@ -163,8 +163,10 @@ describe('mobile user center popover', () => {
       resolveFirst = resolve;
     });
     const check = vi.fn().mockReturnValueOnce(firstCheck).mockResolvedValueOnce(false).mockResolvedValueOnce(true);
+    const prepareProfile = vi.fn(async () => {});
     class Profile extends UserCenterActionItemModel {
       static itemId = 'profile';
+      prepare = prepareProfile;
       label = 'Edit profile';
     }
     class Verification extends UserCenterActionItemModel {
@@ -205,6 +207,8 @@ describe('mobile user center popover', () => {
 
     await openUserMenu(false);
     expect(await screen.findByRole('button', { name: 'Verification' })).toBeVisible();
+    expect(check).toHaveBeenCalledTimes(3);
+    expect(prepareProfile).toHaveBeenCalledOnce();
   });
 
   it.each([true, false])('respects closeOnChange=%s for preference selectors', async (closeOnChange) => {
