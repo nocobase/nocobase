@@ -6,8 +6,8 @@
 // Parsing is deliberately section-scoped: the type comes only from the checkboxes of the "This is a ..." section and
 // the changelog only from the table of the "Changelog" section, so a checked box or a table row anywhere else in the
 // description (a checklist, a quoted template, a code block) never changes the result. That also reads the v2 template
-// GitHub offers from the default branch `main`, whose type list and Changelog table have the same shape; it has no
-// Japanese row, so the author adds `| 🇯🇵 Japanese | ... |` to its table.
+// GitHub offers from the default branch `main`, whose type list and Changelog table, Japanese row included, have the
+// same shape.
 import scopes from './changelog-scopes.json' with { type: 'json' };
 
 /** The changelog languages, in the template's order: the key of each sentence and the label of its table row. */
