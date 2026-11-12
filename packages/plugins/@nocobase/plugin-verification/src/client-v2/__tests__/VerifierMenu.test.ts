@@ -10,17 +10,15 @@
 import { expect, it, vi } from 'vitest';
 import { VerificationUserCenterItemModel } from '../user-center/VerificationUserCenterItemModel';
 
-it('rechecks user-manageable verifiers on each opening, including after a failed request', async () => {
-  const list = vi
+it('rechecks whether any verifier is configured after a failed request', async () => {
+  const hasAny = vi
     .fn()
-    .mockResolvedValueOnce({ data: { data: [] } })
+    .mockResolvedValueOnce({ data: { data: false } })
     .mockRejectedValueOnce(new Error('offline'))
-    .mockResolvedValueOnce({ data: { data: [{ name: 'bound', boundInfo: { bound: true } }] } })
-    .mockResolvedValueOnce({ data: { data: [{ name: 'available', boundInfo: { bound: false } }] } });
+    .mockResolvedValueOnce({ data: { data: true } });
   const item = Object.create(VerificationUserCenterItemModel.prototype);
-  Object.defineProperty(item, 'context', { value: { api: { resource: () => ({ listByUser: list }) } } });
+  Object.defineProperty(item, 'context', { value: { api: { resource: () => ({ hasAny }) } } });
   await expect(item.checkAvailability()).resolves.toBe(false);
   await expect(item.checkAvailability()).rejects.toThrow('offline');
-  await expect(item.checkAvailability()).resolves.toBe(true);
   await expect(item.checkAvailability()).resolves.toBe(true);
 });

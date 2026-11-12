@@ -33,8 +33,8 @@ export class VerificationUserCenterItemModel extends UserCenterActionItemModel {
   label = 'Verification';
 
   async checkAvailability() {
-    const response = await this.context.api.resource('verifiers').listByUser();
-    return response.data.data.length > 0;
+    const response = await this.context.api.resource('verifiers').hasAny();
+    return response.data.data === true;
   }
 
   getLabelNode() {

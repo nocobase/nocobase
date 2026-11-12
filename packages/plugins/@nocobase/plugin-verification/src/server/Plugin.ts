@@ -48,6 +48,7 @@ export default class PluginVerficationServer extends Plugin {
       this.app.resourceManager.registerActionHandler(`verifiers:${action}`, handler),
     );
 
+    this.app.acl.allow('verifiers', 'hasAny', 'loggedIn');
     this.app.acl.allow('verifiers', 'listByUser', 'loggedIn');
     this.app.acl.allow('verifiers', 'listForVerify', 'loggedIn');
     this.app.acl.allow('verifiers', 'bind', 'loggedIn');
