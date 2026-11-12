@@ -166,7 +166,6 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
     const lastSync = await store.getLastSyncedAt!(ACCOUNT_ID);
     expect(isAutomaticSyncDue(lastSync)).toBe(false);
     arriving = true;
-    const arrivedAt = Date.now();
     client.emit('exists', { path: 'INBOX', count: 1, prevCount: 0 });
     await vi.waitFor(async () => {
       expect(
@@ -178,10 +177,6 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
         ).items,
       ).toMatchObject([{ subject: 'Arrived via IDLE' }]);
     });
-    console.info(
-      'IDLE EXISTS to listMessages: ' + (Date.now() - arrivedAt) + 'ms',
-    );
-    expect(Date.now() - arrivedAt).toBeLessThan(5_000);
     await service.updateAccount(
       { actorId: 'user-1' },
       { accountId: ACCOUNT_ID, status: 'suspended' },

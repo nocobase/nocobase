@@ -846,6 +846,14 @@ describe('IMAP verification and orphans', () => {
         expect(
           (await messages()).map((message) => message.providerMessageId),
         ).not.toContain('<new@example.com>');
+        await store.markPushSyncPending(accountId, 'idle-during-verification');
+        // Deterministically precede the next claim, even on fast machines.
+        await database
+          .query()
+          .updateTable('mailPushPending')
+          .set({ requestedAt: '2000-01-01T00:00:00.000Z' })
+          .where('accountId', '=', accountId)
+          .execute();
         await step();
         expect(
           (
@@ -854,9 +862,62 @@ describe('IMAP verification and orphans', () => {
         ).toContain('<new@example.com>');
         await step(); // The retained complete pass permits cleanup immediately.
         expect(await store.findActiveSyncRun(accountId)).toBeUndefined();
+        expect(
+          await database
+            .query()
+            .selectFrom('mailPushPending')
+            .selectAll()
+            .where('accountId', '=', accountId)
+            .execute(),
+        ).toEqual([]);
         expect(server.statuses > 0).toBe(!listStatus);
       } finally {
         clock.mockRestore();
+      }
+    },
+  );
+
+  it.each(['later', 'same millisecond'] as const)(
+    'retains a %s push arriving after the final IMAP LIST',
+    async (timing) => {
+      folder('INBOX');
+      deliver('INBOX', { raw: raw('<existing@example.com>') });
+      await sync();
+      await service().startSync(owner, { accountId });
+      await step();
+      await step();
+      const original = ImapSmtpAdapter.prototype.commitSyncStep;
+      const commit = vi
+        .spyOn(ImapSmtpAdapter.prototype, 'commitSyncStep')
+        .mockImplementationOnce(async function (input) {
+          expect(input.status).toBe('completed');
+          deliver('INBOX', { raw: raw('<late@example.com>') });
+          await store.markPushSyncPending(accountId, 'late-idle');
+          await database
+            .query()
+            .updateTable('mailPushPending')
+            .set({
+              requestedAt: new Date(
+                Date.parse(input.run.updatedAt) + (timing === 'later' ? 1 : 0),
+              ).toISOString(),
+            })
+            .where('accountId', '=', accountId)
+            .execute();
+          return original.call(this, input);
+        });
+      try {
+        await step();
+        expect(await store.findActiveSyncRun(accountId)).toMatchObject({
+          phase: 'preparing',
+          status: 'running',
+        });
+        while (await step());
+        expect(
+          (await messages()).map((message) => message.providerMessageId),
+        ).toContain('<late@example.com>');
+        expect(await store.findActiveSyncRun(accountId)).toBeUndefined();
+      } finally {
+        commit.mockRestore();
       }
     },
   );

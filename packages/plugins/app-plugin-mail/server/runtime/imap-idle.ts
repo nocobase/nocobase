@@ -13,6 +13,7 @@ interface Watch {
   client?: ImapFlow;
   timer?: NodeJS.Timeout;
   failures: number;
+  selectedAt?: number;
 }
 
 /** One dedicated INBOX listener per active IMAP account in this application instance. */
@@ -118,7 +119,7 @@ export class MailImapIdle {
       client.close();
       return;
     }
-    watch.failures = 0;
+    watch.selectedAt = Date.now();
     client.on('exists', (event) => {
       if (
         this.current(watch) &&
@@ -160,6 +161,13 @@ export class MailImapIdle {
     if (!this.current(watch) || watch.timer) return;
     const client = watch.client;
     watch.client = undefined;
+    // Briefly successful SELECTs must not defeat exponential backoff.
+    if (
+      watch.selectedAt !== undefined &&
+      Date.now() - watch.selectedAt >= 60_000
+    )
+      watch.failures = 0;
+    watch.selectedAt = undefined;
     // Set the timer first: closing may synchronously emit another close event.
     const delay = Math.min(60_000, 1_000 * 2 ** Math.min(watch.failures++, 6));
     watch.timer = setTimeout(() => {

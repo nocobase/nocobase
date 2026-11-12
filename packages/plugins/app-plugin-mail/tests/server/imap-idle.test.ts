@@ -169,6 +169,31 @@ describe('INBOX IDLE lifecycle', () => {
     expect(schedule).not.toHaveBeenCalled();
   });
 
+  it('backs off connections that SELECT successfully but disconnect before becoming stable', async () => {
+    vi.useFakeTimers();
+    const { listener, clients, schedule } = fixture();
+    listener.update(account);
+    await vi.advanceTimersByTimeAsync(0);
+    for (const delay of [1_000, 2_000, 4_000, 8_000, 16_000, 32_000, 60_000]) {
+      const count = clients.length;
+      clients.at(-1)!.close();
+      await vi.advanceTimersByTimeAsync(delay - 1);
+      expect(clients).toHaveLength(count);
+      expect(schedule).toHaveBeenCalledTimes(count);
+      await vi.advanceTimersByTimeAsync(1);
+      expect(clients).toHaveLength(count + 1);
+      expect(schedule).toHaveBeenCalledTimes(count + 1);
+    }
+    // A full minute on the current connection restores the initial delay.
+    await vi.advanceTimersByTimeAsync(60_000);
+    const count = clients.length;
+    clients.at(-1)!.close();
+    await vi.advanceTimersByTimeAsync(999);
+    expect(clients).toHaveLength(count);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(clients).toHaveLength(count + 1);
+  });
+
   it('does not poll or reconnect when IDLE is unsupported', async () => {
     vi.useFakeTimers();
     const { listener, clients, createClient } = fixture();
