@@ -238,17 +238,28 @@ jobs:
           || steps.website.outcome == 'failure' || steps.commit.outcome == 'failure')
         env:
           TAG: ${{ inputs.tag }}
-          # Each step runs only after the one before it succeeded, so at most one of them failed.
+          # Each step runs only after the one before it succeeded, so at most one of them failed. STAGE is how the
+          # Feishu card names it: rendering (生成), the App token (申请 token), or reaching website-v3 (推送).
           STEP: >-
             ${{ steps.entry.outcome == 'failure' && 'Render the website entry'
             || steps.website_token.outcome == 'failure' && 'Create a website token'
             || steps.website.outcome == 'failure' && 'Check out the website'
             || steps.commit.outcome == 'failure' && 'Commit the entry to the website'
             || 'Check out the repository or set up Node.js' }}
+          STAGE: >-
+            ${{ steps.website_token.outcome == 'failure' && '申请 token'
+            || (steps.website.outcome == 'failure' || steps.commit.outcome == 'failure') && '推送'
+            || '生成' }}
         run: |
-          echo "step=$STEP" >> "$GITHUB_OUTPUT"
+          {
+            echo "step=$STEP"
+            echo "stage=$STAGE"
+            # Aggregate tags hold only letters, digits, '.', '-' and one '/', so encoding the '/' is the whole escape.
+            echo "release_url=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/releases/tag/${TAG//\//%2F}"
+          } >> "$GITHUB_OUTPUT"
           echo "::warning::The website changelog for $TAG was not published: \"$STEP\" failed. Run V3 GitHub Release with tag $TAG to resend it."
 
+      # Only a failure is reported; a published entry sends nothing.
       - name: Notify Feishu about the failed website update
         if: always() && steps.failed.outcome == 'success'
         continue-on-error: true
@@ -256,14 +267,16 @@ jobs:
           WEBHOOK_URL: ${{ secrets.RELEASE_RESULT_FEISHU_WEBHOOK_URL }}
           ACTOR: ${{ github.actor }}
           REPOSITORY: ${{ github.repository }}
-          TITLE: Website changelog not published
+          TITLE: NocoBase 3 更新日志未发布到官网
           STATUS: failure
-          STATUS_TEXT_FAILURE: Needs a resend
+          STATUS_TEXT_FAILURE: 需要人工重发
           WORKFLOW_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          RELEASE_URL: ${{ steps.failed.outputs.release_url }}
           CONTENT: |
-            The changelog of `${{ inputs.tag }}` did not reach nocobase/website-v3: step **${{ steps.failed.outputs.step }}** failed. The release itself is published.
+            版本：`${{ inputs.tag }}`
+            失败环节：**${{ steps.failed.outputs.stage }}**（${{ steps.failed.outputs.step }}）
 
-            To resend it, run **V3 GitHub Release** (`v3-github-release.yml`) manually with tag `${{ inputs.tag }}`.
+            版本已正常发布，只是官网少了这一条。处理后手动运行 V3 GitHub Release，填入这个 tag 即可重发。
         run: |
           if [ -z "$WEBHOOK_URL" ]; then
             echo "::warning::RELEASE_RESULT_FEISHU_WEBHOOK_URL is not set, so no Feishu notification was sent"

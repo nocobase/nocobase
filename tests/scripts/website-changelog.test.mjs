@@ -287,6 +287,11 @@ test('the GitHub Release workflow publishes the entry to website-v3 as a best-ef
     /WEBHOOK_URL: \$\{\{ secrets\.RELEASE_RESULT_FEISHU_WEBHOOK_URL \}\}/u,
   );
   assert.match(notify, /\.\/scripts\/feishu-notify\.sh/u);
+  assert.match(notify, /TITLE: NocoBase 3 更新日志未发布到官网/u);
+  assert.match(
+    notify,
+    /RELEASE_URL: \$\{\{ steps\.failed\.outputs\.release_url \}\}/u,
+  );
   assert.match(
     source,
     /    secrets:\n      NOCOBASE_APP_PRIVATE_KEY:\n        required: true\n(?:      #.*\n)?      RELEASE_RESULT_FEISHU_WEBHOOK_URL:\n        required: false/u,
