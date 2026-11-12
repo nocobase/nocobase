@@ -604,6 +604,40 @@ jobs:
           repositories: nocobase3-pro
           permission-contents: write
 
+      # Candidates of earlier batches are removed here, never on failure: "Re-run failed jobs" reuses this job's outputs,
+      # so a failed run can be resumed only while its candidate still exists. A candidate is removed once a Pro release
+      # tag points at it (it was published, and the tag keeps its commit), or once it is older than the 30 days within
+      # which GitHub can re-run its workflow run. release-write serializes these runs, so no other run is using one, and
+      # the current batch's candidate is never touched.
+      - name: Prune stale Pro release candidates
+        if: "!inputs.dry_run && steps.plan.outputs.release == 'true'"
+        env:
+          PRO_TOKEN: ${{ steps.pro_write_token.outputs.token }}
+          OSS_BATCH: ${{ needs.prepare.outputs.batch }}
+        run: |
+          git remote set-url origin "https://x-access-token:${PRO_TOKEN}@github.com/nocobase/nocobase3-pro.git"
+          git fetch --quiet origin --tags --force
+          CURRENT="refs/heads/release-candidate/${OSS_BATCH}"
+          NOW=$(date +%s)
+          git ls-remote --heads origin 'release-candidate/*' | while read -r SHA REF; do
+            [ "$REF" != "$CURRENT" ] || continue
+            if ! printf '%s\n' "$REF" | grep -Eqx 'refs/heads/release-candidate/[0-9]{4}-[0-9]{2}-[0-9]{2}\.[0-9]+'; then
+              echo "Leaving $REF: not a release candidate name."
+              continue
+            fi
+            git fetch --quiet --no-tags origin "+${REF}:refs/prune-candidates/${REF#refs/heads/}"
+            if [ -n "$(git tag --points-at "$SHA" -l 'release-beta/*')" ]; then
+              REASON='a Pro release tag points at it'
+            elif [ $((NOW - $(git log -1 --format=%ct "$SHA"))) -gt $((30 * 24 * 3600)) ]; then
+              REASON='its run can no longer be re-run'
+            else
+              echo "Keeping $REF: unreleased, and its run can still be re-run."
+              continue
+            fi
+            git push --quiet --force-with-lease="${REF}:${SHA}" origin ":${REF}"
+            echo "Deleted $REF: $REASON."
+          done
+
       # The branch is named after the open-source batch, so a rerun of this job for the same release finds it. A rerun
       # reuses a candidate with the same tree, and replaces any other leftover candidate unless a Pro release tag already
       # points at it. A leftover branch from a release that never published is harmless.
@@ -793,9 +827,11 @@ jobs:
         run: git remote set-url origin "https://x-access-token:${RELEASE_TOKEN}@github.com/nocobase/nocobase.git"
 
       # Keep the internal candidate branch separate from the public v3 Beta tag.
+      # A rerun after the merge back must not push the release branch that merge deleted.
       - name: Tag and push release branch
         if: '!inputs.dry_run'
         env:
+          GH_TOKEN: ${{ steps.release_token.outputs.token }}
           RELEASE_BRANCH: ${{ needs.prepare.outputs.release_branch }}
           RELEASE_TAG: ${{ needs.prepare.outputs.release_tag }}
         run: |
@@ -810,7 +846,11 @@ jobs:
           else
             git tag "$RELEASE_TAG"
           fi
-          git push origin "refs/heads/${RELEASE_BRANCH}:refs/heads/${RELEASE_BRANCH}"
+          if [ -n "$(gh pr list --head "$RELEASE_BRANCH" --base v3-develop --state merged --json url --jq '.[].url')" ]; then
+            echo "$RELEASE_BRANCH was already merged into v3-develop; not pushing it again."
+          else
+            git push origin "refs/heads/${RELEASE_BRANCH}:refs/heads/${RELEASE_BRANCH}"
+          fi
           git push origin "refs/tags/${RELEASE_TAG}:refs/tags/${RELEASE_TAG}"
 
       # Publish the exact tarballs prepared and tested from the immutable release source state.
@@ -848,6 +888,11 @@ jobs:
                 FAILED=1
               fi
             done
+            # changesets tags only what it published itself; on a rerun an earlier attempt may have published the rest
+            # without pushing their tags.
+            if ! git rev-parse --verify --quiet "refs/tags/${SPEC}" > /dev/null; then
+              git tag "$SPEC"
+            fi
           done < "$RUNNER_TEMP/released-specs.txt"
 
           if [ "$FAILED" = "1" ]; then
@@ -870,11 +915,26 @@ jobs:
           RELEASE_BATCH: ${{ needs.prepare.outputs.batch }}
         run: |
           TEMPLATE_VERSION=$(node -p "require('./packages/templates/app-template-default/package.json').version")
-          PR_URL=$(gh pr create \
-            --title "chore: release $RELEASE_BATCH [skip ci]" \
-            --body "Prerelease \`$RELEASE_BATCH\` published to npm under the \`beta\` dist-tag. Per-package versions are in the workflow summary." \
-            --base v3-develop \
-            --head "$RELEASE_BRANCH")
+          # A rerun finds the merge back an earlier attempt made, or the pull request it left open, such as one whose
+          # conflict was resolved and merged by hand.
+          MERGED_URL=$(gh pr list --head "$RELEASE_BRANCH" --base v3-develop --state merged --json url --jq '.[0].url // empty')
+          if [ -n "$MERGED_URL" ]; then
+            echo "$RELEASE_BRANCH was already merged: $MERGED_URL"
+            {
+              echo "url=$MERGED_URL"
+              echo "merged=true"
+              echo "sha=$(gh pr view "$MERGED_URL" --json mergeCommit --jq .mergeCommit.oid)"
+            } >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          PR_URL=$(gh pr list --head "$RELEASE_BRANCH" --base v3-develop --state open --json url --jq '.[0].url // empty')
+          if [ -z "$PR_URL" ]; then
+            PR_URL=$(gh pr create \
+              --title "chore: release $RELEASE_BATCH [skip ci]" \
+              --body "Prerelease \`$RELEASE_BATCH\` published to npm under the \`beta\` dist-tag. Per-package versions are in the workflow summary." \
+              --base v3-develop \
+              --head "$RELEASE_BRANCH")
+          fi
           echo "url=$PR_URL" >> "$GITHUB_OUTPUT"
 
           set +e
@@ -1096,6 +1156,7 @@ jobs:
       - name: Tag and push the release branch
         if: '!inputs.dry_run'
         env:
+          GH_TOKEN: ${{ steps.pro_write_token.outputs.token }}
           PRO_TOKEN: ${{ steps.pro_write_token.outputs.token }}
           NAME: ${{ needs.pro-candidate.outputs.name }}
           CANDIDATE_SHA: ${{ needs.pro-candidate.outputs.candidate_sha }}
@@ -1112,7 +1173,10 @@ jobs:
             git tag "$NAME" "$CANDIDATE_SHA"
             git push origin "refs/tags/${NAME}:refs/tags/${NAME}"
           fi
-          if ! git ls-remote --exit-code --heads origin "$NAME" > /dev/null; then
+          # After the merge back deleted it, a rerun must not push the release branch again.
+          if [ -n "$(gh pr list --repo nocobase/nocobase3-pro --head "$NAME" --state merged --json url --jq '.[].url')" ]; then
+            echo "$NAME was already merged into Pro develop."
+          elif ! git ls-remote --exit-code --heads origin "$NAME" > /dev/null; then
             git push origin "${CANDIDATE_SHA}:refs/heads/${NAME}"
           fi
 
@@ -1130,12 +1194,18 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.PRO_NPM_TOKEN }}
           PRO_NPM_REGISTRY: ${{ secrets.PRO_NPM_REGISTRY }}
           SPECS: ${{ needs.pro-candidate.outputs.specs }}
+          CANDIDATE_SHA: ${{ needs.pro-candidate.outputs.candidate_sha }}
         run: |
           FAILED=0
           for SPEC in $SPECS; do
             for TAG in beta latest; do
               npm dist-tag add "$SPEC" "$TAG" --registry "$PRO_NPM_REGISTRY" || FAILED=1
             done
+            # publish-commercial-packages tags only what it published itself; an earlier attempt may have published the
+            # rest without pushing their tags.
+            if ! git rev-parse --verify --quiet "refs/tags/${SPEC}" > /dev/null; then
+              git tag "$SPEC" "$CANDIDATE_SHA"
+            fi
           done
           test "$FAILED" = 0 || { echo '::error::One or more Pro beta or latest dist-tags could not be updated'; exit 1; }
           git push origin --tags
@@ -1193,7 +1263,8 @@ jobs:
           fi
           gh pr merge --repo nocobase/nocobase3-pro "$PR_URL" --merge --delete-branch
 
-      # The release tag and the merge into develop now keep the candidate commit reachable.
+      # The only place a candidate of this run is deleted: after the merge back, when the release tag and Pro develop keep
+      # its commit reachable for any later rerun. Already deleted is fine.
       - name: Delete the Pro release candidate branch
         if: '!inputs.dry_run'
         env:
@@ -1258,51 +1329,5 @@ jobs:
           STATUS: failure
           STATUS_TEXT_FAILURE: 发版中断
           WORKFLOW_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-          CONTENT: OSS **${{ needs.prepare.outputs.batch }}** 已经发布，Pro 发布中断。可以直接重跑这个 job，它会接着已经创建的发版分支和已经发布的包继续；也可以单独跑 V3 Release Pro Beta。
+          CONTENT: OSS **${{ needs.prepare.outputs.batch }}** 已经发布，Pro 发布中断。在这次运行上点「Re-run failed jobs」即可，它会接着已经打的 tag、已经推的分支和已经发布的包继续。
         run: ./vendor/nocobase3/scripts/feishu-notify.sh
-
-  # A candidate pushed for a release that then failed or was cancelled before npm published is never published. Remove
-  # it. A branch left behind anyway (this job failed, or the run was killed) is harmless: nothing reads it, and a rerun of
-  # the same batch replaces it.
-  pro-candidate-cleanup:
-    name: Remove the unpublished Pro candidate
-    needs: [prepare, pro-candidate, release, pro-release]
-    if: >-
-      always() && !inputs.dry_run && (failure() || cancelled())
-      && needs.pro-candidate.outputs.candidate_sha != ''
-      && needs.release.outputs.published != 'true'
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - name: Create a Pro write token for the cleanup
-        if: '!inputs.dry_run'
-        id: pro_write_token
-        uses: actions/create-github-app-token@v2
-        with:
-          app-id: ${{ vars.NOCOBASE_APP_ID }}
-          private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
-          owner: nocobase
-          repositories: nocobase3-pro
-          permission-contents: write
-
-      - name: Delete the Pro release candidate branch
-        if: '!inputs.dry_run'
-        env:
-          GH_TOKEN: ${{ steps.pro_write_token.outputs.token }}
-          BRANCH: ${{ needs.pro-candidate.outputs.candidate_branch }}
-          CANDIDATE_SHA: ${{ needs.pro-candidate.outputs.candidate_sha }}
-        run: |
-          # Delete only this run's own candidate: a release-candidate/<batch> branch that still holds its commit.
-          case "$BRANCH" in
-            release-candidate/[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9].[0-9]*) ;;
-            *) echo "::error::Refusing to delete $BRANCH"; exit 1 ;;
-          esac
-          CURRENT=$(gh api "repos/nocobase/nocobase3-pro/git/ref/heads/${BRANCH}" --jq .object.sha 2> /dev/null || true)
-          if [ -z "$CURRENT" ]; then
-            echo "$BRANCH is already gone."
-          elif [ "$CURRENT" != "$CANDIDATE_SHA" ]; then
-            echo "::warning::$BRANCH now holds $CURRENT, not this run's candidate $CANDIDATE_SHA; leaving it."
-          else
-            gh api --method DELETE "repos/nocobase/nocobase3-pro/git/refs/heads/${BRANCH}"
-            echo "Deleted $BRANCH."
-          fi

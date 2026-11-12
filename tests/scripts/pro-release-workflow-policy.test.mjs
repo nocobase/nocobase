@@ -1,6 +1,12 @@
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -18,7 +24,7 @@ async function workflow(name) {
 }
 
 // The jobs of the open-source beta release that check out and publish Pro.
-const jointProJobs = ['pro-candidate', 'pro-release', 'pro-candidate-cleanup'];
+const jointProJobs = ['pro-candidate', 'pro-release'];
 
 async function jointProJob(job) {
   const source = await workflow('v3-release-beta.yml');
@@ -122,18 +128,58 @@ test('Pro publishes the pushed candidate commit without regenerating it', async 
   );
 });
 
-test('an unpublished candidate is cleaned up only when the release failed or was cancelled before npm', async () => {
-  const cleanup = await jointProJob('pro-candidate-cleanup');
-  for (const condition of [
-    'always()',
-    '!inputs.dry_run',
-    '(failure() || cancelled())',
-    "needs.pro-candidate.outputs.candidate_sha != ''",
-    "needs.release.outputs.published != 'true'",
-  ]) {
-    assert.ok(cleanup.includes(condition), condition);
+// "Re-run failed jobs" reuses pro-candidate's outputs and never pushes its candidate again, so the candidate of a
+// failed or cancelled run must survive until a rerun has merged it back.
+test('only the merge back and the stale-candidate prune delete a release candidate', async () => {
+  const source = await workflow('v3-release-beta.yml');
+  const deletion = /--method DELETE|git push[^\n]*(?:--delete|\s":)/u;
+  const steps = source.split(/\n(?=      - name: )/u);
+  const deleting = steps
+    .filter(
+      (step) =>
+        deletion.test(step) &&
+        /release-candidate|candidate_branch|CANDIDATE/u.test(step),
+    )
+    .map((step) => step.match(/- name: ([^\n]+)/u)[1]);
+  assert.deepEqual(deleting.sort(), [
+    'Delete the Pro release candidate branch',
+    'Prune stale Pro release candidates',
+  ]);
+  assert.equal(
+    source.match(/- name: Delete the Pro release candidate branch/gu).length,
+    1,
+  );
+  const publish = await jointProJob('pro-release');
+  assert.ok(
+    publish.indexOf('- name: Merge release metadata back into Pro develop') <
+      publish.indexOf('- name: Delete the Pro release candidate branch'),
+  );
+  const candidate = await jointProJob('pro-candidate');
+  assert.ok(
+    candidate.indexOf('- name: Prune stale Pro release candidates') <
+      candidate.indexOf('- name: Push the Pro release candidate'),
+  );
+
+  // Nothing that runs because of a failure or a cancellation touches a candidate.
+  const jobs = source.split(/\n(?=  [a-z][\w-]*:\n)/u);
+  for (const block of [...jobs, ...steps]) {
+    const condition =
+      block.match(/^\s*if: (?:>-\n(?:\s+[^\n]+\n)+|[^\n]+)/mu)?.[0] ?? '';
+    if (!/failure\(\)|cancelled\(\)|always\(\)/u.test(condition)) continue;
+    for (const stepBlock of block.split(/\n(?=      - name: )/u)) {
+      const stepCondition =
+        stepBlock === block
+          ? condition
+          : (stepBlock.match(/^\s*if: [^\n]+/mu)?.[0] ?? condition);
+      if (!/failure\(\)|cancelled\(\)|always\(\)/u.test(stepCondition))
+        continue;
+      assert.doesNotMatch(
+        stepBlock,
+        /release-candidate|candidate_branch/u,
+        stepBlock.slice(0, 200),
+      );
+    }
   }
-  assert.doesNotMatch(cleanup, /actions\/checkout/u);
 });
 
 test('every step that can write outside the runner is disabled for dry runs', async () => {
@@ -321,8 +367,33 @@ test('the Pro candidate is pushed once per batch, reused on a rerun, and never r
   assert.equal(branchSha(), replaced.outputs.sha);
 });
 
+// A gh that answers `gh pr list` with MERGED_URL and logs every call.
+function fakeGh(directory) {
+  const bin = path.join(directory, 'gh-bin');
+  mkdirSync(bin);
+  writeFileSync(
+    path.join(bin, 'gh'),
+    `#!/usr/bin/env node
+const fs = require('node:fs');
+const args = process.argv.slice(2);
+if (process.env.GH_LOG) fs.appendFileSync(process.env.GH_LOG, JSON.stringify(args) + '\\n');
+if (args[0] === 'pr' && args[1] === 'list') { if (process.env.MERGED_URL) process.stdout.write(process.env.MERGED_URL + '\\n'); process.exit(0); }
+if (args.includes('DELETE')) process.exit(0);
+if (process.env.CURRENT_SHA) process.stdout.write(process.env.CURRENT_SHA + '\\n');
+else process.exit(1);
+`,
+    { mode: 0o755 },
+  );
+  return bin;
+}
+
 test('the Pro release tags the candidate once and pushes the release branch at it', async (t) => {
-  const { directory, env, git, remote, proSha } = gitFixture(t);
+  const fixture = gitFixture(t);
+  const { directory, git, remote, proSha } = fixture;
+  const env = {
+    ...fixture.env,
+    PATH: `${fakeGh(directory)}${path.delimiter}${process.env.PATH}`,
+  };
   const publish = await jointProJob('pro-release');
   const name = 'release-beta/2026-11-12.1';
   const checkout = path.join(directory, 'release');
@@ -356,10 +427,91 @@ test('the Pro release tags the candidate once and pushes the release branch at i
   );
   assert.notEqual(other.status, 0);
   assert.match(other.stdout, /already points to/u);
+
+  // After the merge back deleted the release branch, a rerun does not push it again.
+  git(remote, 'update-ref', '-d', `refs/heads/${name}`);
+  const merged = runStep(
+    publish,
+    'Tag and push the release branch',
+    checkout,
+    env,
+    {
+      NAME: name,
+      CANDIDATE_SHA: proSha,
+      MERGED_URL: 'https://github.com/nocobase/nocobase3-pro/pull/1',
+    },
+  );
+  assert.equal(merged.status, 0, merged.stderr);
+  assert.equal(git(remote, 'branch', '--list', name), '');
 });
 
-test("candidate cleanup deletes only this run's own candidate branch", async (t) => {
-  const cleanup = await jointProJob('pro-candidate-cleanup');
+test('pruning removes released and expired candidates of other batches only', async (t) => {
+  const { directory, env, git, remote, proSha } = gitFixture(t);
+  const candidateJob = await jointProJob('pro-candidate');
+  const seed = path.join(directory, 'seed');
+  const commit = (message, date) => {
+    writeFileSync(path.join(seed, 'CHANGELOG.md'), `${message}\n`);
+    git(seed, 'add', '-A');
+    execFileSync(
+      'git',
+      ['-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-qm', message],
+      {
+        cwd: seed,
+        env: date
+          ? { ...env, GIT_COMMITTER_DATE: date, GIT_AUTHOR_DATE: date }
+          : env,
+      },
+    );
+    return git(seed, 'rev-parse', 'HEAD');
+  };
+  const branches = {
+    'release-candidate/2026-11-12.2': commit('current'),
+    'release-candidate/2026-11-10.1': commit('released'),
+    'release-candidate/2026-11-11.1': commit('recent and unreleased'),
+    'release-candidate/2026-09-01.1': commit('expired', '2026-09-01T00:00:00Z'),
+    'release-candidate/manual': commit('not a batch', '2026-09-01T00:00:00Z'),
+  };
+  for (const [branch, sha] of Object.entries(branches)) {
+    git(seed, 'push', '-q', remote, `${sha}:refs/heads/${branch}`);
+  }
+  git(
+    seed,
+    'push',
+    '-q',
+    remote,
+    `${branches['release-candidate/2026-11-10.1']}:refs/tags/release-beta/2026-11-10.1`,
+  );
+  const checkout = path.join(directory, 'prune');
+  git(directory, 'clone', '-q', remote, checkout);
+  git(checkout, 'checkout', '-q', proSha);
+
+  const result = runStep(
+    candidateJob,
+    'Prune stale Pro release candidates',
+    checkout,
+    env,
+    {
+      OSS_BATCH: '2026-11-12.2',
+    },
+  );
+  assert.equal(result.status, 0, result.stderr);
+  const left = git(
+    remote,
+    'for-each-ref',
+    '--format=%(refname:short)',
+    'refs/heads/release-candidate/',
+  )
+    .split('\n')
+    .sort();
+  assert.deepEqual(left, [
+    'release-candidate/2026-11-11.1',
+    'release-candidate/2026-11-12.2',
+    'release-candidate/manual',
+  ]);
+});
+
+test("the post-merge deletion removes only this run's own candidate branch, idempotently", async (t) => {
+  const cleanup = await jointProJob('pro-release');
   const directory = mkdtempSync(path.join(tmpdir(), 'joint-pro-cleanup-'));
   t.after(() => rmSync(directory, { recursive: true, force: true }));
   const log = path.join(directory, 'gh.log');
