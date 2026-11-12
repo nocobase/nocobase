@@ -10,7 +10,6 @@
 import { DndContext as DndKitContext, DragEndEvent, DragOverlay, rectIntersection } from '@dnd-kit/core';
 import { Props } from '@dnd-kit/core/dist/components/DndContext/DndContext';
 import React, { useCallback, useState } from 'react';
-import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient } from '../../../api-client/hooks/useAPIClient';
 import { createDesignable, useDesignable } from '../../hooks/useDesignable';
@@ -82,33 +81,30 @@ const InternalDndContext = React.memo((props: Props) => {
   const { t } = useTranslation();
   const [visible, setVisible] = useState(true);
 
-  const notifyDragStart = props.onDragStart;
   const onDragStart = useCallback(
     (event) => {
       const { active } = event;
       const activeSchema = active?.data?.current?.schema;
       setVisible(!!activeSchema);
-      notifyDragStart?.(event);
+      if (props?.onDragStart) {
+        props?.onDragStart?.(event);
+      }
     },
-    [notifyDragStart],
+    [props?.onDragStart],
   );
 
   const onDragEnd = useDragEnd(props?.onDragEnd);
 
   return (
     <DndKitContext collisionDetection={rectIntersection} {...props} onDragStart={onDragStart} onDragEnd={onDragEnd}>
-      {typeof document !== 'undefined' &&
-        createPortal(
-          <DragOverlay
-            dropAnimation={{
-              duration: 10,
-              easing: 'cubic-bezier(0.18, 0.67, 0.6, 1.22)',
-            }}
-          >
-            {visible && <span style={{ whiteSpace: 'nowrap' }}>{t('Dragging')}</span>}
-          </DragOverlay>,
-          document.body,
-        )}
+      <DragOverlay
+        dropAnimation={{
+          duration: 10,
+          easing: 'cubic-bezier(0.18, 0.67, 0.6, 1.22)',
+        }}
+      >
+        {visible && <span style={{ whiteSpace: 'nowrap' }}>{t('Dragging')}</span>}
+      </DragOverlay>
       {props.children}
     </DndKitContext>
   );

@@ -7,10 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { useFieldSchema } from '@formily/react';
 import { useTranslation } from 'react-i18next';
 import {
   SchemaSettings,
+  useBlockTemplateContext,
   SchemaSettingsLayoutItem,
+  SchemaSettingsFormItemTemplate,
+  useSchemaSettings,
+  useCollection,
   SchemaSettingsBlockHeightItem,
   SchemaSettingsBlockTitleItem,
   SchemaSettingsLinkageRules,
@@ -53,6 +58,25 @@ export const bulkEditFormBlockSettings = new SchemaSettings({
     {
       name: 'divider',
       type: 'divider',
+    },
+    {
+      name: 'formItemTemplate',
+      Component: SchemaSettingsFormItemTemplate,
+      useVisible() {
+        return !!useSchemaSettings().template;
+      },
+      useComponentProps() {
+        const { componentNamePrefix } = useBlockTemplateContext();
+        const { name } = useCollection();
+        const fieldSchema = useFieldSchema();
+        const defaultResource =
+          fieldSchema?.['x-decorator-props']?.resource || fieldSchema?.['x-decorator-props']?.association;
+        return {
+          componentName: `${componentNamePrefix}FormItem`,
+          collectionName: name,
+          resourceName: defaultResource,
+        };
+      },
     },
     {
       name: 'setBlockLayout',

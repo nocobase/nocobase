@@ -52,7 +52,6 @@ import { isVariable } from '../../variables/utils/isVariable';
 import { transformVariableValue } from '../../variables/utils/transformVariableValue';
 import { useBlockRequestContext, useFilterByTk, useParamsFromRecord } from '../BlockProvider';
 import { useOperators } from '../CollectOperators';
-import { isLegacyBulkEditSubmit } from './isLegacyBulkEditSubmit';
 import { useDetailsBlockContext } from '../DetailsBlockProvider';
 import { TableFieldResource } from '../TableFieldProvider';
 
@@ -258,13 +257,6 @@ export const useCreateActionProps = () => {
 
   return {
     async onClick() {
-      if (isLegacyBulkEditSubmit(actionSchema)) {
-        message.error(
-          t('This bulk edit form uses a legacy create action. Add a new bulk edit form and configure its fields.'),
-        );
-        return;
-      }
-
       const { onSuccess, skipValidator, triggerWorkflows } = actionSchema?.['x-action-settings'] ?? {};
       const {
         manualClose,
