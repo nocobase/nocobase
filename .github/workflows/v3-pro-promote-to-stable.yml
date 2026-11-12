@@ -51,7 +51,9 @@ jobs:
           persist-credentials: false
 
       - name: Copy release tooling outside the checkout
-        run: cp .workflow-tools/scripts/reconcile-pro-release-metadata.mjs "$RUNNER_TEMP/reconcile-pro-release-metadata.mjs"
+        run: |
+          cp .workflow-tools/scripts/reconcile-pro-release-metadata.mjs "$RUNNER_TEMP/reconcile-pro-release-metadata.mjs"
+          cp .workflow-tools/scripts/pro-release-candidates.mjs "$RUNNER_TEMP/pro-release-candidates.mjs"
 
       - name: Create a read token for the Pro repository
         id: checkout_token
@@ -77,6 +79,10 @@ jobs:
         env:
           PRO_TOKEN: ${{ steps.checkout_token.outputs.token }}
         run: git remote set-url origin "https://x-access-token:${PRO_TOKEN}@github.com/nocobase/nocobase3-pro.git"
+
+      # A joint beta release in flight (V3 Release Beta) still merges its beta versions into Pro develop, which would undo this promotion's return to prerelease state there, so promotion waits until it is published and merged. A candidate older than 30 days is ignored; see scripts/pro-release-candidates.mjs.
+      - name: Refuse to run while a joint beta release is in flight
+        run: node "$RUNNER_TEMP/pro-release-candidates.mjs" check
 
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
@@ -199,6 +205,7 @@ jobs:
           OSS_SHA: ${{ steps.oss.outputs.sha }}
         run: |
           git remote set-url origin "https://x-access-token:${PRO_TOKEN}@github.com/nocobase/nocobase3-pro.git"
+          node "$RUNNER_TEMP/pro-release-candidates.mjs" check
           git add -A
           test "$(git -C vendor/nocobase3 rev-parse HEAD)" = "$OSS_SHA"
           test "$(git ls-files --stage vendor/nocobase3 | awk '{print $2}')" = "$OSS_SHA"
