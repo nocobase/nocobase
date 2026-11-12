@@ -1,5 +1,15 @@
 # @nocobase/app-server
 
+## 5.0.0-beta.5
+
+### Minor Changes
+
+- 44bf26a: Allow plugins to contribute an application-local synchronous ID implementation with asynchronous initialization while retaining the host ID provider and public service token. Select and cache the implementation on first generation, preserving early-resolved references without per-ID container lookups. Document initialization ordering and plugin-owned cleanup.
+
+### Patch Changes
+
+- 1952789: Update authentication, editor, and validation dependencies to patched releases.
+
 ## 5.0.0-beta.4
 
 ### Minor Changes

@@ -1,5 +1,32 @@
 # @nocobase/app-plugin-projects
 
+## 0.1.0-beta.30
+
+### Minor Changes
+
+- c74760f: Invitation emails are written in one language instead of every supported language. The language is chosen when inviting (`locale` on the invite endpoints, defaulting to the inviter's interface language and then the application's default), kept on the invitation and reused by resends. Only a language without email text falls back to the application's default language and English. The subject follows the email's language, and the expiry is formatted for that language and marked as UTC.
+
+  The accept page opens in the invitation's language, offers a language picker, and stores the language on screen as the new account's language. Lookups return the invitation's `locale`, and accepting takes an optional `locale`. Projects' invite dialog gains an email language field. The notification template preview now renders each language separately. Traditional Chinese and Japanese wording and list separators are corrected.
+
+  This adds the migration `202611110001_user_invitation_locale`, which adds a nullable `userInvitations.locale` column. Existing invitations keep a null language and use the resending person's language.
+
+### Patch Changes
+
+- 788df3e: Batch knowledge directory metadata and node permissions across spaces, preserving visibility and archived-document counts. Provide a lightweight authorized project metadata query without issue or member totals.
+- dd92f18: Index human task executors so attention queries can combine executor assignments with the existing owner index instead of scanning a large issue table.
+- 1952789: Update authentication, editor, and validation dependencies to patched releases.
+- fe0bfbc: Reduce project task grouping work by selecting authorized project seeds before traversing ancestors, and bound hierarchy traversal depth.
+- Updated dependencies [44bf26a]
+- Updated dependencies [c74760f]
+- Updated dependencies [74f1bf8]
+- Updated dependencies [1952789]
+  - @nocobase/app-server@5.0.0-beta.5
+  - @nocobase/app-plugin-users@2.0.0-beta.20
+  - @nocobase/app-plugin-authentication@2.0.0-beta.21
+  - @nocobase/app-plugin-authorization@1.0.0-beta.38
+  - @nocobase/app-plugin-notification@2.0.0-beta.9
+  - @nocobase/app-plugin-file@1.0.0-beta.31
+
 ## 0.1.0-beta.29
 
 ### Minor Changes

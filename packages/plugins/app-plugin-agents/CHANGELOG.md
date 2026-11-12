@@ -1,5 +1,27 @@
 # @nocobase/app-plugin-agents
 
+## 2.0.0-beta.12
+
+### Minor Changes
+
+- 7884308: Show each enabled coding tool's quota beside its tag in the runtime list, and show only "Latest" or "Upgradable" in its version column. The runtime list now returns current tool quota marks, usage and pause thresholds.
+
+### Patch Changes
+
+- 1952789: Update authentication, editor, and validation dependencies to patched releases.
+- fcd59ee: Simplify runtime quota threshold settings, show them read-only to viewers, distinguish missing quota data, and format quota windows in days or hours.
+- Updated dependencies [44bf26a]
+- Updated dependencies [1952789]
+- Updated dependencies [a6b6b7c]
+  - @nocobase/app-server@5.0.0-beta.5
+  - @nocobase/acp-bridge@1.0.0-beta.7
+  - @nocobase/agent-protocol@0.1.0-beta.19
+  - @nocobase/app-cli-client@0.1.0-beta.21
+  - @nocobase/app-plugin-authentication@2.0.0-beta.21
+  - @nocobase/app-plugin-authorization@1.0.0-beta.38
+  - @nocobase/app-cli@1.0.0-beta.34
+  - @nocobase/app-plugin-file@1.0.0-beta.31
+
 ## 2.0.0-beta.11
 
 ### Minor Changes

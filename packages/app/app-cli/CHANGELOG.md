@@ -1,5 +1,14 @@
 # @nocobase/app-cli
 
+## 1.0.0-beta.34
+
+### Patch Changes
+
+- a6b6b7c: Build only an application's workspace dependencies without traversing dependency test fixtures, limit dependency build concurrency, and provide a default 6 GiB compiler heap.
+- Updated dependencies [44bf26a]
+- Updated dependencies [1952789]
+  - @nocobase/app-server@5.0.0-beta.5
+
 ## 1.0.0-beta.33
 
 ### Minor Changes
