@@ -159,8 +159,8 @@ const runtimesEnUS = {
       offlineNever: 'Offline',
     },
     toolUsage: {
-      label: 'Runs by coding tool',
-      item: '{{tool}} {{used}}/{{limit}}',
+      short: 'Runs {{used}}/{{limit}}',
+      hint: 'At most {{limit}} {{tool}} runs at once; {{used}} running now',
     },
     toolSlots: {
       label: 'Limits per coding tool',

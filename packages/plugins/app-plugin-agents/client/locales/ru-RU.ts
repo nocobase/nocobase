@@ -788,8 +788,8 @@ const ruRU: LocaleResource<typeof enUS> = {
       offlineNever: 'Не в сети',
     },
     toolUsage: {
-      label: 'Запуски по инструментам',
-      item: '{{tool}} {{used}}/{{limit}}',
+      short: 'Запуски {{used}}/{{limit}}',
+      hint: 'Не более {{limit}} запусков {{tool}} одновременно; сейчас {{used}}',
     },
     toolSlots: {
       label: 'Лимиты по инструментам',

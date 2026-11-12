@@ -1213,46 +1213,55 @@ describe('runtimes page', () => {
     expect(within(sheet).queryByText(/runner update$/u)).toBeNull();
   });
 
-  it('shows the runs by coding tool against each tool’s limit', async () => {
+  it('shows each tool’s runs against its own limit beside the tool', async () => {
     runners = [
       runner('r1', {
         slots: 3,
         activeRuns: 3,
-        toolSlots: { claude: 2, codex: 1 },
+        toolSlots: { claude: 2, codex: 5 },
         reportedSlots: 3,
         toolLoad: {
           claude: { slots: 2, free: 0 },
-          codex: { slots: 1, free: 0 },
+          codex: { slots: 3, free: 2 },
         },
         activeByTool: { claude: 2, codex: 1 },
+        enabledTools: ['claude', 'codex'],
+        tools: [
+          { kind: 'claude', authenticated: true },
+          { kind: 'codex', authenticated: true },
+        ],
       }),
       runner('r3', { slots: 2, activeRuns: 1, activeByTool: { codex: 1 } }),
     ];
     renderPage(<RuntimesPage />);
     const row = await screen.findByTestId('runner-r1');
-    const usage = within(row).getByRole('list', {
-      name: 'runtimes.toolUsage.label',
+    const tools = within(row).getByRole('list', {
+      name: 'runtimes.columns.tools',
     });
-    expect(
-      within(usage)
-        .getAllByRole('listitem')
-        .map((item) => item.textContent),
-    ).toEqual([
-      'runtimes.toolUsage.item(tool=tools.claude,used=2,limit=2)',
-      'runtimes.toolUsage.item(tool=tools.codex,used=1,limit=1)',
-    ]);
+    const claude = within(tools).getByTestId('tool-concurrency-claude');
+    expect(claude).toHaveTextContent(
+      'runtimes.toolUsage.short(tool=tools.claude,used=2,limit=2)',
+    );
+    expect(claude).toHaveAttribute('data-full');
+    expect(claude).toHaveAccessibleName(
+      'runtimes.toolUsage.hint(tool=tools.claude,used=2,limit=2)',
+    );
+    // A limit above the runtime's total reads as the total, which is what bounds it.
+    const codex = within(tools).getByTestId('tool-concurrency-codex');
+    expect(codex).toHaveTextContent(
+      'runtimes.toolUsage.short(tool=tools.codex,used=1,limit=3)',
+    );
+    expect(codex).not.toHaveAttribute('data-full');
+    // The status column keeps only the runtime's total.
+    expect(within(row).getAllByText(/toolUsage/u)).toHaveLength(2);
     const sheet = await openSheet();
-    expect(
-      within(sheet).queryByRole('list', {
-        name: 'runtimes.toolUsage.label',
-      }),
-    ).toBeNull();
+    expect(within(sheet).queryByTestId('tool-concurrency-claude')).toBeNull();
     within(sheet).getByText('tools.claude 2/2');
-    // Running tools without a configured limit do not add a usage line.
+    // Running tools without a configured limit show none.
     expect(
-      within(screen.getByTestId('runner-r3')).queryByRole('list', {
-        name: 'runtimes.toolUsage.label',
-      }),
+      within(screen.getByTestId('runner-r3')).queryByTestId(
+        /^tool-concurrency-/u,
+      ),
     ).toBeNull();
   });
 
@@ -1272,9 +1281,7 @@ describe('runtimes page', () => {
     renderPage(<RuntimesPage />);
     const row = await screen.findByTestId('runner-r1');
     within(row).getByText(/^runtimes\.activity\.online\(active=1,slots=2,/u);
-    expect(
-      within(row).queryByRole('list', { name: 'runtimes.toolUsage.label' }),
-    ).toBeNull();
+    expect(within(row).queryByTestId(/^tool-concurrency-/u)).toBeNull();
     const sheet = await openSheet();
     expect(
       within(sheet).getByLabelText(
