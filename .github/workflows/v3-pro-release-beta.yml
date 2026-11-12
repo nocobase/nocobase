@@ -46,6 +46,18 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 120
     steps:
+      # The Pro checkout below replaces the workspace, so the open-source tooling this job runs is copied out first.
+      - name: Check out workflow tooling
+        uses: actions/checkout@v4
+        with:
+          path: .workflow-tools
+          persist-credentials: false
+
+      - name: Copy release tooling outside the checkout
+        run: |
+          mkdir -p "$RUNNER_TEMP/oss-tools"
+          cp .workflow-tools/scripts/pro-release-candidates.mjs "$RUNNER_TEMP/oss-tools/"
+
       - name: Create a read token for the Pro repository
         id: checkout_token
         uses: actions/create-github-app-token@v2
@@ -70,6 +82,10 @@ jobs:
         env:
           PRO_TOKEN: ${{ steps.checkout_token.outputs.token }}
         run: git remote set-url origin "https://x-access-token:${PRO_TOKEN}@github.com/nocobase/nocobase3-pro.git"
+
+      # V3 Release Beta releases Pro with the open-source beta through a release-candidate/<batch> branch. While one is in flight, a Pro release of its own would publish the same versions or take the same release-beta name, so this workflow refuses to start, and checks again just before it writes anything. A candidate older than 30 days is ignored, because its run can no longer be re-run; see scripts/pro-release-candidates.mjs.
+      - name: Refuse to run while a joint beta release is in flight
+        run: node "$RUNNER_TEMP/oss-tools/pro-release-candidates.mjs" check
 
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
@@ -224,6 +240,7 @@ jobs:
           OSS_SHA: ${{ steps.oss.outputs.sha }}
         run: |
           git remote set-url origin "https://x-access-token:${PRO_TOKEN}@github.com/nocobase/nocobase3-pro.git"
+          node "$RUNNER_TEMP/oss-tools/pro-release-candidates.mjs" check
           git add -A
           test "$(git -C vendor/nocobase3 rev-parse HEAD)" = "$OSS_SHA"
           test "$(git ls-files --stage vendor/nocobase3 | awk '{print $2}')" = "$OSS_SHA"
@@ -256,7 +273,16 @@ jobs:
             done
           done < "$RUNNER_TEMP/pro-released-specs.txt"
           test "$FAILED" = 0 || { echo '::error::One or more Pro beta or latest dist-tags could not be updated'; exit 1; }
-          git push origin --tags
+          # publish-commercial-packages.mjs moves a package tag that a candidate which never published had reserved, so the package tags it wrote at the release commit are forced; it refuses to move any other.
+          HEAD_SHA=$(git rev-parse HEAD)
+          REFS=()
+          while IFS= read -r SPEC; do
+            [ -n "$SPEC" ] || continue
+            if [ "$(git rev-parse --verify --quiet "refs/tags/${SPEC}^{commit}" || true)" = "$HEAD_SHA" ]; then
+              REFS+=("+refs/tags/${SPEC}:refs/tags/${SPEC}")
+            fi
+          done < "$RUNNER_TEMP/pro-released-specs.txt"
+          if [ "${#REFS[@]}" -gt 0 ]; then git push origin "${REFS[@]}"; fi
 
       - name: Merge release metadata back into Pro develop
         if: "!inputs.dry_run && steps.release_state.outputs.release == 'true'"

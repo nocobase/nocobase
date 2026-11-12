@@ -86,7 +86,17 @@ test('GitHub PR merge commands explicitly skip CI on the newly created merge com
 
   for (const name of releases) {
     const source = workflow(name);
-    const merges = [...source.matchAll(/^\s*(gh pr merge[^\n]+)$/gmu)];
+    const allMerges = [...source.matchAll(/^\s*(gh pr merge[^\n]+)$/gmu)];
+    // Pro release branches merge into Pro develop with a merge commit, as the dedicated Pro workflows do, so the tagged
+    // release commit stays reachable there.
+    const merges = allMerges.filter(
+      ([, command]) => !command.includes('--repo nocobase/nocobase3-pro'),
+    );
+    for (const [, command] of allMerges.filter(([, command]) =>
+      command.includes('--repo nocobase/nocobase3-pro'),
+    )) {
+      assert.match(command, / --merge(?: |$)/u, name);
+    }
     assert.ok(merges.length > 0, name);
     for (const [, command] of merges) {
       const output = execFileSync('bash', ['-e', '-c', command], {
@@ -111,7 +121,10 @@ test('GitHub PR merge commands explicitly skip CI on the newly created merge com
       assert.notEqual(subjectIndex, -1, name);
       assert.match(args[subjectIndex + 1], /\[skip ci\]$/u, name);
     }
-    const titles = [...source.matchAll(/--title "([^"\n]+)"/gu)];
+    // Pull request titles only; a GitHub Release title is not a commit.
+    const titles = [
+      ...source.matchAll(/^(?![^\n]*gh release)[^\n]*--title "([^"\n]+)"/gmu),
+    ];
     assert.ok(titles.length > 0, name);
     for (const [, title] of titles) assert.match(title, /\[skip ci\]$/u, name);
   }
@@ -155,9 +168,16 @@ test('OSS writes use a fresh scoped App token after validation, including merge 
 
     for (const step of steps(name)) {
       if (step.includes('gh pr ')) {
+        // Pro steps write to nocobase/nocobase3-pro only, with a token scoped to that repository.
+        const token = step.includes('--repo nocobase/nocobase3-pro')
+          ? 'pro_write_token'
+          : 'release_token';
         assert.match(
           step,
-          /GH_TOKEN: \$\{\{ steps\.release_token\.outputs\.token \}\}/u,
+          new RegExp(
+            `GH_TOKEN: \\$\\{\\{ steps\\.${token}\\.outputs\\.token \\}\\}`,
+            'u',
+          ),
           name,
         );
       }
@@ -165,7 +185,14 @@ test('OSS writes use a fresh scoped App token after validation, including merge 
         assert.match(step, /persist-credentials: false/u, name);
       }
       if (step.includes('git push') && !step.includes('echo "  git')) {
-        assert.ok(source.indexOf(step) > tokenPosition, name);
+        // A Pro push uses its own Pro-scoped token, minted after Pro's own validation in the same job.
+        if (
+          !step.includes(
+            'PRO_TOKEN: ${{ steps.pro_write_token.outputs.token }}',
+          )
+        ) {
+          assert.ok(source.indexOf(step) > tokenPosition, name);
+        }
         assert.match(step, /if: .*?!inputs\.dry_run/u, name);
       }
     }
