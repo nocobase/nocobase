@@ -206,7 +206,10 @@ function ToolConcurrency({
   const values = {
     tool: t(`tools.${tool}`),
     used: runner.activeByTool?.[tool] ?? 0,
-    limit: toolLimit({ slots: runner.slots, toolSlots: runner.toolSlots }, tool),
+    limit: toolLimit(
+      { slots: runner.slots, toolSlots: runner.toolSlots },
+      tool,
+    ),
   };
   const hint = t('runtimes.toolUsage.hint', values);
   return (
