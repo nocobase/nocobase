@@ -96,9 +96,7 @@ pnpm nocobase config init
 pnpm nocobase config check
 ```
 
-Create each child as a separate application. From the child's project, run `pnpm build --tar` and provide the generated `storage/exports/dist.tar.gz` to Main: upload it as a template version, publish the version, then create instances from it. Main consumes deployment archives, not child source directories. New versions are published separately and instances are upgraded explicitly.
-
-Each invocation of create-app creates one application and checks its driver and synchronizes its Skills after installation. It does not discover, rename or initialize nested applications. Ordinary `pnpm-workspace.yaml` configuration for internal packages is preserved. Main and child applications keep separate configuration, database and storage; source location is not part of the deployment contract.
+After creation, use the installed `nocobase-app-plugin-multi-app` Skill for multi-app development and deployment. Each create-app invocation creates one application.
 
 Dependencies are installed automatically; `--no-install` skips that. Generated `pnpm-workspace.yaml` defaults to `verifyDepsBeforeRun: false`, so `pnpm dev`, `pnpm build`, and `pnpm start` do not implicitly install dependencies. Run `pnpm install` explicitly after changing dependencies, or before starting an app created with `--no-install`. An explicit template setting is preserved. Existing applications can add `verifyDepsBeforeRun: false` to their own `pnpm-workspace.yaml`.
 
@@ -159,7 +157,7 @@ JSON mode never prompts. It writes one final JSON document to stdout and progres
 | `DRIVER_VERIFICATION_FAILED` | `verify`        | The database driver's native addon did not load, even after a rebuild.                 |
 | `NODE_UNSUPPORTED`           |                 | Node.js is older than 24; nothing ran.                                                 |
 
-`result.nextCommands` is the whole remaining procedure in order, so an agent can run it as written rather than reconstructing it from prose. For a single App it lists `pnpm nocobase config init`, `pnpm nocobase config check` and `pnpm dev`, preceded by `pnpm install` after `--no-install`. A multi-App result lists configuration commands for each declared App and leaves distinct runtime startup to the project README. `config init --json` returns the rest the same way: `result.nextCommands`, and `result.requiredSettings` for a database whose connection still has to be filled in.
+`result.nextCommands` is the whole remaining procedure in order, so an agent can run it as written rather than reconstructing it from prose. It lists `pnpm nocobase config init`, `pnpm nocobase config check` and `pnpm dev`, preceded by `pnpm install` after `--no-install`. `config init --json` returns the rest the same way: `result.nextCommands`, and `result.requiredSettings` for a database whose connection still has to be filled in.
 
 Success exits with 0, invalid input with 2, and operational failures with 1. An install failure preserves generated files, and its suggestion is the `pnpm --dir=<directory> install` that retries it in the existing directory from wherever it is run. `configured` is always `false`: creation writes no configuration, and nothing here verifies a database connection. The CLI never starts the application itself.
 
