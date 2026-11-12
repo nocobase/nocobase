@@ -17,6 +17,12 @@ import { moduleOf, parsePullRequest } from './pr-body.mjs';
 export const GUIDANCE =
   'This pull request description does not follow the v3 PR template (.github/pull_request_template.md on v3-develop): check exactly one type, and unless it is Others write one English, one Chinese and one Japanese changelog sentence. Editing the title or description runs this check again.';
 
+/** The guidance for another repository's pull request, `--no-module`, which follows that repository's own template. */
+export const OTHER_REPOSITORY_GUIDANCE = GUIDANCE.replace(
+  'the v3 PR template (.github/pull_request_template.md on v3-develop)',
+  "the PR template (this repository's .github/pull_request_template.md)",
+);
+
 /**
  * Escapes text for a GitHub Actions workflow command, which ends at the first line break.
  * @param {string} text
@@ -53,7 +59,8 @@ function summary(result, withModule) {
   }
   for (const error of result.errors) lines.push(`- ❌ ${error}`);
   for (const warning of result.warnings) lines.push(`- ⚠️ ${warning}`);
-  if (result.errors.length) lines.push('', GUIDANCE);
+  if (result.errors.length)
+    lines.push('', withModule ? GUIDANCE : OTHER_REPOSITORY_GUIDANCE);
   return `${lines.join('\n')}\n`;
 }
 
@@ -83,7 +90,10 @@ function main(argv) {
     withModule ? {} : { scopes: null },
   );
   for (const error of result.errors) console.log(`::error::${command(error)}`);
-  if (result.errors.length) console.log(`::error::${command(GUIDANCE)}`);
+  if (result.errors.length)
+    console.log(
+      `::error::${command(withModule ? GUIDANCE : OTHER_REPOSITORY_GUIDANCE)}`,
+    );
   for (const warning of result.warnings)
     console.log(`::warning::${command(warning)}`);
   if (!result.errors.length)

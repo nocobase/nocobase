@@ -270,6 +270,14 @@ test('check-pr-body reports errors as annotations and writes the job summary', (
   assert.equal(pro.status, 0, pro.stdout + pro.stderr);
   assert.doesNotMatch(pro.stdout, /::warning::/u);
   assert.match(pro.stdout, /PR description ok: Bug fix\./u);
+  const proFailed = run({ title: 'feat(multi-portal): x', body: 'x' }, {}, [
+    '--no-module',
+  ]);
+  assert.equal(proFailed.status, 1);
+  assert.match(
+    proFailed.stdout,
+    /does not follow the PR template \(this repository's/u,
+  );
 
   const failed = run({ title: 'fix(db): x', body: 'Fixes a thing.' });
   assert.equal(failed.status, 1);
