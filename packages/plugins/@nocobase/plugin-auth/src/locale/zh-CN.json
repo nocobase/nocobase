@@ -44,7 +44,7 @@
   "Please enter your email": "请输入您的邮箱",
   "Please enter your username or email": "请输入用户名或邮箱",
   "Please keep and enable at least one authenticator": "请至少保留并启用一个认证器",
-  "Reset email sent successfully": "重置邮件发送成功",
+  "If this email address is registered, you will receive a password reset email.": "如果该邮箱已注册，你将收到密码重置邮件。",
   "Reset link expiration (minutes)": "重置链接有效期（分钟）",
   "Reset link has expired": "重置链接已过期",
   "Reset password": "重置密码",

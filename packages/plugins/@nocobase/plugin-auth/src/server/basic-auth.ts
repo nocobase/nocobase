@@ -172,16 +172,6 @@ export class BasicAuth extends BaseAuth {
       ctx.throw(400, ctx.t('Incorrect email format', { ns: namespace }));
     }
 
-    const user = await this.userRepository.findOne({
-      where: {
-        email,
-      },
-    });
-
-    if (!user) {
-      ctx.throw(401, ctx.t('The email is incorrect, please re-enter', { ns: namespace }));
-    }
-
     // 通过用户认证的接口获取邮件渠道、主题、内容等
     const {
       notificationChannel,
@@ -202,97 +192,53 @@ export class BasicAuth extends BaseAuth {
       ctx.logger.warn(destination.error);
       return ctx.throw(503, ctx.t('Email password recovery is temporarily unavailable.', { ns: namespace }));
     }
-    const resetPage = getPasswordResetPage(destination, baseURL);
 
-    // 生成重置密码的 token
-    const resetToken = await ctx.app.authManager.jwt.sign(
-      {
-        resetPasswordUserId: user.id,
-      },
-      {
-        expiresIn: resetTokenExpiresIn * 60, // 配置的过期时间，单位分钟，需要转成秒
-      },
-    );
-
-    // 构建重置密码链接
-    resetPage.searchParams.set('resetToken', resetToken);
-    resetPage.searchParams.set('name', authenticatorName);
-    const resetLink = resetPage.href;
-
-    const systemSettings = (await ctx.db.getRepository('systemSettings')?.findOne()) || {};
-
-    // 通过通知管理插件发送邮件
     const notificationManager = ctx.app.getPlugin('notification-manager');
-    if (notificationManager) {
-      const emailer = await notificationManager.manager.findChannel(notificationChannel);
-      if (emailer) {
-        try {
-          const parsedSubject = parsedValue(emailSubject, {
-            $user: user,
-            $resetLink: resetLink,
-            $env: ctx.app.environment.getVariables(),
-            $resetLinkExpiration: resetTokenExpiresIn,
-            $systemSettings: systemSettings,
-          });
-
-          const parsedContent = parsedValue(emailContentType === 'html' ? emailContentHTML : emailContentText, {
-            $user: user,
-            $resetLink: resetLink,
-            $env: ctx.app.environment.getVariables(),
-            $resetLinkExpiration: resetTokenExpiresIn,
-            $systemSettings: systemSettings,
-          });
-
-          const content = emailContentType === 'html' ? { html: parsedContent } : { text: parsedContent };
-
-          try {
-            await notificationManager.send({
-              channelName: notificationChannel,
-              message: {
-                to: [email],
-                subject: parsedSubject,
-                contentType: emailContentType,
-                ...content,
-              },
-            });
-
-            ctx.logger.info(`Password reset email sent to ${email}`);
-          } catch (error) {
-            ctx.logger.error(`Failed to send reset password email: ${error.message}`, {
-              error,
-              email,
-              notificationChannel,
-            });
-            ctx.throw(
-              500,
-              ctx.t('Failed to send email. Error: {{error}}', {
-                ns: namespace,
-                error: error.message,
-              }),
-            );
-          }
-        } catch (error) {
-          ctx.logger.error(`Error parsing email template variables: ${error.message}`, {
-            error,
-            emailSubject,
-            emailContentType,
-          });
-          ctx.throw(
-            500,
-            ctx.t('Error parsing email template. Error: {{error}}', {
-              ns: namespace,
-              error: error.message,
-            }),
-          );
-        }
-      } else {
-        ctx.throw(400, ctx.t('Email channel not found', { ns: namespace }));
-      }
-    } else {
+    if (!notificationManager) {
       ctx.throw(500, ctx.t('Notification manager plugin not found', { ns: namespace }));
     }
+    if (!(await notificationManager.manager.findChannel(notificationChannel))) {
+      ctx.throw(400, ctx.t('Email channel not found', { ns: namespace }));
+    }
 
-    ctx.logger.info(`Password reset email sent to ${email}`);
+    const user = await this.userRepository.findOne({ where: { email } });
+    if (!user) {
+      return null;
+    }
+
+    // Once the request is accepted, delivery errors must not disclose whether the account exists.
+    try {
+      const resetToken = await ctx.app.authManager.jwt.sign(
+        { resetPasswordUserId: user.id },
+        { expiresIn: resetTokenExpiresIn * 60 },
+      );
+      const resetPage = getPasswordResetPage(destination, baseURL);
+      resetPage.searchParams.set('resetToken', resetToken);
+      resetPage.searchParams.set('name', authenticatorName);
+      const resetLink = resetPage.href;
+      const variables = {
+        $user: user,
+        $resetLink: resetLink,
+        $env: ctx.app.environment.getVariables(),
+        $resetLinkExpiration: resetTokenExpiresIn,
+        $systemSettings: (await ctx.db.getRepository('systemSettings')?.findOne()) || {},
+      };
+      const content = parsedValue(emailContentType === 'html' ? emailContentHTML : emailContentText, variables);
+      await notificationManager.send({
+        channelName: notificationChannel,
+        message: {
+          to: [email],
+          subject: parsedValue(emailSubject, variables),
+          contentType: emailContentType,
+          ...(emailContentType === 'html' ? { html: content } : { text: content }),
+        },
+      });
+    } catch (error) {
+      ctx.logger.error('Failed to prepare or dispatch password reset email', {
+        notificationChannel,
+        errorName: error instanceof Error ? error.name : undefined,
+      });
+    }
 
     return null;
   }

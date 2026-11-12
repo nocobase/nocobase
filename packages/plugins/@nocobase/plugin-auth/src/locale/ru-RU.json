@@ -39,7 +39,7 @@
   "Please enter your email": "Пожалуйста, введите ваш email",
   "Please enter your username or email": "Пожалуйста, введите имя пользователя или email",
   "Please keep and enable at least one authenticator": "Пожалуйста, сохраните и включите хотя бы один аутентификатор",
-  "Reset email sent successfully": "Email для сброса успешно отправлен",
+  "If this email address is registered, you will receive a password reset email.": "Если этот адрес зарегистрирован, вы получите письмо для сброса пароля.",
   "Reset link expiration (minutes)": "Срок действия ссылки сброса (минуты)",
   "Reset link has expired": "Ссылка сброса истекла",
   "Reset password": "Сбросить пароль",

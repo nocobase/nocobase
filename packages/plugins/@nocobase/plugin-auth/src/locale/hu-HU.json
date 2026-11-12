@@ -39,7 +39,7 @@
   "Please enter your email": "Please enter your email",
   "Please enter your username or email": "Kérjük, adja meg a felhasználónevét vagy email címét",
   "Please keep and enable at least one authenticator": "Kérjük, tartson meg és engedélyezzen legalább egy hitelesítőt",
-  "Reset email sent successfully": "Reset email sent successfully",
+  "If this email address is registered, you will receive a password reset email.": "Ha ez az e-mail-cím regisztrálva van, e-mailt küldünk a jelszó visszaállításához.",
   "Reset link expiration (minutes)": "Reset link expiration (minutes)",
   "Reset link has expired": "Reset link has expired",
   "Reset password": "Reset password",
