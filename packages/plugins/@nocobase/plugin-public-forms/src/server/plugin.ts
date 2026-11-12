@@ -47,6 +47,12 @@ type FileAccessAuthorizerPlugin = {
   }) => void;
 };
 
+function getPublicFormTarget(collection: string | null) {
+  const keys = (collection ?? '').split(':');
+  const collectionName = keys.pop();
+  return { collectionName, dataSourceKey: keys.pop() || 'main' };
+}
+
 function parseCookieHeader(header: string | undefined) {
   const cookies: Array<[string, string]> = [];
   if (!header) {
@@ -315,9 +321,7 @@ export class PluginPublicFormsServer extends Plugin {
         };
       }
     }
-    const keys = instance.collection.split(':');
-    const collectionName = keys.pop();
-    const dataSourceKey = keys.pop() || 'main';
+    const { collectionName, dataSourceKey } = getPublicFormTarget(instance.collection);
     const title = instance.get('title');
     const [schema, flowModel, completeFlowModel] = await Promise.all([
       uiSchema.getJsonSchema(filterByTk).catch(() => null),
@@ -457,15 +461,9 @@ export class PluginPublicFormsServer extends Plugin {
     const jwt = this.app.authManager.jwt;
     const token = ctx.get('X-Form-Token');
     if (token) {
+      let formCollection: string;
       try {
         const tokenData = await jwt.decode(token);
-        ctx.PublicForm = {
-          collectionName: tokenData.collectionName,
-          formKey: tokenData.formKey,
-          targetCollections: tokenData.targetCollections,
-          exp: tokenData.exp,
-        };
-
         const publicForms = this.db.getRepository('publicForms');
         const instance = await publicForms.findOne({
           filter: {
@@ -478,15 +476,33 @@ export class PluginPublicFormsServer extends Plugin {
         if (!instance.get('enabled')) {
           throw new Error('The form is not enabled');
         }
-        // 将 publicSubmit 转为 create（用于触发工作流的 Action 事件）
-        const actionName = ctx.action.actionName;
-        if (actionName === 'publicSubmit') {
-          ctx.action.actionName = 'create';
-        }
-        ctx.skipAuthCheck = true;
+        formCollection = instance.collection;
+        ctx.PublicForm = {
+          collectionName: tokenData.collectionName,
+          formKey: tokenData.formKey,
+          targetCollections: tokenData.targetCollections,
+          exp: tokenData.exp,
+        };
       } catch (error) {
-        ctx.throw(401, error.message);
+        return ctx.throw(401, error.message);
       }
+
+      if (
+        actionName === 'publicSubmit' ||
+        (actionName === 'create' && resourceName === ctx.PublicForm.collectionName)
+      ) {
+        const { collectionName, dataSourceKey } = getPublicFormTarget(formCollection);
+        if (
+          ctx.dataSource.name !== dataSourceKey ||
+          resourceName !== collectionName ||
+          resourceName !== ctx.PublicForm.collectionName
+        ) {
+          return ctx.throw(403);
+        }
+        // Dispatch public submissions as creates so they still trigger action workflows.
+        ctx.action.actionName = 'create';
+      }
+      ctx.skipAuthCheck = true;
     }
     await next();
   };
