@@ -4331,3 +4331,31 @@ describe('IMAP large mailbox checkpoints and cooperative imports', () => {
     ).toBeUndefined();
   });
 });
+
+describe('IMAP excluded-copy identity changes', () => {
+  it('rechecks excluded copies when another copy introduces their identity', async () => {
+    server.capabilities.add('OBJECTID');
+    folder('INBOX');
+    folder('Archive');
+    deliver('Archive', {
+      raw: raw('<old-shared@example.com>'),
+      emailId: 'OLD-SHARED',
+      date: '2025-01-01T00:00:00.000Z',
+    });
+    await sync();
+    expect(await messages()).toEqual([]);
+    const uid = deliver('INBOX', {
+      raw: raw('<old-shared@example.com>'),
+      emailId: 'OLD-SHARED',
+    });
+    await sync();
+    expect(await messages()).toMatchObject([
+      { providerMessageId: 'OLD-SHARED', folders: ['Archive', 'INBOX'] },
+    ]);
+    server.folders.get('INBOX')!.messages.delete(uid);
+    await sync();
+    expect(await messages()).toMatchObject([
+      { providerMessageId: 'OLD-SHARED', folders: ['Archive'] },
+    ]);
+  });
+});

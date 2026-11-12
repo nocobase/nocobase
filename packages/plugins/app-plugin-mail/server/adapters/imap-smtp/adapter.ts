@@ -619,6 +619,10 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
           verify = result.verify;
         }
       }
+      // Imports can introduce an identity with an older excluded copy in another
+      // folder. Re-screen against the committed IDs before allowing cleanup.
+      if (verify && messages.length)
+        verify = { ...verify, excluded: undefined };
       return {
         ok: true,
         value: {
