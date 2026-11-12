@@ -9,6 +9,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import locales from '../../client/locales/index.js';
 import {
   RunnerStatusCell,
+  RunnerToolsCell,
   RunnerVersionCell,
 } from '../../client/pages/runtimes/runner-cells.js';
 import type { RunnerSummary } from '../../shared/runners.js';
@@ -26,6 +27,7 @@ describe.each([
     offline: 'Offline',
     ago: '2 days ago',
     upgrade: 'Upgradable',
+    runs: 'Runs',
   },
   {
     locale: 'zh-CN',
@@ -33,14 +35,21 @@ describe.each([
     offline: '离线',
     ago: '前天',
     upgrade: '可升级',
+    runs: '并发',
   },
-])('$locale runtime status', ({ locale, online, offline, ago, upgrade }) => {
+])('$locale runtime status', ({ locale, online, offline, ago, upgrade, runs }) => {
   async function show(overrides: Partial<RunnerSummary>, withVersion = false) {
     const runtime = await createTestI18nRuntime({
       locale,
       namespaces: { '@nocobase/app-plugin-agents': locales },
     });
-    const value = runner('capacity', overrides);
+    const value = runner('capacity', {
+      tools: [
+        { kind: 'claude', authenticated: true },
+        { kind: 'codex', authenticated: true },
+      ],
+      ...overrides,
+    });
     return render(
       <TestI18nProvider
         runtime={runtime}
@@ -48,6 +57,9 @@ describe.each([
       >
         <div data-testid='status'>
           <RunnerStatusCell runner={value} />
+        </div>
+        <div data-testid='tools'>
+          <RunnerToolsCell runner={value} />
         </div>
         {withVersion ? <RunnerVersionCell runner={value} /> : null}
       </TestI18nProvider>,
@@ -63,10 +75,10 @@ describe.each([
       activeByTool: { codex: 1 },
     });
     expect(screen.getByTestId('status').textContent).toBe(`${online} 2/10`);
-    expect(screen.queryByRole('list')).toBeNull();
+    expect(screen.queryByTestId(/^tool-concurrency-/u)).toBeNull();
   });
 
-  it('uses configured total and per-tool limits instead of heartbeat capacity', async () => {
+  it('uses configured total and per-tool limits instead of heartbeat capacity, each limit beside its tool', async () => {
     await show({
       slots: 10,
       reportedSlots: 6,
@@ -75,15 +87,12 @@ describe.each([
       toolSlots: { codex: 10, claude: 2 },
       toolLoad: { codex: { slots: 4, free: 3 }, claude: { slots: 6, free: 4 } },
     });
-    expect(screen.getByText(`${online} 3/10`)).toBeInTheDocument();
+    expect(screen.getByTestId('status').textContent).toBe(`${online} 3/10`);
     expect(
-      within(screen.getByRole('list'))
-        .getAllByRole('listitem')
+      within(screen.getByTestId('tools'))
+        .getAllByTestId(/^tool-concurrency-/u)
         .map((item) => item.textContent),
-    ).toEqual(['Claude Code 2/2', 'Codex 1/10']);
-    expect(screen.getByTestId('status').textContent).toBe(
-      `${online} 3/10Claude Code 2/2Codex 1/10`,
-    );
+    ).toEqual([`${runs} 2/2`, `${runs} 1/10`]);
   });
 
   it('shows only configured tools and clips their limits to total concurrency', async () => {
@@ -92,7 +101,11 @@ describe.each([
       toolSlots: { codex: 20 },
       activeByTool: { claude: 1 },
     });
-    expect(screen.getByRole('list').textContent).toBe('Codex 0/8');
+    expect(
+      within(screen.getByTestId('tools'))
+        .getAllByTestId(/^tool-concurrency-/u)
+        .map((item) => [item.dataset.testid, item.textContent]),
+    ).toEqual([['tool-concurrency-codex', `${runs} 0/8`]]);
   });
 
   it('keeps a full runtime online', async () => {
@@ -116,8 +129,9 @@ describe.each([
         },
         true,
       );
-      expect(screen.getByTestId('status').textContent).toBe(
-        `${online} 1/10Codex 1/10`,
+      expect(screen.getByTestId('status').textContent).toBe(`${online} 1/10`);
+      expect(screen.getByTestId('tool-concurrency-codex').textContent).toBe(
+        `${runs} 1/10`,
       );
       expect(screen.getByText(upgrade)).toBeInTheDocument();
     },
