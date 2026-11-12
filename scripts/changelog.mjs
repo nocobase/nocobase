@@ -18,10 +18,13 @@
 //
 // Usage:
 //   node scripts/changelog.mjs --tag <aggregate tag> --repo nocobase/nocobase [--root <dir>] [--head <ref>]
-//     [--from <ref>] [--out-dir <dir>]
+//     [--from <ref>] [--scopes <file>] [--out-dir <dir>]
 //
 // `--root` (default `.`) is the checkout whose changelogs are written; `--head` (default HEAD) ends the range and
-// `--from` overrides where it starts. The tag need not exist yet. With `--out-dir` it also writes
+// `--from` overrides where it starts. `--scopes` names a JSON file of more modules,
+// `{ "<scope>": { "en", "zh", "ja" } }`, merged over `changelog-scopes.json`: nocobase/nocobase3-pro's release workflows
+// pass its own `scripts/changelog-scopes.json`, so Pro's modules have names while the scopes it shares with NocoBase 3
+// keep theirs. The tag need not exist yet. With `--out-dir` it also writes
 // `release-notes.en.md`, `release-notes.zh-CN.md`, `release-notes.ja-JP.md` and `missing.json` there. Exits 0 once the
 // changelogs are written, even when pull requests are missing from them; non-zero only on bad usage or a git/gh
 // failure.
@@ -39,7 +42,13 @@ import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 import { parseArgs } from 'node:util';
 
-import { moduleOf, parsePullRequest, PLACEHOLDER } from './pr-body.mjs';
+import scopes from './changelog-scopes.json' with { type: 'json' };
+import {
+  LANGUAGES,
+  moduleOf,
+  parsePullRequest,
+  PLACEHOLDER,
+} from './pr-body.mjs';
 
 /** Section titles of the PR types that reach the changelog, in order. `Others` never does. */
 export const TYPE_TITLES = {
@@ -272,6 +281,26 @@ export function collectEntries(pullRequests, scopeMap) {
 }
 
 /**
+ * `changelog-scopes.json` with the modules of a `--scopes` file merged over it.
+ * @param {unknown} extra the parsed file
+ * @returns {Record<string, Record<Language, string>>}
+ * @throws {Error} when the file is not an object of scopes naming their module in every language
+ */
+export function mergeScopes(extra) {
+  if (!extra || typeof extra !== 'object' || Array.isArray(extra))
+    throw new Error('The scopes file must hold a JSON object.');
+  for (const [scope, names] of Object.entries(extra)) {
+    if (!/^[a-z0-9-]+$/u.test(scope))
+      throw new Error(`The scope "${scope}" is not lowercase kebab-case.`);
+    for (const { key } of LANGUAGES) {
+      if (typeof names?.[key] !== 'string' || !names[key])
+        throw new Error(`The scope "${scope}" has no ${key} module name.`);
+    }
+  }
+  return { ...scopes, ...extra };
+}
+
+/**
  * Renders a release's changelog in one language, without its heading: a section per type, a bullet per module (its
  * entries nested when there are several), as nocobase v2's changelog does.
  * @param {{ entries: Entry[] }} collected
@@ -413,6 +442,7 @@ function options(argv) {
       root: { type: 'string', default: '.' },
       head: { type: 'string', default: 'HEAD' },
       from: { type: 'string' },
+      scopes: { type: 'string' },
       'out-dir': { type: 'string' },
     },
   });
@@ -505,7 +535,10 @@ async function main(argv) {
   }
 
   const pullRequests = await viewPullRequests(numbers, repo);
-  const collected = collectEntries(pullRequests);
+  const scopeMap = values.scopes
+    ? mergeScopes(JSON.parse(readFileSync(values.scopes, 'utf8')))
+    : undefined;
+  const collected = collectEntries(pullRequests, scopeMap);
   const languages = /** @type {Language[]} */ (Object.keys(CHANGELOG_FILES));
   const notes = Object.fromEntries(
     languages.map((language) => [language, renderNotes(collected, language)]),
@@ -569,7 +602,7 @@ if (
       String(error.code).startsWith('ERR_PARSE_ARGS')
     ) {
       console.error(
-        `${error.message}\nUsage: node scripts/changelog.mjs --tag <aggregate tag> --repo <owner/name> [--root <dir>] [--head <ref>] [--from <ref>] [--out-dir <dir>]`,
+        `${error.message}\nUsage: node scripts/changelog.mjs --tag <aggregate tag> --repo <owner/name> [--root <dir>] [--head <ref>] [--from <ref>] [--scopes <file>] [--out-dir <dir>]`,
       );
       process.exitCode = 2;
     } else {

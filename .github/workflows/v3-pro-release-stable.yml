@@ -194,6 +194,46 @@ jobs:
           LEFT=$(node ./vendor/nocobase3/scripts/list-package-versions.mjs --prerelease)
           test -z "$LEFT" || { echo "::error::Stable Pro release contains prerelease versions: $LEFT"; exit 1; }
 
+      # The root CHANGELOG.md, CHANGELOG.zh-CN.md and CHANGELOG.ja-JP.md gain this release's section, written by the
+      # framework's scripts/changelog.mjs from the descriptions of the Pro pull requests the release contains, with
+      # Pro's own module names (scripts/changelog-scopes.json, passed once the framework's script takes --scopes); the
+      # release commit carries the three files, and the Pro GitHub Release opens with the English section. A stable
+      # release writes it only when it versions packages: one that only refreshes OSS metadata is never tagged, so a
+      # section for it would name a release that does not exist. Best effort: a failure warns, puts the files back as
+      # they were, and the release goes on without the section.
+      - name: Create a Pro pull request read token
+        if: steps.release.outputs.needs_version == 'true'
+        id: pull_request_token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.NOCOBASE_APP_ID }}
+          private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
+          owner: nocobase
+          repositories: nocobase3-pro
+          permission-contents: read
+          permission-pull-requests: read
+
+      - name: Write the changelog
+        if: steps.release.outputs.needs_version == 'true'
+        env:
+          GH_TOKEN: ${{ steps.pull_request_token.outputs.token }}
+          TAG: ${{ steps.release.outputs.name }}
+        run: |
+          ARGS=(--tag "$TAG" --repo nocobase/nocobase3-pro --root .)
+          if [ -f scripts/changelog-scopes.json ] && grep -q -- "scopes: { type: 'string' }" vendor/nocobase3/scripts/changelog.mjs; then
+            ARGS+=(--scopes scripts/changelog-scopes.json)
+          fi
+          if ! node ./vendor/nocobase3/scripts/changelog.mjs "${ARGS[@]}"; then
+            echo "::warning::Writing the changelog failed; $TAG has no changelog section."
+            for file in CHANGELOG.md CHANGELOG.zh-CN.md CHANGELOG.ja-JP.md; do
+              if git ls-files --error-unmatch -- "$file" > /dev/null 2>&1; then
+                git checkout HEAD -- "$file"
+              else
+                rm -f -- "$file"
+              fi
+            done
+          fi
+
       - name: Build and test Pro
         run: |
           pnpm build

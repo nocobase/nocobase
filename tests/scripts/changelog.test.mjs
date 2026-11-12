@@ -11,6 +11,7 @@ import {
   collectEntries,
   extractPullRequestNumbers,
   extractReleaseSection,
+  mergeScopes,
   parseChangelogSections,
   pendingBetaPullRequests,
   prependChangelog,
@@ -355,4 +356,31 @@ test('changelog CLI discovers legacy tags for the first new Beta release', (t) =
     );
     git('tag', tag);
   }
+});
+
+test('a --scopes file adds modules over changelog-scopes.json and must name each in every language', () => {
+  const scopeMap = mergeScopes({
+    approval: { en: 'Approval', zh: '审批', ja: '承認' },
+  });
+  const collected = collectEntries(
+    [
+      pr(3, 'feat(approval): a', body('New feature', 'Add A.', '新增 A。')),
+      pr(
+        4,
+        'fix(app-plugin-approval): b',
+        body('Bug fix', 'Fix B.', '修复 B。'),
+      ),
+      pr(5, 'fix(db): c', body('Bug fix', 'Fix C.', '修复 C。')),
+    ],
+    scopeMap,
+  );
+  assert.deepEqual(
+    collected.entries.map(({ module }) => module.en),
+    ['Approval', 'Approval', 'Database'],
+  );
+  assert.throws(
+    () => mergeScopes({ approval: { en: 'Approval', zh: '审批' } }),
+    /"approval" has no ja module name/u,
+  );
+  assert.throws(() => mergeScopes([]), /JSON object/u);
 });
