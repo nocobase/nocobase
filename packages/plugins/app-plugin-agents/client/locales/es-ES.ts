@@ -786,8 +786,8 @@ const esES: LocaleResource<typeof enUS> = {
       offlineNever: 'Sin conexión',
     },
     toolUsage: {
-      label: 'Se ejecuta mediante herramienta de codificación',
-      item: '{{tool}} {{used}}/{{limit}}',
+      short: 'Ejecuciones {{used}}/{{limit}}',
+      hint: 'Como máximo {{limit}} ejecuciones de {{tool}} a la vez; {{used}} en curso',
     },
     toolSlots: {
       label: 'Límites por herramienta de codificación',

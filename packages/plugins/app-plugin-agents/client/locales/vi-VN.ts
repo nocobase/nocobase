@@ -751,8 +751,8 @@ const viVN: LocaleResource<typeof enUS> = {
       offlineNever: 'Ngoại tuyến',
     },
     toolUsage: {
-      label: 'Chạy bằng công cụ mã hóa',
-      item: '{{tool}} {{used}}/{{limit}}',
+      short: 'Chạy {{used}}/{{limit}}',
+      hint: 'Tối đa {{limit}} lượt chạy {{tool}} cùng lúc; đang chạy {{used}}',
     },
     toolSlots: {
       label: 'Giới hạn cho mỗi công cụ mã hóa',

@@ -3,14 +3,15 @@
  * runtime-cli.tsx`): its state with the slots it uses, its coding tools with whether each is turned on, installed and
  * signed in, and its version with the command that upgrades it.
  */
+import type { AgentTool } from '@nocobase/agent-protocol';
 import { useTranslation } from '@nocobase/i18n/client';
 import type { ReactElement } from 'react';
 
 import {
   listedTools,
   runnerActivity,
+  toolLimit,
   toolState,
-  toolUsage,
   type Runner,
   type RunnerActivity,
   type RunnerListItem,
@@ -46,7 +47,8 @@ const ACTIVITY_TONE: Readonly<Record<RunnerActivity, Tone>> = {
 };
 
 /**
- * Its state at a glance, with online concurrency limits and optional per-tool limits.
+ * Its state at a glance, with its runs against its concurrency limit. A tool's own limit sits beside the tool
+ * (`RunnerToolsCell`).
  */
 export function RunnerStatusCell({
   runner,
@@ -60,8 +62,6 @@ export function RunnerStatusCell({
     | 'activeRuns'
     | 'activeJobs'
     | 'lastSeenAt'
-    | 'toolSlots'
-    | 'activeByTool'
     | 'workspaceUsage'
     | 'draining'
   >;
@@ -83,7 +83,7 @@ export function RunnerStatusCell({
       ? t('runtimes.activity.offline', values)
       : t('runtimes.activity.offlineNever');
   else label = t(`runtimes.status.${activity}`);
-  const tag = badgeOnly ? (
+  return badgeOnly ? (
     <Badge
       variant='secondary'
       data-size='sm'
@@ -102,32 +102,6 @@ export function RunnerStatusCell({
     >
       {label}
     </AgTag>
-  );
-  const usage = toolUsage(runner).filter((item) => item.limited);
-  return (
-    <div className='flex flex-col items-start gap-1'>
-      {tag}
-      {badgeOnly || usage.length === 0 ? null : (
-        <ul
-          className='flex flex-wrap gap-x-2 text-xs text-muted-foreground tabular-nums'
-          aria-label={t('runtimes.toolUsage.label')}
-        >
-          {usage.map((item) => (
-            <li
-              key={item.tool}
-              data-full={item.used >= item.limit ? true : undefined}
-              className='data-full:text-foreground'
-            >
-              {t('runtimes.toolUsage.item', {
-                tool: t(`tools.${item.tool}`),
-                used: item.used,
-                limit: item.limit,
-              })}
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
   );
 }
 
@@ -160,13 +134,14 @@ export function ToolStateTag({
 
 /**
  * Each coding tool the runner lists, by whether it can take work: green when it is signed in, amber when it needs
- * installing or a login on its host, grey when it is turned off for this runtime. An enabled tool with quota reported
- * shows it beside its tag (`ToolQuota`).
+ * installing or a login on its host, grey when it is turned off for this runtime. An enabled tool shows beside its tag
+ * its runs against its own concurrency limit (`ToolConcurrency`), when it has one, and its quota (`ToolQuota`).
  */
 export function RunnerToolsCell({
   runner,
 }: {
   readonly runner: Pick<Runner, 'enabledTools' | 'tools'> &
+    Partial<Pick<RunnerListItem, 'slots' | 'toolSlots' | 'activeByTool'>> &
     Partial<QuotaSource>;
 }): ReactElement {
   const { t } = useTranslation();
@@ -200,12 +175,53 @@ export function RunnerToolsCell({
               <span className='sr-only'>{t(`runtimes.tool.${state}`)}</span>
             </AgTag>
             {state === 'off' ? null : (
-              <ToolQuota runner={runner} tool={tool} now={now} />
+              <>
+                <ToolConcurrency runner={runner} tool={tool} />
+                <ToolQuota runner={runner} tool={tool} now={now} />
+              </>
             )}
           </li>
         );
       })}
     </ul>
+  );
+}
+
+/**
+ * A tool's runs against its own concurrency limit ("Runs 1/2"), never above the runtime's total; nothing for a tool
+ * bounded only by the total, or for a runner whose total is unknown.
+ */
+function ToolConcurrency({
+  runner,
+  tool,
+}: {
+  readonly runner: Partial<
+    Pick<RunnerListItem, 'slots' | 'toolSlots' | 'activeByTool'>
+  >;
+  readonly tool: AgentTool;
+}): ReactElement | null {
+  const { t } = useTranslation();
+  if (runner.slots === undefined || runner.toolSlots?.[tool] === undefined)
+    return null;
+  const values = {
+    tool: t(`tools.${tool}`),
+    used: runner.activeByTool?.[tool] ?? 0,
+    limit: toolLimit(
+      { slots: runner.slots, toolSlots: runner.toolSlots },
+      tool,
+    ),
+  };
+  const hint = t('runtimes.toolUsage.hint', values);
+  return (
+    <span
+      data-testid={`tool-concurrency-${tool}`}
+      data-full={values.used >= values.limit ? true : undefined}
+      className='text-xs whitespace-nowrap text-muted-foreground tabular-nums data-full:font-medium data-full:text-foreground'
+      title={hint}
+      aria-label={hint}
+    >
+      {t('runtimes.toolUsage.short', values)}
+    </span>
   );
 }
 

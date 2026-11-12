@@ -750,8 +750,8 @@ const jaJP: LocaleResource<typeof enUS> = {
       offlineNever: 'オフライン',
     },
     toolUsage: {
-      label: 'コーディングツールで実行',
-      item: '{{tool}} {{used}}/{{limit}}',
+      short: '同時 {{used}}/{{limit}}',
+      hint: '{{tool}} は同時に最大 {{limit}} 件まで実行、現在 {{used}} 件',
     },
     toolSlots: {
       label: 'コーディングツールごとの制限',

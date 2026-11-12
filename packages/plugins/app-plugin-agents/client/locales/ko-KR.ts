@@ -728,8 +728,8 @@ const koKR: LocaleResource<typeof enUS> = {
       offlineNever: '오프라인',
     },
     toolUsage: {
-      label: '코딩 도구별 실행',
-      item: '{{tool}} {{used}}/{{limit}}',
+      short: '동시 {{used}}/{{limit}}',
+      hint: '{{tool}} 동시 실행 최대 {{limit}}개, 현재 {{used}}개',
     },
     toolSlots: {
       label: '코딩 도구별 한도',

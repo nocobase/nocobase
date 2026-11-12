@@ -781,8 +781,8 @@ const ptBR: LocaleResource<typeof enUS> = {
       offlineNever: 'Off-line',
     },
     toolUsage: {
-      label: 'Executado por ferramenta de codificação',
-      item: '{{tool}} {{used}}/{{limit}}',
+      short: 'Execuções {{used}}/{{limit}}',
+      hint: 'No máximo {{limit}} execuções de {{tool}} ao mesmo tempo; {{used}} em andamento',
     },
     toolSlots: {
       label: 'Limites por ferramenta de codificação',

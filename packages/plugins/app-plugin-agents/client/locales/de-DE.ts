@@ -778,8 +778,8 @@ const deDE: LocaleResource<typeof enUS> = {
       offlineNever: 'Offline',
     },
     toolUsage: {
-      label: 'Wird vom Codierungstool ausgeführt',
-      item: '{{tool}} {{used}}/{{limit}}',
+      short: 'Läufe {{used}}/{{limit}}',
+      hint: 'Höchstens {{limit}} {{tool}}-Läufe gleichzeitig; {{used}} laufen gerade',
     },
     toolSlots: {
       label: 'Beschränkungen pro Codierungstool',
