@@ -5,7 +5,6 @@
 // parameter's file is streamed to the upload ticket the request answers; a changed-files parameter sends its
 // directory's changed files as multipart parts; a binary body field is a part of its own; a `download` command saves
 // to `--out`; a command that asks first takes `--yes`.
-import { openAsBlob } from 'node:fs';
 import { readFile, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { createInterface } from 'node:readline/promises';
@@ -17,7 +16,6 @@ import { UsageError } from '../lib/command.ts';
 import { CliCommandError } from '../lib/envelope.ts';
 import { globalFlags } from '../lib/globals.ts';
 import { AppApiError } from '../lib/http.ts';
-import { mediaTypeOf } from '../lib/mime.ts';
 import {
   CliParseError,
   parameterLabel,
@@ -31,6 +29,7 @@ import { changedFiles, type LocalFile } from './files.ts';
 import type { CliCommand, CliParameter } from './manifest.ts';
 import { urlFor, type Session } from './session.ts';
 import { streamToTicket } from './ticket.ts';
+import { localFileBody } from './upload.ts';
 
 /** What a command answered: the API's `{ data, meta? }`. */
 export interface ApiAnswer {
@@ -138,12 +137,7 @@ async function uploadAll(
     const list: string[] = [];
     for (const file of files) {
       const form = new FormData();
-      form.append(
-        upload.part,
-        new File([await openAsBlob(file.path)], file.name, {
-          type: mediaTypeOf(file.name),
-        }),
-      );
+      form.append(upload.part, await localFileBody(file));
       const answer = await send(
         urlFor(session.server, upload.path),
         {
@@ -181,7 +175,7 @@ async function discard(
         `${uploadPath.replace(/\/+$/u, '')}/${encodeURIComponent(id)}`,
       ),
       { method: 'DELETE', headers: session.headers },
-      options,
+      { ...options, signal: undefined },
     ).catch(() => undefined);
 }
 
@@ -214,12 +208,7 @@ export async function buildRequest(
         if (item === undefined || item === null) continue;
         if (item && typeof item === 'object' && 'path' in item) {
           const local = item as LocalUpload;
-          form.append(
-            field,
-            new File([await openAsBlob(local.path)], local.name, {
-              type: mediaTypeOf(local.name),
-            }),
-          );
+          form.append(field, await localFileBody(local));
         } else form.append(field, requestText(item));
       }
     }

@@ -1,4 +1,6 @@
 import { once } from 'node:events';
+import { writeFile } from 'node:fs/promises';
+import path from 'node:path';
 import {
   createServer,
   type IncomingMessage,
@@ -7,6 +9,8 @@ import {
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { send } from '../src/dynamic/execute.ts';
+import { localFileBody } from '../src/dynamic/upload.ts';
+import { tempDir, removeDir } from './helpers.ts';
 
 const cleanups: (() => Promise<void>)[] = [];
 afterEach(async () => {
@@ -27,6 +31,14 @@ async function serve(
   const address = server.address();
   if (!address || typeof address === 'string') throw new Error('No test port');
   return new URL(`http://127.0.0.1:${address.port}/main/api/upload`);
+}
+
+async function diskFile(content: Uint8Array, name: string) {
+  const directory = tempDir('upload-test-');
+  cleanups.push(async () => removeDir(directory));
+  const file = path.join(directory, 'archive.tar.gz');
+  await writeFile(file, content);
+  return localFileBody({ path: file, name, size: content.length });
 }
 
 // A large virtual file makes accidental eager consumption observable without allocating a large test fixture.
@@ -83,9 +95,7 @@ describe('file request transport', () => {
     form.append('label', 'three');
     form.append(
       'file',
-      new File([new Uint8Array([0, 1, 255])], 'a"\r\n.tar.gz', {
-        type: 'application/gzip',
-      }),
+      await diskFile(new Uint8Array([0, 1, 255]), 'a"\r\n.tar.gz'),
     );
     await expect(
       send(
@@ -231,6 +241,23 @@ describe('file request transport', () => {
     await expect(
       send(url, { method: 'POST', body: form }, {}),
     ).rejects.toMatchObject({ reason: 'NETWORK' });
+  });
+
+  it('refuses a local file changed after the request body was prepared', async () => {
+    const directory = tempDir('upload-changed-');
+    cleanups.push(async () => removeDir(directory));
+    const file = path.join(directory, 'archive.tar.gz');
+    await writeFile(file, 'original');
+    const body = await localFileBody({
+      path: file,
+      name: 'archive.tar.gz',
+      size: 8,
+    });
+    await writeFile(file, 'changed and longer');
+    const url = await serve((request) => request.resume());
+    await expect(send(url, { method: 'POST', body }, {})).rejects.toMatchObject(
+      { reason: 'NETWORK' },
+    );
   });
 
   it('returns a redirect without replaying the write or forwarding its credential', async () => {

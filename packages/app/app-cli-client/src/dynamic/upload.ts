@@ -1,9 +1,27 @@
 // File bodies use Node HTTP: fetch can read ahead of a slow socket even for a file-backed Blob.
 import { randomUUID } from 'node:crypto';
+import { openAsBlob } from 'node:fs';
+import type { Stats } from 'node:fs';
+import { open, stat } from 'node:fs/promises';
 import { request as httpRequest } from 'node:http';
 import { request as httpsRequest } from 'node:https';
 import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
+
+import { mediaTypeOf } from '../lib/mime.ts';
+import type { LocalFile } from './files.ts';
+
+const localFiles = new WeakMap<Blob, { path: string; info: Stats }>();
+
+/** Keep a real File for injected fetches. Blob cancellation defers closing until GC, so native HTTP owns the handle. */
+export async function localFileBody(file: LocalFile): Promise<File> {
+  const info = await stat(file.path);
+  const body = new File([await openAsBlob(file.path)], file.name, {
+    type: mediaTypeOf(file.name),
+  });
+  localFiles.set(body, { path: file.path, info });
+  return body;
+}
 
 const crlf = (value: string) => value.replace(/\r\n|\r|\n/gu, '\r\n');
 const quoted = (value: string) =>
@@ -13,6 +31,34 @@ const quoted = (value: string) =>
 
 /** Read at most one Blob chunk ahead; cancellation also closes the file-backed reader. */
 async function* bytes(blob: Blob): AsyncGenerator<Uint8Array> {
+  const local = localFiles.get(blob);
+  if (local) {
+    const file = await open(local.path, 'r');
+    const unchanged = (info: Stats) => {
+      if (
+        info.size !== local.info.size ||
+        info.mtimeMs !== local.info.mtimeMs ||
+        info.ctimeMs !== local.info.ctimeMs
+      )
+        throw new Error(`File changed while uploading: ${local.path}`);
+    };
+    try {
+      unchanged(await file.stat());
+      const stream = file.createReadStream({
+        autoClose: false,
+        highWaterMark: 65536,
+      });
+      try {
+        yield* stream as AsyncIterable<Uint8Array>;
+        unchanged(await file.stat());
+      } finally {
+        stream.destroy();
+      }
+    } finally {
+      await file.close();
+    }
+    return;
+  }
   const reader = blob.stream().getReader();
   try {
     for (;;) {
