@@ -151,7 +151,11 @@ describe('projects', () => {
     await h.services.projects.update(h.viewer('lead'), project.id, {
       leadUserId: 'alice',
     });
-    await h.services.projects.removeMember(h.viewer('alice'), project.id, 'lead');
+    await h.services.projects.removeMember(
+      h.viewer('alice'),
+      project.id,
+      'lead',
+    );
     release();
     expect(changed).toEqual([project.id, project.id, project.id, project.id]);
   });
