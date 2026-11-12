@@ -19,6 +19,7 @@ import {
   Droppable,
   tExpr,
   FlowModelRenderer,
+  FlowModel,
   FlowSettingsButton,
   ForkFlowModel,
   MultiRecordResource,
@@ -1229,8 +1230,8 @@ TableBlockModel.registerEvents({
   },
 });
 
-function defineClickedRowRecordVariable(model: TableBlockModel, value: any) {
-  const recordMeta = createCurrentRecordMetaFactory(model.context, () => model.collection, {
+function defineClickedRowRecordVariable(model: FlowModel, value: Record<string, unknown> | null) {
+  const recordMeta = createCurrentRecordMetaFactory(model.context, () => model.context.collection, {
     title: tExpr('Clicked row record'),
   });
   model.context.defineProperty('clickedRowRecord', {
@@ -1239,6 +1240,6 @@ function defineClickedRowRecordVariable(model: TableBlockModel, value: any) {
   });
 }
 
-function removeClickedRowRecordVariable(model: TableBlockModel) {
+function removeClickedRowRecordVariable(model: FlowModel) {
   model.context.defineProperty('clickedRowRecord', {});
 }
