@@ -21,11 +21,7 @@ import {
   removeDirectory,
   scaffoldFromTemplate,
 } from './lib/scaffold.ts';
-import {
-  DEFAULT_REGISTRY,
-  downloadTemplate,
-  resolveTemplateSource,
-} from './lib/template.ts';
+import { downloadTemplate, resolveTemplateSource } from './lib/template.ts';
 import { buildNpmrcFile } from './lib/npmrc.ts';
 import {
   FAILURE_CODES,
@@ -181,18 +177,18 @@ async function run(
   state.directory = targetDirectory;
   state.stage = 'scaffold';
   await assertTargetIsUsable(targetDirectory);
-  const registry =
-    input.flags.registry ?? process.env.NOCOBASE_REGISTRY ?? DEFAULT_REGISTRY;
+  const nocobaseRegistry =
+    input.flags['nocobase-registry'] ?? process.env.NOCOBASE_REGISTRY;
   const source = resolveTemplateSource(input.flags.template, {
     tag: input.flags['template-tag'],
   });
   state.stage = 'download';
   progress(`Downloading ${source}`);
-  const template = await downloadTemplate({ registry, source });
+  const template = await downloadTemplate({ nocobaseRegistry, source });
   state.stage = 'scaffold';
   try {
     const extraFiles: Record<string, string> = {
-      '.npmrc': buildNpmrcFile({ registry }),
+      '.npmrc': buildNpmrcFile({ nocobaseRegistry }),
     };
     await scaffoldFromTemplate({
       name,

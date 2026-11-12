@@ -23,6 +23,7 @@ let stdout: string;
 beforeEach(async () => {
   root = await mkdtemp(path.join(os.tmpdir(), 'create-flow-'));
   stdout = '';
+  vi.stubEnv('NOCOBASE_REGISTRY', undefined);
   vi.spyOn(process, 'cwd').mockReturnValue(root);
   vi.spyOn(process.stdout, 'write').mockImplementation((chunk) => {
     stdout += String(chunk);
@@ -92,7 +93,11 @@ describe('JSON creation flow', () => {
     await expect(readFile(path.join(root, 'crm/config.yml'))).rejects.toThrow();
     expect(stdout).not.toContain('secret');
     await expect(readFile(path.join(root, 'crm/.env'))).rejects.toThrow();
-    // Public npm needs no scoped override in the generated project.
+    expect(downloadTemplate).toHaveBeenCalledWith({
+      source: '@nocobase/app-template-default@latest',
+      nocobaseRegistry: undefined,
+    });
+    // No explicit registry means no scoped override in the generated project.
     expect(await readFile(path.join(root, 'crm/.npmrc'), 'utf8')).not.toContain(
       '@nocobase:registry=',
     );
@@ -108,11 +113,13 @@ describe('JSON creation flow', () => {
         '--template=multi-portal',
         '--template-tag=beta',
       ];
-      if (selection === 'flag') argv.push(`--registry=${registry}`);
-      else vi.stubEnv('NOCOBASE_REGISTRY', registry);
+      if (selection === 'flag') {
+        vi.stubEnv('NOCOBASE_REGISTRY', 'https://ignored.example/');
+        argv.push(`--nocobase-registry=${registry}`);
+      } else vi.stubEnv('NOCOBASE_REGISTRY', registry);
       expect(await run(argv)).toBe(0);
       expect(downloadTemplate).toHaveBeenCalledWith({
-        registry,
+        nocobaseRegistry: registry,
         source: '@nocobase/app-template-multi-portal@beta',
       });
       expect(
@@ -136,7 +143,7 @@ describe('JSON creation flow', () => {
         'crm',
         '--json',
         '--template=multi-portal',
-        '--registry=https://pkg-v3.nocobase.com/',
+        '--nocobase-registry=https://pkg-v3.nocobase.com/',
       ]),
     ).toBe(1);
     expect(JSON.parse(stdout)).toMatchObject({

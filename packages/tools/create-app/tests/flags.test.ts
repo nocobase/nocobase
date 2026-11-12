@@ -2,6 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { formatHelp, parseInput } from '../src/lib/flags.ts';
 
 describe('parseInput', () => {
+  it('rejects the removed generic registry option', async () => {
+    await expect(
+      parseInput(['crm', '--registry=https://example.com/']),
+    ).rejects.toThrow();
+  });
   it('installs and prompts by default, and accepts --json', async () => {
     expect((await parseInput(['crm'])).flags).toMatchObject({
       json: false,
@@ -42,12 +47,12 @@ describe('parseInput', () => {
       '--template',
       'multi-portal',
       '--template-tag=beta',
-      '--registry=https://pkg-v3.nocobase.com/',
+      '--nocobase-registry=https://pkg-v3.nocobase.com/',
     ]);
     expect(input.flags).toMatchObject({
       template: 'multi-portal',
       'template-tag': 'beta',
-      registry: 'https://pkg-v3.nocobase.com/',
+      'nocobase-registry': 'https://pkg-v3.nocobase.com/',
     });
   });
 
@@ -74,11 +79,11 @@ describe('parseInput', () => {
     const input = await parseInput([
       'crm',
       '--template=./packages/app-template-default',
-      '--registry=https://registry.npmjs.org',
+      '--nocobase-registry=https://registry.npmjs.org',
     ]);
 
     expect(input.flags.template).toBe('./packages/app-template-default');
-    expect(input.flags.registry).toBe('https://registry.npmjs.org');
+    expect(input.flags['nocobase-registry']).toBe('https://registry.npmjs.org');
   });
 
   /** The default is a name, so the package it points at stays an implementation detail. */
@@ -123,7 +128,7 @@ describe('formatHelp', () => {
     expect(help).toContain('--template-tag');
     expect(help).toContain('default');
     expect(help).toContain('--[no-]install');
-    expect(help).toContain('https://registry.npmjs.org');
+    expect(help).toContain('NOCOBASE_REGISTRY');
     expect(help).toContain('create-app crm');
   });
 });

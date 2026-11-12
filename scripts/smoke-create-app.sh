@@ -96,8 +96,7 @@ export PNPM_CONFIG_MINIMUM_RELEASE_AGE=0
 export PNPM_CONFIG_REGISTRY="$REGISTRY"
 export npm_config_registry="$REGISTRY"
 export NPM_CONFIG_REGISTRY="$REGISTRY"
-# create-app reads this when --registry is not given; passing both keeps the generated application's install pointed
-# at the same place even if the flag handling changes.
+# create-app persists this registry for @nocobase dependencies in the generated application.
 export NOCOBASE_REGISTRY="$REGISTRY"
 
 # An override that silently did not apply would test packages from the wrong registry and report success, so it is
@@ -121,7 +120,7 @@ echo "workdir:     $WORKDIR"
 
 cd "$WORKDIR"
 
-CREATE_ARGS=("@nocobase/app@$CREATE_APP_VERSION" "$APP_NAME" "--registry=$REGISTRY" "--template=$TEMPLATE")
+CREATE_ARGS=("@nocobase/app@$CREATE_APP_VERSION" "$APP_NAME" "--template=$TEMPLATE")
 if [ "$JSON_OUTPUT" = 1 ]; then
   pnpm create "${CREATE_ARGS[@]}" --json > "$WORKDIR/create.json"
   # --create-app-version may name a release from before create-app printed the application CLI's envelope, whose

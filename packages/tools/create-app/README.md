@@ -8,7 +8,11 @@ pnpm create @nocobase/app crm
 
 `pnpm create @nocobase/app` resolves to the `@nocobase/create-app` package and runs it, forwarding every argument after the package name verbatim.
 
-NocoBase packages and templates are published to the public npm registry. `--registry` changes where create-app downloads the template and resolves `@nocobase` dependencies; `NOCOBASE_REGISTRY` supplies the same override for a private registry or an unreleased local snapshot. Third-party dependencies keep the package manager's configured default registry; do not set `npm_config_registry` to a NocoBase-only private registry. A generated project's `.npmrc` records a non-public registry for the `@nocobase` scope and omits the override when public npm is used.
+Registry selection follows your npm/pnpm configuration. Set `NOCOBASE_REGISTRY` or `--nocobase-registry` to override the registry for **`@nocobase/*` only**. Precedence is `--nocobase-registry` > `NOCOBASE_REGISTRY` > existing package-manager configuration. Third-party templates and dependencies keep their configured registries. create-app no longer accepts `--registry`.
+
+An explicit override is recorded as `@nocobase:registry` in the generated `.npmrc`, including when it points to public npm or the template is local. Without an override, no registry entry is written. Credentials are never copied. A project-level `.npmrc` used to fetch the template is not copied to the new application; use a user-level configuration or an explicit override when that registry must also be available there.
+
+`NOCOBASE_REGISTRY` is read by create-app after it starts. It does not control the outer `pnpm create` download of `@nocobase/create-app`; configure pnpm's `@nocobase` scope for that step. npm/pnpm's own `--registry` option remains a general registry setting, such as in `pnpm login --registry=...`.
 
 ## About dist-tags
 
@@ -41,16 +45,16 @@ pnpm create @nocobase/app
 
 ## Flags
 
-| Flag             | Description                                                                              |
-| ---------------- | ---------------------------------------------------------------------------------------- |
-| `[directory]`    | Application directory, relative to the current one. Prompted for when omitted            |
-| `--json`         | Non-interactive mode; requires a directory and prints one final JSON result              |
-| `--no-install`   | Skip installing dependencies after scaffolding                                           |
-| `--template`     | Template, `default` by default. Also accepts a published package or a local package path |
-| `--template-tag` | Channel a named template is fetched from: `latest` (default) or `beta`                   |
-| `--registry`     | Registry the template is downloaded from, `https://registry.npmjs.org` by default        |
-| `-h, --help`     | Show help                                                                                |
-| `--version`      | Show the version                                                                         |
+| Flag                  | Description                                                                              |
+| --------------------- | ---------------------------------------------------------------------------------------- |
+| `[directory]`         | Application directory, relative to the current one. Prompted for when omitted            |
+| `--json`              | Non-interactive mode; requires a directory and prints one final JSON result              |
+| `--no-install`        | Skip installing dependencies after scaffolding                                           |
+| `--template`          | Template, `default` by default. Also accepts a published package or a local package path |
+| `--template-tag`      | Channel a named template is fetched from: `latest` (default) or `beta`                   |
+| `--nocobase-registry` | Override the registry for `@nocobase/*`; takes precedence over `NOCOBASE_REGISTRY`       |
+| `-h, --help`          | Show help                                                                                |
+| `--version`           | Show the version                                                                         |
 
 `--template` supports `default` (the default application), `examples` (the example application), `multi-portal` (one application with multiple business entry points), and `multi-app` (Main only, with optional independent children), each pointing at the corresponding `@nocobase/app-template-*` package. The multi-portal and multi-app templates are commercial Pro packages, not bundled with this open-source creation tool. They require authorized registry access.
 
@@ -83,7 +87,7 @@ npm view @nocobase/app-template-multi-portal@beta version --registry=https://pkg
 NOCOBASE_REGISTRY=https://pkg-v3.nocobase.com/ pnpm create @nocobase/app@beta crm --template=multi-portal --template-tag=beta
 ```
 
-The alias follows `--template-tag` like Default and Examples. Registry selection remains explicit: use `--registry` or `NOCOBASE_REGISTRY`; the alias does not change global npm configuration. The generated project records the selected registry for `@nocobase` packages without copying credentials. A successful login does not prove access to the template or that the selected channel has been released: verify the package with `npm view` before creating the project. If the installed create-app predates this alias, use `--template=@nocobase/app-template-multi-portal@beta` with the same registry instead. Do not substitute Default when the commercial package is unavailable.
+The alias follows `--template-tag` like Default and Examples. Registry selection follows your configured `@nocobase` scope, or an explicit `NOCOBASE_REGISTRY` / `--nocobase-registry` override; the alias does not change global npm configuration. The generated project records the selected registry for `@nocobase` packages without copying credentials. A successful login does not prove access to the template or that the selected channel has been released: verify the package with `npm view` before creating the project. If the installed create-app predates this alias, use `--template=@nocobase/app-template-multi-portal@beta` with the same registry instead. Do not substitute Default when the commercial package is unavailable.
 
 ### Multi-app applications
 
@@ -105,7 +109,7 @@ Dependencies are installed automatically; `--no-install` skips that. Generated `
 The template is downloaded (`@nocobase/app-template-default@latest` by default) and, on top of it:
 
 - `package.json` is rewritten: the application's own name and display name, publish metadata dropped so it cannot be released by accident, and `packageManager` pinned to a pnpm that reads `allowBuilds`
-- `.npmrc` records the registry the template came from, scoped to `@nocobase`, so later installs in the project resolve NocoBase packages from the same place; it is omitted for the public npm
+- `.npmrc` records an explicitly selected `@nocobase` registry for later installs, without changing the default registry or copying credentials; no registry entry is written when no override was supplied
 - `.gitignore` is written when the template ships none, so the `config.yml` that `config init` later writes cannot be committed
 - `pnpm-workspace.yaml` gets its `allowBuilds` decisions (see below)
 - Dependencies are installed (skip with `--no-install`)
