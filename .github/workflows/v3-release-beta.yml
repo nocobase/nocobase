@@ -1356,7 +1356,7 @@ jobs:
           trap 'git remote set-url origin https://github.com/nocobase/nocobase3-pro.git' EXIT
           node "$RUNNER_TEMP/oss-tools/pro-release-candidates.mjs" prune --keep "$BRANCH" --superseded
 
-      # The release commit pins the open-source release commit, which v3-develop does not contain because the release is squash-merged there. Pro develop must track v3-develop, so the release branch moves the pointer to the merged release commit before merging back. When the open-source merge back failed (merged is 'false'), it keeps Pro develop's current pointer instead; when release has not reported a merge at all, this job waits for release to be re-run. Pro develop may have moved since pro-candidate, so develop is merged into the release branch first. Its pnpm-workspace.yaml and pnpm-lock.yaml are taken from develop, so the Pro-owned entries develop added or changed (catalog, allowBuilds, overrides) survive; the gitlink is regenerated rather than merged, and sync-release-oss.mjs then re-syncs the upstream blocks of pnpm-workspace.yaml and regenerates the lockfile against the target pointer. A rerun starts from the release branch it already pushed. The write token is moved into a shell variable that is not exported, handed to gh explicitly, and put in the remote only to fetch and to push, so no install, sync, or conflict script this step runs can read it.
+      # The release commit pins the open-source release commit, which v3-develop does not contain because the release is squash-merged there. Pro develop must track v3-develop, so the release branch moves the pointer to the merged release commit before merging back, unless Pro develop already points at a descendant of it, which it keeps so the merge back never moves develop's pointer backwards; a pointer unrelated to the merged release commit is replaced by it with a warning. When the open-source merge back failed (merged is 'false'), it keeps Pro develop's current pointer instead; when release has not reported a merge at all, this job waits for release to be re-run. Pro develop may have moved since pro-candidate, so develop is merged into the release branch first. Its pnpm-workspace.yaml and pnpm-lock.yaml are taken from develop, so the Pro-owned entries develop added or changed (catalog, allowBuilds, overrides) survive; the gitlink is regenerated rather than merged, and sync-release-oss.mjs then re-syncs the upstream blocks of pnpm-workspace.yaml and regenerates the lockfile against the target pointer. A rerun starts from the release branch it already pushed. The write token is moved into a shell variable that is not exported, handed to gh explicitly, and put in the remote only to fetch and to push, so no install, sync, or conflict script this step runs can read it.
       - name: Return the submodule pointer to v3-develop
         if: '!inputs.dry_run'
         id: pointer
@@ -1388,6 +1388,17 @@ jobs:
           else
             echo "::error::The open-source release has not merged back into v3-develop yet (merged='${MERGED}'), so the commit Pro develop should point at is unknown. Pro is published and tagged; use \"Re-run failed jobs\" so that Publish beta finishes its merge back, and this job continues from here."
             exit 1
+          fi
+          # Never move Pro develop's pointer backwards: develop may have been bumped past the merged release commit since the open-source merge back. The submodule fetches v3-develop so the ancestry check sees both commits.
+          DEV_PTR=$(git rev-parse refs/remotes/origin/develop:vendor/nocobase3)
+          if [ "$DEV_PTR" != "$TARGET" ]; then
+            git -C vendor/nocobase3 fetch --quiet --no-tags origin "+refs/heads/v3-develop:refs/remotes/origin/v3-develop"
+            if git -C vendor/nocobase3 merge-base --is-ancestor "$TARGET" "$DEV_PTR" 2> /dev/null; then
+              echo "Pro develop already points at $DEV_PTR, which contains $TARGET; $NAME keeps develop's pointer."
+              TARGET="$DEV_PTR"
+            elif ! git -C vendor/nocobase3 merge-base --is-ancestor "$DEV_PTR" "$TARGET" 2> /dev/null; then
+              echo "::warning::Pro develop points at $DEV_PTR, which is neither an ancestor nor a descendant of $TARGET on v3-develop; $NAME moves the pointer to $TARGET."
+            fi
           fi
           git config user.name 'nocobase[bot]'
           git config user.email '179432756+nocobase[bot]@users.noreply.github.com'

@@ -1062,11 +1062,8 @@ server.listen(0, '127.0.0.1', () => {
   });
 }
 
-test('the merge back keeps the pnpm settings Pro develop changed after the candidate, and installs without the write token', async (t) => {
-  if (spawnSync('pnpm', ['--version']).status !== 0) {
-    t.skip('pnpm is not installed');
-    return;
-  }
+// A Pro repository whose develop pins the open-source `base`, a release candidate `name` that pins the release commit `source`, and v3-develop at `target`, the merged release commit. Pro develop then changes a Pro-owned catalog entry and adds one a plugin uses. Its sync scripts stand in for Pro's: the upstream block is the `# oss:` line, and the install is a real pnpm install against a local registry.
+async function mergeBackFixture(t) {
   const directory = mkdtempSync(path.join(tmpdir(), 'joint-pro-merge-back-'));
   t.after(() => rmSync(directory, { recursive: true, force: true }));
   const registryUrl = await localRegistry(t, directory, {
@@ -1221,31 +1218,60 @@ execFileSync('pnpm', ['install', '--no-frozen-lockfile'], { stdio: 'inherit', en
   commit(seed, 'feat: use pro-new');
   git(seed, 'push', '-q', 'origin', 'develop');
 
-  const checkout = path.join(directory, 'release');
-  git(directory, 'clone', '-q', remote, checkout);
-  git(checkout, 'checkout', '-q', '--detach', `origin/${name}`);
-  git(checkout, 'submodule', 'update', '--init', '-q');
   const tools = path.join(directory, 'runner-temp', 'oss-tools');
   mkdirSync(tools, { recursive: true });
   copyFileSync(
     path.join(root, 'scripts/reconcile-pro-release-metadata.mjs'),
     path.join(tools, 'reconcile-pro-release-metadata.mjs'),
   );
+  const publish = await jointProJob('pro-release');
+  // Run the pointer step from a fresh checkout of the candidate, as pro-release does.
+  const pointer = async () => {
+    const checkout = mkdtempSync(path.join(directory, 'release-'));
+    git(directory, 'clone', '-q', remote, checkout);
+    git(checkout, 'checkout', '-q', '--detach', `origin/${name}`);
+    git(checkout, 'submodule', 'update', '--init', '-q');
+    return runStep(
+      publish,
+      'Return the submodule pointer to v3-develop',
+      checkout,
+      env,
+      {
+        RUNNER_TEMP: path.dirname(tools),
+        NAME: name,
+        MERGED: 'true',
+        MERGE_SHA: target,
+        PRO_TOKEN: 'write-token',
+        GH_TOKEN: 'write-token',
+      },
+    );
+  };
+  return {
+    git,
+    write,
+    commit,
+    install,
+    oss,
+    seed,
+    remote,
+    name,
+    tokens,
+    target,
+    workspace,
+    plugin,
+    pointer,
+  };
+}
 
-  const result = runStep(
-    await jointProJob('pro-release'),
-    'Return the submodule pointer to v3-develop',
-    checkout,
-    env,
-    {
-      RUNNER_TEMP: path.dirname(tools),
-      NAME: name,
-      MERGED: 'true',
-      MERGE_SHA: target,
-      PRO_TOKEN: 'write-token',
-      GH_TOKEN: 'write-token',
-    },
-  );
+test('the merge back keeps the pnpm settings Pro develop changed after the candidate, moves its pointer forward to the merged release commit, and installs without the write token', async (t) => {
+  if (spawnSync('pnpm', ['--version']).status !== 0) {
+    t.skip('pnpm is not installed');
+    return;
+  }
+  const { git, remote, name, tokens, target, workspace, plugin, pointer } =
+    await mergeBackFixture(t);
+
+  const result = await pointer();
   assert.doesNotMatch(
     result.stdout + result.stderr,
     /ERR_PNPM_CATALOG_ENTRY_NOT_FOUND/u,
@@ -1283,4 +1309,76 @@ execFileSync('pnpm', ['install', '--no-frozen-lockfile'], { stdio: 'inherit', en
       `chore: merge develop into ${name} [skip ci]`,
     ],
   );
+});
+
+test("the merge back keeps Pro develop's pointer when develop was bumped past the merged release commit, also on a rerun", async (t) => {
+  if (spawnSync('pnpm', ['--version']).status !== 0) {
+    t.skip('pnpm is not installed');
+    return;
+  }
+  const {
+    git,
+    write,
+    commit,
+    install,
+    oss,
+    seed,
+    remote,
+    name,
+    target,
+    workspace,
+    pointer,
+  } = await mergeBackFixture(t);
+
+  // After the open-source merge back, v3-develop moves on and Pro develop is bumped to the newer commit.
+  git(oss, 'checkout', '-q', 'v3-develop');
+  write(oss, 'VERSION', 'newer\n');
+  const newer = commit(oss, 'newer');
+  git(seed, 'checkout', '-q', 'develop');
+  git(path.join(seed, 'vendor/nocobase3'), 'fetch', '-q', 'origin');
+  git(path.join(seed, 'vendor/nocobase3'), 'checkout', '-q', '--detach', newer);
+  execFileSync(process.execPath, ['scripts/sync-workspace-config.mjs'], {
+    cwd: seed,
+  });
+  install(seed);
+  commit(seed, `chore: bump oss to ${newer}`);
+  git(seed, 'push', '-q', 'origin', 'develop');
+
+  const result = await pointer();
+  assert.equal(result.status, 0, result.stdout + result.stderr);
+  const show = (file) => git(remote, 'show', `refs/heads/${name}:${file}`);
+  assert.equal(
+    git(remote, 'rev-parse', `refs/heads/${name}:vendor/nocobase3`),
+    newer,
+  );
+  assert.equal(
+    show('pnpm-workspace.yaml'),
+    workspace('  pro-dep: 1.1.0\n  pro-new: 1.0.0')
+      .replace('# oss: base', '# oss: newer')
+      .trimEnd(),
+  );
+  assert.equal(
+    show('pnpm-lock.yaml'),
+    git(remote, 'show', 'refs/heads/develop:pnpm-lock.yaml'),
+  );
+  assert.match(
+    result.stdout,
+    new RegExp(
+      `Pro develop already points at ${newer}, which contains ${target}; ${name} keeps develop's pointer\\.`,
+      'u',
+    ),
+  );
+  const pushed = git(remote, 'rev-parse', `refs/heads/${name}`);
+  assert.deepEqual(
+    git(remote, 'log', '--format=%s', '-2', pushed).split('\n'),
+    [
+      `chore: bump oss to ${newer} [skip ci]`,
+      `chore: merge develop into ${name} [skip ci]`,
+    ],
+  );
+
+  // A rerun after this partial merge back keeps the pushed branch as it is.
+  const rerun = await pointer();
+  assert.equal(rerun.status, 0, rerun.stdout + rerun.stderr);
+  assert.equal(git(remote, 'rev-parse', `refs/heads/${name}`), pushed);
 });
