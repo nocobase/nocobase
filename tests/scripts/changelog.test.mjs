@@ -22,7 +22,12 @@ import { renderChangelogLines } from '../../scripts/release-notes.mjs';
 
 const repo = 'nocobase/nocobase';
 
-function body(type, en = 'An English sentence.', zh = '一句中文。') {
+function body(
+  type,
+  en = 'An English sentence.',
+  zh = '一句中文。',
+  ja = '日本語の一文。',
+) {
   return `### This is a ...
 
 - [${type === 'New feature' ? 'x' : ' '}] New feature
@@ -32,11 +37,11 @@ function body(type, en = 'An English sentence.', zh = '一句中文。') {
 
 ### Changelog
 
-| Language   | Changelog |
-| ---------- | --------- |
-| 🇺🇸 English | ${en} |
-| 🇨🇳 Chinese | ${zh} |
-`;
+| Language    | Changelog |
+| ----------- | --------- |
+| 🇺🇸 English  | ${en} |
+| 🇨🇳 Chinese  | ${zh} |
+${ja === null ? '' : `| 🇯🇵 Japanese | ${ja} |\n`}`;
 }
 
 function pr(number, title, text, headRefName = `fix/v3-${number}`) {
@@ -92,9 +97,13 @@ test('pull request numbers come from squash and merge commit subjects', () => {
 
 test('entries are grouped by type and module; Others, release and unreadable PRs stay out', () => {
   const collected = collectEntries([
-    pr(5, 'fix(demo-mode): b', body('Bug fix', 'Fix B.', '修复 B。')),
-    pr(3, 'feat(knowledge): a', body('New feature', 'Add A.', '新增 A。')),
-    pr(4, 'fix(demo-mode): c', body('Bug fix', 'Fix C.', '修复 C。')),
+    pr(5, 'fix(demo-mode): b', body('Bug fix', 'Fix B.', '修复 B。', null)),
+    pr(
+      3,
+      'feat(knowledge): a',
+      body('New feature', 'Add A.', '新增 A。', 'A を追加。'),
+    ),
+    pr(4, 'fix(demo-mode): c', body('Bug fix', 'Fix C.', '修复 C。', 'TODO')),
     pr(6, 'ci: d', body('Others')),
     pr(7, 'chore: release', body('Bug fix'), 'release-beta/2026-10-26.3'),
     pr(8, 'fix(db): old description', 'Fixes something.'),
@@ -121,6 +130,44 @@ test('entries are grouped by type and module; Others, release and unreadable PRs
     /### 🐛 修复\n\n- \*\*\[演示模式\]\*\*\n {2}- 修复 C。/u,
   );
   assert.equal(renderNotes({ entries: [] }, 'zh'), '没有面向用户的变更。\n');
+});
+
+test('the Japanese changelog falls back to English when a PR has no Japanese sentence', () => {
+  const collected = collectEntries([
+    pr(
+      3,
+      'feat(knowledge): a',
+      body('New feature', 'Add A.', '新增 A。', 'A を追加。'),
+    ),
+    pr(4, 'fix(demo-mode): c', body('Bug fix', 'Fix C.', '修复 C。', 'TODO')),
+    pr(5, 'fix(demo-mode): b', body('Bug fix', 'Fix B.', '修复 B。', null)),
+  ]);
+  assert.deepEqual(collected.missing, []);
+  assert.equal(
+    renderNotes(collected, 'ja'),
+    `### 🎉 新機能
+
+- **[ナレッジベース]** A を追加。 ([#3](https://github.com/${repo}/pull/3)) by @someone
+
+### 🐛 不具合修正
+
+- **[デモモード]**
+  - Fix C. ([#4](https://github.com/${repo}/pull/4)) by @someone
+  - Fix B. ([#5](https://github.com/${repo}/pull/5)) by @someone
+`,
+  );
+  assert.equal(
+    renderNotes({ entries: [] }, 'ja'),
+    'ユーザー向けの変更はありません。\n',
+  );
+  assert.ok(
+    prependChangelog(null, {
+      tag: 'release-beta/2026-10-26.3',
+      repo,
+      notes: renderNotes(collected, 'ja'),
+      language: 'ja',
+    }).startsWith(CHANGELOG_HEADERS.ja),
+  );
 });
 
 test('sections are prepended below the header once per tag and read back for the GitHub Release', () => {

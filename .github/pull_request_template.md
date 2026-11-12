@@ -22,10 +22,11 @@
 ### Changelog
 
 <!-- One sentence per language about what a user notices, not how it was built. Required unless Others is checked.
-Good: "Show which packages a release published on its GitHub release page." / "在 GitHub Release 页面显示本次发布的包。"
+Good: "Show which packages a release published on its GitHub release page." / "在 GitHub Release 页面显示本次发布的包。" / "GitHub Release ページに、このリリースで公開されたパッケージを表示します。"
 Bad: "Refactor renderReleaseNotes to read package tags" — an implementation detail no user sees. -->
 
-| Language   | Changelog |
-| ---------- | --------- |
-| 🇺🇸 English |           |
-| 🇨🇳 Chinese |           |
+| Language    | Changelog |
+| ----------- | --------- |
+| 🇺🇸 English  |           |
+| 🇨🇳 Chinese  |           |
+| 🇯🇵 Japanese |           |

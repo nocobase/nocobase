@@ -162,12 +162,12 @@ jobs:
             node scripts/list-package-versions.mjs --table
           } >> "$GITHUB_STEP_SUMMARY"
 
-      # The root CHANGELOG.md and CHANGELOG.zh-CN.md gain this release's section, written by scripts/changelog.mjs from
-      # the type and bilingual changelog of each pull request merged since the previous beta
-      # (.github/pull_request_template.md). The release commit carries both files, and v3-github-release.yml reads the
-      # English section back for the GitHub Release. The script comes from the workflow tooling checkout and reads pull
-      # requests with this job's read-only token. Best effort: a failure warns, puts both files back as they were, and
-      # the release goes on without the section.
+      # The root CHANGELOG.md, CHANGELOG.zh-CN.md and CHANGELOG.ja-JP.md gain this release's section, written by
+      # scripts/changelog.mjs from the type and the English, Chinese and Japanese changelog of each pull request merged
+      # since the previous beta (.github/pull_request_template.md). The release commit carries the three files, and
+      # v3-github-release.yml reads the English section back for the GitHub Release. The script comes from the workflow
+      # tooling checkout and reads pull requests with this job's read-only token. Best effort: a failure warns, puts the
+      # files back as they were, and the release goes on without the section.
       - name: Write the changelog
         env:
           GH_TOKEN: ${{ github.token }}
@@ -176,7 +176,7 @@ jobs:
         run: |
           if ! node ../scripts/changelog.mjs --tag "$TAG" --repo "$REPO" --root .; then
             echo "::warning::Writing the changelog failed; $TAG has no changelog section."
-            for file in CHANGELOG.md CHANGELOG.zh-CN.md; do
+            for file in CHANGELOG.md CHANGELOG.zh-CN.md CHANGELOG.ja-JP.md; do
               if git ls-files --error-unmatch -- "$file" > /dev/null 2>&1; then
                 git checkout HEAD -- "$file"
               else
