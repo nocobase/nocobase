@@ -90,7 +90,7 @@ The alias follows `--template-tag` like Default and Examples. Registry selection
 The `multi-app` alias resolves the commercial `@nocobase/app-template-multi-app` package in `nocobase/nocobase3-pro`. It creates Main only. Select the authorized registry explicitly and verify that the selected template version is available:
 
 ```bash
-pnpm create @nocobase/app@beta platform --template multi-app --registry https://pkg-v3.nocobase.com/
+NOCOBASE_REGISTRY=https://pkg-v3.nocobase.com/ pnpm create @nocobase/app@beta platform --template multi-app --template-tag beta
 cd platform
 pnpm nocobase config init
 pnpm nocobase config check
