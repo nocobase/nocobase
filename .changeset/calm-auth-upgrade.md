@@ -7,4 +7,4 @@
 '@nocobase/app-template-examples': patch
 ---
 
-Upgrade Better Auth and its API key integration to 1.7.21 with aligned runtime dependencies.
+Upgrade Better Auth and its API key integration to 1.7.21 with aligned runtime dependencies. Keep password reset eligibility checks inside the active authentication transaction.
