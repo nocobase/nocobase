@@ -21,7 +21,11 @@ export async function streamToTicket(
   session: Session,
   ticketData: unknown,
   file: LocalFile,
-  options: { readonly fetch?: typeof fetch; readonly timeoutMs?: number },
+  options: {
+    readonly fetch?: typeof fetch;
+    readonly timeoutMs?: number;
+    readonly signal?: AbortSignal;
+  },
 ): Promise<TicketAnswer> {
   const parsed = UploadTicketSchema.safeParse(ticketData);
   if (!parsed.success)

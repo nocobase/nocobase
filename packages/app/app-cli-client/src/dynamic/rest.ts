@@ -121,6 +121,7 @@ export async function parseRestCall(
 export interface RestOptions {
   readonly fetch?: typeof fetch;
   readonly timeoutMs?: number;
+  readonly signal?: AbortSignal;
 }
 
 /** Uploads each file of the call's upload parameters; the ids, by parameter. */

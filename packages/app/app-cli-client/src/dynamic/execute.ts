@@ -11,6 +11,7 @@ import { pipeline } from 'node:stream/promises';
 import { readErrorBody, type DownloadResult } from '@nocobase/agent-protocol';
 
 import { AppApiError } from '../lib/http.ts';
+import { fileRequest } from './upload.ts';
 
 /** A saved download: where it went, and a line saying so. */
 export interface Saved {
@@ -21,13 +22,26 @@ export interface Saved {
 export async function send(
   url: URL,
   init: RequestInit,
-  options: { readonly fetch?: typeof fetch; readonly timeoutMs?: number },
+  options: {
+    readonly fetch?: typeof fetch;
+    readonly timeoutMs?: number;
+    readonly signal?: AbortSignal;
+  },
 ): Promise<unknown> {
+  const fileBody = init.body instanceof FormData || init.body instanceof Blob;
+  const timeout = AbortSignal.timeout(
+    options.timeoutMs ?? (fileBody ? 30 * 60_000 : 120_000),
+  );
+  const signals = [timeout, init.signal, options.signal].filter(
+    (signal): signal is AbortSignal => signal != null,
+  );
+  const signal = AbortSignal.any(signals);
   let response: Response;
   try {
-    response = await (options.fetch ?? fetch)(url, {
+    // Keep the injected fetch contract; production file bodies use Node's backpressured HTTP pipe.
+    response = await (options.fetch ?? (fileBody ? fileRequest : fetch))(url, {
       ...init,
-      signal: AbortSignal.timeout(options.timeoutMs ?? 120_000),
+      signal,
     });
   } catch (error) {
     throw new AppApiError(
