@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 
 import { describe, expect, it } from 'vitest';
-import * as XLSX from 'xlsx';
+import * as XLSX from '@e965/xlsx';
 
 import { SUPPORTED_DOCUMENT_EXTENSIONS as KNOWLEDGE_PARSED_EXTENSIONS } from '../src/formats.js';
 import { isParsed, workerExtractor } from '../src/index.js';
