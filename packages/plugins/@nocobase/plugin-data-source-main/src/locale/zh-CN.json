@@ -1,4 +1,7 @@
 {
+  "Cannot synchronize collection \"{{collection}}\" because its database table could not be found.": "无法同步数据表 \"{{collection}}\"，因为对应的数据库表不存在。",
+  "Cannot synchronize field \"{{field}}\" in collection \"{{collection}}\": database type \"{{type}}\" is not supported.": "无法同步数据表 \"{{collection}}\" 中的字段 \"{{field}}\"：不支持数据库类型 \"{{type}}\"。",
+  "Cannot remove field \"{{field}}\" from collection \"{{collection}}\" because its database column still exists.": "无法删除数据表 \"{{collection}}\" 中的字段 \"{{field}}\"，因为对应的数据库列仍然存在。",
   "any.required": "{{label}} 是必填项",
   "date.base": "{{label}} 必须是有效日期",
   "date.format": "{{label}} 必须是 {{format}} 格式",

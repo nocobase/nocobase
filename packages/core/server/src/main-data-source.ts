@@ -8,10 +8,18 @@
  */
 
 import { Context } from '@nocobase/actions';
-import { CollectionOptions, DataSourceOptions, SequelizeDataSource } from '@nocobase/data-source-manager';
+import {
+  CollectionOptions,
+  DataSourceOptions,
+  FieldOptions,
+  LoadedCollectionOptions,
+  SequelizeDataSource,
+} from '@nocobase/data-source-manager';
 import { Collection, Model } from '@nocobase/database';
 
 type MainDataSourceStatus = 'loaded' | 'loading';
+type LoadedMainField = FieldOptions & { key: string; columnName?: string };
+type LoadedMainCollection = LoadedCollectionOptions & { fields: LoadedMainField[] };
 
 export class MainDataSource extends SequelizeDataSource {
   status: MainDataSourceStatus = 'loaded';
@@ -107,30 +115,28 @@ export class MainDataSource extends SequelizeDataSource {
     }
   }
 
-  private async getLoadedCollections(filter?: any) {
+  private async getLoadedCollections(filter?: { name?: string[] }) {
     const db = this.collectionManager.db;
-    const loadedCollections = await db.getRepository('collections').find({
+    const loadedCollections: Model[] = await db.getRepository('collections').find({
       appends: ['fields'],
       filter: {
         hidden: false,
         ...filter,
       },
     });
-    const collections = loadedCollections.filter(
-      (collection: Model) => !['db2cm', 'dbsync'].includes(collection.options?.from),
-    );
-    const loadedData = {};
+    const collections = loadedCollections.filter((collection: Model) => collection.options?.from !== 'db2cm');
+    const loadedData: Record<string, LoadedMainCollection> = {};
     for (const collection of collections) {
-      const c = db.getCollection(collection.name);
-      // Use the physical table/view name so view collections whose logical name
-      // differs from `viewName` can still be matched during introspection sync.
-      loadedData[c.model.tableName] = {
-        ...collection.toJSON(),
-        fields: collection.fields.map((field: Model) => {
-          const f = c.getField(field.name);
+      const options = collection.toJSON<LoadedMainCollection>();
+      const c = db.getCollection(options.name);
+      loadedData[options.name] = {
+        ...options,
+        fields: (collection.get('fields') as Model[]).map((field) => {
+          const fieldOptions = field.toJSON<LoadedMainField>();
+          const f = c.getField(fieldOptions.name);
           return {
+            ...fieldOptions,
             columnName: f?.columnName(),
-            ...field.toJSON(),
           };
         }),
       };
@@ -138,7 +144,7 @@ export class MainDataSource extends SequelizeDataSource {
     return loadedData;
   }
 
-  async syncFieldsFromDatabase(ctx: any, collectionNames?: string[]) {
+  async syncFieldsFromDatabase(ctx: Context, collectionNames?: string[]) {
     let filter = {};
     if (collectionNames?.length) {
       filter = {
@@ -147,27 +153,72 @@ export class MainDataSource extends SequelizeDataSource {
     }
     const db = this.collectionManager.db;
     const loadedCollections = await this.getLoadedCollections(filter);
-    const tableNames = Object.values(loadedCollections).map(({ name }) => {
-      const collection = db.getCollection(name);
-      return collection.getTableNameWithSchema();
-    });
-    let collections = [];
-    try {
-      collections = await this.tables2Collections(tableNames);
-    } catch (err) {
-      ctx.log.error(err);
-    }
-    const toLoadCollections = this.mergeWithLoadedCollections(collections, loadedCollections);
     const currentSchema = process.env.COLLECTION_MANAGER_SCHEMA || db.options.schema || 'public';
+    // Pair each introspection result with its existing logical collection, including prefixed tables and renamed views.
+    const syncPlans = await Promise.all(
+      Object.values(loadedCollections).map(async (loadedCollection) => {
+        const collection = db.getCollection(loadedCollection.name);
+        const [incoming] = await this.tables2Collections([collection.getTableNameWithSchema()]);
+        if (!incoming) {
+          ctx.throw(
+            400,
+            ctx.t('Cannot synchronize collection "{{collection}}" because its database table could not be found.', {
+              collection: loadedCollection.name,
+              ns: 'data-source-main',
+            }),
+          );
+        }
 
-    for (const values of toLoadCollections) {
-      if (values.schema === currentSchema) {
-        delete values.schema;
-      }
+        const unsupportedColumns = new Map((incoming.unsupportedFields || []).map((field) => [field.name, field]));
+        for (const field of loadedCollection.fields) {
+          const unsupportedColumn = unsupportedColumns.get(field.columnName || field.field || field.name);
+          if (unsupportedColumn) {
+            ctx.throw(
+              400,
+              ctx.t(
+                'Cannot synchronize field "{{field}}" in collection "{{collection}}": database type "{{type}}" is not supported.',
+                {
+                  field: field.name,
+                  collection: loadedCollection.name,
+                  type: unsupportedColumn.rawType,
+                  ns: 'data-source-main',
+                },
+              ),
+            );
+          }
+        }
 
-      const existsFields = loadedCollections[values.tableName].fields;
-      const deletedFields = existsFields.filter((field: any) => !values.fields.find((f) => f.name === field.name));
+        const physicalColumns = new Set([
+          ...incoming.fields.map((field) => field.field || field.name),
+          ...unsupportedColumns.keys(),
+        ]);
+        const [values] = this.mergeWithLoadedCollections([{ ...incoming, name: loadedCollection.name }], {
+          [loadedCollection.name]: loadedCollection,
+        });
+        if (values.schema === currentSchema) {
+          delete values.schema;
+        }
 
+        const deletedFields = loadedCollection.fields.filter(
+          (field) => !values.fields.some((f) => f.name === field.name),
+        );
+        for (const field of deletedFields) {
+          if (physicalColumns.has(field.columnName || field.field || field.name)) {
+            ctx.throw(
+              400,
+              ctx.t(
+                'Cannot remove field "{{field}}" from collection "{{collection}}" because its database column still exists.',
+                { field: field.name, collection: loadedCollection.name, ns: 'data-source-main' },
+              ),
+            );
+          }
+        }
+        return { values, deletedFields };
+      }),
+    );
+
+    // Validate every collection before starting writes so a rejected batch leaves all field metadata intact.
+    for (const { values, deletedFields } of syncPlans) {
       await db.sequelize.transaction(async (transaction) => {
         for (const field of deletedFields) {
           await db.getRepository('fields').destroy({
