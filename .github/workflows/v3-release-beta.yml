@@ -551,6 +551,7 @@ jobs:
             --branch "$RELEASE_BRANCH"
 
       - name: Pin Pro to the release candidate and install
+        id: pro_install
         env:
           BASE_SHA: ${{ needs.prepare.outputs.base_sha }}
           SOURCE_SHA: ${{ needs.prepare.outputs.source_sha }}
@@ -585,12 +586,27 @@ jobs:
         run: git add -A
 
       - name: Build and test Pro
+        id: pro_build
         run: |
           pnpm build
           pnpm test
 
       - name: Verify Pro packages in OSS Default
+        id: pro_verify
         uses: ./.github/actions/verify-create-app
+
+      # An open-source change that breaks a commercial plugin surfaces in one of the three steps above. Say how to unblock
+      # the release instead of leaving only a failed test log.
+      - name: Explain how to unblock the release
+        if: failure() && (steps.pro_install.outcome == 'failure' || steps.pro_build.outcome == 'failure' || steps.pro_verify.outcome == 'failure')
+        run: |
+          MESSAGE='Pro develop failed to install, build, test, or smoke-test against this open-source release candidate, so nothing was published, open-source packages included. Fix Pro first: open a pull request against nocobase/nocobase3-pro develop that bumps vendor/nocobase3 to v3-develop with pnpm nocobase3:sync, fixes the affected plugins, and adds a changeset. Merge it, then use "Re-run failed jobs" on this run (pro-candidate checks out Pro develop again) or start V3 Release Beta again. In an emergency, run V3 Release Beta with skip_pro to release the open-source packages alone, then run V3 Release Pro Beta once Pro is fixed.'
+          echo "::error title=Pro is broken by this release::$MESSAGE"
+          {
+            echo '### Pro is broken by this release'
+            echo
+            echo "$MESSAGE"
+          } >> "$GITHUB_STEP_SUMMARY"
 
       # Installation tokens expire after one hour, so mint the write token only after validation.
       - name: Create a Pro write token for the candidate
@@ -1021,7 +1037,7 @@ jobs:
           WORKFLOW_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           CONTENT: |
             预览版发版流程中断，请查看 Actions 日志确认失败阶段和仓库状态。
-            ${{ needs.pro-candidate.result == 'failure' && 'Pro 用这次的候选版本测试失败，OSS 也没有发布。先修好 Pro develop，再重新发版；紧急情况下可以勾选 skip_pro 单独发 OSS。' || '' }}
+            ${{ needs.pro-candidate.result == 'failure' && 'Pro 用这次的候选版本测试失败，OSS 也没有发布。先在 Pro 上开 PR，把 submodule 升到 v3-develop 并修好插件，合并后重跑这次失败的 job 或重新发版；紧急情况下可以勾选 skip_pro 单独发 OSS。' || '' }}
         run: ./scripts/feishu-notify.sh
 
   # npm is already published at this point. Rendering a GitHub Release is recoverable and stays in a separate job.
