@@ -47,6 +47,24 @@ The HTTP transport protocol supports both Streamable and SSE. Streamable is the 
 
 ![20260323103906](https://static-docs.nocobase.com/20260323103906.png)
 
+#### Example: Parallel Search
+
+[Parallel Search MCP](https://docs.parallel.ai/integrations/mcp/search-mcp) provides public web search and page extraction without a Parallel account or API key. Free access is rate limited.
+
+Add a service with these values:
+
+| Field     | Value                            |
+| --------- | -------------------------------- |
+| Name      | `parallel-search`                |
+| Title     | `Parallel Search`                |
+| Transport | `HTTP (Streamable)`              |
+| URL       | `https://search.parallel.ai/mcp` |
+| Headers   | Leave empty                      |
+
+Run the availability test, save the service, and use `View` to check that `web_search` and `web_fetch` are listed. These tools default to `Ask`; keep that setting to confirm each call, or choose `Allow` to let AI Employees call them directly when needed.
+
+When the service is enabled, AI Employees can use these tools during conversations. Tool calls send the supplied queries, requested URLs, and any objective or context to Parallel. To stop using them, disable this service in the MCP service list.
+
 ### Availability Test
 
 When adding or editing an MCP service, you can run an availability test after entering the configuration. If the configuration is complete and correct, and the MCP service is reachable, the system will return a success message.
