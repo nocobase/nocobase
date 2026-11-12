@@ -19,6 +19,7 @@ const mocks = vi.hoisted(() => {
     mailbox: false as false | { uidValidity: bigint },
     search: vi.fn(),
     fetch: vi.fn(),
+    fetchAll: vi.fn(),
     fetchOne: vi.fn(),
     download: vi.fn(),
     messageFlagsAdd: vi.fn(),
@@ -114,6 +115,7 @@ describe('IMAP/SMTP mail Provider', () => {
     mocks.imap.exec.mockResolvedValue({ next: vi.fn() });
     mocks.imap.messageFlagsAdd.mockResolvedValue(true);
     mocks.imap.download.mockReset();
+    mocks.imap.fetchAll.mockResolvedValue([]);
     mocks.imap.fetch.mockImplementation(async function* () {});
   });
 

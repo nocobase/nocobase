@@ -10,6 +10,7 @@ import type { ImapLocationPersistence, ImapSmtpCredential } from './types.js';
 import type { ImapSmtpMailProviderConfig } from './config.js';
 import { IMAP_SMTP_CAPABILITIES } from './constants.js';
 import { ImapSmtpAdapter } from './adapter.js';
+import { ImapConnectionPool } from './connection-pool.js';
 import { validateConfig, verifyConnections } from './connection.js';
 import { classifyError, failure } from './errors.js';
 
@@ -19,6 +20,7 @@ import { classifyError, failure } from './errors.js';
  */
 export function createImapSmtpMailProviderDefinition(
   locations?: (accountId: string) => ImapLocationPersistence,
+  pool: ImapConnectionPool = new ImapConnectionPool(),
 ): MailProviderDefinition<ImapSmtpMailProviderConfig> {
   return {
     type: 'imap-smtp',
@@ -40,6 +42,10 @@ export function createImapSmtpMailProviderDefinition(
         account,
         credential,
         locations?.(account.id),
+        undefined,
+        undefined,
+        undefined,
+        pool,
       );
     },
   };
