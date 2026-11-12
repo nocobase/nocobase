@@ -1,3 +1,4 @@
 {
-  "Markdown block settings": "Markdown block settings"
+  "Markdown block settings": "Markdown 區塊設定",
+  "vditor.uploadError.message": "無法將檔案上傳至目前的儲存空間。您正嘗試將檔案上傳至 Markdown 編輯器，但目前的儲存空間設定不支援此操作。若要啟用上傳功能，請完成以下設定：1. 前往「檔案管理器」。2. 選擇目前使用中的儲存空間（{{storageTitle}}）。3. 設定「Base URL」並啟用「公開存取」選項。"
 }
