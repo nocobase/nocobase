@@ -1342,6 +1342,7 @@
   "Sub-form": "子表单",
   "Sub-form(Popover)": "子表单(弹窗)",
   "Sub-table": "子表格",
+  "Sub-table values must be a list of records. Check the configured default value.": "子表的值必须是记录列表。请检查字段的默认值配置。",
   "Subform mode": "子表单模式",
   "Submit": "提交",
   "Submit action settings": "提交按钮设置",

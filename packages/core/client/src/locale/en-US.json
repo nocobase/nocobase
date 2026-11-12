@@ -1343,6 +1343,7 @@
   "Sub-form": "Sub-form",
   "Sub-form(Popover)": "Sub-form(Popover)",
   "Sub-table": "Sub-table",
+  "Sub-table values must be a list of records. Check the configured default value.": "Sub-table values must be a list of records. Check the configured default value.",
   "Subform mode": "Sub-form mode",
   "Submit": "Submit",
   "Submit action settings": "Submit action settings",
