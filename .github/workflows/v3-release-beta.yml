@@ -11,6 +11,10 @@ on:
         description: Skip the create-app smoke test (use only when the smoke test itself is broken)
         type: boolean
         default: false
+      skip_pro:
+        description: "Release without testing or publishing Pro (emergency use only: Pro may not install on this release)"
+        type: boolean
+        default: false
 permissions:
   contents: read
   actions: write
