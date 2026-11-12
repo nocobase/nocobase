@@ -110,10 +110,10 @@ async function parsePackage(files, pkgType, pkg) {
 
 async function parsePR(number, pkgType, cwd, pkg, retries = 10) {
   let { ver = 'rc' } = program.opts();
-  // gh pr view 5112 --json author,body,files
+  // gh pr view 5112 --json body,files
   let res;
   try {
-    const { stdout } = await execa('gh', ['pr', 'view', number, '--json', 'author,body,files,baseRefName,url'], {
+    const { stdout } = await execa('gh', ['pr', 'view', number, '--json', 'body,files,baseRefName,url'], {
       cwd,
     });
     res = stdout;
@@ -126,7 +126,7 @@ async function parsePR(number, pkgType, cwd, pkg, retries = 10) {
     }
     return { number };
   }
-  const { author, body, files, baseRefName, url } = JSON.parse(res);
+  const { body, files, baseRefName, url } = JSON.parse(res);
   // if (ver === 'beta' && baseRefName !== 'next') {
   //   return { number };
   // }
@@ -146,7 +146,6 @@ async function parsePR(number, pkgType, cwd, pkg, retries = 10) {
   const changelog = {
     prType,
     number,
-    author: author.login,
     moduleType: name?.includes('plugin-') ? 'plugin' : 'core',
     module: name,
     url,
@@ -285,7 +284,7 @@ async function generateChangelog(changelogs) {
           const moduleResults = [];
           const lists = [];
           for (const changelog of moduleChangelogs) {
-            const { number, author, pro, url } = changelog;
+            const { number, pro, url } = changelog;
             const { description, docTitle, docLink } = changelog[lang];
             if (!description) {
               console.warn(`PR #${number} has no ${lang} changelog`);
@@ -293,7 +292,7 @@ async function generateChangelog(changelogs) {
             }
             const pr = pro && !test ? '' : ` ([#${number}](${url}))`;
             const doc = docTitle && docLink ? `${referenceLocale[lang]}[${docTitle}](${docLink})` : '';
-            lists.push(`${description}${pr} by @${author}\n${doc}`);
+            lists.push(`${description}${pr}\n${doc}`);
           }
           if (!lists.length) {
             continue;
