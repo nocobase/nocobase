@@ -37,11 +37,18 @@ function proRemote(t) {
   const develop = git(seed, 'rev-parse', 'HEAD');
 
   // A candidate commit on top of develop, pushed to `branch`; `date` backdates it.
-  function candidate(branch, { date, tag, merge } = {}) {
+  function candidate(branch, { date, tag, merge, runUrl } = {}) {
     git(seed, 'checkout', '-q', '--detach', develop);
     writeFileSync(path.join(seed, 'CHANGELOG.md'), `${branch}\n`);
     git(seed, 'add', '-A');
-    execFileSync('git', ['commit', '-qm', `chore: release ${branch}`], {
+    const message = ['-m', `chore: release ${branch}`];
+    if (runUrl) {
+      message.push(
+        '-m',
+        `OSS-Release: nocobase-v3-beta/2026-11-11.1\nOSS-Run: ${runUrl}`,
+      );
+    }
+    execFileSync('git', ['commit', '-q', ...message], {
       cwd: seed,
       env: date
         ? { ...env, GIT_COMMITTER_DATE: date, GIT_AUTHOR_DATE: date }
@@ -104,7 +111,8 @@ test('check passes without candidates, and with candidates that are published an
 
 test('check refuses while a candidate is unpublished, or published but not merged into Pro develop', (t) => {
   const { candidate, run } = proRemote(t);
-  candidate('release-candidate/2026-11-11.1');
+  const runUrl = 'https://github.com/nocobase/nocobase/actions/runs/123456';
+  candidate('release-candidate/2026-11-11.1', { runUrl });
   const unpublished = run('check');
   assert.equal(unpublished.status, 1);
   assert.match(
@@ -113,10 +121,13 @@ test('check refuses while a candidate is unpublished, or published but not merge
   );
   assert.match(
     unpublished.stdout,
-    /release-candidate\/2026-11-11\.1 \([0-9a-f]{12}, created [^)]+\): not published yet/u,
+    /release-candidate\/2026-11-11\.1 \([0-9a-f]{12}, created [^,]+, created by https:\/\/github\.com\/nocobase\/nocobase\/actions\/runs\/123456\): not published yet/u,
   );
   assert.match(unpublished.stdout, /Re-run failed jobs/u);
-  assert.match(unpublished.stdout, /git push origin --delete <branch>/u);
+  assert.match(
+    unpublished.stdout,
+    /::error:: {2}git push https:\/\/github\.com\/nocobase\/nocobase3-pro\.git --delete release-candidate\/2026-11-11\.1$/mu,
+  );
 
   const tagged = proRemote(t);
   tagged.candidate('release-candidate/2026-11-11.2', {
@@ -126,7 +137,7 @@ test('check refuses while a candidate is unpublished, or published but not merge
   assert.equal(unmerged.status, 1);
   assert.match(
     unmerged.stdout,
-    /tagged release-beta\/2026-11-11\.2 but not merged into Pro develop yet/u,
+    /created by a V3 Release Beta run it does not record\): tagged release-beta\/2026-11-11\.2 but not merged into Pro develop yet/u,
   );
 });
 
@@ -160,12 +171,46 @@ test('prune deletes published-and-merged and expired candidates, keeping the cur
   ]);
 });
 
-test('rejects anything but check and prune --keep <candidate>', (t) => {
+test('prune --superseded also deletes unpublished candidates of other batches, but keeps tagged ones and the current batch', (t) => {
+  const { candidate, run, branches } = proRemote(t);
+  candidate('release-candidate/2026-11-12.2');
+  candidate('release-candidate/2026-11-11.1', {
+    runUrl: 'https://github.com/nocobase/nocobase/actions/runs/1',
+  });
+  candidate('release-candidate/2026-11-10.2', {
+    tag: 'release-beta/2026-11-10.2',
+  });
+  candidate('release-candidate/2026-11-10.1', {
+    tag: 'release-beta/2026-11-10.1',
+    merge: true,
+  });
+  candidate('release-candidate/manual');
+
+  const result = run(
+    'prune',
+    '--keep',
+    'release-candidate/2026-11-12.2',
+    '--superseded',
+  );
+  assert.equal(result.status, 0, result.stdout + result.stderr);
+  assert.match(
+    result.stdout,
+    /Deleted release-candidate\/2026-11-11\.1: never published, and superseded .*actions\/runs\/1\)/u,
+  );
+  assert.deepEqual(branches(), [
+    'release-candidate/2026-11-10.2',
+    'release-candidate/2026-11-12.2',
+    'release-candidate/manual',
+  ]);
+});
+
+test('rejects anything but check and prune --keep <candidate> [--superseded]', (t) => {
   const { run } = proRemote(t);
   for (const args of [
     [],
     ['prune'],
     ['prune', '--keep', 'develop'],
+    ['prune', '--keep', 'release-candidate/2026-11-12.1', '--all'],
     ['check', 'x'],
   ]) {
     const result = run(...args);

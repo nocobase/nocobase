@@ -273,7 +273,16 @@ jobs:
             done
           done < "$RUNNER_TEMP/pro-released-specs.txt"
           test "$FAILED" = 0 || { echo '::error::One or more Pro beta or latest dist-tags could not be updated'; exit 1; }
-          git push origin --tags
+          # publish-commercial-packages.mjs moves a package tag that a candidate which never published had reserved, so the package tags it wrote at the release commit are forced; it refuses to move any other.
+          HEAD_SHA=$(git rev-parse HEAD)
+          REFS=()
+          while IFS= read -r SPEC; do
+            [ -n "$SPEC" ] || continue
+            if [ "$(git rev-parse --verify --quiet "refs/tags/${SPEC}^{commit}" || true)" = "$HEAD_SHA" ]; then
+              REFS+=("+refs/tags/${SPEC}:refs/tags/${SPEC}")
+            fi
+          done < "$RUNNER_TEMP/pro-released-specs.txt"
+          if [ "${#REFS[@]}" -gt 0 ]; then git push origin "${REFS[@]}"; fi
 
       - name: Merge release metadata back into Pro develop
         if: "!inputs.dry_run && steps.release_state.outputs.release == 'true'"

@@ -3,11 +3,15 @@
 // Usage, from a Pro checkout whose `origin` can read (check) or write (prune) the Pro repository:
 //   node pro-release-candidates.mjs check
 //   node pro-release-candidates.mjs prune --keep release-candidate/<YYYY-MM-DD.N>
+//   node pro-release-candidates.mjs prune --keep release-candidate/<YYYY-MM-DD.N> --superseded
 //
 // v3-release-beta.yml pushes the tested Pro tree to release-candidate/<OSS batch> before the open-source packages are published, and its pro-release job publishes that commit, tags it release-beta/<batch>, merges it into Pro develop, and only then deletes the branch. A candidate is therefore in flight until both have happened: a release-beta/* tag points at its commit, and Pro develop contains it. Until then, its run may still publish Pro, so:
 //
 // - `check` is the first step of the standalone Pro beta and promotion workflows. It fails when a candidate is in flight, because a Pro release of its own would publish the same versions or take the same release-beta/* name.
 // - `prune` runs in pro-candidate just before it pushes a new candidate, and deletes the candidates that are no longer in flight, other than the one named by --keep.
+// - `prune --superseded` runs in pro-release once this run's Pro beta is published. It also deletes every other candidate no release-beta/* tag points at: such a candidate is left by a run that failed before publishing, typically in its open-source jobs, and can no longer be resumed, because its pro-release refuses to publish once a Pro beta its develop did not contain was released, which this one just was. A candidate a release-beta/* tag points at was published and still waits for its merge back, so it is kept.
+//
+// pro-candidate records the URL of the V3 Release Beta run that pushed a candidate in its commit message (`OSS-Run: <url>`), so `check` can link each blocking candidate to its run.
 //
 // A candidate older than 30 days is stale either way: GitHub re-runs a workflow run only within 30 days of it, so its run can no longer publish anything. `check` ignores it with a warning and `prune` deletes it. Only branches named release-candidate/<YYYY-MM-DD.N> are considered; anything else under release-candidate/ is left alone.
 import { execFileSync, spawnSync } from 'node:child_process';
@@ -72,12 +76,20 @@ export function listCandidates({
         { cwd },
       ).status === 0;
     const committed = Number(git(cwd, 'log', '-1', '--format=%ct', sha));
+    const run = git(
+      cwd,
+      'log',
+      '-1',
+      '--format=%(trailers:key=OSS-Run,valueonly,separator=%x20)',
+      sha,
+    );
     candidates.push({
       branch,
       sha,
       tags,
       merged,
       committed,
+      run,
       released: tags.length > 0 && merged,
       stale: now - committed > staleAfterSeconds,
     });
@@ -85,13 +97,16 @@ export function listCandidates({
   return candidates;
 }
 
-function describe({ branch, sha, tags, committed }) {
+function describe({ branch, sha, tags, committed, run }) {
   const created = new Date(committed * 1000).toISOString();
   const state =
     tags.length > 0
       ? `tagged ${tags.join(', ')} but not merged into Pro develop yet`
       : 'not published yet';
-  return `${branch} (${sha.slice(0, 12)}, created ${created}): ${state}`;
+  const origin = run
+    ? `created by ${run}`
+    : 'created by a V3 Release Beta run it does not record';
+  return `${branch} (${sha.slice(0, 12)}, created ${created}, ${origin}): ${state}`;
 }
 
 export function checkNoCandidateInFlight(options) {
@@ -113,16 +128,22 @@ export function checkNoCandidateInFlight(options) {
   const lines = [
     'A joint NocoBase 3 beta release (V3 Release Beta) is still in flight in nocobase/nocobase3-pro, so this Pro release would publish the same versions or take the same release-beta name:',
     ...inFlight.map((candidate) => `  ${describe(candidate)}`),
-    'Finish that release first: open its V3 Release Beta run and use "Re-run failed jobs"; it publishes the candidate, merges it into Pro develop, and deletes the branch. If that run will never be resumed, delete the branch (git push origin --delete <branch>) and start this workflow again. Candidates older than 30 days are ignored, because their runs can no longer be re-run.',
+    'Finish that release first: open its V3 Release Beta run, linked above, and use "Re-run failed jobs"; it publishes the candidate, merges it into Pro develop, and deletes the branch. If that run is truly abandoned, delete its branch in nocobase/nocobase3-pro and start this workflow again:',
+    ...inFlight.map(
+      ({ branch }) =>
+        `  git push https://github.com/nocobase/nocobase3-pro.git --delete ${branch}`,
+    ),
+    'or delete it on https://github.com/nocobase/nocobase3-pro/branches. Candidates older than 30 days are ignored, because their runs can no longer be re-run.',
   ];
   throw new Error(lines.join('\n'));
 }
 
-export function pruneCandidates({ keep, ...options }) {
+export function pruneCandidates({ keep, superseded = false, ...options }) {
   for (const candidate of listCandidates(options)) {
-    const { branch, sha, released, stale } = candidate;
+    const { branch, sha, tags, released, stale } = candidate;
     if (branch === keep) continue;
-    if (!released && !stale) {
+    const abandoned = superseded && tags.length === 0;
+    if (!released && !stale && !abandoned) {
       console.log(
         `Keeping ${describe(candidate)}; its run can still be re-run.`,
       );
@@ -136,9 +157,12 @@ export function pruneCandidates({ keep, ...options }) {
       'origin',
       `:refs/heads/${branch}`,
     );
-    console.log(
-      `Deleted ${branch}: ${released ? 'published and merged into Pro develop' : 'its run can no longer be re-run'}.`,
-    );
+    const reason = released
+      ? 'published and merged into Pro develop'
+      : stale
+        ? 'its run can no longer be re-run'
+        : `never published, and superseded by the Pro beta this run released (${describe(candidate)})`;
+    console.log(`Deleted ${branch}: ${reason}.`);
   }
 }
 
@@ -150,13 +174,13 @@ if (import.meta.main) {
     } else if (
       command === 'prune' &&
       rest[0] === '--keep' &&
-      /^release-candidate\/\S+$/u.test(rest[1] ?? '') &&
-      rest.length === 2
+      candidatePattern.test(`refs/heads/${rest[1] ?? ''}`) &&
+      (rest.length === 2 || (rest.length === 3 && rest[2] === '--superseded'))
     ) {
-      pruneCandidates({ keep: rest[1] });
+      pruneCandidates({ keep: rest[1], superseded: rest.length === 3 });
     } else {
       throw new Error(
-        'Usage: pro-release-candidates.mjs check | prune --keep release-candidate/<batch>',
+        'Usage: pro-release-candidates.mjs check | prune --keep release-candidate/<YYYY-MM-DD.N> [--superseded]',
       );
     }
   } catch (error) {

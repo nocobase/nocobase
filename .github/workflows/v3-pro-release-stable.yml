@@ -297,7 +297,10 @@ jobs:
             echo "$NEW_TAGS"
             git tag "$TAG"
             git push origin "refs/tags/${TAG}:refs/tags/${TAG}"
-            git push origin --tags
+            # publish-commercial-packages.mjs moves a package tag that a candidate which never published had reserved, so the package tags it wrote are forced; it refuses to move any other.
+            REFS=()
+            for PACKAGE_TAG in $NEW_TAGS; do REFS+=("+refs/tags/${PACKAGE_TAG}:refs/tags/${PACKAGE_TAG}"); done
+            git push origin "${REFS[@]}"
             echo 'published=true' >> "$GITHUB_OUTPUT"
           fi
 

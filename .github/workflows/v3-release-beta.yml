@@ -465,8 +465,8 @@ jobs:
       release: ${{ steps.plan.outputs.release }}
       candidate_sha: ${{ steps.candidate.outputs.sha }}
       candidate_branch: ${{ steps.candidate.outputs.branch }}
-      name: ${{ steps.candidate.outputs.name }}
-      batch: ${{ steps.candidate.outputs.batch }}
+      name: ${{ steps.release_name.outputs.name }}
+      batch: ${{ steps.release_name.outputs.batch }}
       rows: ${{ steps.changed.outputs.rows }}
       specs: ${{ steps.changed.outputs.specs }}
     steps:
@@ -604,6 +604,85 @@ jobs:
         # SPECS is a space-separated list of name@version specs; word splitting passes one argument per spec.
         run: node ./scripts/check-release-versions.mjs --registry "$PRO_NPM_REGISTRY" --unpublished $SPECS
 
+      # The changelog below heads its section with the release-beta name, so the name is chosen before the tree is staged. A rerun of this job takes the name of the candidate this run already pushed, so it writes the same section and can reuse that candidate. Otherwise the Pro batch number skips the numbers of today's release tags and of the other candidates still pushed, so a candidate of a failed run that was never tagged cannot give this one the same release-beta name. The read token is in the remote only while this step runs.
+      - name: Name the Pro release
+        if: steps.plan.outputs.release == 'true'
+        id: release_name
+        env:
+          PRO_TOKEN: ${{ steps.checkout_token.outputs.token }}
+          OSS_BATCH: ${{ needs.prepare.outputs.batch }}
+          RELEASE_TAG: ${{ needs.prepare.outputs.release_tag }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          git remote set-url origin "https://x-access-token:${PRO_TOKEN}@github.com/nocobase/nocobase3-pro.git"
+          trap 'git remote set-url origin https://github.com/nocobase/nocobase3-pro.git' EXIT
+          BRANCH="release-candidate/${OSS_BATCH}"
+          git fetch --quiet origin --tags --force
+          git ls-remote --heads origin 'refs/heads/release-candidate/*' | while read -r _ REF; do
+            [ "$REF" != "refs/heads/${BRANCH}" ] || continue
+            git fetch --quiet --no-tags origin "+${REF}:refs/pro-candidates/${REF#refs/heads/}"
+          done
+          BATCH=''
+          if git fetch --quiet --no-tags origin "+refs/heads/${BRANCH}:refs/remotes/origin/${BRANCH}" 2> /dev/null \
+            && git log -1 --format=%B "refs/remotes/origin/${BRANCH}" | grep -qxF "OSS-Release: $RELEASE_TAG" \
+            && git log -1 --format=%B "refs/remotes/origin/${BRANCH}" | grep -qxF "OSS-Run: $RUN_URL"; then
+            BATCH=$(git log -1 --format=%s "refs/remotes/origin/${BRANCH}" | sed -n 's/^chore: release \([^ ]*\) \[skip ci\]$/\1/p')
+            test -n "$BATCH" || { echo "::error::$BRANCH has an unexpected subject"; exit 1; }
+            echo "Keeping the name of $BRANCH, which this run pushed earlier."
+          else
+            DAY=$(date -u +%Y-%m-%d)
+            MAX=0
+            TAKEN=$(
+              git tag -l "release-beta/${DAY}.*"
+              git for-each-ref --format='%(subject)' 'refs/pro-candidates/' | sed -n 's/^chore: release \([^ ]*\) \[skip ci\]$/release-beta\/\1/p'
+            )
+            for TAG in $TAKEN; do
+              case "$TAG" in "release-beta/${DAY}."*) ;; *) continue ;; esac
+              NUMBER="${TAG##*.}"
+              case "$NUMBER" in ''|*[!0-9]*) continue ;; esac
+              [ "$NUMBER" -gt "$MAX" ] && MAX="$NUMBER"
+            done
+            BATCH="${DAY}.$((MAX + 1))"
+          fi
+          {
+            echo "name=release-beta/${BATCH}"
+            echo "batch=${BATCH}"
+          } >> "$GITHUB_OUTPUT"
+
+      # The root CHANGELOG.md, CHANGELOG.zh-CN.md and CHANGELOG.ja-JP.md gain this release's section, written as v3-pro-release-beta.yml writes it: by the framework's scripts/changelog.mjs from the descriptions of the Pro pull requests the release contains, with Pro's own module names (scripts/changelog-scopes.json, passed once the framework's script takes --scopes). The section is part of the tested, committed candidate, and the Pro GitHub Release opens with its English text. Best effort: a failure warns, puts the files back as they were, and the release goes on without the section.
+      - name: Create a Pro pull request read token
+        if: steps.plan.outputs.release == 'true'
+        id: pull_request_token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.NOCOBASE_APP_ID }}
+          private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
+          owner: nocobase
+          repositories: nocobase3-pro
+          permission-contents: read
+          permission-pull-requests: read
+
+      - name: Write the changelog
+        if: steps.plan.outputs.release == 'true'
+        env:
+          GH_TOKEN: ${{ steps.pull_request_token.outputs.token }}
+          TAG: ${{ steps.release_name.outputs.name }}
+        run: |
+          ARGS=(--tag "$TAG" --repo nocobase/nocobase3-pro --root .)
+          if [ -f scripts/changelog-scopes.json ] && grep -q -- "scopes: { type: 'string' }" vendor/nocobase3/scripts/changelog.mjs; then
+            ARGS+=(--scopes scripts/changelog-scopes.json)
+          fi
+          if ! node ./vendor/nocobase3/scripts/changelog.mjs "${ARGS[@]}"; then
+            echo "::warning::Writing the changelog failed; $TAG has no changelog section."
+            for file in CHANGELOG.md CHANGELOG.zh-CN.md CHANGELOG.ja-JP.md; do
+              if git ls-files --error-unmatch -- "$file" > /dev/null 2>&1; then
+                git checkout HEAD -- "$file"
+              else
+                rm -f -- "$file"
+              fi
+            done
+          fi
+
       # The index holds the versioned tree that the build, tests, and smoke test below run against; the candidate commit records exactly this index, never their output.
       - name: Stage the versioned Pro tree
         run: git add -A
@@ -650,9 +729,10 @@ jobs:
           OSS_BATCH: ${{ needs.prepare.outputs.batch }}
         run: |
           git remote set-url origin "https://x-access-token:${PRO_TOKEN}@github.com/nocobase/nocobase3-pro.git"
+          trap 'git remote set-url origin https://github.com/nocobase/nocobase3-pro.git' EXIT
           node "$RUNNER_TEMP/oss-tools/pro-release-candidates.mjs" prune --keep "release-candidate/${OSS_BATCH}"
 
-      # The branch is named after the open-source batch, so a rerun of this job for the same release finds it. A rerun reuses a candidate with the same tree, and replaces any other leftover candidate unless a Pro release tag already points at it. A leftover branch from a release that never published is harmless. The Pro batch number skips the numbers of today's release tags and of the other candidates still pushed, so a candidate of a failed run that was never tagged cannot give this one the same release-beta name.
+      # The branch is named after the open-source batch, so a rerun of this job for the same release finds it. A rerun reuses a candidate this run pushed with the same tree and name, and replaces any other leftover candidate unless a Pro release tag already points at it. A leftover branch from a release that never published is harmless; pro-release deletes it once a later release is published. The commit message records the open-source release tag and the URL of this run (`OSS-Run`), which the standalone Pro workflows link to while they refuse to start.
       - name: Push the Pro release candidate
         if: "!inputs.dry_run && steps.plan.outputs.release == 'true'"
         id: candidate
@@ -661,48 +741,35 @@ jobs:
           OSS_BATCH: ${{ needs.prepare.outputs.batch }}
           RELEASE_TAG: ${{ needs.prepare.outputs.release_tag }}
           SOURCE_SHA: ${{ needs.prepare.outputs.source_sha }}
+          NAME: ${{ steps.release_name.outputs.name }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           git remote set-url origin "https://x-access-token:${PRO_TOKEN}@github.com/nocobase/nocobase3-pro.git"
+          trap 'git remote set-url origin https://github.com/nocobase/nocobase3-pro.git' EXIT
           git config user.name 'nocobase[bot]'
           git config user.email '179432756+nocobase[bot]@users.noreply.github.com'
           test "$(git ls-files --stage vendor/nocobase3 | awk '{print $2}')" = "$SOURCE_SHA"
           BRANCH="release-candidate/${OSS_BATCH}"
+          SUBJECT="chore: release ${NAME#release-beta/} [skip ci]"
           TREE=$(git write-tree)
           git fetch --quiet origin --tags --force
-          git ls-remote --heads origin 'refs/heads/release-candidate/*' | while read -r _ REF; do
-            [ "$REF" != "refs/heads/${BRANCH}" ] || continue
-            git fetch --quiet --no-tags origin "+${REF}:refs/pro-candidates/${REF#refs/heads/}"
-          done
           EXISTING=''
-          if git fetch --quiet origin "+refs/heads/${BRANCH}:refs/remotes/origin/${BRANCH}" 2> /dev/null; then
+          if git fetch --quiet --no-tags origin "+refs/heads/${BRANCH}:refs/remotes/origin/${BRANCH}" 2> /dev/null; then
             EXISTING=$(git rev-parse "refs/remotes/origin/${BRANCH}")
           fi
           if [ -n "$EXISTING" ] && [ "$(git rev-parse "${EXISTING}^{tree}")" = "$TREE" ] \
-            && git log -1 --format=%B "$EXISTING" | grep -qxF "OSS-Release: $RELEASE_TAG"; then
+            && [ "$(git log -1 --format=%s "$EXISTING")" = "$SUBJECT" ] \
+            && git log -1 --format=%B "$EXISTING" | grep -qxF "OSS-Release: $RELEASE_TAG" \
+            && git log -1 --format=%B "$EXISTING" | grep -qxF "OSS-Run: $RUN_URL"; then
             SHA="$EXISTING"
-            NAME="release-beta/$(git log -1 --format=%s "$SHA" | sed -n 's/^chore: release \([^ ]*\) \[skip ci\]$/\1/p')"
-            test "$NAME" != 'release-beta/' || { echo "::error::$BRANCH has an unexpected subject"; exit 1; }
             echo "Reusing $BRANCH at $SHA."
           else
             if [ -n "$EXISTING" ] && [ -n "$(git tag --points-at "$EXISTING" -l 'release-beta/*')" ]; then
               echo "::error::$BRANCH holds $EXISTING, which a Pro release tag already points at; refusing to replace it."
               exit 1
             fi
-            DAY=$(date -u +%Y-%m-%d)
-            MAX=0
-            TAKEN=$(
-              git tag -l "release-beta/${DAY}.*"
-              git for-each-ref --format='%(subject)' 'refs/pro-candidates/' | sed -n 's/^chore: release \([^ ]*\) \[skip ci\]$/release-beta\/\1/p'
-            )
-            for TAG in $TAKEN; do
-              case "$TAG" in "release-beta/${DAY}."*) ;; *) continue ;; esac
-              NUMBER="${TAG##*.}"
-              case "$NUMBER" in ''|*[!0-9]*) continue ;; esac
-              [ "$NUMBER" -gt "$MAX" ] && MAX="$NUMBER"
-            done
-            NAME="release-beta/${DAY}.$((MAX + 1))"
             # HUSKY=0 and --no-verify keep Pro's commit hooks from changing what was tested.
-            HUSKY=0 git commit --quiet --no-verify -m "chore: release ${NAME#release-beta/} [skip ci]" -m "OSS-Release: $RELEASE_TAG"
+            HUSKY=0 git commit --quiet --no-verify -m "$SUBJECT" -m "OSS-Release: ${RELEASE_TAG}"$'\n'"OSS-Run: ${RUN_URL}"
             test "$(git rev-parse 'HEAD^{tree}')" = "$TREE" || { echo "::error::The candidate commit does not record the tested tree $TREE"; exit 1; }
             SHA=$(git rev-parse HEAD)
             git push --force-with-lease="refs/heads/${BRANCH}:${EXISTING}" origin "${SHA}:refs/heads/${BRANCH}"
@@ -710,8 +777,6 @@ jobs:
           {
             echo "sha=$SHA"
             echo "branch=$BRANCH"
-            echo "name=$NAME"
-            echo "batch=${NAME#release-beta/}"
           } >> "$GITHUB_OUTPUT"
 
   release:
@@ -1175,22 +1240,20 @@ jobs:
           permission-contents: write
           permission-pull-requests: write
 
+      # Every step below that talks to the Pro repository puts the write token in the remote itself and takes it out again when it ends, so no later step (pnpm publish runs the packages' lifecycle scripts) can read it from .git/config, and each step works on its own when the job is re-run.
       # The standalone Pro workflows refuse to start while this candidate is in flight, but one started before it was pushed may have released meanwhile. Its release tag is then one Pro develop did not contain when pro-candidate recorded the tags it lacked, and this candidate would publish the same versions without its changes.
-      - name: Tag and push the release branch
+      - name: Refuse to publish over a newer Pro beta
         if: '!inputs.dry_run'
         env:
-          GH_TOKEN: ${{ steps.pro_write_token.outputs.token }}
           PRO_TOKEN: ${{ steps.pro_write_token.outputs.token }}
           NAME: ${{ needs.pro-candidate.outputs.name }}
-          CANDIDATE_SHA: ${{ needs.pro-candidate.outputs.candidate_sha }}
           CANDIDATE_BRANCH: ${{ needs.pro-candidate.outputs.candidate_branch }}
           PRO_SHA: ${{ needs.pro-candidate.outputs.pro_sha }}
           KNOWN_TAGS: ${{ needs.pro-candidate.outputs.unmerged_tags }}
           MERGE_SHA: ${{ needs.release.outputs.merge_sha }}
         run: |
           git remote set-url origin "https://x-access-token:${PRO_TOKEN}@github.com/nocobase/nocobase3-pro.git"
-          git config user.name 'nocobase[bot]'
-          git config user.email '179432756+nocobase[bot]@users.noreply.github.com'
+          trap 'git remote set-url origin https://github.com/nocobase/nocobase3-pro.git' EXIT
           git fetch --quiet origin --tags --force
           NEWER=$(git tag -l 'release-beta/*' --no-merged "$PRO_SHA" | while read -r TAG; do
             [ "$TAG" != "$NAME" ] || continue
@@ -1201,6 +1264,41 @@ jobs:
             echo "::error::Another Pro beta was released after Pro develop was tested at $PRO_SHA: $(echo $NEWER). This candidate does not contain it and would publish the same versions, so nothing Pro was published. The open-source packages are already out. Delete the $CANDIDATE_BRANCH branch in nocobase/nocobase3-pro, then run V3 Release Pro Beta with oss_sha set to ${MERGE_SHA:-the open-source merge commit on v3-develop}."
             exit 1
           fi
+
+      # pnpm skips versions the registry already holds, so a version is accepted as published only when this candidate published it in an earlier attempt: its name@version tag points at the candidate, or its gitHead is the candidate. The tags are pushed at the candidate before publishing, so an attempt that published only some packages is recognized when it is re-run. A tag left at another commit by a candidate that never published (no release tag points at it, and the version is not on pkg-v3) is reclaimed: check-release-versions.mjs warns about it and the tag is moved here. It refuses everything else, so every tag can be forced to the candidate once it passes.
+      - name: Verify the Pro versions and reserve their tags
+        if: '!inputs.dry_run'
+        env:
+          PRO_TOKEN: ${{ steps.pro_write_token.outputs.token }}
+          NODE_AUTH_TOKEN: ${{ secrets.PRO_NPM_TOKEN }}
+          PRO_NPM_REGISTRY: ${{ secrets.PRO_NPM_REGISTRY }}
+          SPECS: ${{ needs.pro-candidate.outputs.specs }}
+          CANDIDATE_SHA: ${{ needs.pro-candidate.outputs.candidate_sha }}
+        run: |
+          git remote set-url origin "https://x-access-token:${PRO_TOKEN}@github.com/nocobase/nocobase3-pro.git"
+          trap 'git remote set-url origin https://github.com/nocobase/nocobase3-pro.git' EXIT
+          git fetch --quiet origin --tags --force
+          # SPECS is a space-separated list of name@version specs; word splitting passes one argument per spec.
+          node ./scripts/check-release-versions.mjs --registry "$PRO_NPM_REGISTRY" --candidate "$CANDIDATE_SHA" $SPECS
+          REFS=()
+          for SPEC in $SPECS; do
+            git tag --force "$SPEC" "$CANDIDATE_SHA" > /dev/null
+            REFS+=("+refs/tags/${SPEC}:refs/tags/${SPEC}")
+          done
+          git push --quiet origin "${REFS[@]}"
+
+      # Tagged only once the versions passed the check above, so a candidate that may not be published never gets a release tag.
+      - name: Tag and push the release branch
+        if: '!inputs.dry_run'
+        env:
+          GH_TOKEN: ${{ steps.pro_write_token.outputs.token }}
+          PRO_TOKEN: ${{ steps.pro_write_token.outputs.token }}
+          NAME: ${{ needs.pro-candidate.outputs.name }}
+          CANDIDATE_SHA: ${{ needs.pro-candidate.outputs.candidate_sha }}
+        run: |
+          git remote set-url origin "https://x-access-token:${PRO_TOKEN}@github.com/nocobase/nocobase3-pro.git"
+          trap 'git remote set-url origin https://github.com/nocobase/nocobase3-pro.git' EXIT
+          git fetch --quiet origin --tags --force
           if git rev-parse --verify --quiet "refs/tags/${NAME}" > /dev/null; then
             TAG_SHA=$(git rev-parse "refs/tags/${NAME}^{commit}")
             test "$TAG_SHA" = "$CANDIDATE_SHA" || { echo "::error::$NAME already points to $TAG_SHA, not the candidate $CANDIDATE_SHA"; exit 1; }
@@ -1216,27 +1314,6 @@ jobs:
             git push origin "${CANDIDATE_SHA}:refs/heads/${NAME}"
           fi
 
-      # pnpm skips versions the registry already holds, so a version is accepted as published only when this candidate published it in an earlier attempt: its name@version tag points at the candidate, or its gitHead is the candidate. The tags are pushed at the candidate before publishing, so an attempt that published only some packages is recognized when it is re-run.
-      - name: Verify the Pro versions and reserve their tags
-        if: '!inputs.dry_run'
-        env:
-          PRO_TOKEN: ${{ steps.pro_write_token.outputs.token }}
-          NODE_AUTH_TOKEN: ${{ secrets.PRO_NPM_TOKEN }}
-          PRO_NPM_REGISTRY: ${{ secrets.PRO_NPM_REGISTRY }}
-          SPECS: ${{ needs.pro-candidate.outputs.specs }}
-          CANDIDATE_SHA: ${{ needs.pro-candidate.outputs.candidate_sha }}
-        run: |
-          git remote set-url origin "https://x-access-token:${PRO_TOKEN}@github.com/nocobase/nocobase3-pro.git"
-          git fetch --quiet origin --tags --force
-          # SPECS is a space-separated list of name@version specs; word splitting passes one argument per spec.
-          node ./scripts/check-release-versions.mjs --registry "$PRO_NPM_REGISTRY" --candidate "$CANDIDATE_SHA" $SPECS
-          REFS=()
-          for SPEC in $SPECS; do
-            git rev-parse --verify --quiet "refs/tags/${SPEC}" > /dev/null || git tag "$SPEC" "$CANDIDATE_SHA"
-            REFS+=("refs/tags/${SPEC}:refs/tags/${SPEC}")
-          done
-          git push --quiet origin "${REFS[@]}"
-
       - name: Publish Pro packages
         if: '!inputs.dry_run'
         env:
@@ -1247,6 +1324,7 @@ jobs:
       - name: Point beta and latest at this release and push package tags
         if: '!inputs.dry_run'
         env:
+          PRO_TOKEN: ${{ steps.pro_write_token.outputs.token }}
           NODE_AUTH_TOKEN: ${{ secrets.PRO_NPM_TOKEN }}
           PRO_NPM_REGISTRY: ${{ secrets.PRO_NPM_REGISTRY }}
           SPECS: ${{ needs.pro-candidate.outputs.specs }}
@@ -1263,9 +1341,22 @@ jobs:
             fi
           done
           test "$FAILED" = 0 || { echo '::error::One or more Pro beta or latest dist-tags could not be updated'; exit 1; }
+          git remote set-url origin "https://x-access-token:${PRO_TOKEN}@github.com/nocobase/nocobase3-pro.git"
+          trap 'git remote set-url origin https://github.com/nocobase/nocobase3-pro.git' EXIT
           git push origin --tags
 
-      # The release commit pins the open-source release commit, which v3-develop does not contain because the release is squash-merged there. Pro develop must track v3-develop, so the release branch moves the pointer to the merged release commit before merging back. When the open-source merge back failed (merged is 'false'), it keeps Pro develop's current pointer instead; when release has not reported a merge at all, this job waits for release to be re-run. Pro develop may have moved since pro-candidate, typically its pointer or pnpm-lock.yaml, so develop is merged into the release branch first: the gitlink and the lockfile are regenerated rather than merged, and package versions and changelogs are reconciled as a stable sync does. A rerun starts from the release branch it already pushed. The install runs with a token-free remote, so no install script can read the write token.
+      # A candidate of an earlier batch that no release tag points at was left by a run that failed before publishing, typically in its open-source jobs. It can no longer be resumed: its pro-release refuses to publish once a Pro beta its develop did not contain was released, which this one now was. Until it is deleted, it makes the standalone Pro workflows refuse to start. Only release-candidate/<YYYY-MM-DD.N> branches are considered, this run's own candidate is never touched, and a tagged candidate, which still waits for its merge back, is kept; see scripts/pro-release-candidates.mjs.
+      - name: Delete the candidates this release superseded
+        if: '!inputs.dry_run'
+        env:
+          PRO_TOKEN: ${{ steps.pro_write_token.outputs.token }}
+          BRANCH: ${{ needs.pro-candidate.outputs.candidate_branch }}
+        run: |
+          git remote set-url origin "https://x-access-token:${PRO_TOKEN}@github.com/nocobase/nocobase3-pro.git"
+          trap 'git remote set-url origin https://github.com/nocobase/nocobase3-pro.git' EXIT
+          node "$RUNNER_TEMP/oss-tools/pro-release-candidates.mjs" prune --keep "$BRANCH" --superseded
+
+      # The release commit pins the open-source release commit, which v3-develop does not contain because the release is squash-merged there. Pro develop must track v3-develop, so the release branch moves the pointer to the merged release commit before merging back. When the open-source merge back failed (merged is 'false'), it keeps Pro develop's current pointer instead; when release has not reported a merge at all, this job waits for release to be re-run. Pro develop may have moved since pro-candidate, so develop is merged into the release branch first. Its pnpm-workspace.yaml and pnpm-lock.yaml are taken from develop, so the Pro-owned entries develop added or changed (catalog, allowBuilds, overrides) survive; the gitlink is regenerated rather than merged, and sync-release-oss.mjs then re-syncs the upstream blocks of pnpm-workspace.yaml and regenerates the lockfile against the target pointer. A rerun starts from the release branch it already pushed. The write token is moved into a shell variable that is not exported, handed to gh explicitly, and put in the remote only to fetch and to push, so no install, sync, or conflict script this step runs can read it.
       - name: Return the submodule pointer to v3-develop
         if: '!inputs.dry_run'
         id: pointer
@@ -1277,14 +1368,18 @@ jobs:
           MERGE_SHA: ${{ needs.release.outputs.merge_sha }}
           NODE_AUTH_TOKEN: ${{ secrets.PRO_NPM_TOKEN }}
         run: |
-          git remote set-url origin "https://x-access-token:${PRO_TOKEN}@github.com/nocobase/nocobase3-pro.git"
-          if [ -n "$(gh pr list --repo nocobase/nocobase3-pro --head "$NAME" --state merged --json url --jq '.[].url')" ]; then
+          WRITE_TOKEN="$PRO_TOKEN"
+          unset PRO_TOKEN GH_TOKEN
+          if [ -n "$(GH_TOKEN="$WRITE_TOKEN" gh pr list --repo nocobase/nocobase3-pro --head "$NAME" --state merged --json url --jq '.[].url')" ]; then
             echo "$NAME was already merged into Pro develop."
             echo "merged=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
           echo "merged=false" >> "$GITHUB_OUTPUT"
+          git remote set-url origin "https://x-access-token:${WRITE_TOKEN}@github.com/nocobase/nocobase3-pro.git"
+          trap 'git remote set-url origin https://github.com/nocobase/nocobase3-pro.git' EXIT
           git fetch --quiet origin "+refs/heads/develop:refs/remotes/origin/develop" "+refs/heads/${NAME}:refs/remotes/origin/${NAME}"
+          git remote set-url origin https://github.com/nocobase/nocobase3-pro.git
           if [ -n "$MERGE_SHA" ]; then
             TARGET="$MERGE_SHA"
           elif [ "$MERGED" = false ]; then
@@ -1297,8 +1392,6 @@ jobs:
           git config user.name 'nocobase[bot]'
           git config user.email '179432756+nocobase[bot]@users.noreply.github.com'
           git checkout --quiet -B "$NAME" "refs/remotes/origin/${NAME}"
-          AUTHENTICATED=$(git remote get-url origin)
-          git remote set-url origin "$(printf '%s' "$AUTHENTICATED" | sed 's#//[^@/]*@#//#')"
           # HUSKY=0 and --no-verify keep Pro's commit hooks from changing the commits; each must record the staged tree.
           commit() {
             local TREE
@@ -1317,11 +1410,12 @@ jobs:
               echo "::error::Pro develop could not be merged into $NAME."
               exit 1
             fi
-            node "$RUNNER_TEMP/oss-tools/reconcile-pro-release-metadata.mjs" --metadata-source "$(git rev-parse HEAD)" --oss-sha "$SOURCE"
+            # Develop's copies, which the release branch only differs from in the upstream blocks and the lockfile that the sync below regenerates.
+            node "$RUNNER_TEMP/oss-tools/reconcile-pro-release-metadata.mjs" --metadata-source "$(git rev-parse refs/remotes/origin/develop)" --oss-sha "$SOURCE"
             if [ "$MERGE_RC" != 0 ]; then node ./vendor/nocobase3/scripts/resolve-sync-conflicts.mjs; fi
             CONFLICTS=$(git diff --name-only --diff-filter=U)
             if [ -n "$CONFLICTS" ]; then
-              echo "::error::Pro develop changed since this release was tested and conflicts with $NAME in: $(echo $CONFLICTS). Pro is published and tagged. Merge develop into $NAME by hand in nocobase/nocobase3-pro, keeping vendor/nocobase3 at $SOURCE, push $NAME, then use \"Re-run failed jobs\"."
+              echo "::error::Pro develop changed since this release was tested and conflicts with $NAME in: $(echo $CONFLICTS). Pro is published and tagged. Merge develop into $NAME by hand in nocobase/nocobase3-pro, keeping vendor/nocobase3 at $SOURCE and develop's pnpm-workspace.yaml, push $NAME, then use \"Re-run failed jobs\"."
               exit 1
             fi
             commit -m "chore: merge develop into ${NAME} [skip ci]"
@@ -1332,7 +1426,7 @@ jobs:
             git add pnpm-workspace.yaml pnpm-lock.yaml vendor/nocobase3
             if ! git diff --cached --quiet; then commit -m "chore: bump oss to ${TARGET} [skip ci]"; fi
           fi
-          git remote set-url origin "$AUTHENTICATED"
+          git remote set-url origin "https://x-access-token:${WRITE_TOKEN}@github.com/nocobase/nocobase3-pro.git"
           git push --quiet origin "HEAD:refs/heads/${NAME}"
 
       - name: Merge release metadata back into Pro develop

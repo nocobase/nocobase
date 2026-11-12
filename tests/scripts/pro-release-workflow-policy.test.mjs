@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { execFileSync, spawnSync } from 'node:child_process';
+import { execFileSync, spawn, spawnSync } from 'node:child_process';
 import {
   copyFileSync,
   mkdirSync,
@@ -129,8 +129,50 @@ test('Pro publishes the pushed candidate commit without regenerating it', async 
   );
 });
 
+test('pro-candidate writes the Pro changelog into the tested candidate as the standalone Pro beta does', async () => {
+  const candidate = await jointProJob('pro-candidate');
+  const standalone = await workflow('v3-pro-release-beta.yml');
+  assert.equal(
+    runBlock(candidate, 'Write the changelog'),
+    runBlock(standalone, 'Write the changelog'),
+  );
+  const order = [
+    '- name: Version Pro packages',
+    '- name: Name the Pro release',
+    '- name: Create a Pro pull request read token',
+    '- name: Write the changelog',
+    '- name: Stage the versioned Pro tree',
+    '- name: Build and test Pro',
+    '- name: Push the Pro release candidate',
+  ].map((step) => candidate.indexOf(step));
+  assert.ok(
+    order.every((position) => position !== -1),
+    order.join(),
+  );
+  assert.deepEqual(
+    [...order].sort((a, b) => a - b),
+    order,
+  );
+  const step = (name) =>
+    candidate
+      .split(/\n(?=      - name: )/u)
+      .find((block) => block.startsWith(`      - name: ${name}\n`));
+  assert.match(
+    step('Write the changelog'),
+    /TAG: \$\{\{ steps\.release_name\.outputs\.name \}\}/u,
+  );
+  assert.match(
+    step('Create a Pro pull request read token'),
+    /permission-pull-requests: read/u,
+  );
+  assert.match(
+    step('Push the Pro release candidate'),
+    /NAME: \$\{\{ steps\.release_name\.outputs\.name \}\}/u,
+  );
+});
+
 // "Re-run failed jobs" reuses pro-candidate's outputs and never pushes its candidate again, so the candidate of a failed or cancelled run must survive until a rerun has merged it back.
-test('only the merge back and the stale-candidate prune delete a release candidate', async () => {
+test('only the merge back and the candidate prunes delete a release candidate', async () => {
   const source = await workflow('v3-release-beta.yml');
   const deletion = /--method DELETE|git push[^\n]*(?:--delete|\s":)/u;
   const steps = source.split(/\n(?=      - name: )/u);
@@ -147,6 +189,7 @@ test('only the merge back and the stale-candidate prune delete a release candida
     .map((step) => step.match(/- name: ([^\n]+)/u)[1]);
   assert.deepEqual([...deleting, ...pruning].sort(), [
     'Delete the Pro release candidate branch',
+    'Delete the candidates this release superseded',
     'Prune stale Pro release candidates',
   ]);
   assert.equal(
@@ -157,6 +200,15 @@ test('only the merge back and the stale-candidate prune delete a release candida
   assert.ok(
     publish.indexOf('- name: Merge release metadata back into Pro develop') <
       publish.indexOf('- name: Delete the Pro release candidate branch'),
+  );
+  // Earlier candidates are superseded only once this release is published, and never this run's own.
+  assert.ok(
+    publish.indexOf('- name: Point beta and latest at this release') <
+      publish.indexOf('- name: Delete the candidates this release superseded'),
+  );
+  assert.match(
+    runBlock(publish, 'Delete the candidates this release superseded'),
+    /prune --keep "\$BRANCH" --superseded$/mu,
   );
   const candidate = await jointProJob('pro-candidate');
   assert.ok(
@@ -229,6 +281,52 @@ test('the Pro registry serves only the @nocobase scope and the install can authe
   }
 });
 
+test('the joint Pro jobs never use the public npm token or registry', async () => {
+  for (const job of jointProJobs) {
+    const source = await jointProJob(job);
+    assert.doesNotMatch(source, /secrets\.NPM_TOKEN\b/u, job);
+    // The only mention of public npm is the check that rejects it as the Pro registry.
+    for (const step of source.split(/\n(?=      - name: )/u)) {
+      if (!step.includes('registry.npmjs.org')) continue;
+      assert.match(step, /- name: Validate the Pro npm registry\n/u, job);
+      assert.equal(
+        step.match(/registry\.npmjs\.org/gu).length,
+        1,
+        `${job}:\n${step}`,
+      );
+      assert.match(
+        step,
+        /if \(registry\.hostname === "registry\.npmjs\.org"\) \{ console\.error\("::error::Commercial packages must not use public npm"\); process\.exit\(1\); \}/u,
+      );
+    }
+  }
+});
+
+// No step of pro-release leaves the write token in .git/config for a later step, where pnpm publish's lifecycle scripts or an install could read it: each one that puts it in the remote resets the remote when it exits.
+test('pro-release keeps the write token out of the remote between steps', async () => {
+  const publish = await jointProJob('pro-release');
+  for (const step of publish.split(/\n(?=      - name: )/u)) {
+    if (!step.includes('x-access-token:')) continue;
+    assert.match(
+      step,
+      /^\s+trap 'git remote set-url origin https:\/\/github\.com\/nocobase\/nocobase3-pro\.git' EXIT$/mu,
+      step.slice(0, 200),
+    );
+  }
+  const pointer = runBlock(
+    publish,
+    'Return the submodule pointer to v3-develop',
+  );
+  assert.ok(
+    pointer.startsWith('WRITE_TOKEN="$PRO_TOKEN"\nunset PRO_TOKEN GH_TOKEN\n'),
+    pointer.slice(0, 200),
+  );
+  assert.doesNotMatch(
+    pointer.slice(pointer.indexOf('unset')),
+    /\$\{?(?:GH|PRO)_TOKEN/u,
+  );
+});
+
 function runBlock(job, stepName) {
   const lines = job.split('\n');
   const step = lines.findIndex((line) => line.trim() === `- name: ${stepName}`);
@@ -281,10 +379,10 @@ function gitFixture(t) {
   };
 }
 
-// Run a workflow step's script in `cwd`, keeping the local remote instead of authenticating it.
+// Run a workflow step's script in `cwd`, keeping the local remote instead of authenticating it and resetting it to GitHub.
 function runStep(job, stepName, cwd, env, extra) {
   const script = runBlock(job, stepName).replace(
-    /^git remote set-url origin .*$/mu,
+    /^(?:git remote set-url origin|trap ).*$/gmu,
     '',
   );
   const output = path.join(cwd, '..', `${path.basename(cwd)}.output`);
@@ -303,6 +401,27 @@ function runStep(job, stepName, cwd, env, extra) {
   return { ...result, outputs };
 }
 
+// Name the Pro release, then push the candidate, as pro-candidate does around its changelog, build, and tests.
+function pushCandidate(candidateJob, checkout, env, extra) {
+  const named = runStep(candidateJob, 'Name the Pro release', checkout, env, {
+    RUN_URL: 'https://github.com/nocobase/nocobase/actions/runs/1',
+    ...extra,
+  });
+  if (named.status !== 0) return named;
+  const pushed = runStep(
+    candidateJob,
+    'Push the Pro release candidate',
+    checkout,
+    env,
+    {
+      RUN_URL: 'https://github.com/nocobase/nocobase/actions/runs/1',
+      NAME: named.outputs.name,
+      ...extra,
+    },
+  );
+  return { ...pushed, outputs: { ...named.outputs, ...pushed.outputs } };
+}
+
 test('the Pro candidate is pushed once per batch, reused on a rerun, and never replaced once released', async (t) => {
   const { directory, env, git, remote, proSha } = gitFixture(t);
   const candidateJob = await jointProJob('pro-candidate');
@@ -310,7 +429,7 @@ test('the Pro candidate is pushed once per batch, reused on a rerun, and never r
   const ossBatch = '2026-11-12.1';
   const releaseTag = `nocobase-v3-beta/${ossBatch}`;
 
-  function candidate(name, changelog) {
+  function candidate(name, changelog, extra = {}) {
     const checkout = path.join(directory, name);
     git(directory, 'clone', '-q', remote, checkout);
     git(checkout, 'checkout', '-q', proSha);
@@ -323,17 +442,12 @@ test('the Pro candidate is pushed once per batch, reused on a rerun, and never r
       '--cacheinfo',
       `160000,${sourceSha},vendor/nocobase3`,
     );
-    return runStep(
-      candidateJob,
-      'Push the Pro release candidate',
-      checkout,
-      env,
-      {
-        OSS_BATCH: ossBatch,
-        RELEASE_TAG: releaseTag,
-        SOURCE_SHA: sourceSha,
-      },
-    );
+    return pushCandidate(candidateJob, checkout, env, {
+      OSS_BATCH: ossBatch,
+      RELEASE_TAG: releaseTag,
+      SOURCE_SHA: sourceSha,
+      ...extra,
+    });
   }
   const branchSha = () =>
     git(remote, 'rev-parse', `refs/heads/release-candidate/${ossBatch}`);
@@ -345,7 +459,7 @@ test('the Pro candidate is pushed once per batch, reused on a rerun, and never r
   assert.equal(branchSha(), first.outputs.sha);
   assert.equal(
     git(remote, 'log', '-1', '--format=%B', first.outputs.sha),
-    `chore: release ${first.outputs.batch} [skip ci]\n\nOSS-Release: ${releaseTag}`,
+    `chore: release ${first.outputs.batch} [skip ci]\n\nOSS-Release: ${releaseTag}\nOSS-Run: https://github.com/nocobase/nocobase/actions/runs/1`,
   );
   assert.equal(
     git(remote, 'rev-parse', `${first.outputs.sha}:vendor/nocobase3`),
@@ -357,18 +471,32 @@ test('the Pro candidate is pushed once per batch, reused on a rerun, and never r
   assert.equal(rerun.status, 0, rerun.stderr);
   assert.deepEqual(rerun.outputs, first.outputs);
 
-  // A different tree replaces a leftover nobody released.
+  // A different tree replaces a leftover nobody released, and keeps the name this run gave it.
   const replaced = candidate('replaced', 'versioned again\n');
   assert.equal(replaced.status, 0, replaced.stderr);
   assert.notEqual(replaced.outputs.sha, first.outputs.sha);
+  assert.equal(replaced.outputs.name, first.outputs.name);
   assert.equal(branchSha(), replaced.outputs.sha);
 
+  // The same tree pushed by another run is replaced, so the commit records the run that can still publish it.
+  const otherRun = candidate('other-run', 'versioned again\n', {
+    RUN_URL: 'https://github.com/nocobase/nocobase/actions/runs/2',
+  });
+  assert.equal(otherRun.status, 0, otherRun.stderr);
+  assert.notEqual(otherRun.outputs.sha, replaced.outputs.sha);
+  assert.match(
+    git(remote, 'log', '-1', '--format=%B', otherRun.outputs.sha),
+    /^OSS-Run: https:\/\/github\.com\/nocobase\/nocobase\/actions\/runs\/2$/mu,
+  );
+  const back = candidate('back', 'versioned again\n');
+  assert.equal(back.status, 0, back.stderr);
+
   // Once a Pro release tag points at the candidate, a different tree must not replace it.
-  git(remote, 'tag', replaced.outputs.name, replaced.outputs.sha);
+  git(remote, 'tag', back.outputs.name, back.outputs.sha);
   const refused = candidate('refused', 'something else\n');
   assert.notEqual(refused.status, 0);
   assert.match(refused.stdout, /refusing to replace it/u);
-  assert.equal(branchSha(), replaced.outputs.sha);
+  assert.equal(branchSha(), back.outputs.sha);
 });
 
 // A gh that answers `gh pr list` with MERGED_URL and logs every call.
@@ -630,17 +758,11 @@ test('a new Pro batch number skips the numbers of candidates still pushed, and c
   git(checkout, 'config', 'core.hooksPath', '.hooks');
   const tree = git(checkout, 'write-tree');
 
-  const result = runStep(
-    candidateJob,
-    'Push the Pro release candidate',
-    checkout,
-    env,
-    {
-      OSS_BATCH: '2026-11-12.1',
-      RELEASE_TAG: 'nocobase-v3-beta/2026-11-12.1',
-      SOURCE_SHA: sourceSha,
-    },
-  );
+  const result = pushCandidate(candidateJob, checkout, env, {
+    OSS_BATCH: '2026-11-12.1',
+    RELEASE_TAG: 'nocobase-v3-beta/2026-11-12.1',
+    SOURCE_SHA: sourceSha,
+  });
   assert.equal(result.status, 0, result.stderr);
   assert.equal(result.outputs.name, `release-beta/${day}.4`);
   assert.equal(git(remote, 'rev-parse', `${result.outputs.sha}^{tree}`), tree);
@@ -691,7 +813,7 @@ test('pro-release refuses to publish once another Pro beta was released from a n
   const tag = (extra) => {
     const checkout = mkdtempSync(path.join(directory, 'tag-'));
     git(directory, 'clone', '-q', remote, checkout);
-    return runStep(publish, 'Tag and push the release branch', checkout, env, {
+    const inputs = {
       NAME: name,
       CANDIDATE_SHA: candidateSha,
       CANDIDATE_BRANCH: 'release-candidate/2026-11-12.1',
@@ -699,7 +821,22 @@ test('pro-release refuses to publish once another Pro beta was released from a n
       KNOWN_TAGS: 'release-beta/2026-10-10.1 ',
       MERGE_SHA: 'f'.repeat(40),
       ...extra,
-    });
+    };
+    const guard = runStep(
+      publish,
+      'Refuse to publish over a newer Pro beta',
+      checkout,
+      env,
+      inputs,
+    );
+    if (guard.status !== 0) return guard;
+    return runStep(
+      publish,
+      'Tag and push the release branch',
+      checkout,
+      env,
+      inputs,
+    );
   };
 
   const unknownOld = tag({ KNOWN_TAGS: '' });
@@ -812,9 +949,41 @@ test('pro-release checks the versions with the candidate before reserving their 
       'refs/tags/@nocobase/',
     );
 
+  // The release tag is pushed only once the check passed, so a candidate that may not be published is never tagged release-beta.
+  const order = [
+    '- name: Refuse to publish over a newer Pro beta',
+    '- name: Verify the Pro versions and reserve their tags',
+    '- name: Tag and push the release branch',
+    '- name: Publish Pro packages',
+  ].map((step) => publish.indexOf(step));
+  assert.ok(
+    order.every((position) => position !== -1),
+    order.join(),
+  );
+  assert.deepEqual(
+    [...order].sort((a, b) => a - b),
+    order,
+  );
+
   const refused = reserve(1);
   assert.notEqual(refused.status, 0);
   assert.equal(tags(), '');
+
+  // A tag an abandoned candidate reserved is moved once the check accepted it (check-release-versions.mjs decides which may be).
+  const seed = path.join(directory, 'seed');
+  git(
+    seed,
+    '-c',
+    'user.name=t',
+    '-c',
+    'user.email=t@t',
+    'commit',
+    '-q',
+    '--allow-empty',
+    '-m',
+    'abandoned candidate',
+  );
+  git(seed, 'push', '-q', remote, 'HEAD:refs/tags/@nocobase/two@0.1.0-beta.5');
 
   for (const attempt of [1, 2]) {
     const result = reserve(0);
@@ -834,5 +1003,284 @@ test('pro-release checks the versions with the candidate before reserving their 
   assert.equal(
     tags(),
     `@nocobase/one@1.0.0-beta.2 ${proSha}\n@nocobase/two@0.1.0-beta.5 ${proSha}`,
+  );
+});
+
+// A registry on 127.0.0.1 that serves `packages` ({ name: [versions] }) as minimal tarballs, in a child process so that synchronously spawned installs can reach it.
+async function localRegistry(t, directory, packages) {
+  const server = path.join(directory, 'registry.mjs');
+  writeFileSync(
+    server,
+    `import { execFileSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { createServer } from 'node:http';
+import path from 'node:path';
+const [work, json] = process.argv.slice(2);
+const files = new Map();
+const server = createServer((request, response) => {
+  const route = decodeURIComponent(request.url.split('?')[0]);
+  const file = files.get(route);
+  if (!file) { response.statusCode = 404; response.end('{}'); return; }
+  if (typeof file === 'string') response.setHeader('content-type', 'application/json');
+  response.end(file);
+});
+server.listen(0, '127.0.0.1', () => {
+  const base = 'http://127.0.0.1:' + server.address().port;
+  for (const [name, versions] of Object.entries(JSON.parse(json))) {
+    const document = { name, 'dist-tags': { latest: versions.at(-1) }, versions: {}, time: {} };
+    for (const version of versions) {
+      const folder = path.join(work, name + '-' + version);
+      mkdirSync(path.join(folder, 'package'), { recursive: true });
+      writeFileSync(path.join(folder, 'package/package.json'), JSON.stringify({ name, version }));
+      execFileSync('tar', ['-czf', 'package.tgz', 'package'], { cwd: folder });
+      const tarball = readFileSync(path.join(folder, 'package.tgz'));
+      const route = '/' + name + '/-/' + name + '-' + version + '.tgz';
+      files.set(route, tarball);
+      document.versions[version] = { name, version, dist: { tarball: base + route, shasum: createHash('sha1').update(tarball).digest('hex'), integrity: 'sha512-' + createHash('sha512').update(tarball).digest('base64') } };
+      document.time[version] = '2020-01-01T00:00:00.000Z';
+    }
+    files.set('/' + name, JSON.stringify(document));
+  }
+  process.stdout.write(base + '/\\n');
+});
+`,
+  );
+  const work = path.join(directory, 'registry');
+  mkdirSync(work);
+  const child = spawn(
+    process.execPath,
+    [server, work, JSON.stringify(packages)],
+    {
+      stdio: ['ignore', 'pipe', 'inherit'],
+    },
+  );
+  t.after(() => child.kill());
+  return new Promise((resolve, reject) => {
+    child.once('error', reject);
+    child.stdout.once('data', (chunk) => resolve(String(chunk).trim()));
+  });
+}
+
+test('the merge back keeps the pnpm settings Pro develop changed after the candidate, and installs without the write token', async (t) => {
+  if (spawnSync('pnpm', ['--version']).status !== 0) {
+    t.skip('pnpm is not installed');
+    return;
+  }
+  const directory = mkdtempSync(path.join(tmpdir(), 'joint-pro-merge-back-'));
+  t.after(() => rmSync(directory, { recursive: true, force: true }));
+  const registryUrl = await localRegistry(t, directory, {
+    'pro-dep': ['1.0.0', '1.1.0'],
+    'pro-new': ['1.0.0'],
+  });
+  const tokens = path.join(directory, 'install-tokens.json');
+  const env = {
+    ...process.env,
+    PATH: `${fakeGh(directory)}${path.delimiter}${process.env.PATH}`,
+    GIT_CONFIG_GLOBAL: '/dev/null',
+    GIT_CONFIG_NOSYSTEM: '1',
+    GIT_CONFIG_COUNT: '1',
+    GIT_CONFIG_KEY_0: 'protocol.file.allow',
+    GIT_CONFIG_VALUE_0: 'always',
+    GIT_AUTHOR_NAME: 't',
+    GIT_AUTHOR_EMAIL: 't@t',
+    GIT_COMMITTER_NAME: 't',
+    GIT_COMMITTER_EMAIL: 't@t',
+    XDG_CONFIG_HOME: path.join(directory, 'config'),
+    XDG_CACHE_HOME: path.join(directory, 'cache'),
+    npm_config_store_dir: path.join(directory, 'store'),
+    INSTALL_TOKENS: tokens,
+  };
+  const git = (cwd, ...args) =>
+    execFileSync('git', args, { cwd, env, encoding: 'utf8' }).trim();
+  const write = (cwd, file, content) => {
+    mkdirSync(path.dirname(path.join(cwd, file)), { recursive: true });
+    writeFileSync(path.join(cwd, file), content);
+  };
+  const commit = (cwd, message) => {
+    git(cwd, 'add', '-A');
+    git(cwd, 'commit', '-qm', message);
+    return git(cwd, 'rev-parse', 'HEAD');
+  };
+  const install = (cwd) =>
+    execFileSync('pnpm', ['install', '--no-frozen-lockfile'], {
+      cwd,
+      env: { ...env, CI: 'true' },
+      stdio: 'ignore',
+    });
+
+  // The open-source repository: the commit Pro develop pins, the release commit the candidate pins, and the merged release commit on v3-develop.
+  const oss = path.join(directory, 'oss');
+  git(directory, 'init', '-q', '-b', 'v3-develop', oss);
+  write(oss, 'VERSION', 'base\n');
+  write(oss, 'scripts/resolve-sync-conflicts.mjs', '\n');
+  const base = commit(oss, 'base');
+  write(oss, 'VERSION', 'source\n');
+  const source = commit(oss, 'release commit');
+  git(oss, 'checkout', '-q', '-B', 'v3-develop', base);
+  write(oss, 'VERSION', 'target\n');
+  const target = commit(oss, 'merged release');
+
+  // Pro develop, as pro-candidate tested it. Its sync scripts stand in for Pro's: the upstream block is the `# oss:` line, and the install is a real pnpm install against the local registry.
+  const remote = path.join(directory, 'pro.git');
+  git(directory, 'init', '-q', '--bare', '-b', 'develop', remote);
+  const seed = path.join(directory, 'seed');
+  git(directory, 'init', '-q', '-b', 'develop', seed);
+  git(seed, 'remote', 'add', 'origin', remote);
+  write(seed, '.gitignore', 'node_modules\n');
+  write(seed, '.npmrc', `registry=${registryUrl}\n`);
+  write(seed, 'package.json', '{ "name": "pro", "private": true }\n');
+  write(
+    seed,
+    'scripts/sync-workspace-config.mjs',
+    `import fs from 'node:fs';
+const oss = fs.readFileSync('vendor/nocobase3/VERSION', 'utf8').trim();
+const file = 'pnpm-workspace.yaml';
+const synced = fs.readFileSync(file, 'utf8').replace(/^# oss: .*$/mu, '# oss: ' + oss);
+if (process.argv[2] === '--check') process.exit(synced === fs.readFileSync(file, 'utf8') ? 0 : 1);
+fs.writeFileSync(file, synced);
+`,
+  );
+  write(
+    seed,
+    'scripts/sync-release-oss.mjs',
+    `import { execFileSync } from 'node:child_process';
+import fs from 'node:fs';
+const [, , branch, , , sha] = process.argv;
+if (branch !== '--branch' || !/^[0-9a-f]{40}$/u.test(sha)) process.exit(2);
+const leaked = ['PRO_TOKEN', 'GH_TOKEN', 'WRITE_TOKEN'].filter((name) => process.env[name] !== undefined);
+fs.writeFileSync(process.env.INSTALL_TOKENS, JSON.stringify(leaked));
+execFileSync('git', ['-C', 'vendor/nocobase3', 'checkout', '-q', '--detach', sha], { stdio: 'inherit' });
+execFileSync('git', ['update-index', '--cacheinfo', '160000,' + sha + ',vendor/nocobase3'], { stdio: 'inherit' });
+execFileSync(process.execPath, ['scripts/sync-workspace-config.mjs', '--write'], { stdio: 'inherit' });
+execFileSync('pnpm', ['install', '--no-frozen-lockfile'], { stdio: 'inherit', env: { ...process.env, CI: 'true' } });
+`,
+  );
+  const workspace = (catalog) =>
+    `packages:\n  - packages/*\n# oss: base\nallowBuilds: {}\nsharedWorkspaceLockfile: true\nlinkWorkspacePackages: true\ncatalog:\n${catalog}`;
+  const plugin = (version, dependencies) =>
+    `${JSON.stringify(
+      {
+        name: '@pro/plugin',
+        version,
+        private: true,
+        license: 'UNLICENSED',
+        description: 'A commercial plugin',
+        dependencies,
+      },
+      null,
+      2,
+    )}\n`;
+  write(seed, 'pnpm-workspace.yaml', workspace('  pro-dep: 1.0.0\n'));
+  write(
+    seed,
+    'packages/plugin/package.json',
+    plugin('1.0.0-beta.1', { 'pro-dep': 'catalog:' }),
+  );
+  git(seed, 'submodule', 'add', '-q', oss, 'vendor/nocobase3');
+  git(path.join(seed, 'vendor/nocobase3'), 'checkout', '-q', '--detach', base);
+  install(seed);
+  commit(seed, 'pro develop');
+  git(seed, 'push', '-q', 'origin', 'develop');
+
+  // The candidate, published as release-beta/<batch>: a new version, pinned to the release commit.
+  const name = 'release-beta/2026-11-12.1';
+  git(seed, 'checkout', '-q', '-b', name);
+  write(
+    seed,
+    'packages/plugin/package.json',
+    plugin('1.0.0-beta.2', { 'pro-dep': 'catalog:' }),
+  );
+  git(
+    path.join(seed, 'vendor/nocobase3'),
+    'checkout',
+    '-q',
+    '--detach',
+    source,
+  );
+  execFileSync(process.execPath, ['scripts/sync-workspace-config.mjs'], {
+    cwd: seed,
+  });
+  commit(seed, `chore: release 2026-11-12.1 [skip ci]`);
+  git(seed, 'push', '-q', 'origin', name);
+
+  // Meanwhile Pro develop changes a catalog entry and adds one that a plugin uses.
+  git(seed, 'checkout', '-q', 'develop');
+  git(path.join(seed, 'vendor/nocobase3'), 'checkout', '-q', '--detach', base);
+  write(
+    seed,
+    'pnpm-workspace.yaml',
+    workspace('  pro-dep: 1.1.0\n  pro-new: 1.0.0\n'),
+  );
+  write(
+    seed,
+    'packages/plugin/package.json',
+    plugin('1.0.0-beta.1', { 'pro-dep': 'catalog:', 'pro-new': 'catalog:' }),
+  );
+  install(seed);
+  commit(seed, 'feat: use pro-new');
+  git(seed, 'push', '-q', 'origin', 'develop');
+
+  const checkout = path.join(directory, 'release');
+  git(directory, 'clone', '-q', remote, checkout);
+  git(checkout, 'checkout', '-q', '--detach', `origin/${name}`);
+  git(checkout, 'submodule', 'update', '--init', '-q');
+  const tools = path.join(directory, 'runner-temp', 'oss-tools');
+  mkdirSync(tools, { recursive: true });
+  copyFileSync(
+    path.join(root, 'scripts/reconcile-pro-release-metadata.mjs'),
+    path.join(tools, 'reconcile-pro-release-metadata.mjs'),
+  );
+
+  const result = runStep(
+    await jointProJob('pro-release'),
+    'Return the submodule pointer to v3-develop',
+    checkout,
+    env,
+    {
+      RUNNER_TEMP: path.dirname(tools),
+      NAME: name,
+      MERGED: 'true',
+      MERGE_SHA: target,
+      PRO_TOKEN: 'write-token',
+      GH_TOKEN: 'write-token',
+    },
+  );
+  assert.doesNotMatch(
+    result.stdout + result.stderr,
+    /ERR_PNPM_CATALOG_ENTRY_NOT_FOUND/u,
+  );
+  assert.equal(result.status, 0, result.stdout + result.stderr);
+  assert.equal(result.outputs.merged, 'false');
+  assert.deepEqual(JSON.parse(readFileSync(tokens, 'utf8')), []);
+
+  const show = (file) => git(remote, 'show', `refs/heads/${name}:${file}`);
+  assert.equal(
+    show('pnpm-workspace.yaml'),
+    workspace('  pro-dep: 1.1.0\n  pro-new: 1.0.0')
+      .replace('# oss: base', '# oss: target')
+      .trimEnd(),
+  );
+  assert.match(show('pnpm-lock.yaml'), /^ {2}pro-dep@1\.1\.0:$/mu);
+  assert.match(show('pnpm-lock.yaml'), /^ {2}pro-new@1\.0\.0:$/mu);
+  assert.doesNotMatch(show('pnpm-lock.yaml'), /pro-dep@1\.0\.0/u);
+  assert.deepEqual(JSON.parse(show('packages/plugin/package.json')), {
+    ...JSON.parse(
+      plugin('1.0.0-beta.2', {
+        'pro-dep': 'catalog:',
+        'pro-new': 'catalog:',
+      }),
+    ),
+  });
+  assert.equal(
+    git(remote, 'rev-parse', `refs/heads/${name}:vendor/nocobase3`),
+    target,
+  );
+  assert.deepEqual(
+    git(remote, 'log', '--format=%s', '-2', `refs/heads/${name}`).split('\n'),
+    [
+      `chore: bump oss to ${target} [skip ci]`,
+      `chore: merge develop into ${name} [skip ci]`,
+    ],
   );
 });
