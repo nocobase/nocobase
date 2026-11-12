@@ -46,13 +46,20 @@ export async function create(ctx: Context, next: Next) {
 
 export async function destroy(ctx: Context, next: Next) {
   const repo = ctx.db.getRepository(ctx.action.resourceName);
-  const { filterByTk } = ctx.action.params;
+  const { filterByTk, filter } = ctx.action.params;
+  // The action filter includes the current user's ownership and ACL constraints.
+  const keys = await repo.find({
+    filter: filterByTk == null ? filter : { $and: [filter, { id: { $in: filterByTk } }] },
+    fields: ['id', 'token'],
+  });
 
-  const data = await repo.findById(filterByTk);
-  const token = data?.get('token');
-  if (token) {
-    await ctx.app.authManager.jwt.block(token);
+  for (const key of keys) {
+    const token = key.get('token');
+    if (token) {
+      await ctx.app.authManager.jwt.block(token);
+    }
   }
 
+  ctx.action.params.filterByTk = keys.map((key) => key.get('id'));
   return actions.destroy(ctx, next);
 }
