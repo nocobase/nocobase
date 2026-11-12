@@ -61,6 +61,8 @@ import type {
   ImapSyncCursor,
   ImapVerifyFolder,
   ImapVerifyState,
+  ImapExcludedRecheck,
+  ImapRecheckIdentity,
 } from './types.js';
 import type { MailSyncStepCommit } from '../../contracts/persistence.js';
 import type { MailSyncRun } from '../../../shared/mail.js';
@@ -74,6 +76,8 @@ import {
   MAX_IMAP_RAW_COMPARE_BYTES,
   MAX_IMAP_VERIFY_ATTEMPTS,
   MAX_IMAP_VERIFY_STATE_BYTES,
+  MAX_IMAP_RECHECK_IDENTITIES,
+  IMAP_RECHECK_BATCH_SIZE,
 } from './constants.js';
 import { createImapClient, createSmtpTransport } from './connection.js';
 import type { ImapConnectionPool } from './connection-pool.js';
@@ -280,7 +284,10 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
               changeCursor &&
               syncCursor({
                 ...changeCursor,
-                verify: { excluded: changeCursor.verify?.excluded },
+                verify: {
+                  excluded: changeCursor.verify?.excluded,
+                  rechecks: changeCursor.verify?.rechecks,
+                },
               }),
           }
         : input,
@@ -593,11 +600,7 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
       if (this.locations) {
         if (hasMore || messages.length > 0) {
           // Commit new copies first, retaining the last complete verification pass.
-          verify = previous.verify && {
-            attempts: previous.verify.attempts,
-            folders: previous.verify.folders,
-            excluded: previous.verify.excluded,
-          };
+          verify = previous.verify && { ...previous.verify };
           hasMore = true;
         } else if (
           this.syncRun?.mode === 'initial' &&
@@ -605,6 +608,15 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
         ) {
           // Catch up between history pages without spending verification attempts.
           verify = previous.verify;
+        } else if (previous.verify?.rechecks?.length) {
+          // Recheck only committed identities, without mixing partial observations
+          // into a verification pass. The cursor saves progress after each folder.
+          verify = await this.advanceExcludedRecheck(
+            previous.verify,
+            nextFolders,
+            input.signal,
+          );
+          hasMore = true;
         } else {
           const result = await this.verifyFolders(
             mailboxes,
@@ -626,15 +638,7 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
         }
       }
       if (verify?.excluded && messages.length)
-        verify = {
-          ...verify,
-          excluded: await this.recheckExcludedIdentities(
-            verify.excluded,
-            nextFolders,
-            messages,
-            input.signal,
-          ),
-        };
+        verify = this.enqueueExcludedRechecks(verify, messages);
       return {
         ok: true,
         value: {
@@ -2515,13 +2519,23 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
     };
   }
 
-  private async recheckExcludedIdentities(
-    previous: NonNullable<ImapVerifyState['excluded']>,
-    folders: Readonly<Record<string, ImapFolderCursor>>,
+  private enqueueExcludedRechecks(
+    verify: ImapVerifyState,
     copies: readonly FetchedCopy[],
-    signal?: AbortSignal,
-  ): Promise<NonNullable<ImapVerifyState['excluded']>> {
-    const queries = new Map<string, SearchObject>();
+  ): ImapVerifyState {
+    const folders = Object.keys(verify.excluded ?? {}).filter(
+      (path) => verify.excluded![path].uids,
+    );
+    if (!folders.length) return verify;
+    const pending = [...(verify.rechecks ?? [])];
+    const key = (identity: ImapRecheckIdentity) =>
+      identity.emailId !== undefined
+        ? 'native:' + identity.emailId
+        : 'rfc:' + identity.rfcMessageId;
+    const queued = new Set(
+      pending.flatMap((batch) => batch.identities.map(key)),
+    );
+    const identities = new Map<string, ImapRecheckIdentity>();
     for (const copy of copies) {
       const source = this.nativeSource();
       const nativeId = validNativeId(
@@ -2531,45 +2545,88 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
             ? copy.observed?.providerMessageId
             : undefined),
       );
-      const query = nativeId
+      const identity: ImapRecheckIdentity | undefined = nativeId
         ? { emailId: nativeId }
         : copy.rfcMessageId
-          ? { header: { 'message-id': copy.rfcMessageId } }
+          ? { rfcMessageId: copy.rfcMessageId }
           : undefined;
-      if (query) queries.set(JSON.stringify(query), query);
+      if (identity && !queued.has(key(identity)))
+        identities.set(key(identity), identity);
     }
-    if (!queries.size) return previous;
-    const excluded = { ...previous };
-    const identities = [...queries.values()];
-    const client = await this.imap();
-    for (const [path, range] of Object.entries(previous)) {
+    if (
+      pending.reduce((total, batch) => total + batch.identities.length, 0) +
+        identities.size >
+      MAX_IMAP_RECHECK_IDENTITIES
+    ) {
+      // Bounded cursor fallback: re-screen later, after the arrival is committed.
+      return { attempts: 0 };
+    }
+    const added = [...identities.values()];
+    for (
+      let offset = 0;
+      offset < added.length;
+      offset += IMAP_RECHECK_BATCH_SIZE
+    )
+      pending.push({
+        identities: added.slice(offset, offset + IMAP_RECHECK_BATCH_SIZE),
+        folders,
+      });
+    return { ...verify, rechecks: pending.length ? pending : undefined };
+  }
+
+  private async advanceExcludedRecheck(
+    verify: ImapVerifyState,
+    folders: Readonly<Record<string, ImapFolderCursor>>,
+    signal?: AbortSignal,
+  ): Promise<ImapVerifyState> {
+    const excluded = { ...verify.excluded };
+    const pending: ImapExcludedRecheck[] = [...(verify.rechecks ?? [])];
+    while (pending.length) {
       throwIfAborted(signal);
-      if (!range.uids) continue;
-      if (folders[path]?.uidValidity !== range.uidValidity) {
+      const batch = pending[0];
+      const [path, ...remaining] = batch.folders;
+      const advance = () => {
+        if (remaining.length) pending[0] = { ...batch, folders: remaining };
+        else pending.shift();
+      };
+      const range = excluded[path];
+      if (!range?.uids || folders[path]?.uidValidity !== range.uidValidity) {
         delete excluded[path];
+        advance();
         continue;
       }
+      const client = await this.imap();
       const selected = await client.mailboxOpen(path, { readOnly: true });
       if (String(selected.uidValidity) !== range.uidValidity) {
         delete excluded[path];
+        advance();
         continue;
       }
-      let uids = range.uids;
-      for (let offset = 0; offset < identities.length && uids; offset += 100) {
-        throwIfAborted(signal);
-        const batch = identities.slice(offset, offset + 100);
-        const found = await client.search(
-          { uid: uids, ...(batch.length === 1 ? batch[0] : { or: batch }) },
-          { uid: true },
-        );
-        if (!Array.isArray(found))
-          throw new Error('The excluded-copy identity SEARCH was incomplete.');
-        uids = subtractUids(uids, found);
-      }
+      const identities: SearchObject[] = batch.identities.map((identity) =>
+        identity.emailId !== undefined
+          ? { emailId: identity.emailId }
+          : { header: { 'message-id': identity.rfcMessageId } },
+      );
+      const found = await client.search(
+        {
+          uid: range.uids,
+          ...(identities.length === 1 ? identities[0] : { or: identities }),
+        },
+        { uid: true },
+      );
+      if (!Array.isArray(found))
+        throw new Error('The excluded-copy identity SEARCH was incomplete.');
+      const uids = subtractUids(range.uids, found);
       if (uids) excluded[path] = { ...range, uids };
       else delete excluded[path];
+      advance();
+      break; // One folder per committed step; arrivals take priority on the next step.
     }
-    return excluded;
+    return {
+      ...verify,
+      excluded,
+      rechecks: pending.length ? pending : undefined,
+    };
   }
 
   private async normalizeMessage(

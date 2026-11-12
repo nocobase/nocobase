@@ -8,7 +8,11 @@ import type {
   ImapVerifyState,
   MessageLocator,
 } from './types.js';
-import { MAX_IMAP_PROVIDER_ID_LENGTH } from './constants.js';
+import {
+  MAX_IMAP_PROVIDER_ID_LENGTH,
+  MAX_IMAP_RECHECK_IDENTITIES,
+  IMAP_RECHECK_BATCH_SIZE,
+} from './constants.js';
 
 export const MAX_IMAP_UID = 0xffff_ffff;
 
@@ -107,7 +111,10 @@ function isVerifyState(value: unknown): value is ImapVerifyState {
     attempts?: unknown;
     folders?: unknown;
     excluded?: unknown;
+    rechecks?: unknown;
   };
+  if (record.rechecks !== undefined && !isRechecks(record.rechecks))
+    return false;
   if (
     record.excluded !== undefined &&
     !(Array.isArray(record.excluded)
@@ -130,6 +137,44 @@ function isVerifyState(value: unknown): value is ImapVerifyState {
       typeof (folder as Partial<ImapVerifyFolder>).uids === 'string' &&
       /^[\d:,]*$/.test((folder as ImapVerifyFolder).uids),
   );
+}
+
+function isRechecks(value: unknown): boolean {
+  if (!Array.isArray(value) || value.length > MAX_IMAP_RECHECK_IDENTITIES)
+    return false;
+  let count = 0;
+  return value.every((entry: unknown) => {
+    if (!entry || typeof entry !== 'object') return false;
+    const batch = entry as Record<string, unknown>;
+    if (
+      !Array.isArray(batch.folders) ||
+      !batch.folders.length ||
+      !batch.folders.every((folder: unknown) => typeof folder === 'string') ||
+      !Array.isArray(batch.identities) ||
+      !batch.identities.length ||
+      batch.identities.length > IMAP_RECHECK_BATCH_SIZE
+    )
+      return false;
+    count += batch.identities.length;
+    return (
+      count <= MAX_IMAP_RECHECK_IDENTITIES &&
+      batch.identities.every((identity: unknown) => {
+        if (!identity || typeof identity !== 'object') return false;
+        const id = identity as Record<string, unknown>;
+        return (
+          (typeof id.emailId === 'string' &&
+            /^[A-Za-z0-9_-]{1,255}$/.test(id.emailId) &&
+            id.rfcMessageId === undefined) ||
+          (id.emailId === undefined &&
+            typeof id.rfcMessageId === 'string' &&
+            id.rfcMessageId.length <= MAX_IMAP_PROVIDER_ID_LENGTH &&
+            /^<[\x21-\x3b\x3d\x3f-\x7e]+@[\x21-\x3b\x3d\x3f-\x7e]+>$/.test(
+              id.rfcMessageId,
+            ))
+        );
+      })
+    );
+  });
 }
 
 function isExcludedFolder(value: unknown): boolean {

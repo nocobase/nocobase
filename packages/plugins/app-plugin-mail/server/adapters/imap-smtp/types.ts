@@ -101,7 +101,18 @@ export interface ImapVerifyState {
     Record<string, Pick<ImapVerifyFolder, 'uidValidity' | 'uids'>>
   >;
   readonly folders?: Readonly<Record<string, ImapVerifyFolder>>;
+  readonly rechecks?: readonly ImapExcludedRecheck[];
 }
+
+/** A bounded batch of committed identities and the exclusion folders still to search. */
+export interface ImapExcludedRecheck {
+  readonly identities: readonly ImapRecheckIdentity[];
+  readonly folders: readonly string[];
+}
+
+export type ImapRecheckIdentity =
+  | { readonly emailId: string; readonly rfcMessageId?: undefined }
+  | { readonly emailId?: undefined; readonly rfcMessageId: string };
 
 /**
  * Account-bound persistence given to one IMAP adapter instance. It exposes only

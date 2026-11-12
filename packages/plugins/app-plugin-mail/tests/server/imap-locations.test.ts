@@ -60,6 +60,7 @@ const server = vi.hoisted(() => {
     onList: undefined as (() => void) | undefined,
     onFlag: undefined as (() => void) | undefined,
     onSearch: undefined as (() => number[] | false | undefined) | undefined,
+    onIdentitySearch: undefined as (() => Promise<void> | void) | undefined,
     selectionModes: [] as boolean[],
     allowNetwork: true,
     reset(): void {
@@ -89,6 +90,7 @@ const server = vi.hoisted(() => {
       this.onList = undefined;
       this.onFlag = undefined;
       this.onSearch = undefined;
+      this.onIdentitySearch = undefined;
       this.selectionModes.length = 0;
       this.allowNetwork = true;
     },
@@ -233,6 +235,7 @@ vi.mock('imapflow', () => {
           path: String(this.mailbox && this.mailbox.path),
           uid: query.uid,
         });
+      if (identities.length) await server.onIdentitySearch?.();
       const resultUids = query.uid
         ? uidsOf(query.uid, folder)
         : [...folder.messages.keys()].sort((a, b) => a - b);
@@ -4538,4 +4541,322 @@ describe('IMAP history scope after lightweight identity reads', () => {
       ).toEqual([]);
     },
   );
+});
+
+describe('IMAP deferred exclusion rechecks', () => {
+  it('commits arrivals before slow identity searches, checkpoints progress, and blocks cleanup until finished', async () => {
+    server.capabilities.add('OBJECTID');
+    const paths = ['INBOX', 'Archive', 'Sent', 'Other'];
+    for (const path of paths) {
+      folder(path);
+      deliver(path, {
+        raw: raw(`<old-${path}@example.com>`),
+        emailId: `OLD-${path}`,
+        date: '2025-01-01T00:00:00.000Z',
+      });
+    }
+    const missingUid = deliver('INBOX', {
+      raw: raw('<missing@example.com>'),
+      emailId: 'MISSING',
+    });
+    await sync();
+    const missing = (await messages())[0];
+    server.folders.get('INBOX')!.messages.delete(missingUid);
+    deliver('INBOX', {
+      raw: raw('<urgent-before-recheck@example.com>'),
+      emailId: 'URGENT',
+    });
+    const run = await service().startSync(owner, { accountId });
+    await step();
+    server.identitySearches.length = 0;
+    server.selectionModes.length = 0;
+    const clock = vi.spyOn(Date, 'now');
+    let now = Date.now();
+    clock.mockImplementation(() => now);
+    const importedAt = now;
+    const logger = { info: vi.fn() };
+    server.onIdentitySearch = async () => {
+      now += 2000;
+      expect(
+        (
+          await service().listMessages(owner, { accountIds: [accountId] })
+        ).items.map((item) => item.providerMessageId),
+      ).toContain('URGENT');
+    };
+    try {
+      await step(adapters, logger); // Import and commit, without searching exclusions.
+      expect(now).toBe(importedAt);
+      expect(server.identitySearches).toEqual([]);
+      expect(server.selectionModes).toHaveLength(1); // The new message's own mailbox only.
+      expect(
+        (
+          await service().listMessages(owner, { accountIds: [accountId] })
+        ).items.map((item) => item.providerMessageId),
+      ).toContain('URGENT');
+      const queued = parseSyncCursor(
+        (await store.getSyncRun(run.id))!.changeCursor,
+      ).verify!;
+      expect(queued.rechecks).toEqual([
+        { identities: [{ emailId: 'URGENT' }], folders: paths },
+      ]);
+      expect(queued.attempts).toBeUndefined();
+      expect(logger.info).toHaveBeenCalledWith(
+        expect.objectContaining({
+          event: 'mail.sync.imap_commands',
+          imapCommands: expect.objectContaining({
+            byCommand: expect.not.objectContaining({
+              SEARCH: expect.anything(),
+            }),
+          }),
+        }),
+        'IMAP synchronization step command counts.',
+      );
+      server.batchFetches.length = 0;
+      await step();
+      expect(server.identitySearches).toHaveLength(1);
+      expect(
+        parseSyncCursor((await store.getSyncRun(run.id))!.changeCursor).verify
+          ?.rechecks?.[0].folders,
+      ).toEqual(paths.slice(1));
+      expect(server.batchFetches).toEqual([]); // No verification flags or lightweight FETCH.
+      expect(
+        await store.getMessageForAccount(accountId, missing.id),
+      ).toBeDefined();
+
+      // Publish the partially processed queue exactly as a terminal partial does.
+      const current = (await store.getSyncRun(run.id))!;
+      const checkpoint = current.changeCursor!;
+      const claimed = await store.claimSyncRun(
+        run.id,
+        current.revision,
+        current.phase,
+        'partial-recheck',
+        new Date(Date.now() + 60_000).toISOString(),
+      );
+      await store.commitSyncStep({
+        run: claimed!,
+        messages: [],
+        phase: 'completed',
+        status: 'partial',
+        changeCursor: checkpoint,
+        createNextTask: false,
+      });
+      expect(
+        parseSyncCursor(await store.getSyncCursor(accountId)).verify
+          ?.rechecks?.[0].folders,
+      ).toEqual(paths.slice(1));
+      while (await step()); // Settle the obsolete task queued before the partial transition.
+      const resumed = await service().startSync(owner, { accountId });
+      expect(resumed.mode).toBe('incremental');
+      await step();
+      for (const path of paths.slice(1)) {
+        await step();
+        expect(server.identitySearches.at(-1)?.path).toBe(path);
+        expect(server.batchFetches).toEqual([]);
+        expect(
+          await store.getMessageForAccount(accountId, missing.id),
+        ).toBeDefined();
+      }
+      expect(server.identitySearches.map((search) => search.path)).toEqual(
+        paths,
+      );
+      expect(
+        parseSyncCursor((await store.getSyncRun(resumed.id))!.changeCursor)
+          .verify?.rechecks,
+      ).toBeUndefined();
+      expect(
+        parseSyncCursor((await store.getSyncRun(resumed.id))!.changeCursor)
+          .verify?.attempts,
+      ).toBeUndefined();
+      await step(); // First verification pass, after all rechecks.
+      expect(
+        await store.getMessageForAccount(accountId, missing.id),
+      ).toBeDefined();
+      await step(); // Matching second pass permits cleanup.
+      expect(
+        await store.getMessageForAccount(accountId, missing.id),
+      ).toBeUndefined();
+      expect(await store.getSyncRun(resumed.id)).toMatchObject({
+        status: 'completed',
+      });
+      expect((await messages()).map((item) => item.providerMessageId)).toEqual([
+        'URGENT',
+      ]);
+    } finally {
+      server.onIdentitySearch = undefined;
+      clock.mockRestore();
+    }
+  });
+
+  it('prioritizes another arrival while rechecks remain and revisits already searched folders for its identity', async () => {
+    server.capabilities.add('OBJECTID');
+    for (const path of ['INBOX', 'Archive']) {
+      folder(path);
+      deliver(path, {
+        raw: raw(`<old-${path}@example.com>`),
+        emailId: `OLD-${path}`,
+        date: '2025-01-01T00:00:00.000Z',
+      });
+    }
+    await sync();
+    deliver('INBOX', { raw: raw('<first@example.com>'), emailId: 'FIRST' });
+    const run = await service().startSync(owner, { accountId });
+    await step();
+    await step(); // Commit FIRST.
+    await step(); // Search INBOX for FIRST.
+    expect(
+      parseSyncCursor((await store.getSyncRun(run.id))!.changeCursor).verify
+        ?.rechecks?.[0].folders,
+    ).toEqual(['Archive']);
+    deliver('INBOX', { raw: raw('<second@example.com>'), emailId: 'SECOND' });
+    server.identitySearches.length = 0;
+    await step(); // Commit SECOND before the remaining recheck.
+    expect(server.identitySearches).toEqual([]);
+    expect(
+      (
+        await service().listMessages(owner, { accountIds: [accountId] })
+      ).items.map((item) => item.providerMessageId),
+    ).toContain('SECOND');
+    const batches = parseSyncCursor(
+      (await store.getSyncRun(run.id))!.changeCursor,
+    ).verify?.rechecks;
+    expect(batches).toEqual([
+      { identities: [{ emailId: 'FIRST' }], folders: ['Archive'] },
+      { identities: [{ emailId: 'SECOND' }], folders: ['INBOX', 'Archive'] },
+    ]);
+    while (await step());
+    expect(await store.getSyncRun(run.id)).toMatchObject({
+      status: 'completed',
+    });
+    expect((await messages()).map((item) => item.providerMessageId)).toEqual([
+      'FIRST',
+      'SECOND',
+    ]);
+  });
+});
+
+describe('IMAP deferred recheck checkpoint bounds', () => {
+  it('keeps queued identities in a verification-exhausted partial checkpoint', async () => {
+    server.capabilities.add('OBJECTID');
+    folder('INBOX');
+    folder('Archive');
+    deliver('INBOX', {
+      raw: raw('<old-other@example.com>'),
+      emailId: 'OLD',
+      date: '2025-01-01T00:00:00.000Z',
+    });
+    deliver('Archive', {
+      raw: raw('<shared-old@example.com>'),
+      emailId: 'SHARED',
+      date: '2025-01-01T00:00:00.000Z',
+    });
+    const current = deliver('INBOX', {
+      raw: raw('<shared-new@example.com>'),
+      emailId: 'SHARED',
+    });
+    await store.commitSyncBatch({
+      accountId,
+      folders: [],
+      messages: [],
+      deletedProviderMessageIds: [],
+      nextCursor: syncCursor({
+        version: 1,
+        receivedAfter: '2026-01-01T00:00:00.000Z',
+        folders: {
+          INBOX: { uidValidity: '1', uidNext: 3 },
+          Archive: { uidValidity: '1', uidNext: 2 },
+        },
+        verify: {
+          attempts: 4,
+          excluded: {
+            INBOX: { uidValidity: '1', uids: '1' },
+            Archive: { uidValidity: '1', uids: '1' },
+          },
+        },
+      }),
+    });
+    const run = await service().startSync(owner, { accountId });
+    await step();
+    await step();
+    expect(await store.getSyncRun(run.id)).toMatchObject({ status: 'partial' });
+    const checkpoint = parseSyncCursor(await store.getSyncCursor(accountId));
+    expect(checkpoint.verify?.attempts).toBeUndefined();
+    expect(checkpoint.verify?.folders).toBeUndefined();
+    expect(checkpoint.verify?.rechecks).toEqual([
+      { identities: [{ emailId: 'SHARED' }], folders: ['INBOX', 'Archive'] },
+    ]);
+    const resumed = await sync();
+    expect(await store.getSyncRun(resumed)).toMatchObject({
+      mode: 'incremental',
+      status: 'completed',
+    });
+    expect(await messages()).toMatchObject([
+      { providerMessageId: 'SHARED', folders: ['Archive', 'INBOX'] },
+    ]);
+    server.folders.get('INBOX')!.messages.delete(current);
+    await sync();
+    expect(await messages()).toMatchObject([
+      { providerMessageId: 'SHARED', folders: ['Archive'] },
+    ]);
+  });
+
+  it('bounds queued identities and restarts two fresh passes when capacity is exceeded', async () => {
+    server.capabilities.add('OBJECTID');
+    folder('INBOX');
+    deliver('INBOX', {
+      raw: raw('<old-capacity@example.com>'),
+      emailId: 'OLD',
+      date: '2025-01-01T00:00:00.000Z',
+    });
+    deliver('INBOX', {
+      raw: raw('<new-capacity@example.com>'),
+      emailId: 'NEW',
+    });
+    const identities = Array.from({ length: 1000 }, (_, index) => ({
+      emailId: `Q-${index}`,
+    }));
+    const rechecks = Array.from({ length: 10 }, (_, index) => ({
+      identities: identities.slice(index * 100, index * 100 + 100),
+      folders: ['INBOX'],
+    }));
+    await store.commitSyncBatch({
+      accountId,
+      folders: [],
+      messages: [],
+      deletedProviderMessageIds: [],
+      nextCursor: syncCursor({
+        version: 1,
+        receivedAfter: '2026-01-01T00:00:00.000Z',
+        folders: { INBOX: { uidValidity: '1', uidNext: 2 } },
+        verify: {
+          attempts: 3,
+          excluded: { INBOX: { uidValidity: '1', uids: '1' } },
+          rechecks,
+        },
+      }),
+    });
+    const run = await service().startSync(owner, { accountId });
+    await step();
+    await step();
+    expect(
+      parseSyncCursor((await store.getSyncRun(run.id))!.changeCursor).verify,
+    ).toEqual({ attempts: 0 });
+    expect(server.identitySearches).toEqual([]);
+    expect((await messages()).map((item) => item.providerMessageId)).toEqual([
+      'NEW',
+    ]);
+    await step();
+    expect(await store.getSyncRun(run.id)).toMatchObject({ status: 'running' });
+    expect(
+      parseSyncCursor((await store.getSyncRun(run.id))!.changeCursor).verify
+        ?.attempts,
+    ).toBe(1);
+    await step();
+    expect(await store.getSyncRun(run.id)).toMatchObject({
+      status: 'completed',
+    });
+    expect((await messages()).map((item) => item.providerMessageId)).toEqual([
+      'NEW',
+    ]);
+  });
 });
