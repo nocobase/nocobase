@@ -1996,7 +1996,7 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
       lastUidCheck = Date.now();
       const client = await this.imap();
       if (client.capabilities.has('LIST-STATUS'))
-        return changed(await this.listMailboxes());
+        return changed(this.selectableMailboxes(await this.listMailboxes()));
       // Avoid one STATUS per folder on servers without LIST-STATUS.
       if (!folders.INBOX) return false;
       const status = await client.status('INBOX', { uidNext: true });
