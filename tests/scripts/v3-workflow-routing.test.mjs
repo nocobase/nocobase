@@ -11,6 +11,14 @@ const workflow = (name) =>
     'utf8',
   );
 
+// The jobs of the beta release that test and publish Pro write only nocobase/nocobase3-pro, whose branches are develop
+// and main, with the Pro registry token; tests/scripts/pro-release-workflow-policy.test.mjs covers them.
+const ossJobs = (source) =>
+  source.replace(
+    /\n  (?:pro-candidate|pro-release):\n[\s\S]*?(?=\n  [a-z][\w-]*:\n|$)/gu,
+    '\n',
+  );
+
 const triggerBranches = (source, event) => {
   const match = source.match(
     new RegExp(`^  ${event}:\\n    branches:\\n((?:      - .+\\n)+)`, 'mu'),
@@ -70,7 +78,7 @@ test('OSS releases write only the migrated repository and v3 branches', () => {
     'release-stable',
     'merge-beta-to-stable',
   ]) {
-    const source = workflow(name);
+    const source = ossJobs(workflow(name));
     assert.match(source, /repositories: nocobase\n/u);
     assert.doesNotMatch(
       source,
@@ -88,7 +96,7 @@ test('OSS releases write only the migrated repository and v3 branches', () => {
 
 test('OSS releases publish through public npm with the existing token', () => {
   for (const name of ['release-beta', 'release-stable']) {
-    const source = workflow(name);
+    const source = ossJobs(workflow(name));
     assert.match(source, /registry-url: https:\/\/registry\.npmjs\.org/u);
     assert.match(source, /NODE_AUTH_TOKEN: \$\{\{ secrets\.NPM_TOKEN \}\}/u);
     assert.doesNotMatch(source, /npm\.nocobase\.ai|PRO_NPM_TOKEN/u);

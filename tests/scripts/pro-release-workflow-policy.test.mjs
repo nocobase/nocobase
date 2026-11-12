@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
 import {
+  copyFileSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
@@ -128,8 +129,7 @@ test('Pro publishes the pushed candidate commit without regenerating it', async 
   );
 });
 
-// "Re-run failed jobs" reuses pro-candidate's outputs and never pushes its candidate again, so the candidate of a
-// failed or cancelled run must survive until a rerun has merged it back.
+// "Re-run failed jobs" reuses pro-candidate's outputs and never pushes its candidate again, so the candidate of a failed or cancelled run must survive until a rerun has merged it back.
 test('only the merge back and the stale-candidate prune delete a release candidate', async () => {
   const source = await workflow('v3-release-beta.yml');
   const deletion = /--method DELETE|git push[^\n]*(?:--delete|\s":)/u;
@@ -141,7 +141,11 @@ test('only the merge back and the stale-candidate prune delete a release candida
         /release-candidate|candidate_branch|CANDIDATE/u.test(step),
     )
     .map((step) => step.match(/- name: ([^\n]+)/u)[1]);
-  assert.deepEqual(deleting.sort(), [
+  // The prune step deletes through scripts/pro-release-candidates.mjs, tested in pro-release-candidates.test.mjs.
+  const pruning = steps
+    .filter((step) => step.includes('pro-release-candidates.mjs" prune'))
+    .map((step) => step.match(/- name: ([^\n]+)/u)[1]);
+  assert.deepEqual([...deleting, ...pruning].sort(), [
     'Delete the Pro release candidate branch',
     'Prune stale Pro release candidates',
   ]);
@@ -474,12 +478,20 @@ test('pruning removes released and expired candidates of other batches only', as
   for (const [branch, sha] of Object.entries(branches)) {
     git(seed, 'push', '-q', remote, `${sha}:refs/heads/${branch}`);
   }
+  // Published and merged back into Pro develop.
   git(
     seed,
     'push',
     '-q',
     remote,
     `${branches['release-candidate/2026-11-10.1']}:refs/tags/release-beta/2026-11-10.1`,
+    `+${branches['release-candidate/2026-11-10.1']}:refs/heads/develop`,
+  );
+  const tools = path.join(directory, 'runner-temp', 'oss-tools');
+  mkdirSync(tools, { recursive: true });
+  copyFileSync(
+    path.join(root, 'scripts/pro-release-candidates.mjs'),
+    path.join(tools, 'pro-release-candidates.mjs'),
   );
   const checkout = path.join(directory, 'prune');
   git(directory, 'clone', '-q', remote, checkout);
@@ -492,6 +504,7 @@ test('pruning removes released and expired candidates of other batches only', as
     env,
     {
       OSS_BATCH: '2026-11-12.2',
+      RUNNER_TEMP: path.dirname(tools),
     },
   );
   assert.equal(result.status, 0, result.stderr);
@@ -563,4 +576,263 @@ else process.exit(1);
   const develop = clean('develop', candidateSha);
   assert.notEqual(develop.result.status, 0);
   assert.equal(develop.deleted, false);
+});
+
+test('a new Pro batch number skips the numbers of candidates still pushed, and commit hooks cannot change the tree', async (t) => {
+  const { directory, env, git, remote, proSha } = gitFixture(t);
+  const candidateJob = await jointProJob('pro-candidate');
+  const day = new Date().toISOString().slice(0, 10);
+  const sourceSha = 'a'.repeat(40);
+
+  // A failed run's candidate that was never tagged still holds the Pro batch <day>.3.
+  const seed = path.join(directory, 'seed');
+  git(seed, 'checkout', '-q', '--detach', proSha);
+  git(
+    seed,
+    '-c',
+    'user.name=t',
+    '-c',
+    'user.email=t@t',
+    'commit',
+    '-q',
+    '--allow-empty',
+    '-m',
+    `chore: release ${day}.3 [skip ci]`,
+  );
+  git(
+    seed,
+    'push',
+    '-q',
+    remote,
+    'HEAD:refs/heads/release-candidate/2026-11-11.4',
+  );
+  git(seed, 'push', '-q', remote, `${proSha}:refs/tags/release-beta/${day}.1`);
+
+  const checkout = path.join(directory, 'hooked');
+  git(directory, 'clone', '-q', remote, checkout);
+  git(checkout, 'checkout', '-q', proSha);
+  writeFileSync(path.join(checkout, 'CHANGELOG.md'), 'versioned\n');
+  git(checkout, 'add', '-A');
+  git(
+    checkout,
+    'update-index',
+    '--add',
+    '--cacheinfo',
+    `160000,${sourceSha},vendor/nocobase3`,
+  );
+  // A pre-commit hook that would add a file to the commit, as a lint-staged fix would.
+  mkdirSync(path.join(checkout, '.hooks'));
+  writeFileSync(
+    path.join(checkout, '.hooks/pre-commit'),
+    '#!/bin/sh\necho changed > hook.txt\ngit add hook.txt\n',
+    { mode: 0o755 },
+  );
+  git(checkout, 'config', 'core.hooksPath', '.hooks');
+  const tree = git(checkout, 'write-tree');
+
+  const result = runStep(
+    candidateJob,
+    'Push the Pro release candidate',
+    checkout,
+    env,
+    {
+      OSS_BATCH: '2026-11-12.1',
+      RELEASE_TAG: 'nocobase-v3-beta/2026-11-12.1',
+      SOURCE_SHA: sourceSha,
+    },
+  );
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(result.outputs.name, `release-beta/${day}.4`);
+  assert.equal(git(remote, 'rev-parse', `${result.outputs.sha}^{tree}`), tree);
+});
+
+test('pro-release refuses to publish once another Pro beta was released from a newer develop', async (t) => {
+  const fixture = gitFixture(t);
+  const { directory, git, remote, proSha } = fixture;
+  const env = {
+    ...fixture.env,
+    PATH: `${fakeGh(directory)}${path.delimiter}${process.env.PATH}`,
+  };
+  const publish = await jointProJob('pro-release');
+  const seed = path.join(directory, 'seed');
+  const commit = (message) => {
+    git(seed, 'checkout', '-q', '--detach', proSha);
+    git(
+      seed,
+      '-c',
+      'user.name=t',
+      '-c',
+      'user.email=t@t',
+      'commit',
+      '-q',
+      '--allow-empty',
+      '-m',
+      message,
+    );
+    return git(seed, 'rev-parse', 'HEAD');
+  };
+  const candidateSha = commit('candidate');
+  git(
+    seed,
+    'push',
+    '-q',
+    remote,
+    `${candidateSha}:refs/heads/release-candidate/2026-11-12.1`,
+  );
+  // An old release that never merged back, already missing from develop when pro-candidate ran.
+  git(
+    seed,
+    'push',
+    '-q',
+    remote,
+    `${commit('old')}:refs/tags/release-beta/2026-10-10.1`,
+  );
+  const name = 'release-beta/2026-11-12.2';
+  const tag = (extra) => {
+    const checkout = mkdtempSync(path.join(directory, 'tag-'));
+    git(directory, 'clone', '-q', remote, checkout);
+    return runStep(publish, 'Tag and push the release branch', checkout, env, {
+      NAME: name,
+      CANDIDATE_SHA: candidateSha,
+      CANDIDATE_BRANCH: 'release-candidate/2026-11-12.1',
+      PRO_SHA: proSha,
+      KNOWN_TAGS: 'release-beta/2026-10-10.1 ',
+      MERGE_SHA: 'f'.repeat(40),
+      ...extra,
+    });
+  };
+
+  const unknownOld = tag({ KNOWN_TAGS: '' });
+  assert.notEqual(unknownOld.status, 0);
+
+  const first = tag();
+  assert.equal(first.status, 0, first.stderr);
+  assert.equal(
+    git(remote, 'rev-parse', `refs/tags/${name}^{commit}`),
+    candidateSha,
+  );
+  // Its own tag does not block a rerun.
+  assert.equal(tag().status, 0);
+
+  // A standalone Pro beta released meanwhile from a develop this candidate does not contain.
+  git(
+    seed,
+    'push',
+    '-q',
+    remote,
+    `${commit('standalone')}:refs/tags/release-beta/2026-11-12.1`,
+  );
+  const refused = tag();
+  assert.notEqual(refused.status, 0);
+  assert.match(
+    refused.stdout,
+    /::error::Another Pro beta was released after Pro develop was tested at [0-9a-f]{40}: release-beta\/2026-11-12\.1\. .*V3 Release Pro Beta with oss_sha set to f{40}/u,
+  );
+});
+
+test('the pointer returns to the old commit only when the open-source merge back failed, and otherwise waits for release', async (t) => {
+  const fixture = gitFixture(t);
+  const { directory, git, remote, proSha } = fixture;
+  const env = {
+    ...fixture.env,
+    PATH: `${fakeGh(directory)}${path.delimiter}${process.env.PATH}`,
+  };
+  const publish = await jointProJob('pro-release');
+  const name = 'release-beta/2026-11-12.1';
+  git(
+    path.join(directory, 'seed'),
+    'push',
+    '-q',
+    remote,
+    `${proSha}:refs/heads/${name}`,
+  );
+  const pointer = (extra) => {
+    const checkout = mkdtempSync(path.join(directory, 'pointer-'));
+    git(directory, 'clone', '-q', remote, checkout);
+    return runStep(
+      publish,
+      'Return the submodule pointer to v3-develop',
+      checkout,
+      env,
+      {
+        NAME: name,
+        ...extra,
+      },
+    );
+  };
+
+  for (const merged of ['', 'true']) {
+    const waiting = pointer({ MERGED: merged, MERGE_SHA: '' });
+    assert.notEqual(waiting.status, 0, merged);
+    assert.match(
+      waiting.stdout,
+      /::error::The open-source release has not merged back into v3-develop yet .*Re-run failed jobs/u,
+    );
+  }
+  const done = pointer({
+    MERGED: '',
+    MERGE_SHA: '',
+    MERGED_URL: 'https://github.com/nocobase/nocobase3-pro/pull/1',
+  });
+  assert.equal(done.status, 0, done.stderr);
+  assert.equal(done.outputs.merged, 'true');
+});
+
+test('pro-release checks the versions with the candidate before reserving their tags at it', async (t) => {
+  const fixture = gitFixture(t);
+  const { directory, git, remote, proSha } = fixture;
+  const publish = await jointProJob('pro-release');
+  const specs = '@nocobase/one@1.0.0-beta.2 @nocobase/two@0.1.0-beta.5 ';
+  const reserve = (verdict) => {
+    const checkout = mkdtempSync(path.join(directory, 'reserve-'));
+    git(directory, 'clone', '-q', remote, checkout);
+    // Stands in for Pro's scripts/check-release-versions.mjs and records its arguments.
+    mkdirSync(path.join(checkout, 'scripts'));
+    writeFileSync(
+      path.join(checkout, 'scripts/check-release-versions.mjs'),
+      `process.getBuiltinModule('node:fs').writeFileSync(${JSON.stringify(path.join(directory, 'check-args.json'))}, JSON.stringify(process.argv.slice(2))); process.exit(${verdict});\n`,
+    );
+    return runStep(
+      publish,
+      'Verify the Pro versions and reserve their tags',
+      checkout,
+      fixture.env,
+      {
+        PRO_NPM_REGISTRY: 'https://pkg-v3.example.test/',
+        SPECS: specs,
+        CANDIDATE_SHA: proSha,
+      },
+    );
+  };
+  const tags = () =>
+    git(
+      remote,
+      'for-each-ref',
+      '--format=%(refname:short) %(objectname)',
+      'refs/tags/@nocobase/',
+    );
+
+  const refused = reserve(1);
+  assert.notEqual(refused.status, 0);
+  assert.equal(tags(), '');
+
+  for (const attempt of [1, 2]) {
+    const result = reserve(0);
+    assert.equal(result.status, 0, `attempt ${attempt}: ${result.stderr}`);
+  }
+  assert.deepEqual(
+    JSON.parse(readFileSync(path.join(directory, 'check-args.json'), 'utf8')),
+    [
+      '--registry',
+      'https://pkg-v3.example.test/',
+      '--candidate',
+      proSha,
+      '@nocobase/one@1.0.0-beta.2',
+      '@nocobase/two@0.1.0-beta.5',
+    ],
+  );
+  assert.equal(
+    tags(),
+    `@nocobase/one@1.0.0-beta.2 ${proSha}\n@nocobase/two@0.1.0-beta.5 ${proSha}`,
+  );
 });
