@@ -64,9 +64,6 @@ export default (collection: Collection, relationField: HasManyField | BelongsToM
         summary: 'Set or reset associations',
         parameters: [
           {
-            $ref: '#/components/parameters/filterByTk',
-          },
-          {
             $ref: '#/components/parameters/filterByTks',
           },
         ],
@@ -84,9 +81,6 @@ export default (collection: Collection, relationField: HasManyField | BelongsToM
         summary: 'Detach record',
         parameters: [
           {
-            $ref: '#/components/parameters/filterByTk',
-          },
-          {
             $ref: '#/components/parameters/filterByTks',
           },
         ],
@@ -102,6 +96,18 @@ export default (collection: Collection, relationField: HasManyField | BelongsToM
       post: {
         tags: [`${collection.name}.${relationField.name}`],
         summary: 'Attach or detach record',
+        description: 'Pass the target key in filterByTk or in a JSON body with a tk property.',
+        requestBody: {
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['tk'],
+                properties: { tk: { oneOf: [{ type: 'string' }, { type: 'integer' }] } },
+              },
+            },
+          },
+        },
         parameters: [
           {
             $ref: '#/components/parameters/filterByTk',
