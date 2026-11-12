@@ -14,6 +14,8 @@ import {
   replaceElementOfArray,
 } from './utils';
 
+import { getCardDragId } from './kanbanRecord';
+
 function reorderCardsOnColumn(column, reorderCards) {
   return { ...column, cards: reorderCards(column.cards) };
 }
@@ -81,7 +83,7 @@ function addCard(board, inColumn, card, { on }: any = {}) {
 
 function removeCard(board, fromColumn, card) {
   const columnToRemove = board.columns.find(({ id }) => id === fromColumn.id);
-  const filteredCards = columnToRemove.cards.filter(({ id }) => card.id !== id);
+  const filteredCards = columnToRemove.cards.filter((item) => getCardDragId(card) !== getCardDragId(item));
   const columnWithoutCard = { ...columnToRemove, cards: filteredCards };
   const filteredColumns = board.columns.map((column) => (fromColumn.id === column.id ? columnWithoutCard : column));
   return { ...board, columns: filteredColumns };

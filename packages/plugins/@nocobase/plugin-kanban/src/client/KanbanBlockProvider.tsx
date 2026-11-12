@@ -23,6 +23,10 @@ import { Spin } from 'antd';
 import { isEqual } from 'lodash';
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 
+import { kanbanMoveKey, isCardMoveDisabled, toColumns } from './board/kanbanRecord';
+
+export { toColumns } from './board/kanbanRecord';
+
 export const KanbanBlockContext = createContext<any>({});
 KanbanBlockContext.displayName = 'KanbanBlockContext';
 
@@ -98,42 +102,11 @@ const useDisableCardDrag = () => {
   return !result;
 };
 
-export const toColumns = (groupCollectionField: any, dataSource: Array<any> = [], primaryKey, options) => {
-  const columns = {
-    __unknown__: {
-      id: '__unknown__',
-      title: 'Unknown',
-      color: 'default',
-      cards: [],
-    },
-  };
-  options?.forEach((item) => {
-    columns[item.value] = {
-      id: item.value,
-      title: item.label,
-      color: item.color,
-      cards: [],
-    };
-  });
-  dataSource.forEach((ds) => {
-    const value = ds[groupCollectionField.name];
-    if (value && columns[value]) {
-      columns[value].cards.push({ ...ds, id: ds[primaryKey] });
-    } else {
-      columns.__unknown__.cards.push(ds);
-    }
-  });
-  if (columns.__unknown__.cards.length === 0) {
-    delete columns.__unknown__;
-  }
-  return Object.values(columns);
-};
-
 export const useKanbanBlockProps = () => {
   const field = useField<ArrayField>();
   const ctx = useKanbanBlockContext();
   const [dataSource, setDataSource] = useState([]);
-  const primaryKey = useCollection()?.getPrimaryKey();
+  const targetKey = useCollection()?.getFilterTargetKey();
   const fieldSchema = useFieldSchema();
   const app = useApp();
   const plugin = app.pm.get('kanban') as any;
@@ -141,13 +114,10 @@ export const useKanbanBlockProps = () => {
   const { options } = targetGroupField?.useGetGroupOptions(ctx.groupField) || { options: [] };
   const { columnWidth } = fieldSchema?.parent?.['x-component-props'] || {};
   useEffect(() => {
-    const data = toColumns(ctx.groupField, ctx?.service?.data?.data, primaryKey, options);
-    if (isEqual(field.value, data) && dataSource === field.value) {
-      return;
-    }
-    field.value = data;
+    const data = toColumns(ctx.groupField, ctx?.service?.data?.data, targetKey, options);
+    if (!isEqual(field.value, data)) field.value = data;
     setDataSource(field.value);
-  }, [ctx?.service?.data?.data, ctx?.service?.loading, options]);
+  }, [ctx?.service?.data?.data, ctx?.service?.loading, ctx.groupField, field, targetKey, options]);
 
   const disableCardDrag = useDisableCardDrag();
 
@@ -157,12 +127,13 @@ export const useKanbanBlockProps = () => {
       const destinationColumn = columns.find((column) => column.id === toColumnId);
       const sourceCard = sourceColumn?.cards?.[fromPosition];
       const targetCard = destinationColumn?.cards?.[toPosition];
+      if (!sourceCard || isCardMoveDisabled(sourceCard) || isCardMoveDisabled(targetCard)) return;
       const values = {
-        sourceId: sourceCard.id,
+        sourceId: sourceCard[kanbanMoveKey] ?? sourceCard.id,
         sortField: ctx?.sortField || `${groupField.name}_sort`,
       };
       if (targetCard) {
-        values['targetId'] = targetCard.id;
+        values['targetId'] = targetCard[kanbanMoveKey] ?? targetCard.id;
       } else {
         values['targetScope'] = {
           [groupField.name]: toColumnId,
@@ -170,7 +141,7 @@ export const useKanbanBlockProps = () => {
       }
       await ctx.resource.move(values);
     },
-    [ctx?.sortField],
+    [ctx?.sortField, ctx.resource],
   );
 
   return {
