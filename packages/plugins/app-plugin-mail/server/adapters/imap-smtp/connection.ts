@@ -59,6 +59,7 @@ export async function verifyConnections(
 export function createImapClient(
   endpoint: ImapSmtpEndpointConfig,
   credential: ImapSmtpCredential,
+  idle = false,
 ): ImapFlow {
   const client = new ImapFlow({
     host: endpoint.host,
@@ -72,7 +73,9 @@ export function createImapClient(
     maxResponseSize: 2 * MAX_IMAP_BODY_BYTES,
     connectionTimeout: CONNECTION_TIMEOUT_MS,
     greetingTimeout: CONNECTION_TIMEOUT_MS,
-    socketTimeout: SOCKET_TIMEOUT_MS,
+    // IDLE must stay quiet for 25 minutes without the normal one-minute NOOP.
+    socketTimeout: idle ? 26 * 60_000 : SOCKET_TIMEOUT_MS,
+    ...(idle ? { maxIdleTime: 25 * 60_000, disableAutoIdle: true } : {}),
     tls: { rejectUnauthorized: endpoint.rejectUnauthorized ?? true },
   });
   // Protocol limit failures emit an error after connect. Closing rejects pending

@@ -3,6 +3,9 @@ import { MailError } from './services/errors.js';
 import { MailAccountRemovals } from './runtime/account-removals.js';
 import { MailBackgroundTasks } from './runtime/background-tasks.js';
 import { MailOutboxRelay } from './runtime/outbox-relay.js';
+import { MailImapIdle } from './runtime/imap-idle.js';
+import type { ImapSmtpMailProviderConfig } from './adapters/imap-smtp/config.js';
+import type { MailAccount } from '../shared/mail.js';
 import { MailPushSubscriptions } from './runtime/push-subscriptions.js';
 import { MailSyncScheduler } from './operations/schedule-sync.js';
 import { randomUUID } from 'node:crypto';
@@ -49,6 +52,9 @@ export interface MailRuntimeOptions {
   readonly syncBatchSize?: number;
   readonly outboundAttachments?: MailOutboundAttachmentStorage;
   readonly credentials?: MailCredentialVault;
+  readonly resolveImapConfig?: (
+    account: MailAccount,
+  ) => ImapSmtpMailProviderConfig;
   readonly pushWebhookUrl?: string;
   readonly pushWebhookSecret?: string;
   readonly messageChangeNotifier?: MailMessageChangeNotifier;
@@ -58,6 +64,7 @@ export class MailRuntime implements MailOutboxPublisher, MailRuntimeService {
   private readonly operation: SyncMailboxOperation;
   private readonly scheduler: MailSyncScheduler;
   private readonly subscriptions: MailPushSubscriptions;
+  private readonly imapIdle?: MailImapIdle;
   private readonly relay: MailOutboxRelay;
   private readonly removals: MailAccountRemovals;
   private removalPromise?: Promise<void>;
@@ -72,6 +79,14 @@ export class MailRuntime implements MailOutboxPublisher, MailRuntimeService {
   private closed = false;
 
   public constructor(private readonly options: MailRuntimeOptions) {
+    if (options.credentials && options.resolveImapConfig) {
+      this.imapIdle = new MailImapIdle({
+        credentials: options.credentials,
+        resolveConfig: options.resolveImapConfig,
+        schedulePushSync: (accountId) => this.schedulePushSync(accountId),
+        logger: options.logger,
+      });
+    }
     this.removals = new MailAccountRemovals(options);
     this.scheduler = new MailSyncScheduler(
       options.store,
@@ -206,6 +221,7 @@ export class MailRuntime implements MailOutboxPublisher, MailRuntimeService {
   private async sweepAccounts(): Promise<number> {
     let created = 0;
     const accounts = await this.options.store.listAllAccounts();
+    this.imapIdle?.reconcile(accounts);
     for (const account of accounts) {
       if (account.status !== 'active') continue;
       try {
@@ -280,6 +296,11 @@ export class MailRuntime implements MailOutboxPublisher, MailRuntimeService {
         'Mail maintenance task failed.',
       );
     }
+  }
+
+  public accountChanged(account: MailAccount): void {
+    if (this.closed) return;
+    this.imapIdle?.update(account);
   }
 
   public schedulePushSync(accountId: string): Promise<boolean> {
@@ -426,6 +447,7 @@ export class MailRuntime implements MailOutboxPublisher, MailRuntimeService {
     if (this.automaticSyncTimer) clearInterval(this.automaticSyncTimer);
     this.relayTimer = undefined;
     this.automaticSyncTimer = undefined;
+    await this.imapIdle?.close();
     await this.tasks.close();
     await this.publishPromise;
     await this.automaticSyncPromise;

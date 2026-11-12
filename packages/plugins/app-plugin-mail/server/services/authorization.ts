@@ -31,7 +31,11 @@ export class MailAuthorizationService {
       | 'listIdentities'
       | 'listSignatures'
       | 'saveAuthorizedAccount',
-      'registry' | 'resolveProviderConfig' | 'credentials' | 'providerContext'
+      | 'registry'
+      | 'resolveProviderConfig'
+      | 'credentials'
+      | 'providerContext'
+      | 'outbox'
     >,
     private readonly sync: Pick<MailService, 'startSync'>,
     private readonly defaultAutomaticSyncIntervalMinutes: number,
@@ -320,6 +324,7 @@ export class MailAuthorizationService {
     ) {
       await credentials.delete(previousCredentialReference);
     }
+    this.dependencies.outbox.accountChanged?.(account);
     if (isNewAccount) {
       await this.sync.startSync({ actorId: userId }, { accountId: account.id });
     }

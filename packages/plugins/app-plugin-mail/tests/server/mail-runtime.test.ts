@@ -1,3 +1,6 @@
+import { EventEmitter } from 'node:events';
+import type { ImapFlow } from 'imapflow';
+import * as imapConnection from '../../server/adapters/imap-smtp/connection.js';
 import {
   createMailTestDatabase,
   destroyMailTestDatabase,
@@ -91,6 +94,99 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
         canSend: true,
       },
     ]);
+  });
+
+  it('imports IDLE arrivals between automatic syncs and closes INBOX on account suspension', async () => {
+    const connected = {
+      ...account(),
+      provider: { type: 'imap-smtp', name: 'imap' },
+    };
+    await store.saveAccount(connected);
+    const client = Object.assign(new EventEmitter(), {
+      capabilities: new Set(['IDLE']),
+      connect: vi.fn(async () => undefined),
+      mailboxOpen: vi.fn(async () => undefined),
+      idle: vi.fn(() => new Promise<boolean>(() => undefined)),
+      close: vi.fn(),
+    });
+    vi.spyOn(imapConnection, 'createImapClient').mockReturnValue(
+      client as unknown as ImapFlow,
+    );
+    let arriving = false;
+    const adapter = {
+      ...baseAdapter(),
+      getCurrentSyncCursor: async () => ({
+        ok: true as const,
+        value: { value: 'idle-cursor' },
+      }),
+      listMessages: async () => ({
+        ok: true as const,
+        value: { messages: [] },
+      }),
+      listChanges: vi.fn(async () => ({
+        ok: true as const,
+        value: {
+          messages: arriving
+            ? [message('idle-arrival', 'Arrived via IDLE')]
+            : [],
+          deletedProviderMessageIds: [],
+          nextCursor: { value: 'idle-cursor' },
+          hasMore: false,
+        },
+      })),
+    };
+    const adapters = resolver(adapter);
+    executor = new InlineJobExecutor();
+    runtime = createMailRuntime({
+      store,
+      adapters,
+      executor,
+      relayIntervalMs: 10,
+      credentials: {
+        get: async () => ({ username: 'u', password: 'p' }),
+      } as unknown as MailCredentialVault,
+      resolveImapConfig: () => ({
+        type: 'imap-smtp',
+        name: 'imap',
+        imap: { host: 'imap.example.com', port: 993, secure: true },
+        smtp: { host: 'smtp.example.com', port: 465, secure: true },
+      }),
+    });
+    const service = new DefaultMailService({
+      store,
+      adapters,
+      outbox: runtime,
+    });
+    await runtime.start();
+    await vi.waitFor(async () => {
+      expect(client.idle).toHaveBeenCalledOnce();
+      expect(await store.getLastSyncedAt!(ACCOUNT_ID)).toBeDefined();
+      expect(await store.findActiveSyncRun(ACCOUNT_ID)).toBeUndefined();
+    });
+    const lastSync = await store.getLastSyncedAt!(ACCOUNT_ID);
+    expect(isAutomaticSyncDue(lastSync)).toBe(false);
+    arriving = true;
+    const arrivedAt = Date.now();
+    client.emit('exists', { path: 'INBOX', count: 1, prevCount: 0 });
+    await vi.waitFor(async () => {
+      expect(
+        (
+          await service.listMessages(
+            { actorId: 'user-1' },
+            { accountIds: [ACCOUNT_ID] },
+          )
+        ).items,
+      ).toMatchObject([{ subject: 'Arrived via IDLE' }]);
+    });
+    console.info(
+      'IDLE EXISTS to listMessages: ' + (Date.now() - arrivedAt) + 'ms',
+    );
+    expect(Date.now() - arrivedAt).toBeLessThan(5_000);
+    await service.updateAccount(
+      { actorId: 'user-1' },
+      { accountId: ACCOUNT_ID, status: 'suspended' },
+    );
+    expect(client.close).toHaveBeenCalledOnce();
   });
 
   async function drainRemoval(

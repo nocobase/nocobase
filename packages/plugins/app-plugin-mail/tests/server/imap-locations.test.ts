@@ -846,9 +846,9 @@ describe('IMAP verification and orphans', () => {
         ).not.toContain('<new@example.com>');
         await step();
         expect(
-          (await service().listMessages(owner, { accountId })).items.map(
-            (message) => message.providerMessageId,
-          ),
+          (
+            await service().listMessages(owner, { accountIds: [accountId] })
+          ).items.map((message) => message.providerMessageId),
         ).toContain('<new@example.com>');
         await step(); // The retained complete pass permits cleanup immediately.
         expect(await store.findActiveSyncRun(accountId)).toBeUndefined();
@@ -881,33 +881,36 @@ describe('IMAP verification and orphans', () => {
     ).not.toContain('<transient@example.com>');
   });
 
-  it('bounds quiet verification to one extra LIST per four seconds', async () => {
-    server.capabilities.add('LIST-STATUS');
-    for (const path of ['INBOX', 'A', 'B', 'C', 'D', 'E']) {
-      folder(path);
-      deliver(path, { raw: raw(`<${path}@example.com>`) });
-    }
-    await sync();
-    const clock = vi.spyOn(Date, 'now');
-    let now = Date.now();
-    clock.mockImplementation(() => now);
-    server.onFetchAll = () => {
-      now += 3_500;
-    };
-    try {
-      server.lists = 0;
+  it.each([0, 3_500])(
+    'bounds quiet verification LISTs with %i ms batches',
+    async (batchDuration) => {
+      server.capabilities.add('LIST-STATUS');
+      for (const path of ['INBOX', 'A', 'B', 'C', 'D', 'E']) {
+        folder(path);
+        deliver(path, { raw: raw(`<${path}@example.com>`) });
+      }
       await sync();
-      // Baseline: one folder-discovery LIST + three LISTs per verification pass.
-      // Six 3.5s batches add two timed checks per pass: 7 + 4 = 11.
-      console.info(
-        'Quiet IMAP run: baseline LIST=7; timed verification LIST=' +
-          server.lists,
-      );
-      expect(server.lists).toBe(11);
-    } finally {
-      clock.mockRestore();
-    }
-  });
+      const clock = vi.spyOn(Date, 'now');
+      let now = Date.now();
+      clock.mockImplementation(() => now);
+      server.onFetchAll = () => {
+        now += batchDuration;
+      };
+      try {
+        server.lists = 0;
+        await sync();
+        // Baseline: one folder-discovery LIST + three LISTs per verification pass.
+        // Six 3.5s batches add two timed checks per pass: 7 + 4 = 11.
+        console.info(
+          'Quiet IMAP run: baseline LIST=7; timed verification LIST=' +
+            server.lists,
+        );
+        expect(server.lists).toBe(batchDuration === 0 ? 7 : 11);
+      } finally {
+        clock.mockRestore();
+      }
+    },
+  );
 
   it('reconciles a UID deleted between SEARCH and FETCH in the same run', async () => {
     folder('INBOX');

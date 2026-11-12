@@ -1973,8 +1973,10 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
       // Partial observations must never invalidate copies or publish flags.
       this.copies = [];
       this.changes = [];
+      if (attempts >= MAX_IMAP_VERIFY_ATTEMPTS)
+        this.verificationIncomplete = true;
       return {
-        done: false,
+        done: attempts >= MAX_IMAP_VERIFY_ATTEMPTS,
         verify: {
           attempts,
           folders: previous?.folders,
