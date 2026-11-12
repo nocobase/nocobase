@@ -521,16 +521,29 @@ export class EagerLoadingTree {
           }
         };
 
+        const parentsBySourceKey = new Map<string, Model[]>();
+        if (['HasMany', 'HasOne', 'BelongsToMany'].includes(associationType)) {
+          for (const parent of node.parent.instances) {
+            const sourceKey = parent.get(association.sourceKey);
+            if (sourceKey == null) continue;
+            // BIGINT keys may arrive as numbers or decimal strings. Never coerce them to Number.
+            const key = String(sourceKey);
+            const parents = parentsBySourceKey.get(key);
+            if (parents) {
+              parents.push(parent);
+            } else {
+              parentsBySourceKey.set(key, [parent]);
+            }
+          }
+        }
+        const matchingParents = (foreignKey: unknown) =>
+          foreignKey == null ? [] : parentsBySourceKey.get(String(foreignKey)) ?? [];
+
         if (associationType == 'HasMany' || associationType == 'HasOne') {
           const foreignKey = association.foreignKey;
-          const sourceKey = association.sourceKey;
 
           for (const instance of node.instances) {
-            const parentInstance = node.parent.instances.find(
-              (parentInstance) => parentInstance.get(sourceKey) == instance.get(foreignKey),
-            );
-
-            if (parentInstance) {
+            for (const parentInstance of matchingParents(instance.get(foreignKey))) {
               if (associationType == 'HasMany') {
                 const children = parentInstance.getDataValue(association.as);
                 if (!children) {
@@ -581,7 +594,6 @@ export class EagerLoadingTree {
         }
 
         if (associationType == 'BelongsToMany') {
-          const sourceKey = association.sourceKey;
           const foreignKey = association.foreignKey;
 
           const as = association.oneFromTarget.as;
@@ -592,11 +604,7 @@ export class EagerLoadingTree {
             delete instance.dataValues['_pivot_'];
             delete instance['_pivot_'];
 
-            const parentInstance = node.parent.instances.find(
-              (parentInstance) => parentInstance.get(sourceKey) == instance.dataValues[as].get(foreignKey),
-            );
-
-            if (parentInstance) {
+            for (const parentInstance of matchingParents(instance.dataValues[as].get(foreignKey))) {
               const children = parentInstance.getDataValue(association.as);
 
               if (!children) {
