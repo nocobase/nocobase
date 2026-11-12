@@ -5,6 +5,7 @@
 // of the tagged commit with `git show` exactly as release-notes.mjs reads the English one, so an entry for any past
 // release can be rendered at any later time. A language without a section is left out (the site falls back to English),
 // and a release with no English section, or one whose section only says it has no user-facing changes, has no entry.
+// The ` by @login` credits older sections still carry after each pull request link are dropped.
 //
 // `publishedAt` is when the entry was first written. Rewriting an existing file keeps its `publishedAt`, so resending a
 // release whose changelog did not change leaves the file byte for byte the same and there is nothing to commit.
@@ -53,6 +54,24 @@ export function describeRelease(tag) {
   };
 }
 
+// One author credit: `@login`, `@org/app`, or the linked form `[@login](https://github.com/login)`.
+const AUTHOR = String.raw`(?:@[\w.-]+(?:\/[\w.-]+)?|\[@[^\]\s]+\]\(https?:\/\/[^)\s]+\))`;
+// ` by <author>[, <author>…]` at the end of a line, right after the pull request link's closing parenthesis.
+const CREDITS = new RegExp(
+  String.raw`\)[ \t]+by[ \t]+${AUTHOR}(?:[ \t]*(?:,|、|&|and)[ \t]*${AUTHOR})*[ \t]*$`,
+  'gmu',
+);
+
+/**
+ * Drops the pull request authors credited after each entry's link. Sections written before #11523 end their entries
+ * with ` by @login`; the website lists changes, not who made them, so a backfilled old release reads like a new one.
+ * @param {string} markdown
+ * @returns {string}
+ */
+export function stripAuthorCredits(markdown) {
+  return markdown.replace(CREDITS, ')');
+}
+
 /**
  * The notes of each language that has a section for the tag. A section that only says the release has no user-facing
  * changes counts as none.
@@ -65,7 +84,7 @@ export function collectNotes(changelogs, tag) {
   for (const language of Object.keys(CHANGELOG_FILES)) {
     const section = findReleaseSection(changelogs[language], tag);
     if (!section || section === EMPTY[language].trim()) continue;
-    notes[NOTE_LOCALES[language]] = section;
+    notes[NOTE_LOCALES[language]] = stripAuthorCredits(section);
   }
   return notes;
 }

@@ -14,6 +14,7 @@ import {
   now,
   readChangelogs,
   serializeEntry,
+  stripAuthorCredits,
 } from '../../scripts/website-changelog.mjs';
 
 const script = fileURLToPath(
@@ -206,4 +207,53 @@ test('the GitHub Release workflow publishes the entry to website-v3 as a best-ef
   // website-v3's site.yml has to run on the commit to publish it.
   assert.doesNotMatch(job, /skip ci/iu);
   assert.match(job, /::warning::/u);
+});
+
+test('drops the author credits older sections carry after each pull request link', () => {
+  const pr = (number) =>
+    `([#${number}](https://github.com/nocobase/nocobase/pull/${number}))`;
+  assert.equal(
+    stripAuthorCredits(
+      [
+        '### 🎉 New Features',
+        '',
+        `- **[Agents]** Show quota windows ${pr(11483)} by @2013xile`,
+        '- **[Projects]**',
+        `  - Faster reminders ${pr(11502)} by @chenos, @2013xile and [@mytharcher](https://github.com/mytharcher)`,
+        `  - Studio change ${pr(11503)} by @app/nocobase-studio`,
+        `- **[文件]** 支持附件上限。 ${pr(11460)} by @a、@b`,
+        `- **[Users]** Already clean ${pr(11495)}`,
+        '- Mentions stay in text: ask @chenos by email',
+      ].join('\n'),
+    ),
+    [
+      '### 🎉 New Features',
+      '',
+      `- **[Agents]** Show quota windows ${pr(11483)}`,
+      '- **[Projects]**',
+      `  - Faster reminders ${pr(11502)}`,
+      `  - Studio change ${pr(11503)}`,
+      `- **[文件]** 支持附件上限。 ${pr(11460)}`,
+      `- **[Users]** Already clean ${pr(11495)}`,
+      '- Mentions stay in text: ask @chenos by email',
+    ].join('\n'),
+  );
+
+  const tag = 'nocobase-v3-beta/2026-11-11.1';
+  const line = `- **[Agents]** Quota ${pr(11483)} by @2013xile`;
+  assert.deepEqual(
+    collectNotes(
+      {
+        en: changelog('Changelog', [[tag, line]]),
+        zh: changelog('更新日志', [[tag, line.replace('Quota', '额度')]]),
+        ja: changelog('変更履歴', [[tag, line.replace('Quota', 'クォータ')]]),
+      },
+      tag,
+    ),
+    {
+      en: `- **[Agents]** Quota ${pr(11483)}`,
+      'zh-CN': `- **[Agents]** 额度 ${pr(11483)}`,
+      'ja-JP': `- **[Agents]** クォータ ${pr(11483)}`,
+    },
+  );
 });
