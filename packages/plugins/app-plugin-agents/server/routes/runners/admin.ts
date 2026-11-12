@@ -312,7 +312,7 @@ export function createAdminRoutes(
         ],
       }),
       description:
-        "Every runner for a reader of runners or of agents (`agents.runners` or `agents.agents` read); otherwise the caller's own. Workspace usage contains totals only; use runtime workspaces (GET /agents/runners/:runnerId/workspaces) for directory diagnostics.",
+        "Every runner for a reader of runners or of agents (`agents.runners` or `agents.agents` read); otherwise the caller's own. Workspace usage contains totals only; use runtime workspaces (GET /agents/runners/:runnerId/workspaces) for directory diagnostics. Quota carries only tool quota marks and usage whose reset has not passed, with the pause thresholds; the runtime's own read has the rest.",
       responses: {
         200: listResponse(RunnerListItemSchema),
         ...apiErrorResponses,
@@ -360,13 +360,14 @@ export function createAdminRoutes(
         if ((await runnerRights(context, runner, inactive)).see)
           visible.push(runner);
       const takes = await takesOf(visible);
+      const now = services.clock.now().getTime();
       const data = await Promise.all(
         visible.map(async (runner): Promise<RunnerListItem> => {
           const summary = await summarizeRunner(context, runner, takes, {
             held,
             inactive,
           });
-          return runnerListItem(summary);
+          return runnerListItem(summary, now);
         }),
       );
       return context.json({ data, meta: { total: data.length } });

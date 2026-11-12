@@ -606,6 +606,9 @@ const zhTW: LocaleResource<typeof enUS> = {
       workspaceSize: '工作空間尺寸：{{value}}',
       providers_one: '{{count}} 配額供應商',
       providers_other: '{{count}} 配額供應商',
+      models_one: '{{count}} 個模型額度用完',
+      models_other: '{{count}} 個模型額度用完',
+      percent: '{{percent}}%',
       runColumns: {
         issue: '任務 / 對話',
         agent: '代理',
@@ -850,6 +853,8 @@ const zhTW: LocaleResource<typeof enUS> = {
       show: '版本 {{version}}：有更新的執行程式可用',
       available: '有更新',
       badge: '可升級',
+      latest: '最新',
+      installed: '版本 {{version}}',
       title: '{{name}} 的較新執行環境',
       description: '安裝了{{version}}，該應用程式服務於{{latest}}。',
       hint: '一旦沒有Agent執行，它就會自行更新。要立即更新它，請在其主機上執行它。',

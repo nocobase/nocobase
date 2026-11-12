@@ -654,6 +654,9 @@ const deDE: LocaleResource<typeof enUS> = {
       workspaceSize: 'Arbeitsbereichsgröße: {{value}}',
       providers_one: '{{count}}-Anbieter mit Kontingent',
       providers_other: '{{count}}-Anbieter mit Kontingent',
+      models_one: '{{count}} Modell mit Kontingent',
+      models_other: '{{count}} Modelle mit Kontingent',
+      percent: '{{percent}}%',
       runColumns: {
         issue: 'Aufgabe / Unterhaltung',
         agent: 'Agent',
@@ -917,6 +920,8 @@ const deDE: LocaleResource<typeof enUS> = {
       show: 'Version {{version}}: Ein neuerer Runner ist verfügbar',
       available: 'Update verfügbar',
       badge: 'Aktualisierbar',
+      latest: 'Aktuell',
+      installed: 'Version {{version}}',
       title: 'Ein neuerer Runner für {{name}}',
       description:
         '{{version}} installiert, diese Anwendung bedient {{latest}}.',
