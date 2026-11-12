@@ -28,6 +28,8 @@ const server = vi.hoisted(() => {
       uids: number[];
       query: Record<string, unknown>;
     }[],
+    lists: 0,
+    statuses: 0,
     singleFlagReads: 0,
     onFetchAll: undefined as (() => void) | undefined,
     failFlags: new Set<string>(),
@@ -58,6 +60,8 @@ const server = vi.hoisted(() => {
       this.capabilities.clear();
       this.sourceReads.length = 0;
       this.batchFetches.length = 0;
+      this.lists = 0;
+      this.statuses = 0;
       this.singleFlagReads = 0;
       this.onFetchAll = undefined;
       this.failFlags.clear();
@@ -135,7 +139,12 @@ vi.mock('imapflow', () => {
       server.logouts += 1;
     }
     public close(): void {}
+    public async status(path: string): Promise<unknown> {
+      server.statuses += 1;
+      return { uidNext: server.folders.get(path)!.uidNext };
+    }
     public async list(): Promise<unknown[]> {
+      server.lists += 1;
       server.onList?.();
       return [...server.folders].map(([path, folder]) => ({
         path,
@@ -807,6 +816,98 @@ describe('IMAP verification and orphans', () => {
       expect((await messages()).every((message) => message.read)).toBe(true);
     },
   );
+
+  it.each([true, false])(
+    'imports new mail on the step after interrupting verification (LIST-STATUS: %s)',
+    async (listStatus) => {
+      if (listStatus) server.capabilities.add('LIST-STATUS');
+      folder('INBOX');
+      folder('Archive');
+      deliver('INBOX', { raw: raw('<existing@example.com>') });
+      deliver('Archive', { raw: raw('<archive@example.com>') });
+      await sync();
+      await service().startSync(owner, { accountId });
+      await step();
+      await step(); // Keep a complete pass for the cleanup comparison.
+      const clock = vi.spyOn(Date, 'now');
+      const now = Date.now();
+      clock.mockReturnValue(now);
+      server.onFetchAll = () => {
+        server.onFetchAll = undefined;
+        deliver('INBOX', { raw: raw('<new@example.com>') });
+        clock.mockReturnValue(now + 4_001);
+      };
+      try {
+        server.batchFetches.length = 0;
+        await step();
+        expect(server.batchFetches).toHaveLength(1); // Stop before Archive.
+        expect(
+          (await messages()).map((message) => message.providerMessageId),
+        ).not.toContain('<new@example.com>');
+        await step();
+        expect(
+          (await service().listMessages(owner, { accountId })).items.map(
+            (message) => message.providerMessageId,
+          ),
+        ).toContain('<new@example.com>');
+        await step(); // The retained complete pass permits cleanup immediately.
+        expect(await store.findActiveSyncRun(accountId)).toBeUndefined();
+        expect(server.statuses > 0).toBe(!listStatus);
+      } finally {
+        clock.mockRestore();
+      }
+    },
+  );
+
+  it('requires another complete pass for a new copy expunged after import', async () => {
+    folder('INBOX');
+    deliver('INBOX', { raw: raw('<existing@example.com>') });
+    await sync();
+    await service().startSync(owner, { accountId });
+    await step();
+    await step();
+    deliver('INBOX', { raw: raw('<transient@example.com>') });
+    await step(); // Import while retaining the older pass.
+    server.folders.get('INBOX')!.messages.delete(2);
+    await step();
+    expect(await store.findActiveSyncRun(accountId)).toBeDefined();
+    expect(
+      (await messages()).map((message) => message.providerMessageId),
+    ).toContain('<transient@example.com>');
+    await step();
+    expect(await store.findActiveSyncRun(accountId)).toBeUndefined();
+    expect(
+      (await messages()).map((message) => message.providerMessageId),
+    ).not.toContain('<transient@example.com>');
+  });
+
+  it('bounds quiet verification to one extra LIST per four seconds', async () => {
+    server.capabilities.add('LIST-STATUS');
+    for (const path of ['INBOX', 'A', 'B', 'C', 'D', 'E']) {
+      folder(path);
+      deliver(path, { raw: raw(`<${path}@example.com>`) });
+    }
+    await sync();
+    const clock = vi.spyOn(Date, 'now');
+    let now = Date.now();
+    clock.mockImplementation(() => now);
+    server.onFetchAll = () => {
+      now += 3_500;
+    };
+    try {
+      server.lists = 0;
+      await sync();
+      // Baseline: one folder-discovery LIST + three LISTs per verification pass.
+      // Six 3.5s batches add two timed checks per pass: 7 + 4 = 11.
+      console.info(
+        'Quiet IMAP run: baseline LIST=7; timed verification LIST=' +
+          server.lists,
+      );
+      expect(server.lists).toBe(11);
+    } finally {
+      clock.mockRestore();
+    }
+  });
 
   it('reconciles a UID deleted between SEARCH and FETCH in the same run', async () => {
     folder('INBOX');

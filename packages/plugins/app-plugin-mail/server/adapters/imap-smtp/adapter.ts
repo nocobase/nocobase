@@ -550,9 +550,10 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
       let verify: ImapVerifyState | undefined;
       if (this.locations) {
         if (hasMore || messages.length > 0) {
-          // New copies are committed first; verification restarts afterwards.
+          // Commit new copies first, retaining the last complete verification pass.
           verify = previous.verify && {
             attempts: previous.verify.attempts,
+            folders: previous.verify.folders,
             excluded: previous.verify.excluded,
           };
           hasMore = true;
@@ -1967,8 +1968,42 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
     const excluded = new Set(previous?.excluded ?? []);
     const uncertainGenerations = new Set<string>();
     let stable = true;
+    let lastUidCheck = Date.now();
+    const interrupted = (): { done: boolean; verify: ImapVerifyState } => {
+      // Partial observations must never invalidate copies or publish flags.
+      this.copies = [];
+      this.changes = [];
+      return {
+        done: false,
+        verify: {
+          attempts,
+          folders: previous?.folders,
+          excluded: [...excluded],
+        },
+      };
+    };
+    const changed = (boxes: readonly ListResponse[]): boolean =>
+      boxes.some(
+        (box) =>
+          box.status?.uidNext !== undefined &&
+          box.status.uidNext !== folders[box.path]?.uidNext,
+      );
+    const checkNewMail = async (): Promise<boolean> => {
+      throwIfAborted(signal);
+      if (Date.now() - lastUidCheck < 4_000) return false;
+      lastUidCheck = Date.now();
+      const client = await this.imap();
+      if (client.capabilities.has('LIST-STATUS'))
+        return changed(await this.listMailboxes());
+      // Avoid one STATUS per folder on servers without LIST-STATUS.
+      if (!folders.INBOX) return false;
+      const status = await client.status('INBOX', { uidNext: true });
+      if (!status) throw new Error('The IMAP UIDNEXT check was incomplete.');
+      return status.uidNext !== folders.INBOX.uidNext;
+    };
     const known = await this.locations!.listKnownLocations();
     for (const mailbox of mailboxes) {
+      if (await checkNewMail()) return interrupted();
       throwIfAborted(signal);
       const client = await this.imap();
       const selected = await client.mailboxOpen(mailbox.path, {
@@ -1978,7 +2013,7 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
       const cursor = folders[mailbox.path];
       if (state.uidValidity !== cursor.uidValidity) return 'generation-changed';
       // New mail arrived after this page: import it before verifying again.
-      if (state.uidNext !== cursor.uidNext) stable = false;
+      if (state.uidNext !== cursor.uidNext) return interrupted();
       let uids: number[] | false | undefined;
       try {
         uids = await client.search({ all: true }, { uid: true });
@@ -2029,6 +2064,7 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
           present.get(mailbox.path)!.has(location.uid),
       );
       for (let offset = 0; offset < candidates.length; offset += 1000) {
+        if (await checkNewMail()) return interrupted();
         throwIfAborted(signal);
         const batch = candidates.slice(offset, offset + 1000);
         const messages = await client.fetchAll(
@@ -2107,17 +2143,22 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
       }
     }
     const after = this.selectableMailboxes(await this.listMailboxes());
+    lastUidCheck = Date.now();
+    if (changed(after)) return interrupted();
     if (
       after.length !== mailboxes.length ||
       after.some((box) => !snapshot[box.path])
     )
       stable = false;
     for (const mailbox of after) {
+      if (await checkNewMail()) return interrupted();
       throwIfAborted(signal);
       const selected = await (
         await this.imap()
       ).mailboxOpen(mailbox.path, { readOnly: true });
       const state = await this.selectedFolderState(selected);
+      if (state.uidNext !== folders[mailbox.path]?.uidNext)
+        return interrupted();
       const rechecked = await (
         await this.imap()
       ).search({ all: true }, { uid: true });
@@ -2134,6 +2175,7 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
         uncertainGenerations.add(mailbox.path);
     }
     const finalRange = this.selectableMailboxes(await this.listMailboxes());
+    if (changed(finalRange)) return interrupted();
     const finalPaths = new Set(finalRange.map((mailbox) => mailbox.path));
     if (
       finalPaths.size !== mailboxes.length ||
@@ -2232,7 +2274,18 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
       }
       return { done: false, verify: { attempts, excluded: [...excluded] } };
     }
-    if (previous?.folders && sameSnapshot(previous.folders, snapshot)) {
+    if (
+      previous?.folders &&
+      sameSnapshot(previous.folders, snapshot) &&
+      // A newly imported then expunged copy needs its own complete missing pass.
+      !known.some(
+        (location) =>
+          location.uidValidity ===
+            previous.folders?.[location.folder]?.uidValidity &&
+          location.uid >= previous.folders[location.folder].uidNext &&
+          !present.get(location.folder)?.has(location.uid),
+      )
+    ) {
       this.cleanup = true;
       return { done: true };
     }
@@ -2389,10 +2442,24 @@ function sameSnapshot(
     paths.every(
       (path) =>
         left[path]?.uidValidity === right[path].uidValidity &&
-        left[path].uidNext === right[path].uidNext &&
-        left[path].uids === right[path].uids,
+        left[path].uidNext <= right[path].uidNext &&
+        left[path].uids === uidsBelow(right[path].uids, left[path].uidNext),
     )
   );
+}
+
+/** Clip compressed ranges without expanding potentially very large UID sets. */
+function uidsBelow(ranges: string, uidNext: number): string {
+  return ranges
+    .split(',')
+    .flatMap((range) => {
+      if (!range) return [];
+      const [start, end = start] = range.split(':').map(Number);
+      if (start >= uidNext) return [];
+      const last = Math.min(end, uidNext - 1);
+      return [start === last ? String(start) : `${start}:${last}`];
+    })
+    .join(',');
 }
 
 function isResponseLimitError(error: unknown): boolean {
