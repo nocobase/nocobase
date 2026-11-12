@@ -356,7 +356,7 @@ async function collectAllowedRecordKeys(
   try {
     checkFilterParams(collection, filter);
 
-    const scopedFilter = filter ? await parseJsonTemplate(filter, parseOptions) : {};
+    const scopedFilter = filter ? await parseJsonTemplate(filter, { ...parseOptions, collection }) : {};
     const records = await repository.find({
       filter: {
         ...scopedFilter,
@@ -516,7 +516,7 @@ async function processAssociationChild(options: ProcessAssociationChildOptions) 
         }
       } else {
         checkFilterParams(target, updateParams.params?.filter);
-        const filter = await parseJsonTemplate(updateParams.params?.filter, parseOptions);
+        const filter = await parseJsonTemplate(updateParams.params?.filter, { ...parseOptions, collection: target });
         const record = await repository.findOne({
           filter: {
             ...filter,

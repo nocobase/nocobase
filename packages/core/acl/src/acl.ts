@@ -8,7 +8,7 @@
  */
 
 import { Action } from '@nocobase/resourcer';
-import { assign, parseFilter, Toposort, ToposortOptions } from '@nocobase/utils';
+import { assign, dayjs, getDateVars, offsetFromString, parseFilter, Toposort, ToposortOptions } from '@nocobase/utils';
 import EventEmitter from 'events';
 import compose from 'koa-compose';
 import lodash from 'lodash';
@@ -20,7 +20,7 @@ import { NoPermissionError } from './errors/no-permission-error';
 import FixedParamsManager, { Merger, GeneralMerger } from './fixed-params-manager';
 import SnippetManager, { SnippetOptions } from './snippet-manager';
 import { mergeAclActionParams, removeEmptyParams } from './utils';
-import Database from '@nocobase/database';
+import Database, { Collection } from '@nocobase/database';
 
 export interface CanResult {
   role: string;
@@ -58,6 +58,7 @@ type Listener = (ctx: ListenerContext) => void;
 export type UserProvider = (args: { fields: string[] }) => Promise<any>;
 
 export interface ParseJsonTemplateOptions {
+  collection?: Collection;
   timezone?: string;
   state?: any;
   userProvider?: UserProvider;
@@ -507,6 +508,7 @@ export class ACL extends EventEmitter {
           }
         } catch (e) {
           if (e instanceof NoPermissionError) {
+            ctx.log?.debug?.('Permission check denied', { reason: e.message });
             ctx.throw(403, 'No permissions');
             return;
           }
@@ -559,6 +561,7 @@ export class ACL extends EventEmitter {
     const collection = db?.getCollection?.(resourceName);
     checkFilterParams(collection, params?.filter);
     const parsedFilter = await parseJsonTemplate(params.filter, {
+      collection,
       state: ctx.state,
       timezone: getTimezone(ctx),
       userProvider: createUserProvider({
@@ -744,15 +747,54 @@ export async function parseJsonTemplate(filter: any, options: ParseJsonTemplateO
 
   const timezone = options?.timezone;
   const state = JSON.parse(JSON.stringify(options?.state || {}));
+  const now = new Date().toISOString();
+  const dates = getDateVars();
+  const dateVars = Object.fromEntries(
+    Object.entries(dates).map(([name, resolver]) => [
+      name,
+      (context) => {
+        const field = context.field;
+        const localDate =
+          field?.type === 'dateOnly' || (field?.type === 'formula' && field.options?.dataType === 'dateOnly');
+        const localTime = field?.type === 'datetimeNoTz';
+        if (name === 'now') {
+          const wall = dayjs(now).utcOffset(offsetFromString(field?.timezone || timezone || '+00:00'));
+          if (localDate) return wall.format('YYYY-MM-DD');
+          if (localTime) return wall.format('YYYY-MM-DD HH:mm:ss.SSS');
+          return now;
+        }
+        const value = typeof resolver === 'function' ? resolver(context) : resolver;
+        if (!localDate && !localTime) return value;
+        return typeof value === 'string'
+          ? value.replace(/[+-]\d{2}:\d{2}$/, '')
+          : [value[0], value[1], value[2], '+00:00'];
+      },
+    ]),
+  );
+  const vars = {
+    ctx: { state },
+    $user: options?.userProvider || (async () => undefined),
+    $nRole: () => state.currentRole,
+    $date: dateVars,
+    $nDate: dateVars,
+  };
   const parsedFilter = await parseFilter(filter, {
     timezone,
-    now: new Date().toISOString(),
-    vars: {
-      ctx: {
-        state,
-      },
-      $user: options?.userProvider || (async () => undefined),
-      $nRole: () => state.currentRole,
+    now,
+    vars,
+    getField: (path: string) => {
+      const collection = options?.collection;
+      const parts = path.split('.').filter((part) => !part.startsWith('$') && !/^\d+$/.test(part));
+      return collection?.db?.getFieldByPath([collection.name, ...parts].join('.'));
+    },
+    validateVariable: (key) => {
+      const [root, member, ...rest] = key.split('.');
+      if (
+        !Object.prototype.hasOwnProperty.call(vars, root) ||
+        (['$date', '$nDate'].includes(root) && (rest.length || !Object.prototype.hasOwnProperty.call(dates, member)))
+      ) {
+        throw new NoPermissionError('Unknown variable in permission filter: ' + key);
+      }
     },
   });
   return parsedFilter;
