@@ -22,6 +22,7 @@ const server = vi.hoisted(() => {
   return {
     folders: new Map<string, FakeFolder>(),
     capabilities: new Set<string>(),
+    nonselectable: new Set<string>(),
     sourceReads: [] as string[],
     batchFetches: [] as {
       path: string;
@@ -58,6 +59,7 @@ const server = vi.hoisted(() => {
     reset(): void {
       this.folders.clear();
       this.capabilities.clear();
+      this.nonselectable.clear();
       this.sourceReads.length = 0;
       this.batchFetches.length = 0;
       this.lists = 0;
@@ -149,7 +151,7 @@ vi.mock('imapflow', () => {
       return [...server.folders].map(([path, folder]) => ({
         path,
         name: path,
-        flags: new Set<string>(),
+        flags: new Set(server.nonselectable.has(path) ? ['\\Noselect'] : []),
         specialUse: path === 'INBOX' ? '\\Inbox' : undefined,
         status: {
           messages: folder.messages.size,
@@ -889,6 +891,8 @@ describe('IMAP verification and orphans', () => {
         folder(path);
         deliver(path, { raw: raw(`<${path}@example.com>`) });
       }
+      folder('Container');
+      server.nonselectable.add('Container');
       await sync();
       const clock = vi.spyOn(Date, 'now');
       let now = Date.now();
