@@ -39,7 +39,7 @@
   "Please enter your email": "Voer je e-mailadres",
   "Please enter your username or email": "Voer je gebruikersnaam of e-mailadres in",
   "Please keep and enable at least one authenticator": "Houd minstens één authenticator ingeschakeld",
-  "Reset email sent successfully": "Reset e-mail succesvol verzonden",
+  "If this email address is registered, you will receive a password reset email.": "Als dit e-mailadres is geregistreerd, ontvang je een e-mail om je wachtwoord opnieuw in te stellen.",
   "Reset link expiration (minutes)": "Verloop van de resetlink (minuten)",
   "Reset link has expired": "Resetlink is verlopen",
   "Reset password": "Wachtwoord opnieuw instellen",

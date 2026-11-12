@@ -39,7 +39,7 @@
   "Please enter your email": "이메일을 입력하세요",
   "Please enter your username or email": "사용자 이름 또는 이메일을 입력하세요",
   "Please keep and enable at least one authenticator": "적어도 하나의 인증기를 유지하고 활성화하세요.",
-  "Reset email sent successfully": "리셋 이메일이 성공적으로 전송되었습니다",
+  "If this email address is registered, you will receive a password reset email.": "등록된 이메일 주소라면 비밀번호 재설정 메일을 받게 됩니다.",
   "Reset link expiration (minutes)": "리셋 링크 만료 (분)",
   "Reset link has expired": "리셋 링크의 유효 기간이 만료되었습니다",
   "Reset password": "비밀번호 재설정",
