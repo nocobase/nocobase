@@ -87,7 +87,28 @@ Check the selected generator's `--help` for `multi-app` in the supported templat
 
 A generator without this alias, including create-app `0.1.0-beta.36`, can use `--template=@nocobase/app-template-multi-app@beta` instead; omit `--template-tag` because the package specifier already selects the channel. This still requires a published, accessible template. If the package or requested version is unavailable, report the blocker rather than substituting Default. For an explicitly requested unreleased preview, use the actual packed template artifact provided for that preview. Reuse the user's selected registry and version.
 
-Confirm `ok: true` and `result.dependenciesInstalled: true`, read the generated `AGENTS.md`, then follow Configure and Start below. Continue multi-app work using the installed `nocobase-app-plugin-multi-app` Skill: create an independent child, install dependencies, build its `dist.tar.gz`, and upload/publish an application version in Main. Configure an available Releases App Host before creating managed instances; starting Main alone does not enable child deployment. Do not create a child unless requested.
+Confirm `ok: true` and `result.dependenciesInstalled: true`, read the generated `AGENTS.md`, then follow Configure and Start below. Once Main is running, offer the child-creation guide below before the final handover. Configure an available Releases App Host before creating managed instances; starting Main alone does not enable child deployment.
+
+### Continue by creating a child application
+
+After Main is configured and running, ask whether the user wants to create a child now. Do not create one automatically. If they decline, finish with Main's handover. If they agree, offer `<main-directory>/packages/child-app` as the default and accept a user-specified directory; resolve relative paths from Main. Reuse explicit choices instead of asking again. Require a new or empty target and never overwrite an existing application.
+
+Before creation, ask whether the child needs platform-wide SSO. Independent login is the default. Selecting SSO authorizes installing and configuring the commercial `@nocobase/app-plugin-platform-sso` package; merely requesting a child does not. Reuse the commercial registry authentication procedure and verify access to a compatible plugin version before installation. If access or required SSO configuration is unavailable, report the blocker rather than silently changing the login choice.
+
+Create the child as an ordinary Default application, not another multi-app Main. Create its parent directory when needed and run from that parent with the target's basename; do not pass a slash-containing path or `.` as the application name. For the default location:
+
+```bash
+mkdir -p <main-directory>/packages
+(cd <main-directory>/packages && PNPM_CONFIG_MINIMUM_RELEASE_AGE=0 pnpm create @nocobase/app@beta child-app --template default --template-tag beta --no-install --json)
+```
+
+Use `--no-install` so the workspace boundary can be checked before dependency installation; `dependenciesInstalled: false` is expected at this step. Main's default workspace includes `packages/*`. For a child nested under Main, preserve existing workspace settings and exclude that exact child from Main's `pnpm-workspace.yaml` package globs (for the default directory, append `!packages/child-app`). Keep the child's generated `pnpm-workspace.yaml` and its own lockfile; do not add it as a Main dependency. From the child directory, verify `pnpm root -w` points to the child's `node_modules` before running `pnpm install`. For a custom location, check any enclosing workspace and establish the same independent boundary. Do not relocate the user's requested target silently.
+
+Read the child's own `AGENTS.md`, install dependencies there, and follow Configure and Start for that child. Keep its configuration, database and storage independent from Main, and select a different local port. Keep child source and runtime files out of Main's deployment archive; Main consumes the child's separately built archive.
+
+If the user selected SSO, configure the child's `@nocobase` registry and reuse secure credentials before running `pnpm add @nocobase/app-plugin-platform-sso@<compatible-version>` in the child. `NOCOBASE_REGISTRY` alone does not configure `pnpm add`. Synchronize Skills if the installed plugin's guidance is missing, then follow `nocobase-app-plugin-platform-sso` for server/client/config registration and login verification, and `nocobase-app-plugin-multi-app` in Main for the platform-side setup. Installation alone does not enable SSO. Resolve the platform issuer, child origin/callback, application/client identity and securely supplied credentials; retain local recovery login unless the user explicitly requests a different policy. Without SSO, keep ordinary local authentication and do not install that plugin.
+
+Verify child startup and, when selected, the actual SSO flow before reporting them as working. Report Main and child directories, URLs, selected login mode and any remaining setup. Offer the installed multi-app Skill's next steps—build the child's `dist.tar.gz`, upload and publish a version in Main—without automatically deploying it.
 
 ## Create
 
