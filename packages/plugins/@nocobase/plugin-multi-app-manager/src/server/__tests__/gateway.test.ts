@@ -35,6 +35,14 @@ describe('gateway with multiple apps', () => {
     await app.destroy();
   });
 
+  it('resolves a registered sub-application domain for authentication links', async () => {
+    const repo = app.db.getRepository('applications');
+    await repo.model.create({ name: 'billing', cname: 'billing.example.com' });
+    const supervisor = AppSupervisor.getInstance();
+    expect((await supervisor.getAppModel('billing')).cname).toBe('billing.example.com');
+    expect(await supervisor.getAppNameByCName('billing.example.com')).toBeNull();
+  });
+
   it.skip('should boot main app with sub apps', async () => {
     const mainStatus = await AppSupervisor.getInstance().getAppStatus('main');
     expect(mainStatus).toEqual('running');
