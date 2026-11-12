@@ -120,7 +120,8 @@ catalog:
   tw-animate-css: ^1.2.5
   typescript: ^6.0.3
   typescript-eslint: ^8.67.0
-  vite: ^6.3.5
+  # GHSA-587h-7wmj-h5pm: keep Vite 6 above the patched launch-editor validation floor.
+  vite: ^6.4.4
   vitest: ^4.1.10
   ws: ^8.21.3
   yaml: ^2.9.0
@@ -144,6 +145,8 @@ overrides:
   'pdfjs-dist@>=5.0.0 <6.2.108': ^6.2.108
   # GHSA-rfgv-xxqx-mfg5, GHSA-w293-vg96-wgc3, GHSA-xjj6-f33q-929c, GHSA-4w7w-5xrc-9h26, GHSA-2m5v-pch6-74hx, GHSA-qrxm-fqhp-jwvm; remove when the AI SDK requires undici >= 7.30.1.
   'undici@>=7.0.0 <7.30.1': ^7.30.1
+  # GHSA-rfgv-xxqx-mfg5, GHSA-w293-vg96-wgc3, GHSA-vp8m-p9jh-q5pm, GHSA-xjj6-f33q-929c, GHSA-4w7w-5xrc-9h26, GHSA-2m5v-pch6-74hx, GHSA-qrxm-fqhp-jwvm; remove when jsdom and unifont require undici >= 8.12.2.
+  'undici@>=8.0.0 <8.12.2': 8.12.2
   # GHSA-6qxp-vccf-f47h, GHSA-22jm-h49p-29qw, GHSA-46jr-4wx8-v453, GHSA-f897-62hf-6gxq; remove when the Claude agent SDK requires @modelcontextprotocol/sdk >= 1.32.0.
   '@modelcontextprotocol/sdk@>=1.0.0 <1.32.0': ^1.32.0
   # GHSA-27r3-jxmh-p828; remove when the MCP SDK requires body-parser >= 2.4.0.
