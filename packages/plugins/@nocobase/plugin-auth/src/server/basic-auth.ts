@@ -12,6 +12,7 @@ import { PasswordField } from '@nocobase/database';
 import _ from 'lodash';
 import { namespace } from '../preset';
 import { parsedValue } from '@nocobase/utils';
+import { getPasswordResetDestination, getPasswordResetPage } from './utils/passwordResetUrl';
 
 export class BasicAuth extends BaseAuth {
   static readonly optionsKeysNotAllowedInEnv = ['emailContentText', 'emailContentHTML', 'emailSubject'];
@@ -157,7 +158,7 @@ export class BasicAuth extends BaseAuth {
     const {
       values: { email, baseURL },
     } = ctx.action.params;
-    const authenticatorName = ctx.headers['x-authenticator'];
+    const authenticatorName = ctx.get('X-Authenticator');
 
     if (!authenticatorName) {
       ctx.throw(400, ctx.t('Missing X-Authenticator in request header', { ns: namespace }));
@@ -186,6 +187,12 @@ export class BasicAuth extends BaseAuth {
       ctx.throw(403, ctx.t('Not allowed to reset password', { ns: namespace }));
     }
 
+    const destination = await getPasswordResetDestination(ctx.app.name);
+    if ('error' in destination) {
+      ctx.logger.warn(destination.error);
+      return ctx.throw(503, ctx.t('Email password recovery is temporarily unavailable.', { ns: namespace }));
+    }
+
     const notificationManager = ctx.app.getPlugin('notification-manager');
     if (!notificationManager) {
       ctx.throw(500, ctx.t('Notification manager plugin not found', { ns: namespace }));
@@ -205,7 +212,10 @@ export class BasicAuth extends BaseAuth {
         { resetPasswordUserId: user.id },
         { expiresIn: resetTokenExpiresIn * 60 },
       );
-      const resetLink = `${baseURL}/reset-password?resetToken=${resetToken}&name=${authenticatorName}`;
+      const resetPage = getPasswordResetPage(destination, baseURL);
+      resetPage.searchParams.set('resetToken', resetToken);
+      resetPage.searchParams.set('name', authenticatorName);
+      const resetLink = resetPage.href;
       const variables = {
         $user: user,
         $resetLink: resetLink,
