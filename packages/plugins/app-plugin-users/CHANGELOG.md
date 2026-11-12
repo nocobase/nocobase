@@ -1,5 +1,26 @@
 # @nocobase/app-plugin-users
 
+## 2.0.0-beta.20
+
+### Minor Changes
+
+- c74760f: Invitation emails are written in one language instead of every supported language. The language is chosen when inviting (`locale` on the invite endpoints, defaulting to the inviter's interface language and then the application's default), kept on the invitation and reused by resends. Only a language without email text falls back to the application's default language and English. The subject follows the email's language, and the expiry is formatted for that language and marked as UTC.
+
+  The accept page opens in the invitation's language, offers a language picker, and stores the language on screen as the new account's language. Lookups return the invitation's `locale`, and accepting takes an optional `locale`. Projects' invite dialog gains an email language field. The notification template preview now renders each language separately. Traditional Chinese and Japanese wording and list separators are corrected.
+
+  This adds the migration `202611110001_user_invitation_locale`, which adds a nullable `userInvitations.locale` column. Existing invitations keep a null language and use the resending person's language.
+
+### Patch Changes
+
+- 74f1bf8: The user locale provider no longer hides the application while an already known session refreshes. It keeps the last identity until the refresh answers and only hides the page to swap the language when the identity really changes (sign-in, sign-out or another account). A sign-up page with automatic sign-in turned off now shows its "Registration request submitted" result instead of being unmounted and showing an empty form.
+- 1952789: Update authentication, editor, and validation dependencies to patched releases.
+- Updated dependencies [44bf26a]
+- Updated dependencies [1952789]
+  - @nocobase/app-server@5.0.0-beta.5
+  - @nocobase/app-plugin-authentication@2.0.0-beta.21
+  - @nocobase/app-plugin-authorization@1.0.0-beta.38
+  - @nocobase/app-plugin-notification@2.0.0-beta.9
+
 ## 2.0.0-beta.19
 
 ### Patch Changes

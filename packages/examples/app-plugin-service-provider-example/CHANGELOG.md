@@ -1,5 +1,14 @@
 # @nocobase/app-plugin-service-provider-example
 
+## 1.0.0-beta.12
+
+### Patch Changes
+
+- 1952789: Update authentication, editor, and validation dependencies to patched releases.
+- Updated dependencies [44bf26a]
+- Updated dependencies [1952789]
+  - @nocobase/app-server@5.0.0-beta.5
+
 ## 1.0.0-beta.11
 
 ### Patch Changes

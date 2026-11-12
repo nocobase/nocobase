@@ -1,5 +1,25 @@
 # @nocobase/app-plugin-demo-mode
 
+## 0.2.0-beta.12
+
+### Patch Changes
+
+- 0d2ce49: Fix a blank application caused by Demo Mode matching routes nested in same-path groups, such as the default template's System settings categories, and skip that matching while Demo Mode is off.
+- 1952789: Update authentication, editor, and validation dependencies to patched releases.
+- Updated dependencies [44bf26a]
+- Updated dependencies [c74760f]
+- Updated dependencies [74f1bf8]
+- Updated dependencies [1952789]
+- Updated dependencies [7884308]
+- Updated dependencies [a6b6b7c]
+- Updated dependencies [fcd59ee]
+  - @nocobase/app-server@5.0.0-beta.5
+  - @nocobase/app-plugin-users@2.0.0-beta.20
+  - @nocobase/app-plugin-agents@2.0.0-beta.12
+  - @nocobase/app-plugin-authentication@2.0.0-beta.21
+  - @nocobase/app-plugin-authorization@1.0.0-beta.38
+  - @nocobase/app-cli@1.0.0-beta.34
+
 ## 0.2.0-beta.11
 
 ### Patch Changes

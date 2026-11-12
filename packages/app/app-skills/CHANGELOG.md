@@ -1,5 +1,20 @@
 # @nocobase/app-skills
 
+## 0.1.0-beta.65
+
+### Minor Changes
+
+- a4191df: Put every table row's actions in one "⋮" menu. Both templates ship `RowActions` (`#components/row-actions`), which draws the same icon-only trigger on every row and page, keeps destructive actions last after a separator, renders nothing when the viewer has no action, and keeps menu clicks from reaching the row. The prepared Users and default access lists, the list and edit example and the customer contacts example use it; account actions such as Disable and Revoke sessions are no longer buttons on the row, and actions columns show no header text. The development Skill makes the menu the default for a single action, for every record state and for administration lists, shows an action outside it only when the user or a confirmed design asks for it, keeps the actions column unpinned, and the component checker reports actions columns that render buttons or links, show header text or pin the column. Existing applications receive `RowActions` and the updated pages through a template upgrade; synchronizing the Skill does not change pages that are already built.
+
+### Patch Changes
+
+- 9f74da7: Clarify that the commercial multi-app template creates Main only and children are added on demand. Keep the template alias while removing multi-application scaffolding and appDirectories processing. Main consumes child deployment archives rather than source directories.
+
+  Move multi-app scenario Skills out of the shared application guidance package; they are distributed by the commercial multi-app plugin.
+
+- 44bf26a: Allow plugins to contribute an application-local synchronous ID implementation with asynchronous initialization while retaining the host ID provider and public service token. Select and cache the implementation on first generation, preserving early-resolved references without per-ID container lookups. Document initialization ordering and plugin-owned cleanup.
+- cf13b3f: Support the commercial Main-only multi-app template alias with standard single-application creation and Skills synchronization. Keep commercial templates and plugins as licensed registry dependencies, scope private registry selection to NocoBase packages, and report recoverable installation failures without exposing credential settings.
+
 ## 0.1.0-beta.64
 
 ### Minor Changes

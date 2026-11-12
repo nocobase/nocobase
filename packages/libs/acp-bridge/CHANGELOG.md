@@ -1,5 +1,11 @@
 # @nocobase/acp-bridge
 
+## 1.0.0-beta.7
+
+### Patch Changes
+
+- 1952789: Update authentication, editor, and validation dependencies to patched releases.
+
 ## 1.0.0-beta.6
 
 ### Patch Changes

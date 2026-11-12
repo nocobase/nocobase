@@ -1,5 +1,21 @@
 # @nocobase/app-plugin-knowledge
 
+## 0.1.0-beta.20
+
+### Patch Changes
+
+- 788df3e: Batch knowledge directory metadata and node permissions across spaces, preserving visibility and archived-document counts. Provide a lightweight authorized project metadata query without issue or member totals.
+- 1952789: Update authentication, editor, and validation dependencies to patched releases.
+- Updated dependencies [44bf26a]
+- Updated dependencies [1952789]
+- Updated dependencies [7884308]
+- Updated dependencies [fcd59ee]
+  - @nocobase/app-server@5.0.0-beta.5
+  - @nocobase/app-plugin-agents@2.0.0-beta.12
+  - @nocobase/app-plugin-authentication@2.0.0-beta.21
+  - @nocobase/app-plugin-authorization@1.0.0-beta.38
+  - @nocobase/app-plugin-file@1.0.0-beta.31
+
 ## 0.1.0-beta.19
 
 ### Minor Changes

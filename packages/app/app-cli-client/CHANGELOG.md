@@ -1,5 +1,14 @@
 # @nocobase/app-cli-client
 
+## 0.1.0-beta.21
+
+### Patch Changes
+
+- 1952789: Update authentication, editor, and validation dependencies to patched releases.
+- Updated dependencies [1952789]
+  - @nocobase/acp-bridge@1.0.0-beta.7
+  - @nocobase/agent-protocol@0.1.0-beta.19
+
 ## 0.1.0-beta.20
 
 ### Patch Changes

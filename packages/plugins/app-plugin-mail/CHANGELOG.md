@@ -1,5 +1,17 @@
 # @nocobase/app-plugin-mail
 
+## 1.0.0-beta.24
+
+### Patch Changes
+
+- 1952789: Update authentication, editor, and validation dependencies to patched releases.
+- 1724828: Speed up IMAP synchronization with batched copy verification, tolerate concurrent mailbox changes, and reuse idle connections for attachment downloads.
+- Updated dependencies [44bf26a]
+- Updated dependencies [1952789]
+  - @nocobase/app-server@5.0.0-beta.5
+  - @nocobase/app-plugin-authentication@2.0.0-beta.21
+  - @nocobase/app-plugin-authorization@1.0.0-beta.38
+
 ## 1.0.0-beta.23
 
 ### Patch Changes
