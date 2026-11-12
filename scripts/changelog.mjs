@@ -217,10 +217,9 @@ export function pendingBetaPullRequests(content) {
 }
 
 /**
- * @typedef {{ number: number, title: string, body?: string | null, url: string, author?: { login?: string } | null,
- *   headRefName?: string }} PullRequest
+ * @typedef {{ number: number, title: string, body?: string | null, url: string, headRefName?: string }} PullRequest
  * @typedef {'en' | 'zh' | 'ja'} Language
- * @typedef {{ number: number, url: string, author: string, type: string, module: Record<Language, string>,
+ * @typedef {{ number: number, url: string, type: string, module: Record<Language, string>,
  *   changelog: Record<Language, string> }} Entry
  * @typedef {{ number: number, title: string, url: string, reason: string }} Missing
  */
@@ -258,7 +257,6 @@ export function collectEntries(pullRequests, scopeMap) {
     entries.push({
       number,
       url,
-      author: pullRequest.author?.login ?? 'ghost',
       type: parsed.type,
       module: moduleOf(parsed.scope, scopeMap),
       changelog: {
@@ -292,7 +290,7 @@ export function renderNotes({ entries }, language) {
       modules
         .get(name)
         .push(
-          `${entry.changelog[language]} ([#${entry.number}](${entry.url})) by @${entry.author}`,
+          `${entry.changelog[language]} ([#${entry.number}](${entry.url}))`,
         );
     }
     if (!modules.size) continue;
@@ -370,7 +368,7 @@ async function viewPullRequest(number, repo) {
     '--repo',
     repo,
     '--json',
-    'number,title,body,author,url,headRefName',
+    'number,title,body,url,headRefName',
   ];
   for (let attempt = 1; ; attempt += 1) {
     try {

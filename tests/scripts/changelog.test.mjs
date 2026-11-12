@@ -50,7 +50,6 @@ function pr(number, title, text, headRefName = `fix/v3-${number}`) {
     title,
     body: text,
     url: `https://github.com/${repo}/pull/${number}`,
-    author: { login: 'someone' },
     headRefName,
   };
 }
@@ -116,13 +115,13 @@ test('entries are grouped by type and module; Others, release and unreadable PRs
     renderNotes(collected, 'en'),
     `### 🎉 New Features
 
-- **[Knowledge base]** Add A. ([#3](https://github.com/${repo}/pull/3)) by @someone
+- **[Knowledge base]** Add A. ([#3](https://github.com/${repo}/pull/3))
 
 ### 🐛 Bug Fixes
 
 - **[Demo mode]**
-  - Fix C. ([#4](https://github.com/${repo}/pull/4)) by @someone
-  - Fix B. ([#5](https://github.com/${repo}/pull/5)) by @someone
+  - Fix C. ([#4](https://github.com/${repo}/pull/4))
+  - Fix B. ([#5](https://github.com/${repo}/pull/5))
 `,
   );
   assert.match(
@@ -147,13 +146,13 @@ test('the Japanese changelog falls back to English when a PR has no Japanese sen
     renderNotes(collected, 'ja'),
     `### 🎉 新機能
 
-- **[ナレッジベース]** A を追加。 ([#3](https://github.com/${repo}/pull/3)) by @someone
+- **[ナレッジベース]** A を追加。 ([#3](https://github.com/${repo}/pull/3))
 
 ### 🐛 不具合修正
 
 - **[デモモード]**
-  - Fix C. ([#4](https://github.com/${repo}/pull/4)) by @someone
-  - Fix B. ([#5](https://github.com/${repo}/pull/5)) by @someone
+  - Fix C. ([#4](https://github.com/${repo}/pull/4))
+  - Fix B. ([#5](https://github.com/${repo}/pull/5))
 `,
   );
   assert.equal(
@@ -219,11 +218,11 @@ test('sections are prepended below the header once per tag and read back for the
 test('a stable release carries the PRs the betas listed that no stable section lists', () => {
   const link = (number) =>
     `([#${number}](https://github.com/${repo}/pull/${number}))`;
-  // Sync merges can leave the stable section anywhere relative to later betas.
+  // Sync merges can leave the stable section anywhere relative to later betas. Sections written before authors were left out still end entries with `by @<login>`.
   const changelog = `${CHANGELOG_HEADERS.en}
 ## [release-beta/2026-10-28.1](x)
 
-- **[Database]** D ${link(4)} by @a
+- **[Database]** D ${link(4)}
 
 ## [release/2026-10-27.1](x)
 
