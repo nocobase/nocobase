@@ -6,6 +6,7 @@
  * This program is offered under a commercial license.
  * For more information, see <https://www.nocobase.com/agreement>
  */
+import type { Context, Next } from '@nocobase/actions';
 import { InstallOptions, Plugin } from '@nocobase/server';
 import { round } from 'mathjs';
 import { parseCollectionName } from '@nocobase/data-source-manager';
@@ -20,6 +21,9 @@ const aggregators = {
   min: 'min',
   max: 'max',
 };
+
+const writeActions = ['create', 'update', 'destroy', 'firstOrCreate', 'updateOrCreate'];
+const configureVariables = 'ui.customVariables';
 
 export class PluginCustomVariablesServer extends Plugin {
   afterAdd() {}
@@ -109,7 +113,27 @@ export class PluginCustomVariablesServer extends Plugin {
 
       await next();
     });
-    this.app.acl.allow('customVariables', ['parse', 'create', 'update', 'destroy', 'list', 'get'], 'loggedIn');
+    this.app.acl.allow('customVariables', ['parse', 'list', 'get'], 'loggedIn');
+    this.app.acl.registerSnippet({
+      name: configureVariables,
+      actions: writeActions.map((action) => `customVariables:${action}`),
+    });
+    // A role's data permissions can also grant CRUD actions. Variable definitions require UI configuration access.
+    this.app.acl.use(
+      async (ctx: Context, next: Next) => {
+        const { resourceName, actionName } = ctx.permission;
+        if (resourceName === 'customVariables' && writeActions.includes(actionName)) {
+          const roles = this.app.acl.getRoles(ctx.state.currentRoles || [ctx.state.currentRole]);
+          if (
+            !roles.some((role) => role.name === 'root' || role.effectiveSnippets().allowed.includes(configureVariables))
+          ) {
+            ctx.throw(403);
+          }
+        }
+        await next();
+      },
+      { before: 'core' },
+    );
   }
 
   async install(options?: InstallOptions) {}
