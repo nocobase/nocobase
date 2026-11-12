@@ -14,6 +14,7 @@ import {
   useBlockTemplateContext,
   SchemaSettingsLayoutItem,
   SchemaSettingsFormItemTemplate,
+  useSchemaSettings,
   useCollection,
   SchemaSettingsBlockHeightItem,
   SchemaSettingsBlockTitleItem,
@@ -61,6 +62,9 @@ export const bulkEditFormBlockSettings = new SchemaSettings({
     {
       name: 'formItemTemplate',
       Component: SchemaSettingsFormItemTemplate,
+      useVisible() {
+        return !!useSchemaSettings().template;
+      },
       useComponentProps() {
         const { componentNamePrefix } = useBlockTemplateContext();
         const { name } = useCollection();
