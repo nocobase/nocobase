@@ -195,6 +195,8 @@ fi`,
   next: `if [ "$runner" = 0 ]; then
   say "Next: $cli login --server $server"
 fi`,
+  npmInstallComment: `    # No optional dependencies: the coding tools' SDKs list one package per platform, each carrying a binary the
+    # runner never starts.`,
   productComment: `# Installs one product: install_product <command> <prefix> <mode>. Sets "installed" to what happened: "new", "kept"
 # (the token was not accepted, but the CLI is installed), "used" (the token was used, by the runner registered here)
 # or "missing" (the application serves no CLI; with --runner the runtime is installed without it).

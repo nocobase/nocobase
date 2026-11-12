@@ -42,8 +42,8 @@ import {
 export type Admission = (context: Context) => Promise<boolean>;
 export interface DistributionRoutesOptions {
   readonly artifacts: DistService;
-  /** Explicit allowed products. Omitted only when the host intentionally serves every configured product. */
-  readonly products?: readonly string[];
+  /** Explicit allowed products, or 'all' when the host intentionally serves every configured product. */
+  readonly products: readonly string[] | 'all';
   readonly admissions?: readonly Admission[];
   readonly fallback?: MiddlewareHandler;
   readonly mint?: {
@@ -132,6 +132,9 @@ export function downloadTokenAdmission(
 export function createDistributionRoutes(
   options: DistributionRoutesOptions,
 ): Hono {
+  const products = options.products;
+  if (products !== 'all' && !Array.isArray(products))
+    throw new Error("products must explicitly be an array or 'all'.");
   const router = distributionRouter();
   const artifacts = options.artifacts;
   const allowed: MiddlewareHandler = async (context, next) => {
@@ -149,8 +152,8 @@ export function createDistributionRoutes(
     const product = context.req.param('product');
     if (
       product !== undefined &&
-      options.products &&
-      !options.products.includes(product)
+      products !== 'all' &&
+      !products.includes(product)
     )
       throw new ProtocolError(
         'NOT_FOUND',
@@ -207,16 +210,17 @@ export function createDistributionRoutes(
     async (context) => {
       const manifest = await artifacts.manifest();
       return context.json({
-        data: options.products
-          ? {
-              ...manifest,
-              products: Object.fromEntries(
-                Object.entries(manifest.products).filter(([product]) =>
-                  options.products?.includes(product),
+        data:
+          products !== 'all'
+            ? {
+                ...manifest,
+                products: Object.fromEntries(
+                  Object.entries(manifest.products).filter(([product]) =>
+                    products.includes(product),
+                  ),
                 ),
-              ),
-            }
-          : manifest,
+              }
+            : manifest,
       });
     },
   );

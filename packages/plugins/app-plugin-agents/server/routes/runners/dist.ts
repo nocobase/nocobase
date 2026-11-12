@@ -23,6 +23,7 @@ export function createDistRoutes(
 ): Hono {
   return createDistributionRoutes({
     artifacts: services.dist,
+    products: 'all',
     admissions: [
       async (context) => {
         const key = context.req.header(HEADERS.runnerKey);

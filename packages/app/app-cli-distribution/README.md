@@ -37,7 +37,7 @@ const distribution = new Hono()
 app.route('/api/agents/dist', distribution);
 ```
 
-`app` is the host's Hono API router. A NocoBase host contributes this router through its normal server routes declaration; it does not register the Agents plugin. `products` restricts manifest entries, resolution and file requests, including npm resolution. Keep it explicit for a CLI-only host. A request for another product receives 404 after authorization. The artifact directory and manifests are trusted deployment inputs; isolate them from user uploads and untrusted filesystem writers. Files cannot escape their product directory through a manifest path.
+`app` is the host's Hono API router. A NocoBase host contributes this router through its normal server routes declaration; it does not register the Agents plugin. `products` restricts manifest entries, resolution and file requests, including npm resolution. It is required: pass the CLI allowlist, or explicitly pass `'all'` to serve every configured product as Agents does. Omitting it throws when the router is created. A request for another product receives 404 after authorization. The artifact directory and manifests are trusted deployment inputs; isolate them from user uploads and untrusted filesystem writers. Files cannot escape their product directory through a manifest path.
 
 ## Authorization is explicit
 

@@ -33,6 +33,7 @@ export interface InstallScriptExtensions {
   readonly afterCli?: string;
   readonly next?: string;
   readonly productComment?: string;
+  readonly npmInstallComment?: string;
 }
 export interface InstallScriptOptions {
   readonly cli: string;
@@ -133,6 +134,7 @@ const DEFAULT_EXTENSIONS: Required<InstallScriptExtensions> = {
   afterCli: `say "$cli is installed: $bin_dir/$cli"
 `,
   next: `say "Next: $cli login --server $server"`,
+  npmInstallComment: `    # Optional platform binaries are not needed by this installation.`,
   productComment: `# Installs one product and records its installation.
 `,
 };
@@ -296,7 +298,7 @@ ${npmLauncherScript()}LAUNCHER
     say "Installing $package@$version with npm ..."
     run rm -rf "$dest.partial"
     run mkdir -p "$dest.partial"
-    # Optional platform binaries are not needed by this installation.
+@npmInstallComment@
     run "$npm_bin" install --prefix "$dest.partial" --no-save --no-audit --no-fund --omit=optional "$package@$version"
     if [ "$dry_run" = 0 ]; then
       [ -e "$dest.partial/node_modules/.bin/$product" ] || fail "$package@$version provides no $product command."

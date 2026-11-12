@@ -65,11 +65,18 @@ const prefix = '/api/agents/dist';
 const file = `${prefix}/products/acme/versions/1.0.0/files/cli.tar.gz`;
 
 describe('independent host without Agents, a database or background jobs', () => {
+  it('rejects an omitted product policy before registering routes', async () => {
+    const { artifacts } = await fixture();
+    expect(() =>
+      // @ts-expect-error JavaScript callers must explicitly specify the product policy too.
+      createDistributionRoutes({ artifacts }),
+    ).toThrow("products must explicitly be an array or 'all'.");
+  });
   it('defaults to protected downloads, with optional mint absent', async () => {
     const { artifacts } = await fixture();
     const app = new Hono().route(
       prefix,
-      createDistributionRoutes({ artifacts }),
+      createDistributionRoutes({ artifacts, products: ['acme'] }),
     );
     expect((await app.request(`${prefix}/manifest`)).status).toBe(401);
     expect((await app.request(file)).status).toBe(401);
@@ -199,7 +206,11 @@ describe('independent host without Agents, a database or background jobs', () =>
     await writeFile(path.join(dir, 'stable', 'invalid', 'manifest.json'), '{}');
     const app = new Hono().route(
       prefix,
-      createDistributionRoutes({ artifacts, fallback: session }),
+      createDistributionRoutes({
+        artifacts,
+        products: ['acme'],
+        fallback: session,
+      }),
     );
     expect((await artifacts.manifest()).products).not.toHaveProperty('invalid');
     expect(
@@ -257,7 +268,11 @@ describe('independent host without Agents, a database or background jobs', () =>
     };
     const app = new Hono().route(
       prefix,
-      createDistributionRoutes({ artifacts: tracked, fallback: session }),
+      createDistributionRoutes({
+        artifacts: tracked,
+        products: ['acme'],
+        fallback: session,
+      }),
     );
     const response = await app.request(file, { headers });
     const reader = response.body!.getReader();
