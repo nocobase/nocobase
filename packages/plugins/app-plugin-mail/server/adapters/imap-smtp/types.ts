@@ -10,6 +10,8 @@ export interface ImapFolderCursor {
 
 export interface ImapSyncCursor {
   readonly version: 1;
+  /** Keep the import boundary when a history-complete partial resumes incrementally. */
+  readonly receivedAfter?: string;
   readonly folders: Readonly<Record<string, ImapFolderCursor>>;
   readonly verify?: ImapVerifyState;
 }
@@ -94,8 +96,10 @@ export interface ImapVerifyFolder {
 
 /** First verification pass, kept in the change cursor until the second pass compares it. */
 export interface ImapVerifyState {
-  readonly attempts: number;
-  readonly excluded?: readonly string[];
+  readonly attempts?: number;
+  readonly excluded?: Readonly<
+    Record<string, Pick<ImapVerifyFolder, 'uidValidity' | 'uids'>>
+  >;
   readonly folders?: Readonly<Record<string, ImapVerifyFolder>>;
 }
 
@@ -136,6 +140,7 @@ export interface ImapLocationPersistence {
   ): Promise<readonly ImapStoredLocation[]>;
   /** Valid and pending copies of the account, for verification. */
   listKnownLocations(): Promise<readonly ImapStoredLocation[]>;
+  getPushRequestedAt(): Promise<string | undefined>;
   beginMove(): Promise<ImapMoveState>;
   rememberMoveDestination(
     state: ImapMoveState,

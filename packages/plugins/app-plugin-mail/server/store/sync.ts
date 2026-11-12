@@ -667,7 +667,12 @@ export class MailSyncStore {
           .where('accountId', '=', input.run.accountId)
           .execute();
       }
-      if (input.status === 'completed' && input.changeCursor) {
+      if (
+        (input.status === 'completed' || input.status === 'partial') &&
+        input.changeCursor &&
+        (input.run.mode === 'incremental' ||
+          (input.historyComplete ?? input.run.historyComplete))
+      ) {
         await upsertSyncState(
           connection.query,
           input.run.accountId,
@@ -1488,6 +1493,15 @@ export function createImapLocationPersistence(
       const query = database.query();
       const rows = await select(query).execute<ImapLocationRow>();
       return resolve(query, rows);
+    },
+    async getPushRequestedAt() {
+      const row = await database
+        .query()
+        .selectFrom<PushPendingRow>('mailPushPending')
+        .select('requestedAt')
+        .where('accountId', '=', accountId)
+        .executeTakeFirst<Pick<PushPendingRow, 'requestedAt'>>();
+      return row?.requestedAt;
     },
     commitFlags,
     commitDeleted,

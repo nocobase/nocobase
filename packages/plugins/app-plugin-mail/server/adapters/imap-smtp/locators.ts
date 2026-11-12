@@ -58,6 +58,7 @@ export function parseSyncCursor(
     throw new Error('Invalid IMAP sync cursor.');
   const record = parsed as {
     version?: unknown;
+    receivedAfter?: unknown;
     folders?: unknown;
     verify?: unknown;
   };
@@ -68,6 +69,13 @@ export function parseSyncCursor(
   ) {
     throw new Error('Invalid IMAP sync cursor.');
   }
+  if (
+    record.receivedAfter !== undefined &&
+    (typeof record.receivedAfter !== 'string' ||
+      !Number.isFinite(Date.parse(record.receivedAfter)))
+  )
+    throw new Error('Invalid IMAP sync cursor.');
+  const receivedAfter = record.receivedAfter;
   const folders: Record<string, ImapFolderCursor> = {};
   for (const [path, value] of Object.entries(record.folders)) {
     if (!isImapFolderCursor(value)) {
@@ -75,10 +83,22 @@ export function parseSyncCursor(
     }
     folders[path] = value;
   }
-  if (record.verify === undefined) return { version: 1, folders };
+  if (record.verify === undefined)
+    return { version: 1, folders, receivedAfter };
   if (!isVerifyState(record.verify))
     throw new Error('Invalid IMAP sync cursor.');
-  return { version: 1, folders, verify: record.verify };
+  return {
+    version: 1,
+    receivedAfter,
+    folders,
+    verify: {
+      ...record.verify,
+      // Old tuple arrays are deliberately re-screened rather than migrated.
+      excluded: Array.isArray(record.verify.excluded)
+        ? undefined
+        : record.verify.excluded,
+    },
+  };
 }
 
 function isVerifyState(value: unknown): value is ImapVerifyState {
@@ -90,11 +110,17 @@ function isVerifyState(value: unknown): value is ImapVerifyState {
   };
   if (
     record.excluded !== undefined &&
-    (!Array.isArray(record.excluded) ||
-      !record.excluded.every((value) => typeof value === 'string'))
+    !(Array.isArray(record.excluded)
+      ? record.excluded.every((value) => typeof value === 'string')
+      : record.excluded &&
+        typeof record.excluded === 'object' &&
+        Object.values(record.excluded).every(isExcludedFolder))
   )
     return false;
-  if (!Number.isSafeInteger(record.attempts) || (record.attempts as number) < 0)
+  if (
+    record.attempts !== undefined &&
+    (!Number.isSafeInteger(record.attempts) || (record.attempts as number) < 0)
+  )
     return false;
   if (record.folders === undefined) return true;
   if (!record.folders || typeof record.folders !== 'object') return false;
@@ -104,6 +130,45 @@ function isVerifyState(value: unknown): value is ImapVerifyState {
       typeof (folder as Partial<ImapVerifyFolder>).uids === 'string' &&
       /^[\d:,]*$/.test((folder as ImapVerifyFolder).uids),
   );
+}
+
+function isExcludedFolder(value: unknown): boolean {
+  if (!value || typeof value !== 'object') return false;
+  const folder = value as Record<string, unknown>;
+  return isUidValidity(folder.uidValidity) && isUidRanges(folder.uids);
+}
+
+function isUidRanges(value: unknown): value is string {
+  if (typeof value !== 'string') return false;
+  if (!value) return true;
+  let previous = 0;
+  return value.split(',').every((range) => {
+    if (!/^[1-9]\d*(?::[1-9]\d*)?$/.test(range)) return false;
+    const [first, last = first] = range.split(':').map(Number);
+    const valid = first > previous && last >= first && last <= MAX_IMAP_UID;
+    previous = last;
+    return valid;
+  });
+}
+
+/** Intersect a SEARCH result with compressed ranges without expanding the cursor. */
+export function matchingUids(
+  uids: readonly number[],
+  ranges: string,
+): number[] {
+  const intervals = ranges
+    ? ranges.split(',').map((range) => {
+        const [first, last = first] = range.split(':').map(Number);
+        return [first, last] as const;
+      })
+    : [];
+  let index = 0;
+  return [...uids]
+    .sort((a, b) => a - b)
+    .filter((uid) => {
+      while (index < intervals.length && intervals[index][1] < uid) index += 1;
+      return index < intervals.length && intervals[index][0] <= uid;
+    });
 }
 
 /** Compress a UID set into sorted IMAP ranges; equal sets give equal strings. */

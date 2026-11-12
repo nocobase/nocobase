@@ -78,6 +78,7 @@ import { createImapClient, createSmtpTransport } from './connection.js';
 import type { ImapConnectionPool } from './connection-pool.js';
 import {
   compressUids,
+  matchingUids,
   encodeCopyLocator,
   encodeHistoryCursor,
   encodeMessageLocator,
@@ -251,6 +252,10 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
     )
       throw new Error('The IMAP sync operation snapshot changed.');
     const incomplete = this.verificationIncomplete;
+    const changeCursor =
+      incomplete && input.changeCursor
+        ? parseSyncCursor(input.changeCursor)
+        : undefined;
     const evidence = {
       copies: this.copies.filter(
         (copy) => copy.flagsOnly || ids.has(copy.providerMessageId),
@@ -261,7 +266,17 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
     this.beginStep();
     return this.locations.commitSyncStep(
       incomplete
-        ? { ...input, status: 'partial', createNextTask: false }
+        ? {
+            ...input,
+            status: 'partial',
+            createNextTask: false,
+            changeCursor:
+              changeCursor &&
+              syncCursor({
+                ...changeCursor,
+                verify: { excluded: changeCursor.verify?.excluded },
+              }),
+          }
         : input,
       evidence,
     );
@@ -297,7 +312,14 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
         throwIfAborted(signal);
         folders[mailbox.path] = await this.folderState(mailbox.path, mailbox);
       }
-      return { ok: true, value: syncCursor({ version: 1, folders }) };
+      return {
+        ok: true,
+        value: syncCursor({
+          version: 1,
+          folders,
+          receivedAfter: this.syncRun?.policy.receivedAfter,
+        }),
+      };
     } catch (error) {
       this.closeImap();
       return {
@@ -341,6 +363,11 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
         : undefined;
       since?.setUTCHours(0, 0, 0, 0);
       let scannedRanges = 0;
+      const checkNewMail = this.newMailChecker(
+        parseSyncCursor(this.syncRun?.changeCursor ?? input.baselineCursor)
+          .folders,
+        input.signal,
+      );
       while (
         folderIndex < folders.length &&
         messages.length < limit &&
@@ -349,6 +376,7 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
         scannedRanges += 1;
         throwIfAborted(input.signal);
         const folder = folders[folderIndex];
+        const selectedFolderIndex = folderIndex;
         const mailbox = await (
           await this.imap()
         ).mailboxOpen(folder, {
@@ -421,12 +449,15 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
             upperUid = start - 1;
           }
         }
-        for (const copy of await this.fetchMessages(
+        let yielded = false;
+        const fetched = await this.fetchMessages(
           folder,
           String(mailbox.uidValidity),
           selected,
           input.signal,
-        )) {
+          async () => (yielded = await checkNewMail()),
+        );
+        for (const copy of fetched) {
           const { receivedAt } = copy.message;
           if (
             input.receivedAfter &&
@@ -437,10 +468,15 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
           }
           messages.push(copy);
         }
+        if (yielded) {
+          folderIndex = selectedFolderIndex;
+          upperUid = fetched.at(-1)!.tuple.uid - 1;
+        }
         if (upperUid !== undefined && upperUid < 1) {
           folderIndex += 1;
           upperUid = undefined;
         }
+        if (yielded) break;
       }
       const nextCursor =
         folderIndex < folders.length
@@ -557,12 +593,19 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
             excluded: previous.verify.excluded,
           };
           hasMore = true;
+        } else if (
+          this.syncRun?.mode === 'initial' &&
+          !this.syncRun.historyComplete
+        ) {
+          // Catch up between history pages without spending verification attempts.
+          verify = previous.verify;
         } else {
           const result = await this.verifyFolders(
             mailboxes,
             nextFolders,
             previous.verify,
             input.signal,
+            previous.receivedAfter ?? this.syncRun?.policy.receivedAfter,
           );
           if (result === 'generation-changed')
             return failure(
@@ -584,6 +627,8 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
           deletedProviderMessageIds: [],
           nextCursor: syncCursor({
             version: 1,
+            receivedAfter:
+              previous.receivedAfter ?? this.syncRun?.policy.receivedAfter,
             folders: nextFolders,
             ...(verify ? { verify } : {}),
           }),
@@ -1619,6 +1664,7 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
     uidValidity: string,
     uids: number[] | string,
     signal?: AbortSignal,
+    shouldYield?: () => Promise<boolean>,
   ): Promise<FetchedCopy[]> {
     if (uids.length === 0) return [];
     const observed = this.locations
@@ -1634,6 +1680,10 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
       metadata.push(message);
     }
     const messages: FetchedCopy[] = [];
+    if (shouldYield && Array.isArray(uids)) {
+      const order = new Map(uids.map((uid, index) => [uid, index]));
+      metadata.sort((a, b) => order.get(a.uid)! - order.get(b.uid)!);
+    }
     for (const message of metadata) {
       throwIfAborted(signal);
       const normalized = await this.normalizeMessage(
@@ -1656,8 +1706,49 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
         structure: message.bodyStructure,
         size: message.size,
       });
+      if (await shouldYield?.()) break;
     }
     return messages;
+  }
+
+  /** Check only between completed commands; issuing commands inside FETCH deadlocks. */
+  private newMailChecker(
+    folders: Readonly<Record<string, ImapFolderCursor>>,
+    signal?: AbortSignal,
+  ): (() => Promise<boolean>) & { uidChecked(): void } {
+    let lastUidCheck = Date.now();
+    let lastPushCheck = Date.now();
+    const check = async () => {
+      throwIfAborted(signal);
+      const now = Date.now();
+      if (this.locations && this.syncRun && now - lastPushCheck >= 1_000) {
+        lastPushCheck = now;
+        const requestedAt = await this.locations.getPushRequestedAt();
+        if (
+          requestedAt &&
+          Date.parse(requestedAt) > Date.parse(this.syncRun.updatedAt)
+        )
+          return true;
+      }
+      if (now - lastUidCheck < 4_000) return false;
+      lastUidCheck = now;
+      const client = await this.imap();
+      if (client.capabilities.has('LIST-STATUS'))
+        return this.selectableMailboxes(await this.listMailboxes()).some(
+          (box) =>
+            box.status?.uidNext !== undefined &&
+            box.status.uidNext !== folders[box.path]?.uidNext,
+        );
+      if (!folders.INBOX) return false;
+      const status = await client.status('INBOX', { uidNext: true });
+      if (!status) throw new Error('The IMAP UIDNEXT check was incomplete.');
+      return status.uidNext !== folders.INBOX.uidNext;
+    };
+    return Object.assign(check, {
+      uidChecked: () => {
+        lastUidCheck = Date.now();
+      },
+    });
   }
 
   private beginStep(): void {
@@ -1957,6 +2048,7 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
     folders: Readonly<Record<string, ImapFolderCursor>>,
     previous: ImapVerifyState | undefined,
     signal?: AbortSignal,
+    receivedAfter?: string,
   ): Promise<
     | { readonly done: boolean; readonly verify?: ImapVerifyState }
     | 'generation-changed'
@@ -1965,10 +2057,15 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
     const snapshot: Record<string, ImapVerifyFolder> = {};
     const present = new Map<string, Set<number>>();
     const observedCopies = new Map<string, FetchMessageObject>();
-    const excluded = new Set(previous?.excluded ?? []);
+    const excluded: Record<
+      string,
+      Pick<ImapVerifyFolder, 'uidValidity' | 'uids'>
+    > = {
+      ...previous?.excluded,
+    };
     const uncertainGenerations = new Set<string>();
     let stable = true;
-    let lastUidCheck = Date.now();
+    const checkNewMail = this.newMailChecker(folders, signal);
     const interrupted = (): { done: boolean; verify: ImapVerifyState } => {
       // Partial observations must never invalidate copies or publish flags.
       this.copies = [];
@@ -1980,7 +2077,7 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
         verify: {
           attempts,
           folders: previous?.folders,
-          excluded: [...excluded],
+          excluded,
         },
       };
     };
@@ -1990,19 +2087,6 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
           box.status?.uidNext !== undefined &&
           box.status.uidNext !== folders[box.path]?.uidNext,
       );
-    const checkNewMail = async (): Promise<boolean> => {
-      throwIfAborted(signal);
-      if (Date.now() - lastUidCheck < 4_000) return false;
-      lastUidCheck = Date.now();
-      const client = await this.imap();
-      if (client.capabilities.has('LIST-STATUS'))
-        return changed(this.selectableMailboxes(await this.listMailboxes()));
-      // Avoid one STATUS per folder on servers without LIST-STATUS.
-      if (!folders.INBOX) return false;
-      const status = await client.status('INBOX', { uidNext: true });
-      if (!status) throw new Error('The IMAP UIDNEXT check was incomplete.');
-      return status.uidNext !== folders.INBOX.uidNext;
-    };
     const known = await this.locations!.listKnownLocations();
     for (const mailbox of mailboxes) {
       if (await checkNewMail()) return interrupted();
@@ -2024,7 +2108,7 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
         if (!isResponseLimitError(error)) throw error;
         // The UID list exceeds the protocol budget: keep every copy and skip cleanup.
         this.verificationIncomplete = true;
-        return { done: true, verify: { attempts, excluded: [...excluded] } };
+        return { done: true, verify: { attempts, excluded } };
       }
       if (!Array.isArray(uids))
         // Retry the step: an incomplete SEARCH proves nothing about missing copies.
@@ -2045,7 +2129,7 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
         MAX_IMAP_VERIFY_STATE_BYTES
       ) {
         this.verificationIncomplete = true;
-        return { done: true, verify: { attempts, excluded: [...excluded] } };
+        return { done: true, verify: { attempts, excluded } };
       }
       const bound = new Set(
         known
@@ -2101,51 +2185,104 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
           else stable = false;
         }
       }
-      const unbound = uids.filter(
-        (uid) =>
-          !bound.has(uid) &&
-          !excluded.has(
-            tupleKey({
-              folder: mailbox.path,
-              uidValidity: state.uidValidity,
-              uid,
-            }),
-          ),
+      const excludedUids = new Set(
+        matchingUids(
+          uids,
+          excluded[mailbox.path]?.uidValidity === state.uidValidity
+            ? excluded[mailbox.path].uids
+            : '',
+        ),
       );
-      if (unbound.length) {
-        // Reconcile copies below the scan high-water mark, including old-date moves.
-        const fetched = await this.fetchMessages(
-          mailbox.path,
-          state.uidValidity,
-          unbound.slice(0, this.syncRun?.policy.batchSize ?? 100),
-          signal,
+      const rememberExcluded = () => {
+        if (!excludedUids.size) {
+          delete excluded[mailbox.path];
+          return;
+        }
+        excluded[mailbox.path] = {
+          uidValidity: state.uidValidity,
+          uids: compressUids(excludedUids),
+        };
+      };
+      const unbound = uids.filter(
+        (uid) => !bound.has(uid) && !excludedUids.has(uid),
+      );
+      const toFetch: number[] = [];
+      const bodyLimit = this.syncRun?.policy.batchSize ?? 100;
+      // Screen large historical mailboxes without downloading old bodies. A copy
+      // of an existing identity still needs full evidence, even with an old date.
+      for (let offset = 0; offset < unbound.length; offset += 1000) {
+        if (await checkNewMail()) {
+          rememberExcluded();
+          return interrupted();
+        }
+        const batch = unbound.slice(offset, offset + 1000);
+        const metadata = await client.fetchAll(
+          compressUids(batch),
+          {
+            uid: true,
+            internalDate: true,
+            emailId: true,
+            headers: ['message-id'],
+          },
+          { uid: true },
         );
         const sources = await this.locations!.findMessageSources(
-          fetched.flatMap((copy) => {
+          metadata.flatMap((message) => {
             const id =
-              validNativeId(this.nativeSource(), copy.emailId) ??
-              copy.rfcMessageId;
+              validNativeId(this.nativeSource(), message.emailId) ??
+              validRfcMessageId(messageIdHeader(message.headers));
             return id ? [id] : [];
           }),
         );
-        for (const copy of fetched) {
+        for (const message of metadata) {
+          const nativeId = validNativeId(this.nativeSource(), message.emailId);
           const id =
-            validNativeId(this.nativeSource(), copy.emailId) ??
-            copy.rfcMessageId;
-          const beforeImportDate =
-            this.syncRun?.policy.receivedAfter &&
-            copy.message.receivedAt &&
-            Date.parse(copy.message.receivedAt) <
-              Date.parse(this.syncRun.policy.receivedAfter);
-          if (beforeImportDate && !copy.observed && (!id || !sources.has(id)))
-            excluded.add(tupleKey(copy.tuple));
-          else this.verificationCopies.push(copy);
+            nativeId ?? validRfcMessageId(messageIdHeader(message.headers));
+          const identityReadable =
+            nativeId ||
+            (message.headers &&
+              message.headers.byteLength <= MAX_HEADER_BYTES &&
+              message.headers.subarray(-4).equals(Buffer.from('\r\n\r\n')));
+          const receivedAt = toIsoDate(message.internalDate);
+          const observed = known.some(
+            (location) =>
+              location.folder === mailbox.path &&
+              location.uidValidity === state.uidValidity &&
+              location.uid === message.uid,
+          );
+          if (
+            receivedAfter &&
+            identityReadable &&
+            receivedAt &&
+            Date.parse(receivedAt) < Date.parse(receivedAfter) &&
+            !observed &&
+            (!id || !sources.has(id))
+          )
+            excludedUids.add(message.uid);
+          else toFetch.push(message.uid);
         }
-        stable = false;
+        rememberExcluded();
+        // Bound the full-body work; remaining UIDs stay unbound for the next pass.
+        if (toFetch.length >= bodyLimit) break;
       }
+      rememberExcluded();
+      if (toFetch.length) {
+        if (await checkNewMail()) return interrupted();
+        let yielded = false;
+        const fetched = await this.fetchMessages(
+          mailbox.path,
+          state.uidValidity,
+          toFetch.slice(0, bodyLimit),
+          signal,
+          async () => (yielded = await checkNewMail()),
+        );
+        this.verificationCopies.push(...fetched);
+        if (yielded) return interrupted();
+      }
+      if (unbound.some((uid) => !excludedUids.has(uid))) stable = false;
     }
     const after = this.selectableMailboxes(await this.listMailboxes());
-    lastUidCheck = Date.now();
+    checkNewMail.uidChecked();
     if (changed(after)) return interrupted();
     if (
       after.length !== mailboxes.length ||
@@ -2263,18 +2400,18 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
         this.changes.push({ id: location.id, observed: location, ...next });
     }
     if (
-      Buffer.byteLength(JSON.stringify({ snapshot, excluded: [...excluded] })) >
+      Buffer.byteLength(JSON.stringify({ snapshot, excluded })) >
       MAX_IMAP_VERIFY_STATE_BYTES
     ) {
       this.verificationIncomplete = true;
-      return { done: true, verify: { attempts } };
+      return { done: true, verify: { attempts, excluded } };
     }
     if (!stable) {
       if (attempts >= MAX_IMAP_VERIFY_ATTEMPTS) {
         this.verificationIncomplete = true;
-        return { done: true, verify: { attempts, excluded: [...excluded] } };
+        return { done: true, verify: { attempts, excluded } };
       }
-      return { done: false, verify: { attempts, excluded: [...excluded] } };
+      return { done: false, verify: { attempts, excluded } };
     }
     if (
       previous?.folders &&
@@ -2289,15 +2426,15 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
       )
     ) {
       this.cleanup = true;
-      return { done: true };
+      return { done: true, verify: { excluded } };
     }
     if (attempts >= MAX_IMAP_VERIFY_ATTEMPTS) {
       this.verificationIncomplete = true;
-      return { done: true, verify: { attempts, excluded: [...excluded] } };
+      return { done: true, verify: { attempts, excluded } };
     }
     return {
       done: false,
-      verify: { attempts, folders: snapshot, excluded: [...excluded] },
+      verify: { attempts, folders: snapshot, excluded },
     };
   }
 
@@ -2370,10 +2507,7 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
       ...body,
       size: message.size,
       // Preserve the header value; mailparser can wrap malformed bare IDs in brackets.
-      internetMessageId:
-        /^message-id:[\t ]*([^\r\n]*(?:\r\n[\t ][^\r\n]*)*)\r\n/im.exec(
-          header.toString('utf8'),
-        )?.[1],
+      internetMessageId: messageIdHeader(header),
       providerFolderIds: [folder],
       from,
       to,
@@ -2582,5 +2716,15 @@ function copyMatches(
   return (
     source === 'locator' &&
     encodeCopyLocator(location, location.id) === location.providerMessageId
+  );
+}
+
+/** Preserve the raw header value, including malformed IDs, on both FETCH paths. */
+function messageIdHeader(header: Buffer | undefined): string | undefined {
+  return (
+    header &&
+    /^message-id:[\t ]*([^\r\n]*(?:\r\n[\t ][^\r\n]*)*)\r\n/im.exec(
+      header.toString('utf8'),
+    )?.[1]
   );
 }
