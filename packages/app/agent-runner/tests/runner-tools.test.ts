@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { readFileSync, statSync } from 'node:fs';
+import { readFileSync, statSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -31,9 +31,20 @@ describe("the runner's Node.js and pnpm", () => {
     expect(readFileSync(path.join(binDir, 'node'), 'utf8')).toContain(
       process.execPath,
     );
-    const env = { PATH: binDir, HOME: path.dirname(binDir) };
+    const root = path.dirname(binDir);
+    // A workspace may request another pnpm; use the worker's real environment to keep the bundled release.
+    writeFileSync(
+      path.join(root, 'package.json'),
+      JSON.stringify({ packageManager: 'pnpm@1.0.0' }),
+    );
+    const env = buildAgentEnv({
+      source: { HOME: root },
+      binDir,
+      pinPnpm: true,
+    });
     const run = (command: string) =>
       execFileSync('/bin/sh', ['-c', command], {
+        cwd: root,
         env,
         encoding: 'utf8',
       }).trim();

@@ -134,6 +134,20 @@ catalog:
 # part of the stack onto it: the `openai` client and LangChain then load different copies, types stop agreeing, and
 # LangGraph's interrupt handling changes behavior. Pinning keeps one copy throughout the stack.
 overrides:
+  # GHSA-35jh-r3h4-6jhm, GHSA-4xc9-xhrj-v574, GHSA-jf85-cpcp-j695; remove when Mammoth requires argparse >= 1.0.10, which removes its vulnerable Lodash 3 dependency.
+  'argparse@>=1.0.0 <1.0.10': ^1.0.10
+  # GHSA-93q8-gq69-wqmw; remove when all CLI / Docker dependencies require ansi-regex >= 5.0.1.
+  'ansi-regex@>=5.0.0 <5.0.1': ^5.0.1
+  # GHSA-xcx6-jx8p-x3h5; remove when tedious / unstorage requires @azure/identity >= 4.14.1, which supports patched MSAL 7 without forcing its old MSAL 5 contract.
+  '@azure/identity@>=4.0.0 <4.14.1': ^4.14.1
+  # GHSA-hq66-cqwq-w95j; remove when officeparser requires pdfjs-dist >= 6.2.108. Its PDF and worker APIs are covered by extraction tests.
+  'pdfjs-dist@>=5.0.0 <6.2.108': ^6.2.108
+  # GHSA-rfgv-xxqx-mfg5, GHSA-w293-vg96-wgc3, GHSA-xjj6-f33q-929c, GHSA-4w7w-5xrc-9h26, GHSA-2m5v-pch6-74hx, GHSA-qrxm-fqhp-jwvm; remove when the AI SDK requires undici >= 7.30.1.
+  'undici@>=7.0.0 <7.30.1': ^7.30.1
+  # GHSA-6qxp-vccf-f47h, GHSA-22jm-h49p-29qw, GHSA-46jr-4wx8-v453, GHSA-f897-62hf-6gxq; remove when the Claude agent SDK requires @modelcontextprotocol/sdk >= 1.32.0.
+  '@modelcontextprotocol/sdk@>=1.0.0 <1.32.0': ^1.32.0
+  # GHSA-27r3-jxmh-p828; remove when the MCP SDK requires body-parser >= 2.4.0.
+  'body-parser@>=2.0.0 <2.4.0': ^2.4.0
   # GHSA-cg2g-xh64-v4q7, GHSA-mrv2-3pqr-j5jr, GHSA-c6gr-qvv4-5v3f; remove when Mermaid requires dompurify >= 3.4.17.
   'dompurify@>=3.0.0 <3.4.17': ^3.4.17
   # GHSA-5jgf-p345-68v8, GHSA-f65p-4m7j-42xc, GHSA-fph4-wmhf-6fwf, GHSA-jqff-g426-hqxp, GHSA-qw65-cvwx-89v3, GHSA-hrr3-gc8f-f4qj, GHSA-w74x-v6f9-j3xg, GHSA-xhq7-xmqj-769h, GHSA-wjr9-j795-jxcr, GHSA-333x-w4r6-6crp; remove when Ajv requires fast-uri >= 3.1.9.

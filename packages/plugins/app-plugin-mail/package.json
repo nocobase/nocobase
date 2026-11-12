@@ -117,7 +117,7 @@
     "hono": "catalog:",
     "imapflow": "^2.0.0",
     "mailparser": "^3.9.24",
-    "nodemailer": "^9.0.5",
+    "nodemailer": "^10.1.4",
     "zod": "catalog:"
   },
   "devDependencies": {
@@ -130,7 +130,6 @@
     "@testing-library/user-event": "catalog:",
     "@types/mailparser": "^3.4.6",
     "@types/node": "catalog:",
-    "@types/nodemailer": "^8.0.1",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
     "@vitest/coverage-v8": "catalog:",

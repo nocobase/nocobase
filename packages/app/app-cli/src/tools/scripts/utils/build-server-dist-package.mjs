@@ -196,12 +196,27 @@ const writeDistWorkspace = () => {
       '',
     ].join('\n'),
   );
-  // Runtime patches are part of the deployable dependency contract, not just the development install.
+  // Runtime resolution rules must survive the fresh deployment install, including their catalog references.
   const patchRoot = findWorkspaceRoot(rootDir) ?? rootDir;
   const workspacePath = path.join(patchRoot, 'pnpm-workspace.yaml');
-  const patches = fs.existsSync(workspacePath)
-    ? (parse(fs.readFileSync(workspacePath, 'utf8'))?.patchedDependencies ?? {})
+  const workspaceSettings = fs.existsSync(workspacePath)
+    ? (parse(fs.readFileSync(workspacePath, 'utf8')) ?? {})
     : {};
+  if (Object.keys(workspaceSettings.overrides ?? {}).length)
+    fs.appendFileSync(
+      distWorkspacePath,
+      stringify({
+        ...(workspaceSettings.catalog
+          ? { catalog: workspaceSettings.catalog }
+          : {}),
+        ...(workspaceSettings.catalogs
+          ? { catalogs: workspaceSettings.catalogs }
+          : {}),
+        overrides: workspaceSettings.overrides,
+      }),
+    );
+  // Runtime patches are part of the deployable dependency contract, not just the development install.
+  const patches = workspaceSettings.patchedDependencies ?? {};
   const copied = {};
   for (const [specifier, file] of Object.entries(patches)) {
     if (typeof file !== 'string')
@@ -271,11 +286,16 @@ const addExternalPackage = (
 ) => {
   if (externalPackageNames.has(packageName)) return;
 
-  const version =
-    getInstalledVersion(packageName, sourcePackageDir) ??
-    getInstalledVersion(packageName) ??
+  const declared =
     getDeclaredVersion(sourcePackage, packageName) ??
     getDeclaredVersion(rootPackage, packageName);
+  // A tarball may contain a version unavailable on npm (for example, the official SheetJS releases).
+  const version =
+    declared && /^https?:\/\//u.test(declared)
+      ? declared
+      : (getInstalledVersion(packageName, sourcePackageDir) ??
+        getInstalledVersion(packageName) ??
+        declared);
 
   if (!version) {
     throw new Error(

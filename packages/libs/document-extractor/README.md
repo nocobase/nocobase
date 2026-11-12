@@ -17,3 +17,5 @@ Set `omitEmbeddedImages: true` for text-only DOCX extraction. It skips embedded 
 The default deadline is five minutes including queue time, with two running Workers, 32 waiting requests and 100 MiB per input. Cancellation and timeouts wait for Worker termination. Caller-owned bytes are never transferred. Output over budget fails rather than truncating. Workers isolate CPU work, not all memory allocations or hostile document behavior; they are not security sandboxes. Import `/formats` for browser-safe format information.
 
 An authorized storage caller may pass `maxInputBytes` per extraction to use the file’s configured disk limit. This overrides the extractor instance’s default byte ceiling for that request; output, concurrency and deadline limits still apply.
+
+Spreadsheet parsing uses the npm-published `@e965/xlsx` distribution of SheetJS 0.20.3. It retains legacy XLS, XLSM, XLSX and CSV support without URL dependencies in published packages.

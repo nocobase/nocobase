@@ -52,7 +52,7 @@
     "@nocobase/cli-envelope": "workspace:^",
     "@oclif/core": "catalog:",
     "ini": "6.0.0",
-    "pnpm": "11.7.0",
+    "pnpm": "11.11.0",
     "zod": "catalog:",
     "@nocobase/acp-bridge": "workspace:^"
   },

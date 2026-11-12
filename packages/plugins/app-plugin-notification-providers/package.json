@@ -94,8 +94,7 @@
     "prettier": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:",
-    "nodemailer": "^9.0.5",
-    "resend": "^6.22.1",
-    "@types/nodemailer": "^8.0.1"
+    "nodemailer": "^10.1.4",
+    "resend": "^6.22.1"
   }
 }

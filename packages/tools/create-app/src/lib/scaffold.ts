@@ -15,8 +15,9 @@ import path from 'node:path';
  * The exact version matters: `packageManager` only accepts one, and a range like `pnpm@11` is silently ignored rather
  * than rejected, leaving the project on whatever pnpm the machine already had. It must stay on pnpm 11 or newer,
  * because `allowBuilds` — which lets the database driver compile its native addon — did not exist before then.
+ * Version 11.11 also retains remote tarball integrity during production resolution, as required by SheetJS.
  */
-export const REQUIRED_PACKAGE_MANAGER = 'pnpm@11.7.0';
+export const REQUIRED_PACKAGE_MANAGER = 'pnpm@11.11.0';
 
 async function isEmptyDirectory(directory: string): Promise<boolean> {
   try {
