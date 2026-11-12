@@ -296,8 +296,7 @@ ${npmLauncherScript()}LAUNCHER
     say "Installing $package@$version with npm ..."
     run rm -rf "$dest.partial"
     run mkdir -p "$dest.partial"
-    # No optional dependencies: the coding tools' SDKs list one package per platform, each carrying a binary the
-    # runner never starts.
+    # Optional platform binaries are not needed by this installation.
     run "$npm_bin" install --prefix "$dest.partial" --no-save --no-audit --no-fund --omit=optional "$package@$version"
     if [ "$dry_run" = 0 ]; then
       [ -e "$dest.partial/node_modules/.bin/$product" ] || fail "$package@$version provides no $product command."

@@ -1,3 +1,9 @@
+export {
+  DistTargetParams,
+  DistFileParams,
+  DistTargetQuery,
+  DownloadTokenSchema,
+} from '@nocobase/app-cli-distribution';
 /**
  * The path parameters, query strings and small bodies of the plugin's routes. Bodies the services own (an agent, a
  * skill, a model service) keep their schemas beside the service, strict there too.
@@ -106,7 +112,6 @@ import {
 import {
   RUNNER_STATUSES,
   RUNNER_TRUST,
-  type DownloadToken,
   type RegistrationToken,
   type RegistrationTokenSummary,
   type RegistrationTokenInput,
@@ -248,18 +253,6 @@ export const RunMountParams: z.ZodType<{ runId: string; name: string }> =
 export const CommandParams: z.ZodType<{ commandId: string }> = z.object({
   commandId: id.describe('The command identifier.'),
 });
-export const DistTargetParams: z.ZodType<{ product: string; target: string }> =
-  z.object({ product: id, target: id });
-export const DistFileParams: z.ZodType<{
-  product: string;
-  version: string;
-  file: string;
-}> = z.object({
-  product: id,
-  version: id.describe('The version to read or restore.'),
-  file: id.describe('The file to upload.'),
-});
-
 export const AgentListQuery: z.ZodType<{ includeArchived?: boolean }> =
   z.object({ includeArchived: queryBoolean.optional() });
 
@@ -509,17 +502,6 @@ export const ModelCatalogQuery: z.ZodType<{ kind: ModelKind }> = z.object({
 
 export const ClaimQuery: z.ZodType<{ wait?: boolean | undefined }> = z.object({
   wait: queryBoolean.optional(),
-});
-
-export const DistTargetQuery: z.ZodType<{
-  format?: 'json' | 'env' | undefined;
-  accept?: string | undefined;
-}> = z.object({
-  format: z.enum(['json', 'env']).optional(),
-  accept: z.string().max(200).optional().meta({
-    description:
-      'The other answers the caller understands, comma-separated. `npm`: when the application has no tarball of the product but names its npm package, answer that package and exact version (`kind: npm`) instead of 404. Unknown values are ignored.',
-  }),
 });
 
 export const VariableValueInput: z.ZodType<{
@@ -2356,17 +2338,6 @@ export const RegistrationTokenSummarySchema: z.ZodType<RegistrationTokenSummary>
     createdAt: dateTime,
     expiresAt: dateTime,
   });
-
-export const DownloadTokenSchema: z.ZodType<DownloadToken> = z.object({
-  token: z.string().meta({
-    description:
-      'The download token, shown only in this answer; the install script downloads the CLI with it.',
-  }),
-  expiresAt: dateTime,
-  maxDownloads: z.number().int().meta({
-    description: 'How many tarball downloads it allows, retries included.',
-  }),
-});
 
 /** A run's context as its subject assembles it: free-form, by subject kind. */
 export const RunContextSchema: z.ZodType<Readonly<Record<string, unknown>>> = z

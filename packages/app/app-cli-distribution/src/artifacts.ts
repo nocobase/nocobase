@@ -310,7 +310,8 @@ export function createArtifactStore(config: DistConfig = {}): DistService {
       if (!found || channelDir === null) throw notFound('File');
       const [target, entry] = found;
       const file = path.resolve(channelDir, entry.file);
-      if (!file.startsWith(`${channelDir}${path.sep}`)) throw notFound('File');
+      if (!file.startsWith(`${path.resolve(channelDir, product)}${path.sep}`))
+        throw notFound('File');
       let size: number;
       try {
         size = (await stat(file)).size;

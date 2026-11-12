@@ -7,6 +7,7 @@ import {
   DistArtifactSchema,
   DistManifestSchema,
   DistNpmPackageSchema,
+  DistResolutionSchema,
   HEADERS,
   isDistNpmPackage,
   ProtocolError,
@@ -22,8 +23,10 @@ import {
   dataResponse,
   cliRoute,
   describeRoute,
+  resolver,
 } from '@nocobase/app-server/router';
 import type { Context, Hono, MiddlewareHandler } from 'hono';
+import { z } from 'zod';
 
 import { distributionRouter } from './http.js';
 import type { DistService } from './artifacts.js';
@@ -158,7 +161,7 @@ export function createDistributionRoutes(
   const downloadErrors = {
     401: apiErrorResponse(
       401,
-      'No runner key, registration token, download token or signed-in person, or one that is not valid (`UNAUTHORIZED`, `REGISTRATION_TOKEN_INVALID`, `DOWNLOAD_TOKEN_INVALID`, `RUNNER_KEY_INVALID`).',
+      'A required download credential or signed-in identity is missing or invalid.',
     ),
     500: apiErrorResponse(500),
   };
@@ -228,7 +231,19 @@ export function createDistributionRoutes(
         summary: 'Resolve a CLI artifact',
         operationId: 'cliDistributionResolve',
         ...cliRoute(false),
-        responses: { 200: { description: 'The artifact.' }, ...downloadErrors },
+        responses: {
+          200: {
+            description: 'The resolved artifact or npm package.',
+            content: {
+              'application/json': {
+                schema: resolver(z.object({ data: DistResolutionSchema })),
+              },
+              'text/plain': { schema: { type: 'string' } },
+            },
+          },
+          404: apiErrorResponse(404),
+          ...downloadErrors,
+        },
       },
     ),
     apiValidator('param', DistTargetParams),
@@ -264,7 +279,24 @@ export function createDistributionRoutes(
         summary: 'Download a CLI artifact',
         operationId: 'cliDistributionFile',
         ...cliRoute(false),
-        responses: { 200: { description: 'The artifact.' }, ...downloadErrors },
+        responses: {
+          200: {
+            description: 'The artifact file.',
+            content: {
+              'application/gzip': {
+                schema: { type: 'string', format: 'binary' },
+              },
+            },
+            headers: {
+              'x-checksum-sha256': {
+                schema: { type: 'string' },
+                description: 'The SHA-256 checksum.',
+              },
+            },
+          },
+          404: apiErrorResponse(404),
+          ...downloadErrors,
+        },
       },
     ),
     apiValidator('param', DistFileParams),
