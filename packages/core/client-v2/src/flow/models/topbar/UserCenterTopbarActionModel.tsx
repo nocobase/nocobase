@@ -11,7 +11,7 @@ import { UserOutlined } from '@ant-design/icons';
 import { css, cx } from '@emotion/css';
 import { FlowModel, FlowModelRenderer, observer } from '@nocobase/flow-engine';
 import { Divider, Dropdown, Empty, Select, Spin, theme } from 'antd';
-import React, { useCallback, useContext, useEffect, useState } from 'react';
+import React, { useCallback, useContext, useEffect, useLayoutEffect, useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { createAclSnippetAllow } from '../../../acl/createAclSnippetAllow';
 import { MobileTopbarActionsContext } from '../../admin-shell/admin-layout/MobileTopbarActionsContext';
@@ -240,6 +240,9 @@ export class UserCenterItemModel extends FlowModel {
 
   async prepare() {}
 
+  /** Recheck this item on each opening without delaying other menu items. */
+  checkAvailability?(): Promise<boolean>;
+
   render() {
     return <UserCenterTextItemView model={this as UserCenterTextItemModel} />;
   }
@@ -373,6 +376,9 @@ const UserCenterSelectItemView = observer(
   { displayName: 'UserCenterSelectItemView' },
 );
 
+// Ant Design caches the hidden dropdown. Context lets availability checks observe every opening.
+const UserCenterOpenContext = React.createContext(false);
+
 const UserCenterDropdownPanel = (props: {
   model: UserCenterTopbarActionModel;
   open: boolean;
@@ -381,7 +387,9 @@ const UserCenterDropdownPanel = (props: {
   const { model, open, closeDropdown } = props;
   const { token } = theme.useToken();
   const [loading, setLoading] = useState(false);
-  const [items, setItems] = useState<UserCenterItemModel[]>([]);
+  const [preparedItems, setPreparedItems] = useState<UserCenterItemModel[]>([]);
+  const menuOpen = useContext(UserCenterOpenContext);
+  const [availability, setAvailability] = useState(new Map<UserCenterItemModel, boolean>());
 
   useEffect(() => {
     if (!open) {
@@ -390,37 +398,57 @@ const UserCenterDropdownPanel = (props: {
 
     let cancelled = false;
     setLoading(true);
-    setItems([]);
+    setPreparedItems([]);
 
-    void model
-      .getPreparedItems(closeDropdown)
-      .then((preparedItems) => {
-        if (!cancelled) {
-          setItems(preparedItems);
-        }
-      })
-      .catch((error) => {
+    async function prepareItems() {
+      try {
+        const items = await model.getPreparedItems(closeDropdown);
+        if (!cancelled) setPreparedItems(items);
+      } catch (error) {
         console.error('[NocoBase] User center prepare failed.', error);
-      })
-      .finally(() => {
-        if (!cancelled) {
-          setLoading(false);
-        }
-      });
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+    prepareItems();
 
     return () => {
       cancelled = true;
     };
   }, [closeDropdown, model, open]);
 
+  useLayoutEffect(() => {
+    // Keep the overlay stable during its exit animation. Clear old availability before the next opening paints.
+    if (!menuOpen) return;
+    let cancelled = false;
+    setAvailability(new Map());
+    async function checkItem(item: UserCenterItemModel) {
+      if (!item.checkAvailability) return;
+      let available = false;
+      try {
+        available = await item.checkAvailability();
+      } catch (error) {
+        console.error(`[NocoBase] User center item '${item.getItemId()}' availability check failed.`, error);
+      }
+      if (!cancelled) setAvailability((previous) => new Map(previous).set(item, available));
+    }
+    preparedItems.forEach(checkItem);
+    return () => {
+      cancelled = true;
+    };
+  }, [menuOpen, preparedItems]);
+
+  const items = preparedItems.filter((item) => !item.checkAvailability || availability.get(item));
+  const waiting = loading || (!items.length && preparedItems.some((item) => !availability.has(item)));
+
   return (
     <div className={userCenterDropdownClassName} style={getUserCenterDropdownVars(token)}>
-      {loading ? (
+      {waiting ? (
         <div className="nb-user-center-loading">
           <Spin size="small" />
         </div>
       ) : null}
-      {!loading && !items.length ? (
+      {!waiting && !items.length ? (
         <div className="nb-user-center-empty">
           <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={model.context.t('No data')} />
         </div>
@@ -460,15 +488,17 @@ const UserCenterTopbarActionView = observer(
     }, [closeMobileTopbar]);
 
     return model.renderWrapper(
-      <Dropdown
-        trigger={['hover']}
-        placement="bottomRight"
-        open={open}
-        onOpenChange={setOpen}
-        dropdownRender={() => <UserCenterDropdownPanel model={model} open={open} closeDropdown={closeDropdown} />}
-      >
-        <span className={userCenterTriggerClassName}>{model.renderButton()}</span>
-      </Dropdown>,
+      <UserCenterOpenContext.Provider value={open}>
+        <Dropdown
+          trigger={['hover']}
+          placement="bottomRight"
+          open={open}
+          onOpenChange={setOpen}
+          dropdownRender={() => <UserCenterDropdownPanel model={model} open={open} closeDropdown={closeDropdown} />}
+        >
+          <span className={userCenterTriggerClassName}>{model.renderButton()}</span>
+        </Dropdown>
+      </UserCenterOpenContext.Provider>,
     );
   },
   { displayName: 'UserCenterTopbarActionView' },
