@@ -9,6 +9,7 @@
 
 import { getApp } from '@nocobase/plugin-workflow-test';
 import { uid } from '@nocobase/utils';
+import { TASK_STATUS } from '../../common/constants';
 
 describe('workflowCcTasks read permissions', () => {
   let app: Awaited<ReturnType<typeof getApp>>;
@@ -139,6 +140,29 @@ describe('workflowCcTasks read permissions', () => {
     });
     expect(response.status).toBe(200);
     expect(response.body.data).toEqual({ id: ownerTaskId });
+  });
+
+  it('changes only the read status and timestamp of the recipient’s task', async () => {
+    const tasks = app.db.getRepository('workflowCcTasks');
+    const task = await tasks.findOne({ filterByTk: ownerTaskId });
+    const { title, userId, workflowId, executionId, jobId, nodeId } = task.get();
+    const originalFields = { title, userId, workflowId, executionId, jobId, nodeId };
+    const params = {
+      filterByTk: ownerTaskId,
+      values: { title: 'new title', userId: null, workflowId: null, executionId: null, jobId: null, nodeId: null },
+    };
+    const resource = ownerAgent.resource('workflowCcTasks');
+    expect((await resource.read(params)).status).toBe(200);
+    await task.reload();
+    expect(task.get()).toMatchObject({ ...originalFields, status: TASK_STATUS.READ, readAt: expect.any(Date) });
+
+    await otherAgent.resource('workflowCcTasks').unread({ filterByTk: ownerTaskId });
+    await task.reload();
+    expect(task.get('status')).toBe(TASK_STATUS.READ);
+
+    expect((await resource.unread(params)).status).toBe(200);
+    await task.reload();
+    expect(task.get()).toMatchObject({ ...originalFields, status: TASK_STATUS.UNREAD, readAt: null });
   });
 
   it('requires authentication for personal reads', async () => {
