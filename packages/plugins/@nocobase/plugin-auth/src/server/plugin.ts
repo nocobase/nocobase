@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import type { Context } from '@nocobase/actions';
 import { Cache } from '@nocobase/cache';
 import { Model } from '@nocobase/database';
 import { InstallOptions, Plugin } from '@nocobase/server';
@@ -20,6 +21,7 @@ import { AuthModel } from './model/authenticator';
 import { Storer } from './storer';
 import { TokenBlacklistService } from './token-blacklist';
 import { TokenController } from './token-controller';
+import { getPasswordResetDestination } from './utils/passwordResetUrl';
 
 export class PluginAuthServer extends Plugin {
   cache: Cache;
@@ -111,6 +113,33 @@ export class PluginAuthServer extends Plugin {
         };
       },
     });
+    this.db.on('authenticators.beforeSave', async (model: AuthModel, { context }: { context?: Context }) => {
+      if (!context || model.authType !== presetAuthType || !model.options?.public?.enableResetPassword) {
+        return;
+      }
+      const enablingRecovery = model.isNewRecord || !model.previous('options')?.public?.enableResetPassword;
+      const enablingAuthenticator = model.changed('enabled') && model.get('enabled');
+      if (enablingRecovery || enablingAuthenticator) {
+        const destination = await getPasswordResetDestination(this.app.name);
+        if ('error' in destination) {
+          context.throw(400, context.t(destination.error, { ns: namespace }));
+        }
+      }
+    });
+
+    this.app.on('afterUpgrade', async () => {
+      const authenticators = await this.db.getRepository('authenticators').find({
+        filter: { authType: presetAuthType, enabled: true },
+        fields: ['options'],
+      });
+      if (authenticators.some((auth) => auth.options?.public?.enableResetPassword)) {
+        const destination = await getPasswordResetDestination(this.app.name);
+        if ('error' in destination) {
+          this.app.logger.warn(destination.error);
+        }
+      }
+    });
+
     // Register actions
     Object.entries(authActions).forEach(
       ([action, handler]) => this.app.resourceManager.getResource('auth')?.addAction(action, handler),

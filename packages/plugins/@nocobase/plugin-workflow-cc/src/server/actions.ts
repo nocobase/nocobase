@@ -7,8 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import actions, { Context } from '@nocobase/actions';
+import actions, { Context, Next } from '@nocobase/actions';
 import { sanitizeWorkflowTaskReadParams } from '@nocobase/plugin-workflow';
+import { TASK_STATUS } from '../common/constants';
 import { appendTempAssociationFields } from './tempAssociationFields';
 
 const mergeAppends = (appends: string[] | undefined, required: string[]) => {
@@ -16,6 +17,24 @@ const mergeAppends = (appends: string[] | undefined, required: string[]) => {
   required.forEach((item) => result.add(item));
   return Array.from(result);
 };
+
+async function updateReadStatus(context: Context, next: Next, readAt: Date | null) {
+  context.action.mergeParams({
+    filter: {
+      userId: context.state.currentUser.id,
+      ...(readAt && { status: TASK_STATUS.UNREAD }),
+    },
+  });
+  const { filterByTk, filter } = context.action.params;
+  context.body = await context.db.getRepository('workflowCcTasks').update({
+    filterByTk,
+    filter,
+    values: { status: readAt ? TASK_STATUS.READ : TASK_STATUS.UNREAD, readAt },
+    context,
+  });
+  context.status = 200;
+  await next();
+}
 
 const workflowCcTasks = {
   async get(context: Context, next) {
@@ -52,18 +71,7 @@ const workflowCcTasks = {
         return context.throw(403, 'You do not have permission to access this task');
       }
     }
-    context.action.mergeParams({
-      filterByTk,
-      filter: {
-        userId: context.state.currentUser.id,
-        status: 0,
-      },
-      values: {
-        status: 1,
-        readAt: new Date(),
-      },
-    });
-    return actions.update(context, next);
+    return updateReadStatus(context, next, new Date());
   },
 
   async unread(context: Context, next) {
@@ -71,17 +79,7 @@ const workflowCcTasks = {
     if (!filterByTk) {
       return context.throw(400, 'filterByTk is required for unread action');
     }
-    context.action.mergeParams({
-      filterByTk,
-      filter: {
-        userId: context.state.currentUser.id,
-      },
-      values: {
-        status: 0,
-        readAt: null,
-      },
-    });
-    return actions.update(context, next);
+    return updateReadStatus(context, next, null);
   },
 };
 
