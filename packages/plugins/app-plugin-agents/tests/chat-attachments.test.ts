@@ -333,6 +333,91 @@ describe('chat attachments', () => {
     );
   });
 
+  it('sends a conversation run upload immediately, retains it and restricts its content to that conversation', async () => {
+    h = await createHarness();
+    const agentId = await h.createAgent();
+    const runner = await h.registerRunner();
+    const id = await conversation(agentId);
+    await h.services.conversations.send(ALICE, id, { content: 'Send a file' });
+    const [payload] = await claim(h, runner);
+    const runToken = payload.cli.credential.content.token as string;
+    const form = new FormData();
+    form.set('file', new File([PNG], 'result.png', { type: 'image/png' }));
+    const response = await h.request('POST', '/agents/chatAttachments', {
+      runToken,
+      form,
+    });
+    expect(response.status).toBe(201);
+    const file = response.body.data as { id: string; contentUrl: string };
+    const messages = await h.services.conversations.messages(ALICE, id, {});
+    expect(
+      messages.items.filter((message) => message.role === 'assistant'),
+    ).toMatchObject([
+      {
+        runId: payload.run.id,
+        content: { content: '' },
+        attachments: [{ id: file.id, filename: 'result.png' }],
+      },
+    ]);
+    const row = await h.services.tx
+      .read()
+      .repository('agChatAttachments')
+      .findOne({ filter: { id: file.id } });
+    expect(row).toMatchObject({
+      conversationId: id,
+      messageId: messages.items.at(-1)!.id,
+    });
+    expect((await content(file.id, { runToken })).status).toBe(200);
+    expect((await content(file.id, { user: BOB })).status).toBe(404);
+    expect((await content(file.id)).status).toBe(401);
+    const download = await content(file.id, { user: ALICE, download: true });
+    expect(download.status).toBe(200);
+    expect(download.headers.get('content-disposition')).toContain(
+      'attachment;',
+    );
+    await h.enqueue(agentId, '9', { actorUserId: ALICE });
+    const [other] = await claim(h, runner);
+    expect(
+      (
+        await content(file.id, {
+          runToken: other.cli.credential.content.token as string,
+        })
+      ).status,
+    ).toBe(404);
+    h.clock.advance(25 * 60 * 60 * 1000);
+    expect(await h.services.chatAttachments.purge()).toBe(0);
+    expect((await content(file.id, { user: ALICE })).status).toBe(200);
+    expect(
+      (await h.services.conversations.messages(ALICE, id, {})).items.at(-1)!
+        .attachments,
+    ).toMatchObject([{ id: file.id }]);
+  });
+
+  it('leaves task run uploads unattached and purges them after a day', async () => {
+    h = await createHarness();
+    const agentId = await h.createAgent();
+    const runner = await h.registerRunner();
+    await h.enqueue(agentId, '9', { actorUserId: ALICE });
+    const [payload] = await claim(h, runner);
+    const runToken = payload.cli.credential.content.token as string;
+    const form = new FormData();
+    form.set(
+      'file',
+      new File(['task output'], 'task.txt', { type: 'text/plain' }),
+    );
+    const response = await h.request('POST', '/agents/chatAttachments', {
+      runToken,
+      form,
+    });
+    expect(response.status).toBe(201);
+    const file = response.body.data as { id: string };
+    expect((await content(file.id, { user: ALICE })).status).toBe(200);
+    expect((await content(file.id, { runToken })).status).toBe(404);
+    h.clock.advance(25 * 60 * 60 * 1000);
+    expect(await h.services.chatAttachments.purge()).toBe(1);
+    expect((await content(file.id, { user: ALICE })).status).toBe(404);
+  });
+
   it('purges uploads never sent after a day, and keeps the sent ones', async () => {
     h = await createHarness();
     const agentId = await h.createAgent();

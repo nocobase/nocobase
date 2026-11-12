@@ -1541,13 +1541,17 @@ export function createChatRoutes(
 
   router.post(
     '/chatAttachments',
-    guard,
+    personOrRun,
     describeRoute({
       tags,
       summary: 'Upload a file to send in chat',
       operationId: 'agentsUploadChatAttachment',
-      ...cliRoute({ command: 'conversation attachment upload' }),
-      description: `One file as the \`file\` field of a multipart body, at most ${services.chatAttachments.uploadLimit.maxFileSizeMb} MB. It is the caller's alone until it is sent with a message (\`attachmentIds\`); one never sent is purged after a day.`,
+      security: personOrRunSecurity,
+      ...cliRoute({
+        command: 'conversation attachment upload',
+        action: RUN_SELF_ACTION,
+      }),
+      description: `One file as the \`file\` field of a multipart body, at most ${services.chatAttachments.uploadLimit.maxFileSizeMb} MB. With a conversation run token, immediately sends the file in that run's reply and retains it with the conversation; no Markdown link is needed. Otherwise it is the caller's alone until sent with a message (\`attachmentIds\`); one never sent is purged after a day.`,
       requestBody: singleFileBody,
       responses: {
         201: dataResponse(MessageAttachmentSchema, 'Stored.'),
@@ -1578,10 +1582,13 @@ export function createChatRoutes(
       const file = body.file;
       if (!(file instanceof File))
         throw invalid('Send one file as multipart form data, as `file`.');
-      return context.json(
-        { data: await services.chatAttachments.upload(me(context), file) },
-        201,
+      const attachment = await services.chatAttachments.upload(
+        me(context),
+        file,
       );
+      const run = context.get('caller').run;
+      if (run) await conversations.attachFromRun(run.id, attachment.id);
+      return context.json({ data: attachment }, 201);
     },
   );
   router.delete(
