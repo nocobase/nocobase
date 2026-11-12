@@ -91,7 +91,13 @@ it('builds a business attachment feature from the shipped Skill and UI Library',
     }
     // The receiving application owns the primitives and resolves their imports in its own package scope.
     mkdirSync(path.join(appRoot, 'client/components/ui'), { recursive: true });
-    for (const name of ['button', 'dialog', 'spinner', 'alert-dialog']) {
+    for (const name of [
+      'button',
+      'dialog',
+      'spinner',
+      'alert-dialog',
+      'tabs',
+    ]) {
       cpSync(
         path.join(templateRoot, `client/components/ui/${name}.tsx`),
         path.join(appRoot, `client/components/ui/${name}.tsx`),

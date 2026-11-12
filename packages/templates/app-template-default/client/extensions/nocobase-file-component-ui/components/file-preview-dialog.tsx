@@ -245,7 +245,7 @@ function PreviewBody({
   }, [sourceUrl, kind]);
   const url = kind === 'pdf' ? blobUrl : sourceUrl;
   useEffect(() => {
-    if (!url || !['text', 'markdown'].includes(kind)) return undefined;
+    if (!url || !['text', 'markdown', 'html'].includes(kind)) return undefined;
     const controller = new AbortController();
     void fetch(url, {
       credentials: fileUrlCredentials(url),

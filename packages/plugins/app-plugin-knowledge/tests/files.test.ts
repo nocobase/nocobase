@@ -438,6 +438,33 @@ describe('knowledge files', () => {
       expect(await replaced.json()).toMatchObject({ data: { version: 2 } });
     });
 
+    it('serves an HTML file as a sandboxed download, never as a document', async () => {
+      const form = new FormData();
+      form.append('scope', 'project');
+      form.append('scopeId', 'p1');
+      form.append(
+        'file',
+        new File(['<script>parent.document</script>'], 'page.html', {
+          type: 'text/html',
+        }),
+      );
+      const created = await upload('lead', '/docs/upload', form);
+      expect(created.status).toBe(200);
+      const { data } = (await created.json()) as { data: { id: string } };
+      const served = await app.request(`/knowledge/docs/${data.id}/file`, {
+        headers: { 'x-user': 'reader' },
+      });
+      expect(served.status).toBe(200);
+      expect(served.headers.get('content-type')).toBe('text/html');
+      expect(served.headers.get('content-disposition')).toMatch(
+        /^attachment; /u,
+      );
+      expect(served.headers.get('content-security-policy')).toBe(
+        "sandbox; default-src 'none'",
+      );
+      expect(served.headers.get('x-content-type-options')).toBe('nosniff');
+    });
+
     it('refuses a body without a file', async () => {
       const form = new FormData();
       form.append('scope', 'project');
