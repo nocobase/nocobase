@@ -1,5 +1,6 @@
 import { afterEach, expect, it, vi } from 'vitest';
 import { z } from 'zod';
+import { readUIMessageStream } from 'ai';
 import type { AuthorizationContext } from '@nocobase/authorization/core';
 import { OnlineAgentConfigurator } from '../server/online/agent/configuration.js';
 import type {
@@ -13,7 +14,7 @@ import {
   RunnerRealtimeOnlineAgent,
 } from '../server/online/agent/runner/backend.js';
 import { OnlineAgentUIStreams } from '../server/online/agent/transport/streams.js';
-import { appUIMessageText } from '../shared/online-agent.js';
+import { appUIMessageText, type AppUIMessage } from '../shared/online-agent.js';
 import { claim, createHarness, type Harness } from './harness.js';
 
 let h: Harness;
@@ -136,6 +137,32 @@ async function chunks(
   }
 }
 const userMessage = [{ role: 'user' as const, content: 'Fixture request' }];
+it('preserves the uploaded filename through the SDK file stream', async () => {
+  const f = await fixture();
+  const agent = await f.create();
+  await agent.send(userMessage);
+  const run = (await h.services.conversations.get('alice', agent.sessionId))
+    .run!;
+  const file = await h.services.chatAttachments.upload(
+    'alice',
+    new File(['report'], 'report.pdf', { type: 'application/pdf' }),
+  );
+  await h.services.conversations.attachFromRun(run.id, file.id);
+  await f.finish(agent);
+  const stream = await agent.receive();
+  let saved: AppUIMessage | undefined;
+  for await (const message of readUIMessageStream<AppUIMessage>({
+    stream: stream!,
+  }))
+    saved = message;
+  expect(saved?.parts).toContainEqual(
+    expect.objectContaining({
+      type: 'file',
+      mediaType: 'application/pdf',
+      providerMetadata: { nocobase: { filename: 'report.pdf' } },
+    }),
+  );
+});
 const unsupported = (capability: string) => ({
   code: 'INVALID_REQUEST',
   details: { reason: 'UNSUPPORTED_CAPABILITY', backend: 'runner', capability },
