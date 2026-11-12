@@ -30,9 +30,9 @@ This Skill gets a new project created, configured and running locally: source co
 
 ## Choose the template
 
-Use Default for an ordinary application, Examples for exploring bundled examples, and `multi-portal` when the user asks for one application with multiple business entry points. Multi-portal is a commercial Pro template, not a tenant or process isolation mechanism. Keep the user's explicit template choice.
+Use Default for an ordinary application, Examples for exploring bundled examples, and `multi-portal` when the user asks for one application with multiple business entry points. Use `multi-app` when the user asks for a Main application that manages independent child applications. Both multi-portal and multi-app are commercial Pro templates. Multi-portal is not a tenant or process isolation mechanism. Keep the user's explicit template choice.
 
-For Default and Examples, continue with Create below. For multi-portal, first follow the commercial registry steps in this section, then use its creation command instead of the public-registry command below.
+For Default and Examples, continue with Create below. For multi-portal or multi-app, follow the commercial registry authentication steps below, verify access to the selected template package, then use that template's creation command instead of the public-registry command below.
 
 ### Commercial multi-portal template
 
@@ -68,6 +68,26 @@ For an explicitly selected older create-app release such as `0.1.0-beta.35`, use
 ```
 
 Reuse the same authentication configuration for recovery. With `--no-install`, `ok: true` means scaffolding only and `dependenciesInstalled` is false. Confirm the project `.npmrc` has the intended `@nocobase:registry` URL without credentials. Once created, use the application's own `AGENTS.md`, `.agents/rules/multi-portal.md` and installed Skills for portal development. The portal command is `pnpm create @nocobase/portal`; generated portals start uninstalled and an authorized administrator installs them through System settings → Portals. Do not use `pnpm create:module` or replace business authorization with a grant to all users.
+
+### Commercial multi-app template
+
+`multi-app` resolves to `@nocobase/app-template-multi-app` from the Pro registry and honors `--template-tag`. It creates **Main only**, with application management capabilities. It does not generate `apps/sub` or require an `apps/` directory; independent child applications are added on demand.
+
+Reuse the commercial registry login and scoped authentication procedure above, but verify the multi-app package itself before creating files:
+
+```bash
+npm view @nocobase/app-template-multi-app@beta version --registry=https://pkg-v3.nocobase.com/
+```
+
+Check the selected generator's `--help` for `multi-app` in the supported template names. Once package access and alias support are confirmed, create Main from the parent directory:
+
+```bash
+(cd <parent-directory> && PNPM_CONFIG_MINIMUM_RELEASE_AGE=0 NOCOBASE_REGISTRY=https://pkg-v3.nocobase.com/ npm_config_registry=https://registry.npmjs.org pnpm create @nocobase/app@beta <name> --template multi-app --template-tag beta --json)
+```
+
+A generator without this alias, including create-app `0.1.0-beta.36`, can use `--template=@nocobase/app-template-multi-app@beta` instead; omit `--template-tag` because the package specifier already selects the channel. This still requires a published, accessible template. If the package or requested version is unavailable, report the blocker rather than substituting Default. For an explicitly requested unreleased preview, use the actual packed template artifact provided for that preview. Reuse the user's selected registry and version.
+
+Confirm `ok: true` and `result.dependenciesInstalled: true`, read the generated `AGENTS.md`, then follow Configure and Start below. Continue multi-app work using the installed `nocobase-app-plugin-multi-app` Skill: create an independent child, install dependencies, build its `dist.tar.gz`, and upload/publish an application version in Main. Configure an available Releases App Host before creating managed instances; starting Main alone does not enable child deployment. Do not create a child unless requested.
 
 ## Create
 
