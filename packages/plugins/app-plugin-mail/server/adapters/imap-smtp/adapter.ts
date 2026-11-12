@@ -7,6 +7,7 @@ import {
   type ListResponse,
   type MailboxObject,
   type MessageStructureObject,
+  type SearchObject,
 } from 'imapflow';
 import { type Transporter } from 'nodemailer';
 import MailComposer from 'nodemailer/lib/mail-composer/index.js';
@@ -79,6 +80,7 @@ import type { ImapConnectionPool } from './connection-pool.js';
 import {
   compressUids,
   matchingUids,
+  subtractUids,
   encodeCopyLocator,
   encodeHistoryCursor,
   encodeMessageLocator,
@@ -619,10 +621,16 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
           verify = result.verify;
         }
       }
-      // Imports can introduce an identity with an older excluded copy in another
-      // folder. Re-screen against the committed IDs before allowing cleanup.
-      if (verify && messages.length)
-        verify = { ...verify, excluded: undefined };
+      if (verify?.excluded && messages.length)
+        verify = {
+          ...verify,
+          excluded: await this.recheckExcludedIdentities(
+            verify.excluded,
+            nextFolders,
+            messages,
+            input.signal,
+          ),
+        };
       return {
         ok: true,
         value: {
@@ -2210,6 +2218,15 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
       const unbound = uids.filter(
         (uid) => !bound.has(uid) && !excludedUids.has(uid),
       );
+      const knownUids = new Set(
+        known
+          .filter(
+            (location) =>
+              location.folder === mailbox.path &&
+              location.uidValidity === state.uidValidity,
+          )
+          .map((location) => location.uid),
+      );
       const toFetch: number[] = [];
       const bodyLimit = this.syncRun?.policy.batchSize ?? 100;
       // Screen large historical mailboxes without downloading old bodies. A copy
@@ -2246,14 +2263,10 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
             nativeId ||
             (message.headers &&
               message.headers.byteLength <= MAX_HEADER_BYTES &&
-              message.headers.subarray(-4).equals(Buffer.from('\r\n\r\n')));
+              (message.headers.equals(Buffer.from('\r\n')) ||
+                message.headers.subarray(-4).equals(Buffer.from('\r\n\r\n'))));
           const receivedAt = toIsoDate(message.internalDate);
-          const observed = known.some(
-            (location) =>
-              location.folder === mailbox.path &&
-              location.uidValidity === state.uidValidity &&
-              location.uid === message.uid,
-          );
+          const observed = knownUids.has(message.uid);
           if (
             receivedAfter &&
             identityReadable &&
@@ -2280,7 +2293,29 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
           signal,
           async () => (yielded = await checkNewMail()),
         );
-        this.verificationCopies.push(...fetched);
+        const sources = await this.locations!.findMessageSources(
+          fetched.flatMap((copy) => {
+            const id =
+              validNativeId(this.nativeSource(), copy.emailId) ??
+              copy.rfcMessageId;
+            return id ? [id] : [];
+          }),
+        );
+        for (const copy of fetched) {
+          const id =
+            validNativeId(this.nativeSource(), copy.emailId) ??
+            copy.rfcMessageId;
+          if (
+            receivedAfter &&
+            copy.message.receivedAt &&
+            Date.parse(copy.message.receivedAt) < Date.parse(receivedAfter) &&
+            !copy.observed &&
+            (!id || !sources.has(id))
+          )
+            excludedUids.add(copy.tuple.uid);
+          else this.verificationCopies.push(copy);
+        }
+        rememberExcluded();
         if (yielded) return interrupted();
       }
       if (unbound.some((uid) => !excludedUids.has(uid))) stable = false;
@@ -2440,6 +2475,63 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
       done: false,
       verify: { attempts, folders: snapshot, excluded },
     };
+  }
+
+  private async recheckExcludedIdentities(
+    previous: NonNullable<ImapVerifyState['excluded']>,
+    folders: Readonly<Record<string, ImapFolderCursor>>,
+    copies: readonly FetchedCopy[],
+    signal?: AbortSignal,
+  ): Promise<NonNullable<ImapVerifyState['excluded']>> {
+    const queries = new Map<string, SearchObject>();
+    for (const copy of copies) {
+      const source = this.nativeSource();
+      const nativeId = validNativeId(
+        source,
+        copy.emailId ??
+          (copy.observed?.source === source
+            ? copy.observed?.providerMessageId
+            : undefined),
+      );
+      const query = nativeId
+        ? { emailId: nativeId }
+        : copy.rfcMessageId
+          ? { header: { 'message-id': copy.rfcMessageId } }
+          : undefined;
+      if (query) queries.set(JSON.stringify(query), query);
+    }
+    if (!queries.size) return previous;
+    const excluded = { ...previous };
+    const identities = [...queries.values()];
+    const client = await this.imap();
+    for (const [path, range] of Object.entries(previous)) {
+      throwIfAborted(signal);
+      if (!range.uids) continue;
+      if (folders[path]?.uidValidity !== range.uidValidity) {
+        delete excluded[path];
+        continue;
+      }
+      const selected = await client.mailboxOpen(path, { readOnly: true });
+      if (String(selected.uidValidity) !== range.uidValidity) {
+        delete excluded[path];
+        continue;
+      }
+      let uids = range.uids;
+      for (let offset = 0; offset < identities.length && uids; offset += 100) {
+        throwIfAborted(signal);
+        const batch = identities.slice(offset, offset + 100);
+        const found = await client.search(
+          { uid: uids, ...(batch.length === 1 ? batch[0] : { or: batch }) },
+          { uid: true },
+        );
+        if (!Array.isArray(found))
+          throw new Error('The excluded-copy identity SEARCH was incomplete.');
+        uids = subtractUids(uids, found);
+      }
+      if (uids) excluded[path] = { ...range, uids };
+      else delete excluded[path];
+    }
+    return excluded;
   }
 
   private async normalizeMessage(

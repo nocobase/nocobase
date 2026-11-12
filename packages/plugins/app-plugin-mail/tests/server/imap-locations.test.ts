@@ -13,6 +13,7 @@ const server = vi.hoisted(() => {
     emailId?: string;
     date: Date;
     structure?: Record<string, unknown>;
+    omitInternalDate?: boolean;
   }
   interface FakeFolder {
     uidValidity: bigint;
@@ -26,6 +27,7 @@ const server = vi.hoisted(() => {
     sourceReads: [] as string[],
     bodyReads: [] as string[],
     fullFetches: [] as { path: string; uids: number[] }[],
+    identitySearches: [] as { path: string; uid: unknown }[],
     onBody: undefined as
       ((path: string, uid: number) => Promise<void> | void) | undefined,
     batchFetches: [] as {
@@ -67,6 +69,7 @@ const server = vi.hoisted(() => {
       this.sourceReads.length = 0;
       this.bodyReads.length = 0;
       this.fullFetches.length = 0;
+      this.identitySearches.length = 0;
       this.onBody = undefined;
       this.batchFetches.length = 0;
       this.lists = 0;
@@ -194,20 +197,50 @@ vi.mock('imapflow', () => {
     public async search(query: {
       uid?: string;
       since?: Date;
+      emailId?: string;
+      header?: Record<string, string | boolean>;
+      or?: { emailId?: string; header?: Record<string, string | boolean> }[];
     }): Promise<number[]> {
       const result = server.onSearch?.();
       if (result !== undefined) return result as number[];
       const folder = this.selected();
+      const identities =
+        query.or ?? (query.emailId || query.header ? [query] : []);
+      if (identities.length)
+        server.identitySearches.push({
+          path: String(this.mailbox && this.mailbox.path),
+          uid: query.uid,
+        });
       const resultUids = query.uid
         ? uidsOf(query.uid, folder)
         : [...folder.messages.keys()].sort((a, b) => a - b);
-      return query.since
+      const dateMatched = query.since
         ? resultUids.filter(
             (uid) => folder.messages.get(uid)!.date >= query.since!,
           )
         : resultUids;
+      return identities.length
+        ? dateMatched.filter((uid) =>
+            identities.some((identity) =>
+              identity.emailId
+                ? folder.messages.get(uid)!.emailId === identity.emailId
+                : Object.entries(identity.header ?? {}).every(
+                    ([name, value]) =>
+                      name.toLowerCase() === 'message-id' &&
+                      typeof value === 'string' &&
+                      messageIdOf(folder.messages.get(uid)!.raw)?.includes(
+                        value,
+                      ),
+                  ),
+            ),
+          )
+        : dateMatched;
     }
-    private metadata(uid: number, folder: Folder): Record<string, unknown> {
+    private metadata(
+      uid: number,
+      folder: Folder,
+      query?: Record<string, unknown>,
+    ): Record<string, unknown> {
       const message = folder.messages.get(uid)!;
       const { header, body } = split(message.raw);
       return {
@@ -215,7 +248,7 @@ vi.mock('imapflow', () => {
         id: `synthetic-${uid}`,
         size: message.raw.byteLength,
         flags: new Set(message.flags),
-        internalDate: message.date,
+        internalDate: message.omitInternalDate ? undefined : message.date,
         envelope: { messageId: messageIdOf(message.raw), subject: 'Subject' },
         bodyStructure: message.structure ?? {
           type: 'text/plain',
@@ -223,7 +256,32 @@ vi.mock('imapflow', () => {
           parameters: { charset: 'utf-8' },
           size: body.byteLength,
         },
-        headers: header,
+        ...(query?.headers
+          ? {
+              headers: Array.isArray(query.headers)
+                ? Buffer.from(
+                    header
+                      .toString()
+                      .split('\r\n')
+                      .filter(
+                        (line) =>
+                          query.headers instanceof Array &&
+                          query.headers.some(
+                            (name: unknown) =>
+                              typeof name === 'string' &&
+                              line
+                                .toLowerCase()
+                                .startsWith(`${name.toLowerCase()}:`),
+                          ),
+                      )
+                      .map((line) => `${line}\r\n`)
+                      .join('') + '\r\n',
+                  )
+                : header,
+            }
+          : query
+            ? {}
+            : { headers: header }),
         ...(message.emailId ? { emailId: message.emailId } : {}),
       };
     }
@@ -247,7 +305,9 @@ vi.mock('imapflow', () => {
         query,
       });
       server.onFetchAll?.();
-      return uidsOf(range, folder).map((uid) => this.metadata(uid, folder));
+      return uidsOf(range, folder).map((uid) =>
+        this.metadata(uid, folder, query),
+      );
     }
     public async fetchOne(
       range: number | string,
@@ -479,6 +539,7 @@ function deliver(
     flags?: string[];
     date?: string;
     structure?: Record<string, unknown>;
+    omitInternalDate?: boolean;
   },
 ): number {
   const target = server.folders.get(path)!;
@@ -490,6 +551,7 @@ function deliver(
     flags: new Set(message.flags ?? []),
     date: new Date(message.date ?? '2026-03-01T00:00:00.000Z'),
     structure: message.structure,
+    omitInternalDate: message.omitInternalDate,
   });
   return uid;
 }
@@ -4073,6 +4135,26 @@ describe('IMAP large mailbox checkpoints and cooperative imports', () => {
       Archive: { uidValidity: '1', uids: '1:17000' },
     });
     expect(server.bodyReads).toEqual([]);
+    for (let arrival = 0; arrival < 3; arrival += 1) {
+      server.batchFetches.length = 0;
+      server.identitySearches.length = 0;
+      deliver('INBOX', { raw: raw('<new-' + arrival + '@example.com>') });
+      await sync();
+      expect(
+        server.batchFetches.filter((batch) => batch.query.internalDate),
+      ).toEqual([]);
+      expect(server.identitySearches).toHaveLength(2);
+      expect(
+        server.identitySearches.every((query) => query.uid === '1:17000'),
+      ).toBe(true);
+      expect(
+        parseSyncCursor(await store.getSyncCursor(accountId)).verify?.excluded,
+      ).toEqual({
+        INBOX: { uidValidity: '1', uids: '1:17000' },
+        Archive: { uidValidity: '1', uids: '1:17000' },
+      });
+    }
+    expect(await messages()).toHaveLength(3);
     const legacy = {
       ...parseSyncCursor(cursor),
       verify: { attempts: 1, excluded: ['old-tuple'] },
@@ -4358,4 +4440,35 @@ describe('IMAP excluded-copy identity changes', () => {
       { providerMessageId: 'OLD-SHARED', folders: ['Archive'] },
     ]);
   });
+});
+
+describe('IMAP history scope after lightweight identity reads', () => {
+  it.each([false, true])(
+    'does not import an old copy with no Message-ID (missing INTERNALDATE: %s)',
+    async (missingDate) => {
+      folder('INBOX');
+      const source = raw('<removed@example.com>')
+        .toString()
+        .replace(/^Message-ID:.*\r\n/m, '');
+      deliver('INBOX', {
+        raw: Buffer.from('Date: Wed, 1 Jan 2025 00:00:00 +0000\r\n' + source),
+        date: '2025-01-01T00:00:00.000Z',
+        omitInternalDate: missingDate,
+      });
+      await sync();
+      expect(await messages()).toEqual([]);
+      expect(server.bodyReads).toHaveLength(missingDate ? 1 : 0);
+      expect(
+        parseSyncCursor(await store.getSyncCursor(accountId)).verify?.excluded
+          ?.INBOX?.uids,
+      ).toBe('1');
+      server.bodyReads.length = 0;
+      server.batchFetches.length = 0;
+      await sync();
+      expect(server.bodyReads).toEqual([]);
+      expect(
+        server.batchFetches.filter((batch) => batch.query.internalDate),
+      ).toEqual([]);
+    },
+  );
 });

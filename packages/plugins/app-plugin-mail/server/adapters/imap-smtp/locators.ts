@@ -171,6 +171,29 @@ export function matchingUids(
     });
 }
 
+/** Remove a small UID set without expanding potentially huge exclusion ranges. */
+export function subtractUids(
+  ranges: string,
+  removed: readonly number[],
+): string {
+  const sorted = [...new Set(removed)].sort((a, b) => a - b);
+  const kept: string[] = [];
+  let index = 0;
+  for (const range of ranges.split(',')) {
+    if (!range) continue;
+    const [first, last = first] = range.split(':').map(Number);
+    let start = first;
+    while (index < sorted.length && sorted[index] < first) index += 1;
+    while (index < sorted.length && sorted[index] <= last) {
+      const uid = sorted[index++];
+      if (start < uid) kept.push(rangeFor(start, uid - 1));
+      start = uid + 1;
+    }
+    if (start <= last) kept.push(rangeFor(start, last));
+  }
+  return kept.join(',');
+}
+
 /** Compress a UID set into sorted IMAP ranges; equal sets give equal strings. */
 export function compressUids(uids: Iterable<number>): string {
   const sorted = [...new Set(uids)].sort((left, right) => left - right);
