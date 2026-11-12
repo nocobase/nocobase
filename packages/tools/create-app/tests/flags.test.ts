@@ -2,10 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { formatHelp, parseInput } from '../src/lib/flags.ts';
 
 describe('parseInput', () => {
-  it('rejects the removed generic registry option', async () => {
-    await expect(
-      parseInput(['crm', '--registry=https://example.com/']),
-    ).rejects.toThrow();
+  it('accepts the deprecated registry flag for existing callers', async () => {
+    expect(
+      (await parseInput(['crm', '--registry=https://example.com/'])).flags
+        .registry,
+    ).toBe('https://example.com/');
   });
   it('installs and prompts by default, and accepts --json', async () => {
     expect((await parseInput(['crm'])).flags).toMatchObject({

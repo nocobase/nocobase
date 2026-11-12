@@ -221,7 +221,7 @@ describe('isTemplateAlias', () => {
 });
 
 describe('downloadTemplate', () => {
-  it.each(['scoped override', 'configured scope', 'third-party'])(
+  it.each(['scoped override', 'configured scope', 'third-party', 'legacy'])(
     'routes template requests using %s and reports download errors',
     { timeout: 60_000 },
     async (mode) => {
@@ -251,7 +251,7 @@ describe('downloadTemplate', () => {
         const { port } = registry.address() as AddressInfo;
         const registryUrl = `http://127.0.0.1:${port}/`;
         const source =
-          mode === 'third-party'
+          mode === 'third-party' || mode === 'legacy'
             ? '@other/template-probe'
             : '@nocobase/this-template-does-not-exist';
         const userConfig = path.join(npmConfig, 'userconfig.npmrc');
@@ -259,11 +259,18 @@ describe('downloadTemplate', () => {
           userConfig,
           `registry=${registryUrl}\n@nocobase:registry=${mode === 'scoped override' ? 'http://127.0.0.1:1/' : registryUrl}\n`,
         );
-        vi.stubEnv('npm_config_registry', registryUrl);
-        vi.stubEnv('NPM_CONFIG_REGISTRY', registryUrl);
+        vi.stubEnv(
+          'npm_config_registry',
+          mode === 'legacy' ? 'http://127.0.0.1:1/' : registryUrl,
+        );
+        vi.stubEnv(
+          'NPM_CONFIG_REGISTRY',
+          mode === 'legacy' ? 'http://127.0.0.1:1/' : registryUrl,
+        );
         await expect(
           downloadTemplate({
             source,
+            ...(mode === 'legacy' ? { legacyRegistry: registryUrl } : {}),
             nocobaseRegistry:
               mode === 'configured scope'
                 ? undefined

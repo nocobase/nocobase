@@ -8,7 +8,7 @@ pnpm create @nocobase/app crm
 
 `pnpm create @nocobase/app` resolves to the `@nocobase/create-app` package and runs it, forwarding every argument after the package name verbatim.
 
-Registry selection follows your npm/pnpm configuration. Set `NOCOBASE_REGISTRY` or `--nocobase-registry` to override the registry for **`@nocobase/*` only**. Precedence is `--nocobase-registry` > `NOCOBASE_REGISTRY` > existing package-manager configuration. Third-party templates and dependencies keep their configured registries. create-app no longer accepts `--registry`.
+Registry selection follows your npm/pnpm configuration. Set `NOCOBASE_REGISTRY` or `--nocobase-registry` to override the registry for **`@nocobase/*` only**. Precedence is `--nocobase-registry` > deprecated `--registry` > `NOCOBASE_REGISTRY` > existing package-manager configuration. Third-party templates and dependencies keep their configured registries. The deprecated `--registry` remains accepted with a migration warning (also included in JSON `warnings`). It retains the legacy template-download override, including third-party templates, and the generated `@nocobase` scope setting. Use `--nocobase-registry` or `NOCOBASE_REGISTRY` for NocoBase packages; configure npm/pnpm for third-party templates. If both flags are supplied, `--registry` is ignored.
 
 An explicit override is recorded as `@nocobase:registry` in the generated `.npmrc`, including when it points to public npm or the template is local. Without an override, no registry entry is written. Credentials are never copied. A project-level `.npmrc` used to fetch the template is not copied to the new application; use a user-level configuration or an explicit override when that registry must also be available there.
 

@@ -39,6 +39,10 @@ export const CREATE_FLAGS = {
     options: [...TEMPLATE_TAGS],
     description: `Channel to fetch a named template from: ${TEMPLATE_TAGS.join(', ')}. Ignored when --template names a package or a path, which already say which version to use.`,
   }),
+  registry: Flags.string({
+    description:
+      'Deprecated. Use --nocobase-registry or NOCOBASE_REGISTRY for @nocobase packages; configure npm/pnpm for third-party templates.',
+  }),
   'nocobase-registry': Flags.string({
     description:
       'Registry for @nocobase packages only. Overrides NOCOBASE_REGISTRY.',
@@ -62,6 +66,7 @@ export interface ParsedInput {
     template: string;
     'template-tag': string;
     'nocobase-registry'?: string;
+    registry?: string;
     help: boolean;
     version: boolean;
   };

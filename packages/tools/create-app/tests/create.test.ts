@@ -67,6 +67,34 @@ async function template(): Promise<void> {
 const run = (argv: string[]) =>
   createApp({ argv, version: 'test', binary: 'create-app' });
 describe('JSON creation flow', () => {
+  it.each([false, true])(
+    'warns for legacy registry and gives the new flag precedence: %s',
+    async (useNew) => {
+      await template();
+      vi.stubEnv('NOCOBASE_REGISTRY', 'https://environment.example/');
+      const argv = ['crm', '--json', '--registry=https://legacy.example/'];
+      if (useNew) argv.push('--nocobase-registry=https://new.example/');
+      expect(await run(argv)).toBe(0);
+      const selected = useNew
+        ? 'https://new.example/'
+        : 'https://legacy.example/';
+      expect(downloadTemplate).toHaveBeenCalledWith({
+        source: '@nocobase/app-template-default@latest',
+        nocobaseRegistry: selected,
+        ...(useNew ? {} : { legacyRegistry: selected }),
+      });
+      expect(JSON.parse(stdout).warnings).toEqual([
+        expect.stringContaining('--registry is deprecated'),
+      ]);
+      expect(process.stderr.write).toHaveBeenCalledWith(
+        expect.stringContaining('--nocobase-registry'),
+      );
+      expect(await readFile(path.join(root, 'crm/.npmrc'), 'utf8')).toContain(
+        `@nocobase:registry=${selected}`,
+      );
+    },
+  );
+
   it('installs by default and hands the configuration step to config init', async () => {
     await template();
     expect(await run(['crm', '--json'])).toBe(0);

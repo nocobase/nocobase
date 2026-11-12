@@ -92,6 +92,8 @@ export interface DownloadTemplateOptions {
   /** A published package (`pkg`, `pkg@1.2.3`) or a path to a local package directory. */
   source: string;
   nocobaseRegistry?: string;
+  /** Deprecated generic override, retained only for callers using --registry. */
+  legacyRegistry?: string;
 }
 
 /**
@@ -200,6 +202,8 @@ export async function downloadTemplate(
       await copyFile(path.resolve(source), tarballPath);
     } else {
       const args = packer.args(tarballPath);
+      if (options.legacyRegistry && !local)
+        args.push(`--registry=${options.legacyRegistry}`);
       if (
         options.nocobaseRegistry &&
         !local &&

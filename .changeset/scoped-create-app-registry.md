@@ -2,4 +2,4 @@
 "@nocobase/create-app": patch
 ---
 
-Replace create-app's --registry flag with --nocobase-registry. Scope explicit registry overrides and NOCOBASE_REGISTRY to @nocobase packages, preserve package-manager configuration when no override is given, and leave third-party templates and dependencies on their configured registries.
+Add --nocobase-registry and scope NOCOBASE_REGISTRY to @nocobase packages while respecting existing package-manager configuration. Keep --registry compatible with its legacy download behavior and display a migration warning, including in JSON output.
