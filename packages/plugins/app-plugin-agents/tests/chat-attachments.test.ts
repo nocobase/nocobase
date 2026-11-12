@@ -375,7 +375,10 @@ describe('chat attachments', () => {
     expect(download.headers.get('content-disposition')).toContain(
       'attachment;',
     );
-    await h.enqueue(agentId, '9', { actorUserId: ALICE });
+    const otherConversation = await conversation(agentId);
+    await h.services.conversations.send(ALICE, otherConversation, {
+      content: 'Other conversation',
+    });
     const [other] = await claim(h, runner);
     expect(
       (
