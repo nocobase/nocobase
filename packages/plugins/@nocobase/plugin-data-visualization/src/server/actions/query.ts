@@ -12,7 +12,8 @@ import compose from 'koa-compose';
 import { Cache } from '@nocobase/cache';
 import { NoPermissionError } from '@nocobase/acl';
 import { applyQueryPermission } from '@nocobase/plugin-acl';
-import { middlewares } from '@nocobase/server';
+import { createContextVariablesScope } from '@nocobase/server';
+import { parseFilter } from '@nocobase/utils';
 import { QueryParams } from '../types';
 import PluginFlowEngineServer from '@nocobase/plugin-flow-engine';
 
@@ -105,12 +106,15 @@ export const parseVariables = async (ctx: Context, next: Next) => {
     ctx.action.params.values = { mode, ...values };
   }
 
-  const { filter } = ctx.action.params.values;
-  ctx.action.params.filter = filter;
-  await middlewares.parseVariables(ctx, async () => {
-    ctx.action.params.values.filter = ctx.action.params.filter;
-    await next();
-  });
+  const { filter, dataSource, collection } = ctx.action.params.values;
+  if (filter) {
+    const target = collection && { resourceName: collection, database: getQueryDatabase(ctx, dataSource) };
+    ctx.action.params.filter = ctx.action.params.values.filter = await parseFilter(
+      filter,
+      createContextVariablesScope(ctx, target),
+    );
+  }
+  await next();
 };
 
 export const cacheMiddleware = async (ctx: Context, next: Next) => {
