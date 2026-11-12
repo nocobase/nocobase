@@ -229,13 +229,18 @@ async function prepareOfflineMetadata(cache: string): Promise<void> {
     });
   }
   for (const [name, metadata] of metadataByName) {
-    const file = path.join(
-      cache,
-      'v11/metadata/registry.npmjs.org',
-      `${name}.jsonl`,
-    );
-    await mkdir(path.dirname(file), { recursive: true });
-    await writeFile(file, `{}\n${JSON.stringify(metadata)}`);
+    // pnpm may request full metadata while resolving locked optional packages.
+    for (const kind of ['metadata', 'metadata-full']) {
+      const file = path.join(
+        cache,
+        'v11',
+        kind,
+        'registry.npmjs.org',
+        `${name}.jsonl`,
+      );
+      await mkdir(path.dirname(file), { recursive: true });
+      await writeFile(file, `{}\n${JSON.stringify(metadata)}`);
+    }
   }
 }
 
