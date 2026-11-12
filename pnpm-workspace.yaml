@@ -28,7 +28,7 @@ catalog:
   ollama-ai-provider-v2: ^4.0.1
   '@arethetypeswrong/cli': ^0.18.5
   '@base-ui/react': ^1.6.0
-  '@better-auth/api-key': 1.7.7
+  '@better-auth/api-key': 1.7.21
   '@cacheable/memory': ^2.2.0
   '@clack/prompts': ^1.7.0
   '@dnd-kit/core': ^6.3.1
@@ -71,7 +71,7 @@ catalog:
   '@vitest/coverage-v8': ^4.1.10
   '@vitest/eslint-plugin': ^1.6.27
   ajv: ^8.20.0
-  better-auth: 1.7.7
+  better-auth: 1.7.21
   better-sqlite3: ^13.0.3
   bloom-filters: ^3.0.4
   class-variance-authority: ^0.7.1
@@ -203,3 +203,12 @@ minimumReleaseAgeExclude:
   - '@publint/pack@0.1.7'
   - publint@0.3.24
   - eslint-plugin-react-refresh@0.5.6
+  - '@better-auth/api-key@1.7.21'
+  - '@better-auth/core@1.7.21'
+  - '@better-auth/drizzle-adapter@1.7.21'
+  - '@better-auth/kysely-adapter@1.7.21'
+  - '@better-auth/memory-adapter@1.7.21'
+  - '@better-auth/mongo-adapter@1.7.21'
+  - '@better-auth/prisma-adapter@1.7.21'
+  - '@better-auth/telemetry@1.7.21'
+  - better-auth@1.7.21
