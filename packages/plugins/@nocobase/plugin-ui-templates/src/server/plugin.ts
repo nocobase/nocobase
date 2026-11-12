@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import type { Context, Next } from '@nocobase/actions';
 import { InstallOptions, Plugin } from '@nocobase/server';
 import _ from 'lodash';
 import flowModelTemplates from './resources/flowModelTemplates';
@@ -18,12 +19,32 @@ export class PluginBlockReferenceServer extends Plugin {
     this.app.resourceManager.define(flowModelTemplates);
     this.app.resourceManager.define(flowModelTemplateUsages);
 
-    this.app.acl.allow('flowModelTemplates', '*', 'loggedIn');
-    this.app.acl.allow('flowModelTemplateUsages', '*', 'loggedIn');
+    const templateReads = ['list', 'get'];
+    const manageTemplates = `pm.${this.name}.templates`;
+    this.app.acl.allow('flowModelTemplates', templateReads, 'loggedIn');
     this.app.acl.registerSnippet({
-      name: `pm.${this.name}.templates`,
+      name: manageTemplates,
       actions: ['flowModelTemplates:*', 'flowModelTemplateUsages:*'],
     });
+    // General data permissions can grant CRUD actions. Template management requires the plugin permission.
+    this.app.acl.use(
+      async (ctx: Context, next: Next) => {
+        const { resourceName, actionName } = ctx.permission;
+        if (
+          resourceName === 'flowModelTemplateUsages' ||
+          (resourceName === 'flowModelTemplates' && !templateReads.includes(actionName))
+        ) {
+          const roles = this.app.acl.getRoles(ctx.state.currentRoles || [ctx.state.currentRole]);
+          if (
+            !roles.some((role) => role.name === 'root' || role.effectiveSnippets().allowed.includes(manageTemplates))
+          ) {
+            ctx.throw(403);
+          }
+        }
+        await next();
+      },
+      { before: 'core' },
+    );
 
     this.app.auditManager?.registerActions([
       'flowModelTemplates:create',
