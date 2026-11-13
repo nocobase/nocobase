@@ -194,3 +194,5 @@ The `deployment.cancelled` event reports cancellation separately from failure, a
 ## Diagnostic upload context
 
 An assembling application may provide `ReleasesAccess.securityLogContextOf(context)` to attach trusted diagnostic fields from its authenticated request to upload, image registration, promotion and ticket issuance security logs. The callback must not read identity from request headers or upload input. It grants no permissions and changes no release records or log retention settings. A legacy upload ticket's completion log includes `ticketId` so it can be correlated with its issuing log without adding stored audit state.
+
+Agents may configure Apps and deploy directly to protected environments when their represented user's App grants allow it. Direct protected deployments require both `deploy` and `deploy-protected`; callers without the latter use deployment requests. Agents still cannot delete Apps or approve deployment requests. API keys retain their restrictions on configuration, protected deployment and deletion.

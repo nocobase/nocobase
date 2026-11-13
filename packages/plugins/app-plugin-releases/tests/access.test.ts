@@ -221,7 +221,7 @@ describe('access through the application port', () => {
     ).rejects.toMatchObject({ reason: 'INVALID_DRIVER' });
   });
 
-  it('refuses agents the human-only actions whatever they hold', async () => {
+  it('lets agents configure within initiator grants while refusing deletion', async () => {
     const admin = await harness.as('admin', 'admin');
     await harness.services.releases.createApp(admin, {
       id: 'a',
@@ -234,12 +234,14 @@ describe('access through the application port', () => {
     ).resolves.toBeTruthy();
     await expect(
       harness.services.releases.readConfig(agent, 'a'),
-    ).rejects.toMatchObject({
-      reason: 'HUMAN_REQUIRED',
-    });
+    ).resolves.toBeTruthy();
     await expect(
       harness.services.releases.updateApp(agent, 'a', { name: 'Renamed' }),
-    ).rejects.toMatchObject({ reason: 'HUMAN_REQUIRED' });
+    ).resolves.toMatchObject({ app: { name: 'Renamed' } });
+    const nobody = await harness.services.callerForUser('nobody', 'agent');
+    await expect(
+      harness.services.releases.updateApp(nobody, 'a', { name: 'Denied' }),
+    ).rejects.toMatchObject({ status: 'PERMISSION_DENIED' });
     await expect(
       harness.services.releases.deleteApp(agent, 'a', { confirm: 'a' }),
     ).rejects.toMatchObject({ reason: 'HUMAN_REQUIRED' });
@@ -251,7 +253,7 @@ describe('access through the application port', () => {
     expect(marked.kind).toBe('agent');
   });
 
-  it('takes every deployment to a protected environment through a request, decided by deploy-protected without approvers', async () => {
+  it('allows protected deployment by grant and keeps approval personal', async () => {
     const admin = await harness.as('admin', 'admin');
     const contributor = await harness.as('carol', 'contributor');
     await harness.services.releases.createApp(contributor, {
@@ -270,8 +272,6 @@ describe('access through the application port', () => {
     // Nobody deploys there directly: a person holding deploy-protected, an agent or a key alike.
     for (const caller of [
       contributor,
-      admin,
-      await harness.services.callerForUser('admin', 'agent'),
       await harness.services.callerForUser('admin', 'key'),
     ])
       await expect(
@@ -279,11 +279,19 @@ describe('access through the application port', () => {
           releaseId: release.id,
         }),
       ).rejects.toMatchObject({ reason: 'APPROVAL_REQUIRED' });
-    await expect(
-      harness.services.releases.rollback(admin, 'prod', {
-        deploymentId: 'any',
-      }),
-    ).rejects.toMatchObject({ reason: 'APPROVAL_REQUIRED' });
+    for (const caller of [
+      admin,
+      await harness.services.callerForUser('admin', 'agent'),
+    ]) {
+      const deployment = await harness.services.releases.deploy(
+        caller,
+        'prod',
+        { releaseId: release.id },
+      );
+      expect(
+        await harness.services.releases.waitForDeployment(deployment.id),
+      ).toMatchObject({ status: 'succeeded', actorKind: caller.kind });
+    }
     // Whoever may deploy the App requests it instead.
     const request = await harness.services.requests.create(
       contributor,

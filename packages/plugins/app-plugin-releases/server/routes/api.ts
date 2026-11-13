@@ -1031,7 +1031,7 @@ export function createReleasesApi(
         action: 'rel.apps/configure',
       }),
       description:
-        'Requires the `configure` action on the App. People only: agents and keys are refused.',
+        'Requires the `configure` action on the App. API keys are refused.',
       responses: {
         200: dataResponse(ReleasesAppSchema),
         ...apiErrorResponses,
@@ -1151,7 +1151,7 @@ export function createReleasesApi(
         action: 'rel.apps/configure',
       }),
       description:
-        'Requires the `configure` action on the App. People only. Secret values are masked and never returned.',
+        'Requires the `configure` action on the App. API keys are refused. Secret values are masked and never returned.',
       responses: {
         200: dataResponse(ReleasesConfigSchema),
         ...apiErrorResponses,
@@ -1187,7 +1187,7 @@ export function createReleasesApi(
         action: 'rel.apps/configure',
       }),
       description:
-        'Requires the `configure` action on the App. People only. Saves the running deployment’s `config.yml` and asks the runtime to reload it; a masked value keeps the stored secret, `secretChanges` set or remove secrets.',
+        'Requires the `configure` action on the App. API keys are refused. Saves the running deployment’s `config.yml` and asks the runtime to reload it; a masked value keeps the stored secret, `secretChanges` set or remove secrets.',
       responses: {
         200: dataResponse(
           ReleasesConfigSchema,
@@ -1273,7 +1273,7 @@ export function createReleasesApi(
         action: 'rel.apps/configure',
       }),
       description:
-        'Requires the `configure` action on the App. People only. It reaches the App with its next deployment. A name the runtime sets itself is refused (`VARIABLE_RESERVED`).',
+        'Requires the `configure` action on the App. API keys are refused. It reaches the App with its next deployment. A name the runtime sets itself is refused (`VARIABLE_RESERVED`).',
       responses: {
         200: dataResponse(ReleasesAppVariableSchema),
         ...apiErrorResponses,
@@ -1310,7 +1310,7 @@ export function createReleasesApi(
         action: 'rel.apps/configure',
       }),
       description:
-        'Requires the `configure` action on the App. People only. Removes the App’s value; its environment’s applies again.',
+        'Requires the `configure` action on the App. API keys are refused. Removes the App’s value; its environment’s applies again.',
       responses: {
         204: emptyResponse(),
         ...apiErrorResponses,
@@ -1719,7 +1719,8 @@ export function createReleasesApi(
         flags: { appId: { name: 'app' }, releaseId: { name: 'release' } },
         action: 'rel.apps/configure',
       }),
-      description: 'Requires the `configure` action on the App. People only.',
+      description:
+        'Requires the `configure` action on the App. API keys are refused.',
       responses: {
         200: dataResponse(ReleasesConfigTemplateSchema),
         ...apiErrorResponses,
@@ -1982,7 +1983,7 @@ export function createReleasesApi(
         action: 'rel.apps/deploy',
       }),
       description:
-        'Requires the `deploy` action on the App. A protected environment is deployed only through a deployment request an approver approves (`POST /apps/{appId}/deploymentRequests`), so deploying there directly is refused. A new deployment replaces older queued deployments of the same App; running deployments continue. The `Idempotency-Key` header, or `idempotencyKey`, answers a repeated request with its first deployment.',
+        'Requires the `deploy` action on the App. A protected environment also requires `deploy-protected` on the App for direct deployment; otherwise use a deployment request (`POST /apps/{appId}/deploymentRequests`). A new deployment replaces older queued deployments of the same App; running deployments continue. The `Idempotency-Key` header, or `idempotencyKey`, answers a repeated request with its first deployment.',
       responses: {
         200: dataResponse(
           ReleasesDeploymentSchema,

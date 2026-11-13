@@ -19,7 +19,11 @@ import {
   type SpaceRef,
 } from '../../shared/knowledge.js';
 import { docNotFound, forbidden, invalid } from '../errors.js';
-import { createAccessCheck, type KnowledgeReader } from './access.js';
+import {
+  authorizationReader,
+  createAccessCheck,
+  type KnowledgeReader,
+} from './access.js';
 import type { KnowledgeContext } from './context.js';
 import { spaceOfDoc } from './documents.js';
 import {
@@ -285,7 +289,8 @@ export function createPermissionService(
       if (!doc) throw docNotFound();
       const access = accessFor(viewer);
       await access.requireDoc(doc, 'read');
-      if (doc.archivedAt && viewer.actor) throw docNotFound();
+      if (doc.archivedAt && authorizationReader(context.access, viewer).actor)
+        throw docNotFound();
       const { node, space } = await access.doc(doc);
       const conn = context.read();
       let source: KnowledgeAccessSource;

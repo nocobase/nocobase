@@ -14,6 +14,7 @@ import type { KeyScope } from '@nocobase/authorization/core';
 import {
   BUSINESS_KEYS,
   HUMAN_ONLY_ACTIONS,
+  AGENT_REFUSED_ACTIONS,
   PAGES,
   SETTINGS_KEYS,
   allPermissions,
@@ -122,8 +123,8 @@ export class AccessGuard {
   public scope(caller: Caller, action: AppAction): Scope {
     if (caller.kind === 'system') return 'all';
     if (
-      (caller.kind === 'agent' || caller.kind === 'key') &&
-      HUMAN_ONLY_ACTIONS.includes(action)
+      (caller.kind === 'agent' && AGENT_REFUSED_ACTIONS.includes(action)) ||
+      (caller.kind === 'key' && HUMAN_ONLY_ACTIONS.includes(action))
     )
       return 'none';
     // An action the application left out reaches nothing.
@@ -196,8 +197,8 @@ export class AccessGuard {
   ): Promise<void> {
     if (await this.canApp(caller, action, app)) return;
     if (
-      (caller.kind === 'agent' || caller.kind === 'key') &&
-      HUMAN_ONLY_ACTIONS.includes(action)
+      (caller.kind === 'agent' && AGENT_REFUSED_ACTIONS.includes(action)) ||
+      (caller.kind === 'key' && HUMAN_ONLY_ACTIONS.includes(action))
     )
       throw forbidden(
         `${caller.kind === 'agent' ? 'An agent' : 'A key'} may not ${action} an application.`,
@@ -213,8 +214,11 @@ export class AccessGuard {
   public requireAnyApp(caller: Caller, ...actions: AppAction[]): void {
     if (actions.some((action) => this.scope(caller, action) !== 'none')) return;
     if (
-      (caller.kind === 'agent' || caller.kind === 'key') &&
-      actions.every((action) => HUMAN_ONLY_ACTIONS.includes(action))
+      actions.every(
+        (action) =>
+          (caller.kind === 'agent' && AGENT_REFUSED_ACTIONS.includes(action)) ||
+          (caller.kind === 'key' && HUMAN_ONLY_ACTIONS.includes(action)),
+      )
     )
       throw forbidden(
         `${caller.kind === 'agent' ? 'An agent' : 'A key'} may not ${actions[0]} an application.`,

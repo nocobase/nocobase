@@ -40,8 +40,7 @@ export interface ReleasesAccess {
    */
   permissionsOfUser(userId: string): Promise<ReleasesPermissions>;
   /**
-   * Whether the caller is a person or an agent acting for one. Agents are refused `deploy-protected`, `configure`
-   * and `delete` whatever they hold, and never decide a deployment request. Defaults to `human`. Asked for a
+   * Whether the caller is a person or an agent acting for one. Agents are refused `delete` whatever they hold, and never decide a deployment request. Defaults to `human`. Asked for a
    * scoped identity too: `agent` makes it an agent's (such as an agent's run bounded by its scope) rather than a key's.
    */
   actorKindOf?(identity: AuthorizationIdentity): 'human' | 'agent';

@@ -285,7 +285,9 @@ export function createFileService(
               parent?.id ?? null,
             ),
             next: { title, summary, content: '', file: versionFile(stored) },
-            author: { kind: 'user', id: viewer.userId },
+            author: {
+              ...(viewer.actor ?? { kind: 'user', id: viewer.userId }),
+            },
             createdById: viewer.userId,
             now,
           });
@@ -340,7 +342,7 @@ export function createFileService(
               content: '',
               file: versionFile(stored),
             },
-            { kind: 'user', id: viewer.userId, note },
+            { ...(viewer.actor ?? { kind: 'user', id: viewer.userId }), note },
             nowText(),
           );
         });

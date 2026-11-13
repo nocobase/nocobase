@@ -2105,8 +2105,8 @@ export class ReleasesService {
   }
 
   /**
-   * The deploy rules: `deploy` on the App, and nobody deploys directly to a protected environment, which takes a
-   * deployment request instead (`DeploymentRequestService.create`).
+   * The deploy rules: `deploy` on the App, plus `deploy-protected` for direct deployment to a protected environment.
+   * Other deployers use a deployment request (`DeploymentRequestService.create`).
    */
   public async authorizeDeploy(
     caller: Caller,
@@ -2115,7 +2115,10 @@ export class ReleasesService {
   ): Promise<void> {
     if (caller.kind === 'system') return;
     await this.options.guard.requireApp(caller, 'deploy', app);
-    if (environment.protected)
+    if (
+      environment.protected &&
+      !(await this.options.guard.canApp(caller, 'deploy-protected', app))
+    )
       throw new ReleasesError(
         'This environment is protected: request the deployment, and an approver deploys it.',
         'APPROVAL_REQUIRED',
