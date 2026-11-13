@@ -538,23 +538,39 @@ export class MailSyncStore {
         input.run.accountId,
         input.deletedProviderMessageIds ?? [],
       );
-      const pendingPush =
+      const pushRequest =
         input.status === 'completed'
           ? await connection.query
               .selectFrom<PushPendingRow>('mailPushPending')
-              .select(['accountId', 'requestToken'])
+              .select(['accountId', 'requestToken', 'requestedAt'])
               .where('accountId', '=', input.run.accountId)
               .executeTakeFirst<
-                Pick<PushPendingRow, 'accountId' | 'requestToken'>
+                Pick<
+                  PushPendingRow,
+                  'accountId' | 'requestToken' | 'requestedAt'
+                >
               >()
           : undefined;
-      if (pendingPush) {
-        await connection.query
+      let pushDeleted = false;
+      if (pushRequest) {
+        const deleted = await connection.query
           .deleteFrom<PushPendingRow>('mailPushPending')
           .where('accountId', '=', input.run.accountId)
-          .where('requestToken', '=', pendingPush.requestToken)
+          .where('requestToken', '=', pushRequest.requestToken)
           .execute();
+        pushDeleted = deleted.deletedCount === 1;
       }
+      // A completed IMAP verification has observed arrivals notified before
+      // this step was claimed. Keep later (or same-millisecond) pushes so a
+      // message arriving after the final LIST still gets a follow-up run.
+      const pendingPush =
+        pushRequest &&
+        (!pushDeleted ||
+          !(
+            imap?.cleanup &&
+            Date.parse(pushRequest.requestedAt) <
+              Date.parse(input.run.updatedAt)
+          ));
       // Only the step that finishes the run, after every batch and two
       // matching verification passes, may remove messages without copies.
       if (imap?.cleanup && input.status === 'completed' && !pendingPush) {
@@ -651,7 +667,13 @@ export class MailSyncStore {
           .where('accountId', '=', input.run.accountId)
           .execute();
       }
-      if (input.status === 'completed' && input.changeCursor) {
+      if (
+        input.changeCursor &&
+        (input.status === 'completed' ||
+          (input.status === 'partial' &&
+            (input.run.mode === 'incremental' ||
+              (input.historyComplete ?? input.run.historyComplete))))
+      ) {
         await upsertSyncState(
           connection.query,
           input.run.accountId,
@@ -1472,6 +1494,15 @@ export function createImapLocationPersistence(
       const query = database.query();
       const rows = await select(query).execute<ImapLocationRow>();
       return resolve(query, rows);
+    },
+    async getPushRequestedAt() {
+      const row = await database
+        .query()
+        .selectFrom<PushPendingRow>('mailPushPending')
+        .select('requestedAt')
+        .where('accountId', '=', accountId)
+        .executeTakeFirst<Pick<PushPendingRow, 'requestedAt'>>();
+      return row?.requestedAt;
     },
     commitFlags,
     commitDeleted,

@@ -96,7 +96,12 @@ export class SyncMailboxOperation {
     writeMailLog(
       this.dependencies.logger,
       'info',
-      { event: 'mail.sync.started', ...this.logFields(run) },
+      {
+        event: 'mail.sync.started',
+        ...this.logFields(run),
+        claimedAt: new Date().toISOString(),
+        claimDurationMs: Math.max(0, Date.now() - now),
+      },
       'Mail synchronization step started.',
     );
     const signal = AbortSignal.timeout(SYNC_STEP_TIMEOUT_MS);
@@ -236,6 +241,18 @@ export class SyncMailboxOperation {
       await this.failSyncRun(run, normalized, error);
     } finally {
       stopLeaseHeartbeat();
+      if (adapter instanceof ImapSmtpAdapter)
+        writeMailLog(
+          this.dependencies.logger,
+          'info',
+          {
+            event: 'mail.sync.imap_commands',
+            ...this.logFields(run),
+            stepDurationMs: Math.max(0, Date.now() - now),
+            ...adapter.syncDiagnostics(),
+          },
+          'IMAP synchronization step command counts.',
+        );
       await closeQuietly(adapter);
     }
   }
@@ -284,6 +301,7 @@ export class SyncMailboxOperation {
     input: MailSyncStepCommit,
     adapter?: MailProviderAdapter,
   ): Promise<MailSyncRun> {
+    const startedAt = Date.now();
     // The built-in IMAP adapter commits its copies' location evidence with the step.
     const result =
       adapter instanceof ImapSmtpAdapter && adapter.persistsLocations
@@ -299,6 +317,11 @@ export class SyncMailboxOperation {
             ? 'mail.sync.completed'
             : 'mail.sync.progress',
         ...this.logFields(result),
+        committedAt: new Date().toISOString(),
+        commitDurationMs: Math.max(0, Date.now() - startedAt),
+        previousPhase: input.run.phase,
+        previousRevision: input.run.revision,
+        importedMessages: input.messages.length,
       },
       'Mail synchronization progress saved.',
     );
