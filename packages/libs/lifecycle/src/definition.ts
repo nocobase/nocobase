@@ -847,6 +847,14 @@ export function defineLifecycle<T extends LifecycleTypes>(
         : typeof configuration.startTransition === 'string'
           ? [configuration.startTransition]
           : configuration.startTransition;
+    if (
+      configuration.startTransition !== undefined &&
+      (!starts.length || new Set(starts).size !== starts.length)
+    )
+      throw invalid(
+        name,
+        'parameter start transitions must be nonempty and unique.',
+      );
     if (starts.some((start) => !transitions.has(start)))
       throw invalid(name, 'unknown parameter start transition.');
     if (triggers.size && !definition.dueAtField)

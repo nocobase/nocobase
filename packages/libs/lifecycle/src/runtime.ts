@@ -1300,12 +1300,7 @@ export class LifecycleRuntime {
           'PARAMETER_SNAPSHOT_MISSING',
           'This started instance requires a verified historical parameter snapshot.',
         );
-      if (
-        !logs.some((entry) => entry.transition === CREATE_TRANSITION) ||
-        logs.length !==
-          Number(context.record[registered.lifecycle.versionField]) ||
-        logs.some((entry, index) => entry.version !== index + 1)
-      )
+      if (!logs.some((entry) => entry.transition === CREATE_TRANSITION))
         throw new ParameterConfigurationError(
           'PARAMETER_START_UNKNOWN',
           'The instance has no reliable creation or start history; migrate it before execution.',

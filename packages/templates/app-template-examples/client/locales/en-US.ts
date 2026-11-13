@@ -209,7 +209,7 @@ const enUS = {
     nodeParametersDescription:
       'Only parameters associated with this node or transition are shown. Other workflow parameters remain unchanged.',
     workflowParameters: 'Workflow parameters',
-    parameterRevision: 'Workflow parameter version {{revision}}',
+    parameterRevision: 'Configuration revision {{revision}}',
     parametersTitle: '{{name}} parameters',
     copyVersionParameters: 'Copy values from v{{version}} as unsaved inputs',
     configuringVersion:

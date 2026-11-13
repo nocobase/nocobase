@@ -272,7 +272,7 @@ const zhCN: AppResource = {
     nodeParametersDescription:
       '仅展示当前节点或连线关联的参数，其他流程参数保持不变。',
     workflowParameters: '流程级参数',
-    parameterRevision: '流程参数版本 {{revision}}',
+    parameterRevision: '配置修订号 {{revision}}',
     parametersTitle: '{{name}} · 参数配置',
     copyVersionParameters: '将 v{{version}} 配置复制为未保存输入',
     configuringVersion:

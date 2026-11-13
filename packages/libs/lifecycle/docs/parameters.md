@@ -51,7 +51,7 @@ Index `(stateField, dueAtField)` on the business table. A sweep filters state, d
 
 ## References and current business facts
 
-A snapshot fixes selected reference IDs and rule groups. Current department/role membership and person eligibility remain external facts resolved at execution. Deleted references resolve to no candidates; the editor displays the missing reference. An assignment requiring candidates refuses with `NO_ELIGIBLE_REVIEWER` if none remain. Do not silently replace a selected reference or change an instance snapshot. Inventory, personnel validity and other current business facts are distinct from versioned parameters.
+A snapshot fixes selected reference IDs and rule groups. Current department/role membership and person eligibility remain external facts resolved at execution. Deleted references resolve to no candidates; the editor displays the missing reference. Assignments that require candidates must reject an empty result with an explicit `NO_ELIGIBLE_REVIEWER` precondition; the existing reviewer demonstration only previews candidates. Do not silently replace a selected reference or change an instance snapshot. Inventory, personnel validity and other current business facts are distinct from versioned parameters.
 
 ## Administration and instance detail
 

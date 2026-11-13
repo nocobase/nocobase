@@ -196,7 +196,12 @@ export function ParameterEditor({
     structuredClone(group.values),
   );
   const [baseline, setBaseline] = useState(group.values);
-  const dirty = JSON.stringify(draft) !== JSON.stringify(baseline);
+  const [objectText, setObjectText] = useState<Record<string, string>>({});
+  const dirty =
+    JSON.stringify(draft) !== JSON.stringify(baseline) ||
+    Object.keys(objectText).some(
+      (key) => objectText[key] !== JSON.stringify(baseline[key], null, 2),
+    );
   useEffect(() => onDirtyChange?.(dirty), [dirty, onDirtyChange]);
   const [revision, setRevision] = useState(group.revision);
   const [requestId, setRequestId] = useState(createUuid);
@@ -205,11 +210,14 @@ export function ParameterEditor({
   const [conflict, setConflict] = useState<ParameterGroupView>();
   const [preview, setPreview] = useState<readonly string[]>();
   const [objectErrors, setObjectErrors] = useState<Record<string, string>>({});
-  const [objectText, setObjectText] = useState<Record<string, string>>({});
+
   const hasReviewers = Object.values(group.fields).some(
     (field) => field.type === 'reviewers',
   );
   const change = (key: string, value: JsonObject[string]): void => {
+    onDirtyChange?.(
+      JSON.stringify({ ...draft, [key]: value }) !== JSON.stringify(baseline),
+    );
     setDraft((previous) => ({ ...previous, [key]: value }));
     setRequestId(createUuid());
     setNote('');
@@ -327,6 +335,7 @@ export function ParameterEditor({
               value={objectText[key] ?? JSON.stringify(draft[key], null, 2)}
               onChange={(event) => {
                 const text = event.target.value;
+                onDirtyChange?.(true);
                 setObjectText((current) => ({ ...current, [key]: text }));
                 try {
                   change(key, JSON.parse(text) as JsonObject);

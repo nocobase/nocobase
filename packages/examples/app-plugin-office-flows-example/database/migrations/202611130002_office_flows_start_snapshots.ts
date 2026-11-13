@@ -36,8 +36,7 @@ const migration: MigrationDefinition = defineMigration({
             startTransition !== '$create' &&
             !start &&
             creation &&
-            logs.length === Number(record.lifecycleVersion) &&
-            logs.every((log, index) => Number(log.version) === index + 1)
+            Number(creation.version) === 1
           )
             continue;
           conflicts.push({

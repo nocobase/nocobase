@@ -119,6 +119,128 @@ describe('complete startup snapshots', () => {
       values: { wait: 500, second: 1000 },
     });
   });
+  it('starts independently with same-name fields having different types, defaults and validation', async () => {
+    const store = new MemoryLifecycleStore();
+    const parameters = new StoredLifecycleParameters(store);
+    const runtime = new LifecycleRuntime({ store });
+    const contracts: ParameterGroup[] = [
+      {
+        key: 'rules',
+        title: 'Rules',
+        schemaVersion: 1,
+        fields: {
+          limit: {
+            type: 'number',
+            title: 'Limit',
+            parse(value) {
+              if (typeof value !== 'number' || value < 1)
+                throw new Error('Positive number required.');
+              return value;
+            },
+          },
+        },
+      },
+      {
+        key: 'rules',
+        title: 'Rules',
+        schemaVersion: 2,
+        fields: {
+          limit: {
+            type: 'string',
+            title: 'Limit',
+            parse(value) {
+              if (typeof value !== 'string' || !value.startsWith('tier-'))
+                throw new Error('Tier required.');
+              return value;
+            },
+          },
+        },
+      },
+    ];
+    for (const [index, contract] of contracts.entries()) {
+      runtime.register(
+        defineLifecycle<{
+          record: LifecycleRecord;
+          state: 'active';
+          parameters: { limit: number | string };
+        }>({
+          name: `contract-v${index + 1}`,
+          key: 'contract',
+          version: index + 1,
+          collection: 'contracts',
+          definitionField: 'definition',
+          initial: 'active',
+          states: [{ name: 'active', final: true }],
+          parameters: { limit: index === 0 ? 5 : 'tier-default' },
+          parameterConfiguration: { groups: [contract] },
+          transitions: {},
+        }),
+        {
+          parameterConfiguration: { store: parameters, scope: () => 'tenant' },
+        },
+      );
+    }
+    const first = await runtime.create(
+      'contract-v1',
+      {},
+      { actor: SYSTEM_ACTOR },
+    );
+    const second = await runtime.create(
+      'contract-v2',
+      {},
+      { actor: SYSTEM_ACTOR },
+    );
+    for (const [index, contract] of contracts.entries()) {
+      await parameters.save({
+        scope: 'tenant',
+        group: configurationGroup(`contract-v${index + 1}`, [contract]),
+        values: { limit: index === 0 ? 20 : 'tier-premium' },
+        expectedRevision: 0,
+        requestId: `contract-config-${index}`,
+        actorId: 'admin',
+        at: new Date().toISOString(),
+      });
+    }
+    const third = await runtime.create(
+      'contract-v1',
+      {},
+      { actor: SYSTEM_ACTOR },
+    );
+    const fourth = await runtime.create(
+      'contract-v2',
+      {},
+      { actor: SYSTEM_ACTOR },
+    );
+    const values = await Promise.all(
+      [first, second, third, fourth].map(
+        async (result) =>
+          (
+            await runtime.view(
+              String(result.record.definition),
+              result.record.id,
+              SYSTEM_ACTOR,
+            )
+          ).parameterValues,
+      ),
+    );
+    expect(values).toEqual([
+      { limit: 5 },
+      { limit: 'tier-default' },
+      { limit: 20 },
+      { limit: 'tier-premium' },
+    ]);
+    await expect(
+      parameters.save({
+        scope: 'tenant',
+        group: configurationGroup('contract-v2', [contracts[1]!]),
+        values: { limit: 20 },
+        expectedRevision: 1,
+        requestId: 'invalid-v2',
+        actorId: 'admin',
+        at: new Date().toISOString(),
+      }),
+    ).rejects.toThrow('Tier required.');
+  });
   it('starts a draft with current values and retains them after withdrawal and resubmission', async () => {
     const { runtime, save } = setup();
     const a = await runtime.create('work', {}, { actor: SYSTEM_ACTOR });

@@ -252,6 +252,29 @@ function post(path: string, body: unknown, method = 'POST'): Request {
 }
 
 describe('lifecycle example routes', () => {
+  it('describes an instance with its immutable values when current administrator configuration is invalid', async () => {
+    const { app, store } = application(allow);
+    store.insertRecord('lifecycleExampleWorkflowParameters', {
+      id: 'lifecycle.tickets',
+      scope: 'demo',
+      revision: 1,
+      values: { waitMinutes: 'broken' },
+      actorId: 'admin',
+      at: '2026-11-13T00:00:00.000Z',
+    });
+    const router = await apiRoutes.createRouter(app);
+    const response = await router.request(
+      '/lifecycleExample/tickets/lifecycle?recordId=5&actAs=agent-zhou',
+    );
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({
+      data: {
+        description: { name: 'tickets' },
+        parameters: { waitMinutes: 2, reopenDays: 7 },
+      },
+    });
+  });
+
   it('requires a signed-in user', async () => {
     const router = await apiRoutes.createRouter(application(deny).app);
     expect((await router.request('/lifecycleExample/tickets')).status).toBe(

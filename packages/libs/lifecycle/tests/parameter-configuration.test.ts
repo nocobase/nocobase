@@ -371,7 +371,7 @@ describe('reviewer selection rules', () => {
 });
 
 describe('configured effect attempts', () => {
-  it('persists separately fenced values before each attempt and keeps retry reads live', async () => {
+  it('persists separately fenced usage facts while retries retain startup values', async () => {
     const store = new MemoryLifecycleStore();
     const parameters = new StoredLifecycleParameters(store);
     const runtime = new LifecycleRuntime({

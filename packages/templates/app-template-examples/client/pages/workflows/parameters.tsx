@@ -16,8 +16,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '#components/ui/alert-dialog';
-import { useEffect, useRef, useState, type RefObject } from 'react';
-import { createUuid, useApiClient } from '@nocobase/app-client';
+import { useEffect, useRef, useState } from 'react';
+import {
+  createUuid,
+  useApiClient,
+  useNavigationGuard,
+} from '@nocobase/app-client';
 import { useTranslation } from '@nocobase/i18n/client';
 import { useBeforeUnload, useLocation, useParams } from 'react-router';
 import {
@@ -100,7 +104,6 @@ export default function WorkflowParametersPage() {
 
 export function WorkflowParametersForm({
   inline = false,
-  navigationRef,
   selectedVersion,
   selectedDefinition,
   previousVersion,
@@ -109,7 +112,6 @@ export function WorkflowParametersForm({
   selectedVersion?: number;
   selectedDefinition?: string;
   previousVersion?: number;
-  navigationRef?: RefObject<(() => Promise<boolean>) | null>;
 }) {
   const { workflowId = '' } = useParams();
   const update = useCan({
@@ -194,16 +196,33 @@ export function WorkflowParametersForm({
   );
   const busy = saving || Object.values(pendingGroups).some(Boolean);
   const [dirty, setDirty] = useState<Record<string, boolean>>({});
+  const dirtyRef = useRef(false);
+  const dirtyGroupsRef = useRef<Record<string, boolean>>({});
+  const updateDirty = (key: string, value: boolean) => {
+    dirtyGroupsRef.current[key] = value;
+    dirtyRef.current = Object.values(dirtyGroupsRef.current).some(Boolean);
+    setDirty((previous) =>
+      previous[key] === value ? previous : { ...previous, [key]: value },
+    );
+  };
+  const clearDirty = () => {
+    dirtyGroupsRef.current = {};
+    dirtyRef.current = false;
+    setDirty({});
+  };
+
   const [confirmOpen, setConfirmOpen] = useState(false);
   const decisionRef = useRef<((value: boolean) => void) | null>(null);
+  const leaveApprovedRef = useRef(false);
   const isDirty = Object.values(dirty).some(Boolean);
   useBeforeUnload((event) => {
-    if (busy || isDirty) {
+    if (busy || dirtyRef.current) {
       event.preventDefault();
       event.returnValue = '';
     }
   });
   const decide = (value: boolean) => {
+    leaveApprovedRef.current = value;
     decisionRef.current?.(value);
     decisionRef.current = null;
     setConfirmOpen(false);
@@ -262,7 +281,7 @@ export function WorkflowParametersForm({
           if (inline) {
             setSavedParameters(result.data);
             setRevisionOverride(undefined);
-            setDirty({});
+            clearDirty();
           }
         }
       } else {
@@ -291,20 +310,16 @@ export function WorkflowParametersForm({
       setSaving(false);
     }
   };
-  useEffect(() => {
-    if (!navigationRef) return;
-    navigationRef.current = async () => {
-      if (busy) return false;
-      if (!isDirty) return true;
-      setConfirmOpen(true);
-      return new Promise<boolean>((resolve) => {
-        decisionRef.current = resolve;
-      });
-    };
-    return () => {
-      navigationRef.current = null;
-    };
-  });
+  const confirmLeave = (): boolean | Promise<boolean> => {
+    if (savedRef.current || leaveApprovedRef.current) return true;
+    if (savingRef.current || busy) return false;
+    if (!dirtyRef.current) return true;
+    setConfirmOpen(true);
+    return new Promise<boolean>((resolve) => {
+      decisionRef.current = resolve;
+    });
+  };
+  useNavigationGuard(confirmLeave);
   const SaveAction = inline ? InlineSaveParameters : SaveParameters;
   const Container = inline ? InlineParameters : RouteDialog;
   return (
@@ -329,15 +344,7 @@ export function WorkflowParametersForm({
         pathname: `/workflows/definitions/${encodeURIComponent(workflowId)}`,
         search: search.toString(),
       }}
-      beforeClose={() => {
-        if (savedRef.current) return true;
-        if (savingRef.current || busy) return false;
-        if (!isDirty) return true;
-        setConfirmOpen(true);
-        return new Promise<boolean>((resolve) => {
-          decisionRef.current = resolve;
-        });
-      }}
+      beforeClose={confirmLeave}
       footer={
         update.can &&
         (groups.some((group) => group.canUpdate) ||
@@ -455,11 +462,14 @@ export function WorkflowParametersForm({
             variant='outline'
             onClick={() => {
               void client
-                .request<{ data: Parameters }>({ path })
+                .request<{ data: Parameters }>({ path, query })
                 .then(({ data }) => {
-                  setSavedParameters(data);
+                  if (!mountedRef.current) return;
+                  if (data.kind === 'office') {
+                    setSavedParameters(data);
+                    clearDirty();
+                  }
                   setRevisionOverride(data.revision);
-                  setDirty({});
                   setConflict(false);
                   setSaveError('');
                 })
@@ -502,13 +512,7 @@ export function WorkflowParametersForm({
                       [group.key]: pending,
                     }))
                   }
-                  onDirtyChange={(value) =>
-                    setDirty((previous) =>
-                      previous[group.key] === value
-                        ? previous
-                        : { ...previous, [group.key]: value },
-                    )
-                  }
+                  onDirtyChange={(value) => updateDirty(group.key, value)}
                 />
               </div>
             ))}
@@ -537,11 +541,7 @@ export function WorkflowParametersForm({
             onBusyChange={(pending) =>
               setPendingGroups((previous) => ({ ...previous, office: pending }))
             }
-            onDirtyChange={(value) =>
-              setDirty((previous) =>
-                previous.office === value ? previous : { office: value },
-              )
-            }
+            onDirtyChange={(value) => updateDirty('office', value)}
           />
         )}
       </fieldset>

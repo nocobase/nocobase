@@ -36,23 +36,21 @@ it.each(['unknown', 'started', 'draft'] as const)(
           },
         });
       if (kind !== 'unknown')
-        await fixture.database
-          .repository('officeFlowsTransitions')
-          .createOne({
-            values: {
-              lifecycle: 'incoming',
-              recordId: String(Number(record.record.id)),
-              transition: kind === 'draft' ? '$create' : 'submit',
-              from: kind === 'draft' ? null : 'draft',
-              to: kind === 'draft' ? 'draft' : 'headReview',
-              actorId: 'zhoujie',
-              input: {},
-              at: '2026-10-01T00:00:00.000Z',
-              version: 1,
-              requestId: null,
-              requestKey: '$v:1',
-            },
-          });
+        await fixture.database.repository('officeFlowsTransitions').createOne({
+          values: {
+            lifecycle: 'incoming',
+            recordId: String(Number(record.record.id)),
+            transition: kind === 'draft' ? '$create' : 'submit',
+            from: kind === 'draft' ? null : 'draft',
+            to: kind === 'draft' ? 'draft' : 'headReview',
+            actorId: 'zhoujie',
+            input: {},
+            at: '2026-10-01T00:00:00.000Z',
+            version: 1,
+            requestId: null,
+            requestKey: '$v:1',
+          },
+        });
       if (kind === 'draft') {
         await migrator.latest();
         expect(

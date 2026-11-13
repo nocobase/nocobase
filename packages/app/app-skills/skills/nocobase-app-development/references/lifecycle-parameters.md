@@ -59,15 +59,15 @@ Show the concrete version being configured and state that changes affect its fut
 
 ## Example start inventory
 
-| Definition | Formal start | Same-instance continuation |
-| --- | --- | --- |
-| `expenses`, `expenses-v2` | `submit` | Return, withdrawal and resubmission |
-| `tickets` | Create | Reopen and reply |
-| `orders` | First `checkout` | Checkout retry after payment failure |
-| `invoices`, `exports` | `submit` | Failure retry and continuation |
-| `subscriptions` | Create | Renewals and dunning |
-| Office `incoming`, `dataRequests` | `submit` | Return and resubmission |
-| Office `clerkTasks`, `teamTasks` | Create by dispatch | Further dispatch and feedback |
+| Definition                        | Formal start       | Same-instance continuation           |
+| --------------------------------- | ------------------ | ------------------------------------ |
+| `expenses`, `expenses-v2`         | `submit`           | Return, withdrawal and resubmission  |
+| `tickets`                         | Create             | Reopen and reply                     |
+| `orders`                          | First `checkout`   | Checkout retry after payment failure |
+| `invoices`, `exports`             | `submit`           | Failure retry and continuation       |
+| `subscriptions`                   | Create             | Renewals and dunning                 |
+| Office `incoming`, `dataRequests` | `submit`           | Return and resubmission              |
+| Office `clerkTasks`, `teamTasks`  | Create by dispatch | Further dispatch and feedback        |
 
 The parameterless purchase, fulfilment, extraction, executor, procurement and onboarding definitions do not need snapshots. Office holidays remain fixed process parameters; organization membership is a current fact.
 

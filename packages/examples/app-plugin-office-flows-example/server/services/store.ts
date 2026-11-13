@@ -1,6 +1,11 @@
 import { OfficeParameterStore } from './parameter-snapshots.js';
-import { SYSTEM_ACTOR, type LifecycleRuntime } from '@nocobase/lifecycle';
+import {
+  SYSTEM_ACTOR,
+  ParameterConfigurationError,
+  type LifecycleRuntime,
+} from '@nocobase/lifecycle';
 import { OfficeWorkflowParameterService } from './workflow-parameters.js';
+import { OfficeWorkflowValues } from './workflow-parameter-schema.js';
 import { randomUUID } from 'node:crypto';
 import { setTimeout as delay } from 'node:timers/promises';
 
@@ -245,14 +250,20 @@ export class OfficeStore {
             this.connection,
           );
     if (recordId !== undefined && !snapshot)
-      throw new Error(
-        'PARAMETER_SNAPSHOT_MISSING: data request calendar requires its start snapshot.',
+      throw new ParameterConfigurationError(
+        'PARAMETER_SNAPSHOT_MISSING',
+        'Data request calendar requires its start snapshot.',
       );
-    const rows = snapshot
-      ? (snapshot.values.holidays as unknown as {
-          date: string;
-          kind: string;
-        }[])
+    const parsed = snapshot
+      ? OfficeWorkflowValues.safeParse(snapshot.values)
+      : undefined;
+    if (snapshot && (!parsed?.success || !parsed.data.holidays))
+      throw new ParameterConfigurationError(
+        'PARAMETER_SNAPSHOT_INVALID',
+        'Data request calendar snapshot is incomplete or invalid.',
+      );
+    const rows = parsed?.success
+      ? parsed.data.holidays!
       : (
           await new OfficeWorkflowParameterService(
             this.database,

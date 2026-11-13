@@ -1,6 +1,6 @@
 import { Empty, EmptyDescription } from '#components/ui/empty';
 import { officeParameterFields } from '@nocobase/app-plugin-office-flows-example/client';
-import { useEffect, useRef, type ReactElement } from 'react';
+import { useEffect, type ReactElement } from 'react';
 import {
   Link,
   Outlet,
@@ -81,7 +81,6 @@ function DefinitionDiagram({
   );
 }
 export default function DefinitionPage(): ReactElement {
-  const navigationRef = useRef<(() => Promise<boolean>) | null>(null);
   const { workflowId = '' } = useParams();
   const { t } = useTranslation();
   const labels = useWorkflowLabels();
@@ -137,17 +136,10 @@ export default function DefinitionPage(): ReactElement {
                 versions={loaded.workflow.versions}
                 value={loaded.definition.version}
                 onChange={(next) => {
-                  void (async () => {
-                    if (
-                      navigationRef.current &&
-                      !(await navigationRef.current())
-                    )
-                      return;
-                    const params = new URLSearchParams(search);
-                    if (next === undefined) params.delete('version');
-                    else params.set('version', String(next));
-                    setSearch(params);
-                  })();
+                  const params = new URLSearchParams(search);
+                  if (next === undefined) params.delete('version');
+                  else params.set('version', String(next));
+                  setSearch(params);
                 }}
               />
             )}
@@ -213,7 +205,6 @@ export default function DefinitionPage(): ReactElement {
               ) ? (
               <WorkflowParametersForm
                 key={`${workflowId}@${loaded.definition.version}`}
-                navigationRef={navigationRef}
                 selectedVersion={loaded.definition.version}
                 selectedDefinition={loaded.definition.name}
                 previousVersion={

@@ -1,3 +1,5 @@
+import { parameterIdentity } from '@nocobase/lifecycle';
+import { databaseManagerToken } from '@nocobase/db';
 import type { OfficeWorkflowParameters } from '@nocobase/app-plugin-office-flows-example/client';
 import { authorizationToken } from '@nocobase/app-plugin-authorization/server';
 import {
@@ -82,12 +84,102 @@ describe('workflow management through the registered application routes', () => 
     ).toMatchObject({ paymentWindowMinutes: 9 });
   });
 
-  test('requires a concrete parameter version and rejects a cross-version draft', async ({ testApp }) => {
+  test('requires a concrete parameter version and rejects a cross-version draft', async ({
+    testApp,
+  }) => {
     const session = await signIn(testApp, DEFAULT_ADMIN_CREDENTIALS);
-    expect((await session.fetch('/workflows/definitions/lifecycle.expenses/parameters')).status).toBe(400);
-    const response = await session.fetch('/workflows/definitions/lifecycle.expenses/parameters?version=2', { method: 'PUT', headers: { 'content-type': 'application/json', origin: 'http://localhost' }, body: JSON.stringify({ kind: 'lifecycle', definition: 'expenses', values: {}, expectedRevision: 0, requestId: 'wrong-target' }) });
+    expect(
+      (
+        await session.fetch(
+          '/workflows/definitions/lifecycle.expenses/parameters',
+        )
+      ).status,
+    ).toBe(400);
+    const response = await session.fetch(
+      '/workflows/definitions/lifecycle.expenses/parameters?version=2',
+      {
+        method: 'PUT',
+        headers: {
+          'content-type': 'application/json',
+          origin: 'http://localhost',
+        },
+        body: JSON.stringify({
+          kind: 'lifecycle',
+          definition: 'expenses',
+          values: {},
+          expectedRevision: 0,
+          requestId: 'wrong-target',
+        }),
+      },
+    );
     expect(response.status).toBe(409);
-    expect(await response.json()).toMatchObject({ error: { reason: 'PARAMETER_DEFINITION_MISMATCH' } });
+    expect(await response.json()).toMatchObject({
+      error: { reason: 'PARAMETER_DEFINITION_MISMATCH' },
+    });
+  });
+
+  test('reads an existing execution graph from its snapshot when current configuration is invalid', async ({
+    testApp,
+  }) => {
+    const session = await signIn(testApp, DEFAULT_ADMIN_CREDENTIALS);
+    const service = testApp.application.container.resolve(
+      lifecycleExampleServiceToken,
+    );
+    const ticket = await service.createTicket(
+      {
+        subject: 'Snapshot',
+        description: 'Original values',
+        category: 'account',
+        priority: 'high',
+        failNotifications: 0,
+      },
+      'customer-li',
+    );
+    const database =
+      testApp.application.container.resolve(databaseManagerToken);
+    const previous = await database
+      .repository('lifecycleExampleWorkflowParameters')
+      .findOne({ filter: { id: 'lifecycle.tickets' } });
+    const recordId = String(ticket.id);
+    try {
+      await database
+        .repository('lifecycleExampleWorkflowParameters')
+        .updateMany({
+          filter: { id: 'lifecycle.tickets' },
+          values: { values: { waitMinutes: 'invalid current value' } },
+        });
+      const response = await session.fetch(
+        `/workflows/executions/lifecycle.tickets/${recordId}`,
+      );
+      expect(response.status).toBe(200);
+      expect(await response.json()).toMatchObject({
+        data: {
+          parameters: { waitMinutes: 2 },
+          view: { parameterValues: { waitMinutes: 2 } },
+        },
+      });
+    } finally {
+      await database
+        .repository('lifecycleExampleWorkflowParameters')
+        .updateMany({
+          filter: { id: 'lifecycle.tickets' },
+          values: { values: previous!.values },
+        });
+      await database
+        .repository('lifecycleExampleTickets')
+        .deleteMany({ filter: { id: Number(recordId) } });
+      await database
+        .repository('lifecycleExampleTransitions')
+        .deleteMany({ filter: { lifecycle: 'tickets', recordId } });
+      await database
+        .repository('lifecycleExampleParameterSnapshots')
+        .deleteMany({
+          filter: { id: parameterIdentity('demo', 'tickets', recordId) },
+        });
+      await database.repository('lifecycleExampleParameterUsages').deleteMany({
+        filter: { recordKey: parameterIdentity('demo', 'tickets', recordId) },
+      });
+    }
   });
 
   test('updates shared office departments through the parameter API and rejects stale or invalid writes', async ({

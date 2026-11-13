@@ -84,6 +84,7 @@ export interface LifecycleClient {
   describe(
     lifecycle: string,
     definition?: string,
+    recordId?: string,
   ): Promise<LifecycleDescriptionView>;
   view(
     lifecycle: string,
@@ -202,10 +203,17 @@ export function createLifecycleClient(
   const record = (lifecycle: string, id: string): string =>
     `${base}/${segment(lifecycle)}/${segment(id)}`;
   return {
-    describe: (lifecycle, definition) =>
+    describe: (lifecycle, definition, recordId) =>
       send({
         path: `${base}/${segment(lifecycle)}/lifecycle`,
-        ...(definition === undefined ? {} : { query: { definition } }),
+        ...(definition === undefined && recordId === undefined
+          ? {}
+          : {
+              query: {
+                ...(definition ? { definition } : {}),
+                ...(recordId ? { recordId } : {}),
+              },
+            }),
       }),
     view: (lifecycle, id, options) =>
       send({ path: record(lifecycle, id), signal: options?.signal }),
@@ -312,6 +320,7 @@ export function useLifecycle(
     client: LifecycleClient;
     lifecycle: string;
     definition: string | undefined;
+    recordId: string | undefined;
     value: LifecycleDescriptionView;
   }>();
   const [loaded, setLoaded] = useState<{
@@ -418,16 +427,17 @@ export function useLifecycle(
   useEffect(() => {
     if (waiting) return undefined;
     let active = true;
-    void client.describe(lifecycle, definition).then(
+    void client.describe(lifecycle, definition, id).then(
       (value) => {
-        if (active) setDescribed({ client, lifecycle, definition, value });
+        if (active)
+          setDescribed({ client, lifecycle, definition, recordId: id, value });
       },
       () => undefined,
     );
     return () => {
       active = false;
     };
-  }, [client, lifecycle, definition, waiting]);
+  }, [client, lifecycle, definition, waiting, id]);
 
   useEffect(() => {
     if (id === undefined) return undefined;
@@ -451,12 +461,26 @@ export function useLifecycle(
   const view = loaded?.scope === scope ? loaded.view : undefined;
   const error = failure?.scope === scope ? failure.error : undefined;
   const busy = acting === scope;
-  const description =
+  const resolvedDescription =
     described?.client === client &&
     described.lifecycle === lifecycle &&
+    described.recordId === id &&
     (waiting || described.definition === definition)
       ? described.value
       : undefined;
+
+  const description = useMemo(
+    () =>
+      resolvedDescription && view?.parameterValues
+        ? {
+            ...resolvedDescription,
+            parameters: view.parameterValues as Readonly<
+              Record<string, unknown>
+            >,
+          }
+        : resolvedDescription,
+    [resolvedDescription, view?.parameterValues],
+  );
 
   const act = useCallback(
     async <T extends RecordView>(work: () => Promise<T>): Promise<T> => {

@@ -224,18 +224,12 @@ const migration: MigrationDefinition = defineMigration({
           const oldValues = snapshot?.values as Values | undefined;
           const complete =
             oldValues && validate(contract, oldValues).length === 0;
-          const continuous =
-            logs.length === Number(record.lifecycleVersion) &&
-            logs.every((log, index) => Number(log.version) === index + 1);
+          const continuous = logs.some(
+            (log) => log.transition === '$create' && Number(log.version) === 1,
+          );
           if (!start && contract.start && creation && !existing && continuous)
             continue;
-          if (
-            !complete &&
-            (!start ||
-              !logs
-                .filter((log) => Number(log.version) <= Number(start.version))
-                .every((log, index) => Number(log.version) === index + 1))
-          ) {
+          if (!complete && !start) {
             conflicts.push({
               definition: name,
               recordId,

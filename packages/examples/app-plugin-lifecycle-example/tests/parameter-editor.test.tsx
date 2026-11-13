@@ -2,7 +2,13 @@ import {
   TestI18nProvider,
   createTestI18nRuntime,
 } from '@nocobase/i18n/testing';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import type { ParameterGroupView } from '../shared/parameter-configuration.js';
 import type { ParameterApi } from '../client/lib/parameter-api.js';
@@ -113,7 +119,11 @@ describe('shared parameter editor', () => {
       const copy = locale === 'zh-CN' ? zhCN : enUS;
       for (const field of Object.values(copy.parameters.fields)) {
         expect(screen.getByLabelText(field.title)).toHaveValue(3);
-        expect(screen.getByText(field.description)).toBeInTheDocument();
+        expect(
+          within(screen.getByText(field.title).parentElement!).getByText(
+            field.description,
+          ),
+        ).toBeInTheDocument();
       }
     },
   );

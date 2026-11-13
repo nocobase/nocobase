@@ -638,7 +638,7 @@ describe('parameters isolated by definition version', () => {
         defineLifecycle(
           v2({
             parameters: {
-              limit: changed.schemaVersion === 2 ? 10 : 10,
+              limit: 10,
               extra: 0,
             },
             dueAtField: 'dueAt',
@@ -650,7 +650,7 @@ describe('parameters isolated by definition version', () => {
     ).not.toThrow();
   });
 
-  it('still reads the shared group for a record of the first version', async () => {
+  it('keeps the first version bound while executing its snapshot', async () => {
     const { runtime, store } = versions();
     const { record } = await runtime.create('requests', {}, { actor });
     await runtime.fire('requests', record.id, 'send', { actor: SYSTEM_ACTOR });

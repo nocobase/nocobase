@@ -1,4 +1,7 @@
-import { useRealtimeRefresh } from '@nocobase/app-client';
+import {
+  useRealtimeRefresh,
+  NavigationGuardProvider,
+} from '@nocobase/app-client';
 import { RouteTreeProvider } from '../../client/routing/route-context.js';
 import type { AppClientRegisteredRoute } from '@nocobase/app-client/plugins';
 import { BackButton } from '../../client/components/back-button.js';
@@ -119,12 +122,14 @@ async function view(
     <I18nProvider runtime={runtime}>
       <NamespaceScope ns={namespace}>
         <MemoryRouter initialEntries={[path]}>
-          <RouteTreeProvider routes={routes}>
-            <PageBreadcrumbProvider>
-              <Breadcrumbs />
-              {children}
-            </PageBreadcrumbProvider>
-          </RouteTreeProvider>
+          <NavigationGuardProvider>
+            <RouteTreeProvider routes={routes}>
+              <PageBreadcrumbProvider>
+                <Breadcrumbs />
+                {children}
+              </PageBreadcrumbProvider>
+            </RouteTreeProvider>
+          </NavigationGuardProvider>
         </MemoryRouter>
       </NamespaceScope>
     </I18nProvider>,

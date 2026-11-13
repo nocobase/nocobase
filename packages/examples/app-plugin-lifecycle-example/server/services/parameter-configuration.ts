@@ -100,8 +100,12 @@ export class ParameterConfigurationService {
         'This example persona may not perform this configuration operation.',
       );
   }
-  private group(key: string): ParameterGroup {
-    const group = groups.find((item) => item.key === key);
+  private group(key: string, workflow?: string): ParameterGroup {
+    const group = workflow
+      ? lifecycles
+          .find((item) => item.name === workflow)
+          ?.parameterConfiguration?.groups.find((item) => item.key === key)
+      : groups.find((item) => item.key === key);
     if (!group)
       throw new ExampleError(
         'NOT_FOUND',
@@ -117,7 +121,7 @@ export class ParameterConfigurationService {
     configuration?: ParameterVersion,
   ): Promise<ParameterGroupView> {
     this.authorize(actor, 'read', key);
-    const group = this.group(key);
+    const group = this.group(key, workflow);
     // Every version of one process that uses the group: they share its
     // configuration, so the group belongs to the process, not a version.
     const owners = lifecycles.filter(
@@ -185,7 +189,10 @@ export class ParameterConfigurationService {
     workflow: string,
   ): Promise<readonly ParameterGroupView[]> {
     this.authorize(actor, 'read');
-    const visible = groups.filter((group) => {
+    const declared =
+      lifecycles.find((item) => item.name === workflow)?.parameterConfiguration
+        ?.groups ?? [];
+    const visible = declared.filter((group) => {
       if (
         !lifecycles.some(
           (item) =>
@@ -259,7 +266,7 @@ export class ParameterConfigurationService {
     const current = await this.read(key, actor, workflow);
     const owner = current.uses[0].lifecycle;
     await this.saveWorkflow(
-      normalizeParameterValues(this.group(key), values),
+      normalizeParameterValues(this.group(key, owner), values),
       expectedRevision,
       requestId,
       actor,

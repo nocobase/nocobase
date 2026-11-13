@@ -86,6 +86,10 @@ export function lifecycleRoutes(
   const definitionOf = (recordId: string): Promise<string> =>
     runtime.boundLifecycle(lifecycle, recordId);
   const definitionQuery = {
+    recordId: z.string().min(1).optional().meta({
+      description:
+        'An instance whose immutable parameters and bound definition should be described.',
+    }),
     definition: z.string().min(1).optional().meta({
       description:
         'The name of one version of the process; the latest version when absent.',
@@ -94,6 +98,7 @@ export function lifecycleRoutes(
   const DescribeQuery: z.ZodType<{
     readonly actAs?: string;
     readonly definition?: string;
+    readonly recordId?: string;
   }> =
     spec.persona === false
       ? z.object(definitionQuery)
@@ -126,7 +131,7 @@ export function lifecycleRoutes(
     }),
     apiValidator('query', DescribeQuery),
     async (context) => {
-      const { definition } = context.req.valid('query');
+      const { definition, recordId } = context.req.valid('query');
       const group = runtime.group(lifecycle);
       if (
         definition !== undefined &&
@@ -138,11 +143,18 @@ export function lifecycleRoutes(
           domain: LIFECYCLE_EXAMPLE_DOMAIN,
           message: `No version "${definition}" of this process.`,
         });
+      const instance = recordId
+        ? await runtime.view(
+            await definitionOf(recordId),
+            recordId,
+            actorOf(context, context.req.valid('query').actAs),
+          )
+        : undefined;
       return context.json({
         data: await lifecycleDescriptionViewAsync(
           runtime,
-          definition ?? group.latest,
-          { record: null, transactionHandle: undefined },
+          instance?.lifecycle ?? definition ?? group.latest,
+          { record: instance?.record ?? null, transactionHandle: undefined },
         ),
       });
     },

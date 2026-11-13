@@ -17,7 +17,11 @@ import {
   type ApiErrorStatus,
   type AppApiRouteContribution,
 } from '@nocobase/app-server/router';
-import { LifecycleError, lifecycleErrorFields } from '@nocobase/lifecycle';
+import {
+  LifecycleError,
+  lifecycleErrorFields,
+  ParameterConfigurationError,
+} from '@nocobase/lifecycle';
 import { Hono } from 'hono';
 
 import {
@@ -76,6 +80,13 @@ const SERVICE_STATUS: Record<OfficeFlowsError['code'], ApiErrorStatus> = {
  * `inputField` names where a transition's input sits in the request body.
  */
 function toApiError(error: unknown, inputField?: string): unknown {
+  if (error instanceof ParameterConfigurationError)
+    return new ApiError({
+      status: 'FAILED_PRECONDITION',
+      domain: OFFICE_FLOWS_DOMAIN,
+      reason: error.code,
+      message: error.message,
+    });
   if (error instanceof LifecycleError) {
     const fields = lifecycleErrorFields(
       error,
