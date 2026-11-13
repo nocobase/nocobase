@@ -1,5 +1,14 @@
 # @nocobase/app-host
 
+## 0.1.0-beta.24
+
+### Patch Changes
+
+- f60b678: Bound release downloads with configurable idle and total timeouts, retry a timed out read once, and allow cancellation while opening or transferring the artifact so queued deployments can continue.
+- Updated dependencies [3112daa]
+- Updated dependencies [3112daa]
+  - @nocobase/app-server@5.0.0-beta.6
+
 ## 0.1.0-beta.23
 
 ### Patch Changes

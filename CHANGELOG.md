@@ -2,6 +2,21 @@
 
 All notable changes to NocoBase 3 are documented in this file, one section per release: `nocobase-v3-beta/<date>.<n>` for a beta and `release/<date>.<n>` for a stable release. The versions each release published are on its GitHub Release, and every package's own changes are in its CHANGELOG.md.
 
+## [nocobase-v3-beta/2026-11-13.2](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-13.2)
+
+### 🎉 New Features
+
+- **[CLI]** Safely reuse declared CLI operation keys, stream large uploads, and provide an independent public installer while preserving existing update and protected installation behavior. ([#11535](https://github.com/nocobase/nocobase/pull/11535))
+- **[Agents]** Enable Native OnlineAgent web search for configured DeepSeek models using existing service credentials. ([#11551](https://github.com/nocobase/nocobase/pull/11551))
+
+### 🚀 Improvements
+
+- **[Release management]** Keep app lists responsive as environments grow and match search text literally. ([#11553](https://github.com/nocobase/nocobase/pull/11553))
+
+### 🐛 Bug Fixes
+
+- **[Release management]** Time out stalled release downloads and allow cancellation so queued deployments can continue. ([#11547](https://github.com/nocobase/nocobase/pull/11547))
+
 ## [nocobase-v3-beta/2026-11-13.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-13.1)
 
 ### 🎉 New Features

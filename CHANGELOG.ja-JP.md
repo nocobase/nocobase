@@ -2,6 +2,21 @@
 
 このファイルには NocoBase 3 の主な変更を、リリースごとに 1 セクションずつ記録します。`nocobase-v3-beta/<日付>.<連番>` はベータ版、`release/<日付>.<連番>` は正式版です。各リリースで公開されたパッケージのバージョンは対応する GitHub Release を、各パッケージ自体の変更はパッケージ内の CHANGELOG.md を参照してください。
 
+## [nocobase-v3-beta/2026-11-13.2](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-13.2)
+
+### 🎉 新機能
+
+- **[CLI]** CLI で宣言された操作キーを安全に再利用し、大容量ファイルをストリーミング送信して、既存の更新と保護されたインストール動作を維持した独立の公開インストーラーを提供します。 ([#11535](https://github.com/nocobase/nocobase/pull/11535))
+- **[Agent]** 設定済みのサービス認証情報を使い、DeepSeek モデルのネイティブエージェントでウェブ検索を利用できるようになりました。 ([#11551](https://github.com/nocobase/nocobase/pull/11551))
+
+### 🚀 改善
+
+- **[リリース管理]** 環境内のアプリが増えても一覧の応答性を保ち、検索文字列をそのまま照合します。 ([#11553](https://github.com/nocobase/nocobase/pull/11553))
+
+### 🐛 不具合修正
+
+- **[リリース管理]** 停滞したリリースのダウンロードをタイムアウトし、キャンセル可能にして後続のデプロイを継続します。 ([#11547](https://github.com/nocobase/nocobase/pull/11547))
+
 ## [nocobase-v3-beta/2026-11-13.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-13.1)
 
 ### 🎉 新機能

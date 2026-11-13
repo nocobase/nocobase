@@ -1,5 +1,24 @@
 # @nocobase/app-plugin-agents
 
+## 2.0.0-beta.14
+
+### Minor Changes
+
+- b2e2a1e: Support DeepSeek's official Search API in Native OnlineAgent web search using existing model-service credentials and bounded source evidence.
+
+### Patch Changes
+
+- 3112daa: Derive dedicated CLI operation keys from explicitly marked OpenAPI header schemas. The CLI generates or reuses a key, preserves it in success and failure output, and reports uncertain results without replaying writes. Upgrade the CLI and server together for operation-key commands. Online shells expose authorized commands but refuse unsupported writes before sending. Ordinary headers and existing commands retain their behavior.
+- Updated dependencies [3112daa]
+- Updated dependencies [3112daa]
+- Updated dependencies [3112daa]
+- Updated dependencies [3112daa]
+  - @nocobase/app-cli-client@0.1.0-beta.22
+  - @nocobase/app-server@5.0.0-beta.6
+  - @nocobase/app-cli-distribution@0.1.0-beta.1
+  - @nocobase/app-plugin-authentication@2.0.0-beta.22
+  - @nocobase/app-plugin-file@1.0.0-beta.31
+
 ## 2.0.0-beta.13
 
 ### Minor Changes
