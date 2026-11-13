@@ -485,12 +485,25 @@ jobs:
           local-packages-only: 'true'
           test-project: ${{ matrix.project }}
 
+  # The standalone Pro workflows (v3-pro-release-beta.yml, v3-pro-release-stable.yml, v3-pro-promote-to-stable.yml) all hold the pro-release-write concurrency group while they run. The Pro checks must not start during one of them: they test Pro develop as they check it out, and a standalone release that merges its versions back into develop meanwhile makes pro-release refuse to publish after the open-source packages are already out. This job only joins the group, so it waits until such a release has finished, and pro-check starts after it; the open-source jobs run in the meantime. It starts without waiting for prepare so the wait overlaps it. A Pro release that queues for the group while this job waits replaces it as the group's one pending entry, which cancels this job; nothing is published then, and notify-failure says so.
+  pro-wait:
+    name: Wait for running Pro releases
+    if: '!inputs.skip_pro'
+    concurrency:
+      group: pro-release-write
+      cancel-in-progress: false
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Continue once no standalone Pro release is running
+        run: echo "No standalone Pro release holds pro-release-write; the Pro checks can start."
+
   # Pro checks out and builds commercial source on public Actions minutes. Nothing from these jobs leaves them through Actions: no artifact is uploaded and no cache is saved, and the only artifact they read is the open-source release state.
   #
   # The Pro checks run as two parallel legs, each on its own freshly versioned tree of Pro develop: test builds what the Pro tests need and runs them, and smoke runs the create-app smoke test, which builds Pro and the open-source packages itself. In one job they took longer than the whole open-source side. Both legs check out and version Pro develop the same way, and pro-candidate publishes nothing unless they tested the same commit and tree. A leg that is re-run checks the whole of Pro on its own, so "Re-run failed jobs" after a Pro fix tests the new Pro develop completely even though the other leg keeps its earlier result. The release skips the private packages/examples/** in both legs (pnpm release:build and release:test in Pro).
   pro-check:
     name: Test Pro with this release (${{ matrix.part }})
-    needs: prepare
+    needs: [prepare, pro-wait]
     if: '!inputs.skip_pro'
     runs-on: ubuntu-latest
     timeout-minutes: 120
@@ -1334,13 +1347,14 @@ jobs:
   # This job also covers failures before the release job, which cannot reach notification steps in the release job.
   notify-failure:
     name: Notify beta release failure
-    needs: [prepare, build, test, smoke, pro-check, pro-candidate, release]
+    needs:
+      [prepare, build, test, smoke, pro-wait, pro-check, pro-candidate, release]
     if: >-
       always() && !cancelled() && !inputs.dry_run
       && needs.release.outputs.merged != 'false'
       && (needs.prepare.result == 'failure' || needs.build.result == 'failure' || needs.test.result == 'failure'
-        || needs.smoke.result == 'failure' || needs.pro-check.result == 'failure' || needs.pro-candidate.result == 'failure'
-        || needs.release.result == 'failure')
+        || needs.smoke.result == 'failure' || needs.pro-wait.result == 'failure' || needs.pro-wait.result == 'cancelled'
+        || needs.pro-check.result == 'failure' || needs.pro-candidate.result == 'failure' || needs.release.result == 'failure')
     runs-on: ubuntu-latest
     steps:
       - name: Check out workflow tooling
@@ -1358,6 +1372,7 @@ jobs:
           CONTENT: |
             预览版发版流程中断，请查看 Actions 日志确认失败阶段和仓库状态。
             ${{ needs.pro-check.result == 'failure' && 'Pro 用这次的候选版本测试失败，OSS 也没有发布。先在 Pro develop 上合并修复插件的 PR。如果修复只用到这次候选版本里已有的 OSS 代码，在这次运行上点「Re-run failed jobs」：重跑沿用同一个 OSS 候选版本，重跑的 Pro 检查会重新拉取最新的 Pro develop，并自己把 Pro 的测试和冒烟都跑一遍。如果修复依赖发版开始之后才合进 v3-develop 的 OSS 改动，重跑拿不到这些改动，要重新跑一次 V3 Release Beta。紧急情况下可以勾选 skip_pro 单独发 OSS。' || '' }}
+            ${{ needs.pro-wait.result == 'cancelled' && '等待独立 Pro 发版结束时，有另一个 Pro 发版也在排队，这次的等待被取消，OSS 和 Pro 都没有发布。等那些 Pro 发版结束后，重新跑一次 V3 Release Beta。' || '' }}
         run: ./scripts/feishu-notify.sh
 
   # npm is already published at this point. Rendering a GitHub Release is recoverable and stays in a separate job.
@@ -1471,13 +1486,13 @@ jobs:
           registry-url: ${{ secrets.PRO_NPM_REGISTRY }}
           scope: '@nocobase'
 
-      # Publishing needs dependencies and build output, but neither may change what was tested.
+      # Publishing needs dependencies and build output, but neither may change what was tested. Build what pro-check's test leg built (Pro's release:build: every Pro package except the private packages/examples/**, which are never published), so a build that passed there passes here, after the open-source packages are already out.
       - name: Install and build the candidate
         env:
           NODE_AUTH_TOKEN: ${{ secrets.PRO_NPM_TOKEN }}
         run: |
           CI=true pnpm install --frozen-lockfile
-          pnpm build
+          pnpm release:build
           test -z "$(git status --porcelain --untracked-files=no)" || { git status --short; echo '::error::Installing or building changed the tested candidate'; exit 1; }
 
       # Installation tokens expire after one hour, so mint the write token only after the build.

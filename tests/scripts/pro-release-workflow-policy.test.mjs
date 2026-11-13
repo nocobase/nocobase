@@ -25,7 +25,7 @@ async function workflow(name) {
 }
 
 // The jobs of the open-source beta release that check out and publish Pro.
-const jointProJobs = ['pro-check', 'pro-candidate', 'pro-release'];
+const jointProJobs = ['pro-wait', 'pro-check', 'pro-candidate', 'pro-release'];
 
 async function jointProJob(job) {
   const source = await workflow('v3-release-beta.yml');
@@ -92,6 +92,36 @@ test('the open-source beta publishes only after Pro passed with its release cand
   assert.match(publish, /group: pro-release-write/u);
 });
 
+test('the Pro checks wait for a running standalone Pro release before they check out Pro develop', async () => {
+  // The job without the comment of the job that follows it.
+  const wait = (await jointProJob('pro-wait')).split('\n  #')[0];
+  assert.match(
+    wait,
+    /concurrency:\n\s+group: pro-release-write\n\s+cancel-in-progress: false\n/u,
+  );
+  assert.match(wait, /if: '!inputs\.skip_pro'/u);
+  // It starts at once, so the wait overlaps prepare and the open-source jobs, and it does nothing but hold its place in the group.
+  assert.doesNotMatch(wait, /^\s+needs:/mu);
+  assert.doesNotMatch(wait, /uses: |git |gh |pnpm /u);
+  const check = await jointProJob('pro-check');
+  assert.match(check, /needs: \[prepare, pro-wait\]/u);
+  // Every standalone Pro workflow holds the group the wait joins.
+  for (const name of proWorkflows) {
+    assert.match(
+      await workflow(name),
+      /^concurrency:\n\s+group: pro-release-write\n\s+cancel-in-progress: false$/mu,
+      name,
+    );
+  }
+  // A wait cancelled by another queued Pro release publishes nothing and is reported.
+  const source = await workflow('v3-release-beta.yml');
+  const notify = source
+    .split('\n  notify-failure:\n')[1]
+    .split(/\n  [a-z][\w-]*:\n/u)[0];
+  assert.match(notify, /needs:\s+\[[^\]]*\bpro-wait\b[^\]]*\]/u);
+  assert.match(notify, /needs\.pro-wait\.result == 'cancelled'/u);
+});
+
 test('Pro publishes the pushed candidate commit without regenerating it', async () => {
   const candidate = await jointProJob('pro-candidate');
   // The write token is minted only after the tree is proven to be the one the Pro checks tested.
@@ -120,10 +150,17 @@ test('Pro publishes the pushed candidate commit without regenerating it', async 
     assert.ok(!publish.includes(regeneration), regeneration);
   }
   const publishing = publish.indexOf('publish-commercial-packages');
+  // It builds what pro-check's test leg built, never the root build with the private examples, which nothing checked before the open-source packages were published.
+  assert.match(
+    runBlock(publish, 'Install and build the candidate'),
+    /^pnpm release:build$/mu,
+  );
+  assert.doesNotMatch(publish, /^\s+pnpm build$/mu);
   for (const check of [
     'test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"',
     'test "$TAG_SHA" = "$GITLINK"',
     'pnpm install --frozen-lockfile',
+    'pnpm release:build',
     'Installing or building changed the tested candidate',
   ]) {
     const position = publish.indexOf(check);
