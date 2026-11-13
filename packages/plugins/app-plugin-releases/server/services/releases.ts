@@ -528,8 +528,17 @@ export class ReleasesService {
       .repository<Row & { id: string; environmentId: string }>('relApps');
     let cursor: { id: string; createdAt: string } | undefined;
     for (;;) {
+      const after = cursor;
       const rows = await apps.findMany({
-        filter: condition,
+        // The redundant leading-axis bound lets SQLite seek the composite index instead of scanning the
+        // environment from its start for every OR cursor boundary. The cursor still resolves timestamp ties.
+        filter: after
+          ? (f) =>
+              f.and([
+                condition(f),
+                f.date('createdAt').notAfter(after.createdAt),
+              ])
+          : condition,
         // Repository compiles the descending (createdAt, id) lexicographic boundary with exact equality on time.
         cursor,
         select: (s) => s.fields('id', 'environmentId', 'createdAt', 'labels'),

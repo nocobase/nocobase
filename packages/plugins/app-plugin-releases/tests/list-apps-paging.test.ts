@@ -157,6 +157,8 @@ describe('database app pagination', () => {
       {},
       { search: 'APP-0' },
       { labels: { team: 'red' } },
+      { search: 'app-1', labels: { team: 'blue' } },
+      { search: 'app-1', runStates: ['stopped'] as const },
       { runStates: ['running'] as const },
       {
         search: 'app-1',
@@ -229,6 +231,18 @@ describe('database app pagination', () => {
     await expect(h.services.releases.listApps(nobody)).rejects.toMatchObject({
       status: 'PERMISSION_DENIED',
     });
+  });
+
+  it('keeps large explicit scopes within SQLite expression depth', async () => {
+    const only = baseline.slice(0, 1600).map((app) => app.id);
+    await check(
+      {
+        ...admin,
+        keyScope: testKeyScope({ actions: ['rel.apps/view'], apps: only }),
+      },
+      { environmentId: 'preview', pageSize: 100, page: 99 },
+      (app) => only.includes(app.id),
+    );
   });
 
   it('reads at most one page of full rows and 500 lightweight rows per scan query for 2000 Apps', async () => {

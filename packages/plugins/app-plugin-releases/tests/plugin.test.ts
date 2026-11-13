@@ -28,6 +28,7 @@ describe('@nocobase/app-plugin-releases', () => {
       '202610210001_rel_protected_requires_approval',
       '202610260002_rel_bound_artifact_keys',
       '202611020001_rel_environment_purpose',
+      '202611130001_rel_apps_environment_created_index',
     ]);
   });
 });
