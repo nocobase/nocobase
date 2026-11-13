@@ -15,12 +15,12 @@ const png =
 afterEach(() => vi.unstubAllGlobals());
 
 it.each([null, 'https://api.deepseek.com', 'https://api.deepseek.com/'])(
-  'declares exact DeepSeek Flash image formats on official endpoint %s without enabling search',
+  'declares exact DeepSeek Flash image formats on official endpoint %s alongside official search',
   (baseUrl) => {
     expect(
       resolveModelCapabilities({ ...connection, baseUrl }, modelId),
     ).toEqual({
-      webSearch: false,
+      webSearch: true,
       imageMediaTypes: formats,
     });
   },
@@ -38,14 +38,13 @@ it.each([
   'constructor',
 ])('does not infer image capability from the model name %s', (model) => {
   expect(resolveModelCapabilities(connection, model)).toEqual({
-    webSearch: false,
+    webSearch: true,
   });
 });
 
 it.each([
   'https://gateway.example.invalid/v1',
   'http://api.deepseek.com',
-  'https://api.deepseek.com/v1',
   'https://api.deepseek.com:8443',
   'https://api.deepseek.com.attacker.invalid',
   'https://user@api.deepseek.com',
@@ -57,6 +56,15 @@ it.each([
     { webSearch: false },
   );
 });
+
+it.each(['https://api.deepseek.com/v1', 'https://api.deepseek.com/v1/'])(
+  'admits retrieval at %s without expanding image admission',
+  (baseUrl) => {
+    expect(
+      resolveModelCapabilities({ ...connection, baseUrl }, modelId),
+    ).toEqual({ webSearch: true });
+  },
+);
 
 it.each(['embedding', 'rerank'] as const)(
   'does not grant image inputs to %s models',
@@ -94,7 +102,7 @@ it('includes derived image capabilities in the model catalog response schema', a
     expect(
       ModelCatalogServiceSchema.parse(found).models[0].capabilities,
     ).toEqual({
-      webSearch: false,
+      webSearch: true,
       imageMediaTypes: formats,
     });
   } finally {
