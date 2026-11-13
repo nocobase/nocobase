@@ -7,6 +7,7 @@ import {
   appUIMessageText,
   type ChatExtensions,
   ChatProvider,
+  rememberThinking,
   useChatPanel,
   type ChatPanelState,
   type AppUIMessage,
@@ -431,6 +432,75 @@ it('groups native models by service and submits the selected service/model pair'
     ),
   );
 });
+
+it.each([
+  ['inherits the Agent default without a remembered level', null, undefined],
+  ['restores a remembered level the model still takes', 'high', 'high'],
+  [
+    'explicitly resets a remembered level the model no longer takes',
+    'xhigh',
+    'default',
+  ],
+] as const)(
+  'starts a new conversation with its model’s thinking level: %s',
+  async (_name, remembered, expected) => {
+    host.catalog.mockResolvedValue({
+      data: [
+        {
+          ...models.data[0],
+          models: [
+            {
+              ...models.data[0].models[0],
+              capabilities: {
+                webSearch: false,
+                reasoning: { levels: ['off', 'low', 'high'] },
+              },
+            },
+          ],
+        },
+      ],
+    });
+    const normal = host.request.getMockImplementation()!;
+    host.request.mockImplementation(async (input) => {
+      if (input.path === 'agents/conversations' && input.method === 'POST')
+        return { data: conversation };
+      return normal(input);
+    });
+    await setup();
+    const selected = { modelService: 'local', model: 'chat' };
+    if (remembered)
+      rememberThinking(panel.memoryKey ?? '', selected, remembered);
+    await waitFor(() =>
+      expect(screen.getByTestId('chat-agent-picker')).toBeEnabled(),
+    );
+    const user = userEvent.setup();
+    await user.click(screen.getByTestId('chat-agent-picker'));
+    await user.click(
+      await screen.findByRole('menuitem', { name: /Chat.*Local/ }),
+    );
+    await user.type(
+      screen.getByRole('textbox', { name: 'Message to the agent' }),
+      'Think about it{Enter}',
+    );
+    await waitFor(() =>
+      expect(host.request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          path: 'agents/conversations',
+          method: 'POST',
+        }),
+      ),
+    );
+    const creation = host.request.mock.calls.find(
+      ([request]) =>
+        request.path === 'agents/conversations' && request.method === 'POST',
+    )![0];
+    expect(creation.json).toMatchObject({ selectedModel: selected });
+    if (expected === undefined)
+      expect(creation.json.config?.thinking).toBeUndefined();
+    else
+      expect(creation.json).toMatchObject({ config: { thinking: expected } });
+  },
+);
 
 it('uses the approved Chinese hint and service grouping in the online mode picker, with a switch to Runner agents', async () => {
   host.catalog.mockResolvedValue(models);

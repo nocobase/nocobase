@@ -380,14 +380,15 @@ function ConversationBody({
   const thinkingValue: ReasoningLevel = nativeConversation
     ? shownThinking(configuration.data?.thinking)
     : (chosenThinking ?? 'default');
-  /** A new conversation starts with the level remembered for its model while the model still takes it. */
-  const newThinking = (selected: ModelRef): ReasoningLevel | undefined => {
-    const remembered = thinkingMemory.remembered(selected);
-    return restoredThinking(remembered, capabilitiesOf(selected)) ===
-      remembered && remembered !== null
-      ? remembered
-      : undefined;
-  };
+  /**
+   * A new conversation starts with the level remembered for its model, or explicitly with the default when the
+   * model no longer takes it; only without a remembered level does the Agent's own default apply.
+   */
+  const newThinking = (selected: ModelRef): ReasoningLevel | undefined =>
+    restoredThinking(
+      thinkingMemory.remembered(selected),
+      capabilitiesOf(selected),
+    );
   const searchEnabled = nativeConversation
     ? configuration.data?.webSearch === true
     : chosenSearch && searchSupported;
