@@ -786,6 +786,12 @@ const deDE: LocaleResource<typeof enUS> = {
           'Es gibt keinen ersten Administrator, der angezeigt werden kann.',
       },
       messages: {
+        artifactReadIdleTimeout:
+          'Seit {{seconds}} Sekunden wurden keine Daten des Release-Pakets empfangen. Die Bereitstellung wurde nicht abgeschlossen. Versuchen Sie es erneut.',
+        artifactReadTotalTimeout:
+          'Das Lesen des Release-Pakets hat {{seconds}} Sekunden überschritten. Die Bereitstellung wurde nicht abgeschlossen. Versuchen Sie es erneut.',
+        artifactReadTimeout:
+          'Das Zeitlimit zum Lesen des Release-Pakets wurde überschritten. Die Bereitstellung wurde nicht abgeschlossen. Versuchen Sie es erneut.',
         hostExited: 'Der Prozess der App wurde gestoppt, bevor sie bereit war.',
         hostDisabled: 'Der App-Host ist ausgeschaltet.',
         hostShutDown: 'Der App-Host wurde heruntergefahren.',

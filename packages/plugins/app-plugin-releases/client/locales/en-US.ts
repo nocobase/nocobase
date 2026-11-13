@@ -605,6 +605,12 @@ const ui = {
       INITIAL_ADMIN_UNAVAILABLE: 'There is no first administrator to show.',
     },
     messages: {
+      artifactReadIdleTimeout:
+        'No data was received from the release package for {{seconds}} seconds. The deployment did not finish; try again.',
+      artifactReadTotalTimeout:
+        'Reading the release package exceeded {{seconds}} seconds. The deployment did not finish; try again.',
+      artifactReadTimeout:
+        'Reading the release package timed out. The deployment did not finish; try again.',
       hostExited: 'The app’s process stopped before it was ready.',
       hostDisabled: 'The app host is turned off.',
       hostShutDown: 'The app host has shut down.',

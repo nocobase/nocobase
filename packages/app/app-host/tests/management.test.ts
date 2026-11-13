@@ -53,6 +53,151 @@ afterEach(async () => {
 });
 
 describe('managed host reconciliation', () => {
+  it('fails a stalled read after one retry, cleans partial files and automatically advances the queue', async () => {
+    const fixture = await createFixture();
+    const streams: PassThrough[] = [];
+    const entered = Promise.withResolvers<void>();
+    const getStream = vi.fn().mockImplementation(async () => {
+      if (streams.length < 2) {
+        const stream = new PassThrough();
+        streams.push(stream);
+        stream.write('partial');
+        entered.resolve();
+        return stream;
+      }
+      return Readable.from(
+        await readFile(path.join(fixture.artifactDir, fixture.artifact.key)),
+      );
+    });
+    const catalog = new DeploymentCatalog({
+      deploymentsDir: fixture.deploymentsDir,
+      volumesDir: fixture.volumesDir,
+    });
+    const host = createAppHost({
+      mode: 'managed',
+      appRevisionsDir: fixture.deploymentsDir,
+      appVolumesDir: fixture.volumesDir,
+      artifactResolver: new DriveArtifactResolver(
+        { getStream } as unknown as NocoBaseDriveDisk,
+        catalog,
+        {
+          appRevisionsDir: fixture.deploymentsDir,
+          artifactRead: { idleTimeoutMs: 50, timeoutMs: 500 },
+        },
+      ),
+      evictionIntervalMs: 0,
+    });
+    hosts.push(host);
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    const logs: Record<string, unknown>[] = [];
+    const spec = deploymentSet(1, fixture.artifact).deployments[0]!;
+    const first = host.management
+      .applyDeployment({ ...spec, operationId: 'timeout-read' }, (entry) =>
+        logs.push(entry),
+      )
+      .catch((error: unknown) => error);
+    await entered.promise;
+    const second = host.management.applyDeployment({
+      ...spec,
+      operationId: 'after-timeout-read',
+    });
+    await vi.advanceTimersByTimeAsync(50);
+    await vi.waitFor(() => expect(getStream).toHaveBeenCalledTimes(2));
+    await vi.advanceTimersByTimeAsync(50);
+    await first;
+    vi.useRealTimers();
+    expect(await host.management.getOperation('timeout-read')).toMatchObject({
+      state: 'failed',
+    });
+    expect(
+      JSON.stringify(await host.management.getOperation('timeout-read')),
+    ).toContain('ARTIFACT_READ_TIMEOUT');
+    expect(
+      logs.filter((entry) => entry.msg === 'Release artifact read failed'),
+    ).toEqual([
+      expect.objectContaining({
+        attempt: 1,
+        reason: 'idle',
+        bytes: 7,
+        readDurationMs: expect.any(Number),
+      }),
+      expect.objectContaining({
+        attempt: 2,
+        reason: 'idle',
+        bytes: 7,
+        readDurationMs: expect.any(Number),
+      }),
+    ]);
+    await second;
+    expect(
+      await host.management.getOperation('after-timeout-read'),
+    ).toMatchObject({ state: 'succeeded' });
+    expect(streams.every((stream) => stream.destroyed)).toBe(true);
+    expect(
+      (await readdir(path.join(fixture.deploymentsDir, 'customer'))).filter(
+        (name) => name.endsWith('.tar.gz') || name.endsWith('.staging'),
+      ),
+    ).toEqual([]);
+  });
+
+  it('cancels a pending getStream within a second, advances the queue and destroys the late stream', async () => {
+    const fixture = await createFixture();
+    const entered = Promise.withResolvers<void>();
+    const pending = Promise.withResolvers<PassThrough>();
+    const getStream = vi
+      .fn()
+      .mockImplementationOnce(() => {
+        entered.resolve();
+        return pending.promise;
+      })
+      .mockImplementation(async () =>
+        Readable.from(
+          await readFile(path.join(fixture.artifactDir, fixture.artifact.key)),
+        ),
+      );
+    const catalog = new DeploymentCatalog({
+      deploymentsDir: fixture.deploymentsDir,
+      volumesDir: fixture.volumesDir,
+    });
+    const host = createAppHost({
+      mode: 'managed',
+      appRevisionsDir: fixture.deploymentsDir,
+      appVolumesDir: fixture.volumesDir,
+      artifactResolver: new DriveArtifactResolver(
+        { getStream } as unknown as NocoBaseDriveDisk,
+        catalog,
+        { appRevisionsDir: fixture.deploymentsDir },
+      ),
+      evictionIntervalMs: 0,
+    });
+    hosts.push(host);
+    const spec = deploymentSet(1, fixture.artifact).deployments[0]!;
+    const first = host.management
+      .applyDeployment({ ...spec, operationId: 'pending-read' })
+      .catch((error: unknown) => error);
+    await entered.promise;
+    const second = host.management.applyDeployment({
+      ...spec,
+      operationId: 'after-pending-read',
+    });
+    const started = Date.now();
+    expect(
+      await host.management.cancelDeployment('pending-read', 'customer'),
+    ).toBe('cancelling');
+    expect(await first).toMatchObject({ code: 'DEPLOYMENT_CANCELLED' });
+    expect(await host.management.getOperation('pending-read')).toMatchObject({
+      state: 'cancelled',
+    });
+    expect(Date.now() - started).toBeLessThan(1000);
+    const late = new PassThrough();
+    pending.resolve(late);
+    await second;
+    expect(late.destroyed).toBe(true);
+    expect(
+      await host.management.getOperation('after-pending-read'),
+    ).toMatchObject({ state: 'succeeded' });
+  });
+
   it('cancels a stalled artifact stream, cleans its files and lets the next deployment continue', async () => {
     const fixture = await createFixture();
     const entered = Promise.withResolvers<void>();
@@ -92,10 +237,15 @@ describe('managed host reconciliation', () => {
       .catch((error: unknown) => error);
     await entered.promise;
     stream.write('partial');
+    const started = Date.now();
     expect(await host.management.cancelDeployment('stream', 'customer')).toBe(
       'cancelling',
     );
     expect(await first).toMatchObject({ code: 'DEPLOYMENT_CANCELLED' });
+    expect(await host.management.getOperation('stream')).toMatchObject({
+      state: 'cancelled',
+    });
+    expect(Date.now() - started).toBeLessThan(1000);
     expect(stream.destroyed).toBe(true);
     expect(
       await readdir(path.join(fixture.deploymentsDir, 'customer')),

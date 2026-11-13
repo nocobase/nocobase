@@ -763,6 +763,12 @@ const jaJP: LocaleResource<typeof enUS> = {
         INITIAL_ADMIN_UNAVAILABLE: '表示する最初の管理者がありません。',
       },
       messages: {
+        artifactReadIdleTimeout:
+          'リリースパッケージから {{seconds}} 秒間データを受信できませんでした。デプロイは完了していません。再試行してください。',
+        artifactReadTotalTimeout:
+          'リリースパッケージの読み取りが {{seconds}} 秒を超えました。デプロイは完了していません。再試行してください。',
+        artifactReadTimeout:
+          'リリースパッケージの読み取りがタイムアウトしました。デプロイは完了していません。再試行してください。',
         hostExited: 'アプリのプロセスが準備が整う前に停止しました。',
         hostDisabled: 'アプリホストがオフになっています。',
         hostShutDown: 'アプリホストがシャットダウンしました。',

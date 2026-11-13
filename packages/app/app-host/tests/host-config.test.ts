@@ -26,6 +26,36 @@ afterEach(async () => {
 });
 
 describe('loadAppHostConfig', () => {
+  it('defaults artifact read deadlines and preserves individual overrides', async () => {
+    const rootDir = await createTempDirectory();
+    expect(
+      (await loadAppHostConfig({ rootDir, environment: {} })).artifactRead,
+    ).toEqual({ idleTimeoutMs: 60_000, timeoutMs: 600_000 });
+    await writeFile(
+      path.join(rootDir, 'config.json'),
+      JSON.stringify({
+        host: { artifactRead: { idleTimeoutMs: 123, timeoutMs: 456 } },
+      }),
+    );
+    expect(
+      (await loadAppHostConfig({ rootDir, environment: {} })).artifactRead,
+    ).toEqual({ idleTimeoutMs: 123, timeoutMs: 456 });
+  });
+
+  it.each([0, -1, 0.5, '60000', 2_147_483_648, null])(
+    'rejects an invalid artifact read deadline: %s',
+    async (value) => {
+      const rootDir = await createTempDirectory();
+      await writeFile(
+        path.join(rootDir, 'config.json'),
+        JSON.stringify({ host: { artifactRead: { timeoutMs: value } } }),
+      );
+      await expect(
+        loadAppHostConfig({ rootDir, environment: {} }),
+      ).rejects.toThrow('artifactRead.timeoutMs');
+    },
+  );
+
   it('accepts native OSS artifact configuration and preserves role and network settings', async () => {
     const rootDir = await createTempDirectory();
     const artifact = {

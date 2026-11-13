@@ -709,6 +709,11 @@ const zhTW: LocaleResource<typeof enUS> = {
         INITIAL_ADMIN_UNAVAILABLE: '沒有顯示第一個管理員。',
       },
       messages: {
+        artifactReadIdleTimeout:
+          '讀取發佈套件時連續 {{seconds}} 秒未收到資料，部署未完成，請重試。',
+        artifactReadTotalTimeout:
+          '讀取發佈套件超過 {{seconds}} 秒，部署未完成，請重試。',
+        artifactReadTimeout: '讀取發佈套件逾時，部署未完成，請重試。',
         hostExited: '應用程式的程式在準備就緒之前停止。',
         hostDisabled: '應用程式主機已關閉。',
         hostShutDown: '應用程式主機已關閉。',

@@ -787,6 +787,12 @@ const ptBR: LocaleResource<typeof enUS> = {
           'Não há primeiro administrador para mostrar.',
       },
       messages: {
+        artifactReadIdleTimeout:
+          'Nenhum dado do pacote da versão foi recebido por {{seconds}} segundos. A implantação não foi concluída; tente novamente.',
+        artifactReadTotalTimeout:
+          'A leitura do pacote da versão excedeu {{seconds}} segundos. A implantação não foi concluída; tente novamente.',
+        artifactReadTimeout:
+          'O tempo de leitura do pacote da versão esgotou. A implantação não foi concluída; tente novamente.',
         hostExited:
           'O processo do aplicativo foi interrompido antes de estar pronto.',
         hostDisabled: 'O host do aplicativo está desativado.',

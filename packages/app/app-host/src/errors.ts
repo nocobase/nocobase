@@ -22,6 +22,20 @@ export class AppRegistryError extends Error {
   }
 }
 
+export class ArtifactReadTimeoutError extends Error {
+  readonly code = 'ARTIFACT_READ_TIMEOUT';
+  constructor(
+    readonly kind: 'idle' | 'total',
+    readonly timeoutMs: number,
+  ) {
+    super(
+      kind === 'idle'
+        ? `Reading the release package timed out: no data received for ${timeoutMs} ms. Deploy the release again.`
+        : `Reading the release package timed out: the attempt exceeded ${timeoutMs} ms. Deploy the release again.`,
+    );
+  }
+}
+
 /**
  * The message of the error itself, wrappers included.
  *
