@@ -35,6 +35,8 @@ const ptBR: LocaleResource<typeof enUS> = {
   'files.next': 'Próximo arquivo',
   'files.loadingPreview': 'Carregando visualização...',
   'files.downloadFile': 'Baixar arquivo',
+  'files.htmlPage': 'Página',
+  'files.htmlSource': 'Código-fonte',
   'files.previewUnavailable':
     'A visualização não está disponível para este tipo de arquivo.',
   'files.imageFailed':

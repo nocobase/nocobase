@@ -6,11 +6,18 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
 import {
+  htmlPreviewDocument,
   resolveOfficeEmbedUrl,
   resolveOfficeOpenXmlFormat,
   type FilePreviewKind,
 } from '../../lib/file-preview.js';
 import { Button } from '../../../../components/ui/button.js';
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from '../../../../components/ui/tabs.js';
 import { resolveSafeFileUrl } from '../../lib/file-url.js';
 import { FileThumbnail } from '../file-thumbnail.js';
 
@@ -87,9 +94,11 @@ export function FilePreviewContent(
       return <video controls src={url} className='max-h-[70vh] max-w-full' />;
     case 'markdown':
       return <MarkdownPreview text={text} />;
+    case 'html':
+      return <HtmlPreview file={file} text={text} />;
     case 'text':
       return (
-        <pre className='max-h-[70vh] overflow-auto whitespace-pre-wrap rounded-md bg-muted p-3 text-sm'>
+        <pre className='max-h-[70vh] overflow-auto whitespace-pre-wrap rounded-md bg-muted p-3 text-sm text-foreground'>
           {text ??
             t('files.loadingPreview', { defaultValue: 'Loading preview...' })}
         </pre>
@@ -125,6 +134,50 @@ function MarkdownPreview(inputProps: { readonly text?: string }): ReactElement {
         {text}
       </ReactMarkdown>
     </article>
+  );
+}
+
+// The frame gets scripts and nothing else: without allow-same-origin the page
+// has an opaque origin, so it cannot read the application's cookies, storage or
+// DOM, and the policy in the document blocks every request it would make.
+function HtmlPreview(inputProps: {
+  readonly file: FileRecord;
+  readonly text?: string;
+}): ReactElement {
+  const { t } = useTranslation('@nocobase/app-plugin-file');
+  const { file, text } = inputProps;
+
+  if (text === undefined)
+    return (
+      <div role='status'>
+        {t('files.loadingPreview', { defaultValue: 'Loading preview...' })}
+      </div>
+    );
+  return (
+    <Tabs defaultValue='page'>
+      <TabsList>
+        <TabsTrigger value='page'>
+          {t('files.htmlPage', { defaultValue: 'Page' })}
+        </TabsTrigger>
+        <TabsTrigger value='source'>
+          {t('files.htmlSource', { defaultValue: 'Source' })}
+        </TabsTrigger>
+      </TabsList>
+      <TabsContent value='page'>
+        <iframe
+          title={file.filename}
+          sandbox='allow-scripts'
+          referrerPolicy='no-referrer'
+          srcDoc={htmlPreviewDocument(text)}
+          className='h-[70vh] w-full rounded-md border'
+        />
+      </TabsContent>
+      <TabsContent value='source'>
+        <pre className='max-h-[70vh] overflow-auto whitespace-pre-wrap rounded-md bg-muted p-3 text-sm text-foreground'>
+          {text}
+        </pre>
+      </TabsContent>
+    </Tabs>
   );
 }
 

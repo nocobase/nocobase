@@ -30,6 +30,8 @@ const messages = {
   'files.next': '下一个文件',
   'files.loadingPreview': '正在加载预览…',
   'files.downloadFile': '下载文件',
+  'files.htmlPage': '页面效果',
+  'files.htmlSource': '源码',
   'files.previewUnavailable': '此文件类型不支持预览。',
   'files.imageFailed': '无法显示此图片，文件可能已损坏或格式不受支持。',
   'files.officeFailed': 'Office Online 无法加载此文件。',

@@ -17,6 +17,7 @@
       "registryDependencies": [
         "button",
         "dialog",
+        "tabs",
         "@nocobase/attachment-list",
         "@nocobase/loading"
       ],

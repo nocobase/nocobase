@@ -34,6 +34,8 @@ const messages = {
   'files.next': 'Nächste Datei',
   'files.loadingPreview': 'Vorschau wird geladen...',
   'files.downloadFile': 'Datei herunterladen',
+  'files.htmlPage': 'Seite',
+  'files.htmlSource': 'Quelltext',
   'files.previewUnavailable':
     'Die Vorschau ist für diesen Dateityp nicht verfügbar.',
   'files.imageFailed':

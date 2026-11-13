@@ -35,6 +35,8 @@ const frFR: LocaleResource<typeof enUS> = {
   'files.next': 'Fichier suivant',
   'files.loadingPreview': "Chargement de l'aperçu...",
   'files.downloadFile': 'Télécharger le fichier',
+  'files.htmlPage': 'Page',
+  'files.htmlSource': 'Source',
   'files.previewUnavailable':
     "L'aperçu n'est pas disponible pour ce type de fichier.",
   'files.imageFailed':

@@ -34,6 +34,8 @@ const viVN: LocaleResource<typeof enUS> = {
   'files.next': 'Tập tin tiếp theo',
   'files.loadingPreview': 'Đang tải bản xem trước...',
   'files.downloadFile': 'Tải tập tin',
+  'files.htmlPage': 'Trang',
+  'files.htmlSource': 'Mã nguồn',
   'files.previewUnavailable': 'Bản xem trước không khả dụng cho loại tệp này.',
   'files.imageFailed':
     'Không thể hiển thị hình ảnh này. Nó có thể bị hỏng hoặc ở định dạng không được hỗ trợ.',
