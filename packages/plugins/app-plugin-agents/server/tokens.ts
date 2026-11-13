@@ -54,8 +54,6 @@ export type {
   EmbedResult,
   GenerateRequest,
   WebSearchRequest,
-  WebFetchRequest,
-  WebFetchResult,
   ModelEndpoint,
   RerankRequest,
   RerankResult,

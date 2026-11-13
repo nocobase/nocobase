@@ -384,7 +384,6 @@ const viVN: LocaleResource<typeof enUS> = {
       units: 'Vật phẩm',
       purposes: {
         search: 'Tìm kiếm web',
-        fetch: 'Tải trang web',
         embedding: 'Nhúng',
         rerank: 'Sắp xếp lại',
         text: 'Văn bản tiện ích',

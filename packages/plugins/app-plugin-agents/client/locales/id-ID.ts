@@ -384,7 +384,6 @@ const idID: LocaleResource<typeof enUS> = {
       units: 'Barang',
       purposes: {
         search: 'Pencarian web',
-        fetch: 'Pengambilan web',
         embedding: 'Penyematan',
         rerank: 'Pemeringkatan ulang',
         text: 'Teks utilitas',

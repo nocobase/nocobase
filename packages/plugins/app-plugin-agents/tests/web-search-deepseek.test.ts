@@ -98,13 +98,6 @@ describe('DeepSeek official retrieval over loopback HTTP', () => {
       source: 'customer.research',
       signal,
     });
-  const fetchPage = (url = page.url, signal?: AbortSignal) =>
-    h.services.models.gateway.fetch({
-      model,
-      url,
-      source: 'customer.research',
-      signal,
-    });
   const usage = async () => {
     const rows = await h.database
       .connection()
@@ -149,14 +142,6 @@ describe('DeepSeek official retrieval over loopback HTTP', () => {
           authorization: `Bearer ${KEY}`,
         },
       ]);
-      answer = (response) =>
-        json(response, { title: page.title, content: page.content });
-      expect(await fetchPage()).toEqual({
-        url: page.url,
-        title: page.title,
-        content: page.content,
-      });
-      expect(requests[1]?.path).toBe('/v1/tools/fetch');
       expect(await usage()).toMatchObject([
         {
           purpose: 'search',
@@ -166,31 +151,17 @@ describe('DeepSeek official retrieval over loopback HTTP', () => {
           outputTokens: 0,
           units: 1,
         },
-        {
-          purpose: 'fetch',
-          source: 'customer.research',
-          model: 'tools/fetch',
-          inputTokens: 0,
-          outputTokens: 0,
-          units: 1,
-        },
       ]);
     },
   );
 
-  it('fetches Markdown remotely and can pass retrieval evidence to ordinary generation', async () => {
-    answer = (response) =>
-      json(response, { title: page.title, content: page.content });
-    const result = await fetchPage();
-    expect(result).toEqual({
-      title: page.title,
-      url: page.url,
-      content: page.content,
+  it('passes Search evidence and content to ordinary generation', async () => {
+    const result = await search();
+    expect(result.results[0]).toMatchObject({
+      status: 'success',
+      sources: [page],
     });
-    expect(requests[0]).toMatchObject({
-      path: '/v1/tools/fetch',
-      body: { url: page.url },
-    });
+    expect(requests[0]?.path).toBe('/v1/tools/search');
     answer = (response) =>
       json(response, {
         id: 'completion',
@@ -214,7 +185,7 @@ describe('DeepSeek official retrieval over loopback HTTP', () => {
     ).toEqual({ text: 'Grounded answer' });
     expect(requests[1]?.path).toBe('/chat/completions');
     expect(await usage()).toMatchObject([
-      { purpose: 'fetch', units: 1 },
+      { purpose: 'search', units: 1 },
       { purpose: 'text', source: 'customer.answer' },
     ]);
   });
@@ -347,62 +318,47 @@ describe('DeepSeek official retrieval over loopback HTTP', () => {
     expect(await usage()).toHaveLength(1);
   });
 
-  it.each(['search', 'fetch'] as const)(
-    'preserves every HTTP error category for %s without leaking upstream messages or keys',
-    async (operation) => {
-      for (const [status, code] of [
-        [400, 'badResponse'],
-        [401, 'auth'],
-        [402, 'quota'],
-        [403, 'badResponse'],
-        [404, 'badResponse'],
-        [408, 'network'],
-        [413, 'badResponse'],
-        [429, 'rateLimit'],
-        [500, 'network'],
-        [504, 'network'],
-      ] as const) {
-        answer = (response) =>
-          json(response, { error: { message: KEY, code: KEY } }, status);
-        const error = await (
-          operation === 'search' ? search() : fetchPage()
-        ).catch((error: unknown) => error);
-        expect(error).toBeInstanceOf(ModelError);
-        expect(error).toMatchObject({ code, status });
-        expect(inspect(error, { depth: 10 })).not.toContain(KEY);
-      }
-      expect(requests).toHaveLength(10);
-      expect(await usage()).toHaveLength(10);
-      expect(JSON.stringify(await usage())).not.toContain(KEY);
-    },
-  );
-
-  it.each(['search', 'fetch'] as const)(
-    'bounds and validates %s responses and strips any echoed key',
-    async (operation) => {
+  it('preserves every HTTP error category for search without leaking upstream messages or keys', async () => {
+    for (const [status, code] of [
+      [400, 'badResponse'],
+      [401, 'auth'],
+      [402, 'quota'],
+      [403, 'badResponse'],
+      [404, 'badResponse'],
+      [408, 'network'],
+      [413, 'badResponse'],
+      [429, 'rateLimit'],
+      [500, 'network'],
+      [504, 'network'],
+    ] as const) {
       answer = (response) =>
-        json(
-          response,
-          operation === 'search'
-            ? { results: [{ ...page, title: KEY, summary: KEY, content: KEY }] }
-            : { title: KEY, content: KEY },
-        );
-      expect(
-        JSON.stringify(await (operation === 'search' ? search() : fetchPage())),
-      ).not.toContain(KEY);
-      for (const body of [
-        'not JSON',
-        JSON.stringify({ wrong: KEY }),
-        JSON.stringify({ content: 'x'.repeat(2 * 1024 * 1024) }),
-      ]) {
-        answer = (response) => response.end(body);
-        await expect(
-          operation === 'search' ? search() : fetchPage(),
-        ).rejects.toMatchObject({ code: 'badResponse' });
-      }
-      expect(await usage()).toHaveLength(4);
-    },
-  );
+        json(response, { error: { message: KEY, code: KEY } }, status);
+      const error = await search().catch((error: unknown) => error);
+      expect(error).toBeInstanceOf(ModelError);
+      expect(error).toMatchObject({ code, status });
+      expect(inspect(error, { depth: 10 })).not.toContain(KEY);
+    }
+    expect(requests).toHaveLength(10);
+    expect(await usage()).toHaveLength(10);
+    expect(JSON.stringify(await usage())).not.toContain(KEY);
+  });
+
+  it('bounds and validates search responses and strips any echoed key', async () => {
+    answer = (response) =>
+      json(response, {
+        results: [{ ...page, title: KEY, summary: KEY, content: KEY }],
+      });
+    expect(JSON.stringify(await search())).not.toContain(KEY);
+    for (const body of [
+      'not JSON',
+      JSON.stringify({ wrong: KEY }),
+      JSON.stringify({ content: 'x'.repeat(2 * 1024 * 1024) }),
+    ]) {
+      answer = (response) => response.end(body);
+      await expect(search()).rejects.toMatchObject({ code: 'badResponse' });
+    }
+    expect(await usage()).toHaveLength(4);
+  });
 
   it('filters unsafe and duplicated result URLs while keeping provider evidence', async () => {
     answer = (response) =>
@@ -466,28 +422,19 @@ describe('DeepSeek official retrieval over loopback HTTP', () => {
         },
       ],
     });
-    for (const url of [
-      'file:///etc/passwd',
-      'https://user:password@example.com',
-      'not a URL',
-      `https://example.com/${'x'.repeat(8192)}`,
-    ])
-      await expect(fetchPage(url)).rejects.toMatchObject({
-        code: 'badResponse',
-      });
     await h.services.models.services.update('deepseek', { apiKey: '' });
     await expect(search()).rejects.toMatchObject({ code: 'auth' });
-    await expect(fetchPage()).rejects.toMatchObject({ code: 'auth' });
     await h.services.models.services.update('deepseek', {
       apiKey: KEY,
       baseUrl: 'https://proxy.example/v1',
     });
     await expect(search()).rejects.toMatchObject({ code: 'config' });
-    await expect(fetchPage()).rejects.toMatchObject({ code: 'config' });
     await expect(
-      h.services.models.gateway.fetch({
+      h.services.models.gateway.search({
         model: { ...model, modelService: 'missing' },
-        url: page.url,
+        queries: ['Current facts'],
+        sessionId: 'missing-service',
+        signal: new AbortController().signal,
         source: 'test',
       }),
     ).rejects.toMatchObject({ code: 'config' });
@@ -495,61 +442,20 @@ describe('DeepSeek official retrieval over loopback HTTP', () => {
     expect(await usage()).toHaveLength(0);
   });
 
-  it.each(['search', 'fetch'] as const)(
-    'records a network failure for %s without retaining a secret cause',
-    async (operation) => {
-      vi.stubGlobal('fetch', () => {
-        throw new Error(KEY);
-      });
-      const error = await (
-        operation === 'search' ? search() : fetchPage()
-      ).catch((error: unknown) => error);
-      expect(error).toMatchObject({ code: 'network' });
-      expect(inspect(error, { depth: 10 })).not.toContain(KEY);
-      expect(await usage()).toHaveLength(1);
-    },
-  );
+  it('records a network failure for search without retaining a secret cause', async () => {
+    vi.stubGlobal('fetch', () => {
+      throw new Error(KEY);
+    });
+    const error = await search().catch((error: unknown) => error);
+    expect(error).toMatchObject({ code: 'network' });
+    expect(inspect(error, { depth: 10 })).not.toContain(KEY);
+    expect(await usage()).toHaveLength(1);
+  });
 
-  it.each(['search', 'fetch'] as const)(
-    'settles %s cancellation with one usage row per attempt',
-    async (operation) => {
-      const pending = new Promise<void>((resolve) => {
-        vi.stubGlobal('fetch', (_input: unknown, init?: RequestInit) => {
-          resolve();
-          return new Promise<Response>((_resolve, reject) =>
-            init?.signal?.addEventListener(
-              'abort',
-              () => reject(new Error(KEY)),
-              { once: true },
-            ),
-          );
-        });
-      });
-      const controller = new AbortController();
-      const result = (
-        operation === 'search'
-          ? search(undefined, controller.signal)
-          : fetchPage(undefined, controller.signal)
-      ).catch((error: unknown) => error);
-      await pending;
-      controller.abort();
-      expect(await result).toMatchObject({ code: 'aborted' });
-      expect(await usage()).toHaveLength(1);
-    },
-  );
-
-  it.each(['search', 'fetch'] as const)(
-    'counts and classifies the local %s deadline',
-    async (operation) => {
-      vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
-      const deadline = new AbortController();
-      vi.spyOn(AbortSignal, 'timeout').mockReturnValue(deadline.signal);
-      let started!: () => void;
-      const pending = new Promise<void>((resolve) => {
-        started = resolve;
-      });
+  it('settles search cancellation with one usage row per attempt', async () => {
+    const pending = new Promise<void>((resolve) => {
       vi.stubGlobal('fetch', (_input: unknown, init?: RequestInit) => {
-        started();
+        resolve();
         return new Promise<Response>((_resolve, reject) =>
           init?.signal?.addEventListener(
             'abort',
@@ -558,21 +464,41 @@ describe('DeepSeek official retrieval over loopback HTTP', () => {
           ),
         );
       });
-      try {
-        const result = (operation === 'search' ? search() : fetchPage()).catch(
-          (error: unknown) => error,
-        );
-        await pending;
-        if (operation === 'fetch') deadline.abort();
-        else
-          await vi.advanceTimersByTimeAsync(WEB_SEARCH_LIMITS.queryTimeoutMs);
-        expect(await result).toMatchObject({ code: 'network' });
-        expect(await usage()).toHaveLength(1);
-      } finally {
-        vi.useRealTimers();
-      }
-    },
-  );
+    });
+    const controller = new AbortController();
+    const result = search(undefined, controller.signal).catch(
+      (error: unknown) => error,
+    );
+    await pending;
+    controller.abort();
+    expect(await result).toMatchObject({ code: 'aborted' });
+    expect(await usage()).toHaveLength(1);
+  });
+
+  it('counts and classifies the local search deadline', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    let started!: () => void;
+    const pending = new Promise<void>((resolve) => {
+      started = resolve;
+    });
+    vi.stubGlobal('fetch', (_input: unknown, init?: RequestInit) => {
+      started();
+      return new Promise<Response>((_resolve, reject) =>
+        init?.signal?.addEventListener('abort', () => reject(new Error(KEY)), {
+          once: true,
+        }),
+      );
+    });
+    try {
+      const result = search().catch((error: unknown) => error);
+      await pending;
+      await vi.advanceTimersByTimeAsync(WEB_SEARCH_LIMITS.queryTimeoutMs);
+      expect(await result).toMatchObject({ code: 'network' });
+      expect(await usage()).toHaveLength(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 
   it('does not retry an upstream request when recording usage fails', async () => {
     const log = vi.fn();

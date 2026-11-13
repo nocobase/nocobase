@@ -1,5 +1,5 @@
 import { WEB_SEARCH_RETRIEVAL_INSTRUCTIONS } from './search/prompts.js';
-import { deepseekSearch, deepseekFetch } from './search/deepseek.js';
+import { deepseekSearch } from './search/deepseek.js';
 import { WebSearchBudget } from './search/budget.js';
 /**
  * The model gateway online agents' runs call (`ModelGateway`): the catalog of what the enabled model services offer,
@@ -229,20 +229,6 @@ export interface WebSearchRequest {
   readonly budget?: WebSearchBudget;
 }
 
-/** Fetches one public page through the selected DeepSeek service; never fetches the URL locally. */
-export interface WebFetchRequest {
-  readonly model: ModelRef;
-  readonly url: string;
-  readonly source: string;
-  readonly signal?: AbortSignal;
-}
-
-export interface WebFetchResult {
-  readonly url: string;
-  readonly title: string;
-  readonly content: string;
-}
-
 /** `ModelGateway.generate`: one short text from a chat model, without tools, for utility work. */
 export interface GenerateRequest {
   readonly model: ModelRef;
@@ -283,8 +269,6 @@ export interface ModelGateway {
   generate(request: GenerateRequest): Promise<{ text: string }>;
   /** Native retrieval evidence only; never creates an Agent or writes a message. */
   search(request: WebSearchRequest): Promise<WebSearchResult>;
-  /** DeepSeek official page retrieval; every attempted request is recorded as `fetch` use. */
-  fetch(request: WebFetchRequest): Promise<WebFetchResult>;
 }
 
 /** A service's connection and what it says of one of its models. */
@@ -977,40 +961,6 @@ export function createModelGateway(
     }
   }
 
-  async function fetchPage(request: WebFetchRequest): Promise<WebFetchResult> {
-    if (request.signal?.aborted)
-      throw new ModelError('aborted', 'The call was stopped.');
-    const connection = await source.connectionFor(request.model, 'chat');
-    if (
-      connection.provider !== 'deepseek' ||
-      !resolveModelCapabilities(connection, request.model.model).webSearch
-    )
-      throw new ModelError(
-        'config',
-        'Web fetch is unavailable for the selected service endpoint.',
-      );
-    const deadline = AbortSignal.timeout(WEB_SEARCH_LIMITS.queryTimeoutMs);
-    const signal = request.signal
-      ? AbortSignal.any([request.signal, deadline])
-      : deadline;
-    return deepseekFetch(
-      connection,
-      request.url,
-      signal,
-      () =>
-        record({
-          purpose: 'fetch',
-          source: request.source,
-          modelService: request.model.modelService,
-          model: 'tools/fetch',
-          inputTokens: 0,
-          outputTokens: 0,
-          units: 1,
-        }),
-      request.signal,
-    );
-  }
-
   async function generate(request: GenerateRequest): Promise<{ text: string }> {
     const { signal } = request;
     const connection = await source.connectionFor(request.model, 'chat');
@@ -1050,7 +1000,6 @@ export function createModelGateway(
     rerank,
     generate,
     search,
-    fetch: fetchPage,
     async check(ref) {
       try {
         return answered(

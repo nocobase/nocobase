@@ -383,7 +383,6 @@ const jaJP: LocaleResource<typeof enUS> = {
       units: 'アイテム',
       purposes: {
         search: 'ウェブ検索',
-        fetch: 'ウェブ取得',
         embedding: '埋め込み',
         rerank: 'リランキング',
         text: 'ユーティリティテキスト',

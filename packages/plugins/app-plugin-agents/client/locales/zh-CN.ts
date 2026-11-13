@@ -368,7 +368,6 @@ const zhCN: AgentsResource = {
       units: '条数',
       purposes: {
         search: '网页搜索',
-        fetch: '网页抓取',
         embedding: '向量化',
         rerank: '重排序',
         text: '辅助文本',

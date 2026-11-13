@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { ModelError, type WebFetchResult } from '../gateway.js';
+import { ModelError } from '../gateway.js';
 import {
   baseUrlOf,
   headersOf,
@@ -28,12 +28,10 @@ const SearchSchema = z.object({
     )
     .max(50),
 });
-const FetchSchema = z.object({ title: z.string(), content: z.string() });
 
-/** Only the configured official service is contacted; target pages are fetched by DeepSeek. */
+/** Only the configured official service is contacted. */
 async function request(
   connection: ModelConnection,
-  operation: 'search' | 'fetch',
   body: Record<string, unknown>,
   signal: AbortSignal,
   record: () => Promise<void>,
@@ -50,7 +48,7 @@ async function request(
   try {
     try {
       const response = await modelFetch(
-        `${new URL(baseUrlOf(connection) || 'https://api.deepseek.com').origin}/v1/tools/${operation}`,
+        `${new URL(baseUrlOf(connection) || 'https://api.deepseek.com').origin}/v1/tools/search`,
         {
           method: 'POST',
           headers: {
@@ -76,7 +74,7 @@ async function request(
                 : status === 408 || status >= 500
                   ? 'network'
                   : 'badResponse',
-          `DeepSeek ${operation} request failed (HTTP ${status}).`,
+          `DeepSeek search request failed (HTTP ${status}).`,
           { status },
         );
       }
@@ -147,7 +145,6 @@ export async function deepseekSearch(
   const parsed = SearchSchema.safeParse(
     await request(
       connection,
-      'search',
       {
         query,
         count: WEB_SEARCH_LIMITS.sources,
@@ -191,42 +188,4 @@ export async function deepseekSearch(
     sources,
     true,
   );
-}
-
-export async function deepseekFetch(
-  connection: ModelConnection,
-  url: string,
-  signal: AbortSignal,
-  record: () => Promise<void>,
-  callerSignal?: AbortSignal,
-): Promise<WebFetchResult> {
-  try {
-    const target = new URL(url);
-    if (
-      [...url].length > 8192 ||
-      !['http:', 'https:'].includes(target.protocol) ||
-      !target.hostname ||
-      target.username ||
-      target.password
-    )
-      throw new Error('Invalid URL.');
-  } catch {
-    throw new ModelError(
-      'badResponse',
-      'Web fetch requires an HTTP(S) URL without credentials, at most 8192 characters.',
-    );
-  }
-  const parsed = FetchSchema.safeParse(
-    await request(connection, 'fetch', { url }, signal, record, callerSignal),
-  );
-  if (!parsed.success || !parsed.data.content.trim())
-    throw new ModelError(
-      'badResponse',
-      'DeepSeek returned no usable page content.',
-    );
-  return {
-    url,
-    title: redact(parsed.data.title, connection),
-    content: redact(parsed.data.content, connection),
-  };
 }
