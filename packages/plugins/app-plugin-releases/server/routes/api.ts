@@ -1983,7 +1983,7 @@ export function createReleasesApi(
         action: 'rel.apps/deploy',
       }),
       description:
-        'Requires the `deploy` action on the App. A protected environment also requires `deploy-protected` on the App for direct deployment; otherwise use a deployment request (`POST /apps/{appId}/deploymentRequests`). A new deployment replaces older queued deployments of the same App; running deployments continue. The `Idempotency-Key` header, or `idempotencyKey`, answers a repeated request with its first deployment.',
+        'Requires the `deploy` action on the App. A protected environment also requires environment approval eligibility for direct deployment (the initiating person for an agent); resolved approvers take precedence, with `deploy-protected` on the App as fallback when none resolve; otherwise use a deployment request (`POST /apps/{appId}/deploymentRequests`). A new deployment replaces older queued deployments of the same App; running deployments continue. The `Idempotency-Key` header, or `idempotencyKey`, answers a repeated request with its first deployment.',
       responses: {
         200: dataResponse(
           ReleasesDeploymentSchema,
@@ -2358,7 +2358,7 @@ export function createReleasesApi(
         action: 'rel.apps/deploy',
       }),
       description:
-        'Requires the `deploy` action on the App. Asks for `releaseId` to be deployed, or with `rollbackToDeploymentId` for a rollback, to be approved by one of the environment’s approvers. On a protected environment this is the only way to deploy.',
+        'Requires the `deploy` action on the App. Asks for `releaseId` to be deployed, or with `rollbackToDeploymentId` for a rollback, to be approved by one of the environment’s approvers. Deployers without environment approval eligibility use this request.',
       responses: {
         201: dataResponse(
           ReleasesDeploymentRequestSchema,

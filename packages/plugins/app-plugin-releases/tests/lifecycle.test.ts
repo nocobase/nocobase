@@ -135,22 +135,9 @@ describe('deployment requests', () => {
   it('refuses a direct deployment and deploys once someone else approves the request', async () => {
     const { lead, release } = await prepare();
     await expect(
-      harness.services.releases.deploy(
-        {
-          ...lead,
-          permissions: {
-            ...lead.permissions,
-            scopes: {
-              ...lead.permissions.scopes,
-              'rel.apps/deploy-protected': 'none',
-            },
-          },
-        },
-        'acme',
-        {
-          releaseId: release.id,
-        },
-      ),
+      harness.services.releases.deploy(lead, 'acme', {
+        releaseId: release.id,
+      }),
     ).rejects.toMatchObject({ reason: 'APPROVAL_REQUIRED' });
     const request = await harness.services.requests.create(lead, 'acme', {
       releaseId: release.id,

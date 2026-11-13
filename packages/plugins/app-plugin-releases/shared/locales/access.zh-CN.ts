@@ -58,7 +58,7 @@ const accessZhCN: typeof accessEnUS = {
           deployProtected: {
             title: '部署到受保护环境',
             description:
-              '直接部署到受保护环境；未指定审批人时，人也可审批部署申请',
+              '未解析出环境审批人时，本人可审批申请，本人或其运行可直接部署',
             related: '部署到受保护环境（与自己相关的）',
             relatedLabel: '我创建的',
             relatedHint: '我创建的应用，以及系统另外关联给我的应用',

@@ -71,7 +71,7 @@ const idID: LocaleResource<typeof enUS> = {
           deployProtected: {
             title: 'Deploy ke lingkungan terlindungi',
             description:
-              'Deploy langsung ke lingkungan terlindungi; pengguna juga dapat menyetujui permintaan tanpa penyetuju yang ditentukan',
+              'Jika penyetuju lingkungan tidak ditemukan, setujui permintaan secara pribadi atau deploy langsung sebagai orang tersebut atau prosesnya',
             related: 'Deploy ke lingkungan terlindungi (terkait)',
             relatedLabel: 'Yang aku buat',
             relatedHint:

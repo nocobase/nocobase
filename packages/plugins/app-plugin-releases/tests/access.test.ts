@@ -253,7 +253,12 @@ describe('access through the application port', () => {
     expect(marked.kind).toBe('agent');
   });
 
-  it('allows protected deployment by grant and keeps approval personal', async () => {
+  it('requires the designated approver for protected deployment and keeps decisions personal', async () => {
+    await harness.services.environments.update(
+      await harness.as('admin', 'admin'),
+      'production',
+      { approvers: ['wang'] },
+    );
     const admin = await harness.as('admin', 'admin');
     const contributor = await harness.as('carol', 'contributor');
     await harness.services.releases.createApp(contributor, {
@@ -269,9 +274,11 @@ describe('access through the application port', () => {
         stream: streamOf(artifact.bytes),
       },
     );
-    // Nobody deploys there directly: a person holding deploy-protected, an agent or a key alike.
+    // Only the designated approver deploys directly, including a run acting for that person.
     for (const caller of [
       contributor,
+      admin,
+      await harness.services.callerForUser('admin', 'agent'),
       await harness.services.callerForUser('admin', 'key'),
     ])
       await expect(
@@ -280,8 +287,8 @@ describe('access through the application port', () => {
         }),
       ).rejects.toMatchObject({ reason: 'APPROVAL_REQUIRED' });
     for (const caller of [
-      admin,
-      await harness.services.callerForUser('admin', 'agent'),
+      await harness.as('wang', 'admin'),
+      await harness.services.callerForUser('wang', 'agent'),
     ]) {
       const deployment = await harness.services.releases.deploy(
         caller,
@@ -299,16 +306,19 @@ describe('access through the application port', () => {
       { releaseId: release.id },
     );
     expect(request).toMatchObject({ status: 'pending' });
-    // With no approvers named, a person holding deploy-protected decides; a contributor does not.
+    // The same designated approver rule governs request decisions.
     const dave = await harness.as('dave', 'contributor');
     await expect(
       harness.services.requests.approve(dave, request.id, undefined, 'prod'),
     ).rejects.toMatchObject({ status: 'PERMISSION_DENIED' });
     await expect(
-      harness.services.requests.approve(admin, request.id),
+      harness.services.requests.approve(
+        await harness.as('wang', 'admin'),
+        request.id,
+      ),
     ).rejects.toMatchObject({ reason: 'CONFIRMATION_REQUIRED' });
     const approved = await harness.services.requests.approve(
-      admin,
+      await harness.as('wang', 'admin'),
       request.id,
       undefined,
       'prod',

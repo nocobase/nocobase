@@ -63,11 +63,11 @@ export interface ReleasesAccess {
   /**
    * The user IDs who may decide a deployment request. Defaults to the environment's `approvers` taken as user IDs;
    * with none, anyone holding `deploy-protected` on the App (`deploy` on an unprotected environment), other than the
-   * requester, may decide.
+   * requester, may decide. Also used for direct deployment; only the App ID is supplied.
    */
   approversOf?(
     environment: EnvironmentRecord,
-    request: DeploymentRequestView,
+    request: Pick<DeploymentRequestView, 'appId'>,
   ): Promise<readonly string[]>;
 }
 

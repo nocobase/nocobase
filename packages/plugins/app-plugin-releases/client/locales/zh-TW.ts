@@ -62,7 +62,7 @@ const zhTW: LocaleResource<typeof enUS> = {
           deployProtected: {
             title: '部署至受保護環境',
             description:
-              '直接部署至受保護環境；未指定審批人時，人員也可審批部署申請',
+              '未解析出環境審批人時，本人可審批申請，本人或其執行可直接部署',
             related: '部署至受保護環境（與自己相關的）',
             relatedLabel: '我建立的',
             relatedHint: '我建立的應用程式，以及任何與我相關的應用程式',

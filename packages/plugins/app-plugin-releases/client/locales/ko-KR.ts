@@ -63,7 +63,7 @@ const koKR: LocaleResource<typeof enUS> = {
           deployProtected: {
             title: '보호된 환경에 배포',
             description:
-              '보호된 환경에 직접 배포합니다. 승인자가 지정되지 않으면 사용자가 요청을 승인할 수도 있습니다',
+              '환경 승인자를 확인할 수 없으면 본인이 요청을 승인하거나 본인 또는 해당 실행이 직접 배포할 수 있습니다',
             related: '보호된 환경에 배포 (관련 항목)',
             relatedLabel: '내가 만든 앱',
             relatedHint: '내가 만든 앱과 애플리케이션이 나와 연결한 앱',

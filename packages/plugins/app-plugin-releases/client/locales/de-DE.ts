@@ -71,7 +71,7 @@ const deDE: LocaleResource<typeof enUS> = {
           deployProtected: {
             title: 'In geschützten Umgebungen bereitstellen',
             description:
-              'Direkt in geschützten Umgebungen bereitstellen; Personen können auch Anfragen ohne benannte Genehmiger genehmigen',
+              'Wenn keine Umgebungsgenehmiger ermittelt werden, Anfragen persönlich genehmigen oder selbst bzw. über einen Lauf direkt bereitstellen',
             related: 'In geschützten Umgebungen bereitstellen (zugehörige)',
             relatedLabel: 'Die, die ich erschaffen habe',
             relatedHint:

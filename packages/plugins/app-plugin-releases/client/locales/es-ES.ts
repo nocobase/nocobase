@@ -72,7 +72,7 @@ const esES: LocaleResource<typeof enUS> = {
           deployProtected: {
             title: 'Desplegar en entornos protegidos',
             description:
-              'Desplegar directamente en entornos protegidos; las personas también pueden aprobar solicitudes sin aprobadores designados',
+              'Si no se resuelven aprobadores del entorno, aprobar solicitudes personalmente o desplegar directamente como esa persona o su ejecución',
             related: 'Desplegar en entornos protegidos (relacionados)',
             relatedLabel: 'Los que creé',
             relatedHint:

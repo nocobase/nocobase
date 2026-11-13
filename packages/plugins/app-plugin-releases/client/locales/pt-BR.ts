@@ -71,7 +71,7 @@ const ptBR: LocaleResource<typeof enUS> = {
           deployProtected: {
             title: 'Implantar em ambientes protegidos',
             description:
-              'Implantar diretamente em ambientes protegidos; pessoas também podem aprovar solicitações sem aprovadores definidos',
+              'Quando nenhum aprovador do ambiente for resolvido, aprovar solicitações pessoalmente ou implantar diretamente como essa pessoa ou sua execução',
             related: 'Implantar em ambientes protegidos (relacionados)',
             relatedLabel: 'Aqueles que eu criei',
             relatedHint:

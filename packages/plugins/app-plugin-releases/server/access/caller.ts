@@ -33,7 +33,7 @@ import {
   type SettingsItem,
   type SettingsKey,
 } from '../../shared/access.js';
-import type { ActorKind } from '../../shared/releases.js';
+import type { ActorKind, EnvironmentRecord } from '../../shared/releases.js';
 import { forbidden } from '../errors.js';
 import type { ActorRef, ReleasesAccess } from '../tokens.js';
 
@@ -188,6 +188,26 @@ export class AccessGuard {
           allowed.add(app.id);
     }
     return allowed;
+  }
+
+  /** Environment approvers take precedence over the fallback App permission. Keys never approve. */
+  public async isApprover(
+    caller: Caller,
+    app: AppOwnership,
+    environment: EnvironmentRecord,
+  ): Promise<boolean> {
+    if (!caller.userId || (caller.kind !== 'human' && caller.kind !== 'agent'))
+      return false;
+    const access = this.access();
+    const approvers = access?.approversOf
+      ? await access.approversOf(environment, { appId: app.id })
+      : environment.approvers;
+    if (approvers.length) return approvers.includes(caller.userId);
+    return await this.canApp(
+      caller,
+      environment.protected ? 'deploy-protected' : 'deploy',
+      app,
+    );
   }
 
   public async requireApp(

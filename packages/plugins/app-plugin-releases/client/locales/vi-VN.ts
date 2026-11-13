@@ -72,7 +72,7 @@ const viVN: LocaleResource<typeof enUS> = {
           deployProtected: {
             title: 'Triển khai vào môi trường được bảo vệ',
             description:
-              'Triển khai trực tiếp vào môi trường được bảo vệ; người dùng cũng có thể duyệt yêu cầu khi chưa chỉ định người duyệt',
+              'Khi không xác định được người duyệt môi trường, duyệt yêu cầu trực tiếp hoặc triển khai bằng chính người đó hay lượt chạy của họ',
             related: 'Triển khai vào môi trường được bảo vệ (liên quan)',
             relatedLabel: 'Những cái tôi đã tạo ra',
             relatedHint:

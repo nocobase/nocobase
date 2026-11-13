@@ -380,13 +380,7 @@ export class DeploymentRequestService {
       request.environmentId,
     );
     if (!environment) return false;
-    const approvers = await this.approversOf(environment, request);
-    if (approvers.length) return approvers.includes(caller.userId);
-    return await this.options.guard.canApp(
-      caller,
-      environment.protected ? 'deploy-protected' : 'deploy',
-      app,
-    );
+    return await this.options.guard.isApprover(caller, app, environment);
   }
 
   private async requireDecider(

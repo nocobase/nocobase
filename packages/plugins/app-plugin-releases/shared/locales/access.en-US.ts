@@ -70,7 +70,7 @@ const accessEnUS = {
           deployProtected: {
             title: 'Deploy to protected environments',
             description:
-              'Deploy directly to protected environments; people may also approve requests when no approvers are named',
+              'When no environment approvers resolve, approve requests as a person or deploy directly as that person or their run',
             related: 'Deploy to protected environments (ones related to them)',
             relatedLabel: 'Ones I created',
             relatedHint:

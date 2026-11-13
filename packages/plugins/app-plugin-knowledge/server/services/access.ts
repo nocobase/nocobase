@@ -71,7 +71,7 @@ export interface KnowledgeReaderAccess {
 
 /** The application's spaces and their access, bound to `knowledgeAccessToken`. */
 export interface KnowledgeAccessResolver {
-  /** Authorize actors as their initiating user, retaining the actor for audit. Default: intersect both parties and cap actors at propose. */
+  /** Authorize run agents (actor kind `agent`) as their initiating user, retaining the actor for audit. Default: intersect both parties and cap actors at propose. */
   readonly actorAuthorization?: 'initiator';
   /** `space` in its normal form when the application has such a space; null otherwise (400 `INVALID_SCOPE`). */
   space(space: SpaceRef): SpaceRef | null;
@@ -185,7 +185,8 @@ export function authorizationReader(
   access: Pick<KnowledgeAccessResolver, 'actorAuthorization'>,
   reader: KnowledgeReader,
 ): KnowledgeReader {
-  return access.actorAuthorization === 'initiator'
+  return access.actorAuthorization === 'initiator' &&
+    reader.actor?.kind === 'agent'
     ? { userId: reader.userId }
     : reader;
 }

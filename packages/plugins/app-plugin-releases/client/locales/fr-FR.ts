@@ -71,7 +71,7 @@ const frFR: LocaleResource<typeof enUS> = {
           deployProtected: {
             title: 'Déployer dans des environnements protégés',
             description:
-              'Déployer directement dans des environnements protégés ; les personnes peuvent aussi approuver les demandes sans approbateur désigné',
+              'Si aucun approbateur n’est résolu, approuver les demandes en personne ou déployer directement en personne ou par son exécution',
             related: 'Déployer dans des environnements protégés (liés)',
             relatedLabel: "Ceux que j'ai créés",
             relatedHint:

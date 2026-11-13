@@ -59,7 +59,7 @@ export type SettingsKey = {
  * | `configure`        | read and change the App's configuration and settings, labels and expiry                |
  * | `upload`           | upload releases, request upload tickets, promote releases into the App, label releases |
  * | `deploy`           | deploy and roll back on an unprotected environment, request a deployment anywhere      |
- * | `deploy-protected` | deploy directly to a protected environment; approve requests as a person   |
+ * | `deploy-protected` | fallback approval eligibility when no environment approvers resolve   |
  * | `operate`          | start, stop and restart                                                                |
  * | `delete`           | delete the App with its data                                                           |
  */

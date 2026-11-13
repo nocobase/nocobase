@@ -73,6 +73,32 @@ describe('actor authorization policy', () => {
           expectedVersion: 1,
         }),
       ).rejects.toBeTruthy();
+      // Online agents keep the default ceiling even when the host enables run initiator authorization.
+      const online = {
+        userId: 'lead',
+        actor: { kind: 'online-agent', id: 'online' },
+      };
+      await expect(
+        h.knowledge.docs.create(online, { ...space, title: 'Denied' }),
+      ).rejects.toBeTruthy();
+      await expect(
+        h.knowledge.docs.archive(online, made.id),
+      ).rejects.toBeTruthy();
+      // Archived documents remain hidden to every actor, including run initiators.
+      await h.knowledge.docs.archive(lead, made.id);
+      await expect(
+        h.knowledge.docs.get(leadAgent, made.id),
+      ).rejects.toMatchObject({ code: 'DOC_NOT_FOUND' });
+      await expect(
+        h.knowledge.permissions.effective(leadAgent, made.id),
+      ).rejects.toMatchObject({ code: 'DOC_NOT_FOUND' });
+      expect(
+        (
+          await h.knowledge.docs.tree(leadAgent, space, { archived: true })
+        ).spaces.flatMap((entry) => entry.docs),
+      ).not.toEqual(
+        expect.arrayContaining([expect.objectContaining({ id: made.id })]),
+      );
       // A space manager keeps the same override as its initiating user.
       await expect(
         h.knowledge.permissions.replace(leadAgent, doc.id, {

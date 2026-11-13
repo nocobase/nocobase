@@ -70,7 +70,7 @@ const jaJP: LocaleResource<typeof enUS> = {
           deployProtected: {
             title: '保護された環境へのデプロイ',
             description:
-              '保護された環境へ直接デプロイします。承認者が指定されていない場合、人は申請も承認できます',
+              '環境の承認者が解決されない場合、本人が申請を承認し、本人またはその実行が直接デプロイできます',
             related: '保護された環境へのデプロイ（関連するもの）',
             relatedLabel: '私が作ったもの',
             relatedHint:

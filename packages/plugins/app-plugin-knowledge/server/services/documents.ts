@@ -189,11 +189,7 @@ export async function readableDoc(
   const { ref } = await spaceOfDoc(context, doc);
   const rights = await access.requireDoc(doc, 'read');
   // Restricted actors never see archived documents.
-  if (
-    doc.archivedAt &&
-    authorizationReader(context.access, access.reader).actor
-  )
-    throw docNotFound();
+  if (doc.archivedAt && access.reader.actor) throw docNotFound();
   return { doc, space: ref, rights };
 }
 
@@ -373,7 +369,7 @@ export function createDocumentService(
             (doc) =>
               doc.kind !== 'folder' &&
               !!doc.archivedAt &&
-              !authorizationReader(context.access, viewer).actor &&
+              !viewer.actor &&
               accessOfLevel(acl.node(doc.id).level).edit,
           ).length,
         });
@@ -408,7 +404,8 @@ export function createDocumentService(
             ).filter(
               // Archived entries only for whoever may restore them.
               (doc) =>
-                !doc.archivedAt || accessOfLevel(acl.node(doc.id).level).edit,
+                !doc.archivedAt ||
+                (!viewer.actor && accessOfLevel(acl.node(doc.id).level).edit),
             )
           : [];
         for (const doc of docs)
@@ -478,9 +475,7 @@ export function createDocumentService(
         const doc = await findDocBySlug(conn, record.id, key);
         if (
           doc &&
-          !(
-            doc.archivedAt && authorizationReader(context.access, viewer).actor
-          ) &&
+          !(doc.archivedAt && viewer.actor) &&
           (await access.doc(doc)).access.read
         )
           return view(access, doc.id);
