@@ -6,7 +6,7 @@ import type { Agents } from '@nocobase/app-plugin-agents/server/tokens';
 export interface KnowledgeOnlineAgentIntegration {
   readonly onlineAgent: Agents['onlineAgent'];
   readonly credentialType: string;
-  readerOf(session: AuthSession): KnowledgeReader;
+  readerOf(session: NonNullable<AuthSession>): KnowledgeReader;
 }
 
 /** Resolve the host's original token, never a second service or a process-wide cache. */
