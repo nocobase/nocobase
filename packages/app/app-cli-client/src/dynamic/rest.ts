@@ -283,7 +283,7 @@ export async function executeRest(
         throw new UsageError('Not done.', EXIT_CODES.general);
     }
     if (command.idempotency) {
-      operationKey ??= randomUUID();
+      operationKey ??= `${Date.now()}.${randomUUID()}`;
       call = { ...call, operationKey };
       const header = command.idempotency.header.toLowerCase();
       if (

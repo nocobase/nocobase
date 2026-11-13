@@ -53,7 +53,7 @@ describe('schema-derived operation keys', () => {
     router.onError(apiErrorHandler);
     const Key = z
       .string()
-      .min(1)
+      .length(50)
       .meta({ 'x-idempotency': true, ref: 'OperationKey' });
     router.post(
       '/records',
@@ -79,7 +79,8 @@ describe('schema-derived operation keys', () => {
     });
     expect(doc.components?.schemas?.OperationKey).toMatchObject({
       type: 'string',
-      minLength: 1,
+      minLength: 50,
+      maxLength: 50,
       'x-idempotency': true,
     });
     const parameter = doc.paths?.['/api/records']?.post?.parameters?.[0];
@@ -93,7 +94,8 @@ describe('schema-derived operation keys', () => {
     expect(derived.idempotency).toEqual({
       header: 'idempotency-key',
       flag: 'operation-key',
-      minLength: 1,
+      minLength: 50,
+      maxLength: 50,
     });
     expect(derived.parameters.map((p) => p.name)).toEqual(['name']);
     expect(derived.requiredCapabilities).toEqual(['idempotency-v1']);
@@ -111,6 +113,26 @@ describe('schema-derived operation keys', () => {
         })
       ).status,
     ).toBe(400);
+  });
+
+  it('accepts exact 50-character constraints through referenced intersections', () => {
+    const doc = document([header({ $ref: '#/components/schemas/Key' })]);
+    doc.components = {
+      schemas: {
+        Key: {
+          allOf: [
+            { type: 'string', minLength: 50 },
+            { maxLength: 50, 'x-idempotency': true } as object,
+          ],
+        },
+      },
+    };
+    expect(command(doc).idempotency).toEqual({
+      header: 'idempotency-key',
+      flag: 'operation-key',
+      minLength: 50,
+      maxLength: 50,
+    });
   });
 
   it('ignores ordinary headers and false markers without creating flags', () => {
@@ -190,9 +212,10 @@ describe('schema-derived operation keys', () => {
     [{ type: ['string', 'null'], 'x-idempotency': true }, 'string'],
     [{ type: 'string', 'x-idempotency': 'true' }, 'true or false'],
     [{ type: 'string', 'x-idempotency': null }, 'true or false'],
-    [{ type: 'string', minLength: 37, 'x-idempotency': true }, 'UUID'],
-    [{ type: 'string', maxLength: 35, 'x-idempotency': true }, 'UUID'],
+    [{ type: 'string', minLength: 51, 'x-idempotency': true }, '50-character'],
+    [{ type: 'string', maxLength: 49, 'x-idempotency': true }, '50-character'],
     [{ type: 'string', pattern: '^a', 'x-idempotency': true }, 'unsupported'],
+    [{ type: 'string', format: 'uuid', 'x-idempotency': true }, 'format'],
     [{ type: 'string', format: 'email', 'x-idempotency': true }, 'format'],
     [{ type: 'string', enum: ['a'], 'x-idempotency': true }, 'unsupported'],
     [

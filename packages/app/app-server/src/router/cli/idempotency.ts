@@ -214,7 +214,6 @@ export function deriveCliIdempotency(
       'type',
       'minLength',
       'maxLength',
-      'format',
       'title',
       'description',
       'examples',
@@ -225,7 +224,6 @@ export function deriveCliIdempotency(
     let stringType = false;
     let minLength = 1;
     let maxLength: number | undefined;
-    let format: 'uuid' | undefined;
     for (const part of parts) {
       for (const key of Object.keys(part))
         if (!allowed.has(key))
@@ -244,14 +242,11 @@ export function deriveCliIdempotency(
           minLength = Math.max(minLength, value as number);
         else maxLength = Math.min(maxLength ?? Infinity, value as number);
       }
-      if (part.format !== undefined) {
-        if (part.format !== 'uuid')
-          return fail('only the uuid string format is supported');
-        format = 'uuid';
-      }
     }
-    if (!stringType || minLength > 36 || (maxLength ?? Infinity) < 36)
-      return fail('the schema must accept an automatically generated UUID');
+    if (!stringType || minLength > 50 || (maxLength ?? Infinity) < 50)
+      return fail(
+        'the schema must accept a 50-character timestamp.UUID operation key',
+      );
     if (
       parameters.filter(
         (candidate) =>
@@ -265,7 +260,6 @@ export function deriveCliIdempotency(
       flag: 'operation-key',
       minLength,
       ...(maxLength === undefined ? {} : { maxLength }),
-      ...(format ? { format } : {}),
     };
   }
   return result;

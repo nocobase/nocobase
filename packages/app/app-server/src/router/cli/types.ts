@@ -239,7 +239,6 @@ export interface CliIdempotency {
   readonly flag: 'operation-key';
   readonly minLength: number;
   readonly maxLength?: number;
-  readonly format?: 'uuid';
 }
 
 export const CLI_IDEMPOTENCY_CAPABILITY = 'idempotency-v1';

@@ -57,7 +57,10 @@ describe('dedicated operation keys', () => {
     const stderr: string[] = [];
     const fetcher = vi.fn<typeof fetch>(async (_url, init) => {
       key = new Headers(init?.headers).get('idempotency-key');
-      expect(key).toMatch(/^[a-f0-9-]{36}$/u);
+      expect(key).toMatch(
+        /^\d{13}\.[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/u,
+      );
+      expect(key).toHaveLength(50);
       expect(stderr).toEqual([`Operation key: ${key}\n`]);
       expect(new Headers(init?.headers).get('authorization')).toBe(
         session.headers.authorization,
@@ -80,6 +83,30 @@ describe('dedicated operation keys', () => {
     ).not.toContain('secret-body');
     expect(stderr.join('')).not.toContain('secret-body');
     expect(fetcher).toHaveBeenCalledTimes(1);
+  });
+
+  it('accepts exact 50-character bounds for generated and explicit native keys', async () => {
+    const exact = CliCommandSchema.parse({
+      ...command,
+      idempotency: { ...command.idempotency, minLength: 50, maxLength: 50 },
+    });
+    const explicit = `${Date.now()}.00000000-0000-4000-8000-000000000001`;
+    for (const args of [[], ['--operation-key', explicit]]) {
+      const fetcher = vi.fn<typeof fetch>(async (_url, init) => {
+        const key = new Headers(init?.headers).get('idempotency-key');
+        expect(key).toHaveLength(50);
+        if (args.length) expect(key).toBe(explicit);
+        return Response.json({ data: 'ok' });
+      });
+      await executeRest(
+        session,
+        exact,
+        await parseRestCall(exact, ['--value', 'A', ...args]),
+        { fetch: fetcher, stderr: () => undefined },
+      );
+      expect(fetcher).toHaveBeenCalledOnce();
+    }
+    expect(renderCommandHelp(exact)).toContain('24 hours');
   });
 
   it('preserves an explicit key and does not send it in the URL or body', async () => {
@@ -121,7 +148,7 @@ describe('dedicated operation keys', () => {
     ).rejects.toThrow('Invalid --operation-key');
   });
 
-  it('refuses duplicates, UUID-incompatible constraints, unknown semantics, flags and auth headers', async () => {
+  it('refuses duplicates, timestamp.UUID-incompatible constraints, unknown semantics, flags and auth headers', async () => {
     await expect(
       parseRestCall(command, [
         '--value',
@@ -134,8 +161,10 @@ describe('dedicated operation keys', () => {
     ).rejects.toThrow('only be specified once');
     for (const changes of [
       { idempotency: { ...command.idempotency, header: 'Authorization' } },
-      { idempotency: { ...command.idempotency, minLength: 37 } },
+      { idempotency: { ...command.idempotency, minLength: 51 } },
       { idempotency: { ...command.idempotency, flag: 'other' } },
+      { idempotency: { ...command.idempotency, maxLength: 49 } },
+      { idempotency: { ...command.idempotency, format: 'uuid' } },
       { idempotency: { ...command.idempotency, future: true } },
       { requiredCapabilities: ['future-v2'] },
       { requiredCapabilities: undefined },

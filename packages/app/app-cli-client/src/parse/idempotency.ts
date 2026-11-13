@@ -70,8 +70,7 @@ export function validateOperationCommand(
     return fail('missing capability requirement');
   if (
     Object.keys(spec).some(
-      (key) =>
-        !['header', 'flag', 'minLength', 'maxLength', 'format'].includes(key),
+      (key) => !['header', 'flag', 'minLength', 'maxLength'].includes(key),
     )
   )
     return fail('unknown idempotency semantics');
@@ -92,12 +91,13 @@ export function validateOperationCommand(
   if (
     !Number.isSafeInteger(spec.minLength) ||
     spec.minLength < 1 ||
-    spec.minLength > 36 ||
+    spec.minLength > 50 ||
     (spec.maxLength !== undefined &&
-      (!Number.isSafeInteger(spec.maxLength) || spec.maxLength < 36)) ||
-    (spec.format !== undefined && spec.format !== 'uuid')
+      (!Number.isSafeInteger(spec.maxLength) || spec.maxLength < 50))
   )
-    return fail('UUID-incompatible constraints');
+    return fail(
+      'constraints must accept a 50-character timestamp.UUID operation key',
+    );
   if (
     command.readBinding ||
     command.parameters?.some(
@@ -129,13 +129,9 @@ export function validateOperationKey(
     /[^\x20-\x7e]/u.test(value) ||
     value.length < spec.minLength ||
     value.length > (spec.maxLength ?? Infinity) ||
-    value.trim() !== value ||
-    (spec.format === 'uuid' &&
-      !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/iu.test(
-        value,
-      ))
+    value.trim() !== value
   )
     throw new Error(
-      'Invalid --operation-key: use a printable ASCII value satisfying the declared length and UUID constraints, without surrounding whitespace.',
+      'Invalid --operation-key: use a printable ASCII value satisfying the declared length constraints, without surrounding whitespace.',
     );
 }

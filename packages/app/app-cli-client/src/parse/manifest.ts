@@ -71,7 +71,6 @@ export interface CliIdempotency {
   readonly flag: 'operation-key';
   readonly minLength: number;
   readonly maxLength?: number;
-  readonly format?: 'uuid';
 }
 
 /** One command: a request to one API route. */

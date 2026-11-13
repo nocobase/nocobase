@@ -110,7 +110,6 @@ export const CliCommandSchema: z.ZodType<CliCommand> = z
         flag: z.literal('operation-key'),
         minLength: z.number().int(),
         maxLength: z.number().int().optional(),
-        format: z.literal('uuid').optional(),
       })
       .optional(),
     requiredCapabilities: z.array(z.string()).optional(),
