@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/app-cli-distribution",
-  "version": "0.1.0-beta.0",
+  "version": "0.1.0-beta.1",
   "description": "Composable server-side CLI artifact distribution and installation.",
   "license": "Apache-2.0",
   "type": "module",

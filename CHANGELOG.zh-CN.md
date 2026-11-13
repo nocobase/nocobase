@@ -2,6 +2,21 @@
 
 本文件记录 NocoBase 3 的所有重要变更，每次发布一节：`nocobase-v3-beta/<日期>.<序号>` 是预览版，`release/<日期>.<序号>` 是正式版。每次发布的包版本见对应的 GitHub Release，各个包自己的变更见包内的 CHANGELOG.md。
 
+## [nocobase-v3-beta/2026-11-13.2](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-13.2)
+
+### 🎉 新特性
+
+- **[命令行]** CLI 可安全复用声明的操作键、流式上传大文件，并提供独立公开安装入口，同时保留原更新及受保护安装行为。 ([#11535](https://github.com/nocobase/nocobase/pull/11535))
+- **[Agent]** 支持为配置 DeepSeek 模型的原生 Agent 启用联网搜索，并复用已有服务凭据。 ([#11551](https://github.com/nocobase/nocobase/pull/11551))
+
+### 🚀 优化
+
+- **[发布管理]** 应用数量增长时保持列表响应，并按字面匹配搜索内容。 ([#11553](https://github.com/nocobase/nocobase/pull/11553))
+
+### 🐛 修复
+
+- **[发布管理]** 发布包下载停滞时自动超时并支持取消，让后续部署继续执行。 ([#11547](https://github.com/nocobase/nocobase/pull/11547))
+
 ## [nocobase-v3-beta/2026-11-13.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-13.1)
 
 ### 🎉 新特性

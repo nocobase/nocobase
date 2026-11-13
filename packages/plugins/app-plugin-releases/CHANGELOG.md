@@ -1,5 +1,18 @@
 # @nocobase/app-plugin-releases
 
+## 0.1.0-beta.24
+
+### Patch Changes
+
+- f60b678: Bound release downloads with configurable idle and total timeouts, retry a timed out read once, and allow cancellation while opening or transferring the artifact so queued deployments can continue.
+- 2a63164: Paginate app lists in the database, scan label and runtime filters in bounded batches, and index both environment and global ordering. Treat search text literally.
+- Updated dependencies [3112daa]
+- Updated dependencies [f60b678]
+- Updated dependencies [3112daa]
+  - @nocobase/app-server@5.0.0-beta.6
+  - @nocobase/app-host@0.1.0-beta.24
+  - @nocobase/app-plugin-authentication@2.0.0-beta.22
+
 ## 0.1.0-beta.23
 
 ### Patch Changes
