@@ -115,7 +115,7 @@
   "dependencies": {
     "@sinclair/typebox": "catalog:",
     "hono": "catalog:",
-    "imapflow": "^2.0.0",
+    "imapflow": "^2.2.9",
     "mailparser": "^3.9.24",
     "nodemailer": "^10.1.4",
     "zod": "catalog:"
