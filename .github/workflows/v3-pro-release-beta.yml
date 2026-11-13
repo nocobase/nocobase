@@ -474,7 +474,7 @@ jobs:
           fi
 
       - name: Notify success
-        if: "!inputs.dry_run && success()"
+        if: '!inputs.dry_run && success()'
         env:
           WEBHOOK_URL: ${{ secrets.RELEASE_RESULT_FEISHU_WEBHOOK_URL }}
           ACTOR: ${{ github.actor }}
