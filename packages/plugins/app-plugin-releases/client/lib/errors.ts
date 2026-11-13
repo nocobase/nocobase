@@ -40,6 +40,29 @@ const CODE_PREFIX = /^\[[A-Z][A-Z0-9_]*\]\s*/;
 /** The Host's active App limit, appended for diagnostics; older records carry it even when no limit is set. */
 const LIMIT_SUFFIX = /\s*maxActiveApps=\d+$/;
 
+const CAPACITY_KEYS: ReadonlySet<string> = new Set([
+  'recycleWait',
+  'recycleRetry',
+  'capacityExceeded',
+  'replacementMemory',
+  'startQueueFull',
+  'activeLimit',
+]);
+
+/**
+ * The locale key of a Host capacity message, also when the Host wraps it in the App it was about
+ * (`App "crm" failed to reload: …`).
+ */
+function capacityKey(text: string): string | undefined {
+  for (const [message, key] of Object.entries(MESSAGES))
+    if (
+      CAPACITY_KEYS.has(key) &&
+      (text === message || text.endsWith(`: ${message}`))
+    )
+      return key;
+  return undefined;
+}
+
 /** Prefixes the plugin puts before a runtime's message. */
 const PREFIXES: readonly (readonly [string, string])[] = [
   ['Start failed: ', 'startFailed'],
@@ -52,8 +75,10 @@ const PREFIXES: readonly (readonly [string, string])[] = [
 export function messageText(t: Translate, message: string): string {
   const raw = message.trim();
   const text = raw.replace(CODE_PREFIX, '').replace(LIMIT_SUFFIX, '');
+  const capacity = capacityKey(text);
+  if (capacity) return t(`ui.errors.messages.${capacity}`);
   // Any other wording of a capacity refusal still reads as one, never as the Host's own sentence.
-  if (raw.startsWith('[APP_CAPACITY_EXCEEDED]') && !MESSAGES[text])
+  if (raw.startsWith('[APP_CAPACITY_EXCEEDED]'))
     return t('ui.errors.messages.capacityExceeded');
   if (text === 'Deployment cancelled.')
     return t('ui.deployments.statuses.cancelled');

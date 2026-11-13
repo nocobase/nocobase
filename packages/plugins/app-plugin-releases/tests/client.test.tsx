@@ -620,6 +620,19 @@ describe('client', () => {
         '[APP_CAPACITY_EXCEEDED] Waiting for Host memory recycling; retry later',
       ),
     ).toBe(enUS.ui.errors.messages.recycleRetry);
+    // As the Host reports it: wrapped in the App it was about, in a deployment and on the runtime.
+    expect(
+      messageText(
+        t,
+        '[APP_CAPACITY_EXCEEDED] App "demo" failed to reload: Waiting for Host memory recycling; retry later',
+      ),
+    ).toBe(enUS.ui.errors.messages.recycleRetry);
+    expect(
+      messageText(
+        t,
+        'App "demo" failed to reload: App Host capacity exceeded: insufficient memory or active application capacity; retry later',
+      ),
+    ).toBe(enUS.ui.errors.messages.capacityExceeded);
     expect(
       messageText(t, '[APP_CAPACITY_EXCEEDED] Something the Host said'),
     ).toBe(enUS.ui.errors.messages.capacityExceeded);
