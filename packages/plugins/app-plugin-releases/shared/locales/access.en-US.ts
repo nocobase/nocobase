@@ -68,14 +68,14 @@ const accessEnUS = {
             all: 'Deploy (all)',
           },
           deployProtected: {
-            title: 'Approve protected deployments',
+            title: 'Deploy to protected environments',
             description:
-              'Approve deployments to protected environments that name no approvers; people only',
-            related: 'Approve protected deployments (ones related to them)',
+              'Deploy directly to protected environments; people may also approve requests when no approvers are named',
+            related: 'Deploy to protected environments (ones related to them)',
             relatedLabel: 'Ones I created',
             relatedHint:
               'Apps I created, and any the application relates to me',
-            all: 'Approve protected deployments (all)',
+            all: 'Deploy to protected environments (all)',
           },
           operate: {
             title: 'Start and stop',

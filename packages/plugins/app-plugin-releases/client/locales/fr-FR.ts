@@ -69,15 +69,14 @@ const frFR: LocaleResource<typeof enUS> = {
             all: 'Déployer (tous)',
           },
           deployProtected: {
-            title: 'Approuver les déploiements protégés',
+            title: 'Déployer dans des environnements protégés',
             description:
-              'Approuver les déploiements dans des environnements protégés qui ne nomment aucun approbateur ; les gens seulement',
-            related:
-              'Approuver les déploiements protégés (ceux qui leur sont liés)',
+              'Déployer directement dans des environnements protégés ; les personnes peuvent aussi approuver les demandes sans approbateur désigné',
+            related: 'Déployer dans des environnements protégés (liés)',
             relatedLabel: "Ceux que j'ai créés",
             relatedHint:
               "Applications que j'ai créées et toutes les applications qui me concernent",
-            all: 'Approuver les déploiements protégés (tous)',
+            all: 'Déployer dans des environnements protégés (tous)',
           },
           operate: {
             title: 'Démarrer et arrêter',

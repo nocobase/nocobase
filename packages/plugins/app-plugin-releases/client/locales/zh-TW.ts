@@ -60,12 +60,13 @@ const zhTW: LocaleResource<typeof enUS> = {
             all: '部署（全部）',
           },
           deployProtected: {
-            title: '批准受保護的部署',
-            description: '批准部署到沒有指定批准者的受保護環境；僅限人',
-            related: '批准受保護的部署（與其相關的部署）',
+            title: '部署至受保護環境',
+            description:
+              '直接部署至受保護環境；未指定審批人時，人員也可審批部署申請',
+            related: '部署至受保護環境（與自己相關的）',
             relatedLabel: '我建立的',
             relatedHint: '我建立的應用程式，以及任何與我相關的應用程式',
-            all: '批准受保護的部署（全部）',
+            all: '部署至受保護環境（全部）',
           },
           operate: {
             title: '啟動與停止',

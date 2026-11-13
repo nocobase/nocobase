@@ -70,15 +70,14 @@ const esES: LocaleResource<typeof enUS> = {
             all: 'Implementar (todos)',
           },
           deployProtected: {
-            title: 'Aprobar implementaciones protegidas',
+            title: 'Desplegar en entornos protegidos',
             description:
-              'Aprobar implementaciones en entornos protegidos que no nombran aprobadores; solo personas',
-            related:
-              'Aprobar despliegues protegidos (los relacionados con ellos)',
+              'Desplegar directamente en entornos protegidos; las personas también pueden aprobar solicitudes sin aprobadores designados',
+            related: 'Desplegar en entornos protegidos (relacionados)',
             relatedLabel: 'Los que creé',
             relatedHint:
               'Aplicaciones que creé y cualquier aplicación relacionada conmigo',
-            all: 'Aprobar implementaciones protegidas (todas)',
+            all: 'Desplegar en entornos protegidos (todos)',
           },
           operate: {
             title: 'Iniciar y detener',

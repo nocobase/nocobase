@@ -61,13 +61,13 @@ const koKR: LocaleResource<typeof enUS> = {
             all: '배포(전체)',
           },
           deployProtected: {
-            title: '보호된 배포 승인',
+            title: '보호된 환경에 배포',
             description:
-              '승인자가 지정되지 않은 보호된 환경으로의 배포를 승인합니다. 사람만 가능합니다',
-            related: '보호된 배포 승인(관련된 앱)',
+              '보호된 환경에 직접 배포합니다. 승인자가 지정되지 않으면 사용자가 요청을 승인할 수도 있습니다',
+            related: '보호된 환경에 배포 (관련 항목)',
             relatedLabel: '내가 만든 앱',
             relatedHint: '내가 만든 앱과 애플리케이션이 나와 연결한 앱',
-            all: '보호된 배포 승인(전체)',
+            all: '보호된 환경에 배포 (전체)',
           },
           operate: {
             title: '시작 및 중지',

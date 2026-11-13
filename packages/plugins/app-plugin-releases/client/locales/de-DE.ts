@@ -69,15 +69,14 @@ const deDE: LocaleResource<typeof enUS> = {
             all: 'Bereitstellen (alle)',
           },
           deployProtected: {
-            title: 'Geschützte Bereitstellungen genehmigen',
+            title: 'In geschützten Umgebungen bereitstellen',
             description:
-              'Genehmigen Sie Bereitstellungen in geschützten Umgebungen, in denen keine Genehmiger benannt sind. Nur Menschen',
-            related:
-              'Geschützte Bereitstellungen genehmigen (die damit verbundenen)',
+              'Direkt in geschützten Umgebungen bereitstellen; Personen können auch Anfragen ohne benannte Genehmiger genehmigen',
+            related: 'In geschützten Umgebungen bereitstellen (zugehörige)',
             relatedLabel: 'Die, die ich erschaffen habe',
             relatedHint:
               'Apps, die ich erstellt habe, und alle Apps, die sich auf mich beziehen',
-            all: 'Geschützte Bereitstellungen genehmigen (alle)',
+            all: 'In geschützten Umgebungen bereitstellen (alle)',
           },
           operate: {
             title: 'Starten und stoppen',
