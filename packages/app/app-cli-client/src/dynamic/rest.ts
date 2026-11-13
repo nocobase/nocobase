@@ -5,6 +5,7 @@
 // parameter's file is streamed to the upload ticket the request answers; a changed-files parameter sends its
 // directory's changed files as multipart parts; a binary body field is a part of its own; a `download` command saves
 // to `--out`; a command that asks first takes `--yes`.
+import { randomUUID } from 'node:crypto';
 import { readFile, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { createInterface } from 'node:readline/promises';
@@ -13,7 +14,7 @@ import { EXIT_CODES } from '@nocobase/agent-protocol';
 
 import { appCliConfig } from '../config.ts';
 import { UsageError } from '../lib/command.ts';
-import { CliCommandError } from '../lib/envelope.ts';
+import { CliCommandError, errorJsonOf } from '../lib/envelope.ts';
 import { globalFlags } from '../lib/globals.ts';
 import { AppApiError } from '../lib/http.ts';
 import {
@@ -23,6 +24,7 @@ import {
   type CliCall,
   type CliParseIo,
 } from '../parse/arguments.ts';
+import { validateOperationCommand } from '../parse/idempotency.ts';
 import { fillRequest, requestText } from '../request.ts';
 import { download, send } from './execute.ts';
 import { changedFiles, type LocalFile } from './files.ts';
@@ -121,6 +123,7 @@ export interface RestOptions {
   readonly fetch?: typeof fetch;
   readonly timeoutMs?: number;
   readonly signal?: AbortSignal;
+  readonly stderr?: (text: string) => void;
 }
 
 /** Uploads each file of the call's upload parameters; the ids, by parameter. */
@@ -185,8 +188,19 @@ export async function buildRequest(
   command: CliCommand,
   call: RestCall,
   uploadedIds: ReadonlyMap<CliParameter, readonly string[]> = new Map(),
-): Promise<{ url: URL; body?: string | FormData; type?: string }> {
-  const filled = fillRequest(command, call.values, call.bodyFile);
+): Promise<{
+  url: URL;
+  body?: string | FormData;
+  type?: string;
+  headers?: Readonly<Record<string, string>>;
+}> {
+  const filled = fillRequest(
+    command,
+    call.values,
+    call.bodyFile,
+    call.operationKey,
+  );
+  const headers = filled.headers ? { headers: filled.headers } : {};
   const fields = filled.fields;
   for (const [parameter, ids] of uploadedIds)
     fields[parameter.field] = parameter.upload?.multiple ? ids : ids[0];
@@ -197,7 +211,7 @@ export async function buildRequest(
   if (ticketParameter && call.ticket)
     fields[ticketParameter.field] = call.ticket.name;
   const url = urlFor(session.server, filled.path);
-  if (!command.body && !call.changed) return { url };
+  if (!command.body && !call.changed) return { url, ...headers };
   // Changed files go as parts beside the fields; without files a JSON body keeps line breaks as they are.
   if (call.changed) fields[call.changed.field] = [...call.changed.files];
   if (call.changed || command.body?.media === 'multipart/form-data') {
@@ -212,9 +226,14 @@ export async function buildRequest(
         } else form.append(field, requestText(item));
       }
     }
-    return { url, body: form };
+    return { url, body: form, ...headers };
   }
-  return { url, body: JSON.stringify(fields), type: 'application/json' };
+  return {
+    url,
+    body: JSON.stringify(fields),
+    type: 'application/json',
+    ...headers,
+  };
 }
 
 /** Sends the call; the API's answer, or for a download the saved file. */
@@ -224,95 +243,199 @@ export async function executeRest(
   call: RestCall,
   options: RestOptions = {},
 ): Promise<ApiAnswer> {
-  if (command.confirm && !call.yes && !globalFlags().yes) {
-    if (!interactive())
-      throw new CliCommandError(
-        'CONFIRMATION_REQUIRED',
-        `${command.confirm} Nothing was done without a terminal to ask in.`,
-        {
-          exit: EXIT_CODES.validation,
-          suggestions: [{ message: 'Pass --yes to go ahead without asking.' }],
-        },
-      );
-    const answer = (await ask(`${command.confirm} [y/N] `)).trim();
-    if (!/^y(es)?$/iu.test(answer))
-      throw new UsageError('Not done.', EXIT_CODES.general);
-  }
-  const uploaded: { path: string; id: string }[] = [];
+  let operationKey = call.operationKey;
+  let requestStatus: 'not-sent' | 'unknown' | 'responded' = 'not-sent';
   try {
-    if (command.readBinding) {
-      const binding = command.readBinding;
-      const values = Object.entries(binding.params).map(([field, source]) => {
-        const entry = [...call.values].find(
-          ([parameter]) =>
-            parameter.in === 'path' && parameter.field === source,
-        );
-        return [{ in: 'path' as const, field }, entry?.[1]] as const;
-      });
-      const read = fillRequest({ method: 'GET', path: binding.path }, values);
-      const answer = await send(
-        urlFor(session.server, read.path),
-        {
-          method: 'GET',
-          headers: { accept: 'application/json', ...session.headers },
+    validateOperationCommand(command);
+    if (
+      command.idempotency &&
+      (call.dryRun ||
+        globalFlags().dryRun ||
+        [...call.values].some(
+          ([parameter, value]) =>
+            parameter.name === 'dry-run' && value === true,
+        ))
+    )
+      return {
+        data: null,
+        meta: {
+          ...(operationKey ? { operationKey } : {}),
+          requestStatus: 'not-sent',
+          message:
+            'Dry run: no request was sent; no operation key was generated.',
         },
-        options,
-      );
-      let value: unknown = answer;
-      for (const field of binding.responseField.split('.'))
-        value =
-          value && typeof value === 'object' && Object.hasOwn(value, field)
-            ? (value as Record<string, unknown>)[field]
-            : undefined;
-      if (value === undefined || value === null || value === '')
+      };
+    if (command.confirm && !call.yes && !globalFlags().yes) {
+      if (!interactive())
         throw new CliCommandError(
-          'READ_BINDING_MISSING',
-          'There is no current value for this decision; the resource may be missing or expired. Refresh it before deciding.',
-          { exit: EXIT_CODES.validation },
+          'CONFIRMATION_REQUIRED',
+          `${command.confirm} Nothing was done without a terminal to ask in.`,
+          {
+            exit: EXIT_CODES.validation,
+            suggestions: [
+              { message: 'Pass --yes to go ahead without asking.' },
+            ],
+          },
         );
-      call = {
-        ...call,
-        bodyFile: { ...call.bodyFile, [binding.bodyField]: value },
-      };
+      const answer = (await ask(`${command.confirm} [y/N] `)).trim();
+      if (!/^y(es)?$/iu.test(answer))
+        throw new UsageError('Not done.', EXIT_CODES.general);
     }
-    const ids = await uploadAll(session, call, options, uploaded);
-    const { url, body, type } = await buildRequest(session, command, call, ids);
-    const init: RequestInit = {
-      method: command.method,
-      headers: {
-        accept: command.output.kind === 'download' ? '*/*' : 'application/json',
-        ...(type ? { 'content-type': type } : {}),
-        ...session.headers,
-      },
-      ...(body === undefined ? {} : { body }),
-    };
-    if (command.output.kind === 'download') {
-      const saved = await download(url, init, call.out, options);
-      return {
-        data: saved.data,
-        ...(saved.message ? { meta: { message: saved.message } } : {}),
-      };
+    if (command.idempotency) {
+      operationKey ??= randomUUID();
+      call = { ...call, operationKey };
+      const header = command.idempotency.header.toLowerCase();
+      if (
+        Object.keys(session.headers).some(
+          (name) => name.toLowerCase() === header,
+        )
+      )
+        throw new CliCommandError(
+          'OPERATION_HEADER_CONFLICT',
+          'The operation-key header conflicts with the authenticated session; nothing was sent.',
+        );
     }
-    const answer = (await send(url, init, options)) as
-      { data?: unknown; meta?: Record<string, unknown> } | undefined;
-    if (call.ticket) {
-      const uploaded = await streamToTicket(
+    const uploaded: { path: string; id: string }[] = [];
+    try {
+      if (command.readBinding) {
+        const binding = command.readBinding;
+        const values = Object.entries(binding.params).map(([field, source]) => {
+          const entry = [...call.values].find(
+            ([parameter]) =>
+              parameter.in === 'path' && parameter.field === source,
+          );
+          return [{ in: 'path' as const, field }, entry?.[1]] as const;
+        });
+        const read = fillRequest({ method: 'GET', path: binding.path }, values);
+        const answer = await send(
+          urlFor(session.server, read.path),
+          {
+            method: 'GET',
+            headers: { accept: 'application/json', ...session.headers },
+          },
+          options,
+        );
+        let value: unknown = answer;
+        for (const field of binding.responseField.split('.'))
+          value =
+            value && typeof value === 'object' && Object.hasOwn(value, field)
+              ? (value as Record<string, unknown>)[field]
+              : undefined;
+        if (value === undefined || value === null || value === '')
+          throw new CliCommandError(
+            'READ_BINDING_MISSING',
+            'There is no current value for this decision; the resource may be missing or expired. Refresh it before deciding.',
+            { exit: EXIT_CODES.validation },
+          );
+        call = {
+          ...call,
+          bodyFile: { ...call.bodyFile, [binding.bodyField]: value },
+        };
+      }
+      const ids = await uploadAll(session, call, options, uploaded);
+      const { url, body, type, headers } = await buildRequest(
         session,
-        answer?.data,
-        call.ticket,
-        options,
+        command,
+        call,
+        ids,
       );
-      return {
-        data: uploaded.data,
-        ...(uploaded.message ? { meta: { message: uploaded.message } } : {}),
+      const init: RequestInit = {
+        method: command.method,
+        headers: {
+          accept:
+            command.output.kind === 'download' ? '*/*' : 'application/json',
+          ...(type ? { 'content-type': type } : {}),
+          ...session.headers,
+          ...headers,
+        },
+        ...(command.idempotency ? { redirect: 'error' } : {}),
+        ...(body === undefined ? {} : { body }),
       };
+      options.signal?.throwIfAborted();
+      if (operationKey)
+        (options.stderr ?? ((text) => process.stderr.write(text)))(
+          `Operation key: ${operationKey}\n`,
+        );
+      requestStatus = 'unknown';
+      if (command.output.kind === 'download') {
+        const saved = await download(url, init, call.out, options);
+        return {
+          data: saved.data,
+          ...(saved.message || operationKey
+            ? {
+                meta: {
+                  ...(saved.message ? { message: saved.message } : {}),
+                  ...(operationKey
+                    ? { operationKey, requestStatus: 'responded' }
+                    : {}),
+                },
+              }
+            : {}),
+        };
+      }
+      const answer = (await send(url, init, {
+        ...options,
+        ...(command.idempotency ? { strictResponse: true } : {}),
+      })) as { data?: unknown; meta?: Record<string, unknown> } | undefined;
+      if (call.ticket) {
+        const uploaded = await streamToTicket(
+          session,
+          answer?.data,
+          call.ticket,
+          options,
+        );
+        return {
+          data: uploaded.data,
+          ...(uploaded.message ? { meta: { message: uploaded.message } } : {}),
+        };
+      }
+      return {
+        data: answer?.data ?? null,
+        ...(answer?.meta || operationKey
+          ? {
+              meta: {
+                ...answer?.meta,
+                ...(operationKey
+                  ? { operationKey, requestStatus: 'responded' }
+                  : {}),
+              },
+            }
+          : {}),
+      };
+    } catch (error) {
+      await discard(session, uploaded, options);
+      throw error;
     }
-    return {
-      data: answer?.data ?? null,
-      ...(answer?.meta ? { meta: answer.meta } : {}),
-    };
   } catch (error) {
-    await discard(session, uploaded, options);
-    throw error;
+    if (!command.idempotency) throw error;
+    const failure = errorJsonOf(error, appCliConfig().bin);
+    if (
+      error instanceof AppApiError &&
+      error.status > 0 &&
+      !['RESPONSE_READ_FAILED', 'UNEXPECTED_RESPONSE'].includes(error.reason)
+    )
+      requestStatus = 'responded';
+    const details =
+      failure.details && typeof failure.details === 'object'
+        ? failure.details
+        : {};
+    throw new CliCommandError(
+      failure.code,
+      `${failure.message} ${requestStatus === 'not-sent' ? 'The business request was not sent.' : 'The server may have executed the operation. Query its status before retrying with the original key, parameters and file; a new invocation without the original key is a new operation. Retry only within the server deduplication window.'}`,
+      {
+        exit:
+          error instanceof AppApiError
+            ? error.exitCode
+            : error instanceof CliCommandError || error instanceof UsageError
+              ? error.exit
+              : EXIT_CODES.general,
+        suggestions: failure.suggestions,
+        details: {
+          ...details,
+          ...(operationKey ? { operationKey } : {}),
+          requestStatus,
+        },
+      },
+    );
   }
 }

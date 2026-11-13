@@ -1,3 +1,7 @@
+import {
+  validateOperationCommand,
+  validateOperationKey,
+} from './idempotency.ts';
 // Reading a command line against a manifest command (`kind: 'rest'`): the words after the command are its positional
 // parameters, in order, and its flags, each a path, query or body parameter, or a file to send.
 //
@@ -98,6 +102,8 @@ export interface CliCall<F extends CliFileRef = CliFileRef> {
   };
   /** `--out`, as typed. */
   readonly out?: string;
+  readonly operationKey?: string;
+  readonly dryRun?: boolean;
   readonly yes: boolean;
   readonly json: boolean;
   readonly help: boolean;
@@ -283,6 +289,11 @@ export async function parseCommandLine<F extends CliFileRef>(
   rest: readonly string[],
   options: CliParseOptions<F>,
 ): Promise<CliCall<F>> {
+  try {
+    validateOperationCommand(command);
+  } catch (error) {
+    throw new CliParseError('UNSUPPORTED_CAPABILITY', (error as Error).message);
+  }
   const { bin, io } = options;
   const values = new Map<CliParameter, unknown>();
   const uploads = new Map<CliParameter, F[]>();
@@ -295,6 +306,7 @@ export async function parseCommandLine<F extends CliFileRef>(
       if (parameter.alias) flags.set(parameter.alias, parameter);
     }
   const args: string[] = [];
+  let operationKey: string | undefined;
   let bodyPath: string | undefined;
   let out: string | undefined;
   let yes = options.yes ?? false;
@@ -351,6 +363,17 @@ export async function parseCommandLine<F extends CliFileRef>(
       index += 1;
       return next;
     };
+    if (name === 'operation-key' && command.idempotency) {
+      if (operationKey !== undefined)
+        throw invalid('--operation-key may only be specified once.');
+      operationKey = value();
+      try {
+        validateOperationKey(command.idempotency, operationKey);
+      } catch (error) {
+        throw invalid((error as Error).message);
+      }
+      continue;
+    }
     const parameter = flags.get(name);
     if (parameter) {
       if ((parameter.in === 'file' || parameter.binary) && !io.file)
@@ -551,7 +574,7 @@ export async function parseCommandLine<F extends CliFileRef>(
       (parameter) =>
         parameter.name === 'dry-run' && parameter.type === 'boolean',
     );
-    if (!flag)
+    if (!flag && !command.idempotency)
       throw new CliParseError(
         'DRY_RUN_UNSUPPORTED',
         `The server offers no dry run of \`${bin} ${commandWords(command)}\`; nothing was sent.`,
@@ -564,7 +587,7 @@ export async function parseCommandLine<F extends CliFileRef>(
           ],
         },
       );
-    values.set(flag, true);
+    if (flag) values.set(flag, true);
   }
 
   const missing: CliParameter[] = [];
@@ -599,6 +622,8 @@ export async function parseCommandLine<F extends CliFileRef>(
     throw invalid(`--${command.body.file} <file.json> is required.`);
   return {
     values,
+    ...(operationKey === undefined ? {} : { operationKey }),
+    ...(options.dryRun ? { dryRun: true } : {}),
     ...(bodyFile ? { bodyFile } : {}),
     uploads,
     ...(ticket ? { ticket } : {}),

@@ -47,6 +47,34 @@ function shell(commands: readonly CliCommand[], send: CommandSurface['send']) {
 }
 
 describe('Sandbox CLI public parser/request compatibility (adapter contracts, not business acceptance)', () => {
+  it('refuses operation-key commands before sending while retaining help', async () => {
+    const send = vi.fn<CommandSurface['send']>();
+    const bash = shell(
+      [
+        {
+          ...command,
+          idempotency: {
+            header: 'operation-key-header',
+            flag: 'operation-key',
+            minLength: 1,
+          },
+          requiredCapabilities: ['idempotency-v1'],
+        },
+      ],
+      send,
+    );
+    const help = await bash.exec('acme record update --help');
+    expect(help.exitCode).toBe(0);
+    expect(help.stdout).toContain('--operation-key');
+    const result = await bash.exec('acme record update abc --json');
+    expect(result.exitCode).not.toBe(0);
+    expect(JSON.parse(result.stdout)).toMatchObject({
+      ok: false,
+      error: { code: 'UNSUPPORTED_CAPABILITY' },
+    });
+    expect(send).not.toHaveBeenCalled();
+  });
+
   it('reads JSON/content files and exported shell values only from the VFS', async () => {
     const send = vi.fn<CommandSurface['send']>(async () =>
       Response.json({ data: { saved: true } }),

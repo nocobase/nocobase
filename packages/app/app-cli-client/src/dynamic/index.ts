@@ -14,6 +14,7 @@ import { asCliError, UsageError } from '../lib/command.ts';
 import {
   CliCommandError,
   failureEnvelope,
+  errorJsonOf,
   successEnvelope,
 } from '../lib/envelope.ts';
 import { globalFlags } from '../lib/globals.ts';
@@ -218,7 +219,27 @@ async function runResolved(
   session: Session,
   { command, rest }: Resolved,
 ): Promise<Outcome> {
-  const call = await parseRestCall(command, rest);
+  const call = await parseRestCall(command, rest).catch((error: unknown) => {
+    if (!command.idempotency) throw error;
+    const failure = errorJsonOf(error, appCliConfig().bin);
+    throw new CliCommandError(
+      failure.code,
+      `${failure.message} The business request was not sent.`,
+      {
+        exit:
+          error instanceof UsageError || error instanceof CliCommandError
+            ? error.exit
+            : EXIT_CODES.general,
+        suggestions: failure.suggestions,
+        details: {
+          ...(failure.details && typeof failure.details === 'object'
+            ? failure.details
+            : {}),
+          requestStatus: 'not-sent',
+        },
+      },
+    );
+  });
   if (call.help) return { help: renderCommandHelp(command), json: call.json };
   return {
     answer: await executeRest(session, command, call),

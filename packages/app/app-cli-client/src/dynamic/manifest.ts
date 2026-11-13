@@ -28,6 +28,12 @@ export type {
   CliWithheldCommand,
 } from '../parse/manifest.ts';
 
+import {
+  CLI_CAPABILITIES,
+  CLI_CAPABILITIES_HEADER,
+  validateOperationCommand,
+} from '../parse/idempotency.ts';
+
 const Identity = z.enum(['person', 'run']);
 
 export const CliParameterSchema: z.ZodType<CliParameter> = z.object({
@@ -88,63 +94,99 @@ export const CliParameterSchema: z.ZodType<CliParameter> = z.object({
   multiple: z.boolean().optional(),
 });
 
-export const CliCommandSchema: z.ZodType<CliCommand> = z.object({
-  id: z.string().min(1),
-  summary: z.string(),
-  description: z.string().optional(),
-  operationId: z.string().optional(),
-  method: z.enum(['GET', 'POST', 'PUT', 'PATCH', 'DELETE']),
-  path: z.string(),
-  parameters: z.array(CliParameterSchema),
-  readBinding: z
-    .object({
-      path: z.string(),
-      params: z.record(z.string(), z.string()),
-      responseField: z.string(),
-      bodyField: z.string(),
-    })
-    .optional(),
-  body: z
-    .object({
-      media: z.enum(['application/json', 'multipart/form-data']),
-      file: z.string().optional(),
-      required: z.boolean().optional(),
-    })
-    .optional(),
-  output: z.object({
-    kind: z.enum(['data', 'list', 'empty', 'download']),
-    columns: z.array(z.string()).optional(),
-  }),
-  confirm: z.string().optional(),
-  examples: z.array(z.string()).optional(),
-  identities: z.array(Identity),
-  action: z.string().optional(),
-});
+export const CliCommandSchema: z.ZodType<CliCommand> = z
+  .object({
+    id: z.string().min(1),
+    summary: z.string(),
+    description: z.string().optional(),
+    operationId: z.string().optional(),
+    method: z.enum(['GET', 'POST', 'PUT', 'PATCH', 'DELETE']),
+    path: z.string(),
+    parameters: z.array(CliParameterSchema),
+    idempotency: z
+      .strictObject({
+        header: z.string(),
+        flag: z.literal('operation-key'),
+        minLength: z.number().int(),
+        maxLength: z.number().int().optional(),
+        format: z.literal('uuid').optional(),
+      })
+      .optional(),
+    requiredCapabilities: z.array(z.string()).optional(),
+    readBinding: z
+      .object({
+        path: z.string(),
+        params: z.record(z.string(), z.string()),
+        responseField: z.string(),
+        bodyField: z.string(),
+      })
+      .optional(),
+    body: z
+      .object({
+        media: z.enum(['application/json', 'multipart/form-data']),
+        file: z.string().optional(),
+        required: z.boolean().optional(),
+      })
+      .optional(),
+    output: z.object({
+      kind: z.enum(['data', 'list', 'empty', 'download']),
+      columns: z.array(z.string()).optional(),
+    }),
+    confirm: z.string().optional(),
+    examples: z.array(z.string()).optional(),
+    identities: z.array(Identity),
+    action: z.string().optional(),
+  })
+  .superRefine((command, ctx) => {
+    try {
+      validateOperationCommand(command);
+    } catch (error) {
+      ctx.addIssue({ code: 'custom', message: (error as Error).message });
+    }
+  });
 
-export const CliManifestSchema: z.ZodType<CliManifest> = z.object({
-  version: z.number().int(),
-  etag: z.string().min(1),
-  identity: z.object({
-    settings: z.array(z.string()).optional(),
-    kind: Identity,
-    userId: z.string(),
-    displayName: z.string(),
-    runId: z.string().optional(),
-    actions: z.array(z.string()).optional(),
-  }),
-  commands: z.array(CliCommandSchema),
-  withheld: z
-    .array(
-      z.object({
-        id: z.string(),
-        summary: z.string(),
-        reason: z.enum(['identity', 'action']),
-        identities: z.array(Identity),
-        action: z.string().optional(),
-      }),
+export const CliManifestSchema: z.ZodType<CliManifest> = z
+  .object({
+    version: z.number().int(),
+    capabilities: z.array(z.string()).optional(),
+    etag: z.string().min(1),
+    identity: z.object({
+      settings: z.array(z.string()).optional(),
+      kind: Identity,
+      userId: z.string(),
+      displayName: z.string(),
+      runId: z.string().optional(),
+      actions: z.array(z.string()).optional(),
+    }),
+    commands: z.array(CliCommandSchema),
+    withheld: z
+      .array(
+        z.object({
+          id: z.string(),
+          summary: z.string(),
+          reason: z.enum(['identity', 'action']),
+          identities: z.array(Identity),
+          action: z.string().optional(),
+        }),
+      )
+      .optional(),
+  })
+  .superRefine((manifest, ctx) => {
+    if (
+      manifest.capabilities?.some(
+        (capability) => !CLI_CAPABILITIES.includes(capability),
+      ) ||
+      manifest.commands.some((command) =>
+        command.requiredCapabilities?.some(
+          (capability) => !manifest.capabilities?.includes(capability),
+        ),
+      )
     )
-    .optional(),
-});
+      ctx.addIssue({
+        code: 'custom',
+        message: 'The server did not negotiate the required CLI semantics.',
+      });
+  });
 
 interface CachedManifest {
   readonly etag: string;
@@ -156,7 +198,9 @@ export function manifestCacheFile(
   session: Pick<Session, 'server' | 'cacheKey'>,
 ): string {
   const key = createHash('sha256')
-    .update(`${session.server}\u0000${session.cacheKey}`)
+    .update(
+      `${session.server}\u0000${session.cacheKey}\u0000${CLI_CAPABILITIES.join(',')}`,
+    )
     .digest('hex')
     .slice(0, 24);
   return path.join(paths.manifestCache, `${key}.json`);
@@ -202,6 +246,7 @@ export async function loadManifest(
       headers: {
         accept: 'application/json',
         ...session.headers,
+        [CLI_CAPABILITIES_HEADER]: CLI_CAPABILITIES.join(','),
         ...(usable ? { 'if-none-match': `"${usable.etag}"` } : {}),
       },
       signal: AbortSignal.timeout(options.timeoutMs ?? 15_000),

@@ -26,6 +26,7 @@ export async function send(
     readonly fetch?: typeof fetch;
     readonly timeoutMs?: number;
     readonly signal?: AbortSignal;
+    readonly strictResponse?: boolean;
   },
 ): Promise<unknown> {
   const fileBody = init.body instanceof FormData || init.body instanceof Blob;
@@ -50,11 +51,24 @@ export async function send(
       `Could not reach ${url.origin}: ${error instanceof Error ? error.message : String(error)}`,
     );
   }
-  const text = await response.text().catch(() => '');
+  const text = await response.text().catch(() => {
+    if (!options.strictResponse) return '';
+    throw new AppApiError(
+      response.status,
+      'RESPONSE_READ_FAILED',
+      'Could not read the server response; the request outcome is unknown.',
+    );
+  });
   let parsed: unknown;
   try {
     parsed = text === '' ? undefined : JSON.parse(text);
   } catch {
+    if (response.ok && options.strictResponse)
+      throw new AppApiError(
+        response.status,
+        'UNEXPECTED_RESPONSE',
+        'The server returned invalid JSON; the request outcome is unknown.',
+      );
     parsed = undefined;
   }
   if (!response.ok) {
@@ -73,6 +87,17 @@ export async function send(
       `${init.method ?? 'GET'} ${url.pathname} answered ${response.status}`,
     );
   }
+  if (
+    options.strictResponse &&
+    response.ok &&
+    response.status !== 204 &&
+    (!parsed || typeof parsed !== 'object' || !('data' in parsed))
+  )
+    throw new AppApiError(
+      response.status,
+      'UNEXPECTED_RESPONSE',
+      'The server returned no API result; the request outcome is unknown.',
+    );
   return parsed;
 }
 

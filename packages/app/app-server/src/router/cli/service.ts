@@ -119,8 +119,12 @@ export class CliService {
   }
 
   /** The manifest of `caller`: the commands `document` describes that it may run. */
-  public manifestFor(document: ApiDocument, caller: CliCaller): CliManifest {
-    return cliManifestOf(this.commandsOf(document), caller);
+  public manifestFor(
+    document: ApiDocument,
+    caller: CliCaller,
+    capabilities: readonly string[] = [],
+  ): CliManifest {
+    return cliManifestOf(this.commandsOf(document), caller, capabilities);
   }
 
   private changed(): void {

@@ -15,7 +15,11 @@ import {
 import type { ApiDocsService } from '../openapi/service.js';
 import type { CliService } from './service.js';
 import { renderCliReference } from './reference.js';
-import { cliRoute, type CliManifest } from './types.js';
+import {
+  CLI_CAPABILITIES_HEADER,
+  cliRoute,
+  type CliManifest,
+} from './types.js';
 
 const Identity = z.enum(['person', 'run']);
 
@@ -97,6 +101,16 @@ const CliCommandSchema = z
         'The request path, the base path included, with `{name}` placeholders.',
     }),
     parameters: z.array(CliParameterSchema),
+    idempotency: z
+      .object({
+        header: z.string(),
+        flag: z.literal('operation-key'),
+        minLength: z.number().int(),
+        maxLength: z.number().int().optional(),
+        format: z.literal('uuid').optional(),
+      })
+      .optional(),
+    requiredCapabilities: z.array(z.string()).optional(),
     readBinding: z
       .object({
         path: z.string(),
@@ -126,6 +140,7 @@ const CliCommandSchema = z
 const CliManifestSchema: z.ZodType<CliManifest> = z
   .object({
     version: z.number().int(),
+    capabilities: z.array(z.string()).optional(),
     etag: z.string(),
     identity: z.object({
       settings: z.array(z.string()).optional().meta({
@@ -214,7 +229,13 @@ export function createCliRouter(cli: CliService, docs: ApiDocsService): Hono {
         domain: appErrorDomain,
         message: 'Sign in, or present an API key or a run token.',
       });
-    return cli.manifestFor(await docs.getDocument(), caller);
+    return cli.manifestFor(
+      await docs.getDocument(),
+      caller,
+      (context.req.header(CLI_CAPABILITIES_HEADER) ?? '')
+        .split(',')
+        .map((value) => value.trim()),
+    );
   };
   router.get(
     '/cli/manifest',
@@ -246,6 +267,7 @@ export function createCliRouter(cli: CliService, docs: ApiDocsService): Hono {
       const manifest = await manifestOf(context);
       context.header('etag', `"${manifest.etag}"`);
       context.header('cache-control', 'private, no-cache');
+      context.header('vary', CLI_CAPABILITIES_HEADER);
       const asked = context.req.header('if-none-match');
       if (
         asked &&
@@ -284,6 +306,7 @@ export function createCliRouter(cli: CliService, docs: ApiDocsService): Hono {
       if (!cli.hasCallers()) return apiNotFoundHandler(context);
       const manifest = await manifestOf(context);
       context.header('cache-control', 'private, no-cache');
+      context.header('vary', CLI_CAPABILITIES_HEADER);
       return context.text(renderCliReference(manifest, cli.described()));
     },
   );

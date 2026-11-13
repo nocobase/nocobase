@@ -6,6 +6,7 @@ import type { ApiDocument } from '../openapi/document.js';
 import type { RepositoryApiAction } from '../repository-routes.js';
 import {
   CLI_EXTENSION,
+  CLI_IDEMPOTENCY_CAPABILITY,
   CLI_MANIFEST_VERSION,
   type CliCaller,
   type CliCommand,
@@ -17,6 +18,12 @@ import {
   type CliRouteOptions,
   type CliWithheldCommand,
 } from './types.js';
+
+import {
+  deriveCliIdempotency,
+  validateCliIdempotencyCommand,
+  rejectBodyIdempotency,
+} from './idempotency.js';
 
 type Schema = OpenAPIV3_1.SchemaObject;
 type SchemaOrRef = OpenAPIV3_1.SchemaObject | OpenAPIV3_1.ReferenceObject;
@@ -32,6 +39,7 @@ export interface DeriveCliCommandsOptions {
   readonly identitySchemes?: Readonly<Record<string, CliIdentity>>;
   /** Operations left out, as if their `x-cli` were `false`. */
   readonly exclude?: readonly CliExclusion[];
+  readonly capabilities?: readonly string[];
 }
 
 function excluded(
@@ -369,15 +377,18 @@ function deriveOne(
 
   const flagHints = options.flags ?? {};
   const inputs: Omit<CliParameter, 'name' | 'position'>[] = [];
-  const parameters = (operation.parameters ?? [])
+  const allParameters = (operation.parameters ?? [])
     .map((parameter) =>
       resolve<OpenAPIV3_1.ParameterObject>(document, parameter),
     )
     .filter(
       (parameter): parameter is OpenAPIV3_1.ParameterObject =>
-        parameter !== undefined &&
-        (parameter.in === 'path' || parameter.in === 'query'),
+        parameter !== undefined,
     );
+  const idempotency = deriveCliIdempotency(document, method, allParameters);
+  const parameters = allParameters.filter(
+    (parameter) => parameter.in === 'path' || parameter.in === 'query',
+  );
   for (const parameter of parameters) {
     const shape = shapeOf(document, parameter.schema);
     const schema = resolve<Schema>(document, parameter.schema);
@@ -403,6 +414,7 @@ function deriveOne(
     document,
     operation.requestBody,
   );
+  rejectBodyIdempotency(document, requestBody);
   const binding = options.readBinding;
   const readOperation = binding ? operations.get(binding.operation) : undefined;
   if (
@@ -578,6 +590,9 @@ function deriveOne(
     method: method.toUpperCase() as CliCommand['method'],
     path: `${basePathOf(document)}${path}`,
     parameters: result,
+    ...(idempotency
+      ? { idempotency, requiredCapabilities: [CLI_IDEMPOTENCY_CAPABILITY] }
+      : {}),
     ...(readBinding ? { readBinding } : {}),
     ...(body ? { body } : {}),
     output: {
@@ -591,6 +606,7 @@ function deriveOne(
       : identitiesOf(document, operation, schemes),
     ...(options.action ? { action: options.action } : {}),
   };
+  validateCliIdempotencyCommand(command);
   return {
     command,
     explicit: Boolean(explicit?.length),
@@ -625,7 +641,32 @@ export function deriveAllCliCommands(
         document,
         path,
         method,
-        operation,
+        {
+          ...operation,
+          parameters: [
+            ...(item?.parameters ?? []).filter((parameter) => {
+              const inherited = resolve<OpenAPIV3_1.ParameterObject>(
+                document,
+                parameter,
+              );
+              return !(operation.parameters ?? []).some((value) => {
+                const own = resolve<OpenAPIV3_1.ParameterObject>(
+                  document,
+                  value,
+                );
+                return (
+                  (own?.in === 'header'
+                    ? own.name.toLowerCase()
+                    : own?.name) ===
+                    (inherited?.in === 'header'
+                      ? inherited.name.toLowerCase()
+                      : inherited?.name) && own?.in === inherited?.in
+                );
+              });
+            }),
+            ...(operation.parameters ?? []),
+          ],
+        },
         schemes,
         operations,
         collections,
@@ -678,7 +719,11 @@ function withheldReason(
 export function cliManifestOf(
   commands: readonly CliCommand[],
   caller: CliCaller,
+  capabilities: readonly string[] = [],
 ): CliManifest {
+  const supported = capabilities.includes(CLI_IDEMPOTENCY_CAPABILITY)
+    ? [CLI_IDEMPOTENCY_CAPABILITY]
+    : [];
   const identity = {
     ...(caller.settings === undefined
       ? {}
@@ -692,6 +737,12 @@ export function cliManifestOf(
   const offered: CliCommand[] = [];
   const withheld: CliWithheldCommand[] = [];
   for (const command of commands) {
+    if (
+      command.requiredCapabilities?.some(
+        (capability) => !supported.includes(capability),
+      )
+    )
+      continue;
     const reason = withheldReason(command, caller);
     if (reason === undefined) offered.push(command);
     else
@@ -704,11 +755,19 @@ export function cliManifestOf(
       });
   }
   const etag = createHash('sha256')
-    .update(JSON.stringify({ identity, commands: offered, withheld }))
+    .update(
+      JSON.stringify({
+        identity,
+        commands: offered,
+        withheld,
+        capabilities: supported,
+      }),
+    )
     .digest('hex')
     .slice(0, 32);
   return {
     version: CLI_MANIFEST_VERSION,
+    ...(supported.length ? { capabilities: supported } : {}),
     etag,
     identity,
     commands: offered,
@@ -722,5 +781,9 @@ export function deriveCliCommands(
   caller: CliCaller,
   options: DeriveCliCommandsOptions = {},
 ): CliManifest {
-  return cliManifestOf(deriveAllCliCommands(document, options), caller);
+  return cliManifestOf(
+    deriveAllCliCommands(document, options),
+    caller,
+    options.capabilities,
+  );
 }
