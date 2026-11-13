@@ -1,6 +1,10 @@
 import { createServer, type ServerResponse } from 'node:http';
 import { inspect } from 'node:util';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { simulateReadableStream } from 'ai';
+import { MockLanguageModelV4 } from 'ai/test';
+import * as providers from '../server/online/providers.js';
+import { fixtureModel } from './helpers/native-files.js';
 import { Authorization } from '@nocobase/authorization/core';
 import { ModelError, createModelGateway } from '../server/online/gateway.js';
 import { publicSearchResult } from '../shared/web-search-results.js';
@@ -115,7 +119,12 @@ describe('DeepSeek official retrieval over loopback HTTP', () => {
     }));
   };
 
-  it.each([undefined, 'https://api.deepseek.com/'])(
+  it.each([
+    undefined,
+    'https://api.deepseek.com/',
+    'https://api.deepseek.com/v1',
+    'https://api.deepseek.com/v1/',
+  ])(
     'reuses the encrypted service credentials and configured official base %s',
     async (baseUrl) => {
       if (baseUrl)
@@ -126,7 +135,13 @@ describe('DeepSeek official retrieval over loopback HTTP', () => {
         sources: [page],
         findings: expect.stringContaining(page.summary),
       });
-      expect(publicSearchResult(result)).toEqual(result);
+      expect(publicSearchResult(result).results[0]).toMatchObject({
+        status: 'success',
+        sources: [{ title: page.title, url: page.url }],
+      });
+      expect(JSON.stringify(publicSearchResult(result))).not.toContain(
+        '"content"',
+      );
       expect(requests).toEqual([
         {
           path: '/v1/tools/search',
@@ -134,11 +149,27 @@ describe('DeepSeek official retrieval over loopback HTTP', () => {
           authorization: `Bearer ${KEY}`,
         },
       ]);
+      answer = (response) =>
+        json(response, { title: page.title, content: page.content });
+      expect(await fetchPage()).toEqual({
+        url: page.url,
+        title: page.title,
+        content: page.content,
+      });
+      expect(requests[1]?.path).toBe('/v1/tools/fetch');
       expect(await usage()).toMatchObject([
         {
           purpose: 'search',
           source: 'customer.research',
           model: 'tools/search',
+          inputTokens: 0,
+          outputTokens: 0,
+          units: 1,
+        },
+        {
+          purpose: 'fetch',
+          source: 'customer.research',
+          model: 'tools/fetch',
           inputTokens: 0,
           outputTokens: 0,
           units: 1,
@@ -188,20 +219,122 @@ describe('DeepSeek official retrieval over loopback HTTP', () => {
     ]);
   });
 
-  it('admits DeepSeek in the existing Native OnlineAgent search composition', async () => {
+  it('keeps page bodies for business callers while Native model input, stream and reloaded cards stay bounded', async () => {
+    const body = 'private-page-body:' + 'x'.repeat(100_000);
+    answer = (response) =>
+      json(response, { results: [{ ...page, content: body }] });
+    const business = await search();
+    expect(business.results[0]).toMatchObject({
+      status: 'success',
+      sources: [{ content: expect.stringContaining('private-page-body:') }],
+    });
+    const projected = publicSearchResult(business);
+    expect(projected.results[0]).toMatchObject({
+      status: 'success',
+      sources: [{ title: page.title, url: page.url }],
+    });
+    expect(JSON.stringify(projected)).not.toContain('"content"');
+    expect(JSON.stringify(projected)).not.toContain('"summary"');
+    expect(JSON.stringify(projected)).not.toContain('"snippet"');
+
     const authorization = new Authorization({ plugins: [] }).for({
       principal: { type: 'user', id: 'alice' },
     });
     const actor = { user: { id: 'alice' }, authorization, credentials: {} };
+    const queries = ['Current facts', '😀'.repeat(129)];
+    const modelUsage = {
+      inputTokens: { total: 1, noCache: 1, cacheRead: 0, cacheWrite: 0 },
+      outputTokens: { total: 1, text: 1, reasoning: 0 },
+    };
+    let step = 0;
+    const main = new MockLanguageModelV4({
+      doStream: async ({ prompt }) => {
+        if (step++ === 0)
+          return {
+            stream: simulateReadableStream({
+              chunks: [
+                {
+                  type: 'tool-call',
+                  toolCallId: 'deepseek-search',
+                  toolName: 'webSearch',
+                  input: JSON.stringify({ queries }),
+                },
+                {
+                  type: 'finish',
+                  usage: modelUsage,
+                  finishReason: { unified: 'tool-calls', raw: 'tool_calls' },
+                },
+              ],
+            }),
+          };
+        const input = JSON.stringify(prompt);
+        expect(input).not.toContain('private-page-body:');
+        expect(input).toContain(page.summary);
+        expect(input).toContain('badResponse');
+        expect(input.length).toBeLessThan(20_000);
+        return {
+          stream: simulateReadableStream({
+            chunks: [
+              { type: 'text-start', id: 'reply' },
+              { type: 'text-delta', id: 'reply', delta: 'Grounded answer' },
+              { type: 'text-end', id: 'reply' },
+              {
+                type: 'finish',
+                usage: modelUsage,
+                finishReason: { unified: 'stop', raw: 'stop' },
+              },
+            ],
+          }),
+        };
+      },
+    });
+    vi.spyOn(providers, 'languageModel').mockImplementation(() =>
+      fixtureModel(main),
+    );
     const agent = await h.services.onlineAgent.realtime(actor, {
       selectedModel: model,
       webSearch: true,
     });
-    expect(
-      (await h.services.onlineAgent.configuration(actor, agent.sessionId))
-        .webSearch,
-    ).toBe(true);
-    expect((await search()).results[0]?.status).toBe('success');
+    await agent.send([{ role: 'user', content: 'Find current facts.' }]);
+    const stream = await agent.receive();
+    const chunks: unknown[] = [];
+    if (stream) {
+      const reader = stream.getReader();
+      while (true) {
+        const item = await reader.read();
+        if (item.done) break;
+        chunks.push(item.value);
+      }
+    }
+    await vi.waitFor(async () => expect(await agent.status()).toBe('idle'));
+    expect(main.doStreamCalls).toHaveLength(2);
+    expect(JSON.stringify(chunks)).not.toContain('private-page-body:');
+    const restored = await h.services.onlineAgent.realtime(actor, {
+      sessionId: agent.sessionId,
+    });
+    const history = await restored.history();
+    const cards = history
+      .flatMap((message) => message.parts)
+      .filter((part) => part.type === 'tool-webSearch');
+    expect(cards).toHaveLength(1);
+    expect(cards[0]).toMatchObject({
+      output: {
+        results: [
+          {
+            status: 'success',
+            sources: [{ title: page.title, url: page.url }],
+          },
+          { status: 'failed', reason: 'unavailable', code: 'badResponse' },
+        ],
+      },
+    });
+    expect(JSON.stringify(history)).not.toContain('private-page-body:');
+    expect(JSON.stringify(history).length).toBeLessThan(20_000);
+    expect(requests).toHaveLength(2);
+    expect(await usage()).toMatchObject([
+      { purpose: 'search', source: 'customer.research' },
+      { purpose: 'search', source: 'agents.webSearch' },
+    ]);
   });
 
   it('counts empty results as an attempt without inventing evidence', async () => {
@@ -288,9 +421,50 @@ describe('DeepSeek official retrieval over loopback HTTP', () => {
     });
   });
 
-  it('rejects invalid input, missing credentials and unsupported endpoints before any attempt', async () => {
-    await expect(search(['😀'.repeat(129)])).rejects.toMatchObject({
+  it('isolates oversized Unicode queries and records only the valid requests', async () => {
+    const queries = [
+      'Valid before',
+      '😀'.repeat(129),
+      '😀'.repeat(128),
+      'Valid after',
+    ];
+    const result = await search(queries);
+    expect(result.results.map((item) => item.status)).toEqual([
+      'success',
+      'failed',
+      'success',
+      'success',
+    ]);
+    expect(result.results[1]).toEqual({
+      query: queries[1],
+      status: 'failed',
+      reason: 'unavailable',
       code: 'badResponse',
+    });
+    expect(publicSearchResult(result).results[1]).toEqual(result.results[1]);
+    expect(requests.map((request) => request.body)).toEqual(
+      expect.arrayContaining(
+        [queries[0], queries[2], queries[3]].map((query) => ({
+          query,
+          count: 10,
+          need_content: true,
+        })),
+      ),
+    );
+    expect(requests).toHaveLength(3);
+    expect(await usage()).toHaveLength(3);
+  });
+
+  it('rejects invalid input, missing credentials and unsupported endpoints before any attempt', async () => {
+    expect(await search(['😀'.repeat(129)])).toEqual({
+      results: [
+        {
+          query: '😀'.repeat(129),
+          status: 'failed',
+          reason: 'unavailable',
+          code: 'badResponse',
+        },
+      ],
     });
     for (const url of [
       'file:///etc/passwd',

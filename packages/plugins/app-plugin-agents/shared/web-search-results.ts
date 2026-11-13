@@ -120,9 +120,6 @@ const ResultSchema = z.object({
             z.object({
               title: z.string(),
               url: z.string(),
-              snippet: z.string().optional(),
-              summary: z.string().optional(),
-              content: z.string().optional(),
             }),
           ),
         }),
@@ -136,13 +133,14 @@ const ResultSchema = z.object({
           query: z.string(),
           status: z.literal('failed'),
           reason: z.enum(['timeout', 'unavailable', 'noEvidence']),
+          code: z.literal('badResponse').optional(),
         }),
       ]),
     )
     .max(WEB_SEARCH_LIMITS.queriesPerCall),
 });
 
-/** Public/history/model projections reconstruct only known safe evidence, never the raw provider body. */
+/** Agent/history/card projections retain only bounded findings and links, never page bodies or duplicate summaries. */
 export function publicSearchResult(value: unknown): WebSearchResult {
   const parsed = ResultSchema.parse(value);
   return {
@@ -163,6 +161,7 @@ export function publicSearchResult(value: unknown): WebSearchResult {
               query: limited(item.query, WEB_SEARCH_LIMITS.queryCharacters),
               status: item.status,
               reason: item.reason,
+              ...(item.code ? { code: item.code } : {}),
             },
     ),
   };

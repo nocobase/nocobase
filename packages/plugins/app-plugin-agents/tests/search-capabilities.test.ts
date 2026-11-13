@@ -132,3 +132,31 @@ it('accepts documented Alibaba regional endpoints but not lookalikes, proxies or
     ).toBe(false);
   }
 });
+
+it('admits only the documented DeepSeek endpoint aliases', () => {
+  for (const baseUrl of [
+    'https://api.deepseek.com',
+    'https://api.deepseek.com/',
+    'https://api.deepseek.com/v1',
+    'https://api.deepseek.com/v1/',
+  ])
+    expect(
+      resolveModelCapabilities(
+        { provider: 'deepseek', baseUrl },
+        'deepseek-chat',
+      ),
+    ).toEqual({ webSearch: true });
+  for (const suffix of [
+    '/v1/proxy',
+    '/v2',
+    '/v1?key=secret',
+    '/v1#fragment',
+    ':8443/v1',
+  ])
+    expect(
+      resolveModelCapabilities(
+        { provider: 'deepseek', baseUrl: `https://api.deepseek.com${suffix}` },
+        'deepseek-chat',
+      ),
+    ).toEqual({ webSearch: false });
+});

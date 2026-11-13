@@ -45,7 +45,6 @@ it.each([
 it.each([
   'https://gateway.example.invalid/v1',
   'http://api.deepseek.com',
-  'https://api.deepseek.com/v1',
   'https://api.deepseek.com:8443',
   'https://api.deepseek.com.attacker.invalid',
   'https://user@api.deepseek.com',
@@ -57,6 +56,15 @@ it.each([
     { webSearch: false },
   );
 });
+
+it.each(['https://api.deepseek.com/v1', 'https://api.deepseek.com/v1/'])(
+  'admits retrieval at %s without expanding image admission',
+  (baseUrl) => {
+    expect(
+      resolveModelCapabilities({ ...connection, baseUrl }, modelId),
+    ).toEqual({ webSearch: true });
+  },
+);
 
 it.each(['embedding', 'rerank'] as const)(
   'does not grant image inputs to %s models',

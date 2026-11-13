@@ -42,7 +42,7 @@ async function request(
   if (connection.provider !== 'deepseek' || !officialSearchEndpoint(connection))
     throw new ModelError(
       'config',
-      'DeepSeek retrieval requires its official root endpoint.',
+      'DeepSeek retrieval requires its official root or /v1 endpoint.',
     );
   if (!connection.apiKey)
     throw new ModelError('auth', 'The service has no API key.');
@@ -50,7 +50,7 @@ async function request(
   try {
     try {
       const response = await modelFetch(
-        `${(baseUrlOf(connection) || 'https://api.deepseek.com').replace(/\/+$/u, '')}/v1/tools/${operation}`,
+        `${new URL(baseUrlOf(connection) || 'https://api.deepseek.com').origin}/v1/tools/${operation}`,
         {
           method: 'POST',
           headers: {
@@ -138,10 +138,12 @@ export async function deepseekSearch(
   callerSignal?: AbortSignal,
 ): Promise<WebSearchItem> {
   if ([...query].length > 128)
-    throw new ModelError(
-      'badResponse',
-      'DeepSeek search queries must contain at most 128 Unicode characters.',
-    );
+    return {
+      query,
+      status: 'failed',
+      reason: 'unavailable',
+      code: 'badResponse',
+    };
   const parsed = SearchSchema.safeParse(
     await request(
       connection,

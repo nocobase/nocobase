@@ -51,5 +51,7 @@ export type WebSearchItem =
       query: string;
       status: 'failed';
       reason: 'timeout' | 'unavailable' | 'noEvidence';
+      /** Local per-query rejection; upstream failures still throw ModelError. */
+      code?: 'badResponse';
     };
 export type WebSearchResult = { results: WebSearchItem[] };

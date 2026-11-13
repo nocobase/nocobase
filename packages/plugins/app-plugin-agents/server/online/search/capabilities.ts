@@ -86,8 +86,10 @@ export function officialSearchEndpoint(
     const expected = new URL(official);
     return (
       url.origin === expected.origin &&
-      url.pathname.replace(/\/+$/u, '') ===
-        expected.pathname.replace(/\/+$/u, '') &&
+      (url.pathname.replace(/\/+$/u, '') ===
+        expected.pathname.replace(/\/+$/u, '') ||
+        (connection.provider === 'deepseek' &&
+          url.pathname.replace(/\/+$/u, '') === '/v1')) &&
       !url.username &&
       !url.password &&
       !url.search &&
@@ -107,7 +109,15 @@ export function resolveModelCapabilities(
   if (kind !== 'chat' || !definition || !officialSearchEndpoint(connection)) {
     return { webSearch: false };
   }
-  return mergeModelCapabilities(definition, model);
+  const capabilities = mergeModelCapabilities(definition, model);
+  // Search's documented /v1 alias does not expand separately verified image admission.
+  if (
+    connection.provider === 'deepseek' &&
+    connection.baseUrl &&
+    new URL(connection.baseUrl).pathname.replace(/\/+$/u, '') === '/v1'
+  )
+    return { webSearch: capabilities.webSearch };
+  return capabilities;
 }
 
 export function supportsOpenAISearch(
