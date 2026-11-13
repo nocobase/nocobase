@@ -383,7 +383,6 @@ const idID: LocaleResource<typeof enUS> = {
       calls: 'Panggilan',
       units: 'Barang',
       purposes: {
-        search: 'Pencarian web',
         embedding: 'Penyematan',
         rerank: 'Pemeringkatan ulang',
         text: 'Teks utilitas',

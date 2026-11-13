@@ -389,10 +389,9 @@ export interface RunDay {
 export const MODEL_USAGE_ROUTE = 'agents/usage/models';
 
 /** What a model call outside any run was for. */
-export type ModelUsagePurpose = 'embedding' | 'rerank' | 'text' | 'search';
+export type ModelUsagePurpose = 'embedding' | 'rerank' | 'text';
 
 export const MODEL_USAGE_PURPOSES: readonly ModelUsagePurpose[] = [
-  'search',
   'embedding',
   'rerank',
   'text',

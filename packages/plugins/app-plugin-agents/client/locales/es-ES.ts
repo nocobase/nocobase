@@ -398,7 +398,6 @@ const esES: LocaleResource<typeof enUS> = {
       calls: 'Llamadas',
       units: 'Artículos',
       purposes: {
-        search: 'Búsqueda web',
         embedding: 'Incrustaciones',
         rerank: 'Reclasificación',
         text: 'Texto de utilidad',

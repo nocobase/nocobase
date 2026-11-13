@@ -401,7 +401,6 @@ const frFR: LocaleResource<typeof enUS> = {
       calls: 'Appels',
       units: 'Objets',
       purposes: {
-        search: 'Recherche web',
         embedding: 'Intégrations',
         rerank: 'Reclassement',
         text: 'Texte utilitaire',

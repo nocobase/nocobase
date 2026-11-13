@@ -394,7 +394,6 @@ const deDE: LocaleResource<typeof enUS> = {
       calls: 'Anrufe',
       units: 'Artikel',
       purposes: {
-        search: 'Websuche',
         embedding: 'Einbettungen',
         rerank: 'Neue Rangfolge',
         text: 'Utility-Text',

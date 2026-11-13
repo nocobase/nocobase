@@ -31,9 +31,6 @@ export const WebSearchInputSchema: z.ZodType<WebSearchInput> = z.strictObject({
 export function safeSearchSource(value: {
   title?: string;
   url: string;
-  snippet?: string;
-  summary?: string;
-  content?: string;
 }): WebSearchSource | null {
   if (characters(value.url) > WEB_SEARCH_LIMITS.urlCharacters) return null;
   try {
@@ -51,20 +48,6 @@ export function safeSearchSource(value: {
         WEB_SEARCH_LIMITS.titleCharacters,
       ),
       url: url.href,
-      ...(value.snippet === undefined
-        ? {}
-        : { snippet: limited(value.snippet, 1000) }),
-      ...(value.summary === undefined
-        ? {}
-        : {
-            summary: limited(
-              value.summary,
-              WEB_SEARCH_LIMITS.findingsCharacters,
-            ),
-          }),
-      ...(value.content === undefined
-        ? {}
-        : { content: limited(value.content, 100_000) }),
     };
   } catch {
     return null;
@@ -74,7 +57,7 @@ export function safeSearchSource(value: {
 export function searchItem(
   query: string,
   text: string,
-  sources: readonly (Omit<WebSearchSource, 'title'> & { title?: string })[],
+  sources: readonly { title?: string; url: string }[],
   executed: boolean,
 ): WebSearchItem {
   const safe: WebSearchSource[] = [];
@@ -116,12 +99,7 @@ const ResultSchema = z.object({
           query: z.string(),
           status: z.literal('success'),
           findings: z.string(),
-          sources: z.array(
-            z.object({
-              title: z.string(),
-              url: z.string(),
-            }),
-          ),
+          sources: z.array(z.object({ title: z.string(), url: z.string() })),
         }),
         z.object({
           query: z.string(),
@@ -133,14 +111,13 @@ const ResultSchema = z.object({
           query: z.string(),
           status: z.literal('failed'),
           reason: z.enum(['timeout', 'unavailable', 'noEvidence']),
-          code: z.literal('badResponse').optional(),
         }),
       ]),
     )
     .max(WEB_SEARCH_LIMITS.queriesPerCall),
 });
 
-/** Agent/history/card projections retain only bounded findings and links, never page bodies or duplicate summaries. */
+/** Public/history/model projections reconstruct only known safe evidence, never the raw provider body. */
 export function publicSearchResult(value: unknown): WebSearchResult {
   const parsed = ResultSchema.parse(value);
   return {
@@ -161,7 +138,6 @@ export function publicSearchResult(value: unknown): WebSearchResult {
               query: limited(item.query, WEB_SEARCH_LIMITS.queryCharacters),
               status: item.status,
               reason: item.reason,
-              ...(item.code ? { code: item.code } : {}),
             },
     ),
   };

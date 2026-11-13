@@ -53,7 +53,6 @@ export type {
   EmbedRequest,
   EmbedResult,
   GenerateRequest,
-  WebSearchRequest,
   ModelEndpoint,
   RerankRequest,
   RerankResult,

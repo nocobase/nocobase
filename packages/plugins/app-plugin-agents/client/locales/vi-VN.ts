@@ -383,7 +383,6 @@ const viVN: LocaleResource<typeof enUS> = {
       calls: 'Cuộc gọi',
       units: 'Vật phẩm',
       purposes: {
-        search: 'Tìm kiếm web',
         embedding: 'Nhúng',
         rerank: 'Sắp xếp lại',
         text: 'Văn bản tiện ích',

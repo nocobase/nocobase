@@ -103,7 +103,6 @@ import {
   type ProviderModels,
 } from '../../shared/models.js';
 import {
-  MODEL_USAGE_PURPOSES,
   USAGE_GROUP_BYS,
   type ModelUsageReport,
   type PricesAnswer,
@@ -1479,7 +1478,7 @@ export const ModelUsageReportSchema: z.ZodType<ModelUsageReport> = z.object({
   to: z.string().meta({ format: 'date' }),
   rows: z.array(
     z.object({
-      purpose: z.enum(MODEL_USAGE_PURPOSES),
+      purpose: z.enum(['embedding', 'rerank', 'text']),
       source: z.string(),
       modelService: z.string(),
       model: z.string(),

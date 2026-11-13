@@ -26,14 +26,7 @@ export const WEB_SEARCH_LIMITS: Readonly<{
 };
 
 export type WebSearchInput = { queries: string[] };
-export type WebSearchSource = {
-  title: string;
-  url: string;
-  /** Provider-returned evidence, never model-authored text. */
-  snippet?: string;
-  summary?: string;
-  content?: string;
-};
+export type WebSearchSource = { title: string; url: string };
 export type WebSearchItem =
   | {
       query: string;
@@ -51,7 +44,5 @@ export type WebSearchItem =
       query: string;
       status: 'failed';
       reason: 'timeout' | 'unavailable' | 'noEvidence';
-      /** Local per-query rejection; upstream failures still throw ModelError. */
-      code?: 'badResponse';
     };
 export type WebSearchResult = { results: WebSearchItem[] };

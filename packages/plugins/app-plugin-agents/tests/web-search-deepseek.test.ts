@@ -1,14 +1,16 @@
 import { createServer, type ServerResponse } from 'node:http';
 import { inspect } from 'node:util';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { ZodError } from 'zod';
+import { Authorization } from '@nocobase/authorization/core';
 import { simulateReadableStream } from 'ai';
 import { MockLanguageModelV4 } from 'ai/test';
 import * as providers from '../server/online/providers.js';
-import { fixtureModel } from './helpers/native-files.js';
-import { Authorization } from '@nocobase/authorization/core';
-import { ModelError, createModelGateway } from '../server/online/gateway.js';
+import { classify, ModelError } from '../server/online/gateway.js';
+import { deepseekSearch } from '../server/online/search/deepseek.js';
 import { publicSearchResult } from '../shared/web-search-results.js';
 import { WEB_SEARCH_LIMITS } from '../shared/web-search.js';
+import { fixtureModel } from './helpers/native-files.js';
 import { createHarness, type Harness } from './harness.js';
 
 const KEY = 'offline-deepseek-sentinel';
@@ -18,10 +20,11 @@ const page = {
   url: 'https://example.com/page',
   snippet: 'Short excerpt',
   summary: 'Long summary',
-  content: '# Page body',
+  content: '',
 };
+const source = { title: page.title, url: page.url };
 
-describe('DeepSeek official retrieval over loopback HTTP', () => {
+describe('DeepSeek Search in the existing Native retrieval contract', () => {
   const realFetch = globalThis.fetch;
   let h: Harness;
   let requests: {
@@ -29,7 +32,7 @@ describe('DeepSeek official retrieval over loopback HTTP', () => {
     body: unknown;
     authorization: string | undefined;
   }[];
-  let answer: (response: ServerResponse) => void;
+  let answer: (response: ServerResponse, query: string) => void;
   let close: () => Promise<void>;
   const json = (response: ServerResponse, value: unknown, status = 200) => {
     response.writeHead(status, { 'content-type': 'application/json' });
@@ -41,12 +44,15 @@ describe('DeepSeek official retrieval over loopback HTTP', () => {
     const server = createServer(async (request, response) => {
       const chunks: Buffer[] = [];
       for await (const chunk of request) chunks.push(Buffer.from(chunk));
+      const body = JSON.parse(Buffer.concat(chunks).toString()) as {
+        query: string;
+      };
       requests.push({
         path: request.url ?? '',
-        body: JSON.parse(Buffer.concat(chunks).toString()),
+        body,
         authorization: request.headers.authorization,
       });
-      answer(response);
+      answer(response, body.query);
     });
     await new Promise<void>((resolve) =>
       server.listen(0, '127.0.0.1', resolve),
@@ -65,11 +71,11 @@ describe('DeepSeek official retrieval over loopback HTTP', () => {
       'fetch',
       (input: string | URL | Request, init?: RequestInit) => {
         const url = new URL(input instanceof Request ? input.url : input);
-        if (url.origin !== 'https://api.deepseek.com')
-          throw new Error('Unexpected outbound provider origin.');
-        if (url.pathname.startsWith('/v1/tools/'))
-          if (init?.redirect !== 'error')
-            throw new Error('Retrieval must reject redirects.');
+        if (
+          url.origin !== 'https://api.deepseek.com' ||
+          init?.redirect !== 'error'
+        )
+          throw new Error('Unexpected outbound provider request.');
         return realFetch(`${origin}${url.pathname}`, init);
       },
     );
@@ -82,6 +88,7 @@ describe('DeepSeek official retrieval over loopback HTTP', () => {
     });
   });
   afterEach(async () => {
+    vi.useRealTimers();
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
     await h?.close();
@@ -94,23 +101,16 @@ describe('DeepSeek official retrieval over loopback HTTP', () => {
     h.services.models.gateway.search({
       model,
       queries,
-      sessionId: 'test-session',
-      source: 'customer.research',
+      sessionId: 'native-search',
+      source: 'agents.webSearch',
       signal,
     });
-  const usage = async () => {
-    const rows = await h.database
-      .connection()
-      .query.selectFrom('agModelUsage')
-      .selectAll()
-      .execute<Record<string, unknown>>();
-    return rows.map((row) => ({
-      ...row,
-      inputTokens: Number(row.inputTokens),
-      outputTokens: Number(row.outputTokens),
-      units: Number(row.units),
-    }));
-  };
+  const adapter = async () =>
+    deepseekSearch(
+      await h.services.models.services.connectionFor(model),
+      'Current facts',
+      new AbortController().signal,
+    );
 
   it.each([
     undefined,
@@ -118,102 +118,38 @@ describe('DeepSeek official retrieval over loopback HTTP', () => {
     'https://api.deepseek.com/v1',
     'https://api.deepseek.com/v1/',
   ])(
-    'reuses the encrypted service credentials and configured official base %s',
+    'reuses the existing encrypted service connection at %s',
     async (baseUrl) => {
       if (baseUrl)
         await h.services.models.services.update('deepseek', { baseUrl });
       const result = await search();
-      expect(result.results[0]).toMatchObject({
+      expect(result.results[0]).toEqual({
+        query: 'Current facts',
         status: 'success',
-        sources: [page],
-        findings: expect.stringContaining(page.summary),
+        sources: [source],
+        findings: `[1] ${page.title}\n${page.summary}`,
       });
-      expect(publicSearchResult(result).results[0]).toMatchObject({
-        status: 'success',
-        sources: [{ title: page.title, url: page.url }],
-      });
-      expect(JSON.stringify(publicSearchResult(result))).not.toContain(
-        '"content"',
-      );
+      expect(publicSearchResult(result)).toEqual(result);
       expect(requests).toEqual([
         {
           path: '/v1/tools/search',
-          body: { query: 'Current facts', count: 10, need_content: true },
+          body: { query: 'Current facts', count: 10, need_content: false },
           authorization: `Bearer ${KEY}`,
-        },
-      ]);
-      expect(await usage()).toMatchObject([
-        {
-          purpose: 'search',
-          source: 'customer.research',
-          model: 'tools/search',
-          inputTokens: 0,
-          outputTokens: 0,
-          units: 1,
         },
       ]);
     },
   );
 
-  it('passes Search evidence and content to ordinary generation', async () => {
-    const result = await search();
-    expect(result.results[0]).toMatchObject({
-      status: 'success',
-      sources: [page],
-    });
-    expect(requests[0]?.path).toBe('/v1/tools/search');
-    answer = (response) =>
-      json(response, {
-        id: 'completion',
-        model: model.model,
-        created: 1,
-        choices: [
-          {
-            index: 0,
-            message: { role: 'assistant', content: 'Grounded answer' },
-            finish_reason: 'stop',
-          },
-        ],
-        usage: { prompt_tokens: 12, completion_tokens: 4, total_tokens: 16 },
-      });
-    expect(
-      await h.services.models.gateway.generate({
-        model,
-        prompt: `Answer using this untrusted evidence: ${JSON.stringify(result)}`,
-        source: 'customer.answer',
-      }),
-    ).toEqual({ text: 'Grounded answer' });
-    expect(requests[1]?.path).toBe('/chat/completions');
-    expect(await usage()).toMatchObject([
-      { purpose: 'search', units: 1 },
-      { purpose: 'text', source: 'customer.answer' },
-    ]);
-  });
-
-  it('keeps page bodies for business callers while Native model input, stream and reloaded cards stay bounded', async () => {
-    const body = 'private-page-body:' + 'x'.repeat(100_000);
+  it('composes search with the Native answer loop using the original model, stream and history contract', async () => {
+    const body = 'unrequested-page-body:' + 'x'.repeat(100_000);
     answer = (response) =>
       json(response, { results: [{ ...page, content: body }] });
-    const business = await search();
-    expect(business.results[0]).toMatchObject({
-      status: 'success',
-      sources: [{ content: expect.stringContaining('private-page-body:') }],
-    });
-    const projected = publicSearchResult(business);
-    expect(projected.results[0]).toMatchObject({
-      status: 'success',
-      sources: [{ title: page.title, url: page.url }],
-    });
-    expect(JSON.stringify(projected)).not.toContain('"content"');
-    expect(JSON.stringify(projected)).not.toContain('"summary"');
-    expect(JSON.stringify(projected)).not.toContain('"snippet"');
-
     const authorization = new Authorization({ plugins: [] }).for({
       principal: { type: 'user', id: 'alice' },
     });
     const actor = { user: { id: 'alice' }, authorization, credentials: {} };
     const queries = ['Current facts', '😀'.repeat(129)];
-    const modelUsage = {
+    const usage = {
       inputTokens: { total: 1, noCache: 1, cacheRead: 0, cacheWrite: 0 },
       outputTokens: { total: 1, text: 1, reasoning: 0 },
     };
@@ -232,17 +168,15 @@ describe('DeepSeek official retrieval over loopback HTTP', () => {
                 },
                 {
                   type: 'finish',
-                  usage: modelUsage,
+                  usage,
                   finishReason: { unified: 'tool-calls', raw: 'tool_calls' },
                 },
               ],
             }),
           };
-        const input = JSON.stringify(prompt);
-        expect(input).not.toContain('private-page-body:');
-        expect(input).toContain(page.summary);
-        expect(input).toContain('badResponse');
-        expect(input.length).toBeLessThan(20_000);
+        expect(JSON.stringify(prompt)).toContain(page.summary);
+        expect(JSON.stringify(prompt)).toContain('unavailable');
+        expect(JSON.stringify(prompt)).not.toContain('unrequested-page-body:');
         return {
           stream: simulateReadableStream({
             chunks: [
@@ -251,7 +185,7 @@ describe('DeepSeek official retrieval over loopback HTTP', () => {
               { type: 'text-end', id: 'reply' },
               {
                 type: 'finish',
-                usage: modelUsage,
+                usage,
                 finishReason: { unified: 'stop', raw: 'stop' },
               },
             ],
@@ -267,8 +201,8 @@ describe('DeepSeek official retrieval over loopback HTTP', () => {
       webSearch: true,
     });
     await agent.send([{ role: 'user', content: 'Find current facts.' }]);
-    const stream = await agent.receive();
     const chunks: unknown[] = [];
+    const stream = await agent.receive();
     if (stream) {
       const reader = stream.getReader();
       while (true) {
@@ -279,7 +213,6 @@ describe('DeepSeek official retrieval over loopback HTTP', () => {
     }
     await vi.waitFor(async () => expect(await agent.status()).toBe('idle'));
     expect(main.doStreamCalls).toHaveLength(2);
-    expect(JSON.stringify(chunks)).not.toContain('private-page-body:');
     const restored = await h.services.onlineAgent.realtime(actor, {
       sessionId: agent.sessionId,
     });
@@ -292,33 +225,35 @@ describe('DeepSeek official retrieval over loopback HTTP', () => {
       output: {
         results: [
           {
+            query: queries[0],
             status: 'success',
-            sources: [{ title: page.title, url: page.url }],
+            findings: `[1] ${page.title}\n${page.summary}`,
+            sources: [source],
           },
-          { status: 'failed', reason: 'unavailable', code: 'badResponse' },
+          { query: queries[1], status: 'failed', reason: 'unavailable' },
         ],
       },
     });
-    expect(JSON.stringify(history)).not.toContain('private-page-body:');
-    expect(JSON.stringify(history).length).toBeLessThan(20_000);
-    expect(requests).toHaveLength(2);
-    expect(await usage()).toMatchObject([
-      { purpose: 'search', source: 'customer.research' },
-      { purpose: 'search', source: 'agents.webSearch' },
-    ]);
+    expect(JSON.stringify(chunks)).not.toContain('unrequested-page-body:');
+    expect(JSON.stringify(history)).not.toContain('unrequested-page-body:');
+    expect(requests).toHaveLength(1);
   });
 
-  it('counts empty results as an attempt without inventing evidence', async () => {
+  it('returns noEvidence for empty results and uses snippets when summaries are empty', async () => {
     answer = (response) => json(response, { results: [] });
     expect(await search()).toEqual({
       results: [
         { query: 'Current facts', status: 'failed', reason: 'noEvidence' },
       ],
     });
-    expect(await usage()).toHaveLength(1);
+    answer = (response) =>
+      json(response, { results: [{ ...page, summary: '' }] });
+    expect((await search()).results[0]).toMatchObject({
+      findings: `[1] ${page.title}\n${page.snippet}`,
+    });
   });
 
-  it('preserves every HTTP error category for search without leaking upstream messages or keys', async () => {
+  it('preserves adapter error categories in the common classifier and applies common gateway failure semantics', async () => {
     for (const [status, code] of [
       [400, 'badResponse'],
       [401, 'auth'],
@@ -333,57 +268,178 @@ describe('DeepSeek official retrieval over loopback HTTP', () => {
     ] as const) {
       answer = (response) =>
         json(response, { error: { message: KEY, code: KEY } }, status);
-      const error = await search().catch((error: unknown) => error);
+      const error = await adapter().catch((error: unknown) => error);
       expect(error).toBeInstanceOf(ModelError);
-      expect(error).toMatchObject({ code, status });
+      expect(classify(error)).toMatchObject({ code, status });
       expect(inspect(error, { depth: 10 })).not.toContain(KEY);
+      if (code === 'auth')
+        await expect(search()).rejects.toMatchObject({ code });
+      else
+        expect(await search()).toEqual({
+          results: [
+            { query: 'Current facts', status: 'failed', reason: 'unavailable' },
+          ],
+        });
     }
-    expect(requests).toHaveLength(10);
-    expect(await usage()).toHaveLength(10);
-    expect(JSON.stringify(await usage())).not.toContain(KEY);
+    expect(requests).toHaveLength(20);
   });
 
-  it('bounds and validates search responses and strips any echoed key', async () => {
-    answer = (response) =>
-      json(response, {
-        results: [{ ...page, title: KEY, summary: KEY, content: KEY }],
+  it('preserves successful siblings when one query is rate-limited', async () => {
+    answer = (response, query) =>
+      query === 'limited'
+        ? json(response, { error: { message: KEY } }, 429)
+        : json(response, { results: [page] });
+    const result = await search(['valid', 'limited', 'later']);
+    expect(result.results.map((item) => item.status)).toEqual([
+      'success',
+      'failed',
+      'success',
+    ]);
+    expect(result.results[1]).toEqual({
+      query: 'limited',
+      status: 'failed',
+      reason: 'unavailable',
+    });
+  });
+
+  it('returns a single timeout while retaining other successful queries', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    const transport = vi.fn((_input: unknown, init?: RequestInit) => {
+      const { query } = JSON.parse(String(init?.body)) as { query: string };
+      if (query !== 'hang')
+        return Promise.resolve(Response.json({ results: [page] }));
+      return new Promise<Response>((_resolve, reject) =>
+        init?.signal?.addEventListener(
+          'abort',
+          () => reject(init.signal?.reason),
+          { once: true },
+        ),
+      );
+    });
+    vi.stubGlobal('fetch', transport);
+    const pending = search(['hang', 'success', 'later']);
+    await vi.waitFor(() => expect(transport).toHaveBeenCalledTimes(3));
+    await vi.advanceTimersByTimeAsync(WEB_SEARCH_LIMITS.queryTimeoutMs);
+    const result = await pending;
+    expect(result.results.map((item) => item.status)).toEqual([
+      'failed',
+      'success',
+      'success',
+    ]);
+    expect(result.results[0]).toEqual({
+      query: 'hang',
+      status: 'failed',
+      reason: 'timeout',
+    });
+  });
+
+  it('cancels active HTTP requests with the caller reason and leaves queued queries unstarted', async () => {
+    let closed = 0;
+    answer = (response) => {
+      response.on('close', () => {
+        closed++;
       });
+    };
+    const controller = new AbortController();
+    const reason = new Error('Stop DeepSeek searches');
+    const pending = search(
+      ['first', 'second', 'third', 'fourth'],
+      controller.signal,
+    );
+    void pending.catch(() => {});
+    try {
+      await vi.waitFor(() => expect(requests).toHaveLength(2));
+      controller.abort(reason);
+      await expect(pending).rejects.toBe(reason);
+      await vi.waitFor(() => expect(closed).toBe(2));
+      expect(requests).toHaveLength(2);
+    } finally {
+      controller.abort();
+      await Promise.allSettled([pending]);
+    }
+  });
+
+  it('propagates an authentication failure through group cancellation without relabeling it as a timeout', async () => {
+    const responses = new Map<string, ServerResponse>();
+    let closed = false;
+    answer = (response, query) => {
+      responses.set(query, response);
+      if (query === 'hold')
+        response.on('close', () => {
+          closed = true;
+        });
+      if (responses.has('denied') && responses.has('hold'))
+        json(responses.get('denied')!, { error: { message: KEY } }, 401);
+    };
+    const reasons: unknown[] = [];
+    const transport = globalThis.fetch;
+    vi.stubGlobal(
+      'fetch',
+      (input: string | URL | Request, init?: RequestInit) => {
+        init?.signal?.addEventListener(
+          'abort',
+          () => reasons.push(init.signal?.reason),
+          { once: true },
+        );
+        return transport(input, init);
+      },
+    );
+    await expect(
+      search(['denied', 'hold', 'later', 'last']),
+    ).rejects.toMatchObject({ code: 'auth' });
+    await vi.waitFor(() => expect(closed).toBe(true));
+    expect(requests).toHaveLength(2);
+    expect(reasons.length).toBeGreaterThan(0);
+    for (const reason of reasons)
+      expect(reason).toMatchObject({ code: 'auth' });
+  });
+
+  it('bounds and validates responses without retaining unsafe text or echoed keys', async () => {
+    answer = (response) =>
+      json(response, { results: [{ ...page, title: KEY, summary: KEY }] });
     expect(JSON.stringify(await search())).not.toContain(KEY);
     for (const body of [
       'not JSON',
       JSON.stringify({ wrong: KEY }),
-      JSON.stringify({ content: 'x'.repeat(2 * 1024 * 1024) }),
+      JSON.stringify({ oversized: 'x'.repeat(2 * 1024 * 1024) }),
     ]) {
       answer = (response) => response.end(body);
-      await expect(search()).rejects.toMatchObject({ code: 'badResponse' });
+      const error = await adapter().catch((error: unknown) => error);
+      expect(classify(error).code).toBe('badResponse');
+      expect(inspect(error, { depth: 10 })).not.toContain(KEY);
+      expect(await search()).toEqual({
+        results: [
+          { query: 'Current facts', status: 'failed', reason: 'unavailable' },
+        ],
+      });
     }
-    expect(await usage()).toHaveLength(4);
   });
 
-  it('filters unsafe and duplicated result URLs while keeping provider evidence', async () => {
+  it('filters unsafe and duplicated sources and bounds findings', async () => {
     answer = (response) =>
       json(response, {
         results: [
           { ...page, url: 'javascript:alert(1)' },
           { ...page, url: 'https://user:password@example.com' },
           { ...page, url: `https://example.com/${KEY}` },
-          page,
+          { ...page, summary: '😀'.repeat(7000) },
           page,
         ],
       });
-    expect((await search()).results[0]).toMatchObject({
+    const result = await search();
+    expect(result.results[0]).toMatchObject({
       status: 'success',
-      sources: [page],
+      sources: [source],
     });
+    if (result.results[0]?.status !== 'success')
+      throw new Error('Expected evidence.');
+    expect([...result.results[0].findings]).toHaveLength(
+      WEB_SEARCH_LIMITS.findingsCharacters,
+    );
   });
 
-  it('isolates oversized Unicode queries and records only the valid requests', async () => {
-    const queries = [
-      'Valid before',
-      '😀'.repeat(129),
-      '😀'.repeat(128),
-      'Valid after',
-    ];
+  it('isolates the 128-code-point query limit without expanding result fields', async () => {
+    const queries = ['valid', '😀'.repeat(129), '😀'.repeat(128), 'later'];
     const result = await search(queries);
     expect(result.results.map((item) => item.status)).toEqual([
       'success',
@@ -395,33 +451,16 @@ describe('DeepSeek official retrieval over loopback HTTP', () => {
       query: queries[1],
       status: 'failed',
       reason: 'unavailable',
-      code: 'badResponse',
     });
-    expect(publicSearchResult(result).results[1]).toEqual(result.results[1]);
-    expect(requests.map((request) => request.body)).toEqual(
-      expect.arrayContaining(
-        [queries[0], queries[2], queries[3]].map((query) => ({
-          query,
-          count: 10,
-          need_content: true,
-        })),
-      ),
-    );
     expect(requests).toHaveLength(3);
-    expect(await usage()).toHaveLength(3);
   });
 
-  it('rejects invalid input, missing credentials and unsupported endpoints before any attempt', async () => {
-    expect(await search(['😀'.repeat(129)])).toEqual({
-      results: [
-        {
-          query: '😀'.repeat(129),
-          status: 'failed',
-          reason: 'unavailable',
-          code: 'badResponse',
-        },
-      ],
-    });
+  it('uses the original preflight exceptions for cancellation, invalid input and missing configuration', async () => {
+    const reason = new Error('Already stopped');
+    await expect(search(undefined, AbortSignal.abort(reason))).rejects.toBe(
+      reason,
+    );
+    await expect(search([])).rejects.toBeInstanceOf(ZodError);
     await h.services.models.services.update('deepseek', { apiKey: '' });
     await expect(search()).rejects.toMatchObject({ code: 'auth' });
     await h.services.models.services.update('deepseek', {
@@ -429,96 +468,20 @@ describe('DeepSeek official retrieval over loopback HTTP', () => {
       baseUrl: 'https://proxy.example/v1',
     });
     await expect(search()).rejects.toMatchObject({ code: 'config' });
-    await expect(
-      h.services.models.gateway.search({
-        model: { ...model, modelService: 'missing' },
-        queries: ['Current facts'],
-        sessionId: 'missing-service',
-        signal: new AbortController().signal,
-        source: 'test',
-      }),
-    ).rejects.toMatchObject({ code: 'config' });
     expect(requests).toHaveLength(0);
-    expect(await usage()).toHaveLength(0);
   });
 
-  it('records a network failure for search without retaining a secret cause', async () => {
+  it('classifies transport failures without retaining a secret cause', async () => {
     vi.stubGlobal('fetch', () => {
       throw new Error(KEY);
     });
-    const error = await search().catch((error: unknown) => error);
-    expect(error).toMatchObject({ code: 'network' });
+    const error = await adapter().catch((error: unknown) => error);
+    expect(classify(error).code).toBe('network');
     expect(inspect(error, { depth: 10 })).not.toContain(KEY);
-    expect(await usage()).toHaveLength(1);
-  });
-
-  it('settles search cancellation with one usage row per attempt', async () => {
-    const pending = new Promise<void>((resolve) => {
-      vi.stubGlobal('fetch', (_input: unknown, init?: RequestInit) => {
-        resolve();
-        return new Promise<Response>((_resolve, reject) =>
-          init?.signal?.addEventListener(
-            'abort',
-            () => reject(new Error(KEY)),
-            { once: true },
-          ),
-        );
-      });
+    expect(await search()).toEqual({
+      results: [
+        { query: 'Current facts', status: 'failed', reason: 'unavailable' },
+      ],
     });
-    const controller = new AbortController();
-    const result = search(undefined, controller.signal).catch(
-      (error: unknown) => error,
-    );
-    await pending;
-    controller.abort();
-    expect(await result).toMatchObject({ code: 'aborted' });
-    expect(await usage()).toHaveLength(1);
-  });
-
-  it('counts and classifies the local search deadline', async () => {
-    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
-    let started!: () => void;
-    const pending = new Promise<void>((resolve) => {
-      started = resolve;
-    });
-    vi.stubGlobal('fetch', (_input: unknown, init?: RequestInit) => {
-      started();
-      return new Promise<Response>((_resolve, reject) =>
-        init?.signal?.addEventListener('abort', () => reject(new Error(KEY)), {
-          once: true,
-        }),
-      );
-    });
-    try {
-      const result = search().catch((error: unknown) => error);
-      await pending;
-      await vi.advanceTimersByTimeAsync(WEB_SEARCH_LIMITS.queryTimeoutMs);
-      expect(await result).toMatchObject({ code: 'network' });
-      expect(await usage()).toHaveLength(1);
-    } finally {
-      vi.useRealTimers();
-    }
-  });
-
-  it('does not retry an upstream request when recording usage fails', async () => {
-    const log = vi.fn();
-    const gateway = createModelGateway(h.services.models.services, {
-      usage: {
-        record: async () => {
-          throw new Error('Storage unavailable');
-        },
-      },
-      onError: log,
-    });
-    await gateway.search({
-      model,
-      queries: ['facts'],
-      source: 'test',
-      sessionId: 'test',
-      signal: new AbortController().signal,
-    });
-    expect(requests).toHaveLength(1);
-    expect(log).toHaveBeenCalledOnce();
-    expect(inspect(log.mock.calls)).not.toContain(KEY);
   });
 });

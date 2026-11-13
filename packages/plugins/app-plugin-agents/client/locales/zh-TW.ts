@@ -370,7 +370,6 @@ const zhTW: LocaleResource<typeof enUS> = {
       calls: '通話',
       units: '物品',
       purposes: {
-        search: '網頁搜尋',
         embedding: '嵌入',
         rerank: '重新排名',
         text: '實用文本',

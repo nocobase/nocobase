@@ -381,7 +381,6 @@ const pages = {
       calls: 'Calls',
       units: 'Items',
       purposes: {
-        search: 'Web search',
         embedding: 'Embeddings',
         rerank: 'Reranking',
         text: 'Utility text',
