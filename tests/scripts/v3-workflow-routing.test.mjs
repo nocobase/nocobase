@@ -15,7 +15,7 @@ const workflow = (name) =>
 // and main, with the Pro registry token; tests/scripts/pro-release-workflow-policy.test.mjs covers them.
 const ossJobs = (source) =>
   source.replace(
-    /\n  (?:pro-candidate|pro-release):\n[\s\S]*?(?=\n  [a-z][\w-]*:\n|$)/gu,
+    /\n  (?:pro-check|pro-candidate|pro-release):\n[\s\S]*?(?=\n  [a-z][\w-]*:\n|$)/gu,
     '\n',
   );
 
