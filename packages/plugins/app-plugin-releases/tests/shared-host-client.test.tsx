@@ -424,18 +424,19 @@ describe('shared app host', () => {
       within((await screen.findAllByText(id))[0]!.closest('tr') as HTMLElement);
     // One state per App: a deployment in progress replaces the runtime's state rather than sitting beside it.
     expect((await row('deploying-app')).queryByText('Running')).toBeNull();
-    // A deployment refused for capacity waits for the recycle; the runtime's earlier failure is only its detail.
+    // A deployment back in the queue: the list does not know whether the host recycles, so it says queued; the
+    // runtime's earlier failure is only its detail.
     const recyclingRow = await row('recycling-app');
     expect(
       recyclingRow
-        .getByText('Waiting for the host to restart')
+        .getByText('Queued · 0 ahead')
         .closest('[title]')
         ?.getAttribute('title'),
     ).toBe(
-      'The app host is recycling memory; the deployment continues when it finishes.',
+      'Last failure: The app host does not have enough memory or a free slot, so the deployment did not finish. Try again later.',
     );
     expect(recyclingRow.queryByText('Failed')).toBeNull();
-    expect(recyclingRow.queryByText(/Deploying|Queued/)).toBeNull();
+    expect(recyclingRow.queryByText(/Deploying|restart/)).toBeNull();
     expect(document.body.textContent).not.toContain('9007199254740991');
     // Not on its runtime yet is not worded as starting: it holds no slot.
     expect(

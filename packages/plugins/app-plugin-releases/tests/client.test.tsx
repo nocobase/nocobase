@@ -816,9 +816,11 @@ describe('client', () => {
         status: 'queued' | 'deploying' | 'cancelling';
         queueAhead: number | null;
       } | null,
+      recycling: 'pending' | 'restarting' | null = null,
     ) =>
       ({
         app: { activation: 'eager', currentDeploymentId: 'd1' },
+        host: { recycling },
         runtime: {
           state: 'failed',
           error:
@@ -827,24 +829,54 @@ describe('client', () => {
         hasPendingDeployment: pendingDeployment !== null,
         pendingDeployment,
       }) as never;
+    const lastFailure = `Last failure: ${enUS.ui.errors.messages.activeLimit}`;
     const cases = [
-      [{ status: 'queued', queueAhead: 2 }, 'Queued · 2 ahead'],
-      [{ status: 'deploying', queueAhead: null }, enUS.ui.state.deploying],
-      [{ status: 'deploying', queueAhead: 0 }, enUS.ui.state.waitingRecycle],
+      [
+        { status: 'queued', queueAhead: 2 },
+        null,
+        'Queued · 2 ahead',
+        lastFailure,
+      ],
+      [
+        { status: 'deploying', queueAhead: null },
+        null,
+        enUS.ui.state.deploying,
+        lastFailure,
+      ],
+      // Refused for capacity, it waits while its shared runtime recycles memory.
+      [
+        { status: 'deploying', queueAhead: 0 },
+        'pending',
+        enUS.ui.state.waitingRecycle,
+        enUS.ui.errors.messages.recycleWait,
+      ],
+      [
+        { status: 'deploying', queueAhead: 0 },
+        'restarting',
+        enUS.ui.state.waitingRecycle,
+        enUS.ui.errors.messages.recycleWait,
+      ],
+      // The retry after the recycle, queued behind other work: queued, not recycling.
+      [
+        { status: 'deploying', queueAhead: 1 },
+        null,
+        'Queued · 1 ahead',
+        lastFailure,
+      ],
       [
         { status: 'cancelling', queueAhead: null },
+        'pending',
         enUS.ui.deployments.statuses.cancelling,
+        lastFailure,
       ],
     ] as const;
-    for (const [pending, label] of cases) {
-      const view = render(<AppStateBadge summary={summary(pending)} />);
+    for (const [pending, recycling, label, detail] of cases) {
+      const view = render(
+        <AppStateBadge summary={summary(pending, recycling)} />,
+      );
       const tag = screen.getByText(label);
       expect(screen.queryByText(enUS.ui.state.failed)).toBeNull();
-      expect(tag.closest('[title]')?.getAttribute('title')).toBe(
-        pending.queueAhead === 0
-          ? enUS.ui.errors.messages.recycleWait
-          : `Last failure: ${enUS.ui.errors.messages.activeLimit}`,
-      );
+      expect(tag.closest('[title]')?.getAttribute('title')).toBe(detail);
       view.unmount();
     }
     // Once the deployment is over, the runtime's own state shows with its reason, and no queue label stays behind.

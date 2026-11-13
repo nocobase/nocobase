@@ -2,16 +2,18 @@ import type { AppSummary } from '../../shared/releases.js';
 import { messageText } from './errors.js';
 
 /**
- * The state an App's badge shows, one at a time. A pending deployment comes first, whatever the runtime last did: a
- * started deployment that reports a queue position again was refused for capacity and waits for the shared runtime to
- * recycle memory before its retry. Otherwise a stopped App whose last start was refused says what it waits for, and a
- * stopped on-demand App says that a visit starts it.
+ * The state an App's badge shows, one at a time. A pending deployment comes first, whatever the runtime last did; one
+ * that reports a queue position is queued, and waits for the recycle while its shared runtime is recycling
+ * (`deploymentWaitOf`). Otherwise a stopped App whose last start was refused says what it waits for, and a stopped
+ * on-demand App says that a visit starts it.
  */
 export function appStateOf(summary: AppSummary): string {
   if (summary.hasPendingDeployment) {
     const pending = summary.pendingDeployment;
-    if (pending?.status === 'deploying' && pending.queueAhead != null)
-      return 'waitingRecycle';
+    const wait = pending
+      ? deploymentWaitOf(pending, summary.host?.recycling)
+      : null;
+    if (wait) return wait === 'recycle' ? 'waitingRecycle' : 'queued';
     return pending?.status ?? 'deploying';
   }
   const state = summary.runtime.state;
@@ -24,6 +26,27 @@ export function appStateOf(summary: AppSummary): string {
   )
     return 'stoppedOnDemand';
   return state;
+}
+
+/**
+ * What a pending deployment waits for: `recycle` while it has a queue position and its shared runtime is recycling
+ * (a deployment refused for capacity waits for exactly that before its one retry), `queue` for any other queue
+ * position, including that retry queued behind other work once the recycle is over; null when it is not waiting.
+ * Only the single-App read carries the runtime (`AppSummary.host`), so a list without it says `queue`.
+ */
+export function deploymentWaitOf(
+  deployment: {
+    readonly status: string;
+    readonly queueAhead?: number | null;
+  },
+  recycling: 'pending' | 'restarting' | null | undefined,
+): 'recycle' | 'queue' | null {
+  if (
+    deployment.queueAhead == null ||
+    !['queued', 'deploying'].includes(deployment.status)
+  )
+    return null;
+  return recycling ? 'recycle' : 'queue';
 }
 
 const WAITING_STATE = {

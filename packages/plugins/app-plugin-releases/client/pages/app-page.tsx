@@ -104,7 +104,7 @@ import {
   type ConfigSecretDrafts,
 } from '../lib/config-secrets.js';
 import { ReleasesDeleteAppImpactContext } from '../lib/delete-app-impact.js';
-import { appStateDetail } from '../lib/app-state.js';
+import { appStateDetail, deploymentWaitOf } from '../lib/app-state.js';
 import { messageText } from '../lib/errors.js';
 import { formatDate, formatSize, labelsHeader } from '../lib/format.js';
 import { useReleasesLinks, useReleasesPaths } from '../lib/paths.js';
@@ -436,6 +436,7 @@ function AppPageContent({ appId }: { readonly appId: string }): ReactElement {
         requestTo={requestTo}
         deployments={items}
         currentId={summary.app.currentDeploymentId}
+        recycling={summary.host?.recycling ?? null}
         canRollback={canDeploy}
         canReadLogs={canOnApp(me, 'read-logs', summary)}
         busy={busy}
@@ -895,6 +896,7 @@ function DeploymentTable({
   requestTo,
   deployments,
   currentId,
+  recycling,
   canRollback,
   canReadLogs,
   busy,
@@ -907,6 +909,8 @@ function DeploymentTable({
   readonly requestTo: (requestId: string) => To;
   readonly deployments: readonly DeploymentItem[];
   readonly currentId: string | null;
+  /** Whether the App's shared runtime is recycling (`AppHostView.recycling`), which a queued deployment may wait for. */
+  readonly recycling: 'pending' | 'restarting' | null;
   readonly canRollback: boolean;
   readonly canReadLogs: boolean;
   readonly busy: string | null;
@@ -1006,17 +1010,16 @@ function DeploymentTable({
               wording='ui.requests.status'
             />
           );
+        const wait = deploymentWaitOf(item.deployment, recycling);
         return (
           <div className='min-w-0'>
             <StatusTag
               status={item.deployment.status}
               wording='ui.deployments.statuses'
             />
-            {item.deployment.queueAhead != null &&
-            ['queued', 'deploying'].includes(item.deployment.status) ? (
+            {wait ? (
               <p className='mt-1 text-xs text-muted-foreground'>
-                {/* Back in the queue once started: refused for capacity, it waits for memory to be recycled. */}
-                {item.deployment.status === 'deploying'
+                {wait === 'recycle'
                   ? t('ui.errors.messages.recycleWait')
                   : t('ui.deployments.queueAhead', {
                       ahead: item.deployment.queueAhead,
