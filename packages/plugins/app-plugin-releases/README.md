@@ -105,8 +105,8 @@ Everything is under `/api/releases` and follows the application's HTTP API rules
 
 ## Rules the plugin enforces
 
-- An agent or a key never configures or deletes an App, or decides a deployment request, whatever it holds.
-- A protected environment takes every deployment, rollbacks included, through a deployment request someone else (a person, not the requester) approves, typing the App ID again; nobody deploys there directly (`APPROVAL_REQUIRED`), and an upload ticket cannot deploy there. Anyone who may deploy the App, a key or an agent included, may make the request. Its approvers are the environment's `approvers` as the application resolves them (`ReleasesAccess.approversOf`); with nobody named, whoever holds `deploy-protected` on the App.
+- An agent never deletes an App or decides a deployment request. A key also cannot configure Apps or deploy directly to protected environments, whatever it holds.
+- A protected environment requires both `deploy` and `deploy-protected` on the App for direct deployment or rollback. Without protected deployment permission, direct deployment is refused (`APPROVAL_REQUIRED`); anyone who may deploy the App, a key or an agent included, may create a deployment request instead. Approving requests remains personal and requires typing the App ID again. Its approvers are the environment's `approvers` as the application resolves them (`ReleasesAccess.approversOf`); with nobody named, whoever holds `deploy-protected` on the App.
 - Upload tickets are single use and expire; they act with what their issuer may still do. A key acts with what its owner may still do, within its scope.
 
 ## Releases: archives and images
