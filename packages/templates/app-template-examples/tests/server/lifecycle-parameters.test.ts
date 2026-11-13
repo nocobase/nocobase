@@ -19,6 +19,38 @@ const test = createAppTest({
 });
 
 describe('lifecycle parameter configuration through the application API', () => {
+  test('advertises creation idempotency only where the service implements it', async ({
+    testApp,
+  }) => {
+    const session = await signIn(testApp, DEFAULT_ADMIN_CREDENTIALS);
+    const response = await session.fetch('/swagger');
+    expect(response.status).toBe(200);
+    const document = (await response.json()) as {
+      paths: Record<
+        string,
+        { post?: { parameters?: { in: string; name: string }[] } }
+      >;
+    };
+    for (const flow of [
+      'subscriptions',
+      'orders',
+      'exports',
+      'purchases',
+      'fulfilments',
+      'invoices',
+    ]) {
+      const operation = document.paths['/api/lifecycleExample/' + flow]?.post;
+      expect(operation).toBeDefined();
+      const headers =
+        operation!.parameters
+          ?.filter((parameter) => parameter.in === 'header')
+          .map((parameter) => parameter.name.toLowerCase()) ?? [];
+      expect(headers.includes('idempotency-key')).toBe(
+        flow === 'subscriptions',
+      );
+    }
+  });
+
   test('authenticates before validation and checks read/write permissions on all entry points', async ({
     testApp,
     request,

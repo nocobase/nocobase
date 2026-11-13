@@ -13,3 +13,6 @@ Require an independently persisted unstarted proof for configured drafts. The ex
 
 
 Recover incomplete historical snapshots only when the first startup is proven. Gaps or inconsistent history stop migration rather than using a later retained submission's parameters, while complete snapshots remain preserved.
+
+
+Backfill authoritative unstarted proofs for untouched legacy drafts, preflight all conflicts before configuration or DDL writes, and keep migration numbering after merged history. Custom LifecycleStore adapters must implement findRecords for bounded primary-key batch reads before upgrading.

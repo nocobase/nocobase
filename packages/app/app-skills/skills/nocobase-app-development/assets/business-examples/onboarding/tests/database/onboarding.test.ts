@@ -56,7 +56,7 @@ describeMigration('202611050001_create_onboarding', {
 
 // A case written before the binding column belongs to the only definition
 // the table has had.
-describeMigration('202611110005_onboarding_definition_binding', {
+describeMigration('202611130005_onboarding_definition_binding', {
   sources: [
     {
       packageName: 'onboarding-test',

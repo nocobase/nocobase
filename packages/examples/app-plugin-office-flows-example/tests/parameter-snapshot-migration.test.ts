@@ -1,5 +1,14 @@
+import path from 'node:path';
 import { createMigrator } from '@nocobase/db';
 import { createTestDatabase } from '@nocobase/app-testing/server';
+import {
+  parameterIdentity,
+  LifecycleRuntime,
+  createRepositoryLifecycleStore,
+} from '@nocobase/lifecycle';
+import { OfficeStore } from '../server/services/store.js';
+import { registerLifecycles } from '../server/lifecycles/index.js';
+import { COLLECTIONS } from '../server/scope.js';
 import { expect, it } from 'vitest';
 import { migrations } from './fixtures.js';
 
@@ -12,25 +21,25 @@ it.each(['unknown', 'started', 'creation-only', 'partial-history'] as const)(
         database: fixture.database,
         sources: migrations,
       });
-      await migrator.upTo('202611110003_office_flows_definition_binding');
+      await migrator.upTo('202611130003_office_flows_definition_binding');
       const record = await fixture.database
         .repository('officeFlowsIncoming')
         .createOne({
           values: {
             number: 'HISTORY-1',
             title: 'History',
-            code: '',
-            sender: '',
-            senderRef: '',
-            summary: '',
-            officeOpinion: '',
+            code: 'UPGRADE',
+            sender: 'Example office',
+            senderRef: 'REF-1',
+            summary: 'Upgrade acceptance',
+            officeOpinion: 'Review required',
             distributionType: 'normal',
             registrarId: 'zhoujie',
             officeHeadId: 'xulei',
             officeLeaderId: 'fanqing',
             status: 'draft',
             statusChangedAt: '2026-10-01T00:00:00.000Z',
-            lifecycleVersion: 1,
+            lifecycleVersion: kind === 'partial-history' ? 3 : 1,
             createdAt: '2026-10-01T00:00:00.000Z',
             lifecycleDefinition: 'incoming',
           },
@@ -67,11 +76,82 @@ it.each(['unknown', 'started', 'creation-only', 'partial-history'] as const)(
             requestKey: '$v:3',
           },
         });
-      await expect(migrator.latest()).rejects.toThrow(
-        kind === 'started'
-          ? 'START_PARAMETERS_UNRECOVERABLE'
-          : 'START_HISTORY_UNKNOWN',
-      );
+      const noTransaction = createMigrator({
+        database: fixture.database,
+        sources: [
+          {
+            packageName: 'office-snapshot-preflight-test',
+            directory: path.resolve(
+              import.meta.dirname,
+              'fixtures/nontransactional-snapshot',
+            ),
+          },
+        ],
+      });
+      if (kind === 'creation-only') {
+        await noTransaction.latest();
+        const id = String(Number(record.record.id));
+        expect(
+          await fixture.database
+            .repository('officeFlowsCreationRequests')
+            .findOne({
+              filter: {
+                id: parameterIdentity(
+                  '$parameter-start-v1',
+                  'office',
+                  'incoming',
+                  id,
+                  'proof',
+                ),
+              },
+            }),
+        ).toMatchObject({ status: 'unstarted', revision: 0 });
+        const runtime = new LifecycleRuntime({
+          creationRequestsCollection: 'officeFlowsCreationRequests',
+          store: createRepositoryLifecycleStore(fixture.database, {
+            collections: {
+              transitions: COLLECTIONS.transitions,
+              effectRuns: COLLECTIONS.effectRuns,
+            },
+          }),
+        });
+        registerLifecycles(runtime, new OfficeStore(fixture.database));
+        expect(
+          (await runtime.view('incoming', id, { id: 'zhoujie' })).state,
+        ).toBe('draft');
+        await runtime.fire('incoming', id, 'submit', {
+          actor: { id: 'zhoujie' },
+        });
+        expect(
+          (await runtime.view('incoming', id, { id: 'zhoujie' })).state,
+        ).toBe('headReview');
+        await noTransaction.latest();
+      } else {
+        await expect(noTransaction.latest()).rejects.toThrow(
+          kind === 'started'
+            ? 'START_PARAMETERS_UNRECOVERABLE'
+            : kind === 'partial-history'
+              ? 'DRAFT_EDIT_HISTORY_UNPROVEN'
+              : 'START_HISTORY_UNKNOWN',
+        );
+        fixture.database.connection().collections.invalidate();
+        expect(
+          await fixture.database
+            .connection()
+            .collections.get('officeFlowsParameterSnapshots'),
+        ).toBeUndefined();
+        expect(
+          await fixture.database
+            .connection()
+            .collections.get('officeFlowsCreationRequests'),
+        ).toBeUndefined();
+        // Fix an unprovable imported record, then retry the exact nontransactional migration.
+        await fixture.database
+          .repository('officeFlowsIncoming')
+          .deleteMany({ filter: { id: record.record.id } });
+        await noTransaction.latest();
+        await noTransaction.latest();
+      }
     } finally {
       await fixture.destroy();
     }

@@ -1,11 +1,21 @@
+import path from 'node:path';
 import { createMigrator } from '@nocobase/db';
 import { createTestDatabase } from '@nocobase/app-testing/server';
-import { parameterIdentity } from '@nocobase/lifecycle';
+import {
+  parameterIdentity,
+  LifecycleRuntime,
+  createRepositoryLifecycleStore,
+} from '@nocobase/lifecycle';
+import { expenseLifecycle } from '../server/lifecycles/expense.js';
+import { WorkflowParameterStore } from '../server/configuration/workflow-parameter-store.js';
+import { exampleParameterRegistration } from '../server/configuration/store.js';
+import { createExampleServices } from '../server/lifecycles/services.js';
+import { LIFECYCLE_EXAMPLE_COLLECTIONS } from '../server/scope.js';
 import { expect, it } from 'vitest';
 import { migrations } from './fixtures.js';
 
-const target = '202611130001_lifecycle_example_start_snapshots';
-const before = '202611110002_lifecycle_example_definition_binding';
+const target = '202611130006_lifecycle_example_start_snapshots';
+const before = '202611130002_lifecycle_example_definition_binding';
 const at = '2026-10-01T00:00:00.000Z';
 const values = {
   notificationPrefix: 'Original',
@@ -246,7 +256,7 @@ it('rejects an initial-state record whose creation survives but first submit his
       },
     });
     await expect(fixture.migrator.latest()).rejects.toThrow(
-      'START_HISTORY_UNKNOWN',
+      'DRAFT_EDIT_HISTORY_UNPROVEN',
     );
   } finally {
     await fixture.testDatabase.destroy();
@@ -519,5 +529,187 @@ it('preserves a complete snapshot even when first-submit history is missing and 
     ).toEqual(original!.payload);
   } finally {
     await run.fixture.destroy();
+  }
+});
+
+it('migrates a proven untouched legacy draft and snapshots configuration only on its first submit', async () => {
+  const run = await expenseStartHistory({ missingFirst: true });
+  try {
+    await run.database.repository('lifecycleExampleTransitions').deleteMany({
+      filter: (f) =>
+        f.and([
+          f.string('lifecycle').eq('expenses'),
+          f.string('recordId').eq(run.recordId),
+          f.string('transition').ne('$create'),
+        ]),
+    });
+    await run.database.repository('lifecycleExampleExpenses').updateMany({
+      filter: { id: Number(run.recordId) },
+      values: {
+        status: 'draft',
+        lifecycleVersion: 1,
+        approverId: null,
+        items: [
+          {
+            date: '2026-10-01',
+            category: 'transport',
+            description: 'Taxi',
+            amountCents: 600000,
+          },
+        ],
+        statusChangedAt: at,
+      },
+    });
+    await run.migrator.latest();
+    const proofId = parameterIdentity(
+      '$parameter-start-v1',
+      'demo',
+      'expenses',
+      run.recordId,
+      'proof',
+    );
+    const requests = run.database.repository(
+      'lifecycleExampleCreationRequests',
+    );
+    expect(await requests.findOne({ filter: { id: proofId } })).toMatchObject({
+      status: 'unstarted',
+      revision: 0,
+    });
+    const store = createRepositoryLifecycleStore(run.database, {
+      collections: LIFECYCLE_EXAMPLE_COLLECTIONS,
+    });
+    const parameters = new WorkflowParameterStore(store);
+    const runtime = new LifecycleRuntime({
+      store,
+      creationRequestsCollection: 'lifecycleExampleCreationRequests',
+      dispatcher: { dispatch: async () => {} },
+    });
+    runtime.register(expenseLifecycle, {
+      parameterConfiguration: exampleParameterRegistration(
+        parameters,
+        'expenses',
+      ),
+      services: createExampleServices({ info: () => {} }),
+    });
+    expect(
+      (await runtime.view('expenses', run.recordId, { id: 'lin' })).state,
+    ).toBe('draft');
+    expect(
+      await parameters.snapshot('demo', 'expenses', run.recordId),
+    ).toBeUndefined();
+    await run.database
+      .repository('lifecycleExampleWorkflowParameters')
+      .updateMany({
+        filter: { id: 'lifecycle.expenses' },
+        values: {
+          revision: 1,
+          values: { ...firstExpenseValues, escalateAfterMinutes: 9 },
+        },
+      });
+    await runtime.fire('expenses', run.recordId, 'submit', {
+      actor: { id: 'lin' },
+    });
+    expect(
+      await parameters.snapshot('demo', 'expenses', run.recordId),
+    ).toMatchObject({
+      values: { ...firstExpenseValues, escalateAfterMinutes: 9 },
+    });
+    await run.migrator.latest();
+    expect(await requests.count()).toBe(1);
+    expect(await requests.findOne({ filter: { id: proofId } })).toMatchObject({
+      status: 'started',
+      revision: 1,
+    });
+  } finally {
+    await run.fixture.destroy();
+  }
+});
+
+it('preflights all conflicts before any write even without transactional rollback, then succeeds after repair', async () => {
+  const run = await history('missing');
+  try {
+    const config = run.database.repository(
+      'lifecycleExampleWorkflowParameters',
+    );
+    await config.updateMany({
+      filter: { id: 'lifecycle.expenses' },
+      values: { revision: 0, values: { autoApproveLimit: 123 } },
+    });
+    await config.updateMany({
+      filter: { id: 'lifecycle.orders' },
+      values: { revision: 1, values: { paymentWindowMinutes: -1 } },
+    });
+    const original = await config.findOne({
+      filter: { id: 'lifecycle.expenses' },
+    });
+    const connection = run.database.connection();
+    const beforeSchema = await connection.collections.getPhysical(
+      'lifecycleExampleTickets',
+    );
+    const noTransaction = createMigrator({
+      database: run.database,
+      sources: [
+        {
+          packageName: 'snapshot-preflight-test',
+          directory: path.resolve(
+            import.meta.dirname,
+            'fixtures/nontransactional-snapshot',
+          ),
+        },
+      ],
+    });
+    const failure = await noTransaction
+      .latest()
+      .catch((error: unknown) => error);
+    expect(failure).toBeInstanceOf(Error);
+    expect(String(failure)).toContain('configuration');
+    expect(String(failure)).toContain('START_PARAMETERS_UNRECOVERABLE');
+    connection.collections.invalidate();
+    expect(
+      await connection.collections.getPhysical('lifecycleExampleTickets'),
+    ).toEqual(beforeSchema);
+    expect(
+      await connection.collections.get('lifecycleExampleCreationRequests'),
+    ).toBeUndefined();
+    expect(
+      await config.findOne({ filter: { id: 'lifecycle.expenses' } }),
+    ).toEqual(original);
+    expect(
+      await run.database
+        .repository('lifecycleExampleParameterSnapshots')
+        .count(),
+    ).toBe(0);
+    await config.updateMany({
+      filter: { id: 'lifecycle.orders' },
+      values: { values: { paymentWindowMinutes: 3 } },
+    });
+    await run.database.repository('lifecycleExampleParameterUsages').createOne({
+      values: {
+        id: parameterIdentity('tickets', 'transition', run.entryId, 0),
+        recordKey: parameterIdentity('demo', 'tickets', run.recordId),
+        at,
+        payload: {
+          scope: 'demo',
+          lifecycle: 'tickets',
+          recordId: run.recordId,
+          kind: 'transition',
+          associationId: run.entryId,
+          revision: 3,
+          values,
+          sources,
+          at,
+        },
+      },
+    });
+    await noTransaction.latest();
+    await noTransaction.latest();
+    expect(
+      await connection.collections.get('lifecycleExampleCreationRequests'),
+    ).toBeDefined();
+    expect(
+      (await config.findOne({ filter: { id: 'lifecycle.expenses' } }))?.values,
+    ).toEqual(firstExpenseValues);
+  } finally {
+    await run.testDatabase.destroy();
   }
 });

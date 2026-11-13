@@ -31,7 +31,7 @@ const ticket = (subject: string) => ({
   },
 });
 
-describeMigration('202611110002_lifecycle_example_definition_binding', {
+describeMigration('202611130002_lifecycle_example_definition_binding', {
   sources: migrations,
   async before({ connection }) {
     await connection

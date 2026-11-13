@@ -50,7 +50,7 @@ describeMigration('202611040001_create_procurement', {
 
 // A request written before the binding column belongs to the only
 // definition the table has had.
-describeMigration('202611110004_procurement_definition_binding', {
+describeMigration('202611130004_procurement_definition_binding', {
   sources: [
     {
       packageName: 'procurement-test',

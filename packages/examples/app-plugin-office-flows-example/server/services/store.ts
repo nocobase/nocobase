@@ -3,6 +3,7 @@ import {
   SYSTEM_ACTOR,
   ParameterConfigurationError,
   type LifecycleRuntime,
+  type ParameterSnapshot,
 } from '@nocobase/lifecycle';
 import { OfficeWorkflowParameterService } from './workflow-parameters.js';
 import { OfficeWorkflowValues } from './workflow-parameter-schema.js';
@@ -239,37 +240,60 @@ export class OfficeStore {
     }
   }
 
-  public async calendar(recordId?: string): Promise<WorkCalendar> {
-    const snapshot =
-      recordId === undefined
-        ? undefined
-        : await this.parameterStore().snapshot(
-            'office',
-            'dataRequests',
-            recordId,
-            this.connection,
-          );
-    if (recordId !== undefined && !snapshot)
+  private calendarFromSnapshot(
+    snapshot: ParameterSnapshot | undefined,
+  ): WorkCalendar {
+    if (!snapshot)
       throw new ParameterConfigurationError(
         'PARAMETER_SNAPSHOT_MISSING',
         'Data request calendar requires its start snapshot.',
       );
-    const parsed = snapshot
-      ? OfficeWorkflowValues.safeParse(snapshot.values)
-      : undefined;
-    if (snapshot && (!parsed?.success || !parsed.data.holidays))
+    const parsed = OfficeWorkflowValues.safeParse(snapshot.values);
+    if (!parsed.success || !parsed.data.holidays)
       throw new ParameterConfigurationError(
         'PARAMETER_SNAPSHOT_INVALID',
         'Data request calendar snapshot is incomplete or invalid.',
       );
-    const rows = parsed?.success
-      ? parsed.data.holidays!
-      : (
-          await new OfficeWorkflowParameterService(
-            this.database,
-            this.connection,
-          ).read('dataRequests')
-        ).values.holidays!;
+    return createWorkCalendar(
+      parsed.data.holidays.map((row) => ({ date: row.date, kind: row.kind })),
+    );
+  }
+
+  public async calendars(
+    recordIds: readonly string[],
+  ): Promise<ReadonlyMap<string, WorkCalendar>> {
+    const result = new Map<string, WorkCalendar>();
+    // Bound the IN list across dialects while keeping scheduling free of per-row snapshot reads.
+    for (let offset = 0; offset < recordIds.length; offset += 500) {
+      const ids = recordIds.slice(offset, offset + 500);
+      const snapshots = await this.parameterStore().snapshots(
+        'office',
+        'dataRequests',
+        ids,
+        this.connection,
+      );
+      for (const id of ids)
+        result.set(id, this.calendarFromSnapshot(snapshots.get(id)));
+    }
+    return result;
+  }
+
+  public async calendar(recordId?: string): Promise<WorkCalendar> {
+    if (recordId !== undefined)
+      return this.calendarFromSnapshot(
+        await this.parameterStore().snapshot(
+          'office',
+          'dataRequests',
+          recordId,
+          this.connection,
+        ),
+      );
+    const rows = (
+      await new OfficeWorkflowParameterService(
+        this.database,
+        this.connection,
+      ).read('dataRequests')
+    ).values.holidays!;
     return createWorkCalendar(
       rows.map((row) => ({
         date: text(row.date),

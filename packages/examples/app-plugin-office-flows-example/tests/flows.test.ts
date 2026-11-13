@@ -15,6 +15,7 @@ import type { DatabaseManager } from '@nocobase/db';
 import {
   createRepositoryLifecycleStore,
   LifecycleRuntime,
+  StoredLifecycleParameters,
 } from '@nocobase/lifecycle';
 import { ServiceContainer } from '@nocobase/service-provider';
 import { Hono } from 'hono';
@@ -298,6 +299,73 @@ describe('data usage request', () => {
     ).rejects.toMatchObject({ code: 'CONFLICT' });
     const detail = await service.dataRequestDetail(id, 'zhangwei');
     expect((detail.record as Plain).status).toBe('draft');
+  });
+
+  it('batches scheduled calendars while preserving each instance holiday snapshot', async () => {
+    let holiday = today(1);
+    for (
+      let offset = 1;
+      [0, 6].includes(new Date(holiday).getUTCDay());
+      offset += 1
+    )
+      holiday = today(offset + 1);
+    const parameters = new OfficeWorkflowParameterService(database);
+    await parameters.save(
+      'dataRequests',
+      {
+        holidays: [
+          { date: holiday, kind: 'holiday', name: 'Instance holiday' },
+        ],
+      },
+      0,
+    );
+    const first = await service.createDataRequest(
+      requestForm({
+        frequency: 'daily',
+        deliveryDate: '',
+        firstUseDate: today(),
+        lastDeliveryDate: today(14),
+      }),
+      'zhangwei',
+    );
+    await approveToAcceptance(String(first.id));
+    await parameters.save('dataRequests', { holidays: [] }, 1);
+    const second = await service.createDataRequest(
+      requestForm({
+        frequency: 'daily',
+        deliveryDate: '',
+        firstUseDate: today(),
+        lastDeliveryDate: today(14),
+      }),
+      'zhangwei',
+    );
+    await approveToAcceptance(String(second.id));
+    const batch = vi.spyOn(StoredLifecycleParameters.prototype, 'snapshots');
+    const single = vi.spyOn(StoredLifecycleParameters.prototype, 'snapshot');
+    await service.runSchedule(holiday);
+    expect(batch).toHaveBeenCalledTimes(1);
+    expect(batch.mock.calls[0]![2]).toEqual(
+      expect.arrayContaining([String(first.id), String(second.id)]),
+    );
+    expect(single).not.toHaveBeenCalled();
+    const firstDetail = await service.dataRequestDetail(
+      String(first.id),
+      'chenjing',
+    );
+    const secondDetail = await service.dataRequestDetail(
+      String(second.id),
+      'chenjing',
+    );
+    expect(
+      (firstDetail.extractions as Plain[]).some(
+        (row) => row.scheduledDate === holiday,
+      ),
+    ).toBe(false);
+    expect(
+      (secondDetail.extractions as Plain[]).some(
+        (row) => row.scheduledDate === holiday,
+      ),
+    ).toBe(true);
   });
 
   it('creates the due tasks of a periodic request once, however often it sweeps', async () => {

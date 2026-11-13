@@ -116,6 +116,7 @@ interface FlowSpec<Body> {
   readonly plural: string;
   readonly input: z.ZodType<Body>;
   readonly description: string;
+  readonly idempotent?: boolean;
   create(
     flows: DurableFlowService,
     body: Body,
@@ -162,6 +163,10 @@ function flowRoutes<Body>(
       });
     },
   );
+  const headers: z.ZodType<{ readonly 'idempotency-key'?: string }> =
+    spec.idempotent
+      ? z.object({ 'idempotency-key': z.string().min(1).max(200).optional() })
+      : z.object({});
   router.post(
     path,
     describeRoute({
@@ -175,10 +180,7 @@ function flowRoutes<Body>(
         500: apiErrorResponse(500),
       },
     }),
-    apiValidator(
-      'header',
-      z.object({ 'idempotency-key': z.string().min(1).max(200).optional() }),
-    ),
+    apiValidator('header', headers),
     apiValidator('json', spec.input),
     async (context) => {
       const body = context.req.valid('json');
@@ -245,6 +247,7 @@ export function durableFlowRoutes(
   });
   flowRoutes(router, base, flows, {
     flow: 'subscriptions',
+    idempotent: true,
     noun: 'Subscription',
     plural: 'subscriptions',
     input: CreateSubscriptionInput,

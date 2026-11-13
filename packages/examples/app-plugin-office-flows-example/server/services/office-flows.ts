@@ -535,9 +535,12 @@ export class OfficeFlowsService {
     const requests = await this.database
       .repository(COLLECTIONS.dataRequests)
       .findMany({ filter: { status: 'accepting' } });
+    const calendars = await this.store.calendars(
+      requests.map((row) => text(row.id)),
+    );
     let created = 0;
     for (const row of requests) {
-      const calendar = await this.store.calendar(text(row.id));
+      const calendar = calendars.get(text(row.id))!;
       const form = formOf({ ...row });
       if (form.frequency === 'once' || form.frequency === 'other') continue;
       const acceptedOn = text(row.acceptedAt ?? row.statusChangedAt).slice(

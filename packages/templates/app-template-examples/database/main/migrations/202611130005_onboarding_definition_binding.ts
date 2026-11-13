@@ -13,7 +13,7 @@ const BINDINGS: readonly (readonly [collection: string, definition: string])[] =
   ];
 
 const migration: MigrationDefinition = defineMigration({
-  name: '202611110005_onboarding_definition_binding',
+  name: '202611130005_onboarding_definition_binding',
   async up({ builder, query }) {
     for (const [collection, definition] of BINDINGS) {
       await builder.alterCollection(collection, (table) => {

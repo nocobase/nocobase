@@ -15,7 +15,7 @@ const TABLES = [
   'officeFlowsExecutorTasks',
 ];
 
-describeMigration('202611110003_office_flows_definition_binding', {
+describeMigration('202611130003_office_flows_definition_binding', {
   sources: migrations,
   async before({ connection }) {
     await connection.repository('officeFlowsExtractions').createOne({

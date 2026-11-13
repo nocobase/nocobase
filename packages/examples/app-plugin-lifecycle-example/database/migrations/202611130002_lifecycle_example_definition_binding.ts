@@ -9,16 +9,18 @@ import { defineMigration, type MigrationDefinition } from '@nocobase/db';
  */
 const BINDINGS: readonly (readonly [collection: string, definition: string])[] =
   [
-    ['officeFlowsDataRequests', 'dataRequests'],
-    ['officeFlowsExtractions', 'extractions'],
-    ['officeFlowsIncoming', 'incoming'],
-    ['officeFlowsClerkTasks', 'clerkTasks'],
-    ['officeFlowsTeamTasks', 'teamTasks'],
-    ['officeFlowsExecutorTasks', 'executorTasks'],
+    ['lifecycleExampleTickets', 'tickets'],
+    ['lifecycleExampleExpenses', 'expenses'],
+    ['lifecycleExampleOrders', 'orders'],
+    ['lifecycleExampleInvoices', 'invoices'],
+    ['lifecycleExampleExports', 'exports'],
+    ['lifecycleExamplePurchases', 'purchases'],
+    ['lifecycleExampleFulfilments', 'fulfilments'],
+    ['lifecycleExampleSubscriptions', 'subscriptions'],
   ];
 
 const migration: MigrationDefinition = defineMigration({
-  name: '202611110003_office_flows_definition_binding',
+  name: '202611130002_lifecycle_example_definition_binding',
   async up({ builder, query }) {
     for (const [collection, definition] of BINDINGS) {
       await builder.alterCollection(collection, (table) => {
