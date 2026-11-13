@@ -1,4 +1,4 @@
-import type { ApiClient } from '@nocobase/app-client';
+import { ApiClientError, type ApiClient } from '@nocobase/app-client';
 
 export interface PushDevice {
   id: string;
@@ -48,10 +48,16 @@ export async function unsubscribeDevice(
 ): Promise<void> {
   const id = currentDevice(base, userId);
   if (id)
-    await api.request({
-      method: 'DELETE',
-      path: `webPush/subscriptions/${encodeURIComponent(id)}`,
-    });
+    try {
+      await api.request({
+        method: 'DELETE',
+        path: `webPush/subscriptions/${encodeURIComponent(id)}`,
+      });
+    } catch (error) {
+      // Already removed, for example from another device: nothing is left to stop, so signing out may continue.
+      if (!(error instanceof ApiClientError && error.status === 404))
+        throw error;
+    }
   if ('serviceWorker' in navigator) {
     const registration = await navigator.serviceWorker.getRegistration(
       pushBase(base),

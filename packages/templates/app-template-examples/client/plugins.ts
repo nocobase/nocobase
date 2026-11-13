@@ -14,6 +14,7 @@ import templatePrintExample from '@nocobase/app-plugin-template-print-example/cl
 import users from '@nocobase/app-plugin-users/client';
 import databaseExplorer from '@nocobase/app-plugin-database-explorer/client';
 import notificationInApp from '@nocobase/app-plugin-notification-in-app/client';
+import webPush from '@nocobase/app-plugin-notification-web-push/client';
 import notificationExample from '@nocobase/app-plugin-notification-example/client';
 import jobsExample from '@nocobase/app-plugin-jobs-example/client';
 import realtimeExample from '@nocobase/app-plugin-realtime-example/client';
@@ -47,6 +48,7 @@ const clientPlugins: AppClientPlugins = defineClientPlugins([
   apiKeys(),
   i18n(),
   notificationInApp(),
+  webPush(),
   notificationExample(),
   jobsExample(),
   realtimeExample(),
