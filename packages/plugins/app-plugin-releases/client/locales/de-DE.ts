@@ -155,6 +155,7 @@ const deDE: LocaleResource<typeof enUS> = {
       environments: 'Umgebungen bereitstellen',
     },
     apps: {
+      lastFailure: 'Letzter Fehler: {{detail}}',
       title: 'Apps',
       create: 'App erstellen',
       id: 'App-ID',
@@ -807,6 +808,18 @@ const deDE: LocaleResource<typeof enUS> = {
           'Der Test wurde nicht innerhalb von 20 Sekunden abgeschlossen.',
         hostNoSettings:
           'Die lokale Laufzeitumgebung nimmt keine Verbindungseinstellungen entgegen.',
+        recycleWait:
+          'Der App-Host gibt Speicher frei; die Bereitstellung wird danach fortgesetzt.',
+        recycleRetry:
+          'Der App-Host gibt noch Speicher frei, daher wurde die Bereitstellung nicht abgeschlossen. Versuchen Sie es später erneut.',
+        capacityExceeded:
+          'Dem App-Host fehlt Speicher oder ein freier Platz, daher wurde die Bereitstellung nicht abgeschlossen. Versuchen Sie es später erneut.',
+        replacementMemory:
+          'Dem App-Host fehlt Speicher, um die neue Version zu starten; die aktuelle läuft weiter. Versuchen Sie es später erneut.',
+        startQueueFull:
+          'Auf dem App-Host starten zu viele Apps. Versuchen Sie es später erneut.',
+        activeLimit:
+          'Die Anzahl laufender Apps hat ihr Limit erreicht. Versuchen Sie es später erneut.',
       },
       prefixed: {
         startFailed: 'Start fehlgeschlagen: {{detail}}',

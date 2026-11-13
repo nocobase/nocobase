@@ -155,6 +155,7 @@ const frFR: LocaleResource<typeof enUS> = {
       environments: 'Déployer des environnements',
     },
     apps: {
+      lastFailure: 'Dernier échec : {{detail}}',
       title: 'Applications',
       create: 'Créer une application',
       id: "Identifiant de l'application",
@@ -813,6 +814,18 @@ const frFR: LocaleResource<typeof enUS> = {
         checkTimeout: "Le test ne s'est pas terminé dans les 20 secondes.",
         hostNoSettings:
           'Le runtime local ne prend aucun paramètre de connexion.',
+        recycleWait:
+          'L’hôte d’applications libère de la mémoire ; le déploiement reprendra ensuite.',
+        recycleRetry:
+          'L’hôte d’applications libère encore de la mémoire, le déploiement n’a donc pas abouti. Réessayez plus tard.',
+        capacityExceeded:
+          'L’hôte d’applications manque de mémoire ou d’emplacement libre, le déploiement n’a donc pas abouti. Réessayez plus tard.',
+        replacementMemory:
+          'L’hôte d’applications manque de mémoire pour démarrer la nouvelle version ; la version actuelle continue de fonctionner. Réessayez plus tard.',
+        startQueueFull:
+          'Trop d’applications démarrent sur l’hôte. Réessayez plus tard.',
+        activeLimit:
+          'Le nombre d’applications en cours d’exécution a atteint sa limite. Réessayez plus tard.',
       },
       prefixed: {
         startFailed: 'Échec du démarrage : {{detail}}',

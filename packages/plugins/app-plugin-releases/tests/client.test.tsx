@@ -607,6 +607,28 @@ describe('client', () => {
     expect(messageText(t, 'Something else broke.')).toBe(
       'Something else broke.',
     );
+    // A capacity refusal reads as a retryable failure, without the Host's code or its unset-limit sentinel.
+    expect(
+      messageText(
+        t,
+        '[APP_CAPACITY_EXCEEDED] App Host capacity exceeded: insufficient memory or active application capacity; retry later maxActiveApps=9007199254740991',
+      ),
+    ).toBe(enUS.ui.errors.messages.capacityExceeded);
+    expect(
+      messageText(
+        t,
+        '[APP_CAPACITY_EXCEEDED] Waiting for Host memory recycling; retry later',
+      ),
+    ).toBe(enUS.ui.errors.messages.recycleRetry);
+    expect(
+      messageText(t, '[APP_CAPACITY_EXCEEDED] Something the Host said'),
+    ).toBe(enUS.ui.errors.messages.capacityExceeded);
+    expect(messageText(t, 'Waiting for Host memory recycling')).toBe(
+      enUS.ui.errors.messages.recycleWait,
+    );
+    expect(
+      messageText(t, '[APP_CREATE_FAILED] App "shop" failed to initialize'),
+    ).toBe('App "shop" failed to initialize');
     const refused = new ApiClientError('App ID may contain only letters.', {
       status: 400,
       reason: 'INVALID_APP_ID',
@@ -773,6 +795,52 @@ describe('client', () => {
     ).toBe(
       'ui.policy.activation.onDemand · ui.policy.idleSummary{"minutes":10} · ui.policy.dormantSummary{"hours":24}',
     );
+  });
+
+  it('shows one state per App: a pending deployment first, with the last failure as its detail', () => {
+    const summary = (
+      pendingDeployment: {
+        status: 'queued' | 'deploying' | 'cancelling';
+        queueAhead: number | null;
+      } | null,
+    ) =>
+      ({
+        app: { activation: 'eager', currentDeploymentId: 'd1' },
+        runtime: {
+          state: 'failed',
+          error:
+            '[APP_CAPACITY_EXCEEDED] Active app capacity exceeded and no idle app can be evicted. maxActiveApps=9007199254740991',
+        },
+        hasPendingDeployment: pendingDeployment !== null,
+        pendingDeployment,
+      }) as never;
+    const cases = [
+      [{ status: 'queued', queueAhead: 2 }, 'Queued · 2 ahead'],
+      [{ status: 'deploying', queueAhead: null }, enUS.ui.state.deploying],
+      [{ status: 'deploying', queueAhead: 0 }, enUS.ui.state.waitingRecycle],
+      [
+        { status: 'cancelling', queueAhead: null },
+        enUS.ui.deployments.statuses.cancelling,
+      ],
+    ] as const;
+    for (const [pending, label] of cases) {
+      const view = render(<AppStateBadge summary={summary(pending)} />);
+      const tag = screen.getByText(label);
+      expect(screen.queryByText(enUS.ui.state.failed)).toBeNull();
+      expect(tag.closest('[title]')?.getAttribute('title')).toBe(
+        pending.queueAhead === 0
+          ? enUS.ui.errors.messages.recycleWait
+          : `Last failure: ${enUS.ui.errors.messages.activeLimit}`,
+      );
+      view.unmount();
+    }
+    // Once the deployment is over, the runtime's own state shows with its reason, and no queue label stays behind.
+    render(<AppStateBadge summary={summary(null)} />);
+    const failed = screen.getByText(enUS.ui.state.failed);
+    expect(failed.closest('[title]')?.getAttribute('title')).toBe(
+      enUS.ui.errors.messages.activeLimit,
+    );
+    expect(screen.queryByText(/Queued|Deploying/)).toBeNull();
   });
 
   it('says a stopped on-demand App starts on a visit, and a dormant one is prepared on a visit', () => {

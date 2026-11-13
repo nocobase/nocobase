@@ -154,6 +154,7 @@ const ptBR: LocaleResource<typeof enUS> = {
       environments: 'Implantar ambientes',
     },
     apps: {
+      lastFailure: 'Última falha: {{detail}}',
       title: 'Aplicativos',
       create: 'Criar aplicativo',
       id: 'ID do aplicativo',
@@ -805,6 +806,18 @@ const ptBR: LocaleResource<typeof enUS> = {
         checkTimeout: 'O teste não foi concluído em 20 segundos.',
         hostNoSettings:
           'O ambiente de execução local não requer configurações de conexão.',
+        recycleWait:
+          'O host de aplicativos está liberando memória; a implantação continua quando terminar.',
+        recycleRetry:
+          'O host de aplicativos ainda está liberando memória, então a implantação não foi concluída. Tente novamente mais tarde.',
+        capacityExceeded:
+          'O host de aplicativos não tem memória suficiente ou vaga livre, então a implantação não foi concluída. Tente novamente mais tarde.',
+        replacementMemory:
+          'O host de aplicativos não tem memória suficiente para iniciar a nova versão; a atual continua em execução. Tente novamente mais tarde.',
+        startQueueFull:
+          'Há aplicativos demais iniciando no host. Tente novamente mais tarde.',
+        activeLimit:
+          'O número de aplicativos em execução atingiu o limite. Tente novamente mais tarde.',
       },
       prefixed: {
         startFailed: 'Falha na inicialização: {{detail}}',

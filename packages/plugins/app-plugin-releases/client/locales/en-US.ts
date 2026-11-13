@@ -8,6 +8,7 @@ const ui = {
   },
   apps: {
     title: 'Apps',
+    lastFailure: 'Last failure: {{detail}}',
     create: 'Create app',
     id: 'App ID',
     name: 'Name',
@@ -618,6 +619,18 @@ const ui = {
       notReady: 'It is not ready yet; try again in a moment.',
       checkTimeout: 'The test did not finish within 20 seconds.',
       hostNoSettings: 'The local runtime takes no connection settings.',
+      recycleWait:
+        'The app host is recycling memory; the deployment continues when it finishes.',
+      recycleRetry:
+        'The app host is still recycling memory, so the deployment did not finish. Try again later.',
+      capacityExceeded:
+        'The app host does not have enough memory or a free slot, so the deployment did not finish. Try again later.',
+      replacementMemory:
+        'The app host does not have enough memory to start the new version; the current one keeps running. Try again later.',
+      startQueueFull:
+        'Too many apps are starting on the app host. Try again later.',
+      activeLimit:
+        'The number of running apps has reached its limit. Try again later.',
     },
     prefixed: {
       startFailed: 'Start failed: {{detail}}',

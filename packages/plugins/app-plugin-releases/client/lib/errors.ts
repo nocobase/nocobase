@@ -24,7 +24,21 @@ const MESSAGES: Readonly<Record<string, string>> = {
   'The check did not finish within 20 seconds.': 'checkTimeout',
   'The target is not ready yet.': 'notReady',
   'The Host driver takes no connection settings.': 'hostNoSettings',
+  // The shared Host refusing a start for memory or a slot (`APP_CAPACITY_EXCEEDED`), and the driver's one wait.
+  'Waiting for Host memory recycling': 'recycleWait',
+  'Waiting for Host memory recycling; retry later': 'recycleRetry',
+  'App Host capacity exceeded: insufficient memory or active application capacity; retry later':
+    'capacityExceeded',
+  'Insufficient memory for replacement; current runtime kept serving':
+    'replacementMemory',
+  'Cold-start queue is full; retry later': 'startQueueFull',
+  'Active app capacity exceeded and no idle app can be evicted.': 'activeLimit',
 };
+
+/** The error code the Host driver puts before a failed deployment's message (`[APP_CAPACITY_EXCEEDED] …`). */
+const CODE_PREFIX = /^\[[A-Z][A-Z0-9_]*\]\s*/;
+/** The Host's active App limit, appended for diagnostics; older records carry it even when no limit is set. */
+const LIMIT_SUFFIX = /\s*maxActiveApps=\d+$/;
 
 /** Prefixes the plugin puts before a runtime's message. */
 const PREFIXES: readonly (readonly [string, string])[] = [
@@ -36,7 +50,11 @@ const PREFIXES: readonly (readonly [string, string])[] = [
 
 /** A runtime's or the plugin's message in the reader's language; unknown text as it is. */
 export function messageText(t: Translate, message: string): string {
-  const text = message.trim();
+  const raw = message.trim();
+  const text = raw.replace(CODE_PREFIX, '').replace(LIMIT_SUFFIX, '');
+  // Any other wording of a capacity refusal still reads as one, never as the Host's own sentence.
+  if (raw.startsWith('[APP_CAPACITY_EXCEEDED]') && !MESSAGES[text])
+    return t('ui.errors.messages.capacityExceeded');
   if (text === 'Deployment cancelled.')
     return t('ui.deployments.statuses.cancelled');
   if (text === 'Replaced by a newer deployment.')

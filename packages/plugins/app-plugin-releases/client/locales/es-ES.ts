@@ -155,6 +155,7 @@ const esES: LocaleResource<typeof enUS> = {
       environments: 'Implementar entornos',
     },
     apps: {
+      lastFailure: 'Último fallo: {{detail}}',
       title: 'Aplicaciones',
       create: 'Crear aplicación',
       id: 'ID de aplicación',
@@ -804,6 +805,18 @@ const esES: LocaleResource<typeof enUS> = {
         checkTimeout: 'La prueba no finalizó en 20 segundos.',
         hostNoSettings:
           'El entorno de ejecución local no requiere configuración de conexión.',
+        recycleWait:
+          'El host de aplicaciones está liberando memoria; el despliegue continuará cuando termine.',
+        recycleRetry:
+          'El host de aplicaciones sigue liberando memoria, así que el despliegue no se completó. Inténtalo más tarde.',
+        capacityExceeded:
+          'El host de aplicaciones no tiene suficiente memoria ni un espacio libre, así que el despliegue no se completó. Inténtalo más tarde.',
+        replacementMemory:
+          'El host de aplicaciones no tiene memoria suficiente para iniciar la nueva versión; la actual sigue en ejecución. Inténtalo más tarde.',
+        startQueueFull:
+          'Se están iniciando demasiadas aplicaciones en el host. Inténtalo más tarde.',
+        activeLimit:
+          'El número de aplicaciones en ejecución alcanzó su límite. Inténtalo más tarde.',
       },
       prefixed: {
         startFailed: 'Error al iniciar: {{detail}}',

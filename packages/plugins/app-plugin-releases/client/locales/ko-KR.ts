@@ -142,6 +142,7 @@ const koKR: LocaleResource<typeof enUS> = {
       environments: '배포 환경',
     },
     apps: {
+      lastFailure: '마지막 실패: {{detail}}',
       title: '앱',
       create: '앱 만들기',
       id: '앱 ID',
@@ -755,6 +756,17 @@ const koKR: LocaleResource<typeof enUS> = {
         notReady: '아직 준비되지 않았습니다. 잠시 후 다시 시도하세요.',
         checkTimeout: '테스트가 20초 안에 끝나지 않았습니다.',
         hostNoSettings: '로컬 실행 환경에는 연결 설정이 없습니다.',
+        recycleWait:
+          '앱 호스트가 메모리를 회수하는 중입니다. 완료되면 배포를 계속합니다.',
+        recycleRetry:
+          '앱 호스트가 아직 메모리를 회수하는 중이라 배포가 완료되지 않았습니다. 나중에 다시 시도하세요.',
+        capacityExceeded:
+          '앱 호스트의 메모리나 빈 슬롯이 부족하여 배포가 완료되지 않았습니다. 나중에 다시 시도하세요.',
+        replacementMemory:
+          '앱 호스트의 메모리가 부족하여 새 버전을 시작할 수 없습니다. 현재 버전은 계속 실행됩니다. 나중에 다시 시도하세요.',
+        startQueueFull: '시작 중인 앱이 너무 많습니다. 나중에 다시 시도하세요.',
+        activeLimit:
+          '실행 중인 앱 수가 한도에 도달했습니다. 나중에 다시 시도하세요.',
       },
       prefixed: {
         startFailed: '시작 실패: {{detail}}',

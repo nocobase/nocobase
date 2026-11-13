@@ -174,6 +174,11 @@ describe('deployment control', () => {
         ).items.find((item) => item.id === deployment.id)!.cancellable,
       ).toBe(true),
     );
+    // A started deployment back in the queue is how the App's one state tells the capacity wait (`appStateOf`).
+    expect(
+      (await harness.services.releases.getApp(admin, 'capacity'))
+        .pendingDeployment,
+    ).toEqual({ status: 'deploying', queueAhead: 0 });
     expect(
       (
         await harness.services.releases.cancelDeployment(
@@ -183,6 +188,40 @@ describe('deployment control', () => {
         )
       ).status,
     ).toBe('cancelled');
+    const after = await harness.services.releases.getApp(admin, 'capacity');
+    expect(after.hasPendingDeployment).toBe(false);
+    expect(after.pendingDeployment).toBeNull();
+  });
+
+  it('leaves no pending deployment once a capacity wait ends in a failure', async () => {
+    const { admin, release } = await setup();
+    const releases = harness.services.releases;
+    control.state.failing.add('1.0.0');
+    const deployment = await releases.deploy(admin, 'shop', {
+      releaseId: release.id,
+    });
+    await control.ready(deployment.id);
+    control.start(deployment.id);
+    control.operations.get(deployment.id)!.event?.({
+      phase: 'queued',
+      queueAhead: 0,
+      cancellable: true,
+    });
+    await vi.waitFor(async () =>
+      expect((await releases.getApp(admin, 'shop')).pendingDeployment).toEqual({
+        status: 'deploying',
+        queueAhead: 0,
+      }),
+    );
+    control.operations.get(deployment.id)!.finish();
+    await vi.waitFor(async () =>
+      expect(
+        (await releases.getDeployment(admin, 'shop', deployment.id)).status,
+      ).toBe('failed'),
+    );
+    const after = await releases.getApp(admin, 'shop');
+    expect(after.hasPendingDeployment).toBe(false);
+    expect(after.pendingDeployment).toBeNull();
   });
 
   it('keeps the running deployment and only the newest queued deployment, including upload-and-deploy', async () => {

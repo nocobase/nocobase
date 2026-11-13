@@ -155,6 +155,7 @@ const viVN: LocaleResource<typeof enUS> = {
       environments: 'Triển khai môi trường',
     },
     apps: {
+      lastFailure: 'Lỗi gần nhất: {{detail}}',
       title: 'Ứng dụng',
       create: 'Tạo ứng dụng',
       id: 'ID ứng dụng',
@@ -792,6 +793,17 @@ const viVN: LocaleResource<typeof enUS> = {
         notReady: 'Nó vẫn chưa sẵn sàng; hãy thử lại sau giây lát.',
         checkTimeout: 'Bài kiểm tra không kết thúc trong vòng 20 giây.',
         hostNoSettings: 'Thời gian chạy cục bộ không có cài đặt kết nối.',
+        recycleWait:
+          'Máy chủ ứng dụng đang thu hồi bộ nhớ; việc triển khai sẽ tiếp tục khi hoàn tất.',
+        recycleRetry:
+          'Máy chủ ứng dụng vẫn đang thu hồi bộ nhớ nên việc triển khai chưa hoàn tất. Hãy thử lại sau.',
+        capacityExceeded:
+          'Máy chủ ứng dụng không đủ bộ nhớ hoặc chỗ trống nên việc triển khai chưa hoàn tất. Hãy thử lại sau.',
+        replacementMemory:
+          'Máy chủ ứng dụng không đủ bộ nhớ để khởi động phiên bản mới; phiên bản hiện tại vẫn chạy. Hãy thử lại sau.',
+        startQueueFull:
+          'Có quá nhiều ứng dụng đang khởi động trên máy chủ. Hãy thử lại sau.',
+        activeLimit: 'Số ứng dụng đang chạy đã đạt giới hạn. Hãy thử lại sau.',
       },
       prefixed: {
         startFailed: 'Khởi động không thành công: {{detail}}',

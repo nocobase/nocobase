@@ -393,6 +393,7 @@ describe('shared app host', () => {
     const running = appSummary('running', 'busy-app');
     const queued = appSummary('stopped', 'queued-app');
     const deploying = appSummary('running', 'deploying-app');
+    const recycling = appSummary('failed', 'recycling-app');
     const pending = appSummary('pending', 'pending-app');
     await render('/release-environments/staging', {
       apps: [
@@ -407,12 +408,35 @@ describe('shared app host', () => {
         },
         { ...queued, runtime: { ...queued.runtime, waiting: 'memory' } },
         { ...deploying, hasPendingDeployment: true },
+        {
+          ...recycling,
+          runtime: {
+            ...recycling.runtime,
+            error:
+              '[APP_CAPACITY_EXCEEDED] App Host capacity exceeded: insufficient memory or active application capacity; retry later maxActiveApps=9007199254740991',
+          },
+          hasPendingDeployment: true,
+          pendingDeployment: { status: 'deploying', queueAhead: 0 },
+        },
       ],
     });
     const row = async (id: string) =>
       within((await screen.findAllByText(id))[0]!.closest('tr') as HTMLElement);
-    // The runtime's own state; a deployment in progress is marked beside it rather than hiding it.
-    expect((await row('deploying-app')).getByText('Running')).toBeTruthy();
+    // One state per App: a deployment in progress replaces the runtime's state rather than sitting beside it.
+    expect((await row('deploying-app')).queryByText('Running')).toBeNull();
+    // A deployment refused for capacity waits for the recycle; the runtime's earlier failure is only its detail.
+    const recyclingRow = await row('recycling-app');
+    expect(
+      recyclingRow
+        .getByText('Waiting for the host to restart')
+        .closest('[title]')
+        ?.getAttribute('title'),
+    ).toBe(
+      'The app host is recycling memory; the deployment continues when it finishes.',
+    );
+    expect(recyclingRow.queryByText('Failed')).toBeNull();
+    expect(recyclingRow.queryByText(/Deploying|Queued/)).toBeNull();
+    expect(document.body.textContent).not.toContain('9007199254740991');
     // Not on its runtime yet is not worded as starting: it holds no slot.
     expect(
       (await row('pending-app')).getByText('Not started yet'),

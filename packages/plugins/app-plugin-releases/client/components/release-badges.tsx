@@ -6,8 +6,7 @@ import { useContext, type ReactElement } from 'react';
 import { ACCESS_NAMESPACE } from '../../shared/access.js';
 import type { AppSummary, Labels } from '../../shared/releases.js';
 import { ReleasesAppOriginContext } from '../lib/app-origin.js';
-import { appStateOf } from '../lib/app-state.js';
-import { messageText } from '../lib/errors.js';
+import { appStateDetail, appStateOf } from '../lib/app-state.js';
 import { ReleasesSystemLabelsContext } from '../lib/system-labels.js';
 import { SystemLabelChip } from './labels-editor.js';
 import { Tag, type Tone } from './tag.js';
@@ -30,7 +29,10 @@ const APP_STATE_TONE: Readonly<Record<string, Tone>> = {
   unknown: 'grey',
 };
 
-/** The App's runtime state; deploying while a deployment is pending. The runtime's error shows on hover. */
+/**
+ * The App's one state (`appStateOf`); what explains it shows on hover: the wait of a deployment refused for capacity,
+ * else the runtime's last error, as a last failure while a deployment is pending.
+ */
 export function AppStateBadge({
   summary,
 }: {
@@ -42,11 +44,7 @@ export function AppStateBadge({
     <Tag
       tone={APP_STATE_TONE[state] ?? 'grey'}
       dot
-      title={
-        summary.runtime.error
-          ? messageText(t, summary.runtime.error)
-          : undefined
-      }
+      title={appStateDetail(t, summary, state) ?? undefined}
     >
       {state === 'queued' && summary.pendingDeployment?.queueAhead != null
         ? t('ui.deployments.queueAhead', {

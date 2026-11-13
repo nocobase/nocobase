@@ -154,6 +154,7 @@ const jaJP: LocaleResource<typeof enUS> = {
       environments: '環境の展開',
     },
     apps: {
+      lastFailure: '前回の失敗：{{detail}}',
       title: 'アプリ',
       create: 'アプリの作成',
       id: 'アプリID',
@@ -778,6 +779,18 @@ const jaJP: LocaleResource<typeof enUS> = {
           'まだ準備ができていません。しばらくしてからもう一度試してください。',
         checkTimeout: 'テストは 20 秒以内に終了しませんでした。',
         hostNoSettings: 'ローカル 実行環境は接続設定を必要としません。',
+        recycleWait:
+          'アプリホストがメモリを回収しています。完了後にデプロイを続行します。',
+        recycleRetry:
+          'アプリホストはまだメモリを回収中のため、デプロイは完了しませんでした。しばらくしてから再試行してください。',
+        capacityExceeded:
+          'アプリホストのメモリまたは空き枠が不足しているため、デプロイは完了しませんでした。しばらくしてから再試行してください。',
+        replacementMemory:
+          'アプリホストのメモリが不足しているため新しいバージョンを起動できません。現在のバージョンは稼働を続けます。しばらくしてから再試行してください。',
+        startQueueFull:
+          '起動中のアプリが多すぎます。しばらくしてから再試行してください。',
+        activeLimit:
+          '実行中のアプリ数が上限に達しています。しばらくしてから再試行してください。',
       },
       prefixed: {
         startFailed: '起動に失敗しました: {{detail}}',
