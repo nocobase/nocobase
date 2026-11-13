@@ -48,6 +48,20 @@
 #     maxBufferedBytesPerConnection: 1048576
 #     maxPendingMessagesPerConnection: 64
 
+# Installation as an app from the browser, over HTTPS or on localhost. The manifest at <base path>/manifest.webmanifest
+# is public and carries only these fields; the name follows client.app.title unless set here. Icon paths are relative
+# to the base path or absolute https:// URLs; give a replaced icon a new file name. APP_PWA_ENABLED=false turns it off.
+# pwa:
+#   enabled: true
+#   name: Acme Service Desk
+#   shortName: Acme
+#   themeColor: '#002ad1'
+#   backgroundColor: '#ffffff'
+#   icons:
+#     - { src: assets/pwa-192.png, sizes: 192x192, type: image/png }
+#     - { src: assets/pwa-512.png, sizes: 512x512, type: image/png }
+#   appleTouchIcon: assets/pwa-192.png
+
 # Values under client are public and embedded in the SPA HTML.
 client:
   app:

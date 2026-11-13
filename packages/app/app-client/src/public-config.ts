@@ -18,6 +18,8 @@ export interface PublicAppConfig {
   i18n: { defaultLocale?: string };
   /** The application's own `package.json`, published by the runtime rather than baked into the build. */
   app: { displayName?: string; version?: string };
+  /** The `pwa` section of `@nocobase/app-server/spa`, read to link the manifest with `mountInstallLinks`. */
+  pwa: { enabled?: boolean; appleTouchIcon?: string };
 }
 
 type PublicLeaf =
