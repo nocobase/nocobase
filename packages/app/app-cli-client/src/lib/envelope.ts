@@ -100,12 +100,20 @@ export function errorJsonOf(
       ...(error.status ? { httpStatus: error.status } : {}),
       ...(error.apiStatus ? { status: error.apiStatus } : {}),
       ...(error.metadata === undefined ? {} : { metadata: error.metadata }),
+      ...(error.fieldViolations === undefined
+        ? {}
+        : { fieldViolations: error.fieldViolations }),
     };
     return {
       code: error.reason,
       message: error.message,
-      suggestions:
-        apiSuggestionsOf(error.metadata) ?? suggestionsFor(error.reason, bin),
+      suggestions: [
+        ...(apiSuggestionsOf(error.metadata) ??
+          suggestionsFor(error.reason, bin)),
+        ...(error.fieldViolations ?? []).map(({ field, description }) => ({
+          message: `${field}: ${description}`,
+        })),
+      ],
       ...(Object.keys(details).length > 0 ? { details } : {}),
     };
   }
