@@ -27,6 +27,18 @@ describe('Examples Foundation integration', () => {
     );
   });
 
+  it('removes the application usage route and its settings group', async () => {
+    const runtime = await resolveAppRuntime(appRuntime);
+    expect(runtime.routes.some((route) => route.path === '/foundation')).toBe(
+      false,
+    );
+    expect(
+      runtime.routes.some((route) =>
+        ['foundation', 'foundationSettings'].includes(route.name),
+      ),
+    ).toBe(false);
+  });
+
   it('provides Features and extensions in System settings with its existing route', async () => {
     const runtime = await resolveAppRuntime(appRuntime);
     const category = buildSettingsCatalog(runtime.routes, new Set()).find(

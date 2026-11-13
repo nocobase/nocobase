@@ -38,10 +38,9 @@ const clientPlugins: AppClientPlugins = defineClientPlugins([
   mail(),
   // The manifest is what the capability guide lists: every plugin this application declares.
   foundation({
-    settingsGroup: true,
+    usagePage: false,
     manifest: applicationManifest,
     guideSettingsPath: '/settings',
-    navigation: false,
   }),
 ]);
 

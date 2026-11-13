@@ -1,4 +1,10 @@
-import { type ApiClient } from '@nocobase/app-client';
+import {
+  defineAppRuntime,
+  resolveAppRuntime,
+} from '@nocobase/app-client/runtime';
+import foundation from '../../client/plugin.js';
+import { defineClientPlugins } from '@nocobase/app-client/plugins';
+import { createAppClientConfig, type ApiClient } from '@nocobase/app-client';
 import {
   AuthorizationClient,
   type AuthorizationSnapshot,
@@ -89,5 +95,63 @@ describe('Features and extensions access', () => {
         throw new Error('Missing page permission');
       expect(await client.can(route.authz)).toBe(false);
     }
+  });
+});
+
+describe('optional application usage page', () => {
+  it.each([false, true])(
+    'keeps the guide when usage is disabled with settingsGroup: %s',
+    async (settingsGroup) => {
+      const runtime = await resolveAppRuntime(
+        defineAppRuntime({
+          packageName: 'test-app',
+          createAppConfig: createAppClientConfig,
+          plugins: defineClientPlugins([
+            foundation({
+              usagePage: false,
+              settingsGroup,
+              manifest: SAMPLE_MANIFEST,
+            }),
+          ]),
+        }),
+      );
+      expect(runtime.routes.map(({ name }) => name).sort()).toEqual([
+        'capabilityGuide',
+        'capabilityGuideEntry',
+      ]);
+      for (const route of runtime.routes) {
+        expect(route.auth).toBe('required');
+        expect(route.authz).toEqual(CAPABILITY_GUIDE_ACCESS);
+      }
+    },
+  );
+
+  it('registers no routes when usage is disabled without a guide manifest', async () => {
+    const runtime = await resolveAppRuntime(
+      defineAppRuntime({
+        packageName: 'test-app',
+        createAppConfig: createAppClientConfig,
+        plugins: defineClientPlugins([
+          foundation({ usagePage: false, settingsGroup: true }),
+        ]),
+      }),
+    );
+    expect(runtime.routes).toEqual([]);
+  });
+
+  it('retains the usage page by default', async () => {
+    const runtime = await resolveAppRuntime(
+      defineAppRuntime({
+        packageName: 'test-app',
+        createAppConfig: createAppClientConfig,
+        plugins: defineClientPlugins([foundation()]),
+      }),
+    );
+    expect(runtime.routes).toHaveLength(1);
+    expect(runtime.routes[0]).toMatchObject({
+      name: 'foundation',
+      path: '/foundation',
+      authz: 'unrestricted',
+    });
   });
 });
