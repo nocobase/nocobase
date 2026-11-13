@@ -34,6 +34,7 @@ export type {
   CliCommand,
   CliManifest,
   CliParameter,
+  CliIdempotency,
   CliWithheldCommand,
 } from './dynamic/manifest.ts';
 export {

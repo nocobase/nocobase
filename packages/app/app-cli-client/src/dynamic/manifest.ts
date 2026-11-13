@@ -25,8 +25,11 @@ export type {
   CliCommand,
   CliManifest,
   CliParameter,
+  CliIdempotency,
   CliWithheldCommand,
 } from '../parse/manifest.ts';
+
+import { validateOperationCommand } from '../parse/idempotency.ts';
 
 const Identity = z.enum(['person', 'run']);
 
@@ -88,38 +91,54 @@ export const CliParameterSchema: z.ZodType<CliParameter> = z.object({
   multiple: z.boolean().optional(),
 });
 
-export const CliCommandSchema: z.ZodType<CliCommand> = z.object({
-  id: z.string().min(1),
-  summary: z.string(),
-  description: z.string().optional(),
-  operationId: z.string().optional(),
-  method: z.enum(['GET', 'POST', 'PUT', 'PATCH', 'DELETE']),
-  path: z.string(),
-  parameters: z.array(CliParameterSchema),
-  readBinding: z
-    .object({
-      path: z.string(),
-      params: z.record(z.string(), z.string()),
-      responseField: z.string(),
-      bodyField: z.string(),
-    })
-    .optional(),
-  body: z
-    .object({
-      media: z.enum(['application/json', 'multipart/form-data']),
-      file: z.string().optional(),
-      required: z.boolean().optional(),
-    })
-    .optional(),
-  output: z.object({
-    kind: z.enum(['data', 'list', 'empty', 'download']),
-    columns: z.array(z.string()).optional(),
-  }),
-  confirm: z.string().optional(),
-  examples: z.array(z.string()).optional(),
-  identities: z.array(Identity),
-  action: z.string().optional(),
-});
+export const CliCommandSchema: z.ZodType<CliCommand> = z
+  .object({
+    id: z.string().min(1),
+    summary: z.string(),
+    description: z.string().optional(),
+    operationId: z.string().optional(),
+    method: z.enum(['GET', 'POST', 'PUT', 'PATCH', 'DELETE']),
+    path: z.string(),
+    parameters: z.array(CliParameterSchema),
+    idempotency: z
+      .strictObject({
+        header: z.string(),
+        flag: z.literal('operation-key'),
+        minLength: z.number().int(),
+        maxLength: z.number().int().optional(),
+      })
+      .optional(),
+    readBinding: z
+      .object({
+        path: z.string(),
+        params: z.record(z.string(), z.string()),
+        responseField: z.string(),
+        bodyField: z.string(),
+      })
+      .optional(),
+    body: z
+      .object({
+        media: z.enum(['application/json', 'multipart/form-data']),
+        file: z.string().optional(),
+        required: z.boolean().optional(),
+      })
+      .optional(),
+    output: z.object({
+      kind: z.enum(['data', 'list', 'empty', 'download']),
+      columns: z.array(z.string()).optional(),
+    }),
+    confirm: z.string().optional(),
+    examples: z.array(z.string()).optional(),
+    identities: z.array(Identity),
+    action: z.string().optional(),
+  })
+  .superRefine((command, ctx) => {
+    try {
+      validateOperationCommand(command);
+    } catch (error) {
+      ctx.addIssue({ code: 'custom', message: (error as Error).message });
+    }
+  });
 
 export const CliManifestSchema: z.ZodType<CliManifest> = z.object({
   version: z.number().int(),

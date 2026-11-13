@@ -65,6 +65,14 @@ export interface CliParameter {
   readonly multiple?: boolean | undefined;
 }
 
+/** Dedicated operation-key header semantics. */
+export interface CliIdempotency {
+  readonly header: string;
+  readonly flag: 'operation-key';
+  readonly minLength: number;
+  readonly maxLength?: number;
+}
+
 /** One command: a request to one API route. */
 export interface CliCommand {
   readonly id: string;
@@ -74,6 +82,7 @@ export interface CliCommand {
   readonly method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   readonly path: string;
   readonly parameters: readonly CliParameter[];
+  readonly idempotency?: CliIdempotency;
   /** Read once before sending; the response field fills a body field, without a user flag. */
   readonly readBinding?: {
     readonly path: string;

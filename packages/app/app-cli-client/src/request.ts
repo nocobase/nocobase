@@ -1,6 +1,12 @@
 // The request a manifest command makes, from the values given for its parameters: path parameters fill the route's
 // `{field}` placeholders, query parameters the query string (an array repeats), body parameters the body's fields. It
-// imports nothing, so a server that calls its own routes the way the CLI does (an online agent's tools) shares it.
+// imports no platform APIs, so a server that calls its own routes the way the CLI does (an online agent's tools) shares it.
+
+import {
+  validateOperationCommand,
+  validateOperationKey,
+} from './parse/idempotency.ts';
+import type { CliIdempotency } from './parse/manifest.ts';
 
 /** The part of a manifest parameter the request needs. */
 export interface RequestParameter {
@@ -10,6 +16,10 @@ export interface RequestParameter {
 
 /** The part of a manifest command the request needs. */
 export interface RequestCommand {
+  readonly idempotency?: CliIdempotency;
+  readonly parameters?: import('./parse/manifest.ts').CliCommand['parameters'];
+  readonly body?: import('./parse/manifest.ts').CliCommand['body'];
+  readonly readBinding?: import('./parse/manifest.ts').CliCommand['readBinding'];
   readonly method: string;
   /** Below the server's origin, with `{field}` placeholders. */
   readonly path: string;
@@ -20,6 +30,7 @@ export interface FilledRequest {
   readonly method: string;
   readonly path: string;
   readonly fields: Record<string, unknown>;
+  readonly headers?: Readonly<Record<string, string>>;
 }
 
 /** A value as it goes into a path or a query string. */
@@ -35,7 +46,18 @@ export function fillRequest(
   command: RequestCommand,
   values: Iterable<readonly [RequestParameter, unknown]>,
   base: Readonly<Record<string, unknown>> = {},
+  operationKey?: string,
 ): FilledRequest {
+  validateOperationCommand(command);
+  let headers: Record<string, string> | undefined;
+  if (command.idempotency) {
+    if (operationKey === undefined)
+      throw new Error(
+        'This command requires operation-key support; no request was built.',
+      );
+    validateOperationKey(command.idempotency, operationKey);
+    headers = { [command.idempotency.header.toLowerCase()]: operationKey };
+  }
   let route = command.path;
   const query = new URLSearchParams();
   const fields: Record<string, unknown> = { ...base };
@@ -56,5 +78,6 @@ export function fillRequest(
     method: command.method,
     path: search ? `${route}?${search}` : route,
     fields,
+    ...(headers ? { headers } : {}),
   };
 }

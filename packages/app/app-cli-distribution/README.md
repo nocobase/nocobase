@@ -43,9 +43,37 @@ app.route('/api/agents/dist', distribution);
 
 No artifact is public by default. `admissions` are ordered asynchronous handlers: return `false` when the handler recognizes no credential, return `true` after authorizing it, and throw on an invalid recognized credential. An error never falls through to another handler or a signed-in session. After every handler declines, `fallback` may authorize through the host. With neither an accepting handler nor a fallback, requests receive 401 `UNAUTHORIZED` in the existing `agents` error domain. Never use download credentials as business login credentials.
 
-The package implements no public-download strategy or signed credential protocol. A host can write its own authorization middleware, which makes its security policy the host's responsibility. Choosing Main's policy, any public access, and any new persistent token store require a separate product decision. This package does not select one or create a table.
+The package implements no anonymous artifact admission or signed credential protocol. A host can write its own authorization middleware, which makes its security policy the host's responsibility. Choosing Main's policy, any public access, and any new persistent token store require a separate product decision. This package does not select one or create a table.
 
-`createInstallRoutes` serves a public script containing no credential. The CLI-only script accepts `--token`, `--server`, `--prefix`, `--bin-dir`, `--dry-run`, `-h` and `--help`; it sends the token in `x-nocobase-download-token`. A session-only host can resolve/download/update through its authenticated clients, but must supply an installation credential admission if it wants this token-based one-line installation. The `InstallScriptExtensions.credentials` hook may implement another host-approved installation transport. No Runner flags, registration or services are in the default script.
+`createInstallRoutes` and `installScript` keep the protected CLI installation protocol unchanged. They accept `--token`, `--server`, `--prefix`, `--bin-dir`, `--dry-run`, `-h` and `--help`, and send `x-nocobase-download-token`. Agents and its Runner extensions keep using these original entry points. The script implementation and extension contract are not shared with public-mode generation.
+
+## Independent public installer
+
+A host that deliberately serves its own CLI artifacts publicly imports a separate entry:
+
+```ts
+import {
+  publicInstallScript,
+  createPublicInstallRoutes,
+} from '@nocobase/app-cli-distribution/public-install';
+
+// Either render the script in the host's own route:
+const script = publicInstallScript({
+  cli: 'acme',
+  server: 'https://example.com/platform/main',
+});
+// Or mount this router alongside that host's public artifact router:
+const installation = createPublicInstallRoutes({
+  cli: () => 'acme',
+  publicBasePath: '/platform/main',
+});
+```
+
+Mount the router at the host's existing `/api/agents/dist` prefix, choosing one installation router. This script has no token parsing, credential header, Runner registration, service installation or extension hooks. It independently handles server/prefix/bin-dir/dry-run, platform/tool checks, anonymous resolution/download, SHA-256 verification, installation metadata, version activation, command links and the next login instruction. It requires Node.js 24+, curl, tar and a SHA-256 tool on macOS/Linux (Windows through WSL); npm is required only for an npm resolution. It reuses the stateless npm launcher and requested-server helper, not the protected script's text. Relative installation paths become absolute, and metadata remains valid for paths containing quotes. Dry-run resolves metadata but performs no download or installation writes. Exit 0 indicates success/help/dry-run, 2 invalid usage/address and 1 runtime/prerequisite/resolution/checksum failures; a failing external install tool may retain its own nonzero code.
+
+The host must separately configure anonymous artifact admission, restricted to its CLI product, for example `products: ['acme']` with `admissions: [async () => true]`. The new script does not change artifact authorization. A protected response fails even if an older CLI is present. Keep deployment configuration, database files and credentials out of the public archive.
+
+Existing `<cli> update` already consumes the same resolution/file endpoints after selecting its signed-in profile, and needs no download token when those endpoints are public. No `publicUpdates` brand option or `update --server` extension is provided. A never-signed-in installation can rerun the public installer; normal business use still begins with native login. The old update command, protected distribution targets and Runner ownership remain unchanged.
 
 ## Optional stateful download tokens
 
@@ -77,4 +105,4 @@ The new package's host tests exercise protected defaults, an explicit session po
 
 The extraction adds no database query, write, lock or transaction to an Agents request and no polling or Runner claim work. Token mint remains one insert/transaction; metadata admission one read/transaction plus a conditional update when binding; a token file request remains two reads/transactions and one conditional counting update. The product restriction adds an in-memory membership check. No independent-host database or jobs are required.
 
-Main integration and UI, its authorization choice, signed tokens/public downloads, token cleanup, mode switching between independent distribution and Agents, and the client's full-buffer update download remain separate work. One router owns `/api/agents/dist` in a host; do not register both independent distribution and Agents at that prefix.
+Main integration and UI, host authorization choices, token cleanup, mode switching between independent distribution and Agents, and the client's full-buffer update download remain separate work. One router owns `/api/agents/dist` in a host; do not register both independent distribution and Agents at that prefix.

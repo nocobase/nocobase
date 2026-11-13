@@ -1,7 +1,6 @@
 // A file sent beside a request (`ticket` on a manifest parameter): the request answers an upload ticket, and the file
 // is streamed straight to the ticket's URL with the ticket's headers only, never the session's. The upload's answer is
 // the command's.
-import { openAsBlob } from 'node:fs';
 
 import { UploadTicketSchema } from '@nocobase/agent-protocol';
 
@@ -9,6 +8,7 @@ import { AppApiError } from '../lib/http.ts';
 import { send } from './execute.ts';
 import type { LocalFile } from './files.ts';
 import { urlFor, type Session } from './session.ts';
+import { localFileBody } from './upload.ts';
 
 /** What the upload answered: its `data`, and its message or else the ticket's. */
 export interface TicketAnswer {
@@ -21,7 +21,11 @@ export async function streamToTicket(
   session: Session,
   ticketData: unknown,
   file: LocalFile,
-  options: { readonly fetch?: typeof fetch; readonly timeoutMs?: number },
+  options: {
+    readonly fetch?: typeof fetch;
+    readonly timeoutMs?: number;
+    readonly signal?: AbortSignal;
+  },
 ): Promise<TicketAnswer> {
   const parsed = UploadTicketSchema.safeParse(ticketData);
   if (!parsed.success)
@@ -50,7 +54,7 @@ export async function streamToTicket(
         'content-disposition': `attachment; filename*=UTF-8''${encodeURIComponent(file.name)}`,
         ...ticket.headers,
       },
-      body: await openAsBlob(file.path),
+      body: await localFileBody(file),
     },
     { ...options, timeoutMs: options.timeoutMs ?? 30 * 60_000 },
   );

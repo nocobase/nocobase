@@ -233,6 +233,14 @@ export interface CliParameter {
 
 export type CliOutputKind = 'data' | 'list' | 'empty' | 'download';
 
+/** Dedicated operation-key semantics; never a general header parameter. */
+export interface CliIdempotency {
+  readonly header: string;
+  readonly flag: 'operation-key';
+  readonly minLength: number;
+  readonly maxLength?: number;
+}
+
 /** One command of the manifest. */
 export interface CliCommand {
   /** Its words joined by `:`, such as `issue:comment:add`. */
@@ -244,6 +252,7 @@ export interface CliCommand {
   /** The request path below the server's origin, the application's base path included, with `{name}` placeholders. */
   readonly path: string;
   readonly parameters: readonly CliParameter[];
+  readonly idempotency?: CliIdempotency;
   /** Read once before sending; the response field fills a body field, without a user flag. */
   readonly readBinding?: {
     readonly path: string;

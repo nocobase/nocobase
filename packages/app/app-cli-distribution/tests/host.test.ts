@@ -14,6 +14,7 @@ import {
   downloadTokenAdmission,
   installScript,
 } from '../src/index.js';
+import { createPublicInstallRoutes } from '../src/public-install.js';
 import { memoryTokens } from './tokens.js';
 
 const roots: string[] = [];
@@ -285,6 +286,20 @@ describe('independent host without Agents, a database or background jobs', () =>
     await closed;
     expect(opened?.closed).toBe(true);
     expect(opened?.destroyed).toBe(true);
+  });
+  it('forwards the explicit public installer policy through the route factory', async () => {
+    const app = new Hono().route(
+      prefix,
+      createPublicInstallRoutes({
+        cli: () => 'acme',
+        publicBasePath: '/nested/main',
+      }),
+    );
+    const response = await app.request(`${prefix}/installScript`);
+    const script = await response.text();
+    expect(script).not.toContain('--token');
+    expect(script).toContain('server="http://localhost/nested/main"');
+    expect(script).toContain('Business access requires a separate login.');
   });
   it('keeps unsafe server addresses out of the shell script', () => {
     expect(

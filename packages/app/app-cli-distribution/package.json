@@ -15,6 +15,10 @@
     ".": {
       "types": "./src/index.ts",
       "import": "./src/index.ts"
+    },
+    "./public-install": {
+      "types": "./src/public-install.ts",
+      "import": "./src/public-install.ts"
     }
   },
   "files": [
@@ -26,6 +30,10 @@
       ".": {
         "types": "./dist/index.d.ts",
         "import": "./dist/index.js"
+      },
+      "./public-install": {
+        "types": "./dist/public-install.d.ts",
+        "import": "./dist/public-install.js"
       }
     }
   },
