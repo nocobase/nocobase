@@ -241,9 +241,6 @@ export interface CliIdempotency {
   readonly maxLength?: number;
 }
 
-export const CLI_IDEMPOTENCY_CAPABILITY = 'idempotency-v1';
-export const CLI_CAPABILITIES_HEADER = 'x-nocobase-cli-capabilities';
-
 /** One command of the manifest. */
 export interface CliCommand {
   /** Its words joined by `:`, such as `issue:comment:add`. */
@@ -256,7 +253,6 @@ export interface CliCommand {
   readonly path: string;
   readonly parameters: readonly CliParameter[];
   readonly idempotency?: CliIdempotency;
-  readonly requiredCapabilities?: readonly string[];
   /** Read once before sending; the response field fills a body field, without a user flag. */
   readonly readBinding?: {
     readonly path: string;
@@ -333,7 +329,6 @@ export const CLI_MANIFEST_VERSION = 4;
 
 export interface CliManifest {
   readonly version: number;
-  readonly capabilities?: readonly string[];
   /** Changes whenever the commands change; a CLI caches by it. */
   readonly etag: string;
   readonly identity: CliManifestIdentity;

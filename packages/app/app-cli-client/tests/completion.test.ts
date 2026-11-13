@@ -91,7 +91,6 @@ describe('completion', () => {
         flag: 'operation-key',
         minLength: 1,
       },
-      requiredCapabilities: ['idempotency-v1'],
     };
     expect(
       completeLine(['record', 'create'], '--op', statics, [marked]),

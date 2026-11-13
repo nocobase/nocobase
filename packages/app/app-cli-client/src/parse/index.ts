@@ -36,9 +36,6 @@ export type {
 } from './manifest.ts';
 
 export {
-  CLI_CAPABILITIES,
-  CLI_CAPABILITIES_HEADER,
-  CLI_IDEMPOTENCY_CAPABILITY,
   validateOperationCommand,
   validateOperationKey,
 } from './idempotency.ts';

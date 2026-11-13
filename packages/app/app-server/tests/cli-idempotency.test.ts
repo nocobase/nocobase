@@ -48,6 +48,79 @@ function command(doc = document()) {
 }
 
 describe('schema-derived operation keys', () => {
+  it('retains identity/action withholding and hashes descriptor changes', () => {
+    const doc = document(undefined, {
+      'x-cli': { identities: ['person'], action: 'records/create' },
+    });
+    const denied = deriveCliCommands(doc, caller);
+    expect(denied.commands).toEqual([]);
+    expect(denied.withheld).toMatchObject([{ reason: 'action' }]);
+    const allowed = { ...caller, actions: new Set(['records/create']) };
+    const manifest = deriveCliCommands(doc, allowed);
+    expect(manifest.commands).toHaveLength(1);
+    expect(manifest.commands[0]?.idempotency).toBeDefined();
+    expect(manifest.withheld).toEqual([]);
+    expect(
+      deriveCliCommands(doc, { ...allowed, kind: 'run' }).withheld,
+    ).toMatchObject([{ reason: 'identity' }]);
+    const changed = document(
+      [
+        header({
+          type: 'string',
+          minLength: 1,
+          maxLength: 80,
+          'x-idempotency': true,
+        }),
+      ],
+      { 'x-cli': { identities: ['person'], action: 'records/create' } },
+    );
+    expect(deriveCliCommands(changed, allowed).etag).not.toBe(manifest.etag);
+  });
+
+  it('serves marked commands and their reference with ordinary conditional caching', async () => {
+    const router = new Hono();
+    router.post(
+      '/records',
+      describeRoute({
+        tags: ['Records'],
+        summary: 'Create a record',
+        operationId: 'createRecord',
+        responses: { 200: dataResponse(z.string()) },
+      }),
+      apiValidator(
+        'header',
+        z.object({
+          'idempotency-key': z.string().min(1).meta({ 'x-idempotency': true }),
+        }),
+      ),
+      (c) => c.json({ data: 'ok' }),
+    );
+    const docs = new ApiDocsService();
+    docs.attach({
+      api: router,
+      describe: () => ({ info: { title: 'Keys', version: 'test' } }),
+    });
+    const cli = new CliService();
+    cli.addCaller(() => caller);
+    const routes = createCliRouter(cli, docs);
+    const first = await routes.request('/cli/manifest');
+    expect(first.status).toBe(200);
+    expect(first.headers.get('vary')).toBeNull();
+    const manifest = (await first.json()).data;
+    expect(manifest.commands).toHaveLength(1);
+    expect(manifest.commands[0].idempotency.header).toBe('idempotency-key');
+    expect(
+      (
+        await routes.request('/cli/manifest', {
+          headers: { 'if-none-match': first.headers.get('etag')! },
+        })
+      ).status,
+    ).toBe(304);
+    expect(await (await routes.request('/cli/llms.txt')).text()).toContain(
+      '--operation-key',
+    );
+  });
+
   it('preserves field metadata through NocoBase apiValidator, document generation and manifest derivation', async () => {
     const router = new Hono();
     router.onError(apiErrorHandler);
@@ -98,12 +171,7 @@ describe('schema-derived operation keys', () => {
       maxLength: 50,
     });
     expect(derived.parameters.map((p) => p.name)).toEqual(['name']);
-    expect(derived.requiredCapabilities).toEqual(['idempotency-v1']);
-    expect(deriveCliCommands(doc, caller).commands).toEqual([]);
-    expect(
-      deriveCliCommands(doc, caller, { capabilities: ['idempotency-v1'] })
-        .commands,
-    ).toHaveLength(1);
+    expect(deriveCliCommands(doc, caller).commands).toHaveLength(1);
     expect(
       (
         await router.request('/records', {
@@ -348,76 +416,5 @@ describe('schema-derived operation keys', () => {
         }),
       ),
     ).toThrow('single target');
-  });
-
-  it('separates HTTP capabilities, ETags, 304 and references without changing caller permissions', async () => {
-    const router = new Hono();
-    router.onError(apiErrorHandler);
-    router.post(
-      '/records',
-      describeRoute({
-        tags: ['Records'],
-        summary: 'Create a record',
-        operationId: 'createRecord',
-        responses: { 200: dataResponse(z.string()) },
-      }),
-      apiValidator(
-        'header',
-        z.object({
-          'idempotency-key': z.string().min(1).meta({ 'x-idempotency': true }),
-        }),
-      ),
-      (c) => c.json({ data: 'ok' }),
-    );
-    router.get(
-      '/records',
-      describeRoute({
-        tags: ['Records'],
-        summary: 'List records',
-        operationId: 'listRecords',
-        responses: { 200: dataResponse(z.string()) },
-      }),
-      (c) => c.json({ data: 'ok' }),
-    );
-    const docs = new ApiDocsService();
-    docs.attach({
-      api: router,
-      describe: () => ({ info: { title: 'Keys', version: 'test' } }),
-    });
-    const cli = new CliService();
-    cli.addCaller(() => caller);
-    cli.describe({ bin: 'acme' });
-    const routes = createCliRouter(cli, docs);
-    const first = await routes.request('/cli/manifest');
-    const old = (await first.json()).data;
-    expect(old.commands.map((c: { method: string }) => c.method)).toEqual([
-      'GET',
-    ]);
-    const headers = {
-      'x-nocobase-cli-capabilities': 'idempotency-v1',
-      'if-none-match': first.headers.get('etag')!,
-    };
-    const second = await routes.request('/cli/manifest', { headers });
-    expect(second.status).toBe(200);
-    expect(second.headers.get('vary')).toBe('x-nocobase-cli-capabilities');
-    const fresh = (await second.json()).data;
-    expect(fresh.commands).toHaveLength(2);
-    expect(fresh.etag).not.toBe(old.etag);
-    expect(
-      (
-        await routes.request('/cli/manifest', {
-          headers: { ...headers, 'if-none-match': second.headers.get('etag')! },
-        })
-      ).status,
-    ).toBe(304);
-    expect(
-      (
-        await routes.request('/cli/manifest', {
-          headers: { 'if-none-match': second.headers.get('etag')! },
-        })
-      ).status,
-    ).toBe(200);
-    const reference = await routes.request('/cli/llms.txt', { headers });
-    expect(await reference.text()).toContain('--operation-key');
   });
 });

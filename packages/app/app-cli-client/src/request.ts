@@ -20,7 +20,6 @@ export interface RequestCommand {
   readonly parameters?: import('./parse/manifest.ts').CliCommand['parameters'];
   readonly body?: import('./parse/manifest.ts').CliCommand['body'];
   readonly readBinding?: import('./parse/manifest.ts').CliCommand['readBinding'];
-  readonly requiredCapabilities?: readonly string[];
   readonly method: string;
   /** Below the server's origin, with `{field}` placeholders. */
   readonly path: string;

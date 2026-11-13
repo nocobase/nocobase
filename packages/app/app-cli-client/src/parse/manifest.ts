@@ -83,7 +83,6 @@ export interface CliCommand {
   readonly path: string;
   readonly parameters: readonly CliParameter[];
   readonly idempotency?: CliIdempotency;
-  readonly requiredCapabilities?: readonly string[];
   /** Read once before sending; the response field fills a body field, without a user flag. */
   readonly readBinding?: {
     readonly path: string;
@@ -120,7 +119,6 @@ export interface CliWithheldCommand {
 
 export interface CliManifest {
   readonly version: number;
-  readonly capabilities?: readonly string[];
   readonly etag: string;
   readonly identity: {
     readonly kind: 'person' | 'run';

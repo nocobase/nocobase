@@ -29,11 +29,7 @@ export type {
   CliWithheldCommand,
 } from '../parse/manifest.ts';
 
-import {
-  CLI_CAPABILITIES,
-  CLI_CAPABILITIES_HEADER,
-  validateOperationCommand,
-} from '../parse/idempotency.ts';
+import { validateOperationCommand } from '../parse/idempotency.ts';
 
 const Identity = z.enum(['person', 'run']);
 
@@ -112,7 +108,6 @@ export const CliCommandSchema: z.ZodType<CliCommand> = z
         maxLength: z.number().int().optional(),
       })
       .optional(),
-    requiredCapabilities: z.array(z.string()).optional(),
     readBinding: z
       .object({
         path: z.string(),
@@ -145,48 +140,30 @@ export const CliCommandSchema: z.ZodType<CliCommand> = z
     }
   });
 
-export const CliManifestSchema: z.ZodType<CliManifest> = z
-  .object({
-    version: z.number().int(),
-    capabilities: z.array(z.string()).optional(),
-    etag: z.string().min(1),
-    identity: z.object({
-      settings: z.array(z.string()).optional(),
-      kind: Identity,
-      userId: z.string(),
-      displayName: z.string(),
-      runId: z.string().optional(),
-      actions: z.array(z.string()).optional(),
-    }),
-    commands: z.array(CliCommandSchema),
-    withheld: z
-      .array(
-        z.object({
-          id: z.string(),
-          summary: z.string(),
-          reason: z.enum(['identity', 'action']),
-          identities: z.array(Identity),
-          action: z.string().optional(),
-        }),
-      )
-      .optional(),
-  })
-  .superRefine((manifest, ctx) => {
-    if (
-      manifest.capabilities?.some(
-        (capability) => !CLI_CAPABILITIES.includes(capability),
-      ) ||
-      manifest.commands.some((command) =>
-        command.requiredCapabilities?.some(
-          (capability) => !manifest.capabilities?.includes(capability),
-        ),
-      )
+export const CliManifestSchema: z.ZodType<CliManifest> = z.object({
+  version: z.number().int(),
+  etag: z.string().min(1),
+  identity: z.object({
+    settings: z.array(z.string()).optional(),
+    kind: Identity,
+    userId: z.string(),
+    displayName: z.string(),
+    runId: z.string().optional(),
+    actions: z.array(z.string()).optional(),
+  }),
+  commands: z.array(CliCommandSchema),
+  withheld: z
+    .array(
+      z.object({
+        id: z.string(),
+        summary: z.string(),
+        reason: z.enum(['identity', 'action']),
+        identities: z.array(Identity),
+        action: z.string().optional(),
+      }),
     )
-      ctx.addIssue({
-        code: 'custom',
-        message: 'The server did not negotiate the required CLI semantics.',
-      });
-  });
+    .optional(),
+});
 
 interface CachedManifest {
   readonly etag: string;
@@ -198,9 +175,7 @@ export function manifestCacheFile(
   session: Pick<Session, 'server' | 'cacheKey'>,
 ): string {
   const key = createHash('sha256')
-    .update(
-      `${session.server}\u0000${session.cacheKey}\u0000${CLI_CAPABILITIES.join(',')}`,
-    )
+    .update(`${session.server}\u0000${session.cacheKey}`)
     .digest('hex')
     .slice(0, 24);
   return path.join(paths.manifestCache, `${key}.json`);
@@ -246,7 +221,6 @@ export async function loadManifest(
       headers: {
         accept: 'application/json',
         ...session.headers,
-        [CLI_CAPABILITIES_HEADER]: CLI_CAPABILITIES.join(','),
         ...(usable ? { 'if-none-match': `"${usable.etag}"` } : {}),
       },
       signal: AbortSignal.timeout(options.timeoutMs ?? 15_000),

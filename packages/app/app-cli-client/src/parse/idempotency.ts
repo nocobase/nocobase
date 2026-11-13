@@ -1,9 +1,5 @@
 import type { CliCommand, CliIdempotency } from './manifest.ts';
 
-export const CLI_IDEMPOTENCY_CAPABILITY = 'idempotency-v1';
-export const CLI_CAPABILITIES_HEADER = 'x-nocobase-cli-capabilities';
-export const CLI_CAPABILITIES: readonly string[] = [CLI_IDEMPOTENCY_CAPABILITY];
-
 const reserved = new Set([
   'authorization',
   'proxy-authorization',
@@ -46,7 +42,7 @@ const reserved = new Set([
 
 /** Validate wire semantics even when a consumer uses the shared parser without the manifest reader. */
 export function validateOperationCommand(
-  command: Pick<CliCommand, 'idempotency' | 'requiredCapabilities'> &
+  command: Pick<CliCommand, 'idempotency'> &
     Partial<Pick<CliCommand, 'parameters' | 'body' | 'readBinding'>> & {
       readonly method: string;
     },
@@ -54,20 +50,8 @@ export function validateOperationCommand(
   const fail = (message: string): never => {
     throw new Error(`Unsupported CLI operation-key contract: ${message}`);
   };
-  if (
-    command.requiredCapabilities?.some(
-      (capability) => !CLI_CAPABILITIES.includes(capability),
-    )
-  )
-    return fail('unknown required capability');
   const spec = command.idempotency;
-  if (!spec) {
-    if (command.requiredCapabilities?.includes(CLI_IDEMPOTENCY_CAPABILITY))
-      return fail('missing idempotency descriptor');
-    return;
-  }
-  if (!command.requiredCapabilities?.includes(CLI_IDEMPOTENCY_CAPABILITY))
-    return fail('missing capability requirement');
+  if (!spec) return;
   if (
     Object.keys(spec).some(
       (key) => !['header', 'flag', 'minLength', 'maxLength'].includes(key),

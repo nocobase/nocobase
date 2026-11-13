@@ -1,10 +1,15 @@
-import { createHash } from 'node:crypto';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
-import { configureAppCli, appCliPaths } from '../src/config.ts';
+import { configureAppCli } from '../src/config.ts';
+import { createHash } from 'node:crypto';
+import { mkdtemp, rm } from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
+import { appCliPaths } from '../src/config.ts';
 import {
   CliCommandSchema,
-  CliManifestSchema,
+  loadManifest,
   manifestCacheFile,
+  readCachedManifest,
 } from '../src/dynamic/manifest.ts';
 import { executeRest, parseRestCall } from '../src/dynamic/rest.ts';
 import { renderCommandHelp } from '../src/dynamic/output.ts';
@@ -39,7 +44,6 @@ const command = CliCommandSchema.parse({
     minLength: 1,
     maxLength: 100,
   },
-  requiredCapabilities: ['idempotency-v1'],
 });
 const session: Session = {
   kind: 'user',
@@ -52,6 +56,48 @@ const io = { readText: async () => undefined, env: () => undefined };
 const explicit = 'original-key';
 
 describe('dedicated operation keys', () => {
+  it('uses the existing session cache and conditional headers for marked commands', async () => {
+    const home = await mkdtemp(path.join(os.tmpdir(), 'cli-key-cache-'));
+    const paths = appCliPaths(home);
+    try {
+      const hash = createHash('sha256')
+        .update(`${session.server}\u0000${session.cacheKey}`)
+        .digest('hex')
+        .slice(0, 24);
+      expect(manifestCacheFile(paths, session)).toBe(
+        path.join(paths.manifestCache, `${hash}.json`),
+      );
+      const manifest = {
+        version: 4,
+        etag: 'key-contract',
+        identity: { kind: 'person', userId: 'u1', displayName: 'Ada' },
+        commands: [command],
+      };
+      const fetcher = vi
+        .fn<typeof fetch>()
+        .mockResolvedValueOnce(Response.json({ data: manifest }))
+        .mockResolvedValueOnce(new Response(null, { status: 304 }));
+      expect(await loadManifest(session, { paths, fetch: fetcher })).toEqual(
+        manifest,
+      );
+      expect(fetcher.mock.calls[0]?.[1]?.headers).toEqual({
+        accept: 'application/json',
+        ...session.headers,
+      });
+      expect(await loadManifest(session, { paths, fetch: fetcher })).toEqual(
+        manifest,
+      );
+      expect(fetcher.mock.calls[1]?.[1]?.headers).toEqual({
+        accept: 'application/json',
+        ...session.headers,
+        'if-none-match': '"key-contract"',
+      });
+      expect(await readCachedManifest(session, paths)).toEqual(manifest);
+    } finally {
+      await rm(home, { recursive: true, force: true });
+    }
+  });
+
   it('generates once, prints to stderr before sending and keeps the same key in the success envelope', async () => {
     let key: string | null = null;
     const stderr: string[] = [];
@@ -166,8 +212,6 @@ describe('dedicated operation keys', () => {
       { idempotency: { ...command.idempotency, maxLength: 49 } },
       { idempotency: { ...command.idempotency, format: 'uuid' } },
       { idempotency: { ...command.idempotency, future: true } },
-      { requiredCapabilities: ['future-v2'] },
-      { requiredCapabilities: undefined },
       { method: 'GET' },
       { parameters: [{ ...command.parameters[0], name: 'operation-key' }] },
       { body: { media: 'application/json', file: 'OPERATION-KEY' } },
@@ -327,44 +371,6 @@ describe('dedicated operation keys', () => {
       details: { operationKey: explicit, requestStatus: 'not-sent' },
     });
     expect(fetcher).not.toHaveBeenCalled();
-  });
-
-  it('separates capability caches and refuses unnegotiated or unknown semantics, including offline data', () => {
-    const paths = appCliPaths('/synthetic-home');
-    const old = createHash('sha256')
-      .update(`${session.server}\u0000${session.cacheKey}`)
-      .digest('hex')
-      .slice(0, 24);
-    expect(manifestCacheFile(paths, session)).not.toContain(old);
-    const manifest = {
-      version: 4,
-      etag: 'test',
-      identity: { kind: 'person', userId: 'u1', displayName: 'Ada' },
-      commands: [command],
-    };
-    expect(CliManifestSchema.safeParse(manifest).success).toBe(false);
-    expect(
-      CliManifestSchema.safeParse({
-        ...manifest,
-        capabilities: ['idempotency-v1'],
-      }).success,
-    ).toBe(true);
-    expect(
-      CliManifestSchema.safeParse({ ...manifest, capabilities: ['future-v2'] })
-        .success,
-    ).toBe(false);
-    expect(
-      CliManifestSchema.safeParse({
-        ...manifest,
-        commands: [
-          {
-            ...command,
-            idempotency: undefined,
-            requiredCapabilities: undefined,
-          },
-        ],
-      }).success,
-    ).toBe(true);
   });
 
   it('keeps ordinary JSON response behavior unchanged', async () => {
