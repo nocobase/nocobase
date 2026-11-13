@@ -128,7 +128,7 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
   private imapClient?: ImapFlow;
   private readonly commandMetrics = new ImapCommandMetrics();
   private stopCommandObservation?: () => void;
-  private readonly yieldReasons = new Set<'push' | 'uidnext'>();
+  private readonly yieldReasons = new Set<'push' | 'uidnext' | 'budget'>();
   private readonly smtpTransport: Transporter;
   // Evidence and byte budget of the current step only; never reused across steps.
   private copies: ImapCopyEvidence[] = [];
@@ -390,6 +390,10 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
         throwIfAborted(input.signal);
         const folder = folders[folderIndex];
         const selectedFolderIndex = folderIndex;
+        // Only the newest history page has an independent commit budget. Later
+        // pages keep their throughput, while push checks still apply to both.
+        const topPage = upperUid === undefined && legacyOffset === undefined;
+        const pageStartedAt = Date.now();
         const mailbox = await (
           await this.imap()
         ).mailboxOpen(folder, {
@@ -468,7 +472,14 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
           String(mailbox.uidValidity),
           selected,
           input.signal,
-          async () => (yielded = await checkNewMail()),
+          async () => {
+            yielded = await checkNewMail();
+            if (!yielded && topPage && Date.now() - pageStartedAt >= 2_000) {
+              this.yieldReasons.add('budget');
+              yielded = true;
+            }
+            return yielded;
+          },
         );
         for (const copy of fetched) {
           const { receivedAt } = copy.message;
@@ -535,7 +546,14 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
         };
       }
       const mailboxes = this.selectableMailboxes(await this.listMailboxes());
-      const nextFolders: Record<string, ImapFolderCursor> = {};
+      // Unvisited folders must retain their high-water marks when a completed
+      // folder's new copies are committed before the next folder is inspected.
+      const nextFolders: Record<string, ImapFolderCursor> = Object.fromEntries(
+        mailboxes.flatMap((mailbox) => {
+          const old = previous.folders[mailbox.path];
+          return old ? [[mailbox.path, old]] : [];
+        }),
+      );
       const messages: FetchedCopy[] = [];
       let hasMore = false;
       const limit = Math.max(1, input.limit);
@@ -595,6 +613,10 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
           uidValidity: current.uidValidity,
           uidNext: nextUid,
         };
+        if (messages.length > 0) {
+          hasMore ||= mailbox !== mailboxes.at(-1);
+          break;
+        }
       }
       let verify: ImapVerifyState | undefined;
       if (this.locations) {

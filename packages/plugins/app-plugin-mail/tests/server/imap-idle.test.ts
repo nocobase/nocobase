@@ -1,3 +1,4 @@
+import { mailPushTiming } from '../../server/runtime/push-timing.js';
 import { EventEmitter } from 'node:events';
 import type { ImapFlow } from 'imapflow';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -45,6 +46,7 @@ function fixture() {
   const credentials = {
     get: vi.fn(async () => ({ username: 'u', password: 'p' })),
   };
+  const logger = { info: vi.fn() };
   const schedule = vi.fn(async () => undefined);
   const createClient = vi.fn(() => {
     const client = new FakeImap();
@@ -55,10 +57,11 @@ function fixture() {
     credentials: credentials as unknown as MailCredentialVault,
     resolveConfig: () => config,
     schedulePushSync: schedule,
+    logger,
     createClient,
   });
   instances.push(listener);
-  return { listener, clients, credentials, schedule, createClient };
+  return { listener, clients, credentials, schedule, createClient, logger };
 }
 
 afterEach(async () => {
@@ -83,6 +86,48 @@ describe('INBOX IDLE lifecycle', () => {
     expect(schedule).not.toHaveBeenCalled();
     clients[0].emit('exists', { path: 'INBOX', count: 2, prevCount: 1 });
     expect(schedule).toHaveBeenCalledExactlyOnceWith(account.id);
+  });
+
+  it('timestamps and correlates EXISTS separately from reconnect catch-up without payloads', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime('2026-03-02T00:00:00.000Z');
+    const { listener, clients, schedule, logger } = fixture();
+    const contexts: unknown[] = [];
+    schedule.mockImplementation(async () => {
+      await Promise.resolve();
+      contexts.push(mailPushTiming.getStore());
+    });
+    listener.update(account);
+    await vi.advanceTimersByTimeAsync(0);
+    vi.setSystemTime('2026-03-02T00:00:01.000Z');
+    clients[0].emit('exists', { path: 'INBOX', count: 2, prevCount: 1 });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(contexts).toEqual([
+      {
+        notificationId: expect.any(String),
+        receivedAt: '2026-03-02T00:00:00.000Z',
+        source: 'connect',
+      },
+      {
+        notificationId: expect.any(String),
+        receivedAt: '2026-03-02T00:00:01.000Z',
+        source: 'exists',
+      },
+    ]);
+    expect(contexts[0]).not.toEqual(contexts[1]);
+    for (const context of contexts)
+      expect(logger.info).toHaveBeenCalledWith(
+        expect.objectContaining({
+          event: 'mail.imap.idle.notified',
+          accountId: account.id,
+          ...(context as object),
+        }),
+        expect.any(String),
+      );
+    expect(mailPushTiming.getStore()).toBeUndefined();
+    expect(JSON.stringify(logger.info.mock.calls)).not.toMatch(
+      /owner@example|credential|imap.example/,
+    );
   });
 
   it('keeps one listener and closes it on suspension, credential replacement and removal', async () => {

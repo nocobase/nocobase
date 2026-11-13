@@ -1,10 +1,12 @@
 import type { ImapFlow } from 'imapflow';
+import { randomUUID } from 'node:crypto';
 import type { MailAccount } from '../../shared/mail.js';
 import type { MailCredentialVault } from '../contracts/provider.js';
 import type { ImapSmtpMailProviderConfig } from '../adapters/imap-smtp/config.js';
 import type { ImapSmtpCredential } from '../adapters/imap-smtp/types.js';
 import { createImapClient } from '../adapters/imap-smtp/connection.js';
 import { writeMailLog, type MailLogger } from '../logging.js';
+import { mailPushTiming } from './push-timing.js';
 
 interface Watch {
   readonly key: string;
@@ -127,10 +129,10 @@ export class MailImapIdle {
         event.path === 'INBOX' &&
         event.count > event.prevCount
       )
-        this.notify(watch);
+        this.notify(watch, 'exists');
     });
     // Also catch messages delivered while disconnected, before SELECT's baseline.
-    this.notify(watch);
+    this.notify(watch, 'connect');
     writeMailLog(
       this.options.logger,
       'info',
@@ -143,18 +145,36 @@ export class MailImapIdle {
     void client.idle().then(ended, ended);
   }
 
-  private notify(watch: Watch): void {
-    void this.options.schedulePushSync(watch.account.id).catch(() => {
-      writeMailLog(
-        this.options.logger,
-        'error',
-        {
-          event: 'mail.imap.idle.schedule_failed',
-          accountId: watch.account.id,
-        },
-        'IMAP IDLE could not schedule Mail synchronization.',
-      );
-    });
+  private notify(watch: Watch, source: 'exists' | 'connect'): void {
+    const timing = {
+      notificationId: randomUUID(),
+      receivedAt: new Date().toISOString(),
+      source,
+    };
+    writeMailLog(
+      this.options.logger,
+      'info',
+      {
+        event: 'mail.imap.idle.notified',
+        accountId: watch.account.id,
+        ...timing,
+      },
+      'Mail INBOX IDLE notification received.',
+    );
+    void mailPushTiming
+      .run(timing, () => this.options.schedulePushSync(watch.account.id))
+      .catch(() => {
+        writeMailLog(
+          this.options.logger,
+          'error',
+          {
+            event: 'mail.imap.idle.schedule_failed',
+            accountId: watch.account.id,
+            ...timing,
+          },
+          'IMAP IDLE could not schedule Mail synchronization.',
+        );
+      });
   }
 
   private retry(watch: Watch): void {

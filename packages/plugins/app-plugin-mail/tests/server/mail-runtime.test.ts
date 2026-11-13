@@ -1,3 +1,4 @@
+import { mailPushTiming } from '../../server/runtime/push-timing.js';
 import { EventEmitter } from 'node:events';
 import type { ImapFlow } from 'imapflow';
 import * as imapConnection from '../../server/adapters/imap-smtp/connection.js';
@@ -953,6 +954,28 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
         batchSize: 10,
       },
     });
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime('2026-09-02T00:00:00.000Z');
+    const committedRevisions: number[] = [];
+    const loggedAfterCommit: boolean[] = [];
+    const commit = store.commitSyncStep.bind(store);
+    vi.spyOn(store, 'commitSyncStep').mockImplementation(async (input) => {
+      const result = await commit(input);
+      committedRevisions.push(result.revision);
+      vi.setSystemTime(Date.now() + 25);
+      return result;
+    });
+    logger.info.mockImplementation((data) => {
+      if (
+        data.event === 'mail.sync.progress' ||
+        data.event === 'mail.sync.completed'
+      ) {
+        loggedAfterCommit.push(
+          committedRevisions.includes(data.revision) &&
+            data.committedAt === new Date().toISOString(),
+        );
+      }
+    });
     const operation = new SyncMailboxOperation({
       store,
       adapters: resolver(provider),
@@ -967,6 +990,31 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
       run = (await store.getSyncRun(run.id))!;
     }
     expect(run.status).toBe('completed');
+    expect(committedRevisions).toHaveLength(3);
+    expect(loggedAfterCommit).toEqual([true, true, true]);
+    expect(
+      logger.info.mock.calls
+        .filter(([data]) => data.committedAt)
+        .map(([data]) => data.commitDurationMs),
+    ).toEqual([25, 25, 25]);
+    expect(logger.info).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: 'mail.sync.started',
+        claimedAt: '2026-09-02T00:00:00.000Z',
+        claimDurationMs: 0,
+      }),
+      expect.any(String),
+    );
+    expect(logger.info).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: 'mail.sync.progress',
+        importedMessages: 1,
+        previousPhase: 'history',
+        previousRevision: 1,
+        committedAt: '2026-09-02T00:00:00.050Z',
+      }),
+      expect.any(String),
+    );
     expect(logger.info).toHaveBeenCalledWith(
       expect.objectContaining({
         event: 'mail.sync.completed',
@@ -2036,6 +2084,93 @@ describe('[SRV][DATA] mail runtime, synchronization, sending, and consistency', 
     await expect(store.getPushSubscription(ACCOUNT_ID)).resolves.toMatchObject({
       providerSubscriptionId: 'subscription-before-removal',
     });
+  });
+
+  it('logs persisted push tokens and actual run creation separately from reused runs and scheduling completion', async () => {
+    executor = await InlineJobExecutor.ready();
+    const logger = { info: vi.fn() };
+    runtime = createMailRuntime({
+      store,
+      adapters: resolver(baseAdapter()),
+      executor,
+      logger,
+    });
+    vi.spyOn(runtime, 'kick').mockImplementation(() => undefined);
+    const writes = vi.spyOn(store, 'markPushSyncPending');
+    const reads = vi.spyOn(store, 'getSyncRun');
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime('2026-03-02T00:00:00.000Z');
+    const create = store.createSyncRun.bind(store);
+    vi.spyOn(store, 'createSyncRun').mockImplementation(async (input) => {
+      const result = await create(input);
+      vi.setSystemTime('2026-03-02T00:00:00.025Z');
+      return result;
+    });
+    const timing = {
+      notificationId: 'notification-one',
+      receivedAt: '2026-03-02T00:00:00.000Z',
+      source: 'exists' as const,
+    };
+    await expect(
+      mailPushTiming.run(timing, () => runtime!.schedulePushSync(ACCOUNT_ID)),
+    ).resolves.toBe(true);
+    const created = logger.info.mock.calls
+      .map(([data]) => data)
+      .find((data) => data.event === 'mail.sync.run_created')!;
+    expect(created).toMatchObject({
+      ...timing,
+      created: true,
+      requestToken: expect.any(String),
+      syncRunId: expect.any(String),
+      runCreatedAt: '2026-03-02T00:00:00.000Z',
+      observedAt: '2026-03-02T00:00:00.025Z',
+    });
+    expect(logger.info).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: 'mail.sync.push_persisted',
+        ...timing,
+        requestToken: created.requestToken,
+        persistedAt: '2026-03-02T00:00:00.000Z',
+      }),
+      expect.any(String),
+    );
+    expect(logger.info).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: 'mail.sync.push_scheduled',
+        created: true,
+        schedulingMs: 25,
+        scheduledAt: '2026-03-02T00:00:00.025Z',
+      }),
+      expect.any(String),
+    );
+    vi.setSystemTime('2026-03-02T00:00:01.000Z');
+    await expect(
+      mailPushTiming.run(
+        { ...timing, notificationId: 'notification-two' },
+        () => runtime!.schedulePushSync(ACCOUNT_ID),
+      ),
+    ).resolves.toBe(false);
+    expect(logger.info).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: 'mail.sync.run_reused',
+        notificationId: 'notification-two',
+        syncRunId: created.syncRunId,
+        created: false,
+        runCreatedAt: created.runCreatedAt,
+        observedAt: '2026-03-02T00:00:01.000Z',
+      }),
+      expect.any(String),
+    );
+    expect(writes).toHaveBeenCalledTimes(2);
+    expect(reads).not.toHaveBeenCalled(); // Timing adds no run lookup.
+    expect(
+      logger.info.mock.calls.filter(
+        ([data]) => data.event === 'mail.sync.run_created',
+      ),
+    ).toHaveLength(1);
+    expect(JSON.stringify(logger.info.mock.calls)).not.toMatch(
+      /user-1|@example|secret:test/,
+    );
   });
 
   it('deduplicates push-triggered synchronization', async () => {

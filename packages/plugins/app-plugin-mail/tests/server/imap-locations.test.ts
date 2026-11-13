@@ -4327,7 +4327,7 @@ describe('IMAP large mailbox checkpoints and cooperative imports', () => {
     clock.mockImplementation(() => now);
     let bodies = 0;
     server.onBody = async () => {
-      now += 2000;
+      now += 1000;
       bodies += 1;
       if (bodies !== 2) return;
       deliver('INBOX', {
@@ -4858,5 +4858,213 @@ describe('IMAP deferred recheck checkpoint bounds', () => {
     expect((await messages()).map((item) => item.providerMessageId)).toEqual([
       'NEW',
     ]);
+  });
+});
+
+describe('IMAP bounded top history pages and folder commits', () => {
+  it('commits a pre-claim baseline arrival within the top-page budget and resumes sparse UIDs without replay', async () => {
+    server.capabilities.add('OBJECTID');
+    folder('INBOX');
+    const boundary = '2026-03-01T00:00:00.000Z';
+    deliver('INBOX', {
+      raw: raw('<out-of-range@example.com>'),
+      date: '2026-02-28T23:59:59.999Z',
+    });
+    for (let index = 1; index <= 300; index += 1) {
+      server.folders.get('INBOX')!.uidNext += 2;
+      deliver('INBOX', {
+        raw: raw(`<baseline-${index}@example.com>`),
+        emailId: `BASELINE-${index}`,
+        date: boundary,
+      });
+    }
+    // EXISTS was persisted before the baseline and before the history claim.
+    await store.markPushSyncPending(accountId, 'already-in-baseline');
+    const run = await service().startSync(owner, {
+      accountId,
+      receivedAfter: boundary,
+    });
+    await step();
+    const logger = { info: vi.fn() };
+    let now = Date.now();
+    const clock = vi.spyOn(Date, 'now').mockImplementation(() => now);
+    server.onBody = () => {
+      now += 1000;
+    };
+    try {
+      const startedAt = now;
+      await step(adapters, logger);
+      expect(now - startedAt).toBe(2000);
+      expect(server.bodyReads).toEqual(['INBOX:901', 'INBOX:898']);
+      const visible = await service().listMessages(owner, {
+        accountIds: [accountId],
+      });
+      expect(visible.items.map((item) => item.providerMessageId)).toContain(
+        'BASELINE-300',
+      );
+      const checkpoint = (await store.getSyncRun(run.id))!;
+      expect(checkpoint).toMatchObject({
+        phase: 'catchUp',
+        historyComplete: false,
+      });
+      expect(
+        JSON.parse(
+          Buffer.from(checkpoint.historyCursor!, 'base64url').toString(),
+        ),
+      ).toMatchObject({ upperUid: 897 });
+      expect(logger.info).toHaveBeenCalledWith(
+        expect.objectContaining({
+          event: 'mail.sync.imap_commands',
+          yieldReasons: ['budget'],
+        }),
+        expect.any(String),
+      );
+      // A new operation/adapter resumes the saved page. The old push does not
+      // force another yield; only the first page has the independent budget.
+      await step();
+      const before = server.bodyReads.length;
+      await step(adapters, logger);
+      expect(server.bodyReads.length - before).toBe(100);
+      expect((await store.getSyncRun(run.id))!.policy.receivedAfter).toBe(
+        boundary,
+      );
+      while (await step(adapters, logger));
+      expect(await store.getSyncRun(run.id)).toMatchObject({
+        status: 'completed',
+        historyComplete: true,
+      });
+      expect(await messages()).toHaveLength(300);
+      // SINCE includes the preceding day; the exact boundary rejects its one copy.
+      expect(new Set(server.bodyReads).size).toBe(301);
+      expect(server.bodyReads).toHaveLength(301);
+      expect(
+        logger.info.mock.calls.filter(
+          ([data]) =>
+            data.event === 'mail.sync.imap_commands' &&
+            data.yieldReasons.includes('budget'),
+        ),
+      ).toHaveLength(1);
+    } finally {
+      server.onBody = undefined;
+      clock.mockRestore();
+    }
+  });
+
+  it.each([false, true])(
+    'commits a complete copy before other folders and proves cross-page identity (native: %s)',
+    async (native) => {
+      if (native) server.capabilities.add('OBJECTID');
+      // Preserve the actual server order: INBOX need not be first.
+      for (const path of ['Archive', 'INBOX', 'Sent']) folder(path);
+      await sync();
+      const bytes = raw('<cross-folder-arrival@example.com>', 'Complete body');
+      for (const path of ['Archive', 'INBOX', 'Sent'])
+        deliver(path, {
+          raw: bytes,
+          emailId: native ? 'CROSS-FOLDER' : undefined,
+        });
+      const run = await service().startSync(owner, { accountId });
+      await step();
+      server.bodyReads.length = 0;
+      const logger = { info: vi.fn() };
+      const client = await database.connection().client<{
+        on(event: string, listener: () => void): void;
+        off(event: string, listener: () => void): void;
+      }>();
+      let sqlQueries = 0;
+      const countQuery = () => {
+        sqlQueries += 1;
+      };
+      client.on('query', countQuery);
+      try {
+        await step(adapters, logger);
+      } finally {
+        client.off('query', countQuery);
+      }
+      expect(sqlQueries).toBeLessThanOrEqual(125);
+      expect(server.bodyReads).toEqual(['Archive:1']);
+      expect(
+        logger.info.mock.calls.find(
+          ([data]) => data.event === 'mail.sync.imap_commands',
+        )![0].imapCommands.total,
+      ).toBeLessThanOrEqual(4);
+      const first = (
+        await service().listMessages(owner, { accountIds: [accountId] })
+      ).items;
+      expect(first).toHaveLength(1);
+      expect(first[0].contentStatus).toBe('complete');
+      const cursor = parseSyncCursor(
+        (await store.getSyncRun(run.id))!.changeCursor,
+      );
+      expect(cursor.folders).toMatchObject({
+        Archive: { uidNext: 2 },
+        INBOX: { uidNext: 1 },
+        Sent: { uidNext: 1 },
+      });
+      await step();
+      const second = (
+        await service().listMessages(owner, { accountIds: [accountId] })
+      ).items;
+      expect(second).toHaveLength(1);
+      expect(second[0].id).toBe(first[0].id);
+      expect((await messages())[0].folders).toEqual(['Archive', 'INBOX']);
+      while (await step());
+      expect(await store.getSyncRun(run.id)).toMatchObject({
+        status: 'completed',
+      });
+      expect(await messages()).toMatchObject([
+        { id: first[0].id, folders: ['Archive', 'INBOX', 'Sent'] },
+      ]);
+      expect(await messages()).toHaveLength(1);
+    },
+  );
+});
+
+describe('IMAP per-folder top page budgets', () => {
+  it('budgets each folder top without reordering stored history folders', async () => {
+    server.capabilities.add('OBJECTID');
+    for (const path of ['Archive', 'INBOX']) {
+      folder(path);
+      for (let uid = 1; uid <= 3; uid++)
+        deliver(path, {
+          raw: raw(`<${path}-${uid}@example.com>`),
+          emailId: `${path}-${uid}`,
+        });
+    }
+    const run = await service().startSync(owner, { accountId });
+    await step();
+    let now = Date.now();
+    const clock = vi.spyOn(Date, 'now').mockImplementation(() => now);
+    server.onBody = () => {
+      now += 1000;
+    };
+    const logger = { info: vi.fn() };
+    try {
+      await step(adapters, logger);
+      expect(server.bodyReads).toEqual(['Archive:3', 'Archive:2']);
+      await step();
+      await step(adapters, logger);
+      expect(server.bodyReads).toEqual([
+        'Archive:3',
+        'Archive:2',
+        'Archive:1',
+        'INBOX:3',
+        'INBOX:2',
+      ]);
+      expect(
+        logger.info.mock.calls.filter(
+          ([data]) =>
+            data.event === 'mail.sync.imap_commands' &&
+            data.yieldReasons.includes('budget'),
+        ),
+      ).toHaveLength(2);
+      while (await step());
+      expect((await store.getSyncRun(run.id))!.status).toBe('completed');
+      expect(await messages()).toHaveLength(6);
+      expect(new Set(server.bodyReads).size).toBe(6);
+    } finally {
+      server.onBody = undefined;
+      clock.mockRestore();
+    }
   });
 });
