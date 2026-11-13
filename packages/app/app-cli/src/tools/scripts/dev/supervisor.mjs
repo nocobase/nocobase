@@ -45,6 +45,7 @@ export async function superviseDevelopment({
     });
   const inheritedEnv = { ...baseEnv };
   let child;
+  let terminationTimer;
   let watcher;
   let timer;
   let stopping = false;
@@ -56,7 +57,18 @@ export async function superviseDevelopment({
     terminating = true;
     terminationStartedAt = performance.now();
     console.log(`\n[dev] Stopping development processes (${reason})`);
-    child?.kill();
+    // Signal only the worker: it owns the immediate Vite/tsx commands, and tsx
+    // forwards to the application. A group SIGTERM would reach the app twice.
+    // Windows taskkill must enumerate the intact tree before its parent exits.
+    if (process.platform === 'win32') child?.kill('SIGKILL');
+    else child?.nodeChildProcess.kill('SIGTERM');
+    // tsx watch has a five-second escalation; allow it time to finish.
+    terminationTimer = setTimeout(() => {
+      console.error(
+        '[dev] Development shutdown timed out; forcing termination.',
+      );
+      child?.kill('SIGKILL');
+    }, 6000);
   };
   // Terminal and package-manager signals can arrive more than once.
   const stop = (reason) => {
@@ -100,7 +112,8 @@ export async function superviseDevelopment({
         env: inheritedEnv,
         extendEnv: false,
         killDescendants: true,
-        forceKillAfterDelay: 1800,
+        // Graceful forwarding is worker-owned; only escalation targets the group.
+        forceKillAfterDelay: false,
         reject: false,
         buffer: false,
         stdio: ['pipe', 'pipe', 'pipe'],
@@ -116,8 +129,14 @@ export async function superviseDevelopment({
           console.error('[dev] Failed to forward input', error);
         }
       });
-      child.nodeChildProcess.once('exit', () => terminate());
+      child.nodeChildProcess.once('exit', () => {
+        terminate();
+        // A cooperative worker waits for its commands. Reap orphaned descendants
+        // after an unexpected exit too, even when they hold inherited pipes open.
+        child.kill('SIGKILL');
+      });
       const result = await child;
+      clearTimeout(terminationTimer);
       process.stdin.unpipe(child.stdin);
       // Reap descendants that closed their output before their parent exited.
       child.kill('SIGKILL');
@@ -148,6 +167,7 @@ export async function superviseDevelopment({
     return 1;
   } finally {
     clearInterval(parentWatch);
+    clearTimeout(terminationTimer);
     clearTimeout(timer);
     watcher?.close();
     process.stdin.pause();
