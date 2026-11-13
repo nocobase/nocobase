@@ -104,7 +104,7 @@ export function supportedReasoningLevel(
   // `off` and `default` have no lower level: -1 leaves the loop at once.
   const index = enabled.indexOf(requested);
   for (let lower = index - 1; lower >= 0; lower -= 1)
-    if (levels.includes(enabled[lower]!)) return enabled[lower]!;
+    if (levels.includes(enabled[lower])) return enabled[lower];
   return 'default';
 }
 

@@ -148,7 +148,7 @@ export class NativeOnlineAgent {
       ReturnType<OnlineAgentSessionManager['load']>
     >['config'];
     let sdkFailure = false;
-    let thinking: ThinkingSelection = { level: 'default' };
+    let thinking!: ThinkingSelection;
     const thinkingNotices: ThinkingNotice[] = [];
     let waitingApprovals = false;
     let background = false;
