@@ -252,3 +252,272 @@ it('rejects an initial-state record whose creation survives but first submit his
     await fixture.testDatabase.destroy();
   }
 });
+
+const firstExpenseValues = {
+  autoApproveLimit: 5000,
+  financeLimit: 50000,
+  escalateAfterMinutes: 3,
+};
+const laterExpenseValues = {
+  autoApproveLimit: 5000,
+  financeLimit: 50000,
+  escalateAfterMinutes: 30,
+};
+
+async function expenseStartHistory(options: {
+  missingFirst?: boolean;
+  missingCreation?: boolean;
+  editGap?: boolean;
+  partial?: boolean;
+  corruptUsage?: boolean;
+  complete?: boolean;
+}) {
+  const fixture = await createTestDatabase();
+  const { database } = fixture;
+  const migrator = createMigrator({ database, sources: migrations });
+  await migrator.upTo(before);
+  const startVersion = options.editGap ? 3 : 2;
+  const firstAt = '2026-10-01T00:01:00.000Z';
+  const laterAt = '2026-10-02T00:01:00.000Z';
+  const created = await database
+    .repository('lifecycleExampleExpenses')
+    .createOne({
+      values: {
+        title: 'Repeated submission history',
+        purpose: '',
+        items: [],
+        amountCents: 600000,
+        applicantId: 'lin',
+        approverId: 'chen',
+        failPayments: 0,
+        status: 'awaitingManager',
+        statusChangedAt: laterAt,
+        lifecycleVersion: startVersion + 2,
+        createdAt: at,
+        lifecycleDefinition: 'expenses',
+        parameterContract: 1,
+      },
+    });
+  const recordId = String(Number(created.record.id));
+  const snapshotId = parameterIdentity('demo', 'expenses', recordId);
+  const append = async (
+    transition: string,
+    version: number,
+    from: string | null,
+    to: string,
+    time: string,
+  ) => {
+    const result = await database
+      .repository('lifecycleExampleTransitions')
+      .createOne({
+        values: {
+          lifecycle: 'expenses',
+          recordId,
+          transition,
+          version,
+          from,
+          to,
+          actorId: 'lin',
+          input: {},
+          at: time,
+          requestId: null,
+          requestKey: '$v:' + version,
+        },
+      });
+    return String(Number(result.record.id));
+  };
+  if (!options.missingCreation) await append('$create', 1, null, 'draft', at);
+  const firstId = options.missingFirst
+    ? undefined
+    : await append('submit', startVersion, 'draft', 'awaitingManager', firstAt);
+  await append(
+    'withdraw',
+    startVersion + 1,
+    'awaitingManager',
+    'draft',
+    laterAt,
+  );
+  const laterId = await append(
+    'submit',
+    startVersion + 2,
+    'draft',
+    'awaitingManager',
+    laterAt,
+  );
+  const sources = Object.fromEntries(
+    Object.keys(firstExpenseValues).map((field) => [
+      field,
+      {
+        group:
+          field === 'escalateAfterMinutes'
+            ? 'expenseTiming'
+            : 'expenseThresholds',
+        revision: 3,
+        schemaVersion: 1,
+        origin: 'configuration',
+      },
+    ]),
+  );
+  for (const [associationId, effective, time] of [
+    ...(firstId ? [[firstId, firstExpenseValues, firstAt] as const] : []),
+    [laterId, laterExpenseValues, laterAt] as const,
+  ]) {
+    await database.repository('lifecycleExampleParameterUsages').createOne({
+      values: {
+        id: parameterIdentity('expenses', 'transition', associationId, 0),
+        recordKey: parameterIdentity('demo', 'expenses', recordId),
+        at: time,
+        payload: {
+          scope: 'demo',
+          lifecycle: 'expenses',
+          recordId:
+            options.corruptUsage && associationId === firstId
+              ? 'another-record'
+              : recordId,
+          kind: 'transition',
+          associationId,
+          attempt: 0,
+          revision: 3,
+          at: time,
+          values: effective,
+          sources,
+        },
+      },
+    });
+  }
+  if (options.partial || options.complete)
+    await database.repository('lifecycleExampleParameterSnapshots').createOne({
+      values: {
+        id: snapshotId,
+        payload: {
+          scope: 'demo',
+          lifecycle: 'expenses',
+          recordId,
+          revision: 3,
+          at: firstAt,
+          values: options.complete
+            ? firstExpenseValues
+            : { autoApproveLimit: 5000 },
+          sources: options.complete
+            ? sources
+            : { autoApproveLimit: sources.autoApproveLimit },
+        },
+      },
+    });
+  return {
+    fixture,
+    database,
+    migrator,
+    snapshotId,
+    recordId,
+    firstId,
+    laterId,
+    firstAt,
+  };
+}
+
+it.each([false, true])(
+  'rejects later submit usage when the first submit log is lost (partial snapshot: %s)',
+  async (partial) => {
+    const run = await expenseStartHistory({ missingFirst: true, partial });
+    try {
+      const snapshots = run.database.repository(
+        'lifecycleExampleParameterSnapshots',
+      );
+      const original = await snapshots.findOne({
+        filter: { id: run.snapshotId },
+      });
+      await expect(run.migrator.latest()).rejects.toThrow(
+        'FIRST_START_UNPROVEN',
+      );
+      expect(
+        await snapshots.findOne({ filter: { id: run.snapshotId } }),
+      ).toEqual(original);
+      await expect(run.migrator.latest()).rejects.toThrow(
+        'FIRST_START_UNPROVEN',
+      );
+      expect(
+        await snapshots.findOne({ filter: { id: run.snapshotId } }),
+      ).toEqual(original);
+    } finally {
+      await run.fixture.destroy();
+    }
+  },
+);
+
+it.each([false, true])(
+  'recovers only from a proven first submit and remains unchanged on repeated migration (partial snapshot: %s)',
+  async (partial) => {
+    const run = await expenseStartHistory({ partial });
+    try {
+      await run.migrator.latest();
+      const snapshots = run.database.repository(
+        'lifecycleExampleParameterSnapshots',
+      );
+      const first = await snapshots.findOne({ filter: { id: run.snapshotId } });
+      expect(first?.payload).toMatchObject({
+        values: firstExpenseValues,
+        at: run.firstAt,
+        recoveredFrom: {
+          transitionId: run.firstId,
+          usageId: parameterIdentity('expenses', 'transition', run.firstId!, 0),
+        },
+      });
+      const record = await run.database
+        .repository('lifecycleExampleExpenses')
+        .findOne({ filter: { id: Number(run.recordId) } });
+      expect(new Date(record!.lifecycleDueAt as string).toISOString()).toBe(
+        '2026-10-02T00:04:00.000Z',
+      );
+      await run.migrator.latest();
+      expect(
+        (await snapshots.findOne({ filter: { id: run.snapshotId } }))?.payload,
+      ).toEqual(first?.payload);
+    } finally {
+      await run.fixture.destroy();
+    }
+  },
+);
+
+it.each(['missingCreation', 'editGap'] as const)(
+  'requires positive first-start evidence when history has %s',
+  async (reason) => {
+    const run = await expenseStartHistory({ [reason]: true });
+    try {
+      await expect(run.migrator.latest()).rejects.toThrow(
+        'FIRST_START_UNPROVEN',
+      );
+    } finally {
+      await run.fixture.destroy();
+    }
+  },
+);
+
+it('rejects a first-submit usage whose payload belongs to another record', async () => {
+  const run = await expenseStartHistory({ corruptUsage: true });
+  try {
+    await expect(run.migrator.latest()).rejects.toThrow(
+      'START_PARAMETERS_UNRECOVERABLE',
+    );
+  } finally {
+    await run.fixture.destroy();
+  }
+});
+
+it('preserves a complete snapshot even when first-submit history is missing and a later usage differs', async () => {
+  const run = await expenseStartHistory({ missingFirst: true, complete: true });
+  try {
+    const snapshots = run.database.repository(
+      'lifecycleExampleParameterSnapshots',
+    );
+    const original = await snapshots.findOne({
+      filter: { id: run.snapshotId },
+    });
+    await run.migrator.latest();
+    expect(
+      (await snapshots.findOne({ filter: { id: run.snapshotId } }))?.payload,
+    ).toEqual(original!.payload);
+  } finally {
+    await run.fixture.destroy();
+  }
+});

@@ -10,3 +10,6 @@ Isolate parameter configuration by definition version and freeze complete instan
 
 
 Require an independently persisted unstarted proof for configured drafts. The existing creation-receipt table is now required for submission-start definitions even without a client request ID; creation writes the proof and first start consumes it atomically. Historical records without reliable proof or recoverable startup parameters stop migration instead of being treated as fresh drafts.
+
+
+Recover incomplete historical snapshots only when the first startup is proven. Gaps or inconsistent history stop migration rather than using a later retained submission's parameters, while complete snapshots remain preserved.

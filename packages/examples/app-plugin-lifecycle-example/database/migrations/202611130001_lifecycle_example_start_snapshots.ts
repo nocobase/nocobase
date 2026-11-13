@@ -86,6 +86,38 @@ const contracts: Record<string, Contract> = {
     due: { pastDue: ['dunningMinutes', 60000] },
   },
 };
+/** Positive historical evidence, never an inference from absent submit entries. */
+function provesFirstStart(logs: readonly Values[], candidate: Values): boolean {
+  const version = Number(candidate.version);
+  if (
+    !Number.isSafeInteger(version) ||
+    version < 1 ||
+    logs.some(
+      (entry) =>
+        !Number.isSafeInteger(Number(entry.version)) ||
+        Number(entry.version) < 1,
+    )
+  )
+    return false;
+  const prefix = logs.filter((entry) => Number(entry.version) <= version);
+  // Every transition consumes a business version. A gap can hide an earlier
+  // submit/withdraw, or merely an ordinary edit: either way, it proves nothing.
+  // This checks a positive prefix for recovery, not draft identity at runtime.
+  return (
+    prefix.length === version &&
+    prefix.every(
+      (entry, index) =>
+        Number(entry.version) === index + 1 &&
+        typeof entry.to === 'string' &&
+        entry.to.length > 0 &&
+        (index === 0
+          ? entry.transition === '$create' && entry.from === null
+          : entry.transition !== '$create' &&
+            entry.from === prefix[index - 1].to),
+    )
+  );
+}
+
 function validate(contract: Contract, values: Values): string[] {
   const errors = Object.keys(values).filter(
     (key) => !(key in contract.defaults),
@@ -212,9 +244,13 @@ const migration: MigrationDefinition = defineMigration({
               sort: (s) => s.field('version').asc(),
             },
           );
-          const start = logs.find(
+          const candidate = logs.find(
             (log) => log.transition === (contract.start ?? '$create'),
           );
+          const start =
+            candidate && provesFirstStart(logs, candidate)
+              ? candidate
+              : undefined;
           const id = identity('demo', name, recordId);
           const existing = await repository(
             'lifecycleExampleParameterSnapshots',
@@ -231,25 +267,41 @@ const migration: MigrationDefinition = defineMigration({
               recordId,
               status: record.status,
               fields: Object.keys(contract.defaults),
-              reason: 'START_HISTORY_UNKNOWN',
+              candidateStartId: candidate ? String(Number(candidate.id)) : null,
+              candidateVersion: candidate ? Number(candidate.version) : null,
+              reason: candidate
+                ? 'FIRST_START_UNPROVEN'
+                : 'START_HISTORY_UNKNOWN',
             });
             continue;
           }
-          const usage = start
-            ? await repository('lifecycleExampleParameterUsages').findOne({
-                filter: {
-                  id: identity(
-                    name,
-                    'transition',
-                    String(Number(start?.id)),
-                    0,
-                  ),
-                },
-              })
-            : undefined;
+          const usage =
+            !complete && start
+              ? await repository('lifecycleExampleParameterUsages').findOne({
+                  filter: {
+                    id: identity(
+                      name,
+                      'transition',
+                      String(Number(start?.id)),
+                      0,
+                    ),
+                  },
+                })
+              : undefined;
           const fact = usage?.payload as Values | undefined;
           const evidence = fact?.values as Values | undefined;
-          if (!complete && (!evidence || validate(contract, evidence).length)) {
+          const matchesStart =
+            fact &&
+            fact.scope === 'demo' &&
+            fact.lifecycle === name &&
+            fact.recordId === recordId &&
+            fact.kind === 'transition' &&
+            fact.associationId === String(Number(start?.id)) &&
+            (fact.attempt ?? 0) === 0;
+          if (
+            !complete &&
+            (!matchesStart || !evidence || validate(contract, evidence).length)
+          ) {
             conflicts.push({
               definition: name,
               recordId,
@@ -335,7 +387,12 @@ const migration: MigrationDefinition = defineMigration({
               ? {
                   recoveredFrom: {
                     transitionId: String(Number(start?.id)),
-                    usageId: String(Number(usage!.id)),
+                    usageId: identity(
+                      name,
+                      'transition',
+                      String(Number(start!.id)),
+                      0,
+                    ),
                     groupRevisions,
                   },
                 }
