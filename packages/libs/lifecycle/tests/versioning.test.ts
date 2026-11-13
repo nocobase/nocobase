@@ -545,7 +545,7 @@ describe('records of several versions', () => {
   });
 });
 
-describe('parameters shared by versions', () => {
+describe('parameters isolated by definition version', () => {
   function versions() {
     const store = new MemoryLifecycleStore();
     const parameters = new StoredLifecycleParameters(store);
@@ -561,7 +561,7 @@ describe('parameters shared by versions', () => {
     runtime.register(
       defineLifecycle(
         v1({
-          parameterConfiguration: { readMode: 'live', groups: [limits] },
+          dueAtField: 'dueAt', parameterConfiguration: { groups: [limits] },
         }),
       ),
       { parameterConfiguration: registration, services: { sent: [] } },
@@ -569,13 +569,12 @@ describe('parameters shared by versions', () => {
     return { store, parameters, runtime, registration, scopes };
   }
 
-  it('reads one stored configuration for every version, and adds a new group for what a new version needs', async () => {
+  it('reads independent configuration for every version', async () => {
     const { parameters, runtime, registration, scopes } = versions();
     runtime.register(
       defineLifecycle(
         v2({
-          parameterConfiguration: {
-            readMode: 'live',
+          dueAtField: 'dueAt', parameterConfiguration: {
             groups: [limits, extras],
           },
         }),
@@ -584,7 +583,7 @@ describe('parameters shared by versions', () => {
     );
     await parameters.save({
       scope: 'demo',
-      group: limits,
+      group: { ...limits, key: 'requests' },
       values: { limit: 25 },
       expectedRevision: 0,
       requestId: 'r1',
@@ -606,7 +605,7 @@ describe('parameters shared by versions', () => {
         transactionHandle: undefined,
         purpose: 'preview',
       }),
-    ).resolves.toEqual({ limit: 25, extra: 0 });
+    ).resolves.toEqual({ limit: 10, extra: 0 });
     expect(scopes).toContainEqual(['requests-v2', 'requests']);
     expect(scopes).toContainEqual(['requests', 'requests']);
   });
@@ -630,7 +629,7 @@ describe('parameters shared by versions', () => {
         },
       },
     ],
-  ])('refuses a version whose shared group has %s', (_, changed) => {
+  ])('accepts a version whose independent contract has %s', (_, changed) => {
     const { runtime, registration } = versions();
     expect(() =>
       runtime.register(
@@ -640,12 +639,12 @@ describe('parameters shared by versions', () => {
               limit: changed.schemaVersion === 2 ? 10 : 10,
               extra: 0,
             },
-            parameterConfiguration: { readMode: 'live', groups: [changed] },
+            dueAtField: 'dueAt', parameterConfiguration: { groups: [changed] },
           }),
         ),
         { parameterConfiguration: registration, services: { sent: [] } },
       ),
-    ).toThrow(/parameter group "limits" differs/);
+    ).not.toThrow();
   });
 
   it('still reads the shared group for a record of the first version', async () => {

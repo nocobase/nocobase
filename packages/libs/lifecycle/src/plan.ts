@@ -168,6 +168,7 @@ export function ownedFields<T extends LifecycleTypes>(
     lifecycle.stateField,
     lifecycle.changedAtField,
     lifecycle.versionField,
+    ...(lifecycle.dueAtField ? [lifecycle.dueAtField] : []),
     ...(lifecycle.definitionField === undefined
       ? []
       : [lifecycle.definitionField]),

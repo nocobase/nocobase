@@ -381,6 +381,8 @@ export interface LifecycleDefinition<T extends LifecycleTypes> {
   readonly stateField?: string;
   /** Defaults to `statusChangedAt`. Every transition, a self-transition too, updates it. */
   readonly changedAtField?: string;
+  /** Indexed earliest trigger deadline, computed from the instance snapshot. */
+  readonly dueAtField?: string;
   /**
    * Defaults to `lifecycleVersion`: an integer every transition increments.
    * The conditional update checks it as well as the state, so two
@@ -462,6 +464,7 @@ export interface Lifecycle<T extends LifecycleTypes> {
   readonly collection: string;
   readonly stateField: string;
   readonly changedAtField: string;
+  readonly dueAtField?: string;
   readonly versionField: string;
   /** The default initial state. */
   readonly initial: T['state'];
@@ -485,8 +488,7 @@ export interface Lifecycle<T extends LifecycleTypes> {
 /** A plain description for a client: draw the state diagram, label buttons. */
 export interface LifecycleDescription {
   readonly parameterConfiguration?: {
-    readonly readMode: string;
-    readonly snapshotTransition?: string;
+    readonly startTransition?: string | readonly string[];
     readonly groups: readonly {
       readonly key: string;
       readonly title: string;
@@ -833,19 +835,11 @@ export function defineLifecycle<T extends LifecycleTypes>(
 
   const configuration = definition.parameterConfiguration;
   if (configuration) {
-    if (
-      configuration.readMode !== undefined &&
-      !['snapshot', 'live'].includes(configuration.readMode)
-    )
-      throw invalid(name, 'unknown parameter read mode.');
-    if (
-      configuration.snapshotTransition &&
-      !transitions.has(configuration.snapshotTransition)
-    )
-      throw invalid(name, 'unknown snapshot transition.');
+    const starts = configuration.startTransition === undefined ? [] : typeof configuration.startTransition === 'string' ? [configuration.startTransition] : configuration.startTransition;
+    if (starts.some(start => !transitions.has(start))) throw invalid(name, 'unknown parameter start transition.');
+    if (triggers.size && !definition.dueAtField) throw invalid(name, 'configured triggers require an indexed dueAtField.');
     const keys = new Set<string>();
     const groups = new Set<string>();
-    let snapshots = false;
     for (const group of configuration.groups) {
       if (
         !group.key ||
@@ -862,10 +856,6 @@ export function defineLifecycle<T extends LifecycleTypes>(
             `parameter "${key}" needs a unique key and a code default.`,
           );
         keys.add(key);
-        const mode = field.readMode ?? configuration.readMode ?? 'live';
-        if (!['snapshot', 'live'].includes(mode))
-          throw invalid(name, `unknown read mode for "${key}".`);
-        snapshots ||= mode === 'snapshot';
         try {
           field.parse((definition.parameters as Record<string, unknown>)[key]);
         } catch {
@@ -879,19 +869,6 @@ export function defineLifecycle<T extends LifecycleTypes>(
           if (!binding.state && !binding.transition)
             throw invalid(name, `empty binding for "${key}".`);
         }
-      }
-      for (const together of group.sameReadMode ?? []) {
-        const modes = together.map((key) => {
-          const field = group.fields[key];
-          if (!field)
-            throw invalid(name, `unknown constraint parameter "${key}".`);
-          return field.readMode ?? configuration.readMode ?? 'live';
-        });
-        if (new Set(modes).size !== 1)
-          throw invalid(
-            name,
-            'joint parameter constraints require the same read mode.',
-          );
       }
       try {
         normalizeParameterValues(
@@ -910,8 +887,6 @@ export function defineLifecycle<T extends LifecycleTypes>(
         );
       }
     }
-    if (snapshots && !configuration.snapshotTransition)
-      throw invalid(name, 'snapshot parameters require a binding transition.');
   }
   return Object.freeze({
     name,
@@ -922,6 +897,7 @@ export function defineLifecycle<T extends LifecycleTypes>(
     collection: definition.collection ?? name,
     stateField,
     changedAtField,
+    ...(definition.dueAtField ? { dueAtField: definition.dueAtField } : {}),
     versionField,
     initial: initialStates[0],
     initialStates,
@@ -950,13 +926,7 @@ export function describeLifecycle<T extends LifecycleTypes>(
     ...(lifecycle.parameterConfiguration
       ? {
           parameterConfiguration: {
-            readMode: lifecycle.parameterConfiguration.readMode ?? 'live',
-            ...(lifecycle.parameterConfiguration.snapshotTransition
-              ? {
-                  snapshotTransition:
-                    lifecycle.parameterConfiguration.snapshotTransition,
-                }
-              : {}),
+            ...(lifecycle.parameterConfiguration.startTransition ? { startTransition: lifecycle.parameterConfiguration.startTransition } : {}),
             groups: lifecycle.parameterConfiguration.groups.map((group) => ({
               key: group.key,
               title: group.title,
@@ -965,13 +935,7 @@ export function describeLifecycle<T extends LifecycleTypes>(
                 Object.entries(group.fields).map(
                   ([key, { parse: _parse, ...field }]) => [
                     key,
-                    {
-                      ...field,
-                      readMode:
-                        field.readMode ??
-                        lifecycle.parameterConfiguration?.readMode ??
-                        'live',
-                    },
+                    field,
                   ],
                 ),
               ),

@@ -145,7 +145,7 @@ export {
   LIFECYCLE_PARAMETER_COLLECTIONS,
   normalizeParameterValues,
   parameterIdentity,
-  type ParameterReadMode,
+  configurationGroup,
   type ParameterBinding,
   type ReviewerSelection,
   type ConfigurableParameter,
