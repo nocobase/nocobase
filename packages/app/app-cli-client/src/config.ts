@@ -66,6 +66,8 @@ export interface AppCliSelfUpdate {
   readonly packageRoot: string;
   /** The product the application serves the CLI as (`DIST_ROUTES.resolve`); `bin` by default. */
   readonly product?: string;
+  /** Enable credential-free update requests with `update --server <url>`; the host must explicitly serve this product publicly. */
+  readonly public?: boolean;
 }
 
 /** Where the signed-in person's requests go, and the headers that authenticate them. */

@@ -10,13 +10,15 @@ const mocks = vi.hoisted(() => ({
   apply: vi.fn(),
   latest: vi.fn(),
   restart: vi.fn(),
+  session: vi.fn(),
+  findRun: vi.fn(),
 }));
 vi.mock('../src/dynamic/session.ts', () => ({
-  currentSession: async () => ({
-    kind: 'user',
-    server: 'https://example.test',
-    headers: {},
-  }),
+  currentSession: mocks.session,
+}));
+vi.mock('../src/lib/credentials.ts', async (original) => ({
+  ...(await original<typeof import('../src/lib/credentials.ts')>()),
+  findRunCredentials: mocks.findRun,
 }));
 vi.mock('../src/acp-service.ts', async (original) => ({
   ...(await original<typeof import('../src/acp-service.ts')>()),
@@ -34,6 +36,12 @@ describe('update command service restart', () => {
   let config: Config;
   beforeEach(async () => {
     home = tempDir();
+    mocks.session.mockResolvedValue({
+      kind: 'user',
+      server: 'https://example.test',
+      headers: { authorization: 'Bearer test-session' },
+    });
+    mocks.findRun.mockReturnValue(undefined);
     configureAppCli(TEST_CLI);
     config = await Config.load(path.resolve(import.meta.dirname, '..'));
     mocks.latest.mockResolvedValue({
@@ -51,6 +59,9 @@ describe('update command service restart', () => {
     });
   });
   afterEach(() => {
+    process.exitCode = 0;
+    vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
     vi.restoreAllMocks();
     vi.clearAllMocks();
     removeDir(home);
@@ -61,6 +72,104 @@ describe('update command service restart', () => {
       version: '1.0.0',
       selfUpdate: { packageRoot: home },
     });
+
+  const publicCommand = () =>
+    updateCommand({
+      ...TEST_CLI,
+      version: '1.0.0',
+      selfUpdate: { packageRoot: home, public: true },
+    });
+
+  it('only enables an explicit public target when the application opts in', async () => {
+    await expect(
+      command().run(['--server', 'https://public.test/main'], config),
+    ).rejects.toThrow();
+    expect(mocks.latest).not.toHaveBeenCalled();
+    mocks.session.mockResolvedValue(undefined);
+    await expect(command().run([], config)).rejects.toThrow('Sign in first');
+    await expect(publicCommand().run([], config)).rejects.toThrow(
+      'Sign in first',
+    );
+    expect(mocks.latest).not.toHaveBeenCalled();
+  });
+
+  it.each([{ args: ['--check'] }, { args: [] }])(
+    'updates a public target with no session or profile headers: %j',
+    async ({ args }) => {
+      mocks.session.mockRejectedValue(
+        new Error('The keychain must not be read'),
+      );
+      await publicCommand().run(
+        [...args, '--server', 'https://public.test/platform/main/'],
+        config,
+      );
+      expect(mocks.session).not.toHaveBeenCalled();
+      const client = mocks.latest.mock.calls[0]![0];
+      expect(client.server).toBe('https://public.test/platform/main');
+      const request = vi.fn(async () => new Response('{}'));
+      vi.stubGlobal('fetch', request);
+      await client.request('GET', '/api/agents/dist/manifest');
+      const [url, options] = request.mock.calls[0]! as unknown as [
+        URL,
+        RequestInit,
+      ];
+      expect(url.pathname).toBe('/platform/main/api/agents/dist/manifest');
+      expect(options.headers).not.toHaveProperty('authorization');
+      expect(options.headers).not.toHaveProperty('x-api-key');
+    },
+  );
+
+  it('preserves authenticated updates when no public target is supplied', async () => {
+    await publicCommand().run(['--check'], config);
+    expect(mocks.session).toHaveBeenCalledOnce();
+    const client = mocks.latest.mock.calls[0]![0];
+    const request = vi.fn(async () => new Response('{}'));
+    vi.stubGlobal('fetch', request);
+    await client.request('GET', '/api/agents/dist/manifest');
+    expect(request).toHaveBeenCalledWith(
+      expect.any(URL),
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          authorization: 'Bearer test-session',
+        }),
+      }),
+    );
+  });
+
+  it.each([
+    'not a URL',
+    'ftp://public.test',
+    'https://user:secret@public.test',
+    'https://public.test?token=secret',
+    'https://public.test/#secret',
+  ])(
+    'refuses unsafe public targets without echoing secrets: %s',
+    async (server) => {
+      await expect(
+        publicCommand().run(['--server', server], config),
+      ).rejects.toThrow('HTTP(S) application URL');
+      expect(mocks.latest).not.toHaveBeenCalled();
+    },
+  );
+
+  it('retains Runner ownership and session-agent restrictions for public targets', async () => {
+    mocks.findRun.mockReturnValue('/run/credential.json');
+    await expect(
+      publicCommand().run(['--server', 'https://public.test'], config),
+    ).rejects.toThrow('runner keeps it up to date');
+    expect(mocks.session).not.toHaveBeenCalled();
+    mocks.findRun.mockReturnValue(undefined);
+    vi.stubEnv('ACME_AGENT_SESSION', 'test-session');
+    const Command = updateCommand({
+      ...TEST_CLI,
+      envPrefix: 'ACME',
+      selfUpdate: { packageRoot: home, public: true },
+    });
+    await expect(
+      Command.run(['--server', 'https://public.test'], config),
+    ).rejects.toThrow('runner keeps it up to date');
+    expect(mocks.latest).not.toHaveBeenCalled();
+  });
 
   it('restarts after activation and announces the activated version', async () => {
     const Command = command();

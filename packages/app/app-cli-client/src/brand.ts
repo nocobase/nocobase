@@ -34,6 +34,8 @@ export interface AppCliBrand {
   readonly auth?: AppCliAuth;
   /** The command manifest's path below the server's address; `CLI_ROUTES.manifest` when left out. */
   readonly manifestPath?: string;
+  /** Allow `update --server <url>` without a login. This does not make server artifacts public. */
+  readonly publicUpdates?: boolean;
   /**
    * Skill directories, relative to the application, that the packaged CLI ships in its `skills/` (each a directory with
    * a `SKILL.md`, or a directory of them): the runner gives them to every run whose CLI it is. Read when packaging only.
@@ -81,7 +83,11 @@ export function appCliConfigOf(
       : { manifestPath: brand.manifestPath }),
     ...(description === undefined ? {} : { description }),
     version: info.version,
-    selfUpdate: { packageRoot: info.packageRoot, product: brand.bin },
+    selfUpdate: {
+      packageRoot: info.packageRoot,
+      product: brand.bin,
+      ...(brand.publicUpdates === true ? { public: true } : {}),
+    },
   };
 }
 

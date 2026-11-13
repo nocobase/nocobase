@@ -187,22 +187,23 @@ An application may have a command line of its own for people and agents, besides
 }
 ```
 
-| Field                | Meaning                                                                                                             |
-| -------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| `bin`                | The command, lowercase; also the product the application serves it as. Not `nocobase` or `nocobase-runner`          |
-| `displayName`        | The application's name in messages; `bin` by default                                                                |
-| `description`        | The root help's description                                                                                         |
-| `stateDir`           | The directory under the home directory it keeps profiles and caches in; `.<bin>` by default                         |
-| `homeEnv`            | An environment variable that moves `stateDir`, such as `ACME_HOME`                                                  |
-| `envPrefix`          | Enables `<PREFIX>_SERVER`, `<PREFIX>_API_KEY` and `<PREFIX>_PROFILE`, which act without signing in                  |
-| `keychainEnv`        | An environment variable whose value `off` keeps the credential in `config.json` instead of the keychain             |
-| `keychainService`    | The keychain service of the credential; `<bin>-cli` by default                                                      |
-| `runCredentialsFile` | Where a runner writes a run's credentials, relative to the run's directory; `<stateDir>/run.json` by default        |
-| `exampleServer`      | The address its help shows                                                                                          |
-| `auth`               | `clientId` (and `basePath`) of the server's device authorization, for `login` in the browser                        |
-| `manifestPath`       | The command manifest below the server's address; `/api/cli/manifest` by default                                     |
-| `skills`             | Skill directories, relative to the application (each with a `SKILL.md`, or a directory of them), shipped to runners |
-| `version`            | The packed version; the application's by default                                                                    |
+| Field                | Meaning                                                                                                                              |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `bin`                | The command, lowercase; also the product the application serves it as. Not `nocobase` or `nocobase-runner`                           |
+| `displayName`        | The application's name in messages; `bin` by default                                                                                 |
+| `description`        | The root help's description                                                                                                          |
+| `stateDir`           | The directory under the home directory it keeps profiles and caches in; `.<bin>` by default                                          |
+| `homeEnv`            | An environment variable that moves `stateDir`, such as `ACME_HOME`                                                                   |
+| `envPrefix`          | Enables `<PREFIX>_SERVER`, `<PREFIX>_API_KEY` and `<PREFIX>_PROFILE`, which act without signing in                                   |
+| `keychainEnv`        | An environment variable whose value `off` keeps the credential in `config.json` instead of the keychain                              |
+| `keychainService`    | The keychain service of the credential; `<bin>-cli` by default                                                                       |
+| `runCredentialsFile` | Where a runner writes a run's credentials, relative to the run's directory; `<stateDir>/run.json` by default                         |
+| `exampleServer`      | The address its help shows                                                                                                           |
+| `auth`               | `clientId` (and `basePath`) of the server's device authorization, for `login` in the browser                                         |
+| `publicUpdates`      | Explicitly enable credential-free `update --server <full-application-url>`; the host must separately allow public artifact downloads |
+| `manifestPath`       | The command manifest below the server's address; `/api/cli/manifest` by default                                                      |
+| `skills`             | Skill directories, relative to the application (each with a `SKILL.md`, or a directory of them), shipped to runners                  |
+| `version`            | The packed version; the application's by default                                                                                     |
 
 `cli link` writes a small package under `node_modules/.cache/nocobase-cli/link/<bin>/` and links its entry into `node_modules/.bin` (`--bin-dir` elsewhere), so `pnpm exec <bin>` runs the CLI from the installed, or in this repository the source, `@nocobase/app-cli-client`. `cli build` packs it into one standalone tarball per platform (`--targets`, by default `darwin-arm64,darwin-x64,linux-x64,linux-arm64`; Windows is not supported) that bundles Node.js (downloaded from nodejs.org and checked against `SHASUMS256.txt`, cached in `node_modules/.cache/nocobase-cli/node`; `--host-node` uses this machine's for its own platform, `--node-version` picks another), its `nocobase.cli`, the skills, and its production dependencies installed by npm without optional ones; workspace packages it needs are built and vendored. `cli build --runner` packs `@nocobase/agent-runner` as `nocobase-runner` the same way. `--universal` adds one tarball without Node.js, `<product>-v<version>-universal.tar.gz`, whose `bin/<bin>` runs `bin/run.js` on the machine's Node.js 24 or newer (`NOCOBASE_NODE`, then the installation's `<prefix>/node`, then `node` on PATH); without `--targets` it is the only one packed, and the manifest records its `node` as `system`. The agents plugin serves it to every platform that has no tarball of its own. Each product goes in `<out>/<channel>/<product>/` (`--out`, by default `storage/runners/dist`; `--channel`, by default `stable`), its tarballs `<version>/<product>-v<version>-<target>.tar.gz` and their SHA-256 and size in `manifest.json` there, which the agents plugin serves. CI builds them as artifacts mounted into that storage; `npm`, `pnpm` and `tar` come from the environment.
 
