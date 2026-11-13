@@ -36,7 +36,6 @@ describe('a packaged CLI', () => {
           stateDir: '.acme',
           homeEnv: 'ACME_HOME',
           envPrefix: 'ACME',
-          publicUpdates: true,
           keychainEnv: 'ACME_KEYCHAIN',
           auth: { clientId: 'acme' },
           skills: ['ai/skills/acme-cli'],
@@ -51,7 +50,6 @@ describe('a packaged CLI', () => {
       keychainEnv: 'ACME_KEYCHAIN',
       auth: { clientId: 'acme' },
       description: 'From package',
-      selfUpdate: { packageRoot: '/p', product: 'acme', public: true },
     });
   });
 

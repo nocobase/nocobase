@@ -38,8 +38,6 @@ export interface InstallScriptExtensions {
 export interface InstallScriptOptions {
   readonly cli: string;
   readonly server?: string;
-  /** Generate a credential-free installer only for a product the host deliberately serves publicly. */
-  readonly public?: boolean;
   readonly extensions?: InstallScriptExtensions;
 }
 export function installScript(options: InstallScriptOptions): string {
@@ -50,27 +48,12 @@ export function installScript(options: InstallScriptOptions): string {
     throw new Error(`Not a CLI command name: ${options.cli}`);
   const server = options.server ?? '';
   const fallback = SAFE_SERVER.test(server) ? server.replace(/\/+$/u, '') : '';
-  const publicInstall = options.public === true;
-  const extensions = {
-    ...DEFAULT_EXTENSIONS,
-    ...(publicInstall ? PUBLIC_EXTENSIONS : {}),
-    ...options.extensions,
-    tokenVariable: publicInstall ? '' : 'token=""\n',
-    parseToken: publicInstall
-      ? ''
-      : '    --token) token="${2:-}"; shift 2 ;;\n',
-    requireToken: publicInstall ? '' : ' || [ -z "$token" ]',
-    resolveCredentials: publicInstall
-      ? ''
-      : `    -H "$header: $token" \\
-`,
-    downloadCredentials: publicInstall ? '' : ' -H "$header: $token"',
-  };
+  const extensions = { ...DEFAULT_EXTENSIONS, ...options.extensions };
   return INSTALL_SCRIPT_TEMPLATE.replace(
     /@([A-Za-z]+)@/gu,
     (marker, key: string) =>
       key in extensions
-        ? (extensions[key as keyof typeof extensions] ?? '')
+        ? (extensions[key as keyof InstallScriptExtensions] ?? '')
         : marker,
   )
     .replaceAll('@CLI@', options.cli)
@@ -78,8 +61,6 @@ export function installScript(options: InstallScriptOptions): string {
 }
 export interface InstallRoutesOptions {
   readonly cli: () => string;
-  /** Generate a public installer. Artifact admission must separately authorize anonymous requests. */
-  readonly public?: boolean;
   readonly publicOrigin?: () => string | undefined;
   readonly publicBasePath?: string;
   readonly extensions?: InstallScriptExtensions;
@@ -157,24 +138,6 @@ const DEFAULT_EXTENSIONS: Required<InstallScriptExtensions> = {
   productComment: `# Installs one product and records its installation.
 `,
 };
-const PUBLIC_EXTENSIONS: InstallScriptExtensions = {
-  intro: `# Installs the publicly downloadable @CLI@ CLI. Business commands require a separate login.
-#   curl -fsSL <server>/api/agents/dist/installScript | sh -s -- [options]
-`,
-  usage: `Usage: install.sh [--server <url>] [options]
-
-  --server <url>          The application (defaults to the script's application)
-  --prefix <dir>          Where to install @CLI@ (default: ~/.local/share/@CLI@, or NOCOBASE_CLI_INSTALL_DIR)
-  --bin-dir <dir>         Where to link the command (default: ~/.local/bin, or NOCOBASE_CLI_BIN_DIR)
-  --dry-run               Print what would be done, and change nothing
-
-No download credential is required. Business commands require a separate login.`,
-  credentials: '',
-  resolveFailure: `  if [ "$status" != 200 ]; then
-    message="$(sed -n 's/.*"message":"\\([^"]*\\)".*/\\1/p' "$tmp/resolve")"
-    fail "$server answered $status: \${message:-$(cat "$tmp/resolve")}"
-  fi`,
-};
 const INSTALL_SCRIPT_TEMPLATE = `#!/bin/sh
 @intro@set -eu
 
@@ -188,7 +151,8 @@ cli=@CLI@
 @command@
 server="@DEFAULT_SERVER@"
 server_explicit=0
-@tokenVariable@@name@
+token=""
+@name@
 prefix="\${NOCOBASE_CLI_INSTALL_DIR:-}"
 @prefix@
 bin_dir="\${NOCOBASE_CLI_BIN_DIR:-}"
@@ -197,7 +161,8 @@ dry_run=0
 while [ $# -gt 0 ]; do
   case "$1" in
 @parseServer@
-@parseToken@@parseRunner@
+    --token) token="\${2:-}"; shift 2 ;;
+@parseRunner@
     --prefix) prefix="\${2:-}"; shift 2 ;;
 @parsePrefix@
     --bin-dir) bin_dir="\${2:-}"; shift 2 ;;
@@ -208,7 +173,7 @@ while [ $# -gt 0 ]; do
   esac
 done
 @validate@
-if [ -z "$server" ]@requireToken@; then
+if [ -z "$server" ] || [ -z "$token" ]; then
   usage >&2
   exit 2
 fi
@@ -291,7 +256,8 @@ ${npmLauncherScript()}LAUNCHER
   mode="$3"
   installed=new
   status="$(curl -sS -o "$tmp/resolve" -w '%{http_code}' \\
-@resolveCredentials@    "$server/api/agents/dist/products/$product/targets/$target?format=env&accept=npm")" ||
+    -H "$header: $token" \\
+    "$server/api/agents/dist/products/$product/targets/$target?format=env&accept=npm")" ||
     fail "Could not reach $server."
 @resolveFailure@
   kind="$(field kind)"
@@ -343,7 +309,7 @@ ${npmLauncherScript()}LAUNCHER
     run mv "$dest.partial" "$dest"
   else
     say "Downloading $product $version for $target from $server ..."
-    run curl -fSL --progress-bar@downloadCredentials@ -o "$tmp/$product.tar.gz" "$server$url"
+    run curl -fSL --progress-bar -H "$header: $token" -o "$tmp/$product.tar.gz" "$server$url"
     if [ "$dry_run" = 0 ]; then
       actual="$(sha256 "$tmp/$product.tar.gz")"
       [ "$actual" = "$checksum" ] || fail "The download does not match its SHA-256 (expected $checksum, got $actual)."
@@ -404,7 +370,6 @@ export function createInstallRoutes(options: InstallRoutesOptions): Hono {
       context.body(
         installScript({
           cli: options.cli(),
-          ...(options.public === true ? { public: true } : {}),
           server: requestedServer(context, options),
           ...(options.extensions ? { extensions: options.extensions } : {}),
         }),

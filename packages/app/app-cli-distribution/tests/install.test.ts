@@ -15,6 +15,7 @@ import path from 'node:path';
 import { promisify } from 'node:util';
 import { expect, it } from 'vitest';
 import { installScript } from '../src/install.js';
+import { publicInstallScript } from '../src/public-install.js';
 
 const exec = promisify(execFile);
 
@@ -56,10 +57,9 @@ it.each([{ public: true }, { public: false }])(
       );
       const address = server.address() as { port: number };
       const script = path.join(root, 'install.sh');
-      const contents = installScript({
+      const contents = (policy.public ? publicInstallScript : installScript)({
         cli: 'acme',
         server: `http://127.0.0.1:${address.port}/nested/main`,
-        ...policy,
       });
       await writeFile(script, contents);
       await exec('sh', ['-n', script]);
@@ -129,9 +129,8 @@ it('fails a public install on a protected response instead of retaining an exist
     const script = path.join(root, 'install.sh');
     await writeFile(
       script,
-      installScript({
+      publicInstallScript({
         cli: 'acme',
-        public: true,
         server: `http://127.0.0.1:${port}/main`,
       }),
     );

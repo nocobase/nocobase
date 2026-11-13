@@ -24,8 +24,6 @@ export interface CliBrand {
   readonly exampleServer?: string;
   readonly auth?: { readonly clientId?: string; readonly basePath?: string };
   readonly manifestPath?: string;
-  /** Allow credential-free `update --server <url>` for a product the host explicitly serves publicly. */
-  readonly publicUpdates?: boolean;
   /** Skill directories, relative to the application, the packaged CLI ships in `skills/`. */
   readonly skills?: readonly string[];
   /** The packaged CLI's version; the application's when left out. */
@@ -95,11 +93,6 @@ export function parseCliBrand(value: unknown): CliBrand {
     )
       throw invalid(`nocobase.cli.${field} must be a relative path.`);
   }
-  if (
-    record['publicUpdates'] !== undefined &&
-    typeof record['publicUpdates'] !== 'boolean'
-  )
-    throw invalid('nocobase.cli.publicUpdates must be a boolean.');
   const auth = record['auth'];
   if (auth !== undefined) {
     if (typeof auth !== 'object' || auth === null || Array.isArray(auth))

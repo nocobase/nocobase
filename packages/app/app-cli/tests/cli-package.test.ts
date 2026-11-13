@@ -110,7 +110,6 @@ describe('nocobase.cli', () => {
       bin: 'acme',
       displayName: 'Acme',
       envPrefix: 'ACME',
-      publicUpdates: true,
       auth: { clientId: 'acme' },
       skills: ['ai/skills/acme-cli'],
     });
@@ -118,7 +117,6 @@ describe('nocobase.cli', () => {
       bin: 'acme',
       displayName: 'Acme',
       envPrefix: 'ACME',
-      publicUpdates: true,
       auth: { clientId: 'acme' },
     });
     for (const bad of [
@@ -131,8 +129,6 @@ describe('nocobase.cli', () => {
       { bin: 'acme', skills: ['/etc'] },
       { bin: 'acme', auth: { secret: 'x' } },
       { bin: 'acme', displayName: '' },
-      { bin: 'acme', publicUpdates: 'true' },
-      { bin: 'acme', publicUpdates: {} },
     ])
       expect(() => parseCliBrand(bad)).toThrow(CommandError);
   });

@@ -24,7 +24,6 @@ import {
 import { restartAcpServices } from './acp-service.ts';
 import { appCliHome, type AppCliConfig, type AppCliSession } from './config.ts';
 import { currentSession } from './dynamic/session.ts';
-import { findRunCredentials } from './lib/credentials.ts';
 import {
   applyUpdate,
   detectInstallation,
@@ -271,7 +270,6 @@ export function updateEnvironment(
 
 /** `<bin> update`, for a CLI whose configuration names `selfUpdate`. */
 export function updateCommand(app: AppCliConfig): Command.Class {
-  const publicUpdates = app.selfUpdate?.public === true;
   return class Update extends AppCommand {
     private serviceWarnings: string[] = [];
     protected override toSuccessJson(result: unknown): unknown {
@@ -284,26 +282,12 @@ export function updateCommand(app: AppCliConfig): Command.Class {
     static override description =
       `Asks the server you are signed in to for the newest ${app.bin} it serves for this platform, downloads it ` +
       `and checks its SHA-256 (or installs the exact version it names on npm), and switches to it, keeping the ` +
-      `previous version beside it. For ${app.bin} installed alone by the install script.` +
-      (publicUpdates
-        ? ' Use --server <url> for public downloads without a login; no credentials are sent to that target.'
-        : '');
+      `previous version beside it. For ${app.bin} installed alone by the install script.`;
     static override examples = [
       '<%= config.bin %> update',
       '<%= config.bin %> update --check',
-      ...(publicUpdates
-        ? ['<%= config.bin %> update --server https://example.com/main']
-        : []),
     ];
     static override flags = {
-      ...(publicUpdates
-        ? {
-            server: Flags.string({
-              description:
-                'Public distribution server, including its application base path. Sends no credentials.',
-            }),
-          }
-        : {}),
       check: Flags.boolean({
         description: 'Only say whether a newer version is served.',
       }),
@@ -314,50 +298,17 @@ export function updateCommand(app: AppCliConfig): Command.Class {
       const environment = updateEnvironment(app);
       if (environment === undefined)
         throw new UsageError(`${app.bin} does not update itself.`);
-      // An explicit public target never reads a user credential or reuses a profile's headers.
-      // Retain Runner ownership even when a public target is supplied; finding the file does not read its token.
-      if (
-        flags.server !== undefined &&
-        (findRunCredentials(process.cwd(), app) !== undefined ||
-          (app.envPrefix !== undefined &&
-            process.env[`${app.envPrefix}_AGENT_SESSION`] !== undefined))
-      )
+      const session = await currentSession();
+      if (session === undefined)
+        throw new UsageError(
+          `Sign in first: \`${app.bin} login --server <url>\`.`,
+          EXIT_CODES.auth,
+        );
+      if (session.kind === 'run')
         throw new UsageError(
           `This ${app.bin} belongs to an agent's run; the runner keeps it up to date.`,
         );
-      let target: AppCliSession;
-      if (flags.server !== undefined) {
-        let url: URL;
-        try {
-          url = new URL(flags.server);
-          if (
-            !['http:', 'https:'].includes(url.protocol) ||
-            url.username ||
-            url.password ||
-            url.search ||
-            url.hash
-          )
-            throw new Error('Invalid public target');
-        } catch {
-          throw new UsageError(
-            'The public update server must be an HTTP(S) application URL without credentials, a query or a fragment.',
-          );
-        }
-        target = { server: url.href.replace(/\/+$/u, ''), headers: {} };
-      } else {
-        const session = await currentSession();
-        if (session === undefined)
-          throw new UsageError(
-            `Sign in first: \`${app.bin} login --server <url>\`.`,
-            EXIT_CODES.auth,
-          );
-        if (session.kind === 'run')
-          throw new UsageError(
-            `This ${app.bin} belongs to an agent's run; the runner keeps it up to date.`,
-          );
-        target = session;
-      }
-      const result = await updateCli(target, environment, {
+      const result = await updateCli(session, environment, {
         check: flags.check === true,
         log: (line) => this.log(line),
       });
