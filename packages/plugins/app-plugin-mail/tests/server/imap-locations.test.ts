@@ -5068,3 +5068,90 @@ describe('IMAP per-folder top page budgets', () => {
     }
   });
 });
+
+describe('IMAP shared top-page commit budget', () => {
+  it.each([2, 3])(
+    'shares one budget across %s short folders and resumes without replay',
+    async (folderCount) => {
+      server.capabilities.add('OBJECTID');
+      const paths = ['Archive', 'INBOX', 'Sent'].slice(0, folderCount);
+      const boundary = '2026-03-01T00:00:00.000Z';
+      for (const path of paths) {
+        folder(path);
+        deliver(path, {
+          raw: raw(`<shared-budget-${path}@example.com>`),
+          emailId: `SHARED-${path}`,
+          date: boundary,
+        });
+      }
+      // All messages and the pending push precede the baseline/history claim.
+      await store.markPushSyncPending(accountId, 'shared-budget-before-claim');
+      const run = await service().startSync(owner, {
+        accountId,
+        receivedAfter: boundary,
+      });
+      await step();
+      const logger = { info: vi.fn() };
+      let now = Date.now();
+      const clock = vi.spyOn(Date, 'now').mockImplementation(() => now);
+      server.onBody = () => {
+        now += 1500;
+      };
+      try {
+        const startedAt = now;
+        await step(adapters, logger);
+        // The boundary is cooperative: the second complete body takes it to 3s.
+        expect(now - startedAt).toBe(3000);
+        expect(server.bodyReads).toEqual(['Archive:1', 'INBOX:1']);
+        expect(logger.info).toHaveBeenCalledWith(
+          expect.objectContaining({
+            event: 'mail.sync.imap_commands',
+            yieldReasons: ['budget'],
+          }),
+          expect.any(String),
+        );
+        const protocol = logger.info.mock.calls.find(
+          ([data]) => data.event === 'mail.sync.imap_commands',
+        )![0];
+        expect(protocol.imapCommands.total).toBeLessThanOrEqual(8);
+        const visible = (
+          await service().listMessages(owner, { accountIds: [accountId] })
+        ).items;
+        expect(visible.map((item) => item.providerMessageId).sort()).toEqual([
+          'SHARED-Archive',
+          'SHARED-INBOX',
+        ]);
+        expect(visible.every((item) => item.contentStatus === 'complete')).toBe(
+          true,
+        );
+        const checkpoint = (await store.getSyncRun(run.id))!;
+        expect(checkpoint.policy.receivedAfter).toBe(boundary);
+        if (folderCount === 3) {
+          expect(checkpoint.historyComplete).toBe(false);
+          expect(
+            JSON.parse(
+              Buffer.from(checkpoint.historyCursor!, 'base64url').toString(),
+            ),
+          ).toEqual({ folderIndex: 2 });
+        }
+        // A fresh operation/adapter uses the stored cursor; the old push cannot
+        // force replay of the two already committed folders.
+        while (await step());
+        expect(await store.getSyncRun(run.id)).toMatchObject({
+          status: 'completed',
+          historyComplete: true,
+        });
+        expect(server.bodyReads).toEqual(paths.map((path) => `${path}:1`));
+        expect(new Set(server.bodyReads).size).toBe(folderCount);
+        const final = (
+          await service().listMessages(owner, { accountIds: [accountId] })
+        ).items;
+        expect(final).toHaveLength(folderCount);
+        expect(new Set(final.map((item) => item.id)).size).toBe(folderCount);
+      } finally {
+        server.onBody = undefined;
+        clock.mockRestore();
+      }
+    },
+  );
+});

@@ -376,6 +376,7 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
         : undefined;
       since?.setUTCHours(0, 0, 0, 0);
       let scannedRanges = 0;
+      let budgetStartedAt: number | undefined;
       const checkNewMail = this.newMailChecker(
         parseSyncCursor(this.syncRun?.changeCursor ?? input.baselineCursor)
           .folders,
@@ -390,10 +391,10 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
         throwIfAborted(input.signal);
         const folder = folders[folderIndex];
         const selectedFolderIndex = folderIndex;
-        // Only the newest history page has an independent commit budget. Later
-        // pages keep their throughput, while push checks still apply to both.
+        // Top pages share this call's budget from the first top page onward.
+        // Continuation pages keep their throughput and existing push checks.
         const topPage = upperUid === undefined && legacyOffset === undefined;
-        const pageStartedAt = Date.now();
+        if (topPage) budgetStartedAt ??= Date.now();
         const mailbox = await (
           await this.imap()
         ).mailboxOpen(folder, {
@@ -474,7 +475,7 @@ export class ImapSmtpAdapter implements MailProviderAdapter {
           input.signal,
           async () => {
             yielded = await checkNewMail();
-            if (!yielded && topPage && Date.now() - pageStartedAt >= 2_000) {
+            if (!yielded && topPage && Date.now() - budgetStartedAt! >= 2_000) {
               this.yieldReasons.add('budget');
               yielded = true;
             }
