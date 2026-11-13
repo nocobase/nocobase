@@ -139,6 +139,7 @@ const zhTW: LocaleResource<typeof enUS> = {
     },
     apps: {
       title: '應用程式',
+      lastFailure: '上次失敗：{{detail}}',
       create: '建立應用程式',
       id: '應用程式 ID',
       name: '名稱',
@@ -722,6 +723,14 @@ const zhTW: LocaleResource<typeof enUS> = {
         notReady: '還沒準備好；稍後再試。',
         checkTimeout: '測試未在 20 秒內完成。',
         hostNoSettings: '本機運作時不採用任何連線設定。',
+        recycleWait: '預覽服務正在回收記憶體，完成後繼續部署。',
+        recycleRetry: '預覽服務仍在回收記憶體，部署未完成。請稍後重試。',
+        capacityExceeded:
+          '預覽服務記憶體不足或執行中的應用程式已達上限，部署未完成。請稍後重試。',
+        replacementMemory:
+          '預覽服務記憶體不足，無法啟動新版本，目前版本繼續執行。請稍後重試。',
+        startQueueFull: '同時啟動的應用程式過多，請稍後重試。',
+        activeLimit: '執行中的應用程式已達上限，請稍後重試。',
       },
       prefixed: {
         startFailed: '啟動失敗：{{detail}}',

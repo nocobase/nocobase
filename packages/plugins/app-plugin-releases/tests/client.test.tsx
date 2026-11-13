@@ -607,6 +607,41 @@ describe('client', () => {
     expect(messageText(t, 'Something else broke.')).toBe(
       'Something else broke.',
     );
+    // A capacity refusal reads as a retryable failure, without the Host's code or its unset-limit sentinel.
+    expect(
+      messageText(
+        t,
+        '[APP_CAPACITY_EXCEEDED] App Host capacity exceeded: insufficient memory or active application capacity; retry later maxActiveApps=9007199254740991',
+      ),
+    ).toBe(enUS.ui.errors.messages.capacityExceeded);
+    expect(
+      messageText(
+        t,
+        '[APP_CAPACITY_EXCEEDED] Waiting for Host memory recycling; retry later',
+      ),
+    ).toBe(enUS.ui.errors.messages.recycleRetry);
+    // As the Host reports it: wrapped in the App it was about, in a deployment and on the runtime.
+    expect(
+      messageText(
+        t,
+        '[APP_CAPACITY_EXCEEDED] App "demo" failed to reload: Waiting for Host memory recycling; retry later',
+      ),
+    ).toBe(enUS.ui.errors.messages.recycleRetry);
+    expect(
+      messageText(
+        t,
+        'App "demo" failed to reload: App Host capacity exceeded: insufficient memory or active application capacity; retry later',
+      ),
+    ).toBe(enUS.ui.errors.messages.capacityExceeded);
+    expect(
+      messageText(t, '[APP_CAPACITY_EXCEEDED] Something the Host said'),
+    ).toBe(enUS.ui.errors.messages.capacityExceeded);
+    expect(messageText(t, 'Waiting for Host memory recycling')).toBe(
+      enUS.ui.errors.messages.recycleWait,
+    );
+    expect(
+      messageText(t, '[APP_CREATE_FAILED] App "shop" failed to initialize'),
+    ).toBe('App "shop" failed to initialize');
     const refused = new ApiClientError('App ID may contain only letters.', {
       status: 400,
       reason: 'INVALID_APP_ID',
@@ -773,6 +808,84 @@ describe('client', () => {
     ).toBe(
       'ui.policy.activation.onDemand · ui.policy.idleSummary{"minutes":10} · ui.policy.dormantSummary{"hours":24}',
     );
+  });
+
+  it('shows one state per App: a pending deployment first, with the last failure as its detail', () => {
+    const summary = (
+      pendingDeployment: {
+        status: 'queued' | 'deploying' | 'cancelling';
+        queueAhead: number | null;
+      } | null,
+      recycling: 'pending' | 'restarting' | null = null,
+    ) =>
+      ({
+        app: { activation: 'eager', currentDeploymentId: 'd1' },
+        host: { recycling },
+        runtime: {
+          state: 'failed',
+          error:
+            '[APP_CAPACITY_EXCEEDED] Active app capacity exceeded and no idle app can be evicted. maxActiveApps=9007199254740991',
+        },
+        hasPendingDeployment: pendingDeployment !== null,
+        pendingDeployment,
+      }) as never;
+    const lastFailure = `Last failure: ${enUS.ui.errors.messages.activeLimit}`;
+    const cases = [
+      [
+        { status: 'queued', queueAhead: 2 },
+        null,
+        'Queued · 2 ahead',
+        lastFailure,
+      ],
+      [
+        { status: 'deploying', queueAhead: null },
+        null,
+        enUS.ui.state.deploying,
+        lastFailure,
+      ],
+      // Refused for capacity, it waits while its shared runtime recycles memory.
+      [
+        { status: 'deploying', queueAhead: 0 },
+        'pending',
+        enUS.ui.state.waitingRecycle,
+        enUS.ui.errors.messages.recycleWait,
+      ],
+      [
+        { status: 'deploying', queueAhead: 0 },
+        'restarting',
+        enUS.ui.state.waitingRecycle,
+        enUS.ui.errors.messages.recycleWait,
+      ],
+      // The retry after the recycle, queued behind other work: queued, not recycling.
+      [
+        { status: 'deploying', queueAhead: 1 },
+        null,
+        'Queued · 1 ahead',
+        lastFailure,
+      ],
+      [
+        { status: 'cancelling', queueAhead: null },
+        'pending',
+        enUS.ui.deployments.statuses.cancelling,
+        lastFailure,
+      ],
+    ] as const;
+    for (const [pending, recycling, label, detail] of cases) {
+      const view = render(
+        <AppStateBadge summary={summary(pending, recycling)} />,
+      );
+      const tag = screen.getByText(label);
+      expect(screen.queryByText(enUS.ui.state.failed)).toBeNull();
+      expect(tag.closest('[title]')?.getAttribute('title')).toBe(detail);
+      view.unmount();
+    }
+    // Once the deployment is over, the runtime's own state shows with its reason, and no queue label stays behind.
+    render(<AppStateBadge summary={summary(null)} />);
+    const failed = screen.getByText(enUS.ui.state.failed);
+    expect(failed.closest('[title]')?.getAttribute('title')).toBe(
+      enUS.ui.errors.messages.activeLimit,
+    );
+    expect(screen.queryByText(/Queued|Deploying/)).toBeNull();
   });
 
   it('says a stopped on-demand App starts on a visit, and a dormant one is prepared on a visit', () => {

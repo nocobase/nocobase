@@ -111,14 +111,24 @@ export class AppReloadFailedError extends AppRegistryError {
 }
 
 export class AppCapacityExceededError extends AppRegistryError {
+  /** The configured limit, `Number.MAX_SAFE_INTEGER` when none is set; kept for diagnostics and logs. */
+  readonly maxActiveApps: number;
+
   constructor(
     maxActiveApps: number,
     reason: string = 'Active app capacity exceeded and no idle app can be evicted.',
   ) {
-    super(`${reason} maxActiveApps=${maxActiveApps}`, {
-      status: 503,
-      code: 'APP_CAPACITY_EXCEEDED',
-    });
+    // The message reaches users through deployment results; an unset limit is an internal sentinel, not a number to show.
+    super(
+      maxActiveApps < Number.MAX_SAFE_INTEGER
+        ? `${reason} maxActiveApps=${maxActiveApps}`
+        : reason,
+      {
+        status: 503,
+        code: 'APP_CAPACITY_EXCEEDED',
+      },
+    );
+    this.maxActiveApps = maxActiveApps;
   }
 }
 

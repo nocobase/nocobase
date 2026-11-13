@@ -155,6 +155,7 @@ const idID: LocaleResource<typeof enUS> = {
       environments: 'Menyebarkan lingkungan',
     },
     apps: {
+      lastFailure: 'Kegagalan terakhir: {{detail}}',
       title: 'Aplikasi',
       create: 'Buat aplikasi',
       id: 'ID Aplikasi',
@@ -785,6 +786,18 @@ const idID: LocaleResource<typeof enUS> = {
         notReady: 'Ia belum siap; coba lagi sebentar lagi.',
         checkTimeout: 'Tes tidak selesai dalam 20 detik.',
         hostNoSettings: 'Runtime lokal tidak memerlukan pengaturan koneksi.',
+        recycleWait:
+          'Host aplikasi sedang membebaskan memori; penerapan berlanjut setelah selesai.',
+        recycleRetry:
+          'Host aplikasi masih membebaskan memori, sehingga penerapan tidak selesai. Coba lagi nanti.',
+        capacityExceeded:
+          'Host aplikasi kekurangan memori atau slot kosong, sehingga penerapan tidak selesai. Coba lagi nanti.',
+        replacementMemory:
+          'Host aplikasi kekurangan memori untuk memulai versi baru; versi saat ini tetap berjalan. Coba lagi nanti.',
+        startQueueFull:
+          'Terlalu banyak aplikasi yang sedang dimulai di host. Coba lagi nanti.',
+        activeLimit:
+          'Jumlah aplikasi yang berjalan telah mencapai batas. Coba lagi nanti.',
       },
       prefixed: {
         startFailed: 'Mulai gagal: {{detail}}',

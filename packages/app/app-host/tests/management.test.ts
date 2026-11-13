@@ -264,6 +264,98 @@ describe('managed host reconciliation', () => {
     ).toMatchObject({ state: 'succeeded' });
   });
 
+  it('keeps the expanded revision after a capacity refusal and reuses it after the Host restarts', async () => {
+    const fixture = await createFixture();
+    const options = {
+      mode: 'managed' as const,
+      appRevisionsDir: fixture.deploymentsDir,
+      appVolumesDir: fixture.volumesDir,
+      artifact: fsArtifact(fixture.artifactDir),
+      evictionIntervalMs: 0,
+    };
+    const host = createAppHost(options);
+    hosts.push(host);
+    vi.spyOn(host.registry, 'memoryUsage').mockReturnValue({
+      heapUsed: 1000,
+      heapLimit: 1000,
+      rss: 1000,
+      available: 0,
+    });
+    const spec = {
+      ...deploymentSet(1, fixture.artifact).deployments[0]!,
+      operationId: 'capacity-reuse',
+      scope: { id: 'preview', backend: 'in-process' },
+      activation: 'eager' as const,
+    };
+    const refused = (await host.management.applyDeployment(spec))
+      .deployments[0];
+    expect(refused).toMatchObject({
+      observedState: 'failed',
+      errorCode: 'APP_CAPACITY_EXCEEDED',
+    });
+    // No configured limit: the internal sentinel never reaches the message people read.
+    expect(refused?.error).not.toContain('maxActiveApps');
+    expect(refused?.error).not.toContain(String(Number.MAX_SAFE_INTEGER));
+    expect(await revisionNames(fixture.deploymentsDir, 'customer')).toEqual([
+      fixture.artifact.checksum,
+    ]);
+
+    // A retry on the same Host, still short of memory, reuses the revision instead of extracting it again.
+    const again = await host.management.applyDeployment({
+      ...spec,
+      retryCapacity: true,
+    });
+    expect(again.deployments[0]).toMatchObject({
+      errorCode: 'APP_CAPACITY_EXCEEDED',
+    });
+    expect(await revisionNames(fixture.deploymentsDir, 'customer')).toEqual([
+      fixture.artifact.checksum,
+    ]);
+
+    // The Host restarts to recycle memory; the archive is gone, so only the kept revision can satisfy the retry.
+    await host.close('rotation');
+    await rm(path.join(fixture.artifactDir, fixture.artifact.key));
+    const restarted = createAppHost(options);
+    hosts.push(restarted);
+    const retried = await restarted.management.applyDeployment({
+      ...spec,
+      retryCapacity: true,
+    });
+    expect(retried.deployments[0]).toMatchObject({
+      observedState: 'running',
+      cacheHit: true,
+    });
+    expect(restarted.registry.definition('customer')?.rootDir).toBe(
+      revisionDirectory(fixture.deploymentsDir, fixture.artifact),
+    );
+  });
+
+  it('removes the expanded revision when the application itself fails to start', async () => {
+    const fixture = await createFixture();
+    await writeFile(
+      path.join(fixture.appRoot, 'dist', 'server', 'embedded.js'),
+      'throw new Error("broken release");',
+    );
+    const broken = await createArtifact(fixture, '1.2.9');
+    const host = createAppHost({
+      mode: 'managed',
+      appRevisionsDir: fixture.deploymentsDir,
+      appVolumesDir: fixture.volumesDir,
+      artifact: fsArtifact(fixture.artifactDir),
+      evictionIntervalMs: 0,
+    });
+    hosts.push(host);
+    const result = await host.management.applyDeployment({
+      ...deploymentSet(1, broken).deployments[0]!,
+      operationId: 'broken-start',
+      scope: { id: 'preview', backend: 'in-process' },
+      activation: 'eager' as const,
+    });
+    expect(result.deployments[0]?.observedState).toBe('failed');
+    expect(result.deployments[0]?.errorCode).not.toBe('APP_CAPACITY_EXCEEDED');
+    expect(await revisionNames(fixture.deploymentsDir, 'customer')).toEqual([]);
+  });
+
   it.each(['cancel', 'timeout', 'exit'] as const)(
     'cleans a stalled extraction on %s and lets the next deployment finish',
     async (outcome) => {
