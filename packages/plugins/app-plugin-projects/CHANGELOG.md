@@ -1,5 +1,16 @@
 # @nocobase/app-plugin-projects
 
+## 0.1.0-beta.31
+
+### Patch Changes
+
+- dd0a34f: Resolve a patched PDF.js release for officeparser document extraction and verify PDF text extraction with its local worker.
+- 902c376: Emit a `project.changed` domain event when a project's members, visibility or lead change, so listeners that keep per-person state about its issues can read them again.
+- Updated dependencies [b33e134]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.22
+  - @nocobase/app-server@5.0.0-beta.5
+  - @nocobase/app-plugin-users@2.0.0-beta.20
+
 ## 0.1.0-beta.30
 
 ### Minor Changes

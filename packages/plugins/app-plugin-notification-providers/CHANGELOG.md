@@ -1,5 +1,17 @@
 # @nocobase/app-plugin-notification-providers
 
+## 1.0.0-beta.20
+
+### Patch Changes
+
+- dd0a34f: Upgrade SMTP sending to Nodemailer 10 with its bundled declarations and security fixes. The framework's Node.js 24 requirement already satisfies Nodemailer 10's Node.js 20 minimum.
+
+  Align Notification Providers' SMTP test dependency with the shared transport so its mocks intercept the runtime version.
+
+- Updated dependencies [dd0a34f]
+  - @nocobase/mailer@1.0.0-beta.3
+  - @nocobase/app-server@5.0.0-beta.5
+
 ## 1.0.0-beta.19
 
 ### Minor Changes

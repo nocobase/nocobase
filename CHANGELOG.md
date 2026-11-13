@@ -2,6 +2,26 @@
 
 All notable changes to NocoBase 3 are documented in this file, one section per release: `nocobase-v3-beta/<date>.<n>` for a beta and `release/<date>.<n>` for a stable release. The versions each release published are on its GitHub Release, and every package's own changes are in its CHANGELOG.md.
 
+## [nocobase-v3-beta/2026-11-13.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-13.1)
+
+### 🎉 New Features
+
+- **[Agents]** Applications can distribute their CLI independently of Agents while existing Agents installations keep their download and update protocols. ([#11539](https://github.com/nocobase/nocobase/pull/11539))
+
+### 🚀 Improvements
+
+- **[Agents]** The runtime list shows each coding tool's concurrency limit and current runs beside the tool. ([#11530](https://github.com/nocobase/nocobase/pull/11530))
+- **[App templates]** Run a new application's test files in parallel, so `pnpm test` finishes several times faster. ([#11543](https://github.com/nocobase/nocobase/pull/11543))
+
+### 🐛 Bug Fixes
+
+- **[Authentication]** Improve sign-in security and preserve password recovery after updating authentication dependencies. ([#11526](https://github.com/nocobase/nocobase/pull/11526))
+- **[Mail]**
+  - Import new IMAP messages promptly during mailbox verification and between synchronization runs, and resume large mailbox synchronization safely. ([#11529](https://github.com/nocobase/nocobase/pull/11529))
+  - The mail plugin now requires imapflow 2.2.9 or later, which its IMAP synchronization needs. ([#11550](https://github.com/nocobase/nocobase/pull/11550))
+- **[Agents]** Show files uploaded by conversation runners in their replies and retain them with the conversation. ([#11532](https://github.com/nocobase/nocobase/pull/11532))
+- **[Release management]** Retrying a deployment the app host refused for memory reuses the already expanded release, and each app shows a single clear state with readable capacity messages. ([#11544](https://github.com/nocobase/nocobase/pull/11544))
+
 ## [nocobase-v3-beta/2026-11-12.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-12.1)
 
 ### 🎉 New Features

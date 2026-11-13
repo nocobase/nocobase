@@ -1,5 +1,14 @@
 # @nocobase/app-cli
 
+## 1.0.0-beta.35
+
+### Patch Changes
+
+- dd0a34f: Use pnpm 11.11.0 for source and generated application builds. Its remote tarball integrity handling allows production installations of the official patched SheetJS distribution; applications using that distribution should update their packageManager pin before building with pnpm 11.
+- dd0a34f: Keep fresh production installations on patched argparse 1 and ansi-regex 5 releases. Upgrading argparse within its compatible major removes the vulnerable Lodash 3 dependency without forcing Lodash across major versions.
+- dd0a34f: Keep official tarball dependency sources and workspace security overrides in standalone deployments. Include catalogs referenced by overrides so a production install retains the tested dependency constraints.
+- @nocobase/app-server@5.0.0-beta.5
+
 ## 1.0.0-beta.34
 
 ### Patch Changes

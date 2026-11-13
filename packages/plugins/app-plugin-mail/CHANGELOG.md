@@ -1,5 +1,24 @@
 # @nocobase/app-plugin-mail
 
+## 1.0.0-beta.25
+
+### Patch Changes
+
+- a1af7f0: Require imapflow 2.2.9 or later, which IMAP synchronization needs to read each message's email ID.
+- dd0a34f: Upgrade SMTP sending to Nodemailer 10 with its bundled declarations and security fixes. The framework's Node.js 24 requirement already satisfies Nodemailer 10's Node.js 20 minimum.
+
+  Align Notification Providers' SMTP test dependency with the shared transport so its mocks intercept the runtime version.
+
+- 44cb25f: Import new IMAP messages promptly during mailbox verification and between synchronization runs.
+
+  Screen historical copies without downloading out-of-range bodies, yield slow imports for new arrivals, and resume history-complete partial synchronization safely.
+
+  Share the top-page history budget across folders in each call and commit bounded top history pages and new folder copies earlier, with redacted notification-to-commit timing for diagnosing slow delivery.
+
+- Updated dependencies [b33e134]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.22
+  - @nocobase/app-server@5.0.0-beta.5
+
 ## 1.0.0-beta.24
 
 ### Patch Changes

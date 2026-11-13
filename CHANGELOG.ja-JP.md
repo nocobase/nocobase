@@ -2,6 +2,26 @@
 
 このファイルには NocoBase 3 の主な変更を、リリースごとに 1 セクションずつ記録します。`nocobase-v3-beta/<日付>.<連番>` はベータ版、`release/<日付>.<連番>` は正式版です。各リリースで公開されたパッケージのバージョンは対応する GitHub Release を、各パッケージ自体の変更はパッケージ内の CHANGELOG.md を参照してください。
 
+## [nocobase-v3-beta/2026-11-13.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-13.1)
+
+### 🎉 新機能
+
+- **[Agent]** アプリケーションは Agents から独立して CLI を配布でき、既存の Agents 環境のダウンロードと更新プロトコルも維持されます。 ([#11539](https://github.com/nocobase/nocobase/pull/11539))
+
+### 🚀 改善
+
+- **[Agent]** 実行環境の一覧で、各コーディングツールの横に同時実行数の上限と現在の実行数を表示します。 ([#11530](https://github.com/nocobase/nocobase/pull/11530))
+- **[アプリテンプレート]** 新しいアプリケーションのテストファイルを並列で実行し、`pnpm test` が数倍速く完了するようにします。 ([#11543](https://github.com/nocobase/nocobase/pull/11543))
+
+### 🐛 不具合修正
+
+- **[認証]** 認証依存関係を更新し、ログインの安全性を高めながらパスワード再設定を引き続き利用できるようにします。 ([#11526](https://github.com/nocobase/nocobase/pull/11526))
+- **[メール]**
+  - メールボックスの照合中や同期の合間にも新しい IMAP メールをすばやく取り込み、大きなメールボックスの同期を安全に再開します。 ([#11529](https://github.com/nocobase/nocobase/pull/11529))
+  - メールプラグインは、IMAP 同期に必要な imapflow 2.2.9 以降を必須とするようになりました。 ([#11550](https://github.com/nocobase/nocobase/pull/11550))
+- **[Agent]** 会話中の Runner がアップロードしたファイルを返信に表示し、会話とともに保持します。 ([#11532](https://github.com/nocobase/nocobase/pull/11532))
+- **[リリース管理]** アプリホストがメモリ不足で拒否したデプロイを再試行すると展開済みのリリースを再利用し、各アプリには分かりやすい状態が 1 つだけ表示され、容量に関するメッセージも読みやすくなりました。 ([#11544](https://github.com/nocobase/nocobase/pull/11544))
+
 ## [nocobase-v3-beta/2026-11-12.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-12.1)
 
 ### 🎉 新機能

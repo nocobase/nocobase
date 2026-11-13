@@ -1,5 +1,11 @@
 # @nocobase/agent-runner
 
+## 0.1.0-beta.28
+
+### Patch Changes
+
+- dd0a34f: Update the bundled pnpm release and resolve patched Undici, MCP SDK and request body parser versions for agent requests and runner tooling.
+
 ## 0.1.0-beta.27
 
 ### Patch Changes
