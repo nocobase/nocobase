@@ -25,7 +25,7 @@ async function workflow(name) {
 }
 
 // The jobs of the open-source beta release that check out and publish Pro.
-const jointProJobs = ['pro-candidate', 'pro-release'];
+const jointProJobs = ['pro-check', 'pro-candidate', 'pro-release'];
 
 async function jointProJob(job) {
   const source = await workflow('v3-release-beta.yml');
@@ -73,9 +73,13 @@ test('the open-source beta publishes only after Pro passed with its release cand
     release,
     /\(needs\.pro-candidate\.result == 'success' \|\| \(inputs\.skip_pro && needs\.pro-candidate\.result == 'skipped'\)\)/u,
   );
+  const check = await jointProJob('pro-check');
+  assert.match(check, /if: '!inputs\.skip_pro'/u);
+  assert.match(check, /uses: \.\/\.github\/actions\/verify-create-app/u);
+  assert.match(check, /pnpm release:build\n\s+pnpm release:test/u);
   const candidate = await jointProJob('pro-candidate');
   assert.match(candidate, /if: '!inputs\.skip_pro'/u);
-  assert.match(candidate, /uses: \.\/\.github\/actions\/verify-create-app/u);
+  assert.match(candidate, /needs: \[prepare, pro-check\]/u);
   const publish = await jointProJob('pro-release');
   for (const condition of [
     '!inputs.dry_run',
@@ -90,11 +94,15 @@ test('the open-source beta publishes only after Pro passed with its release cand
 
 test('Pro publishes the pushed candidate commit without regenerating it', async () => {
   const candidate = await jointProJob('pro-candidate');
-  // The write token is minted only after every validation step.
-  assert.ok(
-    candidate.indexOf('uses: ./.github/actions/verify-create-app') <
-      candidate.indexOf('id: pro_write_token'),
+  // The write token is minted only after the tree is proven to be the one the Pro checks tested.
+  const verified = candidate.indexOf(
+    '- name: Verify the tree the Pro checks tested',
   );
+  assert.notEqual(verified, -1);
+  assert.ok(verified < candidate.indexOf('id: pro_write_token'));
+  // The checks never get a write token and never push.
+  const check = await jointProJob('pro-check');
+  assert.doesNotMatch(check, /permission-contents: write|git push/u);
   assert.match(candidate, /git push --force-with-lease=/u);
   assert.match(candidate, /BRANCH="release-candidate\/\$\{OSS_BATCH\}"/u);
 
@@ -129,7 +137,7 @@ test('Pro publishes the pushed candidate commit without regenerating it', async 
   );
 });
 
-test('pro-candidate writes the Pro changelog into the tested candidate as the standalone Pro beta does', async () => {
+test('pro-candidate writes the Pro changelog into the tested tree as the standalone Pro beta does', async () => {
   const candidate = await jointProJob('pro-candidate');
   const standalone = await workflow('v3-pro-release-beta.yml');
   assert.equal(
@@ -138,11 +146,11 @@ test('pro-candidate writes the Pro changelog into the tested candidate as the st
   );
   const order = [
     '- name: Version Pro packages',
+    '- name: Verify the tree the Pro checks tested',
     '- name: Name the Pro release',
     '- name: Create a Pro pull request read token',
     '- name: Write the changelog',
-    '- name: Stage the versioned Pro tree',
-    '- name: Build and test Pro',
+    '- name: Stage the changelog',
     '- name: Push the Pro release candidate',
   ].map((step) => candidate.indexOf(step));
   assert.ok(
@@ -400,6 +408,163 @@ function runStep(job, stepName, cwd, env, extra) {
   );
   return { ...result, outputs };
 }
+
+test('pro-check splits the Pro checks between two legs, and a re-run leg checks all of Pro', async (t) => {
+  const check = await jointProJob('pro-check');
+  assert.match(
+    check,
+    /fail-fast: false\n\s+matrix:\n\s+part: \[test, smoke\]/u,
+  );
+  // A matrix job combines its legs' outputs, so every output is named after the leg that writes it.
+  for (const part of ['test', 'smoke']) {
+    for (const output of ['sha', 'tree', 'unmerged_tags', 'complete']) {
+      assert.ok(
+        check.includes(
+          `      ${part}_${output}: \${{ steps.tested.outputs.${part}_${output} }}\n`,
+        ),
+        `${part}_${output}`,
+      );
+    }
+  }
+  const order = [
+    '- name: Version Pro packages',
+    '- name: Verify the Pro versions are new',
+    '- name: Stage the versioned Pro tree',
+    '- name: Choose what this leg checks',
+    '- name: Build and test Pro',
+    '- name: Verify Pro packages in OSS Default',
+    '- name: Record what this leg tested',
+  ].map((step) => check.indexOf(step));
+  assert.ok(
+    order.every((position) => position !== -1),
+    order.join(),
+  );
+  assert.deepEqual(
+    [...order].sort((a, b) => a - b),
+    order,
+  );
+  const step = (name) =>
+    check
+      .split(/\n(?=      - name: )/u)
+      .find((block) => block.startsWith(`      - name: ${name}\n`));
+  assert.match(
+    step('Build and test Pro'),
+    /if: contains\(steps\.scope\.outputs\.parts, 'test'\)/u,
+  );
+  assert.match(
+    step('Verify Pro packages in OSS Default'),
+    /if: contains\(steps\.scope\.outputs\.parts, 'smoke'\)/u,
+  );
+
+  const directory = mkdtempSync(path.join(tmpdir(), 'pro-check-'));
+  t.after(() => rmSync(directory, { recursive: true, force: true }));
+  const cwd = path.join(directory, 'leg');
+  mkdirSync(cwd);
+  const scope = (part, attempt) =>
+    runStep(check, 'Choose what this leg checks', cwd, process.env, {
+      PART: part,
+      ATTEMPT: attempt,
+    });
+  assert.deepEqual(scope('smoke', '1').outputs, { parts: 'smoke' });
+  assert.deepEqual(scope('test', '1').outputs, { parts: 'test' });
+  assert.deepEqual(scope('smoke', '2').outputs, { parts: 'test smoke' });
+
+  const recorded = (parts) =>
+    runStep(check, 'Record what this leg tested', cwd, process.env, {
+      PART: 'smoke',
+      PARTS: parts,
+      SHA: 'b'.repeat(40),
+      UNMERGED_TAGS: 'release-beta/2026-11-12.1 ',
+      TREE: 'c'.repeat(40),
+    }).outputs;
+  assert.deepEqual(recorded('smoke'), {
+    smoke_sha: 'b'.repeat(40),
+    smoke_tree: 'c'.repeat(40),
+    smoke_unmerged_tags: 'release-beta/2026-11-12.1 ',
+    smoke_complete: 'false',
+  });
+  assert.equal(recorded('test smoke').smoke_complete, 'true');
+});
+
+test('pro-candidate publishes only the commit and tree the Pro checks tested', async (t) => {
+  const candidate = await jointProJob('pro-candidate');
+  assert.match(
+    candidate,
+    /- name: Check out the tested Pro commit\n(?:\s+[^\n]+\n)*?\s+ref: \$\{\{ steps\.tested\.outputs\.sha \}\}\n/u,
+  );
+  assert.doesNotMatch(candidate, /ref: develop/u);
+
+  const { directory, env, git, remote, proSha } = gitFixture(t);
+  const choose = (outputs) =>
+    runStep(
+      candidate,
+      'Choose the Pro commit the checks tested',
+      directory,
+      env,
+      outputs,
+    );
+  const sha = (letter) => letter.repeat(40);
+  const halves = {
+    TEST_SHA: sha('a'),
+    TEST_TREE: sha('b'),
+    TEST_TAGS: 'release-beta/2026-11-11.1 ',
+    TEST_COMPLETE: 'false',
+    SMOKE_SHA: sha('a'),
+    SMOKE_TREE: sha('b'),
+    SMOKE_TAGS: 'release-beta/2026-11-11.1 ',
+    SMOKE_COMPLETE: 'false',
+  };
+  const same = choose(halves);
+  assert.equal(same.status, 0, same.stderr);
+  assert.deepEqual(same.outputs, {
+    sha: sha('a'),
+    tree: sha('b'),
+    unmerged_tags: 'release-beta/2026-11-11.1 ',
+  });
+
+  // Halves of two different trees publish nothing.
+  for (const changed of [{ SMOKE_SHA: sha('c') }, { TEST_TREE: sha('d') }]) {
+    const mixed = choose({ ...halves, ...changed });
+    assert.notEqual(mixed.status, 0);
+    assert.match(mixed.stdout, /tested different versioned trees/u);
+    assert.deepEqual(mixed.outputs, {});
+  }
+  const missing = choose({ ...halves, TEST_SHA: '', SMOKE_SHA: '' });
+  assert.notEqual(missing.status, 0);
+
+  // A leg that checked all of Pro on a re-run decides alone, whatever the other leg checked earlier.
+  const rerun = choose({
+    ...halves,
+    SMOKE_SHA: sha('e'),
+    SMOKE_TREE: sha('f'),
+    SMOKE_TAGS: '',
+    SMOKE_COMPLETE: 'true',
+  });
+  assert.equal(rerun.status, 0, rerun.stderr);
+  assert.deepEqual(rerun.outputs, {
+    sha: sha('e'),
+    tree: sha('f'),
+    unmerged_tags: '',
+  });
+
+  // Versioning the tested commit again must reproduce the tested tree exactly.
+  const checkout = path.join(directory, 'candidate');
+  git(directory, 'clone', '-q', remote, checkout);
+  git(checkout, 'checkout', '-q', proSha);
+  writeFileSync(path.join(checkout, 'package.json'), '{"version":"1"}\n');
+  git(checkout, 'add', '-A');
+  const tested = git(checkout, 'write-tree');
+  const verify = (cwd) =>
+    runStep(candidate, 'Verify the tree the Pro checks tested', cwd, env, {
+      TESTED_TREE: tested,
+    });
+  const reproduced = verify(checkout);
+  assert.equal(reproduced.status, 0, reproduced.stderr);
+  writeFileSync(path.join(checkout, 'pnpm-lock.yaml'), 'changed\n');
+  const drifted = verify(checkout);
+  assert.notEqual(drifted.status, 0);
+  assert.match(drifted.stdout, /not the tree .* the Pro checks ran against/u);
+});
 
 // Name the Pro release, then push the candidate, as pro-candidate does around its changelog, build, and tests.
 function pushCandidate(candidateJob, checkout, env, extra) {

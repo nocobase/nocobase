@@ -1,9 +1,16 @@
 import assert from 'node:assert/strict';
-import { readFileSync, mkdtempSync, rmSync } from 'node:fs';
-import { execFileSync } from 'node:child_process';
+import {
+  readFileSync,
+  mkdtempSync,
+  rmSync,
+  writeFileSync,
+  chmodSync,
+} from 'node:fs';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
+import { parse } from 'yaml';
 
 const workflow = (name) =>
   readFileSync(
@@ -15,7 +22,7 @@ const workflow = (name) =>
 // and main, with the Pro registry token; tests/scripts/pro-release-workflow-policy.test.mjs covers them.
 const ossJobs = (source) =>
   source.replace(
-    /\n  (?:pro-candidate|pro-release):\n[\s\S]*?(?=\n  [a-z][\w-]*:\n|$)/gu,
+    /\n  (?:pro-check|pro-candidate|pro-release):\n[\s\S]*?(?=\n  [a-z][\w-]*:\n|$)/gu,
     '\n',
   );
 
@@ -186,9 +193,120 @@ test('installer smoke covers the Default archive', () => {
     /smoke-app-installer\.mjs --archive packages\/templates\/app-template-default\/storage\/exports\/dist\.tar\.gz/u,
   );
   assert.doesNotMatch(smoke, /app-template-hub|--source|schedule:/u);
-  for (const name of ['release-beta', 'release-stable']) {
-    assert.match(workflow(name), /template: \[default, examples\]/u);
-    assert.doesNotMatch(workflow(name), /template: \[[^\n]*\bhub\b/u);
+  assert.match(workflow('release-stable'), /template: \[default, examples\]/u);
+  assert.doesNotMatch(workflow('release-stable'), /template: \[[^\n]*\bhub\b/u);
+  // The beta release builds its smoke matrix in prepare; see the Quality test below.
+  assert.match(
+    workflow('release-beta'),
+    /include: \$\{\{ fromJSON\(needs\.prepare\.outputs\.smoke_matrix\) \}\}/u,
+  );
+  assert.doesNotMatch(workflow('release-beta'), /"template":"hub"/u);
+});
+
+test('the beta release reuses Quality only when its tests and both create-app smoke tests passed on the release base', (t) => {
+  const release = parse(workflow('release-beta'));
+  const step = release.jobs.prepare.steps.find(
+    (candidate) => candidate.id === 'quality',
+  );
+  assert.equal(release.jobs.prepare.permissions.checks, 'read');
+  assert.equal(
+    release.jobs.test.if,
+    "needs.prepare.outputs.quality_passed != 'true'",
+  );
+  assert.match(
+    release.jobs.release.if,
+    /needs\.test\.result == 'success' \|\| \(needs\.prepare\.outputs\.quality_passed == 'true' && needs\.test\.result == 'skipped'\)/u,
+  );
+  const verify = release.jobs.smoke.steps.find(
+    (candidate) => candidate.name === 'Verify create-app against this release',
+  );
+  assert.equal(verify.with['test-project'], '${{ matrix.project }}');
+
+  const directory = mkdtempSync(path.join(tmpdir(), 'v3-quality-'));
+  t.after(() => rmSync(directory, { recursive: true, force: true }));
+  // A fake gh that answers the check-runs query with the conclusions given per check name, as the nocobase App or another app.
+  const gh = path.join(directory, 'gh');
+  writeFileSync(
+    gh,
+    `#!/usr/bin/env node
+const args = process.argv.slice(2);
+const name = args[args.indexOf('-f') + 1].slice('check_name='.length);
+const runs = JSON.parse(process.env.FAKE_RUNS)[name] ?? [];
+if (runs === 'error') process.exit(1);
+const jq = args[args.indexOf('--jq') + 1];
+const response = { check_runs: runs.map(([slug, conclusion, started_at]) => ({ app: { slug }, conclusion, started_at })) };
+process.stdout.write(require('node:child_process').execFileSync('jq', ['-r', jq], { input: JSON.stringify(response) }));
+`,
+  );
+  chmodSync(gh, 0o755);
+  const run = (runs) => {
+    const output = path.join(directory, 'output');
+    writeFileSync(output, '');
+    const result = spawnSync('bash', ['-e', '-c', step.run], {
+      env: {
+        ...process.env,
+        PATH: `${directory}:${process.env.PATH}`,
+        FAKE_RUNS: JSON.stringify(runs),
+        GITHUB_OUTPUT: output,
+        GITHUB_STEP_SUMMARY: path.join(directory, 'summary'),
+        REPO: 'nocobase/nocobase',
+        BASE_SHA: 'a'.repeat(40),
+      },
+      encoding: 'utf8',
+    });
+    assert.equal(result.status, 0, result.stderr);
+    const outputs = Object.fromEntries(
+      readFileSync(output, 'utf8')
+        .split('\n')
+        .filter(Boolean)
+        .map((line) => [
+          line.slice(0, line.indexOf('=')),
+          line.slice(line.indexOf('=') + 1),
+        ]),
+    );
+    return { ...outputs, smoke_matrix: JSON.parse(outputs.smoke_matrix) };
+  };
+  const passed = [['nocobase', 'success', '2026-11-12T17:20:00Z']];
+  const all = {
+    Test: passed,
+    'Create-app smoke (default)': passed,
+    'Create-app smoke (examples)': passed,
+  };
+  assert.deepEqual(run(all), {
+    passed: 'true',
+    smoke_matrix: [
+      { template: 'default', project: 'none' },
+      { template: 'examples', project: 'none' },
+    ],
+  });
+  const full = {
+    passed: 'false',
+    smoke_matrix: [
+      { template: 'default', project: 'all' },
+      { template: 'examples', project: 'node' },
+      { template: 'examples', project: 'client' },
+    ],
+  };
+  for (const runs of [
+    // Quality has not run, or not on this commit.
+    {},
+    // One check failed, or is still running.
+    { ...all, 'Create-app smoke (examples)': [['nocobase', 'failure', 'x']] },
+    { ...all, Test: [['nocobase', null, '2026-11-12T17:20:00Z']] },
+    // A check run of the same name from another app does not count.
+    { ...all, Test: [['github-actions', 'success', 'x']] },
+    // The latest attempt decides: a re-run that failed after a success.
+    {
+      ...all,
+      Test: [
+        ['nocobase', 'success', '2026-11-12T17:20:00Z'],
+        ['nocobase', 'failure', '2026-11-12T18:20:00Z'],
+      ],
+    },
+    // The API is unavailable.
+    { ...all, Test: 'error' },
+  ]) {
+    assert.deepEqual(run(runs), full, JSON.stringify(runs));
   }
 });
 
