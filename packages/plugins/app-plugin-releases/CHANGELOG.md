@@ -1,5 +1,18 @@
 # @nocobase/app-plugin-releases
 
+## 0.1.0-beta.23
+
+### Patch Changes
+
+- 6102557: Keep the expanded release when the App Host refuses a deployment for memory or capacity, so the retry after a recycle or a Host restart reuses it instead of extracting it again, and stop appending an unset active app limit to capacity errors. Show one state per app in the Releases app list and app overview, with a pending deployment taking precedence and the runtime's last failure as its detail, and word capacity refusals and the recycle wait in every supported language.
+- Updated dependencies [b33e134]
+- Updated dependencies [6102557]
+- Updated dependencies [dd0a34f]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.22
+  - @nocobase/app-host@0.1.0-beta.23
+  - @nocobase/app-host-docker@0.1.0-beta.5
+  - @nocobase/app-server@5.0.0-beta.5
+
 ## 0.1.0-beta.22
 
 ### Patch Changes

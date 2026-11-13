@@ -1,5 +1,30 @@
 # @nocobase/app-plugin-agents
 
+## 2.0.0-beta.13
+
+### Minor Changes
+
+- e103671: Show each enabled coding tool's runs against its own concurrency limit beside its tag in the runtime list ("Runs 1/2"), instead of under the runtime's status.
+
+### Patch Changes
+
+- 8db22e3: Send files uploaded by conversation runs immediately with their replies and retain them with the conversation.
+- fb306c9: Expose composable server-side CLI distribution without registering Agents, while preserving existing Agents download credentials and installation protocols.
+- dd0a34f: Require the patched RE2JS release for agent output schema pattern validation.
+- dd0a34f: Update the bundled pnpm release and resolve patched Undici, MCP SDK and request body parser versions for agent requests and runner tooling.
+- Updated dependencies [b33e134]
+- Updated dependencies [fb306c9]
+- Updated dependencies [dd0a34f]
+- Updated dependencies [dd0a34f]
+- Updated dependencies [dd0a34f]
+- Updated dependencies [dd0a34f]
+- Updated dependencies [dd0a34f]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.22
+  - @nocobase/app-cli-distribution@0.1.0-beta.0
+  - @nocobase/app-cli@1.0.0-beta.35
+  - @nocobase/document-extractor@0.1.0-beta.2
+  - @nocobase/app-server@5.0.0-beta.5
+
 ## 2.0.0-beta.12
 
 ### Minor Changes

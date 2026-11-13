@@ -1,5 +1,11 @@
 # @nocobase/create-app
 
+## 0.1.0-beta.38
+
+### Patch Changes
+
+- dd0a34f: Use pnpm 11.11.0 for source and generated application builds. Its remote tarball integrity handling allows production installations of the official patched SheetJS distribution; applications using that distribution should update their packageManager pin before building with pnpm 11.
+
 ## 0.1.0-beta.37
 
 ### Minor Changes

@@ -2,6 +2,26 @@
 
 本文件记录 NocoBase 3 的所有重要变更，每次发布一节：`nocobase-v3-beta/<日期>.<序号>` 是预览版，`release/<日期>.<序号>` 是正式版。每次发布的包版本见对应的 GitHub Release，各个包自己的变更见包内的 CHANGELOG.md。
 
+## [nocobase-v3-beta/2026-11-13.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-13.1)
+
+### 🎉 新特性
+
+- **[Agent]** 应用可以独立于 Agents 分发 CLI，同时保留既有 Agents 安装的下载与更新协议。 ([#11539](https://github.com/nocobase/nocobase/pull/11539))
+
+### 🚀 优化
+
+- **[Agent]** 运行环境列表在每个编码工具旁显示该工具的并发上限和当前运行数。 ([#11530](https://github.com/nocobase/nocobase/pull/11530))
+- **[应用模板]** 新建应用的测试文件改为并行运行，`pnpm test` 的速度提升数倍。 ([#11543](https://github.com/nocobase/nocobase/pull/11543))
+
+### 🐛 修复
+
+- **[认证]** 更新认证依赖，改善登录安全性并保持密码重置正常可用。 ([#11526](https://github.com/nocobase/nocobase/pull/11526))
+- **[邮件]**
+  - 在邮箱副本核对期间和两轮同步之间及时导入 IMAP 新邮件，并安全续跑大邮箱同步。 ([#11529](https://github.com/nocobase/nocobase/pull/11529))
+  - 邮件插件现在要求 imapflow 2.2.9 及以上版本，IMAP 同步需要用到该版本。 ([#11550](https://github.com/nocobase/nocobase/pull/11550))
+- **[Agent]** 对话中的 Runner 上传文件后立即在回复中显示附件，并随对话长期保留。 ([#11532](https://github.com/nocobase/nocobase/pull/11532))
+- **[发布管理]** 应用宿主因内存不足拒绝部署后，重试会复用已解包的版本；每个应用只显示一个清晰的状态，容量相关提示改为易懂的文案。 ([#11544](https://github.com/nocobase/nocobase/pull/11544))
+
 ## [nocobase-v3-beta/2026-11-12.1](https://github.com/nocobase/nocobase/releases/tag/nocobase-v3-beta%2F2026-11-12.1)
 
 ### 🎉 新特性

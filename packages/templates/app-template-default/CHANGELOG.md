@@ -1,5 +1,32 @@
 # @nocobase/app-template-default
 
+## 1.0.0-beta.96
+
+### Patch Changes
+
+- b33e134: Upgrade Better Auth and its API key integration to 1.7.21 with aligned runtime dependencies. Keep password reset eligibility checks inside the active authentication transaction.
+- 5fb0869: Run the generated application's test files in parallel, which makes `pnpm test` several times faster. Stop a form from announcing the end of its save after it has been removed from the page.
+- dd0a34f: Use pnpm 11.11.0 for source and generated application builds. Its remote tarball integrity handling allows production installations of the official patched SheetJS distribution; applications using that distribution should update their packageManager pin before building with pnpm 11.
+- Updated dependencies [b33e134]
+- Updated dependencies [8db22e3]
+- Updated dependencies [fb306c9]
+- Updated dependencies [a1af7f0]
+- Updated dependencies [dd0a34f]
+- Updated dependencies [dd0a34f]
+- Updated dependencies [dd0a34f]
+- Updated dependencies [dd0a34f]
+- Updated dependencies [dd0a34f]
+- Updated dependencies [dd0a34f]
+- Updated dependencies [44cb25f]
+- Updated dependencies [e103671]
+  - @nocobase/app-plugin-authentication@2.0.0-beta.22
+  - @nocobase/app-plugin-api-keys@1.0.0-beta.23
+  - @nocobase/app-plugin-notification-in-app@2.0.0-beta.6
+  - @nocobase/app-plugin-agents@2.0.0-beta.13
+  - @nocobase/app-plugin-mail@1.0.0-beta.25
+  - @nocobase/app-cli@1.0.0-beta.35
+  - @nocobase/app-plugin-notification-providers@1.0.0-beta.20
+
 ## 1.0.0-beta.95
 
 ### Minor Changes

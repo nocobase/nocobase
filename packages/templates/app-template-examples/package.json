@@ -1,7 +1,7 @@
 {
   "name": "@nocobase/app-template-examples",
   "displayName": "NocoBase Examples",
-  "version": "1.0.0-beta.79",
+  "version": "1.0.0-beta.80",
   "type": "module",
   "prettier": "@nocobase/dev-config/prettier",
   "engines": {
@@ -10,7 +10,7 @@
   "packageManager": "pnpm@11.11.0",
   "nocobase": {
     "templateKind": "app",
-    "defaultTemplateVersion": "1.0.0-beta.79",
+    "defaultTemplateVersion": "1.0.0-beta.80",
     "cli": {
       "bin": "nocobase-examples",
       "displayName": "NocoBase Examples",
