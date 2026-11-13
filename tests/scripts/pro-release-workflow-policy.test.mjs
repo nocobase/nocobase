@@ -13,6 +13,8 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 
+import { treeAnnotationTitle } from '../../scripts/wait-for-pro-checks.mjs';
+
 const root = path.resolve(import.meta.dirname, '../..');
 const proWorkflows = [
   'v3-pro-release-beta.yml',
@@ -27,13 +29,16 @@ async function workflow(name) {
 // The jobs of the open-source beta release that check out and publish Pro.
 const jointProJobs = ['pro-wait', 'pro-check', 'pro-candidate', 'pro-release'];
 
-async function jointProJob(job) {
-  const source = await workflow('v3-release-beta.yml');
+function workflowJob(source, job) {
   const start = source.indexOf(`\n  ${job}:\n`);
   assert.notEqual(start, -1, job);
   const rest = source.slice(start + 1);
   const end = rest.slice(1).search(/\n  [a-z][\w-]*:\n/u);
   return end === -1 ? rest : rest.slice(0, end + 1);
+}
+
+async function jointProJob(job) {
+  return workflowJob(await workflow('v3-release-beta.yml'), job);
 }
 
 async function proSources() {
@@ -213,6 +218,117 @@ test('pro-candidate writes the Pro changelog into the tested tree as the standal
   assert.match(
     step('Push the Pro release candidate'),
     /NAME: \$\{\{ steps\.release_name\.outputs\.name \}\}/u,
+  );
+});
+
+// The standalone Pro beta builds Pro in the job that publishes it while two other jobs test and smoke-test the same versioned tree, and writes nothing until both passed on that tree.
+test('the standalone Pro beta builds while Pro is checked, and writes only after both checks passed on its tree', async () => {
+  const source = await workflow('v3-pro-release-beta.yml');
+  assert.doesNotMatch(source, /pnpm build\b|pnpm test\b/u);
+  const prepare = workflowJob(source, 'prepare');
+  assert.match(
+    prepare,
+    /pro_sha: \$\{\{ steps\.commits\.outputs\.pro_sha \}\}/u,
+  );
+  assert.match(
+    prepare,
+    /oss_sha: \$\{\{ steps\.commits\.outputs\.oss_sha \}\}/u,
+  );
+  assert.ok(
+    prepare.indexOf('pro-release-candidates.mjs" check') <
+      prepare.indexOf('- name: Select the Pro and OSS commits'),
+  );
+
+  const check = workflowJob(source, 'check');
+  const release = workflowJob(source, 'release');
+  for (const [name, job] of [
+    ['check', check],
+    ['release', release],
+  ]) {
+    // Both start right after prepare, so the build overlaps the checks.
+    assert.match(job, /^    needs: prepare$/mu, name);
+    assert.match(
+      job,
+      /^    if: needs\.prepare\.outputs\.release == 'true'$/mu,
+      name,
+    );
+    assert.match(
+      job,
+      /ref: \$\{\{ needs\.prepare\.outputs\.pro_sha \}\}/u,
+      name,
+    );
+    assert.match(
+      job,
+      /OSS_SHA: \$\{\{ needs\.prepare\.outputs\.oss_sha \}\}\n[^\n]+\n\s+run: node \.\/scripts\/sync-release-oss\.mjs --branch develop --sha "\$OSS_SHA"/u,
+      name,
+    );
+    assert.equal(
+      runBlock(job, 'Stage the versioned Pro tree'),
+      'git add -A\necho "tree=$(git write-tree)" >> "$GITHUB_OUTPUT"\n',
+      name,
+    );
+  }
+
+  assert.match(check, /^    name: Check Pro \(\$\{\{ matrix\.part \}\}\)$/mu);
+  assert.match(
+    check,
+    /fail-fast: false\n\s+matrix:\n\s+part: \[test, smoke\]/u,
+  );
+  assert.match(
+    check,
+    /- name: Test Pro\n\s+if: matrix\.part == 'test'\n\s+run: pnpm release:test\n/u,
+  );
+  assert.match(
+    check,
+    /- name: Verify Pro packages in OSS Default\n\s+if: matrix\.part == 'smoke'\n\s+uses: \.\/\.github\/actions\/verify-create-app\n/u,
+  );
+  assert.doesNotMatch(
+    check,
+    /release:build|permission-contents: write|git push/u,
+  );
+  // The tree is announced only once the check passed, in the last step.
+  const steps = check.split(/\n(?=      - name: )/u);
+  const announce = steps.at(-1);
+  assert.match(announce, /^      - name: Announce the checked tree\n/u);
+  assert.doesNotMatch(announce, /^\s+if:/mu);
+  assert.ok(
+    announce.includes(
+      `run: echo "::notice title=${treeAnnotationTitle}::$TREE"`,
+    ),
+    announce,
+  );
+
+  assert.match(
+    release,
+    /permissions:\n\s+contents: read\n\s+actions: read\n\s+checks: read\n/u,
+  );
+  assert.match(release, /- name: Build Pro\n\s+run: pnpm release:build\n/u);
+  assert.match(
+    release,
+    /run: node "\$RUNNER_TEMP\/oss-tools\/wait-for-pro-checks\.mjs" --tree "\$TREE" --job 'Check Pro \(test\)' --job 'Check Pro \(smoke\)'\n/u,
+  );
+  assert.match(
+    release,
+    /TREE: \$\{\{ steps\.tree\.outputs\.tree \}\}\n\s+run: node "\$RUNNER_TEMP\/oss-tools\/wait-for-pro-checks/u,
+  );
+  const order = [
+    '- name: Version Pro packages',
+    '- name: Stage the versioned Pro tree',
+    '- name: Write the changelog',
+    '- name: Build Pro',
+    '- name: Wait for the Pro checks',
+    '- name: Stop after validation',
+    '- name: Create a fresh Pro write token',
+    '- name: Commit, tag, and push the tested candidate',
+    '- name: Publish Pro packages',
+  ].map((step) => release.indexOf(step));
+  assert.ok(
+    order.every((position) => position !== -1),
+    order.join(),
+  );
+  assert.deepEqual(
+    [...order].sort((a, b) => a - b),
+    order,
   );
 });
 
