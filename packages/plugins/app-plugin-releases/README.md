@@ -105,8 +105,8 @@ Everything is under `/api/releases` and follows the application's HTTP API rules
 
 ## Rules the plugin enforces
 
-- An agent or a key never configures or deletes an App, or decides a deployment request, whatever it holds.
-- A protected environment takes every deployment, rollbacks included, through a deployment request someone else (a person, not the requester) approves, typing the App ID again; nobody deploys there directly (`APPROVAL_REQUIRED`), and an upload ticket cannot deploy there. Anyone who may deploy the App, a key or an agent included, may make the request. Its approvers are the environment's `approvers` as the application resolves them (`ReleasesAccess.approversOf`); with nobody named, whoever holds `deploy-protected` on the App.
+- An agent never deletes an App or decides a deployment request. A key also cannot configure Apps or deploy directly to protected environments, whatever it holds.
+- A protected environment requires `deploy` on the App and environment approval eligibility for direct deployment or rollback. Its resolved approvers take precedence; when none resolve, `deploy-protected` on the App is required. Without approval eligibility, direct deployment is refused (`APPROVAL_REQUIRED`); anyone who may deploy the App, a key or an agent included, may create a deployment request instead. Approving requests remains personal and requires typing the App ID again. Its approvers are the environment's `approvers` as the application resolves them (`ReleasesAccess.approversOf`); with nobody named, whoever holds `deploy-protected` on the App.
 - Upload tickets are single use and expire; they act with what their issuer may still do. A key acts with what its owner may still do, within its scope.
 
 ## Releases: archives and images
@@ -194,3 +194,5 @@ The `deployment.cancelled` event reports cancellation separately from failure, a
 ## Diagnostic upload context
 
 An assembling application may provide `ReleasesAccess.securityLogContextOf(context)` to attach trusted diagnostic fields from its authenticated request to upload, image registration, promotion and ticket issuance security logs. The callback must not read identity from request headers or upload input. It grants no permissions and changes no release records or log retention settings. A legacy upload ticket's completion log includes `ticketId` so it can be correlated with its issuing log without adding stored audit state.
+
+Agents may configure Apps and deploy directly to protected environments when their represented user's App grants and environment approval eligibility allow it. Direct protected deployments require `deploy` and membership in the resolved environment approvers; when none resolve, `deploy-protected` is required instead. Other deployers use deployment requests. Agents still cannot delete Apps or approve deployment requests. API keys retain their restrictions on configuration, protected deployment and deletion.

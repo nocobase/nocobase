@@ -69,15 +69,14 @@ const idID: LocaleResource<typeof enUS> = {
             all: 'Terapkan (semua)',
           },
           deployProtected: {
-            title: 'Menyetujui penerapan yang dilindungi',
+            title: 'Deploy ke lingkungan terlindungi',
             description:
-              'Menyetujui penerapan pada lingkungan yang dilindungi tanpa menyebutkan nama pemberi persetujuan; hanya orang',
-            related:
-              'Menyetujui penerapan yang dilindungi (yang terkait dengannya)',
+              'Jika penyetuju lingkungan tidak ditemukan, setujui permintaan secara pribadi atau deploy langsung sebagai orang tersebut atau prosesnya',
+            related: 'Deploy ke lingkungan terlindungi (terkait)',
             relatedLabel: 'Yang aku buat',
             relatedHint:
               'Aplikasi yang saya buat, dan aplikasi apa pun yang berhubungan dengan saya',
-            all: 'Menyetujui penerapan yang dilindungi (semua)',
+            all: 'Deploy ke lingkungan terlindungi (semua)',
           },
           operate: {
             title: 'Mulai dan berhenti',

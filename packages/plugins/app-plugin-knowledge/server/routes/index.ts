@@ -92,13 +92,7 @@ export function createApiRoutes(
               domain: 'authentication',
               message: 'Sign in first.',
             });
-          return {
-            userId: auth.user.id,
-            ...(integration &&
-            auth.credential?.type === integration.credentialType
-              ? { actor: { kind: 'online-agent', id: auth.credential.id } }
-              : {}),
-          };
+          return integration?.readerOf(auth) ?? { userId: auth.user.id };
         },
         (space) =>
           container.has(knowledgeAccessToken)

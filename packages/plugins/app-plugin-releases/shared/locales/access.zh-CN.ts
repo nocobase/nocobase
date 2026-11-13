@@ -56,12 +56,13 @@ const accessZhCN: typeof accessEnUS = {
             all: '部署（全部）',
           },
           deployProtected: {
-            title: '审批受保护环境的部署',
-            description: '在未指定审批人的受保护环境审批部署，仅限人',
-            related: '审批受保护环境的部署（与自己相关的）',
+            title: '部署到受保护环境',
+            description:
+              '未解析出环境审批人时，本人可审批申请，本人或其运行可直接部署',
+            related: '部署到受保护环境（与自己相关的）',
             relatedLabel: '我创建的',
             relatedHint: '我创建的应用，以及系统另外关联给我的应用',
-            all: '审批受保护环境的部署（全部）',
+            all: '部署到受保护环境（全部）',
           },
           operate: {
             title: '启停',

@@ -70,15 +70,14 @@ const viVN: LocaleResource<typeof enUS> = {
             all: 'Triển khai (tất cả)',
           },
           deployProtected: {
-            title: 'Phê duyệt triển khai được bảo vệ',
+            title: 'Triển khai vào môi trường được bảo vệ',
             description:
-              'Phê duyệt việc triển khai vào các môi trường được bảo vệ mà không có người phê duyệt; chỉ có người',
-            related:
-              'Phê duyệt các triển khai được bảo vệ (những triển khai liên quan đến chúng)',
+              'Khi không xác định được người duyệt môi trường, duyệt yêu cầu trực tiếp hoặc triển khai bằng chính người đó hay lượt chạy của họ',
+            related: 'Triển khai vào môi trường được bảo vệ (liên quan)',
             relatedLabel: 'Những cái tôi đã tạo ra',
             relatedHint:
               'Ứng dụng tôi đã tạo và mọi ứng dụng liên quan đến tôi',
-            all: 'Phê duyệt triển khai được bảo vệ (tất cả)',
+            all: 'Triển khai vào môi trường được bảo vệ (tất cả)',
           },
           operate: {
             title: 'Bắt đầu và dừng',

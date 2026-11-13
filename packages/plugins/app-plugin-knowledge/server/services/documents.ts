@@ -1,3 +1,4 @@
+import { authorizationReader } from './access.js';
 /**
  * Entries as people work on them: a space's tree with the spaces it inherits, one entry, its versions, creating an
  * article or a folder (files are uploaded, `files.ts`), editing under an optimistic lock (`expectedVersion`), moving (no
@@ -187,7 +188,7 @@ export async function readableDoc(
   if (!doc) throw docNotFound();
   const { ref } = await spaceOfDoc(context, doc);
   const rights = await access.requireDoc(doc, 'read');
-  // Agents never see archived documents.
+  // Restricted actors never see archived documents.
   if (doc.archivedAt && access.reader.actor) throw docNotFound();
   return { doc, space: ref, rights };
 }
@@ -321,7 +322,9 @@ export function createDocumentService(
       const parties = new Map<string, ReadonlySet<string>[]>();
       for (const principal of [
         { kind: 'user', id: viewer.userId },
-        ...(viewer.actor ? [viewer.actor] : []),
+        ...(authorizationReader(context.access, viewer).actor
+          ? [viewer.actor!]
+          : []),
       ]) {
         const keys = await context.subjects.keysOfMany(
           principal,
@@ -401,7 +404,8 @@ export function createDocumentService(
             ).filter(
               // Archived entries only for whoever may restore them.
               (doc) =>
-                !doc.archivedAt || accessOfLevel(acl.node(doc.id).level).edit,
+                !doc.archivedAt ||
+                (!viewer.actor && accessOfLevel(acl.node(doc.id).level).edit),
             )
           : [];
         for (const doc of docs)
@@ -578,7 +582,7 @@ export function createDocumentService(
             (await freeSlug(tx.conn, space.id, check.slugify(next.title))),
           sortOrder: await nextSortOrder(tx.conn, space.id, parent?.id ?? null),
           next,
-          author: { kind: 'user', id: viewer.userId },
+          author: { ...(viewer.actor ?? { kind: 'user', id: viewer.userId }) },
           createdById: viewer.userId,
           now,
         });
@@ -661,7 +665,7 @@ export function createDocumentService(
                   }
                 : {}),
             },
-            { kind: 'user', id: viewer.userId, note },
+            { ...(viewer.actor ?? { kind: 'user', id: viewer.userId }), note },
             nowText(),
           );
           return;
@@ -684,7 +688,7 @@ export function createDocumentService(
                 ? (current?.content ?? '')
                 : check.content(input.content),
           },
-          { kind: 'user', id: viewer.userId, note },
+          { ...(viewer.actor ?? { kind: 'user', id: viewer.userId }), note },
           nowText(),
         );
       });
@@ -845,7 +849,8 @@ export function createDocumentService(
         chain.length > 0 ? await access.access(chain[0]) : { manage: false };
       const explain =
         options.explain === true &&
-        ((rights.manage && !viewer.actor) ||
+        ((rights.manage &&
+          !authorizationReader(context.access, viewer).actor) ||
           ((await context.settings().mayExplain?.(viewer)) ?? false));
       const conn = context.read();
       const records = await spacesOf(conn, chain);

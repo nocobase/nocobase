@@ -69,15 +69,14 @@ const ptBR: LocaleResource<typeof enUS> = {
             all: 'Implantar (todos)',
           },
           deployProtected: {
-            title: 'Aprovar implantações protegidas',
+            title: 'Implantar em ambientes protegidos',
             description:
-              'Aprovar implantações em ambientes protegidos que não nomeiam aprovadores; apenas pessoas',
-            related:
-              'Aprovar implantações protegidas (aquelas relacionadas a elas)',
+              'Quando nenhum aprovador do ambiente for resolvido, aprovar solicitações pessoalmente ou implantar diretamente como essa pessoa ou sua execução',
+            related: 'Implantar em ambientes protegidos (relacionados)',
             relatedLabel: 'Aqueles que eu criei',
             relatedHint:
               'Aplicativos que criei e qualquer aplicativo relacionado a mim',
-            all: 'Aprovar implantações protegidas (todas)',
+            all: 'Implantar em ambientes protegidos (todos)',
           },
           operate: {
             title: 'Iniciar e parar',

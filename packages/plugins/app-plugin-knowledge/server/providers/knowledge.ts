@@ -78,12 +78,16 @@ export class KnowledgeProvider extends ServiceProvider<AppPluginApplication> {
     const config = () =>
       this.app.config.get<KnowledgeConfig>('knowledge') ?? {};
     const maxFileSize = config().maxFileSize;
+    const thisAccess = () => this.access();
     this.app.container.singleton(knowledgeToken, (resolver) =>
       createKnowledge({
         database: resolver.resolve(databaseManagerToken),
         proposals: config().proposals !== false,
         // Resolved on each question, so an application binding it after this plugin registers is still asked.
         access: {
+          get actorAuthorization() {
+            return thisAccess().actorAuthorization;
+          },
           space: (space) => this.access().space(space),
           inherits: (space) => this.access().inherits(space),
           forReader: (reader) => this.access().forReader(reader),

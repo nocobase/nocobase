@@ -256,7 +256,7 @@ export function createCommentRoutes(comments: CommentService): Hono<ViewerEnv> {
         confirm: 'Delete this comment and its files?',
       }),
       description:
-        'By its author, or by whoever may moderate comments on the issue. A run may delete only its own plain comments from the current run, without moderator fallback. Its files go with it.',
+        'By its author, or by whoever may moderate comments on the issue. Its files go with it.',
       responses: {
         204: emptyResponse(),
         ...apiErrorResponses,

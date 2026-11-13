@@ -30,6 +30,8 @@ Nothing is read without a reader (`KnowledgeReader`: a person, or an actor such 
 
 Below a space, each folder, article and file may narrow or widen its access: it inherits its parent's plus entries of its own, or in `custom` mode has only its own entries, at the levels `read`, `propose`, `edit` and `manage`; whoever manages the space manages every node in it. Entries name subjects of types the application declares with `registerSubjectProvider` (a user, a role, a group…), resolved at query time, and retrieval filters by each entry's access key inside every query. [`docs/permissions.md`](docs/permissions.md) describes the model, the subject provider contract and how retrieval is filtered.
 
+Applications may set `actorAuthorization: 'initiator'` on their resolver to let run agents (`actor.kind === 'agent'`) use the initiating user’s space and document permissions without the default actor intersection or propose ceiling. Native run requests retain Agent/run attribution on versions; see [actor authorization](docs/permissions.md#authorizing-actors-as-their-initiating-user).
+
 ## Entries and files
 
 An entry of a tree is a `folder` (a name and a place, no versions; renamed in place), an `article` (Markdown) or a `file`. A file's every version names its stored file and holds, as its content, the file's text extracted as Markdown; an article is never replaced by a file, nor a file by text.
@@ -132,3 +134,5 @@ Without an indexer, `GET /api/knowledge/search?explain=true`, `GET /api/knowledg
 ## Proposal availability
 
 Set `knowledge.proposals: false` to use direct editing without the proposal workflow. The default remains enabled. Disabled proposal and ticket routes are not registered, and the service refuses text/file proposals, ticket creation and ticket redemption before storing anything. The capabilities endpoint reports the setting so the knowledge view hides proposal navigation, pending counts and submission controls. Direct document/file editing keeps its native permissions and optimistic version checks. Historical proposal and ticket records are preserved.
+
+Online agents retain the default permission intersection and propose ceiling, even with initiator authorization enabled. Archived documents remain hidden to all actors.
