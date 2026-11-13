@@ -286,6 +286,21 @@ describe('independent host without Agents, a database or background jobs', () =>
     expect(opened?.closed).toBe(true);
     expect(opened?.destroyed).toBe(true);
   });
+  it('forwards the explicit public installer policy through the route factory', async () => {
+    const app = new Hono().route(
+      prefix,
+      createInstallRoutes({
+        cli: () => 'acme',
+        public: true,
+        publicBasePath: '/nested/main',
+      }),
+    );
+    const response = await app.request(`${prefix}/installScript`);
+    const script = await response.text();
+    expect(script).not.toContain('--token');
+    expect(script).toContain('server="http://localhost/nested/main"');
+    expect(script).toContain('Business commands require a separate login.');
+  });
   it('keeps unsafe server addresses out of the shell script', () => {
     expect(
       installScript({ cli: 'acme', server: 'https://example.test/$(bad)' }),

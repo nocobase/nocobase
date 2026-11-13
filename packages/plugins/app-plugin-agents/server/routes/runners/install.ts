@@ -203,11 +203,16 @@ fi`,
 `,
 };
 export function installScript(options: InstallScriptOptions): string {
-  return sharedInstallScript({ ...options, extensions: RUNNER_EXTENSIONS });
+  return sharedInstallScript({
+    ...options,
+    public: false,
+    extensions: RUNNER_EXTENSIONS,
+  });
 }
 export function createInstallRoutes(options: InstallRoutesOptions): Hono {
   return createSharedInstallRoutes({
     ...options,
+    public: false,
     extensions: RUNNER_EXTENSIONS,
     openapi: {
       tags,
