@@ -717,8 +717,8 @@ const zhTW: LocaleResource<typeof enUS> = {
       offlineNever: '目前離線',
     },
     toolUsage: {
-      label: '透過編碼工具執行',
-      item: '{{tool}} {{used}}/{{limit}}',
+      short: '並行 {{used}}/{{limit}}',
+      hint: '{{tool}} 最多同時執行 {{limit}} 個，目前 {{used}} 個',
     },
     toolSlots: {
       label: '每個編碼工具的限制',

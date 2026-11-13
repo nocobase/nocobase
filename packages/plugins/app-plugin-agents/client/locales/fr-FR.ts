@@ -785,8 +785,8 @@ const frFR: LocaleResource<typeof enUS> = {
       offlineNever: 'Hors ligne',
     },
     toolUsage: {
-      label: "Exécuté par l'outil de codage",
-      item: '{{tool}} {{used}}/{{limit}}',
+      short: 'Exécutions {{used}}/{{limit}}',
+      hint: 'Au plus {{limit}} exécutions {{tool}} à la fois ; {{used}} en cours',
     },
     toolSlots: {
       label: 'Limites par outil de codage',

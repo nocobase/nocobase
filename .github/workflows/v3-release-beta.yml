@@ -4,7 +4,7 @@ name: V3 Release Beta
 # and latest dist-tags. Versioning happens on an isolated release branch so v3-develop remains available while the release
 # is checked.
 #
-# The commercial plugins in nocobase/nocobase3-pro are released with it. pro-candidate builds, tests, and smoke-tests Pro against this release candidate before anything is published, so a change here that breaks a commercial plugin stops the open-source release too; fix Pro develop first, then use "Re-run failed jobs" (same open-source candidate, latest Pro develop) or, when the fix needs open-source changes merged after this run started, start a new run. Pro releases every package whose published @nocobase/* ranges reject this release (on beta that is any new major.minor.patch, not only a new major), together with Pro's own pending changesets: pro-candidate pushes the tested commit to release-candidate/<batch> in the Pro repository, and after npm pro-release publishes that commit. When Pro has nothing to publish, it is still tested and its publishing is skipped. skip_pro releases the open-source packages alone.
+# The commercial plugins in nocobase/nocobase3-pro are released with it. pro-check builds, tests, and smoke-tests Pro against this release candidate before anything is published, so a change here that breaks a commercial plugin stops the open-source release too; fix Pro develop first, then use "Re-run failed jobs" (same open-source candidate, latest Pro develop) or, when the fix needs open-source changes merged after this run started, start a new run. Pro releases every package whose published @nocobase/* ranges reject this release (on beta that is any new major.minor.patch, not only a new major), together with Pro's own pending changesets: pro-candidate pushes the tested tree to release-candidate/<batch> in the Pro repository, and after npm pro-release publishes that commit. When Pro has nothing to publish, it is still tested and its publishing is skipped. skip_pro releases the open-source packages alone.
 
 on:
   workflow_dispatch:
@@ -29,9 +29,7 @@ concurrency:
 permissions:
   contents: read
 
-# prepare versions the release and saves it as release-source-state. build and test both restore that state and run in
-# parallel: tests read workspace packages from source, so they never needed the build output, and running them after
-# the build only added their duration to every release.
+# prepare versions the release and saves it as release-source-state. build and test both restore that state and run in parallel: tests read workspace packages from source, so they never needed the build output, and running them after the build only added their duration to every release. When Quality already passed on the release base, test is skipped and the smoke tests stop running the template suites; see "Check Quality on the release base".
 jobs:
   prepare:
     name: Prepare beta release
@@ -40,11 +38,14 @@ jobs:
     defaults:
       run:
         working-directory: release-source
-    # Pull requests read lets the changelog step read the descriptions of the pull requests this release contains.
+    # Pull requests read lets the changelog step read the descriptions of the pull requests this release contains, and checks read lets the Quality step read the check runs of the release base.
     permissions:
       contents: read
       pull-requests: read
+      checks: read
     outputs:
+      quality_passed: ${{ steps.quality.outputs.passed }}
+      smoke_matrix: ${{ steps.quality.outputs.smoke_matrix }}
       release_branch: ${{ steps.branch.outputs.name }}
       release_tag: ${{ steps.branch.outputs.tag }}
       batch: ${{ steps.branch.outputs.batch }}
@@ -112,6 +113,40 @@ jobs:
       - name: Record release base
         id: base
         run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      # Quality (nocobase3-quality.yml in chenos/nocobase-ci) runs everything for each push to v3-develop that does not say [skip ci], and nocobase-bot mirrors its jobs as check runs of the nocobase GitHub App on the pushed commit. Its Test runs the same suites as the test shards here, and its create-app smoke tests run the template suites in applications generated from packed packages, as the smoke tests here do. Versioning changes manifests and changelogs, not what those suites run, so when all three passed on the release base the release skips test and its smoke tests skip the template suites; they still generate, install, build, and start applications from this release's own tarballs. Anything else, such as Quality still running or a [skip ci] merge back on top, runs the tests here as before.
+      - name: Check Quality on the release base
+        id: quality
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BASE_SHA: ${{ steps.base.outputs.sha }}
+          REPO: ${{ github.repository }}
+        run: |
+          PASSED=true
+          for NAME in 'Test' 'Create-app smoke (default)' 'Create-app smoke (examples)'; do
+            CONCLUSION=$(gh api --method GET "repos/$REPO/commits/$BASE_SHA/check-runs" -f check_name="$NAME" -f filter=latest \
+              --jq '[.check_runs[] | select(.app.slug == "nocobase")] | sort_by(.started_at) | last | .conclusion // "missing"') \
+              || CONCLUSION=unavailable
+            echo "$NAME: $CONCLUSION"
+            [ "$CONCLUSION" = success ] || PASSED=false
+          done
+          echo "passed=$PASSED" >> "$GITHUB_OUTPUT"
+          # Without Quality the examples template suites are the longest smoke step, so its node and client projects get a runner each; the default suites stay in one.
+          if [ "$PASSED" = true ]; then
+            MATRIX='[{"template":"default","project":"none"},{"template":"examples","project":"none"}]'
+          else
+            MATRIX='[{"template":"default","project":"all"},{"template":"examples","project":"node"},{"template":"examples","project":"client"}]'
+          fi
+          echo "smoke_matrix=$MATRIX" >> "$GITHUB_OUTPUT"
+          {
+            echo "### Quality on the release base"
+            echo
+            if [ "$PASSED" = true ]; then
+              echo "Quality passed on \`$BASE_SHA\`: the test shards are skipped and the smoke tests do not run the template suites."
+            else
+              echo "Quality has not passed on \`$BASE_SHA\`: the release runs the tests and the template suites itself."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Snapshot versions before versioning
         run: node scripts/list-package-versions.mjs > "$RUNNER_TEMP/versions-before.json"
@@ -316,6 +351,7 @@ jobs:
   test:
     name: Test beta release (${{ matrix.shard }})
     needs: prepare
+    if: needs.prepare.outputs.quality_passed != 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 45
     defaults:
@@ -381,7 +417,7 @@ jobs:
         run: ../scripts/release-test-shard.sh "$SHARD" "$INCLUDE_TEMPLATES"
 
   smoke:
-    name: Release smoke (${{ matrix.template }})
+    name: Release smoke (${{ matrix.template }}, ${{ matrix.project }})
     needs: [prepare, build]
     if: '!inputs.skip_smoke_test'
     runs-on: ubuntu-latest
@@ -392,7 +428,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        template: [default, examples]
+        include: ${{ fromJSON(needs.prepare.outputs.smoke_matrix) }}
     steps:
       - name: Check out workflow tooling
         uses: actions/checkout@v4
@@ -447,37 +483,32 @@ jobs:
           template-kind: ${{ matrix.template }}
           package-artifacts: ${{ runner.temp }}/release-smoke-packages
           local-packages-only: 'true'
+          test-project: ${{ matrix.project }}
 
-  # Pro checks out and builds commercial source on public Actions minutes. Nothing from it leaves this job through Actions: no artifact is uploaded and no cache is saved, and the only artifact it reads is the open-source release state. When Pro has something to release, the tested versioned tree is committed and pushed to release-candidate/<batch> in the private Pro repository, and pro-release publishes exactly that commit.
-  pro-candidate:
-    name: Test Pro with this release
+  # Pro checks out and builds commercial source on public Actions minutes. Nothing from these jobs leaves them through Actions: no artifact is uploaded and no cache is saved, and the only artifact they read is the open-source release state.
+  #
+  # The Pro checks run as two parallel legs, each on its own freshly versioned tree of Pro develop: test builds what the Pro tests need and runs them, and smoke runs the create-app smoke test, which builds Pro and the open-source packages itself. In one job they took longer than the whole open-source side. Both legs check out and version Pro develop the same way, and pro-candidate publishes nothing unless they tested the same commit and tree. A leg that is re-run checks the whole of Pro on its own, so "Re-run failed jobs" after a Pro fix tests the new Pro develop completely even though the other leg keeps its earlier result. The release skips the private packages/examples/** in both legs (pnpm release:build and release:test in Pro).
+  pro-check:
+    name: Test Pro with this release (${{ matrix.part }})
     needs: prepare
     if: '!inputs.skip_pro'
     runs-on: ubuntu-latest
     timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        part: [test, smoke]
+    # A matrix job combines the outputs of its legs, so each leg writes outputs named after its part.
     outputs:
-      pro_sha: ${{ steps.pro.outputs.sha }}
-      unmerged_tags: ${{ steps.pro.outputs.unmerged_tags }}
-      release: ${{ steps.plan.outputs.release }}
-      candidate_sha: ${{ steps.candidate.outputs.sha }}
-      candidate_branch: ${{ steps.candidate.outputs.branch }}
-      name: ${{ steps.release_name.outputs.name }}
-      batch: ${{ steps.release_name.outputs.batch }}
-      rows: ${{ steps.changed.outputs.rows }}
-      specs: ${{ steps.changed.outputs.specs }}
+      test_sha: ${{ steps.tested.outputs.test_sha }}
+      test_tree: ${{ steps.tested.outputs.test_tree }}
+      test_unmerged_tags: ${{ steps.tested.outputs.test_unmerged_tags }}
+      test_complete: ${{ steps.tested.outputs.test_complete }}
+      smoke_sha: ${{ steps.tested.outputs.smoke_sha }}
+      smoke_tree: ${{ steps.tested.outputs.smoke_tree }}
+      smoke_unmerged_tags: ${{ steps.tested.outputs.smoke_unmerged_tags }}
+      smoke_complete: ${{ steps.tested.outputs.smoke_complete }}
     steps:
-      # The Pro checkout below replaces the workspace, so the open-source tooling this job runs is copied out first.
-      - name: Check out workflow tooling
-        uses: actions/checkout@v4
-        with:
-          path: .workflow-tools
-          persist-credentials: false
-
-      - name: Copy release tooling outside the checkout
-        run: |
-          mkdir -p "$RUNNER_TEMP/oss-tools"
-          cp .workflow-tools/scripts/pro-release-candidates.mjs "$RUNNER_TEMP/oss-tools/"
-
       - name: Create a read token for the Pro repository
         id: checkout_token
         uses: actions/create-github-app-token@v2
@@ -600,6 +631,252 @@ jobs:
         # SPECS is a space-separated list of name@version specs; word splitting passes one argument per spec.
         run: node ./scripts/check-release-versions.mjs --registry "$PRO_NPM_REGISTRY" --unpublished $SPECS
 
+      # The index records the versioned tree the checks below run against; building and testing never stage anything. pro-candidate versions the tested commit again and publishes only this tree, with the changelog section added.
+      - name: Stage the versioned Pro tree
+        id: tree
+        run: |
+          git add -A
+          echo "tree=$(git write-tree)" >> "$GITHUB_OUTPUT"
+
+      # The first attempt splits the checks between the two legs. A re-run leg checked out Pro develop again, possibly a newer commit than the one the other leg checked, whose result "Re-run failed jobs" keeps, so it checks both halves itself.
+      - name: Choose what this leg checks
+        id: scope
+        env:
+          PART: ${{ matrix.part }}
+          ATTEMPT: ${{ github.run_attempt }}
+        run: |
+          if [ "$ATTEMPT" = 1 ]; then
+            echo "parts=$PART" >> "$GITHUB_OUTPUT"
+          else
+            echo "Attempt $ATTEMPT re-runs this leg, so it builds, tests, and smoke-tests Pro on its own."
+            echo "parts=test smoke" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build and test Pro
+        id: pro_build
+        if: contains(steps.scope.outputs.parts, 'test')
+        run: |
+          pnpm release:build
+          pnpm release:test
+
+      - name: Verify Pro packages in OSS Default
+        id: pro_verify
+        if: contains(steps.scope.outputs.parts, 'smoke')
+        uses: ./.github/actions/verify-create-app
+
+      # An open-source change that breaks a commercial plugin surfaces in one of the three steps above. Say how to unblock the release instead of leaving only a failed test log.
+      - name: Explain how to unblock the release
+        if: failure() && (steps.pro_install.outcome == 'failure' || steps.pro_build.outcome == 'failure' || steps.pro_verify.outcome == 'failure')
+        run: |
+          MESSAGE='Pro develop failed to install, build, test, or smoke-test against this open-source release candidate, so nothing was published, open-source packages included. Fix Pro first: open a pull request against nocobase/nocobase3-pro develop that fixes the affected plugins and adds a changeset, and merge it. Then choose how to continue. Re-run failed jobs: this run keeps the same open-source release candidate, and the re-run Pro check checks out the latest Pro develop again and covers all of Pro, so use it when the Pro fix needs only open-source code already in this candidate (the fix may bump vendor/nocobase3 with pnpm nocobase3:sync, but only to a v3-develop commit this release already contains). Start a new V3 Release Beta instead when the Pro fix depends on open-source changes merged after this release started: a re-run never picks them up. In an emergency, run V3 Release Beta with skip_pro to release the open-source packages alone, then run V3 Release Pro Beta once Pro is fixed.'
+          echo "::error title=Pro is broken by this release::$MESSAGE"
+          {
+            echo '### Pro is broken by this release'
+            echo
+            echo "$MESSAGE"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Record what this leg tested
+        id: tested
+        env:
+          PART: ${{ matrix.part }}
+          PARTS: ${{ steps.scope.outputs.parts }}
+          SHA: ${{ steps.pro.outputs.sha }}
+          UNMERGED_TAGS: ${{ steps.pro.outputs.unmerged_tags }}
+          TREE: ${{ steps.tree.outputs.tree }}
+        run: |
+          {
+            echo "${PART}_sha=$SHA"
+            echo "${PART}_tree=$TREE"
+            echo "${PART}_unmerged_tags=$UNMERGED_TAGS"
+            echo "${PART}_complete=$([ "$PARTS" = 'test smoke' ] && echo true || echo false)"
+          } >> "$GITHUB_OUTPUT"
+
+  # Turns what pro-check tested into the commit pro-release publishes. It checks out the Pro commit the checks tested, versions it again as they did, and stops unless the result is the tree they tested. Only then does it name the release, write the changelog section (no build or test reads the changelogs), and, when Pro has something to release, push the commit to release-candidate/<batch> in the Pro repository. It uploads and caches nothing, like pro-check.
+  pro-candidate:
+    name: Prepare the Pro release candidate
+    needs: [prepare, pro-check]
+    if: '!inputs.skip_pro'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    outputs:
+      pro_sha: ${{ steps.tested.outputs.sha }}
+      unmerged_tags: ${{ steps.tested.outputs.unmerged_tags }}
+      release: ${{ steps.plan.outputs.release }}
+      candidate_sha: ${{ steps.candidate.outputs.sha }}
+      candidate_branch: ${{ steps.candidate.outputs.branch }}
+      name: ${{ steps.release_name.outputs.name }}
+      batch: ${{ steps.release_name.outputs.batch }}
+      rows: ${{ steps.changed.outputs.rows }}
+      specs: ${{ steps.changed.outputs.specs }}
+    steps:
+      # The Pro checkout below replaces the workspace, so the open-source tooling this job runs is copied out first.
+      - name: Check out workflow tooling
+        uses: actions/checkout@v4
+        with:
+          path: .workflow-tools
+          persist-credentials: false
+
+      - name: Copy release tooling outside the checkout
+        run: |
+          mkdir -p "$RUNNER_TEMP/oss-tools"
+          cp .workflow-tools/scripts/pro-release-candidates.mjs "$RUNNER_TEMP/oss-tools/"
+
+      # A leg that checked all of Pro by itself, on a re-run, decides alone. Otherwise both legs checked half each and must have checked the same commit and tree; they differ only when Pro develop or the registry changed between their starts.
+      - name: Choose the Pro commit the checks tested
+        id: tested
+        env:
+          TEST_SHA: ${{ needs.pro-check.outputs.test_sha }}
+          TEST_TREE: ${{ needs.pro-check.outputs.test_tree }}
+          TEST_TAGS: ${{ needs.pro-check.outputs.test_unmerged_tags }}
+          TEST_COMPLETE: ${{ needs.pro-check.outputs.test_complete }}
+          SMOKE_SHA: ${{ needs.pro-check.outputs.smoke_sha }}
+          SMOKE_TREE: ${{ needs.pro-check.outputs.smoke_tree }}
+          SMOKE_TAGS: ${{ needs.pro-check.outputs.smoke_unmerged_tags }}
+          SMOKE_COMPLETE: ${{ needs.pro-check.outputs.smoke_complete }}
+        run: |
+          if [ "$TEST_COMPLETE" = true ]; then
+            LEG=test
+          elif [ "$SMOKE_COMPLETE" = true ]; then
+            LEG=smoke
+          elif [ -n "$TEST_SHA" ] && [ "$TEST_SHA" = "$SMOKE_SHA" ] && [ -n "$TEST_TREE" ] && [ "$TEST_TREE" = "$SMOKE_TREE" ]; then
+            LEG=test
+          else
+            echo "::error::The two Pro checks tested different versioned trees: test checked Pro ${TEST_SHA:-?} as ${TEST_TREE:-?}, smoke checked Pro ${SMOKE_SHA:-?} as ${SMOKE_TREE:-?}. Pro develop or the registry changed between them, so nothing was published. Use \"Re-run job\" on one of the two \"Test Pro with this release\" jobs: a re-run leg checks all of Pro on its own, and this job follows it."
+            exit 1
+          fi
+          if [ "$LEG" = test ]; then
+            SHA="$TEST_SHA" TREE="$TEST_TREE" TAGS="$TEST_TAGS"
+          else
+            SHA="$SMOKE_SHA" TREE="$SMOKE_TREE" TAGS="$SMOKE_TAGS"
+          fi
+          echo "Publishing what the $LEG check tested: Pro $SHA as tree $TREE."
+          {
+            echo "sha=$SHA"
+            echo "tree=$TREE"
+            echo "unmerged_tags=$TAGS"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Create a read token for the Pro repository
+        id: checkout_token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.NOCOBASE_APP_ID }}
+          private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
+          owner: nocobase
+          repositories: nocobase3-pro
+          permission-contents: read
+
+      - name: Check out the tested Pro commit
+        uses: actions/checkout@v4
+        with:
+          repository: nocobase/nocobase3-pro
+          ref: ${{ steps.tested.outputs.sha }}
+          fetch-depth: 0
+          submodules: recursive
+          token: ${{ steps.checkout_token.outputs.token }}
+          persist-credentials: false
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.7.0
+          run_install: false
+
+      - name: Validate the Pro npm registry
+        env:
+          PRO_NPM_REGISTRY: ${{ secrets.PRO_NPM_REGISTRY }}
+        run: |
+          node -e '
+            const value = process.env.PRO_NPM_REGISTRY?.trim();
+            if (!value) { console.error("::error::PRO_NPM_REGISTRY is not configured"); process.exit(1); }
+            let registry;
+            try { registry = new URL(value); } catch { console.error("::error::PRO_NPM_REGISTRY is not a valid URL"); process.exit(1); }
+            if (registry.hostname === "registry.npmjs.org") { console.error("::error::Commercial packages must not use public npm"); process.exit(1); }
+          '
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: ${{ secrets.PRO_NPM_REGISTRY }}
+          scope: '@nocobase'
+
+      - name: Download release source state
+        uses: actions/download-artifact@v4
+        with:
+          name: release-source-state
+          path: ${{ runner.temp }}/release-state
+
+      # The release commit exists only on the runners until the release job pushes it, so it is restored from the release state inside the submodule rather than fetched.
+      - name: Restore the release candidate in the submodule
+        working-directory: vendor/nocobase3
+        env:
+          BASE_SHA: ${{ needs.prepare.outputs.base_sha }}
+          SOURCE_SHA: ${{ needs.prepare.outputs.source_sha }}
+          RELEASE_BRANCH: ${{ needs.prepare.outputs.release_branch }}
+        run: |
+          git fetch --quiet --no-tags origin "+refs/heads/v3-develop:refs/remotes/origin/v3-develop"
+          git checkout --quiet --detach "$BASE_SHA"
+          node scripts/release-state.mjs restore \
+            --directory "$RUNNER_TEMP/release-state" \
+            --base "$BASE_SHA" \
+            --expected "$SOURCE_SHA" \
+            --branch "$RELEASE_BRANCH"
+
+      - name: Pin Pro to the release candidate and install
+        id: pro_install
+        env:
+          BASE_SHA: ${{ needs.prepare.outputs.base_sha }}
+          SOURCE_SHA: ${{ needs.prepare.outputs.source_sha }}
+          NODE_AUTH_TOKEN: ${{ secrets.PRO_NPM_TOKEN }}
+        run: node ./scripts/sync-release-oss.mjs --branch develop --candidate "$SOURCE_SHA" --base "$BASE_SHA"
+
+      - name: Snapshot Pro versions before versioning
+        run: node ./vendor/nocobase3/scripts/list-package-versions.mjs > "$RUNNER_TEMP/pro-versions-before.json"
+
+      - name: Plan the Pro release
+        id: plan
+        env:
+          BATCH: ${{ needs.prepare.outputs.batch }}
+          NODE_AUTH_TOKEN: ${{ secrets.PRO_NPM_TOKEN }}
+          PRO_NPM_REGISTRY: ${{ secrets.PRO_NPM_REGISTRY }}
+        run: node ./scripts/generate-oss-peer-changesets.mjs --batch "$BATCH" --registry "$PRO_NPM_REGISTRY"
+
+      - name: Version Pro packages
+        if: steps.plan.outputs.release == 'true'
+        id: changed
+        run: |
+          pnpm changeset version
+          CHANGED=$(node ./vendor/nocobase3/scripts/list-package-versions.mjs --changed "$RUNNER_TEMP/pro-versions-before.json")
+          test -n "$CHANGED" || { echo '::error::Pro changesets changed no package versions'; exit 1; }
+          echo "$CHANGED"
+          echo "rows=$(node ./vendor/nocobase3/scripts/list-package-versions.mjs --released-rows "$RUNNER_TEMP/pro-versions-before.json")" >> "$GITHUB_OUTPUT"
+          echo "specs=$(node ./vendor/nocobase3/scripts/list-package-versions.mjs --released-specs "$RUNNER_TEMP/pro-versions-before.json" | tr '\n' ' ')" >> "$GITHUB_OUTPUT"
+
+      # The Pro publisher skips a version the registry already holds, so a version this release produced that is already published would be skipped silently. That happens when Pro develop still carries an earlier release's versions, such as after its merge back failed.
+      - name: Verify the Pro versions are new
+        if: steps.plan.outputs.release == 'true'
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.PRO_NPM_TOKEN }}
+          PRO_NPM_REGISTRY: ${{ secrets.PRO_NPM_REGISTRY }}
+          SPECS: ${{ steps.changed.outputs.specs }}
+        # SPECS is a space-separated list of name@version specs; word splitting passes one argument per spec.
+        run: node ./scripts/check-release-versions.mjs --registry "$PRO_NPM_REGISTRY" --unpublished $SPECS
+
+      # The candidate must be the tree the checks ran against. Versioning the same commit against the same release state reproduces it; anything else changed since they ran, and nothing they did not test is pushed.
+      - name: Verify the tree the Pro checks tested
+        env:
+          TESTED_TREE: ${{ steps.tested.outputs.tree }}
+        run: |
+          git add -A
+          TREE=$(git write-tree)
+          if [ "$TREE" != "$TESTED_TREE" ]; then
+            git diff --cached --stat "$TESTED_TREE" || true
+            echo "::error::Versioning the tested Pro commit again produced tree $TREE, not the tree $TESTED_TREE the Pro checks ran against, so nothing was published. Use \"Re-run job\" on one of the two \"Test Pro with this release\" jobs: a re-run leg checks all of Pro on its own, and this job follows it."
+            exit 1
+          fi
+
       # The changelog below heads its section with the release-beta name, so the name is chosen before the tree is staged. A rerun of this job takes the name of the candidate this run already pushed, so it writes the same section and can reuse that candidate. Otherwise the Pro batch number skips the numbers of today's release tags and of the other candidates still pushed, so a candidate of a failed run that was never tagged cannot give this one the same release-beta name. The read token is in the remote only while this step runs.
       - name: Name the Pro release
         if: steps.plan.outputs.release == 'true'
@@ -679,31 +956,9 @@ jobs:
             done
           fi
 
-      # The index holds the versioned tree that the build, tests, and smoke test below run against; the candidate commit records exactly this index, never their output.
-      - name: Stage the versioned Pro tree
+      # The changelog files join the tested tree in the candidate commit.
+      - name: Stage the changelog
         run: git add -A
-
-      - name: Build and test Pro
-        id: pro_build
-        run: |
-          pnpm build
-          pnpm test
-
-      - name: Verify Pro packages in OSS Default
-        id: pro_verify
-        uses: ./.github/actions/verify-create-app
-
-      # An open-source change that breaks a commercial plugin surfaces in one of the three steps above. Say how to unblock the release instead of leaving only a failed test log.
-      - name: Explain how to unblock the release
-        if: failure() && (steps.pro_install.outcome == 'failure' || steps.pro_build.outcome == 'failure' || steps.pro_verify.outcome == 'failure')
-        run: |
-          MESSAGE='Pro develop failed to install, build, test, or smoke-test against this open-source release candidate, so nothing was published, open-source packages included. Fix Pro first: open a pull request against nocobase/nocobase3-pro develop that fixes the affected plugins and adds a changeset, and merge it. Then choose how to continue. Re-run failed jobs: this run keeps the same open-source release candidate, and pro-candidate checks out the latest Pro develop again, so use it when the Pro fix needs only open-source code already in this candidate (the fix may bump vendor/nocobase3 with pnpm nocobase3:sync, but only to a v3-develop commit this release already contains). Start a new V3 Release Beta instead when the Pro fix depends on open-source changes merged after this release started: a re-run never picks them up. In an emergency, run V3 Release Beta with skip_pro to release the open-source packages alone, then run V3 Release Pro Beta once Pro is fixed.'
-          echo "::error title=Pro is broken by this release::$MESSAGE"
-          {
-            echo '### Pro is broken by this release'
-            echo
-            echo "$MESSAGE"
-          } >> "$GITHUB_STEP_SUMMARY"
 
       # Installation tokens expire after one hour, so mint the write token only after validation.
       - name: Create a Pro write token for the candidate
@@ -780,7 +1035,8 @@ jobs:
     needs: [prepare, build, test, smoke, pro-candidate]
     if: >-
       !cancelled() && needs.prepare.result == 'success'
-      && needs.build.result == 'success' && needs.test.result == 'success'
+      && needs.build.result == 'success'
+      && (needs.test.result == 'success' || (needs.prepare.outputs.quality_passed == 'true' && needs.test.result == 'skipped'))
       && (needs.smoke.result == 'success' || (inputs.skip_smoke_test && needs.smoke.result == 'skipped'))
       && (needs.pro-candidate.result == 'success' || (inputs.skip_pro && needs.pro-candidate.result == 'skipped'))
     runs-on: ubuntu-latest
@@ -1078,12 +1334,13 @@ jobs:
   # This job also covers failures before the release job, which cannot reach notification steps in the release job.
   notify-failure:
     name: Notify beta release failure
-    needs: [prepare, build, test, smoke, pro-candidate, release]
+    needs: [prepare, build, test, smoke, pro-check, pro-candidate, release]
     if: >-
       always() && !cancelled() && !inputs.dry_run
       && needs.release.outputs.merged != 'false'
       && (needs.prepare.result == 'failure' || needs.build.result == 'failure' || needs.test.result == 'failure'
-        || needs.smoke.result == 'failure' || needs.pro-candidate.result == 'failure' || needs.release.result == 'failure')
+        || needs.smoke.result == 'failure' || needs.pro-check.result == 'failure' || needs.pro-candidate.result == 'failure'
+        || needs.release.result == 'failure')
     runs-on: ubuntu-latest
     steps:
       - name: Check out workflow tooling
@@ -1100,7 +1357,7 @@ jobs:
           WORKFLOW_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           CONTENT: |
             预览版发版流程中断，请查看 Actions 日志确认失败阶段和仓库状态。
-            ${{ needs.pro-candidate.result == 'failure' && 'Pro 用这次的候选版本测试失败，OSS 也没有发布。先在 Pro develop 上合并修复插件的 PR。如果修复只用到这次候选版本里已有的 OSS 代码，在这次运行上点「Re-run failed jobs」：重跑沿用同一个 OSS 候选版本，并重新拉取最新的 Pro develop。如果修复依赖发版开始之后才合进 v3-develop 的 OSS 改动，重跑拿不到这些改动，要重新跑一次 V3 Release Beta。紧急情况下可以勾选 skip_pro 单独发 OSS。' || '' }}
+            ${{ needs.pro-check.result == 'failure' && 'Pro 用这次的候选版本测试失败，OSS 也没有发布。先在 Pro develop 上合并修复插件的 PR。如果修复只用到这次候选版本里已有的 OSS 代码，在这次运行上点「Re-run failed jobs」：重跑沿用同一个 OSS 候选版本，重跑的 Pro 检查会重新拉取最新的 Pro develop，并自己把 Pro 的测试和冒烟都跑一遍。如果修复依赖发版开始之后才合进 v3-develop 的 OSS 改动，重跑拿不到这些改动，要重新跑一次 V3 Release Beta。紧急情况下可以勾选 skip_pro 单独发 OSS。' || '' }}
         run: ./scripts/feishu-notify.sh
 
   # npm is already published at this point. Rendering a GitHub Release is recoverable and stays in a separate job.

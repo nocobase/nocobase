@@ -699,33 +699,6 @@ export function toolLimit(
   return own === undefined ? runner.slots : Math.min(own, runner.slots);
 }
 
-/** One coding tool's use of a runner's slots, as a page shows it. */
-export interface ToolUsage {
-  readonly tool: AgentTool;
-  /** Runs of it the runner holds now, for this application. */
-  readonly used: number;
-  /** Its limit (`toolLimit`). */
-  readonly limit: number;
-  /** Whether the limit is its own (`toolSlots`) rather than the runner's total. */
-  readonly limited: boolean;
-}
-
-/**
- * The coding tools worth showing a runner's use of, in the protocol's order: those with a limit of their own and those
- * it runs something of now. Empty for a runner without limits per tool that runs nothing.
- */
-export function toolUsage(
-  runner: Pick<RunnerSummary, 'slots' | 'toolSlots' | 'activeByTool'>,
-): ToolUsage[] {
-  return AGENT_TOOLS.flatMap((tool) => {
-    const used = runner.activeByTool?.[tool] ?? 0;
-    const limited = runner.toolSlots?.[tool] !== undefined;
-    return limited || used > 0
-      ? [{ tool, used, limit: toolLimit(runner, tool), limited }]
-      : [];
-  });
-}
-
 /** An agent as far as where it may run is concerned (the agents plugin's `Agent` fits). */
 export interface RunnerAgentFit {
   readonly id: string;

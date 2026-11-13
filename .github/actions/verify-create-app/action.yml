@@ -17,7 +17,7 @@ inputs:
     description: Template to verify (default, examples, or all).
     default: all
   test-project:
-    description: Complete Vitest project to verify (all, node, or client). All other lifecycle checks always run.
+    description: Complete Vitest project to verify (all, node, client, or none to skip pnpm test). All other lifecycle checks always run.
     default: all
   package-artifacts:
     description: Directory containing the complete set of tarballs produced by pack:check. Empty uses changeset publish.
@@ -49,9 +49,9 @@ runs:
         esac
 
         case "$TEST_PROJECT" in
-          all|node|client) ;;
+          all|node|client|none) ;;
           *)
-            echo "::error::test-project must be all, node, or client; received '$TEST_PROJECT'"
+            echo "::error::test-project must be all, node, client, or none; received '$TEST_PROJECT'"
             exit 2
             ;;
         esac

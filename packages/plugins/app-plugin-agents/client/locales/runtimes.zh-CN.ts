@@ -144,8 +144,8 @@ const runtimesZhCN: RuntimesLocale = {
     revokedList_other: '{{count}} 个已吊销的运行环境',
     lastSeen: '最近在线 {{time}}',
     toolUsage: {
-      label: '各编码工具的运行数',
-      item: '{{tool}} {{used}}/{{limit}}',
+      short: '并发 {{used}}/{{limit}}',
+      hint: '{{tool}} 最多同时运行 {{limit}} 个，当前 {{used}} 个',
     },
     toolSlots: {
       label: '按编码工具限制',

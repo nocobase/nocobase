@@ -1,0 +1,270 @@
+# Keep default secret detection; exceptions below pair exact files with reviewed values.
+# Historical paths stay listed after moves/deletions so full branch history is covered.
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Resource baseline SHA256 digests are content hashes, not credentials"
+targetRules = ["generic-api-key"]
+condition = "AND"
+paths = [
+  '''(?:^|/)dev/business-baseline/resources\.json$''',
+]
+regexes = [
+  '''^[a-f0-9]{64}$''',
+]
+
+[[allowlists]]
+description = "Disposable local registry login used only by the CI fixture"
+targetRules = ["curl-auth-user"]
+condition = "AND"
+paths = [
+  '''(?:^|/)\.github/actions/local-registry/action\.yml$''',
+]
+regexes = [
+  '''^local-ci:local-ci$''',
+]
+
+[[allowlists]]
+description = "Disposable local registry login used only by the CI fixture"
+targetRules = ["curl-auth-user"]
+condition = "AND"
+paths = [
+  '''(?:^|/)\.github/actions/verify-create-app/action\.yml$''',
+]
+regexes = [
+  '''^release-ci:release-ci$''',
+]
+
+[[allowlists]]
+description = "RFC 6455 sample WebSocket nonce in proxy handshake tests"
+targetRules = ["generic-api-key"]
+condition = "AND"
+paths = [
+  '''(?:^|/)packages/app/app-cli/tests/tools/dev-proxy\.test\.ts$''',
+  '''(?:^|/)packages/app/app-host-docker/tests/backend\.test\.ts$''',
+  '''(?:^|/)packages/app/app-host-docker/tests/integration\.test\.ts$''',
+  '''(?:^|/)packages/app/app-server/tests/node-proxy\.test\.ts$''',
+  '''(?:^|/)packages/templates/app-template-default/tests/logic/dev-proxy\.test\.ts$''',
+  '''(?:^|/)packages/templates/app-template-examples/tests/logic/dev-proxy\.test\.ts$''',
+  '''(?:^|/)packages/templates/app-template-hub/tests/logic/dev-proxy\.test\.ts$''',
+]
+regexes = [
+  '''^(?:dGhlIHNhbXBsZSBub25jZQ==)$''',
+]
+
+[[allowlists]]
+description = "Synthetic runner event redaction input"
+targetRules = ["generic-api-key"]
+condition = "AND"
+paths = [
+  '''(?:^|/)packages/app/agent-runner/tests/runner-e2e\.test\.ts$''',
+]
+regexes = [
+  '''^(?:env-secret-0123456789)$''',
+]
+
+[[allowlists]]
+description = "Synthetic request logger redaction input"
+targetRules = ["generic-api-key"]
+condition = "AND"
+paths = [
+  '''(?:^|/)packages/app/app-server/tests/request-logger\.test\.ts$''',
+]
+regexes = [
+  '''^(?:aBcD1234_efGH5678-ijKL)$''',
+]
+
+[[allowlists]]
+description = "Synthetic streaming redactor header input"
+targetRules = ["generic-api-key"]
+condition = "AND"
+paths = [
+  '''(?:^|/)packages/libs/agent-protocol/tests/output-redactor\.test\.ts$''',
+]
+regexes = [
+  '''^(?:fictional123456)$''',
+]
+
+[[allowlists]]
+description = "Synthetic header, npmrc, Slack and split-stream redaction inputs"
+targetRules = ["generic-api-key"]
+condition = "AND"
+paths = [
+  '''(?:^|/)packages/libs/agent-protocol/tests/redact\.test\.ts$''',
+]
+regexes = [
+  '''^(?:abcdef0123456789|abc\.DEF-123_xyz|xoxb-123456789012-abcdefABCDEF|split-secret-0123456789)$''',
+]
+
+[[allowlists]]
+description = "Nonfunctional private key body used by streaming redaction tests"
+targetRules = ["private-key"]
+condition = "AND"
+regexTarget = "match"
+paths = [
+  '''(?:^|/)packages/libs/agent-protocol/tests/output-redactor\.test\.ts$''',
+]
+regexes = [
+  '''^-----BEGIN PRIVATE KEY-----\\nBODY123456\\n-----END PRIVATE KEY-----''',
+]
+
+[[allowlists]]
+description = "Fabricated OpenSSH key body encodes repeated secret text for redaction tests"
+targetRules = ["private-key"]
+condition = "AND"
+regexTarget = "match"
+paths = [
+  '''(?:^|/)packages/libs/agent-protocol/tests/redact\.test\.ts$''',
+]
+regexes = [
+  '''^-----BEGIN OPENSSH PRIVATE KEY-----',\s*'b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW',\s*'QyNTUxOQAAACBzZWNyZXQgc2VjcmV0IHNlY3JldCBzZWNyZXQgc2VjcmV0AAAAA',\s*'-----END OPENSSH PRIVATE KEY-----$''',
+]
+
+[[allowlists]]
+description = "Fixed illustrative JWT used only as redaction input"
+targetRules = ["jwt"]
+condition = "AND"
+paths = [
+  '''(?:^|/)packages/libs/agent-protocol/tests/redact\.test\.ts$''',
+]
+regexes = [
+  '''^eyJhbGciOiJIUzI1NiJ9\.eyJzdWIiOiIxMjM0NTY3ODkwIn0\.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U$''',
+]
+
+[[allowlists]]
+description = "Split provider-key fragment in a streaming redaction test"
+targetRules = ["generic-api-key"]
+condition = "AND"
+paths = [
+  '''(?:^|/)packages/plugins/app-plugin-agent-sessions/tests/server/service\.test\.ts$''',
+]
+regexes = [
+  '''^(?:sk-proj-abc123def4)$''',
+]
+
+[[allowlists]]
+description = "Fixed authentication secret for isolated API documentation tests"
+targetRules = ["generic-api-key"]
+condition = "AND"
+paths = [
+  '''(?:^|/)packages/plugins/app-plugin-api-keys/tests/api-docs\.test\.ts$''',
+]
+regexes = [
+  '''^(?:api-keys-api-docs-secret-at-least-32-characters)$''',
+]
+
+[[allowlists]]
+description = "Fixed authentication secret for isolated password reset email tests"
+targetRules = ["generic-api-key"]
+condition = "AND"
+paths = [
+  '''(?:^|/)packages/plugins/app-plugin-authentication/server/tests/integration/password-reset-email\.test\.ts$''',
+]
+regexes = [
+  '''^(?:synthetic-secret-at-least-32-characters)$''',
+]
+
+[[allowlists]]
+description = "Fixed authentication secret for isolated invitation tests"
+targetRules = ["generic-api-key"]
+condition = "AND"
+paths = [
+  '''(?:^|/)packages/plugins/app-plugin-projects/tests/helpers/invitation-app\.ts$''',
+]
+regexes = [
+  '''^(?:invitation-integration-test-secret-at-least-32-characters)$''',
+]
+
+[[allowlists]]
+description = "Fixed authentication secret for isolated username invitation tests"
+targetRules = ["generic-api-key"]
+condition = "AND"
+paths = [
+  '''(?:^|/)packages/plugins/app-plugin-users/tests/invitation-username\.test\.ts$''',
+]
+regexes = [
+  '''^(?:invitation-test-secret-at-least-32-characters)$''',
+]
+
+[[allowlists]]
+description = "Synthetic live-token-shaped configuration redaction input"
+targetRules = ["generic-api-key"]
+condition = "AND"
+paths = [
+  '''(?:^|/)packages/plugins/app-plugin-releases/tests/config-secrets\.test\.ts$''',
+]
+regexes = [
+  '''^(?:tok_live_1234567890)$''',
+]
+
+[[allowlists]]
+description = "Permission label property reference is metadata, not a credential"
+targetRules = ["generic-api-key"]
+condition = "AND"
+paths = [
+  '''(?:^|/)packages/plugins/app-plugin-users/server/services/users\.ts$''',
+]
+regexes = [
+  '''^(?:scope\.labelI18nKey)$''',
+]
+
+[[allowlists]]
+description = "Historical webhook signature test uses a fixed fake signing secret"
+targetRules = ["generic-api-key"]
+condition = "AND"
+paths = [
+  '''(?:^|/)packages/apps/studio/tests/git/webhooks\.test\.ts$''',
+]
+regexes = [
+  '''^(?:whsec-0123456789abcdef)$''',
+]
+
+[[allowlists]]
+description = "Historical configuration documentation asks users to replace the placeholder"
+targetRules = ["generic-api-key"]
+condition = "AND"
+paths = [
+  '''(?:^|/)internal-docs/app-config\.md$''',
+]
+regexes = [
+  '''^(?:replace-with-a-unique-secret-at-least-32-characters)$''',
+]
+
+[[allowlists]]
+description = "Fixed authentication secret in current and historical foundation access tests"
+targetRules = ["generic-api-key"]
+condition = "AND"
+paths = [
+  '''(?:^|/)packages/templates/app-template-examples/tests/server/foundation-access\.test\.ts$''',
+  '''(?:^|/)packages/templates/app-template-examples/tests/logic/foundation-access\.test\.ts$''',
+]
+regexes = [
+  '''^(?:foundation-test-secret-at-least-32-characters)$''',
+]
+
+[[allowlists]]
+description = "Disposable OceanBase system password in development database examples"
+targetRules = ["generic-api-key"]
+condition = "AND"
+paths = [
+  '''(?:^|/)packages/templates/app-template-examples/docker-compose\.yml$''',
+  '''(?:^|/)packages/libs/db-oceanbase/docker-compose\.yml$''',
+]
+regexes = [
+  '''^(?:ObSys_123456)$''',
+]
+
+[[allowlists]]
+description = "Historical input component documentation displays a fixed placeholder"
+targetRules = ["generic-api-key"]
+condition = "AND"
+paths = [
+  '''(?:^|/)packages/apps/studio/client/pages/reference/components/input-group\.tsx$''',
+  '''(?:^|/)packages/templates/app-template-default/client/pages/reference/components/input-group\.tsx$''',
+  '''(?:^|/)packages/templates/app-template-examples/client/pages/reference/components/input-group\.tsx$''',
+  '''(?:^|/)packages/templates/app-template-hub/client/pages/reference/components/input-group\.tsx$''',
+]
+regexes = [
+  '''^(?:nb_live_9f2c41d8a7e04b13)$''',
+]

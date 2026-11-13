@@ -472,6 +472,8 @@ export function FeedbackForm({
         // discard the input (`RouteOverlay`'s `dirty`). The end waits one task, for a close the save started.
         const form = event.currentTarget;
         const announce = (phase: 'start' | 'end'): void => {
+          // The end runs a task later, when the form may already be gone: a removed form has no ancestor to tell, and its document may have been torn down with it.
+          if (!form.isConnected) return;
           form.dispatchEvent(
             new CustomEvent('nocobase:form-submit', {
               bubbles: true,

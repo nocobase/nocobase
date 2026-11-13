@@ -753,8 +753,8 @@ const idID: LocaleResource<typeof enUS> = {
       offlineNever: 'Luring',
     },
     toolUsage: {
-      label: 'Dijalankan dengan alat pengkodean',
-      item: '{{tool}} {{used}}/{{limit}}',
+      short: 'Jalan {{used}}/{{limit}}',
+      hint: 'Paling banyak {{limit}} jalannya {{tool}} sekaligus; {{used}} berjalan sekarang',
     },
     toolSlots: {
       label: 'Batasan per alat pengkodean',
