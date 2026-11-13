@@ -105,8 +105,9 @@ function setup() {
 }
 describe('configured lifecycle parameters', () => {
   it('previews current values, binds the complete values only on first successful submission', async () => {
-    const { store, parameters, runtime, save, seen } = setup();
-    const record = (await runtime.create('orders', {}, { actor: SYSTEM_ACTOR })).record;
+    const { parameters, runtime, save, seen } = setup();
+    const record = (await runtime.create('orders', {}, { actor: SYSTEM_ACTOR }))
+      .record;
     await save(20, 2, 0);
     expect(
       await runtime.resolveParameters('orders', {
@@ -141,7 +142,9 @@ describe('configured lifecycle parameters', () => {
       [20, 2],
       [20, 2],
     ]);
-    const newRecord = (await runtime.create('orders', {}, { actor: SYSTEM_ACTOR })).record;
+    const newRecord = (
+      await runtime.create('orders', {}, { actor: SYSTEM_ACTOR })
+    ).record;
     await runtime.fire('orders', newRecord.id, 'submit', {
       actor: SYSTEM_ACTOR,
     });
@@ -160,7 +163,8 @@ describe('configured lifecycle parameters', () => {
   });
   it('rolls back snapshots and usage together with hooks and nested savepoints', async () => {
     const { store, runtime, parameters, fail } = setup();
-    const record = (await runtime.create('orders', {}, { actor: SYSTEM_ACTOR })).record;
+    const record = (await runtime.create('orders', {}, { actor: SYSTEM_ACTOR }))
+      .record;
     fail();
     await expect(
       runtime.fire('orders', record.id, 'submit', { actor: SYSTEM_ACTOR }),
@@ -168,7 +172,11 @@ describe('configured lifecycle parameters', () => {
     expect(
       await parameters.snapshot('demo', 'orders', String(record.id)),
     ).toBeUndefined();
-    expect((await store.listTransitions('orders', String(record.id))).map(entry => entry.transition)).toEqual(['$create']);
+    expect(
+      (await store.listTransitions('orders', String(record.id))).map(
+        (entry) => entry.transition,
+      ),
+    ).toEqual(['$create']);
     await runtime.transaction(async (tx) => {
       await expect(
         tx.fire('orders', record.id, 'submit', { actor: SYSTEM_ACTOR }),
@@ -184,8 +192,9 @@ describe('configured lifecycle parameters', () => {
     });
   });
   it('does not reread or replace facts on idempotent replay', async () => {
-    const { store, runtime, parameters, save } = setup();
-    const record = (await runtime.create('orders', {}, { actor: SYSTEM_ACTOR })).record;
+    const { runtime, parameters, save } = setup();
+    const record = (await runtime.create('orders', {}, { actor: SYSTEM_ACTOR }))
+      .record;
     const first = await runtime.fire('orders', record.id, 'submit', {
       actor: SYSTEM_ACTOR,
       requestId: 'first',
@@ -259,8 +268,9 @@ describe('configured lifecycle parameters', () => {
     ).toThrow('storage adapter');
   });
   it('records standalone action facts and shares values with its transitions', async () => {
-    const { store, runtime, parameters, save } = setup();
-    const record = (await runtime.create('orders', {}, { actor: SYSTEM_ACTOR })).record;
+    const { runtime, parameters, save } = setup();
+    const record = (await runtime.create('orders', {}, { actor: SYSTEM_ACTOR }))
+      .record;
     await runtime.withParameterExecution('orders', record.id, async () => {}, {
       actionId: 'comment-1',
     });
@@ -299,7 +309,13 @@ describe('configured lifecycle parameters', () => {
       status: 'review',
       legacy: true,
     });
-    await expect(runtime.resolveParameters('orders', { record: old, purpose: 'preview', transactionHandle: undefined })).rejects.toMatchObject({ code: 'PARAMETER_SNAPSHOT_MISSING' });
+    await expect(
+      runtime.resolveParameters('orders', {
+        record: old,
+        purpose: 'preview',
+        transactionHandle: undefined,
+      }),
+    ).rejects.toMatchObject({ code: 'PARAMETER_SNAPSHOT_MISSING' });
     await store.transaction(async (tx) =>
       parameters.saveSnapshot(
         {
@@ -398,7 +414,8 @@ describe('configured effect attempts', () => {
       }),
       { parameterConfiguration: { store: parameters, scope: () => 'demo' } },
     );
-    const record = (await runtime.create('orders', {}, { actor: SYSTEM_ACTOR })).record;
+    const record = (await runtime.create('orders', {}, { actor: SYSTEM_ACTOR }))
+      .record;
     const result = await runtime.fire('orders', record.id, 'submit', {
       actor: SYSTEM_ACTOR,
     });
@@ -435,7 +452,8 @@ describe('configured effect attempts', () => {
 describe('configured action and continuation boundaries', () => {
   it('rolls back a successful nested submission when its outer action fails', async () => {
     const { store, runtime, parameters } = setup();
-    const record = (await runtime.create('orders', {}, { actor: SYSTEM_ACTOR })).record;
+    const record = (await runtime.create('orders', {}, { actor: SYSTEM_ACTOR }))
+      .record;
     await expect(
       runtime.withParameterExecution(
         'orders',
@@ -443,7 +461,7 @@ describe('configured action and continuation boundaries', () => {
         async (_values, tx, resolution) => {
           expect(resolution?.sources.limit).toMatchObject({
             origin: 'default',
-                    });
+          });
           await tx.fire('orders', record.id, 'submit', { actor: SYSTEM_ACTOR });
           expect(
             await parameters.snapshot(
@@ -467,8 +485,9 @@ describe('configured action and continuation boundaries', () => {
     expect((await store.findRecord('orders', record.id))?.status).toBe('draft');
   });
   it('allows a replay-aware action owner to avoid reading or writing parameter facts twice', async () => {
-    const { store, runtime, parameters, save } = setup();
-    const record = (await runtime.create('orders', {}, { actor: SYSTEM_ACTOR })).record;
+    const { runtime, parameters, save } = setup();
+    const record = (await runtime.create('orders', {}, { actor: SYSTEM_ACTOR }))
+      .record;
     const execute = async (): Promise<unknown> =>
       store.transaction(async (transaction) => {
         const receipt = await transaction.findRecord(
@@ -549,7 +568,8 @@ describe('configured action and continuation boundaries', () => {
       }),
       { parameterConfiguration: { store: parameters, scope: () => 'demo' } },
     );
-    const record = (await runtime.create('tasks', {}, { actor: SYSTEM_ACTOR })).record;
+    const record = (await runtime.create('tasks', {}, { actor: SYSTEM_ACTOR }))
+      .record;
     const result = await runtime.fire('tasks', record.id, 'start', {
       actor: SYSTEM_ACTOR,
     });

@@ -98,7 +98,11 @@ export class ParameterConfigurationError extends Error {
 /** Optional capability: unconfigured runtimes never require these collections. */
 export interface LifecycleParameterStore {
   /** Reads one immutable, complete revision for this definition version. */
-  readConfiguration(scope: string, lifecycle: string, transaction?: unknown): Promise<ParameterVersion | undefined>;
+  readConfiguration(
+    scope: string,
+    lifecycle: string,
+    transaction?: unknown,
+  ): Promise<ParameterVersion | undefined>;
   read(
     scope: string,
     group: string,
@@ -108,7 +112,12 @@ export interface LifecycleParameterStore {
     input: SaveParameterVersion,
     transaction?: unknown,
   ): Promise<ParameterVersion>;
-  snapshots(scope: string, lifecycle: string, recordIds: readonly string[], transaction?: unknown): Promise<ReadonlyMap<string, ParameterSnapshot>>;
+  snapshots(
+    scope: string,
+    lifecycle: string,
+    recordIds: readonly string[],
+    transaction?: unknown,
+  ): Promise<ReadonlyMap<string, ParameterSnapshot>>;
   snapshot(
     scope: string,
     lifecycle: string,
@@ -304,7 +313,11 @@ export class StoredLifecycleParameters implements LifecycleParameterStore {
     }
     return { ...version, values };
   }
-  public readConfiguration(scope: string, lifecycle: string, transaction?: unknown): Promise<ParameterVersion | undefined> {
+  public readConfiguration(
+    scope: string,
+    lifecycle: string,
+    transaction?: unknown,
+  ): Promise<ParameterVersion | undefined> {
     return this.read(scope, lifecycle, transaction);
   }
   public read(
@@ -483,10 +496,23 @@ export class StoredLifecycleParameters implements LifecycleParameterStore {
       return version;
     });
   }
-  public snapshots(scope: string, lifecycle: string, recordIds: readonly string[], transaction?: unknown): Promise<ReadonlyMap<string, ParameterSnapshot>> {
-    return this.transaction(transaction, async store => {
-      const rows = await store.findRecords(this.collections.snapshots, recordIds.map(id => parameterIdentity(scope, lifecycle, id)));
-      return new Map(rows.map(row => { const snapshot = stored<ParameterSnapshot>(row)!; return [snapshot.recordId, snapshot]; }));
+  public snapshots(
+    scope: string,
+    lifecycle: string,
+    recordIds: readonly string[],
+    transaction?: unknown,
+  ): Promise<ReadonlyMap<string, ParameterSnapshot>> {
+    return this.transaction(transaction, async (store) => {
+      const rows = await store.findRecords(
+        this.collections.snapshots,
+        recordIds.map((id) => parameterIdentity(scope, lifecycle, id)),
+      );
+      return new Map(
+        rows.map((row) => {
+          const snapshot = stored<ParameterSnapshot>(row)!;
+          return [snapshot.recordId, snapshot];
+        }),
+      );
     });
   }
   public snapshot(
@@ -625,12 +651,25 @@ export class StoredLifecycleParameters implements LifecycleParameterStore {
 }
 
 /** A single revision covers all groups of one definition; groups are presentation only. */
-export function configurationGroup(lifecycle: string, groups: readonly ParameterGroup[]): ParameterGroup {
+export function configurationGroup(
+  lifecycle: string,
+  groups: readonly ParameterGroup[],
+): ParameterGroup {
   return {
-    key: lifecycle, title: lifecycle, schemaVersion: 1,
-    fields: Object.fromEntries(groups.flatMap(group => Object.entries(group.fields))),
+    key: lifecycle,
+    title: lifecycle,
+    schemaVersion: 1,
+    fields: Object.fromEntries(
+      groups.flatMap((group) => Object.entries(group.fields)),
+    ),
     validate(values) {
-      for (const group of groups) normalizeParameterValues(group, Object.fromEntries(Object.keys(group.fields).map(key => [key, values[key]])));
+      for (const group of groups)
+        normalizeParameterValues(
+          group,
+          Object.fromEntries(
+            Object.keys(group.fields).map((key) => [key, values[key]]),
+          ),
+        );
     },
   };
 }

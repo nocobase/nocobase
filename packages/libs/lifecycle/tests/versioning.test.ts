@@ -561,7 +561,8 @@ describe('parameters isolated by definition version', () => {
     runtime.register(
       defineLifecycle(
         v1({
-          dueAtField: 'dueAt', parameterConfiguration: { groups: [limits] },
+          dueAtField: 'dueAt',
+          parameterConfiguration: { groups: [limits] },
         }),
       ),
       { parameterConfiguration: registration, services: { sent: [] } },
@@ -574,7 +575,8 @@ describe('parameters isolated by definition version', () => {
     runtime.register(
       defineLifecycle(
         v2({
-          dueAtField: 'dueAt', parameterConfiguration: {
+          dueAtField: 'dueAt',
+          parameterConfiguration: {
             groups: [limits, extras],
           },
         }),
@@ -639,7 +641,8 @@ describe('parameters isolated by definition version', () => {
               limit: changed.schemaVersion === 2 ? 10 : 10,
               extra: 0,
             },
-            dueAtField: 'dueAt', parameterConfiguration: { groups: [changed] },
+            dueAtField: 'dueAt',
+            parameterConfiguration: { groups: [changed] },
           }),
         ),
         { parameterConfiguration: registration, services: { sent: [] } },

@@ -835,9 +835,16 @@ export function defineLifecycle<T extends LifecycleTypes>(
 
   const configuration = definition.parameterConfiguration;
   if (configuration) {
-    const starts = configuration.startTransition === undefined ? [] : typeof configuration.startTransition === 'string' ? [configuration.startTransition] : configuration.startTransition;
-    if (starts.some(start => !transitions.has(start))) throw invalid(name, 'unknown parameter start transition.');
-    if (triggers.size && !definition.dueAtField) throw invalid(name, 'configured triggers require an indexed dueAtField.');
+    const starts =
+      configuration.startTransition === undefined
+        ? []
+        : typeof configuration.startTransition === 'string'
+          ? [configuration.startTransition]
+          : configuration.startTransition;
+    if (starts.some((start) => !transitions.has(start)))
+      throw invalid(name, 'unknown parameter start transition.');
+    if (triggers.size && !definition.dueAtField)
+      throw invalid(name, 'configured triggers require an indexed dueAtField.');
     const keys = new Set<string>();
     const groups = new Set<string>();
     for (const group of configuration.groups) {
@@ -926,17 +933,19 @@ export function describeLifecycle<T extends LifecycleTypes>(
     ...(lifecycle.parameterConfiguration
       ? {
           parameterConfiguration: {
-            ...(lifecycle.parameterConfiguration.startTransition ? { startTransition: lifecycle.parameterConfiguration.startTransition } : {}),
+            ...(lifecycle.parameterConfiguration.startTransition
+              ? {
+                  startTransition:
+                    lifecycle.parameterConfiguration.startTransition,
+                }
+              : {}),
             groups: lifecycle.parameterConfiguration.groups.map((group) => ({
               key: group.key,
               title: group.title,
               schemaVersion: group.schemaVersion,
               fields: Object.fromEntries(
                 Object.entries(group.fields).map(
-                  ([key, { parse: _parse, ...field }]) => [
-                    key,
-                    field,
-                  ],
+                  ([key, { parse: _parse, ...field }]) => [key, field],
                 ),
               ),
             })),

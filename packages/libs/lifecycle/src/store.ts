@@ -321,7 +321,10 @@ export interface LifecycleStore {
   afterCommit(callback: () => void | Promise<void>): void;
 
   /** Bounded primary-key batch, used by trigger pages. */
-  findRecords(collection: string, ids: readonly RecordId[]): Promise<LifecycleRecord[]>;
+  findRecords(
+    collection: string,
+    ids: readonly RecordId[],
+  ): Promise<LifecycleRecord[]>;
 
   findRecord(
     collection: string,

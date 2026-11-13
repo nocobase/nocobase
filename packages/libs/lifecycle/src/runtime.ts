@@ -704,7 +704,8 @@ export class LifecycleRuntime {
 
   public constructor(options: LifecycleRuntimeOptions) {
     this.store = options.store;
-    this.creationRequestsCollection = options.creationRequestsCollection ?? 'lifecycleCreationRequests';
+    this.creationRequestsCollection =
+      options.creationRequestsCollection ?? 'lifecycleCreationRequests';
     this.dispatcher = options.dispatcher ?? new InlineDispatcher(this);
     this.clock = options.clock ?? ((): Date => new Date());
     this.logger = options.logger ?? silent;
@@ -892,7 +893,6 @@ export class LifecycleRuntime {
       refuse(
         `"${lifecycle.key}" has several versions, so they need a definitionField naming each record's version.`,
       );
-
   }
 
   /** The registered versions of a key, oldest first. */
@@ -1051,9 +1051,7 @@ export class LifecycleRuntime {
       return parameters;
     }
     const pending = (async (): Promise<Readonly<object>> => {
-      if (
-        registered.parameterConfiguration
-      ) {
+      if (registered.parameterConfiguration) {
         const resolution = await this.readConfiguredParameters(
           registered,
           context,
@@ -1185,7 +1183,11 @@ export class LifecycleRuntime {
 
   private startTransitions(registered: Registered): readonly string[] {
     const start = registered.lifecycle.parameterConfiguration?.startTransition;
-    return start === undefined ? [] : typeof start === 'string' ? [start] : start;
+    return start === undefined
+      ? []
+      : typeof start === 'string'
+        ? [start]
+        : start;
   }
 
   private async readConfiguredParameters(
@@ -1195,45 +1197,144 @@ export class LifecycleRuntime {
   ): Promise<ParameterResolution> {
     const config = registered.parameterConfiguration!;
     const definition = registered.lifecycle.parameterConfiguration!;
-    const scope = config.scope({ ...context, lifecycle: registered.lifecycle.name, key: registered.lifecycle.key });
-    if (!scope) throw new ParameterConfigurationError('CONFIGURATION_INVALID', 'The authoritative configuration scope is empty.');
-    const snapshot = suppliedSnapshot !== undefined ? suppliedSnapshot ?? undefined : context.record ? await config.store.snapshot(scope, registered.lifecycle.name, String(context.record.id), context.transactionHandle) : undefined;
+    const scope = config.scope({
+      ...context,
+      lifecycle: registered.lifecycle.name,
+      key: registered.lifecycle.key,
+    });
+    if (!scope)
+      throw new ParameterConfigurationError(
+        'CONFIGURATION_INVALID',
+        'The authoritative configuration scope is empty.',
+      );
+    const snapshot =
+      suppliedSnapshot !== undefined
+        ? (suppliedSnapshot ?? undefined)
+        : context.record
+          ? await config.store.snapshot(
+              scope,
+              registered.lifecycle.name,
+              String(context.record.id),
+              context.transactionHandle,
+            )
+          : undefined;
     if (snapshot) {
       try {
-        if (snapshot.scope !== scope || snapshot.lifecycle !== registered.lifecycle.name || snapshot.recordId !== String(context.record!.id) || !Number.isSafeInteger(snapshot.revision) || snapshot.revision < 0 || !Number.isFinite(Date.parse(snapshot.at))) throw new Error('Invalid snapshot identity or provenance.');
+        if (
+          snapshot.scope !== scope ||
+          snapshot.lifecycle !== registered.lifecycle.name ||
+          snapshot.recordId !== String(context.record!.id) ||
+          !Number.isSafeInteger(snapshot.revision) ||
+          snapshot.revision < 0 ||
+          !Number.isFinite(Date.parse(snapshot.at))
+        )
+          throw new Error('Invalid snapshot identity or provenance.');
         const values: JsonObject = {};
         for (const group of definition.groups) {
-          const normalized = normalizeParameterValues(group, Object.fromEntries(Object.keys(group.fields).map(key => {
-            const source = snapshot.sources[key];
-            if (!Object.hasOwn(snapshot.values, key) || !source || source.schemaVersion !== group.schemaVersion || source.group !== group.key) throw new Error(`Missing or incompatible snapshot parameter "${key}".`);
-            return [key, snapshot.values[key]];
-          })));
+          const normalized = normalizeParameterValues(
+            group,
+            Object.fromEntries(
+              Object.keys(group.fields).map((key) => {
+                const source = snapshot.sources[key];
+                if (
+                  !Object.hasOwn(snapshot.values, key) ||
+                  !source ||
+                  source.schemaVersion !== group.schemaVersion ||
+                  source.group !== group.key
+                )
+                  throw new Error(
+                    `Missing or incompatible snapshot parameter "${key}".`,
+                  );
+                return [key, snapshot.values[key]];
+              }),
+            ),
+          );
           Object.assign(values, normalized);
         }
         // Non-configurable defaults are also part of the complete frozen values.
-        for (const key of Object.keys(registered.lifecycle.parameters)) if (!Object.hasOwn(snapshot.values, key)) throw new Error(`Missing snapshot parameter "${key}".`);
-        return { scope, revision: snapshot.revision, values: { ...snapshot.values, ...values }, sources: snapshot.sources };
+        for (const key of Object.keys(registered.lifecycle.parameters))
+          if (!Object.hasOwn(snapshot.values, key))
+            throw new Error(`Missing snapshot parameter "${key}".`);
+        return {
+          scope,
+          revision: snapshot.revision,
+          values: { ...snapshot.values, ...values },
+          sources: snapshot.sources,
+        };
       } catch (error) {
-        throw new ParameterConfigurationError('PARAMETER_SNAPSHOT_INVALID', `Invalid instance parameter snapshot: ${error instanceof Error ? error.message : String(error)}`);
+        throw new ParameterConfigurationError(
+          'PARAMETER_SNAPSHOT_INVALID',
+          `Invalid instance parameter snapshot: ${error instanceof Error ? error.message : String(error)}`,
+        );
       }
     }
     if (context.record) {
       const starts = this.startTransitions(registered);
-      const logs = await this.store.transaction(store => store.listTransitions(registered.lifecycle.name, String(context.record!.id)), context.transactionHandle === undefined ? undefined : { within: context.transactionHandle });
-      if (!starts.length || logs.some(entry => starts.includes(entry.transition)) || config.snapshotRequired?.(context.record)) throw new ParameterConfigurationError('PARAMETER_SNAPSHOT_MISSING', 'This started instance requires a verified historical parameter snapshot.');
-      if (!logs.some(entry => entry.transition === CREATE_TRANSITION)) throw new ParameterConfigurationError('PARAMETER_START_UNKNOWN', 'The instance has no reliable creation or start history; migrate it before execution.');
+      const logs = await this.store.transaction(
+        (store) =>
+          store.listTransitions(
+            registered.lifecycle.name,
+            String(context.record!.id),
+          ),
+        context.transactionHandle === undefined
+          ? undefined
+          : { within: context.transactionHandle },
+      );
+      if (
+        !starts.length ||
+        logs.some((entry) => starts.includes(entry.transition)) ||
+        config.snapshotRequired?.(context.record)
+      )
+        throw new ParameterConfigurationError(
+          'PARAMETER_SNAPSHOT_MISSING',
+          'This started instance requires a verified historical parameter snapshot.',
+        );
+      if (!logs.some((entry) => entry.transition === CREATE_TRANSITION))
+        throw new ParameterConfigurationError(
+          'PARAMETER_START_UNKNOWN',
+          'The instance has no reliable creation or start history; migrate it before execution.',
+        );
     }
-    const current = await config.store.readConfiguration(scope, registered.lifecycle.name, context.transactionHandle);
+    const current = await config.store.readConfiguration(
+      scope,
+      registered.lifecycle.name,
+      context.transactionHandle,
+    );
     const values = { ...registered.lifecycle.parameters } as JsonObject;
     const sources: Record<string, ParameterSource> = {};
     for (const group of definition.groups) {
-      const complete = normalizeParameterValues(group, Object.fromEntries(Object.keys(group.fields).map(key => [key, current && Object.hasOwn(current.values, key) ? current.values[key] : values[key]])));
+      const complete = normalizeParameterValues(
+        group,
+        Object.fromEntries(
+          Object.keys(group.fields).map((key) => [
+            key,
+            current && Object.hasOwn(current.values, key)
+              ? current.values[key]
+              : values[key],
+          ]),
+        ),
+      );
       for (const key of Object.keys(group.fields)) {
         values[key] = complete[key];
-        sources[key] = { group: group.key, schemaVersion: group.schemaVersion, revision: current?.revision ?? 0, origin: current && Object.hasOwn(current.values, key) ? 'configuration' : 'default' };
+        sources[key] = {
+          group: group.key,
+          schemaVersion: group.schemaVersion,
+          revision: current?.revision ?? 0,
+          origin:
+            current && Object.hasOwn(current.values, key)
+              ? 'configuration'
+              : 'default',
+        };
       }
     }
-    if (current && Object.keys(current.values).some(key => !Object.hasOwn(values, key))) throw new ParameterConfigurationError('CONFIGURATION_INCOMPATIBLE', 'Stored configuration contains unknown parameters.');
+    if (
+      current &&
+      Object.keys(current.values).some((key) => !Object.hasOwn(values, key))
+    )
+      throw new ParameterConfigurationError(
+        'CONFIGURATION_INCOMPATIBLE',
+        'Stored configuration contains unknown parameters.',
+      );
     return { scope, revision: current?.revision ?? 0, values, sources };
   }
 
@@ -1245,17 +1346,59 @@ export class LifecycleRuntime {
     const config = registered.parameterConfiguration;
     if (!config || !context.record) return;
     const starts = this.startTransitions(registered);
-    if (!(context.purpose === 'create' && !starts.length) && !(context.purpose === 'transition' && starts.includes(context.transition ?? ''))) return;
-    const resolution = supplied ?? this.parameterExecution.getStore()?.resolutions.get(moveKey(registered.lifecycle.name, context.record.id));
-    if (!resolution) throw new Error('The parameter execution has no resolution to bind.');
-    if (await config.store.snapshot(resolution.scope, registered.lifecycle.name, String(context.record.id), context.transactionHandle)) return;
-    await config.store.saveSnapshot({ ...resolution, lifecycle: registered.lifecycle.name, recordId: String(context.record.id), at: this.clock().toISOString() }, context.transactionHandle);
+    if (
+      !(context.purpose === 'create' && !starts.length) &&
+      !(
+        context.purpose === 'transition' &&
+        starts.includes(context.transition ?? '')
+      )
+    )
+      return;
+    const resolution =
+      supplied ??
+      this.parameterExecution
+        .getStore()
+        ?.resolutions.get(
+          moveKey(registered.lifecycle.name, context.record.id),
+        );
+    if (!resolution)
+      throw new Error('The parameter execution has no resolution to bind.');
+    if (
+      await config.store.snapshot(
+        resolution.scope,
+        registered.lifecycle.name,
+        String(context.record.id),
+        context.transactionHandle,
+      )
+    )
+      return;
+    await config.store.saveSnapshot(
+      {
+        ...resolution,
+        lifecycle: registered.lifecycle.name,
+        recordId: String(context.record.id),
+        at: this.clock().toISOString(),
+      },
+      context.transactionHandle,
+    );
   }
 
-  private triggerDueAt(lifecycle: Lifecycle<LifecycleTypes>, state: string, parameters: Readonly<object>, now: Date): string | null {
-    const delays = [...lifecycle.triggers.values()].filter(trigger => trigger.when.includes(state)).map(trigger => trigger.definition.after(parameters as ParametersOf<LifecycleTypes>));
-    if (delays.some(delay => !Number.isFinite(delay))) throw new Error('Trigger delay must be finite.');
-    return delays.length ? new Date(now.getTime() + Math.min(...delays)).toISOString() : null;
+  private triggerDueAt(
+    lifecycle: Lifecycle<LifecycleTypes>,
+    state: string,
+    parameters: Readonly<object>,
+    now: Date,
+  ): string | null {
+    const delays = [...lifecycle.triggers.values()]
+      .filter((trigger) => trigger.when.includes(state))
+      .map((trigger) =>
+        trigger.definition.after(parameters as ParametersOf<LifecycleTypes>),
+      );
+    if (delays.some((delay) => !Number.isFinite(delay)))
+      throw new Error('Trigger delay must be finite.');
+    return delays.length
+      ? new Date(now.getTime() + Math.min(...delays)).toISOString()
+      : null;
   }
 
   private async recordParameterUsage(
@@ -1627,7 +1770,14 @@ export class LifecycleRuntime {
           'INVALID_SET',
           `Creating a ${name} record may not set "${field}"; the lifecycle owns it.`,
         );
-    if (options.requestId !== undefined && (!options.requestId.trim() || options.requestId.startsWith('$'))) throw new LifecycleError('INVALID_REQUEST_ID', 'Creation requires a nonempty, non-reserved request ID.');
+    if (
+      options.requestId !== undefined &&
+      (!options.requestId.trim() || options.requestId.startsWith('$'))
+    )
+      throw new LifecycleError(
+        'INVALID_REQUEST_ID',
+        'Creation requires a nonempty, non-reserved request ID.',
+      );
     const now = this.clock();
     const at = now.toISOString();
     const inner: { handle?: unknown } = {};
@@ -1637,21 +1787,79 @@ export class LifecycleRuntime {
           inner.handle = store.transactionHandle;
           let creationKey: string | undefined;
           if (options.requestId !== undefined) {
-            const scope = registered.parameterConfiguration?.scope({ lifecycle: name, key: lifecycle.key, record: null, values, transactionHandle: store.transactionHandle, purpose: 'create' }) ?? '$default';
-            creationKey = parameterIdentity(scope, name, options.actor.id, options.requestId);
-            const fingerprint = canonical({ values, state, input: options.input ?? {} } as JsonObject);
+            const scope =
+              registered.parameterConfiguration?.scope({
+                lifecycle: name,
+                key: lifecycle.key,
+                record: null,
+                values,
+                transactionHandle: store.transactionHandle,
+                purpose: 'create',
+              }) ?? '$default';
+            creationKey = parameterIdentity(
+              scope,
+              name,
+              options.actor.id,
+              options.requestId,
+            );
+            const fingerprint = canonical({
+              values,
+              state,
+              input: options.input ?? {},
+            } as JsonObject);
             try {
-              await store.transaction(async nested => {
-                await nested.createRecord(this.creationRequestsCollection, { id: creationKey, status: 'claimed', revision: 0, actorId: options.actor.id, fingerprint, recordId: null, entryId: null, at });
-              }, { within: store.transactionHandle });
+              await store.transaction(
+                async (nested) => {
+                  await nested.createRecord(this.creationRequestsCollection, {
+                    id: creationKey,
+                    status: 'claimed',
+                    revision: 0,
+                    actorId: options.actor.id,
+                    fingerprint,
+                    recordId: null,
+                    entryId: null,
+                    at,
+                  });
+                },
+                { within: store.transactionHandle },
+              );
             } catch (error) {
               if (!isUniqueConflict(error)) throw error;
-              const previous = await store.findRecord(this.creationRequestsCollection, creationKey);
-              if (!previous || previous.fingerprint !== fingerprint || previous.actorId !== options.actor.id) throw new LifecycleError('REQUEST_REUSED', 'The creation request was already used with different input.');
-              const record = previous.recordId ? await store.findRecord(lifecycle.collection, String(previous.recordId)) : undefined;
-              const entry = previous.entryId ? await store.findTransition(String(previous.entryId)) : undefined;
-              if (!record || !entry) throw new LifecycleError('CONFLICT', 'The creation request has not committed yet; retry it with the same request ID.');
-              if (registered.parameterConfiguration) await this.readConfiguredParameters(registered, { record, purpose: 'preview', transactionHandle: store.transactionHandle });
+              const previous = await store.findRecord(
+                this.creationRequestsCollection,
+                creationKey,
+              );
+              if (
+                !previous ||
+                previous.fingerprint !== fingerprint ||
+                previous.actorId !== options.actor.id
+              )
+                throw new LifecycleError(
+                  'REQUEST_REUSED',
+                  'The creation request was already used with different input.',
+                );
+              const record =
+                typeof previous.recordId === 'string'
+                  ? await store.findRecord(
+                      lifecycle.collection,
+                      previous.recordId,
+                    )
+                  : undefined;
+              const entry =
+                typeof previous.entryId === 'string'
+                  ? await store.findTransition(previous.entryId)
+                  : undefined;
+              if (!record || !entry)
+                throw new LifecycleError(
+                  'CONFLICT',
+                  'The creation request has not committed yet; retry it with the same request ID.',
+                );
+              if (registered.parameterConfiguration)
+                await this.readConfiguredParameters(registered, {
+                  record,
+                  purpose: 'preview',
+                  transactionHandle: store.transactionHandle,
+                });
               return { record, entry, effectRuns: [], replayed: true };
             }
           }
@@ -1684,7 +1892,16 @@ export class LifecycleRuntime {
             [lifecycle.stateField]: state,
             [lifecycle.changedAtField]: at,
             [lifecycle.versionField]: 1,
-            ...(lifecycle.dueAtField ? { [lifecycle.dueAtField]: this.triggerDueAt(lifecycle, state, parameters, now) } : {}),
+            ...(lifecycle.dueAtField
+              ? {
+                  [lifecycle.dueAtField]: this.triggerDueAt(
+                    lifecycle,
+                    state,
+                    parameters,
+                    now,
+                  ),
+                }
+              : {}),
             // Bound in the same write: the record is this definition's from
             // its first instant, and nothing else may change that.
             ...(lifecycle.definitionField === undefined
@@ -1701,7 +1918,15 @@ export class LifecycleRuntime {
             this.parameterExecution
               .getStore()
               ?.resolutions.set(moveKey(name, record.id), creationResolution);
-          await this.bindParameterSnapshot(registered, { record, transactionHandle: store.transactionHandle, purpose: 'create' }, creationResolution);
+          await this.bindParameterSnapshot(
+            registered,
+            {
+              record,
+              transactionHandle: store.transactionHandle,
+              purpose: 'create',
+            },
+            creationResolution,
+          );
           const entry = await store.appendTransition({
             lifecycle: lifecycle.name,
             recordId: String(record.id),
@@ -1781,7 +2006,23 @@ export class LifecycleRuntime {
                 ),
                 entryWork,
               );
-          if (creationKey) await store.updateRecordIf(this.creationRequestsCollection, creationKey, { stateField: 'status', state: 'claimed', versionField: 'revision', version: 0 }, { recordId: String(record.id), entryId: entry.id, status: 'complete', revision: 1 });
+          if (creationKey)
+            await store.updateRecordIf(
+              this.creationRequestsCollection,
+              creationKey,
+              {
+                stateField: 'status',
+                state: 'claimed',
+                versionField: 'revision',
+                version: 0,
+              },
+              {
+                recordId: String(record.id),
+                entryId: entry.id,
+                status: 'complete',
+                revision: 1,
+              },
+            );
           outcome.created = created;
           return created.result;
         }),
@@ -1920,10 +2161,9 @@ export class LifecycleRuntime {
         runId,
         attempt,
       };
-      const resolution =
-        registered.parameterConfiguration
-          ? await this.readConfiguredParameters(registered, parameterContext)
-          : undefined;
+      const resolution = registered.parameterConfiguration
+        ? await this.readConfiguredParameters(registered, parameterContext)
+        : undefined;
       const parameters = resolution
         ? freezeParameters(resolution.values)
         : await this.resolveParameters(lifecycle.name, parameterContext);
@@ -2407,10 +2647,15 @@ export class LifecycleRuntime {
     let fired = 0;
     const failures: unknown[] = [];
     for (const { lifecycle } of this.lifecycles.values()) {
-      const parameters = this.parameters(lifecycle.name) as ParametersOf<LifecycleTypes>;
+      const parameters = this.parameters(
+        lifecycle.name,
+      ) as ParametersOf<LifecycleTypes>;
       for (const trigger of lifecycle.triggers.values()) {
         const changedBefore = new Date(
-          this.clock().getTime() - (lifecycle.parameterConfiguration ? 0 : trigger.definition.after(parameters)),
+          this.clock().getTime() -
+            (lifecycle.parameterConfiguration
+              ? 0
+              : trigger.definition.after(parameters)),
         ).toISOString();
         let after: IdleRecordCursor | undefined;
         let firedHere = 0;
@@ -2420,8 +2665,12 @@ export class LifecycleRuntime {
             {
               stateField: lifecycle.stateField,
               states: trigger.when,
-              changedAtField: lifecycle.parameterConfiguration ? lifecycle.dueAtField! : lifecycle.changedAtField,
-              changedBefore: lifecycle.parameterConfiguration ? new Date(this.clock().getTime() + 1).toISOString() : changedBefore,
+              changedAtField: lifecycle.parameterConfiguration
+                ? lifecycle.dueAtField!
+                : lifecycle.changedAtField,
+              changedBefore: lifecycle.parameterConfiguration
+                ? new Date(this.clock().getTime() + 1).toISOString()
+                : changedBefore,
               limit: trigger.batchSize,
               ...(after ? { after } : {}),
               // Only this version's records: another version of the
@@ -2441,10 +2690,25 @@ export class LifecycleRuntime {
           if (registration) {
             const scopes = new Map<string, string[]>();
             for (const record of records) {
-              const scope = registration.scope({ lifecycle: lifecycle.name, key: lifecycle.key, record, purpose: 'preview', transactionHandle: undefined });
-              scopes.set(scope, [...(scopes.get(scope) ?? []), String(record.id)]);
+              const scope = registration.scope({
+                lifecycle: lifecycle.name,
+                key: lifecycle.key,
+                record,
+                purpose: 'preview',
+                transactionHandle: undefined,
+              });
+              scopes.set(scope, [
+                ...(scopes.get(scope) ?? []),
+                String(record.id),
+              ]);
             }
-            for (const [scope, ids] of scopes) for (const [id, snapshot] of await registration.store.snapshots(scope, lifecycle.name, ids)) snapshots.set(id, snapshot);
+            for (const [scope, ids] of scopes)
+              for (const [id, snapshot] of await registration.store.snapshots(
+                scope,
+                lifecycle.name,
+                ids,
+              ))
+                snapshots.set(id, snapshot);
           }
           for (const record of records) {
             if (firedHere >= trigger.batchSize) break;
@@ -2455,12 +2719,37 @@ export class LifecycleRuntime {
             try {
               // The record must still be idle when the transition is
               // decided: another sweep may have moved it since this one read it.
-              const instanceParameters = lifecycle.parameterConfiguration ? (await this.readConfiguredParameters(this.get(lifecycle.name), { record, transactionHandle: undefined, purpose: 'preview' }, snapshots.get(String(record.id)) ?? null)).values : parameters;
-              const instanceChangedBefore = new Date(this.clock().getTime() - trigger.definition.after(instanceParameters as ParametersOf<LifecycleTypes>) + 1).toISOString();
-              if (String(record[lifecycle.changedAtField]) >= instanceChangedBefore) continue;
+              const instanceParameters = lifecycle.parameterConfiguration
+                ? (
+                    await this.readConfiguredParameters(
+                      this.get(lifecycle.name),
+                      {
+                        record,
+                        transactionHandle: undefined,
+                        purpose: 'preview',
+                      },
+                      snapshots.get(String(record.id)) ?? null,
+                    )
+                  ).values
+                : parameters;
+              const instanceChangedBefore = new Date(
+                this.clock().getTime() -
+                  trigger.definition.after(
+                    instanceParameters as ParametersOf<LifecycleTypes>,
+                  ) +
+                  1,
+              ).toISOString();
+              if (
+                String(record[lifecycle.changedAtField]) >=
+                instanceChangedBefore
+              )
+                continue;
               await this.fire(lifecycle.name, record.id, trigger.transition, {
                 actor: SYSTEM_ACTOR,
-                expect: { changedBefore: instanceChangedBefore, version: versionOf(lifecycle, record) },
+                expect: {
+                  changedBefore: instanceChangedBefore,
+                  version: versionOf(lifecycle, record),
+                },
               });
               this.triggerRefusals.delete(
                 triggerKey(lifecycle.name, trigger.name, record.id),
@@ -2506,7 +2795,13 @@ export class LifecycleRuntime {
           const last = records.at(-1);
           if (records.length < trigger.batchSize || !last) break;
           const next: IdleRecordCursor = {
-            changedAt: String(last[lifecycle.parameterConfiguration ? lifecycle.dueAtField! : lifecycle.changedAtField]),
+            changedAt: String(
+              last[
+                lifecycle.parameterConfiguration
+                  ? lifecycle.dueAtField!
+                  : lifecycle.changedAtField
+              ],
+            ),
             id: last.id,
           };
           // A store that ignores the cursor would hand back the same page forever.
@@ -3128,7 +3423,19 @@ export class LifecycleRuntime {
         versionField: lifecycle.versionField,
         version: plan.version,
       },
-      { ...plan.values, ...(lifecycle.dueAtField ? { [lifecycle.dueAtField]: this.triggerDueAt(lifecycle, plan.to, parameters, now) } : {}) },
+      {
+        ...plan.values,
+        ...(lifecycle.dueAtField
+          ? {
+              [lifecycle.dueAtField]: this.triggerDueAt(
+                lifecycle,
+                plan.to,
+                parameters,
+                now,
+              ),
+            }
+          : {}),
+      },
     );
     if (!written)
       throw new LifecycleError(
@@ -3151,7 +3458,16 @@ export class LifecycleRuntime {
     const record = Object.freeze({
       ...current,
       ...plan.values,
-      ...(lifecycle.dueAtField ? { [lifecycle.dueAtField]: this.triggerDueAt(lifecycle, plan.to, parameters, now) } : {}),
+      ...(lifecycle.dueAtField
+        ? {
+            [lifecycle.dueAtField]: this.triggerDueAt(
+              lifecycle,
+              plan.to,
+              parameters,
+              now,
+            ),
+          }
+        : {}),
     }) as LifecycleRecord;
     await this.recordParameterUsage(
       registered,
