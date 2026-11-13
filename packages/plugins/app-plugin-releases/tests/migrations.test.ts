@@ -206,10 +206,11 @@ describeMigration('202611020001_rel_environment_purpose', {
   },
 });
 
-// Ordered pagination keeps the existing single-column index and adds a reversible composite index.
+// Ordered pagination keeps the existing environment index and adds reversible scoped and global indexes.
 describeMigration('202611130001_rel_apps_environment_created_index', {
   sources,
   up: async ({ expectCollection }) => {
+    await expectCollection('relApps').toHaveIndex(['createdAt', 'id']);
     await expectCollection('relApps').toHaveIndex([
       'environmentId',
       'createdAt',
@@ -218,6 +219,7 @@ describeMigration('202611130001_rel_apps_environment_created_index', {
     await expectCollection('relApps').toHaveIndex(['environmentId']);
   },
   down: async ({ expectCollection }) => {
+    await expectCollection('relApps').not.toHaveIndex(['createdAt', 'id']);
     await expectCollection('relApps').not.toHaveIndex([
       'environmentId',
       'createdAt',

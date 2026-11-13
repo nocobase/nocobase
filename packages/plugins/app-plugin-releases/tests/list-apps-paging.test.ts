@@ -245,63 +245,95 @@ describe('database app pagination', () => {
     );
   });
 
-  it('reads at most one page of full rows and 500 lightweight rows per scan query for 2000 Apps', async () => {
-    for (const filters of [
+  it('bounds single- and cross-environment reads and reuses each environment status', async () => {
+    for (const scope of [
+      { environmentId: 'preview' },
       {},
-      { labels: { team: 'red' } },
-      { runStates: ['running'] as const },
-      { labels: { team: 'red' }, runStates: ['running'] as const },
+      { environmentIds: ['preview', 'staging'] },
     ]) {
-      const reads: { sql: string; rows: Record<string, unknown>[] }[] = [];
-      const observe = (response: unknown, query: { sql: string }) => {
-        if (
-          query.sql.toLowerCase().startsWith('select') &&
-          query.sql.includes(table)
-        )
-          reads.push({
-            sql: query.sql,
-            rows: Array.isArray(response)
-              ? response
-              : [response as Record<string, unknown>],
-          });
-      };
-      calls.length = 0;
-      knex.on('query-response', observe);
-      try {
-        await check(admin, {
-          environmentId: 'preview',
-          pageSize: 100,
-          ...filters,
-        });
-      } finally {
-        knex.off('query-response', observe);
-      }
-      const full = reads.filter((read) =>
-        read.rows.some((row) => 'description' in row),
+      const environmentIds = [
+        ...(scope.environmentId ? [scope.environmentId] : []),
+        ...(scope.environmentIds ?? []),
+      ];
+      const candidates = baseline.filter(
+        (app) =>
+          !environmentIds.length || environmentIds.includes(app.environmentId),
       );
-      expect(full).toHaveLength(1);
-      expect(full[0]!.rows.length).toBeLessThanOrEqual(100);
-      const batches = reads.filter((read) =>
-        read.rows.some((row) => 'labels' in row && !('description' in row)),
-      );
-      if ('labels' in filters || 'runStates' in filters) {
-        expect(batches).toHaveLength(4);
-        for (const batch of batches) {
-          expect(batch.rows.length).toBeLessThanOrEqual(500);
-          expect(Object.keys(batch.rows[0]!).sort()).toEqual(
-            ['id', 'environmentId', 'createdAt', 'labels'].sort(),
-          );
+      for (const filters of [
+        {},
+        { labels: { team: 'red' } },
+        { runStates: ['running'] as const },
+        { labels: { team: 'red' }, runStates: ['running'] as const },
+      ]) {
+        const reads: { sql: string; rows: Record<string, unknown>[] }[] = [];
+        const observe = (response: unknown, query: { sql: string }) => {
+          if (
+            query.sql.toLowerCase().startsWith('select') &&
+            query.sql.includes(table)
+          )
+            reads.push({
+              sql: query.sql,
+              rows: Array.isArray(response)
+                ? response
+                : [response as Record<string, unknown>],
+            });
+        };
+        const options = { ...scope, pageSize: 100, ...filters };
+        calls.length = 0;
+        knex.on('query-response', observe);
+        try {
+          await check(admin, options);
+        } finally {
+          knex.off('query-response', observe);
         }
-        // Four full batches plus one empty termination probe and the full page. Summaries add one App join.
-        expect(reads).toHaveLength(7);
-      } else {
-        expect(batches).toHaveLength(0);
-        expect(reads).toHaveLength(3); // count, page, summary join
+        const full = reads.filter((read) =>
+          read.rows.some((row) => 'description' in row),
+        );
+        expect(full).toHaveLength(1);
+        expect(full[0]!.rows.length).toBeLessThanOrEqual(100);
+        const batches = reads.filter((read) =>
+          read.rows.some((row) => 'labels' in row && !('description' in row)),
+        );
+        if ('labels' in filters || 'runStates' in filters) {
+          expect(batches).toHaveLength(Math.ceil(candidates.length / 500));
+          for (const batch of batches) {
+            expect(batch.rows.length).toBeLessThanOrEqual(500);
+            expect(Object.keys(batch.rows[0]!).sort()).toEqual(
+              ['id', 'environmentId', 'createdAt', 'labels'].sort(),
+            );
+          }
+          // Batches include one empty end probe only on an exact multiple; full page and summary join add two.
+          expect(reads).toHaveLength(Math.floor(candidates.length / 500) + 3);
+        } else {
+          expect(batches).toHaveLength(0);
+          expect(reads).toHaveLength(3);
+        }
+        const pageIds = new Set(expected(options).ids);
+        const statusApps =
+          'runStates' in filters
+            ? candidates.filter((app) =>
+                matchesLabels(app.labels, filters.labels),
+              )
+            : baseline.filter((app) => pageIds.has(app.id));
+        const grouped = new Map<string, string[]>();
+        for (const app of statusApps)
+          grouped.set(app.environmentId, [
+            ...(grouped.get(app.environmentId) ?? []),
+            app.id,
+          ]);
+        expect(
+          calls
+            .map((call) => ({
+              environmentId: call.environmentId,
+              ids: [...call.ids].sort(),
+            }))
+            .sort((a, b) => a.environmentId.localeCompare(b.environmentId)),
+        ).toEqual(
+          [...grouped]
+            .map(([environmentId, ids]) => ({ environmentId, ids: ids.sort() }))
+            .sort((a, b) => a.environmentId.localeCompare(b.environmentId)),
+        );
       }
-      expect(calls).toHaveLength(1);
-      expect(calls[0]!.ids.length).toBe(
-        'runStates' in filters ? ('labels' in filters ? 1000 : 2000) : 100,
-      );
     }
   });
 

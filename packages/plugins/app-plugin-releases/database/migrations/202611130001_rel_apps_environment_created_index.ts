@@ -7,9 +7,11 @@ const migration: MigrationDefinition = defineMigration({
       collection.index(['environmentId', 'createdAt', 'id'], {
         name: 'rel_apps_environment_created_id',
       });
+      collection.index(['createdAt', 'id'], { name: 'rel_apps_created_id' });
     });
   },
   async down({ builder }) {
+    await builder.dropIndex('relApps', 'rel_apps_created_id');
     await builder.dropIndex('relApps', 'rel_apps_environment_created_id');
   },
 });
