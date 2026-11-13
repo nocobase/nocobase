@@ -62,6 +62,10 @@ const idID: LocaleResource<typeof enUS> = {
     title: 'Buang perubahan yang belum disimpan?',
   },
   errors: {
+    TOOLS_REFRESH_UNSUPPORTED:
+      'Runner ini tidak mendukung penyegaran status. Mulai ulang runner.',
+    RUNNER_REFRESH_UNAVAILABLE:
+      'Status runner yang dicabut tidak dapat disegarkan.',
     boundRunnerIncompatible:
       'Lingkungan ini tidak dapat menjalankan Agent yang dipilih. Ganti lingkungan untuk melanjutkan.',
     CONFLICT: 'Sementara itu, keadaannya berubah. Muat ulang dan coba lagi.',
@@ -591,6 +595,11 @@ const idID: LocaleResource<typeof enUS> = {
     unknown: 'Pelariannya gagal.',
   },
   runtimes: {
+    refresh: {
+      button: 'Segarkan status',
+      checking: 'Memeriksa…',
+      restart: 'Mulai ulang runner untuk menyegarkan statusnya.',
+    },
     pathHint:
       'Runner mencari alat pemrograman menggunakan PATH miliknya sendiri. Di terminal tempat which codex / which claude berfungsi, jalankan lagi nocobase-runner service install dan mulai ulang layanan (atau jalankan lagi nocobase-runner start) agar runner mendapat PATH yang benar.',
     quota: {

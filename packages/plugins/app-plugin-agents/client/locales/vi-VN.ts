@@ -62,6 +62,10 @@ const viVN: LocaleResource<typeof enUS> = {
     title: 'Hủy các thay đổi chưa được lưu?',
   },
   errors: {
+    TOOLS_REFRESH_UNSUPPORTED:
+      'Runner này không hỗ trợ làm mới trạng thái. Hãy khởi động lại runner.',
+    RUNNER_REFRESH_UNAVAILABLE:
+      'Không thể làm mới trạng thái của runner đã bị thu hồi.',
     boundRunnerIncompatible:
       'Môi trường này không thể chạy Agent đã chọn. Hãy đổi môi trường để tiếp tục.',
     CONFLICT: 'Trong lúc đó, nó đã thay đổi. Tải lại và thử lại.',
@@ -589,6 +593,11 @@ const viVN: LocaleResource<typeof enUS> = {
     unknown: 'Việc chạy không thành công.',
   },
   runtimes: {
+    refresh: {
+      button: 'Làm mới trạng thái',
+      checking: 'Đang kiểm tra…',
+      restart: 'Hãy khởi động lại runner để làm mới trạng thái.',
+    },
     pathHint:
       'Runner tìm công cụ lập trình bằng PATH của chính nó. Trong terminal mà which codex / which claude hoạt động, hãy chạy lại nocobase-runner service install và khởi động lại dịch vụ (hoặc chạy lại nocobase-runner start) để nó nhận đúng PATH.',
     quota: {

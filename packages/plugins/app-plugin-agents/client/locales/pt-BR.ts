@@ -63,6 +63,10 @@ const ptBR: LocaleResource<typeof enUS> = {
     title: 'Descartar alterações não salvas?',
   },
   errors: {
+    TOOLS_REFRESH_UNSUPPORTED:
+      'Este runner não permite atualizar o status. Reinicie-o.',
+    RUNNER_REFRESH_UNAVAILABLE:
+      'Não é possível atualizar o status de um runner revogado.',
     boundRunnerIncompatible:
       'Este ambiente não pode executar o Agent selecionado. Troque de ambiente para continuar.',
     CONFLICT: 'Entretanto mudou. Recarregue e tente novamente.',
@@ -614,6 +618,11 @@ const ptBR: LocaleResource<typeof enUS> = {
     unknown: 'A execução falhou.',
   },
   runtimes: {
+    refresh: {
+      button: 'Atualizar status',
+      checking: 'Verificando…',
+      restart: 'Reinicie o runner para atualizar seu status.',
+    },
     pathHint:
       'O runner encontra as ferramentas de programação pelo próprio PATH. Em um terminal onde which codex / which claude funcione, execute nocobase-runner service install de novo e reinicie o serviço (ou execute nocobase-runner start de novo) para que ele receba o PATH correto.',
     quota: {

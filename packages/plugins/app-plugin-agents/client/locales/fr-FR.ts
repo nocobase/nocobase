@@ -63,6 +63,10 @@ const frFR: LocaleResource<typeof enUS> = {
     title: 'Supprimer les modifications non enregistrées ?',
   },
   errors: {
+    TOOLS_REFRESH_UNSUPPORTED:
+      'Ce runner ne prend pas en charge l’actualisation du statut. Redémarrez-le.',
+    RUNNER_REFRESH_UNAVAILABLE:
+      'Le statut d’un runner révoqué ne peut pas être actualisé.',
     boundRunnerIncompatible:
       'Cet environnement ne peut pas exécuter l’Agent sélectionné. Changez d’environnement pour continuer.',
     CONFLICT: 'Entre-temps, cela a changé. Rechargez et réessayez.',
@@ -617,6 +621,11 @@ const frFR: LocaleResource<typeof enUS> = {
     unknown: "L'exécution a échoué.",
   },
   runtimes: {
+    refresh: {
+      button: 'Actualiser le statut',
+      checking: 'Vérification…',
+      restart: 'Redémarrez le runner pour actualiser son statut.',
+    },
     pathHint:
       'Le runner trouve les outils de développement avec son propre PATH. Dans un terminal où which codex / which claude fonctionne, relancez nocobase-runner service install et redémarrez le service (ou relancez nocobase-runner start) pour qu’il obtienne le bon PATH.',
     quota: {

@@ -60,6 +60,9 @@ const koKR: LocaleResource<typeof enUS> = {
     title: '저장하지 않은 변경 사항을 버릴까요?',
   },
   errors: {
+    TOOLS_REFRESH_UNSUPPORTED:
+      '이 runner는 상태 새로 고침을 지원하지 않습니다. runner를 다시 시작하세요.',
+    RUNNER_REFRESH_UNAVAILABLE: '해지된 runner의 상태는 새로 고칠 수 없습니다.',
     boundRunnerIncompatible:
       '이 실행 환경에서는 선택한 Agent를 실행할 수 없습니다. 계속하려면 실행 환경을 바꾸세요.',
     CONFLICT: '그사이 변경되었습니다. 다시 불러온 뒤 다시 시도하세요.',
@@ -576,6 +579,11 @@ const koKR: LocaleResource<typeof enUS> = {
     unknown: '실행에 실패했습니다.',
   },
   runtimes: {
+    refresh: {
+      button: '상태 새로 고침',
+      checking: '확인 중…',
+      restart: '상태를 새로 고치려면 runner를 다시 시작하세요.',
+    },
     quota: {
       ceilingReached: '할당량 임계값 도달',
       ceilingLabel: '접수 중지 임계값',

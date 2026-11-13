@@ -67,7 +67,15 @@ it('returns REVISION_CONFLICT for a losing model-unavailable report and preserve
 
 it('returns REVISION_CONFLICT for heartbeat cleanup, retaining the mark until replay succeeds', async () => {
   h = await createHarness();
-  const runner = await h.registerRunner();
+  const runner = await h.registerRunner({ toolsRefreshSupported: true });
+  const refresh = await h.request(
+    'POST',
+    `/agents/runners/${runner.runnerId}/refreshStatus`,
+    { user: 'owner' },
+  );
+  expect(refresh.status).toBe(202);
+  const requestId = refresh.body.data.toolsRefreshRequestId;
+  expect(requestId).toEqual(expect.any(String));
   await h.services.tx.run((unit) =>
     h.services.runners.markModelUnavailable(
       unit,
@@ -78,6 +86,8 @@ it('returns REVISION_CONFLICT for heartbeat cleanup, retaining the mark until re
   );
   const before = await h.services.runners.get(runner.runnerId);
   const body = {
+    toolsRefreshSupported: true,
+    toolsRefreshCompletedId: requestId,
     version: before.version,
     features: before.features,
     tools: [{ kind: 'claude', authenticated: true, models: [{ id: 'a' }] }],
@@ -98,11 +108,15 @@ it('returns REVISION_CONFLICT for heartbeat cleanup, retaining the mark until re
   const retained = await h.services.runners.get(runner.runnerId);
   expect(retained.unavailableModels).toEqual(before.unavailableModels);
   expect(retained.quotaRevision).toBe(before.quotaRevision);
+  expect(retained.toolsRefreshRequestId).toBe(requestId);
   const saved = await h.request('POST', '/agents/runners/heartbeat', {
     runnerKey: runner.key,
     body,
   });
   expect(saved.status).toBe(200);
+  expect(
+    (await h.services.runners.get(runner.runnerId)).toolsRefreshRequestId,
+  ).toBeNull();
   expect(
     (await h.services.runners.get(runner.runnerId)).unavailableModels,
   ).toEqual([]);

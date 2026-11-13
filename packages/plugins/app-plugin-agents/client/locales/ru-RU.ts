@@ -62,6 +62,9 @@ const ruRU: LocaleResource<typeof enUS> = {
     title: 'Отменить несохранённые изменения?',
   },
   errors: {
+    TOOLS_REFRESH_UNSUPPORTED:
+      'Этот runner не поддерживает обновление статуса. Перезапустите его.',
+    RUNNER_REFRESH_UNAVAILABLE: 'Нельзя обновить статус отозванного runner.',
     boundRunnerIncompatible:
       'Эта среда выполнения не может запустить выбранного Agent. Смените среду выполнения, чтобы продолжить.',
     CONFLICT: 'Тем временем это изменилось. Перезагрузите и повторите.',
@@ -620,6 +623,11 @@ const ruRU: LocaleResource<typeof enUS> = {
     unknown: 'Запуск завершился ошибкой.',
   },
   runtimes: {
+    refresh: {
+      button: 'Обновить статус',
+      checking: 'Проверка…',
+      restart: 'Перезапустите runner, чтобы обновить его статус.',
+    },
     quota: {
       ceilingReached: 'Порог квоты достигнут',
       ceilingLabel: 'Приостановить при',
