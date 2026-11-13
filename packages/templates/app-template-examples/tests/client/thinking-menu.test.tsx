@@ -60,6 +60,7 @@ const second = { modelService: 'local', model: 'second' };
 let config: OnlineChatConfigSnapshot;
 let detail: ConversationDetail;
 const third = { modelService: 'local', model: 'third' };
+const fourth = { modelService: 'local', model: 'fourth' };
 let patch: (body: {
   config: { thinking?: string };
   selectedModel?: typeof first;
@@ -93,7 +94,7 @@ beforeEach(() => {
   config = {
     selectedModel: first,
     scope: ['business'],
-    model: ['local/first', 'local/second', 'local/third'],
+    model: ['local/first', 'local/second', 'local/third', 'local/fourth'],
     tool: ['read'],
     toolVersions: { read: '1' },
     systemPrompt: 'Keep me',
@@ -167,6 +168,15 @@ beforeEach(() => {
                 label: 'Third model',
                 kind: 'chat',
                 capabilities: { webSearch: false },
+              },
+              {
+                value: 'fourth',
+                label: 'Fourth model',
+                kind: 'chat',
+                capabilities: {
+                  webSearch: false,
+                  reasoning: { levels: ['off', 'high'] },
+                },
               },
             ],
           },
@@ -271,6 +281,67 @@ it('keeps the remembered level when saving it fails', async () => {
   await user.click(await screen.findByRole('menuitemradio', { name: 'High' }));
   await waitFor(() => expect(configPatches()).toHaveLength(1));
   expect(readThinking('/', first)).toBe('low');
+});
+
+it('turns thinking on and off with a real switch for a model with off and one level, and goes back to the default', async () => {
+  rememberThinking('/', fourth, 'high');
+  config = { ...config, selectedModel: fourth };
+  mount();
+  const toggle = await screen.findByRole('switch');
+  await waitFor(() => expect(toggle).toBeEnabled());
+  // The conversation has no level yet: the provider's default, neither on nor off.
+  expect(toggle).toHaveAccessibleName('Thinking level: Default');
+  expect(toggle).toHaveAttribute('aria-checked', 'false');
+  expect(screen.queryByTestId('chat-thinking-menu')).toBeNull();
+  expect(screen.queryByTestId('chat-thinking-default')).toBeNull();
+  const user = userEvent.setup();
+  await user.click(toggle);
+  await waitFor(() =>
+    expect(screen.getByRole('switch')).toHaveAttribute('aria-checked', 'true'),
+  );
+  expect(screen.getByRole('switch')).toHaveAccessibleName('Thinking level: On');
+  await user.click(screen.getByRole('switch'));
+  await waitFor(() =>
+    expect(screen.getByRole('switch')).toHaveAccessibleName(
+      'Thinking level: Off',
+    ),
+  );
+  expect(screen.getByRole('switch')).toHaveAttribute('aria-checked', 'false');
+  expect(readThinking('/', fourth)).toBe('off');
+  await user.click(
+    screen.getByRole('button', { name: 'Use the provider default' }),
+  );
+  await waitFor(() =>
+    expect(screen.getByRole('switch')).toHaveAccessibleName(
+      'Thinking level: Default',
+    ),
+  );
+  expect(configPatches()).toEqual([
+    { config: { thinking: 'high' } },
+    { config: { thinking: 'off' } },
+    { config: { thinking: 'default' } },
+  ]);
+  expect(readThinking('/', fourth)).toBe('default');
+});
+
+it('restores the switch’s remembered state when switching to its model', async () => {
+  rememberThinking('/', fourth, 'off');
+  mount();
+  const picker = await screen.findByTestId('chat-model-picker');
+  await waitFor(() => expect(picker).toBeEnabled());
+  const user = userEvent.setup();
+  await user.click(screen.getByText('First model'));
+  await user.click(
+    await screen.findByRole('menuitem', { name: 'Fourth model Local' }),
+  );
+  await waitFor(() =>
+    expect(screen.getByRole('switch')).toHaveAccessibleName(
+      'Thinking level: Off',
+    ),
+  );
+  expect(configPatches()).toEqual([
+    { config: { thinking: 'off' }, selectedModel: fourth },
+  ]);
 });
 
 it('picks a switch, a menu or nothing from a model’s levels', () => {

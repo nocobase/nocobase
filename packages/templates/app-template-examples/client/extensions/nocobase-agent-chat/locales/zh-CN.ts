@@ -26,6 +26,7 @@ const agentChatZhCN: AgentChatLocale = {
       title: '思考等级',
       choose: '思考等级：{{level}}',
       on: '开启',
+      useDefault: '改用厂商默认设置',
       levels: {
         default: '默认',
         off: '关闭',

@@ -20,8 +20,8 @@ import { useChatPanel } from './provider.js';
 
 /**
  * The control a model's levels call for: `none` when it takes only `default`; `toggle` when it takes `off` and one
- * level that turns thinking on (`on`), shown as default, off and on; `menu` for anything else, listing `levels`. Every
- * control keeps `default` selectable.
+ * level that turns thinking on (`on`), shown as a switch between off and that level beside a way back to `default`;
+ * `menu` for anything else, listing `levels`. Every control keeps `default` selectable.
  */
 export type ThinkingControl =
   | { readonly kind: 'none' }
