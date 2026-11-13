@@ -4707,7 +4707,7 @@ importers:
         specifier: 'catalog:'
         version: 4.13.2
       imapflow:
-        specifier: ^2.0.0
+        specifier: ^2.2.9
         version: 2.2.10
       lucide-react:
         specifier: 'catalog:'
