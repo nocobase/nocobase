@@ -998,6 +998,24 @@ const frFR: LocaleResource<typeof enUS> = {
     },
   },
   chat: {
+    thinking: {
+      levels: {
+        default: 'Par défaut',
+        off: 'Désactivé',
+        minimal: 'Minimal',
+        low: 'Faible',
+        medium: 'Moyen',
+        high: 'Élevé',
+        xhigh: 'Très élevé',
+        max: 'Maximal',
+      },
+      adjusted:
+        'Ce modèle ne prend pas en charge le niveau de réflexion « {{requested}} » ; cette réponse a utilisé « {{used}} ».',
+      adjustedToDefault:
+        'Ce modèle ne prend pas en charge le niveau de réflexion « {{requested}} » ; cette réponse a utilisé la valeur par défaut du fournisseur.',
+      warning:
+        'Le fournisseur n’a peut-être pas appliqué le niveau de réflexion « {{level}} » à cette réponse.',
+    },
     // Keep new guidance available in English until this locale is translated.
     executionFailed:
       'L’exécution a échoué. Relisez la conversation enregistrée avant de réessayer.',
@@ -1172,6 +1190,17 @@ const frFR: LocaleResource<typeof enUS> = {
         "OpenCode envoie x-opencode-session à chaque requête (un identifiant de session par conversation). Il dessert chaque famille de modèles à travers son propre API : DeepSeek, GLM, Kimi et MiMo jusqu'à DeepSeek ou OpenAI-compatible, Claude, MiniMax et Qwen jusqu'à Anthropic, GPT et Grok jusqu'à OpenAI. Ajoutez un service de chaque type dont vous avez besoin, le tout avec cette base URL.",
     },
     models: {
+      reasoning: {
+        label: 'Niveaux de réflexion',
+        field: 'Niveaux de réflexion de {{name}}',
+        auto: 'Automatique',
+        none: 'Non pris en charge',
+        custom: 'Personnalisé',
+        builtin: 'Intégrés : {{levels}}',
+        builtinNone: 'Intégrés : par défaut uniquement',
+        unsaved: 'Les niveaux intégrés s’affichent après l’enregistrement',
+        empty: 'Choisissez au moins un niveau.',
+      },
       title: 'Modèles',
       description:
         "Vérifiez les modèles proposés par ce service et indiquez à quoi chacun sert : les modèles de chat répondent aux Agents, intègrent le texte d'index des modèles pour la recherche, reclassent les modèles dans l'ordre des résultats de recherche. Un modèle d'intégration peut demander des vecteurs d'une taille.",

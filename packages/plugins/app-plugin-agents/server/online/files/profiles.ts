@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import type { ModelRef } from '../../../shared/models.js';
 import { baseUrlOf, type ModelConnection } from '../providers.js';
-import { resolveModelCapabilities } from '../search/capabilities.js';
+import { resolveModelCapabilities } from '../capabilities.js';
 import { invalid } from '../../kernel/errors.js';
 import type {
   FileInputProfile,

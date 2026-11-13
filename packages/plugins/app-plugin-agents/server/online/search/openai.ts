@@ -4,7 +4,7 @@ import {
 } from '@ai-sdk/openai';
 import type { NativeSearchCall } from './contracts.js';
 import { z } from 'zod';
-export { supportsOpenAISearch } from './capabilities.js';
+export { supportsOpenAISearch } from '../capabilities.js';
 
 export interface OpenAISearchCall extends NativeSearchCall {
   readonly providerOptions: { openai: OpenAILanguageModelResponsesOptions };

@@ -338,6 +338,113 @@ describe('Agent management › Models', () => {
     );
   });
 
+  it('shows a chat model’s built-in thinking levels and saves none or a custom set that replaces them', async () => {
+    state.services = [
+      service({
+        models: [
+          {
+            value: 'mock-model',
+            label: 'mock-model',
+            kind: 'chat',
+            dimensions: null,
+            capabilities: {
+              webSearch: false,
+              reasoning: { levels: ['off', 'low', 'high'] },
+            },
+          },
+          {
+            value: 'mock-fast',
+            label: 'mock-fast',
+            kind: 'chat',
+            dimensions: null,
+            reasoning: { levels: ['max'] },
+            capabilities: {
+              webSearch: false,
+              reasoning: { levels: ['max'] },
+            },
+          },
+        ],
+      }),
+    ];
+    renderPage(<ModelsPage />);
+    await userEvent.click(
+      await screen.findByRole('button', {
+        name: 'services.service.edit(title=Team)',
+      }),
+    );
+    const dialog = await screen.findByRole('dialog');
+    const auto = await within(dialog).findByRole('listitem', {
+      name: 'mock-model',
+    });
+    expect(
+      within(auto).getByText(
+        'services.models.reasoning.builtin(levels=chat.thinking.levels.off, chat.thinking.levels.low, chat.thinking.levels.high)',
+      ),
+    ).toBeInTheDocument();
+    // Custom starts from the levels the model takes now; unchecking all of them blocks saving.
+    await userEvent.click(
+      within(auto).getByRole('combobox', {
+        name: 'services.models.reasoning.field(name=mock-model)',
+      }),
+    );
+    await userEvent.click(
+      await screen.findByRole('option', {
+        name: 'services.models.reasoning.custom',
+      }),
+    );
+    const levels = within(auto).getByRole('group', {
+      name: 'services.models.reasoning.field(name=mock-model)',
+    });
+    for (const level of ['off', 'low', 'high'])
+      await userEvent.click(
+        within(levels).getByRole('checkbox', {
+          name: `chat.thinking.levels.${level}`,
+        }),
+      );
+    expect(
+      within(auto).getByText('services.models.reasoning.empty'),
+    ).toBeInTheDocument();
+    expect(
+      within(dialog).getByRole('button', { name: 'actions.save' }),
+    ).toBeDisabled();
+    await userEvent.click(
+      within(levels).getByRole('checkbox', {
+        name: 'chat.thinking.levels.max',
+      }),
+    );
+    await userEvent.click(
+      within(levels).getByRole('checkbox', {
+        name: 'chat.thinking.levels.low',
+      }),
+    );
+    const custom = within(dialog).getByRole('listitem', { name: 'mock-fast' });
+    await userEvent.click(
+      within(custom).getByRole('combobox', {
+        name: 'services.models.reasoning.field(name=mock-fast)',
+      }),
+    );
+    await userEvent.click(
+      await screen.findByRole('option', {
+        name: 'services.models.reasoning.none',
+      }),
+    );
+    await userEvent.click(
+      within(dialog).getByRole('button', { name: 'actions.save' }),
+    );
+    await waitFor(() =>
+      expect(sent('PATCH', 'agents/services/team').at(-1)).toMatchObject({
+        models: [
+          {
+            value: 'mock-model',
+            kind: 'chat',
+            reasoning: { levels: ['low', 'max'] },
+          },
+          { value: 'mock-fast', kind: 'chat', reasoning: false },
+        ],
+      }),
+    );
+  });
+
   it('notes an OpenCode base URL, whose session header is sent automatically', async () => {
     state.services = [service({ baseUrl: 'https://opencode.ai/zen/go/v1' })];
     renderPage(<ModelsPage />);

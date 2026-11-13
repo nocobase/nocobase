@@ -6,7 +6,9 @@ import {
   guessModelKind,
   MODEL_KINDS,
   MODEL_PROVIDERS,
+  REASONING_LEVELS,
   providerOf,
+  type ReasoningLevel,
   type ModelKind,
   type ModelOption,
   type ModelProviderOption,
@@ -111,12 +113,66 @@ export function setModelKind(
 ): ModelOption[] {
   return models.map((model) =>
     model.value === id
-      ? {
-          ...model,
-          kind,
-          dimensions: kind === 'embedding' ? model.dimensions : null,
-        }
+      ? withoutReasoning(
+          {
+            ...model,
+            kind,
+            dimensions: kind === 'embedding' ? model.dimensions : null,
+          },
+          kind !== 'chat',
+        )
       : model,
+  );
+}
+
+function withoutReasoning(model: ModelOption, drop: boolean): ModelOption {
+  if (!drop) return model;
+  const { reasoning: _reasoning, ...rest } = model;
+  return rest;
+}
+
+/** How a chat model's thinking levels are set: the built-in ones, none, or the administrator's own. */
+export type ReasoningMode = 'auto' | 'none' | 'custom';
+
+export function reasoningModeOf(model: ModelOption): ReasoningMode {
+  return model.reasoning === undefined
+    ? 'auto'
+    : model.reasoning === false
+      ? 'none'
+      : 'custom';
+}
+
+/**
+ * The models with the chat model `id`'s thinking levels set: `auto` takes the built-in ones, `none` offers none, and
+ * `custom` the levels given (starting from `start` when it has none yet), kept once each in `REASONING_LEVELS` order.
+ */
+export function setModelReasoning(
+  models: readonly ModelOption[],
+  id: string,
+  mode: ReasoningMode,
+  levels: readonly ReasoningLevel[] = [],
+): ModelOption[] {
+  return models.map((model) => {
+    if (model.value !== id || model.kind !== 'chat') return model;
+    if (mode === 'auto') return withoutReasoning(model, true);
+    if (mode === 'none') return { ...model, reasoning: false };
+    const chosen = new Set(levels);
+    return {
+      ...model,
+      reasoning: {
+        levels: REASONING_LEVELS.filter(
+          (level): level is Exclude<ReasoningLevel, 'default'> =>
+            level !== 'default' && chosen.has(level),
+        ),
+      },
+    };
+  });
+}
+
+/** Whether every custom setting names at least one level, which saving requires. */
+export function reasoningComplete(models: readonly ModelOption[]): boolean {
+  return models.every(
+    (model) => !model.reasoning || model.reasoning.levels.length > 0,
   );
 }
 

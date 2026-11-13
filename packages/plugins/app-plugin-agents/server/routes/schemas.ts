@@ -93,6 +93,8 @@ import {
 import type { I18nText } from '../../shared/i18n.js';
 import {
   MODEL_KINDS,
+  REASONING_LEVELS,
+  type ReasoningLevel,
   type DefaultModels,
   MODEL_PROVIDER_NAMES,
   type ModelCheck,
@@ -1514,6 +1516,17 @@ export const PricesSchema: z.ZodType<PricesAnswer> = z.object({
 // Model services.
 const modelKind = z.enum(MODEL_KINDS as [ModelKind, ...ModelKind[]]);
 
+const modelReasoning = z.object({
+  levels: z.array(
+    z.enum(
+      REASONING_LEVELS.filter((level) => level !== 'default') as [
+        Exclude<ReasoningLevel, 'default'>,
+        ...Exclude<ReasoningLevel, 'default'>[],
+      ],
+    ),
+  ),
+});
+
 const modelOption = z.object({
   value: z.string(),
   label: z.string(),
@@ -1525,7 +1538,18 @@ const modelOption = z.object({
       description:
         'Code-owned native image MIME types for the selected Provider, endpoint, and model.',
     }),
+    reasoning: modelReasoning.optional().meta({
+      description:
+        'The thinking levels the chat model takes besides `default`, the administrator’s or the built-in ones; absent when it takes only `default`.',
+    }),
   }),
+  reasoning: z
+    .union([z.literal(false), modelReasoning])
+    .optional()
+    .meta({
+      description:
+        'The thinking levels an administrator set for the chat model; `false` offers none, absent takes the built-in ones.',
+    }),
 });
 
 export const ModelCatalogServiceSchema: z.ZodType<ModelService> = z.object({

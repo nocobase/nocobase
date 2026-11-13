@@ -354,7 +354,10 @@ describe('the model gateway', () => {
     expect(classify(new Error('boom')).code).toBe('unknown');
     expect(reasoningOf('xhigh')).toBe('xhigh');
     expect(reasoningOf('low')).toBe('low');
-    expect(reasoningOf('max')).toBe('provider-default');
+    expect(reasoningOf('max')).toBe('max');
+    expect(reasoningOf('off')).toBe('none');
+    expect(reasoningOf('default')).toBe('provider-default');
+    expect(reasoningOf('unknown')).toBe('provider-default');
     expect(reasoningOf(null)).toBe('provider-default');
   });
 });

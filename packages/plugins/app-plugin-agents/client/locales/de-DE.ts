@@ -993,6 +993,24 @@ const deDE: LocaleResource<typeof enUS> = {
     },
   },
   chat: {
+    thinking: {
+      levels: {
+        default: 'Standard',
+        off: 'Aus',
+        minimal: 'Minimal',
+        low: 'Niedrig',
+        medium: 'Mittel',
+        high: 'Hoch',
+        xhigh: 'Sehr hoch',
+        max: 'Maximal',
+      },
+      adjusted:
+        'Dieses Modell unterstützt die Denkstufe „{{requested}}“ nicht; für diese Antwort wurde „{{used}}“ verwendet.',
+      adjustedToDefault:
+        'Dieses Modell unterstützt die Denkstufe „{{requested}}“ nicht; für diese Antwort wurde die Standardeinstellung des Anbieters verwendet.',
+      warning:
+        'Der Anbieter hat die Denkstufe „{{level}}“ für diese Antwort möglicherweise nicht angewendet.',
+    },
     // Keep new guidance available in English until this locale is translated.
     executionFailed:
       'Die Ausführung ist fehlgeschlagen. Prüfen Sie die gespeicherte Unterhaltung, bevor Sie es erneut versuchen.',
@@ -1167,6 +1185,17 @@ const deDE: LocaleResource<typeof enUS> = {
         'OpenCode sendet x-opencode-session bei jeder Anfrage (eine Sitzungs-ID pro Konversation). Es bedient jede Modellfamilie über einen eigenen API: DeepSeek, GLM, Kimi und MiMo bis DeepSeek oder OpenAI-compatible, Claude, MiniMax und Qwen bis Anthropic, GPT und Grok bis OpenAI. Fügen Sie mit diesem Basisgerät URL einen Service jeder Art hinzu, den Sie benötigen.',
     },
     models: {
+      reasoning: {
+        label: 'Denkstufen',
+        field: 'Denkstufen von {{name}}',
+        auto: 'Automatisch',
+        none: 'Nicht unterstützt',
+        custom: 'Benutzerdefiniert',
+        builtin: 'Integriert: {{levels}}',
+        builtinNone: 'Integriert: nur Standard',
+        unsaved: 'Integrierte Stufen erscheinen nach dem Speichern',
+        empty: 'Wählen Sie mindestens eine Stufe.',
+      },
       title: 'Modelle',
       description:
         'Sehen Sie sich die Modelle an, die dieser Dienst anbietet, und geben Sie an, wofür sie jeweils gedacht sind: Chat-Modelle, Antworten auf Agents, Einbetten von Modellindextexten für die Suche, Neuordnen von Modellen in der Reihenfolge der Suchergebnisse. Ein Einbettungsmodell kann nach Vektoren einer Größe fragen.',

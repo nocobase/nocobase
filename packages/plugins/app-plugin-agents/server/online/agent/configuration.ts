@@ -4,6 +4,7 @@ import { registerSandboxTools } from '../sandbox/tools.js';
 import type { Tool } from 'ai';
 import type { ServiceResolver } from '@nocobase/service-provider';
 import { invalid } from '../../kernel/errors.js';
+import { assertReasoningLevel } from './thinking.js';
 import { jsonSafe, strictJson } from './messages/json.js';
 import type {
   OnlineAgentJson,
@@ -252,7 +253,10 @@ export class OnlineAgentConfigurator {
         result.model = [...scope.model];
         hasModel = true;
       }
-      if (scope.thinking !== undefined) result.thinking = scope.thinking;
+      if (scope.thinking !== undefined) {
+        assertReasoningLevel(scope.thinking);
+        result.thinking = scope.thinking;
+      }
       if (scope.webSearch !== undefined) {
         if (typeof scope.webSearch !== 'boolean')
           throw invalid('webSearch must be a boolean.');

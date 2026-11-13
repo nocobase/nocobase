@@ -7,7 +7,7 @@ import {
   type ModelConnection,
 } from '../providers.js';
 import { ByteLimitError, readBoundedBytes } from '../files/input.js';
-import { officialSearchEndpoint } from './capabilities.js';
+import { officialSearchEndpoint } from '../capabilities.js';
 import { safeSearchSource, searchItem } from './results.js';
 import {
   WEB_SEARCH_LIMITS,

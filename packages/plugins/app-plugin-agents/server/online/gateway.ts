@@ -50,7 +50,7 @@ import type {
   WebSearchItem,
   WebSearchResult,
 } from '../../shared/web-search.js';
-import { resolveModelCapabilities } from './search/capabilities.js';
+import { resolveModelCapabilities } from './capabilities.js';
 import {
   searchItem,
   unverifiedSearchItem,
@@ -315,17 +315,27 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 const text = (value: unknown): string =>
   typeof value === 'string' ? value : '';
 
-/** An entry's reasoning effort (`ONLINE_EFFORTS`) as the SDK names it; the provider's default otherwise. */
+/**
+ * A thinking level (`ReasoningLevel`) as the SDK's `reasoning` names it: `default` (and anything else) is
+ * `provider-default`, `off` is `none`, and the levels that turn thinking on go as they are. The SDK's type has no
+ * `max` yet; it is passed on regardless, a provider package that knows it uses it and one that does not ignores it
+ * with an `unsupported` warning.
+ */
 export function reasoningOf(
-  effort: string | null | undefined,
-): 'minimal' | 'low' | 'medium' | 'high' | 'xhigh' | 'provider-default' {
-  switch (effort) {
+  level: string | null | undefined,
+): NonNullable<Parameters<typeof streamText>[0]['reasoning']> {
+  switch (level) {
+    case 'off':
+      return 'none';
     case 'minimal':
     case 'low':
     case 'medium':
     case 'high':
     case 'xhigh':
-      return effort;
+      return level;
+    case 'max':
+      // Deliberately outside the SDK's current type; see above.
+      return level as unknown as 'xhigh';
     default:
       return 'provider-default';
   }

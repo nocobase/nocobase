@@ -962,6 +962,24 @@ const viVN: LocaleResource<typeof enUS> = {
     },
   },
   chat: {
+    thinking: {
+      levels: {
+        default: 'Mặc định',
+        off: 'Tắt',
+        minimal: 'Tối thiểu',
+        low: 'Thấp',
+        medium: 'Trung bình',
+        high: 'Cao',
+        xhigh: 'Rất cao',
+        max: 'Tối đa',
+      },
+      adjusted:
+        'Mô hình này không hỗ trợ mức suy nghĩ "{{requested}}"; câu trả lời này đã dùng "{{used}}".',
+      adjustedToDefault:
+        'Mô hình này không hỗ trợ mức suy nghĩ "{{requested}}"; câu trả lời này đã dùng mặc định của nhà cung cấp.',
+      warning:
+        'Nhà cung cấp có thể chưa áp dụng mức suy nghĩ "{{level}}" cho câu trả lời này.',
+    },
     // Keep new guidance available in English until this locale is translated.
     executionFailed:
       'Thực thi thất bại. Hãy xem lại cuộc trò chuyện đã lưu trước khi thử lại.',
@@ -1134,6 +1152,17 @@ const viVN: LocaleResource<typeof enUS> = {
         'OpenCode gửi x-opencode-session với mọi yêu cầu (một id phiên cho mỗi cuộc trò chuyện). Nó phục vụ từng dòng mô hình thông qua DeepSeek, GLM, Kimi và MiMo thông qua DeepSeek hoặc OpenAI-compatible, Claude, MiniMax và Qwen thông qua Anthropic, GPT và Grok thông qua OpenAI. Thêm dịch vụ của từng loại bạn cần, tất cả đều có URL cơ sở này.',
     },
     models: {
+      reasoning: {
+        label: 'Mức suy nghĩ',
+        field: 'Mức suy nghĩ của {{name}}',
+        auto: 'Tự động',
+        none: 'Không hỗ trợ',
+        custom: 'Tùy chỉnh',
+        builtin: 'Tích hợp: {{levels}}',
+        builtinNone: 'Tích hợp: chỉ mặc định',
+        unsaved: 'Các mức tích hợp hiển thị sau khi lưu',
+        empty: 'Chọn ít nhất một mức.',
+      },
       title: 'Mô hình',
       description:
         'Kiểm tra các mô hình mà dịch vụ này cung cấp và cho biết mỗi mô hình dùng để làm gì: mô hình trò chuyện trả lời Agents, mô hình nhúng văn bản chỉ mục cho tìm kiếm, sắp xếp lại mô hình theo thứ tự kết quả tìm kiếm. Một mô hình nhúng có thể yêu cầu các vectơ có kích thước.',
