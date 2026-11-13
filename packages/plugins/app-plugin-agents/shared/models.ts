@@ -43,10 +43,77 @@ export type ModelProviderName =
  */
 export type ModelKind = 'chat' | 'embedding' | 'rerank';
 
+/**
+ * How hard a model thinks before it answers, as an online agent's `thinking` names it: `default` leaves it to the
+ * provider, `off` turns thinking off, and the rest are the levels that turn it on, lowest first
+ * (`REASONING_ENABLED_LEVELS`). The provider's Vercel AI SDK package turns a level into the provider's own parameter;
+ * `max` is passed on as it is, and a provider package that does not know it ignores it with a warning.
+ */
+export type ReasoningLevel =
+  'default' | 'off' | 'minimal' | 'low' | 'medium' | 'high' | 'xhigh' | 'max';
+
+/** The levels that turn thinking on, lowest first. */
+export const REASONING_ENABLED_LEVELS: readonly Exclude<
+  ReasoningLevel,
+  'default' | 'off'
+>[] = ['minimal', 'low', 'medium', 'high', 'xhigh', 'max'];
+
+/** Every level, in the order a menu lists them. */
+export const REASONING_LEVELS: readonly ReasoningLevel[] = [
+  'default',
+  'off',
+  ...REASONING_ENABLED_LEVELS,
+];
+
+export function isReasoningLevel(value: unknown): value is ReasoningLevel {
+  return (
+    typeof value === 'string' &&
+    (REASONING_LEVELS as readonly string[]).includes(value)
+  );
+}
+
+/**
+ * The levels a model takes besides `default`, which every model takes: `off` when its thinking can be turned off, and
+ * the levels that turn it on. Never empty.
+ */
+export interface ModelReasoning {
+  readonly levels: readonly Exclude<ReasoningLevel, 'default'>[];
+}
+
+/** Every level a model with `reasoning` takes, `default` first, in `REASONING_LEVELS` order. */
+export function reasoningLevelsOf(
+  reasoning: ModelReasoning | undefined,
+): ReasoningLevel[] {
+  const levels = new Set<ReasoningLevel>(reasoning?.levels ?? []);
+  return REASONING_LEVELS.filter(
+    (level) => level === 'default' || levels.has(level),
+  );
+}
+
+/**
+ * The level a model with `reasoning` runs `requested` at: the level itself when the model takes it; for a level that
+ * turns thinking on, the nearest lower level it takes, else `default`; `default` for `off` it does not take.
+ */
+export function supportedReasoningLevel(
+  requested: ReasoningLevel,
+  reasoning: ModelReasoning | undefined,
+): ReasoningLevel {
+  const levels = reasoningLevelsOf(reasoning);
+  if (levels.includes(requested)) return requested;
+  const enabled: readonly ReasoningLevel[] = REASONING_ENABLED_LEVELS;
+  // `off` and `default` have no lower level: -1 leaves the loop at once.
+  const index = enabled.indexOf(requested);
+  for (let lower = index - 1; lower >= 0; lower -= 1)
+    if (levels.includes(enabled[lower])) return enabled[lower];
+  return 'default';
+}
+
 export interface ModelCapabilities {
   readonly webSearch: boolean;
   /** Code-owned native image formats; absence does not grant image input. */
   readonly imageMediaTypes?: readonly string[];
+  /** The thinking levels the model takes besides `default`; absent when it takes only `default`. */
+  readonly reasoning?: ModelReasoning;
 }
 
 export interface ProviderCapabilitiesDefinition {
@@ -164,6 +231,11 @@ export function isOpenCodeUrl(baseUrl: string | null | undefined): boolean {
 export interface ModelOption {
   /** Derived by the server; absent on older servers means unsupported. */
   readonly capabilities?: ModelCapabilities;
+  /**
+   * For a chat model, the thinking levels an administrator set for it (`ModelInput.reasoning`); absent when the
+   * built-in levels apply.
+   */
+  readonly reasoning?: false | ModelReasoning;
   /** The provider's model id. */
   readonly value: string;
   readonly label: string;
@@ -275,6 +347,11 @@ export interface ModelInput {
   readonly kind?: ModelKind;
   /** An embedding model's vector size (1–8192); absent or null takes the model's own. */
   readonly dimensions?: number | null;
+  /**
+   * A chat model's thinking levels: absent takes the built-in ones the plugin knows for the provider and model id,
+   * `false` offers none (only `default`), and an object replaces the built-in levels entirely.
+   */
+  readonly reasoning?: false | ModelReasoning;
 }
 
 /** `POST agents/services`. */

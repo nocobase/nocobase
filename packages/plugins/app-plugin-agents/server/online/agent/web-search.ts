@@ -19,10 +19,12 @@ export async function validateWebSearch(
   model: ModelRef,
   dependency: OnlineAgentWebSearch | undefined,
   clearInherited: boolean = false,
+  capabilities: () => Promise<ModelCapabilities> = () =>
+    dependency!.capabilities(model),
 ): Promise<void> {
   if (!config.webSearch) return;
   if (!dependency) throw invalid('Native web search is unavailable.');
-  if ((await dependency.capabilities(model)).webSearch) return;
+  if ((await capabilities()).webSearch) return;
   if (clearInherited) {
     config.webSearch = false;
     delete config.toolVersions[WEB_SEARCH_TOOL];

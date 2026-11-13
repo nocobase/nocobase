@@ -525,7 +525,7 @@ it('accepts declared business variables but rejects browser policy overrides on 
   const configuration = {
     scope: ['business-input'],
     context: { variable: { count: 2 } },
-    thinking: 'unregistered-level',
+    thinking: 'high',
   };
   const created = await f.request('/conversations', 'POST', {
     config: configuration,
@@ -537,7 +537,7 @@ it('accepts declared business variables but rejects browser policy overrides on 
     systemPrompt: 'Count 2',
     variable: { count: 2 },
     tool: ['business'],
-    thinking: 'unregistered-level',
+    thinking: 'high',
   });
   const savedBeforeRefusals = (await (await f.request(path)).json()).data;
   const conversationsBeforeRefusals = await h.database

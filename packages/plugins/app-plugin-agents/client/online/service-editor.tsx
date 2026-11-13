@@ -24,7 +24,10 @@ import {
   type ModelKind,
   type ModelOption,
   type ModelProviderOption,
+  type ModelReasoning,
   type ModelServiceView,
+  type ReasoningLevel,
+  REASONING_LEVELS,
 } from '../../shared/models.js';
 import { agentsKeys } from '../api/keys.js';
 import { SecretInput } from '../components/secret-input.js';
@@ -62,8 +65,12 @@ import {
   baseUrlOf,
   modelRows,
   newServiceTitle,
+  reasoningComplete,
+  reasoningModeOf,
   setModelDimensions,
   setModelKind,
+  setModelReasoning,
+  type ReasoningMode,
   testModelOf,
   toggleModel,
   validBaseUrl,
@@ -208,11 +215,12 @@ function ServiceForm({
       const fields = {
         title: title.trim(),
         baseUrl: baseUrlOf(url, chosen),
-        models: models.map(({ value, label, kind, dimensions }) => ({
+        models: models.map(({ value, label, kind, dimensions, reasoning }) => ({
           value,
           label,
           kind,
           dimensions,
+          ...(reasoning === undefined ? {} : { reasoning }),
         })),
         enabled,
         ...(key.trim() ? { apiKey: key.trim() } : {}),
@@ -257,7 +265,11 @@ function ServiceForm({
     !validBaseUrl(url) ||
     (provider !== null && !provider.defaultBaseUrl && !url.trim());
   const canSave =
-    canManage && provider !== null && Boolean(title.trim()) && !urlInvalid;
+    canManage &&
+    provider !== null &&
+    Boolean(title.trim()) &&
+    !urlInvalid &&
+    reasoningComplete(models);
   const connectionModel = testModelOf(models);
   const kinds = provider?.kinds ?? ['chat'];
   const kindItems = kinds.map((kind) => ({
@@ -584,6 +596,18 @@ function ServiceForm({
                         </Button>
                       ) : null}
                     </div>
+                    {model && model.kind === 'chat' ? (
+                      <ModelReasoningField
+                        model={model}
+                        builtin={builtinOf(service, model.value)}
+                        canManage={canManage}
+                        onChange={(mode, levels) =>
+                          setModels(
+                            setModelReasoning(models, row.id, mode, levels),
+                          )
+                        }
+                      />
+                    ) : null}
                     {tested?.state === 'done' ? (
                       <ModelTestResult
                         kind={tested.kind}
@@ -652,6 +676,143 @@ function ServiceForm({
         ) : null}
       </DialogFooter>
     </form>
+  );
+}
+
+/**
+ * The built-in thinking levels of a saved chat model, as the server answered them while it took the built-in ones:
+ * null for a model not saved that way yet, whose built-in levels the form cannot know before saving.
+ */
+function builtinOf(
+  service: ModelServiceView | null,
+  id: string,
+): ModelReasoning | undefined | null {
+  const saved = service?.models.find((model) => model.value === id);
+  if (!saved || saved.kind !== 'chat' || saved.reasoning !== undefined)
+    return null;
+  return saved.capabilities?.reasoning;
+}
+
+const CUSTOM_LEVELS = REASONING_LEVELS.filter(
+  (level): level is ModelReasoning['levels'][number] => level !== 'default',
+);
+
+/**
+ * A chat model's thinking levels: automatic (the built-in ones, shown read-only), not supported (only the provider's
+ * default), or custom (the levels checked, which replace the built-in ones entirely).
+ */
+function ModelReasoningField({
+  model,
+  builtin,
+  canManage,
+  onChange,
+}: {
+  readonly model: ModelOption;
+  readonly builtin: ModelReasoning | undefined | null;
+  readonly canManage: boolean;
+  readonly onChange: (
+    mode: ReasoningMode,
+    levels?: readonly ReasoningLevel[],
+  ) => void;
+}): ReactElement {
+  const { t } = useTranslation();
+  const mode = reasoningModeOf(model);
+  const level = (value: ReasoningLevel) => t(`chat.thinking.levels.${value}`);
+  const modes = (['auto', 'none', 'custom'] as const).map((value) => ({
+    value,
+    label: t(`services.models.reasoning.${value}`),
+  }));
+  const chosen = model.reasoning ? model.reasoning.levels : [];
+  return (
+    <div
+      className='flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5 pb-1.5 pl-9'
+      data-testid='ag-model-reasoning'
+    >
+      <span className='text-xs text-muted-foreground'>
+        {t('services.models.reasoning.label')}
+      </span>
+      {canManage ? (
+        <Select
+          items={modes}
+          value={mode}
+          onValueChange={(value: string | null) => {
+            if (!value) return;
+            const next = value as ReasoningMode;
+            // A custom setting starts from the levels the model takes now.
+            onChange(
+              next,
+              next === 'custom'
+                ? (model.capabilities?.reasoning?.levels ?? builtin?.levels)
+                : undefined,
+            );
+          }}
+        >
+          <SelectTrigger
+            size='sm'
+            className='h-7 w-32 shrink-0'
+            aria-label={t('services.models.reasoning.field', {
+              name: model.value,
+            })}
+          >
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {modes.map((item) => (
+              <SelectItem key={item.value} value={item.value}>
+                {item.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      ) : (
+        <Badge variant='outline'>
+          {t(`services.models.reasoning.${mode}`)}
+        </Badge>
+      )}
+      {mode === 'auto' ? (
+        <span className='text-xs text-muted-foreground'>
+          {builtin === null
+            ? t('services.models.reasoning.unsaved')
+            : builtin
+              ? t('services.models.reasoning.builtin', {
+                  levels: builtin.levels.map(level).join(', '),
+                })
+              : t('services.models.reasoning.builtinNone')}
+        </span>
+      ) : null}
+      {mode === 'custom' ? (
+        <span
+          role='group'
+          aria-label={t('services.models.reasoning.field', {
+            name: model.value,
+          })}
+          className='flex flex-wrap items-center gap-x-3 gap-y-1'
+        >
+          {CUSTOM_LEVELS.map((value) => (
+            <label key={value} className='flex items-center gap-1.5 text-xs'>
+              <Checkbox
+                checked={chosen.includes(value)}
+                disabled={!canManage}
+                onCheckedChange={(on: boolean) =>
+                  onChange(
+                    'custom',
+                    on
+                      ? [...chosen, value]
+                      : chosen.filter((item) => item !== value),
+                  )
+                }
+              />
+              {level(value)}
+            </label>
+          ))}
+          {chosen.length === 0 ? (
+            <span role='alert' className='text-xs text-destructive'>
+              {t('services.models.reasoning.empty')}
+            </span>
+          ) : null}
+        </span>
+      ) : null}
+    </div>
   );
 }
 

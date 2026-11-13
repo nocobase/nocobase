@@ -116,6 +116,7 @@ export { ChatApi } from './chat/api.js';
 export {
   useConversationModel,
   type ConversationModel,
+  type ConversationModelChange,
 } from './chat/use-conversation-model.js';
 export {
   useConversationSources,
@@ -161,6 +162,7 @@ export {
   liveStepsView,
   newConversationAgent,
   noticeText,
+  thinkingLevelText,
   stepLineText,
   timelineOrder,
   type LiveStepsView,
@@ -268,3 +270,13 @@ export {
   type ChatNoticeKind,
   type ChatNoticeConditions,
 } from './chat/notices.js';
+export {
+  CHAT_THINKING_STORAGE_KEY,
+  readThinking,
+  rememberThinking,
+  restoredThinking,
+  shownThinking,
+  thinkingControlOf,
+  useThinkingMemory,
+  type ThinkingControl,
+} from './chat/thinking.js';

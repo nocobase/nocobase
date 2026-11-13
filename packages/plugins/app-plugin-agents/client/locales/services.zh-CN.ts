@@ -72,6 +72,17 @@ const servicesZhCN: ServicesLocale = {
         'OpenCode 的每次请求会自动带上 x-opencode-session（每个对话一个会话 ID）。它按模型系列使用不同的接口：DeepSeek、GLM、Kimi、MiMo 用 DeepSeek 或 OpenAI-compatible 类型，Claude、MiniMax、Qwen 用 Anthropic 类型，GPT、Grok 用 OpenAI 类型。需要哪类就各添加一个该类型的服务，Base URL 都填这个地址。',
     },
     models: {
+      reasoning: {
+        label: '思考等级',
+        field: '{{name}} 的思考等级',
+        auto: '自动',
+        none: '不支持',
+        custom: '自定义',
+        builtin: '内置：{{levels}}',
+        builtinNone: '内置：仅默认',
+        unsaved: '保存后显示内置等级',
+        empty: '至少选择一个等级。',
+      },
       title: '模型',
       description:
         '勾选这个服务提供的模型，并说明每个模型的用途：对话模型供 Agent 回答，向量模型为搜索建立文本索引，重排序模型为搜索结果排序。向量模型可以指定向量维度。',

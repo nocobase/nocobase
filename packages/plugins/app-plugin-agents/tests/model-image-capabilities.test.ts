@@ -1,11 +1,19 @@
 import { DEFAULT_FILE_UPLOAD_LIMIT } from '@nocobase/app-plugin-file/server';
 import { afterEach, expect, it, vi } from 'vitest';
 import { convertToModelMessages, generateText } from 'ai';
-import { resolveModelCapabilities } from '../server/online/search/capabilities.js';
+import { resolveModelCapabilities as resolveAll } from '../server/online/capabilities.js';
 import { NativeFileInputs } from '../server/online/files/service.js';
 import { ModelCatalogServiceSchema } from '../server/routes/schemas.js';
 import type { NativeMessage } from '../server/online/agent/types.js';
 import { createHarness } from './harness.js';
+
+/** Search and image admission only; thinking levels have their own tests (`model-reasoning.test.ts`). */
+const resolveModelCapabilities = (
+  ...args: Parameters<typeof resolveAll>
+): Omit<ReturnType<typeof resolveAll>, 'reasoning'> => {
+  const { reasoning: _reasoning, ...rest } = resolveAll(...args);
+  return rest;
+};
 
 const formats = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
 const connection = { provider: 'deepseek' as const, baseUrl: null };
@@ -104,6 +112,7 @@ it('includes derived image capabilities in the model catalog response schema', a
     ).toEqual({
       webSearch: true,
       imageMediaTypes: formats,
+      reasoning: { levels: ['off', 'low', 'high', 'xhigh'] },
     });
   } finally {
     await h.close();

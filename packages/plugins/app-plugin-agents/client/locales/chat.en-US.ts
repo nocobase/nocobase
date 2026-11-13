@@ -5,6 +5,24 @@
  */
 const chatEnUS = {
   chat: {
+    thinking: {
+      levels: {
+        default: 'Default',
+        off: 'Off',
+        minimal: 'Minimal',
+        low: 'Low',
+        medium: 'Medium',
+        high: 'High',
+        xhigh: 'Extra high',
+        max: 'Max',
+      },
+      adjusted:
+        'This model does not support the {{requested}} thinking level; {{used}} was used for this reply.',
+      adjustedToDefault:
+        'This model does not support the {{requested}} thinking level; the provider default was used for this reply.',
+      warning:
+        'The provider may not have applied the {{level}} thinking level to this reply.',
+    },
     executionFailed:
       'Execution failed. Review the saved conversation before retrying.',
     untitled: 'Untitled conversation',

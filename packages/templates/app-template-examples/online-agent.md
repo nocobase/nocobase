@@ -16,6 +16,10 @@ When the selected native model actually returns SDK reasoning parts, the install
 
 For an offline browser regression, build this package and run `node --experimental-import-meta-resolve --import tsx tests/fixtures/online-agent-reasoning-acceptance.ts` from its directory. Set `E2E_SCREENSHOT_DIR` to retain screenshots. The harness creates temporary configuration, isolated databases/storage, synthetic credentials and a local HTTP model fixture; it prints the actual application entry URL and disposes its owned server and data after the tests. It never calls a paid provider. This automated check does not replace acceptance against an explicitly authorized real provider or user review.
 
+## Thinking level
+
+Beside the model choice, the input shows a thinking level menu for a native model that takes more than the provider's default: Default, Off and the levels the model takes; a model that can turn thinking off and on at one level shows a switch instead, with a button beside it to go back to the provider default. A model that takes only the default shows no menu. The levels come from the model's capabilities on the Models page, where an administrator keeps the built-in levels (Automatic), offers none (Not supported) or sets their own (Custom). Choosing a level saves it to the conversation. The browser remembers the level last chosen for each model and applies it when switching to that model, or `default` when the model no longer takes it; reopening a conversation shows its saved level. When a run used another level than the one chosen, its answer says which.
+
 ## Configure a model
 
 1. Start this application's own configuration and database as described in [Getting started](README.MD#getting-started). Open the `Local:` URL printed by `pnpm dev`, including its application base path.

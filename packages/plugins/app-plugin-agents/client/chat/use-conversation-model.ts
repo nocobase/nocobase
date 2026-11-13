@@ -7,24 +7,39 @@ import {
   type UseQueryResult,
 } from '@tanstack/react-query';
 import type { OnlineChatConfigSnapshot } from '../../shared/conversations.js';
-import type { ModelRef } from '../../shared/models.js';
+import type { ModelRef, ReasoningLevel } from '../../shared/models.js';
 import { agentsQueryClient } from '../query.js';
 import { useChatController } from './controller.js';
 import { chatKeys } from './keys.js';
 import { useChatApi } from './use-chat.js';
+
+/**
+ * One explicit change: a model alone, or any of the model, web search and thinking level together, so a model switch
+ * can carry the level remembered for the new model in the same write.
+ */
+export type ConversationModelChange =
+  | ModelRef
+  | {
+      readonly selectedModel?: ModelRef;
+      readonly webSearch?: boolean;
+      readonly thinking?: ReasoningLevel;
+    };
 
 export interface ConversationModel {
   readonly configuration: UseQueryResult<OnlineChatConfigSnapshot>;
   readonly select: UseMutationResult<
     OnlineChatConfigSnapshot,
     Error,
-    ModelRef | { selectedModel?: ModelRef; webSearch: boolean }
+    ConversationModelChange
   >;
   /** Shared across mounted views of this conversation. */
   readonly changing: boolean;
 }
 
-/** Reads the saved model and explicitly changes only it, without replacing the conversation's configuration. */
+/**
+ * Reads the saved model, web search and thinking level, and explicitly changes only what a change names, without
+ * replacing the conversation's configuration.
+ */
 export function useConversationModel(
   id: string | null,
   enabled = true,
@@ -55,9 +70,7 @@ export function useConversationModel(
     {
       mutationKey: key,
       retry: false,
-      mutationFn: async (
-        change: ModelRef | { selectedModel?: ModelRef; webSearch: boolean },
-      ) => {
+      mutationFn: async (change: ConversationModelChange) => {
         const active = controller.lifetime();
         if (!id || !active()) throw new CancelledError({ silent: true });
         await client.cancelQueries({ queryKey: key, exact: true });
@@ -66,7 +79,16 @@ export function useConversationModel(
           const model =
             'modelService' in change ? change : change.selectedModel;
           const overrides =
-            'webSearch' in change ? { webSearch: change.webSearch } : {};
+            'modelService' in change
+              ? {}
+              : {
+                  ...(change.webSearch === undefined
+                    ? {}
+                    : { webSearch: change.webSearch }),
+                  ...(change.thinking === undefined
+                    ? {}
+                    : { thinking: change.thinking }),
+                };
           const result = await api.configure(id, overrides, model);
           if (!active()) return result;
           await client.cancelQueries({ queryKey: key, exact: true });

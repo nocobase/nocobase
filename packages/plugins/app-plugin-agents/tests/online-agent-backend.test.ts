@@ -217,7 +217,7 @@ describe('Native backend ownership and facade regressions', () => {
         });
       const system = vi.fn(() => ({ systemPromptTemplate: 'System' }));
       const personal = vi.fn(() => ({ systemPromptTemplate: 'Personal' }));
-      const global = vi.fn(() => ({ thinking: 'initial' }));
+      const global = vi.fn(() => ({ thinking: 'low' }));
       f.configurator.registerOnlineAgentScope('system', system);
       f.configurator.registerOnlineAgentScope('personal', personal);
       f.configurator.registerOnlineAgentGlobalScope(global);
@@ -227,7 +227,7 @@ describe('Native backend ownership and facade regressions', () => {
         config: {
           scope: ['personal'],
           systemPrompt: 'Personal',
-          thinking: 'initial',
+          thinking: 'low',
         },
         model: alternate,
       });
@@ -273,7 +273,7 @@ describe('Native backend ownership and facade regressions', () => {
           template: (context: OnlineAgentContext) =>
             `${context.systemPrompt}:pending`,
         },
-        thinking: 'pending',
+        thinking: 'medium',
       }));
       f.configurator.registerOnlineAgentScope('pending', pending);
       const original = await f.service[kind](actor, {
@@ -286,33 +286,33 @@ describe('Native backend ownership and facade regressions', () => {
       });
       await f.service.configure(actor, original.sessionId, {
         systemPromptTemplate: 'Latest',
-        thinking: 'latest',
+        thinking: 'high',
       });
       const accepted = vi
         .spyOn(f.sessions.native, 'accept')
         .mockRejectedValueOnce(new Error('Admission rejected'));
       await expect(submit(opened)).rejects.toThrow('Admission rejected');
       expect(await f.sessions.load('alice', original.sessionId)).toMatchObject({
-        config: { systemPrompt: 'Latest', thinking: 'latest' },
+        config: { systemPrompt: 'Latest', thinking: 'high' },
         model: ref,
         lastSeq: 0,
       });
       expect(await original.status()).toBe('idle');
       await submit(opened);
       expect(await f.sessions.load('alice', original.sessionId)).toMatchObject({
-        config: { systemPrompt: 'Latest:pending', thinking: 'pending' },
+        config: { systemPrompt: 'Latest:pending', thinking: 'medium' },
         model: alternate,
       });
       expect(pending).toHaveBeenCalledTimes(2);
       await f.service.configure(
         actor,
         original.sessionId,
-        { systemPromptTemplate: 'Newest', thinking: 'newest' },
+        { systemPromptTemplate: 'Newest', thinking: 'xhigh' },
         ref,
       );
       await submit(opened);
       expect(await f.sessions.load('alice', original.sessionId)).toMatchObject({
-        config: { systemPrompt: 'Newest', thinking: 'newest' },
+        config: { systemPrompt: 'Newest', thinking: 'xhigh' },
         model: ref,
       });
       expect(pending).toHaveBeenCalledTimes(2);
@@ -349,12 +349,12 @@ describe('Native backend ownership and facade regressions', () => {
         });
       }
       if ('send' in opened)
-        await opened.send(messages, { overrides: { thinking: 'allowed' } });
+        await opened.send(messages, { overrides: { thinking: 'minimal' } });
       else
         await opened.run(
           messages,
           { type: 'string' },
-          { overrides: { thinking: 'allowed' } },
+          { overrides: { thinking: 'minimal' } },
         );
       await settle(opened);
       await submit(opened);
@@ -362,7 +362,7 @@ describe('Native backend ownership and facade regressions', () => {
         (await f.sessions.load('alice', original.sessionId)).config,
       ).toMatchObject({
         systemPrompt: 'Trusted',
-        thinking: 'allowed',
+        thinking: 'minimal',
       });
     },
   );

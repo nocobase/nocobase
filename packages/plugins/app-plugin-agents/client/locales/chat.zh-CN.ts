@@ -2,6 +2,23 @@ import type { ChatLocale } from './chat.en-US.js';
 
 const chatZhCN: ChatLocale = {
   chat: {
+    thinking: {
+      levels: {
+        default: '默认',
+        off: '关闭',
+        minimal: '最低',
+        low: '低',
+        medium: '中',
+        high: '高',
+        xhigh: '超高',
+        max: '最高',
+      },
+      adjusted:
+        '当前模型不支持「{{requested}}」思考等级，本次回复使用了「{{used}}」。',
+      adjustedToDefault:
+        '当前模型不支持「{{requested}}」思考等级，本次回复使用了厂商默认设置。',
+      warning: '厂商可能未在本次回复中应用「{{level}}」思考等级。',
+    },
     executionFailed: '执行失败。请先查看已保存的会话记录，再决定是否重试。',
     untitled: '未命名对话',
     renamed: '标题已修改',

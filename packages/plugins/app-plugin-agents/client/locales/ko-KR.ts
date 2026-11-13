@@ -940,6 +940,24 @@ const koKR: LocaleResource<typeof enUS> = {
     },
   },
   chat: {
+    thinking: {
+      levels: {
+        default: '기본값',
+        off: '끄기',
+        minimal: '최소',
+        low: '낮음',
+        medium: '중간',
+        high: '높음',
+        xhigh: '매우 높음',
+        max: '최대',
+      },
+      adjusted:
+        '이 모델은 사고 수준 "{{requested}}"을(를) 지원하지 않아 이번 답변에는 "{{used}}"을(를) 사용했습니다.',
+      adjustedToDefault:
+        '이 모델은 사고 수준 "{{requested}}"을(를) 지원하지 않아 이번 답변에는 제공업체 기본값을 사용했습니다.',
+      warning:
+        '제공업체가 이번 답변에 사고 수준 "{{level}}"을(를) 적용하지 않았을 수 있습니다.',
+    },
     executionFailed:
       '실행에 실패했습니다. 다시 시도하기 전에 저장된 대화를 확인하세요.',
     untitled: '제목 없는 대화',
@@ -1109,6 +1127,17 @@ const koKR: LocaleResource<typeof enUS> = {
         'OpenCode는 모든 요청에 x-opencode-session을 보냅니다(대화마다 세션 ID 하나). 모델 계열마다 자체 API로 제공합니다: DeepSeek, GLM, Kimi, MiMo는 DeepSeek 또는 OpenAI 호환, Claude, MiniMax, Qwen은 Anthropic, GPT와 Grok은 OpenAI. 필요한 유형마다 이 기본 URL로 서비스를 추가하세요.',
     },
     models: {
+      reasoning: {
+        label: '사고 수준',
+        field: '{{name}}의 사고 수준',
+        auto: '자동',
+        none: '지원 안 함',
+        custom: '사용자 지정',
+        builtin: '기본 제공: {{levels}}',
+        builtinNone: '기본 제공: 기본값만',
+        unsaved: '저장 후 기본 제공 수준이 표시됩니다',
+        empty: '수준을 하나 이상 선택하세요.',
+      },
       title: '모델',
       description:
         '이 서비스가 제공하는 모델을 체크하고 각각의 용도를 지정하세요: 채팅 모델은 Agent에 답하고, 임베딩 모델은 검색용으로 텍스트를 인덱싱하며, 재순위 모델은 검색 결과를 정렬합니다. 임베딩 모델은 특정 크기의 벡터를 요구할 수 있습니다.',

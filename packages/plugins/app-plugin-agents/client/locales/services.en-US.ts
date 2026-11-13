@@ -72,6 +72,17 @@ const servicesEnUS = {
         'OpenCode sends x-opencode-session with every request (one session id per conversation). It serves each model family through its own API: DeepSeek, GLM, Kimi and MiMo through DeepSeek or OpenAI-compatible, Claude, MiniMax and Qwen through Anthropic, GPT and Grok through OpenAI. Add a service of each type you need, all with this base URL.',
     },
     models: {
+      reasoning: {
+        label: 'Thinking levels',
+        field: 'Thinking levels of {{name}}',
+        auto: 'Automatic',
+        none: 'Not supported',
+        custom: 'Custom',
+        builtin: 'Built in: {{levels}}',
+        builtinNone: 'Built in: default only',
+        unsaved: 'Built-in levels show after saving',
+        empty: 'Choose at least one level.',
+      },
       title: 'Models',
       description:
         'Check the models this service offers, and say what each is for: chat models answer agents, embedding models index text for search, rerank models order search results. An embedding model may ask for vectors of a size.',

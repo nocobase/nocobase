@@ -44,7 +44,7 @@ import {
 } from './search/anthropic.js';
 import { googleSearchCall, type GoogleSearchCall } from './search/google.js';
 import { alibabaSearchCall, type AlibabaSearchCall } from './search/alibaba.js';
-import { resolveModelCapabilities } from './search/capabilities.js';
+import { resolveModelCapabilities } from './capabilities.js';
 type JSONObject = Record<string, JSONValue>;
 /** The SDK's reranking model specification, as `ai` names it (`RerankingModel` minus model ids and older versions). */
 type RerankingModelV4 = Extract<RerankingModel, { specificationVersion: 'v4' }>;

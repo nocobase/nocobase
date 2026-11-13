@@ -1,6 +1,17 @@
 import type { NativeExecutionRequest } from './types.js';
 import { WebSearchBudget } from '../../search/budget.js';
 import { validateWebSearch, type OnlineAgentWebSearch } from '../web-search.js';
+import {
+  THINKING_NOTICE_IDS,
+  capabilitiesReader,
+  executionThinking,
+  thinkingAdjustedNotice,
+  thinkingWarningNotice,
+  thinkingWarnings,
+  validateThinking,
+  type ThinkingNotice,
+  type ThinkingSelection,
+} from '../thinking.js';
 import { effectiveTools } from '../configuration.js';
 import { FileInputError } from '../../files/errors.js';
 import {
@@ -137,6 +148,8 @@ export class NativeOnlineAgent {
       ReturnType<OnlineAgentSessionManager['load']>
     >['config'];
     let sdkFailure = false;
+    let thinking!: ThinkingSelection;
+    const thinkingNotices: ThinkingNotice[] = [];
     let waitingApprovals = false;
     let background = false;
     let result: OnlineAgentJson | undefined;
@@ -174,12 +187,22 @@ export class NativeOnlineAgent {
         selected.modelService !== session.model.modelService ||
         selected.model !== session.model.model;
       config = structuredClone(config);
+      const capabilities = capabilitiesReader(this.deps.webSearch, selected);
       await validateWebSearch(
         config,
         selected,
         this.deps.webSearch,
         changedModel && input?.overrides?.webSearch === undefined,
+        capabilities,
       );
+      if (input?.overrides)
+        await validateThinking(
+          config,
+          input.overrides.thinking,
+          capabilities,
+          changedModel,
+        );
+      thinking = await executionThinking(config.thinking, capabilities);
       model = await this.deps.model(selected, id);
       const searchBudget = new WebSearchBudget();
       const entryContext: Omit<OnlineAgentToolContext, 'execution'> =
@@ -401,6 +424,9 @@ export class NativeOnlineAgent {
       }
       return;
     }
+    // The level this execution runs with is said in its answer when it is not the conversation's.
+    if (thinking.adjusted)
+      thinkingNotices.push(thinkingAdjustedNotice(thinking.adjusted));
     let privateMessage: UIMessage = priorMessage
       ? structuredClone(priorMessage)
       : { id: messageId, role: 'assistant', parts: [], metadata };
@@ -457,7 +483,7 @@ export class NativeOnlineAgent {
         toolsContext: Object.fromEntries(
           Object.keys(tools).map((name) => [name, toolContext]),
         ),
-        reasoning: reasoningOf(config.thinking),
+        reasoning: reasoningOf(thinking.level),
         abortSignal: execution.abort.signal,
         maxRetries: 0,
         stopWhen: stepCountIs(20),
@@ -521,6 +547,11 @@ export class NativeOnlineAgent {
         if (projected) output?.write(projected);
       }
       await generated.responseMessages;
+      if (thinking.level !== 'default') {
+        const warned = thinkingWarnings(await generated.warnings);
+        if (warned)
+          thinkingNotices.push(thinkingWarningNotice(thinking.level, warned));
+      }
       if (sdkFailure) outcome = 'failed';
       else if (execution.abort.signal.aborted) outcome = 'cancelled';
       else if (
@@ -635,8 +666,13 @@ export class NativeOnlineAgent {
                 ...privateMessage.parts.filter(
                   (part) =>
                     part.type !== 'data-notice' ||
-                    part.id !== 'execution-status',
+                    (part.id !== 'execution-status' &&
+                      !(
+                        thinkingNotices.length &&
+                        THINKING_NOTICE_IDS.has(part.id ?? '')
+                      )),
                 ),
+                ...thinkingNotices,
                 notice,
               ],
             },
@@ -680,6 +716,7 @@ export class NativeOnlineAgent {
       );
       if (background) await this.deps.sessions.finish(context.user.id, id);
       if (output) await this.deps.uiStreams.release(id, output);
+      for (const part of thinkingNotices) output?.write(part);
       output?.write(notice);
       output?.write({
         type: 'message-metadata',

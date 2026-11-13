@@ -921,6 +921,23 @@ const zhTW: LocaleResource<typeof enUS> = {
     },
   },
   chat: {
+    thinking: {
+      levels: {
+        default: '預設',
+        off: '關閉',
+        minimal: '最低',
+        low: '低',
+        medium: '中',
+        high: '高',
+        xhigh: '超高',
+        max: '最高',
+      },
+      adjusted:
+        '目前模型不支援「{{requested}}」思考等級，本次回覆使用了「{{used}}」。',
+      adjustedToDefault:
+        '目前模型不支援「{{requested}}」思考等級，本次回覆使用了供應商預設設定。',
+      warning: '供應商可能未在本次回覆中套用「{{level}}」思考等級。',
+    },
     // Keep new guidance available in English until this locale is translated.
     executionFailed: '執行失敗。重試前請先檢查已儲存的對話。',
     fileInputFailures: {
@@ -1078,6 +1095,17 @@ const zhTW: LocaleResource<typeof enUS> = {
         'OpenCode 會在每個請求中傳送 x-opencode-session（每段對話一個工作階段 ID）。它透過各模型系列專用的 API 提供服務：DeepSeek、GLM、Kimi 和 MiMo 使用 DeepSeek 或 OpenAI-compatible 介面；Claude、MiniMax 和 Qwen 使用 Anthropic；GPT 和 Grok 使用 OpenAI。請依需求新增各型別的服務，並全部使用此基底 URL。',
     },
     models: {
+      reasoning: {
+        label: '思考等級',
+        field: '{{name}} 的思考等級',
+        auto: '自動',
+        none: '不支援',
+        custom: '自訂',
+        builtin: '內建：{{levels}}',
+        builtinNone: '內建：僅預設',
+        unsaved: '儲存後顯示內建等級',
+        empty: '至少選擇一個等級。',
+      },
       title: '模型',
       description:
         '檢查此服務提供的模型，並說明每個模型的用途：聊天模型回答Agents、嵌入模型索引文字以進行搜尋、重新排列模型順序搜尋結果。嵌入模型可能需要一定大小的向量。',

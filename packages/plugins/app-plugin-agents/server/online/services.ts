@@ -1,4 +1,4 @@
-import { resolveModelCapabilities } from './search/capabilities.js';
+import { resolveModelCapabilities } from './capabilities.js';
 import type { ModelCapabilities } from '../../shared/models.js';
 /**
  * The model services online agents call (`agModelServices`): listing, adding, editing, switching off and deleting
@@ -18,6 +18,7 @@ import { z } from 'zod';
 import {
   MODEL_KINDS,
   MODEL_PROVIDER_NAMES,
+  REASONING_LEVELS,
   guessModelKind,
   providerOf,
   type CreateModelServiceRequest,
@@ -31,6 +32,7 @@ import {
   type ModelKind,
   type ModelOption,
   type ModelProviderName,
+  type ModelReasoning,
   type ModelRef,
   type ModelServiceView,
   type ProviderModels,
@@ -82,8 +84,26 @@ interface ServiceRecord {
   readonly updatedAt: string;
 }
 
+type ModelReasoningLevel = ModelReasoning['levels'][number];
+
 const KindSchema = z.enum(MODEL_KINDS as [ModelKind, ...ModelKind[]]);
 const DimensionsSchema = z.number().int().min(1).max(8192).nullable();
+
+const ReasoningSchema = z.union([
+  z.literal(false),
+  z.strictObject({
+    levels: z
+      .array(
+        z.enum(
+          REASONING_LEVELS.filter((level) => level !== 'default') as [
+            ModelReasoningLevel,
+            ...ModelReasoningLevel[],
+          ],
+        ),
+      )
+      .min(1, 'Choose at least one thinking level.'),
+  }),
+]);
 
 const ModelsSchema = z
   .array(
@@ -93,10 +113,18 @@ const ModelsSchema = z
         label: z.string().trim().max(200).optional(),
         kind: KindSchema.optional(),
         dimensions: DimensionsSchema.optional(),
+        reasoning: ReasoningSchema.optional().describe(
+          'A chat model’s thinking levels besides `default`: absent takes the built-in ones, `false` offers none, an object replaces them.',
+        ),
       })
       .refine(
         (model) => !model.dimensions || model.kind === 'embedding',
         'Only an embedding model has dimensions.',
+      )
+      .refine(
+        (model) =>
+          model.reasoning === undefined || (model.kind ?? 'chat') === 'chat',
+        'Only a chat model has thinking levels.',
       ),
   )
   .max(500);
@@ -278,6 +306,18 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 const text = (value: unknown): string | null =>
   typeof value === 'string' && value.trim() ? value.trim() : null;
 
+/** A chat model's stored thinking levels, in `REASONING_LEVELS` order and each once; undefined for the built-in ones. */
+function reasoningOf(value: unknown): false | ModelReasoning | undefined {
+  if (value === false) return false;
+  if (!isRecord(value) || !Array.isArray(value.levels)) return undefined;
+  const stored = new Set(value.levels as unknown[]);
+  const levels = REASONING_LEVELS.filter(
+    (level): level is ModelReasoningLevel =>
+      level !== 'default' && stored.has(level),
+  );
+  return levels.length ? { levels } : undefined;
+}
+
 /** The models a stored list offers, in order and each once; a model without a kind is a chat model. */
 function modelsOf(stored: unknown): ModelOption[] {
   const seen = new Set<string>();
@@ -288,11 +328,13 @@ function modelsOf(stored: unknown): ModelOption[] {
     const kind = kindOf(item.kind);
     if (!value || seen.has(value)) continue;
     seen.add(value);
+    const reasoning = kind === 'chat' ? reasoningOf(item.reasoning) : undefined;
     models.push({
       value,
       label: text(item.label) ?? value,
       kind,
       dimensions: dimensionsOf(kind, item.dimensions),
+      ...(reasoning === undefined ? {} : { reasoning }),
     });
   }
   return models;
@@ -353,6 +395,7 @@ function outputModels(record: ServiceRecord): ModelOption[] {
       { provider: providerName(record), baseUrl: record.baseUrl },
       model.value,
       model.kind,
+      model.reasoning,
     ),
   }));
 }
