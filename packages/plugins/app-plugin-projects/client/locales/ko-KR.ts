@@ -357,6 +357,9 @@ const koKR: LocaleResource<typeof enUS> = {
       alreadyMember: '이미 구성원',
       notSent: '이메일 미발송',
       sent: '이메일 발송됨',
+      noEmailChannel:
+        '이메일을 보내지 못했습니다: 이메일 채널이 구성되지 않았습니다',
+      deliveryFailed: '이메일을 보내지 못했습니다: 이메일 전송에 실패했습니다',
     },
     pending: '대기 중',
     projectRequired: '내가 이끄는 프로젝트를 하나 이상 선택하세요.',

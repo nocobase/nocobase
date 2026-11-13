@@ -160,6 +160,7 @@ function sentResult(result: UserInvitationResult): InvitationResult {
         email: result.email,
         outcome: 'invited',
         emailSent: result.emailSent,
+        ...(result.emailError ? { emailError: result.emailError } : {}),
         ...(result.inviteUrl ? { inviteUrl: result.inviteUrl } : {}),
       }
     : { email: result.email, outcome: 'alreadyMember' };

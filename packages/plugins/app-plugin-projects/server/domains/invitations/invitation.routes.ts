@@ -64,6 +64,7 @@ export function createInvitationRoutes(
       operationId: 'projectsCreateInvitations',
       ...cliRoute({
         command: 'project invitation create',
+        columns: ['email', 'outcome', 'emailSent', 'emailError', 'inviteUrl'],
         flags: {
           emails: { name: 'email' },
           projectIds: { name: 'project' },

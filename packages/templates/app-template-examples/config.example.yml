@@ -136,6 +136,8 @@ notification:
     inbox:
       type: in-app
 
+    # User invitations use users.invitations.mailer or mailers.default when configured; otherwise they fall back to
+    # users.invitations.emailChannel (`system-email` by default). Enable this channel for that legacy fallback.
     # Configuring mailers alone does not create a notification channel.
     # system-email:
     #   type: email

@@ -371,6 +371,10 @@ const esES: LocaleResource<typeof enUS> = {
       added: 'Tiene una cuenta — agregada a los proyectos',
       alreadyMember: 'Ya eres miembro',
       notSent: 'Correo electrónico no enviado',
+      noEmailChannel:
+        'Correo electrónico no enviado: no hay ningún canal de correo configurado',
+      deliveryFailed:
+        'Correo electrónico no enviado: error al enviar el correo',
       sent: 'Correo electrónico enviado',
     },
     pending: 'Esperando',

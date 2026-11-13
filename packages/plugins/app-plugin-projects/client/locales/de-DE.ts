@@ -383,6 +383,8 @@ const deDE: LocaleResource<typeof enUS> = {
       added: 'Hat ein Konto – zu den Projekten hinzugefügt',
       alreadyMember: 'Bereits Mitglied',
       notSent: 'E-Mail nicht gesendet',
+      noEmailChannel: 'E-Mail nicht gesendet: Kein E-Mail-Kanal konfiguriert',
+      deliveryFailed: 'E-Mail nicht gesendet: E-Mail-Zustellung fehlgeschlagen',
       sent: 'E-Mail gesendet',
     },
     pending: 'Warten',

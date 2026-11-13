@@ -366,6 +366,8 @@ const ruRU: LocaleResource<typeof enUS> = {
       alreadyMember: 'Уже участник',
       notSent: 'Письмо не отправлено',
       sent: 'Письмо отправлено',
+      noEmailChannel: 'Письмо не отправлено: почтовый канал не настроен',
+      deliveryFailed: 'Письмо не отправлено: ошибка отправки',
     },
     pending: 'Ожидает',
     projectRequired: 'Выберите хотя бы один проект, которым вы руководите.',

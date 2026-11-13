@@ -364,6 +364,9 @@ const ptBR: LocaleResource<typeof enUS> = {
       added: 'Tem uma conta — adicionada aos projetos',
       alreadyMember: 'Já é membro',
       notSent: 'E-mail não enviado',
+      noEmailChannel:
+        'E-mail não enviado: nenhum canal de e-mail está configurado',
+      deliveryFailed: 'E-mail não enviado: falha ao enviar o e-mail',
       sent: 'E-mail enviado',
     },
     pending: 'Esperando',
