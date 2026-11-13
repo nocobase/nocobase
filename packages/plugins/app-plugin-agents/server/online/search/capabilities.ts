@@ -20,7 +20,7 @@ const definitions: Partial<
     models: {},
   },
   deepseek: {
-    defaults: { webSearch: false },
+    defaults: { webSearch: true },
     models: {
       // Verified against https://api-docs.deepseek.com/zh-cn/guides/vision on 2026-10-23.
       'deepseek-flash': {

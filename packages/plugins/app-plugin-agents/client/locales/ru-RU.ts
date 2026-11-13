@@ -403,6 +403,8 @@ const ruRU: LocaleResource<typeof enUS> = {
       calls: 'Вызовы',
       units: 'Элементы',
       purposes: {
+        search: 'Веб-поиск',
+        fetch: 'Загрузка веб-страниц',
         embedding: 'Эмбеддинги',
         rerank: 'Переранжирование',
         text: 'Служебный текст',

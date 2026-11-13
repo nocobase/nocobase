@@ -18,10 +18,15 @@ it('applies explicit model false over provider true instead of using truthy fall
 });
 
 const platforms: readonly {
-  provider: 'openai' | 'anthropic' | 'google' | 'alibaba';
+  provider: 'openai' | 'anthropic' | 'google' | 'alibaba' | 'deepseek';
   endpoint: string;
   models: readonly string[];
 }[] = [
+  {
+    provider: 'deepseek',
+    endpoint: 'https://api.deepseek.com',
+    models: ['deepseek-chat', 'future-deepseek-chat'],
+  },
   {
     provider: 'alibaba',
     endpoint: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
@@ -88,11 +93,6 @@ it.each(platforms)(
 );
 
 it('keeps platforms without a search adapter unsupported regardless of model brand', () => {
-  expect(resolveModelCapabilities({ provider: 'deepseek' }, 'gpt-5.4')).toEqual(
-    {
-      webSearch: false,
-    },
-  );
   expect(
     resolveModelCapabilities(
       { provider: 'openai-compatible', baseUrl: 'https://api.openai.com/v1' },

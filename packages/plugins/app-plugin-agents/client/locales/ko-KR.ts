@@ -373,6 +373,8 @@ const koKR: LocaleResource<typeof enUS> = {
       calls: '호출',
       units: '항목',
       purposes: {
+        search: '웹 검색',
+        fetch: '웹 가져오기',
         embedding: '임베딩',
         rerank: '재순위',
         text: '보조 텍스트',

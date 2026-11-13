@@ -1,4 +1,5 @@
 import { WEB_SEARCH_RETRIEVAL_INSTRUCTIONS } from './search/prompts.js';
+import { deepseekSearch, deepseekFetch } from './search/deepseek.js';
 import { WebSearchBudget } from './search/budget.js';
 /**
  * The model gateway online agents' runs call (`ModelGateway`): the catalog of what the enabled model services offer,
@@ -224,8 +225,22 @@ export interface WebSearchRequest {
   readonly queries: readonly string[];
   readonly sessionId: string;
   readonly signal: AbortSignal;
-  readonly source: 'agents.webSearch';
+  readonly source: string;
   readonly budget?: WebSearchBudget;
+}
+
+/** Fetches one public page through the selected DeepSeek service; never fetches the URL locally. */
+export interface WebFetchRequest {
+  readonly model: ModelRef;
+  readonly url: string;
+  readonly source: string;
+  readonly signal?: AbortSignal;
+}
+
+export interface WebFetchResult {
+  readonly url: string;
+  readonly title: string;
+  readonly content: string;
 }
 
 /** `ModelGateway.generate`: one short text from a chat model, without tools, for utility work. */
@@ -268,6 +283,8 @@ export interface ModelGateway {
   generate(request: GenerateRequest): Promise<{ text: string }>;
   /** Native retrieval evidence only; never creates an Agent or writes a message. */
   search(request: WebSearchRequest): Promise<WebSearchResult>;
+  /** DeepSeek official page retrieval; every attempted request is recorded as `fetch` use. */
+  fetch(request: WebFetchRequest): Promise<WebFetchResult>;
 }
 
 /** A service's connection and what it says of one of its models. */
@@ -800,12 +817,18 @@ export function createModelGateway(
 
   async function search(request: WebSearchRequest): Promise<WebSearchResult> {
     const { signal } = request;
-    signal.throwIfAborted();
-    const { queries } = WebSearchInputSchema.parse({
-      queries: request.queries,
-    });
+    if (signal.aborted)
+      throw new ModelError('aborted', 'The call was stopped.');
+    const input = WebSearchInputSchema.safeParse({ queries: request.queries });
+    if (!input.success)
+      throw new ModelError(
+        'badResponse',
+        'Web search requires one to four nonempty queries within the query limit.',
+      );
+    const { queries } = input.data;
     const connection = await source.connectionFor(request.model, 'chat');
-    signal.throwIfAborted();
+    if (signal.aborted)
+      throw new ModelError('aborted', 'The call was stopped.');
     if (!resolveModelCapabilities(connection, request.model.model).webSearch)
       throw new ModelError(
         'config',
@@ -843,6 +866,23 @@ export function createModelGateway(
             );
             const querySignal = AbortSignal.any([group, timeout.signal]);
             try {
+              if (connection.provider === 'deepseek')
+                return await deepseekSearch(
+                  connection,
+                  query,
+                  querySignal,
+                  () =>
+                    record({
+                      purpose: 'search',
+                      source: request.source,
+                      modelService: request.model.modelService,
+                      model: 'tools/search',
+                      inputTokens: 0,
+                      outputTokens: 0,
+                      units: 1,
+                    }),
+                  signal,
+                );
               const { evidence: evidenceOf, ...call } = createSearchCall(
                 connection,
                 request.model.model,
@@ -858,7 +898,7 @@ export function createModelGateway(
               const usage = usageOf(result.totalUsage);
               await record({
                 purpose: 'text',
-                source: 'agents.webSearch',
+                source: request.source,
                 modelService: request.model.modelService,
                 model: request.model.model,
                 inputTokens:
@@ -886,6 +926,8 @@ export function createModelGateway(
                 evidence.executed,
               );
             } catch (error) {
+              // Direct API failures retain their category and safe status for business callers.
+              if (connection.provider === 'deepseek') throw error;
               group.throwIfAborted();
               if (ToolChoiceViolationError.isInstance(error))
                 return { query, status: 'failed', reason: 'noEvidence' };
@@ -920,6 +962,8 @@ export function createModelGateway(
           worker,
         ),
       );
+      if (connection.provider === 'deepseek' && signal.aborted)
+        throw new ModelError('aborted', 'The call was stopped.');
       signal.throwIfAborted();
       if (deadline.signal.aborted)
         throw new ModelError(
@@ -931,6 +975,40 @@ export function createModelGateway(
     } finally {
       clearTimeout(timer);
     }
+  }
+
+  async function fetchPage(request: WebFetchRequest): Promise<WebFetchResult> {
+    if (request.signal?.aborted)
+      throw new ModelError('aborted', 'The call was stopped.');
+    const connection = await source.connectionFor(request.model, 'chat');
+    if (
+      connection.provider !== 'deepseek' ||
+      !resolveModelCapabilities(connection, request.model.model).webSearch
+    )
+      throw new ModelError(
+        'config',
+        'Web fetch is unavailable for the selected service endpoint.',
+      );
+    const deadline = AbortSignal.timeout(WEB_SEARCH_LIMITS.queryTimeoutMs);
+    const signal = request.signal
+      ? AbortSignal.any([request.signal, deadline])
+      : deadline;
+    return deepseekFetch(
+      connection,
+      request.url,
+      signal,
+      () =>
+        record({
+          purpose: 'fetch',
+          source: request.source,
+          modelService: request.model.modelService,
+          model: 'tools/fetch',
+          inputTokens: 0,
+          outputTokens: 0,
+          units: 1,
+        }),
+      request.signal,
+    );
   }
 
   async function generate(request: GenerateRequest): Promise<{ text: string }> {
@@ -972,6 +1050,7 @@ export function createModelGateway(
     rerank,
     generate,
     search,
+    fetch: fetchPage,
     async check(ref) {
       try {
         return answered(

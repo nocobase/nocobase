@@ -8,6 +8,8 @@ export {
   type EmbedRequest,
   type EmbedResult,
   type GenerateRequest,
+  type WebFetchRequest,
+  type WebFetchResult,
   type WebSearchRequest,
   type ModelEndpoint,
   type ModelSource,

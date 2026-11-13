@@ -1,7 +1,7 @@
 /**
  * What model calls outside any run used (`agModelUsage`): the embeddings, reranking and short utility texts the
- * application asks the model gateway for (`ModelGateway.embed`, `rerank`, `generate`). The gateway records each call
- * as it returns (`ModelUsageRecorder`); the report groups them by purpose, caller and model, priced like online runs'
+ * application asks the model gateway for (`ModelGateway.embed`, `rerank`, `generate`, `search`, `fetch`). The gateway records each call
+ * as it returns, or after each direct retrieval attempt (`ModelUsageRecorder`); the report groups them by purpose, caller and model, priced like online runs'
  * calls from the service's model prices (`tool` `online`).
  */
 import type { DatabaseConnection } from '@nocobase/db';

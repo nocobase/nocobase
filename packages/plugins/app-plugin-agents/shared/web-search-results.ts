@@ -31,6 +31,9 @@ export const WebSearchInputSchema: z.ZodType<WebSearchInput> = z.strictObject({
 export function safeSearchSource(value: {
   title?: string;
   url: string;
+  snippet?: string;
+  summary?: string;
+  content?: string;
 }): WebSearchSource | null {
   if (characters(value.url) > WEB_SEARCH_LIMITS.urlCharacters) return null;
   try {
@@ -48,6 +51,20 @@ export function safeSearchSource(value: {
         WEB_SEARCH_LIMITS.titleCharacters,
       ),
       url: url.href,
+      ...(value.snippet === undefined
+        ? {}
+        : { snippet: limited(value.snippet, 1000) }),
+      ...(value.summary === undefined
+        ? {}
+        : {
+            summary: limited(
+              value.summary,
+              WEB_SEARCH_LIMITS.findingsCharacters,
+            ),
+          }),
+      ...(value.content === undefined
+        ? {}
+        : { content: limited(value.content, 100_000) }),
     };
   } catch {
     return null;
@@ -57,7 +74,7 @@ export function safeSearchSource(value: {
 export function searchItem(
   query: string,
   text: string,
-  sources: readonly { title?: string; url: string }[],
+  sources: readonly (Omit<WebSearchSource, 'title'> & { title?: string })[],
   executed: boolean,
 ): WebSearchItem {
   const safe: WebSearchSource[] = [];
@@ -99,7 +116,15 @@ const ResultSchema = z.object({
           query: z.string(),
           status: z.literal('success'),
           findings: z.string(),
-          sources: z.array(z.object({ title: z.string(), url: z.string() })),
+          sources: z.array(
+            z.object({
+              title: z.string(),
+              url: z.string(),
+              snippet: z.string().optional(),
+              summary: z.string().optional(),
+              content: z.string().optional(),
+            }),
+          ),
         }),
         z.object({
           query: z.string(),

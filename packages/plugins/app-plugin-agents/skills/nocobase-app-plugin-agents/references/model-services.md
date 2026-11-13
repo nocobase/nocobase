@@ -15,3 +15,6 @@ Agents run on runners and do not use model services. The plugin keeps model serv
 ## Legacy vector collections
 
 Agents 2 removes the legacy vector collection service. Use the model gateway for Embedding; Knowledge owns its independent document indexing and storage. Before upgrading an existing integration, read `@nocobase/app-plugin-agents/docs/vectors-migration.md`. There is no automatic conversion of legacy collections.
+
+
+Use `models.gateway.search({ model, queries, sessionId, signal, source })` for retrieval through admitted providers and `models.gateway.fetch({ model, url, source, signal? })` for DeepSeek page Markdown. DeepSeek calls its official Search / Fetch APIs with the existing service key and official root Base URL; Responses `web_search` is not used. Search sources preserve provider-returned snippets, summaries and bodies. Every actual DeepSeek request records `search` / `fetch` usage, including failures, and throws distinguishable `ModelError` categories. Compose with `generate()` using untrusted evidence and keep citation URLs from retrieval. Read `docs/native-web-search.md` in this package for endpoint admission, bounds and request-based pricing; usage rows count attempts rather than billed successes.

@@ -15,12 +15,12 @@ const png =
 afterEach(() => vi.unstubAllGlobals());
 
 it.each([null, 'https://api.deepseek.com', 'https://api.deepseek.com/'])(
-  'declares exact DeepSeek Flash image formats on official endpoint %s without enabling search',
+  'declares exact DeepSeek Flash image formats on official endpoint %s alongside official search',
   (baseUrl) => {
     expect(
       resolveModelCapabilities({ ...connection, baseUrl }, modelId),
     ).toEqual({
-      webSearch: false,
+      webSearch: true,
       imageMediaTypes: formats,
     });
   },
@@ -38,7 +38,7 @@ it.each([
   'constructor',
 ])('does not infer image capability from the model name %s', (model) => {
   expect(resolveModelCapabilities(connection, model)).toEqual({
-    webSearch: false,
+    webSearch: true,
   });
 });
 
@@ -94,7 +94,7 @@ it('includes derived image capabilities in the model catalog response schema', a
     expect(
       ModelCatalogServiceSchema.parse(found).models[0].capabilities,
     ).toEqual({
-      webSearch: false,
+      webSearch: true,
       imageMediaTypes: formats,
     });
   } finally {

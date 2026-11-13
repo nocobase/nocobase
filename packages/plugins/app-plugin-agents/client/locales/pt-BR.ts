@@ -396,6 +396,8 @@ const ptBR: LocaleResource<typeof enUS> = {
       calls: 'Chamadas',
       units: 'Itens',
       purposes: {
+        search: 'Pesquisa na web',
+        fetch: 'Obtenção de página',
         embedding: 'Incorporações',
         rerank: 'Reclassificação',
         text: 'Texto utilitário',

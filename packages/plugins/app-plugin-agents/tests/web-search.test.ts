@@ -680,7 +680,8 @@ describe('OpenAI native web search SDK gate', () => {
     });
     const noSearch = await h.services.models.services.create({
       title: 'No search',
-      provider: 'deepseek',
+      provider: 'openai-compatible',
+      baseUrl: 'https://proxy.example/v1',
       apiKey: 'offline-test-key',
       models: [{ value: 'deepseek-chat' }],
     });

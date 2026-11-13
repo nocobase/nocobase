@@ -26,7 +26,14 @@ export const WEB_SEARCH_LIMITS: Readonly<{
 };
 
 export type WebSearchInput = { queries: string[] };
-export type WebSearchSource = { title: string; url: string };
+export type WebSearchSource = {
+  title: string;
+  url: string;
+  /** Provider-returned evidence, never model-authored text. */
+  snippet?: string;
+  summary?: string;
+  content?: string;
+};
 export type WebSearchItem =
   | {
       query: string;
