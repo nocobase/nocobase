@@ -84,7 +84,7 @@ function fixtureSnapshot(
   });
 }
 
-function application(authentication: Auth) {
+async function application(authentication: Auth) {
   // A real runtime on a memory store: the record routes are the library's,
   // so they are tested against a lifecycle, not a mock.
   const store = new MemoryLifecycleStore();
@@ -137,20 +137,20 @@ function application(authentication: Auth) {
     statusChangedAt: '2026-10-01T09:00:00.000Z',
     lifecycleVersion: 3,
   });
-  store.insertRecord('lifecycleExampleOrders', {
-    lifecycleDefinition: 'orders',
-    id: 3,
-    title: '降噪耳机',
-    customerId: 'customer-li',
-    amountCents: 39_900,
-    paymentAttempt: 0,
-    paymentSessionId: null,
-    failCheckouts: 0,
-    failRefunds: 0,
-    status: 'draft',
-    statusChangedAt: '2026-10-01T09:00:00.000Z',
-    lifecycleVersion: 1,
-  });
+  await runtime.create(
+    'orders',
+    {
+      id: 3,
+      title: '降噪耳机',
+      customerId: 'customer-li',
+      amountCents: 39_900,
+      paymentAttempt: 0,
+      paymentSessionId: null,
+      failCheckouts: 0,
+      failRefunds: 0,
+    },
+    { actor: { id: 'user-1' } },
+  );
   store.insertRecord('lifecycleExampleExpenses', {
     lifecycleDefinition: 'expenses',
     id: 1,
@@ -184,18 +184,6 @@ function application(authentication: Auth) {
   fixtureSnapshot(store, runtime, 'invoices', 9);
   fixtureSnapshot(store, runtime, 'expenses', 1);
   fixtureSnapshot(store, runtime, 'tickets', 5);
-  void store.appendTransition({
-    lifecycle: 'orders',
-    recordId: '3',
-    transition: '$create',
-    from: null,
-    to: 'draft',
-    actorId: 'user-1',
-    input: {},
-    at: '2026-10-01T09:00:00.000Z',
-    version: 1,
-    requestId: null,
-  });
   const service = {
     runtime,
     createExpense: vi.fn(async (values: object) => ({ id: 2, ...values })),
@@ -253,7 +241,7 @@ function post(path: string, body: unknown, method = 'POST'): Request {
 
 describe('lifecycle example routes', () => {
   it('describes an instance with its immutable values when current administrator configuration is invalid', async () => {
-    const { app, store } = application(allow);
+    const { app, store } = await application(allow);
     store.insertRecord('lifecycleExampleWorkflowParameters', {
       id: 'lifecycle.tickets',
       scope: 'demo',
@@ -276,14 +264,14 @@ describe('lifecycle example routes', () => {
   });
 
   it('requires a signed-in user', async () => {
-    const router = await apiRoutes.createRouter(application(deny).app);
+    const router = await apiRoutes.createRouter((await application(deny)).app);
     expect((await router.request('/lifecycleExample/tickets')).status).toBe(
       401,
     );
   });
 
   it('lists a page of records with the parameters the page quotes', async () => {
-    const { app, service } = application(allow);
+    const { app, service } = await application(allow);
     const router = await apiRoutes.createRouter(app);
     const response = await router.request(
       '/lifecycleExample/tickets?actAs=agent-zhou',
@@ -310,7 +298,7 @@ describe('lifecycle example routes', () => {
   });
 
   it('lists the reports of every version with the states of all of them', async () => {
-    const { app, service } = application(allow);
+    const { app, service } = await application(allow);
     const router = await apiRoutes.createRouter(app);
     const response = await router.request(
       '/lifecycleExample/expenses?actAs=zhao&view=approvals&status=awaitingAudit',
@@ -341,7 +329,7 @@ describe('lifecycle example routes', () => {
   });
 
   it('fires a transition as one of the lifecycle personas through the record routes', async () => {
-    const { app, service } = application(allow);
+    const { app, service } = await application(allow);
     const router = await apiRoutes.createRouter(app);
     const response = await router.request(
       post('/lifecycleExample/expenses/1/fire?actAs=chen', {
@@ -376,7 +364,7 @@ describe('lifecycle example routes', () => {
   });
 
   it('rejects a persona the example does not define', async () => {
-    const router = await apiRoutes.createRouter(application(allow).app);
+    const router = await apiRoutes.createRouter((await application(allow)).app);
     const response = await router.request(
       post('/lifecycleExample/expenses/1/fire?actAs=mallory', {
         transition: 'approve',
@@ -393,7 +381,7 @@ describe('lifecycle example routes', () => {
   });
 
   it('answers a refused transition in the standard body, with its reasons', async () => {
-    const router = await apiRoutes.createRouter(application(allow).app);
+    const router = await apiRoutes.createRouter((await application(allow)).app);
     const denied = await router.request(
       post('/lifecycleExample/expenses/1/fire?actAs=sun', {
         transition: 'approve',
@@ -459,7 +447,7 @@ describe('lifecycle example routes', () => {
   });
 
   it('answers a guard about the record as a failed precondition, and one about the persona as forbidden', async () => {
-    const router = await apiRoutes.createRouter(application(allow).app);
+    const router = await apiRoutes.createRouter((await application(allow)).app);
     const reopen = { transition: 'reopen', input: { message: '又坏了' } };
     // The customer who filed it may reopen tickets; this one closed too long ago.
     const expired = await router.request(
@@ -498,7 +486,7 @@ describe('lifecycle example routes', () => {
   });
 
   it('edits only the fields an expense edit sends, under the record’s id', async () => {
-    const { app, service } = application(allow);
+    const { app, service } = await application(allow);
     const router = await apiRoutes.createRouter(app);
     const edited = await router.request(
       post(
@@ -528,7 +516,7 @@ describe('lifecycle example routes', () => {
   });
 
   it('answers and acts through the version a record is bound to, whichever the page names', async () => {
-    const { app, store, runtime } = application(allow);
+    const { app, store, runtime } = await application(allow);
     // A second version of orders on the same table: one step, straight to paid.
     runtime.register(
       defineLifecycle({
@@ -629,7 +617,7 @@ describe('lifecycle example routes', () => {
   });
 
   it('describes a lifecycle, and refuses an effect run of another record', async () => {
-    const router = await apiRoutes.createRouter(application(allow).app);
+    const router = await apiRoutes.createRouter((await application(allow)).app);
     const described = await router.request(
       '/lifecycleExample/expenses/lifecycle?actAs=lin',
     );
@@ -656,7 +644,7 @@ describe('lifecycle example routes', () => {
   });
 
   it('continues a run whose continuation waits, without running its effect again', async () => {
-    const { app, store, runtime } = application(allow);
+    const { app, store, runtime } = await application(allow);
     const router = await apiRoutes.createRouter(app);
     // An approved report whose payment succeeded, but whose `paid` could not
     // be fired yet: the continuation waits on the run.
@@ -742,7 +730,7 @@ describe('lifecycle example routes', () => {
   });
 
   it('answers a continuation refused again as a failed precondition with its own code', async () => {
-    const { app, store, service } = application(allow);
+    const { app, store, service } = await application(allow);
     const router = await apiRoutes.createRouter(app);
     /** A succeeded payment run on report 1 whose continuation waits. */
     const waiting = (transition: string) =>
@@ -853,7 +841,7 @@ describe('lifecycle example routes', () => {
   });
 
   it('validates a new expense before creating it', async () => {
-    const { app, service } = application(allow);
+    const { app, service } = await application(allow);
     const router = await apiRoutes.createRouter(app);
     const bad = await router.request(
       post('/lifecycleExample/expenses?actAs=lin', {
@@ -908,7 +896,7 @@ describe('lifecycle example routes', () => {
   });
 
   it('acts as the signed-in user on a durable flow, whatever persona is named', async () => {
-    const { app } = application(allow);
+    const { app } = await application(allow);
     const router = await apiRoutes.createRouter(app);
     const view = await router.request('/lifecycleExample/orders/3');
     expect(view.status).toBe(200);
@@ -940,7 +928,7 @@ describe('lifecycle example routes', () => {
   });
 
   it('protects invoice creation, platform actions and PDF downloads', async () => {
-    const router = await apiRoutes.createRouter(application(deny).app);
+    const router = await apiRoutes.createRouter((await application(deny)).app);
     for (const request of [
       post('/lifecycleExample/invoices', {}),
       post('/lifecycleExample/sandbox/invoices/9/complete', {
@@ -952,7 +940,7 @@ describe('lifecycle example routes', () => {
   });
 
   it('downloads an issued sample PDF and refuses a missing invoice', async () => {
-    const router = await apiRoutes.createRouter(application(allow).app);
+    const router = await apiRoutes.createRouter((await application(allow)).app);
     const response = await router.request('/lifecycleExample/invoices/9/pdf');
     expect(response.status).toBe(200);
     expect(response.headers.get('content-type')).toBe('application/pdf');
@@ -970,7 +958,7 @@ describe('lifecycle example routes', () => {
   });
 
   it('declares every route in the API document', async () => {
-    const router = await apiRoutes.createRouter(application(allow).app);
+    const router = await apiRoutes.createRouter((await application(allow)).app);
     expect(findUndeclaredApiRoutes(router)).toEqual([]);
     const document = await generateApiDocument(router, {
       info: { title: 'Lifecycle example', version: '0.0.0' },

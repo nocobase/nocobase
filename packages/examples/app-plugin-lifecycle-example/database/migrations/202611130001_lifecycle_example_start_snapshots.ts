@@ -215,7 +215,6 @@ const migration: MigrationDefinition = defineMigration({
           const start = logs.find(
             (log) => log.transition === (contract.start ?? '$create'),
           );
-          const creation = logs.find((log) => log.transition === '$create');
           const id = identity('demo', name, recordId);
           const existing = await repository(
             'lifecycleExampleParameterSnapshots',
@@ -224,11 +223,8 @@ const migration: MigrationDefinition = defineMigration({
           const oldValues = snapshot?.values as Values | undefined;
           const complete =
             oldValues && validate(contract, oldValues).length === 0;
-          const continuous = logs.some(
-            (log) => log.transition === '$create' && Number(log.version) === 1,
-          );
-          if (!start && contract.start && creation && !existing && continuous)
-            continue;
+          // A missing start entry cannot prove an old record was never started.
+          // Only complete snapshots or the actual startup usage evidence are recoverable.
           if (!complete && !start) {
             conflicts.push({
               definition: name,

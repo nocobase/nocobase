@@ -35,3 +35,5 @@ Adding `key` and `version` is metadata: it creates no second version and moves n
 - Triggers, effect retries and continuations of existing records still run.
 - Parameter values resolved for an existing record are unchanged.
 - Report each definition's key and version, its binding field, the backfill rule used per table, every conflict and its decision, and any entry point or customized path you could not verify.
+
+A retained creation entry cannot prove a legacy record never started: startup or withdrawal logs may have been lost. Without a complete snapshot, actual startup evidence for recovery, or an independently persisted unstarted proof, report a conflict even for an initial-state record. Do not manufacture proof from absent logs. New submission-start definitions require the runtime-owned receipt table: creation atomically writes its unstarted proof, first start consumes it with the snapshot, and later edits or log cleanup cannot reset it. Preserve proof rows during rollback and retention.

@@ -7,3 +7,6 @@
 ---
 
 Isolate parameter configuration by definition version and freeze complete instance parameters atomically at the explicit start boundary. Keep retries, continuations and trigger deadlines on the original snapshot, and protect unsaved version configuration.
+
+
+Require an independently persisted unstarted proof for configured drafts. The existing creation-receipt table is now required for submission-start definitions even without a client request ID; creation writes the proof and first start consumes it atomically. Historical records without reliable proof or recoverable startup parameters stop migration instead of being treated as fresh drafts.

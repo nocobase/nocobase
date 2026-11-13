@@ -31,6 +31,7 @@ function serviceOn(database: DatabaseManager): LifecycleExampleService {
   });
   const runtime = new LifecycleRuntime({
     store,
+    creationRequestsCollection: 'lifecycleExampleCreationRequests',
     // Effects stay queued: only the transitions matter here.
     dispatcher: { dispatch: () => Promise.resolve() },
   });

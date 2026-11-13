@@ -332,6 +332,72 @@ describe('complete startup snapshots', () => {
       runtime.view('work', legacy.id, SYSTEM_ACTOR),
     ).rejects.toMatchObject({ code: 'PARAMETER_SNAPSHOT_MISSING' });
   });
+  it('does not infer an unstarted draft from a surviving creation log', async () => {
+    const { runtime, store, parameters } = setup();
+    const record = await store.createRecord('work', {
+      definition: 'work',
+      status: 'draft',
+      lifecycleVersion: 9,
+    });
+    await store.appendTransition({
+      lifecycle: 'work',
+      recordId: String(record.id),
+      transition: '$create',
+      from: null,
+      to: 'draft',
+      actorId: 'system',
+      input: {},
+      version: 1,
+      requestId: null,
+      at: new Date().toISOString(),
+    });
+    const read = vi.spyOn(parameters, 'readConfiguration');
+    await expect(
+      runtime.view('work', record.id, SYSTEM_ACTOR),
+    ).rejects.toMatchObject({ code: 'PARAMETER_START_UNKNOWN' });
+    await expect(
+      runtime.fire('work', record.id, 'submit', { actor: SYSTEM_ACTOR }),
+    ).rejects.toMatchObject({ code: 'PARAMETER_START_UNKNOWN' });
+    expect(read).not.toHaveBeenCalled();
+  });
+
+  it('keeps independent draft proof across edits and consumes it atomically on first submission', async () => {
+    const { runtime, store, parameters, save } = setup();
+    const created = await runtime.create('work', {}, { actor: SYSTEM_ACTOR });
+    const proof = () =>
+      store
+        .records('lifecycleCreationRequests')
+        .find((row) => row.fingerprint === '$parameter-start-v1');
+    expect(proof()).toMatchObject({ status: 'unstarted', revision: 0 });
+    store.patchRecord('work', created.record.id, {
+      lifecycleVersion: 8,
+      title: 'Edited draft',
+    });
+    expect(
+      (await runtime.view('work', created.record.id, SYSTEM_ACTOR))
+        .parameterValues,
+    ).toEqual({ wait: 100, second: 200 });
+    await save(300, 600, 0);
+    const failure = vi
+      .spyOn(parameters, 'saveSnapshot')
+      .mockRejectedValueOnce(new Error('storage failed'));
+    await expect(
+      runtime.fire('work', created.record.id, 'submit', {
+        actor: SYSTEM_ACTOR,
+      }),
+    ).rejects.toThrow('storage failed');
+    expect(proof()).toMatchObject({ status: 'unstarted', revision: 0 });
+    failure.mockRestore();
+    await runtime.fire('work', created.record.id, 'submit', {
+      actor: SYSTEM_ACTOR,
+    });
+    expect(proof()).toMatchObject({ status: 'started', revision: 1 });
+    expect(
+      (await runtime.view('work', created.record.id, SYSTEM_ACTOR))
+        .parameterValues,
+    ).toEqual({ wait: 300, second: 600 });
+  });
+
   it('bounds overdue refusal scans and resumes beyond the refused backlog on the next sweep', async () => {
     const { runtime, store, advance } = setup(true);
     for (let index = 0; index < 101; index++)

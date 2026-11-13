@@ -7,6 +7,7 @@ import {
   LifecycleRuntime,
   StoredLifecycleParameters,
   SYSTEM_ACTOR,
+  parameterIdentity,
   type LifecycleRecord,
   type ParameterGroup,
 } from '@nocobase/lifecycle';
@@ -17,7 +18,7 @@ import type { DatabaseManager } from '@nocobase/db';
 
 interface Types {
   record: LifecycleRecord;
-  state: 'waiting' | 'done';
+  state: 'draft' | 'waiting' | 'done';
   parameters: { left: number; right: number };
 }
 const group: ParameterGroup = {
@@ -44,7 +45,11 @@ const group: ParameterGroup = {
 };
 async function setup(
   database: DatabaseManager,
-  options: { fail?: boolean; effect?: (values: object) => void } = {},
+  options: {
+    fail?: boolean;
+    draft?: boolean;
+    effect?: (values: object) => void;
+  } = {},
 ) {
   await database.builder().createCollection('snapshotWork', (table) => {
     table.bigInt('id').primary().autoIncrement().notNull();
@@ -67,10 +72,17 @@ async function setup(
     version: 1,
     collection: 'snapshotWork',
     definitionField: 'definition',
-    initial: 'waiting',
-    states: ['waiting', { name: 'done', final: true }],
+    initial: options.draft ? 'draft' : 'waiting',
+    states: [
+      ...(options.draft ? ['draft' as const] : []),
+      'waiting',
+      { name: 'done', final: true },
+    ],
     parameters: { left: 1, right: 2 },
-    parameterConfiguration: { groups: [group] },
+    parameterConfiguration: {
+      groups: [group],
+      ...(options.draft ? { startTransition: 'submit' } : {}),
+    },
     onEnterState: {
       waiting: [
         () => {
@@ -93,7 +105,15 @@ async function setup(
           ],
         }
       : {},
-    transitions: { finish: { from: 'waiting', to: 'done' } },
+    transitions: {
+      finish: { from: 'waiting', to: 'done' },
+      ...(options.draft
+        ? {
+            submit: { from: 'draft' as const, to: 'waiting' as const },
+            withdraw: { from: 'waiting' as const, to: 'draft' as const },
+          }
+        : {}),
+    },
   });
   const runtime = () => {
     const instance = new LifecycleRuntime({
@@ -247,4 +267,113 @@ test('queued effects survive configuration edits and a new runtime, and retries 
     (await restarted.view('snapshotWork', created.record.id, SYSTEM_ACTOR))
       .state,
   ).toBe('done');
+});
+
+test('edited drafts keep authoritative proof and use configuration from their first successful submission', async ({
+  database,
+}) => {
+  const options = { draft: true, fail: true };
+  const { runtime, parameters, save } = await setup(database, options);
+  const instance = runtime();
+  const created = await instance.create(
+    'snapshotWork',
+    { title: 'draft' },
+    { actor: SYSTEM_ACTOR },
+  );
+  const recordId = String(created.record.id);
+  const proofId = parameterIdentity(
+    '$parameter-start-v1',
+    'tenant',
+    'snapshotWork',
+    recordId,
+    'proof',
+  );
+  await database.repository('snapshotWork').updateMany({
+    filter: { id: Number(recordId) },
+    values: { title: 'edited', lifecycleVersion: 7 },
+  });
+  await save(10, 0);
+  expect(
+    (await instance.view('snapshotWork', recordId, SYSTEM_ACTOR))
+      .parameterValues,
+  ).toEqual({ left: 10, right: 20 });
+  await expect(
+    instance.fire('snapshotWork', recordId, 'submit', { actor: SYSTEM_ACTOR }),
+  ).rejects.toThrow('start failure');
+  expect(
+    await parameters.snapshot('tenant', 'snapshotWork', recordId),
+  ).toBeUndefined();
+  expect(
+    await database
+      .repository('lifecycleExampleCreationRequests')
+      .findOne({ filter: { id: proofId } }),
+  ).toMatchObject({ status: 'unstarted', revision: 0 });
+  await save(20, 1);
+  options.fail = false;
+  await instance.fire('snapshotWork', recordId, 'submit', {
+    actor: SYSTEM_ACTOR,
+  });
+  expect(
+    await parameters.snapshot('tenant', 'snapshotWork', recordId),
+  ).toMatchObject({ revision: 2, values: { left: 20, right: 40 } });
+  expect(
+    await database
+      .repository('lifecycleExampleCreationRequests')
+      .findOne({ filter: { id: proofId } }),
+  ).toMatchObject({ status: 'started', revision: 1 });
+});
+
+test('lost submit logs and a missing snapshot never turn a withdrawn instance into a fresh draft', async ({
+  database,
+}) => {
+  const { runtime, parameters } = await setup(database, { draft: true });
+  const instance = runtime();
+  const created = await instance.create(
+    'snapshotWork',
+    { title: 'history' },
+    { actor: SYSTEM_ACTOR },
+  );
+  const recordId = String(created.record.id);
+  await instance.fire('snapshotWork', recordId, 'submit', {
+    actor: SYSTEM_ACTOR,
+  });
+  await instance.fire('snapshotWork', recordId, 'withdraw', {
+    actor: SYSTEM_ACTOR,
+  });
+  for (const transition of ['submit', 'withdraw'])
+    await database.repository('lifecycleExampleTransitions').deleteMany({
+      filter: { lifecycle: 'snapshotWork', recordId, transition },
+    });
+  await database.repository('lifecycleExampleParameterSnapshots').deleteMany({
+    filter: { id: parameterIdentity('tenant', 'snapshotWork', recordId) },
+  });
+  expect(
+    (
+      await database
+        .repository('lifecycleExampleTransitions')
+        .findMany({ filter: { lifecycle: 'snapshotWork', recordId } })
+    ).map((entry) => entry.transition),
+  ).toEqual(['$create']);
+  const read = vi.spyOn(parameters, 'readConfiguration');
+  await expect(
+    instance.view('snapshotWork', recordId, SYSTEM_ACTOR),
+  ).rejects.toMatchObject({ code: 'PARAMETER_SNAPSHOT_MISSING' });
+  await expect(
+    instance.fire('snapshotWork', recordId, 'submit', { actor: SYSTEM_ACTOR }),
+  ).rejects.toMatchObject({ code: 'PARAMETER_SNAPSHOT_MISSING' });
+  await database.repository('lifecycleExampleCreationRequests').deleteMany({
+    filter: {
+      id: parameterIdentity(
+        '$parameter-start-v1',
+        'tenant',
+        'snapshotWork',
+        recordId,
+        'proof',
+      ),
+    },
+  });
+  await expect(
+    instance.view('snapshotWork', recordId, SYSTEM_ACTOR),
+  ).rejects.toMatchObject({ code: 'PARAMETER_START_UNKNOWN' });
+  expect(read).not.toHaveBeenCalled();
 });

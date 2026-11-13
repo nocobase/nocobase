@@ -183,3 +183,72 @@ it.each(['missing', 'later'] as const)(
     }
   },
 );
+
+it('rejects an initial-state record whose creation survives but first submit history is missing', async () => {
+  const fixture = await history('missing');
+  try {
+    await fixture.database
+      .repository('lifecycleExampleTickets')
+      .deleteMany({ filter: { id: Number(fixture.recordId) } });
+    await fixture.database
+      .repository('lifecycleExampleTransitions')
+      .deleteMany({
+        filter: { lifecycle: 'tickets', recordId: fixture.recordId },
+      });
+    const created = await fixture.database
+      .repository('lifecycleExampleExpenses')
+      .createOne({
+        values: {
+          title: 'Lost startup history',
+          purpose: '',
+          items: [],
+          amountCents: 0,
+          applicantId: 'lin',
+          approverId: null,
+          failPayments: 0,
+          status: 'draft',
+          statusChangedAt: at,
+          lifecycleVersion: 3,
+          createdAt: at,
+          lifecycleDefinition: 'expenses',
+          parameterContract: 1,
+        },
+      });
+    const recordId = String(Number(created.record.id));
+    await fixture.database.repository('lifecycleExampleTransitions').createOne({
+      values: {
+        lifecycle: 'expenses',
+        recordId,
+        transition: '$create',
+        from: null,
+        to: 'draft',
+        actorId: 'lin',
+        input: {},
+        at,
+        version: 1,
+        requestId: null,
+        requestKey: '$v:1',
+      },
+    });
+    await fixture.database.repository('lifecycleExampleTransitions').createOne({
+      values: {
+        lifecycle: 'expenses',
+        recordId,
+        transition: 'withdraw',
+        from: 'awaitingManager',
+        to: 'draft',
+        actorId: 'lin',
+        input: {},
+        at,
+        version: 3,
+        requestId: null,
+        requestKey: '$v:3',
+      },
+    });
+    await expect(fixture.migrator.latest()).rejects.toThrow(
+      'START_HISTORY_UNKNOWN',
+    );
+  } finally {
+    await fixture.testDatabase.destroy();
+  }
+});

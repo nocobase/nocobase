@@ -31,14 +31,8 @@ const migration: MigrationDefinition = defineMigration({
             sort: (s) => s.field('version').asc(),
           });
           const start = logs.find((log) => log.transition === startTransition);
-          const creation = logs.find((log) => log.transition === '$create');
-          if (
-            startTransition !== '$create' &&
-            !start &&
-            creation &&
-            Number(creation.version) === 1
-          )
-            continue;
+          // Legacy code persisted no independent unstarted proof. A retained creation
+          // entry cannot rule out a lost submit entry, even in the initial state.
           conflicts.push({
             definition,
             recordId: String(Number(record.id)),

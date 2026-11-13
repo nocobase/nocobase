@@ -86,7 +86,7 @@ export interface LifecycleLogger {
 
 export interface LifecycleRuntimeOptions {
   readonly store: LifecycleStore;
-  /** Table with a string primary key; required only when create uses requestId. */
+  /** Owned receipt table; required for creation request IDs and configured draft start proofs. */
   readonly creationRequestsCollection?: string;
   /** Defaults to running each effect in process before `fire()` returns. */
   readonly dispatcher?: EffectDispatcher;
@@ -450,6 +450,7 @@ interface Registered {
 }
 
 interface ParameterExecution {
+  readonly store: LifecycleStore;
   readonly handle: unknown;
   readonly values: Map<string, Promise<Readonly<object>>>;
   readonly resolutions: Map<string, ParameterResolution>;
@@ -1110,6 +1111,7 @@ export class LifecycleRuntime {
       (store) =>
         this.parameterExecution.run(
           {
+            store,
             handle: store.transactionHandle,
             values: new Map(),
             resolutions: new Map(),
@@ -1171,7 +1173,7 @@ export class LifecycleRuntime {
         ? new Map(parent.resolutions)
         : new Map<string, ParameterResolution>();
     return this.parameterExecution.run(
-      { handle: store.transactionHandle, values, resolutions },
+      { store, handle: store.transactionHandle, values, resolutions },
       async () => {
         const result = await work();
         if (parentHandle !== undefined && parent?.handle === parentHandle)
@@ -1281,29 +1283,53 @@ export class LifecycleRuntime {
     }
     if (context.record) {
       const starts = this.startTransitions(registered);
-      const logs = await this.store.transaction(
-        (store) =>
-          store.listTransitions(
-            registered.lifecycle.name,
-            String(context.record!.id),
-          ),
-        context.transactionHandle === undefined
-          ? undefined
-          : { within: context.transactionHandle },
-      );
-      if (
-        !starts.length ||
-        logs.some((entry) => starts.includes(entry.transition)) ||
-        config.snapshotRequired?.(context.record)
-      )
+      const record = context.record;
+      const recordId = String(record.id);
+      if (!starts.length || config.snapshotRequired?.(record))
         throw new ParameterConfigurationError(
           'PARAMETER_SNAPSHOT_MISSING',
           'This started instance requires a verified historical parameter snapshot.',
         );
-      if (!logs.some((entry) => entry.transition === CREATE_TRANSITION))
+      const inspect = async (store: LifecycleStore): Promise<void> => {
+        // A positive, independently persisted start state survives transition-log retention.
+        // The business concurrency counter and the absence of a submit log prove nothing.
+        const proof = await store.findRecord(
+          this.creationRequestsCollection,
+          this.parameterStartIdentity(
+            scope,
+            registered.lifecycle.name,
+            recordId,
+          ),
+        );
+        if (
+          proof?.status === 'unstarted' &&
+          proof.fingerprint === '$parameter-start-v1' &&
+          proof.revision === 0 &&
+          proof.recordId === recordId
+        )
+          return;
+        // Logs only classify the error; they never authorize a configuration fallback.
+        const logs =
+          proof?.status === 'started'
+            ? []
+            : await store.listTransitions(registered.lifecycle.name, recordId);
         throw new ParameterConfigurationError(
-          'PARAMETER_START_UNKNOWN',
-          'The instance has no reliable creation or start history; migrate it before execution.',
+          proof?.status === 'started' ||
+            logs.some((entry) => starts.includes(entry.transition))
+            ? 'PARAMETER_SNAPSHOT_MISSING'
+            : 'PARAMETER_START_UNKNOWN',
+          'The instance has no complete snapshot or authoritative unstarted proof; migrate it before execution.',
+        );
+      };
+      const execution = this.parameterExecution.getStore();
+      if (execution && execution.handle === context.transactionHandle)
+        await inspect(execution.store);
+      else
+        await this.store.transaction(
+          inspect,
+          context.transactionHandle === undefined
+            ? undefined
+            : { within: context.transactionHandle },
         );
     }
     const current = await config.store.readConfiguration(
@@ -1349,6 +1375,21 @@ export class LifecycleRuntime {
     return { scope, revision: current?.revision ?? 0, values, sources };
   }
 
+  private parameterStartIdentity(
+    scope: string,
+    lifecycle: string,
+    recordId: string,
+  ): string {
+    // A reserved namespace, distinct from actor/request identities.
+    return parameterIdentity(
+      '$parameter-start-v1',
+      scope,
+      lifecycle,
+      recordId,
+      'proof',
+    );
+  }
+
   private async bindParameterSnapshot(
     registered: Registered,
     context: Omit<ParameterReadContext<LifecycleTypes>, 'lifecycle' | 'key'>,
@@ -1383,6 +1424,33 @@ export class LifecycleRuntime {
       )
     )
       return;
+    if (starts.length) {
+      const execution = this.parameterExecution.getStore();
+      if (!execution || execution.handle !== context.transactionHandle)
+        throw new Error(
+          'Parameter start proof must join the startup transaction.',
+        );
+      const claimed = await execution.store.updateRecordIf(
+        this.creationRequestsCollection,
+        this.parameterStartIdentity(
+          resolution.scope,
+          registered.lifecycle.name,
+          String(context.record.id),
+        ),
+        {
+          stateField: 'status',
+          state: 'unstarted',
+          versionField: 'revision',
+          version: 0,
+        },
+        { status: 'started', revision: 1, at: this.clock().toISOString() },
+      );
+      if (!claimed)
+        throw new ParameterConfigurationError(
+          'CONFIGURATION_CONFLICT',
+          'The parameter start proof changed; retry the startup request.',
+        );
+    }
     await config.store.saveSnapshot(
       {
         ...resolution,
@@ -1929,6 +1997,29 @@ export class LifecycleRuntime {
             this.parameterExecution
               .getStore()
               ?.resolutions.set(moveKey(name, record.id), creationResolution);
+          if (
+            registered.parameterConfiguration &&
+            this.startTransitions(registered).length
+          ) {
+            if (!creationResolution)
+              throw new Error(
+                'Draft creation requires an authoritative parameter scope.',
+              );
+            await store.createRecord(this.creationRequestsCollection, {
+              id: this.parameterStartIdentity(
+                creationResolution.scope,
+                name,
+                String(record.id),
+              ),
+              status: 'unstarted',
+              revision: 0,
+              actorId: options.actor.id,
+              fingerprint: '$parameter-start-v1',
+              recordId: String(record.id),
+              entryId: null,
+              at,
+            });
+          }
           await this.bindParameterSnapshot(
             registered,
             {
