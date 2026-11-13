@@ -34,8 +34,9 @@ export class FoundationProvider extends ServiceProvider<AppPluginApplication> {
         database: container.resolve(databaseManagerToken),
         appName: this.app.appName,
         executor,
-        collector: () =>
+        collector: (signal) =>
           new DefaultFoundationService({
+            signal,
             container: this.app.container,
             config: this.app.config,
             rootDir,

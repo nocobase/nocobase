@@ -61,10 +61,9 @@ export async function renderAuthenticatedClient(
       throw new Error(`Member registration failed: ${await response.text()}`);
   }
   const authz = server.application.container.resolve(authorizationToken);
-  const session = await signIn(
-    server,
-    options.member || sharedServer ? member : DEFAULT_ADMIN_CREDENTIALS,
-  );
+  const credentials =
+    options.member || sharedServer ? member : DEFAULT_ADMIN_CREDENTIALS;
+  const session = await signIn(server, credentials);
   if (sharedServer && !options.member) {
     await authz.permissionSets.assign({
       id: randomUUID(),
@@ -83,7 +82,10 @@ export async function renderAuthenticatedClient(
       subject: { type: 'user', id: session.user.id },
     });
   }
-  return renderClient(server, session, permissionSetKey, ui, options);
+  return {
+    ...(await renderClient(server, session, permissionSetKey, ui, options)),
+    credentials,
+  };
 }
 
 function createClientTestServer() {
@@ -113,7 +115,8 @@ function createClientTestServer() {
 /**
  * Reuse installation within a file whose tests only change their own identity's state.
  * Each render gets a new user, session, grants, cookies and client. Tests that mutate
- * shared application configuration or business data use renderAuthenticatedClient instead.
+ * shared application configuration or business data use renderAuthenticatedClient instead,
+ * unless they explicitly reset that state before each render.
  */
 export function createAuthenticatedClientRenderer() {
   let server: TestApp | undefined;
