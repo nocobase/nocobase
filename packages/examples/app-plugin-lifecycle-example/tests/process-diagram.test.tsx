@@ -112,7 +112,6 @@ describe('example process diagram', () => {
       const configurableDescription: LifecycleDescription = {
         ...description,
         parameterConfiguration: {
-          readMode: 'live',
           groups: [
             {
               key: 'timing',

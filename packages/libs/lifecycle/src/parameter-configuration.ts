@@ -46,6 +46,11 @@ export interface ParameterResolution {
   readonly sources: Readonly<Record<string, ParameterSource>>;
 }
 export interface ParameterSnapshot extends ParameterResolution {
+  readonly recoveredFrom?: {
+    readonly transitionId: string;
+    readonly usageId?: string;
+    readonly groupRevisions?: Readonly<Record<string, number>>;
+  };
   readonly lifecycle: string;
   readonly recordId: string;
   readonly at: string;

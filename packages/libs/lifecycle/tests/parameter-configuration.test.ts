@@ -485,7 +485,7 @@ describe('configured action and continuation boundaries', () => {
     expect((await store.findRecord('orders', record.id))?.status).toBe('draft');
   });
   it('allows a replay-aware action owner to avoid reading or writing parameter facts twice', async () => {
-    const { runtime, parameters, save } = setup();
+    const { store, runtime, parameters, save } = setup();
     const record = (await runtime.create('orders', {}, { actor: SYSTEM_ACTOR }))
       .record;
     const execute = async (): Promise<unknown> =>

@@ -462,11 +462,31 @@ export function History({
       <p className='text-sm text-muted-foreground'>{t('common.noHistory')}</p>
     );
   return (
-    <ol className='space-y-3 border-l pl-4'>
-      {entries.map((entry) => (
-        <li key={entry.key}>{entry.node}</li>
-      ))}
-    </ol>
+    <div className='space-y-3'>
+      {(view.parameterSnapshot || view.parameterPreview) && (
+        <details>
+          <summary>
+            {t(
+              view.parameterSnapshot
+                ? 'common.parameterSnapshot'
+                : 'common.parameterPreview',
+            )}
+          </summary>
+          <pre className='overflow-auto text-xs'>
+            {JSON.stringify(
+              view.parameterSnapshot ?? view.parameterPreview,
+              null,
+              2,
+            )}
+          </pre>
+        </details>
+      )}
+      <ol className='space-y-3 border-l pl-4'>
+        {entries.map((entry) => (
+          <li key={entry.key}>{entry.node}</li>
+        ))}
+      </ol>
+    </div>
   );
 }
 

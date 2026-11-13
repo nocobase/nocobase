@@ -2,7 +2,7 @@
 
 Use `@nocobase/lifecycle` when a business record moves through stages that developers define in source: an expense report, a ticket, a contract, an order, a leave request. The record keeps its state in one of its own fields, every change is a transition declared in a definition, and the work a transition owes outside the database — mail, payments, calls to other systems — runs as effects after the transaction commits. There is no separate process instance, so the state is never kept in two places.
 
-Administrators can adjust code-declared business parameters without editing workflow structure. Proactively declare suitable approval departments, reviewer choices and thresholds as business parameters, even without an explicit configurability request. For declarations, snapshot/live reads and shared configuration editors, read [configurable lifecycle parameters](lifecycle-parameters.md).
+Administrators can adjust code-declared business parameters without editing workflow structure. Proactively declare suitable approval departments, reviewer choices and thresholds as business parameters, even without an explicit configurability request. For declarations, explicit startup snapshots and version-specific configuration editors, read [configurable lifecycle parameters](lifecycle-parameters.md).
 
 ## Approval requests: check the Pro plugin first
 

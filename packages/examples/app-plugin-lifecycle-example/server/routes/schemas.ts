@@ -421,8 +421,9 @@ export const DescriptionViewSchema: z.ZodType<LifecycleDescriptionView> = z
     description: z.object({
       parameterConfiguration: z
         .object({
-          readMode: z.string(),
-          snapshotTransition: z.string().optional(),
+          startTransition: z
+            .union([z.string(), z.array(z.string())])
+            .optional(),
           groups: z.array(
             z.object({
               key: z.string(),
@@ -439,7 +440,6 @@ export const DescriptionViewSchema: z.ZodType<LifecycleDescriptionView> = z
                     'reviewers',
                   ]),
                   title: z.string(),
-                  readMode: z.enum(['snapshot', 'live']).optional(),
                   minimum: z.number().optional(),
                   maximum: z.number().optional(),
                   bindings: z

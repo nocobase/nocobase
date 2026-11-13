@@ -18,52 +18,52 @@ const enUS = {
       paymentWindowMinutes: {
         title: 'Payment timeout (minutes)',
         description:
-          'Cancel an unpaid order after this wait. Changes apply to newly scheduled payment timers; existing timers keep their due time.',
+          'Fixed at instance start. Changes affect only future starts of this version.',
       },
       escalateAfterMinutes: {
         title: 'Manager review timeout (minutes)',
         description:
-          'Escalate a pending manager review after this wait. Changes apply to newly scheduled review timers; existing timers keep their due time.',
+          'Fixed at instance start. Changes affect only future starts of this version.',
       },
       waitMinutes: {
         title: 'Customer reply timeout (minutes)',
         description:
-          'Close a ticket if the customer does not reply within this wait. Changes apply to newly scheduled timers; existing timers keep their due time.',
+          'Fixed at instance start. Changes affect only future starts of this version.',
       },
       querySeconds: {
         title: 'Invoice status query delay (seconds)',
         description:
-          'Query the invoice provider if no callback arrives within this wait. Changes apply to newly scheduled queries; existing queries keep their due time.',
+          'Fixed at instance start. Changes affect only future starts of this version.',
       },
       pollSeconds: {
         title: 'Export progress check interval (seconds)',
         description:
-          'Wait this long before checking an export in progress. Changes apply to newly scheduled checks; existing checks keep their due time.',
+          'Fixed at instance start. Changes affect only future starts of this version.',
       },
       maxMinutes: {
         title: 'Export completion timeout (minutes)',
         description:
-          'Set the completion deadline when an export job starts. An unfinished job times out at that deadline. Changes do not move existing job deadlines.',
+          'Fixed at instance start. Changes affect only future starts of this version.',
       },
       periodMinutes: {
         title: 'Subscription renewal period (minutes)',
         description:
-          'Use this duration to calculate the new period end after a successful charge. Changes apply after the next successful charge; the current period end stays fixed.',
+          'Fixed at instance start. Changes affect only future starts of this version.',
       },
       dunningMinutes: {
         title: 'Failed renewal payment retry interval (minutes)',
         description:
-          'Wait this long before retrying a failed renewal payment. Changes apply to newly scheduled retries; existing retries keep their due time.',
+          'Fixed at instance start. Changes affect only future starts of this version.',
       },
       maxDunning: {
         title: 'Renewal payment failure limit',
         description:
-          'Cancel the subscription at the next automatic retry if its failed payment count has reached this limit. Changes apply at the next retry decision.',
+          'Fixed at instance start. Changes affect only future starts of this version.',
       },
       reopenDays: {
         title: 'Ticket reopening deadline (days)',
         description:
-          'Allow reopening within this many days after a ticket closes; otherwise a new ticket is required. Each reopening request uses the latest setting.',
+          'Fixed at instance start. Changes affect only future starts of this version.',
       },
     },
     loading: 'Loading parameters…',
@@ -71,7 +71,7 @@ const enUS = {
     description:
       'Change only code-declared values. Workflow structure, decisions and timeouts stay in code.',
     ruleExplanation:
-      'All conditions in one group must match. Separate groups are added together. Put alternative users in separate groups.',
+      'All conditions in one group must match. Separate groups are added together. Put alternative users in separate groups. Selected references are fixed; current membership and eligibility are resolved during execution.',
     allConditions: 'Match all these conditions',
     alsoInclude: 'Also include',
     selectionType: 'Selection type',
@@ -87,9 +87,7 @@ const enUS = {
     codeDefaults: 'Code defaults',
     databaseVersion: 'Saved configuration',
     snapshotEffect:
-      'Snapshot: fixed at first submission; retained after return or withdrawal',
-    liveEffect:
-      'Future parameter reads use the latest configuration; existing timers and deadlines stay fixed.',
+      'Fixed at instance start. Changes affect only future starts of this version.',
     yes: 'Yes',
     no: 'No',
     invalidObject: 'Enter a valid JSON object.',
@@ -105,10 +103,10 @@ const enUS = {
     noCandidates: 'No eligible candidates; submission will be refused.',
     editCurrent: 'Edit current configuration',
     historyBoundary:
-      'This edits current configuration. Historical facts and existing assigned candidates remain unchanged.',
+      'Fixed at instance start. Changes affect only future starts of this version.',
     history: 'Actual parameter usage',
-    effectivePreview: 'Effective values for this record now',
-    firstSnapshot: 'First-submission snapshot',
+    effectivePreview: 'Current configuration preview before start',
+    firstSnapshot: 'Instance start snapshot',
     notRecorded: 'Not recorded',
     diagramEntry: 'Optional diagram entry',
     diagramHint:

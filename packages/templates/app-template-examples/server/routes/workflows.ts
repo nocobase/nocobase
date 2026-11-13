@@ -273,17 +273,22 @@ export const workflowRoutes: AppApiRouteContribution<Application> =
         },
       }),
       apiValidator('param', WorkflowParams),
+      apiValidator('query', WorkflowVersionQuery.required()),
       async (c) => {
         const { workflowId } = c.req.valid('param');
-        const { workflow } = await service.definition(workflowId);
+        const { workflow, definition } = await service.definition(
+          workflowId,
+          c.req.valid('query').version,
+        );
         return c.json({
           data:
             workflow.source === 'office'
               ? {
                   kind: 'office',
-                  ...(await officeParameters.read(workflow.name)),
+                  definition: definition.name,
+                  ...(await officeParameters.read(definition.name)),
                 }
-              : await parameters.readWorkflow('zhao', workflow.name),
+              : await parameters.readWorkflow('zhao', definition.name),
         });
       },
     );
@@ -301,17 +306,20 @@ export const workflowRoutes: AppApiRouteContribution<Application> =
         },
       }),
       apiValidator('param', WorkflowParams),
+      apiValidator('query', WorkflowVersionQuery.required()),
       apiValidator(
         'json',
         z.discriminatedUnion('kind', [
           z.strictObject({
             kind: z.literal('lifecycle'),
+            definition: z.string().min(1),
             values: z.record(z.string(), z.unknown()),
             expectedRevision: z.number().int().min(0),
             requestId: z.string().min(1).max(100),
           }),
           z.strictObject({
             kind: z.literal('office'),
+            definition: z.string().min(1),
             values: OfficeWorkflowValues,
             organization: z
               .strictObject({
@@ -338,8 +346,19 @@ export const workflowRoutes: AppApiRouteContribution<Application> =
       ),
       async (c) => {
         const { workflowId } = c.req.valid('param');
-        const { workflow } = await service.definition(workflowId);
+        const { workflow, definition } = await service.definition(
+          workflowId,
+          c.req.valid('query').version,
+        );
         const input = c.req.valid('json');
+        if (input.definition !== definition.name)
+          throw new ApiError({
+            status: 'ABORTED',
+            domain: 'examples',
+            reason: 'PARAMETER_DEFINITION_MISMATCH',
+            message:
+              'The parameter draft belongs to another definition version.',
+          });
         if (input.kind !== workflow.source)
           throw new ApiError({
             status: 'INVALID_ARGUMENT',
@@ -351,7 +370,7 @@ export const workflowRoutes: AppApiRouteContribution<Application> =
           data:
             input.kind === 'office'
               ? await officeParameters.save(
-                  workflow.name,
+                  definition.name,
                   input.values,
                   input.expectedRevision,
                   input.organization,
@@ -361,7 +380,7 @@ export const workflowRoutes: AppApiRouteContribution<Application> =
                   input.expectedRevision,
                   input.requestId,
                   'zhao',
-                  workflow.name,
+                  definition.name,
                 ),
         });
       },

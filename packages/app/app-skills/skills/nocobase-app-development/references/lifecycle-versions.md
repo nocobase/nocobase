@@ -31,18 +31,9 @@ Shared code counts as part of a version. A guard, effect, service or helper that
 6. Decide the entry points as described below.
 7. Test both versions: an old record still follows the old graph, a new record follows the new one, each version's trigger handles only its own records, and a record of one version is refused by the other with `DEFINITION_MISMATCH`.
 
-## Parameters the versions share
+## Parameters belong to the definition version
 
-All versions of a key share one stored configuration per parameter group: the store keys it by the process (`ParameterReadContext.key`), not by the definition name. Snapshot fields of a record are fixed at its `snapshotTransition` and stored under the record's definition name.
-
-The stored configuration of a group must match its fields exactly, and a group has one `schemaVersion`, so a group several versions declare must be identical in each; registration refuses otherwise. Hence:
-
-- A new version that keeps the parameter fields reuses the existing groups unchanged.
-- A group that any record has used is frozen: never add, remove, retype or reinterpret its fields, raise its `schemaVersion` or rename its key. (The group key here is the parameter group's `key`, not the process key.)
-- New parameters go in a new group. The new version declares the existing groups and the new one; the old version keeps declaring only the existing ones.
-- A management page that edits a process shows the union of every version's groups and saves each group once.
-
-With these rules an old record resolves the same values as before, and no version meets `CONFIGURATION_INCOMPATIBLE` or an unknown or missing parameter.
+Each definition version freezes its contract, including meaning, units, validation and defaults, and stores configuration independently by concrete definition name. A group can evolve independently in a new version; there is no cross-version group freezing rule. Administrators edit values only. An explicit copy from a previous version must validate against the target contract and becomes independent. At formal business start the runtime atomically saves complete effective values, revision and fixed time. All later execution uses that immutable instance snapshot. Return, withdrawal and resubmission of the same instance retain it. Identify start boundaries explicitly; see [parameter contracts and snapshots](lifecycle-parameters.md).
 
 ## Entry points
 

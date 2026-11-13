@@ -78,7 +78,11 @@ export const invoiceLifecycle: Lifecycle<InvoiceTypes> =
       { name: 'issued', final: true },
       'issueFailed',
     ],
-    parameterConfiguration: { readMode: 'live', groups: [invoiceTimingGroup] },
+    dueAtField: 'lifecycleDueAt',
+    parameterConfiguration: {
+      startTransition: 'submit',
+      groups: [invoiceTimingGroup],
+    },
     parameters: { querySeconds: 30 },
     transitions: {
       submit: { title: 'Request invoice', from: 'draft', to: 'submitting' },

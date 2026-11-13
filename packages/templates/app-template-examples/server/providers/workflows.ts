@@ -9,6 +9,7 @@ import {
   lifecycleDescriptionViewAsync,
   LifecycleError,
   type LifecycleRuntime,
+  type LifecycleRecord,
 } from '@nocobase/lifecycle';
 import type {
   WorkflowSummary,
@@ -258,6 +259,7 @@ export class WorkflowsService {
   public async definition(
     id: string,
     number?: number,
+    record?: LifecycleRecord,
   ): Promise<WorkflowDefinition> {
     const resolved = this.resolve(id);
     const { group } = resolved;
@@ -271,7 +273,7 @@ export class WorkflowsService {
         ? this.executionStats(group, [selected.name])
         : undefined,
       lifecycleDescriptionViewAsync(group.runtime, selected.name, {
-        record: null,
+        record: record ?? null,
         transactionHandle: undefined,
       }),
     ]);
@@ -426,7 +428,7 @@ export class WorkflowsService {
     if (!version) throw missing();
     const view = await group.runtime.view(name, recordId, { id: actorId });
     return {
-      ...(await this.definition(group.id, version.version)),
+      ...(await this.definition(group.id, version.version, view.record)),
       view: { ...view, record: { ...view.record, id: String(view.record.id) } },
     };
   }

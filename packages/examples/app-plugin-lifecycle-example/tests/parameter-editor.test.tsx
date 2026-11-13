@@ -30,7 +30,7 @@ const group: ParameterGroupView = {
     {
       lifecycle: 'expenses',
       field: 'financeLimit',
-      readMode: 'snapshot',
+
       bindings: [{ state: 'awaitingManager' }],
     },
   ],

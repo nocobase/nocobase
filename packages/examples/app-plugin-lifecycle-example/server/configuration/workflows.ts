@@ -25,28 +25,6 @@ export const parameterDefinitions: readonly ParameterDefinition[] = [
   ticketLifecycle,
 ];
 
-/**
- * One entry per process, by its key: every version of a process shares one
- * stored configuration, holding the groups any of its versions uses. A
- * group stays as it is once used, so a field later versions add lives in a
- * new group; its default comes from the latest version declaring it.
- */
-export const parameterWorkflows: readonly {
-  name: string;
-  parameters?: object;
-  parameterConfiguration?: { groups: readonly ParameterGroup[] };
-}[] = [...new Set(parameterDefinitions.map(({ key }) => key))].map((key) => {
-  const versions = parameterDefinitions.filter((item) => item.key === key);
-  const groups = new Map<string, ParameterGroup>();
-  for (const version of versions)
-    for (const group of version.parameterConfiguration?.groups ?? [])
-      if (!groups.has(group.key)) groups.set(group.key, group);
-  return {
-    name: key,
-    parameters: Object.assign(
-      {},
-      ...versions.map((version) => version.parameters ?? {}),
-    ) as object,
-    parameterConfiguration: { groups: [...groups.values()] },
-  };
-});
+/** Every definition version owns a separate configuration and contract. */
+export const parameterWorkflows: readonly ParameterDefinition[] =
+  parameterDefinitions;

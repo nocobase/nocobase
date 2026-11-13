@@ -284,7 +284,7 @@ describeMigration('202610160003_lifecycle_example_workflow_parameters', {
   up: async ({ database }) => {
     const { StoredLifecycleParameters, createRepositoryLifecycleStore } =
       await import('@nocobase/lifecycle');
-    const { PARAMETER_COLLECTIONS, workflowParameterStore } =
+    const { PARAMETER_COLLECTIONS } =
       await import('../server/configuration/store.js');
     const store = new StoredLifecycleParameters(
       createRepositoryLifecycleStore(database),
@@ -292,10 +292,7 @@ describeMigration('202610160003_lifecycle_example_workflow_parameters', {
     );
     for (const name of ['reviewerDemo', 'reviewerLiveDemo']) {
       expect(
-        await workflowParameterStore(store, name).read(
-          'demo',
-          'financeReviewers',
-        ),
+        await store.read('demo', `lifecycle.${name}.financeReviewers`),
       ).toMatchObject({
         revision: 1,
         values: {
@@ -312,7 +309,7 @@ describeMigration('202610160005_lifecycle_example_unified_parameters', {
   before: async ({ database }) => {
     const { StoredLifecycleParameters, createRepositoryLifecycleStore } =
       await import('@nocobase/lifecycle');
-    const { PARAMETER_COLLECTIONS, workflowParameterStore } =
+    const { PARAMETER_COLLECTIONS } =
       await import('../server/configuration/store.js');
     const {
       expenseParameterGroup,
@@ -336,9 +333,9 @@ describeMigration('202610160005_lifecycle_example_unified_parameters', {
         { reviewerRule: [{ group: 1, type: 'user', referenceId: 'sun' }] },
       ],
     ] as const) {
-      await workflowParameterStore(store, workflow).save({
+      await store.save({
         scope: 'demo',
-        group,
+        group: { ...group, key: `lifecycle.${workflow}.${group.key}` },
         values: values as import('@nocobase/lifecycle').JsonObject,
         expectedRevision: 0,
         requestId: group.key,

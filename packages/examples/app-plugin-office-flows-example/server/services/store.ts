@@ -1,3 +1,5 @@
+import { OfficeParameterStore } from './parameter-snapshots.js';
+import { SYSTEM_ACTOR, type LifecycleRuntime } from '@nocobase/lifecycle';
 import { OfficeWorkflowParameterService } from './workflow-parameters.js';
 import { randomUUID } from 'node:crypto';
 import { setTimeout as delay } from 'node:timers/promises';
@@ -139,6 +141,13 @@ export interface DispatchResult {
  * a unique key.
  */
 export class OfficeStore {
+  private runtime?: LifecycleRuntime;
+  public attachRuntime(runtime: LifecycleRuntime): void {
+    this.runtime = runtime;
+  }
+  public parameterStore(): OfficeParameterStore {
+    return new OfficeParameterStore(this.database);
+  }
   public constructor(
     private readonly database: DatabaseManager,
     private readonly clock: () => Date = (): Date => new Date(),
@@ -151,13 +160,14 @@ export class OfficeStore {
    * connection, and a read elsewhere would wait for it.
    */
   public bound(handle: unknown): OfficeStore {
-    return handle === undefined
-      ? this
-      : new OfficeStore(
-          this.database,
-          this.clock,
-          handle as DatabaseConnection,
-        );
+    if (handle === undefined) return this;
+    const bound = new OfficeStore(
+      this.database,
+      this.clock,
+      handle as DatabaseConnection,
+    );
+    if (this.runtime) bound.attachRuntime(this.runtime);
+    return bound;
   }
 
   public repository(collection: string): Repository {
@@ -224,13 +234,31 @@ export class OfficeStore {
     }
   }
 
-  public async calendar(): Promise<WorkCalendar> {
-    const rows = (
-      await new OfficeWorkflowParameterService(
-        this.database,
-        this.connection,
-      ).read('dataRequests')
-    ).values.holidays!;
+  public async calendar(recordId?: string): Promise<WorkCalendar> {
+    const snapshot =
+      recordId === undefined
+        ? undefined
+        : await this.parameterStore().snapshot(
+            'office',
+            'dataRequests',
+            recordId,
+            this.connection,
+          );
+    if (recordId !== undefined && !snapshot)
+      throw new Error(
+        'PARAMETER_SNAPSHOT_MISSING: data request calendar requires its start snapshot.',
+      );
+    const rows = snapshot
+      ? (snapshot.values.holidays as unknown as {
+          date: string;
+          kind: string;
+        }[])
+      : (
+          await new OfficeWorkflowParameterService(
+            this.database,
+            this.connection,
+          ).read('dataRequests')
+        ).values.holidays!;
     return createWorkCalendar(
       rows.map((row) => ({
         date: text(row.date),
@@ -441,27 +469,33 @@ export class OfficeStore {
         }
         const row = plain(await rows.findOne({ filter: { id: rowId } }))!;
         const now = this.now();
-        const record = await connection
-          .repository(target.collection)
-          .createOne({
-            values: {
-              number,
-              rootId: idOf(row.rootId),
-              parentId: idOf(row.parentId),
-              assignmentId: rowId,
-              departmentName: text(row.departmentName),
-              assignees: people(row.assignees),
-              ccHeads: people(row.ccHeads),
-              ccLeaders: people(row.ccLeaders),
-              signedBy: [],
-              attachments: [],
-              status: target.initial,
-              statusChangedAt: now,
-              lifecycleVersion: 0,
-              lifecycleDefinition: target.definition,
-              createdAt: now,
-            },
-          });
+        if (!this.runtime)
+          throw new Error(
+            'Task dispatch requires a registered lifecycle runtime.',
+          );
+        const record = await this.runtime.create(
+          target.definition,
+          {
+            number,
+            rootId: idOf(row.rootId),
+            parentId: idOf(row.parentId),
+            assignmentId: rowId,
+            departmentName: text(row.departmentName),
+            assignees: people(row.assignees),
+            ccHeads: people(row.ccHeads),
+            ccLeaders: people(row.ccLeaders),
+            signedBy: [],
+            attachments: [],
+            createdAt: now,
+          },
+          {
+            actor: SYSTEM_ACTOR,
+            state: target.initial,
+            requestId: `dispatch:${level}:${rowId}`,
+            requestInput: { rowId, level },
+            transaction: connection,
+          },
+        );
         const id = idOf(record.record.id);
         // Publish ownership with the task and the dispatch claim. A retry
         // reuses the existing task, so it cannot duplicate these memberships.

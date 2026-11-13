@@ -122,8 +122,8 @@ export const ticketLifecycle: Lifecycle<TicketTypes> =
     },
     states: ['new', 'open', 'awaitingCustomer', 'closed'],
     // A real help desk waits days; the example waits minutes so you can watch it.
+    dueAtField: 'lifecycleDueAt',
     parameterConfiguration: {
-      readMode: 'live',
       groups: [
         ticketParameterGroup,
         notificationParameterGroup,

@@ -141,9 +141,9 @@ export const expenseLifecycle: Lifecycle<ExpenseTypes> =
       { name: 'paid', final: true },
     ],
     // A real approval escalates after days; the example after minutes.
+    dueAtField: 'lifecycleDueAt',
     parameterConfiguration: {
-      readMode: 'snapshot',
-      snapshotTransition: 'submit',
+      startTransition: 'submit',
       groups: [expenseParameterGroup, expenseTimingGroup],
     },
     parameters: {

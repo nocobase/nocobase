@@ -294,6 +294,8 @@ export interface CanOptions {
 }
 
 export interface CreateOptions {
+  /** Stable server-normalized input, excluding generated timestamps, for request deduplication. */
+  readonly requestInput?: JsonObject;
   /** Reuse for retries of one creation, scoped to the definition, tenant and actor. */
   readonly requestId?: string;
   readonly actor: LifecycleActor;
@@ -694,6 +696,7 @@ export class LifecycleRuntime {
    * lifecycle call inside its transition, and with which code, so the log
    * says so on the 1st, 2nd, 4th… sweep. Bounded: the oldest are forgotten.
    */
+  private readonly triggerCursors = new Map<string, IdleRecordCursor>();
   private readonly triggerRefusals = new Map<
     string,
     { readonly code: string; readonly count: number }
@@ -770,6 +773,10 @@ export class LifecycleRuntime {
       throw new LifecycleError(
         'INVALID_DEFINITION',
         'The parameter storage adapter is missing a required capability.',
+      );
+    if (options.parameters || options.parameterProvider)
+      this.logger.warn(
+        'Parameter override readers are deprecated. New configurable definitions must declare a start contract and use instance snapshots.',
       );
     this.checkVersion(lifecycle as unknown as Lifecycle<LifecycleTypes>);
     if (lifecycle.defaulted.length)
@@ -851,9 +858,7 @@ export class LifecycleRuntime {
    * version taken, a key that is another definition's name, or a different
    * collection or record fields, which would split one process's records
    * or let one version read another's. Every version of a key needs a
-   * definition field once there are two, and a parameter group several
-   * versions use must be the same group in each: they share one stored
-   * configuration, which must stay valid for the oldest of them.
+   * definition field once there are two. Each version owns its parameter contract.
    */
   private checkVersion(lifecycle: Lifecycle<LifecycleTypes>): void {
     const refuse = (message: string): never => {
@@ -1229,6 +1234,12 @@ export class LifecycleRuntime {
           !Number.isFinite(Date.parse(snapshot.at))
         )
           throw new Error('Invalid snapshot identity or provenance.');
+        if (
+          Object.keys(snapshot.values).some(
+            (key) => !Object.hasOwn(registered.lifecycle.parameters, key),
+          )
+        )
+          throw new Error('Unknown snapshot parameter.');
         const values: JsonObject = {};
         for (const group of definition.groups) {
           const normalized = normalizeParameterValues(
@@ -1289,7 +1300,12 @@ export class LifecycleRuntime {
           'PARAMETER_SNAPSHOT_MISSING',
           'This started instance requires a verified historical parameter snapshot.',
         );
-      if (!logs.some((entry) => entry.transition === CREATE_TRANSITION))
+      if (
+        !logs.some((entry) => entry.transition === CREATE_TRANSITION) ||
+        logs.length !==
+          Number(context.record[registered.lifecycle.versionField]) ||
+        logs.some((entry, index) => entry.version !== index + 1)
+      )
         throw new ParameterConfigurationError(
           'PARAMETER_START_UNKNOWN',
           'The instance has no reliable creation or start history; migrate it before execution.',
@@ -1803,7 +1819,7 @@ export class LifecycleRuntime {
               options.requestId,
             );
             const fingerprint = canonical({
-              values,
+              values: options.requestInput ?? values,
               state,
               input: options.input ?? {},
             } as JsonObject);
@@ -2657,9 +2673,15 @@ export class LifecycleRuntime {
               ? 0
               : trigger.definition.after(parameters)),
         ).toISOString();
-        let after: IdleRecordCursor | undefined;
+        const cursorKey = `${lifecycle.name}:${trigger.name}`;
+        let after = this.triggerCursors.get(cursorKey);
+        let scanned = 0;
+        let exhausted = false;
         let firedHere = 0;
-        while (firedHere < trigger.batchSize) {
+        while (
+          firedHere < trigger.batchSize &&
+          scanned < trigger.batchSize * 10
+        ) {
           const records = await this.store.findIdleRecords(
             lifecycle.collection,
             {
@@ -2685,6 +2707,7 @@ export class LifecycleRuntime {
                   }),
             },
           );
+          scanned += records.length;
           const snapshots = new Map<string, ParameterSnapshot>();
           const registration = this.get(lifecycle.name).parameterConfiguration;
           if (registration) {
@@ -2793,7 +2816,10 @@ export class LifecycleRuntime {
             }
           }
           const last = records.at(-1);
-          if (records.length < trigger.batchSize || !last) break;
+          if (records.length < trigger.batchSize || !last) {
+            exhausted = true;
+            break;
+          }
           const next: IdleRecordCursor = {
             changedAt: String(
               last[
@@ -2813,6 +2839,9 @@ export class LifecycleRuntime {
             break;
           after = next;
         }
+        if (!exhausted && after && scanned >= trigger.batchSize * 10)
+          this.triggerCursors.set(cursorKey, after);
+        else this.triggerCursors.delete(cursorKey);
         fired += firedHere;
       }
     }
@@ -3829,11 +3858,6 @@ export class LifecycleRuntime {
 }
 
 /** Detach provider-owned values before freezing callback input. */
-/**
- * Whether two versions declare the same parameter group: the fields, their
- * types and the schema version a stored configuration was validated
- * against. Titles and bindings may differ; the stored values may not.
- */
 function freezeParameters(values: object): Readonly<object> {
   const copy: object = structuredClone(values);
   const freeze = (value: object): void => {

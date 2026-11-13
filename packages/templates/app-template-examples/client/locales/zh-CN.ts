@@ -274,6 +274,9 @@ const zhCN: AppResource = {
     workflowParameters: '流程级参数',
     parameterRevision: '流程参数版本 {{revision}}',
     parametersTitle: '{{name}} · 参数配置',
+    copyVersionParameters: '将 v{{version}} 配置复制为未保存输入',
+    configuringVersion:
+      '正在配置 v{{version}}。修改只影响此后启动的该版本实例。引用选择固定，成员在执行时解析。',
     parametersDescription: '配置仅对当前流程生效，已保存的实例快照保持不变。',
     discardParameters: '放弃尚未保存的参数修改？',
     noParameters: '此流程没有可配置参数。',

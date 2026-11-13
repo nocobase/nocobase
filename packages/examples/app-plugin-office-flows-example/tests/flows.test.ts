@@ -43,6 +43,7 @@ beforeEach(async () => {
   testDatabase = await createTestDatabase({ migrations, seeds });
   database = testDatabase.database;
   runtime = new LifecycleRuntime({
+    creationRequestsCollection: 'officeFlowsCreationRequests',
     store: createRepositoryLifecycleStore(database, {
       collections: {
         transitions: COLLECTIONS.transitions,
@@ -453,6 +454,19 @@ describe('incoming document', () => {
       { departmentName: '工会', ...allPeople },
       'gaoyan',
     );
+    await new OfficeWorkflowParameterService(database).save(
+      'teamTasks',
+      {
+        dispatchRules: {
+          departmentNames: [],
+          ownDepartmentOnly: false,
+          assigneeRole: 'heads',
+          ccHeads: false,
+          ccLeaders: false,
+        },
+      },
+      0,
+    );
     await service.fireTask('clerk', clerkId, 'dispatchTeams', {}, 'gaoyan');
     await service.addRow(
       'clerk',
@@ -482,24 +496,16 @@ describe('incoming document', () => {
     expect(team!.kind).toBe('team');
     const parameters = new OfficeWorkflowParameterService(database);
     const teamConfig = await parameters.read('teamTasks');
-    await expect(
-      service.addRow(
-        'team',
-        teamId,
-        { departmentName: '董事会办公室', ...allPeople },
-        'luoxin',
-      ),
-    ).rejects.toMatchObject({ reason: 'DEPARTMENT_OUT_OF_SCOPE' });
     await parameters.save(
       'teamTasks',
       {
         dispatchRules: {
           ...teamConfig.values.dispatchRules!,
-          ownDepartmentOnly: false,
-          assigneeRole: 'heads',
+          ownDepartmentOnly: true,
+          assigneeRole: 'clerks',
         },
       },
-      0,
+      1,
     );
     const roleRow = await service.addRow(
       'team',
@@ -531,13 +537,13 @@ describe('incoming document', () => {
       'luoxin',
     );
     await service.fireTask('team', teamId, 'dispatchExecutors', {}, 'luoxin');
-    const [executor] = (await service.myTasks('tangjun')).records;
+    const [executor] = (await service.myTasks('fanqing')).records;
     expect(executor!.kind).toBe('executor');
 
     const executorView = await service.taskDetail(
       'executor',
       String(executor!.id),
-      'tangjun',
+      'fanqing',
     );
     expect(
       (executorView.processing as { title: string }[]).map(
@@ -548,19 +554,19 @@ describe('incoming document', () => {
       'executor',
       String(executor!.id),
       { redHeadFeedback: false, feedback: '已按要求自查' },
-      'tangjun',
+      'fanqing',
     );
     await service.fireTask(
       'executor',
       String(executor!.id),
       'submitFeedback',
       {},
-      'tangjun',
+      'fanqing',
     );
     const done = await service.taskDetail(
       'executor',
       String(executor!.id),
-      'tangjun',
+      'fanqing',
     );
     expect((done.record as Plain).status).toBe('done');
     // The executor's feedback stays out of the root's traces.
@@ -569,7 +575,7 @@ describe('incoming document', () => {
     expect(rootTraces.some((trace) => trace.action === '派发执行人')).toBe(
       false,
     );
-    expect(people((done.record as Plain).assignees)).toEqual(['tangjun']);
+    expect(people((done.record as Plain).assignees)).toEqual(['fanqing']);
   });
 
   it('ends a clerk task on an objection and tells the office', async () => {

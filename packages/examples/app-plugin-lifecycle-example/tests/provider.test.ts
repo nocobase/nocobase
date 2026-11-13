@@ -41,7 +41,7 @@ let directory: string;
 const logger = { info: () => {}, warn: () => {}, error: () => {} };
 
 describe('parameter configuration against the real repository', () => {
-  test('updates one workflow row atomically with one shared revision and preserves unedited fields', async ({
+  test('updates one workflow row atomically with one revision per definition and preserves unedited fields', async ({
     database,
   }) => {
     const running = await start(database);
@@ -60,13 +60,12 @@ describe('parameter configuration against the real repository', () => {
       );
       const saved = await config.readWorkflow('zhao', 'expenses');
       expect(saved.revision).toBe(1);
-      expect(saved.groups.map((group) => group.revision)).toEqual([1, 1, 1]);
+      expect(saved.groups.map((group) => group.revision)).toEqual([1, 1]);
       // The audit group the second version added reads its default.
       expect(saved.values).toEqual({
         autoApproveLimit: 6000,
         financeLimit: 50000,
         escalateAfterMinutes: 9,
-        auditLimit: 20000,
       });
       await expect(
         config.saveWorkflow(
@@ -224,18 +223,41 @@ describe('parameter configuration against the real repository', () => {
         parameterConfigurationServiceToken,
       );
       const values = { autoApproveLimit: 100, financeLimit: 1000 };
-      expect(await config.read('expenseThresholds', 'lin')).toMatchObject({
+      expect(
+        await config.read('expenseThresholds', 'lin', 'expenses'),
+      ).toMatchObject({
         revision: 0,
         canUpdate: false,
       });
       expect(
-        await config.save('expenseThresholds', values, 0, 'save-1', 'zhao'),
+        await config.save(
+          'expenseThresholds',
+          values,
+          0,
+          'save-1',
+          'zhao',
+          'expenses',
+        ),
       ).toMatchObject({ revision: 1, values });
       expect(
-        await config.save('expenseThresholds', values, 0, 'save-1', 'zhao'),
+        await config.save(
+          'expenseThresholds',
+          values,
+          0,
+          'save-1',
+          'zhao',
+          'expenses',
+        ),
       ).toMatchObject({ revision: 1 });
       await expect(
-        config.save('expenseThresholds', values, 0, 'save-2', 'zhao'),
+        config.save(
+          'expenseThresholds',
+          values,
+          0,
+          'save-2',
+          'zhao',
+          'expenses',
+        ),
       ).rejects.toMatchObject({ code: 'CONFIGURATION_CONFLICT' });
       await expect(
         config.save(
@@ -244,6 +266,7 @@ describe('parameter configuration against the real repository', () => {
           1,
           'save-1',
           'zhao',
+          'expenses',
         ),
       ).rejects.toMatchObject({ code: 'CONFIGURATION_REQUEST_REUSED' });
       await expect(
@@ -253,6 +276,7 @@ describe('parameter configuration against the real repository', () => {
           1,
           'unknown',
           'zhao',
+          'expenses',
         ),
       ).rejects.toMatchObject({ code: 'CONFIGURATION_INVALID' });
       await expect(
@@ -262,6 +286,7 @@ describe('parameter configuration against the real repository', () => {
           1,
           'invalid',
           'zhao',
+          'expenses',
         ),
       ).rejects.toMatchObject({ code: 'CONFIGURATION_INVALID' });
       await expect(
@@ -283,7 +308,7 @@ describe('parameter configuration against the real repository', () => {
     }
   });
 
-  test('shares one configuration between both expense versions without changing a first-version report', async ({
+  test('isolates both expense configurations and preserves each instance snapshot', async ({
     database,
   }) => {
     const running = await start(database);
@@ -311,6 +336,7 @@ describe('parameter configuration against the real repository', () => {
         0,
         'thresholds',
         'zhao',
+        'expenses',
       );
       const first = String(
         (await service.createExpense(draft, 'lin', 'expenses')).id,
@@ -329,7 +355,7 @@ describe('parameter configuration against the real repository', () => {
       await config.save(
         'expenseAudit',
         { auditLimit: 25000 },
-        1,
+        0,
         'audit',
         'zhao',
       );
@@ -345,8 +371,8 @@ describe('parameter configuration against the real repository', () => {
         id: 'chen',
       });
       expect(secondView.parameterValues).toEqual({
-        autoApproveLimit: 1000,
-        financeLimit: 40000,
+        autoApproveLimit: 5000,
+        financeLimit: 50000,
         escalateAfterMinutes: 3,
         auditLimit: 20000,
       });
@@ -419,6 +445,7 @@ describe('parameter configuration against the real repository', () => {
         0,
         'before-submit',
         'zhao',
+        'expenses-v2',
       );
       expect(
         (await service.runtime.view('expenses-v2', id, { id: 'lin' }))
@@ -438,19 +465,21 @@ describe('parameter configuration against the real repository', () => {
         1,
         'after-submit',
         'zhao',
+        'expenses-v2',
       );
       await service.runtime.fire('expenses-v2', id, 'submit', {
         actor: { id: 'lin' },
         input: {},
         requestId: 'submit-once',
       });
-      const history = await config.history('expenses', id, 'lin');
+      const history = await config.history('expenses-v2', id, 'lin');
       expect(history.snapshot?.values).toEqual({
         autoApproveLimit: 100,
         financeLimit: 3000,
         auditLimit: 20000,
+        escalateAfterMinutes: 3,
       });
-      expect(history.current).toMatchObject({ financeLimit: 3000 });
+      expect(history.current).toBeUndefined();
       expect(
         history.usages.filter(
           (usage) =>
@@ -458,7 +487,8 @@ describe('parameter configuration against the real repository', () => {
         ),
       ).toHaveLength(1);
       expect(
-        (await config.read('expenseThresholds', 'lin')).values.financeLimit,
+        (await config.read('expenseThresholds', 'lin', 'expenses-v2')).values
+          .financeLimit,
       ).toBe(1000);
       await service.runtime.fire('expenses-v2', id, 'withdraw', {
         actor: { id: 'lin' },
@@ -474,11 +504,11 @@ describe('parameter configuration against the real repository', () => {
       ).toMatchObject({ financeLimit: 3000 });
       await service.runtime.prune({ olderThan: '2099-01-01T00:00:00.000Z' });
       expect(
-        (await config.history('expenses', id, 'lin')).snapshot?.values
+        (await config.history('expenses-v2', id, 'lin')).snapshot?.values
           .financeLimit,
       ).toBe(3000);
       expect(
-        (await config.history('expenses', id, 'lin')).usages.length,
+        (await config.history('expenses-v2', id, 'lin')).usages.length,
       ).toBeGreaterThan(1);
     } finally {
       await running.stop();
@@ -710,7 +740,10 @@ describe('lifecycle example provider', () => {
       // Pretend the wait has passed instead of waiting two minutes.
       await database.repository('lifecycleExampleTickets').updateMany({
         filter: { id: Number(id) },
-        values: { statusChangedAt: '2000-01-01T00:00:00.000Z' },
+        values: {
+          statusChangedAt: '2000-01-01T00:00:00.000Z',
+          lifecycleDueAt: '2000-01-01T00:02:00.000Z',
+        },
       });
       expect(await service.runTriggers()).toBe(1);
       const detail = await service.runtime.view('tickets', id, {

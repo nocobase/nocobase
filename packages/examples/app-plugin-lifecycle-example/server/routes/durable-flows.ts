@@ -116,7 +116,12 @@ interface FlowSpec<Body> {
   readonly plural: string;
   readonly input: z.ZodType<Body>;
   readonly description: string;
-  create(flows: DurableFlowService, body: Body, actor: string): Promise<Plain>;
+  create(
+    flows: DurableFlowService,
+    body: Body,
+    actor: string,
+    requestId?: string,
+  ): Promise<Plain>;
 }
 
 function flowRoutes<Body>(
@@ -170,13 +175,26 @@ function flowRoutes<Body>(
         500: apiErrorResponse(500),
       },
     }),
+    apiValidator(
+      'header',
+      z.object({ 'idempotency-key': z.string().min(1).max(200).optional() }),
+    ),
     apiValidator('json', spec.input),
     async (context) => {
       const body = context.req.valid('json');
       // Created by whoever is signed in; the customer it is for is in the body.
       const actor = signedInUser(context);
       return context.json(
-        { data: outward(await spec.create(flows, body, actor)) },
+        {
+          data: outward(
+            await spec.create(
+              flows,
+              body,
+              actor,
+              context.req.valid('header')['idempotency-key'],
+            ),
+          ),
+        },
         201,
       );
     },
@@ -232,7 +250,8 @@ export function durableFlowRoutes(
     input: CreateSubscriptionInput,
     description:
       'Taken out for a customer; the first period is charged at once.',
-    create: (service, body, actor) => service.createSubscription(body, actor),
+    create: (service, body, actor, requestId) =>
+      service.createSubscription(body, actor, requestId),
   });
 
   flowRoutes(router, base, flows, {

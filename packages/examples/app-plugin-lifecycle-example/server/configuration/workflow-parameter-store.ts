@@ -45,6 +45,13 @@ export class WorkflowParameterStore extends StoredLifecycleParameters {
   public constructor(private readonly records: LifecycleStore) {
     super(records, PARAMETER_COLLECTIONS);
   }
+  public override readConfiguration(
+    scope: string,
+    lifecycle: string,
+    transaction?: unknown,
+  ): Promise<ParameterVersion | undefined> {
+    return this.read(scope, `lifecycle.${lifecycle}`, transaction);
+  }
   public override read(
     scope: string,
     key: string,

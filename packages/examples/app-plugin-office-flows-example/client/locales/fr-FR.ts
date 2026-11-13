@@ -87,6 +87,8 @@ const frFR: LocaleResource<typeof enUS> = {
       "Données de démonstration lues par les processus : les personnes qu'une ligne de service amène, les groupes de direction et le calendrier des jours fériés 2026.",
   },
   common: {
+    parameterSnapshot: 'Instantané au démarrage de l’instance',
+    parameterPreview: 'Aperçu de la configuration avant le démarrage',
     created: 'Créé',
     actAs: 'Agir comme',
     save: 'Enregistrer',

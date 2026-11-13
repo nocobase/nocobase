@@ -87,6 +87,8 @@ const deDE: LocaleResource<typeof enUS> = {
       'Demonstrationsdaten, die die Prozesse lesen: die Personen, die eine Abteilungsreihe einbringt, Managementgruppen und der Feiertagskalender 2026.',
   },
   common: {
+    parameterSnapshot: 'Snapshot beim Instanzstart',
+    parameterPreview: 'Konfigurationsvorschau vor dem Start',
     created: 'Erstellt',
     actAs: 'Handeln als',
     save: 'Speichern',

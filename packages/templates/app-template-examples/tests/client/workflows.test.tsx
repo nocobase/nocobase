@@ -1472,6 +1472,7 @@ it('reloads the complete office snapshot after a conflict before the next inline
         method: 'PUT',
         json: {
           kind: 'office',
+          definition: 'dataRequests',
           expectedRevision: 2,
           values: {
             holidays: [

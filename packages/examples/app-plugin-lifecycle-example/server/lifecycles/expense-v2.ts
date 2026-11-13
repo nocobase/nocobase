@@ -84,9 +84,9 @@ export const expenseV2Lifecycle: Lifecycle<ExpenseV2Types> =
       { name: 'rejected', final: true },
       { name: 'paid', final: true },
     ],
+    dueAtField: 'lifecycleDueAt',
     parameterConfiguration: {
-      readMode: 'snapshot',
-      snapshotTransition: 'submit',
+      startTransition: 'submit',
       groups: [expenseParameterGroup, expenseTimingGroup, expenseAuditGroup],
     },
     parameters: {

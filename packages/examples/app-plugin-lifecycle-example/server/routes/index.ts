@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { configurationRoutes } from './parameter-configuration.js';
 import { parameterConfigurationServiceToken } from '../tokens.js';
 import {
@@ -144,12 +145,24 @@ function listRoutes(
       },
     }),
     apiValidator('query', ActAsQuery),
+    apiValidator(
+      'header',
+      z.object({ 'idempotency-key': z.string().min(1).max(200).optional() }),
+    ),
     apiValidator('json', CreateTicketInput),
     async (context) => {
       const { actAs } = context.req.valid('query');
       const values = context.req.valid('json');
       return context.json(
-        { data: outward(await service.createTicket(values, actAs)) },
+        {
+          data: outward(
+            await service.createTicket(
+              values,
+              actAs,
+              context.req.valid('header')['idempotency-key'],
+            ),
+          ),
+        },
         201,
       );
     },

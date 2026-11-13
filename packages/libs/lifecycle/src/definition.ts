@@ -657,6 +657,12 @@ export function defineLifecycle<T extends LifecycleTypes>(
     owned.add(definitionField);
   }
 
+  if (definition.dueAtField !== undefined) {
+    if (!NAME.test(definition.dueAtField) || owned.has(definition.dueAtField))
+      throw invalid(name, 'dueAtField must be a distinct record field.');
+    owned.add(definition.dueAtField);
+  }
+
   const effects = new Map<string, EffectDefinition<T>>();
   const collect = (effect: EffectDefinition<T>, where: string): void => {
     const existing = effects.get(effect.name);

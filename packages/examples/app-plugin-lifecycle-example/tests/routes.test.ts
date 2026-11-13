@@ -11,6 +11,7 @@ import { createAppPaths } from '@nocobase/app-server/config';
 import type { AppPluginApplication } from '@nocobase/app-server/plugins';
 import {
   defineLifecycle,
+  parameterIdentity,
   LifecycleError,
   LifecycleRuntime,
   MemoryLifecycleStore,
@@ -48,6 +49,40 @@ const allow = {
 const deny = {
   required: () => (context) => context.json({ code: 'UNAUTHORIZED' }, 401),
 } as unknown as Auth;
+
+function fixtureSnapshot(
+  store: MemoryLifecycleStore,
+  runtime: LifecycleRuntime,
+  name: string,
+  recordId: number,
+) {
+  const lifecycle = runtime.definition(name);
+  const sources = Object.fromEntries(
+    lifecycle.parameterConfiguration!.groups.flatMap((group) =>
+      Object.keys(group.fields).map((key) => [
+        key,
+        {
+          group: group.key,
+          schemaVersion: group.schemaVersion,
+          revision: 0,
+          origin: 'default',
+        },
+      ]),
+    ),
+  );
+  store.insertRecord('lifecycleExampleParameterSnapshots', {
+    id: parameterIdentity('demo', name, String(recordId)),
+    payload: {
+      scope: 'demo',
+      lifecycle: name,
+      recordId: String(recordId),
+      revision: 0,
+      values: lifecycle.parameters,
+      sources,
+      at: '2026-10-01T09:00:00.000Z',
+    },
+  });
+}
 
 function application(authentication: Auth) {
   // A real runtime on a memory store: the record routes are the library's,
@@ -145,6 +180,21 @@ function application(authentication: Auth) {
     status: 'closed',
     statusChangedAt: '2000-01-01T00:00:00.000Z',
     lifecycleVersion: 3,
+  });
+  fixtureSnapshot(store, runtime, 'invoices', 9);
+  fixtureSnapshot(store, runtime, 'expenses', 1);
+  fixtureSnapshot(store, runtime, 'tickets', 5);
+  void store.appendTransition({
+    lifecycle: 'orders',
+    recordId: '3',
+    transition: '$create',
+    from: null,
+    to: 'draft',
+    actorId: 'user-1',
+    input: {},
+    at: '2026-10-01T09:00:00.000Z',
+    version: 1,
+    requestId: null,
   });
   const service = {
     runtime,
@@ -583,7 +633,7 @@ describe('lifecycle example routes', () => {
   });
 
   it('continues a run whose continuation waits, without running its effect again', async () => {
-    const { app, store } = application(allow);
+    const { app, store, runtime } = application(allow);
     const router = await apiRoutes.createRouter(app);
     // An approved report whose payment succeeded, but whose `paid` could not
     // be fired yet: the continuation waits on the run.
@@ -601,6 +651,7 @@ describe('lifecycle example routes', () => {
       statusChangedAt: '2026-10-01T09:00:00.000Z',
       lifecycleVersion: 2,
     });
+    fixtureSnapshot(store, runtime, 'expenses', 3);
     const run = await store.createEffectRun({
       transitionId: '0',
       lifecycle: 'expenses',

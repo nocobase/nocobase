@@ -211,6 +211,9 @@ const enUS = {
     workflowParameters: 'Workflow parameters',
     parameterRevision: 'Workflow parameter version {{revision}}',
     parametersTitle: '{{name}} parameters',
+    copyVersionParameters: 'Copy values from v{{version}} as unsaved inputs',
+    configuringVersion:
+      'Configuring v{{version}}. Changes apply only to instances of this version started afterward. References keep their selection; membership is resolved at execution.',
     parametersDescription:
       'These settings apply only to this workflow. Existing snapshots remain unchanged.',
     discardParameters: 'Discard unsaved parameter changes?',

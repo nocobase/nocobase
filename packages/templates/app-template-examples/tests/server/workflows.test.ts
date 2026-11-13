@@ -33,7 +33,7 @@ describe('workflow management through the registered application routes', () => 
   }) => {
     const session = await signIn(testApp, DEFAULT_ADMIN_CREDENTIALS);
     const endpoint = (name: string) =>
-      `/workflows/definitions/lifecycle.${name}/parameters`;
+      `/workflows/definitions/lifecycle.${name}/parameters?version=1`;
     const save = (name: string, values: unknown) =>
       session.fetch(endpoint(name), {
         method: 'PUT',
@@ -43,6 +43,7 @@ describe('workflow management through the registered application routes', () => 
         },
         body: JSON.stringify({
           kind: 'lifecycle',
+          definition: name,
           values,
           expectedRevision: 0,
           requestId: `save-${name}`,
@@ -81,12 +82,20 @@ describe('workflow management through the registered application routes', () => 
     ).toMatchObject({ paymentWindowMinutes: 9 });
   });
 
+  test('requires a concrete parameter version and rejects a cross-version draft', async ({ testApp }) => {
+    const session = await signIn(testApp, DEFAULT_ADMIN_CREDENTIALS);
+    expect((await session.fetch('/workflows/definitions/lifecycle.expenses/parameters')).status).toBe(400);
+    const response = await session.fetch('/workflows/definitions/lifecycle.expenses/parameters?version=2', { method: 'PUT', headers: { 'content-type': 'application/json', origin: 'http://localhost' }, body: JSON.stringify({ kind: 'lifecycle', definition: 'expenses', values: {}, expectedRevision: 0, requestId: 'wrong-target' }) });
+    expect(response.status).toBe(409);
+    expect(await response.json()).toMatchObject({ error: { reason: 'PARAMETER_DEFINITION_MISMATCH' } });
+  });
+
   test('updates shared office departments through the parameter API and rejects stale or invalid writes', async ({
     testApp,
     request,
   }) => {
     const endpoint = (name: string) =>
-      `/workflows/definitions/office.${name}/parameters`;
+      `/workflows/definitions/office.${name}/parameters?version=1`;
     expect((await request(endpoint('teamTasks'))).status).toBe(401);
     const session = await signIn(testApp, DEFAULT_ADMIN_CREDENTIALS);
     const read = async (name: string) =>
@@ -101,6 +110,7 @@ describe('workflow management through the registered application routes', () => 
     );
     const input = {
       kind: 'office',
+      definition: 'teamTasks',
       values: team.values,
       expectedRevision: team.revision,
       organization: {
@@ -141,8 +151,8 @@ describe('workflow management through the registered application routes', () => 
     request,
   }) => {
     for (const path of [
-      '/workflows/definitions/lifecycle.expenses/parameters',
-      '/workflows/definitions/office.teamTasks/parameters',
+      '/workflows/definitions/lifecycle.expenses/parameters?version=1',
+      '/workflows/definitions/office.teamTasks/parameters?version=1',
       '/workflows/definitions',
       '/workflows/definitions/invalid',
       '/workflows/executions?page=bad',
@@ -231,8 +241,8 @@ describe('workflow management through the registered application routes', () => 
     expect(registered.status).toBe(200);
     const member = await signIn(testApp, credentials);
     for (const path of [
-      '/workflows/definitions/lifecycle.expenses/parameters',
-      '/workflows/definitions/office.teamTasks/parameters',
+      '/workflows/definitions/lifecycle.expenses/parameters?version=1',
+      '/workflows/definitions/office.teamTasks/parameters?version=1',
       '/workflows/definitions',
       '/workflows/categories',
       '/workflows/executions?page=bad',
@@ -269,14 +279,14 @@ describe('workflow management through the registered application routes', () => 
     expect(
       (
         await member.fetch(
-          '/workflows/definitions/lifecycle.expenses/parameters',
+          '/workflows/definitions/lifecycle.expenses/parameters?version=1',
         )
       ).status,
     ).toBe(200);
     expect(
       (
         await member.fetch(
-          '/workflows/definitions/lifecycle.expenses/parameters',
+          '/workflows/definitions/lifecycle.expenses/parameters?version=1',
           {
             method: 'PUT',
             headers: input.headers,
@@ -288,7 +298,7 @@ describe('workflow management through the registered application routes', () => 
     expect(
       (
         await member.fetch(
-          '/workflows/definitions/office.teamTasks/parameters',
+          '/workflows/definitions/office.teamTasks/parameters?version=1',
           { method: 'PUT', headers: input.headers, body: JSON.stringify({}) },
         )
       ).status,

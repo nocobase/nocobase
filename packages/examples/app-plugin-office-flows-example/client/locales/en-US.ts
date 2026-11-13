@@ -83,6 +83,8 @@ const enUS = {
       'Demonstration data the processes read: the people a department row brings in, management groups, and the 2026 holiday calendar.',
   },
   common: {
+    parameterSnapshot: 'Instance start snapshot',
+    parameterPreview: 'Current configuration preview before start',
     created: 'Created',
     actAs: 'Act as',
     save: 'Save',

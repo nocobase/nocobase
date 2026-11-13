@@ -95,7 +95,11 @@ export const orderLifecycle: Lifecycle<OrderTypes> =
       { name: 'refunded', final: true },
     ],
     // A real shop waits half an hour or more; the example a few minutes.
-    parameterConfiguration: { readMode: 'live', groups: [orderTimingGroup] },
+    dueAtField: 'lifecycleDueAt',
+    parameterConfiguration: {
+      startTransition: 'checkout',
+      groups: [orderTimingGroup],
+    },
     parameters: { paymentWindowMinutes: 3 },
     transitions: {
       checkout: {

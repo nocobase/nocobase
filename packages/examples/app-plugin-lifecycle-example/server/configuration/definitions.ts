@@ -28,7 +28,6 @@ export const expenseParameterGroup: ParameterGroup = {
       bindings: [{ state: 'awaitingManager' }],
     },
   },
-  sameReadMode: [['autoApproveLimit', 'financeLimit']],
   validate: (values) => {
     if (Number(values.autoApproveLimit) > Number(values.financeLimit))
       throw new Error(
@@ -62,7 +61,7 @@ export const ticketParameterGroup: ParameterGroup = {
     reopenDays: {
       type: 'number',
       title: 'Reopen window (days)',
-      readMode: 'live',
+
       minimum: 0,
       maximum: 365,
       parse: (value) => z.number().finite().min(0).max(365).parse(value),
@@ -78,7 +77,7 @@ export const notificationParameterGroup: ParameterGroup = {
     notificationPrefix: {
       type: 'string',
       title: 'Notification prefix',
-      readMode: 'live',
+
       parse: (value) => z.string().max(200).parse(value),
       bindings: [{ state: 'awaitingCustomer' }, { transition: 'reply' }],
     },
@@ -114,7 +113,7 @@ function timingGroup(
         {
           type: 'number',
           title: label,
-          readMode: 'live',
+
           bindings: [{ state: states[name] }],
           minimum: 1,
           parse: (value: unknown) =>

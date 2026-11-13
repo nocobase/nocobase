@@ -183,6 +183,7 @@ export class LifecycleExampleProvider extends ServiceProvider<AppPluginApplicati
     this.parameterStore = parameterStore;
     const runtime = new LifecycleRuntime({
       store,
+      creationRequestsCollection: 'lifecycleExampleCreationRequests',
       dispatcher: this.effectJobs(),
       logger: {
         warn: (message, details) => logger.warn({ details }, message),

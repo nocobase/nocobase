@@ -20,53 +20,53 @@ const viVN: LocaleResource<typeof enUS> = {
       paymentWindowMinutes: {
         title: 'Thời gian chờ thanh toán (phút)',
         description:
-          'Hủy đơn hàng chưa thanh toán sau thời gian chờ đợi này. Những thay đổi áp dụng cho bộ tính giờ thanh toán mới được lên lịch; bộ tính giờ hiện có giữ thời gian đến hạn của họ.',
+          'Cố định khi phiên bản quy trình bắt đầu. Thay đổi chỉ áp dụng cho các lần khởi tạo sau của phiên bản này.',
       },
       escalateAfterMinutes: {
         title: 'Thời gian chờ xem xét của người quản lý (phút)',
         description:
-          'Gửi yêu cầu xem xét của người quản lý đang chờ xử lý sau thời gian chờ đợi này. Những thay đổi áp dụng cho bộ tính giờ đánh giá mới được lên lịch; bộ tính giờ hiện có giữ thời gian đến hạn của họ.',
+          'Cố định khi phiên bản quy trình bắt đầu. Thay đổi chỉ áp dụng cho các lần khởi tạo sau của phiên bản này.',
       },
       waitMinutes: {
         title: 'Thời gian chờ trả lời của khách hàng (phút)',
         description:
-          'Đóng yêu cầu nếu khách hàng không trả lời trong thời gian chờ này. Các thay đổi áp dụng cho bộ hẹn giờ mới được lên lịch; bộ tính giờ hiện có giữ thời gian đến hạn của họ.',
+          'Cố định khi phiên bản quy trình bắt đầu. Thay đổi chỉ áp dụng cho các lần khởi tạo sau của phiên bản này.',
       },
       querySeconds: {
         title: 'Độ trễ truy vấn trạng thái hóa đơn (giây)',
         description:
-          'Truy vấn nhà cung cấp hóa đơn nếu không có cuộc gọi lại nào đến trong thời gian chờ đợi này. Các thay đổi áp dụng cho các truy vấn mới được lên lịch; các truy vấn hiện tại giữ nguyên thời gian đến hạn của chúng.',
+          'Cố định khi phiên bản quy trình bắt đầu. Thay đổi chỉ áp dụng cho các lần khởi tạo sau của phiên bản này.',
       },
       pollSeconds: {
         title: 'Khoảng thời gian kiểm tra tiến trình xuất (giây)',
         description:
-          'Hãy đợi thật lâu trước khi kiểm tra quá trình xuất đang diễn ra. Những thay đổi áp dụng cho các lần kiểm tra mới được lên lịch; séc hiện có giữ đúng thời hạn.',
+          'Cố định khi phiên bản quy trình bắt đầu. Thay đổi chỉ áp dụng cho các lần khởi tạo sau của phiên bản này.',
       },
       maxMinutes: {
         title: 'Thời gian chờ hoàn thành xuất (phút)',
         description:
-          'Đặt thời hạn hoàn thành khi công việc xuất bắt đầu. Một công việc chưa hoàn thành sẽ hết hạn vào thời hạn đó. Những thay đổi không làm thay đổi thời hạn công việc hiện tại.',
+          'Cố định khi phiên bản quy trình bắt đầu. Thay đổi chỉ áp dụng cho các lần khởi tạo sau của phiên bản này.',
       },
       periodMinutes: {
         title: 'Thời gian gia hạn đăng ký (phút)',
         description:
-          'Sử dụng khoảng thời gian này để tính toán thời gian kết thúc mới sau khi tính phí thành công. Các thay đổi sẽ được áp dụng sau lần tính phí thành công tiếp theo; thời điểm kết thúc hiện tại vẫn cố định.',
+          'Cố định khi phiên bản quy trình bắt đầu. Thay đổi chỉ áp dụng cho các lần khởi tạo sau của phiên bản này.',
       },
       dunningMinutes: {
         title:
           'Khoảng thời gian thử lại thanh toán gia hạn không thành công (phút)',
         description:
-          'Hãy đợi thật lâu trước khi thử lại khoản thanh toán gia hạn không thành công. Những thay đổi áp dụng cho những lần thử lại mới được lên lịch; các lần thử lại hiện tại vẫn giữ nguyên thời gian đến hạn của chúng.',
+          'Cố định khi phiên bản quy trình bắt đầu. Thay đổi chỉ áp dụng cho các lần khởi tạo sau của phiên bản này.',
       },
       maxDunning: {
         title: 'Giới hạn lỗi thanh toán gia hạn',
         description:
-          'Hủy đăng ký ở lần thử lại tự động tiếp theo nếu số lần thanh toán không thành công đã đạt đến giới hạn này. Những thay đổi được áp dụng ở quyết định thử lại tiếp theo.',
+          'Cố định khi phiên bản quy trình bắt đầu. Thay đổi chỉ áp dụng cho các lần khởi tạo sau của phiên bản này.',
       },
       reopenDays: {
         title: 'Thời hạn mở lại vé (ngày)',
         description:
-          'Cho phép mở lại trong vòng nhiều ngày sau khi vé đóng; nếu không thì phải có một vé mới. Mỗi yêu cầu mở lại đều sử dụng cài đặt mới nhất.',
+          'Cố định khi phiên bản quy trình bắt đầu. Thay đổi chỉ áp dụng cho các lần khởi tạo sau của phiên bản này.',
       },
     },
     loading: 'Đang tải tham số…',
@@ -74,7 +74,7 @@ const viVN: LocaleResource<typeof enUS> = {
     description:
       'Chỉ thay đổi các giá trị được khai báo bằng mã. Cấu trúc quy trình làm việc, các quyết định và thời gian chờ vẫn nằm trong mã.',
     ruleExplanation:
-      'Tất cả các điều kiện trong một nhóm phải phù hợp. Các nhóm riêng biệt được thêm vào với nhau. Đặt người dùng thay thế vào các nhóm riêng biệt.',
+      'Tất cả các điều kiện trong một nhóm phải phù hợp. Các nhóm riêng biệt được thêm vào với nhau. Đặt người dùng thay thế vào các nhóm riêng biệt. Tham chiếu đã chọn được cố định; thành viên và tính hợp lệ được xác định khi thực thi.',
     allConditions: 'Phù hợp với tất cả các điều kiện này',
     alsoInclude: 'Cũng bao gồm',
     selectionType: 'Kiểu lựa chọn',
@@ -90,9 +90,7 @@ const viVN: LocaleResource<typeof enUS> = {
     codeDefaults: 'Mã mặc định',
     databaseVersion: 'Đã lưu cấu hình',
     snapshotEffect:
-      'Ảnh chụp nhanh: đã sửa ở lần gửi đầu tiên; được giữ lại sau khi trả lại hoặc rút tiền',
-    liveEffect:
-      'Các lần đọc tham số trong tương lai sử dụng cấu hình mới nhất; bộ tính giờ và thời hạn hiện tại vẫn cố định.',
+      'Cố định khi phiên bản quy trình bắt đầu. Thay đổi chỉ áp dụng cho các lần khởi tạo sau của phiên bản này.',
     yes: 'Có',
     no: 'Không',
     invalidObject: 'Nhập đối tượng JSON hợp lệ.',
@@ -110,10 +108,10 @@ const viVN: LocaleResource<typeof enUS> = {
       'Không có ứng cử viên đủ tư cách; việc nộp hồ sơ sẽ bị từ chối.',
     editCurrent: 'Chỉnh sửa cấu hình hiện tại',
     historyBoundary:
-      'Điều này chỉnh sửa cấu hình hiện tại. Sự thật lịch sử và các ứng cử viên được chỉ định hiện tại không thay đổi.',
+      'Cố định khi phiên bản quy trình bắt đầu. Thay đổi chỉ áp dụng cho các lần khởi tạo sau của phiên bản này.',
     history: 'Sử dụng tham số thực tế',
-    effectivePreview: 'Giá trị hiệu dụng cho bản ghi này hiện nay',
-    firstSnapshot: 'Ảnh chụp nhanh lần gửi đầu tiên',
+    effectivePreview: 'Xem trước cấu hình trước khi bắt đầu',
+    firstSnapshot: 'Ảnh chụp khi bắt đầu',
     notRecorded: 'Không được ghi lại',
     diagramEntry: 'Mục sơ đồ tùy chọn',
     diagramHint:

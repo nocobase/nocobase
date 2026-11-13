@@ -3,7 +3,6 @@ import { subscriptionLifecycle } from '../lifecycles/subscription.js';
 import { exportLifecycle } from '../lifecycles/export.js';
 import { invoiceLifecycle } from '../lifecycles/invoice.js';
 import { orderLifecycle } from '../lifecycles/order.js';
-import { workflowParameterStore } from '../configuration/store.js';
 import type {
   ParameterGroupView,
   ParameterHistoryView,
@@ -64,13 +63,6 @@ const lifecycles = [
   expenseV2Lifecycle,
   ticketLifecycle,
 ];
-/** The process `workflow` names, by its key or by any version's name. */
-function keyOf(workflow: string): string {
-  return (
-    lifecycles.find((item) => item.name === workflow || item.key === workflow)
-      ?.key ?? workflow
-  );
-}
 export class ParameterConfigurationService {
   public constructor(
     private readonly database: DatabaseManager,
@@ -130,12 +122,13 @@ export class ParameterConfigurationService {
     // configuration, so the group belongs to the process, not a version.
     const owners = lifecycles.filter(
       (lifecycle) =>
-        (!workflow || lifecycle.key === keyOf(workflow)) &&
+        (!workflow || lifecycle.name === workflow) &&
         lifecycle.parameterConfiguration?.groups.some(
           (candidate) => candidate.key === key,
         ),
     );
-    if (new Set(owners.map((owner) => owner.key)).size !== 1)
+    if (!workflow && owners.length > 1) owners.splice(1);
+    if (new Set(owners.map((owner) => owner.name)).size !== 1)
       throw new ExampleError(
         'NOT_FOUND',
         'PARAMETER_WORKFLOW_REQUIRED',
@@ -144,7 +137,7 @@ export class ParameterConfigurationService {
     const owner = owners.at(-1)!;
     const version =
       configuration ??
-      (await workflowParameterStore(this.store, owner.key).read('demo', key));
+      (await this.store.read('demo', `lifecycle.${owner.name}.${key}`));
     if (version && version.schemaVersion !== group.schemaVersion)
       throw new ParameterConfigurationError(
         'CONFIGURATION_INCOMPATIBLE',
@@ -154,7 +147,7 @@ export class ParameterConfigurationService {
       Object.keys(group.fields).map((field) => [
         field,
         (
-          parameterWorkflows.find((item) => item.name === owner.key)!
+          parameterWorkflows.find((item) => item.name === owner.name)!
             .parameters as JsonObject
         )[field]!,
       ]),
@@ -182,10 +175,6 @@ export class ParameterConfigurationService {
           .map(([field, declaration]) => ({
             lifecycle: lifecycle.name,
             field,
-            readMode:
-              declaration.readMode ??
-              lifecycle.parameterConfiguration?.readMode ??
-              'live',
             bindings: declaration.bindings ?? [],
           })),
       ),
@@ -200,7 +189,7 @@ export class ParameterConfigurationService {
       if (
         !lifecycles.some(
           (item) =>
-            item.key === keyOf(workflow) &&
+            item.name === workflow &&
             item.parameterConfiguration?.groups.some(
               (candidate) => candidate.key === group.key,
             ),
@@ -214,10 +203,7 @@ export class ParameterConfigurationService {
         return false;
       }
     });
-    const version = await this.store.read(
-      'demo',
-      `lifecycle.${keyOf(workflow)}`,
-    );
+    const version = await this.store.read('demo', `lifecycle.${workflow}`);
     return Promise.all(
       visible.map((group) =>
         this.read(
@@ -245,6 +231,7 @@ export class ParameterConfigurationService {
     workflow: string,
   ): Promise<{
     kind: 'lifecycle';
+    definition: string;
     revision: number;
     values: JsonObject;
     groups: readonly ParameterGroupView[];
@@ -252,6 +239,7 @@ export class ParameterConfigurationService {
     const groups = await this.list(actor, workflow);
     return {
       kind: 'lifecycle' as const,
+      definition: workflow,
       revision: groups[0]?.revision ?? 0,
       values: Object.fromEntries(
         groups.flatMap((group) => Object.entries(group.values)),
@@ -287,12 +275,13 @@ export class ParameterConfigurationService {
     workflow: string,
   ): Promise<{
     kind: 'lifecycle';
+    definition: string;
     revision: number;
     values: JsonObject;
     groups: readonly ParameterGroupView[];
   }> {
     this.authorize(actor, 'write');
-    const group = workflowParameterGroup(keyOf(workflow));
+    const group = workflowParameterGroup(workflow);
     const current = await this.readWorkflow(actor, workflow);
     const normalized = normalizeParameterValues(group, {
       ...current.values,
@@ -339,6 +328,7 @@ export class ParameterConfigurationService {
       });
     return {
       kind: 'lifecycle',
+      definition: workflow,
       revision: saved.revision,
       values: saved.values,
       groups: current.groups.map((group) => ({
@@ -481,19 +471,22 @@ export class ParameterConfigurationService {
         'PARAMETER_ACCESS_DENIED',
         'Only the record owner or a reviewer may inspect this history.',
       );
-    const [snapshot, usages, current] = await Promise.all([
+    const [snapshot, usages] = await Promise.all([
       this.store.snapshot('demo', definition, id),
       this.store.listUsage('demo', definition, id),
-      this.runtime.resolveParameters(definition, {
-        record: { ...record, id },
-        purpose: 'preview',
-        transactionHandle: undefined,
-      }),
     ]);
     return {
       snapshot: snapshot ?? null,
       usages,
-      current,
+      ...(!snapshot
+        ? {
+            current: await this.runtime.resolveParameters(definition, {
+              record: { ...record, id },
+              purpose: 'preview',
+              transactionHandle: undefined,
+            }),
+          }
+        : {}),
       recorded: usages.length > 0,
     };
   }

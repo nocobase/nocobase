@@ -20,53 +20,53 @@ const esES: LocaleResource<typeof enUS> = {
       paymentWindowMinutes: {
         title: 'Tiempo de espera de pago (minutos)',
         description:
-          'Cancelar un pedido impago después de esta espera. Los cambios se aplican a los temporizadores de pago recientemente programados; Los temporizadores existentes mantienen su tiempo debido.',
+          'Se fija al iniciar la instancia. Los cambios solo afectan a futuros inicios de esta versión.',
       },
       escalateAfterMinutes: {
         title: 'Tiempo de espera de revisión del administrador (minutos)',
         description:
-          'Escalar una revisión pendiente del administrador después de esta espera. Los cambios se aplican a los temporizadores de revisión recientemente programados; Los temporizadores existentes mantienen su tiempo debido.',
+          'Se fija al iniciar la instancia. Los cambios solo afectan a futuros inicios de esta versión.',
       },
       waitMinutes: {
         title: 'Tiempo de espera de respuesta del cliente (minutos)',
         description:
-          'Cerrar un ticket si el cliente no responde dentro de esta espera. Los cambios se aplican a los temporizadores programados recientemente; Los temporizadores existentes mantienen su tiempo debido.',
+          'Se fija al iniciar la instancia. Los cambios solo afectan a futuros inicios de esta versión.',
       },
       querySeconds: {
         title: 'Retraso en consulta de estado de factura (segundos)',
         description:
-          'Consulta al proveedor de facturas si no llega ninguna devolución de llamada dentro de esta espera. Los cambios se aplican a consultas recientemente programadas; las consultas existentes mantienen su debido tiempo.',
+          'Se fija al iniciar la instancia. Los cambios solo afectan a futuros inicios de esta versión.',
       },
       pollSeconds: {
         title:
           'Intervalo de verificación del progreso de la exportación (segundos)',
         description:
-          'Espere tanto tiempo antes de verificar una exportación en progreso. Los cambios se aplican a las comprobaciones programadas recientemente; los controles existentes mantienen su debido tiempo.',
+          'Se fija al iniciar la instancia. Los cambios solo afectan a futuros inicios de esta versión.',
       },
       maxMinutes: {
         title: 'Tiempo de espera de finalización de exportación (minutos)',
         description:
-          'Establece la fecha límite de finalización cuando comienza un trabajo de exportación. Un trabajo inacabado caduca en esa fecha límite. Los cambios no modifican los plazos de los trabajos existentes.',
+          'Se fija al iniciar la instancia. Los cambios solo afectan a futuros inicios de esta versión.',
       },
       periodMinutes: {
         title: 'Periodo de renovación de suscripción (minutos)',
         description:
-          'Utilice esta duración para calcular el final del nuevo período después de un cargo exitoso. Los cambios se aplican después del siguiente cargo exitoso; el final del período actual permanece fijo.',
+          'Se fija al iniciar la instancia. Los cambios solo afectan a futuros inicios de esta versión.',
       },
       dunningMinutes: {
         title: 'Intervalo de reintento de pago de renovación fallido (minutos)',
         description:
-          'Espere tanto tiempo antes de volver a intentar un pago de renovación fallido. Los cambios se aplican a los reintentos recién programados; los reintentos existentes mantienen su debido tiempo.',
+          'Se fija al iniciar la instancia. Los cambios solo afectan a futuros inicios de esta versión.',
       },
       maxDunning: {
         title: 'Límite de fallas de pago de renovación',
         description:
-          'Cancele la suscripción en el siguiente reintento automático si su recuento de pagos fallidos ha alcanzado este límite. Los cambios se aplican en la siguiente decisión de reintento.',
+          'Se fija al iniciar la instancia. Los cambios solo afectan a futuros inicios de esta versión.',
       },
       reopenDays: {
         title: 'Fecha límite de reapertura de tickets (días)',
         description:
-          'Permitir la reapertura dentro de estos días después del cierre de un ticket; de lo contrario, se requerirá un boleto nuevo. Cada solicitud de reapertura utiliza la configuración más reciente.',
+          'Se fija al iniciar la instancia. Los cambios solo afectan a futuros inicios de esta versión.',
       },
     },
     loading: 'Cargando parámetros…',
@@ -74,7 +74,7 @@ const esES: LocaleResource<typeof enUS> = {
     description:
       'Cambie sólo los valores declarados por código. La estructura del flujo de trabajo, las decisiones y los tiempos de espera permanecen en el código.',
     ruleExplanation:
-      'Todas las condiciones de un grupo deben coincidir. Los grupos separados se suman. Coloque a los usuarios alternativos en grupos separados.',
+      'Todas las condiciones de un grupo deben coincidir. Los grupos separados se suman. Coloque a los usuarios alternativos en grupos separados. Las referencias elegidas se fijan; los miembros actuales y su elegibilidad se resuelven al ejecutar.',
     allConditions: 'Cumple todas estas condiciones',
     alsoInclude: 'Inclúyase también',
     selectionType: 'Tipo de selección',
@@ -90,9 +90,7 @@ const esES: LocaleResource<typeof enUS> = {
     codeDefaults: 'Código predeterminado',
     databaseVersion: 'Configuración guardada',
     snapshotEffect:
-      'Instantánea: corregida en el primer envío; retenido después de la devolución o retiro',
-    liveEffect:
-      'Las lecturas futuras de parámetros utilizan la configuración más reciente; Los cronómetros y plazos existentes permanecen fijos.',
+      'Se fija al iniciar la instancia. Los cambios solo afectan a futuros inicios de esta versión.',
     yes: 'Sí',
     no: 'No',
     invalidObject: 'Ingrese un objeto JSON válido.',
@@ -109,10 +107,10 @@ const esES: LocaleResource<typeof enUS> = {
       'No hay candidatos elegibles; la presentación será rechazada.',
     editCurrent: 'Editar configuración actual',
     historyBoundary:
-      'Esto edita la configuración actual. Los hechos históricos y los candidatos asignados existentes permanecen sin cambios.',
+      'Se fija al iniciar la instancia. Los cambios solo afectan a futuros inicios de esta versión.',
     history: 'Uso real de parámetros',
-    effectivePreview: 'Valores efectivos para este registro ahora',
-    firstSnapshot: 'Instantánea del primer envío',
+    effectivePreview: 'Vista previa de la configuración antes del inicio',
+    firstSnapshot: 'Instantánea al iniciar la instancia',
     notRecorded: 'No registrado',
     diagramEntry: 'Entrada de diagrama opcional',
     diagramHint:

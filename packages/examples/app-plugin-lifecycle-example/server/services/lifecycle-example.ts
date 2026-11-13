@@ -170,7 +170,11 @@ export class LifecycleExampleService {
   }
 
   /** The lifecycle's `create` decides who may file one and what it must hold. */
-  public createTicket(values: NewTicket, actor: string): Promise<Plain> {
+  public createTicket(
+    values: NewTicket,
+    actor: string,
+    requestId?: string,
+  ): Promise<Plain> {
     return this.create(
       'tickets',
       {
@@ -179,6 +183,7 @@ export class LifecycleExampleService {
         assigneeId: null,
       },
       actor,
+      requestId,
     );
   }
 
@@ -308,11 +313,16 @@ export class LifecycleExampleService {
     name: ExampleLifecycleName,
     values: Plain,
     actor: string,
+    requestId?: string,
   ): Promise<Plain> {
     const { record } = await this.runtime.create(
       name,
       { ...values, createdAt: this.clock().toISOString() },
-      { actor: { id: actor } },
+      {
+        actor: { id: actor },
+        requestId,
+        requestInput: values as import('@nocobase/lifecycle').JsonObject,
+      },
     );
     return { ...record };
   }

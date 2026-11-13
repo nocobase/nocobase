@@ -87,6 +87,8 @@ const viVN: LocaleResource<typeof enUS> = {
       'Dữ liệu trình diễn mà quy trình đọc: những người mà hàng phòng ban đưa vào, các nhóm quản lý và lịch nghỉ lễ năm 2026.',
   },
   common: {
+    parameterSnapshot: 'Ảnh chụp khi bắt đầu',
+    parameterPreview: 'Xem trước cấu hình trước khi bắt đầu',
     created: 'Đã tạo',
     actAs: 'Hành động như',
     save: 'Lưu',

@@ -1,3 +1,4 @@
+import { createWorkCalendar, type CalendarEntry } from '../calendar.js';
 import { OfficeWorkflowParameterService } from './workflow-parameters.js';
 import { officeWorkflowDefinitions } from '../lifecycles/index.js';
 import type {
@@ -98,6 +99,9 @@ export interface RecordView {
     readonly effectRuns: readonly EffectRun[];
   };
   readonly traces: readonly Plain[];
+  readonly parameterSnapshot?:
+    import('@nocobase/lifecycle').ParameterSnapshot | null;
+  readonly parameterPreview?: Readonly<object>;
 }
 
 export interface Paging {
@@ -267,6 +271,26 @@ export class OfficeFlowsService {
     const definition = await this.runtime.boundLifecycle(name, id);
     return {
       record,
+      ...(this.runtime.definition(definition).parameterConfiguration
+        ? await (async () => {
+            const snapshot = await this.store
+              .parameterStore()
+              .snapshot('office', definition, id);
+            return snapshot
+              ? { parameterSnapshot: snapshot }
+              : {
+                  parameterSnapshot: null,
+                  parameterPreview: await this.runtime.resolveParameters(
+                    definition,
+                    {
+                      record: { ...record, id },
+                      purpose: 'preview',
+                      transactionHandle: undefined,
+                    },
+                  ),
+                };
+          })()
+        : {}),
       description: this.runtime.describe(definition),
       available: await this.runtime.available(definition, id, { id: actor }),
       history: await this.runtime.history(definition, id),
@@ -421,7 +445,14 @@ export class OfficeFlowsService {
       requestId: idOf(id),
     });
     const form = formOf(view.record);
-    const calendar = await this.store.calendar();
+    const values = await this.runtime.resolveParameters('dataRequests', {
+      record: { ...view.record, id },
+      purpose: 'preview',
+      transactionHandle: undefined,
+    });
+    const calendar = createWorkCalendar(
+      (values as { holidays: CalendarEntry[] }).holidays,
+    );
     const nominal = nominalDates(form);
     return {
       ...view,
@@ -501,12 +532,12 @@ export class OfficeFlowsService {
   public async runSchedule(
     today: string = this.store.now().slice(0, 10),
   ): Promise<number> {
-    const calendar = await this.store.calendar();
     const requests = await this.database
       .repository(COLLECTIONS.dataRequests)
       .findMany({ filter: { status: 'accepting' } });
     let created = 0;
     for (const row of requests) {
+      const calendar = await this.store.calendar(text(row.id));
       const form = formOf({ ...row });
       if (form.frequency === 'once' || form.frequency === 'other') continue;
       const acceptedOn = text(row.acceptedAt ?? row.statusChangedAt).slice(
@@ -664,11 +695,18 @@ export class OfficeFlowsService {
       clerk: 'clerkTasks',
       team: 'teamTasks',
     }[parentKind];
-    const configuration = await new OfficeWorkflowParameterService(
-      this.database,
-    ).read(workflow);
-    const rules = configuration.values.dispatchRules!;
-    const department = configuration.organization!.departments.find(
+    const configuration = {
+      organization: await new OfficeWorkflowParameterService(
+        this.database,
+      ).organization(),
+    };
+    const parameters = (await this.runtime.resolveParameters(workflow, {
+      record: { ...parent, id: parentId },
+      purpose: 'action',
+      transactionHandle: undefined,
+    })) as import('../../shared/workflow-parameters.js').OfficeWorkflowValues;
+    const rules = parameters.dispatchRules!;
+    const department = configuration.organization.departments.find(
       (item) => item.name === input.departmentName,
     );
     if (
@@ -778,10 +816,16 @@ export class OfficeFlowsService {
       // A group the body names that does not exist is a bad request, not a
       // missing resource: the URL names the document, which does exist.
       const group = (
-        await new OfficeWorkflowParameterService(this.database).read('incoming')
-      ).values.managementGroups!.find(
-        (item) => item.id === Number(input.groupId),
-      );
+        (await this.runtime.resolveParameters('incoming', {
+          record: { ...record, id: incomingId },
+          purpose: 'action',
+          transactionHandle: undefined,
+        })) as {
+          managementGroups: NonNullable<
+            import('../../shared/workflow-parameters.js').OfficeWorkflowValues['managementGroups']
+          >;
+        }
+      ).managementGroups.find((item) => item.id === Number(input.groupId));
       if (!group)
         throw new OfficeFlowsError(
           'INVALID',

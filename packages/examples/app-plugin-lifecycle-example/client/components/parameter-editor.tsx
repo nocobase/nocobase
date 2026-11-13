@@ -179,6 +179,7 @@ export function ParameterEditor({
   readonly saveRef?: Ref<{
     save: () => Promise<boolean>;
     values: () => JsonObject | undefined;
+    replace: (values: JsonObject) => void;
   }>;
   readonly hideRevision?: boolean;
   readonly group: ParameterGroupView;
@@ -249,6 +250,12 @@ export function ParameterEditor({
     }
   };
   useImperativeHandle(saveRef, () => ({
+    replace: (values: JsonObject) => {
+      setDraft(structuredClone(values));
+      setObjectErrors({});
+      setObjectText({});
+      setRequestId(createUuid());
+    },
     values: () =>
       Object.values(objectErrors).some(Boolean) ? undefined : draft,
     save: async () =>
@@ -283,15 +290,7 @@ export function ParameterEditor({
           <p className='text-xs text-muted-foreground'>
             {businessParameterFields.has(key)
               ? t(`parameters.fields.${key}.description`)
-              : [
-                  ...new Set(
-                    group.uses
-                      .filter((use) => use.field === key)
-                      .map((use) => use.readMode),
-                  ),
-                ]
-                  .map((mode) => t(`parameters.${mode}Effect`))
-                  .join(' · ')}
+              : t('parameters.snapshotEffect')}
           </p>
           {field.type === 'reviewers' ? (
             <ReviewerRuleEditor
