@@ -45,6 +45,7 @@ jobs:
       checks: read
     outputs:
       quality_passed: ${{ steps.quality.outputs.passed }}
+      smoke_matrix: ${{ steps.quality.outputs.smoke_matrix }}
       release_branch: ${{ steps.branch.outputs.name }}
       release_tag: ${{ steps.branch.outputs.tag }}
       batch: ${{ steps.branch.outputs.batch }}
@@ -130,6 +131,13 @@ jobs:
             [ "$CONCLUSION" = success ] || PASSED=false
           done
           echo "passed=$PASSED" >> "$GITHUB_OUTPUT"
+          # Without Quality the examples template suites are the longest smoke step, so its node and client projects get a runner each; the default suites stay in one.
+          if [ "$PASSED" = true ]; then
+            MATRIX='[{"template":"default","project":"none"},{"template":"examples","project":"none"}]'
+          else
+            MATRIX='[{"template":"default","project":"all"},{"template":"examples","project":"node"},{"template":"examples","project":"client"}]'
+          fi
+          echo "smoke_matrix=$MATRIX" >> "$GITHUB_OUTPUT"
           {
             echo "### Quality on the release base"
             echo
@@ -409,7 +417,7 @@ jobs:
         run: ../scripts/release-test-shard.sh "$SHARD" "$INCLUDE_TEMPLATES"
 
   smoke:
-    name: Release smoke (${{ matrix.template }})
+    name: Release smoke (${{ matrix.template }}, ${{ matrix.project }})
     needs: [prepare, build]
     if: '!inputs.skip_smoke_test'
     runs-on: ubuntu-latest
@@ -420,7 +428,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        template: [default, examples]
+        include: ${{ fromJSON(needs.prepare.outputs.smoke_matrix) }}
     steps:
       - name: Check out workflow tooling
         uses: actions/checkout@v4
@@ -475,7 +483,7 @@ jobs:
           template-kind: ${{ matrix.template }}
           package-artifacts: ${{ runner.temp }}/release-smoke-packages
           local-packages-only: 'true'
-          test-project: ${{ needs.prepare.outputs.quality_passed == 'true' && 'none' || 'all' }}
+          test-project: ${{ matrix.project }}
 
   # Pro checks out and builds commercial source on public Actions minutes. Nothing from these jobs leaves them through Actions: no artifact is uploaded and no cache is saved, and the only artifact they read is the open-source release state.
   #
