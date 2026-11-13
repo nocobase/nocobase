@@ -330,7 +330,11 @@ test('Pro publishing passes the private registry and token independently', () =>
 });
 
 test('Pro workflows retain the branch arguments supported by their source-owned sync script', () => {
-  assert.match(workflow('pro-release-beta'), /ARGS=\(--branch develop\)/u);
+  // The standalone beta selects the OSS commit once in prepare and pins every job to it.
+  assert.match(
+    workflow('pro-release-beta'),
+    /sync-release-oss\.mjs --branch develop --sha "\$OSS_SHA"/u,
+  );
   for (const name of ['pro-release-stable', 'pro-promote-to-stable']) {
     assert.match(workflow(name), /ARGS=\(--branch main\)/u);
   }
