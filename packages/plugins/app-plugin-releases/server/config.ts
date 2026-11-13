@@ -133,6 +133,8 @@ export interface ReleasesHostConfig {
   readonly restartDrainMs?: number;
   /** Live shared-process admission; defaults to 70% heap, 320 MiB start headroom and no extra system reserve. */
   readonly memoryBudget?: import('@nocobase/app-host/registry').AppMemoryBudget;
+  /** Release reads: 60 s idle, 10 min per attempt, with one retry on timeout. */
+  readonly artifactRead?: import('@nocobase/app-host/artifacts').ArtifactReadOptions;
   /** Optional running/starting count ceiling, independent of deployed record count. */
   readonly maxActiveApps?: number;
   /** How often the Host's idle stops and dormancies are read for `restartAfterChurn`, in milliseconds (60000). */

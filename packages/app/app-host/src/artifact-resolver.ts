@@ -1,8 +1,5 @@
 import { artifactWorker } from './artifact-worker-client.js';
-import {
-  deploymentCheckpoint,
-  deploymentSignal,
-} from './deployment-control.js';
+import { deploymentCheckpoint } from './deployment-control.js';
 /**
  * This file is part of the NocoBase (R) project.
  * Copyright (c) 2020-2024 NocoBase Co., Ltd.
@@ -14,7 +11,6 @@ import {
 
 import { deploymentLog } from './deployment-log.js';
 import { randomUUID } from 'node:crypto';
-import { createWriteStream } from 'node:fs';
 import {
   mkdir,
   readFile,
@@ -24,7 +20,12 @@ import {
   writeFile,
 } from 'node:fs/promises';
 import path from 'node:path';
-import { pipeline } from 'node:stream/promises';
+import {
+  downloadArtifact,
+  resolveArtifactReadOptions,
+  type ArtifactReadOptions,
+} from './artifact-read.js';
+export type { ArtifactReadOptions } from './artifact-read.js';
 
 import type { NocoBaseDriveDisk } from '@nocobase/drive';
 
@@ -59,6 +60,7 @@ export interface DriveArtifactResolverOptions {
   localArtifactDir?: string;
   logger?: Logger;
   expandedRevisionLimit?: number;
+  artifactRead?: ArtifactReadOptions;
 }
 
 interface InstalledArtifactMetadata {
@@ -98,6 +100,7 @@ export class DriveArtifactResolver implements ArtifactResolver {
   readonly localArtifactDir?: string;
   readonly logger?: Logger;
   readonly expandedRevisionLimit?: number;
+  readonly artifactRead: Required<ArtifactReadOptions>;
   private readonly activeRevisionByApp = new Map<string, string>();
   private readonly revisionPrunes = new Map<string, Promise<void>>();
 
@@ -114,6 +117,7 @@ export class DriveArtifactResolver implements ArtifactResolver {
       : undefined;
     this.logger = options.logger;
     this.expandedRevisionLimit = options.expandedRevisionLimit;
+    this.artifactRead = resolveArtifactReadOptions(options.artifactRead);
     if (
       this.expandedRevisionLimit !== undefined &&
       (!Number.isSafeInteger(this.expandedRevisionLimit) ||
@@ -178,7 +182,13 @@ export class DriveArtifactResolver implements ArtifactResolver {
       const readStartedAt = Date.now();
       const localPath = this.localArtifactPath(reference.key);
       if (!localPath)
-        await downloadArtifact(this.disk, reference.key, archivePath);
+        await downloadArtifact(
+          this.disk,
+          reference.key,
+          archivePath,
+          this.artifactRead,
+          this.logger,
+        );
       const readDurationMs = Date.now() - readStartedAt;
       deploymentCheckpoint();
       deploymentLog('verifying', 'Verifying artifact checksum', {
@@ -501,24 +511,6 @@ function artifactChecksumsEqual(
     left.appId === right.appId &&
     left.checksum.toLowerCase() === right.checksum.toLowerCase()
   );
-}
-
-async function downloadArtifact(
-  disk: NocoBaseDriveDisk,
-  key: string,
-  destination: string,
-): Promise<void> {
-  const signal = deploymentSignal();
-  try {
-    await pipeline(
-      await disk.getStream(key),
-      createWriteStream(destination, { flags: 'wx', mode: 0o600 }),
-      { signal },
-    );
-  } catch (error) {
-    signal?.throwIfAborted();
-    throw error;
-  }
 }
 
 function validateArtifactReference(reference: ArtifactReference): void {

@@ -794,6 +794,12 @@ const frFR: LocaleResource<typeof enUS> = {
           "Il n'y a pas de premier administrateur à afficher.",
       },
       messages: {
+        artifactReadIdleTimeout:
+          'Aucune donnée du paquet de version n’a été reçue pendant {{seconds}} secondes. Le déploiement n’a pas abouti ; réessayez.',
+        artifactReadTotalTimeout:
+          'La lecture du paquet de version a dépassé {{seconds}} secondes. Le déploiement n’a pas abouti ; réessayez.',
+        artifactReadTimeout:
+          'Le délai de lecture du paquet de version a expiré. Le déploiement n’a pas abouti ; réessayez.',
         hostExited:
           'Le processus de l’application s’est arrêté avant qu’elle ne soit prête.',
         hostDisabled: "L'hôte de l'application est désactivé.",

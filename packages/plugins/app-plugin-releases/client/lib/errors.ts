@@ -75,6 +75,19 @@ const PREFIXES: readonly (readonly [string, string])[] = [
 export function messageText(t: Translate, message: string): string {
   const raw = message.trim();
   const text = raw.replace(CODE_PREFIX, '').replace(LIMIT_SUFFIX, '');
+  const readTimeout =
+    /Reading the release package timed out: (no data received for|the attempt exceeded) (\d+) ms\. Deploy the release again\.$/.exec(
+      text,
+    );
+  if (readTimeout)
+    return t(
+      `ui.errors.messages.${readTimeout[1] === 'no data received for' ? 'artifactReadIdleTimeout' : 'artifactReadTotalTimeout'}`,
+      {
+        seconds: Number(readTimeout[2]) / 1000,
+      },
+    );
+  if (raw.startsWith('[ARTIFACT_READ_TIMEOUT]'))
+    return t('ui.errors.messages.artifactReadTimeout');
   const capacity = capacityKey(text);
   if (capacity) return t(`ui.errors.messages.${capacity}`);
   // Any other wording of a capacity refusal still reads as one, never as the Host's own sentence.

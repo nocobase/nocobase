@@ -786,6 +786,12 @@ const esES: LocaleResource<typeof enUS> = {
           'No hay un primer administrador para mostrar.',
       },
       messages: {
+        artifactReadIdleTimeout:
+          'No se recibieron datos del paquete de la versión durante {{seconds}} segundos. El despliegue no se completó; inténtalo de nuevo.',
+        artifactReadTotalTimeout:
+          'La lectura del paquete de la versión superó {{seconds}} segundos. El despliegue no se completó; inténtalo de nuevo.',
+        artifactReadTimeout:
+          'Se agotó el tiempo de lectura del paquete de la versión. El despliegue no se completó; inténtalo de nuevo.',
         hostExited:
           'El proceso de la aplicación se detuvo antes de que estuviera lista.',
         hostDisabled: 'El host de la aplicación está apagado.',

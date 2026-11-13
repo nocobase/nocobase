@@ -607,6 +607,31 @@ describe('client', () => {
     expect(messageText(t, 'Something else broke.')).toBe(
       'Something else broke.',
     );
+    expect(
+      messageText(
+        t,
+        '[ARTIFACT_READ_TIMEOUT] Reading the release package timed out: no data received for 1250 ms. Deploy the release again.',
+      ),
+    ).toBe(
+      enUS.ui.errors.messages.artifactReadIdleTimeout.replace(
+        '{{seconds}}',
+        '1.25',
+      ),
+    );
+    expect(
+      messageText(
+        t,
+        '[ARTIFACT_READ_TIMEOUT] Reading the release package timed out: the attempt exceeded 90000 ms. Deploy the release again.',
+      ),
+    ).toBe(
+      enUS.ui.errors.messages.artifactReadTotalTimeout.replace(
+        '{{seconds}}',
+        '90',
+      ),
+    );
+    expect(
+      messageText(t, '[ARTIFACT_READ_TIMEOUT] Unknown timeout detail'),
+    ).toBe(enUS.ui.errors.messages.artifactReadTimeout);
     // A capacity refusal reads as a retryable failure, without the Host's code or its unset-limit sentinel.
     expect(
       messageText(

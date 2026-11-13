@@ -772,6 +772,12 @@ const idID: LocaleResource<typeof enUS> = {
           'Tidak ada administrator pertama yang ditampilkan.',
       },
       messages: {
+        artifactReadIdleTimeout:
+          'Tidak ada data paket rilis yang diterima selama {{seconds}} detik. Deployment belum selesai; coba lagi.',
+        artifactReadTotalTimeout:
+          'Pembacaan paket rilis melebihi {{seconds}} detik. Deployment belum selesai; coba lagi.',
+        artifactReadTimeout:
+          'Waktu pembacaan paket rilis habis. Deployment belum selesai; coba lagi.',
         hostExited: 'Proses aplikasi dihentikan sebelum siap.',
         hostDisabled: 'Host aplikasi dimatikan.',
         hostShutDown: 'Host aplikasi telah dimatikan.',

@@ -574,6 +574,11 @@ const zhCN: typeof enUS = {
         INITIAL_ADMIN_UNAVAILABLE: '没有可显示的初始管理员。',
       },
       messages: {
+        artifactReadIdleTimeout:
+          '读取发布包时连续 {{seconds}} 秒没有收到数据，部署未完成，请重试。',
+        artifactReadTotalTimeout:
+          '读取发布包超过 {{seconds}} 秒，部署未完成，请重试。',
+        artifactReadTimeout: '读取发布包超时，部署未完成，请重试。',
         hostExited: '应用进程在就绪前退出了。',
         hostDisabled: '应用宿主未启用。',
         hostShutDown: '应用宿主已关闭。',

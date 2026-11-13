@@ -741,6 +741,12 @@ const koKR: LocaleResource<typeof enUS> = {
         INITIAL_ADMIN_UNAVAILABLE: '표시할 첫 번째 관리자가 없습니다.',
       },
       messages: {
+        artifactReadIdleTimeout:
+          '릴리스 패키지에서 {{seconds}}초 동안 데이터를 받지 못했습니다. 배포가 완료되지 않았습니다. 다시 시도하세요.',
+        artifactReadTotalTimeout:
+          '릴리스 패키지 읽기가 {{seconds}}초를 초과했습니다. 배포가 완료되지 않았습니다. 다시 시도하세요.',
+        artifactReadTimeout:
+          '릴리스 패키지 읽기 시간이 초과되었습니다. 배포가 완료되지 않았습니다. 다시 시도하세요.',
         hostExited: '앱 프로세스가 준비되기 전에 중지되었습니다.',
         hostDisabled: '앱 호스트가 꺼져 있습니다.',
         hostShutDown: '앱 호스트가 종료되었습니다.',

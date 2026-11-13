@@ -777,6 +777,12 @@ const viVN: LocaleResource<typeof enUS> = {
         INITIAL_ADMIN_UNAVAILABLE: 'Không có quản trị viên đầu tiên hiển thị.',
       },
       messages: {
+        artifactReadIdleTimeout:
+          'Không nhận được dữ liệu từ gói phát hành trong {{seconds}} giây. Việc triển khai chưa hoàn tất; hãy thử lại.',
+        artifactReadTotalTimeout:
+          'Việc đọc gói phát hành đã vượt quá {{seconds}} giây. Việc triển khai chưa hoàn tất; hãy thử lại.',
+        artifactReadTimeout:
+          'Đã hết thời gian đọc gói phát hành. Việc triển khai chưa hoàn tất; hãy thử lại.',
         hostExited: 'Quá trình của ứng dụng đã dừng trước khi sẵn sàng.',
         hostDisabled: 'Máy chủ ứng dụng bị tắt.',
         hostShutDown: 'Máy chủ ứng dụng đã tắt.',
