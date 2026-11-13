@@ -11,7 +11,14 @@ import path from 'node:path';
 import { Readable } from 'node:stream';
 
 import type { AppRuntimeLogging } from '@nocobase/app-server/logging';
-import type { DatabaseConnection, DatabaseManager, Row } from '@nocobase/db';
+import type {
+  DatabaseConnection,
+  DatabaseManager,
+  FilterBuilder,
+  FilterNode,
+  Row,
+  SortBuilder,
+} from '@nocobase/db';
 import {
   createDriveManager,
   type AppDriveDiskConfig,
@@ -27,7 +34,6 @@ import {
   type JournalQuery,
   type Logger,
 } from '@nocobase/logging';
-import type { Knex } from 'knex';
 import { parse as parseYaml } from 'yaml';
 
 import { BUSINESS_ACTIONS, type AppAction } from '../../shared/access.js';
@@ -375,71 +381,184 @@ export class ReleasesService {
         'INVALID_SEARCH',
         'INVALID_ARGUMENT',
       );
-    const searchIds = search
-      ? await this.findAppIdsBySearch(search)
-      : undefined;
-    let query = this.query()
-      .selectFrom('relApps')
-      .selectAll()
-      .orderBy('createdAt', 'desc')
-      .orderBy('id', 'desc');
-    // An empty list matches nothing: `id IS NULL` never holds, and unlike a placeholder id it needs no value
-    // (PostgreSQL refuses a NUL character in a text parameter) and suits any column type.
-    if (searchIds)
-      query = query.where((eb) =>
-        searchIds.length > 0
-          ? eb('id', 'in', [...searchIds])
-          : eb('id', 'is', null),
-      );
     const environmentIds = [
-      ...(options.environmentId ? [options.environmentId] : []),
-      ...(options.environmentIds ?? []),
+      ...new Set([
+        ...(options.environmentId ? [options.environmentId] : []),
+        ...(options.environmentIds ?? []),
+      ]),
     ];
-    if (environmentIds.length > 0)
-      query = query.where('environmentId', 'in', [...new Set(environmentIds)]);
-    const only = filter.only;
-    if (only)
-      query = query.where((eb) =>
-        only.length > 0 ? eb('id', 'in', [...only]) : eb('id', 'is', null),
-      );
-    if (!filter.all) {
-      const { createdBy, ids } = filter;
-      query = query.where((eb) =>
-        eb.or([
-          eb('createdBy', 'in', [...createdBy]),
-          ids.length > 0 ? eb('id', 'in', [...ids]) : eb('id', 'is', null),
-        ]),
-      );
+    const among = (
+      f: FilterBuilder,
+      field: string,
+      values: readonly string[],
+    ): FilterNode => {
+      // Group large scopes so SQLite does not exhaust its expression depth on a flat disjunction.
+      if (!values.length)
+        return f.and([f.string(field).eq(''), f.string(field).ne('')]);
+      const nodes = values.map((value) => f.string(field).eq(value));
+      const group = (items: readonly FilterNode[]): FilterNode =>
+        items.length <= 100
+          ? f.or(items)
+          : f.or(
+              Array.from({ length: Math.ceil(items.length / 100) }, (_, i) =>
+                group(items.slice(i * 100, (i + 1) * 100)),
+              ),
+            );
+      return group(nodes);
+    };
+    const condition = (f: FilterBuilder): FilterNode =>
+      f.and([
+        ...(environmentIds.length
+          ? [among(f, 'environmentId', environmentIds)]
+          : []),
+        ...(filter.only ? [among(f, 'id', filter.only)] : []),
+        ...(filter.all
+          ? []
+          : [
+              f.or([
+                among(f, 'createdBy', filter.createdBy),
+                among(f, 'id', filter.ids),
+              ]),
+            ]),
+        ...(search
+          ? [
+              f.or([
+                f.string('id').includes(search, { mode: 'insensitive' }),
+                f.string('name').includes(search, { mode: 'insensitive' }),
+              ]),
+            ]
+          : []),
+      ]);
+    const apps = this.options.database
+      .connection()
+      .repository<Row & { id: string; environmentId: string }>('relApps');
+    const sort = (s: SortBuilder) => [
+      s.field('createdAt').desc(),
+      s.field('id').desc(),
+    ];
+    const pageOf = (total: number) =>
+      Math.min(requestedPage, Math.max(1, Math.ceil(total / pageSize)));
+    if (
+      !Object.keys(options.labels ?? {}).length &&
+      !options.runStates?.length
+    ) {
+      const total = await apps.count({ filter: condition });
+      const page = pageOf(total);
+      const rows = await apps.findMany({
+        filter: condition,
+        sort,
+        limit: pageSize,
+        offset: (page - 1) * pageSize,
+      });
+      return {
+        items: await this.summarize(rows.map(decodeApp)),
+        total,
+        page,
+        pageSize,
+      };
     }
-    // Labels are opaque JSON, matched here rather than in SQL.
-    let rows = (await query.execute<Row>())
-      .map(decodeApp)
-      .filter((app) => matchesLabels(app.labels, options.labels));
-    // A state filter needs every candidate's runtime before the page is cut: one batched status call per environment,
-    // reused for the page's summaries.
+
+    let total = 0;
+    let ids: string[] = [];
     let statuses: RuntimeStatuses | undefined;
     if (options.runStates?.length) {
+      // The driver takes all ids once per environment. Only ids/environment survive the label scan; statuses and
+      // candidates remain O(N), while labels and complete App records are bounded by a batch and a page respectively.
+      const candidates = [];
+      for await (const candidate of this.scanAppCandidates(
+        condition,
+        options.labels,
+      ))
+        candidates.push(candidate);
+      const known = await this.runtimeStatuses(candidates);
+      statuses = known;
       const wanted = new Set(options.runStates);
-      statuses = await this.runtimeStatuses(rows);
-      const known = statuses;
-      rows = rows.filter((app) =>
+      const matching = candidates.filter((app) =>
         wanted.has(
           runStateOf(runtimeStatus(known.get(app.environmentId), app.id)),
         ),
       );
+      total = matching.length;
+      const page = pageOf(total);
+      ids = matching
+        .slice((page - 1) * pageSize, page * pageSize)
+        .map((app) => app.id);
+    } else {
+      // Retain the requested page and a rolling last page, including a full last page on an exact multiple.
+      let last: string[] = [];
+      for await (const app of this.scanAppCandidates(
+        condition,
+        options.labels,
+      )) {
+        if (total % pageSize === 0) last = [];
+        last.push(app.id);
+        if (
+          total >= (requestedPage - 1) * pageSize &&
+          total < requestedPage * pageSize
+        )
+          ids.push(app.id);
+        total += 1;
+      }
+      if (pageOf(total) !== requestedPage) ids = last;
     }
-    const total = rows.length;
-    const page = Math.min(
-      requestedPage,
-      Math.max(1, Math.ceil(total / pageSize)),
-    );
-    const slice = rows.slice((page - 1) * pageSize, page * pageSize);
+    const rows = ids.length
+      ? await apps.findMany({
+          filter: (f) => f.and([condition(f), among(f, 'id', ids)]),
+        })
+      : [];
+    const byId = new Map(rows.map((row) => [String(row.id), decodeApp(row)]));
+    const pageApps = ids.flatMap((id) => {
+      const app = byId.get(id);
+      return app ? [app] : [];
+    });
     return {
-      items: await this.summarize(slice, statuses),
+      items: await this.summarize(pageApps, statuses),
       total,
-      page,
+      page: pageOf(total),
       pageSize,
     };
+  }
+
+  private async *scanAppCandidates(
+    condition: (f: FilterBuilder) => FilterNode,
+    labels: Labels | undefined,
+  ): AsyncGenerator<Pick<AppRecord, 'id' | 'environmentId'>> {
+    const apps = this.options.database
+      .connection()
+      .repository<Row & { id: string; environmentId: string }>('relApps');
+    let cursor: { id: string; createdAt: string } | undefined;
+    for (;;) {
+      const after = cursor;
+      const rows = await apps.findMany({
+        // The redundant leading-axis bound lets SQLite seek the composite index instead of scanning the
+        // environment from its start for every OR cursor boundary. The cursor still resolves timestamp ties.
+        filter: after
+          ? (f) =>
+              f.and([
+                condition(f),
+                f.date('createdAt').notAfter(after.createdAt),
+              ])
+          : condition,
+        // Repository compiles the descending (createdAt, id) lexicographic boundary with exact equality on time.
+        cursor,
+        select: (s) => s.fields('id', 'environmentId', 'createdAt', 'labels'),
+        sort: (s) => [s.field('createdAt').desc(), s.field('id').desc()],
+        limit: 500,
+      });
+      for (const row of rows) {
+        if (matchesLabels(decodeLabels(row.labels), labels))
+          yield {
+            id: String(row.id),
+            environmentId: String(row.environmentId),
+          };
+      }
+      if (rows.length < 500) return;
+      const last = rows[rows.length - 1];
+      cursor = {
+        id: String(last.id),
+        createdAt: decodeDate(last.createdAt).toISOString(),
+      };
+    }
   }
 
   public async getApp(caller: Caller, appId: string): Promise<AppSummary> {
@@ -2836,7 +2955,7 @@ export class ReleasesService {
 
   /** Each environment's driver status of these Apps, one call per environment; the error when its driver failed. */
   private async runtimeStatuses(
-    apps: readonly AppRecord[],
+    apps: readonly Pick<AppRecord, 'id' | 'environmentId'>[],
   ): Promise<RuntimeStatuses> {
     const statuses = new Map<
       string,
@@ -2957,27 +3076,6 @@ export class ReleasesService {
         })(),
       };
     });
-  }
-
-  private async findAppIdsBySearch(search: string): Promise<readonly string[]> {
-    const connection = this.options.database.connection();
-    const physical = await connection.collections.getPhysical('relApps');
-    if (!physical) throw new Error('The releases schema is unavailable.');
-    const knex = await connection.client<Knex>();
-    // A raw query bypasses the repository that scopes a table to its schema, so name the schema here. The columns are
-    // literals bound as identifiers; the only untrusted value is the bound search term.
-    const rows = await knex(physical.tableName)
-      .withSchema(physical.schema)
-      .select('id')
-      .whereRaw('lower(??) like lower(?) or lower(??) like lower(?)', [
-        'id',
-        `%${search}%`,
-        'name',
-        `%${search}%`,
-      ]);
-    return (rows as Array<Record<string, unknown>>).map((row) =>
-      String(row['id']),
-    );
   }
 
   /** Opens (once) the driver session of an environment. */
