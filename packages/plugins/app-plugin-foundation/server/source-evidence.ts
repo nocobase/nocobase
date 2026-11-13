@@ -277,6 +277,7 @@ export class SourceEvidence {
     file: string,
     roots?: readonly ts.Node[],
     contextualCalls = false,
+    discardUnsafe = false,
   ): {
     references: Set<string>;
     collections: Set<string>;
@@ -904,6 +905,14 @@ export class SourceEvidence {
       bindings: ReadonlyMap<ts.Declaration, readonly ts.Node[]> = new Map(),
       active: ReadonlySet<ts.Node> = new Set(),
     ): void => {
+      // Only dependency callers that discard unsafe slices may skip the remaining evidence.
+      // Page discovery and diagnostic callers still need the complete traversal.
+      if (
+        contextualCalls &&
+        discardUnsafe &&
+        (unsafeCapabilityEscaped || unsafeValueEscaped)
+      )
+        return;
       if (ts.isTypeNode(node)) return;
       if (
         contextualCalls &&
