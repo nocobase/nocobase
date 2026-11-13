@@ -69,3 +69,37 @@ it.each(['unknown', 'started', 'draft'] as const)(
     }
   },
 );
+
+it.each(['officeFlowsParameterSnapshots', 'officeFlowsCreationRequests'])(
+  'refuses rollback while %s contains instance evidence',
+  async (collection) => {
+    const fixture = await createTestDatabase();
+    try {
+      const migrator = createMigrator({
+        database: fixture.database,
+        sources: migrations,
+      });
+      await migrator.latest();
+      const values =
+        collection === 'officeFlowsParameterSnapshots'
+          ? { id: 'preserved-evidence', payload: { values: { holidays: [] } } }
+          : {
+              id: 'preserved-evidence',
+              status: 'completed',
+              revision: 1,
+              actorId: 'test',
+              fingerprint: '{}',
+              recordId: '1',
+              entryId: '1',
+              at: '2026-11-13T00:00:00.000Z',
+            };
+      await fixture.database.repository(collection).createOne({ values });
+      await expect(migrator.rollback()).rejects.toThrow(
+        'Parameter snapshots and receipts are retained.',
+      );
+      expect(await fixture.database.repository(collection).count()).toBe(1);
+    } finally {
+      await fixture.destroy();
+    }
+  },
+);
