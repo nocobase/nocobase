@@ -122,6 +122,39 @@ describe('schema-derived operation keys', () => {
     );
     expect(derived).not.toHaveProperty('idempotency');
     expect(derived.parameters).toEqual([]);
+    expect(() =>
+      command(
+        document([], {
+          requestBody: {
+            content: {
+              'application/json': {
+                schema: { type: 'string', 'x-idempotency': false },
+              },
+            },
+          },
+        }),
+      ),
+    ).not.toThrow();
+  });
+
+  it('does not interpret example data as schema annotations', () => {
+    const body = {
+      requestBody: {
+        content: {
+          'application/json': {
+            schema: { type: 'object', example: { 'x-idempotency': true } },
+          },
+        },
+      },
+    };
+    expect(() =>
+      command(
+        document(
+          [header({ type: 'string', example: { 'x-idempotency': true } })],
+          body,
+        ),
+      ),
+    ).not.toThrow();
   });
 
   it('resolves parameter and schema refs, allOf intersections, and path-level parameters', () => {
@@ -164,6 +197,14 @@ describe('schema-derived operation keys', () => {
     [{ type: 'string', enum: ['a'], 'x-idempotency': true }, 'unsupported'],
     [
       { anyOf: [{ type: 'string', 'x-idempotency': true }, { type: 'null' }] },
+      'ambiguous',
+    ],
+    [
+      {
+        type: 'string',
+        'x-idempotency': false,
+        anyOf: [{ 'x-idempotency': true }],
+      },
       'ambiguous',
     ],
     [

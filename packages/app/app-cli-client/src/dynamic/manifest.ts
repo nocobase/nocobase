@@ -25,6 +25,7 @@ export type {
   CliCommand,
   CliManifest,
   CliParameter,
+  CliIdempotency,
   CliWithheldCommand,
 } from '../parse/manifest.ts';
 

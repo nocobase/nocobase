@@ -156,13 +156,22 @@ export async function download(
   url: URL,
   init: RequestInit,
   out: string | undefined,
-  options: { readonly fetch?: typeof fetch; readonly timeoutMs?: number },
+  options: {
+    readonly fetch?: typeof fetch;
+    readonly timeoutMs?: number;
+    readonly signal?: AbortSignal;
+  },
 ): Promise<Saved> {
   let response: Response;
   try {
     response = await (options.fetch ?? fetch)(url, {
       ...init,
-      signal: AbortSignal.timeout(options.timeoutMs ?? 30 * 60_000),
+      signal: AbortSignal.any([
+        AbortSignal.timeout(options.timeoutMs ?? 30 * 60_000),
+        ...[init.signal, options.signal].filter(
+          (signal): signal is AbortSignal => signal != null,
+        ),
+      ]),
     });
   } catch (error) {
     throw new AppApiError(

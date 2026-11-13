@@ -1,7 +1,3 @@
-import {
-  validateOperationCommand,
-  validateOperationKey,
-} from './idempotency.ts';
 // Reading a command line against a manifest command (`kind: 'rest'`): the words after the command are its positional
 // parameters, in order, and its flags, each a path, query or body parameter, or a file to send.
 //
@@ -17,6 +13,11 @@ import {
 //
 // It touches no file, environment or terminal itself: `CliParseIo` does, so the CLI on a machine and an online run's
 // shell read a line the same way.
+import {
+  validateOperationCommand,
+  validateOperationKey,
+} from './idempotency.ts';
+
 import {
   DOWNLOAD_OUT_FLAG,
   EXIT_CODES,

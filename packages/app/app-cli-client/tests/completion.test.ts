@@ -82,6 +82,25 @@ describe('completion', () => {
     ]);
   });
 
+  it('offers the dedicated operation-key flag only on marked commands', () => {
+    const marked: CliCommand = {
+      ...command('record:create'),
+      method: 'POST',
+      idempotency: {
+        header: 'request-key',
+        flag: 'operation-key',
+        minLength: 1,
+      },
+      requiredCapabilities: ['idempotency-v1'],
+    };
+    expect(
+      completeLine(['record', 'create'], '--op', statics, [marked]),
+    ).toEqual(['--operation-key']);
+    expect(completeLine(['issue', 'get'], '--op', statics, commands)).toEqual(
+      [],
+    );
+  });
+
   it('prints a script per shell that asks the CLI', () => {
     for (const shell of ['zsh', 'bash', 'fish'])
       expect(completionScript('acme', shell)).toContain('acme __complete --');

@@ -649,6 +649,7 @@ export function deriveAllCliCommands(
                 document,
                 parameter,
               );
+              if (inherited?.in !== 'header') return false;
               return !(operation.parameters ?? []).some((value) => {
                 const own = resolve<OpenAPIV3_1.ParameterObject>(
                   document,

@@ -31,6 +31,7 @@ export type {
   CliEnvDefault,
   CliManifest,
   CliParameter,
+  CliIdempotency,
   CliWithheldCommand,
 } from './manifest.ts';
 

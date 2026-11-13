@@ -324,7 +324,18 @@ async function runContext(
   try {
     const outcome = await runResolved(context.session, resolved);
     if (outcome.help !== undefined) {
-      write(outcome.help);
+      write(
+        resolved.command.idempotency && outcome.json
+          ? JSON.stringify(
+              successEnvelope(name, {
+                data: { help: outcome.help },
+                meta: { requestStatus: 'not-sent' },
+              }),
+              null,
+              2,
+            )
+          : outcome.help,
+      );
       return;
     }
     const answer = outcome.answer ?? { data: null };
@@ -336,7 +347,10 @@ async function runContext(
             name,
             answer,
             [],
-            dryRun ? 'success-noop' : 'success',
+            dryRun ||
+              (resolved.command.idempotency && answer.meta?.dryRun === true)
+              ? 'success-noop'
+              : 'success',
           ),
           null,
           2,

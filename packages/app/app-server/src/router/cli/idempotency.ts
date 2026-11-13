@@ -54,7 +54,7 @@ function hasMarker(
   if (Array.isArray(value))
     return value.some((child) => hasMarker(document, child, seen));
   const node = value as ObjectValue;
-  if (own(node, marker)) return true;
+  if (own(node, marker) && node[marker] !== false) return true;
   if (
     typeof node.$ref === 'string' &&
     node.$ref.startsWith('#/') &&
@@ -71,9 +71,30 @@ function hasMarker(
           : undefined;
     if (hasMarker(document, target, seen)) return true;
   }
-  return Object.entries(node).some(
-    ([key, child]) => key !== '$ref' && hasMarker(document, child, seen),
-  );
+  const children = [
+    'allOf',
+    'anyOf',
+    'oneOf',
+    'not',
+    'if',
+    'then',
+    'else',
+    'items',
+    'prefixItems',
+    'contains',
+    'additionalProperties',
+    'unevaluatedProperties',
+    'propertyNames',
+  ];
+  if (children.some((key) => hasMarker(document, node[key], seen))) return true;
+  return ['properties', 'patternProperties', 'dependentSchemas'].some((key) => {
+    const entries = node[key];
+    return (
+      entries &&
+      typeof entries === 'object' &&
+      Object.values(entries).some((child) => hasMarker(document, child, seen))
+    );
+  });
 }
 
 const reserved = new Set([
@@ -155,6 +176,14 @@ export function deriveCliIdempotency(
       return fail(
         'put x-idempotency on the parameter schema, not the parameter',
       );
+    if (
+      Object.values(parameter.content ?? {}).some((media) =>
+        hasMarker(document, media.schema),
+      )
+    )
+      return fail(
+        'operation-key parameters must declare schema rather than content',
+      );
     if (!hasMarker(document, parameter.schema)) continue;
     const parts = schemaParts(document, parameter.schema);
     const marks = parts
@@ -162,11 +191,8 @@ export function deriveCliIdempotency(
       .map((part) => part[marker]);
     if (marks.some((value) => value !== true && value !== false))
       return fail('x-idempotency must be true or false');
-    if (!marks.includes(true)) {
-      if (marks.length === 0)
-        return fail('a marker inside an unsupported composition is ambiguous');
-      continue;
-    }
+    if (!marks.includes(true))
+      return fail('a marker inside an unsupported composition is ambiguous');
     if (marks.includes(false)) return fail('conflicting x-idempotency markers');
     if (parameter.in !== 'header')
       return fail('only header parameters may be marked');
@@ -273,6 +299,12 @@ export function rejectBodyIdempotency(
   document: ApiDocument,
   body: unknown,
 ): void {
-  if (hasMarker(document, body))
+  if (!body || typeof body !== 'object') return;
+  const content = (body as OpenAPIV3_1.RequestBodyObject).content;
+  if (
+    Object.values(content ?? {}).some((media) =>
+      hasMarker(document, media.schema),
+    )
+  )
     return fail('only header parameter schemas may declare x-idempotency');
 }

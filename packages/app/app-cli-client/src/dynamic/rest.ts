@@ -261,6 +261,7 @@ export async function executeRest(
         meta: {
           ...(operationKey ? { operationKey } : {}),
           requestStatus: 'not-sent',
+          dryRun: true,
           message:
             'Dry run: no request was sent; no operation key was generated.',
         },

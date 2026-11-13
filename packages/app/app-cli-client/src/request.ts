@@ -1,11 +1,12 @@
+// The request a manifest command makes, from the values given for its parameters: path parameters fill the route's
+// `{field}` placeholders, query parameters the query string (an array repeats), body parameters the body's fields. It
+// imports no platform APIs, so a server that calls its own routes the way the CLI does (an online agent's tools) shares it.
+
 import {
   validateOperationCommand,
   validateOperationKey,
 } from './parse/idempotency.ts';
 import type { CliIdempotency } from './parse/manifest.ts';
-// The request a manifest command makes, from the values given for its parameters: path parameters fill the route's
-// `{field}` placeholders, query parameters the query string (an array repeats), body parameters the body's fields. It
-// imports no platform APIs, so a server that calls its own routes the way the CLI does (an online agent's tools) shares it.
 
 /** The part of a manifest parameter the request needs. */
 export interface RequestParameter {
