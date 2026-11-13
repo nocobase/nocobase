@@ -120,10 +120,17 @@ test('Pro publishes the pushed candidate commit without regenerating it', async 
     assert.ok(!publish.includes(regeneration), regeneration);
   }
   const publishing = publish.indexOf('publish-commercial-packages');
+  // It builds what pro-check's test leg built, never the root build with the private examples, which nothing checked before the open-source packages were published.
+  assert.match(
+    runBlock(publish, 'Install and build the candidate'),
+    /^pnpm release:build$/mu,
+  );
+  assert.doesNotMatch(publish, /^\s+pnpm build$/mu);
   for (const check of [
     'test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"',
     'test "$TAG_SHA" = "$GITLINK"',
     'pnpm install --frozen-lockfile',
+    'pnpm release:build',
     'Installing or building changed the tested candidate',
   ]) {
     const position = publish.indexOf(check);

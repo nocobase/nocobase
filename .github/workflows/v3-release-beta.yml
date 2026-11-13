@@ -1471,13 +1471,13 @@ jobs:
           registry-url: ${{ secrets.PRO_NPM_REGISTRY }}
           scope: '@nocobase'
 
-      # Publishing needs dependencies and build output, but neither may change what was tested.
+      # Publishing needs dependencies and build output, but neither may change what was tested. Build what pro-check's test leg built (Pro's release:build: every Pro package except the private packages/examples/**, which are never published), so a build that passed there passes here, after the open-source packages are already out.
       - name: Install and build the candidate
         env:
           NODE_AUTH_TOKEN: ${{ secrets.PRO_NPM_TOKEN }}
         run: |
           CI=true pnpm install --frozen-lockfile
-          pnpm build
+          pnpm release:build
           test -z "$(git status --porcelain --untracked-files=no)" || { git status --short; echo '::error::Installing or building changed the tested candidate'; exit 1; }
 
       # Installation tokens expire after one hour, so mint the write token only after the build.
