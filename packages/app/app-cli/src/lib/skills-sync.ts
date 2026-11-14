@@ -734,11 +734,11 @@ async function isPackagedCli(directory: string): Promise<boolean> {
   try {
     const manifest = await readJson(path.join(directory, 'package.json'));
     const nocobase = manifest.nocobase;
-    return (
-      typeof nocobase === 'object' &&
-      nocobase !== null &&
-      typeof (nocobase as { cli?: unknown }).cli === 'object'
-    );
+    if (typeof nocobase !== 'object' || nocobase === null) return false;
+    const cli = (nocobase as { cli?: { bin?: unknown; entry?: unknown } }).cli;
+    // Project-local CLI extensions ship development guidance for the consuming app.
+    // Only a standalone branded executable owns a separate end-user Skill.
+    return typeof cli?.bin === 'string' && cli.entry === undefined;
   } catch {
     return false;
   }

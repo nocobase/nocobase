@@ -23,6 +23,7 @@ export const TEMPLATE_ALIASES: Readonly<Record<string, TemplateAlias>> = {
   examples: { packageName: '@nocobase/app-template-examples' },
   'multi-portal': { packageName: '@nocobase/app-template-multi-portal' },
   'multi-app': { packageName: '@nocobase/app-template-multi-app' },
+  'sub-app': { packageName: '@nocobase/app-template-sub-app' },
 };
 
 export const DEFAULT_TEMPLATE = 'default';
