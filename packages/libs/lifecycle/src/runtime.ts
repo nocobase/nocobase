@@ -161,8 +161,6 @@ export type ParameterProvider<T extends LifecycleTypes> = (
 export interface ParameterConfigurationRegistration<T extends LifecycleTypes> {
   readonly store: LifecycleParameterStore;
   readonly scope: (context: ParameterReadContext<T>) => string;
-  /** Refuses a submitted record whose historical snapshot cannot be recovered. */
-  readonly snapshotRequired?: (record: T['record']) => boolean;
 }
 export interface RegisterOptions<T extends LifecycleTypes> {
   readonly services?: ServicesSource<T>;
@@ -1053,7 +1051,6 @@ export class LifecycleRuntime {
     const cached = scoped && key ? execution.values.get(key) : undefined;
     if (cached) {
       const parameters = await cached;
-      await this.bindParameterSnapshot(registered, context);
       return parameters;
     }
     const pending = (async (): Promise<Readonly<object>> => {
@@ -1064,7 +1061,6 @@ export class LifecycleRuntime {
         );
         if (scoped && key) execution.resolutions.set(key, resolution);
         const parameters = freezeParameters(resolution.values);
-        await this.bindParameterSnapshot(registered, context, resolution);
         return parameters;
       }
       const overrides = registered.parameterProvider
@@ -1188,15 +1184,6 @@ export class LifecycleRuntime {
     );
   }
 
-  private startTransitions(registered: Registered): readonly string[] {
-    const start = registered.lifecycle.parameterConfiguration?.startTransition;
-    return start === undefined
-      ? []
-      : typeof start === 'string'
-        ? [start]
-        : start;
-  }
-
   private async readConfiguredParameters(
     registered: Registered,
     context: Omit<ParameterReadContext<LifecycleTypes>, 'lifecycle' | 'key'>,
@@ -1233,10 +1220,17 @@ export class LifecycleRuntime {
           snapshot.recordId !== String(context.record!.id) ||
           !Number.isSafeInteger(snapshot.revision) ||
           snapshot.revision < 0 ||
+          typeof snapshot.at !== 'string' ||
           !Number.isFinite(Date.parse(snapshot.at))
         )
           throw new Error('Invalid snapshot identity or provenance.');
         if (
+          !snapshot.values ||
+          typeof snapshot.values !== 'object' ||
+          Array.isArray(snapshot.values) ||
+          !snapshot.sources ||
+          typeof snapshot.sources !== 'object' ||
+          Array.isArray(snapshot.sources) ||
           Object.keys(snapshot.values).some(
             (key) => !Object.hasOwn(registered.lifecycle.parameters, key),
           )
@@ -1253,7 +1247,12 @@ export class LifecycleRuntime {
                   !Object.hasOwn(snapshot.values, key) ||
                   !source ||
                   source.schemaVersion !== group.schemaVersion ||
-                  source.group !== group.key
+                  source.group !== group.key ||
+                  !Number.isSafeInteger(source.revision) ||
+                  source.revision < 0 ||
+                  !['default', 'configuration', 'recovered'].includes(
+                    source.origin,
+                  )
                 )
                   throw new Error(
                     `Missing or incompatible snapshot parameter "${key}".`,
@@ -1264,6 +1263,15 @@ export class LifecycleRuntime {
           );
           Object.assign(values, normalized);
         }
+        const configuredFields = new Set(
+          definition.groups.flatMap((group) => Object.keys(group.fields)),
+        );
+        if (
+          Object.keys(snapshot.sources).some(
+            (key) => !configuredFields.has(key),
+          )
+        )
+          throw new Error('Unknown snapshot parameter source.');
         // Non-configurable defaults are also part of the complete frozen values.
         for (const key of Object.keys(registered.lifecycle.parameters))
           if (!Object.hasOwn(snapshot.values, key))
@@ -1281,62 +1289,24 @@ export class LifecycleRuntime {
         );
       }
     }
-    if (context.record) {
-      const starts = this.startTransitions(registered);
-      const record = context.record;
-      const recordId = String(record.id);
-      if (!starts.length || config.snapshotRequired?.(record))
-        throw new ParameterConfigurationError(
-          'PARAMETER_SNAPSHOT_MISSING',
-          'This started instance requires a verified historical parameter snapshot.',
-        );
-      const inspect = async (store: LifecycleStore): Promise<void> => {
-        // A positive, independently persisted start state survives transition-log retention.
-        // The business concurrency counter and the absence of a submit log prove nothing.
-        const proof = await store.findRecord(
-          this.creationRequestsCollection,
-          this.parameterStartIdentity(
-            scope,
-            registered.lifecycle.name,
-            recordId,
-          ),
-        );
-        if (
-          proof?.status === 'unstarted' &&
-          proof.fingerprint === '$parameter-start-v1' &&
-          proof.revision === 0 &&
-          proof.recordId === recordId
-        )
-          return;
-        // Logs only classify the error; they never authorize a configuration fallback.
-        const logs =
-          proof?.status === 'started'
-            ? []
-            : await store.listTransitions(registered.lifecycle.name, recordId);
-        throw new ParameterConfigurationError(
-          proof?.status === 'started' ||
-            logs.some((entry) => starts.includes(entry.transition))
-            ? 'PARAMETER_SNAPSHOT_MISSING'
-            : 'PARAMETER_START_UNKNOWN',
-          'The instance has no complete snapshot or authoritative unstarted proof; migrate it before execution.',
-        );
-      };
-      const execution = this.parameterExecution.getStore();
-      if (execution && execution.handle === context.transactionHandle)
-        await inspect(execution.store);
-      else
-        await this.store.transaction(
-          inspect,
-          context.transactionHandle === undefined
-            ? undefined
-            : { within: context.transactionHandle },
-        );
-    }
+    if (context.record)
+      throw new ParameterConfigurationError(
+        'PARAMETER_SNAPSHOT_MISSING',
+        'Every configured instance requires its persisted parameter snapshot, including draft records.',
+      );
     const current = await config.store.readConfiguration(
       scope,
       registered.lifecycle.name,
       context.transactionHandle,
     );
+    if (
+      current &&
+      (!Number.isSafeInteger(current.revision) || current.revision < 0)
+    )
+      throw new ParameterConfigurationError(
+        'CONFIGURATION_INVALID',
+        'Invalid configuration revision.',
+      );
     const values = { ...registered.lifecycle.parameters } as JsonObject;
     const sources: Record<string, ParameterSource> = {};
     for (const group of definition.groups) {
@@ -1373,93 +1343,6 @@ export class LifecycleRuntime {
         'Stored configuration contains unknown parameters.',
       );
     return { scope, revision: current?.revision ?? 0, values, sources };
-  }
-
-  private parameterStartIdentity(
-    scope: string,
-    lifecycle: string,
-    recordId: string,
-  ): string {
-    // A reserved namespace, distinct from actor/request identities.
-    return parameterIdentity(
-      '$parameter-start-v1',
-      scope,
-      lifecycle,
-      recordId,
-      'proof',
-    );
-  }
-
-  private async bindParameterSnapshot(
-    registered: Registered,
-    context: Omit<ParameterReadContext<LifecycleTypes>, 'lifecycle' | 'key'>,
-    supplied?: ParameterResolution,
-  ): Promise<void> {
-    const config = registered.parameterConfiguration;
-    if (!config || !context.record) return;
-    const starts = this.startTransitions(registered);
-    if (
-      !(context.purpose === 'create' && !starts.length) &&
-      !(
-        context.purpose === 'transition' &&
-        starts.includes(context.transition ?? '')
-      )
-    )
-      return;
-    const resolution =
-      supplied ??
-      this.parameterExecution
-        .getStore()
-        ?.resolutions.get(
-          moveKey(registered.lifecycle.name, context.record.id),
-        );
-    if (!resolution)
-      throw new Error('The parameter execution has no resolution to bind.');
-    if (
-      await config.store.snapshot(
-        resolution.scope,
-        registered.lifecycle.name,
-        String(context.record.id),
-        context.transactionHandle,
-      )
-    )
-      return;
-    if (starts.length) {
-      const execution = this.parameterExecution.getStore();
-      if (!execution || execution.handle !== context.transactionHandle)
-        throw new Error(
-          'Parameter start proof must join the startup transaction.',
-        );
-      const claimed = await execution.store.updateRecordIf(
-        this.creationRequestsCollection,
-        this.parameterStartIdentity(
-          resolution.scope,
-          registered.lifecycle.name,
-          String(context.record.id),
-        ),
-        {
-          stateField: 'status',
-          state: 'unstarted',
-          versionField: 'revision',
-          version: 0,
-        },
-        { status: 'started', revision: 1, at: this.clock().toISOString() },
-      );
-      if (!claimed)
-        throw new ParameterConfigurationError(
-          'CONFIGURATION_CONFLICT',
-          'The parameter start proof changed; retry the startup request.',
-        );
-    }
-    await config.store.saveSnapshot(
-      {
-        ...resolution,
-        lifecycle: registered.lifecycle.name,
-        recordId: String(context.record.id),
-        at: this.clock().toISOString(),
-      },
-      context.transactionHandle,
-    );
   }
 
   private triggerDueAt(
@@ -1997,38 +1880,21 @@ export class LifecycleRuntime {
             this.parameterExecution
               .getStore()
               ?.resolutions.set(moveKey(name, record.id), creationResolution);
-          if (
-            registered.parameterConfiguration &&
-            this.startTransitions(registered).length
-          ) {
+          if (registered.parameterConfiguration) {
             if (!creationResolution)
               throw new Error(
-                'Draft creation requires an authoritative parameter scope.',
+                'Creation requires an authoritative parameter resolution.',
               );
-            await store.createRecord(this.creationRequestsCollection, {
-              id: this.parameterStartIdentity(
-                creationResolution.scope,
-                name,
-                String(record.id),
-              ),
-              status: 'unstarted',
-              revision: 0,
-              actorId: options.actor.id,
-              fingerprint: '$parameter-start-v1',
-              recordId: String(record.id),
-              entryId: null,
-              at,
-            });
+            await registered.parameterConfiguration.store.saveSnapshot(
+              {
+                ...creationResolution,
+                lifecycle: name,
+                recordId: String(record.id),
+                at,
+              },
+              store.transactionHandle,
+            );
           }
-          await this.bindParameterSnapshot(
-            registered,
-            {
-              record,
-              transactionHandle: store.transactionHandle,
-              purpose: 'create',
-            },
-            creationResolution,
-          );
           const entry = await store.appendTransition({
             lifecycle: lifecycle.name,
             recordId: String(record.id),

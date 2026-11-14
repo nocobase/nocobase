@@ -488,7 +488,6 @@ export interface Lifecycle<T extends LifecycleTypes> {
 /** A plain description for a client: draw the state diagram, label buttons. */
 export interface LifecycleDescription {
   readonly parameterConfiguration?: {
-    readonly startTransition?: string | readonly string[];
     readonly groups: readonly {
       readonly key: string;
       readonly title: string;
@@ -841,22 +840,6 @@ export function defineLifecycle<T extends LifecycleTypes>(
 
   const configuration = definition.parameterConfiguration;
   if (configuration) {
-    const starts =
-      configuration.startTransition === undefined
-        ? []
-        : typeof configuration.startTransition === 'string'
-          ? [configuration.startTransition]
-          : configuration.startTransition;
-    if (
-      configuration.startTransition !== undefined &&
-      (!starts.length || new Set(starts).size !== starts.length)
-    )
-      throw invalid(
-        name,
-        'parameter start transitions must be nonempty and unique.',
-      );
-    if (starts.some((start) => !transitions.has(start)))
-      throw invalid(name, 'unknown parameter start transition.');
     if (triggers.size && !definition.dueAtField)
       throw invalid(name, 'configured triggers require an indexed dueAtField.');
     const keys = new Set<string>();
@@ -947,12 +930,6 @@ export function describeLifecycle<T extends LifecycleTypes>(
     ...(lifecycle.parameterConfiguration
       ? {
           parameterConfiguration: {
-            ...(lifecycle.parameterConfiguration.startTransition
-              ? {
-                  startTransition:
-                    lifecycle.parameterConfiguration.startTransition,
-                }
-              : {}),
             groups: lifecycle.parameterConfiguration.groups.map((group) => ({
               key: group.key,
               title: group.title,

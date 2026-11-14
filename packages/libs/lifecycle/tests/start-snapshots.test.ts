@@ -56,7 +56,6 @@ function setup(creation = false) {
       parameters: { wait: 100, second: 200 },
       parameterConfiguration: {
         groups: [group],
-        ...(creation ? {} : { startTransition: 'submit' }),
       },
       transitions: {
         submit: { from: 'draft', to: 'waiting' },
@@ -109,14 +108,14 @@ describe('complete startup snapshots', () => {
       .mockRejectedValue(new Error('broken configuration'));
     expect(
       (await runtime.view('work', a.record.id, SYSTEM_ACTOR)).parameterValues,
-    ).toEqual({ wait: 500, second: 1000 });
+    ).toEqual({ wait: 100, second: 200 });
     expect(read).not.toHaveBeenCalled();
     expect(
       await parameters.snapshot('tenant', 'work', String(a.record.id)),
     ).toMatchObject({
-      revision: 1,
+      revision: 0,
       at: '2026-11-13T00:00:00.000Z',
-      values: { wait: 500, second: 1000 },
+      values: { wait: 100, second: 200 },
     });
   });
   it('starts independently with same-name fields having different types, defaults and validation', async () => {
@@ -241,7 +240,7 @@ describe('complete startup snapshots', () => {
       }),
     ).rejects.toThrow('Tier required.');
   });
-  it('starts a draft with current values and retains them after withdrawal and resubmission', async () => {
+  it('freezes a draft at creation and retains its values after withdrawal and resubmission', async () => {
     const { runtime, save } = setup();
     const a = await runtime.create('work', {}, { actor: SYSTEM_ACTOR });
     await save(300, 600, 0);
@@ -256,7 +255,7 @@ describe('complete startup snapshots', () => {
     await runtime.fire('work', a.record.id, 'submit', { actor: SYSTEM_ACTOR });
     expect(
       (await runtime.view('work', a.record.id, SYSTEM_ACTOR)).parameterValues,
-    ).toEqual({ wait: 300, second: 600 });
+    ).toEqual({ wait: 100, second: 200 });
     const b = await runtime.create('work', {}, { actor: SYSTEM_ACTOR });
     await runtime.fire('work', b.record.id, 'submit', { actor: SYSTEM_ACTOR });
     expect(
@@ -315,7 +314,7 @@ describe('complete startup snapshots', () => {
     });
     await expect(
       runtime.view('work', legacy.id, SYSTEM_ACTOR),
-    ).rejects.toMatchObject({ code: 'PARAMETER_START_UNKNOWN' });
+    ).rejects.toMatchObject({ code: 'PARAMETER_SNAPSHOT_MISSING' });
     await store.appendTransition({
       lifecycle: 'work',
       recordId: String(legacy.id),
@@ -354,49 +353,85 @@ describe('complete startup snapshots', () => {
     const read = vi.spyOn(parameters, 'readConfiguration');
     await expect(
       runtime.view('work', record.id, SYSTEM_ACTOR),
-    ).rejects.toMatchObject({ code: 'PARAMETER_START_UNKNOWN' });
+    ).rejects.toMatchObject({ code: 'PARAMETER_SNAPSHOT_MISSING' });
     await expect(
       runtime.fire('work', record.id, 'submit', { actor: SYSTEM_ACTOR }),
-    ).rejects.toMatchObject({ code: 'PARAMETER_START_UNKNOWN' });
+    ).rejects.toMatchObject({ code: 'PARAMETER_SNAPSHOT_MISSING' });
     expect(read).not.toHaveBeenCalled();
   });
 
-  it('keeps independent draft proof across edits and consumes it atomically on first submission', async () => {
-    const { runtime, store, parameters, save } = setup();
+  it('never rewrites a draft snapshot during editing or submission and bases a delayed deadline on state entry', async () => {
+    const { runtime, store, parameters, save, advance } = setup();
     const created = await runtime.create('work', {}, { actor: SYSTEM_ACTOR });
-    const proof = () =>
-      store
-        .records('lifecycleCreationRequests')
-        .find((row) => row.fingerprint === '$parameter-start-v1');
-    expect(proof()).toMatchObject({ status: 'unstarted', revision: 0 });
+    const before = await parameters.snapshot(
+      'tenant',
+      'work',
+      String(created.record.id),
+    );
+    expect(before).toMatchObject({
+      values: { wait: 100, second: 200 },
+      revision: 0,
+    });
+    expect(store.records('lifecycleCreationRequests')).toHaveLength(0);
     store.patchRecord('work', created.record.id, {
       lifecycleVersion: 8,
       title: 'Edited draft',
     });
-    expect(
-      (await runtime.view('work', created.record.id, SYSTEM_ACTOR))
-        .parameterValues,
-    ).toEqual({ wait: 100, second: 200 });
     await save(300, 600, 0);
-    const failure = vi
-      .spyOn(parameters, 'saveSnapshot')
-      .mockRejectedValueOnce(new Error('storage failed'));
-    await expect(
-      runtime.fire('work', created.record.id, 'submit', {
-        actor: SYSTEM_ACTOR,
-      }),
-    ).rejects.toThrow('storage failed');
-    expect(proof()).toMatchObject({ status: 'unstarted', revision: 0 });
-    failure.mockRestore();
+    advance(5000);
+    const writes = vi.spyOn(parameters, 'saveSnapshot');
     await runtime.fire('work', created.record.id, 'submit', {
       actor: SYSTEM_ACTOR,
     });
-    expect(proof()).toMatchObject({ status: 'started', revision: 1 });
+    expect(writes).not.toHaveBeenCalled();
     expect(
-      (await runtime.view('work', created.record.id, SYSTEM_ACTOR))
-        .parameterValues,
-    ).toEqual({ wait: 300, second: 600 });
+      await parameters.snapshot('tenant', 'work', String(created.record.id)),
+    ).toEqual(before);
+    expect((await store.findRecord('work', created.record.id))?.dueAt).toBe(
+      '2026-11-13T00:00:05.100Z',
+    );
+    advance(99);
+    expect(await runtime.runTriggers()).toBe(0);
+    advance(1);
+    expect(await runtime.runTriggers()).toBe(1);
   });
+
+  it.each([
+    'values',
+    'scope',
+    'revision',
+    'at',
+    'sources',
+    'schemaVersion',
+    'group',
+    'origin',
+    'sourceRevision',
+  ])(
+    'rejects a draft with invalid snapshot %s without consulting configuration',
+    async (field) => {
+      const { runtime, store, parameters } = setup();
+      const created = await runtime.create('work', {}, { actor: SYSTEM_ACTOR });
+      const row = store.records('lifecycleParameterSnapshots')[0]!;
+      const payload = structuredClone(row.payload) as Record<string, unknown>;
+      const sources = payload.sources as Record<
+        string,
+        Record<string, unknown>
+      >;
+      if (field === 'values') payload.values = { wait: 'wrong', second: 200 };
+      else if (field === 'sources') payload.sources = {};
+      else if (field === 'schemaVersion') sources.wait.schemaVersion = 2;
+      else if (field === 'group') sources.wait.group = 'other';
+      else if (field === 'origin') sources.wait.origin = 'unknown';
+      else if (field === 'sourceRevision') sources.wait.revision = -1;
+      else payload[field] = field === 'revision' ? -1 : 'invalid';
+      store.patchRecord('lifecycleParameterSnapshots', row.id, { payload });
+      const read = vi.spyOn(parameters, 'readConfiguration');
+      await expect(
+        runtime.view('work', created.record.id, SYSTEM_ACTOR),
+      ).rejects.toMatchObject({ code: 'PARAMETER_SNAPSHOT_INVALID' });
+      expect(read).not.toHaveBeenCalled();
+    },
+  );
 
   it('bounds overdue refusal scans and resumes beyond the refused backlog on the next sweep', async () => {
     const { runtime, store, advance } = setup(true);

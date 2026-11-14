@@ -421,9 +421,6 @@ export const DescriptionViewSchema: z.ZodType<LifecycleDescriptionView> = z
     description: z.object({
       parameterConfiguration: z
         .object({
-          startTransition: z
-            .union([z.string(), z.array(z.string())])
-            .optional(),
           groups: z.array(
             z.object({
               key: z.string(),

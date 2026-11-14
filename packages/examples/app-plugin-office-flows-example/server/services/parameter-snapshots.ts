@@ -18,7 +18,7 @@ import { OfficeWorkflowParameterService } from './workflow-parameters.js';
 
 export const OFFICE_SNAPSHOTS = 'officeFlowsParameterSnapshots';
 
-/** Contract defaults are versioned source; legacy administrator values are read only before start. */
+/** Contract defaults are versioned source; administrator values are resolved only at record creation. */
 export function officeParameterContract(name: string): {
   parameters: JsonObject;
   parameterConfiguration: ParameterConfigurationDefinition;
@@ -51,9 +51,6 @@ export function officeParameterContract(name: string): {
     ) as JsonObject,
     parameterConfiguration: {
       groups: [configurationGroup(name, [group])],
-      ...(['incoming', 'dataRequests'].includes(name)
-        ? { startTransition: 'submit' }
-        : {}),
     },
   };
 }

@@ -36,7 +36,6 @@ const group: ParameterGroup = {
   },
 };
 const configuration: ParameterConfigurationDefinition = {
-  startTransition: 'submit',
   groups: [group],
 };
 function setup() {
@@ -104,21 +103,28 @@ function setup() {
   };
 }
 describe('configured lifecycle parameters', () => {
-  it('previews current values, binds the complete values only on first successful submission', async () => {
+  it('freezes complete values at creation while identity-free previews see current configuration', async () => {
     const { parameters, runtime, save, seen } = setup();
     const record = (await runtime.create('orders', {}, { actor: SYSTEM_ACTOR }))
       .record;
     await save(20, 2, 0);
     expect(
       await runtime.resolveParameters('orders', {
-        record,
+        record: null,
         purpose: 'preview',
         transactionHandle: undefined,
       }),
     ).toEqual({ limit: 20, live: 2 });
     expect(
+      await runtime.resolveParameters('orders', {
+        record,
+        purpose: 'preview',
+        transactionHandle: undefined,
+      }),
+    ).toEqual({ limit: 10, live: 1 });
+    expect(
       await parameters.snapshot('demo', 'orders', String(record.id)),
-    ).toBeUndefined();
+    ).toMatchObject({ values: { limit: 10, live: 1 } });
     const first = await runtime.fire('orders', record.id, 'submit', {
       actor: SYSTEM_ACTOR,
       requestId: 'first',
@@ -131,16 +137,16 @@ describe('configured lifecycle parameters', () => {
         purpose: 'preview',
         transactionHandle: undefined,
       }),
-    ).toEqual({ limit: 20, live: 2 });
+    ).toEqual({ limit: 10, live: 1 });
     await runtime.fire('orders', record.id, 'withdraw', {
       actor: SYSTEM_ACTOR,
     });
     await runtime.fire('orders', record.id, 'submit', { actor: SYSTEM_ACTOR });
     expect(seen).toEqual([
-      [20, 2],
-      [20, 2],
-      [20, 2],
-      [20, 2],
+      [10, 1],
+      [10, 1],
+      [10, 1],
+      [10, 1],
     ]);
     const newRecord = (
       await runtime.create('orders', {}, { actor: SYSTEM_ACTOR })
@@ -155,9 +161,9 @@ describe('configured lifecycle parameters', () => {
       first.entry.id,
     );
     expect(usage).toMatchObject({
-      values: { limit: 20, live: 2 },
+      values: { limit: 10, live: 1 },
       sources: {
-        limit: { origin: 'configuration', revision: 1 },
+        limit: { origin: 'default', revision: 0 },
       },
     });
   });
@@ -171,7 +177,7 @@ describe('configured lifecycle parameters', () => {
     ).rejects.toThrow('hook failure');
     expect(
       await parameters.snapshot('demo', 'orders', String(record.id)),
-    ).toBeUndefined();
+    ).toMatchObject({ values: { limit: 10, live: 1 } });
     expect(
       (await store.listTransitions('orders', String(record.id))).map(
         (entry) => entry.transition,
@@ -188,7 +194,7 @@ describe('configured lifecycle parameters', () => {
           String(record.id),
           tx.handle,
         ),
-      ).toBeUndefined();
+      ).toMatchObject({ values: { limit: 10, live: 1 } });
     });
   });
   it('does not reread or replace facts on idempotent replay', async () => {
@@ -282,14 +288,14 @@ describe('configured lifecycle parameters', () => {
       'orders',
       record.id,
       async (values, tx) => {
-        expect(values).toEqual({ limit: 20, live: 2 });
+        expect(values).toEqual({ limit: 10, live: 1 });
         await tx.fire('orders', record.id, 'submit', { actor: SYSTEM_ACTOR });
       },
       { actionId: 'submit-action' },
     );
     expect(
       await parameters.usage('orders', 'action', 'submit-action'),
-    ).toMatchObject({ values: { limit: 20, live: 2 } });
+    ).toMatchObject({ values: { limit: 10, live: 1 } });
   });
   it('refuses missing, unknown and corrupt historical snapshots', async () => {
     const { store, parameters, lifecycle } = setup();
@@ -298,7 +304,6 @@ describe('configured lifecycle parameters', () => {
       parameterConfiguration: {
         store: parameters,
         scope: () => 'demo',
-        snapshotRequired: (record) => record.status === 'review',
       },
     });
     const record = await store.createRecord('orders', { status: 'review' });
@@ -478,7 +483,7 @@ describe('configured action and continuation boundaries', () => {
     ).rejects.toThrow('outer action failure');
     expect(
       await parameters.snapshot('demo', 'orders', String(record.id)),
-    ).toBeUndefined();
+    ).toMatchObject({ values: { limit: 10, live: 1 } });
     expect(
       await parameters.listUsage('demo', 'orders', String(record.id)),
     ).toHaveLength(1);

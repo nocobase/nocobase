@@ -109,7 +109,6 @@ export const exportLifecycle: Lifecycle<ExportTypes> =
     ],
     dueAtField: 'lifecycleDueAt',
     parameterConfiguration: {
-      startTransition: 'submit',
       groups: [exportTimingGroup],
     },
     parameters: { pollSeconds: 15, maxMinutes: 3 },

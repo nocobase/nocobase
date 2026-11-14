@@ -30,7 +30,6 @@ export interface ParameterGroup {
   readonly validate?: (values: JsonObject) => void;
 }
 export interface ParameterConfigurationDefinition {
-  readonly startTransition?: string | readonly string[];
   readonly groups: readonly ParameterGroup[];
 }
 export interface ParameterSource {
@@ -88,7 +87,6 @@ export type ParameterConfigurationErrorCode =
   | 'CONFIGURATION_REQUEST_REUSED'
   | 'PARAMETER_SNAPSHOT_MISSING'
   | 'PARAMETER_SNAPSHOT_INVALID'
-  | 'PARAMETER_START_UNKNOWN'
   | 'PARAMETER_SNAPSHOT_REQUIRED'
   | 'PARAMETER_ATTEMPT_STALE';
 export class ParameterConfigurationError extends Error {

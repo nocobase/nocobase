@@ -80,7 +80,6 @@ export const invoiceLifecycle: Lifecycle<InvoiceTypes> =
     ],
     dueAtField: 'lifecycleDueAt',
     parameterConfiguration: {
-      startTransition: 'submit',
       groups: [invoiceTimingGroup],
     },
     parameters: { querySeconds: 30 },

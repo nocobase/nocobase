@@ -97,7 +97,6 @@ export const orderLifecycle: Lifecycle<OrderTypes> =
     // A real shop waits half an hour or more; the example a few minutes.
     dueAtField: 'lifecycleDueAt',
     parameterConfiguration: {
-      startTransition: 'checkout',
       groups: [orderTimingGroup],
     },
     parameters: { paymentWindowMinutes: 3 },

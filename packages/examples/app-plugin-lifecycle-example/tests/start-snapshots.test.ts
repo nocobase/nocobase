@@ -81,7 +81,6 @@ async function setup(
     parameters: { left: 1, right: 2 },
     parameterConfiguration: {
       groups: [group],
-      ...(options.draft ? { startTransition: 'submit' } : {}),
     },
     onEnterState: {
       waiting: [
@@ -269,7 +268,7 @@ test('queued effects survive configuration edits and a new runtime, and retries 
   ).toBe('done');
 });
 
-test('edited drafts keep authoritative proof and use configuration from their first successful submission', async ({
+test('edited drafts retain their creation snapshot across failed and successful submission', async ({
   database,
 }) => {
   const options = { draft: true, fail: true };
@@ -281,46 +280,36 @@ test('edited drafts keep authoritative proof and use configuration from their fi
     { actor: SYSTEM_ACTOR },
   );
   const recordId = String(created.record.id);
-  const proofId = parameterIdentity(
-    '$parameter-start-v1',
-    'tenant',
-    'snapshotWork',
-    recordId,
-    'proof',
-  );
-  await database.repository('snapshotWork').updateMany({
-    filter: { id: Number(recordId) },
-    values: { title: 'edited', lifecycleVersion: 7 },
-  });
+  const before = await parameters.snapshot('tenant', 'snapshotWork', recordId);
+  expect(before).toMatchObject({ revision: 0, values: { left: 1, right: 2 } });
+  expect(
+    await database.repository('lifecycleExampleCreationRequests').count(),
+  ).toBe(0);
+  await database
+    .repository('snapshotWork')
+    .updateMany({
+      filter: { id: Number(recordId) },
+      values: { title: 'edited', lifecycleVersion: 7 },
+    });
   await save(10, 0);
   expect(
     (await instance.view('snapshotWork', recordId, SYSTEM_ACTOR))
       .parameterValues,
-  ).toEqual({ left: 10, right: 20 });
+  ).toEqual({ left: 1, right: 2 });
   await expect(
     instance.fire('snapshotWork', recordId, 'submit', { actor: SYSTEM_ACTOR }),
   ).rejects.toThrow('start failure');
-  expect(
-    await parameters.snapshot('tenant', 'snapshotWork', recordId),
-  ).toBeUndefined();
-  expect(
-    await database
-      .repository('lifecycleExampleCreationRequests')
-      .findOne({ filter: { id: proofId } }),
-  ).toMatchObject({ status: 'unstarted', revision: 0 });
+  expect(await parameters.snapshot('tenant', 'snapshotWork', recordId)).toEqual(
+    before,
+  );
   await save(20, 1);
   options.fail = false;
   await instance.fire('snapshotWork', recordId, 'submit', {
     actor: SYSTEM_ACTOR,
   });
-  expect(
-    await parameters.snapshot('tenant', 'snapshotWork', recordId),
-  ).toMatchObject({ revision: 2, values: { left: 20, right: 40 } });
-  expect(
-    await database
-      .repository('lifecycleExampleCreationRequests')
-      .findOne({ filter: { id: proofId } }),
-  ).toMatchObject({ status: 'started', revision: 1 });
+  expect(await parameters.snapshot('tenant', 'snapshotWork', recordId)).toEqual(
+    before,
+  );
 });
 
 test('lost submit logs and a missing snapshot never turn a withdrawn instance into a fresh draft', async ({
@@ -361,19 +350,5 @@ test('lost submit logs and a missing snapshot never turn a withdrawn instance in
   await expect(
     instance.fire('snapshotWork', recordId, 'submit', { actor: SYSTEM_ACTOR }),
   ).rejects.toMatchObject({ code: 'PARAMETER_SNAPSHOT_MISSING' });
-  await database.repository('lifecycleExampleCreationRequests').deleteMany({
-    filter: {
-      id: parameterIdentity(
-        '$parameter-start-v1',
-        'tenant',
-        'snapshotWork',
-        recordId,
-        'proof',
-      ),
-    },
-  });
-  await expect(
-    instance.view('snapshotWork', recordId, SYSTEM_ACTOR),
-  ).rejects.toMatchObject({ code: 'PARAMETER_START_UNKNOWN' });
   expect(read).not.toHaveBeenCalled();
 });

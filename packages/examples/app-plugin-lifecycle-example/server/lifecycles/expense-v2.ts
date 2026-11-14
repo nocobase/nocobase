@@ -86,7 +86,6 @@ export const expenseV2Lifecycle: Lifecycle<ExpenseV2Types> =
     ],
     dueAtField: 'lifecycleDueAt',
     parameterConfiguration: {
-      startTransition: 'submit',
       groups: [expenseParameterGroup, expenseTimingGroup, expenseAuditGroup],
     },
     parameters: {
